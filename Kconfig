@@ -1,0 +1,70 @@
+#
+# Copyright (C) 2020 Xiaomi Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+config BLUETOOTH
+	bool "Enable Bluetooth"
+	default n
+	select LIBUV
+	select LIBUV_EXTENSION
+if BLUETOOTH
+
+config BLUETOOTH_AVRCP_TG
+	bool "Enable BT_AVRCP_TG"
+	default n
+	
+config BLUETOOTH_AVRCP_CT
+	bool "Enable BT_AVRCP_CT"
+	default n
+	
+	config BLUETOOTH_A2DP_SRC
+	bool "Enable BT_A2DP_SRC"
+	default n
+	
+	config BLUETOOTH_A2DP_SINK
+	bool "Enable BT_A2DP_SINK"
+	default n
+	
+	config BLUETOOTH_HFP_HF
+	bool "Enable BT_HFP_HF"
+	default n
+
+	config BLUETOOTH_HFP_AG
+	bool "Enable BT_HFP_AG"
+	default n
+
+	config BLUETOOTH_GATT
+	bool "Enable BT_GATT"
+	default n
+
+	config BLUETOOTH_HID_DEV
+	bool "Enable BT_HID_DEV"
+	default n
+
+	config BLUETOOTH_SPP
+	bool "Enable BT_SPP"
+	default n
+
+	if BLUETOOTH_SPP
+		config BLUETOOTH_SPP_INSTANCE
+			int "SPP instance"
+			default 2
+endif # BLUETOOTH_SPP
+
+	config BLUETOOTH_LOCAL_THREAD
+	bool "Local Thread Transfer"
+  default n
+
+endif # BLUETOOTH
