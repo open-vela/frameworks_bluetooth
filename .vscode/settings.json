@@ -1,0 +1,7 @@
+{
+  "files.associations": {
+    "files.watcherExclude": "{     \"**/.git/objects/**\": true,     \"**/.git/subtree-cache/**\": true,     \"**/node_modules/*/**\": true   }",
+    "*.tcc": "c",
+    "bts_service.h": "c"
+  }
+}

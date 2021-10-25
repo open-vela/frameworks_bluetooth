@@ -25,11 +25,11 @@ CSRCS += btservice/gap/bts_gap.c
 CSRCS += btservice/a2dp_source/bts_a2dp_source.c
 CSRCS += btservice/avrcp_target/bts_avrcp_target.c
 
-#CSRCS +=btservice/state_machine/state_machine.c
-#CSRCS +=btservice/hfp_client/bts_hf_client.c
-#CSRCS +=btservice/hfp_client/bts_hf_client_state_machine.c
-#CSRCS +=btservice/spp/bts_spp.c
-#CSRCS +=utils/list.c
+CSRCS +=btservice/state_machine/state_machine.c
+CSRCS +=btservice/hfp_client/bts_hf_client.c
+CSRCS +=btservice/hfp_client/bts_hf_client_state_machine.c
+CSRCS +=btservice/spp/bts_spp.c
+CSRCS +=utils/list.c
 
 MAINSRC   = btmanager/btm_manager.c 
 

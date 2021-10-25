@@ -42,6 +42,8 @@ typedef struct excute_service_context
 bt_result_code  register_process_func_to_service(bt_profile_id profile_id, 
                                         bts_process_command_func_in_service func);
 
+uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb);
+void bts_uv_poll_stop(uv_poll_t* handle);
 
 void process_in_work_thread( process_in_io func_in_io,  void * data);
 
