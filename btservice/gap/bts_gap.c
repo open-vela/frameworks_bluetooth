@@ -156,7 +156,6 @@ void adapter_hci_event_callback(SERVICE_BT_HCI_EVENT_S *hci_event)
 extern int TL_h4_send(UINT8 *pBuf, UINT32 len);
 void adapter_transport_write_packet_callback(uint8_t *hci_packet, uint32_t length)
 {
-    printf("%s\n", __func__);
     TL_h4_send(hci_packet, length);
 }
 

@@ -101,6 +101,36 @@ void bts_uv_close_cb(uv_handle_t* handle)
     free(handle);
 }
 
+uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb)
+{
+    int ret;
+    uv_poll_t *handle;
+
+    handle = (uv_poll_t *)malloc(sizeof(uv_poll_t));
+    if (!handle)
+        return NULL;
+
+    ret = uv_poll_init(dispatch_loop, handle, fd);
+    if (ret < 0) {
+        free(handle);
+        return NULL;
+    }
+
+    ret = uv_poll_start(handle, pevents, cb);
+    if (ret < 0) {
+        free(handle);
+        return NULL;
+    }
+
+    return handle;
+}
+
+void bts_uv_poll_stop(uv_poll_t* handle)
+{
+    uv_poll_stop(handle);
+    uv_close((uv_handle_t*)handle, bts_uv_close_cb);
+}
+
 //all the message will be porcess first time here, there is uv process here
 void execute_manager_message(uv_async_t* handle)
 {
@@ -199,6 +229,7 @@ void process_data_from_manager(int profile_id, char * buff, size_t size)
 Exit:
     return ;
 }
+
 
 void receive_data_from_manager(void * handle, bt_profile_id profile_id, char * buff, size_t size)
 {
@@ -364,7 +395,7 @@ int loop_init()
 
     uv_idle_init(uv_default_loop(), &idler);
     //uv_idle_start(&idler, idle_process);
-    //start_timer(0, 200000, process_in_loop_timer, NULL);
+    start_timer(0, 200000, process_in_loop_timer, NULL);
     printf("Idling...\n");
     uv_run(dispatch_loop, UV_RUN_DEFAULT);
 
@@ -381,6 +412,8 @@ int bts_service_get_interface(void* handle)
     manager_context_t *context = (manager_context_t *)handle;
     context->app_id = 0;
 }
+extern bt_result_code spp_service_start(void);
+bt_result_code hf_client_service_start(void);
 
 int bts_service_init()
 {
@@ -388,6 +421,8 @@ int bts_service_init()
     int i = 0;
     printf(" bt_service_init coming \n");
     bts_common_init();
+    hf_client_service_start();
+    spp_service_start();
     loop_init();
     printf(" bt_service_init done \n");
     return 0;
