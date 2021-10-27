@@ -18,6 +18,7 @@ include $(APPDIR)/Make.defs
 
 CSRCS += btservice/btservice/bts_service.c
 CSRCS += btservice/gap/bts_gap.c
+CSRCS += btmanager/btm_manager.c
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SRC),y)
 CSRCS += btservice/a2dp_source/bts_a2dp_source.c
@@ -38,6 +39,14 @@ ifeq ($(CONFIG_BLUETOOTH_SPP),y)
 	CSRCS +=btservice/spp/bts_spp.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_GATT),y)
+	CSRCS +=btmanager/btm_le_scan.c
+	CSRCS +=btmanager/btm_le_advertise.c
+	CSRCS +=btservice/gatt/bts_lescan.c
+	CSRCS +=btservice/gatt/bts_leadv.c
+	CSRCS +=btservice/gatt/bts_gatt.c
+endif
+
 CSRCS +=utils/list.c
 CSRCS +=utils/uuid.c
 
@@ -52,8 +61,8 @@ CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/sr
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/system/libuv/libuv/include}
 
-ifeq ($(CONFIG_BLUETOOTH_MANAGER), y)
-	MAINSRC   = btmanager/btm_manager.c 
+ifeq ($(BLUETOOTH_SAMPLE_LEADV), y)
+	MAINSRC   = samples/test_leadv.c
 
 	PRIORITY = SCHED_PRIORITY_DEFAULT
 	STACKSIZE = CONFIG_DEFAULT_TASK_STACKSIZE
