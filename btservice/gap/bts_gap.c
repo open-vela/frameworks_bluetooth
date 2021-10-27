@@ -24,14 +24,19 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "btdatatype.h"
+#include "global.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_gap.h"
 
 #include "btm_manager.h"
 #include "bts_service.h"
 #include "bts_gap.h"
+
+#define LOG_TAG "bts_gap"
+#include "log.h"
 
 bts_gap_callback_t *gap_callback_cb = NULL;
 void bts_common_register_callback(bts_gap_callback_t *cb)
@@ -42,8 +47,8 @@ void bts_common_register_callback(bts_gap_callback_t *cb)
 /*process callback from stack */
 void process_loop_in_common(void *data, size_t data_size)
 {
-    int common_size = 0;
-    char *common_buff = NULL;
+    //int common_size = 0;
+    //char *common_buff = NULL;
 
     // if (NULL == context)
     // {
@@ -127,7 +132,7 @@ void adapter_link_mode_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_MOD
 
 void adapter_link_connect_request_callback(BD_ADDR remote_addr)
 {
-    printf("%s\n", __func__);
+    BT_LOGD("%s", __func__);
     service_adapter_gap_reply_link_request(remote_addr, true);
 }
 
@@ -137,11 +142,11 @@ void adapter_link_policy_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_P
 
 void adapter_stack_state_changed_callback(SERVICE_BT_STACK_STATE stack_state)
 {
-    printf("Stack State Changed to %d\r\n>", stack_state);
+    BT_LOGD("Stack State Changed to %d", stack_state);
     if (stack_state == BT_STATE_ON)
     {
         uint8_t local_name[] = "BlueLet-NuttX";
-        service_adapter_gap_set_local_name(local_name, sizeof(local_name));
+        service_adapter_gap_set_local_name((char *)local_name, sizeof(local_name));
         service_adapter_gap_set_local_device_class(BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO |
                 BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
         service_adapter_gap_set_local_io_capability(SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
@@ -178,7 +183,7 @@ void adapter_delete_br_link_key_callback(BD_ADDR remote_addr)
 
 void adapter_pairing_request_callback(BD_ADDR remote_addr, bool local_initiate, bool is_bondable)
 {
-    printf("%s\n", __func__);
+    BT_LOGD("%s", __func__);
     service_adapter_gap_reply_pairing_request(remote_addr, 0);
 }
 
@@ -223,6 +228,11 @@ void adapter_ble_phy_update_callback(BD_ADDR remote_addr, SERVICE_BLE_PHY_TYPE t
 {
 }
 
+void adapter_ble_irk_callback(BT_COMMON_KEY irk, BD_ADDR ble_addr,
+                                     SERVICE_BLE_ADDR_TYPE ble_addr_type)
+{
+
+}
 void adapter_ble_packet_received_callback(BD_ADDR remote_addr, uint16_t private_cid,
         uint8_t *packet, uint16_t packet_size)
 {
@@ -236,7 +246,7 @@ void get_local_address(void)
 void get_state(void)
 {
     // TODO adapter interface
-    printf("get_state \n");
+    BT_LOGD("get_state");
 }
 
 void set_local_address(char *buff, size_t size)
@@ -244,13 +254,13 @@ void set_local_address(char *buff, size_t size)
     bool status = false;
     if (false == status)
     {
-        printf("Decoding failed \n");
+        BT_LOGD("Decoding failed");
     }
     // TODO adapter interface
     // set_address.address
 }
 
-const GAP_CALLBACKS_S gap_callback = {
+GAP_CALLBACKS_S gap_callback = {
     sizeof(GAP_CALLBACKS_S),
     adapter_stack_state_changed_callback,
     adapter_received_remote_name_callback,
@@ -284,20 +294,25 @@ const GAP_CALLBACKS_S gap_callback = {
     adapter_ble_remove_resolving_list_callback,
     adapter_ble_address_callback,
     adapter_ble_phy_update_callback,
+    adapter_ble_irk_callback,
     adapter_ble_packet_received_callback
 };
 
-void register_callback_to_stack()
+void register_callback_to_stack(void)
 {
 }
 
 static void *bluelet_loop_thread(void *arg)
 {
-    printf("%s\n", __func__);
+    BT_LOGD("%s", __func__);
     service_adapter_gap_enable();
     while (1)
         ScheduleLoop();
+    
+    return NULL;
 }
+
+extern void InitTransportLayer(void);
 
 int bluelet_init(void)
 {
@@ -312,11 +327,13 @@ int bluelet_init(void)
     pthread_attr_setstacksize(&attr, 8192);
     pthread_create(&loop_pthread, &attr, bluelet_loop_thread, NULL);
     pthread_detach(loop_pthread);
+
+    return 0;
 }
 
-void bts_common_init()
+void bts_common_init(void)
 {
-    printf(" common_init coming \n");
+    //BT_LOGD(" common_init coming");
     bluelet_init();
     register_callback_to_stack();
 }

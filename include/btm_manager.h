@@ -27,6 +27,9 @@
  * @brief Bluetooth address length 
  */
 #define BT_ADDR_LENGTH (6)        /*!< define the address length*/
+#ifdef BD_NAME_MAX_SIZE
+#undef BD_NAME_MAX_SIZE
+#endif
 #define BD_NAME_MAX_SIZE (20)
 
 /** Bluetooth address type*/

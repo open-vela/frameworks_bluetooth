@@ -84,9 +84,10 @@ Exit:
 
 bt_result_code send_to_service(void * handle, bt_profile_id profile_id, void* profile_buffer, int profile_size)
 {
+    bt_result_code result = BT_RESULT_FAILED;
+    #if 0
     size_t size = 0;
     char *send_buffer = NULL;
-    bt_result_code result = BT_RESULT_FAILED;
     printf(" send_to_service profile id is %d\n", profile_id);
 
     if (NULL == handle){
@@ -102,23 +103,25 @@ bt_result_code send_to_service(void * handle, bt_profile_id profile_id, void* pr
     if (profile_buffer != NULL) 
     {
 #ifdef CONFIG_BLUETOOTH_LOCAL_THREAD
-        result = receive_data_from_manager(handle, profile_id, profile_buffer, size);
+        //result = receive_data_from_manager(handle, profile_id, profile_buffer, size);
 #else 
 #endif
     }
 
 Exit:
+#endif
     return result;
 }
 
 
 void common_process_func(void * handle, char * buff, size_t size)
 {
+    #if 0
     bt_result_code result = BT_RESULT_FAILED;
     bool status = false;
     bt_manager_bt_state  btmanager_state = BT_MANAGER_STATE_OFF;
     printf(" common_process_func size is %d \n", size);
-    #if 0
+    
     manager_context_t *context;
      
     if (NULL == handle){
@@ -145,15 +148,16 @@ void common_process_func(void * handle, char * buff, size_t size)
     default:
       break;
     }
-    #endif
 
 Exit:
     printf(" common_process_func exit \n");
+    #endif
 }
 manager_context_t * pcontext;
 manager_context_t* btm_context_init(manager_context_t * context)
 {
     //TODO init context for RPC 
+    return NULL;
 }
 
 bt_result_code bt_manager_init(void *p)
@@ -174,6 +178,13 @@ bt_result_code bt_manager_init(void *p)
 
     result = BT_RESULT_WAITING_FOR_INIT_STATUS_CHANGED;
     return result;
+}
+
+void *bt_manager_thread_start(void *arg)
+{
+    bt_manager_init(NULL);
+
+    return NULL;
 }
 
 bt_result_code bt_manager_deinit(void * handle)
@@ -213,7 +224,7 @@ bt_result_code bt_manager_enable(void * handle)
     }
     context = (manager_context_t *)handle;
 #ifdef CONFIG_BLUETOOTH_LOCAL_THREAD
-    result = send_to_service(context, BT_PROFILE_COMMON_ID, NULL, NULL);
+    result = send_to_service(context, BT_PROFILE_COMMON_ID, NULL, 0);
 #endif
 Exit:
     return result;
@@ -221,8 +232,8 @@ Exit:
 
 bt_result_code bt_manager_disable(void * handle)
 {
-    size_t size = 0;
-    char *buffer = NULL;
+    //size_t size = 0;
+    //char *buffer = NULL;
     bt_result_code result = BT_RESULT_FAILED;
     manager_context_t *context;
     if (NULL == handle){
@@ -230,7 +241,7 @@ bt_result_code bt_manager_disable(void * handle)
     }
     context = (manager_context_t *)handle;
 #ifdef CONFIG_BLUETOOTH_LOCAL_THREAD
-    result = send_to_service(context, BT_PROFILE_COMMON_ID, NULL, NULL);
+    result = send_to_service(context, BT_PROFILE_COMMON_ID, NULL, 0);
 #endif
 Exit:
     return result;
@@ -245,8 +256,8 @@ bool bt_manager_is_enable(void * handle)
 
 bt_manager_bt_state bt_get_state(void * handle)
 {
-    size_t size = 0;
-    char *buffer = NULL;
+    //size_t size = 0;
+    //char *buffer = NULL;
     bt_result_code result = BT_RESULT_FAILED;
     manager_context_t *context;
     if (NULL == handle){
@@ -254,7 +265,7 @@ bt_manager_bt_state bt_get_state(void * handle)
     }
     context = (manager_context_t *)handle;
 #ifdef CONFIG_BLUETOOTH_LOCAL_THREAD
-    result = send_to_service(context, BT_PROFILE_COMMON_ID, NULL, NULL);
+    result = send_to_service(context, BT_PROFILE_COMMON_ID, NULL, 0);
 #endif
 Exit:
     return result;
@@ -270,8 +281,8 @@ bt_manager_ble_state ble_get_state(void * handle)
 
 void process_data_from_service(void * handle, int profile_id, char * buff, int size) 
 {
-    bt_result_code result = BT_RESULT_FAILED;
-    bool status = false;
+    //bt_result_code result = BT_RESULT_FAILED;
+    //bool status = false;
     btm_process_func func = NULL;
     
     if ((NULL == buff)  ||(0 == size))
@@ -328,14 +339,14 @@ void * bt_get_profile_interface(void * handle, const bt_profile_id profile_id)
 
 int main(int argc, FAR char *argv[])
 {
-    char  input;
+    //char  input;
     printf("btmanager main  coming in  \n");
 
 #ifdef CONFIG_BLUETOOTH_LOCAL_THREAD
     pthread_t message_tid;
     pthread_attr_t message_attr;
     pthread_attr_init(&message_attr);
-    pthread_create(&message_tid, &message_attr, bt_manager_init, NULL);
+    pthread_create(&message_tid, &message_attr, bt_manager_thread_start, NULL);
 #endif
 
     //test code

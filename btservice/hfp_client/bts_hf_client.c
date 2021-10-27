@@ -40,10 +40,11 @@
 #include "bts_hf_client_state_machine.h"
 #include "bts_hf_client.h"
 
-#include "log.h"
 #include "list.h"
 
-#define LOG_TAG "HF_SERVICE"
+#define LOG_TAG "hfp_service"
+#include "log.h"
+
 
 typedef struct
 {

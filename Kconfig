@@ -24,47 +24,63 @@ if BLUETOOTH
 config BLUETOOTH_AVRCP_TG
 	bool "Enable BT_AVRCP_TG"
 	default n
-	
+
 config BLUETOOTH_AVRCP_CT
 	bool "Enable BT_AVRCP_CT"
 	default n
-	
-	config BLUETOOTH_A2DP_SRC
+
+config BLUETOOTH_A2DP_SRC
 	bool "Enable BT_A2DP_SRC"
 	default n
-	
-	config BLUETOOTH_A2DP_SINK
+
+config BLUETOOTH_A2DP_SINK
 	bool "Enable BT_A2DP_SINK"
 	default n
-	
-	config BLUETOOTH_HFP_HF
+
+config BLUETOOTH_HFP_HF
 	bool "Enable BT_HFP_HF"
 	default n
 
-	config BLUETOOTH_HFP_AG
+config BLUETOOTH_HFP_AG
 	bool "Enable BT_HFP_AG"
 	default n
 
-	config BLUETOOTH_GATT
+config BLUETOOTH_GATT
 	bool "Enable BT_GATT"
 	default n
 
-	config BLUETOOTH_HID_DEV
+config BLUETOOTH_HID_DEV
 	bool "Enable BT_HID_DEV"
 	default n
 
-	config BLUETOOTH_SPP
+config BLUETOOTH_SPP
 	bool "Enable BT_SPP"
-	default n
+	default y
 
-	if BLUETOOTH_SPP
-		config BLUETOOTH_SPP_INSTANCE
-			int "SPP instance"
-			default 2
-endif # BLUETOOTH_SPP
+config BLUETOOTH_MANAGER
+  	bool "Enable bt manager"
+  	default y
 
-	config BLUETOOTH_LOCAL_THREAD
+if BLUETOOTH_SPP
+config BLUETOOTH_SPP_INSTANCE
+	int "SPP instance"
+	default 2
+
+config BLUETOOTH_SPP_MAX_CONNECTIONS
+	int "SPP max connections"
+	default 32
+	help
+		SPP max connections
+
+config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
+	int "SPP server max accept connections"
+	default 2
+	help
+		SPP server max accept connections
+endif
+
+config BLUETOOTH_LOCAL_THREAD
 	bool "Local Thread Transfer"
-  default n
+	default n
 
 endif # BLUETOOTH

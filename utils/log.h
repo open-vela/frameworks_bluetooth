@@ -36,11 +36,15 @@
 
 #include <syslog.h>
 
-#define LOG_TAG "BT
+#ifndef LOG_TAG
+#define LOG_TAG "BT"
+#endif
 
-#define BT_LOGE(fmt, args...) syslog(3, LOG_TAG ": " fmt "\n", ##args)
-#define BT_LOGW(fmt, args...) syslog(4, LOG_TAG ": " fmt "\n", ##args)
-#define BT_LOGI(fmt, args...) syslog(5, LOG_TAG ": " fmt "\n", ##args)
-#define BT_LOGD(fmt, args...) syslog(6, LOG_TAG ": " fmt "\n", ##args)
+#define BT_LOGE(fmt, args...) syslog(3, "[E] " "["LOG_TAG"]" ": " fmt "\n", ##args)
+#define BT_LOGW(fmt, args...) syslog(4, "[W] " "["LOG_TAG"]" ": " fmt "\n", ##args)
+#define BT_LOGI(fmt, args...) syslog(5, "[I] " "["LOG_TAG"]" ": " fmt "\n", ##args)
+#define BT_LOGD(fmt, args...) syslog(6, "[D] " "["LOG_TAG"]" ": " fmt "\n", ##args)
+
+#define BT_ADDR_LOGD(fmt, args...) syslog(6, LOG_TAG ": " fmt "\n", ##args)
 
 #endif
