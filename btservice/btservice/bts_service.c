@@ -30,7 +30,6 @@
 #include "uv.h"
 #include "stack_adapter_service_base.h"
 #include "stack_adapter_gap.h"
-#include "gatt_service.h"
 
 #define UV_TIMEOUT  (32767)
 #define UV_TIMEOUT_REPEAT  (32767)
@@ -438,81 +437,4 @@ int btservice_main(int argc, FAR char *argv[])
     printf(" main coming end\n");
  
     return 0;
-}
-
-static bool is_profile(const char* p1, const char* p2)
-{
-    if (!p1 || !p2) {
-        BT_LOGE("fail, p1:%s or p2:%s invalid", p1, p2);
-        return false;
-    }
-    return strlen(p1) == strlen(p2) && strncmp(p1, p2, strlen(p2)) == 0;
-}
-
-static bt_callbacks* bluetooth_upper_callbacks = NULL;
-
-static bool interface_ready(void) { return bluetooth_upper_callbacks != NULL; }
-
-static const void* get_profile_interface(const char* profile_id)
-{
-    BT_LOGD("%s: id = %s", __func__, profile_id);
-
-    /* sanity check */
-    if (!interface_ready())
-        return NULL;
-
-    if (is_profile(profile_id, BT_PROFILE_GATT_ID))
-        return gatt_get_interface();
-
-    return NULL;
-}
-
-static void srv_adapter_state_changed_callback(bt_state_t state)
-{
-    if (!bluetooth_upper_callbacks) {
-        BT_LOGE("fail, bluetooth_upper_callbacks  nullptr");
-        return;
-    }
-    bluetooth_upper_callbacks->adapter_state_changed_cb(state);
-}
-
-static bt_callbacks bluetooth_lower_callbacks = {
-    .size = sizeof(bluetooth_lower_callbacks),
-    .adapter_state_changed_cb = srv_adapter_state_changed_callback,
-};
-
-static bt_result_code init(bt_callbacks* callbacks)
-{
-    bluetooth_upper_callbacks = callbacks;
-    return BT_RESULT_SUCCESS;
-}
-
-bt_result_code enable()
-{
-    return BT_RESULT_SUCCESS;
-}
-
-bt_result_code disable()
-{
-    return BT_RESULT_SUCCESS;
-}
-
-void cleanup(void)
-{
-}
-
-static bluetooth_service_interface bluetooth_service = {
-    .size = sizeof(bluetooth_service),
-
-    .init = init,
-    .enable = enable,
-    .disable = disable,
-    .cleanup = cleanup,
-
-    .get_profile_interface = get_profile_interface,
-};
-
-const bluetooth_service_interface* get_bluetooth_service_interface()
-{
-    return &bluetooth_service;
 }
