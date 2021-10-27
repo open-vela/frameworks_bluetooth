@@ -32,6 +32,7 @@
 #include "stack_adapter_gap.h"
 
 #include "bts_gap.h"
+#include "bts_gatt.h"
 #include "bts_spp.h"
 
 #define UV_TIMEOUT  (32767)
@@ -292,4 +293,127 @@ extern bt_result_code hf_client_service_start(void);
     service_loop_init();
     printf(" bt_service_init done \n");
     return 0;
+}
+
+static bool is_profile(const char* p1, const char* p2)
+{
+    if (!p1 || !p2) {
+        BT_LOGE("fail, p1:%s or p2:%s invalid", p1, p2);
+        return false;
+    }
+    return strlen(p1) == strlen(p2) && strncmp(p1, p2, strlen(p2)) == 0;
+}
+
+static bt_callbacks* bluetooth_upper_callbacks = NULL;
+
+static bool interface_ready(void) { return bluetooth_upper_callbacks != NULL; }
+
+static const void* get_profile_interface(const char* profile_id)
+{
+    BT_LOGD("%s: id = %s", __func__, profile_id);
+
+    /* sanity check */
+    if (!interface_ready())
+        return NULL;
+
+    if (is_profile(profile_id, BT_PROFILE_GATT))
+        return gatt_get_interface();
+
+    return NULL;
+}
+
+static void srv_adapter_state_changed_callback(bt_state_t state)
+{
+    if (!bluetooth_upper_callbacks) {
+        BT_LOGE("fail, bluetooth_upper_callbacks  nullptr");
+        return;
+    }
+    bluetooth_upper_callbacks->adapter_state_changed_cb(state);
+}
+
+static bt_callbacks bluetooth_lower_callbacks = {
+    .size = sizeof(bluetooth_lower_callbacks),
+    .adapter_state_changed_cb = srv_adapter_state_changed_callback,
+};
+
+typedef enum {
+    THREAD_ID_SERVICE,
+    THREAD_ID_STACK,
+} thread_id_t;
+
+static uv_thread_t thread_handle[2];
+
+static void* stack_schedule_loop(void* data)
+{
+    BT_LOGD("%s", __func__);
+    ScheduleLoop();
+}
+
+static void* service_schedule_loop(void* data)
+{
+    BT_LOGD("%s", __func__);
+    service_loop_init();
+}
+
+static bt_result_code init(bt_callbacks* callbacks)
+{
+    bluetooth_upper_callbacks = callbacks;
+    InitTransportLayer();
+    gap_interface_t* gap_ift = get_gap_instance();
+    gap_ift->init(NULL);
+
+    return BT_RESULT_SUCCESS;
+}
+
+bt_result_code enable(void)
+{
+    gap_interface_t* gap_ift = get_gap_instance();
+    gap_ift->enable();
+
+    int ret = uv_thread_create(&thread_handle[THREAD_ID_STACK], stack_schedule_loop, NULL);
+    if (ret != 0) {
+        BT_LOGE("fail uv_thread_create, ret:%d", ret);
+        return BT_RESULT_FAILED;
+    }
+
+    ret = uv_thread_create(&thread_handle[THREAD_ID_SERVICE], service_schedule_loop, NULL);
+    if (ret != 0) {
+        BT_LOGE("fail uv_thread_create, ret:%d", ret);
+        return BT_RESULT_FAILED;
+    }
+
+#ifdef CONFIG_BLUETOOTH_HFP_HF
+    extern bt_result_code hf_client_service_start(void);
+    hf_client_service_start();
+#endif
+#ifdef CONFIG_BLUETOOTH_SPP
+    spp_service_start();
+#endif
+
+    return BT_RESULT_SUCCESS;
+}
+
+bt_result_code disable(void)
+{
+    return BT_RESULT_SUCCESS;
+}
+
+void cleanup(void)
+{
+}
+
+static bluetooth_service_interface bluetooth_service = {
+    .size = sizeof(bluetooth_service),
+
+    .init = init,
+    .enable = enable,
+    .disable = disable,
+    .cleanup = cleanup,
+
+    .get_profile_interface = get_profile_interface,
+};
+
+const bluetooth_service_interface* get_bluetooth_service_interface()
+{
+    return &bluetooth_service;
 }

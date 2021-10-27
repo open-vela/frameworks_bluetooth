@@ -9,7 +9,7 @@
  * Pre-processor Definitions
  ****************************************************************************/
 typedef enum {
- 
+
     SET_ADDRESS = 0,
     GET_ADDRESS,
     SET_LOCAL_IO_CAPABILITY,
@@ -29,7 +29,7 @@ typedef enum {
     START_DISCONVERY,
     SET_SCAN_MODE,
     GAP_COMMAND_MAX_ID,
- 
+
     SET_ADDRESS_RESPONSE,
     GET_ADDRESS_RESPONSE,
     SET_LOCAL_IO_CAPABILITY_RESPONSE,
@@ -55,8 +55,20 @@ typedef struct {
     /* * set to sizeof(GAP_CALLBACKS_S) */
     uint8_t size;
     bts_gap_init_done_callback gap_init_done_cb;
-	//TODO:: Add Patch Download Start Callback
+    //TODO:: Add Patch Download Start Callback
 } bts_gap_callback_t;
-void bts_common_register_callback(bts_gap_callback_t *cb);
+void bts_common_register_callback(bts_gap_callback_t* cb);
 void bts_common_init(void);
 
+typedef struct {
+    size_t size;
+
+    bt_result_code (*init)(const bts_gap_callback_t* callbacks);
+    void (*cleanup)(void);
+    bt_result_code (*enable)(void);
+    bt_result_code (*disable)(bool normal_disable);
+
+    stack_state_t (*gap_get_stack_state)(void);
+} gap_interface_t;
+
+const gap_interface_t* get_gap_instance(void);

@@ -211,7 +211,10 @@ void * bt_get_profile_interface(void * handle, const bt_profile_id profile_id)
             //TODO add A2DP SRC interface
         }
         break;
-    
+    case BT_PROFILE_GATT_ID: {
+
+        break;
+    }
     default:
         break;
     }
@@ -220,7 +223,7 @@ void * bt_get_profile_interface(void * handle, const bt_profile_id profile_id)
 }
 
 
-int main(int argc, FAR char *argv[])
+int main1(int argc, FAR char *argv[])
 {
     //char  input;
     printf("btmanager main  coming in  \n");
@@ -256,4 +259,94 @@ int main(int argc, FAR char *argv[])
     }
  
     return 0;
+}
+
+static bluetooth_service_interface* bluetooth_service = NULL;
+
+static bt_callbacks_t* bluetooth_upper_callbacks = NULL;
+
+static void bt_mgr_adapter_state_changed_callback(bt_state_t state)
+{
+    if (!bluetooth_upper_callbacks) {
+        BT_LOGE("fail, bluetooth_upper_callbacks nullptr");
+        return;
+    }
+    bluetooth_upper_callbacks->bt_manager_state_changed_callback_cb(state);
+}
+
+static const bt_callbacks bluetooth_lower_callbacks = {
+    .size = sizeof(bluetooth_lower_callbacks),
+    .adapter_state_changed_cb = bt_mgr_adapter_state_changed_callback,
+};
+
+static bt_result_code init(const bt_callbacks_t* callbacks)
+{
+    bluetooth_upper_callbacks = callbacks;
+    if (!bluetooth_service) {
+        BT_LOGE("fail, bluetooth_service nullptr");
+        return BT_RESULT_FAILED;
+    }
+    bt_result_code ret = bluetooth_service->init(&bluetooth_lower_callbacks);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGE("fail, bluetooth_service init fail");
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
+static bt_result_code enable()
+{
+    if (!bluetooth_service) {
+        BT_LOGE("fail, bluetooth_service null");
+        return BT_RESULT_FAILED;
+    }
+    return bluetooth_service->enable();
+}
+
+static bt_result_code disable()
+{
+    if (!bluetooth_service) {
+        BT_LOGE("fail, bluetooth_service null");
+        return BT_RESULT_FAILED;
+    }
+    return bluetooth_service->disable();
+}
+
+static void cleanup(void)
+{
+    if (!bluetooth_service) {
+        BT_LOGE("fail, bluetooth_service null");
+        return;
+    }
+    bluetooth_service->cleanup();
+}
+
+static const void* get_profile_interface(const char* profile_id)
+{
+    if (!bluetooth_service) {
+        BT_LOGE("fail, bluetooth_service nullptr");
+        return NULL;
+    }
+    return bluetooth_service->get_profile_interface(profile_id);
+}
+
+static btm_interface_t bluetooth_manager = {
+    .size = sizeof(btm_interface_t),
+
+    .init = init,
+    .enable = enable,
+    .disable = disable,
+    .cleanup = cleanup,
+
+    .get_profile_interface = get_profile_interface,
+};
+
+btm_interface_t* get_bt_manager_interface(void)
+{
+    bluetooth_service = get_bluetooth_service_interface();
+    if (!bluetooth_service) {
+        BT_LOGE("fail, bluetooth_service null");
+        return NULL;
+    }
+    return &bluetooth_manager;
 }

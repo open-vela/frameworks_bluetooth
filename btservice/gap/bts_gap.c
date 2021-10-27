@@ -34,6 +34,7 @@
 #include "btm_manager.h"
 #include "bts_service.h"
 #include "bts_gap.h"
+#include "bts_leadv.h"
 
 #define LOG_TAG "bts_gap"
 #include "log.h"
@@ -111,10 +112,16 @@ void adapter_ble_scan_result_callback(SERVICE_SCAN_RESULT_DATA_S *scan_result_da
 
 void adapter_ble_adv_started_callback(uint8_t adv_id)
 {
+    BT_LOGD("%s, adv_id:%d", __func__, adv_id);
+    gatt_advertise_interface_t* adv_ift = get_ble_advertise_instance();
+    BT_CBACK(adv_ift->callbacks, ble_advtise_started_cb, adv_id);
 }
 
 void adapter_ble_adv_stopped_callback(uint8_t adv_id)
 {
+    BT_LOGD("%s, adv_id:%d", __func__, adv_id);
+    gatt_advertise_interface_t* adv_ift = get_ble_advertise_instance();
+    BT_CBACK(adv_ift->callbacks, ble_advtise_stopped_cb, adv_id);
 }
 
 void adapter_bt_link_role_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_ROLE link_role)
@@ -336,4 +343,60 @@ void bts_common_init(void)
     //BT_LOGD(" common_init coming");
     bluelet_init();
     register_callback_to_stack();
+}
+
+static bts_gap_callback_t* bts_gap_callbacks = NULL;
+
+bt_result_code gap_init(bts_gap_callback_t* cb)
+{
+    bts_gap_callbacks = cb;
+    service_adapter_gap_init();
+    service_adapter_gap_register_gap_callback(&gap_callback);
+    return BT_RESULT_SUCCESS;
+}
+
+void gap_cleanup(void)
+{
+    bts_gap_callbacks = NULL;
+    service_adapter_gap_cleanup();
+}
+
+bt_result_code gap_enable(void)
+{
+    SERVICE_BT_STATUS ret = service_adapter_gap_enable();
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("gap enable fail,ret:%d", ret);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
+bt_result_code gap_disable(bool normal_disable)
+{
+    SERVICE_BT_STATUS ret = service_adapter_gap_disable(normal_disable);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("gap disable fail,ret:%d", ret);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
+static stack_state_t gap_get_stack_state(void)
+{
+    return BT_STATE_ON;
+}
+
+static gap_interface_t gap_interface = {
+    .size = sizeof(gap_interface),
+
+    .init = gap_init,
+    .cleanup = gap_cleanup,
+    .enable = gap_enable,
+    .disable = gap_disable,
+    .gap_get_stack_state = gap_get_stack_state,
+};
+
+const gap_interface_t* get_gap_instance(void)
+{
+    return &gap_interface;
 }
