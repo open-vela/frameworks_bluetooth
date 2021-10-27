@@ -4,6 +4,7 @@
  * Included Files
  ****************************************************************************/
 #include "btm_manager.h"
+#include "bts_common.h"
 #include "uv.h"
 /****************************************************************************
  * Pre-processor Definitions
@@ -62,3 +63,20 @@ int bts_service_get_interface(void* handle);
 
 int bts_service_init(void);
 
+typedef void (*adapter_state_changed_callback)(bt_state_t state);
+typedef struct {
+    size_t size;
+    adapter_state_changed_callback adapter_state_changed_cb;
+} bt_callbacks;
+
+typedef struct {
+    size_t size;
+    bt_result_code (*init)(bt_callbacks* callbacks);
+    bt_result_code (*enable)(void);
+    bt_result_code (*disable)(void);
+    void (*cleanup)(void);
+
+    const void* (*get_profile_interface)(const char* profile_id);
+} bluetooth_service_interface;
+
+const bluetooth_service_interface* get_bluetooth_service_interface(void);

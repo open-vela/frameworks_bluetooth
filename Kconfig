@@ -47,7 +47,7 @@ config BLUETOOTH_HFP_AG
 
 config BLUETOOTH_GATT
 	bool "Enable BT_GATT"
-	default n
+	default y
 
 config BLUETOOTH_HID_DEV
 	bool "Enable BT_HID_DEV"
@@ -60,6 +60,10 @@ config BLUETOOTH_SPP
 config BLUETOOTH_MANAGER
   	bool "Enable bt manager"
   	default y
+
+config BLUETOOTH_SAMPLE_LEADV
+    bool "Enable ble adv test"
+    default y
 
 if BLUETOOTH_SPP
 config BLUETOOTH_SPP_INSTANCE
