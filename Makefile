@@ -30,11 +30,6 @@ CSRCS +=btservice/hfp_client/bts_hf_client.c
 CSRCS +=btservice/hfp_client/bts_hf_client_state_machine.c
 CSRCS +=btservice/spp/bts_spp.c
 CSRCS +=utils/list.c
-CSRCS +=btmanager/btm_le_scan.c
-CSRCS +=btmanager/btm_le_advertise.c
-CSRCS +=btservice/gatt/bts_lescan.c
-CSRCS +=btservice/gatt/gatt_service.c
-CSRCS +=btservice/gatt/bts_leadv.c
 
 MAINSRC   = btmanager/btm_manager.c 
 

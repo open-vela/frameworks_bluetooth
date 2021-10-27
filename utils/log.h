@@ -36,7 +36,7 @@
 
 #include <syslog.h>
 
-#define LOG_TAG "BT"
+#define LOG_TAG "BT
 
 #define BT_LOGE(fmt, args...) syslog(3, LOG_TAG ": " fmt "\n", ##args)
 #define BT_LOGW(fmt, args...) syslog(4, LOG_TAG ": " fmt "\n", ##args)

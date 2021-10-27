@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <stddef.h>
-#include "log.h"
 /****************************************************************************
  * Included Files
  ****************************************************************************/
@@ -389,25 +387,4 @@ bt_result_code  register_process_func_to_manager(void* handle, bt_profile_id pro
 
 bt_result_code unregister_process_func_to_manager(void* handle, bt_profile_id profile_id);
 
-typedef struct {
-    size_t size;
-
-    bt_result_code (*init)(void* handle, const bt_callbacks_t* callbacks);
-    bt_result_code (*enable)(void* handle);
-    bt_result_code (*disable)(void* handle);
-    void (*cleanup)(void* handle);
-
-    const void* (*get_profile_interface)(const char* profile_id);
-} btm_interface_t;
-
-btm_interface_t* get_bt_manager_interface();
-
-#define BT_CBACK(P_CB, P_CBACK, ...)                           \
-    do {                                                       \
-        if ((P_CB) && (P_CB)->P_CBACK) {                       \
-            BT_LOGD("%s: BT %s->%s", __func__, #P_CB, #P_CBACK); \
-            (P_CB)->P_CBACK(__VA_ARGS__);                      \
-        } else {                                               \
-            BT_LOGE("%s Callback is NULL", __func__);            \
-        }                                                      \
-    } while (0)
+                            
