@@ -30,17 +30,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
+#ifndef __BTM_SPP_H__
+#define __BTM_SPP_H__
 
-#ifndef __BT_LOG_H__
-#define __BT_LOG_H__
+#include "btm_manager.h"
 
-#include <syslog.h>
-
-#define LOG_TAG "BT"
-
-#define BT_LOGE(fmt, args...) syslog(3, LOG_TAG ": " fmt "\n", ##args)
-#define BT_LOGW(fmt, args...) syslog(4, LOG_TAG ": " fmt "\n", ##args)
-#define BT_LOGI(fmt, args...) syslog(5, LOG_TAG ": " fmt "\n", ##args)
-#define BT_LOGD(fmt, args...) syslog(6, LOG_TAG ": " fmt "\n", ##args)
 
 #endif
