@@ -23,6 +23,8 @@
  ****************************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "btm_a2dp_source.h"
 
 #define BT_A2DP_INTERFACE_NUM (11)
@@ -32,7 +34,7 @@ bt_a2dp_source_callbacks_t* a2dp_source_callback = NULL;
 
 void a2dp_source_process_func(char * buff, size_t size)
 {
-    bt_result_code result = BT_RESULT_FAILED;
+    //bt_result_code result = BT_RESULT_FAILED;
 
     bool status = false;
     printf(" a2dp_source_process_func size is %d \n", size);

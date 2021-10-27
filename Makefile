@@ -16,27 +16,53 @@
 
 include $(APPDIR)/Make.defs
 
-#CSRCS += src/btmanager/btm_a2dp_source.c 
-#CSRCS += src/btmanager/btm_avrcp_target.c 
-#CSRCS += src/btmanager/btm_gap.c 
-
-CSRCS += btservice/btservice/bts_service.c 
+CSRCS += btservice/btservice/bts_service.c
 CSRCS += btservice/gap/bts_gap.c
+
+ifeq ($(CONFIG_BLUETOOTH_A2DP_SRC),y)
 CSRCS += btservice/a2dp_source/bts_a2dp_source.c
+endif
+
+ifeq ($(CONFIG_BLUETOOTH_AVRCP_TG),y)
 CSRCS += btservice/avrcp_target/bts_avrcp_target.c
+endif
 
-CSRCS +=btservice/state_machine/state_machine.c
-CSRCS +=btservice/hfp_client/bts_hf_client.c
-CSRCS +=btservice/hfp_client/bts_hf_client_state_machine.c
-CSRCS +=btservice/spp/bts_spp.c
+ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
+	CSRCS +=btservice/state_machine/state_machine.c
+	CSRCS +=btservice/hfp_client/bts_hf_client.c
+	CSRCS +=btservice/hfp_client/bts_hf_client_state_machine.c
+endif
+
+ifeq ($(CONFIG_BLUETOOTH_SPP),y)
+	CSRCS +=btservice/spp/bts_spp_service.c
+	CSRCS +=btservice/spp/bts_spp.c
+endif
+
 CSRCS +=utils/list.c
+CSRCS +=utils/uuid.c
 
-MAINSRC   = btmanager/btm_manager.c 
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/include}
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/btservice/include}
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/btservice/state_machine}
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/utils}
 
-PRIORITY = SCHED_PRIORITY_DEFAULT
-STACKSIZE = CONFIG_DEFAULT_TASK_STACKSIZE
-PROGNAME  = btmanager 
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/src/samples/template/stack_adapter_template/inc}
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/src/stack/portings/btunix}
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/src/stack/include}
 
-MODULE    = $(CONFIG_BLUETOOTH)
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/system/libuv/libuv/include}
+
+ifeq ($(CONFIG_BLUETOOTH_MANAGER), y)
+	MAINSRC   = btmanager/btm_manager.c 
+
+	PRIORITY = SCHED_PRIORITY_DEFAULT
+	STACKSIZE = CONFIG_DEFAULT_TASK_STACKSIZE
+	PROGNAME  = btmanager
+	MODULE    = $(CONFIG_BLUETOOTH)
+
+depend::
+	$(Q) touch $(MAINSRC)
+endif
+
 include $(APPDIR)/Application.mk
 

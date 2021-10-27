@@ -39,11 +39,12 @@
 #include "stack_adapter_common.h"
 
 
-#include "log.h"
 #include "btm_hfp_hf.h"
 #include "bts_hf_client_state_machine.h"
 
 #define LOG_TAG "HF_STM"
+#include "log.h"
+
 #define HF_CONNECT_TIMEOUT 2 * 1000
 
 static void disconnected_enter(state_machine_t *sm);
