@@ -36,11 +36,15 @@
 #include "btm_spp.h"
 #include "btm_manager.h"
 
-bt_result_code spp_init(spp_callbacks_t *callbacks);
-bt_result_code spp_server_start(uint16_t port, uint16_t uuid);
-bt_result_code spp_server_stop(uint16_t port);
-bt_result_code spp_client_connect(bt_address addr, uint16_t port, uint16_t uuid);
-bt_result_code spp_disconnect(bt_address addr, uint16_t port);
-void spp_cleanup(void);
+typedef spp_callbacks_t spp_service_callbacks_t;
 
+bt_result_code bts_spp_init(spp_callbacks_t *callbacks);
+bt_result_code bts_spp_server_start(uint16_t port, uint16_t uuid);
+bt_result_code bts_spp_server_stop(uint16_t port);
+bt_result_code bts_spp_client_connect(bt_address addr, uint16_t port, uint16_t uuid);
+bt_result_code bts_spp_disconnect(bt_address addr, uint16_t port);
+void bts_spp_cleanup(void);
+
+extern bt_result_code spp_service_start(void);
+extern void spp_service_stop(void);
 #endif

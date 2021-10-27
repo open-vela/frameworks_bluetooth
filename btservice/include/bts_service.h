@@ -60,5 +60,5 @@ void process_data_from_manager(int profile_id, char * buff, size_t size) ;
 #endif
 int bts_service_get_interface(void* handle);
 
-int bts_service_init();
+int bts_service_init(void);
 

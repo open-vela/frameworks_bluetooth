@@ -31,6 +31,9 @@
 #include "stack_adapter_service_base.h"
 #include "stack_adapter_gap.h"
 
+#include "bts_gap.h"
+#include "bts_spp.h"
+
 #define UV_TIMEOUT  (32767)
 #define UV_TIMEOUT_REPEAT  (32767)
 
@@ -56,7 +59,6 @@ bts_process_command_func_in_service service_func_list[BT_PROFILE_MAX_ID] = {NULL
 
 char* package_profile_buffer_to_manager(int command_id, void* command_buffer, int command_size, int * profile_size)
 {
-    bt_result_code result = BT_RESULT_FAILED;
     char * profile_buff = NULL;
 
     return profile_buff;
@@ -93,7 +95,7 @@ Exit:
 
 void bts_uv_close_cb(uv_handle_t* handle)
 {
-    printf("uv_close_cb\n");
+    //printf("uv_close_cb\n");
     if (NULL == handle) 
     {
         return;
@@ -134,7 +136,7 @@ void bts_uv_poll_stop(uv_poll_t* handle)
 //all the message will be porcess first time here, there is uv process here
 void execute_manager_message(uv_async_t* handle)
 {
-    printf("execute_manager_message\n");
+    //printf("execute_manager_message\n");
 
     if (NULL == handle)
     {
@@ -150,7 +152,7 @@ void execute_manager_message(uv_async_t* handle)
 
      process_data_from_manager(context->profile_id, context->data, context->data_size);
    
-    uv_close(handle, bts_uv_close_cb);
+    uv_close((uv_handle_t*)handle, bts_uv_close_cb);
     if (NULL != context) 
     {
         free(context);
@@ -160,7 +162,7 @@ void execute_manager_message(uv_async_t* handle)
 
 void execute_service_callback(uv_async_t* handle)
 {
-    printf("execute_manager_message\n");
+    //printf("execute_manager_message\n");
       bts_process_loop_data func;
 
     if (NULL == handle)
@@ -177,7 +179,7 @@ void execute_service_callback(uv_async_t* handle)
 
     func = context->loop_func;
     func(context->data, context->data_size);
-    uv_close(handle, bts_uv_close_cb);
+    uv_close((uv_handle_t*)handle, bts_uv_close_cb);
     if (NULL != context) 
     {
         free(context);
@@ -190,7 +192,7 @@ void process_in_loop(excute_service_context_t *context)
     uv_async_t *post_function_async ;
     uv_loop_t * loop = NULL;
 
-    printf("process_in_loop  \n");
+    //printf("process_in_loop  \n");
 
     if (NULL == dispatch_loop)
     {
@@ -206,8 +208,7 @@ void process_in_loop(excute_service_context_t *context)
 void process_data_from_manager(int profile_id, char * buff, size_t size) 
 {
 
-    bt_result_code result = BT_RESULT_FAILED;
-    bool status = false;
+    //bt_result_code result = BT_RESULT_FAILED;
     bts_process_command_func_in_service func = NULL;
     printf(" process_data_from_manager size is %d \n", size);
 
@@ -233,8 +234,8 @@ Exit:
 
 void receive_data_from_manager(void * handle, bt_profile_id profile_id, char * buff, size_t size)
 {
-    bool status = false;
-    bts_process_command_func_in_service func = NULL;
+    //bool status = false;
+    //bts_process_command_func_in_service func = NULL;
     uv_loop_t * loop = NULL;
     uv_async_t * post_function_async = NULL;
     printf(" receive_data_from_manager size is %d \n", size);
@@ -260,14 +261,14 @@ Exit:
     return;
 }
 
-void on_rpc_client_callback()
+void on_rpc_client_callback(void)
 {
     //TODO fisrt call is initializing local stack,
     //and nedd to callback init status changed to clent
 
 }
 
-bt_result_code send_to_manager(send_buffer, size)
+bt_result_code send_to_manager(void *send_buffer, size_t size)
 {
     bt_result_code result = BT_RESULT_FAILED;
 
@@ -284,7 +285,7 @@ bt_result_code send_pb_command_buffer_to_manager(bt_profile_id profile_id, void*
     if (send_buffer != NULL) {
         result = send_to_manager(send_buffer, size);
     }
-Exit:
+//Exit:
     return result;
 }
 
@@ -363,18 +364,17 @@ uv_timer_t *start_timer(int timeout, int repeat, process_in_timer timer_callback
 void stop_timer(uv_timer_t * timer)
 {
     if (NULL == timer){
-        return NULL;
+        return;
     }
     uv_timer_stop(timer);
-    uv_close(timer, bts_uv_close_cb);
-    return &timer;
+    uv_close((uv_handle_t *)timer, bts_uv_close_cb);
 }
 
 void idle_process(uv_idle_t* handle, int status) {
     //printf("btservice idle_process \n");
 }
 
-void stop_idle_process() {
+void stop_idle_process(void) {
     uv_idle_stop(&idler);
 }
 
@@ -383,11 +383,11 @@ void process_in_loop_timer(char * data)
 
 }
 
-int loop_init()
+int loop_init(void)
 {
     uv_loop_t _loop;
-    pthread_t message_tid;
-    pthread_attr_t message_attr;
+    //pthread_t message_tid;
+    //pthread_attr_t message_attr;
 
     printf("btservice loop_init \n");
     uv_loop_init(&_loop);
@@ -402,6 +402,7 @@ int loop_init()
     //nerver touch here only if service is down
     printf("Idling done\n");
     uv_loop_close(uv_default_loop());
+    return 0;
 }
 
 int bts_service_get_interface(void* handle)
@@ -411,18 +412,22 @@ int bts_service_get_interface(void* handle)
     }
     manager_context_t *context = (manager_context_t *)handle;
     context->app_id = 0;
+    return 0;
 }
-extern bt_result_code spp_service_start(void);
-bt_result_code hf_client_service_start(void);
 
-int bts_service_init()
+int bts_service_init(void)
 {
     init_state = BT_STATE_INITING;
-    int i = 0;
+
     printf(" bt_service_init coming \n");
     bts_common_init();
+#ifdef CONFIG_BLUETOOTH_HFP_HF
+extern bt_result_code hf_client_service_start(void);
     hf_client_service_start();
+#endif
+#ifdef CONFIG_BLUETOOTH_SPP
     spp_service_start();
+#endif
     loop_init();
     printf(" bt_service_init done \n");
     return 0;

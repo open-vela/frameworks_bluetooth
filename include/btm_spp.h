@@ -35,6 +35,7 @@
 
 #include "btm_manager.h"
 
+#define BT_UUID_SERVCLASS_SERIAL_PORT    0x1101 /* Serial Port Profile (SPP) */
 typedef enum {
     SPP_CONNECTION_STATE_DISCONNECTED,
     SPP_CONNECTION_STATE_CONNECTING,
@@ -42,37 +43,37 @@ typedef enum {
     SPP_CONNECTION_STATE_DISCONNECTING
 }spp_connection_state_t;
 
-typedef struct{
+#if 0
+typedef struct {
   bt_device_t device;
   uint16_t port;
   int fd;
   char *name;
   uint16_t uuid16;
-}spp_conn_t;
+} spp_conn_t;
 
-typedef struct{
+typedef struct {
   uint16_t port;
   uint16_t uuid16;
-}spp_server_conn_t;
+} spp_server_conn_t;
+#endif
 
-
-typedef void (*spp_server_started_callback)(spp_server_conn_t server_conn);
-typedef void (*spp_connection_state_callback)(spp_conn_t conn);
-typedef void (*spp_pty_open_callback)(spp_conn_t conn);
+typedef void (*spp_connection_state_callback)(const bt_address addr, uint16_t port, spp_connection_state_t state);
+typedef void (*spp_pty_open_callback)(const bt_address addr, uint16_t port, char *name, int fd);
 
 typedef struct {
     size_t size;
-    spp_server_started_callback server_started_cb;
     spp_pty_open_callback pty_open_cb;
     spp_connection_state_callback connection_state_cb;
-}spp_callbacks_t;
+} spp_callbacks_t;
 
 typedef struct {
   size_t size;
   bt_result_code (*server_start)(void * handle, uint16_t port, uint16_t uuid16);
-  bt_result_code (*server_stop)(void * handle, spp_server_conn_t server_conn);
+  bt_result_code (*server_stop)(void * handle, uint16_t port);
   bt_result_code (*client_connect)(void * handle, bt_address addr, uint16_t port, uint16_t uuid16);
-  bt_result_code (*disconnect)(void * handle, spp_conn_t conn);
+  bt_result_code (*disconnect)(void * handle, bt_address addr, uint16_t port);
+  void           (*set_callbacks)(void * handle, spp_callbacks_t *callbacks);
 }spp_interface_t;
 
 

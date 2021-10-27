@@ -23,12 +23,16 @@
  ****************************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <queue.h>
+
+#include "stack_adapter_a2dp_source.h"
+#include "stack_adapter_service_base.h"
+
 #include "btm_manager.h"
 #include "bts_service.h"
 #include "bts_a2dp.h"
-#include "stack_adapter_a2dp_source.h"
-#include "stack_adapter_service_base.h"
+
 
 #define A2DP_MAX_CONNECTION (2)
 
@@ -85,10 +89,10 @@ a2dp_device_t * find_a2dp_device_by_addr(bt_address remote_addr)
 
 void process_loop_in_a2dp(void * data, size_t data_size)
 {
-    int a2dp_size = 0;
-    char * a2dp_buff = NULL;
-    char * command_buff = NULL;
-    int command_size = 0;
+    //int a2dp_size = 0;
+    //char * a2dp_buff = NULL;
+    //char * command_buff = NULL;
+    //int command_size = 0;
     if (NULL == data)
     {
         return;
@@ -153,7 +157,7 @@ void bts_a2dp_source_connection_state_changed_callback(BD_ADDR remote_addr,
      a2dp_connection_state_changed_parameter_t *parameter = 
        (a2dp_connection_state_changed_parameter_t *) malloc (sizeof(a2dp_connection_state_changed_parameter_t));
      context->loop_func = process_loop_in_a2dp;
-     context->data = parameter;
+     context->data = (void *)parameter;
      context->command_id = A2DP_RESPONSE_CONNECTION_STATE_CHANGED;
      process_in_loop(context);
 }
@@ -180,7 +184,7 @@ void bts_a2dp_source_stream_channel_mtu_callback(BD_ADDR remote_addr, uint16_t s
     
 }
 
-const A2DP_SOURCE_CALLBACKS_S a2dp_callback =
+A2DP_SOURCE_CALLBACKS_S a2dp_callback =
 {
     4,
     bts_a2dp_source_connection_state_changed_callback,
@@ -189,7 +193,7 @@ const A2DP_SOURCE_CALLBACKS_S a2dp_callback =
     bts_a2dp_source_stream_channel_mtu_callback
 };
 
-bt_result_code bts_a2dp_init()
+bt_result_code bts_a2dp_init(void)
 {
     SERVICE_BT_STATUS service_status = SERVICE_BT_STATUS_FAIL;
     bt_result_code result = BT_RESULT_FAILED;
@@ -203,7 +207,7 @@ bt_result_code bts_a2dp_init()
     return result;
 }
 
-bt_result_code bts_a2dp_deinit()
+bt_result_code bts_a2dp_deinit(void)
 {
     SERVICE_BT_STATUS service_status = SERVICE_BT_STATUS_FAIL;
     bt_result_code result = BT_RESULT_FAILED;

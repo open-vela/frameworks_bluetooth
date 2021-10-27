@@ -58,5 +58,5 @@ typedef struct {
 	//TODO:: Add Patch Download Start Callback
 } bts_gap_callback_t;
 void bts_common_register_callback(bts_gap_callback_t *cb);
-void bts_common_init();
+void bts_common_init(void);
 

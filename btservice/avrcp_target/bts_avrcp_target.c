@@ -23,6 +23,8 @@
  ****************************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "btm_manager.h"
 #include "bts_service.h"
 #include "stack_adapter_avrcp_target.h"
@@ -94,7 +96,7 @@ void bts_avrcp_target_received_panel_operation_callback(BD_ADDR remote_addr, SER
 
 }
 
-const AVRCP_TARGET_CALLBACKS_S avrcp_target_callbakc = 
+AVRCP_TARGET_CALLBACKS_S avrcp_target_callbakc = 
 {
     6,
     bts_avrcp_target_connection_state_changed_callback,
@@ -107,8 +109,8 @@ const AVRCP_TARGET_CALLBACKS_S avrcp_target_callbakc =
 
 void process_loop_in_avrcp(excute_service_context_t * context, size_t data_size)
 {
-    int common_size = 0;
-    char * a2dp_buff = NULL;
+    //int common_size = 0;
+    //char * a2dp_buff = NULL;
 
     // if (NULL == context)
     // {
@@ -132,7 +134,7 @@ void process_loop_in_avrcp(excute_service_context_t * context, size_t data_size)
     free(context);
 }
 
-void avrcp_process_command_from_manager(char * profile_buff, size_t profile_size)
+void avrcp_process_command_from_manager(void * profile_buff, size_t profile_size)
 {
     bool status = false;
     if (false == status) 
@@ -149,7 +151,7 @@ void avrcp_process_command_from_manager(char * profile_buff, size_t profile_size
     // }
 }
 
-bt_result_code bts_avrcp_init()
+bt_result_code bts_avrcp_init(void)
 {
     bt_result_code result = BT_RESULT_FAILED;
 
@@ -165,13 +167,13 @@ bt_result_code bts_avrcp_init()
     return result;
 }
 
-bt_result_code avrcp_deinit()
+bt_result_code avrcp_deinit(void)
 {
     bt_result_code result = BT_RESULT_FAILED;
 
     SERVICE_BT_STATUS service_status = SERVICE_BT_STATUS_FAIL;
     printf(" bts_avrcp_deinit coming \n");
-    unregister_process_func_to_service(BT_PROFILE_AV_RC_TARGET_ID, avrcp_process_command_from_manager);
+    //unregister_process_func_to_service(BT_PROFILE_AV_RC_TARGET_ID);
     service_adapter_avrcp_target_cleanup();
     result = BT_RESULT_SUCCESS;
     return result;
