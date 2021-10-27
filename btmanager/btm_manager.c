@@ -82,77 +82,6 @@ Exit:
     return result;
 }
 
-bt_result_code send_to_service(void * handle, bt_profile_id profile_id, void* profile_buffer, int profile_size)
-{
-    bt_result_code result = BT_RESULT_FAILED;
-    #if 0
-    size_t size = 0;
-    char *send_buffer = NULL;
-    printf(" send_to_service profile id is %d\n", profile_id);
-
-    if (NULL == handle){
-        goto Exit;
-    }
-    
-    if (NULL == profile_buffer) 
-    {
-        result = BT_RESULT_FAILED;
-        goto Exit;
-    }
-
-    if (profile_buffer != NULL) 
-    {
-#ifdef CONFIG_BLUETOOTH_LOCAL_THREAD
-        //result = receive_data_from_manager(handle, profile_id, profile_buffer, size);
-#else 
-#endif
-    }
-
-Exit:
-#endif
-    return result;
-}
-
-
-void common_process_func(void * handle, char * buff, size_t size)
-{
-    #if 0
-    bt_result_code result = BT_RESULT_FAILED;
-    bool status = false;
-    bt_manager_bt_state  btmanager_state = BT_MANAGER_STATE_OFF;
-    printf(" common_process_func size is %d \n", size);
-    
-    manager_context_t *context;
-     
-    if (NULL == handle){
-        goto Exit;
-    }
-    context = (manager_context_t *)handle;
-    common_context_t *common = (common_context_t *)buff;
-    switch (common->message.res.response_id)
-    {
-    //TODO ,case need to be merged
-    case INIT_SERVICE_DONE_RESPONSE:
-      /* code */
-    printf(" common_process_func INIT_SERVICE_DONE_RESPONSE \n");
-
-    context->callback->bt_manager_state_changed_callback_cb(btmanager_state);
-      break;
-    case GET_STATE_RESPONSE:
-
-        context->callback->bt_manager_state_changed_callback_cb(btmanager_state);
-      break;
-    case BT_STATE_CHANGED:
-        context->callback->bt_manager_state_changed_callback_cb(btmanager_state);
-      break;
-    default:
-      break;
-    }
-
-Exit:
-    printf(" common_process_func exit \n");
-    #endif
-}
 manager_context_t * pcontext;
 manager_context_t* btm_context_init(manager_context_t * context)
 {
@@ -166,8 +95,6 @@ bt_result_code bt_manager_init(void *p)
 
     pcontext = malloc(sizeof(manager_context_t));
     pcontext->callback = malloc(sizeof(bt_callbacks_t));
-    //TODO initialize all manager profile interface
-    register_process_func_to_manager(pcontext, BT_PROFILE_COMMON_ID, common_process_func);
 #ifdef CONFIG_BLUETOOTH_LOCAL_THREAD
     //call service init
     bts_service_init();
@@ -223,9 +150,6 @@ bt_result_code bt_manager_enable(void * handle)
         goto Exit;
     }
     context = (manager_context_t *)handle;
-#ifdef CONFIG_BLUETOOTH_LOCAL_THREAD
-    result = send_to_service(context, BT_PROFILE_COMMON_ID, NULL, 0);
-#endif
 Exit:
     return result;
 }
@@ -240,9 +164,7 @@ bt_result_code bt_manager_disable(void * handle)
         goto Exit;
     }
     context = (manager_context_t *)handle;
-#ifdef CONFIG_BLUETOOTH_LOCAL_THREAD
-    result = send_to_service(context, BT_PROFILE_COMMON_ID, NULL, 0);
-#endif
+
 Exit:
     return result;
 }
@@ -264,9 +186,6 @@ bt_manager_bt_state bt_get_state(void * handle)
         goto Exit;
     }
     context = (manager_context_t *)handle;
-#ifdef CONFIG_BLUETOOTH_LOCAL_THREAD
-    result = send_to_service(context, BT_PROFILE_COMMON_ID, NULL, 0);
-#endif
 Exit:
     return result;
 }
@@ -276,42 +195,6 @@ bt_manager_ble_state ble_get_state(void * handle)
     bt_result_code result = BT_RESULT_FAILED;
 
     return result;
-}
-
-
-void process_data_from_service(void * handle, int profile_id, char * buff, int size) 
-{
-    //bt_result_code result = BT_RESULT_FAILED;
-    //bool status = false;
-    btm_process_func func = NULL;
-    
-    if ((NULL == buff)  ||(0 == size))
-    {
-        goto Exit;
-    }
-    manager_context_t *context;
-    if (NULL == handle){
-        goto Exit;
-    }
-    context = (manager_context_t *)handle;
-
-    printf("receive data ,profile Id is %d!\n", profile_id);
-    func = context->manager_func_list[profile_id];
-    if (NULL == func) 
-    {
-        goto Exit;
-    }
-    func(handle, buff, size);
-Exit:
-    return ;
-}
-
-void service_callback(void * handle,  int profile_id, char* buff, size_t size)
-{
-    //TODO: first call is init status chagend
-#ifdef CONFIG_BLUETOOTH_LOCAL_THREAD
-    process_data_from_service(handle,profile_id, buff, size);
-#endif
 }
 
 void * bt_get_profile_interface(void * handle, const bt_profile_id profile_id)
