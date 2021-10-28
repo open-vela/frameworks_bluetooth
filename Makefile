@@ -47,7 +47,7 @@ ifeq ($(CONFIG_BLUETOOTH_GATT),y)
 	CSRCS +=btservice/gatt/bts_gatt.c
 endif
 
-CSRCS +=utils/list.c
+#CSRCS +=utils/list.c
 CSRCS +=utils/uuid.c
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/include}
@@ -61,12 +61,12 @@ CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/sr
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/system/libuv/libuv/include}
 
-ifeq ($(BLUETOOTH_SAMPLE_LEADV), y)
+ifeq ($(CONFIG_BLUETOOTH_SAMPLE_LEADV), y)
 	MAINSRC   = samples/test_leadv.c
 
 	PRIORITY = SCHED_PRIORITY_DEFAULT
 	STACKSIZE = CONFIG_DEFAULT_TASK_STACKSIZE
-	PROGNAME  = btmanager
+	PROGNAME  = btsample
 	MODULE    = $(CONFIG_BLUETOOTH)
 
 depend::

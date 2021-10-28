@@ -266,7 +266,7 @@ static spp_pty_device_t *spp_open_pty_device(bt_address addr, uint16_t port)
   if (device == NULL)
     return NULL;
 
-  ret = openpty(&device->mfd, &device->sfd, device->pty_name, NULL, NULL);
+  //ret = openpty(&device->mfd, &device->sfd, device->pty_name, NULL, NULL);
   if (ret != 0) {
     BT_LOGE("pty create failed");
     remove_pty_device(device);
