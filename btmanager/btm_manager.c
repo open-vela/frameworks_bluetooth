@@ -27,6 +27,8 @@
 #include "btm_manager.h"
 #include "bts_service.h"
 
+#define LOG_TAG "btm_manager"
+#include "log.h"
 
 typedef struct{
     int response_id;

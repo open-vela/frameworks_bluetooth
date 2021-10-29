@@ -266,7 +266,7 @@ static spp_pty_device_t *spp_open_pty_device(bt_address addr, uint16_t port)
   if (device == NULL)
     return NULL;
 
-  //ret = openpty(&device->mfd, &device->sfd, device->pty_name, NULL, NULL);
+  ret = openpty(&device->mfd, &device->sfd, device->pty_name, NULL, NULL);
   if (ret != 0) {
     BT_LOGE("pty create failed");
     remove_pty_device(device);
@@ -580,11 +580,11 @@ bt_result_code bts_spp_init(spp_service_callbacks_t *callbacks)
 bt_result_code bts_spp_server_start(uint16_t port, uint16_t uuid)
 {
   SERVICE_BT_STATUS status;
-  struct bt_uuid uuid_src;
+  struct bt_uuid_16 uuid_src;
   struct bt_uuid_128 uuid_128_dst;
 
-  bt_uuid_create(&uuid_src, (uint8_t *)&uuid, 2);
-  uuid_to_uuid128(&uuid_src, &uuid_128_dst);
+  bt_uuid_create((struct bt_uuid *)&uuid_src, (uint8_t *)&uuid, 2);
+  uuid_to_uuid128((struct bt_uuid *)&uuid_src, &uuid_128_dst);
   status = service_adapter_spp_server_open(port, uuid_128_dst.val, SERVER_CONNECTION_MAX);
   if (status != SERVICE_BT_STATUS_SUCCESS)
     return BT_RESULT_FAILED;
@@ -606,11 +606,11 @@ bt_result_code bts_spp_client_connect(bt_address addr, uint16_t port, uint16_t u
 {
   SERVICE_BT_STATUS status;
   spp_pty_device_t *device;
-  struct bt_uuid uuid_src;
+  struct bt_uuid_16 uuid_src;
   struct bt_uuid_128 uuid_128_dst;
 
-  bt_uuid_create(&uuid_src, (uint8_t *)&uuid, 2);
-  uuid_to_uuid128(&uuid_src, &uuid_128_dst);
+  bt_uuid_create((struct bt_uuid *)&uuid_src, (uint8_t *)&uuid, 2);
+  uuid_to_uuid128((struct bt_uuid *)&uuid_src, &uuid_128_dst);
 
   device = alloc_new_device(addr, 0, false);
   if (!device)
