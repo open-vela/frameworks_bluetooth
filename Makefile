@@ -37,6 +37,7 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_SPP),y)
 	CSRCS +=btservice/spp/bts_spp_service.c
 	CSRCS +=btservice/spp/bts_spp.c
+	CSRCS +=btmanager/btm_spp.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_GATT),y)
@@ -47,7 +48,12 @@ ifeq ($(CONFIG_BLUETOOTH_GATT),y)
 	CSRCS +=btservice/gatt/bts_gatt.c
 endif
 
-#CSRCS +=utils/list.c
+#ifneq ($(wildcard $(APPDIR)/vendor/bes/framework/services/utils/list/list.c),)
+#echo "use vender bes services/utils/list"
+#	CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/bes/framework/services/utils/list}
+#else
+CSRCS +=utils/list.c
+#endif
 CSRCS +=utils/uuid.c
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/include}

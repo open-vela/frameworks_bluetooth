@@ -1,11 +1,13 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "btm_le_advertise.h"
 #include "btm_manager.h"
-#include "log.h"
+#include "btm_spp.h"
 
 #define LOG_TAG "btsample_adv"
+#include "log.h"
 
 gatt_advertiser_t* adv_handle;
 
@@ -36,7 +38,9 @@ int main(int argc, FAR char* argv[])
         .le_advertise_stopped_cb = le_adv_stopped_callback,
         .le_advertise_failed_cb = le_adv_failed_callback,
     };
-
+#ifdef CONFIG_BLUETOOTH_SPP_TEST
+    btm_spp_test();
+#endif
     const uint8_t s_adv_data[]
         = { 0x02, 0x01, 0x08, 0x08, 0x09, 0x42, 0x52, 0x54, 0x20, 0x59, 0x61, 0x6F, 0x03, 0x02, 0x00, 0xFF };
     advertise_param_t adv_para;
@@ -50,7 +54,6 @@ int main(int argc, FAR char* argv[])
     adv_para.scan_rsp_data = (char*)s_adv_data;
     adv_para.scan_rsp_length = sizeof(s_adv_data);
 
-    adv_handle = (gatt_advertiser_t*)malloc(sizeof(gatt_advertiser_t));
     btm_gatt_advertise_interface_t* adv_interface = get_le_advertise_interface(manager);
     bt_result_code ret = adv_interface->start_advertising(&adv_handle, &adv_para, &cb);
 
@@ -60,6 +63,7 @@ int main(int argc, FAR char* argv[])
 
     getchar();
     BT_LOGD("sample adv exit ...");
-    free(adv_handle);
+    while (1)
+        sleep(10000);
     return 0;
 }

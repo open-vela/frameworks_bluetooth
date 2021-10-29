@@ -81,6 +81,13 @@ config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
 	default 2
 	help
 		SPP server max accept connections
+
+config BLUETOOTH_SPP_TEST
+	bool "SPP test"
+	default n
+	help
+		SPP test
+
 endif
 
 config BLUETOOTH_LOCAL_THREAD

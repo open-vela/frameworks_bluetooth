@@ -76,5 +76,10 @@ typedef struct {
   void           (*set_callbacks)(void * handle, spp_callbacks_t *callbacks);
 }spp_interface_t;
 
+spp_interface_t *get_spp_interface(void);
+
+#ifdef CONFIG_BLUETOOTH_SPP_TEST
+void btm_spp_test(void);
+#endif
 
 #endif

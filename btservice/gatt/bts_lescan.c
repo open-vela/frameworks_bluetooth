@@ -6,6 +6,9 @@
 #include "bts_service.h"
 #include "stack_adapter_gatt.h"
 
+#define LOG_TAG "bts_lescan"
+#include "log.h"
+
 typedef struct
 {
     enum {

@@ -35,6 +35,9 @@
 #include "bts_gatt.h"
 #include "bts_spp.h"
 
+#define LOG_TAG "bts_service"
+#include "log.h"
+
 #define UV_TIMEOUT  (32767)
 #define UV_TIMEOUT_REPEAT  (32767)
 
@@ -85,7 +88,7 @@ Exit:
 
 void bts_uv_close_cb(uv_handle_t* handle)
 {
-    //printf("uv_close_cb\n");
+    //BT_LOGD("uv_close_cb\n");
     if (NULL == handle) 
     {
         return;
@@ -125,11 +128,11 @@ void bts_uv_poll_stop(uv_poll_t* handle)
 
 void execute_service_callback(uv_async_t* handle)
 {
-    //printf("execute_service_callback\n");
+    //BT_LOGD("execute_service_callback\n");
       bts_process_loop_data func;
 
     if (NULL == handle) {
-        printf("execute_service_callback handle is NULl \n");
+        BT_LOGE("execute_service_callback handle is NULl");
         return;
     }
     excute_service_context_t *context = NULL;
@@ -152,8 +155,6 @@ void process_in_loop(excute_service_context_t *context)
     uv_async_t *post_function_async ;
     uv_loop_t * loop = NULL;
 
-    //printf("process_in_loop  \n");
-
     if (NULL == dispatch_loop) {
         return;
     }
@@ -166,7 +167,7 @@ void process_in_loop(excute_service_context_t *context)
 
 void io_process(uv_work_t *req) 
 {
-    printf("btservice io_process \n");
+    BT_LOGD("btservice io_process");
 
     io_process_data_t *process_data = (io_process_data_t *)req->data;
     if (NULL == process_data){
@@ -182,7 +183,7 @@ void io_process(uv_work_t *req)
 
 void after_io_process(uv_work_t *req, int status)
 {
-    printf("btservice after_io_process \n");
+    BT_LOGD("btservice after_io_process");
     //free();
     //uv_close(req, NULL);
 }
@@ -200,7 +201,7 @@ void process_in_work_thread(process_in_io func_in_io, void * data)
 
 void timer_hadler_cb(uv_timer_t * timer)
 {
-    printf("Do timer_hadler_cb\n");
+    BT_LOGD("Do timer_hadler_cb");
     if (NULL == timer){
         return;
     }
@@ -253,16 +254,15 @@ void process_in_loop_timer(char * data)
 int service_loop_init(void)
 {
     uv_loop_t _loop;
-    printf("btservice loop_init \n");
-    uv_loop_init(&_loop);
+    BT_LOGD("btservice loop_init");
     dispatch_loop = uv_default_loop();
 
     start_timer(0, 200000, process_in_loop_timer, NULL);
-    printf("Idling...\n");
+    BT_LOGD("Idling...");
     uv_run(dispatch_loop, UV_RUN_DEFAULT);
 
     //nerver touch here only if service is down
-    printf("Idling done\n");
+    BT_LOGD("Idling done");
     uv_loop_close(uv_default_loop());
     return 0;
 }
@@ -281,7 +281,7 @@ int bts_service_init(void)
 {
     init_state = BT_STATE_INITING;
 
-    printf(" bt_service_init coming \n");
+    BT_LOGD(" bt_service_init coming");
     bts_common_init();
 #ifdef CONFIG_BLUETOOTH_HFP_HF
 extern bt_result_code hf_client_service_start(void);
@@ -291,7 +291,7 @@ extern bt_result_code hf_client_service_start(void);
     spp_service_start();
 #endif
     service_loop_init();
-    printf(" bt_service_init done \n");
+    BT_LOGD(" bt_service_init done");
     return 0;
 }
 
@@ -318,7 +318,10 @@ static const void* get_profile_interface(const char* profile_id)
 
     if (is_profile(profile_id, BT_PROFILE_GATT))
         return gatt_get_interface();
-
+#ifdef CONFIG_BLUETOOTH_SPP
+    if (is_profile(profile_id, BT_PROFILE_SPP))
+        return (void *)get_spp_service_interface();
+#endif
     return NULL;
 }
 
