@@ -8,6 +8,8 @@
 #include "stack_adapter_gatt.h"
 
 #define LOG_TAG "bts_leadv"
+#include "log.h"
+
 typedef struct
 {
     enum {

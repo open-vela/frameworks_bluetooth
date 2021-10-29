@@ -4,8 +4,8 @@
 
 #include <stddef.h>
 
-#include "btm_manager.h"
 #include "bts_common.h"
+#include "btm_manager.h"
 
 typedef void (*leadv_started_callback)(void* handle);
 typedef void (*leadv_stopped_callback)(void* handle);
