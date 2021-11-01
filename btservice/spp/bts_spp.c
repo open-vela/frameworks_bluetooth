@@ -261,6 +261,7 @@ static spp_pty_device_t *spp_open_pty_device(bt_address addr, uint16_t port)
 {
   int ret;
   spp_pty_device_t *device;
+  struct termios tio;
 
   device = find_pty_device(addr, port);
   if (device == NULL)
@@ -272,7 +273,14 @@ static spp_pty_device_t *spp_open_pty_device(bt_address addr, uint16_t port)
     remove_pty_device(device);
     return NULL;
   }
-
+  //set mfd raw data
+  ioctl(device->mfd, TCGETS, &tio);
+  cfmakeraw(&tio);
+  ioctl(device->mfd, TCSETS, &tio);
+  //set sfd raw data
+  ioctl(device->sfd, TCGETS, &tio);
+  cfmakeraw(&tio);
+  ioctl(device->sfd, TCSETS, &tio);
   BT_LOGD("pty create success, name:%s, master:%d, slave:%d",
           device->pty_name, device->mfd, device->sfd);
   return device;
@@ -361,6 +369,7 @@ static int spp_on_incoming_data_received(bt_address addr, uint16_t port,
   if (!device)
     return -1;
 
+  lib_dumpbuffer("s write:", buffer, length);
   do {
     ret = write(device->sfd, buffer, length);
   } while (ret == -1 && errno == EINTR);
@@ -406,7 +415,7 @@ static void spp_pty_poll_callback(uv_poll_t *req, int status, int events)
         return;
       }
       ret = read(device->mfd, sBuf, length);
-      BT_LOGD("receive:%s, length: %d", sBuf, length);
+      lib_dumpbuffer("m read:", sBuf, ret);
       if (ret)
         do_spp_write(device, sBuf, ret);
     }
