@@ -385,13 +385,23 @@ static int spp_on_incoming_data_received(bt_address addr, uint16_t port,
   return 0;
 }
 
-static void do_spp_write(spp_pty_device_t *device, uint8_t *buffer,
-                         uint8_t length)
+static void do_spp_write(spp_pty_device_t *device, uint16_t length)
 {
+  uint16_t remaining = length;
+  uint8_t size, ret;
+  uint8_t *tmp;
+
   if (!device)
     return;
 
-  service_adapter_spp_write(device->conn_port, buffer, length);
+  do {
+      size = remaining > 10 ? 10 : remaining;
+      tmp = (uint8_t *)malloc(size);
+      ret = read(device->mfd, tmp, size);
+      lib_dumpbuffer("m read:", tmp, ret);
+      service_adapter_spp_write(device->conn_port, tmp, ret);
+      remaining -= ret;
+  } while (remaining);
 }
 
 static void spp_pty_poll_callback(uv_poll_t *req, int status, int events)
@@ -408,16 +418,7 @@ static void spp_pty_poll_callback(uv_poll_t *req, int status, int events)
     if (!device)
       return;
     if (ioctl(device->mfd, FIONREAD, &size) == 0 && size) {
-      int length = size < 255 ? size : 255;
-      uint8_t *sBuf = (uint8_t *)malloc(length);
-      if (!sBuf) {
-        spp_close_pty_device(device);
-        return;
-      }
-      ret = read(device->mfd, sBuf, length);
-      lib_dumpbuffer("m read:", sBuf, ret);
-      if (ret)
-        do_spp_write(device, sBuf, ret);
+      do_spp_write(device, size);
     }
   }
   if (events & UV_WRITABLE) {
