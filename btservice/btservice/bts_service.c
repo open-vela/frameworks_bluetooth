@@ -34,6 +34,7 @@
 #include "bts_gap.h"
 #include "bts_gatt.h"
 #include "bts_spp.h"
+#include "bts_hf_client.h"
 
 #define LOG_TAG "bts_service"
 #include "log.h"
@@ -284,7 +285,6 @@ int bts_service_init(void)
     BT_LOGD(" bt_service_init coming");
     bts_common_init();
 #ifdef CONFIG_BLUETOOTH_HFP_HF
-extern bt_result_code hf_client_service_start(void);
     hf_client_service_start();
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
@@ -318,9 +318,13 @@ static const void* get_profile_interface(const char* profile_id)
 
     if (is_profile(profile_id, BT_PROFILE_GATT))
         return gatt_get_interface();
+#ifdef CONFIG_BLUETOOTH_HFP_HF
+    if (is_profile(profile_id, BT_PROFILE_HANDSFREE_HF))
+        return (const void *)get_hf_client_service_interface();
+#endif
 #ifdef CONFIG_BLUETOOTH_SPP
     if (is_profile(profile_id, BT_PROFILE_SPP))
-        return (void *)get_spp_service_interface();
+        return (const void *)get_spp_service_interface();
 #endif
     return NULL;
 }
@@ -386,7 +390,6 @@ bt_result_code enable(void)
     }
 
 #ifdef CONFIG_BLUETOOTH_HFP_HF
-    extern bt_result_code hf_client_service_start(void);
     hf_client_service_start();
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP

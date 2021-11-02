@@ -36,6 +36,14 @@
 #include "btm_spp.h"
 #include "btm_manager.h"
 
+//typedef void (*spp_svr_connection_state_callback)(const bt_address addr, uint16_t port, spp_connection_state_t state);
+//typedef void (*spp_svr_pty_open_callback)(const bt_address addr, uint16_t port, char *name, int fd);
+//
+//typedef struct {
+//    size_t size;
+//    spp_svr_pty_open_callback pty_open_cb;
+//    spp_svr_connection_state_callback connection_state_cb;
+//} spp_service_callbacks_t;
 typedef spp_callbacks_t spp_service_callbacks_t;
 
 bt_result_code bts_spp_init(spp_callbacks_t *callbacks);
@@ -47,4 +55,6 @@ void bts_spp_cleanup(void);
 
 extern bt_result_code spp_service_start(void);
 extern void spp_service_stop(void);
+extern spp_interface_t *get_spp_service_interface(void);
+
 #endif

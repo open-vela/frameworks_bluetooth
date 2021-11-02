@@ -30,8 +30,10 @@ endif
 
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
 	CSRCS +=btservice/state_machine/state_machine.c
+	CSRCS +=btservice/hfp_client/bts_hf_client_service.c
 	CSRCS +=btservice/hfp_client/bts_hf_client.c
 	CSRCS +=btservice/hfp_client/bts_hf_client_state_machine.c
+	CSRCS +=btmanager/btm_hfp_hf.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_SPP),y)
@@ -52,7 +54,7 @@ endif
 #echo "use vender bes services/utils/list"
 #	CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/bes/framework/services/utils/list}
 #else
-CSRCS +=utils/list.c
+#CSRCS +=utils/list.c
 #endif
 CSRCS +=utils/uuid.c
 

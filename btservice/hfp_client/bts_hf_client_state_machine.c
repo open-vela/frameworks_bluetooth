@@ -37,7 +37,8 @@
 
 #include "stack_adapter_service_base.h"
 #include "stack_adapter_common.h"
-
+#include "stack_adapter_gap.h"
+#include "stack_adapter_hfp.h"
 
 #include "btm_hfp_hf.h"
 #include "bts_hf_client_state_machine.h"
@@ -46,6 +47,24 @@
 #include "log.h"
 
 #define HF_CONNECT_TIMEOUT 2 * 1000
+#define CASE_RETURN_STR(const) \
+  case const:                  \
+    return #const;
+
+typedef struct _hf_state_machine {
+  state_machine_t     sm;
+  bt_address          addr;
+  uint16_t            sco_conn_handle;
+  uv_timer_t          *connect_timer;
+  bool                recognition_active;
+  //list_t              *current_calls;
+  hf_client_service_t *service;
+} hf_state_machine_t;
+
+typedef struct {
+  hf_state_machine_t  *hfsm;
+  hf_client_msg_t     *msg;
+}hf_client_inter_msg_t;
 
 static void disconnected_enter(state_machine_t *sm);
 static void disconnected_exit(state_machine_t *sm);
@@ -89,6 +108,78 @@ static const state_t audio_on_state = {
     .process_event = audio_on_process_event,
 };
 
+char g_bdaddr_str[18];
+
+char *addr_str(bt_address addr)
+{
+  sprintf(g_bdaddr_str, "%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+  g_bdaddr_str[18] = '\0';
+  return g_bdaddr_str;
+}
+
+static char * stack_event_to_string(hf_client_event_t event)
+{
+  switch (event) {
+    CASE_RETURN_STR(CONNECT)
+    CASE_RETURN_STR(DISCONNECT)
+    CASE_RETURN_STR(CONNECT_AUDIO)
+    CASE_RETURN_STR(DISCONNECT_AUDIO)
+    CASE_RETURN_STR(VOICE_RECOGNITION_START)
+    CASE_RETURN_STR(VOICE_RECOGNITION_STOP)
+    CASE_RETURN_STR(SET_MIC_VOLUME)
+    CASE_RETURN_STR(SET_SPEAKER_VOLUME)
+    CASE_RETURN_STR(DIAL_NUMBER)
+    CASE_RETURN_STR(DIAL_MEMORY)
+    CASE_RETURN_STR(DIAL_LAST)
+    CASE_RETURN_STR(ACCEPT_CALL)
+    CASE_RETURN_STR(REJECT_CALL)
+    CASE_RETURN_STR(HOLD_CALL)
+    CASE_RETURN_STR(TERMINATE_CALL)
+    CASE_RETURN_STR(QUERY_CURRENT_CALLS)
+    CASE_RETURN_STR(SEND_AT_COMMAND)
+    CASE_RETURN_STR(TIMEOUT)
+    CASE_RETURN_STR(STACK_EVENT)
+    CASE_RETURN_STR(STACK_EVENT_AUDIO_REQ)
+    CASE_RETURN_STR(STACK_EVENT_CONNECTION_STATE_CHANGED)
+    CASE_RETURN_STR(STACK_EVENT_AUDIO_STATE_CHANGED)
+    CASE_RETURN_STR(STACK_EVENT_VR_STATE_CHANGED)
+    CASE_RETURN_STR(STACK_EVENT_CALL)
+    CASE_RETURN_STR(STACK_EVENT_CALLSETUP)
+    CASE_RETURN_STR(STACK_EVENT_CALLHELD)
+    CASE_RETURN_STR(STACK_EVENT_CLIP)
+    CASE_RETURN_STR(STACK_EVENT_CALL_WAITING)
+    CASE_RETURN_STR(STACK_EVENT_CURRENT_CALLS)
+    CASE_RETURN_STR(STACK_EVENT_VOLUME_CHANGED)
+    CASE_RETURN_STR(STACK_EVENT_CMD_RESULT)
+    CASE_RETURN_STR(STACK_EVENT_RING_INDICATION)
+    default:
+    return "UNKNOWN_EVENT";
+  }
+}
+static void notify_connection_state_changed(hf_client_service_t *service,
+                                            bt_address addr,
+                                            hf_client_connection_state_t state)
+{
+  if (service && service->callbacks)
+    service->callbacks->connection_state_cb(addr, state);
+}
+
+static void notify_audio_state_changed(hf_client_service_t *service,
+                                       bt_address addr,
+                                       hf_client_audio_state_t state)
+{
+  if (service && service->callbacks)
+    service->callbacks->audio_state_cb(addr, state);
+}
+
+static void notify_vr_state_changed(hf_client_service_t *service,
+                                    bt_address addr,
+                                    hf_client_vr_state_t state)
+{
+  if (service && service->callbacks)
+    service->callbacks->vr_cmd_cb(addr, state);
+}
+
 static void disconnected_enter(state_machine_t *sm)
 {
   BT_LOGD("%s", __func__);
@@ -103,14 +194,20 @@ static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void
   hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
   event_data_t *data = (event_data_t *)p_data;
   SERVICE_BT_STATUS status;
-  BT_LOGD("%s", __func__);
+
+  BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
+                                        stack_event_to_string(event),
+                                        addr_str(hfsm->addr));
   switch (event)
   {
   case CONNECT:
     //check bonded state
+    //check address (hfsm->addr == data->bd_addr)
     status = service_adapter_hfp_connect(hfsm->addr);
     if (status != SERVICE_BT_STATUS_SUCCESS) {
-      //callback disconnected
+      BT_LOGE("Connect failed for %s", addr_str(hfsm->addr));
+      notify_connection_state_changed(hfsm->service, hfsm->addr,
+                                      HF_CLIENT_CONNECTION_STATE_DISCONNECTED);
       break;
     }
 
@@ -119,18 +216,18 @@ static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void
   case STACK_EVENT_CONNECTION_STATE_CHANGED:
   {
     //check bonded state;
-    //slc connection callback
-    uint32_t state = data->valueint1;
+    hf_client_connection_state_t state = data->valueint1;
     switch (state)
     {
-    case SERVICE_PROFILE_CONNECTING:
-      hsm_transition_to(sm, &connecting_state);
-      break;
-    case SERVICE_PROFILE_CONNECTED:
+    case HF_CLIENT_CONNECTION_STATE_CONNECTED:
+      notify_connection_state_changed(hfsm->service, hfsm->addr, state);
       hsm_transition_to(sm, &connected_state);
       break;
-    case SERVICE_PROFILE_DISCONNECTED:
-    case SERVICE_PROFILE_DISCONNECTING:
+    case HF_CLIENT_CONNECTION_STATE_CONNECTING:
+    case HF_CLIENT_CONNECTION_STATE_DISCONNECTED:
+    case HF_CLIENT_CONNECTION_STATE_DISCONNECTING:
+      BT_LOGW("Ignored connection state:%d", state);
+      break;
     default:
       break;
     }
@@ -138,6 +235,7 @@ static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void
   }
 
   default:
+    BT_LOGE("Disconnected: Unexpected stack event: %s", stack_event_to_string(event));
     break;
   }
 
@@ -148,7 +246,7 @@ static void hf_connect_timeout_callback(char *data)
 {
   hf_state_machine_t *hfsm = (hf_state_machine_t *)data;
 
-  hf_client_sm_msg_t *msg = hf_msg_new(hfsm, TIMEOUT, hfsm->addr);
+  hf_client_msg_t *msg = hf_client_msg_new(TIMEOUT, hfsm->addr);
   hf_client_send_message(hfsm, msg);
 }
 
@@ -173,32 +271,38 @@ static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *
   hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
   event_data_t *data = (event_data_t *)p_data;
 
-  BT_LOGD("%s", __func__);
+  BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
+                                        stack_event_to_string(event),
+                                        addr_str(hfsm->addr));
   switch (event)
   {
   case STACK_EVENT_CONNECTION_STATE_CHANGED:
   {
-    uint32_t state = data->valueint1;
+    hf_client_connection_state_t state = data->valueint1;
+
     switch (state)
     {
-    case SERVICE_PROFILE_DISCONNECTED:
-      //slc connection callback
+    case HF_CLIENT_CONNECTION_STATE_DISCONNECTED:
+      notify_connection_state_changed(hfsm->service, hfsm->addr, state);
       hsm_transition_to(sm, &disconnected_state);
       break;
-    case SERVICE_PROFILE_CONNECTED:
-      //slc connection callback
+    case HF_CLIENT_CONNECTION_STATE_CONNECTED:
+      notify_connection_state_changed(hfsm->service, hfsm->addr, state);
+      service_adapter_hfp_set_volume(hfsm->addr, VOLUME_MIC, 5);
+      service_adapter_hfp_set_volume(hfsm->addr, VOLUME_SPEAKER, 5);
       hsm_transition_to(sm, &connected_state);
       break;
-    case SERVICE_PROFILE_CONNECTING:
-    case SERVICE_PROFILE_DISCONNECTING:
+    case HF_CLIENT_CONNECTION_STATE_CONNECTING:
+    case HF_CLIENT_CONNECTION_STATE_DISCONNECTING:
+      BT_LOGW("Ignored connection state:%d", state);
+      break;
     default:
       break;
     }
     break;
   }
   case TIMEOUT:
-    BT_LOGD("%s: TIMEOUT", __func__);
-    //connect timeout 
+    BT_LOGD("Connection timeout");
     //slc connection callback
     hsm_transition_to(sm, &disconnected_state);
     break;
@@ -213,16 +317,21 @@ static void connected_enter(state_machine_t *sm)
 {
   BT_LOGD("%s", __func__);
 }
+
 static void connected_exit(state_machine_t *sm)
 {
   BT_LOGD("%s", __func__);
 }
+
 static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
   hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
+  hf_client_service_t *service = hfsm->service;
   event_data_t *data = (event_data_t *)p_data;
   SERVICE_BT_STATUS status;
-  BT_LOGD("%s", __func__);
+  BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
+                                        stack_event_to_string(event),
+                                        addr_str(hfsm->addr));
 
   switch (event)
   {
@@ -232,79 +341,218 @@ static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p
   case DISCONNECT:
     //do disconnect
     status = service_adapter_hfp_disconnect(hfsm->addr);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Disconnect failed for :%s", addr_str(hfsm->addr));
+    }
     break;
   case CONNECT_AUDIO:
     status = service_adapter_hfp_create_sco(hfsm->addr);
     if (status != SERVICE_BT_STATUS_SUCCESS) {
-      break;
+      //callback audio state disconnted
+      BT_LOGE("Connect audio failed for :%s", addr_str(hfsm->addr));
     }
     break;
   case DISCONNECT_AUDIO:
-    service_adapter_hfp_disconnect_sco(hfsm->addr);
+    status = service_adapter_hfp_disconnect_sco(hfsm->addr);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Disconnect audio failed for :%s", addr_str(hfsm->addr));
+    }
     break;
   case VOICE_RECOGNITION_START:
-    status = service_adapter_hfp_enable_voice_recognition(hfsm->addr);
+    if(!hfsm->recognition_active) {
+      status = service_adapter_hfp_enable_voice_recognition(hfsm->addr);
+      if (status != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("Could not start voice recognition");
+      }
+    }
     break;
   case VOICE_RECOGNITION_STOP:
-    service_adapter_hfp_disable_voice_recognition(hfsm->addr);
+    if(hfsm->recognition_active) {
+      status = service_adapter_hfp_disable_voice_recognition(hfsm->addr);
+      if (status != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("Could not stop voice recognition");
+      }
+    }
     break;
-  case SET_MIC_VOLUME:
-    service_adapter_hfp_set_volume(hfsm->addr, VOLUME_MIC, 5);
+  case SET_MIC_VOLUME: {
+    uint8_t vol = 5;
+    //transfer to hf volume
+    service_adapter_hfp_set_volume(hfsm->addr, VOLUME_MIC, vol);
     break;
-  case SET_SPEAKER_VOLUME:
-    service_adapter_hfp_set_volume(hfsm->addr, VOLUME_SPEAKER, 5);
+    }
+  case SET_SPEAKER_VOLUME: {
+    uint8_t vol = 5;
+    //transfer to hf volume
+    service_adapter_hfp_set_volume(hfsm->addr, VOLUME_SPEAKER, vol);
     break;
+  }
   case DIAL_NUMBER:
+    status = service_adapter_hfp_dial_number(hfsm->addr, data->string1);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Dial number: %s failed", data->string1);
+    }
     break;
-  case DIAL_MEMORY:
+  case DIAL_MEMORY: {
+    int memory = data->valueint1;
+    status = service_adapter_hfp_dial_memory(hfsm->addr, memory);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Dial memory: %d failed", memory);
+    }
     break;
+  }
+  case DIAL_LAST: {
+    status = service_adapter_hfp_dial_number(hfsm->addr, NULL);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Dial Last failed");
+    }
+    break;
+  }
   case ACCEPT_CALL:
+    status = service_adapter_hfp_answer_call(hfsm->addr);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Answer call failed");
+    }
     break;
   case REJECT_CALL:
+    status = service_adapter_hfp_reject_call(hfsm->addr);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Reject call failed");
+    }
     break;
   case HOLD_CALL:
+    status = service_adapter_hfp_hold_call(hfsm->addr);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Hold call failed");
+    }
     break;
   case TERMINATE_CALL:
+    status = service_adapter_hfp_hangup_call(hfsm->addr);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Terminate call failed");
+    }
     break;
   case QUERY_CURRENT_CALLS:
+    //not support
     break;
-  case SEND_AT_COMMAND:
+  case SEND_AT_COMMAND: {
+    SERVICE_HFP_AT_CMD_S atcmd;
+
+    atcmd.at_string = data->string1;
+    atcmd.at_length = strlen(data->string1);
+    status = service_adapter_hfp_send_at_cmd(hfsm->addr, &atcmd, NULL);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Send at command failed");
+    }
     break;
+  }
+  case STACK_EVENT_AUDIO_REQ:
+  {
+    status = service_adapter_gap_accept_sco_link(hfsm->addr);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Accept Sco connection failed");
+    }
+    break;
+  }
   case STACK_EVENT_CONNECTION_STATE_CHANGED:
   {
-    uint32_t state = data->valueint1;
+    hf_client_connection_state_t state = data->valueint1;
     switch (state)
     {
-    case SERVICE_PROFILE_DISCONNECTED:
-      //slc connection callback
+    case HF_CLIENT_CONNECTION_STATE_DISCONNECTED:
+      notify_connection_state_changed(hfsm->service, hfsm->addr, state);
       hsm_transition_to(sm, &disconnected_state);
       break;
-    case SERVICE_PROFILE_CONNECTED:
+    case HF_CLIENT_CONNECTION_STATE_CONNECTED:
       //service_adapter_hfp_set_volume(remote_addr, VOLUME_SPEAKER, vol);
-      //slc connection callback
+      notify_connection_state_changed(hfsm->service, hfsm->addr, state);
       hsm_transition_to(sm, &connected_state);
       break;
-    case SERVICE_PROFILE_CONNECTING:
-    case SERVICE_PROFILE_DISCONNECTING:
+    case HF_CLIENT_CONNECTION_STATE_CONNECTING:
+    case HF_CLIENT_CONNECTION_STATE_DISCONNECTING:
       break;
     }
     break;
   }
   case STACK_EVENT_AUDIO_STATE_CHANGED:
   {
-    SERVICE_HFP_SCO_STATE state = data->valueint1;
+    hf_client_audio_state_t state = data->valueint1;
     switch (state)
     {
-    case SERVICE_HFP_SCO_CONNECTED:
+    case HF_CLIENT_AUDIO_STATE_CONNECTED:
       //set audio focus, route audio channel
-      //audio connected callback
+      notify_audio_state_changed(hfsm->service, hfsm->addr, state);
+      hfsm->sco_conn_handle = data->valueint2;
       hsm_transition_to(sm, &audio_on_state);
       break;
-    case SERVICE_HFP_SCO_DISCONNECTED:
-    case SERVICE_HFP_SCO_UNKNOWN:
+    case HF_CLIENT_AUDIO_STATE_DISCONNECTED:
     default:
       break;
     }
+    break;
+  }
+  case STACK_EVENT_VR_STATE_CHANGED: {
+    hf_client_vr_state_t state = data->valueint1;
+    notify_vr_state_changed(hfsm->service, hfsm->addr, state);
+    if (state == HF_CLIENT_VR_STATE_STOPPED)
+      hfsm->recognition_active = false;
+    else 
+      hfsm->recognition_active = true;
+    break;
+  }
+  case STACK_EVENT_CALL: {
+    hf_client_call_t call = data->valueint1;
+    if (service->callbacks)
+      service->callbacks->call_cb(hfsm->addr, call);
+    break;
+  }
+  case STACK_EVENT_CALLSETUP: {
+    hf_client_callsetup_t setup = data->valueint1;
+    if (service->callbacks)
+      service->callbacks->callsetup_cb(hfsm->addr, setup);
+    break;
+  }
+  case STACK_EVENT_CALLHELD: {
+    hf_client_callheld_t held = data->valueint1;
+    if (service->callbacks)
+      service->callbacks->callheld_cb(hfsm->addr, held);
+    break;
+  }
+  case STACK_EVENT_CLIP: {
+    char *number, *name;
+    number = data->string1;
+    name = data->string2;
+    BT_LOGD("CLIP:number :%s, name: %s", number, name == NULL ? "NULL" : name);
+    if (service->callbacks)
+      service->callbacks->clip_cb(hfsm->addr, number, name);
+    break;
+  }
+  case STACK_EVENT_CALL_WAITING: {
+    //not support
+    break;
+  }
+  case STACK_EVENT_CURRENT_CALLS: {
+    //not support
+    break;
+  }
+  case STACK_EVENT_VOLUME_CHANGED: {
+    hf_client_volume_type_t type = data->valueint1;
+    int vol = data->valueint2;
+    //set media volume, need call media interface
+    if (service->callbacks)
+      service->callbacks->volume_change_cb(hfsm->addr, type, vol);
+    break;
+  }
+  case STACK_EVENT_CMD_RESULT: {
+    const char *resp = data->string1;
+    if (service->callbacks)
+      service->callbacks->cmd_complete_cb(hfsm->addr, resp);
+    break;
+  }
+  case STACK_EVENT_RING_INDICATION: {
+    int active = data->valueint1;
+    hf_client_in_band_ring_state_t ring_state = data->valueint2;
+    if (service->callbacks && active)
+      service->callbacks->ring_indication_cb(hfsm->addr, ring_state);
     break;
   }
   default:
@@ -325,51 +573,61 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
 {
   hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
   event_data_t *data = (event_data_t *)p_data;
+  SERVICE_BT_STATUS status;
 
-  BT_LOGD("%s", __func__);
+  BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
+                                        stack_event_to_string(event),
+                                        addr_str(hfsm->addr));
   switch (event)
   {
   case DISCONNECT:
   {
-    //no handle? defer?
+    //no handle?
     break;
   }
   case DISCONNECT_AUDIO:
-    //do disconnect audio
+    status = service_adapter_hfp_disconnect_sco(hfsm->addr);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Disconnect Sco connection failed");
+    }
     break;
   case HOLD_CALL:
-    //do hold call
+    status = service_adapter_hfp_hold_call(hfsm->addr);
+    if (status != SERVICE_BT_STATUS_SUCCESS) {
+      BT_LOGE("Hold call failed");
+    }
     break;
   case STACK_EVENT_CONNECTION_STATE_CHANGED:
   {
-    uint32_t state = data->valueint1;
+    hf_client_connection_state_t state = data->valueint1;
     switch (state)
     {
-    case SERVICE_PROFILE_DISCONNECTED:
-      //audio disconnect callback
+    case HF_CLIENT_CONNECTION_STATE_DISCONNECTED:
       //set audio focus, route audio
-      //slc disconnect callback
+      notify_audio_state_changed(hfsm->service, hfsm->addr, state);
+      notify_connection_state_changed(hfsm->service, hfsm->addr, state);
       hsm_transition_to(sm, &disconnected_state);
       break;
-    case SERVICE_PROFILE_CONNECTED:
-    case SERVICE_PROFILE_CONNECTING:
-    case SERVICE_PROFILE_DISCONNECTING:
+    case HF_CLIENT_CONNECTION_STATE_DISCONNECTING:
+    case HF_CLIENT_CONNECTION_STATE_CONNECTED:
+    case HF_CLIENT_CONNECTION_STATE_CONNECTING:
+      BT_LOGE("Receive state change in unexpect state: %d", state);
       break;
     }
     break;
   }
   case STACK_EVENT_AUDIO_STATE_CHANGED:
   {
-    SERVICE_HFP_SCO_STATE state = data->valueint1;
+    hf_client_audio_state_t state = data->valueint1;
     switch (state)
     {
-    case SERVICE_HFP_SCO_DISCONNECTED:
+    case HF_CLIENT_AUDIO_STATE_DISCONNECTED:
       //set audio focus, route audio
-      //audio disconnect callback
+      notify_audio_state_changed(hfsm->service, hfsm->addr, state);
       hsm_transition_to(sm, &connected_state);
       break;
-    case SERVICE_HFP_SCO_CONNECTED:
-    case SERVICE_HFP_SCO_UNKNOWN:
+    case HF_CLIENT_AUDIO_STATE_CONNECTED:
+      break;
     default:
       break;
     }
@@ -378,19 +636,26 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
   default:
     break;
   }
+
+  return true;
 }
 
-static void hf_client_event_dispatch(char *data, size_t size)
+static void hf_client_event_dispatch(void *data, size_t size)
 {
   if (!data)
     return;
-  hf_client_sm_msg_t *msg = (hf_client_sm_msg_t *)data;
+  hf_client_inter_msg_t *imsg = (hf_client_inter_msg_t *)data;
+  hf_client_msg_t *msg = imsg->msg;
 
-  hsm_dispatch_event(&msg->hfsm->sm, msg->event, &msg->event_data);
-  hf_msg_destory(msg);
+  if (!msg)
+    return;
+
+  hsm_dispatch_event(&imsg->hfsm->sm, msg->event, &msg->event_data);
+  hf_client_msg_destory(msg);
+  free((void *)imsg);
 }
 
-hf_state_machine_t *hf_client_state_machine_new(bt_address bd_addr)
+hf_state_machine_t *hf_client_state_machine_new(hf_client_service_t *context, bt_address bd_addr)
 {
   hf_state_machine_t *hfsm;
 
@@ -399,7 +664,9 @@ hf_state_machine_t *hf_client_state_machine_new(bt_address bd_addr)
     return NULL;
 
   hfsm->connect_timer = NULL;
-  hsm_ctor(&hfsm->sm, &disconnected_state);
+  hfsm->recognition_active = false;
+  hfsm->service = context;
+  hsm_ctor(&hfsm->sm, (state_t *)&disconnected_state);
   memcpy(hfsm->addr, bd_addr, sizeof(bt_address));
 
   return hfsm;
@@ -414,40 +681,55 @@ void hf_client_state_machine_destory(hf_state_machine_t *hfsm)
   free((void *)hfsm);
 }
 
-hf_client_sm_msg_t *hf_msg_new(hf_state_machine_t *sm,
-                               hf_client_event_t event,
-                               bt_address bd_addr)
+hf_client_msg_t *hf_client_msg_new(hf_client_event_t event,
+                                   bt_address bd_addr)
 {
-  hf_client_sm_msg_t *msg;
-  msg = (hf_client_sm_msg_t *)malloc(sizeof(hf_client_sm_msg_t));
+  hf_client_msg_t *msg;
+  msg = (hf_client_msg_t *)malloc(sizeof(hf_client_msg_t));
   if (msg == NULL)
     return NULL;
 
-  msg->hfsm = sm;
   msg->event = event;
-  memcpy(msg->bd_addr, bd_addr, sizeof(bt_address));
   memset(&msg->event_data, 0, sizeof(msg->event_data));
+  memcpy(&msg->event_data.bd_addr, bd_addr, sizeof(bt_address));
+
   return msg;
 }
 
-void hf_msg_destory(hf_client_sm_msg_t *msg)
+void hf_client_msg_destory(hf_client_msg_t *msg)
 {
-  if (!msg)
-    return;
-
-  if (msg->event_data.string1)
-    free(msg->event_data.string1);
-
-  if (msg->event_data.string2)
-    free(msg->event_data.string2);
+  free(msg->event_data.string1);
+  free(msg->event_data.string2);
   free(msg);
 }
 
-void hf_client_send_message(hf_state_machine_t *sm, hf_client_sm_msg_t *msg)
+void hf_client_send_message(hf_state_machine_t *sm,
+                            hf_client_msg_t *msg)
 {
   excute_service_context_t *context = (excute_service_context_t *)malloc(sizeof(excute_service_context_t));
+  hf_client_inter_msg_t *imsg = (hf_client_inter_msg_t *)malloc(sizeof(hf_client_inter_msg_t));
+
+  imsg->hfsm = sm;
+  imsg->msg = msg;
   context->loop_func = hf_client_event_dispatch;
-  context->data = (void *)msg;
-  context->data_size = sizeof(hf_client_sm_msg_t);
+  context->data = (void *)imsg;
+  context->data_size = sizeof(hf_client_inter_msg_t);
   process_in_loop(context);
+}
+
+hf_client_connection_state_t hf_client_get_conn_state(hf_state_machine_t *sm)
+{
+  state_t *state = hsm_get_current_state(&sm->sm);
+
+  if (state == (state_t *)&disconnected_state) {
+    return HF_CLIENT_CONNECTION_STATE_DISCONNECTED;
+  } else if (state == (state_t *)&connecting_state) {
+    return HF_CLIENT_CONNECTION_STATE_CONNECTING;
+  } else if (state == (state_t *)&connected_state ||\
+             state == (state_t *)&audio_on_state) {
+    return HF_CLIENT_CONNECTION_STATE_CONNECTED;
+  } else {
+    BT_LOGE("%s:Unknow State", __func__);
+    return HF_CLIENT_CONNECTION_STATE_DISCONNECTED;
+  }
 }

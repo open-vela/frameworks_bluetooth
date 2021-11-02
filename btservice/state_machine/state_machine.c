@@ -30,11 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#include <syslog.h>
-
 #include "state_machine.h"
-
-#define HSM_LOG(fmt, args...) syslog(6,"StateMachine:" fmt "\n", ##args)
 
 void hsm_ctor(state_machine_t *sm, state_t *initial_state)
 {
@@ -59,7 +55,6 @@ void hsm_transition_to(state_machine_t *sm, const state_t *state)
     sm->previous_state = sm->current_state;
   }
   sm->current_state = state;
-  //HSM_LOG("enter %s state", sm->current_state->state_name);
   sm->current_state->enter(sm);
 }
 
@@ -79,6 +74,15 @@ state_t *hsm_get_previous_state(state_machine_t *sm)
   }
 
   return sm->previous_state;
+}
+
+char *hsm_get_current_state_name(state_machine_t *sm)
+{
+  if (!sm) {
+    return NULL;
+  }
+
+  return sm->current_state->state_name;
 }
 
 bool hsm_dispatch_event(state_machine_t *sm, uint32_t event, void *p_data)
