@@ -107,6 +107,7 @@ static spp_interface_t sppInterface = {
 bt_result_code spp_service_start(void)
 {
   bt_result_code ret;
+  BT_LOGD("%s", __func__);
 
   ret = bts_spp_init(&spp_service_cbs);
   if (ret != BT_RESULT_SUCCESS) {

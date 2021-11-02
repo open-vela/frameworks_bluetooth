@@ -18,6 +18,7 @@ include $(APPDIR)/Make.defs
 
 CSRCS += btservice/btservice/bts_service.c
 CSRCS += btservice/gap/bts_gap.c
+CSRCS += btservice/gap/bts_gap_service.c
 CSRCS += btmanager/btm_manager.c
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SRC),y)
@@ -75,7 +76,7 @@ ifeq ($(CONFIG_BLUETOOTH_SAMPLE_LEADV), y)
 	MAINSRC   = samples/test_gatts.c
 
 	PRIORITY = SCHED_PRIORITY_DEFAULT
-	STACKSIZE = CONFIG_DEFAULT_TASK_STACKSIZE
+	STACKSIZE = 40960
 	PROGNAME  = btsample
 	MODULE    = $(CONFIG_BLUETOOTH)
 
