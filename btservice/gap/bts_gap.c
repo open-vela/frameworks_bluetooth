@@ -73,17 +73,21 @@ void process_loop_in_common(void *data, size_t data_size)
 
 void adapter_device_found_callback(SERVICE_REMOTE_DEVICE_S *device)
 {
+    BT_LOGD("%s", __func__);
 }
 void adapter_received_remote_name_callback(BD_ADDR bd_addr, char *bt_name, uint8_t length)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_discovery_state_changed_callback(SERVICE_BT_DISCOVERY_STATE state)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_pin_request_callback(SERVICE_PIN_REQUEST_DATA_S *request_data)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_ssp_request_callback(SERVICE_SSP_REQUEST_DATA_S *request_data)
@@ -100,14 +104,17 @@ void adapter_ssp_request_callback(SERVICE_SSP_REQUEST_DATA_S *request_data)
 
 void adapter_bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_BOND_STATE state)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S *acl_state_param)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_ble_scan_result_callback(SERVICE_SCAN_RESULT_DATA_S *scan_result_data)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_ble_adv_started_callback(uint8_t adv_id)
@@ -126,15 +133,18 @@ void adapter_ble_adv_stopped_callback(uint8_t adv_id)
 
 void adapter_bt_link_role_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_ROLE link_role)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_scan_mode_changed_callback(SERVICE_BT_SCAN_MODE scan_mode)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_link_mode_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_MODE link_mode,
                                         uint16_t sniff_interval)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_link_connect_request_callback(BD_ADDR remote_addr)
@@ -145,6 +155,7 @@ void adapter_link_connect_request_callback(BD_ADDR remote_addr)
 
 void adapter_link_policy_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_POLICY link_policy)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_stack_state_changed_callback(SERVICE_BT_STACK_STATE stack_state)
@@ -163,6 +174,7 @@ void adapter_stack_state_changed_callback(SERVICE_BT_STACK_STATE stack_state)
 
 void adapter_hci_event_callback(SERVICE_BT_HCI_EVENT_S *hci_event)
 {
+    BT_LOGD("%s", __func__);
 }
 
 extern int TL_h4_send(UINT8 *pBuf, UINT32 len);
@@ -180,12 +192,14 @@ void adapter_init_done_callback(void)
     process_in_loop(context);
 }
 
-void adapter_update_br_link_key_callback(SERVICE_REMOTE_DEVICE_S *bonded_device)
+void adapter_update_br_link_key_callback(SERVICE_REMOTE_DEVICE_S* bonded_device)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_delete_br_link_key_callback(BD_ADDR remote_addr)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_pairing_request_callback(BD_ADDR remote_addr, bool local_initiate, bool is_bondable)
@@ -194,55 +208,67 @@ void adapter_pairing_request_callback(BD_ADDR remote_addr, bool local_initiate, 
     service_adapter_gap_reply_pairing_request(remote_addr, 0);
 }
 
-void adapter_service_discovered_callback(BD_ADDR remote_addr, SERVICE_BR_SERVICE_S *services, uint16_t size)
+void adapter_service_discovered_callback(BD_ADDR remote_addr, SERVICE_BR_SERVICE_S* services, uint16_t size)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_link_encryption_state_callback(BD_ADDR remote_addr, bool br_link, bool encryption_on)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_smp_request_callback(SERVICE_SSP_REQUEST_DATA_S *request_data)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_update_ble_bonded_devices_callback(SERVICE_BLE_KEYS_S *bonded_device_list, uint8_t count_in)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_ble_add_white_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_ble_remove_white_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_ble_add_resolving_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_ble_remove_resolving_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_ble_address_callback(BD_ADDR ble_addr, SERVICE_BLE_ADDR_TYPE ble_addr_type)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_ble_phy_update_callback(BD_ADDR remote_addr, SERVICE_BLE_PHY_TYPE tx_phy,
                                      SERVICE_BLE_PHY_TYPE rx_phy, SERVICE_BT_STATUS status)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void adapter_ble_irk_callback(BT_COMMON_KEY irk, BD_ADDR ble_addr,
                                      SERVICE_BLE_ADDR_TYPE ble_addr_type)
 {
+    BT_LOGD("%s", __func__);
 
 }
 void adapter_ble_packet_received_callback(BD_ADDR remote_addr, uint16_t private_cid,
         uint8_t *packet, uint16_t packet_size)
 {
+    BT_LOGD("%s", __func__);
 }
 
 void get_local_address(void)
