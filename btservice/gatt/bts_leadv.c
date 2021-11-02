@@ -47,6 +47,7 @@ static void add_advertise_handle(advertise_hdl advertiser)
         BT_LOGE("malloc client fail");
         return;
     }
+    memset(client, 0, sizeof(advertise_hdl));
 
     client->advertiser_id = advertiser.advertiser_id;
     client->param = advertiser.param;
@@ -85,7 +86,7 @@ static bt_result_code le_stop_adv(uint8_t advertiser_id)
     SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(advertiser_id);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("set ble start adv fail, err:%d", ret);
-         remove_advertise_handle(client);
+        remove_advertise_handle(client);
         return BT_RESULT_FAILED;
     }
 

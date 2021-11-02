@@ -171,12 +171,12 @@ Exit:
     return result;
 }
 
-bool bt_manager_is_enable(void * handle)
-{
-    bool isEnable = false;
+// bool bt_manager_is_enable(void * handle)
+// {
+//     bool isEnable = false;
 
-    return isEnable;
-}
+//     return isEnable;
+// }
 
 bt_manager_bt_state bt_get_state(void * handle)
 {
