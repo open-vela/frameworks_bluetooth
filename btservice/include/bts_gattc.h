@@ -52,7 +52,7 @@ typedef struct {
         uint32_t latency, uint32_t timeout,
         uint32_t min_connection_event_length,
         uint32_t max_connection_event_length);
-} ble_gatt_client_interface;
+} gatt_client_interface_t;
 
-const ble_gatt_client_interface* get_ble_gatt_client_instance(void);
+const gatt_client_interface_t* get_ble_gatt_client_instance(void);
 #endif

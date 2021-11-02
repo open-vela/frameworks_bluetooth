@@ -337,7 +337,7 @@ bt_result_code bt_manager_deinit(void * handle);
 bt_result_code  bt_register_callback(void * handle, bt_callbacks_t *bt_callbacks_cb);
 bt_result_code bt_manager_enable(void * handle);
 bt_result_code bt_manager_disable(void * handle);
-bool bt_manager_is_enable(void * handle);
+// bool bt_manager_is_enable(void * handle);
 bt_manager_bt_state bt_get_state(void * handle);
 bt_manager_ble_state ble_get_state(void * handle);
 void * bt_get_profile_interface(void * handle, const bt_profile_id profile_id);
@@ -412,4 +412,20 @@ btm_interface_t* get_bt_manager_interface(void);
         } else {                                               \
             BT_LOGE("%s Callback is NULL", __func__);            \
         }                                                      \
+    } while (0)
+
+#define CHECK_PTR(handle)           \
+    do {                            \
+        if (!handle) {              \
+            BT_LOGE("handle NULL"); \
+            return;                 \
+        }                           \
+    } while (0)
+
+#define CHECK_PTR_RETURN(handle, ret) \
+    do {                              \
+        if (!handle) {                \
+            BT_LOGE("handle NULL");   \
+            return ret;               \
+        }                             \
     } while (0)

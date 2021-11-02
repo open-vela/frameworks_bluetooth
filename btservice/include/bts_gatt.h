@@ -23,13 +23,13 @@ typedef struct {
 typedef struct {
     size_t size;
 
-    int (*init)(const btgatt_callbacks* callbacks);
+    bt_result_code (*init)();
     void (*cleanup)(void);
 
     const gatt_scan_interface_t* scanner;
     const gatt_advertise_interface_t* advertiser;
-    const ble_gatt_client_interface* client;
-    const ble_gatt_server_interface* server;
+    const gatt_client_interface_t* client;
+    const gatt_server_interface_t* server;
 } gatt_interface_t;
 
 const gatt_interface_t* gatt_get_interface(void);

@@ -368,6 +368,10 @@ static bt_result_code init(bt_callbacks* callbacks)
     InitTransportLayer();
     gap_interface_t* gap_ift = get_gap_instance();
     gap_ift->init(NULL);
+    gatt_interface_t* gatt_if = gatt_get_interface();
+    if (gatt_if) {
+        gatt_if->init();
+    }
 
     return BT_RESULT_SUCCESS;
 }
@@ -406,6 +410,10 @@ bt_result_code disable(void)
 
 void cleanup(void)
 {
+    gatt_interface_t* gatt_if = gatt_get_interface();
+    if (!gatt_if) {
+        gatt_if->cleanup();
+    }
 }
 
 static bluetooth_service_interface bluetooth_service = {

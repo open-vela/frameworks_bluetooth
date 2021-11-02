@@ -109,7 +109,7 @@ btm_gatt_advertise_interface_t* get_le_advertise_interface(
     }
 
     bt_mgr_interface = (btm_interface_t*)(bt_mgr);
-    gatt_interface_t* interface = (gatt_interface_t*)bt_mgr_interface->get_profile_interface(BT_PROFILE_GATT);
+    gatt_interface_t* interface = bt_mgr_interface->get_profile_interface(BT_PROFILE_GATT);
     if (!interface) {
         BT_LOGE("fail, get_profile_interface gatt");
         return NULL;
