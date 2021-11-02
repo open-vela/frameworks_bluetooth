@@ -58,6 +58,7 @@ void hsm_dtor(state_machine_t *sm);
 void hsm_transition_to(state_machine_t *sm, const state_t *state);
 state_t *hsm_get_current_state(state_machine_t *sm);
 state_t *hsm_get_previous_state(state_machine_t *sm);
+char *hsm_get_current_state_name(state_machine_t *sm);
 bool hsm_dispatch_event(state_machine_t *sm, uint32_t event, void *p_data);
 
 

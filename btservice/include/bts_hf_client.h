@@ -33,10 +33,21 @@
 #ifndef __HF_CLIENT_FROFILE_H__
 #define __HF_CLIENT_FROFILE_H__
 
+#include <nuttx/list.h>
+
 #include "btm_manager.h"
 #include "btm_hfp_hf.h"
 
-extern bt_result_code hf_client_init(const hf_client_callbacks_t *callbacks);
+typedef struct
+{
+  bool started;
+  struct list_node device_list;
+  hf_client_callbacks_t *callbacks;
+} hf_client_service_t;
+
+typedef hf_client_callbacks_t hf_client_service_callbacks_t;
+
+extern bt_result_code hf_client_init(const hf_client_service_callbacks_t *callbacks);
 extern bt_result_code hf_client_connect(bt_address bd_addr);
 extern bt_result_code hf_client_disconnect(bt_address bd_addr);
 extern bt_result_code hf_client_connect_audio(bt_address bd_addr);
@@ -46,11 +57,19 @@ extern bt_result_code hf_client_stop_voice_recognition(bt_address bd_addr);
 extern bt_result_code hf_client_volume_control(bt_address bd_addr, hf_client_volume_type_t type, int volume);
 extern bt_result_code hf_client_dial(bt_address bd_addr, const char* number);
 extern bt_result_code hf_client_dial_memory(bt_address bd_addr, uint32_t memory);
+extern bt_result_code hf_client_redial(bt_address bd_addr);
 extern bt_result_code hf_client_accept_call(bt_address bd_addr);
 extern bt_result_code hf_client_reject_call(bt_address bd_addr);
 extern bt_result_code hf_client_hold_call(bt_address bd_addr);
 extern bt_result_code hf_client_terminate_call(bt_address bd_addr);
 extern bt_result_code hf_client_query_current_calls(bt_address bd_addr);
-extern bt_result_code hf_client_send_at_cmd(bt_address bd_addr);
+extern bt_result_code hf_client_send_at_cmd(bt_address bd_addr, const char *cmd);
 extern void hf_client_cleanup(void);
+
+bt_result_code hf_client_service_start(void);
+void hf_client_service_stop(void);
+const hf_client_interface_t *get_hf_client_service_interface(void);
+
+
+
 #endif

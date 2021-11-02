@@ -35,10 +35,13 @@
  * Included Files
  ****************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <stddef.h>
 #include <fcntl.h>
 #include <pty.h>
 #include <sys/types.h>
+
+#include <nuttx/list.h>
 
 #include "uv.h"
 // bluelet dependent
@@ -50,7 +53,6 @@
 #include "bts_service.h"
 
 #include "uuid.h"
-#include "list.h"
 #include "bts_spp.h"
 #include "btm_spp.h"
 
@@ -73,23 +75,24 @@
 
 typedef struct
 {
-  uint32_t  conn_id_map[INDEX_MAX];
-  uint8_t   conn_id_next;
-  list_t    *dev_list;
+  uint32_t                conn_id_map[INDEX_MAX];
+  uint8_t                 conn_id_next;
+  struct list_node        dev_list;
   spp_service_callbacks_t *cbs;
 } spp_handle_t;
 
 typedef struct
 {
-  uv_poll_t   *handle;
-  bool        accept;
-  bt_address  addr;
-  uint16_t    svr_port;
-  uint16_t    conn_port;
-  int         mfd;
-  int         sfd;
-  char        pty_name[20];
-  spp_connection_state_t state;
+  struct list_node        node;
+  uv_poll_t               *handle;
+  bool                    accept;
+  bt_address              addr;
+  uint16_t                svr_port;
+  uint16_t                conn_port;
+  int                     mfd;
+  int                     sfd;
+  char                    pty_name[20];
+  spp_connection_state_t  state;
 } spp_pty_device_t;
 
 typedef struct
@@ -211,23 +214,19 @@ static spp_pty_device_t *alloc_new_device(bt_address addr, uint16_t port, bool a
   device->sfd = INVALID_FD;
   device->state = SPP_CONNECTION_STATE_DISCONNECTED;
   memcpy(device->addr, addr, sizeof(device->addr));
-
-  if (!list_append(g_spp_handle.dev_list, (void *)device)) {
-    free_connection_port(device->conn_port);
-    free(device);
-    return NULL;
-  }
+  list_add_tail(&g_spp_handle.dev_list, &device->node);
 
   return device;
 }
 
 static spp_pty_device_t *find_pty_device(bt_address addr, uint16_t port)
 {
-  list_t *list = g_spp_handle.dev_list;
+  struct list_node *list = &g_spp_handle.dev_list;
+  spp_pty_device_t *device;
+  struct list_node *node;
 
-  for (const list_node_t *node = list_begin(list); node != list_end(list);
-       node = list_next(node)) {
-    spp_pty_device_t *device = (spp_pty_device_t *)list_node(node);
+  list_for_every(list, node) {
+    device = (spp_pty_device_t *)node;
     if (memcmp(addr, device->addr, 6) == 0 && port == device->conn_port)
       return device;
   }
@@ -237,11 +236,12 @@ static spp_pty_device_t *find_pty_device(bt_address addr, uint16_t port)
 
 static spp_pty_device_t *find_pty_device_by_handle(uv_poll_t *handle)
 {
-  list_t *list = g_spp_handle.dev_list;
+  struct list_node *list = &g_spp_handle.dev_list;
+  spp_pty_device_t *device;
+  struct list_node *node;
 
-  for (const list_node_t *node = list_begin(list); node != list_end(list);
-       node = list_next(node)) {
-    spp_pty_device_t *device = (spp_pty_device_t *)list_node(node);
+  list_for_every(list, node) {
+    device = (spp_pty_device_t *)node;
     if (device->handle == handle)
       return device;
   }
@@ -253,8 +253,8 @@ static void remove_pty_device(spp_pty_device_t *device)
 {
   free_connection_port(device->conn_port);
 
-  if (list_remove(g_spp_handle.dev_list, (void *)device))
-    free(device);
+  list_delete(&device->node);
+  free(device);
 }
 
 static spp_pty_device_t *spp_open_pty_device(bt_address addr, uint16_t port)
@@ -307,11 +307,13 @@ static void spp_close_pty_device(spp_pty_device_t *device)
 
 static void spp_close_all_device(void)
 {
-  list_t *list = g_spp_handle.dev_list;
+  struct list_node *list = &g_spp_handle.dev_list;
+  spp_pty_device_t *device;
+  struct list_node *node;
+  struct list_node *tmp;
 
-  for (const list_node_t *node = list_begin(list); node != list_end(list);
-       node = list_next(node)) {
-    spp_pty_device_t *device = (spp_pty_device_t *)list_node(node);
+  list_for_every_safe(list, node, tmp) {
+    device = (spp_pty_device_t *)node;
     spp_close_pty_device(device);
   }
 }
@@ -395,7 +397,7 @@ static void do_spp_write(spp_pty_device_t *device, uint16_t length)
     return;
 
   do {
-      size = remaining > 10 ? 10 : remaining;
+      size = remaining > 255 ? 255 : remaining;
       tmp = (uint8_t *)malloc(size);
       ret = read(device->mfd, tmp, size);
       lib_dumpbuffer("m read:", tmp, ret);
@@ -406,8 +408,6 @@ static void do_spp_write(spp_pty_device_t *device, uint16_t length)
 
 static void spp_pty_poll_callback(uv_poll_t *req, int status, int events)
 {
-  int ret;
-
   if (status != 0)
     return;
 
@@ -570,17 +570,13 @@ bt_result_code bts_spp_init(spp_service_callbacks_t *callbacks)
   SERVICE_BT_STATUS status;
 
   g_spp_handle.cbs = callbacks;
-  g_spp_handle.dev_list = list_new(NULL);
+  list_initialize(&g_spp_handle.dev_list);
   g_spp_handle.conn_id_next = CONNECTIONS_BASE;
   memset(&g_spp_handle.conn_id_map, 0, sizeof(g_spp_handle.conn_id_map));
 
-  if (!g_spp_handle.dev_list)
-    return BT_RESULT_ALLOC_BUFFER_FAILED;
-
   status = service_adapter_spp_init(&spp_adp_callbacks);
-
   if (status != SERVICE_BT_STATUS_SUCCESS) {
-    list_free(g_spp_handle.dev_list);
+    list_delete(&g_spp_handle.dev_list);
     return BT_RESULT_FAILED;
   }
 
@@ -655,6 +651,6 @@ bt_result_code bts_spp_disconnect(bt_address addr, uint16_t port)
 void bts_spp_cleanup(void)
 {
   spp_close_all_device();
-  list_free(g_spp_handle.dev_list);
+  list_delete(&g_spp_handle.dev_list);
   service_adapter_spp_cleanup();
 }
