@@ -1,5 +1,5 @@
 /****************************************************************************
- * frameworks/bluetooth/src/btservice/profile/common.c
+ * frameworks/bluetooth/src/btservice/profile/bts_gap.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -163,7 +163,7 @@ void adapter_stack_state_changed_callback(SERVICE_BT_STACK_STATE stack_state)
     BT_LOGD("Stack State Changed to %d", stack_state);
     if (stack_state == BT_STATE_ON)
     {
-        uint8_t local_name[] = "BlueLet-NuttX";
+        uint8_t local_name[] = "BlueLet-NuttX-M1";
         service_adapter_gap_set_local_name((char *)local_name, sizeof(local_name));
         service_adapter_gap_set_local_device_class(BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO |
                 BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
@@ -185,10 +185,12 @@ void adapter_transport_write_packet_callback(uint8_t *hci_packet, uint32_t lengt
 
 void adapter_init_done_callback(void)
 {
+    BT_LOGD("%s", __func__);
+
     excute_service_context_t *context = (excute_service_context_t *)malloc(sizeof(excute_service_context_t));
     context->loop_func = process_loop_in_common;
     context->data = NULL;
-    // context->command_id = INIT_SERVICE_DONE_RESPONSE;
+    //context->command_id = INIT_SERVICE_DONE_RESPONSE;
     process_in_loop(context);
 }
 
@@ -335,39 +337,12 @@ void register_callback_to_stack(void)
 {
 }
 
-static void *bluelet_loop_thread(void *arg)
-{
-    BT_LOGD("%s", __func__);
-    service_adapter_gap_enable();
-    while (1)
-        ScheduleLoop();
-    
-    return NULL;
-}
-
 extern void InitTransportLayer(void);
 
-int bluelet_init(void)
-{
-    pthread_t loop_pthread;
-    pthread_attr_t attr;
-
-    service_adapter_gap_init();
-    service_adapter_gap_register_gap_callback(&gap_callback);
-
-    InitTransportLayer();
-    pthread_attr_init(&attr);
-    pthread_attr_setstacksize(&attr, 8192);
-    pthread_create(&loop_pthread, &attr, bluelet_loop_thread, NULL);
-    pthread_detach(loop_pthread);
-
-    return 0;
-}
 
 void bts_common_init(void)
 {
-    //BT_LOGD(" common_init coming");
-    bluelet_init();
+    BT_LOGD(" common_init coming");
     register_callback_to_stack();
 }
 
@@ -377,7 +352,9 @@ bt_result_code gap_init(bts_gap_callback_t* cb)
 {
     bts_gap_callbacks = cb;
     service_adapter_gap_init();
+
     service_adapter_gap_register_gap_callback(&gap_callback);
+
     return BT_RESULT_SUCCESS;
 }
 
@@ -407,22 +384,7 @@ bt_result_code gap_disable(bool normal_disable)
     return BT_RESULT_SUCCESS;
 }
 
-static stack_state_t gap_get_stack_state(void)
+stack_state_t gap_get_stack_state(void)
 {
     return BT_STATE_ON;
-}
-
-static gap_interface_t gap_interface = {
-    .size = sizeof(gap_interface),
-
-    .init = gap_init,
-    .cleanup = gap_cleanup,
-    .enable = gap_enable,
-    .disable = gap_disable,
-    .gap_get_stack_state = gap_get_stack_state,
-};
-
-const gap_interface_t* get_gap_instance(void)
-{
-    return &gap_interface;
 }
