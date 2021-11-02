@@ -1,11 +1,10 @@
 
 #include <stdio.h>
-#include <stdlib.h>
-
+#include <pthread.h>
 #include "btm_le_advertise.h"
 #include "btm_manager.h"
-#include "btm_spp.h"
-
+#include "log.h"
+#include "bts_spp.h"
 #define LOG_TAG "btsample_adv"
 #include "log.h"
 
@@ -31,7 +30,14 @@ int main(int argc, FAR char* argv[])
 {
     btm_interface_t* manager = get_bt_manager_interface();
     manager->init(NULL);
-    manager->enable();
+    pthread_t message_tid;
+    pthread_attr_t message_attr;
+    pthread_attr_init(&message_attr);
+    pthread_attr_setstacksize(&message_attr, 40960);
+    pthread_create(&message_tid, &message_attr, manager->enable, NULL);
+    //manager->enable();
+
+    //spp_service_start();
 
     gatt_advertise_callbacks cb = {
         .le_advertise_started_cb = le_adv_started_callback,
@@ -57,9 +63,13 @@ int main(int argc, FAR char* argv[])
     btm_gatt_advertise_interface_t* adv_interface = get_le_advertise_interface(manager);
     bt_result_code ret = adv_interface->start_advertising(&adv_handle, &adv_para, &cb);
 
+
+    while (1){
+        usleep(1000);
+    }
     getchar();
     BT_LOGD("sample adv stop ...");
-    adv_interface->stop_advertising(adv_handle);
+    //adv_interface->stop_advertising(adv_handle);
 
     getchar();
     BT_LOGD("sample adv exit ...");

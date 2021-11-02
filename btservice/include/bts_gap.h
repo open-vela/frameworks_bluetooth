@@ -4,7 +4,7 @@
  * Included Files
  ****************************************************************************/
 #include <stdio.h>
-
+#include "btm_gap.h"
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -49,26 +49,13 @@ typedef enum {
     GAP_RESPONSE_MAX_ID,
 } gap_command;
 
-typedef void (*bts_gap_init_done_callback)(void);
 
-typedef struct {
-    /* * set to sizeof(GAP_CALLBACKS_S) */
-    uint8_t size;
-    bts_gap_init_done_callback gap_init_done_cb;
-    //TODO:: Add Patch Download Start Callback
-} bts_gap_callback_t;
+
 void bts_common_register_callback(bts_gap_callback_t* cb);
 void bts_common_init(void);
+bt_result_code gap_init(bts_gap_callback_t* cb);
+bt_result_code gap_enable(void);
+bt_result_code gap_disable(bool normal_disable);
+stack_state_t gap_get_stack_state(void);
 
-typedef struct {
-    size_t size;
 
-    bt_result_code (*init)(const bts_gap_callback_t* callbacks);
-    void (*cleanup)(void);
-    bt_result_code (*enable)(void);
-    bt_result_code (*disable)(bool normal_disable);
-
-    stack_state_t (*gap_get_stack_state)(void);
-} gap_interface_t;
-
-const gap_interface_t* get_gap_instance(void);

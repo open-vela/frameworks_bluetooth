@@ -27,6 +27,7 @@
 #include <pthread.h>
 #include "bts_service.h"
 #include "btm_manager.h"
+#include "btm_gap.h"
 #include "uv.h"
 #include "stack_adapter_service_base.h"
 #include "stack_adapter_gap.h"
@@ -354,6 +355,8 @@ static void* stack_schedule_loop(void* data)
 {
     BT_LOGD("%s", __func__);
     ScheduleLoop();
+        BT_LOGD("%s", __func__);
+
 }
 
 static void* service_schedule_loop(void* data)
@@ -381,23 +384,25 @@ bt_result_code enable(void)
     gap_interface_t* gap_ift = get_gap_instance();
     gap_ift->enable();
 
-    int ret = uv_thread_create(&thread_handle[THREAD_ID_STACK], stack_schedule_loop, NULL);
+    // int ret = uv_thread_create(&thread_handle[THREAD_ID_STACK], stack_schedule_loop, NULL);
+    // if (ret != 0) {
+    //     BT_LOGE("fail uv_thread_create, ret:%d", ret);
+    //     return BT_RESULT_FAILED;
+    // }
+
+    int ret = uv_thread_create(&thread_handle[THREAD_ID_SERVICE], service_schedule_loop, NULL);
     if (ret != 0) {
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
         return BT_RESULT_FAILED;
     }
 
-    ret = uv_thread_create(&thread_handle[THREAD_ID_SERVICE], service_schedule_loop, NULL);
-    if (ret != 0) {
-        BT_LOGE("fail uv_thread_create, ret:%d", ret);
-        return BT_RESULT_FAILED;
-    }
-
+    stack_schedule_loop(NULL);
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     hf_client_service_start();
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
     spp_service_start();
+
 #endif
 
     return BT_RESULT_SUCCESS;
