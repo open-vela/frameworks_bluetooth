@@ -311,6 +311,7 @@ void adapter_init_done_callback(void)
 void adapter_update_br_link_key_callback(remote_device_t* bonded_device)
 {
     BT_LOGD("%s", __func__);
+    gap_update_data_storage();
 }
 
 void adapter_delete_br_link_key_callback(bd_addr_t remote_addr)

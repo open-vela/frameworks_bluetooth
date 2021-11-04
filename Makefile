@@ -20,6 +20,7 @@ CSRCS += btservice/btservice/bts_service.c
 CSRCS += btservice/btservice/bts_service_interface.c
 CSRCS += btservice/gap/bts_gap.c
 CSRCS += btservice/gap/bts_gap_service.c
+CSRCS += btservice/gap/bts_gap_data.c
 CSRCS += btmanager/btm_manager.c
 CSRCS +=btmanager/btm_gap.c
 

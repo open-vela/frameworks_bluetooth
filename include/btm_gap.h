@@ -288,4 +288,5 @@ typedef struct {
 } btm_gap_interface_t;
 
 btm_gap_interface_t* get_gap_instance(void);
+
 #endif

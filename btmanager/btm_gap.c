@@ -53,13 +53,13 @@ static void adapter_state_changed_callback(void* gap_handle, stack_state_t state
     bt_result_code ret = BT_RESULT_FAILED;
     BT_LOGD("%s", __func__);
 
-    if (!gap_handle)
-        return ret;
-    gap_context_t * context = (gap_context_t*)gap_handle;
-    if((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->state_changed_cb))
-        return ret;
-    BT_LOGD("%s", __func__);
-    BT_CBACK(context->gap_callbacks, state_changed_cb, state);
+    // if (!gap_handle)
+    //     return ret;
+    // gap_context_t * context = (gap_context_t*)gap_handle;
+    // if((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->state_changed_cb))
+    //     return ret;
+    // BT_LOGD("%s", __func__);
+    // BT_CBACK(context->gap_callbacks, state_changed_cb, state);
     //context->gap_callbacks->state_changed_cb(state);
 }
 

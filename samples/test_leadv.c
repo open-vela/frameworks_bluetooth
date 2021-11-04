@@ -49,15 +49,33 @@ static void le_adv_failed_callback(void* handle, int error)
     BT_LOGD(" %s:err:%d", __func__, error);
 }
 
+ void manager_init_status_changed_callback(bt_result_code status)
+ {
+
+ }
+
+ void manager_state_changed_callback(bt_manager_bt_state state)
+ {
+
+ }
+
+
+static bt_mgr_callback_t mgt_cb = {
+    .bt_manager_state_changed_callback_cb = manager_state_changed_callback,
+    .init_status_changed_callback_cb = manager_init_status_changed_callback,
+
+};
 int main(int argc, FAR char* argv[])
 {
+    void *p;
     btm_interface_t* manager = get_bt_manager_interface();
-    manager->init(NULL);
+    
+    manager->init(&p, &mgt_cb);
     pthread_t message_tid;
     pthread_attr_t message_attr;
     pthread_attr_init(&message_attr);
     pthread_attr_setstacksize(&message_attr, 40960);
-    pthread_create(&message_tid, &message_attr, manager->enable, NULL);
+    pthread_create(&message_tid, &message_attr, manager->enable, p);
     //manager->enable();
 
     //spp_service_start();
