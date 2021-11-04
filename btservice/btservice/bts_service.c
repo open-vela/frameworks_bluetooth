@@ -243,7 +243,7 @@ int service_loop_init(void)
 
 static bool interface_ready(void) { return bluetooth_upper_callbacks != NULL; }
 
-static const void* get_profile_interface(const char* profile_id)
+static const void* bts_get_profile_interface(void* handle, const char* profile_id)
 {
     BT_LOGD("%s: id = %s", __func__, profile_id);
 
