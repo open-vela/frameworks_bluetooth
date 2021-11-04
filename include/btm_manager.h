@@ -226,6 +226,7 @@ typedef struct {
     bt_manager_ble_state_changed_callback bt_manager_ble_state_changed_callback_cb;
 } bt_mgr_callback_t;
 
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -239,17 +240,17 @@ typedef struct {
  * 
  *
  ****************************************************************************/
-
 typedef struct {
     size_t size;
-    bt_result_code (*init)(void** handle, const bt_mgr_callback_t* callbacks);
-    void (*cleanup)(void* handle);
-    bt_result_code (*enable)(void* handle);
-    bt_result_code (*disable)(void* handle);
-    bt_manager_bt_state (*bt_get_state)(void * handle);
-    bt_manager_ble_state (*ble_get_state)(void * handle);
-    void* (*get_profile_interface)(char* profile_id);
-
+    bt_result_code (*init)(void ** handle, const bt_mgr_callback_t* callbacks);
+    bt_result_code (*enable)(void * handle);
+    bt_result_code (*disable)(void * handle);
+    bt_result_code (*enable_ble)(void * handle);
+    bt_result_code (*disable_ble)(void * handle);
+    bt_manager_bt_state  (*bt_get_state)(void * handle);
+    bt_manager_ble_state  (*ble_get_state)(void * handle);
+    void (*cleanup)(void * handle);
+    const void* (*get_profile_interface)(const char* profile_id);
 } btm_interface_t;
 
 btm_interface_t* get_bt_manager_interface(void);
