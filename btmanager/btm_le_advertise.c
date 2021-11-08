@@ -61,7 +61,7 @@ static bt_result_code start_advertising(gatt_advertiser_t** handle_ptr, advertis
     advertise_hdl client = {
         .param = param,
         .callbacks = &le_advertise_callbacks,
-        .mgr_ctx = *handle_ptr,
+        .btm_handle = *handle_ptr,
     };
     bt_result_code ret = advertiser_interface->start_adv(client);
     if (ret != BT_RESULT_SUCCESS) {
@@ -85,7 +85,7 @@ static bt_result_code stop_advertising(gatt_advertiser_t* handle)
 
     bt_result_code ret = advertiser_interface->stop_adv(handle->advertiser_id);
     if (ret != BT_RESULT_SUCCESS) {
-        BT_LOGE("fail,stop_scan err:%d", ret);
+        BT_LOGE("fail,stop_adv err:%d", ret);
         free(handle);
         return ret;
     }

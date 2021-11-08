@@ -79,7 +79,7 @@ static int8_t add_gatt_handle(gatts_hdl_t server)
 
     gatts->server_if = gen_gatts_id();
     gatts->callbacks = server.callbacks;
-    gatts->mgr_ctx = server.mgr_ctx;
+    gatts->btm_handle = server.btm_handle;
     list_add_tail(&gatts_list, &gatts->node);
     return gatts->server_if;
 }
@@ -632,61 +632,61 @@ static void handle_event(void* data, size_t size)
     }
     switch (msg->event) {
     case ON_SERVER_OPENED: {
-        BT_CBACK(handle->callbacks, _server_opened_cb, handle->mgr_ctx, handle->server_if);
+        BT_CBACK(handle->callbacks, _server_opened_cb, handle->btm_handle, handle->server_if);
         free(data);
         break;
     }
     case ON_SERVER_CLOSED: {
-        BT_CBACK(handle->callbacks, _server_closed_cb, handle->mgr_ctx);
+        BT_CBACK(handle->callbacks, _server_closed_cb, handle->btm_handle);
         remove_gatts_handle(handle);
         free(data);
         break;
     }
     case ON_SERVER_CONNECTION_CHANGED: {
         server_state_op_s* value = (server_state_op_s*)(msg->data);
-        BT_CBACK(handle->callbacks, _server_connection_state_changed_cb, handle->mgr_ctx, value->addr, value->state);
+        BT_CBACK(handle->callbacks, _server_connection_state_changed_cb, handle->btm_handle, value->addr, value->state);
         free(value);
         free(data);
         break;
     }
     case ON_SERVER_ELEMENTS_ADD: {
         server_element_op_s* value = (server_element_op_s*)(msg->data);
-        BT_CBACK(handle->callbacks, _server_elements_added_cb, handle->mgr_ctx, value->status, value->elements, value->size);
+        BT_CBACK(handle->callbacks, _server_elements_added_cb, handle->btm_handle, value->status, value->elements, value->size);
         free(value);
         free(data);
         break;
     }
     case ON_SERVER_ELEMENTS_REMOVE: {
         server_element_op_s* value = (server_element_op_s*)(msg->data);
-        BT_CBACK(handle->callbacks, _server_elements_removed_cb, handle->mgr_ctx, value->status, value->elements, value->size);
+        BT_CBACK(handle->callbacks, _server_elements_removed_cb, handle->btm_handle, value->status, value->elements, value->size);
         free(value);
         free(data);
         break;
     }
     case ON_SERVER_PHY_READ: {
         server_phy_op_s* value = (server_phy_op_s*)(msg->data);
-        BT_CBACK(handle->callbacks, _server_phy_read_cb, handle->mgr_ctx, value->addr, value->tx, value->rx);
+        BT_CBACK(handle->callbacks, _server_phy_read_cb, handle->btm_handle, value->addr, value->tx, value->rx);
         free(value);
         free(data);
         break;
     }
     case ON_SERVER_PHY_UPDATE: {
         server_phy_op_s* value = (server_phy_op_s*)(msg->data);
-        BT_CBACK(handle->callbacks, _server_phy_update_cb, handle->mgr_ctx, value->addr, value->tx, value->rx);
+        BT_CBACK(handle->callbacks, _server_phy_update_cb, handle->btm_handle, value->addr, value->tx, value->rx);
         free(value);
         free(data);
         break;
     }
     case ON_SERVER_READ_REQUEST: {
         server_read_op_s* value = (server_read_op_s*)(msg->data);
-        BT_CBACK(handle->callbacks, _server_read_request_cb, handle->mgr_ctx, value->addr, value->request_id, value->element);
+        BT_CBACK(handle->callbacks, _server_read_request_cb, handle->btm_handle, value->addr, value->request_id, value->element);
         free(value);
         free(data);
         break;
     }
     case ON_SERVER_WRITE_REQUEST: {
         server_write_op_s* value = (server_write_op_s*)(msg->data);
-        BT_CBACK(handle->callbacks, _server_write_request_cb, handle->mgr_ctx, value->addr, value->request_id, value->element, value->value, value->offset, value->size);
+        BT_CBACK(handle->callbacks, _server_write_request_cb, handle->btm_handle, value->addr, value->request_id, value->element, value->value, value->offset, value->size);
         free(value->value);
         free(value);
         free(data);
@@ -694,14 +694,14 @@ static void handle_event(void* data, size_t size)
     }
     case ON_SRRVER_MTU_CHANGED: {
         server_mtu_op_s* value = (server_mtu_op_s*)(msg->data);
-        BT_CBACK(handle->callbacks, _server_mtu_changed_cb, handle->mgr_ctx, value->addr, value->mtu);
+        BT_CBACK(handle->callbacks, _server_mtu_changed_cb, handle->btm_handle, value->addr, value->mtu);
         free(value);
         free(data);
         break;
     }
     case ON_SERVER_NOTIFICATION_SENT: {
         server_notify_op_s* value = (server_notify_op_s*)(msg->data);
-        BT_CBACK(handle->callbacks, _server_notify_sent_cb, handle->mgr_ctx, value->addr, value->status);
+        BT_CBACK(handle->callbacks, _server_notify_sent_cb, handle->btm_handle, value->addr, value->status);
         free(value);
         free(data);
         break;

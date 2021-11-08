@@ -108,7 +108,7 @@ static bt_result_code gatt_server_open(gatt_server_t** handle_ptr, gatt_server_c
 
     gatts_hdl_t server = {
         .callbacks = &server_callbacks,
-        .mgr_ctx = *handle_ptr,
+        .btm_handle = *handle_ptr,
     };
     bt_result_code ret = server_interface->open_server(server);
     if (ret != BT_RESULT_SUCCESS) {
