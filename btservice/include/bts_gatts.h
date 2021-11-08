@@ -46,7 +46,7 @@ typedef struct {
     uint8_t server_if;
     ble_gatt_server_callbacks* callbacks;
 
-    void* mgr_ctx;
+    void* btm_handle;
 } gatts_hdl_t;
 
 typedef struct {

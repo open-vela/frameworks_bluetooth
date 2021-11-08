@@ -9,15 +9,17 @@
 #include "btm_manager.h"
 #include "bts_common.h"
 
-typedef void (*le_scan_result_callback)(void* ctx, const scan_result_t* scan_result_data);
-typedef void (*le_scan_failed_callback)(int error);
-typedef void (*le_scan_started_callback)(void* ctx, uint8_t scanner_id);
+typedef void (*bts_le_scan_result_callback)(void* handle, const scan_result_t* scan_result_data);
+typedef void (*bts_le_scan_failed_callback)(void* handle, int error);
+typedef void (*bts_le_scan_started_callback)(void* handle, uint8_t scanner_id);
+typedef void (*bts_le_scan_stopped_callback)(void* handle);
 
 typedef struct {
-    le_scan_result_callback _ble_scan_result_cb;
-    le_scan_failed_callback _ble_scan_failed_cb;
-    le_scan_started_callback _ble_scan_started_cb;
-} ble_scanner_callbacks;
+    bts_le_scan_result_callback bts_le_scan_result_cb;
+    bts_le_scan_failed_callback bts_ble_scan_failed_cb;
+    bts_le_scan_started_callback bts_ble_scan_started_cb;
+    bts_le_scan_stopped_callback bts_ble_scan_stopped_cb;
+} bts_ble_scanner_callbacks;
 
 typedef struct {
     struct list_node node;
@@ -25,10 +27,10 @@ typedef struct {
     uint8_t scanner_id;
     scan_filter_t* filter;
     scan_settings_t* settings;
-    ble_scanner_callbacks* callbacks;
+    bts_ble_scanner_callbacks* callbacks;
 
-    void* mgr_ctx;
-} scan_hdl_t;
+    void* btm_handle;
+} bts_lescan_hdl_t;
 
 typedef void (*ble_scan_result_callback)(const scan_result_t* result);
 
@@ -39,9 +41,9 @@ typedef struct {
     size_t size;
 
     stack_le_scan_callbacks* callbacks;
-    bt_result_code (*start_scan)(scan_hdl_t client);
+    bt_result_code (*start_scan)(bts_lescan_hdl_t client);
     bt_result_code (*stop_scan)(uint8_t scanner_id);
 } gatt_scan_interface_t;
 
-const gatt_scan_interface_t* get_ble_scan_instance(void);
+const gatt_scan_interface_t* get_bts_lescan_instance(void);
 #endif

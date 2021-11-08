@@ -30,4 +30,5 @@ typedef SERVICE_BLE_PHY_TYPE ble_phy_type_t;
 typedef SERVICE_BT_STACK_STATE stack_state_t;
 
 typedef GATT_SERVER_CALLBACKS_S stack_gatt_server_callbacks;
+typedef GATT_CLIENT_CALLBACKS_S stack_gatt_client_callbacks;
 #endif

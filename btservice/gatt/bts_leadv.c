@@ -52,7 +52,7 @@ static void add_advertise_handle(advertise_hdl advertiser)
     client->advertiser_id = advertiser.advertiser_id;
     client->param = advertiser.param;
     client->callbacks = advertiser.callbacks;
-    client->mgr_ctx = advertiser.mgr_ctx;
+    client->btm_handle = advertiser.btm_handle;
     list_add_tail(&advertiser_list, &client->node);
 }
 
@@ -153,13 +153,13 @@ static void handle_event(void* data, size_t size)
     switch (msg->event) {
     case ON_ADV_STARTED: {
         advertise_hdl* handle = (advertise_hdl*)(msg->handle);
-        BT_CBACK(handle->callbacks, _ble_advertise_started_cb, handle->mgr_ctx, handle->advertiser_id);
+        BT_CBACK(handle->callbacks, _ble_advertise_started_cb, handle->btm_handle, handle->advertiser_id);
         free(data);
         break;
     }
     case ON_ADV_STOPPED: {
         advertise_hdl* handle = (advertise_hdl*)(msg->handle);
-        BT_CBACK(handle->callbacks, _ble_advertise_stopped_callback, handle->mgr_ctx, handle->advertiser_id);
+        BT_CBACK(handle->callbacks, _ble_advertise_stopped_callback, handle->btm_handle, handle->advertiser_id);
         remove_advertise_handle(handle);
         free(data);
         break;

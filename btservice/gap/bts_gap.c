@@ -35,6 +35,7 @@
 #include "bts_service.h"
 #include "bts_gap.h"
 #include "bts_leadv.h"
+#include "bts_lescan.h"
 
 #define LOG_TAG "bts_gap"
 #include "log.h"
@@ -107,14 +108,16 @@ void adapter_bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_BOND_ST
     BT_LOGD("%s", __func__);
 }
 
-void adapter_acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S *acl_state_param)
+void adapter_acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S* acl_state_param)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s status:%d, state:%d, reasonCode:%d", __func__, acl_state_param->status, acl_state_param->state, acl_state_param->reasonCode);
 }
 
-void adapter_ble_scan_result_callback(SERVICE_SCAN_RESULT_DATA_S *scan_result_data)
+void adapter_ble_scan_result_callback(SERVICE_SCAN_RESULT_DATA_S* scan_result_data)
 {
     BT_LOGD("%s", __func__);
+    gatt_scan_interface_t* scan_ift = get_bts_lescan_instance();
+    BT_CBACK(scan_ift->callbacks, ble_scan_result, scan_result_data);
 }
 
 void adapter_ble_adv_started_callback(uint8_t adv_id)

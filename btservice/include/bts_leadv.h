@@ -25,7 +25,7 @@ typedef struct {
     advertise_param_t* param;
     ble_advertiser_callbacks* callbacks;
 
-    void* mgr_ctx;
+    void* btm_handle;
 } advertise_hdl;
 
 typedef void (*ble_advertise_started_callback)(uint8_t adv_id);

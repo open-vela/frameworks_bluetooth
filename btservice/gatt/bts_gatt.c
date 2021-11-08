@@ -41,10 +41,9 @@ static void gatt_cleanup()
 
 const gatt_interface_t* gatt_get_interface(void)
 {
-    // gatt_if.client = get_ble_client_instance();
-    gatt_if.client = NULL;
+    gatt_if.client = get_bts_gattc_instance();
     gatt_if.server = get_gatt_server_instance();
-    gatt_if.scanner = get_ble_scan_instance();
+    gatt_if.scanner = get_bts_lescan_instance();
     gatt_if.advertiser = get_ble_advertise_instance();
     return &gatt_if;
 }
