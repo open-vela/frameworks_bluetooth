@@ -45,8 +45,20 @@ config BLUETOOTH_HFP_AG
 	bool "Enable BT_HFP_AG"
 	default n
 
-config BLUETOOTH_GATT
-	bool "Enable BT_GATT"
+config BLUETOOTH_LE_SCAN
+	bool "Enable BT_LE_SCAN"
+	default y
+
+config BLUETOOTH_LE_ADVERTISE
+	bool "Enable BT_LE_ADVERTISE"
+	default y
+
+config BLUETOOTH_GATT_CLIENT
+	bool "Enable BT_GATT_CLIENT"
+	default y
+
+config BLUETOOTH_GATT_SERVER
+	bool "Enable BT_GATT_SERVER"
 	default y
 
 config BLUETOOTH_HID_DEV
@@ -61,8 +73,12 @@ config BLUETOOTH_MANAGER
   	bool "Enable bt manager"
   	default y
 
-config BLUETOOTH_SAMPLE_LEADV
-    bool "Enable ble adv test"
+config BLUETOOTH_SAMPLE_GATTC
+    bool "Enable ble scan and gatt client sample"
+    default n
+
+config BLUETOOTH_SAMPLE_GATTS
+    bool "Enable ble advertise and gatt server sample"
     default y
 
 if BLUETOOTH_SPP

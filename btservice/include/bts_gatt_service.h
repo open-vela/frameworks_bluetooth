@@ -30,32 +30,38 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef _MGR_INC_BLUETOOTH_LE_ADVERTISE_H
-#define _MGR_INC_BLUETOOTH_LE_ADVERTISE_H
 
-#include <stddef.h>
+#ifndef _SRV_INC_GATT_SERVICE_H
+#define _SRV_INC_GATT_SERVICE_H
 
-#include "btm_manager.h"
-#include "bts_common.h"
+#include <stdbool.h>
+#include <stdint.h>
 
-typedef void (*leadv_started_callback)(void* handle);
-typedef void (*leadv_stopped_callback)(void* handle);
-typedef void (*leadv_failed_callback)(void* handle, int error);
-
-typedef struct {
-    leadv_started_callback le_advertise_started_cb;
-    leadv_stopped_callback le_advertise_stopped_cb;
-    leadv_failed_callback le_advertise_failed_cb;
-} btm_le_advertise_callbacks;
+#include "bts_gatt_client.h"
+#include "bts_gatt_server.h"
+#include "bts_le_advertise.h"
+#include "bts_le_scan.h"
 
 typedef struct {
     size_t size;
 
-    bt_result_code (*start_advertising)(void** handle, advertise_param_t* param,
-        btm_le_advertise_callbacks* cb);
-    bt_result_code (*stop_advertising)(void* handle);
-} btm_le_advertise_interface_t;
+    const bts_ble_scanner_callbacks* scanner;
+    const bts_ble_advertiser_callbacks advertiser;
+    const bts_gatt_client_callbacks* client;
+    const bts_gatt_server_callbacks* server;
+} btgatt_callbacks;
 
-btm_le_advertise_interface_t* get_btm_leadv_interface(void* bt_mgr_interface);
+typedef struct {
+    size_t size;
 
+    bt_result_code (*init)();
+    void (*cleanup)(void);
+
+    const bts_le_scan_interface_t* scanner;
+    const bts_le_advertise_interface_t* advertiser;
+    const bts_gattc_interface_t* client;
+    const bts_gatts_interface_t* server;
+} gatt_interface_t;
+
+const gatt_interface_t* gatt_get_interface(void);
 #endif

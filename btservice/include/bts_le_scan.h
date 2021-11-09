@@ -30,32 +30,51 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef _MGR_INC_BLUETOOTH_LE_ADVERTISE_H
-#define _MGR_INC_BLUETOOTH_LE_ADVERTISE_H
+#ifndef _SRV_INC_LESCAN_MANAGER_H
+#define _SRV_INC_LESCAN_MANAGER_H
 
+#include <nuttx/list.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "btm_manager.h"
 #include "bts_common.h"
 
-typedef void (*leadv_started_callback)(void* handle);
-typedef void (*leadv_stopped_callback)(void* handle);
-typedef void (*leadv_failed_callback)(void* handle, int error);
+typedef void (*bts_le_scan_result_callback)(void* handle, const scan_result_t* scan_result_data);
+typedef void (*bts_le_scan_failed_callback)(void* handle, int error);
+typedef void (*bts_le_scan_started_callback)(void* handle, uint8_t scanner_id);
+typedef void (*bts_le_scan_stopped_callback)(void* handle);
 
 typedef struct {
-    leadv_started_callback le_advertise_started_cb;
-    leadv_stopped_callback le_advertise_stopped_cb;
-    leadv_failed_callback le_advertise_failed_cb;
-} btm_le_advertise_callbacks;
+    bts_le_scan_result_callback bts_le_scan_result_cb;
+    bts_le_scan_failed_callback bts_ble_scan_failed_cb;
+    bts_le_scan_started_callback bts_ble_scan_started_cb;
+    bts_le_scan_stopped_callback bts_ble_scan_stopped_cb;
+} bts_ble_scanner_callbacks;
 
+typedef struct {
+    struct list_node node;
+
+    uint8_t scanner_id;
+    ble_scan_filter_t* filter;
+    scan_params_t* settings;
+    const bts_ble_scanner_callbacks* callbacks;
+
+    void* btm_handle;
+} bts_lescan_hdl_t;
+
+typedef void (*ble_scan_result_callback)(const scan_result_t* result);
+
+typedef struct {
+    ble_scan_result_callback ble_scan_result;
+} stack_le_scan_callbacks;
 typedef struct {
     size_t size;
 
-    bt_result_code (*start_advertising)(void** handle, advertise_param_t* param,
-        btm_le_advertise_callbacks* cb);
-    bt_result_code (*stop_advertising)(void* handle);
-} btm_le_advertise_interface_t;
+    const stack_le_scan_callbacks* callbacks;
+    bt_result_code (*start_scan)(bts_lescan_hdl_t client);
+    bt_result_code (*stop_scan)(uint8_t scanner_id);
+} bts_le_scan_interface_t;
 
-btm_le_advertise_interface_t* get_btm_leadv_interface(void* bt_mgr_interface);
-
+const bts_le_scan_interface_t* get_bts_lescan_instance(void);
 #endif
