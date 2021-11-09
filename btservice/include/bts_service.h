@@ -63,7 +63,7 @@ int bts_service_get_interface(void* handle);
 
 int bts_service_init(void);
 
-typedef void (*adapter_state_changed_callback)(bt_state_t state);
+typedef void (*adapter_state_changed_callback)(profile_state_t state);
 typedef struct {
     size_t size;
     adapter_state_changed_callback adapter_state_changed_cb;

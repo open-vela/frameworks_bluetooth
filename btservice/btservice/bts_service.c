@@ -33,7 +33,7 @@
 #include "stack_adapter_gap.h"
 
 #include "bts_gap.h"
-#include "bts_gatt.h"
+#include "bts_gatt_service.h"
 #include "bts_spp.h"
 #include "bts_hf_client.h"
 
@@ -316,9 +316,10 @@ static const void* get_profile_interface(const char* profile_id)
     /* sanity check */
     if (!interface_ready())
         return NULL;
-
+#if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
     if (is_profile(profile_id, BT_PROFILE_GATT))
         return gatt_get_interface();
+#endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     if (is_profile(profile_id, BT_PROFILE_HANDSFREE_HF))
         return (const void *)get_hf_client_service_interface();
@@ -330,7 +331,7 @@ static const void* get_profile_interface(const char* profile_id)
     return NULL;
 }
 
-static void srv_adapter_state_changed_callback(bt_state_t state)
+static void srv_adapter_state_changed_callback(profile_state_t state)
 {
     if (!bluetooth_upper_callbacks) {
         BT_LOGE("fail, bluetooth_upper_callbacks  nullptr");
@@ -371,11 +372,14 @@ static bt_result_code init(bt_callbacks* callbacks)
     InitTransportLayer();
     gap_interface_t* gap_ift = get_gap_instance();
     gap_ift->init(NULL);
+
+#if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
     gatt_interface_t* gatt_if = gatt_get_interface();
     if (gatt_if) {
+        BT_LOGD("gatt init");
         gatt_if->init();
     }
-
+#endif
     return BT_RESULT_SUCCESS;
 }
 
@@ -402,9 +406,7 @@ bt_result_code enable(void)
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
     spp_service_start();
-
 #endif
-
     return BT_RESULT_SUCCESS;
 }
 
@@ -415,10 +417,13 @@ bt_result_code disable(void)
 
 void cleanup(void)
 {
+#if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
     gatt_interface_t* gatt_if = gatt_get_interface();
     if (!gatt_if) {
+        BT_LOGD("gatt cleanup");
         gatt_if->cleanup();
     }
+#endif
 }
 
 static bluetooth_service_interface bluetooth_service = {

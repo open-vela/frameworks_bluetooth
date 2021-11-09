@@ -43,16 +43,28 @@ ifeq ($(CONFIG_BLUETOOTH_SPP),y)
 	CSRCS +=btmanager/btm_spp.c
 endif
 
-ifeq ($(CONFIG_BLUETOOTH_GATT),y)
+ifeq ($(CONFIG_BLUETOOTH_LE_SCAN),y)
 	CSRCS +=btmanager/btm_le_scan.c
-	CSRCS +=btmanager/btm_gatt_client.c
+	CSRCS +=btservice/gatt/bts_le_scan.c
+	CSRCS +=btservice/gatt/bts_gatt_service.c
+endif
+
+ifeq ($(CONFIG_BLUETOOTH_LE_ADVERTISE),y)
 	CSRCS +=btmanager/btm_le_advertise.c
-	CSRCS +=btmanager/btm_gatt_server.c
-	CSRCS +=btservice/gatt/bts_lescan.c
-	CSRCS +=btservice/gatt/bts_leadv.c
-	CSRCS +=btservice/gatt/bts_gatt.c
-	CSRCS +=btservice/gatt/bts_gatts.c
+	CSRCS +=btservice/gatt/bts_le_advertise.c
+	CSRCS +=btservice/gatt/bts_gatt_service.c
+endif
+
+ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT),y)
+	CSRCS +=btmanager/btm_gatt_client.c
 	CSRCS +=btservice/gatt/bts_gatt_client.c
+	CSRCS +=btservice/gatt/bts_gatt_service.c
+endif
+
+ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER),y)
+	CSRCS +=btmanager/btm_gatt_server.c
+	CSRCS +=btservice/gatt/bts_gatt_server.c
+	CSRCS +=btservice/gatt/bts_gatt_service.c
 endif
 
 #ifneq ($(wildcard $(APPDIR)/vendor/bes/framework/services/utils/list/list.c),)
@@ -74,12 +86,24 @@ CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/sr
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/system/libuv/libuv/include}
 
-ifeq ($(CONFIG_BLUETOOTH_SAMPLE_LEADV), y)
+ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GATTC), y)
 	MAINSRC   = samples/test_gattc.c
 
 	PRIORITY = SCHED_PRIORITY_DEFAULT
 	STACKSIZE = 40960
-	PROGNAME  = btsample
+	PROGNAME  = btsample_gattc
+	MODULE    = $(CONFIG_BLUETOOTH)
+
+depend::
+	$(Q) touch $(MAINSRC)
+endif
+
+ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GATTS), y)
+	MAINSRC   = samples/test_gatts.c
+
+	PRIORITY = SCHED_PRIORITY_DEFAULT
+	STACKSIZE = 40960
+	PROGNAME  = btsample_gatts
 	MODULE    = $(CONFIG_BLUETOOTH)
 
 depend::
