@@ -1,66 +1,85 @@
+/****************************************************************************
+ * frameworks/bluetooth/src/btmanager/btm_le_advertise.c
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
 
 #include "btm_le_advertise.h"
+
+#include <stdlib.h>
+
 #include "btm_manager.h"
-#include "bts_gatt.h"
-#include "bts_leadv.h"
+#include "bts_gatt_service.h"
+#include "bts_le_advertise.h"
 
 #include "log.h"
 
 #define LOG_TAG "btm_leadv"
 
+typedef struct {
+    uint8_t advertiser_id;
+    btm_le_advertise_callbacks* cb;
+} btm_leadv_hdl_t;
+
 static btm_interface_t* bt_mgr_interface = NULL;
+static bts_le_advertise_interface_t* advertiser_interface = NULL;
 
-static gatt_advertise_interface_t* advertiser_interface = NULL;
-
-static void on_le_advertise_started(gatt_advertiser_t* handle, uint8_t adv_id)
+static void on_le_advertise_started(btm_leadv_hdl_t* handle, uint8_t adv_id)
 {
-    if (!handle) {
-        BT_LOGE("handle NULL");
-        return;
-    }
+    CHECK_PTR(handle);
     handle->advertiser_id = adv_id;
     BT_CBACK(handle->cb, le_advertise_started_cb, handle);
 }
 
-static void on_le_advertise_stopped(gatt_advertiser_t* handle, uint8_t adv_id)
+static void on_le_advertise_stopped(btm_leadv_hdl_t* handle, uint8_t adv_id)
 {
-    if (!handle) {
-        BT_LOGE("handle NULL");
-        return;
-    }
+    CHECK_PTR(handle);
     BT_CBACK(handle->cb, le_advertise_stopped_cb, handle);
     free(handle);
 }
 
-static void on_le_advertise_failed(gatt_advertiser_t* handle, int error)
+static void on_le_advertise_failed(btm_leadv_hdl_t* handle, int error)
 {
-    if (!handle) {
-        BT_LOGE("handle NULL");
-    }
+    CHECK_PTR(handle);
     BT_CBACK(handle->cb, le_advertise_failed_cb, handle, error);
 }
 
-static ble_advertiser_callbacks le_advertise_callbacks = {
-    ._ble_advertise_started_cb = on_le_advertise_started,
-    ._ble_advertise_stopped_callback = on_le_advertise_stopped,
-    ._ble_advertise_failed_callback = on_le_advertise_failed,
+static bts_ble_advertiser_callbacks bts_le_advertise_cb = {
+    .bts_le_advertise_started_cb = on_le_advertise_started,
+    .bts_le_advertise_stopped_cb = on_le_advertise_stopped,
+    .bts_le_advertise_failed_cb = on_le_advertise_failed,
 };
 
-static bt_result_code start_advertising(gatt_advertiser_t** handle_ptr, advertise_param_t* param,
-    gatt_advertise_callbacks* cb)
+static bt_result_code start_advertising(btm_leadv_hdl_t** handle_ptr, advertise_param_t* param,
+    btm_le_advertise_callbacks* cb)
 {
-    if (!advertiser_interface) {
-        BT_LOGE("fail, advertiser_interface nullptr");
-        return BT_RESULT_STATE_NOT_ON;
-    }
+    CHECK_PTR_RETURN(advertiser_interface, BT_RESULT_STATE_NOT_ON);
 
-    *handle_ptr = (gatt_advertiser_t*)malloc(sizeof(gatt_advertiser_t));
-    memset(*handle_ptr, 0, sizeof(gatt_advertiser_t));
+    *handle_ptr = (btm_leadv_hdl_t*)malloc(sizeof(btm_leadv_hdl_t));
+    memset(*handle_ptr, 0, sizeof(btm_leadv_hdl_t));
     (*handle_ptr)->cb = cb;
 
-    advertise_hdl client = {
+    bts_leadv_hdl_t client = {
         .param = param,
-        .callbacks = &le_advertise_callbacks,
+        .callbacks = &bts_le_advertise_cb,
         .btm_handle = *handle_ptr,
     };
     bt_result_code ret = advertiser_interface->start_adv(client);
@@ -72,16 +91,10 @@ static bt_result_code start_advertising(gatt_advertiser_t** handle_ptr, advertis
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code stop_advertising(gatt_advertiser_t* handle)
+static bt_result_code stop_advertising(btm_leadv_hdl_t* handle)
 {
-    if (!advertiser_interface) {
-        BT_LOGE("fail, advertiser_interface nullptr");
-        return BT_RESULT_STATE_NOT_ON;
-    }
-    if (!handle) {
-        BT_LOGE("handle NULL");
-        return BT_RESULT_FAILED;
-    }
+    CHECK_PTR_RETURN(advertiser_interface, BT_RESULT_STATE_NOT_ON);
+    CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
 
     bt_result_code ret = advertiser_interface->stop_adv(handle->advertiser_id);
     if (ret != BT_RESULT_SUCCESS) {
@@ -93,15 +106,14 @@ static bt_result_code stop_advertising(gatt_advertiser_t* handle)
     return BT_RESULT_SUCCESS;
 }
 
-static btm_gatt_advertise_interface_t le_advertise_interface = {
+static btm_le_advertise_interface_t le_advertise_interface = {
     .size = sizeof(le_advertise_interface),
 
     .start_advertising = start_advertising,
     .stop_advertising = stop_advertising,
 };
 
-btm_gatt_advertise_interface_t* get_le_advertise_interface(
-    void* bt_mgr)
+btm_le_advertise_interface_t* get_btm_leadv_interface(void* bt_mgr)
 {
     if (!bt_mgr) {
         BT_LOGE("fail, bt_mgr NULL");

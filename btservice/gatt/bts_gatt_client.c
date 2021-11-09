@@ -1,3 +1,27 @@
+/****************************************************************************
+ * frameworks/bluetooth/btservice/gatt/bts_gatt_client.c
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+
 #include "bts_gatt_client.h"
 
 #include <errno.h>
@@ -35,7 +59,7 @@ typedef struct {
 
 typedef struct bts_gatt_client {
     gatt_element_t* element;
-    gatt_service_status_t status;
+    gatt_status_t status;
 } bts_gattc_write_result_s;
 
 typedef struct {
@@ -46,7 +70,7 @@ typedef struct {
 
 typedef struct {
     int32_t rssi;
-    gatt_service_status_t status
+    gatt_status_t status
 } bts_gattc_read_rssi_s;
 
 typedef struct {
@@ -59,7 +83,7 @@ typedef struct
     gatt_element_t* element;
     uint8_t* value;
     uint16_t size;
-    gatt_service_status_t status;
+    gatt_status_t status;
 } bts_gattc_read_result_s;
 
 static void send_msg(bts_gattc_msg_t* msg);
@@ -127,14 +151,14 @@ static bts_gattc_msg_t* create_adp_msg(uint8_t event, bts_gattc_hdl_t* handle, v
     return msg;
 }
 
-static void on_client_connection_state_changed(bd_addr_t remote_addr, bt_state_t state)
+static void on_client_connection_state_changed(bd_addr_t remote_addr, profile_state_t state)
 {
     BT_LOGD("%s, remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x] state:%d", __func__, remote_addr[0],
         remote_addr[1], remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5], state);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
-    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_CONNECT_STATE, handle, &state, sizeof(bt_state_t));
+    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_CONNECT_STATE, handle, &state, sizeof(profile_state_t));
     CHECK_PTR(msg);
     send_msg(msg);
 }
@@ -163,7 +187,7 @@ static void on_client_service_discovered(bd_addr_t remote_addr, gatt_element_t* 
 }
 
 static void on_client_read_result(bd_addr_t remote_addr, gatt_element_t* element, uint8_t* value,
-    uint16_t size, gatt_service_status_t status)
+    uint16_t size, gatt_status_t status)
 {
     BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
@@ -182,7 +206,7 @@ static void on_client_read_result(bd_addr_t remote_addr, gatt_element_t* element
 }
 
 static void on_client_write_result(bd_addr_t remote_addr, gatt_element_t* element,
-    gatt_service_status_t status)
+    gatt_status_t status)
 {
     BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
@@ -216,7 +240,7 @@ static void on_client_nofity_request(bd_addr_t remote_addr, gatt_element_t* elem
 }
 
 static void on_client_rssi_read(bd_addr_t remote_addr, int32_t rssi,
-    gatt_service_status_t status)
+    gatt_status_t status)
 {
     BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
@@ -269,7 +293,7 @@ static void on_client_mtu_changed(bd_addr_t remote_addr, uint32_t mtu)
     send_msg(msg);
 }
 
-static const stack_gatt_client_callbacks gatt_client_cbs = {
+static stack_gatt_client_callbacks gatt_client_cbs = {
     .size = sizeof(gatt_client_cbs),
 
     .gatt_client_connection_state_changed_cb = on_client_connection_state_changed,
@@ -481,7 +505,7 @@ static void handle_event(void* data, size_t size)
 
     switch (msg->event) {
     case ON_CLIENT_CONNECT_STATE: {
-        bt_state_t* state = (bt_state_t*)(msg->data);
+        profile_state_t* state = (profile_state_t*)(msg->data);
         BT_CBACK(handle->callbacks, bts_gattc_connection_state_changed_cb, handle->btm_handle, *state);
         if (state == SERVICE_PROFILE_DISCONNECTED) {
             BT_LOGD("remove_gatt_client handle");

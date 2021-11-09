@@ -1,4 +1,28 @@
-#include "bts_lescan.h"
+/****************************************************************************
+ * frameworks/bluetooth/btservice/gatt/bts_le_scan.c
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+
+#include "bts_le_scan.h"
 
 #include <errno.h>
 #include <string.h>
@@ -101,7 +125,7 @@ static bts_lescan_msg_t* create_adp_msg(uint8_t event, bts_lescan_hdl_t* handle,
         return msg;
     }
 
-    void* value = malloc(size);
+    void* value = (void*)malloc(size);
     if (!value) {
         BT_LOGE("fail, malloc data");
         free(msg);
@@ -168,7 +192,7 @@ void on_ble_scan_result(const scan_result_t* scan_result_data)
         bts_lescan_msg_t* msg = (bts_lescan_msg_t*)malloc(sizeof(bts_lescan_msg_t));
         CHECK_PTR(msg);
 
-        scan_result_t* value = malloc(sizeof(scan_result_t) + scan_result_data->length);
+        scan_result_t* value = (scan_result_t*)malloc(sizeof(scan_result_t) + scan_result_data->length);
         CHECK_PTR(value);
         memcpy(value->remote_addr, scan_result_data->remote_addr, sizeof(bd_addr_t));
         value->device_type = scan_result_data->device_type;
@@ -191,15 +215,15 @@ static const stack_le_scan_callbacks le_scanner_cbs = {
     .ble_scan_result = on_ble_scan_result,
 };
 
-static const gatt_scan_interface_t ble_scan_intance = {
-    .size = sizeof(gatt_scan_interface_t),
+static const bts_le_scan_interface_t ble_scan_intance = {
+    .size = sizeof(bts_le_scan_interface_t),
 
     .callbacks = &le_scanner_cbs,
     .start_scan = start_scan,
     .stop_scan = stop_scan,
 };
 
-const gatt_scan_interface_t* get_bts_lescan_instance(void)
+const bts_le_scan_interface_t* get_bts_lescan_instance(void)
 {
     return &ble_scan_intance;
 }

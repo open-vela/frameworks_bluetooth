@@ -1,14 +1,37 @@
+/****************************************************************************
+ * frameworks/bluetooth/samples/test_leadv.c
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ ****************************************************************************/
 
-#include <stdio.h>
-#include <pthread.h>
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+
 #include "btm_le_advertise.h"
 #include "btm_manager.h"
-#include "log.h"
 #include "bts_spp.h"
+#include "log.h"
+#include <pthread.h>
+#include <stdio.h>
 #define LOG_TAG "btsample_adv"
 #include "log.h"
 
-gatt_advertiser_t* adv_handle;
+btm_leadv_hdl_t* adv_handle;
 
 static void le_adv_started_callback(void* handle)
 {
@@ -39,7 +62,7 @@ int main(int argc, FAR char* argv[])
 
     //spp_service_start();
 
-    gatt_advertise_callbacks cb = {
+    btm_le_advertise_callbacks cb = {
         .le_advertise_started_cb = le_adv_started_callback,
         .le_advertise_stopped_cb = le_adv_stopped_callback,
         .le_advertise_failed_cb = le_adv_failed_callback,
@@ -60,11 +83,10 @@ int main(int argc, FAR char* argv[])
     adv_para.scan_rsp_data = (char*)s_adv_data;
     adv_para.scan_rsp_length = sizeof(s_adv_data);
 
-    btm_gatt_advertise_interface_t* adv_interface = get_le_advertise_interface(manager);
+    btm_le_advertise_interface_t* adv_interface = get_btm_leadv_interface(manager);
     bt_result_code ret = adv_interface->start_advertising(&adv_handle, &adv_para, &cb);
 
-
-    while (1){
+    while (1) {
         usleep(1000);
     }
     getchar();

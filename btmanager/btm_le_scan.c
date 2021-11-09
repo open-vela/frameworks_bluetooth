@@ -1,19 +1,44 @@
+/****************************************************************************
+ * frameworks/bluetooth/src/btmanager/btm_le_scan.c
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
 
 #include "btm_le_scan.h"
-#include "btm_manager.h"
-#include "bts_gatt.h"
-#include "bts_lescan.h"
 
+#include <stdlib.h>
+
+#include "btm_manager.h"
+#include "bts_gatt_service.h"
+#include "bts_le_scan.h"
 #include "log.h"
 
 #define LOG_TAG "btm_lescan"
 typedef struct {
     uint8_t scanner_id;
-    gatt_scan_callbacks* cb;
+    btm_le_scan_callbacks* cb;
 } btm_lescan_hdl_t;
 
 static btm_interface_t* bt_mgr_interface = NULL;
-static gatt_scan_interface_t* scanner_interface = NULL;
+static bts_le_scan_interface_t* scanner_interface = NULL;
 
 static void on_le_scan_result(btm_lescan_hdl_t* handle, const scan_result_t* result)
 {
@@ -41,15 +66,15 @@ static void on_le_scan_stopped(btm_lescan_hdl_t* handle)
     free(handle);
 }
 
-static bts_ble_scanner_callbacks le_scan_callbacks = {
+static bts_ble_scanner_callbacks bts_le_scan_cb = {
     .bts_le_scan_result_cb = on_le_scan_result,
     .bts_ble_scan_failed_cb = on_le_scan_failed,
     .bts_ble_scan_started_cb = on_le_scan_started,
     .bts_ble_scan_stopped_cb = on_le_scan_stopped,
 };
 
-static bt_result_code start_scan(btm_lescan_hdl_t** handle_ptr, scan_filter_t* filter, scan_settings_t* setttings,
-    gatt_scan_callbacks* cb)
+static bt_result_code start_scan(btm_lescan_hdl_t** handle_ptr, ble_scan_filter_t* filter, scan_params_t* setttings,
+    btm_le_scan_callbacks* cb)
 {
     CHECK_PTR_RETURN(scanner_interface, BT_RESULT_STATE_NOT_ON);
     *handle_ptr = (btm_lescan_hdl_t*)malloc(sizeof(btm_lescan_hdl_t));
@@ -59,7 +84,7 @@ static bt_result_code start_scan(btm_lescan_hdl_t** handle_ptr, scan_filter_t* f
     bts_lescan_hdl_t client = {
         .filter = filter,
         .settings = setttings,
-        .callbacks = &le_scan_callbacks,
+        .callbacks = &bts_le_scan_cb,
         .btm_handle = *handle_ptr,
     };
 

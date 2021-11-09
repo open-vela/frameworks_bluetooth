@@ -1,5 +1,28 @@
+/****************************************************************************
+ * frameworks/bluetooth/btservice/gatt/bts_le_advertise.c
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ ****************************************************************************/
 
-#include "bts_leadv.h"
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+
+#include "bts_le_advertise.h"
 
 #include <errno.h>
 #include <string.h>
@@ -18,7 +41,7 @@ typedef struct
         ON_ADV_FAILED,
     } event;
 
-    advertise_hdl* handle;
+    bts_leadv_hdl_t* handle;
     size_t size;
     void* data;
 } gatt_lesadv_msg_t;
@@ -28,10 +51,10 @@ static void handle_event(void* data, size_t size);
 
 static struct list_node advertiser_list = LIST_INITIAL_VALUE(advertiser_list);
 
-static advertise_hdl* find_advertise_handle(uint8_t advertiser_id)
+static bts_leadv_hdl_t* find_advertise_handle(uint8_t advertiser_id)
 {
-    advertise_hdl* client;
-    list_for_every_entry(&advertiser_list, client, advertise_hdl, node)
+    bts_leadv_hdl_t* client;
+    list_for_every_entry(&advertiser_list, client, bts_leadv_hdl_t, node)
     {
         if (client->advertiser_id == advertiser_id) {
             return client;
@@ -40,14 +63,14 @@ static advertise_hdl* find_advertise_handle(uint8_t advertiser_id)
     return NULL;
 }
 
-static void add_advertise_handle(advertise_hdl advertiser)
+static void add_advertise_handle(bts_leadv_hdl_t advertiser)
 {
-    advertise_hdl* client = (advertise_hdl*)malloc(sizeof(advertise_hdl));
+    bts_leadv_hdl_t* client = (bts_leadv_hdl_t*)malloc(sizeof(bts_leadv_hdl_t));
     if (!client) {
         BT_LOGE("malloc client fail");
         return;
     }
-    memset(client, 0, sizeof(advertise_hdl));
+    memset(client, 0, sizeof(bts_leadv_hdl_t));
 
     client->advertiser_id = advertiser.advertiser_id;
     client->param = advertiser.param;
@@ -56,14 +79,14 @@ static void add_advertise_handle(advertise_hdl advertiser)
     list_add_tail(&advertiser_list, &client->node);
 }
 
-static bool remove_advertise_handle(advertise_hdl* advertiser)
+static bool remove_advertise_handle(bts_leadv_hdl_t* advertiser)
 {
     list_delete(&advertiser->node);
     free(advertiser);
     return true;
 }
 
-static bt_result_code le_start_adv(advertise_hdl client)
+static bt_result_code le_start_adv(bts_leadv_hdl_t client)
 {
     SERVICE_BT_STATUS ret = service_adapter_gap_start_ble_adv(client.param);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
@@ -77,7 +100,7 @@ static bt_result_code le_start_adv(advertise_hdl client)
 
 static bt_result_code le_stop_adv(uint8_t advertiser_id)
 {
-    advertise_hdl* client = find_advertise_handle(advertiser_id);
+    bts_leadv_hdl_t* client = find_advertise_handle(advertiser_id);
     if (!client) {
         BT_LOGE("fail, invalid advertiser_id:%d", advertiser_id);
         return BT_RESULT_FAILED;
@@ -95,7 +118,7 @@ static bt_result_code le_stop_adv(uint8_t advertiser_id)
 
 static void on_ble_advtise_started_cb(uint8_t adv_id)
 {
-    advertise_hdl* client = find_advertise_handle(adv_id);
+    bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
     if (!client) {
         BT_LOGE("fail, invalid adv id:%d", adv_id);
         return;
@@ -110,7 +133,7 @@ static void on_ble_advtise_started_cb(uint8_t adv_id)
 
 static void on_ble_advtise_stopped_cb(uint8_t adv_id)
 {
-    advertise_hdl* client = find_advertise_handle(adv_id);
+    bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
     if (!client) {
         BT_LOGE("fail, invalid adv id:%d", adv_id);
         return;
@@ -128,7 +151,7 @@ static const stack_le_advertise_callbacks le_callbacks = {
     .ble_advtise_stopped_cb = on_ble_advtise_stopped_cb,
 };
 
-static const gatt_advertise_interface_t ble_advertise_intance = {
+static const bts_le_advertise_interface_t ble_advertise_intance = {
     .size = sizeof(ble_advertise_intance),
 
     .callbacks = &le_callbacks,
@@ -136,7 +159,7 @@ static const gatt_advertise_interface_t ble_advertise_intance = {
     .stop_adv = le_stop_adv,
 };
 
-const gatt_advertise_interface_t* get_ble_advertise_instance(void)
+const bts_le_advertise_interface_t* get_bts_bleadv_instance(void)
 {
     return &ble_advertise_intance;
 }
@@ -152,14 +175,14 @@ static void handle_event(void* data, size_t size)
 
     switch (msg->event) {
     case ON_ADV_STARTED: {
-        advertise_hdl* handle = (advertise_hdl*)(msg->handle);
-        BT_CBACK(handle->callbacks, _ble_advertise_started_cb, handle->btm_handle, handle->advertiser_id);
+        bts_leadv_hdl_t* handle = (bts_leadv_hdl_t*)(msg->handle);
+        BT_CBACK(handle->callbacks, bts_le_advertise_started_cb, handle->btm_handle, handle->advertiser_id);
         free(data);
         break;
     }
     case ON_ADV_STOPPED: {
-        advertise_hdl* handle = (advertise_hdl*)(msg->handle);
-        BT_CBACK(handle->callbacks, _ble_advertise_stopped_callback, handle->btm_handle, handle->advertiser_id);
+        bts_leadv_hdl_t* handle = (bts_leadv_hdl_t*)(msg->handle);
+        BT_CBACK(handle->callbacks, bts_le_advertise_stopped_cb, handle->btm_handle, handle->advertiser_id);
         remove_advertise_handle(handle);
         free(data);
         break;

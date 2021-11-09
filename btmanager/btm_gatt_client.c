@@ -1,10 +1,34 @@
+/****************************************************************************
+ * frameworks/bluetooth/src/btmanager/btm_gatt_client.c
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+
 #include "btm_gatt_client.h"
 
 #include <stdlib.h>
 
 #include "btm_manager.h"
-#include "bts_gatt.h"
 #include "bts_gatt_client.h"
+#include "bts_gatt_service.h"
 #include "log.h"
 
 #define LOG_TAG "btm_gattc"
@@ -12,13 +36,13 @@
 typedef struct
 {
     bd_addr_t remote_addr;
-    gatt_client_callbacks* callbacks;
+    const btm_gatt_client_callbacks* callbacks;
 } btm_gattc_hdl_t;
 
 static btm_interface_t* bt_mgr_interface = NULL;
 static bts_gattc_interface_t* client_interface = NULL;
 
-static void on_bts_gattc_connection_state_changed_cb(btm_gattc_hdl_t* handle, bt_state_t state)
+static void on_bts_gattc_connection_state_changed_cb(btm_gattc_hdl_t* handle, profile_state_t state)
 {
     CHECK_PTR(handle);
     BT_CBACK(handle->callbacks, gattc_connection_state_changed_cb, handle, handle->remote_addr, state);
@@ -36,13 +60,13 @@ static void on_bts_gattc_service_discovered_cb(btm_gattc_hdl_t* handle, gatt_ele
 }
 
 static void on_bts_gattc_read_result_cb(btm_gattc_hdl_t* handle, gatt_element_t* element, uint8_t* value,
-    uint16_t size, gatt_service_status_t status)
+    uint16_t size, gatt_status_t status)
 {
     CHECK_PTR(handle);
     BT_CBACK(handle->callbacks, gattc_read_result_cb, handle, handle->remote_addr, element, value, size, status);
 }
 
-static void on_bts_gattc_write_result_cb(btm_gattc_hdl_t* handle, gatt_element_t* element, gatt_service_status_t status)
+static void on_bts_gattc_write_result_cb(btm_gattc_hdl_t* handle, gatt_element_t* element, gatt_status_t status)
 {
     CHECK_PTR(handle);
     BT_CBACK(handle->callbacks, gattc_write_result_cb, handle, handle->remote_addr, element, status);
@@ -54,7 +78,7 @@ static void on_bts_gattc_nofity_request_cb(btm_gattc_hdl_t* handle, gatt_element
     BT_CBACK(handle->callbacks, gattc_nofity_request_cb, handle, handle->remote_addr, element, value, size);
 }
 
-static void on_bts_gattc_rssi_read_cb(btm_gattc_hdl_t* handle, int32_t rssi, gatt_service_status_t status)
+static void on_bts_gattc_rssi_read_cb(btm_gattc_hdl_t* handle, int32_t rssi, gatt_status_t status)
 {
     CHECK_PTR(handle);
     BT_CBACK(handle->callbacks, gattc_rssi_read_cb, handle, handle->remote_addr, rssi, status);
@@ -90,7 +114,7 @@ static bts_gatt_client_callbacks client_callbacks = {
     .bts_gattc_mtu_changed_cb = on_bts_gattc_mtu_changed_cb,
 };
 
-static bt_result_code gatt_client_connect(btm_gattc_hdl_t** handle_ptr, bd_addr_t remote_addr, gatt_client_callbacks* callbacks)
+static bt_result_code gatt_client_connect(btm_gattc_hdl_t** handle_ptr, bd_addr_t remote_addr, btm_gatt_client_callbacks* callbacks)
 {
     CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
 

@@ -34,8 +34,8 @@
 #include "btm_manager.h"
 #include "bts_service.h"
 #include "bts_gap.h"
-#include "bts_leadv.h"
-#include "bts_lescan.h"
+#include "bts_le_advertise.h"
+#include "bts_le_scan.h"
 
 #define LOG_TAG "bts_gap"
 #include "log.h"
@@ -116,21 +116,21 @@ void adapter_acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S* acl_state_par
 void adapter_ble_scan_result_callback(SERVICE_SCAN_RESULT_DATA_S* scan_result_data)
 {
     BT_LOGD("%s", __func__);
-    gatt_scan_interface_t* scan_ift = get_bts_lescan_instance();
+    bts_le_scan_interface_t* scan_ift = get_bts_lescan_instance();
     BT_CBACK(scan_ift->callbacks, ble_scan_result, scan_result_data);
 }
 
 void adapter_ble_adv_started_callback(uint8_t adv_id)
 {
     BT_LOGD("%s, adv_id:%d", __func__, adv_id);
-    gatt_advertise_interface_t* adv_ift = get_ble_advertise_instance();
+    bts_le_advertise_interface_t* adv_ift = get_bts_bleadv_instance();
     BT_CBACK(adv_ift->callbacks, ble_advtise_started_cb, adv_id);
 }
 
 void adapter_ble_adv_stopped_callback(uint8_t adv_id)
 {
     BT_LOGD("%s, adv_id:%d", __func__, adv_id);
-    gatt_advertise_interface_t* adv_ift = get_ble_advertise_instance();
+    bts_le_advertise_interface_t* adv_ift = get_bts_bleadv_instance();
     BT_CBACK(adv_ift->callbacks, ble_advtise_stopped_cb, adv_id);
 }
 

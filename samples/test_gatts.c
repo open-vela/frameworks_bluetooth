@@ -1,3 +1,26 @@
+/****************************************************************************
+ * frameworks/bluetooth/samples/test_gatts.c
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,9 +32,9 @@
 
 #define LOG_TAG "btsample_gatts"
 
-static gatt_server_t* gatts_handle;
-static gatt_advertiser_t* adv_handle;
-static btm_le_gatts_interface_t* gatts_interface = NULL;
+static void* gatts_handle;
+static void* adv_handle;
+static btm_gatt_server_interface_t* gatts_interface = NULL;
 static btm_interface_t* manager = NULL;
 static bd_addr_t connected_device_addr;
 static uint16_t gatt_mtu = 20;
@@ -67,10 +90,10 @@ static void le_adv_failed_callback(void* handle, int error)
     BT_LOGD(" %s:err:%d", __func__, error);
 }
 
-static void test_server_connection_state_changed_callback(gatt_server_t* handle, bd_addr_t remote_addr, bt_state_t state)
+static void test_server_connection_state_changed_callback(void* handle, bd_addr_t remote_addr, profile_state_t state)
 {
     BT_LOGD("%s  addr:[%02x:%02x:%02x:%02x:%02x:%02x], state:%d", __func__, remote_addr[0], remote_addr[1],
-        remote_addr[2], remote_addr[3], remote_addr[4], state);
+        remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5], state);
     if (state == 2) {
         memcpy(connected_device_addr, remote_addr, sizeof(bd_addr_t));
     } else {
@@ -78,7 +101,7 @@ static void test_server_connection_state_changed_callback(gatt_server_t* handle,
     }
 }
 
-static gatt_advertise_callbacks cb2 = {
+static btm_le_advertise_callbacks cb2 = {
     .le_advertise_started_cb = le_adv_started_callback,
     .le_advertise_stopped_cb = le_adv_stopped_callback,
     .le_advertise_failed_cb = le_adv_failed_callback,
@@ -88,7 +111,7 @@ static const uint8_t s_adv_data[]
     = { 0x02, 0x01, 0x08, 0x08, 0x09, 0x42, 0x52, 0x54, 0x20, 0x59, 0x61, 0x6F, 0x03, 0x02, 0x00, 0xFF };
 static advertise_param_t adv_para;
 
-static void test_server_opened_callback(gatt_server_t* handle)
+static void test_server_opened_callback(void* handle)
 {
     BT_LOGD("%s", __func__);
     if (!gatts_interface) {
@@ -106,38 +129,38 @@ static void test_server_opened_callback(gatt_server_t* handle)
     adv_para.adv_data = (char*)s_adv_data;
     adv_para.scan_rsp_data = (char*)s_adv_data;
     adv_para.scan_rsp_length = sizeof(s_adv_data);
-    btm_gatt_advertise_interface_t* adv_interface = get_le_advertise_interface(manager);
+    btm_le_advertise_interface_t* adv_interface = get_btm_leadv_interface(manager);
     bt_result_code ret = adv_interface->start_advertising(&adv_handle, &adv_para, &cb2);
 }
 
-static void test_server_closed_callback(gatt_server_t* handle)
+static void test_server_closed_callback(void* handle)
 {
     BT_LOGD("%s", __func__);
 }
 
-static void test_server_service_added_callback(gatt_server_t* handle, gatt_service_status_t status, gatt_element_t* element,
+static void test_server_service_added_callback(void* handle, gatt_status_t status, gatt_element_t* element,
     size_t size)
 {
     BT_LOGD("%s", __func__);
 }
 
-static void test_server_service_removed_callback(gatt_server_t* handle, gatt_service_status_t status, gatt_element_t* element,
+static void test_server_service_removed_callback(void* handle, gatt_status_t status, gatt_element_t* element,
     size_t size)
 {
     BT_LOGD("%s", __func__);
 }
 
-static void test_server_phy_read_callback(gatt_server_t* handle, bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
+static void test_server_phy_read_callback(void* handle, bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
 {
     BT_LOGD("%s", __func__);
 }
 
-static void test_server_phy_update_callback(gatt_server_t* handle, bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx, gatt_service_status_t status)
+static void test_server_phy_update_callback(void* handle, bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx, gatt_status_t status)
 {
     BT_LOGD("%s", __func__);
 }
 
-static void test_server_read_request_callback(gatt_server_t* handle, bd_addr_t remote_addr, uint32_t request_id,
+static void test_server_read_request_callback(void* handle, bd_addr_t remote_addr, uint32_t request_id,
     gatt_element_t* element)
 {
     BT_LOGD("%s", __func__);
@@ -163,7 +186,7 @@ static void test_server_read_request_callback(gatt_server_t* handle, bd_addr_t r
     free(rsp);
 }
 
-static void test_server_write_request_callback(gatt_server_t* handle, bd_addr_t remote_addr, uint32_t request_id,
+static void test_server_write_request_callback(void* handle, bd_addr_t remote_addr, uint32_t request_id,
     gatt_element_t* element, uint8_t* value, uint16_t offset,
     uint16_t size)
 {
@@ -194,13 +217,13 @@ static void test_server_write_request_callback(gatt_server_t* handle, bd_addr_t 
     gatts_interface->send_response(handle, remote_addr, rsp);
 }
 
-static void test_server_mtu_changed_callback(gatt_server_t* handle, bd_addr_t remote_addr, uint32_t mtu)
+static void test_server_mtu_changed_callback(void* handle, bd_addr_t remote_addr, uint32_t mtu)
 {
     BT_LOGD("%s mtu: %d", __func__, mtu);
     gatt_mtu = mtu;
 }
 
-static void test_server_notify_sent_callback(gatt_server_t* handle, bd_addr_t remote_addr, gatt_service_status_t status)
+static void test_server_notify_sent_callback(void* handle, bd_addr_t remote_addr, gatt_status_t status)
 {
     BT_LOGD("%s status:%d", __func__, status);
 }
@@ -227,21 +250,21 @@ int main(int argc, FAR char* argv[])
     manager->init(NULL);
     manager->enable();
 
-    gatt_server_callbacks cb = {
-        .le_server_connection_state_changed_cb = test_server_connection_state_changed_callback,
-        .le_server_opened_cb = test_server_opened_callback,
-        .le_server_closed_cb = test_server_closed_callback,
-        .le_server_service_added_cb = test_server_service_added_callback,
-        .le_server_service_removed_cb = test_server_service_removed_callback,
-        .le_server_phy_read_cb = test_server_phy_read_callback,
-        .le_server_phy_update_cb = test_server_phy_update_callback,
-        .le_server_read_request_cb = test_server_read_request_callback,
-        .le_server_write_request_cb = test_server_write_request_callback,
-        .le_server_mtu_changed_cb = test_server_mtu_changed_callback,
-        .le_server_notify_sent_cb = test_server_notify_sent_callback,
+    btm_gatt_server_callbacks cb = {
+        .gatts_connection_state_changed_cb = test_server_connection_state_changed_callback,
+        .gatts_server_opened_cb = test_server_opened_callback,
+        .gatts_server_closed_cb = test_server_closed_callback,
+        .gatts_service_added_cb = test_server_service_added_callback,
+        .gatts_service_removed_cb = test_server_service_removed_callback,
+        .gatts_phy_read_cb = test_server_phy_read_callback,
+        .gatts_phy_update_cb = test_server_phy_update_callback,
+        .gatts_read_request_cb = test_server_read_request_callback,
+        .gatts_write_request_cb = test_server_write_request_callback,
+        .gatts_mtu_changed_cb = test_server_mtu_changed_callback,
+        .gatts_notify_sent_cb = test_server_notify_sent_callback,
     };
 
-    gatts_interface = get_le_gatts_interface(manager);
+    gatts_interface = get_btm_gatts_interface(manager);
     if (!gatts_interface) {
         BT_LOGE("fail, get gatt interface fail");
         return -1;

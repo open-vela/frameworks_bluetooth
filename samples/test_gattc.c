@@ -1,3 +1,26 @@
+/****************************************************************************
+ * frameworks/bluetooth/samples/test_gattc.c
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,7 +56,7 @@ static void on_scan_result_callback(void* handle, const scan_result_t* result)
         result->addr_type, result->device_type, result->evt_type);
 }
 
-static void on_client_connection_state_changed_callback(void* handle, bd_addr_t remote_addr, bt_state_t state)
+static void on_client_connection_state_changed_callback(void* handle, bd_addr_t remote_addr, profile_state_t state)
 {
     BT_LOGD("%s", __func__);
 }
@@ -98,7 +121,7 @@ static void on_client_service_discovered_callback(void* handle, bd_addr_t remote
     gatt_display_service(element, size);
 }
 
-static void on_client_read_result_callback(void* handle, bd_addr_t remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size, gatt_service_status_t status)
+static void on_client_read_result_callback(void* handle, bd_addr_t remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size, gatt_status_t status)
 {
     BT_LOGD("%s, size:%d", __func__, size);
     for (int i = 0; i < size; i++) {
@@ -106,7 +129,7 @@ static void on_client_read_result_callback(void* handle, bd_addr_t remote_addr, 
     }
 }
 
-static void on_client_write_result_callback(void* handle, bd_addr_t remote_addr, gatt_element_t* element, gatt_service_status_t status)
+static void on_client_write_result_callback(void* handle, bd_addr_t remote_addr, gatt_element_t* element, gatt_status_t status)
 {
     BT_LOGD("%s", __func__);
 }
@@ -116,7 +139,7 @@ static void on_client_nofity_request_callback(void* handle, bd_addr_t remote_add
     BT_LOGD("%s", __func__);
 }
 
-static void on_client_rssi_read_callback(void* handle, bd_addr_t remote_addr, int32_t rssi, gatt_service_status_t status)
+static void on_client_rssi_read_callback(void* handle, bd_addr_t remote_addr, int32_t rssi, gatt_status_t status)
 {
     BT_LOGD("%s rssi:%d", __func__, rssi);
 }
@@ -154,7 +177,7 @@ int main(int argc, FAR char* argv[])
         return -1;
     }
 
-    gatt_scan_callbacks scan_cb = {
+    btm_le_scan_callbacks scan_cb = {
         .le_scan_started_cb = on_scan_started_callback,
         .le_scan_failed_cb = on_scan_failed_callback,
         .le_scan_result_cb = on_scan_result_callback,
@@ -167,7 +190,7 @@ int main(int argc, FAR char* argv[])
         char ch = ch = getchar();
         switch (ch) {
         case 'a': {
-            scan_settings_t filter = {
+            scan_params_t filter = {
                 .scan_interval = 300,
                 .scan_window = 500,
                 .scan_phy = BLE_1M_PHY,
@@ -192,7 +215,7 @@ int main(int argc, FAR char* argv[])
     }
     BT_LOGD("### quit start/stop scan, come into gatt client");
 
-    gatt_client_callbacks client_cb = {
+    btm_gatt_client_callbacks client_cb = {
         .gattc_connection_state_changed_cb = on_client_connection_state_changed_callback,
         .gattc_service_discovered_cb = on_client_service_discovered_callback,
         .gattc_read_result_cb = on_client_read_result_callback,

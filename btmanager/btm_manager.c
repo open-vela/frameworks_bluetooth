@@ -267,7 +267,7 @@ static bluetooth_service_interface* bluetooth_service = NULL;
 
 static bt_callbacks_t* bluetooth_upper_callbacks = NULL;
 
-static void bt_mgr_adapter_state_changed_callback(bt_state_t state)
+static void bt_mgr_adapter_state_changed_callback(profile_state_t state)
 {
     if (!bluetooth_upper_callbacks) {
         BT_LOGE("fail, bluetooth_upper_callbacks nullptr");
