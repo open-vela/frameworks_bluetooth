@@ -56,7 +56,6 @@ typedef struct
 }timer_process_data_t;
 
 SERVICE_BT_STACK_STATE service_state = BT_STATE_OFF;
-bt_init_state init_state = BT_STATE_NOT_INITED;
 
 uv_loop_t* dispatch_loop;
 bts_process_command_func_in_service service_func_list[BT_PROFILE_MAX_ID] = {NULL};
@@ -269,32 +268,6 @@ int service_loop_init(void)
     return 0;
 }
 
-int bts_service_get_interface(void* handle)
-{
-    if (NULL == handle){
-
-    }
-    manager_context_t *context = (manager_context_t *)handle;
-    context->app_id = 0;
-    return 0;
-}
-
-int bts_service_init(void)
-{
-    init_state = BT_STATE_INITING;
-
-    BT_LOGD(" bt_service_init coming");
-    bts_common_init();
-#ifdef CONFIG_BLUETOOTH_HFP_HF
-    hf_client_service_start();
-#endif
-#ifdef CONFIG_BLUETOOTH_SPP
-    spp_service_start();
-#endif
-    service_loop_init();
-    BT_LOGD(" bt_service_init done");
-    return 0;
-}
 
 static bool is_profile(const char* p1, const char* p2)
 {
@@ -331,20 +304,6 @@ static const void* get_profile_interface(const char* profile_id)
     return NULL;
 }
 
-static void srv_adapter_state_changed_callback(profile_state_t state)
-{
-    if (!bluetooth_upper_callbacks) {
-        BT_LOGE("fail, bluetooth_upper_callbacks  nullptr");
-        return;
-    }
-    bluetooth_upper_callbacks->adapter_state_changed_cb(state);
-}
-
-static bt_callbacks bluetooth_lower_callbacks = {
-    .size = sizeof(bluetooth_lower_callbacks),
-    .adapter_state_changed_cb = srv_adapter_state_changed_callback,
-};
-
 typedef enum {
     THREAD_ID_SERVICE,
     THREAD_ID_STACK,
@@ -370,10 +329,20 @@ static bt_result_code init(bt_callbacks* callbacks)
 {
     bluetooth_upper_callbacks = callbacks;
     InitTransportLayer();
-    gap_interface_t* gap_ift = get_gap_instance();
-    gap_ift->init(NULL);
+    gap_service_init();
+    int ret = uv_thread_create(&thread_handle[THREAD_ID_STACK], stack_schedule_loop, NULL);
+    if (ret != 0) {
+        BT_LOGE("fail uv_thread_create, ret:%d", ret);
+        return BT_RESULT_FAILED;
+    }
 
+    ret = uv_thread_create(&thread_handle[THREAD_ID_SERVICE], service_schedule_loop, NULL);
+    if (ret != 0) {
+        BT_LOGE("fail uv_thread_create, ret:%d", ret);
+        return BT_RESULT_FAILED;
+    }
 #if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
+    gap_service_init();
     gatt_interface_t* gatt_if = gatt_get_interface();
     if (gatt_if) {
         BT_LOGD("gatt init");
@@ -383,24 +352,11 @@ static bt_result_code init(bt_callbacks* callbacks)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code enable(void)
+
+bt_result_code bts_enable(void* handle)
 {
-    gap_interface_t* gap_ift = get_gap_instance();
-    gap_ift->enable();
-
-    // int ret = uv_thread_create(&thread_handle[THREAD_ID_STACK], stack_schedule_loop, NULL);
-    // if (ret != 0) {
-    //     BT_LOGE("fail uv_thread_create, ret:%d", ret);
-    //     return BT_RESULT_FAILED;
-    // }
-
-    int ret = uv_thread_create(&thread_handle[THREAD_ID_SERVICE], service_schedule_loop, NULL);
-    if (ret != 0) {
-        BT_LOGE("fail uv_thread_create, ret:%d", ret);
-        return BT_RESULT_FAILED;
-    }
-
-    stack_schedule_loop(NULL);
+    gap_enable();
+    //stack_schedule_loop(NULL);
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     hf_client_service_start();
 #endif
@@ -410,7 +366,7 @@ bt_result_code enable(void)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code disable(void)
+bt_result_code disable(void* handle)
 {
     return BT_RESULT_SUCCESS;
 }
@@ -430,7 +386,7 @@ static bluetooth_service_interface bluetooth_service = {
     .size = sizeof(bluetooth_service),
 
     .init = init,
-    .enable = enable,
+    .enable = bts_enable,
     .disable = disable,
     .cleanup = cleanup,
 

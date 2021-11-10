@@ -39,56 +39,105 @@
 #include "log.h"
 
 
-
-bt_result_code gap_if_init(bts_gap_callback_t* cb)
+bts_service_gap_callbacks_t* btm_callbacks;
+void *test_handle = NULL;
+static void gap_if_init_done_callback()
 {
-      gap_init(cb);
 
-    return BT_RESULT_SUCCESS;
+}
+static void gap_if_received_remote_name_callback(BD_ADDR bd_addr, char *bt_name, uint8_t length)
+{
+
+}
+static void gap_if_discovery_state_changed_callback(bt_discovery_state state)
+{
+    
+}
+static void gap_if_ssp_request_callback(bt_ssp_request_data_t *request_data)
+{
+    
+}
+static void gap_if_device_found_callback(bt_device_t device)
+{
+    
+}
+static void gap_if_bond_state_changed_callback(bt_device_t device, bt_bond_state state)
+{
+    
+}
+static void gap_if_connection_state_callback(bt_device_t device, bt_connection_state state)
+{
+    
+}
+static void gap_if_get_bonded_device_list_callback(bt_address*bonded_device_list, uint8_t umber)
+{
+    
 }
 
-void gap_if_cleanup(void)
+static void gap_if_connected_device_list_callback(bt_address*connected_device_list, uint8_t umber)
 {
-    gap_cleanup();
+    
 }
 
-bt_result_code gap_if_enable(void)
+static void gap_if_hci_event_callback(bt_hci_event_t *hci_event)
 {
-    SERVICE_BT_STATUS ret = gap_enable();
-    if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("gap enable fail,ret:%d", ret);
-        return BT_RESULT_FAILED;
+    
+}
+
+void gap_if_adapter_state_changed_callback(stack_state_t state)
+{
+    BT_LOGD("%s", __func__);
+    if ((NULL == btm_callbacks) || (NULL == test_handle)){
+        BT_LOGE("%s, callback is NULL", __func__);
+        return;
     }
-    return BT_RESULT_SUCCESS;
+    btm_callbacks->adapter_state_changed(test_handle, state);
 }
 
-bt_result_code gap_if_disable(bool normal_disable)
-{
-    SERVICE_BT_STATUS ret = gap_disable(normal_disable);
-    if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("gap disable fail,ret:%d", ret);
-        return BT_RESULT_FAILED;
-    }
-    return BT_RESULT_SUCCESS;
-}
-
-stack_state_t gap_if_get_stack_state(void)
-{
-    gap_get_stack_state();
-    return BT_STATE_ON;
-}
-
-
-static gap_interface_t gap_interface = {
-    .size = sizeof(gap_interface),
-    .init = gap_if_init,
-    .cleanup = gap_if_cleanup,
-    .enable = gap_if_enable,
-    .disable = gap_if_disable,
-    .gap_get_stack_state = gap_if_get_stack_state,
+bts_gap_callback_t bts_gap_callbacks = {
+    .adapter_state_changed_cb = gap_if_adapter_state_changed_callback,
+    .gap_init_done_cb = gap_if_init_done_callback,
+    .remote_name_cb = gap_if_received_remote_name_callback,
+    .discovery_state_changed_cb = gap_if_discovery_state_changed_callback,
+    .spp_request_cb = gap_if_ssp_request_callback,
+    .device_found_cb = gap_if_device_found_callback,
+    .bond_state_changed_cb = gap_if_bond_state_changed_callback,
+    .connection_state_changed_cb = gap_if_connection_state_callback,
+    .bond_state_changed_cb = gap_if_bond_state_changed_callback,
+    .connected_list_cb = gap_if_connected_device_list_callback,
+    .hci_event_cb = gap_if_hci_event_callback,
 };
 
-gap_interface_t* get_gap_instance(void)
+bt_result_code gap_service_init()
+{
+    gap_init(&bts_gap_callbacks);
+    return BT_RESULT_SUCCESS;
+}
+
+bt_result_code bts_if_register_callbacks(void* gap_handle, const bts_service_gap_callbacks_t* callbacks)
+{
+    BT_LOGD("%s", __func__);
+    test_handle = gap_handle;
+    btm_callbacks = callbacks;
+}
+
+bt_result_code bts_if_start_discovery(void* gap_handle, uint32_t timeout)
+{
+    bts_start_discovery(timeout);    
+}
+bt_result_code bts_if_set_local_name(void* gap_handle, char *bt_name, uint8_t len)
+{
+    bts_set_local_name(bt_name, len);
+}
+
+static gap_service_interface_t gap_interface = {
+    .size = sizeof(gap_service_interface_t),
+    .register_callbacks = bts_if_register_callbacks,
+    .start_discovery = bts_if_start_discovery,
+    .set_local_name  = bts_if_set_local_name,
+};
+
+gap_service_interface_t* get_gap_service_instance(void)
 {
     return &gap_interface;
 }
