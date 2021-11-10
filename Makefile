@@ -20,6 +20,7 @@ CSRCS += btservice/btservice/bts_service.c
 CSRCS += btservice/gap/bts_gap.c
 CSRCS += btservice/gap/bts_gap_service.c
 CSRCS += btmanager/btm_manager.c
+CSRCS +=btmanager/btm_gap.c
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SRC),y)
 CSRCS += btservice/a2dp_source/bts_a2dp_source.c
@@ -110,5 +111,16 @@ depend::
 	$(Q) touch $(MAINSRC)
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GAP), y)
+	MAINSRC   = samples/test_gap.c
+
+	PRIORITY = SCHED_PRIORITY_DEFAULT
+	STACKSIZE = 40960
+	PROGNAME  = bt_gap_sample
+	MODULE    = $(CONFIG_BLUETOOTH)
+
+depend::
+	$(Q) touch $(MAINSRC)
+endif
 include $(APPDIR)/Application.mk
 
