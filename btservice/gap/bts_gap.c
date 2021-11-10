@@ -40,37 +40,138 @@
 #define LOG_TAG "bts_gap"
 #include "log.h"
 
-bts_gap_callback_t *gap_callback_cb = NULL;
-void bts_common_register_callback(bts_gap_callback_t *cb)
+typedef enum
 {
-    gap_callback_cb = cb;
+  GAP_STACK_STATE_CHANGED = 1,
+  GAP_DEVICE_FOUND,
+  GAP_REMOTE_NAME,
+  GAP_DISCOVERY_STATE_CHANGED,
+  GAP_PIN_CODE_REQUEST,
+  GAP_SSP_REQUEST,
+  GAP_BOND_STATE_CHANGED,
+  GAP_ACL_STATE_CHANGED,
+  GAP_BLE_SCAN_REQUEST,
+  GAP_BLE_ADV_STARTED,
+  GAP_BLE_ADV_STOPPED,
+  GAP_LINK_ROLE_CHANGED,
+  GAP_SCAN_MODE_CHANGED,
+  GAP_LINK_CONNECT_REQUEST,
+  GAP_LINK_POLICY_CHANGED,
+  GAP_HCI_EVENT,
+  GAP_INIT_DONE,
+  GAP_UPDATE_BR_LINKKEY,
+  GAP_DELETE_BR_LINKKEY,
+  GAP_PAIR_REQUEST,
+  GAP_SERVICE_DISCOVERED,
+  GAP_LINK_ENCRYPTION_STATE_CHANGED,
+  GAP_SMP_REQUEST,
+  GAP_UPDATE_BLE_BONDED_DEVICES,
+  GAP_BLE_ADD_WHITE_LIST,
+  GAP_REMOVE_WHITE_LIST,
+  GAP_ADD_BLE_RESOlVING_LIST,
+  GAP_REMOVE_BLE_RESOlVING_LIST,
+  GAP_BLE_ADDRESS,
+  GAP_BLE_PHY_UPDATE,
+  GAP_BLE_IRK,
+  GAP_BLE_PACKET_RECEIVED,
+
+  GAP_EVENT_MAX_ID,
+} gap_event_t;
+
+typedef SERVICE_REMOTE_DEVICE_S device_found_t;
+
+typedef struct {
+  bt_address bd_addr;
+  char *bt_name;
+  uint8_t length;
+} name_request_t;
+
+typedef struct{
+  bt_address  bd_addr;
+  uint32_t    valueint1;
+  uint32_t    valueint2;
+  uint32_t    valueint3;
+  uint32_t    valueint4;
+  char        *string1;
+  char        *string2;
+} gap_event_data_t;
+
+typedef struct
+{
+  gap_event_t event;
+  gap_event_data_t event_data;
+} gap_msg_t;
+
+extern void InitTransportLayer(void);
+
+
+gap_msg_t *gap_msg_new(gap_event_t event)
+{
+  gap_msg_t *msg;
+
+  BT_LOGD("%s", __func__);
+
+  msg = (gap_msg_t *)malloc(sizeof(gap_msg_t));
+  if (!msg)
+    return NULL;
+
+  msg->event = event;
+  memset(&msg->event_data, 0, sizeof(msg->event_data));
+
+  return msg;
 }
 
+void gap_msg_destory(gap_msg_t *msg)
+{
+  free(msg->event_data.string1);
+  free(msg->event_data.string2);
+  free(msg);
+}
+
+
+
+
+static bts_gap_callback_t* bts_gap_callbacks = NULL;
 /*process callback from stack */
-void process_loop_in_common(void *data, size_t data_size)
+void process_loop_in_gap(void *data, size_t data_size)
 {
-    //int common_size = 0;
-    //char *common_buff = NULL;
+    BT_LOGD("%s", __func__);
+    if (!data)
+    return;
+    gap_msg_t *gap_msg = (gap_msg_t*)data;
+    switch (gap_msg->event){
+        case GAP_STACK_STATE_CHANGED:{
+            if (bts_gap_callbacks) {
+            }
+            bts_gap_callbacks->adapter_state_changed_cb(0);
+            if (gap_msg->event_data.valueint1 == BT_STATE_ON) {
+                if (bts_gap_callbacks->adapter_state_changed_cb) {
+                    bts_gap_callbacks->adapter_state_changed_cb(BT_STATE_ON);
+                }
+            }
+        }
+        default:
+        break;
+    }
 
-    // if (NULL == context)
-    // {
-    //     return;
-    // }
-
-    // if(context->command_id > COMMON_COMMAND_MAX_ID)
-    // {
-    //     switch (context->command_id)
-    //     {
-    //     case INIT_SERVICE_DONE_RESPONSE:
-
-    //         gap_callback_cb->gap_init_done_cb();
-
-    //         break;
-    //     default:
-    //         break;
-
-    free(data);
+    gap_msg_destory(gap_msg);
 }
+
+void gap_send_message(gap_msg_t *msg)
+{
+  excute_service_context_t *context = (excute_service_context_t *)malloc(sizeof(excute_service_context_t));
+
+  context->loop_func = process_loop_in_gap;
+  context->data = (void *)msg;
+  context->data_size = sizeof(gap_msg_t);
+  process_in_loop(context);
+}
+
+bt_result_code bts_start_discovery(uint32_t timeout)
+{
+    service_adapter_gap_start_device_discovery(timeout);
+}
+
 
 void adapter_device_found_callback(SERVICE_REMOTE_DEVICE_S *device)
 {
@@ -164,14 +265,18 @@ void adapter_link_policy_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_P
 void adapter_stack_state_changed_callback(SERVICE_BT_STACK_STATE stack_state)
 {
     BT_LOGD("Stack State Changed to %d", stack_state);
+    gap_msg_t *msg = gap_msg_new(GAP_STACK_STATE_CHANGED);
+    BT_LOGD("%s", __func__);
+
     if (stack_state == BT_STATE_ON)
     {
-        uint8_t local_name[] = "BlueLet-NuttX-M1";
-        service_adapter_gap_set_local_name((char *)local_name, sizeof(local_name));
+        msg->event_data.valueint1 = BT_STATE_ON;
+        gap_send_message(msg);
         service_adapter_gap_set_local_device_class(BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO |
                 BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
         service_adapter_gap_set_local_io_capability(SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
         service_adapter_gap_set_scan_mode(SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
+
     }
 }
 
@@ -191,7 +296,7 @@ void adapter_init_done_callback(void)
     BT_LOGD("%s", __func__);
 
     excute_service_context_t *context = (excute_service_context_t *)malloc(sizeof(excute_service_context_t));
-    context->loop_func = process_loop_in_common;
+    context->loop_func = process_loop_in_gap;
     context->data = NULL;
     //context->command_id = INIT_SERVICE_DONE_RESPONSE;
     process_in_loop(context);
@@ -336,20 +441,7 @@ GAP_CALLBACKS_S gap_callback = {
     adapter_ble_packet_received_callback
 };
 
-void register_callback_to_stack(void)
-{
-}
 
-extern void InitTransportLayer(void);
-
-
-void bts_common_init(void)
-{
-    BT_LOGD(" common_init coming");
-    register_callback_to_stack();
-}
-
-static bts_gap_callback_t* bts_gap_callbacks = NULL;
 
 bt_result_code gap_init(bts_gap_callback_t* cb)
 {
@@ -367,7 +459,7 @@ void gap_cleanup(void)
     service_adapter_gap_cleanup();
 }
 
-bt_result_code gap_enable(void)
+bt_result_code gap_enable()
 {
     SERVICE_BT_STATUS ret = service_adapter_gap_enable();
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
@@ -387,7 +479,13 @@ bt_result_code gap_disable(bool normal_disable)
     return BT_RESULT_SUCCESS;
 }
 
-stack_state_t gap_get_stack_state(void)
-{
-    return BT_STATE_ON;
-}
+ bt_result_code bts_set_local_name(char *bt_name, uint8_t len)
+ {
+    SERVICE_BT_STATUS ret = service_adapter_gap_set_local_name(bt_name, len);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("bts_set_local_name,ret:%d", ret);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+ }
+

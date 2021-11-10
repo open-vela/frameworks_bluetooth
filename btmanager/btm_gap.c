@@ -24,53 +24,97 @@
 
 #include <stdio.h>
 #include "btm_manager.h"
-#include "bts_gap.h"
+#include "bts_gap_service.h"
+#include "btm_gap.h"
+#include "bts_service.h"
 
-bt_result_code package_gap_buffer_to_service(int command_id, void* command_buffer, int command_size)
+#define LOG_TAG "btm_gap"
+#include "log.h"
+
+typedef struct {
+    manager_context_t *manager_context;
+    btm_gap_callbacks_t *gap_callbacks;
+    gap_service_interface_t* service_interface;
+}gap_context_t;
+
+
+void btm_discovery_state_changed_callback(void* gap_handle, bt_discovery_state state)
 {
-    bt_result_code result = BT_RESULT_FAILED;
-    char * gap_buff = NULL;
-    int gap_size = 0;
-    bt_profile data = bt_profile_init_default;
 
-    data.command_id = command_id;
-    if (NULL != command_buffer) 
-    {
-        //nano_pb_bytes(data, buffer, command_buffer, command_size);
-    }
+}
 
-    gap_buff = nano_pb_encode(bt_profile_fields, &data, &gap_size);
-#ifdef CONFIG_BLUETOOTH_LOCAL_THREAD
-    result = send_pb_buffer_to_service(NULL, BT_PROFILE_GAP_ID, gap_buff, gap_size);
-#endif
-    return result;
+void btm_remote_name_callback(void* gap_handle, bt_address bd_addr, char *bt_name, uint8_t length)
+{
+
+}
+
+static void adapter_state_changed_callback(void* gap_handle, stack_state_t state)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    BT_LOGD("%s", __func__);
+
+    if (!gap_handle)
+        return ret;
+    gap_context_t * context = (gap_context_t*)gap_handle;
+    if((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->state_changed_cb))
+        return ret;
+    BT_LOGD("%s", __func__);
+    BT_CBACK(context->gap_callbacks, state_changed_cb, state);
+    //context->gap_callbacks->state_changed_cb(state);
+}
+
+const bts_service_gap_callbacks_t service_callbacks = {
+    .size = sizeof(bts_service_gap_callbacks_t),
+    .adapter_state_changed = adapter_state_changed_callback,
+};
+
+
+bt_result_code btm_gap_register_callbacks(void * manager_handle, void ** gap_handle, const btm_gap_callbacks_t* callbacks)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    gap_context_t * context = malloc(sizeof(gap_context_t));
+    if (!context)
+      return ret;
+    *gap_handle = context;
+    context->gap_callbacks = callbacks;
+    context->manager_context = manager_handle;
+    context->service_interface = get_gap_service_instance();
+    context->service_interface->register_callbacks(context, &service_callbacks);
+}
+
+bt_result_code btm_start_discovery(void * handle, uint32_t timeout)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    if (!handle)
+        return ret;
+    gap_context_t * context = (gap_context_t*)handle;
+    if(!context->service_interface)
+        return ret;
+    ret = context->service_interface->start_discovery(handle, timeout);
+    return ret;
+}
+
+bt_result_code btm_set_local_name(void * handle, char *bt_name, uint8_t len)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    if (!handle)
+        return ret;
+    gap_context_t * context = (gap_context_t*)handle;
+    if(!context->service_interface)
+        return ret;
+    ret = context->service_interface->set_local_name(handle, bt_name, len);
+    return ret;
 }
 
 
-bt_result_code bt_set_local_address(void *p ,bt_address addr)
+const btm_gap_interface_t gap_interface = {
+    .register_callbacks = btm_gap_register_callbacks,
+    .start_discovery = btm_start_discovery,
+    .set_name = btm_set_local_name,
+
+};
+
+btm_gap_interface_t* get_gap_instance(void)
 {
-    size_t size = 0;
-    char *buffer = NULL;
-    bt_result_code result = BT_RESULT_FAILED;
-    bt_profile data = bt_profile_init_default;
-
-    if (NULL == addr) 
-    {
-        result = BT_RESULT_PARAMETER_ERROR;
-        goto Exit;
-    }
-    
-    command_set_address set_address = command_set_address_init_default;
-    set_address.address = malloc(BT_ADDR_LENGTH);
-    memcpy(set_address.address, addr, BT_ADDR_LENGTH);
-    buffer = nano_pb_encode(command_set_address_fields, &set_address, &size);
-    if (NULL == buffer)
-    {
-        result = BT_RESULT_ALLOC_BUFFER_FAILED;
-        goto Exit;
-    }
-    result = package_common_buffer_to_service(SET_ADDRESS, buffer, size);
-
-Exit:
-    return result;
+    return &gap_interface;
 }
