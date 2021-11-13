@@ -32,7 +32,7 @@
 #include "log.h"
 
 typedef struct {
-    manager_context_t *manager_context;
+    void *manager_context;
     btm_gap_callbacks_t *gap_callbacks;
     gap_service_interface_t* service_interface;
 }gap_context_t;

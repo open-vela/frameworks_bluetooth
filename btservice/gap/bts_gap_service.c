@@ -115,6 +115,7 @@ bt_result_code gap_service_init()
 }
 
 bt_result_code bts_if_register_callbacks(void* gap_handle, const bts_service_gap_callbacks_t* callbacks)
+
 {
     BT_LOGD("%s", __func__);
     test_handle = gap_handle;
@@ -129,6 +130,7 @@ bt_result_code bts_if_set_local_name(void* gap_handle, char *bt_name, uint8_t le
 {
     bts_set_local_name(bt_name, len);
 }
+
 
 static gap_service_interface_t gap_interface = {
     .size = sizeof(gap_service_interface_t),
