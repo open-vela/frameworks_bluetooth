@@ -11,8 +11,7 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-
-typedef void (*bts_service_adapter_state_changed_callback)(void* handle, stack_state_t state);
+typedef void (*bts_service_gap_adapter_state_changed_callback)(void* handle, stack_state_t state);
 typedef void (*bts_service_gap_init_done_callback)(void* gap_handle);
 typedef void (*bts_service_received_remote_name_callback)(void* gap_handle, bt_address bd_addr, char *bt_name, uint8_t length);
 typedef void (*bts_service_discovery_state_changed_callback)(void* gap_handle, bt_discovery_state state);
@@ -27,7 +26,7 @@ typedef void (*bts_service_hci_event_callback)(void* gap_handle, bt_hci_event_t 
 typedef struct {
     /* * set to sizeof(GAP_CALLBACKS_S) */
     uint8_t size;
-    bts_service_adapter_state_changed_callback adapter_state_changed;
+    bts_service_gap_adapter_state_changed_callback adapter_state_changed;
     bts_service_gap_init_done_callback gap_init_done_cb;
     bts_service_received_remote_name_callback remote_name_cb;
     bts_service_discovery_state_changed_callback discovery_state_changed_cb;
@@ -118,7 +117,6 @@ typedef struct
      */
     bt_result_code (*send_hci_command)(uint8_t *hci_cmd_packet, hci_event_callback cb);
     bt_result_code (*enter_bluetooth_test_mode)(bt_test_mode test_mode);
-
 }gap_service_interface_t;
 
 bt_result_code gap_service_init(void);

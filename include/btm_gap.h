@@ -63,17 +63,17 @@ typedef enum {
 } bt_io_capability;
 
 /* * Bluetooth Scan Mode */
-typedef enum { 
-    BT_SCAN_MODE_NONE = 0, 
-    BT_SCAN_MODE_CONNECTABLE, 
-    BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE 
-} bt_scan_mode;
+// typedef enum { 
+//     BT_SCAN_MODE_NONE = 0, 
+//     BT_SCAN_MODE_CONNECTABLE, 
+//     BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE 
+// } bt_scan_mode;
 
 /** Bluetooth link mode */
-typedef enum { 
-    BT_LINK_MODE_ACTIVE = 0, 
-    BT_LINK_MODE_SNIFF 
-} bt_link_mode;
+// typedef enum { 
+//     BT_LINK_MODE_ACTIVE = 0, 
+//     BT_LINK_MODE_SNIFF 
+// } bt_link_mode;
 
 // Type of the event created by the ctroller when a command is completed
 typedef enum {

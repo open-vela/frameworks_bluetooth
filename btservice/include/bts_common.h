@@ -33,4 +33,17 @@ typedef GATT_CLIENT_CALLBACKS_S stack_gatt_client_callbacks;
 typedef SERVICE_PIN_REQUEST_DATA_S pin_request_data_t;
 typedef SERVICE_BT_DISCOVERY_STATE discovery_state;
 
+typedef SERVICE_SSP_REQUEST_DATA_S ssp_request_data_t;
+typedef SERVICE_BT_BOND_STATE bt_bonde_state;
+typedef SERVICE_ACL_STATE_PARAM_S  acl_state_params_t;
+typedef SERVICE_BT_LINK_ROLE bt_link_role;
+typedef SERVICE_BT_SCAN_MODE bt_scan_mode;
+typedef SERVICE_BT_LINK_MODE bt_link_mode;
+typedef SERVICE_BT_LINK_POLICY bt_link_policy;
+typedef SERVICE_BT_HCI_EVENT_S hci_event_t;
+typedef SERVICE_REMOTE_DEVICE_S remote_device_t;
+typedef SERVICE_BR_SERVICE_S br_service_t;
+typedef SERVICE_BT_STATUS bt_status;
+typedef SERVICE_BLE_ADDR_TYPE ble_addr_type;
+typedef BT_COMMON_KEY bt_common_key;
 #endif

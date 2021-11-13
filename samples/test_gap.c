@@ -20,6 +20,10 @@ btm_gap_interface_t * gap_test_interface = NULL;
  void manager_state_changed_callback(bt_manager_bt_state state)
  {
 
+    BT_LOGD("%s", __func__);
+    char local_name[] = "BLUELET_NUTTX_GAP_TEST";
+    gap_test_interface->set_name(gap_hanlde, local_name, sizeof(local_name));
+    gap_test_interface->start_discovery(gap_hanlde, 5000);
  }
 
 static bt_mgr_callback_t mgt_cb = {
@@ -34,11 +38,6 @@ void test_discovery_state_changed_callback(bt_discovery_state state)
 }
 void test_adapter_state_changed_callback(stack_state_t state)
 {
-  
-    BT_LOGD("%s", __func__);
-    char local_name[] = "BLUELET_NUTTX_GAP_TEST";
-    gap_test_interface->set_name(manager_handle, local_name, sizeof(local_name));
-    
 }
 
 const btm_gap_callbacks_t gap_test_callbacks = 
@@ -50,18 +49,12 @@ const btm_gap_callbacks_t gap_test_callbacks =
 int main(int argc, FAR char* argv[])
 {
     btm_interface_t* manager = get_bt_manager_interface();
-    void *gap_hanlde;
     manager->init(&manager_handle, &mgt_cb);
         
     gap_test_interface = get_gap_instance();
     gap_test_interface->register_callbacks(manager_handle, &gap_hanlde, &gap_test_callbacks);
     
-    //gap_test_interface->start_discovery(gap_hanlde, 500);
-
     manager->enable(manager_handle);
-
-
-
 
     while (1){
         usleep(1000);

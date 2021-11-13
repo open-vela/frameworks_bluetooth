@@ -67,7 +67,7 @@ config BLUETOOTH_HID_DEV
 
 config BLUETOOTH_SPP
 	bool "Enable BT_SPP"
-	default y
+	default n
 
 config BLUETOOTH_MANAGER
   	bool "Enable bt manager"
@@ -79,6 +79,8 @@ config BLUETOOTH_SAMPLE_GATTC
 
 config BLUETOOTH_SAMPLE_GATTS
     bool "Enable ble advertise and gatt server sample"
+    default n
+
 config BLUETOOTH_SAMPLE_LEADV
     bool "Enable ble adv test"
     default n
@@ -110,7 +112,7 @@ config BLUETOOTH_SPP_TEST
 	help
 		SPP test
 
-endif
+endif # BLUETOOTH_SPP
 
 config BLUETOOTH_LOCAL_THREAD
 	bool "Local Thread Transfer"
