@@ -148,9 +148,9 @@ void process_loop_in_gap(void *data, size_t data_size)
     gap_msg_t *gap_msg = (gap_msg_t*)data;
     switch (gap_msg->event){
         case GAP_STACK_STATE_CHANGED:{
-            if (bts_gap_callbacks) {
-                bts_gap_callbacks->adapter_state_changed_cb(gap_msg->event_data.data.stack_state);
-            }
+            // if (bts_gap_callbacks) {
+            //     bts_gap_callbacks->adapter_state_changed_cb(gap_msg->event_data.data.stack_state);
+            // }
             bluetooth_service_interface * service_interface = get_bluetooth_service_interface();
             if (service_interface){
                 service_interface->stack_state_change(gap_msg->event_data.data.stack_state);
@@ -178,11 +178,14 @@ bt_result_code bts_start_discovery(uint32_t timeout)
     service_adapter_gap_start_device_discovery(timeout);
 }
 
-
-
 void adapter_device_found_callback(device_found_t *device)
 {
     BT_LOGD("%s", __func__);
+    if ((!bts_gap_callbacks) || (!bts_gap_callbacks->device_found_cb))
+        return;
+    bt_device_t *new_device  = malloc(sizeof(bt_device_t));
+    memcpy(new_device->addr, device->bd_addr, BT_ADDR_LENGTH);
+    bts_gap_callbacks->device_found_cb(new_device);
 }
 void adapter_received_remote_name_callback(bd_addr_t bd_addr, char *bt_name, uint8_t length)
 {
@@ -583,7 +586,7 @@ bt_result_code gap_disable(bool normal_disable)
     return ret;         
  }
 
-int  bts_get_remote_services(bt_device_t remote_addr, bt_uuid_t *service_list, uint8_t count_in)
+int  bts_get_remote_services(bt_device_t* remote_addr, bt_uuid_t *service_list, uint8_t count_in)
 {
     return -1;
 }
@@ -648,3 +651,189 @@ bt_result_code bts_cancel_bond(bt_device_t *device)
     return ret;   
     
  }
+bt_result_code bts_get_bonded_devices(void)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;   
+
+}
+
+/*Connection*/
+ bt_result_code bts_connect_all(bt_device_t *device)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+ bt_result_code bts_disonnect_all(bt_device_t *device)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+ bt_result_code bts_get_connected_devices(void)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+
+/*Discovery*/
+ bt_result_code bts_set_scan_mode(bt_scan_mode scanMode, bool bondable)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+
+ bt_result_code bts_stop_discovery(void)
+{
+     bt_status ret = BT_RESULT_FAILED;
+
+    ret = service_adapter_gap_stop_device_discovery();
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, ret:%d",  __func__, ret);
+        return BT_RESULT_FAILED;
+    }
+     return ret;       
+}
+ 
+ /*service discovery*/
+
+bt_result_code bts_start_service_discovery(bt_device_t *device, bt_uuid_t uuid)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_stop_service_discovery(bt_device_t *device)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+
+/*VSC command*/
+ bt_result_code bts_send_hci_command_v1(bt_hci_command_t *command, bt_service_hci_command_complete_event event_type)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+
+/*ble interface*/
+bt_result_code bts_set_ble_scan_parameters(scan_params_t *scan_param)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_set_ble_scan_filter(ble_scan_filter_t *scan_filter)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_start_ble_scan(void)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_stop_ble_scan(void)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_start_ble_adv(advertise_param_t *scan_params)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_stop_ble_adv(uint8_t adv_id)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+
+bt_result_code bts_ble_set_static_identity(bt_device_t *device)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_get_current_irk(void)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_set_address(bt_device_t *device)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_get_address(void)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_set_bonded_devices(ble_keys_t *bonded_device_list, uint8_t count_in)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_connect(ble_connect_params_t *conn_param)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_disconnect(bt_device_t *device)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_smp_reply(spp_reply_data_t *reply_data)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_add_white_list(bt_device_t *device)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_remove_white_list(bt_device_t *device)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_add_resolving_list(bt_device_t *device)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_remove_resolving_list(bt_device_t *device)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_set_phy(bt_device_t *device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_add_private_channel(uint16_t private_cid)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_ble_send_packet(bt_device_t *device, uint16_t private_cid,
+        uint8_t *packet, uint16_t packet_size)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}       
+/**
+ * Send HCI command for testing purpose
+ * hci_cmd_packet[in] Complete HCI command packet, e.g. 01 03 0c 00
+ * @return Bluetooth Error status code (0- Success)
+ */
+bt_result_code bts_send_hci_command(uint8_t *hci_cmd_packet, hci_event_callback cb)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}
+bt_result_code bts_enter_bluetooth_test_mode(bt_test_mode test_mode)
+{
+     bt_status ret = BT_RESULT_FAILED;
+     return ret;       
+}

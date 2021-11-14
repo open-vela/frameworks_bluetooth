@@ -7,7 +7,7 @@
 #define LOG_TAG "bts_service_interface"
 
 typedef struct {
-  struct list_node callbakc_list;
+  struct list_node handle_list;
   bt_service_state bt_state;
   ble_service_state ble_state;
 }bt_service_t;
@@ -22,7 +22,7 @@ bt_service_t *service = NULL;
 
 void bts_service_if_state_changed_callback(bt_service_state state)
 {
-  struct list_node *list = &service->callbakc_list;
+  struct list_node *list = &service->handle_list;
   bt_if_handle_t *if_handle;
   struct list_node *node;
 
@@ -39,7 +39,7 @@ void bts_service_if_state_changed_callback(bt_service_state state)
 
 void bts_service_if_ble_state_changed_callback(ble_service_state state)
 {
-  struct list_node *list = &service->callbakc_list;
+  struct list_node *list = &service->handle_list;
   bt_if_handle_t *if_handle;
   struct list_node *node;
 
@@ -60,19 +60,19 @@ bt_result_code bts_if_init(void *handle, bt_service_if_callbacks* callbacks)
 {
     if (!service) {
       service = malloc(sizeof(bt_service_t));
-      list_initialize(&service->callbakc_list);
+      list_initialize(&service->handle_list);
       bts_service_init(&service_callback);
     }
     bt_if_handle_t *service_if_handle = (bt_if_handle_t *)malloc(sizeof(bt_if_handle_t));
     service_if_handle->handle = handle;
     service_if_handle->callbacks = callbacks;
-    list_add_tail(&service->callbakc_list, &service_if_handle->node);
+    list_add_tail(&service->handle_list, &service_if_handle->node);
     return BT_RESULT_SUCCESS;
 }
 
 bt_if_handle_t* find_if_handle_by_handle(void * handle)
 {
-  struct list_node *list = &service->callbakc_list;
+  struct list_node *list = &service->handle_list;
   bt_if_handle_t *if_handle;
   struct list_node *node;
 

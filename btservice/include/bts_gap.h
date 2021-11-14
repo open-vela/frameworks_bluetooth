@@ -14,9 +14,9 @@ typedef void (*bts_gap_init_done_callback)();
 typedef void (*bts_received_remote_name_callback)(BD_ADDR bd_addr, char *bt_name, uint8_t length);
 typedef void (*bts_discovery_state_changed_callback)(bt_discovery_state state);
 typedef void (*bts_ssp_request_callback)(bt_ssp_request_data_t *request_data);
-typedef void (*bts_device_found_callback)(bt_device_t device);
-typedef void (*bts_bond_state_changed_callback)(bt_device_t device, bt_bond_state state);
-typedef void (*bts_connection_state_callback)(bt_device_t device, bt_connection_state state);
+typedef void (*bts_device_found_callback)(bt_device_t* device);
+typedef void (*bts_bond_state_changed_callback)(bt_device_t* device, bt_bond_state state);
+typedef void (*bts_connection_state_callback)(bt_device_t* device, bt_connection_state state);
 typedef void (*bts_get_bonded_device_list_callback)(bt_address*bonded_device_list, uint8_t umber);
 typedef void (*bts_connected_device_list_callback)(bt_address*connected_device_list, uint8_t umber);
 typedef void (*bts_hci_event_callback)(bt_hci_event_t *hci_event);
@@ -59,7 +59,7 @@ stack_state_t gap_get_stack_state(void);
 /*Remote device*/
  bt_result_code bts_get_remote_name(bt_device_t *device);
  bt_result_code bts_get_connection_state(bt_device_t *device);
-int  bts_get_remote_services(bt_device_t remote_addr, bt_uuid_t *service_list, uint8_t count_in);
+int  bts_get_remote_services(bt_device_t* remote_addr, bt_uuid_t *service_list, uint8_t count_in);
 
 /*Bond*/
  bt_bond_state bts_get_bond_state(bt_device_t *device);

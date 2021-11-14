@@ -67,7 +67,7 @@ config BLUETOOTH_HID_DEV
 
 config BLUETOOTH_SPP
 	bool "Enable BT_SPP"
-	default n
+	default y
 
 config BLUETOOTH_MANAGER
   	bool "Enable bt manager"
