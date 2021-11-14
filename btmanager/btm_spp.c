@@ -38,7 +38,7 @@
 #include "btm_manager.h"
 #include "bts_spp.h"
 #include "btm_spp.h"
-
+#include "bts_service_interface.h"
 #define LOG_TAG "btm_spp"
 #include "log.h"
 

@@ -125,14 +125,14 @@ typedef struct {
 
 typedef void (*bt_manager_ble_state_changed_callback)(bt_manager_ble_state state);
 
-typedef void (*bt_connection_state_changed_callback)(bt_device_t device, bt_connection_state state);
+typedef void (*bt_connection_state_changed_callback)(bt_device_t* device, bt_connection_state state);
 
 /**
  * BR/EDR device found callback, invoked in response to btStartDiscovery()
  * @param[in] addr - newly found device
  * @return   void
  */
-typedef void (*device_found_callback)(bt_device_t device);
+typedef void (*device_found_callback)(bt_device_t* device);
 /**
  * BR/EDR device's name updated callback, invoked in response to btStartDiscovery()/btGetRemoteName()
  * @param[in] bt_name - remote device name
@@ -163,7 +163,7 @@ typedef void (*ssp_request_callback)(bt_ssp_request_data_t *request_data);
  * @param[in] state - bond state
  * @return   void
  */
-typedef void (*bond_state_changed_callback)(bt_device_t device, bt_bond_state state);
+typedef void (*bond_state_changed_callback)(bt_device_t* device, bt_bond_state state);
 
 /**
  * Get local name callback - invoked in response to btGetLocalName()
@@ -174,15 +174,15 @@ typedef void (*bond_state_changed_callback)(bt_device_t device, bt_bond_state st
  */
 typedef void (*local_name_callback)(char *bt_name, uint8_t length);
 
-typedef void (*local_address_callback)(bt_device_t device);
+typedef void (*local_address_callback)(bt_device_t* device);
 
 typedef void (*local_device_class_callback)(uint32_t device_class);
 
-typedef void (*connected_state_callback)(bt_device_t device, bt_connection_state state);
+typedef void (*connected_state_callback)(bt_device_t* device, bt_connection_state state);
 
-typedef void (*get_bonded_device_list_callback)(bt_address*bonded_device_list, uint8_t umber);
+typedef void (*get_bonded_device_list_callback)(bt_address*bonded_device_list, uint8_t number);
 
-typedef void (*connected_device_list_callback)(bt_address*connected_device_list, uint8_t umber);
+typedef void (*connected_device_list_callback)(bt_address*connected_device_list, uint8_t number);
 
 typedef void (*btm_adapter_state_changed_callback)(stack_state_t state);
 
@@ -211,7 +211,7 @@ typedef bt_result_code (*bt_gap_register_callbacks)(void * manager_handle, void 
 typedef void (*bt_gap_unregister_callbacks)(void * gap_handle);
 
 /*Local property*/
-typedef bt_result_code (*bt_set_local_address)(void * handle, bt_device_t device);
+typedef bt_result_code (*bt_set_local_address)(void * handle, bt_device_t* device);
 typedef bt_address* (*bt_get_local_address)(void * handle);
 typedef bt_result_code (*bt_set_local_io_capability)(void * handle, bt_io_capability io_capability);
 typedef bt_result_code (*bt_set_local_name)(void * handle, char *bt_name, uint8_t len);
@@ -220,20 +220,20 @@ typedef bt_result_code (*bt_set_local_device_class)(void * handle, uint32_t clas
 typedef bt_result_code (*bt_get_local_device_class)(void * handle);
 
 /*Remote device*/
-typedef bt_result_code (*bt_get_remote_name)(void * handle, bt_device_t device);
-typedef bt_result_code (*bt_get_connection_state)(void * handle, bt_device_t device);
+typedef bt_result_code (*bt_get_remote_name)(void * handle, bt_device_t* device);
+typedef bt_result_code (*bt_get_connection_state)(void * handle, bt_device_t* device);
 
 /*Bond*/
-typedef bt_bond_state (*bt_get_bond_state)(void * handle, bt_device_t device);
-typedef bt_result_code (*bt_reply_pair_request)(void * handle, bt_device_t device, bool accept);
-typedef bt_result_code (*bt_create_bond)(void * handle, bt_device_t device);
-typedef bt_result_code (*bt_cancel_bond)(void * handle, bt_device_t device);
-typedef bt_result_code (*bt_remove_bond)(void * handle, bt_device_t device);
+typedef bt_bond_state (*bt_get_bond_state)(void * handle, bt_device_t* device);
+typedef bt_result_code (*bt_reply_pair_request)(void * handle, bt_device_t* device, bool accept);
+typedef bt_result_code (*bt_create_bond)(void * handle, bt_device_t* device);
+typedef bt_result_code (*bt_cancel_bond)(void * handle, bt_device_t* device);
+typedef bt_result_code (*bt_remove_bond)(void * handle, bt_device_t* device);
 typedef bt_result_code (*bt_get_bonded_devices)(void * handle);
 
 /*Connection*/
-typedef bt_result_code (*bt_connect_all)(void * handle, bt_device_t device);
-typedef bt_result_code (*bt_disonnect_all)(void * handle, bt_device_t device);
+typedef bt_result_code (*bt_connect_all)(void * handle, bt_device_t* device);
+typedef bt_result_code (*bt_disonnect_all)(void * handle, bt_device_t* device);
 typedef bt_result_code (*bt_get_connected_devices)(void * handle);
 
 /*Discovery*/
