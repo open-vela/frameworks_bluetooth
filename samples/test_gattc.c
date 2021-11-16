@@ -33,6 +33,11 @@
 #define LOG_TAG "btsample_gattc"
 
 static bd_addr_t remote_address;
+static void* client_handle;
+static btm_gatt_client_interface_t* client_interface = NULL;
+static uint16_t gatt_mtu = 20;
+#define THROUGHTPUT_HORIZON 5
+static volatile uint16_t throughtput_cursor = 1;
 
 static void on_scan_started_callback(void* handle)
 {
@@ -131,7 +136,8 @@ static void on_client_read_result_callback(void* handle, bd_addr_t remote_addr, 
 
 static void on_client_write_result_callback(void* handle, bd_addr_t remote_addr, gatt_element_t* element, gatt_status_t status)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, status:%d", __func__, status);
+    throughtput_cursor--;
 }
 
 static void on_client_nofity_request_callback(void* handle, bd_addr_t remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size)
@@ -156,6 +162,46 @@ static void on_client_phy_update_callback(void* handle, bd_addr_t remote_addr, b
 static void on_client_mtu_changed_callback(void* handle, bd_addr_t remote_addr, uint32_t mtu)
 {
     BT_LOGD("%s, mtu:%d", __func__, mtu);
+    gatt_mtu = mtu;
+}
+
+static void test_client_throughtout_write(uint32_t times, uint16_t mtu)
+{
+    BT_LOGD("###mtu:%d, times:%d", mtu, times);
+    gatt_element_t element;
+    memset(&element, 0, sizeof(element));
+    unsigned long id = 0;
+    BT_LOGD("please input characteristic  id");
+    scanf("%ld", &id);
+    element.id = id;
+    element.properties = GATT_PROPERTY_WRITE;
+    BT_LOGD("input id:%ld", element.id);
+    int msg_counter = 1;
+    uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * mtu);
+    if (!payload) {
+        BT_LOGD("malloc payload fail");
+        return;
+    }
+    for (int i = 0; i < times; i++) {
+        while (throughtput_cursor >= THROUGHTPUT_HORIZON) {
+            usleep(50);
+        }
+        memset(payload, 1, mtu);
+        payload[0] = (msg_counter >> 24) & 0xFF;
+        payload[1] = (msg_counter >> 16) & 0xFF;
+        payload[2] = (msg_counter >> 8) & 0xFF;
+        payload[3] = msg_counter & 0xFF;
+        bt_result_code code = client_interface->write_request(client_handle, &element, payload, mtu);
+        throughtput_cursor++;
+        BT_LOGD("write_request times:%d, throughtput_cursor:%d", i, throughtput_cursor);
+        if (code != BT_RESULT_SUCCESS) {
+            BT_LOGE("fail, write_request ret:%d", code);
+            return;
+        }
+        msg_counter++;
+    }
+    free(payload);
+    BT_LOGD("%s done", __func__);
 }
 
 static void manager_init_status_changed_callback(bt_result_code status)
@@ -243,13 +289,12 @@ int main(int argc, FAR char* argv[])
         .gattc_mtu_changed_cb = on_client_mtu_changed_callback,
     };
 
-    btm_gatt_client_interface_t* client_interface = get_btm_gattc_interface(manager);
+    client_interface = get_btm_gattc_interface(manager);
     if (!client_interface) {
         BT_LOGE("fail, get_btm_gattc_interface");
         return -1;
     }
 
-    void* client_handle;
     exit = false;
     while (!exit) {
         char ch = getchar();
@@ -275,7 +320,11 @@ int main(int argc, FAR char* argv[])
             break;
         }
         case 'e': {
-            client_interface->update_mtu(client_handle, 30);
+            uint16_t mtu = 20;
+            BT_LOGD("please input mtu");
+            scanf("%ld", &mtu);
+            BT_LOGD("mtu:%ld", mtu);
+            client_interface->update_mtu(client_handle, mtu);
             break;
         }
         case 'f': {
@@ -336,6 +385,14 @@ int main(int argc, FAR char* argv[])
             element.properties = GATT_PROPERTY_NOTIFY;
             BT_LOGD("input id:%ld", element.id);
             client_interface->register_notification(client_handle, &element, false);
+            break;
+        }
+        case 't': {
+            BT_LOGD("please input times, and let's do throughtout job");
+            uint32_t times;
+            scanf("%d", &times);
+            test_client_throughtout_write(times, gatt_mtu);
+            BT_LOGD("throughtout notify ...");
             break;
         }
         case 'q': {

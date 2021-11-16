@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "btm_gatt_server.h"
 #include "btm_le_advertise.h"
@@ -38,6 +39,8 @@ static btm_gatt_server_interface_t* gatts_interface = NULL;
 static btm_interface_t* manager = NULL;
 static bd_addr_t connected_device_addr;
 static uint16_t gatt_mtu = 20;
+#define THROUGHTPUT_HORIZON 2
+static volatile uint16_t throughtput_cursor = 1;
 
 enum {
     /* IDs of Private IOT service */
@@ -219,13 +222,14 @@ static void test_server_write_request_callback(void* handle, bd_addr_t remote_ad
 
 static void test_server_mtu_changed_callback(void* handle, bd_addr_t remote_addr, uint32_t mtu)
 {
-    BT_LOGD("%s mtu: %d", __func__, mtu);
+    BT_LOGD("###%s mtu: %d", __func__, mtu);
     gatt_mtu = mtu;
 }
 
 static void test_server_notify_sent_callback(void* handle, bd_addr_t remote_addr, gatt_status_t status)
 {
-    BT_LOGD("%s status:%d", __func__, status);
+    throughtput_cursor--;
+    BT_LOGD("%s status:%d, throughtput_cursor:%d", __func__, status, throughtput_cursor);
 }
 
 static uint8_t payload[] = {
@@ -258,6 +262,43 @@ static bt_mgr_callback_t mgt_cb = {
     .bt_manager_state_changed_callback_cb = manager_state_changed_callback,
     //.init_status_changed_callback_cb = manager_init_status_changed_callback,
 };
+
+static void test_server_throughtout_notify(uint32_t times, uint16_t mtu)
+{
+    BT_LOGD("###mtu:%d, times:%d", mtu, times);
+    uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * mtu);
+    uint32_t msg_counter = 1;
+    gatt_element_t* element = (gatt_element_t*)(s_iot_service_elements + IOT_SERVICE_TX_CHR_ID - 1);
+    if (!payload) {
+        BT_LOGD("malloc payload fail");
+        return;
+    }
+    if (!element) {
+        BT_LOGD("element null");
+        return;
+    }
+
+    for (int i = 0; i < times; i++) {
+        while (throughtput_cursor >= THROUGHTPUT_HORIZON) {
+            usleep(500);
+        }
+        memset(payload, 1, mtu);
+        payload[0] = (msg_counter >> 24) & 0xFF;
+        payload[1] = (msg_counter >> 16) & 0xFF;
+        payload[2] = (msg_counter >> 8) & 0xFF;
+        payload[3] = msg_counter & 0xFF;
+        bt_result_code code = gatts_interface->send_notify(gatts_handle, connected_device_addr, element, payload, mtu);
+        throughtput_cursor++;
+        BT_LOGD("send_notify times:%d, throughtput_cursor:%d", i, throughtput_cursor);
+        if (code != BT_RESULT_SUCCESS) {
+            BT_LOGE("fail, send_notify ret:%d", code);
+            return;
+        }
+        msg_counter++;
+    }
+    free(payload);
+    BT_LOGD("%s done", __func__);
+}
 
 int main(int argc, FAR char* argv[])
 {
@@ -308,7 +349,22 @@ int main(int argc, FAR char* argv[])
             gatts_interface->send_indicate(gatts_handle, connected_device_addr, element, payload2, sizeof(payload2) / sizeof(payload2[0]));
             break;
         }
-
+        case 'p': {
+            BT_LOGD("please select tx and rx phy(0: 1M, 1: 2M, 2: LE_Coded)");
+            int tx, rx;
+            scanf("%d rx", &tx, &rx);
+            BT_LOGD("  tx%d and rx%d phy", tx, rx);
+            gatts_interface->update_phy(gatts_handle, connected_device_addr, tx, rx);
+            break;
+        }
+        case 't': {
+            BT_LOGD("please input times, and let's do throughtout job");
+            uint32_t times;
+            scanf("%d", &times);
+            test_server_throughtout_notify(times, gatt_mtu);
+            BT_LOGD("throughtout notify ...");
+            break;
+        }
         default: {
             BT_LOGD("please input:\t q 'exit' \t n 'send notify' \t i 'send indicate'");
             break;
