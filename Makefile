@@ -41,6 +41,7 @@ ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_SPP),y)
+	CSRCS += udrv/uv/euv_pty.c
 	CSRCS +=btservice/spp/bts_spp_service.c
 	CSRCS +=btservice/spp/bts_spp.c
 	CSRCS +=btmanager/btm_spp.c
@@ -77,6 +78,8 @@ endif
 #CSRCS +=utils/list.c
 #endif
 CSRCS +=utils/uuid.c
+
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/udrv/include}
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/include}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/btservice/include}
