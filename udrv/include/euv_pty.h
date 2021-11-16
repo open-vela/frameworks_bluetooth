@@ -30,61 +30,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __BTM_SPP_H__
-#define __BTM_SPP_H__
 
-#include "btm_manager.h"
+#ifndef __EUV_PTY_H__
+#define __EUV_PTY_H__
+#include "uv.h"
 
-#define BT_UUID_SERVCLASS_SERIAL_PORT    0x1101 /* Serial Port Profile (SPP) */
-typedef enum {
-  SPP_CONNECTION_STATE_DISCONNECTED,
-  SPP_CONNECTION_STATE_CONNECTING,
-  SPP_CONNECTION_STATE_CONNECTED,
-  SPP_CONNECTION_STATE_DISCONNECTING
-}spp_connection_state_t;
+typedef struct _euv_pty euv_pty_t;
+typedef void (*euv_read_cb)(euv_pty_t *handle,
+                           const uint8_t* buf, ssize_t size);
+typedef void (*euv_write_cb)(euv_pty_t *handle, uint8_t* buf, int status);
 
-typedef enum {
-  SPP_PTY_MODE_NORMAL,
-  SPP_PTY_MODE_RAW
-}spp_pty_mode_t;
-
-#if 0
-typedef struct {
-  bt_device_t device;
-  uint16_t port;
-  int fd;
-  char *name;
-  uint16_t uuid16;
-} spp_conn_t;
-
-typedef struct {
-  uint16_t port;
-  uint16_t uuid16;
-} spp_server_conn_t;
-#endif
-
-typedef void (*spp_connection_state_callback)(const bt_address addr, uint16_t port, spp_connection_state_t state);
-typedef void (*spp_pty_open_callback)(const bt_address addr, uint16_t port, char *name, int fd);
-
-typedef struct {
-    size_t size;
-    spp_pty_open_callback pty_open_cb;
-    spp_connection_state_callback connection_state_cb;
-} spp_callbacks_t;
-
-typedef struct {
-  size_t size;
-  bt_result_code (*server_start)(void * handle, uint16_t port, uint16_t uuid16);
-  bt_result_code (*server_stop)(void * handle, uint16_t port);
-  bt_result_code (*client_connect)(void * handle, bt_address addr, uint16_t port, uint16_t uuid16);
-  bt_result_code (*disconnect)(void * handle, bt_address addr, uint16_t port);
-  void           (*set_callbacks)(void * handle, spp_callbacks_t *callbacks);
-}spp_interface_t;
-
-spp_interface_t *get_spp_interface(void);
-
-#ifdef CONFIG_BLUETOOTH_SPP_TEST
-void btm_spp_test(void);
-#endif
-
+euv_pty_t *euv_pty_init(uv_loop_t* loop, int fd, uv_tty_mode_t mode);
+void euv_pty_close(euv_pty_t *hdl);
+int euv_pty_write(euv_pty_t *handle, uint8_t *buffer, int length, euv_write_cb cb);
+int euv_pty_read_start(euv_pty_t *handle, euv_read_cb cb);
+int euv_pty_read_stop(euv_pty_t *handle);
 #endif

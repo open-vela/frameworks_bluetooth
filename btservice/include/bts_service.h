@@ -58,6 +58,7 @@ void stop_timer(uv_timer_t * timer);
 
 void process_in_loop(excute_service_context_t *context) ;
 int bts_service_get_interface(void* handle);
+uv_loop_t *get_service_loop(void);
 
 int bts_service_init(bt_service_callbacks* callbacks);
 bt_result_code bts_service_bt_enable(void);
