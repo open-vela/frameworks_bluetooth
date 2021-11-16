@@ -397,7 +397,7 @@ bt_result_code bts_if_send_hci_command(uint8_t *hci_cmd_packet, hci_event_callba
 {
     bts_send_hci_command(hci_cmd_packet, cb);
 }
-bt_result_code bts_if_enter_bluetooth_test_mode(bt_test_mode test_mode)
+bt_result_code bts_if_enter_bluetooth_test_mode(void* gap_handle, bt_test_mode test_mode)
 {
     bts_enter_bluetooth_test_mode(test_mode);
 }
@@ -456,41 +456,42 @@ bt_result_code bts_if_enter_bluetooth_test_mode(bt_test_mode test_mode)
 //     .enter_bluetooth_test_mode = bts_if_enter_bluetooth_test_mode,
 // };
 
+bt_result_code bts_if_gap_cleanup(void* gap_handle)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    return ret;
+}
+
 static btm_gap_interface_t gap_interface = {
     .size = sizeof(btm_gap_interface_t),
-    .register_callbacks = bts_if_register_callbacks,
-    .start_discovery = bts_if_start_discovery,
-    .set_address = bts_if_set_local_address,
-    .get_address = bts_if_get_local_address,
-    .set_iocapability = bts_if_set_local_io_capability,
-    .set_name  = bts_if_set_local_name,
-    .get_name = bts_if_get_local_name,
-    .set_class = bts_if_set_local_device_class,
-    .get_class = bts_if_get_local_device_class,
-    .get_remote_name = bts_if_get_remote_name,
-    .get_connetion_state = bts_if_get_connection_state,
-    .get_remote_services = bts_if_get_remote_services,
-    .get_bond_state = bts_if_get_bond_state,
-    .replay_pair_request = bts_if_reply_pair_request,
-    .create_bond = bts_if_create_bond,
-    .cancel_bond = bts_if_cancel_bond,
-    .remove_bond = bts_if_remove_bond,
-    .get_bonded_devices = bts_if_get_bonded_devices,
-    .connect_all = bts_if_connect_all,
-    .disconnect_all = bts_if_disonnect_all,
-    .get_connected_devices = bts_if_get_connected_devices,
-    .set_scan_mode = bts_if_set_scan_mode,
-    .start_discovery = bts_if_start_discovery,
-    .stop_discovery = bts_if_stop_discovery,
-    .start_service_discovery = bts_if_start_service_discovery,
-    .stop_service_discovery = bts_if_stop_service_discovery,
-    .send_hci_command_v1 = bts_if_send_hci_command_v1,
-    .set_ble_scan_parameters = bts_if_set_ble_scan_parameters,
-    .set_ble_scan_filter = bts_if_set_ble_scan_filter,
-    .start_ble_scan = bts_if_start_ble_scan,
-    .stop_ble_scan = bts_if_stop_ble_scan,
-    .start_ble_adv = bts_if_start_ble_adv,
-    .stop_ble_adv = bts_if_stop_ble_adv,
+    .gap_register_callbacks = bts_if_register_callbacks,
+    .gap_cleanup = bts_if_gap_cleanup,
+    .bt_start_discovery = bts_if_start_discovery,
+    .bt_set_local_address = bts_if_set_local_address,
+    .bt_get_local_address = bts_if_get_local_address,
+    .bt_set_local_io_capability = bts_if_set_local_io_capability,
+    .bt_set_local_name  = bts_if_set_local_name,
+    .bt_get_local_name = bts_if_get_local_name,
+    .bt_set_local_device_class = bts_if_set_local_device_class,
+    .bt_get_local_device_class = bts_if_get_local_device_class,
+    .bt_get_remote_name = bts_if_get_remote_name,
+    .bt_get_connection_state = bts_if_get_connection_state,
+    .bt_get_remote_services = bts_if_get_remote_services,
+    .bt_get_bond_state = bts_if_get_bond_state,
+    .bt_reply_pair_request = bts_if_reply_pair_request,
+    .bt_create_bond = bts_if_create_bond,
+    .bt_cancel_bond = bts_if_cancel_bond,
+    .bt_remove_bond = bts_if_remove_bond,
+    .bt_get_bonded_devices = bts_if_get_bonded_devices,
+    .bt_connect_all = bts_if_connect_all,
+    .bt_disconnect_all = bts_if_disonnect_all,
+    .bt_get_connected_devices = bts_if_get_connected_devices,
+    .bt_set_scan_mode = bts_if_set_scan_mode,
+    .bt_start_discovery = bts_if_start_discovery,
+    .bt_stop_discovery = bts_if_stop_discovery,
+    .bt_start_service_discovery = bts_if_start_service_discovery,
+    .bt_stop_service_discovery = bts_if_stop_service_discovery,
+    .bt_send_hci_command_v1 = bts_if_send_hci_command_v1,
     .ble_set_static_identity = bts_if_ble_set_static_identity,
     .ble_get_current_irk = bts_if_ble_get_current_irk,
     .ble_set_address = bts_if_ble_set_address,
@@ -506,7 +507,7 @@ static btm_gap_interface_t gap_interface = {
     .ble_set_phy = bts_if_ble_set_phy,
     .ble_add_private_channel = bts_if_ble_add_private_channel,
     .ble_send_packet = bts_if_ble_send_packet,
-    .send_hci_command = bts_if_send_hci_command,
+    .bt_send_hci_command = bts_if_send_hci_command,
     .enter_bluetooth_test_mode = bts_if_enter_bluetooth_test_mode,
 };
 

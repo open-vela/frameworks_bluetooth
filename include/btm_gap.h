@@ -216,97 +216,60 @@ typedef struct {
 
 /*gap interface*/
 
-typedef bt_result_code (*bt_gap_register_callbacks)(void * manager_handle, void ** gap_handle, const btm_gap_callbacks_t* callbacks);
-typedef void (*bt_gap_unregister_callbacks)(void * gap_handle);
+
+typedef struct {
+    size_t size;
+   bt_result_code (*gap_register_callbacks)(void * manager_handle, void ** gap_handle, const btm_gap_callbacks_t* callbacks);
+   void (*bt_gap_unregister_callbacks)(void * gap_handle);
+   bt_result_code (*gap_cleanup)(void* gap_handle);
 
 /*Local property*/
-typedef bt_result_code (*bt_set_local_address)(void * handle, bt_device_t* device);
-typedef bt_address* (*bt_get_local_address)(void * handle);
-typedef bt_result_code (*bt_set_local_io_capability)(void * handle, bt_io_capability io_capability);
-typedef bt_result_code (*bt_set_local_name)(void * handle, char *bt_name, uint8_t len);
-typedef char* (*bt_get_local_name)(void * handle);
-typedef bt_result_code (*bt_set_local_device_class)(void * handle, uint32_t class_of_device);
-typedef bt_result_code (*bt_get_local_device_class)(void * handle);
+   bt_result_code (*bt_set_local_address)(void * handle, bt_device_t* device);
+   bt_address* (*bt_get_local_address)(void * handle);
+   bt_result_code (*bt_set_local_io_capability)(void * handle, bt_io_capability io_capability);
+   bt_result_code (*bt_set_local_name)(void * handle, char *bt_name, uint8_t len);
+   char* (*bt_get_local_name)(void * handle);
+   bt_result_code (*bt_set_local_device_class)(void * handle, uint32_t class_of_device);
+   bt_result_code (*bt_get_local_device_class)(void * handle);
 
 /*Remote device*/
-typedef bt_result_code (*bt_get_remote_name)(void * handle, bt_device_t* device);
-typedef bt_result_code (*bt_get_connection_state)(void * handle, bt_device_t* device);
+   bt_result_code (*bt_get_remote_name)(void * handle, bt_device_t* device);
+   bt_result_code (*bt_get_connection_state)(void * handle, bt_device_t* device);
 
 /*Bond*/
-typedef bt_bond_state (*bt_get_bond_state)(void * handle, bt_device_t* device);
-typedef bt_result_code (*bt_reply_pair_request)(void * handle, bt_device_t* device, bool accept);
-typedef bt_result_code (*bt_create_bond)(void * handle, bt_device_t* device);
-typedef bt_result_code (*bt_cancel_bond)(void * handle, bt_device_t* device);
-typedef bt_result_code (*bt_remove_bond)(void * handle, bt_device_t* device);
-typedef bt_result_code (*bt_get_bonded_devices)(void * handle);
+   bt_bond_state (*bt_get_bond_state)(void * handle, bt_device_t* device);
+   bt_result_code (*bt_reply_pair_request)(void * handle, bt_device_t* device, bool accept);
+   bt_result_code (*bt_create_bond)(void * handle, bt_device_t* device);
+   bt_result_code (*bt_cancel_bond)(void * handle, bt_device_t* device);
+   bt_result_code (*bt_remove_bond)(void * handle, bt_device_t* device);
+   bt_result_code (*bt_get_bonded_devices)(void * handle);
 
 /*Connection*/
-typedef bt_result_code (*bt_connect_all)(void * handle, bt_device_t* device);
-typedef bt_result_code (*bt_disonnect_all)(void * handle, bt_device_t* device);
-typedef bt_result_code (*bt_get_connected_devices)(void * handle);
+   bt_result_code (*bt_connect_all)(void * handle, bt_device_t* device);
+   bt_result_code (*bt_disconnect_all)(void * handle, bt_device_t* device);
+   bt_result_code (*bt_get_connected_devices)(void * handle);
 
 /*Discovery*/
-typedef bt_result_code (*bt_set_scan_mode)(void * handle, bt_scan_mode scanMode, bool bondable);
+   bt_result_code (*bt_set_scan_mode)(void * handle, bt_scan_mode scanMode, bool bondable);
 //bt_result_code btGapSetLinkMode(bt_address remote_addr, BTLinkMode link_mode);
-typedef bt_result_code (*bt_start_discovery)(void * handle, uint32_t timeout);
-typedef bt_result_code (*bt_stop_discovery)(void * handle);
+   bt_result_code (*bt_start_discovery)(void * handle, uint32_t timeout);
+   bt_result_code (*bt_stop_discovery)(void * handle);
 
 /*VSC command*/
-typedef bt_result_code (*bt_send_hci_command_v1)(void * handle, bt_hci_command_t *command, bt_service_hci_command_complete_event event_type);
+   bt_result_code (*bt_send_hci_command_v1)(void * handle, bt_hci_command_t *command, bt_service_hci_command_complete_event event_type);
 
 /**
  * Send HCI command for testing purpose
  * hci_cmd_packet[in] Complete HCI command packet, e.g. 01 03 0c 00
  * @return Bluetooth Error status code (0- Success)
  */
-typedef bt_result_code (*bt_send_hci_command)(void * handle, uint8_t *hci_cmd_packet, hci_event_callback cb);
-
-
-typedef struct {
-    size_t size;
-    bt_gap_register_callbacks register_callbacks;
-    bt_gap_unregister_callbacks unregister_callbacks;
-    bt_set_local_address set_address;
-    bt_get_local_address get_address;
-    bt_set_local_io_capability set_iocapability;
-    bt_get_local_name get_name;
-    bt_set_local_name set_name;
-    bt_get_local_device_class get_class;
-    bt_set_local_device_class set_class;
-    bt_get_remote_name get_remote_name;
-    bt_get_connection_state get_connetion_state;
-    bt_get_bond_state get_bond_state;
-    bt_reply_pair_request replay_pair_request;
-    bt_create_bond create_bond;
-    bt_remove_bond remove_bond;
-    bt_cancel_bond cancel_bond;
-    bt_get_bonded_devices get_bonded_devices;
-    bt_connect_all connect_all;
-    bt_disonnect_all disconnect_all;
-    bt_get_connected_devices get_connected_devices;
-    bt_set_scan_mode set_scan_mode;
-    bt_start_discovery start_discovery;
-    bt_stop_discovery stop_discovery;
-    bt_send_hci_command_v1 send_hci_command_v1;
-    bt_send_hci_command send_hci_command;
-    int  (*get_remote_services)(void* gap_handle, bt_device_t* remote_addr, bt_uuid_t *service_list, uint8_t count_in);
-
-    void (*cleanup)(void);
-    bt_result_code (*enable)(void);
-    bt_result_code (*disable)(bool normal_disable);
-    stack_state_t (*gap_get_stack_state)(void);
+   bt_result_code (*bt_send_hci_command)(void * handle, uint8_t *hci_cmd_packet, hci_event_callback cb);
 
     /*service discovery*/
-    bt_result_code (*start_service_discovery)(void* gap_handle, bt_device_t* device, bt_uuid_t uuid);
-    bt_result_code (*stop_service_discovery)(void* gap_handle, bt_device_t* device);
+    bt_result_code (*bt_start_service_discovery)(void* gap_handle, bt_device_t* device, bt_uuid_t uuid);
+    bt_result_code (*bt_stop_service_discovery)(void* gap_handle, bt_device_t* device);
+    int  (*bt_get_remote_services)(void* gap_handle, bt_device_t* remote_addr, bt_uuid_t *service_list, uint8_t count_in);
 
-   /*ble interface*/
-    bt_result_code (*set_ble_scan_parameters)(void* gap_handle, scan_params_t *scan_param);
-    bt_result_code (*set_ble_scan_filter)(void* gap_handle, ble_scan_filter_t *scan_filter);
-    bt_result_code (*start_ble_scan)(void* gap_handle);
-    bt_result_code (*stop_ble_scan)(void* gap_handle);
-    bt_result_code (*start_ble_adv)(void* gap_handle, advertise_param_t *scan_params);
-    bt_result_code (*stop_ble_adv)(void* gap_handle, uint8_t adv_id);
     bt_result_code (*ble_set_static_identity)(void* gap_handle, bt_device_t* device);
     bt_result_code (*ble_get_current_irk)(void* gap_handle);
     bt_result_code (*ble_set_address)(void* gap_handle, bt_device_t* device);
@@ -322,13 +285,13 @@ typedef struct {
     bt_result_code (*ble_set_phy)(void* gap_handle, bt_device_t* device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
     bt_result_code (*ble_add_private_channel)(void* gap_handle, uint16_t private_cid);
     bt_result_code (*ble_send_packet)(void* gap_handle, bt_device_t* device, uint16_t private_cid, uint8_t *packet, uint16_t packet_size);
-        
+
     /**
      * Send HCI command for testing purpose
      * hci_cmd_packet[in] Complete HCI command packet, e.g. 01 03 0c 00
      * @return Bluetooth Error status code (0- Success)
      */
-    bt_result_code (*enter_bluetooth_test_mode)(bt_test_mode test_mode);
+    bt_result_code (*enter_bluetooth_test_mode)(void* gap_handle, bt_test_mode test_mode);
 } btm_gap_interface_t;
 
 btm_gap_interface_t* get_gap_instance(void);
