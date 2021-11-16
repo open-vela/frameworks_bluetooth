@@ -23,6 +23,10 @@ typedef void (*bts_service_get_bonded_device_list_callback)(void* gap_handle, bt
 typedef void (*bts_service_connected_device_list_callback)(void* gap_handle, bt_address*connected_device_list, uint8_t umber);
 typedef void (*bts_service_hci_event_callback)(void* gap_handle, bt_hci_event_t *hci_event);
 
+typedef void (*bts_service_smp_request_callback)(void* gap_handle, ssp_request_data_t *request_data);
+typedef void (*bts_service_ble_phy_update_callback)(void* gap_handle, bd_addr_t remote_addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status status);
+typedef void (*bts_service_ble_address_callback)(void* gap_handle, bd_addr_t ble_addr, ble_addr_type ble_addr_type);
+
 typedef struct {
     /* * set to sizeof(GAP_CALLBACKS_S) */
     uint8_t size;
@@ -37,6 +41,9 @@ typedef struct {
     bts_service_get_bonded_device_list_callback get_bonded_deivce_list_cb;
     bts_service_connected_device_list_callback get_connected_devices;
     bts_service_hci_event_callback hci_event_cb;
+    bts_service_smp_request_callback smp_request_cb;
+    bts_service_ble_phy_update_callback ble_phy_update_cb;
+    bts_service_ble_address_callback ble_address_cb;
     //TODO:: Add Patch Download Start Callback
 } bts_service_gap_callbacks_t;
 

@@ -89,7 +89,6 @@ static void gap_if_device_found_callback(bt_device_t* device)
         if_handle = (bt_if_gap_handle_t *)node;
         if (if_handle->gap_callbacks->device_found_cb)
            if_handle->gap_callbacks->device_found_cb(if_handle->gap_handle, device);
-        
     }    
 }
 static void gap_if_bond_state_changed_callback(bt_device_t* device, bt_bond_state state)
@@ -128,6 +127,18 @@ void gap_if_adapter_state_changed_callback(stack_state_t state)
         if_handle->gap_callbacks->adapter_state_changed(if_handle->gap_handle, state);
         }
     }
+}
+void gap_if__smp_request_callback(ssp_request_data_t *request_data)
+{
+
+}
+void gap_if__ble_phy_update_callback( bd_addr_t remote_addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status status)
+{
+
+}
+void gap_if__ble_address_callback( bd_addr_t ble_addr, ble_addr_type ble_addr_type)
+{
+
 }
 
 bts_gap_callback_t bts_gap_callbacks = {
