@@ -162,6 +162,11 @@ void after_io_process(uv_work_t *req, int status)
     //uv_close(req, NULL);
 }
 
+uv_loop_t *get_service_loop(void)
+{
+    return dispatch_loop;
+}
+
 void process_in_work_thread(process_in_io func_in_io, void * data)
 {
     uv_work_t *req = malloc(sizeof(uv_work_t));
