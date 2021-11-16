@@ -86,9 +86,12 @@ typedef struct {
   uint8_t length;
 } name_request_t;
 
+
 typedef struct{
 
   bd_addr_t  bd_addr;
+  ble_addr_type addr_type;
+  uint32_t valueint1;
   union 
   {
       device_found_t found_result;
@@ -102,6 +105,7 @@ typedef struct{
       bt_link_policy link_policy;
       bt_service_state stack_state;
       hci_event_t hci_event;
+
   }data;
   
 } gap_event_data_t;
@@ -320,6 +324,8 @@ void adapter_update_br_link_key_callback(remote_device_t* bonded_device)
 void adapter_delete_br_link_key_callback(bd_addr_t remote_addr)
 {
     BT_LOGD("%s", __func__);
+    gap_update_data_storage();
+
 }
 
 void adapter_pairing_request_callback(bd_addr_t remote_addr, bool local_initiate, bool is_bondable)

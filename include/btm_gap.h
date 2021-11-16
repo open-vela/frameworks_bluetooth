@@ -252,6 +252,7 @@ typedef bt_result_code (*bt_send_hci_command_v1)(void * handle, bt_hci_command_t
  */
 typedef bt_result_code (*bt_send_hci_command)(void * handle, uint8_t *hci_cmd_packet, hci_event_callback cb);
 
+
 typedef struct {
     size_t size;
     bt_gap_register_callbacks register_callbacks;
@@ -283,8 +284,37 @@ typedef struct {
     void (*cleanup)(void);
     bt_result_code (*enable)(void);
     bt_result_code (*disable)(bool normal_disable);
-
     stack_state_t (*gap_get_stack_state)(void);
+
+   /*ble interface*/
+    bt_result_code (*set_ble_scan_parameters)(void* gap_handle, scan_params_t *scan_param);
+    bt_result_code (*set_ble_scan_filter)(void* gap_handle, ble_scan_filter_t *scan_filter);
+    bt_result_code (*start_ble_scan)(void* gap_handle);
+    bt_result_code (*stop_ble_scan)(void* gap_handle);
+    bt_result_code (*start_ble_adv)(void* gap_handle, advertise_param_t *scan_params);
+    bt_result_code (*stop_ble_adv)(void* gap_handle, uint8_t adv_id);
+    bt_result_code (*ble_set_static_identity)(void* gap_handle, bt_device_t* device);
+    bt_result_code (*ble_get_current_irk)(void* gap_handle);
+    bt_result_code (*ble_set_address)(void* gap_handle, bt_device_t* device);
+    bt_result_code (*ble_get_address)(void* gap_handle);
+    bt_result_code (*ble_set_bonded_devices)(void* gap_handle, ble_keys_t *bonded_device_list, uint8_t count_in);
+    bt_result_code (*ble_connect)(void* gap_handle, ble_connect_params_t *conn_param);
+    bt_result_code (*ble_disconnect)(void* gap_handle, bt_device_t* device);
+    bt_result_code (*ble_smp_reply)(void* gap_handle, spp_reply_data_t *reply_data);
+    bt_result_code (*ble_add_white_list)(void* gap_handle, bt_device_t* device);
+    bt_result_code (*ble_remove_white_list)(void* gap_handle, bt_device_t* device);
+    bt_result_code (*ble_add_resolving_list)(void* gap_handle, bt_device_t* device);
+    bt_result_code (*ble_remove_resolving_list)(void* gap_handle, bt_device_t* device);
+    bt_result_code (*ble_set_phy)(void* gap_handle, bt_device_t* device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
+    bt_result_code (*ble_add_private_channel)(void* gap_handle, uint16_t private_cid);
+    bt_result_code (*ble_send_packet)(void* gap_handle, bt_device_t* device, uint16_t private_cid, uint8_t *packet, uint16_t packet_size);
+        
+    /**
+     * Send HCI command for testing purpose
+     * hci_cmd_packet[in] Complete HCI command packet, e.g. 01 03 0c 00
+     * @return Bluetooth Error status code (0- Success)
+     */
+    bt_result_code (*enter_bluetooth_test_mode)(bt_test_mode test_mode);
 } btm_gap_interface_t;
 
 btm_gap_interface_t* get_gap_instance(void);
