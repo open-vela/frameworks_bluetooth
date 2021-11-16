@@ -10,7 +10,7 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-
+#ifdef TEST_REDEFINE
 typedef void (*bts_service_gap_adapter_state_changed_callback)(void* handle, stack_state_t state);
 typedef void (*bts_service_gap_init_done_callback)(void* gap_handle);
 typedef void (*bts_service_received_remote_name_callback)(void* gap_handle, bt_address bd_addr, char *bt_name, uint8_t length);
@@ -47,7 +47,7 @@ typedef struct {
     //TODO:: Add Patch Download Start Callback
 } bts_service_gap_callbacks_t;
 
-typedef bt_result_code (*bts_service_gap_register_callbacks)(void* gap_handle, const bts_service_gap_callbacks_t* callbacks);
+typedef bt_result_code (*bts_service_gap_register_callbacks)(void* gap_handle, const btm_gap_callbacks_t* callbacks);
 
 typedef struct
 {
@@ -125,8 +125,9 @@ typedef struct
     bt_result_code (*send_hci_command)(uint8_t *hci_cmd_packet, hci_event_callback cb);
     bt_result_code (*enter_bluetooth_test_mode)(bt_test_mode test_mode);
 }gap_service_interface_t;
+#endif
 
 bt_result_code gap_service_init(void);
-gap_service_interface_t* get_gap_service_instance(void);
+btm_gap_interface_t* get_gap_service_instance(void);
 
 #endif

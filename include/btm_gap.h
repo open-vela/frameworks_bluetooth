@@ -112,7 +112,7 @@ typedef struct {
  * @param[in] hci_event, include evt_code and parameters
  * @return   void
  */
-typedef void (*hci_event_callback)(bt_hci_event_t *hci_event);
+typedef void (*hci_event_callback)(void* handle, bt_hci_event_t *hci_event);
 
 // HCI command struct
 typedef struct {
@@ -123,23 +123,23 @@ typedef struct {
     char params[1];             // parameters
 } bt_hci_command_t;
 
-typedef void (*bt_manager_ble_state_changed_callback)(bt_manager_ble_state state);
+//typedef void (*bt_manager_ble_state_changed_callback)(void* handle, bt_manager_ble_state state);
 
-typedef void (*bt_connection_state_changed_callback)(bt_device_t* device, bt_connection_state state);
+typedef void (*bt_connection_state_changed_callback)(void* handle, bt_device_t* device, bt_connection_state state);
 
 /**
  * BR/EDR device found callback, invoked in response to btStartDiscovery()
  * @param[in] addr - newly found device
  * @return   void
  */
-typedef void (*device_found_callback)(bt_device_t* device);
+typedef void (*device_found_callback)(void* handle, bt_device_t* device);
 /**
  * BR/EDR device's name updated callback, invoked in response to btStartDiscovery()/btGetRemoteName()
  * @param[in] bt_name - remote device name
  * @param[in] length  - buffer length
  * @return   void
  */
-typedef void (*received_remote_name_callback)(bt_address bd_addr, char *btName, uint8_t length);
+typedef void (*received_remote_name_callback)(void* handle, bt_address bd_addr, char *btName, uint8_t length);
 
 /**
  * @name: discoveryStateChangedCallback
@@ -147,14 +147,14 @@ typedef void (*received_remote_name_callback)(bt_address bd_addr, char *btName, 
  * @param[in] state - newly state
  * @return   void
  */
-typedef void (*discovery_state_changed_callback)(bt_discovery_state state);
+typedef void (*discovery_state_changed_callback)(void* handle, bt_discovery_state state);
 
 /**
  * SSP pairing reqeust callback - Just Works & Numeric Comparison
  * @param[in] request_data - request data from callback
  * @return   void
  */
-typedef void (*ssp_request_callback)(bt_ssp_request_data_t *request_data);
+typedef void (*ssp_request_callback)(void* handle, bt_ssp_request_data_t *request_data);
 
 /**
  * Bonding state change callback - invoked in response to btCreateBond(), service_adapter_cancel_bond(),
@@ -163,7 +163,7 @@ typedef void (*ssp_request_callback)(bt_ssp_request_data_t *request_data);
  * @param[in] state - bond state
  * @return   void
  */
-typedef void (*bond_state_changed_callback)(bt_device_t* device, bt_bond_state state);
+typedef void (*bond_state_changed_callback)(void* handle, bt_device_t* device, bt_bond_state state);
 
 /**
  * Get local name callback - invoked in response to btGetLocalName()
@@ -172,19 +172,25 @@ typedef void (*bond_state_changed_callback)(bt_device_t* device, bt_bond_state s
  * @param[in] maxLen - lenth
  * @return   void
  */
-typedef void (*local_name_callback)(char *bt_name, uint8_t length);
+typedef void (*local_name_callback)(void* handle, char *bt_name, uint8_t length);
 
-typedef void (*local_address_callback)(bt_device_t* device);
+typedef void (*local_address_callback)(void* handle, bt_device_t* device);
 
-typedef void (*local_device_class_callback)(uint32_t device_class);
+typedef void (*local_device_class_callback)(void* handle, uint32_t device_class);
 
-typedef void (*connected_state_callback)(bt_device_t* device, bt_connection_state state);
+typedef void (*connected_state_callback)(void* handle, bt_device_t* device, bt_connection_state state);
 
-typedef void (*get_bonded_device_list_callback)(bt_address*bonded_device_list, uint8_t number);
+typedef void (*get_bonded_device_list_callback)(void* handle, bt_address*bonded_device_list, uint8_t number);
 
-typedef void (*connected_device_list_callback)(bt_address*connected_device_list, uint8_t number);
+typedef void (*connected_device_list_callback)(void* handle, bt_address*connected_device_list, uint8_t number);
 
-typedef void (*btm_adapter_state_changed_callback)(stack_state_t state);
+typedef void (*btm_adapter_state_changed_callback)(void* handle, stack_state_t state);
+
+typedef void (*smp_request_callback)(void* gap_handle, ssp_request_data_t *request_data);
+
+typedef void (*ble_phy_update_callback)(void* gap_handle, bd_addr_t remote_addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status status);
+
+typedef void (*ble_address_callback)(void* gap_handle, bd_addr_t ble_addr, ble_addr_type ble_addr_type);
 
 typedef struct {
     /** set to sizeof(bt_callbacks_t) */
@@ -203,6 +209,9 @@ typedef struct {
     connected_state_callback connected_state_callback_cb;
     connected_device_list_callback connected_device_list_callback_cb;
     local_address_callback local_address_callback_cb;
+    smp_request_callback smp_requeset_cb;
+    ble_phy_update_callback ble_phy_update_cb;
+    ble_address_callback ble_address_cb;
 } btm_gap_callbacks_t;
 
 /*gap interface*/
@@ -262,8 +271,8 @@ typedef struct {
     bt_set_local_io_capability set_iocapability;
     bt_get_local_name get_name;
     bt_set_local_name set_name;
-    bt_set_local_address set_class;
     bt_get_local_device_class get_class;
+    bt_set_local_device_class set_class;
     bt_get_remote_name get_remote_name;
     bt_get_connection_state get_connetion_state;
     bt_get_bond_state get_bond_state;
@@ -280,11 +289,16 @@ typedef struct {
     bt_stop_discovery stop_discovery;
     bt_send_hci_command_v1 send_hci_command_v1;
     bt_send_hci_command send_hci_command;
+    int  (*get_remote_services)(void* gap_handle, bt_device_t* remote_addr, bt_uuid_t *service_list, uint8_t count_in);
 
     void (*cleanup)(void);
     bt_result_code (*enable)(void);
     bt_result_code (*disable)(bool normal_disable);
     stack_state_t (*gap_get_stack_state)(void);
+
+    /*service discovery*/
+    bt_result_code (*start_service_discovery)(void* gap_handle, bt_device_t* device, bt_uuid_t uuid);
+    bt_result_code (*stop_service_discovery)(void* gap_handle, bt_device_t* device);
 
    /*ble interface*/
     bt_result_code (*set_ble_scan_parameters)(void* gap_handle, scan_params_t *scan_param);
