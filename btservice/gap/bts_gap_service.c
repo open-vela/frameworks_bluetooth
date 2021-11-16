@@ -48,7 +48,7 @@ typedef struct {
 typedef struct {
   struct list_node node;
   void* gap_handle;
-  bts_service_gap_callbacks_t* gap_callbacks;
+  btm_gap_callbacks_t* gap_callbacks;
 }bt_if_gap_handle_t;
 
 bt_gap_service_t* gap_service = NULL;
@@ -70,8 +70,8 @@ static void gap_if_discovery_state_changed_callback(bt_discovery_state state)
 
     list_for_every(list, node) {
         if_handle = (bt_if_gap_handle_t *)node;
-        if (if_handle->gap_callbacks->discovery_state_changed_cb)
-            if_handle->gap_callbacks->discovery_state_changed_cb(if_handle->gap_handle, state);
+        if (if_handle->gap_callbacks->discovery_state_changed_callback_cb)
+            if_handle->gap_callbacks->discovery_state_changed_callback_cb(if_handle->gap_handle, state);
     }
 }
 static void gap_if_ssp_request_callback(bt_ssp_request_data_t *request_data)
@@ -87,8 +87,8 @@ static void gap_if_device_found_callback(bt_device_t* device)
 
     list_for_every(list, node) {
         if_handle = (bt_if_gap_handle_t *)node;
-        if (if_handle->gap_callbacks->device_found_cb)
-           if_handle->gap_callbacks->device_found_cb(if_handle->gap_handle, device);
+        if (if_handle->gap_callbacks->device_found_callback_cb)
+           if_handle->gap_callbacks->device_found_callback_cb(if_handle->gap_handle, device);
     }    
 }
 static void gap_if_bond_state_changed_callback(bt_device_t* device, bt_bond_state state)
@@ -123,8 +123,8 @@ void gap_if_adapter_state_changed_callback(stack_state_t state)
 
     list_for_every(list, node) {
         if_handle = (bt_if_gap_handle_t *)node;
-        if (if_handle->gap_callbacks->adapter_state_changed){
-        if_handle->gap_callbacks->adapter_state_changed(if_handle->gap_handle, state);
+        if (if_handle->gap_callbacks->state_changed_cb){
+        if_handle->gap_callbacks->state_changed_cb(if_handle->gap_handle, state);
         }
     }
 }
@@ -166,11 +166,11 @@ bt_result_code gap_service_init()
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_if_register_callbacks(void* gap_handle, const bts_service_gap_callbacks_t* callbacks)
+bt_result_code bts_if_register_callbacks(void* handle, void* gap_handle, const btm_gap_callbacks_t* callbacks)
 {
     BT_LOGD("%s", __func__);
     bt_if_gap_handle_t * gap_if_handle = (bt_if_gap_handle_t*)malloc(sizeof(bt_if_gap_handle_t));
-    gap_if_handle->gap_callbacks = malloc(sizeof(bts_service_gap_callbacks_t));
+    gap_if_handle->gap_callbacks = malloc(sizeof(btm_gap_callbacks_t));
     gap_if_handle->gap_callbacks = callbacks;
     gap_if_handle->gap_handle = gap_handle;
     list_add_tail(&gap_service->handle_list, &gap_if_handle->node);
@@ -402,28 +402,82 @@ bt_result_code bts_if_enter_bluetooth_test_mode(bt_test_mode test_mode)
     bts_enter_bluetooth_test_mode(test_mode);
 }
 
-static gap_service_interface_t gap_interface = {
-    .size = sizeof(gap_service_interface_t),
+// static gap_service_interface_t gap_interface = {
+//     .size = sizeof(gap_service_interface_t),
+//     .register_callbacks = bts_if_register_callbacks,
+//     .start_discovery = bts_if_start_discovery,
+//     .set_local_address = bts_if_set_local_address,
+//     .get_local_address = bts_if_get_local_address,
+//     .set_local_io_capability = bts_if_set_local_io_capability,
+//     .set_local_name  = bts_if_set_local_name,
+//     .get_local_name = bts_if_get_local_name,
+//     .set_local_device_class = bts_if_set_local_device_class,
+//     .get_local_device_class = bts_if_get_local_device_class,
+//     .get_remote_name = bts_if_get_remote_name,
+//     .get_connection_state = bts_if_get_connection_state,
+//     .get_remote_services = bts_if_get_remote_services,
+//     .get_bond_state = bts_if_get_bond_state,
+//     .reply_pair_request = bts_if_reply_pair_request,
+//     .create_bond = bts_if_create_bond,
+//     .cancel_bond = bts_if_cancel_bond,
+//     .remove_bond = bts_if_remove_bond,
+//     .get_bonded_devices = bts_if_get_bonded_devices,
+//     .connect_all = bts_if_connect_all,
+//     .disonnect_all = bts_if_disonnect_all,
+//     .get_connected_devices = bts_if_get_connected_devices,
+//     .set_scan_mode = bts_if_set_scan_mode,
+//     .start_discovery = bts_if_start_discovery,
+//     .stop_discovery = bts_if_stop_discovery,
+//     .start_service_discovery = bts_if_start_service_discovery,
+//     .stop_service_discovery = bts_if_stop_service_discovery,
+//     .send_hci_command_v1 = bts_if_send_hci_command_v1,
+//     .set_ble_scan_parameters = bts_if_set_ble_scan_parameters,
+//     .set_ble_scan_filter = bts_if_set_ble_scan_filter,
+//     .start_ble_scan = bts_if_start_ble_scan,
+//     .stop_ble_scan = bts_if_stop_ble_scan,
+//     .start_ble_adv = bts_if_start_ble_adv,
+//     .stop_ble_adv = bts_if_stop_ble_adv,
+//     .ble_set_static_identity = bts_if_ble_set_static_identity,
+//     .ble_get_current_irk = bts_if_ble_get_current_irk,
+//     .ble_set_address = bts_if_ble_set_address,
+//     .ble_get_address = bts_if_ble_get_address,
+//     .ble_set_bonded_devices = bts_if_ble_set_bonded_devices,
+//     .ble_connect = bts_if_ble_connect,
+//     .ble_disconnect = bts_if_ble_disconnect,
+//     .ble_smp_reply = bts_if_ble_smp_reply,
+//     .ble_add_white_list = bts_if_ble_add_white_list,
+//     .ble_remove_white_list = bts_if_ble_remove_white_list,
+//     .ble_add_resolving_list = bts_if_ble_add_resolving_list,
+//     .ble_remove_resolving_list = bts_if_ble_remove_resolving_list,
+//     .ble_set_phy = bts_if_ble_set_phy,
+//     .ble_add_private_channel = bts_if_ble_add_private_channel,
+//     .ble_send_packet = bts_if_ble_send_packet,
+//     .send_hci_command = bts_if_send_hci_command,
+//     .enter_bluetooth_test_mode = bts_if_enter_bluetooth_test_mode,
+// };
+
+static btm_gap_interface_t gap_interface = {
+    .size = sizeof(btm_gap_interface_t),
     .register_callbacks = bts_if_register_callbacks,
     .start_discovery = bts_if_start_discovery,
-    .set_local_address = bts_if_set_local_address,
-    .get_local_address = bts_if_get_local_address,
-    .set_local_io_capability = bts_if_set_local_io_capability,
-    .set_local_name  = bts_if_set_local_name,
-    .get_local_name = bts_if_get_local_name,
-    .set_local_device_class = bts_if_set_local_device_class,
-    .get_local_device_class = bts_if_get_local_device_class,
+    .set_address = bts_if_set_local_address,
+    .get_address = bts_if_get_local_address,
+    .set_iocapability = bts_if_set_local_io_capability,
+    .set_name  = bts_if_set_local_name,
+    .get_name = bts_if_get_local_name,
+    .set_class = bts_if_set_local_device_class,
+    .get_class = bts_if_get_local_device_class,
     .get_remote_name = bts_if_get_remote_name,
-    .get_connection_state = bts_if_get_connection_state,
+    .get_connetion_state = bts_if_get_connection_state,
     .get_remote_services = bts_if_get_remote_services,
     .get_bond_state = bts_if_get_bond_state,
-    .reply_pair_request = bts_if_reply_pair_request,
+    .replay_pair_request = bts_if_reply_pair_request,
     .create_bond = bts_if_create_bond,
     .cancel_bond = bts_if_cancel_bond,
     .remove_bond = bts_if_remove_bond,
     .get_bonded_devices = bts_if_get_bonded_devices,
     .connect_all = bts_if_connect_all,
-    .disonnect_all = bts_if_disonnect_all,
+    .disconnect_all = bts_if_disonnect_all,
     .get_connected_devices = bts_if_get_connected_devices,
     .set_scan_mode = bts_if_set_scan_mode,
     .start_discovery = bts_if_start_discovery,
@@ -456,7 +510,7 @@ static gap_service_interface_t gap_interface = {
     .enter_bluetooth_test_mode = bts_if_enter_bluetooth_test_mode,
 };
 
-gap_service_interface_t* get_gap_service_instance(void)
+btm_gap_interface_t* get_gap_service_instance(void)
 {
     return &gap_interface;
 }

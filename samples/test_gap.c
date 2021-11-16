@@ -31,20 +31,19 @@ static bt_mgr_callback_t mgt_cb = {
 
 };
 
-void test_discovery_state_changed_callback(bt_discovery_state state)
+void test_discovery_state_changed_callback(void* gap_handle,bt_discovery_state state)
 {
     BT_LOGD("%s", __func__);
 
 }
-void test_adapter_state_changed_callback(stack_state_t state)
+void test_adapter_state_changed_callback(void* gap_handle,stack_state_t state)
 {
      BT_LOGD("%s", __func__);
 
 }
-void test_device_found_callback(bt_device_t* device)
+void test_device_found_callback(void* gap_handle,bt_device_t* device)
 {
      BT_LOGD("%s, device %02x%02x%02x%02x%02x%02x", __func__, device->addr[0], device->addr[1],device->addr[2],device->addr[3],device->addr[4],device->addr[5]);
-
 }
 
 const btm_gap_callbacks_t gap_test_callbacks = 
