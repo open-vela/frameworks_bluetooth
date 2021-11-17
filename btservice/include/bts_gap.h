@@ -42,6 +42,7 @@ typedef struct {
     bts_hci_event_callback hci_event_cb;
     //TODO:: Add Patch Download Start Callback
     bts_smp_request_callback smp_request_cb;
+    bts_update_ble_bonded_devices_callback update_ble_bonede_device_cb;
     bts_ble_phy_update_callback ble_phy_update_cb;
     bts_ble_address_callback ble_address_cb;
 } bts_gap_callback_t;
