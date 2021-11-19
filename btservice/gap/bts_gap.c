@@ -160,7 +160,14 @@ typedef struct
   gap_event_data_t event_data;
 } gap_msg_t;
 
+typedef struct 
+{
+    struct list_node node;
+    bt_device_t* device;
+}discovery_device_t;
+
 struct list_node *msg_list;
+struct list_node *discovery_list = NULL;
 
 extern void InitTransportLayer(void);
 
@@ -205,7 +212,21 @@ void process_loop_in_gap(void *data, size_t data_size)
                 break;
             }
             case GAP_DISCOVERY_STATE_CHANGED:{
-
+                if (gap_msg->event_data.data.discovery_state == BT_DISCOVERY_STARTED) {
+                    if(!discovery_list){
+                        discovery_list = malloc(sizeof(struct list_node));
+                        list_initialize(discovery_list);
+                    }
+                }
+                if (gap_msg->event_data.data.discovery_state == BT_DISCOVERY_STOPPED){
+                    struct list_node *node;
+                    discovery_device_t *discovery_devce;
+                    list_for_every(discovery_list, node){
+                        free(node);
+                    }
+                    free(discovery_list);
+                    discovery_list = NULL;
+                }
                 if ((bts_gap_callbacks) && (bts_gap_callbacks->discovery_state_changed_cb)) {
                     bts_gap_callbacks->discovery_state_changed_cb(gap_msg->event_data.data.discovery_state);
                 }
@@ -226,8 +247,22 @@ void process_loop_in_gap(void *data, size_t data_size)
                 break;
             }
             case GAP_DEVICE_FOUND:{
+                struct list_node *node;
+                discovery_device_t *discovery_devce;
+                bt_device_t *device = gap_msg->event_data.data.device;
+
+                list_for_every(discovery_list, node){
+                    discovery_devce = (discovery_device_t *)node;
+                    if(!memcmp(discovery_devce->device->addr, device->addr, BT_ADDR_LENGTH)){
+                        return ;
+                    }
+                }
+                discovery_devce = malloc(sizeof(discovery_device_t));
+                discovery_devce->device = device;
+                list_add_tail(discovery_list, &discovery_devce->node);
+
                 if ((bts_gap_callbacks) && (bts_gap_callbacks->device_found_cb)) {
-                        bts_gap_callbacks->device_found_cb(gap_msg->event_data.data.device);
+                        bts_gap_callbacks->device_found_cb(device);
                 }                
                 break;
             } 
@@ -275,7 +310,9 @@ void process_loop_in_gap(void *data, size_t data_size)
                 break;
             }              
             case GAP_BLE_ADDRESS:{
-                
+                if ((bts_gap_callbacks) && (bts_gap_callbacks->ble_address_cb)) {
+                        bts_gap_callbacks->ble_address_cb(gap_msg->event_data.data.device->addr, gap_msg->event_data.addr_type);
+                }                            
                 break;
             }      
             default:
@@ -305,13 +342,11 @@ bt_result_code bts_start_discovery(uint32_t timeout)
 
 void adapter_device_found_callback(device_found_t *device)
 {
-    BT_LOGD("%s", __func__);
+    //BT_LOGD("%s", __func__);
     if ((!bts_gap_callbacks) || (!bts_gap_callbacks->device_found_cb))
         return;
     bt_device_t *new_device  = malloc(sizeof(bt_device_t));
-    memcpy(new_device->addr, device->bd_addr, BT_ADDR_LENGTH);
-    //bts_gap_callbacks->device_found_cb(new_device);
-    
+    memcpy(new_device->addr, device->bd_addr, BT_ADDR_LENGTH);    
     gap_msg_t *msg = gap_msg_new(GAP_DEVICE_FOUND);
     msg->event_data.data.device = new_device;
     gap_send_message(msg);
@@ -431,7 +466,7 @@ void adapter_link_connect_request_callback(bd_addr_t remote_addr)
     service_adapter_gap_reply_link_request(remote_addr, true);
 
     gap_msg_t *msg = gap_msg_new(GAP_CONNECT_REQUEST);
-    memcpy(msg->event_data.bd_addr, remote_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     gap_send_message(msg); 
 }
 
@@ -439,7 +474,7 @@ void adapter_link_policy_changed_callback(bd_addr_t remote_addr, bt_link_policy 
 {
     BT_LOGD("%s", __func__);
     gap_msg_t *msg = gap_msg_new(GAP_LINK_POLICY_CHANGED);
-    memcpy(msg->event_data.bd_addr, remote_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.link_policy = link_policy;
     gap_send_message(msg);     
 }
@@ -495,7 +530,7 @@ void adapter_delete_br_link_key_callback(bd_addr_t remote_addr)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t *msg = gap_msg_new(GAP_DELETE_LINK_KEY_CHANGED);
-    memcpy(msg->event_data.bd_addr, remote_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     gap_send_message(msg);     
 
     gap_update_data_storage();
@@ -507,7 +542,7 @@ void adapter_pairing_request_callback(bd_addr_t remote_addr, bool local_initiate
     BT_LOGD("%s", __func__);
     service_adapter_gap_reply_pairing_request(remote_addr, 0);
     gap_msg_t *msg = gap_msg_new(GAP_PAIR_REQUEST);
-    memcpy(msg->event_data.bd_addr, remote_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.pair_request.is_bondable = is_bondable;
     msg->event_data.data.pair_request.local_initiate = local_initiate;
 
@@ -518,7 +553,7 @@ void adapter_service_discovered_callback( bd_addr_t remote_addr, br_service_t* s
 {
     BT_LOGD("%s", __func__);
     gap_msg_t *msg = gap_msg_new(GAP_SERVICE_DISCOVERED);
-    memcpy(msg->event_data.bd_addr, remote_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.discovery_service.services = services;
     msg->event_data.data.discovery_service.size = size;
 
@@ -529,7 +564,7 @@ void adapter_link_encryption_state_callback( bd_addr_t remote_addr, bool br_link
 {
     BT_LOGD("%s", __func__);
     gap_msg_t *msg = gap_msg_new(GAP_LINK_ENCRYPTION_STATE_CHANGED);
-    memcpy(msg->event_data.bd_addr, remote_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.link_encryption.br_link = br_link;
     msg->event_data.data.link_encryption.encryption_on = encryption_on;
     gap_send_message(msg);         
@@ -556,7 +591,7 @@ void adapter_ble_add_white_list_callback( bd_addr_t remote_addr, bt_status statu
 {
     BT_LOGD("%s", __func__);
     gap_msg_t *msg = gap_msg_new(GAP_BLE_ADD_WHITE_LIST);
-    memcpy(msg->event_data.bd_addr, remote_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.status = status;
     gap_send_message(msg);   
 }
@@ -565,7 +600,7 @@ void adapter_ble_remove_white_list_callback( bd_addr_t remote_addr, bt_status st
 {
     BT_LOGD("%s", __func__);
     gap_msg_t *msg = gap_msg_new(GAP_BLE_REMOVE_WHITE_LIST);
-    memcpy(msg->event_data.bd_addr, remote_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.status = status;
     gap_send_message(msg);   
 }
@@ -574,7 +609,7 @@ void adapter_ble_add_resolving_list_callback( bd_addr_t remote_addr, bt_status s
 {
     BT_LOGD("%s", __func__);
     gap_msg_t *msg = gap_msg_new(GAP_ADD_BLE_RESOlVING_LIST);
-    memcpy(msg->event_data.bd_addr, remote_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.status = status;
     gap_send_message(msg);       
 }
@@ -583,7 +618,7 @@ void adapter_ble_remove_resolving_list_callback( bd_addr_t remote_addr, bt_statu
 {
     BT_LOGD("%s", __func__);
     gap_msg_t *msg = gap_msg_new(GAP_REMOVE_BLE_RESOlVING_LIST);
-    memcpy(msg->event_data.bd_addr, remote_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.status = status;
     gap_send_message(msg);           
 }
@@ -592,7 +627,7 @@ void adapter_ble_address_callback( bd_addr_t ble_addr, ble_addr_type ble_addr_ty
 {
     BT_LOGD("%s", __func__);
     gap_msg_t *msg = gap_msg_new(GAP_BLE_ADDRESS);
-    memcpy(msg->event_data.bd_addr, ble_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, ble_addr, BT_ADDR_LENGTH);
     msg->event_data.addr_type = ble_addr_type;
     gap_send_message(msg);               
 }
@@ -602,7 +637,7 @@ void adapter_ble_phy_update_callback( bd_addr_t remote_addr, ble_phy_type_t tx_p
 {
     BT_LOGD("%s", __func__);
     gap_msg_t *msg = gap_msg_new(GAP_BLE_PHY_UPDATE);
-    memcpy(msg->event_data.bd_addr, remote_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.phy_update.tx_phy = tx_phy;
     msg->event_data.data.phy_update.rx_phy = rx_phy;
     msg->event_data.status = status;
@@ -614,7 +649,7 @@ void adapter_ble_irk_callback(bt_common_key irk,  bd_addr_t ble_addr,
 {
     BT_LOGD("%s", __func__);
     gap_msg_t *msg = gap_msg_new(GAP_BLE_IRK);
-    memcpy(msg->event_data.bd_addr, ble_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, ble_addr, BT_ADDR_LENGTH);
     msg->event_data.addr_type = ble_addr_type;
     memcpy(msg->event_data.data.irk, irk, BT_COMMON_KEY_SIZE);
     gap_send_message(msg);               
@@ -625,7 +660,7 @@ void adapter_ble_packet_received_callback( bd_addr_t remote_addr, uint16_t priva
 {
     BT_LOGD("%s", __func__);
     gap_msg_t *msg = gap_msg_new(GAP_BLE_PACKET_RECEIVED);
-    memcpy(msg->event_data.bd_addr, remote_addr, MAX_NAME_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.ble_packet_receive.packet = packet;
     msg->event_data.data.ble_packet_receive.packet_size = packet_size;
     msg->event_data.data.ble_packet_receive.private_cid = private_cid;
@@ -677,7 +712,7 @@ void get_local_address(void)
     // TODO adapter interface
     // get_address.address
 }
-void get_state(void)
+static void get_state(void)
 {
     BT_LOGD("%s", __func__);
 }
