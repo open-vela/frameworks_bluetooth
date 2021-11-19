@@ -58,7 +58,7 @@ typedef struct
 
 bt_service_state service_state = BT_MANAGER_STATE_OFF;
 static bt_service_callbacks* bluetooth_upper_callbacks = NULL;
-uv_loop_t* dispatch_loop;
+static uv_loop_t* bt_dispatch_loop;
 uv_async_t *post_gap_async ;
 
 
@@ -81,7 +81,7 @@ uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb)
     if (!handle)
         return NULL;
 
-    ret = uv_poll_init(dispatch_loop, handle, fd);
+    ret = uv_poll_init(bt_dispatch_loop, handle, fd);
     if (ret < 0) {
         free(handle);
         return NULL;
@@ -129,7 +129,7 @@ void process_in_loop(excute_service_context_t *context)
 {
     uv_async_t *post_function_async ;
 
-    if (NULL == dispatch_loop) {
+    if (NULL == bt_dispatch_loop) {
         return;
     }
     switch (context->profile_id)
@@ -142,7 +142,7 @@ void process_in_loop(excute_service_context_t *context)
         post_function_async = malloc(sizeof(uv_async_t));
         break;
     }
-    uv_async_init(dispatch_loop, post_function_async, execute_service_callback);
+    uv_async_init(bt_dispatch_loop, post_function_async, execute_service_callback);
     uv_handle_set_data((uv_handle_t*)post_function_async, context);
     uv_async_send(post_function_async);
 }
@@ -172,7 +172,7 @@ void after_io_process(uv_work_t *req, int status)
 
 uv_loop_t *get_service_loop(void)
 {
-    return dispatch_loop;
+    return bt_dispatch_loop;
 }
 
 void process_in_work_thread(process_in_io func_in_io, void * data)
@@ -182,7 +182,7 @@ void process_in_work_thread(process_in_io func_in_io, void * data)
     process_data->func_in_io = func_in_io;
     process_data->data = data;
     req->data = process_data;
-    uv_queue_work(dispatch_loop, req, io_process, after_io_process);
+    uv_queue_work(bt_dispatch_loop, req, io_process, after_io_process);
 }
 
 void timer_hadler_cb(uv_timer_t * timer)
@@ -211,7 +211,7 @@ uv_timer_t *start_timer(int timeout, int repeat, process_in_timer timer_callback
         return NULL;
     }
     timer = malloc(sizeof(uv_timer_t));
-    uv_timer_init(dispatch_loop, timer);
+    uv_timer_init(bt_dispatch_loop, timer);
 
     timer_process_data_t *process_data = malloc(sizeof(timer_process_data_t));
     process_data->func_in_timer = timer_callback;
@@ -241,13 +241,13 @@ int service_loop_init(void)
     uv_loop_t _loop;
 
     BT_LOGD("btservice loop_init");
-    dispatch_loop = uv_loop_new();
+    bt_dispatch_loop = uv_loop_new();
 
     //start_timer(0, 200000, process_in_loop_timer, NULL);
     post_gap_async = malloc(sizeof(uv_async_t));
-    uv_async_init(dispatch_loop, post_gap_async, execute_service_callback);
+    uv_async_init(bt_dispatch_loop, post_gap_async, execute_service_callback);
     BT_LOGD("Idling...");
-    uv_run(dispatch_loop, UV_RUN_DEFAULT);
+    uv_run(bt_dispatch_loop, UV_RUN_DEFAULT);
 
     //nerver touch here only if service is down
     BT_LOGD("Idling done");
