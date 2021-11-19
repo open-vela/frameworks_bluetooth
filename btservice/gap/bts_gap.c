@@ -221,9 +221,12 @@ void process_loop_in_gap(void *data, size_t data_size)
                 if (gap_msg->event_data.data.discovery_state == BT_DISCOVERY_STOPPED){
                     struct list_node *node;
                     discovery_device_t *discovery_devce;
-                    list_for_every(discovery_list, node){
+                    while (!list_is_empty(discovery_list))
+                    {
+                        node = list_remove_head(discovery_list);
                         free(node);
                     }
+                    
                     free(discovery_list);
                     discovery_list = NULL;
                 }
@@ -486,10 +489,6 @@ void adapter_stack_state_changed_callback(bt_service_state stack_state)
     msg->event_data.data.stack_state = stack_state;    
     gap_send_message(msg);
 
-    service_adapter_gap_set_local_device_class(BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO |
-            BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
-    service_adapter_gap_set_local_io_capability(SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
-    service_adapter_gap_set_scan_mode(SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
 }
 
 void adapter_hci_event_callback(hci_event_t *hci_event)
