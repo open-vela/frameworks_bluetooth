@@ -36,6 +36,7 @@ typedef struct excute_service_context{
   char * data;
   int command_id;
   bts_process_loop_data loop_func;
+  int profile_id;
 }excute_service_context_t;
 
 typedef bt_manager_bt_state bt_service_state;

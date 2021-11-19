@@ -59,6 +59,8 @@ typedef struct
 bt_service_state service_state = BT_MANAGER_STATE_OFF;
 static bt_service_callbacks* bluetooth_upper_callbacks = NULL;
 uv_loop_t* dispatch_loop;
+uv_async_t *post_gap_async ;
+
 
 void bts_uv_close_cb(uv_handle_t* handle)
 {
@@ -117,7 +119,6 @@ void execute_service_callback(uv_async_t* handle)
 
     func = context->loop_func;
     func(context->data, context->data_size);
-    uv_close((uv_handle_t*)handle, bts_uv_close_cb);
     if (NULL != context) {
         free(context);
     }
@@ -127,14 +128,21 @@ void execute_service_callback(uv_async_t* handle)
 void process_in_loop(excute_service_context_t *context) 
 {
     uv_async_t *post_function_async ;
-    uv_loop_t * loop = NULL;
 
     if (NULL == dispatch_loop) {
         return;
     }
-    post_function_async = malloc(sizeof(uv_async_t));
-    loop = dispatch_loop;
-    uv_async_init(loop, post_function_async, execute_service_callback);
+    switch (context->profile_id)
+    {
+    case BT_PROFILE_GAP_ID:
+        post_function_async =  post_gap_async;
+        break;
+    
+    default:
+        post_function_async = malloc(sizeof(uv_async_t));
+        break;
+    }
+    uv_async_init(dispatch_loop, post_function_async, execute_service_callback);
     uv_handle_set_data((uv_handle_t*)post_function_async, context);
     uv_async_send(post_function_async);
 }
@@ -158,8 +166,8 @@ void io_process(uv_work_t *req)
 void after_io_process(uv_work_t *req, int status)
 {
     BT_LOGD("btservice after_io_process");
-    //free();
-    //uv_close(req, NULL);
+    uv_close(req, NULL);
+    free(req);
 }
 
 uv_loop_t *get_service_loop(void)
@@ -231,10 +239,13 @@ void process_in_loop_timer(char * data)
 int service_loop_init(void)
 {
     uv_loop_t _loop;
-    BT_LOGD("btservice loop_init");
-    dispatch_loop = uv_default_loop();
 
-    start_timer(0, 200000, process_in_loop_timer, NULL);
+    BT_LOGD("btservice loop_init");
+    dispatch_loop = uv_loop_new();
+
+    //start_timer(0, 200000, process_in_loop_timer, NULL);
+    post_gap_async = malloc(sizeof(uv_async_t));
+    uv_async_init(dispatch_loop, post_gap_async, execute_service_callback);
     BT_LOGD("Idling...");
     uv_run(dispatch_loop, UV_RUN_DEFAULT);
 
@@ -243,8 +254,6 @@ int service_loop_init(void)
     uv_loop_close(uv_default_loop());
     return 0;
 }
-
-
 
 static bool interface_ready(void) { return bluetooth_upper_callbacks != NULL; }
 

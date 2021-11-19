@@ -91,6 +91,7 @@ CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/sr
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/src/stack/include}
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/system/libuv/libuv/include}
+CFLAGS   += -I $(APPDIR)/external/bluelet/
 
 ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GATTC), y)
 	MAINSRC   = samples/test_gattc.c
