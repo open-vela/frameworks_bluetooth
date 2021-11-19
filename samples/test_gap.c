@@ -85,6 +85,12 @@ int main(int argc, FAR char* argv[])
                 printf("gap test stop discovery :\n");
                 gap_test_interface->bt_stop_discovery(gap_hanlde);
             }
+            case 'a' :{
+                    gap_test_interface->bt_set_local_device_class(gap_hanlde, BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO |
+                            BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
+                    gap_test_interface->bt_set_local_io_capability(gap_hanlde, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
+                    gap_test_interface->bt_set_scan_mode(gap_hanlde, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
+            }
             default:
             break;
         }
