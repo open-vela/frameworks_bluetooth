@@ -87,7 +87,7 @@ typedef struct
 } bts_gattc_read_result_s;
 
 static void send_msg(bts_gattc_msg_t* msg);
-static void handle_event(void* data, size_t size);
+static void handle_msg_received(bt_profile_id id, void* data, size_t size);
 
 static struct list_node gattc_list = LIST_INITIAL_VALUE(gattc_list);
 
@@ -311,6 +311,7 @@ static bt_result_code gatt_client_connect(bts_gattc_hdl_t handle)
 {
     BT_LOGD("%s, remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", __func__, handle.remote_addr[0],
         handle.remote_addr[1], handle.remote_addr[2], handle.remote_addr[3], handle.remote_addr[4], handle.remote_addr[5]);
+    bts_register_profile_process(BT_PROFILE_GATTC_ID, &handle_msg_received);
     SERVICE_GATT_STATUS ret = service_adapter_gatt_client_connect(handle.remote_addr, &gatt_client_cbs);
     if (ret != GATT_SUCCESS) {
         BT_LOGE("fail, gatt handle connect, err:%d", ret);
@@ -489,8 +490,12 @@ const bts_gattc_interface_t* get_bts_gattc_instance()
     return &gatt_client_intance;
 }
 
-static void handle_event(void* data, size_t size)
+static void handle_msg_received(bt_profile_id id, void* data, size_t size)
 {
+    if (id != BT_PROFILE_GATTC_ID) {
+        BT_LOGE("error, invalid priofile id:%d", id);
+        return;
+    }
     BT_LOGD("%s", __func__);
     bts_gattc_msg_t* msg = (bts_gattc_msg_t*)(data);
     if (!msg) {
@@ -510,6 +515,7 @@ static void handle_event(void* data, size_t size)
         if (state == SERVICE_PROFILE_DISCONNECTED) {
             BT_LOGD("remove_gatt_client handle");
             remove_gatt_client(handle);
+            bts_unregister_profile_process(BT_PROFILE_GATTC_ID);
         }
         break;
     }
@@ -571,10 +577,5 @@ static void handle_event(void* data, size_t size)
 
 static void send_msg(bts_gattc_msg_t* msg)
 {
-
-    excute_service_context_t* context = (excute_service_context_t*)malloc(sizeof(excute_service_context_t));
-    context->loop_func = handle_event;
-    context->data = (void*)msg;
-    context->data_size = sizeof(bts_gattc_msg_t);
-    process_in_loop(context);
+    bts_send_uv_msg(BT_PROFILE_GATTC_ID, msg, sizeof(bts_gattc_msg_t));
 }

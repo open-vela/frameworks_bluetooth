@@ -540,8 +540,9 @@ static void spp_adapter_event_process(void *data, size_t size)
   free(data);
 }
 
-static void spp_adp_send_to_service(spp_adapter_msg_t *msg)
+static void spp_adp_send_to_service(spp_adapter_msg_t* msg)
 {
+#if 0
   excute_service_context_t *context = (excute_service_context_t *)malloc(sizeof(excute_service_context_t));
   spp_adapter_msg_t *spp_msg = (spp_adapter_msg_t *)malloc(sizeof(spp_adapter_msg_t));
 
@@ -550,6 +551,8 @@ static void spp_adp_send_to_service(spp_adapter_msg_t *msg)
   context->data = (void *)spp_msg;
   context->data_size = sizeof(spp_adapter_msg_t);
   process_in_loop(context);
+#endif
+    bts_send_uv_msg(BT_PROFILE_SPP_ID, msg, sizeof(spp_adapter_msg_t));
 }
 
 static void adp_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE_SPP_PORT conn_port,
@@ -630,10 +633,17 @@ static SPP_CALLBACKS_S spp_adp_callbacks = {
  * Public Functions
  ****************************************************************************/
 
+static void handle_msg_received(bt_profile_id id, void* data, size_t size)
+{
+    BT_LOGD("%s, id:%d", id);
+    spp_adapter_event_process(data, size);
+}
+
 bt_result_code bts_spp_init(spp_service_callbacks_t *callbacks)
 {
   SERVICE_BT_STATUS status;
 
+  bts_register_profile_process(BT_PROFILE_SPP_ID, &handle_msg_received);
   g_spp_handle.cbs = callbacks;
   list_initialize(&g_spp_handle.dev_list);
   memset(&g_spp_handle.conn_id_map, 0, sizeof(g_spp_handle.conn_id_map));
@@ -718,4 +728,5 @@ void bts_spp_cleanup(void)
   spp_close_all_device();
   list_delete(&g_spp_handle.dev_list);
   service_adapter_spp_cleanup();
+    bts_unregister_profile_process(BT_PROFILE_SPP_ID);
 }
