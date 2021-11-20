@@ -158,17 +158,33 @@ static void on_client_mtu_changed_callback(void* handle, bd_addr_t remote_addr, 
     BT_LOGD("%s, mtu:%d", __func__, mtu);
 }
 
+static void manager_init_status_changed_callback(bt_result_code status)
+{
+    BT_LOGD("%s, state:%d", __func__, status);
+}
+
+static void manager_state_changed_callback(bt_manager_bt_state state)
+{
+    BT_LOGD("%s, state:%d", __func__, state);
+}
+
+static bt_mgr_callback_t mgt_cb = {
+    .bt_manager_state_changed_callback_cb = manager_state_changed_callback,
+    .init_status_changed_callback_cb = manager_init_status_changed_callback,
+};
+
 int main(int argc, FAR char* argv[])
 {
+    void* manager_handle;
     btm_interface_t* manager = get_bt_manager_interface();
     if (!manager) {
         BT_LOGE("fail, get_bt_manager_interface");
         return -1;
     }
     BT_LOGD(" bt manager init ...");
-    manager->init(NULL);
+    manager->init(&manager_handle, &mgt_cb);
     BT_LOGD(" bt manager inited");
-    manager->enable();
+    manager->enable(manager_handle);
     BT_LOGD(" bt manager enabled");
 
     btm_le_scan_interface_t* scan_interface = get_btm_lescan_interface(manager);

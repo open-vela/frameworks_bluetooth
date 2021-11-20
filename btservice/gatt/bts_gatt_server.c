@@ -102,6 +102,7 @@ typedef struct {
 
 static void send_msg(bts_gatts_msg_t* msg);
 static void handle_event(void* data, size_t size);
+static void handle_msg_received(bt_profile_id id, void* data, size_t size);
 
 static struct list_node gatts_list = LIST_INITIAL_VALUE(gatts_list);
 
@@ -329,6 +330,7 @@ static void on_server_write_request(bd_addr_t remote_addr, uint32_t request_id,
         memcpy(v, value, size);
         data.value = v;
         data.size = size;
+        data.offset = offset;
 
         bts_gatts_msg_t* msg = create_adp_msg(ON_SERVER_WRITE_REQUEST, handle, &data, sizeof(bts_gatts_write_s));
         CHECK_PTR(msg);
@@ -379,6 +381,7 @@ static stack_gatt_server_callbacks gatt_server_cbs = {
 
 static bt_result_code gatt_server_open(bts_gatts_hdl_t server)
 {
+    bts_register_profile_process(BT_PROFILE_GATTS_ID, &handle_msg_received);
     SERVICE_GATT_STATUS ret = service_adapter_gatt_server_open(&gatt_server_cbs);
     if (ret != GATT_SUCCESS) {
         BT_LOGE("fail, gatt server open, err:%d", ret);
@@ -593,9 +596,13 @@ const bts_gatts_interface_t* get_bts_gatts_instance()
     return &gatt_server_intance;
 }
 
-static void handle_event(void* data, size_t size)
+static void handle_msg_received(bt_profile_id id, void* data, size_t size)
 {
-    BT_LOGD("%s", __func__);
+    if (id != BT_PROFILE_GATTS_ID) {
+        BT_LOGE("error, invalid priofile id:%d", id);
+        return;
+    }
+    BT_LOGD("%s, profile_id:%d", __func__, id);
     bts_gatts_msg_t* msg = (bts_gatts_msg_t*)(data);
     if (!msg) {
         BT_LOGE("%s fail, msg null", __func__);
@@ -615,6 +622,7 @@ static void handle_event(void* data, size_t size)
     case ON_SERVER_CLOSED: {
         BT_CBACK(handle->callbacks, bts_gatts_server_closed_cb, handle->btm_handle);
         remove_gatts_handle(handle);
+        bts_unregister_profile_process(BT_PROFILE_GATTS_ID);
         break;
     }
     case ON_SERVER_CONNECTION_CHANGED: {
@@ -679,9 +687,5 @@ static void handle_event(void* data, size_t size)
 
 static void send_msg(bts_gatts_msg_t* msg)
 {
-    excute_service_context_t* context = (excute_service_context_t*)malloc(sizeof(excute_service_context_t));
-    context->loop_func = handle_event;
-    context->data = (void*)msg;
-    context->data_size = sizeof(bts_gatts_msg_t);
-    process_in_loop(context);
+    bts_send_uv_msg(BT_PROFILE_GATTS_ID, msg, sizeof(bts_gatts_msg_t));
 }

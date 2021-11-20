@@ -37,6 +37,8 @@
 #include "bts_spp.h"
 #include "bts_hf_client.h"
 
+#include <nuttx/list.h>
+
 #define LOG_TAG "bts_service"
 #include "log.h"
 
@@ -55,12 +57,29 @@ typedef struct
     void * data;
 }timer_process_data_t;
 
+typedef enum {
+    THREAD_ID_SERVICE,
+    THREAD_ID_STACK,
+} thread_id_t;
+
+
+typedef struct {
+    struct list_node node;
+    bt_profile_id id;
+    void* data;
+    size_t size;
+} bts_profile_msg_t;
 
 bt_service_state service_state = BT_MANAGER_STATE_OFF;
 static bt_service_callbacks* bluetooth_upper_callbacks = NULL;
 static uv_loop_t* bt_dispatch_loop;
 uv_async_t *post_gap_async ;
-
+static uv_mutex_t msg_mutex;
+static uv_thread_t thread_handle[2];
+static uv_async_t async_handle[1];
+static uv_loop_t* loop_handle[1];
+static bts_profile_callbacks profiles_callbacks[BT_PROFILE_MAX_ID];
+static struct list_node bts_msg_list = LIST_INITIAL_VALUE(bts_msg_list);
 
 void bts_uv_close_cb(uv_handle_t* handle)
 {
@@ -279,13 +298,6 @@ static const void* bts_get_profile_interface(void* handle, const char* profile_i
     return NULL;
 }
 
-typedef enum {
-    THREAD_ID_SERVICE,
-    THREAD_ID_STACK,
-} thread_id_t;
-
-static uv_thread_t thread_handle[2];
-
 static void* stack_schedule_loop(void* data)
 {
     BT_LOGD("%s", __func__);
@@ -294,16 +306,72 @@ static void* stack_schedule_loop(void* data)
 
 }
 
+bool bts_register_profile_process(bt_profile_id id, bts_profile_callbacks cb)
+{
+    profiles_callbacks[id] = cb;
+    return true;
+}
+
+bool bts_unregister_profile_process(bt_profile_id id)
+{
+    profiles_callbacks[id] = NULL;
+    return true;
+}
+
+bool bts_send_uv_msg(bt_profile_id id, void* data, size_t size)
+{
+    bts_profile_msg_t* msg = (bts_profile_msg_t*)malloc(sizeof(bts_profile_msg_t));
+    if (!msg) {
+        BT_LOGE("malloc msg fail");
+        return false;
+    }
+    msg->id = id;
+    msg->data = data;
+    msg->size = size;
+    uv_mutex_lock(&msg_mutex);
+    list_add_tail(&bts_msg_list, &msg->node);
+    uv_mutex_unlock(&msg_mutex);
+    uv_async_send(&async_handle[THREAD_ID_SERVICE]);
+    return true;
+}
+
+static void bts_handle_uv_msg(uv_async_t* handle)
+{
+    if (!handle) {
+        BT_LOGE("fail, handle null");
+        return;
+    }
+
+    bts_profile_msg_t* msg = NULL;
+    do {
+        uv_mutex_lock(&msg_mutex);
+        msg = list_remove_head_type(&bts_msg_list, bts_profile_msg_t, node);
+        uv_mutex_unlock(&msg_mutex);
+        if (!msg) {
+            break;
+        }
+        if (!profiles_callbacks[msg->id]) {
+            BT_LOGW("not handle, profile %d not registered");
+            continue;
+        }
+        profiles_callbacks[msg->id](msg->id, msg->data, msg->size);
+        free(msg);
+    } while (true);
+}
+
 static void* service_schedule_loop(void* data)
 {
     BT_LOGD("%s", __func__);
-    service_loop_init();
+    loop_handle[THREAD_ID_SERVICE] = uv_loop_new();
+    uv_async_init(loop_handle[THREAD_ID_SERVICE], &async_handle[THREAD_ID_SERVICE], bts_handle_uv_msg);
+    uv_run(loop_handle[THREAD_ID_SERVICE], UV_RUN_DEFAULT);
 }
 
 bt_result_code bts_service_init(bt_service_callbacks* callbacks)
 {
     bluetooth_upper_callbacks = callbacks;
 
+    uv_mutex_init(&msg_mutex);
     if(service_state != BT_MANAGER_STATE_OFF) 
         return BT_RESULT_FAILED;
     InitTransportLayer();

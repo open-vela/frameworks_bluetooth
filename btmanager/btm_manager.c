@@ -96,10 +96,6 @@ void * bt_get_profile_interface(const bt_profile_id profile_id)
             //TODO add A2DP SRC interface
         }
         break;
-    case BT_PROFILE_GATT_ID: {
-
-        break;
-    }
     default:
         break;
     }
