@@ -182,7 +182,7 @@ gap_msg_t *gap_msg_new(gap_event_t event)
 
   msg->event = event;
   memset(&msg->event_data, 0, sizeof(msg->event_data));
-  list_add_tail(msg_list, &msg->node);
+//   list_add_tail(msg_list, &msg->node);
   
   return msg;
 }
@@ -196,12 +196,23 @@ void gap_msg_destory(gap_msg_t *msg)
 
 static bts_gap_callback_t* bts_gap_callbacks = NULL;
 /*process callback from stack */
+static void handle_msg_received(bt_profile_id id, void* data, size_t size)
+{
+    BT_LOGD("%s, id:%d", __func__, id);
+    process_loop_in_gap(data, size);
+}
+
 void process_loop_in_gap(void *data, size_t data_size)
 {
     BT_LOGD("%s", __func__);
-    while (!list_is_empty(msg_list)){
+    // while (!list_is_empty(msg_list)){
 
-        gap_msg_t *gap_msg = list_remove_head(msg_list);
+        // gap_msg_t *gap_msg = list_remove_head(msg_list);
+    gap_msg_t* gap_msg = (gap_msg_t*)(data);
+    if (!gap_msg) {
+        BT_LOGE("%s fail, gap_msg null", __func__);
+        return;
+    }
         //gap_msg_t *gap_msg = (gap_msg_t*)data;
         switch (gap_msg->event){
             case GAP_STACK_STATE_CHANGED:{
@@ -324,18 +335,19 @@ void process_loop_in_gap(void *data, size_t data_size)
 
         gap_msg_destory(gap_msg);
         
-    }
+    // }
 }
 
-void gap_send_message(gap_msg_t *msg)
+void gap_send_message(gap_msg_t* msg)
 {
-  excute_service_context_t *context = (excute_service_context_t *)malloc(sizeof(excute_service_context_t));
+    //   excute_service_context_t *context = (excute_service_context_t *)malloc(sizeof(excute_service_context_t));
 
-  context->loop_func = process_loop_in_gap;
-  //context->data = (void *)msg;
-  //context->data_size = sizeof(gap_msg_t);
-  context->profile_id = BT_PROFILE_GAP_ID;
-  process_in_loop(context);
+    //       context->loop_func = process_loop_in_gap;
+    //       //context->data = (void *)msg;
+    //       //context->data_size = sizeof(gap_msg_t);
+    //       context->profile_id = BT_PROFILE_GAP_ID;
+    //       process_in_loop(context);
+    bts_send_uv_msg(BT_PROFILE_GAP_ID, msg, sizeof(gap_msg_t));
 }
 
 bt_result_code bts_start_discovery(uint32_t timeout)
@@ -737,6 +749,7 @@ bt_result_code gap_init(bts_gap_callback_t* cb)
         msg_list = malloc(sizeof(struct list_node));
     
     list_initialize(msg_list);
+    bts_register_profile_process(BT_PROFILE_GAP_ID, &handle_msg_received);
     return BT_RESULT_SUCCESS;
 }
 
@@ -744,6 +757,7 @@ void gap_cleanup(void)
 {
     bts_gap_callbacks = NULL;
     service_adapter_gap_cleanup();
+    bts_unregister_profile_process(BT_PROFILE_GAP_ID);
 }
 
 bt_result_code gap_enable()

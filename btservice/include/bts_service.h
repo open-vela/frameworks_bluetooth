@@ -39,6 +39,14 @@ typedef struct excute_service_context{
   int profile_id;
 }excute_service_context_t;
 
+typedef struct {
+    bt_profile_id profile;
+    uint16_t event;
+    void* data;
+    size_t size;
+} bts_uv_msg_t;
+typedef void (*bts_profile_callbacks)(bt_profile_id id, void* data, size_t size);
+
 typedef bt_manager_bt_state bt_service_state;
 typedef bt_manager_ble_state ble_service_state;
 
@@ -70,5 +78,7 @@ bt_service_state bts_service_bt_get_state(void);
 ble_service_state bts_service_ble_get_state(void);
 void bts_service_cleanup(void);
 void stack_state_change(stack_state_t state);
-
+bool bts_send_uv_msg(bt_profile_id id,  void* data, size_t size);
+bool bts_register_profile_process(bt_profile_id id, bts_profile_callbacks cb);
+bool bts_unregister_profile_process(bt_profile_id id);
 #endif

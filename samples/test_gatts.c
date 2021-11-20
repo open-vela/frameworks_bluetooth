@@ -244,11 +244,27 @@ static uint8_t payload2[] = {
     0x01,
 };
 
+static void manager_init_status_changed_callback(bt_result_code status)
+{
+    BT_LOGD("%s, state:%d", __func__, status);
+}
+
+static void manager_state_changed_callback(bt_manager_bt_state state)
+{
+    BT_LOGD("%s, state:%d", __func__, state);
+}
+
+static bt_mgr_callback_t mgt_cb = {
+    .bt_manager_state_changed_callback_cb = manager_state_changed_callback,
+    .init_status_changed_callback_cb = manager_init_status_changed_callback,
+};
+
 int main(int argc, FAR char* argv[])
 {
+    void* manager_handle;
     manager = get_bt_manager_interface();
-    manager->init(NULL);
-    manager->enable();
+    manager->init(&manager_handle, &mgt_cb);
+    manager->enable(manager_handle);
 
     btm_gatt_server_callbacks cb = {
         .gatts_connection_state_changed_cb = test_server_connection_state_changed_callback,

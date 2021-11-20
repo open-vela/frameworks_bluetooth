@@ -47,7 +47,7 @@ typedef struct
 } gatt_lesadv_msg_t;
 
 static void send_msg(gatt_lesadv_msg_t* msg);
-static void handle_event(void* data, size_t size);
+static void handle_msg_received(bt_profile_id id, void* data, size_t size);
 
 static struct list_node advertiser_list = LIST_INITIAL_VALUE(advertiser_list);
 
@@ -88,6 +88,7 @@ static bool remove_advertise_handle(bts_leadv_hdl_t* advertiser)
 
 static bt_result_code le_start_adv(bts_leadv_hdl_t client)
 {
+    bts_register_profile_process(BT_PROFILE_LEADV_ID, &handle_msg_received);
     SERVICE_BT_STATUS ret = service_adapter_gap_start_ble_adv(client.param);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("set ble start adv fail, err:%d", ret);
@@ -164,8 +165,12 @@ const bts_le_advertise_interface_t* get_bts_bleadv_instance(void)
     return &ble_advertise_intance;
 }
 
-static void handle_event(void* data, size_t size)
+static void handle_msg_received(bt_profile_id id, void* data, size_t size)
 {
+    if (id != BT_PROFILE_LEADV_ID) {
+        BT_LOGE("error, invalid priofile id:%d", id);
+        return;
+    }
     BT_LOGD("%s", __func__);
     gatt_lesadv_msg_t* msg = (gatt_lesadv_msg_t*)(data);
     if (!msg) {
@@ -177,26 +182,26 @@ static void handle_event(void* data, size_t size)
     case ON_ADV_STARTED: {
         bts_leadv_hdl_t* handle = (bts_leadv_hdl_t*)(msg->handle);
         BT_CBACK(handle->callbacks, bts_le_advertise_started_cb, handle->btm_handle, handle->advertiser_id);
-        free(data);
         break;
     }
     case ON_ADV_STOPPED: {
         bts_leadv_hdl_t* handle = (bts_leadv_hdl_t*)(msg->handle);
         BT_CBACK(handle->callbacks, bts_le_advertise_stopped_cb, handle->btm_handle, handle->advertiser_id);
         remove_advertise_handle(handle);
-        free(data);
+        bts_unregister_profile_process(BT_PROFILE_LEADV_ID);
         break;
     }
-    default:
+    default: {
+        BT_LOGW("invalid event:%d", msg->event);
         break;
     }
+    }
+    if (msg->size > 0)
+        free(msg->data);
+    free(msg);
 }
 
 static void send_msg(gatt_lesadv_msg_t* msg)
 {
-    excute_service_context_t* context = (excute_service_context_t*)malloc(sizeof(excute_service_context_t));
-    context->loop_func = handle_event;
-    context->data = (void*)msg;
-    context->data_size = sizeof(gatt_lesadv_msg_t);
-    process_in_loop(context);
+    bts_send_uv_msg(BT_PROFILE_LEADV_ID, msg, sizeof(gatt_lesadv_msg_t));
 }

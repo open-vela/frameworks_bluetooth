@@ -48,7 +48,7 @@ typedef struct
 } bts_lescan_msg_t;
 
 static void send_msg(bts_lescan_msg_t* msg);
-static void handle_event(void* data, size_t size);
+static void handle_msg_received(bt_profile_id id, void* data, size_t size);
 
 static struct list_node scanner_list = LIST_INITIAL_VALUE(scanner_list);
 
@@ -139,6 +139,7 @@ static bts_lescan_msg_t* create_adp_msg(uint8_t event, bts_lescan_hdl_t* handle,
 
 static bt_result_code start_scan(bts_lescan_hdl_t handle)
 {
+    bts_register_profile_process(BT_PROFILE_LESCAN_ID, &handle_msg_received);
     SERVICE_BT_STATUS ret = service_adapter_gap_set_ble_scan_filter(&handle.filter);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("set ble scan filter fail, err:%d", ret);
@@ -228,8 +229,12 @@ const bts_le_scan_interface_t* get_bts_lescan_instance(void)
     return &ble_scan_intance;
 }
 
-static void handle_event(void* data, size_t size)
+static void handle_msg_received(bt_profile_id id, void* data, size_t size)
 {
+    if (id != BT_PROFILE_LESCAN_ID) {
+        BT_LOGE("error, invalid priofile id:%d", id);
+        return;
+    }
     BT_LOGD("%s", __func__);
     bts_lescan_msg_t* msg = (bts_lescan_msg_t*)(data);
     if (!msg) {
@@ -256,6 +261,7 @@ static void handle_event(void* data, size_t size)
     case ON_SCAN_STOPPED: {
         BT_CBACK(handle->callbacks, bts_ble_scan_stopped_cb, handle->btm_handle);
         remove_scan_handle(handle);
+        bts_unregister_profile_process(BT_PROFILE_LESCAN_ID);
         break;
     }
     case ON_SCAN_FAILED: {
@@ -273,9 +279,5 @@ static void handle_event(void* data, size_t size)
 
 static void send_msg(bts_lescan_msg_t* msg)
 {
-    excute_service_context_t* context = (excute_service_context_t*)malloc(sizeof(excute_service_context_t));
-    context->loop_func = handle_event;
-    context->data = (void*)msg;
-    context->data_size = sizeof(bts_lescan_msg_t);
-    process_in_loop(context);
+    bts_send_uv_msg(BT_PROFILE_LESCAN_ID, msg, sizeof(bts_lescan_msg_t));
 }
