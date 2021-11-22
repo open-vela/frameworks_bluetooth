@@ -102,28 +102,23 @@ CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/sr
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/system/libuv/libuv/include}
 CFLAGS   += -I $(APPDIR)/external/bluelet/
 
-STACKSIZE = 40960
 PRIORITY = SCHED_PRIORITY_DEFAULT
+STACKSIZE = 40960
 MODULE    = $(CONFIG_BLUETOOTH)
 
 ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GATTC), y)
-	PROGNAME  += btsample_gattc
 	MAINSRC   += samples/test_gattc.c
+	PROGNAME  += btsample_gattc
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GATTS), y)
-	PROGNAME  += btsample_gatts
 	MAINSRC   += samples/test_gatts.c
+	PROGNAME  += btsample_gatts
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GAP), y)
-	PROGNAME  += bt_gap_sample
 	MAINSRC   += samples/test_gap.c
-endif
-
-ifeq ($(CONFIG_BLUETOOTH_TOOL_CHAIN), y)
-	PROGNAME 	+= bttool
-	MAINSRC		+= tools/bt_tools.c
+	PROGNAME  += btsample_gap
 endif
 
 include $(APPDIR)/Application.mk

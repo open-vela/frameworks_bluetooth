@@ -12,10 +12,7 @@
  void *manager_handle = NULL;
 void *gap_hanlde = NULL;
 btm_gap_interface_t * gap_test_interface = NULL;
- void manager_init_status_changed_callback(bt_result_code status)
- {
 
- }
 
  void manager_state_changed_callback(bt_manager_bt_state state)
  {
@@ -27,8 +24,6 @@ btm_gap_interface_t * gap_test_interface = NULL;
 
 static bt_mgr_callback_t mgt_cb = {
     .bt_manager_state_changed_callback_cb = manager_state_changed_callback,
-    .init_status_changed_callback_cb = manager_init_status_changed_callback,
-
 };
 
 void test_discovery_state_changed_callback(void* gap_handle,bt_discovery_state state)
@@ -65,32 +60,71 @@ int main(int argc, FAR char* argv[])
     manager->enable(manager_handle);
     char input;
     bool exit = false;
+    bt_device_t * device = malloc(sizeof(bt_device_t));
+    bd_addr_t add = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};    
     while (!exit)
     {
         printf("please input command:\n");
         input = getchar();
         switch (input)
         {
-            case 'e':{
+            case '0':{
                 printf("gap test exit:\n");
                 exit = true;
                 break;
             }
-            case 'd':{
+            case '1':{
                 printf("gap test start discovery :\n");
                 gap_test_interface->bt_start_discovery(gap_hanlde, 5000);
                 break;
             }
-            case 's':{
+            case '2':{
                 printf("gap test stop discovery :\n");
                 gap_test_interface->bt_stop_discovery(gap_hanlde);
             }
             case 'a' :{
-                    gap_test_interface->bt_set_local_device_class(gap_hanlde, BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO |
-                            BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
                     gap_test_interface->bt_set_local_io_capability(gap_hanlde, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
                     gap_test_interface->bt_set_scan_mode(gap_hanlde, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
             }
+            case 'b' :{
+                memcpy(device->addr, add, BD_ADDR_SIZE);
+                 gap_test_interface->bt_create_bond(gap_hanlde, device);
+                break;
+            }
+            case 'c' :{
+                memcpy(device->addr, add, BD_ADDR_SIZE);
+                 gap_test_interface->bt_create_bond(gap_hanlde, device);
+                break;
+            }
+            case 'd' :{
+                memcpy(device->addr, add, BD_ADDR_SIZE);
+                 gap_test_interface->bt_remove_bond(gap_hanlde, device);
+                break;
+            }          
+            case 'e' :{
+                bt_device_t list[MAX_PAIR_DEVICE];
+                 gap_test_interface->bt_get_bonded_devices(gap_hanlde, list);
+                break;
+            }                
+            case 'f' :{
+                bt_device_t list[MAX_CONNECTED_DEVICE];
+                 gap_test_interface->bt_get_connected_devices(gap_hanlde, list);
+                break;
+            }                     
+            case 'g' :{
+                 gap_test_interface->bt_set_scan_mode(gap_hanlde, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
+                break;
+            }                  
+            case 'h' :{
+                memcpy(device->addr, add, BD_ADDR_SIZE);
+                 gap_test_interface->bt_get_remote_name(gap_hanlde, device);
+                break;
+            }                 
+            case 'i' :{
+                memcpy(device->addr, add, BD_ADDR_SIZE);
+                 gap_test_interface->bt_reply_pair_request(gap_hanlde, device, 0);
+                break;
+            }               
             default:
             break;
         }

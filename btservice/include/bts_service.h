@@ -65,7 +65,6 @@ void process_in_work_thread( process_in_io func_in_io,  void * data);
 uv_timer_t *start_timer(int timeout, int repeat, process_in_timer timer_callback, void * data);
 void stop_timer(uv_timer_t * timer);
 
-void process_in_loop(excute_service_context_t *context) ;
 int bts_service_get_interface(void* handle);
 uv_loop_t *get_service_loop(void);
 

@@ -159,7 +159,7 @@ void bts_a2dp_source_connection_state_changed_callback(BD_ADDR remote_addr,
      context->loop_func = process_loop_in_a2dp;
      context->data = (void *)parameter;
      context->command_id = A2DP_RESPONSE_CONNECTION_STATE_CHANGED;
-     process_in_loop(context);
+     //process_in_loop(context);
 }
 /*******************************************************************************
  * A2DP Source stream state changed callback

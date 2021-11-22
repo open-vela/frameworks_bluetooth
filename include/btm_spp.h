@@ -1,3 +1,9 @@
+/**@file  btm_spp.h
+* @brief       bluetooth adapter for SPP service.
+* @details   including get all SPP profile interface
+* @date        2021-11-10
+* @version     V1.0
+*/
 /****************************************************************************
  *
  *   Copyright (C) 2021 Xiaomi InC. All rights reserved.
