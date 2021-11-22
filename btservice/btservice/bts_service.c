@@ -42,8 +42,6 @@
 #define LOG_TAG "bts_service"
 #include "log.h"
 
-#define UV_TIMEOUT  (32767)
-#define UV_TIMEOUT_REPEAT  (32767)
 
 typedef struct 
 {
@@ -73,11 +71,9 @@ typedef struct {
 bt_service_state service_state = BT_MANAGER_STATE_OFF;
 static bt_service_callbacks* bluetooth_upper_callbacks = NULL;
 static uv_loop_t* bt_dispatch_loop;
-uv_async_t *post_gap_async ;
 static uv_mutex_t msg_mutex;
 static uv_thread_t thread_handle[2];
 static uv_async_t async_handle[1];
-static uv_loop_t* loop_handle[1];
 static bts_profile_callbacks profiles_callbacks[BT_PROFILE_MAX_ID];
 static struct list_node bts_msg_list = LIST_INITIAL_VALUE(bts_msg_list);
 
@@ -144,28 +140,6 @@ void execute_service_callback(uv_async_t* handle)
 
 }
 
-void process_in_loop(excute_service_context_t *context) 
-{
-    uv_async_t *post_function_async ;
-
-    if (NULL == bt_dispatch_loop) {
-        return;
-    }
-    switch (context->profile_id)
-    {
-    case BT_PROFILE_GAP_ID:
-        post_function_async =  post_gap_async;
-        break;
-    
-    default:
-        post_function_async = malloc(sizeof(uv_async_t));
-        break;
-    }
-    uv_async_init(bt_dispatch_loop, post_function_async, execute_service_callback);
-    uv_handle_set_data((uv_handle_t*)post_function_async, context);
-    uv_async_send(post_function_async);
-}
-
 void io_process(uv_work_t *req) 
 {
     BT_LOGD("btservice io_process");
@@ -187,11 +161,6 @@ void after_io_process(uv_work_t *req, int status)
     BT_LOGD("btservice after_io_process");
     uv_close(req, NULL);
     free(req);
-}
-
-uv_loop_t *get_service_loop(void)
-{
-    return bt_dispatch_loop;
 }
 
 void process_in_work_thread(process_in_io func_in_io, void * data)
@@ -250,53 +219,12 @@ void stop_timer(uv_timer_t * timer)
     uv_close((uv_handle_t *)timer, bts_uv_close_cb);
 }
 
-void process_in_loop_timer(char * data)
+uv_loop_t *get_service_loop(void)
 {
-
-}
-
-int service_loop_init(void)
-{
-    uv_loop_t _loop;
-
-    BT_LOGD("btservice loop_init");
-    bt_dispatch_loop = uv_loop_new();
-
-    //start_timer(0, 200000, process_in_loop_timer, NULL);
-    post_gap_async = malloc(sizeof(uv_async_t));
-    uv_async_init(bt_dispatch_loop, post_gap_async, execute_service_callback);
-    BT_LOGD("Idling...");
-    uv_run(bt_dispatch_loop, UV_RUN_DEFAULT);
-
-    //nerver touch here only if service is down
-    BT_LOGD("Idling done");
-    uv_loop_close(uv_default_loop());
-    return 0;
+    return bt_dispatch_loop;
 }
 
 static bool interface_ready(void) { return bluetooth_upper_callbacks != NULL; }
-
-static const void* bts_get_profile_interface(void* handle, const char* profile_id)
-{
-    BT_LOGD("%s: id = %s", __func__, profile_id);
-
-//     /* sanity check */
-//     if (!interface_ready())
-//         return NULL;
-// #if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
-//     if (is_profile(profile_id, BT_PROFILE_GATT))
-//         return gatt_get_interface();
-// #endif
-// #ifdef CONFIG_BLUETOOTH_HFP_HF
-//     if (is_profile(profile_id, BT_PROFILE_HANDSFREE_HF))
-//         return (const void *)get_hf_client_service_interface();
-// #endif
-// #ifdef CONFIG_BLUETOOTH_SPP
-//     if (is_profile(profile_id, BT_PROFILE_SPP))
-//         return (const void *)get_spp_service_interface();
-// #endif
-    return NULL;
-}
 
 static void* stack_schedule_loop(void* data)
 {
@@ -362,9 +290,9 @@ static void bts_handle_uv_msg(uv_async_t* handle)
 static void* service_schedule_loop(void* data)
 {
     BT_LOGD("%s", __func__);
-    loop_handle[THREAD_ID_SERVICE] = uv_loop_new();
-    uv_async_init(loop_handle[THREAD_ID_SERVICE], &async_handle[THREAD_ID_SERVICE], bts_handle_uv_msg);
-    uv_run(loop_handle[THREAD_ID_SERVICE], UV_RUN_DEFAULT);
+    bt_dispatch_loop = uv_loop_new();
+    uv_async_init(bt_dispatch_loop, &async_handle[THREAD_ID_SERVICE], bts_handle_uv_msg);
+    uv_run(bt_dispatch_loop, UV_RUN_DEFAULT);
 }
 
 bt_result_code bts_service_init(bt_service_callbacks* callbacks)
@@ -400,25 +328,6 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
 }
 
 
-
-bt_result_code bts_service_enable()
-{
-    gap_enable();
-#ifdef CONFIG_BLUETOOTH_HFP_HF
-    hf_client_service_start();
-#endif
-#ifdef CONFIG_BLUETOOTH_SPP
-    spp_service_start();
-#endif
-    return BT_RESULT_SUCCESS;
-}
-
-
-bt_result_code bts_service_disable()
-{
-    return BT_RESULT_SUCCESS;
-}
-
 void bts_service_cleanup(void)
 {
 #if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
@@ -429,7 +338,6 @@ void bts_service_cleanup(void)
     }
 #endif
 }
-
 
 void stack_state_change(stack_state_t state)
 {
