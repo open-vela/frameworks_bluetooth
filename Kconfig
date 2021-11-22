@@ -77,7 +77,7 @@ config BLUETOOTH_MANAGER
 
 config BLUETOOTH_SAMPLE_GATTC
     bool "Enable ble scan and gatt client sample"
-    default n
+    default y
 
 config BLUETOOTH_SAMPLE_GATTS
     bool "Enable ble advertise and gatt server sample"
@@ -85,11 +85,11 @@ config BLUETOOTH_SAMPLE_GATTS
 
 config BLUETOOTH_SAMPLE_LEADV
     bool "Enable ble adv test"
-    default n
+    default y
 
 config BLUETOOTH_SAMPLE_GAP
     bool "Enable gap test"
-    default n
+    default y
 
 config BLUETOOTH_TOOL_CHAIN
     bool "Enable bluetooth profile test tools"

@@ -47,17 +47,6 @@ typedef struct {
     btm_gap_interface_t* service_interface;
 }gap_context_t;
 
-
-static void adapter_state_changed_callback(void* gap_handle, stack_state_t state)
-{
-    bt_result_code ret = BT_RESULT_FAILED;
-    BT_LOGD("%s", __func__);
-
-}
-void init_done_callback(void* gap_handle)
-{
-    BT_LOGD("%s", __func__);
-}
 void btm_remote_name_callback(void* gap_handle, bt_address bd_addr, char *bt_name, uint8_t length)
 {
     if (!gap_handle)
@@ -120,26 +109,7 @@ void btm_connected_state_callback(void* gap_handle, bt_device_t* device, bt_conn
     BT_LOGD("%s", __func__);
     context->gap_callbacks->connection_state_callback_cb(gap_handle, device, state);
 }
-void btm_get_bonded_device_list_callback(void* gap_handle, bt_address*bonded_device_list, uint8_t number)
-{
-    if (!gap_handle)
-        return;
-    gap_context_t * context = (gap_context_t*)gap_handle;
-    if((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->get_bonded_device_list_callback_cb))
-        return;
-    BT_LOGD("%s", __func__);
-    context->gap_callbacks->connected_device_list_callback_cb(gap_handle, bonded_device_list, number);
-}
-void btm_connected_device_list_callback(void* gap_handle, bt_address*connected_device_list, uint8_t number)
-{
-    if (!gap_handle)
-        return;
-    gap_context_t * context = (gap_context_t*)gap_handle;
-    if((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->connected_device_list_callback_cb))
-        return;
-    BT_LOGD("%s", __func__);
-    context->gap_callbacks->connected_device_list_callback_cb(gap_handle, connected_device_list, number);
-}
+
 void btm_hci_event_callback(void* gap_handle, bt_hci_event_t *hci_event)
 {
      if (!gap_handle)
@@ -223,21 +193,27 @@ void btm_ble_address_callback(void* gap_handle, bd_addr_t ble_addr, ble_addr_typ
     BT_LOGD("%s", __func__);
     context->gap_callbacks->ble_address_cb(gap_handle,ble_addr, ble_addr_type);   
 }
-
+void btm_pairing_request_callback(void* gap_handle, BD_ADDR remote_addr, bool local_initiate, bool is_bondable)
+{
+     if (!gap_handle)
+        return;
+    gap_context_t * context = (gap_context_t*)gap_handle;
+    if((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->pairing_request_cb))
+        return;
+    BT_LOGD("%s", __func__);
+    context->gap_callbacks->pairing_request_cb(gap_handle,remote_addr, local_initiate, is_bondable);   
+}
 const btm_gap_callbacks_t service_callbacks = {
     .size = sizeof(btm_gap_callbacks_t),
-    .state_changed_cb = adapter_state_changed_callback,
     .bt_connection_state_changed_callback_cb  = btm_connection_state_changed_callback,
     .received_remote_name_callback_cb = btm_remote_name_callback,
     .discovery_state_changed_callback_cb = btm_discovery_state_changed_callback,
     .ssp_request_callback_cb = btm_ssp_request_callback,
     .bond_state_changed_callback_cb = btm_bond_state_changed_callback,
     .hci_event_callback_cb = btm_hci_event_callback,
-    .get_bonded_device_list_callback_cb = btm_get_bonded_device_list_callback,
     .local_name_callback_cb = btm_local_name_callback,
     .local_device_class_callback_cb = btm_local_device_class_callback,
     .connection_state_callback_cb = btm_connected_state_callback,
-    .connected_device_list_callback_cb = btm_connected_device_list_callback,
     .local_address_callback_cb = btm_local_address_callback,
     .device_found_callback_cb = btm_device_found_callback,
     .smp_requeset_cb = btm_smp_request_callback,
@@ -272,7 +248,7 @@ bt_result_code btm_set_local_address(void * gap_handle, bt_device_t* device)
     bt_result_code ret = BT_RESULT_FAILED;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t * context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, bt_set_local_address, ret, gap_handle, device);
+    //BT_GAP_INTERFACE(context->service_interface, bt_set_local_address, ret, gap_handle, device);
     return ret;
 }
 bt_address* btm_get_local_address(void * gap_handle)
@@ -323,7 +299,6 @@ bt_result_code btm_get_local_device_class(void * gap_handle)
     BT_GAP_INTERFACE(context->service_interface, bt_get_local_device_class, ret, gap_handle);
     return ret;
 }
-
 /*Remote device*/
 bt_result_code btm_get_remote_name(void * gap_handle, bt_device_t* device)
 {
@@ -333,24 +308,7 @@ bt_result_code btm_get_remote_name(void * gap_handle, bt_device_t* device)
     BT_GAP_INTERFACE(context->service_interface, bt_get_remote_name, ret, gap_handle, device);
     return ret;
 }
-bt_result_code btm_get_connection_state(void * gap_handle, bt_device_t* device)
-{
-    bt_result_code ret = BT_RESULT_FAILED;
-    CHECK_PTR(gap_handle);
-    gap_context_t * context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, bt_get_connection_state, ret, gap_handle, device);
-    return ret;
-}
 
-/*Bond*/
-bt_bond_state btm_get_bond_state(void * gap_handle, bt_device_t* device)
-{
-    bt_result_code ret = BT_RESULT_FAILED;
-    CHECK_PTR(gap_handle);
-    gap_context_t * context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, bt_get_bond_state, ret, gap_handle, device);
-    return ret;
-}
 bt_result_code btm_reply_pair_request(void * gap_handle, bt_device_t* device, bool accept)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -383,12 +341,12 @@ bt_result_code btm_remove_bond(void * gap_handle, bt_device_t* device)
     BT_GAP_INTERFACE(context->service_interface, bt_remove_bond, ret, gap_handle, device);
     return ret;
 }
-bt_result_code btm_get_bonded_devices(void * gap_handle)
+int btm_get_bonded_devices(void * gap_handle, bt_device_t* device_list)
 {
-    bt_result_code ret = BT_RESULT_FAILED;
+    int ret = 0;
     CHECK_PTR(gap_handle);
     gap_context_t * context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, bt_get_bonded_devices, ret, gap_handle);
+    BT_GAP_INTERFACE(context->service_interface, bt_get_bonded_devices, ret, gap_handle, device_list);
     return ret;
 }
 
@@ -409,12 +367,12 @@ bt_result_code btm_get_bonded_devices(void * gap_handle)
 //     BT_GAP_INTERFACE(context->service_interface, bt_disconnect_all, ret, gap_handle, device);
 //     return ret;
 // }
-bt_result_code btm_get_connected_devices(void * gap_handle)
+   int btm_get_connected_devices(void * gap_handle, bt_device_t* device_list)
 {
-    bt_result_code ret = BT_RESULT_FAILED;
+    int ret = 0;
     CHECK_PTR(gap_handle);
     gap_context_t * context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, bt_get_connected_devices, ret, gap_handle);
+    BT_GAP_INTERFACE(context->service_interface, bt_get_connected_devices, ret, gap_handle, device_list);
     return ret;
 }
 
@@ -446,26 +404,12 @@ bt_result_code btm_stop_discovery(void * gap_handle)
 }
 
 /*VSC command*/
-bt_result_code btm_send_hci_command_v1(void * gap_handle, bt_hci_command_t *command, bt_service_hci_command_complete_event event_type)
+bt_result_code btm_send_hci_command(void * gap_handle, bt_hci_command_t *command, bt_service_hci_command_complete_event event_type)
 {
     bt_result_code ret = BT_RESULT_FAILED;
     CHECK_PTR(gap_handle);
     gap_context_t * context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, bt_send_hci_command_v1, ret, gap_handle, command, event_type);
-    return ret;
-}
-
-/**
- * Send HCI command for testing purpose
- * hci_cmd_packet[in] Complete HCI command packet, e.g. 01 03 0c 00
- * @return Bluetooth Error status code (0- Success)
- */
-bt_result_code btm_send_hci_command(void * gap_handle, uint8_t *hci_cmd_packet, hci_event_callback cb)
-{
-    bt_result_code ret = BT_RESULT_FAILED;
-    CHECK_PTR(gap_handle);
-    gap_context_t * context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, bt_send_hci_command, ret, gap_handle, hci_cmd_packet, cb);
+    BT_GAP_INTERFACE(context->service_interface, bt_send_hci_command, ret, gap_handle, command, event_type);
     return ret;
 }
 
@@ -641,31 +585,24 @@ const btm_gap_interface_t gap_interface = {
     .gap_register_callbacks = btm_gap_register_callbacks,
     .gap_cleanup = btm_gap_cleanup,
     .bt_start_discovery = btm_start_discovery,
-    .bt_set_local_address = btm_set_local_address,
     .bt_get_local_address = btm_get_local_address,
     .bt_set_local_io_capability = btm_set_local_io_capability,
     .bt_set_local_name  = btm_set_local_name,
     .bt_get_local_name = btm_get_local_name,
-    .bt_set_local_device_class = btm_set_local_device_class,
-    .bt_get_local_device_class = btm_get_local_device_class,
     .bt_get_remote_name = btm_get_remote_name,
-    .bt_get_connection_state = btm_get_connection_state,
     .bt_get_remote_services = btm_get_remote_services,
-    .bt_get_bond_state = btm_get_bond_state,
     .bt_reply_pair_request = btm_reply_pair_request,
     .bt_create_bond = btm_create_bond,
     .bt_cancel_bond = btm_cancel_bond,
     .bt_remove_bond = btm_remove_bond,
     .bt_get_bonded_devices = btm_get_bonded_devices,
-    // .bt_connect_all = btm_connect_all,
-    // .bt_disconnect_all = btm_disconnect_all,
     .bt_get_connected_devices = btm_get_connected_devices,
     .bt_set_scan_mode = btm_set_scan_mode,
     .bt_start_discovery = btm_start_discovery,
     .bt_stop_discovery = btm_stop_discovery,
     .bt_start_service_discovery = btm_start_service_discovery,
     .bt_stop_service_discovery = btm_stop_service_discovery,
-    .bt_send_hci_command_v1 = btm_send_hci_command_v1,
+    .bt_send_hci_command = btm_send_hci_command,
     .ble_set_static_identity = btm_ble_set_static_identity,
     .ble_get_current_irk = btm_ble_get_current_irk,
     .ble_set_address = btm_ble_set_address,
@@ -681,8 +618,10 @@ const btm_gap_interface_t gap_interface = {
     .ble_set_phy = btm_ble_set_phy,
     .ble_add_private_channel = btm_ble_add_private_channel,
     .ble_send_packet = btm_ble_send_packet,
-    .bt_send_hci_command = btm_send_hci_command,
     .enter_bluetooth_test_mode = btm_enter_bluetooth_test_mode,
+    .bt_set_local_address = btm_set_local_address,
+    .bt_set_local_device_class = btm_set_local_device_class,
+    .bt_get_local_device_class = btm_get_local_device_class,    
 };
 
 btm_gap_interface_t* get_gap_instance(void)

@@ -10,7 +10,6 @@
  * Pre-processor Definitions
  ****************************************************************************/
 typedef void (*bts_adapter_state_changed_callback)(stack_state_t state);
-typedef void (*bts_gap_init_done_callback)();
 typedef void (*bts_received_remote_name_callback)(BD_ADDR bd_addr, char *bt_name, uint8_t length);
 typedef void (*bts_discovery_state_changed_callback)(bt_discovery_state state);
 typedef void (*bts_ssp_request_callback)(bt_ssp_request_data_t *request_data);
@@ -25,22 +24,21 @@ typedef void (*bts_update_ble_bonded_devices_callback)(ble_keys_t *bonded_device
 typedef void (*bts_smp_request_callback)(ssp_request_data_t *request_data);
 typedef void (*bts_ble_phy_update_callback)( bd_addr_t remote_addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status status);
 typedef void (*bts_ble_address_callback)( bd_addr_t ble_addr, ble_addr_type ble_addr_type);
-
+typedef void (*bts_pairing_request_callback)(BD_ADDR remote_addr, bool local_initiate, bool is_bondable);
 typedef struct {
     /* * set to sizeof(GAP_CALLBACKS_S) */
     uint8_t size;
     bts_adapter_state_changed_callback adapter_state_changed_cb;
-    bts_gap_init_done_callback gap_init_done_cb;
     bts_received_remote_name_callback remote_name_cb;
     bts_discovery_state_changed_callback discovery_state_changed_cb;
     bts_ssp_request_callback spp_request_cb;
+    bts_pairing_request_callback pairing_request_cb;
     bts_device_found_callback device_found_cb;
     bts_bond_state_changed_callback bond_state_changed_cb;
     bts_connection_state_callback connection_state_changed_cb;
     bts_get_bonded_device_list_callback bonded_list_cb;
     bts_connected_device_list_callback connected_list_cb;
     bts_hci_event_callback hci_event_cb;
-    //TODO:: Add Patch Download Start Callback
     bts_smp_request_callback smp_request_cb;
     bts_update_ble_bonded_devices_callback update_ble_bonede_device_cb;
     bts_ble_phy_update_callback ble_phy_update_cb;
@@ -64,21 +62,19 @@ stack_state_t gap_get_stack_state(void);
 
 /*Remote device*/
  bt_result_code bts_get_remote_name(bt_device_t *device);
- bt_result_code bts_get_connection_state(bt_device_t *device);
 int  bts_get_remote_services(bt_device_t* remote_addr, bt_uuid_t *service_list, uint8_t count_in);
 
 /*Bond*/
- bt_bond_state bts_get_bond_state(bt_device_t *device);
  bt_result_code bts_reply_pair_request(bt_device_t *device, bool accept);
  bt_result_code bts_create_bond(bt_device_t *device);
  bt_result_code bts_cancel_bond(bt_device_t *device);
  bt_result_code bts_remove_bond(bt_device_t *device);
- bt_result_code bts_get_bonded_devices(void);
+ int bts_get_bonded_devices(bt_device_t* device_list);
 
 /*Connection*/
  bt_result_code bts_connect_all(bt_device_t *device);
  bt_result_code bts_disonnect_all(bt_device_t *device);
- bt_result_code bts_get_connected_devices(void);
+ int bts_get_connected_devices(bt_device_t* device_list);
 
 /*Discovery*/
  bt_result_code bts_set_scan_mode(bt_scan_mode scanMode, bool bondable);
@@ -92,15 +88,7 @@ bt_result_code bts_start_service_discovery(bt_device_t *device, bt_uuid_t uuid);
 bt_result_code bts_stop_service_discovery(bt_device_t *device);
 
 /*VSC command*/
- bt_result_code bts_send_hci_command_v1(bt_hci_command_t *command, bt_service_hci_command_complete_event event_type);
-
-/*ble interface*/
-bt_result_code bts_set_ble_scan_parameters(scan_params_t *scan_param);
-bt_result_code bts_set_ble_scan_filter(ble_scan_filter_t *scan_filter);
-bt_result_code bts_start_ble_scan(void);
-bt_result_code bts_stop_ble_scan(void);
-bt_result_code bts_start_ble_adv(advertise_param_t *scan_params);
-bt_result_code bts_stop_ble_adv(uint8_t adv_id);
+ bt_result_code bts_send_hci_command(bt_hci_command_t *command, bt_service_hci_command_complete_event event_type);
 
 bt_result_code bts_ble_set_static_identity(bt_device_t *device);
 bt_result_code bts_ble_get_current_irk(void);
@@ -124,7 +112,6 @@ bt_result_code bts_ble_send_packet(bt_device_t *device, uint16_t private_cid,
  * hci_cmd_packet[in] Complete HCI command packet, e.g. 01 03 0c 00
  * @return Bluetooth Error status code (0- Success)
  */
-bt_result_code bts_send_hci_command(uint8_t *hci_cmd_packet, hci_event_callback cb);
 bt_result_code bts_enter_bluetooth_test_mode(bt_test_mode test_mode);
 
 void gap_read_data_storage(void);

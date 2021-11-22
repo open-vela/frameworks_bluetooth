@@ -170,7 +170,7 @@ static void manager_state_changed_callback(bt_manager_bt_state state)
 
 static bt_mgr_callback_t mgt_cb = {
     .bt_manager_state_changed_callback_cb = manager_state_changed_callback,
-    .init_status_changed_callback_cb = manager_init_status_changed_callback,
+    //.init_status_changed_callback_cb = manager_init_status_changed_callback,
 };
 
 int main(int argc, FAR char* argv[])
