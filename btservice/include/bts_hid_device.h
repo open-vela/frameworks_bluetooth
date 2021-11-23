@@ -30,50 +30,46 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef _SRV_INC_LESCAN_MANAGER_H
-#define _SRV_INC_LESCAN_MANAGER_H
+#ifndef _SRV_INC_HID_DEVICE_H
+#define _SRV_INC_HID_DEVICE_H
 
 #include <nuttx/list.h>
-#include <stdbool.h>
 #include <stddef.h>
 
 #include "btm_manager.h"
 
-typedef void (*bts_le_scan_result_callback)(void* handle, const scan_result_t* scan_result_data);
-typedef void (*bts_le_scan_failed_callback)(void* handle, int error);
-typedef void (*bts_le_scan_started_callback)(void* handle, uint8_t scanner_id);
-typedef void (*bts_le_scan_stopped_callback)(void* handle);
+#define XK_MISCELLANY 1
+#define XK_LATIN1 1
+#define XK_XKB_KEYS 1
+
+typedef void (*bts_hidd_app_state_changed_callback)(void* handle, uint8_t device_id, hid_app_state_t registered);
+typedef void (*bts_hidd_connection_state_changed_callback)(void* handle, bt_address remote_addr, profile_state_t state);
 
 typedef struct {
-    bts_le_scan_result_callback bts_le_scan_result_cb;
-    bts_le_scan_failed_callback bts_ble_scan_failed_cb;
-    bts_le_scan_started_callback bts_ble_scan_started_cb;
-    bts_le_scan_stopped_callback bts_ble_scan_stopped_cb;
-} bts_ble_scanner_callbacks;
+    bts_hidd_app_state_changed_callback bts_hidd_app_state_changed_cb;
+    bts_hidd_connection_state_changed_callback bts_hidd_connection_state_changed_cb;
+} bts_hid_device_callbacks;
 
-typedef struct {
+typedef struct
+{
     struct list_node node;
 
-    uint8_t scanner_id;
-    ble_scan_filter_t* filter;
-    scan_params_t* settings;
-    const bts_ble_scanner_callbacks* callbacks;
-
+    const bts_hid_device_callbacks* callbacks;
+    uint8_t device_id;
+    bt_address remote_addr;
     void* btm_handle;
-} bts_lescan_hdl_t;
+} bts_hidd_hdl_t;
 
-typedef void (*ble_scan_result_callback)(const scan_result_t* result);
-
-typedef struct {
-    ble_scan_result_callback ble_scan_result;
-} stack_le_scan_callbacks;
 typedef struct {
     size_t size;
+    bt_result_code (*init)(void);
+    void (*clean_up)(void);
+    bt_result_code (*register_device)(bts_hidd_hdl_t handle, bt_hidd_sdp_settings_t sdp, bt_hidd_qos_settings_t tx_qos, bt_hidd_qos_settings_t rx_qos);
+    bt_result_code (*unregister_device)(uint16_t device_id);
+    bt_result_code (*connect)(uint16_t device_id, bt_address remote_addr);
+    bt_result_code (*disconnect)(uint8_t device_id, bt_address remote_addr);
+    bt_result_code (*unplug)(uint8_t device_id, bt_address remote_addr);
+} bts_hidd_interface_t;
 
-    const stack_le_scan_callbacks* callbacks;
-    bt_result_code (*start_scan)(bts_lescan_hdl_t client);
-    bt_result_code (*stop_scan)(uint8_t scanner_id);
-} bts_le_scan_interface_t;
-
-const bts_le_scan_interface_t* get_bts_lescan_instance(void);
+const bts_hidd_interface_t* get_bts_hidd_interface(void);
 #endif

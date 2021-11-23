@@ -478,7 +478,7 @@ typedef enum {
     BTHID_OUTPUT_REPORT,
     BTHID_FEATURE_REPORT,
 
-    /* Following are used for reports received only */
+    /* Following two are used for reports received by Host only */
     BTHID_BOOT_KB_REPORT = 0x80,
     BTHID_BOOT_MOUSE_REPORT = 0x81
 } SERVICE_HID_REPORT_TYPE;
@@ -509,6 +509,12 @@ typedef enum {
 #define BTHID_ATTR_MASK_SSR_MIN_TIMEOUT         0x0400
 #define BTHID_ATTR_MASK_BREDR                   0x8000
 
+/* Possible HID Desriptor Type */
+typedef enum {
+    BTHID_DESC_TYPE_REPORT = 0x22,
+    BTHID_DESC_TYPE_PHYSICAL = 0x23,
+} SERVICE_HID_DESCRIPTOR_TYPE;
+
 typedef struct {
     uint32_t attr_mask;/* BTHID_ATTR_MASK_VIRTUAL_CABLE etc. */
     uint8_t sub_class;
@@ -522,6 +528,25 @@ typedef struct {
     uint16_t dsc_list_length;/* Length of desc_list */
     uint8_t *dsc_list;/* List of descriptors. Each descriptor is constructed as: Type(1 Byte), Length(2 Bytes, Little Endian), Values(Length Bytes) */
 } SERVICE_HID_INFO_S;
+
+/* * Bluetooth HID Device application state */
+typedef enum { BTHD_APP_STATE_NOT_REGISTERED, BTHD_APP_STATE_REGISTERED } SERVICE_BTHD_APP_STATE;
+
+typedef struct {
+    const char *name;
+    const char *description;
+    const char *provider;
+    SERVICE_HID_INFO_S hids_info;
+} SERVICE_HID_SERVICE_INFO_S;
+
+typedef struct {
+    uint8_t service_type;
+    uint32_t token_rate;
+    uint32_t token_bucket_size;
+    uint32_t peak_bandwidth;
+    uint32_t access_latency;
+    uint32_t delay_variation;
+} SERVICE_HID_QOS_PARAM_S;
 
 /*******************************************************************************
  * GAP

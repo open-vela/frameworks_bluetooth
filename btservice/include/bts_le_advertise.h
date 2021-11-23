@@ -37,7 +37,6 @@
 #include <stddef.h>
 
 #include "btm_manager.h"
-#include "bts_common.h"
 
 typedef void (*bts_le_advertise_started_callback)(void* context, uint8_t adv_id);
 typedef void (*bts_le_advertise_stopped_callback)(void* context, uint8_t adv_id);
