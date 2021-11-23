@@ -33,18 +33,18 @@ CSRCS += btservice/avrcp_target/bts_avrcp_target.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
-	CSRCS +=btservice/state_machine/state_machine.c
-	CSRCS +=btservice/hfp_client/bts_hf_client_service.c
-	CSRCS +=btservice/hfp_client/bts_hf_client.c
-	CSRCS +=btservice/hfp_client/bts_hf_client_state_machine.c
 	CSRCS +=btmanager/btm_hfp_hf.c
+	CSRCS +=btservice/hfp_client/bts_hf_client.c
+	CSRCS +=btservice/hfp_client/bts_hf_client_event.c
+	CSRCS +=btservice/hfp_client/bts_hf_client_service.c
+	CSRCS +=btservice/hfp_client/bts_hf_client_state_machine.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_SPP),y)
 	CSRCS +=udrv/uv/euv_pty.c
-	CSRCS +=btservice/spp/bts_spp_service.c
-	CSRCS +=btservice/spp/bts_spp.c
 	CSRCS +=btmanager/btm_spp.c
+	CSRCS +=btservice/spp/bts_spp.c
+	CSRCS +=btservice/spp/bts_spp_service.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_LE_SCAN),y)
@@ -72,6 +72,7 @@ ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER),y)
 endif
 
 CSRCS +=utils/uuid.c
+CSRCS +=btservice/state_machine/state_machine.c
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/include}
