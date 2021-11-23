@@ -739,7 +739,7 @@ bt_result_code bts_spp_init(spp_service_callbacks_t *callbacks)
   g_spp_handle.cbs = callbacks;
   list_initialize(&g_spp_handle.dev_list);
   memset(&g_spp_handle.conn_id_map, 0, sizeof(g_spp_handle.conn_id_map));
-  bts_register_profile_process(BT_PROFILE_SPP_ID, &bts_spp_handle_service_msg);
+  bts_register_profile_process(BT_PROFILE_SPP_ID, bts_spp_handle_service_msg);
 
   status = service_adapter_spp_init(&spp_adp_callbacks);
   if (status != SERVICE_BT_STATUS_SUCCESS) {

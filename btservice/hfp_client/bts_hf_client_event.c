@@ -30,73 +30,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#define LOG_TAG "btm_spp"
-#include <stdio.h>
-#include <sys/types.h>
+#include <stdlib.h>
 
-// internel dependent
-#include "bts_service.h"
 #include "btm_manager.h"
-#include "bts_spp.h"
-#include "btm_spp.h"
-#include "bts_service_interface.h"
-#include "log.h"
+#include "bts_hf_client_event.h"
 
-static spp_interface_t* get_service(void)
+hf_client_msg_t *hf_client_msg_new(hf_client_event_t event,
+                                   bt_address bd_addr)
 {
-  return (spp_interface_t *)get_bluetooth_service_interface()->get_profile_interface(BT_PROFILE_SPP);
+  hf_client_msg_t *msg;
+  msg = (hf_client_msg_t *)malloc(sizeof(hf_client_msg_t));
+  if (msg == NULL)
+    return NULL;
+
+  msg->event = event;
+  memset(&msg->event_data, 0, sizeof(msg->event_data));
+  memcpy(&msg->event_data.bd_addr, bd_addr, sizeof(bt_address));
+
+  return msg;
 }
 
-static bt_result_code spp_server_start(void * handle, uint16_t port, uint16_t uuid16)
+void hf_client_msg_destory(hf_client_msg_t *msg)
 {
-  spp_interface_t *service = get_service();
-  if (!service)
-    return BT_RESULT_FAILED;
-  return service->server_start(handle, port, uuid16);
-}
-
-static bt_result_code spp_server_stop(void * handle, uint16_t port)
-{
-  spp_interface_t *service = get_service();
-  if (!service)
-    return BT_RESULT_FAILED;
-  return service->server_stop(handle, port);
-}
-
-static bt_result_code spp_client_connect(void * handle, bt_address addr, uint16_t port, uint16_t uuid16)
-{
-  spp_interface_t *service = get_service();
-  if (!service)
-    return BT_RESULT_FAILED;
-  return service->client_connect(handle, addr, port, uuid16);
-}
-
-static bt_result_code spp_disconnect(void * handle, bt_address addr, uint16_t port)
-{
-  spp_interface_t *service = get_service();
-  if (!service)
-    return BT_RESULT_FAILED;
-  return service->disconnect(handle, addr, port);
-}
-
-static void spp_set_callbacks(void * handle, spp_callbacks_t *callbacks)
-{
-  spp_interface_t *service = get_service();
-  if (!service)
-    return;
-  service->set_callbacks(handle, callbacks);
-}
-
-static spp_interface_t sppInterface = {
-  sizeof(spp_interface_t),
-  spp_server_start,
-  spp_server_stop,
-  spp_client_connect,
-  spp_disconnect,
-  spp_set_callbacks,
-};
-
-spp_interface_t *get_spp_interface(void)
-{
-  return &sppInterface;
+  free(msg->event_data.string1);
+  free(msg->event_data.string2);
+  free(msg);
 }

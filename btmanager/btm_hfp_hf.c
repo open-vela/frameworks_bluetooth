@@ -35,6 +35,7 @@
 
 #include "btm_manager.h"
 #include "bts_service.h"
+#include "bts_service_interface.h"
 #include "btm_hfp_hf.h"
 
 #define LOG_TAG "hfp_hf_service"
