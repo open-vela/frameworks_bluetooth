@@ -106,23 +106,7 @@ static spp_interface_t sppInterface = {
   spp_set_callbacks,
 };
 
-
 spp_interface_t *get_spp_interface(void)
 {
   return &sppInterface;
 }
-
-#ifdef CONFIG_BLUETOOTH_SPP_TEST
-static spp_callbacks_t spp_test_cbs = {
-  sizeof(spp_callbacks_t),
-  pty_open_callback,
-  connection_state_callback,
-};
-
-void btm_spp_test(void)
-{
-  spp_interface_t *spp = get_spp_interface();
-  spp->set_callbacks(NULL, &spp_test_cbs);
-  spp->server_start(NULL, 5, BT_UUID_SERVCLASS_SERIAL_PORT);
-}
-#endif
