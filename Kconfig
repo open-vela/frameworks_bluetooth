@@ -66,8 +66,10 @@ config BLUETOOTH_HID_DEV
 	default n
 
 config BLUETOOTH_SPP
-	bool "Enable BT_SPP"
+	bool "Enable BT_SPP profile"
 	default y
+	select PSEUDOTERM
+	select SERIAL_TERMIOS
 
 config BLUETOOTH_MANAGER
   	bool "Enable bt manager"
@@ -91,29 +93,29 @@ config BLUETOOTH_SAMPLE_GAP
 
 if BLUETOOTH_SPP
 config BLUETOOTH_SPP_INSTANCE
-	int "SPP instance"
+	int "Maximum SPP instance count"
 	default 2
 
 config BLUETOOTH_SPP_MAX_CONNECTIONS
-	int "SPP max connections"
+	int "Maximum SPP connections"
 	default 32
 	help
 		SPP max connections
 
 config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
-	int "SPP server max accept connections"
+	int "Maximum SPP server accept connections"
 	default 2
 	help
 		SPP server max accept connections
 
 config BLUETOOTH_SPP_LOOP_EN
-	bool "SPP loop enable"
+	bool "SPP incoming data loop enable"
 	default n
 	help
 		SPP loop enable
 
 config BLUETOOTH_SPP_WRITE_CREDITS
-	int "SPP write credits"
+	int "SPP writeable credits"
 	default 5
 	help
 		SPP write credits
@@ -125,7 +127,7 @@ config BLUETOOTH_SPP_DUMPBUFFER
 		SPP dumpbuffer switch
 
 config BLUETOOTH_SPP_TEST
-	bool "SPP test"
+	bool "SPP test enable"
 	default n
 	help
 		SPP test
