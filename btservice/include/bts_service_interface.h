@@ -1,5 +1,4 @@
 #include "btm_manager.h"
-#include "bts_common.h"
 
 typedef void (*bts_service_if_adapter_state_changed_callback)(void* handle, bt_manager_bt_state state);
 typedef void (*bts_service_if_adapter_ble_state_changed_callback)(void* handle, bt_manager_ble_state state);

@@ -81,21 +81,30 @@ ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER),y)
 	CSRCS +=btservice/gatt/bts_gatt_service.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_HIDDEV),y)
+	CSRCS +=btmanager/btm_hid_device.c
+	CSRCS +=btservice/hid/bts_hid_service.c
+	CSRCS +=btservice/hid/bts_hid_device.c
+endif
+
 ifeq ($(CONFIG_BLUETOOTH_TOOL_CHAIN), y)
 ifeq ($(CONFIG_BLUETOOTH_SPP),y)
-	CSRCS +=tools/spp.c
+	 CSRCS +=tools/spp.c
 endif
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
-	CSRCS +=tools/hf_client.c
+	 CSRCS +=tools/hf_client.c
 endif
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
-	CSRCS +=tools/a2dp_source.c
+	 CSRCS +=tools/a2dp_source.c
 endif
 ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER),y)
-	CSRCS +=tools/gatt_server.c
+	 CSRCS +=tools/gatt_server.c
 endif
 ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT),y)
-	CSRCS +=tools/gatt_client.c
+	 CSRCS +=tools/gatt_client.c
+endif
+ifeq ($(CONFIG_BLUETOOTH_HIDDEV),y)
+      CSRCS +=tools/hid_device.c
 endif
 endif
 

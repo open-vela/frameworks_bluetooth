@@ -47,4 +47,21 @@
 
 #define BT_ADDR_LOGD(fmt, args...) syslog(6, LOG_TAG ": " fmt "\n", ##args)
 
+#define BT_HEXDUMP_MAX 1024 
+#define BT_HEXDUMP(array, size)  do { \
+        if (size > BT_HEXDUMP_MAX) { \
+            BT_LOGE("error, size:%d over flow(%d)", size, BT_HEXDUMP_MAX); \
+            break; \
+        } \
+        uint8_t* bytes = (uint8_t*)array; \
+        char hexstring[BT_HEXDUMP_MAX] = ""; \
+        char hex[8] = "" ; \
+        for (int i = 0; i < size; i++) { \
+            sprintf(hex, "0X%02X ", bytes[i]); \
+            strcat(hexstring, hex); \
+            fflush(stdout); \
+        } \
+        syslog(6, "[D] " "[" LOG_TAG "]" ": %s" "\n",  hexstring); \
+    } while(0)
+ 
 #endif

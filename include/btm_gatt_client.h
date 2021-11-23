@@ -36,7 +36,6 @@
 #include <stddef.h>
 
 #include "btm_manager.h"
-#include "bts_common.h"
 
 typedef void (*btm_gattc_connection_state_changed_callback)(void* handle, bt_address remote_addr, profile_state_t state);
 typedef void (*btm_gattc_service_discovered_callback)(void* handle, bt_address remote_addr, gatt_element_t* element, uint16_t size);

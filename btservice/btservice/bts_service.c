@@ -32,6 +32,7 @@
 #include "bts_gap.h"
 #include "bts_gatt_service.h"
 #include "bts_hf_client.h"
+#include "bts_hid_service.h"
 #include "bts_service.h"
 #include "bts_spp.h"
 #include "stack_adapter_gap.h"
@@ -71,12 +72,41 @@ static struct list_node bts_msg_list = LIST_INITIAL_VALUE(bts_msg_list);
 extern void InitTransportLayer(void);
 extern void ScheduleLoop(void);
 
-void bts_uv_close_cb(uv_handle_t* handle)
+static void bts_uv_close_cb(uv_handle_t* handle)
 {
-    if (NULL == handle) {
-        return;
-    }
+    BT_LOGD("bts_uv_close_cb");
     free(handle);
+}
+
+uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb, void* userdata)
+{
+    uv_poll_t* handle = (uv_poll_t*)malloc(sizeof(uv_poll_t));
+    if (!handle) {
+        BT_LOGE("malloc failed");
+        return NULL;
+    }
+    handle->data = userdata;
+
+    int ret = uv_poll_init(bt_dispatch_loop, handle, fd);
+    if (ret < 0) {
+        BT_LOGE("uv_poll_init failed: %d", ret);
+        free(handle);
+        return NULL;
+    }
+
+    ret = uv_poll_start(handle, pevents, cb);
+    if (ret < 0) {
+        BT_LOGE("uv_poll_start failed: %d", ret);
+        free(handle);
+        return NULL;
+    }
+    return handle;
+}
+
+void bts_uv_poll_stop(uv_poll_t* handle)
+{
+    uv_poll_stop(handle);
+    uv_close((uv_handle_t*)handle, bts_uv_close_cb);
 }
 
 static void timer_hadler_cb(uv_timer_t* timer)
@@ -181,6 +211,7 @@ static void bts_handle_uv_msg(uv_async_t* handle)
         }
         if (!profiles_callbacks[msg->id]) {
             BT_LOGW("not handle, profile %d not registered", msg->id);
+            free(msg);
             continue;
         }
         profiles_callbacks[msg->id](msg->id, msg->data, msg->size);
@@ -191,7 +222,6 @@ static void bts_handle_uv_msg(uv_async_t* handle)
 static void service_schedule_loop(void* data)
 {
     BT_LOGD("%s", __func__);
-    bt_dispatch_loop = uv_loop_new();
     uv_async_init(bt_dispatch_loop, &async_handle[THREAD_ID_SERVICE], bts_handle_uv_msg);
     uv_run(bt_dispatch_loop, UV_RUN_DEFAULT);
 }
@@ -205,12 +235,20 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
         return BT_RESULT_FAILED;
     InitTransportLayer();
     gap_service_init();
+    bt_dispatch_loop = uv_loop_new();
     int ret = uv_thread_create(&thread_handle[THREAD_ID_STACK], stack_schedule_loop, NULL);
     if (ret != 0) {
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
         return BT_RESULT_FAILED;
     }
 
+#if defined(CONFIG_BLUETOOTH_HIDDEV)
+    const hid_interface_t* hid_if = hid_get_interface();
+    if (hid_if) {
+        BT_LOGD("hid init");
+        hid_if->init();
+    }
+#endif
     ret = uv_thread_create(&thread_handle[THREAD_ID_SERVICE], service_schedule_loop, NULL);
     if (ret != 0) {
         BT_LOGE("fail uv_thread_create, ret:%d", ret);

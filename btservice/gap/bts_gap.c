@@ -780,7 +780,7 @@ bt_result_code gap_disable(bool normal_disable)
 
 bt_result_code bts_set_local_name(char* bt_name, uint8_t len)
 {
-    return gap_update_device_name(bt_name, len);
+    return gap_update_device_name((unsigned char*)bt_name, len);
 }
 
 bt_result_code bts_set_local_address(bt_device_t* device)

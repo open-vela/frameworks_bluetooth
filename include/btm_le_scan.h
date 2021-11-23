@@ -36,7 +36,6 @@
 #include <stddef.h>
 
 #include "btm_manager.h"
-#include "bts_common.h"
 
 typedef void (*lescan_result_callback)(void* handle, const scan_result_t* result);
 typedef void (*lescan_failed_callback)(void* handle, int error);
