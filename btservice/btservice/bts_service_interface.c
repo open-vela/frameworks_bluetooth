@@ -3,11 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "bts_a2dp_source.h"
 #include "bts_gap.h"
 #include "bts_gatt_service.h"
-#include "bts_spp.h"
 #include "bts_hf_client.h"
-#include "bts_a2dp_source.h"
+#include "bts_hid_service.h"
 #include "bts_service.h"
 #include "bts_service_interface.h"
 #include "bts_spp.h"
@@ -165,6 +165,13 @@ static void bts_if_cleanup(void* handle)
         gatt_if->cleanup();
     }
 #endif
+#if defined(CONFIG_BLUETOOTH_HIDDEV)
+    const hid_interface_t* hid_if = hid_get_interface();
+    if (hid_if) {
+        BT_LOGD("hidd init");
+        hid_if->cleanup();
+    }
+#endif
 }
 
 static bool is_profile(const char* p1, const char* p2)
@@ -196,6 +203,10 @@ static const void* if_get_profile_interface(const char* profile_id)
 #ifdef CONFIG_BLUETOOTH_SPP
     if (is_profile(profile_id, BT_PROFILE_SPP))
         return (const void*)get_spp_service_interface();
+#endif
+#if defined(CONFIG_BLUETOOTH_HIDDEV)
+    if (is_profile(profile_id, BT_PROFILE_HIDDEV))
+        return hid_get_interface();
 #endif
     return NULL;
 }

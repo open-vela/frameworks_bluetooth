@@ -40,7 +40,6 @@
 #define __BTM_GAP_H__
 
 #include "btm_manager.h"
-#include "bts_common.h"
 
 #define MAX_PAIR_DEVICE 5
 #define MAX_CONNECTED_DEVICE 1

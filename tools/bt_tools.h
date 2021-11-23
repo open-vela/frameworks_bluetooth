@@ -59,3 +59,4 @@ extern int hfp_client_command(void* handle, int argc, char* argv[]);
 extern int gatt_server_command(void* handle, int argc, char* argv[]);
 extern int gatt_client_command(void* handle, int argc, char* argv[]);
 extern int a2dp_source_command(void* handle, int argc, char* argv[]);
+extern int hid_device_command(void* handle, int argc, char* argv[]);

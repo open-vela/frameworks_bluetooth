@@ -30,50 +30,43 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef _SRV_INC_LESCAN_MANAGER_H
-#define _SRV_INC_LESCAN_MANAGER_H
-
-#include <nuttx/list.h>
-#include <stdbool.h>
+#define LOG_TAG "bts_hids"
 #include <stddef.h>
 
-#include "btm_manager.h"
+#include "bts_hid_service.h"
+#include "log.h"
 
-typedef void (*bts_le_scan_result_callback)(void* handle, const scan_result_t* scan_result_data);
-typedef void (*bts_le_scan_failed_callback)(void* handle, int error);
-typedef void (*bts_le_scan_started_callback)(void* handle, uint8_t scanner_id);
-typedef void (*bts_le_scan_stopped_callback)(void* handle);
+static void hid_init(void);
+static void hid_cleanup(void);
 
-typedef struct {
-    bts_le_scan_result_callback bts_le_scan_result_cb;
-    bts_le_scan_failed_callback bts_ble_scan_failed_cb;
-    bts_le_scan_started_callback bts_ble_scan_started_cb;
-    bts_le_scan_stopped_callback bts_ble_scan_stopped_cb;
-} bts_ble_scanner_callbacks;
+static hid_interface_t hid_if = {
+    .size = sizeof(hid_if),
 
-typedef struct {
-    struct list_node node;
+    .init = hid_init,
+    .cleanup = hid_cleanup,
+    .hidd = NULL,
+};
 
-    uint8_t scanner_id;
-    ble_scan_filter_t* filter;
-    scan_params_t* settings;
-    const bts_ble_scanner_callbacks* callbacks;
+static void hid_init(void)
+{
+    BT_LOGD("%s", __func__);
+    if (hid_if.hidd) {
+        hid_if.hidd->init();
+    }
+}
 
-    void* btm_handle;
-} bts_lescan_hdl_t;
+static void hid_cleanup(void)
+{
+    BT_LOGD("%s", __func__);
+    if (hid_if.hidd) {
+        hid_if.hidd->clean_up();
+    }
+}
 
-typedef void (*ble_scan_result_callback)(const scan_result_t* result);
-
-typedef struct {
-    ble_scan_result_callback ble_scan_result;
-} stack_le_scan_callbacks;
-typedef struct {
-    size_t size;
-
-    const stack_le_scan_callbacks* callbacks;
-    bt_result_code (*start_scan)(bts_lescan_hdl_t client);
-    bt_result_code (*stop_scan)(uint8_t scanner_id);
-} bts_le_scan_interface_t;
-
-const bts_le_scan_interface_t* get_bts_lescan_instance(void);
+const hid_interface_t* hid_get_interface(void)
+{
+#if defined(CONFIG_BLUETOOTH_HIDDEV)
+    hid_if.hidd = get_bts_hidd_interface();
 #endif
+    return &hid_if;
+}

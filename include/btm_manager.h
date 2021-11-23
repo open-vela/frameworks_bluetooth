@@ -39,7 +39,6 @@
 #pragma once
 
 /*! Importation of librairies*/
-#include "bts_common.h"
 #include <stdbool.h>
 #include <stddef.h>
 /****************************************************************************
@@ -49,6 +48,7 @@
  * Pre-processor Definitions
  ****************************************************************************/
 #include "stack_adapter_common.h"
+#include "stack_adapter_gatt.h"
 
 /** Bluetooth profile name */
 /*!
@@ -146,6 +146,8 @@ typedef SERVICE_PROFILE_CONNECTION_STATE profile_state_t;
 typedef SERVICE_SCAN_ADV_PARAMS_S advertise_param_t;
 typedef SERVICE_GATT_ELEMENT_S gatt_element_t;
 typedef SERVICE_GATT_RESPONSE_S gatt_response_t;
+typedef GATT_SERVER_CALLBACKS_S stack_gatt_server_callbacks;
+typedef GATT_CLIENT_CALLBACKS_S stack_gatt_client_callbacks;
 
 typedef SERVICE_GATT_STATUS gatt_status_t;
 typedef SERVICE_BLE_PHY_TYPE ble_phy_type_t;
@@ -167,6 +169,10 @@ typedef SERVICE_BR_SERVICE_S br_service_t;
 typedef SERVICE_BT_STATUS bt_status;
 typedef SERVICE_BLE_ADDR_TYPE ble_addr_type;
 typedef BT_COMMON_KEY bt_common_key;
+
+typedef SERVICE_BTHD_APP_STATE hid_app_state_t;
+typedef SERVICE_HID_SERVICE_INFO_S bt_hidd_sdp_settings_t;
+typedef SERVICE_HID_QOS_PARAM_S bt_hidd_qos_settings_t;
 
 /**@enum bt_result_code
 * @brief Result code of bluetooth manager

@@ -109,6 +109,9 @@ static bt_command_t g_cmd_tables[] = {
     { "gap", gap_cmd, "<GAP> General profile" },
     { "gatts", gatt_server_command, "<GATT> gatt server and le advertise" },
     { "gattc", gatt_client_command, "<GATT> gatt server and le scan" },
+#if defined(CONFIG_BLUETOOTH_HIDDEV)
+    { "hidd", hid_device_command, "hid device profile" },
+#endif
     { "help", usage_cmd, "Usage for bttools" },
     { "quit", quit_cmd, "Quit" },
 };
@@ -296,7 +299,7 @@ static int get_bonded_devices(void* handle, int argc, char** argv)
     int ret = gap_test_interface->bt_get_bonded_devices(gap_hanlde, device_list);
     for (int i = 0; i < ret; i++) {
         bt_device_t* device = &device_list[i];
-        BT_LOGD("%s, device [%d]: %s, name : ", __func__, i, addr_str(device->addr), device->name);
+        BT_LOGD("%s, device [%d]: %s, name :%s ", __func__, i, addr_str(device->addr), device->name);
     }
 
     return 0;

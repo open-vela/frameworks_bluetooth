@@ -67,15 +67,15 @@ config BLUETOOTH_GATT_SERVER
 	bool "Enable BT_GATT_SERVER"
 	default y
 
-config BLUETOOTH_HID_DEV
-	bool "Enable BT_HID_DEV"
-	default n
-
 config BLUETOOTH_SPP
 	bool "Enable BT_SPP profile"
 	default y
 	select PSEUDOTERM
 	select SERIAL_TERMIOS
+
+config BLUETOOTH_HIDDEV
+	bool "Enable BT_HIDDEV"
+	default y
 
 config BLUETOOTH_MANAGER
   	bool "Enable bt manager"

@@ -5,7 +5,6 @@
  * Included Files
  ****************************************************************************/
 #include "btm_manager.h"
-#include "bts_common.h"
 #include "uv.h"
 /****************************************************************************
  * Pre-processor Definitions
@@ -42,7 +41,7 @@ typedef struct {
     bts_service_adapter_ble_state_changed_callback adapter_state_ble_changed_cb;
 } bt_service_callbacks;
 
-uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb);
+uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb, void* userdata);
 void bts_uv_poll_stop(uv_poll_t* handle);
 uv_timer_t* start_timer(int timeout, int repeat, process_in_timer timer_callback, void* data);
 void stop_timer(uv_timer_t* timer);
