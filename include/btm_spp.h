@@ -36,6 +36,7 @@
 #include "btm_manager.h"
 
 #define BT_UUID_SERVCLASS_SERIAL_PORT    0x1101 /* Serial Port Profile (SPP) */
+
 typedef enum {
   SPP_CONNECTION_STATE_DISCONNECTED,
   SPP_CONNECTION_STATE_CONNECTING,
@@ -82,9 +83,5 @@ typedef struct {
 }spp_interface_t;
 
 spp_interface_t *get_spp_interface(void);
-
-#ifdef CONFIG_BLUETOOTH_SPP_TEST
-void btm_spp_test(void);
-#endif
 
 #endif

@@ -60,8 +60,8 @@ static void uv_close_callback(uv_handle_t* handle)
 
 static void uv_alloc_callback(uv_handle_t* handle, size_t size, uv_buf_t* buf) 
 {
-  buf->base = malloc(size);
-  buf->len = size;
+  buf->base = malloc(1024);
+  buf->len = 1024;
 }
 
 static void uv_read_callback(uv_stream_t* stream,

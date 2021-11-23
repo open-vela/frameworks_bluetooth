@@ -41,7 +41,7 @@ ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_SPP),y)
-	CSRCS += udrv/uv/euv_pty.c
+	CSRCS +=udrv/uv/euv_pty.c
 	CSRCS +=btservice/spp/bts_spp_service.c
 	CSRCS +=btservice/spp/bts_spp.c
 	CSRCS +=btmanager/btm_spp.c
@@ -71,20 +71,14 @@ ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER),y)
 	CSRCS +=btservice/gatt/bts_gatt_service.c
 endif
 
-#ifneq ($(wildcard $(APPDIR)/vendor/bes/framework/services/utils/list/list.c),)
-#echo "use vender bes services/utils/list"
-#	CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/bes/framework/services/utils/list}
-#else
-#CSRCS +=utils/list.c
-#endif
 CSRCS +=utils/uuid.c
 
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/udrv/include}
-
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/include}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/btservice/include}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/btservice/state_machine}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/utils}
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/udrv/include}
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/src/samples/template/stack_adapter_template/inc}
 CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/xiaomi/vela/bluelet/inc}
