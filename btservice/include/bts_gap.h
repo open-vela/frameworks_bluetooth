@@ -117,6 +117,10 @@ bt_result_code bts_enter_bluetooth_test_mode(bt_test_mode test_mode);
 void gap_read_data_storage(void);
 void gap_update_data_storage(void);
 
+bt_result_code gap_create_factory_info(bool force);
+bt_result_code gap_update_device_name(uint8_t* bt_name, size_t len_name);
+bt_result_code gap_read_device_info();
+
 #endif
 
 

@@ -316,7 +316,6 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
         return BT_RESULT_FAILED;
     }
 #if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
-    gap_service_init();
     gatt_interface_t* gatt_if = gatt_get_interface();
     if (gatt_if) {
         BT_LOGD("gatt init");
@@ -344,6 +343,8 @@ void stack_state_change(stack_state_t state)
     bt_service_state service_state = BT_MANAGER_STATE_OFF;
     if (BT_STATE_ON == state){
         service_state = BT_MANAGER_STATE_ON;
+        gap_create_factory_info(false);
+        gap_read_device_info();
     }
     bluetooth_upper_callbacks->adapter_state_changed_cb(service_state);
 }
