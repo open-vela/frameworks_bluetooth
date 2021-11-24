@@ -91,6 +91,10 @@ config BLUETOOTH_SAMPLE_GAP
     bool "Enable gap test"
     default n
 
+config BLUETOOTH_TOOL_CHAIN
+    bool "Enable bluetooth profile test tools"
+    default y
+
 if BLUETOOTH_SPP
 config BLUETOOTH_SPP_INSTANCE
 	int "Maximum SPP instance count"
@@ -100,19 +104,19 @@ config BLUETOOTH_SPP_MAX_CONNECTIONS
 	int "Maximum SPP connections"
 	default 32
 	help
-		SPP max connections
+		Maximum SPP connections
 
 config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
 	int "Maximum SPP server accept connections"
 	default 2
 	help
-		SPP server max accept connections
+		Maximum SPP server accept connections
 
 config BLUETOOTH_SPP_LOOP_EN
 	bool "SPP incoming data loop enable"
 	default n
 	help
-		SPP loop enable
+		SPP incoming data loop enable
 
 config BLUETOOTH_SPP_WRITE_CREDITS
 	int "SPP writeable credits"
@@ -125,12 +129,6 @@ config BLUETOOTH_SPP_DUMPBUFFER
 	default n
 	help
 		SPP dumpbuffer switch
-
-config BLUETOOTH_SPP_TEST
-	bool "SPP test enable"
-	default n
-	help
-		SPP test
 
 endif # BLUETOOTH_SPP
 

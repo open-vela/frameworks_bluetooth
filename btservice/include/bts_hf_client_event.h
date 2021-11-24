@@ -41,71 +41,70 @@
  * Pre-processor Definitions
  ****************************************************************************/
 #define HF_MSG_NEW(event, addr) hf_client_msg_new(event, addr)
-#define HF_MSG_ADD_STR(msg, num, str, len)          \
-  if (str != NULL && len != 0) {                    \
-    msg->event_data.string##num = malloc(len + 1);  \
-    msg->event_data.string##num[len] = '\0';        \
-    memcpy(msg->event_data.string##num, str, len);  \
-  } else {                                          \
-    msg->event_data.string##num = NULL;             \
-  }
+#define HF_MSG_ADD_STR(msg, num, str, len)             \
+    if (str != NULL && len != 0) {                     \
+        msg->event_data.string##num = malloc(len + 1); \
+        msg->event_data.string##num[len] = '\0';       \
+        memcpy(msg->event_data.string##num, str, len); \
+    } else {                                           \
+        msg->event_data.string##num = NULL;            \
+    }
 
-typedef enum
-{
-  CONNECT = 1,
-  DISCONNECT = 2,
-  CONNECT_AUDIO = 3,
-  DISCONNECT_AUDIO = 4,
-  VOICE_RECOGNITION_START = 5,
-  VOICE_RECOGNITION_STOP = 6,
-  SET_MIC_VOLUME = 7,
-  SET_SPEAKER_VOLUME = 8,
-  DIAL_NUMBER = 10,
-  DIAL_MEMORY = 11,
-  DIAL_LAST = 12,
-  ACCEPT_CALL = 13,
-  REJECT_CALL = 14,
-  HOLD_CALL = 15,
-  TERMINATE_CALL = 16,
-  QUERY_CURRENT_CALLS = 17,
-  SEND_AT_COMMAND = 18,
-  TIMEOUT = 20,
-  STACK_EVENT = 32,
-  STACK_EVENT_AUDIO_REQ,
-  STACK_EVENT_CONNECTION_STATE_CHANGED,
-  STACK_EVENT_AUDIO_STATE_CHANGED,
-  STACK_EVENT_VR_STATE_CHANGED,
-  STACK_EVENT_CALL,
-  STACK_EVENT_CALLSETUP,
-  STACK_EVENT_CALLHELD,
-  STACK_EVENT_CLIP,
-  STACK_EVENT_CALL_WAITING,
-  STACK_EVENT_CURRENT_CALLS,
-  STACK_EVENT_VOLUME_CHANGED,
-  STACK_EVENT_CMD_RESULT,
-  STACK_EVENT_RING_INDICATION,
+typedef enum {
+    CONNECT = 1,
+    DISCONNECT = 2,
+    CONNECT_AUDIO = 3,
+    DISCONNECT_AUDIO = 4,
+    VOICE_RECOGNITION_START = 5,
+    VOICE_RECOGNITION_STOP = 6,
+    SET_MIC_VOLUME = 7,
+    SET_SPEAKER_VOLUME = 8,
+    DIAL_NUMBER = 10,
+    DIAL_MEMORY = 11,
+    DIAL_LAST = 12,
+    ACCEPT_CALL = 13,
+    REJECT_CALL = 14,
+    HOLD_CALL = 15,
+    TERMINATE_CALL = 16,
+    QUERY_CURRENT_CALLS = 17,
+    SEND_AT_COMMAND = 18,
+    TIMEOUT = 20,
+    STACK_EVENT = 32,
+    STACK_EVENT_AUDIO_REQ,
+    STACK_EVENT_CONNECTION_STATE_CHANGED,
+    STACK_EVENT_AUDIO_STATE_CHANGED,
+    STACK_EVENT_VR_STATE_CHANGED,
+    STACK_EVENT_CALL,
+    STACK_EVENT_CALLSETUP,
+    STACK_EVENT_CALLHELD,
+    STACK_EVENT_CLIP,
+    STACK_EVENT_CALL_WAITING,
+    STACK_EVENT_CURRENT_CALLS,
+    STACK_EVENT_VOLUME_CHANGED,
+    STACK_EVENT_CMD_RESULT,
+    STACK_EVENT_RING_INDICATION,
 } hf_client_event_t;
 
 typedef struct
 {
-  bt_address  bd_addr;
-  uint32_t    valueint1;
-  uint32_t    valueint2;
-  uint32_t    valueint3;
-  uint32_t    valueint4;
-  char*       string1;
-  char*       string2;
+    bt_address bd_addr;
+    uint32_t valueint1;
+    uint32_t valueint2;
+    uint32_t valueint3;
+    uint32_t valueint4;
+    char* string1;
+    char* string2;
 } hf_event_data_t;
 
 typedef struct
 {
-  hf_client_event_t event;
-  hf_event_data_t   event_data;
+    hf_client_event_t event;
+    hf_event_data_t event_data;
 } hf_client_msg_t;
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-hf_client_msg_t *hf_client_msg_new(hf_client_event_t event, bt_address bd_addr);
-void hf_client_msg_destory(hf_client_msg_t *msg);
+hf_client_msg_t* hf_client_msg_new(hf_client_event_t event, bt_address bd_addr);
+void hf_client_msg_destory(hf_client_msg_t* msg);
 #endif

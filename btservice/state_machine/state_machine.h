@@ -32,37 +32,31 @@
  ****************************************************************************/
 #ifndef __STATE_MACHINE_H__
 #define __STATE_MACHINE_H__
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 typedef struct _state_machine state_machine_t;
 
-typedef struct _state
-{
-  const char *state_name;
-  void (*enter)(state_machine_t *sm);
-  void (*exit)(state_machine_t *sm);
-  bool (*process_event)(state_machine_t *sm, uint32_t event, void *data);
+typedef struct _state {
+    const char* state_name;
+    void (*enter)(state_machine_t* sm);
+    void (*exit)(state_machine_t* sm);
+    bool (*process_event)(state_machine_t* sm, uint32_t event, void* data);
 } state_t;
 
-typedef struct _state_machine
-{
-  state_t *initial_state;
-  state_t *previous_state;
-  state_t *current_state;
+typedef struct _state_machine {
+    state_t* initial_state;
+    state_t* previous_state;
+    state_t* current_state;
 } state_machine_t;
 
-void hsm_ctor(state_machine_t *sm, state_t *initial_state);
-void hsm_dtor(state_machine_t *sm);
-void hsm_transition_to(state_machine_t *sm, const state_t *state);
-state_t *hsm_get_current_state(state_machine_t *sm);
-state_t *hsm_get_previous_state(state_machine_t *sm);
-char *hsm_get_current_state_name(state_machine_t *sm);
-bool hsm_dispatch_event(state_machine_t *sm, uint32_t event, void *p_data);
-
-
-
-
+void hsm_ctor(state_machine_t* sm, state_t* initial_state);
+void hsm_dtor(state_machine_t* sm);
+void hsm_transition_to(state_machine_t* sm, const state_t* state);
+state_t* hsm_get_current_state(state_machine_t* sm);
+state_t* hsm_get_previous_state(state_machine_t* sm);
+char* hsm_get_current_state_name(state_machine_t* sm);
+bool hsm_dispatch_event(state_machine_t* sm, uint32_t event, void* p_data);
 
 #endif

@@ -38,19 +38,19 @@
  ****************************************************************************/
 #include <nuttx/list.h>
 
-#include "btm_manager.h"
 #include "btm_hfp_hf.h"
+#include "btm_manager.h"
 
 typedef struct
 {
-  bool started;
-  struct list_node device_list;
-  hf_client_callbacks_t *callbacks;
+    bool started;
+    struct list_node device_list;
+    hf_client_callbacks_t* callbacks;
 } hf_client_service_t;
 
 typedef hf_client_callbacks_t hf_client_service_callbacks_t;
 
-extern bt_result_code hf_client_init(const hf_client_service_callbacks_t *callbacks);
+extern bt_result_code hf_client_init(const hf_client_service_callbacks_t* callbacks);
 extern bt_result_code hf_client_connect(bt_address bd_addr);
 extern bt_result_code hf_client_disconnect(bt_address bd_addr);
 extern bt_result_code hf_client_connect_audio(bt_address bd_addr);
@@ -66,13 +66,11 @@ extern bt_result_code hf_client_reject_call(bt_address bd_addr);
 extern bt_result_code hf_client_hold_call(bt_address bd_addr);
 extern bt_result_code hf_client_terminate_call(bt_address bd_addr);
 extern bt_result_code hf_client_query_current_calls(bt_address bd_addr);
-extern bt_result_code hf_client_send_at_cmd(bt_address bd_addr, const char *cmd);
+extern bt_result_code hf_client_send_at_cmd(bt_address bd_addr, const char* cmd);
 extern void hf_client_cleanup(void);
 
 extern bt_result_code hf_client_service_start(void);
 extern void hf_client_service_stop(void);
-extern const hf_client_interface_t *get_hf_client_service_interface(void);
-
-
+extern const hf_client_interface_t* get_hf_client_service_interface(void);
 
 #endif

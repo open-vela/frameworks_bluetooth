@@ -35,24 +35,24 @@
 #include "btm_manager.h"
 #include "bts_hf_client_event.h"
 
-hf_client_msg_t *hf_client_msg_new(hf_client_event_t event,
-                                   bt_address bd_addr)
+hf_client_msg_t* hf_client_msg_new(hf_client_event_t event,
+    bt_address bd_addr)
 {
-  hf_client_msg_t *msg;
-  msg = (hf_client_msg_t *)malloc(sizeof(hf_client_msg_t));
-  if (msg == NULL)
-    return NULL;
+    hf_client_msg_t* msg;
+    msg = (hf_client_msg_t*)malloc(sizeof(hf_client_msg_t));
+    if (msg == NULL)
+        return NULL;
 
-  msg->event = event;
-  memset(&msg->event_data, 0, sizeof(msg->event_data));
-  memcpy(&msg->event_data.bd_addr, bd_addr, sizeof(bt_address));
+    msg->event = event;
+    memset(&msg->event_data, 0, sizeof(msg->event_data));
+    memcpy(&msg->event_data.bd_addr, bd_addr, sizeof(bt_address));
 
-  return msg;
+    return msg;
 }
 
-void hf_client_msg_destory(hf_client_msg_t *msg)
+void hf_client_msg_destory(hf_client_msg_t* msg)
 {
-  free(msg->event_data.string1);
-  free(msg->event_data.string2);
-  free(msg);
+    free(msg->event_data.string1);
+    free(msg->event_data.string2);
+    free(msg);
 }

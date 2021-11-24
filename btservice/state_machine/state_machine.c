@@ -32,64 +32,64 @@
  ****************************************************************************/
 #include "state_machine.h"
 
-void hsm_ctor(state_machine_t *sm, state_t *initial_state)
+void hsm_ctor(state_machine_t* sm, state_t* initial_state)
 {
-  if (sm == NULL)
-    return ;
-  
-  sm->initial_state = initial_state;
-  sm->current_state = NULL;
-  sm->previous_state = NULL;
-  hsm_transition_to(sm, sm->initial_state);
+    if (sm == NULL)
+        return;
+
+    sm->initial_state = initial_state;
+    sm->current_state = NULL;
+    sm->previous_state = NULL;
+    hsm_transition_to(sm, sm->initial_state);
 }
 
-void hsm_dtor(state_machine_t *sm)
+void hsm_dtor(state_machine_t* sm)
 {
-  (void)sm;
+    (void)sm;
 }
 
-void hsm_transition_to(state_machine_t *sm, const state_t *state)
+void hsm_transition_to(state_machine_t* sm, const state_t* state)
 {
-  if (sm->current_state != NULL) {
-    sm->current_state->exit(sm);
-    sm->previous_state = sm->current_state;
-  }
-  sm->current_state = state;
-  sm->current_state->enter(sm);
+    if (sm->current_state != NULL) {
+        sm->current_state->exit(sm);
+        sm->previous_state = sm->current_state;
+    }
+    sm->current_state = state;
+    sm->current_state->enter(sm);
 }
 
-state_t *hsm_get_current_state(state_machine_t *sm)
+state_t* hsm_get_current_state(state_machine_t* sm)
 {
-  if (!sm) {
-    return NULL;
-  }
+    if (!sm) {
+        return NULL;
+    }
 
-  return sm->current_state;
+    return sm->current_state;
 }
 
-state_t *hsm_get_previous_state(state_machine_t *sm)
+state_t* hsm_get_previous_state(state_machine_t* sm)
 {
-  if (!sm) {
-    return NULL;
-  }
+    if (!sm) {
+        return NULL;
+    }
 
-  return sm->previous_state;
+    return sm->previous_state;
 }
 
-char *hsm_get_current_state_name(state_machine_t *sm)
+char* hsm_get_current_state_name(state_machine_t* sm)
 {
-  if (!sm) {
-    return NULL;
-  }
+    if (!sm) {
+        return NULL;
+    }
 
-  return sm->current_state->state_name;
+    return sm->current_state->state_name;
 }
 
-bool hsm_dispatch_event(state_machine_t *sm, uint32_t event, void *p_data)
+bool hsm_dispatch_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-  if (sm->current_state == NULL) {
-    return false;
-  }
+    if (sm->current_state == NULL) {
+        return false;
+    }
 
-  return sm->current_state->process_event(sm, event, p_data);
+    return sm->current_state->process_event(sm, event, p_data);
 }
