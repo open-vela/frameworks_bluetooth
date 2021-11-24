@@ -37,95 +37,95 @@
 #include "btm_manager.h"
 #include "bts_service.h"
 
-#include "bts_spp.h"
 #include "btm_spp.h"
+#include "bts_spp.h"
 
 #define LOG_TAG "spp_service"
 #include "log.h"
 
-static spp_callbacks_t *sppCallbacks = NULL;
+static spp_callbacks_t* sppCallbacks = NULL;
 
 static void spp_svr_connection_state_callback(const bt_address addr, uint16_t port, spp_connection_state_t state)
 {
-  BT_LOGD("%s", __func__);
-  if (sppCallbacks)
-    sppCallbacks->connection_state_cb(addr, port, state);
+    BT_LOGD("%s", __func__);
+    if (sppCallbacks)
+        sppCallbacks->connection_state_cb(addr, port, state);
 }
 
-static void spp_svr_pty_open_callback(const bt_address addr, uint16_t port, char *name, int fd)
+static void spp_svr_pty_open_callback(const bt_address addr, uint16_t port, char* name, int fd)
 {
-  BT_LOGD("%s", __func__);
-  if (sppCallbacks)
-    sppCallbacks->pty_open_cb(addr, port, name, fd);
+    BT_LOGD("%s", __func__);
+    if (sppCallbacks)
+        sppCallbacks->pty_open_cb(addr, port, name, fd);
 }
 
-static bt_result_code spp_if_server_start(void * handle, uint16_t port, uint16_t uuid16)
+static bt_result_code spp_if_server_start(void* handle, uint16_t port, uint16_t uuid16)
 {
-  (void)handle;
-  return bts_spp_server_start(port, uuid16);
+    (void)handle;
+    return bts_spp_server_start(port, uuid16);
 }
 
-static bt_result_code spp_if_server_stop(void * handle, uint16_t port)
+static bt_result_code spp_if_server_stop(void* handle, uint16_t port)
 {
-  (void)handle;
-  return bts_spp_server_stop(port);
+    (void)handle;
+    return bts_spp_server_stop(port);
 }
 
-static bt_result_code spp_if_client_connect(void * handle, bt_address addr, uint16_t port, uint16_t uuid16)
+static bt_result_code spp_if_client_connect(void* handle, bt_address addr, uint16_t port, uint16_t uuid16)
 {
-  (void)handle;
-  return bts_spp_client_connect(addr, port, uuid16);
+    (void)handle;
+    return bts_spp_client_connect(addr, port, uuid16);
 }
 
-static bt_result_code spp_if_disconnect(void * handle, bt_address addr, uint16_t port)
+static bt_result_code spp_if_disconnect(void* handle, bt_address addr, uint16_t port)
 {
-  (void)handle;
-  return bts_spp_disconnect(addr, port);
+    (void)handle;
+    return bts_spp_disconnect(addr, port);
 }
 
-static void spp_if_set_callbacks(void * handle, spp_callbacks_t *callbacks)
+static void spp_if_set_callbacks(void* handle, spp_callbacks_t* callbacks)
 {
-  (void)handle;
-  sppCallbacks = callbacks;
+    (void)handle;
+    sppCallbacks = callbacks;
 }
 
 static spp_service_callbacks_t spp_service_cbs = {
-  sizeof(spp_callbacks_t),
-  spp_svr_pty_open_callback,
-  spp_svr_connection_state_callback,
+    sizeof(spp_callbacks_t),
+    spp_svr_pty_open_callback,
+    spp_svr_connection_state_callback,
 };
 
 static spp_interface_t sppInterface = {
-  sizeof(spp_interface_t),
-  spp_if_server_start,
-  spp_if_server_stop,
-  spp_if_client_connect,
-  spp_if_disconnect,
-  spp_if_set_callbacks,
+    sizeof(spp_interface_t),
+    spp_if_server_start,
+    spp_if_server_stop,
+    spp_if_client_connect,
+    spp_if_disconnect,
+    spp_if_set_callbacks,
 };
 
 bt_result_code spp_service_start(void)
 {
-  bt_result_code ret;
-  BT_LOGD("%s", __func__);
+    bt_result_code ret;
+    BT_LOGD("%s", __func__);
 
-  ret = bts_spp_init(&spp_service_cbs);
-  if (ret != BT_RESULT_SUCCESS) {
-    BT_LOGE("Spp Service start failed");
+    ret = bts_spp_init(&spp_service_cbs);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGE("Spp Service start failed");
+        return ret;
+    }
+
+    BT_LOGD("Spp Service started");
     return ret;
-  }
-
-  BT_LOGD("Spp Service started");
-  return ret;
 }
 
 void spp_service_stop(void)
 {
-  bts_spp_cleanup();
-  BT_LOGD("Spp Service stoped");
+    bts_spp_cleanup();
+    BT_LOGD("Spp Service stoped");
 }
 
-spp_interface_t *get_spp_service_interface(void)
+spp_interface_t* get_spp_service_interface(void)
 {
-  return &sppInterface;
+    return &sppInterface;
 }

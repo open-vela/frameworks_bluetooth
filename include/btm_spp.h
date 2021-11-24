@@ -35,19 +35,19 @@
 
 #include "btm_manager.h"
 
-#define BT_UUID_SERVCLASS_SERIAL_PORT    0x1101 /* Serial Port Profile (SPP) */
+#define BT_UUID_SERVCLASS_SERIAL_PORT 0x1101 /* Serial Port Profile (SPP) */
 
 typedef enum {
-  SPP_CONNECTION_STATE_DISCONNECTED,
-  SPP_CONNECTION_STATE_CONNECTING,
-  SPP_CONNECTION_STATE_CONNECTED,
-  SPP_CONNECTION_STATE_DISCONNECTING
-}spp_connection_state_t;
+    SPP_CONNECTION_STATE_DISCONNECTED,
+    SPP_CONNECTION_STATE_CONNECTING,
+    SPP_CONNECTION_STATE_CONNECTED,
+    SPP_CONNECTION_STATE_DISCONNECTING
+} spp_connection_state_t;
 
 typedef enum {
-  SPP_PTY_MODE_NORMAL,
-  SPP_PTY_MODE_RAW
-}spp_pty_mode_t;
+    SPP_PTY_MODE_NORMAL,
+    SPP_PTY_MODE_RAW
+} spp_pty_mode_t;
 
 #if 0
 typedef struct {
@@ -65,7 +65,7 @@ typedef struct {
 #endif
 
 typedef void (*spp_connection_state_callback)(const bt_address addr, uint16_t port, spp_connection_state_t state);
-typedef void (*spp_pty_open_callback)(const bt_address addr, uint16_t port, char *name, int fd);
+typedef void (*spp_pty_open_callback)(const bt_address addr, uint16_t port, char* name, int fd);
 
 typedef struct {
     size_t size;
@@ -74,14 +74,14 @@ typedef struct {
 } spp_callbacks_t;
 
 typedef struct {
-  size_t size;
-  bt_result_code (*server_start)(void * handle, uint16_t port, uint16_t uuid16);
-  bt_result_code (*server_stop)(void * handle, uint16_t port);
-  bt_result_code (*client_connect)(void * handle, bt_address addr, uint16_t port, uint16_t uuid16);
-  bt_result_code (*disconnect)(void * handle, bt_address addr, uint16_t port);
-  void           (*set_callbacks)(void * handle, spp_callbacks_t *callbacks);
-}spp_interface_t;
+    size_t size;
+    bt_result_code (*server_start)(void* handle, uint16_t port, uint16_t uuid16);
+    bt_result_code (*server_stop)(void* handle, uint16_t port);
+    bt_result_code (*client_connect)(void* handle, bt_address addr, uint16_t port, uint16_t uuid16);
+    bt_result_code (*disconnect)(void* handle, bt_address addr, uint16_t port);
+    void (*set_callbacks)(void* handle, spp_callbacks_t* callbacks);
+} spp_interface_t;
 
-spp_interface_t *get_spp_interface(void);
+spp_interface_t* get_spp_interface(void);
 
 #endif

@@ -71,7 +71,17 @@ ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER),y)
 	CSRCS +=btservice/gatt/bts_gatt_service.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_TOOL_CHAIN), y)
+ifeq ($(CONFIG_BLUETOOTH_SPP),y)
+	CSRCS +=tools/spp.c
+endif
+ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
+	CSRCS +=tools/hf_client.c
+endif
+endif
+
 CSRCS +=utils/uuid.c
+CSRCS +=utils/utils.c
 CSRCS +=btservice/state_machine/state_machine.c
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/}
@@ -80,6 +90,9 @@ CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetoot
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/btservice/state_machine}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/utils}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/udrv/include}
+ifeq ($(CONFIG_BLUETOOTH_TOOL_CHAIN), y)
+	CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/tools}
+endif
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/src/samples/template/stack_adapter_template/inc}
 CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/xiaomi/vela/bluelet/inc}
@@ -89,40 +102,29 @@ CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/sr
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/system/libuv/libuv/include}
 CFLAGS   += -I $(APPDIR)/external/bluelet/
 
+STACKSIZE = 40960
+PRIORITY = SCHED_PRIORITY_DEFAULT
+MODULE    = $(CONFIG_BLUETOOTH)
+
 ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GATTC), y)
-	MAINSRC   = samples/test_gattc.c
-
-	PRIORITY = SCHED_PRIORITY_DEFAULT
-	STACKSIZE = 40960
-	PROGNAME  = btsample_gattc
-	MODULE    = $(CONFIG_BLUETOOTH)
-
-depend::
-	$(Q) touch $(MAINSRC)
+	PROGNAME  += btsample_gattc
+	MAINSRC   += samples/test_gattc.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GATTS), y)
-	MAINSRC   = samples/test_gatts.c
-
-	PRIORITY = SCHED_PRIORITY_DEFAULT
-	STACKSIZE = 40960
-	PROGNAME  = btsample_gatts
-	MODULE    = $(CONFIG_BLUETOOTH)
-
-depend::
-	$(Q) touch $(MAINSRC)
+	PROGNAME  += btsample_gatts
+	MAINSRC   += samples/test_gatts.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GAP), y)
-	MAINSRC   = samples/test_gap.c
-
-	PRIORITY = SCHED_PRIORITY_DEFAULT
-	STACKSIZE = 40960
-	PROGNAME  = bt_gap_sample
-	MODULE    = $(CONFIG_BLUETOOTH)
-
-depend::
-	$(Q) touch $(MAINSRC)
+	PROGNAME  += bt_gap_sample
+	MAINSRC   += samples/test_gap.c
 endif
+
+ifeq ($(CONFIG_BLUETOOTH_TOOL_CHAIN), y)
+	PROGNAME 	+= bttool
+	MAINSRC		+= tools/bt_tools.c
+endif
+
 include $(APPDIR)/Application.mk
 

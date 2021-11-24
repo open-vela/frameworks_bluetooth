@@ -33,20 +33,18 @@
 #ifndef __HF_CLIENT_STATE_MACHINE_H__
 #define __HF_CLIENT_STATE_MACHINE_H__
 
-#include "bts_service.h"
-#include "bts_hf_client.h"
 #include "btm_manager.h"
+#include "bts_hf_client.h"
+#include "bts_service.h"
 #include "state_machine.h"
 
 typedef struct _hf_state_machine hf_state_machine_t;
 
-hf_state_machine_t *hf_client_state_machine_new(hf_client_service_t *context,
-                                                bt_address bd_addr);
-void hf_client_state_machine_destory(hf_state_machine_t *hfsm);
-void hf_client_state_machine_handle_msg(hf_state_machine_t *sm,
-                                          hf_client_msg_t *msg);
-hf_client_connection_state_t hf_client_get_conn_state(hf_state_machine_t *sm);
-
-
+hf_state_machine_t* hf_client_state_machine_new(hf_client_service_t* context,
+    bt_address bd_addr);
+void hf_client_state_machine_destory(hf_state_machine_t* hfsm);
+void hf_client_state_machine_handle_msg(hf_state_machine_t* sm,
+    hf_client_msg_t* msg);
+hf_client_connection_state_t hf_client_get_conn_state(hf_state_machine_t* sm);
 
 #endif
