@@ -171,4 +171,8 @@
     (p) += 4;                 \
   } while (0)
 
+int ba2str(bt_address addr, char *str);
+int str2ba(const char *str, bt_address addr);
+int str2hex(const char *str, char *hex, int len);
+char *addr_str(bt_address addr);
 #endif
