@@ -311,7 +311,7 @@ typedef struct {
  * @param[in] accept - 0 is accept.
  * @return   Bluetooth Error status code (0- Success).
  */
-    bt_result_code (*bt_reply_pair_request)(void* handle, bt_device_t* device, bool accept);
+    bt_result_code (*bt_reply_pair_request)(void* handle, bt_device_t* device, int accept);
     /**
  *@brief   * Create bonding with remote deivce, including ACL link creation
  *  and required pairing (bonding) procedure and SDP procedure.
