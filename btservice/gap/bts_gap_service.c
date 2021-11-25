@@ -299,7 +299,7 @@ static int bts_if_get_remote_services(void* gap_handle, bt_device_t* remote_addr
     service_num = bts_get_remote_services(remote_addr, service_list, count_in);
 }
 
-static bt_result_code bts_if_reply_pair_request(void* gap_handle, bt_device_t* device, bool accept)
+static bt_result_code bts_if_reply_pair_request(void* gap_handle, bt_device_t* device, int accept)
 {
     bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))

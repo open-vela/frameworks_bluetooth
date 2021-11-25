@@ -228,6 +228,7 @@ static const btm_gap_callbacks_t service_callbacks = {
     .smp_requeset_cb = btm_smp_request_callback,
     .ble_phy_update_cb = btm_ble_phy_update_callback,
     .ble_address_cb = btm_ble_address_callback,
+    .pairing_request_cb = btm_pairing_request_callback,
 };
 
 static bt_result_code btm_gap_register_callbacks(void* manager_handle, void** gap_handle, const btm_gap_callbacks_t* callbacks)
@@ -325,7 +326,7 @@ static bt_result_code btm_get_remote_name(void* gap_handle, bt_device_t* device)
     return ret;
 }
 
-static bt_result_code btm_reply_pair_request(void* gap_handle, bt_device_t* device, bool accept)
+static bt_result_code btm_reply_pair_request(void* gap_handle, bt_device_t* device, int accept)
 {
     bt_result_code ret = BT_RESULT_FAILED;
     CHECK_PTR(gap_handle);
