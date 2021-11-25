@@ -59,7 +59,7 @@ static int terminate_call_cmd(void* handle, int argc, char* argv[]);
 static int query_current_calls_cmd(void* handle, int argc, char* argv[]);
 static int send_at_cmd_cmd(void* handle, int argc, char* argv[]);
 
-static hf_client_interface_t* hf_interface = NULL;
+static const hf_client_interface_t* hf_interface = NULL;
 static bt_command_t g_hfp_tables[] = {
     { "connect", connect_cmd, "\"establish hfp SLC connection   :<address>\"" },
     { "disconnect", disconnect_cmd, "\"disconnect hfp SLC connection  :<address>\"" },

@@ -33,6 +33,7 @@
 #define LOG_TAG "spp_test"
 #include "bt_tools.h"
 #include "btm_manager.h"
+#include "bts_service.h"
 #include "btm_spp.h"
 #include "euv_pty.h"
 #include "utils/log.h"
@@ -185,7 +186,6 @@ static int connect_cmd(void* handle, int argc, char* argv[])
 static int disconnect_cmd(void* handle, int argc, char* argv[])
 {
     uint16_t port;
-    uint16_t uuid;
     spp_device_t* device;
     bt_address addr;
 
@@ -197,9 +197,10 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     BT_LOGD("%s, address:%s port:%d", __func__, argv[0], port);
     device = find_pty_by_port(port);
     if (device == NULL)
-        return;
+        return -1;
     euv_pty_read_stop(device->pty);
     euv_pty_close(device->pty);
+    list_delete(&device->node);
     spp_interface->disconnect(NULL, addr, port);
 
     return 0;
@@ -215,8 +216,8 @@ static int write_cmd(void* handle, int argc, char* argv[])
     port = atoi(argv[0]);
     device = find_pty_by_port(port);
     if (device == NULL)
-        return;
-    euv_pty_write(device->pty, argv[1], strlen(argv[1]), NULL);
+        return -1;
+    euv_pty_write(device->pty, (uint8_t *)argv[1], strlen(argv[1]), NULL);
 
     return 0;
 }
