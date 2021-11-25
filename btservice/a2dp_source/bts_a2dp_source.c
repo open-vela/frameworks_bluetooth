@@ -22,17 +22,16 @@
  * Included Files
  ****************************************************************************/
 
+#include <queue.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <queue.h>
 
 #include "stack_adapter_a2dp_source.h"
 #include "stack_adapter_service_base.h"
 
 #include "btm_manager.h"
-#include "bts_service.h"
 #include "bts_a2dp.h"
-
+#include "bts_service.h"
 
 #define A2DP_MAX_CONNECTION (2)
 
@@ -44,60 +43,51 @@ typedef struct {
     SERVICE_A2DP_STREAM_STATE stream_state;
     SERVICE_AVDTP_CODEC_TYPE codec_type;
     uint16_t stream_chnl_mtu;
-}a2dp_device_t;
-
+} a2dp_device_t;
 
 typedef struct {
     bt_address remote_addr;
     SERVICE_PROFILE_CONNECTION_STATE state;
-}a2dp_connection_state_changed_parameter_t;
+} a2dp_connection_state_changed_parameter_t;
 
 dq_queue_t a2dp_device_list;
 
-a2dp_device_t * find_a2dp_device_by_addr(bt_address remote_addr)
+a2dp_device_t* find_a2dp_device_by_addr(bt_address remote_addr)
 {
     int list_size = 0;
     a2dp_device_t* result = NULL;
     list_size = dq_count(&a2dp_device_list);
-    if (0 == list_size)
-    {
+    if (0 == list_size) {
         return NULL;
     }
     a2dp_device_t* device = (a2dp_device_t*)dq_peek(&a2dp_device_list);
 
-    for (int i = 0; i < list_size; i++)
-    {
-        if (NULL == device)
-        {
+    for (int i = 0; i < list_size; i++) {
+        if (NULL == device) {
             break;
         }
 
-        if (memcmp(result->remote_addr, remote_addr, BT_ADDR_LENGTH) == 0)
-        {
+        if (memcmp(result->remote_addr, remote_addr, BT_ADDR_LENGTH) == 0) {
             result = device;
             break;
-        }
-        else
-        {
-            device = (a2dp_device_t*)dq_next(&(device->entry));   
+        } else {
+            device = (a2dp_device_t*)dq_next(&(device->entry));
         }
     }
 
     return result;
 }
 
-
-void process_loop_in_a2dp(void * data, size_t data_size)
+void process_loop_in_a2dp(void* data, size_t data_size)
 {
     //int a2dp_size = 0;
     //char * a2dp_buff = NULL;
     //char * command_buff = NULL;
     //int command_size = 0;
-    if (NULL == data)
-    {
+    if (NULL == data) {
         return;
     }
-    
+
     // if(context->command_id > A2DP_COMMAND_MAX_ID)
     // {
     //     switch (context->command_id)
@@ -119,10 +109,10 @@ void process_loop_in_a2dp(void * data, size_t data_size)
 
     //         response.state = parameter->state;
 
-    //         command_buff = nano_pb_encode(response_a2dp_state_changed_fields, &response, &command_size);    
+    //         command_buff = nano_pb_encode(response_a2dp_state_changed_fields, &response, &command_size);
 
-    //         a2dp_buff = package_common_buffer_to_manager(INIT_SERVICE_DONE_RESPONSE, NULL, 0, &a2dp_size);    
-    //         send_pb_command_buffer_to_manager(BT_PROFILE_ADVANCED_AUDIO_SOURCE_ID, a2dp_buff, a2dp_size); 
+    //         a2dp_buff = package_common_buffer_to_manager(INIT_SERVICE_DONE_RESPONSE, NULL, 0, &a2dp_size);
+    //         send_pb_command_buffer_to_manager(BT_PROFILE_ADVANCED_AUDIO_SOURCE_ID, a2dp_buff, a2dp_size);
 
     //         break;
     //     default:
@@ -133,59 +123,51 @@ void process_loop_in_a2dp(void * data, size_t data_size)
     free(data);
 }
 
-void bts_a2dp_connect(void * data)
+void bts_a2dp_connect(void* data)
 {
-    if (NULL == data)
-    {
+    if (NULL == data) {
         goto Exit;
     }
 
     //service_adapter_a2dp_source_connect(a2dp_connect_data->remote_addr, a2dp_connect_data->);
 Exit:
-        printf("process_loop_in_a2dp exit \n");
-
+    printf("process_loop_in_a2dp exit \n");
 }
-
 
 /*******************************************************************************
  * A2DP connection state changed callback
  ******************************************************************************/
 void bts_a2dp_source_connection_state_changed_callback(BD_ADDR remote_addr,
-                                                              SERVICE_PROFILE_CONNECTION_STATE state)
+    SERVICE_PROFILE_CONNECTION_STATE state)
 {
-     excute_service_context_t *context = (excute_service_context_t*)malloc(sizeof(excute_service_context_t));
-     a2dp_connection_state_changed_parameter_t *parameter = 
-       (a2dp_connection_state_changed_parameter_t *) malloc (sizeof(a2dp_connection_state_changed_parameter_t));
-     context->loop_func = process_loop_in_a2dp;
-     context->data = (void *)parameter;
-     context->command_id = A2DP_RESPONSE_CONNECTION_STATE_CHANGED;
-     //process_in_loop(context);
+    excute_service_context_t* context = (excute_service_context_t*)malloc(sizeof(excute_service_context_t));
+    a2dp_connection_state_changed_parameter_t* parameter = (a2dp_connection_state_changed_parameter_t*)malloc(sizeof(a2dp_connection_state_changed_parameter_t));
+    context->loop_func = process_loop_in_a2dp;
+    context->data = (void*)parameter;
+    context->command_id = A2DP_RESPONSE_CONNECTION_STATE_CHANGED;
+    //process_in_loop(context);
 }
 /*******************************************************************************
  * A2DP Source stream state changed callback
  ******************************************************************************/
 void bts_a2dp_source_stream_state_changed_callback(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state)
 {
-
 }
 
 /*******************************************************************************
  * A2DP Source stream config changed callback
  ******************************************************************************/
-void bts_a2dp_source_stream_config_changed_callback(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S *config)
+void bts_a2dp_source_stream_config_changed_callback(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S* config)
 {
-
 }
 /*******************************************************************************
  * A2DP Source stream config changed callback
  ******************************************************************************/
 void bts_a2dp_source_stream_channel_mtu_callback(BD_ADDR remote_addr, uint16_t stream_chnl_mtu)
 {
-    
 }
 
-A2DP_SOURCE_CALLBACKS_S a2dp_callback =
-{
+A2DP_SOURCE_CALLBACKS_S a2dp_callback = {
     4,
     bts_a2dp_source_connection_state_changed_callback,
     bts_a2dp_source_stream_state_changed_callback,
@@ -200,8 +182,7 @@ bt_result_code bts_a2dp_init(void)
     printf(" bts_a2dp_init coming \n");
 
     service_status = service_adapter_a2dp_source_init(A2DP_MAX_CONNECTION, &a2dp_callback);
-    if (SERVICE_BT_STATUS_SUCCESS == service_status)
-    {
+    if (SERVICE_BT_STATUS_SUCCESS == service_status) {
         result = BT_RESULT_SUCCESS;
     }
     return result;
@@ -214,8 +195,7 @@ bt_result_code bts_a2dp_deinit(void)
     printf(" bts_a2dp_deinit coming \n");
 
     service_adapter_a2dp_source_cleanup();
-    if (SERVICE_BT_STATUS_SUCCESS == service_status)
-    {
+    if (SERVICE_BT_STATUS_SUCCESS == service_status) {
         result = BT_RESULT_SUCCESS;
     }
     return result;

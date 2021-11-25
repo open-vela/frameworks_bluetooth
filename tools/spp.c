@@ -31,15 +31,15 @@
  *
  ****************************************************************************/
 #define LOG_TAG "spp_test"
-#include <stdlib.h>
-#include <string.h>
-#include <debug.h>
-#include <nuttx/list.h>
 #include "bt_tools.h"
 #include "btm_manager.h"
 #include "btm_spp.h"
 #include "euv_pty.h"
 #include "utils/log.h"
+#include <debug.h>
+#include <nuttx/list.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct {
     struct list_node node;

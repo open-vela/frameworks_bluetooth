@@ -23,60 +23,60 @@ extern "C" {
 
 /** @brief Bluetooth UUID types */
 enum {
-	BT_UUID_TYPE_16,
-	BT_UUID_TYPE_32,
-	BT_UUID_TYPE_128,
+    BT_UUID_TYPE_16,
+    BT_UUID_TYPE_32,
+    BT_UUID_TYPE_128,
 };
 
 /** @brief This is a 'tentative' type and should be used as a pointer only */
 struct bt_uuid {
-	uint8_t type;
+    uint8_t type;
 };
 
 struct bt_uuid_16 {
-	struct bt_uuid uuid;
-	uint16_t val;
+    struct bt_uuid uuid;
+    uint16_t val;
 };
 
 struct bt_uuid_32 {
-	struct bt_uuid uuid;
-	uint32_t val;
+    struct bt_uuid uuid;
+    uint32_t val;
 };
 
 struct bt_uuid_128 {
-	struct bt_uuid uuid;
-	uint8_t val[16];
+    struct bt_uuid uuid;
+    uint8_t val[16];
 };
 
-#define BT_UUID_INIT_16(value)		\
-{					\
-	.uuid = { BT_UUID_TYPE_16 },	\
-	.val = (value),			\
-}
+#define BT_UUID_INIT_16(value)       \
+    {                                \
+        .uuid = { BT_UUID_TYPE_16 }, \
+        .val = (value),              \
+    }
 
-#define BT_UUID_INIT_32(value)		\
-{					\
-	.uuid = { BT_UUID_TYPE_32 },	\
-	.val = (value),			\
-}
+#define BT_UUID_INIT_32(value)       \
+    {                                \
+        .uuid = { BT_UUID_TYPE_32 }, \
+        .val = (value),              \
+    }
 
-#define BT_UUID_INIT_128(value...)	\
-{					\
-	.uuid = { BT_UUID_TYPE_128 },	\
-	.val = { value },		\
-}
+#define BT_UUID_INIT_128(value...)    \
+    {                                 \
+        .uuid = { BT_UUID_TYPE_128 }, \
+        .val = { value },             \
+    }
 
 #define snprintk snprintf
 
 #define BT_UUID_DECLARE_16(value) \
-	((struct bt_uuid *) ((struct bt_uuid_16[]) {BT_UUID_INIT_16(value)}))
+    ((struct bt_uuid*)((struct bt_uuid_16[]) { BT_UUID_INIT_16(value) }))
 #define BT_UUID_DECLARE_32(value) \
-	((struct bt_uuid *) ((struct bt_uuid_32[]) {BT_UUID_INIT_32(value)}))
+    ((struct bt_uuid*)((struct bt_uuid_32[]) { BT_UUID_INIT_32(value) }))
 #define BT_UUID_DECLARE_128(value...) \
-	((struct bt_uuid *) ((struct bt_uuid_128[]) {BT_UUID_INIT_128(value)}))
+    ((struct bt_uuid*)((struct bt_uuid_128[]) { BT_UUID_INIT_128(value) }))
 
 #define CONTAINER_OF(ptr, type, field) \
-  ((type *)(((char *)(ptr)) - offsetof(type, field)))
+    ((type*)(((char*)(ptr)) - offsetof(type, field)))
 
 #define BT_UUID_16(__u) CONTAINER_OF(__u, struct bt_uuid_16, uuid)
 #define BT_UUID_32(__u) CONTAINER_OF(__u, struct bt_uuid_32, uuid)
@@ -108,22 +108,22 @@ struct bt_uuid_128 {
  *          @ref BT_UUID_INIT_128 or @ref BT_UUID_DECLARE_128
  */
 #define BT_UUID_128_ENCODE(w32, w1, w2, w3, w48) \
-	(((w48) >>  0) & 0xFF), \
-	(((w48) >>  8) & 0xFF), \
-	(((w48) >> 16) & 0xFF), \
-	(((w48) >> 24) & 0xFF), \
-	(((w48) >> 32) & 0xFF), \
-	(((w48) >> 40) & 0xFF), \
-	(((w3)  >>  0) & 0xFF), \
-	(((w3)  >>  8) & 0xFF), \
-	(((w2)  >>  0) & 0xFF), \
-	(((w2)  >>  8) & 0xFF), \
-	(((w1)  >>  0) & 0xFF), \
-	(((w1)  >>  8) & 0xFF), \
-	(((w32) >>  0) & 0xFF), \
-	(((w32) >>  8) & 0xFF), \
-	(((w32) >> 16) & 0xFF), \
-	(((w32) >> 24) & 0xFF)
+    (((w48) >> 0) & 0xFF),                       \
+        (((w48) >> 8) & 0xFF),                   \
+        (((w48) >> 16) & 0xFF),                  \
+        (((w48) >> 24) & 0xFF),                  \
+        (((w48) >> 32) & 0xFF),                  \
+        (((w48) >> 40) & 0xFF),                  \
+        (((w3) >> 0) & 0xFF),                    \
+        (((w3) >> 8) & 0xFF),                    \
+        (((w2) >> 0) & 0xFF),                    \
+        (((w2) >> 8) & 0xFF),                    \
+        (((w1) >> 0) & 0xFF),                    \
+        (((w1) >> 8) & 0xFF),                    \
+        (((w32) >> 0) & 0xFF),                   \
+        (((w32) >> 8) & 0xFF),                   \
+        (((w32) >> 16) & 0xFF),                  \
+        (((w32) >> 24) & 0xFF)
 
 /** @brief Encode 16 bit UUID into an array values
  *
@@ -140,9 +140,9 @@ struct bt_uuid_128 {
  * @return The comma separated values for UUID 16 value that
  *         may be used directly as an argument for @ref BT_DATA_BYTES.
  */
-#define BT_UUID_16_ENCODE(w16)  \
-	(((w16) >>  0) & 0xFF), \
-	(((w16) >>  8) & 0xFF)
+#define BT_UUID_16_ENCODE(w16) \
+    (((w16) >> 0) & 0xFF),     \
+        (((w16) >> 8) & 0xFF)
 
 /** @brief Encode 32 bit UUID into an array values
  *
@@ -160,10 +160,10 @@ struct bt_uuid_128 {
  *         may be used directly as an argument for @ref BT_DATA_BYTES.
  */
 #define BT_UUID_32_ENCODE(w32)  \
-	(((w32) >>  0) & 0xFF), \
-	(((w32) >>  8) & 0xFF), \
-	(((w32) >> 16) & 0xFF), \
-	(((w32) >> 24) & 0xFF)
+    (((w32) >> 0) & 0xFF),      \
+        (((w32) >> 8) & 0xFF),  \
+        (((w32) >> 16) & 0xFF), \
+        (((w32) >> 24) & 0xFF)
 
 /** @def BT_UUID_STR_LEN
  *
@@ -183,7 +183,7 @@ struct bt_uuid_128 {
  *  @brief Generic Access
  */
 #define BT_UUID_GAP \
-	BT_UUID_DECLARE_16(BT_UUID_GAP_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GAP_VAL)
 /** @def BT_UUID_GATT_VAL
  *  @brief Generic attribute UUID value
  */
@@ -192,7 +192,7 @@ struct bt_uuid_128 {
  *  @brief Generic Attribute
  */
 #define BT_UUID_GATT \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_VAL)
 /** @def BT_UUID_CTS_VAL
  *  @brief Current Time Service UUID value
  */
@@ -201,7 +201,7 @@ struct bt_uuid_128 {
  *  @brief Current Time Service
  */
 #define BT_UUID_CTS \
-	BT_UUID_DECLARE_16(BT_UUID_CTS_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_CTS_VAL)
 /** @def BT_UUID_HTS_VAL
  *  @brief Health Thermometer Service UUID value
  */
@@ -210,7 +210,7 @@ struct bt_uuid_128 {
  *  @brief Health Thermometer Service
  */
 #define BT_UUID_HTS \
-	BT_UUID_DECLARE_16(BT_UUID_HTS_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HTS_VAL)
 /** @def BT_UUID_DIS_VAL
  *  @brief Device Information Service UUID value
  */
@@ -219,7 +219,7 @@ struct bt_uuid_128 {
  *  @brief Device Information Service
  */
 #define BT_UUID_DIS \
-	BT_UUID_DECLARE_16(BT_UUID_DIS_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_DIS_VAL)
 /** @def BT_UUID_HRS_VAL
  *  @brief Heart Rate Service UUID value
  */
@@ -228,7 +228,7 @@ struct bt_uuid_128 {
  *  @brief Heart Rate Service
  */
 #define BT_UUID_HRS \
-	BT_UUID_DECLARE_16(BT_UUID_HRS_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HRS_VAL)
 /** @def BT_UUID_BAS_VAL
  *  @brief Battery Service UUID value
  */
@@ -237,7 +237,7 @@ struct bt_uuid_128 {
  *  @brief Battery Service
  */
 #define BT_UUID_BAS \
-	BT_UUID_DECLARE_16(BT_UUID_BAS_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_BAS_VAL)
 /** @def BT_UUID_HIDS_VAL
  *  @brief HID Service UUID value
  */
@@ -246,7 +246,7 @@ struct bt_uuid_128 {
  *  @brief HID Service
  */
 #define BT_UUID_HIDS \
-	BT_UUID_DECLARE_16(BT_UUID_HIDS_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HIDS_VAL)
 /** @def BT_UUID_CSC_VAL
  *  @brief Cycling Speed and Cadence Service UUID value
  */
@@ -255,7 +255,7 @@ struct bt_uuid_128 {
  *  @brief Cycling Speed and Cadence Service
  */
 #define BT_UUID_CSC \
-	BT_UUID_DECLARE_16(BT_UUID_CSC_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_CSC_VAL)
 /** @def BT_UUID_ESS_VAL
  *  @brief Environmental Sensing Service UUID value
  */
@@ -264,7 +264,7 @@ struct bt_uuid_128 {
  *  @brief Environmental Sensing Service
  */
 #define BT_UUID_ESS \
-	BT_UUID_DECLARE_16(BT_UUID_ESS_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_ESS_VAL)
 /** @def BT_UUID_BMS_VAL
  *  @brief Bond Management Service UUID value
  */
@@ -273,7 +273,7 @@ struct bt_uuid_128 {
  *  @brief Bond Management Service
  */
 #define BT_UUID_BMS \
-	BT_UUID_DECLARE_16(BT_UUID_BMS_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_BMS_VAL)
 /** @def BT_UUID_IPSS_VAL
  *  @brief IP Support Service UUID value
  */
@@ -282,7 +282,7 @@ struct bt_uuid_128 {
  *  @brief IP Support Service
  */
 #define BT_UUID_IPSS \
-	BT_UUID_DECLARE_16(BT_UUID_IPSS_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_IPSS_VAL)
 /** @def BT_UUID_OTS_VAL
  *  @brief Object Transfer Service UUID value
  */
@@ -291,7 +291,7 @@ struct bt_uuid_128 {
  *  @brief Object Transfer Service
  */
 #define BT_UUID_OTS \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_VAL)
 /** @def BT_UUID_MESH_PROV_VAL
  *  @brief Mesh Provisioning Service UUID value
  */
@@ -300,7 +300,7 @@ struct bt_uuid_128 {
  *  @brief Mesh Provisioning Service
  */
 #define BT_UUID_MESH_PROV \
-	BT_UUID_DECLARE_16(BT_UUID_MESH_PROV_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_MESH_PROV_VAL)
 /** @def BT_UUID_MESH_PROXY_VAL
  *  @brief Mesh Proxy Service UUID value
  */
@@ -309,7 +309,7 @@ struct bt_uuid_128 {
  *  @brief Mesh Proxy Service
  */
 #define BT_UUID_MESH_PROXY \
-	BT_UUID_DECLARE_16(BT_UUID_MESH_PROXY_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_MESH_PROXY_VAL)
 /** @def BT_UUID_GATT_PRIMARY_VAL
  *  @brief GATT Primary Service UUID value
  */
@@ -318,7 +318,7 @@ struct bt_uuid_128 {
  *  @brief GATT Primary Service
  */
 #define BT_UUID_GATT_PRIMARY \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_PRIMARY_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_PRIMARY_VAL)
 /** @def BT_UUID_GATT_SECONDARY_VAL
  *  @brief GATT Secondary Service UUID value
  */
@@ -327,7 +327,7 @@ struct bt_uuid_128 {
  *  @brief GATT Secondary Service
  */
 #define BT_UUID_GATT_SECONDARY \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_SECONDARY_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_SECONDARY_VAL)
 /** @def BT_UUID_GATT_INCLUDE_VAL
  *  @brief GATT Include Service UUID value
  */
@@ -336,7 +336,7 @@ struct bt_uuid_128 {
  *  @brief GATT Include Service
  */
 #define BT_UUID_GATT_INCLUDE \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_INCLUDE_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_INCLUDE_VAL)
 /** @def BT_UUID_GATT_CHRC_VAL
  *  @brief GATT Characteristic UUID value
  */
@@ -345,7 +345,7 @@ struct bt_uuid_128 {
  *  @brief GATT Characteristic
  */
 #define BT_UUID_GATT_CHRC \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_CHRC_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_CHRC_VAL)
 /** @def BT_UUID_GATT_CEP_VAL
  *  @brief GATT Characteristic Extended Properties UUID value
  */
@@ -354,7 +354,7 @@ struct bt_uuid_128 {
  *  @brief GATT Characteristic Extended Properties
  */
 #define BT_UUID_GATT_CEP \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_CEP_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_CEP_VAL)
 /** @def BT_UUID_GATT_CUD_VAL
  *  @brief GATT Characteristic User Description UUID value
  */
@@ -363,7 +363,7 @@ struct bt_uuid_128 {
  *  @brief GATT Characteristic User Description
  */
 #define BT_UUID_GATT_CUD \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_CUD_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_CUD_VAL)
 /** @def BT_UUID_GATT_CCC_VAL
  *  @brief GATT Client Characteristic Configuration UUID value
  */
@@ -372,7 +372,7 @@ struct bt_uuid_128 {
  *  @brief GATT Client Characteristic Configuration
  */
 #define BT_UUID_GATT_CCC \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_CCC_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_CCC_VAL)
 /** @def BT_UUID_GATT_SCC_VAL
  *  @brief GATT Server Characteristic Configuration UUID value
  */
@@ -381,7 +381,7 @@ struct bt_uuid_128 {
  *  @brief GATT Server Characteristic Configuration
  */
 #define BT_UUID_GATT_SCC \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_SCC_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_SCC_VAL)
 /** @def BT_UUID_GATT_CPF_VAL
  *  @brief GATT Characteristic Presentation Format UUID value
  */
@@ -390,7 +390,7 @@ struct bt_uuid_128 {
  *  @brief GATT Characteristic Presentation Format
  */
 #define BT_UUID_GATT_CPF \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_CPF_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_CPF_VAL)
 /** @def BT_UUID_VALID_RANGE_VAL
  *  @brief Valid Range Descriptor UUID value
  */
@@ -399,7 +399,7 @@ struct bt_uuid_128 {
  *  @brief Valid Range Descriptor
  */
 #define BT_UUID_VALID_RANGE \
-	BT_UUID_DECLARE_16(BT_UUID_VALID_RANGE_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_VALID_RANGE_VAL)
 /** @def BT_UUID_HIDS_EXT_REPORT_VAL
  *  @brief HID External Report Descriptor UUID value
  */
@@ -408,7 +408,7 @@ struct bt_uuid_128 {
  *  @brief HID External Report Descriptor
  */
 #define BT_UUID_HIDS_EXT_REPORT \
-	BT_UUID_DECLARE_16(BT_UUID_HIDS_EXT_REPORT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HIDS_EXT_REPORT_VAL)
 /** @def BT_UUID_HIDS_REPORT_REF_VAL
  *  @brief HID Report Reference Descriptor UUID value
  */
@@ -417,7 +417,7 @@ struct bt_uuid_128 {
  *  @brief HID Report Reference Descriptor
  */
 #define BT_UUID_HIDS_REPORT_REF \
-	BT_UUID_DECLARE_16(BT_UUID_HIDS_REPORT_REF_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HIDS_REPORT_REF_VAL)
 /** @def BT_UUID_ES_CONFIGURATION_VAL
  *  @brief Environmental Sensing Configuration Descriptor UUID value
  */
@@ -426,7 +426,7 @@ struct bt_uuid_128 {
  *  @brief Environmental Sensing Configuration Descriptor
  */
 #define BT_UUID_ES_CONFIGURATION \
-	BT_UUID_DECLARE_16(BT_UUID_ES_CONFIGURATION_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_ES_CONFIGURATION_VAL)
 /** @def BT_UUID_ES_MEASUREMENT_VAL
  *  @brief Environmental Sensing Measurement Descriptor UUID value
  */
@@ -435,7 +435,7 @@ struct bt_uuid_128 {
  *  @brief Environmental Sensing Measurement Descriptor
  */
 #define BT_UUID_ES_MEASUREMENT \
-	BT_UUID_DECLARE_16(BT_UUID_ES_MEASUREMENT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_ES_MEASUREMENT_VAL)
 /** @def BT_UUID_ES_TRIGGER_SETTING_VAL
  *  @brief Environmental Sensing Trigger Setting Descriptor UUID value
  */
@@ -444,7 +444,7 @@ struct bt_uuid_128 {
  *  @brief Environmental Sensing Trigger Setting Descriptor
  */
 #define BT_UUID_ES_TRIGGER_SETTING \
-	BT_UUID_DECLARE_16(BT_UUID_ES_MEASUREMENT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_ES_MEASUREMENT_VAL)
 /** @def BT_UUID_GAP_DEVICE_NAME_VAL
  *  @brief GAP Characteristic Device Name UUID value
  */
@@ -453,7 +453,7 @@ struct bt_uuid_128 {
  *  @brief GAP Characteristic Device Name
  */
 #define BT_UUID_GAP_DEVICE_NAME \
-	BT_UUID_DECLARE_16(BT_UUID_GAP_DEVICE_NAME_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GAP_DEVICE_NAME_VAL)
 /** @def BT_UUID_GAP_APPEARANCE_VAL
  *  @brief GAP Characteristic Appearance UUID value
  */
@@ -462,7 +462,7 @@ struct bt_uuid_128 {
  *  @brief GAP Characteristic Appearance
  */
 #define BT_UUID_GAP_APPEARANCE \
-	BT_UUID_DECLARE_16(BT_UUID_GAP_APPEARANCE_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GAP_APPEARANCE_VAL)
 /** @def BT_UUID_GAP_PPCP_VAL
  *  @brief GAP Characteristic Peripheral Preferred Connection Parameters UUID
  *         value
@@ -472,7 +472,7 @@ struct bt_uuid_128 {
  *  @brief GAP Characteristic Peripheral Preferred Connection Parameters
  */
 #define BT_UUID_GAP_PPCP \
-	BT_UUID_DECLARE_16(BT_UUID_GAP_PPCP_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GAP_PPCP_VAL)
 /** @def BT_UUID_GATT_SC_VAL
  *  @brief GATT Characteristic Service Changed UUID value
  */
@@ -481,7 +481,7 @@ struct bt_uuid_128 {
  *  @brief GATT Characteristic Service Changed
  */
 #define BT_UUID_GATT_SC \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_SC_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_SC_VAL)
 /** @def BT_UUID_BAS_BATTERY_LEVEL_VAL
  *  @brief BAS Characteristic Battery Level UUID value
  */
@@ -490,7 +490,7 @@ struct bt_uuid_128 {
  *  @brief BAS Characteristic Battery Level
  */
 #define BT_UUID_BAS_BATTERY_LEVEL \
-	BT_UUID_DECLARE_16(BT_UUID_BAS_BATTERY_LEVEL_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_BAS_BATTERY_LEVEL_VAL)
 /** @def BT_UUID_HTS_MEASUREMENT_VAL
  *  @brief HTS Characteristic Measurement Value UUID value
  */
@@ -499,7 +499,7 @@ struct bt_uuid_128 {
  *  @brief HTS Characteristic Measurement Value
  */
 #define BT_UUID_HTS_MEASUREMENT \
-	BT_UUID_DECLARE_16(BT_UUID_HTS_MEASUREMENT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HTS_MEASUREMENT_VAL)
 /** @def BT_UUID_HIDS_BOOT_KB_IN_REPORT_VAL
  *  @brief HID Characteristic Boot Keyboard Input Report UUID value
  */
@@ -508,7 +508,7 @@ struct bt_uuid_128 {
  *  @brief HID Characteristic Boot Keyboard Input Report
  */
 #define BT_UUID_HIDS_BOOT_KB_IN_REPORT \
-	BT_UUID_DECLARE_16(BT_UUID_HIDS_BOOT_KB_IN_REPORT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HIDS_BOOT_KB_IN_REPORT_VAL)
 /** @def BT_UUID_DIS_SYSTEM_ID_VAL
  *  @brief DIS Characteristic System ID UUID value
  */
@@ -517,7 +517,7 @@ struct bt_uuid_128 {
  *  @brief DIS Characteristic System ID
  */
 #define BT_UUID_DIS_SYSTEM_ID \
-	BT_UUID_DECLARE_16(BT_UUID_DIS_SYSTEM_ID_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_DIS_SYSTEM_ID_VAL)
 /** @def BT_UUID_DIS_MODEL_NUMBER_VAL
  *  @brief DIS Characteristic Model Number String UUID value
  */
@@ -526,7 +526,7 @@ struct bt_uuid_128 {
  *  @brief DIS Characteristic Model Number String
  */
 #define BT_UUID_DIS_MODEL_NUMBER \
-	BT_UUID_DECLARE_16(BT_UUID_DIS_MODEL_NUMBER_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_DIS_MODEL_NUMBER_VAL)
 /** @def BT_UUID_DIS_SERIAL_NUMBER_VAL
  *  @brief DIS Characteristic Serial Number String UUID value
  */
@@ -535,7 +535,7 @@ struct bt_uuid_128 {
  *  @brief DIS Characteristic Serial Number String
  */
 #define BT_UUID_DIS_SERIAL_NUMBER \
-	BT_UUID_DECLARE_16(BT_UUID_DIS_SERIAL_NUMBER_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_DIS_SERIAL_NUMBER_VAL)
 /** @def BT_UUID_DIS_FIRMWARE_REVISION_VAL
  *  @brief DIS Characteristic Firmware Revision String UUID value
  */
@@ -544,7 +544,7 @@ struct bt_uuid_128 {
  *  @brief DIS Characteristic Firmware Revision String
  */
 #define BT_UUID_DIS_FIRMWARE_REVISION \
-	BT_UUID_DECLARE_16(BT_UUID_DIS_FIRMWARE_REVISION_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_DIS_FIRMWARE_REVISION_VAL)
 /** @def BT_UUID_DIS_HARDWARE_REVISION_VAL
  *  @brief DIS Characteristic Hardware Revision String UUID value
  */
@@ -553,7 +553,7 @@ struct bt_uuid_128 {
  *  @brief DIS Characteristic Hardware Revision String
  */
 #define BT_UUID_DIS_HARDWARE_REVISION \
-	BT_UUID_DECLARE_16(BT_UUID_DIS_HARDWARE_REVISION_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_DIS_HARDWARE_REVISION_VAL)
 /** @def BT_UUID_DIS_SOFTWARE_REVISION_VAL
  *  @brief DIS Characteristic Software Revision String UUID value
  */
@@ -562,7 +562,7 @@ struct bt_uuid_128 {
  *  @brief DIS Characteristic Software Revision String
  */
 #define BT_UUID_DIS_SOFTWARE_REVISION \
-	BT_UUID_DECLARE_16(BT_UUID_DIS_SOFTWARE_REVISION_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_DIS_SOFTWARE_REVISION_VAL)
 /** @def BT_UUID_DIS_MANUFACTURER_NAME_VAL
  *  @brief DIS Characteristic Manufacturer Name String UUID Value
  */
@@ -571,7 +571,7 @@ struct bt_uuid_128 {
  *  @brief DIS Characteristic Manufacturer Name String
  */
 #define BT_UUID_DIS_MANUFACTURER_NAME \
-	BT_UUID_DECLARE_16(BT_UUID_DIS_MANUFACTURER_NAME_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_DIS_MANUFACTURER_NAME_VAL)
 /** @def BT_UUID_DIS_PNP_ID_VAL
  *  @brief DIS Characteristic PnP ID UUID value
  */
@@ -580,7 +580,7 @@ struct bt_uuid_128 {
  *  @brief DIS Characteristic PnP ID
  */
 #define BT_UUID_DIS_PNP_ID \
-	BT_UUID_DECLARE_16(BT_UUID_DIS_PNP_ID_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_DIS_PNP_ID_VAL)
 /** @def BT_UUID_CTS_CURRENT_TIME_VAL
  *  @brief CTS Characteristic Current Time UUID value
  */
@@ -589,7 +589,7 @@ struct bt_uuid_128 {
  *  @brief CTS Characteristic Current Time
  */
 #define BT_UUID_CTS_CURRENT_TIME \
-	BT_UUID_DECLARE_16(BT_UUID_CTS_CURRENT_TIME_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_CTS_CURRENT_TIME_VAL)
 /** @def BT_UUID_MAGN_DECLINATION_VAL
  *  @brief Magnetic Declination Characteristic UUID value
  */
@@ -598,7 +598,7 @@ struct bt_uuid_128 {
  *  @brief Magnetic Declination Characteristic
  */
 #define BT_UUID_MAGN_DECLINATION \
-	BT_UUID_DECLARE_16(BT_UUID_MAGN_DECLINATION_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_MAGN_DECLINATION_VAL)
 /** @def BT_UUID_HIDS_BOOT_KB_OUT_REPORT_VAL
  *  @brief HID Boot Keyboard Output Report Characteristic UUID value
  */
@@ -607,7 +607,7 @@ struct bt_uuid_128 {
  *  @brief HID Boot Keyboard Output Report Characteristic
  */
 #define BT_UUID_HIDS_BOOT_KB_OUT_REPORT \
-	BT_UUID_DECLARE_16(BT_UUID_HIDS_BOOT_KB_OUT_REPORT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HIDS_BOOT_KB_OUT_REPORT_VAL)
 /** @def BT_UUID_HIDS_BOOT_MOUSE_IN_REPORT_VAL
  *  @brief HID Boot Mouse Input Report Characteristic UUID value
  */
@@ -616,7 +616,7 @@ struct bt_uuid_128 {
  *  @brief HID Boot Mouse Input Report Characteristic
  */
 #define BT_UUID_HIDS_BOOT_MOUSE_IN_REPORT \
-	BT_UUID_DECLARE_16(BT_UUID_HIDS_BOOT_MOUSE_IN_REPORT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HIDS_BOOT_MOUSE_IN_REPORT_VAL)
 /** @def BT_UUID_HRS_MEASUREMENT_VAL
  *  @brief HRS Characteristic Measurement Interval UUID value
  */
@@ -625,7 +625,7 @@ struct bt_uuid_128 {
  *  @brief HRS Characteristic Measurement Interval
  */
 #define BT_UUID_HRS_MEASUREMENT \
-	BT_UUID_DECLARE_16(BT_UUID_HRS_MEASUREMENT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HRS_MEASUREMENT_VAL)
 /** @def BT_UUID_HRS_BODY_SENSOR
  *  @brief HRS Characteristic Body Sensor Location
  */
@@ -634,7 +634,7 @@ struct bt_uuid_128 {
  *  @brief HRS Characteristic Control Point
  */
 #define BT_UUID_HRS_BODY_SENSOR \
-	BT_UUID_DECLARE_16(BT_UUID_HRS_BODY_SENSOR_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HRS_BODY_SENSOR_VAL)
 /** @def BT_UUID_HRS_CONTROL_POINT_VAL
  *  @brief HRS Characteristic Control Point UUID value
  */
@@ -643,7 +643,7 @@ struct bt_uuid_128 {
  *  @brief HRS Characteristic Control Point
  */
 #define BT_UUID_HRS_CONTROL_POINT \
-	BT_UUID_DECLARE_16(BT_UUID_HRS_CONTROL_POINT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HRS_CONTROL_POINT_VAL)
 /** @def BT_UUID_HIDS_INFO_VAL
  *  @brief HID Information Characteristic UUID value
  */
@@ -652,7 +652,7 @@ struct bt_uuid_128 {
  *  @brief HID Information Characteristic
  */
 #define BT_UUID_HIDS_INFO \
-	BT_UUID_DECLARE_16(BT_UUID_HIDS_INFO_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HIDS_INFO_VAL)
 /** @def BT_UUID_HIDS_REPORT_MAP_VAL
  *  @brief HID Report Map Characteristic UUID value
  */
@@ -661,7 +661,7 @@ struct bt_uuid_128 {
  *  @brief HID Report Map Characteristic
  */
 #define BT_UUID_HIDS_REPORT_MAP \
-	BT_UUID_DECLARE_16(BT_UUID_HIDS_REPORT_MAP_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HIDS_REPORT_MAP_VAL)
 /** @def BT_UUID_HIDS_CTRL_POINT_VAL
  *  @brief HID Control Point Characteristic UUID value
  */
@@ -670,7 +670,7 @@ struct bt_uuid_128 {
  *  @brief HID Control Point Characteristic
  */
 #define BT_UUID_HIDS_CTRL_POINT \
-	BT_UUID_DECLARE_16(BT_UUID_HIDS_CTRL_POINT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HIDS_CTRL_POINT_VAL)
 /** @def BT_UUID_HIDS_REPORT_VAL
  *  @brief HID Report Characteristic UUID value
  */
@@ -679,7 +679,7 @@ struct bt_uuid_128 {
  *  @brief HID Report Characteristic
  */
 #define BT_UUID_HIDS_REPORT \
-	BT_UUID_DECLARE_16(BT_UUID_HIDS_REPORT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HIDS_REPORT_VAL)
 /** @def BT_UUID_HIDS_PROTOCOL_MODE_VAL
  *  @brief HID Protocol Mode Characteristic UUID value
  */
@@ -688,7 +688,7 @@ struct bt_uuid_128 {
  *  @brief HID Protocol Mode Characteristic
  */
 #define BT_UUID_HIDS_PROTOCOL_MODE \
-	BT_UUID_DECLARE_16(BT_UUID_HIDS_PROTOCOL_MODE_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HIDS_PROTOCOL_MODE_VAL)
 /** @def BT_UUID_CSC_MEASUREMENT_VAL
  *  @brief CSC Measurement Characteristic UUID value
  */
@@ -697,7 +697,7 @@ struct bt_uuid_128 {
  *  @brief CSC Measurement Characteristic
  */
 #define BT_UUID_CSC_MEASUREMENT \
-	BT_UUID_DECLARE_16(BT_UUID_CSC_MEASUREMENT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_CSC_MEASUREMENT_VAL)
 /** @def BT_UUID_CSC_FEATURE_VAL
  *  @brief CSC Feature Characteristic UUID value
  */
@@ -706,7 +706,7 @@ struct bt_uuid_128 {
  *  @brief CSC Feature Characteristic
  */
 #define BT_UUID_CSC_FEATURE \
-	BT_UUID_DECLARE_16(BT_UUID_CSC_FEATURE_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_CSC_FEATURE_VAL)
 /** @def BT_UUID_SENSOR_LOCATION_VAL
  *  @brief Sensor Location Characteristic UUID value
  */
@@ -715,7 +715,7 @@ struct bt_uuid_128 {
  *  @brief Sensor Location Characteristic
  */
 #define BT_UUID_SENSOR_LOCATION \
-	BT_UUID_DECLARE_16(BT_UUID_SENSOR_LOCATION_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_SENSOR_LOCATION_VAL)
 /** @def BT_UUID_SC_CONTROL_POINT_VAL
  *  @brief SC Control Point Characteristic UUID value
  */
@@ -724,7 +724,7 @@ struct bt_uuid_128 {
  *  @brief SC Control Point Characteristic
  */
 #define BT_UUID_SC_CONTROL_POINT \
-	BT_UUID_DECLARE_16(BT_UUID_SC_CONTROL_POINT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_SC_CONTROL_POINT_VAL)
 /** @def BT_UUID_ELEVATION_VAL
  *  @brief Elevation Characteristic UUID value
  */
@@ -733,7 +733,7 @@ struct bt_uuid_128 {
  *  @brief Elevation Characteristic
  */
 #define BT_UUID_ELEVATION \
-	BT_UUID_DECLARE_16(BT_UUID_ELEVATION_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_ELEVATION_VAL)
 /** @def BT_UUID_PRESSURE_VAL
  *  @brief Pressure Characteristic UUID value
  */
@@ -742,7 +742,7 @@ struct bt_uuid_128 {
  *  @brief Pressure Characteristic
  */
 #define BT_UUID_PRESSURE \
-	BT_UUID_DECLARE_16(BT_UUID_PRESSURE_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_PRESSURE_VAL)
 /** @def BT_UUID_TEMPERATURE_VAL
  *  @brief Temperature Characteristic UUID value
  */
@@ -751,7 +751,7 @@ struct bt_uuid_128 {
  *  @brief Temperature Characteristic
  */
 #define BT_UUID_TEMPERATURE \
-	BT_UUID_DECLARE_16(BT_UUID_TEMPERATURE_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_TEMPERATURE_VAL)
 /** @def BT_UUID_HUMIDITY_VAL
  *  @brief Humidity Characteristic UUID value
  */
@@ -760,7 +760,7 @@ struct bt_uuid_128 {
  *  @brief Humidity Characteristic
  */
 #define BT_UUID_HUMIDITY \
-	BT_UUID_DECLARE_16(BT_UUID_HUMIDITY_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HUMIDITY_VAL)
 /** @def BT_UUID_TRUE_WIND_SPEED_VAL
  *  @brief True Wind Speed Characteristic UUID value
  */
@@ -769,7 +769,7 @@ struct bt_uuid_128 {
  *  @brief True Wind Speed Characteristic
  */
 #define BT_UUID_TRUE_WIND_SPEED \
-	BT_UUID_DECLARE_16(BT_UUID_TRUE_WIND_SPEED_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_TRUE_WIND_SPEED_VAL)
 /** @def BT_UUID_TRUE_WIND_DIR_VAL
  *  @brief True Wind Direction Characteristic UUID value
  */
@@ -778,7 +778,7 @@ struct bt_uuid_128 {
  *  @brief True Wind Direction Characteristic
  */
 #define BT_UUID_TRUE_WIND_DIR \
-	BT_UUID_DECLARE_16(BT_UUID_TRUE_WIND_DIR_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_TRUE_WIND_DIR_VAL)
 /** @def BT_UUID_APPARENT_WIND_SPEED_VAL
  *  @brief Apparent Wind Speed Characteristic UUID value
  */
@@ -787,7 +787,7 @@ struct bt_uuid_128 {
  *  @brief Apparent Wind Speed Characteristic
  */
 #define BT_UUID_APPARENT_WIND_SPEED \
-	BT_UUID_DECLARE_16(BT_UUID_APPARENT_WIND_SPEED_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_APPARENT_WIND_SPEED_VAL)
 /** @def BT_UUID_APPARENT_WIND_DIR_VAL
  *  @brief Apparent Wind Direction Characteristic UUID value
  */
@@ -796,7 +796,7 @@ struct bt_uuid_128 {
  *  @brief Apparent Wind Direction Characteristic
  */
 #define BT_UUID_APPARENT_WIND_DIR \
-	BT_UUID_DECLARE_16(BT_UUID_APPARENT_WIND_DIR_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_APPARENT_WIND_DIR_VAL)
 /** @def BT_UUID_GUST_FACTOR_VAL
  *  @brief Gust Factor Characteristic UUID value
  */
@@ -805,7 +805,7 @@ struct bt_uuid_128 {
  *  @brief Gust Factor Characteristic
  */
 #define BT_UUID_GUST_FACTOR \
-	BT_UUID_DECLARE_16(BT_UUID_GUST_FACTOR_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GUST_FACTOR_VAL)
 /** @def BT_UUID_POLLEN_CONCENTRATION_VAL
  *  @brief Pollen Concentration Characteristic UUID value
  */
@@ -814,7 +814,7 @@ struct bt_uuid_128 {
  *  @brief Pollen Concentration Characteristic
  */
 #define BT_UUID_POLLEN_CONCENTRATION \
-	BT_UUID_DECLARE_16(BT_UUID_POLLEN_CONCENTRATION_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_POLLEN_CONCENTRATION_VAL)
 /** @def BT_UUID_UV_INDEX_VAL
  *  @brief UV Index Characteristic UUID value
  */
@@ -823,7 +823,7 @@ struct bt_uuid_128 {
  *  @brief UV Index Characteristic
  */
 #define BT_UUID_UV_INDEX \
-	BT_UUID_DECLARE_16(BT_UUID_UV_INDEX_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_UV_INDEX_VAL)
 /** @def BT_UUID_IRRADIANCE_VAL
  *  @brief Irradiance Characteristic UUID value
  */
@@ -832,7 +832,7 @@ struct bt_uuid_128 {
  *  @brief Irradiance Characteristic
  */
 #define BT_UUID_IRRADIANCE \
-	BT_UUID_DECLARE_16(BT_UUID_IRRADIANCE_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_IRRADIANCE_VAL)
 /** @def BT_UUID_RAINFALL_VAL
  *  @brief Rainfall Characteristic UUID value
  */
@@ -841,7 +841,7 @@ struct bt_uuid_128 {
  *  @brief Rainfall Characteristic
  */
 #define BT_UUID_RAINFALL \
-	BT_UUID_DECLARE_16(BT_UUID_RAINFALL_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_RAINFALL_VAL)
 /** @def BT_UUID_WIND_CHILL_VAL
  *  @brief Wind Chill Characteristic UUID value
  */
@@ -850,7 +850,7 @@ struct bt_uuid_128 {
  *  @brief Wind Chill Characteristic
  */
 #define BT_UUID_WIND_CHILL \
-	BT_UUID_DECLARE_16(BT_UUID_WIND_CHILL_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_WIND_CHILL_VAL)
 /** @def BT_UUID_HEAT_INDEX_VAL
  *  @brief Heat Index Characteristic UUID value
  */
@@ -859,7 +859,7 @@ struct bt_uuid_128 {
  *  @brief Heat Index Characteristic
  */
 #define BT_UUID_HEAT_INDEX \
-	BT_UUID_DECLARE_16(BT_UUID_HEAT_INDEX_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_HEAT_INDEX_VAL)
 /** @def BT_UUID_DEW_POINT_VAL
  *  @brief Dew Point Characteristic UUID value
  */
@@ -868,7 +868,7 @@ struct bt_uuid_128 {
  *  @brief Dew Point Characteristic
  */
 #define BT_UUID_DEW_POINT \
-	BT_UUID_DECLARE_16(BT_UUID_DEW_POINT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_DEW_POINT_VAL)
 /** @def BT_UUID_DESC_VALUE_CHANGED_VAL
  *  @brief Descriptor Value Changed Characteristic UUID value
  */
@@ -877,7 +877,7 @@ struct bt_uuid_128 {
  *  @brief Descriptor Value Changed Characteristic
  */
 #define BT_UUID_DESC_VALUE_CHANGED \
-	BT_UUID_DECLARE_16(BT_UUID_DESC_VALUE_CHANGED_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_DESC_VALUE_CHANGED_VAL)
 /** @def BT_UUID_MAGN_FLUX_DENSITY_2D_VAL
  *  @brief Magnetic Flux Density - 2D Characteristic UUID value
  */
@@ -886,7 +886,7 @@ struct bt_uuid_128 {
  *  @brief Magnetic Flux Density - 2D Characteristic
  */
 #define BT_UUID_MAGN_FLUX_DENSITY_2D \
-	BT_UUID_DECLARE_16(BT_UUID_MAGN_FLUX_DENSITY_2D_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_MAGN_FLUX_DENSITY_2D_VAL)
 /** @def BT_UUID_MAGN_FLUX_DENSITY_3D_VAL
  *  @brief Magnetic Flux Density - 3D Characteristic UUID value
  */
@@ -895,7 +895,7 @@ struct bt_uuid_128 {
  *  @brief Magnetic Flux Density - 3D Characteristic
  */
 #define BT_UUID_MAGN_FLUX_DENSITY_3D \
-	BT_UUID_DECLARE_16(BT_UUID_MAGN_FLUX_DENSITY_3D_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_MAGN_FLUX_DENSITY_3D_VAL)
 /** @def BT_UUID_BAR_PRESSURE_TREND_VAL
  *  @brief Barometric Pressure Trend Characteristic UUID value
  */
@@ -904,7 +904,7 @@ struct bt_uuid_128 {
  *  @brief Barometric Pressure Trend Characteristic
  */
 #define BT_UUID_BAR_PRESSURE_TREND \
-	BT_UUID_DECLARE_16(BT_UUID_BAR_PRESSURE_TREND_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_BAR_PRESSURE_TREND_VAL)
 /** @def BT_UUID_BMS_CONTROL_POINT_VAL
  *  @brief Bond Management Control Point UUID value
  */
@@ -913,7 +913,7 @@ struct bt_uuid_128 {
  *  @brief Bond Management Control Point
  */
 #define BT_UUID_BMS_CONTROL_POINT \
-	BT_UUID_DECLARE_16(BT_UUID_BMS_CONTROL_POINT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_BMS_CONTROL_POINT_VAL)
 /** @def BT_UUID_BMS_FEATURE_VAL
  *  @brief Bond Management Feature UUID value
  */
@@ -922,7 +922,7 @@ struct bt_uuid_128 {
  *  @brief Bond Management Feature
  */
 #define BT_UUID_BMS_FEATURE \
-	BT_UUID_DECLARE_16(BT_UUID_BMS_FEATURE_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_BMS_FEATURE_VAL)
 /** @def BT_UUID_CENTRAL_ADDR_RES_VAL
  *  @brief Central Address Resolution Characteristic UUID value
  */
@@ -931,7 +931,7 @@ struct bt_uuid_128 {
  *  @brief Central Address Resolution Characteristic
  */
 #define BT_UUID_CENTRAL_ADDR_RES \
-	BT_UUID_DECLARE_16(BT_UUID_CENTRAL_ADDR_RES_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_CENTRAL_ADDR_RES_VAL)
 /** @def BT_UUID_OTS_FEATURE_VAL
  *  @brief OTS Feature Characteristic UUID value
  */
@@ -940,7 +940,7 @@ struct bt_uuid_128 {
  *  @brief OTS Feature Characteristic
  */
 #define BT_UUID_OTS_FEATURE \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_FEATURE_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_FEATURE_VAL)
 /** @def BT_UUID_OTS_NAME_VAL
  *  @brief OTS Object Name Characteristic UUID value
  */
@@ -949,7 +949,7 @@ struct bt_uuid_128 {
  *  @brief OTS Object Name Characteristic
  */
 #define BT_UUID_OTS_NAME \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_NAME_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_NAME_VAL)
 /** @def BT_UUID_OTS_TYPE_VAL
  *  @brief OTS Object Type Characteristic UUID value
  */
@@ -958,7 +958,7 @@ struct bt_uuid_128 {
  *  @brief OTS Object Type Characteristic
  */
 #define BT_UUID_OTS_TYPE \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_TYPE_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_TYPE_VAL)
 /** @def BT_UUID_OTS_SIZE_VAL
  *  @brief OTS Object Size Characteristic UUID value
  */
@@ -967,7 +967,7 @@ struct bt_uuid_128 {
  *  @brief OTS Object Size Characteristic
  */
 #define BT_UUID_OTS_SIZE \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_SIZE_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_SIZE_VAL)
 /** @def BT_UUID_OTS_FIRST_CREATED_VAL
  *  @brief OTS Object First-Created Characteristic UUID value
  */
@@ -976,7 +976,7 @@ struct bt_uuid_128 {
  *  @brief OTS Object First-Created Characteristic
  */
 #define BT_UUID_OTS_FIRST_CREATED \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_FIRST_CREATED_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_FIRST_CREATED_VAL)
 /** @def BT_UUID_OTS_LAST_MODIFIED_VAL
  *  @brief OTS Object Last-Modified Characteristic UUI value
  */
@@ -985,7 +985,7 @@ struct bt_uuid_128 {
  *  @brief OTS Object Last-Modified Characteristic
  */
 #define BT_UUID_OTS_LAST_MODIFIED \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_LAST_MODIFIED_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_LAST_MODIFIED_VAL)
 /** @def BT_UUID_OTS_ID_VAL
  *  @brief OTS Object ID Characteristic UUID value
  */
@@ -994,7 +994,7 @@ struct bt_uuid_128 {
  *  @brief OTS Object ID Characteristic
  */
 #define BT_UUID_OTS_ID \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_ID_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_ID_VAL)
 /** @def BT_UUID_OTS_PROPERTIES_VAL
  *  @brief OTS Object Properties Characteristic UUID value
  */
@@ -1003,7 +1003,7 @@ struct bt_uuid_128 {
  *  @brief OTS Object Properties Characteristic
  */
 #define BT_UUID_OTS_PROPERTIES \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_PROPERTIES_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_PROPERTIES_VAL)
 /** @def BT_UUID_OTS_ACTION_CP_VAL
  *  @brief OTS Object Action Control Point Characteristic UUID value
  */
@@ -1012,7 +1012,7 @@ struct bt_uuid_128 {
  *  @brief OTS Object Action Control Point Characteristic
  */
 #define BT_UUID_OTS_ACTION_CP \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_ACTION_CP_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_ACTION_CP_VAL)
 /** @def BT_UUID_OTS_LIST_CP_VAL
  *  @brief OTS Object List Control Point Characteristic UUID value
  */
@@ -1021,7 +1021,7 @@ struct bt_uuid_128 {
  *  @brief OTS Object List Control Point Characteristic
  */
 #define BT_UUID_OTS_LIST_CP \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_LIST_CP_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_LIST_CP_VAL)
 /** @def BT_UUID_OTS_LIST_FILTER_VAL
  *  @brief OTS Object List Filter Characteristic UUID value
  */
@@ -1030,7 +1030,7 @@ struct bt_uuid_128 {
  *  @brief OTS Object List Filter Characteristic
  */
 #define BT_UUID_OTS_LIST_FILTER \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_LIST_FILTER_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_LIST_FILTER_VAL)
 /** @def BT_UUID_OTS_CHANGED_VAL
  *  @brief OTS Object Changed Characteristic UUID value
  */
@@ -1039,7 +1039,7 @@ struct bt_uuid_128 {
  *  @brief OTS Object Changed Characteristic
  */
 #define BT_UUID_OTS_CHANGED \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_CHANGED_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_CHANGED_VAL)
 /** @def BT_UUID_OTS_TYPE_UNSPECIFIED_VAL
  *  @brief OTS Unspecified Object Type UUID value
  */
@@ -1048,7 +1048,7 @@ struct bt_uuid_128 {
  *  @brief OTS Unspecified Object Type
  */
 #define BT_UUID_OTS_TYPE_UNSPECIFIED \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_TYPE_UNSPECIFIED_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_TYPE_UNSPECIFIED_VAL)
 /** @def BT_UUID_OTS_DIRECTORY_LISTING_VAL
  *  @brief OTS Directory Listing UUID value
  */
@@ -1057,7 +1057,7 @@ struct bt_uuid_128 {
  *  @brief OTS Directory Listing
  */
 #define BT_UUID_OTS_DIRECTORY_LISTING \
-	BT_UUID_DECLARE_16(BT_UUID_OTS_DIRECTORY_LISTING_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_OTS_DIRECTORY_LISTING_VAL)
 /** @def BT_UUID_MESH_PROV_DATA_IN_VAL
  *  @brief Mesh Provisioning Data In UUID value
  */
@@ -1066,7 +1066,7 @@ struct bt_uuid_128 {
  *  @brief Mesh Provisioning Data In
  */
 #define BT_UUID_MESH_PROV_DATA_IN \
-	BT_UUID_DECLARE_16(BT_UUID_MESH_PROV_DATA_IN_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_MESH_PROV_DATA_IN_VAL)
 /** @def BT_UUID_MESH_PROV_DATA_OUT_VAL
  *  @brief Mesh Provisioning Data Out UUID value
  */
@@ -1075,7 +1075,7 @@ struct bt_uuid_128 {
  *  @brief Mesh Provisioning Data Out
  */
 #define BT_UUID_MESH_PROV_DATA_OUT \
-	BT_UUID_DECLARE_16(BT_UUID_MESH_PROV_DATA_OUT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_MESH_PROV_DATA_OUT_VAL)
 /** @def BT_UUID_MESH_PROXY_DATA_IN_VAL
  *  @brief Mesh Proxy Data In UUID value
  */
@@ -1084,7 +1084,7 @@ struct bt_uuid_128 {
  *  @brief Mesh Proxy Data In
  */
 #define BT_UUID_MESH_PROXY_DATA_IN \
-	BT_UUID_DECLARE_16(BT_UUID_MESH_PROXY_DATA_IN_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_MESH_PROXY_DATA_IN_VAL)
 /** @def BT_UUID_MESH_PROXY_DATA_OUT_VAL
  *  @brief Mesh Proxy Data Out UUID value
  */
@@ -1093,7 +1093,7 @@ struct bt_uuid_128 {
  *  @brief Mesh Proxy Data Out
  */
 #define BT_UUID_MESH_PROXY_DATA_OUT \
-	BT_UUID_DECLARE_16(BT_UUID_MESH_PROXY_DATA_OUT_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_MESH_PROXY_DATA_OUT_VAL)
 /** @def BT_UUID_GATT_CLIENT_FEATURES_VAL
  *  @brief Client Supported Features UUID value
  */
@@ -1102,7 +1102,7 @@ struct bt_uuid_128 {
  *  @brief Client Supported Features
  */
 #define BT_UUID_GATT_CLIENT_FEATURES \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_CLIENT_FEATURES_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_CLIENT_FEATURES_VAL)
 /** @def BT_UUID_GATT_DB_HASH_VAL
  *  @brief Database Hash UUID value
  */
@@ -1111,70 +1111,69 @@ struct bt_uuid_128 {
  *  @brief Database Hash
  */
 #define BT_UUID_GATT_DB_HASH \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_DB_HASH_VAL)
+    BT_UUID_DECLARE_16(BT_UUID_GATT_DB_HASH_VAL)
 
 /** @def BT_UUID_GATT_SERVER_FEATURES_VAL
  *  @brief Server Supported Features UUID value
  */
-#define BT_UUID_GATT_SERVER_FEATURES_VAL  0x2b3a
+#define BT_UUID_GATT_SERVER_FEATURES_VAL 0x2b3a
 /** @def BT_UUID_GATT_SERVER_FEATURES
  *  @brief Server Supported Features
  */
-#define BT_UUID_GATT_SERVER_FEATURES      \
-	BT_UUID_DECLARE_16(BT_UUID_GATT_SERVER_FEATURES_VAL)
+#define BT_UUID_GATT_SERVER_FEATURES \
+    BT_UUID_DECLARE_16(BT_UUID_GATT_SERVER_FEATURES_VAL)
 
 /*
  * Protocol UUIDs
  */
-#define BT_UUID_SDP_VAL               0x0001
-#define BT_UUID_SDP                   BT_UUID_DECLARE_16(BT_UUID_SDP_VAL)
-#define BT_UUID_UDP_VAL               0x0002
-#define BT_UUID_UDP                   BT_UUID_DECLARE_16(BT_UUID_UDP_VAL)
-#define BT_UUID_RFCOMM_VAL            0x0003
-#define BT_UUID_RFCOMM                BT_UUID_DECLARE_16(BT_UUID_RFCOMM_VAL)
-#define BT_UUID_TCP_VAL               0x0004
-#define BT_UUID_TCP                   BT_UUID_DECLARE_16(BT_UUID_TCP_VAL)
-#define BT_UUID_TCS_BIN_VAL           0x0005
-#define BT_UUID_TCS_BIN               BT_UUID_DECLARE_16(BT_UUID_TCS_BIN_VAL)
-#define BT_UUID_TCS_AT_VAL            0x0006
-#define BT_UUID_TCS_AT                BT_UUID_DECLARE_16(BT_UUID_TCS_AT_VAL)
-#define BT_UUID_ATT_VAL               0x0007
-#define BT_UUID_ATT                   BT_UUID_DECLARE_16(BT_UUID_ATT_VAL)
-#define BT_UUID_OBEX_VAL              0x0008
-#define BT_UUID_OBEX                  BT_UUID_DECLARE_16(BT_UUID_OBEX_VAL)
-#define BT_UUID_IP_VAL                0x0009
-#define BT_UUID_IP                    BT_UUID_DECLARE_16(BT_UUID_IP_VAL)
-#define BT_UUID_FTP_VAL               0x000a
-#define BT_UUID_FTP                   BT_UUID_DECLARE_16(BT_UUID_FTP_VAL)
-#define BT_UUID_HTTP_VAL              0x000c
-#define BT_UUID_HTTP                  BT_UUID_DECLARE_16(BT_UUID_HTTP_VAL)
-#define BT_UUID_BNEP_VAL              0x000f
-#define BT_UUID_BNEP                  BT_UUID_DECLARE_16(BT_UUID_BNEP_VAL)
-#define BT_UUID_UPNP_VAL              0x0010
-#define BT_UUID_UPNP                  BT_UUID_DECLARE_16(BT_UUID_UPNP_VAL)
-#define BT_UUID_HIDP_VAL              0x0011
-#define BT_UUID_HIDP                  BT_UUID_DECLARE_16(BT_UUID_HIDP_VAL)
-#define BT_UUID_HCRP_CTRL_VAL         0x0012
-#define BT_UUID_HCRP_CTRL             BT_UUID_DECLARE_16(BT_UUID_HCRP_CTRL_VAL)
-#define BT_UUID_HCRP_DATA_VAL         0x0014
-#define BT_UUID_HCRP_DATA             BT_UUID_DECLARE_16(BT_UUID_HCRP_DATA_VAL)
-#define BT_UUID_HCRP_NOTE_VAL         0x0016
-#define BT_UUID_HCRP_NOTE             BT_UUID_DECLARE_16(BT_UUID_HCRP_NOTE_VAL)
-#define BT_UUID_AVCTP_VAL             0x0017
-#define BT_UUID_AVCTP                 BT_UUID_DECLARE_16(BT_UUID_AVCTP_VAL)
-#define BT_UUID_AVDTP_VAL             0x0019
-#define BT_UUID_AVDTP                 BT_UUID_DECLARE_16(BT_UUID_AVDTP_VAL)
-#define BT_UUID_CMTP_VAL              0x001b
-#define BT_UUID_CMTP                  BT_UUID_DECLARE_16(BT_UUID_CMTP_VAL)
-#define BT_UUID_UDI_VAL               0x001d
-#define BT_UUID_UDI                   BT_UUID_DECLARE_16(BT_UUID_UDI_VAL)
-#define BT_UUID_MCAP_CTRL_VAL         0x001e
-#define BT_UUID_MCAP_CTRL             BT_UUID_DECLARE_16(BT_UUID_MCAP_CTRL_VAL)
-#define BT_UUID_MCAP_DATA_VAL         0x001f
-#define BT_UUID_MCAP_DATA             BT_UUID_DECLARE_16(BT_UUID_MCAP_DATA_VAL)
-#define BT_UUID_L2CAP_VAL             0x0100
-#define BT_UUID_L2CAP                 BT_UUID_DECLARE_16(BT_UUID_L2CAP_VAL)
-
+#define BT_UUID_SDP_VAL 0x0001
+#define BT_UUID_SDP BT_UUID_DECLARE_16(BT_UUID_SDP_VAL)
+#define BT_UUID_UDP_VAL 0x0002
+#define BT_UUID_UDP BT_UUID_DECLARE_16(BT_UUID_UDP_VAL)
+#define BT_UUID_RFCOMM_VAL 0x0003
+#define BT_UUID_RFCOMM BT_UUID_DECLARE_16(BT_UUID_RFCOMM_VAL)
+#define BT_UUID_TCP_VAL 0x0004
+#define BT_UUID_TCP BT_UUID_DECLARE_16(BT_UUID_TCP_VAL)
+#define BT_UUID_TCS_BIN_VAL 0x0005
+#define BT_UUID_TCS_BIN BT_UUID_DECLARE_16(BT_UUID_TCS_BIN_VAL)
+#define BT_UUID_TCS_AT_VAL 0x0006
+#define BT_UUID_TCS_AT BT_UUID_DECLARE_16(BT_UUID_TCS_AT_VAL)
+#define BT_UUID_ATT_VAL 0x0007
+#define BT_UUID_ATT BT_UUID_DECLARE_16(BT_UUID_ATT_VAL)
+#define BT_UUID_OBEX_VAL 0x0008
+#define BT_UUID_OBEX BT_UUID_DECLARE_16(BT_UUID_OBEX_VAL)
+#define BT_UUID_IP_VAL 0x0009
+#define BT_UUID_IP BT_UUID_DECLARE_16(BT_UUID_IP_VAL)
+#define BT_UUID_FTP_VAL 0x000a
+#define BT_UUID_FTP BT_UUID_DECLARE_16(BT_UUID_FTP_VAL)
+#define BT_UUID_HTTP_VAL 0x000c
+#define BT_UUID_HTTP BT_UUID_DECLARE_16(BT_UUID_HTTP_VAL)
+#define BT_UUID_BNEP_VAL 0x000f
+#define BT_UUID_BNEP BT_UUID_DECLARE_16(BT_UUID_BNEP_VAL)
+#define BT_UUID_UPNP_VAL 0x0010
+#define BT_UUID_UPNP BT_UUID_DECLARE_16(BT_UUID_UPNP_VAL)
+#define BT_UUID_HIDP_VAL 0x0011
+#define BT_UUID_HIDP BT_UUID_DECLARE_16(BT_UUID_HIDP_VAL)
+#define BT_UUID_HCRP_CTRL_VAL 0x0012
+#define BT_UUID_HCRP_CTRL BT_UUID_DECLARE_16(BT_UUID_HCRP_CTRL_VAL)
+#define BT_UUID_HCRP_DATA_VAL 0x0014
+#define BT_UUID_HCRP_DATA BT_UUID_DECLARE_16(BT_UUID_HCRP_DATA_VAL)
+#define BT_UUID_HCRP_NOTE_VAL 0x0016
+#define BT_UUID_HCRP_NOTE BT_UUID_DECLARE_16(BT_UUID_HCRP_NOTE_VAL)
+#define BT_UUID_AVCTP_VAL 0x0017
+#define BT_UUID_AVCTP BT_UUID_DECLARE_16(BT_UUID_AVCTP_VAL)
+#define BT_UUID_AVDTP_VAL 0x0019
+#define BT_UUID_AVDTP BT_UUID_DECLARE_16(BT_UUID_AVDTP_VAL)
+#define BT_UUID_CMTP_VAL 0x001b
+#define BT_UUID_CMTP BT_UUID_DECLARE_16(BT_UUID_CMTP_VAL)
+#define BT_UUID_UDI_VAL 0x001d
+#define BT_UUID_UDI BT_UUID_DECLARE_16(BT_UUID_UDI_VAL)
+#define BT_UUID_MCAP_CTRL_VAL 0x001e
+#define BT_UUID_MCAP_CTRL BT_UUID_DECLARE_16(BT_UUID_MCAP_CTRL_VAL)
+#define BT_UUID_MCAP_DATA_VAL 0x001f
+#define BT_UUID_MCAP_DATA BT_UUID_DECLARE_16(BT_UUID_MCAP_DATA_VAL)
+#define BT_UUID_L2CAP_VAL 0x0100
+#define BT_UUID_L2CAP BT_UUID_DECLARE_16(BT_UUID_L2CAP_VAL)
 
 /** @brief Compare Bluetooth UUIDs.
  *
@@ -1186,7 +1185,7 @@ struct bt_uuid_128 {
  *
  *  @return negative value if @a u1 < @a u2, 0 if @a u1 == @a u2, else positive
  */
-int bt_uuid_cmp(const struct bt_uuid *u1, const struct bt_uuid *u2);
+int bt_uuid_cmp(const struct bt_uuid* u1, const struct bt_uuid* u2);
 
 /** @brief Create a bt_uuid from a little-endian data buffer.
  *
@@ -1200,7 +1199,7 @@ int bt_uuid_cmp(const struct bt_uuid *u1, const struct bt_uuid *u2);
  *
  *  @return true if the data was valid and the UUID was successfully created.
  */
-bool bt_uuid_create(struct bt_uuid *uuid, const uint8_t *data, uint8_t data_len);
+bool bt_uuid_create(struct bt_uuid* uuid, const uint8_t* data, uint8_t data_len);
 
 /** @brief Convert Bluetooth UUID to string.
  *
@@ -1213,8 +1212,8 @@ bool bt_uuid_create(struct bt_uuid *uuid, const uint8_t *data, uint8_t data_len)
  *
  *  @return N/A
  */
-void bt_uuid_to_str(const struct bt_uuid *uuid, char *str, size_t len);
-void uuid_to_uuid128(const struct bt_uuid *src, struct bt_uuid_128 *dst);
+void bt_uuid_to_str(const struct bt_uuid* uuid, char* str, size_t len);
+void uuid_to_uuid128(const struct bt_uuid* src, struct bt_uuid_128* dst);
 #ifdef __cplusplus
 }
 #endif
