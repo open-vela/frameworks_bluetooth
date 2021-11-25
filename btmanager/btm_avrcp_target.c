@@ -22,6 +22,5 @@
  * Included Files
  ****************************************************************************/
 
-#include <stdio.h>
 #include "btm_manager.h"
-
+#include <stdio.h>

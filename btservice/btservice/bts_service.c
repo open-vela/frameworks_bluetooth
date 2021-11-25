@@ -22,44 +22,42 @@
  * Included Files
  ****************************************************************************/
 
-#include <stdio.h>
-#include<stdlib.h>
-#include <pthread.h>
 #include "bts_service.h"
-#include "btm_manager.h"
 #include "btm_gap.h"
-#include "uv.h"
-#include "stack_adapter_service_base.h"
+#include "btm_manager.h"
 #include "stack_adapter_gap.h"
+#include "stack_adapter_service_base.h"
+#include "uv.h"
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "bts_gap.h"
 #include "bts_gatt_service.h"
-#include "bts_spp.h"
 #include "bts_hf_client.h"
+#include "bts_spp.h"
 
 #include <nuttx/list.h>
 
 #define LOG_TAG "bts_service"
 #include "log.h"
 
-
-typedef struct 
+typedef struct
 {
     process_in_io func_in_io;
-    void * data;
-}io_process_data_t;
+    void* data;
+} io_process_data_t;
 
-typedef struct 
+typedef struct
 {
-    process_in_timer func_in_timer; 
-    void * data;
-}timer_process_data_t;
+    process_in_timer func_in_timer;
+    void* data;
+} timer_process_data_t;
 
 typedef enum {
     THREAD_ID_SERVICE,
     THREAD_ID_STACK,
 } thread_id_t;
-
 
 typedef struct {
     struct list_node node;
@@ -77,131 +75,77 @@ static uv_async_t async_handle[1];
 static bts_profile_callbacks profiles_callbacks[BT_PROFILE_MAX_ID];
 static struct list_node bts_msg_list = LIST_INITIAL_VALUE(bts_msg_list);
 
-void bts_uv_close_cb(uv_handle_t* handle)
-{
-    //BT_LOGD("uv_close_cb\n");
-    if (NULL == handle) 
-    {
-        return;
-    }
-    free(handle);
-}
-
-uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb)
-{
-    int ret;
-    uv_poll_t *handle;
-
-    handle = (uv_poll_t *)malloc(sizeof(uv_poll_t));
-    if (!handle)
-        return NULL;
-
-    ret = uv_poll_init(bt_dispatch_loop, handle, fd);
-    if (ret < 0) {
-        free(handle);
-        return NULL;
-    }
-
-    ret = uv_poll_start(handle, pevents, cb);
-    if (ret < 0) {
-        free(handle);
-        return NULL;
-    }
-
-    return handle;
-}
-
-void bts_uv_poll_stop(uv_poll_t* handle)
-{
-    uv_poll_stop(handle);
-    uv_close((uv_handle_t*)handle, bts_uv_close_cb);
-}
-
-void execute_service_callback(uv_async_t* handle)
-{
-    //BT_LOGD("execute_service_callback\n");
-      bts_process_loop_data func;
-
-    if (NULL == handle) {
-        BT_LOGE("execute_service_callback handle is NULl");
-        return;
-    }
-    excute_service_context_t *context = NULL;
-    context = (excute_service_context_t*)uv_handle_get_data((uv_handle_t*)handle);
-    if (NULL == context) {
-        return;
-    }
-
-    func = context->loop_func;
-    func(context->data, context->data_size);
-    if (NULL != context) {
-        free(context);
-    }
-
-}
-
-void io_process(uv_work_t *req) 
+static void io_process(uv_work_t* req)
 {
     BT_LOGD("btservice io_process");
 
-    io_process_data_t *process_data = (io_process_data_t *)req->data;
-    if (NULL == process_data){
+    io_process_data_t* process_data = (io_process_data_t*)req->data;
+    if (NULL == process_data) {
         return;
     }
 
-    if(NULL == process_data->func_in_io){
+    if (NULL == process_data->func_in_io) {
         return;
     }
     process_data->func_in_io(process_data->data);
     return;
 }
 
-void after_io_process(uv_work_t *req, int status)
+static void after_io_process(uv_work_t* req, int status)
 {
     BT_LOGD("btservice after_io_process");
     uv_close(req, NULL);
     free(req);
 }
 
-void process_in_work_thread(process_in_io func_in_io, void * data)
+void process_in_work_thread(process_in_io func_in_io, void* data)
 {
-    uv_work_t *req = malloc(sizeof(uv_work_t));
-    io_process_data_t *process_data = malloc(sizeof(io_process_data_t));
+    uv_work_t* req = malloc(sizeof(uv_work_t));
+    io_process_data_t* process_data = malloc(sizeof(io_process_data_t));
     process_data->func_in_io = func_in_io;
     process_data->data = data;
     req->data = process_data;
     uv_queue_work(bt_dispatch_loop, req, io_process, after_io_process);
 }
 
-void timer_hadler_cb(uv_timer_t * timer)
+void bts_uv_close_cb(uv_handle_t* handle)
+{
+    //BT_LOGD("uv_close_cb\n");
+    if (NULL == handle) {
+        return;
+    }
+    free(handle);
+}
+
+static void timer_hadler_cb(uv_timer_t* timer)
 {
     BT_LOGD("Do timer_hadler_cb");
-    if (NULL == timer){
+    if (NULL == timer) {
         return;
     }
 
-    if(NULL == timer->data){
+    if (NULL == timer->data) {
         return;
     }
-     timer_process_data_t *process_data = (timer_process_data_t *)timer->data;
-     process_in_timer timer_callback = process_data->func_in_timer;
-     if (NULL != timer_callback){
+    timer_process_data_t* process_data = (timer_process_data_t*)timer->data;
+    process_in_timer timer_callback = process_data->func_in_timer;
+    if (NULL != timer_callback) {
         timer_callback(process_data->data);
-     }
-     
+    }
+
     return;
 }
 
-uv_timer_t *start_timer(int timeout, int repeat, process_in_timer timer_callback, void * data)
+uv_timer_t* start_timer(int timeout, int repeat, process_in_timer timer_callback, void* data)
 {
-    uv_timer_t *timer;
-    if (NULL == timer_callback){
+    uv_timer_t* timer;
+    if (NULL == timer_callback) {
         return NULL;
     }
     timer = malloc(sizeof(uv_timer_t));
     uv_timer_init(bt_dispatch_loop, timer);
 
-    timer_process_data_t *process_data = malloc(sizeof(timer_process_data_t));
+    timer_process_data_t* process_data = malloc(sizeof(timer_process_data_t));
     process_data->func_in_timer = timer_callback;
     process_data->data = data;
     timer->data = process_data;
@@ -210,16 +154,16 @@ uv_timer_t *start_timer(int timeout, int repeat, process_in_timer timer_callback
     return timer;
 }
 
-void stop_timer(uv_timer_t * timer)
+void stop_timer(uv_timer_t* timer)
 {
-    if (NULL == timer){
+    if (NULL == timer) {
         return;
     }
     uv_timer_stop(timer);
-    uv_close((uv_handle_t *)timer, bts_uv_close_cb);
+    uv_close((uv_handle_t*)timer, bts_uv_close_cb);
 }
 
-uv_loop_t *get_service_loop(void)
+uv_loop_t* get_service_loop(void)
 {
     return bt_dispatch_loop;
 }
@@ -231,7 +175,6 @@ static void* stack_schedule_loop(void* data)
     BT_LOGD("%s", __func__);
     ScheduleLoop();
     BT_LOGD("%s", __func__);
-
 }
 
 bool bts_register_profile_process(bt_profile_id id, bts_profile_callbacks cb)
@@ -300,7 +243,7 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     bluetooth_upper_callbacks = callbacks;
 
     uv_mutex_init(&msg_mutex);
-    if(service_state != BT_MANAGER_STATE_OFF) 
+    if (service_state != BT_MANAGER_STATE_OFF)
         return BT_RESULT_FAILED;
     InitTransportLayer();
     gap_service_init();
@@ -315,33 +258,18 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
         return BT_RESULT_FAILED;
     }
-#if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
-    gatt_interface_t* gatt_if = gatt_get_interface();
-    if (gatt_if) {
-        BT_LOGD("gatt init");
-        gatt_if->init();
-    }
-#endif
     service_state = BT_MANAGER_STATE_TURNING_ON;
     return BT_RESULT_SUCCESS;
 }
 
-
 void bts_service_cleanup(void)
 {
-#if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
-    gatt_interface_t* gatt_if = gatt_get_interface();
-    if (!gatt_if) {
-        BT_LOGD("gatt cleanup");
-        gatt_if->cleanup();
-    }
-#endif
 }
 
 void stack_state_change(stack_state_t state)
 {
     bt_service_state service_state = BT_MANAGER_STATE_OFF;
-    if (BT_STATE_ON == state){
+    if (BT_STATE_ON == state) {
         service_state = BT_MANAGER_STATE_ON;
         gap_create_factory_info(false);
         gap_read_device_info();

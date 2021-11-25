@@ -42,12 +42,12 @@
 #include "btm_manager.h"
 #include "bts_common.h"
 
-#define MAX_PAIR_DEVICE   5
+#define MAX_PAIR_DEVICE 5
 #define MAX_CONNECTED_DEVICE 1
 /* * Bluetooth discovery state */
-typedef enum { 
+typedef enum {
     BT_DISCOVERY_STATE_STOPPED = 0,
-    BT_DISCOVERY_STATE_STARTED 
+    BT_DISCOVERY_STATE_STARTED
 } bt_discovery_state;
 
 /* * Bluetooth Bond state */
@@ -72,10 +72,10 @@ typedef enum {
 
 // Type of the event created by the ctroller when a command is completed
 typedef enum {
-	HCI_COMMAND_COMPLETED_BY_NONE = 0, ///< None of the following complete event is created for this command
-	HCI_COMMAND_COMPLETED_BY_COMMAND_COMPLETE_EVENT, ///< HCI Command Complete event completes this command 
-	HCI_COMMAND_COMPLETED_BY_VENDOR_SPECIFIC_EVENT, ///< A HCI Vendor Specific event completes this command 
-	HCI_COMMAND_COMPLETED_EVENT_TYPE_END ///< End of definition, new event type shall be added before it 
+    HCI_COMMAND_COMPLETED_BY_NONE = 0, ///< None of the following complete event is created for this command
+    HCI_COMMAND_COMPLETED_BY_COMMAND_COMPLETE_EVENT, ///< HCI Command Complete event completes this command
+    HCI_COMMAND_COMPLETED_BY_VENDOR_SPECIFIC_EVENT, ///< A HCI Vendor Specific event completes this command
+    HCI_COMMAND_COMPLETED_EVENT_TYPE_END ///< End of definition, new event type shall be added before it
 } bt_service_hci_command_complete_event;
 
 /** ssp type data */
@@ -99,9 +99,9 @@ typedef struct {
  *@brief details of HCI event from controller
  */
 typedef struct {
-    uint8_t evt_code;  ///< HCI event code
-    uint8_t length;    ///< length of the params
-    char params[0];    ///< parameters
+    uint8_t evt_code; ///< HCI event code
+    uint8_t length; ///< length of the params
+    char params[0]; ///< parameters
 } bt_hci_event_t;
 
 /**
@@ -111,15 +111,15 @@ typedef struct {
  * @return   void
  */
 
-typedef void (*hci_event_callback)(void* handle, bt_hci_event_t *hci_event);
+typedef void (*hci_event_callback)(void* handle, bt_hci_event_t* hci_event);
 
 // HCI command struct
 typedef struct {
-    uint8_t ogf;                ///< OpCode Group Field
-    uint16_t ocf;               ///< OpCode Command Field
-    hci_event_callback cb;  // callback
-    uint8_t length;             ///< length of the params
-    char params[1];             // parameters
+    uint8_t ogf; ///< OpCode Group Field
+    uint16_t ocf; ///< OpCode Command Field
+    hci_event_callback cb; // callback
+    uint8_t length; ///< length of the params
+    char params[1]; // parameters
 } bt_hci_command_t;
 
 //typedef void (*bt_manager_ble_state_changed_callback)(void* handle, bt_manager_ble_state state);
@@ -147,7 +147,7 @@ typedef void (*device_found_callback)(void* handle, bt_device_t* device);
  * @param[in] length  - buffer length
  * @return   void
  */
-typedef void (*received_remote_name_callback)(void* handle, bt_address bd_addr, char *bt_name, uint8_t length);
+typedef void (*received_remote_name_callback)(void* handle, bt_address bd_addr, char* bt_name, uint8_t length);
 
 /**
  * @brief discoveryStateChangedCallback
@@ -164,7 +164,7 @@ typedef void (*discovery_state_changed_callback)(void* handle, bt_discovery_stat
  * @param[in] request_data - request data from callback
  * @return   void
  */
-typedef void (*ssp_request_callback)(void* handle, bt_ssp_request_data_t *request_data);
+typedef void (*ssp_request_callback)(void* handle, bt_ssp_request_data_t* request_data);
 
 /**
 * @brief Bonding state change callback - invoked in response to bt_create_bond(), bt_cancel_bond(),
@@ -183,7 +183,7 @@ typedef void (*bond_state_changed_callback)(void* handle, bt_device_t* device, b
  * @param[in] length - lenth
  * @return   void
  */
-typedef void (*local_name_callback)(void* handle, char *bt_name, uint8_t length);
+typedef void (*local_name_callback)(void* handle, char* bt_name, uint8_t length);
 
 typedef void (*local_address_callback)(void* handle, bt_device_t* device);
 
@@ -209,7 +209,7 @@ typedef void (*btm_adapter_state_changed_callback)(void* handle, stack_state_t s
  * @param[in] request_data - request data info.
  * @return   void
  */
-typedef void (*smp_request_callback)(void* gap_handle, ssp_request_data_t *request_data);
+typedef void (*smp_request_callback)(void* gap_handle, ssp_request_data_t* request_data);
 /**
  * @brief ble phy update callback.
  * @param[in] handle - gap handle, must be create before this funciton.
@@ -240,7 +240,7 @@ typedef struct {
     /** set to sizeof(bt_callbacks_t) */
     size_t size;
     btm_adapter_state_changed_callback state_changed_cb;
-    bt_connection_state_changed_callback   bt_connection_state_changed_callback_cb;
+    bt_connection_state_changed_callback bt_connection_state_changed_callback_cb;
     device_found_callback device_found_callback_cb;
     received_remote_name_callback received_remote_name_callback_cb;
     discovery_state_changed_callback discovery_state_changed_callback_cb;
@@ -259,126 +259,125 @@ typedef struct {
 
 /*gap interface*/
 
-
 typedef struct {
     size_t size;
-   bt_result_code (*gap_register_callbacks)(void * manager_handle, void ** gap_handle, const btm_gap_callbacks_t* callbacks);
-/**
+    bt_result_code (*gap_register_callbacks)(void* manager_handle, void** gap_handle, const btm_gap_callbacks_t* callbacks);
+    /**
  *@brief  Clean up Bluetooth stack.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @return   Bluetooth Error status code (0- Success)
- */   
-   bt_result_code (*gap_cleanup)(void* gap_handle);
-/*Local property*/
-/**
+ */
+    bt_result_code (*gap_cleanup)(void* gap_handle);
+    /*Local property*/
+    /**
  *@brief  Get local BT address.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @return   local BT address.
- */   
-   bt_address* (*bt_get_local_address)(void * handle);
-/**
+ */
+    bt_address* (*bt_get_local_address)(void* handle);
+    /**
  *@brief  Set local IO capability.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param[in] io_capability - local IO capability. 
  * @return   Bluetooth Error status code (0- Success).
- */      
-   bt_result_code (*bt_set_local_io_capability)(void * handle, bt_io_capability io_capability);
-/**
+ */
+    bt_result_code (*bt_set_local_io_capability)(void* handle, bt_io_capability io_capability);
+    /**
  *@brief  Set local name.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param[in] bt_name - local BT name, ended with 0. 
  * @param[in] len - length of bt_name.  
  * @return   Bluetooth Error status code (0- Success).
- */         
-   bt_result_code (*bt_set_local_name)(void * handle, char *bt_name, uint8_t len);
-/**
+ */
+    bt_result_code (*bt_set_local_name)(void* handle, char* bt_name, uint8_t len);
+    /**
  *@brief  Get local name.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @return   Local name.
- */   
-   char* (*bt_get_local_name)(void * handle);
-/*Remote device*/
-/**
+ */
+    char* (*bt_get_local_name)(void* handle);
+    /*Remote device*/
+    /**
  *@brief  Get remote name, will be respose in received_remote_name_callback.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param[in] device - reomte device info.
  * @return   Bluetooth Error status code (0- Success).
- */   
-   bt_result_code (*bt_get_remote_name)(void * handle, bt_device_t* device);
-/**
+ */
+    bt_result_code (*bt_get_remote_name)(void* handle, bt_device_t* device);
+    /**
  *@brief  Reply to pairing request.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param[in] device - reomte device info.
  * @param[in] accept - 0 is accept.
  * @return   Bluetooth Error status code (0- Success).
- */      
-   bt_result_code (*bt_reply_pair_request)(void * handle, bt_device_t* device, bool accept);
-/**
+ */
+    bt_result_code (*bt_reply_pair_request)(void* handle, bt_device_t* device, bool accept);
+    /**
  *@brief   * Create bonding with remote deivce, including ACL link creation
  *  and required pairing (bonding) procedure and SDP procedure.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param[in] device - reomte device info.
  * @return   Bluetooth Error status code (0- Success).
- */       
-   bt_result_code (*bt_create_bond)(void * handle, bt_device_t* device);
-/**
+ */
+    bt_result_code (*bt_create_bond)(void* handle, bt_device_t* device);
+    /**
  *@brief   *  Cancel ongoing bonding procedure which previous executed by
  * bt_create_bond().
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param[in] device - reomte device info.
  * @return   Bluetooth Error status code (0- Success).
- */          
-   bt_result_code (*bt_cancel_bond)(void * handle, bt_device_t* device);
-/**
+ */
+    bt_result_code (*bt_cancel_bond)(void* handle, bt_device_t* device);
+    /**
  *@brief   * Remove remote device from bonding history.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param[in] device - reomte device info.
  * @return   Bluetooth Error status code (0- Success).
- */             
-   bt_result_code (*bt_remove_bond)(void * handle, bt_device_t* device);
-   /**
+ */
+    bt_result_code (*bt_remove_bond)(void* handle, bt_device_t* device);
+    /**
  *@brief   * Get remote device from bonding history, reponsed by get_bonded_device_list_callback
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param[out] device_list - device list array. Max number of device list array is .
  * @return   num of bonded device got.
- */   
-   int (*bt_get_bonded_devices)(void * handle, bt_device_t* device_list);
+ */
+    int (*bt_get_bonded_devices)(void* handle, bt_device_t* device_list);
 
-// /*Connection*/
-   /**
+    // /*Connection*/
+    /**
  *@brief   * Get remote device from connected device, reponsed by get_connected_device_list_callback
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param[out] device_list - device list array.Max number of device list array is MAX_CONNTEDE_DEVICE
  * @return   num of bonded device got.
  * @return   Bluetooth Error status code (0- Success).
- */   
-   int (*bt_get_connected_devices)(void * handle, bt_device_t* device_list);
+ */
+    int (*bt_get_connected_devices)(void* handle, bt_device_t* device_list);
 
-/*Discovery*/
-/**
+    /*Discovery*/
+    /**
  *@brief  Set BT scan mode.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param[in]    scan_mode - BT scan mode (connectable, discoverable)
  * @param[in]    bondable - Bondable mode (0 - none bondable; 1 - bondable) 
  * @return   Bluetooth Error status code (0- Success)
- */   
-   bt_result_code (*bt_set_scan_mode)(void * handle, bt_scan_mode scanMode, bool bondable);
-/**
+ */
+    bt_result_code (*bt_set_scan_mode)(void* handle, bt_scan_mode scanMode, bool bondable);
+    /**
  *@brief  Start BR/EDR device discovery.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param    timeout - duration for the discovery procedure
  * @return   Bluetooth Error status code (0- Success)
  */
-   bt_result_code (*bt_start_discovery)(void * handle, uint32_t timeout);
-/**
+    bt_result_code (*bt_start_discovery)(void* handle, uint32_t timeout);
+    /**
  *@brief  Cancel BR/EDR device discovery.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @return   Bluetooth Error status code (0- Success)
- */   
-   bt_result_code (*bt_stop_discovery)(void * handle);
+ */
+    bt_result_code (*bt_stop_discovery)(void* handle);
 
-/*VSC command*/
-/**
+    /*VSC command*/
+    /**
  *@brief   Send HCI command for testing purpose. These command should use the HCI_Command_Complete_Event
  * or HCI_Vendor_Specific_Event as the complete event. If the complete event is none of the
  * HCI_Command_Complete_Event and HCI_Vendor_Specific_Event, event_type shall be set to
@@ -388,11 +387,11 @@ typedef struct {
  * @param[in]  command  hci command
  * @param[in]  event_type  type of the complete event for the command
  * @return   Bluetooth Error status code (0- Success)
- */   
-   bt_result_code (*bt_send_hci_command)(void * handle, bt_hci_command_t *command, bt_service_hci_command_complete_event event_type);
+ */
+    bt_result_code (*bt_send_hci_command)(void* handle, bt_hci_command_t* command, bt_service_hci_command_complete_event event_type);
 
     /*service discovery*/
-/**
+    /**
  * @brief  Start BR/EDR service discovery
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param    device - Remote BT address
@@ -400,31 +399,31 @@ typedef struct {
  * @return   Bluetooth Error status code (0- Success)
  */
     bt_result_code (*bt_start_service_discovery)(void* gap_handle, bt_device_t* device, bt_uuid_t uuid);
-/**
+    /**
  * @brief  Stop BR/EDR service discovery
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param    device - Remote BT address
  * @return   Bluetooth Error status code (0- Success)
- */    
+ */
     bt_result_code (*bt_stop_service_discovery)(void* gap_handle, bt_device_t* device);
 
-    int  (*bt_get_remote_services)(void* gap_handle, bt_device_t* remote_addr, bt_uuid_t *service_list, uint8_t count_in);
+    int (*bt_get_remote_services)(void* gap_handle, bt_device_t* remote_addr, bt_uuid_t* service_list, uint8_t count_in);
 
     bt_result_code (*ble_set_static_identity)(void* gap_handle, bt_device_t* device);
     bt_result_code (*ble_get_current_irk)(void* gap_handle);
     bt_result_code (*ble_set_address)(void* gap_handle, bt_device_t* device);
     bt_result_code (*ble_get_address)(void* gap_handle);
-    bt_result_code (*ble_set_bonded_devices)(void* gap_handle, ble_keys_t *bonded_device_list, uint8_t count_in);
-    bt_result_code (*ble_connect)(void* gap_handle, ble_connect_params_t *conn_param);
+    bt_result_code (*ble_set_bonded_devices)(void* gap_handle, ble_keys_t* bonded_device_list, uint8_t count_in);
+    bt_result_code (*ble_connect)(void* gap_handle, ble_connect_params_t* conn_param);
     bt_result_code (*ble_disconnect)(void* gap_handle, bt_device_t* device);
-    bt_result_code (*ble_smp_reply)(void* gap_handle, spp_reply_data_t *reply_data);
+    bt_result_code (*ble_smp_reply)(void* gap_handle, spp_reply_data_t* reply_data);
     bt_result_code (*ble_add_white_list)(void* gap_handle, bt_device_t* device);
     bt_result_code (*ble_remove_white_list)(void* gap_handle, bt_device_t* device);
     bt_result_code (*ble_add_resolving_list)(void* gap_handle, bt_device_t* device);
     bt_result_code (*ble_remove_resolving_list)(void* gap_handle, bt_device_t* device);
     bt_result_code (*ble_set_phy)(void* gap_handle, bt_device_t* device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
     bt_result_code (*ble_add_private_channel)(void* gap_handle, uint16_t private_cid);
-    bt_result_code (*ble_send_packet)(void* gap_handle, bt_device_t* device, uint16_t private_cid, uint8_t *packet, uint16_t packet_size);
+    bt_result_code (*ble_send_packet)(void* gap_handle, bt_device_t* device, uint16_t private_cid, uint8_t* packet, uint16_t packet_size);
 
     /**
      * Send HCI command for testing purpose
@@ -432,9 +431,9 @@ typedef struct {
      * @return Bluetooth Error status code (0- Success)
      */
     bt_result_code (*enter_bluetooth_test_mode)(void* gap_handle, bt_test_mode test_mode);
-   bt_result_code (*bt_set_local_device_class)(void * handle, uint32_t class_of_device);
-   bt_result_code (*bt_get_local_device_class)(void * handle);
-   bt_result_code (*bt_set_local_address)(void * handle, bt_device_t* device);    
+    bt_result_code (*bt_set_local_device_class)(void* handle, uint32_t class_of_device);
+    bt_result_code (*bt_get_local_device_class)(void* handle);
+    bt_result_code (*bt_set_local_address)(void* handle, bt_device_t* device);
 } btm_gap_interface_t;
 
 btm_gap_interface_t* get_gap_instance(void);

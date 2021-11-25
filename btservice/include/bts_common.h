@@ -35,7 +35,7 @@ typedef SERVICE_BT_DISCOVERY_STATE discovery_state;
 
 typedef SERVICE_SSP_REQUEST_DATA_S ssp_request_data_t;
 typedef SERVICE_BT_BOND_STATE bt_bonde_state;
-typedef SERVICE_ACL_STATE_PARAM_S  acl_state_params_t;
+typedef SERVICE_ACL_STATE_PARAM_S acl_state_params_t;
 typedef SERVICE_BT_LINK_ROLE bt_link_role;
 typedef SERVICE_BT_SCAN_MODE bt_scan_mode;
 typedef SERVICE_BT_LINK_MODE bt_link_mode;
