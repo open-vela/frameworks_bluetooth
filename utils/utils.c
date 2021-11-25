@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "btm_manager.h"
 #include "utils.h"
@@ -75,7 +76,7 @@ int str2ba(const char* str, bt_address addr)
     int i;
 
     if (bachk(str) < 0) {
-        memset(addr, 0, sizeof(addr));
+        memset(addr, 0, sizeof(bt_address));
         return -1;
     }
 

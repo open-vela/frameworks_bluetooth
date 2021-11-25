@@ -46,7 +46,6 @@
 static void usage(void);
 static int usage_cmd(void* handle, int argc, char** argv);
 static int enable_cmd(void* handle, int argc, char** argv);
-static int hfp_cmd(void* handle, int argc, char** argv);
 static int quit_cmd(void* handle, int argc, char** argv);
 
 static btm_gap_interface_t* gap_test_interface = NULL;
@@ -120,14 +119,6 @@ static int enable_cmd(void* handle, int argc, char** argv)
 {
     manager->enable(handle);
 
-    return 0;
-}
-
-static int hfp_cmd(void* handle, int argc, char** argv)
-{
-    for (int i = 0; i < argc; i++) {
-        printf("argv[%d]:%s\n", i, argv[i]);
-    }
     return 0;
 }
 

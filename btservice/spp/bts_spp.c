@@ -275,7 +275,6 @@ static void remove_pty_device(spp_pty_device_t* device)
 static spp_pty_device_t* spp_open_pty_device(bt_address addr, uint16_t port)
 {
     int ret;
-    int opt = 1;
     spp_pty_device_t* device;
 
     device = check_and_update_conn_port(addr, port);
@@ -287,13 +286,6 @@ static spp_pty_device_t* spp_open_pty_device(bt_address addr, uint16_t port)
         BT_LOGE("pty create failed");
         goto error;
     }
-    do {
-        //master nonblock mode
-        ret = ioctl(device->mfd, FIONBIO, &opt);
-    } while (ret == -1 && errno == EINTR);
-
-    if (ret != 0)
-        goto error;
 
     device->handle = euv_pty_init(get_service_loop(), device->mfd, UV_TTY_MODE_IO);
     if (!device->handle)
