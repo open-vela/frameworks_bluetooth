@@ -219,9 +219,7 @@ static int reply_pair_request(void* handle, int argc, char** argv)
         return -1;
     bt_device_t *device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
-    bool accept = false;
-    if (argv[1] != 0)
-        accept = true;
+    uint16_t accept = atoi(argv[0]);
     gap_test_interface->bt_reply_pair_request(gap_hanlde, device, accept);
 }
 
