@@ -121,5 +121,10 @@ ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GAP), y)
 	PROGNAME  += btsample_gap
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_TOOL_CHAIN), y)
+	PROGNAME 	+= bttool
+	MAINSRC		+= tools/bt_tools.c
+endif
+
 include $(APPDIR)/Application.mk
 

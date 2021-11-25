@@ -177,7 +177,7 @@ typedef void (*ssp_request_callback)(void* handle, bt_ssp_request_data_t* reques
 typedef void (*bond_state_changed_callback)(void* handle, bt_device_t* device, bt_bond_state state);
 
 /**
- * @brief Get local name callback - invoked in response to bt_get_local_name()
+ * @brief Local name callback - invoked in response to bt_set_local_name()
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param[in] bt_name - local name
  * @param[in] length - lenth
@@ -274,7 +274,7 @@ typedef struct {
  * @param[in] handle - gap handle, must be create before this funciton.
  * @return   local BT address.
  */
-    bt_address* (*bt_get_local_address)(void* handle);
+    bt_result_code (*bt_get_local_address)(void* handle, bt_address* addr);
     /**
  *@brief  Set local IO capability.
  * @param[in] handle - gap handle, must be create before this funciton.

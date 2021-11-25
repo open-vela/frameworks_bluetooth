@@ -47,11 +47,38 @@ static void usage(void);
 static int usage_cmd(void* handle, int argc, char** argv);
 static int enable_cmd(void* handle, int argc, char** argv);
 static int quit_cmd(void* handle, int argc, char** argv);
+static int gap_cmd(void* handle, int argc, char** argv);
+
+
+/*gap cmd*/
+static int start_discovery(void* handle, int argc, char** argv);
+static int stop_discovery(void* handle, int argc, char** argv);
+static int set_scan_mode(void* handle, int argc, char** argv);
+static int get_local_address(void* handle);
+static int set_local_io_capability(void* handle, int argc, char** argv);
+static int get_local_name(void* handle, int argc, char** argv);
+static int set_local_name(void* handle, int argc, char** argv);
+
+static int get_remote_name(void* handle, int argc, char** argv);
+static int reply_pair_request(void* handle, int argc, char** argv);
+static int create_bond(void* handle, int argc, char** argv);
+static int cancel_bond(void* handle, int argc, char** argv);
+static int remove_bond(void* handle, int argc, char** argv);
+static int get_bonded_devices(void* handle, int argc, char** argv);
+static int get_connected_devices(void* handle, int argc, char** argv);
+static int start_service_discovery(void* handle, int argc, char** argv);
+static int stop_service_discovery(void* handle, int argc, char** argv);
+static int get_remote_services(void* handle, int argc, char** argv);
+static int set_local_device_class(void* handle, int argc, char** argv);
+static int get_local_device_class(void* handle, int argc, char** argv);
+static int set_local_address(void* handle, int argc, char** argv);
+
 
 static btm_gap_interface_t* gap_test_interface = NULL;
 static btm_interface_t* manager;
 static void* manager_handle = NULL;
 static void* gap_hanlde = NULL;
+
 
 static struct option main_options[] = {
     { "help", 0, 0, 'h' },
@@ -69,13 +96,263 @@ static bt_command_t g_cmd_tables[] = {
     { "hfp", hfp_client_command, "<HFP> HandFree Profile --Client" },
 #endif
     { "a2dpsrc", NULL, "<A2DP> Advanced Audio Distribution Profile --Source" },
+    { "gap", gap_cmd, "<GAP> General profile" },
     { "help", usage_cmd, "Usage for bttools" },
     { "quit", quit_cmd, "Quit" },
 };
 
-static void manager_init_status_changed_callback(bt_result_code status)
+static bt_command_t g_gap_tables[] = {
+    { "scan_mode", set_scan_mode, "\"set scan mode       param: <mode>  <bondable> \"" },
+    { "discovery", start_discovery, "\"start bluetooth discovery        param: <timer> \"" },
+    { "stopdiscovery", stop_discovery, "\"stop bluetooth discovery      \"" },
+
+    { "getaddr", get_local_address, "\"get local address      \"" },
+    { "setIO", set_local_io_capability, "\"set local capaliblity        param: <iocapability> \"" },
+    { "getname", get_local_name, "\"get local name        \"" },
+    { "setname", set_local_name, "\"change local name        \"" },
+    
+    { "remotename", get_remote_name, "\"get remote name        param: <addr> \"" },
+    { "replypair", reply_pair_request, "\"replay pair request        param: <addr> <accept>\"" },
+    { "createbond", create_bond, "\"create bond device        param: <addr> \"" },
+    { "cancelbond", cancel_bond, "\"cancel create bond        param: <addr> \"" },
+    { "removebond", remove_bond, "\"remove bond device        param: <addr> \"" },
+    { "getbonded", get_bonded_devices, "\"get bonded device list     \"" },
+    { "getconnected", get_connected_devices, "\"get connected device list       \"" },
+    { "servicediscovery", start_service_discovery, "\"start service discovery        param: <addr> <uuid>\"" },
+    { "stopservicediscovery", stop_service_discovery, "\"stop service discovery        param: <addr> \"" },
+    { "getremoteservice", get_remote_services, "\"get remote service        param: <addr> \"" },
+    { "setclass", set_local_device_class, "\"set local class        param: <class> \"" },
+    { "getclass", get_local_device_class, "\"get local class        \"" },
+    { "setaddr", set_local_address, "\"set local addr        param: <addr> \"" },
+};
+
+static struct option gap_options[] = {
+    { "help", 0, 0, 'h' },
+    { 0, 0, 0, 0 }
+};
+static int start_discovery(void* handle, int argc, char** argv)
 {
-    BT_LOGD("%s", __func__);
+    if (argc < 1)
+        return -1;
+
+    uint16_t timerout = atoi(argv[0]);
+    gap_test_interface->bt_start_discovery(gap_hanlde, timerout);
+}
+static int stop_discovery(void* handle, int argc, char** argv)
+{
+    gap_test_interface->bt_stop_discovery(gap_hanlde);
+}
+static int set_scan_mode(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+
+    uint16_t parameter0 = atoi(argv[0]);
+    uint16_t parameter1 = atoi(argv[1]);
+    bt_scan_mode scanMode ;
+    bool bondable  = false;
+    if (parameter1 != 0) 
+        bondable = true;
+    switch (parameter0)
+    {
+    case 0:
+        scanMode = SCAN_MODE_NONE;
+        break;
+case 1:
+        scanMode = SCAN_MODE_CONNECTABLE;
+        break;
+case 2:
+        scanMode = SCAN_MODE_CONNECTABLE_DISCOVERABLE;
+        break;
+    default:
+        break;
+    }
+
+    gap_test_interface->bt_set_scan_mode(gap_hanlde, scanMode, bondable);
+}
+
+static int get_local_address(void* handle)
+{
+    bt_address* addr = malloc(sizeof(bd_addr_t));
+    gap_test_interface->bt_get_local_address(gap_hanlde, addr);
+    BT_LOGD("%s, bt_address %02x:%02x:%02x:%02x:%02x:%02x", __func__, addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+
+}
+
+static int set_local_io_capability(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+    uint16_t iocap = atoi(argv[0]);
+    gap_test_interface->bt_set_local_io_capability(gap_hanlde, iocap);
+}
+
+static int get_local_name(void* handle, int argc, char** argv)
+{
+
+    char * name = gap_test_interface->bt_get_local_name(gap_hanlde);
+    BT_LOGD("%s, name: %s", __func__, name);
+
+}
+static int set_local_name(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+    // char *name = malloc(strlen(argv[0]) + 1);
+    // memcpy(name, argv[0], strlen(argv[0]));
+    // name[strlen(argv[0]) + 1] = '\0';
+    char name[]= "ttttttttttttttttttttttttttttttttt";
+    gap_test_interface->bt_set_local_name(gap_hanlde, name, sizeof(name));
+}
+static int get_remote_name(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+    bt_device_t *device = malloc(sizeof(bt_device_t));
+    str2ba(argv[0], device->addr);
+    
+    gap_test_interface->bt_get_remote_name(gap_hanlde, device);
+}
+static int reply_pair_request(void* handle, int argc, char** argv)
+{
+    if (argc < 2)
+        return -1;
+    bt_device_t *device = malloc(sizeof(bt_device_t));
+    str2ba(argv[0], device->addr);
+    bool accept = false;
+    if (argv[1] != 0)
+        accept = true;
+    gap_test_interface->bt_reply_pair_request(gap_hanlde, device, accept);
+}
+
+static int create_bond(void* handle, int argc, char** argv)
+{
+   if (argc < 1)
+        return -1;
+    bt_device_t *device = malloc(sizeof(bt_device_t));
+    str2ba(argv[0], device->addr);
+    gap_test_interface->bt_create_bond(gap_hanlde, device);
+}
+
+static int cancel_bond(void* handle, int argc, char** argv)
+{
+   if (argc < 1)
+        return -1;
+    bt_device_t *device = malloc(sizeof(bt_device_t));
+    str2ba(argv[0], device->addr);
+    gap_test_interface->bt_cancel_bond(gap_hanlde, device);
+}
+static int remove_bond(void* handle, int argc, char** argv)
+{
+   if (argc < 1)
+        return -1;
+    bt_device_t *device = malloc(sizeof(bt_device_t));
+    str2ba(argv[0], device->addr);
+    gap_test_interface->bt_remove_bond(gap_hanlde, device);
+}
+static int get_bonded_devices(void* handle, int argc, char** argv)
+{
+
+    bt_device_t device_list [MAX_PAIR_DEVICE];
+    
+    int ret  = gap_test_interface->bt_get_bonded_devices(gap_hanlde,device_list);
+    for (int i = 0; i < ret; i++){
+        bt_device_t *device =  &device_list[i];
+        BT_LOGD("%s, device [%d]: %02x:%02x:%02x:%02x:%02x:%02x", __func__, i, device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5]);
+    }
+
+}
+static int get_connected_devices(void* handle, int argc, char** argv)
+{
+
+    bt_device_t device_list [MAX_CONNECTED_DEVICE];
+    
+    int ret  = gap_test_interface->bt_get_connected_devices(gap_hanlde,device_list);
+    for (int i = 0; i < ret; i++){
+        bt_device_t *device =  &device_list[i];
+        BT_LOGD("%s, device [%d]: %02x:%02x:%02x:%02x:%02x:%02x", __func__, i, device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5]);
+    }
+
+}
+static int start_service_discovery(void* handle, int argc, char** argv)
+{
+    if (argc < 2)
+        return -1;
+
+}
+static int stop_service_discovery(void* handle, int argc, char** argv)
+{
+
+}
+static int get_remote_services(void* handle, int argc, char** argv)
+{
+
+}
+static int set_local_device_class(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+    uint16_t class = atoi(argv[0]);
+    gap_test_interface->bt_set_local_device_class(gap_hanlde, class);
+}
+static int get_local_device_class(void* handle, int argc, char** argv)
+{
+    uint16_t class= gap_test_interface->bt_get_local_device_class(gap_hanlde);
+    BT_LOGD("%s, class: %d", __func__, class);
+}
+static int set_local_address(void* handle, int argc, char** argv)
+{
+   if (argc < 1)
+        return -1;
+    bt_device_t *device = malloc(sizeof(bt_device_t));
+    str2ba(argv[0], device->addr);
+    gap_test_interface->bt_set_local_address(gap_hanlde, device);
+}
+static void gap_usage(void)
+{
+    printf("Usage:\n");
+    printf("\taddress: peer device address like 00:01:02:03:04:05\n");
+    printf("Commands:\n");
+    for (int i = 0; i < ARRAY_SIZE(g_gap_tables); i++) {
+        printf("\t%-8s\t%s\n", g_gap_tables[i].cmd, g_gap_tables[i].help);
+    }
+}
+
+int gap_cmd(void* handle, int argc, char* argv[])
+{
+    int opt, ret = -1;
+
+    if (gap_test_interface == NULL) {
+        gap_test_interface = get_gap_instance();
+    // /    gap_test_interface->gap_register_callbacks(manager_handle, &gap_hanlde, &gap_callbacks);
+    }
+
+    while ((opt = getopt_long(argc, argv, "h", gap_options, NULL)) != -1) {
+        switch (opt) {
+        case 'h':
+            gap_usage();
+            return 0;
+        default:
+            break;
+        }
+    }
+
+    if (argc > 1) {
+        for (int i = 0; i < ARRAY_SIZE(g_gap_tables); i++) {
+            if (strncmp(g_gap_tables[i].cmd, argv[1], strlen(g_gap_tables[i].cmd)) == 0) {
+                if (g_gap_tables[i].func) {
+                    ret = g_gap_tables[i].func(handle, argc - 2, &argv[2]);
+                }
+            }
+        }
+    }
+
+    if (ret < 0) {
+        printf("UnKnow command %s\n", argv[1]);
+        gap_usage();
+    }
+
+    return 0;
 }
 
 static void manager_state_changed_callback(bt_manager_bt_state state)
@@ -90,7 +367,7 @@ static void manager_state_changed_callback(bt_manager_bt_state state)
 
 static void test_discovery_state_changed_callback(void* gap_handle, bt_discovery_state state)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, state %d", __func__, state);
 }
 
 static void test_adapter_state_changed_callback(void* gap_handle, stack_state_t state)
@@ -100,19 +377,146 @@ static void test_adapter_state_changed_callback(void* gap_handle, stack_state_t 
 
 static void test_device_found_callback(void* gap_handle, bt_device_t* device)
 {
-    BT_LOGD("%s, device %02x%02x%02x%02x%02x%02x", __func__, device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5]);
+    BT_LOGD("%s, device %02x:%02x:%02x:%02x:%02x:%02x", __func__, device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5]);
+}
+void test_connection_state_changed_callback(void* handle, bt_device_t* device, bt_connection_state state)
+{
+    char *connection_state = NULL;
+    switch (state)
+    {
+    case BT_BOND_STATE_NONE:
+        connection_state = "BT_BOND_STATE_NONE";
+        break;
+    case BT_BOND_STATE_BONDING:
+        connection_state = "BT_BOND_STATE_BONDING";
+        break;
+    case BT_BOND_STATE_BONDED:
+        connection_state = "BT_BOND_STATE_BONDED";    
+        break;
+    case BT_BOND_STATE_SDP_DONE:
+        connection_state = "BT_BOND_STATE_SDP_DONE";
+        break;
+    case BT_BOND_STATE_BLE_NONE:
+        connection_state = "BT_BOND_STATE_BLE_NONE";
+        break;
+    case BT_BOND_STATE_BLE_BONDING:
+        connection_state = "BT_BOND_STATE_BLE_BONDING";
+        break;
+    case BT_BOND_STATE_BLE_BONDED:
+        connection_state = "BT_BOND_STATE_BLE_BONDED";
+        break;
+    default:
+        break;
+    }
+    BT_LOGD("%s, device %02x:%02x:%02x:%02x:%02x:%02x, state:  %d", __func__, 
+        device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5], state);
+
+}
+void test_received_remote_name_callback(void* handle, bt_address bd_addr, char* bt_name, uint8_t length)
+{
+    BT_LOGD("%s, device %02x:%02x:%02x:%02x:%02x:%02x, bt_name: %s", __func__, bd_addr[0], bd_addr[1], bd_addr[2], bd_addr[3], bd_addr[4], bd_addr[5], bt_name);
 }
 
-const btm_gap_callbacks_t gap_test_callbacks = {
-    .discovery_state_changed_callback_cb = test_discovery_state_changed_callback,
+void test_ssp_request_callback(void* handle, bt_ssp_request_data_t* request_data)
+{
+    BT_LOGD("%s, : request_data->ssp_type: %d", __func__, request_data->ssp_type);
+    
+    if (request_data->ssp_type == GAP_SPP_TYPE_PASSKEY_CONFIRMATION) {
+        SERVICE_SSP_REPLY_DATA_S reply;
+        memcpy(reply.remote_addr, request_data->remote_addr, 6);
+        reply.accept = true;
+        reply.type = GAP_SPP_TYPE_PASSKEY_CONFIRMATION;
+        service_adapter_gap_ssp_reply(&reply);
+    }
+    if (request_data->ssp_type == GAP_SPP_TYPE_PASSKEY_ENTRY) {
+        SERVICE_SSP_REPLY_DATA_S reply;
+        memcpy(reply.remote_addr, request_data->remote_addr, 6);
+        reply.accept = true;
+        reply.type = GAP_SPP_TYPE_PASSKEY_ENTRY;
+        reply.passkey = request_data->pass_key;
+        service_adapter_gap_ssp_reply(&reply);
+    }
+    if (request_data->ssp_type == GAP_SPP_TYPE_PASSKEY_NOTIFICATION) {
+        SERVICE_SSP_REPLY_DATA_S reply;
+        memcpy(reply.remote_addr, request_data->remote_addr, 6);
+        reply.accept = true;
+        reply.type = GAP_SPP_TYPE_PASSKEY_NOTIFICATION;
+        // reply.passkey = request_data->pass_key;
+        // service_adapter_gap_ssp_reply(&reply);
+    }
+    
+}
+void test_bond_state_changed_callback(void* handle, bt_device_t* device, bt_bond_state state)
+{
+    char *bond_state = NULL;
+    switch (state)
+    {
+    case BT_BOND_STATE_NONE:
+        bond_state = "BT_BOND_STATE_NONE";
+        break;
+    case BT_BOND_STATE_BONDING:
+        bond_state = "BT_BOND_STATE_BONDING";
+        break;
+    case BT_BOND_STATE_BONDED:
+        bond_state = "BT_BOND_STATE_BONDED";    
+        break;
+    case BT_BOND_STATE_SDP_DONE:
+        bond_state = "BT_BOND_STATE_SDP_DONE";
+        break;
+    case BT_BOND_STATE_BLE_NONE:
+        bond_state = "BT_BOND_STATE_BLE_NONE";
+        break;
+    case BT_BOND_STATE_BLE_BONDING:
+        bond_state = "BT_BOND_STATE_BLE_BONDING";
+        break;
+    case BT_BOND_STATE_BLE_BONDED:
+        bond_state = "BT_BOND_STATE_BLE_BONDED";
+        break;
+    default:
+        break;
+    }
+    //BT_LOGD("%s, device %02x:%02x:%02x:%02x:%02x:%02x, state:%s ", __func__, device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5], state);
+}
+void test_local_name_callback(void* handle, char* bt_name, uint8_t length)
+{
+    BT_LOGD("%s,,  bt_name: %s", __func__, bt_name);  
+}
+void test_local_address_callback(void* handle, bt_device_t* device)
+{
+    BT_LOGD("%s, device %02x:%02x:%02x:%02x:%02x:%02x", __func__, device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5]);
+}
+void test_local_device_class_callback(void* handle, uint32_t device_class)
+{
+        BT_LOGD("%s,  device_class is %d", __func__, device_class);
+
+}
+void test_smp_request_callback(void* gap_handle, ssp_request_data_t* request_data)
+{
+    BT_LOGD("%s,", __func__);
+}
+void test_pairing_request_callback(void* gap_handle, BD_ADDR remote_addr, bool local_initiate, bool is_bondable)
+{
+    BT_LOGD("%s,local_initiate: %d, is_bondable:%d", __func__, local_initiate, is_bondable);
+
+}
+
+const btm_gap_callbacks_t gap_test_tool_callbacks = {
     .state_changed_cb = test_adapter_state_changed_callback,
     .discovery_state_changed_callback_cb = test_discovery_state_changed_callback,
     .device_found_callback_cb = test_device_found_callback,
+    .connection_state_callback_cb = test_connection_state_changed_callback,
+    .received_remote_name_callback_cb = test_received_remote_name_callback,
+    .ssp_request_callback_cb = test_ssp_request_callback,
+    .bond_state_changed_callback_cb = test_bond_state_changed_callback,
+    .local_name_callback_cb = test_local_name_callback,
+    .local_address_callback_cb = test_local_address_callback,
+    .local_device_class_callback_cb = test_local_device_class_callback,
+    .smp_requeset_cb = test_smp_request_callback,
+    .pairing_request_cb = test_pairing_request_callback,
 };
 
 static bt_mgr_callback_t mgt_cb = {
     .bt_manager_state_changed_callback_cb = manager_state_changed_callback,
-    .init_status_changed_callback_cb = manager_init_status_changed_callback,
 };
 
 static int enable_cmd(void* handle, int argc, char** argv)
@@ -201,7 +605,7 @@ int main(int argc, char** argv)
     manager = get_bt_manager_interface();
     manager->init(&manager_handle, &mgt_cb);
     gap_test_interface = get_gap_instance();
-    gap_test_interface->gap_register_callbacks(manager_handle, &gap_hanlde, &gap_test_callbacks);
+    gap_test_interface->gap_register_callbacks(manager_handle, &gap_hanlde, &gap_test_tool_callbacks);
 
     buffer = malloc(CONFIG_NSH_LINELEN);
     if (!buffer)

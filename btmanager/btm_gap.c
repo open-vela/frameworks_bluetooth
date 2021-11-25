@@ -257,17 +257,17 @@ static bt_result_code btm_set_local_address(void* gap_handle, bt_device_t* devic
     bt_result_code ret = BT_RESULT_FAILED;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
-    //BT_GAP_INTERFACE(context->service_interface, bt_set_local_address, ret, gap_handle, device);
+    BT_GAP_INTERFACE(context->service_interface, bt_set_local_address, ret, gap_handle, device);
     return ret;
 }
 
-static bt_address* btm_get_local_address(void* gap_handle)
+static bt_result_code btm_get_local_address(void* gap_handle, bt_address* addr)
 {
-    bt_address* addr;
+    bt_result_code ret = BT_RESULT_FAILED;
     CHECK_PTR(gap_handle);
     gap_context_t* context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, bt_get_local_address, addr, gap_handle);
-    return addr;
+    BT_GAP_INTERFACE(context->service_interface, bt_get_local_address, ret, gap_handle, addr);
+    return ret;
 }
 
 static bt_result_code btm_set_local_io_capability(void* gap_handle, bt_io_capability io_capability)
