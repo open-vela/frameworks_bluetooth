@@ -31,19 +31,19 @@
  *
  ****************************************************************************/
 #define LOG_TAG "gap_test"
-#include <stdlib.h>
-#include <string.h>
-#include <debug.h>
-#include <nuttx/list.h>
 #include "bt_tools.h"
-#include "btm_manager.h"
 #include "btm_gap.h"
+#include "btm_manager.h"
 #include "euv_pty.h"
 #include "utils/log.h"
+#include <debug.h>
+#include <nuttx/list.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct {
     struct list_node node;
-    
+
 } gap_device_t;
 
 static int start_server_cmd(void* handle, int argc, char* argv[]);
@@ -79,7 +79,6 @@ static void usage(void)
     }
 }
 
-
 static int reply_pair_request_cmd(void* handle, int argc, char* argv[])
 {
     uint16_t port;
@@ -95,27 +94,23 @@ static int reply_pair_request_cmd(void* handle, int argc, char* argv[])
     BT_LOGD("%s, address:%s port:%d, uuid:0x%04x", __func__, argv[0], port, uuid);
     gap_interface->
 
-    return 0;
+        return 0;
 }
 
-void test_discovery_state_changed_callback(void* gap_handle,bt_discovery_state state)
+void test_discovery_state_changed_callback(void* gap_handle, bt_discovery_state state)
 {
     BT_LOGD("%s", __func__);
-
 }
-void test_adapter_state_changed_callback(void* gap_handle,stack_state_t state)
+void test_adapter_state_changed_callback(void* gap_handle, stack_state_t state)
 {
-     BT_LOGD("%s", __func__);
-
+    BT_LOGD("%s", __func__);
 }
-void test_device_found_callback(void* gap_handle,bt_device_t* device)
+void test_device_found_callback(void* gap_handle, bt_device_t* device)
 {
-     BT_LOGD("%s, device %02x%02x%02x%02x%02x%02x", __func__, device->addr[0], device->addr[1],device->addr[2],device->addr[3],device->addr[4],device->addr[5]);
+    BT_LOGD("%s, device %02x%02x%02x%02x%02x%02x", __func__, device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5]);
 }
 
-
-const btm_gap_callbacks_t gap_callbacks = 
-{
+const btm_gap_callbacks_t gap_callbacks = {
     .discovery_state_changed_callback_cb = test_discovery_state_changed_callback,
     .state_changed_cb = test_adapter_state_changed_callback,
     .device_found_callback_cb = test_device_found_callback,
@@ -127,7 +122,7 @@ int gap_command(void* handle, int argc, char* argv[])
 
     if (gap_interface == NULL) {
         gap_interface = get_gap_instance();
-    // /    gap_test_interface->gap_register_callbacks(manager_handle, &gap_hanlde, &gap_callbacks);
+        // /    gap_test_interface->gap_register_callbacks(manager_handle, &gap_hanlde, &gap_callbacks);
     }
 
     while ((opt = getopt_long(argc, argv, "h", gap_options, NULL)) != -1) {
