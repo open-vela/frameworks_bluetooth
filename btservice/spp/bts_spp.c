@@ -646,7 +646,7 @@ static void adp_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE_S
     SERVICE_PROFILE_CONNECTION_STATE state)
 {
     spp_msg_t msg;
-    spp_connection_state_t conn_state;
+    spp_connection_state_t conn_state = SPP_CONNECTION_STATE_DISCONNECTED;
 
     switch (state) {
     case SERVICE_PROFILE_DISCONNECTED:

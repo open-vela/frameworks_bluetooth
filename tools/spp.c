@@ -33,8 +33,8 @@
 #define LOG_TAG "spp_test"
 #include "bt_tools.h"
 #include "btm_manager.h"
-#include "bts_service.h"
 #include "btm_spp.h"
+#include "bts_service.h"
 #include "euv_pty.h"
 #include "utils/log.h"
 #include <debug.h>
@@ -217,7 +217,7 @@ static int write_cmd(void* handle, int argc, char* argv[])
     device = find_pty_by_port(port);
     if (device == NULL)
         return -1;
-    euv_pty_write(device->pty, (uint8_t *)argv[1], strlen(argv[1]), NULL);
+    euv_pty_write(device->pty, (uint8_t*)argv[1], strlen(argv[1]), NULL);
 
     return 0;
 }
