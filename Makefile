@@ -78,6 +78,9 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
 	CSRCS +=tools/hf_client.c
 endif
+ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER),y)
+	CSRCS +=tools/gatt_server.c
+endif
 endif
 
 CSRCS +=utils/uuid.c

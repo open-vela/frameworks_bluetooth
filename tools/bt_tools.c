@@ -97,6 +97,7 @@ static bt_command_t g_cmd_tables[] = {
 #endif
     { "a2dpsrc", NULL, "<A2DP> Advanced Audio Distribution Profile --Source" },
     { "gap", gap_cmd, "<GAP> General profile" },
+    { "gatts", gatt_server_command, "<GATT> gatt server and le advertise" },
     { "help", usage_cmd, "Usage for bttools" },
     { "quit", quit_cmd, "Quit" },
 };
