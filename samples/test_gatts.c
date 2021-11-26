@@ -262,7 +262,7 @@ static void test_server_throughtout_notify(uint32_t times, uint16_t mtu)
     BT_LOGD("%s done", __func__);
 }
 
-void usage()
+static void usage()
 {
     BT_LOGD("usage: \n \
       \t a, open gatt server\n \
