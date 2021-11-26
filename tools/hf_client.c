@@ -272,7 +272,7 @@ static int terminate_call_cmd(void* handle, int argc, char* argv[])
 static int query_current_calls_cmd(void* handle, int argc, char* argv[])
 {
     bt_address addr;
-    if (argc < 2 || hf_interface == NULL)
+    if (argc < 1 || hf_interface == NULL)
         return -1;
 
     str2ba(argv[0], addr);
