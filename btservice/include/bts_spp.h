@@ -56,5 +56,6 @@ void bts_spp_cleanup(void);
 extern bt_result_code spp_service_start(void);
 extern void spp_service_stop(void);
 extern spp_interface_t* get_spp_service_interface(void);
+extern void bts_spp_state_dump(void);
 
 #endif

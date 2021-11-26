@@ -56,6 +56,8 @@ typedef struct _hf_state_machine {
     uint16_t sco_conn_handle;
     uv_timer_t* connect_timer;
     bool recognition_active;
+    uint8_t spk_volume;
+    uint8_t mic_volume;
     //list_t              *current_calls;
     hf_client_service_t* service;
 } hf_state_machine_t;
@@ -566,7 +568,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         hf_client_call_state_t state = data->valueint3;
         hf_client_call_mpty_type_t mpty = data->valueint4;
         char* number = data->string1;
-
+        BT_LOGD("Current Call[%d]: dir:%d, state:%d, mpty:%d, number:%s", index, dir, state, mpty, number);
         if (service->callbacks)
             service->callbacks->current_calls_cb(hfsm->addr, index, dir, state, mpty, (const char*)number);
         break;
@@ -576,6 +578,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         hf_client_volume_type_t type = data->valueint1;
         int vol = data->valueint2;
         //set media volume, need call media interface
+        BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
         if (service->callbacks)
             service->callbacks->volume_change_cb(hfsm->addr, type, vol);
         break;
@@ -623,6 +626,7 @@ static void audio_on_exit(state_machine_t* sm)
 static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
+    hf_client_service_t* service = hfsm->service;
     hf_event_data_t* data = (hf_event_data_t*)p_data;
     SERVICE_BT_STATUS status;
 
@@ -640,6 +644,25 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         }
         break;
 
+    case SET_MIC_VOLUME: {
+        uint8_t vol = data->valueint1;
+        vol = vol > 15 ? 15 : vol;
+        //transfer to hf volume
+        BT_LOGD("Set Mic Volume :%d", vol);
+        service_adapter_hfp_set_volume(hfsm->addr, VOLUME_MIC, vol);
+        break;
+    }
+
+    case SET_SPEAKER_VOLUME: {
+        uint8_t vol = data->valueint1;
+        vol = vol > 15 ? 15 : vol;
+
+        BT_LOGD("Set Speaker Volume :%d", vol);
+        //transfer to hf volume
+        service_adapter_hfp_set_volume(hfsm->addr, VOLUME_SPEAKER, vol);
+        break;
+    }
+
     case HOLD_CALL:
         status = service_adapter_hfp_call_control(hfsm->addr, HFP_CALL_CONTROL_CHLD_2, 0);
         //status = service_adapter_hfp_hold_call(hfsm->addr);
@@ -654,6 +677,35 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
             BT_LOGE("Terminate call failed");
         }
         break;
+
+    case QUERY_CURRENT_CALLS:
+        status = service_adapter_hfp_get_current_calls(hfsm->addr);
+        if (status != SERVICE_BT_STATUS_SUCCESS) {
+            BT_LOGE("Query current call failed");
+        }
+        break;
+
+    case STACK_EVENT_CURRENT_CALLS: {
+        int index = data->valueint1;
+        hf_client_call_direction_t dir = data->valueint2;
+        hf_client_call_state_t state = data->valueint3;
+        hf_client_call_mpty_type_t mpty = data->valueint4;
+        char* number = data->string1;
+        BT_LOGD("Current Call[%d]: dir:%d, state:%d, mpty:%d, number:%s", index, dir, state, mpty, number);
+        if (service->callbacks)
+            service->callbacks->current_calls_cb(hfsm->addr, index, dir, state, mpty, (const char*)number);
+        break;
+    }
+
+    case STACK_EVENT_VOLUME_CHANGED: {
+        hf_client_volume_type_t type = data->valueint1;
+        int vol = data->valueint2;
+        //set media volume, need call media interface
+        BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
+        if (service->callbacks)
+            service->callbacks->volume_change_cb(hfsm->addr, type, vol);
+        break;
+    }
 
     case STACK_EVENT_CONNECTION_STATE_CHANGED: {
         hf_client_connection_state_t state = data->valueint1;
@@ -729,6 +781,8 @@ void hf_client_state_machine_destory(hf_state_machine_t* hfsm)
     if (!hfsm)
         return;
 
+    hf_client_state_machine_handle_msg(hfsm, HF_MSG_NEW(DISCONNECT, NULL));
+    stop_timer(hfsm->connect_timer);
     hsm_dtor(&hfsm->sm);
     free((void*)hfsm);
 }
@@ -737,6 +791,7 @@ void hf_client_state_machine_handle_msg(hf_state_machine_t* sm,
     hf_client_msg_t* msg)
 {
     hf_client_event_dispatch(sm, msg);
+    hf_client_msg_destory(msg);
 }
 
 hf_client_connection_state_t hf_client_get_conn_state(hf_state_machine_t* sm)

@@ -45,7 +45,8 @@ hf_client_msg_t* hf_client_msg_new(hf_client_event_t event,
 
     msg->event = event;
     memset(&msg->event_data, 0, sizeof(msg->event_data));
-    memcpy(&msg->event_data.bd_addr, bd_addr, sizeof(bt_address));
+    if (bd_addr != NULL)
+        memcpy(&msg->event_data.bd_addr, bd_addr, sizeof(bt_address));
 
     return msg;
 }

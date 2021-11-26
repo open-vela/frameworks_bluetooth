@@ -35,6 +35,7 @@
 #include "btm_manager.h"
 #include "btm_spp.h"
 #include "bts_service.h"
+#include "bts_spp.h"
 #include "euv_pty.h"
 #include "utils/log.h"
 #include <debug.h>
@@ -54,15 +55,18 @@ static int stop_server_cmd(void* handle, int argc, char* argv[]);
 static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int write_cmd(void* handle, int argc, char* argv[]);
+static int dump_cmd(void* handle, int argc, char* argv[]);
 
 static struct list_node device_list = LIST_INITIAL_VALUE(device_list);
 static spp_interface_t* spp_interface = NULL;
+static uv_timer_t* spp_timer = NULL;
 static bt_command_t g_spp_tables[] = {
     { "start", start_server_cmd, "\"start spp server        param: <port> <uuid>\"" },
     { "stop", stop_server_cmd, "\"stop  spp server        param: <port>\"" },
     { "connect", connect_cmd, "\"connect spp device      param: <address> <port> <uuid>\"" },
-    { "disconnect", disconnect_cmd, "\"disconnect peer device  param: <port>\"" },
+    { "disconnect", disconnect_cmd, "\"disconnect peer device  param: <address> <port>\"" },
     { "write", write_cmd, "\"write data to peer      param: <port> <data>\"" },
+    { "dump", dump_cmd, "\"dump spp current state\"" },
 };
 
 static struct option spp_options[] = {
@@ -105,13 +109,43 @@ static void pty_read_cb(euv_pty_t* handle,
 {
     if (size > 0)
         lib_dumpbuffer("spp read", buf, size);
-    else
+    else {
         BT_LOGE("%s read failed, status:%d", __func__, size);
+        euv_pty_read_stop(handle);
+        euv_pty_close(handle);
+    }
+}
+
+static void check_resource_release(uint16_t port)
+{
+    spp_device_t* device;
+
+    device = find_pty_by_port(port);
+    if (device == NULL)
+        return;
+    euv_pty_close(device->pty);
+    list_delete(&device->node);
+    free(device);
+}
+
+static void disconnect_timeout(char* arg)
+{
+    if (arg == NULL)
+        return;
+    uint16_t port = (uint16_t)*arg;
+
+    check_resource_release(port);
+    stop_timer(spp_timer);
+    free((void*)arg);
 }
 
 static void connection_state_callback(const bt_address addr, uint16_t port, spp_connection_state_t state)
 {
     BT_LOGD("%s port: %d, state:%d", __func__, port, state);
+
+    if (state == SPP_CONNECTION_STATE_DISCONNECTED) {
+        check_resource_release(port);
+    }
 }
 
 static void pty_open_callback(const bt_address addr, uint16_t port, char* name, int fd)
@@ -143,7 +177,7 @@ static int start_server_cmd(void* handle, int argc, char* argv[])
         uuid = BT_UUID_SERVCLASS_SERIAL_PORT;
 
     BT_LOGD("%s, port:%d, uuid:0x%04x", __func__, port, uuid);
-    spp_interface->server_start(NULL, 5, uuid);
+    spp_interface->server_start(NULL, port, uuid);
 
     return 0;
 }
@@ -186,22 +220,23 @@ static int connect_cmd(void* handle, int argc, char* argv[])
 static int disconnect_cmd(void* handle, int argc, char* argv[])
 {
     uint16_t port;
-    spp_device_t* device;
     bt_address addr;
-
+    uint16_t* p_port;
+    spp_device_t* device;
     if (argc < 2)
         return -1;
 
+    p_port = malloc(sizeof(uint16_t));
     str2ba(argv[0], addr);
     port = atoi(argv[1]);
-    BT_LOGD("%s, address:%s port:%d", __func__, argv[0], port);
+    *p_port = port;
     device = find_pty_by_port(port);
     if (device == NULL)
         return -1;
-    euv_pty_read_stop(device->pty);
-    euv_pty_close(device->pty);
-    list_delete(&device->node);
+    BT_LOGD("%s, address:%s port:%d", __func__, argv[0], port);
+
     spp_interface->disconnect(NULL, addr, port);
+    spp_timer = start_timer(2000, 0, disconnect_timeout, (void*)p_port);
 
     return 0;
 }
@@ -215,9 +250,17 @@ static int write_cmd(void* handle, int argc, char* argv[])
 
     port = atoi(argv[0]);
     device = find_pty_by_port(port);
+    BT_LOGD("%s port:%d", __func__, port);
     if (device == NULL)
         return -1;
     euv_pty_write(device->pty, (uint8_t*)argv[1], strlen(argv[1]), NULL);
+
+    return 0;
+}
+
+static int dump_cmd(void* handle, int argc, char* argv[])
+{
+    bts_spp_state_dump();
 
     return 0;
 }
