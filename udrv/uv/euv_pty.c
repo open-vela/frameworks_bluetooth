@@ -95,14 +95,23 @@ int euv_pty_read_start(euv_pty_t* handle, euv_read_cb cb)
 
 int euv_pty_read_stop(euv_pty_t* handle)
 {
+    if (handle == NULL)
+        return -EINVAL;
+
     return uv_read_stop((uv_stream_t*)&handle->uv_tty);
 }
 
 int euv_pty_write(euv_pty_t* handle, uint8_t* buffer, int length, euv_write_cb cb)
 {
     uv_buf_t buf;
-    euv_wreq_t* wreq = (euv_wreq_t*)malloc(sizeof(euv_wreq_t));
+    euv_wreq_t* wreq;
 
+    if (handle == NULL)
+        return -EINVAL;
+
+    wreq = (euv_wreq_t*)malloc(sizeof(euv_wreq_t));
+    if (!wreq)
+        return -ENOMEM;
     wreq->req.data = (void*)handle;
     wreq->buffer = buffer;
     wreq->write_cb = cb;
@@ -115,6 +124,9 @@ euv_pty_t* euv_pty_init(uv_loop_t* loop, int fd, uv_tty_mode_t mode)
 {
     euv_pty_t* handle;
     int ret;
+
+    if (loop == NULL || fd < 0)
+        return NULL;
 
     handle = (euv_pty_t*)malloc(sizeof(euv_pty_t));
     if (!handle)
@@ -135,5 +147,8 @@ euv_pty_t* euv_pty_init(uv_loop_t* loop, int fd, uv_tty_mode_t mode)
 
 void euv_pty_close(euv_pty_t* hdl)
 {
+    if (hdl == NULL)
+        return;
+
     uv_close((uv_handle_t*)&hdl->uv_tty, uv_close_callback);
 }

@@ -85,11 +85,10 @@ hf_client_service_t g_hfp_service;
  ****************************************************************************/
 static hf_client_device_t* find_hf_device_by_addr(bt_address bd_addr)
 {
-    struct list_node* list = &g_hfp_service.device_list;
     hf_client_device_t* device;
     struct list_node* node;
 
-    list_for_every(list, node)
+    list_for_every(&g_hfp_service.device_list, node)
     {
         device = (hf_client_device_t*)node;
         if (memcmp(device->bd_addr, bd_addr, sizeof(bt_address)) == 0)
@@ -101,7 +100,6 @@ static hf_client_device_t* find_hf_device_by_addr(bt_address bd_addr)
 
 static hf_client_device_t* hf_client_device_new(hf_state_machine_t* sm, bt_address bd_addr)
 {
-    struct list_node* list = &g_hfp_service.device_list;
     hf_client_device_t* device;
 
     device = (hf_client_device_t*)malloc(sizeof(hf_client_device_t));
@@ -110,7 +108,7 @@ static hf_client_device_t* hf_client_device_new(hf_state_machine_t* sm, bt_addre
 
     memcpy(device->bd_addr, bd_addr, sizeof(bt_address));
     device->sm = sm;
-    list_add_tail(list, &device->node);
+    list_add_tail(&g_hfp_service.device_list, &device->node);
 
     return device;
 }
@@ -120,6 +118,7 @@ static void hf_client_device_delete(hf_client_device_t* device)
     if (!device)
         return;
 
+    hf_client_state_machine_destory(device->sm);
     list_delete(&device->node);
     free((void*)device);
 }
@@ -450,7 +449,7 @@ static void hf_client_service_event_process(void* data, size_t size)
         break;
     }
 
-    hf_client_msg_destory(msg);
+    //hf_client_msg_destory(msg);
     free(imsg);
 }
 
@@ -591,11 +590,11 @@ bt_result_code hf_client_volume_control(bt_address bd_addr, hf_client_volume_typ
     if (!sm)
         return BT_RESULT_FAILED;
 
-    msg = HF_MSG_NEW(SET_SPEAKER_VOLUME, bd_addr);
+    hf_client_event_t event = (type == HF_CLIENT_VOLUME_TYPE_MIC) ? SET_MIC_VOLUME : SET_SPEAKER_VOLUME;
+    msg = HF_MSG_NEW(event, bd_addr);
     if (!msg)
         return BT_RESULT_ALLOC_BUFFER_FAILED;
-    msg->event_data.valueint1 = type;
-    msg->event_data.valueint2 = volume;
+    msg->event_data.valueint1 = volume;
     hf_client_send_message(sm, msg);
 
     return BT_RESULT_SUCCESS;
@@ -761,6 +760,15 @@ bt_result_code hf_client_send_at_cmd(bt_address bd_addr, const char* cmd)
 
 void hf_client_cleanup(void)
 {
+    hf_client_device_t* device;
+    struct list_node* node;
+    struct list_node* tmp;
+
+    list_for_every_safe(&g_hfp_service.device_list, node, tmp)
+    {
+        device = (hf_client_device_t*)node;
+        hf_client_device_delete(device);
+    }
     service_adapter_hfp_cleanup();
     g_hfp_service.started = false;
 }
