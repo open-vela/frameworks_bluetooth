@@ -261,7 +261,7 @@ typedef struct {
  * @param[in] handle - gap handle, must be create before this funciton.
  * @return   local BT address.
  */
-    bt_result_code (*bt_get_local_address)(void* handle, bt_address* addr);
+    bt_result_code (*bt_get_local_address)(void* handle, bt_address addr);
     /**
  *@brief  Set local IO capability.
  * @param[in] handle - gap handle, must be create before this funciton.

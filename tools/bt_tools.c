@@ -103,7 +103,7 @@ static bt_command_t g_cmd_tables[] = {
 
 static bt_command_t g_gap_tables[] = {
     { "scan_mode", set_scan_mode, "\"set scan mode       param: <mode>  <bondable> \"" },
-    { "discovery", start_discovery, "\"start bluetooth discovery        param: <timer> \"" },
+    { "discovery", start_discovery, "\"start bluetooth discovery        param: <timer(n*1.28s)> \"" },
     { "stopdiscovery", stop_discovery, "\"stop bluetooth discovery      \"" },
 
     { "getaddr", get_local_address, "\"get local address      \"" },
@@ -182,7 +182,7 @@ static int set_scan_mode(void* handle, int argc, char** argv)
 static int get_local_address(void* handle, int argc, char** argv)
 {
     bt_address addr;
-    gap_test_interface->bt_get_local_address(gap_hanlde, &addr);
+    gap_test_interface->bt_get_local_address(gap_hanlde, addr);
     BT_LOGD("%s, bt_address :%s", __func__, addr_str(addr));
     return 0;
 
@@ -213,7 +213,7 @@ static int set_local_name(void* handle, int argc, char** argv)
         return -1;
     char *name = malloc(strlen(argv[0]) + 1);
     memcpy(name, argv[0], strlen(argv[0]));
-    name[strlen(argv[0]) + 1] = NULL;
+    name[strlen(argv[0]) + 1] = 0;
     gap_test_interface->bt_set_local_name(gap_hanlde, argv[0], strlen(argv[0]) + 1);
 
     return 0;
@@ -488,7 +488,7 @@ void test_bond_state_changed_callback(void* handle, bt_device_t* device, bt_bond
         bond_state = "BT_BOND_STATE_BLE_BONDED";
         break;
     default:
-        break;  
+        break;
     }
     BT_LOGD("%s, state:%s ", __func__,  bond_state);
     BT_LOGD("%s, device : %s, state: %s", __func__, addr_str(device->addr), bond_state);
@@ -515,7 +515,7 @@ void test_pairing_request_callback(void* gap_handle, BD_ADDR remote_addr, bool l
     local_initiate, is_bondable, remote_addr[0], remote_addr[1], remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5]);
 }
 
-const btm_gap_callbacks_t gap_test_tool_callbacks = {
+btm_gap_callbacks_t gap_test_tool_callbacks = {
     .state_changed_cb = test_adapter_state_changed_callback,
     .discovery_state_changed_callback_cb = test_discovery_state_changed_callback,
     .device_found_callback_cb = test_device_found_callback,

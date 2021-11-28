@@ -50,7 +50,7 @@ stack_state_t gap_get_stack_state(void);
 /*Local property*/
 
 bt_result_code bts_set_local_address(bt_device_t* device);
-bt_result_code bts_get_local_address(bt_address* addr);
+bt_result_code bts_get_local_address(bt_address addr);
 bt_result_code bts_set_local_io_capability(bt_io_capability io_capability);
 bt_result_code bts_set_local_name(char* bt_name, uint8_t len);
 char* bts_get_local_name(void);

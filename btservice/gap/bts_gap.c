@@ -790,7 +790,7 @@ bt_result_code bts_set_local_address(bt_device_t* device)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_get_local_address(bt_address* addr)
+bt_result_code bts_get_local_address(bt_address addr)
 {
     if (!addr)
         return BT_RESULT_FAILED;
@@ -1140,7 +1140,7 @@ bt_result_code bts_ble_send_packet(bt_device_t* device, uint16_t private_cid,
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_send_packet(device, private_cid, packet, packet_size);
+    bt_status ret = service_adapter_gap_ble_send_packet(device->addr, private_cid, packet, packet_size);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
