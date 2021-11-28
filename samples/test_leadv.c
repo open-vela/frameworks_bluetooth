@@ -21,6 +21,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#define LOG_TAG "btsample_adv"
 
 #include "btm_le_advertise.h"
 #include "btm_manager.h"
@@ -28,7 +29,6 @@
 #include "log.h"
 #include <pthread.h>
 #include <stdio.h>
-#define LOG_TAG "btsample_adv"
 #include "log.h"
 
 btm_leadv_hdl_t* adv_handle;

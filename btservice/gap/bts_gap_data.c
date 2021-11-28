@@ -21,6 +21,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#define LOG_TAG "bts_gap_data"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -34,7 +35,6 @@
 #include "bts_service.h"
 #include "log.h"
 
-#define LOG_TAG "bts_gap_data"
 
 #ifndef MAX_BONDED_DEVICES_SUPPORTED
 #define MAX_BONDED_DEVICES_SUPPORTED 5

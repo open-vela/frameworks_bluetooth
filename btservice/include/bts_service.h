@@ -20,24 +20,8 @@ typedef void (*bts_process_loop_data)(void* data, size_t data_size);
 //process block command in work loop
 typedef void (*bts_process_int_work_func)(int command_id, char* data, size_t data_size);
 
-typedef void (*process_in_io)(char* data);
 typedef void (*process_in_timer)(char* data);
 
-typedef struct excute_manager_context {
-    void* handle;
-    size_t data_size;
-    char* data;
-    int profile_id;
-} excute_manager_context_t;
-
-typedef struct excute_service_context {
-    void* handle;
-    size_t data_size;
-    char* data;
-    int command_id;
-    bts_process_loop_data loop_func;
-    int profile_id;
-} excute_service_context_t;
 
 typedef struct {
     bt_profile_id profile;
@@ -61,7 +45,6 @@ typedef struct {
 
 uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb);
 void bts_uv_poll_stop(uv_poll_t* handle);
-void process_in_work_thread(process_in_io func_in_io, void* data);
 uv_timer_t* start_timer(int timeout, int repeat, process_in_timer timer_callback, void* data);
 void stop_timer(uv_timer_t* timer);
 

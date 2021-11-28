@@ -324,7 +324,7 @@ int hfp_client_command(void* handle, int argc, char* argv[])
 
     if (argc > 1) {
         for (int i = 0; i < ARRAY_SIZE(g_hfp_tables); i++) {
-            if (strncmp(g_hfp_tables[i].cmd, argv[1], strlen(argv[1])) == 0) {
+            if (strcmp(g_hfp_tables[i].cmd, argv[1]) == 0) {
                 if (g_hfp_tables[i].func) {
                     ret = g_hfp_tables[i].func(handle, argc - 2, &argv[2]);
                 }

@@ -21,6 +21,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#define LOG_TAG "btm_leadv"
 
 #include "btm_le_advertise.h"
 
@@ -32,7 +33,6 @@
 
 #include "log.h"
 
-#define LOG_TAG "btm_leadv"
 
 typedef struct {
     uint8_t advertiser_id;

@@ -41,13 +41,13 @@
 #define BT_GAP_CB(MOTHOD, ...)                                                      \
     do {                                                                            \
         bt_if_gap_handle_t* if_handle;                                              \
-        struct list_node* node;                                                     \
+        struct list_node* handle_node;                                                     \
         if (!gap_service)                                                           \
             break;                                                                  \
         struct list_node* list = &gap_service->handle_list;                         \
-        list_for_every(list, node)                                                  \
+        list_for_every(list, handle_node)                                                  \
         {                                                                           \
-            if_handle = (bt_if_gap_handle_t*)node;                                  \
+            if_handle = (bt_if_gap_handle_t*)handle_node;                                  \
             if ((if_handle->gap_callbacks) && (if_handle->gap_callbacks)->MOTHOD) { \
                 (if_handle->gap_callbacks)->MOTHOD(__VA_ARGS__);                    \
             } else {                                                                \
@@ -104,7 +104,7 @@ static void gap_if_discovery_state_changed_callback(bt_discovery_state state)
             if_handle->gap_callbacks->discovery_state_changed_callback_cb(if_handle->gap_handle, state);
     }
 }
-static void gap_if_ssp_request_callback(bt_ssp_request_data_t* request_data)
+static void gap_if_ssp_request_callback(ssp_request_data_t* request_data)
 {
     BT_LOGD("%s", __func__);
     BT_GAP_CB(ssp_request_callback_cb, if_handle->gap_handle, request_data);
@@ -140,19 +140,8 @@ static void gap_if_connection_state_callback(bt_device_t* device, bt_connection_
     BT_LOGD("%s", __func__);
     BT_GAP_CB(connection_state_callback_cb, if_handle->gap_handle, device, state);
 }
-static void gap_if_get_bonded_device_list_callback(bt_address* bonded_device_list, uint8_t umber)
-{
-    BT_LOGD("%s", __func__);
-    //BT_GAP_CB(get_bonded_device_list_callback_cb, if_handle->gap_handle, bonded_device_list, umber);
-}
 
-static void gap_if_connected_device_list_callback(bt_address* connected_device_list, uint8_t umber)
-{
-    BT_LOGD("%s", __func__);
-    //BT_GAP_CB(connected_device_list_callback_cb, if_handle->gap_handle, connected_device_list, umber);
-}
-
-static void gap_if_hci_event_callback(bt_hci_event_t* hci_event)
+static void gap_if_hci_event_callback(hci_event_t* hci_event)
 {
     BT_LOGD("%s", __func__);
     BT_GAP_CB(hci_event_callback_cb, if_handle->gap_handle, hci_event);
@@ -172,10 +161,10 @@ static void gap_if_ble_phy_update_callback(bd_addr_t remote_addr, ble_phy_type_t
     BT_LOGD("%s", __func__);
     BT_GAP_CB(ble_phy_update_cb, if_handle->gap_handle, remote_addr, tx_phy, rx_phy, status);
 }
-static void gap_if_ble_address_callback(bd_addr_t ble_addr, ble_addr_type ble_addr_type)
+static void gap_if_ble_address_callback(bd_addr_t bd_addr, ble_addr_type addr_type)
 {
     BT_LOGD("%s", __func__);
-    BT_GAP_CB(ble_address_cb, if_handle->gap_handle, ble_addr, ble_addr_type);
+    BT_GAP_CB(ble_address_cb, if_handle->gap_handle, bd_addr, addr_type);
 }
 
 bts_gap_callback_t bts_gap_callbacks = {
@@ -188,7 +177,6 @@ bts_gap_callback_t bts_gap_callbacks = {
     .device_found_cb = gap_if_device_found_callback,
     .bond_state_changed_cb = gap_if_bond_state_changed_callback,
     .connection_state_changed_cb = gap_if_connection_state_callback,
-    .connected_list_cb = gap_if_connected_device_list_callback,
     .hci_event_cb = gap_if_hci_event_callback,
     .smp_request_cb = gap_if_smp_request_callback,
     .ble_phy_update_cb = gap_if_ble_phy_update_callback,
@@ -205,7 +193,7 @@ bt_result_code gap_service_init()
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code bts_if_register_callbacks(void* handle, void* gap_handle, const btm_gap_callbacks_t* callbacks)
+static bt_result_code bts_if_register_callbacks(void* handle, void** gap_handle, const btm_gap_callbacks_t* callbacks)
 {
     bt_result_code ret = BT_RESULT_FAILED;
     BT_LOGD("%s", __func__);
@@ -219,6 +207,7 @@ static bt_result_code bts_if_register_callbacks(void* handle, void* gap_handle, 
     gap_if_handle->gap_callbacks = callbacks;
     gap_if_handle->gap_handle = gap_handle;
     list_add_tail(&gap_service->handle_list, &gap_if_handle->node);
+    return BT_RESULT_SUCCESS;
 }
 
 static bt_result_code bts_if_start_discovery(void* gap_handle, uint32_t timeout)
@@ -297,6 +286,7 @@ static int bts_if_get_remote_services(void* gap_handle, bt_device_t* remote_addr
     if (!gap_is_handle_valid(gap_handle))
         return service_num;
     service_num = bts_get_remote_services(remote_addr, service_list, count_in);
+    return service_num;
 }
 
 static bt_result_code bts_if_reply_pair_request(void* gap_handle, bt_device_t* device, int accept)
