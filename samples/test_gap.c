@@ -1,3 +1,4 @@
+#define LOG_TAG "bt_sample_gap"
 
 #include "btm_le_advertise.h"
 #include "btm_manager.h"
@@ -5,7 +6,6 @@
 #include "log.h"
 #include <pthread.h>
 #include <stdio.h>
-#define LOG_TAG "bt_sample_gap"
 #include "btm_gap.h"
 #include "log.h"
 
@@ -56,7 +56,7 @@ int main(int argc, FAR char* argv[])
     manager->enable(manager_handle);
     char input;
     bool exit = false;
-    bt_device_t* device = malloc(sizeof(bt_device_t));
+    bt_device_t* device = (bt_device_t*)malloc(sizeof(bt_device_t));
     bd_addr_t add = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
     while (!exit) {
         printf("please input command:\n");

@@ -21,6 +21,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#define LOG_TAG "btm_manager"
 
 #include "btm_manager.h"
 #include "bts_service.h"
@@ -28,22 +29,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define LOG_TAG "btm_manager"
 #include "log.h"
 
 typedef struct {
     size_t size;
     bt_mgr_callback_t* callback;
-    //TODO, handle is for  RPC in the feature
-    void* client_hanlde;
-    //hanlde id created in service
-    int app_id;
-    //btm_process_func manager_func_list[BT_PROFILE_MAX_ID];
 } manager_context_t;
 
 static bluetooth_service_interface* bluetooth_service = NULL;
 
-static manager_context_t* btm_context_init()
+static manager_context_t* btm_context_init(void)
 {
     manager_context_t* init_context = NULL;
     init_context = (manager_context_t*)malloc(sizeof(manager_context_t));
@@ -66,11 +61,10 @@ static bt_manager_bt_state bt_get_state(void* handle)
     //size_t size = 0;
     //char *buffer = NULL;
     bt_result_code result = BT_RESULT_FAILED;
-    manager_context_t* context;
     if (!handle) {
         goto Exit;
     }
-    context = (manager_context_t*)handle;
+    //TODO
 Exit:
     return result;
 }
@@ -78,6 +72,7 @@ Exit:
 static bt_manager_ble_state ble_get_state(void* handle)
 {
     bt_result_code result = BT_RESULT_FAILED;
+    //TODO
 
     return result;
 }
@@ -86,13 +81,13 @@ static void bt_mgr_adapter_state_changed_callback(void* handle, stack_state_t st
 {
     manager_context_t* context;
     if (NULL == handle)
-        return;
+        return ;
     context = (manager_context_t*)handle;
 
     bt_mgr_callback_t* bluetooth_upper_callbacks = context->callback;
     if (!bluetooth_upper_callbacks) {
         BT_LOGE("fail, bluetooth_upper_callbacks nullptr");
-        return;
+        return ;
     }
     bluetooth_upper_callbacks->bt_manager_state_changed_callback_cb(state);
 }
@@ -107,12 +102,12 @@ static void bt_mgr_adapter_ble_state_changed_callback(void* handle, bt_manager_b
     bt_mgr_callback_t* bluetooth_upper_callbacks = context->callback;
     if (!bluetooth_upper_callbacks) {
         BT_LOGE("fail, bluetooth_upper_callbacks nullptr");
-        return;
+        return ;
     }
     bluetooth_upper_callbacks->bt_manager_ble_state_changed_callback_cb(state);
 }
 
-static const bt_service_if_callbacks bluetooth_lower_callbacks = {
+static bt_service_if_callbacks bluetooth_lower_callbacks = {
     .size = sizeof(bluetooth_lower_callbacks),
     .adapter_state_changed_cb = bt_mgr_adapter_state_changed_callback,
     .adapter_state_ble_changed_cb = bt_mgr_adapter_ble_state_changed_callback,
@@ -140,14 +135,10 @@ Exit:
 
 static bt_result_code bt_mgr_enable(void* handle)
 {
-    bt_result_code ret = BT_RESULT_FAILED;
-    manager_context_t* context;
     if (!handle) {
         BT_LOGE("%s, handle is NULL", __func__);
-        return;
+        return BT_RESULT_FAILED;
     }
-    context = (manager_context_t*)handle;
-
     if (!bluetooth_service) {
         BT_LOGE("fail, bluetooth_service null");
         return BT_RESULT_FAILED;
@@ -157,12 +148,10 @@ static bt_result_code bt_mgr_enable(void* handle)
 
 static bt_result_code bt_mgr_disable(void* handle)
 {
-    manager_context_t* context;
     if (!handle) {
         BT_LOGE("%s, handle is NULL", __func__);
-        return;
+        return BT_RESULT_FAILED;
     }
-    context = (manager_context_t*)handle;
 
     if (!bluetooth_service) {
         BT_LOGE("fail, bluetooth_service null");
@@ -173,13 +162,10 @@ static bt_result_code bt_mgr_disable(void* handle)
 
 static bt_result_code bt_mgr_enable_ble(void* handle)
 {
-    bt_result_code ret = BT_RESULT_FAILED;
-    manager_context_t* context;
     if (!handle) {
         BT_LOGE("%s, handle is NULL", __func__);
-        return;
+        return BT_RESULT_FAILED;
     }
-    context = (manager_context_t*)handle;
 
     if (!bluetooth_service) {
         BT_LOGE("fail, bluetooth_service null");
@@ -190,12 +176,10 @@ static bt_result_code bt_mgr_enable_ble(void* handle)
 
 static bt_result_code bt_mgr_disable_ble(void* handle)
 {
-    manager_context_t* context;
     if (!handle) {
         BT_LOGE("%s, handle is NULL", __func__);
-        return;
+        return BT_RESULT_FAILED;
     }
-    context = (manager_context_t*)handle;
     if (!bluetooth_service) {
         BT_LOGE("fail, bluetooth_service null");
         return BT_RESULT_FAILED;
@@ -205,15 +189,13 @@ static bt_result_code bt_mgr_disable_ble(void* handle)
 
 static void bt_mgr_cleanup(void* handle)
 {
-    manager_context_t* context;
     if (!handle) {
         BT_LOGE("%s, handle is NULL", __func__);
-        return;
+        return ;
     }
-    context = (manager_context_t*)handle;
     if (!bluetooth_service) {
         BT_LOGE("fail, bluetooth_service null");
-        return BT_RESULT_FAILED;
+        return ;
     }
     bluetooth_service->cleanup(handle);
 }
@@ -222,7 +204,7 @@ static const void* get_profile_interface(const char* profile_id)
 {
     if (!bluetooth_service) {
         BT_LOGE("fail, bluetooth_service null");
-        return BT_RESULT_FAILED;
+        return NULL;
     }
     return bluetooth_service->get_profile_interface(profile_id);
 }

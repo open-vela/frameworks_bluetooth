@@ -21,6 +21,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#define LOG_TAG "btsample_gattc"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,7 +31,6 @@
 #include "btm_manager.h"
 #include "log.h"
 
-#define LOG_TAG "btsample_gattc"
 
 static bd_addr_t remote_address;
 static void* client_handle;
