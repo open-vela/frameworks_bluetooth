@@ -41,6 +41,7 @@ typedef SERVICE_BT_SCAN_MODE bt_scan_mode;
 typedef SERVICE_BT_LINK_MODE bt_link_mode;
 typedef SERVICE_BT_LINK_POLICY bt_link_policy;
 typedef SERVICE_BT_HCI_EVENT_S hci_event_t;
+
 typedef SERVICE_REMOTE_DEVICE_S remote_device_t;
 typedef SERVICE_BR_SERVICE_S br_service_t;
 typedef SERVICE_BT_STATUS bt_status;

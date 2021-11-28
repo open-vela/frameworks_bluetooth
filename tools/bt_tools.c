@@ -180,10 +180,10 @@ static int set_scan_mode(void* handle, int argc, char** argv)
 static int get_local_address(void* handle, int argc, char** argv)
 {
     bt_address addr;
-    gap_test_interface->bt_get_local_address(gap_hanlde, addr);
+    gap_test_interface->bt_get_local_address(gap_hanlde, &addr);
     BT_LOGD("%s, bt_address :%s", __func__, addr_str(addr));
-
     return 0;
+
 }
 
 static int set_local_io_capability(void* handle, int argc, char** argv)
@@ -381,7 +381,7 @@ int gap_cmd(void* handle, int argc, char* argv[])
 
     if (argc > 1) {
         for (int i = 0; i < ARRAY_SIZE(g_gap_tables); i++) {
-            if (strncmp(g_gap_tables[i].cmd, argv[1], strlen(g_gap_tables[i].cmd)) == 0) {
+            if (strcmp(g_gap_tables[i].cmd, argv[1]) == 0) {
                 if (g_gap_tables[i].func) {
                     ret = g_gap_tables[i].func(handle, argc - 2, &argv[2]);
                 }
@@ -433,18 +433,18 @@ void test_received_remote_name_callback(void* handle, bt_address bd_addr, char* 
     BT_LOGD("%s, device %s, bt_name: %s", __func__, addr_str(bd_addr), bt_name);
 }
 
-void test_ssp_request_callback(void* handle, bt_ssp_request_data_t* request_data)
+void test_ssp_request_callback(void* handle, ssp_request_data_t* request_data)
 {
     BT_LOGD("%s, : request_data->ssp_type: %d", __func__, request_data->ssp_type);
 
-    if (request_data->ssp_type == SPP_TYPE_PASSKEY_CONFIRMATION) {
+    if (request_data->ssp_type == GAP_SPP_TYPE_PASSKEY_CONFIRMATION) {
         SERVICE_SSP_REPLY_DATA_S reply;
         memcpy(reply.remote_addr, request_data->remote_addr, 6);
         reply.accept = true;
         reply.type = GAP_SPP_TYPE_PASSKEY_CONFIRMATION;
         service_adapter_gap_ssp_reply(&reply);
     }
-    if (request_data->ssp_type == SPP_TYPE_PASSKEY_ENTRY) {
+    if (request_data->ssp_type == GAP_SPP_TYPE_PASSKEY_ENTRY) {
         SERVICE_SSP_REPLY_DATA_S reply;
         memcpy(reply.remote_addr, request_data->remote_addr, 6);
         reply.accept = true;
@@ -452,7 +452,7 @@ void test_ssp_request_callback(void* handle, bt_ssp_request_data_t* request_data
         reply.passkey = request_data->pass_key;
         service_adapter_gap_ssp_reply(&reply);
     }
-    if (request_data->ssp_type == SPP_TYPE_PASSKEY_NOTIFICATION) {
+    if (request_data->ssp_type == GAP_SPP_TYPE_PASSKEY_NOTIFICATION) {
         SERVICE_SSP_REPLY_DATA_S reply;
         memcpy(reply.remote_addr, request_data->remote_addr, 6);
         reply.accept = true;
@@ -489,7 +489,7 @@ void test_bond_state_changed_callback(void* handle, bt_device_t* device, bt_bond
     default:
         break;
     }
-    BT_LOGD("%s, device %s, state:%s ", __func__, addr_str(device->addr), bond_state);
+    BT_LOGD("%s, state:%s ", __func__,  bond_state);
 }
 void test_local_name_callback(void* handle, char* bt_name, uint8_t length)
 {
@@ -509,7 +509,8 @@ void test_smp_request_callback(void* gap_handle, ssp_request_data_t* request_dat
 }
 void test_pairing_request_callback(void* gap_handle, BD_ADDR remote_addr, bool local_initiate, bool is_bondable)
 {
-    BT_LOGD("%s,local_initiate: %d, is_bondable:%d", __func__, local_initiate, is_bondable);
+    BT_LOGD("%s,local_initiate: %d, is_bondable:%d,  device :%02x:%02x:%02x:%02x:%02x:%02x", __func__, 
+    local_initiate, is_bondable, remote_addr[0], remote_addr[1], remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5]);
 }
 
 const btm_gap_callbacks_t gap_test_tool_callbacks = {
@@ -575,7 +576,7 @@ static void show_version(void)
 static int execute_command(void* handle, int argc, char* argv[])
 {
     for (int i = 0; i < ARRAY_SIZE(g_cmd_tables); i++) {
-        if (strncmp(g_cmd_tables[i].cmd, argv[0], strlen(argv[0])) == 0) {
+        if (strcmp(g_cmd_tables[i].cmd, argv[0]) == 0) {
             if (g_cmd_tables[i].func) {
                 g_cmd_tables[i].func(handle, argc, &argv[0]);
                 if (g_cmd_tables[i].func == quit_cmd)

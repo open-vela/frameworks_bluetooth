@@ -22,12 +22,7 @@
  * Included Files
  ****************************************************************************/
 
-#include "bts_service.h"
-#include "btm_gap.h"
-#include "btm_manager.h"
-#include "stack_adapter_gap.h"
-#include "stack_adapter_service_base.h"
-#include "uv.h"
+#include <nuttx/list.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,17 +31,16 @@
 #include "bts_gatt_service.h"
 #include "bts_hf_client.h"
 #include "bts_spp.h"
-
-#include <nuttx/list.h>
+#include "bts_service.h"
+#include "btm_gap.h"
+#include "btm_manager.h"
+#include "stack_adapter_gap.h"
+#include "stack_adapter_service_base.h"
+#include "uv.h"
 
 #define LOG_TAG "bts_service"
 #include "log.h"
 
-typedef struct
-{
-    process_in_io func_in_io;
-    void* data;
-} io_process_data_t;
 
 typedef struct
 {
@@ -75,38 +69,8 @@ static uv_async_t async_handle[1];
 static bts_profile_callbacks profiles_callbacks[BT_PROFILE_MAX_ID];
 static struct list_node bts_msg_list = LIST_INITIAL_VALUE(bts_msg_list);
 
-static void io_process(uv_work_t* req)
-{
-    BT_LOGD("btservice io_process");
-
-    io_process_data_t* process_data = (io_process_data_t*)req->data;
-    if (NULL == process_data) {
-        return;
-    }
-
-    if (NULL == process_data->func_in_io) {
-        return;
-    }
-    process_data->func_in_io(process_data->data);
-    return;
-}
-
-static void after_io_process(uv_work_t* req, int status)
-{
-    BT_LOGD("btservice after_io_process");
-    uv_close(req, NULL);
-    free(req);
-}
-
-void process_in_work_thread(process_in_io func_in_io, void* data)
-{
-    uv_work_t* req = malloc(sizeof(uv_work_t));
-    io_process_data_t* process_data = malloc(sizeof(io_process_data_t));
-    process_data->func_in_io = func_in_io;
-    process_data->data = data;
-    req->data = process_data;
-    uv_queue_work(bt_dispatch_loop, req, io_process, after_io_process);
-}
+extern void InitTransportLayer(void);
+ extern void ScheduleLoop(void);
 
 void bts_uv_close_cb(uv_handle_t* handle)
 {
@@ -168,13 +132,10 @@ uv_loop_t* get_service_loop(void)
     return bt_dispatch_loop;
 }
 
-static bool interface_ready(void) { return bluetooth_upper_callbacks != NULL; }
-
-static void* stack_schedule_loop(void* data)
+static void stack_schedule_loop(void* data)
 {
     BT_LOGD("%s", __func__);
     ScheduleLoop();
-    BT_LOGD("%s", __func__);
 }
 
 bool bts_register_profile_process(bt_profile_id id, bts_profile_callbacks cb)
@@ -222,7 +183,7 @@ static void bts_handle_uv_msg(uv_async_t* handle)
             break;
         }
         if (!profiles_callbacks[msg->id]) {
-            BT_LOGW("not handle, profile %d not registered");
+            BT_LOGW("not handle, profile %d not registered", msg->id);
             continue;
         }
         profiles_callbacks[msg->id](msg->id, msg->data, msg->size);
@@ -230,7 +191,7 @@ static void bts_handle_uv_msg(uv_async_t* handle)
     } while (true);
 }
 
-static void* service_schedule_loop(void* data)
+static void service_schedule_loop(void* data)
 {
     BT_LOGD("%s", __func__);
     bt_dispatch_loop = uv_loop_new();
@@ -264,15 +225,18 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
 
 void bts_service_cleanup(void)
 {
+
 }
 
 void stack_state_change(stack_state_t state)
 {
-    bt_service_state service_state = BT_MANAGER_STATE_OFF;
     if (BT_STATE_ON == state) {
         service_state = BT_MANAGER_STATE_ON;
         gap_create_factory_info(false);
         gap_read_device_info();
+    }
+    if (BT_STATE_OFF == state) {
+        service_state = BT_MANAGER_STATE_OFF;
     }
     bluetooth_upper_callbacks->adapter_state_changed_cb(service_state);
 }

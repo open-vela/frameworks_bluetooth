@@ -1,13 +1,14 @@
-#include "bts_service_interface.h"
-
+#define LOG_TAG "bts_service_interface"
 #include <nuttx/list.h>
+#include <stdlib.h>
+#include <stdio.h>
 
+#include "bts_service_interface.h"
 #include "bts_gap.h"
 #include "bts_gatt_service.h"
 #include "bts_service.h"
 
 #include "log.h"
-#define LOG_TAG "bts_service_interface"
 
 typedef struct {
     struct list_node handle_list;
@@ -64,11 +65,13 @@ static bt_service_callbacks service_callback = {
 static bt_result_code bts_if_init(void* handle, bt_service_if_callbacks* callbacks)
 {
     if (!service) {
-        service = malloc(sizeof(bt_service_t));
+        service = (bt_service_t *)malloc(sizeof(bt_service_t));
         list_initialize(&service->handle_list);
         bts_service_init(&service_callback);
+        service->ble_state = STATE_BLE_OFF;
+        service->bt_state = BT_MANAGER_STATE_OFF;
 #if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
-        gatt_interface_t* gatt_if = gatt_get_interface();
+        const gatt_interface_t* gatt_if = gatt_get_interface();
         if (gatt_if) {
             BT_LOGD("gatt init");
             gatt_if->init();
@@ -125,7 +128,13 @@ static bt_result_code bts_if_disable(void* handle)
     if_handle = find_if_handle_by_handle(handle);
     if (!if_handle)
         return BT_RESULT_FAILED;
-
+    gap_disable(true);
+#ifdef CONFIG_BLUETOOTH_HFP_HF
+    hf_client_service_stop();
+#endif
+#ifdef CONFIG_BLUETOOTH_SPP
+    spp_service_stop();
+#endif
     return BT_RESULT_SUCCESS;
 }
 
@@ -133,14 +142,14 @@ static void bts_if_cleanup(void* handle)
 {
     bt_if_handle_t* if_handle;
     if (!handle)
-        return BT_RESULT_FAILED;
+        return;
     if_handle = find_if_handle_by_handle(handle);
     if (!if_handle)
-        return BT_RESULT_FAILED;
+        return;
     service->bt_state = BT_MANAGER_STATE_TURNING_OFF;
     bts_service_cleanup();
 #if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
-    gatt_interface_t* gatt_if = gatt_get_interface();
+    const gatt_interface_t* gatt_if = gatt_get_interface();
     if (!gatt_if) {
         BT_LOGD("gatt cleanup");
         gatt_if->cleanup();
@@ -188,9 +197,10 @@ static bt_manager_ble_state if_get_ble_state(void* handle)
 {
     if (!service)
         return BT_MANAGER_STATE_OFF;
-    if (service->bt_state) {
-    }
-    return service->bt_state;
+    if (service->bt_state != BT_MANAGER_STATE_OFF) 
+        return service->bt_state;
+    else 
+        return service->ble_state;
 }
 
 static void bts_if_stack_state_change(stack_state_t state)

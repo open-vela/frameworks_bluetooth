@@ -292,7 +292,7 @@ int spp_command(void* handle, int argc, char* argv[])
 
     if (argc > 1) {
         for (int i = 0; i < ARRAY_SIZE(g_spp_tables); i++) {
-            if (strncmp(g_spp_tables[i].cmd, argv[1], strlen(g_spp_tables[i].cmd)) == 0) {
+            if (strcmp(g_spp_tables[i].cmd, argv[1]) == 0) {
                 if (g_spp_tables[i].func) {
                     ret = g_spp_tables[i].func(handle, argc - 2, &argv[2]);
                 }

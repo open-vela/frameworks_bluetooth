@@ -12,13 +12,11 @@
 typedef void (*bts_adapter_state_changed_callback)(stack_state_t state);
 typedef void (*bts_received_remote_name_callback)(BD_ADDR bd_addr, char* bt_name, uint8_t length);
 typedef void (*bts_discovery_state_changed_callback)(bt_discovery_state state);
-typedef void (*bts_ssp_request_callback)(bt_ssp_request_data_t* request_data);
+typedef void (*bts_ssp_request_callback)(ssp_request_data_t* request_data);
 typedef void (*bts_device_found_callback)(bt_device_t* device);
 typedef void (*bts_bond_state_changed_callback)(bt_device_t* device, bt_bond_state state);
 typedef void (*bts_connection_state_callback)(bt_device_t* device, bt_connection_state state);
-typedef void (*bts_get_bonded_device_list_callback)(bt_address* bonded_device_list, uint8_t umber);
-typedef void (*bts_connected_device_list_callback)(bt_address* connected_device_list, uint8_t umber);
-typedef void (*bts_hci_event_callback)(bt_hci_event_t* hci_event);
+typedef void (*bts_hci_event_callback)(hci_event_t* hci_event);
 //typedef void (*bts_service_discovered_callback)( bd_addr_t remote_addr, br_service_t* services, uint16_t size);
 typedef void (*bts_update_ble_bonded_devices_callback)(ble_keys_t* bonded_device_list, uint8_t count_in);
 typedef void (*bts_smp_request_callback)(ssp_request_data_t* request_data);
@@ -36,8 +34,6 @@ typedef struct {
     bts_device_found_callback device_found_cb;
     bts_bond_state_changed_callback bond_state_changed_cb;
     bts_connection_state_callback connection_state_changed_cb;
-    bts_get_bonded_device_list_callback bonded_list_cb;
-    bts_connected_device_list_callback connected_list_cb;
     bts_hci_event_callback hci_event_cb;
     bts_smp_request_callback smp_request_cb;
     bts_update_ble_bonded_devices_callback update_ble_bonede_device_cb;
@@ -46,6 +42,8 @@ typedef struct {
 } bts_gap_callback_t;
 
 bt_result_code gap_init(bts_gap_callback_t* cb);
+void gap_cleanup(void);
+
 bt_result_code gap_enable(void);
 bt_result_code gap_disable(bool normal_disable);
 stack_state_t gap_get_stack_state(void);
@@ -72,8 +70,6 @@ bt_result_code bts_remove_bond(bt_device_t* device);
 int bts_get_bonded_devices(bt_device_t* device_list);
 
 /*Connection*/
-bt_result_code bts_connect_all(bt_device_t* device);
-bt_result_code bts_disonnect_all(bt_device_t* device);
 int bts_get_connected_devices(bt_device_t* device_list);
 
 /*Discovery*/
@@ -119,6 +115,6 @@ void gap_update_data_storage(void);
 
 bt_result_code gap_create_factory_info(bool force);
 bt_result_code gap_update_device_name(uint8_t* bt_name, size_t len_name);
-bt_result_code gap_read_device_info();
+bt_result_code gap_read_device_info(void);
 
 #endif

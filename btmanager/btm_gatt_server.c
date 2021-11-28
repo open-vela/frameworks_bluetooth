@@ -21,6 +21,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#define LOG_TAG "btm_gatts"
 
 #include "btm_gatt_server.h"
 
@@ -31,7 +32,6 @@
 #include "bts_gatt_service.h"
 #include "log.h"
 
-#define LOG_TAG "btm_gatts"
 
 typedef struct
 {

@@ -21,6 +21,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#define LOG_TAG "btsample_gatts"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +32,6 @@
 #include "btm_manager.h"
 #include "log.h"
 
-#define LOG_TAG "btsample_gatts"
 #define THROUGHTPUT_HORIZON 2
 
 static void* gatts_handle;

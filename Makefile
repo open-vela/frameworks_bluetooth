@@ -25,11 +25,9 @@ CSRCS += btmanager/btm_manager.c
 CSRCS +=btmanager/btm_gap.c
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SRC),y)
-CSRCS += btservice/a2dp_source/bts_a2dp_source.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_AVRCP_TG),y)
-CSRCS += btservice/avrcp_target/bts_avrcp_target.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)

@@ -87,22 +87,9 @@ typedef enum {
 } ssp_type;
 
 /** ssp request data */
-typedef struct {
-    bt_address remote_addr;
-    uint32_t cod;
-    ssp_type ssp_type;
-    uint32_t pass_key;
-    char bt_name[BD_NAME_MAX_SIZE];
-} bt_ssp_request_data_t;
-
 /**
  *@brief details of HCI event from controller
  */
-typedef struct {
-    uint8_t evt_code; ///< HCI event code
-    uint8_t length; ///< length of the params
-    char params[0]; ///< parameters
-} bt_hci_event_t;
 
 /**
  *@brief HCI event callback (only for the raw HCI command sent by upper layer)
@@ -111,7 +98,7 @@ typedef struct {
  * @return   void
  */
 
-typedef void (*hci_event_callback)(void* handle, bt_hci_event_t* hci_event);
+typedef void (*hci_event_callback)(void* handle, hci_event_t* hci_event);
 
 // HCI command struct
 typedef struct {
@@ -164,7 +151,7 @@ typedef void (*discovery_state_changed_callback)(void* handle, bt_discovery_stat
  * @param[in] request_data - request data from callback
  * @return   void
  */
-typedef void (*ssp_request_callback)(void* handle, bt_ssp_request_data_t* request_data);
+typedef void (*ssp_request_callback)(void* handle, ssp_request_data_t* request_data);
 
 /**
 * @brief Bonding state change callback - invoked in response to bt_create_bond(), bt_cancel_bond(),
@@ -432,7 +419,7 @@ typedef struct {
      */
     bt_result_code (*enter_bluetooth_test_mode)(void* gap_handle, bt_test_mode test_mode);
     bt_result_code (*bt_set_local_device_class)(void* handle, uint32_t class_of_device);
-    bt_result_code (*bt_get_local_device_class)(void* handle);
+    uint32_t (*bt_get_local_device_class)(void* handle);
     bt_result_code (*bt_set_local_address)(void* handle, bt_device_t* device);
 } btm_gap_interface_t;
 

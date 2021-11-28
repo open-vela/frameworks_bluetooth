@@ -82,8 +82,8 @@ typedef struct {
 typedef struct {
     size_t size;
 
-    bt_result_code (*init)();
-    void (*clean_up)();
+    bt_result_code (*init)(void);
+    void (*clean_up)(void);
 
     bt_result_code (*open_server)(bts_gatts_hdl_t handle);
     bt_result_code (*close_server)(uint8_t server_if);
@@ -101,5 +101,5 @@ typedef struct {
 
 } bts_gatts_interface_t;
 
-const bts_gatts_interface_t* get_bts_gatts_instance();
+const bts_gatts_interface_t* get_bts_gatts_instance(void);
 #endif
