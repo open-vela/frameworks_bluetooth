@@ -36,7 +36,7 @@ typedef struct {
     bt_mgr_callback_t* callback;
 } manager_context_t;
 
-static bluetooth_service_interface* bluetooth_service = NULL;
+const static bluetooth_service_interface* bluetooth_service = NULL;
 
 static manager_context_t* btm_context_init(void)
 {

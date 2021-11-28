@@ -45,7 +45,7 @@
 
 typedef struct {
     void* manager_context;
-    btm_gap_callbacks_t* gap_callbacks;
+    const btm_gap_callbacks_t* gap_callbacks;
     btm_gap_interface_t* service_interface;
 } gap_context_t;
 
@@ -253,6 +253,7 @@ static bt_result_code btm_gap_cleanup(void* gap_handle)
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
     BT_GAP_INTERFACE(context->service_interface, gap_cleanup, ret, gap_handle);
+    free(gap_handle);
     return ret;
 }
 
@@ -265,7 +266,7 @@ static bt_result_code btm_set_local_address(void* gap_handle, bt_device_t* devic
     return ret;
 }
 
-static bt_result_code btm_get_local_address(void* gap_handle, bt_address* addr)
+static bt_result_code btm_get_local_address(void* gap_handle, bt_address addr)
 {
     bt_result_code ret = BT_RESULT_FAILED;
     CHECK_PTR_RETURN(gap_handle, ret);
@@ -310,9 +311,9 @@ static bt_result_code btm_set_local_device_class(void* gap_handle, uint32_t clas
     return ret;
 }
 
-static bt_result_code btm_get_local_device_class(void* gap_handle)
+static uint32_t btm_get_local_device_class(void* gap_handle)
 {
-    bt_result_code ret = BT_RESULT_FAILED;
+    uint32_t ret = 0;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
     BT_GAP_INTERFACE(context->service_interface, bt_get_local_device_class, ret, gap_handle);
