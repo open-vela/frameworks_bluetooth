@@ -49,7 +49,7 @@
         {                                                                           \
             if_handle = (bt_if_gap_handle_t*)handle_node;                                  \
             if ((if_handle->gap_callbacks) && (if_handle->gap_callbacks)->MOTHOD) { \
-                (if_handle->gap_callbacks)->MOTHOD(__VA_ARGS__);                    \
+                (if_handle->gap_callbacks)->MOTHOD(if_handle->gap_handle, __VA_ARGS__);                    \
             } else {                                                                \
                 BT_LOGE("%s GAP interface is NULL", __func__);                      \
             }                                                                       \
@@ -65,7 +65,7 @@ typedef struct {
 typedef struct {
     struct list_node node;
     void* gap_handle;
-    btm_gap_callbacks_t* gap_callbacks;
+    const btm_gap_callbacks_t* gap_callbacks;
 } bt_if_gap_handle_t;
 
 bt_gap_service_t* gap_service = NULL;
@@ -88,63 +88,46 @@ static bool gap_is_handle_valid(void* gap_handle)
 static void gap_if_received_remote_name_callback(BD_ADDR bd_addr, char* bt_name, uint8_t length)
 {
     BT_LOGD("%s", __func__);
-    BT_GAP_CB(received_remote_name_callback_cb, if_handle->gap_handle, bd_addr, bt_name, length);
+    BT_GAP_CB(received_remote_name_callback_cb,  bd_addr, bt_name, length);
 }
 static void gap_if_discovery_state_changed_callback(bt_discovery_state state)
 {
     BT_LOGD("%s", __func__);
-    struct list_node* list = &gap_service->handle_list;
-    bt_if_gap_handle_t* if_handle;
-    struct list_node* node;
+    BT_GAP_CB(discovery_state_changed_callback_cb, state);
 
-    list_for_every(list, node)
-    {
-        if_handle = (bt_if_gap_handle_t*)node;
-        if (if_handle->gap_callbacks->discovery_state_changed_callback_cb)
-            if_handle->gap_callbacks->discovery_state_changed_callback_cb(if_handle->gap_handle, state);
-    }
 }
 static void gap_if_ssp_request_callback(ssp_request_data_t* request_data)
 {
     BT_LOGD("%s", __func__);
-    BT_GAP_CB(ssp_request_callback_cb, if_handle->gap_handle, request_data);
+    BT_GAP_CB(ssp_request_callback_cb, request_data);
 }
 
 static void gap_if_pairing_request_callback(BD_ADDR remote_addr, bool local_initiate, bool is_bondable)
 {
     BT_LOGD("%s", __func__);
-    BT_GAP_CB(pairing_request_cb, if_handle->gap_handle, remote_addr, local_initiate, is_bondable);
+    BT_GAP_CB(pairing_request_cb,  remote_addr, local_initiate, is_bondable);
 }
 static void gap_if_device_found_callback(bt_device_t* device)
 {
     BT_LOGD("%s", __func__);
-    struct list_node* list = &gap_service->handle_list;
-    bt_if_gap_handle_t* if_handle;
-    struct list_node* node;
-
-    // list_for_every(list, node) {
-    //     if_handle = (bt_if_gap_handle_t *)node;
-    //     if (if_handle->gap_callbacks->device_found_callback_cb)
-    //        if_handle->gap_callbacks->device_found_callback_cb(if_handle->gap_handle, device);
-    // }
-    BT_GAP_CB(device_found_callback_cb, if_handle->gap_handle, device);
+    BT_GAP_CB(device_found_callback_cb,  device);
 }
 
 static void gap_if_bond_state_changed_callback(bt_device_t* device, bt_bond_state state)
 {
     BT_LOGD("%s", __func__);
-    BT_GAP_CB(bond_state_changed_callback_cb, if_handle->gap_handle, device, state);
+    BT_GAP_CB(bond_state_changed_callback_cb,  device, state);
 }
 static void gap_if_connection_state_callback(bt_device_t* device, bt_connection_state state)
 {
     BT_LOGD("%s", __func__);
-    BT_GAP_CB(connection_state_callback_cb, if_handle->gap_handle, device, state);
+    BT_GAP_CB(connection_state_callback_cb,  device, state);
 }
 
 static void gap_if_hci_event_callback(hci_event_t* hci_event)
 {
     BT_LOGD("%s", __func__);
-    BT_GAP_CB(hci_event_callback_cb, if_handle->gap_handle, hci_event);
+    BT_GAP_CB(hci_event_callback_cb,  hci_event);
 }
 
 static void gap_if_adapter_state_changed_callback(stack_state_t state)
@@ -154,17 +137,17 @@ static void gap_if_adapter_state_changed_callback(stack_state_t state)
 static void gap_if_smp_request_callback(ssp_request_data_t* request_data)
 {
     BT_LOGD("%s", __func__);
-    BT_GAP_CB(smp_requeset_cb, if_handle->gap_handle, request_data);
+    BT_GAP_CB(smp_requeset_cb,  request_data);
 }
 static void gap_if_ble_phy_update_callback(bd_addr_t remote_addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status status)
 {
     BT_LOGD("%s", __func__);
-    BT_GAP_CB(ble_phy_update_cb, if_handle->gap_handle, remote_addr, tx_phy, rx_phy, status);
+    BT_GAP_CB(ble_phy_update_cb,  remote_addr, tx_phy, rx_phy, status);
 }
 static void gap_if_ble_address_callback(bd_addr_t bd_addr, ble_addr_type addr_type)
 {
     BT_LOGD("%s", __func__);
-    BT_GAP_CB(ble_address_cb, if_handle->gap_handle, bd_addr, addr_type);
+    BT_GAP_CB(ble_address_cb,  bd_addr, addr_type);
 }
 
 bts_gap_callback_t bts_gap_callbacks = {
