@@ -46,6 +46,8 @@
 static void usage(void);
 static int usage_cmd(void* handle, int argc, char** argv);
 static int enable_cmd(void* handle, int argc, char** argv);
+static int disable_cmd(void* handle, int argc, char** argv);
+
 static int quit_cmd(void* handle, int argc, char** argv);
 static int gap_cmd(void* handle, int argc, char** argv);
 
@@ -85,7 +87,7 @@ static struct option main_options[] = {
 
 static bt_command_t g_cmd_tables[] = {
     { "enable", enable_cmd, "enable stack" },
-    { "disable", NULL, "disable stack" },
+    { "disable", disable_cmd, "disable stack" },
 #ifdef CONFIG_BLUETOOTH_SPP
     { "spp", spp_command, "<SPP> Serial Port Profile" },
 #endif
@@ -209,11 +211,10 @@ static int set_local_name(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return -1;
-    // char *name = malloc(strlen(argv[0]) + 1);
-    // memcpy(name, argv[0], strlen(argv[0]));
-    // name[strlen(argv[0]) + 1] = '\0';
-    char name[] = "ttttttttttttttttttttttttttttttttt";
-    gap_test_interface->bt_set_local_name(gap_hanlde, name, sizeof(name));
+    char *name = malloc(strlen(argv[0]) + 1);
+    memcpy(name, argv[0], strlen(argv[0]));
+    name[strlen(argv[0]) + 1] = NULL;
+    gap_test_interface->bt_set_local_name(gap_hanlde, argv[0], strlen(argv[0]) + 1);
 
     return 0;
 }
@@ -271,7 +272,7 @@ static int remove_bond(void* handle, int argc, char** argv)
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
     gap_test_interface->bt_remove_bond(gap_hanlde, device);
-    
+
     return 0;
 }
 
@@ -487,9 +488,10 @@ void test_bond_state_changed_callback(void* handle, bt_device_t* device, bt_bond
         bond_state = "BT_BOND_STATE_BLE_BONDED";
         break;
     default:
-        break;
+        break;  
     }
     BT_LOGD("%s, state:%s ", __func__,  bond_state);
+    BT_LOGD("%s, device : %s, state: %s", __func__, addr_str(device->addr), bond_state);
 }
 void test_local_name_callback(void* handle, char* bt_name, uint8_t length)
 {
@@ -535,6 +537,14 @@ static bt_mgr_callback_t mgt_cb = {
 static int enable_cmd(void* handle, int argc, char** argv)
 {
     manager->enable(handle);
+
+    return 0;
+}
+
+
+static int disable_cmd(void* handle, int argc, char** argv)
+{
+    manager->disable(handle);
 
     return 0;
 }

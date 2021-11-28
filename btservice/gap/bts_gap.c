@@ -106,14 +106,12 @@ typedef struct {
     uint8_t count_in;
 } ble_bonded_update_t;
 
-typedef struct
-{
+typedef struct{
     ble_phy_type_t tx_phy;
     ble_phy_type_t rx_phy;
 } phy_update_changed_t;
 
-typedef struct
-{
+typedef struct{
     uint16_t private_cid;
     uint8_t* packet;
     uint16_t packet_size;
@@ -151,15 +149,13 @@ typedef struct {
     } data;
 } gap_event_data_t;
 
-typedef struct
-{
+typedef struct{
     struct list_node node;
     gap_event_t event;
     gap_event_data_t event_data;
 } gap_msg_t;
 
-typedef struct
-{
+typedef struct{
     struct list_node node;
     bt_device_t* device;
 } list_device_t;
@@ -279,7 +275,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
         if ((bts_gap_callbacks) && (bts_gap_callbacks->bond_state_changed_cb)) {
             bt_device_t* new_device = malloc(sizeof(bt_device_t));
             memcpy(new_device->addr, gap_msg->event_data.bd_addr, BT_ADDR_LENGTH);
-            bts_gap_callbacks->bond_state_changed_cb(gap_msg->event_data.data.device, gap_msg->event_data.data.bond_state);
+            bts_gap_callbacks->bond_state_changed_cb(new_device, gap_msg->event_data.data.bond_state);
             if (gap_msg->event_data.data.bond_state == SERVICE_BT_BOND_STATE_BONDED) {
                 gap_update_data_storage();
             }
@@ -287,6 +283,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
             if (gap_msg->event_data.data.bond_state == SERVICE_BT_BOND_STATE_NONE) {
                 gap_update_data_storage();
             }
+            free(new_device);
         }
         break;
     }
