@@ -21,6 +21,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#define LOG_TAG "btm_lescan"
 
 #include "btm_le_scan.h"
 
@@ -31,36 +32,39 @@
 #include "bts_le_scan.h"
 #include "log.h"
 
-#define LOG_TAG "btm_lescan"
 typedef struct {
     uint8_t scanner_id;
     btm_le_scan_callbacks* cb;
 } btm_lescan_hdl_t;
 
 static btm_interface_t* bt_mgr_interface = NULL;
-static bts_le_scan_interface_t* scanner_interface = NULL;
+static const bts_le_scan_interface_t* scanner_interface = NULL;
 
-static void on_le_scan_result(btm_lescan_hdl_t* handle, const scan_result_t* result)
+static void on_le_scan_result(void* hdl, const scan_result_t* result)
 {
+    btm_lescan_hdl_t* handle = (btm_lescan_hdl_t*)hdl;
     CHECK_PTR(handle);
     BT_CBACK(handle->cb, le_scan_result_cb, handle, result);
 }
 
-static void on_le_scan_failed(btm_lescan_hdl_t* handle, int error)
+static void on_le_scan_failed(void* hdl, int error)
 {
+    btm_lescan_hdl_t* handle = (btm_lescan_hdl_t*)hdl;
     CHECK_PTR(handle);
     BT_CBACK(handle->cb, le_scan_failed_cb, handle, error);
 }
 
-static void on_le_scan_started(btm_lescan_hdl_t* handle, uint8_t scanner_id)
+static void on_le_scan_started(void* hdl, uint8_t scanner_id)
 {
+    btm_lescan_hdl_t* handle = (btm_lescan_hdl_t*)hdl;
     CHECK_PTR(handle);
     handle->scanner_id = scanner_id;
     BT_CBACK(handle->cb, le_scan_started_cb, handle);
 }
 
-static void on_le_scan_stopped(btm_lescan_hdl_t* handle)
+static void on_le_scan_stopped(void* hdl)
 {
+    btm_lescan_hdl_t* handle = (btm_lescan_hdl_t*)hdl;
     CHECK_PTR(handle);
     BT_CBACK(handle->cb, le_scan_stopped_cb, handle);
     free(handle);
@@ -73,13 +77,13 @@ static bts_ble_scanner_callbacks bts_le_scan_cb = {
     .bts_ble_scan_stopped_cb = on_le_scan_stopped,
 };
 
-static bt_result_code start_scan(btm_lescan_hdl_t** handle_ptr, ble_scan_filter_t* filter, scan_params_t* setttings,
+static bt_result_code start_scan(void** handle_ptr, ble_scan_filter_t* filter, scan_params_t* setttings,
     btm_le_scan_callbacks* cb)
 {
     CHECK_PTR_RETURN(scanner_interface, BT_RESULT_STATE_NOT_ON);
-    *handle_ptr = (btm_lescan_hdl_t*)malloc(sizeof(btm_lescan_hdl_t));
+    *handle_ptr = (void*)malloc(sizeof(btm_lescan_hdl_t));
     memset(*handle_ptr, 0, sizeof(btm_lescan_hdl_t));
-    (*handle_ptr)->cb = cb;
+    ((btm_lescan_hdl_t*)(*handle_ptr))->cb = cb;
 
     bts_lescan_hdl_t client = {
         .filter = filter,
@@ -97,12 +101,12 @@ static bt_result_code start_scan(btm_lescan_hdl_t** handle_ptr, ble_scan_filter_
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code stop_scan(btm_lescan_hdl_t* handle)
+static bt_result_code stop_scan(void* handle)
 {
     CHECK_PTR_RETURN(scanner_interface, BT_RESULT_STATE_NOT_ON);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
 
-    bt_result_code ret = scanner_interface->stop_scan(handle->scanner_id);
+    bt_result_code ret = scanner_interface->stop_scan(((btm_lescan_hdl_t*)handle)->scanner_id);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail,stop_scan err:%d", ret);
         return ret;
@@ -125,7 +129,7 @@ btm_le_scan_interface_t* get_btm_lescan_interface(void* bt_mgr)
         return NULL;
     }
     bt_mgr_interface = (btm_interface_t*)(bt_mgr);
-    gatt_interface_t* interface = (gatt_interface_t*)bt_mgr_interface->get_profile_interface(BT_PROFILE_GATT);
+    const gatt_interface_t* interface = (gatt_interface_t*)bt_mgr_interface->get_profile_interface(BT_PROFILE_GATT);
     if (!interface) {
         BT_LOGE("fail, get_profile_interface gatt");
         return NULL;

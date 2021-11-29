@@ -17,11 +17,11 @@ typedef void (*bts_device_found_callback)(bt_device_t* device);
 typedef void (*bts_bond_state_changed_callback)(bt_device_t* device, bt_bond_state state);
 typedef void (*bts_connection_state_callback)(bt_device_t* device, bt_connection_state state);
 typedef void (*bts_hci_event_callback)(hci_event_t* hci_event);
-//typedef void (*bts_service_discovered_callback)( bd_addr_t remote_addr, br_service_t* services, uint16_t size);
+//typedef void (*bts_service_discovered_callback)( bt_address remote_addr, br_service_t* services, uint16_t size);
 typedef void (*bts_update_ble_bonded_devices_callback)(ble_keys_t* bonded_device_list, uint8_t count_in);
 typedef void (*bts_smp_request_callback)(ssp_request_data_t* request_data);
-typedef void (*bts_ble_phy_update_callback)(bd_addr_t remote_addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status status);
-typedef void (*bts_ble_address_callback)(bd_addr_t ble_addr, ble_addr_type ble_addr_type);
+typedef void (*bts_ble_phy_update_callback)(bt_address remote_addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status status);
+typedef void (*bts_ble_address_callback)(bt_address ble_addr, ble_addr_type ble_addr_type);
 typedef void (*bts_pairing_request_callback)(BD_ADDR remote_addr, bool local_initiate, bool is_bondable);
 typedef struct {
     /* * set to sizeof(GAP_CALLBACKS_S) */
@@ -114,7 +114,7 @@ void gap_read_data_storage(void);
 void gap_update_data_storage(void);
 
 bt_result_code gap_create_factory_info(bool force);
-bt_result_code gap_update_device_name(uint8_t* bt_name, size_t len_name);
+bt_result_code gap_update_device_name(uint8_t* bt_name, uint8_t len_name);
 bt_result_code gap_read_device_info(void);
 
 #endif

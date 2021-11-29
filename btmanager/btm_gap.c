@@ -181,7 +181,7 @@ static void btm_smp_request_callback(void* gap_handle, ssp_request_data_t* reque
     context->gap_callbacks->smp_requeset_cb(gap_handle, request_data);
 }
 
-static void btm_ble_phy_update_callback(void* gap_handle, bd_addr_t remote_addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status status)
+static void btm_ble_phy_update_callback(void* gap_handle, bt_address remote_addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status status)
 {
     if (!gap_handle)
         return;
@@ -192,7 +192,7 @@ static void btm_ble_phy_update_callback(void* gap_handle, bd_addr_t remote_addr,
     context->gap_callbacks->ble_phy_update_cb(gap_handle, remote_addr, tx_phy, rx_phy, status);
 }
 
-static void btm_ble_address_callback(void* gap_handle, bd_addr_t bd_addr, ble_addr_type addr_type)
+static void btm_ble_address_callback(void* gap_handle, bt_address bd_addr, ble_addr_type addr_type)
 {
     if (!gap_handle)
         return;
@@ -243,7 +243,7 @@ static bt_result_code btm_gap_register_callbacks(void* manager_handle, void** ga
     context->gap_callbacks = callbacks;
     context->manager_context = manager_handle;
     context->service_interface = get_gap_service_instance();
-    ret = context->service_interface->gap_register_callbacks(manager_handle, context, &service_callbacks);
+    ret = context->service_interface->gap_register_callbacks(manager_handle, (void**)&context, &service_callbacks);
     return ret;
 }
 

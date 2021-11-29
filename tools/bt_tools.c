@@ -39,6 +39,7 @@
 
 #include "btm_gap.h"
 #include "btm_manager.h"
+#include "stack_adapter_gap.h"
 
 #include "bt_tools.h"
 #include "utils/log.h"
@@ -186,7 +187,6 @@ static int get_local_address(void* handle, int argc, char** argv)
     gap_test_interface->bt_get_local_address(gap_hanlde, addr);
     BT_LOGD("%s, bt_address :%s", __func__, addr_str(addr));
     return 0;
-
 }
 
 static int set_local_io_capability(void* handle, int argc, char** argv)
@@ -212,7 +212,7 @@ static int set_local_name(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return -1;
-    char *name = malloc(strlen(argv[0]) + 1);
+    char* name = malloc(strlen(argv[0]) + 1);
     memcpy(name, argv[0], strlen(argv[0]));
     name[strlen(argv[0]) + 1] = 0;
     gap_test_interface->bt_set_local_name(gap_hanlde, argv[0], strlen(argv[0]) + 1);
@@ -491,7 +491,7 @@ void test_bond_state_changed_callback(void* handle, bt_device_t* device, bt_bond
     default:
         break;
     }
-    BT_LOGD("%s, state:%s ", __func__,  bond_state);
+    BT_LOGD("%s, state:%s ", __func__, bond_state);
     BT_LOGD("%s, device : %s, state: %s", __func__, addr_str(device->addr), bond_state);
 }
 void test_local_name_callback(void* handle, char* bt_name, uint8_t length)
@@ -512,8 +512,8 @@ void test_smp_request_callback(void* gap_handle, ssp_request_data_t* request_dat
 }
 void test_pairing_request_callback(void* gap_handle, BD_ADDR remote_addr, bool local_initiate, bool is_bondable)
 {
-    BT_LOGD("%s,local_initiate: %d, is_bondable:%d,  device :%02x:%02x:%02x:%02x:%02x:%02x", __func__, 
-    local_initiate, is_bondable, remote_addr[0], remote_addr[1], remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5]);
+    BT_LOGD("%s,local_initiate: %d, is_bondable:%d,  device :%02x:%02x:%02x:%02x:%02x:%02x", __func__,
+        local_initiate, is_bondable, remote_addr[0], remote_addr[1], remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5]);
 }
 
 btm_gap_callbacks_t gap_test_tool_callbacks = {
@@ -541,7 +541,6 @@ static int enable_cmd(void* handle, int argc, char** argv)
 
     return 0;
 }
-
 
 static int disable_cmd(void* handle, int argc, char** argv)
 {

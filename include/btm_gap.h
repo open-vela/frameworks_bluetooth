@@ -205,7 +205,7 @@ typedef void (*smp_request_callback)(void* gap_handle, ssp_request_data_t* reque
  * @param[in] status - phy update success or failed.
  * @return   void
  */
-typedef void (*ble_phy_update_callback)(void* gap_handle, bd_addr_t remote_addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status status);
+typedef void (*ble_phy_update_callback)(void* gap_handle, bt_address remote_addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status status);
 /**
  * @brief ble address update callback- invoked in response to ble_set_address.
  * @param[in] handle - gap handle, must be create before this funciton.
@@ -213,7 +213,7 @@ typedef void (*ble_phy_update_callback)(void* gap_handle, bd_addr_t remote_addr,
  * @param[in] ble_addr_type - rx phy type updated.
  * @return   void
  */
-typedef void (*ble_address_callback)(void* gap_handle, bd_addr_t ble_addr, ble_addr_type ble_addr_type);
+typedef void (*ble_address_callback)(void* gap_handle, bt_address ble_addr, ble_addr_type ble_addr_type);
 /**
  * @brief ble address update callback- invoked in response to ble_set_address.
  * @param[in] handle -gap handle, must be create before this funciton.
