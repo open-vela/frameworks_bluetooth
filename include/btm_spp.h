@@ -55,21 +55,6 @@ typedef enum {
     SPP_PTY_MODE_RAW
 } spp_pty_mode_t;
 
-#if 0
-typedef struct {
-  bt_device_t device;
-  uint16_t port;
-  int fd;
-  char *name;
-  uint16_t uuid16;
-} spp_conn_t;
-
-typedef struct {
-  uint16_t port;
-  uint16_t uuid16;
-} spp_server_conn_t;
-#endif
-
 typedef void (*spp_connection_state_callback)(const bt_address addr, uint16_t port, spp_connection_state_t state);
 typedef void (*spp_pty_open_callback)(const bt_address addr, uint16_t port, char* name, int fd);
 
