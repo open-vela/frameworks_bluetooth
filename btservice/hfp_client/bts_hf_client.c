@@ -388,7 +388,7 @@ static void adp_clip_cb(BD_ADDR remote_addr, const char* number, const char* nam
     hf_client_send_message(sm, msg);
 }
 
-void adp_current_call_callback(BD_ADDR remote_addr, uint32_t idx,
+static void adp_current_call_callback(BD_ADDR remote_addr, uint32_t idx,
     SERVICE_HFP_CURRENT_CALL_DIR dir,
     SERVICE_HFP_CURRENT_CALL_STATUS status, SERVICE_HFP_CURRENT_CALL_MODE mode,
     SERVICE_HFP_CURRENT_CALL_MPTY mpty, const char* number, uint32_t type)

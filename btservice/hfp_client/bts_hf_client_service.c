@@ -43,82 +43,71 @@
 static hf_client_callbacks_t* hfCallbacks = NULL;
 
 void hf_svr_connection_state_callback(
-    const bt_address addr, hf_client_connection_state_t state)
+    bt_address addr, hf_client_connection_state_t state)
 {
-    BT_LOGD("%s", __func__);
     if (hfCallbacks)
         hfCallbacks->connection_state_cb(addr, state);
 }
 void hf_svr_audio_state_callback(
-    const bt_address addr, hf_client_audio_state_t state)
+    bt_address addr, hf_client_audio_state_t state)
 {
-    BT_LOGD("%s", __func__);
     if (hfCallbacks)
         hfCallbacks->audio_state_cb(addr, state);
 }
-void hf_svr_vr_cmd_callback(const bt_address addr,
+void hf_svr_vr_cmd_callback(bt_address addr,
     hf_client_vr_state_t state)
 {
-    BT_LOGD("%s", __func__);
     if (hfCallbacks)
         hfCallbacks->vr_cmd_cb(addr, state);
 }
-void hf_svr_call_callback(const bt_address addr,
+void hf_svr_call_callback(bt_address addr,
     hf_client_call_t call)
 {
-    BT_LOGD("%s", __func__);
     if (hfCallbacks)
         hfCallbacks->call_cb(addr, call);
 }
 void hf_svr_callsetup_callback(
-    const bt_address addr, hf_client_callsetup_t callsetup)
+    bt_address addr, hf_client_callsetup_t callsetup)
 {
-    BT_LOGD("%s", __func__);
     if (hfCallbacks)
         hfCallbacks->callsetup_cb(addr, callsetup);
 }
-void hf_svr_callheld_callback(const bt_address addr,
+void hf_svr_callheld_callback(bt_address addr,
     hf_client_callheld_t callheld)
 {
-    BT_LOGD("%s", __func__);
     if (hfCallbacks)
         hfCallbacks->callheld_cb(addr, callheld);
 }
-void hf_svr_clip_callback(const bt_address addr,
+void hf_svr_clip_callback(bt_address addr,
     const char* number, const char* name)
 {
-    BT_LOGD("%s", __func__);
     if (hfCallbacks)
         hfCallbacks->clip_cb(addr, number, name);
 }
-void hf_svr_current_calls_callback(const bt_address addr, int index,
+void hf_svr_current_calls_callback(bt_address addr, int index,
     hf_client_call_direction_t dir,
     hf_client_call_state_t state,
     hf_client_call_mpty_type_t mpty,
     const char* number)
 {
-    BT_LOGD("%s", __func__);
     if (hfCallbacks)
         hfCallbacks->current_calls_cb(addr, index, dir, state, mpty, number);
 }
 void hf_svr_volume_change_callback(
-    const bt_address addr, hf_client_volume_type_t type, int volume)
+    bt_address addr, hf_client_volume_type_t type, int volume)
 {
-    BT_LOGD("%s", __func__);
     if (hfCallbacks)
         hfCallbacks->volume_change_cb(addr, type, volume);
 }
 void hf_svr_cmd_complete_callback(
-    const bt_address addr, const char* resp)
+    bt_address addr, const char* resp)
 {
-    BT_LOGD("%s", __func__);
     if (hfCallbacks)
         hfCallbacks->cmd_complete_cb(addr, resp);
 }
-void hf_svr_ring_indication_callback(const bt_address addr,
+void hf_svr_ring_indication_callback(bt_address addr,
     hf_client_in_band_ring_state_t state)
 {
-    BT_LOGD("%s", __func__);
     if (hfCallbacks)
         hfCallbacks->ring_indication_cb(addr, state);
 }

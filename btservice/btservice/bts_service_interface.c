@@ -6,6 +6,8 @@
 #include "bts_service_interface.h"
 #include "bts_gap.h"
 #include "bts_gatt_service.h"
+#include "bts_spp.h"
+#include "bts_hf_client.h"
 #include "bts_service.h"
 
 #include "log.h"
