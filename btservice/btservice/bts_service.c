@@ -27,20 +27,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "btm_gap.h"
+#include "btm_manager.h"
 #include "bts_gap.h"
 #include "bts_gatt_service.h"
 #include "bts_hf_client.h"
-#include "bts_spp.h"
 #include "bts_service.h"
-#include "btm_gap.h"
-#include "btm_manager.h"
+#include "bts_spp.h"
 #include "stack_adapter_gap.h"
 #include "stack_adapter_service_base.h"
 #include "uv.h"
 
 #define LOG_TAG "bts_service"
 #include "log.h"
-
 
 typedef struct
 {
@@ -70,7 +69,7 @@ static bts_profile_callbacks profiles_callbacks[BT_PROFILE_MAX_ID];
 static struct list_node bts_msg_list = LIST_INITIAL_VALUE(bts_msg_list);
 
 extern void InitTransportLayer(void);
- extern void ScheduleLoop(void);
+extern void ScheduleLoop(void);
 
 void bts_uv_close_cb(uv_handle_t* handle)
 {
@@ -225,18 +224,15 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
 
 void bts_service_cleanup(void)
 {
-
 }
 
-void stack_state_change(stack_state_t state)
+void stack_state_change(bt_service_state state)
 {
-    if (BT_STATE_ON == state) {
-        service_state = BT_MANAGER_STATE_ON;
+    service_state = state;
+    if (BT_MANAGER_STATE_ON == state) {
         gap_create_factory_info(false);
         gap_read_device_info();
-    }
-    if (BT_STATE_OFF == state) {
-        service_state = BT_MANAGER_STATE_OFF;
+        gap_read_data_storage();
     }
     bluetooth_upper_callbacks->adapter_state_changed_cb(service_state);
 }

@@ -20,7 +20,7 @@ typedef struct {
     bt_manager_bt_state (*bt_get_state)(void* handle);
     bt_manager_ble_state (*ble_get_state)(void* handle);
     const void* (*get_profile_interface)(const char* profile_id);
-    void (*stack_state_change)(stack_state_t state);
+    void (*stack_state_change)(bt_service_state state);
 
 } bluetooth_service_interface;
 

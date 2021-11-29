@@ -22,7 +22,6 @@ typedef void (*bts_process_int_work_func)(int command_id, char* data, size_t dat
 
 typedef void (*process_in_timer)(char* data);
 
-
 typedef struct {
     bt_profile_id profile;
     uint16_t event;
@@ -59,7 +58,7 @@ bt_result_code bts_service_ble_disable(void);
 bt_service_state bts_service_bt_get_state(void);
 ble_service_state bts_service_ble_get_state(void);
 void bts_service_cleanup(void);
-void stack_state_change(stack_state_t state);
+void stack_state_change(bt_service_state state);
 bool bts_send_uv_msg(bt_profile_id id, void* data, size_t size);
 bool bts_register_profile_process(bt_profile_id id, bts_profile_callbacks cb);
 bool bts_unregister_profile_process(bt_profile_id id);
