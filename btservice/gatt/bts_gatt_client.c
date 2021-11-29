@@ -21,17 +21,18 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#define LOG_TAG "bts_gattc"
 
 #include "bts_gatt_client.h"
 
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bts_service.h"
 #include "log.h"
+#include "stack_adapter_gap.h"
 #include "stack_adapter_gatt.h"
-
-#define LOG_TAG "bts_gattc"
 
 typedef struct
 {
@@ -54,7 +55,7 @@ typedef struct
 
 typedef struct {
     gatt_element_t* element;
-    uint16_t size
+    uint16_t size;
 } bts_gattc_service_discover_s;
 
 typedef struct bts_gatt_client {
@@ -70,7 +71,7 @@ typedef struct {
 
 typedef struct {
     int32_t rssi;
-    gatt_status_t status
+    gatt_status_t status;
 } bts_gattc_read_rssi_s;
 
 typedef struct {
@@ -91,12 +92,12 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size);
 
 static struct list_node gattc_list = LIST_INITIAL_VALUE(gattc_list);
 
-static bts_gattc_hdl_t* find_gattc_handle(bd_addr_t addr)
+static bts_gattc_hdl_t* find_gattc_handle(bt_address addr)
 {
     bts_gattc_hdl_t* gattc;
     list_for_every_entry(&gattc_list, gattc, bts_gattc_hdl_t, node)
     {
-        if (!memcmp(gattc->remote_addr, addr, sizeof(bd_addr_t))) {
+        if (!memcmp(gattc->remote_addr, addr, sizeof(bt_address))) {
             return gattc;
         }
     }
@@ -111,7 +112,7 @@ static bool add_gattc_handle(bts_gattc_hdl_t handle)
 
     gattc->callbacks = handle.callbacks;
     gattc->btm_handle = handle.btm_handle;
-    memcpy(gattc->remote_addr, handle.remote_addr, sizeof(bd_addr_t));
+    memcpy(gattc->remote_addr, handle.remote_addr, sizeof(bt_address));
     list_add_tail(&gattc_list, &gattc->node);
     return true;
 }
@@ -151,7 +152,7 @@ static bts_gattc_msg_t* create_adp_msg(uint8_t event, bts_gattc_hdl_t* handle, v
     return msg;
 }
 
-static void on_client_connection_state_changed(bd_addr_t remote_addr, profile_state_t state)
+static void on_client_connection_state_changed(bt_address remote_addr, profile_state_t state)
 {
     BT_LOGD("%s, remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x] state:%d", __func__, remote_addr[0],
         remote_addr[1], remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5], state);
@@ -163,7 +164,7 @@ static void on_client_connection_state_changed(bd_addr_t remote_addr, profile_st
     send_msg(msg);
 }
 
-static void on_client_service_discovered(bd_addr_t remote_addr, gatt_element_t* element,
+static void on_client_service_discovered(bt_address remote_addr, gatt_element_t* element,
     uint16_t size)
 {
     BT_LOGD("%s", __func__);
@@ -186,7 +187,7 @@ static void on_client_service_discovered(bd_addr_t remote_addr, gatt_element_t* 
     send_msg(msg);
 }
 
-static void on_client_read_result(bd_addr_t remote_addr, gatt_element_t* element, uint8_t* value,
+static void on_client_read_result(bt_address remote_addr, gatt_element_t* element, uint8_t* value,
     uint16_t size, gatt_status_t status)
 {
     BT_LOGD("%s", __func__);
@@ -205,7 +206,7 @@ static void on_client_read_result(bd_addr_t remote_addr, gatt_element_t* element
     send_msg(msg);
 }
 
-static void on_client_write_result(bd_addr_t remote_addr, gatt_element_t* element,
+static void on_client_write_result(bt_address remote_addr, gatt_element_t* element,
     gatt_status_t status)
 {
     BT_LOGD("%s", __func__);
@@ -221,7 +222,7 @@ static void on_client_write_result(bd_addr_t remote_addr, gatt_element_t* elemen
     send_msg(msg);
 }
 
-static void on_client_nofity_request(bd_addr_t remote_addr, gatt_element_t* element,
+static void on_client_nofity_request(bt_address remote_addr, gatt_element_t* element,
     uint8_t* value, uint16_t size)
 {
     BT_LOGD("%s", __func__);
@@ -239,7 +240,7 @@ static void on_client_nofity_request(bd_addr_t remote_addr, gatt_element_t* elem
     send_msg(msg);
 }
 
-static void on_client_rssi_read(bd_addr_t remote_addr, int32_t rssi,
+static void on_client_rssi_read(bt_address remote_addr, int32_t rssi,
     gatt_status_t status)
 {
     BT_LOGD("%s", __func__);
@@ -254,7 +255,7 @@ static void on_client_rssi_read(bd_addr_t remote_addr, int32_t rssi,
     send_msg(msg);
 }
 
-static void on_client_phy_read(bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
+static void on_client_phy_read(bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
 {
     BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
@@ -268,7 +269,7 @@ static void on_client_phy_read(bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy
     send_msg(msg);
 }
 
-static void on_client_phy_update(bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
+static void on_client_phy_update(bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx, gatt_status_t status)
 {
     BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
@@ -282,7 +283,7 @@ static void on_client_phy_update(bd_addr_t remote_addr, ble_phy_type_t tx, ble_p
     send_msg(msg);
 }
 
-static void on_client_mtu_changed(bd_addr_t remote_addr, uint32_t mtu)
+static void on_client_mtu_changed(bt_address remote_addr, uint32_t mtu, gatt_status_t status)
 {
     BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
@@ -326,7 +327,7 @@ static bt_result_code gatt_client_connect(bts_gattc_hdl_t handle)
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_client_disconnect(bd_addr_t addr)
+static bt_result_code gatt_client_disconnect(bt_address addr)
 {
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
@@ -340,7 +341,7 @@ static bt_result_code gatt_client_disconnect(bd_addr_t addr)
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_client_discover_services(bd_addr_t addr, bt_uuid_t uuid)
+static bt_result_code gatt_client_discover_services(bt_address addr, bt_uuid_t uuid)
 {
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
@@ -362,7 +363,7 @@ static bt_result_code gatt_client_discover_services(bd_addr_t addr, bt_uuid_t uu
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_client_read_request(bd_addr_t addr, gatt_element_t* element)
+static bt_result_code gatt_client_read_request(bt_address addr, gatt_element_t* element)
 {
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
@@ -375,7 +376,7 @@ static bt_result_code gatt_client_read_request(bd_addr_t addr, gatt_element_t* e
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_client_write_request(bd_addr_t addr, gatt_element_t* element, uint8_t* value,
+static bt_result_code gatt_client_write_request(bt_address addr, gatt_element_t* element, uint8_t* value,
     uint16_t length)
 {
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
@@ -389,7 +390,7 @@ static bt_result_code gatt_client_write_request(bd_addr_t addr, gatt_element_t* 
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_client_register_notification(bd_addr_t addr, gatt_element_t* element, bool enable)
+static bt_result_code gatt_client_register_notification(bt_address addr, gatt_element_t* element, bool enable)
 {
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
@@ -402,7 +403,7 @@ static bt_result_code gatt_client_register_notification(bd_addr_t addr, gatt_ele
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_client_read_rssi(bd_addr_t addr)
+static bt_result_code gatt_client_read_rssi(bt_address addr)
 {
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
@@ -415,7 +416,7 @@ static bt_result_code gatt_client_read_rssi(bd_addr_t addr)
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_client_read_phy(bd_addr_t addr)
+static bt_result_code gatt_client_read_phy(bt_address addr)
 {
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
@@ -428,7 +429,7 @@ static bt_result_code gatt_client_read_phy(bd_addr_t addr)
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_client_update_phy(bd_addr_t addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+static bt_result_code gatt_client_update_phy(bt_address addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
@@ -441,7 +442,7 @@ static bt_result_code gatt_client_update_phy(bd_addr_t addr, ble_phy_type_t tx_p
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_client_update_mtu(bd_addr_t addr, uint32_t mtu)
+static bt_result_code gatt_client_update_mtu(bt_address addr, uint32_t mtu)
 {
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
@@ -454,7 +455,7 @@ static bt_result_code gatt_client_update_mtu(bd_addr_t addr, uint32_t mtu)
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_client_update_connection_parameter(bd_addr_t addr, uint32_t min_interval, uint32_t max_interval,
+static bt_result_code gatt_client_update_connection_parameter(bt_address addr, uint32_t min_interval, uint32_t max_interval,
     uint32_t latency, uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length)
 {
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
@@ -485,19 +486,19 @@ static const bts_gattc_interface_t gatt_client_intance = {
     .update_connection_parameter = gatt_client_update_connection_parameter,
 };
 
-const bts_gattc_interface_t* get_bts_gattc_instance()
+const bts_gattc_interface_t* get_bts_gattc_instance(void)
 {
     return &gatt_client_intance;
 }
 
-static void handle_msg_received(bt_profile_id id, void* data, size_t size)
+static void handle_msg_received(bt_profile_id id, void* value, size_t size)
 {
     if (id != BT_PROFILE_GATTC_ID) {
         BT_LOGE("error, invalid priofile id:%d", id);
         return;
     }
     BT_LOGD("%s", __func__);
-    bts_gattc_msg_t* msg = (bts_gattc_msg_t*)(data);
+    bts_gattc_msg_t* msg = (bts_gattc_msg_t*)(value);
     if (!msg) {
         BT_LOGE("%s fail, msg null", __func__);
         return;

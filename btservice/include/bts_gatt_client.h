@@ -39,7 +39,7 @@
 #include "btm_manager.h"
 #include "bts_common.h"
 
-typedef void (*bts_gattc_connect_state_changed_callback)(void* handle, bt_connection_state state);
+typedef void (*bts_gattc_connect_state_changed_callback)(void* handle, profile_state_t state);
 typedef void (*bts_gattc_services_discovered_callback)(void* handle, gatt_element_t* element, uint16_t size);
 typedef void (*bts_gattc_read_rsp_callback)(void* handle, gatt_element_t* element, uint8_t* value, uint16_t size, gatt_status_t status);
 typedef void (*bts_gattc_write_req_callback)(void* handle, gatt_element_t* element, gatt_status_t status);
@@ -66,7 +66,7 @@ typedef struct
     struct list_node node;
 
     const bts_gatt_client_callbacks* callbacks;
-    bd_addr_t remote_addr;
+    bt_address remote_addr;
     void* btm_handle;
 } bts_gattc_hdl_t;
 
@@ -74,16 +74,16 @@ typedef struct {
     size_t size;
 
     bt_result_code (*connect)(bts_gattc_hdl_t handle);
-    bt_result_code (*disconnect)(bd_addr_t addr);
-    bt_result_code (*discover_services)(bd_addr_t addr, bt_uuid_t uuid);
-    bt_result_code (*read_request)(bd_addr_t addr, gatt_element_t* element);
-    bt_result_code (*write_request)(bd_addr_t addr, gatt_element_t* element, uint8_t* value, uint16_t length);
-    bt_result_code (*register_notification)(bd_addr_t addr, gatt_element_t* element, bool enable);
-    bt_result_code (*read_rssi)(bd_addr_t addr);
-    bt_result_code (*read_phy)(bd_addr_t addr);
-    bt_result_code (*update_phy)(bd_addr_t addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
-    bt_result_code (*update_mtu)(bd_addr_t addr, uint32_t mtu);
-    bt_result_code (*update_connection_parameter)(bd_addr_t addr, uint32_t min_interval, uint32_t max_interval,
+    bt_result_code (*disconnect)(bt_address addr);
+    bt_result_code (*discover_services)(bt_address addr, bt_uuid_t uuid);
+    bt_result_code (*read_request)(bt_address addr, gatt_element_t* element);
+    bt_result_code (*write_request)(bt_address addr, gatt_element_t* element, uint8_t* value, uint16_t length);
+    bt_result_code (*register_notification)(bt_address addr, gatt_element_t* element, bool enable);
+    bt_result_code (*read_rssi)(bt_address addr);
+    bt_result_code (*read_phy)(bt_address addr);
+    bt_result_code (*update_phy)(bt_address addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
+    bt_result_code (*update_mtu)(bt_address addr, uint32_t mtu);
+    bt_result_code (*update_connection_parameter)(bt_address addr, uint32_t min_interval, uint32_t max_interval,
         uint32_t latency, uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length);
 } bts_gattc_interface_t;
 

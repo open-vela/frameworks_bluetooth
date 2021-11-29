@@ -29,7 +29,6 @@
 #include "log.h"
 #include <pthread.h>
 #include <stdio.h>
-#include "log.h"
 
 btm_leadv_hdl_t* adv_handle;
 
@@ -49,17 +48,12 @@ static void le_adv_failed_callback(void* handle, int error)
     BT_LOGD(" %s:err:%d", __func__, error);
 }
 
-void manager_init_status_changed_callback(bt_result_code status)
-{
-}
-
 void manager_state_changed_callback(bt_manager_bt_state state)
 {
 }
 
 static bt_mgr_callback_t mgt_cb = {
     .bt_manager_state_changed_callback_cb = manager_state_changed_callback,
-    .init_status_changed_callback_cb = manager_init_status_changed_callback,
 };
 
 int main(int argc, FAR char* argv[])

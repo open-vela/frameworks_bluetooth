@@ -41,7 +41,7 @@
 
 typedef void (*bts_le_advertise_started_callback)(void* context, uint8_t adv_id);
 typedef void (*bts_le_advertise_stopped_callback)(void* context, uint8_t adv_id);
-typedef void (*bts_le_advertise_failed_callback)(uint8_t adv_id, int error);
+typedef void (*bts_le_advertise_failed_callback)(void* context, int error);
 typedef struct {
     bts_le_advertise_started_callback bts_le_advertise_started_cb;
     bts_le_advertise_stopped_callback bts_le_advertise_stopped_cb;

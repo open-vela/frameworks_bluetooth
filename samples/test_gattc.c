@@ -31,11 +31,10 @@
 #include "btm_manager.h"
 #include "log.h"
 
-
-static bd_addr_t remote_address;
+static bt_address remote_address;
 static void* client_handle;
 static btm_gatt_client_interface_t* client_interface = NULL;
-static uint16_t gatt_mtu = 20;
+static uint32_t gatt_mtu = 20;
 #define THROUGHTPUT_HORIZON 5
 static volatile uint16_t throughtput_cursor = 1;
 
@@ -61,7 +60,7 @@ static void on_scan_result_callback(void* handle, const scan_result_t* result)
         result->addr_type, result->device_type, result->evt_type);
 }
 
-static void on_client_connection_state_changed_callback(void* handle, bd_addr_t remote_addr, profile_state_t state)
+static void on_client_connection_state_changed_callback(void* handle, bt_address remote_addr, profile_state_t state)
 {
     BT_LOGD("%s, state:%d", __func__, state);
 }
@@ -120,13 +119,13 @@ static void gatt_display_service(gatt_element_t* elements, uint16_t size)
     BT_LOGD(">");
 }
 
-static void on_client_service_discovered_callback(void* handle, bd_addr_t remote_addr, gatt_element_t* element, uint16_t size)
+static void on_client_service_discovered_callback(void* handle, bt_address remote_addr, gatt_element_t* element, uint16_t size)
 {
     BT_LOGD("%s", __func__);
     gatt_display_service(element, size);
 }
 
-static void on_client_read_result_callback(void* handle, bd_addr_t remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size, gatt_status_t status)
+static void on_client_read_result_callback(void* handle, bt_address remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size, gatt_status_t status)
 {
     BT_LOGD("%s, size:%d", __func__, size);
     for (int i = 0; i < size; i++) {
@@ -134,33 +133,33 @@ static void on_client_read_result_callback(void* handle, bd_addr_t remote_addr, 
     }
 }
 
-static void on_client_write_result_callback(void* handle, bd_addr_t remote_addr, gatt_element_t* element, gatt_status_t status)
+static void on_client_write_result_callback(void* handle, bt_address remote_addr, gatt_element_t* element, gatt_status_t status)
 {
     BT_LOGD("%s, status:%d", __func__, status);
     throughtput_cursor--;
 }
 
-static void on_client_nofity_request_callback(void* handle, bd_addr_t remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size)
+static void on_client_nofity_request_callback(void* handle, bt_address remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size)
 {
     BT_LOGD("%s, size:%d", __func__, size);
 }
 
-static void on_client_rssi_read_callback(void* handle, bd_addr_t remote_addr, int32_t rssi, gatt_status_t status)
+static void on_client_rssi_read_callback(void* handle, bt_address remote_addr, int32_t rssi, gatt_status_t status)
 {
     BT_LOGD("%s rssi:%d", __func__, rssi);
 }
 
-static void on_client_phy_read_callback(void* handle, bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
+static void on_client_phy_read_callback(void* handle, bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
 {
     BT_LOGD("%s, tx_phy:%d, rx_phy:%d", __func__, tx, rx);
 }
 
-static void on_client_phy_update_callback(void* handle, bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
+static void on_client_phy_update_callback(void* handle, bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
 {
     BT_LOGD("%s, tx_phy:%d, rx_phy:%d", __func__, tx, rx);
 }
 
-static void on_client_mtu_changed_callback(void* handle, bd_addr_t remote_addr, uint32_t mtu)
+static void on_client_mtu_changed_callback(void* handle, bt_address remote_addr, uint32_t mtu)
 {
     BT_LOGD("%s, mtu:%d", __func__, mtu);
     gatt_mtu = mtu;
@@ -205,11 +204,6 @@ static void test_client_throughtout_write(uint32_t times, uint16_t mtu)
     BT_LOGD("%s done", __func__);
 }
 
-static void manager_init_status_changed_callback(bt_result_code status)
-{
-    BT_LOGD("%s, state:%d", __func__, status);
-}
-
 static void manager_state_changed_callback(bt_manager_bt_state state)
 {
     BT_LOGD("%s, state:%d", __func__, state);
@@ -217,7 +211,6 @@ static void manager_state_changed_callback(bt_manager_bt_state state)
 
 static bt_mgr_callback_t mgt_cb = {
     .bt_manager_state_changed_callback_cb = manager_state_changed_callback,
-    //.init_status_changed_callback_cb = manager_init_status_changed_callback,
 };
 
 static btm_le_scan_callbacks scan_cb = {
@@ -259,7 +252,7 @@ int main(int argc, FAR char* argv[])
         char ch = getchar();
         switch (ch) {
         case 'a': {
-            bd_addr_t remote_address;
+            bt_address remote_address;
             BT_LOGD("please input addr ");
             scanf("%x:%x:%x:%x:%x:%x", &remote_address[0], &remote_address[1], &remote_address[2], &remote_address[3], &remote_address[4], &remote_address[5]);
             BT_LOGD("remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5]);
@@ -373,12 +366,12 @@ int main(int argc, FAR char* argv[])
                 BT_LOGE("fail, get_btm_lescan_interface");
                 break;
             }
-            scan_params_t filter = {
+            scan_params_t scan_params = {
                 .scan_interval = 300,
                 .scan_window = 500,
                 .scan_phy = BLE_1M_PHY,
             };
-            scan_interface->start_scan(&scan_handle, &filter, NULL, &scan_cb);
+            scan_interface->start_scan(&scan_handle, NULL, &scan_params, &scan_cb);
             break;
         }
         case 'v': {

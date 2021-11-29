@@ -21,6 +21,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#define LOG_TAG "bts_gatts"
 
 #include "bts_gatt_server.h"
 
@@ -30,9 +31,8 @@
 
 #include "bts_service.h"
 #include "log.h"
+#include "stack_adapter_gap.h"
 #include "stack_adapter_gatt.h"
-
-#define LOG_TAG "bts_gatts"
 
 typedef struct
 {
@@ -56,8 +56,8 @@ typedef struct
 } bts_gatts_msg_t;
 
 typedef struct {
-    bd_addr_t addr;
-    profile_state_t state
+    bt_address addr;
+    profile_state_t state;
 } bts_gatts_state_s;
 
 typedef struct {
@@ -67,7 +67,7 @@ typedef struct {
 } bts_gatts_element_s;
 
 typedef struct {
-    bd_addr_t addr;
+    bt_address addr;
     ble_phy_type_t tx;
     ble_phy_type_t rx;
     gatt_status_t status;
@@ -75,14 +75,14 @@ typedef struct {
 
 typedef struct
 {
-    bd_addr_t addr;
+    bt_address addr;
     uint32_t request_id;
     gatt_element_t* element;
 } bts_gatts_read_s;
 
 typedef struct
 {
-    bd_addr_t addr;
+    bt_address addr;
     uint32_t request_id;
     gatt_element_t* element;
     uint8_t* value;
@@ -91,17 +91,16 @@ typedef struct
 } bts_gatts_write_s;
 
 typedef struct {
-    bd_addr_t addr;
-    uint32_t mtu
+    bt_address addr;
+    uint32_t mtu;
 } bts_gatts_mtu_s;
 
 typedef struct {
-    bd_addr_t addr;
+    bt_address addr;
     gatt_status_t status;
 } bts_gatts_notify_s;
 
 static void send_msg(bts_gatts_msg_t* msg);
-static void handle_event(void* data, size_t size);
 static void handle_msg_received(bt_profile_id id, void* data, size_t size);
 
 static struct list_node gatts_list = LIST_INITIAL_VALUE(gatts_list);
@@ -118,7 +117,7 @@ static bts_gatts_hdl_t* find_gatts_handle(uint8_t server_if)
     return NULL;
 }
 
-static int8_t gen_gatts_id()
+static int8_t gen_gatts_id(void)
 {
     uint8_t found = 0;
     bts_gatts_hdl_t* handle;
@@ -196,13 +195,13 @@ static bts_gatts_msg_t* create_adp_msg(uint8_t event, bts_gatts_hdl_t* handle, v
     return msg;
 }
 
-static void on_server_connection_state_changed(bd_addr_t remote_addr, profile_state_t state)
+static void on_server_connection_state_changed(bt_address remote_addr, profile_state_t state)
 {
     bts_gatts_hdl_t* handle;
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_state_s data;
-        memcpy(data.addr, remote_addr, sizeof(bd_addr_t));
+        memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.state = state;
 
         bts_gatts_msg_t* msg = create_adp_msg(ON_SERVER_CONNECTION_CHANGED, handle, &data, sizeof(bts_gatts_state_s));
@@ -261,13 +260,13 @@ static void on_server_elements_removed(gatt_status_t status, gatt_element_t* ele
     }
 }
 
-static void on_server_phy_read(bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
+static void on_server_phy_read(bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
 {
     bts_gatts_hdl_t* handle;
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_phy_s data;
-        memcpy(data.addr, remote_addr, sizeof(bd_addr_t));
+        memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.tx = tx;
         data.rx = rx;
 
@@ -277,13 +276,13 @@ static void on_server_phy_read(bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy
     }
 }
 
-static void on_server_phy_update(bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx, gatt_status_t status)
+static void on_server_phy_update(bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx, gatt_status_t status)
 {
     bts_gatts_hdl_t* handle;
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_phy_s data;
-        memcpy(data.addr, remote_addr, sizeof(bd_addr_t));
+        memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.tx = tx;
         data.rx = rx;
         data.status = status;
@@ -294,14 +293,14 @@ static void on_server_phy_update(bd_addr_t remote_addr, ble_phy_type_t tx, ble_p
     }
 }
 
-static void on_server_read_request(bd_addr_t remote_addr, uint32_t request_id,
+static void on_server_read_request(bt_address remote_addr, uint32_t request_id,
     gatt_element_t* element)
 {
     bts_gatts_hdl_t* handle;
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_read_s data;
-        memcpy(data.addr, remote_addr, sizeof(bd_addr_t));
+        memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.request_id = request_id;
         gatt_element_t* elem = (gatt_element_t*)malloc(sizeof(gatt_element_t));
         memcpy(elem, element, sizeof(gatt_element_t));
@@ -313,7 +312,7 @@ static void on_server_read_request(bd_addr_t remote_addr, uint32_t request_id,
     }
 }
 
-static void on_server_write_request(bd_addr_t remote_addr, uint32_t request_id,
+static void on_server_write_request(bt_address remote_addr, uint32_t request_id,
     gatt_element_t* element, uint8_t* value, uint16_t offset,
     uint16_t size)
 {
@@ -321,7 +320,7 @@ static void on_server_write_request(bd_addr_t remote_addr, uint32_t request_id,
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_write_s data;
-        memcpy(data.addr, remote_addr, sizeof(bd_addr_t));
+        memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.request_id = request_id;
         gatt_element_t* elem = (gatt_element_t*)malloc(sizeof(gatt_element_t));
         memcpy(elem, element, sizeof(gatt_element_t));
@@ -338,13 +337,13 @@ static void on_server_write_request(bd_addr_t remote_addr, uint32_t request_id,
     }
 }
 
-static void on_server_mtu_changed(bd_addr_t remote_addr, uint32_t mtu)
+static void on_server_mtu_changed(bt_address remote_addr, uint32_t mtu)
 {
     bts_gatts_hdl_t* handle;
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_mtu_s data;
-        memcpy(data.addr, remote_addr, sizeof(bd_addr_t));
+        memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.mtu = mtu;
         bts_gatts_msg_t* msg = create_adp_msg(ON_SRRVER_MTU_CHANGED, handle, &data, sizeof(bts_gatts_mtu_s));
         CHECK_PTR(msg);
@@ -352,13 +351,13 @@ static void on_server_mtu_changed(bd_addr_t remote_addr, uint32_t mtu)
     }
 }
 
-static void on_server_notify_sent(bd_addr_t remote_addr, gatt_status_t status)
+static void on_server_notify_sent(bt_address remote_addr, gatt_status_t status)
 {
     bts_gatts_hdl_t* handle;
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_notify_s data;
-        memcpy(data.addr, remote_addr, sizeof(bd_addr_t));
+        memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.status = status;
         bts_gatts_msg_t* msg = create_adp_msg(ON_SERVER_NOTIFICATION_SENT, handle, &data, sizeof(bts_gatts_notify_s));
         CHECK_PTR(msg);
@@ -401,7 +400,7 @@ static bt_result_code gatt_server_open(bts_gatts_hdl_t server)
     }
 
     bts_gatts_msg_t* msg = create_adp_msg(ON_SERVER_OPENED, handle, NULL, 0);
-    CHECK_PTR(msg);
+    CHECK_PTR_RETURN(msg, BT_RESULT_FAILED);
     send_msg(msg);
 
     return BT_RESULT_SUCCESS;
@@ -421,13 +420,13 @@ static bt_result_code gatt_server_close(uint8_t server_if)
     }
 
     bts_gatts_msg_t* msg = create_adp_msg(ON_SERVER_CLOSED, handle, NULL, 0);
-    CHECK_PTR(msg);
+    CHECK_PTR_RETURN(msg, BT_RESULT_FAILED);
     send_msg(msg);
 
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_server_connect(uint8_t server_if, bd_addr_t remote_addr, bool auto_connect)
+static bt_result_code gatt_server_connect(uint8_t server_if, bt_address remote_addr, bool auto_connect)
 {
     bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
@@ -443,7 +442,7 @@ static bt_result_code gatt_server_connect(uint8_t server_if, bd_addr_t remote_ad
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_server_disconnect(uint8_t server_if, bd_addr_t remote_addr)
+static bt_result_code gatt_server_disconnect(uint8_t server_if, bt_address remote_addr)
 {
     bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
@@ -491,7 +490,7 @@ static bt_result_code gatt_server_remove_element(uint8_t server_if, uint32_t* id
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_server_read_phy(uint8_t server_if, bd_addr_t remote_addr)
+static bt_result_code gatt_server_read_phy(uint8_t server_if, bt_address remote_addr)
 {
     bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
@@ -507,7 +506,7 @@ static bt_result_code gatt_server_read_phy(uint8_t server_if, bd_addr_t remote_a
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_server_update_phy(uint8_t server_if, bd_addr_t remote_addr, ble_phy_type_t tx_type, ble_phy_type_t rx_type)
+static bt_result_code gatt_server_update_phy(uint8_t server_if, bt_address remote_addr, ble_phy_type_t tx_type, ble_phy_type_t rx_type)
 {
     bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
@@ -523,7 +522,7 @@ static bt_result_code gatt_server_update_phy(uint8_t server_if, bd_addr_t remote
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_server_send_notify(uint8_t server_if, bd_addr_t remote_addr, gatt_element_t* characteristic, uint8_t* value,
+static bt_result_code gatt_server_send_notify(uint8_t server_if, bt_address remote_addr, gatt_element_t* characteristic, uint8_t* value,
     size_t size)
 {
     bt_result_code ret = gatt_server_is_valid(server_if);
@@ -540,7 +539,7 @@ static bt_result_code gatt_server_send_notify(uint8_t server_if, bd_addr_t remot
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_server_send_indicate(uint8_t server_if, bd_addr_t remote_addr, gatt_element_t* characteristic, uint8_t* value,
+static bt_result_code gatt_server_send_indicate(uint8_t server_if, bt_address remote_addr, gatt_element_t* characteristic, uint8_t* value,
     size_t size)
 {
     bt_result_code ret = gatt_server_is_valid(server_if);
@@ -557,7 +556,7 @@ static bt_result_code gatt_server_send_indicate(uint8_t server_if, bd_addr_t rem
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code gatt_server_send_response(uint8_t server_if, bd_addr_t remote_addr, gatt_response_t* response)
+static bt_result_code gatt_server_send_response(uint8_t server_if, bt_address remote_addr, gatt_response_t* response)
 {
     bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
@@ -591,7 +590,7 @@ static const bts_gatts_interface_t gatt_server_intance = {
     .send_response = gatt_server_send_response,
 };
 
-const bts_gatts_interface_t* get_bts_gatts_instance()
+const bts_gatts_interface_t* get_bts_gatts_instance(void)
 {
     return &gatt_server_intance;
 }
@@ -609,7 +608,7 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
         return;
     }
 
-    bts_gatts_hdl_t* handle = (bts_gatts_msg_t*)(msg->handle);
+    bts_gatts_hdl_t* handle = (bts_gatts_hdl_t*)(msg->handle);
     if (!handle) {
         BT_LOGE("%s fail, handle null", __func__);
         return;

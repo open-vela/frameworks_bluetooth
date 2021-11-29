@@ -21,16 +21,18 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#define LOG_TAG "bts_leadv"
 
 #include "bts_le_advertise.h"
 
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bts_service.h"
+#include "stack_adapter_gap.h"
 #include "stack_adapter_gatt.h"
 
-#define LOG_TAG "bts_leadv"
 #include "log.h"
 
 typedef struct

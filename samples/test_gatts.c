@@ -38,8 +38,8 @@ static void* gatts_handle;
 static void* adv_handle;
 static btm_gatt_server_interface_t* gatts_interface = NULL;
 static btm_interface_t* manager = NULL;
-static bd_addr_t connected_device_addr;
-static uint16_t gatt_mtu = 20;
+static bt_address connected_device_addr;
+static uint32_t gatt_mtu = 20;
 static volatile uint16_t throughtput_cursor = 1;
 
 enum {
@@ -50,7 +50,7 @@ enum {
     IOT_SERVICE_RX_CHR_ID,
 };
 
-static const gatt_element_t s_iot_service_elements[] = {
+static gatt_element_t s_iot_service_elements[] = {
     { /* Private IOT Service - 0xFF00 */
         IOT_SERVICE_ID,
         { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00 },
@@ -92,12 +92,12 @@ static void le_adv_failed_callback(void* handle, int error)
     BT_LOGD(" %s:err:%d", __func__, error);
 }
 
-static void test_server_connection_state_changed_callback(void* handle, bd_addr_t remote_addr, profile_state_t state)
+static void test_server_connection_state_changed_callback(void* handle, bt_address remote_addr, profile_state_t state)
 {
     BT_LOGD("%s  addr:[%02x:%02x:%02x:%02x:%02x:%02x], state:%d", __func__, remote_addr[0], remote_addr[1],
         remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5], state);
     if (state == 2) {
-        memcpy(connected_device_addr, remote_addr, sizeof(bd_addr_t));
+        memcpy(connected_device_addr, remote_addr, sizeof(bt_address));
     } else {
         memset(connected_device_addr, 0, sizeof(remote_addr));
     }
@@ -131,17 +131,17 @@ static void test_server_service_removed_callback(void* handle, gatt_status_t sta
     BT_LOGD("%s", __func__);
 }
 
-static void test_server_phy_read_callback(void* handle, bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
+static void test_server_phy_read_callback(void* handle, bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
 {
     BT_LOGD("%s", __func__);
 }
 
-static void test_server_phy_update_callback(void* handle, bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx, gatt_status_t status)
+static void test_server_phy_update_callback(void* handle, bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx, gatt_status_t status)
 {
     BT_LOGD("%s", __func__);
 }
 
-static void test_server_read_request_callback(void* handle, bd_addr_t remote_addr, uint32_t request_id,
+static void test_server_read_request_callback(void* handle, bt_address remote_addr, uint32_t request_id,
     gatt_element_t* element)
 {
     BT_LOGD("%s", __func__);
@@ -149,12 +149,14 @@ static void test_server_read_request_callback(void* handle, bd_addr_t remote_add
 
     if (element->id == IOT_SERVICE_TX_CHR_CCC_ID) {
         rsp = malloc(sizeof(gatt_response_t) + 1);
+        memset(rsp, 0, sizeof(gatt_response_t) + 1);
         uint16_t s_iot_tx_ccc_value = 0x2234;
         rsp->length = 2;
         rsp->value[0] = (uint8_t)(s_iot_tx_ccc_value & 0xFF);
         rsp->value[1] = (uint8_t)(s_iot_tx_ccc_value >> 8);
     } else {
         rsp = malloc(sizeof(gatt_response_t));
+        memset(rsp, 0, sizeof(gatt_response_t));
         rsp->length = 0;
     }
     rsp->request_id = request_id;
@@ -167,7 +169,7 @@ static void test_server_read_request_callback(void* handle, bd_addr_t remote_add
     free(rsp);
 }
 
-static void test_server_write_request_callback(void* handle, bd_addr_t remote_addr, uint32_t request_id,
+static void test_server_write_request_callback(void* handle, bt_address remote_addr, uint32_t request_id,
     gatt_element_t* element, uint8_t* value, uint16_t offset,
     uint16_t size)
 {
@@ -198,21 +200,16 @@ static void test_server_write_request_callback(void* handle, bd_addr_t remote_ad
     gatts_interface->send_response(handle, remote_addr, rsp);
 }
 
-static void test_server_mtu_changed_callback(void* handle, bd_addr_t remote_addr, uint32_t mtu)
+static void test_server_mtu_changed_callback(void* handle, bt_address remote_addr, uint32_t mtu)
 {
     BT_LOGD("###%s mtu: %d", __func__, mtu);
     gatt_mtu = mtu;
 }
 
-static void test_server_notify_sent_callback(void* handle, bd_addr_t remote_addr, gatt_status_t status)
+static void test_server_notify_sent_callback(void* handle, bt_address remote_addr, gatt_status_t status)
 {
     throughtput_cursor--;
     BT_LOGD("%s status:%d, throughtput_cursor:%d", __func__, status, throughtput_cursor);
-}
-
-static void manager_init_status_changed_callback(bt_result_code status)
-{
-    BT_LOGD("%s, state:%d", __func__, status);
 }
 
 static void manager_state_changed_callback(bt_manager_bt_state state)
@@ -222,7 +219,6 @@ static void manager_state_changed_callback(bt_manager_bt_state state)
 
 static bt_mgr_callback_t mgt_cb = {
     .bt_manager_state_changed_callback_cb = manager_state_changed_callback,
-    //.init_status_changed_callback_cb = manager_init_status_changed_callback,
 };
 
 static void test_server_throughtout_notify(uint32_t times, uint16_t mtu)
@@ -330,7 +326,7 @@ int main(int argc, FAR char* argv[])
         }
         case 'c': {
             BT_LOGD("gatt server try to connect capable device, please input addr:");
-            bd_addr_t remote_address;
+            bt_address remote_address;
             scanf("%x:%x:%x:%x:%x:%x", &remote_address[0], &remote_address[1], &remote_address[2], &remote_address[3], &remote_address[4], &remote_address[5]);
             BT_LOGD("remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5]);
             bt_result_code ret = gatts_interface->connect(&gatts_handle, remote_address, true);
@@ -354,7 +350,8 @@ int main(int argc, FAR char* argv[])
         }
         case 'f': {
             BT_LOGD("gatt server remove service");
-            gatts_interface->remove_service(gatts_handle, s_iot_service_elements);
+            uint32_t id = IOT_SERVICE_ID;
+            gatts_interface->remove_service(gatts_handle, &id, 1);
             break;
         }
         case 'g': {
