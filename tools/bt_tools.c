@@ -402,10 +402,12 @@ int gap_cmd(void* handle, int argc, char* argv[])
 static void manager_state_changed_callback(bt_manager_bt_state state)
 {
     BT_LOGD("%s", __func__);
+#if 0  //name device_class and io had set in  stack_state_change
     char local_name[] = "BLUELET_NUTTX_Fzw";
     gap_test_interface->bt_set_local_name(gap_hanlde, local_name, sizeof(local_name));
     gap_test_interface->bt_set_local_device_class(gap_hanlde, BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO | BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
     gap_test_interface->bt_set_local_io_capability(gap_hanlde, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
+#endif
     gap_test_interface->bt_set_scan_mode(gap_hanlde, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
 }
 

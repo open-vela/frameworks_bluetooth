@@ -206,7 +206,7 @@ static bt_manager_ble_state if_get_ble_state(void* handle)
         return service->ble_state;
 }
 
-static void bts_if_stack_state_change(stack_state_t state)
+static void bts_if_stack_state_change(bt_service_state state)
 {
     stack_state_change(state);
 }
