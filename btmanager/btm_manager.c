@@ -33,7 +33,7 @@
 
 typedef struct {
     size_t size;
-    bt_mgr_callback_t* callback;
+    const bt_mgr_callback_t* callback;
 } manager_context_t;
 
 const static bluetooth_service_interface* bluetooth_service = NULL;
@@ -77,17 +77,17 @@ static bt_manager_ble_state ble_get_state(void* handle)
     return result;
 }
 
-static void bt_mgr_adapter_state_changed_callback(void* handle, stack_state_t state)
+static void bt_mgr_adapter_state_changed_callback(void* handle, bt_manager_bt_state state)
 {
     manager_context_t* context;
     if (NULL == handle)
-        return ;
+        return;
     context = (manager_context_t*)handle;
 
-    bt_mgr_callback_t* bluetooth_upper_callbacks = context->callback;
+    const bt_mgr_callback_t* bluetooth_upper_callbacks = context->callback;
     if (!bluetooth_upper_callbacks) {
         BT_LOGE("fail, bluetooth_upper_callbacks nullptr");
-        return ;
+        return;
     }
     bluetooth_upper_callbacks->bt_manager_state_changed_callback_cb(state);
 }
@@ -99,10 +99,10 @@ static void bt_mgr_adapter_ble_state_changed_callback(void* handle, bt_manager_b
         return;
     context = (manager_context_t*)handle;
 
-    bt_mgr_callback_t* bluetooth_upper_callbacks = context->callback;
+    const bt_mgr_callback_t* bluetooth_upper_callbacks = context->callback;
     if (!bluetooth_upper_callbacks) {
         BT_LOGE("fail, bluetooth_upper_callbacks nullptr");
-        return ;
+        return;
     }
     bluetooth_upper_callbacks->bt_manager_ble_state_changed_callback_cb(state);
 }
@@ -191,11 +191,11 @@ static void bt_mgr_cleanup(void* handle)
 {
     if (!handle) {
         BT_LOGE("%s, handle is NULL", __func__);
-        return ;
+        return;
     }
     if (!bluetooth_service) {
         BT_LOGE("fail, bluetooth_service null");
-        return ;
+        return;
     }
     bluetooth_service->cleanup(handle);
 }

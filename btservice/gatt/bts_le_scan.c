@@ -21,16 +21,18 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#define LOG_TAG "bts_lescan"
 
 #include "bts_le_scan.h"
 
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bts_service.h"
+#include "stack_adapter_gap.h"
 #include "stack_adapter_gatt.h"
 
-#define LOG_TAG "bts_lescan"
 #include "log.h"
 
 typedef struct
@@ -52,7 +54,7 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size);
 
 static struct list_node scanner_list = LIST_INITIAL_VALUE(scanner_list);
 
-static uint8_t generate_scanner_id()
+static uint8_t generate_scanner_id(void)
 {
     uint8_t found = 0;
     bts_lescan_hdl_t* handle;
@@ -140,13 +142,13 @@ static bts_lescan_msg_t* create_adp_msg(uint8_t event, bts_lescan_hdl_t* handle,
 static bt_result_code start_scan(bts_lescan_hdl_t handle)
 {
     bts_register_profile_process(BT_PROFILE_LESCAN_ID, &handle_msg_received);
-    SERVICE_BT_STATUS ret = service_adapter_gap_set_ble_scan_filter(&handle.filter);
+    SERVICE_BT_STATUS ret = service_adapter_gap_set_ble_scan_filter(handle.filter);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("set ble scan filter fail, err:%d", ret);
         return BT_RESULT_FAILED;
     }
 
-    ret = service_adapter_gap_set_ble_scan_parameters(&handle.settings);
+    ret = service_adapter_gap_set_ble_scan_parameters(handle.settings);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("set ble scan parameters fail, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -195,7 +197,7 @@ void on_ble_scan_result(const scan_result_t* scan_result_data)
 
         scan_result_t* value = (scan_result_t*)malloc(sizeof(scan_result_t) + scan_result_data->length);
         CHECK_PTR(value);
-        memcpy(value->remote_addr, scan_result_data->remote_addr, sizeof(bd_addr_t));
+        memcpy(value->remote_addr, scan_result_data->remote_addr, sizeof(bt_address));
         value->device_type = scan_result_data->device_type;
         value->rssi = scan_result_data->rssi;
         value->addr_type = scan_result_data->addr_type;

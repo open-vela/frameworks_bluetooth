@@ -1,14 +1,15 @@
 #define LOG_TAG "bts_service_interface"
 #include <nuttx/list.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#include "bts_service_interface.h"
 #include "bts_gap.h"
 #include "bts_gatt_service.h"
 #include "bts_spp.h"
 #include "bts_hf_client.h"
 #include "bts_service.h"
+#include "bts_service_interface.h"
+#include "bts_spp.h"
 
 #include "log.h"
 
@@ -53,7 +54,7 @@ static void bts_service_if_ble_state_changed_callback(ble_service_state state)
     list_for_every(list, node)
     {
         if_handle = (bt_if_handle_t*)node;
-        if (if_handle->callbacks->adapter_state_changed_cb) {
+        if (if_handle->callbacks->adapter_state_ble_changed_cb) {
             if_handle->callbacks->adapter_state_ble_changed_cb(if_handle->handle, state);
         }
     }
@@ -67,7 +68,7 @@ static bt_service_callbacks service_callback = {
 static bt_result_code bts_if_init(void* handle, bt_service_if_callbacks* callbacks)
 {
     if (!service) {
-        service = (bt_service_t *)malloc(sizeof(bt_service_t));
+        service = (bt_service_t*)malloc(sizeof(bt_service_t));
         list_initialize(&service->handle_list);
         bts_service_init(&service_callback);
         service->ble_state = STATE_BLE_OFF;
@@ -199,9 +200,9 @@ static bt_manager_ble_state if_get_ble_state(void* handle)
 {
     if (!service)
         return BT_MANAGER_STATE_OFF;
-    if (service->bt_state != BT_MANAGER_STATE_OFF) 
+    if (service->bt_state != BT_MANAGER_STATE_OFF)
         return service->bt_state;
-    else 
+    else
         return service->ble_state;
 }
 

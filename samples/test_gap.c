@@ -57,7 +57,7 @@ int main(int argc, FAR char* argv[])
     char input;
     bool exit = false;
     bt_device_t* device = (bt_device_t*)malloc(sizeof(bt_device_t));
-    bd_addr_t add = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
+    bt_address add = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
     while (!exit) {
         printf("please input command:\n");
         input = getchar();

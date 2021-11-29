@@ -34,7 +34,8 @@
 
 #include "bts_service.h"
 #include "log.h"
-
+#include "stack_adapter_common.h"
+#include "stack_adapter_gap.h"
 
 #ifndef MAX_BONDED_DEVICES_SUPPORTED
 #define MAX_BONDED_DEVICES_SUPPORTED 5
@@ -52,7 +53,7 @@
 typedef struct {
     uint32_t device_class;
     SERVICE_BT_IO_CAPABILITY io_capability;
-    uint8_t bt_name[BT_DEVICE_NAME_MAX_LEN];
+    char bt_name[BT_DEVICE_NAME_MAX_LEN];
 } bt_device_info_t;
 
 typedef struct {
@@ -164,7 +165,7 @@ bt_result_code gap_create_factory_info(bool force)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code gap_update_device_name(uint8_t* bt_name, size_t len_name)
+bt_result_code gap_update_device_name(char* bt_name, uint8_t len_name)
 {
     if (len_name > BT_DEVICE_NAME_MAX_LEN) {
         BT_LOGE("bt_name len%d too long", len_name);
@@ -194,7 +195,7 @@ bt_result_code gap_update_device_name(uint8_t* bt_name, size_t len_name)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code gap_read_device_info()
+bt_result_code gap_read_device_info(void)
 {
     bt_status ret;
     bt_device_info_t device_info;

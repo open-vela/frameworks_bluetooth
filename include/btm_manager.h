@@ -131,9 +131,6 @@
 */
 #define BD_NAME_MAX_SIZE (20)
 
-/** Bluetooth address type*/
-typedef uint8_t bt_address[BT_ADDR_LENGTH];
-
 typedef SERVICE_BLE_KEYS_S ble_keys_t;
 typedef SERVICE_LE_CONNECT_PARAMS_S ble_connect_params_t;
 typedef SERVICE_SSP_REPLY_DATA_S spp_reply_data_t;
@@ -142,7 +139,7 @@ typedef SERVICE_BT_TEST_MODE bt_test_mode;
 typedef SERVICE_SCAN_PARAMS_S scan_params_t;
 typedef SERVICE_BLE_SCAN_FILTER_S ble_scan_filter_t;
 typedef SERVICE_SCAN_RESULT_DATA_S scan_result_t;
-typedef BD_ADDR bd_addr_t;
+typedef BD_ADDR bt_address;
 typedef BT_UUID_T bt_uuid_t;
 
 typedef SERVICE_PROFILE_CONNECTION_STATE profile_state_t;
