@@ -49,6 +49,13 @@
 #include "utils/utils.h"
 
 #define HF_CONNECT_TIMEOUT 2 * 1000
+#define HF_SERVICE_CBACK(P_CB, P_CBACK, ...)                     \
+    do {                                                         \
+        if ((P_CB) && (P_CB)->P_CBACK) {                         \
+            BT_LOGD("%s: HF %s->%s", __func__, #P_CB, #P_CBACK); \
+            (P_CB)->P_CBACK(__VA_ARGS__);                        \
+        }                                                        \
+    } while (0)
 
 typedef struct _hf_state_machine {
     state_machine_t sm;
@@ -148,24 +155,21 @@ static void notify_connection_state_changed(hf_client_service_t* service,
     bt_address addr,
     hf_client_connection_state_t state)
 {
-    if (service && service->callbacks)
-        service->callbacks->connection_state_cb(addr, state);
+    HF_SERVICE_CBACK(service->callbacks, connection_state_cb, addr, state);
 }
 
 static void notify_audio_state_changed(hf_client_service_t* service,
     bt_address addr,
     hf_client_audio_state_t state)
 {
-    if (service && service->callbacks)
-        service->callbacks->audio_state_cb(addr, state);
+    HF_SERVICE_CBACK(service->callbacks, audio_state_cb, addr, state);
 }
 
 static void notify_vr_state_changed(hf_client_service_t* service,
     bt_address addr,
     hf_client_vr_state_t state)
 {
-    if (service && service->callbacks)
-        service->callbacks->vr_cmd_cb(addr, state);
+    HF_SERVICE_CBACK(service->callbacks, vr_cmd_cb, addr, state);
 }
 
 static void disconnected_enter(state_machine_t* sm)
@@ -527,24 +531,21 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     case STACK_EVENT_CALL: {
         hf_client_call_t call = data->valueint1;
 
-        if (service->callbacks)
-            service->callbacks->call_cb(hfsm->addr, call);
+        HF_SERVICE_CBACK(service->callbacks, call_cb, hfsm->addr, call);
         break;
     }
 
     case STACK_EVENT_CALLSETUP: {
         hf_client_callsetup_t setup = data->valueint1;
 
-        if (service->callbacks)
-            service->callbacks->callsetup_cb(hfsm->addr, setup);
+        HF_SERVICE_CBACK(service->callbacks, callsetup_cb, hfsm->addr, setup);
         break;
     }
 
     case STACK_EVENT_CALLHELD: {
         hf_client_callheld_t held = data->valueint1;
 
-        if (service->callbacks)
-            service->callbacks->callheld_cb(hfsm->addr, held);
+        HF_SERVICE_CBACK(service->callbacks, callheld_cb, hfsm->addr, held);
         break;
     }
 
@@ -553,8 +554,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         char* name = data->string2;
 
         BT_LOGD("CLIP:number :%s, name: %s", number, name == NULL ? "NULL" : name);
-        if (service->callbacks)
-            service->callbacks->clip_cb(hfsm->addr, number, name);
+        HF_SERVICE_CBACK(service->callbacks, clip_cb, hfsm->addr, number, name);
         break;
     }
 
@@ -569,8 +569,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         hf_client_call_mpty_type_t mpty = data->valueint4;
         char* number = data->string1;
         BT_LOGD("Current Call[%d]: dir:%d, state:%d, mpty:%d, number:%s", index, dir, state, mpty, number);
-        if (service->callbacks)
-            service->callbacks->current_calls_cb(hfsm->addr, index, dir, state, mpty, (const char*)number);
+        HF_SERVICE_CBACK(service->callbacks, current_calls_cb, hfsm->addr, index, dir, state, mpty, (const char*)number);
         break;
     }
 
@@ -579,25 +578,22 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         int vol = data->valueint2;
         //set media volume, need call media interface
         BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
-        if (service->callbacks)
-            service->callbacks->volume_change_cb(hfsm->addr, type, vol);
+        HF_SERVICE_CBACK(service->callbacks, volume_change_cb, hfsm->addr, type, vol);
         break;
     }
 
     case STACK_EVENT_CMD_RESULT: {
         const char* resp = data->string1;
 
-        if (service->callbacks)
-            service->callbacks->cmd_complete_cb(hfsm->addr, resp);
+        HF_SERVICE_CBACK(service->callbacks, cmd_complete_cb, hfsm->addr, resp);
         break;
     }
 
     case STACK_EVENT_RING_INDICATION: {
         int active = data->valueint1;
         hf_client_in_band_ring_state_t ring_state = data->valueint2;
-
-        if (service->callbacks && active)
-            service->callbacks->ring_indication_cb(hfsm->addr, ring_state);
+        if (active)
+            HF_SERVICE_CBACK(service->callbacks, ring_indication_cb, hfsm->addr, ring_state);
         break;
     }
 
@@ -692,8 +688,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         hf_client_call_mpty_type_t mpty = data->valueint4;
         char* number = data->string1;
         BT_LOGD("Current Call[%d]: dir:%d, state:%d, mpty:%d, number:%s", index, dir, state, mpty, number);
-        if (service->callbacks)
-            service->callbacks->current_calls_cb(hfsm->addr, index, dir, state, mpty, (const char*)number);
+        HF_SERVICE_CBACK(service->callbacks, current_calls_cb, hfsm->addr, index, dir, state, mpty, (const char*)number);
         break;
     }
 
@@ -702,8 +697,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         int vol = data->valueint2;
         //set media volume, need call media interface
         BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
-        if (service->callbacks)
-            service->callbacks->volume_change_cb(hfsm->addr, type, vol);
+        HF_SERVICE_CBACK(service->callbacks, volume_change_cb, hfsm->addr, type, vol);
         break;
     }
 

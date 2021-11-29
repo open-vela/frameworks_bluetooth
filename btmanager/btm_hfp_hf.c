@@ -38,7 +38,7 @@
 #include "bts_service.h"
 #include "bts_service_interface.h"
 
-#define LOG_TAG "hfp_hf_service"
+#define LOG_TAG "btm_hfp_hf"
 #include "log.h"
 
 static hf_client_interface_t* get_service(void)

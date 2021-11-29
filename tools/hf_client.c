@@ -303,13 +303,97 @@ static int send_at_cmd_cmd(void* handle, int argc, char* argv[])
     return 0;
 }
 
+static void hf_client_connection_state_cb(
+    bt_address addr, hf_client_connection_state_t state)
+{
+    BT_LOGD("%s, addr:%s, state:%d", __func__, addr_str(addr), state);
+}
+
+static void hf_client_audio_state_cb(
+    bt_address addr, hf_client_audio_state_t state)
+{
+    BT_LOGD("%s, addr:%s, state:%d", __func__, addr_str(addr), state);
+}
+
+static void hf_client_vr_cmd_cb(bt_address addr,
+    hf_client_vr_state_t state)
+{
+    BT_LOGD("%s, addr:%s, state:%d", __func__, addr_str(addr), state);
+}
+
+static void hf_client_call_cb(bt_address addr,
+    hf_client_call_t call)
+{
+    BT_LOGD("%s, addr:%s, call:%d", __func__, addr_str(addr), call);
+}
+
+static void hf_client_callsetup_cb(
+    bt_address addr, hf_client_callsetup_t callsetup)
+{
+    BT_LOGD("%s, addr:%s, callsetup:%d", __func__, addr_str(addr), callsetup);
+}
+
+static void hf_client_callheld_cb(bt_address addr,
+    hf_client_callheld_t callheld)
+{
+    BT_LOGD("%s, addr:%s, callheld:%d", __func__, addr_str(addr), callheld);
+}
+
+static void hf_client_clip_cb(bt_address addr,
+    const char* number, const char* name)
+{
+    BT_LOGD("%s, addr:%s, number:%s, name:%s", __func__, addr_str(addr), number, name);
+}
+
+static void hf_client_current_calls_cb(bt_address addr, int index,
+    hf_client_call_direction_t dir,
+    hf_client_call_state_t state,
+    hf_client_call_mpty_type_t mpty,
+    const char* number)
+{
+    BT_LOGD("%s, addr:%s, call[%d], dir:%d, state:%d, mpty:%d, number:%s", __func__, addr_str(addr), index, dir, state, mpty, number);
+}
+
+static void hf_client_volume_change_cb(
+    bt_address addr, hf_client_volume_type_t type, int volume)
+{
+    BT_LOGD("%s, addr:%s, volume:%d", __func__, addr_str(addr), volume);
+}
+
+static void hf_client_cmd_complete_cb(
+    bt_address addr, const char* resp)
+{
+    BT_LOGD("%s, addr:%s, resp:%s", __func__, addr_str(addr), resp);
+}
+
+static void hf_client_ring_indication_cb(bt_address addr,
+    hf_client_in_band_ring_state_t state)
+{
+    BT_LOGD("%s, addr:%s, state:%d", __func__, addr_str(addr), state);
+}
+
+hf_client_callbacks_t hf_client_cbs = {
+    sizeof(hf_client_callbacks_t),
+    hf_client_connection_state_cb,
+    hf_client_audio_state_cb,
+    hf_client_vr_cmd_cb,
+    hf_client_call_cb,
+    hf_client_callsetup_cb,
+    hf_client_callheld_cb,
+    hf_client_clip_cb,
+    hf_client_current_calls_cb,
+    hf_client_volume_change_cb,
+    hf_client_cmd_complete_cb,
+    hf_client_ring_indication_cb,
+};
+
 int hfp_client_command(void* handle, int argc, char* argv[])
 {
     int opt, ret = -1;
 
     if (hf_interface == NULL) {
         hf_interface = get_hf_client_interface();
-        //hf_interface->set_callbacks(NULL, NULL);
+        hf_interface->set_callbacks(NULL, &hf_client_cbs);
     }
 
     while ((opt = getopt_long(argc, argv, "h", hfp_options, NULL)) != -1) {
