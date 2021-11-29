@@ -21,7 +21,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-#define LOG_TAG "btsample_gatts"
+#define LOG_TAG "bttool_gatts"
 
 #include <debug.h>
 #include <nuttx/list.h>
