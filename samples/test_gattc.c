@@ -63,7 +63,7 @@ static void on_scan_result_callback(void* handle, const scan_result_t* result)
 
 static void on_client_connection_state_changed_callback(void* handle, bd_addr_t remote_addr, profile_state_t state)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, state:%d", __func__, state);
 }
 
 static void gatt_display_service(gatt_element_t* elements, uint16_t size)
@@ -142,7 +142,7 @@ static void on_client_write_result_callback(void* handle, bd_addr_t remote_addr,
 
 static void on_client_nofity_request_callback(void* handle, bd_addr_t remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, size:%d", __func__, size);
 }
 
 static void on_client_rssi_read_callback(void* handle, bd_addr_t remote_addr, int32_t rssi, gatt_status_t status)
@@ -152,11 +152,12 @@ static void on_client_rssi_read_callback(void* handle, bd_addr_t remote_addr, in
 
 static void on_client_phy_read_callback(void* handle, bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, tx_phy:%d, rx_phy:%d", __func__, tx, rx);
 }
+
 static void on_client_phy_update_callback(void* handle, bd_addr_t remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, tx_phy:%d, rx_phy:%d", __func__, tx, rx);
 }
 
 static void on_client_mtu_changed_callback(void* handle, bd_addr_t remote_addr, uint32_t mtu)
@@ -167,7 +168,7 @@ static void on_client_mtu_changed_callback(void* handle, bd_addr_t remote_addr, 
 
 static void test_client_throughtout_write(uint32_t times, uint16_t mtu)
 {
-    BT_LOGD("###mtu:%d, times:%d", mtu, times);
+    BT_LOGD("mtu:%d, times:%d", mtu, times);
     gatt_element_t element;
     memset(&element, 0, sizeof(element));
     unsigned long id = 0;
@@ -219,6 +220,25 @@ static bt_mgr_callback_t mgt_cb = {
     //.init_status_changed_callback_cb = manager_init_status_changed_callback,
 };
 
+static btm_le_scan_callbacks scan_cb = {
+    .le_scan_started_cb = on_scan_started_callback,
+    .le_scan_failed_cb = on_scan_failed_callback,
+    .le_scan_result_cb = on_scan_result_callback,
+    .le_scan_stopped_cb = on_scan_stopped_callback,
+};
+
+static btm_gatt_client_callbacks client_cb = {
+    .gattc_connection_state_changed_cb = on_client_connection_state_changed_callback,
+    .gattc_service_discovered_cb = on_client_service_discovered_callback,
+    .gattc_read_result_cb = on_client_read_result_callback,
+    .gattc_write_result_cb = on_client_write_result_callback,
+    .gattc_nofity_request_cb = on_client_nofity_request_callback,
+    .gattc_rssi_read_cb = on_client_rssi_read_callback,
+    .gattc_phy_read_cb = on_client_phy_read_callback,
+    .gattc_phy_update_cb = on_client_phy_update_callback,
+    .gattc_mtu_changed_cb = on_client_mtu_changed_callback,
+};
+
 int main(int argc, FAR char* argv[])
 {
     void* manager_handle;
@@ -233,69 +253,8 @@ int main(int argc, FAR char* argv[])
     manager->enable(manager_handle);
     BT_LOGD(" bt manager enabled");
 
-    btm_le_scan_interface_t* scan_interface = get_btm_lescan_interface(manager);
-    if (!scan_interface) {
-        BT_LOGE("fail, get_btm_lescan_interface");
-        return -1;
-    }
-
-    btm_le_scan_callbacks scan_cb = {
-        .le_scan_started_cb = on_scan_started_callback,
-        .le_scan_failed_cb = on_scan_failed_callback,
-        .le_scan_result_cb = on_scan_result_callback,
-        .le_scan_stopped_cb = on_scan_stopped_callback,
-    };
-
     void* scan_handle;
     bool exit = false;
-    while (!exit) {
-        char ch = ch = getchar();
-        switch (ch) {
-        case 'a': {
-            scan_params_t filter = {
-                .scan_interval = 300,
-                .scan_window = 500,
-                .scan_phy = BLE_1M_PHY,
-            };
-            scan_interface->start_scan(&scan_handle, &filter, NULL, &scan_cb);
-            break;
-        }
-        case 'b': {
-            scan_interface->stop_scan(scan_handle);
-            break;
-        }
-        case 'q': {
-            BT_LOGD("exit...");
-            exit = true;
-            break;
-        }
-        default: {
-            BT_LOGD("invalid %c", ch);
-            break;
-        }
-        }
-    }
-    BT_LOGD("### quit start/stop scan, come into gatt client");
-
-    btm_gatt_client_callbacks client_cb = {
-        .gattc_connection_state_changed_cb = on_client_connection_state_changed_callback,
-        .gattc_service_discovered_cb = on_client_service_discovered_callback,
-        .gattc_read_result_cb = on_client_read_result_callback,
-        .gattc_write_result_cb = on_client_write_result_callback,
-        .gattc_nofity_request_cb = on_client_nofity_request_callback,
-        .gattc_rssi_read_cb = on_client_rssi_read_callback,
-        .gattc_phy_read_cb = on_client_phy_read_callback,
-        .gattc_phy_update_cb = on_client_phy_update_callback,
-        .gattc_mtu_changed_cb = on_client_mtu_changed_callback,
-    };
-
-    client_interface = get_btm_gattc_interface(manager);
-    if (!client_interface) {
-        BT_LOGE("fail, get_btm_gattc_interface");
-        return -1;
-    }
-
-    exit = false;
     while (!exit) {
         char ch = getchar();
         switch (ch) {
@@ -331,6 +290,19 @@ int main(int argc, FAR char* argv[])
             client_interface->update_phy(client_handle, BLE_1M_PHY, BLE_1M_PHY);
             break;
         }
+        case 'g': {
+            uint32_t min_interval;
+            uint32_t max_interval;
+            uint32_t latency;
+            uint32_t timeout;
+            uint32_t min_connection_event_length;
+            uint32_t max_connection_event_length;
+            BT_LOGD("please input: min_interval max_interval latency timeout min_connection_event_length max_connection_event_length");
+            scanf("%d %d %d %d %d %d", &min_interval, &max_interval, &latency, &timeout, &min_connection_event_length, &max_connection_event_length);
+            BT_LOGD("min_interval: %d, max_interval: %d, latency: %d, timeout:%d, min_connection_event_length:%d, max_connection_event_length%d", min_interval, max_interval, latency, timeout, min_connection_event_length, max_connection_event_length);
+            client_interface->update_connection_parameter(client_handle, min_interval, max_interval, latency, timeout, min_connection_event_length, max_connection_event_length);
+            break;
+        }
         case 'i': {
             bt_uuid_t uuid;
             memset(uuid, 0, sizeof(bt_uuid_t));
@@ -357,7 +329,7 @@ int main(int argc, FAR char* argv[])
             element.id = id;
             element.properties = GATT_PROPERTY_WRITE;
             BT_LOGD("input id:%ld", element.id);
-            static uint8_t value[] = { 0x01, 0x02, 0x03, 0x04, 0x05 };
+            uint8_t value[] = { 0x01, 0x02, 0x03, 0x04, 0x05 };
             client_interface->write_request(client_handle, &element, value, sizeof(value) / sizeof(value[0]));
             break;
         }
@@ -393,6 +365,29 @@ int main(int argc, FAR char* argv[])
             scanf("%d", &times);
             test_client_throughtout_write(times, gatt_mtu);
             BT_LOGD("throughtout notify ...");
+            break;
+        }
+        case 'u': {
+            btm_le_scan_interface_t* scan_interface = get_btm_lescan_interface(manager);
+            if (!scan_interface) {
+                BT_LOGE("fail, get_btm_lescan_interface");
+                break;
+            }
+            scan_params_t filter = {
+                .scan_interval = 300,
+                .scan_window = 500,
+                .scan_phy = BLE_1M_PHY,
+            };
+            scan_interface->start_scan(&scan_handle, &filter, NULL, &scan_cb);
+            break;
+        }
+        case 'v': {
+            btm_le_scan_interface_t* scan_interface = get_btm_lescan_interface(manager);
+            if (!scan_interface) {
+                BT_LOGE("fail, get_btm_lescan_interface");
+                break;
+            }
+            scan_interface->stop_scan(scan_handle);
             break;
         }
         case 'q': {
