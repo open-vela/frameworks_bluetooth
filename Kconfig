@@ -39,7 +39,7 @@ config BLUETOOTH_A2DP_SINK
 
 config BLUETOOTH_HFP_HF
 	bool "Enable BT_HFP_HF"
-	default n
+	default y
 
 config BLUETOOTH_HFP_AG
 	bool "Enable BT_HFP_AG"
