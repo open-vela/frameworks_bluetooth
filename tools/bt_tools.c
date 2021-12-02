@@ -81,10 +81,13 @@ static btm_gap_interface_t* gap_test_interface = NULL;
 static btm_interface_t* manager;
 static void* manager_handle = NULL;
 static void* gap_hanlde = NULL;
+static uint8_t daemon_enable = 0;
 
 static struct option main_options[] = {
     { "help", 0, 0, 'h' },
     { "version", 0, 0, 'v' },
+    { "daemon", 0, 0, 'd' },
+    { "set", 0, 0, 's' },
     { 0, 0, 0, 0 }
 };
 
@@ -100,7 +103,9 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     { "hfp", hfp_client_command, "<HFP> HandFree Profile --Client" },
 #endif
-    { "a2dpsrc", NULL, "<A2DP> Advanced Audio Distribution Profile --Source" },
+#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+    { "a2dpsrc", a2dp_source_command, "<A2DP> Advanced Audio Distribution Profile --Source" },
+#endif
     { "gap", gap_cmd, "<GAP> General profile" },
     { "gatts", gatt_server_command, "<GATT> gatt server and le advertise" },
     { "gattc", gatt_client_command, "<GATT> gatt server and le scan" },
@@ -409,12 +414,13 @@ int gap_cmd(void* handle, int argc, char* argv[])
 static void manager_state_changed_callback(bt_manager_bt_state state)
 {
     BT_LOGD("%s", __func__);
-#if 0 //name device_class and io had set in  stack_state_change
-    char local_name[] = "BLUELET_NUTTX_Fzw";
-    gap_test_interface->bt_set_local_name(gap_hanlde, local_name, sizeof(local_name));
-    gap_test_interface->bt_set_local_device_class(gap_hanlde, BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO | BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
-    gap_test_interface->bt_set_local_io_capability(gap_hanlde, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
-#endif
+    if (daemon_enable) {
+        char local_name[] = "BLUELET_NUTTX_Sim";
+        gap_test_interface->bt_set_local_name(gap_hanlde, local_name, sizeof(local_name));
+        gap_test_interface->bt_set_local_device_class(gap_hanlde, BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO | BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
+        gap_test_interface->bt_set_local_io_capability(gap_hanlde, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
+    }
+
     gap_test_interface->bt_set_scan_mode(gap_hanlde, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
 }
 
@@ -521,11 +527,12 @@ void test_smp_request_callback(void* gap_handle, ssp_request_data_t* request_dat
 }
 void test_pairing_request_callback(void* gap_handle, BD_ADDR remote_addr, bool local_initiate, bool is_bondable)
 {
-    BT_LOGD("%s,local_initiate: %d, is_bondable:%d,  device :%02x:%02x:%02x:%02x:%02x:%02x", __func__,
-        local_initiate, is_bondable, remote_addr[0], remote_addr[1], remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5]);
-    // bt_device_t* device = malloc(sizeof(bt_device_t));
-    // memcpy(device->addr, remote_addr, BT_ADDR_LENGTH);
-    // gap_test_interface->bt_reply_pair_request(gap_handle, device, 0);
+    BT_LOGD("%s,local_initiate: %d, is_bondable:%d", __func__, local_initiate, is_bondable);
+    if (daemon_enable) {
+        bt_device_t* device = malloc(sizeof(bt_device_t));
+        memcpy(device->addr, remote_addr, 6);
+        gap_test_interface->bt_reply_pair_request(gap_hanlde, device, 0);
+    }
 }
 
 btm_gap_callbacks_t gap_test_tool_callbacks = {
@@ -636,13 +643,18 @@ int main(int argc, char** argv)
     char* saveptr;
     int ret, len;
 
-    while ((opt = getopt_long(argc, argv, "h-v", main_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "h-v-d-s", main_options, NULL)) != -1) {
         switch (opt) {
         case 'h':
             usage();
             exit(0);
         case 'v':
             show_version();
+            exit(0);
+        case 'd':
+            daemon_enable = 1;
+            break;
+        case 's':
             exit(0);
         default:
             break;
@@ -652,6 +664,8 @@ int main(int argc, char** argv)
     //btm_manager init
     manager = get_bt_manager_interface();
     manager->init(&manager_handle, &mgt_cb);
+    if (daemon_enable)
+        manager->enable(manager_handle);
     gap_test_interface = get_gap_instance();
     gap_test_interface->gap_register_callbacks(manager_handle, &gap_hanlde, &gap_test_tool_callbacks);
 
@@ -660,6 +674,10 @@ int main(int argc, char** argv)
         return -ENOMEM;
 
     while (1) {
+        if (daemon_enable) {
+            sleep(10000);
+            continue;
+        }
         printf("bttool> ");
         fflush(stdout);
 

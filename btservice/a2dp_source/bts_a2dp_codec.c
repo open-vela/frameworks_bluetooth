@@ -30,32 +30,60 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "btm_manager.h"
-#include "utils/utils.h"
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#include "bts_a2dp_codec.h"
+#include "bts_service.h"
+#include "a2dp_codec_sbc.h"
 
-/****************************************************************************
- * Public Types
- ****************************************************************************/
-typedef struct {
-    char* cmd;
-    int (*func)(void* handle, int argc, char** argv);
-    char* help;
-} bt_command_t;
+#define LOG_TAG "a2dp_codec"
+#include "log.h"
 
-extern int spp_command(void* handle, int argc, char* argv[]);
-extern int hfp_client_command(void* handle, int argc, char* argv[]);
-extern int gatt_server_command(void* handle, int argc, char* argv[]);
-extern int gatt_client_command(void* handle, int argc, char* argv[]);
-extern int a2dp_source_command(void* handle, int argc, char* argv[]);
+#define A2DP_SBC_ENCODER_INTERVAL_MS 30
+
+a2dp_codec_t g_a2dp_codec;
+a2dp_codec_config_t* current_config;
+
+static const a2dp_codec_config_t a2dp_codec_default_config = {
+    BTS_A2DP_CODEC_INDEX_SOURCE_SBC,
+    BTS_A2DP_CODEC_SAMPLE_RATE_44100,
+    BTS_A2DP_CODEC_BITS_PER_SAMPLE_16,
+    BTS_A2DP_CODEC_CHANNEL_MODE_STEREO,
+    328000,
+};
+
+uint32_t bts_a2dp_codec_interval_ms(void)
+{
+    return A2DP_SBC_ENCODER_INTERVAL_MS;
+}
+
+void bts_a2dp_codec_init(void)
+{
+    current_config = &g_a2dp_codec.current_codec_config;
+
+    memcpy(current_config, &a2dp_codec_default_config, sizeof(a2dp_codec_config_t));
+    if (current_config->codec_type == BTS_A2DP_CODEC_INDEX_SOURCE_SBC)
+        a2dp_codec_sbc_init();
+}
+
+a2dp_codec_config_t* bts_a2dp_codec_get_config(void)
+{
+    return current_config;
+}
+
+void bts_a2dp_codec_set_config(a2dp_codec_config_t* config)
+{
+    memcpy(current_config, config, sizeof(a2dp_codec_config_t));
+    if (current_config->codec_type == BTS_A2DP_CODEC_INDEX_SOURCE_SBC)
+        current_config->bit_rate = a2dp_codec_sbc_bit_rate(bts_a2dp_codec_get_frame_length());
+}
+
+uint32_t bts_a2dp_codec_get_frame_length(void)
+{
+    if (current_config->codec_type == BTS_A2DP_CODEC_INDEX_SOURCE_SBC)
+        return a2dp_codec_sbc_frame_length();
+
+    return 0; //unknown codec
+}

@@ -30,71 +30,72 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#define LOG_TAG "btm_a2dp_source"
-/****************************************************************************
- * Included Files
- ****************************************************************************/
+
 #include <stdio.h>
 #include <sys/types.h>
 
-#include "btm_a2dp_source.h"
 #include "btm_manager.h"
+#include "bts_a2dp_source.h"
 #include "bts_service.h"
-#include "bts_service_interface.h"
 
+#define LOG_TAG "a2dp_service"
 #include "log.h"
 
-static a2dp_source_interface_t* get_service(void)
+static a2dp_source_callbacks_t* a2dpSourceCbs = NULL;
+
+static void a2dp_connection_state_cb(bt_address addr,
+    a2dp_connection_state_t state)
 {
-    return (a2dp_source_interface_t*)get_bluetooth_service_interface()->get_profile_interface(BT_PROFILE_ADVANCED_AUDIO_SOURCE);
+    if (a2dpSourceCbs)
+        a2dpSourceCbs->connection_state_cb(addr, state);
 }
+
+static void a2dp_audio_state_cb(bt_address addr,
+    a2dp_audio_state_t state)
+{
+    if (a2dpSourceCbs)
+        a2dpSourceCbs->audio_state_cb(addr, state);
+}
+
+static void a2dp_audio_source_config_cb(bt_address addr)
+{
+    if (a2dpSourceCbs)
+        a2dpSourceCbs->audio_source_config_cb(addr);
+}
+
+static const a2dp_source_callbacks_t a2dp_callbacks = {
+    sizeof(a2dp_source_callbacks_t),
+    a2dp_connection_state_cb,
+    a2dp_audio_state_cb,
+    a2dp_audio_source_config_cb
+};
 
 static bt_result_code a2dp_source_connect(void* handle, bt_address addr)
 {
-    a2dp_source_interface_t* service = get_service();
-    if (!service)
-        return BT_RESULT_FAILED;
-
-    return service->connect(handle, addr);
+    return bts_a2dp_source_connect(addr);
 }
 
 static bt_result_code a2dp_source_disconnect(void* handle, bt_address addr)
 {
-    a2dp_source_interface_t* service = get_service();
-    if (!service)
-        return BT_RESULT_FAILED;
-
-    return service->disconnect(handle, addr);
+    return bts_a2dp_source_disconnect(addr);
 }
 
 static bt_result_code a2dp_source_set_silence_device(void* handle, bt_address addr, bool silence)
 {
-    a2dp_source_interface_t* service = get_service();
-    if (!service)
-        return BT_RESULT_FAILED;
-
-    return service->set_silence_device(handle, addr, silence);
+    return BT_RESULT_SUCCESS;
 }
 
 static bt_result_code a2dp_source_set_active_device(void* handle, bt_address addr)
 {
-    a2dp_source_interface_t* service = get_service();
-    if (!service)
-        return BT_RESULT_FAILED;
-
-    return service->set_active_device(handle, addr);
+    return BT_RESULT_SUCCESS;
 }
 
 static void a2dp_source_set_callbacks(void* handle, a2dp_source_callbacks_t* callbacks)
 {
-    a2dp_source_interface_t* service = get_service();
-    if (!service)
-        return;
-
-    service->set_callbacks(handle, callbacks);
+    a2dpSourceCbs = callbacks;
 }
 
-static const a2dp_source_interface_t a2dpSourceInterface = {
+static const a2dp_source_interface_t a2dpSourceSvrInterface = {
     sizeof(a2dp_source_interface_t),
     a2dp_source_connect,
     a2dp_source_disconnect,
@@ -103,7 +104,18 @@ static const a2dp_source_interface_t a2dpSourceInterface = {
     a2dp_source_set_callbacks
 };
 
-const a2dp_source_interface_t* get_a2dp_source_interface(void)
+bt_result_code a2dp_source_service_start(void)
 {
-    return &a2dpSourceInterface;
+    BT_LOGD("%s", __func__);
+    return bts_a2dp_source_init(&a2dp_callbacks);
+}
+
+void a2dp_source_service_stop(void)
+{
+    bts_a2dp_source_cleanup();
+}
+
+const a2dp_source_interface_t* get_a2dp_source_service_interface(void)
+{
+    return &a2dpSourceSvrInterface;
 }

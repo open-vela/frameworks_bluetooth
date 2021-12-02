@@ -30,32 +30,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-#include <getopt.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include "btm_manager.h"
-#include "utils/utils.h"
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#include "sbc_encoder.h"
 
-/****************************************************************************
- * Public Types
- ****************************************************************************/
-typedef struct {
-    char* cmd;
-    int (*func)(void* handle, int argc, char** argv);
-    char* help;
-} bt_command_t;
+static const sbc_param_t sbc_default_param = {
+    SBC_SF_44100,
+    SBC_STEREO,
+    SUB_BANDS_8,
+    2,
+    SBC_BLOCK_3,
+    SBC_LOUDNESS,
+    32,
+    213000,
+};
 
-extern int spp_command(void* handle, int argc, char* argv[]);
-extern int hfp_client_command(void* handle, int argc, char* argv[]);
-extern int gatt_server_command(void* handle, int argc, char* argv[]);
-extern int gatt_client_command(void* handle, int argc, char* argv[]);
-extern int a2dp_source_command(void* handle, int argc, char* argv[]);
+const sbc_param_t* sbc_encoder_param_get(void)
+{
+    return &sbc_default_param;
+}

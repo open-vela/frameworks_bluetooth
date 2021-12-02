@@ -25,6 +25,17 @@ CSRCS += btmanager/btm_manager.c
 CSRCS +=btmanager/btm_gap.c
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SRC),y)
+	CSRCS +=btmanager/btm_a2dp_source.c
+	CSRCS += btservice/a2dp_source/bts_a2dp_source.c
+	CSRCS += btservice/a2dp_source/bts_a2dp_source_service.c
+	CSRCS += btservice/a2dp_source/bts_a2dp_source_audio.c
+	CSRCS += btservice/a2dp_source/bts_a2dp_control.c
+	CSRCS += btservice/a2dp_source/bts_a2dp_event.c
+	CSRCS += btservice/a2dp_source/bts_a2dp_state_machine.c
+	CSRCS += btservice/a2dp_source/bts_a2dp_codec.c
+	CSRCS += udrv/uv/a2dp_ipc.c
+	CSRCS += btservice/a2dp_source/codec/a2dp_codec_sbc.c
+	CSRCS += btservice/a2dp_source/codec/sbc_encoder.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_AVRCP_TG),y)
@@ -77,6 +88,9 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
 	CSRCS +=tools/hf_client.c
 endif
+ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
+	CSRCS +=tools/a2dp_source.c
+endif
 ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER),y)
 	CSRCS +=tools/gatt_server.c
 endif
@@ -95,6 +109,7 @@ CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetoot
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/btservice/state_machine}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/utils}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/udrv/include}
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/btservice/a2dp_source/codec}
 ifeq ($(CONFIG_BLUETOOTH_TOOL_CHAIN), y)
 	CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/tools}
 endif
