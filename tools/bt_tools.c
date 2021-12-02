@@ -73,7 +73,7 @@ static int stop_service_discovery(void* handle, int argc, char** argv);
 static int get_remote_services(void* handle, int argc, char** argv);
 static int set_local_device_class(void* handle, int argc, char** argv);
 static int get_local_device_class(void* handle, int argc, char** argv);
-static int set_local_address(void* handle, int argc, char** argv);
+static int ble_set_address(void* handle, int argc, char** argv);
 
 static btm_gap_interface_t* gap_test_interface = NULL;
 static btm_interface_t* manager;
@@ -125,7 +125,8 @@ static bt_command_t g_gap_tables[] = {
     { "getremoteservice", get_remote_services, "\"get remote service        param: <addr> \"" },
     { "setclass", set_local_device_class, "\"set local class        param: <class> \"" },
     { "getclass", get_local_device_class, "\"get local class        \"" },
-    { "setaddr", set_local_address, "\"set local addr        param: <addr> \"" },
+    { "setbleaddr", ble_set_address, "\"set ble address        param: <ogf> <ocf> <data> \"" },
+
 };
 
 static struct option gap_options[] = {
@@ -341,14 +342,15 @@ static int get_local_device_class(void* handle, int argc, char** argv)
     return 0;
 }
 
-static int set_local_address(void* handle, int argc, char** argv)
+static int ble_set_address(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return -1;
+
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
-    gap_test_interface->bt_set_local_address(gap_hanlde, device);
-
+    gap_test_interface->ble_set_address(gap_hanlde, device);
+    free(device);
     return 0;
 }
 
@@ -402,7 +404,7 @@ int gap_cmd(void* handle, int argc, char* argv[])
 static void manager_state_changed_callback(bt_manager_bt_state state)
 {
     BT_LOGD("%s", __func__);
-#if 0  //name device_class and io had set in  stack_state_change
+#if 0 //name device_class and io had set in  stack_state_change
     char local_name[] = "BLUELET_NUTTX_Fzw";
     gap_test_interface->bt_set_local_name(gap_hanlde, local_name, sizeof(local_name));
     gap_test_interface->bt_set_local_device_class(gap_hanlde, BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO | BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);

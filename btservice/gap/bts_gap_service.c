@@ -42,9 +42,9 @@
     do {                                                                                \
         bt_if_gap_handle_t* if_handle;                                                  \
         struct list_node* handle_node;                                                  \
-        if (!gap_service)                                                               \
+        if (!g_gap_service)                                                               \
             break;                                                                      \
-        struct list_node* list = &gap_service->handle_list;                             \
+        struct list_node* list = &g_gap_service->handle_list;                             \
         list_for_every(list, handle_node)                                               \
         {                                                                               \
             if_handle = (bt_if_gap_handle_t*)handle_node;                               \
@@ -68,11 +68,11 @@ typedef struct {
     const btm_gap_callbacks_t* gap_callbacks;
 } bt_if_gap_handle_t;
 
-bt_gap_service_t* gap_service = NULL;
+bt_gap_service_t* g_gap_service = NULL;
 
 static bool gap_is_handle_valid(void* gap_handle)
 {
-    struct list_node* list = &gap_service->handle_list;
+    struct list_node* list = &g_gap_service->handle_list;
     struct list_node* node;
     bt_if_gap_handle_t* if_handle;
 
@@ -155,6 +155,11 @@ static void gap_if_ble_address_callback(bt_address bd_addr, ble_addr_type addr_t
     BT_LOGD("%s", __func__);
     BT_GAP_CB(ble_address_cb, bd_addr, addr_type);
 }
+static void gap_ifbts_ble_irk_callback(bt_common_key irk, bt_address ble_addr, ble_addr_type addr_type)
+{
+    BT_LOGD("%s", __func__);
+    BT_GAP_CB(ble_irk_cb, irk, ble_addr, addr_type);    
+}
 
 bts_gap_callback_t bts_gap_callbacks = {
     .size = sizeof(bts_gap_callback_t),
@@ -170,14 +175,15 @@ bts_gap_callback_t bts_gap_callbacks = {
     .smp_request_cb = gap_if_smp_request_callback,
     .ble_phy_update_cb = gap_if_ble_phy_update_callback,
     .ble_address_cb = gap_if_ble_address_callback,
+    .ble_irk_cb = gap_ifbts_ble_irk_callback,
 };
 
 bt_result_code gap_service_init()
 {
-    if (!gap_service) {
-        gap_service = (bt_gap_service_t*)malloc(sizeof(bt_gap_service_t));
+    if (!g_gap_service) {
+        g_gap_service = (bt_gap_service_t*)malloc(sizeof(bt_gap_service_t));
         gap_init(&bts_gap_callbacks);
-        list_initialize(&gap_service->handle_list);
+        list_initialize(&g_gap_service->handle_list);
     }
     return BT_RESULT_SUCCESS;
 }
@@ -188,14 +194,14 @@ static bt_result_code bts_if_register_callbacks(void* handle, void** gap_handle,
     BT_LOGD("%s", __func__);
     if (gap_is_handle_valid(*gap_handle))
         return ret;
-    if (!gap_service)
+    if (!g_gap_service)
         return ret;
 
     bt_if_gap_handle_t* gap_if_handle = (bt_if_gap_handle_t*)malloc(sizeof(bt_if_gap_handle_t));
     gap_if_handle->gap_callbacks = malloc(sizeof(btm_gap_callbacks_t));
     gap_if_handle->gap_callbacks = callbacks;
     gap_if_handle->gap_handle = *gap_handle;
-    list_add_tail(&gap_service->handle_list, &gap_if_handle->node);
+    list_add_tail(&g_gap_service->handle_list, &gap_if_handle->node);
     return BT_RESULT_SUCCESS;
 }
 
@@ -367,7 +373,7 @@ static bt_result_code bts_if_stop_service_discovery(void* gap_handle, bt_device_
     ret = bts_stop_service_discovery(device);
     return ret;
 }
-
+#ifdef HCI_VSC_COMMAND
 /*VSC command*/
 static bt_result_code bts_if_send_hci_command(void* gap_handle, bt_hci_command_t* command, bt_service_hci_command_complete_event event_type)
 {
@@ -377,7 +383,7 @@ static bt_result_code bts_if_send_hci_command(void* gap_handle, bt_hci_command_t
     ret = bts_send_hci_command(command, event_type);
     return ret;
 }
-
+#endif
 static bt_result_code bts_if_ble_set_static_identity(void* gap_handle, bt_device_t* device)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -509,7 +515,7 @@ static bt_result_code bts_if_gap_cleanup(void* gap_handle)
     bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
-    struct list_node* list = &gap_service->handle_list;
+    struct list_node* list = &g_gap_service->handle_list;
     struct list_node* node;
     bt_if_gap_handle_t* if_handle;
     list_for_every(list, node)
@@ -552,7 +558,9 @@ static btm_gap_interface_t gap_interface = {
     .bt_stop_discovery = bts_if_stop_discovery,
     .bt_start_service_discovery = bts_if_start_service_discovery,
     .bt_stop_service_discovery = bts_if_stop_service_discovery,
+#ifdef HCI_VSC_COMMAND
     .bt_send_hci_command = bts_if_send_hci_command,
+#endif
     .ble_set_static_identity = bts_if_ble_set_static_identity,
     .ble_get_current_irk = bts_if_ble_get_current_irk,
     .ble_set_address = bts_if_ble_set_address,

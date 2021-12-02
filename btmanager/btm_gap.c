@@ -214,6 +214,17 @@ static void btm_pairing_request_callback(void* gap_handle, BD_ADDR remote_addr, 
     context->gap_callbacks->pairing_request_cb(gap_handle, remote_addr, local_initiate, is_bondable);
 }
 
+void btm_ble_irk_callback(void* gap_handle, bt_common_key irk, bt_address ble_addr, ble_addr_type addr_type)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->ble_irk_cb))
+        return;
+    BT_LOGD("%s", __func__);
+    context->gap_callbacks->ble_irk_cb(gap_handle, irk, ble_addr, addr_type);
+}
+
 static const btm_gap_callbacks_t service_callbacks = {
     .size = sizeof(btm_gap_callbacks_t),
     .bt_connection_state_changed_callback_cb = btm_connection_state_changed_callback,
@@ -414,6 +425,7 @@ static bt_result_code btm_stop_discovery(void* gap_handle)
 }
 
 /*VSC command*/
+#ifdef HCI_VSC_COMMAND
 static bt_result_code btm_send_hci_command(void* gap_handle, bt_hci_command_t* command, bt_service_hci_command_complete_event event_type)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -422,6 +434,7 @@ static bt_result_code btm_send_hci_command(void* gap_handle, bt_hci_command_t* c
     BT_GAP_INTERFACE(context->service_interface, bt_send_hci_command, ret, gap_handle, command, event_type);
     return ret;
 }
+#endif
 
 static int btm_get_remote_services(void* gap_handle, bt_device_t* remote_addr, bt_uuid_t* service_list, uint8_t count_in)
 {
@@ -622,7 +635,9 @@ static btm_gap_interface_t gap_interface = {
     .bt_stop_discovery = btm_stop_discovery,
     .bt_start_service_discovery = btm_start_service_discovery,
     .bt_stop_service_discovery = btm_stop_service_discovery,
+#ifdef HCI_VSC_COMMAND
     .bt_send_hci_command = btm_send_hci_command,
+#endif
     .ble_set_static_identity = btm_ble_set_static_identity,
     .ble_get_current_irk = btm_ble_get_current_irk,
     .ble_set_address = btm_ble_set_address,
