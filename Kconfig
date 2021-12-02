@@ -23,7 +23,7 @@ if BLUETOOTH
 
 config BLUETOOTH_AVRCP_TG
 	bool "Enable BT_AVRCP_TG"
-	default n
+	default y
 
 config BLUETOOTH_AVRCP_CT
 	bool "Enable BT_AVRCP_CT"

@@ -114,6 +114,9 @@ static bt_result_code bts_if_enable(void* handle)
         return BT_RESULT_FAILED;
 
     gap_enable();
+#ifdef CONFIG_BLUETOOTH_AVRCP_TG
+    avrcp_target_init();
+#endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     hf_client_service_start();
 #endif

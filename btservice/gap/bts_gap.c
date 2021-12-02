@@ -160,15 +160,17 @@ typedef struct {
     bt_device_t* device;
 } list_device_t;
 
-struct list_node* msg_list;
-struct list_node* discovery_list;
+struct list_node* g_msg_list;
+struct list_node* g_discovery_list;
+static bts_gap_callback_t* g_bts_gap_callbacks = NULL;
+/*process callback from stack */
 
 extern void InitTransportLayer(void);
 
 static gap_msg_t* gap_msg_new(gap_event_t event)
 {
     gap_msg_t* msg;
-    if (!msg_list)
+    if (!g_msg_list)
         return NULL;
     msg = (gap_msg_t*)malloc(sizeof(gap_msg_t));
     if (!msg)
@@ -176,7 +178,7 @@ static gap_msg_t* gap_msg_new(gap_event_t event)
 
     msg->event = event;
     memset(&msg->event_data, 0, sizeof(msg->event_data));
-    //   list_add_tail(msg_list, &msg->node);
+    //   list_add_tail(g_msg_list, &msg->node);
 
     return msg;
 }
@@ -187,8 +189,7 @@ static void gap_msg_destory(gap_msg_t* msg)
     free(msg);
 }
 
-static bts_gap_callback_t* bts_gap_callbacks = NULL;
-/*process callback from stack */
+
 
 static void process_loop_in_gap(void* data, size_t data_size)
 {
@@ -208,43 +209,43 @@ static void process_loop_in_gap(void* data, size_t data_size)
     }
     case GAP_DISCOVERY_STATE_CHANGED: {
         if (gap_msg->event_data.data.discovery_state == BT_DISCOVERY_STARTED) {
-            if (!discovery_list) {
-                discovery_list = malloc(sizeof(struct list_node));
-                list_initialize(discovery_list);
+            if (!g_discovery_list) {
+                g_discovery_list = malloc(sizeof(struct list_node));
+                list_initialize(g_discovery_list);
             }
         }
         if (gap_msg->event_data.data.discovery_state == BT_DISCOVERY_STOPPED) {
             struct list_node* node;
-            while (!list_is_empty(discovery_list)) {
-                node = list_remove_head(discovery_list);
+            while (!list_is_empty(g_discovery_list)) {
+                node = list_remove_head(g_discovery_list);
                 free(node);
             }
 
-            free(discovery_list);
-            discovery_list = NULL;
+            free(g_discovery_list);
+            g_discovery_list = NULL;
         }
-        if ((bts_gap_callbacks) && (bts_gap_callbacks->discovery_state_changed_cb)) {
-            bts_gap_callbacks->discovery_state_changed_cb(gap_msg->event_data.data.discovery_state);
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->discovery_state_changed_cb)) {
+            g_bts_gap_callbacks->discovery_state_changed_cb(gap_msg->event_data.data.discovery_state);
         }
         break;
     }
     case GAP_REMOTE_NAME: {
-        if ((bts_gap_callbacks) && (bts_gap_callbacks->remote_name_cb)) {
-            bts_gap_callbacks->remote_name_cb(gap_msg->event_data.bd_addr,
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->remote_name_cb)) {
+            g_bts_gap_callbacks->remote_name_cb(gap_msg->event_data.bd_addr,
                 gap_msg->event_data.data.remote_name.bt_name,
                 gap_msg->event_data.data.remote_name.length);
         }
         break;
     }
     case GAP_SSP_REQUEST: {
-        if ((bts_gap_callbacks) && (bts_gap_callbacks->spp_request_cb)) {
-            bts_gap_callbacks->spp_request_cb(gap_msg->event_data.data.ssp_request_data);
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->spp_request_cb)) {
+            g_bts_gap_callbacks->spp_request_cb(gap_msg->event_data.data.ssp_request_data);
         }
         break;
     }
     case GAP_PAIR_REQUEST: {
-        if ((bts_gap_callbacks) && (bts_gap_callbacks->pairing_request_cb)) {
-            bts_gap_callbacks->pairing_request_cb(gap_msg->event_data.bd_addr, gap_msg->event_data.data.pair_request.local_initiate,
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->pairing_request_cb)) {
+            g_bts_gap_callbacks->pairing_request_cb(gap_msg->event_data.bd_addr, gap_msg->event_data.data.pair_request.local_initiate,
                 gap_msg->event_data.data.pair_request.is_bondable);
         }
         break;
@@ -255,7 +256,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
         list_device_t* discovery_devce;
         bt_device_t* device = gap_msg->event_data.data.device;
 
-        list_for_every(discovery_list, node)
+        list_for_every(g_discovery_list, node)
         {
             discovery_devce = (list_device_t*)node;
             if (!memcmp(discovery_devce->device->addr, device->addr, BT_ADDR_LENGTH)) {
@@ -264,18 +265,18 @@ static void process_loop_in_gap(void* data, size_t data_size)
         }
         discovery_devce = malloc(sizeof(list_device_t));
         discovery_devce->device = device;
-        list_add_tail(discovery_list, &discovery_devce->node);
+        list_add_tail(g_discovery_list, &discovery_devce->node);
 
-        if ((bts_gap_callbacks) && (bts_gap_callbacks->device_found_cb)) {
-            bts_gap_callbacks->device_found_cb(device);
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->device_found_cb)) {
+            g_bts_gap_callbacks->device_found_cb(device);
         }
         break;
     }
     case GAP_BOND_STATE_CHANGED: {
-        if ((bts_gap_callbacks) && (bts_gap_callbacks->bond_state_changed_cb)) {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->bond_state_changed_cb)) {
             bt_device_t* new_device = malloc(sizeof(bt_device_t));
             memcpy(new_device->addr, gap_msg->event_data.bd_addr, BT_ADDR_LENGTH);
-            bts_gap_callbacks->bond_state_changed_cb(new_device, gap_msg->event_data.data.bond_state);
+            g_bts_gap_callbacks->bond_state_changed_cb(new_device, gap_msg->event_data.data.bond_state);
             if (gap_msg->event_data.data.bond_state == SERVICE_BT_BOND_STATE_BONDED) {
                 gap_update_data_storage();
             }
@@ -288,7 +289,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
         break;
     }
     case GAP_ACL_STATE_CHANGED: {
-        if ((bts_gap_callbacks) && (bts_gap_callbacks->connection_state_changed_cb)) {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->connection_state_changed_cb)) {
             bt_device_t* new_device = malloc(sizeof(bt_device_t));
             bt_connection_state state = STATE_DISCONNECTED;
             memcpy(new_device->addr, gap_msg->event_data.data.acl_state_params->remote_addr, BD_ADDR_LEN);
@@ -302,41 +303,47 @@ static void process_loop_in_gap(void* data, size_t data_size)
             default:
                 return;
             }
-            bts_gap_callbacks->connection_state_changed_cb(new_device, state);
+            g_bts_gap_callbacks->connection_state_changed_cb(new_device, state);
         }
         break;
     }
     case GAP_HCI_EVENT: {
-        if ((bts_gap_callbacks) && (bts_gap_callbacks->hci_event_cb)) {
-            bts_gap_callbacks->hci_event_cb(gap_msg->event_data.data.hci_event);
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->hci_event_cb)) {
+            g_bts_gap_callbacks->hci_event_cb(gap_msg->event_data.data.hci_event);
         }
         break;
     }
     case GAP_UPDATE_BLE_BONDED_DEVICES: {
-        if ((bts_gap_callbacks) && (bts_gap_callbacks->update_ble_bonede_device_cb)) {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->update_ble_bonede_device_cb)) {
             gap_update_data_storage();
-            bts_gap_callbacks->update_ble_bonede_device_cb(gap_msg->event_data.data.ble_bonded_update.bonded_device_list,
+            g_bts_gap_callbacks->update_ble_bonede_device_cb(gap_msg->event_data.data.ble_bonded_update.bonded_device_list,
                 gap_msg->event_data.data.ble_bonded_update.count_in);
         }
         break;
     }
     case GAP_SMP_REQUEST: {
-        if ((bts_gap_callbacks) && (bts_gap_callbacks->smp_request_cb)) {
-            bts_gap_callbacks->smp_request_cb(gap_msg->event_data.data.ssp_request_data);
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->smp_request_cb)) {
+            g_bts_gap_callbacks->smp_request_cb(gap_msg->event_data.data.ssp_request_data);
         }
         break;
     }
     case GAP_BLE_PHY_UPDATE: {
-        if ((bts_gap_callbacks) && (bts_gap_callbacks->ble_phy_update_cb)) {
-            bts_gap_callbacks->ble_phy_update_cb(gap_msg->event_data.bd_addr,
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->ble_phy_update_cb)) {
+            g_bts_gap_callbacks->ble_phy_update_cb(gap_msg->event_data.bd_addr,
                 gap_msg->event_data.data.phy_update.tx_phy, gap_msg->event_data.data.phy_update.rx_phy,
                 gap_msg->event_data.status);
         }
         break;
     }
+    case GAP_BLE_IRK:{
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->ble_irk_cb)) {
+            g_bts_gap_callbacks->ble_irk_cb(gap_msg->event_data.data.irk, gap_msg->event_data.bd_addr, gap_msg->event_data.addr_type);
+        }        
+        break;
+    }
     case GAP_BLE_ADDRESS: {
-        if ((bts_gap_callbacks) && (bts_gap_callbacks->ble_address_cb)) {
-            bts_gap_callbacks->ble_address_cb(gap_msg->event_data.bd_addr, gap_msg->event_data.addr_type);
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->ble_address_cb)) {
+            g_bts_gap_callbacks->ble_address_cb(gap_msg->event_data.bd_addr, gap_msg->event_data.addr_type);
         }
         break;
     }
@@ -380,7 +387,7 @@ bt_result_code bts_start_discovery(uint32_t timeout)
 static void adapter_device_found_callback(device_found_t* device)
 {
     //BT_LOGD("%s", __func__);
-    if ((!bts_gap_callbacks) || (!bts_gap_callbacks->device_found_cb))
+    if ((!g_bts_gap_callbacks) || (!g_bts_gap_callbacks->device_found_cb))
         return;
     bt_device_t* new_device = malloc(sizeof(bt_device_t));
     memcpy(new_device->addr, device->bd_addr, BT_ADDR_LENGTH);
@@ -696,7 +703,7 @@ static void adapter_ble_packet_received_callback(bt_address remote_addr, uint16_
     gap_send_message(msg);
 }
 
-GAP_CALLBACKS_S gap_callback = {
+GAP_CALLBACKS_S g_gap_callback = {
     .size = sizeof(GAP_CALLBACKS_S),
     .gap_stack_state_changed_cb = adapter_stack_state_changed_callback,
     .gap_received_remote_name_cb = adapter_received_remote_name_callback,
@@ -735,14 +742,14 @@ GAP_CALLBACKS_S gap_callback = {
 
 bt_result_code gap_init(bts_gap_callback_t* cb)
 {
-    bts_gap_callbacks = cb;
+    g_bts_gap_callbacks = cb;
     service_adapter_gap_init();
 
-    service_adapter_gap_register_gap_callback(&gap_callback);
-    if (!msg_list)
-        msg_list = malloc(sizeof(struct list_node));
+    service_adapter_gap_register_gap_callback(&g_gap_callback);
+    if (!g_msg_list)
+        g_msg_list = malloc(sizeof(struct list_node));
 
-    list_initialize(msg_list);
+    list_initialize(g_msg_list);
 
     bts_register_profile_process(BT_PROFILE_GAP_ID, &handle_msg_received);
     return BT_RESULT_SUCCESS;
@@ -750,7 +757,7 @@ bt_result_code gap_init(bts_gap_callback_t* cb)
 
 void gap_cleanup(void)
 {
-    bts_gap_callbacks = NULL;
+    g_bts_gap_callbacks = NULL;
     service_adapter_gap_cleanup();
     bts_unregister_profile_process(BT_PROFILE_GAP_ID);
 }
@@ -979,7 +986,7 @@ bt_result_code bts_stop_service_discovery(bt_device_t* device)
     }
     return BT_RESULT_SUCCESS;
 }
-
+#ifdef HCI_VSC_COMMAND
 /*VSC command*/
 bt_result_code bts_send_hci_command(bt_hci_command_t* command, bt_service_hci_command_complete_event event_type)
 {
@@ -992,7 +999,7 @@ bt_result_code bts_send_hci_command(bt_hci_command_t* command, bt_service_hci_co
     }
     return BT_RESULT_SUCCESS;
 }
-
+#endif
 bt_result_code bts_ble_set_static_identity(bt_device_t* device)
 {
     if (!device)
