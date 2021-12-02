@@ -23,6 +23,8 @@ typedef void (*bts_smp_request_callback)(ssp_request_data_t* request_data);
 typedef void (*bts_ble_phy_update_callback)(bt_address remote_addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status status);
 typedef void (*bts_ble_address_callback)(bt_address ble_addr, ble_addr_type ble_addr_type);
 typedef void (*bts_pairing_request_callback)(BD_ADDR remote_addr, bool local_initiate, bool is_bondable);
+typedef void (*bts_ble_irk_callback)(bt_common_key irk, bt_address ble_addr, ble_addr_type ble_addr_type);
+
 typedef struct {
     /* * set to sizeof(GAP_CALLBACKS_S) */
     uint8_t size;
@@ -39,6 +41,7 @@ typedef struct {
     bts_update_ble_bonded_devices_callback update_ble_bonede_device_cb;
     bts_ble_phy_update_callback ble_phy_update_cb;
     bts_ble_address_callback ble_address_cb;
+    bts_ble_irk_callback ble_irk_cb;
 } bts_gap_callback_t;
 
 bt_result_code gap_init(bts_gap_callback_t* cb);

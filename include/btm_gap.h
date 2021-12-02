@@ -223,6 +223,8 @@ typedef void (*ble_address_callback)(void* gap_handle, bt_address ble_addr, ble_
  */
 typedef void (*pairing_request_callback)(void* gap_handle, BD_ADDR remote_addr, bool local_initiate, bool is_bondable);
 
+typedef void (*ble_irk_callback)(void* gap_handle, bt_common_key irk, bt_address ble_addr, ble_addr_type ble_addr_type);
+
 typedef struct {
     /** set to sizeof(bt_callbacks_t) */
     size_t size;
@@ -242,6 +244,7 @@ typedef struct {
     ble_phy_update_callback ble_phy_update_cb;
     ble_address_callback ble_address_cb;
     pairing_request_callback pairing_request_cb;
+    ble_irk_callback ble_irk_cb;
 } btm_gap_callbacks_t;
 
 /*gap interface*/
@@ -375,8 +378,9 @@ typedef struct {
  * @param[in]  event_type  type of the complete event for the command
  * @return   Bluetooth Error status code (0- Success)
  */
+#ifdef HCI_VSC_COMMAND
     bt_result_code (*bt_send_hci_command)(void* handle, bt_hci_command_t* command, bt_service_hci_command_complete_event event_type);
-
+#endif
     /*service discovery*/
     /**
  * @brief  Start BR/EDR service discovery

@@ -1,0 +1,10 @@
+#ifndef __BTS_GAP__H__
+#define __BTS_GAP__H__
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+#include "bts_gap_service.h"
+#include "stack_adapter_common.h"
+#include <stdio.h>
+bt_result_code avrcp_target_init(void);
+#endif
