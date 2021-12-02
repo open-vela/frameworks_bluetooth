@@ -58,23 +58,24 @@ Exit:
 
 static bt_manager_bt_state bt_get_state(void* handle)
 {
-    //size_t size = 0;
-    //char *buffer = NULL;
-    bt_result_code result = BT_RESULT_FAILED;
+
+    bt_manager_bt_state state = BT_MANAGER_STATE_OFF;
     if (!handle) {
         goto Exit;
     }
-    //TODO
+    state = bluetooth_service->bt_get_state(handle);
 Exit:
-    return result;
+    return state;
 }
 
 static bt_manager_ble_state ble_get_state(void* handle)
 {
-    bt_result_code result = BT_RESULT_FAILED;
-    //TODO
-
-    return result;
+    bt_manager_ble_state state = STATE_BLE_OFF;
+    if (!handle) {
+        return state;
+    }
+    state = bluetooth_service->ble_get_state(handle);
+    return state;
 }
 
 static void bt_mgr_adapter_state_changed_callback(void* handle, bt_manager_bt_state state)

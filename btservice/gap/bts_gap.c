@@ -784,12 +784,8 @@ bt_result_code gap_disable(bool normal_disable)
 
 bt_result_code bts_set_local_name(char* bt_name, uint8_t len)
 {
-    bt_status ret = service_adapter_gap_set_local_name(bt_name, len);
-    if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, ret:%d", __func__, ret);
-        return BT_RESULT_FAILED;
-    }
-    return BT_RESULT_SUCCESS;
+    return gap_update_device_name(bt_name, len);
+
 }
 
 bt_result_code bts_set_local_address(bt_device_t* device)

@@ -48,6 +48,8 @@ static void usage(void);
 static int usage_cmd(void* handle, int argc, char** argv);
 static int enable_cmd(void* handle, int argc, char** argv);
 static int disable_cmd(void* handle, int argc, char** argv);
+static int get_state_cmd(void* handle, int argc, char** argv);
+static int get_ble_state_cmd(void* handle, int argc, char** argv);
 
 static int quit_cmd(void* handle, int argc, char** argv);
 static int gap_cmd(void* handle, int argc, char** argv);
@@ -89,6 +91,9 @@ static struct option main_options[] = {
 static bt_command_t g_cmd_tables[] = {
     { "enable", enable_cmd, "enable stack" },
     { "disable", disable_cmd, "disable stack" },
+    { "get_state", get_state_cmd, "get stack state" },
+    { "get_ble_state", get_ble_state_cmd, "get stack ble state" },
+
 #ifdef CONFIG_BLUETOOTH_SPP
     { "spp", spp_command, "<SPP> Serial Port Profile" },
 #endif
@@ -125,7 +130,7 @@ static bt_command_t g_gap_tables[] = {
     { "getremoteservice", get_remote_services, "\"get remote service        param: <addr> \"" },
     { "setclass", set_local_device_class, "\"set local class        param: <class> \"" },
     { "getclass", get_local_device_class, "\"get local class        \"" },
-    { "setbleaddr", ble_set_address, "\"set ble address        param: <ogf> <ocf> <data> \"" },
+    { "setbleaddr", ble_set_address, "\"set ble address        param: <addr> \"" },
 
 };
 
@@ -286,7 +291,7 @@ static int get_bonded_devices(void* handle, int argc, char** argv)
     int ret = gap_test_interface->bt_get_bonded_devices(gap_hanlde, device_list);
     for (int i = 0; i < ret; i++) {
         bt_device_t* device = &device_list[i];
-        BT_LOGD("%s, device [%d]: %s", __func__, i, addr_str(device->addr));
+        BT_LOGD("%s, device [%d]: %s, name : ", __func__, i, addr_str(device->addr), device->name);
     }
 
     return 0;
@@ -300,7 +305,7 @@ static int get_connected_devices(void* handle, int argc, char** argv)
     int ret = gap_test_interface->bt_get_connected_devices(gap_hanlde, device_list);
     for (int i = 0; i < ret; i++) {
         bt_device_t* device = &device_list[i];
-        BT_LOGD("%s, device [%d]: %s", __func__, i, addr_str(device->addr));
+        BT_LOGD("%s, device [%d]: %s, name: %s", __func__, i, addr_str(device->addr), device->name);
     }
 
     return 0;
@@ -553,6 +558,19 @@ static int disable_cmd(void* handle, int argc, char** argv)
     return 0;
 }
 
+static int get_state_cmd(void* handle, int argc, char** argv)
+{
+    bt_manager_bt_state state = manager->bt_get_state(handle);
+    BT_LOGD("%s, state: %d", __func__, state);
+    return 0;
+}
+
+static int get_ble_state_cmd(void* handle, int argc, char** argv)
+{
+    bt_manager_ble_state state = manager->ble_get_state(handle);
+    BT_LOGD("%s, state: %d", __func__, state);
+    return 0;
+}
 static int usage_cmd(void* handle, int argc, char** argv)
 {
     usage();

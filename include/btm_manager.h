@@ -249,6 +249,8 @@ typedef struct
     bt_address addr;
     bt_device_type device_type;
     ble_address_type addr_type;
+    char *name;
+    int name_length;
     int rssi;
 } bt_device_t;
 

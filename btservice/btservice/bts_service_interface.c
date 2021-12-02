@@ -204,7 +204,7 @@ static bt_manager_ble_state if_get_ble_state(void* handle)
     if (!service)
         return BT_MANAGER_STATE_OFF;
     if (service->bt_state != BT_MANAGER_STATE_OFF)
-        return service->bt_state;
+        return STATE_BLE_ON;
     else
         return service->ble_state;
 }
