@@ -73,7 +73,6 @@ extern void ScheduleLoop(void);
 
 void bts_uv_close_cb(uv_handle_t* handle)
 {
-    //BT_LOGD("uv_close_cb\n");
     if (NULL == handle) {
         return;
     }
@@ -82,7 +81,6 @@ void bts_uv_close_cb(uv_handle_t* handle)
 
 static void timer_hadler_cb(uv_timer_t* timer)
 {
-    BT_LOGD("Do timer_hadler_cb");
     if (NULL == timer) {
         return;
     }

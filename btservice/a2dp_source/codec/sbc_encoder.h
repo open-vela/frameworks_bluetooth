@@ -30,32 +30,49 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-#include <getopt.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef __SBC_ENCODER_H__
+#define __SBC_ENCODER_H__
 
-#include "btm_manager.h"
-#include "utils/utils.h"
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#include <stddef.h>
+#include <sys/types.h>
 
-/****************************************************************************
- * Public Types
- ****************************************************************************/
+#define SBC_MAX_NUM_OF_SUBBANDS 8
+#define SBC_MAX_NUM_OF_CHANNELS 2
+#define SBC_MAX_NUM_OF_BLOCKS 16
+
+#define SBC_LOUDNESS 0
+#define SBC_SNR 1
+
+#define SUB_BANDS_8 8
+#define SUB_BANDS_4 4
+
+#define SBC_SF_16000 0
+#define SBC_SF_32000 1
+#define SBC_SF_44100 2
+#define SBC_SF_48000 3
+
+#define SBC_MONO 0
+#define SBC_DUAL 1
+#define SBC_STEREO 2
+#define SBC_JOINT_STEREO 3
+
+#define SBC_BLOCK_0 4
+#define SBC_BLOCK_1 8
+#define SBC_BLOCK_2 12
+#define SBC_BLOCK_3 16
+
 typedef struct {
-    char* cmd;
-    int (*func)(void* handle, int argc, char** argv);
-    char* help;
-} bt_command_t;
+    int16_t s16SamplingFreq; /* 16k, 32k, 44.1k or 48k*/
+    int16_t s16ChannelMode; /* mono, dual, streo or joint streo*/
+    int16_t s16NumOfSubBands; /* 4 or 8 */
+    int16_t s16NumOfChannels;
+    int16_t s16NumOfBlocks; /* 4, 8, 12 or 16*/
+    int16_t s16AllocationMethod; /* loudness or SNR*/
+    int16_t s16BitPool; /* 16*numOfSb for mono & dual;
+                                 32*numOfSb for stereo & joint stereo */
+    uint32_t u32BitRate;
+} sbc_param_t;
 
-extern int spp_command(void* handle, int argc, char* argv[]);
-extern int hfp_client_command(void* handle, int argc, char* argv[]);
-extern int gatt_server_command(void* handle, int argc, char* argv[]);
-extern int gatt_client_command(void* handle, int argc, char* argv[]);
-extern int a2dp_source_command(void* handle, int argc, char* argv[]);
+const sbc_param_t* sbc_encoder_param_get(void);
+
+#endif

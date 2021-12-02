@@ -30,32 +30,31 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "btm_manager.h"
-#include "utils/utils.h"
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#include "bts_a2dp_event.h"
 
-/****************************************************************************
- * Public Types
- ****************************************************************************/
-typedef struct {
-    char* cmd;
-    int (*func)(void* handle, int argc, char** argv);
-    char* help;
-} bt_command_t;
+a2dp_event_t* a2dp_event_new(a2dp_event_type_t event,
+    bt_address bd_addr)
+{
+    a2dp_event_t* a2dp_event;
 
-extern int spp_command(void* handle, int argc, char* argv[]);
-extern int hfp_client_command(void* handle, int argc, char* argv[]);
-extern int gatt_server_command(void* handle, int argc, char* argv[]);
-extern int gatt_client_command(void* handle, int argc, char* argv[]);
-extern int a2dp_source_command(void* handle, int argc, char* argv[]);
+    a2dp_event = (a2dp_event_t*)malloc(sizeof(a2dp_event_t));
+    if (a2dp_event == NULL)
+        return NULL;
+
+    a2dp_event->event = event;
+    memset(&a2dp_event->event_data, 0, sizeof(a2dp_event->event_data));
+    if (bd_addr != NULL)
+        memcpy(&a2dp_event->event_data.bd_addr, bd_addr, sizeof(bt_address));
+
+    return a2dp_event;
+}
+
+void a2dp_event_destory(a2dp_event_t* a2dp_event)
+{
+    free(a2dp_event->event_data.data);
+    free(a2dp_event);
+}

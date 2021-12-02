@@ -95,6 +95,27 @@ config BLUETOOTH_TOOL_CHAIN
     bool "Enable bluetooth profile test tools"
     default y
 
+if BLUETOOTH_A2DP_SRC
+config BLUETOOTH_A2DP_MAX_CONNECTIONS
+	int "Maximum A2dp connections"
+	default 1
+	help
+		Maximum A2dp connections
+
+config BLUETOOTH_A2DP_IPC_RPSMG_SERVER
+	bool "Bluetooth A2dp audio IPC rpmsg server"
+	default y
+	help
+		Bluetooth A2dp audio IPC rpmsg server
+
+config BLUETOOTH_A2DP_IPC_RPSMG_NAME
+	string "Bluetooth A2dp audio IPC rpmsg name"
+	default "ap"
+	help
+		Bluetooth A2dp audio IPC rpmsg name
+
+endif #BLUETOOTH_A2DP_SRC
+
 if BLUETOOTH_SPP
 config BLUETOOTH_SPP_INSTANCE
 	int "Maximum SPP instance count"

@@ -30,62 +30,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __BTM_A2DP_SOURCE_H__
-#define __BTM_A2DP_SOURCE_H__
+#ifndef __A2DP_IPC_H__
+#define __A2DP_IPC_H__
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-#include "btm_manager.h"
+#include "uv.h"
+#include "stdbool.h"
 
 typedef enum {
-    A2DP_CONNECTION_STATE_DISCONNECTED = 0,
-    A2DP_CONNECTION_STATE_CONNECTING,
-    A2DP_CONNECTION_STATE_CONNECTED,
-    A2DP_CONNECTION_STATE_DISCONNECTING
-} a2dp_connection_state_t;
+    IPC_OPEN_EVT = 0x0001,
+    IPC_CLOSE_EVT = 0x0002,
+    IPC_RX_DATA_EVT = 0x0004,
+    IPC_RX_DATA_READY_EVT = 0x0008,
+    IPC_TX_DATA_READY_EVT = 0x0010
+} a2dp_ipc_event_t;
 
-/* Bluetooth AV datapath states */
-typedef enum {
-    A2DP_AUDIO_STATE_REMOTE_SUSPEND = 0,
-    A2DP_AUDIO_STATE_STOPPED,
-    A2DP_AUDIO_STATE_STARTED,
-} a2dp_audio_state_t;
+typedef struct _a2dp_ipc a2dp_ipc_t;
+typedef void (*ipc_event_cb_t)(uint8_t ch_id, a2dp_ipc_event_t event);
+typedef void (*ipc_alloc_cb_t)(uint8_t ch_id, uint8_t** buffer, size_t *len);
+typedef void (*ipc_read_cb_t)(uint8_t ch_id, uint8_t* buffer, size_t len);
+typedef void (*ipc_write_cb_t)(uint8_t ch_id, uint8_t* buffer);
 
-typedef void (*a2dp_connection_state_callback)(bt_address addr,
-    a2dp_connection_state_t state);
+#define A2DP_IPC_CH_ID_AV_CTRL 0
+#define A2DP_IPC_CH_ID_AV_AUDIO 1
+#define A2DP_IPC_CH_ID_AV_SOURCE_CTRL 0
+#define A2DP_IPC_CH_ID_AV_SOURCE_AUDIO 1
+#define A2DP_IPC_CH_ID_AV_SINK_CTRL 2
+#define A2DP_IPC_CH_ID_AV_SINK_AUDIO 3
+#define A2DP_IPC_CH_NUM 4
+#define A2DP_IPC_CH_ID_ALL 5 /* used to address all the ch id at once */
 
-typedef void (*a2dp_audio_state_callback)(bt_address addr,
-    a2dp_audio_state_t state);
+const char* dump_a2dp_ipc_event(uint8_t event);
 
-typedef void (*a2dp_audio_source_config_callback)(bt_address addr);
-
-typedef struct {
-    /** set to sizeof(a2dp_source_callbacks_t) */
-    size_t size;
-    a2dp_connection_state_callback connection_state_cb;
-    a2dp_audio_state_callback audio_state_cb;
-    a2dp_audio_source_config_callback audio_source_config_cb;
-} a2dp_source_callbacks_t;
-
-typedef struct {
-    size_t size;
-
-    /** connect to headset */
-    bt_result_code (*connect)(void* handle, bt_address addr);
-
-    /** dis-connect from headset */
-    bt_result_code (*disconnect)(void* handle, bt_address addr);
-
-    /** sets the connected device silence state */
-    bt_result_code (*set_silence_device)(void* handle, bt_address addr, bool silence);
-
-    /** sets the connected device as active */
-    bt_result_code (*set_active_device)(void* handle, bt_address addr);
-
-    void (*set_callbacks)(void* handle, a2dp_source_callbacks_t* callbacks);
-
-} a2dp_source_interface_t;
-
-extern const a2dp_source_interface_t* get_a2dp_source_interface(void);
+a2dp_ipc_t* a2dp_ipc_init(uv_loop_t* loop);
+bool a2dp_ipc_open(a2dp_ipc_t* a2dp, uint8_t ch_id, const char* path, ipc_event_cb_t cb);
+void a2dp_ipc_close(a2dp_ipc_t* a2dp, uint8_t ch_id);
+int a2dp_ipc_write(a2dp_ipc_t* a2dp, uint8_t ch_id, const uint8_t* data, uint16_t len, ipc_write_cb_t cb);
+int a2dp_ipc_read_start(a2dp_ipc_t* a2dp, uint8_t ch_id, ipc_alloc_cb_t alloc_cb, ipc_read_cb_t read_cb);
+int a2dp_ipc_read_stop(a2dp_ipc_t* a2dp, uint8_t ch_id);
 
 #endif

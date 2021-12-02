@@ -30,32 +30,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-#include <getopt.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef __BTS_A2DP_STATE_MACHINE_H__
+#define __BTS_A2DP_STATE_MACHINE_H__
 
 #include "btm_manager.h"
-#include "utils/utils.h"
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#include "bts_a2dp_event.h"
+#include "bts_service.h"
 
-/****************************************************************************
- * Public Types
- ****************************************************************************/
-typedef struct {
-    char* cmd;
-    int (*func)(void* handle, int argc, char** argv);
-    char* help;
-} bt_command_t;
+typedef enum {
+    A2DP_STATE_IDLE,
+    A2DP_STATE_OPENING,
+    A2DP_STATE_OPENED,
+    A2DP_STATE_STARTED,
+    A2DP_STATE_CLOSING
+} a2dp_state_t;
 
-extern int spp_command(void* handle, int argc, char* argv[]);
-extern int hfp_client_command(void* handle, int argc, char* argv[]);
-extern int gatt_server_command(void* handle, int argc, char* argv[]);
-extern int gatt_client_command(void* handle, int argc, char* argv[]);
-extern int a2dp_source_command(void* handle, int argc, char* argv[]);
+typedef struct _a2dp_state_machine a2dp_state_machine_t;
+
+a2dp_state_machine_t* a2dp_state_machine_new(void* context, bt_address bd_addr);
+void a2dp_state_machine_destory(a2dp_state_machine_t* a2dp_sm);
+void a2dp_state_machine_handle_event(a2dp_state_machine_t* sm, a2dp_event_t* a2dp_event);
+a2dp_state_t a2dp_state_machine_get_state(a2dp_state_machine_t* sm);
+const char * a2dp_state_machine_current_state(a2dp_state_machine_t* sm);
+#endif

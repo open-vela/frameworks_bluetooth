@@ -7,6 +7,7 @@
 #include "bts_gatt_service.h"
 #include "bts_spp.h"
 #include "bts_hf_client.h"
+#include "bts_a2dp_source.h"
 #include "bts_service.h"
 #include "bts_service_interface.h"
 #include "bts_spp.h"
@@ -117,6 +118,9 @@ static bt_result_code bts_if_enable(void* handle)
 #ifdef CONFIG_BLUETOOTH_AVRCP_TG
     avrcp_target_init();
 #endif
+#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+    a2dp_source_service_start();
+#endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     hf_client_service_start();
 #endif
@@ -180,6 +184,10 @@ static const void* if_get_profile_interface(const char* profile_id)
 #if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
     if (is_profile(profile_id, BT_PROFILE_GATT))
         return gatt_get_interface();
+#endif
+#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+    if (is_profile(profile_id, BT_PROFILE_ADVANCED_AUDIO_SOURCE))
+        return get_a2dp_source_service_interface();
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     if (is_profile(profile_id, BT_PROFILE_HANDSFREE_HF))
