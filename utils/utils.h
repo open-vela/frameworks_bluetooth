@@ -34,6 +34,8 @@
 #ifndef __BT_UTILS_H__
 #define __BT_UTILS_H__
 
+#include "btm_manager.h"
+
 #define CASE_RETURN_STR(const) \
     case const:                \
         return #const;

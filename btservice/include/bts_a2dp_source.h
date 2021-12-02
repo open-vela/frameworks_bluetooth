@@ -30,62 +30,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __BTM_A2DP_SOURCE_H__
-#define __BTM_A2DP_SOURCE_H__
+#ifndef __BTS_A2DP_SOURCE_H__
+#define __BTS_A2DP_SOURCE_H__
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include <nuttx/list.h>
+
 #include "btm_manager.h"
-
-typedef enum {
-    A2DP_CONNECTION_STATE_DISCONNECTED = 0,
-    A2DP_CONNECTION_STATE_CONNECTING,
-    A2DP_CONNECTION_STATE_CONNECTED,
-    A2DP_CONNECTION_STATE_DISCONNECTING
-} a2dp_connection_state_t;
-
-/* Bluetooth AV datapath states */
-typedef enum {
-    A2DP_AUDIO_STATE_REMOTE_SUSPEND = 0,
-    A2DP_AUDIO_STATE_STOPPED,
-    A2DP_AUDIO_STATE_STARTED,
-} a2dp_audio_state_t;
-
-typedef void (*a2dp_connection_state_callback)(bt_address addr,
-    a2dp_connection_state_t state);
-
-typedef void (*a2dp_audio_state_callback)(bt_address addr,
-    a2dp_audio_state_t state);
-
-typedef void (*a2dp_audio_source_config_callback)(bt_address addr);
+#include "btm_a2dp_source.h"
+#include "bts_a2dp_event.h"
 
 typedef struct {
-    /** set to sizeof(a2dp_source_callbacks_t) */
-    size_t size;
-    a2dp_connection_state_callback connection_state_cb;
-    a2dp_audio_state_callback audio_state_cb;
-    a2dp_audio_source_config_callback audio_source_config_cb;
-} a2dp_source_callbacks_t;
+    struct list_node device_list;
+    bool enabled;
+    bt_address active_peer;
+    const a2dp_source_callbacks_t* callbacks;
+} a2dp_source_t;
 
-typedef struct {
-    size_t size;
+void bts_a2dp_source_stream_start(void);
+void bts_a2dp_source_stream_stop(void);
+void bts_a2dp_source_stream_suspend(void);
+void bts_a2dp_source_codec_state_change(void);
+bool bts_a2dp_source_stream_ready(void);
+bool bts_a2dp_source_stream_started(void);
+uint8_t* bts_a2dp_source_active_peer(void);
 
-    /** connect to headset */
-    bt_result_code (*connect)(void* handle, bt_address addr);
+bt_result_code bts_a2dp_source_init(const a2dp_source_callbacks_t* callbacks);
+bt_result_code bts_a2dp_source_connect(bt_address addr);
+bt_result_code bts_a2dp_source_disconnect(bt_address addr);
+void bts_a2dp_source_cleanup(void);
 
-    /** dis-connect from headset */
-    bt_result_code (*disconnect)(void* handle, bt_address addr);
+void bts_a2dp_service_handle_event(bt_profile_id id, void* data, size_t size);
+void bts_a2dp_source_dump(void);
 
-    /** sets the connected device silence state */
-    bt_result_code (*set_silence_device)(void* handle, bt_address addr, bool silence);
-
-    /** sets the connected device as active */
-    bt_result_code (*set_active_device)(void* handle, bt_address addr);
-
-    void (*set_callbacks)(void* handle, a2dp_source_callbacks_t* callbacks);
-
-} a2dp_source_interface_t;
-
-extern const a2dp_source_interface_t* get_a2dp_source_interface(void);
+extern bt_result_code a2dp_source_service_start(void);
+extern void a2dp_source_service_stop(void);
+extern const a2dp_source_interface_t* get_a2dp_source_service_interface(void);
 
 #endif

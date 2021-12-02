@@ -30,32 +30,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-#include <getopt.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef __BTS_A2DP_SOURCE_AUDIO_H__
+#define __BTS_A2DP_SOURCE_AUDIO_H__
 
-#include "btm_manager.h"
-#include "utils/utils.h"
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+void bts_a2dp_source_audio_init(void);
+void bts_a2dp_source_audio_cleanup(void);
+void bts_a2dp_source_on_idle(void);
+void bts_a2dp_source_on_started(void);
+void bts_a2dp_source_on_stopped(void);
+void bts_a2dp_source_on_suspended(void);
+bool bts_a2dp_source_is_streaming(void);
+void bts_a2dp_source_on_connection_changed(bool connected);
+void bts_a2dp_source_set_mtu(uint16_t mtu);
 
-/****************************************************************************
- * Public Types
- ****************************************************************************/
-typedef struct {
-    char* cmd;
-    int (*func)(void* handle, int argc, char** argv);
-    char* help;
-} bt_command_t;
-
-extern int spp_command(void* handle, int argc, char* argv[]);
-extern int hfp_client_command(void* handle, int argc, char* argv[]);
-extern int gatt_server_command(void* handle, int argc, char* argv[]);
-extern int gatt_client_command(void* handle, int argc, char* argv[]);
-extern int a2dp_source_command(void* handle, int argc, char* argv[]);
+#endif
