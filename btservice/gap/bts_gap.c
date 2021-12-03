@@ -189,8 +189,6 @@ static void gap_msg_destory(gap_msg_t* msg)
     free(msg);
 }
 
-
-
 static void process_loop_in_gap(void* data, size_t data_size)
 {
 
@@ -335,10 +333,10 @@ static void process_loop_in_gap(void* data, size_t data_size)
         }
         break;
     }
-    case GAP_BLE_IRK:{
+    case GAP_BLE_IRK: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->ble_irk_cb)) {
             g_bts_gap_callbacks->ble_irk_cb(gap_msg->event_data.data.irk, gap_msg->event_data.bd_addr, gap_msg->event_data.addr_type);
-        }        
+        }
         break;
     }
     case GAP_BLE_ADDRESS: {
@@ -572,10 +570,10 @@ static void adapter_delete_br_link_key_callback(bt_address remote_addr)
 static void adapter_pairing_request_callback(bt_address remote_addr, bool local_initiate, bool is_bondable)
 {
     BT_LOGD("%s", __func__);
-    // if (local_initiate || is_bondable) {
-    //     service_adapter_gap_reply_pairing_request(remote_addr, 0);
-    //     return;
-    // }
+    if (local_initiate || is_bondable) {
+        service_adapter_gap_reply_pairing_request(remote_addr, 0);
+        return;
+    }
 
     gap_msg_t* msg = gap_msg_new(GAP_PAIR_REQUEST);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
@@ -785,7 +783,6 @@ bt_result_code gap_disable(bool normal_disable)
 bt_result_code bts_set_local_name(char* bt_name, uint8_t len)
 {
     return gap_update_device_name(bt_name, len);
-
 }
 
 bt_result_code bts_set_local_address(bt_device_t* device)

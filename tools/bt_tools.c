@@ -523,6 +523,9 @@ void test_pairing_request_callback(void* gap_handle, BD_ADDR remote_addr, bool l
 {
     BT_LOGD("%s,local_initiate: %d, is_bondable:%d,  device :%02x:%02x:%02x:%02x:%02x:%02x", __func__,
         local_initiate, is_bondable, remote_addr[0], remote_addr[1], remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5]);
+    // bt_device_t* device = malloc(sizeof(bt_device_t));
+    // memcpy(device->addr, remote_addr, BT_ADDR_LENGTH);
+    // gap_test_interface->bt_reply_pair_request(gap_handle, device, 0);
 }
 
 btm_gap_callbacks_t gap_test_tool_callbacks = {
