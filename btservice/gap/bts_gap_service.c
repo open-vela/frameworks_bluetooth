@@ -25,8 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "btdatatype.h"
-#include "global.h"
+
 #include "stack_adapter_common.h"
 #include "stack_adapter_gap.h"
 
