@@ -116,7 +116,7 @@ config BLUETOOTH_A2DP_IPC_RPSMG_SERVER
 
 config BLUETOOTH_A2DP_IPC_RPSMG_NAME
 	string "Bluetooth A2dp audio IPC rpmsg name"
-	default "ap"
+	default "cp"
 	help
 		Bluetooth A2dp audio IPC rpmsg name
 
