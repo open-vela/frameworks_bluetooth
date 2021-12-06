@@ -47,6 +47,8 @@
 #define LOG_TAG "a2dp_stream"
 #include "log.h"
 
+#define STREAM_DATA_OFFSET (offsetof(SERVICE_A2DP_SOURCE_PACKET_S, data) + 1)
+
 typedef enum {
     STATE_OFF,
     STATE_START_UP,
@@ -63,7 +65,6 @@ typedef struct
     a2dp_stream_state_t stream_state;
     uint8_t codec_info[10];
     uint32_t interval_ms;
-
     uv_timer_t* media_alarm;
 } a2dp_source_stream_t;
 
@@ -91,8 +92,8 @@ static uint32_t calculate_max_frames_per_packet(void)
 static SERVICE_A2DP_SOURCE_PACKET_S* bts_a2dp_source_build_packet(uint8_t* buffer, uint16_t len)
 {
     SERVICE_A2DP_SOURCE_PACKET_S* packet;
+    uint32_t offset = STREAM_DATA_OFFSET;
     uint8_t num_frames;
-    uint32_t offset = sizeof(SERVICE_A2DP_SOURCE_PACKET_S) + 1;
 
     packet = (SERVICE_A2DP_SOURCE_PACKET_S *)(buffer - offset);
     num_frames = len / a2dp_src_stream.frames_len;
@@ -122,16 +123,17 @@ static void bts_a2dp_source_packet_send(SERVICE_A2DP_SOURCE_PACKET_S* packet)
 
 static void bts_a2dp_audio_data_alloc(uint8_t ch_id, uint8_t** buffer, size_t *len)
 {
-    uint8_t *pbuf;
-    uint32_t offset = sizeof(SERVICE_A2DP_SOURCE_PACKET_S) + 1;//header + num_frames
+    SERVICE_A2DP_SOURCE_PACKET_S *packet;
+    uint32_t offset = STREAM_DATA_OFFSET;//header->data offset + num_frames
 
     *len = a2dp_src_stream.max_tx_length;
-    pbuf = malloc(*len + offset);
-    if (!pbuf) {
+    packet = (SERVICE_A2DP_SOURCE_PACKET_S *)malloc(*len + offset);
+    if (!packet) {
         a2dp_ipc_read_stop(a2dp_ipc, ch_id);
         return;
     }
-    *buffer = pbuf + offset;
+
+    *buffer = &packet->data[1];
 }
 
 static void bts_a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, size_t len)
@@ -140,8 +142,7 @@ static void bts_a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, size_t 
 
     if (len <= 0) {
         BT_LOGD("%s, status:%d", __func__, len);
-        uint32_t offset = sizeof(SERVICE_A2DP_SOURCE_PACKET_S) + 1;
-        buffer -= offset;
+        buffer -= STREAM_DATA_OFFSET;
         free(buffer);
         if (len < 0)
             a2dp_ipc_read_stop(a2dp_ipc, ch_id);
@@ -183,6 +184,7 @@ static void bts_a2dp_source_start_audio_req(void)
 static void bts_a2dp_source_stop_audio_req(void)
 {
     BT_LOGD("%s", __func__);
+
     if (a2dp_src_stream.stream_state == STATE_RUNNING) {
         a2dp_ipc_read_stop(a2dp_ipc, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
     }
