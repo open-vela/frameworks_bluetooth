@@ -26,14 +26,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "btdatatype.h"
 #include "btm_manager.h"
 #include "bts_gap.h"
 #include "bts_le_advertise.h"
 #include "bts_le_scan.h"
 #include "bts_service.h"
 #include "bts_service_interface.h"
-#include "global.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_gap.h"
 
@@ -290,7 +288,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->connection_state_changed_cb)) {
             bt_device_t* new_device = malloc(sizeof(bt_device_t));
             bt_connection_state state = STATE_DISCONNECTED;
-            memcpy(new_device->addr, gap_msg->event_data.data.acl_state_params->remote_addr, BD_ADDR_LEN);
+            memcpy(new_device->addr, gap_msg->event_data.data.acl_state_params->remote_addr, BT_ADDR_LENGTH);
             switch (gap_msg->event_data.data.acl_state_params->state) {
             case SERVICE_BT_ACL_STATE_CONNECTED:
                 state = STATE_CONNECTED;
@@ -403,7 +401,7 @@ static void adapter_received_remote_name_callback(bt_address bd_addr, char* bt_n
 
     msg->event_data.data.remote_name.bt_name = (char*)malloc(length);
     memcpy(msg->event_data.data.remote_name.bt_name, bt_name, length);
-    memcpy(msg->event_data.bd_addr, bd_addr, BD_ADDR_LEN);
+    memcpy(msg->event_data.bd_addr, bd_addr, BT_ADDR_LENGTH);
     msg->event_data.data.remote_name.length = length;
     gap_send_message(msg);
 }
@@ -436,7 +434,7 @@ static void adapter_bond_state_changed_callback(bt_address remote_addr, bt_bonde
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BOND_STATE_CHANGED);
-    memcpy(msg->event_data.bd_addr, remote_addr, BD_ADDR_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.bond_state = state;
     gap_send_message(msg);
 }
@@ -475,7 +473,7 @@ static void adapter_bt_link_role_changed_callback(bt_address remote_addr, bt_lin
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_LINK_ROLE_CHANGED);
-    memcpy(msg->event_data.bd_addr, remote_addr, BD_ADDR_LEN);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.link_role = link_role;
     gap_send_message(msg);
 }
@@ -542,7 +540,7 @@ static void adapter_hci_event_callback(hci_event_t* hci_event)
     gap_send_message(msg);
 }
 
-extern int TL_h4_send(UINT8* pBuf, UINT32 len);
+extern int TL_h4_send(uint8_t* pBuf, uint32_t len);
 static void adapter_transport_write_packet_callback(uint8_t* hci_packet, uint32_t length)
 {
     TL_h4_send(hci_packet, length);
@@ -819,8 +817,8 @@ bt_result_code bts_set_local_io_capability(bt_io_capability io_capability)
 
 char* bts_get_local_name()
 {
-    char* name = malloc(MAX_NAME_LEN);
-    bt_status ret = service_adapter_gap_get_local_name(&name, MAX_NAME_LEN);
+    char* name = malloc(BD_NAME_MAX_SIZE);
+    bt_status ret = service_adapter_gap_get_local_name(&name, BD_NAME_MAX_SIZE);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return NULL;
