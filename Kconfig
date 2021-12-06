@@ -21,6 +21,12 @@ config BLUETOOTH
 	select LIBUV_EXTENSION
 if BLUETOOTH
 
+config LIB_BLUELET
+  bool "BARROT Bluelet Stack"
+  default y
+  help
+    Enable support for the BARROT Bluetooth stack
+
 config BLUETOOTH_AVRCP_TG
 	bool "Enable BT_AVRCP_TG"
 	default y
