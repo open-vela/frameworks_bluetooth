@@ -130,6 +130,7 @@ static char* stack_event_to_string(hf_client_event_t event)
         CASE_RETURN_STR(HOLD_CALL)
         CASE_RETURN_STR(TERMINATE_CALL)
         CASE_RETURN_STR(QUERY_CURRENT_CALLS)
+        CASE_RETURN_STR(UPDATE_BATTERY_LEVEL)
         CASE_RETURN_STR(SEND_AT_COMMAND)
         CASE_RETURN_STR(TIMEOUT)
         CASE_RETURN_STR(STACK_EVENT)
@@ -245,6 +246,7 @@ static void hf_connect_timeout_callback(char* data)
 
     hf_client_msg_t* msg = hf_client_msg_new(TIMEOUT, hfsm->addr);
     hf_client_state_machine_handle_msg(hfsm, msg);
+    hf_client_msg_destory(msg);
 }
 
 static void connecting_enter(state_machine_t* sm)
@@ -318,6 +320,7 @@ static void connected_enter(state_machine_t* sm)
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(hfsm->addr));
+    service_adapter_hfp_send_battery_value(hfsm->addr, 100);
 }
 
 static void connected_exit(state_machine_t* sm)
@@ -472,6 +475,13 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         }
         break;
     }
+
+    case UPDATE_BATTERY_LEVEL:
+        status = service_adapter_hfp_send_battery_value(hfsm->addr, (uint8_t)data->valueint1);
+        if (status != SERVICE_BT_STATUS_SUCCESS) {
+            BT_LOGE("Update battery level failed");
+        }
+        break;
 
     case STACK_EVENT_AUDIO_REQ:
         status = service_adapter_gap_accept_sco_link(hfsm->addr);
@@ -681,6 +691,13 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         }
         break;
 
+    case UPDATE_BATTERY_LEVEL:
+        status = service_adapter_hfp_send_battery_value(hfsm->addr, (uint8_t)data->valueint1);
+        if (status != SERVICE_BT_STATUS_SUCCESS) {
+            BT_LOGE("Update battery level failed");
+        }
+        break;
+
     case STACK_EVENT_CURRENT_CALLS: {
         int index = data->valueint1;
         hf_client_call_direction_t dir = data->valueint2;
@@ -775,7 +792,6 @@ void hf_client_state_machine_destory(hf_state_machine_t* hfsm)
     if (!hfsm)
         return;
 
-    hf_client_state_machine_handle_msg(hfsm, HF_MSG_NEW(DISCONNECT, NULL));
     stop_timer(hfsm->connect_timer);
     hsm_dtor(&hfsm->sm);
     free((void*)hfsm);
@@ -785,7 +801,6 @@ void hf_client_state_machine_handle_msg(hf_state_machine_t* sm,
     hf_client_msg_t* msg)
 {
     hf_client_event_dispatch(sm, msg);
-    hf_client_msg_destory(msg);
 }
 
 hf_client_connection_state_t hf_client_get_conn_state(hf_state_machine_t* sm)
