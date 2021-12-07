@@ -162,6 +162,7 @@ typedef struct
     bt_result_code (*terminate_call)(void* handle, bt_address addr);
     bt_result_code (*query_current_calls)(void* handle, bt_address addr);
     bt_result_code (*send_at_cmd)(void* handle, bt_address addr, const char* cmd);
+    bt_result_code (*update_battery_level)(void* handle, bt_address addr, uint8_t battery);
     void (*set_callbacks)(void* handle, hf_client_callbacks_t* callbacks);
 } hf_client_interface_t;
 
