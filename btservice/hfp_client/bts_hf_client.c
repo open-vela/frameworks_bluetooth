@@ -115,9 +115,13 @@ static hf_client_device_t* hf_client_device_new(hf_state_machine_t* sm, bt_addre
 
 static void hf_client_device_delete(hf_client_device_t* device)
 {
+    hf_client_msg_t *msg;
     if (!device)
         return;
 
+    msg = HF_MSG_NEW(DISCONNECT, NULL);
+    hf_client_state_machine_handle_msg(device->sm, msg);
+    hf_client_msg_destory(msg);
     hf_client_state_machine_destory(device->sm);
     list_delete(&device->node);
     free((void*)device);
@@ -438,18 +442,38 @@ static void hf_client_send_message(hf_state_machine_t* sm, hf_client_msg_t* msg)
     bts_send_uv_msg(BT_PROFILE_HANDSFREE_HF_ID, imsg, sizeof(hf_client_inter_msg_t));
 }
 
+
+static void hf_client_cleanup(void)
+{
+    hf_client_device_t* device;
+    struct list_node* node;
+    struct list_node* tmp;
+
+    list_for_every_safe(&g_hfp_service.device_list, node, tmp)
+    {
+        device = (hf_client_device_t*)node;
+        hf_client_device_delete(device);
+    }
+    service_adapter_hfp_cleanup();
+    g_hfp_service.started = false;
+}
+
+
 static void hf_client_service_event_process(void* data, size_t size)
 {
     hf_client_inter_msg_t* imsg = (hf_client_inter_msg_t*)data;
     hf_client_msg_t* msg = imsg->msg;
 
     switch (msg->event) {
-    default:
-        hf_client_state_machine_handle_msg(imsg->hfsm, msg);
+        case CLEANUP:
+            hf_client_cleanup();
         break;
+        default:
+            hf_client_state_machine_handle_msg(imsg->hfsm, msg);
+            break;
     }
 
-    //hf_client_msg_destory(msg);
+    hf_client_msg_destory(msg);
     free(imsg);
 }
 
@@ -461,7 +485,7 @@ static void bts_hf_client_handle_service_msg(bt_profile_id id, void* data, size_
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-bt_result_code hf_client_init(const hf_client_service_callbacks_t* callbacks)
+bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks)
 {
     SERVICE_BT_STATUS status;
 
@@ -479,7 +503,7 @@ bt_result_code hf_client_init(const hf_client_service_callbacks_t* callbacks)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_connect(bt_address bd_addr)
+bt_result_code bts_hf_client_connect(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -496,7 +520,7 @@ bt_result_code hf_client_connect(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_disconnect(bt_address bd_addr)
+bt_result_code bts_hf_client_disconnect(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -513,7 +537,7 @@ bt_result_code hf_client_disconnect(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_connect_audio(bt_address bd_addr)
+bt_result_code bts_hf_client_connect_audio(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -530,7 +554,7 @@ bt_result_code hf_client_connect_audio(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_disconnect_audio(bt_address bd_addr)
+bt_result_code bts_hf_client_disconnect_audio(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -547,7 +571,7 @@ bt_result_code hf_client_disconnect_audio(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_start_voice_recognition(bt_address bd_addr)
+bt_result_code bts_hf_client_start_voice_recognition(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -564,7 +588,7 @@ bt_result_code hf_client_start_voice_recognition(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_stop_voice_recognition(bt_address bd_addr)
+bt_result_code bts_hf_client_stop_voice_recognition(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -581,7 +605,7 @@ bt_result_code hf_client_stop_voice_recognition(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_volume_control(bt_address bd_addr, hf_client_volume_type_t type, int volume)
+bt_result_code bts_hf_client_volume_control(bt_address bd_addr, hf_client_volume_type_t type, int volume)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -600,7 +624,7 @@ bt_result_code hf_client_volume_control(bt_address bd_addr, hf_client_volume_typ
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_dial(bt_address bd_addr, const char* number)
+bt_result_code bts_hf_client_dial(bt_address bd_addr, const char* number)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -619,7 +643,7 @@ bt_result_code hf_client_dial(bt_address bd_addr, const char* number)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_dial_memory(bt_address bd_addr, uint32_t memory)
+bt_result_code bts_hf_client_dial_memory(bt_address bd_addr, uint32_t memory)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -637,7 +661,7 @@ bt_result_code hf_client_dial_memory(bt_address bd_addr, uint32_t memory)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_redial(bt_address bd_addr)
+bt_result_code bts_hf_client_redial(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -654,7 +678,7 @@ bt_result_code hf_client_redial(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_accept_call(bt_address bd_addr)
+bt_result_code bts_hf_client_accept_call(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -671,7 +695,7 @@ bt_result_code hf_client_accept_call(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_reject_call(bt_address bd_addr)
+bt_result_code bts_hf_client_reject_call(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -688,7 +712,7 @@ bt_result_code hf_client_reject_call(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_hold_call(bt_address bd_addr)
+bt_result_code bts_hf_client_hold_call(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -705,7 +729,7 @@ bt_result_code hf_client_hold_call(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_terminate_call(bt_address bd_addr)
+bt_result_code bts_hf_client_terminate_call(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -722,7 +746,7 @@ bt_result_code hf_client_terminate_call(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_query_current_calls(bt_address bd_addr)
+bt_result_code bts_hf_client_query_current_calls(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -739,7 +763,7 @@ bt_result_code hf_client_query_current_calls(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code hf_client_send_at_cmd(bt_address bd_addr, const char* cmd)
+bt_result_code bts_hf_client_send_at_cmd(bt_address bd_addr, const char* cmd)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -758,17 +782,32 @@ bt_result_code hf_client_send_at_cmd(bt_address bd_addr, const char* cmd)
     return BT_RESULT_SUCCESS;
 }
 
-void hf_client_cleanup(void)
+bt_result_code bts_hf_client_update_battery_level(bt_address bd_addr, uint8_t battery)
 {
-    hf_client_device_t* device;
-    struct list_node* node;
-    struct list_node* tmp;
+    hf_state_machine_t* sm;
+    hf_client_msg_t* msg;
 
-    list_for_every_safe(&g_hfp_service.device_list, node, tmp)
-    {
-        device = (hf_client_device_t*)node;
-        hf_client_device_delete(device);
-    }
-    service_adapter_hfp_cleanup();
-    g_hfp_service.started = false;
+    sm = get_state_machine(bd_addr);
+    if (!sm)
+        return BT_RESULT_FAILED;
+
+    msg = HF_MSG_NEW(UPDATE_BATTERY_LEVEL, bd_addr);
+    if (!msg)
+        return BT_RESULT_ALLOC_BUFFER_FAILED;
+
+    msg->event_data.valueint1 = (uint32_t)battery;
+    hf_client_send_message(sm, msg);
+
+    return BT_RESULT_SUCCESS;
+}
+
+void bts_hf_client_cleanup(void)
+{
+    hf_client_msg_t* msg;
+
+    msg = HF_MSG_NEW(CLEANUP, NULL);
+    if (!msg)
+        return BT_RESULT_ALLOC_BUFFER_FAILED;
+
+    hf_client_send_message(NULL, msg);
 }
