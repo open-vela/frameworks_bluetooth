@@ -347,6 +347,18 @@ static bt_result_code hid_device_disconnect(uint8_t device_id, bt_address remote
     return BT_RESULT_SUCCESS;
 }
 
+static bt_result_code hid_device_send_report(uint8_t device_id, uint8_t report_id, uint8_t* buffer, size_t size)
+{
+    bts_hidd_hdl_t* handle = find_hidd_handle2(device_id);
+    CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
+    SERVICE_GATT_STATUS ret = service_adapter_hid_device_send_intr_report(report_id, buffer, size);
+    if (ret != GATT_SUCCESS) {
+        BT_LOGE("fail, hid_device_send_intr_report, ret:%d", ret);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
 static bt_result_code hid_device_unplug(uint8_t device_id, bt_address remote_addr)
 {
     bts_hidd_hdl_t* handle = find_hidd_handle2(device_id);
@@ -368,6 +380,7 @@ static const bts_hidd_interface_t hid_device_instance = {
     .unregister_device = hid_device_unregister_device,
     .connect = hid_device_connect,
     .disconnect = hid_device_disconnect,
+    .send_report_test = hid_device_send_report,
     .unplug = hid_device_unplug,
 };
 
