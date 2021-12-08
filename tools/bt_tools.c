@@ -439,7 +439,8 @@ static void test_adapter_state_changed_callback(void* gap_handle, stack_state_t 
 
 static void test_device_found_callback(void* gap_handle, bt_device_t* device)
 {
-    BT_LOGD("%s, device %02x:%02x:%02x:%02x:%02x:%02x", __func__, device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5]);
+    BT_LOGD("%s, device %02x:%02x:%02x:%02x:%02x:%02x, device class : %d",
+     __func__, device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5], device->cod);
 }
 
 void test_connection_state_changed_callback(void* handle, bt_device_t* device, bt_connection_state state)
