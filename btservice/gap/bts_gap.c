@@ -390,6 +390,7 @@ static void adapter_device_found_callback(remote_device_t* device)
     new_device->addr_type = device->addr_type;
     new_device->device_type = device->device_type;
     new_device->cod = device->cod;
+    new_device->rssi = device->rssi;
     gap_msg_t* msg = gap_msg_new(GAP_DEVICE_FOUND);
     msg->event_data.data.device = new_device;
     gap_send_message(msg);
