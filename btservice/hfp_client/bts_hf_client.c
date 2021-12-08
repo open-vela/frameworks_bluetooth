@@ -363,7 +363,6 @@ static void adp_received_sco_connection_req_cb(BD_ADDR remote_addr)
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
 
-    BT_LOGD("%s", __func__);
     sm = get_state_machine(remote_addr);
     if (!sm)
         return;
@@ -807,7 +806,7 @@ void bts_hf_client_cleanup(void)
 
     msg = HF_MSG_NEW(CLEANUP, NULL);
     if (!msg)
-        return BT_RESULT_ALLOC_BUFFER_FAILED;
+        return;
 
     hf_client_send_message(NULL, msg);
 }
