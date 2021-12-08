@@ -414,6 +414,31 @@ int gap_cmd(void* handle, int argc, char* argv[])
     return 0;
 }
 
+static void display_services(uint8_t *services, uint8_t count)
+{
+    bt_uuid_t all_0;
+    uint8_t *current = services;
+    uint8_t *end = current + count * 16;
+
+    memset(all_0, 0, 16);
+    while (current < end) {
+        if (!memcmp(all_0, current, 16)) {
+            break;
+        }
+        if (services == current) {
+            BT_LOGD("[uuid_list]");
+        }
+        BT_LOGD("[0x%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x]",
+               current[15], current[14], current[13], current[12], current[11], current[10], current[9],
+               current[8],
+               current[7], current[6], current[5], current[4], current[3], current[2], current[1], current[0]);
+        current += 16;
+    }
+    if (services != current) {
+        BT_LOGD("[uuid_list-end]");
+    }
+}
+
 static void manager_state_changed_callback(bt_manager_bt_state state)
 {
     BT_LOGD("%s", __func__);
@@ -441,6 +466,7 @@ static void test_device_found_callback(void* gap_handle, bt_device_t* device)
 {
     BT_LOGD("%s, device %02x:%02x:%02x:%02x:%02x:%02x, device class : %d, rssi: %d ",
      __func__, device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5], device->cod, device->rssi);
+     display_services(device->uuids, MAX_UUID_NUM);
 }
 
 void test_connection_state_changed_callback(void* handle, bt_device_t* device, bt_connection_state state)
