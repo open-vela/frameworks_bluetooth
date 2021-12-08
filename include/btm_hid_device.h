@@ -53,6 +53,7 @@ typedef struct {
     bt_result_code (*unregister_device)(void* handle);
     bt_result_code (*connect)(void* handle, bt_address remote_addr);
     bt_result_code (*disconnect)(void* handle, bt_address remote_addr);
+    bt_result_code (*send_report_test)(void* handle, uint8_t report_id, uint8_t* buffer, size_t size);
     bt_result_code (*unplug)(void* handle, bt_address remote_addr);
 } btm_hid_device_interface_t;
 
