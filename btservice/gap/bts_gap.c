@@ -396,11 +396,12 @@ static void adapter_device_found_callback(device_found_t* device)
 
 static void adapter_received_remote_name_callback(bt_address bd_addr, char* bt_name, uint8_t length)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, bt_name:%s", __func__, bt_name);
     gap_msg_t* msg = gap_msg_new(GAP_REMOTE_NAME);
 
-    msg->event_data.data.remote_name.bt_name = (char*)malloc(length);
+    msg->event_data.data.remote_name.bt_name = (char*)malloc(length + 1);
     memcpy(msg->event_data.data.remote_name.bt_name, bt_name, length);
+    msg->event_data.data.remote_name.bt_name[length] = '\0';
     memcpy(msg->event_data.bd_addr, bd_addr, BT_ADDR_LENGTH);
     msg->event_data.data.remote_name.length = length;
     gap_send_message(msg);
