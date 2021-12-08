@@ -58,15 +58,15 @@
  ****************************************************************************/
 typedef struct
 {
-    struct list_node node;
-    void* handle;
-    bt_address bd_addr;
+    struct list_node    node;
+    void*               handle;
+    bt_address          bd_addr;
     hf_state_machine_t* sm;
 } hf_client_device_t;
 
 typedef struct {
     hf_state_machine_t* hfsm;
-    hf_client_msg_t* msg;
+    hf_client_msg_t*    msg;
 } hf_client_inter_msg_t;
 
 /****************************************************************************
@@ -78,7 +78,10 @@ static void hf_client_send_message(hf_state_machine_t* sm, hf_client_msg_t* msg)
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-hf_client_service_t g_hfp_service;
+hf_client_service_t g_hfp_service = {
+    .started        = false,
+    .device_list    = LIST_INITIAL_VALUE(g_hfp_service.device_list)
+};
 
 /****************************************************************************
  * Private Functions
@@ -130,7 +133,12 @@ static void hf_client_device_delete(hf_client_device_t* device)
 static hf_state_machine_t* get_state_machine(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
-    hf_client_device_t* device = find_hf_device_by_addr(bd_addr);
+    hf_client_device_t* device;
+
+    if (!g_hfp_service.started)
+        return NULL;
+
+    device = find_hf_device_by_addr(bd_addr);
     if (device)
         return device->sm;
 
@@ -487,6 +495,9 @@ static void bts_hf_client_handle_service_msg(bt_profile_id id, void* data, size_
 bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks)
 {
     SERVICE_BT_STATUS status;
+
+    if (g_hfp_service.started)
+        return BT_RESULT_SUCCESS;
 
     g_hfp_service.callbacks = (hf_client_callbacks_t*)callbacks;
     list_initialize(&g_hfp_service.device_list);
