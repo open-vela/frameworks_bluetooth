@@ -88,7 +88,7 @@ static bt_result_code hf_start_voice_recognition(void* handle, bt_address addr)
     if (!service)
         return BT_RESULT_FAILED;
 
-    return service->stop_voice_recognition(handle, addr);
+    return service->start_voice_recognition(handle, addr);
 }
 
 static bt_result_code hf_stop_voice_recognition(void* handle, bt_address addr)
@@ -97,7 +97,7 @@ static bt_result_code hf_stop_voice_recognition(void* handle, bt_address addr)
     if (!service)
         return BT_RESULT_FAILED;
 
-    return service->start_voice_recognition(handle, addr);
+    return service->stop_voice_recognition(handle, addr);
 }
 
 static bt_result_code hf_volume_control(void* handle, bt_address addr, hf_client_volume_type_t type, int volume)

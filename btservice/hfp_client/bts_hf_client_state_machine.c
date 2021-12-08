@@ -412,7 +412,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
 
     case DIAL_MEMORY: {
         int memory = data->valueint1;
-
+        BT_LOGD("Dial memory :%d", memory);
         status = service_adapter_hfp_dial_memory(hfsm->addr, memory);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Dial memory: %d failed", memory);
@@ -650,6 +650,15 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         }
         break;
 
+    case VOICE_RECOGNITION_STOP:
+        if (hfsm->recognition_active) {
+            status = service_adapter_hfp_disable_voice_recognition(hfsm->addr);
+            if (status != SERVICE_BT_STATUS_SUCCESS) {
+                BT_LOGE("Could not stop voice recognition");
+            }
+        }
+        break;
+
     case SET_MIC_VOLUME: {
         uint8_t vol = data->valueint1;
         vol = vol > 15 ? 15 : vol;
@@ -669,9 +678,15 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         break;
     }
 
+    case REJECT_CALL:
+        status = service_adapter_hfp_call_control(hfsm->addr, HFP_CALL_CONTROL_CHLD_0, 0);
+        if (status != SERVICE_BT_STATUS_SUCCESS) {
+            BT_LOGE("Reject call failed");
+        }
+        break;
+
     case HOLD_CALL:
         status = service_adapter_hfp_call_control(hfsm->addr, HFP_CALL_CONTROL_CHLD_2, 0);
-        //status = service_adapter_hfp_hold_call(hfsm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Hold call failed");
         }
@@ -697,6 +712,38 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
             BT_LOGE("Update battery level failed");
         }
         break;
+
+    case STACK_EVENT_VR_STATE_CHANGED: {
+        hf_client_vr_state_t state = data->valueint1;
+
+        notify_vr_state_changed(hfsm->service, hfsm->addr, state);
+        if (state == HF_CLIENT_VR_STATE_STOPPED)
+            hfsm->recognition_active = false;
+        else
+            hfsm->recognition_active = true;
+        break;
+    }
+
+    case STACK_EVENT_CALL: {
+        hf_client_call_t call = data->valueint1;
+
+        HF_SERVICE_CBACK(service->callbacks, call_cb, hfsm->addr, call);
+        break;
+    }
+
+    case STACK_EVENT_CALLSETUP: {
+        hf_client_callsetup_t setup = data->valueint1;
+
+        HF_SERVICE_CBACK(service->callbacks, callsetup_cb, hfsm->addr, setup);
+        break;
+    }
+
+    case STACK_EVENT_CALLHELD: {
+        hf_client_callheld_t held = data->valueint1;
+
+        HF_SERVICE_CBACK(service->callbacks, callheld_cb, hfsm->addr, held);
+        break;
+    }
 
     case STACK_EVENT_CURRENT_CALLS: {
         int index = data->valueint1;
