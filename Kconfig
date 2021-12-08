@@ -75,7 +75,7 @@ config BLUETOOTH_SPP
 
 config BLUETOOTH_HIDDEV
 	bool "Enable BT_HIDDEV"
-	default n
+	default y
 
 config BLUETOOTH_MANAGER
   	bool "Enable bt manager"
