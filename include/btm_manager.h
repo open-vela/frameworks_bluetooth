@@ -121,6 +121,7 @@
 */
 #define BT_ADDR_LENGTH (6) /*!< define the address length*/
 #define UUID_SIZE 16
+#define MAX_UUID_NUM 10
 
 #ifdef BD_NAME_MAX_SIZE
 #undef BD_NAME_MAX_SIZE
@@ -259,6 +260,7 @@ typedef struct
     int name_length;
     int rssi;
     uint32_t cod;
+    bt_uuid_t uuids[MAX_UUID_NUM];
 } bt_device_t;
 
 /**
