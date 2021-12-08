@@ -545,6 +545,7 @@ static void spp_server_start(uint16_t port, uint16_t uuid)
 
 static void spp_server_stop(uint16_t port)
 {
+    port = (port & 0x3E) + 1;
     service_adapter_spp_server_close(port);
 }
 
@@ -758,6 +759,9 @@ bt_result_code bts_spp_server_start(uint16_t port, uint16_t uuid)
 {
     spp_msg_t msg;
 
+    if (!g_spp_handle.started)
+        return BT_RESULT_FAILED;
+
     msg.event = SERVER_START_REQ;
     msg.port = port;
     msg.uuid16 = uuid;
@@ -770,6 +774,9 @@ bt_result_code bts_spp_server_stop(uint16_t port)
 {
     spp_msg_t msg;
 
+    if (!g_spp_handle.started)
+        return BT_RESULT_FAILED;
+
     msg.event = SERVER_STOP_REQ;
     msg.port = port;
     do_in_spp_service(&msg);
@@ -780,6 +787,9 @@ bt_result_code bts_spp_server_stop(uint16_t port)
 bt_result_code bts_spp_client_connect(bt_address addr, uint16_t port, uint16_t uuid)
 {
     spp_msg_t msg;
+
+    if (!g_spp_handle.started)
+        return BT_RESULT_FAILED;
 
     msg.event = CLIENT_CONNECT_REQ;
     msg.port = port;
@@ -794,6 +804,9 @@ bt_result_code bts_spp_disconnect(bt_address addr, uint16_t port)
 {
     spp_msg_t msg;
 
+    if (!g_spp_handle.started)
+        return BT_RESULT_FAILED;
+
     msg.event = DISCONNECT_REQ;
     msg.port = port;
     memcpy(msg.addr, addr, sizeof(bt_address));
@@ -805,6 +818,9 @@ bt_result_code bts_spp_disconnect(bt_address addr, uint16_t port)
 void bts_spp_cleanup(void)
 {
     spp_msg_t msg;
+
+    if (!g_spp_handle.started)
+        return;
 
     msg.event = CLEANUP;
     do_in_spp_service(&msg);
