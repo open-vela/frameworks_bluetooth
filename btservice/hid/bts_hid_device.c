@@ -36,9 +36,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <nuttx/input/kbd_codec.h>
-#include <nuttx/input/x11_keysymdef.h>
-#include <nuttx/streams.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -249,51 +246,6 @@ static HID_DEVICE_CALLBACKS_S hid_device_cb = {
     .bthd_virtual_cable_unplug_cb = on_hidd_device_virtual_unplug_callback,
 };
 
-static void debug_kbd(const char* buffer, size_t nbytes)
-{
-    struct lib_meminstream_s stream;
-    struct kbd_getstate_s state;
-    uint32_t ch;
-    int ret;
-    lib_meminstream(&stream, buffer, nbytes);
-    for (;;) {
-        /* Decode the next thing from the buffer */
-        ret = kbd_decode((struct lib_instream_s*)&stream, &state, &ch);
-        if (ret == KBD_ERROR) { /* Error or end-of-file */
-            BT_LOGW("kbd_decode end: %d", ret);
-            break; /* Break out when all of the data has been processed */
-        }
-        switch (ret) {
-        case KBD_PRESS: { /* Key press event */
-            BT_LOGD("Normal Press:    %c [0x%08x]\n", isprint(ch) ? ch : '.', ch);
-            if (ch == XK_space) {
-                BT_LOGD("Press: BackSpace\n");
-            }
-            uint8_t kbd_code[] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-            kbd_code[2] = ch - 'a' + 0x04;
-            SERVICE_GATT_STATUS ret2 = service_adapter_hid_device_send_intr_report(0, kbd_code, sizeof(kbd_code));
-            if (ret2 != GATT_SUCCESS) {
-                BT_LOGE("fail, hid_device_send_intr_report, ret:%d", ret2);
-            }
-            break;
-        }
-        case KBD_RELEASE: { /* Key release event */
-            BT_LOGD("Normal Release:  %c [0x%08x]\n", isprint(ch) ? ch : '.', ch);
-            uint8_t kbd_code[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-            SERVICE_GATT_STATUS ret2 = service_adapter_hid_device_send_intr_report(0, kbd_code, sizeof(kbd_code));
-            if (ret2 != GATT_SUCCESS) {
-                BT_LOGE("fail, hid_device_send_intr_report, ret:%d", ret2);
-            }
-            break;
-        }
-        default: {
-            BT_LOGD("Unexpected: %d\n", ret);
-            break;
-        }
-        }
-    }
-}
-
 static void hid_uv_poll_callback(uv_poll_t* handle, int status, int events)
 {
     if (status < 0) {
@@ -309,7 +261,6 @@ static void hid_uv_poll_callback(uv_poll_t* handle, int status, int events)
             return;
         }
 
-        // debug_kbd(buffer, nbytes);
         if (current_state != SERVICE_PROFILE_CONNECTED) {
             BT_LOGE("hidd not connected, current_state:%d", current_state);
             return;
@@ -328,19 +279,7 @@ static void hid_uv_poll_callback(uv_poll_t* handle, int status, int events)
 
 static bt_result_code hid_device_init(void)
 {
-    hidd_fd = open(HIDD_UNINPT_DEV, O_RDONLY);
-    if (hidd_fd < 0) {
-        BT_LOGE("open(%s) failed: %s", HIDD_UNINPT_DEV, strerror(errno));
-        return BT_RESULT_FAILED;
-    }
-
-    hidd_uv_handle = bts_uv_poll_start(hidd_fd, UV_READABLE | UV_DISCONNECT, hid_uv_poll_callback, NULL);
-    if (!hidd_uv_handle) {
-        BT_LOGE("fail, bts_uv_poll_start");
-        return BT_RESULT_FAILED;
-    }
     bts_register_profile_process(BT_PROFILE_HIDDEV_ID, &handle_msg_received);
-
     SERVICE_GATT_STATUS ret = service_adapter_hid_device_init(&hid_device_cb);
     if (ret != GATT_SUCCESS) {
         BT_LOGE("fail, hid_device_init failed: %d", ret);
@@ -351,9 +290,8 @@ static bt_result_code hid_device_init(void)
 
 static void hid_device_cleanup(void)
 {
-    close(hidd_fd);
-    bts_uv_poll_stop(hidd_uv_handle);
     service_adapter_hid_device_cleanup();
+    bts_unregister_profile_process(BT_PROFILE_HIDDEV_ID);
 }
 
 static bt_result_code hid_device_register_device(bts_hidd_hdl_t handle, bt_hidd_sdp_settings_t sdp, bt_hidd_qos_settings_t tx_qos, bt_hidd_qos_settings_t rx_qos)
@@ -459,12 +397,28 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
     switch (msg->event) {
     case ON_HIDD_APP_STATE_CHANGED: {
         hid_app_state_t* registered = (hid_app_state_t*)(msg->data);
-        BT_CBACK(handle->callbacks, bts_hidd_app_state_changed_cb, handle->btm_handle, handle->device_id, *registered);
         if (!*registered) {
-            BT_LOGD("remove_hid_device handle");
+            BT_LOGD("unregistered, remove_hid_device handle");
             remove_hid_device(handle);
-            bts_unregister_profile_process(BT_PROFILE_HIDDEV_ID);
+            close(hidd_fd);
+            bts_uv_poll_stop(hidd_uv_handle);
+            hidd_fd = 0;
+            hidd_uv_handle = NULL;
+            return;
         }
+
+        hidd_fd = open(HIDD_UNINPT_DEV, O_RDONLY);
+        if (hidd_fd < 0) {
+            BT_LOGE("open(%s) failed: %s", HIDD_UNINPT_DEV, strerror(errno));
+            return;
+        }
+
+        hidd_uv_handle = bts_uv_poll_start(hidd_fd, UV_READABLE | UV_DISCONNECT, hid_uv_poll_callback, NULL);
+        if (!hidd_uv_handle) {
+            BT_LOGE("fail, bts_uv_poll_start");
+            return;
+        }
+        BT_CBACK(handle->callbacks, bts_hidd_app_state_changed_cb, handle->btm_handle, handle->device_id, *registered);
         break;
     }
     case ON_HIDD_CONNECTION_STATE_CHANGED: {

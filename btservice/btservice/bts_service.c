@@ -105,6 +105,10 @@ uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb, void* userdata)
 
 void bts_uv_poll_stop(uv_poll_t* handle)
 {
+    if (!handle) {
+        BT_LOGE("uv_poll_stop failed, handle NULL");
+        return;
+    }
     uv_poll_stop(handle);
     uv_close((uv_handle_t*)handle, bts_uv_close_cb);
 }
@@ -242,13 +246,6 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
         return BT_RESULT_FAILED;
     }
 
-#if defined(CONFIG_BLUETOOTH_HIDDEV)
-    const hid_interface_t* hid_if = hid_get_interface();
-    if (hid_if) {
-        BT_LOGD("hid init");
-        hid_if->init();
-    }
-#endif
     ret = uv_thread_create(&thread_handle[THREAD_ID_SERVICE], service_schedule_loop, NULL);
     if (ret != 0) {
         BT_LOGE("fail uv_thread_create, ret:%d", ret);

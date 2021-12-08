@@ -81,6 +81,14 @@ static bt_result_code bts_if_init(void* handle, bt_service_if_callbacks* callbac
             gatt_if->init();
         }
 #endif
+
+#if defined(CONFIG_BLUETOOTH_HIDDEV)
+        const hid_interface_t* hid_if = hid_get_interface();
+        if (hid_if) {
+            BT_LOGD("hid init");
+            hid_if->init();
+        }
+#endif
     }
     bt_if_handle_t* service_if_handle = (bt_if_handle_t*)malloc(sizeof(bt_if_handle_t));
     service_if_handle->handle = handle;
