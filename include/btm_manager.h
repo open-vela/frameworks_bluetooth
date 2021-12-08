@@ -258,6 +258,7 @@ typedef struct
     char *name;
     int name_length;
     int rssi;
+    uint32_t cod;
 } bt_device_t;
 
 /**

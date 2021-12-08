@@ -77,7 +77,7 @@ typedef enum {
     GAP_EVENT_MAX_ID,
 } gap_event_t;
 
-typedef SERVICE_REMOTE_DEVICE_S device_found_t;
+typedef SERVICE_REMOTE_DEVICE_S remote_device_t;
 
 typedef struct {
     char* bt_name;
@@ -121,7 +121,7 @@ typedef struct {
     uint32_t valueint1;
     bt_status status;
     union {
-        device_found_t* found_result;
+        remote_device_t* found_result;
         discovery_state discovery_state;
         pin_request_data_t* pin_request_data;
         ssp_request_data_t* ssp_request_data;
@@ -380,7 +380,7 @@ bt_result_code bts_start_discovery(uint32_t timeout)
     return BT_RESULT_SUCCESS;
 }
 
-static void adapter_device_found_callback(device_found_t* device)
+static void adapter_device_found_callback(remote_device_t* device)
 {
     //BT_LOGD("%s", __func__);
     if ((!g_bts_gap_callbacks) || (!g_bts_gap_callbacks->device_found_cb))
@@ -389,6 +389,7 @@ static void adapter_device_found_callback(device_found_t* device)
     memcpy(new_device->addr, device->bd_addr, BT_ADDR_LENGTH);
     new_device->addr_type = device->addr_type;
     new_device->device_type = device->device_type;
+    new_device->cod = device->cod;
     gap_msg_t* msg = gap_msg_new(GAP_DEVICE_FOUND);
     msg->event_data.data.device = new_device;
     gap_send_message(msg);
