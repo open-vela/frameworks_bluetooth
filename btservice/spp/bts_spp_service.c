@@ -47,14 +47,12 @@ static spp_callbacks_t* sppCallbacks = NULL;
 
 static void spp_svr_connection_state_callback(const bt_address addr, uint16_t port, spp_connection_state_t state)
 {
-    BT_LOGD("%s", __func__);
     if (sppCallbacks)
         sppCallbacks->connection_state_cb(addr, port, state);
 }
 
 static void spp_svr_pty_open_callback(const bt_address addr, uint16_t port, char* name, int fd)
 {
-    BT_LOGD("%s", __func__);
     if (sppCallbacks)
         sppCallbacks->pty_open_cb(addr, port, name, fd);
 }
