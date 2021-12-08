@@ -246,6 +246,9 @@ static hidd_device_t* add_hidd_device(bt_address remote_address)
 
 static bool remove_hidd_device(hidd_device_t* device)
 {
+    if (!device) {
+        return true;
+    }
     list_delete(&device->node);
     free(device);
     return true;
@@ -259,6 +262,17 @@ static void on_hidd_device_state_changed_callback(void* handle, hid_app_state_t 
 static void on_hidd_connection_state_changed_callback(void* handle, bt_address remote_addr, profile_state_t state)
 {
     BT_LOGD("%s addr:[%s], state:%d", __func__, addr_str(remote_addr), state);
+    if (state == SERVICE_PROFILE_CONNECTED) {
+        hidd_device_t* device = find_hidd_device(remote_addr);
+        if (!device) { //Connect from peer
+            add_hidd_device(remote_addr);
+        }
+    } else if (state == SERVICE_PROFILE_DISCONNECTED) {
+        hidd_device_t* device = find_hidd_device(remote_addr);
+        if (!device) {
+            remove_hidd_device(device);
+        }
+    }
 }
 
 static bt_hid_device_callbacks hidd_callbacks = {
@@ -373,10 +387,73 @@ static int hidd_disconnect(void* handle, int argc, char** argv)
     }
     bt_result_code ret = hidd_interface->disconnect(hidd_handle, remote_address);
     if (ret != BT_RESULT_SUCCESS) {
+        remove_hidd_device(device);
         BT_LOGD("fail, disconnect  ret: %d", ret);
         return -1;
     }
-    remove_hidd_device(device);
+    return 0;
+}
+
+static void hex2str(char* src_str, uint8_t* dest_buf, uint8_t hex_number)
+{
+    uint8_t i;
+    uint8_t lb, hb;
+
+    for (i = 0; i < hex_number; i++) {
+        lb = src_str[(i << 1) + 1];
+        hb = src_str[i << 1];
+        if (hb >= '0' && hb <= '9') {
+            dest_buf[i] = hb - '0';
+        } else if (hb >= 'A' && hb < 'G') {
+            dest_buf[i] = hb - 'A' + 10;
+        } else if (hb >= 'a' && hb < 'g') {
+            dest_buf[i] = hb - 'a' + 10;
+        } else {
+            dest_buf[i] = 0;
+        }
+
+        dest_buf[i] <<= 4;
+        if (lb >= '0' && lb <= '9') {
+            dest_buf[i] += lb - '0';
+        } else if (lb >= 'A' && lb < 'G') {
+            dest_buf[i] += lb - 'A' + 10;
+        } else if (lb >= 'a' && lb < 'g') {
+            dest_buf[i] += lb - 'a' + 10;
+        }
+    }
+}
+
+static int hidd_send_report_test(void* handle, int argc, char** argv)
+{
+    if (!hidd_interface || argc < 3) {
+        return -1;
+    }
+    bt_address remote_address;
+    str2ba(argv[0], remote_address);
+
+    uint8_t report_id = atoi(argv[1]);
+
+    size_t size = strlen(argv[2]) + 1;
+    char* buffer = (char*)malloc(size);
+    memcpy(buffer, argv[2], size);
+    buffer[size] = 0;
+
+    BT_LOGD("report remote_addr:%s, report_id:%d, buffer:%s", addr_str(remote_address), report_id, buffer);
+    hidd_device_t* device = find_hidd_device(remote_address);
+    if (!device) {
+        BT_LOGD("device not found");
+        return -1;
+    }
+
+    uint8_t buf[8];
+    memset(buf, 0, sizeof(buf));
+    hex2str(buffer, buf, size / 2);
+    bt_result_code ret = hidd_interface->send_report_test(hidd_handle, report_id, buf, size / 2);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGD("fail, send_report_test  ret: %d", ret);
+        return -1;
+    }
+    free(buffer);
     return 0;
 }
 
@@ -406,6 +483,7 @@ static bt_command_t g_hidd_tables[] = {
     { "unregister", hidd_unregister_device, "\"hidd unregister\"" },
     { "connect", hidd_connect, "\"hidd connect  :<address>\"" },
     { "disconnect", hidd_disconnect, "\"hidd disconnect :<address>t\"" },
+    { "send_report_test", hidd_send_report_test, "\"hidd send report test: <address> <report_id> <data>\"" },
     { "unplug", hidd_unplug, "\"hidd unplug  :<address>\"" },
 };
 
