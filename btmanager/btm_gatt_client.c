@@ -34,6 +34,7 @@
 
 typedef struct
 {
+    void** handle_ptr;
     bt_address remote_addr;
     const btm_gatt_client_callbacks* callbacks;
 } btm_gattc_hdl_t;
@@ -48,7 +49,9 @@ static void on_bts_gattc_connection_state_changed_cb(void* hdl, profile_state_t 
     BT_CBACK(handle->callbacks, gattc_connection_state_changed_cb, handle, handle->remote_addr, state);
     if (state == SERVICE_PROFILE_DISCONNECTED) {
         BT_LOGD("free btm_gatt_client handle");
+        void** handle_ptr = handle->handle_ptr;
         free(handle);
+        *handle_ptr = NULL;
     }
 }
 
@@ -122,14 +125,16 @@ static bts_gatt_client_callbacks client_callbacks = {
     .bts_gattc_mtu_changed_cb = on_bts_gattc_mtu_changed_cb,
 };
 
-static bt_result_code gatt_client_connect(void** handle_ptr, bt_address remote_addr, btm_gatt_client_callbacks* callbacks)
+static bt_result_code gatt_client_connect(void** hdl_ptr, bt_address remote_addr, btm_gatt_client_callbacks* callbacks)
 {
     CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
 
-    *handle_ptr = (void*)malloc(sizeof(btm_gattc_hdl_t));
+    btm_gattc_hdl_t** handle_ptr = (btm_gattc_hdl_t**)(hdl_ptr);
+    *handle_ptr = (btm_gattc_hdl_t*)malloc(sizeof(btm_gattc_hdl_t));
     memset(*handle_ptr, 0, sizeof(btm_gattc_hdl_t));
-    ((btm_gattc_hdl_t*)(*handle_ptr))->callbacks = callbacks;
-    memcpy(((btm_gattc_hdl_t*)(*handle_ptr))->remote_addr, remote_addr, sizeof(bt_address));
+    (*handle_ptr)->callbacks = callbacks;
+    (*handle_ptr)->handle_ptr = (void**)handle_ptr;
+    memcpy((*handle_ptr)->remote_addr, remote_addr, sizeof(bt_address));
 
     bts_gattc_hdl_t client = {
         .callbacks = &client_callbacks,
@@ -141,6 +146,7 @@ static bt_result_code gatt_client_connect(void** handle_ptr, bt_address remote_a
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, connect err:%d", ret);
         free(*handle_ptr);
+        *handle_ptr = NULL;
         return ret;
     }
     return BT_RESULT_SUCCESS;
@@ -154,7 +160,9 @@ static bt_result_code gatt_client_disconnect(void* hdl)
     bt_result_code ret = client_interface->disconnect(handle->remote_addr);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, disconnect err:%d", ret);
+        void** handle_ptr = handle->handle_ptr;
         free(handle);
+        *handle_ptr = NULL;
         return ret;
     }
     return BT_RESULT_SUCCESS;

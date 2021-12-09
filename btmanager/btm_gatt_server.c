@@ -34,6 +34,7 @@
 
 typedef struct
 {
+    void** handle_ptr;
     uint8_t server_if;
     const btm_gatt_server_callbacks* callbacks;
 } btm_gatts_hdl_t;
@@ -62,6 +63,9 @@ static void on_bts_gatts_closed_cb(void* hdl)
     btm_gatts_hdl_t* handle = hdl;
     CHECK_PTR(handle);
     BT_CBACK(handle->callbacks, gatts_server_closed_cb, handle);
+    void** handle_ptr = handle->handle_ptr;
+    free(handle);
+    *handle_ptr = NULL;
 }
 
 static void on_bts_gatts_element_added(void* hdl, gatt_status_t status, gatt_element_t* element,
@@ -139,13 +143,15 @@ static bts_gatt_server_callbacks server_callbacks = {
     .bts_gatts_notify_sent_cb = on_bts_gatts_notify_sent,
 };
 
-static bt_result_code gatt_server_open(void** handle_ptr, btm_gatt_server_callbacks* callbacks)
+static bt_result_code gatt_server_open(void** hdl_ptr, btm_gatt_server_callbacks* callbacks)
 {
     CHECK_PTR_RETURN(server_interface, BT_RESULT_STATE_NOT_ON);
 
-    *handle_ptr = (void*)malloc(sizeof(btm_gatts_hdl_t));
+    btm_gatts_hdl_t** handle_ptr = (btm_gatts_hdl_t**)(hdl_ptr);
+    *handle_ptr = (btm_gatts_hdl_t*)malloc(sizeof(btm_gatts_hdl_t));
     memset(*handle_ptr, 0, sizeof(btm_gatts_hdl_t));
-    ((btm_gatts_hdl_t*)(*handle_ptr))->callbacks = callbacks;
+    (*handle_ptr)->callbacks = callbacks;
+    (*handle_ptr)->handle_ptr = (void**)handle_ptr;
 
     bts_gatts_hdl_t server = {
         .callbacks = &server_callbacks,
@@ -154,6 +160,8 @@ static bt_result_code gatt_server_open(void** handle_ptr, btm_gatt_server_callba
     bt_result_code ret = server_interface->open_server(server);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, open_server err:%d", ret);
+        free(*handle_ptr);
+        *handle_ptr = NULL;
         return ret;
     }
 
@@ -168,6 +176,9 @@ static bt_result_code gatt_server_close(void* hdl)
     bt_result_code ret = server_interface->close_server(handle->server_if);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, close_server err:%d", ret);
+        void** handle_ptr = handle->handle_ptr;
+        free(handle);
+        *handle_ptr = NULL;
         return ret;
     }
     return BT_RESULT_SUCCESS;

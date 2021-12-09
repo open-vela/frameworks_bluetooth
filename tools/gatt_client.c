@@ -417,7 +417,7 @@ static int gattc_update_phy(void* handle, int argc, char** argv)
 
 static int gattc_update_connection_parameter(void* handle, int argc, char** argv)
 {
-    if (!gattc_interface || argc < 7) {
+    if (!gattc_interface || argc < 6) {
         return -1;
     }
     bt_address remote_address;
@@ -540,7 +540,7 @@ static int gattc_register_notification(void* handle, int argc, char** argv)
 
 static int gattc_throughtout_write(void* handle, int argc, char** argv)
 {
-    if (!gattc_interface || argc < 2) {
+    if (!gattc_interface || argc < 1) {
         return -1;
     }
     bt_address remote_address;
