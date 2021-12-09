@@ -33,6 +33,7 @@
 
 typedef struct
 {
+    void** handle_ptr;
     bt_address remote_addr;
     const bt_hid_device_callbacks* callbacks;
     uint8_t device_id;
@@ -47,6 +48,11 @@ static void hidd_app_state_changed(void* hdl, uint8_t device_id, hid_app_state_t
     CHECK_PTR(handle);
     handle->device_id = device_id;
     BT_CBACK(handle->callbacks, hidd_app_state_changed_cb, handle, registered);
+    if (!registered) {
+        void** handle_ptr = handle->handle_ptr;
+        free(handle);
+        *handle_ptr = NULL;
+    }
 }
 
 static void on_bts_hidd_connection_state_changed(void* hdl, bt_address remote_addr, profile_state_t state)
@@ -68,6 +74,7 @@ static bt_result_code hidd_register_device(void** ptr, bt_hidd_sdp_settings_t sd
     *handle_ptr = (btm_hidd_hdl_t*)malloc(sizeof(btm_hidd_hdl_t));
     memset(*handle_ptr, 0, sizeof(btm_hidd_hdl_t));
     (*handle_ptr)->callbacks = cb;
+    (*handle_ptr)->handle_ptr = (void**)handle_ptr;
 
     bts_hidd_hdl_t hidd = {
         .callbacks = &bts_hidd_cb,
@@ -77,6 +84,8 @@ static bt_result_code hidd_register_device(void** ptr, bt_hidd_sdp_settings_t sd
     bt_result_code ret = hidd_interface->register_device(hidd, sdp, tx_qos, rx_qos);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail,register_device err:%d", ret);
+        free(*handle_ptr);
+        *handle_ptr = NULL;
         return ret;
     }
 
@@ -91,6 +100,9 @@ static bt_result_code hidd_unregister_device(void* hdl)
     bt_result_code ret = hidd_interface->unregister_device(handle->device_id);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail,unregister_device err:%d", ret);
+        void** handle_ptr = handle->handle_ptr;
+        free(handle);
+        *handle_ptr = NULL;
         return ret;
     }
 
