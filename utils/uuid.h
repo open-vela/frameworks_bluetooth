@@ -1185,7 +1185,7 @@ struct bt_uuid_128 {
  *
  *  @return negative value if @a u1 < @a u2, 0 if @a u1 == @a u2, else positive
  */
-int bt_uuid_cmp(const struct bt_uuid* u1, const struct bt_uuid* u2);
+int bt_utils_uuid_cmp(const struct bt_uuid* u1, const struct bt_uuid* u2);
 
 /** @brief Create a bt_uuid from a little-endian data buffer.
  *
@@ -1199,7 +1199,7 @@ int bt_uuid_cmp(const struct bt_uuid* u1, const struct bt_uuid* u2);
  *
  *  @return true if the data was valid and the UUID was successfully created.
  */
-bool bt_uuid_create(struct bt_uuid* uuid, const uint8_t* data, uint8_t data_len);
+bool bt_utils_uuid_create(struct bt_uuid* uuid, const uint8_t* data, uint8_t data_len);
 
 /** @brief Convert Bluetooth UUID to string.
  *
@@ -1212,7 +1212,7 @@ bool bt_uuid_create(struct bt_uuid* uuid, const uint8_t* data, uint8_t data_len)
  *
  *  @return N/A
  */
-void bt_uuid_to_str(const struct bt_uuid* uuid, char* str, size_t len);
+void bt_utils_uuid_to_str(const struct bt_uuid* uuid, char* str, size_t len);
 void uuid_to_uuid128(const struct bt_uuid* src, struct bt_uuid_128* dst);
 #ifdef __cplusplus
 }
