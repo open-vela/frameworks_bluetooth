@@ -538,7 +538,7 @@ static void spp_server_start(uint16_t port, uint16_t uuid)
     struct bt_uuid_16 uuid_src;
     struct bt_uuid_128 uuid_128_dst;
 
-    bt_uuid_create((struct bt_uuid*)&uuid_src, (uint8_t*)&uuid, 2);
+    bt_utils_uuid_create((struct bt_uuid*)&uuid_src, (uint8_t*)&uuid, 2);
     uuid_to_uuid128((struct bt_uuid*)&uuid_src, &uuid_128_dst);
     service_adapter_spp_server_open(port, uuid_128_dst.val, SERVER_CONNECTION_MAX);
 }
@@ -556,7 +556,7 @@ static void spp_client_connect(bt_address addr, uint16_t port, uint16_t uuid)
     struct bt_uuid_16 uuid_src;
     struct bt_uuid_128 uuid_128_dst;
 
-    bt_uuid_create((struct bt_uuid*)&uuid_src, (uint8_t*)&uuid, 2);
+    bt_utils_uuid_create((struct bt_uuid*)&uuid_src, (uint8_t*)&uuid, 2);
     uuid_to_uuid128((struct bt_uuid*)&uuid_src, &uuid_128_dst);
 
     device = alloc_new_device(addr, 0, false);
