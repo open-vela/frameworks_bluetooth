@@ -239,10 +239,11 @@ static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM
     case A2DP_STREAM_SUSPENDED:
         event = STREAM_SUSPENDED_EVT;
         break;
-    case A2DP_STREAM_STREAMING: {
+    case A2DP_STREAM_STREAMING:
         event = STREAM_STARTED_EVT;
         break;
-    }
+    default:
+        return;
     }
 
     do_in_a2dp_service(a2dp_event_new(event, remote_addr));
@@ -291,7 +292,7 @@ static uint32_t adp_stream_sample_rate_transfer(uint32_t sample_rate)
         samplerate = BTS_A2DP_CODEC_SAMPLE_RATE_192000;
         break;
     default:
-        BT_LOGE("Invalid sample rate: %d", sample_rate);
+        BT_LOGE("Invalid sample rate: %ld", sample_rate);
         return BTS_A2DP_CODEC_SAMPLE_RATE_44100;
     }
 
