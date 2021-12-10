@@ -32,7 +32,7 @@
  ****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <nuttx/mm/circbuf.h>
 #include "btm_manager.h"
 #include "bts_a2dp_codec.h"
 #include "bts_a2dp_control.h"
@@ -57,19 +57,20 @@ typedef enum {
 
 typedef struct
 {
-    uint8_t tx_frames;
-    uint16_t frames_len;
-    uint16_t max_tx_length;
-    uint16_t mtu;
-    uint32_t sequence_number;
+    uint8_t             tx_frames;
+    uint16_t            frames_len;
+    uint16_t            max_tx_length;
+    uint16_t            mtu;
+    uint32_t            sequence_number;
     a2dp_stream_state_t stream_state;
-    uint8_t codec_info[10];
-    uint32_t interval_ms;
-    uv_timer_t* media_alarm;
+    uint8_t             codec_info[10];
+    uint32_t            interval_ms;
+    uv_timer_t*         media_alarm;
+    struct circbuf_s    fragmente;
 } a2dp_source_stream_t;
 
 static a2dp_source_stream_t a2dp_src_stream;
-extern a2dp_ipc_t* a2dp_ipc;
+extern a2dp_ipc_t*          a2dp_ipc;
 
 static uint32_t get_os_timestamp_ms(void)
 {
@@ -94,9 +95,21 @@ static SERVICE_A2DP_SOURCE_PACKET_S* bts_a2dp_source_build_packet(uint8_t* buffe
     SERVICE_A2DP_SOURCE_PACKET_S* packet;
     uint32_t offset = STREAM_DATA_OFFSET;
     uint8_t num_frames;
+    int fragment_size;
+    
+    fragment_size = circbuf_used(&a2dp_src_stream.fragmente);
+    if (fragment_size) {
+        circbuf_read(&a2dp_src_stream.fragmente, (buffer - fragment_size), fragment_size);
+        len += fragment_size;
+    }
 
-    packet = (SERVICE_A2DP_SOURCE_PACKET_S *)(buffer - offset);
+    packet = (SERVICE_A2DP_SOURCE_PACKET_S *)(buffer - offset - fragment_size);
     num_frames = len / a2dp_src_stream.frames_len;
+    fragment_size = len % a2dp_src_stream.frames_len;
+    packet->data_length = len - fragment_size + 1;
+    if (fragment_size && circbuf_space(&a2dp_src_stream.fragmente) > fragment_size) {
+        circbuf_write(&a2dp_src_stream.fragmente, &packet->data[packet->data_length], fragment_size);
+    }
     packet->data[0] = num_frames;
     packet->header.version = 2;
     packet->header.padding = 0;
@@ -106,8 +119,7 @@ static SERVICE_A2DP_SOURCE_PACKET_S* bts_a2dp_source_build_packet(uint8_t* buffe
     packet->header.sequenceNumber = a2dp_src_stream.sequence_number++;
     packet->header.ssrc = 1;
     packet->header.timestamp = get_os_timestamp_ms();
-    packet->data_length = len + 1; //frame data + num_frames
-
+    
     return packet;
 }
 
@@ -123,17 +135,26 @@ static void bts_a2dp_source_packet_send(SERVICE_A2DP_SOURCE_PACKET_S* packet)
 
 static void bts_a2dp_audio_data_alloc(uint8_t ch_id, uint8_t** buffer, size_t *len)
 {
+    int fragment_size;
     SERVICE_A2DP_SOURCE_PACKET_S *packet;
     uint32_t offset = STREAM_DATA_OFFSET;//header->data offset + num_frames
 
-    *len = a2dp_src_stream.max_tx_length;
-    packet = (SERVICE_A2DP_SOURCE_PACKET_S *)malloc(*len + offset);
+    fragment_size = circbuf_used(&a2dp_src_stream.fragmente);
+    if (fragment_size > a2dp_src_stream.max_tx_length) {
+        *buffer = NULL;
+        return;
+    }
+
+    *len = a2dp_src_stream.max_tx_length - fragment_size;
+    packet = (SERVICE_A2DP_SOURCE_PACKET_S *)malloc(*len + offset + fragment_size);
     if (!packet) {
+        *buffer = NULL;
         a2dp_ipc_read_stop(a2dp_ipc, ch_id);
         return;
     }
 
-    *buffer = &packet->data[1];
+    *buffer = &packet->data[1+fragment_size];
+    //*buffer = ((uint8_t *)packet) + offset + fragment_size;
 }
 
 static void bts_a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, size_t len)
@@ -170,6 +191,8 @@ static void bts_a2dp_source_audio_handle_timer(char* arg)
 static void bts_a2dp_source_start_audio_req(void)
 {
     BT_LOGD("%s", __func__);
+
+    circbuf_reset(&a2dp_src_stream.fragmente);
     a2dp_src_stream.interval_ms = bts_a2dp_codec_interval_ms();
     a2dp_src_stream.frames_len = bts_a2dp_codec_get_frame_length();
     a2dp_src_stream.tx_frames = calculate_max_frames_per_packet();
@@ -189,6 +212,8 @@ static void bts_a2dp_source_stop_audio_req(void)
         a2dp_ipc_read_stop(a2dp_ipc, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
     }
 
+    circbuf_reset(&a2dp_src_stream.fragmente);
+    //TODO: need flush socket
     stop_timer(a2dp_src_stream.media_alarm);
     a2dp_src_stream.media_alarm = NULL;
     a2dp_src_stream.stream_state = STATE_OFF;
@@ -263,6 +288,7 @@ void bts_a2dp_source_audio_init(void)
     a2dp_src_stream.media_alarm = NULL;
     a2dp_src_stream.stream_state = STATE_OFF;
     a2dp_src_stream.sequence_number = 0;
+    circbuf_init(&a2dp_src_stream.fragmente, NULL, 1024);
     bts_a2dp_codec_init();
     bts_a2dp_control_init(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
 }
