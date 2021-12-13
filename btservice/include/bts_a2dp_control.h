@@ -71,10 +71,7 @@ typedef enum {
 typedef enum {
     A2DP_CTRL_EVT_CMD_COMPLETED,
     A2DP_CTRL_EVT_CONNECTED,
-    A2DP_CTRL_EVT_DISCONNECTED,
-    A2DP_CTRL_EVT_STARTED,
-    A2DP_CTRL_EVT_STOPPED,
-    A2DP_CTRL_EVT_SUSPENDED
+    A2DP_CTRL_EVT_DISCONNECTED
 } a2dp_ctrl_evt_t;
 
 typedef enum {
@@ -89,4 +86,5 @@ typedef enum {
 extern void bts_a2dp_control_init(uint8_t ctrl_id, uint8_t data_id);
 extern void bts_a2dp_control_cleanup(void);
 extern void bts_a2dp_ctrl_event(uint8_t ch_id, a2dp_ctrl_evt_t event);
+extern void bts_a2dp_ctrl_command_ack(uint8_t ch_id, a2dp_ctrl_cmd_t cmd, a2dp_ctrl_status_t ack);
 #endif
