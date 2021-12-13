@@ -94,7 +94,7 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
 	 CSRCS +=tools/hf_client.c
 endif
-ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
+ifeq ($(CONFIG_BLUETOOTH_A2DP_SRC),y)
 	 CSRCS +=tools/a2dp_source.c
 endif
 ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER),y)
