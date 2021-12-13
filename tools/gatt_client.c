@@ -599,7 +599,7 @@ static bt_command_t g_gattc_tables[] = {
     { "read_rssi", gattc_read_rssi, "\"gatt client read rssi  :<address>\"" },
     { "read_phy", gattc_read_phy, "\"gatt client read phy  :<address>\"" },
     { "update_mtu", gattc_update_mtu, "\"gatt client update mtu  :<address> <mtu>\"" },
-    { "update_phy", gattc_update_phy, "\"gatt client update phy  :<address> <tx phy> <rx phy>\"" },
+    { "update_phy", gattc_update_phy, "\"gatt client update phy(0: 1M, 1: 2M, 2: LE_Coded)  :<address> <tx phy> <rx phy>\"" },
     { "update_conn", gattc_update_connection_parameter, "\"gatt client update connect  parameter  :<address> <min_interval>  <max_interval> <latency> <timeout> <min_connection_event_length> <max_connection_event_length>  \"" },
     { "discover_services", gattc_discover_services, "\"gatt client discover all services <address> \"" },
     { "read_request", gattc_read_request, "\"gatt client read request: :<address> <charateristic id>\"" },

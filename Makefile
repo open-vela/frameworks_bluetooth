@@ -57,28 +57,28 @@ ifeq ($(CONFIG_BLUETOOTH_SPP),y)
 	CSRCS +=btservice/spp/bts_spp_service.c
 endif
 
+ifneq ($(findstring y, $(CONFIG_BLUETOOTH_LE_SCAN)_$(CONFIG_BLUETOOTH_LE_ADVERTISE)_$(CONFIG_BLUETOOTH_GATT_CLIENT)_$(CONFIG_BLUETOOTH_GATT_SERVER)), )
+	CSRCS +=btservice/gatt/bts_gatt_service.c
+endif
+
 ifeq ($(CONFIG_BLUETOOTH_LE_SCAN),y)
 	CSRCS +=btmanager/btm_le_scan.c
 	CSRCS +=btservice/gatt/bts_le_scan.c
-	CSRCS +=btservice/gatt/bts_gatt_service.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_LE_ADVERTISE),y)
 	CSRCS +=btmanager/btm_le_advertise.c
 	CSRCS +=btservice/gatt/bts_le_advertise.c
-	CSRCS +=btservice/gatt/bts_gatt_service.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT),y)
 	CSRCS +=btmanager/btm_gatt_client.c
 	CSRCS +=btservice/gatt/bts_gatt_client.c
-	CSRCS +=btservice/gatt/bts_gatt_service.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER),y)
 	CSRCS +=btmanager/btm_gatt_server.c
 	CSRCS +=btservice/gatt/bts_gatt_server.c
-	CSRCS +=btservice/gatt/bts_gatt_service.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_HIDDEV),y)

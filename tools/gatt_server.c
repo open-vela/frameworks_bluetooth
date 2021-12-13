@@ -38,12 +38,18 @@
 
 #define THROUGHTPUT_HORIZON 2
 
+typedef struct {
+    struct list_node node;
+    uint16_t gatt_mtu;
+    bt_address remote_address;
+} gatts_device_t;
+
 static void* gatts_handle;
 static void* adv_handle;
 static btm_gatt_server_interface_t* gatts_interface = NULL;
 static btm_interface_t* manager = NULL;
-static uint16_t gatt_mtu = 20;
 static volatile uint16_t throughtput_cursor = 1;
+static struct list_node gatts_device_list = LIST_INITIAL_VALUE(gatts_device_list);
 
 enum {
     /* IDs of Private IOT service */
@@ -51,6 +57,7 @@ enum {
     IOT_SERVICE_TX_CHR_ID,
     IOT_SERVICE_TX_CHR_CCC_ID,
     IOT_SERVICE_RX_CHR_ID,
+    IOT_SERVICE_READ_CHR_ID,
 };
 
 static gatt_element_t s_iot_service_elements[] = {
@@ -71,14 +78,54 @@ static gatt_element_t s_iot_service_elements[] = {
         { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x02, 0x29, 0x00, 0x00 },
         DESCRIPTOR,
         0,
-        GATT_PERMISSION_READABLE | GATT_PERMISSION_WRITABLE },
+        GATT_PERMISSION_READABLE | GATT_PERMISSION_WRITABLE | GATT_PERMISSION_AUTHENTICATION_REQUIRED },
     { /* Private Characteristic for RX - 0xFF02 */
         IOT_SERVICE_RX_CHR_ID,
         { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x02, 0xFF, 0x00, 0x00 },
         CHARACTERISTIC,
         GATT_PROPERTY_WRITE_NO_RESPONSE,
         GATT_PERMISSION_WRITABLE },
+    { /* Private Characteristic for read operation demo - 0xFF05 */
+        IOT_SERVICE_READ_CHR_ID,
+        { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x05, 0xFF, 0x00, 0x00 },
+        CHARACTERISTIC,
+        GATT_PROPERTY_READ,
+        GATT_PERMISSION_READABLE },
 };
+
+static gatts_device_t* find_gatts_device(bt_address remote_address)
+{
+    gatts_device_t* device;
+    list_for_every_entry(&gatts_device_list, device, gatts_device_t, node)
+    {
+        if (!memcmp(device->remote_address, remote_address, sizeof(bt_address))) {
+            return device;
+        }
+    }
+    return NULL;
+}
+
+static gatts_device_t* add_gatts_device(bt_address remote_address)
+{
+    gatts_device_t* device = (gatts_device_t*)malloc(sizeof(gatts_device_t));
+    if (!device) {
+        BT_LOGE("malloc device fail");
+        return NULL;
+    }
+
+    memset(device, 0, sizeof(gatts_device_t));
+    device->gatt_mtu = 23;
+    memcpy(device->remote_address, remote_address, sizeof(bt_address));
+    list_add_tail(&gatts_device_list, &device->node);
+    return device;
+}
+
+static bool remove_gatts_device(gatts_device_t* device)
+{
+    list_delete(&device->node);
+    free(device);
+    return true;
+}
 
 static void le_adv_started_callback(void* handle)
 {
@@ -101,10 +148,90 @@ static btm_le_advertise_callbacks le_adv_cb = {
     .le_advertise_failed_cb = le_adv_failed_callback,
 };
 
+static char* profile_state_to_str(profile_state_t state)
+{
+    switch (state) {
+    case SERVICE_PROFILE_DISCONNECTED: {
+        return "profile disconnected";
+    }
+    case SERVICE_PROFILE_CONNECTING: {
+        return "profile connecting";
+    }
+    case SERVICE_PROFILE_CONNECTED: {
+        return "profile connected";
+    }
+    case SERVICE_PROFILE_DISCONNECTING: {
+        return "profile disconnecting";
+    }
+    default: {
+        return "unknown state";
+    }
+    }
+}
+
 static void test_server_connection_state_changed_callback(void* handle, bt_address remote_addr, profile_state_t state)
 {
-    BT_LOGD("%s  addr:[%02x:%02x:%02x:%02x:%02x:%02x], state:%d", __func__, remote_addr[0], remote_addr[1],
-        remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5], state);
+    BT_LOGD("%s  addr:%s, state:%s", __func__, addr_str(remote_addr), profile_state_to_str(state));
+    if (state == SERVICE_PROFILE_DISCONNECTED) {
+        gatts_device_t* device = find_gatts_device(remote_addr);
+        remove_gatts_device(device);
+    } else if (state == SERVICE_PROFILE_CONNECTED) {
+        add_gatts_device(remote_addr);
+    }
+}
+
+static void gatt_display_service(gatt_element_t* elements, uint16_t size)
+{
+    gatt_element_t* item = elements;
+    gatt_element_t* item_end = elements + size;
+
+    while (item < item_end) {
+        switch (item->type) {
+        case PRIMARY_SERVICE:
+            BT_LOGD(">[%d][PRI]", item->id);
+            break;
+        case SECONDARY_SERVICE:
+            BT_LOGD(">[%d][SND]", item->id);
+            break;
+        case INCLUDED_SERVICE:
+            BT_LOGD(">  [%d][INC]", item->id);
+            break;
+        case CHARACTERISTIC:
+            BT_LOGD(">  [%d][CHR]", item->id);
+            break;
+        case DESCRIPTOR:
+            BT_LOGD(">    [%d][DES]", item->id);
+            break;
+        }
+        BT_LOGD("[PROP:%d", item->properties);
+        if (item->properties) {
+            BT_LOGD(",");
+            if (item->properties & GATT_PROPERTY_READ) {
+                BT_LOGD("R");
+            }
+            if (item->properties & GATT_PROPERTY_WRITE_NO_RESPONSE) {
+                BT_LOGD("Wn");
+            }
+            if (item->properties & GATT_PROPERTY_WRITE) {
+                BT_LOGD("W");
+            }
+            if (item->properties & GATT_PROPERTY_NOTIFY) {
+                BT_LOGD("N");
+            }
+            if (item->properties & GATT_PROPERTY_INDICATE) {
+                BT_LOGD("I");
+            }
+        }
+        BT_LOGD("]");
+
+        BT_LOGD("[0x%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x]\r\n",
+            item->uuid[15], item->uuid[14], item->uuid[13], item->uuid[12],
+            item->uuid[11], item->uuid[10], item->uuid[9], item->uuid[8],
+            item->uuid[7], item->uuid[6], item->uuid[5], item->uuid[4],
+            item->uuid[3], item->uuid[2], item->uuid[1], item->uuid[0]);
+        item++;
+    }
+    BT_LOGD(">");
 }
 
 static void test_server_opened_callback(void* handle)
@@ -120,37 +247,39 @@ static void test_server_closed_callback(void* handle)
 static void test_server_service_added_callback(void* handle, gatt_status_t status, gatt_element_t* element,
     size_t size)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, status: %d, size: %d", __func__, status, size);
+    gatt_display_service(element, size);
 }
 
 static void test_server_service_removed_callback(void* handle, gatt_status_t status, gatt_element_t* element,
     size_t size)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, status: %d, size: %d", __func__, status, size);
+    gatt_display_service(element, size);
 }
 
 static void test_server_phy_read_callback(void* handle, bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, addr:%s, tx:%d, rx:%d", __func__, addr_str(remote_addr), tx, rx);
 }
 
 static void test_server_phy_update_callback(void* handle, bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx, gatt_status_t status)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, addr:%s, status:%d, tx:%d, rx:%d", __func__, addr_str(remote_addr), status, tx, rx);
 }
 
 static void test_server_read_request_callback(void* handle, bt_address remote_addr, uint32_t request_id,
     gatt_element_t* element)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, addr:%s, request_id:%d", __func__, addr_str(remote_addr), request_id);
+    gatt_display_service(element, 1);
     gatt_response_t* rsp;
-    if (element->id == IOT_SERVICE_TX_CHR_CCC_ID) {
-        rsp = malloc(sizeof(gatt_response_t) + 1);
-        memset(rsp, 0, sizeof(gatt_response_t) + 1);
-        uint16_t s_iot_tx_ccc_value = 0x2234;
-        rsp->length = 2;
-        rsp->value[0] = (uint8_t)(s_iot_tx_ccc_value & 0xFF);
-        rsp->value[1] = (uint8_t)(s_iot_tx_ccc_value >> 8);
+    if (element->id == IOT_SERVICE_READ_CHR_ID) {
+        const char* read_rsp = "XIAOMI VELA BT";
+        rsp = malloc(sizeof(gatt_response_t) + strlen(read_rsp) + 1);
+        memset(rsp, 0, sizeof(gatt_response_t) + strlen(read_rsp) + 1);
+        rsp->length = strlen(read_rsp) + 1;
+        memcpy(rsp->value, read_rsp, strlen(read_rsp) + 1);
     } else {
         rsp = malloc(sizeof(gatt_response_t));
         memset(rsp, 0, sizeof(gatt_response_t));
@@ -170,24 +299,27 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
     gatt_element_t* element, uint8_t* value, uint16_t offset,
     uint16_t size)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, addr:%s, request_id:%d", __func__, addr_str(remote_addr), request_id);
+    gatt_display_service(element, 1);
     gatt_response_t* rsp = malloc(sizeof(gatt_response_t));
     memset(rsp, 0, sizeof(gatt_response_t));
     switch (element->id) {
     case IOT_SERVICE_TX_CHR_CCC_ID: {
         uint16_t s_iot_tx_ccc_value = value[0] + (value[1] << 8);
-        BT_LOGD(" IOT transmission %s!\r\n>", s_iot_tx_ccc_value ? "enabled" : "disabled");
+        BT_LOGD(" IOT transmission %s", s_iot_tx_ccc_value ? "enabled" : "disabled");
         break;
     }
     case IOT_SERVICE_RX_CHR_ID: {
-        BT_LOGD(" IOT received %d bytes!\r\n>", size);
+        BT_LOGD(" IOT received %d bytes,, offset:%d", size, offset);
         break;
     }
     default: {
-        BT_LOGD(" write %d bytes from offset %d of element %d!\r\n>", size, offset, element->id);
+        BT_LOGD(" write %d bytes from offset %d of element %d", size, offset, element->id);
         break;
     }
     }
+    BT_HEXDUMP(value, size);
+
     rsp->length = 0;
     rsp->request_id = request_id;
     rsp->status = GATT_SUCCESS;
@@ -200,14 +332,18 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
 
 static void test_server_mtu_changed_callback(void* handle, bt_address remote_addr, uint32_t mtu)
 {
-    BT_LOGD("%s mtu: %d", __func__, mtu);
-    gatt_mtu = mtu;
+    BT_LOGD("%s, addr:%s, mtu: %d", __func__, addr_str(remote_addr), mtu);
+    gatts_device_t* device = find_gatts_device(remote_addr);
+    if (!device) {
+        BT_LOGD("update device:%s, mtu:%d", addr_str(remote_addr), mtu);
+        device->gatt_mtu = mtu;
+    }
 }
 
 static void test_server_notify_sent_callback(void* handle, bt_address remote_addr, gatt_status_t status)
 {
     throughtput_cursor--;
-    BT_LOGD("%s status:%d, throughtput_cursor:%d", __func__, status, throughtput_cursor);
+    BT_LOGD("%s addr:%s, status:%d, throughtput_cursor:%d", __func__, addr_str(remote_addr), status, throughtput_cursor);
 }
 
 static void test_server_throughtout_notify(bt_address remote_addr, gatt_element_t* element, uint32_t times, uint16_t mtu)
@@ -290,7 +426,7 @@ static int gatts_connect(void* handle, int argc, char** argv)
     }
     bt_address remote_address;
     str2ba(argv[0], remote_address);
-    BT_LOGD("connect remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5]);
+    BT_LOGD("connect remote_addr:%s", addr_str(remote_address));
     bt_result_code ret = gatts_interface->connect(gatts_handle, remote_address, true);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, connect  ret: %d", ret);
@@ -305,9 +441,15 @@ static int gatts_disconnect(void* handle, int argc, char** argv)
     }
     bt_address remote_address;
     str2ba(argv[0], remote_address);
-    BT_LOGD("disconnect remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5]);
+    BT_LOGD("disconnect remote_addr:%s", addr_str(remote_address));
+    gatts_device_t* device = find_gatts_device(remote_address);
+    if (!device) {
+        BT_LOGE("device%s not connected", addr_str(remote_address));
+        return -1;
+    }
     bt_result_code ret = gatts_interface->disconnect(gatts_handle, remote_address);
     if (ret != BT_RESULT_SUCCESS) {
+        remove_gatts_device(device);
         BT_LOGD("fail, disconnect  ret: %d", ret);
     }
     return 0;
@@ -349,10 +491,16 @@ static int gatts_read_phy(void* handle, int argc, char** argv)
     }
     bt_address remote_address;
     str2ba(argv[0], remote_address);
-    BT_LOGD("read phy remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5]);
+    BT_LOGD("read phy  remote_addr:%s", addr_str(remote_address));
+    gatts_device_t* device = find_gatts_device(remote_address);
+    if (!device) {
+        BT_LOGE("device%s not connected", addr_str(remote_address));
+        return -1;
+    }
     bt_result_code ret = gatts_interface->read_phy(gatts_handle, remote_address);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, read phy  ret: %d", ret);
+        return -1;
     }
     return 0;
 }
@@ -366,10 +514,16 @@ static int gatts_update_phy(void* handle, int argc, char** argv)
     str2ba(argv[0], remote_address);
     int tx = atoi(argv[1]);
     int rx = atoi(argv[2]);
-    BT_LOGD("update phy(0: 1M, 1: 2M, 2: LE_Coded) remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x], tx:%d, rx:%d", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5], tx, rx);
+    BT_LOGD("update phy  remote_addr:%s, tx:%d, rx:%d", addr_str(remote_address), tx, rx);
+    gatts_device_t* device = find_gatts_device(remote_address);
+    if (!device) {
+        BT_LOGE("device%s not connected", addr_str(remote_address));
+        return -1;
+    }
     bt_result_code ret = gatts_interface->update_phy(gatts_handle, remote_address, tx, rx);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, update phy  ret: %d", ret);
+        return -1;
     }
     return 0;
 }
@@ -381,10 +535,20 @@ static int gatts_send_notify(void* handle, int argc, char** argv)
     }
     bt_address remote_address;
     str2ba(argv[0], remote_address);
-    BT_LOGD("send notify remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5]);
+
+    size_t size = strlen(argv[1]);
+    uint8_t* payload = (uint8_t*)malloc(size);
+    memcpy(payload, argv[1], size);
+
+    BT_LOGD("send notify   remote_addr:%s, value:", addr_str(remote_address));
+    BT_HEXDUMP(payload, size);
+    gatts_device_t* device = find_gatts_device(remote_address);
+    if (!device) {
+        BT_LOGE("device%s not connected", addr_str(remote_address));
+        return -1;
+    }
     gatt_element_t* element = (gatt_element_t*)(s_iot_service_elements + IOT_SERVICE_TX_CHR_ID - 1);
-    uint8_t payload[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    bt_result_code ret = gatts_interface->send_notify(gatts_handle, remote_address, element, payload, sizeof(payload) / sizeof(payload[0]));
+    bt_result_code ret = gatts_interface->send_notify(gatts_handle, remote_address, element, payload, size);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, read phy  ret: %d", ret);
     }
@@ -398,10 +562,20 @@ static int gatts_send_indicate(void* handle, int argc, char** argv)
     }
     bt_address remote_address;
     str2ba(argv[0], remote_address);
-    BT_LOGD("send indicate remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5]);
+
+    size_t size = strlen(argv[1]);
+    uint8_t* payload = (uint8_t*)malloc(size);
+    memcpy(payload, argv[1], size);
+
+    BT_LOGD("send indicate   remote_addr:%s, value:", addr_str(remote_address));
+    BT_HEXDUMP(payload, size);
+    gatts_device_t* device = find_gatts_device(remote_address);
+    if (!device) {
+        BT_LOGE("device%s not connected", addr_str(remote_address));
+        return -1;
+    }
     gatt_element_t* element = (gatt_element_t*)(s_iot_service_elements + IOT_SERVICE_TX_CHR_ID - 1);
-    uint8_t payload[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    bt_result_code ret = gatts_interface->send_indicate(gatts_handle, remote_address, element, payload, sizeof(payload) / sizeof(payload[0]));
+    bt_result_code ret = gatts_interface->send_indicate(gatts_handle, remote_address, element, payload, size);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, send indicate  ret: %d", ret);
     }
@@ -416,27 +590,37 @@ static int gatts_do_throughput(void* handle, int argc, char** argv)
     bt_address remote_address;
     str2ba(argv[0], remote_address);
     uint32_t times = atoi(argv[1]);
-    BT_LOGD("throughtout remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x], times:%d", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5], times);
+    BT_LOGD("throughtout remote_addr:%s, times:%d", addr_str(remote_address), times);
     gatt_element_t* element = (gatt_element_t*)(s_iot_service_elements + IOT_SERVICE_TX_CHR_ID - 1);
     if (!element) {
         BT_LOGD("element null");
         return -1;
     }
-    test_server_throughtout_notify(remote_address, element, times, gatt_mtu);
+    gatts_device_t* device = find_gatts_device(remote_address);
+    if (!device) {
+        BT_LOGE("device%s not connected", addr_str(remote_address));
+        return -1;
+    }
+    test_server_throughtout_notify(remote_address, element, times, device->gatt_mtu);
     BT_LOGD("throughtout notify ...");
     return 0;
 }
 
 static int le_start_advertising(void* handle, int argc, char** argv)
 {
-    if (!gatts_interface) {
+    if (!gatts_interface || argc < 1) {
         return -1;
     }
-    BT_LOGD("start ble adv");
+    int adv_type = atoi(argv[1]);
+    if (adv_type < BLE_ADV_IND || adv_type > BLE_SCAN_RSP) {
+        BT_LOGE("invalid adv_type:%d", adv_type);
+        return -1;
+    }
+    BT_LOGD("start ble adv type:%d", adv_type);
     const uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x08, 0x09, 0x42, 0x52, 0x54, 0x2D, 0x49, 0x44, 0x4D, 0x03, 0x02, 0x00, 0xFF };
     advertise_param_t adv_para;
     memset(&adv_para, 0, sizeof(SERVICE_SCAN_ADV_PARAMS_S));
-    adv_para.params.adv_type = BLE_ADV_IND;
+    adv_para.params.adv_type = adv_type;
     adv_para.params.channel_map = ADV_CHANNEL_DEFAULT;
     adv_para.params.interval = 48;
     adv_para.params.tx_power = -10;
@@ -477,10 +661,10 @@ static bt_command_t g_gatts_tables[] = {
     { "remove", gatts_remove, "\"remove gatt service\"" },
     { "read_phy", gatts_read_phy, "\"read phy:<address>\"" },
     { "update_phy", gatts_update_phy, "\"update phy(0: 1M, 1: 2M, 2: LE_Coded) :<address> <tx> <rx>\"" },
-    { "send_notify", gatts_send_notify, "\"send notify:<address> \"" },
-    { "send_indicate", gatts_send_indicate, "\"send indicate remote_addr :<address>\"" },
+    { "send_notify", gatts_send_notify, "\"send notify:<address> <payload> \"" },
+    { "send_indicate", gatts_send_indicate, "\"send indicate:<address> <payload>\"" },
     { "throughput", gatts_do_throughput, "\"throughtout:<address> <times>\"" },
-    { "start_adv", le_start_advertising, "\"start le adv\"" },
+    { "start_adv", le_start_advertising, "\"start le adv(0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)\" <type>" },
     { "stop_adv", le_stop_advertising, "\"stop le adv\"" },
 };
 
