@@ -410,28 +410,27 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
     switch (msg->event) {
     case ON_HIDD_APP_STATE_CHANGED: {
         hid_app_state_t* registered = (hid_app_state_t*)(msg->data);
-        if (!*registered) {
+        BT_CBACK(handle->callbacks, bts_hidd_app_state_changed_cb, handle->btm_handle, handle->device_id, *registered);
+        if (*registered) {
+            hidd_fd = open(HIDD_UNINPT_DEV, O_RDONLY);
+            if (hidd_fd < 0) {
+                BT_LOGE("open(%s) failed: %s", HIDD_UNINPT_DEV, strerror(errno));
+                return;
+            }
+
+            hidd_uv_handle = bts_uv_poll_start(hidd_fd, UV_READABLE | UV_DISCONNECT, hid_uv_poll_callback, NULL);
+            if (!hidd_uv_handle) {
+                BT_LOGE("fail, bts_uv_poll_start");
+                return;
+            }
+        } else {
             BT_LOGD("unregistered, remove_hid_device handle");
             remove_hid_device(handle);
             close(hidd_fd);
             bts_uv_poll_stop(hidd_uv_handle);
             hidd_fd = 0;
             hidd_uv_handle = NULL;
-            return;
         }
-
-        hidd_fd = open(HIDD_UNINPT_DEV, O_RDONLY);
-        if (hidd_fd < 0) {
-            BT_LOGE("open(%s) failed: %s", HIDD_UNINPT_DEV, strerror(errno));
-            return;
-        }
-
-        hidd_uv_handle = bts_uv_poll_start(hidd_fd, UV_READABLE | UV_DISCONNECT, hid_uv_poll_callback, NULL);
-        if (!hidd_uv_handle) {
-            BT_LOGE("fail, bts_uv_poll_start");
-            return;
-        }
-        BT_CBACK(handle->callbacks, bts_hidd_app_state_changed_cb, handle->btm_handle, handle->device_id, *registered);
         break;
     }
     case ON_HIDD_CONNECTION_STATE_CHANGED: {
