@@ -37,7 +37,7 @@ config BLUETOOTH_AVRCP_CT
 
 config BLUETOOTH_A2DP_SRC
 	bool "Enable BT_A2DP_SRC"
-	default n
+	default y
 
 config BLUETOOTH_A2DP_SINK
 	bool "Enable BT_A2DP_SINK"
