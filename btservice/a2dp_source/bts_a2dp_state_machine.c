@@ -55,20 +55,21 @@
 #define LOG_TAG "a2dp_stm"
 #include "log.h"
 
-#define HF_CONNECT_TIMEOUT 2 * 1000
-#define CASE_RETURN_STR(const) \
-    case const:                \
-        return #const;
+#define A2DP_CONNECT_TIMEOUT 4 * 1000
+#define A2DP_START_TIMEOUT 2 * 1000
 
 typedef enum pending_state {
-    PENDING_NONE,
-    PENDING_START,
+    PENDING_NONE = 0x0,
+    PENDING_START = 0X02,
+    PENDING_STOP = 0x04
 } pending_state_t;
 typedef struct _a2dp_state_machine {
     state_machine_t sm;
     a2dp_source_t* service;
     bt_address addr;
     pending_state_t pending;
+    uv_timer_t *connect_timer;
+    uv_timer_t *start_timer;
 } a2dp_state_machine_t;
 
 typedef struct {
@@ -143,6 +144,8 @@ static char* stack_event_to_string(a2dp_event_type_t event)
         CASE_RETURN_STR(STREAM_MTU_CONFIG_EVT)
         CASE_RETURN_STR(CODEC_CONFIG_EVT)
         CASE_RETURN_STR(DEVICE_CODEC_STATE_CHANGE_EVT)
+        CASE_RETURN_STR(CONNECT_TIMEOUT)
+        CASE_RETURN_STR(START_TIMEOUT)
     default:
         return "UNKNOWN_EVENT";
     }
@@ -169,6 +172,26 @@ static void bts_a2dp_report_audio_config_state(a2dp_source_t* service, bt_addres
         service->callbacks->audio_source_config_cb(addr);
 }
 
+static void a2dp_connect_timeout_callback(char* data)
+{
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
+    a2dp_event_t* a2dp_event;
+
+    a2dp_event = a2dp_event_new(CONNECT_TIMEOUT, NULL);
+    a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
+    a2dp_event_destory(a2dp_event);
+}
+
+static void a2dp_start_timeout_callback(char* data)
+{
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
+    a2dp_event_t* a2dp_event;
+
+    a2dp_event = a2dp_event_new(START_TIMEOUT, NULL);
+    a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
+    a2dp_event_destory(a2dp_event);
+}
+
 static void idle_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
@@ -180,9 +203,17 @@ static void idle_enter(state_machine_t* sm)
 static void idle_exit(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
+    a2dp_source_t* service = a2dp_sm->service;
+    state_t *prev_state = hsm_get_previous_state(sm);
 
     BT_LOGD("state=%s Exit, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
+    if (prev_state != NULL && prev_state == &opening_state) {
+        stop_timer(a2dp_sm->connect_timer);
+        a2dp_sm->connect_timer = NULL;
+        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
+            A2DP_CONNECTION_STATE_DISCONNECTED);
+    }
 }
 
 static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data)
@@ -190,6 +221,7 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
     a2dp_source_t* service = a2dp_sm->service;
     a2dp_event_data_t* event_data = (a2dp_event_data_t*)p_data;
+
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),
         addr_str(a2dp_sm->addr));
@@ -201,16 +233,11 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             bts_a2dp_report_connection_state(service, a2dp_sm->addr,
                 A2DP_CONNECTION_STATE_DISCONNECTED);
-            BT_LOGE("Connect failed");
+            break;
         }
         hsm_transition_to(sm, &opening_state);
         break;
     }
-
-    case DISCONNECT_REQ:
-    case STREAM_START_REQ:
-    case STREAM_SUSPEND_REQ:
-        break;
 
     case CONNECTED_EVT:
         bts_a2dp_source_on_connection_changed(true);
@@ -219,16 +246,10 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
         hsm_transition_to(sm, &opened_state);
         break;
 
-    case DISCONNECTED_EVT:
-    case STREAM_STARTED_EVT:
-    case STREAM_SUSPENDED_EVT:
-    case STREAM_CLOSED_EVT:
-    case STREAM_MTU_CONFIG_EVT:
-        break;
-
     default:
         break;
     }
+
     return true;
 }
 
@@ -239,8 +260,8 @@ static void opening_enter(state_machine_t* sm)
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
-    bts_a2dp_report_connection_state(service, a2dp_sm->addr,
-        A2DP_CONNECTION_STATE_CONNECTING);
+    a2dp_sm->connect_timer = start_timer(A2DP_CONNECT_TIMEOUT, 0, a2dp_connect_timeout_callback, a2dp_sm);
+    bts_a2dp_report_connection_state(service, a2dp_sm->addr, A2DP_CONNECTION_STATE_CONNECTING);
 }
 
 static void opening_exit(state_machine_t* sm)
@@ -260,9 +281,6 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
         stack_event_to_string(event),
         addr_str(a2dp_sm->addr));
     switch (event) {
-    case CONNECT_REQ:
-        break;
-
     case DISCONNECT_REQ: {
         SERVICE_BT_STATUS status;
 
@@ -270,17 +288,15 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect failed");
         }
-        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
-            A2DP_CONNECTION_STATE_DISCONNECTED);
         hsm_transition_to(sm, &idle_state);
         break;
     }
 
-    case STREAM_START_REQ:
-    case STREAM_SUSPEND_REQ:
-        break;
-
     case CONNECTED_EVT:
+        if (a2dp_sm->connect_timer) {
+            stop_timer(a2dp_sm->connect_timer);
+            a2dp_sm->connect_timer = NULL;
+        }
         bts_a2dp_source_on_connection_changed(true);
         bts_a2dp_report_connection_state(service, a2dp_sm->addr,
             A2DP_CONNECTION_STATE_CONNECTED);
@@ -288,21 +304,14 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case DISCONNECTED_EVT:
-        bts_a2dp_source_on_connection_changed(false);
-        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
-            A2DP_CONNECTION_STATE_DISCONNECTED);
+    case CONNECT_TIMEOUT:
         hsm_transition_to(sm, &idle_state);
-        break;
-
-    case STREAM_SUSPENDED_EVT:
-    case STREAM_CLOSED_EVT:
-    case STREAM_STARTED_EVT:
-    case STREAM_MTU_CONFIG_EVT:
         break;
 
     default:
         break;
     }
+
     return true;
 }
 
@@ -331,8 +340,6 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         stack_event_to_string(event),
         addr_str(a2dp_sm->addr));
     switch (event) {
-    case CONNECT_REQ:
-        break;
     case DISCONNECT_REQ: {
         SERVICE_BT_STATUS status;
 
@@ -347,23 +354,24 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     }
     case STREAM_START_REQ: {
         SERVICE_BT_STATUS status;
-        a2dp_sm->pending = PENDING_START;
         status = service_adapter_a2dp_source_start_stream(event_data->bd_addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Stream start failed");
+            break;
         }
+        a2dp_sm->pending |= PENDING_START;
+        a2dp_sm->start_timer = start_timer(A2DP_START_TIMEOUT, 0, a2dp_start_timeout_callback, a2dp_sm);
         break;
     }
 
-    case STREAM_SUSPEND_REQ:
-    case CONNECTED_EVT:
-        break;
-
     case DISCONNECTED_EVT:
-        if (a2dp_sm->pending == PENDING_START) {
-            a2dp_sm->pending = PENDING_NONE;
+        if (a2dp_sm->pending & PENDING_START) {
+            a2dp_sm->pending &= ~PENDING_START;
+            stop_timer(a2dp_sm->start_timer);
+            a2dp_sm->start_timer = NULL;
             // When pending on start request, then received stream close event
             //call bts_a2dp_source_on_started(), shoule ack start failure;
+            bts_a2dp_source_on_started(false);
             return true;
         }
         bts_a2dp_source_on_connection_changed(false);
@@ -375,8 +383,10 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     case STREAM_STARTED_EVT:
         // If remote tries to start A2DP when DUT is A2DP Source, then Suspend.
         // If A2DP is Sink and call is active, then disconnect the AVDTP channel.
-        a2dp_sm->pending = PENDING_NONE;
-        bts_a2dp_source_on_started();
+        a2dp_sm->pending &= ~PENDING_START;
+        stop_timer(a2dp_sm->start_timer);
+        a2dp_sm->start_timer = NULL;
+        bts_a2dp_source_on_started(true);
         hsm_transition_to(sm, &started_state);
         break;
 
@@ -395,9 +405,18 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         bts_a2dp_report_audio_config_state(service, a2dp_sm->addr);
         break;
 
+    case START_TIMEOUT: {
+        a2dp_sm->pending &= ~PENDING_START;
+        stop_timer(a2dp_sm->start_timer);
+        a2dp_sm->start_timer = NULL;
+        bts_a2dp_source_on_started(false);
+        break;
+    }
+
     default:
         break;
     }
+
     return true;
 }
 
@@ -429,9 +448,6 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         stack_event_to_string(event),
         addr_str(a2dp_sm->addr));
     switch (event) {
-    case CONNECT_REQ:
-        break;
-
     case DISCONNECT_REQ: {
         SERVICE_BT_STATUS status;
 
@@ -448,7 +464,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
 
     case STREAM_START_REQ:
         // We were started remotely, just ACK back the local request
-        bts_a2dp_source_on_started();
+        bts_a2dp_source_on_started(true);
         break;
 
     case STREAM_SUSPEND_REQ: {
@@ -466,9 +482,6 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         bts_a2dp_report_connection_state(service, a2dp_sm->addr,
             A2DP_CONNECTION_STATE_DISCONNECTED);
         hsm_transition_to(sm, &idle_state);
-        break;
-
-    case STREAM_STARTED_EVT:
         break;
 
     case STREAM_SUSPENDED_EVT:
@@ -491,12 +504,10 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         bts_a2dp_report_audio_config_state(service, a2dp_sm->addr);
         break;
 
-    case CONNECTED_EVT:
-    case STREAM_MTU_CONFIG_EVT:
-
     default:
         break;
     }
+
     return true;
 }
 
@@ -525,19 +536,10 @@ static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_d
         stack_event_to_string(event),
         addr_str(a2dp_sm->addr));
     switch (event) {
-    case CONNECT_REQ:
-    case DISCONNECT_REQ:
-    case STREAM_START_REQ:
-        //Ignored
-        break;
-
     case STREAM_SUSPEND_REQ:
     case STREAM_CLOSED_EVT:
     case STREAM_SUSPENDED_EVT:
         bts_a2dp_source_on_stopped();
-        break;
-
-    case CONNECTED_EVT:
         break;
 
     case DISCONNECTED_EVT:
@@ -546,11 +548,10 @@ static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_d
         hsm_transition_to(sm, &idle_state);
         break;
 
-    case STREAM_STARTED_EVT:
-    case STREAM_MTU_CONFIG_EVT:
     default:
         break;
     }
+
     return true;
 }
 

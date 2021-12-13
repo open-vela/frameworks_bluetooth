@@ -52,6 +52,8 @@ typedef enum {
     STREAM_MTU_CONFIG_EVT,
     CODEC_CONFIG_EVT,
     DEVICE_CODEC_STATE_CHANGE_EVT,
+    CONNECT_TIMEOUT,
+    START_TIMEOUT,
 } a2dp_event_type_t;
 
 typedef struct

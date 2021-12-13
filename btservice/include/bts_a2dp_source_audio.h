@@ -36,7 +36,7 @@
 void bts_a2dp_source_audio_init(void);
 void bts_a2dp_source_audio_cleanup(void);
 void bts_a2dp_source_on_idle(void);
-void bts_a2dp_source_on_started(void);
+void bts_a2dp_source_on_started(bool started);
 void bts_a2dp_source_on_stopped(void);
 void bts_a2dp_source_on_suspended(void);
 bool bts_a2dp_source_is_streaming(void);
