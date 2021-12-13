@@ -87,7 +87,7 @@ static void bts_a2dp_ctrl_event_with_data(uint8_t ch_id, a2dp_ctrl_evt_t event, 
     }
 }
 
-static void bts_a2dp_ctrl_command_ack(uint8_t ch_id, a2dp_ctrl_cmd_t cmd, a2dp_ctrl_status_t ack)
+void bts_a2dp_ctrl_command_ack(uint8_t ch_id, a2dp_ctrl_cmd_t cmd, a2dp_ctrl_status_t ack)
 {
     uint8_t cmd_ack[2];
     uint8_t* p = cmd_ack;
@@ -125,7 +125,7 @@ static void bts_a2dp_control_on_start(uint8_t ch_id)
 
     if (bts_a2dp_source_stream_ready()) {
         bts_a2dp_source_stream_start();
-        status = A2DP_CTRL_STATUS_SUCCESS;
+        return;
     } else if (bts_a2dp_source_stream_started()) {
         status = A2DP_CTRL_STATUS_SUCCESS;
     } else {
