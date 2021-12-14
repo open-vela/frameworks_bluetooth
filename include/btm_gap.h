@@ -41,7 +41,7 @@
 
 #include "btm_manager.h"
 
-#define MAX_PAIR_DEVICE 5
+#define MAX_PAIR_DEVICE 2
 #define MAX_CONNECTED_DEVICE 1
 /* * Bluetooth discovery state */
 typedef enum {
