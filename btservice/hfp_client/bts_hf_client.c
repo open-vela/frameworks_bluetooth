@@ -423,6 +423,11 @@ static void adp_current_call_callback(BD_ADDR remote_addr, uint32_t idx,
     hf_client_send_message(sm, msg);
 }
 
+static void adp_at_command_result_callback(BD_ADDR remote_addr, uint32_t at_cmd_code,uint32_t result)
+{
+
+}
+
 HFP_CALLBACKS_S hfp_adp_callbacks = {
     sizeof(HFP_CALLBACKS_S),
     adp_connection_state_changed_cb,
@@ -437,7 +442,8 @@ HFP_CALLBACKS_S hfp_adp_callbacks = {
     adp_received_at_cmd_cb,
     adp_received_sco_connection_req_cb,
     adp_clip_cb,
-    adp_current_call_callback
+    adp_current_call_callback,
+    adp_at_command_result_callback
 };
 
 static void hf_client_send_message(hf_state_machine_t* sm, hf_client_msg_t* msg)
