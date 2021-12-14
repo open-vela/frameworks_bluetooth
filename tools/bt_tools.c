@@ -76,12 +76,14 @@ static int get_remote_services(void* handle, int argc, char** argv);
 static int set_local_device_class(void* handle, int argc, char** argv);
 static int get_local_device_class(void* handle, int argc, char** argv);
 static int ble_set_address(void* handle, int argc, char** argv);
+static int set_auto_accept_pair(void* handle, int argc, char** argv);
 
 static btm_gap_interface_t* gap_test_interface = NULL;
 static btm_interface_t* manager;
 static void* manager_handle = NULL;
 static void* gap_hanlde = NULL;
 static uint8_t daemon_enable = 0;
+static uint16_t auto_accept = 0;
 
 static struct option main_options[] = {
     { "help", 0, 0, 'h' },
@@ -117,28 +119,27 @@ static bt_command_t g_cmd_tables[] = {
 };
 
 static bt_command_t g_gap_tables[] = {
-    { "scan_mode", set_scan_mode, "\"set scan mode       param: <mode>  <bondable> \"" },
-    { "discovery", start_discovery, "\"start bluetooth discovery        param: <timer(n*1.28s)> \"" },
-    { "stopdiscovery", stop_discovery, "\"stop bluetooth discovery      \"" },
-
-    { "getaddr", get_local_address, "\"get local address      \"" },
-    { "setIO", set_local_io_capability, "\"set local capaliblity        param: <iocapability> \"" },
-    { "getname", get_local_name, "\"get local name        \"" },
-    { "setname", set_local_name, "\"change local name        \"" },
-
-    { "remotename", get_remote_name, "\"get remote name        param: <addr> \"" },
-    { "replypair", reply_pair_request, "\"replay pair request        param: <addr> <accept>\"" },
-    { "createbond", create_bond, "\"create bond device        param: <addr> \"" },
-    { "cancelbond", cancel_bond, "\"cancel create bond        param: <addr> \"" },
-    { "removebond", remove_bond, "\"remove bond device        param: <addr> \"" },
-    { "getbonded", get_bonded_devices, "\"get bonded device list     \"" },
-    { "getconnected", get_connected_devices, "\"get connected device list       \"" },
-    { "servicediscovery", start_service_discovery, "\"start service discovery        param: <addr> <uuid>\"" },
-    { "stopservicediscovery", stop_service_discovery, "\"stop service discovery        param: <addr> \"" },
-    { "getremoteservice", get_remote_services, "\"get remote service        param: <addr> \"" },
-    { "setclass", set_local_device_class, "\"set local class        param: <class> \"" },
-    { "getclass", get_local_device_class, "\"get local class        \"" },
-    { "setbleaddr", ble_set_address, "\"set ble address        param: <addr> \"" },
+    { "scan_mode",                         set_scan_mode,                      "\"set scan mode                   param: <mode>  <bondable> \"" },
+    { "discovery",                             start_discovery,                        "\"start bluetooth discovery        param: <timer(n*1.28s)> \"" },
+    { "stopdiscovery",                    stop_discovery,                        "\"stop bluetooth discovery \"" },
+    { "getaddr",                                get_local_address,                  "\"get local address      \"" },
+    { "setIO",                                      set_local_io_capability,        "\"set local capaliblity         param: <iocapability> \"" },
+    { "getname",                              get_local_name,                       "\"get local name  \"" },
+    { "setname",                               set_local_name,                       "\"change local name \"" },
+    { "remotename",                      get_remote_name,                  "\"get remote name              param: <addr> \"" },
+    { "replypair",                              reply_pair_request,                 "\"replay pair request          param: <addr> <accept>\"" },
+    { "createbond",                         create_bond,                              "\"create bond device         param: <addr> \"" },
+    { "cancelbond",                         cancel_bond,                             "\"cancel create bond          param: <addr> \"" },
+    { "removebond",                      remove_bond,                           "\"remove bond device       param: <addr> \"" },
+    { "getbonded",                          get_bonded_devices,             "\"get bonded device  \"" },
+    { "getconnected",                     get_connected_devices,       "\"get connected device   \"" },
+    { "servicediscovery",               start_service_discovery,       "\"start service discovery    param: <addr> <uuid>\"" },
+    { "stopservicediscovery",      stop_service_discovery,        "\"stop service discovery    param: <addr> \"" },
+    { "getremoteservice",              get_remote_services,            "\"get remote service            param: <addr> \"" },
+    { "setclass",                                  set_local_device_class,        "\"set local class                      param: <class> \"" },
+    { "getclass",                                 get_local_device_class,        "\"get local class \"" },
+    { "setbleaddr",                            ble_set_address,                     "\"set ble address                    param: <addr> \"" },
+    { "autoaccept",                           set_auto_accept_pair,           "\"auto accept pair                 param: <accept:0 auto accpet, 1 not auto accept> \"" },
 
 };
 
@@ -367,6 +368,14 @@ static int ble_set_address(void* handle, int argc, char** argv)
     return 0;
 }
 
+static int set_auto_accept_pair(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+    auto_accept = atoi(argv[0]);
+    return 0;
+}
+
 static void gap_usage(void)
 {
     printf("Usage:\n");
@@ -383,9 +392,9 @@ int gap_cmd(void* handle, int argc, char* argv[])
 
     if (gap_test_interface == NULL) {
         gap_test_interface = get_gap_instance();
-        // /    gap_test_interface->gap_register_callbacks(manager_handle, &gap_hanlde, &gap_callbacks);
     }
-
+    if (!gap_test_interface)
+        return 0;
     while ((opt = getopt_long(argc, argv, "h", gap_options, NULL)) != -1) {
         switch (opt) {
         case 'h':
@@ -448,6 +457,7 @@ static void manager_state_changed_callback(bt_manager_bt_state state)
         gap_test_interface->bt_set_local_device_class(gap_hanlde, BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO | BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
         gap_test_interface->bt_set_local_io_capability(gap_hanlde, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
     }
+    gap_test_interface->bt_set_local_device_class(gap_hanlde, BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO | BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
 
     gap_test_interface->bt_set_scan_mode(gap_hanlde, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
 }
@@ -464,8 +474,8 @@ static void test_adapter_state_changed_callback(void* gap_handle, stack_state_t 
 
 static void test_device_found_callback(void* gap_handle, bt_device_t* device)
 {
-    BT_LOGD("%s, device %02x:%02x:%02x:%02x:%02x:%02x, device class : %d, rssi: %d ",
-     __func__, device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5], device->cod, device->rssi);
+    BT_LOGD("%s, device name : %s, device %02x:%02x:%02x:%02x:%02x:%02x, device class : %d, rssi: %d ",
+     __func__, device->name, device->addr[0], device->addr[1], device->addr[2], device->addr[3], device->addr[4], device->addr[5], device->cod, device->rssi);
      display_services(device->uuids, MAX_UUID_NUM);
 }
 
@@ -558,7 +568,7 @@ void test_smp_request_callback(void* gap_handle, ssp_request_data_t* request_dat
 void test_pairing_request_callback(void* gap_handle, BD_ADDR remote_addr, bool local_initiate, bool is_bondable)
 {
     BT_LOGD("%s,local_initiate: %d, is_bondable:%d", __func__, local_initiate, is_bondable);
-    if (daemon_enable) {
+    if ((daemon_enable) || (!auto_accept && (local_initiate || is_bondable))) {
         bt_device_t* device = malloc(sizeof(bt_device_t));
         memcpy(device->addr, remote_addr, 6);
         gap_test_interface->bt_reply_pair_request(gap_hanlde, device, 0);
@@ -620,8 +630,7 @@ static int usage_cmd(void* handle, int argc, char** argv)
 
 static int quit_cmd(void* handle, int argc, char** argv)
 {
-    //manager->cleanup(handle);
-
+    manager->cleanup(handle);
     return 0;
 }
 

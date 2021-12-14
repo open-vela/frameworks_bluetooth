@@ -256,8 +256,7 @@ typedef struct
     bt_address addr;
     bt_device_type device_type;
     ble_address_type addr_type;
-    char *name;
-    int name_length;
+    char name[BT_DEVICE_NAME_MAX_LEN];
     int rssi;
     uint32_t cod;
     bt_uuid_t uuids[MAX_UUID_NUM];
