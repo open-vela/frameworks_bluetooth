@@ -392,6 +392,8 @@ static void adapter_device_found_callback(remote_device_t* device)
     new_device->cod = device->cod;
     new_device->rssi = device->rssi;
     memcpy(new_device->uuids, device->uuids, MAX_UUID_NUM * sizeof(bt_uuid_t));
+    memcpy(new_device->name, device->bt_name, BT_DEVICE_NAME_MAX_LEN + 1);
+
     gap_msg_t* msg = gap_msg_new(GAP_DEVICE_FOUND);
     msg->event_data.data.device = new_device;
     gap_send_message(msg);
@@ -572,11 +574,13 @@ static void adapter_delete_br_link_key_callback(bt_address remote_addr)
 static void adapter_pairing_request_callback(bt_address remote_addr, bool local_initiate, bool is_bondable)
 {
     BT_LOGD("%s", __func__);
-    if (local_initiate || is_bondable) {
-        service_adapter_gap_reply_pairing_request(remote_addr, 0);
-        return;
+    SERVICE_REMOTE_DEVICE_S bonded_list[MAX_PAIR_DEVICE];
+    int num = service_adapter_gap_get_bonded_devices(bonded_list, MAX_PAIR_DEVICE);
+    if (num >= MAX_PAIR_DEVICE) {
+            service_adapter_gap_reply_pairing_request(remote_addr, 1);
+            BT_LOGE("%s, pair num is max, can not pair any device any more!", __func__);
+            return;
     }
-
     gap_msg_t* msg = gap_msg_new(GAP_PAIR_REQUEST);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.pair_request.is_bondable = is_bondable;
@@ -882,6 +886,13 @@ bt_result_code bts_create_bond(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
+
+    SERVICE_REMOTE_DEVICE_S bonded_list[MAX_PAIR_DEVICE];
+    int num = service_adapter_gap_get_bonded_devices(bonded_list, MAX_PAIR_DEVICE);
+    if (num >= MAX_PAIR_DEVICE) {
+            BT_LOGE("%s, pair num is max, can not pair any device any more!", __func__);
+            return BT_RESULT_FAILED;
+    }        
     bt_status ret = service_adapter_gap_create_bond(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
@@ -918,8 +929,11 @@ int bts_get_bonded_devices(bt_device_t* device_list)
     int ret = 0;
     SERVICE_REMOTE_DEVICE_S bonded_list[MAX_PAIR_DEVICE];
     ret = service_adapter_gap_get_bonded_devices(bonded_list, MAX_PAIR_DEVICE);
+    if (ret > MAX_PAIR_DEVICE)
+        ret = MAX_PAIR_DEVICE;
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[0].addr, bonded_list[i].bd_addr, BT_ADDR_LENGTH);
+        memcpy(device_list[0].name, bonded_list[i].bt_name, BT_DEVICE_NAME_MAX_LEN + 1);
     }
     return ret;
 }
@@ -931,6 +945,7 @@ int bts_get_connected_devices(bt_device_t* device_list)
     ret = service_adapter_gap_get_connected_devices(connected_list, MAX_CONNECTED_DEVICE);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[0].addr, connected_list[i].bd_addr, BT_ADDR_LENGTH);
+        memcpy(device_list[0].name, connected_list[i].bt_name, BT_DEVICE_NAME_MAX_LEN + 1);
     }
     return ret;
 }
