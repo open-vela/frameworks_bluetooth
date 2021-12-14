@@ -94,6 +94,104 @@ typedef enum { HFP_CURRENT_CALL_MODE_VOICE, HFP_CURRENT_CALL_MODE_DATA, HFP_CURR
 /* * Current call - mpty. */
 typedef enum { HFP_CURRENT_CALL_MPTY_NO, HFP_CURRENT_CALL_MPTY_YES } SERVICE_HFP_CURRENT_CALL_MPTY;
 
+/* * HFP AT Command - Code Map */
+typedef enum {
+    HFP_ATCC_ATA =              0x0001,                     /* ATA */
+    HFP_ATCC_ATD =              0x0002,                     /* ATDdd...dd; ATD>nnn...; */
+    HFP_ATCC_CCWA =             0x000b,                     /* AT+CCWA=1 AT+CCWA=0 */
+    HFP_ATCC_CHLD =             0x000c,                     /* AT+CHLD=x (0,1,2,3,4) */
+    HFP_ATCC_CHLD_0 =           0x000c | 0x0200,            /* AT+CHLD=0 Held Call Release */
+    HFP_ATCC_CHLD_1 =           0x000c | 0x0400,            /* AT+CHLD=1 Release Specified Active Call */
+    HFP_ATCC_CHLD_2 =           0x000c | 0x0400 | 0x0200,   /* AT+CHLD=2 Call Held or Active/Held Position Swap */
+    HFP_ATCC_CHLD_3 =           0x000c | 0x0800,            /* AT+CHLD=3 Adds a held call to the conversation */
+    HFP_ATCC_CHLD_4 =           0x000c | 0x0800 | 0x0200,   /* AT+CHLD=4 Connects the two calls and disconnects the subscriber from both calls */
+    HFP_ATCC_CHLD_T =           0x000c | 0x0800 | 0x0400,   /* AT+CHLD=? */
+    HFP_ATCC_CHUP =             0x000d,                     /* AT+CHUP */
+    HFP_ATCC_CIND_MAP =         0x000e,                     /* AT+CIND=? */
+    HFP_ATCC_CIND_STATUS =      0x000e | 0x0800,            /* AT+CIND? */
+    HFP_ATCC_CLCC =             0x000f,                     /* AT+CLCC */
+    HFP_ATCC_COPS_SETFORMAT =   0x0010,                     /* AT+COPS=3,0 */
+    HFP_ATCC_COPS_NAME =        0x0010 | 0x0800,            /* AT+COPS? */
+    HFP_ATCC_CMEE =             0x0011,                     /* AT+CMEE=1 */
+    HFP_ATCC_CLIP =             0x0013,                     /* AT+CLIP=1 Calling Line Identification notification */
+    HFP_ATCC_CMER_0 =           0x0014,                     /* AT+CMER=3,0,0,0 Disable indicator events reporting */
+    HFP_ATCC_CMER_1 =           0x0014 | 0x0800,            /* AT+CMER=3,0,0,1 Enable indicator events reporting */
+    HFP_ATCC_VTS =              0x0016,                     /* AT+VTS=<DTMF> */
+    HFP_ATCC_CNUM =             0x0017,                     /* AT+CNUM Retrieve Subscriber Number Information */
+    HFP_ATCC_BIA =              0x0018,                     /* AT+BIA=[[<indrep 1>][,[<indrep 2>][,...[,[<indrep n>]]]]]] */
+    HFP_ATCC_BINP =             0x0019,                     /* AT+BINP=1 */
+    HFP_ATCC_BLDN =             0x001a,                     /* AT+BLDN (Bluetooth Last Dialed Number) */
+    HFP_ATCC_BVRA_0 =           0x001b,                     /* AT+BVRA=0 Disable Bluetooth Voice Recognition Activation */
+    HFP_ATCC_BVRA_1 =           0x001b | 0x0800,            /* AT+BVRA=1 Enable Bluetooth Voice Recognition Activation */
+    HFP_ATCC_BRSF =             0x001c,                     /* AT+BRSF=<HF supported features bitmap> */
+    HFP_ATCC_NREC =             0x001d,                     /* AT+NREC=0 Disable Noise Reduction and Echo Canceling */
+    HFP_ATCC_VGM =              0x001e,                     /* AT+VGM=<gain> 0-15 */
+    HFP_ATCC_VGS =              0x001f,                     /* AT+VGS=<gain> 0-15 */
+    HFP_ATCC_BTRH_0 =           0x0021,                     /* AT+BTRH=0, Bluetooth Response and Hold Feature */
+    HFP_ATCC_BTRH_1 =           0x0021 | 0x0800,            /* AT+BTRH=1, Bluetooth Response and Hold Feature */
+    HFP_ATCC_BTRH_2 =           0x0021 | 0x0400,            /* AT+BTRH=2, Bluetooth Response and Hold Feature */
+    HFP_ATCC_BTRH_QUERY =       0x0021 | 0x0800 | 0x0400,   /* AT+BTRH?, Bluetooth Response and Hold Feature */
+    HFP_ATCC_BCC =              0x0022,                     /* AT+BCC (Bluetooth Codec Connection) */
+    HFP_ATCC_BCS =              0x0023,                     /* AT+BCS= <u>  (u is a Codec ID) Bluetooth Codec Selection */
+    HFP_ATCC_BAC =              0x0024,                     /* AT+BAC= [<u1>[,<u2>[,...[,<un>]]]] Bluetooth Available Codecs */
+    HFP_ATCC_CKPD_200 =         0x0025,                     /* AT+CKPD=200 */
+    HFP_ATCC_CGMM =             0x0026,                     /* AT+CGMM */
+    HFP_ATCC_CGMI =             0x0027,                     /* AT+CGMI */
+    HFP_ATCC_CGMR =             0x0028,                     /* AT+CGMR */
+
+    HFP_ATCC_BIND =             0x0029,                     /* AT+BIND Bluetooth HF Indicators */
+    HFP_ATCC_BIND_INFO =        0x0029 | 0x0200,            /* AT+BIND=1,2 Inform AG of HF's supported HF Indicators */
+    HFP_ATCC_BIND_QUERY =       0x0029 | 0x0400,            /* AT+BIND=?   Query AG's supported HF Indicators*/
+    HFP_ATCC_BIND_STATUS =      0x0029 | 0x0800,            /* AT+BIND?    Check the initial states of each HF Indicator in AG*/
+    HFP_ATCC_BIEV =             0x002a,                     /* AT+BIEV=<assigned num>,<val>  HF report its value of the HF Indicator denoted by <assigned num>*/
+
+    HFP_ATCC_EXTENDED_COMMAND = 0x0088                      /* Any AT command sent by service_adapter_hfp_send_at_cmd */
+} SERVICE_HFP_AT_COMMAND_CODE;
+
+typedef enum {
+    HFP_ATC_RESULT_OK,  /* OK received */
+    HFP_ATC_RESULT_TIMEOUT, /* Timeout before receiving any result code */
+    HFP_ATC_RESULT_ERROR,   /* ERROR received */
+    HFP_ATC_RESULT_NOCARRIER,   /* NO CARRIER received */
+    HFP_ATC_RESULT_BUSY,    /* BUSY received */
+    HFP_ATC_RESULT_NOANSWER,    /* NO ANSWER received */
+    HFP_ATC_RESULT_DELAYED, /* DELAYED received */
+    HFP_ATC_RESULT_BLACKLISTED, /* BLACKLISTED received */
+
+    HFP_ATC_RESULT_CMEERR = 10, /* Start of CME ERROR code */
+    HFP_ATC_RESULT_CMEERR_AGFAILURE = HFP_ATC_RESULT_CMEERR,    /* CME ERROR: 0 - AG failure */
+    HFP_ATC_RESULT_CMEERR_NOCONN2PHONE, /* CME ERROR: 1 - No connection to phone */
+    HFP_ATC_RESULT_CMEERR_OPERATION_NOTALLOWED,
+    HFP_ATC_RESULT_CMEERR_OPERATION_NOTSUPPORTED,
+    HFP_ATC_RESULT_CMEERR_PHSIMPIN_REQUIRED,
+
+    HFP_ATC_RESULT_CMEERR_SIMNOT_INSERTED = HFP_ATC_RESULT_CMEERR + 10, /* CME ERROR: 10 - SIM not inserted */
+    HFP_ATC_RESULT_CMEERR_SIMPIN_REQUIRED,
+    HFP_ATC_RESULT_CMEERR_SIMPUK_REQUIRED,
+    HFP_ATC_RESULT_CMEERR_SIM_FAILURE,
+    HFP_ATC_RESULT_CMEERR_SIM_BUSY,
+
+    HFP_ATC_RESULT_CMEERR_INCORRECT_PASSWORD = HFP_ATC_RESULT_CMEERR + 16,  /* CME ERROR: 16 - Incorrect password */
+    HFP_ATC_RESULT_CMEERR_SIMPIN2_REQUIRED,
+    HFP_ATC_RESULT_CMEERR_SIMPUK2_REQUIRED,
+
+    HFP_ATC_RESULT_CMEERR_MEMORY_FULL = HFP_ATC_RESULT_CMEERR + 20, /* CME ERROR: 10 - Memory full */
+    HFP_ATC_RESULT_CMEERR_INVALID_INDEX,
+
+    HFP_ATC_RESULT_CMEERR_MEMORY_FAILURE = HFP_ATC_RESULT_CMEERR + 23,  /* CME ERROR: 10 - Memory failure */
+    HFP_ATC_RESULT_CMEERR_TEXTSTRING_TOOLONG,
+    HFP_ATC_RESULT_CMEERR_INVALID_CHARACTERS_INTEXTSTRING,
+    HFP_ATC_RESULT_CMEERR_DIAL_STRING_TOOLONG,
+    HFP_ATC_RESULT_CMEERR_INVALID_CHARACTERS_INDIALSTRING,
+
+    HFP_ATC_RESULT_CMEERR_NETWORK_NOSERVICE = HFP_ATC_RESULT_CMEERR + 30,   /* CME ERROR: 10 - No network service */
+    HFP_ATC_RESULT_CMEERR_NETWORK_TIMEOUT,
+    HFP_ATC_RESULT_CMEERR_NETWORK_NOTALLOWED_EMERGENCYCALL_ONLY,
+
+    /* The other CME error codes */
+
+} SERVICE_HFP_AT_COMMAND_RESULT;
+
 /*******************************************************************************
  * A2DP
  ******************************************************************************/
@@ -515,6 +613,12 @@ typedef enum {
     BTHID_DESC_TYPE_PHYSICAL = 0x23,
 } SERVICE_HID_DESCRIPTOR_TYPE;
 
+/* Possible HID Report ID for Boot mode */
+typedef enum {
+    BTHID_BOOT_KB_REPORT_ID = 0x01,
+    BTHID_BOOT_MOUSE_REPORT_ID = 0x02,
+} SERVICE_HID_BOOT_MODE_REPORT_ID;
+
 typedef struct {
     uint32_t attr_mask;/* BTHID_ATTR_MASK_VIRTUAL_CABLE etc. */
     uint8_t sub_class;
@@ -711,7 +815,8 @@ typedef enum {
     BLE_ADDR_RANDOM,
     BLE_ADDR_PUBLIC_ID,
     BLE_ADDR_RANDOM_ID,
-    BLE_ADDR_ANONYMOUS
+    BLE_ADDR_ANONYMOUS,
+    BLE_ADDR_UNKNOWN = 0xFF
 } SERVICE_BLE_ADDR_TYPE;
 
 /* * BLE PHY type */
@@ -825,11 +930,13 @@ typedef struct {
     SERVICE_AVDTP_CODEC_TYPE a2dp_codectype;
 } SERVICE_BT_DEVICE_PROFILE_S;
 
+#define BT_DEVICE_NAME_MAX_LEN  63
+
 /* * Remote device Info */
 typedef struct {
     BD_ADDR bd_addr;
     SERVICE_BLE_ADDR_TYPE addr_type;
-    // char* bt_name;
+    char bt_name[BT_DEVICE_NAME_MAX_LEN + 1];
     BT_UUID_T uuids[10];
     uint8_t link_key[16];
     SERVICE_LINK_KEY_TYPE link_key_type;
