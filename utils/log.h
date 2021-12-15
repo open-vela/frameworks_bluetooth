@@ -49,6 +49,9 @@
 
 #define BT_HEXDUMP_MAX 1024 
 #define BT_HEXDUMP(array, size)  do { \
+        if( size < 1) { \
+            break; \
+        } \
         if (size > BT_HEXDUMP_MAX) { \
             BT_LOGE("error, size:%d over flow(%d)", size, BT_HEXDUMP_MAX); \
             break; \
