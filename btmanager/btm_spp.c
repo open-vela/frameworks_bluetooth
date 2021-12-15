@@ -47,7 +47,7 @@ static spp_interface_t* get_service(void)
     return (spp_interface_t*)get_bluetooth_service_interface()->get_profile_interface(BT_PROFILE_SPP);
 }
 
-static bt_result_code spp_server_start(void* handle, uint16_t port, uint16_t uuid16)
+static BT_RESULT_CODE spp_server_start(void* handle, uint16_t port, uint16_t uuid16)
 {
     spp_interface_t* service = get_service();
     if (!service)
@@ -55,7 +55,7 @@ static bt_result_code spp_server_start(void* handle, uint16_t port, uint16_t uui
     return service->server_start(handle, port, uuid16);
 }
 
-static bt_result_code spp_server_stop(void* handle, uint16_t port)
+static BT_RESULT_CODE spp_server_stop(void* handle, uint16_t port)
 {
     spp_interface_t* service = get_service();
     if (!service)
@@ -63,7 +63,7 @@ static bt_result_code spp_server_stop(void* handle, uint16_t port)
     return service->server_stop(handle, port);
 }
 
-static bt_result_code spp_client_connect(void* handle, bt_address addr, uint16_t port, uint16_t uuid16)
+static BT_RESULT_CODE spp_client_connect(void* handle, bt_address addr, uint16_t port, uint16_t uuid16)
 {
     spp_interface_t* service = get_service();
     if (!service)
@@ -71,7 +71,7 @@ static bt_result_code spp_client_connect(void* handle, bt_address addr, uint16_t
     return service->client_connect(handle, addr, port, uuid16);
 }
 
-static bt_result_code spp_disconnect(void* handle, bt_address addr, uint16_t port)
+static BT_RESULT_CODE spp_disconnect(void* handle, bt_address addr, uint16_t port)
 {
     spp_interface_t* service = get_service();
     if (!service)

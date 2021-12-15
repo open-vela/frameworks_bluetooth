@@ -50,27 +50,27 @@ typedef struct
 
 typedef hf_client_callbacks_t hf_client_service_callbacks_t;
 
-extern bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks);
-extern bt_result_code bts_hf_client_connect(bt_address bd_addr);
-extern bt_result_code bts_hf_client_disconnect(bt_address bd_addr);
-extern bt_result_code bts_hf_client_connect_audio(bt_address bd_addr);
-extern bt_result_code bts_hf_client_disconnect_audio(bt_address bd_addr);
-extern bt_result_code bts_hf_client_start_voice_recognition(bt_address bd_addr);
-extern bt_result_code bts_hf_client_stop_voice_recognition(bt_address bd_addr);
-extern bt_result_code bts_hf_client_volume_control(bt_address bd_addr, hf_client_volume_type_t type, int volume);
-extern bt_result_code bts_hf_client_dial(bt_address bd_addr, const char* number);
-extern bt_result_code bts_hf_client_dial_memory(bt_address bd_addr, uint32_t memory);
-extern bt_result_code bts_hf_client_redial(bt_address bd_addr);
-extern bt_result_code bts_hf_client_accept_call(bt_address bd_addr);
-extern bt_result_code bts_hf_client_reject_call(bt_address bd_addr);
-extern bt_result_code bts_hf_client_hold_call(bt_address bd_addr);
-extern bt_result_code bts_hf_client_terminate_call(bt_address bd_addr);
-extern bt_result_code bts_hf_client_query_current_calls(bt_address bd_addr);
-extern bt_result_code bts_hf_client_send_at_cmd(bt_address bd_addr, const char* cmd);
-extern bt_result_code bts_hf_client_update_battery_level(bt_address bd_addr, uint8_t battery);
+extern BT_RESULT_CODE bts_hf_client_init(const hf_client_service_callbacks_t* callbacks);
+extern BT_RESULT_CODE bts_hf_client_connect(bt_address bd_addr);
+extern BT_RESULT_CODE bts_hf_client_disconnect(bt_address bd_addr);
+extern BT_RESULT_CODE bts_hf_client_connect_audio(bt_address bd_addr);
+extern BT_RESULT_CODE bts_hf_client_disconnect_audio(bt_address bd_addr);
+extern BT_RESULT_CODE bts_hf_client_start_voice_recognition(bt_address bd_addr);
+extern BT_RESULT_CODE bts_hf_client_stop_voice_recognition(bt_address bd_addr);
+extern BT_RESULT_CODE bts_hf_client_volume_control(bt_address bd_addr, hf_client_volume_type_t type, int volume);
+extern BT_RESULT_CODE bts_hf_client_dial(bt_address bd_addr, const char* number);
+extern BT_RESULT_CODE bts_hf_client_dial_memory(bt_address bd_addr, uint32_t memory);
+extern BT_RESULT_CODE bts_hf_client_redial(bt_address bd_addr);
+extern BT_RESULT_CODE bts_hf_client_accept_call(bt_address bd_addr);
+extern BT_RESULT_CODE bts_hf_client_reject_call(bt_address bd_addr);
+extern BT_RESULT_CODE bts_hf_client_hold_call(bt_address bd_addr);
+extern BT_RESULT_CODE bts_hf_client_terminate_call(bt_address bd_addr);
+extern BT_RESULT_CODE bts_hf_client_query_current_calls(bt_address bd_addr);
+extern BT_RESULT_CODE bts_hf_client_send_at_cmd(bt_address bd_addr, const char* cmd);
+extern BT_RESULT_CODE bts_hf_client_update_battery_level(bt_address bd_addr, uint8_t battery);
 extern void bts_hf_client_cleanup(void);
 
-extern bt_result_code hf_client_service_start(void);
+extern BT_RESULT_CODE hf_client_service_start(void);
 extern void hf_client_service_stop(void);
 extern const hf_client_interface_t* get_hf_client_service_interface(void);
 

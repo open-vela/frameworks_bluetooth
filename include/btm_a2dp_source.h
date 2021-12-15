@@ -71,16 +71,16 @@ typedef struct {
     size_t size;
 
     /** connect to headset */
-    bt_result_code (*connect)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*connect)(void* handle, bt_address addr);
 
     /** dis-connect from headset */
-    bt_result_code (*disconnect)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*disconnect)(void* handle, bt_address addr);
 
     /** sets the connected device silence state */
-    bt_result_code (*set_silence_device)(void* handle, bt_address addr, bool silence);
+    BT_RESULT_CODE (*set_silence_device)(void* handle, bt_address addr, bool silence);
 
     /** sets the connected device as active */
-    bt_result_code (*set_active_device)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*set_active_device)(void* handle, bt_address addr);
 
     void (*set_callbacks)(void* handle, a2dp_source_callbacks_t* callbacks);
 

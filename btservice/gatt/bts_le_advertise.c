@@ -49,7 +49,7 @@ typedef struct
 } gatt_lesadv_msg_t;
 
 static void send_msg(gatt_lesadv_msg_t* msg);
-static void handle_msg_received(bt_profile_id id, void* data, size_t size);
+static void handle_msg_received(BT_PROFILE_ID id, void* data, size_t size);
 
 static struct list_node advertiser_list = LIST_INITIAL_VALUE(advertiser_list);
 
@@ -88,7 +88,7 @@ static bool remove_advertise_handle(bts_leadv_hdl_t* advertiser)
     return true;
 }
 
-static bt_result_code le_start_adv(bts_leadv_hdl_t client)
+static BT_RESULT_CODE le_start_adv(bts_leadv_hdl_t client)
 {
     bts_register_profile_process(BT_PROFILE_LEADV_ID, &handle_msg_received);
     SERVICE_BT_STATUS ret = service_adapter_gap_start_ble_adv(client.param);
@@ -101,7 +101,7 @@ static bt_result_code le_start_adv(bts_leadv_hdl_t client)
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code le_stop_adv(uint8_t advertiser_id)
+static BT_RESULT_CODE le_stop_adv(uint8_t advertiser_id)
 {
     bts_leadv_hdl_t* client = find_advertise_handle(advertiser_id);
     if (!client) {
@@ -167,7 +167,7 @@ const bts_le_advertise_interface_t* get_bts_bleadv_instance(void)
     return &ble_advertise_intance;
 }
 
-static void handle_msg_received(bt_profile_id id, void* data, size_t size)
+static void handle_msg_received(BT_PROFILE_ID id, void* data, size_t size)
 {
     if (id != BT_PROFILE_LEADV_ID) {
         BT_LOGE("error, invalid priofile id:%d", id);

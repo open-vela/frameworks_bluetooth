@@ -55,12 +55,12 @@ typedef enum {
 
 typedef struct {
     struct list_node node;
-    bt_profile_id id;
+    BT_PROFILE_ID id;
     void* data;
     size_t size;
 } bts_profile_msg_t;
 
-bt_service_state service_state = BT_MANAGER_STATE_OFF;
+bt_service_state service_state = BTM_STATE_OFF;
 static bt_service_callbacks* bluetooth_upper_callbacks = NULL;
 static uv_loop_t* bt_dispatch_loop;
 static uv_mutex_t msg_mutex;
@@ -169,19 +169,19 @@ static void stack_schedule_loop(void* data)
     ScheduleLoop();
 }
 
-bool bts_register_profile_process(bt_profile_id id, bts_profile_callbacks cb)
+bool bts_register_profile_process(BT_PROFILE_ID id, bts_profile_callbacks cb)
 {
     profiles_callbacks[id] = cb;
     return true;
 }
 
-bool bts_unregister_profile_process(bt_profile_id id)
+bool bts_unregister_profile_process(BT_PROFILE_ID id)
 {
     profiles_callbacks[id] = NULL;
     return true;
 }
 
-bool bts_send_uv_msg(bt_profile_id id, void* data, size_t size)
+bool bts_send_uv_msg(BT_PROFILE_ID id, void* data, size_t size)
 {
     bts_profile_msg_t* msg = (bts_profile_msg_t*)malloc(sizeof(bts_profile_msg_t));
     if (!msg) {
@@ -230,12 +230,12 @@ static void service_schedule_loop(void* data)
     uv_run(bt_dispatch_loop, UV_RUN_DEFAULT);
 }
 
-bt_result_code bts_service_init(bt_service_callbacks* callbacks)
+BT_RESULT_CODE bts_service_init(bt_service_callbacks* callbacks)
 {
     bluetooth_upper_callbacks = callbacks;
 
     uv_mutex_init(&msg_mutex);
-    if (service_state != BT_MANAGER_STATE_OFF)
+    if (service_state != BTM_STATE_OFF)
         return BT_RESULT_FAILED;
     InitTransportLayer();
     gap_service_init();
@@ -251,7 +251,7 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
         return BT_RESULT_FAILED;
     }
-    service_state = BT_MANAGER_STATE_TURNING_ON;
+    service_state = BTM_STATE_TURNING_ON;
     return BT_RESULT_SUCCESS;
 }
 
@@ -262,7 +262,7 @@ void bts_service_cleanup(void)
 void stack_state_change(bt_service_state state)
 {
     service_state = state;
-    if (BT_MANAGER_STATE_ON == state) {
+    if (BTM_STATE_ON == state) {
         gap_create_factory_info(false);
         gap_read_device_info();
         gap_read_data_storage();

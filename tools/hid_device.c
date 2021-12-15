@@ -254,20 +254,20 @@ static bool remove_hidd_device(hidd_device_t* device)
     return true;
 }
 
-static void on_hidd_device_state_changed_callback(void* handle, hid_app_state_t registered)
+static void on_hidd_device_state_changed_callback(void* handle, HID_APP_STATE registered)
 {
     BT_LOGD("%s registered:%d", __func__, registered);
 }
 
-static void on_hidd_connection_state_changed_callback(void* handle, bt_address remote_addr, profile_state_t state)
+static void on_hidd_connection_state_changed_callback(void* handle, bt_address remote_addr, PROFILE_CONNECTION_STATE state)
 {
     BT_LOGD("%s addr:[%s], state:%d", __func__, addr_str(remote_addr), state);
-    if (state == SERVICE_PROFILE_CONNECTED) {
+    if (state == PROFILE_CONNECTED) {
         hidd_device_t* device = find_hidd_device(remote_addr);
         if (!device) { //Connect from peer
             add_hidd_device(remote_addr);
         }
-    } else if (state == SERVICE_PROFILE_DISCONNECTED) {
+    } else if (state == PROFILE_DISCONNECTED) {
         hidd_device_t* device = find_hidd_device(remote_addr);
         if (!device) {
             remove_hidd_device(device);
@@ -298,25 +298,25 @@ static int hidd_register_device(void* handle, int argc, char** argv)
     const uint8_t* desc_list;
     uint16_t desc_len;
     uint8_t sub_class;
-    memset(&hids_info, 0, sizeof(SERVICE_HID_SERVICE_INFO_S));
+    memset(&hids_info, 0, sizeof(bt_hidd_sdp_settings_t));
     hids_info.name = "BRT_HID_Device_Demo";
     hids_info.description = "A demo of HID Device implementation";
     hids_info.provider = "BARROT Technology Limited";
-    hids_info.hids_info.attr_mask = BTHID_ATTR_MASK_VIRTUAL_CABLE | BTHID_ATTR_MASK_RECONNECT_INITIATE /* | BTHID_ATTR_MASK_BOOT_DEVICE*/;
+    hids_info.hids_info.attr_mask = HID_ATTR_MASK_VIRTUAL_CABLE | HID_ATTR_MASK_RECONNECT_INITIATE /* | BTHID_ATTR_MASK_BOOT_DEVICE*/;
 
     switch (dev_type) {
     case APP_HID_DEVICE_KEYBOARD:
-        sub_class = (uint8_t)BT_COD_PERIPHERAL_KEYBOARD;
+        sub_class = (uint8_t)COD_PERIPHERAL_KEYBOARD;
         desc_list = s_hidKBReportDesc;
         desc_len = sizeof(s_hidKBReportDesc);
         break;
     case APP_HID_DEVICE_MOUSE:
-        sub_class = (uint8_t)BT_COD_PERIPHERAL_POINT;
+        sub_class = (uint8_t)COD_PERIPHERAL_POINT;
         desc_list = s_hidMouseReportDesc;
         desc_len = sizeof(s_hidMouseReportDesc);
         break;
     default:
-        sub_class = (uint8_t)BT_COD_PERIPHERAL_KEYORPOINT;
+        sub_class = (uint8_t)COD_PERIPHERAL_KEYORPOINT;
         desc_list = s_hidComboReportDesc;
         desc_len = sizeof(s_hidComboReportDesc);
         break;
@@ -327,13 +327,13 @@ static int hidd_register_device(void* handle, int argc, char** argv)
     hids_info.hids_info.version = 0x200; /* Demo only */
     hids_info.hids_info.dsc_list_length = (uint16_t)(desc_len + 3); /* 3 bytes for Descriptor Type and Length */
     hids_info.hids_info.dsc_list = malloc(desc_len + 3);
-    hids_info.hids_info.dsc_list[0] = BTHID_DESC_TYPE_REPORT;
+    hids_info.hids_info.dsc_list[0] = HID_DESC_TYPE_REPORT;
     hids_info.hids_info.dsc_list[1] = (uint8_t)(desc_len & 0xFF);
     hids_info.hids_info.dsc_list[2] = (uint8_t)(desc_len >> 8);
     memcpy(hids_info.hids_info.dsc_list + 3, desc_list, desc_len);
     bt_hidd_qos_settings_t tx_qos, rx_qos;
 
-    bt_result_code ret = hidd_interface->register_device(&hidd_handle, hids_info, tx_qos, rx_qos, &hidd_callbacks);
+    BT_RESULT_CODE ret = hidd_interface->register_device(&hidd_handle, hids_info, tx_qos, rx_qos, &hidd_callbacks);
     free(hids_info.hids_info.dsc_list);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, register_device  ret: %d", ret);
@@ -344,7 +344,7 @@ static int hidd_register_device(void* handle, int argc, char** argv)
 
 static int hidd_unregister_device(void* handle, int argc, char** argv)
 {
-    bt_result_code ret = hidd_interface->unregister_device(hidd_handle);
+    BT_RESULT_CODE ret = hidd_interface->unregister_device(hidd_handle);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, unregister_device  ret: %d", ret);
         return -1;
@@ -364,7 +364,7 @@ static int hidd_connect(void* handle, int argc, char** argv)
     if (!device) {
         device = add_hidd_device(remote_address);
     }
-    bt_result_code ret = hidd_interface->connect(hidd_handle, device->remote_address);
+    BT_RESULT_CODE ret = hidd_interface->connect(hidd_handle, device->remote_address);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, connect  ret: %d", ret);
         return -1;
@@ -385,7 +385,7 @@ static int hidd_disconnect(void* handle, int argc, char** argv)
         BT_LOGD("device not found");
         return -1;
     }
-    bt_result_code ret = hidd_interface->disconnect(hidd_handle, remote_address);
+    BT_RESULT_CODE ret = hidd_interface->disconnect(hidd_handle, remote_address);
     if (ret != BT_RESULT_SUCCESS) {
         remove_hidd_device(device);
         BT_LOGD("fail, disconnect  ret: %d", ret);
@@ -448,7 +448,7 @@ static int hidd_send_report_test(void* handle, int argc, char** argv)
     uint8_t buf[8];
     memset(buf, 0, sizeof(buf));
     hex2str(buffer, buf, size / 2);
-    bt_result_code ret = hidd_interface->send_report_test(hidd_handle, report_id, buf, size / 2);
+    BT_RESULT_CODE ret = hidd_interface->send_report_test(hidd_handle, report_id, buf, size / 2);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, send_report_test  ret: %d", ret);
         return -1;
@@ -470,7 +470,7 @@ static int hidd_unplug(void* handle, int argc, char** argv)
         BT_LOGD("device not found");
         return -1;
     }
-    bt_result_code ret = hidd_interface->unplug(hidd_handle, remote_address);
+    BT_RESULT_CODE ret = hidd_interface->unplug(hidd_handle, remote_address);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, unplug  ret: %d", ret);
         return -1;

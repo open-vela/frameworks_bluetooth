@@ -146,23 +146,23 @@ typedef struct
 typedef struct
 {
     size_t size;
-    bt_result_code (*connect)(void* handle, bt_address addr);
-    bt_result_code (*disconnect)(void* handle, bt_address addr);
-    bt_result_code (*connect_audio)(void* handle, bt_address addr);
-    bt_result_code (*disconnect_audio)(void* handle, bt_address addr);
-    bt_result_code (*start_voice_recognition)(void* handle, bt_address addr);
-    bt_result_code (*stop_voice_recognition)(void* handle, bt_address addr);
-    bt_result_code (*volume_control)(void* handle, bt_address addr, hf_client_volume_type_t type, int volume);
-    bt_result_code (*dial)(void* handle, bt_address addr, const char* number);
-    bt_result_code (*dial_memory)(void* handle, bt_address addr, uint32_t memory);
-    bt_result_code (*redial)(void* handle, bt_address addr);
-    bt_result_code (*accept_call)(void* handle, bt_address addr);
-    bt_result_code (*reject_call)(void* handle, bt_address addr);
-    bt_result_code (*hold_call)(void* handle, bt_address addr);
-    bt_result_code (*terminate_call)(void* handle, bt_address addr);
-    bt_result_code (*query_current_calls)(void* handle, bt_address addr);
-    bt_result_code (*send_at_cmd)(void* handle, bt_address addr, const char* cmd);
-    bt_result_code (*update_battery_level)(void* handle, bt_address addr, uint8_t battery);
+    BT_RESULT_CODE (*connect)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*disconnect)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*connect_audio)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*disconnect_audio)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*start_voice_recognition)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*stop_voice_recognition)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*volume_control)(void* handle, bt_address addr, hf_client_volume_type_t type, int volume);
+    BT_RESULT_CODE (*dial)(void* handle, bt_address addr, const char* number);
+    BT_RESULT_CODE (*dial_memory)(void* handle, bt_address addr, uint32_t memory);
+    BT_RESULT_CODE (*redial)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*accept_call)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*reject_call)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*hold_call)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*terminate_call)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*query_current_calls)(void* handle, bt_address addr);
+    BT_RESULT_CODE (*send_at_cmd)(void* handle, bt_address addr, const char* cmd);
+    BT_RESULT_CODE (*update_battery_level)(void* handle, bt_address addr, uint8_t battery);
     void (*set_callbacks)(void* handle, hf_client_callbacks_t* callbacks);
 } hf_client_interface_t;
 

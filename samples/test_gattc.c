@@ -60,7 +60,7 @@ static void on_scan_result_callback(void* handle, const scan_result_t* result)
         result->addr_type, result->device_type, result->evt_type);
 }
 
-static void on_client_connection_state_changed_callback(void* handle, bt_address remote_addr, profile_state_t state)
+static void on_client_connection_state_changed_callback(void* handle, bt_address remote_addr, PROFILE_CONNECTION_STATE state)
 {
     BT_LOGD("%s, state:%d", __func__, state);
 }
@@ -72,38 +72,38 @@ static void gatt_display_service(gatt_element_t* elements, uint16_t size)
 
     while (item < item_end) {
         switch (item->type) {
-        case PRIMARY_SERVICE:
+        case GATT_PRIMARY_SERVICE:
             BT_LOGD(">[%d][PRI]", item->id);
             break;
-        case SECONDARY_SERVICE:
+        case GATT_SECONDARY_SERVICE:
             BT_LOGD(">[%d][SND]", item->id);
             break;
-        case INCLUDED_SERVICE:
+        case GATT_INCLUDED_SERVICE:
             BT_LOGD(">  [%d][INC]", item->id);
             break;
-        case CHARACTERISTIC:
+        case GATT_CHARACTERISTIC:
             BT_LOGD(">  [%d][CHR]", item->id);
             break;
-        case DESCRIPTOR:
+        case GATT_DESCRIPTOR:
             BT_LOGD(">    [%d][DES]", item->id);
             break;
         }
         BT_LOGD("[PROP:%d", item->properties);
         if (item->properties) {
             BT_LOGD(",");
-            if (item->properties & GATT_PROPERTY_READ) {
+            if (item->properties & GATT_ATT_PROPERTY_READ) {
                 BT_LOGD("R");
             }
-            if (item->properties & GATT_PROPERTY_WRITE_NO_RESPONSE) {
+            if (item->properties & GATT_ATT_PROPERTY_WRITE_NO_RESPONSE) {
                 BT_LOGD("Wn");
             }
-            if (item->properties & GATT_PROPERTY_WRITE) {
+            if (item->properties & GATT_ATT_PROPERTY_WRITE) {
                 BT_LOGD("W");
             }
-            if (item->properties & GATT_PROPERTY_NOTIFY) {
+            if (item->properties & GATT_ATT_PROPERTY_NOTIFY) {
                 BT_LOGD("N");
             }
-            if (item->properties & GATT_PROPERTY_INDICATE) {
+            if (item->properties & GATT_ATT_PROPERTY_INDICATE) {
                 BT_LOGD("I");
             }
         }
@@ -125,7 +125,7 @@ static void on_client_service_discovered_callback(void* handle, bt_address remot
     gatt_display_service(element, size);
 }
 
-static void on_client_read_result_callback(void* handle, bt_address remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size, gatt_status_t status)
+static void on_client_read_result_callback(void* handle, bt_address remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size, GATT_STATUS status)
 {
     BT_LOGD("%s, size:%d", __func__, size);
     for (int i = 0; i < size; i++) {
@@ -133,7 +133,7 @@ static void on_client_read_result_callback(void* handle, bt_address remote_addr,
     }
 }
 
-static void on_client_write_result_callback(void* handle, bt_address remote_addr, gatt_element_t* element, gatt_status_t status)
+static void on_client_write_result_callback(void* handle, bt_address remote_addr, gatt_element_t* element, GATT_STATUS status)
 {
     BT_LOGD("%s, status:%d", __func__, status);
     throughtput_cursor--;
@@ -144,17 +144,17 @@ static void on_client_nofity_request_callback(void* handle, bt_address remote_ad
     BT_LOGD("%s, size:%d", __func__, size);
 }
 
-static void on_client_rssi_read_callback(void* handle, bt_address remote_addr, int32_t rssi, gatt_status_t status)
+static void on_client_rssi_read_callback(void* handle, bt_address remote_addr, int32_t rssi, GATT_STATUS status)
 {
     BT_LOGD("%s rssi:%d", __func__, rssi);
 }
 
-static void on_client_phy_read_callback(void* handle, bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
+static void on_client_phy_read_callback(void* handle, bt_address remote_addr, BLE_PHY_TYPE tx, BLE_PHY_TYPE rx)
 {
     BT_LOGD("%s, tx_phy:%d, rx_phy:%d", __func__, tx, rx);
 }
 
-static void on_client_phy_update_callback(void* handle, bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
+static void on_client_phy_update_callback(void* handle, bt_address remote_addr, BLE_PHY_TYPE tx, BLE_PHY_TYPE rx)
 {
     BT_LOGD("%s, tx_phy:%d, rx_phy:%d", __func__, tx, rx);
 }
@@ -174,7 +174,7 @@ static void test_client_throughtout_write(uint32_t times, uint16_t mtu)
     BT_LOGD("please input characteristic  id");
     scanf("%ld", &id);
     element.id = id;
-    element.properties = GATT_PROPERTY_WRITE;
+    element.properties = GATT_ATT_PROPERTY_WRITE;
     BT_LOGD("input id:%ld", element.id);
     int msg_counter = 1;
     uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * mtu);
@@ -191,7 +191,7 @@ static void test_client_throughtout_write(uint32_t times, uint16_t mtu)
         payload[1] = (msg_counter >> 16) & 0xFF;
         payload[2] = (msg_counter >> 8) & 0xFF;
         payload[3] = msg_counter & 0xFF;
-        bt_result_code code = client_interface->write_request(client_handle, &element, payload, mtu);
+        BT_RESULT_CODE code = client_interface->write_request(client_handle, &element, payload, mtu);
         throughtput_cursor++;
         BT_LOGD("write_request times:%d, throughtput_cursor:%d", i, throughtput_cursor);
         if (code != BT_RESULT_SUCCESS) {
@@ -204,7 +204,7 @@ static void test_client_throughtout_write(uint32_t times, uint16_t mtu)
     BT_LOGD("%s done", __func__);
 }
 
-static void manager_state_changed_callback(bt_manager_bt_state state)
+static void manager_state_changed_callback(BTM_BT_STATE state)
 {
     BT_LOGD("%s, state:%d", __func__, state);
 }
@@ -280,7 +280,7 @@ int main(int argc, FAR char* argv[])
             break;
         }
         case 'f': {
-            client_interface->update_phy(client_handle, BLE_1M_PHY, BLE_1M_PHY);
+            client_interface->update_phy(client_handle, BLE_1M_PHY_TYPE, BLE_1M_PHY_TYPE);
             break;
         }
         case 'g': {
@@ -320,7 +320,7 @@ int main(int argc, FAR char* argv[])
             BT_LOGD("please input id");
             scanf("%ld", &id);
             element.id = id;
-            element.properties = GATT_PROPERTY_WRITE;
+            element.properties = GATT_ATT_PROPERTY_WRITE;
             BT_LOGD("input id:%ld", element.id);
             uint8_t value[] = { 0x01, 0x02, 0x03, 0x04, 0x05 };
             client_interface->write_request(client_handle, &element, value, sizeof(value) / sizeof(value[0]));
@@ -333,8 +333,8 @@ int main(int argc, FAR char* argv[])
             BT_LOGD("please input id");
             scanf("%ld", &id);
             element.id = id;
-            element.type = CHARACTERISTIC;
-            element.properties = GATT_PROPERTY_NOTIFY;
+            element.type = GATT_CHARACTERISTIC;
+            element.properties = GATT_ATT_PROPERTY_NOTIFY;
             BT_LOGD("input id:%ld", element.id);
             client_interface->register_notification(client_handle, &element, true);
             break;
@@ -346,8 +346,8 @@ int main(int argc, FAR char* argv[])
             BT_LOGD("please input id");
             scanf("%ld", &id);
             element.id = id;
-            element.type = CHARACTERISTIC;
-            element.properties = GATT_PROPERTY_NOTIFY;
+            element.type = GATT_CHARACTERISTIC;
+            element.properties = GATT_ATT_PROPERTY_NOTIFY;
             BT_LOGD("input id:%ld", element.id);
             client_interface->register_notification(client_handle, &element, false);
             break;
@@ -369,7 +369,7 @@ int main(int argc, FAR char* argv[])
             scan_params_t scan_params = {
                 .scan_interval = 300,
                 .scan_window = 500,
-                .scan_phy = BLE_1M_PHY,
+                .scan_phy = BLE_1M_PHY_TYPE,
             };
             scan_interface->start_scan(&scan_handle, NULL, &scan_params, &scan_cb);
             break;

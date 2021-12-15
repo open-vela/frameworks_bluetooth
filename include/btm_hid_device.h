@@ -37,8 +37,8 @@
 
 #include "btm_manager.h"
 
-typedef void (*btm_hidd_device_state_changed_callback)(void* handle, hid_app_state_t registered);
-typedef void (*btm_hidd_connection_state_changed_callback)(void* handle, bt_address remote_addr, profile_state_t state);
+typedef void (*btm_hidd_device_state_changed_callback)(void* handle, HID_APP_STATE registered);
+typedef void (*btm_hidd_connection_state_changed_callback)(void* handle, bt_address remote_addr, PROFILE_CONNECTION_STATE state);
 
 typedef struct {
     btm_hidd_device_state_changed_callback hidd_app_state_changed_cb;
@@ -48,13 +48,13 @@ typedef struct {
 typedef struct {
     size_t size;
 
-    bt_result_code (*register_device)(void** handle, bt_hidd_sdp_settings_t sdp, bt_hidd_qos_settings_t tx_qos,
+    BT_RESULT_CODE (*register_device)(void** handle, bt_hidd_sdp_settings_t sdp, bt_hidd_qos_settings_t tx_qos,
         bt_hidd_qos_settings_t rx_qos, bt_hid_device_callbacks* callbacks);
-    bt_result_code (*unregister_device)(void* handle);
-    bt_result_code (*connect)(void* handle, bt_address remote_addr);
-    bt_result_code (*disconnect)(void* handle, bt_address remote_addr);
-    bt_result_code (*send_report_test)(void* handle, uint8_t report_id, uint8_t* buffer, size_t size);
-    bt_result_code (*unplug)(void* handle, bt_address remote_addr);
+    BT_RESULT_CODE (*unregister_device)(void* handle);
+    BT_RESULT_CODE (*connect)(void* handle, bt_address remote_addr);
+    BT_RESULT_CODE (*disconnect)(void* handle, bt_address remote_addr);
+    BT_RESULT_CODE (*send_report_test)(void* handle, uint8_t report_id, uint8_t* buffer, size_t size);
+    BT_RESULT_CODE (*unplug)(void* handle, bt_address remote_addr);
 } btm_hid_device_interface_t;
 
 btm_hid_device_interface_t* get_btm_hid_device_interface(void* bt_mgr_interface);

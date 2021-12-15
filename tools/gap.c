@@ -97,7 +97,7 @@ static int reply_pair_request_cmd(void* handle, int argc, char* argv[])
         return 0;
 }
 
-void test_discovery_state_changed_callback(void* gap_handle, bt_discovery_state state)
+void test_discovery_state_changed_callback(void* gap_handle, BT_DISCOVERY_STATE state)
 {
     BT_LOGD("%s", __func__);
 }
