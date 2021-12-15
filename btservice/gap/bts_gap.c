@@ -159,7 +159,6 @@ typedef struct {
 } list_device_t;
 
 struct list_node* g_msg_list;
-struct list_node* g_discovery_list;
 static bts_gap_callback_t* g_bts_gap_callbacks = NULL;
 /*process callback from stack */
 
@@ -204,22 +203,6 @@ static void process_loop_in_gap(void* data, size_t data_size)
         break;
     }
     case GAP_DISCOVERY_STATE_CHANGED: {
-        if (gap_msg->event_data.data.discovery_state == BT_DISCOVERY_STARTED) {
-            if (!g_discovery_list) {
-                g_discovery_list = malloc(sizeof(struct list_node));
-                list_initialize(g_discovery_list);
-            }
-        }
-        if (gap_msg->event_data.data.discovery_state == BT_DISCOVERY_STOPPED) {
-            struct list_node* node;
-            while (!list_is_empty(g_discovery_list)) {
-                node = list_remove_head(g_discovery_list);
-                free(node);
-            }
-
-            free(g_discovery_list);
-            g_discovery_list = NULL;
-        }
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->discovery_state_changed_cb)) {
             g_bts_gap_callbacks->discovery_state_changed_cb(gap_msg->event_data.data.discovery_state);
         }
@@ -252,16 +235,8 @@ static void process_loop_in_gap(void* data, size_t data_size)
         list_device_t* discovery_devce;
         bt_device_t* device = gap_msg->event_data.data.device;
 
-        list_for_every(g_discovery_list, node)
-        {
-            discovery_devce = (list_device_t*)node;
-            if (!memcmp(discovery_devce->device->addr, device->addr, BT_ADDR_LENGTH)) {
-                return;
-            }
-        }
         discovery_devce = malloc(sizeof(list_device_t));
         discovery_devce->device = device;
-        list_add_tail(g_discovery_list, &discovery_devce->node);
 
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->device_found_cb)) {
             g_bts_gap_callbacks->device_found_cb(device);
