@@ -45,46 +45,23 @@
 #define A2DP_SOURCE_DATA_PATH "source_data"
 #endif
 
-#define A2DP_CTRL_EVT_HEADER_LEN 3
+#define A2DP_CTRL_EVT_HEADER_LEN 1
 
 typedef enum {
-    A2DP_CTRL_CMD = 1,
-    A2DP_CTRL_EVT
-} a2dp_ctrl_type_t;
-
-/*
-cmd:      cmd_type|cmd_code|cmd_len|cmd_data|
-cmd cmpt  evt_type|evt_code|evt_len|cmd_code|cmd_status|evt_data|
-evt       evt_type|evt_code|evt_len|evt_data|
-*/
-typedef enum {
-    A2DP_CTRL_CMD_NONE,
-    A2DP_CTRL_CMD_CHECK_READY,
     A2DP_CTRL_CMD_START,
     A2DP_CTRL_CMD_STOP,
-    A2DP_CTRL_CMD_SUSPEND,
-    A2DP_CTRL_GET_INPUT_AUDIO_CONFIG,
-    A2DP_CTRL_GET_OUTPUT_AUDIO_CONFIG,
-    A2DP_CTRL_SET_OUTPUT_AUDIO_CONFIG
+    A2DP_CTRL_CMD_CONFIG_DONE
 } a2dp_ctrl_cmd_t;
 
 typedef enum {
-    A2DP_CTRL_EVT_CMD_COMPLETED,
-    A2DP_CTRL_EVT_CONNECTED,
-    A2DP_CTRL_EVT_DISCONNECTED
+    A2DP_CTRL_EVT_STARTED,
+    A2DP_CTRL_EVT_START_FAIL,
+    A2DP_CTRL_EVT_STOPPED,
+    A2DP_CTRL_EVT_UPDATE_CONFIG
 } a2dp_ctrl_evt_t;
-
-typedef enum {
-    A2DP_CTRL_STATUS_SUCCESS,
-    A2DP_CTRL_STATUS_FAILURE,
-    A2DP_CTRL_STATUS_INCALL_FAILURE, /* Failure when in Call*/
-    A2DP_CTRL_STATUS_UNSUPPORTED,
-    A2DP_CTRL_STATUS_PENDING,
-    A2DP_CTRL_STATUS_DISCONNECT_IN_PROGRESS,
-} a2dp_ctrl_status_t;
 
 extern void bts_a2dp_control_init(uint8_t ctrl_id, uint8_t data_id);
 extern void bts_a2dp_control_cleanup(void);
-extern void bts_a2dp_ctrl_event(uint8_t ch_id, a2dp_ctrl_evt_t event);
-extern void bts_a2dp_ctrl_command_ack(uint8_t ch_id, a2dp_ctrl_cmd_t cmd, a2dp_ctrl_status_t ack);
+extern void bts_a2dp_control_event(uint8_t ch_id, a2dp_ctrl_evt_t evt);
+extern void bts_a2dp_control_update_audio_config(uint8_t isvalid);
 #endif

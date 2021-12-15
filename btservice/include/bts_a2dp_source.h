@@ -50,7 +50,6 @@ typedef struct {
 
 void bts_a2dp_source_stream_start(void);
 void bts_a2dp_source_stream_stop(void);
-void bts_a2dp_source_stream_suspend(void);
 void bts_a2dp_source_codec_state_change(void);
 bool bts_a2dp_source_stream_ready(void);
 bool bts_a2dp_source_stream_started(void);

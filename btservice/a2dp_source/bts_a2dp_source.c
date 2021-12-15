@@ -211,10 +211,10 @@ static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE
         return;
 
     switch (state) {
-    case PROFILE_DISCONNECTED:
+    case SERVICE_PROFILE_DISCONNECTED:
         event = DISCONNECTED_EVT;
         break;
-    case PROFILE_CONNECTED:
+    case SERVICE_PROFILE_CONNECTED:
         event = CONNECTED_EVT;
         break;
     default:
@@ -249,65 +249,15 @@ static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM
     do_in_a2dp_service(a2dp_event_new(event, remote_addr));
 }
 
-static uint32_t adp_stream_codec_transfer(uint8_t codec)
-{
-    bts_a2dp_codec_index_t index;
-
-    switch (codec) {
-    case SERVICE_AVDTP_CODEC_TYPE_SBC:
-        index = BTS_A2DP_CODEC_INDEX_SOURCE_SBC;
-        break;
-    case SERVICE_AVDTP_CODEC_TYPE_MPEG2_4_AAC:
-        index = BTS_A2DP_CODEC_INDEX_SOURCE_AAC;
-        break;
-    default:
-        index = BTS_A2DP_CODEC_INDEX_SOURCE_SBC;
-        break;
-    }
-
-    return index;
-}
-
-static uint32_t adp_stream_sample_rate_transfer(uint32_t sample_rate)
-{
-    bts_a2dp_codec_sample_rate_t samplerate;
-
-    switch (sample_rate) {
-    case 44100:
-        samplerate = BTS_A2DP_CODEC_SAMPLE_RATE_44100;
-        break;
-    case 48000:
-        samplerate = BTS_A2DP_CODEC_SAMPLE_RATE_48000;
-        break;
-    case 88200:
-        samplerate = BTS_A2DP_CODEC_SAMPLE_RATE_88200;
-        break;
-    case 96000:
-        samplerate = BTS_A2DP_CODEC_SAMPLE_RATE_96000;
-        break;
-    case 176400:
-        samplerate = BTS_A2DP_CODEC_SAMPLE_RATE_176400;
-        break;
-    case 192000:
-        samplerate = BTS_A2DP_CODEC_SAMPLE_RATE_192000;
-        break;
-    default:
-        BT_LOGE("Invalid sample rate: %d", sample_rate);
-        return BTS_A2DP_CODEC_SAMPLE_RATE_44100;
-    }
-
-    return samplerate;
-}
-
 static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S* config)
 {
     a2dp_event_t* event;
     a2dp_codec_config_t codec_config;
 
-    codec_config.codec_type = adp_stream_codec_transfer(config->codec);
-    codec_config.sample_rate = adp_stream_sample_rate_transfer(config->sample_rate);
-    codec_config.channel_mode = config->channel == SERVICE_CHANNEL_MONO ? BTS_A2DP_CODEC_CHANNEL_MODE_MONO : BTS_A2DP_CODEC_CHANNEL_MODE_STEREO;
-    codec_config.bits_per_sample = BTS_A2DP_CODEC_BITS_PER_SAMPLE_16;
+    codec_config.codec_type = config->codec;
+    codec_config.sample_rate = config->sample_rate;
+    codec_config.channel_mode = config->channel;
+    codec_config.bits_per_sample = config->bit_width;
 
     event = a2dp_event_new(CODEC_CONFIG_EVT, remote_addr);
     event->event_data.data = malloc(sizeof(codec_config));
@@ -371,13 +321,6 @@ void bts_a2dp_source_stream_start(void)
 }
 
 void bts_a2dp_source_stream_stop(void)
-{
-    uint8_t* addr = bts_a2dp_source_active_peer();
-
-    do_in_a2dp_service(a2dp_event_new(STREAM_SUSPEND_REQ, addr));
-}
-
-void bts_a2dp_source_stream_suspend(void)
 {
     uint8_t* addr = bts_a2dp_source_active_peer();
 

@@ -41,14 +41,14 @@
 #define LOG_TAG "a2dp_codec"
 #include "log.h"
 
-#define A2DP_SBC_ENCODER_INTERVAL_MS 30
+#define A2DP_SBC_ENCODER_INTERVAL_MS 20
 
 a2dp_codec_t g_a2dp_codec;
 a2dp_codec_config_t* current_config;
 
 static const a2dp_codec_config_t a2dp_codec_default_config = {
-    BTS_A2DP_CODEC_INDEX_SOURCE_SBC,
-    BTS_A2DP_CODEC_SAMPLE_RATE_44100,
+    BTS_A2DP_TYPE_SBC,
+    44100,
     BTS_A2DP_CODEC_BITS_PER_SAMPLE_16,
     BTS_A2DP_CODEC_CHANNEL_MODE_STEREO,
     328000,
@@ -64,7 +64,7 @@ void bts_a2dp_codec_init(void)
     current_config = &g_a2dp_codec.current_codec_config;
 
     memcpy(current_config, &a2dp_codec_default_config, sizeof(a2dp_codec_config_t));
-    if (current_config->codec_type == BTS_A2DP_CODEC_INDEX_SOURCE_SBC)
+    if (current_config->codec_type == BTS_A2DP_TYPE_SBC)
         a2dp_codec_sbc_init();
 }
 
@@ -76,13 +76,13 @@ a2dp_codec_config_t* bts_a2dp_codec_get_config(void)
 void bts_a2dp_codec_set_config(a2dp_codec_config_t* config)
 {
     memcpy(current_config, config, sizeof(a2dp_codec_config_t));
-    if (current_config->codec_type == BTS_A2DP_CODEC_INDEX_SOURCE_SBC)
+    if (current_config->codec_type == BTS_A2DP_TYPE_SBC)
         current_config->bit_rate = a2dp_codec_sbc_bit_rate(bts_a2dp_codec_get_frame_length());
 }
 
 uint32_t bts_a2dp_codec_get_frame_length(void)
 {
-    if (current_config->codec_type == BTS_A2DP_CODEC_INDEX_SOURCE_SBC)
+    if (current_config->codec_type == BTS_A2DP_TYPE_SBC)
         return a2dp_codec_sbc_frame_length();
 
     return 0; //unknown codec
