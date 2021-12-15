@@ -50,9 +50,9 @@ typedef struct {
 typedef struct {
     size_t size;
 
-    bt_result_code (*start_advertising)(void** handle, advertise_param_t* param,
+    BT_RESULT_CODE (*start_advertising)(void** handle, advertise_param_t* param,
         btm_le_advertise_callbacks* cb);
-    bt_result_code (*stop_advertising)(void* handle);
+    BT_RESULT_CODE (*stop_advertising)(void* handle);
 } btm_le_advertise_interface_t;
 
 btm_le_advertise_interface_t* get_btm_leadv_interface(void* bt_mgr_interface);

@@ -54,27 +54,27 @@ static gatt_element_t s_iot_service_elements[] = {
     { /* Private IOT Service - 0xFF00 */
         IOT_SERVICE_ID,
         { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00 },
-        PRIMARY_SERVICE,
+        GATT_PRIMARY_SERVICE
         0,
-        GATT_PERMISSION_READABLE },
+        GATT_ATT_PERMISSION_READABLE },
     { /* Private Characteristic for TX - 0xFF01 */
         IOT_SERVICE_TX_CHR_ID,
         { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x01, 0xFF, 0x00, 0x00 },
-        CHARACTERISTIC,
-        GATT_PROPERTY_NOTIFY | GATT_PROPERTY_INDICATE,
+        GATT_CHARACTERISTIC,
+        GATT_ATT_PROPERTY_NOTIFY | GATT_ATT_PROPERTY_INDICATE,
         0 },
     { /* Client Characteristic Configuration Descriptor - 0x2902 */
         IOT_SERVICE_TX_CHR_CCC_ID,
         { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x02, 0x29, 0x00, 0x00 },
-        DESCRIPTOR,
+        GATT_DESCRIPTOR,
         0,
-        GATT_PERMISSION_READABLE | GATT_PERMISSION_WRITABLE },
+        GATT_ATT_PERMISSION_READABLE | GATT_ATT_PERMISSION_WRITABLE },
     { /* Private Characteristic for RX - 0xFF02 */
         IOT_SERVICE_RX_CHR_ID,
         { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x02, 0xFF, 0x00, 0x00 },
-        CHARACTERISTIC,
-        GATT_PROPERTY_WRITE_NO_RESPONSE,
-        GATT_PERMISSION_WRITABLE },
+        GATT_CHARACTERISTIC,
+        GATT_ATT_PROPERTY_WRITE_NO_RESPONSE,
+        GATT_ATT_PERMISSION_WRITABLE },
 };
 
 static void le_adv_started_callback(void* handle)
@@ -92,7 +92,7 @@ static void le_adv_failed_callback(void* handle, int error)
     BT_LOGD(" %s:err:%d", __func__, error);
 }
 
-static void test_server_connection_state_changed_callback(void* handle, bt_address remote_addr, profile_state_t state)
+static void test_server_connection_state_changed_callback(void* handle, bt_address remote_addr, PROFILE_CONNECTION_STATE state)
 {
     BT_LOGD("%s  addr:[%02x:%02x:%02x:%02x:%02x:%02x], state:%d", __func__, remote_addr[0], remote_addr[1],
         remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5], state);
@@ -119,24 +119,24 @@ static void test_server_closed_callback(void* handle)
     BT_LOGD("%s", __func__);
 }
 
-static void test_server_service_added_callback(void* handle, gatt_status_t status, gatt_element_t* element,
+static void test_server_service_added_callback(void* handle, GATT_STATUS status, gatt_element_t* element,
     size_t size)
 {
     BT_LOGD("%s", __func__);
 }
 
-static void test_server_service_removed_callback(void* handle, gatt_status_t status, gatt_element_t* element,
+static void test_server_service_removed_callback(void* handle, GATT_STATUS status, gatt_element_t* element,
     size_t size)
 {
     BT_LOGD("%s", __func__);
 }
 
-static void test_server_phy_read_callback(void* handle, bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx)
+static void test_server_phy_read_callback(void* handle, bt_address remote_addr, BLE_PHY_TYPE tx, BLE_PHY_TYPE rx)
 {
     BT_LOGD("%s", __func__);
 }
 
-static void test_server_phy_update_callback(void* handle, bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx, gatt_status_t status)
+static void test_server_phy_update_callback(void* handle, bt_address remote_addr, BLE_PHY_TYPE tx, BLE_PHY_TYPE rx, GATT_STATUS status)
 {
     BT_LOGD("%s", __func__);
 }
@@ -160,7 +160,7 @@ static void test_server_read_request_callback(void* handle, bt_address remote_ad
         rsp->length = 0;
     }
     rsp->request_id = request_id;
-    rsp->status = GATT_SUCCESS;
+    rsp->status = GATT_STATUS_SUCCESS;
     if (!gatts_interface) {
         BT_LOGE("fail,   gatt interface null");
         return;
@@ -192,7 +192,7 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
     }
     rsp->length = 0;
     rsp->request_id = request_id;
-    rsp->status = GATT_SUCCESS;
+    rsp->status = GATT_STATUS_SUCCESS;
     if (!gatts_interface) {
         BT_LOGE("fail,   gatt interface null");
         return;
@@ -206,13 +206,13 @@ static void test_server_mtu_changed_callback(void* handle, bt_address remote_add
     gatt_mtu = mtu;
 }
 
-static void test_server_notify_sent_callback(void* handle, bt_address remote_addr, gatt_status_t status)
+static void test_server_notify_sent_callback(void* handle, bt_address remote_addr, GATT_STATUS status)
 {
     throughtput_cursor--;
     BT_LOGD("%s status:%d, throughtput_cursor:%d", __func__, status, throughtput_cursor);
 }
 
-static void manager_state_changed_callback(bt_manager_bt_state state)
+static void manager_state_changed_callback(BTM_BT_STATE state)
 {
     BT_LOGD("%s, state:%d", __func__, state);
 }
@@ -245,7 +245,7 @@ static void test_server_throughtout_notify(uint32_t times, uint16_t mtu)
         payload[1] = (msg_counter >> 16) & 0xFF;
         payload[2] = (msg_counter >> 8) & 0xFF;
         payload[3] = msg_counter & 0xFF;
-        bt_result_code code = gatts_interface->send_notify(gatts_handle, connected_device_addr, element, payload, mtu);
+        BT_RESULT_CODE code = gatts_interface->send_notify(gatts_handle, connected_device_addr, element, payload, mtu);
         throughtput_cursor++;
         BT_LOGD("send_notify times:%d, throughtput_cursor:%d", i, throughtput_cursor);
         if (code != BT_RESULT_SUCCESS) {
@@ -310,7 +310,7 @@ int main(int argc, FAR char* argv[])
         switch (ch) {
         case 'a': {
             BT_LOGD("open gatt server");
-            bt_result_code ret = gatts_interface->open(&gatts_handle, &gatts_cb);
+            BT_RESULT_CODE ret = gatts_interface->open(&gatts_handle, &gatts_cb);
             if (ret != BT_RESULT_SUCCESS) {
                 BT_LOGE("fail, open gatt interface fail");
             }
@@ -318,7 +318,7 @@ int main(int argc, FAR char* argv[])
         }
         case 'b': {
             BT_LOGD("close gatt server");
-            bt_result_code ret = gatts_interface->close(gatts_handle);
+            BT_RESULT_CODE ret = gatts_interface->close(gatts_handle);
             if (ret != BT_RESULT_SUCCESS) {
                 BT_LOGD("close  fail, ret: %d", ret);
             }
@@ -329,7 +329,7 @@ int main(int argc, FAR char* argv[])
             bt_address remote_address;
             scanf("%x:%x:%x:%x:%x:%x", &remote_address[0], &remote_address[1], &remote_address[2], &remote_address[3], &remote_address[4], &remote_address[5]);
             BT_LOGD("remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5]);
-            bt_result_code ret = gatts_interface->connect(&gatts_handle, remote_address, true);
+            BT_RESULT_CODE ret = gatts_interface->connect(&gatts_handle, remote_address, true);
             if (ret != BT_RESULT_SUCCESS) {
                 BT_LOGD("connect  fail, ret: %d", ret);
             }
@@ -337,7 +337,7 @@ int main(int argc, FAR char* argv[])
         }
         case 'd': {
             BT_LOGD("gatt server try to disconnect remote device");
-            bt_result_code ret = gatts_interface->disconnect(&gatts_handle, connected_device_addr);
+            BT_RESULT_CODE ret = gatts_interface->disconnect(&gatts_handle, connected_device_addr);
             if (ret != BT_RESULT_SUCCESS) {
                 BT_LOGD("disconnect  fail, ret: %d", ret);
             }
@@ -345,7 +345,7 @@ int main(int argc, FAR char* argv[])
         }
         case 'e': {
             BT_LOGD("gatt server add service");
-            gatts_interface->add_service(gatts_handle, s_iot_service_elements, sizeof(s_iot_service_elements) / sizeof(SERVICE_GATT_ELEMENT_S));
+            gatts_interface->add_service(gatts_handle, s_iot_service_elements, sizeof(s_iot_service_elements) / sizeof(gatt_element_t));
             break;
         }
         case 'f': {
@@ -393,9 +393,9 @@ int main(int argc, FAR char* argv[])
             BT_LOGD("start ble adv");
             const uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x08, 0x09, 0x42, 0x52, 0x54, 0x2D, 0x49, 0x44, 0x4D, 0x03, 0x02, 0x00, 0xFF };
             advertise_param_t adv_para;
-            memset(&adv_para, 0, sizeof(SERVICE_SCAN_ADV_PARAMS_S));
-            adv_para.params.adv_type = BLE_ADV_IND;
-            adv_para.params.channel_map = ADV_CHANNEL_DEFAULT;
+            memset(&adv_para, 0, sizeof(advertise_param_t));
+            adv_para.params.adv_type = BLE_EVENT_ADV_IND;
+            adv_para.params.channel_map = BLE_ADV_CHANNEL_DEFAULT;
             adv_para.params.interval = 48;
             adv_para.params.tx_power = -10;
             adv_para.adv_length = sizeof(s_adv_data);
@@ -403,7 +403,7 @@ int main(int argc, FAR char* argv[])
             adv_para.scan_rsp_data = (char*)s_adv_data;
             adv_para.scan_rsp_length = sizeof(s_adv_data);
             btm_le_advertise_interface_t* adv_interface = get_btm_leadv_interface(manager);
-            bt_result_code ret = adv_interface->start_advertising(&adv_handle, &adv_para, &le_adv_cb);
+            BT_RESULT_CODE ret = adv_interface->start_advertising(&adv_handle, &adv_para, &le_adv_cb);
             if (ret != BT_RESULT_SUCCESS) {
                 BT_LOGD("start_advertising  fail, ret: %d", ret);
             }
@@ -412,7 +412,7 @@ int main(int argc, FAR char* argv[])
         case 'm': {
             BT_LOGD("stop ble adv");
             btm_le_advertise_interface_t* adv_interface = get_btm_leadv_interface(manager);
-            bt_result_code ret = adv_interface->stop_advertising(adv_handle);
+            BT_RESULT_CODE ret = adv_interface->stop_advertising(adv_handle);
             if (ret != BT_RESULT_SUCCESS) {
                 BT_LOGD("start_advertising  fail, ret: %d", ret);
             }

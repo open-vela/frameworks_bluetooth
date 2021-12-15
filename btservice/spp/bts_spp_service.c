@@ -57,25 +57,25 @@ static void spp_svr_pty_open_callback(const bt_address addr, uint16_t port, char
         sppCallbacks->pty_open_cb(addr, port, name, fd);
 }
 
-static bt_result_code spp_if_server_start(void* handle, uint16_t port, uint16_t uuid16)
+static BT_RESULT_CODE spp_if_server_start(void* handle, uint16_t port, uint16_t uuid16)
 {
     (void)handle;
     return bts_spp_server_start(port, uuid16);
 }
 
-static bt_result_code spp_if_server_stop(void* handle, uint16_t port)
+static BT_RESULT_CODE spp_if_server_stop(void* handle, uint16_t port)
 {
     (void)handle;
     return bts_spp_server_stop(port);
 }
 
-static bt_result_code spp_if_client_connect(void* handle, bt_address addr, uint16_t port, uint16_t uuid16)
+static BT_RESULT_CODE spp_if_client_connect(void* handle, bt_address addr, uint16_t port, uint16_t uuid16)
 {
     (void)handle;
     return bts_spp_client_connect(addr, port, uuid16);
 }
 
-static bt_result_code spp_if_disconnect(void* handle, bt_address addr, uint16_t port)
+static BT_RESULT_CODE spp_if_disconnect(void* handle, bt_address addr, uint16_t port)
 {
     (void)handle;
     return bts_spp_disconnect(addr, port);
@@ -102,9 +102,9 @@ static spp_interface_t sppInterface = {
     spp_if_set_callbacks,
 };
 
-bt_result_code spp_service_start(void)
+BT_RESULT_CODE spp_service_start(void)
 {
-    bt_result_code ret;
+    BT_RESULT_CODE ret;
     BT_LOGD("%s", __func__);
 
     ret = bts_spp_init(&spp_service_cbs);

@@ -67,7 +67,7 @@ typedef struct {
     const uint8_t peer_sep_;
 } a2dp_device_t;
 
-static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state);
+static void adp_connection_state_changed_cb(BD_ADDR remote_addr, PROFILE_CONNECTION_STATE state);
 static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state);
 static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S* config);
 static void adp_stream_channel_mtu_cb(BD_ADDR remote_addr, uint16_t stream_chnl_mtu);
@@ -201,7 +201,7 @@ static void do_in_a2dp_service(a2dp_event_t* a2dp_event)
     bts_send_uv_msg(BT_PROFILE_ADVANCED_AUDIO_SOURCE_ID, a2dp_event, sizeof(a2dp_event_t));
 }
 
-static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state)
+static void adp_connection_state_changed_cb(BD_ADDR remote_addr, PROFILE_CONNECTION_STATE state)
 {
     a2dp_state_machine_t* a2dp_sm;
     a2dp_event_type_t event;
@@ -211,10 +211,10 @@ static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE
         return;
 
     switch (state) {
-    case SERVICE_PROFILE_DISCONNECTED:
+    case PROFILE_DISCONNECTED:
         event = DISCONNECTED_EVT;
         break;
-    case SERVICE_PROFILE_CONNECTED:
+    case PROFILE_CONNECTED:
         event = CONNECTED_EVT;
         break;
     default:
@@ -353,7 +353,7 @@ static void a2dp_source_cleanup(void)
     service_adapter_a2dp_source_cleanup();
 }
 
-void bts_a2dp_service_handle_event(bt_profile_id id, void* data, size_t size)
+void bts_a2dp_service_handle_event(BT_PROFILE_ID id, void* data, size_t size)
 {
     a2dp_service_handle_event(data, size);
 }
@@ -415,7 +415,7 @@ void bts_a2dp_source_codec_state_change(void)
     do_in_a2dp_service(a2dp_event_new(DEVICE_CODEC_STATE_CHANGE_EVT, addr));
 }
 
-bt_result_code bts_a2dp_source_init(const a2dp_source_callbacks_t* callbacks)
+BT_RESULT_CODE bts_a2dp_source_init(const a2dp_source_callbacks_t* callbacks)
 {
     a2dp_source.callbacks = callbacks;
     list_initialize(&a2dp_source.device_list);
@@ -426,14 +426,14 @@ bt_result_code bts_a2dp_source_init(const a2dp_source_callbacks_t* callbacks)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_a2dp_source_connect(bt_address addr)
+BT_RESULT_CODE bts_a2dp_source_connect(bt_address addr)
 {
     do_in_a2dp_service(a2dp_event_new(CONNECT_REQ, addr));
 
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_a2dp_source_disconnect(bt_address addr)
+BT_RESULT_CODE bts_a2dp_source_disconnect(bt_address addr)
 {
     do_in_a2dp_service(a2dp_event_new(DISCONNECT_REQ, addr));
 
