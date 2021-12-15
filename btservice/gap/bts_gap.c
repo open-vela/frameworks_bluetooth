@@ -105,8 +105,8 @@ typedef struct {
 } ble_bonded_update_t;
 
 typedef struct {
-    ble_phy_type_t tx_phy;
-    ble_phy_type_t rx_phy;
+    BLE_PHY_TYPE tx_phy;
+    BLE_PHY_TYPE rx_phy;
 } phy_update_changed_t;
 
 typedef struct {
@@ -117,24 +117,24 @@ typedef struct {
 
 typedef struct {
     bt_address bd_addr;
-    ble_addr_type addr_type;
+    BLE_ADDR_TYPE addr_type;
     uint32_t valueint1;
-    bt_status status;
+    BT_STATUS  status;
     union {
         remote_device_t* found_result;
-        discovery_state discovery_state;
+        BT_DISCOVERY_STATE discovery_state;
         pin_request_data_t* pin_request_data;
         ssp_request_data_t* ssp_request_data;
         acl_state_params_t* acl_state_params;
         scan_result_t scan_result;
-        bt_link_role link_role;
-        bt_link_mode link_mode;
-        bt_link_policy link_policy;
+        BT_LINK_ROLE link_role;
+        BT_LINK_MODE link_mode;
+        BT_LINK_POLICY link_policy;
         bt_service_state stack_state;
         hci_event_t* hci_event;
         remote_name_info_t remote_name;
-        bt_bonde_state bond_state;
-        bt_scan_mode scan_mode;
+        BT_BOND_STATE bond_state;
+        BT_SCAN_MODE scan_mode;
         remote_device_t* bonded_device;
         pair_request_t pair_request;
         discovery_service_t discovery_service;
@@ -262,7 +262,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
     case GAP_ACL_STATE_CHANGED: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->connection_state_changed_cb)) {
             bt_device_t* new_device = malloc(sizeof(bt_device_t));
-            bt_connection_state state = STATE_DISCONNECTED;
+            BT_CONNECTION_STATE state = STATE_DISCONNECTED;
             memcpy(new_device->addr, gap_msg->event_data.data.acl_state_params->remote_addr, BT_ADDR_LENGTH);
             switch (gap_msg->event_data.data.acl_state_params->state) {
             case SERVICE_BT_ACL_STATE_CONNECTED:
@@ -335,7 +335,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
     // }
 }
 
-static void handle_msg_received(bt_profile_id id, void* data, size_t size)
+static void handle_msg_received(BT_PROFILE_ID id, void* data, size_t size)
 {
     process_loop_in_gap(data, size);
 }
@@ -345,9 +345,9 @@ static void gap_send_message(gap_msg_t* msg)
     bts_send_uv_msg(BT_PROFILE_GAP_ID, msg, sizeof(gap_msg_t));
 }
 
-bt_result_code bts_start_discovery(uint32_t timeout)
+BT_RESULT_CODE bts_start_discovery(uint32_t timeout)
 {
-    bt_status ret = service_adapter_gap_start_device_discovery(timeout);
+    BT_STATUS  ret = service_adapter_gap_start_device_discovery(timeout);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -367,7 +367,7 @@ static void adapter_device_found_callback(remote_device_t* device)
     new_device->cod = device->cod;
     new_device->rssi = device->rssi;
     memcpy(new_device->uuids, device->uuids, MAX_UUID_NUM * sizeof(bt_uuid_t));
-    memcpy(new_device->name, device->bt_name, BT_DEVICE_NAME_MAX_LEN + 1);
+    memcpy(new_device->name, device->bt_name, DEVICE_NAME_MAX_LEN + 1);
 
     gap_msg_t* msg = gap_msg_new(GAP_DEVICE_FOUND);
     msg->event_data.data.device = new_device;
@@ -387,7 +387,7 @@ static void adapter_received_remote_name_callback(bt_address bd_addr, char* bt_n
     gap_send_message(msg);
 }
 
-static void adapter_discovery_state_changed_callback(discovery_state state)
+static void adapter_discovery_state_changed_callback(BT_DISCOVERY_STATE state)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_DISCOVERY_STATE_CHANGED);
@@ -411,7 +411,7 @@ static void adapter_ssp_request_callback(ssp_request_data_t* request_data)
     gap_send_message(msg);
 }
 
-static void adapter_bond_state_changed_callback(bt_address remote_addr, bt_bonde_state state)
+static void adapter_bond_state_changed_callback(bt_address remote_addr, BT_BOND_STATE state)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BOND_STATE_CHANGED);
@@ -450,7 +450,7 @@ static void adapter_ble_adv_stopped_callback(uint8_t adv_id)
     BT_CBACK(adv_ift->callbacks, ble_advtise_stopped_cb, adv_id);
 }
 
-static void adapter_bt_link_role_changed_callback(bt_address remote_addr, bt_link_role link_role)
+static void adapter_bt_link_role_changed_callback(bt_address remote_addr, BT_LINK_ROLE link_role)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_LINK_ROLE_CHANGED);
@@ -459,7 +459,7 @@ static void adapter_bt_link_role_changed_callback(bt_address remote_addr, bt_lin
     gap_send_message(msg);
 }
 
-static void adapter_scan_mode_changed_callback(bt_scan_mode scan_mode)
+static void adapter_scan_mode_changed_callback(BT_SCAN_MODE scan_mode)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_SCAN_MODE_CHANGED);
@@ -467,7 +467,7 @@ static void adapter_scan_mode_changed_callback(bt_scan_mode scan_mode)
     gap_send_message(msg);
 }
 
-static void adapter_link_mode_changed_callback(bt_address remote_addr, bt_link_mode link_mode,
+static void adapter_link_mode_changed_callback(bt_address remote_addr, BT_LINK_MODE link_mode,
     uint16_t sniff_interval)
 {
     BT_LOGD("%s", __func__);
@@ -487,7 +487,7 @@ static void adapter_link_connect_request_callback(bt_address remote_addr)
     gap_send_message(msg);
 }
 
-static void adapter_link_policy_changed_callback(bt_address remote_addr, bt_link_policy link_policy)
+static void adapter_link_policy_changed_callback(bt_address remote_addr, BT_LINK_POLICY link_policy)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_LINK_POLICY_CHANGED);
@@ -496,13 +496,13 @@ static void adapter_link_policy_changed_callback(bt_address remote_addr, bt_link
     gap_send_message(msg);
 }
 
-static void adapter_stack_state_changed_callback(stack_state_t stack_state)
+static void adapter_stack_state_changed_callback(SERVICE_BT_STACK_STATE stack_state)
 {
     bt_service_state state;
     if (stack_state == BT_STATE_ON) {
-        state = BT_MANAGER_STATE_ON;
+        state = BTM_STATE_ON;
     } else if (stack_state == BT_STATE_OFF) {
-        state = BT_MANAGER_STATE_OFF;
+        state = BTM_STATE_OFF;
     } else {
         BT_LOGE("unkown state: %d", stack_state);
         return;
@@ -602,7 +602,7 @@ static void adapter_update_ble_bonded_devices_callback(ble_keys_t* bonded_device
     gap_send_message(msg);
 }
 
-static void adapter_ble_add_white_list_callback(bt_address remote_addr, bt_status status)
+static void adapter_ble_add_white_list_callback(bt_address remote_addr, BT_STATUS  status)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BLE_ADD_WHITE_LIST);
@@ -611,7 +611,7 @@ static void adapter_ble_add_white_list_callback(bt_address remote_addr, bt_statu
     gap_send_message(msg);
 }
 
-static void adapter_ble_remove_white_list_callback(bt_address remote_addr, bt_status status)
+static void adapter_ble_remove_white_list_callback(bt_address remote_addr, BT_STATUS  status)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BLE_REMOVE_WHITE_LIST);
@@ -620,7 +620,7 @@ static void adapter_ble_remove_white_list_callback(bt_address remote_addr, bt_st
     gap_send_message(msg);
 }
 
-static void adapter_ble_add_resolving_list_callback(bt_address remote_addr, bt_status status)
+static void adapter_ble_add_resolving_list_callback(bt_address remote_addr, BT_STATUS  status)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_ADD_BLE_RESOlVING_LIST);
@@ -629,7 +629,7 @@ static void adapter_ble_add_resolving_list_callback(bt_address remote_addr, bt_s
     gap_send_message(msg);
 }
 
-static void adapter_ble_remove_resolving_list_callback(bt_address remote_addr, bt_status status)
+static void adapter_ble_remove_resolving_list_callback(bt_address remote_addr, BT_STATUS  status)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_REMOVE_BLE_RESOlVING_LIST);
@@ -638,7 +638,7 @@ static void adapter_ble_remove_resolving_list_callback(bt_address remote_addr, b
     gap_send_message(msg);
 }
 
-static void adapter_ble_address_callback(bt_address ble_addr, ble_addr_type addr_type)
+static void adapter_ble_address_callback(bt_address ble_addr, BLE_ADDR_TYPE addr_type)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BLE_ADDRESS);
@@ -647,8 +647,8 @@ static void adapter_ble_address_callback(bt_address ble_addr, ble_addr_type addr
     gap_send_message(msg);
 }
 
-static void adapter_ble_phy_update_callback(bt_address remote_addr, ble_phy_type_t tx_phy,
-    ble_phy_type_t rx_phy, bt_status status)
+static void adapter_ble_phy_update_callback(bt_address remote_addr, BLE_PHY_TYPE tx_phy,
+    BLE_PHY_TYPE rx_phy, BT_STATUS  status)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BLE_PHY_UPDATE);
@@ -660,7 +660,7 @@ static void adapter_ble_phy_update_callback(bt_address remote_addr, ble_phy_type
 }
 
 static void adapter_ble_irk_callback(bt_common_key irk, bt_address ble_addr,
-    ble_addr_type addr_type)
+    BLE_ADDR_TYPE addr_type)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BLE_IRK);
@@ -719,7 +719,7 @@ GAP_CALLBACKS_S g_gap_callback = {
     .gap_ble_packet_received_cb = adapter_ble_packet_received_callback
 };
 
-bt_result_code gap_init(bts_gap_callback_t* cb)
+BT_RESULT_CODE gap_init(bts_gap_callback_t* cb)
 {
     g_bts_gap_callbacks = cb;
     service_adapter_gap_init();
@@ -741,9 +741,9 @@ void gap_cleanup(void)
     bts_unregister_profile_process(BT_PROFILE_GAP_ID);
 }
 
-bt_result_code gap_enable()
+BT_RESULT_CODE gap_enable()
 {
-    bt_status ret = service_adapter_gap_enable();
+    BT_STATUS  ret = service_adapter_gap_enable();
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("gap enable fail,ret:%d", ret);
         return BT_RESULT_FAILED;
@@ -751,9 +751,9 @@ bt_result_code gap_enable()
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code gap_disable(bool normal_disable)
+BT_RESULT_CODE gap_disable(bool normal_disable)
 {
-    bt_status ret = service_adapter_gap_disable(normal_disable);
+    BT_STATUS  ret = service_adapter_gap_disable(normal_disable);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("gap disable fail,ret:%d", ret);
         return BT_RESULT_FAILED;
@@ -761,16 +761,16 @@ bt_result_code gap_disable(bool normal_disable)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_set_local_name(char* bt_name, uint8_t len)
+BT_RESULT_CODE bts_set_local_name(char* bt_name, uint8_t len)
 {
     return gap_update_device_name((unsigned char*)bt_name, len);
 }
 
-bt_result_code bts_set_local_address(bt_device_t* device)
+BT_RESULT_CODE bts_set_local_address(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_set_local_address(device->addr);
+    BT_STATUS  ret = service_adapter_gap_set_local_address(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -778,9 +778,9 @@ bt_result_code bts_set_local_address(bt_device_t* device)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_get_local_address(bt_address addr)
+BT_RESULT_CODE bts_get_local_address(bt_address addr)
 {
-    bt_status ret = service_adapter_gap_get_local_address(addr);
+    BT_STATUS  ret = service_adapter_gap_get_local_address(addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -788,9 +788,9 @@ bt_result_code bts_get_local_address(bt_address addr)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_set_local_io_capability(bt_io_capability io_capability)
+BT_RESULT_CODE bts_set_local_io_capability(BT_IO_CAPABILITY io_capability)
 {
-    bt_status ret = service_adapter_gap_set_local_io_capability(io_capability);
+    BT_STATUS  ret = service_adapter_gap_set_local_io_capability(io_capability);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -800,8 +800,8 @@ bt_result_code bts_set_local_io_capability(bt_io_capability io_capability)
 
 char* bts_get_local_name()
 {
-    char* name = malloc(BD_NAME_MAX_SIZE);
-    bt_status ret = service_adapter_gap_get_local_name(&name, BD_NAME_MAX_SIZE);
+    char* name = malloc(BT_DEV_NAME_MAX_SIZE);
+    BT_STATUS  ret = service_adapter_gap_get_local_name(&name, BT_DEV_NAME_MAX_SIZE);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return NULL;
@@ -809,9 +809,9 @@ char* bts_get_local_name()
     return name;
 }
 
-bt_result_code bts_set_local_device_class(uint32_t class_of_device)
+BT_RESULT_CODE bts_set_local_device_class(uint32_t class_of_device)
 {
-    bt_status ret = service_adapter_gap_set_local_device_class(class_of_device);
+    BT_STATUS  ret = service_adapter_gap_set_local_device_class(class_of_device);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -826,11 +826,11 @@ uint32_t bts_get_local_device_class()
     return device_class;
 }
 
-bt_result_code bts_get_remote_name(bt_device_t* device)
+BT_RESULT_CODE bts_get_remote_name(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_get_remote_name(device->addr);
+    BT_STATUS  ret = service_adapter_gap_get_remote_name(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -847,7 +847,7 @@ int bts_get_remote_services(bt_device_t* device, bt_uuid_t* service_list, uint8_
     return ret;
 }
 
-bt_result_code bts_reply_pair_request(bt_device_t* device, int accept)
+BT_RESULT_CODE bts_reply_pair_request(bt_device_t* device, int accept)
 {
     BT_LOGD("%s", __func__);
 
@@ -857,7 +857,7 @@ bt_result_code bts_reply_pair_request(bt_device_t* device, int accept)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_create_bond(bt_device_t* device)
+BT_RESULT_CODE bts_create_bond(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
@@ -868,7 +868,7 @@ bt_result_code bts_create_bond(bt_device_t* device)
             BT_LOGE("%s, pair num is max, can not pair any device any more!", __func__);
             return BT_RESULT_FAILED;
     }        
-    bt_status ret = service_adapter_gap_create_bond(device->addr);
+    BT_STATUS  ret = service_adapter_gap_create_bond(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -876,11 +876,11 @@ bt_result_code bts_create_bond(bt_device_t* device)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_cancel_bond(bt_device_t* device)
+BT_RESULT_CODE bts_cancel_bond(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_cancel_bond(device->addr);
+    BT_STATUS  ret = service_adapter_gap_cancel_bond(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -888,11 +888,11 @@ bt_result_code bts_cancel_bond(bt_device_t* device)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_remove_bond(bt_device_t* device)
+BT_RESULT_CODE bts_remove_bond(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_remove_bond(device->addr);
+    BT_STATUS  ret = service_adapter_gap_remove_bond(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -908,7 +908,7 @@ int bts_get_bonded_devices(bt_device_t* device_list)
         ret = MAX_PAIR_DEVICE;
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[0].addr, bonded_list[i].bd_addr, BT_ADDR_LENGTH);
-        memcpy(device_list[0].name, bonded_list[i].bt_name, BT_DEVICE_NAME_MAX_LEN + 1);
+        memcpy(device_list[0].name, bonded_list[i].bt_name, DEVICE_NAME_MAX_LEN + 1);
     }
     return ret;
 }
@@ -920,15 +920,15 @@ int bts_get_connected_devices(bt_device_t* device_list)
     ret = service_adapter_gap_get_connected_devices(connected_list, MAX_CONNECTED_DEVICE);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[0].addr, connected_list[i].bd_addr, BT_ADDR_LENGTH);
-        memcpy(device_list[0].name, connected_list[i].bt_name, BT_DEVICE_NAME_MAX_LEN + 1);
+        memcpy(device_list[0].name, connected_list[i].bt_name, DEVICE_NAME_MAX_LEN + 1);
     }
     return ret;
 }
 
 /*Discovery*/
-bt_result_code bts_set_scan_mode(bt_scan_mode scan_mode, bool bondable)
+BT_RESULT_CODE bts_set_scan_mode(BT_SCAN_MODE scan_mode, bool bondable)
 {
-    bt_status ret = service_adapter_gap_set_scan_mode(scan_mode, bondable);
+    BT_STATUS  ret = service_adapter_gap_set_scan_mode(scan_mode, bondable);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -936,9 +936,9 @@ bt_result_code bts_set_scan_mode(bt_scan_mode scan_mode, bool bondable)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_stop_discovery(void)
+BT_RESULT_CODE bts_stop_discovery(void)
 {
-    bt_status ret = service_adapter_gap_stop_device_discovery();
+    BT_STATUS  ret = service_adapter_gap_stop_device_discovery();
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -948,11 +948,11 @@ bt_result_code bts_stop_discovery(void)
 
 /*service discovery*/
 
-bt_result_code bts_start_service_discovery(bt_device_t* device, bt_uuid_t uuid)
+BT_RESULT_CODE bts_start_service_discovery(bt_device_t* device, bt_uuid_t uuid)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_start_service_discovery(device->addr, uuid);
+    BT_STATUS  ret = service_adapter_gap_start_service_discovery(device->addr, uuid);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -960,11 +960,11 @@ bt_result_code bts_start_service_discovery(bt_device_t* device, bt_uuid_t uuid)
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_stop_service_discovery(bt_device_t* device)
+BT_RESULT_CODE bts_stop_service_discovery(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_stop_service_discovery(device->addr);
+    BT_STATUS  ret = service_adapter_gap_stop_service_discovery(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -973,11 +973,11 @@ bt_result_code bts_stop_service_discovery(bt_device_t* device)
 }
 #ifdef HCI_VSC_COMMAND
 /*VSC command*/
-bt_result_code bts_send_hci_command(bt_hci_command_t* command, bt_service_hci_command_complete_event event_type)
+BT_RESULT_CODE bts_send_hci_command(bt_hci_command_t* command, BT_SERVICE_HCI_COMMAND_COMPLETE_EVENT event_type)
 {
     if (!command)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_send_hci_command_v1((SERVICE_HCI_COMMAND_S*)command, event_type);
+    BT_STATUS  ret = service_adapter_gap_send_hci_command_v1((SERVICE_HCI_COMMAND_S*)command, event_type);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -985,158 +985,158 @@ bt_result_code bts_send_hci_command(bt_hci_command_t* command, bt_service_hci_co
     return BT_RESULT_SUCCESS;
 }
 #endif
-bt_result_code bts_ble_set_static_identity(bt_device_t* device)
+BT_RESULT_CODE bts_ble_set_static_identity(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_set_static_identity(device->addr);
+    BT_STATUS  ret = service_adapter_gap_ble_set_static_identity(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_get_current_irk(void)
+BT_RESULT_CODE bts_ble_get_current_irk(void)
 {
-    bt_status ret = service_adapter_gap_ble_get_current_irk();
+    BT_STATUS  ret = service_adapter_gap_ble_get_current_irk();
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_set_address(bt_device_t* device)
+BT_RESULT_CODE bts_ble_set_address(bt_device_t* device)
 {
-    bt_status ret = service_adapter_gap_ble_set_address(device->addr);
+    BT_STATUS  ret = service_adapter_gap_ble_set_address(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_get_address(void)
+BT_RESULT_CODE bts_ble_get_address(void)
 {
-    bt_status ret = service_adapter_gap_ble_get_address();
+    BT_STATUS  ret = service_adapter_gap_ble_get_address();
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_set_bonded_devices(ble_keys_t* bonded_device_list, uint8_t count_in)
+BT_RESULT_CODE bts_ble_set_bonded_devices(ble_keys_t* bonded_device_list, uint8_t count_in)
 {
     if (!bonded_device_list)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_set_bonded_devices(bonded_device_list, count_in);
+    BT_STATUS  ret = service_adapter_gap_ble_set_bonded_devices(bonded_device_list, count_in);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_connect(ble_connect_params_t* conn_param)
+BT_RESULT_CODE bts_ble_connect(ble_connect_params_t* conn_param)
 {
     if (!conn_param)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_connect(conn_param);
+    BT_STATUS  ret = service_adapter_gap_ble_connect(conn_param);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_disconnect(bt_device_t* device)
+BT_RESULT_CODE bts_ble_disconnect(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_disconnect(device->addr);
+    BT_STATUS  ret = service_adapter_gap_ble_disconnect(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_smp_reply(spp_reply_data_t* reply_data)
+BT_RESULT_CODE bts_ble_smp_reply(spp_reply_data_t* reply_data)
 {
     if (!reply_data)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_smp_reply(reply_data);
+    BT_STATUS  ret = service_adapter_gap_ble_smp_reply(reply_data);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_add_white_list(bt_device_t* device)
+BT_RESULT_CODE bts_ble_add_white_list(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_add_white_list(device->addr);
+    BT_STATUS  ret = service_adapter_gap_ble_add_white_list(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_remove_white_list(bt_device_t* device)
+BT_RESULT_CODE bts_ble_remove_white_list(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_remove_white_list(device->addr);
+    BT_STATUS  ret = service_adapter_gap_ble_remove_white_list(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_add_resolving_list(bt_device_t* device)
+BT_RESULT_CODE bts_ble_add_resolving_list(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_add_resolving_list(device->addr);
+    BT_STATUS  ret = service_adapter_gap_ble_add_resolving_list(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_remove_resolving_list(bt_device_t* device)
+BT_RESULT_CODE bts_ble_remove_resolving_list(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_remove_resolving_list(device->addr);
+    BT_STATUS  ret = service_adapter_gap_ble_remove_resolving_list(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_set_phy(bt_device_t* device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+BT_RESULT_CODE bts_ble_set_phy(bt_device_t* device, BLE_PHY_TYPE tx_phy, BLE_PHY_TYPE rx_phy)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_set_phy(device->addr, tx_phy, rx_phy);
+    BT_STATUS  ret = service_adapter_gap_ble_set_phy(device->addr, tx_phy, rx_phy);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_add_private_channel(uint16_t private_cid)
+BT_RESULT_CODE bts_ble_add_private_channel(uint16_t private_cid)
 {
-    bt_status ret = service_adapter_gap_ble_add_private_channel(private_cid);
+    BT_STATUS  ret = service_adapter_gap_ble_add_private_channel(private_cid);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_send_packet(bt_device_t* device, uint16_t private_cid,
+BT_RESULT_CODE bts_ble_send_packet(bt_device_t* device, uint16_t private_cid,
     uint8_t* packet, uint16_t packet_size)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_send_packet(device->addr, private_cid, packet, packet_size);
+    BT_STATUS  ret = service_adapter_gap_ble_send_packet(device->addr, private_cid, packet, packet_size);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
@@ -1144,9 +1144,9 @@ bt_result_code bts_ble_send_packet(bt_device_t* device, uint16_t private_cid,
     return BT_RESULT_SUCCESS;
 }
 
-bt_result_code bts_enter_bluetooth_test_mode(bt_test_mode test_mode)
+BT_RESULT_CODE bts_enter_bluetooth_test_mode(TEST_MODE test_mode)
 {
-    bt_status ret = service_adapter_gap_enter_bluetooth_test_mode(test_mode);
+    BT_STATUS  ret = service_adapter_gap_enter_bluetooth_test_mode(test_mode);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;

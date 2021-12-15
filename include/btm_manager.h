@@ -47,9 +47,7 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-#include "stack_adapter_common.h"
-#include "stack_adapter_gatt.h"
-
+#include "btm_common_define.h"
 /** Bluetooth profile name */
 /*!
 * \def BT_PROFILE_GAP
@@ -119,162 +117,21 @@
 * \def BT_ADDR_LENGTH
 * Description
 */
-#define BT_ADDR_LENGTH (6) /*!< define the address length*/
-#define UUID_SIZE 16
-#define MAX_UUID_NUM 10
 
-#ifdef BD_NAME_MAX_SIZE
-#undef BD_NAME_MAX_SIZE
-#endif
-/*!
-* \def BD_NAME_MAX_SIZE
-* Description
-*/
-#define BD_NAME_MAX_SIZE (20)
-
-typedef SERVICE_BLE_KEYS_S ble_keys_t;
-typedef SERVICE_LE_CONNECT_PARAMS_S ble_connect_params_t;
-typedef SERVICE_SSP_REPLY_DATA_S spp_reply_data_t;
-typedef SERVICE_BT_TEST_MODE bt_test_mode;
-
-typedef SERVICE_SCAN_PARAMS_S scan_params_t;
-typedef SERVICE_BLE_SCAN_FILTER_S ble_scan_filter_t;
-typedef SERVICE_SCAN_RESULT_DATA_S scan_result_t;
-typedef BD_ADDR bt_address;
-typedef BT_UUID_T bt_uuid_t;
-
-typedef SERVICE_PROFILE_CONNECTION_STATE profile_state_t;
-typedef SERVICE_SCAN_ADV_PARAMS_S advertise_param_t;
-typedef SERVICE_GATT_ELEMENT_S gatt_element_t;
-typedef SERVICE_GATT_RESPONSE_S gatt_response_t;
-typedef GATT_SERVER_CALLBACKS_S stack_gatt_server_callbacks;
-typedef GATT_CLIENT_CALLBACKS_S stack_gatt_client_callbacks;
-
-typedef SERVICE_GATT_STATUS gatt_status_t;
-typedef SERVICE_BLE_PHY_TYPE ble_phy_type_t;
-typedef SERVICE_BT_STACK_STATE stack_state_t;
-
-typedef SERVICE_PIN_REQUEST_DATA_S pin_request_data_t;
-typedef SERVICE_BT_DISCOVERY_STATE discovery_state;
-
-typedef SERVICE_SSP_REQUEST_DATA_S ssp_request_data_t;
-typedef SERVICE_BT_BOND_STATE bt_bonde_state;
-typedef SERVICE_ACL_STATE_PARAM_S acl_state_params_t;
-typedef SERVICE_BT_LINK_ROLE bt_link_role;
-typedef SERVICE_BT_SCAN_MODE bt_scan_mode;
-typedef SERVICE_BT_LINK_MODE bt_link_mode;
-typedef SERVICE_BT_LINK_POLICY bt_link_policy;
-typedef SERVICE_BT_HCI_EVENT_S hci_event_t;
-typedef SERVICE_REMOTE_DEVICE_S remote_device_t;
-typedef SERVICE_BR_SERVICE_S br_service_t;
-typedef SERVICE_BT_STATUS bt_status;
-typedef SERVICE_BLE_ADDR_TYPE ble_addr_type;
-typedef BT_COMMON_KEY bt_common_key;
-
-typedef SERVICE_BTHD_APP_STATE hid_app_state_t;
-typedef SERVICE_HID_SERVICE_INFO_S bt_hidd_sdp_settings_t;
-typedef SERVICE_HID_QOS_PARAM_S bt_hidd_qos_settings_t;
-
-/**@enum bt_result_code
-* @brief Result code of bluetooth manager
-*/
-typedef enum {
-    BT_RESULT_STATE_ALLREADY_ON = -7,
-    BT_RESULT_STATE_ALLREADY_OFF = -6,
-    BT_RESULT_STATE_NOT_ON = -5,
-    BT_RESULT_ALLOC_BUFFER_FAILED = -4,
-    BT_RESULT_CALLBACK_ALREADY_EXSIT = -3,
-    BT_RESULT_PARAMETER_ERROR = -2,
-    BT_RESULT_FAILED = -1, ///< genernal error code.
-    BT_RESULT_SUCCESS = 0, ///< success code.
-    BT_RESULT_WAITING_FOR_INIT_STATUS_CHANGED = 1,
-    BT_RESULT_ENABLE_ALLREADY_ON_GOING = 2,
-} bt_result_code;
-
-/** State of bluetooth manager*/
-typedef enum {
-    BT_MANAGER_STATE_OFF = 0,
-    BT_MANAGER_STATE_TURNING_OFF,
-    BT_MANAGER_STATE_TURNING_ON,
-    BT_MANAGER_STATE_ON
-} bt_manager_bt_state;
-
-/** Bluetooth connection state*/
-typedef enum {
-    STATE_DISCONNECTED = 0,
-    STATE_DISCONNECTING,
-    STATE_CONNECTING,
-    STATE_CONNECTED,
-} bt_connection_state;
-
-/** State of bluetooth manager*/
-typedef enum {
-    STATE_BLE_OFF = 0,
-    STATE_BLE_TURNING_OFF,
-    STATE_BLE_TURNING_ON,
-    STATE_BLE_ON
-} bt_manager_ble_state;
-
-/** Bluetooth profile interface IDs */
-typedef enum {
-    BT_PROFILE_COMMON_ID = 1,
-    BT_PROFILE_GAP_ID,
-    BT_PROFILE_HANDSFREE_AG_ID,
-    BT_PROFILE_HANDSFREE_HF_ID,
-    BT_PROFILE_ADVANCED_AUDIO_SOURCE_ID,
-    BT_PROFILE_ADVANCED_AUDIO_SINK_ID,
-    BT_PROFILE_HIDHOST_ID,
-    BT_PROFILE_HIDDEV_ID,
-    BT_PROFILE_LESCAN_ID,
-    BT_PROFILE_GATTC_ID,
-    BT_PROFILE_LEADV_ID,
-    BT_PROFILE_GATTS_ID,
-    BT_PROFILE_AV_RC_TARGET_ID,
-    BT_PROFILE_AV_RC_CTRL_ID,
-    BT_PROFILE_SPP_ID,
-    BT_PROFILE_LE_AUDIO_ID,
-    BT_PROFILE_MAX_ID,
-} bt_profile_id;
-
-typedef enum {
-    BT_DEVTYPE_BREDR,
-    BT_DEVTYPE_BLE,
-    BT_DEVTYPE_DUAL,
-} bt_device_type;
-
-/* * BLE address type */
-typedef enum {
-    BLE_ADDRESS_PUBLIC,
-    BLE_ADDRESS_RANDOM,
-    BLE_ADDRESS_PUBLIC_ID,
-    BLE_ADDRESS_RANDOM_ID,
-    BLE_ADDRESS_ANONYMOUS,
-} ble_address_type;
-
-typedef struct
-{
-    bt_address addr;
-    bt_device_type device_type;
-    ble_address_type addr_type;
-    char name[BT_DEVICE_NAME_MAX_LEN];
-    int rssi;
-    uint32_t cod;
-    bt_uuid_t uuids[MAX_UUID_NUM];
-} bt_device_t;
 
 /**
  * @brief bt state changed callback, in response to enable or disable interface.
 * @param[out]  state    current bt state of stack.
 */
-typedef void (*bt_manager_state_changed_callback)(bt_manager_bt_state state);
+typedef void (*bt_manager_state_changed_callback)(BTM_BT_STATE state);
 
 /**
  * @brief  state changed callback, in response to enable or disable interface.
 * @param[out]  state    current ble state of stack.
 */
-typedef void (*bt_manager_ble_state_changed_callback)(bt_manager_ble_state state);
+typedef void (*bt_manager_ble_state_changed_callback)(BTM_BLE_STATE state);
 
-//typedef void (*init_status_changed_callback)(bt_result_code status);
+//typedef void (*init_status_changed_callback)(BT_RESULT_CODE status);
 
 /**
  * @brief callback for bluetooth service changed
@@ -303,37 +160,37 @@ typedef struct {
      * @param[in]  callbacks  callback for bluetooth manager
      * @return  init success or failed.
     */
-    bt_result_code (*init)(void** handle, const bt_mgr_callback_t* callbacks);
+    BT_RESULT_CODE (*init)(void** handle, const bt_mgr_callback_t* callbacks);
     /** enable bt module,  responsed by bt_manager_state_changed_callback. 
      * @param[in]  handle  unique handle for every app.
      * @return  interface called success or failed.
     */
-    bt_result_code (*enable)(void* handle);
+    BT_RESULT_CODE (*enable)(void* handle);
     /** disable bt module ,  responsed by bt_manager_state_changed_callback. 
      * @param[in]  handle  unique handle for every app.
     * @return  interface called success or failed.
     */
-    bt_result_code (*disable)(void* handle);
+    BT_RESULT_CODE (*disable)(void* handle);
     /** enable ble module,  responsed by ble_manager_state_changed_callback. 
      * @param[in]  handle  unique handle for every app.
     * @return  interface called success or failed.
     */
-    bt_result_code (*enable_ble)(void* handle);
+    BT_RESULT_CODE (*enable_ble)(void* handle);
     /** disable ble module,  responsed by ble_manager_state_changed_callback. 
      * @param[in]  handle  unique handle for every app.
     * @return interface called success or failed.
     */
-    bt_result_code (*disable_ble)(void* handle);
+    BT_RESULT_CODE (*disable_ble)(void* handle);
     /** get state of bt module
      * @param[in]  handle  unique handle for every app.
     * @return  current state of bt module.
     */
-    bt_manager_bt_state (*bt_get_state)(void* handle);
+    BTM_BT_STATE (*bt_get_state)(void* handle);
     /** get state of ble module
      * @param[in]  handle  unique handle for every app.
     * @return  current state of ble module.
     */
-    bt_manager_ble_state (*ble_get_state)(void* handle);
+    BTM_BLE_STATE (*ble_get_state)(void* handle);
     /** clean manager interface handle.
      * @param[in]  handle  unique handle for every app.
     */

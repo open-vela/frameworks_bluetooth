@@ -66,14 +66,14 @@ static bt_service_callbacks service_callback = {
     .adapter_state_ble_changed_cb = bts_service_if_ble_state_changed_callback,
 };
 
-static bt_result_code bts_if_init(void* handle, bt_service_if_callbacks* callbacks)
+static BT_RESULT_CODE bts_if_init(void* handle, bt_service_if_callbacks* callbacks)
 {
     if (!service) {
         service = (bt_service_t*)malloc(sizeof(bt_service_t));
         list_initialize(&service->handle_list);
         bts_service_init(&service_callback);
         service->ble_state = STATE_BLE_OFF;
-        service->bt_state = BT_MANAGER_STATE_OFF;
+        service->bt_state = BTM_STATE_OFF;
 #if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
         const gatt_interface_t* gatt_if = gatt_get_interface();
         if (gatt_if) {
@@ -113,7 +113,7 @@ static bt_if_handle_t* find_if_handle_by_handle(void* handle)
     return NULL;
 }
 
-static bt_result_code bts_if_enable(void* handle)
+static BT_RESULT_CODE bts_if_enable(void* handle)
 {
     bt_if_handle_t* if_handle;
     if (!handle)
@@ -138,7 +138,7 @@ static bt_result_code bts_if_enable(void* handle)
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code bts_if_disable(void* handle)
+static BT_RESULT_CODE bts_if_disable(void* handle)
 {
     bt_if_handle_t* if_handle;
     if (!handle)
@@ -164,7 +164,7 @@ static void bts_if_cleanup(void* handle)
     if_handle = find_if_handle_by_handle(handle);
     if (!if_handle)
         return;
-    service->bt_state = BT_MANAGER_STATE_TURNING_OFF;
+    service->bt_state = BTM_STATE_TURNING_ON;
     bts_service_cleanup();
 #if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
     const gatt_interface_t* gatt_if = gatt_get_interface();
@@ -219,18 +219,18 @@ static const void* if_get_profile_interface(const char* profile_id)
     return NULL;
 }
 
-static bt_manager_bt_state if_get_state(void* handle)
+static BTM_BT_STATE if_get_state(void* handle)
 {
     if (!service)
-        return BT_MANAGER_STATE_OFF;
+        return BTM_STATE_OFF;
     return service->bt_state;
 }
 
-static bt_manager_ble_state if_get_ble_state(void* handle)
+static BTM_BLE_STATE if_get_ble_state(void* handle)
 {
     if (!service)
-        return BT_MANAGER_STATE_OFF;
-    if (service->bt_state != BT_MANAGER_STATE_OFF)
+        return BTM_STATE_OFF;
+    if (service->bt_state != BTM_STATE_OFF)
         return STATE_BLE_ON;
     else
         return service->ble_state;

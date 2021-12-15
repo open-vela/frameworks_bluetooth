@@ -37,22 +37,22 @@
 
 #include "btm_manager.h"
 
-typedef void (*btm_gatts_connection_state_changed_callback)(void* handle, bt_address remote_addr, profile_state_t state);
+typedef void (*btm_gatts_connection_state_changed_callback)(void* handle, bt_address remote_addr, PROFILE_CONNECTION_STATE state);
 typedef void (*btm_gatts_opened_callback)(void* handle);
 typedef void (*btm_gatts_closed_callback)(void* handle);
-typedef void (*btm_gatts_service_added_callback)(void* handle, gatt_status_t status, gatt_element_t* element,
+typedef void (*btm_gatts_service_added_callback)(void* handle, GATT_STATUS status, gatt_element_t* element,
     size_t size);
-typedef void (*btm_gatts_service_removed_callback)(void* handle, gatt_status_t status, gatt_element_t* element,
+typedef void (*btm_gatts_service_removed_callback)(void* handle, GATT_STATUS status, gatt_element_t* element,
     size_t size);
-typedef void (*btm_gatts_phy_read_callback)(void* handle, bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx);
-typedef void (*btm_gatts_phy_update_callback)(void* handle, bt_address remote_addr, ble_phy_type_t tx, ble_phy_type_t rx, gatt_status_t status);
+typedef void (*btm_gatts_phy_read_callback)(void* handle, bt_address remote_addr, BLE_PHY_TYPE tx, BLE_PHY_TYPE rx);
+typedef void (*btm_gatts_phy_update_callback)(void* handle, bt_address remote_addr, BLE_PHY_TYPE tx, BLE_PHY_TYPE rx, GATT_STATUS status);
 typedef void (*btm_gatts_read_request_callback)(void* handle, bt_address remote_addr, uint32_t request_id,
     gatt_element_t* element);
 typedef void (*btm_gatts_write_request_callback)(void* handle, bt_address remote_addr, uint32_t request_id,
     gatt_element_t* element, uint8_t* value, uint16_t offset,
     uint16_t size);
 typedef void (*btm_gatts_mtu_changed_callback)(void* handle, bt_address remote_addr, uint32_t mtu);
-typedef void (*btm_gatts_notify_sent_callback)(void* handle, bt_address remote_addr, gatt_status_t status);
+typedef void (*btm_gatts_notify_sent_callback)(void* handle, bt_address remote_addr, GATT_STATUS status);
 
 typedef struct {
     btm_gatts_connection_state_changed_callback gatts_connection_state_changed_cb;
@@ -71,19 +71,19 @@ typedef struct {
 typedef struct {
     size_t size;
 
-    bt_result_code (*open)(void** handle, btm_gatt_server_callbacks* callbacks);
-    bt_result_code (*close)(void* handle);
-    bt_result_code (*connect)(void* handle, bt_address remote_addr, bool auto_connect);
-    bt_result_code (*disconnect)(void* handle, bt_address remote_addr);
-    bt_result_code (*add_service)(void* handle, gatt_element_t* element, uint16_t size);
-    bt_result_code (*remove_service)(void* handle, uint32_t* ids, uint16_t size);
-    bt_result_code (*read_phy)(void* handle, bt_address remote_addr);
-    bt_result_code (*update_phy)(void* handle, bt_address remote_addr, ble_phy_type_t tx_type, ble_phy_type_t rx_type);
-    bt_result_code (*send_notify)(void* handle, bt_address remote_addr, gatt_element_t* characteristic, uint8_t* value,
+    BT_RESULT_CODE (*open)(void** handle, btm_gatt_server_callbacks* callbacks);
+    BT_RESULT_CODE (*close)(void* handle);
+    BT_RESULT_CODE (*connect)(void* handle, bt_address remote_addr, bool auto_connect);
+    BT_RESULT_CODE (*disconnect)(void* handle, bt_address remote_addr);
+    BT_RESULT_CODE (*add_service)(void* handle, gatt_element_t* element, uint16_t size);
+    BT_RESULT_CODE (*remove_service)(void* handle, uint32_t* ids, uint16_t size);
+    BT_RESULT_CODE (*read_phy)(void* handle, bt_address remote_addr);
+    BT_RESULT_CODE (*update_phy)(void* handle, bt_address remote_addr, BLE_PHY_TYPE tx_type, BLE_PHY_TYPE rx_type);
+    BT_RESULT_CODE (*send_notify)(void* handle, bt_address remote_addr, gatt_element_t* characteristic, uint8_t* value,
         size_t size);
-    bt_result_code (*send_indicate)(void* handle, bt_address remote_addr, gatt_element_t* characteristic, uint8_t* value,
+    BT_RESULT_CODE (*send_indicate)(void* handle, bt_address remote_addr, gatt_element_t* characteristic, uint8_t* value,
         size_t size);
-    bt_result_code (*send_response)(void* handle, bt_address remote_addr, gatt_response_t* response);
+    BT_RESULT_CODE (*send_response)(void* handle, bt_address remote_addr, gatt_response_t* response);
 } btm_gatt_server_interface_t;
 
 btm_gatt_server_interface_t* get_btm_gatts_interface(void* bt_mgr_interface);

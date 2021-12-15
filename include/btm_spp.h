@@ -66,10 +66,10 @@ typedef struct {
 
 typedef struct {
     size_t size;
-    bt_result_code (*server_start)(void* handle, uint16_t port, uint16_t uuid16);
-    bt_result_code (*server_stop)(void* handle, uint16_t port);
-    bt_result_code (*client_connect)(void* handle, bt_address addr, uint16_t port, uint16_t uuid16);
-    bt_result_code (*disconnect)(void* handle, bt_address addr, uint16_t port);
+    BT_RESULT_CODE (*server_start)(void* handle, uint16_t port, uint16_t uuid16);
+    BT_RESULT_CODE (*server_stop)(void* handle, uint16_t port);
+    BT_RESULT_CODE (*client_connect)(void* handle, bt_address addr, uint16_t port, uint16_t uuid16);
+    BT_RESULT_CODE (*disconnect)(void* handle, bt_address addr, uint16_t port);
     void (*set_callbacks)(void* handle, spp_callbacks_t* callbacks);
 } spp_interface_t;
 

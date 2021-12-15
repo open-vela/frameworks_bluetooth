@@ -13,7 +13,7 @@ void* manager_handle = NULL;
 void* gap_hanlde = NULL;
 btm_gap_interface_t* gap_test_interface = NULL;
 
-void manager_state_changed_callback(bt_manager_bt_state state)
+void manager_state_changed_callback(BTM_BT_STATE state)
 {
 
     BT_LOGD("%s", __func__);
@@ -25,7 +25,7 @@ static bt_mgr_callback_t mgt_cb = {
     .bt_manager_state_changed_callback_cb = manager_state_changed_callback,
 };
 
-void test_discovery_state_changed_callback(void* gap_handle, bt_discovery_state state)
+void test_discovery_state_changed_callback(void* gap_handle, BT_DISCOVERY_STATE state)
 {
     BT_LOGD("%s", __func__);
 }
