@@ -93,7 +93,8 @@ static uint32_t calculate_max_frames_per_packet(void)
     if (!a2dp_src_stream.mtu || !frame_len)
         return 0;
 
-    return (a2dp_src_stream.mtu - 1) / frame_len;
+    //dynamic process
+    return 8;//(a2dp_src_stream.mtu - 1) / frame_len;
 }
 
 static SERVICE_A2DP_SOURCE_PACKET_S* bts_a2dp_source_build_packet(stream_buf_t *sbuf, uint16_t len)
@@ -144,7 +145,6 @@ static void bts_a2dp_audio_data_alloc(uint8_t ch_id, uint8_t** buffer, size_t *l
         *buffer = NULL;
         return;
     }
-
     *len = a2dp_src_stream.max_tx_length - fragment_size;
     sbuf->offset = STREAM_DATA_OFFSET + fragment_size;
     sbuf->length = *len + sbuf->offset;
@@ -230,24 +230,13 @@ bool bts_a2dp_source_is_streaming(void)
     return a2dp_src_stream.media_alarm ? true : false;
 }
 
-void bts_a2dp_source_on_idle(void)
-{
-    BT_LOGD("%s", __func__);
-    if (a2dp_src_stream.stream_state == STATE_OFF)
-        return;
-
-    bts_a2dp_source_stop_audio_req();
-}
-
 void bts_a2dp_source_on_connection_changed(bool connected)
 {
     BT_LOGD("%s", __func__);
     if (connected) {
-        bts_a2dp_ctrl_event(A2DP_IPC_CH_ID_AV_SOURCE_CTRL,
-            A2DP_CTRL_EVT_CONNECTED);
+        bts_a2dp_control_update_audio_config(1);
     } else {
-        bts_a2dp_ctrl_event(A2DP_IPC_CH_ID_AV_SOURCE_CTRL,
-            A2DP_CTRL_EVT_DISCONNECTED);
+        bts_a2dp_control_update_audio_config(0);
     }
 }
 
@@ -256,13 +245,11 @@ void bts_a2dp_source_on_started(bool started)
     BT_LOGD("%s", __func__);
 
     if (started) {
-        bts_a2dp_ctrl_command_ack(A2DP_IPC_CH_ID_AV_SOURCE_CTRL,
-        A2DP_CTRL_CMD_START, A2DP_CTRL_STATUS_SUCCESS);
+        bts_a2dp_control_event(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_STARTED);
         if (a2dp_src_stream.stream_state == STATE_OFF)
             bts_a2dp_source_start_audio_req();
     } else {
-        bts_a2dp_ctrl_command_ack(A2DP_IPC_CH_ID_AV_SOURCE_CTRL,
-        A2DP_CTRL_CMD_START, A2DP_CTRL_STATUS_FAILURE);
+        bts_a2dp_control_event(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_START_FAIL);
     }
 }
 
