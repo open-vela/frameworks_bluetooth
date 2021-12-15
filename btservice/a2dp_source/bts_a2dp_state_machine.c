@@ -208,9 +208,7 @@ static void idle_exit(state_machine_t* sm)
 
     BT_LOGD("state=%s Exit, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
-    if (prev_state != NULL && prev_state == &opening_state) {
-        stop_timer(a2dp_sm->connect_timer);
-        a2dp_sm->connect_timer = NULL;
+    if (prev_state != NULL) {
         bts_a2dp_report_connection_state(service, a2dp_sm->addr,
             A2DP_CONNECTION_STATE_DISCONNECTED);
     }
@@ -240,9 +238,6 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
     }
 
     case CONNECTED_EVT:
-        bts_a2dp_source_on_connection_changed(true);
-        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
-            A2DP_CONNECTION_STATE_CONNECTED);
         hsm_transition_to(sm, &opened_state);
         break;
 
@@ -297,14 +292,13 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
             stop_timer(a2dp_sm->connect_timer);
             a2dp_sm->connect_timer = NULL;
         }
-        bts_a2dp_source_on_connection_changed(true);
-        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
-            A2DP_CONNECTION_STATE_CONNECTED);
         hsm_transition_to(sm, &opened_state);
         break;
 
     case DISCONNECTED_EVT:
     case CONNECT_TIMEOUT:
+        stop_timer(a2dp_sm->connect_timer);
+        a2dp_sm->connect_timer = NULL;
         hsm_transition_to(sm, &idle_state);
         break;
 
@@ -318,9 +312,16 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
 static void opened_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
+    a2dp_source_t* service = a2dp_sm->service;
+    state_t *prev_state = hsm_get_previous_state(sm);
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
+    if (prev_state == &idle_state || prev_state == &opening_state) {
+        bts_a2dp_source_on_connection_changed(true);
+        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
+            A2DP_CONNECTION_STATE_CONNECTED);
+    }
 }
 
 static void opened_exit(state_machine_t* sm)
@@ -347,8 +348,6 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect failed");
         }
-        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
-            A2DP_CONNECTION_STATE_DISCONNECTING);
         hsm_transition_to(sm, &closing_state);
         break;
     }
@@ -375,8 +374,6 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
             return true;
         }
         bts_a2dp_source_on_connection_changed(false);
-        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
-            A2DP_CONNECTION_STATE_DISCONNECTED);
         hsm_transition_to(sm, &idle_state);
         break;
 
@@ -456,8 +453,6 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
             BT_LOGE("Disconnect failed");
         }
         bts_a2dp_source_on_connection_changed(false);
-        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
-            A2DP_CONNECTION_STATE_DISCONNECTING);
         hsm_transition_to(sm, &closing_state);
         break;
     }
@@ -479,8 +474,6 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
 
     case DISCONNECTED_EVT:
         bts_a2dp_source_on_connection_changed(false);
-        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
-            A2DP_CONNECTION_STATE_DISCONNECTED);
         hsm_transition_to(sm, &idle_state);
         break;
 
@@ -514,9 +507,12 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
 static void closing_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
+    a2dp_source_t* service = a2dp_sm->service;
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
+    bts_a2dp_report_connection_state(service, a2dp_sm->addr,
+            A2DP_CONNECTION_STATE_DISCONNECTING);
 }
 
 static void closing_exit(state_machine_t* sm)
@@ -543,8 +539,6 @@ static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case DISCONNECTED_EVT:
-        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
-            A2DP_CONNECTION_STATE_DISCONNECTED);
         hsm_transition_to(sm, &idle_state);
         break;
 

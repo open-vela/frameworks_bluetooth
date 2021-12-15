@@ -49,17 +49,12 @@ a2dp_ipc_t* a2dp_ipc;
 #define A2DP_CTRL_PATH A2DP_SOURCE_CTRL_PATH
 #define A2DP_DATA_PATH A2DP_SOURCE_DATA_PATH
 
-const char* audio_a2dp_hw_dump_ctrl_event(a2dp_ctrl_cmd_t cmd)
+const char* audio_a2dp_hw_dump_ctrl_cmd(a2dp_ctrl_cmd_t cmd)
 {
     switch (cmd) {
-        CASE_RETURN_STR(A2DP_CTRL_CMD_NONE)
-        CASE_RETURN_STR(A2DP_CTRL_CMD_CHECK_READY)
         CASE_RETURN_STR(A2DP_CTRL_CMD_START)
         CASE_RETURN_STR(A2DP_CTRL_CMD_STOP)
-        CASE_RETURN_STR(A2DP_CTRL_CMD_SUSPEND)
-        CASE_RETURN_STR(A2DP_CTRL_GET_INPUT_AUDIO_CONFIG)
-        CASE_RETURN_STR(A2DP_CTRL_GET_OUTPUT_AUDIO_CONFIG)
-        CASE_RETURN_STR(A2DP_CTRL_SET_OUTPUT_AUDIO_CONFIG)
+        CASE_RETURN_STR(A2DP_CTRL_CMD_CONFIG_DONE)
         DEFAULT_BREAK()
     }
 
@@ -70,12 +65,9 @@ static void bts_a2dp_ctrl_event_with_data(uint8_t ch_id, a2dp_ctrl_evt_t event, 
 {
     uint8_t stream[128];
     uint8_t* p = stream;
-    /* set packet type */
-    UINT8_TO_STREAM(p, A2DP_CTRL_EVT);
+
     /* set event code */
     UINT8_TO_STREAM(p, event);
-    /* set event length */
-    UINT8_TO_STREAM(p, data_len);
     if (data_len) {
         /* if data length is not zero, set event data */
         ARRAY_TO_STREAM(p, data, data_len);
@@ -87,53 +79,57 @@ static void bts_a2dp_ctrl_event_with_data(uint8_t ch_id, a2dp_ctrl_evt_t event, 
     }
 }
 
-void bts_a2dp_ctrl_command_ack(uint8_t ch_id, a2dp_ctrl_cmd_t cmd, a2dp_ctrl_status_t ack)
+void bts_a2dp_control_event(uint8_t ch_id, a2dp_ctrl_evt_t evt)
 {
-    uint8_t cmd_ack[2];
-    uint8_t* p = cmd_ack;
-    /* set cmd code */
-    UINT8_TO_STREAM(p, cmd);
-    /* set status code */
-    UINT8_TO_STREAM(p, ack);
-
-    bts_a2dp_ctrl_event_with_data(ch_id, A2DP_CTRL_EVT_CMD_COMPLETED, cmd_ack, 2);
+    bts_a2dp_ctrl_event_with_data(ch_id, evt, NULL, 0);
 }
 
-void bts_a2dp_ctrl_event(uint8_t ch_id, a2dp_ctrl_evt_t event)
+void bts_a2dp_control_update_audio_config(uint8_t isvalid)
 {
-    bts_a2dp_ctrl_event_with_data(ch_id, event, NULL, 0);
-}
+    uint8_t buffer[64];
+    uint8_t len;
+    uint8_t* p = buffer;
+    uint8_t ch_id = A2DP_IPC_CH_ID_AV_SOURCE_CTRL;
+    a2dp_codec_config_t* codec_config = bts_a2dp_codec_get_config();
 
-static void bts_a2dp_control_on_check_ready(uint8_t ch_id)
-{
-    a2dp_ctrl_status_t status;
-
-    if (bts_a2dp_source_stream_ready() || bts_a2dp_source_stream_started()) {
-        status = A2DP_CTRL_STATUS_SUCCESS;
+    if (!isvalid) {
+        len = 1;
+        /* set valid code */
+        UINT8_TO_STREAM(p, 0);
     } else {
-        BT_LOGW(
-            "%s: A2DP command check ready while AV stream is not ready", __func__);
-        status = A2DP_CTRL_STATUS_FAILURE;
+        len = 21;
+        /* set valid code */
+        UINT8_TO_STREAM(p, 1);
+        /* set codec type*/
+        UINT32_TO_STREAM(p, codec_config->codec_type);
+        /* set sample rate*/
+        UINT32_TO_STREAM(p, codec_config->sample_rate);
+        /* set bits_per_sample*/
+        UINT32_TO_STREAM(p, codec_config->bits_per_sample);
+        /* set channel_mode*/
+        UINT32_TO_STREAM(p, codec_config->channel_mode);
+        /* set bit rate*/
+        UINT32_TO_STREAM(p, codec_config->bit_rate);
     }
 
-    bts_a2dp_ctrl_command_ack(ch_id, A2DP_CTRL_CMD_CHECK_READY, status);
+    bts_a2dp_ctrl_event_with_data(ch_id, A2DP_CTRL_EVT_UPDATE_CONFIG, buffer, len);
 }
 
 static void bts_a2dp_control_on_start(uint8_t ch_id)
 {
-    a2dp_ctrl_status_t status;
+    a2dp_ctrl_evt_t evt;
 
     if (bts_a2dp_source_stream_ready()) {
         bts_a2dp_source_stream_start();
         return;
     } else if (bts_a2dp_source_stream_started()) {
-        status = A2DP_CTRL_STATUS_SUCCESS;
+        evt = A2DP_CTRL_EVT_STARTED;
     } else {
         BT_LOGW("%s: A2DP command start while AV stream is not ready", __func__);
-        status = A2DP_CTRL_STATUS_FAILURE;
+        evt = A2DP_CTRL_EVT_START_FAIL;
     }
 
-    bts_a2dp_ctrl_command_ack(ch_id, A2DP_CTRL_CMD_START, status);
+    bts_a2dp_control_event(ch_id, evt);
 }
 
 static void bts_a2dp_control_on_stop(uint8_t ch_id)
@@ -142,84 +138,20 @@ static void bts_a2dp_control_on_stop(uint8_t ch_id)
         bts_a2dp_source_stream_stop();
     }
 
-    bts_a2dp_ctrl_command_ack(ch_id, A2DP_CTRL_CMD_STOP, A2DP_CTRL_STATUS_SUCCESS);
+    bts_a2dp_control_event(ch_id, A2DP_CTRL_EVT_STOPPED);
 }
 
-static void bts_a2dp_control_on_suspend(uint8_t ch_id)
+static void bts_a2dp_control_on_config_done(uint8_t ch_id)
 {
-    if (bts_a2dp_source_stream_started()) {
-        bts_a2dp_source_stream_suspend();
-    }
-
-    bts_a2dp_ctrl_command_ack(ch_id, A2DP_CTRL_CMD_SUSPEND, A2DP_CTRL_STATUS_SUCCESS);
-}
-
-static void bts_a2dp_control_on_get_input_audio_config(uint8_t ch_id)
-{
-#define A2DP_MEDIA_CT_SBC 0x00 /* SBC media codec type */
-#define A2DP_MEDIA_CT_AAC 0x02 /* AAC media codec type */
-}
-
-static void bts_a2dp_control_on_get_output_audio_config(uint8_t ch_id)
-{
-    uint8_t buffer[64];
-    uint8_t* p = buffer;
-    a2dp_codec_config_t* codec_config = bts_a2dp_codec_get_config();
-
-    /* set cmd code */
-    UINT8_TO_STREAM(p, A2DP_CTRL_GET_OUTPUT_AUDIO_CONFIG);
-    /* set status code */
-    UINT8_TO_STREAM(p, A2DP_CTRL_STATUS_SUCCESS);
-    /* set codec type*/
-    UINT32_TO_STREAM(p, codec_config->codec_type);
-    /* set sample rate*/
-    UINT32_TO_STREAM(p, codec_config->sample_rate);
-    /* set bits_per_sample*/
-    UINT32_TO_STREAM(p, codec_config->bits_per_sample);
-    /* set channel_mode*/
-    UINT32_TO_STREAM(p, codec_config->channel_mode);
-    /* set bit rate*/
-    UINT32_TO_STREAM(p, codec_config->bit_rate);
-
-    bts_a2dp_ctrl_event_with_data(ch_id, A2DP_CTRL_EVT_CMD_COMPLETED, buffer, 22);
-}
-
-static void bts_a2dp_control_on_set_output_audio_config(uint8_t ch_id, uint8_t* cmd_data, uint8_t cmd_len)
-{
-    a2dp_codec_config_t codec_config;
-
-    codec_config.sample_rate = BTS_A2DP_CODEC_SAMPLE_RATE_NONE;
-    codec_config.bits_per_sample = BTS_A2DP_CODEC_BITS_PER_SAMPLE_NONE;
-    codec_config.channel_mode = BTS_A2DP_CODEC_CHANNEL_MODE_NONE;
-
-    bts_a2dp_ctrl_command_ack(ch_id, A2DP_CTRL_SET_OUTPUT_AUDIO_CONFIG, A2DP_CTRL_STATUS_SUCCESS);
-    /* get sample rate*/
-    STREAM_TO_UINT32(codec_config.sample_rate, cmd_data);
-    /* get bits_per_sample*/
-    STREAM_TO_UINT32(codec_config.bits_per_sample, cmd_data);
-    /* get channel_mode*/
-    STREAM_TO_UINT32(codec_config.channel_mode, cmd_data);
-
-    BT_LOGD(
-        "%s: A2DP_CTRL_SET_OUTPUT_AUDIO_CONFIG: "
-        "sample_rate=0x%x bits_per_sample=0x%x "
-        "channel_mode=0x%x",
-        __func__, codec_config.sample_rate, codec_config.bits_per_sample,
-        codec_config.channel_mode);
-    //Todo update codec config
     bts_a2dp_source_codec_state_change();
 }
 
-static void bts_a2dp_recv_ctrl_data(uint8_t ch_id, a2dp_ctrl_cmd_t cmd, uint8_t* cmd_data, uint8_t cmd_len)
+static void bts_a2dp_recv_ctrl_data(uint8_t ch_id, a2dp_ctrl_cmd_t cmd)
 {
     BT_LOGD("%s: a2dp-ctrl-cmd : %s", __func__,
-        audio_a2dp_hw_dump_ctrl_event(cmd));
+        audio_a2dp_hw_dump_ctrl_cmd(cmd));
     //check length
     switch (cmd) {
-    case A2DP_CTRL_CMD_CHECK_READY:
-        bts_a2dp_control_on_check_ready(ch_id);
-        break;
-
     case A2DP_CTRL_CMD_START:
         bts_a2dp_control_on_start(ch_id);
         break;
@@ -228,30 +160,17 @@ static void bts_a2dp_recv_ctrl_data(uint8_t ch_id, a2dp_ctrl_cmd_t cmd, uint8_t*
         bts_a2dp_control_on_stop(ch_id);
         break;
 
-    case A2DP_CTRL_CMD_SUSPEND:
-        bts_a2dp_control_on_suspend(ch_id);
-        break;
-
-    case A2DP_CTRL_GET_INPUT_AUDIO_CONFIG:
-        bts_a2dp_control_on_get_input_audio_config(ch_id);
-        break;
-
-    case A2DP_CTRL_GET_OUTPUT_AUDIO_CONFIG:
-        bts_a2dp_control_on_get_output_audio_config(ch_id);
-        break;
-
-    case A2DP_CTRL_SET_OUTPUT_AUDIO_CONFIG:
-        bts_a2dp_control_on_set_output_audio_config(ch_id, cmd_data, cmd_len);
+    case A2DP_CTRL_CMD_CONFIG_DONE:
+        bts_a2dp_control_on_config_done(ch_id);
         break;
 
     default:
         BT_LOGD("%s: UNSUPPORTED CMD (%d)", __func__, cmd);
-        bts_a2dp_ctrl_command_ack(ch_id, cmd, A2DP_CTRL_STATUS_FAILURE);
         break;
     }
 
     BT_LOGD("%s: a2dp-ctrl-cmd : %s DONE", __func__,
-        audio_a2dp_hw_dump_ctrl_event(cmd));
+        audio_a2dp_hw_dump_ctrl_cmd(cmd));
 }
 
 static void bts_a2dp_ctrl_buffer_alloc(uint8_t ch_id, uint8_t** buffer, size_t *len)
@@ -263,9 +182,6 @@ static void bts_a2dp_ctrl_buffer_alloc(uint8_t ch_id, uint8_t** buffer, size_t *
 static void bts_a2dp_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, size_t len)
 {
     a2dp_ctrl_cmd_t cmd;
-    uint8_t cmd_len;
-    uint8_t cmd_data[64];
-    uint8_t* p_cmd = cmd_data;
     uint8_t* pbuf = buffer;
 
     if (len <= 0) {
@@ -275,24 +191,12 @@ static void bts_a2dp_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, size_t l
         return;
     }
 
-    while(len >= 3) {
-        /* skip ctrl type*/
-        STREAM_SKIP_UINT8(pbuf);
-        len--;
+    while(len) {
         /* get cmd code*/
         STREAM_TO_UINT8(cmd, pbuf);
         len--;
-        /* get cmd length*/
-        STREAM_TO_UINT8(cmd_len, pbuf);
-        len--;
-        if (cmd_len) {
-            /* get cmd data*/
-            STREAM_TO_ARRAY(p_cmd, pbuf, cmd_len);
-            len -= cmd_len;
-        }
-
         /* process cmd*/
-        bts_a2dp_recv_ctrl_data(ch_id, cmd, cmd_data, cmd_len);
+        bts_a2dp_recv_ctrl_data(ch_id, cmd);
     }
     //free the buffer alloced by bts_a2dp_ctrl_buffer_alloc
     free(buffer);
