@@ -56,10 +56,10 @@ Exit:
     return init_context;
 }
 
-static BTM_BT_STATE bt_get_state(void* handle)
+static btm_bt_state bt_get_state(void* handle)
 {
 
-    BTM_BT_STATE state = BTM_STATE_OFF;
+    btm_bt_state state = BTM_STATE_OFF;
     if (!handle) {
         goto Exit;
     }
@@ -68,9 +68,9 @@ Exit:
     return state;
 }
 
-static BTM_BLE_STATE ble_get_state(void* handle)
+static btm_ble_state ble_get_state(void* handle)
 {
-    BTM_BLE_STATE state = STATE_BLE_OFF;
+    btm_ble_state state = STATE_BLE_OFF;
     if (!handle) {
         return state;
     }
@@ -78,7 +78,7 @@ static BTM_BLE_STATE ble_get_state(void* handle)
     return state;
 }
 
-static void bt_mgr_adapter_state_changed_callback(void* handle, BTM_BT_STATE state)
+static void bt_mgr_adapter_state_changed_callback(void* handle, btm_bt_state state)
 {
     manager_context_t* context;
     if (NULL == handle)
@@ -93,7 +93,7 @@ static void bt_mgr_adapter_state_changed_callback(void* handle, BTM_BT_STATE sta
     bluetooth_upper_callbacks->bt_manager_state_changed_callback_cb(state);
 }
 
-static void bt_mgr_adapter_ble_state_changed_callback(void* handle, BTM_BLE_STATE state)
+static void bt_mgr_adapter_ble_state_changed_callback(void* handle, btm_ble_state state)
 {
     manager_context_t* context;
     if (NULL == handle)
@@ -114,9 +114,9 @@ static bt_service_if_callbacks bluetooth_lower_callbacks = {
     .adapter_state_ble_changed_cb = bt_mgr_adapter_ble_state_changed_callback,
 };
 
-static BT_RESULT_CODE bt_mgr_init(void** handle, const bt_mgr_callback_t* callbacks)
+static bt_result_code bt_mgr_init(void** handle, const bt_mgr_callback_t* callbacks)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     manager_context_t* context = NULL;
     *handle = btm_context_init();
     context = *handle;
@@ -134,7 +134,7 @@ Exit:
     return ret;
 }
 
-static BT_RESULT_CODE bt_mgr_enable(void* handle)
+static bt_result_code bt_mgr_enable(void* handle)
 {
     if (!handle) {
         BT_LOGE("%s, handle is NULL", __func__);
@@ -147,7 +147,7 @@ static BT_RESULT_CODE bt_mgr_enable(void* handle)
     return bluetooth_service->enable(handle);
 }
 
-static BT_RESULT_CODE bt_mgr_disable(void* handle)
+static bt_result_code bt_mgr_disable(void* handle)
 {
     if (!handle) {
         BT_LOGE("%s, handle is NULL", __func__);
@@ -161,7 +161,7 @@ static BT_RESULT_CODE bt_mgr_disable(void* handle)
     return bluetooth_service->disable(handle);
 }
 
-static BT_RESULT_CODE bt_mgr_enable_ble(void* handle)
+static bt_result_code bt_mgr_enable_ble(void* handle)
 {
     if (!handle) {
         BT_LOGE("%s, handle is NULL", __func__);
@@ -175,7 +175,7 @@ static BT_RESULT_CODE bt_mgr_enable_ble(void* handle)
     return bluetooth_service->enable(handle);
 }
 
-static BT_RESULT_CODE bt_mgr_disable_ble(void* handle)
+static bt_result_code bt_mgr_disable_ble(void* handle)
 {
     if (!handle) {
         BT_LOGE("%s, handle is NULL", __func__);

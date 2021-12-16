@@ -34,7 +34,7 @@
 #include "log.h"
 
 void bts_avrcp_target_connection_state_changed_callback(BD_ADDR remote_addr,
-        PROFILE_CONNECTION_STATE state)
+        profile_connection_state state)
 {
     BT_LOGD("%s", __func__);  
     //TODO add uinput initlize
@@ -120,9 +120,9 @@ AVRCP_TARGET_CALLBACKS_S g_avrcp_target = {
   .avrcp_target_received_set_volume_cb = bts_avrcp_target_received_set_volume_callback
 };
 
-BT_RESULT_CODE avrcp_target_init(void)
+bt_result_code avrcp_target_init(void)
 {
-  BT_STATUS  ret = service_adapter_avrcp_target_init(&g_avrcp_target);
+  bt_status  ret = service_adapter_avrcp_target_init(&g_avrcp_target);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;

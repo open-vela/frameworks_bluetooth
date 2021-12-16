@@ -57,20 +57,20 @@ typedef struct
 
 typedef struct {
     bt_address addr;
-    PROFILE_CONNECTION_STATE state;
+    profile_connection_state state;
 } bts_gatts_state_s;
 
 typedef struct {
-    GATT_STATUS status;
+    gatt_status status;
     gatt_element_t* element;
     uint16_t size;
 } bts_gatts_element_s;
 
 typedef struct {
     bt_address addr;
-    BLE_PHY_TYPE tx;
-    BLE_PHY_TYPE rx;
-    GATT_STATUS status;
+    ble_phy_type tx;
+    ble_phy_type rx;
+    gatt_status status;
 } bts_gatts_phy_s;
 
 typedef struct
@@ -97,11 +97,11 @@ typedef struct {
 
 typedef struct {
     bt_address addr;
-    GATT_STATUS status;
+    gatt_status status;
 } bts_gatts_notify_s;
 
 static void send_msg(bts_gatts_msg_t* msg);
-static void handle_msg_received(BT_PROFILE_ID id, void* data, size_t size);
+static void handle_msg_received(bt_profile_id id, void* data, size_t size);
 
 static struct list_node gatts_list = LIST_INITIAL_VALUE(gatts_list);
 
@@ -160,7 +160,7 @@ static bool remove_gatts_handle(bts_gatts_hdl_t* handle)
     return true;
 }
 
-static BT_RESULT_CODE gatt_server_is_valid(uint8_t server_if)
+static bt_result_code gatt_server_is_valid(uint8_t server_if)
 {
     bts_gatts_hdl_t* server = find_gatts_handle(server_if);
     CHECK_PTR_RETURN(server, BT_RESULT_FAILED);
@@ -195,7 +195,7 @@ static bts_gatts_msg_t* create_adp_msg(uint8_t event, bts_gatts_hdl_t* handle, v
     return msg;
 }
 
-static void on_server_connection_state_changed(bt_address remote_addr, PROFILE_CONNECTION_STATE state)
+static void on_server_connection_state_changed(bt_address remote_addr, profile_connection_state state)
 {
     bts_gatts_hdl_t* handle;
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
@@ -210,7 +210,7 @@ static void on_server_connection_state_changed(bt_address remote_addr, PROFILE_C
     }
 }
 
-static void on_server_elements_added(GATT_STATUS status, gatt_element_t* elements,
+static void on_server_elements_added(gatt_status status, gatt_element_t* elements,
     uint16_t size)
 {
     bts_gatts_hdl_t* handle;
@@ -235,7 +235,7 @@ static void on_server_elements_added(GATT_STATUS status, gatt_element_t* element
     }
 }
 
-static void on_server_elements_removed(GATT_STATUS status, gatt_element_t* elements,
+static void on_server_elements_removed(gatt_status status, gatt_element_t* elements,
     uint16_t size)
 {
     bts_gatts_hdl_t* handle;
@@ -260,7 +260,7 @@ static void on_server_elements_removed(GATT_STATUS status, gatt_element_t* eleme
     }
 }
 
-static void on_server_phy_read(bt_address remote_addr, BLE_PHY_TYPE tx, BLE_PHY_TYPE rx)
+static void on_server_phy_read(bt_address remote_addr, ble_phy_type tx, ble_phy_type rx)
 {
     bts_gatts_hdl_t* handle;
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
@@ -276,7 +276,7 @@ static void on_server_phy_read(bt_address remote_addr, BLE_PHY_TYPE tx, BLE_PHY_
     }
 }
 
-static void on_server_phy_update(bt_address remote_addr, BLE_PHY_TYPE tx, BLE_PHY_TYPE rx, GATT_STATUS status)
+static void on_server_phy_update(bt_address remote_addr, ble_phy_type tx, ble_phy_type rx, gatt_status status)
 {
     bts_gatts_hdl_t* handle;
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
@@ -351,7 +351,7 @@ static void on_server_mtu_changed(bt_address remote_addr, uint32_t mtu)
     }
 }
 
-static void on_server_notify_sent(bt_address remote_addr, GATT_STATUS status)
+static void on_server_notify_sent(bt_address remote_addr, gatt_status status)
 {
     bts_gatts_hdl_t* handle;
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
@@ -378,10 +378,10 @@ static stack_gatt_server_callbacks gatt_server_cbs = {
     .gatt_server_notification_sent_cb = on_server_notify_sent,
 };
 
-static BT_RESULT_CODE gatt_server_open(bts_gatts_hdl_t server)
+static bt_result_code gatt_server_open(bts_gatts_hdl_t server)
 {
     bts_register_profile_process(BT_PROFILE_GATTS_ID, &handle_msg_received);
-    GATT_STATUS ret = service_adapter_gatt_server_open(&gatt_server_cbs);
+    gatt_status ret = service_adapter_gatt_server_open(&gatt_server_cbs);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server open, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -406,9 +406,9 @@ static BT_RESULT_CODE gatt_server_open(bts_gatts_hdl_t server)
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE gatt_server_close(uint8_t server_if)
+static bt_result_code gatt_server_close(uint8_t server_if)
 {
-    GATT_STATUS ret = service_adapter_gatt_server_close();
+    gatt_status ret = service_adapter_gatt_server_close();
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server close, err:%d", ret);
     }
@@ -426,15 +426,15 @@ static BT_RESULT_CODE gatt_server_close(uint8_t server_if)
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE gatt_server_connect(uint8_t server_if, bt_address remote_addr, bool auto_connect)
+static bt_result_code gatt_server_connect(uint8_t server_if, bt_address remote_addr, bool auto_connect)
 {
-    BT_RESULT_CODE ret = gatt_server_is_valid(server_if);
+    bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, stack_gatts_interface check");
         return ret;
     }
 
-    GATT_STATUS ret2 = service_adapter_gatt_server_connect(remote_addr);
+    gatt_status ret2 = service_adapter_gatt_server_connect(remote_addr);
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server connect, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -442,15 +442,15 @@ static BT_RESULT_CODE gatt_server_connect(uint8_t server_if, bt_address remote_a
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE gatt_server_disconnect(uint8_t server_if, bt_address remote_addr)
+static bt_result_code gatt_server_disconnect(uint8_t server_if, bt_address remote_addr)
 {
-    BT_RESULT_CODE ret = gatt_server_is_valid(server_if);
+    bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, stack_gatts_interface check");
         return ret;
     }
 
-    GATT_STATUS ret2 = service_adapter_gatt_server_cancel_connection(remote_addr);
+    gatt_status ret2 = service_adapter_gatt_server_cancel_connection(remote_addr);
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server disconnect, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -458,15 +458,15 @@ static BT_RESULT_CODE gatt_server_disconnect(uint8_t server_if, bt_address remot
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE gatt_server_add_element(uint8_t server_if, gatt_element_t* element, uint16_t size)
+static bt_result_code gatt_server_add_element(uint8_t server_if, gatt_element_t* element, uint16_t size)
 {
-    BT_RESULT_CODE ret = gatt_server_is_valid(server_if);
+    bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, stack_gatts_interface check");
         return ret;
     }
 
-    GATT_STATUS ret2 = service_adapter_gatt_server_add_elements(element, size);
+    gatt_status ret2 = service_adapter_gatt_server_add_elements(element, size);
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server add elements, err:%d", ret2);
         return BT_RESULT_FAILED;
@@ -474,15 +474,15 @@ static BT_RESULT_CODE gatt_server_add_element(uint8_t server_if, gatt_element_t*
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE gatt_server_remove_element(uint8_t server_if, uint32_t* ids, uint16_t size)
+static bt_result_code gatt_server_remove_element(uint8_t server_if, uint32_t* ids, uint16_t size)
 {
-    BT_RESULT_CODE ret = gatt_server_is_valid(server_if);
+    bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, stack_gatts_interface check");
         return ret;
     }
 
-    GATT_STATUS ret2 = service_adapter_gatt_server_remove_elements(ids, size);
+    gatt_status ret2 = service_adapter_gatt_server_remove_elements(ids, size);
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server remove elements, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -490,15 +490,15 @@ static BT_RESULT_CODE gatt_server_remove_element(uint8_t server_if, uint32_t* id
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE gatt_server_read_phy(uint8_t server_if, bt_address remote_addr)
+static bt_result_code gatt_server_read_phy(uint8_t server_if, bt_address remote_addr)
 {
-    BT_RESULT_CODE ret = gatt_server_is_valid(server_if);
+    bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, stack_gatts_interface check");
         return ret;
     }
 
-    GATT_STATUS ret2 = service_adapter_gatt_server_read_phy(remote_addr);
+    gatt_status ret2 = service_adapter_gatt_server_read_phy(remote_addr);
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server remove elements, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -506,15 +506,15 @@ static BT_RESULT_CODE gatt_server_read_phy(uint8_t server_if, bt_address remote_
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE gatt_server_update_phy(uint8_t server_if, bt_address remote_addr, BLE_PHY_TYPE tx_type, BLE_PHY_TYPE rx_type)
+static bt_result_code gatt_server_update_phy(uint8_t server_if, bt_address remote_addr, ble_phy_type tx_type, ble_phy_type rx_type)
 {
-    BT_RESULT_CODE ret = gatt_server_is_valid(server_if);
+    bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, stack_gatts_interface check");
         return ret;
     }
 
-    GATT_STATUS ret2 = service_adapter_gatt_server_set_phy(remote_addr, tx_type, rx_type);
+    gatt_status ret2 = service_adapter_gatt_server_set_phy(remote_addr, tx_type, rx_type);
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server remove elements, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -522,16 +522,16 @@ static BT_RESULT_CODE gatt_server_update_phy(uint8_t server_if, bt_address remot
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE gatt_server_send_notify(uint8_t server_if, bt_address remote_addr, gatt_element_t* characteristic, uint8_t* value,
+static bt_result_code gatt_server_send_notify(uint8_t server_if, bt_address remote_addr, gatt_element_t* characteristic, uint8_t* value,
     size_t size)
 {
-    BT_RESULT_CODE ret = gatt_server_is_valid(server_if);
+    bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, stack_gatts_interface check");
         return ret;
     }
 
-    GATT_STATUS ret2 = service_adapter_gatt_server_send_notification(remote_addr, characteristic, value, size);
+    gatt_status ret2 = service_adapter_gatt_server_send_notification(remote_addr, characteristic, value, size);
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server remove elements, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -539,16 +539,16 @@ static BT_RESULT_CODE gatt_server_send_notify(uint8_t server_if, bt_address remo
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE gatt_server_send_indicate(uint8_t server_if, bt_address remote_addr, gatt_element_t* characteristic, uint8_t* value,
+static bt_result_code gatt_server_send_indicate(uint8_t server_if, bt_address remote_addr, gatt_element_t* characteristic, uint8_t* value,
     size_t size)
 {
-    BT_RESULT_CODE ret = gatt_server_is_valid(server_if);
+    bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, stack_gatts_interface check");
         return ret;
     }
 
-    GATT_STATUS ret2 = service_adapter_gatt_server_send_indication(remote_addr, characteristic, value, size);
+    gatt_status ret2 = service_adapter_gatt_server_send_indication(remote_addr, characteristic, value, size);
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server remove elements, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -556,15 +556,15 @@ static BT_RESULT_CODE gatt_server_send_indicate(uint8_t server_if, bt_address re
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE gatt_server_send_response(uint8_t server_if, bt_address remote_addr, gatt_response_t* response)
+static bt_result_code gatt_server_send_response(uint8_t server_if, bt_address remote_addr, gatt_response_t* response)
 {
-    BT_RESULT_CODE ret = gatt_server_is_valid(server_if);
+    bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, stack_gatts_interface check");
         return ret;
     }
 
-    GATT_STATUS ret2 = service_adapter_gatt_server_send_response(remote_addr, response);
+    gatt_status ret2 = service_adapter_gatt_server_send_response(remote_addr, response);
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server remove elements, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -595,7 +595,7 @@ const bts_gatts_interface_t* get_bts_gatts_instance(void)
     return &gatt_server_intance;
 }
 
-static void handle_msg_received(BT_PROFILE_ID id, void* data, size_t size)
+static void handle_msg_received(bt_profile_id id, void* data, size_t size)
 {
     if (id != BT_PROFILE_GATTS_ID) {
         BT_LOGE("error, invalid priofile id:%d", id);

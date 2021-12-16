@@ -227,7 +227,7 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
         addr_str(a2dp_sm->addr));
     switch (event) {
     case CONNECT_REQ: {
-        SERVICE_BT_STATUS status;
+        bt_status status;
         status = service_adapter_a2dp_source_connect(event_data->bd_addr,
             SERVICE_AVDTP_CODEC_TYPE_SBC);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
@@ -282,7 +282,7 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
         addr_str(a2dp_sm->addr));
     switch (event) {
     case DISCONNECT_REQ: {
-        SERVICE_BT_STATUS status;
+        bt_status status;
 
         status = service_adapter_a2dp_source_disconnect(event_data->bd_addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
@@ -341,7 +341,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         addr_str(a2dp_sm->addr));
     switch (event) {
     case DISCONNECT_REQ: {
-        SERVICE_BT_STATUS status;
+        bt_status status;
 
         status = service_adapter_a2dp_source_disconnect(event_data->bd_addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
@@ -353,7 +353,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         break;
     }
     case STREAM_START_REQ: {
-        SERVICE_BT_STATUS status;
+        bt_status status;
         status = service_adapter_a2dp_source_start_stream(event_data->bd_addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Stream start failed");
@@ -449,7 +449,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         addr_str(a2dp_sm->addr));
     switch (event) {
     case DISCONNECT_REQ: {
-        SERVICE_BT_STATUS status;
+        bt_status status;
 
         status = service_adapter_a2dp_source_disconnect(event_data->bd_addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
@@ -468,7 +468,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case STREAM_SUSPEND_REQ: {
-        SERVICE_BT_STATUS status;
+        bt_status status;
         status = service_adapter_a2dp_source_suspend_stream(event_data->bd_addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Stream suspend failed");

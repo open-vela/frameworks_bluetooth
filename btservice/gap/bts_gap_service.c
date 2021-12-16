@@ -90,7 +90,7 @@ static void gap_if_received_remote_name_callback(BD_ADDR bd_addr, char* bt_name,
     BT_GAP_CB(received_remote_name_callback_cb, bd_addr, bt_name, length);
 }
 
-static void gap_if_discovery_state_changed_callback(BT_DISCOVERY_STATE state)
+static void gap_if_discovery_state_changed_callback(bt_discovery_state state)
 {
     BT_LOGD("%s", __func__);
     BT_GAP_CB(discovery_state_changed_callback_cb, state);
@@ -114,13 +114,13 @@ static void gap_if_device_found_callback(bt_device_t* device)
     BT_GAP_CB(device_found_callback_cb, device);
 }
 
-static void gap_if_bond_state_changed_callback(bt_device_t* device, BT_BOND_STATE state)
+static void gap_if_bond_state_changed_callback(bt_device_t* device, bt_bond_state state)
 {
     BT_LOGD("%s", __func__);
     BT_GAP_CB(bond_state_changed_callback_cb, device, state);
 }
 
-static void gap_if_connection_state_callback(bt_device_t* device, BT_CONNECTION_STATE state)
+static void gap_if_connection_state_callback(bt_device_t* device, bt_connection_state state)
 {
     BT_LOGD("%s", __func__);
     BT_GAP_CB(connection_state_callback_cb, device, state);
@@ -143,18 +143,18 @@ static void gap_if_smp_request_callback(ssp_request_data_t* request_data)
     BT_GAP_CB(smp_requeset_cb, request_data);
 }
 
-static void gap_if_ble_phy_update_callback(bt_address remote_addr, BLE_PHY_TYPE tx_phy, BLE_PHY_TYPE rx_phy, BT_STATUS  status)
+static void gap_if_ble_phy_update_callback(bt_address remote_addr, ble_phy_type tx_phy, ble_phy_type rx_phy, bt_status  status)
 {
     BT_LOGD("%s", __func__);
     BT_GAP_CB(ble_phy_update_cb, remote_addr, tx_phy, rx_phy, status);
 }
 
-static void gap_if_ble_address_callback(bt_address bd_addr, BLE_ADDR_TYPE addr_type)
+static void gap_if_ble_address_callback(bt_address bd_addr, ble_addr_type addr_type)
 {
     BT_LOGD("%s", __func__);
     BT_GAP_CB(ble_address_cb, bd_addr, addr_type);
 }
-static void gap_ifbts_ble_irk_callback(bt_common_key irk, bt_address ble_addr, BLE_ADDR_TYPE addr_type)
+static void gap_ifbts_ble_irk_callback(bt_common_key irk, bt_address ble_addr, ble_addr_type addr_type)
 {
     BT_LOGD("%s", __func__);
     BT_GAP_CB(ble_irk_cb, irk, ble_addr, addr_type);    
@@ -177,7 +177,7 @@ bts_gap_callback_t bts_gap_callbacks = {
     .ble_irk_cb = gap_ifbts_ble_irk_callback,
 };
 
-BT_RESULT_CODE gap_service_init()
+bt_result_code gap_service_init()
 {
     if (!g_gap_service) {
         g_gap_service = (bt_gap_service_t*)malloc(sizeof(bt_gap_service_t));
@@ -187,9 +187,9 @@ BT_RESULT_CODE gap_service_init()
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE bts_if_register_callbacks(void* handle, void** gap_handle, const btm_gap_callbacks_t* callbacks)
+static bt_result_code bts_if_register_callbacks(void* handle, void** gap_handle, const btm_gap_callbacks_t* callbacks)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     BT_LOGD("%s", __func__);
     if (gap_is_handle_valid(*gap_handle))
         return ret;
@@ -204,38 +204,38 @@ static BT_RESULT_CODE bts_if_register_callbacks(void* handle, void** gap_handle,
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE bts_if_start_discovery(void* gap_handle, uint32_t timeout)
+static bt_result_code bts_if_start_discovery(void* gap_handle, uint32_t timeout)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     return bts_start_discovery(timeout);
 }
-static BT_RESULT_CODE bts_if_set_local_name(void* gap_handle, char* bt_name, uint8_t len)
+static bt_result_code bts_if_set_local_name(void* gap_handle, char* bt_name, uint8_t len)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     return bts_set_local_name(bt_name, len);
 }
 
 /*Local property*/
-static BT_RESULT_CODE bts_if_set_local_address(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_set_local_address(void* gap_handle, bt_device_t* device)
 {
     BT_LOGD("%s", __func__);
     return BT_RESULT_FAILED;
 }
-static BT_RESULT_CODE bts_if_get_local_address(void* gap_handle, bt_address addr)
+static bt_result_code bts_if_get_local_address(void* gap_handle, bt_address addr)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_get_local_address(addr);
     return ret;
 }
-static BT_RESULT_CODE bts_if_set_local_io_capability(void* gap_handle, BT_IO_CAPABILITY io_capability)
+static bt_result_code bts_if_set_local_io_capability(void* gap_handle, bt_io_capability io_capability)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     return bts_set_local_io_capability(io_capability);
@@ -248,9 +248,9 @@ static char* bts_if_get_local_name(void* gap_handle)
     name = bts_get_local_name();
     return name;
 }
-static BT_RESULT_CODE bts_if_set_local_device_class(void* gap_handle, uint32_t class_of_device)
+static bt_result_code bts_if_set_local_device_class(void* gap_handle, uint32_t class_of_device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_set_local_device_class(class_of_device);
@@ -265,9 +265,9 @@ static uint32_t bts_if_get_local_device_class(void* gap_handle)
 }
 
 /*Remote device*/
-static BT_RESULT_CODE bts_if_get_remote_name(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_get_remote_name(void* gap_handle, bt_device_t* device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_get_remote_name(device);
@@ -283,35 +283,35 @@ static int bts_if_get_remote_services(void* gap_handle, bt_device_t* remote_addr
     return service_num;
 }
 
-static BT_RESULT_CODE bts_if_reply_pair_request(void* gap_handle, bt_device_t* device, int accept)
+static bt_result_code bts_if_reply_pair_request(void* gap_handle, bt_device_t* device, int accept)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_reply_pair_request(device, accept);
     return ret;
 }
-static BT_RESULT_CODE bts_if_create_bond(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_create_bond(void* gap_handle, bt_device_t* device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_create_bond(device);
     return ret;
 }
 
-static BT_RESULT_CODE bts_if_cancel_bond(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_cancel_bond(void* gap_handle, bt_device_t* device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_cancel_bond(device);
     return ret;
 }
 
-static BT_RESULT_CODE bts_if_remove_bond(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_remove_bond(void* gap_handle, bt_device_t* device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_remove_bond(device);
@@ -337,18 +337,18 @@ static int bts_if_get_connected_devices(void* gap_handle, bt_device_t* device_li
 }
 
 /*Discovery*/
-static BT_RESULT_CODE bts_if_set_scan_mode(void* gap_handle, BT_SCAN_MODE scan_mode, bool bondable)
+static bt_result_code bts_if_set_scan_mode(void* gap_handle, bt_scan_mode scan_mode, bool bondable)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_set_scan_mode(scan_mode, bondable);
     return ret;
 }
 
-static BT_RESULT_CODE bts_if_stop_discovery(void* gap_handle)
+static bt_result_code bts_if_stop_discovery(void* gap_handle)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_stop_discovery();
@@ -356,17 +356,17 @@ static BT_RESULT_CODE bts_if_stop_discovery(void* gap_handle)
 }
 
 /*service discovery*/
-static BT_RESULT_CODE bts_if_start_service_discovery(void* gap_handle, bt_device_t* device, bt_uuid_t uuid)
+static bt_result_code bts_if_start_service_discovery(void* gap_handle, bt_device_t* device, bt_uuid_t uuid)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_start_service_discovery(device, uuid);
     return ret;
 }
-static BT_RESULT_CODE bts_if_stop_service_discovery(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_stop_service_discovery(void* gap_handle, bt_device_t* device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_stop_service_discovery(device);
@@ -374,144 +374,144 @@ static BT_RESULT_CODE bts_if_stop_service_discovery(void* gap_handle, bt_device_
 }
 #ifdef HCI_VSC_COMMAND
 /*VSC command*/
-static BT_RESULT_CODE bts_if_send_hci_command(void* gap_handle, bt_hci_command_t* command, BT_SERVICE_HCI_COMMAND_COMPLETE_EVENT event_type)
+static bt_result_code bts_if_send_hci_command(void* gap_handle, bt_hci_command_t* command, hci_command_complete_event event_type)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_send_hci_command(command, event_type);
     return ret;
 }
 #endif
-static BT_RESULT_CODE bts_if_ble_set_static_identity(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_ble_set_static_identity(void* gap_handle, bt_device_t* device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_set_static_identity(device);
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_get_current_irk(void* gap_handle)
+static bt_result_code bts_if_ble_get_current_irk(void* gap_handle)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_get_current_irk();
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_set_address(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_ble_set_address(void* gap_handle, bt_device_t* device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_set_address(device);
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_get_address(void* gap_handle)
+static bt_result_code bts_if_ble_get_address(void* gap_handle)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_get_address();
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_set_bonded_devices(void* gap_handle, ble_keys_t* bonded_device_list, uint8_t count_in)
+static bt_result_code bts_if_ble_set_bonded_devices(void* gap_handle, ble_keys_t* bonded_device_list, uint8_t count_in)
 {
     return BT_RESULT_FAILED;
 }
-static BT_RESULT_CODE bts_if_ble_connect(void* gap_handle, ble_connect_params_t* conn_param)
+static bt_result_code bts_if_ble_connect(void* gap_handle, ble_connect_params_t* conn_param)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_connect(conn_param);
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_disconnect(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_ble_disconnect(void* gap_handle, bt_device_t* device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_disconnect(device);
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_smp_reply(void* gap_handle, spp_reply_data_t* reply_data)
+static bt_result_code bts_if_ble_smp_reply(void* gap_handle, spp_reply_data_t* reply_data)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_smp_reply(reply_data);
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_add_white_list(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_ble_add_white_list(void* gap_handle, bt_device_t* device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_add_white_list(device);
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_remove_white_list(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_ble_remove_white_list(void* gap_handle, bt_device_t* device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_remove_white_list(device);
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_add_resolving_list(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_ble_add_resolving_list(void* gap_handle, bt_device_t* device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_add_resolving_list(device);
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_remove_resolving_list(void* gap_handle, bt_device_t* device)
+static bt_result_code bts_if_ble_remove_resolving_list(void* gap_handle, bt_device_t* device)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_remove_resolving_list(device);
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_set_phy(void* gap_handle, bt_device_t* device, BLE_PHY_TYPE tx_phy, BLE_PHY_TYPE rx_phy)
+static bt_result_code bts_if_ble_set_phy(void* gap_handle, bt_device_t* device, ble_phy_type tx_phy, ble_phy_type rx_phy)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_set_phy(device, tx_phy, rx_phy);
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_add_private_channel(void* gap_handle, uint16_t private_cid)
+static bt_result_code bts_if_ble_add_private_channel(void* gap_handle, uint16_t private_cid)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_add_private_channel(private_cid);
     return ret;
 }
-static BT_RESULT_CODE bts_if_ble_send_packet(void* gap_handle, bt_device_t* device, uint16_t private_cid, uint8_t* packet, uint16_t packet_size)
+static bt_result_code bts_if_ble_send_packet(void* gap_handle, bt_device_t* device, uint16_t private_cid, uint8_t* packet, uint16_t packet_size)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_ble_send_packet(device, private_cid, packet, packet_size);
     return ret;
 }
 
-static BT_RESULT_CODE bts_if_enter_bluetooth_test_mode(void* gap_handle, TEST_MODE test_mode)
+static bt_result_code bts_if_enter_bluetooth_test_mode(void* gap_handle, test_mode test_mode)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     ret = bts_enter_bluetooth_test_mode(test_mode);
     return ret;
 }
 
-static BT_RESULT_CODE bts_if_gap_cleanup(void* gap_handle)
+static bt_result_code bts_if_gap_cleanup(void* gap_handle)
 {
-    BT_RESULT_CODE ret = BT_RESULT_FAILED;
+    bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
     struct list_node* list = &g_gap_service->handle_list;

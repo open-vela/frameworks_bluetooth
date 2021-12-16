@@ -158,7 +158,7 @@ static hf_state_machine_t* get_state_machine(bt_address bd_addr)
     return sm;
 }
 
-static hf_client_connection_state_t trans_adp_connection_state(PROFILE_CONNECTION_STATE state)
+static hf_client_connection_state_t trans_adp_connection_state(profile_connection_state state)
 {
     switch (state) {
     case PROFILE_DISCONNECTED:
@@ -213,7 +213,7 @@ static hf_client_callsetup_t trans_adp_callsetup_state(SERVICE_HFP_CALL_SETUP_ST
     return HF_CLIENT_CALLSETUP_NONE;
 }
 
-static void adp_connection_state_changed_cb(BD_ADDR remote_addr, PROFILE_CONNECTION_STATE state)
+static void adp_connection_state_changed_cb(BD_ADDR remote_addr, profile_connection_state state)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -490,7 +490,7 @@ static void hf_client_service_event_process(void* data, size_t size)
     free(imsg);
 }
 
-static void bts_hf_client_handle_service_msg(BT_PROFILE_ID id, void* data, size_t size)
+static void bts_hf_client_handle_service_msg(bt_profile_id id, void* data, size_t size)
 {
     hf_client_service_event_process(data, size);
 }
@@ -498,9 +498,9 @@ static void bts_hf_client_handle_service_msg(BT_PROFILE_ID id, void* data, size_
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-BT_RESULT_CODE bts_hf_client_init(const hf_client_service_callbacks_t* callbacks)
+bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks)
 {
-    SERVICE_BT_STATUS status;
+    bt_status status;
 
     if (g_hfp_service.started)
         return BT_RESULT_SUCCESS;
@@ -519,7 +519,7 @@ BT_RESULT_CODE bts_hf_client_init(const hf_client_service_callbacks_t* callbacks
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_connect(bt_address bd_addr)
+bt_result_code bts_hf_client_connect(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -536,7 +536,7 @@ BT_RESULT_CODE bts_hf_client_connect(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_disconnect(bt_address bd_addr)
+bt_result_code bts_hf_client_disconnect(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -553,7 +553,7 @@ BT_RESULT_CODE bts_hf_client_disconnect(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_connect_audio(bt_address bd_addr)
+bt_result_code bts_hf_client_connect_audio(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -570,7 +570,7 @@ BT_RESULT_CODE bts_hf_client_connect_audio(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_disconnect_audio(bt_address bd_addr)
+bt_result_code bts_hf_client_disconnect_audio(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -587,7 +587,7 @@ BT_RESULT_CODE bts_hf_client_disconnect_audio(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_start_voice_recognition(bt_address bd_addr)
+bt_result_code bts_hf_client_start_voice_recognition(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -604,7 +604,7 @@ BT_RESULT_CODE bts_hf_client_start_voice_recognition(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_stop_voice_recognition(bt_address bd_addr)
+bt_result_code bts_hf_client_stop_voice_recognition(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -621,7 +621,7 @@ BT_RESULT_CODE bts_hf_client_stop_voice_recognition(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_volume_control(bt_address bd_addr, hf_client_volume_type_t type, int volume)
+bt_result_code bts_hf_client_volume_control(bt_address bd_addr, hf_client_volume_type_t type, int volume)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -640,7 +640,7 @@ BT_RESULT_CODE bts_hf_client_volume_control(bt_address bd_addr, hf_client_volume
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_dial(bt_address bd_addr, const char* number)
+bt_result_code bts_hf_client_dial(bt_address bd_addr, const char* number)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -659,7 +659,7 @@ BT_RESULT_CODE bts_hf_client_dial(bt_address bd_addr, const char* number)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_dial_memory(bt_address bd_addr, uint32_t memory)
+bt_result_code bts_hf_client_dial_memory(bt_address bd_addr, uint32_t memory)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -677,7 +677,7 @@ BT_RESULT_CODE bts_hf_client_dial_memory(bt_address bd_addr, uint32_t memory)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_redial(bt_address bd_addr)
+bt_result_code bts_hf_client_redial(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -694,7 +694,7 @@ BT_RESULT_CODE bts_hf_client_redial(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_accept_call(bt_address bd_addr)
+bt_result_code bts_hf_client_accept_call(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -711,7 +711,7 @@ BT_RESULT_CODE bts_hf_client_accept_call(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_reject_call(bt_address bd_addr)
+bt_result_code bts_hf_client_reject_call(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -728,7 +728,7 @@ BT_RESULT_CODE bts_hf_client_reject_call(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_hold_call(bt_address bd_addr)
+bt_result_code bts_hf_client_hold_call(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -745,7 +745,7 @@ BT_RESULT_CODE bts_hf_client_hold_call(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_terminate_call(bt_address bd_addr)
+bt_result_code bts_hf_client_terminate_call(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -762,7 +762,7 @@ BT_RESULT_CODE bts_hf_client_terminate_call(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_query_current_calls(bt_address bd_addr)
+bt_result_code bts_hf_client_query_current_calls(bt_address bd_addr)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -779,7 +779,7 @@ BT_RESULT_CODE bts_hf_client_query_current_calls(bt_address bd_addr)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_send_at_cmd(bt_address bd_addr, const char* cmd)
+bt_result_code bts_hf_client_send_at_cmd(bt_address bd_addr, const char* cmd)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -798,7 +798,7 @@ BT_RESULT_CODE bts_hf_client_send_at_cmd(bt_address bd_addr, const char* cmd)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_hf_client_update_battery_level(bt_address bd_addr, uint8_t battery)
+bt_result_code bts_hf_client_update_battery_level(bt_address bd_addr, uint8_t battery)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;

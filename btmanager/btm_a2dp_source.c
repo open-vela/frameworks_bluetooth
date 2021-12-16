@@ -49,7 +49,7 @@ static a2dp_source_interface_t* get_service(void)
     return (a2dp_source_interface_t*)get_bluetooth_service_interface()->get_profile_interface(BT_PROFILE_ADVANCED_AUDIO_SOURCE);
 }
 
-static BT_RESULT_CODE a2dp_source_connect(void* handle, bt_address addr)
+static bt_result_code a2dp_source_connect(void* handle, bt_address addr)
 {
     a2dp_source_interface_t* service = get_service();
     if (!service)
@@ -58,7 +58,7 @@ static BT_RESULT_CODE a2dp_source_connect(void* handle, bt_address addr)
     return service->connect(handle, addr);
 }
 
-static BT_RESULT_CODE a2dp_source_disconnect(void* handle, bt_address addr)
+static bt_result_code a2dp_source_disconnect(void* handle, bt_address addr)
 {
     a2dp_source_interface_t* service = get_service();
     if (!service)
@@ -67,7 +67,7 @@ static BT_RESULT_CODE a2dp_source_disconnect(void* handle, bt_address addr)
     return service->disconnect(handle, addr);
 }
 
-static BT_RESULT_CODE a2dp_source_set_silence_device(void* handle, bt_address addr, bool silence)
+static bt_result_code a2dp_source_set_silence_device(void* handle, bt_address addr, bool silence)
 {
     a2dp_source_interface_t* service = get_service();
     if (!service)
@@ -76,7 +76,7 @@ static BT_RESULT_CODE a2dp_source_set_silence_device(void* handle, bt_address ad
     return service->set_silence_device(handle, addr, silence);
 }
 
-static BT_RESULT_CODE a2dp_source_set_active_device(void* handle, bt_address addr)
+static bt_result_code a2dp_source_set_active_device(void* handle, bt_address addr)
 {
     a2dp_source_interface_t* service = get_service();
     if (!service)

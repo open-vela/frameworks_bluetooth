@@ -66,7 +66,7 @@ static bt_service_callbacks service_callback = {
     .adapter_state_ble_changed_cb = bts_service_if_ble_state_changed_callback,
 };
 
-static BT_RESULT_CODE bts_if_init(void* handle, bt_service_if_callbacks* callbacks)
+static bt_result_code bts_if_init(void* handle, bt_service_if_callbacks* callbacks)
 {
     if (!service) {
         service = (bt_service_t*)malloc(sizeof(bt_service_t));
@@ -113,7 +113,7 @@ static bt_if_handle_t* find_if_handle_by_handle(void* handle)
     return NULL;
 }
 
-static BT_RESULT_CODE bts_if_enable(void* handle)
+static bt_result_code bts_if_enable(void* handle)
 {
     bt_if_handle_t* if_handle;
     if (!handle)
@@ -138,7 +138,7 @@ static BT_RESULT_CODE bts_if_enable(void* handle)
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE bts_if_disable(void* handle)
+static bt_result_code bts_if_disable(void* handle)
 {
     bt_if_handle_t* if_handle;
     if (!handle)
@@ -219,14 +219,14 @@ static const void* if_get_profile_interface(const char* profile_id)
     return NULL;
 }
 
-static BTM_BT_STATE if_get_state(void* handle)
+static btm_bt_state if_get_state(void* handle)
 {
     if (!service)
         return BTM_STATE_OFF;
     return service->bt_state;
 }
 
-static BTM_BLE_STATE if_get_ble_state(void* handle)
+static btm_ble_state if_get_ble_state(void* handle)
 {
     if (!service)
         return BTM_STATE_OFF;

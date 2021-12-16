@@ -56,15 +56,15 @@ bool bts_a2dp_source_stream_ready(void);
 bool bts_a2dp_source_stream_started(void);
 uint8_t* bts_a2dp_source_active_peer(void);
 
-BT_RESULT_CODE bts_a2dp_source_init(const a2dp_source_callbacks_t* callbacks);
-BT_RESULT_CODE bts_a2dp_source_connect(bt_address addr);
-BT_RESULT_CODE bts_a2dp_source_disconnect(bt_address addr);
+bt_result_code bts_a2dp_source_init(const a2dp_source_callbacks_t* callbacks);
+bt_result_code bts_a2dp_source_connect(bt_address addr);
+bt_result_code bts_a2dp_source_disconnect(bt_address addr);
 void bts_a2dp_source_cleanup(void);
 
-void bts_a2dp_service_handle_event(BT_PROFILE_ID id, void* data, size_t size);
+void bts_a2dp_service_handle_event(bt_profile_id id, void* data, size_t size);
 void bts_a2dp_source_dump(void);
 
-extern BT_RESULT_CODE a2dp_source_service_start(void);
+extern bt_result_code a2dp_source_service_start(void);
 extern void a2dp_source_service_stop(void);
 extern const a2dp_source_interface_t* get_a2dp_source_service_interface(void);
 

@@ -37,14 +37,14 @@
 
 #include "btm_manager.h"
 
-typedef void (*btm_gattc_connection_state_changed_callback)(void* handle, bt_address remote_addr, PROFILE_CONNECTION_STATE state);
+typedef void (*btm_gattc_connection_state_changed_callback)(void* handle, bt_address remote_addr, profile_connection_state state);
 typedef void (*btm_gattc_service_discovered_callback)(void* handle, bt_address remote_addr, gatt_element_t* element, uint16_t size);
-typedef void (*btm_gattc_read_result_callback)(void* handle, bt_address remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size, GATT_STATUS status);
-typedef void (*btm_gattc_write_result_callback)(void* handle, bt_address remote_addr, gatt_element_t* element, GATT_STATUS status);
+typedef void (*btm_gattc_read_result_callback)(void* handle, bt_address remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size, gatt_status status);
+typedef void (*btm_gattc_write_result_callback)(void* handle, bt_address remote_addr, gatt_element_t* element, gatt_status status);
 typedef void (*btm_gattc_nofity_request_callback)(void* handle, bt_address remote_addr, gatt_element_t* element, uint8_t* value, uint16_t size);
-typedef void (*btm_gattc_rssi_read_callback)(void* handle, bt_address remote_addr, int32_t rssi, GATT_STATUS status);
-typedef void (*btm_gattc_phy_read_callback)(void* handle, bt_address remote_addr, BLE_PHY_TYPE tx, BLE_PHY_TYPE rx);
-typedef void (*btm_gattc_phy_update_callback)(void* handle, bt_address remote_addr, BLE_PHY_TYPE tx, BLE_PHY_TYPE rx);
+typedef void (*btm_gattc_rssi_read_callback)(void* handle, bt_address remote_addr, int32_t rssi, gatt_status status);
+typedef void (*btm_gattc_phy_read_callback)(void* handle, bt_address remote_addr, ble_phy_type tx, ble_phy_type rx);
+typedef void (*btm_gattc_phy_update_callback)(void* handle, bt_address remote_addr, ble_phy_type tx, ble_phy_type rx);
 typedef void (*btm_gattc_mtu_changed_callback)(void* handle, bt_address remote_addr, uint32_t mtu);
 
 typedef struct {
@@ -62,17 +62,17 @@ typedef struct {
 typedef struct {
     size_t size;
 
-    BT_RESULT_CODE (*connect)(void** handle, bt_address remote_addr, btm_gatt_client_callbacks* callbacks);
-    BT_RESULT_CODE (*disconnect)(void* handle);
-    BT_RESULT_CODE (*discover_services)(void* handle, bt_uuid_t uuid);
-    BT_RESULT_CODE (*read_request)(void* handle, gatt_element_t* element);
-    BT_RESULT_CODE (*write_request)(void* handle, gatt_element_t* element, uint8_t* value, uint16_t length);
-    BT_RESULT_CODE (*register_notification)(void* handle, gatt_element_t* element, bool enable);
-    BT_RESULT_CODE (*read_rssi)(void* handle);
-    BT_RESULT_CODE (*read_phy)(void* handle);
-    BT_RESULT_CODE (*update_phy)(void* handle, BLE_PHY_TYPE tx_phy, BLE_PHY_TYPE rx_phy);
-    BT_RESULT_CODE (*update_mtu)(void* handle, uint32_t mtu);
-    BT_RESULT_CODE (*update_connection_parameter)(void* handle, uint32_t min_interval, uint32_t max_interval,
+    bt_result_code (*connect)(void** handle, bt_address remote_addr, btm_gatt_client_callbacks* callbacks);
+    bt_result_code (*disconnect)(void* handle);
+    bt_result_code (*discover_services)(void* handle, bt_uuid_t uuid);
+    bt_result_code (*read_request)(void* handle, gatt_element_t* element);
+    bt_result_code (*write_request)(void* handle, gatt_element_t* element, uint8_t* value, uint16_t length);
+    bt_result_code (*register_notification)(void* handle, gatt_element_t* element, bool enable);
+    bt_result_code (*read_rssi)(void* handle);
+    bt_result_code (*read_phy)(void* handle);
+    bt_result_code (*update_phy)(void* handle, ble_phy_type tx_phy, ble_phy_type rx_phy);
+    bt_result_code (*update_mtu)(void* handle, uint32_t mtu);
+    bt_result_code (*update_connection_parameter)(void* handle, uint32_t min_interval, uint32_t max_interval,
         uint32_t latency, uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length);
 } btm_gatt_client_interface_t;
 

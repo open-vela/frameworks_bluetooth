@@ -76,7 +76,7 @@ static bts_ble_advertiser_callbacks bts_le_advertise_cb = {
     .bts_le_advertise_failed_cb = on_le_advertise_failed,
 };
 
-static BT_RESULT_CODE start_advertising(void** hdl_ptr, advertise_param_t* param,
+static bt_result_code start_advertising(void** hdl_ptr, advertise_param_t* param,
     btm_le_advertise_callbacks* cb)
 {
     CHECK_PTR_RETURN(advertiser_interface, BT_RESULT_STATE_NOT_ON);
@@ -92,7 +92,7 @@ static BT_RESULT_CODE start_advertising(void** hdl_ptr, advertise_param_t* param
         .callbacks = &bts_le_advertise_cb,
         .btm_handle = *handle_ptr,
     };
-    BT_RESULT_CODE ret = advertiser_interface->start_adv(client);
+    bt_result_code ret = advertiser_interface->start_adv(client);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, start_adv err:%d", ret);
         free(*handle_ptr);
@@ -103,13 +103,13 @@ static BT_RESULT_CODE start_advertising(void** hdl_ptr, advertise_param_t* param
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE stop_advertising(void* hdl)
+static bt_result_code stop_advertising(void* hdl)
 {
     CHECK_PTR_RETURN(advertiser_interface, BT_RESULT_STATE_NOT_ON);
     btm_leadv_hdl_t* handle = (btm_leadv_hdl_t*)(hdl);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
 
-    BT_RESULT_CODE ret = advertiser_interface->stop_adv(handle->advertiser_id);
+    bt_result_code ret = advertiser_interface->stop_adv(handle->advertiser_id);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail,stop_adv err:%d", ret);
         void** handle_ptr = handle->handle_ptr;

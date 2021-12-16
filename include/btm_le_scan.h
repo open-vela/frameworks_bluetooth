@@ -51,9 +51,9 @@ typedef struct {
 typedef struct {
     size_t size;
 
-    BT_RESULT_CODE (*start_scan)(void** handle, ble_scan_filter_t* filter, scan_params_t* setttings,
+    bt_result_code (*start_scan)(void** handle, ble_scan_filter_t* filter, scan_params_t* setttings,
         btm_le_scan_callbacks* cb);
-    BT_RESULT_CODE (*stop_scan)(void* handle);
+    bt_result_code (*stop_scan)(void* handle);
 } btm_le_scan_interface_t;
 
 btm_le_scan_interface_t* get_btm_lescan_interface(void* bt_mgr_interface);
