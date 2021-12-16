@@ -50,7 +50,7 @@ typedef struct
 } bts_lescan_msg_t;
 
 static void send_msg(bts_lescan_msg_t* msg);
-static void handle_msg_received(BT_PROFILE_ID id, void* data, size_t size);
+static void handle_msg_received(bt_profile_id id, void* data, size_t size);
 
 static struct list_node scanner_list = LIST_INITIAL_VALUE(scanner_list);
 
@@ -139,10 +139,10 @@ static bts_lescan_msg_t* create_adp_msg(uint8_t event, bts_lescan_hdl_t* handle,
     return msg;
 }
 
-static BT_RESULT_CODE start_scan(bts_lescan_hdl_t handle)
+static bt_result_code start_scan(bts_lescan_hdl_t handle)
 {
     bts_register_profile_process(BT_PROFILE_LESCAN_ID, &handle_msg_received);
-    SERVICE_BT_STATUS ret = service_adapter_gap_set_ble_scan_filter(handle.filter);
+    bt_status ret = service_adapter_gap_set_ble_scan_filter(handle.filter);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("set ble scan filter fail, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -172,12 +172,12 @@ static BT_RESULT_CODE start_scan(bts_lescan_hdl_t handle)
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE stop_scan(uint8_t scanner_id)
+static bt_result_code stop_scan(uint8_t scanner_id)
 {
     bts_lescan_hdl_t* handle = find_scan_handle(scanner_id);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
 
-    SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_scan();
+    bt_status ret = service_adapter_gap_stop_ble_scan();
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         remove_scan_handle(handle);
         BT_LOGE("set ble stop scan, err:%d", ret);
@@ -231,7 +231,7 @@ const bts_le_scan_interface_t* get_bts_lescan_instance(void)
     return &ble_scan_intance;
 }
 
-static void handle_msg_received(BT_PROFILE_ID id, void* data, size_t size)
+static void handle_msg_received(bt_profile_id id, void* data, size_t size)
 {
     if (id != BT_PROFILE_LESCAN_ID) {
         BT_LOGE("error, invalid priofile id:%d", id);

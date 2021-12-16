@@ -112,87 +112,87 @@ void hf_svr_ring_indication_callback(bt_address addr,
         hfCallbacks->ring_indication_cb(addr, state);
 }
 
-static BT_RESULT_CODE hf_connect(void* handle, bt_address addr)
+static bt_result_code hf_connect(void* handle, bt_address addr)
 {
     return bts_hf_client_connect(addr);
 }
 
-static BT_RESULT_CODE hf_disconnect(void* handle, bt_address addr)
+static bt_result_code hf_disconnect(void* handle, bt_address addr)
 {
     return bts_hf_client_disconnect(addr);
 }
 
-static BT_RESULT_CODE hf_connect_audio(void* handle, bt_address addr)
+static bt_result_code hf_connect_audio(void* handle, bt_address addr)
 {
     return bts_hf_client_connect_audio(addr);
 }
 
-static BT_RESULT_CODE hf_disconnect_audio(void* handle, bt_address addr)
+static bt_result_code hf_disconnect_audio(void* handle, bt_address addr)
 {
     return bts_hf_client_disconnect_audio(addr);
 }
 
-static BT_RESULT_CODE hf_start_voice_recognition(void* handle, bt_address addr)
+static bt_result_code hf_start_voice_recognition(void* handle, bt_address addr)
 {
     return bts_hf_client_start_voice_recognition(addr);
 }
 
-static BT_RESULT_CODE hf_stop_voice_recognition(void* handle, bt_address addr)
+static bt_result_code hf_stop_voice_recognition(void* handle, bt_address addr)
 {
     return bts_hf_client_stop_voice_recognition(addr);
 }
 
-static BT_RESULT_CODE hf_volume_control(void* handle, bt_address addr, hf_client_volume_type_t type, int volume)
+static bt_result_code hf_volume_control(void* handle, bt_address addr, hf_client_volume_type_t type, int volume)
 {
     return bts_hf_client_volume_control(addr, type, volume);
 }
 
-static BT_RESULT_CODE hf_dial(void* handle, bt_address addr, const char* number)
+static bt_result_code hf_dial(void* handle, bt_address addr, const char* number)
 {
     return bts_hf_client_dial(addr, number);
 }
 
-static BT_RESULT_CODE hf_dial_memory(void* handle, bt_address addr, uint32_t memory)
+static bt_result_code hf_dial_memory(void* handle, bt_address addr, uint32_t memory)
 {
     return bts_hf_client_dial_memory(addr, memory);
 }
 
-static BT_RESULT_CODE hf_redial(void* handle, bt_address addr)
+static bt_result_code hf_redial(void* handle, bt_address addr)
 {
     return bts_hf_client_redial(addr);
 }
 
-static BT_RESULT_CODE hf_accept_call(void* handle, bt_address addr)
+static bt_result_code hf_accept_call(void* handle, bt_address addr)
 {
     return bts_hf_client_accept_call(addr);
 }
 
-static BT_RESULT_CODE hf_reject_call(void* handle, bt_address addr)
+static bt_result_code hf_reject_call(void* handle, bt_address addr)
 {
     return bts_hf_client_reject_call(addr);
 }
 
-static BT_RESULT_CODE hf_hold_call(void* handle, bt_address addr)
+static bt_result_code hf_hold_call(void* handle, bt_address addr)
 {
     return bts_hf_client_hold_call(addr);
 }
 
-static BT_RESULT_CODE hf_terminate_call(void* handle, bt_address addr)
+static bt_result_code hf_terminate_call(void* handle, bt_address addr)
 {
     return bts_hf_client_terminate_call(addr);
 }
 
-static BT_RESULT_CODE hf_query_current_calls(void* handle, bt_address addr)
+static bt_result_code hf_query_current_calls(void* handle, bt_address addr)
 {
     return bts_hf_client_query_current_calls(addr);
 }
 
-static BT_RESULT_CODE hf_send_at_cmd(void* handle, bt_address addr, const char* cmd)
+static bt_result_code hf_send_at_cmd(void* handle, bt_address addr, const char* cmd)
 {
     return bts_hf_client_send_at_cmd(addr, cmd);
 }
 
-static BT_RESULT_CODE hf_update_battery_level(void* handle, bt_address addr, uint8_t battery)
+static bt_result_code hf_update_battery_level(void* handle, bt_address addr, uint8_t battery)
 {
     return bts_hf_client_update_battery_level(addr, battery);
 }
@@ -239,9 +239,9 @@ static const hf_client_interface_t hfInterface = {
     set_callbacks,
 };
 
-BT_RESULT_CODE hf_client_service_start(void)
+bt_result_code hf_client_service_start(void)
 {
-    BT_RESULT_CODE ret;
+    bt_result_code ret;
 
     ret = bts_hf_client_init(&hf_client_svr_callbacks);
     if (ret != BT_RESULT_SUCCESS)

@@ -123,15 +123,15 @@
  * @brief bt state changed callback, in response to enable or disable interface.
 * @param[out]  state    current bt state of stack.
 */
-typedef void (*bt_manager_state_changed_callback)(BTM_BT_STATE state);
+typedef void (*bt_manager_state_changed_callback)(btm_bt_state state);
 
 /**
  * @brief  state changed callback, in response to enable or disable interface.
 * @param[out]  state    current ble state of stack.
 */
-typedef void (*bt_manager_ble_state_changed_callback)(BTM_BLE_STATE state);
+typedef void (*bt_manager_ble_state_changed_callback)(btm_ble_state state);
 
-//typedef void (*init_status_changed_callback)(BT_RESULT_CODE status);
+//typedef void (*init_status_changed_callback)(bt_result_code status);
 
 /**
  * @brief callback for bluetooth service changed
@@ -160,37 +160,37 @@ typedef struct {
      * @param[in]  callbacks  callback for bluetooth manager
      * @return  init success or failed.
     */
-    BT_RESULT_CODE (*init)(void** handle, const bt_mgr_callback_t* callbacks);
+    bt_result_code (*init)(void** handle, const bt_mgr_callback_t* callbacks);
     /** enable bt module,  responsed by bt_manager_state_changed_callback. 
      * @param[in]  handle  unique handle for every app.
      * @return  interface called success or failed.
     */
-    BT_RESULT_CODE (*enable)(void* handle);
+    bt_result_code (*enable)(void* handle);
     /** disable bt module ,  responsed by bt_manager_state_changed_callback. 
      * @param[in]  handle  unique handle for every app.
     * @return  interface called success or failed.
     */
-    BT_RESULT_CODE (*disable)(void* handle);
+    bt_result_code (*disable)(void* handle);
     /** enable ble module,  responsed by ble_manager_state_changed_callback. 
      * @param[in]  handle  unique handle for every app.
     * @return  interface called success or failed.
     */
-    BT_RESULT_CODE (*enable_ble)(void* handle);
+    bt_result_code (*enable_ble)(void* handle);
     /** disable ble module,  responsed by ble_manager_state_changed_callback. 
      * @param[in]  handle  unique handle for every app.
     * @return interface called success or failed.
     */
-    BT_RESULT_CODE (*disable_ble)(void* handle);
+    bt_result_code (*disable_ble)(void* handle);
     /** get state of bt module
      * @param[in]  handle  unique handle for every app.
     * @return  current state of bt module.
     */
-    BTM_BT_STATE (*bt_get_state)(void* handle);
+    btm_bt_state (*bt_get_state)(void* handle);
     /** get state of ble module
      * @param[in]  handle  unique handle for every app.
     * @return  current state of ble module.
     */
-    BTM_BLE_STATE (*ble_get_state)(void* handle);
+    btm_ble_state (*ble_get_state)(void* handle);
     /** clean manager interface handle.
      * @param[in]  handle  unique handle for every app.
     */

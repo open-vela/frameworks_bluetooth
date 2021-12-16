@@ -46,7 +46,7 @@ static hf_client_interface_t* get_service(void)
     return (hf_client_interface_t*)get_bluetooth_service_interface()->get_profile_interface(BT_PROFILE_HANDSFREE_HF);
 }
 
-static BT_RESULT_CODE hf_connect(void* handle, bt_address addr)
+static bt_result_code hf_connect(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -55,7 +55,7 @@ static BT_RESULT_CODE hf_connect(void* handle, bt_address addr)
     return service->connect(handle, addr);
 }
 
-static BT_RESULT_CODE hf_disconnect(void* handle, bt_address addr)
+static bt_result_code hf_disconnect(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -64,7 +64,7 @@ static BT_RESULT_CODE hf_disconnect(void* handle, bt_address addr)
     return service->disconnect(handle, addr);
 }
 
-static BT_RESULT_CODE hf_connect_audio(void* handle, bt_address addr)
+static bt_result_code hf_connect_audio(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -73,7 +73,7 @@ static BT_RESULT_CODE hf_connect_audio(void* handle, bt_address addr)
     return service->connect_audio(handle, addr);
 }
 
-static BT_RESULT_CODE hf_disconnect_audio(void* handle, bt_address addr)
+static bt_result_code hf_disconnect_audio(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -82,7 +82,7 @@ static BT_RESULT_CODE hf_disconnect_audio(void* handle, bt_address addr)
     return service->disconnect_audio(handle, addr);
 }
 
-static BT_RESULT_CODE hf_start_voice_recognition(void* handle, bt_address addr)
+static bt_result_code hf_start_voice_recognition(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -91,7 +91,7 @@ static BT_RESULT_CODE hf_start_voice_recognition(void* handle, bt_address addr)
     return service->start_voice_recognition(handle, addr);
 }
 
-static BT_RESULT_CODE hf_stop_voice_recognition(void* handle, bt_address addr)
+static bt_result_code hf_stop_voice_recognition(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -100,7 +100,7 @@ static BT_RESULT_CODE hf_stop_voice_recognition(void* handle, bt_address addr)
     return service->stop_voice_recognition(handle, addr);
 }
 
-static BT_RESULT_CODE hf_volume_control(void* handle, bt_address addr, hf_client_volume_type_t type, int volume)
+static bt_result_code hf_volume_control(void* handle, bt_address addr, hf_client_volume_type_t type, int volume)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -109,7 +109,7 @@ static BT_RESULT_CODE hf_volume_control(void* handle, bt_address addr, hf_client
     return service->volume_control(handle, addr, type, volume);
 }
 
-static BT_RESULT_CODE hf_dial(void* handle, bt_address addr, const char* number)
+static bt_result_code hf_dial(void* handle, bt_address addr, const char* number)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -118,7 +118,7 @@ static BT_RESULT_CODE hf_dial(void* handle, bt_address addr, const char* number)
     return service->dial(handle, addr, number);
 }
 
-static BT_RESULT_CODE hf_dial_memory(void* handle, bt_address addr, uint32_t memory)
+static bt_result_code hf_dial_memory(void* handle, bt_address addr, uint32_t memory)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -127,7 +127,7 @@ static BT_RESULT_CODE hf_dial_memory(void* handle, bt_address addr, uint32_t mem
     return service->dial_memory(handle, addr, memory);
 }
 
-static BT_RESULT_CODE hf_redial(void* handle, bt_address addr)
+static bt_result_code hf_redial(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -136,7 +136,7 @@ static BT_RESULT_CODE hf_redial(void* handle, bt_address addr)
     return service->redial(handle, addr);
 }
 
-static BT_RESULT_CODE hf_accept_call(void* handle, bt_address addr)
+static bt_result_code hf_accept_call(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -145,7 +145,7 @@ static BT_RESULT_CODE hf_accept_call(void* handle, bt_address addr)
     return service->accept_call(handle, addr);
 }
 
-static BT_RESULT_CODE hf_reject_call(void* handle, bt_address addr)
+static bt_result_code hf_reject_call(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -154,7 +154,7 @@ static BT_RESULT_CODE hf_reject_call(void* handle, bt_address addr)
     return service->reject_call(handle, addr);
 }
 
-static BT_RESULT_CODE hf_hold_call(void* handle, bt_address addr)
+static bt_result_code hf_hold_call(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -163,7 +163,7 @@ static BT_RESULT_CODE hf_hold_call(void* handle, bt_address addr)
     return service->hold_call(handle, addr);
 }
 
-static BT_RESULT_CODE hf_terminate_call(void* handle, bt_address addr)
+static bt_result_code hf_terminate_call(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -172,7 +172,7 @@ static BT_RESULT_CODE hf_terminate_call(void* handle, bt_address addr)
     return service->terminate_call(handle, addr);
 }
 
-static BT_RESULT_CODE hf_query_current_calls(void* handle, bt_address addr)
+static bt_result_code hf_query_current_calls(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -181,7 +181,7 @@ static BT_RESULT_CODE hf_query_current_calls(void* handle, bt_address addr)
     return service->query_current_calls(handle, addr);
 }
 
-static BT_RESULT_CODE hf_send_at_cmd(void* handle, bt_address addr, const char* cmd)
+static bt_result_code hf_send_at_cmd(void* handle, bt_address addr, const char* cmd)
 {
     hf_client_interface_t* service = get_service();
     if (!service)
@@ -190,7 +190,7 @@ static BT_RESULT_CODE hf_send_at_cmd(void* handle, bt_address addr, const char* 
     return service->send_at_cmd(handle, addr, cmd);
 }
 
-static BT_RESULT_CODE hf_update_battery_level(void* handle, bt_address addr, uint8_t battery)
+static bt_result_code hf_update_battery_level(void* handle, bt_address addr, uint8_t battery)
 {
     hf_client_interface_t* service = get_service();
     if (!service)

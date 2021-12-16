@@ -10,7 +10,7 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-BT_RESULT_CODE gap_service_init(void);
+bt_result_code gap_service_init(void);
 btm_gap_interface_t* get_gap_service_instance(void);
 
 #endif

@@ -68,8 +68,8 @@ typedef struct {
     size_t size;
 
     const stack_le_advertise_callbacks* callbacks;
-    BT_RESULT_CODE (*start_adv)(bts_leadv_hdl_t client);
-    BT_RESULT_CODE (*stop_adv)(uint8_t advertiser_id);
+    bt_result_code (*start_adv)(bts_leadv_hdl_t client);
+    bt_result_code (*stop_adv)(uint8_t advertiser_id);
 } bts_le_advertise_interface_t;
 
 const bts_le_advertise_interface_t* get_bts_bleadv_instance(void);

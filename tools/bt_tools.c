@@ -173,7 +173,7 @@ static int set_scan_mode(void* handle, int argc, char** argv)
 
     uint16_t parameter0 = atoi(argv[0]);
     uint16_t parameter1 = atoi(argv[1]);
-    BT_SCAN_MODE scanMode = SCAN_MODE_NONE;
+    bt_scan_mode scanMode = SCAN_MODE_NONE;
     bool bondable = false;
     if (parameter1 != 0)
         bondable = true;
@@ -448,7 +448,7 @@ static void display_services(uint8_t *services, uint8_t count)
     }
 }
 
-static void manager_state_changed_callback(BTM_BT_STATE state)
+static void manager_state_changed_callback(btm_bt_state state)
 {
     BT_LOGD("%s", __func__);
     if (daemon_enable) {
@@ -462,7 +462,7 @@ static void manager_state_changed_callback(BTM_BT_STATE state)
     gap_test_interface->bt_set_scan_mode(gap_hanlde, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
 }
 
-static void test_discovery_state_changed_callback(void* gap_handle, BT_DISCOVERY_STATE state)
+static void test_discovery_state_changed_callback(void* gap_handle, bt_discovery_state state)
 {
     BT_LOGD("%s, state %d", __func__, state);
 }
@@ -474,7 +474,7 @@ static void test_device_found_callback(void* gap_handle, bt_device_t* device)
      display_services(device->uuids, MAX_UUID_NUM);
 }
 
-void test_connection_state_changed_callback(void* handle, bt_device_t* device, BT_CONNECTION_STATE state)
+void test_connection_state_changed_callback(void* handle, bt_device_t* device, bt_connection_state state)
 {
     //char* connection_state = NULL;
     BT_LOGD("%s, device %s, state:  %d", __func__, addr_str(device->addr), state);
@@ -513,7 +513,7 @@ void test_ssp_request_callback(void* handle, ssp_request_data_t* request_data)
         // service_adapter_gap_ssp_reply(&reply);
     }
 }
-void test_bond_state_changed_callback(void* handle, bt_device_t* device, BT_BOND_STATE state)
+void test_bond_state_changed_callback(void* handle, bt_device_t* device, bt_bond_state state)
 {
     char* bond_state = NULL;
     switch (state) {
@@ -604,14 +604,14 @@ static int disable_cmd(void* handle, int argc, char** argv)
 
 static int get_state_cmd(void* handle, int argc, char** argv)
 {
-    BTM_BT_STATE state = manager->bt_get_state(handle);
+    btm_bt_state state = manager->bt_get_state(handle);
     BT_LOGD("%s, state: %d", __func__, state);
     return 0;
 }
 
 static int get_ble_state_cmd(void* handle, int argc, char** argv)
 {
-    BTM_BLE_STATE state = manager->ble_get_state(handle);
+    btm_ble_state state = manager->ble_get_state(handle);
     BT_LOGD("%s, state: %d", __func__, state);
     return 0;
 }

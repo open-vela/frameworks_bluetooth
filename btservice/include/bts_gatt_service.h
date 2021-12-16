@@ -54,7 +54,7 @@ typedef struct {
 typedef struct {
     size_t size;
 
-    BT_RESULT_CODE (*init)(void);
+    bt_result_code (*init)(void);
     void (*cleanup)(void);
 
     const bts_le_scan_interface_t* scanner;

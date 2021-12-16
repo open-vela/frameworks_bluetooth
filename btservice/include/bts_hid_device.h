@@ -42,8 +42,8 @@
 #define XK_LATIN1 1
 #define XK_XKB_KEYS 1
 
-typedef void (*bts_hidd_app_state_changed_callback)(void* handle, uint8_t device_id, HID_APP_STATE registered);
-typedef void (*bts_hidd_connection_state_changed_callback)(void* handle, bt_address remote_addr, PROFILE_CONNECTION_STATE state);
+typedef void (*bts_hidd_app_state_changed_callback)(void* handle, uint8_t device_id, hid_app_state registered);
+typedef void (*bts_hidd_connection_state_changed_callback)(void* handle, bt_address remote_addr, profile_connection_state state);
 
 typedef struct {
     bts_hidd_app_state_changed_callback bts_hidd_app_state_changed_cb;
@@ -62,14 +62,14 @@ typedef struct
 
 typedef struct {
     size_t size;
-    BT_RESULT_CODE (*init)(void);
+    bt_result_code (*init)(void);
     void (*clean_up)(void);
-    BT_RESULT_CODE (*register_device)(bts_hidd_hdl_t handle, bt_hidd_sdp_settings_t sdp, bt_hidd_qos_settings_t tx_qos, bt_hidd_qos_settings_t rx_qos);
-    BT_RESULT_CODE (*unregister_device)(uint16_t device_id);
-    BT_RESULT_CODE (*connect)(uint16_t device_id, bt_address remote_addr);
-    BT_RESULT_CODE (*disconnect)(uint8_t device_id, bt_address remote_addr);
-    BT_RESULT_CODE (*send_report_test)(uint8_t device_id, uint8_t report_id, uint8_t* buffer, size_t size);
-    BT_RESULT_CODE (*unplug)(uint8_t device_id, bt_address remote_addr);
+    bt_result_code (*register_device)(bts_hidd_hdl_t handle, bt_hidd_sdp_settings_t sdp, bt_hidd_qos_settings_t tx_qos, bt_hidd_qos_settings_t rx_qos);
+    bt_result_code (*unregister_device)(uint16_t device_id);
+    bt_result_code (*connect)(uint16_t device_id, bt_address remote_addr);
+    bt_result_code (*disconnect)(uint8_t device_id, bt_address remote_addr);
+    bt_result_code (*send_report_test)(uint8_t device_id, uint8_t report_id, uint8_t* buffer, size_t size);
+    bt_result_code (*unplug)(uint8_t device_id, bt_address remote_addr);
 } bts_hidd_interface_t;
 
 const bts_hidd_interface_t* get_bts_hidd_interface(void);

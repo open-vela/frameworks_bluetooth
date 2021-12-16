@@ -6,5 +6,5 @@
 #include "bts_gap_service.h"
 #include "stack_adapter_common.h"
 #include <stdio.h>
-BT_RESULT_CODE avrcp_target_init(void);
+bt_result_code avrcp_target_init(void);
 #endif

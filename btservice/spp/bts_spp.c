@@ -418,7 +418,7 @@ static void euv_write_loop_complete(euv_pty_t* handle, uint8_t* buf, int status)
 
 static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t length)
 {
-    SERVICE_BT_STATUS status;
+    bt_status status;
     uint16_t remaining = length;
     uint16_t size;
     uint8_t* tmp;
@@ -551,7 +551,7 @@ static void spp_server_stop(uint16_t port)
 
 static void spp_client_connect(bt_address addr, uint16_t port, uint16_t uuid)
 {
-    SERVICE_BT_STATUS status;
+    bt_status status;
     spp_pty_device_t* device;
     struct bt_uuid_16 uuid_src;
     struct bt_uuid_128 uuid_128_dst;
@@ -652,7 +652,7 @@ static void do_in_spp_service(spp_msg_t* msg)
 }
 
 static void adp_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE_SPP_PORT conn_port,
-    PROFILE_CONNECTION_STATE state)
+    profile_connection_state state)
 {
     spp_msg_t msg;
     spp_connection_state_t conn_state = SPP_CONNECTION_STATE_DISCONNECTED;
@@ -717,7 +717,7 @@ static void adp_server_connection_req_received_callback(BD_ADDR remote_addr, SER
     do_in_spp_service(&msg);
 }
 
-static void bts_spp_handle_service_msg(BT_PROFILE_ID id, void* data, size_t size)
+static void bts_spp_handle_service_msg(bt_profile_id id, void* data, size_t size)
 {
     spp_service_event_process(data, size);
 }
@@ -733,9 +733,9 @@ static SPP_CALLBACKS_S spp_adp_callbacks = {
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-BT_RESULT_CODE bts_spp_init(spp_service_callbacks_t* callbacks)
+bt_result_code bts_spp_init(spp_service_callbacks_t* callbacks)
 {
-    SERVICE_BT_STATUS status;
+    bt_status status;
 
     if (g_spp_handle.started)
         return BT_RESULT_SUCCESS;
@@ -755,7 +755,7 @@ BT_RESULT_CODE bts_spp_init(spp_service_callbacks_t* callbacks)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_spp_server_start(uint16_t port, uint16_t uuid)
+bt_result_code bts_spp_server_start(uint16_t port, uint16_t uuid)
 {
     spp_msg_t msg;
 
@@ -770,7 +770,7 @@ BT_RESULT_CODE bts_spp_server_start(uint16_t port, uint16_t uuid)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_spp_server_stop(uint16_t port)
+bt_result_code bts_spp_server_stop(uint16_t port)
 {
     spp_msg_t msg;
 
@@ -784,7 +784,7 @@ BT_RESULT_CODE bts_spp_server_stop(uint16_t port)
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_spp_client_connect(bt_address addr, uint16_t port, uint16_t uuid)
+bt_result_code bts_spp_client_connect(bt_address addr, uint16_t port, uint16_t uuid)
 {
     spp_msg_t msg;
 
@@ -800,7 +800,7 @@ BT_RESULT_CODE bts_spp_client_connect(bt_address addr, uint16_t port, uint16_t u
     return BT_RESULT_SUCCESS;
 }
 
-BT_RESULT_CODE bts_spp_disconnect(bt_address addr, uint16_t port)
+bt_result_code bts_spp_disconnect(bt_address addr, uint16_t port)
 {
     spp_msg_t msg;
 

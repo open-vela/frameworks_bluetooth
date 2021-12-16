@@ -70,22 +70,22 @@ static const a2dp_source_callbacks_t a2dp_callbacks = {
     a2dp_audio_source_config_cb
 };
 
-static BT_RESULT_CODE a2dp_source_connect(void* handle, bt_address addr)
+static bt_result_code a2dp_source_connect(void* handle, bt_address addr)
 {
     return bts_a2dp_source_connect(addr);
 }
 
-static BT_RESULT_CODE a2dp_source_disconnect(void* handle, bt_address addr)
+static bt_result_code a2dp_source_disconnect(void* handle, bt_address addr)
 {
     return bts_a2dp_source_disconnect(addr);
 }
 
-static BT_RESULT_CODE a2dp_source_set_silence_device(void* handle, bt_address addr, bool silence)
+static bt_result_code a2dp_source_set_silence_device(void* handle, bt_address addr, bool silence)
 {
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE a2dp_source_set_active_device(void* handle, bt_address addr)
+static bt_result_code a2dp_source_set_active_device(void* handle, bt_address addr)
 {
     return BT_RESULT_SUCCESS;
 }
@@ -104,7 +104,7 @@ static const a2dp_source_interface_t a2dpSourceSvrInterface = {
     a2dp_source_set_callbacks
 };
 
-BT_RESULT_CODE a2dp_source_service_start(void)
+bt_result_code a2dp_source_service_start(void)
 {
     BT_LOGD("%s", __func__);
     return bts_a2dp_source_init(&a2dp_callbacks);
