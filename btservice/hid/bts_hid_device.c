@@ -49,7 +49,7 @@
 
 static int hidd_fd = -1;
 static uv_poll_t* hidd_uv_handle = NULL;
-static PROFILE_CONNECTION_STATE current_state = PROFILE_DISCONNECTED;
+static profile_connection_state current_state = PROFILE_DISCONNECTED;
 
 typedef struct
 {
@@ -65,11 +65,11 @@ typedef struct
 
 typedef struct {
     bt_address remote_addr;
-    PROFILE_CONNECTION_STATE state;
+    profile_connection_state state;
 } bts_hidd_conn_s;
 
 static void send_msg(bts_hidd_msg_t* msg);
-static void handle_msg_received(BT_PROFILE_ID id, void* data, size_t size);
+static void handle_msg_received(bt_profile_id id, void* data, size_t size);
 
 static struct list_node hidd_list = LIST_INITIAL_VALUE(hidd_list);
 
@@ -168,18 +168,18 @@ static bts_hidd_msg_t* create_adp_msg(uint8_t event, bts_hidd_hdl_t* handle, voi
     return msg;
 }
 
-static void on_hidd_register_changed_callback(HID_APP_STATE registered)
+static void on_hidd_register_changed_callback(hid_app_state registered)
 {
     bts_hidd_hdl_t* hidd;
     list_for_every_entry(&hidd_list, hidd, bts_hidd_hdl_t, node)
     {
-        bts_hidd_msg_t* msg = create_adp_msg(ON_HIDD_APP_STATE_CHANGED, hidd, &registered, sizeof(HID_APP_STATE));
+        bts_hidd_msg_t* msg = create_adp_msg(ON_HIDD_APP_STATE_CHANGED, hidd, &registered, sizeof(hid_app_state));
         CHECK_PTR(msg);
         send_msg(msg);
     }
 }
 
-static void on_hidd_connection_changed_callback(bt_address remote_addr, PROFILE_CONNECTION_STATE state)
+static void on_hidd_connection_changed_callback(bt_address remote_addr, profile_connection_state state)
 {
     BT_LOGD("%s, remote_addr:[%s] state:%d", __func__, addr_str(remote_addr), state);
     current_state = state;
@@ -265,7 +265,7 @@ static void hid_uv_poll_callback(uv_poll_t* handle, int status, int events)
             BT_LOGE("hidd not connected, current_state:%d", current_state);
             return;
         }
-        GATT_STATUS ret2 = service_adapter_hid_device_send_intr_report(0, (unsigned char*)buffer, nbytes);
+        gatt_status ret2 = service_adapter_hid_device_send_intr_report(0, (unsigned char*)buffer, nbytes);
         if (ret2 != GATT_STATUS_SUCCESS) {
             BT_LOGE("fail, hid_device_send_intr_report, ret:%d", ret2);
         }
@@ -277,10 +277,10 @@ static void hid_uv_poll_callback(uv_poll_t* handle, int status, int events)
     }
 }
 
-static BT_RESULT_CODE hid_device_init(void)
+static bt_result_code hid_device_init(void)
 {
     bts_register_profile_process(BT_PROFILE_HIDDEV_ID, &handle_msg_received);
-    GATT_STATUS ret = service_adapter_hid_device_init(&hid_device_cb);
+    gatt_status ret = service_adapter_hid_device_init(&hid_device_cb);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, hid_device_init failed: %d", ret);
         return BT_RESULT_FAILED;
@@ -294,9 +294,9 @@ static void hid_device_cleanup(void)
     bts_unregister_profile_process(BT_PROFILE_HIDDEV_ID);
 }
 
-static BT_RESULT_CODE hid_device_register_device(bts_hidd_hdl_t handle, bt_hidd_sdp_settings_t sdp, bt_hidd_qos_settings_t tx_qos, bt_hidd_qos_settings_t rx_qos)
+static bt_result_code hid_device_register_device(bts_hidd_hdl_t handle, bt_hidd_sdp_settings_t sdp, bt_hidd_qos_settings_t tx_qos, bt_hidd_qos_settings_t rx_qos)
 {
-    GATT_STATUS ret = service_adapter_hid_device_register_app(&sdp, NULL, NULL);
+    gatt_status ret = service_adapter_hid_device_register_app(&sdp, NULL, NULL);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, hid_device_register_app failed, error: %d", ret);
         return BT_RESULT_FAILED;
@@ -310,11 +310,11 @@ static BT_RESULT_CODE hid_device_register_device(bts_hidd_hdl_t handle, bt_hidd_
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE hid_device_unregister_device(uint16_t device_id)
+static bt_result_code hid_device_unregister_device(uint16_t device_id)
 {
     bts_hidd_hdl_t* handle = find_hidd_handle2(device_id);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    GATT_STATUS ret = service_adapter_hid_device_unregister_app();
+    gatt_status ret = service_adapter_hid_device_unregister_app();
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, unregister_device, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -322,12 +322,12 @@ static BT_RESULT_CODE hid_device_unregister_device(uint16_t device_id)
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE hid_device_connect(uint16_t device_id, bt_address remote_addr)
+static bt_result_code hid_device_connect(uint16_t device_id, bt_address remote_addr)
 {
     bts_hidd_hdl_t* handle = find_hidd_handle2(device_id);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
     memcpy(handle->remote_addr, remote_addr, sizeof(bt_address));
-    GATT_STATUS ret = service_adapter_hid_device_connect(handle->remote_addr);
+    gatt_status ret = service_adapter_hid_device_connect(handle->remote_addr);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, hid_device_connect, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -335,11 +335,11 @@ static BT_RESULT_CODE hid_device_connect(uint16_t device_id, bt_address remote_a
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE hid_device_disconnect(uint8_t device_id, bt_address remote_addr)
+static bt_result_code hid_device_disconnect(uint8_t device_id, bt_address remote_addr)
 {
     bts_hidd_hdl_t* handle = find_hidd_handle2(device_id);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    GATT_STATUS ret = service_adapter_hid_device_disconnect();
+    gatt_status ret = service_adapter_hid_device_disconnect();
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, hid_device_disconnect, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -347,11 +347,11 @@ static BT_RESULT_CODE hid_device_disconnect(uint8_t device_id, bt_address remote
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE hid_device_send_report(uint8_t device_id, uint8_t report_id, uint8_t* buffer, size_t size)
+static bt_result_code hid_device_send_report(uint8_t device_id, uint8_t report_id, uint8_t* buffer, size_t size)
 {
     bts_hidd_hdl_t* handle = find_hidd_handle2(device_id);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    GATT_STATUS ret = service_adapter_hid_device_send_intr_report(report_id, buffer, size);
+    gatt_status ret = service_adapter_hid_device_send_intr_report(report_id, buffer, size);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, hid_device_send_intr_report, ret:%d", ret);
         return BT_RESULT_FAILED;
@@ -359,11 +359,11 @@ static BT_RESULT_CODE hid_device_send_report(uint8_t device_id, uint8_t report_i
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE hid_device_unplug(uint8_t device_id, bt_address remote_addr)
+static bt_result_code hid_device_unplug(uint8_t device_id, bt_address remote_addr)
 {
     bts_hidd_hdl_t* handle = find_hidd_handle2(device_id);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    GATT_STATUS ret = service_adapter_hid_device_virtual_unplug();
+    gatt_status ret = service_adapter_hid_device_virtual_unplug();
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, device_virtual_unplug, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -389,7 +389,7 @@ const bts_hidd_interface_t* get_bts_hidd_interface(void)
     return &hid_device_instance;
 }
 
-static void handle_msg_received(BT_PROFILE_ID id, void* data, size_t size)
+static void handle_msg_received(bt_profile_id id, void* data, size_t size)
 {
     if (id != BT_PROFILE_HIDDEV_ID) {
         BT_LOGE("error, invalid priofile id:%d", id);
@@ -409,7 +409,7 @@ static void handle_msg_received(BT_PROFILE_ID id, void* data, size_t size)
 
     switch (msg->event) {
     case ON_HIDD_APP_STATE_CHANGED: {
-        HID_APP_STATE* registered = (HID_APP_STATE*)(msg->data);
+        hid_app_state* registered = (hid_app_state*)(msg->data);
         BT_CBACK(handle->callbacks, bts_hidd_app_state_changed_cb, handle->btm_handle, handle->device_id, *registered);
         if (*registered) {
             hidd_fd = open(HIDD_UNINPT_DEV, O_RDONLY);

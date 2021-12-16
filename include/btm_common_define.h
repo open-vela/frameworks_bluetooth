@@ -174,7 +174,7 @@ typedef struct {
 typedef enum {
     BLE_CONNECT_FILTER_POLICY_ADDR,
     BLE_CONNECT_FILTER_POLICY_WHITE_LIST
-} BLE_CONNECT_FILTER_POLICY;
+} ble_connect_filter_policy;
 
 typedef enum {
     BLE_ADDR_TYPE_PUBLIC,
@@ -183,31 +183,31 @@ typedef enum {
     BLE_ADDR_TYPE_RANDOM_ID,
     BLE_ADDR_TYPE_ANONYMOUS,
     BLE_ADDR_TYPE_UNKNOWN = 0xFF
-} BLE_ADDR_TYPE;
+} ble_addr_type;
 
 typedef enum {
     BLE_1M_PHY_TYPE,
     BLE_2M_PHY_TYPE,
     BLE_CODED_PHY_TYPE
-} BLE_PHY_TYPE;
+} ble_phy_type;
 
 typedef enum {
     SPP_TYPE_PASSKEY_CONFIRMATION,
     SPP_TYPE_PASSKEY_ENTRY,
     SPP_TYPE_CONSENT,
     SPP_TYPE_PASSKEY_NOTIFICATION
-} GAP_SPP_TYPE;
+} gap_spp_type;
 
 typedef enum {
     TESTMODE_DUT,
     TESTMODE_BLE
-} TEST_MODE;
+} test_mode;
 
 typedef enum {
     DEVICE_DEVTYPE_BREDR,
     DEVICE_DEVTYPE_BLE,
     DEVICE_DEVTYPE_DUAL
-} BT_DEVICE_TYPE;
+} bt_device_type;
 
 typedef enum {
     BLE_EVENT_ADV_IND,
@@ -215,12 +215,12 @@ typedef enum {
     BLE_EVENT_ADV_SCAN_IND,
     BLE_EVENT_ADV_NONCONN_IND,
     BLE_EVENT_SCAN_RSP
-} BLE_EVENT_TYPE;
+} ble_event_type;
 
 typedef enum {
     BT_DISCOVERY_STATE_STOPPED = 0,
     BT_DISCOVERY_STATE_STARTED
-} BT_DISCOVERY_STATE;
+} bt_discovery_state;
 
 /* * Bluetooth Bond state */
 typedef enum {
@@ -231,7 +231,7 @@ typedef enum {
     BT_BOND_STATE_BLE_NONE,
     BT_BOND_STATE_BLE_BONDING,
     BT_BOND_STATE_BLE_BONDED
-} BT_BOND_STATE;
+} bt_bond_state;
 
 /* * Local IO capability, shall be the same value defined in HCI Specification. */
 typedef enum {
@@ -240,7 +240,7 @@ typedef enum {
     BT_IO_CAPABILITY_KEYBOARDONLY,
     BT_IO_CAPABILITY_NOINPUTNOOUTPUT,
     BT_IO_CAPABILITY_KEYBOARDDISPLAY
-} BT_IO_CAPABILITY;
+} bt_io_capability;
 
 // Type of the event created by the ctroller when a command is completed
 typedef enum {
@@ -248,28 +248,28 @@ typedef enum {
     HCI_COMMAND_COMPLETED_BY_COMMAND_COMPLETE_EVENT, ///< HCI Command Complete event completes this command
     HCI_COMMAND_COMPLETED_BY_VENDOR_SPECIFIC_EVENT, ///< A HCI Vendor Specific event completes this command
     HCI_COMMAND_COMPLETED_EVENT_TYPE_END ///< End of definition, new event type shall be added before it
-} BT_SERVICE_HCI_COMMAND_COMPLETE_EVENT;
+} hci_command_complete_event;
 
 typedef enum {
     PROFILE_DISCONNECTED,
     PROFILE_CONNECTING,
     PROFILE_CONNECTED,
     PROFILE_DISCONNECTING
-} PROFILE_CONNECTION_STATE;
+} profile_connection_state;
 
 typedef enum {
     BLE_ADV_CHANNEL_DEFAULT,
     BLE_ADV_CHANNEL_37_ONLY,
     BLE_ADV_CHANNEL_38_ONLY,
     BLE_ADV_CHANNEL_39_ONLY
-} BLE_ADV_CHANNEL;
+} ble_adv_channel;
 
 typedef enum {
     ADV_FILTER_WHITE_LIST_FOR_NONE,/* Scan and Connection requests from ANY devices */
     ADV_FILTER_WHITE_LIST_FOR_SCAN,/* Connection requests from ANY devices; Scan requests from devices in the White List */
     ADV_FILTER_WHITE_LIST_ROR_CONNECTION,/* Scan request form ANY devices; Connection requests from devices in the White List */
     ADV_FILTER_WHITE_LIST_FOR_ALL /* Scan and Connection reqeusts from devices in the White List */
-} BLE_ADVERTISING_FILTER_POLICY;
+} ble_advertising_filter_policy;
 
 typedef enum {
     GATT_PRIMARY_SERVICE,
@@ -277,7 +277,7 @@ typedef enum {
     GATT_INCLUDED_SERVICE,
     GATT_CHARACTERISTIC,
     GATT_DESCRIPTOR
-} GATT_ELEMENT_TYPE;
+} gatt_element_type;
 
 typedef enum {
     GATT_STATUS_SUCCESS,
@@ -288,7 +288,7 @@ typedef enum {
     GATT_STATUS_READ_NOT_PERMITTED,
     GATT_STATUS_WRITE_NOT_PERMITTED,
     GATT_STATUS_INVALID_ATTRIBUTE_LENGTH
-} GATT_STATUS;
+} gatt_status;
 
 typedef enum {
     BT_STATUS_SUCCESS,
@@ -304,7 +304,7 @@ typedef enum {
     BT_STATUS_RMT_DEV_DOWN,     /* remote device not in BT range */
     BT_STATUS_AUTH_REJECTED,    /* remote rejects AUTH request */
     BT_STATUS_RMT_DEV_TERMINATE /* remote disconnect the link actively */
-} BT_STATUS;
+} bt_status;
 
 typedef enum {
     BT_ACL_STATE_CONNECTED,
@@ -314,38 +314,38 @@ typedef enum {
     BT_ACL_STATE_LE_CONNECTED,
     BT_ACL_STATE_LE_CONNECTING,
     BT_ACL_STATE_LE_DISCONNECTED
-} BT_ACL_STATE;
+} bt_acl_state;
 
 typedef enum {
     BT_SCAN_MODE_NONE,
     BT_SCAN_MODE_CONNECTABLE,
     BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE
-} BT_SCAN_MODE;
+} bt_scan_mode;
 
 typedef enum {
     BT_LINK_ROLE_MASTER,
     BT_LINK_ROLE_SLAVE,
     BT_LINK_ROLE_UNKNOWN
-} BT_LINK_ROLE;
+} bt_link_role;
 
 typedef enum {
     BT_MODE_ACTIVE,
     BT_MODE_SNIFF
-} BT_LINK_MODE;
+} bt_link_mode;
 
 typedef enum {
     LINK_POLICY_DISABLE_ALL,
     LINK_POLICY_ENABLE_ROLE_SWITCH,
     LINK_POLICY_ENABLE_SNIFF,
     LINK_POLICY_ENABLE_ROLE_SWITCH_AND_SNIFF
-} BT_LINK_POLICY;
+} bt_link_policy;
 
 typedef enum {
     BTHD_STATE_NOT_REGISTERED,
     BTHD_STATE_REGISTERED
-} HID_APP_STATE;
+} hid_app_state;
 
-/**@enum BT_RESULT_CODE
+/**@enum bt_result_code
 * @brief Result code of bluetooth manager
 */
 typedef enum {
@@ -359,7 +359,7 @@ typedef enum {
     BT_RESULT_SUCCESS = 0, ///< success code.
     BT_RESULT_WAITING_FOR_INIT_STATUS_CHANGED = 1,
     BT_RESULT_ENABLE_ALLREADY_ON_GOING = 2,
-} BT_RESULT_CODE;
+} bt_result_code;
 
 /** State of bluetooth manager*/
 typedef enum {
@@ -367,7 +367,7 @@ typedef enum {
     BTM_STATE_TURNING_OFF,
     BTM_STATE_TURNING_ON,
     BTM_STATE_ON
-} BTM_BT_STATE;
+} btm_bt_state;
 
 /** Bluetooth connection state*/
 typedef enum {
@@ -375,7 +375,7 @@ typedef enum {
     STATE_DISCONNECTING,
     STATE_CONNECTING,
     STATE_CONNECTED,
-} BT_CONNECTION_STATE;
+} bt_connection_state;
 
 /** State of bluetooth manager*/
 typedef enum {
@@ -383,7 +383,7 @@ typedef enum {
     STATE_BLE_TURNING_OFF,
     STATE_BLE_TURNING_ON,
     STATE_BLE_ON
-} BTM_BLE_STATE;
+} btm_ble_state;
 
 /** Bluetooth profile interface IDs */
 typedef enum {
@@ -404,19 +404,19 @@ typedef enum {
     BT_PROFILE_SPP_ID,
     BT_PROFILE_LE_AUDIO_ID,
     BT_PROFILE_MAX_ID,
-} BT_PROFILE_ID;
+} bt_profile_id;
 
 /* Possible HID Desriptor Type */
 typedef enum {
     HID_DESC_TYPE_REPORT = 0x22,
     HID_DESC_TYPE_PHYSICAL = 0x23,
-} HID_DESCRIPTOR_TYPE;
+} hid_descriptor_type;
 
 /* Possible HID Report ID for Boot mode */
 typedef enum {
     HID_BOOT_KB_REPORT_ID = 0x01,
     HID_BOOT_MOUSE_REPORT_ID = 0x02,
-} HID_BOOT_MODE_REPORT_ID;
+} hid_boot_mode_report_id;
 
 
 typedef uint8_t bt_common_key[BT_COMMON_KEY_LENGTH];
@@ -424,8 +424,8 @@ typedef uint8_t bt_common_key[BT_COMMON_KEY_LENGTH];
 typedef struct
 {
     bt_address addr;
-    BT_DEVICE_TYPE device_type;
-    BLE_ADDR_TYPE addr_type;
+    bt_device_type device_type;
+    ble_addr_type addr_type;
     char name[DEVICE_NAME_MAX_LEN];
     int rssi;
     uint32_t cod;
@@ -435,17 +435,17 @@ typedef struct
 typedef struct {
     bt_address remote_addr;        // Remote BT address
     bool accept;                // Accept pairing request
-    GAP_SPP_TYPE type;  // type of the SSP reply
+    gap_spp_type type;  // type of the SSP reply
     uint32_t passkey;           // passkey value if type is GAP_SPP_TYPE_PASSKEY_ENTRY
 } spp_reply_data_t;
 
 typedef struct {
-    BLE_CONNECT_FILTER_POLICY filter_policy;
+    ble_connect_filter_policy filter_policy;
     bt_address peer_addr;/* For BLE_CONNECT_FILTER_ADDR only */
-    BLE_ADDR_TYPE
+    ble_addr_type
     peer_addr_type;/* For BLE_CONNECT_FILTER_ADDR only. Set to BLE_ADDR_ANONYMOUS if unknown. */
     bool use_default_params;/* If TRUE, the following parameters are ignored. */
-    BLE_PHY_TYPE init_phy;
+    ble_phy_type init_phy;
     uint16_t scan_interval;
     uint16_t scan_window;
     uint16_t connection_interval_min;
@@ -459,7 +459,7 @@ typedef struct {
 typedef struct {
     int scan_interval;
     int scan_window;
-    BLE_PHY_TYPE scan_phy;
+    ble_phy_type scan_phy;
 } scan_params_t;
 
 typedef struct {
@@ -470,22 +470,22 @@ typedef struct {
 
 typedef struct {
     bt_address remote_addr;
-    BT_DEVICE_TYPE device_type;
+    bt_device_type device_type;
     int8_t rssi;
-    BLE_ADDR_TYPE addr_type;
-    BLE_EVENT_TYPE evt_type;
+    ble_addr_type addr_type;
+    ble_event_type evt_type;
     uint8_t length;
     char adv_data[1];
 } scan_result_t;
 
 typedef struct {
-    BLE_EVENT_TYPE adv_type;
+    ble_event_type adv_type;
     bt_address peer_addr;/* For BLE_ADV_DIRECT_IND only */
-    BLE_ADDR_TYPE peer_addr_type;/* For BLE_ADV_DIRECT_IND only */
+    ble_addr_type peer_addr_type;/* For BLE_ADV_DIRECT_IND only */
     uint32_t interval;
     int8_t tx_power; /* *Range:-20~10 */
-    BLE_ADV_CHANNEL channel_map;
-    BLE_ADVERTISING_FILTER_POLICY filter_policy;
+    ble_adv_channel channel_map;
+    ble_advertising_filter_policy filter_policy;
 } ble_adv_params_t;
 
 
@@ -504,14 +504,14 @@ typedef struct {
                   The id of an INCLUDED_SERVICE shall be the same as that of the PRIMARY_SERVICE or SECONDARY_SERVICE being included. */
     /* For the client application, this is the attribute handle returned from service discovery procedure. */
     bt_uuid_t uuid;
-    GATT_ELEMENT_TYPE type;
+    gatt_element_type type;
     uint32_t properties; /* bit masks, characteristic properties - for characteristic type only */
     uint32_t permissions; /* bit masks, attribute permissions - for all types */
 } gatt_element_t;
 
 typedef struct {
     uint32_t request_id;
-    GATT_STATUS status;
+    gatt_status status;
     uint16_t length; /* value length */
     uint8_t value[0];
 } gatt_response_t;
@@ -527,7 +527,7 @@ typedef struct {
 typedef struct {
     bt_address remote_addr;
     uint32_t cod;
-    GAP_SPP_TYPE ssp_type;
+    gap_spp_type ssp_type;
     uint32_t pass_key;
     char bt_name[BT_DEV_NAME_MAX_SIZE];
 } ssp_request_data_t;
@@ -537,9 +537,9 @@ typedef uint32_t ACL_DISCONNECTED_REASON;
 
 typedef struct {
     bt_address remote_addr;       // Remote BT address
-    BLE_ADDR_TYPE addr_type;
-    BT_STATUS status;  //
-    BT_ACL_STATE state;
+    ble_addr_type addr_type;
+    bt_status status;  //
+    bt_acl_state state;
     ACL_DISCONNECTED_REASON reasonCode;
 } acl_state_params_t;
 
@@ -598,7 +598,7 @@ typedef struct {
  *
  ******************************************************************************/
 typedef void (*server_connection_state_changed_callback)(bt_address remote_addr,
-        PROFILE_CONNECTION_STATE state);
+        profile_connection_state state);
 
 /*******************************************************************************
  *
@@ -610,7 +610,7 @@ typedef void (*server_connection_state_changed_callback)(bt_address remote_addr,
  * @return      void
  *
  ******************************************************************************/
-typedef void (*server_elements_added_callback)(GATT_STATUS status,
+typedef void (*server_elements_added_callback)(gatt_status status,
         gatt_element_t *elements,
         uint16_t size);
 
@@ -625,7 +625,7 @@ typedef void (*server_elements_added_callback)(GATT_STATUS status,
  * @return      void
  *
  ******************************************************************************/
-typedef void (*server_elements_removed_callback)(GATT_STATUS status,
+typedef void (*server_elements_removed_callback)(gatt_status status,
         gatt_element_t *elements,
         uint16_t size);
 
@@ -638,8 +638,8 @@ typedef void (*server_elements_removed_callback)(GATT_STATUS status,
  * @return      void
  *
  ******************************************************************************/
-typedef void (*server_phy_read_callback)(bt_address remote_addr, BLE_PHY_TYPE tx_phy,
-        BLE_PHY_TYPE rx_phy);
+typedef void (*server_phy_read_callback)(bt_address remote_addr, ble_phy_type tx_phy,
+        ble_phy_type rx_phy);
 
 /*******************************************************************************
  *
@@ -651,8 +651,8 @@ typedef void (*server_phy_read_callback)(bt_address remote_addr, BLE_PHY_TYPE tx
  * @return      void
  *
  ******************************************************************************/
-typedef void (*server_phy_update_callback)(bt_address remote_addr, BLE_PHY_TYPE tx_phy,
-        BLE_PHY_TYPE rx_phy, GATT_STATUS status);
+typedef void (*server_phy_update_callback)(bt_address remote_addr, ble_phy_type tx_phy,
+        ble_phy_type rx_phy, gatt_status status);
 
 /*******************************************************************************
  *
@@ -705,7 +705,7 @@ typedef void (*server_mtu_changed_callback)(bt_address remote_addr, uint32_t mtu
  *
  ******************************************************************************/
 typedef void (*server_notification_sent_callback)(bt_address remote_addr,
-        GATT_STATUS status);
+        gatt_status status);
 
 /*******************************************************************************
  *
@@ -716,7 +716,7 @@ typedef void (*server_notification_sent_callback)(bt_address remote_addr,
  *
  ******************************************************************************/
 typedef void (*client_connection_state_changed_callback)(bt_address remote_addr,
-        PROFILE_CONNECTION_STATE state);
+        profile_connection_state state);
 
 /*******************************************************************************
  *
@@ -746,7 +746,7 @@ typedef void (*client_service_discovered_callback)(bt_address remote_addr,
  ******************************************************************************/
 typedef void (*client_element_read_callback)(bt_address remote_addr,
         gatt_element_t *element, uint8_t *value,
-        uint16_t length, GATT_STATUS status);
+        uint16_t length, gatt_status status);
 
 /*******************************************************************************
  *
@@ -759,7 +759,7 @@ typedef void (*client_element_read_callback)(bt_address remote_addr,
  ******************************************************************************/
 typedef void (*client_element_written_callback)(bt_address remote_addr,
         gatt_element_t *element,
-        GATT_STATUS status);
+        gatt_status status);
 
 /*******************************************************************************
  *
@@ -785,7 +785,7 @@ typedef void (*client_element_changed_callback)(bt_address remote_addr,
  *
  ******************************************************************************/
 typedef void (*client_remote_rssi_read_callback)(bt_address remote_addr, int32_t rssi,
-        GATT_STATUS status);
+        gatt_status status);
 
 /*******************************************************************************
  *
@@ -796,8 +796,8 @@ typedef void (*client_remote_rssi_read_callback)(bt_address remote_addr, int32_t
  * @return      void
  *
  ******************************************************************************/
-typedef void (*client_phy_read_callback)(bt_address remote_addr, BLE_PHY_TYPE tx_phy,
-        BLE_PHY_TYPE rx_phy);
+typedef void (*client_phy_read_callback)(bt_address remote_addr, ble_phy_type tx_phy,
+        ble_phy_type rx_phy);
 
 /*******************************************************************************
  *
@@ -809,8 +809,8 @@ typedef void (*client_phy_read_callback)(bt_address remote_addr, BLE_PHY_TYPE tx
  * @return      void
  *
  ******************************************************************************/
-typedef void (*client_phy_update_callback)(bt_address remote_addr, BLE_PHY_TYPE tx_phy,
-        BLE_PHY_TYPE rx_phy, GATT_STATUS status);
+typedef void (*client_phy_update_callback)(bt_address remote_addr, ble_phy_type tx_phy,
+        ble_phy_type rx_phy, gatt_status status);
 
 /*******************************************************************************
  *
@@ -824,7 +824,7 @@ typedef void (*client_phy_update_callback)(bt_address remote_addr, BLE_PHY_TYPE 
  *
  ******************************************************************************/
 typedef void (*client_mtu_changed_callback)(bt_address remote_addr, uint32_t mtu,
-        GATT_STATUS status);
+        gatt_status status);
 
 /* * Stack Gatt Server callback structure */
 typedef struct {

@@ -26,7 +26,7 @@
 #include "bts_gatt_service.h"
 #include "log.h"
 
-static BT_RESULT_CODE gatt_init(void);
+static bt_result_code gatt_init(void);
 static void gatt_cleanup(void);
 
 static gatt_interface_t gatt_if = {
@@ -41,9 +41,9 @@ static gatt_interface_t gatt_if = {
     .advertiser = NULL,
 };
 
-static BT_RESULT_CODE gatt_init(void)
+static bt_result_code gatt_init(void)
 {
-    GATT_STATUS ret = service_adapter_gatt_init();
+    gatt_status ret = service_adapter_gatt_init();
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt_init ret:%d", ret);
         return BT_RESULT_FAILED;

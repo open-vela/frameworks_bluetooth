@@ -55,7 +55,7 @@ typedef enum {
 
 typedef struct {
     struct list_node node;
-    BT_PROFILE_ID id;
+    bt_profile_id id;
     void* data;
     size_t size;
 } bts_profile_msg_t;
@@ -169,19 +169,19 @@ static void stack_schedule_loop(void* data)
     ScheduleLoop();
 }
 
-bool bts_register_profile_process(BT_PROFILE_ID id, bts_profile_callbacks cb)
+bool bts_register_profile_process(bt_profile_id id, bts_profile_callbacks cb)
 {
     profiles_callbacks[id] = cb;
     return true;
 }
 
-bool bts_unregister_profile_process(BT_PROFILE_ID id)
+bool bts_unregister_profile_process(bt_profile_id id)
 {
     profiles_callbacks[id] = NULL;
     return true;
 }
 
-bool bts_send_uv_msg(BT_PROFILE_ID id, void* data, size_t size)
+bool bts_send_uv_msg(bt_profile_id id, void* data, size_t size)
 {
     bts_profile_msg_t* msg = (bts_profile_msg_t*)malloc(sizeof(bts_profile_msg_t));
     if (!msg) {
@@ -230,7 +230,7 @@ static void service_schedule_loop(void* data)
     uv_run(bt_dispatch_loop, UV_RUN_DEFAULT);
 }
 
-BT_RESULT_CODE bts_service_init(bt_service_callbacks* callbacks)
+bt_result_code bts_service_init(bt_service_callbacks* callbacks)
 {
     bluetooth_upper_callbacks = callbacks;
 

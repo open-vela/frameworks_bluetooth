@@ -83,7 +83,7 @@ static bts_ble_scanner_callbacks bts_le_scan_cb = {
     .bts_ble_scan_stopped_cb = on_le_scan_stopped,
 };
 
-static BT_RESULT_CODE start_scan(void** hdl_ptr, ble_scan_filter_t* filter, scan_params_t* setttings,
+static bt_result_code start_scan(void** hdl_ptr, ble_scan_filter_t* filter, scan_params_t* setttings,
     btm_le_scan_callbacks* cb)
 {
     CHECK_PTR_RETURN(scanner_interface, BT_RESULT_STATE_NOT_ON);
@@ -101,7 +101,7 @@ static BT_RESULT_CODE start_scan(void** hdl_ptr, ble_scan_filter_t* filter, scan
         .btm_handle = *handle_ptr,
     };
 
-    BT_RESULT_CODE ret = scanner_interface->start_scan(client);
+    bt_result_code ret = scanner_interface->start_scan(client);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail,start_scan err:%d", ret);
         free(*handle_ptr);
@@ -112,13 +112,13 @@ static BT_RESULT_CODE start_scan(void** hdl_ptr, ble_scan_filter_t* filter, scan
     return BT_RESULT_SUCCESS;
 }
 
-static BT_RESULT_CODE stop_scan(void* hdl)
+static bt_result_code stop_scan(void* hdl)
 {
     CHECK_PTR_RETURN(scanner_interface, BT_RESULT_STATE_NOT_ON);
     btm_lescan_hdl_t* handle = (btm_lescan_hdl_t*)(hdl);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
 
-    BT_RESULT_CODE ret = scanner_interface->stop_scan(handle->scanner_id);
+    bt_result_code ret = scanner_interface->stop_scan(handle->scanner_id);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail,stop_scan err:%d", ret);
         void** handle_ptr = handle->handle_ptr;
