@@ -176,7 +176,7 @@ static void bts_if_cleanup(void* handle)
 #if defined(CONFIG_BLUETOOTH_HIDDEV)
     const hid_interface_t* hid_if = hid_get_interface();
     if (hid_if) {
-        BT_LOGD("hidd init");
+        BT_LOGD("hidd cleanup");
         hid_if->cleanup();
     }
 #endif

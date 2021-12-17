@@ -155,22 +155,22 @@ static void gatt_display_service(gatt_element_t* elements, uint16_t size)
     while (item < item_end) {
         switch (item->type) {
         case GATT_PRIMARY_SERVICE:
-            BT_LOGD(">[%d][PRI]", item->id);
+            BT_LOGD(">[%lu][PRI]", item->id);
             break;
         case GATT_SECONDARY_SERVICE:
-            BT_LOGD(">[%d][SND]", item->id);
+            BT_LOGD(">[%lu][SND]", item->id);
             break;
         case GATT_INCLUDED_SERVICE:
-            BT_LOGD(">  [%d][INC]", item->id);
+            BT_LOGD(">  [%lu][INC]", item->id);
             break;
         case GATT_CHARACTERISTIC:
-            BT_LOGD(">  [%d][CHR]", item->id);
+            BT_LOGD(">  [%lu][CHR]", item->id);
             break;
         case GATT_DESCRIPTOR:
-            BT_LOGD(">    [%d][DES]", item->id);
+            BT_LOGD(">    [%lu][DES]", item->id);
             break;
         }
-        BT_LOGD("[PROP:%d", item->properties);
+        BT_LOGD("[PROP:%lu", item->properties);
         if (item->properties) {
             BT_LOGD(",");
             if (item->properties & GATT_ATT_PROPERTY_READ) {
@@ -230,7 +230,7 @@ static void on_client_nofity_request_callback(void* handle, bt_address remote_ad
 
 static void on_client_rssi_read_callback(void* handle, bt_address remote_addr, int32_t rssi, gatt_status status)
 {
-    BT_LOGD("%s,status:%d, addr:%s, rssi:%d", __func__, status, addr_str(remote_addr), rssi);
+    BT_LOGD("%s,status:%d, addr:%s, rssi:%lu", __func__, status, addr_str(remote_addr), rssi);
 }
 
 static void on_client_phy_read_callback(void* handle, bt_address remote_addr, ble_phy_type tx, ble_phy_type rx)
@@ -245,7 +245,7 @@ static void on_client_phy_update_callback(void* handle, bt_address remote_addr, 
 
 static void on_client_mtu_changed_callback(void* handle, bt_address remote_addr, uint32_t mtu)
 {
-    BT_LOGD("%s, addr:%s, mtu:%d", __func__, addr_str(remote_addr), mtu);
+    BT_LOGD("%s, addr:%s, mtu:%lu", __func__, addr_str(remote_addr), mtu);
     gattc_device_t* device = find_gattc_device(remote_addr);
     if (!device) {
         BT_LOGD("device not found");
@@ -256,15 +256,15 @@ static void on_client_mtu_changed_callback(void* handle, bt_address remote_addr,
 
 static void test_client_throughtout_write(void* client_handle, uint32_t times, uint16_t mtu)
 {
-    BT_LOGD("mtu:%d, times:%d", mtu, times);
+    BT_LOGD("mtu:%u, times:%lu", mtu, times);
     gatt_element_t element;
     memset(&element, 0, sizeof(element));
     uint32_t id = 0;
     BT_LOGD("please input characteristic  id");
-    scanf("%u", &id);
+    scanf("%lu", &id);
     element.id = id;
     element.properties = GATT_ATT_PROPERTY_WRITE;
-    BT_LOGD("input id:%u", element.id);
+    BT_LOGD("input id:%lu", element.id);
 
     int msg_counter = 1;
     throughtput_cursor = 1;
@@ -284,7 +284,7 @@ static void test_client_throughtout_write(void* client_handle, uint32_t times, u
         payload[3] = msg_counter & 0xFF;
         bt_result_code code = gattc_interface->write_request(client_handle, &element, payload, mtu);
         throughtput_cursor++;
-        BT_LOGD("write_request times:%d, throughtput_cursor:%d", i, throughtput_cursor);
+        BT_LOGD("write_request times:%d, throughtput_cursor:%u", i, throughtput_cursor);
         if (code != BT_RESULT_SUCCESS) {
             BT_LOGE("fail, write_request ret:%d", code);
             return;
@@ -325,7 +325,7 @@ static int gattc_connect(void* handle, int argc, char** argv)
     gattc_device_t* device = find_gattc_device(remote_address);
     if (device) {
         BT_LOGE("fail,  please disconnect device, try again");
-        return -1;
+        return 0;
     }
     device = add_gattc_device(remote_address);
     bt_result_code ret = gattc_interface->connect(&device->handle, device->remote_address, &client_cb);
@@ -348,7 +348,7 @@ static int gattc_disconnect(void* handle, int argc, char** argv)
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     bt_result_code ret = gattc_interface->disconnect(device->handle);
     if (ret != BT_RESULT_SUCCESS) {
@@ -369,7 +369,7 @@ static int gattc_read_rssi(void* handle, int argc, char** argv)
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     bt_result_code ret = gattc_interface->read_rssi(device->handle);
     if (ret != BT_RESULT_SUCCESS) {
@@ -389,7 +389,7 @@ static int gattc_read_phy(void* handle, int argc, char** argv)
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     bt_result_code ret = gattc_interface->read_phy(device->handle);
     if (ret != BT_RESULT_SUCCESS) {
@@ -410,7 +410,7 @@ static int gattc_update_mtu(void* handle, int argc, char** argv)
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     bt_result_code ret = gattc_interface->update_mtu(device->handle, mtu);
     if (ret != BT_RESULT_SUCCESS) {
@@ -432,7 +432,7 @@ static int gattc_update_phy(void* handle, int argc, char** argv)
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     bt_result_code ret = gattc_interface->update_phy(device->handle, tx, rx);
     if (ret != BT_RESULT_SUCCESS) {
@@ -443,7 +443,7 @@ static int gattc_update_phy(void* handle, int argc, char** argv)
 
 static int gattc_update_connection_parameter(void* handle, int argc, char** argv)
 {
-    if (!gattc_interface || argc < 6) {
+    if (!gattc_interface || argc < 7) {
         return -1;
     }
     bt_address remote_address;
@@ -454,11 +454,11 @@ static int gattc_update_connection_parameter(void* handle, int argc, char** argv
     uint32_t timeout = atoi(argv[4]);
     uint32_t min_connection_event_length = atoi(argv[5]);
     uint32_t max_connection_event_length = atoi(argv[6]);
-    BT_LOGD("min_interval: %d, max_interval: %d, latency: %d, timeout:%d, min_connection_event_length:%d, max_connection_event_length%d", min_interval, max_interval, latency, timeout, min_connection_event_length, max_connection_event_length);
+    BT_LOGD("min_interval: %lu, max_interval: %lu, latency: %lu, timeout:%lu, min_connection_event_length:%lu, max_connection_event_length%lu", min_interval, max_interval, latency, timeout, min_connection_event_length, max_connection_event_length);
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     bt_result_code ret = gattc_interface->update_connection_parameter(device->handle, min_interval, max_interval, latency, timeout, min_connection_event_length, max_connection_event_length);
     if (ret != BT_RESULT_SUCCESS) {
@@ -478,7 +478,7 @@ static int gattc_discover_services(void* handle, int argc, char** argv)
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     bt_uuid_t uuid;
     memset(uuid, 0, sizeof(bt_uuid_t));
@@ -497,11 +497,11 @@ static int gattc_read_request(void* handle, int argc, char** argv)
     bt_address remote_address;
     str2ba(argv[0], remote_address);
     uint32_t id = atoi(argv[1]);
-    BT_LOGD("%s, remote_addr:%s, id:%u", __func__, addr_str(remote_address), id);
+    BT_LOGD("%s, remote_addr:%s, id:%lu", __func__, addr_str(remote_address), id);
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     gatt_element_t element;
     memset(&element, 0, sizeof(element));
@@ -526,13 +526,13 @@ static int gattc_write_request(void* handle, int argc, char** argv)
     uint8_t* payload = (uint8_t*)malloc(size);
     memcpy(payload, argv[2], size);
 
-    BT_LOGD("%s, remote_addr:%s, id:%u, size:%d, value", __func__, addr_str(remote_address), id, size);
+    BT_LOGD("%s, remote_addr:%s, id:%lu, size:%d, value", __func__, addr_str(remote_address), id, size);
     BT_HEXDUMP(payload, size);
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
         free(payload);
-        return -1;
+        return 0;
     }
     gatt_element_t element;
     memset(&element, 0, sizeof(element));
@@ -552,11 +552,11 @@ static int gattc_enable_cccd(void* handle, int argc, char** argv)
     bt_address remote_address;
     str2ba(argv[0], remote_address);
     uint32_t id = atoi(argv[1]);
-    BT_LOGD("%s, remote_addr:%s, id:%u", __func__, addr_str(remote_address), id);
+    BT_LOGD("%s, remote_addr:%s, id:%lu", __func__, addr_str(remote_address), id);
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     gatt_element_t element;
     memset(&element, 0, sizeof(element));
@@ -578,11 +578,11 @@ static int gattc_disable_cccd(void* handle, int argc, char** argv)
     bt_address remote_address;
     str2ba(argv[0], remote_address);
     uint32_t id = atoi(argv[1]);
-    BT_LOGD("%s, remote_addr:%s, id:%u", __func__, addr_str(remote_address), id);
+    BT_LOGD("%s, remote_addr:%s, id:%lu", __func__, addr_str(remote_address), id);
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     gatt_element_t element;
     memset(&element, 0, sizeof(element));
@@ -598,17 +598,17 @@ static int gattc_disable_cccd(void* handle, int argc, char** argv)
 
 static int gattc_throughtout_write(void* handle, int argc, char** argv)
 {
-    if (!gattc_interface || argc < 1) {
+    if (!gattc_interface || argc < 2) {
         return -1;
     }
     bt_address remote_address;
     str2ba(argv[0], remote_address);
     uint32_t times = atoi(argv[1]);
-    BT_LOGD("throughtout_write remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x], times:%d", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5], times);
+    BT_LOGD("throughtout_write remote_addr:[%s], times:%lu", addr_str(remote_address), times);
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     test_client_throughtout_write(device, times, device->gatt_mtu);
     return 0;
@@ -616,28 +616,27 @@ static int gattc_throughtout_write(void* handle, int argc, char** argv)
 
 static int gattc_start_scan(void* handle, int argc, char** argv)
 {
-    if (!gattc_interface || argc < 1) {
+    if (!gattc_interface || argc < 6) {
         return -1;
     }
 
     btm_le_scan_interface_t* scan_interface = get_btm_lescan_interface(manager);
     if (!scan_interface) {
         BT_LOGE("fail, get_btm_lescan_interface");
-        return -1;
+        return 0;
     }
 
     uint8_t enable_filter = atoi(argv[0]);
     bt_address remote_address;
     str2ba(argv[1], remote_address);
     size_t size = strlen(argv[2]);
-    ble_scan_filter_t* filter_params = malloc(sizeof(ble_scan_filter_t) + size);
-    memset(filter_params, 0, sizeof(ble_scan_filter_t) + size);
-    memcpy(filter_params->bd_addr, remote_address, sizeof(bt_address));
-    filter_params->length = size;
-    if (size > 0) {
-        memcpy(filter_params->adv_data_mask, argv[2], size);
-    }
+    ble_scan_filter_t* filter_params = NULL;
     if (enable_filter) {
+        filter_params = malloc(sizeof(ble_scan_filter_t) + size);
+        memset(filter_params, 0, sizeof(ble_scan_filter_t) + size);
+        memcpy(filter_params->bd_addr, remote_address, sizeof(bt_address));
+        filter_params->length = size;
+        memcpy(filter_params->adv_data_mask, argv[2], size);
         BT_LOGD("%s, enable filter params remote_addr:%s, mask:", __func__, addr_str(remote_address));
         BT_HEXDUMP(filter_params->adv_data_mask, size);
     } else {
@@ -655,14 +654,14 @@ static int gattc_start_scan(void* handle, int argc, char** argv)
     BT_LOGD("%s, scan params interval:%d, widow:%d, phy:%d", __func__, interval, window, phy);
     if (phy > 2) {
         BT_LOGE("fail, invalid phy:%d", phy);
-        return -1;
+        return 0;
     }
 
     bt_result_code ret = scan_interface->start_scan(&scan_handle, filter_params, &scan_params, &scan_cb);
 
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, start_scan  ret: %d", ret);
-        return -1;
+        return 0;
     }
     return 0;
 }
@@ -678,7 +677,7 @@ static int gattc_stop_scan(void* handle, int argc, char** argv)
     bt_result_code ret = scan_interface->stop_scan(scan_handle);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, start_scan  ret: %d", ret);
-        return -1;
+        return 0;
     }
     return 0;
 }
