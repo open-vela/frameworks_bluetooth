@@ -110,8 +110,12 @@ static bt_command_t g_cmd_tables[] = {
     { "a2dpsrc", a2dp_source_command, "<A2DP> Advanced Audio Distribution Profile --Source" },
 #endif
     { "gap", gap_cmd, "<GAP> General profile" },
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
     { "gatts", gatt_server_command, "<GATT> gatt server and le advertise" },
+#endif
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
     { "gattc", gatt_client_command, "<GATT> gatt server and le scan" },
+#endif
 #if defined(CONFIG_BLUETOOTH_HIDDEV)
     { "hidd", hid_device_command, "hid device profile" },
 #endif

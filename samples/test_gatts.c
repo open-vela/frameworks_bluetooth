@@ -54,8 +54,7 @@ static gatt_element_t s_iot_service_elements[] = {
     { /* Private IOT Service - 0xFF00 */
         IOT_SERVICE_ID,
         { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00 },
-        GATT_PRIMARY_SERVICE
-        0,
+        GATT_PRIMARY_SERVICE 0,
         GATT_ATT_PERMISSION_READABLE },
     { /* Private Characteristic for TX - 0xFF01 */
         IOT_SERVICE_TX_CHR_ID,
@@ -186,7 +185,7 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
         break;
     }
     default: {
-        BT_LOGD(" write %d bytes from offset %d of element %d!\r\n>", size, offset, element->id);
+        BT_LOGD(" write %d bytes from offset %d of element %lu!\r\n>", size, offset, element->id);
         break;
     }
     }
@@ -202,7 +201,7 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
 
 static void test_server_mtu_changed_callback(void* handle, bt_address remote_addr, uint32_t mtu)
 {
-    BT_LOGD("###%s mtu: %d", __func__, mtu);
+    BT_LOGD("###%s mtu: %lu", __func__, mtu);
     gatt_mtu = mtu;
 }
 
@@ -223,7 +222,7 @@ static bt_mgr_callback_t mgt_cb = {
 
 static void test_server_throughtout_notify(uint32_t times, uint16_t mtu)
 {
-    BT_LOGD("###mtu:%d, times:%d", mtu, times);
+    BT_LOGD("###mtu:%u, times:%lu", mtu, times);
     uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * mtu);
     uint32_t msg_counter = 1;
     gatt_element_t* element = (gatt_element_t*)(s_iot_service_elements + IOT_SERVICE_TX_CHR_ID - 1);
@@ -247,7 +246,7 @@ static void test_server_throughtout_notify(uint32_t times, uint16_t mtu)
         payload[3] = msg_counter & 0xFF;
         bt_result_code code = gatts_interface->send_notify(gatts_handle, connected_device_addr, element, payload, mtu);
         throughtput_cursor++;
-        BT_LOGD("send_notify times:%d, throughtput_cursor:%d", i, throughtput_cursor);
+        BT_LOGD("send_notify times:%d, throughtput_cursor:%u", i, throughtput_cursor);
         if (code != BT_RESULT_SUCCESS) {
             BT_LOGE("fail, send_notify ret:%d", code);
             return;

@@ -77,7 +77,7 @@ static int8_t gen_hid_dev_id(void)
 {
     uint8_t found = 0;
     bts_hidd_hdl_t* handle;
-    for (uint8_t i = 1; i < 256; i++) {
+    for (uint8_t i = 1; i < 256; i++, found = 0) {
         list_for_every_entry(&hidd_list, handle, bts_hidd_hdl_t, node)
         {
             if (handle->device_id == i) {
