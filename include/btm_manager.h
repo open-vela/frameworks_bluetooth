@@ -215,7 +215,6 @@ btm_interface_t* get_bt_manager_interface(void);
 #define BT_CBACK(P_CB, P_CBACK, ...)                             \
     do {                                                         \
         if ((P_CB) && (P_CB)->P_CBACK) {                         \
-            BT_LOGD("%s: BT %s->%s", __func__, #P_CB, #P_CBACK); \
             (P_CB)->P_CBACK(__VA_ARGS__);                        \
         } else {                                                 \
             BT_LOGE("%s Callback is NULL", __func__);            \

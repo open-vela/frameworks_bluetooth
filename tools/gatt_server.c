@@ -609,7 +609,7 @@ static int gatts_do_throughput(void* handle, int argc, char** argv)
 
 static int le_start_advertising(void* handle, int argc, char** argv)
 {
-    if (!gatts_interface || argc < 1) {
+    if (!gatts_interface || argc < 3) {
         return -1;
     }
     int adv_type = atoi(argv[0]);
@@ -617,14 +617,18 @@ static int le_start_advertising(void* handle, int argc, char** argv)
         BT_LOGE("invalid adv_type:%d", adv_type);
         return 0;
     }
-    BT_LOGD("start ble adv type:%d", adv_type);
+
+    int interval = atoi(argv[1]);
+    int duration = atoi(argv[2]);
+    BT_LOGD("start ble adv type:%d, interval:%d, duration:%d", adv_type, interval, duration);
     const uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x08, 0x09, 0x42, 0x52, 0x54, 0x2D, 0x49, 0x44, 0x4D, 0x03, 0x02, 0x00, 0xFF };
     advertise_param_t adv_para;
     memset(&adv_para, 0, sizeof(advertise_param_t));
     adv_para.params.adv_type = adv_type;
     adv_para.params.channel_map = BLE_ADV_CHANNEL_DEFAULT;
-    adv_para.params.interval = 48;
+    adv_para.params.interval = interval;
     adv_para.params.tx_power = -10;
+    adv_para.duration = duration;
     adv_para.adv_length = sizeof(s_adv_data);
     adv_para.adv_data = (char*)s_adv_data;
     adv_para.scan_rsp_data = (char*)s_adv_data;
@@ -665,7 +669,7 @@ static bt_command_t g_gatts_tables[] = {
     { "send_notify", gatts_send_notify, "\"send notify:<address> <payload> \"" },
     { "send_indicate", gatts_send_indicate, "\"send indicate:<address> <payload>\"" },
     { "throughput", gatts_do_throughput, "\"throughtout:<address> <times>\"" },
-    { "start_adv", le_start_advertising, "\"start le adv(0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)\" <type>" },
+    { "start_adv", le_start_advertising, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration>\"" },
     { "stop_adv", le_stop_advertising, "\"stop le adv\"" },
 };
 
