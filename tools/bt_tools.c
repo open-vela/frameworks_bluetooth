@@ -77,6 +77,7 @@ static int set_local_device_class(void* handle, int argc, char** argv);
 static int get_local_device_class(void* handle, int argc, char** argv);
 static int ble_set_address(void* handle, int argc, char** argv);
 static int set_auto_accept_pair(void* handle, int argc, char** argv);
+static int ble_set_public_address(void* handle, int argc, char** argv);
 
 static btm_gap_interface_t* gap_test_interface = NULL;
 static btm_interface_t* manager;
@@ -139,6 +140,7 @@ static bt_command_t g_gap_tables[] = {
     { "setclass",                                  set_local_device_class,        "\"set local class                      param: <class> \"" },
     { "getclass",                                 get_local_device_class,        "\"get local class \"" },
     { "setbleaddr",                            ble_set_address,                     "\"set ble address                    param: <addr> \"" },
+    { "setblepubaddr",                    ble_set_public_address,      "\"set ble  publica ddress     param: <addr> \"" },
     { "autoaccept",                           set_auto_accept_pair,           "\"auto accept pair                 param: <accept:0 auto accpet, 1 not auto accept> \"" },
 
 };
@@ -243,6 +245,17 @@ static int get_remote_name(void* handle, int argc, char** argv)
     str2ba(argv[0], device->addr);
 
     gap_test_interface->bt_get_remote_name(gap_hanlde, device);
+
+    return 0;
+}
+
+static int ble_set_public_address(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+    bt_device_t* device = malloc(sizeof(bt_device_t));
+    str2ba(argv[0], device->addr);
+    gap_test_interface->ble_set_public_identity(gap_hanlde, device);
 
     return 0;
 }

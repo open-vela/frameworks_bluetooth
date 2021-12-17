@@ -473,6 +473,15 @@ static bt_result_code btm_ble_set_static_identity(void* gap_handle, bt_device_t*
     return ret;
 }
 
+static bt_result_code btm_ble_set_public_identity(void* gap_handle, bt_device_t* device)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    CHECK_PTR_RETURN(gap_handle, ret);
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_GAP_INTERFACE(context->service_interface, ble_set_public_identity, ret, gap_handle, device);
+    return ret;
+}
+
 static bt_result_code btm_ble_get_current_irk(void* gap_handle)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -639,6 +648,7 @@ static btm_gap_interface_t gap_interface = {
     .bt_send_hci_command = btm_send_hci_command,
 #endif
     .ble_set_static_identity = btm_ble_set_static_identity,
+    .ble_set_public_identity = btm_ble_set_public_identity,
     .ble_get_current_irk = btm_ble_get_current_irk,
     .ble_set_address = btm_ble_set_address,
     .ble_get_address = btm_ble_get_address,

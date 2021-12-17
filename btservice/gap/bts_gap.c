@@ -997,6 +997,19 @@ bt_result_code bts_ble_set_static_identity(bt_device_t* device)
     }
     return BT_RESULT_SUCCESS;
 }
+
+bt_result_code bts_ble_set_public_identity(bt_device_t* device)
+{
+    if (!device)
+        return BT_RESULT_FAILED;
+    bt_status ret = service_adapter_gap_ble_set_public_identity(device->addr);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, ret:%d", __func__, ret);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
 bt_result_code bts_ble_get_current_irk(void)
 {
     bt_status  ret = service_adapter_gap_ble_get_current_irk();
