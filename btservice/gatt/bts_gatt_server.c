@@ -121,7 +121,7 @@ static int8_t gen_gatts_id(void)
 {
     uint8_t found = 0;
     bts_gatts_hdl_t* handle;
-    for (uint8_t i = 1; i < 256; i++) {
+    for (uint8_t i = 1; i < 256; i++, found = 0) {
         list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
         {
             if (handle->server_if == i) {
@@ -380,11 +380,13 @@ static stack_gatt_server_callbacks gatt_server_cbs = {
 
 static bt_result_code gatt_server_open(bts_gatts_hdl_t server)
 {
-    bts_register_profile_process(BT_PROFILE_GATTS_ID, &handle_msg_received);
-    gatt_status ret = service_adapter_gatt_server_open(&gatt_server_cbs);
-    if (ret != GATT_STATUS_SUCCESS) {
-        BT_LOGE("fail, gatt server open, err:%d", ret);
-        return BT_RESULT_FAILED;
+    if (list_is_empty(&gatts_list)) {
+        bts_register_profile_process(BT_PROFILE_GATTS_ID, &handle_msg_received);
+        SERVICE_GATT_STATUS ret = service_adapter_gatt_server_open(&gatt_server_cbs);
+        if (ret != GATT_SUCCESS) {
+            BT_LOGE("fail, gatt server open, err:%d", ret);
+            return BT_RESULT_FAILED;
+        }
     }
 
     int8_t gatt_if = add_gatt_handle(server);
@@ -408,9 +410,11 @@ static bt_result_code gatt_server_open(bts_gatts_hdl_t server)
 
 static bt_result_code gatt_server_close(uint8_t server_if)
 {
-    gatt_status ret = service_adapter_gatt_server_close();
-    if (ret != GATT_STATUS_SUCCESS) {
-        BT_LOGE("fail, gatt server close, err:%d", ret);
+    if (list_length(&gatts_list) == 1) {
+        SERVICE_GATT_STATUS ret = service_adapter_gatt_server_close();
+        if (ret != GATT_SUCCESS) {
+            BT_LOGE("fail, gatt server close, err:%d", ret);
+        }
     }
 
     bts_gatts_hdl_t* handle = find_gatts_handle(server_if);
@@ -620,8 +624,11 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
     }
     case ON_SERVER_CLOSED: {
         BT_CBACK(handle->callbacks, bts_gatts_server_closed_cb, handle->btm_handle);
+        if (list_length(&gatts_list) == 1) {
+            BT_LOGD("gatts unregistered");
+            bts_unregister_profile_process(BT_PROFILE_GATTS_ID);
+        }
         remove_gatts_handle(handle);
-        bts_unregister_profile_process(BT_PROFILE_GATTS_ID);
         break;
     }
     case ON_SERVER_CONNECTION_CHANGED: {
