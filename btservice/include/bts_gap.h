@@ -90,6 +90,7 @@ bt_result_code bts_stop_service_discovery(bt_device_t* device);
 bt_result_code bts_send_hci_command(bt_hci_command_t* command, hci_command_complete_event event_type);
 
 bt_result_code bts_ble_set_static_identity(bt_device_t* device);
+bt_result_code bts_ble_set_public_identity(bt_device_t* device);
 bt_result_code bts_ble_get_current_irk(void);
 bt_result_code bts_ble_set_address(bt_device_t* device);
 bt_result_code bts_ble_get_address(void);

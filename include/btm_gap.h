@@ -359,6 +359,7 @@ typedef struct {
     int (*bt_get_remote_services)(void* gap_handle, bt_device_t* remote_addr, bt_uuid_t* service_list, uint8_t count_in);
 
     bt_result_code (*ble_set_static_identity)(void* gap_handle, bt_device_t* device);
+    bt_result_code (*ble_set_public_identity)(void* gap_handle, bt_device_t* device);
     bt_result_code (*ble_get_current_irk)(void* gap_handle);
     bt_result_code (*ble_set_address)(void* gap_handle, bt_device_t* device);
     bt_result_code (*ble_get_address)(void* gap_handle);
