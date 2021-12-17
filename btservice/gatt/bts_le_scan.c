@@ -58,7 +58,7 @@ static uint8_t generate_scanner_id(void)
 {
     uint8_t found = 0;
     bts_lescan_hdl_t* handle;
-    for (uint8_t i = 1; i < 256; i++) {
+    for (uint8_t i = 1; i < 256; i++, found = 0) {
         list_for_every_entry(&scanner_list, handle, bts_lescan_hdl_t, node)
         {
             if (handle->scanner_id == i) {
@@ -142,7 +142,7 @@ static bts_lescan_msg_t* create_adp_msg(uint8_t event, bts_lescan_hdl_t* handle,
 static bt_result_code start_scan(bts_lescan_hdl_t handle)
 {
     bts_register_profile_process(BT_PROFILE_LESCAN_ID, &handle_msg_received);
-    bt_status ret = service_adapter_gap_set_ble_scan_filter(handle.filter);
+    bt_status ret = service_adapter_gap_set_ble_scan_filter((SERVICE_BLE_SCAN_FILTER_S*)(handle.filter));
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("set ble scan filter fail, err:%d", ret);
         return BT_RESULT_FAILED;

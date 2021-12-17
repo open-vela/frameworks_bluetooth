@@ -73,22 +73,22 @@ static void gatt_display_service(gatt_element_t* elements, uint16_t size)
     while (item < item_end) {
         switch (item->type) {
         case GATT_PRIMARY_SERVICE:
-            BT_LOGD(">[%d][PRI]", item->id);
+            BT_LOGD(">[%lu][PRI]", item->id);
             break;
         case GATT_SECONDARY_SERVICE:
-            BT_LOGD(">[%d][SND]", item->id);
+            BT_LOGD(">[%lu][SND]", item->id);
             break;
         case GATT_INCLUDED_SERVICE:
-            BT_LOGD(">  [%d][INC]", item->id);
+            BT_LOGD(">  [%lu][INC]", item->id);
             break;
         case GATT_CHARACTERISTIC:
-            BT_LOGD(">  [%d][CHR]", item->id);
+            BT_LOGD(">  [%lu][CHR]", item->id);
             break;
         case GATT_DESCRIPTOR:
-            BT_LOGD(">    [%d][DES]", item->id);
+            BT_LOGD(">    [%lu][DES]", item->id);
             break;
         }
-        BT_LOGD("[PROP:%d", item->properties);
+        BT_LOGD("[PROP:%lu", item->properties);
         if (item->properties) {
             BT_LOGD(",");
             if (item->properties & GATT_ATT_PROPERTY_READ) {
@@ -146,7 +146,7 @@ static void on_client_nofity_request_callback(void* handle, bt_address remote_ad
 
 static void on_client_rssi_read_callback(void* handle, bt_address remote_addr, int32_t rssi, gatt_status status)
 {
-    BT_LOGD("%s rssi:%d", __func__, rssi);
+    BT_LOGD("%s rssi:%lu", __func__, rssi);
 }
 
 static void on_client_phy_read_callback(void* handle, bt_address remote_addr, ble_phy_type tx, ble_phy_type rx)
@@ -161,13 +161,13 @@ static void on_client_phy_update_callback(void* handle, bt_address remote_addr, 
 
 static void on_client_mtu_changed_callback(void* handle, bt_address remote_addr, uint32_t mtu)
 {
-    BT_LOGD("%s, mtu:%d", __func__, mtu);
+    BT_LOGD("%s, mtu:%lu", __func__, mtu);
     gatt_mtu = mtu;
 }
 
 static void test_client_throughtout_write(uint32_t times, uint16_t mtu)
 {
-    BT_LOGD("mtu:%d, times:%d", mtu, times);
+    BT_LOGD("mtu:%u, times:%u", mtu, times);
     gatt_element_t element;
     memset(&element, 0, sizeof(element));
     unsigned long id = 0;
@@ -175,7 +175,7 @@ static void test_client_throughtout_write(uint32_t times, uint16_t mtu)
     scanf("%ld", &id);
     element.id = id;
     element.properties = GATT_ATT_PROPERTY_WRITE;
-    BT_LOGD("input id:%ld", element.id);
+    BT_LOGD("input id:%lu", element.id);
     int msg_counter = 1;
     uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * mtu);
     if (!payload) {
@@ -193,7 +193,7 @@ static void test_client_throughtout_write(uint32_t times, uint16_t mtu)
         payload[3] = msg_counter & 0xFF;
         bt_result_code code = client_interface->write_request(client_handle, &element, payload, mtu);
         throughtput_cursor++;
-        BT_LOGD("write_request times:%d, throughtput_cursor:%d", i, throughtput_cursor);
+        BT_LOGD("write_request times:%lu, throughtput_cursor:%d", i, throughtput_cursor);
         if (code != BT_RESULT_SUCCESS) {
             BT_LOGE("fail, write_request ret:%d", code);
             return;
@@ -275,7 +275,7 @@ int main(int argc, FAR char* argv[])
             uint16_t mtu = 20;
             BT_LOGD("please input mtu");
             scanf("%ld", &mtu);
-            BT_LOGD("mtu:%ld", mtu);
+            BT_LOGD("mtu:%u", mtu);
             client_interface->update_mtu(client_handle, mtu);
             break;
         }
@@ -291,8 +291,8 @@ int main(int argc, FAR char* argv[])
             uint32_t min_connection_event_length;
             uint32_t max_connection_event_length;
             BT_LOGD("please input: min_interval max_interval latency timeout min_connection_event_length max_connection_event_length");
-            scanf("%d %d %d %d %d %d", &min_interval, &max_interval, &latency, &timeout, &min_connection_event_length, &max_connection_event_length);
-            BT_LOGD("min_interval: %d, max_interval: %d, latency: %d, timeout:%d, min_connection_event_length:%d, max_connection_event_length%d", min_interval, max_interval, latency, timeout, min_connection_event_length, max_connection_event_length);
+            scanf("%lu %lu %lu %lu %lu %lu", &min_interval, &max_interval, &latency, &timeout, &min_connection_event_length, &max_connection_event_length);
+            BT_LOGD("min_interval: %lu, max_interval: %lu, latency: %lu, timeout:%lu, min_connection_event_length:%lu, max_connection_event_length%lu", min_interval, max_interval, latency, timeout, min_connection_event_length, max_connection_event_length);
             client_interface->update_connection_parameter(client_handle, min_interval, max_interval, latency, timeout, min_connection_event_length, max_connection_event_length);
             break;
         }
@@ -309,7 +309,7 @@ int main(int argc, FAR char* argv[])
             BT_LOGD("please input id");
             scanf("%ld", &id);
             element.id = id;
-            BT_LOGD("input id:%ld", element.id);
+            BT_LOGD("input id:%lu", element.id);
             client_interface->read_request(client_handle, &element);
             break;
         }
@@ -321,7 +321,7 @@ int main(int argc, FAR char* argv[])
             scanf("%ld", &id);
             element.id = id;
             element.properties = GATT_ATT_PROPERTY_WRITE;
-            BT_LOGD("input id:%ld", element.id);
+            BT_LOGD("input id:%lu", element.id);
             uint8_t value[] = { 0x01, 0x02, 0x03, 0x04, 0x05 };
             client_interface->write_request(client_handle, &element, value, sizeof(value) / sizeof(value[0]));
             break;
@@ -335,7 +335,7 @@ int main(int argc, FAR char* argv[])
             element.id = id;
             element.type = GATT_CHARACTERISTIC;
             element.properties = GATT_ATT_PROPERTY_NOTIFY;
-            BT_LOGD("input id:%ld", element.id);
+            BT_LOGD("input id:%lu", element.id);
             client_interface->register_notification(client_handle, &element, true);
             break;
         }
@@ -348,7 +348,7 @@ int main(int argc, FAR char* argv[])
             element.id = id;
             element.type = GATT_CHARACTERISTIC;
             element.properties = GATT_ATT_PROPERTY_NOTIFY;
-            BT_LOGD("input id:%ld", element.id);
+            BT_LOGD("input id:%lu", element.id);
             client_interface->register_notification(client_handle, &element, false);
             break;
         }
