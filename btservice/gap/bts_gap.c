@@ -431,7 +431,6 @@ static void adapter_acl_state_changed_callback(acl_state_params_t* acl_state_par
 
 static void adapter_ble_scan_result_callback(scan_result_t* scan_result_data)
 {
-    BT_LOGD("%s", __func__);
     const bts_le_scan_interface_t* scan_ift = get_bts_lescan_instance();
     BT_CBACK(scan_ift->callbacks, ble_scan_result, scan_result_data);
 }
