@@ -67,6 +67,7 @@ int bts_get_remote_services(bt_device_t* remote_addr, bt_uuid_t* service_list, u
 
 /*Bond*/
 bt_result_code bts_reply_pair_request(bt_device_t* device, int accept);
+bt_result_code bts_ssp_reply(spp_reply_data_t* reply_data);
 bt_result_code bts_create_bond(bt_device_t* device);
 bt_result_code bts_cancel_bond(bt_device_t* device);
 bt_result_code bts_remove_bond(bt_device_t* device);

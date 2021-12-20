@@ -65,6 +65,8 @@ static int set_local_name(void* handle, int argc, char** argv);
 
 static int get_remote_name(void* handle, int argc, char** argv);
 static int reply_pair_request(void* handle, int argc, char** argv);
+static int ssp_reply(void* handle, int argc, char** argv);
+
 static int create_bond(void* handle, int argc, char** argv);
 static int cancel_bond(void* handle, int argc, char** argv);
 static int remove_bond(void* handle, int argc, char** argv);
@@ -78,6 +80,10 @@ static int get_local_device_class(void* handle, int argc, char** argv);
 static int ble_set_address(void* handle, int argc, char** argv);
 static int set_auto_accept_pair(void* handle, int argc, char** argv);
 static int ble_set_public_address(void* handle, int argc, char** argv);
+static int add_whitelist_device(void* handle, int argc, char** argv);
+static int add_resolving_device(void* handle, int argc, char** argv);
+static int remove_whitelist_device(void* handle, int argc, char** argv);
+static int remove_resolving_device(void* handle, int argc, char** argv);
 
 static btm_gap_interface_t* gap_test_interface = NULL;
 static btm_interface_t* manager;
@@ -124,28 +130,33 @@ static bt_command_t g_cmd_tables[] = {
 };
 
 static bt_command_t g_gap_tables[] = {
-    { "scan_mode",                         set_scan_mode,                      "\"set scan mode                   param: <mode>  <bondable> \"" },
-    { "discovery",                             start_discovery,                        "\"start bluetooth discovery        param: <timer(n*1.28s)> \"" },
+    { "scan_mode",                         set_scan_mode,                      "\"set scan mode                                    param: <mode>  <bondable> \"" },
+    { "discovery",                             start_discovery,                        "\"start bluetooth discovery             param: <timer(n*1.28s)> \"" },
     { "stopdiscovery",                    stop_discovery,                        "\"stop bluetooth discovery \"" },
     { "getaddr",                                get_local_address,                  "\"get local address      \"" },
-    { "setIO",                                      set_local_io_capability,        "\"set local capaliblity         param: <iocapability> \"" },
+    { "setIO",                                      set_local_io_capability,        "\"set local capaliblity                        param: <iocapability> \"" },
     { "getname",                              get_local_name,                       "\"get local name  \"" },
     { "setname",                               set_local_name,                       "\"change local name \"" },
-    { "remotename",                      get_remote_name,                  "\"get remote name              param: <addr> \"" },
-    { "replypair",                              reply_pair_request,                 "\"replay pair request          param: <addr> <accept>\"" },
-    { "createbond",                         create_bond,                              "\"create bond device         param: <addr> \"" },
-    { "cancelbond",                         cancel_bond,                             "\"cancel create bond          param: <addr> \"" },
-    { "removebond",                      remove_bond,                           "\"remove bond device       param: <addr> \"" },
+    { "remotename",                      get_remote_name,                  "\"get remote name                            param: <addr> \"" },
+    { "replypair",                              reply_pair_request,                 "\"replay pair request                         param: <addr> <accept>\"" },
+    { "createbond",                         create_bond,                              "\"create bond device                         param: <addr> \"" },
+    { "cancelbond",                         cancel_bond,                             "\"cancel create bond                          param: <addr> \"" },
+    { "removebond",                      remove_bond,                           "\"remove bond device                       param: <addr> \"" },
     { "getbonded",                          get_bonded_devices,             "\"get bonded device  \"" },
     { "getconnected",                     get_connected_devices,       "\"get connected device   \"" },
-    { "servicediscovery",               start_service_discovery,       "\"start service discovery    param: <addr> <uuid>\"" },
-    { "stopservicediscovery",      stop_service_discovery,        "\"stop service discovery    param: <addr> \"" },
-    { "getremoteservice",              get_remote_services,            "\"get remote service            param: <addr> \"" },
-    { "setclass",                                  set_local_device_class,        "\"set local class                      param: <class> \"" },
+    { "servicediscovery",               start_service_discovery,       "\"start service discovery                   param: <addr> <uuid>\"" },
+    { "stopservicediscovery",      stop_service_discovery,        "\"stop service discovery                  param: <addr> \"" },
+    { "getremoteservice",              get_remote_services,            "\"get remote service                           param: <addr> \"" },
+    { "setclass",                                  set_local_device_class,        "\"set local class                                    param: <class> \"" },
     { "getclass",                                 get_local_device_class,        "\"get local class \"" },
-    { "setbleaddr",                            ble_set_address,                     "\"set ble address                    param: <addr> \"" },
     { "setblepubaddr",                    ble_set_public_address,      "\"set ble  publica ddress     param: <addr> \"" },
-    { "autoaccept",                           set_auto_accept_pair,           "\"auto accept pair                 param: <accept:0 auto accpet, 1 not auto accept> \"" },
+    { "setbleaddr",                            ble_set_address,                     "\"set ble address                                  param: <addr> \"" },
+    { "autoaccept",                           set_auto_accept_pair,           "\"auto accept pair                               param: <accept:0 auto accpet, 1 not auto accept> \"" },
+    { "addwhitelist",                         add_whitelist_device,           "\"add whitle list device                    param: <addr> \"" },
+    { "removewhitelist",                 remove_whitelist_device,    "\"remove whitle list device            param: <addr> \"" },
+    { "addresolvinglist",                 add_resolving_device,          "\"add resovling list device               param: <addr> \"" },
+    { "removesolvinglist",              remove_resolving_device,   "\"remove resovling list device      param: <addr> \"" },
+    { "sspreply",                                   ssp_reply,   "\"reply remote relpyrequest      param: <addr> <keycode> \"" },
 
 };
 
@@ -237,6 +248,7 @@ static int set_local_name(void* handle, int argc, char** argv)
     memcpy(name, argv[0], strlen(argv[0]));
     name[strlen(argv[0]) + 1] = 0;
     gap_test_interface->bt_set_local_name(gap_hanlde, argv[0], strlen(argv[0]) + 1);
+    free(name);
 
     return 0;
 }
@@ -249,6 +261,7 @@ static int get_remote_name(void* handle, int argc, char** argv)
     str2ba(argv[0], device->addr);
 
     gap_test_interface->bt_get_remote_name(gap_hanlde, device);
+    free(device);
 
     return 0;
 }
@@ -272,9 +285,24 @@ static int reply_pair_request(void* handle, int argc, char** argv)
     str2ba(argv[0], device->addr);
     uint16_t accept = atoi(argv[0]);
     gap_test_interface->bt_reply_pair_request(gap_hanlde, device, accept);
-
+    free(device);
     return 0;
 }
+
+static int ssp_reply(void* handle, int argc, char** argv)
+{
+    if (argc < 2)
+        return -1;
+
+    spp_reply_data_t reply;
+    str2ba(argv[0], reply.remote_addr);
+    reply.accept = true;
+    reply.type = SPP_TYPE_PASSKEY_NOTIFICATION;
+    reply.passkey = atoi(argv[0]);
+    gap_test_interface->bt_ssp_reply(gap_hanlde,&reply);
+    return 0;
+}
+
 
 static int create_bond(void* handle, int argc, char** argv)
 {
@@ -283,7 +311,7 @@ static int create_bond(void* handle, int argc, char** argv)
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
     gap_test_interface->bt_create_bond(gap_hanlde, device);
-
+    free(device);
     return 0;
 }
 
@@ -294,6 +322,7 @@ static int cancel_bond(void* handle, int argc, char** argv)
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
     gap_test_interface->bt_cancel_bond(gap_hanlde, device);
+    free(device);
 
     return 0;
 }
@@ -305,6 +334,7 @@ static int remove_bond(void* handle, int argc, char** argv)
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
     gap_test_interface->bt_remove_bond(gap_hanlde, device);
+    free(device);
 
     return 0;
 }
@@ -390,6 +420,52 @@ static int set_auto_accept_pair(void* handle, int argc, char** argv)
     if (argc < 1)
         return -1;
     auto_accept = atoi(argv[0]);
+    return 0;
+}
+static int add_whitelist_device(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+
+    bt_device_t* device = malloc(sizeof(bt_device_t));
+    str2ba(argv[0], device->addr);
+    gap_test_interface->ble_add_white_list(gap_hanlde, device);
+    free(device);
+    return 0;
+}
+
+static int add_resolving_device(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+
+    bt_device_t* device = malloc(sizeof(bt_device_t));
+    str2ba(argv[0], device->addr);
+    gap_test_interface->ble_add_resolving_list(gap_hanlde, device);
+    free(device);
+    return 0;
+}
+static int remove_whitelist_device(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+
+    bt_device_t* device = malloc(sizeof(bt_device_t));
+    str2ba(argv[0], device->addr);
+    gap_test_interface->ble_remove_white_list(gap_hanlde, device);
+    free(device);
+    return 0;
+}
+
+static int remove_resolving_device(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+
+    bt_device_t* device = malloc(sizeof(bt_device_t));
+    str2ba(argv[0], device->addr);
+    gap_test_interface->ble_remove_resolving_list(gap_hanlde, device);
+    free(device);
     return 0;
 }
 
@@ -505,31 +581,27 @@ void test_received_remote_name_callback(void* handle, bt_address bd_addr, char* 
 void test_ssp_request_callback(void* handle, ssp_request_data_t* request_data)
 {
     BT_LOGD("%s, : request_data->ssp_type: %d", __func__, request_data->ssp_type);
+    spp_reply_data_t reply;
 
-    if (request_data->ssp_type == GAP_SPP_TYPE_PASSKEY_CONFIRMATION) {
-        SERVICE_SSP_REPLY_DATA_S reply;
+    if (request_data->ssp_type == SPP_TYPE_PASSKEY_CONFIRMATION) {
         memcpy(reply.remote_addr, request_data->remote_addr, 6);
         reply.accept = true;
-        reply.type = GAP_SPP_TYPE_PASSKEY_CONFIRMATION;
-        service_adapter_gap_ssp_reply(&reply);
+        reply.type = SPP_TYPE_PASSKEY_CONFIRMATION;
+        gap_test_interface->bt_ssp_reply(gap_hanlde, &reply);
     }
-    if (request_data->ssp_type == GAP_SPP_TYPE_PASSKEY_ENTRY) {
-        SERVICE_SSP_REPLY_DATA_S reply;
+    if (request_data->ssp_type == SPP_TYPE_PASSKEY_ENTRY) {
         memcpy(reply.remote_addr, request_data->remote_addr, 6);
         reply.accept = true;
-        reply.type = GAP_SPP_TYPE_PASSKEY_ENTRY;
+        reply.type = SPP_TYPE_PASSKEY_ENTRY;
         reply.passkey = request_data->pass_key;
-        service_adapter_gap_ssp_reply(&reply);
+        gap_test_interface->bt_ssp_reply(gap_hanlde,&reply);
     }
-    if (request_data->ssp_type == GAP_SPP_TYPE_PASSKEY_NOTIFICATION) {
-        SERVICE_SSP_REPLY_DATA_S reply;
-        memcpy(reply.remote_addr, request_data->remote_addr, 6);
-        reply.accept = true;
-        reply.type = GAP_SPP_TYPE_PASSKEY_NOTIFICATION;
-        // reply.passkey = request_data->pass_key;
-        // service_adapter_gap_ssp_reply(&reply);
+    if (request_data->ssp_type == SPP_TYPE_PASSKEY_NOTIFICATION) {
+        BT_LOGD("%s, device %s, psss key: %d", __func__, addr_str(request_data->remote_addr), request_data->cod);
+        BT_LOGD("please input code:");
     }
 }
+
 void test_bond_state_changed_callback(void* handle, bt_device_t* device, bt_bond_state state)
 {
     char* bond_state = NULL;
@@ -584,6 +656,7 @@ void test_pairing_request_callback(void* gap_handle, bt_address remote_addr, boo
         bt_device_t* device = malloc(sizeof(bt_device_t));
         memcpy(device->addr, remote_addr, 6);
         gap_test_interface->bt_reply_pair_request(gap_hanlde, device, 0);
+        free(device);
     }
 }
 
