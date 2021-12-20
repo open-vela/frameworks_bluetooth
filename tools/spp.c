@@ -55,18 +55,20 @@ static int stop_server_cmd(void* handle, int argc, char* argv[]);
 static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int write_cmd(void* handle, int argc, char* argv[]);
+static int test_cmd(void* handle, int argc, char* argv[]);
 static int dump_cmd(void* handle, int argc, char* argv[]);
 
 static struct list_node device_list = LIST_INITIAL_VALUE(device_list);
 static spp_interface_t* spp_interface = NULL;
 static uv_timer_t* spp_timer = NULL;
 static bt_command_t g_spp_tables[] = {
-    { "start", start_server_cmd, "\"start spp server        param: <port> <uuid>\"" },
-    { "stop", stop_server_cmd, "\"stop  spp server        param: <port>\"" },
-    { "connect", connect_cmd, "\"connect spp device      param: <address> <port> <uuid>\"" },
+    { "start", start_server_cmd,    "\"start spp server        param: <port> <uuid>\"" },
+    { "stop", stop_server_cmd,      "\"stop  spp server        param: <port>\"" },
+    { "connect", connect_cmd,       "\"connect spp device      param: <address> <port> <uuid>\"" },
     { "disconnect", disconnect_cmd, "\"disconnect peer device  param: <address> <port>\"" },
-    { "write", write_cmd, "\"write data to peer      param: <port> <data>\"" },
-    { "dump", dump_cmd, "\"dump spp current state\"" },
+    { "write", write_cmd,           "\"write data to peer      param: <port> <data>\"" },
+    { "test", test_cmd,             "\"transmit bulk data      param: <port> <length> <times>\"" },
+    { "dump", dump_cmd,             "\"dump spp current state\"" },
 };
 
 static struct option spp_options[] = {
@@ -109,7 +111,7 @@ static void pty_read_cb(euv_pty_t* handle,
 {
     if (size > 0)
         lib_dumpbuffer("spp read", buf, size);
-    else {
+    else if (size < 0){
         BT_LOGE("%s read failed, status:%d", __func__, size);
         euv_pty_read_stop(handle);
         euv_pty_close(handle);
@@ -159,7 +161,7 @@ static void pty_open_callback(const bt_address addr, uint16_t port, char* name, 
         BT_LOGE("%s pty init error", __func__);
     }
     list_add_tail(&device_list, &device->node);
-    euv_pty_read_start(device->pty, pty_read_cb);
+    euv_pty_read_start(device->pty, 128, pty_read_cb);
 }
 
 static int start_server_cmd(void* handle, int argc, char* argv[])
@@ -254,6 +256,36 @@ static int write_cmd(void* handle, int argc, char* argv[])
     if (device == NULL)
         return -1;
     euv_pty_write(device->pty, (uint8_t*)argv[1], strlen(argv[1]), NULL);
+
+    return 0;
+}
+
+static void write_complete(euv_pty_t* handle, uint8_t* buf, int status)
+{
+    free(buf);
+}
+static int test_cmd(void* handle, int argc, char* argv[])
+{
+    spp_device_t* device;
+    uint16_t port, length, times;
+    uint8_t *buf;
+
+    if (argc < 3)
+        return -1;
+
+    port = atoi(argv[0]);
+    length = atoi(argv[1]);
+    times = atoi(argv[2]);
+    device = find_pty_by_port(port);
+    BT_LOGD("%s port:%d", __func__, port);
+    if (device == NULL)
+        return -1;
+
+    for (int i = 0; i < times; i++) {
+        buf = malloc(length);
+        memset(buf, 0xA5, length);
+        euv_pty_write(device->pty, buf, length, write_complete);
+    }
 
     return 0;
 }

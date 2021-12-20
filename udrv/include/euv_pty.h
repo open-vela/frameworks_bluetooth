@@ -43,6 +43,6 @@ typedef void (*euv_write_cb)(euv_pty_t* handle, uint8_t* buf, int status);
 euv_pty_t* euv_pty_init(uv_loop_t* loop, int fd, uv_tty_mode_t mode);
 void euv_pty_close(euv_pty_t* hdl);
 int euv_pty_write(euv_pty_t* handle, uint8_t* buffer, int length, euv_write_cb cb);
-int euv_pty_read_start(euv_pty_t* handle, euv_read_cb cb);
+int euv_pty_read_start(euv_pty_t* handle, uint16_t read_size, euv_read_cb cb);
 int euv_pty_read_stop(euv_pty_t* handle);
 #endif
