@@ -431,6 +431,7 @@ static void adapter_acl_state_changed_callback(acl_state_params_t* acl_state_par
 
 static void adapter_ble_scan_result_callback(scan_result_t* scan_result_data)
 {
+    BT_LOGD("%s", __func__);
     const bts_le_scan_interface_t* scan_ift = get_bts_lescan_instance();
     BT_CBACK(scan_ift->callbacks, ble_scan_result, scan_result_data);
 }
@@ -856,6 +857,15 @@ bt_result_code bts_reply_pair_request(bt_device_t* device, int accept)
     return BT_RESULT_SUCCESS;
 }
 
+bt_result_code bts_ssp_reply(spp_reply_data_t* reply_data)
+{
+    BT_LOGD("%s", __func__);
+    if (!reply_data)
+        return BT_RESULT_FAILED;
+    service_adapter_gap_ssp_reply(reply_data);
+    return BT_RESULT_SUCCESS;
+}
+
 bt_result_code bts_create_bond(bt_device_t* device)
 {
     if (!device)
@@ -996,19 +1006,17 @@ bt_result_code bts_ble_set_static_identity(bt_device_t* device)
     }
     return BT_RESULT_SUCCESS;
 }
-
 bt_result_code bts_ble_set_public_identity(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    bt_status ret = service_adapter_gap_ble_set_public_identity(device->addr);
+    bt_status  ret = service_adapter_gap_ble_set_public_identity(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-
 bt_result_code bts_ble_get_current_irk(void)
 {
     bt_status  ret = service_adapter_gap_ble_get_current_irk();

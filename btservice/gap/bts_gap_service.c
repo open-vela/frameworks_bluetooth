@@ -291,6 +291,14 @@ static bt_result_code bts_if_reply_pair_request(void* gap_handle, bt_device_t* d
     ret = bts_reply_pair_request(device, accept);
     return ret;
 }
+static bt_result_code bts_if_ssp_reply(void* gap_handle, spp_reply_data_t* reply_data)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    if (!gap_is_handle_valid(gap_handle))
+        return ret;
+    ret = bts_ssp_reply(reply_data);
+    return ret;
+}
 static bt_result_code bts_if_create_bond(void* gap_handle, bt_device_t* device)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -557,6 +565,7 @@ static btm_gap_interface_t gap_interface = {
     .bt_get_remote_name = bts_if_get_remote_name,
     .bt_get_remote_services = bts_if_get_remote_services,
     .bt_reply_pair_request = bts_if_reply_pair_request,
+    .bt_ssp_reply = bts_if_ssp_reply,
     .bt_create_bond = bts_if_create_bond,
     .bt_cancel_bond = bts_if_cancel_bond,
     .bt_remove_bond = bts_if_remove_bond,

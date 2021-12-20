@@ -436,7 +436,7 @@ typedef struct {
     bt_address remote_addr;        // Remote BT address
     bool accept;                // Accept pairing request
     gap_spp_type type;  // type of the SSP reply
-    uint32_t passkey;           // passkey value if type is GAP_SPP_TYPE_PASSKEY_ENTRY
+    uint32_t passkey;           // passkey value if type is SPP_TYPE_PASSKEY_ENTRY
 } spp_reply_data_t;
 
 typedef struct {
