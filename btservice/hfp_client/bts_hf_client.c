@@ -350,7 +350,7 @@ static void adp_voice_recognition_enabled_changed_cb(BD_ADDR remote_addr, bool e
     hf_client_send_message(sm, msg);
 }
 
-static void adp_received_at_cmd_cb(BD_ADDR remote_addr, char* response, uint16_t response_length)
+static void adp_received_at_cmd_resp_cb(BD_ADDR remote_addr, char* response, uint16_t response_length)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -358,7 +358,7 @@ static void adp_received_at_cmd_cb(BD_ADDR remote_addr, char* response, uint16_t
     sm = get_state_machine(remote_addr);
     if (!sm)
         return;
-    msg = HF_MSG_NEW(STACK_EVENT_CMD_RESULT, remote_addr);
+    msg = HF_MSG_NEW(STACK_EVENT_CMD_RESPONSE, remote_addr);
     if (!msg)
         return;
     HF_MSG_ADD_STR(msg, 1, response, response_length);
@@ -425,7 +425,25 @@ static void adp_current_call_callback(BD_ADDR remote_addr, uint32_t idx,
 
 static void adp_at_command_result_callback(BD_ADDR remote_addr, uint32_t at_cmd_code,uint32_t result)
 {
+    hf_state_machine_t* sm;
+    hf_client_msg_t* msg;
 
+    switch (at_cmd_code) {
+        case HFP_ATCC_ATD:
+        break;
+        default:
+        return;
+    }
+    sm = get_state_machine(remote_addr);
+    if (!sm)
+        return;
+    msg = HF_MSG_NEW(STACK_EVENT_CMD_RESULT, remote_addr);
+    if (!msg)
+        return;
+
+    msg->event_data.valueint1 = at_cmd_code;
+    msg->event_data.valueint2 = result;
+    hf_client_send_message(sm, msg);
 }
 
 HFP_CALLBACKS_S hfp_adp_callbacks = {
@@ -439,7 +457,7 @@ HFP_CALLBACKS_S hfp_adp_callbacks = {
     adp_volume_changed_cb,
     adp_ring_active_state_changed_cb,
     adp_voice_recognition_enabled_changed_cb,
-    adp_received_at_cmd_cb,
+    adp_received_at_cmd_resp_cb,
     adp_received_sco_connection_req_cb,
     adp_clip_cb,
     adp_current_call_callback,
