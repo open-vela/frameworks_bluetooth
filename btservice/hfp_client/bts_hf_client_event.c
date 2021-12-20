@@ -31,6 +31,7 @@
  *
  ****************************************************************************/
 #include <stdlib.h>
+#include <string.h>
 
 #include "btm_manager.h"
 #include "bts_hf_client_event.h"

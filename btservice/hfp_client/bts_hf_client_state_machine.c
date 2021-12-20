@@ -48,7 +48,7 @@
 #include "utils/log.h"
 #include "utils/utils.h"
 
-#define HF_CONNECT_TIMEOUT 2 * 1000
+#define HF_CONNECT_TIMEOUT 4 * 1000
 #define HF_SERVICE_CBACK(P_CB, P_CBACK, ...)                     \
     do {                                                         \
         if ((P_CB) && (P_CB)->P_CBACK) {                         \
@@ -58,16 +58,21 @@
     } while (0)
 
 typedef struct _hf_state_machine {
-    state_machine_t sm;
-    bt_address addr;
-    uint16_t sco_conn_handle;
-    uv_timer_t* connect_timer;
-    bool recognition_active;
-    uint8_t spk_volume;
-    uint8_t mic_volume;
-    //list_t              *current_calls;
-    hf_client_service_t* service;
+    state_machine_t         sm;
+    bt_address              addr;
+    uint16_t                sco_conn_handle;
+    uv_timer_t*             connect_timer;
+    bool                    recognition_active;
+    uint8_t                 spk_volume;
+    uint8_t                 mic_volume;
+    struct list_node        pending_actions;
+    hf_client_service_t*    service;
 } hf_state_machine_t;
+
+typedef struct {
+    struct list_node node;
+    uint32_t cmd_code;
+}hf_at_cmd_t;
 
 static void disconnected_enter(state_machine_t* sm);
 static void disconnected_exit(state_machine_t* sm);
@@ -145,11 +150,34 @@ static char* stack_event_to_string(hf_client_event_t event)
         CASE_RETURN_STR(STACK_EVENT_CALL_WAITING)
         CASE_RETURN_STR(STACK_EVENT_CURRENT_CALLS)
         CASE_RETURN_STR(STACK_EVENT_VOLUME_CHANGED)
+        CASE_RETURN_STR(STACK_EVENT_CMD_RESPONSE)
         CASE_RETURN_STR(STACK_EVENT_CMD_RESULT)
         CASE_RETURN_STR(STACK_EVENT_RING_INDICATION)
     default:
         return "UNKNOWN_EVENT";
     }
+}
+
+static void add_pending_action(hf_state_machine_t *hfsm, uint32_t cmd_code)
+{
+    hf_at_cmd_t *cmd = malloc(sizeof(hf_at_cmd_t));
+
+    cmd->cmd_code = cmd_code;
+    list_add_tail(&hfsm->pending_actions, &cmd->node);
+}
+
+static uint32_t first_pending_action(hf_state_machine_t *hfsm)
+{
+    struct list_node* node;
+
+    node = list_remove_head(&hfsm->pending_actions);
+    if (node) {
+        uint32_t code = ((hf_at_cmd_t *)node)->cmd_code;
+        free(node);
+        return code;
+    }
+
+    return 0;
 }
 
 static void notify_connection_state_changed(hf_client_service_t* service,
@@ -417,6 +445,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Dial memory: %d failed", memory);
         }
+        add_pending_action(hfsm, HFP_ATCC_ATD);
         break;
     }
 
@@ -592,10 +621,28 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         break;
     }
 
-    case STACK_EVENT_CMD_RESULT: {
+    case STACK_EVENT_CMD_RESPONSE: {
         const char* resp = data->string1;
 
         HF_SERVICE_CBACK(service->callbacks, cmd_complete_cb, hfsm->addr, resp);
+        break;
+    }
+
+    case STACK_EVENT_CMD_RESULT: {
+        uint32_t cmd_code = data->valueint1;
+        uint32_t cmd_result = data->valueint2;
+        uint32_t pending;
+
+        pending = first_pending_action(hfsm);
+        if (pending == cmd_code) {
+            switch (cmd_code) {
+                case HFP_ATCC_ATD:
+                if (cmd_result != HFP_ATC_RESULT_OK){
+                    BT_LOGE("Dial memory failed:%d", cmd_result);
+                }
+                break;
+            }
+        }
         break;
     }
 
@@ -801,6 +848,16 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         break;
     }
 
+    case STACK_EVENT_CMD_RESPONSE: {
+        const char* resp = data->string1;
+
+        HF_SERVICE_CBACK(service->callbacks, cmd_complete_cb, hfsm->addr, resp);
+        break;
+    }
+
+    case STACK_EVENT_CMD_RESULT:
+        break;
+
     default:
         break;
     }
@@ -828,6 +885,7 @@ hf_state_machine_t* hf_client_state_machine_new(hf_client_service_t* context,
     hfsm->connect_timer = NULL;
     hfsm->recognition_active = false;
     hfsm->service = context;
+    list_initialize(&hfsm->pending_actions);
     hsm_ctor(&hfsm->sm, (state_t*)&disconnected_state);
     memcpy(hfsm->addr, bd_addr, sizeof(bt_address));
 
