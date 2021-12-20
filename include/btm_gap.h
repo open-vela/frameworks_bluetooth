@@ -41,7 +41,7 @@
 
 #include "btm_manager.h"
 
-#define MAX_PAIR_DEVICE 2
+#define MAX_PAIR_DEVICE 10
 #define MAX_CONNECTED_DEVICE 1
 /* * Bluetooth discovery state */
 
@@ -267,6 +267,8 @@ typedef struct {
  * @param[in] device - reomte device info.
  * @return   Bluetooth Error status code (0- Success).
  */
+   bt_result_code (*bt_ssp_reply)(void* gap_handle, spp_reply_data_t* reply_data);
+
     bt_result_code (*bt_create_bond)(void* handle, bt_device_t* device);
     /**
  *@brief   *  Cancel ongoing bonding procedure which previous executed by
