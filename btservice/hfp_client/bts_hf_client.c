@@ -213,7 +213,7 @@ static hf_client_callsetup_t trans_adp_callsetup_state(SERVICE_HFP_CALL_SETUP_ST
     return HF_CLIENT_CALLSETUP_NONE;
 }
 
-static void adp_connection_state_changed_cb(BD_ADDR remote_addr, profile_connection_state state)
+static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
@@ -500,7 +500,7 @@ static void bts_hf_client_handle_service_msg(bt_profile_id id, void* data, size_
  ****************************************************************************/
 bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks)
 {
-    bt_status status;
+    SERVICE_BT_STATUS status;
 
     if (g_hfp_service.started)
         return BT_RESULT_SUCCESS;
