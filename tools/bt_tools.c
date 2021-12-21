@@ -296,9 +296,9 @@ static int ssp_reply(void* handle, int argc, char** argv)
 
     spp_reply_data_t reply;
     str2ba(argv[0], reply.remote_addr);
-    reply.accept = true;
-    reply.type = SPP_TYPE_PASSKEY_NOTIFICATION;
-    reply.passkey = atoi(argv[0]);
+    reply.accept = 1;
+    reply.type = SPP_TYPE_PASSKEY_ENTRY;
+    reply.passkey = atoi((const char *)argv[1]);
     gap_test_interface->bt_ssp_reply(gap_hanlde,&reply);
     return 0;
 }
