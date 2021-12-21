@@ -192,7 +192,7 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
     hf_event_data_t* data = (hf_event_data_t*)p_data;
-    bt_status status;
+    SERVICE_BT_STATUS status;
 
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),
@@ -336,7 +336,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
     hf_client_service_t* service = hfsm->service;
     hf_event_data_t* data = (hf_event_data_t*)p_data;
-    bt_status status;
+    SERVICE_BT_STATUS status;
 
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),
@@ -634,7 +634,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
     hf_client_service_t* service = hfsm->service;
     hf_event_data_t* data = (hf_event_data_t*)p_data;
-    bt_status status;
+    SERVICE_BT_STATUS status;
 
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),

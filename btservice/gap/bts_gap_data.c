@@ -49,7 +49,9 @@
 #define BT_USER_FILE_NAME "/data/bt_device2.db"
 #define BT_APP_INFO_FILE_NAME "/data/bt_storage.db"
 
+#ifndef BT_DEVICE_NAME_MAX_LEN
 #define BT_DEVICE_NAME_MAX_LEN 248
+#endif
 typedef struct {
     uint32_t device_class;
     SERVICE_BT_IO_CAPABILITY io_capability;
@@ -123,7 +125,7 @@ void gap_read_data_storage(void)
     }
 
     for (int i = 0; i < app_info.bonded_number; i++) {
-        bt_status  ret = service_adapter_gap_set_bonded_device(app_info.bonded_devices + i);
+        SERVICE_BT_STATUS  ret = service_adapter_gap_set_bonded_device(app_info.bonded_devices + i);
         if (ret != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE(" service_adapter_gap_set_bonded_device failed: %d", ret);
         }
@@ -171,7 +173,7 @@ bt_result_code gap_update_device_name(char* bt_name, uint8_t len_name)
         BT_LOGE("bt_name len%d too long", len_name);
         return BT_RESULT_FAILED;
     }
-    bt_status  ret = service_adapter_gap_set_local_name(bt_name, len_name);
+    SERVICE_BT_STATUS  ret = service_adapter_gap_set_local_name(bt_name, len_name);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGD("set_local_name failed: %d", ret);
         return BT_RESULT_FAILED;
@@ -197,7 +199,7 @@ bt_result_code gap_update_device_name(char* bt_name, uint8_t len_name)
 
 bt_result_code gap_read_device_info(void)
 {
-    bt_status  ret;
+    SERVICE_BT_STATUS  ret;
     bt_device_info_t device_info;
     memset(&device_info, 0, sizeof(bt_device_info_t));
     size_t size = file_read_buffer(BT_USER_FILE_NAME, &device_info, sizeof(bt_device_info_t));

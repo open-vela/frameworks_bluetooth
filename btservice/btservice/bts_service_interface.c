@@ -11,7 +11,7 @@
 #include "bts_service.h"
 #include "bts_service_interface.h"
 #include "bts_spp.h"
-
+#include "bts_avrcp_target.h"
 #include "log.h"
 
 typedef struct {
@@ -124,7 +124,7 @@ static bt_result_code bts_if_enable(void* handle)
 
     gap_enable();
 #ifdef CONFIG_BLUETOOTH_AVRCP_TG
-    avrcp_target_init();
+    bts_avrcp_target_init();
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
     a2dp_source_service_start();

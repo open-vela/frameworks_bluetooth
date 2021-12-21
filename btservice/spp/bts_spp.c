@@ -418,7 +418,7 @@ static void euv_write_loop_complete(euv_pty_t* handle, uint8_t* buf, int status)
 
 static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t length)
 {
-    bt_status status;
+    SERVICE_BT_STATUS status;
     uint16_t remaining = length;
     uint16_t size;
     uint8_t* tmp;
@@ -551,7 +551,7 @@ static void spp_server_stop(uint16_t port)
 
 static void spp_client_connect(bt_address addr, uint16_t port, uint16_t uuid)
 {
-    bt_status status;
+    SERVICE_BT_STATUS status;
     spp_pty_device_t* device;
     struct bt_uuid_16 uuid_src;
     struct bt_uuid_128 uuid_128_dst;
@@ -652,7 +652,7 @@ static void do_in_spp_service(spp_msg_t* msg)
 }
 
 static void adp_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE_SPP_PORT conn_port,
-    profile_connection_state state)
+    SERVICE_PROFILE_CONNECTION_STATE state)
 {
     spp_msg_t msg;
     spp_connection_state_t conn_state = SPP_CONNECTION_STATE_DISCONNECTED;
@@ -735,7 +735,7 @@ static SPP_CALLBACKS_S spp_adp_callbacks = {
  ****************************************************************************/
 bt_result_code bts_spp_init(spp_service_callbacks_t* callbacks)
 {
-    bt_status status;
+    SERVICE_BT_STATUS status;
 
     if (g_spp_handle.started)
         return BT_RESULT_SUCCESS;
