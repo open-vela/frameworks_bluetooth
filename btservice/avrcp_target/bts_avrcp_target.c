@@ -29,7 +29,7 @@
 #include "stack_adapter_common.h"
 #include "stack_adapter_service_base.h"
 #include "stack_adapter_avrcp_target.h"
-#include "stack_adapter_common.h"
+#include "bts_avrcp_target.h"
 #define LOG_TAG "bts_avrcp_target"
 #include "log.h"
 
