@@ -518,12 +518,12 @@ static bt_result_code bts_if_ble_send_packet(void* gap_handle, bt_device_t* devi
     return ret;
 }
 
-static bt_result_code bts_if_enter_bluetooth_test_mode(void* gap_handle, test_mode test_mode)
+static bt_result_code bts_if_enter_bluetooth_test_mode(void* gap_handle, test_mode mode)
 {
     bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
-    ret = bts_enter_bluetooth_test_mode(test_mode);
+    ret = bts_enter_bluetooth_test_mode(mode);
     return ret;
 }
 

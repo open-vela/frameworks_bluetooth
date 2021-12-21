@@ -620,12 +620,12 @@ static bt_result_code btm_ble_send_packet(void* gap_handle, bt_device_t* device,
  * hci_cmd_packet[in] Complete HCI command packet, e.g. 01 03 0c 00
  * @return Bluetooth Error status code (0- Success)
  */
-static bt_result_code btm_enter_bluetooth_test_mode(void* gap_handle, test_mode test_mode)
+static bt_result_code btm_enter_bluetooth_test_mode(void* gap_handle, test_mode mode)
 {
     bt_result_code ret = BT_RESULT_FAILED;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, enter_bluetooth_test_mode, ret, gap_handle, test_mode);
+    BT_GAP_INTERFACE(context->service_interface, enter_bluetooth_test_mode, ret, gap_handle, mode);
     return ret;
 }
 

@@ -67,7 +67,7 @@ typedef struct {
     const uint8_t peer_sep_;
 } a2dp_device_t;
 
-static void adp_connection_state_changed_cb(BD_ADDR remote_addr, profile_connection_state state);
+static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state);
 static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state);
 static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S* config);
 static void adp_stream_channel_mtu_cb(BD_ADDR remote_addr, uint16_t stream_chnl_mtu);
@@ -201,7 +201,7 @@ static void do_in_a2dp_service(a2dp_event_t* a2dp_event)
     bts_send_uv_msg(BT_PROFILE_ADVANCED_AUDIO_SOURCE_ID, a2dp_event, sizeof(a2dp_event_t));
 }
 
-static void adp_connection_state_changed_cb(BD_ADDR remote_addr, profile_connection_state state)
+static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state)
 {
     a2dp_state_machine_t* a2dp_sm;
     a2dp_event_type_t event;
@@ -292,7 +292,7 @@ static uint32_t adp_stream_sample_rate_transfer(uint32_t sample_rate)
         samplerate = BTS_A2DP_CODEC_SAMPLE_RATE_192000;
         break;
     default:
-        BT_LOGE("Invalid sample rate: %ld", sample_rate);
+        BT_LOGE("Invalid sample rate: %d", sample_rate);
         return BTS_A2DP_CODEC_SAMPLE_RATE_44100;
     }
 
@@ -327,7 +327,7 @@ static void adp_stream_channel_mtu_cb(BD_ADDR remote_addr, uint16_t stream_chnl_
 
 static void a2dp_source_init(void)
 {
-    bt_status status;
+    SERVICE_BT_STATUS status;
 
     status = service_adapter_a2dp_source_init(A2DP_MAX_CONNECTION, &a2dp_callback);
     if (status != SERVICE_BT_STATUS_SUCCESS) {

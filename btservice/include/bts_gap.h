@@ -113,7 +113,7 @@ bt_result_code bts_ble_send_packet(bt_device_t* device, uint16_t private_cid,
  * hci_cmd_packet[in] Complete HCI command packet, e.g. 01 03 0c 00
  * @return Bluetooth Error status code (0- Success)
  */
-bt_result_code bts_enter_bluetooth_test_mode(test_mode test_mode);
+bt_result_code bts_enter_bluetooth_test_mode(test_mode mode);
 
 void gap_read_data_storage(void);
 void gap_update_data_storage(void);

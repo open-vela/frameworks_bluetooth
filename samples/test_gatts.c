@@ -185,7 +185,7 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
         break;
     }
     default: {
-        BT_LOGD(" write %d bytes from offset %d of element %lu!\r\n>", size, offset, element->id);
+        BT_LOGD(" write %d bytes from offset %d of element %u!\r\n>", size, offset, element->id);
         break;
     }
     }
@@ -201,7 +201,7 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
 
 static void test_server_mtu_changed_callback(void* handle, bt_address remote_addr, uint32_t mtu)
 {
-    BT_LOGD("###%s mtu: %lu", __func__, mtu);
+    BT_LOGD("###%s mtu: %u", __func__, mtu);
     gatt_mtu = mtu;
 }
 
@@ -222,7 +222,7 @@ static bt_mgr_callback_t mgt_cb = {
 
 static void test_server_throughtout_notify(uint32_t times, uint16_t mtu)
 {
-    BT_LOGD("###mtu:%u, times:%lu", mtu, times);
+    BT_LOGD("###mtu:%u, times:%u", mtu, times);
     uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * mtu);
     uint32_t msg_counter = 1;
     gatt_element_t* element = (gatt_element_t*)(s_iot_service_elements + IOT_SERVICE_TX_CHR_ID - 1);

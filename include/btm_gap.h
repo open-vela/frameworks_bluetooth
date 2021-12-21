@@ -382,7 +382,7 @@ typedef struct {
      * hci_cmd_packet[in] Complete HCI command packet, e.g. 01 03 0c 00
      * @return Bluetooth Error status code (0- Success)
      */
-    bt_result_code (*enter_bluetooth_test_mode)(void* gap_handle, test_mode test_mode);
+    bt_result_code (*enter_bluetooth_test_mode)(void* gap_handle, test_mode mode);
     bt_result_code (*bt_set_local_device_class)(void* handle, uint32_t class_of_device);
     uint32_t (*bt_get_local_device_class)(void* handle);
     bt_result_code (*bt_set_local_address)(void* handle, bt_device_t* device);
