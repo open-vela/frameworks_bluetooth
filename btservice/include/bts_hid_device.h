@@ -68,7 +68,7 @@ typedef struct {
     bt_result_code (*unregister_device)(uint16_t device_id);
     bt_result_code (*connect)(uint16_t device_id, bt_address remote_addr);
     bt_result_code (*disconnect)(uint8_t device_id, bt_address remote_addr);
-    bt_result_code (*send_report_test)(uint8_t device_id, uint8_t report_id, uint8_t* buffer, size_t size);
+    bt_result_code (*send_report)(uint8_t device_id, uint8_t report_id, uint8_t* buffer, size_t size);
     bt_result_code (*unplug)(uint8_t device_id, bt_address remote_addr);
 } bts_hidd_interface_t;
 
