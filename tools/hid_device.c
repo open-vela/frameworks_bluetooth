@@ -44,6 +44,7 @@ static btm_interface_t* manager = NULL;
 static btm_hid_device_interface_t* hidd_interface = NULL;
 static struct list_node hidd_device_list = LIST_INITIAL_VALUE(hidd_device_list);
 static void* hidd_handle;
+static bool hidd_registered = false;
 
 const static uint8_t s_hidKBReportDesc[] = {
     0x05, 0x01, /* Usage Page (Generic Desktop), */
@@ -257,6 +258,15 @@ static bool remove_hidd_device(hidd_device_t* device)
 static void on_hidd_device_state_changed_callback(void* handle, hid_app_state registered)
 {
     BT_LOGD("%s registered:%d", __func__, registered);
+    hidd_registered = registered;
+    if (!registered) {
+        BT_LOGD("%s clear hidd device", __func__);
+        hidd_device_t* device;
+        list_for_every_entry(&hidd_device_list, device, hidd_device_t, node)
+        {
+            remove_hidd_device(device);
+        }
+    }
 }
 
 static void on_hidd_connection_state_changed_callback(void* handle, bt_address remote_addr, profile_connection_state state)
@@ -269,7 +279,7 @@ static void on_hidd_connection_state_changed_callback(void* handle, bt_address r
         }
     } else if (state == PROFILE_DISCONNECTED) {
         hidd_device_t* device = find_hidd_device(remote_addr);
-        if (!device) {
+        if (device) {
             remove_hidd_device(device);
         }
     }
@@ -294,6 +304,11 @@ static int hidd_register_device(void* handle, int argc, char** argv)
 
     int dev_type = atoi(argv[0]);
     BT_LOGD("register hid type:%d", dev_type);
+
+    if (hidd_registered) {
+        BT_LOGE("hidd has registed, please unregister then try again");
+        return 0;
+    }
     bt_hidd_sdp_settings_t hids_info;
     const uint8_t* desc_list;
     uint16_t desc_len;
@@ -337,7 +352,7 @@ static int hidd_register_device(void* handle, int argc, char** argv)
     free(hids_info.hids_info.dsc_list);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, register_device  ret: %d", ret);
-        return -1;
+        return 0;
     }
     return 0;
 }
@@ -347,7 +362,7 @@ static int hidd_unregister_device(void* handle, int argc, char** argv)
     bt_result_code ret = hidd_interface->unregister_device(hidd_handle);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, unregister_device  ret: %d", ret);
-        return -1;
+        return 0;
     }
     return 0;
 }
@@ -359,7 +374,7 @@ static int hidd_connect(void* handle, int argc, char** argv)
     }
     bt_address remote_address;
     str2ba(argv[0], remote_address);
-    BT_LOGD("connect remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5]);
+    BT_LOGD("connect remote_addr:[%s]", addr_str(remote_address));
     hidd_device_t* device = find_hidd_device(remote_address);
     if (!device) {
         device = add_hidd_device(remote_address);
@@ -367,7 +382,7 @@ static int hidd_connect(void* handle, int argc, char** argv)
     bt_result_code ret = hidd_interface->connect(hidd_handle, device->remote_address);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, connect  ret: %d", ret);
-        return -1;
+        return 0;
     }
     return 0;
 }
@@ -379,17 +394,17 @@ static int hidd_disconnect(void* handle, int argc, char** argv)
     }
     bt_address remote_address;
     str2ba(argv[0], remote_address);
-    BT_LOGD("disconnect remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5]);
+    BT_LOGD("disconnect remote_addr:[%s]", addr_str(remote_address));
     hidd_device_t* device = find_hidd_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     bt_result_code ret = hidd_interface->disconnect(hidd_handle, remote_address);
     if (ret != BT_RESULT_SUCCESS) {
         remove_hidd_device(device);
         BT_LOGD("fail, disconnect  ret: %d", ret);
-        return -1;
+        return 0;
     }
     return 0;
 }
@@ -423,7 +438,7 @@ static void hex2str(char* src_str, uint8_t* dest_buf, uint8_t hex_number)
     }
 }
 
-static int hidd_send_report_test(void* handle, int argc, char** argv)
+static int hidd_send_report(void* handle, int argc, char** argv)
 {
     if (!hidd_interface || argc < 3) {
         return -1;
@@ -442,16 +457,16 @@ static int hidd_send_report_test(void* handle, int argc, char** argv)
     hidd_device_t* device = find_hidd_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
 
     uint8_t buf[8];
     memset(buf, 0, sizeof(buf));
     hex2str(buffer, buf, size / 2);
-    bt_result_code ret = hidd_interface->send_report_test(hidd_handle, report_id, buf, size / 2);
+    bt_result_code ret = hidd_interface->send_report(hidd_handle, report_id, buf, size / 2);
     if (ret != BT_RESULT_SUCCESS) {
-        BT_LOGD("fail, send_report_test  ret: %d", ret);
-        return -1;
+        BT_LOGD("fail, send_report  ret: %d", ret);
+        return 0;
     }
     free(buffer);
     return 0;
@@ -464,16 +479,16 @@ static int hidd_unplug(void* handle, int argc, char** argv)
     }
     bt_address remote_address;
     str2ba(argv[0], remote_address);
-    BT_LOGD("unplug remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", remote_address[0], remote_address[1], remote_address[2], remote_address[3], remote_address[4], remote_address[5]);
+    BT_LOGD("unplug remote_addr:[%s]", addr_str(remote_address));
     hidd_device_t* device = find_hidd_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
-        return -1;
+        return 0;
     }
     bt_result_code ret = hidd_interface->unplug(hidd_handle, remote_address);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, unplug  ret: %d", ret);
-        return -1;
+        return 0;
     }
     return 0;
 }
@@ -483,7 +498,7 @@ static bt_command_t g_hidd_tables[] = {
     { "unregister", hidd_unregister_device, "\"hidd unregister\"" },
     { "connect", hidd_connect, "\"hidd connect  :<address>\"" },
     { "disconnect", hidd_disconnect, "\"hidd disconnect :<address>t\"" },
-    { "send_report_test", hidd_send_report_test, "\"hidd send report test: <address> <report_id> <data>\"" },
+    { "send_report", hidd_send_report, "\"hidd send report test: <address> <report_id> <data>\"" },
     { "unplug", hidd_unplug, "\"hidd unplug  :<address>\"" },
 };
 

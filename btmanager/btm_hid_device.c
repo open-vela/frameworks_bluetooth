@@ -151,12 +151,12 @@ static bt_result_code hidd_unplug(void* hdl, bt_address remote_addr)
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code hidd_send_report_test(void* hdl, uint8_t report_id, uint8_t* buffer, size_t size)
+static bt_result_code hidd_send_report(void* hdl, uint8_t report_id, uint8_t* buffer, size_t size)
 {
     btm_hidd_hdl_t* handle = (btm_hidd_hdl_t*)hdl;
     CHECK_PTR_RETURN(hidd_interface, BT_RESULT_STATE_NOT_ON);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    bt_result_code ret = hidd_interface->send_report_test(handle->device_id, report_id, buffer, size);
+    bt_result_code ret = hidd_interface->send_report(handle->device_id, report_id, buffer, size);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail,send_report err:%d", ret);
         return ret;
@@ -172,7 +172,7 @@ static btm_hid_device_interface_t bt_hidd_interface = {
     .unregister_device = hidd_unregister_device,
     .connect = hidd_connect,
     .disconnect = hidd_disconnect,
-    .send_report_test = hidd_send_report_test,
+    .send_report = hidd_send_report,
     .unplug = hidd_unplug,
 };
 
