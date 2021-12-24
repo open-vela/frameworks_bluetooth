@@ -266,6 +266,7 @@ void stack_state_change(bt_service_state state)
         gap_create_factory_info(false);
         gap_read_device_info();
         gap_read_data_storage();
+        gap_read_le_storage();
     }
     bluetooth_upper_callbacks->adapter_state_changed_cb(service_state);
 }
