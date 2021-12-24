@@ -282,10 +282,9 @@ static void process_loop_in_gap(void* data, size_t data_size)
         break;
     }
     case GAP_UPDATE_BLE_BONDED_DEVICES: {
+        gap_update_le_storage(gap_msg->event_data.data.ble_bonded_update.bonded_device_list, gap_msg->event_data.data.ble_bonded_update.count_in);
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->update_ble_bonede_device_cb)) {
-            gap_update_data_storage();
-            g_bts_gap_callbacks->update_ble_bonede_device_cb(gap_msg->event_data.data.ble_bonded_update.bonded_device_list,
-                gap_msg->event_data.data.ble_bonded_update.count_in);
+            g_bts_gap_callbacks->update_ble_bonede_device_cb(gap_msg->event_data.data.ble_bonded_update.bonded_device_list, gap_msg->event_data.data.ble_bonded_update.count_in);
         }
         break;
     }
