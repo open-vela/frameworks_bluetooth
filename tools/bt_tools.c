@@ -389,7 +389,7 @@ static int set_local_device_class(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return -1;
-    uint16_t class = atoi(argv[0]);
+    uint32_t class = atoi(argv[0]);
     gap_test_interface->bt_set_local_device_class(gap_hanlde, class);
 
     return 0;
@@ -397,7 +397,7 @@ static int set_local_device_class(void* handle, int argc, char** argv)
 
 static int get_local_device_class(void* handle, int argc, char** argv)
 {
-    uint16_t class = gap_test_interface->bt_get_local_device_class(gap_hanlde);
+    uint32_t class = gap_test_interface->bt_get_local_device_class(gap_hanlde);
     BT_LOGD("%s, class: %d", __func__, class);
 
     return 0;
@@ -547,10 +547,10 @@ static void manager_state_changed_callback(btm_bt_state state)
     if (daemon_enable) {
         char local_name[] = "BLUELET_NUTTX_Sim";
         gap_test_interface->bt_set_local_name(gap_hanlde, local_name, sizeof(local_name));
-        gap_test_interface->bt_set_local_device_class(gap_hanlde, BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO | BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
+        gap_test_interface->bt_set_local_device_class(gap_hanlde, COD_SERVICE_RENDERING | COD_SERVICE_AUDIO | COD_SERVICE_TELEPHONY | COD_AV_HEADSET);
         gap_test_interface->bt_set_local_io_capability(gap_hanlde, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
     }
-    gap_test_interface->bt_set_local_device_class(gap_hanlde, BT_COD_SERVICE_RENDERING | BT_COD_SERVICE_AUDIO | BT_COD_SERVICE_TELEPHONY | BT_COD_AV_HEADSET);
+    gap_test_interface->bt_set_local_device_class(gap_hanlde, COD_SERVICE_RENDERING | COD_SERVICE_AUDIO | COD_SERVICE_TELEPHONY | COD_AV_HEADSET);
 
     gap_test_interface->bt_set_scan_mode(gap_hanlde, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
 }

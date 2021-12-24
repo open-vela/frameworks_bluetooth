@@ -609,7 +609,7 @@ static int gatts_do_throughput(void* handle, int argc, char** argv)
 
 static int le_start_advertising(void* handle, int argc, char** argv)
 {
-    if (!gatts_interface || argc < 3) {
+    if (!gatts_interface || argc < 4) {
         return -1;
     }
     int adv_type = atoi(argv[0]);
@@ -620,6 +620,7 @@ static int le_start_advertising(void* handle, int argc, char** argv)
 
     int interval = atoi(argv[1]);
     int duration = atoi(argv[2]);
+    int filter_type= atoi(argv[3]);
     BT_LOGD("start ble adv type:%d, interval:%d, duration:%d", adv_type, interval, duration);
     const uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x08, 0x09, 0x42, 0x52, 0x54, 0x2D, 0x49, 0x44, 0x4D, 0x03, 0x02, 0x00, 0xFF };
     advertise_param_t adv_para;
@@ -633,6 +634,7 @@ static int le_start_advertising(void* handle, int argc, char** argv)
     adv_para.adv_data = (char*)s_adv_data;
     adv_para.scan_rsp_data = (char*)s_adv_data;
     adv_para.scan_rsp_length = sizeof(s_adv_data);
+    adv_para.params.filter_policy =  filter_type;
     btm_le_advertise_interface_t* adv_interface = get_btm_leadv_interface(manager);
     bt_result_code ret = adv_interface->start_advertising(&adv_handle, &adv_para, &le_adv_cb);
     if (ret != BT_RESULT_SUCCESS) {
