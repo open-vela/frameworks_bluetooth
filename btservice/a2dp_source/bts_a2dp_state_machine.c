@@ -195,23 +195,23 @@ static void a2dp_start_timeout_callback(char* data)
 static void idle_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-
-    BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
-        addr_str(a2dp_sm->addr));
-}
-
-static void idle_exit(state_machine_t* sm)
-{
-    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
     a2dp_source_t* service = a2dp_sm->service;
     state_t *prev_state = hsm_get_previous_state(sm);
 
-    BT_LOGD("state=%s Exit, peer=%s", hsm_get_current_state_name(sm),
+    BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
     if (prev_state != NULL) {
         bts_a2dp_report_connection_state(service, a2dp_sm->addr,
             A2DP_CONNECTION_STATE_DISCONNECTED);
     }
+}
+
+static void idle_exit(state_machine_t* sm)
+{
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
+
+    BT_LOGD("state=%s Exit, peer=%s", hsm_get_current_state_name(sm),
+        addr_str(a2dp_sm->addr));
 }
 
 static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data)
@@ -270,7 +270,6 @@ static void opening_exit(state_machine_t* sm)
 static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    a2dp_source_t* service = a2dp_sm->service;
     a2dp_event_data_t* event_data = (a2dp_event_data_t*)p_data;
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),
@@ -526,8 +525,6 @@ static void closing_exit(state_machine_t* sm)
 static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    a2dp_source_t* service = a2dp_sm->service;
-    //a2dp_event_data_t *event_data = (a2dp_event_data_t *)p_data;
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),
         addr_str(a2dp_sm->addr));
