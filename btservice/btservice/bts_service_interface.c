@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "bts_a2dp_source.h"
+#include "bts_avrcp_target.h"
 #include "bts_gap.h"
 #include "bts_gatt_service.h"
 #include "bts_hf_client.h"
@@ -11,7 +12,6 @@
 #include "bts_service.h"
 #include "bts_service_interface.h"
 #include "bts_spp.h"
-#include "bts_avrcp_target.h"
 #include "log.h"
 
 typedef struct {
@@ -184,8 +184,12 @@ static void bts_if_cleanup(void* handle)
 
 static bool is_profile(const char* p1, const char* p2)
 {
-    if (!p1 || !p2) {
-        BT_LOGE("fail, p1:%s or p2:%s invalid", p1, p2);
+    if (!p2) {
+        BT_LOGE("fail, p2 nullptr");
+        return false;
+    }
+    if (!p1) {
+        BT_LOGE("fail, p1 nullptr");
         return false;
     }
     return strlen(p1) == strlen(p2) && strncmp(p1, p2, strlen(p2)) == 0;

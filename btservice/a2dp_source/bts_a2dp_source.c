@@ -51,8 +51,8 @@
 #include "bts_a2dp_source_audio.h"
 #include "bts_a2dp_state_machine.h"
 #include "bts_service.h"
-#include "utils/utils.h"
 #include "utils/log.h"
+#include "utils/utils.h"
 
 #ifndef CONFIG_BLUETOOTH_A2DP_MAX_CONNECTIONS
 #define A2DP_MAX_CONNECTION (1)
@@ -177,7 +177,7 @@ static void a2dp_service_handle_event(void* event, size_t size)
 
         config = a2dp_event->event_data.data;
         bts_a2dp_codec_set_config(config);
-        BT_LOGD("CODEC_CONFIG_EVT : codec_type: %d, sample_rate: %d, bits_per_sample: %d, channel_mode: %d",
+        BT_LOGD("CODEC_CONFIG_EVT : codec_type: %d, sample_rate: %lu, bits_per_sample: %d, channel_mode: %d",
             config->codec_type,
             config->sample_rate,
             config->bits_per_sample,
@@ -395,7 +395,7 @@ void bts_a2dp_source_dump(void)
     struct list_node* node;
     int i = 0;
     uint8_t is_active;
-    const char *state;
+    const char* state;
     list_for_every(&a2dp_source.device_list, node)
     {
         i++;

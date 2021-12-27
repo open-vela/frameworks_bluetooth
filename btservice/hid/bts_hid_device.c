@@ -97,6 +97,7 @@ static int8_t gen_hid_dev_id(void)
     return -1;
 }
 
+#if 0
 static bts_hidd_hdl_t* find_hidd_handle(bt_address addr)
 {
     bts_hidd_hdl_t* hidd;
@@ -108,6 +109,7 @@ static bts_hidd_hdl_t* find_hidd_handle(bt_address addr)
     }
     return NULL;
 }
+#endif
 
 static bts_hidd_hdl_t* find_hidd_handle2(uint8_t dev_id)
 {
@@ -236,8 +238,8 @@ static void on_hidd_device_virtual_unplug_callback(void)
 static HID_DEVICE_CALLBACKS_S hid_device_cb = {
     .size = sizeof(HID_DEVICE_CALLBACKS_S),
 
-    .bthd_app_state_cb = on_hidd_register_changed_callback,
-    .bthd_connection_state_changed_cb = on_hidd_connection_changed_callback,
+    .bthd_app_state_cb = (hid_device_app_state_callback)(on_hidd_register_changed_callback),
+    .bthd_connection_state_changed_cb = (hid_device_connection_state_callback)(on_hidd_connection_changed_callback),
     .bthd_get_report_cb = on_hidd_get_report_callback,
     .bthd_set_report_cb = on_hidd_set_report_callback,
     .bthd_set_protocol_cb = on_hidd_set_protocol_callback,
