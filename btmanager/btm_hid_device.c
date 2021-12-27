@@ -26,6 +26,7 @@
 #include "btm_hid_device.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "btm_manager.h"
 #include "bts_hid_service.h"

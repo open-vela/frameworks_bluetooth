@@ -58,21 +58,21 @@
     } while (0)
 
 typedef struct _hf_state_machine {
-    state_machine_t         sm;
-    bt_address              addr;
-    uint16_t                sco_conn_handle;
-    uv_timer_t*             connect_timer;
-    bool                    recognition_active;
-    uint8_t                 spk_volume;
-    uint8_t                 mic_volume;
-    struct list_node        pending_actions;
-    hf_client_service_t*    service;
+    state_machine_t sm;
+    bt_address addr;
+    uint16_t sco_conn_handle;
+    uv_timer_t* connect_timer;
+    bool recognition_active;
+    uint8_t spk_volume;
+    uint8_t mic_volume;
+    struct list_node pending_actions;
+    hf_client_service_t* service;
 } hf_state_machine_t;
 
 typedef struct {
     struct list_node node;
     uint32_t cmd_code;
-}hf_at_cmd_t;
+} hf_at_cmd_t;
 
 static void disconnected_enter(state_machine_t* sm);
 static void disconnected_exit(state_machine_t* sm);
@@ -158,21 +158,21 @@ static char* stack_event_to_string(hf_client_event_t event)
     }
 }
 
-static void add_pending_action(hf_state_machine_t *hfsm, uint32_t cmd_code)
+static void add_pending_action(hf_state_machine_t* hfsm, uint32_t cmd_code)
 {
-    hf_at_cmd_t *cmd = malloc(sizeof(hf_at_cmd_t));
+    hf_at_cmd_t* cmd = malloc(sizeof(hf_at_cmd_t));
 
     cmd->cmd_code = cmd_code;
     list_add_tail(&hfsm->pending_actions, &cmd->node);
 }
 
-static uint32_t first_pending_action(hf_state_machine_t *hfsm)
+static uint32_t first_pending_action(hf_state_machine_t* hfsm)
 {
     struct list_node* node;
 
     node = list_remove_head(&hfsm->pending_actions);
     if (node) {
-        uint32_t code = ((hf_at_cmd_t *)node)->cmd_code;
+        uint32_t code = ((hf_at_cmd_t*)node)->cmd_code;
         free(node);
         return code;
     }
@@ -636,9 +636,9 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         pending = first_pending_action(hfsm);
         if (pending == cmd_code) {
             switch (cmd_code) {
-                case HFP_ATCC_ATD:
-                if (cmd_result != HFP_ATC_RESULT_OK){
-                    BT_LOGE("Dial memory failed:%d", cmd_result);
+            case HFP_ATCC_ATD:
+                if (cmd_result != HFP_ATC_RESULT_OK) {
+                    BT_LOGE("Dial memory failed:%lu", cmd_result);
                 }
                 break;
             }
