@@ -63,17 +63,15 @@ static void uv_close_callback(uv_handle_t* handle)
 
 static void uv_alloc_callback(uv_handle_t* handle, size_t size, uv_buf_t* buf)
 {
-    euv_read_t* reader = (euv_pty_t*)handle->data;
+    euv_read_t* reader = (euv_read_t*)handle->data;
 
     buf->base = malloc(reader->read_size);
     buf->len = reader->read_size;
 }
 
-static void uv_read_callback(uv_stream_t* stream,
-                             ssize_t nread,
-                             const uv_buf_t* buf)
+static void uv_read_callback(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 {
-    euv_read_t* reader = (euv_pty_t*)stream->data;
+    euv_read_t* reader = (euv_read_t*)stream->data;
 
     if (reader->read_cb)
         reader->read_cb((euv_pty_t*)stream, (const uint8_t*)buf->base, nread);

@@ -45,10 +45,10 @@
 #include "state_machine.h"
 
 #include "btm_a2dp_source.h"
-#include "bts_a2dp_source.h"
 #include "bts_a2dp_codec.h"
 #include "bts_a2dp_control.h"
 #include "bts_a2dp_event.h"
+#include "bts_a2dp_source.h"
 #include "bts_a2dp_source_audio.h"
 #include "bts_a2dp_state_machine.h"
 #include "utils/utils.h"
@@ -68,8 +68,8 @@ typedef struct _a2dp_state_machine {
     a2dp_source_t* service;
     bt_address addr;
     pending_state_t pending;
-    uv_timer_t *connect_timer;
-    uv_timer_t *start_timer;
+    uv_timer_t* connect_timer;
+    uv_timer_t* start_timer;
 } a2dp_state_machine_t;
 
 typedef struct {
@@ -196,7 +196,7 @@ static void idle_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
     a2dp_source_t* service = a2dp_sm->service;
-    state_t *prev_state = hsm_get_previous_state(sm);
+    state_t* prev_state = hsm_get_previous_state(sm);
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
@@ -312,7 +312,7 @@ static void opened_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
     a2dp_source_t* service = a2dp_sm->service;
-    state_t *prev_state = hsm_get_previous_state(sm);
+    state_t* prev_state = hsm_get_previous_state(sm);
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
@@ -511,7 +511,7 @@ static void closing_enter(state_machine_t* sm)
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
     bts_a2dp_report_connection_state(service, a2dp_sm->addr,
-            A2DP_CONNECTION_STATE_DISCONNECTING);
+        A2DP_CONNECTION_STATE_DISCONNECTING);
 }
 
 static void closing_exit(state_machine_t* sm)
@@ -605,7 +605,7 @@ a2dp_state_t a2dp_state_machine_get_state(a2dp_state_machine_t* sm)
     return state;
 }
 
-const char * a2dp_state_machine_current_state(a2dp_state_machine_t* sm)
+const char* a2dp_state_machine_current_state(a2dp_state_machine_t* sm)
 {
     return hsm_get_current_state_name(&sm->sm);
 }

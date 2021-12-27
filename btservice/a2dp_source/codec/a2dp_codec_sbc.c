@@ -42,7 +42,7 @@ static sbc_param_t* sbc_param;
 
 void a2dp_codec_sbc_init(void)
 {
-    const sbc_param_t *defaultparam;
+    const sbc_param_t* defaultparam;
     sbc_param = malloc(sizeof(sbc_param_t));
     defaultparam = sbc_encoder_param_get();
     memcpy(sbc_param, defaultparam, sizeof(sbc_param_t));
@@ -68,32 +68,19 @@ uint32_t a2dp_codec_sbc_frame_length(void)
 {
     uint32_t frame_len;
 #if 1
-  if (sbc_param->s16ChannelMode == SBC_JOINT_STEREO ||
-      sbc_param->s16ChannelMode == SBC_STEREO) {
-    frame_len = 4 +
-                (4 * sbc_param->s16NumOfSubBands *
-                sbc_param->s16NumOfChannels) /
-                8 +
-                (((sbc_param->s16ChannelMode - 2) *
-                sbc_param->s16NumOfSubBands) +
-                (sbc_param->s16NumOfBlocks * sbc_param->s16BitPool)) /
-                8;
-  } else {
-    frame_len = 4 +
-                ((4 * sbc_param->s16NumOfSubBands *
-                sbc_param->s16NumOfChannels) /
-                8) +
-                ((sbc_param->s16NumOfBlocks *
-                sbc_param->s16NumOfChannels *
-                sbc_param->s16BitPool) /
-                8);
-  }
+    if (sbc_param->s16ChannelMode == SBC_JOINT_STEREO || sbc_param->s16ChannelMode == SBC_STEREO) {
+        frame_len = 4 + (4 * sbc_param->s16NumOfSubBands * sbc_param->s16NumOfChannels) / 8 + (((sbc_param->s16ChannelMode - 2) * sbc_param->s16NumOfSubBands) + (sbc_param->s16NumOfBlocks * sbc_param->s16BitPool)) / 8;
+    } else {
+        frame_len = 4 + ((4 * sbc_param->s16NumOfSubBands * sbc_param->s16NumOfChannels) / 8) + ((sbc_param->s16NumOfBlocks * sbc_param->s16NumOfChannels * sbc_param->s16BitPool) / 8);
+    }
 #else
-  frame_len = 4 + (4 * sbc_param->s16NumOfSubBands * sbc_param->s16NumOfChannels) / 8
-               + ((sbc_param->s16NumOfBlocks * sbc_param->s16BitPool * (1 + (sbc_param->s16ChannelMode == SBC_DUAL))
-               + (sbc_param->s16ChannelMode == SBC_JOINT_STEREO) * sbc_param->s16NumOfSubBands) + 7) / 8;
+    frame_len = 4 + (4 * sbc_param->s16NumOfSubBands * sbc_param->s16NumOfChannels) / 8
+        + ((sbc_param->s16NumOfBlocks * sbc_param->s16BitPool * (1 + (sbc_param->s16ChannelMode == SBC_DUAL))
+               + (sbc_param->s16ChannelMode == SBC_JOINT_STEREO) * sbc_param->s16NumOfSubBands)
+              + 7)
+            / 8;
 #endif
-    BT_LOGD("%s :frame_len:%d", __func__, frame_len);
+    BT_LOGD("%s :frame_len:%lu", __func__, frame_len);
 
     return frame_len;
 }
@@ -105,7 +92,7 @@ uint32_t a2dp_codec_sbc_bit_rate(uint32_t frame_len)
 
     sampling_freq = a2dp_codec_sample_frequency(sbc_param->s16SamplingFreq);
     bit_rate = (8 * frame_len * sampling_freq) / (sbc_param->s16NumOfSubBands * sbc_param->s16NumOfBlocks);
-    BT_LOGD("%s, birtate: %d", __func__, bit_rate);
+    BT_LOGD("%s, birtate: %lu", __func__, bit_rate);
 
     return bit_rate;
 }

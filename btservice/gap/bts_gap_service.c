@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 #include "stack_adapter_common.h"
 #include "stack_adapter_gap.h"
 
@@ -41,9 +40,9 @@
     do {                                                                                \
         bt_if_gap_handle_t* if_handle;                                                  \
         struct list_node* handle_node;                                                  \
-        if (!g_gap_service)                                                               \
+        if (!g_gap_service)                                                             \
             break;                                                                      \
-        struct list_node* list = &g_gap_service->handle_list;                             \
+        struct list_node* list = &g_gap_service->handle_list;                           \
         list_for_every(list, handle_node)                                               \
         {                                                                               \
             if_handle = (bt_if_gap_handle_t*)handle_node;                               \
@@ -143,7 +142,7 @@ static void gap_if_smp_request_callback(ssp_request_data_t* request_data)
     BT_GAP_CB(smp_requeset_cb, request_data);
 }
 
-static void gap_if_ble_phy_update_callback(bt_address remote_addr, ble_phy_type tx_phy, ble_phy_type rx_phy, bt_status  status)
+static void gap_if_ble_phy_update_callback(bt_address remote_addr, ble_phy_type tx_phy, ble_phy_type rx_phy, bt_status status)
 {
     BT_LOGD("%s", __func__);
     BT_GAP_CB(ble_phy_update_cb, remote_addr, tx_phy, rx_phy, status);
@@ -157,7 +156,7 @@ static void gap_if_ble_address_callback(bt_address bd_addr, ble_addr_type addr_t
 static void gap_ifbts_ble_irk_callback(bt_common_key irk, bt_address ble_addr, ble_addr_type addr_type)
 {
     BT_LOGD("%s", __func__);
-    BT_GAP_CB(ble_irk_cb, irk, ble_addr, addr_type);    
+    BT_GAP_CB(ble_irk_cb, irk, ble_addr, addr_type);
 }
 
 bts_gap_callback_t bts_gap_callbacks = {
@@ -534,7 +533,7 @@ static bt_result_code bts_if_gap_cleanup(void* gap_handle)
         return ret;
     struct list_node* list = &g_gap_service->handle_list;
     struct list_node* node;
-    bt_if_gap_handle_t* if_handle;
+    bt_if_gap_handle_t* if_handle = NULL;
     list_for_every(list, node)
     {
         if_handle = (bt_if_gap_handle_t*)node;

@@ -26,6 +26,7 @@
 #include "btm_gatt_server.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "btm_manager.h"
 #include "bts_gatt_server.h"

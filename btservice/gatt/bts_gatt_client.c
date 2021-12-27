@@ -33,6 +33,7 @@
 #include "log.h"
 #include "stack_adapter_gap.h"
 #include "stack_adapter_gatt.h"
+#include "utils.h"
 
 typedef struct
 {
@@ -310,10 +311,9 @@ static stack_gatt_client_callbacks gatt_client_cbs = {
 
 static bt_result_code gatt_client_connect(bts_gattc_hdl_t handle)
 {
-    BT_LOGD("%s, remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x]", __func__, handle.remote_addr[0],
-        handle.remote_addr[1], handle.remote_addr[2], handle.remote_addr[3], handle.remote_addr[4], handle.remote_addr[5]);
+    BT_LOGD("%s, remote_addr:%s", __func__, addr_str(handle.remote_addr));
     bts_register_profile_process(BT_PROFILE_GATTC_ID, &handle_msg_received);
-    gatt_status ret = service_adapter_gatt_client_connect(handle.remote_addr, &gatt_client_cbs);
+    gatt_status ret = service_adapter_gatt_client_connect(handle.remote_addr, (GATT_CLIENT_CALLBACKS_S*)(&gatt_client_cbs));
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt handle connect, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -368,7 +368,7 @@ static bt_result_code gatt_client_read_request(bt_address addr, gatt_element_t* 
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
 
-    gatt_status ret = service_adapter_gatt_client_read_element(handle->remote_addr, element);
+    gatt_status ret = service_adapter_gatt_client_read_element(handle->remote_addr, (SERVICE_GATT_ELEMENT_S*)(element));
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt handle read, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -382,7 +382,7 @@ static bt_result_code gatt_client_write_request(bt_address addr, gatt_element_t*
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
 
-    gatt_status ret = service_adapter_gatt_client_write_element(handle->remote_addr, element, value, length);
+    gatt_status ret = service_adapter_gatt_client_write_element(handle->remote_addr, (SERVICE_GATT_ELEMENT_S*)(element), value, length);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt handle write, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -395,7 +395,7 @@ static bt_result_code gatt_client_register_notification(bt_address addr, gatt_el
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
 
-    gatt_status ret = service_adapter_gatt_client_register_notifications(handle->remote_addr, element, enable);
+    gatt_status ret = service_adapter_gatt_client_register_notifications(handle->remote_addr, (SERVICE_GATT_ELEMENT_S*)(element), enable);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt handle register notify, err:%d", ret);
         return BT_RESULT_FAILED;

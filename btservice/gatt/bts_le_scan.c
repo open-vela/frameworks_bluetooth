@@ -148,7 +148,7 @@ static bt_result_code start_scan(bts_lescan_hdl_t handle)
         return BT_RESULT_FAILED;
     }
 
-    ret = service_adapter_gap_set_ble_scan_parameters(handle.settings);
+    ret = service_adapter_gap_set_ble_scan_parameters((SERVICE_SCAN_PARAMS_S*)(handle.settings));
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("set ble scan parameters fail, err:%d", ret);
         return BT_RESULT_FAILED;

@@ -22,9 +22,12 @@
  * Included Files
  ****************************************************************************/
 
-#include <stddef.h>
 #include "bts_gatt_service.h"
 #include "log.h"
+#include <stddef.h>
+
+#include "stack_adapter_gap.h"
+#include "stack_adapter_gatt.h"
 
 static bt_result_code gatt_init(void);
 static void gatt_cleanup(void);

@@ -382,7 +382,7 @@ static bt_result_code gatt_server_open(bts_gatts_hdl_t server)
 {
     if (list_is_empty(&gatts_list)) {
         bts_register_profile_process(BT_PROFILE_GATTS_ID, &handle_msg_received);
-        SERVICE_GATT_STATUS ret = service_adapter_gatt_server_open(&gatt_server_cbs);
+        SERVICE_GATT_STATUS ret = service_adapter_gatt_server_open((GATT_SERVER_CALLBACKS_S*)(&gatt_server_cbs));
         if (ret != GATT_SUCCESS) {
             BT_LOGE("fail, gatt server open, err:%d", ret);
             return BT_RESULT_FAILED;
@@ -470,7 +470,7 @@ static bt_result_code gatt_server_add_element(uint8_t server_if, gatt_element_t*
         return ret;
     }
 
-    gatt_status ret2 = service_adapter_gatt_server_add_elements(element, size);
+    gatt_status ret2 = service_adapter_gatt_server_add_elements((SERVICE_GATT_ELEMENT_S*)(element), size);
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server add elements, err:%d", ret2);
         return BT_RESULT_FAILED;
@@ -535,7 +535,7 @@ static bt_result_code gatt_server_send_notify(uint8_t server_if, bt_address remo
         return ret;
     }
 
-    gatt_status ret2 = service_adapter_gatt_server_send_notification(remote_addr, characteristic, value, size);
+    gatt_status ret2 = service_adapter_gatt_server_send_notification(remote_addr, (SERVICE_GATT_ELEMENT_S*)(characteristic), value, size);
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server remove elements, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -552,7 +552,7 @@ static bt_result_code gatt_server_send_indicate(uint8_t server_if, bt_address re
         return ret;
     }
 
-    gatt_status ret2 = service_adapter_gatt_server_send_indication(remote_addr, characteristic, value, size);
+    gatt_status ret2 = service_adapter_gatt_server_send_indication(remote_addr, (SERVICE_GATT_ELEMENT_S*)(characteristic), value, size);
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server remove elements, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -568,7 +568,7 @@ static bt_result_code gatt_server_send_response(uint8_t server_if, bt_address re
         return ret;
     }
 
-    gatt_status ret2 = service_adapter_gatt_server_send_response(remote_addr, response);
+    gatt_status ret2 = service_adapter_gatt_server_send_response(remote_addr, (SERVICE_GATT_RESPONSE_S*)(response));
     if (ret2 != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt server remove elements, err:%d", ret);
         return BT_RESULT_FAILED;

@@ -91,7 +91,7 @@ static bool remove_advertise_handle(bts_leadv_hdl_t* advertiser)
 static bt_result_code le_start_adv(bts_leadv_hdl_t client)
 {
     bts_register_profile_process(BT_PROFILE_LEADV_ID, &handle_msg_received);
-    bt_status ret = service_adapter_gap_start_ble_adv(client.param);
+    SERVICE_BT_STATUS ret = service_adapter_gap_start_ble_adv((SERVICE_SCAN_ADV_PARAMS_S*)(client.param));
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("service ble start adv fail, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -109,7 +109,7 @@ static bt_result_code le_stop_adv(uint8_t advertiser_id)
         return BT_RESULT_FAILED;
     }
 
-    bt_status ret = service_adapter_gap_stop_ble_adv(advertiser_id);
+    SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(advertiser_id);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("service ble start adv fail, err:%d", ret);
         remove_advertise_handle(client);

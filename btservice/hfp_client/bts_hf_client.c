@@ -58,15 +58,15 @@
  ****************************************************************************/
 typedef struct
 {
-    struct list_node    node;
-    void*               handle;
-    bt_address          bd_addr;
+    struct list_node node;
+    void* handle;
+    bt_address bd_addr;
     hf_state_machine_t* sm;
 } hf_client_device_t;
 
 typedef struct {
     hf_state_machine_t* hfsm;
-    hf_client_msg_t*    msg;
+    hf_client_msg_t* msg;
 } hf_client_inter_msg_t;
 
 /****************************************************************************
@@ -79,8 +79,8 @@ static void hf_client_send_message(hf_state_machine_t* sm, hf_client_msg_t* msg)
  * Private Data
  ****************************************************************************/
 hf_client_service_t g_hfp_service = {
-    .started        = false,
-    .device_list    = LIST_INITIAL_VALUE(g_hfp_service.device_list)
+    .started = false,
+    .device_list = LIST_INITIAL_VALUE(g_hfp_service.device_list)
 };
 
 /****************************************************************************
@@ -118,7 +118,7 @@ static hf_client_device_t* hf_client_device_new(hf_state_machine_t* sm, bt_addre
 
 static void hf_client_device_delete(hf_client_device_t* device)
 {
-    hf_client_msg_t *msg;
+    hf_client_msg_t* msg;
     if (!device)
         return;
 
@@ -248,7 +248,7 @@ static void adp_sco_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_HFP
 
 static void adp_codec_changed_cb(BD_ADDR remote_addr, SERVICE_HFP_CONFIG_S* config)
 {
-    BT_LOGD(" HF codec config [codec:%d][sample rate:%d][bit width:%d]", config->codec,
+    BT_LOGD(" HF codec config [codec:%d][sample rate:%lu][bit width:%d]", config->codec,
         config->sample_rate, config->bit_width);
 }
 
@@ -423,15 +423,15 @@ static void adp_current_call_callback(BD_ADDR remote_addr, uint32_t idx,
     hf_client_send_message(sm, msg);
 }
 
-static void adp_at_command_result_callback(BD_ADDR remote_addr, uint32_t at_cmd_code,uint32_t result)
+static void adp_at_command_result_callback(BD_ADDR remote_addr, uint32_t at_cmd_code, uint32_t result)
 {
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
 
     switch (at_cmd_code) {
-        case HFP_ATCC_ATD:
+    case HFP_ATCC_ATD:
         break;
-        default:
+    default:
         return;
     }
     sm = get_state_machine(remote_addr);
@@ -473,7 +473,6 @@ static void hf_client_send_message(hf_state_machine_t* sm, hf_client_msg_t* msg)
     bts_send_uv_msg(BT_PROFILE_HANDSFREE_HF_ID, imsg, sizeof(hf_client_inter_msg_t));
 }
 
-
 static void hf_client_cleanup(void)
 {
     hf_client_device_t* device;
@@ -489,19 +488,18 @@ static void hf_client_cleanup(void)
     g_hfp_service.started = false;
 }
 
-
 static void hf_client_service_event_process(void* data, size_t size)
 {
     hf_client_inter_msg_t* imsg = (hf_client_inter_msg_t*)data;
     hf_client_msg_t* msg = imsg->msg;
 
     switch (msg->event) {
-        case CLEANUP:
-            hf_client_cleanup();
+    case CLEANUP:
+        hf_client_cleanup();
         break;
-        default:
-            hf_client_state_machine_handle_msg(imsg->hfsm, msg);
-            break;
+    default:
+        hf_client_state_machine_handle_msg(imsg->hfsm, msg);
+        break;
     }
 
     hf_client_msg_destory(msg);
