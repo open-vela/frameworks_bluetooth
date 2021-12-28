@@ -92,7 +92,7 @@ static int get_ble_resolvinglist_devices(void* handle, int argc, char** argv);
 static btm_gap_interface_t* gap_test_interface = NULL;
 static btm_interface_t* manager;
 static void* manager_handle = NULL;
-static void* gap_hanlde = NULL;
+static void* gap_handle = NULL;
 static uint8_t daemon_enable = 0;
 static uint16_t auto_accept = 0;
 
@@ -178,14 +178,14 @@ static int start_discovery(void* handle, int argc, char** argv)
         return -1;
 
     uint16_t timerout = atoi(argv[0]);
-    gap_test_interface->bt_start_discovery(gap_hanlde, timerout);
+    gap_test_interface->bt_start_discovery(gap_handle, timerout);
 
     return 0;
 }
 
 static int stop_discovery(void* handle, int argc, char** argv)
 {
-    gap_test_interface->bt_stop_discovery(gap_hanlde);
+    gap_test_interface->bt_stop_discovery(gap_handle);
 
     return 0;
 }
@@ -215,7 +215,7 @@ static int set_scan_mode(void* handle, int argc, char** argv)
         break;
     }
 
-    gap_test_interface->bt_set_scan_mode(gap_hanlde, scanMode, bondable);
+    gap_test_interface->bt_set_scan_mode(gap_handle, scanMode, bondable);
 
     return 0;
 }
@@ -223,7 +223,7 @@ static int set_scan_mode(void* handle, int argc, char** argv)
 static int get_local_address(void* handle, int argc, char** argv)
 {
     bt_address addr;
-    gap_test_interface->bt_get_local_address(gap_hanlde, addr);
+    gap_test_interface->bt_get_local_address(gap_handle, addr);
     BT_LOGD("%s, bt_address :%s", __func__, addr_str(addr));
     return 0;
 }
@@ -233,7 +233,7 @@ static int set_local_io_capability(void* handle, int argc, char** argv)
     if (argc < 1)
         return -1;
     uint16_t iocap = atoi(argv[0]);
-    gap_test_interface->bt_set_local_io_capability(gap_hanlde, iocap);
+    gap_test_interface->bt_set_local_io_capability(gap_handle, iocap);
 
     return 0;
 }
@@ -241,7 +241,7 @@ static int set_local_io_capability(void* handle, int argc, char** argv)
 static int get_local_name(void* handle, int argc, char** argv)
 {
 
-    char* name = gap_test_interface->bt_get_local_name(gap_hanlde);
+    char* name = gap_test_interface->bt_get_local_name(gap_handle);
     BT_LOGD("%s, name: %s", __func__, name);
 
     return 0;
@@ -254,7 +254,7 @@ static int set_local_name(void* handle, int argc, char** argv)
     char* name = malloc(strlen(argv[0]) + 1);
     memcpy(name, argv[0], strlen(argv[0]));
     name[strlen(argv[0]) + 1] = 0;
-    gap_test_interface->bt_set_local_name(gap_hanlde, argv[0], strlen(argv[0]) + 1);
+    gap_test_interface->bt_set_local_name(gap_handle, argv[0], strlen(argv[0]) + 1);
     free(name);
 
     return 0;
@@ -267,7 +267,7 @@ static int get_remote_name(void* handle, int argc, char** argv)
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
 
-    gap_test_interface->bt_get_remote_name(gap_hanlde, device);
+    gap_test_interface->bt_get_remote_name(gap_handle, device);
     free(device);
 
     return 0;
@@ -279,7 +279,7 @@ static int ble_set_public_address(void* handle, int argc, char** argv)
         return -1;
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
-    gap_test_interface->ble_set_public_identity(gap_hanlde, device);
+    gap_test_interface->ble_set_public_identity(gap_handle, device);
 
     return 0;
 }
@@ -291,7 +291,7 @@ static int reply_pair_request(void* handle, int argc, char** argv)
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
     uint16_t accept = atoi(argv[0]);
-    gap_test_interface->bt_reply_pair_request(gap_hanlde, device, accept);
+    gap_test_interface->bt_reply_pair_request(gap_handle, device, accept);
     free(device);
     return 0;
 }
@@ -306,7 +306,7 @@ static int ssp_reply(void* handle, int argc, char** argv)
     reply.accept = 1;
     reply.type = SPP_TYPE_PASSKEY_ENTRY;
     reply.passkey = atoi((const char*)argv[1]);
-    gap_test_interface->bt_ssp_reply(gap_hanlde, &reply);
+    gap_test_interface->bt_ssp_reply(gap_handle, &reply);
     return 0;
 }
 
@@ -316,7 +316,7 @@ static int create_bond(void* handle, int argc, char** argv)
         return -1;
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
-    gap_test_interface->bt_create_bond(gap_hanlde, device);
+    gap_test_interface->bt_create_bond(gap_handle, device);
     free(device);
     return 0;
 }
@@ -327,7 +327,7 @@ static int cancel_bond(void* handle, int argc, char** argv)
         return -1;
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
-    gap_test_interface->bt_cancel_bond(gap_hanlde, device);
+    gap_test_interface->bt_cancel_bond(gap_handle, device);
     free(device);
 
     return 0;
@@ -339,7 +339,7 @@ static int remove_bond(void* handle, int argc, char** argv)
         return -1;
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
-    gap_test_interface->bt_remove_bond(gap_hanlde, device);
+    gap_test_interface->bt_remove_bond(gap_handle, device);
     free(device);
 
     return 0;
@@ -347,11 +347,10 @@ static int remove_bond(void* handle, int argc, char** argv)
 
 static int get_bonded_devices(void* handle, int argc, char** argv)
 {
-
-    bt_device_t device_list[MAX_PAIR_DEVICE];
-
-    int ret = gap_test_interface->bt_get_bonded_devices(gap_hanlde, device_list);
-    for (int i = 0; i < ret; i++) {
+    int num = gap_test_interface->bt_get_bonded_devices(gap_handle, NULL, 0);
+    bt_device_t *device_list = malloc(sizeof(bt_device_t) * num);
+    num = gap_test_interface->bt_get_bonded_devices(gap_handle, device_list, num);
+    for (int i = 0; i < num; i++) {
         bt_device_t* device = &device_list[i];
         BT_LOGD("%s, device [%d]: %s, name :%s ", __func__, i, addr_str(device->addr), device->name);
     }
@@ -362,10 +361,11 @@ static int get_bonded_devices(void* handle, int argc, char** argv)
 static int get_connected_devices(void* handle, int argc, char** argv)
 {
 
-    bt_device_t device_list[MAX_CONNECTED_DEVICE];
+    int num = gap_test_interface->bt_get_connected_devices(gap_handle, NULL, 0);
+    bt_device_t *device_list = malloc(sizeof(bt_device_t) * num);
+    num = gap_test_interface->bt_get_connected_devices(gap_handle, device_list, num);
 
-    int ret = gap_test_interface->bt_get_connected_devices(gap_hanlde, device_list);
-    for (int i = 0; i < ret; i++) {
+    for (int i = 0; i < num; i++) {
         bt_device_t* device = &device_list[i];
         BT_LOGD("%s, device [%d]: %s, name: %s", __func__, i, addr_str(device->addr), device->name);
     }
@@ -396,14 +396,14 @@ static int set_local_device_class(void* handle, int argc, char** argv)
     if (argc < 1)
         return -1;
     uint32_t class = atoi(argv[0]);
-    gap_test_interface->bt_set_local_device_class(gap_hanlde, class);
+    gap_test_interface->bt_set_local_device_class(gap_handle, class);
 
     return 0;
 }
 
 static int get_local_device_class(void* handle, int argc, char** argv)
 {
-    uint32_t class = gap_test_interface->bt_get_local_device_class(gap_hanlde);
+    uint32_t class = gap_test_interface->bt_get_local_device_class(gap_handle);
     BT_LOGD("%s, class: %lu", __func__, class);
 
     return 0;
@@ -416,7 +416,7 @@ static int ble_set_address(void* handle, int argc, char** argv)
 
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
-    gap_test_interface->ble_set_address(gap_hanlde, device);
+    gap_test_interface->ble_set_address(gap_handle, device);
     free(device);
     return 0;
 }
@@ -435,7 +435,7 @@ static int add_whitelist_device(void* handle, int argc, char** argv)
 
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
-    gap_test_interface->ble_add_white_list(gap_hanlde, device);
+    gap_test_interface->ble_add_white_list(gap_handle, device);
     free(device);
     return 0;
 }
@@ -447,7 +447,7 @@ static int add_resolving_device(void* handle, int argc, char** argv)
 
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
-    gap_test_interface->ble_add_resolving_list(gap_hanlde, device);
+    gap_test_interface->ble_add_resolving_list(gap_handle, device);
     free(device);
     return 0;
 }
@@ -458,7 +458,7 @@ static int remove_whitelist_device(void* handle, int argc, char** argv)
 
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
-    gap_test_interface->ble_remove_white_list(gap_hanlde, device);
+    gap_test_interface->ble_remove_white_list(gap_handle, device);
     free(device);
     return 0;
 }
@@ -470,16 +470,16 @@ static int remove_resolving_device(void* handle, int argc, char** argv)
 
     bt_device_t* device = malloc(sizeof(bt_device_t));
     str2ba(argv[0], device->addr);
-    gap_test_interface->ble_remove_resolving_list(gap_hanlde, device);
+    gap_test_interface->ble_remove_resolving_list(gap_handle, device);
     free(device);
     return 0;
 }
 static int get_ble_bonded_devices(void* handle, int argc, char** argv)
 {
-    bt_device_t device_list[MAX_PAIR_DEVICE];
-
-    int ret = gap_test_interface->ble_get_bonded_devices(gap_hanlde, device_list);
-    for (int i = 0; i < ret; i++) {
+    int num = gap_test_interface->ble_get_bonded_devices(gap_handle, NULL, 0);
+    bt_device_t *device_list = malloc(sizeof(bt_device_t) * num);
+    num = gap_test_interface->ble_get_bonded_devices(gap_handle, device_list, num);
+    for (int i = 0; i < num; i++) {
         bt_device_t* device = &device_list[i];
         BT_LOGD("%s, device [%d]: %s", __func__, i, addr_str(device->addr));
     }
@@ -489,10 +489,10 @@ static int get_ble_bonded_devices(void* handle, int argc, char** argv)
 
 static int get_ble_connected_devices(void* handle, int argc, char** argv)
 {
-    bt_device_t device_list[MAX_CONNECTED_DEVICE];
-
-    int ret = gap_test_interface->ble_get_connected_devices(gap_hanlde, device_list);
-    for (int i = 0; i < ret; i++) {
+    int num = gap_test_interface->ble_get_connected_devices(gap_handle, NULL, 0);
+    bt_device_t *device_list = malloc(sizeof(bt_device_t) * num);
+    num = gap_test_interface->ble_get_connected_devices(gap_handle, device_list, num);
+    for (int i = 0; i < num; i++) {
         bt_device_t* device = &device_list[i];
         BT_LOGD("%s, device [%d]: %s", __func__, i, addr_str(device->addr));
     }
@@ -502,10 +502,10 @@ static int get_ble_connected_devices(void* handle, int argc, char** argv)
 
 static int get_ble_whitelist_devices(void* handle, int argc, char** argv)
 {
-    bt_device_t device_list[MAX_PAIR_DEVICE];
-
-    int ret = gap_test_interface->ble_get_whitelist_devices(gap_hanlde, device_list);
-    for (int i = 0; i < ret; i++) {
+    int num = gap_test_interface->ble_get_whitelist_devices(gap_handle, NULL, 0);
+    bt_device_t *device_list = malloc(sizeof(bt_device_t) * num);
+    num = gap_test_interface->ble_get_whitelist_devices(gap_handle, device_list, num);
+    for (int i = 0; i < num; i++) {
         bt_device_t* device = &device_list[i];
         BT_LOGD("%s, device [%d]: %s", __func__, i, addr_str(device->addr));
     }
@@ -515,10 +515,10 @@ static int get_ble_whitelist_devices(void* handle, int argc, char** argv)
 
 static int get_ble_resolvinglist_devices(void* handle, int argc, char** argv)
 {
-    bt_device_t device_list[MAX_PAIR_DEVICE];
-
-    int ret = gap_test_interface->ble_get_resolvinglist_devices(gap_hanlde, device_list);
-    for (int i = 0; i < ret; i++) {
+    int num = gap_test_interface->ble_get_resolvinglist_devices(gap_handle, NULL, 0);
+    bt_device_t *device_list = malloc(sizeof(bt_device_t) * num);
+    num = gap_test_interface->ble_get_resolvinglist_devices(gap_handle, device_list, num);
+    for (int i = 0; i < num; i++) {
         bt_device_t* device = &device_list[i];
         BT_LOGD("%s, device [%d]: %s", __func__, i, addr_str(device->addr));
     }
@@ -604,12 +604,12 @@ static void manager_state_changed_callback(btm_bt_state state)
     if (state == BTM_STATE_ON) {
         if (daemon_enable) {
             char local_name[] = "BLUELET_NUTTX_Sim";
-            gap_test_interface->bt_set_local_name(gap_hanlde, local_name, sizeof(local_name));
-            gap_test_interface->bt_set_local_device_class(gap_hanlde, COD_SERVICE_RENDERING | COD_SERVICE_AUDIO | COD_SERVICE_TELEPHONY | COD_AV_HEADSET);
-            gap_test_interface->bt_set_local_io_capability(gap_hanlde, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
+            gap_test_interface->bt_set_local_name(gap_handle, local_name, sizeof(local_name));
+            gap_test_interface->bt_set_local_device_class(gap_handle, COD_SERVICE_RENDERING | COD_SERVICE_AUDIO | COD_SERVICE_TELEPHONY | COD_AV_HEADSET);
+            gap_test_interface->bt_set_local_io_capability(gap_handle, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
         }
-        gap_test_interface->bt_set_local_device_class(gap_hanlde, COD_SERVICE_RENDERING | COD_SERVICE_AUDIO | COD_SERVICE_TELEPHONY | COD_AV_HEADSET);
-        gap_test_interface->bt_set_scan_mode(gap_hanlde, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
+        gap_test_interface->bt_set_local_device_class(gap_handle, COD_SERVICE_RENDERING | COD_SERVICE_AUDIO | COD_SERVICE_TELEPHONY | COD_AV_HEADSET);
+        gap_test_interface->bt_set_scan_mode(gap_handle, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
     }
 }
 
@@ -644,14 +644,14 @@ void test_ssp_request_callback(void* handle, ssp_request_data_t* request_data)
         memcpy(reply.remote_addr, request_data->remote_addr, 6);
         reply.accept = true;
         reply.type = SPP_TYPE_PASSKEY_CONFIRMATION;
-        gap_test_interface->bt_ssp_reply(gap_hanlde, &reply);
+        gap_test_interface->bt_ssp_reply(gap_handle, &reply);
     }
     if (request_data->ssp_type == SPP_TYPE_PASSKEY_ENTRY) {
         memcpy(reply.remote_addr, request_data->remote_addr, 6);
         reply.accept = true;
         reply.type = SPP_TYPE_PASSKEY_ENTRY;
         reply.passkey = request_data->pass_key;
-        gap_test_interface->bt_ssp_reply(gap_hanlde, &reply);
+        gap_test_interface->bt_ssp_reply(gap_handle, &reply);
     }
     if (request_data->ssp_type == SPP_TYPE_PASSKEY_NOTIFICATION) {
         BT_LOGD("%s, device %s, psss key: %lu", __func__, addr_str(request_data->remote_addr), request_data->cod);
@@ -712,7 +712,7 @@ void test_pairing_request_callback(void* gap_handle, bt_address remote_addr, boo
     if ((daemon_enable) || (!auto_accept && (local_initiate || is_bondable))) {
         bt_device_t* device = malloc(sizeof(bt_device_t));
         memcpy(device->addr, remote_addr, 6);
-        gap_test_interface->bt_reply_pair_request(gap_hanlde, device, 0);
+        gap_test_interface->bt_reply_pair_request(gap_handle, device, 0);
         free(device);
     }
 }
@@ -847,7 +847,7 @@ int main(int argc, char** argv)
     if (daemon_enable)
         manager->enable(manager_handle);
     gap_test_interface = get_gap_instance();
-    gap_test_interface->gap_register_callbacks(manager_handle, &gap_hanlde, &gap_test_tool_callbacks);
+    gap_test_interface->gap_register_callbacks(manager_handle, &gap_handle, &gap_test_tool_callbacks);
 
     buffer = malloc(CONFIG_NSH_LINELEN);
     if (!buffer)

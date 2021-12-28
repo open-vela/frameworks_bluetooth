@@ -384,21 +384,21 @@ static bt_result_code btm_remove_bond(void* gap_handle, bt_device_t* device)
     return ret;
 }
 
-static int btm_get_bonded_devices(void* gap_handle, bt_device_t* device_list)
+static int btm_get_bonded_devices(void* gap_handle, bt_device_t* device_list, int max_out)
 {
     int ret = 0;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, bt_get_bonded_devices, ret, gap_handle, device_list);
+    BT_GAP_INTERFACE(context->service_interface, bt_get_bonded_devices, ret, gap_handle, device_list, max_out);
     return ret;
 }
 
-static int btm_get_connected_devices(void* gap_handle, bt_device_t* device_list)
+static int btm_get_connected_devices(void* gap_handle, bt_device_t* device_list, int max_out)
 {
     int ret = 0;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, bt_get_connected_devices, ret, gap_handle, device_list);
+    BT_GAP_INTERFACE(context->service_interface, bt_get_connected_devices, ret, gap_handle, device_list, max_out);
     return ret;
 }
 
@@ -614,37 +614,37 @@ static bt_result_code btm_ble_send_packet(void* gap_handle, bt_device_t* device,
     BT_GAP_INTERFACE(context->service_interface, ble_send_packet, ret, gap_handle, device, private_cid, packet, packet_size);
     return ret;
 }
-static int btm_ble_get_bonded_devices(void* gap_handle, bt_device_t* device_list)
+static int btm_ble_get_bonded_devices(void* gap_handle, bt_device_t* device_list, int max_out)
 {
     int ret = 0;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, ble_get_bonded_devices, ret, gap_handle, device_list);
+    BT_GAP_INTERFACE(context->service_interface, ble_get_bonded_devices, ret, gap_handle, device_list, max_out);
     return ret;
 }
 
-static int btm_ble_get_connected_devices(void* gap_handle, bt_device_t* device_list)
+static int btm_ble_get_connected_devices(void* gap_handle, bt_device_t* device_list, int max_out)
 {
     int ret = 0;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, ble_get_connected_devices, ret, gap_handle, device_list);
+    BT_GAP_INTERFACE(context->service_interface, ble_get_connected_devices, ret, gap_handle, device_list, max_out);
     return ret;
 }
-static int btm_ble_get_whitelist_devices(void* gap_handle, bt_device_t* device_list)
+static int btm_ble_get_whitelist_devices(void* gap_handle, bt_device_t* device_list, int max_out)
 {
     int ret = 0;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, ble_get_whitelist_devices, ret, gap_handle, device_list);
+    BT_GAP_INTERFACE(context->service_interface, ble_get_whitelist_devices, ret, gap_handle, device_list, max_out);
     return ret;
 }
-static int btm_ble_get_resolvinglist_devices(void* gap_handle, bt_device_t* device_list)
+static int btm_ble_get_resolvinglist_devices(void* gap_handle, bt_device_t* device_list, int max_out)
 {
     int ret = 0;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, ble_get_resolvinglist_devices, ret, gap_handle, device_list);
+    BT_GAP_INTERFACE(context->service_interface, ble_get_resolvinglist_devices, ret, gap_handle, device_list, max_out);
     return ret;
 }
 /**
