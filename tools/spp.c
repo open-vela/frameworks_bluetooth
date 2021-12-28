@@ -243,10 +243,17 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     return 0;
 }
 
+static void write_complete(euv_pty_t* handle, uint8_t* buf, int status)
+{
+    free(buf);
+}
+
 static int write_cmd(void* handle, int argc, char* argv[])
 {
     spp_device_t* device;
     uint16_t port;
+    uint8_t *buf;
+
     if (argc < 2)
         return -1;
 
@@ -255,15 +262,14 @@ static int write_cmd(void* handle, int argc, char* argv[])
     BT_LOGD("%s port:%d", __func__, port);
     if (device == NULL)
         return -1;
-    euv_pty_write(device->pty, (uint8_t*)argv[1], strlen(argv[1]), NULL);
+
+    buf = (uint8_t *)strdup(argv[1]);
+    euv_pty_write(device->pty, buf, strlen(argv[1]), write_complete);
 
     return 0;
 }
 
-static void write_complete(euv_pty_t* handle, uint8_t* buf, int status)
-{
-    free(buf);
-}
+
 static int test_cmd(void* handle, int argc, char* argv[])
 {
     spp_device_t* device;
