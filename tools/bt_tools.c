@@ -84,6 +84,10 @@ static int add_whitelist_device(void* handle, int argc, char** argv);
 static int add_resolving_device(void* handle, int argc, char** argv);
 static int remove_whitelist_device(void* handle, int argc, char** argv);
 static int remove_resolving_device(void* handle, int argc, char** argv);
+static int get_ble_bonded_devices(void* handle, int argc, char** argv);
+static int get_ble_connected_devices(void* handle, int argc, char** argv);
+static int get_ble_whitelist_devices(void* handle, int argc, char** argv);
+static int get_ble_resolvinglist_devices(void* handle, int argc, char** argv);
 
 static btm_gap_interface_t* gap_test_interface = NULL;
 static btm_interface_t* manager;
@@ -157,7 +161,10 @@ static bt_command_t g_gap_tables[] = {
     { "addresolvinglist", add_resolving_device, "\"add resovling list device               param: <addr> \"" },
     { "removesolvinglist", remove_resolving_device, "\"remove resovling list device      param: <addr> \"" },
     { "sspreply", ssp_reply, "\"reply remote relpyrequest      param: <addr> <keycode> \"" },
-
+    { "getblebonded", get_ble_bonded_devices, "\"get ble bonded device  \"" },
+    { "getbleconnected", get_ble_connected_devices, "\"get ble connected device  \"" },
+    { "getwhitelist", get_ble_whitelist_devices, "\"get ble whitelist device  \"" },
+    { "getresolvinglist", get_ble_resolvinglist_devices, "\"get ble resolvinglist device  \"" },
 };
 
 static struct option gap_options[] = {
@@ -465,6 +472,57 @@ static int remove_resolving_device(void* handle, int argc, char** argv)
     str2ba(argv[0], device->addr);
     gap_test_interface->ble_remove_resolving_list(gap_hanlde, device);
     free(device);
+    return 0;
+}
+static int get_ble_bonded_devices(void* handle, int argc, char** argv)
+{
+    bt_device_t device_list[MAX_PAIR_DEVICE];
+
+    int ret = gap_test_interface->ble_get_bonded_devices(gap_hanlde, device_list);
+    for (int i = 0; i < ret; i++) {
+        bt_device_t* device = &device_list[i];
+        BT_LOGD("%s, device [%d]: %s", __func__, i, addr_str(device->addr));
+    }
+
+    return 0;
+}
+
+static int get_ble_connected_devices(void* handle, int argc, char** argv)
+{
+    bt_device_t device_list[MAX_CONNECTED_DEVICE];
+
+    int ret = gap_test_interface->ble_get_connected_devices(gap_hanlde, device_list);
+    for (int i = 0; i < ret; i++) {
+        bt_device_t* device = &device_list[i];
+        BT_LOGD("%s, device [%d]: %s", __func__, i, addr_str(device->addr));
+    }
+
+    return 0;
+}
+
+static int get_ble_whitelist_devices(void* handle, int argc, char** argv)
+{
+    bt_device_t device_list[MAX_PAIR_DEVICE];
+
+    int ret = gap_test_interface->ble_get_whitelist_devices(gap_hanlde, device_list);
+    for (int i = 0; i < ret; i++) {
+        bt_device_t* device = &device_list[i];
+        BT_LOGD("%s, device [%d]: %s", __func__, i, addr_str(device->addr));
+    }
+
+    return 0;
+}
+
+static int get_ble_resolvinglist_devices(void* handle, int argc, char** argv)
+{
+    bt_device_t device_list[MAX_PAIR_DEVICE];
+
+    int ret = gap_test_interface->ble_get_resolvinglist_devices(gap_hanlde, device_list);
+    for (int i = 0; i < ret; i++) {
+        bt_device_t* device = &device_list[i];
+        BT_LOGD("%s, device [%d]: %s", __func__, i, addr_str(device->addr));
+    }
+
     return 0;
 }
 

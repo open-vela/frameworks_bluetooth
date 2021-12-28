@@ -42,6 +42,7 @@
 #define LOG_TAG "bts_service"
 #include "log.h"
 
+#define BTSERVICE_THREAD_STACK_SIZE 4096
 typedef struct
 {
     process_in_timer func_in_timer;
@@ -240,17 +241,21 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     InitTransportLayer();
     gap_service_init();
     bt_dispatch_loop = uv_loop_new();
+    uv_thread_options_t options = {UV_THREAD_HAS_STACK_SIZE, BTSERVICE_THREAD_STACK_SIZE};
     int ret = uv_thread_create(&thread_handle[THREAD_ID_STACK], stack_schedule_loop, NULL);
     if (ret != 0) {
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
         return BT_RESULT_FAILED;
     }
+    prctl(PR_SET_NAME_EXT, "bluelet_thread", thread_handle[THREAD_ID_STACK]);
 
-    ret = uv_thread_create(&thread_handle[THREAD_ID_SERVICE], service_schedule_loop, NULL);
+    //ret = uv_thread_create(&thread_handle[THREAD_ID_SERVICE], service_schedule_loop, NULL);
+    ret = uv_thread_create_ex(&thread_handle[THREAD_ID_SERVICE], &options, service_schedule_loop, NULL);
     if (ret != 0) {
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
         return BT_RESULT_FAILED;
     }
+    prctl(PR_SET_NAME_EXT, "btservice_thread", thread_handle[THREAD_ID_SERVICE]);
     service_state = BTM_STATE_TURNING_ON;
     return BT_RESULT_SUCCESS;
 }
