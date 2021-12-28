@@ -621,7 +621,7 @@ static int le_start_advertising(void* handle, int argc, char** argv)
     int interval = atoi(argv[1]);
     int duration = atoi(argv[2]);
     int filter_type = atoi(argv[3]);
-    BT_LOGD("start ble adv type:%d, interval:%d, duration:%d", adv_type, interval, duration);
+    BT_LOGD("start ble adv type:%d, interval:%d, duration:%d, filter_type:%d", adv_type, interval, duration, filter_type);
     const uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x08, 0x09, 0x42, 0x52, 0x54, 0x2D, 0x49, 0x44, 0x4D, 0x03, 0x02, 0x00, 0xFF };
     advertise_param_t adv_para;
     memset(&adv_para, 0, sizeof(advertise_param_t));
@@ -671,7 +671,7 @@ static bt_command_t g_gatts_tables[] = {
     { "send_notify", gatts_send_notify, "\"send notify:<address> <payload> \"" },
     { "send_indicate", gatts_send_indicate, "\"send indicate:<address> <payload>\"" },
     { "throughput", gatts_do_throughput, "\"throughtout:<address> <times>\"" },
-    { "start_adv", le_start_advertising, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration>\"" },
+    { "start_adv", le_start_advertising, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration> <filter_type>\"" },
     { "stop_adv", le_stop_advertising, "\"stop le adv\"" },
 };
 

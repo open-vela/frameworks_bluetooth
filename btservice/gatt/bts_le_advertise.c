@@ -123,7 +123,8 @@ static void on_ble_advtise_started_cb(uint8_t adv_id)
 {
     bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
     if (!client) {
-        BT_LOGE("fail, invalid adv id:%d", adv_id);
+        SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(adv_id);
+        BT_LOGW("stop le adv, adv id:%d, ret:%d", adv_id, ret);
         return;
     }
 
