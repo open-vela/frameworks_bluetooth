@@ -86,6 +86,7 @@ typedef enum {
     STACK_EVENT_CMD_RESPONSE,
     STACK_EVENT_CMD_RESULT,
     STACK_EVENT_RING_INDICATION,
+    STACK_EVENT_CODEC_CHANGED,
 } hf_client_event_t;
 
 typedef struct
