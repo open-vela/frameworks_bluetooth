@@ -376,7 +376,10 @@ typedef struct {
     bt_result_code (*ble_set_phy)(void* gap_handle, bt_device_t* device, ble_phy_type tx_phy, ble_phy_type rx_phy);
     bt_result_code (*ble_add_private_channel)(void* gap_handle, uint16_t private_cid);
     bt_result_code (*ble_send_packet)(void* gap_handle, bt_device_t* device, uint16_t private_cid, uint8_t* packet, uint16_t packet_size);
-
+    int (*ble_get_bonded_devices)(void* gap_handle, bt_device_t* device_list);
+    int (*ble_get_connected_devices)(void* gap_handle, bt_device_t* device_list);
+    int (*ble_get_whitelist_devices)(void* gap_handle, bt_device_t* device_list);
+    int (*ble_get_resolvinglist_devices)(void* gap_handle, bt_device_t* device_list);
     /**
      * Send HCI command for testing purpose
      * hci_cmd_packet[in] Complete HCI command packet, e.g. 01 03 0c 00

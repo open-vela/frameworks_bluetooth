@@ -107,7 +107,10 @@ bt_result_code bts_ble_set_phy(bt_device_t* device, ble_phy_type tx_phy, ble_phy
 bt_result_code bts_ble_add_private_channel(uint16_t private_cid);
 bt_result_code bts_ble_send_packet(bt_device_t* device, uint16_t private_cid,
     uint8_t* packet, uint16_t packet_size);
-
+int bts_get_ble_bonded_devices(bt_device_t* device_list);
+int bts_get_ble_connected_devices(bt_device_t* device_list);
+int bts_get_ble_whitelist_devices(bt_device_t* device_list);
+int bts_get_ble_resolvinglist_devices(bt_device_t* device_list);
 /**
  * Send HCI command for testing purpose
  * hci_cmd_packet[in] Complete HCI command packet, e.g. 01 03 0c 00

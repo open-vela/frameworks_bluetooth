@@ -600,7 +600,7 @@ static void adapter_update_ble_bonded_devices_callback(SERVICE_BLE_KEYS_S* bonde
 
 static void adapter_ble_add_white_list_callback(bt_address remote_addr, SERVICE_BT_STATUS status)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, addr :%s", __func__, addr_str(remote_addr));
     gap_msg_t* msg = gap_msg_new(GAP_BLE_ADD_WHITE_LIST);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.status = status;
@@ -609,7 +609,7 @@ static void adapter_ble_add_white_list_callback(bt_address remote_addr, SERVICE_
 
 static void adapter_ble_remove_white_list_callback(bt_address remote_addr, SERVICE_BT_STATUS status)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, addr :%s", __func__, addr_str(remote_addr));
     gap_msg_t* msg = gap_msg_new(GAP_BLE_REMOVE_WHITE_LIST);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.status = status;
@@ -618,7 +618,7 @@ static void adapter_ble_remove_white_list_callback(bt_address remote_addr, SERVI
 
 static void adapter_ble_add_resolving_list_callback(bt_address remote_addr, SERVICE_BT_STATUS status)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, addr :%s", __func__, addr_str(remote_addr));
     gap_msg_t* msg = gap_msg_new(GAP_ADD_BLE_RESOlVING_LIST);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.status = status;
@@ -627,7 +627,7 @@ static void adapter_ble_add_resolving_list_callback(bt_address remote_addr, SERV
 
 static void adapter_ble_remove_resolving_list_callback(bt_address remote_addr, SERVICE_BT_STATUS status)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, addr :%s", __func__, addr_str(remote_addr));
     gap_msg_t* msg = gap_msg_new(GAP_REMOVE_BLE_RESOlVING_LIST);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.status = status;
@@ -636,7 +636,7 @@ static void adapter_ble_remove_resolving_list_callback(bt_address remote_addr, S
 
 static void adapter_ble_address_callback(bt_address ble_addr, SERVICE_BLE_ADDR_TYPE addr_type)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, addr :%s", __func__, addr_str(ble_addr));
     gap_msg_t* msg = gap_msg_new(GAP_BLE_ADDRESS);
     memcpy(msg->event_data.bd_addr, ble_addr, BT_ADDR_LENGTH);
     msg->event_data.addr_type = addr_type;
@@ -931,6 +931,53 @@ int bts_get_connected_devices(bt_device_t* device_list)
     return ret;
 }
 
+int bts_get_ble_bonded_devices(bt_device_t* device_list)
+{
+    int ret = 0;
+    SERVICE_REMOTE_BLE_DEVICE_S bonded_list[MAX_PAIR_DEVICE];
+    ret = service_adapter_gap_ble_get_bonded_devices(bonded_list, MAX_PAIR_DEVICE);
+    for (int i = 0; i < ret; i++) {
+        memcpy(device_list[i].addr, bonded_list[i].bd_addr, BT_ADDR_LENGTH);
+        device_list[i].addr_type =  bonded_list[i].addr_type;
+    }
+    return ret;
+}
+
+int bts_get_ble_connected_devices(bt_device_t* device_list)
+{
+    int ret = 0;
+    SERVICE_REMOTE_BLE_DEVICE_S connected_list[MAX_CONNECTED_DEVICE];
+    ret = service_adapter_gap_ble_get_connected_devices(connected_list, MAX_CONNECTED_DEVICE);
+    for (int i = 0; i < ret; i++) {
+        memcpy(device_list[i].addr, connected_list[i].bd_addr, BT_ADDR_LENGTH);
+        device_list[i].addr_type =  connected_list[i].addr_type;
+    }
+    return ret;
+}
+
+int bts_get_ble_whitelist_devices(bt_device_t* device_list)
+{
+    int ret = 0;
+    SERVICE_REMOTE_BLE_DEVICE_S whitelist_list[MAX_PAIR_DEVICE];
+    ret = service_adapter_gap_ble_get_white_list_devices(whitelist_list, MAX_PAIR_DEVICE);
+    for (int i = 0; i < ret; i++) {
+        memcpy(device_list[i].addr, whitelist_list[i].bd_addr, BT_ADDR_LENGTH);
+        device_list[i].addr_type =  whitelist_list[i].addr_type;
+    }
+    return ret;
+}
+
+int bts_get_ble_resolvinglist_devices(bt_device_t* device_list)
+{
+    int ret = 0;
+    SERVICE_REMOTE_BLE_DEVICE_S resolvinglist_list[MAX_PAIR_DEVICE];
+    ret = service_adapter_gap_ble_get_bonded_devices(resolvinglist_list, MAX_PAIR_DEVICE);
+    for (int i = 0; i < ret; i++) {
+        memcpy(device_list[i].addr, resolvinglist_list[i].bd_addr, BT_ADDR_LENGTH);
+        device_list[i].addr_type =  resolvinglist_list[i].addr_type;
+    }
+    return ret;
+}
 /*Discovery*/
 bt_result_code bts_set_scan_mode(bt_scan_mode scan_mode, bool bondable)
 {
