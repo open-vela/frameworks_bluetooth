@@ -52,21 +52,21 @@
 #define HF_SERVICE_CBACK(P_CB, P_CBACK, ...)                     \
     do {                                                         \
         if ((P_CB) && (P_CB)->P_CBACK) {                         \
-            BT_LOGD("%s: HF %s->%s", __func__, #P_CB, #P_CBACK); \
             (P_CB)->P_CBACK(__VA_ARGS__);                        \
         }                                                        \
     } while (0)
 
 typedef struct _hf_state_machine {
-    state_machine_t sm;
-    bt_address addr;
-    uint16_t sco_conn_handle;
-    uv_timer_t* connect_timer;
-    bool recognition_active;
-    uint8_t spk_volume;
-    uint8_t mic_volume;
-    struct list_node pending_actions;
-    hf_client_service_t* service;
+    state_machine_t         sm;
+    bt_address              addr;
+    uint16_t                sco_conn_handle;
+    uv_timer_t*             connect_timer;
+    bool                    recognition_active;
+    uint8_t                 spk_volume;
+    uint8_t                 mic_volume;
+    uint8_t                 codec;
+    struct list_node        pending_actions;
+    hf_client_service_t*    service;
 } hf_state_machine_t;
 
 typedef struct {
@@ -153,6 +153,7 @@ static char* stack_event_to_string(hf_client_event_t event)
         CASE_RETURN_STR(STACK_EVENT_CMD_RESPONSE)
         CASE_RETURN_STR(STACK_EVENT_CMD_RESULT)
         CASE_RETURN_STR(STACK_EVENT_RING_INDICATION)
+        CASE_RETURN_STR(STACK_EVENT_CODEC_CHANGED)
     default:
         return "UNKNOWN_EVENT";
     }
@@ -184,6 +185,7 @@ static void notify_connection_state_changed(hf_client_service_t* service,
     bt_address addr,
     hf_client_connection_state_t state)
 {
+    BT_LOGD("%s, addr:%s, state:%d", __func__, addr_str(addr), state);
     HF_SERVICE_CBACK(service->callbacks, connection_state_cb, addr, state);
 }
 
@@ -191,6 +193,7 @@ static void notify_audio_state_changed(hf_client_service_t* service,
     bt_address addr,
     hf_client_audio_state_t state)
 {
+    BT_LOGD("%s, addr:%s, state:%d", __func__, addr_str(addr), state);
     HF_SERVICE_CBACK(service->callbacks, audio_state_cb, addr, state);
 }
 
@@ -198,6 +201,7 @@ static void notify_vr_state_changed(hf_client_service_t* service,
     bt_address addr,
     hf_client_vr_state_t state)
 {
+    BT_LOGD("%s, addr:%s, state:%d", __func__, addr_str(addr), state);
     HF_SERVICE_CBACK(service->callbacks, vr_cmd_cb, addr, state);
 }
 
@@ -259,6 +263,10 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
         }
         break;
     }
+
+    case STACK_EVENT_CODEC_CHANGED:
+        hfsm->codec = data->valueint1;
+        break;
 
     default:
         BT_LOGE("Disconnected: Unexpected stack event: %s", stack_event_to_string(event));
@@ -329,6 +337,10 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         }
         break;
     }
+
+    case STACK_EVENT_CODEC_CHANGED:
+        hfsm->codec = data->valueint1;
+        break;
 
     case TIMEOUT:
         BT_LOGD("Connection timeout");
@@ -545,6 +557,8 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         switch (state) {
         case HF_CLIENT_AUDIO_STATE_CONNECTED:
             //set audio focus, route audio channel
+            if (hfsm->codec == SERVICE_HFP_CODEC_MSBC)
+                state = HF_CLIENT_AUDIO_STATE_CONNECTED_MSBC;
             notify_audio_state_changed(hfsm->service, hfsm->addr, state);
             hfsm->sco_conn_handle = data->valueint2;
             hsm_transition_to(sm, &audio_on_state);
@@ -653,6 +667,10 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
             HF_SERVICE_CBACK(service->callbacks, ring_indication_cb, hfsm->addr, ring_state);
         break;
     }
+
+    case STACK_EVENT_CODEC_CHANGED:
+        hfsm->codec = data->valueint1;
+        break;
 
     default:
         break;
