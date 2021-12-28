@@ -248,8 +248,21 @@ static void adp_sco_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_HFP
 
 static void adp_codec_changed_cb(BD_ADDR remote_addr, SERVICE_HFP_CONFIG_S* config)
 {
+    hf_state_machine_t* sm;
+    hf_client_msg_t* msg;
+
     BT_LOGD(" HF codec config [codec:%d][sample rate:%lu][bit width:%d]", config->codec,
         config->sample_rate, config->bit_width);
+
+    sm = get_state_machine(remote_addr);
+    if (!sm)
+        return;
+    msg = HF_MSG_NEW(STACK_EVENT_CODEC_CHANGED, remote_addr);
+    if (!msg)
+        return;
+    msg->event_data.valueint1 = config->codec;
+
+    hf_client_send_message(sm, msg);
 }
 
 static void adp_call_setup_state_changed_cb(BD_ADDR remote_addr, SERVICE_HFP_CALL_SETUP_STATE state)
@@ -517,6 +530,10 @@ static void bts_hf_client_handle_service_msg(bt_profile_id id, void* data, size_
 bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks)
 {
     SERVICE_BT_STATUS status;
+    uint32_t features = BT_HFP_BRSF_HF_HFINDICATORS | BT_HFP_BRSF_HF_RMTVOLCTRL |
+                        BT_HFP_BRSF_HF_ENHANCED_CALLSTATUS | BT_HFP_BRSF_HF_NREC |
+                        BT_HFP_BRSF_HF_3WAYCALL | BT_HFP_BRSF_HF_CLIP |
+                        BT_HFP_BRSF_HF_CODEC_NEGOTIATION | BT_HFP_BRSF_HF_BVRA;
 
     if (g_hfp_service.started)
         return BT_RESULT_SUCCESS;
@@ -525,7 +542,7 @@ bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks
     list_initialize(&g_hfp_service.device_list);
     bts_register_profile_process(BT_PROFILE_HANDSFREE_HF_ID,
         bts_hf_client_handle_service_msg);
-    status = service_adapter_hfp_init(0x1BF, 1, &hfp_adp_callbacks);
+    status = service_adapter_hfp_init(features, 1, &hfp_adp_callbacks);
     if (status != SERVICE_BT_STATUS_SUCCESS) {
         return BT_RESULT_FAILED;
     }
