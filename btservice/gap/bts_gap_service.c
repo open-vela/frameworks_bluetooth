@@ -343,6 +343,39 @@ static int bts_if_get_connected_devices(void* gap_handle, bt_device_t* device_li
     return ret;
 }
 
+static int bts_if_get_ble_bonded_devices(void* gap_handle, bt_device_t* device_list)
+{
+    int ret = 0;
+    if (!gap_is_handle_valid(gap_handle))
+        return ret;
+    ret = bts_get_ble_bonded_devices(device_list);
+    return ret;
+}
+
+static int bts_if_get_ble_connected_devices(void* gap_handle, bt_device_t* device_list)
+{
+    int ret = 0;
+    if (!gap_is_handle_valid(gap_handle))
+        return ret;
+    ret = bts_get_ble_connected_devices(device_list);
+    return ret;
+}
+static int bts_if_get_ble_whitelist_devices(void* gap_handle, bt_device_t* device_list)
+{
+    int ret = 0;
+    if (!gap_is_handle_valid(gap_handle))
+        return ret;
+    ret = bts_get_ble_whitelist_devices(device_list);
+    return ret;
+}
+static int bts_if_get_ble_resolvinglist_devices(void* gap_handle, bt_device_t* device_list)
+{
+    int ret = 0;
+    if (!gap_is_handle_valid(gap_handle))
+        return ret;
+    ret = bts_get_ble_resolvinglist_devices(device_list);
+    return ret;
+}
 /*Discovery*/
 static bt_result_code bts_if_set_scan_mode(void* gap_handle, bt_scan_mode scan_mode, bool bondable)
 {
@@ -594,6 +627,10 @@ static btm_gap_interface_t gap_interface = {
     .ble_set_phy = bts_if_ble_set_phy,
     .ble_add_private_channel = bts_if_ble_add_private_channel,
     .ble_send_packet = bts_if_ble_send_packet,
+    .ble_get_bonded_devices = bts_if_get_ble_bonded_devices,
+    .ble_get_connected_devices = bts_if_get_ble_connected_devices,
+    .ble_get_whitelist_devices = bts_if_get_ble_whitelist_devices,
+    .ble_get_resolvinglist_devices = bts_if_get_ble_resolvinglist_devices,
     .enter_bluetooth_test_mode = bts_if_enter_bluetooth_test_mode,
 };
 
