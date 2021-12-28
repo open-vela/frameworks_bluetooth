@@ -325,55 +325,55 @@ static bt_result_code bts_if_remove_bond(void* gap_handle, bt_device_t* device)
     return ret;
 }
 
-static int bts_if_get_bonded_devices(void* gap_handle, bt_device_t* device_list)
+static int bts_if_get_bonded_devices(void* gap_handle, bt_device_t* device_list, int max_out)
 {
     int ret = 0;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
-    ret = bts_get_bonded_devices(device_list);
+    ret = bts_get_bonded_devices(device_list, max_out);
     return ret;
 }
 
-static int bts_if_get_connected_devices(void* gap_handle, bt_device_t* device_list)
+static int bts_if_get_connected_devices(void* gap_handle, bt_device_t* device_list, int max_out)
 {
     int ret = 0;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
-    ret = bts_get_connected_devices(device_list);
+    ret = bts_get_connected_devices(device_list, max_out);
     return ret;
 }
 
-static int bts_if_get_ble_bonded_devices(void* gap_handle, bt_device_t* device_list)
+static int bts_if_get_ble_bonded_devices(void* gap_handle, bt_device_t* device_list, int max_out)
 {
     int ret = 0;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
-    ret = bts_get_ble_bonded_devices(device_list);
+    ret = bts_get_ble_bonded_devices(device_list, max_out);
     return ret;
 }
 
-static int bts_if_get_ble_connected_devices(void* gap_handle, bt_device_t* device_list)
+static int bts_if_get_ble_connected_devices(void* gap_handle, bt_device_t* device_list, int max_out)
 {
     int ret = 0;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
-    ret = bts_get_ble_connected_devices(device_list);
+    ret = bts_get_ble_connected_devices(device_list, max_out);
     return ret;
 }
-static int bts_if_get_ble_whitelist_devices(void* gap_handle, bt_device_t* device_list)
+static int bts_if_get_ble_whitelist_devices(void* gap_handle, bt_device_t* device_list, int max_out)
 {
     int ret = 0;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
-    ret = bts_get_ble_whitelist_devices(device_list);
+    ret = bts_get_ble_whitelist_devices(device_list, max_out);
     return ret;
 }
-static int bts_if_get_ble_resolvinglist_devices(void* gap_handle, bt_device_t* device_list)
+static int bts_if_get_ble_resolvinglist_devices(void* gap_handle, bt_device_t* device_list, int max_out)
 {
     int ret = 0;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
-    ret = bts_get_ble_resolvinglist_devices(device_list);
+    ret = bts_get_ble_resolvinglist_devices(device_list, max_out);
     return ret;
 }
 /*Discovery*/

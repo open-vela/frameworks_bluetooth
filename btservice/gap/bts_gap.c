@@ -545,8 +545,8 @@ static void adapter_delete_br_link_key_callback(bt_address remote_addr)
 static void adapter_pairing_request_callback(bt_address remote_addr, bool local_initiate, bool is_bondable)
 {
     BT_LOGD("%s", __func__);
-    SERVICE_REMOTE_DEVICE_S bonded_list[MAX_PAIR_DEVICE];
-    int num = service_adapter_gap_get_bonded_devices(bonded_list, MAX_PAIR_DEVICE);
+    //get total number of bonded devices
+    int num = service_adapter_gap_get_bonded_devices(NULL, 0);
     if (num >= MAX_PAIR_DEVICE) {
         service_adapter_gap_reply_pairing_request(remote_addr, 1);
         BT_LOGE("%s, pair num is max, can not pair any device any more!", __func__);
@@ -867,8 +867,8 @@ bt_result_code bts_create_bond(bt_device_t* device)
     if (!device)
         return BT_RESULT_FAILED;
 
-    SERVICE_REMOTE_DEVICE_S bonded_list[MAX_PAIR_DEVICE];
-    int num = service_adapter_gap_get_bonded_devices(bonded_list, MAX_PAIR_DEVICE);
+    //get total number of bonded devices
+    int num = service_adapter_gap_get_bonded_devices(NULL, 0);
     if (num >= MAX_PAIR_DEVICE) {
         BT_LOGE("%s, pair num is max, can not pair any device any more!", __func__);
         return BT_RESULT_FAILED;
@@ -905,77 +905,117 @@ bt_result_code bts_remove_bond(bt_device_t* device)
     return BT_RESULT_SUCCESS;
 }
 
-int bts_get_bonded_devices(bt_device_t* device_list)
+int bts_get_bonded_devices(bt_device_t* device_list, int max_out)
 {
     int ret = 0;
-    SERVICE_REMOTE_DEVICE_S bonded_list[MAX_PAIR_DEVICE];
-    ret = service_adapter_gap_get_bonded_devices(bonded_list, MAX_PAIR_DEVICE);
-    if (ret > MAX_PAIR_DEVICE)
-        ret = MAX_PAIR_DEVICE;
+    //get total number of paired devices
+    if ((NULL == device_list) || (max_out == 0)) {
+        ret = service_adapter_gap_get_bonded_devices(NULL, 0);
+        return ret;
+    }
+    SERVICE_REMOTE_DEVICE_S* bonded_list = malloc(sizeof(SERVICE_REMOTE_DEVICE_S) * max_out);
+    ret = service_adapter_gap_get_bonded_devices(bonded_list, max_out);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, bonded_list[i].bd_addr, BT_ADDR_LENGTH);
         memcpy(device_list[i].name, bonded_list[i].bt_name, DEVICE_NAME_MAX_LEN + 1);
     }
+    if (bonded_list)
+        free(bonded_list);
     return ret;
 }
 
-int bts_get_connected_devices(bt_device_t* device_list)
+int bts_get_connected_devices(bt_device_t* device_list, int max_out)
 {
     int ret = 0;
-    SERVICE_REMOTE_DEVICE_S connected_list[MAX_CONNECTED_DEVICE];
-    ret = service_adapter_gap_get_connected_devices(connected_list, MAX_CONNECTED_DEVICE);
+    //get total number of paired devices
+    if ((NULL == device_list) || (max_out == 0)) {
+        ret = service_adapter_gap_get_connected_devices(NULL, 0);
+        return ret;
+    }
+    SERVICE_REMOTE_DEVICE_S* connected_list = malloc(sizeof(SERVICE_REMOTE_DEVICE_S) * max_out);
+    ret = service_adapter_gap_get_connected_devices(connected_list, max_out);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, connected_list[i].bd_addr, BT_ADDR_LENGTH);
         memcpy(device_list[i].name, connected_list[i].bt_name, DEVICE_NAME_MAX_LEN + 1);
     }
+    if (connected_list)
+        free(connected_list);
     return ret;
 }
 
-int bts_get_ble_bonded_devices(bt_device_t* device_list)
+int bts_get_ble_bonded_devices(bt_device_t* device_list, int max_out)
 {
     int ret = 0;
-    SERVICE_REMOTE_BLE_DEVICE_S bonded_list[MAX_PAIR_DEVICE];
+    //get total number of paired devices
+    if ((NULL == device_list) || (max_out == 0)) {
+        ret = service_adapter_gap_get_connected_devices(NULL, 0);
+        return ret;
+    }
+    SERVICE_REMOTE_BLE_DEVICE_S* bonded_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
     ret = service_adapter_gap_ble_get_bonded_devices(bonded_list, MAX_PAIR_DEVICE);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, bonded_list[i].bd_addr, BT_ADDR_LENGTH);
         device_list[i].addr_type =  bonded_list[i].addr_type;
     }
+    if (bonded_list)
+        free(bonded_list);
     return ret;
 }
 
-int bts_get_ble_connected_devices(bt_device_t* device_list)
+int bts_get_ble_connected_devices(bt_device_t* device_list, int max_out)
 {
     int ret = 0;
-    SERVICE_REMOTE_BLE_DEVICE_S connected_list[MAX_CONNECTED_DEVICE];
+    //get total number of paired devices
+    if ((NULL == device_list) || (max_out == 0)) {
+        ret = service_adapter_gap_get_connected_devices(NULL, 0);
+        return ret;
+    }
+    SERVICE_REMOTE_BLE_DEVICE_S* connected_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
     ret = service_adapter_gap_ble_get_connected_devices(connected_list, MAX_CONNECTED_DEVICE);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, connected_list[i].bd_addr, BT_ADDR_LENGTH);
         device_list[i].addr_type =  connected_list[i].addr_type;
     }
+    if (connected_list)
+        free(connected_list);
     return ret;
 }
 
-int bts_get_ble_whitelist_devices(bt_device_t* device_list)
+int bts_get_ble_whitelist_devices(bt_device_t* device_list, int max_out)
 {
     int ret = 0;
-    SERVICE_REMOTE_BLE_DEVICE_S whitelist_list[MAX_PAIR_DEVICE];
+    //get total number of paired devices
+    if ((NULL == device_list) || (max_out == 0)) {
+        ret = service_adapter_gap_get_connected_devices(NULL, 0);
+        return ret;
+    }    
+    SERVICE_REMOTE_BLE_DEVICE_S* whitelist_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
     ret = service_adapter_gap_ble_get_white_list_devices(whitelist_list, MAX_PAIR_DEVICE);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, whitelist_list[i].bd_addr, BT_ADDR_LENGTH);
         device_list[i].addr_type =  whitelist_list[i].addr_type;
     }
+    if(whitelist_list)
+        free(whitelist_list);
     return ret;
 }
 
-int bts_get_ble_resolvinglist_devices(bt_device_t* device_list)
+int bts_get_ble_resolvinglist_devices(bt_device_t* device_list, int max_out)
 {
     int ret = 0;
-    SERVICE_REMOTE_BLE_DEVICE_S resolvinglist_list[MAX_PAIR_DEVICE];
+    //get total number of paired devices
+    if ((NULL == device_list) || (max_out == 0)) {
+        ret = service_adapter_gap_get_connected_devices(NULL, 0);
+        return ret;
+    }
+    SERVICE_REMOTE_BLE_DEVICE_S* resolvinglist_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
     ret = service_adapter_gap_ble_get_bonded_devices(resolvinglist_list, MAX_PAIR_DEVICE);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, resolvinglist_list[i].bd_addr, BT_ADDR_LENGTH);
         device_list[i].addr_type =  resolvinglist_list[i].addr_type;
     }
+    if(resolvinglist_list)
+        free(resolvinglist_list);
     return ret;
 }
 /*Discovery*/
