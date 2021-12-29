@@ -677,6 +677,12 @@ static void adapter_ble_packet_received_callback(bt_address remote_addr, uint16_
     msg->event_data.data.ble_packet_receive.private_cid = private_cid;
     gap_send_message(msg);
 }
+static void adapter_local_name_set_callback(char *bt_name, uint16_t len, SERVICE_BT_STATUS status)
+{
+    BT_LOGD("%s", __func__);
+    if (!bt_name)
+        BT_LOGD("name :%s", bt_name);
+}
 
 GAP_CALLBACKS_S g_gap_callback = {
     .size = sizeof(GAP_CALLBACKS_S),
@@ -796,8 +802,8 @@ bt_result_code bts_set_local_io_capability(bt_io_capability io_capability)
 
 char* bts_get_local_name()
 {
-    char* name = malloc(BT_DEV_NAME_MAX_SIZE);
-    SERVICE_BT_STATUS ret = service_adapter_gap_get_local_name(&name, BT_DEV_NAME_MAX_SIZE);
+    char* name = malloc(BT_DEVICE_NAME_MAX_LEN);
+    SERVICE_BT_STATUS ret = service_adapter_gap_get_local_name(&name, BT_DEVICE_NAME_MAX_LEN);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return NULL;
