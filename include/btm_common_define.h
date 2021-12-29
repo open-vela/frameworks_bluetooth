@@ -10,7 +10,7 @@
 * \def BT_DEV_NAME_MAX_SIZE
 * Description
 */
-#define BT_DEV_NAME_MAX_SIZE (20)
+#define BT_DEV_NAME_MAX_SIZE (63)
 
 #define SMP_KEYS_MAX_SIZE   80
 #define BT_COMMON_KEY_LENGTH 16
