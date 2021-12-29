@@ -33,6 +33,7 @@
 #ifndef __SBC_ENCODER_H__
 #define __SBC_ENCODER_H__
 
+#include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
 
@@ -72,7 +73,5 @@ typedef struct {
                                  32*numOfSb for stereo & joint stereo */
     uint32_t u32BitRate;
 } sbc_param_t;
-
-const sbc_param_t* sbc_encoder_param_get(void);
 
 #endif

@@ -33,6 +33,7 @@
 #ifndef __A2DP_CODEC_SBC_H__
 #define __A2DP_CODEC_SBC_H__
 
+#include "sbc_encoder.h"
 /* the length of the SBC Media Payload header. */
 #define A2DP_SBC_MPL_HDR_LEN 1
 
@@ -76,11 +77,11 @@
 #define A2DP_SBC_HDR_L_MSK 0x20
 #define A2DP_SBC_HDR_NUM_MSK 0x0F
 
-void a2dp_codec_sbc_init(void);
-uint32_t a2dp_codec_sbc_frame_length(void);
-uint32_t a2dp_codec_sbc_bit_rate(uint32_t frame_len);
+void a2dp_codec_parse_sbc_param(sbc_param_t* param, uint8_t* codec_info);
+uint32_t a2dp_codec_sbc_frame_length(sbc_param_t* param);
+uint32_t a2dp_codec_sbc_bit_rate(sbc_param_t* param);
 uint8_t calculate_max_frames_per_packet(void);
-void a2dp_codec_sbc_media_timestamp(void);
-void a2dp_codec_sbc_get_num_frame_interation(uint8_t* noi, uint8_t* nof, uint64_t now_timestamp_us);
+void a2dp_codec_sbc_media_timestamp(sbc_param_t* param);
+void a2dp_codec_sbc_get_num_frame_iteration(sbc_param_t* param, uint8_t* noi, uint8_t* nof, uint64_t now_timestamp_us);
 
 #endif
