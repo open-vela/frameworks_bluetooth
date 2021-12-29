@@ -251,10 +251,10 @@ static int set_local_name(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return -1;
-    char* name = malloc(strlen(argv[0]) + 1);
-    memcpy(name, argv[0], strlen(argv[0]));
-    name[strlen(argv[0]) + 1] = 0;
-    gap_test_interface->bt_set_local_name(gap_handle, argv[0], strlen(argv[0]) + 1);
+    int len = strlen(argv[0]) + 1;
+    char* name = malloc(len);
+    memcpy(name, argv[0], len);
+    gap_test_interface->bt_set_local_name(gap_handle, argv[0], len);
     free(name);
 
     return 0;
