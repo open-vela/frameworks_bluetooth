@@ -39,12 +39,21 @@
 
 #include "btm_manager.h"
 #include "btm_a2dp_source.h"
+#include "bts_a2dp_codec.h"
 #include "bts_a2dp_event.h"
+
+typedef struct {
+    bt_address bd_addr;
+    uint8_t is_sink;
+    a2dp_codec_config_t codec_config;
+    //const uint8_t peer_sep_;
+    uint16_t mtu;
+} a2dp_peer_t;
 
 typedef struct {
     struct list_node device_list;
     bool enabled;
-    bt_address active_peer;
+    a2dp_peer_t *active_peer;
     const a2dp_source_callbacks_t* callbacks;
 } a2dp_source_t;
 
@@ -53,7 +62,8 @@ void bts_a2dp_source_stream_stop(void);
 void bts_a2dp_source_codec_state_change(void);
 bool bts_a2dp_source_stream_ready(void);
 bool bts_a2dp_source_stream_started(void);
-uint8_t* bts_a2dp_source_active_peer(void);
+a2dp_peer_t* bts_a2dp_source_find_peer(bt_address addr);
+a2dp_peer_t* bts_a2dp_source_active_peer(void);
 
 bt_result_code bts_a2dp_source_init(const a2dp_source_callbacks_t* callbacks);
 bt_result_code bts_a2dp_source_connect(bt_address addr);

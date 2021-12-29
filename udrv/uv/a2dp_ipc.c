@@ -130,7 +130,6 @@ static void ipc_chnl_listen_cb(uv_stream_t* stream, int status)
     }
 
     ch->state = IPC_CONNTECTED;
-
     if (ch->event_cb)
         ch->event_cb(ch->ch_id, IPC_OPEN_EVT);
 }
@@ -150,9 +149,10 @@ static void ipc_chnl_write_cb(uv_write_t* req, int status)
 {
     ipc_write_t* wreq = (ipc_write_t*)req->data;
     ipc_channel_t* ch = wreq->ch;
+    uint8_t need_close = 0;
 
     if (status != 0) {
-        a2dp_ipc_connection_close(ch);
+        need_close = 1;
         BT_LOGE("%s status:%d", __func__, status);
     }
     if (wreq->write_cb)
@@ -160,6 +160,9 @@ static void ipc_chnl_write_cb(uv_write_t* req, int status)
 
     free(wreq->buffer);
     free(wreq);
+
+    if (need_close)
+        a2dp_ipc_connection_close(ch);
 }
 
 static void ipc_chnl_read_cb(uv_stream_t* stream, ssize_t nread,
@@ -167,10 +170,11 @@ static void ipc_chnl_read_cb(uv_stream_t* stream, ssize_t nread,
 {
     ipc_read_t* rreq = (ipc_read_t*)stream->data;
     ipc_channel_t* ch = rreq->ch;
+    uint8_t need_close = 0;
 
     if (nread < 0) {
+        need_close = 1;
         BT_LOGE("%s nread:%d", __func__, nread);
-        a2dp_ipc_connection_close(ch);
     }
 
     if (nread == 0) {
@@ -179,6 +183,9 @@ static void ipc_chnl_read_cb(uv_stream_t* stream, ssize_t nread,
 
     if (rreq->read_cb)
         rreq->read_cb(ch->ch_id, (uint8_t*)buf->base, nread);
+
+    if (need_close)
+        a2dp_ipc_connection_close(ch);
 }
 
 a2dp_ipc_t* a2dp_ipc_init(uv_loop_t* loop)

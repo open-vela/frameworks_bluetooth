@@ -141,7 +141,6 @@ static char* stack_event_to_string(a2dp_event_type_t event)
         CASE_RETURN_STR(STREAM_STARTED_EVT)
         CASE_RETURN_STR(STREAM_SUSPENDED_EVT)
         CASE_RETURN_STR(STREAM_CLOSED_EVT)
-        CASE_RETURN_STR(STREAM_MTU_CONFIG_EVT)
         CASE_RETURN_STR(CODEC_CONFIG_EVT)
         CASE_RETURN_STR(DEVICE_CODEC_STATE_CHANGE_EVT)
         CASE_RETURN_STR(CONNECT_TIMEOUT)
@@ -392,11 +391,6 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         bts_a2dp_source_on_stopped();
         break;
 
-    case STREAM_MTU_CONFIG_EVT:
-        bts_a2dp_source_set_mtu(event_data->mtu);
-        BT_LOGD("STREAM_MTU_CONFIG_EVT :stream_chnl_mtu:%d", event_data->mtu);
-        break;
-
     case DEVICE_CODEC_STATE_CHANGE_EVT:
         bts_a2dp_report_audio_config_state(service, a2dp_sm->addr);
         break;
@@ -447,7 +441,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case DISCONNECT_REQ: {
         SERVICE_BT_STATUS status;
 
-        status = service_adapter_a2dp_source_disconnect(event_data->bd_addr);
+        status = service_adapter_a2dp_source_disconnect(a2dp_sm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect failed");
         }
@@ -463,7 +457,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
 
     case STREAM_SUSPEND_REQ: {
         SERVICE_BT_STATUS status;
-        status = service_adapter_a2dp_source_suspend_stream(event_data->bd_addr);
+        status = service_adapter_a2dp_source_suspend_stream(a2dp_sm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Stream suspend failed");
         }

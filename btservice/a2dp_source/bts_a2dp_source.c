@@ -44,10 +44,10 @@
 
 #include "a2dp_ipc.h"
 #include "btm_manager.h"
+#include "bts_a2dp_source.h"
 #include "bts_a2dp_codec.h"
 #include "bts_a2dp_control.h"
 #include "bts_a2dp_event.h"
-#include "bts_a2dp_source.h"
 #include "bts_a2dp_source_audio.h"
 #include "bts_a2dp_state_machine.h"
 #include "bts_service.h"
@@ -64,7 +64,7 @@ typedef struct {
     struct list_node node;
     a2dp_state_machine_t* a2dp_sm;
     bt_address bd_addr;
-    const uint8_t peer_sep_;
+    a2dp_peer_t peer;
 } a2dp_device_t;
 
 static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state);
@@ -101,10 +101,12 @@ a2dp_device_t* find_a2dp_device_by_addr(bt_address bd_addr)
 
 static void set_active_peer(bt_address bd_addr)
 {
-    memcpy(a2dp_source.active_peer, bd_addr, 6);
+    a2dp_device_t* device = find_a2dp_device_by_addr(bd_addr);
+
+    a2dp_source.active_peer = &device->peer;
 }
 
-static uint8_t* get_active_peer(void)
+static a2dp_peer_t* get_active_peer(void)
 {
     return a2dp_source.active_peer;
 }
@@ -113,14 +115,15 @@ static a2dp_device_t* a2dp_device_new(a2dp_state_machine_t* sm, bt_address bd_ad
 {
     a2dp_device_t* device;
 
-    set_active_peer(bd_addr);
     device = (a2dp_device_t*)malloc(sizeof(a2dp_device_t));
     if (!device)
         return NULL;
 
     memcpy(device->bd_addr, bd_addr, sizeof(bt_address));
+    memcpy(device->peer.bd_addr, bd_addr, sizeof(bt_address));
     device->a2dp_sm = sm;
     list_add_tail(&a2dp_source.device_list, &device->node);
+    set_active_peer(bd_addr);
 
     return device;
 }
@@ -174,21 +177,32 @@ static void a2dp_service_handle_event(void* event, size_t size)
         break;
     case CODEC_CONFIG_EVT: {
         a2dp_codec_config_t* config;
+        a2dp_device_t* device = find_a2dp_device_by_addr(a2dp_event->event_data.bd_addr);
 
         config = a2dp_event->event_data.data;
-        bts_a2dp_codec_set_config(config);
         BT_LOGD("CODEC_CONFIG_EVT : codec_type: %d, sample_rate: %lu, bits_per_sample: %d, channel_mode: %d",
             config->codec_type,
             config->sample_rate,
             config->bits_per_sample,
             config->channel_mode);
+        bts_a2dp_codec_set_config(device->bd_addr, config);
+        break;
+    }
+    case STREAM_MTU_CONFIG_EVT: {
+        a2dp_device_t* device = find_a2dp_device_by_addr(a2dp_event->event_data.bd_addr);
+        device->peer.mtu = a2dp_event->event_data.mtu;
+        BT_LOGD("STREAM_MTU_CONFIG_EVT :%d", device->peer.mtu);
         break;
     }
     default: {
         a2dp_state_machine_t* a2dp_sm;
+
         a2dp_sm = get_state_machine(a2dp_event->event_data.bd_addr);
         if (!a2dp_sm)
             return;
+        if (a2dp_event->event == CONNECTED_EVT) {
+            set_active_peer(a2dp_event->event_data.bd_addr);
+        }
         a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     } break;
     }
@@ -258,7 +272,7 @@ static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREA
     codec_config.sample_rate = config->sample_rate;
     codec_config.channel_mode = config->channel;
     codec_config.bits_per_sample = config->bit_width;
-
+    memcpy(codec_config.specific_info, config->codec_info, config->codec_info_len);
     event = a2dp_event_new(CODEC_CONFIG_EVT, remote_addr);
     event->event_data.data = malloc(sizeof(codec_config));
     memcpy(event->event_data.data, &codec_config, sizeof(codec_config));
@@ -294,6 +308,7 @@ static void a2dp_source_cleanup(void)
     struct list_node* tmp;
 
     a2dp_source.callbacks = NULL;
+    a2dp_source.active_peer = NULL;
     bts_unregister_profile_process(BT_PROFILE_ADVANCED_AUDIO_SOURCE_ID);
     list_for_every_safe(&a2dp_source.device_list, node, tmp)
     {
@@ -309,31 +324,47 @@ void bts_a2dp_service_handle_event(bt_profile_id id, void* data, size_t size)
     a2dp_service_handle_event(data, size);
 }
 
-uint8_t* bts_a2dp_source_active_peer(void)
+a2dp_peer_t* bts_a2dp_source_active_peer(void)
 {
     return get_active_peer();
 }
 
+a2dp_peer_t* bts_a2dp_source_find_peer(bt_address addr)
+{
+    a2dp_device_t* device = find_a2dp_device_by_addr(addr);
+
+    if (!device)
+        return NULL;
+
+    return &device->peer;
+}
+
 void bts_a2dp_source_stream_start(void)
 {
-    uint8_t* addr = bts_a2dp_source_active_peer();
+    a2dp_peer_t* peer = bts_a2dp_source_active_peer();
+    if (!peer)
+        return;
 
-    do_in_a2dp_service(a2dp_event_new(STREAM_START_REQ, addr));
+    do_in_a2dp_service(a2dp_event_new(STREAM_START_REQ, peer->bd_addr));
 }
 
 void bts_a2dp_source_stream_stop(void)
 {
-    uint8_t* addr = bts_a2dp_source_active_peer();
+    a2dp_peer_t* peer = bts_a2dp_source_active_peer();
+    if (!peer)
+        return;
 
-    do_in_a2dp_service(a2dp_event_new(STREAM_SUSPEND_REQ, addr));
+    do_in_a2dp_service(a2dp_event_new(STREAM_SUSPEND_REQ, peer->bd_addr));
 }
 
 bool bts_a2dp_source_stream_ready(void)
 {
     a2dp_state_machine_t* a2dp_sm;
+    a2dp_peer_t* peer = bts_a2dp_source_active_peer();
+    if (!peer)
+        return false;
 
-    uint8_t* addr = bts_a2dp_source_active_peer();
-    a2dp_sm = get_state_machine(addr);
+    a2dp_sm = get_state_machine(peer->bd_addr);
     if (!a2dp_sm)
         return false;
 
@@ -343,9 +374,11 @@ bool bts_a2dp_source_stream_ready(void)
 bool bts_a2dp_source_stream_started(void)
 {
     a2dp_state_machine_t* a2dp_sm;
+    a2dp_peer_t* peer = bts_a2dp_source_active_peer();
+    if (!peer)
+        return false;
 
-    uint8_t* addr = bts_a2dp_source_active_peer();
-    a2dp_sm = get_state_machine(addr);
+    a2dp_sm = get_state_machine(peer->bd_addr);
     if (!a2dp_sm)
         return false;
 
@@ -354,9 +387,11 @@ bool bts_a2dp_source_stream_started(void)
 
 void bts_a2dp_source_codec_state_change(void)
 {
-    uint8_t* addr = bts_a2dp_source_active_peer();
+    a2dp_peer_t* peer = bts_a2dp_source_active_peer();
+    if (!peer)
+        return;
 
-    do_in_a2dp_service(a2dp_event_new(DEVICE_CODEC_STATE_CHANGE_EVT, addr));
+    do_in_a2dp_service(a2dp_event_new(DEVICE_CODEC_STATE_CHANGE_EVT, peer->bd_addr));
 }
 
 bt_result_code bts_a2dp_source_init(const a2dp_source_callbacks_t* callbacks)
@@ -364,6 +399,7 @@ bt_result_code bts_a2dp_source_init(const a2dp_source_callbacks_t* callbacks)
     if (a2dp_source.enabled)
         return BT_RESULT_SUCCESS;
 
+    a2dp_source.enabled = true;
     a2dp_source.callbacks = callbacks;
     list_initialize(&a2dp_source.device_list);
     bts_register_profile_process(BT_PROFILE_ADVANCED_AUDIO_SOURCE_ID,

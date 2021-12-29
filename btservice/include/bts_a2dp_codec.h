@@ -34,6 +34,8 @@
 #define __BTS_A2DP_CODEC_H__
 
 #include <sys/types.h>
+#include "btm_manager.h"
+#include "sbc_encoder.h"
 
 typedef enum {
     BTS_A2DP_TYPE_SBC,
@@ -67,15 +69,14 @@ typedef struct {
     bts_a2dp_codec_bits_per_sample_t bits_per_sample;
     bts_a2dp_codec_channel_mode_t channel_mode;
     uint32_t bit_rate;
+    uint8_t  specific_info[20];
+    union {
+        sbc_param_t sbc;
+    } codec_param;
 } a2dp_codec_config_t;
 
-typedef struct {
-    a2dp_codec_config_t current_codec_config;
-} a2dp_codec_t;
-
-void bts_a2dp_codec_init(void);
 a2dp_codec_config_t* bts_a2dp_codec_get_config(void);
-void bts_a2dp_codec_set_config(a2dp_codec_config_t* config);
+void bts_a2dp_codec_set_config(bt_address bd_addr, a2dp_codec_config_t* config);
 uint32_t bts_a2dp_codec_interval_ms(void);
 uint32_t bts_a2dp_codec_get_frame_length(void);
 
