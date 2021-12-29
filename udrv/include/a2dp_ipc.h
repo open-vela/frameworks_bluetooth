@@ -49,7 +49,7 @@ typedef enum {
 typedef struct _a2dp_ipc a2dp_ipc_t;
 typedef void (*ipc_event_cb_t)(uint8_t ch_id, a2dp_ipc_event_t event);
 typedef void (*ipc_alloc_cb_t)(uint8_t ch_id, uint8_t** buffer, size_t *len);
-typedef void (*ipc_read_cb_t)(uint8_t ch_id, uint8_t* buffer, size_t len);
+typedef void (*ipc_read_cb_t)(uint8_t ch_id, uint8_t* buffer, ssize_t len);
 typedef void (*ipc_write_cb_t)(uint8_t ch_id, uint8_t* buffer);
 
 #define A2DP_IPC_CH_ID_AV_CTRL 0

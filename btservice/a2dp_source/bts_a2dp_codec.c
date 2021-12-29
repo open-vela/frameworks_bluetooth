@@ -34,56 +34,48 @@
 #include <stdlib.h>
 
 #include "btm_manager.h"
+#include "bts_a2dp_source.h"
 #include "bts_a2dp_codec.h"
 #include "bts_service.h"
 #include "a2dp_codec_sbc.h"
+#include "sbc_encoder.h"
 
 #define LOG_TAG "a2dp_codec"
 #include "log.h"
 
 #define A2DP_SBC_ENCODER_INTERVAL_MS 20
 
-a2dp_codec_t g_a2dp_codec;
-a2dp_codec_config_t* current_config;
-
-static const a2dp_codec_config_t a2dp_codec_default_config = {
-    BTS_A2DP_TYPE_SBC,
-    44100,
-    BTS_A2DP_CODEC_BITS_PER_SAMPLE_16,
-    BTS_A2DP_CODEC_CHANNEL_MODE_STEREO,
-    328000,
-};
+a2dp_codec_config_t g_current_config;
 
 uint32_t bts_a2dp_codec_interval_ms(void)
 {
     return A2DP_SBC_ENCODER_INTERVAL_MS;
 }
 
-void bts_a2dp_codec_init(void)
-{
-    current_config = &g_a2dp_codec.current_codec_config;
-
-    memcpy(current_config, &a2dp_codec_default_config, sizeof(a2dp_codec_config_t));
-    if (current_config->codec_type == BTS_A2DP_TYPE_SBC)
-        a2dp_codec_sbc_init();
-}
-
 a2dp_codec_config_t* bts_a2dp_codec_get_config(void)
 {
-    return current_config;
+    return &g_current_config;
 }
 
-void bts_a2dp_codec_set_config(a2dp_codec_config_t* config)
+void bts_a2dp_codec_set_config(bt_address bd_addr, a2dp_codec_config_t* config)
 {
-    memcpy(current_config, config, sizeof(a2dp_codec_config_t));
-    if (current_config->codec_type == BTS_A2DP_TYPE_SBC)
-        current_config->bit_rate = a2dp_codec_sbc_bit_rate(bts_a2dp_codec_get_frame_length());
+    a2dp_peer_t* peer = bts_a2dp_source_find_peer(bd_addr);
+    a2dp_codec_config_t* peer_config = &peer->codec_config;
+
+    memcpy(peer_config, config, sizeof(a2dp_codec_config_t));
+    if (peer_config->codec_type == BTS_A2DP_TYPE_SBC) {
+        a2dp_codec_parse_sbc_param(&peer_config->codec_param.sbc, config->specific_info);
+        peer_config->bit_rate = peer_config->codec_param.sbc.u32BitRate;
+    }
+
+    memcpy(&g_current_config, peer_config, sizeof(g_current_config));
 }
 
 uint32_t bts_a2dp_codec_get_frame_length(void)
 {
-    if (current_config->codec_type == BTS_A2DP_TYPE_SBC)
-        return a2dp_codec_sbc_frame_length();
+    a2dp_codec_config_t* config = &g_current_config;
+    if (config->codec_type == BTS_A2DP_TYPE_SBC)
+        return a2dp_codec_sbc_frame_length(&config->codec_param.sbc);
 
     return 0; //unknown codec
 }

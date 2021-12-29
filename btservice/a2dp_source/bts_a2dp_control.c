@@ -110,6 +110,19 @@ void bts_a2dp_control_update_audio_config(uint8_t isvalid)
         UINT32_TO_STREAM(p, codec_config->channel_mode);
         /* set bit rate*/
         UINT32_TO_STREAM(p, codec_config->bit_rate);
+        if (codec_config->codec_type == BTS_A2DP_TYPE_SBC) {
+            len += 20;
+            /* set sbc channel mode*/
+            UINT32_TO_STREAM(p, codec_config->codec_param.sbc.s16ChannelMode);
+            /* set sbc number of blocks*/
+            UINT32_TO_STREAM(p, codec_config->codec_param.sbc.s16NumOfBlocks);
+            /* set sbc number of subbands*/
+            UINT32_TO_STREAM(p, codec_config->codec_param.sbc.s16NumOfSubBands);
+            /* set sbc allocation method*/
+            UINT32_TO_STREAM(p, codec_config->codec_param.sbc.s16AllocationMethod);
+            /* set sbc bitpool*/
+            UINT32_TO_STREAM(p, codec_config->codec_param.sbc.s16BitPool);
+        }
     }
 
     bts_a2dp_ctrl_event_with_data(ch_id, A2DP_CTRL_EVT_UPDATE_CONFIG, buffer, len);
@@ -179,7 +192,7 @@ static void bts_a2dp_ctrl_buffer_alloc(uint8_t ch_id, uint8_t** buffer, size_t *
     *buffer = malloc(*len);
 }
 
-static void bts_a2dp_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, size_t len)
+static void bts_a2dp_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len)
 {
     a2dp_ctrl_cmd_t cmd;
     uint8_t* pbuf = buffer;
@@ -233,7 +246,7 @@ static void bts_a2dp_ctrl_cb(uint8_t ch_id, a2dp_ipc_event_t event)
 
 static void bts_a2dp_data_cb(uint8_t ch_id, a2dp_ipc_event_t event)
 {
-    BT_LOGD("%s,event:%s", __func__, dump_a2dp_ipc_event(event));
+    BT_LOGD("%s, event:%s", __func__, dump_a2dp_ipc_event(event));
 
     switch (event) {
     case IPC_OPEN_EVT:
