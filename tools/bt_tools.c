@@ -637,7 +637,7 @@ void test_received_remote_name_callback(void* handle, bt_address bd_addr, char* 
 
 void test_ssp_request_callback(void* handle, ssp_request_data_t* request_data)
 {
-    BT_LOGD("%s, : request_data->ssp_type: %d", __func__, request_data->ssp_type);
+    BT_LOGD("%s, : request_data->ssp_type: %d, name : %s", __func__, request_data->ssp_type, request_data->bt_name);
     spp_reply_data_t reply;
 
     if (request_data->ssp_type == SPP_TYPE_PASSKEY_CONFIRMATION) {
@@ -708,13 +708,29 @@ void test_smp_request_callback(void* gap_handle, ssp_request_data_t* request_dat
 }
 void test_pairing_request_callback(void* gap_handle, bt_address remote_addr, bool local_initiate, bool is_bondable)
 {
+    char* buffer;
+    buffer = malloc(CONFIG_NSH_LINELEN);
     BT_LOGD("%s,local_initiate: %d, is_bondable:%d", __func__, local_initiate, is_bondable);
+    bt_device_t* device = malloc(sizeof(bt_device_t));
+    memcpy(device->addr, remote_addr, BD_ADDR_SIZE);
     if ((daemon_enable) || (!auto_accept && (local_initiate || is_bondable))) {
-        bt_device_t* device = malloc(sizeof(bt_device_t));
-        memcpy(device->addr, remote_addr, 6);
         gap_test_interface->bt_reply_pair_request(gap_handle, device, 0);
-        free(device);
+        goto exit;
     }
+    BT_LOGD("auto accept not open, please input y or n -----------------");
+    int len = readline(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
+    buffer[len] = '\0';
+    if (len < 0)
+        return;
+    if (buffer[0] == 'y'){
+        gap_test_interface->bt_reply_pair_request(gap_handle, device, 0);
+        goto exit;
+    } else {
+        gap_test_interface->bt_reply_pair_request(gap_handle, device, 1);
+    }
+exit:
+        free(device);
+        return;
 }
 
 btm_gap_callbacks_t gap_test_tool_callbacks = {
