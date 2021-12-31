@@ -369,6 +369,7 @@ bt_result_code bts_a2dp_source_init(const a2dp_source_callbacks_t* callbacks)
     bts_register_profile_process(BT_PROFILE_ADVANCED_AUDIO_SOURCE_ID,
         bts_a2dp_service_handle_event);
     do_in_a2dp_service(a2dp_event_new(ENABLE, NULL));
+    a2dp_source.enabled = true;
 
     return BT_RESULT_SUCCESS;
 }
