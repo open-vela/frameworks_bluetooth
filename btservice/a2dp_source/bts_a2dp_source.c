@@ -74,7 +74,7 @@ static void adp_stream_channel_mtu_cb(BD_ADDR remote_addr, uint16_t stream_chnl_
 static void a2dp_source_init(void);
 static void a2dp_source_cleanup(void);
 
-static a2dp_source_t a2dp_source;
+static a2dp_source_t a2dp_source = {.enabled = false};
 
 A2DP_SOURCE_CALLBACKS_S a2dp_callback = {
     sizeof(a2dp_callback),
@@ -300,6 +300,7 @@ static void a2dp_source_cleanup(void)
         device = (a2dp_device_t*)node;
         a2dp_device_delete(device);
     }
+    bts_a2dp_source_audio_cleanup();
     service_adapter_a2dp_source_cleanup();
 }
 
@@ -360,6 +361,9 @@ void bts_a2dp_source_codec_state_change(void)
 
 bt_result_code bts_a2dp_source_init(const a2dp_source_callbacks_t* callbacks)
 {
+    if (a2dp_source.enabled)
+        return BT_RESULT_SUCCESS;
+
     a2dp_source.callbacks = callbacks;
     list_initialize(&a2dp_source.device_list);
     bts_register_profile_process(BT_PROFILE_ADVANCED_AUDIO_SOURCE_ID,
@@ -371,6 +375,9 @@ bt_result_code bts_a2dp_source_init(const a2dp_source_callbacks_t* callbacks)
 
 bt_result_code bts_a2dp_source_connect(bt_address addr)
 {
+    if (!a2dp_source.enabled)
+        return BT_RESULT_FAILED;
+
     do_in_a2dp_service(a2dp_event_new(CONNECT_REQ, addr));
 
     return BT_RESULT_SUCCESS;
@@ -378,6 +385,9 @@ bt_result_code bts_a2dp_source_connect(bt_address addr)
 
 bt_result_code bts_a2dp_source_disconnect(bt_address addr)
 {
+    if (!a2dp_source.enabled)
+        return BT_RESULT_FAILED;
+
     do_in_a2dp_service(a2dp_event_new(DISCONNECT_REQ, addr));
 
     return BT_RESULT_SUCCESS;
@@ -385,6 +395,10 @@ bt_result_code bts_a2dp_source_disconnect(bt_address addr)
 
 void bts_a2dp_source_cleanup(void)
 {
+    if (!a2dp_source.enabled)
+        return;
+
+    a2dp_source.enabled = false;
     do_in_a2dp_service(a2dp_event_new(CLEANUP, NULL));
 }
 
