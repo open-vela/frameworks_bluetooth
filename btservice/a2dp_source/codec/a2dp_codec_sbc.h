@@ -79,4 +79,8 @@
 void a2dp_codec_sbc_init(void);
 uint32_t a2dp_codec_sbc_frame_length(void);
 uint32_t a2dp_codec_sbc_bit_rate(uint32_t frame_len);
+uint8_t calculate_max_frames_per_packet(void);
+void a2dp_codec_sbc_media_timestamp(void);
+void a2dp_codec_sbc_get_num_frame_interation(uint8_t* noi, uint8_t* nof, uint64_t now_timestamp_us);
+
 #endif
