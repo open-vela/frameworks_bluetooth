@@ -147,6 +147,9 @@ static bt_result_code bts_if_disable(void* handle)
     if (!if_handle)
         return BT_RESULT_FAILED;
     gap_disable(true);
+#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+    a2dp_source_service_stop();
+#endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     hf_client_service_stop();
 #endif
