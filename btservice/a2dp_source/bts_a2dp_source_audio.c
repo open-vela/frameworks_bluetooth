@@ -288,5 +288,6 @@ void bts_a2dp_source_audio_init(void)
 
 void bts_a2dp_source_audio_cleanup(void)
 {
+    circbuf_uninit(&a2dp_src_stream.fragmente);
     bts_a2dp_control_cleanup();
 }

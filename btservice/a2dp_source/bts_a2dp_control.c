@@ -254,16 +254,17 @@ static void bts_a2dp_data_cb(uint8_t ch_id, a2dp_ipc_event_t event)
 
 void bts_a2dp_control_init(uint8_t ctrl_id, uint8_t data_id)
 {
-    if (a2dp_ipc == NULL)
+    if (a2dp_ipc == NULL) {
         a2dp_ipc = a2dp_ipc_init(get_service_loop());
-
-    a2dp_ipc_open(a2dp_ipc, ctrl_id, A2DP_CTRL_PATH, bts_a2dp_ctrl_cb);
-    a2dp_ipc_open(a2dp_ipc, data_id, A2DP_DATA_PATH, bts_a2dp_data_cb);
+        a2dp_ipc_open(a2dp_ipc, ctrl_id, A2DP_CTRL_PATH, bts_a2dp_ctrl_cb);
+        a2dp_ipc_open(a2dp_ipc, data_id, A2DP_DATA_PATH, bts_a2dp_data_cb);
+    }
 }
 
 void bts_a2dp_control_cleanup(void)
 {
-    if (a2dp_ipc) {
-        a2dp_ipc_close(a2dp_ipc, A2DP_IPC_CH_ID_ALL);
-    }
+    /* don't close ipc when bt stack disable*/
+    //if (a2dp_ipc) {
+    //    a2dp_ipc_close(a2dp_ipc, A2DP_IPC_CH_ID_ALL);
+    //}
 }
