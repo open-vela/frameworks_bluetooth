@@ -40,8 +40,8 @@ static const sbc_param_t sbc_default_param = {
     2,
     SBC_BLOCK_3,
     SBC_LOUDNESS,
-    32,
-    213000,
+    53,
+    328000,
 };
 
 const sbc_param_t* sbc_encoder_param_get(void)
