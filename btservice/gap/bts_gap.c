@@ -123,19 +123,19 @@ typedef struct {
     union {
         remote_device_t* found_result;
         bt_discovery_state discovery_state;
-        pin_request_data_t* pin_request_data;
-        ssp_request_data_t* ssp_request_data;
-        acl_state_params_t* acl_state_params;
+        pin_request_data_t pin_request_data;
+        ssp_request_data_t ssp_request_data;
+        acl_state_params_t acl_state_params;
         scan_result_t scan_result;
         bt_link_role link_role;
         bt_link_mode link_mode;
         bt_link_policy link_policy;
         bt_service_state stack_state;
-        hci_event_t* hci_event;
+        hci_event_t hci_event;
         remote_name_info_t remote_name;
         bt_bond_state bond_state;
         bt_scan_mode scan_mode;
-        remote_device_t* bonded_device;
+        remote_device_t bonded_device;
         pair_request_t pair_request;
         discovery_service_t discovery_service;
         link_encryption_t link_encryption;
@@ -143,7 +143,7 @@ typedef struct {
         phy_update_changed_t phy_update;
         bt_common_key irk;
         ble_packet_receive_t ble_packet_receive;
-        bt_device_t* device;
+        bt_device_t device;
     } data;
 } gap_event_data_t;
 
@@ -216,7 +216,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
     }
     case GAP_SSP_REQUEST: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->spp_request_cb)) {
-            g_bts_gap_callbacks->spp_request_cb(gap_msg->event_data.data.ssp_request_data);
+            g_bts_gap_callbacks->spp_request_cb(&gap_msg->event_data.data.ssp_request_data);
         }
         break;
     }
@@ -230,7 +230,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
 
     case GAP_DEVICE_FOUND: {
         list_device_t* discovery_devce;
-        bt_device_t* device = gap_msg->event_data.data.device;
+        bt_device_t* device = &gap_msg->event_data.data.device;
 
         discovery_devce = malloc(sizeof(list_device_t));
         discovery_devce->device = device;
@@ -260,8 +260,8 @@ static void process_loop_in_gap(void* data, size_t data_size)
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->connection_state_changed_cb)) {
             bt_device_t* new_device = malloc(sizeof(bt_device_t));
             bt_connection_state state = STATE_DISCONNECTED;
-            memcpy(new_device->addr, gap_msg->event_data.data.acl_state_params->remote_addr, BT_ADDR_LENGTH);
-            switch (gap_msg->event_data.data.acl_state_params->state) {
+            memcpy(new_device->addr, gap_msg->event_data.data.acl_state_params.remote_addr, BT_ADDR_LENGTH);
+            switch (gap_msg->event_data.data.acl_state_params.state) {
             case BT_ACL_STATE_CONNECTED:
                 state = STATE_CONNECTED;
                 break;
@@ -277,7 +277,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
     }
     case GAP_HCI_EVENT: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->hci_event_cb)) {
-            g_bts_gap_callbacks->hci_event_cb(gap_msg->event_data.data.hci_event);
+            g_bts_gap_callbacks->hci_event_cb(&gap_msg->event_data.data.hci_event);
         }
         break;
     }
@@ -290,7 +290,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
     }
     case GAP_SMP_REQUEST: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->smp_request_cb)) {
-            g_bts_gap_callbacks->smp_request_cb(gap_msg->event_data.data.ssp_request_data);
+            g_bts_gap_callbacks->smp_request_cb(&gap_msg->event_data.data.ssp_request_data);
         }
         break;
     }
@@ -356,7 +356,8 @@ static void adapter_device_found_callback(remote_device_t* device)
     //BT_LOGD("%s", __func__);
     if ((!g_bts_gap_callbacks) || (!g_bts_gap_callbacks->device_found_cb))
         return;
-    bt_device_t* new_device = malloc(sizeof(bt_device_t));
+    gap_msg_t* msg = gap_msg_new(GAP_DEVICE_FOUND);
+    bt_device_t* new_device = &(msg->event_data.data.device);
     memcpy(new_device->addr, device->bd_addr, BT_ADDR_LENGTH);
     new_device->addr_type = device->addr_type;
     new_device->device_type = device->device_type;
@@ -364,9 +365,6 @@ static void adapter_device_found_callback(remote_device_t* device)
     new_device->rssi = device->rssi;
     memcpy(new_device->uuids, device->uuids, MAX_UUID_NUM * sizeof(bt_uuid_t));
     memcpy(new_device->name, device->bt_name, DEVICE_NAME_MAX_LEN + 1);
-
-    gap_msg_t* msg = gap_msg_new(GAP_DEVICE_FOUND);
-    msg->event_data.data.device = new_device;
     gap_send_message(msg);
 }
 
@@ -395,7 +393,7 @@ static void adapter_pin_request_callback(SERVICE_PIN_REQUEST_DATA_S* request_dat
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_PIN_CODE_REQUEST);
-    msg->event_data.data.pin_request_data = (pin_request_data_t*)request_data;
+    memcpy(&msg->event_data.data.pin_request_data, request_data, sizeof(SERVICE_PIN_REQUEST_DATA_S));
     gap_send_message(msg);
 }
 
@@ -403,7 +401,7 @@ static void adapter_ssp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_dat
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_SSP_REQUEST);
-    msg->event_data.data.ssp_request_data = (ssp_request_data_t*)request_data;
+    memcpy(&msg->event_data.data.ssp_request_data, request_data, sizeof(SERVICE_SSP_REQUEST_DATA_S));
     gap_send_message(msg);
 }
 
@@ -421,7 +419,7 @@ static void adapter_acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S* acl_st
     BT_LOGD("%s status:%d, state:%d, reasonCode:%lu", __func__, acl_state_param->status, acl_state_param->state, acl_state_param->reasonCode);
 
     gap_msg_t* msg = gap_msg_new(GAP_ACL_STATE_CHANGED);
-    msg->event_data.data.acl_state_params = (acl_state_params_t*)acl_state_param;
+    memcpy(&msg->event_data.data.acl_state_params, acl_state_param, sizeof(SERVICE_ACL_STATE_PARAM_S));
     gap_send_message(msg);
 }
 
@@ -513,7 +511,7 @@ static void adapter_hci_event_callback(SERVICE_BT_HCI_EVENT_S* hci_event)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_HCI_EVENT);
-    msg->event_data.data.hci_event = (hci_event_t*)hci_event;
+    memcpy(&msg->event_data.data.hci_event, hci_event, sizeof(SERVICE_BT_HCI_EVENT_S));
     gap_send_message(msg);
 }
 
@@ -527,7 +525,7 @@ static void adapter_update_br_link_key_callback(remote_device_t* bonded_device)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BR_LINK_KEY_CHANGED);
-    msg->event_data.data.bonded_device = bonded_device;
+    memcpy(&msg->event_data.data.bonded_device, bonded_device, sizeof(remote_device_t));
     gap_send_message(msg);
     gap_update_data_storage();
 }
@@ -585,7 +583,7 @@ static void adapter_smp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_dat
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_SMP_REQUEST);
-    msg->event_data.data.ssp_request_data = (ssp_request_data_t*)request_data;
+    memcpy(&msg->event_data.data.ssp_request_data, request_data, sizeof(SERVICE_SSP_REQUEST_DATA_S));
     gap_send_message(msg);
 }
 
