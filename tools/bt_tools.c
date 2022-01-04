@@ -717,19 +717,23 @@ void test_pairing_request_callback(void* gap_handle, bt_address remote_addr, boo
         gap_test_interface->bt_reply_pair_request(gap_handle, device, 0);
         goto exit;
     }
-    BT_LOGD("auto accept not open, please input y or n -----------------");
-    int len = readline(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
-    buffer[len] = '\0';
-    if (len < 0)
-        return;
-    if (buffer[0] == 'y'){
-        gap_test_interface->bt_reply_pair_request(gap_handle, device, 0);
-        goto exit;
-    } else {
-        gap_test_interface->bt_reply_pair_request(gap_handle, device, 1);
+    while (1) {
+        BT_LOGD("auto accept not open, please input y or n -----------------");
+        int len = readline(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
+        buffer[len] = '\0';
+        if (len < 0)
+            return;
+        if (buffer[0] == 'y') {
+            gap_test_interface->bt_reply_pair_request(gap_handle, device, 0);
+            goto exit;
+        } else if (buffer[0] == 'n') {
+            gap_test_interface->bt_reply_pair_request(gap_handle, device, 1);
+            goto exit;
+        }
     }
 exit:
         free(device);
+        free(buffer);
         return;
 }
 

@@ -242,6 +242,8 @@ static const btm_gap_callbacks_t service_callbacks = {
     .ble_phy_update_cb = btm_ble_phy_update_callback,
     .ble_address_cb = btm_ble_address_callback,
     .pairing_request_cb = btm_pairing_request_callback,
+    .ble_irk_cb = btm_ble_irk_callback,
+
 };
 
 static bt_result_code btm_gap_register_callbacks(void* manager_handle, void** gap_handle, const btm_gap_callbacks_t* callbacks)
