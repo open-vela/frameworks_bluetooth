@@ -89,6 +89,7 @@ static bt_result_code start_advertising(void** hdl_ptr, advertise_param_t* param
     (*handle_ptr)->handle_ptr = (void**)handle_ptr;
 
     bts_leadv_hdl_t client = {
+        .advertiser_id = param->adv_id,
         .param = param,
         .callbacks = &bts_le_advertise_cb,
         .btm_handle = *handle_ptr,
