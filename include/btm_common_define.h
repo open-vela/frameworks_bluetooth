@@ -547,7 +547,7 @@ typedef struct {
 typedef struct {
     uint8_t evt_code;  // HCI event code
     uint8_t length;    // length of the params
-    char params[0];    // parameters
+    char *params;    // parameters
 } hci_event_t;
 
 
