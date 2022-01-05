@@ -212,6 +212,8 @@ static void process_loop_in_gap(void* data, size_t data_size)
                 gap_msg->event_data.data.remote_name.bt_name,
                 gap_msg->event_data.data.remote_name.length);
         }
+        if (gap_msg->event_data.data.remote_name.bt_name)
+            free(gap_msg->event_data.data.remote_name.bt_name);
         break;
     }
     case GAP_SSP_REQUEST: {
@@ -279,6 +281,8 @@ static void process_loop_in_gap(void* data, size_t data_size)
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->hci_event_cb)) {
             g_bts_gap_callbacks->hci_event_cb(&gap_msg->event_data.data.hci_event);
         }
+        if(gap_msg->event_data.data.hci_event.length != 0)
+            free(gap_msg->event_data.data.hci_event.params);
         break;
     }
     case GAP_UPDATE_BLE_BONDED_DEVICES: {
@@ -394,6 +398,8 @@ static void adapter_pin_request_callback(SERVICE_PIN_REQUEST_DATA_S* request_dat
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_PIN_CODE_REQUEST);
     memcpy(&msg->event_data.data.pin_request_data, request_data, sizeof(SERVICE_PIN_REQUEST_DATA_S));
+    memcpy(msg->event_data.data.pin_request_data.bt_name, request_data->bt_name, sizeof(request_data->bt_name));
+
     gap_send_message(msg);
 }
 
@@ -402,6 +408,7 @@ static void adapter_ssp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_dat
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_SSP_REQUEST);
     memcpy(&msg->event_data.data.ssp_request_data, request_data, sizeof(SERVICE_SSP_REQUEST_DATA_S));
+    memcpy(msg->event_data.data.ssp_request_data.bt_name, request_data->bt_name, sizeof(request_data->bt_name));
     gap_send_message(msg);
 }
 
@@ -512,6 +519,10 @@ static void adapter_hci_event_callback(SERVICE_BT_HCI_EVENT_S* hci_event)
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_HCI_EVENT);
     memcpy(&msg->event_data.data.hci_event, hci_event, sizeof(SERVICE_BT_HCI_EVENT_S));
+    if(hci_event->length != 0) {
+        msg->event_data.data.hci_event.params = malloc(hci_event->length);
+        memcpy(msg->event_data.data.hci_event.params, hci_event->params, hci_event->length);
+    }
     gap_send_message(msg);
 }
 
