@@ -647,15 +647,11 @@ void test_ssp_request_callback(void* handle, ssp_request_data_t* request_data)
         gap_test_interface->bt_ssp_reply(gap_handle, &reply);
     }
     if (request_data->ssp_type == SPP_TYPE_PASSKEY_ENTRY) {
-        memcpy(reply.remote_addr, request_data->remote_addr, 6);
-        reply.accept = true;
-        reply.type = SPP_TYPE_PASSKEY_ENTRY;
-        reply.passkey = request_data->pass_key;
-        gap_test_interface->bt_ssp_reply(gap_handle, &reply);
+        BT_LOGD("please input code with sspreply command!");
     }
     if (request_data->ssp_type == SPP_TYPE_PASSKEY_NOTIFICATION) {
         BT_LOGD("%s, device %s, psss key: %lu", __func__, addr_str(request_data->remote_addr), request_data->cod);
-        BT_LOGD("please input code:");
+        BT_LOGD("please input with sspreply command!");
     }
 }
 
