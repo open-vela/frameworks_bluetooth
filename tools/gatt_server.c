@@ -122,6 +122,9 @@ static gatts_device_t* add_gatts_device(bt_address remote_address)
 
 static bool remove_gatts_device(gatts_device_t* device)
 {
+    if (!device) {
+        return true;
+    }
     list_delete(&device->node);
     free(device);
     return true;
