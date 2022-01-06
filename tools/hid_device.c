@@ -262,7 +262,8 @@ static void on_hidd_device_state_changed_callback(void* handle, hid_app_state re
     if (!registered) {
         BT_LOGD("%s clear hidd device", __func__);
         hidd_device_t* device;
-        list_for_every_entry(&hidd_device_list, device, hidd_device_t, node)
+        hidd_device_t* tmp;
+        list_for_every_entry_safe(&hidd_device_list, device, tmp, hidd_device_t, node)
         {
             remove_hidd_device(device);
         }
