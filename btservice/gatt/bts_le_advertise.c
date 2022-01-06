@@ -139,7 +139,7 @@ static void on_ble_advtise_stopped_cb(uint8_t adv_id)
 {
     bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
     if (!client) {
-        BT_LOGE("fail, invalid adv id:%d", adv_id);
+        BT_LOGW("fail, invalid adv id:%d", adv_id);
         return;
     }
 

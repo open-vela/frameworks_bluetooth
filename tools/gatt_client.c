@@ -91,6 +91,9 @@ static gattc_device_t* add_gattc_device(bt_address remote_address)
 
 static bool remove_gattc_device(gattc_device_t* device)
 {
+    if (!device) {
+        return false;
+    }
     list_delete(&device->node);
     free(device);
     return true;
