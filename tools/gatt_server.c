@@ -629,6 +629,7 @@ static int le_start_advertising(void* handle, int argc, char** argv)
     adv_para.params.channel_map = BLE_ADV_CHANNEL_DEFAULT;
     adv_para.params.interval = interval;
     adv_para.params.tx_power = -10;
+    adv_para.params.own_addr_type = BLE_ADDR_TYPE_UNKNOWN;
     adv_para.duration = duration;
     adv_para.adv_length = sizeof(s_adv_data);
     adv_para.adv_data = (char*)s_adv_data;

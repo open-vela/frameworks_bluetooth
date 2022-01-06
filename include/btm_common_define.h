@@ -482,6 +482,8 @@ typedef struct {
     ble_event_type adv_type;
     bt_address peer_addr;/* For BLE_ADV_DIRECT_IND only */
     ble_addr_type peer_addr_type;/* For BLE_ADV_DIRECT_IND only */
+    bt_address own_addr;/* Set if own_addr_type is BLE_ADDR_TYPE_RANDOM. Ignored otherwise */
+    ble_addr_type  own_addr_type;/* One of BLE_ADDR_TYPE_PUBLIC, BLE_ADDR_TYPE_RANDOM and BLE_ADDR_TYPE_UNKNOWN */
     uint32_t interval;
     int8_t tx_power; /* *Range:-20~10 */
     ble_adv_channel channel_map;
