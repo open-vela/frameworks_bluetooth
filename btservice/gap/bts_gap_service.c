@@ -127,7 +127,7 @@ static void gap_if_connection_state_callback(bt_device_t* device, bt_connection_
 
 static void gap_if_hci_event_callback(hci_event_t* hci_event)
 {
-    BT_LOGD("%s", __func__);
+    //BT_LOGD("%s", __func__);
     BT_GAP_CB(hci_event_callback_cb, hci_event);
 }
 
