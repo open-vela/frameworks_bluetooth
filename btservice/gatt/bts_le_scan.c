@@ -106,6 +106,9 @@ static uint8_t add_scan_handle(bts_lescan_hdl_t client)
 
 static bool remove_scan_handle(bts_lescan_hdl_t* handle)
 {
+    if (!handle) {
+        return false;
+    }
     list_delete(&handle->node);
     free(handle);
     return true;
