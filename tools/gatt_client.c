@@ -45,10 +45,16 @@ typedef struct {
     bt_address remote_address;
 } gattc_device_t;
 
+typedef struct {
+    struct list_node node;
+    bt_address remote_addr;
+} gattc_scan_result_t;
+
 static btm_interface_t* manager = NULL;
 static btm_gatt_client_interface_t* gattc_interface = NULL;
 static volatile uint16_t throughtput_cursor = 1;
 static struct list_node gattc_device_list = LIST_INITIAL_VALUE(gattc_device_list);
+static struct list_node gattc_scan_result_list = LIST_INITIAL_VALUE(gattc_scan_result_list);
 static void* scan_handle;
 
 static gattc_device_t* find_gattc_device(bt_address remote_address)
@@ -99,6 +105,42 @@ static bool remove_gattc_device(gattc_device_t* device)
     return true;
 }
 
+static bool find_scan_device(const bt_address remote_address)
+{
+    gattc_scan_result_t* device;
+    list_for_every_entry(&gattc_scan_result_list, device, gattc_scan_result_t, node)
+    {
+        if (!memcmp(device->remote_addr, remote_address, sizeof(bt_address))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void add_scan_device(const bt_address remote_address)
+{
+    gattc_scan_result_t* device = (gattc_scan_result_t*)malloc(sizeof(gattc_scan_result_t));
+    if (!device) {
+        BT_LOGE("malloc gattc_scan_result_t fail");
+        return;
+    }
+
+    memset(device, 0, sizeof(gattc_scan_result_t));
+    memcpy(device->remote_addr, remote_address, sizeof(bt_address));
+    list_add_tail(&gattc_scan_result_list, &device->node);
+}
+
+static void clear_scan_devices(void)
+{
+    gattc_scan_result_t* device;
+    gattc_scan_result_t* device_next;
+    list_for_every_entry_safe(&gattc_scan_result_list, device, device_next, gattc_scan_result_t, node)
+    {
+        list_delete(&device->node);
+        free(device);
+    }
+}
+
 static void on_scan_started_callback(void* handle)
 {
     BT_LOGD("%s", __func__);
@@ -107,17 +149,23 @@ static void on_scan_started_callback(void* handle)
 static void on_scan_stopped_callback(void* handle)
 {
     BT_LOGD("%s", __func__);
+    clear_scan_devices();
 }
 
 static void on_scan_failed_callback(void* handle, int error)
 {
     BT_LOGD("%s err:%d", __func__, error);
+    clear_scan_devices();
 }
 
 static void on_scan_result_callback(void* handle, const scan_result_t* result)
 {
+    if (find_scan_device(result->remote_addr)) {
+        return;
+    }
+    add_scan_device(result->remote_addr);
     BT_LOGD("%s addr:%s, addr_type:%d, device_type:%d, evt_type:%d, rssi:%d", __func__, addr_str(((scan_result_t*)result)->remote_addr), result->addr_type, result->device_type, result->evt_type, result->rssi);
-    BT_HEXDUMP(result->adv_data, result->length);
+    // BT_HEXDUMP(result->adv_data, result->length);
 }
 
 static char* profile_state_to_str(profile_connection_state state)
