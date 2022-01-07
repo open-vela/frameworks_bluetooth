@@ -516,7 +516,7 @@ static void adapter_stack_state_changed_callback(SERVICE_BT_STACK_STATE stack_st
 
 static void adapter_hci_event_callback(SERVICE_BT_HCI_EVENT_S* hci_event)
 {
-    BT_LOGD("%s", __func__);
+    //BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_HCI_EVENT);
     memcpy(&msg->event_data.data.hci_event, hci_event, sizeof(SERVICE_BT_HCI_EVENT_S));
     if(hci_event->length != 0) {
