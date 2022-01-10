@@ -210,11 +210,26 @@ typedef enum {
 } bt_device_type;
 
 typedef enum {
+    /* Auto selection, for compatibility */
     BLE_EVENT_ADV_IND,
     BLE_EVENT_ADV_DIRECT_IND,
     BLE_EVENT_ADV_SCAN_IND,
     BLE_EVENT_ADV_NONCONN_IND,
-    BLE_EVENT_SCAN_RSP
+    BLE_EVENT_SCAN_RSP,
+
+     /* Legacy mode */
+    BLE_EVENT_LEGACY_ADV_IND,
+    BLE_EVENT_LEGACY_ADV_DIRECT_IND,
+    BLE_EVENT_LEGACY_ADV_SCAN_IND,
+    BLE_EVENT_LEGACY_ADV_NONCONN_IND,
+    BLE_EVENT_LEGACY_SCAN_RSP,
+
+    /* None-legacy mode */
+    BLE_EVENT_EXT_ADV_IND,
+    BLE_EVENT_EXT_ADV_DIRECT_IND,
+    BLE_EVENT_EXT_ADV_SCAN_IND,
+    BLE_EVENT_EXT_ADV_NONCONN_IND,
+    BLE_EVENT_EXT_SCAN_RSP,
 } ble_event_type;
 
 typedef enum {
