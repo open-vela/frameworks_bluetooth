@@ -249,8 +249,11 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     return 0;
 }
 
+extern void spp_test_start(int test_cnt);
+extern void spp_app_trans_done_log(void);
 static void write_complete(euv_pty_t* handle, uint8_t* buf, int status)
 {
+    spp_app_trans_done_log();
     free(buf);
 }
 
@@ -275,7 +278,6 @@ static int write_cmd(void* handle, int argc, char* argv[])
     return 0;
 }
 
-
 static int test_cmd(void* handle, int argc, char* argv[])
 {
     spp_device_t* device;
@@ -293,6 +295,7 @@ static int test_cmd(void* handle, int argc, char* argv[])
     if (device == NULL)
         return -1;
 
+    spp_test_start(times);
     for (int i = 0; i < times; i++) {
         buf = malloc(length);
         memset(buf, 0xA5, length);

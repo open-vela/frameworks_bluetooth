@@ -53,6 +53,7 @@ typedef struct {
 
 typedef struct {
     euv_read_cb read_cb;
+    euv_alloc_cb alloc_cb;
     uint16_t read_size;
 } euv_read_t;
 
@@ -63,20 +64,33 @@ static void uv_close_callback(uv_handle_t* handle)
 
 static void uv_alloc_callback(uv_handle_t* handle, size_t size, uv_buf_t* buf)
 {
+    if (!handle->data)
+        return;
+
     euv_read_t* reader = (euv_read_t*)handle->data;
 
-    buf->base = malloc(reader->read_size);
-    buf->len = reader->read_size;
+    if (reader->alloc_cb)
+        reader->alloc_cb((euv_pty_t*)handle, (uint8_t **)&buf->base, &buf->len);
+    else {
+        buf->base = malloc(reader->read_size);
+        buf->len = reader->read_size;
+    }
 }
 
 static void uv_read_callback(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 {
+    if (!stream->data)
+        return;
+
     euv_read_t* reader = (euv_read_t*)stream->data;
+    /*if read stopped in read callback, will free reader struct*/
+    bool release = !reader->alloc_cb;
 
     if (reader->read_cb)
         reader->read_cb((euv_pty_t*)stream, (const uint8_t*)buf->base, nread);
 
-    free(buf->base);
+    if (release)
+        free(buf->base);
 }
 
 static void uv_write_callback(uv_write_t* req, int status)
@@ -89,22 +103,35 @@ static void uv_write_callback(uv_write_t* req, int status)
     free(wreq);
 }
 
-int euv_pty_read_start(euv_pty_t* handle, uint16_t read_size, euv_read_cb cb)
+static int euv_pty_read_start_(euv_pty_t* handle, uint16_t read_size, euv_read_cb read_cb, euv_alloc_cb alloc_cb)
 {
     euv_read_t* reader = malloc(sizeof(euv_read_t));
+    int ret;
 
     if (reader == NULL)
         return -ENOMEM;
 
-    reader->read_cb = cb;
+    reader->read_cb = read_cb;
+    reader->alloc_cb = alloc_cb;
     reader->read_size = read_size;
     handle->uv_tty.data = reader;
-
-    int ret = uv_read_start((uv_stream_t*)&handle->uv_tty, uv_alloc_callback, uv_read_callback);
-    if (ret != 0)
+    ret = uv_read_start((uv_stream_t*)&handle->uv_tty, uv_alloc_callback, uv_read_callback);
+    if (ret != 0) {
+        handle->uv_tty.data = NULL;
         free(reader);
+    }
 
     return ret;
+}
+
+int euv_pty_read_start(euv_pty_t* handle, uint16_t read_size, euv_read_cb cb)
+{
+    return euv_pty_read_start_(handle, read_size, cb, NULL);
+}
+
+int euv_pty_read_start2(euv_pty_t* handle, uint16_t read_size, euv_read_cb read_cb, euv_alloc_cb alloc_cb)
+{
+    return euv_pty_read_start_(handle, read_size, read_cb, alloc_cb);
 }
 
 int euv_pty_read_stop(euv_pty_t* handle)
