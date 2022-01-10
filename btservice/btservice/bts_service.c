@@ -77,7 +77,6 @@ extern void ScheduleLoop(void);
 
 static void bts_uv_close_cb(uv_handle_t* handle)
 {
-    BT_LOGD("bts_uv_close_cb");
     free(handle);
 }
 

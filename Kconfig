@@ -151,12 +151,6 @@ config BLUETOOTH_SPP_LOOP_EN
 	help
 		SPP incoming data loop enable
 
-config BLUETOOTH_SPP_WRITE_CREDITS
-	int "SPP writeable credits"
-	default 5
-	help
-		SPP write credits
-
 config BLUETOOTH_SPP_DUMPBUFFER
 	bool "SPP dumpbuffer switch"
 	default n

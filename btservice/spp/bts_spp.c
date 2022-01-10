@@ -45,6 +45,7 @@
 // nuttx
 #include <debug.h>
 #include <nuttx/list.h>
+#include <nuttx/mm/circbuf.h>
 // libuv
 #include "uv.h"
 // bluelet dependent
@@ -66,23 +67,18 @@
 
 #define CONNECTIONS_MAX CONFIG_BLUETOOTH_SPP_MAX_CONNECTIONS
 #define SERVER_CONNECTION_MAX CONFIG_BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
-#define CONNECTIONS_BASE (1 << 6)
 #define INDEX_MAX (CONNECTIONS_MAX >> 5)
 #define INVALID_FD -1
-
-#define PACKET_SIZE (255)
-#ifdef CONFIG_BLUETOOTH_SPP_WRITE_CREDITS
-#define WRITE_CREDITS CONFIG_BLUETOOTH_SPP_WRITE_CREDITS
-#else
-#define WRITE_CREDITS 5
-#endif
-
+#define DEFAULT_PACKET_SIZE (255)
+#define SEND_FC_EN 1
+#define SENDING_BUFS_QUOTA  13
+#define CACHE_SEND_TIMEOUT 15
 #ifdef CONFIG_BLUETOOTH_SPP_DUMPBUFFER
 #define spp_dumpbuffer(m, a, n) lib_dumpbuffer(m, a, n)
 #else
 #define spp_dumpbuffer(m, a, n)
 #endif
-
+#define CACHE_BUFFER_EN 1
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -96,10 +92,18 @@ typedef struct
     spp_service_callbacks_t* cbs;
 } spp_handle_t;
 
+typedef struct {
+    uint16_t length;
+    uint8_t *buffer_head;
+} cache_buf_t;
+
 typedef struct
 {
     struct list_node node;
     euv_pty_t* handle;
+    uv_timer_t* timer;
+    struct circbuf_s cache;
+    cache_buf_t cache_buf;
 #ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
     euv_pty_t* shandle;
 #endif
@@ -108,10 +112,11 @@ typedef struct
     uint16_t svr_port;
     uint16_t conn_port;
     uint16_t mfs;
+    uint16_t next_to_read;
     int mfd;
     int sfd;
     char pty_name[20];
-    uint8_t credits;
+    uint8_t remaining_quota;
     spp_connection_state_t state;
 } spp_pty_device_t;
 
@@ -147,6 +152,9 @@ static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t leng
  * Private Data
  ****************************************************************************/
 static spp_handle_t g_spp_handle = { .started = 0 };
+int g_send_cnt = -1;
+int g_app_cnt = -1;
+int g_spp_test_cnt = 0;
 
 /****************************************************************************
  * Private Functions
@@ -170,6 +178,68 @@ static const char* spp_event_to_string(uint8_t event)
     }
 }
 #endif
+
+static void calc_trans_speed(const char *stage, int count, struct timespec* ts_start, struct timespec* ts_end)
+{
+    int consume_ms = 0;
+
+    if ((ts_end->tv_nsec - ts_start->tv_nsec) > 0) {
+        consume_ms =  (ts_end->tv_sec - ts_start->tv_sec) * 1000 + \
+            (ts_end->tv_nsec - ts_start->tv_nsec)/1000000UL;
+    } else {
+        consume_ms =  (ts_end->tv_sec - ts_start->tv_sec - 1) * 1000 + \
+            (1000000000LL + ts_end->tv_nsec - ts_start->tv_nsec)/1000000UL;
+    }
+
+    float seconds = (float)consume_ms / 1000.0f;
+    float spd = (float)count / seconds;
+    syslog(1, "%s trans bytes:%d, Seconds: %f, Speed: %fKb/s\n", stage, count * 990, seconds, spd);
+}
+
+void spp_test_start(int test_cnt)
+{
+    g_send_cnt = 0;
+    g_app_cnt = 0;
+    g_spp_test_cnt = test_cnt - 1;
+}
+
+static void spp_send_done_log(void)
+{
+    static struct timespec ts_start1, ts_end1;
+
+    if (g_send_cnt < 0)
+        return;
+
+    if (g_send_cnt == 0) {
+        clock_gettime(CLOCK_MONOTONIC, &ts_start1);
+        g_send_cnt++;
+    } else if (g_send_cnt == g_spp_test_cnt) {
+        clock_gettime(CLOCK_MONOTONIC, &ts_end1);
+        calc_trans_speed("Spp", g_send_cnt, &ts_start1, &ts_end1);
+        g_send_cnt = -1;
+    } else {
+        g_send_cnt++;
+    }
+}
+
+void spp_app_trans_done_log(void)
+{
+    static struct timespec ts_start2, ts_end2;
+
+    if (g_app_cnt < 0)
+        return;
+
+    if (g_app_cnt == 0) {
+        clock_gettime(CLOCK_MONOTONIC, &ts_start2);
+        g_app_cnt++;
+    } else if (g_app_cnt == g_spp_test_cnt) {
+        clock_gettime(CLOCK_MONOTONIC, &ts_end2);
+        calc_trans_speed("App", g_app_cnt, &ts_start2, &ts_end2);
+        g_app_cnt = -1;
+    } else {
+        g_app_cnt++;
+    }
+}
 
 static int alloc_connection_port(uint8_t svr_port, uint16_t* conn_port)
 {
@@ -210,12 +280,16 @@ static spp_pty_device_t* alloc_new_device(bt_address addr, uint16_t port, bool a
     }
     device->accept = accept;
     device->handle = NULL;
-    device->mfs = PACKET_SIZE;
+    device->mfs = DEFAULT_PACKET_SIZE;
     device->mfd = INVALID_FD;
     device->sfd = INVALID_FD;
-    device->credits = WRITE_CREDITS;
+    device->remaining_quota = SENDING_BUFS_QUOTA;
     device->state = SPP_CONNECTION_STATE_DISCONNECTED;
     memset(device->pty_name, 0, sizeof(device->pty_name));
+    circbuf_init(&device->cache, NULL, device->mfs);
+#if CACHE_BUFFER_EN
+    memset(&device->cache_buf, 0, sizeof(device->cache_buf));
+#endif
     memcpy(device->addr, addr, sizeof(device->addr));
     list_add_tail(&g_spp_handle.dev_list, &device->node);
 
@@ -386,24 +460,49 @@ static void spp_notify_pty_opened(bt_address addr, uint16_t port, char* name, in
         g_spp_handle.cbs->pty_open_cb(addr, port, name, fd);
 }
 
+#if CACHE_BUFFER_EN
+static void euv_alloc_buffer(euv_pty_t* handle, uint8_t** buf, size_t *len)
+{
+    spp_pty_device_t* device;
+
+	device = find_pty_device_by_handle(handle);
+    if (!device || buf == NULL) {
+        *buf = NULL;
+        *len = 0;
+        return;
+    }
+
+    if (device->cache_buf.length > 0) {
+        *len = device->mfs - device->cache_buf.length;
+        *buf = device->cache_buf.buffer_head + device->cache_buf.length;
+    } else {
+        *len = device->mfs;
+        *buf = malloc(*len);
+    }
+}
+#endif
+
 static void euv_read_complete(euv_pty_t* handle,
     const uint8_t* buf, ssize_t size)
 {
     spp_pty_device_t* device;
 
-    device = find_pty_device_by_handle(handle);
+	device = find_pty_device_by_handle(handle);
     if (!device || buf == NULL)
         return;
-    if (size < 0) {
-        spp_close_pty_device(device);
+
+    if (size <= 0) {
+#if CACHE_BUFFER_EN
+        if (buf)
+            free((void *)buf);
+#endif
+        if (size < 0)
+            spp_close_pty_device(device);
         return;
     }
     if (size > 0) {
         spp_dumpbuffer("master read:", buf, size);
         do_spp_write(device, (uint8_t*)buf, size);
-        if (!(--device->credits)) {
-            euv_pty_read_stop(handle);
-        }
     }
 }
 
@@ -413,6 +512,9 @@ static void euv_read_loop_complete(euv_pty_t* handle,
 {
     if (size > 0)
         spp_dumpbuffer("slave read:", buf, size);
+#if CACHE_BUFFER_EN
+    free(buf);
+#endif
 }
 #endif
 
@@ -437,31 +539,123 @@ static void euv_write_loop_complete(euv_pty_t* handle, uint8_t* buf, int status)
 }
 #endif
 
+static void spp_cache_timeout(char* data)
+{
+    spp_pty_device_t* device = (spp_pty_device_t*)data;
+
+#if CACHE_BUFFER_EN
+    if (device->cache_buf.length == 0)
+        return;
+#else
+    if (circbuf_used(&device->cache) == 0) {
+        return;
+    }
+#endif
+    do_spp_write(device, NULL, 0);
+}
+
+static void spp_cache_fragement(spp_pty_device_t* device, uint8_t* buffer, uint16_t length)
+{
+#if CACHE_BUFFER_EN
+    device->cache_buf.buffer_head = buffer;
+    device->cache_buf.length = length;
+#else
+    circbuf_write(&device->cache, buffer, length);
+#endif
+    device->timer = start_timer(CACHE_SEND_TIMEOUT, 0, spp_cache_timeout, device);
+    device->next_to_read = device->mfs - length;
+#if SEND_FC_EN
+    if (device->remaining_quota > 0) {
+#else
+    {
+#endif
+#if !CACHE_BUFFER_EN
+        euv_pty_read_stop(device->handle);
+        euv_pty_read_start(device->handle, device->next_to_read, euv_read_complete);
+#endif
+    }
+}
+
+static void spp_cache_stop(spp_pty_device_t* device)
+{
+    stop_timer(device->timer);
+    device->next_to_read = device->mfs;
+
+#if SEND_FC_EN
+    if (device->remaining_quota > 0) {
+#else
+    {
+#endif
+#if !CACHE_BUFFER_EN
+        euv_pty_read_stop(device->handle);
+        euv_pty_read_start(device->handle, device->next_to_read, euv_read_complete);
+#endif
+    }
+}
+
 static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t length)
 {
     SERVICE_BT_STATUS status;
-    uint16_t remaining = length;
+    uint16_t remaining;
+    uint16_t cache_size;
     uint16_t size;
-    uint8_t* tmp;
+    uint8_t* tmpbuf;
 
-    if (!device || buffer == NULL || length == 0)
+    if (!device)
         return -EINVAL;
+
+#if CACHE_BUFFER_EN
+    cache_size = device->cache_buf.length;
+#else
+    cache_size = circbuf_used(&device->cache);
+#endif
+    remaining = length + cache_size;
 
     do {
         size = (remaining > device->mfs) ? device->mfs : remaining;
-        tmp = (uint8_t*)malloc(size);
-        if (!tmp) {
+        if (cache_size == 0 && size < device->mfs) {
+            spp_cache_fragement(device, buffer, size);
+            return 0;
+        }
+#if CACHE_BUFFER_EN
+        if (cache_size > 0) {
+            spp_cache_stop(device);
+            tmpbuf = device->cache_buf.buffer_head;
+            device->cache_buf.buffer_head = NULL;
+            device->cache_buf.length = 0;
+            cache_size = 0;
+        } else {
+            tmpbuf = buffer;
+        }
+#else
+        tmpbuf = (uint8_t*)malloc(size);
+        if (!tmpbuf) {
             BT_LOGE("%s failed to allocate memory", __func__);
             return -ENOMEM;
         }
-        memcpy(tmp, buffer, size);
-        status = service_adapter_spp_write(device->conn_port, tmp, size);
+        if (cache_size > 0) {
+            spp_cache_stop(device);
+            circbuf_read(&device->cache, tmpbuf, cache_size);
+            memcpy(tmpbuf, buffer, size - cache_size);
+            cache_size = 0;
+        } else {
+            memcpy(tmpbuf, buffer, size);
+        }
+#endif
+        status = service_adapter_spp_write(device->conn_port, tmpbuf, size);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("%s write to stack failed", __func__);
+            free(tmpbuf);
             return length - remaining;
         }
+#if SEND_FC_EN
+        if (!(--device->remaining_quota)) {
+            euv_pty_read_stop(device->handle);
+        }
+#endif
         remaining -= size;
         buffer += size;
+        assert(remaining == 0);
     } while (remaining);
 
     return length;
@@ -524,17 +718,24 @@ static void spp_on_incoming_data_received(bt_address addr, uint16_t port,
 
 static void spp_on_outgoing_complete(uint16_t port, uint8_t* buffer, uint16_t length)
 {
+#if SEND_FC_EN
     spp_pty_device_t* device;
 
     device = find_pty_device(port);
     if (!device || buffer == NULL)
         return;
 
-    if (!device->credits && device->handle != NULL) {
-        euv_pty_read_start(device->handle, device->mfs, euv_read_complete);
+    spp_send_done_log();
+    if (!device->remaining_quota && device->handle != NULL) {
+#if CACHE_BUFFER_EN
+        euv_pty_read_start2(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
+#else
+        euv_pty_read_start(device->handle, device->next_to_read, euv_read_complete);
+#endif
     }
-    device->credits++;
+    device->remaining_quota++;
     free(buffer);
+#endif
 }
 
 static void spp_on_connect_request_received(bt_address addr, uint16_t port)
@@ -556,12 +757,19 @@ static void spp_on_connection_update_mfs(uint16_t port, uint16_t mfs)
     int ret;
     spp_pty_device_t* device;
 
+    BT_LOGD("%s, mfs:%d", __func__, mfs);
     device = find_pty_device(port);
     if (!device)
         return;
 
     device->mfs = mfs;
+    device->next_to_read = mfs;
+    circbuf_resize(&device->cache, mfs);
+#if CACHE_BUFFER_EN
+    ret = euv_pty_read_start2(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
+#else
     ret = euv_pty_read_start(device->handle, device->mfs, euv_read_complete);
+#endif
 #ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
     ret = euv_pty_read_start(device->shandle, device->mfs, euv_read_loop_complete);
 #endif
@@ -726,6 +934,7 @@ static void adp_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE_S
 static void adp_data_sent_callback(SERVICE_SPP_PORT conn_port, uint8_t* buffer, uint16_t length,
     uint16_t sent_length)
 {
+#if SEND_FC_EN
     spp_msg_t msg;
 
     msg.event = DATA_SENT;
@@ -733,8 +942,11 @@ static void adp_data_sent_callback(SERVICE_SPP_PORT conn_port, uint8_t* buffer, 
     msg.length = length;
     msg.sent_length = sent_length;
     msg.buffer = buffer;
-
     do_in_spp_service(&msg);
+#else
+    spp_send_done_log();
+    free(buffer);
+#endif
 }
 
 static void adp_data_received_callback(BD_ADDR remote_addr, SERVICE_SPP_PORT conn_port, uint8_t* buffer, uint16_t length)
