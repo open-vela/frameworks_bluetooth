@@ -122,7 +122,7 @@ static void btm_hci_event_callback(void* gap_handle, hci_event_t* hci_event)
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->hci_event_callback_cb))
         return;
-    BT_LOGD("%s", __func__);
+    //BT_LOGD("%s", __func__);
     context->gap_callbacks->hci_event_callback_cb(gap_handle, hci_event);
 }
 
