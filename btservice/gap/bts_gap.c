@@ -290,6 +290,9 @@ static void process_loop_in_gap(void* data, size_t data_size)
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->update_ble_bonede_device_cb)) {
             g_bts_gap_callbacks->update_ble_bonede_device_cb(gap_msg->event_data.data.ble_bonded_update.bonded_device_list, gap_msg->event_data.data.ble_bonded_update.count_in);
         }
+        if (gap_msg->event_data.data.ble_bonded_update.count_in > 0) {
+            free(gap_msg->event_data.data.ble_bonded_update.bonded_device_list);
+        }
         break;
     }
     case GAP_SMP_REQUEST: {
@@ -601,8 +604,15 @@ static void adapter_smp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_dat
 static void adapter_update_ble_bonded_devices_callback(SERVICE_BLE_KEYS_S* bonded_device_list, uint8_t count_in)
 {
     BT_LOGD("%s", __func__);
+    if (count_in < 1) {
+        BT_LOGE("Invalid count (%d) of bond devices", count_in);
+        return;
+    }
     gap_msg_t* msg = gap_msg_new(GAP_UPDATE_BLE_BONDED_DEVICES);
-    msg->event_data.data.ble_bonded_update.bonded_device_list = (ble_keys_t*)bonded_device_list;
+    ble_keys_t* devices = (ble_keys_t*)malloc(sizeof(ble_keys_t) * count_in);
+    memset(devices, 0, sizeof(ble_keys_t) * count_in);
+    memcpy(devices, bonded_device_list, sizeof(ble_keys_t) * count_in);
+    msg->event_data.data.ble_bonded_update.bonded_device_list = devices;
     msg->event_data.data.ble_bonded_update.count_in = count_in;
     gap_send_message(msg);
 }
