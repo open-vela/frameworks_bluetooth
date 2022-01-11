@@ -177,6 +177,13 @@ typedef enum {
 } ble_connect_filter_policy;
 
 typedef enum {
+    BLE_ADVERTISE_FILTER_WHITE_LIST_FOR_NONE, /* Scan and Connection requests from ANY devices */
+    BLE_ADVERTISE_FILTER_WHITE_LIST_FOR_SCAN, /* Connection requests from ANY devices; Scan requests from devices in the White List */
+    BLE_ADVERTISE_FILTER_WHITE_LIST_ROR_CONNECTION, /* Scan request form ANY devices; Connection requests from devices in the White List */
+    BLE_ADVERTISE_FILTER_WHITE_LIST_FOR_ALL /* Scan and Connection reqeusts from devices in the White List */
+} ble_advertise_filter_policy;
+
+typedef enum {
     BLE_ADDR_TYPE_PUBLIC,
     BLE_ADDR_TYPE_RANDOM,
     BLE_ADDR_TYPE_PUBLIC_ID,
