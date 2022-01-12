@@ -281,7 +281,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->hci_event_cb)) {
             g_bts_gap_callbacks->hci_event_cb(&gap_msg->event_data.data.hci_event);
         }
-        if(gap_msg->event_data.data.hci_event.length != 0)
+        if (gap_msg->event_data.data.hci_event.length != 0)
             free(gap_msg->event_data.data.hci_event.params);
         break;
     }
@@ -350,6 +350,7 @@ static void gap_send_message(gap_msg_t* msg)
 
 bt_result_code bts_start_discovery(uint32_t timeout)
 {
+    BT_LOGD("%s: PERFORMANCE-GAP-BLUELET-DISCOVERY-START", __func__);
     SERVICE_BT_STATUS ret = service_adapter_gap_start_device_discovery(timeout);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
@@ -360,7 +361,7 @@ bt_result_code bts_start_discovery(uint32_t timeout)
 
 static void adapter_device_found_callback(remote_device_t* device)
 {
-    //BT_LOGD("%s", __func__);
+    //BT_LOGD("%s: PERFORMANCE-GAP-BLUELET-DISCOVERY-END", __func__);
     if ((!g_bts_gap_callbacks) || (!g_bts_gap_callbacks->device_found_cb))
         return;
     gap_msg_t* msg = gap_msg_new(GAP_DEVICE_FOUND);
@@ -418,6 +419,8 @@ static void adapter_ssp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_dat
 static void adapter_bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_BOND_STATE state)
 {
     BT_LOGD("%s", __func__);
+    if ((SERVICE_BT_BOND_STATE_BONDED == state) || (SERVICE_BT_BOND_STATE_BLE_BONDED == state))
+        BT_LOGD("%s: PERFORMANCE-GAP-BLUELET-BOND-END", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BOND_STATE_CHANGED);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.bond_state = state;
@@ -522,7 +525,7 @@ static void adapter_hci_event_callback(SERVICE_BT_HCI_EVENT_S* hci_event)
     //BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_HCI_EVENT);
     memcpy(&msg->event_data.data.hci_event, hci_event, sizeof(SERVICE_BT_HCI_EVENT_S));
-    if(hci_event->length != 0) {
+    if (hci_event->length != 0) {
         msg->event_data.data.hci_event.params = malloc(hci_event->length);
         memcpy(msg->event_data.data.hci_event.params, hci_event->params, hci_event->length);
     }
@@ -696,7 +699,7 @@ static void adapter_ble_packet_received_callback(bt_address remote_addr, uint16_
     msg->event_data.data.ble_packet_receive.private_cid = private_cid;
     gap_send_message(msg);
 }
-static void adapter_local_name_set_callback(char *bt_name, uint16_t len, SERVICE_BT_STATUS status)
+static void adapter_local_name_set_callback(char* bt_name, uint16_t len, SERVICE_BT_STATUS status)
 {
     BT_LOGD("%s", __func__);
     if (!bt_name)
@@ -891,7 +894,7 @@ bt_result_code bts_create_bond(bt_device_t* device)
 {
     if (!device)
         return BT_RESULT_FAILED;
-
+    BT_LOGD("%s: PERFORMANCE-GAP-BLUELET-BOND-START", __func__);
     //get total number of bonded devices
     int num = service_adapter_gap_get_bonded_devices(NULL, 0);
     if (num >= MAX_PAIR_DEVICE) {
@@ -980,7 +983,7 @@ int bts_get_ble_bonded_devices(bt_device_t* device_list, int max_out)
     ret = service_adapter_gap_ble_get_bonded_devices(bonded_list, MAX_PAIR_DEVICE);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, bonded_list[i].bd_addr, BT_ADDR_LENGTH);
-        device_list[i].addr_type =  bonded_list[i].addr_type;
+        device_list[i].addr_type = bonded_list[i].addr_type;
     }
     if (bonded_list)
         free(bonded_list);
@@ -999,7 +1002,7 @@ int bts_get_ble_connected_devices(bt_device_t* device_list, int max_out)
     ret = service_adapter_gap_ble_get_connected_devices(connected_list, MAX_CONNECTED_DEVICE);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, connected_list[i].bd_addr, BT_ADDR_LENGTH);
-        device_list[i].addr_type =  connected_list[i].addr_type;
+        device_list[i].addr_type = connected_list[i].addr_type;
     }
     if (connected_list)
         free(connected_list);
@@ -1013,14 +1016,14 @@ int bts_get_ble_whitelist_devices(bt_device_t* device_list, int max_out)
     if ((NULL == device_list) || (max_out == 0)) {
         ret = service_adapter_gap_get_connected_devices(NULL, 0);
         return ret;
-    }    
+    }
     SERVICE_REMOTE_BLE_DEVICE_S* whitelist_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
     ret = service_adapter_gap_ble_get_white_list_devices(whitelist_list, MAX_PAIR_DEVICE);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, whitelist_list[i].bd_addr, BT_ADDR_LENGTH);
-        device_list[i].addr_type =  whitelist_list[i].addr_type;
+        device_list[i].addr_type = whitelist_list[i].addr_type;
     }
-    if(whitelist_list)
+    if (whitelist_list)
         free(whitelist_list);
     return ret;
 }
@@ -1037,9 +1040,9 @@ int bts_get_ble_resolvinglist_devices(bt_device_t* device_list, int max_out)
     ret = service_adapter_gap_ble_get_bonded_devices(resolvinglist_list, MAX_PAIR_DEVICE);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, resolvinglist_list[i].bd_addr, BT_ADDR_LENGTH);
-        device_list[i].addr_type =  resolvinglist_list[i].addr_type;
+        device_list[i].addr_type = resolvinglist_list[i].addr_type;
     }
-    if(resolvinglist_list)
+    if (resolvinglist_list)
         free(resolvinglist_list);
     return ret;
 }
