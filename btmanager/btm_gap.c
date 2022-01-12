@@ -89,7 +89,7 @@ static void btm_device_found_callback(void* gap_handle, bt_device_t* device)
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->device_found_callback_cb))
         return;
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s: PERFORMANCE-GAP-BTM-DISCOVERY-FOUND", __func__);
     context->gap_callbacks->device_found_callback_cb(gap_handle, device);
 }
 
@@ -100,7 +100,8 @@ static void btm_bond_state_changed_callback(void* gap_handle, bt_device_t* devic
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->bond_state_changed_callback_cb))
         return;
-    BT_LOGD("%s", __func__);
+    if ((BT_BOND_STATE_BONDED == state) || (BT_BOND_STATE_BLE_BONDED == state))
+        BT_LOGD("%s: PERFORMANCE-GAP-BTM-BOND-END", __func__);
     context->gap_callbacks->bond_state_changed_callback_cb(gap_handle, device, state);
 }
 
@@ -181,7 +182,7 @@ static void btm_smp_request_callback(void* gap_handle, ssp_request_data_t* reque
     context->gap_callbacks->smp_requeset_cb(gap_handle, request_data);
 }
 
-static void btm_ble_phy_update_callback(void* gap_handle, bt_address remote_addr, ble_phy_type tx_phy, ble_phy_type rx_phy, bt_status  status)
+static void btm_ble_phy_update_callback(void* gap_handle, bt_address remote_addr, ble_phy_type tx_phy, ble_phy_type rx_phy, bt_status status)
 {
     if (!gap_handle)
         return;
@@ -364,6 +365,7 @@ static bt_result_code btm_create_bond(void* gap_handle, bt_device_t* device)
     bt_result_code ret = BT_RESULT_FAILED;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_LOGD("%s: PERFORMANCE-GAP-BTM-BOND-START", __func__);
     BT_GAP_INTERFACE(context->service_interface, bt_create_bond, ret, gap_handle, device);
     return ret;
 }
@@ -420,6 +422,7 @@ static bt_result_code btm_start_discovery(void* gap_handle, uint32_t timeout)
     bt_result_code ret = BT_RESULT_FAILED;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_LOGD("%s: PERFORMANCE-GAP-BTM-DISCOVERY-START ", __func__);
     BT_GAP_INTERFACE(context->service_interface, bt_start_discovery, ret, gap_handle, timeout);
     return ret;
 }

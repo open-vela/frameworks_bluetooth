@@ -42,7 +42,7 @@
 #include "btm_manager.h"
 
 #define MAX_PAIR_DEVICE 10
-#define MAX_CONNECTED_DEVICE 1
+#define MAX_CONNECTED_DEVICE 2
 /* * Bluetooth discovery state */
 
 
