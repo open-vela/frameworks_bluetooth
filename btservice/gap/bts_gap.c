@@ -231,12 +231,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
     }
 
     case GAP_DEVICE_FOUND: {
-        list_device_t* discovery_devce;
         bt_device_t* device = &gap_msg->event_data.data.device;
-
-        discovery_devce = malloc(sizeof(list_device_t));
-        discovery_devce->device = device;
-
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->device_found_cb)) {
             g_bts_gap_callbacks->device_found_cb(device);
         }
@@ -327,6 +322,11 @@ static void process_loop_in_gap(void* data, size_t data_size)
     }
     case GAP_DELETE_LINK_KEY_CHANGED: {
         gap_update_data_storage();
+        break;
+    }
+    case GAP_SERVICE_DISCOVERED: {
+        if (!gap_msg->event_data.data.discovery_service.services)
+            free(gap_msg->event_data.data.discovery_service.services);
         break;
     }
     default:
@@ -580,9 +580,9 @@ static void adapter_service_discovered_callback(BD_ADDR remote_addr, SERVICE_BR_
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_SERVICE_DISCOVERED);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
-    msg->event_data.data.discovery_service.services = (br_service_t*)services;
     msg->event_data.data.discovery_service.size = size;
-
+    msg->event_data.data.discovery_service.services = malloc(size * sizeof(br_service_t));
+    memcpy(msg->event_data.data.discovery_service.services, services, size * sizeof(br_service_t));
     gap_send_message(msg);
 }
 
@@ -985,6 +985,7 @@ int bts_get_ble_bonded_devices(bt_device_t* device_list, int max_out)
     }
     SERVICE_REMOTE_BLE_DEVICE_S* bonded_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
     ret = service_adapter_gap_ble_get_bonded_devices(bonded_list, MAX_PAIR_DEVICE);
+
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, bonded_list[i].bd_addr, BT_ADDR_LENGTH);
         device_list[i].addr_type = bonded_list[i].addr_type;
@@ -1004,6 +1005,7 @@ int bts_get_ble_connected_devices(bt_device_t* device_list, int max_out)
     }
     SERVICE_REMOTE_BLE_DEVICE_S* connected_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
     ret = service_adapter_gap_ble_get_connected_devices(connected_list, MAX_CONNECTED_DEVICE);
+
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, connected_list[i].bd_addr, BT_ADDR_LENGTH);
         device_list[i].addr_type = connected_list[i].addr_type;
@@ -1023,6 +1025,7 @@ int bts_get_ble_whitelist_devices(bt_device_t* device_list, int max_out)
     }
     SERVICE_REMOTE_BLE_DEVICE_S* whitelist_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
     ret = service_adapter_gap_ble_get_white_list_devices(whitelist_list, MAX_PAIR_DEVICE);
+
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, whitelist_list[i].bd_addr, BT_ADDR_LENGTH);
         device_list[i].addr_type = whitelist_list[i].addr_type;
@@ -1042,6 +1045,7 @@ int bts_get_ble_resolvinglist_devices(bt_device_t* device_list, int max_out)
     }
     SERVICE_REMOTE_BLE_DEVICE_S* resolvinglist_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
     ret = service_adapter_gap_ble_get_bonded_devices(resolvinglist_list, MAX_PAIR_DEVICE);
+
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, resolvinglist_list[i].bd_addr, BT_ADDR_LENGTH);
         device_list[i].addr_type = resolvinglist_list[i].addr_type;
