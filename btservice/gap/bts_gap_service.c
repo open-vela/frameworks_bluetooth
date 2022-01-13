@@ -153,7 +153,7 @@ static void gap_if_ble_address_callback(bt_address bd_addr, ble_addr_type addr_t
     BT_LOGD("%s", __func__);
     BT_GAP_CB(ble_address_cb, bd_addr, addr_type);
 }
-static void gap_ifbts_ble_irk_callback(bt_common_key irk, bt_address ble_addr, ble_addr_type addr_type)
+static void gap_if_bts_ble_irk_callback(bt_common_key irk, bt_address ble_addr, ble_addr_type addr_type)
 {
     BT_LOGD("%s", __func__);
     BT_GAP_CB(ble_irk_cb, irk, ble_addr, addr_type);
@@ -173,7 +173,7 @@ bts_gap_callback_t bts_gap_callbacks = {
     .smp_request_cb = gap_if_smp_request_callback,
     .ble_phy_update_cb = gap_if_ble_phy_update_callback,
     .ble_address_cb = gap_if_ble_address_callback,
-    .ble_irk_cb = gap_ifbts_ble_irk_callback,
+    .ble_irk_cb = gap_if_bts_ble_irk_callback,
 };
 
 bt_result_code gap_service_init()
@@ -196,7 +196,6 @@ static bt_result_code bts_if_register_callbacks(void* handle, void** gap_handle,
         return ret;
 
     bt_if_gap_handle_t* gap_if_handle = (bt_if_gap_handle_t*)malloc(sizeof(bt_if_gap_handle_t));
-    gap_if_handle->gap_callbacks = malloc(sizeof(btm_gap_callbacks_t));
     gap_if_handle->gap_callbacks = callbacks;
     gap_if_handle->gap_handle = *gap_handle;
     list_add_tail(&g_gap_service->handle_list, &gap_if_handle->node);
