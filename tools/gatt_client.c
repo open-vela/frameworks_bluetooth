@@ -36,7 +36,7 @@
 #include "btm_manager.h"
 #include "log.h"
 
-#define THROUGHTPUT_HORIZON 5
+#define THROUGHTPUT_HORIZON 2
 
 typedef struct {
     struct list_node node;
@@ -305,17 +305,12 @@ static void on_client_mtu_changed_callback(void* handle, bt_address remote_addr,
     device->gatt_mtu = mtu;
 }
 
-static void test_client_throughtout_write(void* client_handle, uint32_t times, uint16_t mtu)
+static void test_client_throughtout_write(void* client_handle, uint32_t id, uint32_t times, uint16_t mtu)
 {
-    BT_LOGD("mtu:%u, times:%lu", mtu, times);
     gatt_element_t element;
     memset(&element, 0, sizeof(element));
-    uint32_t id = 0;
-    BT_LOGD("please input characteristic  id");
-    scanf("%lu", &id);
     element.id = id;
     element.properties = GATT_ATT_PROPERTY_WRITE;
-    BT_LOGD("input id:%lu", element.id);
 
     int msg_counter = 1;
     throughtput_cursor = 1;
@@ -326,7 +321,7 @@ static void test_client_throughtout_write(void* client_handle, uint32_t times, u
     }
     for (int i = 0; i < times; i++) {
         while (throughtput_cursor >= THROUGHTPUT_HORIZON) {
-            usleep(50);
+            usleep(500);
         }
         memset(payload, 1, mtu);
         payload[0] = (msg_counter >> 24) & 0xFF;
@@ -649,19 +644,21 @@ static int gattc_disable_cccd(void* handle, int argc, char** argv)
 
 static int gattc_throughtout_write(void* handle, int argc, char** argv)
 {
-    if (!gattc_interface || argc < 2) {
+    if (!gattc_interface || argc < 3) {
         return -1;
     }
     bt_address remote_address;
     str2ba(argv[0], remote_address);
     uint32_t times = atoi(argv[1]);
-    BT_LOGD("throughtout_write remote_addr:[%s], times:%lu", addr_str(remote_address), times);
+    uint32_t id = atoi(argv[2]);
+    BT_LOGD("throughtout_write, characteristic id:%lu, remote_addr:[%s], times:%lu", id, addr_str(remote_address), times);
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
         return 0;
     }
-    test_client_throughtout_write(device, times, device->gatt_mtu);
+
+    test_client_throughtout_write(device->handle, id, times, device->gatt_mtu);
     return 0;
 }
 
@@ -746,7 +743,7 @@ static bt_command_t g_gattc_tables[] = {
     { "write_request", gattc_write_request, "\"gatt client write request :<address> <charateristic id> <payload>\"" },
     { "enable_cccd", gattc_enable_cccd, "\"gatt client enable cccd :<address> <charateristic id>\"" },
     { "disable_cccd", gattc_disable_cccd, "\"gatt client disable cccd:<address> <charateristic id>\"" },
-    { "throughtout_write", gattc_throughtout_write, "\"gatt client throughtout write  :<address> <times>\"" },
+    { "throughtout_write", gattc_throughtout_write, "\"gatt client throughtout write  :<address> <times> <write charateristic id>\"" },
     { "start_scan", gattc_start_scan, "\"gatt start le scan  {phy(0: 1M, 1: 2M, 2: LE_Coded)}: <enable filter 0:disable 1:enable ><filter_addr> <filter_mask>  <scan_interval> <scan_windows> <scan_phy> \"" },
     { "stop_scan", gattc_stop_scan, "\"gatt stop le scan  \"" },
 };

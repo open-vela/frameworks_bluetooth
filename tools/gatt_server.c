@@ -337,7 +337,7 @@ static void test_server_mtu_changed_callback(void* handle, bt_address remote_add
 {
     BT_LOGD("%s, addr:%s, mtu: %lu", __func__, addr_str(remote_addr), mtu);
     gatts_device_t* device = find_gatts_device(remote_addr);
-    if (!device) {
+    if (device) {
         BT_LOGD("update device:%s, mtu:%lu", addr_str(remote_addr), mtu);
         device->gatt_mtu = mtu;
     }
