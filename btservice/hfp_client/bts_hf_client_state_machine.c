@@ -185,6 +185,8 @@ static void notify_connection_state_changed(hf_client_service_t* service,
     bt_address addr,
     hf_client_connection_state_t state)
 {
+    if (state == HF_CLIENT_CONNECTION_STATE_CONNECTED)
+        BT_LOGD("PERFORMANCE-HF-BTM-CONNECTED");
     BT_LOGD("%s, addr:%s, state:%d", __func__, addr_str(addr), state);
     HF_SERVICE_CBACK(service->callbacks, connection_state_cb, addr, state);
 }
@@ -233,6 +235,7 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
     case CONNECT:
         //check bonded state
         //check address (hfsm->addr == data->bd_addr)
+        BT_LOGD("PERFORMANCE-HF-BLUELET-CONNECT_START");
         status = service_adapter_hfp_connect(hfsm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Connect failed for %s", addr_str(hfsm->addr));

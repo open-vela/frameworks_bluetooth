@@ -51,7 +51,7 @@ static bt_result_code hf_connect(void* handle, bt_address addr)
     hf_client_interface_t* service = get_service();
     if (!service)
         return BT_RESULT_FAILED;
-
+    BT_LOGD("PERFORMANCE-HF-BTM-CONNECT_START");
     return service->connect(handle, addr);
 }
 

@@ -153,6 +153,8 @@ static char* stack_event_to_string(a2dp_event_type_t event)
 static void bts_a2dp_report_connection_state(a2dp_source_t* service, bt_address addr, a2dp_connection_state_t state)
 {
     BT_LOGD("%s, addr:%s, state: %d", __func__, addr_str(addr), state);
+    if(state == A2DP_CONNECTION_STATE_CONNECTED)
+        BT_LOGD("PERFORMANCE-A2DP-SRC-BTM-CONNECTED");
     if (service->callbacks)
         service->callbacks->connection_state_cb(addr, state);
 }
@@ -225,6 +227,7 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
     switch (event) {
     case CONNECT_REQ: {
         SERVICE_BT_STATUS status;
+        BT_LOGD("PERFORMANCE-A2DP-SRC-BLUELET-CONNECT-START");
         status = service_adapter_a2dp_source_connect(event_data->bd_addr,
             SERVICE_AVDTP_CODEC_TYPE_SBC);
         if (status != SERVICE_BT_STATUS_SUCCESS) {

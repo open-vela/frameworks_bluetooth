@@ -55,6 +55,7 @@ static bt_result_code a2dp_source_connect(void* handle, bt_address addr)
     if (!service)
         return BT_RESULT_FAILED;
 
+    BT_LOGD("PERFORMANCE-A2DP-SRC-BTM-CONNECT-START");
     return service->connect(handle, addr);
 }
 
