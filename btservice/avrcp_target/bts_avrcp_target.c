@@ -21,6 +21,10 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include <errno.h>
+#include <fcntl.h>
+#include <nuttx/input/buttons.h>
+#include <nuttx/input/touchscreen.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,11 +37,37 @@
 #define LOG_TAG "bts_avrcp_target"
 #include "log.h"
 
+int g_button_fd = -1;
+
+static void bts_avrcp_write_buttuon(SERVICE_AVRCP_PANEL_OPERATION op_code, SERVICE_AVRCP_PANEL_STATE state)
+{
+    if (g_button_fd < 0)
+        return;
+    btn_buttonset_t button = 0;
+    //buttonset value : AVRCP_ID(8bit) | AVRCP_OP_CODE(8bit) | AVRCP_STATE(8bit) | reserved(8bit)
+    button |= (uint32_t)(op_code << 16);
+    button |= (uint32_t)(state << 8);
+    BT_LOGD("%s, button : %d, op_code: %d, state:%d", __func__, button, op_code, state);
+    write(g_button_fd, &button, sizeof(button));
+}
+
 static void bts_avrcp_target_connection_state_changed_callback(BD_ADDR remote_addr,
     SERVICE_PROFILE_CONNECTION_STATE state)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, state : %d", __func__, state);
     //TODO add uinput initlize
+    if (SERVICE_PROFILE_CONNECTED == state) {
+        g_button_fd = open("/dev/ubutton", O_WRONLY);
+        if (g_button_fd < 0) {
+            BT_LOGD("%s, open /dev/ubutton failed, errno : %d", __func__, errno);
+        }
+    }
+    if (SERVICE_PROFILE_DISCONNECTED == state) {
+        if (g_button_fd > 0) {
+            close(g_button_fd);
+            g_button_fd = -1;
+        }
+    }
 }
 
 static void bts_avrcp_target_received_register_notification_request_callback(BD_ADDR remote_addr,
@@ -109,8 +139,9 @@ static void bts_avrcp_target_received_panel_operation_callback(BD_ADDR remote_ad
         BT_LOGD("AVRCP_OPERATION_BACKWARD, state is %d  ", state);
         break;
     default:
-        break;
+        return;
     }
+    bts_avrcp_write_buttuon(op, state);
 }
 
 static AVRCP_TARGET_CALLBACKS_S g_avrcp_target = {
