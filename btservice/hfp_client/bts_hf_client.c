@@ -166,6 +166,7 @@ static hf_client_connection_state_t trans_adp_connection_state(profile_connectio
     case PROFILE_CONNECTING:
         return HF_CLIENT_CONNECTION_STATE_CONNECTING;
     case PROFILE_CONNECTED:
+        BT_LOGD("PERFORMANCE-HF-BLUELET-CONNECTED");
         return HF_CLIENT_CONNECTION_STATE_CONNECTED;
     case PROFILE_DISCONNECTING:
         return HF_CLIENT_CONNECTION_STATE_DISCONNECTING;

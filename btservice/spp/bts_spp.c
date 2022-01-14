@@ -461,6 +461,7 @@ static void spp_on_connection_state_chaneged(bt_address addr, uint16_t port,
     spp_notify_connection_state(addr, port, state);
 
     if (state == SPP_CONNECTION_STATE_CONNECTED) {
+        BT_LOGD("PERFORMANCE-SPP-BTM-CONNECTED");
         device = spp_open_pty_device(addr, port);
         if (device == NULL)
             return;
@@ -624,6 +625,7 @@ static void spp_service_event_process(void* data, size_t size)
         break;
 
     case CLIENT_CONNECT_REQ:
+        BT_LOGD("PERFORMANCE-SPP-BLUELET-CONNECT_START");
         spp_client_connect(msg->addr, msg->port, msg->uuid16);
         break;
 
@@ -684,6 +686,7 @@ static void adp_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE_S
         conn_state = SPP_CONNECTION_STATE_CONNECTING;
         break;
     case PROFILE_CONNECTED:
+        BT_LOGD("PERFORMANCE-SPP-BLUELET-CONNECTED");
         conn_state = SPP_CONNECTION_STATE_CONNECTED;
         break;
     case PROFILE_DISCONNECTING:
