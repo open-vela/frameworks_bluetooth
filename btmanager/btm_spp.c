@@ -68,6 +68,7 @@ static bt_result_code spp_client_connect(void* handle, bt_address addr, uint16_t
     spp_interface_t* service = get_service();
     if (!service)
         return BT_RESULT_FAILED;
+    BT_LOGD("PERFORMANCE-SPP-BTM-CONNECT_START");
     return service->client_connect(handle, addr, port, uuid16);
 }
 
