@@ -34,38 +34,13 @@
 #define __BTS_A2DP_SOURCE_AUDIO_H__
 
 #include <nuttx/mm/circbuf.h>
+#include "btm_common_define.h"
 #include "a2dp_ipc.h"
 
-typedef enum {
-    STATE_OFF,
-    STATE_START_UP,
-    STATE_RUNNING,
-    STATE_FLUSHING
-} stream_state_t;
+typedef void (*frame_send_callback)(uint8_t *buf, uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp);
+typedef int  (*frame_read_callback)(uint8_t *buf, uint16_t frame_len);
 
-typedef struct {
-    void*    buffer;
-    uint16_t offset;
-    uint16_t length;
-} stream_buf_t;
-
-typedef struct {
-    uint32_t            last_tx_frames;
-    uint32_t            total_tx_frames;
-    uint16_t            frames_len;
-    uint16_t            max_tx_length;
-    uint16_t            mtu;
-    uint32_t            sequence_number;
-    uint32_t            media_timestamp;
-    uint64_t            session_start_us;
-    stream_state_t      stream_state;
-    uint8_t             codec_info[10];
-    uint32_t            interval_ms;
-    uv_timer_t*         media_alarm;
-    struct circbuf_s    fragmente;
-    stream_buf_t        stream_buf;
-} a2dp_source_stream_t;
-
+uint64_t get_os_timestamp_us(void);
 void bts_a2dp_source_audio_init(void);
 void bts_a2dp_source_audio_cleanup(void);
 void bts_a2dp_source_on_connection_changed(bool connected);
@@ -73,6 +48,7 @@ void bts_a2dp_source_on_started(bool started);
 void bts_a2dp_source_on_stopped(void);
 void bts_a2dp_source_on_suspended(void);
 bool bts_a2dp_source_is_streaming(void);
-void bts_a2dp_source_set_mtu(uint16_t mtu);
+void bts_a2dp_source_setup_codec(bt_address bd_addr);
+
 
 #endif

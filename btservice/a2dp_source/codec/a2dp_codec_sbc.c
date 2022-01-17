@@ -40,14 +40,10 @@
 #include "sbc_encoder.h"
 #include "bts_a2dp_codec.h"
 #include "bts_a2dp_source_audio.h"
+#include "bts_a2dp_source_sbc_stream.h"
 
 #define LOG_TAG "a2dp_codec_sbc"
 #include "log.h"
-
-#define A2DP_SBC_BIT_PER_SAMPLE  16
-
-extern a2dp_source_stream_t a2dp_src_stream;
-
 
 typedef struct {
     uint8_t samp_freq;    /* Sampling frequency */
@@ -165,7 +161,7 @@ static int a2dp_get_sbc_channel_count(a2dp_sbc_info_t *info)
     return SBC_MAX_NUM_OF_CHANNELS;
 }
 
-uint16_t a2dp_codec_sample_frequency(uint16_t sample_frequency)
+uint16_t a2dp_sbc_sample_frequency(uint16_t sample_frequency)
 {
     uint16_t sampling_freq;
 
@@ -179,67 +175,6 @@ uint16_t a2dp_codec_sample_frequency(uint16_t sample_frequency)
         sampling_freq = 48000;
 
     return sampling_freq;
-}
-
-uint32_t a2dp_codec_sbc_frame_length(sbc_param_t* param)
-{
-    uint32_t frame_len, frame_len2;
-
-    if (param->s16ChannelMode == SBC_STEREO ||
-        param->s16ChannelMode == SBC_JOINT_STEREO) {
-        frame_len = 4 +
-                    (4 *
-                    param->s16NumOfSubBands *
-                    param->s16NumOfChannels) /
-                    8 +
-                    (((param->s16ChannelMode - 2) *
-                    param->s16NumOfSubBands) +
-                    (param->s16NumOfBlocks *
-                    param->s16BitPool)) /
-                    8;
-    } else {
-        frame_len = 4 +
-                    ((4 *
-                    param->s16NumOfSubBands *
-                    param->s16NumOfChannels) /
-                    8) +
-                    ((param->s16NumOfBlocks *
-                    param->s16NumOfChannels *
-                    param->s16BitPool) /
-                    8);
-    }
-
-    frame_len2 = 4 +
-                (4 *
-                param->s16NumOfSubBands *
-                param->s16NumOfChannels) /
-                8 +
-                ((param->s16NumOfBlocks *
-                param->s16BitPool *
-                (1 + (param->s16ChannelMode == SBC_DUAL)) +
-                (param->s16ChannelMode == SBC_JOINT_STEREO) *
-                param->s16NumOfSubBands)+ 7) /
-                8;
-
-    //BT_LOGD("%s :frame_len:%u, frame_len2:%u", __func__, frame_len, frame_len2);
-    assert(frame_len == frame_len2);
-
-    return frame_len;
-}
-
-uint32_t a2dp_codec_sbc_bit_rate(sbc_param_t* param)
-{
-    uint16_t samp_freq;
-    uint32_t bit_rate;
-    uint32_t frame_len;
-
-    frame_len = a2dp_codec_sbc_frame_length(param);
-    samp_freq = a2dp_codec_sample_frequency(param->s16SamplingFreq);
-    bit_rate = (8 * frame_len * samp_freq) /
-                (param->s16NumOfSubBands * param->s16NumOfBlocks);
-    BT_LOGD("%s, birtate: %lu", __func__, bit_rate);
-
-    return bit_rate;
 }
 
 void a2dp_codec_parse_sbc_param(sbc_param_t* param, uint8_t* codec_info)
@@ -256,7 +191,7 @@ void a2dp_codec_parse_sbc_param(sbc_param_t* param, uint8_t* codec_info)
     param->s16NumOfBlocks = a2dp_get_sbc_blocks(&si);
     param->s16AllocationMethod = a2dp_get_sbc_allocation_method(&si);
     param->s16BitPool = si.max_bitpool;
-    param->u32BitRate = a2dp_codec_sbc_bit_rate(param);
+    param->u32BitRate = a2dp_sbc_bit_rate(param);
 
     BT_LOGD("%s:\n \
                 s16SamplingFreq:%d,\n \
@@ -274,77 +209,4 @@ void a2dp_codec_parse_sbc_param(sbc_param_t* param, uint8_t* codec_info)
                 param->s16AllocationMethod,
                 param->s16BitPool,
                 param->u32BitRate);
-}
-
-uint8_t calculate_max_frames_per_packet(void)
-{
-    uint32_t frame_len = bts_a2dp_codec_get_frame_length();
-    if (!a2dp_src_stream.mtu || !frame_len)
-        return 0;
-
-    // dynamic process
-    return (a2dp_src_stream.mtu - 1) / frame_len;
-}
-
-void a2dp_codec_sbc_media_timestamp(sbc_param_t* param)
-{
-    /*
-     * Timestamp of the media packet header represent the TS of the
-     * first SBC frame, i.e the timestamp before including this frame.
-     */
-    uint16_t blocm_x_subband
-        = param->s16NumOfSubBands * param->s16NumOfBlocks;
-    a2dp_src_stream.media_timestamp
-        += blocm_x_subband * a2dp_src_stream.last_tx_frames;
-}
-
-void a2dp_codec_sbc_get_num_frame_iteration(sbc_param_t* param, uint8_t* noi, uint8_t* nof,
-                                             uint64_t now_timestamp_us)
-{
-    uint16_t sample_rate;
-    switch (param->s16SamplingFreq) {
-    case SBC_SF_44100:
-        sample_rate = 44100;
-        break;
-    case SBC_SF_48000:
-        sample_rate = 48000;
-    default:
-        sample_rate = 44100;
-        break;
-    }
-    /* PCM bytes of per  frame */
-    uint16_t per_frame_bytes = param->s16NumOfBlocks *
-                               param->s16NumOfSubBands *
-                               param->s16NumOfChannels *
-                               A2DP_SBC_BIT_PER_SAMPLE / 8;
-    /* PCM bytes read each media task tick */
-    uint16_t bytes_per_tick = (sample_rate *
-                              A2DP_SBC_BIT_PER_SAMPLE / 8 *
-                              param->s16NumOfChannels *
-                              a2dp_src_stream.interval_ms) /
-                              1000;
-    /* Calculate the playback time of per PCM frame */
-    uint64_t per_frame_time = per_frame_bytes * 1000000 /
-                              (sample_rate *
-                              (A2DP_SBC_BIT_PER_SAMPLE / 8) *
-                              param->s16NumOfChannels);
-    /* Calculate the actual playback timestamp according to the total PCM frames
-     * we send */
-    uint64_t actual_timestamp_us = 
-             a2dp_src_stream.session_start_us +
-             a2dp_src_stream.total_tx_frames *
-             per_frame_time;
-
-    *noi = 1;
-    uint8_t projected_nof = (bytes_per_tick + per_frame_bytes / 2) / per_frame_bytes;
-    *nof = projected_nof > calculate_max_frames_per_packet() ?
-           calculate_max_frames_per_packet() : projected_nof;
-
-    if (now_timestamp_us >= actual_timestamp_us) {
-        uint8_t delta_frames = (now_timestamp_us - actual_timestamp_us) / per_frame_time;
-        if (delta_frames / *nof)
-            *noi = 2;
-    } else {
-        *nof = *nof - 1;
-    }
 }

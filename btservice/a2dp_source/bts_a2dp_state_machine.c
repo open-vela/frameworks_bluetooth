@@ -396,6 +396,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
 
     case DEVICE_CODEC_STATE_CHANGE_EVT:
         bts_a2dp_report_audio_config_state(service, a2dp_sm->addr);
+        bts_a2dp_source_setup_codec(a2dp_sm->addr);
         break;
 
     case START_TIMEOUT: {
@@ -436,7 +437,6 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
     a2dp_source_t* service = a2dp_sm->service;
-    a2dp_event_data_t* event_data = (a2dp_event_data_t*)p_data;
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),
         addr_str(a2dp_sm->addr));
