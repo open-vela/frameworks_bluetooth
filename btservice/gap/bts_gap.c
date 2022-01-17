@@ -607,15 +607,16 @@ static void adapter_smp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_dat
 static void adapter_update_ble_bonded_devices_callback(SERVICE_BLE_KEYS_S* bonded_device_list, uint8_t count_in)
 {
     BT_LOGD("%s", __func__);
-    if (count_in < 1) {
-        BT_LOGE("Invalid count (%d) of bond devices", count_in);
-        return;
-    }
     gap_msg_t* msg = gap_msg_new(GAP_UPDATE_BLE_BONDED_DEVICES);
-    ble_keys_t* devices = (ble_keys_t*)malloc(sizeof(ble_keys_t) * count_in);
-    memset(devices, 0, sizeof(ble_keys_t) * count_in);
-    memcpy(devices, bonded_device_list, sizeof(ble_keys_t) * count_in);
-    msg->event_data.data.ble_bonded_update.bonded_device_list = devices;
+    if (count_in < 1) {
+        BT_LOGD("count (%d) of bond devices", count_in);
+        msg->event_data.data.ble_bonded_update.bonded_device_list = NULL;
+    } else {
+        ble_keys_t* devices = (ble_keys_t*)malloc(sizeof(ble_keys_t) * count_in);
+        memset(devices, 0, sizeof(ble_keys_t) * count_in);
+        memcpy(devices, bonded_device_list, sizeof(ble_keys_t) * count_in);
+        msg->event_data.data.ble_bonded_update.bonded_device_list = devices;
+    }
     msg->event_data.data.ble_bonded_update.count_in = count_in;
     gap_send_message(msg);
 }
@@ -944,12 +945,12 @@ int bts_get_bonded_devices(bt_device_t* device_list, int max_out)
     SERVICE_REMOTE_DEVICE_S* bonded_list = malloc(sizeof(SERVICE_REMOTE_DEVICE_S) * max_out);
     ret = service_adapter_gap_get_bonded_devices(bonded_list, max_out);
     for (int i = 0; i < ret; i++) {
-        uint8_t *link_key = bonded_list[i].link_key;
+        uint8_t* link_key = bonded_list[i].link_key;
         memcpy(device_list[i].addr, bonded_list[i].bd_addr, BT_ADDR_LENGTH);
         memcpy(device_list[i].name, bonded_list[i].bt_name, DEVICE_NAME_MAX_LEN + 1);
         BT_LOGD("Linkkey: %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X", link_key[0], link_key[1], link_key[2], link_key[3], link_key[4], link_key[5],
-                       link_key[6], link_key[7], link_key[8], link_key[9], link_key[10], link_key[11],
-                       link_key[12], link_key[13], link_key[14], link_key[15]);
+            link_key[6], link_key[7], link_key[8], link_key[9], link_key[10], link_key[11],
+            link_key[12], link_key[13], link_key[14], link_key[15]);
     }
     if (bonded_list)
         free(bonded_list);
