@@ -30,53 +30,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __BTS_A2DP_CODEC_H__
-#define __BTS_A2DP_CODEC_H__
 
-#include <sys/types.h>
-#include "btm_manager.h"
-#include "sbc_encoder.h"
+void a2dp_source_sbc_stream_init(sbc_param_t* param, uint32_t mtu,
+                                 frame_send_callback send_cb,
+                                 frame_read_callback read_cb);
+void a2dp_source_sbc_send_frames(uint16_t header_reserve, uint64_t timestamp);
+void a2dp_source_sbc_stream_reset(void);
+int  a2dp_source_sbc_interval_ms(void);
+uint32_t a2dp_sbc_frame_length(sbc_param_t* param);
+uint32_t a2dp_sbc_bit_rate(sbc_param_t* param);
 
-typedef enum {
-    BTS_A2DP_TYPE_SBC,
-    BTS_A2DP_TYPE_MPEG1_2_AUDIO,
-    BTS_A2DP_TYPE_MPEG2_4_AAC,
-    BTS_A2DP_TYPE_ATRAC,
-    BTS_A2DP_TYPE_OPUS,
-    BTS_A2DP_TYPE_H263,
-    BTS_A2DP_TYPE_MPEG4_VSP,
-    BTS_A2DP_TYPE_H263_PROF3,
-    BTS_A2DP_TYPE_H263_PROF8,
-    BTS_A2DP_TYPE_LHDC,
-    BTS_A2DP_TYPE_NON_A2DP
-} bts_a2dp_codec_index_t;
-
-typedef uint32_t bts_a2dp_codec_sample_rate_t;
-
-typedef enum {
-    BTS_A2DP_CODEC_BITS_PER_SAMPLE_8 =  0x0,
-    BTS_A2DP_CODEC_BITS_PER_SAMPLE_16 = 0x1,
-} bts_a2dp_codec_bits_per_sample_t;
-
-typedef enum {
-    BTS_A2DP_CODEC_CHANNEL_MODE_MONO = 0x0,
-    BTS_A2DP_CODEC_CHANNEL_MODE_STEREO = 0x1
-} bts_a2dp_codec_channel_mode_t;
-
-typedef struct {
-    bts_a2dp_codec_index_t codec_type;
-    bts_a2dp_codec_sample_rate_t sample_rate;
-    bts_a2dp_codec_bits_per_sample_t bits_per_sample;
-    bts_a2dp_codec_channel_mode_t channel_mode;
-    uint32_t bit_rate;
-    uint8_t  specific_info[20];
-    union {
-        sbc_param_t sbc;
-    } codec_param;
-} a2dp_codec_config_t;
-
-uint32_t bts_a2dp_codec_get_frame_length(void);
-a2dp_codec_config_t* bts_a2dp_codec_get_config(void);
-void bts_a2dp_codec_set_config(bt_address bd_addr, a2dp_codec_config_t* config);
-
-#endif
