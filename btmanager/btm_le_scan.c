@@ -51,6 +51,7 @@ static void on_le_scan_result(void* hdl, const scan_result_t* result)
 
 static void on_le_scan_failed(void* hdl, int error)
 {
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BTM-SCAN-FAILED");
     btm_lescan_hdl_t* handle = (btm_lescan_hdl_t*)hdl;
     CHECK_PTR(handle);
     BT_CBACK(handle->cb, le_scan_failed_cb, handle, error);
@@ -61,6 +62,7 @@ static void on_le_scan_failed(void* hdl, int error)
 
 static void on_le_scan_started(void* hdl, uint8_t scanner_id)
 {
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BTM-SCAN-STARTED");
     btm_lescan_hdl_t* handle = (btm_lescan_hdl_t*)hdl;
     CHECK_PTR(handle);
     handle->scanner_id = scanner_id;
@@ -69,6 +71,7 @@ static void on_le_scan_started(void* hdl, uint8_t scanner_id)
 
 static void on_le_scan_stopped(void* hdl)
 {
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BTM-SCAN-STOPPED");
     btm_lescan_hdl_t* handle = (btm_lescan_hdl_t*)hdl;
     CHECK_PTR(handle);
     BT_CBACK(handle->cb, le_scan_stopped_cb, handle);
@@ -87,6 +90,7 @@ static bts_ble_scanner_callbacks bts_le_scan_cb = {
 static bt_result_code start_scan(void** hdl_ptr, ble_scan_filter_t* filter, scan_params_t* setttings,
     btm_le_scan_callbacks* cb)
 {
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BTM-SCAN-START");
     CHECK_PTR_RETURN(scanner_interface, BT_RESULT_STATE_NOT_ON);
 
     btm_lescan_hdl_t** handle_ptr = (btm_lescan_hdl_t**)(hdl_ptr);
