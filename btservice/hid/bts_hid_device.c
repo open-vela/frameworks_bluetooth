@@ -185,7 +185,7 @@ static void on_hidd_register_changed_callback(hid_app_state registered)
 
 static void on_hidd_connection_changed_callback(bt_address remote_addr, profile_connection_state state)
 {
-    BT_LOGD("%s, remote_addr:[%s] state:%d", __func__, addr_str(remote_addr), state);
+    BT_LOGD("PERFORMANCE-HID-DEVICE-PROFILE-BLUELET-CONNECTION-STATE:%d, addr:%s", state, addr_str(remote_addr));
     current_state = state;
     bts_hidd_conn_s conn;
     memcpy(conn.remote_addr, remote_addr, sizeof(bt_address));
@@ -346,6 +346,7 @@ static bt_result_code hid_device_unregister_device(uint16_t device_id)
 
 static bt_result_code hid_device_connect(uint16_t device_id, bt_address remote_addr)
 {
+    BT_LOGD("PERFORMANCE-HID-DEVICE-PROFILE-BLUELET-CONNECTION-START, addr:%s", addr_str(remote_addr));
     bts_hidd_hdl_t* handle = find_hidd_handle2(device_id);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
     memcpy(handle->remote_addr, remote_addr, sizeof(bt_address));
@@ -359,6 +360,7 @@ static bt_result_code hid_device_connect(uint16_t device_id, bt_address remote_a
 
 static bt_result_code hid_device_disconnect(uint8_t device_id, bt_address remote_addr)
 {
+    BT_LOGD("PERFORMANCE-HID-DEVICE-PROFILE-BLUELET-DISCONNECTION-START, addr:%s", addr_str(remote_addr));
     bts_hidd_hdl_t* handle = find_hidd_handle2(device_id);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
     gatt_status ret = service_adapter_hid_device_disconnect();

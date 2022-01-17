@@ -119,6 +119,7 @@ static bt_result_code start_scan(void** hdl_ptr, ble_scan_filter_t* filter, scan
 
 static bt_result_code stop_scan(void* hdl)
 {
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BTM-SCAN-STOP");
     CHECK_PTR_RETURN(scanner_interface, BT_RESULT_STATE_NOT_ON);
     btm_lescan_hdl_t* handle = (btm_lescan_hdl_t*)(hdl);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
