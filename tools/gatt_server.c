@@ -55,7 +55,7 @@ static btm_gatt_server_interface_t* gatts_interface = NULL;
 static btm_interface_t* manager = NULL;
 static volatile uint16_t throughtput_cursor = 1;
 static struct list_node gatts_device_list = LIST_INITIAL_VALUE(gatts_device_list);
-static struct list_node advertise_handle_list = LIST_INITIAL_VALUE(gatts_device_list);
+static struct list_node advertise_handle_list = LIST_INITIAL_VALUE(advertise_handle_list);
 
 enum {
     /* IDs of Private IOT service */
@@ -682,7 +682,7 @@ static int gatts_do_throughput(void* handle, int argc, char** argv)
 
 static int le_start_advertising(void* handle, int argc, char** argv)
 {
-    if (!gatts_interface || argc < 4) {
+    if (!gatts_interface || argc < 5) {
         return -1;
     }
     int adv_type = atoi(argv[0]);
