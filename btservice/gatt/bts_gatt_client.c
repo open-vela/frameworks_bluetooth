@@ -155,8 +155,7 @@ static bts_gattc_msg_t* create_adp_msg(uint8_t event, bts_gattc_hdl_t* handle, v
 
 static void on_client_connection_state_changed(bt_address remote_addr, profile_connection_state state)
 {
-    BT_LOGD("%s, remote_addr:[%02x:%02x:%02x:%02x:%02x:%02x] state:%d", __func__, remote_addr[0],
-        remote_addr[1], remote_addr[2], remote_addr[3], remote_addr[4], remote_addr[5], state);
+    BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BLUELET-CONNECTION-STATE:%d, addr:%s", state, addr_str(remote_addr));
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
@@ -311,7 +310,7 @@ static stack_gatt_client_callbacks gatt_client_cbs = {
 
 static bt_result_code gatt_client_connect(bts_gattc_hdl_t handle)
 {
-    BT_LOGD("%s, remote_addr:%s", __func__, addr_str(handle.remote_addr));
+    BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BLUELET-CONNECTION-START, addr:%s", addr_str(handle.remote_addr));
     bts_register_profile_process(BT_PROFILE_GATTC_ID, &handle_msg_received);
     gatt_status ret = service_adapter_gatt_client_connect(handle.remote_addr, (GATT_CLIENT_CALLBACKS_S*)(&gatt_client_cbs));
     if (ret != GATT_STATUS_SUCCESS) {
@@ -329,6 +328,7 @@ static bt_result_code gatt_client_connect(bts_gattc_hdl_t handle)
 
 static bt_result_code gatt_client_disconnect(bt_address addr)
 {
+    BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BLUELET-DISCONNECTION-START, addr:%s", addr_str(addr));
     bts_gattc_hdl_t* handle = find_gattc_handle(addr);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
 
