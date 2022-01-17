@@ -980,7 +980,7 @@ int bts_get_ble_bonded_devices(bt_device_t* device_list, int max_out)
     int ret = 0;
     //get total number of paired devices
     if ((NULL == device_list) || (max_out == 0)) {
-        ret = service_adapter_gap_get_connected_devices(NULL, 0);
+        ret = service_adapter_gap_ble_get_bonded_devices(NULL, 0);
         return ret;
     }
     SERVICE_REMOTE_BLE_DEVICE_S* bonded_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
@@ -1000,7 +1000,7 @@ int bts_get_ble_connected_devices(bt_device_t* device_list, int max_out)
     int ret = 0;
     //get total number of paired devices
     if ((NULL == device_list) || (max_out == 0)) {
-        ret = service_adapter_gap_get_connected_devices(NULL, 0);
+        ret = service_adapter_gap_ble_get_connected_devices(NULL, 0);
         return ret;
     }
     SERVICE_REMOTE_BLE_DEVICE_S* connected_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
@@ -1020,7 +1020,7 @@ int bts_get_ble_whitelist_devices(bt_device_t* device_list, int max_out)
     int ret = 0;
     //get total number of paired devices
     if ((NULL == device_list) || (max_out == 0)) {
-        ret = service_adapter_gap_get_connected_devices(NULL, 0);
+        ret = service_adapter_gap_ble_get_white_list_devices(NULL, 0);
         return ret;
     }
     SERVICE_REMOTE_BLE_DEVICE_S* whitelist_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
@@ -1040,11 +1040,11 @@ int bts_get_ble_resolvinglist_devices(bt_device_t* device_list, int max_out)
     int ret = 0;
     //get total number of paired devices
     if ((NULL == device_list) || (max_out == 0)) {
-        ret = service_adapter_gap_get_connected_devices(NULL, 0);
+        ret = service_adapter_gap_ble_get_resolving_list_devices(NULL, 0);
         return ret;
     }
     SERVICE_REMOTE_BLE_DEVICE_S* resolvinglist_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
-    ret = service_adapter_gap_ble_get_bonded_devices(resolvinglist_list, MAX_PAIR_DEVICE);
+    ret = service_adapter_gap_ble_get_resolving_list_devices(resolvinglist_list, MAX_PAIR_DEVICE);
 
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, resolvinglist_list[i].bd_addr, BT_ADDR_LENGTH);
