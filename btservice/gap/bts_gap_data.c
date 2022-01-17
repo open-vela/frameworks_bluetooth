@@ -203,8 +203,8 @@ void gap_read_le_storage(void)
         BT_LOGE("invalid check_sum:%ld", app_info.check_sum);
         return;
     }
-    if (app_info.bonded_number > MAX_BONDED_DEVICES_SUPPORTED) {
-        BT_LOGE(" bonded_number:%d overflow", app_info.bonded_number);
+    if ((app_info.bonded_number > MAX_BONDED_DEVICES_SUPPORTED) || (app_info.bonded_number == 0)) {
+        BT_LOGE(" bonded_number:%d ", app_info.bonded_number);
         return;
     }
 
@@ -240,7 +240,9 @@ void gap_update_le_storage(ble_keys_t* key, uint8_t count)
         BT_LOGE("ble bond save fail, count(%d) overflowed(max :%d)", count, MAX_BONDED_DEVICES_SUPPORTED);
         return;
     }
-    memcpy(app_info.bonded_devices, key, count * sizeof(ble_keys_t));
+    if (0 != count) {
+        memcpy(app_info.bonded_devices, key, count * sizeof(ble_keys_t));
+    }
     app_info.check_sum = app_info.size + app_info.bonded_number;
 
 #ifdef BT_DEBUG_BLE_BOND_INFO
