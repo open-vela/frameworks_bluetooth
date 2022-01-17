@@ -78,10 +78,6 @@
 #define A2DP_SBC_HDR_NUM_MSK 0x0F
 
 void a2dp_codec_parse_sbc_param(sbc_param_t* param, uint8_t* codec_info);
-uint32_t a2dp_codec_sbc_frame_length(sbc_param_t* param);
-uint32_t a2dp_codec_sbc_bit_rate(sbc_param_t* param);
-uint8_t calculate_max_frames_per_packet(void);
-void a2dp_codec_sbc_media_timestamp(sbc_param_t* param);
-void a2dp_codec_sbc_get_num_frame_iteration(sbc_param_t* param, uint8_t* noi, uint8_t* nof, uint64_t now_timestamp_us);
+uint16_t a2dp_sbc_sample_frequency(uint16_t sample_frequency);
 
 #endif

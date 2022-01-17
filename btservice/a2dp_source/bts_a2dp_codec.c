@@ -33,25 +33,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "btm_manager.h"
-#include "bts_a2dp_source.h"
-#include "bts_a2dp_codec.h"
-#include "bts_service.h"
 #include "a2dp_codec_sbc.h"
+#include "btm_manager.h"
+#include "bts_a2dp_codec.h"
+#include "bts_a2dp_source.h"
+#include "bts_service.h"
 #include "sbc_encoder.h"
 
 #define LOG_TAG "a2dp_codec"
 #include "log.h"
 
-#define A2DP_SBC_ENCODER_INTERVAL_MS 20
+extern uint32_t a2dp_sbc_frame_length(sbc_param_t* param);
 
 a2dp_codec_config_t g_current_config;
 
-uint32_t bts_a2dp_codec_interval_ms(void)
+uint32_t bts_a2dp_codec_get_frame_length(void)
 {
-    return A2DP_SBC_ENCODER_INTERVAL_MS;
-}
+    a2dp_codec_config_t* config = &g_current_config;
+    if (config->codec_type == BTS_A2DP_TYPE_SBC)
+        return a2dp_sbc_frame_length(&config->codec_param.sbc);
 
+    return 0; //unknown codec
+}
 a2dp_codec_config_t* bts_a2dp_codec_get_config(void)
 {
     return &g_current_config;
@@ -69,13 +72,4 @@ void bts_a2dp_codec_set_config(bt_address bd_addr, a2dp_codec_config_t* config)
     }
 
     memcpy(&g_current_config, peer_config, sizeof(g_current_config));
-}
-
-uint32_t bts_a2dp_codec_get_frame_length(void)
-{
-    a2dp_codec_config_t* config = &g_current_config;
-    if (config->codec_type == BTS_A2DP_TYPE_SBC)
-        return a2dp_codec_sbc_frame_length(&config->codec_param.sbc);
-
-    return 0; //unknown codec
 }
