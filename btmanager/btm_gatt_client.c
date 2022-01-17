@@ -45,6 +45,7 @@ static const bts_gattc_interface_t* client_interface = NULL;
 
 static void on_bts_gattc_connection_state_changed_cb(void* hdl, profile_connection_state state)
 {
+    BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BTM-STATE:%d", state);
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
     CHECK_PTR(handle);
     BT_CBACK(handle->callbacks, gattc_connection_state_changed_cb, handle, handle->remote_addr, state);
@@ -128,6 +129,7 @@ static bts_gatt_client_callbacks client_callbacks = {
 
 static bt_result_code gatt_client_connect(void** hdl_ptr, bt_address remote_addr, btm_gatt_client_callbacks* callbacks)
 {
+    BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BTM-CONNECT-START");
     CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
 
     btm_gattc_hdl_t** handle_ptr = (btm_gattc_hdl_t**)(hdl_ptr);
@@ -155,6 +157,7 @@ static bt_result_code gatt_client_connect(void** hdl_ptr, bt_address remote_addr
 
 static bt_result_code gatt_client_disconnect(void* hdl)
 {
+    BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BTM-DISCONNECT-START");
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
     CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);

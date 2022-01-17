@@ -197,6 +197,7 @@ static bts_gatts_msg_t* create_adp_msg(uint8_t event, bts_gatts_hdl_t* handle, v
 
 static void on_server_connection_state_changed(bt_address remote_addr, profile_connection_state state)
 {
+    BT_LOGD("PERFORMANCE-GATT-SERVER-PROFILE-BLUELET-CONNECTION-STATE:%d, addr:%s", state, addr_str(remote_addr));
     bts_gatts_hdl_t* handle;
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
@@ -432,6 +433,7 @@ static bt_result_code gatt_server_close(uint8_t server_if)
 
 static bt_result_code gatt_server_connect(uint8_t server_if, bt_address remote_addr, bool auto_connect)
 {
+    BT_LOGD("PERFORMANCE-GATT-SERVER-PROFILE-BLUELET-CONNECTION-START, addr:%s", addr_str(remote_addr));
     bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, stack_gatts_interface check");
@@ -448,6 +450,7 @@ static bt_result_code gatt_server_connect(uint8_t server_if, bt_address remote_a
 
 static bt_result_code gatt_server_disconnect(uint8_t server_if, bt_address remote_addr)
 {
+    BT_LOGD("PERFORMANCE-GATT-SERVER-PROFILE-BLUELET-DISCONNECTION-START, addr:%s", addr_str(remote_addr));
     bt_result_code ret = gatt_server_is_valid(server_if);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, stack_gatts_interface check");

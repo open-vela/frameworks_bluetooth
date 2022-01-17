@@ -45,6 +45,7 @@ static const bts_le_advertise_interface_t* advertiser_interface = NULL;
 
 static void on_le_advertise_started(void* hdl, uint8_t adv_id)
 {
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BTM-ADVERTISE-STARTED");
     btm_leadv_hdl_t* handle = (btm_leadv_hdl_t*)hdl;
     CHECK_PTR(handle);
     handle->advertiser_id = adv_id;
@@ -53,6 +54,7 @@ static void on_le_advertise_started(void* hdl, uint8_t adv_id)
 
 static void on_le_advertise_stopped(void* hdl, uint8_t adv_id)
 {
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BTM-ADVERTISE-STOPPED");
     btm_leadv_hdl_t* handle = (btm_leadv_hdl_t*)hdl;
     CHECK_PTR(handle);
     BT_CBACK(handle->cb, le_advertise_stopped_cb, handle);
@@ -63,6 +65,7 @@ static void on_le_advertise_stopped(void* hdl, uint8_t adv_id)
 
 static void on_le_advertise_failed(void* hdl, int error)
 {
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BTM-ADVERTISE-FAILED");
     btm_leadv_hdl_t* handle = (btm_leadv_hdl_t*)hdl;
     CHECK_PTR(handle);
     BT_CBACK(handle->cb, le_advertise_failed_cb, handle, error);
@@ -80,6 +83,7 @@ static bts_ble_advertiser_callbacks bts_le_advertise_cb = {
 static bt_result_code start_advertising(void** hdl_ptr, advertise_param_t* param,
     btm_le_advertise_callbacks* cb)
 {
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BTM-ADVERTISE-START");
     CHECK_PTR_RETURN(advertiser_interface, BT_RESULT_STATE_NOT_ON);
 
     btm_leadv_hdl_t** handle_ptr = (btm_leadv_hdl_t**)(hdl_ptr);
@@ -107,6 +111,7 @@ static bt_result_code start_advertising(void** hdl_ptr, advertise_param_t* param
 
 static bt_result_code stop_advertising(void* hdl)
 {
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BTM-ADVERTISE-STOP");
     CHECK_PTR_RETURN(advertiser_interface, BT_RESULT_STATE_NOT_ON);
     btm_leadv_hdl_t* handle = (btm_leadv_hdl_t*)(hdl);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);

@@ -144,6 +144,7 @@ static bts_lescan_msg_t* create_adp_msg(uint8_t event, bts_lescan_hdl_t* handle,
 
 static bt_result_code start_scan(bts_lescan_hdl_t handle)
 {
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-SCAN-START");
     bts_register_profile_process(BT_PROFILE_LESCAN_ID, &handle_msg_received);
     SERVICE_BT_STATUS ret = service_adapter_gap_set_ble_scan_filter((SERVICE_BLE_SCAN_FILTER_S*)(handle.filter));
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
@@ -172,11 +173,13 @@ static bt_result_code start_scan(bts_lescan_hdl_t handle)
     CHECK_PTR_RETURN(handle2, BT_RESULT_FAILED);
 
     send_msg(create_adp_msg(ON_SCAN_STARTED, handle2, NULL, 0));
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-SCAN-STARTED");
     return BT_RESULT_SUCCESS;
 }
 
 static bt_result_code stop_scan(uint8_t scanner_id)
 {
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-SCAN-STOP");
     bts_lescan_hdl_t* handle = find_scan_handle(scanner_id);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
 
@@ -187,6 +190,7 @@ static bt_result_code stop_scan(uint8_t scanner_id)
         return BT_RESULT_FAILED;
     }
     send_msg(create_adp_msg(ON_SCAN_STOPPED, handle, NULL, 0));
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-SCAN-STOPPED");
     return BT_RESULT_SUCCESS;
 }
 

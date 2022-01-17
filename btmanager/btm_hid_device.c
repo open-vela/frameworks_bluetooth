@@ -45,6 +45,7 @@ static const bts_hidd_interface_t* hidd_interface = NULL;
 
 static void hidd_app_state_changed(void* hdl, uint8_t device_id, hid_app_state registered)
 {
+    BT_LOGD("PERFORMANCE-HID-DEV-PROFILE-BTM-APP-STATE:%d", registered);
     btm_hidd_hdl_t* handle = (btm_hidd_hdl_t*)hdl;
     CHECK_PTR(handle);
     handle->device_id = device_id;
@@ -58,6 +59,7 @@ static void hidd_app_state_changed(void* hdl, uint8_t device_id, hid_app_state r
 
 static void on_bts_hidd_connection_state_changed(void* hdl, bt_address remote_addr, profile_connection_state state)
 {
+    BT_LOGD("PERFORMANCE-HID-DEV-PROFILE-BTM-CONNECTION-STATE:%d", state);
     btm_hidd_hdl_t* handle = (btm_hidd_hdl_t*)hdl;
     CHECK_PTR(handle);
     BT_CBACK(handle->callbacks, hidd_connection_state_changed_cb, handle, remote_addr, state);
@@ -112,6 +114,7 @@ static bt_result_code hidd_unregister_device(void* hdl)
 
 static bt_result_code hidd_connect(void* hdl, bt_address remote_addr)
 {
+    BT_LOGD("PERFORMANCE-HID-DEV-PROFILE-BTM-CONNECT-START");
     btm_hidd_hdl_t* handle = (btm_hidd_hdl_t*)hdl;
     CHECK_PTR_RETURN(hidd_interface, BT_RESULT_STATE_NOT_ON);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
@@ -126,6 +129,7 @@ static bt_result_code hidd_connect(void* hdl, bt_address remote_addr)
 
 static bt_result_code hidd_disconnect(void* hdl, bt_address remote_addr)
 {
+    BT_LOGD("PERFORMANCE-HID-DEV-PROFILE-BTM-DISCONNECT-START");
     btm_hidd_hdl_t* handle = (btm_hidd_hdl_t*)hdl;
     CHECK_PTR_RETURN(hidd_interface, BT_RESULT_STATE_NOT_ON);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
