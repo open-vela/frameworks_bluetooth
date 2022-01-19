@@ -26,6 +26,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "btm_gap.h"
 #include "btm_manager.h"
@@ -231,18 +232,33 @@ static void service_schedule_loop(void* data)
     uv_run(bt_dispatch_loop, UV_RUN_DEFAULT);
 }
 
+void create_config_folder()
+{
+    char folder_misc[] = "/data/misc";
+    char folder_bt[] = "/data/misc/bt";
+    int ret = 0;
+    if (access(folder_misc, 0) == -1) {
+        ret = mkdir(folder_misc, 0777);
+        BT_LOGD("%s, create misc ret:%d", __func__, ret);
+    }
+    if (access(folder_bt, 0) == -1) {
+        ret = mkdir(folder_bt, 0777);
+        BT_LOGD("%s, create bt ret:%d", __func__, ret);
+    }
+}
+
 bt_result_code bts_service_init(bt_service_callbacks* callbacks)
 {
     bluetooth_upper_callbacks = callbacks;
-
+    create_config_folder();
     uv_mutex_init(&msg_mutex);
     if (service_state != BTM_STATE_OFF)
         return BT_RESULT_FAILED;
     InitTransportLayer();
     gap_service_init();
     bt_dispatch_loop = uv_loop_new();
-    uv_thread_options_t options = {UV_THREAD_HAS_STACK_SIZE, BTSERVICE_THREAD_STACK_SIZE};
-    
+    uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE, BTSERVICE_THREAD_STACK_SIZE };
+
     int ret = uv_thread_create_ex(&thread_handle[THREAD_ID_STACK], &options, stack_schedule_loop, NULL);
     if (ret != 0) {
         BT_LOGE("fail uv_thread_create, ret:%d", ret);

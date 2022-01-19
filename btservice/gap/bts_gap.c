@@ -34,6 +34,7 @@
 #include "bts_service_interface.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_gap.h"
+#include "utils.h"
 
 #define LOG_TAG "bts_gap"
 #include "log.h"
@@ -746,6 +747,7 @@ GAP_CALLBACKS_S g_gap_callback = {
 
 bt_result_code gap_init(bts_gap_callback_t* cb)
 {
+    create_config_folder();
     g_bts_gap_callbacks = cb;
     service_adapter_gap_init();
 
@@ -756,6 +758,7 @@ bt_result_code gap_init(bts_gap_callback_t* cb)
     list_initialize(g_msg_list);
 
     bts_register_profile_process(BT_PROFILE_GAP_ID, &handle_msg_received);
+
     return BT_RESULT_SUCCESS;
 }
 
