@@ -46,10 +46,10 @@
 #define BT_DEFAULT_IO_CAPABILITY (SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT)
 
 #define BT_DEFAULT_NAME_PREFIX "XIAOMI WATCH L61"
-#define BT_DEFAULT_FILE_NAME "/data/bt_device.db"
-#define BT_USER_FILE_NAME "/data/bt_device2.db"
-#define BT_APP_INFO_FILE_NAME "/data/bt_storage.db"
-#define LE_APP_INFO_FILE_NAME "/data/le_storage.db"
+#define BT_DEFAULT_FILE_NAME "/data/misc/bt/bt_device.db"
+#define BT_USER_FILE_NAME "/data//misc/bt/bt_device2.db"
+#define BT_APP_INFO_FILE_NAME "/data//misc/bt/bt_storage.db"
+#define LE_APP_INFO_FILE_NAME "/data//misc/bt/le_storage.db"
 
 #ifndef BT_DEVICE_NAME_MAX_LEN
 #define BT_DEVICE_NAME_MAX_LEN 248
