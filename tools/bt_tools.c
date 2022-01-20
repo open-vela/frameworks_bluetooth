@@ -129,6 +129,7 @@ static bt_command_t g_cmd_tables[] = {
 #if defined(CONFIG_BLUETOOTH_HIDDEV)
     { "hidd", hid_device_command, "hid device profile" },
 #endif
+    { "log", log_command, "log control"},
     { "help", usage_cmd, "Usage for bttools" },
     { "quit", quit_cmd, "Quit" },
 };
@@ -884,6 +885,7 @@ int main(int argc, char** argv)
         printf("bttool> ");
         fflush(stdout);
 
+        memset(_argv, 0, sizeof(_argv));
         len = readline(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
         buffer[len] = '\0';
         if (len < 0)
@@ -910,7 +912,6 @@ int main(int argc, char** argv)
 
         if (_argc > 0) {
             ret = execute_command(manager_handle, _argc, _argv);
-            memset(_argv, 0, sizeof(_argv));
             _argc = 0;
             if (ret == -2)
                 break;
