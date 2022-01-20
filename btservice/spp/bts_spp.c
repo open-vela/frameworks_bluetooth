@@ -861,6 +861,9 @@ void bts_spp_state_dump(void)
     struct list_node* node;
     int i = 0;
 
+    if (!g_spp_handle.started)
+        return;
+
     list_for_every(&g_spp_handle.dev_list, node)
     {
         i++;

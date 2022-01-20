@@ -101,6 +101,12 @@ config BLUETOOTH_TOOL_CHAIN
     bool "Enable bluetooth profile test tools"
     default y
 
+config BT_FRAMEWORK_LOG_LEVEL
+    int "Bt framework log level"
+    default 7
+    help
+        Set bt framework log level <0~7>
+
 if BLUETOOTH_A2DP_SRC
 config BLUETOOTH_A2DP_MAX_CONNECTIONS
 	int "Maximum A2dp connections"

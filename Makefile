@@ -107,10 +107,12 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_HIDDEV),y)
       CSRCS +=tools/hid_device.c
 endif
+CSRCS +=tools/log.c
 endif
 
 CSRCS +=utils/uuid.c
 CSRCS +=utils/utils.c
+CSRCS +=utils/log.c
 CSRCS +=btservice/state_machine/state_machine.c
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/}
@@ -124,12 +126,15 @@ ifeq ($(CONFIG_BLUETOOTH_TOOL_CHAIN), y)
 	CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/tools}
 endif
 
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/src/samples/template/stack_adapter_template/inc}
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/src/samples/stack_adapter/inc}
 CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/xiaomi/vela/bluelet/inc}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/src/stack/portings/btunix}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/src/stack/include}
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/system/libuv/libuv/include}
+ifneq ($(CONFIG_KVDB),)
+  CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/kvdb}
+endif
 CFLAGS   += -I $(APPDIR)/external/bluelet/
 
 PRIORITY = SCHED_PRIORITY_DEFAULT

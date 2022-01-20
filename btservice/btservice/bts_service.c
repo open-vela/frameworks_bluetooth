@@ -238,6 +238,7 @@ void create_config_folder()
     char folder_misc[] = "/data/misc";
     char folder_bt[] = "/data/misc/bt";
     int ret = 0;
+
     if (access(folder_misc, 0) == -1) {
         ret = mkdir(folder_misc, 0777);
         BT_LOGD("%s, create misc ret:%d", __func__, ret);
@@ -246,6 +247,14 @@ void create_config_folder()
         ret = mkdir(folder_bt, 0777);
         BT_LOGD("%s, create bt ret:%d", __func__, ret);
     }
+#ifdef CONFIG_BLUELET_HCI_SNOOP_LOG_PATH
+    char folder_snoop[] = CONFIG_BLUELET_HCI_SNOOP_LOG_PATH;
+
+    if (access(folder_snoop, 0) == -1) {
+        if (mkdir(folder_snoop, 0777) < 0)
+            BT_LOGE("%s, create snoop ret:%d", __func__, ret);
+    }
+#endif
 }
 
 bt_result_code bts_service_init(bt_service_callbacks* callbacks)
@@ -255,6 +264,7 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     uv_mutex_init(&msg_mutex);
     if (service_state != BTM_STATE_OFF)
         return BT_RESULT_FAILED;
+    utils_log_init();
     InitTransportLayer();
     gap_service_init();
     bt_dispatch_loop = uv_loop_new();
@@ -275,6 +285,7 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     }
     prctl(PR_SET_NAME_EXT, "btservice_thread", thread_handle[THREAD_ID_SERVICE]);
     service_state = BTM_STATE_TURNING_ON;
+
     return BT_RESULT_SUCCESS;
 }
 
