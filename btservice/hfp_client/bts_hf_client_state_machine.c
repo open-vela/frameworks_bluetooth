@@ -625,7 +625,11 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         hf_client_call_state_t state = data->valueint3;
         hf_client_call_mpty_type_t mpty = data->valueint4;
         char* number = data->string1;
-        BT_LOGD("Current Call[%d]: dir:%d, state:%d, mpty:%d, number:%s", index, dir, state, mpty, number);
+        if (index == 0) {
+            BT_LOGD("Query current call final");
+        } else {
+            BT_LOGD("Current Call[%d]: dir:%d, state:%d, mpty:%d, number:%s", index, dir, state, mpty, number);
+        }
         HF_SERVICE_CBACK(service->callbacks, current_calls_cb, hfsm->addr, index, dir, state, mpty, (const char*)number);
         break;
     }
@@ -820,7 +824,12 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         hf_client_call_state_t state = data->valueint3;
         hf_client_call_mpty_type_t mpty = data->valueint4;
         char* number = data->string1;
-        BT_LOGD("Current Call[%d]: dir:%d, state:%d, mpty:%d, number:%s", index, dir, state, mpty, number);
+        if (index == 0) {
+            BT_LOGD("Query current call final");
+        } else {
+            BT_LOGD("Current Call[%d]: dir:%d, state:%d, mpty:%d, number:%s", index, dir, state, mpty, number);
+        }
+
         HF_SERVICE_CBACK(service->callbacks, current_calls_cb, hfsm->addr, index, dir, state, mpty, (const char*)number);
         break;
     }
