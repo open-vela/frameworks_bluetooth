@@ -306,6 +306,7 @@ static void connecting_exit(state_machine_t* sm)
         addr_str(hfsm->addr));
     //stop timer
     stop_timer(hfsm->connect_timer);
+    hfsm->connect_timer = NULL;
 }
 
 static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* p_data)
@@ -918,7 +919,8 @@ void hf_client_state_machine_destory(hf_state_machine_t* hfsm)
     if (!hfsm)
         return;
 
-    stop_timer(hfsm->connect_timer);
+    if (hfsm->connect_timer)
+        stop_timer(hfsm->connect_timer);
     hsm_dtor(&hfsm->sm);
     free((void*)hfsm);
 }
