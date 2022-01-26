@@ -273,7 +273,6 @@ static spp_pty_device_t* find_pty_device_by_handle(euv_pty_t* handle)
 
 static void remove_pty_device(spp_pty_device_t* device)
 {
-    BT_LOGD("%s", __func__);
     free_connection_port(device->conn_port);
 
     list_delete(&device->node);
@@ -303,8 +302,12 @@ static spp_pty_device_t* spp_open_pty_device(bt_address addr, uint16_t port)
     device->shandle = euv_pty_init(get_service_loop(), device->sfd, UV_TTY_MODE_IO);
     if (!device->shandle) {
         euv_pty_close(device->handle);
+        device->mfd = INVALID_FD;
         goto error;
     }
+#else
+    close(device->sfd);
+    device->sfd = INVALID_FD;
 #endif
 
     BT_LOGD("pty create success, name:%s, master:%d, slave:%d",
@@ -319,25 +322,17 @@ error:
 
 static void spp_close_pty_device(spp_pty_device_t* device)
 {
-    if (device->mfd != INVALID_FD) {
-        close(device->mfd);
-        device->mfd = INVALID_FD;
-    }
-
-    if (device->sfd != INVALID_FD) {
-        close(device->sfd);
-        device->sfd = INVALID_FD;
-    }
-
     if (device->handle) {
         euv_pty_close(device->handle);
         device->handle = NULL;
+        device->mfd = INVALID_FD;
     }
 
 #ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
     if (device->shandle) {
         euv_pty_close(device->shandle);
         device->shandle = NULL;
+        device->sfd = INVALID_FD;
     }
 #endif
     if (device->state == SPP_CONNECTION_STATE_CONNECTED)
