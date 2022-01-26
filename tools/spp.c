@@ -152,7 +152,13 @@ static void connection_state_callback(const bt_address addr, uint16_t port, spp_
 
 static void pty_open_callback(const bt_address addr, uint16_t port, char* name, int fd)
 {
-    BT_LOGD("%s port: %d, name:%s, fd:%d", __func__, port, name, fd);
+    int sfd;
+
+    fd = open(name, O_RDWR | O_NOCTTY | O_NONBLOCK);
+    if (fd < 0)
+        return;
+
+    BT_LOGD("%s port: %d, name:%s, slave fd:%d", __func__, port, name, fd);
     spp_device_t* device = malloc(sizeof(spp_device_t));
     device->fd = fd;
     device->port = port;
