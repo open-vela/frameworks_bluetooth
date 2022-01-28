@@ -214,6 +214,7 @@ static spp_pty_device_t* alloc_new_device(bt_address addr, uint16_t port, bool a
     device->sfd = INVALID_FD;
     device->credits = WRITE_CREDITS;
     device->state = SPP_CONNECTION_STATE_DISCONNECTED;
+    memset(device->pty_name, 0, sizeof(device->pty_name));
     memcpy(device->addr, addr, sizeof(device->addr));
     list_add_tail(&g_spp_handle.dev_list, &device->node);
 
@@ -228,30 +229,11 @@ static spp_pty_device_t* find_pty_device(uint16_t port)
     list_for_every(&g_spp_handle.dev_list, node)
     {
         device = (spp_pty_device_t*)node;
-        if (port == device->conn_port)
+        if ((port >> 6) == (device->conn_port >> 6))
             return device;
     }
 
-    BT_LOGW("Device not found for port:%d", port);
-    return NULL;
-}
-
-static spp_pty_device_t* check_and_update_conn_port(bt_address addr, uint16_t port)
-{
-    spp_pty_device_t* device;
-    struct list_node* node;
-
-    list_for_every(&g_spp_handle.dev_list, node)
-    {
-        device = (spp_pty_device_t*)node;
-        if (memcmp(addr, device->addr, 6) == 0 && (port >> 6) == (device->conn_port >> 6)) {
-            if (port != device->conn_port)
-                device->conn_port = port;
-            return device;
-        }
-    }
-
-    BT_LOGW("Device not found for port:%d", port);
+    BT_LOGW("%s, Device not found for port:%d", __func__, port);
     return NULL;
 }
 
@@ -273,20 +255,19 @@ static spp_pty_device_t* find_pty_device_by_handle(euv_pty_t* handle)
 
 static void remove_pty_device(spp_pty_device_t* device)
 {
+    BT_LOGW("%s, for port:%d", __func__, device->conn_port);
     free_connection_port(device->conn_port);
 
     list_delete(&device->node);
     free(device);
 }
 
-static spp_pty_device_t* spp_open_pty_device(bt_address addr, uint16_t port)
+static spp_pty_device_t* spp_open_pty_device(spp_pty_device_t* device, uint16_t new_port)
 {
     int ret;
-    spp_pty_device_t* device;
 
-    device = check_and_update_conn_port(addr, port);
-    if (device == NULL)
-        return NULL;
+    if (new_port != device->conn_port)
+        device->conn_port = new_port;
 
     ret = openpty(&device->mfd, &device->sfd, device->pty_name, NULL, NULL);
     if (ret != 0) {
@@ -453,20 +434,26 @@ static void spp_on_connection_state_chaneged(bt_address addr, uint16_t port,
     spp_pty_device_t* device;
 
     BT_LOGD("%s, addr: %s, port: %d, state: %d", __func__, addr_str(addr), port, state);
-    spp_notify_connection_state(addr, port, state);
+    device = find_pty_device(port);
+    if (device == NULL || memcmp(addr, device->addr, 6) != 0) {
+        BT_LOGE("%s, port or address mismatch", __func__);
+        return;
+    }
 
+    spp_notify_connection_state(addr, port, state);
     if (state == SPP_CONNECTION_STATE_CONNECTED) {
         BT_LOGD("PERFORMANCE-SPP-BTM-CONNECTED");
-        device = spp_open_pty_device(addr, port);
+        device = spp_open_pty_device(device, port);
         if (device == NULL)
             return;
 
         device->state = state;
         spp_notify_pty_opened(addr, port, device->pty_name, device->sfd);
+    } else if (state == SPP_CONNECTION_STATE_CONNECTING) {
+        //update port by stack adapter , user port + peer svr_chnl << 1(sdp)
+        if (port != device->conn_port)
+            device->conn_port = port;
     } else if (state == SPP_CONNECTION_STATE_DISCONNECTED) {
-        device = find_pty_device(port);
-        if (!device)
-            return;
         device->state = state;
         spp_close_pty_device(device);
     }
@@ -517,10 +504,10 @@ static void spp_on_connect_request_received(bt_address addr, uint16_t port)
 
     device = alloc_new_device(addr, port, true);
     if (device) {
-        BT_LOGD("CONN_REQ_RECEIVED: svr_port:%d, conn_port:%d", port, device->conn_port);
+        BT_LOGD("%s, CONN_REQ_RECEIVED: svr_port:%d, conn_port:%d", __func__, port, device->conn_port);
         service_adapter_spp_send_connection_rsp(addr, device->conn_port, true);
     } else {
-        BT_LOGW("device alloc failed, reject connection: svr_port:%d,", port);
+        BT_LOGW("%s, device alloc failed, reject connection: svr_port:%d,", __func__, port);
         service_adapter_spp_send_connection_rsp(addr, port, false);
     }
 }
@@ -544,6 +531,7 @@ static void spp_on_connection_update_mfs(uint16_t port, uint16_t mfs)
     }
 }
 
+//spp server port must be odd number, range in (3~57) 3,5,7,9...57
 static void spp_server_start(uint16_t port, uint16_t uuid)
 {
     struct bt_uuid_16 uuid_src;
@@ -576,7 +564,7 @@ static void spp_client_connect(bt_address addr, uint16_t port, uint16_t uuid)
 
     status = service_adapter_spp_client_open(addr, device->conn_port, uuid_128_dst.val);
     if (status != SERVICE_BT_STATUS_SUCCESS) {
-        //spp_notify_connection_state(addr, device->conn_port, SPP_CONNECTION_STATE_DISCONNECTING);
+        //spp_notify_connection_state(addr, device->conn_port, SPP_CONNECTION_STATE_DISCONNECTED);
         remove_pty_device(device);
         return;
     }
