@@ -62,7 +62,7 @@ static struct list_node device_list = LIST_INITIAL_VALUE(device_list);
 static spp_interface_t* spp_interface = NULL;
 static uv_timer_t* spp_timer = NULL;
 static bt_command_t g_spp_tables[] = {
-    { "start", start_server_cmd,    "\"start spp server        param: <port> <uuid>\"" },
+    { "start", start_server_cmd,    "\"start spp server        param: <port> <uuid>\", server port must be odd number, range in (3~57) 3,5,7,9...57"},
     { "stop", stop_server_cmd,      "\"stop  spp server        param: <port>\"" },
     { "connect", connect_cmd,       "\"connect spp device      param: <address> <port> <uuid>\"" },
     { "disconnect", disconnect_cmd, "\"disconnect peer device  param: <address> <port>\"" },
