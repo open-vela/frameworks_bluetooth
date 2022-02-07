@@ -154,7 +154,7 @@ static void pty_open_callback(const bt_address addr, uint16_t port, char* name, 
 {
     int sfd;
 
-    fd = open(name, O_RDWR | O_NOCTTY | O_NONBLOCK);
+    fd = open(name, O_RDWR | O_NOCTTY);
     if (fd < 0)
         return;
 
