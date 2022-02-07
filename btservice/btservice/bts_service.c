@@ -275,7 +275,7 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
         return BT_RESULT_FAILED;
     }
-    prctl(PR_SET_NAME_EXT, "bluelet_thread", thread_handle[THREAD_ID_STACK]);
+    pthread_setname_np(thread_handle[THREAD_ID_STACK], "bluelet_thread");
 
     options.stack_size = BTSERVICE_THREAD_STACK_SIZE;
     ret = uv_thread_create_ex(&thread_handle[THREAD_ID_SERVICE], &options, service_schedule_loop, NULL);
@@ -283,7 +283,7 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
         return BT_RESULT_FAILED;
     }
-    prctl(PR_SET_NAME_EXT, "btservice_thread", thread_handle[THREAD_ID_SERVICE]);
+    pthread_setname_np(thread_handle[THREAD_ID_SERVICE], "btservice_thread");
     service_state = BTM_STATE_TURNING_ON;
 
     return BT_RESULT_SUCCESS;
