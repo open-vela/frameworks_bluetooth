@@ -36,13 +36,14 @@
  ****************************************************************************/
 #include <stdio.h>
 #include <sys/types.h>
-
+#include <connectivity/state.h>
+#include <uORB/uORB.h>
 #include "stack_adapter_hfp.h"
 #include "stack_adapter_service_base.h"
 
 #include "btm_manager.h"
 #include "bts_service.h"
-
+#include "btm_hfp_hf.h"
 #include "bts_hf_client.h"
 #include "bts_hf_client_event.h"
 #include "bts_hf_client_state_machine.h"
@@ -80,6 +81,7 @@ static void hf_client_send_message(hf_state_machine_t* sm, hf_client_msg_t* msg)
  ****************************************************************************/
 hf_client_service_t g_hfp_service = {
     .started = false,
+    .orb_fd = -1,
     .device_list = LIST_INITIAL_VALUE(g_hfp_service.device_list)
 };
 
@@ -493,6 +495,9 @@ static void hf_client_cleanup(void)
     struct list_node* node;
     struct list_node* tmp;
 
+    if (g_hfp_service.orb_fd > 0)
+        orb_unadvertise(g_hfp_service.orb_fd);
+    g_hfp_service.orb_fd = -1;
     list_for_every_safe(&g_hfp_service.device_list, node, tmp)
     {
         device = (hf_client_device_t*)node;
@@ -535,6 +540,7 @@ bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks
                         BT_HFP_BRSF_HF_ENHANCED_CALLSTATUS | BT_HFP_BRSF_HF_NREC |
                         BT_HFP_BRSF_HF_3WAYCALL | BT_HFP_BRSF_HF_CLIP |
                         BT_HFP_BRSF_HF_CODEC_NEGOTIATION | BT_HFP_BRSF_HF_BVRA;
+                        //BT_HFP_BRSF_HF_BVRA;
 
     if (g_hfp_service.started)
         return BT_RESULT_SUCCESS;
@@ -545,6 +551,11 @@ bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks
         bts_hf_client_handle_service_msg);
     status = service_adapter_hfp_init(features, 1, &hfp_adp_callbacks);
     if (status != SERVICE_BT_STATUS_SUCCESS) {
+        return BT_RESULT_FAILED;
+    }
+    g_hfp_service.orb_fd = orb_advertise(ORB_ID(hfp_state), NULL);
+    if (g_hfp_service.orb_fd < 0) {
+        BT_LOGE("g_hfp_service.orb_fd advertise failed");
         return BT_RESULT_FAILED;
     }
 

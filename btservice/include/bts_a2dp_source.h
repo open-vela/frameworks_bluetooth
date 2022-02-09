@@ -36,7 +36,6 @@
  * Included Files
  ****************************************************************************/
 #include <nuttx/list.h>
-
 #include "btm_manager.h"
 #include "btm_a2dp_source.h"
 #include "bts_a2dp_codec.h"
@@ -52,6 +51,7 @@ typedef struct {
 
 typedef struct {
     struct list_node device_list;
+    int orb_fd;
     bool enabled;
     a2dp_peer_t *active_peer;
     const a2dp_source_callbacks_t* callbacks;
