@@ -44,6 +44,7 @@
 typedef struct
 {
     bool started;
+    int orb_fd;
     struct list_node device_list;
     hf_client_callbacks_t* callbacks;
 } hf_client_service_t;
