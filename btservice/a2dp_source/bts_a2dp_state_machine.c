@@ -35,7 +35,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-
+#include <connectivity/state.h>
+#include <uORB/uORB.h>
 #include "stack_adapter_a2dp_sink.h"
 #include "stack_adapter_a2dp_source.h"
 #include "stack_adapter_common.h"
@@ -150,27 +151,52 @@ static char* stack_event_to_string(a2dp_event_type_t event)
     }
 }
 
-static void bts_a2dp_report_connection_state(a2dp_source_t* service, bt_address addr, a2dp_connection_state_t state)
+static void broadcast_a2dp_state(int orb_fd, bt_address addr, int conn_state, int audio_state)
 {
+    struct a2dp_state uORB_state;
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    uORB_state.timestamp = ts.tv_sec * 1000 + ts.tv_nsec / 1000000UL;
+    uORB_state.conn_state = conn_state;
+    uORB_state.audio_state = audio_state;
+    memcpy(uORB_state.addr, addr, 6);
+    if (orb_fd > 0) {
+        int ret = orb_publish(ORB_ID(a2dp_state), orb_fd, &uORB_state);
+        if (ret != 0)
+            BT_LOGE("Failed to publish connection state");
+    }
+}
+
+static void bts_a2dp_report_connection_state(a2dp_source_t* service, bt_address addr, a2dp_connection_state_t state)
+{    
     BT_LOGD("%s, addr:%s, state: %d", __func__, addr_str(addr), state);
     if(state == A2DP_CONNECTION_STATE_CONNECTED)
         BT_LOGD("PERFORMANCE-A2DP-SRC-BTM-CONNECTED");
+
     if (service->callbacks)
         service->callbacks->connection_state_cb(addr, state);
+    broadcast_a2dp_state(service->orb_fd, addr, state, A2DP_AUDIO_NOT_READY);
 }
 
 static void bts_a2dp_report_audio_state(a2dp_source_t* service, bt_address addr, a2dp_audio_state_t state)
 {
     BT_LOGD("%s, addr:%s, state: %d", __func__, addr_str(addr), state);
+
     if (service->callbacks)
         service->callbacks->audio_state_cb(addr, state);
+
+    broadcast_a2dp_state(service->orb_fd, addr, PROFILE_CONN_CONNECTED, state);
 }
 
 static void bts_a2dp_report_audio_config_state(a2dp_source_t* service, bt_address addr)
 {
     BT_LOGD("%s, addr:%s", __func__, addr_str(addr));
+
     if (service->callbacks)
         service->callbacks->audio_source_config_cb(addr);
+
+    broadcast_a2dp_state(service->orb_fd, addr, PROFILE_CONN_CONNECTED, A2DP_AUDIO_STOPPED);
 }
 
 static void a2dp_connect_timeout_callback(char* data)

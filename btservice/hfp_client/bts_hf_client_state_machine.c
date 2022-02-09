@@ -36,7 +36,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-
+#include <connectivity/state.h>
+#include <uORB/uORB.h>
 #include "stack_adapter_common.h"
 #include "stack_adapter_gap.h"
 #include "stack_adapter_hfp.h"
@@ -181,6 +182,23 @@ static uint32_t first_pending_action(hf_state_machine_t* hfsm)
     return 0;
 }
 
+static void broadcast_hfp_state(int orb_fd, bt_address addr, int conn_state, int audio_state)
+{
+    struct hfp_state uORB_state;
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    uORB_state.timestamp = ts.tv_sec * 1000 + ts.tv_nsec / 1000000UL;
+    uORB_state.conn_state = conn_state;
+    uORB_state.audio_state = audio_state;
+    memcpy(uORB_state.addr, addr, 6);
+    if (orb_fd > 0) {
+        int ret = orb_publish(ORB_ID(hfp_state), orb_fd, &uORB_state);
+        if (ret != 0)
+            BT_LOGE("Failed to publish state");
+    }
+}
+
 static void notify_connection_state_changed(hf_client_service_t* service,
     bt_address addr,
     hf_client_connection_state_t state)
@@ -189,6 +207,7 @@ static void notify_connection_state_changed(hf_client_service_t* service,
         BT_LOGD("PERFORMANCE-HF-BTM-CONNECTED");
     BT_LOGD("%s, addr:%s, state:%d", __func__, addr_str(addr), state);
     HF_SERVICE_CBACK(service->callbacks, connection_state_cb, addr, state);
+    broadcast_hfp_state(service->orb_fd, addr, state, HFP_AUDIO_DISCONNECTED);
 }
 
 static void notify_audio_state_changed(hf_client_service_t* service,
@@ -197,6 +216,7 @@ static void notify_audio_state_changed(hf_client_service_t* service,
 {
     BT_LOGD("%s, addr:%s, state:%d", __func__, addr_str(addr), state);
     HF_SERVICE_CBACK(service->callbacks, audio_state_cb, addr, state);
+    broadcast_hfp_state(service->orb_fd, addr, PROFILE_CONN_CONNECTED, state);
 }
 
 static void notify_vr_state_changed(hf_client_service_t* service,
