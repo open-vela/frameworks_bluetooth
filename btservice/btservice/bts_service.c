@@ -157,6 +157,9 @@ void stop_timer(uv_timer_t* timer)
     if (NULL == timer) {
         return;
     }
+    if (timer->data)
+        free(timer->data);
+    timer->data = NULL;
     uv_timer_stop(timer);
     uv_close((uv_handle_t*)timer, bts_uv_close_cb);
 }
