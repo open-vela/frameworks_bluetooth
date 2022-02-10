@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <nuttx/serial/pty.h>
 // nuttx
 #include <debug.h>
 #include <nuttx/list.h>
@@ -262,14 +263,55 @@ static void remove_pty_device(spp_pty_device_t* device)
     free(device);
 }
 
+static int open_pty(int *master, char *name)
+{
+    char buf[64];
+    int ret;
+    /* Open the pseudo terminal master */
+    ret = posix_openpt(O_RDWR);
+    if (ret < 0)
+        return ret;
+
+    *master = ret;
+
+    /* Configure the pseudo terminal master */
+
+    ret = grantpt(*master);
+    if (ret < 0)
+        goto err;
+
+    ret = unlockpt(*master);
+    if (ret < 0)
+        goto err;
+
+    /* Open the pseudo terminal slave */
+
+    ret = ptsname_r(*master, buf, sizeof(buf));
+    if (ret < 0)
+        goto err;
+
+    if (name != NULL)
+        strcpy(name, buf);
+
+    return 0;
+
+err:
+  close(*master);
+  return ret;
+}
+
 static spp_pty_device_t* spp_open_pty_device(spp_pty_device_t* device, uint16_t new_port)
 {
     int ret;
 
     if (new_port != device->conn_port)
         device->conn_port = new_port;
-
+#ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
     ret = openpty(&device->mfd, &device->sfd, device->pty_name, NULL, NULL);
+#else
+    ret = open_pty(&device->mfd, device->pty_name);
+    device->sfd = INVALID_FD;
+#endif
     if (ret != 0) {
         BT_LOGE("pty create failed");
         goto error;
@@ -286,9 +328,6 @@ static spp_pty_device_t* spp_open_pty_device(spp_pty_device_t* device, uint16_t 
         device->mfd = INVALID_FD;
         goto error;
     }
-#else
-    close(device->sfd);
-    device->sfd = INVALID_FD;
 #endif
 
     BT_LOGD("pty create success, name:%s, master:%d, slave:%d",
