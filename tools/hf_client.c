@@ -370,7 +370,8 @@ static void hf_client_current_calls_cb(bt_address addr, int index,
     hf_client_call_mpty_type_t mpty,
     const char* number)
 {
-    BT_LOGD("%s, addr:%s, call[%d], dir:%d, state:%d, mpty:%d, number:%s", __func__, addr_str(addr), index, dir, state, mpty, number);
+    if (index != 0)
+        BT_LOGD("%s, addr:%s, call[%d], dir:%d, state:%d, mpty:%d, number:%s", __func__, addr_str(addr), index, dir, state, mpty, number);
 }
 
 static void hf_client_volume_change_cb(
