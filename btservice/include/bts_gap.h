@@ -118,14 +118,10 @@ int bts_get_ble_resolvinglist_devices(bt_device_t* device_list, int max_out);
  */
 bt_result_code bts_enter_bluetooth_test_mode(test_mode mode);
 
-void gap_read_data_storage(void);
-void gap_update_data_storage(void);
-
-bt_result_code gap_create_factory_info(bool force);
-bt_result_code gap_update_device_name(uint8_t* bt_name, uint8_t len_name);
-bt_result_code gap_read_device_info(void);
-
-void gap_read_le_storage(void);
-void gap_update_le_storage(ble_keys_t* key, uint8_t count);
+void gap_bt_bond_store(void);
+void gap_bluetooth_bond_init(void);
+void gap_ble_bond_store(ble_keys_t* key, uint8_t count);
+bt_result_code gap_bluetooth_device_init(void);
+bt_result_code gap_bt_update_name(char* name, uint8_t size);
 
 #endif
