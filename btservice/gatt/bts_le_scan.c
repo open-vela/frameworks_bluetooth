@@ -196,6 +196,11 @@ static bt_result_code stop_scan(uint8_t scanner_id)
 
 void on_ble_scan_result(const scan_result_t* scan_result_data)
 {
+    if (!scan_result_data) {
+        BT_LOGE("scan_result_data nullptr");
+        return;
+    }
+
     bts_lescan_hdl_t* handle;
     list_for_every_entry(&scanner_list, handle, bts_lescan_hdl_t, node)
     {
