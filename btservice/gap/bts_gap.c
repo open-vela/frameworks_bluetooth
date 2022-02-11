@@ -243,13 +243,6 @@ static void process_loop_in_gap(void* data, size_t data_size)
             bt_device_t* new_device = malloc(sizeof(bt_device_t));
             memcpy(new_device->addr, gap_msg->event_data.bd_addr, BT_ADDR_LENGTH);
             g_bts_gap_callbacks->bond_state_changed_cb(new_device, gap_msg->event_data.data.bond_state);
-            if (gap_msg->event_data.data.bond_state == BT_BOND_STATE_BONDED) {
-                gap_update_data_storage();
-            }
-
-            if (gap_msg->event_data.data.bond_state == BT_BOND_STATE_NONE) {
-                gap_update_data_storage();
-            }
             free(new_device);
         }
         break;
@@ -282,7 +275,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
         break;
     }
     case GAP_UPDATE_BLE_BONDED_DEVICES: {
-        gap_update_le_storage(gap_msg->event_data.data.ble_bonded_update.bonded_device_list, gap_msg->event_data.data.ble_bonded_update.count_in);
+        gap_ble_bond_store(gap_msg->event_data.data.ble_bonded_update.bonded_device_list, gap_msg->event_data.data.ble_bonded_update.count_in);
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->update_ble_bonede_device_cb)) {
             g_bts_gap_callbacks->update_ble_bonede_device_cb(gap_msg->event_data.data.ble_bonded_update.bonded_device_list, gap_msg->event_data.data.ble_bonded_update.count_in);
         }
@@ -318,11 +311,11 @@ static void process_loop_in_gap(void* data, size_t data_size)
         break;
     }
     case GAP_BR_LINK_KEY_CHANGED: {
-        gap_update_data_storage();
+        gap_bt_bond_store();
         break;
     }
     case GAP_DELETE_LINK_KEY_CHANGED: {
-        gap_update_data_storage();
+        gap_bt_bond_store();
         break;
     }
     case GAP_SERVICE_DISCOVERED: {
@@ -545,7 +538,6 @@ static void adapter_update_br_link_key_callback(remote_device_t* bonded_device)
     gap_msg_t* msg = gap_msg_new(GAP_BR_LINK_KEY_CHANGED);
     memcpy(&msg->event_data.data.bonded_device, bonded_device, sizeof(remote_device_t));
     gap_send_message(msg);
-    gap_update_data_storage();
 }
 
 static void adapter_delete_br_link_key_callback(bt_address remote_addr)
@@ -554,8 +546,6 @@ static void adapter_delete_br_link_key_callback(bt_address remote_addr)
     gap_msg_t* msg = gap_msg_new(GAP_DELETE_LINK_KEY_CHANGED);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     gap_send_message(msg);
-
-    gap_update_data_storage();
 }
 
 static void adapter_pairing_request_callback(bt_address remote_addr, bool local_initiate, bool is_bondable)
@@ -701,12 +691,6 @@ static void adapter_ble_packet_received_callback(bt_address remote_addr, uint16_
     msg->event_data.data.ble_packet_receive.private_cid = private_cid;
     gap_send_message(msg);
 }
-static void adapter_local_name_set_callback(char* bt_name, uint16_t len, SERVICE_BT_STATUS status)
-{
-    BT_LOGD("%s", __func__);
-    if (!bt_name)
-        BT_LOGD("name :%s", bt_name);
-}
 
 GAP_CALLBACKS_S g_gap_callback = {
     .size = sizeof(GAP_CALLBACKS_S),
@@ -791,7 +775,7 @@ bt_result_code gap_disable(bool normal_disable)
 
 bt_result_code bts_set_local_name(char* bt_name, uint8_t len)
 {
-    return gap_update_device_name((unsigned char*)bt_name, len);
+    return gap_bt_update_name(bt_name, len);
 }
 
 bt_result_code bts_set_local_address(bt_device_t* device)

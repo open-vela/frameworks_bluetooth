@@ -38,18 +38,14 @@
 #include "stack_adapter_gap.h"
 #include "utils.h"
 
-#ifndef MAX_BONDED_DEVICES_SUPPORTED
-#define MAX_BONDED_DEVICES_SUPPORTED 5
-#endif
-
 #define BT_DEFAULT_DEVICE_CLASS (BT_COD_SERVICE_CAPTURING | BT_COD_SERVICE_AUDIO | BT_COD_WERABLE_WATCH)
 #define BT_DEFAULT_IO_CAPABILITY (SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT)
 
-#define BT_DEFAULT_NAME_PREFIX "XIAOMI WATCH L61"
-#define BT_DEFAULT_FILE_NAME "/data/misc/bt/bt_device.db"
-#define BT_USER_FILE_NAME "/data//misc/bt/bt_device2.db"
-#define BT_APP_INFO_FILE_NAME "/data//misc/bt/bt_storage.db"
-#define LE_APP_INFO_FILE_NAME "/data//misc/bt/le_storage.db"
+#define BT_DEFAULT_NAME_PREFIX "XIAOMI VELA"
+#define BT_DEFAULT_FILE_NAME "/data/misc/bt/bt_default.db"
+#define BT_USER_FILE_NAME "/data/misc/bt/bt_user.db"
+#define BT_APP_INFO_FILE_NAME "/data/misc/bt/bt_app.db"
+#define LE_APP_INFO_FILE_NAME "/data/misc/bt/le_app.db"
 
 #ifndef BT_DEVICE_NAME_MAX_LEN
 #define BT_DEVICE_NAME_MAX_LEN 248
@@ -60,302 +56,707 @@ typedef struct {
     char bt_name[BT_DEVICE_NAME_MAX_LEN];
 } bt_device_info_t;
 
+typedef enum {
+    STORAGE_TYPE_BT,
+    STORAGE_TYPE_BLE,
+} storage_type;
+
 typedef struct {
-    /* Basic information to save */
     uint32_t size;
+    uint32_t check_sum;
     uint8_t spk_volume;
     uint8_t mic_volume;
     uint16_t bonded_number;
-    SERVICE_REMOTE_DEVICE_S bonded_devices[MAX_BONDED_DEVICES_SUPPORTED];
-    uint32_t check_sum;
-    /* More items to be added from here for future extension */
+    storage_type type;
+    void* bonded_devices;
 } bt_storage_t;
 
-typedef struct {
-    /* Basic information to save */
+typedef void (*gap_on_open)(uv_fs_t* req);
+typedef void (*gap_on_read)(uv_fs_t* req);
+typedef void (*gap_on_write)(uv_fs_t* req);
+typedef void (*gap_on_close)(uv_fs_t* req);
+typedef void (*gap_on_clean)(uv_fs_t* req);
+typedef void (*gap_on_except)(uv_fs_t* req);
+
+typedef struct gap_bt_uv_ops {
+    gap_on_open on_open;
+    gap_on_write on_write;
+    gap_on_read on_read;
+    gap_on_close on_close;
+    gap_on_clean on_clean;
+    gap_on_except on_except;
+
+    uv_fs_t open_req;
+    uv_fs_t read_req;
+    uv_fs_t write_req;
+    uv_fs_t close_req;
+    uv_fs_t clean_req;
+    uv_fs_t except_req;
+
+    uv_buf_t iov;
+    uv_fs_t data;
+} gap_bt_uv_ops;
+
+static void gap_bt_device_load(const char* file);
+
+static bt_device_info_t current_bt_device_info;
+
+static void gap_bt_uv_op_on_open(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    if (req->result < 0) {
+        if (ops->on_except) {
+            ops->except_req.data = ops;
+            ops->on_except(&ops->except_req);
+        } else {
+            BT_LOGW(" open file: %s", uv_strerror((int)req->result));
+            ops->clean_req.data = ops;
+            ops->on_clean(&ops->clean_req);
+        }
+        return;
+    }
+
+    ops->open_req.data = ops;
+    ops->on_open(&ops->open_req);
+}
+
+static void gap_bt_uv_op_on_read(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    if (req->result < 0) {
+        BT_LOGE("Read error: %s", uv_strerror(req->result));
+        ops->clean_req.data = ops;
+        ops->on_clean(&ops->clean_req);
+        return;
+    }
+
+    if (req->result == 0) {
+        BT_LOGD("read eof");
+        ops->clean_req.data = ops;
+        ops->on_clean(&ops->clean_req);
+        return;
+    }
+
+    ops->read_req.data = ops;
+    ops->on_read(&ops->read_req);
+}
+
+static void gap_bt_uv_op_on_write(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    if (req->result < 0) {
+        BT_LOGE("Write error: %s", uv_strerror((int)req->result));
+        ops->clean_req.data = ops;
+        ops->on_clean(&ops->clean_req);
+        return;
+    }
+
+    ops->write_req.data = ops;
+    ops->on_write(&ops->write_req);
+}
+
+static void gap_bt_uv_op_on_close(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+    ops->close_req.data = ops;
+    ops->on_close(&ops->close_req);
+}
+
+static void gap_bt_uv_op_on_clean(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+    ops->clean_req.data = ops;
+    ops->on_clean(&ops->clean_req);
+}
+
+static void gap_bt_name_update_on_clean(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+    uv_fs_req_cleanup(&ops->open_req);
+    uv_fs_req_cleanup(&ops->write_req);
+    uv_fs_req_cleanup(&ops->close_req);
+    free(ops);
+}
+
+static void gap_bt_name_update_on_close(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->clean_req.data = ops;
+    gap_bt_uv_op_on_clean(&ops->clean_req);
+}
+
+static void gap_bt_name_update_on_write(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->close_req.data = ops;
+    uv_fs_close(get_service_loop(), &ops->close_req, ops->open_req.result, gap_bt_uv_op_on_close);
+}
+
+static void gap_bt_name_update_on_open(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->iov = uv_buf_init((char*)&current_bt_device_info, sizeof(bt_device_info_t));
+    ops->write_req.data = ops;
+    uv_fs_write(get_service_loop(), &ops->write_req, ops->open_req.result, &ops->iov, 1, 0, gap_bt_uv_op_on_write);
+}
+
+bt_result_code gap_bt_update_name(char* name, uint8_t size)
+{
+    BT_LOGD("%s", __func__);
+    if (size > BT_DEVICE_NAME_MAX_LEN) {
+        BT_LOGE("bt_name len%d too long", size);
+        return BT_RESULT_FAILED;
+    }
+
+    SERVICE_BT_STATUS ret = service_adapter_gap_set_local_name(name, size);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGD("set_local_name failed: %d", ret);
+        return BT_RESULT_FAILED;
+    }
+
+    gap_bt_uv_ops* ops = malloc(sizeof(gap_bt_uv_ops));
+    if (!ops) {
+        BT_LOGE("malloc");
+        return BT_RESULT_FAILED;
+    }
+    memset(ops, 0, sizeof(gap_bt_uv_ops));
+    ops->on_open = gap_bt_name_update_on_open;
+    ops->on_write = gap_bt_name_update_on_write;
+    ops->on_close = gap_bt_name_update_on_close;
+    ops->on_clean = gap_bt_name_update_on_clean;
+    ops->open_req.data = ops;
+    memcpy(current_bt_device_info.bt_name, name, size);
+
+    int rc = uv_fs_open(get_service_loop(), &ops->open_req, BT_USER_FILE_NAME, O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR, gap_bt_uv_op_on_open);
+    if (rc < 0) {
+        ops->clean_req.data = ops;
+        gap_bt_uv_op_on_clean(&ops->clean_req);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
+static void gap_bt_device_load_on_clean(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+    uv_fs_req_cleanup(&ops->open_req);
+    uv_fs_req_cleanup(&ops->read_req);
+    uv_fs_req_cleanup(&ops->close_req);
+    free(ops);
+}
+
+static void gap_bt_device_load_on_close(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->clean_req.data = ops;
+    gap_bt_uv_op_on_clean(&ops->clean_req);
+}
+
+static void gap_bt_device_load_on_except(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+    ops->clean_req.data = ops;
+    ops->on_clean(&ops->clean_req);
+
+    gap_bt_device_load(BT_DEFAULT_FILE_NAME);
+}
+
+static void gap_bt_device_load_on_read(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    BT_LOGD("bt name:%s", current_bt_device_info.bt_name);
+    BT_LOGD("io_capability:%d", current_bt_device_info.io_capability);
+
+    SERVICE_BT_STATUS ret = service_adapter_gap_set_local_device_class(current_bt_device_info.device_class);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("set_local_device_class failed: %d", ret);
+    }
+
+    ret = service_adapter_gap_set_local_io_capability(current_bt_device_info.io_capability);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("set_local_io_capability failed: %d", ret);
+    }
+
+    ret = service_adapter_gap_set_local_name(current_bt_device_info.bt_name, strlen(current_bt_device_info.bt_name) + 1);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGD("set_local_name failed: %d", ret);
+    }
+
+    ops->close_req.data = ops;
+    uv_fs_close(get_service_loop(), &ops->close_req, ops->open_req.result, gap_bt_uv_op_on_close);
+}
+
+static void gap_bt_device_load_on_open(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->iov = uv_buf_init((char*)&current_bt_device_info, sizeof(bt_device_info_t));
+    ops->read_req.data = ops;
+    uv_fs_read(get_service_loop(), &ops->read_req, req->result, &ops->iov, 1, -1, gap_bt_uv_op_on_read);
+}
+
+static void gap_bt_device_load(const char* file)
+{
+    gap_bt_uv_ops* ops = malloc(sizeof(gap_bt_uv_ops));
+    if (!ops) {
+        BT_LOGE("malloc");
+        return;
+    }
+    memset(ops, 0, sizeof(gap_bt_uv_ops));
+    ops->on_open = gap_bt_device_load_on_open;
+    ops->on_read = gap_bt_device_load_on_read;
+    ops->on_close = gap_bt_device_load_on_close;
+    ops->on_clean = gap_bt_device_load_on_clean;
+    ops->on_except = gap_bt_device_load_on_except;
+    ops->open_req.data = ops;
+
+    int rc = uv_fs_open(get_service_loop(), &ops->open_req, file, O_RDONLY, S_IWUSR | S_IRUSR, gap_bt_uv_op_on_open);
+    if (rc < 0) {
+        BT_LOGE("fail, open file %s failed", file);
+        ops->clean_req.data = ops;
+        gap_bt_uv_op_on_clean(&ops->clean_req);
+        return;
+    }
+}
+
+static void gap_bt_init_device_info(void)
+{
+    BT_LOGD("%s", __func__);
+    gap_bt_device_load(BT_USER_FILE_NAME);
+}
+
+static void gap_bt_factory_update_on_clean(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+    uv_fs_req_cleanup(&ops->open_req);
+    uv_fs_req_cleanup(&ops->write_req);
+    uv_fs_req_cleanup(&ops->close_req);
+    free(ops->data.data);
+    free(ops);
+}
+
+static void gap_bt_factory_update_on_close(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->clean_req.data = ops;
+    gap_bt_uv_op_on_clean(&ops->clean_req);
+    gap_bt_init_device_info();
+}
+
+static void gap_bt_factory_update_on_write(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->close_req.data = ops;
+    uv_fs_close(get_service_loop(), &ops->close_req, ops->open_req.result, gap_bt_uv_op_on_close);
+}
+
+static void gap_bt_factory_update_on_open(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    bt_device_info_t* default_device_info = (bt_device_info_t*)malloc(sizeof(bt_device_info_t));
+    memset(default_device_info, 0, sizeof(default_device_info));
+    default_device_info->device_class = BT_DEFAULT_DEVICE_CLASS;
+    default_device_info->io_capability = BT_DEFAULT_IO_CAPABILITY;
+
+    srand(time(NULL));
+    int r = rand() % 999;
+    sprintf(default_device_info->bt_name, "%s-%03X", BT_DEFAULT_NAME_PREFIX, r);
+    ops->data.data = default_device_info;
+
+    ops->iov = uv_buf_init((char*)default_device_info, sizeof(bt_device_info_t));
+    ops->write_req.data = ops;
+
+    memcpy(&current_bt_device_info, default_device_info, sizeof(bt_device_info_t));
+    uv_fs_write(get_service_loop(), &ops->write_req, ops->open_req.result, &ops->iov, 1, -1, gap_bt_uv_op_on_write);
+}
+
+bt_result_code gap_bluetooth_device_init(void)
+{
+    BT_LOGD("%s", __func__);
+    uv_fs_t req;
+    int rc = uv_fs_access(get_service_loop(), &req, BT_DEFAULT_FILE_NAME, F_OK, NULL);
+    if (!rc) {
+        uv_fs_req_cleanup(&req);
+        BT_LOGD("bt default  device exist");
+        gap_bt_init_device_info();
+        return BT_RESULT_SUCCESS;
+    }
+    uv_fs_req_cleanup(&req);
+
+    gap_bt_uv_ops* ops = malloc(sizeof(gap_bt_uv_ops));
+    if (!ops) {
+        BT_LOGE("malloc");
+        return BT_RESULT_FAILED;
+    }
+    memset(ops, 0, sizeof(gap_bt_uv_ops));
+    ops->on_open = gap_bt_factory_update_on_open;
+    ops->on_write = gap_bt_factory_update_on_write;
+    ops->on_close = gap_bt_factory_update_on_close;
+    ops->on_clean = gap_bt_factory_update_on_clean;
+    ops->open_req.data = ops;
+
+    rc = uv_fs_open(get_service_loop(), &ops->open_req, BT_DEFAULT_FILE_NAME, O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR | S_IRUSR, gap_bt_uv_op_on_open);
+    if (rc < 0) {
+        ops->clean_req.data = ops;
+        gap_bt_uv_op_on_clean(&ops->clean_req);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
+static void gap_bt_bond_store_on_clean(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+    uv_fs_req_cleanup(&ops->open_req);
+    uv_fs_req_cleanup(&ops->write_req);
+    uv_fs_req_cleanup(&ops->close_req);
+    free(ops->data.data);
+    free(ops);
+}
+
+static void gap_bt_bond_store_on_open(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    bt_storage_t* storage = (bt_storage_t*)ops->data.data;
+    ops->iov = uv_buf_init((char*)storage, storage->size);
+    ops->write_req.data = ops;
+    uv_fs_write(get_service_loop(), &ops->write_req, ops->open_req.result, &ops->iov, 1, -1, gap_bt_uv_op_on_write);
+}
+
+static void gap_bt_bond_store_on_write(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->close_req.data = ops;
+    uv_fs_close(get_service_loop(), &ops->close_req, ops->open_req.result, gap_bt_uv_op_on_close);
+}
+
+static void gap_bt_bond_store_on_close(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->clean_req.data = ops;
+    gap_bt_uv_op_on_clean(&ops->clean_req);
+}
+
+static bt_storage_t* gap_bt_get_bonded_devices(void)
+{
+    int bonded_number = service_adapter_gap_get_bonded_devices(NULL, 0);
+    uint32_t size = sizeof(bt_storage_t) - sizeof(void*) + sizeof(SERVICE_REMOTE_DEVICE_S) * bonded_number;
+    bt_storage_t* bt_storage = malloc(size);
+    if (!bt_storage) {
+        BT_LOGE("fail, bt_storage nullptr");
+        return NULL;
+    }
+    memset(bt_storage, 0, size);
+    bt_storage->type = STORAGE_TYPE_BT;
+    bt_storage->bonded_number = bonded_number;
+    SERVICE_REMOTE_DEVICE_S* device = (void*)((uint8_t*)bt_storage + sizeof(bt_storage_t) - sizeof(void*));
+    service_adapter_gap_get_bonded_devices(device, bonded_number);
+    bt_storage->size = size;
+    bt_storage->check_sum = bt_storage->size + bt_storage->bonded_number;
+    return bt_storage;
+}
+
+static void gap_bluetooth_bond_store(bt_storage_t* bt_storage, const char* file)
+{
+    gap_bt_uv_ops* ops = malloc(sizeof(gap_bt_uv_ops));
+    if (!ops) {
+        BT_LOGE("malloc");
+        return;
+    }
+    memset(ops, 0, sizeof(gap_bt_uv_ops));
+    ops->on_open = gap_bt_bond_store_on_open;
+    ops->on_write = gap_bt_bond_store_on_write;
+    ops->on_close = gap_bt_bond_store_on_close;
+    ops->on_clean = gap_bt_bond_store_on_clean;
+    ops->open_req.data = ops;
+    ops->data.data = bt_storage;
+
+    int rc = uv_fs_open(get_service_loop(), &ops->open_req, file, O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR | S_IRUSR, gap_bt_uv_op_on_open);
+    if (rc < 0) {
+        BT_LOGE("failed to open:%s", file);
+        ops->clean_req.data = ops;
+        gap_bt_uv_op_on_clean(&ops->clean_req);
+        return;
+    }
+}
+
+void gap_bt_bond_store(void)
+{
+    BT_LOGD("%s", __func__);
+    bt_storage_t* bt_storage = gap_bt_get_bonded_devices();
+    if (!bt_storage) {
+        BT_LOGE("fail, bt_storage  nullptr");
+        return;
+    }
+
+    gap_bluetooth_bond_store(bt_storage, BT_APP_INFO_FILE_NAME);
+}
+
+void gap_ble_bond_store(ble_keys_t* key, uint8_t count)
+{
+    BT_LOGD("%s", __func__);
+    uint32_t size = sizeof(bt_storage_t) - sizeof(void*) + sizeof(ble_keys_t) * count;
+    bt_storage_t* bt_storage = malloc(size);
+    if (!bt_storage) {
+        BT_LOGE("fail, bt_storage nullptr");
+        return;
+    }
+    memset(bt_storage, 0, size);
+    bt_storage->type = STORAGE_TYPE_BLE;
+    bt_storage->bonded_number = count;
+
+    ble_keys_t* keys = (void*)((uint8_t*)bt_storage + sizeof(bt_storage_t) - sizeof(void*));
+    for (int i = 0; i < count; i++) {
+        memcpy(keys + i, key + i, sizeof(ble_keys_t));
+    }
+    bt_storage->size = size;
+    bt_storage->check_sum = bt_storage->size + bt_storage->bonded_number;
+
+    gap_bluetooth_bond_store(bt_storage, LE_APP_INFO_FILE_NAME);
+}
+
+static void gap_bt_bond_load_on_clean(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+    uv_fs_req_cleanup(&ops->open_req);
+    uv_fs_req_cleanup(&ops->read_req);
+    uv_fs_req_cleanup(&ops->close_req);
+    free(ops->data.data);
+    free(ops);
+}
+
+static void gap_bt_bond_load_on_open(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->read_req.data = ops;
     uint32_t size;
-    uint16_t bonded_number;
-    ble_keys_t bonded_devices[MAX_BONDED_DEVICES_SUPPORTED];
-    uint32_t check_sum;
-    /* More items to be added from here for future extension */
-} le_storage_t;
+    ops->iov = uv_buf_init((char*)&size, sizeof(uint32_t));
+    uv_fs_read(get_service_loop(), &ops->read_req, req->result, &ops->iov, 1, -1, NULL);
 
-//#define BT_DEBUG_BLE_BOND_INFO 1
+    BT_LOGD("%s  size:%ld", __func__, size);
 
-#ifdef BT_DEBUG_BLE_BOND_INFO
-struct HCI_AddressStru {
-    uint8_t bd[BT_ADDR_LENGTH]; /* 6octets, 48bits */
-    uint8_t atype; /* etc, HCI_OWN_ADDRESS_TYPE_PUBLIC_DEVICE_ADDRESS = HCI_PEER_ADDRESS_TYPE_PUBLIC_DEVICE_ADDRESS */
-    uint8_t cap; /* etc, HCI_ADDRESS_CAP_LE, reserved for compatibility only. */
-};
-
-struct SMP_KeyStru { /* Master role security database */
-    uint8_t ltk_len; /* as Security Level, both side share this length, by pairing_request and response min */
-    uint8_t fea; /* etc, SMP_KEYFEA_ECDH */
-
-    /* Local sent to remote information */
-    uint8_t div[2]; /* 16bits, 2octets, Peripherial(slave) distributed DIV for remote(Master) */
-
-    /* Remote sent to local, or LESC derived on both sides */
-    uint8_t ltk[16]; /* corresponding to Public/Static address or IRK(RPA) */
-    uint8_t ediv[2]; /* eDIV and Rand are only used in legacy LTK encryption(no LESC) */
-    uint8_t rand[8]; /* Encryption keys */
-    uint8_t irk[16]; /* Resolveable address */
-    uint8_t csrk[16]; /* Signature, CSRK_DECODE. CSRK_ENCODE is generated by d1(ER, DIV, 1) locally */
-};
-
-struct SMP_KeyStoreStru { /* Keys that indexes by addr */
-    struct HCI_AddressStru addr; /* peer address, FIXME, is dule-mode? */
-    struct SMP_KeyStru key; /* Bonding information */
-};
-
-typedef struct {
-    struct SMP_KeyStoreStru keys;
-    struct HCI_AddressStru ui_addr; /* Address for UI consistency */
-} ADPT_LE_KEYS_S;
-#endif
-
-static size_t file_write_buffer(const char* filename, void* data, size_t size)
-{
-    FILE* file = fopen(filename, "wb+");
-    if (!file) {
-        return 0;
-    }
-    size_t ret = fwrite(data, sizeof(uint8_t), size, file);
-    if (ret != size) {
-        return 0;
-    }
-    fflush(file);
-    fclose(file);
-    return ret;
+    bt_storage_t* bt_info = (bt_storage_t*)malloc(size);
+    memset(bt_info, 0, size);
+    ops->data.data = bt_info;
+    ops->iov = uv_buf_init((char*)bt_info, size);
+    uv_fs_read(get_service_loop(), &ops->read_req, req->result, &ops->iov, 1, 0, gap_bt_uv_op_on_read);
 }
 
-static size_t file_read_buffer(const char* filename, void* data, uint32_t size)
+static void gap_btstack_set_bt_bond_device(bt_storage_t* bt_storage)
 {
-    FILE* file = fopen(filename, "rb");
-    if (file == NULL) {
-        return 0;
-    }
-
-    size_t size_read = fread(data, sizeof(uint8_t), size, file);
-    fclose(file);
-    return size_read;
-}
-
-void gap_read_data_storage(void)
-{
-    bt_storage_t app_info;
-    memset(&app_info, 0, sizeof(bt_storage_t));
-    size_t size = file_read_buffer(BT_APP_INFO_FILE_NAME, &app_info, sizeof(bt_storage_t));
-    if (size != sizeof(bt_storage_t)) {
+    if (!bt_storage) {
+        BT_LOGE("fail, bt_storage is NULL");
         return;
     }
 
-    if (app_info.size != sizeof(bt_storage_t)) {
-        BT_LOGE("invalid size:%ld", app_info.size);
-        return;
-    }
-    if (app_info.check_sum != (app_info.size + app_info.bonded_number)) {
-        BT_LOGE("invalid check_sum:%ld", app_info.check_sum);
-        return;
-    }
-    if (app_info.bonded_number > MAX_BONDED_DEVICES_SUPPORTED) {
-        BT_LOGE(" bonded_number:%d overflow", app_info.bonded_number);
+    if (bt_storage->check_sum != (bt_storage->size + bt_storage->bonded_number)) {
+        BT_LOGE("invalid check_sum:%ld", bt_storage->check_sum);
         return;
     }
 
-    for (int i = 0; i < app_info.bonded_number; i++) {
-        SERVICE_BT_STATUS ret = service_adapter_gap_set_bonded_device(app_info.bonded_devices + i);
+    SERVICE_REMOTE_DEVICE_S* device = (SERVICE_REMOTE_DEVICE_S*)((uint8_t*)bt_storage + sizeof(bt_storage_t) - sizeof(void*));
+    for (int i = 0; i < bt_storage->bonded_number; i++) {
+        SERVICE_BT_STATUS ret = service_adapter_gap_set_bonded_device(device + i);
         if (ret != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE(" service_adapter_gap_set_bonded_device failed: %d", ret);
         }
     }
 }
 
-void gap_update_data_storage(void)
+static void gap_btstack_set_ble_bond_device(bt_storage_t* bt_storage)
 {
-    bt_storage_t app_info;
-    memset(&app_info, 0, sizeof(bt_storage_t));
-    app_info.size = sizeof(bt_storage_t);
-    app_info.bonded_number = (uint16_t)service_adapter_gap_get_bonded_devices(app_info.bonded_devices, MAX_BONDED_DEVICES_SUPPORTED);
-    app_info.check_sum = app_info.size + app_info.bonded_number;
-    size_t size = file_write_buffer(BT_APP_INFO_FILE_NAME, &app_info, sizeof(bt_storage_t));
-    if (size != sizeof(bt_storage_t)) {
-        BT_LOGE("fail,  %s err: %s", __func__, strerror(errno));
-        return;
-    }
-}
-
-void gap_read_le_storage(void)
-{
-    le_storage_t app_info;
-    memset(&app_info, 0, sizeof(le_storage_t));
-    size_t size = file_read_buffer(LE_APP_INFO_FILE_NAME, &app_info, sizeof(le_storage_t));
-    if (size != sizeof(le_storage_t)) {
+    if (!bt_storage) {
+        BT_LOGE("fail, bt_storage is NULL");
         return;
     }
 
-    if (app_info.size != sizeof(le_storage_t)) {
-        BT_LOGE("invalid size:%ld", app_info.size);
+    if (bt_storage->check_sum != (bt_storage->size + bt_storage->bonded_number)) {
+        BT_LOGE("invalid check_sum:%ld", bt_storage->check_sum);
         return;
     }
-    if (app_info.check_sum != (app_info.size + app_info.bonded_number)) {
-        BT_LOGE("invalid check_sum:%ld", app_info.check_sum);
-        return;
-    }
-    if ((app_info.bonded_number > MAX_BONDED_DEVICES_SUPPORTED) || (app_info.bonded_number == 0)) {
-        BT_LOGE(" bonded_number:%d ", app_info.bonded_number);
+    if (bt_storage->bonded_number == 0) {
+        BT_LOGW(" bonded_number %d ", bt_storage->bonded_number);
         return;
     }
 
-#ifdef BT_DEBUG_BLE_BOND_INFO
-    ble_keys_t* bonded_device_list = app_info.bonded_devices;
-    for (int index = 0; index < app_info.bonded_number; index++) {
-        BT_LOGE("%s###device[%d]", __func__, index);
-        ADPT_LE_KEYS_S* key = (ADPT_LE_KEYS_S*)(bonded_device_list->smp_keys);
-        BT_LOGE("ui_addr->bd:%s, atype:0x%0X, cap:0x%0X", addr_str(key->ui_addr.bd), key->ui_addr.atype, key->ui_addr.cap);
-        BT_LOGE("keys->addr->bd:%s, atype:0x%0X, cap:0x%0X", addr_str(key->keys.addr.bd), key->keys.addr.atype, key->keys.addr.cap);
-        BT_LOGE("keys->key:");
-        BT_HEXDUMP(&(key->keys.key), sizeof(struct SMP_KeyStru));
-        bonded_device_list++;
-    }
-#endif
-
-    BT_LOGD("%s", __func__);
-    SERVICE_BT_STATUS ret = service_adapter_gap_ble_set_bonded_devices((SERVICE_BLE_KEYS_S*)(app_info.bonded_devices), app_info.bonded_number);
+    ble_keys_t* keys = (ble_keys_t*)((uint8_t*)bt_storage + sizeof(bt_storage_t) - sizeof(void*));
+    SERVICE_BT_STATUS ret = service_adapter_gap_ble_set_bonded_devices((SERVICE_BLE_KEYS_S*)keys, bt_storage->bonded_number);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE(" service_adapter_gap_set_le_bonded_device failed: %d", ret);
         return;
     }
 }
 
-void gap_update_le_storage(ble_keys_t* key, uint8_t count)
+static void gap_bt_bond_load_on_read(uv_fs_t* req)
 {
-    le_storage_t app_info;
-    memset(&app_info, 0, sizeof(le_storage_t));
-    app_info.size = sizeof(le_storage_t);
-    app_info.bonded_number = count;
-
-    if (count > MAX_BONDED_DEVICES_SUPPORTED) {
-        BT_LOGE("ble bond save fail, count(%d) overflowed(max :%d)", count, MAX_BONDED_DEVICES_SUPPORTED);
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
         return;
     }
-    if (0 != count) {
-        memcpy(app_info.bonded_devices, key, count * sizeof(ble_keys_t));
-    }
-    app_info.check_sum = app_info.size + app_info.bonded_number;
 
-#ifdef BT_DEBUG_BLE_BOND_INFO
-    ble_keys_t* bonded_device_list = app_info.bonded_devices;
-    for (int index = 0; index < count; index++) {
-        BT_LOGE("%s###device[%d]", __func__, index);
-        ADPT_LE_KEYS_S* smp_keys = (ADPT_LE_KEYS_S*)(bonded_device_list->smp_keys);
-        BT_LOGE("ui_addr->bd:%s, atype:0x%0X, cap:0x%0X", addr_str(smp_keys->ui_addr.bd), smp_keys->ui_addr.atype, smp_keys->ui_addr.cap);
-        BT_LOGE("keys->addr->bd:%s, atype:0x%0X, cap:0x%0X", addr_str(smp_keys->keys.addr.bd), smp_keys->keys.addr.atype, smp_keys->keys.addr.cap);
-        BT_LOGE("keys->key:");
-        BT_HEXDUMP(&(smp_keys->keys.key), sizeof(struct SMP_KeyStru));
-        bonded_device_list++;
+    bt_storage_t* bt_info = (bt_storage_t*)(ops->data.data);
+    if (bt_info->type == STORAGE_TYPE_BT) {
+        gap_btstack_set_bt_bond_device(bt_info);
+    } else if (bt_info->type == STORAGE_TYPE_BLE) {
+        gap_btstack_set_ble_bond_device(bt_info);
+    } else {
+        BT_LOGE("fail, unknown storage type")
     }
-#endif
 
-    size_t size = file_write_buffer(LE_APP_INFO_FILE_NAME, &app_info, sizeof(le_storage_t));
-    if (size != sizeof(le_storage_t)) {
-        BT_LOGE("fail,  %s err: %s", __func__, strerror(errno));
+    ops->close_req.data = ops;
+    uv_fs_close(get_service_loop(), &ops->close_req, ops->open_req.result, gap_bt_uv_op_on_close);
+}
+
+static void gap_bt_bond_load_on_close(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->clean_req.data = ops;
+    gap_bt_uv_op_on_clean(&ops->clean_req);
+}
+
+static void gap_bt_bond_load(const char* file)
+{
+    gap_bt_uv_ops* ops = malloc(sizeof(gap_bt_uv_ops));
+    if (!ops) {
+        BT_LOGE("malloc");
+        return;
+    }
+    memset(ops, 0, sizeof(gap_bt_uv_ops));
+    ops->on_open = gap_bt_bond_load_on_open;
+    ops->on_read = gap_bt_bond_load_on_read;
+    ops->on_close = gap_bt_bond_load_on_close;
+    ops->on_clean = gap_bt_bond_load_on_clean;
+    ops->open_req.data = ops;
+
+    int rc = uv_fs_open(get_service_loop(), &ops->open_req, file, O_RDONLY, S_IWUSR | S_IRUSR, gap_bt_uv_op_on_open);
+    if (rc < 0) {
+        BT_LOGE(" failed to open file:%s", file)
+        ops->clean_req.data = ops;
+        gap_bt_uv_op_on_clean(&ops->clean_req);
         return;
     }
 }
 
-bt_result_code gap_create_factory_info(bool force)
+void gap_bluetooth_bond_init(void)
 {
-    BT_LOGD("%s force:%d", __func__, force);
-    if (!access(BT_DEFAULT_FILE_NAME, F_OK) && !force) {
-        BT_LOGD("factory exist");
-        return BT_RESULT_SUCCESS;
-    }
-
-    bt_device_info_t default_device_info = {
-        .device_class = BT_DEFAULT_DEVICE_CLASS,
-        .io_capability = BT_DEFAULT_IO_CAPABILITY,
-    };
-    memset(default_device_info.bt_name, 0, BT_DEVICE_NAME_MAX_LEN);
-    srand(time(NULL));
-    int r = rand() % 999;
-    sprintf(default_device_info.bt_name, "%s-%03X", BT_DEFAULT_NAME_PREFIX, r);
-
-    size_t size = file_write_buffer(BT_DEFAULT_FILE_NAME, &default_device_info, sizeof(bt_device_info_t));
-    if (size != sizeof(bt_device_info_t)) {
-        BT_LOGE("fail,  %s err: %s", __func__, strerror(errno));
-        return BT_RESULT_FAILED;
-    }
-    return BT_RESULT_SUCCESS;
-}
-
-bt_result_code gap_update_device_name(char* bt_name, uint8_t len_name)
-{
-    if (len_name > BT_DEVICE_NAME_MAX_LEN) {
-        BT_LOGE("bt_name len%d too long", len_name);
-        return BT_RESULT_FAILED;
-    }
-    SERVICE_BT_STATUS ret = service_adapter_gap_set_local_name(bt_name, len_name);
-    if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGD("set_local_name failed: %d", ret);
-        return BT_RESULT_FAILED;
-    }
-
-    bt_device_info_t device_info;
-    memset(&device_info, 0, sizeof(bt_device_info_t));
-    size_t size = file_read_buffer(BT_DEFAULT_FILE_NAME, &device_info, sizeof(bt_device_info_t));
-    if (size != sizeof(bt_device_info_t)) {
-        BT_LOGE("fail,%s failed: %s", __func__, strerror(errno));
-        return BT_RESULT_FAILED;
-    }
-    memset(device_info.bt_name, 0, BT_DEVICE_NAME_MAX_LEN);
-    memcpy(device_info.bt_name, bt_name, len_name);
-
-    size = file_write_buffer(BT_USER_FILE_NAME, &device_info, sizeof(bt_device_info_t));
-    if (size != sizeof(bt_device_info_t)) {
-        BT_LOGE("file_write_buffer failed: %d", size);
-        return BT_RESULT_FAILED;
-    }
-    return BT_RESULT_SUCCESS;
-}
-
-bt_result_code gap_read_device_info(void)
-{
-    SERVICE_BT_STATUS ret;
-    bt_device_info_t device_info;
-    memset(&device_info, 0, sizeof(bt_device_info_t));
-    size_t size = file_read_buffer(BT_USER_FILE_NAME, &device_info, sizeof(bt_device_info_t));
-    if (size == sizeof(bt_device_info_t)) {
-        BT_LOGD("read user device info");
-        goto done;
-    }
-
-    BT_LOGW("user bt info(%s) invalid, read default bt info", BT_USER_FILE_NAME);
-    size = file_read_buffer(BT_DEFAULT_FILE_NAME, &device_info, sizeof(bt_device_info_t));
-    if (size == sizeof(bt_device_info_t)) {
-        BT_LOGD("read factory device info");
-        goto done;
-    }
-    return BT_RESULT_FAILED;
-
-done:
-    ret = service_adapter_gap_set_local_device_class(device_info.device_class);
-    if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("set_local_device_class failed: %d", ret);
-        return BT_RESULT_FAILED;
-    }
-
-    ret = service_adapter_gap_set_local_io_capability(device_info.io_capability);
-    if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("set_local_io_capability failed: %d", ret);
-        return BT_RESULT_FAILED;
-    }
-
-    ret = service_adapter_gap_set_local_name(device_info.bt_name, strlen(device_info.bt_name) + 1);
-    if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGD("set_local_name failed: %d", ret);
-        return BT_RESULT_FAILED;
-    }
-    return BT_RESULT_SUCCESS;
+    BT_LOGD("%s", __func__);
+    gap_bt_bond_load(BT_APP_INFO_FILE_NAME);
+    gap_bt_bond_load(LE_APP_INFO_FILE_NAME);
 }
