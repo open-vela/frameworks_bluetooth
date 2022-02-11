@@ -300,10 +300,8 @@ void stack_state_change(bt_service_state state)
 {
     service_state = state;
     if (BTM_STATE_ON == state) {
-        gap_create_factory_info(false);
-        gap_read_device_info();
-        gap_read_data_storage();
-        gap_read_le_storage();
+        gap_bluetooth_device_init();
+        gap_bluetooth_bond_init();
     }
     bluetooth_upper_callbacks->adapter_state_changed_cb(service_state);
 }
