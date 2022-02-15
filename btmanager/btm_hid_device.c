@@ -57,12 +57,12 @@ static void hidd_app_state_changed(void* hdl, uint8_t device_id, hid_app_state r
     }
 }
 
-static void on_bts_hidd_connection_state_changed(void* hdl, bt_address remote_addr, profile_connection_state state)
+static void on_bts_hidd_connection_state_changed(void* hdl, bt_address remote_addr, bool le_hid, profile_connection_state state)
 {
     BT_LOGD("PERFORMANCE-HID-DEV-PROFILE-BTM-CONNECTION-STATE:%d", state);
     btm_hidd_hdl_t* handle = (btm_hidd_hdl_t*)hdl;
     CHECK_PTR(handle);
-    BT_CBACK(handle->callbacks, hidd_connection_state_changed_cb, handle, remote_addr, state);
+    BT_CBACK(handle->callbacks, hidd_connection_state_changed_cb, handle, remote_addr, le_hid, state);
 }
 
 static bts_hid_device_callbacks bts_hidd_cb = {
@@ -156,12 +156,12 @@ static bt_result_code hidd_unplug(void* hdl, bt_address remote_addr)
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code hidd_send_report(void* hdl, uint8_t report_id, uint8_t* buffer, size_t size)
+static bt_result_code hidd_send_report(void* hdl, bt_address remote_addr, uint8_t report_id, uint8_t* buffer, size_t size)
 {
     btm_hidd_hdl_t* handle = (btm_hidd_hdl_t*)hdl;
     CHECK_PTR_RETURN(hidd_interface, BT_RESULT_STATE_NOT_ON);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    bt_result_code ret = hidd_interface->send_report(handle->device_id, report_id, buffer, size);
+    bt_result_code ret = hidd_interface->send_report(handle->device_id, remote_addr, report_id, buffer, size);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail,send_report err:%d", ret);
         return ret;

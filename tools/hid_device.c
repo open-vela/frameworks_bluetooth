@@ -270,9 +270,9 @@ static void on_hidd_device_state_changed_callback(void* handle, hid_app_state re
     }
 }
 
-static void on_hidd_connection_state_changed_callback(void* handle, bt_address remote_addr, profile_connection_state state)
+static void on_hidd_connection_state_changed_callback(void* handle, bt_address remote_addr, bool le_hid, profile_connection_state state)
 {
-    BT_LOGD("%s addr:[%s], state:%d", __func__, addr_str(remote_addr), state);
+    BT_LOGD("%s addr:[%s],le_hid:%d,  state:%d", __func__, addr_str(remote_addr), le_hid, state);
     if (state == PROFILE_CONNECTED) {
         hidd_device_t* device = find_hidd_device(remote_addr);
         if (!device) { //Connect from peer
@@ -464,7 +464,7 @@ static int hidd_send_report(void* handle, int argc, char** argv)
     uint8_t buf[8];
     memset(buf, 0, sizeof(buf));
     hex2str(buffer, buf, size / 2);
-    bt_result_code ret = hidd_interface->send_report(hidd_handle, report_id, buf, size / 2);
+    bt_result_code ret = hidd_interface->send_report(hidd_handle, remote_address, report_id, buf, size / 2);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, send_report  ret: %d", ret);
         return 0;

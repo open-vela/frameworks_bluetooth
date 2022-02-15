@@ -38,7 +38,7 @@
 #include "btm_manager.h"
 
 typedef void (*btm_hidd_device_state_changed_callback)(void* handle, hid_app_state registered);
-typedef void (*btm_hidd_connection_state_changed_callback)(void* handle, bt_address remote_addr, profile_connection_state state);
+typedef void (*btm_hidd_connection_state_changed_callback)(void* handle, bt_address remote_addr, bool le_hid, profile_connection_state state);
 
 typedef struct {
     btm_hidd_device_state_changed_callback hidd_app_state_changed_cb;
@@ -53,7 +53,7 @@ typedef struct {
     bt_result_code (*unregister_device)(void* handle);
     bt_result_code (*connect)(void* handle, bt_address remote_addr);
     bt_result_code (*disconnect)(void* handle, bt_address remote_addr);
-    bt_result_code (*send_report)(void* handle, uint8_t report_id, uint8_t* buffer, size_t size);
+    bt_result_code (*send_report)(void* handle, bt_address remote_addr, uint8_t report_id, uint8_t* buffer, size_t size);
     bt_result_code (*unplug)(void* handle, bt_address remote_addr);
 } btm_hid_device_interface_t;
 
