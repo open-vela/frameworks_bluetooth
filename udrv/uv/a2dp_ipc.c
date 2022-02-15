@@ -207,8 +207,6 @@ a2dp_ipc_t* a2dp_ipc_init(uv_loop_t* loop)
         a2dp->ch[i].event_cb = NULL;
     }
 
-    BT_LOGD("%s success", __func__);
-
     return a2dp;
 }
 

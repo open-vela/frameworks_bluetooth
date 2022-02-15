@@ -106,13 +106,14 @@ static const a2dp_source_interface_t a2dpSourceSvrInterface = {
 
 bt_result_code a2dp_source_service_start(void)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("A2dp Source Service Started");
     return bts_a2dp_source_init(&a2dp_callbacks);
 }
 
 void a2dp_source_service_stop(void)
 {
     bts_a2dp_source_cleanup();
+    BT_LOGD("A2dp Source Service Stoped");
 }
 
 const a2dp_source_interface_t* get_a2dp_source_service_interface(void)

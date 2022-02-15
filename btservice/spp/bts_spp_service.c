@@ -105,7 +105,6 @@ static spp_interface_t sppInterface = {
 bt_result_code spp_service_start(void)
 {
     bt_result_code ret;
-    BT_LOGD("%s", __func__);
 
     ret = bts_spp_init(&spp_service_cbs);
     if (ret != BT_RESULT_SUCCESS) {
@@ -113,14 +112,14 @@ bt_result_code spp_service_start(void)
         return ret;
     }
 
-    BT_LOGD("Spp Service started");
+    BT_LOGD("Spp Service Started");
     return ret;
 }
 
 void spp_service_stop(void)
 {
     bts_spp_cleanup();
-    BT_LOGD("Spp Service stoped");
+    BT_LOGD("Spp Service Stoped");
 }
 
 spp_interface_t* get_spp_service_interface(void)
