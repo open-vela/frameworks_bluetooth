@@ -43,7 +43,7 @@
 #define XK_XKB_KEYS 1
 
 typedef void (*bts_hidd_app_state_changed_callback)(void* handle, uint8_t device_id, hid_app_state registered);
-typedef void (*bts_hidd_connection_state_changed_callback)(void* handle, bt_address remote_addr, profile_connection_state state);
+typedef void (*bts_hidd_connection_state_changed_callback)(void* handle, bt_address remote_addr, bool le_hid, profile_connection_state state);
 
 typedef struct {
     bts_hidd_app_state_changed_callback bts_hidd_app_state_changed_cb;
@@ -68,7 +68,7 @@ typedef struct {
     bt_result_code (*unregister_device)(uint16_t device_id);
     bt_result_code (*connect)(uint16_t device_id, bt_address remote_addr);
     bt_result_code (*disconnect)(uint8_t device_id, bt_address remote_addr);
-    bt_result_code (*send_report)(uint8_t device_id, uint8_t report_id, uint8_t* buffer, size_t size);
+    bt_result_code (*send_report)(uint8_t device_id, bt_address remote_addr, uint8_t report_id, uint8_t* buffer, size_t size);
     bt_result_code (*unplug)(uint8_t device_id, bt_address remote_addr);
 } bts_hidd_interface_t;
 
