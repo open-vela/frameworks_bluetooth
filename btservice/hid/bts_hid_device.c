@@ -69,6 +69,7 @@ typedef struct
 typedef struct {
     bt_address remote_addr;
     profile_connection_state state;
+    bool le_hid;
 } bts_hidd_conn_s;
 
 static void send_msg(bts_hidd_msg_t* msg);
@@ -183,13 +184,14 @@ static void on_hidd_register_changed_callback(hid_app_state registered)
     }
 }
 
-static void on_hidd_connection_changed_callback(bt_address remote_addr, profile_connection_state state)
+static void on_hidd_connection_changed_callback(bt_address remote_addr, bool le_hid, profile_connection_state state)
 {
     BT_LOGD("PERFORMANCE-HID-DEVICE-PROFILE-BLUELET-CONNECTION-STATE:%d, addr:%s", state, addr_str(remote_addr));
     current_state = state;
     bts_hidd_conn_s conn;
     memcpy(conn.remote_addr, remote_addr, sizeof(bt_address));
     conn.state = state;
+    conn.le_hid = le_hid;
 
     bts_hidd_hdl_t* hidd;
     list_for_every_entry(&hidd_list, hidd, bts_hidd_hdl_t, node)
@@ -204,35 +206,35 @@ static void on_hidd_connection_changed_callback(bt_address remote_addr, profile_
     }
 }
 
-static void on_hidd_get_report_callback(uint8_t rpt_type, uint8_t rpt_id, uint16_t buffer_size)
+static void on_hidd_get_report_callback(bt_address remote_addr, uint8_t rpt_type, uint8_t rpt_id, uint16_t buffer_size)
 {
-    BT_LOGD(" %s, rpt_type:%d, rpt_id:%d, buffer_size:%d", __func__, rpt_type, rpt_id, buffer_size);
+    BT_LOGD(" %s, addr:%s, rpt_type:%d, rpt_id:%d, buffer_size:%d", __func__, addr_str(remote_addr), rpt_type, rpt_id, buffer_size);
     uint8_t rpt_data[] = { 0x00, 0x00 };
     rpt_data[0] = rpt_id;
-    service_adapter_hid_device_get_report_response(rpt_type, rpt_data, sizeof(rpt_data));
+    service_adapter_hid_device_get_report_response(remote_addr, rpt_type, rpt_data, sizeof(rpt_data));
 }
 
-static void on_hidd_set_report_callback(uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data)
+static void on_hidd_set_report_callback(bt_address remote_addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data)
 {
-    BT_LOGD("%s, Report Data [T-%d, L-%d]:", __func__, rpt_type, rpt_size);
+    BT_LOGD("%s, addr:%s, Report Data [T-%d, L-%d]:", __func__, addr_str(remote_addr), rpt_type, rpt_size);
     BT_HEXDUMP(rpt_data, rpt_size);
-    service_adapter_hid_device_report_error(BTHID_OK);
+    service_adapter_hid_device_report_error(remote_addr, BTHID_OK);
 }
 
-static void on_hidd_set_protocol_callback(uint8_t protocol)
+static void on_hidd_set_protocol_callback(bt_address remote_addr, uint8_t protocol)
 {
-    BT_LOGD("%s,  protocol: %02x", __func__, protocol);
+    BT_LOGD("%s,  addr:%s, protocol: %02x", __func__, addr_str(remote_addr), protocol);
 }
 
-static void on_hidd_intr_data_callback(uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data)
+static void on_hidd_intr_data_callback(bt_address remote_addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data)
 {
-    BT_LOGD("%s Report Data [T-%d, L-%d]:", __func__, rpt_type, rpt_size);
+    BT_LOGD("%s, addr:%s, Report Data [T-%d, L-%d]:", __func__, addr_str(remote_addr), rpt_type, rpt_size);
     BT_HEXDUMP(rpt_data, rpt_size);
 }
 
-static void on_hidd_device_virtual_unplug_callback(void)
+static void on_hidd_device_virtual_unplug_callback(bt_address remote_addr)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, addr:%s", __func__, addr_str(remote_addr));
 }
 
 static HID_DEVICE_CALLBACKS_S hid_device_cb = {
@@ -363,7 +365,7 @@ static bt_result_code hid_device_disconnect(uint8_t device_id, bt_address remote
     BT_LOGD("PERFORMANCE-HID-DEVICE-PROFILE-BLUELET-DISCONNECTION-START, addr:%s", addr_str(remote_addr));
     bts_hidd_hdl_t* handle = find_hidd_handle2(device_id);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    gatt_status ret = service_adapter_hid_device_disconnect();
+    gatt_status ret = service_adapter_hid_device_disconnect(remote_addr);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, hid_device_disconnect, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -371,11 +373,11 @@ static bt_result_code hid_device_disconnect(uint8_t device_id, bt_address remote
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code hid_device_send_report(uint8_t device_id, uint8_t report_id, uint8_t* buffer, size_t size)
+static bt_result_code hid_device_send_report(uint8_t device_id, bt_address remote_addr, uint8_t report_id, uint8_t* buffer, size_t size)
 {
     bts_hidd_hdl_t* handle = find_hidd_handle2(device_id);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    gatt_status ret = service_adapter_hid_device_send_intr_report(report_id, buffer, size);
+    gatt_status ret = service_adapter_hid_device_send_intr_report(remote_addr, report_id, buffer, size);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, hid_device_send_intr_report, ret:%d", ret);
         return BT_RESULT_FAILED;
@@ -387,7 +389,7 @@ static bt_result_code hid_device_unplug(uint8_t device_id, bt_address remote_add
 {
     bts_hidd_hdl_t* handle = find_hidd_handle2(device_id);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    gatt_status ret = service_adapter_hid_device_virtual_unplug();
+    gatt_status ret = service_adapter_hid_device_virtual_unplug(remote_addr);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, device_virtual_unplug, err:%d", ret);
         return BT_RESULT_FAILED;
@@ -576,7 +578,7 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
     }
     case ON_HIDD_CONNECTION_STATE_CHANGED: {
         bts_hidd_conn_s* conn = (bts_hidd_conn_s*)(msg->data);
-        BT_CBACK(handle->callbacks, bts_hidd_connection_state_changed_cb, handle->btm_handle, conn->remote_addr, conn->state);
+        BT_CBACK(handle->callbacks, bts_hidd_connection_state_changed_cb, handle->btm_handle, conn->remote_addr, conn->le_hid, conn->state);
         break;
     }
     default: {
