@@ -247,14 +247,14 @@ bt_result_code hf_client_service_start(void)
     if (ret != BT_RESULT_SUCCESS)
         return ret;
 
-    BT_LOGD("hf client service started");
+    BT_LOGD("HF Client Service Started");
     return ret;
 }
 
 void hf_client_service_stop(void)
 {
     bts_hf_client_cleanup();
-    BT_LOGD("hf client service stoped");
+    BT_LOGD("HF Client Service Stoped");
 }
 
 const hf_client_interface_t* get_hf_client_service_interface(void)
