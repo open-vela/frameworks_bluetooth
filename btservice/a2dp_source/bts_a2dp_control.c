@@ -231,6 +231,8 @@ static void bts_a2dp_ctrl_cb(uint8_t ch_id, a2dp_ipc_event_t event)
     switch (event) {
     case IPC_OPEN_EVT:
         bts_a2dp_ctrl_start(ch_id);
+        if (bts_a2dp_source_stream_ready())
+            bts_a2dp_control_update_audio_config(1);
         break;
 
     case IPC_CLOSE_EVT:
