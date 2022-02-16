@@ -840,11 +840,10 @@ static void spp_cleanup(void)
     g_spp_handle.started = 0;
 }
 
-static void spp_service_event_process(void* data, size_t size)
+static void spp_service_event_process(spp_msg_t* msg)
 {
-    if (!data || !size)
+    if (!msg)
         return;
-    spp_msg_t* msg = (spp_msg_t*)data;
 
     //BT_LOGD("%s, event: %s", __func__, spp_event_to_string(msg->event));
     switch (msg->event) {
@@ -892,8 +891,6 @@ static void spp_service_event_process(void* data, size_t size)
     default:
         break;
     }
-
-    free(data);
 }
 
 static void do_in_spp_service(spp_msg_t* msg)
@@ -992,7 +989,11 @@ static void adp_connection_mfs_callback(SERVICE_SPP_PORT conn_port, uint16_t mfs
 
 static void bts_spp_handle_service_msg(bt_profile_id id, void* data, size_t size)
 {
-    spp_service_event_process(data, size);
+    if (data == NULL)
+        return;
+
+    spp_service_event_process((spp_msg_t*)data);
+    free(data);
 }
 
 static SPP_CALLBACKS_S spp_adp_callbacks = {

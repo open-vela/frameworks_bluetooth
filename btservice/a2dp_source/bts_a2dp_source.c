@@ -372,6 +372,7 @@ void bts_a2dp_source_stream_stop(void)
 bool bts_a2dp_source_stream_ready(void)
 {
     a2dp_state_machine_t* a2dp_sm;
+    a2dp_state_t state;
     a2dp_peer_t* peer = bts_a2dp_source_active_peer();
     if (!peer)
         return false;
@@ -380,7 +381,8 @@ bool bts_a2dp_source_stream_ready(void)
     if (!a2dp_sm)
         return false;
 
-    return a2dp_state_machine_get_state(a2dp_sm) == A2DP_STATE_OPENED;
+    state = a2dp_state_machine_get_state(a2dp_sm);
+    return (state == A2DP_STATE_OPENED || state == A2DP_STATE_STARTED);
 }
 
 bool bts_a2dp_source_stream_started(void)
