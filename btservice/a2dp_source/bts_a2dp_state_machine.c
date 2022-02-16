@@ -62,13 +62,15 @@
 typedef enum pending_state {
     PENDING_NONE = 0x0,
     PENDING_START = 0X02,
-    PENDING_STOP = 0x04
+    PENDING_STOP = 0x04,
 } pending_state_t;
+
 typedef struct _a2dp_state_machine {
     state_machine_t sm;
     a2dp_source_t* service;
     bt_address addr;
     pending_state_t pending;
+    bool audio_ready;
     uv_timer_t* connect_timer;
     uv_timer_t* start_timer;
 } a2dp_state_machine_t;
@@ -219,6 +221,21 @@ static void a2dp_start_timeout_callback(char* data)
     a2dp_event_destory(a2dp_event);
 }
 
+static bool flag_isset(a2dp_state_machine_t *a2dp_sm, pending_state_t flag)
+{
+    return (bool)(a2dp_sm->pending & flag);
+}
+
+static void flag_set(a2dp_state_machine_t *a2dp_sm, pending_state_t flag)
+{
+    a2dp_sm->pending |= flag;
+}
+
+static void flag_clear(a2dp_state_machine_t *a2dp_sm, pending_state_t flag)
+{
+    a2dp_sm->pending &= ~flag;
+}
+
 static void idle_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
@@ -227,6 +244,7 @@ static void idle_enter(state_machine_t* sm)
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
+    a2dp_sm->audio_ready = false;
     if (prev_state != NULL) {
         bts_a2dp_report_connection_state(service, a2dp_sm->addr,
             A2DP_CONNECTION_STATE_DISCONNECTED);
@@ -380,19 +398,24 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     }
     case STREAM_START_REQ: {
         SERVICE_BT_STATUS status;
+
+        if (!a2dp_sm->audio_ready) {
+            BT_LOGE("A2DP Audio is not ready, Ignore start cmd");
+            break;
+        }
         status = service_adapter_a2dp_source_start_stream(event_data->bd_addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Stream start failed");
             break;
         }
-        a2dp_sm->pending |= PENDING_START;
+        flag_set(a2dp_sm, PENDING_START);
         a2dp_sm->start_timer = start_timer(A2DP_START_TIMEOUT, 0, a2dp_start_timeout_callback, a2dp_sm);
         break;
     }
 
     case DISCONNECTED_EVT:
-        if (a2dp_sm->pending & PENDING_START) {
-            a2dp_sm->pending &= ~PENDING_START;
+        if (flag_isset(a2dp_sm, PENDING_START)) {
+            flag_clear(a2dp_sm, PENDING_START);
             stop_timer(a2dp_sm->start_timer);
             a2dp_sm->start_timer = NULL;
             // When pending on start request, then received stream close event
@@ -407,7 +430,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     case STREAM_STARTED_EVT:
         // If remote tries to start A2DP when DUT is A2DP Source, then Suspend.
         // If A2DP is Sink and call is active, then disconnect the AVDTP channel.
-        a2dp_sm->pending &= ~PENDING_START;
+        flag_clear(a2dp_sm, PENDING_START);
         stop_timer(a2dp_sm->start_timer);
         a2dp_sm->start_timer = NULL;
         bts_a2dp_source_on_started(true);
@@ -421,12 +444,13 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         break;
 
     case DEVICE_CODEC_STATE_CHANGE_EVT:
+        a2dp_sm->audio_ready = true;
         bts_a2dp_report_audio_config_state(service, a2dp_sm->addr);
         bts_a2dp_source_setup_codec(a2dp_sm->addr);
         break;
 
     case START_TIMEOUT: {
-        a2dp_sm->pending &= ~PENDING_START;
+        flag_clear(a2dp_sm, PENDING_START);
         stop_timer(a2dp_sm->start_timer);
         a2dp_sm->start_timer = NULL;
         bts_a2dp_source_on_started(false);
@@ -586,6 +610,7 @@ a2dp_state_machine_t* a2dp_state_machine_new(void* context, bt_address bd_addr)
         return NULL;
 
     a2dp_sm->service = (a2dp_source_t*)context;
+    a2dp_sm->audio_ready = false;
     hsm_ctor(&a2dp_sm->sm, (state_t*)&idle_state);
     memcpy(a2dp_sm->addr, bd_addr, sizeof(bt_address));
 
