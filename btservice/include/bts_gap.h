@@ -4,6 +4,7 @@
  * Included Files
  ****************************************************************************/
 #include "bts_gap_service.h"
+#include "bts_service.h"
 #include "stack_adapter_common.h"
 #include <stdio.h>
 /****************************************************************************
@@ -121,7 +122,7 @@ bt_result_code bts_enter_bluetooth_test_mode(test_mode mode);
 void gap_bt_bond_store(void);
 void gap_bluetooth_bond_init(void);
 void gap_ble_bond_store(ble_keys_t* key, uint8_t count);
-bt_result_code gap_bluetooth_device_init(void);
+bt_result_code gap_bluetooth_device_init(bts_service_adapter_state_changed_callback cb);
 bt_result_code gap_bt_update_name(char* name, uint8_t size);
 
 #endif

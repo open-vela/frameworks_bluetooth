@@ -243,11 +243,11 @@ void create_config_folder()
 
     if (access(folder_misc, 0) == -1) {
         ret = mkdir(folder_misc, 0777);
-        BT_LOGD("%s, create misc ret:%d", __func__, ret);
+        syslog(LOG_DEBUG, "%s, create misc ret:%d\n", __func__, ret);
     }
     if (access(folder_bt, 0) == -1) {
         ret = mkdir(folder_bt, 0777);
-        BT_LOGD("%s, create bt ret:%d", __func__, ret);
+        syslog(LOG_DEBUG, "%s, create bt ret:%d\n", __func__, ret);
     }
 #ifdef CONFIG_BLUELET_HCI_SNOOP_LOG_PATH
     char folder_snoop[] = CONFIG_BLUELET_HCI_SNOOP_LOG_PATH;
@@ -299,8 +299,9 @@ void stack_state_change(bt_service_state state)
 {
     service_state = state;
     if (BTM_STATE_ON == state) {
-        gap_bluetooth_device_init();
+        gap_bluetooth_device_init(bluetooth_upper_callbacks->adapter_state_changed_cb);
         gap_bluetooth_bond_init();
+    } else {
+        bluetooth_upper_callbacks->adapter_state_changed_cb(state);
     }
-    bluetooth_upper_callbacks->adapter_state_changed_cb(service_state);
 }

@@ -100,6 +100,7 @@ typedef struct gap_bt_uv_ops {
 static void gap_bt_device_load(const char* file);
 
 static bt_device_info_t current_bt_device_info;
+static bts_service_adapter_state_changed_callback adapter_state_changed_cb = NULL;
 
 static void gap_bt_uv_op_on_open(uv_fs_t* req)
 {
@@ -312,7 +313,6 @@ static void gap_bt_device_load_on_except(uv_fs_t* req)
     }
     ops->clean_req.data = ops;
     ops->on_clean(&ops->clean_req);
-
     gap_bt_device_load(BT_DEFAULT_FILE_NAME);
 }
 
@@ -342,6 +342,9 @@ static void gap_bt_device_load_on_read(uv_fs_t* req)
         BT_LOGD("set_local_name failed: %d", ret);
     }
 
+    if (adapter_state_changed_cb) {
+        adapter_state_changed_cb(BTM_STATE_ON);
+    }
     ops->close_req.data = ops;
     uv_fs_close(get_service_loop(), &ops->close_req, ops->open_req.result, gap_bt_uv_op_on_close);
 }
@@ -453,9 +456,10 @@ static void gap_bt_factory_update_on_open(uv_fs_t* req)
     uv_fs_write(get_service_loop(), &ops->write_req, ops->open_req.result, &ops->iov, 1, -1, gap_bt_uv_op_on_write);
 }
 
-bt_result_code gap_bluetooth_device_init(void)
+bt_result_code gap_bluetooth_device_init(bts_service_adapter_state_changed_callback cb)
 {
     BT_LOGD("%s", __func__);
+    adapter_state_changed_cb = cb;
     uv_fs_t req;
     int rc = uv_fs_access(get_service_loop(), &req, BT_DEFAULT_FILE_NAME, F_OK, NULL);
     if (!rc) {

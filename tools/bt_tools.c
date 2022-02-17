@@ -608,7 +608,7 @@ static void display_services(uint8_t* services, uint8_t count)
 
 static void manager_state_changed_callback(btm_bt_state state)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, state:%d", __func__, state);
     if (state == BTM_STATE_ON) {
         if (daemon_enable) {
             char local_name[] = "BLUELET_NUTTX_Sim";
