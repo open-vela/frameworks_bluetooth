@@ -48,7 +48,6 @@
 #include "log.h"
 
 #define MAX_FRAME_NUM_PER_TICK 14
-#define STREAM_DATA_OFFSET (offsetof(SERVICE_A2DP_SOURCE_PACKET_S, data) + 1)
 #define STREAM_DELAY_MS 100
 #define STREAM_FLUSH_SIZE (1024)
 #define STREAM_DATA_RESERVED offsetof(SERVICE_A2DP_SOURCE_PACKET_S, data)
@@ -85,7 +84,7 @@ uint64_t get_os_timestamp_us(void)
 
     clock_gettime(CLOCK_BOOTTIME, &ts);
 
-    return (ts.tv_sec * 1000000 + (ts.tv_nsec / 1000));
+    return (uint64_t)(((uint64_t)ts.tv_sec * 1000000L) + ((uint64_t)ts.tv_nsec / 1000));
 }
 
 static void bts_a2dp_source_packet_send(SERVICE_A2DP_SOURCE_PACKET_S* packet)
