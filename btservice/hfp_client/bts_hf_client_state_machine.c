@@ -304,6 +304,11 @@ static void hf_connect_timeout_callback(char* data)
     hf_state_machine_t* hfsm = (hf_state_machine_t*)data;
 
     hf_client_msg_t* msg = hf_client_msg_new(TIMEOUT, hfsm->addr);
+    if (msg == NULL) {
+        BT_LOGW("%s malloc failed", __func__);
+        return;
+    }
+
     hf_client_state_machine_handle_msg(hfsm, msg);
     hf_client_msg_destory(msg);
 }

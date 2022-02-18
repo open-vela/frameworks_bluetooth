@@ -125,6 +125,9 @@ static void hf_client_device_delete(hf_client_device_t* device)
         return;
 
     msg = HF_MSG_NEW(DISCONNECT, NULL);
+    if (msg == NULL)
+        return;
+
     hf_client_state_machine_handle_msg(device->sm, msg);
     hf_client_msg_destory(msg);
     hf_client_state_machine_destory(device->sm);

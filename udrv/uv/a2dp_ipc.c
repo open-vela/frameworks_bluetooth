@@ -202,7 +202,7 @@ a2dp_ipc_t* a2dp_ipc_init(uv_loop_t* loop)
     }
 
     a2dp->loop = loop;
-    for (uint8_t i = 1; i < A2DP_IPC_CH_NUM; i++) {
+    for (uint8_t i = 0; i < A2DP_IPC_CH_NUM; i++) {
         a2dp->ch[i].state = IPC_DISCONNTECTED;
         a2dp->ch[i].event_cb = NULL;
     }
@@ -216,7 +216,7 @@ bool a2dp_ipc_open(a2dp_ipc_t* a2dp, uint8_t ch_id, const char* path, ipc_event_
     uv_fs_t fs;
     int ret;
 
-    if (ch_id > A2DP_IPC_CH_NUM || !a2dp)
+    if (ch_id >= A2DP_IPC_CH_NUM || !a2dp)
         return false;
 
     ch = &a2dp->ch[ch_id];
@@ -291,7 +291,7 @@ int a2dp_ipc_write(a2dp_ipc_t* a2dp, uint8_t ch_id, const uint8_t* data, uint16_
     uv_buf_t uv_buf;
     int ret;
 
-    if (ch_id > A2DP_IPC_CH_NUM || !a2dp)
+    if (ch_id >= A2DP_IPC_CH_NUM || !a2dp)
         return -EINVAL;
 
     ch = &a2dp->ch[ch_id];
@@ -304,8 +304,10 @@ int a2dp_ipc_write(a2dp_ipc_t* a2dp, uint8_t ch_id, const uint8_t* data, uint16_
         return -ENOMEM;
     }
     uint8_t* tmpbuf = (uint8_t*)malloc(len);
-    if (!tmpbuf)
+    if (!tmpbuf) {
+        free(wreq);
         return -ENOMEM;
+    }
     memcpy(tmpbuf, data, len);
 
     wreq->write_cb = cb;
@@ -319,6 +321,8 @@ int a2dp_ipc_write(a2dp_ipc_t* a2dp, uint8_t ch_id, const uint8_t* data, uint16_
         ipc_chnl_write_cb);
     if (ret != 0) {
         BT_LOGE("write error: %s", uv_strerror(ret));
+        free(wreq);
+        free(tmpbuf);
         a2dp_ipc_connection_close(ch);
         return ret;
     }
@@ -332,7 +336,7 @@ int a2dp_ipc_read_start(a2dp_ipc_t* a2dp, uint8_t ch_id, ipc_alloc_cb_t alloc_cb
     ipc_read_t* rreq;
     int ret;
 
-    if (ch_id > A2DP_IPC_CH_NUM || !a2dp)
+    if (ch_id >= A2DP_IPC_CH_NUM || !a2dp)
         return -EINVAL;
 
     ch = &a2dp->ch[ch_id];
@@ -355,6 +359,7 @@ int a2dp_ipc_read_start(a2dp_ipc_t* a2dp, uint8_t ch_id, ipc_alloc_cb_t alloc_cb
         ipc_chnl_read_cb);
     if (ret != 0) {
         BT_LOGE("read start error :%s", uv_strerror(ret));
+        free(rreq);
         a2dp_ipc_connection_close(ch);
         return ret;
     }
@@ -367,7 +372,7 @@ int a2dp_ipc_read_stop(a2dp_ipc_t* a2dp, uint8_t ch_id)
     ipc_channel_t* ch;
     int ret;
 
-    if (ch_id > A2DP_IPC_CH_NUM || !a2dp)
+    if (ch_id >= A2DP_IPC_CH_NUM || !a2dp)
         return -EINVAL;
 
     ch = &a2dp->ch[ch_id];
