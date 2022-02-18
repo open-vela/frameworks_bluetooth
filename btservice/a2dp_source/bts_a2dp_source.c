@@ -38,7 +38,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <connectivity/state.h>
+#include <connectivity/bt.h>
 #include <uORB/uORB.h>
 #include "stack_adapter_a2dp_source.h"
 #include "stack_adapter_service_base.h"

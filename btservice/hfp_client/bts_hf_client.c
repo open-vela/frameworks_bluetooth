@@ -36,7 +36,7 @@
  ****************************************************************************/
 #include <stdio.h>
 #include <sys/types.h>
-#include <connectivity/state.h>
+#include <connectivity/bt.h>
 #include <uORB/uORB.h>
 #include "stack_adapter_hfp.h"
 #include "stack_adapter_service_base.h"
