@@ -152,7 +152,7 @@ static void connection_state_callback(const bt_address addr, uint16_t port, spp_
 
 static void pty_open_callback(const bt_address addr, uint16_t port, char* name, int fd)
 {
-    int sfd;
+    //int sfd;
 
     fd = open(name, O_RDWR | O_NOCTTY);
     if (fd < 0)
@@ -164,7 +164,9 @@ static void pty_open_callback(const bt_address addr, uint16_t port, char* name, 
     device->port = port;
     device->pty = euv_pty_init(get_service_loop(), fd, UV_TTY_MODE_IO);
     if (device->pty == NULL) {
+        free(device);
         BT_LOGE("%s pty init error", __func__);
+        return;
     }
     list_add_tail(&device_list, &device->node);
     euv_pty_read_start(device->pty, 128, pty_read_cb);
@@ -239,8 +241,11 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     port = atoi(argv[1]);
     *p_port = port;
     device = find_pty_by_port(port);
-    if (device == NULL)
+    if (device == NULL) {
+        free(p_port);
         return -1;
+    }
+
     BT_LOGD("%s, address:%s port:%d", __func__, argv[0], port);
 
     spp_interface->disconnect(NULL, addr, port);

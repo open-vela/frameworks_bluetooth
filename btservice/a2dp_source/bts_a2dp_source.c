@@ -269,7 +269,7 @@ static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM
 static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S* config)
 {
     a2dp_event_t* event;
-    a2dp_codec_config_t codec_config;
+    a2dp_codec_config_t codec_config = {0};
 
     codec_config.codec_type = config->codec;
     codec_config.sample_rate = config->sample_rate;
@@ -304,7 +304,7 @@ static void a2dp_source_init(void)
     a2dp_source.orb_fd = orb_advertise(ORB_ID(a2dp_state), NULL);
     if (a2dp_source.orb_fd < 0) {
         BT_LOGE("a2dp_source.orb_fd advertise failed");
-        return BT_RESULT_FAILED;
+        return;
     }
 
     bts_a2dp_source_audio_init();
