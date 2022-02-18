@@ -287,11 +287,12 @@ static int updata_battery_level_cmd(void* handle, int argc, char* argv[])
 {
     bt_address addr;
     uint8_t battery;
+
     if (argc < 2 || hf_interface == NULL)
         return -1;
 
     str2ba(argv[0], addr);
-    battery = atoi(argv[1]);
+    battery = (uint8_t)atoi(argv[1]);
     if (battery < 0 || battery > 100)
         return -EINVAL;
 

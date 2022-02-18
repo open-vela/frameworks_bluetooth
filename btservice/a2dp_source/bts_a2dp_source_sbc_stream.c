@@ -63,7 +63,7 @@ static uint8_t calculate_max_frames_per_packet(void)
 {
     uint32_t frame_len = sbc_stream.frames_len;
     if (!sbc_stream.mtu || !frame_len)
-        return 0;
+        return 7;
 
     return (sbc_stream.mtu - 1) / frame_len;
 }
@@ -135,7 +135,7 @@ static void a2dp_sbc_get_num_frame_iteration(uint8_t* noi, uint8_t* nof,
                               A2DP_SBC_ENCODER_INTERVAL_MS) /
                               1000;
     /* Calculate the playback time of per PCM frame */
-    uint64_t per_frame_time = per_frame_bytes * 1000000 /
+    uint64_t per_frame_time = (uint64_t)per_frame_bytes * 1000000UL /
                               (sample_rate *
                               (A2DP_SBC_BIT_PER_SAMPLE / 8) *
                               param->s16NumOfChannels);

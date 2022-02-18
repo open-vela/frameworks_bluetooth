@@ -467,7 +467,6 @@ static void euv_alloc_buffer(euv_pty_t* handle, uint8_t** buf, size_t *len)
 
 	device = find_pty_device_by_handle(handle);
     if (!device || buf == NULL) {
-        *buf = NULL;
         *len = 0;
         return;
     }
@@ -523,13 +522,16 @@ static void euv_write_complete(euv_pty_t* handle, uint8_t* buf, int status)
     spp_pty_device_t* device;
 
     device = find_pty_device_by_handle(handle);
-    if (!device || buf == NULL)
+    if (!device || buf == NULL) {
+        if (buf != NULL)
+            BT_LOGW("%s, device closed, memory %p leak warning", __func__, buf);
         return;
-    if (status != 0) {
-        spp_close_pty_device(device);
     }
 
     service_adapter_spp_data_received_rsp(device->conn_port, buf);
+    if (status != 0) {
+        spp_close_pty_device(device);
+    }
 }
 
 #ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
@@ -711,8 +713,8 @@ static void spp_on_incoming_data_received(bt_address addr, uint16_t port,
     spp_dumpbuffer("master write:", buffer, length);
     ret = euv_pty_write(device->handle, buffer, length, euv_write_complete);
     if (ret != 0) {
-        spp_close_pty_device(device);
         BT_LOGE("Spp write to slave port %d failed", device->mfd);
+        spp_close_pty_device(device);
     }
 }
 
@@ -897,6 +899,10 @@ static void spp_service_event_process(void* data, size_t size)
 static void do_in_spp_service(spp_msg_t* msg)
 {
     spp_msg_t* spp_msg = (spp_msg_t*)malloc(sizeof(spp_msg_t));
+    if (spp_msg == NULL) {
+        BT_LOGE("%s malloc failed", __func__);
+        return;
+    }
 
     memcpy(spp_msg, msg, sizeof(spp_msg_t));
     bts_send_uv_msg(BT_PROFILE_SPP_ID, spp_msg, sizeof(spp_msg_t));
@@ -905,7 +911,7 @@ static void do_in_spp_service(spp_msg_t* msg)
 static void adp_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE_SPP_PORT conn_port,
     SERVICE_PROFILE_CONNECTION_STATE state)
 {
-    spp_msg_t msg;
+    spp_msg_t msg = {0};
     spp_connection_state_t conn_state = SPP_CONNECTION_STATE_DISCONNECTED;
 
     switch (state) {
@@ -935,7 +941,7 @@ static void adp_data_sent_callback(SERVICE_SPP_PORT conn_port, uint8_t* buffer, 
     uint16_t sent_length)
 {
 #if SEND_FC_EN
-    spp_msg_t msg;
+    spp_msg_t msg = {0};
 
     msg.event = DATA_SENT;
     msg.port = conn_port;
@@ -951,7 +957,7 @@ static void adp_data_sent_callback(SERVICE_SPP_PORT conn_port, uint8_t* buffer, 
 
 static void adp_data_received_callback(BD_ADDR remote_addr, SERVICE_SPP_PORT conn_port, uint8_t* buffer, uint16_t length)
 {
-    spp_msg_t msg;
+    spp_msg_t msg = {0};
 
     msg.event = DATA_RECEIVED;
     msg.port = conn_port;
@@ -964,7 +970,7 @@ static void adp_data_received_callback(BD_ADDR remote_addr, SERVICE_SPP_PORT con
 
 static void adp_server_connection_req_received_callback(BD_ADDR remote_addr, SERVICE_SPP_PORT svr_port)
 {
-    spp_msg_t msg;
+    spp_msg_t msg = {0};
 
     msg.event = CONN_REQ_RECEIVED;
     msg.port = svr_port;
@@ -975,7 +981,7 @@ static void adp_server_connection_req_received_callback(BD_ADDR remote_addr, SER
 
 static void adp_connection_mfs_callback(SERVICE_SPP_PORT conn_port, uint16_t mfs)
 {
-    spp_msg_t msg;
+    spp_msg_t msg = {0};
 
     msg.event = UPDATE_MFS;
     msg.port = conn_port;
@@ -1025,7 +1031,7 @@ bt_result_code bts_spp_init(spp_service_callbacks_t* callbacks)
 
 bt_result_code bts_spp_server_start(uint16_t port, uint16_t uuid)
 {
-    spp_msg_t msg;
+    spp_msg_t msg = {0};
 
     if (!g_spp_handle.started)
         return BT_RESULT_FAILED;
@@ -1040,7 +1046,7 @@ bt_result_code bts_spp_server_start(uint16_t port, uint16_t uuid)
 
 bt_result_code bts_spp_server_stop(uint16_t port)
 {
-    spp_msg_t msg;
+    spp_msg_t msg = {0};
 
     if (!g_spp_handle.started)
         return BT_RESULT_FAILED;
@@ -1054,7 +1060,7 @@ bt_result_code bts_spp_server_stop(uint16_t port)
 
 bt_result_code bts_spp_client_connect(bt_address addr, uint16_t port, uint16_t uuid)
 {
-    spp_msg_t msg;
+    spp_msg_t msg = {0};
 
     if (!g_spp_handle.started)
         return BT_RESULT_FAILED;
@@ -1070,7 +1076,7 @@ bt_result_code bts_spp_client_connect(bt_address addr, uint16_t port, uint16_t u
 
 bt_result_code bts_spp_disconnect(bt_address addr, uint16_t port)
 {
-    spp_msg_t msg;
+    spp_msg_t msg = {0};
 
     if (!g_spp_handle.started)
         return BT_RESULT_FAILED;
@@ -1085,7 +1091,7 @@ bt_result_code bts_spp_disconnect(bt_address addr, uint16_t port)
 
 void bts_spp_cleanup(void)
 {
-    spp_msg_t msg;
+    spp_msg_t msg = {0};
 
     if (!g_spp_handle.started)
         return;
