@@ -36,7 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <connectivity/state.h>
+#include <connectivity/bt.h>
 #include <uORB/uORB.h>
 #include "stack_adapter_common.h"
 #include "stack_adapter_gap.h"

@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <connectivity/state.h>
+#include <connectivity/bt.h>
 #include <uORB/uORB.h>
 #include "stack_adapter_a2dp_sink.h"
 #include "stack_adapter_a2dp_source.h"
