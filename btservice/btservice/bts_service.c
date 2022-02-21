@@ -262,7 +262,11 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
 {
     bluetooth_upper_callbacks = callbacks;
     create_config_folder();
-    uv_mutex_init(&msg_mutex);
+    int rc = uv_mutex_init(&msg_mutex);
+    if (rc) {
+        BT_LOGE("fail, uv_mutex_init err:%d", rc);
+        return BT_RESULT_FAILED;
+    }
     if (service_state != BTM_STATE_OFF)
         return BT_RESULT_FAILED;
     utils_log_init();

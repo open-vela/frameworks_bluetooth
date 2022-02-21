@@ -446,6 +446,10 @@ static void gap_bt_factory_update_on_open(uv_fs_t* req)
     }
 
     bt_device_info_t* default_device_info = (bt_device_info_t*)malloc(sizeof(bt_device_info_t));
+    if(!default_device_info) {
+        BT_LOGE("fail, malloc default_device_info failed");
+        return;
+    }
     memset(default_device_info, 0, sizeof(default_device_info));
     default_device_info->device_class = BT_DEFAULT_DEVICE_CLASS;
     default_device_info->io_capability = BT_DEFAULT_IO_CAPABILITY;

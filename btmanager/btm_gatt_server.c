@@ -152,6 +152,11 @@ static bt_result_code gatt_server_open(void** hdl_ptr, btm_gatt_server_callbacks
 
     btm_gatts_hdl_t** handle_ptr = (btm_gatts_hdl_t**)(hdl_ptr);
     *handle_ptr = (btm_gatts_hdl_t*)malloc(sizeof(btm_gatts_hdl_t));
+    if (!*handle_ptr) {
+        BT_LOGE("error, mallocbtm_gatts_hdl_t  failed");
+        return BT_RESULT_ALLOC_BUFFER_FAILED;
+    }
+
     memset(*handle_ptr, 0, sizeof(btm_gatts_hdl_t));
     (*handle_ptr)->callbacks = callbacks;
     (*handle_ptr)->handle_ptr = (void**)handle_ptr;

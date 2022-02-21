@@ -75,6 +75,11 @@ static bt_result_code hidd_register_device(void** ptr, bt_hidd_sdp_settings_t sd
     btm_hidd_hdl_t** handle_ptr = (btm_hidd_hdl_t**)ptr;
     CHECK_PTR_RETURN(hidd_interface, BT_RESULT_STATE_NOT_ON);
     *handle_ptr = (btm_hidd_hdl_t*)malloc(sizeof(btm_hidd_hdl_t));
+    if (!*handle_ptr) {
+        BT_LOGE("error, malloc btm_hidd_hdl_t failed");
+        return BT_RESULT_ALLOC_BUFFER_FAILED;
+    }
+
     memset(*handle_ptr, 0, sizeof(btm_hidd_hdl_t));
     (*handle_ptr)->callbacks = cb;
     (*handle_ptr)->handle_ptr = (void**)handle_ptr;
