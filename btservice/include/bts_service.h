@@ -61,4 +61,6 @@ void stack_state_change(bt_service_state state);
 bool bts_send_uv_msg(bt_profile_id id, void* data, size_t size);
 bool bts_register_profile_process(bt_profile_id id, bts_profile_callbacks cb);
 bool bts_unregister_profile_process(bt_profile_id id);
+void create_config_folder(void);
+
 #endif
