@@ -148,6 +148,7 @@ int euv_pty_write(euv_pty_t* handle, uint8_t* buffer, int length, euv_write_cb c
 {
     uv_buf_t buf;
     euv_wreq_t* wreq;
+    int ret;
 
     if (handle == NULL)
         return -EINVAL;
@@ -160,7 +161,11 @@ int euv_pty_write(euv_pty_t* handle, uint8_t* buffer, int length, euv_write_cb c
     wreq->write_cb = cb;
     buf = uv_buf_init((char*)buffer, length);
 
-    return uv_write(&wreq->req, (uv_stream_t*)&handle->uv_tty, &buf, 1, uv_write_callback);
+    ret = uv_write(&wreq->req, (uv_stream_t*)&handle->uv_tty, &buf, 1, uv_write_callback);
+    if (ret != 0)
+        free(wreq);
+
+    return ret;
 }
 
 euv_pty_t* euv_pty_init(uv_loop_t* loop, int fd, uv_tty_mode_t mode)

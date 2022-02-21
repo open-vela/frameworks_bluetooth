@@ -259,7 +259,7 @@ static void adpt_register_notification_request_cb(BD_ADDR remote_addr,
 
 static void adpt_get_play_status_request_cb(BD_ADDR remote_addr)
 {
-    avrcp_msg_t msg;
+    avrcp_msg_t msg = {0};
 
     msg.event = GET_PLAY_STATUS_REQUEST;
     memcpy(msg.addr, remote_addr, sizeof(bt_address));
@@ -268,7 +268,7 @@ static void adpt_get_play_status_request_cb(BD_ADDR remote_addr)
 
 static void adpt_get_element_attr_request_cb(BD_ADDR remote_addr)
 {
-    avrcp_msg_t msg;
+    avrcp_msg_t msg = {0};
 
     msg.event = GET_ELEMENT_ATTR_REQUEST;
     memcpy(msg.addr, remote_addr, sizeof(bt_address));

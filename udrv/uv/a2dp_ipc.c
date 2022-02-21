@@ -308,8 +308,8 @@ int a2dp_ipc_write(a2dp_ipc_t* a2dp, uint8_t ch_id, const uint8_t* data, uint16_
         free(wreq);
         return -ENOMEM;
     }
-    memcpy(tmpbuf, data, len);
 
+    memcpy(tmpbuf, data, len);
     wreq->write_cb = cb;
     wreq->ch = ch;
     wreq->buffer = tmpbuf;
