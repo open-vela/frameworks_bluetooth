@@ -33,6 +33,7 @@
 #include "log.h"
 #include "stack_adapter_gap.h"
 #include "stack_adapter_gatt.h"
+#include "utils.h"
 
 typedef struct
 {

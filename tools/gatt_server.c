@@ -696,7 +696,7 @@ static int le_start_advertising(void* handle, int argc, char** argv)
     int duration = atoi(argv[2]);
     int filter_type = atoi(argv[3]);
     uint8_t adv_id = atoi(argv[4]);
-    BT_LOGD("start ble adv type:%d, interval:%d, duration:%d, filter_type:%d, adv_id:%lu", adv_type, interval, duration, filter_type, adv_id);
+    BT_LOGD("start ble adv type:%d, interval:%d, duration:%d, filter_type:%d, adv_id:%u", adv_type, interval, duration, filter_type, adv_id);
     uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x09, 0x09, 0x42, 0x52, 0x54, 0x2D, 0x49, 0x44, 0x4D, 0x30, 0x03, 0x02, 0x00, 0xFF };
     s_adv_data[12] = 0x30 + adv_id;
 

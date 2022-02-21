@@ -32,6 +32,7 @@
 #include "bts_gatt_server.h"
 #include "bts_gatt_service.h"
 #include "log.h"
+#include "utils.h"
 
 typedef struct
 {
