@@ -88,6 +88,11 @@ static bt_result_code start_advertising(void** hdl_ptr, advertise_param_t* param
 
     btm_leadv_hdl_t** handle_ptr = (btm_leadv_hdl_t**)(hdl_ptr);
     *handle_ptr = (btm_leadv_hdl_t*)malloc(sizeof(btm_leadv_hdl_t));
+    if (!*handle_ptr) {
+        BT_LOGE("error, malloc btm_leadv_hdl_t falied");
+        return BT_RESULT_ALLOC_BUFFER_FAILED;
+    }
+
     memset(*handle_ptr, 0, sizeof(btm_leadv_hdl_t));
     (*handle_ptr)->cb = cb;
     (*handle_ptr)->handle_ptr = (void**)handle_ptr;

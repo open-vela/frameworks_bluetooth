@@ -95,6 +95,11 @@ static bt_result_code start_scan(void** hdl_ptr, ble_scan_filter_t* filter, scan
 
     btm_lescan_hdl_t** handle_ptr = (btm_lescan_hdl_t**)(hdl_ptr);
     *handle_ptr = (btm_lescan_hdl_t*)malloc(sizeof(btm_lescan_hdl_t));
+    if (!*handle_ptr) {
+        BT_LOGE("error, malloc btm_lescan_hdl_t failed");
+        return BT_RESULT_ALLOC_BUFFER_FAILED;
+    }
+
     memset(*handle_ptr, 0, sizeof(btm_lescan_hdl_t));
     (*handle_ptr)->cb = cb;
     (*handle_ptr)->handle_ptr = (void**)handle_ptr;

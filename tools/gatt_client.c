@@ -69,17 +69,17 @@ static gattc_device_t* find_gattc_device(bt_address remote_address)
     return NULL;
 }
 
-static gattc_device_t* find_gattc_device2(void* handle)
-{
-    gattc_device_t* device;
-    list_for_every_entry(&gattc_device_list, device, gattc_device_t, node)
-    {
-        if (device->handle == handle) {
-            return device;
-        }
-    }
-    return NULL;
-}
+// static gattc_device_t* find_gattc_device2(void* handle)
+// {
+//     gattc_device_t* device;
+//     list_for_every_entry(&gattc_device_list, device, gattc_device_t, node)
+//     {
+//         if (device->handle == handle) {
+//             return device;
+//         }
+//     }
+//     return NULL;
+// }
 
 static gattc_device_t* add_gattc_device(bt_address remote_address)
 {
@@ -387,7 +387,6 @@ static int gattc_disconnect(void* handle, int argc, char** argv)
     if (!gattc_interface || argc < 1) {
         return -1;
     }
-    find_gattc_device2(handle);
     bt_address remote_address;
     str2ba(argv[0], remote_address);
     BT_LOGD("%s, remote_addr:%s", __func__, addr_str(remote_address));
@@ -570,6 +569,10 @@ static int gattc_write_request(void* handle, int argc, char** argv)
 
     size_t size = strlen(argv[2]);
     uint8_t* payload = (uint8_t*)malloc(size);
+    if(!payload) {
+        BT_LOGE("error, failed to allocate payload");
+        return 0;
+    }
     memcpy(payload, argv[2], size);
 
     BT_LOGD("%s, remote_addr:%s, id:%lu, size:%d, value", __func__, addr_str(remote_address), id, size);
@@ -587,6 +590,7 @@ static int gattc_write_request(void* handle, int argc, char** argv)
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, write_request  ret: %d", ret);
     }
+    free(payload);
     return 0;
 }
 

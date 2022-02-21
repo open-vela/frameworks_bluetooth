@@ -362,6 +362,7 @@ static void test_server_read_request_callback(void* handle, bt_address remote_ad
     rsp->status = GATT_STATUS_SUCCESS;
     if (!gatts_interface) {
         BT_LOGE("fail,   gatt interface null");
+        free(rsp);
         return;
     }
     gatts_interface->send_response(handle, remote_addr, rsp);
@@ -375,6 +376,10 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
     BT_LOGD("%s, addr:%s, request_id:%lu", __func__, addr_str(remote_addr), request_id);
     gatt_display_service(element, 1);
     gatt_response_t* rsp = malloc(sizeof(gatt_response_t));
+    if (!rsp) {
+        BT_LOGE("error, rsp malloc failed");
+        return;
+    }
     memset(rsp, 0, sizeof(gatt_response_t));
     switch (element->id) {
     case IOT_SERVICE_TX_CHR_CCC_ID: {
@@ -398,9 +403,11 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
     rsp->status = GATT_STATUS_SUCCESS;
     if (!gatts_interface) {
         BT_LOGE("fail,   gatt interface null");
+        free(rsp);
         return;
     }
     gatts_interface->send_response(handle, remote_addr, rsp);
+    free(rsp);
 }
 
 static void test_server_mtu_changed_callback(void* handle, bt_address remote_addr, uint32_t mtu)
@@ -612,12 +619,17 @@ static int gatts_send_notify(void* handle, int argc, char** argv)
 
     size_t size = strlen(argv[1]);
     uint8_t* payload = (uint8_t*)malloc(size);
+    if (!payload) {
+        BT_LOGE("error, failed to allocate payload");
+        return 0;
+    }
     memcpy(payload, argv[1], size);
 
     BT_LOGD("send notify   remote_addr:%s, value:", addr_str(remote_address));
     BT_HEXDUMP(payload, size);
     gatts_device_t* device = find_gatts_device(remote_address);
     if (!device) {
+        free(payload);
         BT_LOGE("device%s not connected", addr_str(remote_address));
         return 0;
     }
@@ -626,6 +638,7 @@ static int gatts_send_notify(void* handle, int argc, char** argv)
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, read phy  ret: %d", ret);
     }
+    free(payload);
     return 0;
 }
 
@@ -639,12 +652,17 @@ static int gatts_send_indicate(void* handle, int argc, char** argv)
 
     size_t size = strlen(argv[1]);
     uint8_t* payload = (uint8_t*)malloc(size);
+    if (!payload) {
+        BT_LOGE("error, failed to allocate payload");
+        return 0;
+    }
     memcpy(payload, argv[1], size);
 
     BT_LOGD("send indicate   remote_addr:%s, value:", addr_str(remote_address));
     BT_HEXDUMP(payload, size);
     gatts_device_t* device = find_gatts_device(remote_address);
     if (!device) {
+        free(payload);
         BT_LOGE("device%s not connected", addr_str(remote_address));
         return 0;
     }
@@ -653,6 +671,7 @@ static int gatts_send_indicate(void* handle, int argc, char** argv)
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("fail, send indicate  ret: %d", ret);
     }
+    free(payload);
     return 0;
 }
 

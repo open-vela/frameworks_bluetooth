@@ -1,13 +1,12 @@
 #define LOG_TAG "bt_sample_gap"
 
+#include "btm_gap.h"
 #include "btm_le_advertise.h"
 #include "btm_manager.h"
 #include "bts_spp.h"
 #include "log.h"
 #include <pthread.h>
 #include <stdio.h>
-#include "btm_gap.h"
-#include "log.h"
 
 void* manager_handle = NULL;
 void* gap_hanlde = NULL;
@@ -57,6 +56,12 @@ int main(int argc, FAR char* argv[])
     char input;
     bool exit = false;
     bt_device_t* device = (bt_device_t*)malloc(sizeof(bt_device_t));
+    if (!device) {
+        BT_LOGE("error, failed malloc bt_device_t")
+        return 0;
+    }
+    memset(device, 0, sizeof(bt_device_t));
+
     bt_address add = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
     while (!exit) {
         printf("please input command:\n");

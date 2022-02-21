@@ -58,7 +58,7 @@ static uint8_t generate_scanner_id(void)
 {
     uint8_t found = 0;
     bts_lescan_hdl_t* handle;
-    for (uint8_t i = 1; i < 256; i++, found = 0) {
+    for (uint8_t i = 1; i < 64; i++, found = 0) {
         list_for_every_entry(&scanner_list, handle, bts_lescan_hdl_t, node)
         {
             if (handle->scanner_id == i) {
@@ -98,6 +98,7 @@ static uint8_t add_scan_handle(bts_lescan_hdl_t client)
     handle->scanner_id = generate_scanner_id();
     if (!(handle->scanner_id)) {
         BT_LOGE("fail, generate_scanner_id id:%d", handle->scanner_id);
+        free(handle);
         return 0;
     }
     list_add_tail(&scanner_list, &handle->node);
@@ -208,7 +209,11 @@ void on_ble_scan_result(const scan_result_t* scan_result_data)
         CHECK_PTR(msg);
 
         scan_result_t* value = (scan_result_t*)malloc(sizeof(scan_result_t) + scan_result_data->length);
-        CHECK_PTR(value);
+        if (!value) {
+            free(msg);
+            BT_LOGE("error, malloc value failed");
+            return;
+        }
         memcpy(value->remote_addr, scan_result_data->remote_addr, sizeof(bt_address));
         value->device_type = scan_result_data->device_type;
         value->rssi = scan_result_data->rssi;

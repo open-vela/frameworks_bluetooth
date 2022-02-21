@@ -82,7 +82,7 @@ static int8_t gen_hid_dev_id(void)
 {
     uint8_t found = 0;
     bts_hidd_hdl_t* handle;
-    for (uint8_t i = 1; i < 256; i++, found = 0) {
+    for (uint8_t i = 1; i < 64; i++, found = 0) {
         list_for_every_entry(&hidd_list, handle, bts_hidd_hdl_t, node)
         {
             if (handle->device_id == i) {
@@ -150,10 +150,6 @@ static bts_hidd_msg_t* create_adp_msg(uint8_t event, bts_hidd_hdl_t* handle, voi
     bts_hidd_msg_t* msg = (bts_hidd_msg_t*)malloc(sizeof(bts_hidd_msg_t));
     CHECK_PTR_RETURN(msg, NULL);
 
-    if (size < 0) {
-        BT_LOGE("fail, invlaid size:%d", size);
-        return NULL;
-    }
     msg->event = event;
     msg->handle = handle;
     msg->size = size;

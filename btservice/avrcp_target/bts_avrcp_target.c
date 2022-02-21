@@ -23,10 +23,10 @@
  ****************************************************************************/
 #include <errno.h>
 #include <fcntl.h>
+#include <nuttx/input/keyboard.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <nuttx/input/keyboard.h>
 
 #include "btm_manager.h"
 #include "bts_a2dp_source.h"
@@ -70,11 +70,11 @@ static const struct {
     uint8_t avrcp;
     uint32_t mapped_id;
 } rc_key_map[] = {
-    { "PLAY",     AVRCP_OPERATION_PLAY,     XF86XK_AudioPlay  },
-    { "STOP",     AVRCP_OPERATION_STOP,     XF86XK_AudioStop  },
-    { "PAUSE",    AVRCP_OPERATION_PAUSE,    XF86XK_AudioPause },
-    { "FORWARD",  AVRCP_OPERATION_FORWARD,  XF86XK_AudioNext  },
-    { "BACKWARD", AVRCP_OPERATION_BACKWARD, XF86XK_AudioPrev  },
+    { "PLAY", AVRCP_OPERATION_PLAY, XF86XK_AudioPlay },
+    { "STOP", AVRCP_OPERATION_STOP, XF86XK_AudioStop },
+    { "PAUSE", AVRCP_OPERATION_PAUSE, XF86XK_AudioPause },
+    { "FORWARD", AVRCP_OPERATION_FORWARD, XF86XK_AudioNext },
+    { "BACKWARD", AVRCP_OPERATION_BACKWARD, XF86XK_AudioPrev },
     //{ "VOLUME UP",    AVRCP_OPERATION_VOLUME_UP,   XF86XK_AudioRaiseVolume},
     //{ "VOLUME DOWN",  AVRCP_OPERATION_VOLUME_DOWN, XF86XK_AudioLowerVolume},
     { NULL, 0, 0 }
@@ -238,6 +238,7 @@ static void adpt_connection_state_changed_cb(BD_ADDR remote_addr,
     SERVICE_PROFILE_CONNECTION_STATE state)
 {
     avrcp_msg_t msg;
+    memset(&msg, 0, sizeof(avrcp_msg_t));
 
     msg.event = CONNECTION_STATE_CHANGED;
     msg.data.conn_state = state;
@@ -249,6 +250,7 @@ static void adpt_register_notification_request_cb(BD_ADDR remote_addr,
     SERVICE_AVRCP_NOTIFICATION_EVENT event, uint32_t interval)
 {
     avrcp_msg_t msg;
+    memset(&msg, 0, sizeof(avrcp_msg_t));
 
     msg.event = REGISTER_NOTIFICATION;
     msg.data.reg_notif.event = event;
@@ -278,6 +280,7 @@ static void adpt_get_element_attr_request_cb(BD_ADDR remote_addr)
 static void adpt_set_volume_cb(BD_ADDR remote_addr, uint8_t volume)
 {
     avrcp_msg_t msg;
+    memset(&msg, 0, sizeof(avrcp_msg_t));
 
     msg.event = SET_ABSOLUTE_VOLUME;
     msg.data.volume = volume;
@@ -289,6 +292,7 @@ static void adpt_panel_operation_cb(BD_ADDR remote_addr,
     SERVICE_AVRCP_PANEL_OPERATION op, SERVICE_AVRCP_PANEL_STATE state)
 {
     avrcp_msg_t msg;
+    memset(&msg, 0, sizeof(avrcp_msg_t));
 
     msg.event = PASSTHROUHT_CMD;
     msg.data.cmd.opcode = op;

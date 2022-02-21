@@ -241,6 +241,11 @@ static void process_loop_in_gap(void* data, size_t data_size)
     case GAP_BOND_STATE_CHANGED: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->bond_state_changed_cb)) {
             bt_device_t* new_device = malloc(sizeof(bt_device_t));
+            if (!new_device) {
+                BT_LOGE("error, malloc new_device failed");
+                return;
+            }
+            memset(new_device, 0, sizeof(bt_device_t));
             memcpy(new_device->addr, gap_msg->event_data.bd_addr, BT_ADDR_LENGTH);
             g_bts_gap_callbacks->bond_state_changed_cb(new_device, gap_msg->event_data.data.bond_state);
             free(new_device);
@@ -250,6 +255,11 @@ static void process_loop_in_gap(void* data, size_t data_size)
     case GAP_ACL_STATE_CHANGED: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->connection_state_changed_cb)) {
             bt_device_t* new_device = malloc(sizeof(bt_device_t));
+            if (!new_device) {
+                BT_LOGE("error, malloc new_device failed");
+                return;
+            }
+            memset(new_device, 0, sizeof(bt_device_t));
             bt_connection_state state = STATE_DISCONNECTED;
             memcpy(new_device->addr, gap_msg->event_data.data.acl_state_params.remote_addr, BT_ADDR_LENGTH);
             switch (gap_msg->event_data.data.acl_state_params.state) {
@@ -521,6 +531,10 @@ static void adapter_hci_event_callback(SERVICE_BT_HCI_EVENT_S* hci_event)
     memcpy(&msg->event_data.data.hci_event, hci_event, sizeof(SERVICE_BT_HCI_EVENT_S));
     if (hci_event->length != 0) {
         msg->event_data.data.hci_event.params = malloc(hci_event->length);
+        if (!msg->event_data.data.hci_event.params) {
+            BT_LOGE("error, malloc params failed");
+            return;
+        }
         memcpy(msg->event_data.data.hci_event.params, hci_event->params, hci_event->length);
     }
     gap_send_message(msg);
@@ -573,6 +587,10 @@ static void adapter_service_discovered_callback(BD_ADDR remote_addr, SERVICE_BR_
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.discovery_service.size = size;
     msg->event_data.data.discovery_service.services = malloc(size * sizeof(br_service_t));
+    if (!msg->event_data.data.discovery_service.services) {
+        BT_LOGE("error, malloc services failed");
+        return;
+    }
     memcpy(msg->event_data.data.discovery_service.services, services, size * sizeof(br_service_t));
     gap_send_message(msg);
 }
@@ -736,8 +754,14 @@ bt_result_code gap_init(bts_gap_callback_t* cb)
     service_adapter_gap_init();
 
     service_adapter_gap_register_gap_callback(&g_gap_callback);
-    if (!g_msg_list)
+    if (!g_msg_list) {
         g_msg_list = malloc(sizeof(struct list_node));
+        if (!g_msg_list) {
+            BT_LOGE("error, malloc g_msg_list failed");
+            return BT_RESULT_ALLOC_BUFFER_FAILED;
+        }
+        memset(g_msg_list, 0, sizeof(struct list_node));
+    }
 
     list_initialize(g_msg_list);
 
@@ -812,8 +836,11 @@ bt_result_code bts_set_local_io_capability(bt_io_capability io_capability)
 
 char* bts_get_local_name()
 {
-    char* name = malloc(BT_DEVICE_NAME_MAX_LEN);
-    SERVICE_BT_STATUS ret = service_adapter_gap_get_local_name(&name, BT_DEVICE_NAME_MAX_LEN);
+    static char name[BT_DEVICE_NAME_MAX_LEN];
+    memset(name, 0, sizeof(name));
+    char* ppname = name;
+
+    SERVICE_BT_STATUS ret = service_adapter_gap_get_local_name(&ppname, BT_DEVICE_NAME_MAX_LEN);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%d", __func__, ret);
         return NULL;
@@ -930,6 +957,11 @@ int bts_get_bonded_devices(bt_device_t* device_list, int max_out)
         return ret;
     }
     SERVICE_REMOTE_DEVICE_S* bonded_list = malloc(sizeof(SERVICE_REMOTE_DEVICE_S) * max_out);
+    if (!bonded_list) {
+        BT_LOGE("error, malloc g_msg_list failed");
+        return 0;
+    }
+    memset(bonded_list, 0, sizeof(SERVICE_REMOTE_DEVICE_S) * max_out);
     ret = service_adapter_gap_get_bonded_devices(bonded_list, max_out);
     for (int i = 0; i < ret; i++) {
         uint8_t* link_key = bonded_list[i].link_key;
@@ -953,6 +985,11 @@ int bts_get_connected_devices(bt_device_t* device_list, int max_out)
         return ret;
     }
     SERVICE_REMOTE_DEVICE_S* connected_list = malloc(sizeof(SERVICE_REMOTE_DEVICE_S) * max_out);
+    if (!connected_list) {
+        BT_LOGE("error, malloc connected_list failed");
+        return 0;
+    }
+    memset(connected_list, 0, sizeof(SERVICE_REMOTE_DEVICE_S) * max_out);
     ret = service_adapter_gap_get_connected_devices(connected_list, max_out);
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, connected_list[i].bd_addr, BT_ADDR_LENGTH);
@@ -972,6 +1009,11 @@ int bts_get_ble_bonded_devices(bt_device_t* device_list, int max_out)
         return ret;
     }
     SERVICE_REMOTE_BLE_DEVICE_S* bonded_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
+    if (!bonded_list) {
+        BT_LOGE("error, malloc bonded_list failed");
+        return 0;
+    }
+    memset(bonded_list, 0, sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
     ret = service_adapter_gap_ble_get_bonded_devices(bonded_list, MAX_PAIR_DEVICE);
 
     for (int i = 0; i < ret; i++) {
@@ -992,6 +1034,12 @@ int bts_get_ble_connected_devices(bt_device_t* device_list, int max_out)
         return ret;
     }
     SERVICE_REMOTE_BLE_DEVICE_S* connected_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
+    if (!connected_list) {
+        BT_LOGE("error, malloc connected_list failed");
+        return 0;
+    }
+    memset(connected_list, 0, sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
+
     ret = service_adapter_gap_ble_get_connected_devices(connected_list, MAX_CONNECTED_DEVICE);
 
     for (int i = 0; i < ret; i++) {
@@ -1012,6 +1060,12 @@ int bts_get_ble_whitelist_devices(bt_device_t* device_list, int max_out)
         return ret;
     }
     SERVICE_REMOTE_BLE_DEVICE_S* whitelist_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
+    if (!whitelist_list) {
+        BT_LOGE("error, malloc whitelist_list failed");
+        return 0;
+    }
+    memset(whitelist_list, 0, sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
+
     ret = service_adapter_gap_ble_get_white_list_devices(whitelist_list, MAX_PAIR_DEVICE);
 
     for (int i = 0; i < ret; i++) {
@@ -1032,6 +1086,12 @@ int bts_get_ble_resolvinglist_devices(bt_device_t* device_list, int max_out)
         return ret;
     }
     SERVICE_REMOTE_BLE_DEVICE_S* resolvinglist_list = malloc(sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
+    if (!resolvinglist_list) {
+        BT_LOGE("error, malloc resolvinglist_list failed");
+        return 0;
+    }
+    memset(resolvinglist_list, 0, sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
+
     ret = service_adapter_gap_ble_get_resolving_list_devices(resolvinglist_list, MAX_PAIR_DEVICE);
 
     for (int i = 0; i < ret; i++) {

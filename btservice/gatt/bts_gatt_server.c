@@ -122,7 +122,7 @@ static int8_t gen_gatts_id(void)
 {
     uint8_t found = 0;
     bts_gatts_hdl_t* handle;
-    for (uint8_t i = 1; i < 256; i++, found = 0) {
+    for (uint8_t i = 1; i < 64; i++, found = 0) {
         list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
         {
             if (handle->server_if == i) {
@@ -203,6 +203,7 @@ static void on_server_connection_state_changed(bt_address remote_addr, profile_c
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_state_s data;
+        memset(&data, 0, sizeof(data));
         memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.state = state;
 
@@ -219,8 +220,13 @@ static void on_server_elements_added(gatt_status status, gatt_element_t* element
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_element_s data;
+        memset(&data, 0, sizeof(data));
         data.status = status;
         gatt_element_t* items = (gatt_element_t*)malloc(sizeof(gatt_element_t) * size);
+        if (!items) {
+            BT_LOGE("error, malloc items failed");
+            return;
+        }
         for (size_t index = 0; index < size; index++, items++, elements++) {
             items->id = elements->id;
             memcpy(items->uuid, elements->uuid, sizeof(bt_uuid_t));
@@ -232,7 +238,11 @@ static void on_server_elements_added(gatt_status status, gatt_element_t* element
         data.size = size;
 
         bts_gatts_msg_t* msg = create_adp_msg(ON_SERVER_ELEMENTS_ADD, handle, &data, sizeof(bts_gatts_element_s));
-        CHECK_PTR(msg);
+        if (!msg) {
+            free(items);
+            BT_LOGE("error, create_adp_msg");
+            return;
+        }
         send_msg(msg);
     }
 }
@@ -244,8 +254,14 @@ static void on_server_elements_removed(gatt_status status, gatt_element_t* eleme
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_element_s data;
+        memset(&data, 0, sizeof(data));
         data.status = status;
         gatt_element_t* items = (gatt_element_t*)malloc(sizeof(gatt_element_t) * size);
+        if (!items) {
+            BT_LOGE("error, malloc items failed");
+            return;
+        }
+
         for (size_t index = 0; index < size; index++, items++, elements++) {
             items->id = elements->id;
             memcpy(items->uuid, elements->uuid, sizeof(bt_uuid_t));
@@ -257,7 +273,12 @@ static void on_server_elements_removed(gatt_status status, gatt_element_t* eleme
         data.size = size;
 
         bts_gatts_msg_t* msg = create_adp_msg(ON_SERVER_ELEMENTS_REMOVE, handle, &data, sizeof(bts_gatts_element_s));
-        CHECK_PTR(msg);
+        if (!msg) {
+            free(items);
+            BT_LOGE("error, create_adp_msg");
+            return;
+        }
+
         send_msg(msg);
     }
 }
@@ -268,6 +289,7 @@ static void on_server_phy_read(bt_address remote_addr, ble_phy_type tx, ble_phy_
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_phy_s data;
+        memset(&data, 0, sizeof(data));
         memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.tx = tx;
         data.rx = rx;
@@ -284,6 +306,7 @@ static void on_server_phy_update(bt_address remote_addr, ble_phy_type tx, ble_ph
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_phy_s data;
+        memset(&data, 0, sizeof(data));
         memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.tx = tx;
         data.rx = rx;
@@ -302,14 +325,25 @@ static void on_server_read_request(bt_address remote_addr, uint32_t request_id,
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_read_s data;
+        memset(&data, 0, sizeof(data));
         memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.request_id = request_id;
         gatt_element_t* elem = (gatt_element_t*)malloc(sizeof(gatt_element_t));
+        if (!elem) {
+            BT_LOGE("error, malloc elem failed");
+            return;
+        }
+
         memcpy(elem, element, sizeof(gatt_element_t));
         data.element = elem;
 
         bts_gatts_msg_t* msg = create_adp_msg(ON_SERVER_READ_REQUEST, handle, &data, sizeof(bts_gatts_read_s));
-        CHECK_PTR(msg);
+        if (!msg) {
+            free(elem);
+            BT_LOGE("error, create_adp_msg");
+            return;
+        }
+
         send_msg(msg);
     }
 }
@@ -322,9 +356,15 @@ static void on_server_write_request(bt_address remote_addr, uint32_t request_id,
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_write_s data;
+        memset(&data, 0, sizeof(data));
         memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.request_id = request_id;
         gatt_element_t* elem = (gatt_element_t*)malloc(sizeof(gatt_element_t));
+        if (!elem) {
+            BT_LOGE("error, malloc elem failed");
+            return;
+        }
+
         memcpy(elem, element, sizeof(gatt_element_t));
         data.element = elem;
         uint8_t* v = (uint8_t*)malloc(size);
@@ -334,7 +374,12 @@ static void on_server_write_request(bt_address remote_addr, uint32_t request_id,
         data.offset = offset;
 
         bts_gatts_msg_t* msg = create_adp_msg(ON_SERVER_WRITE_REQUEST, handle, &data, sizeof(bts_gatts_write_s));
-        CHECK_PTR(msg);
+        if (!msg) {
+            free(elem);
+            BT_LOGE("error, create_adp_msg");
+            return;
+        }
+
         send_msg(msg);
     }
 }
@@ -345,6 +390,7 @@ static void on_server_mtu_changed(bt_address remote_addr, uint32_t mtu)
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_mtu_s data;
+        memset(&data, 0, sizeof(data));
         memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.mtu = mtu;
         bts_gatts_msg_t* msg = create_adp_msg(ON_SRRVER_MTU_CHANGED, handle, &data, sizeof(bts_gatts_mtu_s));
@@ -359,6 +405,7 @@ static void on_server_notify_sent(bt_address remote_addr, gatt_status status)
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
     {
         bts_gatts_notify_s data;
+        memset(&data, 0, sizeof(data));
         memcpy(data.addr, remote_addr, sizeof(bt_address));
         data.status = status;
         bts_gatts_msg_t* msg = create_adp_msg(ON_SERVER_NOTIFICATION_SENT, handle, &data, sizeof(bts_gatts_notify_s));

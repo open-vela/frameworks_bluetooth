@@ -172,7 +172,12 @@ static void on_client_service_discovered(bt_address remote_addr, gatt_element_t*
     CHECK_PTR(handle);
 
     bts_gattc_service_discover_s data;
+    memset(&data, 0, sizeof(data));
     gatt_element_t* items = (gatt_element_t*)malloc(sizeof(gatt_element_t) * size);
+    if (!items) {
+        BT_LOGE("error, malloc element failed");
+        return;
+    }
     for (size_t index = 0; index < size; index++, items++, element++) {
         items->id = element->id;
         memcpy(items->uuid, element->uuid, sizeof(BT_UUID_T));
@@ -183,7 +188,11 @@ static void on_client_service_discovered(bt_address remote_addr, gatt_element_t*
     data.element = items - size;
     data.size = size;
     bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_SERVICE_DISCOVERED, handle, &data, sizeof(bts_gattc_service_discover_s));
-    CHECK_PTR(msg);
+    if (!msg) {
+        free(items);
+        BT_LOGE("failed, create_adp_msg");
+        return;
+    }
     send_msg(msg);
 }
 
@@ -195,14 +204,23 @@ static void on_client_read_result(bt_address remote_addr, gatt_element_t* elemen
     CHECK_PTR(handle);
 
     bts_gattc_read_result_s data;
+    memset(&data, 0, sizeof(data));
     data.element = (gatt_element_t*)malloc(sizeof(gatt_element_t));
+    if (!data.element) {
+        BT_LOGE("error, malloc element failed");
+        return;
+    }
     memcpy(data.element, element, sizeof(gatt_element_t));
     data.value = (uint8_t*)malloc(sizeof(uint8_t) * size);
     memcpy(data.value, value, size);
     data.size = size;
     data.status = status;
     bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_READ_RESULT, handle, &data, sizeof(bts_gattc_read_result_s));
-    CHECK_PTR(msg);
+    if (!msg) {
+        free(data.element);
+        BT_LOGE("failed, create_adp_msg");
+        return;
+    }
     send_msg(msg);
 }
 
@@ -214,11 +232,20 @@ static void on_client_write_result(bt_address remote_addr, gatt_element_t* eleme
     CHECK_PTR(handle);
 
     bts_gattc_write_result_s data;
+    memset(&data, 0, sizeof(data));
     data.element = (gatt_element_t*)malloc(sizeof(gatt_element_t));
+    if (!data.element) {
+        BT_LOGE("error, malloc element failed");
+        return;
+    }
     memcpy(data.element, element, sizeof(gatt_element_t));
     data.status = status;
     bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_WRITE_RESULT, handle, &data, sizeof(bts_gattc_write_result_s));
-    CHECK_PTR(msg);
+    if (!msg) {
+        free(data.element);
+        BT_LOGE("failed, create_adp_msg");
+        return;
+    }
     send_msg(msg);
 }
 
@@ -230,13 +257,29 @@ static void on_client_nofity_request(bt_address remote_addr, gatt_element_t* ele
     CHECK_PTR(handle);
 
     bts_gattc_notify_request_s data;
+    memset(&data, 0, sizeof(data));
     data.element = (gatt_element_t*)malloc(sizeof(gatt_element_t));
+    if (!data.element) {
+        BT_LOGE("error, malloc element failed");
+        return;
+    }
     memcpy(data.element, element, sizeof(gatt_element_t));
     data.value = (uint8_t*)malloc(sizeof(uint8_t) * size);
+    if (!data.value) {
+        free(data.element);
+        BT_LOGE("error, malloc value failed");
+        return;
+    }
+
     memcpy(data.value, value, size);
     data.size = size;
     bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_NOTIFY_REQUEST, handle, &data, sizeof(bts_gattc_notify_request_s));
-    CHECK_PTR(msg);
+    if (!msg) {
+        free(data.element);
+        free(data.value);
+        BT_LOGE("failed, create_adp_msg");
+        return;
+    }
     send_msg(msg);
 }
 
@@ -248,6 +291,7 @@ static void on_client_rssi_read(bt_address remote_addr, int32_t rssi,
     CHECK_PTR(handle);
 
     bts_gattc_read_rssi_s data;
+    memset(&data, 0, sizeof(data));
     data.rssi = rssi;
     data.status = status;
     bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_RSSI_READ, handle, &data, sizeof(bts_gattc_read_rssi_s));
@@ -262,6 +306,7 @@ static void on_client_phy_read(bt_address remote_addr, ble_phy_type tx, ble_phy_
     CHECK_PTR(handle);
 
     bts_gattc_phy_type_s data;
+    memset(&data, 0, sizeof(data));
     data.tx = tx;
     data.rx = rx;
     bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_PHY_READ, handle, &data, sizeof(bts_gattc_phy_type_s));
@@ -276,6 +321,7 @@ static void on_client_phy_update(bt_address remote_addr, ble_phy_type tx, ble_ph
     CHECK_PTR(handle);
 
     bts_gattc_phy_type_s data;
+    memset(&data, 0, sizeof(data));
     data.tx = tx;
     data.rx = rx;
     bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_PHY_UPDATE, handle, &data, sizeof(bts_gattc_phy_type_s));
