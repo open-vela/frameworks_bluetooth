@@ -347,7 +347,9 @@ static int hidd_register_device(void* handle, int argc, char** argv)
     hids_info.hids_info.dsc_list[1] = (uint8_t)(desc_len & 0xFF);
     hids_info.hids_info.dsc_list[2] = (uint8_t)(desc_len >> 8);
     memcpy(hids_info.hids_info.dsc_list + 3, desc_list, desc_len);
-    bt_hidd_qos_settings_t tx_qos, rx_qos;
+    bt_hidd_qos_settings_t tx_qos, rx_qos; //stack  not support bt_hidd_qos_settings_t features, hence not inited;
+    memset(&tx_qos, 0, sizeof(tx_qos));
+    memset(&rx_qos, 0, sizeof(rx_qos));
 
     bt_result_code ret = hidd_interface->register_device(&hidd_handle, hids_info, tx_qos, rx_qos, &hidd_callbacks);
     free(hids_info.hids_info.dsc_list);
@@ -451,8 +453,12 @@ static int hidd_send_report(void* handle, int argc, char** argv)
 
     size_t size = strlen(argv[2]) + 1;
     char* buffer = (char*)malloc(size);
+    if (!buffer) {
+        BT_LOGE("error,  buffer malloc failed");
+        return 0;
+    }
     memcpy(buffer, argv[2], size);
-    buffer[size] = 0;
+    buffer[size - 1] = 0;
 
     BT_LOGD("report remote_addr:%s, report_id:%d, buffer:%s", addr_str(remote_address), report_id, buffer);
     hidd_device_t* device = find_hidd_device(remote_address);

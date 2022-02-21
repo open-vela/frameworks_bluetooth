@@ -148,6 +148,11 @@ static void on_ble_advtise_stopped_cb(uint8_t adv_id)
     }
 
     gatt_lesadv_msg_t* msg = (gatt_lesadv_msg_t*)malloc(sizeof(gatt_lesadv_msg_t));
+    if (!msg) {
+        BT_LOGE("error, malloc gatt_lesadv_msg_t failed");
+        return;
+    }
+
     memset(msg, 0, sizeof(gatt_lesadv_msg_t));
     msg->event = ON_ADV_STOPPED;
     msg->handle = client;
