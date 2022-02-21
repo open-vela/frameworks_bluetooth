@@ -293,7 +293,7 @@ static int updata_battery_level_cmd(void* handle, int argc, char* argv[])
 
     str2ba(argv[0], addr);
     battery = (uint8_t)atoi(argv[1]);
-    if (battery < 0 || battery > 100)
+    if (battery > 100)
         return -EINVAL;
 
     hf_interface->update_battery_level(NULL, addr, battery);

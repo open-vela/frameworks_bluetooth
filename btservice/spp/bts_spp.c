@@ -409,7 +409,6 @@ static spp_pty_device_t* spp_open_pty_device(spp_pty_device_t* device, uint16_t 
     return device;
 error:
     close(device->mfd);
-    close(device->sfd);
     remove_pty_device(device);
     return NULL;
 }
