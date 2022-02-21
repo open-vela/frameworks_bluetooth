@@ -241,7 +241,7 @@ void create_config_folder(void)
     char folder_bt[] = "/data/misc/bt";
 
     if (access(folder_misc, 0) != 0) {
-        if (mkdir(folder_misc, 0777) != 0);
+        if (mkdir(folder_misc, 0777) != 0)
             syslog(LOG_WARNING, "%s, create misc folder failed\n", __func__);
     }
     if (access(folder_bt, 0) != 0) {
