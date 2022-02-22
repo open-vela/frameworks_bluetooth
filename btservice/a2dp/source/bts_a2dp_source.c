@@ -159,6 +159,7 @@ static void a2dp_service_handle_event(a2dp_event_t* a2dp_event, uint8_t peer_sep
 
         device->peer.mtu = a2dp_event->event_data.mtu;
         BT_LOGD("STREAM_MTU_CONFIG_EVT :%d", device->peer.mtu);
+        bts_a2dp_codec_update_config(&device->peer.codec_config, device->peer.mtu);
         break;
     }
     default: {

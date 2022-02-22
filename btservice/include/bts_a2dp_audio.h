@@ -33,9 +33,7 @@
 #ifndef __BTS_A2DP_AUDIO_H__
 #define __BTS_A2DP_AUDIO_H__
 
-#include <nuttx/mm/circbuf.h>
 #include "btm_common_define.h"
-#include "a2dp_ipc.h"
 
 void bts_a2dp_audio_on_connection_changed(uint8_t peer_sep, bool connected);
 void bts_a2dp_audio_on_started(uint8_t peer_sep, bool started);

@@ -33,10 +33,8 @@
 #ifndef __BTS_A2DP_SINK_AUDIO_H__
 #define __BTS_A2DP_SINK_AUDIO_H__
 
-#include <nuttx/mm/circbuf.h>
 #include <nuttx/list.h>
 #include "btm_common_define.h"
-#include "a2dp_ipc.h"
 
 typedef struct {
     struct list_node node;

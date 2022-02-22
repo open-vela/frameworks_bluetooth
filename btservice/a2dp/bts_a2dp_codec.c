@@ -35,36 +35,40 @@
 
 #include "btm_manager.h"
 #include "bts_service.h"
-#include "a2dp_codec_sbc.h"
-#include "sbc_encoder.h"
 #include "bts_a2dp_codec.h"
+#include "bts_a2dp_source_audio.h"
 
 #define LOG_TAG "a2dp_codec"
 #include "log.h"
 
-extern uint32_t a2dp_sbc_frame_length(sbc_param_t* param);
-
 a2dp_codec_config_t g_current_config;
 
-uint32_t bts_a2dp_codec_get_frame_length(void)
+static void a2dp_codec_config_set(a2dp_codec_config_t* config, uint16_t mtu)
 {
-    a2dp_codec_config_t* config = &g_current_config;
-    if (config->codec_type == BTS_A2DP_TYPE_SBC)
-        return a2dp_sbc_frame_length(&config->codec_param.sbc);
+    if (config->codec_type == BTS_A2DP_TYPE_SBC) {
+        a2dp_source_sbc_update_config(mtu, &config->codec_param.sbc, config->specific_info);
+        config->bit_rate = config->codec_param.sbc.u32BitRate;
+    } else if (config->codec_type == BTS_A2DP_TYPE_MPEG2_4_AAC) {
+        a2dp_source_aac_update_config(mtu, &config->codec_param.aac, config->specific_info);
+        config->bit_rate = config->codec_param.aac.u32BitRate;
+    } else {
+        BT_LOGE("%s Unkonw Codec", __func__);
+    }
 
-    return 0; //unknown codec
-}
-a2dp_codec_config_t* bts_a2dp_codec_get_config(void)
-{
-    return &g_current_config;
+    memcpy(&g_current_config, config, sizeof(g_current_config));
 }
 
 void bts_a2dp_codec_set_config(a2dp_codec_config_t* config)
 {
-    if (config->codec_type == BTS_A2DP_TYPE_SBC) {
-        a2dp_codec_parse_sbc_param(&config->codec_param.sbc, config->specific_info);
-        config->bit_rate = config->codec_param.sbc.u32BitRate;
-    }
+    a2dp_codec_config_set(config, 0);
+}
 
-    memcpy(&g_current_config, config, sizeof(g_current_config));
+void bts_a2dp_codec_update_config(a2dp_codec_config_t* config, uint16_t mtu)
+{
+    a2dp_codec_config_set(config, mtu);
+}
+
+a2dp_codec_config_t* bts_a2dp_codec_get_config(void)
+{
+    return &g_current_config;
 }
