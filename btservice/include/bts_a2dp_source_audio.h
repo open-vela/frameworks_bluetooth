@@ -33,15 +33,19 @@
 #ifndef __BTS_A2DP_SOURCE_AUDIO_H__
 #define __BTS_A2DP_SOURCE_AUDIO_H__
 
-#include <nuttx/mm/circbuf.h>
 #include "btm_common_define.h"
-#include "a2dp_ipc.h"
+#include "a2dp_codec_sbc.h"
+#include "a2dp_codec_aac.h"
+
+#define AVDT_MEDIA_OFFSET 23
+#define MAX_2MBPS_AVDTP_MTU 663   // 2DH5 MTU=679, -12 for AVDTP, -4 for L2CAP
+#define MAX_3MBPS_AVDTP_MTU 1005  // 3DH5 MTU=1021, -12 for AVDTP, -4 for L2CAP
 
 typedef void (*frame_send_callback)(uint8_t *buf, uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp);
 typedef int  (*frame_read_callback)(uint8_t *buf, uint16_t frame_len);
 
 typedef struct {
-    void (*init)(sbc_param_t* param, uint32_t mtu,
+    void (*init)(void* param, uint32_t mtu,
                                     frame_send_callback send_cb,
                                     frame_read_callback read_cb);
     void (*reset)(void);
@@ -58,6 +62,9 @@ void bts_a2dp_source_on_stopped(void);
 void bts_a2dp_source_on_suspended(void);
 bool bts_a2dp_source_is_streaming(void);
 void bts_a2dp_source_setup_codec(bt_address bd_addr);
+int a2dp_source_sbc_update_config(uint32_t mtu, sbc_param_t* param, uint8_t* codec_info);
+int a2dp_source_aac_update_config(uint32_t mtu, aac_encoder_param_t* param, uint8_t* codec_info);
 extern const a2dp_source_stream_interface_t* get_a2dp_source_sbc_stream_interface(void);
+extern const a2dp_source_stream_interface_t* get_a2dp_source_aac_stream_interface(void);
 
 #endif

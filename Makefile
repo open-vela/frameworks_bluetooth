@@ -32,6 +32,7 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP),y)
 	CSRCS += btservice/a2dp/bts_a2dp_codec.c
 	CSRCS += btservice/a2dp/bts_a2dp_device.c
 	CSRCS += btservice/a2dp/codec/a2dp_codec_sbc.c
+	CSRCS += btservice/a2dp/codec/a2dp_codec_aac.c
 	CSRCS += udrv/uv/a2dp_ipc.c
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK),y)

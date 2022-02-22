@@ -140,6 +140,13 @@ config BLUETOOTH_A2DP_IPC_RPSMG_NAME
 	help
 		Bluetooth A2dp audio IPC rpmsg name
 
+config BLUETOOTH_A2DP_AAC_CODEC
+	bool "Bluetooth A2dp AAC codec support"
+	default n
+	select AAC_ENABLED
+	help
+		Bluetooth A2dp AAC codec support
+
 endif #BLUETOOTH_A2DP
 
 if BLUETOOTH_SPP

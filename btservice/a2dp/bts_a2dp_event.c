@@ -30,8 +30,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "btm_manager.h"
 #include "bts_a2dp_event.h"

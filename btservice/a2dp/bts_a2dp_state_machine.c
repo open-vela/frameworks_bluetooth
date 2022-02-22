@@ -53,6 +53,11 @@
 
 #define A2DP_CONNECT_TIMEOUT 4 * 1000
 #define A2DP_START_TIMEOUT 2 * 1000
+#ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
+#define A2DP_PREFERRED_CODEC    SERVICE_AVDTP_CODEC_TYPE_MPEG2_4_AAC
+#else
+#define A2DP_PREFERRED_CODEC    SERVICE_AVDTP_CODEC_TYPE_SBC
+#endif
 
 typedef enum pending_state {
     PENDING_NONE = 0x0,
@@ -305,10 +310,10 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
         BT_LOGD("PERFORMANCE-A2DP-SRC-BLUELET-CONNECT-START");
         if (a2dp_sm->peer_sep == SEP_SNK)
             status = service_adapter_a2dp_source_connect(data->bd_addr,
-                SERVICE_AVDTP_CODEC_TYPE_SBC);
+                                                         A2DP_PREFERRED_CODEC);
         else
             status = service_adapter_a2dp_sink_connect(data->bd_addr,
-                SERVICE_AVDTP_CODEC_TYPE_SBC);
+                                                       A2DP_PREFERRED_CODEC);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
                 A2DP_CONNECTION_STATE_DISCONNECTED);

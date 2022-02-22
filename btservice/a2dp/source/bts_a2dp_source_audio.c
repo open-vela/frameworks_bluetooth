@@ -32,15 +32,16 @@
  ****************************************************************************/
 #include <stdint.h>
 #include <stdlib.h>
+#include <nuttx/mm/circbuf.h>
 #include "bts_service.h"
 #include "bts_a2dp_codec.h"
 #include "bts_a2dp_control.h"
 #include "bts_a2dp_source.h"
 #include "bts_a2dp_source_audio.h"
-#include "utils.h"
 
 #include "stack_adapter_a2dp_source.h"
 #include "stack_adapter_service_base.h"
+#include "a2dp_ipc.h"
 #include "utils/utils.h"
 #define LOG_TAG "a2dp_src_stream"
 #include "log.h"
@@ -58,13 +59,11 @@ typedef enum {
 
 typedef struct {
     uint16_t         mtu;
-    uint16_t         frames_len;
     stream_state_t   stream_state;
     uint8_t          codec_info[10];
     uint32_t         interval_ms;
     uv_timer_t*      media_alarm;
     uint32_t         sequence_number;
-    uint32_t         total_tx_frames;
     uint32_t         max_tx_length;
     struct circbuf_s stream_pool;
     uint8_t          read_congest;
@@ -84,6 +83,8 @@ static const a2dp_source_stream_interface_t *get_stream_interface(void)
     config = bts_a2dp_codec_get_config();
     if (config->codec_type == BTS_A2DP_TYPE_SBC)
         return get_a2dp_source_sbc_stream_interface();
+    else if (config->codec_type == BTS_A2DP_TYPE_MPEG2_4_AAC)
+        return get_a2dp_source_aac_stream_interface();
 
     abort();
     return NULL;
@@ -108,16 +109,14 @@ static void bts_a2dp_audio_data_alloc(uint8_t ch_id, uint8_t** buffer, size_t* l
 
     //check pool buffer space enough to read one frame
     space = circbuf_space(&stream->stream_pool);
-    if (space < a2dp_src_stream.frames_len) {
-        BT_LOGE("%s, space:%d, frames_len:%d", __func__, space, a2dp_src_stream.frames_len);
+    if (space == 0) {
+        BT_LOGE("%s, no enough space to read", __func__);
         *buffer = NULL;
         return;
     }
 
     next_to_read = space > stream->max_tx_length ?
-                   stream->max_tx_length :
-                   space /(stream->frames_len) * (stream->frames_len);
-    //BT_LOGD("%s, space:%d, next_read:%d", __func__, space, next_to_read);
+                   stream->max_tx_length : space;
 
     alloc_buffer = (void*)malloc(next_to_read);
     if (!alloc_buffer) {
@@ -154,7 +153,7 @@ static void bts_a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t
 
     circbuf_write(&stream->stream_pool, buffer, len);
     space = circbuf_space(&stream->stream_pool);
-    if (space < stream->frames_len) {
+    if (space == 0) {
         bts_a2dp_source_read_congest(ch_id);
     }
 
@@ -175,7 +174,7 @@ static void bts_a2dp_source_start_read(void)
         stream->read_congest != 1)
         return;
 
-    if (circbuf_space(&stream->stream_pool) < stream->frames_len)
+    if (circbuf_space(&stream->stream_pool) == 0)
         return;
 
     stream->read_congest = 0;
@@ -211,7 +210,6 @@ static void bts_a2dp_source_send_callback(uint8_t* buf, uint16_t nbytes, uint8_t
     packet->header.sequenceNumber = stream->sequence_number++;
     packet->header.ssrc = 1;
     packet->header.timestamp = timestamp;
-    stream->total_tx_frames += nb_frames;
 
     bts_a2dp_source_packet_send(packet);
 }
@@ -268,7 +266,8 @@ static void bts_a2dp_source_start_delay(char* arg)
 {
     a2dp_source_stream_t* stream = &a2dp_src_stream;
 
-    stop_timer(a2dp_src_stream.media_alarm);
+    stop_timer(stream->media_alarm);
+    stream->media_alarm = NULL;
     stream->media_alarm = start_timer(stream->interval_ms,
                           stream->interval_ms,
                           bts_a2dp_source_audio_handle_timer,
@@ -293,17 +292,16 @@ static void bts_a2dp_source_start_audio_req(void)
         bts_a2dp_source_stop_flush();
 
     circbuf_reset(&stream->stream_pool);
-    stream->mtu = peer->mtu;
+    stream->mtu = peer->mtu > 0 ? peer->mtu : MAX_2MBPS_AVDTP_MTU;
     stream->read_congest = 0;
     stream->interval_ms = stream->stream_interface->get_interval_ms();
-    stream->frames_len = bts_a2dp_codec_get_frame_length();
-    stream->max_tx_length = MAX_FRAME_NUM_PER_TICK * stream->frames_len;
+    stream->max_tx_length = stream->mtu;
     bts_a2dp_source_start_read();
     /*delay start, wait stream pool filling*/
     stream->media_alarm = start_timer(STREAM_DELAY_MS,
-        0,
-        bts_a2dp_source_start_delay,
-        NULL);
+                                      0,
+                                      bts_a2dp_source_start_delay,
+                                      NULL);
     stream->stream_state = STATE_RUNNING;
 }
 
@@ -318,7 +316,6 @@ static void bts_a2dp_source_stop_audio_req(void)
     circbuf_reset(&a2dp_src_stream.stream_pool);
     stop_timer(a2dp_src_stream.media_alarm);
     a2dp_src_stream.media_alarm = NULL;
-    a2dp_src_stream.total_tx_frames = 0;
     a2dp_src_stream.sequence_number = 0;
     a2dp_src_stream.stream_state = STATE_OFF;
     bts_a2dp_source_start_flush();
@@ -403,10 +400,8 @@ void bts_a2dp_source_setup_codec(bt_address bd_addr)
 
 void bts_a2dp_source_audio_init(void)
 {
-    a2dp_src_stream.media_alarm = NULL;
+    memset(&a2dp_src_stream, 0, sizeof(a2dp_src_stream));
     a2dp_src_stream.stream_state = STATE_OFF;
-    a2dp_src_stream.sequence_number = 0;
-    a2dp_src_stream.total_tx_frames = 0;
     circbuf_init(&a2dp_src_stream.stream_pool, NULL, 4096);
     bts_a2dp_control_init(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
 }
