@@ -35,7 +35,8 @@
 
 #include <sys/types.h>
 #include "btm_manager.h"
-#include "sbc_encoder.h"
+#include "a2dp_codec_sbc.h"
+#include "a2dp_codec_aac.h"
 
 typedef enum {
     BTS_A2DP_TYPE_SBC,
@@ -72,11 +73,13 @@ typedef struct {
     uint8_t  specific_info[20];
     union {
         sbc_param_t sbc;
+        aac_encoder_param_t aac;
     } codec_param;
 } a2dp_codec_config_t;
 
-uint32_t bts_a2dp_codec_get_frame_length(void);
 a2dp_codec_config_t* bts_a2dp_codec_get_config(void);
 void bts_a2dp_codec_set_config(a2dp_codec_config_t* config);
+void bts_a2dp_codec_update_config(a2dp_codec_config_t* config, uint16_t mtu);
+
 
 #endif

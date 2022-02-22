@@ -127,6 +127,12 @@ void bts_a2dp_control_update_audio_config(uint8_t ch_id, uint8_t isvalid)
             UINT32_TO_STREAM(p, codec_config->codec_param.sbc.s16AllocationMethod);
             /* set sbc bitpool*/
             UINT32_TO_STREAM(p, codec_config->codec_param.sbc.s16BitPool);
+        } else if (codec_config->codec_type == BTS_A2DP_TYPE_MPEG2_4_AAC) {
+            len += 8;
+            /* set aac object type*/
+            UINT32_TO_STREAM(p, codec_config->codec_param.aac.u16ObjectType);
+            /* set aac vbr*/
+            UINT32_TO_STREAM(p, codec_config->codec_param.aac.u16VariableBitRate);
         }
     }
 
