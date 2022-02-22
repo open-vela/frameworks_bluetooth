@@ -559,7 +559,7 @@ static void handle_msg_received(bt_profile_id id, void* value, size_t size)
     case ON_CLIENT_CONNECT_STATE: {
         profile_connection_state* state = (profile_connection_state*)(msg->data);
         BT_CBACK(handle->callbacks, bts_gattc_connection_state_changed_cb, handle->btm_handle, *state);
-        if (state == PROFILE_DISCONNECTED) {
+        if (*state == PROFILE_DISCONNECTED) {
             BT_LOGD("remove_gatt_client handle");
             remove_gatt_client(handle);
             bts_unregister_profile_process(BT_PROFILE_GATTC_ID);
