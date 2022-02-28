@@ -51,6 +51,7 @@ typedef struct {
 } advertise_handle_t;
 
 static void* gatts_handle;
+static void* adv_handle[10];
 static btm_gatt_server_interface_t* gatts_interface = NULL;
 static btm_interface_t* manager = NULL;
 static volatile uint16_t throughtput_cursor = 1;
@@ -710,11 +711,14 @@ static int le_start_advertising(void* handle, int argc, char** argv)
         return 0;
     }
 
-    void* adv_handle;
     int interval = atoi(argv[1]);
     int duration = atoi(argv[2]);
     int filter_type = atoi(argv[3]);
     uint8_t adv_id = atoi(argv[4]);
+    if (adv_id >= sizeof(adv_handle) / sizeof(adv_handle[0])) {
+        BT_LOGD("fail, adv_id :%d overflow", adv_id);
+        return 0;
+    }
     BT_LOGD("start ble adv type:%d, interval:%d, duration:%d, filter_type:%d, adv_id:%u", adv_type, interval, duration, filter_type, adv_id);
     uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x09, 0x09, 0x42, 0x52, 0x54, 0x2D, 0x49, 0x44, 0x4D, 0x30, 0x03, 0x02, 0x00, 0xFF };
     s_adv_data[12] = 0x30 + adv_id;
@@ -734,13 +738,13 @@ static int le_start_advertising(void* handle, int argc, char** argv)
     adv_para.params.filter_policy = filter_type;
     adv_para.adv_id = adv_id;
     btm_le_advertise_interface_t* adv_interface = get_btm_leadv_interface(manager);
-    bt_result_code ret = adv_interface->start_advertising(&adv_handle, &adv_para, &le_adv_cb);
+    bt_result_code ret = adv_interface->start_advertising(&adv_handle[adv_id], &adv_para, &le_adv_cb);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGD("start_advertising  fail, ret: %d", ret);
         return 0;
     }
 
-    add_advertise_handle(adv_handle, adv_id);
+    add_advertise_handle(adv_handle[adv_id], adv_id);
     return 0;
 }
 
