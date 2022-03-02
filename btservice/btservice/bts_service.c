@@ -239,6 +239,11 @@ void create_config_folder(void)
 {
     char folder_misc[] = "/data/misc";
     char folder_bt[] = "/data/misc/bt";
+#ifdef CONFIG_BLUELET_HCI_SNOOP_LOG_PATH
+    char folder_snoop[] = CONFIG_BLUELET_HCI_SNOOP_LOG_PATH;
+#else
+    char folder_snoop[] = "/data/misc/bt/snoop/";
+#endif
 
     if (access(folder_misc, 0) != 0) {
         if (mkdir(folder_misc, 0777) != 0)
@@ -248,14 +253,11 @@ void create_config_folder(void)
         if (mkdir(folder_bt, 0777) != 0)
             syslog(LOG_WARNING, "%s, create bt folder failed\n", __func__);
     }
-#ifdef CONFIG_BLUELET_HCI_SNOOP_LOG_PATH
-    char folder_snoop[] = CONFIG_BLUELET_HCI_SNOOP_LOG_PATH;
 
     if (access(folder_snoop, 0) != 0) {
         if (mkdir(folder_snoop, 0777) != 0)
             syslog(LOG_WARNING, "%s, create snoop folder failed", __func__);
     }
-#endif
 }
 
 bt_result_code bts_service_init(bt_service_callbacks* callbacks)
