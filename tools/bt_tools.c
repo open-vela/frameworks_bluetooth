@@ -383,6 +383,10 @@ static int remove_bond(void* handle, int argc, char** argv)
 static int get_bonded_devices(void* handle, int argc, char** argv)
 {
     int num = gap_test_interface->bt_get_bonded_devices(g_gap_handle, NULL, 0);
+    if (num < 1) {
+        BT_LOGD("%s, num : %d", __func__, num);
+        return 0;
+    }
     bt_device_t* device_list = malloc(sizeof(bt_device_t) * num);
     if (!device_list) {
         BT_LOGE("error, device_list malloc failed");
@@ -402,6 +406,10 @@ static int get_connected_devices(void* handle, int argc, char** argv)
 {
 
     int num = gap_test_interface->bt_get_connected_devices(g_gap_handle, NULL, 0);
+    if (num < 1) {
+        BT_LOGD("%s, num : %d", __func__, num);
+        return 0;
+    }
     bt_device_t* device_list = malloc(sizeof(bt_device_t) * num);
     if (!device_list) {
         BT_LOGE("error, device_list malloc failed");
@@ -552,6 +560,10 @@ static int remove_resolving_device(void* handle, int argc, char** argv)
 static int get_ble_bonded_devices(void* handle, int argc, char** argv)
 {
     int num = gap_test_interface->ble_get_bonded_devices(g_gap_handle, NULL, 0);
+    if (num < 1) {
+        BT_LOGD("%s, num : %d", __func__, num);
+        return 0;
+    }
     bt_device_t* device_list = malloc(sizeof(bt_device_t) * num);
     if (!device_list) {
         BT_LOGE("error, device malloc failed");
@@ -571,6 +583,10 @@ static int get_ble_bonded_devices(void* handle, int argc, char** argv)
 static int get_ble_connected_devices(void* handle, int argc, char** argv)
 {
     int num = gap_test_interface->ble_get_connected_devices(g_gap_handle, NULL, 0);
+    if (num < 1) {
+        BT_LOGD("%s, num : %d", __func__, num);
+        return 0;
+    }
     bt_device_t* device_list = malloc(sizeof(bt_device_t) * num);
     if (!device_list) {
         BT_LOGE("error, device malloc failed");
@@ -591,6 +607,11 @@ static int get_ble_connected_devices(void* handle, int argc, char** argv)
 static int get_ble_whitelist_devices(void* handle, int argc, char** argv)
 {
     int num = gap_test_interface->ble_get_whitelist_devices(g_gap_handle, NULL, 0);
+    if (num < 1) {
+        BT_LOGD("%s, num : %d", __func__, num);
+        return 0;
+    }
+
     bt_device_t* device_list = malloc(sizeof(bt_device_t) * num);
     if (!device_list) {
         BT_LOGE("error, device malloc failed");
@@ -610,6 +631,10 @@ static int get_ble_whitelist_devices(void* handle, int argc, char** argv)
 static int get_ble_resolvinglist_devices(void* handle, int argc, char** argv)
 {
     int num = gap_test_interface->ble_get_resolvinglist_devices(g_gap_handle, NULL, 0);
+    if (num < 1) {
+        BT_LOGD("%s, num : %d", __func__, num);
+        return 0;
+    }
     bt_device_t* device_list = malloc(sizeof(bt_device_t) * num);
     if (!device_list) {
         BT_LOGE("error, device malloc failed");
