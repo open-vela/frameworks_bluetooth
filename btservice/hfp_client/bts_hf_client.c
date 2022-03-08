@@ -556,11 +556,13 @@ bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks
     if (status != SERVICE_BT_STATUS_SUCCESS) {
         return BT_RESULT_FAILED;
     }
+#ifndef CONFIG_ARCH_SIM
     g_hfp_service.orb_fd = orb_advertise(ORB_ID(hfp_state), NULL);
     if (g_hfp_service.orb_fd < 0) {
         BT_LOGE("g_hfp_service.orb_fd advertise failed");
         return BT_RESULT_FAILED;
     }
+#endif
 
     g_hfp_service.started = true;
 

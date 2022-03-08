@@ -30,51 +30,71 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __A2DP_EVENT_H__
-#define __A2DP_EVENT_H__
+#define LOG_TAG "btm_a2dp_sink"
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include <stdio.h>
+#include <sys/types.h>
+
+#include "btm_a2dp_sink.h"
 #include "btm_manager.h"
-#include "bts_a2dp_sink_audio.h"
+#include "bts_service.h"
+#include "bts_service_interface.h"
 
-typedef enum {
-    ENABLE = 1,
-    CLEANUP,
-    CONNECT_REQ,
-    DISCONNECT_REQ,
-    STREAM_START_REQ,
-    STREAM_SUSPEND_REQ,
-    PEER_STREAM_START_REQ,
-    CONNECTED_EVT,
-    DISCONNECTED_EVT,
-    STREAM_STARTED_EVT,
-    STREAM_SUSPENDED_EVT,
-    STREAM_CLOSED_EVT,
-    STREAM_MTU_CONFIG_EVT,
-    CODEC_CONFIG_EVT,
-    DEVICE_CODEC_STATE_CHANGE_EVT,
-    DATA_IND_EVT,
-    CONNECT_TIMEOUT,
-    START_TIMEOUT,
-} a2dp_event_type_t;
+#include "log.h"
 
-typedef struct
+static a2dp_sink_interface_t* get_service(void)
 {
-    bt_address  bd_addr;
-    uint8_t     peer_sep;
-    uint16_t    mtu;
-    void*       data;
-    a2dp_sink_packet_t *packet;
-} a2dp_event_data_t;
+    return (a2dp_sink_interface_t*)get_bluetooth_service_interface()->get_profile_interface(BT_PROFILE_ADVANCED_AUDIO_SINK);
+}
 
-typedef struct
+static bt_result_code a2dp_sink_connect(void* handle, bt_address addr)
 {
-    a2dp_event_type_t event;
-    a2dp_event_data_t event_data;
-} a2dp_event_t;
+    a2dp_sink_interface_t* service = get_service();
+    if (!service)
+        return BT_RESULT_FAILED;
 
-a2dp_event_t* a2dp_event_new(a2dp_event_type_t event, bt_address bd_addr);
-void a2dp_event_destory(a2dp_event_t* a2dp_event);
+    BT_LOGD("PERFORMANCE-A2DP-SNK-BTM-CONNECT-START");
+    return service->connect(handle, addr);
+}
 
-#endif
+static bt_result_code a2dp_sink_disconnect(void* handle, bt_address addr)
+{
+    a2dp_sink_interface_t* service = get_service();
+    if (!service)
+        return BT_RESULT_FAILED;
+
+    return service->disconnect(handle, addr);
+}
+
+static bt_result_code a2dp_sink_set_active_device(void* handle, bt_address addr)
+{
+    a2dp_sink_interface_t* service = get_service();
+    if (!service)
+        return BT_RESULT_FAILED;
+
+    return service->set_active_device(handle, addr);
+}
+
+static void a2dp_sink_set_callbacks(void* handle, a2dp_sink_callbacks_t* callbacks)
+{
+    a2dp_sink_interface_t* service = get_service();
+    if (!service)
+        return;
+
+    service->set_callbacks(handle, callbacks);
+}
+
+static const a2dp_sink_interface_t a2dpSinkInterface = {
+    sizeof(a2dp_sink_interface_t),
+    a2dp_sink_connect,
+    a2dp_sink_disconnect,
+    a2dp_sink_set_active_device,
+    a2dp_sink_set_callbacks
+};
+
+const a2dp_sink_interface_t* get_a2dp_sink_interface(void)
+{
+    return &a2dpSinkInterface;
+}

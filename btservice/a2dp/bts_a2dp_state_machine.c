@@ -30,27 +30,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-
+#include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <connectivity/bt.h>
 #include <uORB/uORB.h>
 #include "stack_adapter_a2dp_sink.h"
 #include "stack_adapter_a2dp_source.h"
 #include "stack_adapter_common.h"
-#include "stack_adapter_gap.h"
 #include "stack_adapter_service_base.h"
 
 #include "state_machine.h"
-
-#include "btm_a2dp_source.h"
-#include "bts_a2dp_codec.h"
-#include "bts_a2dp_control.h"
 #include "bts_a2dp_event.h"
 #include "bts_a2dp_source.h"
-#include "bts_a2dp_source_audio.h"
+#include "bts_a2dp_sink.h"
+#include "bts_a2dp_audio.h"
 #include "bts_a2dp_state_machine.h"
 #include "utils/utils.h"
 #define LOG_TAG "a2dp_stm"
@@ -67,10 +62,11 @@ typedef enum pending_state {
 
 typedef struct _a2dp_state_machine {
     state_machine_t sm;
-    a2dp_source_t* service;
+    void* service;
     bt_address addr;
     pending_state_t pending;
     bool audio_ready;
+    uint8_t peer_sep;
     uv_timer_t* connect_timer;
     uv_timer_t* start_timer;
 } a2dp_state_machine_t;
@@ -146,6 +142,7 @@ static char* stack_event_to_string(a2dp_event_type_t event)
         CASE_RETURN_STR(STREAM_CLOSED_EVT)
         CASE_RETURN_STR(CODEC_CONFIG_EVT)
         CASE_RETURN_STR(DEVICE_CODEC_STATE_CHANGE_EVT)
+        CASE_RETURN_STR(DATA_IND_EVT)
         CASE_RETURN_STR(CONNECT_TIMEOUT)
         CASE_RETURN_STR(START_TIMEOUT)
     default:
@@ -157,7 +154,6 @@ static void broadcast_a2dp_state(int orb_fd, bt_address addr, int conn_state, in
 {
     struct a2dp_state uORB_state;
     struct timespec ts;
-
     clock_gettime(CLOCK_MONOTONIC, &ts);
     uORB_state.timestamp = ts.tv_sec * 1000 + ts.tv_nsec / 1000000UL;
     uORB_state.conn_state = conn_state;
@@ -170,35 +166,72 @@ static void broadcast_a2dp_state(int orb_fd, bt_address addr, int conn_state, in
     }
 }
 
-static void bts_a2dp_report_connection_state(a2dp_source_t* service, bt_address addr, a2dp_connection_state_t state)
-{    
+static void bts_a2dp_report_connection_state(a2dp_state_machine_t* stm, bt_address addr, a2dp_connection_state_t state)
+{
+    int orb_fd;
     BT_LOGD("%s, addr:%s, state: %d", __func__, addr_str(addr), state);
     if(state == A2DP_CONNECTION_STATE_CONNECTED)
-        BT_LOGD("PERFORMANCE-A2DP-SRC-BTM-CONNECTED");
+        BT_LOGD("PERFORMANCE-A2DP-BTM-CONNECTED");
 
-    if (service->callbacks)
-        service->callbacks->connection_state_cb(addr, state);
-    broadcast_a2dp_state(service->orb_fd, addr, state, A2DP_AUDIO_NOT_READY);
+    if (stm->peer_sep == SEP_SRC) {
+        a2dp_sink_t* snk_service = (a2dp_sink_t*)stm->service;
+
+        orb_fd = snk_service->orb_fd;
+        if (snk_service->callbacks)
+            snk_service->callbacks->connection_state_cb(addr, state);
+    } else {
+        a2dp_source_t* src_service = (a2dp_source_t*)stm->service;
+
+        orb_fd = src_service->orb_fd;
+        if (src_service->callbacks)
+            src_service->callbacks->connection_state_cb(addr, state);
+    }
+    
+    broadcast_a2dp_state(orb_fd, addr, state, A2DP_AUDIO_NOT_READY);
 }
 
-static void bts_a2dp_report_audio_state(a2dp_source_t* service, bt_address addr, a2dp_audio_state_t state)
+static void bts_a2dp_report_audio_state(a2dp_state_machine_t* stm, bt_address addr, a2dp_audio_state_t state)
 {
+    int orb_fd;
     BT_LOGD("%s, addr:%s, state: %d", __func__, addr_str(addr), state);
 
-    if (service->callbacks)
-        service->callbacks->audio_state_cb(addr, state);
+    if (stm->peer_sep == SEP_SRC) {
+        a2dp_sink_t* snk_service = (a2dp_sink_t*)stm->service;
 
-    broadcast_a2dp_state(service->orb_fd, addr, PROFILE_CONN_CONNECTED, state);
+        orb_fd = snk_service->orb_fd;
+        if (snk_service->callbacks)
+            snk_service->callbacks->audio_state_cb(addr, state);
+    } else {
+        a2dp_source_t* src_service = (a2dp_source_t*)stm->service;
+
+        orb_fd = src_service->orb_fd;
+        if (src_service->callbacks)
+            src_service->callbacks->audio_state_cb(addr, state);
+    }
+
+    broadcast_a2dp_state(orb_fd, addr, PROFILE_CONN_CONNECTED, state);
 }
 
-static void bts_a2dp_report_audio_config_state(a2dp_source_t* service, bt_address addr)
+static void bts_a2dp_report_audio_config_state(a2dp_state_machine_t* stm, bt_address addr)
 {
+    int orb_fd;
     BT_LOGD("%s, addr:%s", __func__, addr_str(addr));
 
-    if (service->callbacks)
-        service->callbacks->audio_source_config_cb(addr);
+    if (stm->peer_sep == SEP_SRC) {
+        a2dp_sink_t* snk_service = (a2dp_sink_t*)stm->service;
 
-    broadcast_a2dp_state(service->orb_fd, addr, PROFILE_CONN_CONNECTED, A2DP_AUDIO_STOPPED);
+        orb_fd = snk_service->orb_fd;
+        if (snk_service->callbacks)
+            snk_service->callbacks->audio_sink_config_cb(addr);
+    } else {
+        a2dp_source_t* src_service = (a2dp_source_t*)stm->service;
+
+        orb_fd = src_service->orb_fd;
+        if (src_service->callbacks)
+            src_service->callbacks->audio_source_config_cb(addr);
+    }
+
+    broadcast_a2dp_state(orb_fd, addr, PROFILE_CONN_CONNECTED, A2DP_AUDIO_STOPPED);
 }
 
 static void a2dp_connect_timeout_callback(char* data)
@@ -239,14 +272,13 @@ static void flag_clear(a2dp_state_machine_t *a2dp_sm, pending_state_t flag)
 static void idle_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    a2dp_source_t* service = a2dp_sm->service;
     state_t* prev_state = hsm_get_previous_state(sm);
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
     a2dp_sm->audio_ready = false;
     if (prev_state != NULL) {
-        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
+        bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
             A2DP_CONNECTION_STATE_DISCONNECTED);
     }
 }
@@ -262,8 +294,7 @@ static void idle_exit(state_machine_t* sm)
 static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    a2dp_source_t* service = a2dp_sm->service;
-    a2dp_event_data_t* event_data = (a2dp_event_data_t*)p_data;
+    a2dp_event_data_t* data = (a2dp_event_data_t*)p_data;
 
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),
@@ -272,10 +303,14 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
     case CONNECT_REQ: {
         SERVICE_BT_STATUS status;
         BT_LOGD("PERFORMANCE-A2DP-SRC-BLUELET-CONNECT-START");
-        status = service_adapter_a2dp_source_connect(event_data->bd_addr,
-            SERVICE_AVDTP_CODEC_TYPE_SBC);
+        if (a2dp_sm->peer_sep == SEP_SNK)
+            status = service_adapter_a2dp_source_connect(data->bd_addr,
+                SERVICE_AVDTP_CODEC_TYPE_SBC);
+        else
+            status = service_adapter_a2dp_sink_connect(data->bd_addr,
+                SERVICE_AVDTP_CODEC_TYPE_SBC);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
-            bts_a2dp_report_connection_state(service, a2dp_sm->addr,
+            bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
                 A2DP_CONNECTION_STATE_DISCONNECTED);
             break;
         }
@@ -297,12 +332,11 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
 static void opening_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    a2dp_source_t* service = a2dp_sm->service;
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
     a2dp_sm->connect_timer = start_timer(A2DP_CONNECT_TIMEOUT, 0, a2dp_connect_timeout_callback, a2dp_sm);
-    bts_a2dp_report_connection_state(service, a2dp_sm->addr, A2DP_CONNECTION_STATE_CONNECTING);
+    bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr, A2DP_CONNECTION_STATE_CONNECTING);
 }
 
 static void opening_exit(state_machine_t* sm)
@@ -316,15 +350,17 @@ static void opening_exit(state_machine_t* sm)
 static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    a2dp_event_data_t* event_data = (a2dp_event_data_t*)p_data;
+    a2dp_event_data_t* data = (a2dp_event_data_t*)p_data;
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),
         addr_str(a2dp_sm->addr));
     switch (event) {
     case DISCONNECT_REQ: {
         SERVICE_BT_STATUS status;
-
-        status = service_adapter_a2dp_source_disconnect(event_data->bd_addr);
+        if (a2dp_sm->peer_sep == SEP_SNK)
+            status = service_adapter_a2dp_source_disconnect(data->bd_addr);
+        else
+            status = service_adapter_a2dp_sink_disconnect(data->bd_addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect failed");
         }
@@ -357,14 +393,13 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
 static void opened_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    a2dp_source_t* service = a2dp_sm->service;
     state_t* prev_state = hsm_get_previous_state(sm);
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
     if (prev_state == &idle_state || prev_state == &opening_state) {
-        bts_a2dp_source_on_connection_changed(true);
-        bts_a2dp_report_connection_state(service, a2dp_sm->addr,
+        bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
+        bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
             A2DP_CONNECTION_STATE_CONNECTED);
     }
 }
@@ -380,8 +415,7 @@ static void opened_exit(state_machine_t* sm)
 static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    a2dp_source_t* service = a2dp_sm->service;
-    a2dp_event_data_t* event_data = (a2dp_event_data_t*)p_data;
+    a2dp_event_data_t* data = (a2dp_event_data_t*)p_data;
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),
         addr_str(a2dp_sm->addr));
@@ -389,7 +423,10 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     case DISCONNECT_REQ: {
         SERVICE_BT_STATUS status;
 
-        status = service_adapter_a2dp_source_disconnect(event_data->bd_addr);
+        if (a2dp_sm->peer_sep == SEP_SNK)
+            status = service_adapter_a2dp_source_disconnect(data->bd_addr);
+        else
+            status = service_adapter_a2dp_sink_disconnect(data->bd_addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect failed");
         }
@@ -403,7 +440,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
             BT_LOGE("A2DP Audio is not ready, Ignore start cmd");
             break;
         }
-        status = service_adapter_a2dp_source_start_stream(event_data->bd_addr);
+        status = service_adapter_a2dp_source_start_stream(data->bd_addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Stream start failed");
             break;
@@ -419,41 +456,49 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
             stop_timer(a2dp_sm->start_timer);
             a2dp_sm->start_timer = NULL;
             // When pending on start request, then received stream close event
-            //call bts_a2dp_source_on_started(), shoule ack start failure;
-            bts_a2dp_source_on_started(false);
+            //call bts_a2dp_audio_on_started(), shoule ack start failure;
+            bts_a2dp_audio_on_started(a2dp_sm->peer_sep, false);
             return true;
         }
-        bts_a2dp_source_on_connection_changed(false);
+        bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
         hsm_transition_to(sm, &idle_state);
         break;
 
     case STREAM_STARTED_EVT:
-        // If remote tries to start A2DP when DUT is A2DP Source, then Suspend.
-        // If A2DP is Sink and call is active, then disconnect the AVDTP channel.
-        flag_clear(a2dp_sm, PENDING_START);
-        stop_timer(a2dp_sm->start_timer);
-        a2dp_sm->start_timer = NULL;
-        bts_a2dp_source_on_started(true);
+        if (a2dp_sm->peer_sep == SEP_SNK) {
+            // If remote tries to start A2DP when DUT is A2DP Source, then Suspend.
+            // If A2DP is Sink and call is active, then disconnect the AVDTP channel.
+            flag_clear(a2dp_sm, PENDING_START);
+            stop_timer(a2dp_sm->start_timer);
+            a2dp_sm->start_timer = NULL;
+        }
+
+        if (!a2dp_sm->audio_ready) {
+            BT_LOGW("A2dp device is not ready: %s", stack_event_to_string(event));
+            break;
+        }
+
+        bts_a2dp_audio_on_started(a2dp_sm->peer_sep, true);
         hsm_transition_to(sm, &started_state);
         break;
 
     case STREAM_SUSPENDED_EVT:
     case STREAM_CLOSED_EVT:
         a2dp_sm->pending = PENDING_NONE;
-        bts_a2dp_source_on_stopped();
+        bts_a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
 
     case DEVICE_CODEC_STATE_CHANGE_EVT:
         a2dp_sm->audio_ready = true;
-        bts_a2dp_report_audio_config_state(service, a2dp_sm->addr);
-        bts_a2dp_source_setup_codec(a2dp_sm->addr);
+        bts_a2dp_report_audio_config_state(a2dp_sm, a2dp_sm->addr);
+        bts_a2dp_audio_setup_codec(a2dp_sm->peer_sep, a2dp_sm->addr);
         break;
 
     case START_TIMEOUT: {
         flag_clear(a2dp_sm, PENDING_START);
         stop_timer(a2dp_sm->start_timer);
         a2dp_sm->start_timer = NULL;
-        bts_a2dp_source_on_started(false);
+        bts_a2dp_audio_on_started(a2dp_sm->peer_sep, false);
         break;
     }
 
@@ -467,11 +512,10 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
 static void started_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    a2dp_source_t* service = a2dp_sm->service;
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
-    bts_a2dp_report_audio_state(service, a2dp_sm->addr,
+    bts_a2dp_report_audio_state(a2dp_sm, a2dp_sm->addr,
         A2DP_AUDIO_STATE_STARTED);
 }
 
@@ -486,61 +530,72 @@ static void started_exit(state_machine_t* sm)
 static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    a2dp_source_t* service = a2dp_sm->service;
-    BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
-        stack_event_to_string(event),
-        addr_str(a2dp_sm->addr));
+    if (event != DATA_IND_EVT)
+        BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
+            stack_event_to_string(event),
+            addr_str(a2dp_sm->addr));
     switch (event) {
     case DISCONNECT_REQ: {
         SERVICE_BT_STATUS status;
-
-        status = service_adapter_a2dp_source_disconnect(a2dp_sm->addr);
+        if (a2dp_sm->peer_sep == SEP_SNK)
+            status = service_adapter_a2dp_source_disconnect(a2dp_sm->addr);
+        else
+            status = service_adapter_a2dp_sink_disconnect(a2dp_sm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect failed");
         }
-        bts_a2dp_source_on_connection_changed(false);
+        bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
         hsm_transition_to(sm, &closing_state);
         break;
     }
 
     case STREAM_START_REQ:
         // We were started remotely, just ACK back the local request
-        bts_a2dp_source_on_started(true);
+        if (a2dp_sm->peer_sep == SEP_SNK)
+            bts_a2dp_audio_on_started(a2dp_sm->peer_sep, true);
         break;
 
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    case DATA_IND_EVT: {
+        a2dp_event_data_t* data = (a2dp_event_data_t*)p_data;
+        bts_a2dp_sink_packet_recieve(data->packet);
+        break;
+    }
+#endif
     case STREAM_SUSPEND_REQ: {
         SERVICE_BT_STATUS status;
         status = service_adapter_a2dp_source_suspend_stream(a2dp_sm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Stream suspend failed");
         }
-        bts_a2dp_source_on_stopped();
+        bts_a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
     }
 
     case DISCONNECTED_EVT:
-        bts_a2dp_source_on_connection_changed(false);
+        //check active, if active should nofify ffmpeg to stop
+        bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
         hsm_transition_to(sm, &idle_state);
         break;
 
     case STREAM_SUSPENDED_EVT:
         //If remote suspend, notify ffmpeg to
         // suspend/stop stream.
-        bts_a2dp_source_on_suspended();
-        bts_a2dp_report_audio_state(service, a2dp_sm->addr,
+        bts_a2dp_audio_on_suspended(a2dp_sm->peer_sep);
+        bts_a2dp_report_audio_state(a2dp_sm, a2dp_sm->addr,
             A2DP_AUDIO_STATE_STOPPED);
         hsm_transition_to(sm, &opened_state);
         break;
 
     case STREAM_CLOSED_EVT:
-        bts_a2dp_source_on_stopped();
-        bts_a2dp_report_audio_state(service, a2dp_sm->addr,
+        bts_a2dp_audio_on_stopped(a2dp_sm->peer_sep);
+        bts_a2dp_report_audio_state(a2dp_sm, a2dp_sm->addr,
             A2DP_AUDIO_STATE_STOPPED);
         hsm_transition_to(sm, &opened_state);
         break;
 
     case DEVICE_CODEC_STATE_CHANGE_EVT:
-        bts_a2dp_report_audio_config_state(service, a2dp_sm->addr);
+        bts_a2dp_report_audio_config_state(a2dp_sm, a2dp_sm->addr);
         break;
 
     default:
@@ -553,11 +608,10 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
 static void closing_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    a2dp_source_t* service = a2dp_sm->service;
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
-    bts_a2dp_report_connection_state(service, a2dp_sm->addr,
+    bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
         A2DP_CONNECTION_STATE_DISCONNECTING);
 }
 
@@ -579,7 +633,7 @@ static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case STREAM_SUSPEND_REQ:
     case STREAM_CLOSED_EVT:
     case STREAM_SUSPENDED_EVT:
-        bts_a2dp_source_on_stopped();
+        bts_a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
 
     case DISCONNECTED_EVT:
@@ -601,7 +655,7 @@ static void a2dp_state_machine_event_dispatch(a2dp_state_machine_t* a2dp_sm, a2d
     hsm_dispatch_event(&a2dp_sm->sm, a2dp_event->event, &a2dp_event->event_data);
 }
 
-a2dp_state_machine_t* a2dp_state_machine_new(void* context, bt_address bd_addr)
+a2dp_state_machine_t* a2dp_state_machine_new(void* context, uint8_t peer_sep, bt_address bd_addr)
 {
     a2dp_state_machine_t* a2dp_sm;
 
@@ -609,8 +663,11 @@ a2dp_state_machine_t* a2dp_state_machine_new(void* context, bt_address bd_addr)
     if (!a2dp_sm)
         return NULL;
 
-    a2dp_sm->service = (a2dp_source_t*)context;
+    a2dp_sm->service = context;
     a2dp_sm->audio_ready = false;
+    a2dp_sm->peer_sep = peer_sep;
+    a2dp_sm->start_timer = NULL;
+    a2dp_sm->connect_timer = NULL;
     hsm_ctor(&a2dp_sm->sm, (state_t*)&idle_state);
     memcpy(a2dp_sm->addr, bd_addr, sizeof(bt_address));
 

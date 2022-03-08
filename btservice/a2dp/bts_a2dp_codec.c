@@ -34,27 +34,37 @@
 #include <stdlib.h>
 
 #include "btm_manager.h"
-#include "bts_a2dp_event.h"
+#include "bts_service.h"
+#include "a2dp_codec_sbc.h"
+#include "sbc_encoder.h"
+#include "bts_a2dp_codec.h"
 
-a2dp_event_t* a2dp_event_new(a2dp_event_type_t event,
-    bt_address bd_addr)
+#define LOG_TAG "a2dp_codec"
+#include "log.h"
+
+extern uint32_t a2dp_sbc_frame_length(sbc_param_t* param);
+
+a2dp_codec_config_t g_current_config;
+
+uint32_t bts_a2dp_codec_get_frame_length(void)
 {
-    a2dp_event_t* a2dp_event;
+    a2dp_codec_config_t* config = &g_current_config;
+    if (config->codec_type == BTS_A2DP_TYPE_SBC)
+        return a2dp_sbc_frame_length(&config->codec_param.sbc);
 
-    a2dp_event = (a2dp_event_t*)malloc(sizeof(a2dp_event_t));
-    if (a2dp_event == NULL)
-        return NULL;
-
-    a2dp_event->event = event;
-    memset(&a2dp_event->event_data, 0, sizeof(a2dp_event->event_data));
-    if (bd_addr != NULL)
-        memcpy(&a2dp_event->event_data.bd_addr, bd_addr, sizeof(bt_address));
-
-    return a2dp_event;
+    return 0; //unknown codec
+}
+a2dp_codec_config_t* bts_a2dp_codec_get_config(void)
+{
+    return &g_current_config;
 }
 
-void a2dp_event_destory(a2dp_event_t* a2dp_event)
+void bts_a2dp_codec_set_config(a2dp_codec_config_t* config)
 {
-    free(a2dp_event->event_data.data);
-    free(a2dp_event);
+    if (config->codec_type == BTS_A2DP_TYPE_SBC) {
+        a2dp_codec_parse_sbc_param(&config->codec_param.sbc, config->specific_info);
+        config->bit_rate = config->codec_param.sbc.u32BitRate;
+    }
+
+    memcpy(&g_current_config, config, sizeof(g_current_config));
 }

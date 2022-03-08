@@ -175,6 +175,29 @@
         (p) += 4;             \
     } while (0)
 
+#define BE_STREAM_TO_UINT8(u8, p) \
+  {                               \
+    (u8) = (uint8_t)(*(p));       \
+    (p) += 1;                     \
+  }
+#define BE_STREAM_TO_UINT16(u16, p)                                       \
+  {                                                                       \
+    (u16) = (uint16_t)(((uint16_t)(*(p)) << 8) + (uint16_t)(*((p) + 1))); \
+    (p) += 2;                                                             \
+  }
+#define BE_STREAM_TO_UINT24(u32, p)                                     \
+  {                                                                     \
+    (u32) = (((uint32_t)(*((p) + 2))) + ((uint32_t)(*((p) + 1)) << 8) + \
+             ((uint32_t)(*(p)) << 16));                                 \
+    (p) += 3;                                                           \
+  }
+#define BE_STREAM_TO_UINT32(u32, p)                                      \
+  {                                                                      \
+    (u32) = ((uint32_t)(*((p) + 3)) + ((uint32_t)(*((p) + 2)) << 8) +    \
+             ((uint32_t)(*((p) + 1)) << 16) + ((uint32_t)(*(p)) << 24)); \
+    (p) += 4;                                                            \
+  }
+
 int ba2str(bt_address addr, char* str);
 int str2ba(const char* str, bt_address addr);
 int str2hex(const char* str, char* hex, int len);

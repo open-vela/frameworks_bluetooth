@@ -38,16 +38,7 @@
 #include <nuttx/list.h>
 #include "btm_manager.h"
 #include "btm_a2dp_source.h"
-#include "bts_a2dp_codec.h"
-#include "bts_a2dp_event.h"
-
-typedef struct {
-    bt_address bd_addr;
-    uint8_t is_sink;
-    a2dp_codec_config_t codec_config;
-    //const uint8_t peer_sep_;
-    uint16_t mtu;
-} a2dp_peer_t;
+#include "bts_a2dp_device.h"
 
 typedef struct {
     struct list_node device_list;

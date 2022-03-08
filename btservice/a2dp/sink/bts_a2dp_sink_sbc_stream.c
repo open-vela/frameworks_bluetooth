@@ -30,51 +30,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __A2DP_EVENT_H__
-#define __A2DP_EVENT_H__
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-#include "btm_manager.h"
+
+#include <assert.h>
+#include <stdlib.h>
+#include "bts_service.h"
 #include "bts_a2dp_sink_audio.h"
 
-typedef enum {
-    ENABLE = 1,
-    CLEANUP,
-    CONNECT_REQ,
-    DISCONNECT_REQ,
-    STREAM_START_REQ,
-    STREAM_SUSPEND_REQ,
-    PEER_STREAM_START_REQ,
-    CONNECTED_EVT,
-    DISCONNECTED_EVT,
-    STREAM_STARTED_EVT,
-    STREAM_SUSPENDED_EVT,
-    STREAM_CLOSED_EVT,
-    STREAM_MTU_CONFIG_EVT,
-    CODEC_CONFIG_EVT,
-    DEVICE_CODEC_STATE_CHANGE_EVT,
-    DATA_IND_EVT,
-    CONNECT_TIMEOUT,
-    START_TIMEOUT,
-} a2dp_event_type_t;
+#define LOG_TAG "sink_sbc"
+#include "log.h"
 
-typedef struct
+static a2dp_sink_packet_t* sink_sbc_repackage(uint8_t *data, uint16_t length)
 {
-    bt_address  bd_addr;
-    uint8_t     peer_sep;
-    uint16_t    mtu;
-    void*       data;
-    a2dp_sink_packet_t *packet;
-} a2dp_event_data_t;
+    a2dp_sink_packet_t* packet = NULL;
+    /* sbc packed header, skip it */
+    uint8_t SBC_HDRSIZE = 1; 
 
-typedef struct
+    length -= SBC_HDRSIZE;
+    packet = malloc(sizeof(a2dp_sink_packet_t) + length);
+    if (packet) {
+        packet->length = length;
+        memcpy(packet->data, data + SBC_HDRSIZE, length);
+    }
+
+    return packet;
+}
+
+static void sink_sbc_packet_send_done(a2dp_sink_packet_t* packet)
 {
-    a2dp_event_type_t event;
-    a2dp_event_data_t event_data;
-} a2dp_event_t;
+    free(packet);
+}
 
-a2dp_event_t* a2dp_event_new(a2dp_event_type_t event, bt_address bd_addr);
-void a2dp_event_destory(a2dp_event_t* a2dp_event);
+static const a2dp_sink_stream_interface_t a2dp_sink_stream_sbc = {
+    sink_sbc_repackage,
+    sink_sbc_packet_send_done,
+};
 
-#endif
+const a2dp_sink_stream_interface_t* get_a2dp_sink_sbc_stream_interface(void)
+{
+    return &a2dp_sink_stream_sbc;
+}
