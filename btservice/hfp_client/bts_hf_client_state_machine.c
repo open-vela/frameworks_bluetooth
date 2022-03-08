@@ -197,6 +197,7 @@ static void broadcast_hfp_state(int orb_fd, bt_address addr, int conn_state, int
         if (ret != 0)
             BT_LOGE("Failed to publish state");
     }
+
 }
 
 static void notify_connection_state_changed(hf_client_service_t* service,

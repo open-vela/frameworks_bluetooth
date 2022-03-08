@@ -63,5 +63,5 @@ typedef enum {
 extern void bts_a2dp_control_init(uint8_t ctrl_id, uint8_t data_id);
 extern void bts_a2dp_control_cleanup(void);
 extern void bts_a2dp_control_event(uint8_t ch_id, a2dp_ctrl_evt_t evt);
-extern void bts_a2dp_control_update_audio_config(uint8_t isvalid);
+extern void bts_a2dp_control_update_audio_config(uint8_t ch_id, uint8_t isvalid);
 #endif

@@ -35,8 +35,8 @@
 #include <sys/types.h>
 
 #include "btm_manager.h"
-#include "bts_a2dp_source.h"
 #include "bts_service.h"
+#include "bts_a2dp_source.h"
 
 #define LOG_TAG "a2dp_service"
 #include "log.h"

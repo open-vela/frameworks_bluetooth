@@ -77,6 +77,6 @@ typedef struct {
 
 uint32_t bts_a2dp_codec_get_frame_length(void);
 a2dp_codec_config_t* bts_a2dp_codec_get_config(void);
-void bts_a2dp_codec_set_config(bt_address bd_addr, a2dp_codec_config_t* config);
+void bts_a2dp_codec_set_config(a2dp_codec_config_t* config);
 
 #endif

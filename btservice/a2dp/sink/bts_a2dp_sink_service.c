@@ -30,46 +30,87 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
+
 #include <stdio.h>
-#include <stdlib.h>
+#include <sys/types.h>
 
-#include "a2dp_codec_sbc.h"
 #include "btm_manager.h"
-#include "bts_a2dp_codec.h"
-#include "bts_a2dp_source.h"
+#include "bts_a2dp_sink.h"
 #include "bts_service.h"
-#include "sbc_encoder.h"
 
-#define LOG_TAG "a2dp_codec"
+#define LOG_TAG "a2dp_service"
 #include "log.h"
 
-extern uint32_t a2dp_sbc_frame_length(sbc_param_t* param);
+static a2dp_sink_callbacks_t* a2dpSinkCbs = NULL;
 
-a2dp_codec_config_t g_current_config;
-
-uint32_t bts_a2dp_codec_get_frame_length(void)
+static void a2dp_connection_state_cb(bt_address addr,
+    a2dp_connection_state_t state)
 {
-    a2dp_codec_config_t* config = &g_current_config;
-    if (config->codec_type == BTS_A2DP_TYPE_SBC)
-        return a2dp_sbc_frame_length(&config->codec_param.sbc);
-
-    return 0; //unknown codec
-}
-a2dp_codec_config_t* bts_a2dp_codec_get_config(void)
-{
-    return &g_current_config;
+    if (a2dpSinkCbs)
+        a2dpSinkCbs->connection_state_cb(addr, state);
 }
 
-void bts_a2dp_codec_set_config(bt_address bd_addr, a2dp_codec_config_t* config)
+static void a2dp_audio_state_cb(bt_address addr,
+    a2dp_audio_state_t state)
 {
-    a2dp_peer_t* peer = bts_a2dp_source_find_peer(bd_addr);
-    a2dp_codec_config_t* peer_config = &peer->codec_config;
+    if (a2dpSinkCbs)
+        a2dpSinkCbs->audio_state_cb(addr, state);
+}
 
-    memcpy(peer_config, config, sizeof(a2dp_codec_config_t));
-    if (peer_config->codec_type == BTS_A2DP_TYPE_SBC) {
-        a2dp_codec_parse_sbc_param(&peer_config->codec_param.sbc, config->specific_info);
-        peer_config->bit_rate = peer_config->codec_param.sbc.u32BitRate;
-    }
+static void a2dp_audio_sink_config_cb(bt_address addr)
+{
+    if (a2dpSinkCbs)
+        a2dpSinkCbs->audio_sink_config_cb(addr);
+}
 
-    memcpy(&g_current_config, peer_config, sizeof(g_current_config));
+static const a2dp_sink_callbacks_t a2dp_callbacks = {
+    sizeof(a2dp_sink_callbacks_t),
+    a2dp_connection_state_cb,
+    a2dp_audio_state_cb,
+    a2dp_audio_sink_config_cb
+};
+
+static bt_result_code a2dp_sink_connect(void* handle, bt_address addr)
+{
+    return bts_a2dp_sink_connect(addr);
+}
+
+static bt_result_code a2dp_sink_disconnect(void* handle, bt_address addr)
+{
+    return bts_a2dp_sink_disconnect(addr);
+}
+
+static bt_result_code a2dp_sink_set_active_device(void* handle, bt_address addr)
+{
+    return BT_RESULT_SUCCESS;
+}
+
+static void a2dp_sink_set_callbacks(void* handle, a2dp_sink_callbacks_t* callbacks)
+{
+    a2dpSinkCbs = callbacks;
+}
+
+static const a2dp_sink_interface_t a2dpSinkSvrInterface = {
+    sizeof(a2dp_sink_interface_t),
+    a2dp_sink_connect,
+    a2dp_sink_disconnect,
+    a2dp_sink_set_active_device,
+    a2dp_sink_set_callbacks
+};
+
+bt_result_code a2dp_sink_service_start(void)
+{
+    BT_LOGD("A2dp Sink Service Started");
+    return bts_a2dp_sink_init(&a2dp_callbacks);
+}
+
+void a2dp_sink_service_stop(void)
+{
+    bts_a2dp_sink_cleanup();
+    BT_LOGD("A2dp Sink Service Stoped");
+}
+
+const a2dp_sink_interface_t* get_a2dp_sink_service_interface(void)
+{
+    return &a2dpSinkSvrInterface;
 }

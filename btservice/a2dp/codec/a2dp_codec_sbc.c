@@ -38,9 +38,6 @@
 
 #include "a2dp_codec_sbc.h"
 #include "sbc_encoder.h"
-#include "bts_a2dp_codec.h"
-#include "bts_a2dp_source_audio.h"
-#include "bts_a2dp_source_sbc_stream.h"
 
 #define LOG_TAG "a2dp_codec_sbc"
 #include "log.h"
@@ -161,6 +158,53 @@ static int a2dp_get_sbc_channel_count(a2dp_sbc_info_t *info)
     return SBC_MAX_NUM_OF_CHANNELS;
 }
 
+uint32_t a2dp_sbc_frame_length(sbc_param_t* param)
+{
+    uint32_t frame_len, frame_len2;
+
+    if (param == NULL)
+        return 0;
+
+    if (param->s16ChannelMode == SBC_STEREO ||
+        param->s16ChannelMode == SBC_JOINT_STEREO) {
+        frame_len = 4 +
+                    (4 *
+                    param->s16NumOfSubBands *
+                    param->s16NumOfChannels) /
+                    8 +
+                    (((param->s16ChannelMode - 2) *
+                    param->s16NumOfSubBands) +
+                    (param->s16NumOfBlocks *
+                    param->s16BitPool)) /
+                    8;
+    } else {
+        frame_len = 4 +
+                    ((4 *
+                    param->s16NumOfSubBands *
+                    param->s16NumOfChannels) /
+                    8) +
+                    ((param->s16NumOfBlocks *
+                    param->s16NumOfChannels *
+                    param->s16BitPool) /
+                    8);
+    }
+
+    frame_len2 = 4 +
+                (4 *
+                param->s16NumOfSubBands *
+                param->s16NumOfChannels) /
+                8 +
+                ((param->s16NumOfBlocks *
+                param->s16BitPool *
+                (1 + (param->s16ChannelMode == SBC_DUAL)) +
+                (param->s16ChannelMode == SBC_JOINT_STEREO) *
+                param->s16NumOfSubBands)+ 7) /
+                8;
+    assert(frame_len == frame_len2);
+
+    return frame_len;
+}
+
 uint16_t a2dp_sbc_sample_frequency(uint16_t sample_frequency)
 {
     uint16_t sampling_freq;
@@ -175,6 +219,20 @@ uint16_t a2dp_sbc_sample_frequency(uint16_t sample_frequency)
         sampling_freq = 48000;
 
     return sampling_freq;
+}
+
+uint32_t a2dp_sbc_bit_rate(sbc_param_t* param)
+{
+    uint16_t samp_freq;
+    uint32_t bit_rate;
+    uint32_t frame_len;
+
+    frame_len = a2dp_sbc_frame_length(param);
+    samp_freq = a2dp_sbc_sample_frequency(param->s16SamplingFreq);
+    bit_rate = (8 * frame_len * samp_freq) / (param->s16NumOfSubBands * param->s16NumOfBlocks);
+    BT_LOGD("%s, birtate: %" PRIu32, __func__, bit_rate);
+
+    return bit_rate;
 }
 
 void a2dp_codec_parse_sbc_param(sbc_param_t* param, uint8_t* codec_info)

@@ -30,51 +30,37 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __A2DP_EVENT_H__
-#define __A2DP_EVENT_H__
+#ifndef __BTS_A2DP_SINK_H__
+#define __BTS_A2DP_SINK_H__
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include <nuttx/list.h>
 #include "btm_manager.h"
-#include "bts_a2dp_sink_audio.h"
+#include "btm_a2dp_sink.h"
+#include "bts_a2dp_device.h"
+#include "bts_a2dp_codec.h"
+#include "bts_a2dp_event.h"
 
-typedef enum {
-    ENABLE = 1,
-    CLEANUP,
-    CONNECT_REQ,
-    DISCONNECT_REQ,
-    STREAM_START_REQ,
-    STREAM_SUSPEND_REQ,
-    PEER_STREAM_START_REQ,
-    CONNECTED_EVT,
-    DISCONNECTED_EVT,
-    STREAM_STARTED_EVT,
-    STREAM_SUSPENDED_EVT,
-    STREAM_CLOSED_EVT,
-    STREAM_MTU_CONFIG_EVT,
-    CODEC_CONFIG_EVT,
-    DEVICE_CODEC_STATE_CHANGE_EVT,
-    DATA_IND_EVT,
-    CONNECT_TIMEOUT,
-    START_TIMEOUT,
-} a2dp_event_type_t;
+typedef struct {
+    struct list_node device_list;
+    int orb_fd;
+    bool enabled;
+    const a2dp_sink_callbacks_t* callbacks;
+    a2dp_peer_t *active_peer;
+} a2dp_sink_t;
 
-typedef struct
-{
-    bt_address  bd_addr;
-    uint8_t     peer_sep;
-    uint16_t    mtu;
-    void*       data;
-    a2dp_sink_packet_t *packet;
-} a2dp_event_data_t;
+bt_result_code bts_a2dp_sink_init(const a2dp_sink_callbacks_t* callbacks);
+bt_result_code bts_a2dp_sink_connect(bt_address addr);
+bt_result_code bts_a2dp_sink_disconnect(bt_address addr);
+void bts_a2dp_sink_cleanup(void);
+a2dp_peer_t* bts_a2dp_sink_find_peer(bt_address addr);
+bool bts_a2dp_sink_stream_ready(void);
+void bts_a2dp_sink_codec_state_change(void);
+void bts_a2dp_sink_dump(void);
 
-typedef struct
-{
-    a2dp_event_type_t event;
-    a2dp_event_data_t event_data;
-} a2dp_event_t;
-
-a2dp_event_t* a2dp_event_new(a2dp_event_type_t event, bt_address bd_addr);
-void a2dp_event_destory(a2dp_event_t* a2dp_event);
+extern bt_result_code a2dp_sink_service_start(void);
+extern void a2dp_sink_service_stop(void);
+extern const a2dp_sink_interface_t* get_a2dp_sink_service_interface(void);
 
 #endif

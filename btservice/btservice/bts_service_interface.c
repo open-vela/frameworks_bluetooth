@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "bts_a2dp_source.h"
+#include "bts_a2dp_sink.h"
 #include "bts_avrcp_target.h"
 #include "bts_gap.h"
 #include "bts_gatt_service.h"
@@ -126,6 +127,9 @@ static bt_result_code bts_if_enable(void* handle)
 #ifdef CONFIG_BLUETOOTH_AVRCP_TG
     bts_avrcp_target_init();
 #endif
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    a2dp_sink_service_start();
+#endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
     a2dp_source_service_start();
 #endif
@@ -147,6 +151,9 @@ static bt_result_code bts_if_disable(void* handle)
     if (!if_handle)
         return BT_RESULT_FAILED;
     gap_disable(true);
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    a2dp_sink_service_stop();
+#endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
     a2dp_source_service_stop();
 #endif
@@ -206,6 +213,10 @@ static const void* if_get_profile_interface(const char* profile_id)
 #if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
     if (is_profile(profile_id, BT_PROFILE_GATT))
         return gatt_get_interface();
+#endif
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    if (is_profile(profile_id, BT_PROFILE_ADVANCED_AUDIO_SINK))
+        return get_a2dp_sink_service_interface();
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
     if (is_profile(profile_id, BT_PROFILE_ADVANCED_AUDIO_SOURCE))

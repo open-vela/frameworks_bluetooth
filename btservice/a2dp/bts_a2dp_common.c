@@ -31,12 +31,14 @@
  *
  ****************************************************************************/
 
-void a2dp_source_sbc_stream_init(sbc_param_t* param, uint32_t mtu,
-                                 frame_send_callback send_cb,
-                                 frame_read_callback read_cb);
-void a2dp_source_sbc_send_frames(uint16_t header_reserve, uint64_t timestamp);
-void a2dp_source_sbc_stream_reset(void);
-int  a2dp_source_sbc_interval_ms(void);
-uint32_t a2dp_sbc_frame_length(sbc_param_t* param);
-uint32_t a2dp_sbc_bit_rate(sbc_param_t* param);
+#include <time.h>
+#include "bts_a2dp_common.h"
 
+uint64_t get_os_timestamp_us(void)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_BOOTTIME, &ts);
+
+    return (uint64_t)(((uint64_t)ts.tv_sec * 1000000L) + ((uint64_t)ts.tv_nsec / 1000));
+}
