@@ -30,51 +30,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __A2DP_EVENT_H__
-#define __A2DP_EVENT_H__
+#ifndef __BTM_A2DP_SINK_H__
+#define __BTM_A2DP_SINK_H__
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include "btm_a2dp.h"
 #include "btm_manager.h"
-#include "bts_a2dp_sink_audio.h"
 
-typedef enum {
-    ENABLE = 1,
-    CLEANUP,
-    CONNECT_REQ,
-    DISCONNECT_REQ,
-    STREAM_START_REQ,
-    STREAM_SUSPEND_REQ,
-    PEER_STREAM_START_REQ,
-    CONNECTED_EVT,
-    DISCONNECTED_EVT,
-    STREAM_STARTED_EVT,
-    STREAM_SUSPENDED_EVT,
-    STREAM_CLOSED_EVT,
-    STREAM_MTU_CONFIG_EVT,
-    CODEC_CONFIG_EVT,
-    DEVICE_CODEC_STATE_CHANGE_EVT,
-    DATA_IND_EVT,
-    CONNECT_TIMEOUT,
-    START_TIMEOUT,
-} a2dp_event_type_t;
+typedef void (*a2dp_audio_sink_config_callback)(bt_address addr);
 
-typedef struct
-{
-    bt_address  bd_addr;
-    uint8_t     peer_sep;
-    uint16_t    mtu;
-    void*       data;
-    a2dp_sink_packet_t *packet;
-} a2dp_event_data_t;
+typedef struct {
+    /** set to sizeof(a2dp_sink_callbacks_t) */
+    size_t size;
+    a2dp_connection_state_callback connection_state_cb;
+    a2dp_audio_state_callback audio_state_cb;
+    a2dp_audio_sink_config_callback audio_sink_config_cb;
+} a2dp_sink_callbacks_t;
 
-typedef struct
-{
-    a2dp_event_type_t event;
-    a2dp_event_data_t event_data;
-} a2dp_event_t;
+typedef struct {
+    size_t size;
 
-a2dp_event_t* a2dp_event_new(a2dp_event_type_t event, bt_address bd_addr);
-void a2dp_event_destory(a2dp_event_t* a2dp_event);
+    /** connect to headset */
+    bt_result_code (*connect)(void* handle, bt_address addr);
+
+    /** dis-connect from headset */
+    bt_result_code (*disconnect)(void* handle, bt_address addr);
+
+    /** sets the connected device as active */
+    bt_result_code (*set_active_device)(void* handle, bt_address addr);
+
+    void (*set_callbacks)(void* handle, a2dp_sink_callbacks_t* callbacks);
+
+} a2dp_sink_interface_t;
+
+extern const a2dp_sink_interface_t* get_a2dp_sink_interface(void);
 
 #endif

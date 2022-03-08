@@ -30,51 +30,39 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __A2DP_EVENT_H__
-#define __A2DP_EVENT_H__
+#ifndef __BTS_A2DP_DEVICE_H__
+#define __BTS_A2DP_DEVICE_H__
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include <nuttx/list.h>
 #include "btm_manager.h"
-#include "bts_a2dp_sink_audio.h"
+#include "bts_a2dp_codec.h"
+#include "bts_a2dp_event.h"
+#include "bts_a2dp_state_machine.h"
 
-typedef enum {
-    ENABLE = 1,
-    CLEANUP,
-    CONNECT_REQ,
-    DISCONNECT_REQ,
-    STREAM_START_REQ,
-    STREAM_SUSPEND_REQ,
-    PEER_STREAM_START_REQ,
-    CONNECTED_EVT,
-    DISCONNECTED_EVT,
-    STREAM_STARTED_EVT,
-    STREAM_SUSPENDED_EVT,
-    STREAM_CLOSED_EVT,
-    STREAM_MTU_CONFIG_EVT,
-    CODEC_CONFIG_EVT,
-    DEVICE_CODEC_STATE_CHANGE_EVT,
-    DATA_IND_EVT,
-    CONNECT_TIMEOUT,
-    START_TIMEOUT,
-} a2dp_event_type_t;
+#define SEP_SRC     0     /* Source SEP */
+#define SEP_SNK     1     /* Sink SEP */
+#define SEP_INVALID 3     /* Invalid SEP */
 
-typedef struct
-{
-    bt_address  bd_addr;
-    uint8_t     peer_sep;
-    uint16_t    mtu;
-    void*       data;
-    a2dp_sink_packet_t *packet;
-} a2dp_event_data_t;
+#define SVR_SOURCE  0
+#define SVR_SINK    1
+typedef struct {
+    bt_address bd_addr;
+    uint8_t is_sink;
+    a2dp_codec_config_t codec_config;
+    uint16_t mtu;
+} a2dp_peer_t;
 
-typedef struct
-{
-    a2dp_event_type_t event;
-    a2dp_event_data_t event_data;
-} a2dp_event_t;
+typedef struct {
+    struct list_node node;
+    a2dp_state_machine_t* a2dp_sm;
+    bt_address bd_addr;
+    a2dp_peer_t peer;
+    uint8_t peer_sep;
+} a2dp_device_t;
 
-a2dp_event_t* a2dp_event_new(a2dp_event_type_t event, bt_address bd_addr);
-void a2dp_event_destory(a2dp_event_t* a2dp_event);
-
+a2dp_device_t* find_a2dp_device_by_addr(struct list_node *list, bt_address bd_addr);
+a2dp_device_t* a2dp_device_new(void *ctx, uint8_t peer_sep, bt_address bd_addr);
+void a2dp_device_delete(a2dp_device_t* device);
 #endif

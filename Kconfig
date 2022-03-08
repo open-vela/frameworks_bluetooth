@@ -29,19 +29,27 @@ config LIB_BLUELET
 
 config BLUETOOTH_AVRCP_TG
 	bool "Enable BT_AVRCP_TG"
-	default y
+	default n
 
 config BLUETOOTH_AVRCP_CT
 	bool "Enable BT_AVRCP_CT"
 	default n
 
+config BLUETOOTH_A2DP
+	bool "Enable BT_A2DP"
+	default n
+
 config BLUETOOTH_A2DP_SRC
 	bool "Enable BT_A2DP_SRC"
 	default y
+	select BLUETOOTH_A2DP
+	select BLUETOOTH_AVRCP_TG
 
 config BLUETOOTH_A2DP_SINK
 	bool "Enable BT_A2DP_SINK"
 	default n
+	select BLUETOOTH_A2DP
+	select BLUETOOTH_AVRCP_CT
 
 config BLUETOOTH_HFP_HF
 	bool "Enable BT_HFP_HF"
@@ -107,7 +115,7 @@ config BT_FRAMEWORK_LOG_LEVEL
     help
         Set bt framework log level <0~7>
 
-if BLUETOOTH_A2DP_SRC
+if BLUETOOTH_A2DP
 config BLUETOOTH_A2DP_MAX_CONNECTIONS
 	int "Maximum A2dp connections"
 	default 1

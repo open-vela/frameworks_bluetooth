@@ -30,51 +30,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __A2DP_EVENT_H__
-#define __A2DP_EVENT_H__
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-#include "btm_manager.h"
-#include "bts_a2dp_sink_audio.h"
+#ifndef __BTS_A2DP_AUDIO_H__
+#define __BTS_A2DP_AUDIO_H__
 
-typedef enum {
-    ENABLE = 1,
-    CLEANUP,
-    CONNECT_REQ,
-    DISCONNECT_REQ,
-    STREAM_START_REQ,
-    STREAM_SUSPEND_REQ,
-    PEER_STREAM_START_REQ,
-    CONNECTED_EVT,
-    DISCONNECTED_EVT,
-    STREAM_STARTED_EVT,
-    STREAM_SUSPENDED_EVT,
-    STREAM_CLOSED_EVT,
-    STREAM_MTU_CONFIG_EVT,
-    CODEC_CONFIG_EVT,
-    DEVICE_CODEC_STATE_CHANGE_EVT,
-    DATA_IND_EVT,
-    CONNECT_TIMEOUT,
-    START_TIMEOUT,
-} a2dp_event_type_t;
+#include <nuttx/mm/circbuf.h>
+#include "btm_common_define.h"
+#include "a2dp_ipc.h"
 
-typedef struct
-{
-    bt_address  bd_addr;
-    uint8_t     peer_sep;
-    uint16_t    mtu;
-    void*       data;
-    a2dp_sink_packet_t *packet;
-} a2dp_event_data_t;
+void bts_a2dp_audio_on_connection_changed(uint8_t peer_sep, bool connected);
+void bts_a2dp_audio_on_started(uint8_t peer_sep, bool started);
+void bts_a2dp_audio_on_stopped(uint8_t peer_sep);
+void bts_a2dp_audio_on_suspended(uint8_t peer_sep);
+void bts_a2dp_audio_setup_codec(uint8_t peer_sep, bt_address bd_addr);
 
-typedef struct
-{
-    a2dp_event_type_t event;
-    a2dp_event_data_t event_data;
-} a2dp_event_t;
+void bts_a2dp_audio_init(uint8_t svr_class);
+void bts_a2dp_audio_cleanup(uint8_t svr_class);
 
-a2dp_event_t* a2dp_event_new(a2dp_event_type_t event, bt_address bd_addr);
-void a2dp_event_destory(a2dp_event_t* a2dp_event);
 
 #endif

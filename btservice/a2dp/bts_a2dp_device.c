@@ -30,51 +30,73 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __A2DP_EVENT_H__
-#define __A2DP_EVENT_H__
+#define LOG_TAG "a2dp_device"
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+
+#include <string.h>
+#include <stdlib.h>
+
 #include "btm_manager.h"
-#include "bts_a2dp_sink_audio.h"
+#include "bts_service.h"
+#include "bts_a2dp_device.h"
+#include "bts_a2dp_state_machine.h"
+#include "utils/log.h"
+#include "utils/utils.h"
 
-typedef enum {
-    ENABLE = 1,
-    CLEANUP,
-    CONNECT_REQ,
-    DISCONNECT_REQ,
-    STREAM_START_REQ,
-    STREAM_SUSPEND_REQ,
-    PEER_STREAM_START_REQ,
-    CONNECTED_EVT,
-    DISCONNECTED_EVT,
-    STREAM_STARTED_EVT,
-    STREAM_SUSPENDED_EVT,
-    STREAM_CLOSED_EVT,
-    STREAM_MTU_CONFIG_EVT,
-    CODEC_CONFIG_EVT,
-    DEVICE_CODEC_STATE_CHANGE_EVT,
-    DATA_IND_EVT,
-    CONNECT_TIMEOUT,
-    START_TIMEOUT,
-} a2dp_event_type_t;
-
-typedef struct
+a2dp_device_t* find_a2dp_device_by_addr(struct list_node *list, bt_address bd_addr)
 {
-    bt_address  bd_addr;
-    uint8_t     peer_sep;
-    uint16_t    mtu;
-    void*       data;
-    a2dp_sink_packet_t *packet;
-} a2dp_event_data_t;
+    a2dp_device_t* device;
+    struct list_node* node;
 
-typedef struct
+    list_for_every(list, node)
+    {
+        device = (a2dp_device_t*)node;
+        if (memcmp(device->bd_addr, bd_addr, sizeof(bt_address)) == 0)
+            return device;
+    }
+
+    return NULL;
+}
+
+a2dp_device_t* a2dp_device_new(void *ctx, uint8_t peer_sep, bt_address bd_addr)
 {
-    a2dp_event_type_t event;
-    a2dp_event_data_t event_data;
-} a2dp_event_t;
+    a2dp_device_t* device;
+    a2dp_state_machine_t *a2dp_sm;
 
-a2dp_event_t* a2dp_event_new(a2dp_event_type_t event, bt_address bd_addr);
-void a2dp_event_destory(a2dp_event_t* a2dp_event);
+    device = (a2dp_device_t*)malloc(sizeof(a2dp_device_t));
+    if (!device)
+        return NULL;
 
-#endif
+    memcpy(device->bd_addr, bd_addr, sizeof(bt_address));
+    memcpy(device->peer.bd_addr, bd_addr, sizeof(bt_address));
+    a2dp_sm = a2dp_state_machine_new(ctx, peer_sep, bd_addr);
+    if (!a2dp_sm) {
+        BT_LOGE("Create state machine failed");
+        free(device);
+        return NULL;
+    }
+
+    device->a2dp_sm = a2dp_sm;
+
+    return device;
+}
+
+void a2dp_device_delete(a2dp_device_t* device)
+{
+    a2dp_event_t* a2dp_event;
+
+    if (!device)
+        return;
+
+    a2dp_event = a2dp_event_new(DISCONNECT_REQ, NULL);
+    a2dp_state_machine_handle_event(device->a2dp_sm, a2dp_event);
+    a2dp_event_destory(a2dp_event);
+    a2dp_state_machine_destory(device->a2dp_sm);
+    list_delete(&device->node);
+    free((void*)device);
+}
+
+
+

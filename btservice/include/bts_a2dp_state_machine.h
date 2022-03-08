@@ -47,7 +47,7 @@ typedef enum {
 
 typedef struct _a2dp_state_machine a2dp_state_machine_t;
 
-a2dp_state_machine_t* a2dp_state_machine_new(void* context, bt_address bd_addr);
+a2dp_state_machine_t* a2dp_state_machine_new(void* context, uint8_t peer_sep, bt_address bd_addr);
 void a2dp_state_machine_destory(a2dp_state_machine_t* a2dp_sm);
 void a2dp_state_machine_handle_event(a2dp_state_machine_t* sm, a2dp_event_t* a2dp_event);
 a2dp_state_t a2dp_state_machine_get_state(a2dp_state_machine_t* sm);

@@ -35,11 +35,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "bts_service.h"
+#include "bts_a2dp_common.h"
 #include "a2dp_codec_sbc.h"
 #include "bts_a2dp_source_audio.h"
-#include "bts_a2dp_source_sbc_stream.h"
 
-#define LOG_TAG "sbc_src_stream"
+#define LOG_TAG "src_sbc"
 #include "log.h"
 
 #define A2DP_SBC_BIT_PER_SAMPLE 16
@@ -77,52 +77,6 @@ static uint8_t calculate_max_frames_per_packet(void)
     return (sbc_stream.mtu - 1) / frame_len;
 }
 
-uint32_t a2dp_sbc_frame_length(sbc_param_t* param)
-{
-    uint32_t frame_len, frame_len2;
-
-    if (param == NULL)
-        return 0;
-
-    if (param->s16ChannelMode == SBC_STEREO ||
-        param->s16ChannelMode == SBC_JOINT_STEREO) {
-        frame_len = 4 +
-                    (4 *
-                    param->s16NumOfSubBands *
-                    param->s16NumOfChannels) /
-                    8 +
-                    (((param->s16ChannelMode - 2) *
-                    param->s16NumOfSubBands) +
-                    (param->s16NumOfBlocks *
-                    param->s16BitPool)) /
-                    8;
-    } else {
-        frame_len = 4 +
-                    ((4 *
-                    param->s16NumOfSubBands *
-                    param->s16NumOfChannels) /
-                    8) +
-                    ((param->s16NumOfBlocks *
-                    param->s16NumOfChannels *
-                    param->s16BitPool) /
-                    8);
-    }
-
-    frame_len2 = 4 +
-                (4 *
-                param->s16NumOfSubBands *
-                param->s16NumOfChannels) /
-                8 +
-                ((param->s16NumOfBlocks *
-                param->s16BitPool *
-                (1 + (param->s16ChannelMode == SBC_DUAL)) +
-                (param->s16ChannelMode == SBC_JOINT_STEREO) *
-                param->s16NumOfSubBands)+ 7) /
-                8;
-    assert(frame_len == frame_len2);
-
-    return frame_len;
-}
 
 static void a2dp_sbc_get_num_frame_iteration(uint8_t* num_of_iterations, uint8_t* num_of_frames,
     uint64_t now_timestamp_us)
@@ -220,21 +174,7 @@ static void a2dp_sbc_send_frames(uint16_t header_reserve, uint8_t frames)
     free(buffer);
 }
 
-uint32_t a2dp_sbc_bit_rate(sbc_param_t* param)
-{
-    uint16_t samp_freq;
-    uint32_t bit_rate;
-    uint32_t frame_len;
-
-    frame_len = a2dp_sbc_frame_length(param);
-    samp_freq = a2dp_sbc_sample_frequency(param->s16SamplingFreq);
-    bit_rate = (8 * frame_len * samp_freq) / (param->s16NumOfSubBands * param->s16NumOfBlocks);
-    BT_LOGD("%s, birtate: %" PRIu32, __func__, bit_rate);
-
-    return bit_rate;
-}
-
-void a2dp_source_sbc_send_frames(uint16_t header_reserve, uint64_t timestamp)
+static void a2dp_source_sbc_send_frames(uint16_t header_reserve, uint64_t timestamp)
 {
     uint8_t num_of_frames;
     uint8_t num_of_iterations;
@@ -249,7 +189,7 @@ void a2dp_source_sbc_send_frames(uint16_t header_reserve, uint64_t timestamp)
     }
 }
 
-void a2dp_source_sbc_stream_init(sbc_param_t* param, uint32_t mtu,
+static void a2dp_source_sbc_stream_init(sbc_param_t* param, uint32_t mtu,
                                  frame_send_callback send_cb,
                                  frame_read_callback read_cb)
 {
@@ -264,7 +204,7 @@ void a2dp_source_sbc_stream_init(sbc_param_t* param, uint32_t mtu,
     sbc_stream.feeding_state.last_frame_us = 0;
 }
 
-void a2dp_source_sbc_stream_reset(void)
+static void a2dp_source_sbc_stream_reset(void)
 {
     sbc_param_t *param = sbc_stream.param;
     uint16_t sample_rate;
@@ -283,7 +223,20 @@ void a2dp_source_sbc_stream_reset(void)
                                 1000;
 }
 
-int a2dp_source_sbc_interval_ms(void)
+static int a2dp_source_sbc_interval_ms(void)
 {
     return A2DP_SBC_ENCODER_INTERVAL_MS;
+}
+
+static const a2dp_source_stream_interface_t a2dp_source_stream_sbc = {
+    a2dp_source_sbc_stream_init,
+    a2dp_source_sbc_stream_reset,
+    NULL,
+    a2dp_source_sbc_send_frames,
+    a2dp_source_sbc_interval_ms,
+};
+
+const a2dp_source_stream_interface_t* get_a2dp_source_sbc_stream_interface(void)
+{
+    return &a2dp_source_stream_sbc;
 }

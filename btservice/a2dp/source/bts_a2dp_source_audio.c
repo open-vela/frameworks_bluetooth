@@ -30,21 +30,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include "bts_service.h"
-#include "a2dp_codec_sbc.h"
 #include "bts_a2dp_codec.h"
-#include "a2dp_codec_sbc.h"
 #include "bts_a2dp_control.h"
 #include "bts_a2dp_source.h"
 #include "bts_a2dp_source_audio.h"
-#include "bts_a2dp_source_sbc_stream.h"
+#include "bts_a2dp_common.h"
 
 #include "stack_adapter_a2dp_source.h"
 #include "stack_adapter_service_base.h"
 #include "utils/utils.h"
-#define LOG_TAG "a2dp_stream"
+#define LOG_TAG "a2dp_src_stream"
 #include "log.h"
 
 #define MAX_FRAME_NUM_PER_TICK 14
@@ -70,6 +68,7 @@ typedef struct {
     uint32_t         max_tx_length;
     struct circbuf_s stream_pool;
     uint8_t          read_congest;
+    const a2dp_source_stream_interface_t* stream_interface;
     //a2dp_stream_context_t stream_context;
 } a2dp_source_stream_t;
 
@@ -78,13 +77,16 @@ extern a2dp_ipc_t* a2dp_ipc;
 
 static void bts_a2dp_source_read_congest(uint8_t ch_id);
 
-uint64_t get_os_timestamp_us(void)
+static const a2dp_source_stream_interface_t *get_stream_interface(void)
 {
-    struct timespec ts;
+    a2dp_codec_config_t* config;
 
-    clock_gettime(CLOCK_BOOTTIME, &ts);
+    config = bts_a2dp_codec_get_config();
+    if (config->codec_type == BTS_A2DP_TYPE_SBC)
+        return get_a2dp_source_sbc_stream_interface();
 
-    return (uint64_t)(((uint64_t)ts.tv_sec * 1000000L) + ((uint64_t)ts.tv_nsec / 1000));
+    abort();
+    return NULL;
 }
 
 static void bts_a2dp_source_packet_send(SERVICE_A2DP_SOURCE_PACKET_S* packet)
@@ -229,61 +231,6 @@ static int bts_a2dp_source_read_callback(uint8_t* buf, uint16_t frame_len)
     return frame_len;
 }
 
-static void bts_a2dp_source_send_frames(a2dp_source_stream_t* stream)
-{
-    a2dp_codec_config_t* config;
-
-    config = bts_a2dp_codec_get_config();
-    if (config->codec_type == BTS_A2DP_TYPE_SBC) {
-        a2dp_source_sbc_send_frames(STREAM_DATA_RESERVED, get_os_timestamp_us());
-    }
-
-    bts_a2dp_source_start_read();
-}
-
-static void bts_a2dp_source_stream_init(bt_address bd_addr)
-{
-    a2dp_codec_config_t* config;
-    a2dp_peer_t* peer = bts_a2dp_source_find_peer(bd_addr);
-
-    if (peer == NULL) {
-        BT_LOGE("%s, can't find peer:%s", __func__, addr_str(bd_addr));
-        return;
-    }
-
-    config = bts_a2dp_codec_get_config();
-    if (config->codec_type == BTS_A2DP_TYPE_SBC) {
-        //for sbc codec
-        a2dp_source_sbc_stream_init(&config->codec_param.sbc, peer->mtu,
-            bts_a2dp_source_send_callback,
-            bts_a2dp_source_read_callback);
-    } else if (config->codec_type == BTS_A2DP_TYPE_MPEG2_4_AAC) {
-        //for aac codec
-    }
-}
-
-static void bts_a2dp_source_stream_reset(void)
-{
-    a2dp_codec_config_t* config;
-
-    config = bts_a2dp_codec_get_config();
-    if (config->codec_type == BTS_A2DP_TYPE_SBC) {
-        a2dp_source_sbc_stream_reset();
-    }
-}
-
-static int bts_a2dp_source_stream_interval_ms(void)
-{
-    a2dp_codec_config_t* config;
-
-    config = bts_a2dp_codec_get_config();
-    if (config->codec_type == BTS_A2DP_TYPE_SBC) {
-        return a2dp_source_sbc_interval_ms();
-    }
-
-    return 20;
-}
-
 static void bts_a2dp_source_audio_handle_timer(char* arg)
 {
     a2dp_source_stream_t* stream = &a2dp_src_stream;
@@ -294,7 +241,10 @@ static void bts_a2dp_source_audio_handle_timer(char* arg)
     if (circbuf_used(&stream->stream_pool) == 0)
         return;
 
-    bts_a2dp_source_send_frames(stream);
+    if (stream->stream_interface) {
+        stream->stream_interface->send_frames(STREAM_DATA_RESERVED, get_os_timestamp_us());
+        bts_a2dp_source_start_read();
+    }
 }
 
 static void bts_a2dp_source_start_flush(void)
@@ -323,7 +273,8 @@ static void bts_a2dp_source_start_delay(char* arg)
                           stream->interval_ms,
                           bts_a2dp_source_audio_handle_timer,
                           NULL);
-    bts_a2dp_source_stream_reset();
+    if (stream->stream_interface)
+        stream->stream_interface->reset();
 }
 
 static void bts_a2dp_source_start_audio_req(void)
@@ -333,14 +284,18 @@ static void bts_a2dp_source_start_audio_req(void)
     a2dp_source_stream_t* stream = &a2dp_src_stream;
     a2dp_peer_t* peer = bts_a2dp_source_active_peer();
 
-    if (stream->stream_state == STATE_FLUSHING) {
-        bts_a2dp_source_stop_flush();
+    if (!stream->stream_interface) {
+        BT_LOGE("stream interface is NULL");
+        return;
     }
+
+    if (stream->stream_state == STATE_FLUSHING)
+        bts_a2dp_source_stop_flush();
 
     circbuf_reset(&stream->stream_pool);
     stream->mtu = peer->mtu;
     stream->read_congest = 0;
-    stream->interval_ms = bts_a2dp_source_stream_interval_ms();
+    stream->interval_ms = stream->stream_interface->get_interval_ms();
     stream->frames_len = bts_a2dp_codec_get_frame_length();
     stream->max_tx_length = MAX_FRAME_NUM_PER_TICK * stream->frames_len;
     bts_a2dp_source_start_read();
@@ -367,7 +322,7 @@ static void bts_a2dp_source_stop_audio_req(void)
     a2dp_src_stream.sequence_number = 0;
     a2dp_src_stream.stream_state = STATE_OFF;
     bts_a2dp_source_start_flush();
-    bts_a2dp_source_stream_reset();
+    a2dp_src_stream.stream_interface->reset();
 }
 
 static void bts_a2dp_source_close_audio(void)
@@ -385,9 +340,9 @@ void bts_a2dp_source_on_connection_changed(bool connected)
 {
     BT_LOGD("%s, %d", __func__, connected);
     if (connected) {
-        bts_a2dp_control_update_audio_config(1);
+        bts_a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, 1);
     } else {
-        bts_a2dp_control_update_audio_config(0);
+        bts_a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, 0);
         bts_a2dp_source_stop_audio_req();
     }
 }
@@ -422,8 +377,27 @@ void bts_a2dp_source_on_suspended(void)
 
 void bts_a2dp_source_setup_codec(bt_address bd_addr)
 {
-    circbuf_reset(&a2dp_src_stream.stream_pool);
-    bts_a2dp_source_stream_init(bd_addr);
+    a2dp_source_stream_t* stream = &a2dp_src_stream;
+    a2dp_codec_config_t* config;
+    a2dp_peer_t* peer;
+
+    circbuf_reset(&stream->stream_pool);
+    stream->stream_interface = get_stream_interface();
+    if (!stream->stream_interface) {
+        BT_LOGE("get_stream_interface fail");
+        return;
+    }
+
+    config = bts_a2dp_codec_get_config();
+    peer = bts_a2dp_source_find_peer(bd_addr);
+    if (peer == NULL) {
+        BT_LOGE("%s, can't find peer:%s", __func__, addr_str(bd_addr));
+        return;
+    }
+
+    stream->stream_interface->init(&config->codec_param.sbc, peer->mtu,
+                                   bts_a2dp_source_send_callback,
+                                   bts_a2dp_source_read_callback);
     bts_a2dp_source_start_flush();
 }
 
