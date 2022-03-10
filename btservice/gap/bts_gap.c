@@ -420,9 +420,40 @@ static void adapter_ssp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_dat
     gap_send_message(msg);
 }
 
+static char* bond_state_to_str(bt_bond_state state)
+{
+    static char* bond_state = NULL;
+    switch (state) {
+    case BT_BOND_STATE_NONE:
+        bond_state = "BT_BOND_STATE_NONE";
+        break;
+    case BT_BOND_STATE_BONDING:
+        bond_state = "BT_BOND_STATE_BONDING";
+        break;
+    case BT_BOND_STATE_BONDED:
+        bond_state = "BT_BOND_STATE_BONDED";
+        break;
+    case BT_BOND_STATE_SDP_DONE:
+        bond_state = "BT_BOND_STATE_SDP_DONE";
+        break;
+    case BT_BOND_STATE_BLE_NONE:
+        bond_state = "BT_BOND_STATE_BLE_NONE";
+        break;
+    case BT_BOND_STATE_BLE_BONDING:
+        bond_state = "BT_BOND_STATE_BLE_BONDING";
+        break;
+    case BT_BOND_STATE_BLE_BONDED:
+        bond_state = "BT_BOND_STATE_BLE_BONDED";
+        break;
+    default:
+        break;
+    }
+    return bond_state;
+}
+
 static void adapter_bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_BOND_STATE state)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, state:%s", __func__, bond_state_to_str(state));
     if ((SERVICE_BT_BOND_STATE_BONDED == state) || (SERVICE_BT_BOND_STATE_BLE_BONDED == state))
         BT_LOGD("%s: PERFORMANCE-GAP-BLUELET-BOND-END", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BOND_STATE_CHANGED);
