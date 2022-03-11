@@ -700,6 +700,55 @@ static int gatts_do_throughput(void* handle, int argc, char** argv)
     return 0;
 }
 
+static int le_start_advertising2(void* handle, int argc, char** argv)
+{
+    if (!gatts_interface || argc < 5) {
+        return -1;
+    }
+    int adv_type = atoi(argv[0]);
+    if (adv_type < BLE_EVENT_ADV_IND || adv_type > BLE_EVENT_SCAN_RSP) {
+        BT_LOGE("invalid adv_type:%d", adv_type);
+        return 0;
+    }
+
+    int interval = atoi(argv[1]);
+    int duration = atoi(argv[2]);
+    int filter_type = atoi(argv[3]);
+    uint8_t adv_id = atoi(argv[4]);
+    if (adv_id >= sizeof(adv_handle) / sizeof(adv_handle[0])) {
+        BT_LOGD("fail, adv_id :%d overflow", adv_id);
+        return 0;
+    }
+    BT_LOGD("start ble adv type:%d, interval:%d, duration:%d, filter_type:%d, adv_id:%u", adv_type, interval, duration, filter_type, adv_id);
+    uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x03, 0x02, 0x00, 0xFF };
+    uint8_t s_rsp_data[] = { 0x09, 0x09, 0x42, 0x52, 0x54, 0x2D, 0x49, 0x44, 0x4D, 0x30 };
+    s_rsp_data[9] = 0x30 + adv_id;
+
+    advertise_param_t adv_para;
+    memset(&adv_para, 0, sizeof(advertise_param_t));
+    adv_para.params.adv_type = adv_type;
+    adv_para.params.channel_map = BLE_ADV_CHANNEL_DEFAULT;
+    adv_para.params.interval = interval;
+    adv_para.params.tx_power = -10;
+    adv_para.params.own_addr_type = BLE_ADDR_TYPE_UNKNOWN;
+    adv_para.duration = duration;
+    adv_para.adv_length = sizeof(s_adv_data);
+    adv_para.adv_data = (char*)s_adv_data;
+    adv_para.scan_rsp_data = (char*)s_rsp_data;
+    adv_para.scan_rsp_length = sizeof(s_rsp_data);
+    adv_para.params.filter_policy = filter_type;
+    adv_para.adv_id = adv_id;
+    btm_le_advertise_interface_t* adv_interface = get_btm_leadv_interface(manager);
+    bt_result_code ret = adv_interface->start_advertising(&adv_handle[adv_id], &adv_para, &le_adv_cb);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGD("start_advertising  fail, ret: %d", ret);
+        return 0;
+    }
+
+    add_advertise_handle(adv_handle[adv_id], adv_id);
+    return 0;
+}
+
 static int le_start_advertising(void* handle, int argc, char** argv)
 {
     if (!gatts_interface || argc < 5) {
@@ -786,6 +835,7 @@ static bt_command_t g_gatts_tables[] = {
     { "send_indicate", gatts_send_indicate, "\"send indicate:<address> <payload>\"" },
     { "throughput", gatts_do_throughput, "\"throughtout:<address> <times>\"" },
     { "start_adv", le_start_advertising, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration> <filter_type> <adv_id (0:legacy, 1~K: extend)>\"" },
+    { "start_adv2", le_start_advertising2, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration> <filter_type> <adv_id (0:legacy, 1~K: extend)>\"" },
     { "stop_adv", le_stop_advertising, "\"stop le adv <adv_id>\"" },
 };
 
