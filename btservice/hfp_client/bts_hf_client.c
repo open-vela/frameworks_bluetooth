@@ -498,14 +498,14 @@ static void hf_client_cleanup(void)
     struct list_node* node;
     struct list_node* tmp;
 
-    if (g_hfp_service.orb_fd > 0)
-        orb_unadvertise(g_hfp_service.orb_fd);
-    g_hfp_service.orb_fd = -1;
     list_for_every_safe(&g_hfp_service.device_list, node, tmp)
     {
         device = (hf_client_device_t*)node;
         hf_client_device_delete(device);
     }
+    if (g_hfp_service.orb_fd > 0)
+        orb_unadvertise(g_hfp_service.orb_fd);
+    g_hfp_service.orb_fd = -1;
     service_adapter_hfp_cleanup();
     g_hfp_service.started = false;
 }
