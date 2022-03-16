@@ -316,17 +316,17 @@ static void a2dp_source_cleanup(void)
     struct list_node* node;
     struct list_node* tmp;
 
+    list_for_every_safe(&a2dp_source.device_list, node, tmp)
+    {
+        device = (a2dp_device_t*)node;
+        a2dp_device_delete(device);
+    }
     a2dp_source.callbacks = NULL;
     a2dp_source.active_peer = NULL;
     if (a2dp_source.orb_fd > 0)
         orb_unadvertise(a2dp_source.orb_fd);
     a2dp_source.orb_fd = -1;
     bts_unregister_profile_process(BT_PROFILE_ADVANCED_AUDIO_SOURCE_ID);
-    list_for_every_safe(&a2dp_source.device_list, node, tmp)
-    {
-        device = (a2dp_device_t*)node;
-        a2dp_device_delete(device);
-    }
     bts_a2dp_source_audio_cleanup();
     service_adapter_a2dp_source_cleanup();
 }

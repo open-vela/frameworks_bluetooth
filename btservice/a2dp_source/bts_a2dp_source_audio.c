@@ -370,6 +370,12 @@ static void bts_a2dp_source_stop_audio_req(void)
     bts_a2dp_source_stream_reset();
 }
 
+static void bts_a2dp_source_close_audio(void)
+{
+    bts_a2dp_source_stop_audio_req();
+    a2dp_ipc_read_stop(a2dp_ipc, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
+}
+
 bool bts_a2dp_source_is_streaming(void)
 {
     return a2dp_src_stream.media_alarm ? true : false;
@@ -433,6 +439,7 @@ void bts_a2dp_source_audio_init(void)
 
 void bts_a2dp_source_audio_cleanup(void)
 {
+    bts_a2dp_source_close_audio();
     circbuf_uninit(&a2dp_src_stream.stream_pool);
     bts_a2dp_control_cleanup();
 }

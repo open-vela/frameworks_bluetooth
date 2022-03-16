@@ -98,6 +98,7 @@ static void a2dp_ipc_connection_close(ipc_channel_t* ch)
     if (ch->state == IPC_CONNTECTED) {
         ch->state = IPC_DISCONNTECTED;
         free(ch->cli_pipe->data);
+        ch->cli_pipe->data = NULL;
         uv_close((uv_handle_t*)ch->cli_pipe, ipc_chnl_close_cb);
         if (ch->event_cb)
             ch->event_cb(ch->ch_id, IPC_CLOSE_EVT);
@@ -129,6 +130,7 @@ static void ipc_chnl_listen_cb(uv_stream_t* stream, int status)
         return;
     }
 
+    ch->cli_pipe->data = NULL;
     ch->state = IPC_CONNTECTED;
     if (ch->event_cb)
         ch->event_cb(ch->ch_id, IPC_OPEN_EVT);
@@ -220,6 +222,10 @@ bool a2dp_ipc_open(a2dp_ipc_t* a2dp, uint8_t ch_id, const char* path, ipc_event_
         return false;
 
     ch = &a2dp->ch[ch_id];
+
+    if (ch->state == IPC_CONNTECTED)
+        return true;
+
     ch->svr_pipe = malloc(sizeof(uv_pipe_t));
     ret = uv_pipe_init(a2dp->loop, ch->svr_pipe, 0);
     if (ret != 0) {
@@ -254,7 +260,7 @@ bool a2dp_ipc_open(a2dp_ipc_t* a2dp, uint8_t ch_id, const char* path, ipc_event_
     ch->ipc_handle = (void*)a2dp;
     ch->svr_pipe->data = ch;
 
-    BT_LOGD("%s path[%d]: %s success", __func__, ch_id, path);
+    BT_LOGD("%s path{%d}[%s] success", __func__, ch_id, path);
 
     return true;
 error:
@@ -271,6 +277,9 @@ void a2dp_ipc_close(a2dp_ipc_t* a2dp, uint8_t ch_id)
 
     if (ch_id != A2DP_IPC_CH_ID_ALL) {
         ch = &a2dp->ch[ch_id];
+        if (ch->state == IPC_DISCONNTECTED)
+            return;
+
         a2dp_ipc_connection_close(ch);
         uv_close((uv_handle_t*)ch->svr_pipe, ipc_chnl_close_cb);
         return;
@@ -357,7 +366,7 @@ int a2dp_ipc_read_start(a2dp_ipc_t* a2dp, uint8_t ch_id, ipc_alloc_cb_t alloc_cb
     ret = uv_read_start((uv_stream_t*)ch->cli_pipe,
         ipc_chnl_read_alloc_cb,
         ipc_chnl_read_cb);
-    if (ret != 0) {
+    if (ret != 0 && ret != UV_EALREADY) {
         BT_LOGE("read start error :%s", uv_strerror(ret));
         free(rreq);
         a2dp_ipc_connection_close(ch);
