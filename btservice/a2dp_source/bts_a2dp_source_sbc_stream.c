@@ -44,6 +44,14 @@
 
 #define A2DP_SBC_BIT_PER_SAMPLE 16
 #define A2DP_SBC_ENCODER_INTERVAL_MS 20
+#define MAX_PCM_FRAME_NUM_PER_TICK 14
+#define A2DP_SBC_MAX_PCM_ITER_NUM_PER_TICK 3
+
+typedef struct {
+    uint64_t            last_frame_us;
+    float               counter;
+    uint32_t            bytes_per_tick;
+}a2dp_sbc_feeding_state_t;
 
 typedef struct {
     sbc_param_t*        param;
@@ -55,6 +63,7 @@ typedef struct {
     uint16_t            max_tx_length;
     uint32_t            media_timestamp;
     uint64_t            session_start_us;
+    a2dp_sbc_feeding_state_t feeding_state;
 } a2dp_stream_sbc_t;
 
 a2dp_stream_sbc_t sbc_stream;
@@ -115,49 +124,49 @@ uint32_t a2dp_sbc_frame_length(sbc_param_t* param)
     return frame_len;
 }
 
-static void a2dp_sbc_get_num_frame_iteration(uint8_t* noi, uint8_t* nof,
+static void a2dp_sbc_get_num_frame_iteration(uint8_t* num_of_iterations, uint8_t* num_of_frames,
     uint64_t now_timestamp_us)
 {
-    uint16_t sample_rate;
-    sbc_param_t* param = sbc_stream.param;
+    uint32_t projected_nof = 0;
+    a2dp_stream_sbc_t* stream = &sbc_stream;
+    sbc_param_t* param = stream->param;
 
-    sample_rate = a2dp_sbc_sample_frequency(param->s16SamplingFreq);
-
-    /* PCM bytes of per  frame */
-    uint16_t per_frame_bytes = param->s16NumOfBlocks *
-                               param->s16NumOfSubBands *
-                               param->s16NumOfChannels *
-                               A2DP_SBC_BIT_PER_SAMPLE / 8;
-    /* PCM bytes read each media task tick */
-    uint16_t bytes_per_tick = (sample_rate *
-                              A2DP_SBC_BIT_PER_SAMPLE / 8 *
-                              param->s16NumOfChannels *
-                              A2DP_SBC_ENCODER_INTERVAL_MS) /
-                              1000;
-    /* Calculate the playback time of per PCM frame */
-    uint64_t per_frame_time = (uint64_t)per_frame_bytes * 1000000UL /
-                              (sample_rate *
-                              (A2DP_SBC_BIT_PER_SAMPLE / 8) *
-                              param->s16NumOfChannels);
-    /* Calculate the actual playback timestamp according to the total PCM frames
-     * we send */
-    uint64_t actual_timestamp_us =
-             sbc_stream.session_start_us +
-             sbc_stream.total_tx_frames *
-             per_frame_time;
-
-    *noi = 1;
-    uint8_t projected_nof = (bytes_per_tick + per_frame_bytes / 2) / per_frame_bytes;
-    *nof = projected_nof > calculate_max_frames_per_packet() ?
-           calculate_max_frames_per_packet() : projected_nof;
-
-    if (now_timestamp_us >= actual_timestamp_us) {
-        uint8_t delta_frames = (now_timestamp_us - actual_timestamp_us) / per_frame_time;
-        if (delta_frames / *nof)
-            *noi = 2;
-    } else {
-        *nof = *nof - 1;
+    uint32_t pcm_bytes_per_frame = param->s16NumOfSubBands *
+                                   param->s16NumOfBlocks *
+                                   param->s16NumOfChannels *
+                                   A2DP_SBC_BIT_PER_SAMPLE / 8;
+    uint32_t us_this_tick = A2DP_SBC_ENCODER_INTERVAL_MS * 1000;
+    if (stream->feeding_state.last_frame_us != 0)
+        us_this_tick = now_timestamp_us - stream->feeding_state.last_frame_us;
+    stream->feeding_state.last_frame_us = now_timestamp_us;
+    float ticks = (float)us_this_tick / (A2DP_SBC_ENCODER_INTERVAL_MS * 1000);
+    stream->feeding_state.counter += (float)stream->feeding_state.bytes_per_tick * ticks;
+    projected_nof = stream->feeding_state.counter / pcm_bytes_per_frame;
+    uint32_t frames_per_tick = stream->feeding_state.bytes_per_tick / pcm_bytes_per_frame;
+    if (projected_nof > MAX_PCM_FRAME_NUM_PER_TICK) {
+        uint32_t delta = projected_nof - MAX_PCM_FRAME_NUM_PER_TICK;
+        projected_nof = MAX_PCM_FRAME_NUM_PER_TICK;
+        if ((delta / frames_per_tick) > A2DP_SBC_MAX_PCM_ITER_NUM_PER_TICK)
+            stream->feeding_state.counter = projected_nof * pcm_bytes_per_frame;
     }
+
+    uint8_t noi = 1;
+    uint8_t nof = calculate_max_frames_per_packet();
+    if (nof < projected_nof) {
+        noi = projected_nof / frames_per_tick;
+        if (noi > 1) {
+            nof = frames_per_tick;
+            if (noi > A2DP_SBC_MAX_PCM_ITER_NUM_PER_TICK) {
+                noi = A2DP_SBC_MAX_PCM_ITER_NUM_PER_TICK;
+                stream->feeding_state.counter = noi * nof * pcm_bytes_per_frame;
+            }
+        }
+    } else
+        nof = projected_nof;
+
+    stream->feeding_state.counter -= noi * nof * pcm_bytes_per_frame;
+    *num_of_frames = nof;
+    *num_of_iterations = noi;
 }
 
 static void a2dp_sbc_send_frames(uint16_t header_reserve, uint8_t frames)
@@ -190,7 +199,11 @@ static void a2dp_sbc_send_frames(uint16_t header_reserve, uint8_t frames)
             frames--;
             read_frames++;
         } else {
-            //BT_LOGW("%s, underflow :%d", __func__, frames);
+            BT_LOGW("%s, underflow :%d", __func__, frames);
+            sbc_stream.feeding_state.counter += param->s16NumOfSubBands *
+                                                param->s16NumOfBlocks *
+                                                param->s16NumOfChannels *
+                                                A2DP_SBC_BIT_PER_SAMPLE / 8 * frames;
             break;
         }
     } while (frames);
@@ -248,13 +261,26 @@ void a2dp_source_sbc_stream_init(sbc_param_t* param, uint32_t mtu,
     sbc_stream.frames_len = a2dp_sbc_frame_length(sbc_stream.param);
     sbc_stream.media_timestamp = 0;
     sbc_stream.session_start_us = 0;
+    sbc_stream.feeding_state.last_frame_us = 0;
 }
 
 void a2dp_source_sbc_stream_reset(void)
 {
+    sbc_param_t *param = sbc_stream.param;
+    uint16_t sample_rate;
+
+    sample_rate = a2dp_sbc_sample_frequency(param->s16SamplingFreq);
     sbc_stream.total_tx_frames = 0;
     sbc_stream.media_timestamp = 0;
     sbc_stream.session_start_us = get_os_timestamp_us();
+    sbc_stream.feeding_state.last_frame_us = 0;
+    sbc_stream.feeding_state.counter = 0;
+    sbc_stream.feeding_state.bytes_per_tick =
+                                (sample_rate *
+                                A2DP_SBC_BIT_PER_SAMPLE / 8 *
+                                param->s16NumOfChannels *
+                                A2DP_SBC_ENCODER_INTERVAL_MS) /
+                                1000;
 }
 
 int a2dp_source_sbc_interval_ms(void)
