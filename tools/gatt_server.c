@@ -755,7 +755,7 @@ static int le_start_advertising(void* handle, int argc, char** argv)
         return -1;
     }
     int adv_type = atoi(argv[0]);
-    if (adv_type < BLE_EVENT_ADV_IND || adv_type > BLE_EVENT_SCAN_RSP) {
+    if (adv_type < BLE_EVENT_ADV_IND || adv_type > BLE_EVENT_EXT_SCAN_RSP) {
         BT_LOGE("invalid adv_type:%d", adv_type);
         return 0;
     }
