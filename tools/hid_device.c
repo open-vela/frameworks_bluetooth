@@ -347,6 +347,8 @@ static int hidd_register_device(void* handle, int argc, char** argv)
     hids_info.hids_info.dsc_list[1] = (uint8_t)(desc_len & 0xFF);
     hids_info.hids_info.dsc_list[2] = (uint8_t)(desc_len >> 8);
     memcpy(hids_info.hids_info.dsc_list + 3, desc_list, desc_len);
+    hids_info.br_hid = 1;
+    hids_info.le_hid = 0;
     bt_hidd_qos_settings_t tx_qos, rx_qos; //stack  not support bt_hidd_qos_settings_t features, hence not inited;
     memset(&tx_qos, 0, sizeof(tx_qos));
     memset(&rx_qos, 0, sizeof(rx_qos));

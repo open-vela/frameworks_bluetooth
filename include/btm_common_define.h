@@ -608,6 +608,8 @@ typedef struct {
     const char *description;
     const char *provider;
     hid_info_t hids_info;
+    bool br_hid;
+    bool le_hid;
 } bt_hidd_sdp_settings_t;
 
 typedef struct {
