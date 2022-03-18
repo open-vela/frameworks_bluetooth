@@ -131,7 +131,7 @@ static bt_command_t g_cmd_tables[] = {
 #endif
     { "log", log_command, "log control" },
     { "help", usage_cmd, "Usage for bttools" },
-    { "quit", quit_cmd, "Quit" },
+    //{ "quit", quit_cmd, "Quit" },
 };
 
 static bt_command_t g_gap_tables[] = {
@@ -918,6 +918,9 @@ static int get_ble_state_cmd(void* handle, int argc, char** argv)
 }
 static int usage_cmd(void* handle, int argc, char** argv)
 {
+    if (argc == 2 && !strcmp(argv[1], "me!!!"))
+        return -2;
+
     usage();
 
     return 0;
@@ -951,13 +954,15 @@ static void show_version(void)
 
 static int execute_command(void* handle, int argc, char* argv[])
 {
+    int ret;
+
     for (int i = 0; i < ARRAY_SIZE(g_cmd_tables); i++) {
         if (strcmp(g_cmd_tables[i].cmd, argv[0]) == 0) {
             if (g_cmd_tables[i].func) {
-                g_cmd_tables[i].func(handle, argc, &argv[0]);
+                ret = g_cmd_tables[i].func(handle, argc, &argv[0]);
                 if (g_cmd_tables[i].func == quit_cmd)
                     return -2;
-                return 0;
+                return ret;
             }
         }
     }
