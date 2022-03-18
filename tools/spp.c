@@ -55,25 +55,23 @@ static int stop_server_cmd(void* handle, int argc, char* argv[]);
 static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int write_cmd(void* handle, int argc, char* argv[]);
-static int test_cmd(void* handle, int argc, char* argv[]);
+static int send_cmd(void* handle, int argc, char* argv[]);
+static int speed_cmd(void* handle, int argc, char* argv[]);
 static int dump_cmd(void* handle, int argc, char* argv[]);
 
 static struct list_node device_list = LIST_INITIAL_VALUE(device_list);
 static spp_interface_t* spp_interface = NULL;
 static uv_timer_t* spp_timer = NULL;
+static sem_t spp_sem;
 static bt_command_t g_spp_tables[] = {
-    { "start", start_server_cmd,    "\"start spp server        param: <port> <uuid>\", server port must be odd number, range in (3~57) 3,5,7,9...57"},
+    { "start", start_server_cmd,    "\"start spp server        param: <port> <uuid>\", note:server port must be odd number, range in (3~57) 3,5,7,9...57"},
     { "stop", stop_server_cmd,      "\"stop  spp server        param: <port>\"" },
     { "connect", connect_cmd,       "\"connect spp device      param: <address> <port> <uuid>\"" },
     { "disconnect", disconnect_cmd, "\"disconnect peer device  param: <address> <port>\"" },
     { "write", write_cmd,           "\"write data to peer      param: <port> <data>\"" },
-    { "test", test_cmd,             "\"transmit bulk data      param: <port> <length> <times>\"" },
+    { "send", send_cmd,             "\"transmit bulk data      param: <port> <length> <iterations>\"" },
+    { "speed", speed_cmd,           "\"performance test        param: <port> <iteration>\" note:iteration * 990 shoule less than free memory" },
     { "dump", dump_cmd,             "\"dump spp current state\"" },
-};
-
-static struct option spp_options[] = {
-    { "help", 0, 0, 'h' },
-    { 0, 0, 0, 0 }
 };
 
 static void usage(void)
@@ -126,6 +124,7 @@ static void check_resource_release(uint16_t port)
     if (device == NULL)
         return;
     euv_pty_close(device->pty);
+    device->pty = NULL;
     list_delete(&device->node);
     free(device);
 }
@@ -152,8 +151,6 @@ static void connection_state_callback(const bt_address addr, uint16_t port, spp_
 
 static void pty_open_callback(const bt_address addr, uint16_t port, char* name, int fd)
 {
-    //int sfd;
-
     fd = open(name, O_RDWR | O_NOCTTY);
     if (fd < 0)
         return;
@@ -168,6 +165,7 @@ static void pty_open_callback(const bt_address addr, uint16_t port, char* name, 
         BT_LOGE("%s pty init error", __func__);
         return;
     }
+
     list_add_tail(&device_list, &device->node);
     euv_pty_read_start(device->pty, 128, pty_read_cb);
 }
@@ -247,7 +245,6 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     }
 
     BT_LOGD("%s, address:%s port:%d", __func__, argv[0], port);
-
     spp_interface->disconnect(NULL, addr, port);
     spp_timer = start_timer(2000, 0, disconnect_timeout, (void*)p_port);
 
@@ -256,6 +253,13 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
 
 extern void spp_test_start(int test_cnt);
 extern void spp_app_trans_done_log(void);
+static void write_fc_complete(euv_pty_t* handle, uint8_t* buf, int status)
+{
+    sem_post(&spp_sem);
+    spp_app_trans_done_log();
+    free(buf);
+}
+
 static void write_complete(euv_pty_t* handle, uint8_t* buf, int status)
 {
     spp_app_trans_done_log();
@@ -278,16 +282,41 @@ static int write_cmd(void* handle, int argc, char* argv[])
         return -1;
 
     buf = (uint8_t *)strdup(argv[1]);
+    sem_wait(&spp_sem);
     euv_pty_write(device->pty, buf, strlen(argv[1]), write_complete);
 
     return 0;
 }
 
-static int test_cmd(void* handle, int argc, char* argv[])
+static int send_bluk(uint16_t port, uint16_t length, uint16_t interations, uint8_t fc)
 {
     spp_device_t* device;
-    uint16_t port, length, times;
     uint8_t *buf;
+
+    device = find_pty_by_port(port);
+    BT_LOGD("%s port:%d", __func__, port);
+    if (device == NULL)
+        return -1;
+
+    spp_test_start(interations);
+    for (int i = 0; i < interations; i++) {
+        if (device->pty == NULL)
+            break;
+        buf = malloc(length);
+        memset(buf, 0xA5, length);
+        if (fc) {
+            sem_wait(&spp_sem);
+            euv_pty_write(device->pty, buf, length, write_fc_complete);
+        } else
+            euv_pty_write(device->pty, buf, length, write_complete);
+    }
+
+    return 0;
+}
+
+static int send_cmd(void* handle, int argc, char* argv[])
+{
+    uint16_t port, length, times;
 
     if (argc < 3)
         return -1;
@@ -295,19 +324,21 @@ static int test_cmd(void* handle, int argc, char* argv[])
     port = atoi(argv[0]);
     length = atoi(argv[1]);
     times = atoi(argv[2]);
-    device = find_pty_by_port(port);
-    BT_LOGD("%s port:%d", __func__, port);
-    if (device == NULL)
+
+    return send_bluk(port, length, times, 1);
+}
+
+static int speed_cmd(void* handle, int argc, char* argv[])
+{
+    uint16_t port, times;
+
+    if (argc < 2)
         return -1;
 
-    spp_test_start(times);
-    for (int i = 0; i < times; i++) {
-        buf = malloc(length);
-        memset(buf, 0xA5, length);
-        euv_pty_write(device->pty, buf, length, write_complete);
-    }
+    port = atoi(argv[0]);
+    times = atoi(argv[1]);
 
-    return 0;
+    return send_bluk(port, 990, times, 0);
 }
 
 static int dump_cmd(void* handle, int argc, char* argv[])
@@ -325,21 +356,12 @@ static spp_callbacks_t spp_test_cbs = {
 
 int spp_command(void* handle, int argc, char* argv[])
 {
-    int opt, ret = -1;
+    int ret = -1;
 
     if (spp_interface == NULL) {
+        sem_init(&spp_sem, 0, 50);
         spp_interface = get_spp_interface();
         spp_interface->set_callbacks(NULL, &spp_test_cbs);
-    }
-
-    while ((opt = getopt_long(argc, argv, "h", spp_options, NULL)) != -1) {
-        switch (opt) {
-        case 'h':
-            usage();
-            return 0;
-        default:
-            break;
-        }
     }
 
     if (argc > 1) {
