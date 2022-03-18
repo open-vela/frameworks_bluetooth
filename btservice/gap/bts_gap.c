@@ -1362,3 +1362,23 @@ bt_result_code bts_enter_bluetooth_test_mode(test_mode mode)
     }
     return BT_RESULT_SUCCESS;
 }
+
+bt_result_code bts_set_page_scan_parameters(bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window)
+{
+    SERVICE_BT_STATUS ret = service_adapter_gap_set_page_scan_parameters((SERVICE_BT_SCAN_TYPE)scan_type, scan_interval, scan_window);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, ret:%d", __func__, ret);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
+bt_result_code bts_set_inquiry_scan_parameters(bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window)
+{
+    SERVICE_BT_STATUS ret = service_adapter_gap_set_inquiry_scan_parameters((SERVICE_BT_SCAN_TYPE)scan_type, scan_interval, scan_window);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, ret:%d", __func__, ret);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}

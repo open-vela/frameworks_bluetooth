@@ -58,6 +58,8 @@ static int gap_cmd(void* handle, int argc, char** argv);
 static int start_discovery(void* handle, int argc, char** argv);
 static int stop_discovery(void* handle, int argc, char** argv);
 static int set_scan_mode(void* handle, int argc, char** argv);
+static int set_inquiry_scan_parameters(void* handle, int argc, char** argv);
+static int set_page_scan_parameters(void* handle, int argc, char** argv);
 static int get_local_address(void* handle, int argc, char** argv);
 static int set_local_io_capability(void* handle, int argc, char** argv);
 static int get_local_name(void* handle, int argc, char** argv);
@@ -136,6 +138,8 @@ static bt_command_t g_cmd_tables[] = {
 
 static bt_command_t g_gap_tables[] = {
     { "scan_mode", set_scan_mode, "\"set scan mode                                    param: <mode>  <bondable> \"" },
+    { "inquiryparas", set_inquiry_scan_parameters, "\"set inquiry parameters                 param: <type>  <scan_interval>  <scan_window> \"" },
+    { "pageparas", set_page_scan_parameters, "\"set page parameters                 param: <type>  <scan_interval>  <scan_window> \"" },
     { "discovery", start_discovery, "\"start bluetooth discovery             param: <timer(n*1.28s)> \"" },
     { "stopdiscovery", stop_discovery, "\"stop bluetooth discovery \"" },
     { "getaddr", get_local_address, "\"get local address      \"" },
@@ -218,6 +222,56 @@ static int set_scan_mode(void* handle, int argc, char** argv)
 
     gap_test_interface->bt_set_scan_mode(g_gap_handle, scanMode, bondable);
 
+    return 0;
+}
+
+static int set_inquiry_scan_parameters(void* handle, int argc, char** argv)
+{
+    if (argc < 3)
+        return -1;
+
+    bt_scan_type scan_type = BR_SCAN_TYPE_STANDARD;
+    uint16_t type = atoi(argv[0]);
+    uint16_t scan_interval = atoi(argv[1]);
+    uint16_t scan_window = atoi(argv[2]);
+    switch (type) {
+    case 0:
+        scan_type = BR_SCAN_TYPE_STANDARD;
+        break;
+    case 1:
+        scan_type = BR_SCAN_TYPE_INTERLACED;
+        break;
+    default:
+        break;
+    }
+    BT_LOGD("%s, scan_type:%d, scan_interval:%d, scan_window:%d", __func__, scan_type, scan_interval, scan_window);
+
+    gap_test_interface->bt_set_inquiry_scan_parameters(g_gap_handle, scan_type, scan_interval, scan_window);
+    return 0;
+}
+
+static int set_page_scan_parameters(void* handle, int argc, char** argv)
+{
+    if (argc < 3)
+        return -1;
+
+    bt_scan_type scan_type = BR_SCAN_TYPE_STANDARD;
+    uint16_t type = atoi(argv[0]);
+    uint16_t scan_interval = atoi(argv[1]);
+    uint16_t scan_window = atoi(argv[2]);
+    switch (type) {
+    case 0:
+        scan_type = BR_SCAN_TYPE_STANDARD;
+        break;
+    case 1:
+        scan_type = BR_SCAN_TYPE_INTERLACED;
+        break;
+    default:
+        break;
+    }
+    BT_LOGD("%s, scan_type:%d, scan_interval:%d, scan_window:%d", __func__, scan_type, scan_interval, scan_window);
+
+    gap_test_interface->bt_set_page_scan_parameters(g_gap_handle, scan_type, scan_interval, scan_window);
     return 0;
 }
 

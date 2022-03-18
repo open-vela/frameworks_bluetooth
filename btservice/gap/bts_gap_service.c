@@ -558,6 +558,20 @@ static bt_result_code bts_if_enter_bluetooth_test_mode(void* gap_handle, test_mo
     return ret;
 }
 
+static bt_result_code bts_if_set_page_scan_parameters(void* gap_handle, bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window)
+{
+    if (!gap_is_handle_valid(gap_handle))
+        return BT_RESULT_FAILED;
+    return bts_set_page_scan_parameters(scan_type, scan_interval, scan_window);
+}
+
+static bt_result_code bts_if_set_inquiry_scan_parameters(void* gap_handle, bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window)
+{
+    if (!gap_is_handle_valid(gap_handle))
+        return BT_RESULT_FAILED;
+    return bts_set_inquiry_scan_parameters(scan_type, scan_interval, scan_window);
+}
+
 static bt_result_code bts_if_gap_cleanup(void* gap_handle)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -631,6 +645,8 @@ static btm_gap_interface_t gap_interface = {
     .ble_get_whitelist_devices = bts_if_get_ble_whitelist_devices,
     .ble_get_resolvinglist_devices = bts_if_get_ble_resolvinglist_devices,
     .enter_bluetooth_test_mode = bts_if_enter_bluetooth_test_mode,
+    .bt_set_inquiry_scan_parameters = bts_if_set_inquiry_scan_parameters,
+    .bt_set_page_scan_parameters = bts_if_set_page_scan_parameters,
 };
 
 btm_gap_interface_t* get_gap_service_instance(void)
