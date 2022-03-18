@@ -205,6 +205,8 @@ int utils_log_enable(int id)
     default:
         return -1;
     }
+
+    property_commit();
     syslog(LOG_DEBUG, "%s Log Enabled\n", log_id_str(id));
 
     return 0;
@@ -231,6 +233,7 @@ int utils_log_disable(int id)
     default:
         return -1;
     }
+    property_commit();
     syslog(LOG_DEBUG, "%s Log Disabled\n", log_id_str(id));
 
     return 0;
@@ -243,6 +246,7 @@ uint8_t utils_set_log_level(uint8_t level)
 
     m_log_level = level;
     property_set_int32("persist.bluetooth.log.level", level);
+    property_commit();
 
     return m_log_level;
 }
@@ -260,6 +264,7 @@ int utils_set_log_mask_level(uint8_t id, uint8_t mask_bit, bool enable)
             }
 
             property_set_int32("persist.bluetooth.log.stack", m_stack_log_mask);
+            property_commit();
             syslog(LOG_DEBUG, "%s Log %s\n", profile_mask_str(mask_bit), enable ? "Enabled" : "Disabled");
             return 0;
         }
