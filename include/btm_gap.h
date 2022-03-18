@@ -389,6 +389,8 @@ typedef struct {
     bt_result_code (*bt_set_local_device_class)(void* handle, uint32_t class_of_device);
     uint32_t (*bt_get_local_device_class)(void* handle);
     bt_result_code (*bt_set_local_address)(void* handle, bt_device_t* device);
+    bt_result_code (*bt_set_inquiry_scan_parameters)(void* gap_handle, bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window);
+    bt_result_code (*bt_set_page_scan_parameters)(void* gap_handle, bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window);
 } btm_gap_interface_t;
 
 btm_gap_interface_t* get_gap_instance(void);

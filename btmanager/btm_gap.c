@@ -666,6 +666,24 @@ static bt_result_code btm_enter_bluetooth_test_mode(void* gap_handle, test_mode 
     return ret;
 }
 
+static bt_result_code btm_set_inquiry_scan_parameter(void* gap_handle, bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    CHECK_PTR_RETURN(gap_handle, ret);
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_GAP_INTERFACE(context->service_interface, bt_set_inquiry_scan_parameters, ret, gap_handle, scan_type, scan_interval, scan_window);
+    return ret;
+}
+
+static bt_result_code btm_set_page_scan_parameters(void* gap_handle, bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    CHECK_PTR_RETURN(gap_handle, ret);
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_GAP_INTERFACE(context->service_interface, bt_set_page_scan_parameters, ret, gap_handle, scan_type, scan_interval, scan_window);
+    return ret;
+}
+
 static btm_gap_interface_t gap_interface = {
     .size = sizeof(btm_gap_interface_t),
     .gap_register_callbacks = btm_gap_register_callbacks,
@@ -716,6 +734,8 @@ static btm_gap_interface_t gap_interface = {
     .ble_get_connected_devices = btm_ble_get_connected_devices,
     .ble_get_whitelist_devices = btm_ble_get_whitelist_devices,
     .ble_get_resolvinglist_devices = btm_ble_get_resolvinglist_devices,
+    .bt_set_inquiry_scan_parameters = btm_set_inquiry_scan_parameter,
+    .bt_set_page_scan_parameters = btm_set_page_scan_parameters,
 };
 
 btm_gap_interface_t* get_gap_instance(void)

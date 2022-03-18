@@ -211,6 +211,12 @@ typedef enum {
 } test_mode;
 
 typedef enum {
+    BR_SCAN_TYPE_STANDARD,
+    BR_SCAN_TYPE_INTERLACED,
+    BR_SCAN_TYPE_UNKNOWN = 0xFF
+} bt_scan_type;
+
+typedef enum {
     DEVICE_DEVTYPE_BREDR,
     DEVICE_DEVTYPE_BLE,
     DEVICE_DEVTYPE_DUAL
