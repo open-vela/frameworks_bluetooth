@@ -286,9 +286,10 @@ static spp_pty_device_t* alloc_new_device(bt_address addr, uint16_t port, bool a
     device->remaining_quota = SENDING_BUFS_QUOTA;
     device->state = SPP_CONNECTION_STATE_DISCONNECTED;
     memset(device->pty_name, 0, sizeof(device->pty_name));
-    circbuf_init(&device->cache, NULL, device->mfs);
 #if CACHE_BUFFER_EN
     memset(&device->cache_buf, 0, sizeof(device->cache_buf));
+#else
+    circbuf_init(&device->cache, NULL, device->mfs);
 #endif
     memcpy(device->addr, addr, sizeof(device->addr));
     list_add_tail(&g_spp_handle.dev_list, &device->node);
@@ -415,6 +416,9 @@ error:
 
 static void spp_close_pty_device(spp_pty_device_t* device)
 {
+    if (device->timer != NULL)
+        stop_timer(device->timer);
+
     if (device->handle) {
         euv_pty_close(device->handle);
         device->handle = NULL;
@@ -580,6 +584,7 @@ static void spp_cache_fragement(spp_pty_device_t* device, uint8_t* buffer, uint1
 static void spp_cache_stop(spp_pty_device_t* device)
 {
     stop_timer(device->timer);
+    device->timer = NULL;
     device->next_to_read = device->mfs;
 
 #if SEND_FC_EN
@@ -722,8 +727,9 @@ static void spp_on_outgoing_complete(uint16_t port, uint8_t* buffer, uint16_t le
 #if SEND_FC_EN
     spp_pty_device_t* device;
 
+    free(buffer);
     device = find_pty_device(port);
-    if (!device || buffer == NULL)
+    if (!device)
         return;
 
     spp_send_done_log();
@@ -735,7 +741,6 @@ static void spp_on_outgoing_complete(uint16_t port, uint8_t* buffer, uint16_t le
 #endif
     }
     device->remaining_quota++;
-    free(buffer);
 #endif
 }
 
@@ -765,10 +770,10 @@ static void spp_on_connection_update_mfs(uint16_t port, uint16_t mfs)
 
     device->mfs = mfs;
     device->next_to_read = mfs;
-    circbuf_resize(&device->cache, mfs);
 #if CACHE_BUFFER_EN
     ret = euv_pty_read_start2(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
 #else
+    circbuf_resize(&device->cache, mfs);
     ret = euv_pty_read_start(device->handle, device->mfs, euv_read_complete);
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
