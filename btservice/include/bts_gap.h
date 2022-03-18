@@ -119,6 +119,10 @@ int bts_get_ble_resolvinglist_devices(bt_device_t* device_list, int max_out);
  */
 bt_result_code bts_enter_bluetooth_test_mode(test_mode mode);
 
+bt_result_code bts_set_page_scan_parameters(bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window);
+
+bt_result_code bts_set_inquiry_scan_parameters(bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window);
+
 void gap_bt_bond_store(void);
 void gap_bluetooth_bond_init(void);
 void gap_ble_bond_store(ble_keys_t* key, uint8_t count);
