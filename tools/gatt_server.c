@@ -149,19 +149,19 @@ static advertise_handle_t* find_advertise_handle(uint8_t adv_id)
     return NULL;
 }
 
-static advertise_handle_t* find_advertise_handle2(void* adv_handle)
+static advertise_handle_t* find_advertise_handle2(void* adv_hdl)
 {
     advertise_handle_t* handle;
     list_for_every_entry(&advertise_handle_list, handle, advertise_handle_t, node)
     {
-        if (handle->adv_handle == adv_handle) {
+        if (handle->adv_handle == adv_hdl) {
             return handle;
         }
     }
     return NULL;
 }
 
-static void add_advertise_handle(void* adv_handle, uint8_t adv_id)
+static void add_advertise_handle(void* adv_hdl, uint8_t adv_id)
 {
     advertise_handle_t* handle = (advertise_handle_t*)malloc(sizeof(advertise_handle_t));
     if (!handle) {
@@ -169,7 +169,7 @@ static void add_advertise_handle(void* adv_handle, uint8_t adv_id)
         return;
     }
 
-    handle->adv_handle = adv_handle;
+    handle->adv_handle = adv_hdl;
     handle->adv_id = adv_id;
     list_add_tail(&advertise_handle_list, &handle->node);
 }
