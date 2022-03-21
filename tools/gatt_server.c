@@ -262,22 +262,22 @@ static void gatt_display_service(gatt_element_t* elements, uint16_t size)
     while (item < item_end) {
         switch (item->type) {
         case GATT_PRIMARY_SERVICE:
-            BT_LOGD(">[%lu][PRI]", item->id);
+            BT_LOGD(">[%" PRIu32"][PRI]", item->id);
             break;
         case GATT_SECONDARY_SERVICE:
-            BT_LOGD(">[%lu][SND]", item->id);
+            BT_LOGD(">[%" PRIu32"][SND]", item->id);
             break;
         case GATT_INCLUDED_SERVICE:
-            BT_LOGD(">  [%lu][INC]", item->id);
+            BT_LOGD(">  [%" PRIu32"][INC]", item->id);
             break;
         case GATT_CHARACTERISTIC:
-            BT_LOGD(">  [%lu][CHR]", item->id);
+            BT_LOGD(">  [%" PRIu32"][CHR]", item->id);
             break;
         case GATT_DESCRIPTOR:
-            BT_LOGD(">    [%lu][DES]", item->id);
+            BT_LOGD(">    [%" PRIu32"][DES]", item->id);
             break;
         }
-        BT_LOGD("[PROP:%lu", item->properties);
+        BT_LOGD("[PROP:%" PRIu32, item->properties);
         if (item->properties) {
             BT_LOGD(",");
             if (item->properties & GATT_ATT_PROPERTY_READ) {
@@ -345,7 +345,7 @@ static void test_server_phy_update_callback(void* handle, bt_address remote_addr
 static void test_server_read_request_callback(void* handle, bt_address remote_addr, uint32_t request_id,
     gatt_element_t* element)
 {
-    BT_LOGD("%s, addr:%s, request_id:%lu", __func__, addr_str(remote_addr), request_id);
+    BT_LOGD("%s, addr:%s, request_id:%" PRIu32, __func__, addr_str(remote_addr), request_id);
     gatt_display_service(element, 1);
     gatt_response_t* rsp;
     if (element->id == IOT_SERVICE_READ_CHR_ID) {
@@ -374,7 +374,7 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
     gatt_element_t* element, uint8_t* value, uint16_t offset,
     uint16_t size)
 {
-    BT_LOGD("%s, addr:%s, request_id:%lu", __func__, addr_str(remote_addr), request_id);
+    BT_LOGD("%s, addr:%s, request_id:%" PRIu32, __func__, addr_str(remote_addr), request_id);
     gatt_display_service(element, 1);
     gatt_response_t* rsp = malloc(sizeof(gatt_response_t));
     if (!rsp) {
@@ -393,7 +393,7 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
         break;
     }
     default: {
-        BT_LOGD(" write %d bytes from offset %d of element %lu", size, offset, element->id);
+        BT_LOGD(" write %d bytes from offset %d of element %" PRIu32, size, offset, element->id);
         break;
     }
     }
@@ -413,10 +413,10 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
 
 static void test_server_mtu_changed_callback(void* handle, bt_address remote_addr, uint32_t mtu)
 {
-    BT_LOGD("%s, addr:%s, mtu: %lu", __func__, addr_str(remote_addr), mtu);
+    BT_LOGD("%s, addr:%s, mtu: %" PRIu32,  __func__, addr_str(remote_addr), mtu);
     gatts_device_t* device = find_gatts_device(remote_addr);
     if (device) {
-        BT_LOGD("update device:%s, mtu:%lu", addr_str(remote_addr), mtu);
+        BT_LOGD("update device:%s, mtu:%" PRIu32, addr_str(remote_addr), mtu);
         device->gatt_mtu = mtu;
     }
 }
@@ -429,7 +429,7 @@ static void test_server_notify_sent_callback(void* handle, bt_address remote_add
 
 static void test_server_throughtout_notify(bt_address remote_addr, gatt_element_t* element, uint32_t times, uint16_t mtu)
 {
-    BT_LOGD("mtu:%u, times:%lu", mtu, times);
+    BT_LOGD("mtu:%" PRIu16", times:%" PRIu32, mtu, times);
     uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * mtu);
     if (!payload) {
         BT_LOGD("malloc payload fail");
@@ -684,7 +684,7 @@ static int gatts_do_throughput(void* handle, int argc, char** argv)
     bt_address remote_address;
     str2ba(argv[0], remote_address);
     uint32_t times = atoi(argv[1]);
-    BT_LOGD("throughtout remote_addr:%s, times:%lu", addr_str(remote_address), times);
+    BT_LOGD("throughtout remote_addr:%s, times:%" PRIu32, addr_str(remote_address), times);
     gatt_element_t* element = (gatt_element_t*)(s_iot_service_elements + IOT_SERVICE_TX_CHR_ID - 1);
     if (!element) {
         BT_LOGD("element null");

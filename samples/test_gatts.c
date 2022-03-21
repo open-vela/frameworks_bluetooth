@@ -222,7 +222,7 @@ static bt_mgr_callback_t mgt_cb = {
 
 static void test_server_throughtout_notify(uint32_t times, uint16_t mtu)
 {
-    BT_LOGD("###mtu:%lu, times:%lu", mtu, times);
+    BT_LOGD("###mtu:%" PRIu32", times:%" PRIu32, mtu, times);
     uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * mtu);
     uint32_t msg_counter = 1;
     gatt_element_t* element = (gatt_element_t*)(s_iot_service_elements + IOT_SERVICE_TX_CHR_ID - 1);

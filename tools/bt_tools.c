@@ -457,7 +457,7 @@ static int set_local_device_class(void* handle, int argc, char** argv)
 static int get_local_device_class(void* handle, int argc, char** argv)
 {
     uint32_t class = gap_test_interface->bt_get_local_device_class(g_gap_handle);
-    BT_LOGD("%s, class: %lu", __func__, class);
+    BT_LOGD("%s, class: %" PRIu32, __func__, class);
 
     return 0;
 }
@@ -746,7 +746,7 @@ static void test_discovery_state_changed_callback(void* handle, bt_discovery_sta
 
 static void test_device_found_callback(void* handle, bt_device_t* device)
 {
-    BT_LOGD("%s, device name : %s, device %s, device class : %lu, rssi: %d ", __func__, device->name, addr_str(device->addr), device->cod, device->rssi);
+    BT_LOGD("%s, device name : %s, device %s, device class : %" PRIu32", rssi: %d ", __func__, device->name, addr_str(device->addr), device->cod, device->rssi);
     display_services((uint8_t*)(device->uuids), MAX_UUID_NUM);
 }
 
@@ -776,7 +776,7 @@ void test_ssp_request_callback(void* handle, ssp_request_data_t* request_data)
         BT_LOGD("please input code with sspreply command!");
     }
     if (request_data->ssp_type == SPP_TYPE_PASSKEY_NOTIFICATION) {
-        BT_LOGD("%s, device %s, psss key: %lu", __func__, addr_str(request_data->remote_addr), request_data->cod);
+        BT_LOGD("%s, device %s, psss key: %" PRIu32, __func__, addr_str(request_data->remote_addr), request_data->cod);
         BT_LOGD("please input with sspreply command!");
     }
 }
@@ -822,7 +822,7 @@ void test_local_address_callback(void* handle, bt_device_t* device)
 }
 void test_local_device_class_callback(void* handle, uint32_t device_class)
 {
-    BT_LOGD("%s,  device_class is %lu", __func__, device_class);
+    BT_LOGD("%s,  device_class is %" PRIu32, __func__, device_class);
 }
 void test_smp_request_callback(void* handle, ssp_request_data_t* request_data)
 {

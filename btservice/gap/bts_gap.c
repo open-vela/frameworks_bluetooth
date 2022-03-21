@@ -464,7 +464,7 @@ static void adapter_bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_
 
 static void adapter_acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S* acl_state_param)
 {
-    BT_LOGD("%s status:%d, state:%d, reasonCode:%lu", __func__, acl_state_param->status, acl_state_param->state, acl_state_param->reasonCode);
+    BT_LOGD("%s status:%d, state:%d, reasonCode:%" PRIu32, __func__, acl_state_param->status, acl_state_param->state, acl_state_param->reasonCode);
 
     gap_msg_t* msg = gap_msg_new(GAP_ACL_STATE_CHANGED);
     memcpy(&msg->event_data.data.acl_state_params, acl_state_param, sizeof(SERVICE_ACL_STATE_PARAM_S));

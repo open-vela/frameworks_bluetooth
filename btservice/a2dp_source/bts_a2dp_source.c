@@ -182,7 +182,7 @@ static void a2dp_service_handle_event(void* event, size_t size)
         a2dp_device_t* device = find_a2dp_device_by_addr(a2dp_event->event_data.bd_addr);
 
         config = a2dp_event->event_data.data;
-        BT_LOGD("CODEC_CONFIG_EVT : codec_type: %d, sample_rate: %lu, bits_per_sample: %d, channel_mode: %d",
+        BT_LOGD("CODEC_CONFIG_EVT : codec_type: %d, sample_rate: %" PRIu32", bits_per_sample: %d, channel_mode: %d",
             config->codec_type,
             config->sample_rate,
             config->bits_per_sample,

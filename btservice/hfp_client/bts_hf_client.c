@@ -257,7 +257,7 @@ static void adp_codec_changed_cb(BD_ADDR remote_addr, SERVICE_HFP_CONFIG_S* conf
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
 
-    BT_LOGD(" HF codec config [codec:%d][sample rate:%lu][bit width:%d]", config->codec,
+    BT_LOGD(" HF codec config [codec:%d][sample rate:%" PRIu32"][bit width:%d]", config->codec,
         config->sample_rate, config->bit_width);
 
     sm = get_state_machine(remote_addr);
