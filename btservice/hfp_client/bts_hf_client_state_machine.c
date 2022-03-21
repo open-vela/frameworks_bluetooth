@@ -685,7 +685,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
             switch (cmd_code) {
             case HFP_ATCC_ATD:
                 if (cmd_result != HFP_ATC_RESULT_OK) {
-                    BT_LOGE("Dial memory failed:%lu", cmd_result);
+                    BT_LOGE("Dial memory failed:%" PRIu32, cmd_result);
                 }
                 break;
             }

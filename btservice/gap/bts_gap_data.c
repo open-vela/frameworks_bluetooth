@@ -671,7 +671,7 @@ static void gap_bt_bond_load_on_open(uv_fs_t* req)
     ops->iov = uv_buf_init((char*)&size, sizeof(uint32_t));
     uv_fs_read(get_service_loop(), &ops->read_req, req->result, &ops->iov, 1, -1, NULL);
 
-    BT_LOGD("%s  size:%ld", __func__, size);
+    BT_LOGD("%s  size:%" PRIu32, __func__, size);
 
     bt_storage_t* bt_info = (bt_storage_t*)malloc(size);
     memset(bt_info, 0, size);
@@ -688,7 +688,7 @@ static void gap_btstack_set_bt_bond_device(bt_storage_t* bt_storage)
     }
 
     if (bt_storage->check_sum != (bt_storage->size + bt_storage->bonded_number)) {
-        BT_LOGE("invalid check_sum:%ld", bt_storage->check_sum);
+        BT_LOGE("invalid check_sum:%" PRIu32, bt_storage->check_sum);
         return;
     }
 
@@ -709,7 +709,7 @@ static void gap_btstack_set_ble_bond_device(bt_storage_t* bt_storage)
     }
 
     if (bt_storage->check_sum != (bt_storage->size + bt_storage->bonded_number)) {
-        BT_LOGE("invalid check_sum:%ld", bt_storage->check_sum);
+        BT_LOGE("invalid check_sum:%" PRIu32, bt_storage->check_sum);
         return;
     }
     if (bt_storage->bonded_number == 0) {

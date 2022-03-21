@@ -138,7 +138,7 @@ static int send_key(int fd, uint32_t keycode, int pressed)
     if (g_keyboard_fd < 0)
         return -1;
 
-    BT_LOGD("%s, fd: %d, keycode: 0x%08lx, pressed: %d", __func__, fd, keycode, pressed);
+    BT_LOGD("%s, fd: %d, keycode: 0x%08" PRIx32", pressed: %d", __func__, fd, keycode, pressed);
     key.code = keycode;
     key.type = pressed;
 
