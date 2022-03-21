@@ -78,7 +78,6 @@
 #else
 #define spp_dumpbuffer(m, a, n)
 #endif
-#define CACHE_BUFFER_EN 1
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -102,7 +101,6 @@ typedef struct
     struct list_node node;
     euv_pty_t* handle;
     uv_timer_t* timer;
-    struct circbuf_s cache;
     cache_buf_t cache_buf;
 #ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
     euv_pty_t* shandle;
@@ -273,24 +271,18 @@ static spp_pty_device_t* alloc_new_device(bt_address addr, uint16_t port, bool a
     if (device == NULL)
         return NULL;
 
+    memset(device, 0, sizeof(spp_pty_device_t));
     device->svr_port = port;
     if (alloc_connection_port(port, &device->conn_port) < 0) {
         free(device);
         return NULL;
     }
     device->accept = accept;
-    device->handle = NULL;
     device->mfs = DEFAULT_PACKET_SIZE;
     device->mfd = INVALID_FD;
     device->sfd = INVALID_FD;
     device->remaining_quota = SENDING_BUFS_QUOTA;
     device->state = SPP_CONNECTION_STATE_DISCONNECTED;
-    memset(device->pty_name, 0, sizeof(device->pty_name));
-#if CACHE_BUFFER_EN
-    memset(&device->cache_buf, 0, sizeof(device->cache_buf));
-#else
-    circbuf_init(&device->cache, NULL, device->mfs);
-#endif
     memcpy(device->addr, addr, sizeof(device->addr));
     list_add_tail(&g_spp_handle.dev_list, &device->node);
 
@@ -463,7 +455,6 @@ static void spp_notify_pty_opened(bt_address addr, uint16_t port, char* name, in
         g_spp_handle.cbs->pty_open_cb(addr, port, name, fd);
 }
 
-#if CACHE_BUFFER_EN
 static void euv_alloc_buffer(euv_pty_t* handle, uint8_t** buf, size_t *len)
 {
     spp_pty_device_t* device;
@@ -482,7 +473,6 @@ static void euv_alloc_buffer(euv_pty_t* handle, uint8_t** buf, size_t *len)
         *buf = malloc(*len);
     }
 }
-#endif
 
 static void euv_read_complete(euv_pty_t* handle,
     const uint8_t* buf, ssize_t size)
@@ -494,10 +484,9 @@ static void euv_read_complete(euv_pty_t* handle,
         return;
 
     if (size <= 0) {
-#if CACHE_BUFFER_EN
         if (buf)
             free((void *)buf);
-#endif
+
         if (size < 0)
             spp_close_pty_device(device);
         return;
@@ -514,9 +503,8 @@ static void euv_read_loop_complete(euv_pty_t* handle,
 {
     if (size > 0)
         spp_dumpbuffer("slave read:", buf, size);
-#if CACHE_BUFFER_EN
+
     free(buf);
-#endif
 }
 #endif
 
@@ -548,37 +536,19 @@ static void spp_cache_timeout(char* data)
 {
     spp_pty_device_t* device = (spp_pty_device_t*)data;
 
-#if CACHE_BUFFER_EN
     if (device->cache_buf.length == 0)
         return;
-#else
-    if (circbuf_used(&device->cache) == 0) {
-        return;
-    }
-#endif
+
     do_spp_write(device, NULL, 0);
 }
 
 static void spp_cache_fragement(spp_pty_device_t* device, uint8_t* buffer, uint16_t length)
 {
-#if CACHE_BUFFER_EN
+
     device->cache_buf.buffer_head = buffer;
     device->cache_buf.length = length;
-#else
-    circbuf_write(&device->cache, buffer, length);
-#endif
     device->timer = start_timer(CACHE_SEND_TIMEOUT, 0, spp_cache_timeout, device);
     device->next_to_read = device->mfs - length;
-#if SEND_FC_EN
-    if (device->remaining_quota > 0) {
-#else
-    {
-#endif
-#if !CACHE_BUFFER_EN
-        euv_pty_read_stop(device->handle);
-        euv_pty_read_start(device->handle, device->next_to_read, euv_read_complete);
-#endif
-    }
 }
 
 static void spp_cache_stop(spp_pty_device_t* device)
@@ -586,17 +556,6 @@ static void spp_cache_stop(spp_pty_device_t* device)
     stop_timer(device->timer);
     device->timer = NULL;
     device->next_to_read = device->mfs;
-
-#if SEND_FC_EN
-    if (device->remaining_quota > 0) {
-#else
-    {
-#endif
-#if !CACHE_BUFFER_EN
-        euv_pty_read_stop(device->handle);
-        euv_pty_read_start(device->handle, device->next_to_read, euv_read_complete);
-#endif
-    }
 }
 
 static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t length)
@@ -610,11 +569,7 @@ static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t leng
     if (!device)
         return -EINVAL;
 
-#if CACHE_BUFFER_EN
     cache_size = device->cache_buf.length;
-#else
-    cache_size = circbuf_used(&device->cache);
-#endif
     remaining = length + cache_size;
 
     do {
@@ -623,7 +578,7 @@ static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t leng
             spp_cache_fragement(device, buffer, size);
             return 0;
         }
-#if CACHE_BUFFER_EN
+
         if (cache_size > 0) {
             spp_cache_stop(device);
             tmpbuf = device->cache_buf.buffer_head;
@@ -633,21 +588,7 @@ static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t leng
         } else {
             tmpbuf = buffer;
         }
-#else
-        tmpbuf = (uint8_t*)malloc(size);
-        if (!tmpbuf) {
-            BT_LOGE("%s failed to allocate memory", __func__);
-            return -ENOMEM;
-        }
-        if (cache_size > 0) {
-            spp_cache_stop(device);
-            circbuf_read(&device->cache, tmpbuf, cache_size);
-            memcpy(tmpbuf, buffer, size - cache_size);
-            cache_size = 0;
-        } else {
-            memcpy(tmpbuf, buffer, size);
-        }
-#endif
+
         status = service_adapter_spp_write(device->conn_port, tmpbuf, size);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("%s write to stack failed", __func__);
@@ -734,11 +675,7 @@ static void spp_on_outgoing_complete(uint16_t port, uint8_t* buffer, uint16_t le
 
     spp_send_done_log();
     if (!device->remaining_quota && device->handle != NULL) {
-#if CACHE_BUFFER_EN
         euv_pty_read_start2(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
-#else
-        euv_pty_read_start(device->handle, device->next_to_read, euv_read_complete);
-#endif
     }
     device->remaining_quota++;
 #endif
@@ -770,12 +707,7 @@ static void spp_on_connection_update_mfs(uint16_t port, uint16_t mfs)
 
     device->mfs = mfs;
     device->next_to_read = mfs;
-#if CACHE_BUFFER_EN
     ret = euv_pty_read_start2(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
-#else
-    circbuf_resize(&device->cache, mfs);
-    ret = euv_pty_read_start(device->handle, device->mfs, euv_read_complete);
-#endif
 #ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
     ret = euv_pty_read_start(device->shandle, device->mfs, euv_read_loop_complete);
 #endif
