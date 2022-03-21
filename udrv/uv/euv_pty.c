@@ -59,6 +59,8 @@ typedef struct {
 
 static void uv_close_callback(uv_handle_t* handle)
 {
+    if (handle->data)
+        free(handle->data);
     free(handle);
 }
 
@@ -180,6 +182,7 @@ euv_pty_t* euv_pty_init(uv_loop_t* loop, int fd, uv_tty_mode_t mode)
     if (!handle)
         return NULL;
 
+    memset(handle, 0, sizeof(euv_pty_t));
     ret = uv_tty_init(loop, &handle->uv_tty, fd, 1);
     if (ret != 0) {
         free(handle);
