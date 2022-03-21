@@ -240,28 +240,19 @@ static void process_loop_in_gap(void* data, size_t data_size)
     }
     case GAP_BOND_STATE_CHANGED: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->bond_state_changed_cb)) {
-            bt_device_t* new_device = malloc(sizeof(bt_device_t));
-            if (!new_device) {
-                BT_LOGE("error, malloc new_device failed");
-                return;
-            }
-            memset(new_device, 0, sizeof(bt_device_t));
-            memcpy(new_device->addr, gap_msg->event_data.bd_addr, BT_ADDR_LENGTH);
-            g_bts_gap_callbacks->bond_state_changed_cb(new_device, gap_msg->event_data.data.bond_state);
-            free(new_device);
+            bt_device_t new_device = {0};
+
+            memcpy(new_device.addr, gap_msg->event_data.bd_addr, BT_ADDR_LENGTH);
+            g_bts_gap_callbacks->bond_state_changed_cb(&new_device, gap_msg->event_data.data.bond_state);
         }
         break;
     }
     case GAP_ACL_STATE_CHANGED: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->connection_state_changed_cb)) {
-            bt_device_t* new_device = malloc(sizeof(bt_device_t));
-            if (!new_device) {
-                BT_LOGE("error, malloc new_device failed");
-                return;
-            }
-            memset(new_device, 0, sizeof(bt_device_t));
+            bt_device_t new_device = {0};
+
             bt_connection_state state = STATE_DISCONNECTED;
-            memcpy(new_device->addr, gap_msg->event_data.data.acl_state_params.remote_addr, BT_ADDR_LENGTH);
+            memcpy(new_device.addr, gap_msg->event_data.data.acl_state_params.remote_addr, BT_ADDR_LENGTH);
             switch (gap_msg->event_data.data.acl_state_params.state) {
             case BT_ACL_STATE_CONNECTED:
                 state = STATE_CONNECTED;
@@ -272,7 +263,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
             default:
                 return;
             }
-            g_bts_gap_callbacks->connection_state_changed_cb(new_device, state);
+            g_bts_gap_callbacks->connection_state_changed_cb(&new_device, state);
         }
         break;
     }
@@ -337,14 +328,13 @@ static void process_loop_in_gap(void* data, size_t data_size)
         break;
     }
 
-    gap_msg_destory(gap_msg);
-
     // }
 }
 
 static void handle_msg_received(bt_profile_id id, void* data, size_t size)
 {
     process_loop_in_gap(data, size);
+    gap_msg_destory((gap_msg_t *)data);
 }
 
 static void gap_send_message(gap_msg_t* msg)
