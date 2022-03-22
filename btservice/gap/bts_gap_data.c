@@ -46,6 +46,7 @@
 #define BT_USER_FILE_NAME "/data/misc/bt/bt_user.db"
 #define BT_APP_INFO_FILE_NAME "/data/misc/bt/bt_app.db"
 #define LE_APP_INFO_FILE_NAME "/data/misc/bt/le_app.db"
+#define LE_WHITLIST_INFO_FILE_NAME "/data/misc/bt/le_whitelist.db"
 
 #ifndef BT_DEVICE_NAME_MAX_LEN
 #define BT_DEVICE_NAME_MAX_LEN 248
@@ -56,6 +57,8 @@ typedef struct {
     uint32_t device_class;
     SERVICE_BT_IO_CAPABILITY io_capability;
     char bt_name[BT_DEVICE_NAME_MAX_LEN];
+    SERVICE_BT_SCAN_MODE scan_mode;
+    bool bondable;
 } bt_device_info_t;
 
 typedef enum {
@@ -72,6 +75,11 @@ typedef struct {
     storage_type type;
     void* bonded_devices;
 } bt_storage_t;
+
+typedef struct gap_ble_whitelist_data {
+    uint32_t num;
+    SERVICE_REMOTE_BLE_DEVICE_S* devices;
+} gap_ble_whitelist_data;
 
 typedef void (*gap_on_open)(uv_fs_t* req);
 typedef void (*gap_on_read)(uv_fs_t* req);
@@ -197,7 +205,7 @@ static void gap_bt_uv_op_on_clean(uv_fs_t* req)
     ops->on_clean(&ops->clean_req);
 }
 
-static void gap_bt_name_update_on_clean(uv_fs_t* req)
+static void gap_bt_deviceinfo_update_on_clean(uv_fs_t* req)
 {
     gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
     if (!ops) {
@@ -210,7 +218,7 @@ static void gap_bt_name_update_on_clean(uv_fs_t* req)
     free(ops);
 }
 
-static void gap_bt_name_update_on_close(uv_fs_t* req)
+static void gap_bt_deviceinfo_update_on_close(uv_fs_t* req)
 {
     gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
     if (!ops) {
@@ -222,7 +230,7 @@ static void gap_bt_name_update_on_close(uv_fs_t* req)
     gap_bt_uv_op_on_clean(&ops->clean_req);
 }
 
-static void gap_bt_name_update_on_write(uv_fs_t* req)
+static void gap_bt_deviceinfo_update_on_write(uv_fs_t* req)
 {
     gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
     if (!ops) {
@@ -234,7 +242,7 @@ static void gap_bt_name_update_on_write(uv_fs_t* req)
     uv_fs_close(get_service_loop(), &ops->close_req, ops->open_req.result, gap_bt_uv_op_on_close);
 }
 
-static void gap_bt_name_update_on_open(uv_fs_t* req)
+static void gap_bt_deviceinfo_update_on_open(uv_fs_t* req)
 {
     gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
     if (!ops) {
@@ -245,6 +253,30 @@ static void gap_bt_name_update_on_open(uv_fs_t* req)
     ops->iov = uv_buf_init((char*)&current_bt_device_info, sizeof(bt_device_info_t));
     ops->write_req.data = ops;
     uv_fs_write(get_service_loop(), &ops->write_req, ops->open_req.result, &ops->iov, 1, 0, gap_bt_uv_op_on_write);
+}
+
+static bt_result_code gap_bt_update_device_info(void)
+{
+    BT_LOGD("%s", __func__);
+    gap_bt_uv_ops* ops = malloc(sizeof(gap_bt_uv_ops));
+    if (!ops) {
+        BT_LOGE("malloc");
+        return BT_RESULT_FAILED;
+    }
+    memset(ops, 0, sizeof(gap_bt_uv_ops));
+    ops->on_open = gap_bt_deviceinfo_update_on_open;
+    ops->on_write = gap_bt_deviceinfo_update_on_write;
+    ops->on_close = gap_bt_deviceinfo_update_on_close;
+    ops->on_clean = gap_bt_deviceinfo_update_on_clean;
+    ops->open_req.data = ops;
+
+    int rc = uv_fs_open(get_service_loop(), &ops->open_req, BT_USER_FILE_NAME, O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR, gap_bt_uv_op_on_open);
+    if (rc < 0) {
+        ops->clean_req.data = ops;
+        gap_bt_uv_op_on_clean(&ops->clean_req);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
 }
 
 bt_result_code gap_bt_update_name(char* name, uint8_t size)
@@ -261,26 +293,45 @@ bt_result_code gap_bt_update_name(char* name, uint8_t size)
         return BT_RESULT_FAILED;
     }
 
-    gap_bt_uv_ops* ops = malloc(sizeof(gap_bt_uv_ops));
-    if (!ops) {
-        BT_LOGE("malloc");
-        return BT_RESULT_FAILED;
-    }
-    memset(ops, 0, sizeof(gap_bt_uv_ops));
-    ops->on_open = gap_bt_name_update_on_open;
-    ops->on_write = gap_bt_name_update_on_write;
-    ops->on_close = gap_bt_name_update_on_close;
-    ops->on_clean = gap_bt_name_update_on_clean;
-    ops->open_req.data = ops;
     memcpy(current_bt_device_info.bt_name, name, size);
+    return gap_bt_update_device_info();
+}
 
-    int rc = uv_fs_open(get_service_loop(), &ops->open_req, BT_USER_FILE_NAME, O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR, gap_bt_uv_op_on_open);
-    if (rc < 0) {
-        ops->clean_req.data = ops;
-        gap_bt_uv_op_on_clean(&ops->clean_req);
+bt_result_code gap_bt_update_scan_mode(bt_scan_mode scan_mode, bool bondable)
+{
+    SERVICE_BT_STATUS ret = service_adapter_gap_set_scan_mode(scan_mode, bondable);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, ret:%d", __func__, ret);
         return BT_RESULT_FAILED;
     }
-    return BT_RESULT_SUCCESS;
+
+    current_bt_device_info.scan_mode = scan_mode;
+    current_bt_device_info.bondable = bondable;
+    return gap_bt_update_device_info();
+}
+
+bt_result_code gap_bt_update_io_capability(bt_io_capability io_capability)
+{
+    SERVICE_BT_STATUS ret = service_adapter_gap_set_local_io_capability(io_capability);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, ret:%d", __func__, ret);
+        return BT_RESULT_FAILED;
+    }
+
+    current_bt_device_info.io_capability = io_capability;
+    return gap_bt_update_device_info();
+}
+
+bt_result_code gap_bt_update_device_class(uint32_t class_of_device)
+{
+    SERVICE_BT_STATUS ret = service_adapter_gap_set_local_device_class(class_of_device);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, ret:%d", __func__, ret);
+        return BT_RESULT_FAILED;
+    }
+
+    current_bt_device_info.device_class = class_of_device;
+    return gap_bt_update_device_info();
 }
 
 static void gap_bt_device_load_on_clean(uv_fs_t* req)
@@ -328,8 +379,15 @@ static void gap_bt_device_load_on_read(uv_fs_t* req)
         return;
     }
 
+    if (gap_data_init_timer) {
+        stop_timer(gap_data_init_timer);
+    }
+
     BT_LOGD("bt name:%s", current_bt_device_info.bt_name);
     BT_LOGD("io_capability:%d", current_bt_device_info.io_capability);
+    BT_LOGD("scan_mode:%d", current_bt_device_info.scan_mode);
+    BT_LOGD("device_class:0x%0x", current_bt_device_info.device_class);
+    BT_LOGD("bondable:%d", current_bt_device_info.bondable);
 
     SERVICE_BT_STATUS ret = service_adapter_gap_set_local_device_class(current_bt_device_info.device_class);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
@@ -346,9 +404,11 @@ static void gap_bt_device_load_on_read(uv_fs_t* req)
         BT_LOGD("set_local_name failed: %d", ret);
     }
 
-    if (gap_data_init_timer) {
-        stop_timer(gap_data_init_timer);
+    ret = service_adapter_gap_set_scan_mode(current_bt_device_info.scan_mode, current_bt_device_info.bondable);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGD("set_scan_mode failed: %d", ret);
     }
+
     if (adapter_state_changed_cb && enable_report_btm_state_on) {
         enable_report_btm_state_on = false;
         adapter_state_changed_cb(BTM_STATE_ON);
@@ -448,13 +508,15 @@ static void gap_bt_factory_update_on_open(uv_fs_t* req)
     }
 
     bt_device_info_t* default_device_info = (bt_device_info_t*)malloc(sizeof(bt_device_info_t));
-    if(!default_device_info) {
+    if (!default_device_info) {
         BT_LOGE("fail, malloc default_device_info failed");
         return;
     }
     memset(default_device_info, 0, sizeof(default_device_info));
     default_device_info->device_class = BT_DEFAULT_DEVICE_CLASS;
     default_device_info->io_capability = BT_DEFAULT_IO_CAPABILITY;
+    default_device_info->bondable = true;
+    default_device_info->scan_mode = BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE;
 
     srand(time(NULL));
     int r = rand() % 999;
@@ -786,4 +848,166 @@ void gap_bluetooth_bond_init(void)
     BT_LOGD("%s", __func__);
     gap_bt_bond_load(BT_APP_INFO_FILE_NAME);
     gap_bt_bond_load(LE_APP_INFO_FILE_NAME);
+}
+
+static void gap_ble_whitelist_on_open(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+    gap_ble_whitelist_data* storage = (gap_ble_whitelist_data*)ops->data.data;
+    SERVICE_REMOTE_BLE_DEVICE_S* devices = &(storage->devices);
+    for (int i = 0; i < storage->num; i++) {
+        BT_LOGE("gap_ble_whitelist_on_open  addr:%s ", addr_str(devices[i].bd_addr));
+    }
+    ops->iov = uv_buf_init((char*)storage, sizeof(uint32_t) + sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * (storage->num));
+    ops->write_req.data = ops;
+    uv_fs_write(get_service_loop(), &ops->write_req, ops->open_req.result, &ops->iov, 1, -1, gap_bt_uv_op_on_write);
+}
+
+bt_result_code gap_ble_whitelist_store_update(bool added, bt_address addr)
+{
+    int whitelist_number = service_adapter_gap_ble_get_white_list_devices(NULL, 0);
+    //BT_LOGD("%s, whitelist_number:%d", __func__, whitelist_number)
+
+    size_t size = sizeof(gap_ble_whitelist_data) - sizeof(SERVICE_REMOTE_BLE_DEVICE_S*) + sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * whitelist_number;
+    gap_ble_whitelist_data* ble_whitelist_storage = (gap_ble_whitelist_data*)malloc(size);
+    if (!ble_whitelist_storage) {
+        BT_LOGE("error, malloc whitelist_list failed");
+        return BT_RESULT_FAILED;
+    }
+    memset(ble_whitelist_storage, 0, size);
+    SERVICE_REMOTE_BLE_DEVICE_S* devices = &(ble_whitelist_storage->devices);
+    whitelist_number = service_adapter_gap_ble_get_white_list_devices(devices, whitelist_number);
+    for (int i = 0; i < whitelist_number; i++) {
+        if (added && !memcmp(addr, devices[i].bd_addr, sizeof(bt_address))) {
+            return BT_RESULT_SUCCESS;
+        }
+    }
+    ble_whitelist_storage->num = whitelist_number;
+
+    gap_bt_uv_ops* ops = malloc(sizeof(gap_bt_uv_ops));
+    if (!ops) {
+        free(ble_whitelist_storage);
+        BT_LOGE("malloc ops");
+        return BT_RESULT_FAILED;
+    }
+    memset(ops, 0, sizeof(gap_bt_uv_ops));
+    ops->on_open = gap_ble_whitelist_on_open;
+    ops->on_write = gap_bt_bond_store_on_write;
+    ops->on_close = gap_bt_bond_store_on_close;
+    ops->on_clean = gap_bt_bond_store_on_clean;
+    ops->open_req.data = ops;
+    ops->data.data = ble_whitelist_storage;
+
+    int rc = uv_fs_open(get_service_loop(), &ops->open_req, LE_WHITLIST_INFO_FILE_NAME, O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR | S_IRUSR, gap_bt_uv_op_on_open);
+    if (rc < 0) {
+        BT_LOGE("failed to open:%s", LE_WHITLIST_INFO_FILE_NAME);
+        ops->clean_req.data = ops;
+        gap_bt_uv_op_on_clean(&ops->clean_req);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
+static void gap_ble_whitelist_load_open(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->read_req.data = ops;
+    uint32_t whitelist_number;
+    ops->iov = uv_buf_init((char*)&whitelist_number, sizeof(uint32_t));
+    uv_fs_read(get_service_loop(), &ops->read_req, req->result, &ops->iov, 1, -1, NULL);
+
+    BT_LOGD("%s  whitelist_number:%ld", __func__, whitelist_number);
+    if (whitelist_number < 1) {
+        return;
+    }
+
+    size_t size = sizeof(gap_ble_whitelist_data) - sizeof(SERVICE_REMOTE_BLE_DEVICE_S*) + sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * whitelist_number;
+    gap_ble_whitelist_data* whitelist_devices = (gap_ble_whitelist_data*)malloc(size);
+    if (!whitelist_devices) {
+        BT_LOGE("malloc whitelist_devices fail");
+        return;
+    }
+
+    memset(whitelist_devices, 0, size);
+    ops->data.data = whitelist_devices;
+    ops->iov = uv_buf_init((char*)whitelist_devices, size);
+    uv_fs_read(get_service_loop(), &ops->read_req, req->result, &ops->iov, 1, 0, gap_bt_uv_op_on_read);
+}
+
+static void gap_ble_whitelist_load_read(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    gap_ble_whitelist_data* whitelist_devices = (gap_ble_whitelist_data*)(ops->data.data);
+    SERVICE_REMOTE_BLE_DEVICE_S* devices = &(whitelist_devices->devices);
+    for (int i = 0; i < whitelist_devices->num; i++) {
+        SERVICE_BT_STATUS ret = service_adapter_gap_ble_add_white_list(devices[i].bd_addr);
+        if (ret != SERVICE_BT_STATUS_SUCCESS) {
+            BT_LOGE("add whitelist %s fail, ret:%d", addr_str(devices[i].bd_addr), ret);
+        }
+    }
+    ops->close_req.data = ops;
+    uv_fs_close(get_service_loop(), &ops->close_req, ops->open_req.result, gap_bt_uv_op_on_close);
+}
+
+static void gap_ble_whitelist_load_close(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+
+    ops->clean_req.data = ops;
+    gap_bt_uv_op_on_clean(&ops->clean_req);
+}
+
+static void gap_ble_whitelist_load_clean(uv_fs_t* req)
+{
+    gap_bt_uv_ops* ops = (gap_bt_uv_ops*)req->data;
+    if (!ops) {
+        BT_LOGE("fail,  ops nullptr");
+        return;
+    }
+    uv_fs_req_cleanup(&ops->open_req);
+    uv_fs_req_cleanup(&ops->read_req);
+    uv_fs_req_cleanup(&ops->close_req);
+    free(ops->data.data);
+    free(ops);
+}
+
+void gap_ble_whitelist_load(void)
+{
+    gap_bt_uv_ops* ops = malloc(sizeof(gap_bt_uv_ops));
+    if (!ops) {
+        BT_LOGE("malloc");
+        return;
+    }
+    memset(ops, 0, sizeof(gap_bt_uv_ops));
+    ops->on_open = gap_ble_whitelist_load_open;
+    ops->on_read = gap_ble_whitelist_load_read;
+    ops->on_close = gap_ble_whitelist_load_close;
+    ops->on_clean = gap_ble_whitelist_load_clean;
+    ops->open_req.data = ops;
+
+    int rc = uv_fs_open(get_service_loop(), &ops->open_req, LE_WHITLIST_INFO_FILE_NAME, O_RDONLY, S_IWUSR | S_IRUSR, gap_bt_uv_op_on_open);
+    if (rc < 0) {
+        BT_LOGE(" failed to open file:%s", LE_WHITLIST_INFO_FILE_NAME)
+        ops->clean_req.data = ops;
+        gap_bt_uv_op_on_clean(&ops->clean_req);
+        return;
+    }
 }
