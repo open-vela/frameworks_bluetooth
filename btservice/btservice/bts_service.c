@@ -306,6 +306,7 @@ void stack_state_change(bt_service_state state)
     if (BTM_STATE_ON == state) {
         gap_bluetooth_device_init(bluetooth_upper_callbacks->adapter_state_changed_cb);
         gap_bluetooth_bond_init();
+        gap_ble_whitelist_load();
     } else {
         bluetooth_upper_callbacks->adapter_state_changed_cb(state);
     }

@@ -324,6 +324,14 @@ static void process_loop_in_gap(void* data, size_t data_size)
             free(gap_msg->event_data.data.discovery_service.services);
         break;
     }
+    case GAP_BLE_ADD_WHITE_LIST: {
+        gap_ble_whitelist_store_update(true, gap_msg->event_data.bd_addr);
+        break;
+    }
+    case GAP_BLE_REMOVE_WHITE_LIST: {
+        gap_ble_whitelist_store_update(false, gap_msg->event_data.bd_addr);
+        break;
+    }
     default:
         break;
     }
@@ -847,12 +855,7 @@ bt_result_code bts_get_local_address(bt_address addr)
 
 bt_result_code bts_set_local_io_capability(bt_io_capability io_capability)
 {
-    SERVICE_BT_STATUS ret = service_adapter_gap_set_local_io_capability(io_capability);
-    if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, ret:%d", __func__, ret);
-        return BT_RESULT_FAILED;
-    }
-    return BT_RESULT_SUCCESS;
+    return gap_bt_update_io_capability(io_capability);
 }
 
 char* bts_get_local_name()
@@ -871,12 +874,7 @@ char* bts_get_local_name()
 
 bt_result_code bts_set_local_device_class(uint32_t class_of_device)
 {
-    SERVICE_BT_STATUS ret = service_adapter_gap_set_local_device_class(class_of_device);
-    if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, ret:%d", __func__, ret);
-        return BT_RESULT_FAILED;
-    }
-    return BT_RESULT_SUCCESS;
+    return gap_bt_update_device_class(class_of_device);
 }
 
 uint32_t bts_get_local_device_class()
@@ -1126,12 +1124,7 @@ int bts_get_ble_resolvinglist_devices(bt_device_t* device_list, int max_out)
 /*Discovery*/
 bt_result_code bts_set_scan_mode(bt_scan_mode scan_mode, bool bondable)
 {
-    SERVICE_BT_STATUS ret = service_adapter_gap_set_scan_mode(scan_mode, bondable);
-    if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, ret:%d", __func__, ret);
-        return BT_RESULT_FAILED;
-    }
-    return BT_RESULT_SUCCESS;
+    return gap_bt_update_scan_mode(scan_mode, bondable);
 }
 
 bt_result_code bts_stop_discovery(void)
