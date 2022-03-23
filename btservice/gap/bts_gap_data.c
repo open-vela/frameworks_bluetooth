@@ -289,7 +289,7 @@ bt_result_code gap_bt_update_name(char* name, uint8_t size)
 
     SERVICE_BT_STATUS ret = service_adapter_gap_set_local_name(name, size);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGD("set_local_name failed: %d", ret);
+        BT_LOGD("set_local_name failed: %lu", ret);
         return BT_RESULT_FAILED;
     }
 
@@ -301,7 +301,7 @@ bt_result_code gap_bt_update_scan_mode(bt_scan_mode scan_mode, bool bondable)
 {
     SERVICE_BT_STATUS ret = service_adapter_gap_set_scan_mode(scan_mode, bondable);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, ret:%d", __func__, ret);
+        BT_LOGE("%s, ret:%lu", __func__, ret);
         return BT_RESULT_FAILED;
     }
 
@@ -314,7 +314,7 @@ bt_result_code gap_bt_update_io_capability(bt_io_capability io_capability)
 {
     SERVICE_BT_STATUS ret = service_adapter_gap_set_local_io_capability(io_capability);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, ret:%d", __func__, ret);
+        BT_LOGE("%s, ret:%lu", __func__, ret);
         return BT_RESULT_FAILED;
     }
 
@@ -326,7 +326,7 @@ bt_result_code gap_bt_update_device_class(uint32_t class_of_device)
 {
     SERVICE_BT_STATUS ret = service_adapter_gap_set_local_device_class(class_of_device);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, ret:%d", __func__, ret);
+        BT_LOGE("%s, ret:%lu", __func__, ret);
         return BT_RESULT_FAILED;
     }
 
@@ -386,27 +386,27 @@ static void gap_bt_device_load_on_read(uv_fs_t* req)
     BT_LOGD("bt name:%s", current_bt_device_info.bt_name);
     BT_LOGD("io_capability:%d", current_bt_device_info.io_capability);
     BT_LOGD("scan_mode:%d", current_bt_device_info.scan_mode);
-    BT_LOGD("device_class:0x%0x", current_bt_device_info.device_class);
+    BT_LOGD("device_class:0x%0lX", current_bt_device_info.device_class);
     BT_LOGD("bondable:%d", current_bt_device_info.bondable);
 
     SERVICE_BT_STATUS ret = service_adapter_gap_set_local_device_class(current_bt_device_info.device_class);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("set_local_device_class failed: %d", ret);
+        BT_LOGE("set_local_device_class failed: %lu", ret);
     }
 
     ret = service_adapter_gap_set_local_io_capability(current_bt_device_info.io_capability);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("set_local_io_capability failed: %d", ret);
+        BT_LOGE("set_local_io_capability failed: %lu", ret);
     }
 
     ret = service_adapter_gap_set_local_name(current_bt_device_info.bt_name, strlen(current_bt_device_info.bt_name) + 1);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGD("set_local_name failed: %d", ret);
+        BT_LOGD("set_local_name failed: %lu", ret);
     }
 
     ret = service_adapter_gap_set_scan_mode(current_bt_device_info.scan_mode, current_bt_device_info.bondable);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGD("set_scan_mode failed: %d", ret);
+        BT_LOGD("set_scan_mode failed: %lu", ret);
     }
 
     if (adapter_state_changed_cb && enable_report_btm_state_on) {
@@ -512,7 +512,7 @@ static void gap_bt_factory_update_on_open(uv_fs_t* req)
         BT_LOGE("fail, malloc default_device_info failed");
         return;
     }
-    memset(default_device_info, 0, sizeof(default_device_info));
+    memset(default_device_info, 0, sizeof(bt_device_info_t));
     default_device_info->device_class = BT_DEFAULT_DEVICE_CLASS;
     default_device_info->io_capability = BT_DEFAULT_IO_CAPABILITY;
     default_device_info->bondable = true;
@@ -758,7 +758,7 @@ static void gap_btstack_set_bt_bond_device(bt_storage_t* bt_storage)
     for (int i = 0; i < bt_storage->bonded_number; i++) {
         SERVICE_BT_STATUS ret = service_adapter_gap_set_bonded_device(device + i);
         if (ret != SERVICE_BT_STATUS_SUCCESS) {
-            BT_LOGE(" service_adapter_gap_set_bonded_device failed: %d", ret);
+            BT_LOGE(" service_adapter_gap_set_bonded_device failed: %lu", ret);
         }
     }
 }
@@ -782,7 +782,7 @@ static void gap_btstack_set_ble_bond_device(bt_storage_t* bt_storage)
     ble_keys_t* keys = (ble_keys_t*)((uint8_t*)bt_storage + sizeof(bt_storage_t) - sizeof(void*));
     SERVICE_BT_STATUS ret = service_adapter_gap_ble_set_bonded_devices((SERVICE_BLE_KEYS_S*)keys, bt_storage->bonded_number);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE(" service_adapter_gap_set_le_bonded_device failed: %d", ret);
+        BT_LOGE(" service_adapter_gap_set_le_bonded_device failed: %lu", ret);
         return;
     }
 }
@@ -858,7 +858,7 @@ static void gap_ble_whitelist_on_open(uv_fs_t* req)
         return;
     }
     gap_ble_whitelist_data* storage = (gap_ble_whitelist_data*)ops->data.data;
-    SERVICE_REMOTE_BLE_DEVICE_S* devices = &(storage->devices);
+    SERVICE_REMOTE_BLE_DEVICE_S* devices = (SERVICE_REMOTE_BLE_DEVICE_S*)(&(storage->devices));
     for (int i = 0; i < storage->num; i++) {
         BT_LOGE("gap_ble_whitelist_on_open  addr:%s ", addr_str(devices[i].bd_addr));
     }
@@ -879,7 +879,7 @@ bt_result_code gap_ble_whitelist_store_update(bool added, bt_address addr)
         return BT_RESULT_FAILED;
     }
     memset(ble_whitelist_storage, 0, size);
-    SERVICE_REMOTE_BLE_DEVICE_S* devices = &(ble_whitelist_storage->devices);
+    SERVICE_REMOTE_BLE_DEVICE_S* devices = (SERVICE_REMOTE_BLE_DEVICE_S*)(&(ble_whitelist_storage->devices));
     whitelist_number = service_adapter_gap_ble_get_white_list_devices(devices, whitelist_number);
     for (int i = 0; i < whitelist_number; i++) {
         if (added && !memcmp(addr, devices[i].bd_addr, sizeof(bt_address))) {
@@ -952,11 +952,11 @@ static void gap_ble_whitelist_load_read(uv_fs_t* req)
     }
 
     gap_ble_whitelist_data* whitelist_devices = (gap_ble_whitelist_data*)(ops->data.data);
-    SERVICE_REMOTE_BLE_DEVICE_S* devices = &(whitelist_devices->devices);
+    SERVICE_REMOTE_BLE_DEVICE_S* devices = (SERVICE_REMOTE_BLE_DEVICE_S*)(&(whitelist_devices->devices));
     for (int i = 0; i < whitelist_devices->num; i++) {
         SERVICE_BT_STATUS ret = service_adapter_gap_ble_add_white_list(devices[i].bd_addr);
         if (ret != SERVICE_BT_STATUS_SUCCESS) {
-            BT_LOGE("add whitelist %s fail, ret:%d", addr_str(devices[i].bd_addr), ret);
+            BT_LOGE("add whitelist %s fail, ret:%lu", addr_str(devices[i].bd_addr), ret);
         }
     }
     ops->close_req.data = ops;
