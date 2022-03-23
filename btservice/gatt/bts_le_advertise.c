@@ -94,7 +94,7 @@ static bt_result_code le_start_adv(bts_leadv_hdl_t client)
     bts_register_profile_process(BT_PROFILE_LEADV_ID, &handle_msg_received);
     SERVICE_BT_STATUS ret = service_adapter_gap_start_ble_adv((SERVICE_SCAN_ADV_PARAMS_S*)(client.param));
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("service ble start adv fail, err:%d", ret);
+        BT_LOGE("service ble start adv fail, err:%lu", ret);
         return BT_RESULT_FAILED;
     }
 
@@ -113,7 +113,7 @@ static bt_result_code le_stop_adv(uint8_t advertiser_id)
 
     SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(advertiser_id);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("service ble start adv fail, err:%d", ret);
+        BT_LOGE("service ble start adv fail, err:%lu", ret);
         remove_advertise_handle(client);
         return BT_RESULT_FAILED;
     }
@@ -127,7 +127,7 @@ static void on_ble_advtise_started_cb(uint8_t adv_id)
     bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
     if (!client) {
         SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(adv_id);
-        BT_LOGW("stop le adv, adv id:%d, ret:%d", adv_id, ret);
+        BT_LOGW("stop le adv, adv id:%d, ret:%lu", adv_id, ret);
         return;
     }
 
