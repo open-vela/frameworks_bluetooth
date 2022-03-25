@@ -881,11 +881,6 @@ bt_result_code gap_ble_whitelist_store_update(bool added, bt_address addr)
     memset(ble_whitelist_storage, 0, size);
     SERVICE_REMOTE_BLE_DEVICE_S* devices = (SERVICE_REMOTE_BLE_DEVICE_S*)(&(ble_whitelist_storage->devices));
     whitelist_number = service_adapter_gap_ble_get_white_list_devices(devices, whitelist_number);
-    for (int i = 0; i < whitelist_number; i++) {
-        if (added && !memcmp(addr, devices[i].bd_addr, sizeof(bt_address))) {
-            return BT_RESULT_SUCCESS;
-        }
-    }
     ble_whitelist_storage->num = whitelist_number;
 
     gap_bt_uv_ops* ops = malloc(sizeof(gap_bt_uv_ops));
