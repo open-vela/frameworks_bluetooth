@@ -201,7 +201,7 @@ void a2dp_codec_parse_sbc_param(sbc_param_t* param, uint8_t* codec_info)
                 s16NumOfBlocks:%d,\n \
                 s16AllocationMethod:%d,\n \
                 s16BitPool:%d,\n \
-                u32BitRate:%lu", __func__, param->s16SamplingFreq,
+                u32BitRate:%" PRIu32, __func__, param->s16SamplingFreq,
                 param->s16ChannelMode,
                 param->s16NumOfSubBands,
                 param->s16NumOfChannels,

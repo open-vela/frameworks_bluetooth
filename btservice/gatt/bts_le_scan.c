@@ -149,19 +149,19 @@ static bt_result_code start_scan(bts_lescan_hdl_t handle)
     bts_register_profile_process(BT_PROFILE_LESCAN_ID, &handle_msg_received);
     SERVICE_BT_STATUS ret = service_adapter_gap_set_ble_scan_filter((SERVICE_BLE_SCAN_FILTER_S*)(handle.filter));
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("set ble scan filter fail, err:%lu", ret);
+        BT_LOGE("set ble scan filter fail, err:%" PRIu32, ret);
         return BT_RESULT_FAILED;
     }
 
     ret = service_adapter_gap_set_ble_scan_parameters((SERVICE_SCAN_PARAMS_S*)(handle.settings));
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("set ble scan parameters fail, err:%lu", ret);
+        BT_LOGE("set ble scan parameters fail, err:%" PRIu32, ret);
         return BT_RESULT_FAILED;
     }
 
     ret = service_adapter_gap_start_ble_scan();
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("set ble start scan, err:%lu", ret);
+        BT_LOGE("set ble start scan, err:%" PRIu32, ret);
         return BT_RESULT_FAILED;
     }
 
@@ -187,7 +187,7 @@ static bt_result_code stop_scan(uint8_t scanner_id)
     SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_scan();
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         remove_scan_handle(handle);
-        BT_LOGE("set ble stop scan, err:%lu", ret);
+        BT_LOGE("set ble stop scan, err:%" PRIu32, ret);
         return BT_RESULT_FAILED;
     }
     send_msg(create_adp_msg(ON_SCAN_STOPPED, handle, NULL, 0));
