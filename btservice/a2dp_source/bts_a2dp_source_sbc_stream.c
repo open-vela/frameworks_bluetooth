@@ -229,7 +229,7 @@ uint32_t a2dp_sbc_bit_rate(sbc_param_t* param)
     frame_len = a2dp_sbc_frame_length(param);
     samp_freq = a2dp_sbc_sample_frequency(param->s16SamplingFreq);
     bit_rate = (8 * frame_len * samp_freq) / (param->s16NumOfSubBands * param->s16NumOfBlocks);
-    BT_LOGD("%s, birtate: %lu", __func__, bit_rate);
+    BT_LOGD("%s, birtate: %" PRIu32, __func__, bit_rate);
 
     return bit_rate;
 }

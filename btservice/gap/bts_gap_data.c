@@ -289,7 +289,7 @@ bt_result_code gap_bt_update_name(char* name, uint8_t size)
 
     SERVICE_BT_STATUS ret = service_adapter_gap_set_local_name(name, size);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGD("set_local_name failed: %lu", ret);
+        BT_LOGD("set_local_name failed: %" PRIu32, ret);
         return BT_RESULT_FAILED;
     }
 
@@ -301,7 +301,7 @@ bt_result_code gap_bt_update_scan_mode(bt_scan_mode scan_mode, bool bondable)
 {
     SERVICE_BT_STATUS ret = service_adapter_gap_set_scan_mode(scan_mode, bondable);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, ret:%lu", __func__, ret);
+        BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
         return BT_RESULT_FAILED;
     }
 
@@ -314,7 +314,7 @@ bt_result_code gap_bt_update_io_capability(bt_io_capability io_capability)
 {
     SERVICE_BT_STATUS ret = service_adapter_gap_set_local_io_capability(io_capability);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, ret:%lu", __func__, ret);
+        BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
         return BT_RESULT_FAILED;
     }
 
@@ -326,7 +326,7 @@ bt_result_code gap_bt_update_device_class(uint32_t class_of_device)
 {
     SERVICE_BT_STATUS ret = service_adapter_gap_set_local_device_class(class_of_device);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, ret:%lu", __func__, ret);
+        BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
         return BT_RESULT_FAILED;
     }
 
@@ -386,27 +386,27 @@ static void gap_bt_device_load_on_read(uv_fs_t* req)
     BT_LOGD("bt name:%s", current_bt_device_info.bt_name);
     BT_LOGD("io_capability:%d", current_bt_device_info.io_capability);
     BT_LOGD("scan_mode:%d", current_bt_device_info.scan_mode);
-    BT_LOGD("device_class:0x%0lX", current_bt_device_info.device_class);
+    BT_LOGD("device_class:0x%" PRIu32, current_bt_device_info.device_class);
     BT_LOGD("bondable:%d", current_bt_device_info.bondable);
 
     SERVICE_BT_STATUS ret = service_adapter_gap_set_local_device_class(current_bt_device_info.device_class);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("set_local_device_class failed: %lu", ret);
+        BT_LOGE("set_local_device_class failed: %" PRIu32, ret);
     }
 
     ret = service_adapter_gap_set_local_io_capability(current_bt_device_info.io_capability);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE("set_local_io_capability failed: %lu", ret);
+        BT_LOGE("set_local_io_capability failed: %" PRIu32, ret);
     }
 
     ret = service_adapter_gap_set_local_name(current_bt_device_info.bt_name, strlen(current_bt_device_info.bt_name) + 1);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGD("set_local_name failed: %lu", ret);
+        BT_LOGD("set_local_name failed: %" PRIu32, ret);
     }
 
     ret = service_adapter_gap_set_scan_mode(current_bt_device_info.scan_mode, current_bt_device_info.bondable);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGD("set_scan_mode failed: %lu", ret);
+        BT_LOGD("set_scan_mode failed: %" PRIu32, ret);
     }
 
     if (adapter_state_changed_cb && enable_report_btm_state_on) {
@@ -758,7 +758,7 @@ static void gap_btstack_set_bt_bond_device(bt_storage_t* bt_storage)
     for (int i = 0; i < bt_storage->bonded_number; i++) {
         SERVICE_BT_STATUS ret = service_adapter_gap_set_bonded_device(device + i);
         if (ret != SERVICE_BT_STATUS_SUCCESS) {
-            BT_LOGE(" service_adapter_gap_set_bonded_device failed: %lu", ret);
+            BT_LOGE(" service_adapter_gap_set_bonded_device failed: %" PRIu32, ret);
         }
     }
 }
@@ -782,7 +782,7 @@ static void gap_btstack_set_ble_bond_device(bt_storage_t* bt_storage)
     ble_keys_t* keys = (ble_keys_t*)((uint8_t*)bt_storage + sizeof(bt_storage_t) - sizeof(void*));
     SERVICE_BT_STATUS ret = service_adapter_gap_ble_set_bonded_devices((SERVICE_BLE_KEYS_S*)keys, bt_storage->bonded_number);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
-        BT_LOGE(" service_adapter_gap_set_le_bonded_device failed: %lu", ret);
+        BT_LOGE(" service_adapter_gap_set_le_bonded_device failed: %" PRIu32, ret);
         return;
     }
 }
@@ -920,7 +920,7 @@ static void gap_ble_whitelist_load_open(uv_fs_t* req)
     ops->iov = uv_buf_init((char*)&whitelist_number, sizeof(uint32_t));
     uv_fs_read(get_service_loop(), &ops->read_req, req->result, &ops->iov, 1, -1, NULL);
 
-    BT_LOGD("%s  whitelist_number:%ld", __func__, whitelist_number);
+    BT_LOGD("%s  whitelist_number:%" PRIu32, __func__, whitelist_number);
     if (whitelist_number < 1) {
         return;
     }
@@ -951,7 +951,7 @@ static void gap_ble_whitelist_load_read(uv_fs_t* req)
     for (int i = 0; i < whitelist_devices->num; i++) {
         SERVICE_BT_STATUS ret = service_adapter_gap_ble_add_white_list(devices[i].bd_addr);
         if (ret != SERVICE_BT_STATUS_SUCCESS) {
-            BT_LOGE("add whitelist %s fail, ret:%lu", addr_str(devices[i].bd_addr), ret);
+            BT_LOGE("add whitelist %s fail, ret:%" PRIu32, addr_str(devices[i].bd_addr), ret);
         }
     }
     ops->close_req.data = ops;
