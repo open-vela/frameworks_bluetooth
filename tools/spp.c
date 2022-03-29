@@ -30,7 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#define LOG_TAG "spp_test"
+#define LOG_TAG "spp_tool"
 #include "bt_tools.h"
 #include "btm_manager.h"
 #include "btm_spp.h"
