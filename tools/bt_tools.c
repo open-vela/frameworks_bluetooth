@@ -124,6 +124,9 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
     { "a2dpsrc", a2dp_source_command, "<A2DP> Advanced Audio Distribution Profile --Source" },
 #endif
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    { "a2dpsnk", a2dp_sink_command, "<A2DP> Advanced Audio Distribution Profile --Sink" },
+#endif
     { "gap", gap_cmd, "<GAP> General profile" },
 #ifdef CONFIG_BLUETOOTH_GATT_SERVER
     { "gatts", gatt_server_command, "<GATT> gatt server and le advertise" },

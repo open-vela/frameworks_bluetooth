@@ -30,7 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#define LOG_TAG "hfp_test"
+#define LOG_TAG "hfp_tool"
 #include <debug.h>
 #include <nuttx/list.h>
 #include <stdlib.h>
