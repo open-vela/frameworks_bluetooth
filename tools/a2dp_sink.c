@@ -30,7 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#define LOG_TAG "a2dp_src_tool"
+#define LOG_TAG "a2dp_snk_tool"
 
 #include <stdlib.h>
 #include <string.h>
@@ -39,24 +39,19 @@
 #include "bt_tools.h"
 #include "btm_manager.h"
 #include "bts_service.h"
-#include "btm_a2dp_source.h"
-#include "bts_a2dp_source.h"
+#include "btm_a2dp_sink.h"
+#include "bts_a2dp_sink.h"
 #include "utils/log.h"
 
 static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int dump_cmd(void* handle, int argc, char* argv[]);
 
-static const a2dp_source_interface_t* a2dp_source_interface = NULL; 
-static bt_command_t g_a2dp_source_tables[] = {
-    { "connect", connect_cmd, "\"connect a2dp sink device      param: <address> \"" },
-    { "disconnect", disconnect_cmd, "\"disconnect peer a2dp sink device  param: <address>\"" },
+static const a2dp_sink_interface_t* a2dp_sink_interface = NULL;
+static bt_command_t g_a2dp_sink_tables[] = {
+    { "connect", connect_cmd, "\"connect a2dp source device      param: <address> \"" },
+    { "disconnect", disconnect_cmd, "\"disconnect peer a2dp source device  param: <address>\"" },
     { "dump", dump_cmd, "\"dump a2dp device state\"" },
-};
-
-static struct option a2dp_source_options[] = {
-    { "help", 0, 0, 'h' },
-    { 0, 0, 0, 0 }
 };
 
 static void usage(void)
@@ -64,8 +59,8 @@ static void usage(void)
     printf("Usage:\n");
     printf("\taddress: peer device address like 00:01:02:03:04:05\n");
     printf("Commands:\n");
-    for (int i = 0; i < ARRAY_SIZE(g_a2dp_source_tables); i++) {
-        printf("\t%-8s\t%s\n", g_a2dp_source_tables[i].cmd, g_a2dp_source_tables[i].help);
+    for (int i = 0; i < ARRAY_SIZE(g_a2dp_sink_tables); i++) {
+        printf("\t%-8s\t%s\n", g_a2dp_sink_tables[i].cmd, g_a2dp_sink_tables[i].help);
     }
 }
 
@@ -79,7 +74,7 @@ static void audio_state_callback(bt_address addr, a2dp_audio_state_t state)
     BT_LOGD("%s addr: %s, state:%d", __func__, addr_str(addr), state);
 }
 
-static void audio_source_config_callback(bt_address addr)
+static void audio_sink_config_callback(bt_address addr)
 {
     BT_LOGD("%s addr: %s", __func__, addr_str(addr));
 }
@@ -92,7 +87,7 @@ static int connect_cmd(void* handle, int argc, char* argv[])
         return -1;
 
     str2ba(argv[0], addr);
-    a2dp_source_interface->connect(NULL, addr);
+    a2dp_sink_interface->connect(NULL, addr);
 
     return 0;
 }
@@ -105,48 +100,37 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
         return -1;
 
     str2ba(argv[0], addr);
-    a2dp_source_interface->disconnect(NULL, addr);
+    a2dp_sink_interface->disconnect(NULL, addr);
 
     return 0;
 }
 
 static int dump_cmd(void* handle, int argc, char* argv[])
 {
-    bts_a2dp_source_dump();
     return 0;
 }
 
-static a2dp_source_callbacks_t a2dp_source_test_cbs = {
-    sizeof(a2dp_source_callbacks_t),
+static a2dp_sink_callbacks_t a2dp_sink_cbs = {
+    sizeof(a2dp_sink_callbacks_t),
     connection_state_callback,
     audio_state_callback,
-    audio_source_config_callback
+    audio_sink_config_callback
 };
 
-int a2dp_source_command(void* handle, int argc, char* argv[])
+int a2dp_sink_command(void* handle, int argc, char* argv[])
 {
-    int opt, ret = -1;
+    int ret = -1;
 
-    if (a2dp_source_interface == NULL) {
-        a2dp_source_interface = get_a2dp_source_interface();
-        a2dp_source_interface->set_callbacks(NULL, &a2dp_source_test_cbs);
-    }
-
-    while ((opt = getopt_long(argc, argv, "h", a2dp_source_options, NULL)) != -1) {
-        switch (opt) {
-        case 'h':
-            usage();
-            return 0;
-        default:
-            break;
-        }
+    if (a2dp_sink_interface == NULL) {
+        a2dp_sink_interface = get_a2dp_sink_interface();
+        a2dp_sink_interface->set_callbacks(NULL, &a2dp_sink_cbs);
     }
 
     if (argc > 1) {
-        for (int i = 0; i < ARRAY_SIZE(g_a2dp_source_tables); i++) {
-            if (strcmp(g_a2dp_source_tables[i].cmd, argv[1]) == 0) {
-                if (g_a2dp_source_tables[i].func) {
-                    ret = g_a2dp_source_tables[i].func(handle, argc - 2, &argv[2]);
+        for (int i = 0; i < ARRAY_SIZE(g_a2dp_sink_tables); i++) {
+            if (strcmp(g_a2dp_sink_tables[i].cmd, argv[1]) == 0) {
+                if (g_a2dp_sink_tables[i].func) {
+                    ret = g_a2dp_sink_tables[i].func(handle, argc - 2, &argv[2]);
                 }
             }
         }
