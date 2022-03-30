@@ -353,7 +353,9 @@ typedef enum {
     BT_STATUS_RMT_DEV_DOWN,     /* remote device not in BT range */
     BT_STATUS_AUTH_REJECTED,    /* remote rejects AUTH request */
     BT_STATUS_RMT_DEV_TERMINATE /* remote disconnect the link actively */
-} bt_status;
+} bt_status_ext;
+
+typedef uint32_t bt_status;
 
 typedef enum {
     BT_ACL_STATE_CONNECTED,
@@ -362,7 +364,10 @@ typedef enum {
     BT_ACL_STATE_DISCONNECTED,
     BT_ACL_STATE_LE_CONNECTED,
     BT_ACL_STATE_LE_CONNECTING,
-    BT_ACL_STATE_LE_DISCONNECTED
+    BT_ACL_STATE_LE_DISCONNECTED,
+    /* Extended for bonded device management */
+    BT_ACL_STATE_BR_BONDED_FULL, /* BR bonded devices limit reached */
+    BT_ACL_STATE_LE_BONDED_FULL, /* LE bonded devices limit reached */
 } bt_acl_state;
 
 typedef enum {
