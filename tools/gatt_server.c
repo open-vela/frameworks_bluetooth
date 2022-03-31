@@ -695,6 +695,11 @@ static int gatts_do_throughput(void* handle, int argc, char** argv)
         BT_LOGE("device%s not connected", addr_str(remote_address));
         return 0;
     }
+#define MAX_THP_DATA (50 * 512)
+    if ((times * device->gatt_mtu) > MAX_THP_DATA) {
+        BT_LOGE("%s, data over flow max(%d)", __func__, MAX_THP_DATA);
+        return 0;
+    }
     test_server_throughtout_notify(remote_address, element, times, device->gatt_mtu);
     BT_LOGD("throughtout notify ...");
     return 0;
