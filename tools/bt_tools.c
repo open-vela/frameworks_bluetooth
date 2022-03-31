@@ -81,6 +81,7 @@ static int set_local_device_class(void* handle, int argc, char** argv);
 static int get_local_device_class(void* handle, int argc, char** argv);
 static int ble_set_address(void* handle, int argc, char** argv);
 static int set_auto_accept_pair(void* handle, int argc, char** argv);
+static int bt_reset_btinfo(void* handle, int argc, char** argv);
 static int ble_set_public_address(void* handle, int argc, char** argv);
 static int add_whitelist_device(void* handle, int argc, char** argv);
 static int add_resolving_device(void* handle, int argc, char** argv);
@@ -97,6 +98,7 @@ static void* manager_handle = NULL;
 static void* g_gap_handle = NULL;
 static uint8_t daemon_enable = 0;
 static uint16_t auto_accept = 0;
+static bool btinfo_reset = true;
 
 static struct option main_options[] = {
     { "help", 0, 0, 'h' },
@@ -170,6 +172,7 @@ static bt_command_t g_gap_tables[] = {
     { "getbleconnected", get_ble_connected_devices, "\"get ble connected device  \"" },
     { "getwhitelist", get_ble_whitelist_devices, "\"get ble whitelist device  \"" },
     { "getresolvinglist", get_ble_resolvinglist_devices, "\"get ble resolvinglist device  \"" },
+    { "btinforeset", bt_reset_btinfo, "\"bluetooth device info reset                              param: <0 use last device info, 1 use default device info> \"" },
 };
 
 static struct option gap_options[] = {
@@ -541,6 +544,25 @@ static int set_auto_accept_pair(void* handle, int argc, char** argv)
     auto_accept = atoi(argv[0]);
     return 0;
 }
+
+static int bt_reset_btinfo(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+    bool reset = true;
+    int choose = atoi(argv[0]);
+    switch (choose) {
+    case 0:
+        reset = false;
+        break;
+    default:
+        break;
+    }
+    btinfo_reset = reset;
+    BT_LOGD("%s, btinfo_reset:%d", __func__, btinfo_reset);
+    return 0;
+}
+
 static int add_whitelist_device(void* handle, int argc, char** argv)
 {
     if (argc < 1)
@@ -788,8 +810,13 @@ static void manager_state_changed_callback(btm_bt_state state)
             gap_test_interface->bt_set_local_device_class(g_gap_handle, COD_SERVICE_RENDERING | COD_SERVICE_AUDIO | COD_SERVICE_TELEPHONY | COD_AV_HEADSET);
             gap_test_interface->bt_set_local_io_capability(g_gap_handle, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
         }
+        if (!btinfo_reset) {
+            BT_LOGD("%s, btinfo_reset:%d", __func__, btinfo_reset);
+            return;
+        }
         gap_test_interface->bt_set_local_device_class(g_gap_handle, COD_SERVICE_RENDERING | COD_SERVICE_AUDIO | COD_SERVICE_TELEPHONY | COD_AV_HEADSET);
         gap_test_interface->bt_set_scan_mode(g_gap_handle, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
+        gap_test_interface->bt_set_local_io_capability(g_gap_handle, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
     }
 }
 
