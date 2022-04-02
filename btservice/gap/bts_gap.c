@@ -583,7 +583,7 @@ static void adapter_update_br_link_key_callback(remote_device_t* bonded_device)
     gap_send_message(msg);
 }
 
-static void adapter_delete_br_link_key_callback(bt_address remote_addr)
+static void adapter_delete_br_link_key_callback(bt_address remote_addr, SERVICE_BT_STATUS reason)
 {
     BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_DELETE_LINK_KEY_CHANGED);
