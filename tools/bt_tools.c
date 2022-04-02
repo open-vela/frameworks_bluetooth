@@ -91,6 +91,7 @@ static int get_ble_bonded_devices(void* handle, int argc, char** argv);
 static int get_ble_connected_devices(void* handle, int argc, char** argv);
 static int get_ble_whitelist_devices(void* handle, int argc, char** argv);
 static int get_ble_resolvinglist_devices(void* handle, int argc, char** argv);
+static int ble_create_encrypted_connect(void* handle, int argc, char** argv);
 
 static btm_gap_interface_t* gap_test_interface = NULL;
 static btm_interface_t* manager;
@@ -173,6 +174,7 @@ static bt_command_t g_gap_tables[] = {
     { "getwhitelist", get_ble_whitelist_devices, "\"get ble whitelist device  \"" },
     { "getresolvinglist", get_ble_resolvinglist_devices, "\"get ble resolvinglist device  \"" },
     { "btinforeset", bt_reset_btinfo, "\"bluetooth device info reset                              param: <0 use last device info, 1 use default device info> \"" },
+    { "bleenccon", ble_create_encrypted_connect, "\"ble create encrypted connect      param: <addr> \"" },
 };
 
 static struct option gap_options[] = {
@@ -728,6 +730,26 @@ static int get_ble_resolvinglist_devices(void* handle, int argc, char** argv)
     return 0;
 }
 
+static int ble_create_encrypted_connect(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+
+    ble_connect_params_t conn_param;
+    memset(&conn_param, 0, sizeof(ble_connect_params_t));
+
+    conn_param.filter_policy = BLE_CONNECT_FILTER_ADDR;
+    str2ba(argv[0], conn_param.peer_addr);
+    conn_param.peer_addr_type = BLE_ADDR_ANONYMOUS;
+    conn_param.use_default_params = true;
+
+    BT_LOGD("%s, addr:%s", addr_str(conn_param.peer_addr));
+
+    gap_test_interface->ble_connect(g_gap_handle, &conn_param);
+
+    return 0;
+}
+
 static void gap_usage(void)
 {
     printf("Usage:\n");
@@ -905,10 +927,32 @@ void test_local_device_class_callback(void* handle, uint32_t device_class)
 {
     BT_LOGD("%s,  device_class is %" PRIu32, __func__, device_class);
 }
+
 void test_smp_request_callback(void* handle, ssp_request_data_t* request_data)
 {
-    BT_LOGD("%s,", __func__);
+    BT_LOGD("%s, addr:%s", __func__, addr_str(request_data->remote_addr));
+    switch (request_data->ssp_type) {
+    case SPP_TYPE_PASSKEY_CONFIRMATION: {
+        BT_LOGD(" SMP User confirmation request: %d\r\n>", request_data->pass_key);
+        spp_reply_data_t reply;
+        memcpy(reply.remote_addr, request_data->remote_addr, 6);
+        reply.accept = TRUE;
+        reply.type = SPP_TYPE_PASSKEY_CONFIRMATION;
+        service_adapter_gap_ble_smp_reply(&reply);
+        gap_test_interface->bt_ssp_reply(g_gap_handle, &reply);
+        break;
+    }
+    case SPP_TYPE_PASSKEY_ENTRY:
+        BT_LOGD(" SMP User passkey entry request\r\n>");
+        break;
+    case SPP_TYPE_CONSENT:
+        break;
+    case SPP_TYPE_PASSKEY_NOTIFICATION:
+        BT_LOGD(" SMP User passkey entry for remote: %d\r\n>", request_data->pass_key);
+        break;
+    }
 }
+
 void test_pairing_request_callback(void* handle, bt_address remote_addr, bool local_initiate, bool is_bondable)
 {
     char* buffer = malloc(CONFIG_NSH_LINELEN);
