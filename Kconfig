@@ -145,12 +145,6 @@ config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
 	help
 		Maximum SPP server accept connections
 
-config BLUETOOTH_SPP_LOOP_EN
-	bool "SPP incoming data loop enable"
-	default n
-	help
-		SPP incoming data loop enable
-
 config BLUETOOTH_SPP_DUMPBUFFER
 	bool "SPP dumpbuffer switch"
 	default n

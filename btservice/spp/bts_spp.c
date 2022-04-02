@@ -102,9 +102,6 @@ typedef struct
     euv_pty_t* handle;
     uv_timer_t* timer;
     cache_buf_t cache_buf;
-#ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
-    euv_pty_t* shandle;
-#endif
     bool accept;
     bt_address addr;
     uint16_t svr_port;
@@ -373,12 +370,9 @@ static spp_pty_device_t* spp_open_pty_device(spp_pty_device_t* device, uint16_t 
 
     if (new_port != device->conn_port)
         device->conn_port = new_port;
-#ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
-    ret = openpty(&device->mfd, &device->sfd, device->pty_name, NULL, NULL);
-#else
+
     ret = open_pty(&device->mfd, device->pty_name);
     device->sfd = INVALID_FD;
-#endif
     if (ret != 0) {
         BT_LOGE("pty create failed");
         goto error;
@@ -387,15 +381,6 @@ static spp_pty_device_t* spp_open_pty_device(spp_pty_device_t* device, uint16_t 
     device->handle = euv_pty_init(get_service_loop(), device->mfd, UV_TTY_MODE_IO);
     if (!device->handle)
         goto error;
-
-#ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
-    device->shandle = euv_pty_init(get_service_loop(), device->sfd, UV_TTY_MODE_IO);
-    if (!device->shandle) {
-        euv_pty_close(device->handle);
-        device->mfd = INVALID_FD;
-        goto error;
-    }
-#endif
 
     BT_LOGD("pty create success, name:%s, master:%d, slave:%d",
         device->pty_name, device->mfd, device->sfd);
@@ -417,13 +402,6 @@ static void spp_close_pty_device(spp_pty_device_t* device)
         device->mfd = INVALID_FD;
     }
 
-#ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
-    if (device->shandle) {
-        euv_pty_close(device->shandle);
-        device->shandle = NULL;
-        device->sfd = INVALID_FD;
-    }
-#endif
     if (device->state == SPP_CONNECTION_STATE_CONNECTED)
         service_adapter_spp_disconnect_by_port(device->conn_port);
 
@@ -497,17 +475,6 @@ static void euv_read_complete(euv_pty_t* handle,
     }
 }
 
-#ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
-static void euv_read_loop_complete(euv_pty_t* handle,
-    const uint8_t* buf, ssize_t size)
-{
-    if (size > 0)
-        spp_dumpbuffer("slave read:", buf, size);
-
-    free(buf);
-}
-#endif
-
 static void euv_write_complete(euv_pty_t* handle, uint8_t* buf, int status)
 {
     spp_pty_device_t* device;
@@ -524,13 +491,6 @@ static void euv_write_complete(euv_pty_t* handle, uint8_t* buf, int status)
         spp_close_pty_device(device);
     }
 }
-
-#ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
-static void euv_write_loop_complete(euv_pty_t* handle, uint8_t* buf, int status)
-{
-    free(buf);
-}
-#endif
 
 static void spp_cache_timeout(char* data)
 {
@@ -649,12 +609,6 @@ static void spp_on_incoming_data_received(bt_address addr, uint16_t port,
     if (!device || buffer == NULL)
         return;
 
-#ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
-    uint8_t* loop_buf = (uint8_t*)malloc(length);
-    memcpy(loop_buf, buffer, length);
-    spp_dumpbuffer("slave write:", loop_buf, length);
-    euv_pty_write(device->shandle, loop_buf, length, euv_write_loop_complete);
-#endif
     spp_dumpbuffer("master write:", buffer, length);
     ret = euv_pty_write(device->handle, buffer, length, euv_write_complete);
     if (ret != 0) {
@@ -708,9 +662,6 @@ static void spp_on_connection_update_mfs(uint16_t port, uint16_t mfs)
     device->mfs = mfs;
     device->next_to_read = mfs;
     ret = euv_pty_read_start2(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
-#ifdef CONFIG_BLUETOOTH_SPP_LOOP_EN
-    ret = euv_pty_read_start(device->shandle, device->mfs, euv_read_loop_complete);
-#endif
     if (ret != 0) {
         spp_close_pty_device(device);
     }
