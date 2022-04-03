@@ -743,7 +743,7 @@ static int ble_create_encrypted_connect(void* handle, int argc, char** argv)
     conn_param.peer_addr_type = BLE_ADDR_ANONYMOUS;
     conn_param.use_default_params = true;
 
-    BT_LOGD("%s, addr:%s", addr_str(conn_param.peer_addr));
+    BT_LOGD("%s, addr:%s", __func__, addr_str(conn_param.peer_addr));
 
     gap_test_interface->ble_connect(g_gap_handle, &conn_param);
 
@@ -925,7 +925,7 @@ void test_local_address_callback(void* handle, bt_device_t* device)
 }
 void test_local_device_class_callback(void* handle, uint32_t device_class)
 {
-    BT_LOGD("%s,  device_class is %" PRIu32, __func__, device_class);
+    BT_LOGD("%s,  device_class is %" PRIu32 "\r\n", __func__, device_class);
 }
 
 void test_smp_request_callback(void* handle, ssp_request_data_t* request_data)
@@ -933,13 +933,12 @@ void test_smp_request_callback(void* handle, ssp_request_data_t* request_data)
     BT_LOGD("%s, addr:%s", __func__, addr_str(request_data->remote_addr));
     switch (request_data->ssp_type) {
     case SPP_TYPE_PASSKEY_CONFIRMATION: {
-        BT_LOGD(" SMP User confirmation request: %d\r\n>", request_data->pass_key);
+        BT_LOGD(" SMP User confirmation request: %" PRIu32 "\r\n>", request_data->pass_key);
         spp_reply_data_t reply;
         memcpy(reply.remote_addr, request_data->remote_addr, 6);
         reply.accept = TRUE;
         reply.type = SPP_TYPE_PASSKEY_CONFIRMATION;
-        service_adapter_gap_ble_smp_reply(&reply);
-        gap_test_interface->bt_ssp_reply(g_gap_handle, &reply);
+        gap_test_interface->ble_smp_reply(g_gap_handle, &reply);
         break;
     }
     case SPP_TYPE_PASSKEY_ENTRY:
@@ -948,7 +947,7 @@ void test_smp_request_callback(void* handle, ssp_request_data_t* request_data)
     case SPP_TYPE_CONSENT:
         break;
     case SPP_TYPE_PASSKEY_NOTIFICATION:
-        BT_LOGD(" SMP User passkey entry for remote: %d\r\n>", request_data->pass_key);
+        BT_LOGD(" SMP User passkey entry for remote: %" PRIu32 "\r\n>", request_data->pass_key);
         break;
     }
 }
