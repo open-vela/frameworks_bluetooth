@@ -109,7 +109,7 @@ static void gap_if_pairing_request_callback(BD_ADDR remote_addr, bool local_init
 
 static void gap_if_device_found_callback(bt_device_t* device)
 {
-    BT_LOGD("%s", __func__);
+    // BT_LOGD("%s", __func__);
     BT_GAP_CB(device_found_callback_cb, device);
 }
 

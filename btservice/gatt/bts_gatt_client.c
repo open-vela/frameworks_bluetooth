@@ -543,7 +543,7 @@ static void handle_msg_received(bt_profile_id id, void* value, size_t size)
         BT_LOGE("error, invalid priofile id:%d", id);
         return;
     }
-    BT_LOGD("%s", __func__);
+    // BT_LOGD("%s", __func__);
     bts_gattc_msg_t* msg = (bts_gattc_msg_t*)(value);
     if (!msg) {
         BT_LOGE("%s fail, msg null", __func__);
