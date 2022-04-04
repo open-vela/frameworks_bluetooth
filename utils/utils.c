@@ -93,3 +93,13 @@ char* addr_str(bt_address addr)
 
     return g_bdaddr_str;
 }
+
+char * uuid_str(bt_uuid_t uuid)
+{
+    static char uuid_s[36];
+    memset(uuid_s, 0, 36);
+    for(int i= 0; i < UUID_SIZE; i++) {
+        snprintf(uuid_s + i * 2 , 36, "%02X", uuid[i]);
+    }
+    return uuid_s;
+}
