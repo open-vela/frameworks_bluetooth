@@ -103,3 +103,13 @@ char * uuid_str(bt_uuid_t uuid)
     }
     return uuid_s;
 }
+
+bool uuid_is_empty(bt_uuid_t uuid)
+{
+    for(int i= 0; i < UUID_SIZE; i++) {
+        if (uuid[i] != 0) {
+            return false;
+        }
+    }
+    return true;
+}
