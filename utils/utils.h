@@ -180,4 +180,5 @@ int str2ba(const char* str, bt_address addr);
 int str2hex(const char* str, char* hex, int len);
 char* addr_str(bt_address addr);
 char * uuid_str(bt_uuid_t uuid);
+bool uuid_is_empty(bt_uuid_t uuid);
 #endif
