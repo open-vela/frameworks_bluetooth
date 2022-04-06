@@ -986,6 +986,10 @@ int bts_get_bonded_devices(bt_device_t* device_list, int max_out)
         uint8_t* link_key = bonded_list[i].link_key;
         memcpy(device_list[i].addr, bonded_list[i].bd_addr, BT_ADDR_LENGTH);
         memcpy(device_list[i].name, bonded_list[i].bt_name, DEVICE_NAME_MAX_LEN + 1);
+        memcpy(device_list[i].uuids, bonded_list[i].uuids, MAX_UUID_NUM);
+        device_list[i].device_type = bonded_list[i].device_type;
+        device_list[i].cod = bonded_list[i].cod;
+
         BT_LOGD("Linkkey: %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X", link_key[0], link_key[1], link_key[2], link_key[3], link_key[4], link_key[5],
             link_key[6], link_key[7], link_key[8], link_key[9], link_key[10], link_key[11],
             link_key[12], link_key[13], link_key[14], link_key[15]);

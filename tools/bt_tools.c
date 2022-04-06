@@ -455,7 +455,7 @@ static int get_bonded_devices(void* handle, int argc, char** argv)
     num = gap_test_interface->bt_get_bonded_devices(g_gap_handle, device_list, num);
     for (int i = 0; i < num; i++) {
         bt_device_t* device = &device_list[i];
-        BT_LOGD("%s, device [%d]: %s, name :%s ", __func__, i, addr_str(device->addr), device->name);
+        BT_LOGD("%s, device [%d]: %s, name :%s, code %" PRIu32, __func__, i, addr_str(device->addr), device->name, device->cod);
     }
     free(device_list);
     return 0;
@@ -933,7 +933,7 @@ void test_smp_request_callback(void* handle, ssp_request_data_t* request_data)
     BT_LOGD("%s, addr:%s", __func__, addr_str(request_data->remote_addr));
     switch (request_data->ssp_type) {
     case SPP_TYPE_PASSKEY_CONFIRMATION: {
-        BT_LOGD(" SMP User confirmation request: %" PRIu32 "\r\n>", request_data->pass_key);
+        BT_LOGD(" SMP User confirmation request:  %" PRIu32, request_data->pass_key);
         spp_reply_data_t reply;
         memcpy(reply.remote_addr, request_data->remote_addr, 6);
         reply.accept = TRUE;
@@ -942,12 +942,12 @@ void test_smp_request_callback(void* handle, ssp_request_data_t* request_data)
         break;
     }
     case SPP_TYPE_PASSKEY_ENTRY:
-        BT_LOGD(" SMP User passkey entry request\r\n>");
+        BT_LOGD(" SMP User passkey entry request");
         break;
     case SPP_TYPE_CONSENT:
         break;
     case SPP_TYPE_PASSKEY_NOTIFICATION:
-        BT_LOGD(" SMP User passkey entry for remote: %" PRIu32 "\r\n>", request_data->pass_key);
+        BT_LOGD(" SMP User passkey entry for remote: %" PRIu32, request_data->pass_key);
         break;
     }
 }
