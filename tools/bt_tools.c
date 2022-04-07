@@ -995,6 +995,11 @@ exit:
     return;
 }
 
+void test_delete_linkey_callback(void* gap_handle, bt_address remote_addr, bt_status reason)
+{
+    BT_LOGD("%s, addr:%s, reason:%" PRIu32, __func__, addr_str(remote_addr), reason);
+}
+
 btm_gap_callbacks_t gap_test_tool_callbacks = {
     .discovery_state_changed_callback_cb = test_discovery_state_changed_callback,
     .device_found_callback_cb = test_device_found_callback,
@@ -1007,6 +1012,7 @@ btm_gap_callbacks_t gap_test_tool_callbacks = {
     .local_device_class_callback_cb = test_local_device_class_callback,
     .smp_requeset_cb = test_smp_request_callback,
     .pairing_request_cb = test_pairing_request_callback,
+    .delete_linkey_cb = test_delete_linkey_callback,
 };
 
 static bt_mgr_callback_t mgt_cb = {

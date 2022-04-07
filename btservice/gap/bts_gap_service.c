@@ -159,6 +159,12 @@ static void gap_if_bts_ble_irk_callback(bt_common_key irk, bt_address ble_addr, 
     BT_GAP_CB(ble_irk_cb, irk, ble_addr, addr_type);
 }
 
+static void gap_if_delete_linkey_callback(bt_address remote_addr, bt_status reason)
+{
+    BT_LOGD("%s", __func__);
+    BT_GAP_CB(delete_linkey_cb, remote_addr, reason);
+}
+
 bts_gap_callback_t bts_gap_callbacks = {
     .size = sizeof(bts_gap_callback_t),
     .adapter_state_changed_cb = gap_if_adapter_state_changed_callback,
@@ -174,6 +180,7 @@ bts_gap_callback_t bts_gap_callbacks = {
     .ble_phy_update_cb = gap_if_ble_phy_update_callback,
     .ble_address_cb = gap_if_ble_address_callback,
     .ble_irk_cb = gap_if_bts_ble_irk_callback,
+    .delete_linkey_cb = gap_if_delete_linkey_callback,
 };
 
 bt_result_code gap_service_init()

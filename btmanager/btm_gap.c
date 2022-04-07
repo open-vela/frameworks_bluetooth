@@ -226,6 +226,16 @@ void btm_ble_irk_callback(void* gap_handle, bt_common_key irk, bt_address ble_ad
     context->gap_callbacks->ble_irk_cb(gap_handle, irk, ble_addr, addr_type);
 }
 
+void btm_delete_linkey_callback(void* gap_handle, bt_address remote_addr, bt_status reason)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->delete_linkey_cb))
+        return;
+    context->gap_callbacks->delete_linkey_cb(gap_handle, remote_addr, reason);
+}
+
 static const btm_gap_callbacks_t service_callbacks = {
     .size = sizeof(btm_gap_callbacks_t),
     .bt_connection_state_changed_callback_cb = btm_connection_state_changed_callback,
@@ -244,7 +254,7 @@ static const btm_gap_callbacks_t service_callbacks = {
     .ble_address_cb = btm_ble_address_callback,
     .pairing_request_cb = btm_pairing_request_callback,
     .ble_irk_cb = btm_ble_irk_callback,
-
+    .delete_linkey_cb = btm_delete_linkey_callback,
 };
 
 static bt_result_code btm_gap_register_callbacks(void* manager_handle, void** gap_handle, const btm_gap_callbacks_t* callbacks)
