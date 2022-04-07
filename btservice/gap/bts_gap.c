@@ -316,6 +316,9 @@ static void process_loop_in_gap(void* data, size_t data_size)
         break;
     }
     case GAP_DELETE_LINK_KEY_CHANGED: {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->delete_linkey_cb)) {
+            g_bts_gap_callbacks->delete_linkey_cb(gap_msg->event_data.bd_addr, gap_msg->event_data.status);
+        }
         gap_bt_bond_store();
         break;
     }
@@ -585,9 +588,10 @@ static void adapter_update_br_link_key_callback(remote_device_t* bonded_device)
 
 static void adapter_delete_br_link_key_callback(bt_address remote_addr, SERVICE_BT_STATUS reason)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, addr:%s, reason:%" PRIu32, __func__, addr_str(remote_addr), reason);
     gap_msg_t* msg = gap_msg_new(GAP_DELETE_LINK_KEY_CHANGED);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
+    msg->event_data.status = reason;
     gap_send_message(msg);
 }
 
