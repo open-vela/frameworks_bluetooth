@@ -167,7 +167,7 @@ static void pty_open_callback(const bt_address addr, uint16_t port, char* name, 
     }
 
     list_add_tail(&device_list, &device->node);
-    euv_pty_read_start(device->pty, 128, pty_read_cb);
+    euv_pty_read_start(device->pty, 2048, pty_read_cb);
 }
 
 static int start_server_cmd(void* handle, int argc, char* argv[])
