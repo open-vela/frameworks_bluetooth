@@ -50,6 +50,19 @@ typedef struct {
     int port;
 } spp_device_t;
 
+typedef struct {
+    uint8_t port;
+    enum {
+        TRANS_NONE = 0,
+        TRANS_SENDING,
+        TRANS_RECVING,
+    } state;
+    uint32_t trans_total_size;
+    uint32_t received_size;
+    uint64_t start_timestamp;
+    uint64_t end_timestamp;
+} transmit_context_t;
+
 static int start_server_cmd(void* handle, int argc, char* argv[]);
 static int stop_server_cmd(void* handle, int argc, char* argv[]);
 static int connect_cmd(void* handle, int argc, char* argv[]);
@@ -63,6 +76,8 @@ static struct list_node device_list = LIST_INITIAL_VALUE(device_list);
 static spp_interface_t* spp_interface = NULL;
 static uv_timer_t* spp_timer = NULL;
 static sem_t spp_sem;
+static sem_t spp_send_sem;
+static transmit_context_t trans_ctx = {0};
 static bt_command_t g_spp_tables[] = {
     { "start", start_server_cmd,    "\"start spp server        param: <port> <uuid>\", note:server port must be odd number, range in (3~57) 3,5,7,9...57"},
     { "stop", stop_server_cmd,      "\"stop  spp server        param: <port>\"" },
@@ -103,12 +118,82 @@ static spp_device_t* find_pty_by_port(int port)
     BT_LOGW("Device not found for port:%d", port);
     return NULL;
 }
+static const char *TRANS_START = "START:";
+static const char *TRANS_START_ACK = "START_ACK";
+static const char *TRANS_EOF = "EOF";
+extern uint64_t get_os_timestamp_us(void);
+
+static int spp_sem_post(sem_t* sem)
+{
+    return sem_post(sem);
+}
+
+static int spp_sem_timedwait(sem_t* sem, uint16_t timeout)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += timeout;
+
+    return sem_timedwait(sem, &ts);
+}
+
+static void spp_trans_reset(void)
+{
+    memset(&trans_ctx, 0, sizeof(trans_ctx));
+}
+
+static void show_result(uint64_t start, uint64_t end, uint32_t bytes)
+{
+    float use = (float)(end - start) / 1000;
+    float spd = (float)(bytes / 1024) / use;
+
+    BT_LOGD("transmit done, total: %"PRIu32 " bytes, use: %f seconds, speed: %f KB/s", bytes, use, spd);
+}
+
+static void spp_data_received(euv_pty_t* handle, const uint8_t* buf, ssize_t size)
+{
+    transmit_context_t *ctx = &trans_ctx;
+
+    switch (ctx->state) {
+        case TRANS_NONE:
+            if (strncmp((const char *)buf, TRANS_START, strlen(TRANS_START)) == 0) {
+                spp_trans_reset();
+                ctx->state = TRANS_RECVING;
+                sscanf((const char *)buf, "START:%ld;", &ctx->trans_total_size);
+                BT_LOGD("receive start, waiting for %" PRIu32" bytes transmit done", ctx->trans_total_size);
+                euv_pty_write(handle, (uint8_t *)TRANS_START_ACK, strlen(TRANS_START_ACK), NULL);
+                ctx->start_timestamp = get_os_timestamp_us() / 1000;
+            } else
+                lib_dumpbuffer("spp read", buf, size);
+            break;
+        case TRANS_SENDING:
+            if (strncmp((const char *)buf, TRANS_EOF, strlen(TRANS_EOF)) == 0) {
+                ctx->state = TRANS_NONE;
+                ctx->end_timestamp = get_os_timestamp_us() / 1000;
+                show_result(ctx->start_timestamp, ctx->end_timestamp, ctx->trans_total_size);
+                spp_trans_reset();
+            } else if (strncmp((const char *)buf, TRANS_START_ACK, strlen(TRANS_START_ACK)) == 0) {
+                spp_sem_post(&spp_send_sem);
+            }
+            break;
+        case TRANS_RECVING:
+            ctx->received_size += size;
+            if (ctx->received_size >= ctx->trans_total_size) {
+                ctx->state = TRANS_NONE;
+                ctx->end_timestamp = get_os_timestamp_us() / 1000;
+                show_result(ctx->start_timestamp, ctx->end_timestamp, ctx->trans_total_size);
+                euv_pty_write(handle, (uint8_t *)TRANS_EOF, 4, NULL);
+                spp_trans_reset();
+            }
+            break;
+    }
+}
 
 static void pty_read_cb(euv_pty_t* handle,
     const uint8_t* buf, ssize_t size)
 {
     if (size > 0)
-        lib_dumpbuffer("spp read", buf, size);
+        spp_data_received(handle, buf, size);
     else if (size < 0){
         BT_LOGE("%s read failed, status:%d", __func__, size);
         euv_pty_read_stop(handle);
@@ -251,18 +336,9 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     return 0;
 }
 
-extern void spp_test_start(int test_cnt);
-extern void spp_app_trans_done_log(void);
-static void write_fc_complete(euv_pty_t* handle, uint8_t* buf, int status)
-{
-    sem_post(&spp_sem);
-    spp_app_trans_done_log();
-    free(buf);
-}
-
 static void write_complete(euv_pty_t* handle, uint8_t* buf, int status)
 {
-    spp_app_trans_done_log();
+    spp_sem_post(&spp_sem);
     free(buf);
 }
 
@@ -288,7 +364,7 @@ static int write_cmd(void* handle, int argc, char* argv[])
     return 0;
 }
 
-static int send_bluk(uint16_t port, uint16_t length, uint16_t interations, uint8_t fc)
+static int send_bulk(uint16_t port, uint16_t length, uint16_t interations)
 {
     spp_device_t* device;
     uint8_t *buf;
@@ -298,17 +374,16 @@ static int send_bluk(uint16_t port, uint16_t length, uint16_t interations, uint8
     if (device == NULL)
         return -1;
 
-    spp_test_start(interations);
     for (int i = 0; i < interations; i++) {
         if (device->pty == NULL)
             break;
         buf = malloc(length);
         memset(buf, 0xA5, length);
-        if (fc) {
-            sem_wait(&spp_sem);
-            euv_pty_write(device->pty, buf, length, write_fc_complete);
-        } else
-            euv_pty_write(device->pty, buf, length, write_complete);
+        if (spp_sem_timedwait(&spp_sem, 2) < 0) {
+            free(buf);
+            break;
+        }
+        euv_pty_write(device->pty, buf, length, write_complete);
     }
 
     return 0;
@@ -325,20 +400,42 @@ static int send_cmd(void* handle, int argc, char* argv[])
     length = atoi(argv[1]);
     times = atoi(argv[2]);
 
-    return send_bluk(port, length, times, 1);
+    return send_bulk(port, length, times);
 }
 
 static int speed_cmd(void* handle, int argc, char* argv[])
 {
     uint16_t port, times;
+    static uint8_t start_buf[100];
+    spp_device_t* device;
 
     if (argc < 2)
         return -1;
 
     port = atoi(argv[0]);
     times = atoi(argv[1]);
+    if (times <= 0)
+        return -1;
 
-    return send_bluk(port, 990, times, 0);
+    device = find_pty_by_port(port);
+    if (device == NULL)
+        return -1;
+
+    memset(start_buf, 0, sizeof(start_buf));
+    spp_trans_reset();
+    trans_ctx.trans_total_size = 990 * times;
+    trans_ctx.state = TRANS_SENDING;
+    trans_ctx.start_timestamp = get_os_timestamp_us() / 1000;
+    sprintf((char *)start_buf, "START:%"PRIu32";", trans_ctx.trans_total_size);
+    BT_LOGD("transmit start, waiting for %" PRIu32" bytes transmit done", trans_ctx.trans_total_size);
+    euv_pty_write(device->pty, start_buf, strlen((const char *)start_buf), NULL);
+    /* wait start ack */
+    if (spp_sem_timedwait(&spp_send_sem, 2) < 0) {
+        spp_trans_reset();
+        return -1;
+    }
+
+    return send_bulk(port, 990, times);
 }
 
 static int dump_cmd(void* handle, int argc, char* argv[])
@@ -354,15 +451,29 @@ static spp_callbacks_t spp_test_cbs = {
     connection_state_callback,
 };
 
+int spp_command_init(void)
+{
+    if (spp_interface == NULL) {
+        sem_init(&spp_sem, 0, 50);
+        sem_init(&spp_send_sem, 0, 0);
+        spp_interface = get_spp_interface();
+        spp_interface->set_callbacks(NULL, &spp_test_cbs);
+        /* start 0x1109 server for terminal control channel */
+        //spp_interface->server_start(NULL, 9, 0x1109);
+    }
+
+    return 0;
+}
+
+void spp_command_uninit(void)
+{
+    sem_destroy(&spp_sem);
+    sem_destroy(&spp_send_sem);
+}
+
 int spp_command(void* handle, int argc, char* argv[])
 {
     int ret = -1;
-
-    if (spp_interface == NULL) {
-        sem_init(&spp_sem, 0, 50);
-        spp_interface = get_spp_interface();
-        spp_interface->set_callbacks(NULL, &spp_test_cbs);
-    }
 
     if (argc > 1) {
         for (int i = 0; i < ARRAY_SIZE(g_spp_tables); i++) {

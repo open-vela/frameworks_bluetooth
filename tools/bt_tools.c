@@ -1065,6 +1065,11 @@ static int quit_cmd(void* handle, int argc, char** argv)
     return 0;
 }
 
+static void bttool_command_init(void)
+{
+    spp_command_init();
+}
+
 static void usage(void)
 {
     printf("Usage:\n"
@@ -1141,6 +1146,7 @@ int main(int argc, char** argv)
     gap_test_interface = get_gap_instance();
     gap_test_interface->gap_register_callbacks(manager_handle, &g_gap_handle, &gap_test_tool_callbacks);
 
+    bttool_command_init();
     buffer = malloc(CONFIG_NSH_LINELEN);
     if (!buffer)
         return -ENOMEM;

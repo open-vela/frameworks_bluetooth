@@ -174,68 +174,6 @@ static const char* spp_event_to_string(uint8_t event)
 }
 #endif
 
-static void calc_trans_speed(const char *stage, int count, struct timespec* ts_start, struct timespec* ts_end)
-{
-    int consume_ms = 0;
-
-    if ((ts_end->tv_nsec - ts_start->tv_nsec) > 0) {
-        consume_ms =  (ts_end->tv_sec - ts_start->tv_sec) * 1000 + \
-            (ts_end->tv_nsec - ts_start->tv_nsec)/1000000UL;
-    } else {
-        consume_ms =  (ts_end->tv_sec - ts_start->tv_sec - 1) * 1000 + \
-            (1000000000LL + ts_end->tv_nsec - ts_start->tv_nsec)/1000000UL;
-    }
-
-    float seconds = (float)consume_ms / 1000.0f;
-    float spd = (float)count / seconds;
-    syslog(1, "%s trans bytes:%d, Seconds: %f, Speed: %fKb/s\n", stage, count * 990, seconds, spd);
-}
-
-void spp_test_start(int test_cnt)
-{
-    g_send_cnt = 0;
-    g_app_cnt = 0;
-    g_spp_test_cnt = test_cnt - 1;
-}
-
-static void spp_send_done_log(void)
-{
-    static struct timespec ts_start1, ts_end1;
-
-    if (g_send_cnt < 0)
-        return;
-
-    if (g_send_cnt == 0) {
-        clock_gettime(CLOCK_MONOTONIC, &ts_start1);
-        g_send_cnt++;
-    } else if (g_send_cnt == g_spp_test_cnt) {
-        clock_gettime(CLOCK_MONOTONIC, &ts_end1);
-        calc_trans_speed("Spp", g_send_cnt, &ts_start1, &ts_end1);
-        g_send_cnt = -1;
-    } else {
-        g_send_cnt++;
-    }
-}
-
-void spp_app_trans_done_log(void)
-{
-    static struct timespec ts_start2, ts_end2;
-
-    if (g_app_cnt < 0)
-        return;
-
-    if (g_app_cnt == 0) {
-        clock_gettime(CLOCK_MONOTONIC, &ts_start2);
-        g_app_cnt++;
-    } else if (g_app_cnt == g_spp_test_cnt) {
-        clock_gettime(CLOCK_MONOTONIC, &ts_end2);
-        calc_trans_speed("App", g_app_cnt, &ts_start2, &ts_end2);
-        g_app_cnt = -1;
-    } else {
-        g_app_cnt++;
-    }
-}
-
 static int alloc_connection_port(uint8_t svr_port, uint16_t* conn_port)
 {
     uint8_t conn_id = 0;
@@ -627,7 +565,6 @@ static void spp_on_outgoing_complete(uint16_t port, uint8_t* buffer, uint16_t le
     if (!device)
         return;
 
-    spp_send_done_log();
     if (!device->remaining_quota && device->handle != NULL) {
         euv_pty_read_start2(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
     }
