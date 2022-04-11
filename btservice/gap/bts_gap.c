@@ -335,6 +335,12 @@ static void process_loop_in_gap(void* data, size_t data_size)
         gap_ble_whitelist_store_update(false, gap_msg->event_data.bd_addr);
         break;
     }
+    case GAP_CONNECT_REQUEST: {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->link_connect_request_cb)) {
+            g_bts_gap_callbacks->link_connect_request_cb(gap_msg->event_data.bd_addr);
+        }
+        break;
+    }
     default:
         break;
     }
@@ -523,8 +529,6 @@ static void adapter_link_mode_changed_callback(BD_ADDR remote_addr, SERVICE_BT_L
 static void adapter_link_connect_request_callback(BD_ADDR remote_addr)
 {
     BT_LOGD("%s", __func__);
-    service_adapter_gap_reply_link_request(remote_addr, true);
-
     gap_msg_t* msg = gap_msg_new(GAP_CONNECT_REQUEST);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     gap_send_message(msg);
@@ -1377,6 +1381,16 @@ bt_result_code bts_set_page_scan_parameters(bt_scan_type scan_type, uint16_t sca
 bt_result_code bts_set_inquiry_scan_parameters(bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window)
 {
     SERVICE_BT_STATUS ret = service_adapter_gap_set_inquiry_scan_parameters((SERVICE_BT_SCAN_TYPE)scan_type, scan_interval, scan_window);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
+bt_result_code bts_reply_link_request(BD_ADDR remote_addr, bool accept)
+{
+    SERVICE_BT_STATUS ret = service_adapter_gap_reply_link_request(remote_addr, accept);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
         return BT_RESULT_FAILED;
