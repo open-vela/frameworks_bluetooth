@@ -26,6 +26,7 @@ typedef void (*bts_ble_address_callback)(bt_address ble_addr, ble_addr_type ble_
 typedef void (*bts_pairing_request_callback)(BD_ADDR remote_addr, bool local_initiate, bool is_bondable);
 typedef void (*bts_ble_irk_callback)(bt_common_key irk, bt_address ble_addr, ble_addr_type ble_addr_type);
 typedef void (*bts_delete_linkey_callback)(bt_address remote_addr, bt_status reason);
+typedef void (*bts_link_connect_request_callback)(bt_address remote_addr);
 
 typedef struct {
     /* * set to sizeof(GAP_CALLBACKS_S) */
@@ -45,6 +46,7 @@ typedef struct {
     bts_ble_address_callback ble_address_cb;
     bts_ble_irk_callback ble_irk_cb;
     bts_delete_linkey_callback delete_linkey_cb;
+    bts_link_connect_request_callback link_connect_request_cb;
 } bts_gap_callback_t;
 
 bt_result_code gap_init(bts_gap_callback_t* cb);
@@ -124,6 +126,8 @@ bt_result_code bts_enter_bluetooth_test_mode(test_mode mode);
 bt_result_code bts_set_page_scan_parameters(bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window);
 
 bt_result_code bts_set_inquiry_scan_parameters(bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window);
+
+bt_result_code bts_reply_link_request(BD_ADDR remote_addr, bool accept);
 
 void gap_bt_bond_store(void);
 void gap_bluetooth_bond_init(void);

@@ -165,6 +165,12 @@ static void gap_if_delete_linkey_callback(bt_address remote_addr, bt_status reas
     BT_GAP_CB(delete_linkey_cb, remote_addr, reason);
 }
 
+static void gap_if_link_connect_request_callback(bt_address remote_addr)
+{
+    BT_LOGD("%s", __func__);
+    BT_GAP_CB(link_connect_request_cb, remote_addr);
+}
+
 bts_gap_callback_t bts_gap_callbacks = {
     .size = sizeof(bts_gap_callback_t),
     .adapter_state_changed_cb = gap_if_adapter_state_changed_callback,
@@ -181,6 +187,7 @@ bts_gap_callback_t bts_gap_callbacks = {
     .ble_address_cb = gap_if_ble_address_callback,
     .ble_irk_cb = gap_if_bts_ble_irk_callback,
     .delete_linkey_cb = gap_if_delete_linkey_callback,
+    .link_connect_request_cb = gap_if_link_connect_request_callback,
 };
 
 bt_result_code gap_service_init()
@@ -579,6 +586,13 @@ static bt_result_code bts_if_set_inquiry_scan_parameters(void* gap_handle, bt_sc
     return bts_set_inquiry_scan_parameters(scan_type, scan_interval, scan_window);
 }
 
+static bt_result_code bts_if_reply_link_request(void* gap_handle, bt_address remote_addr, bool accept)
+{
+    if (!gap_is_handle_valid(gap_handle))
+        return BT_RESULT_FAILED;
+    return bts_reply_link_request(remote_addr, accept);
+}
+
 static bt_result_code bts_if_gap_cleanup(void* gap_handle)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -654,6 +668,7 @@ static btm_gap_interface_t gap_interface = {
     .enter_bluetooth_test_mode = bts_if_enter_bluetooth_test_mode,
     .bt_set_inquiry_scan_parameters = bts_if_set_inquiry_scan_parameters,
     .bt_set_page_scan_parameters = bts_if_set_page_scan_parameters,
+    .bt_reply_link_request = bts_if_reply_link_request,
 };
 
 btm_gap_interface_t* get_gap_service_instance(void)
