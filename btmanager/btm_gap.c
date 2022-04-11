@@ -49,6 +49,15 @@ typedef struct {
     btm_gap_interface_t* service_interface;
 } gap_context_t;
 
+static bt_result_code btm_reply_link_request(void* gap_handle, bt_address remote_addr, bool accept)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    CHECK_PTR_RETURN(gap_handle, ret);
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_GAP_INTERFACE(context->service_interface, bt_reply_link_request, ret, gap_handle, remote_addr, accept);
+    return ret;
+}
+
 static void btm_remote_name_callback(void* gap_handle, bt_address bd_addr, char* bt_name, uint8_t length)
 {
     if (!gap_handle)
@@ -236,6 +245,21 @@ void btm_delete_linkey_callback(void* gap_handle, bt_address remote_addr, bt_sta
     context->gap_callbacks->delete_linkey_cb(gap_handle, remote_addr, reason);
 }
 
+static void btm_link_connect_request_callback(void* gap_handle, bt_address remote_addr)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if (NULL == context->gap_callbacks)
+        return;
+
+    if (NULL == context->gap_callbacks->link_connect_request_cb) {
+        btm_reply_link_request(gap_handle, remote_addr, true);
+        return;
+    }
+    context->gap_callbacks->link_connect_request_cb(gap_handle, remote_addr);
+}
+
 static const btm_gap_callbacks_t service_callbacks = {
     .size = sizeof(btm_gap_callbacks_t),
     .bt_connection_state_changed_callback_cb = btm_connection_state_changed_callback,
@@ -255,6 +279,7 @@ static const btm_gap_callbacks_t service_callbacks = {
     .pairing_request_cb = btm_pairing_request_callback,
     .ble_irk_cb = btm_ble_irk_callback,
     .delete_linkey_cb = btm_delete_linkey_callback,
+    .link_connect_request_cb = btm_link_connect_request_callback,
 };
 
 static bt_result_code btm_gap_register_callbacks(void* manager_handle, void** gap_handle, const btm_gap_callbacks_t* callbacks)
@@ -746,6 +771,7 @@ static btm_gap_interface_t gap_interface = {
     .ble_get_resolvinglist_devices = btm_ble_get_resolvinglist_devices,
     .bt_set_inquiry_scan_parameters = btm_set_inquiry_scan_parameter,
     .bt_set_page_scan_parameters = btm_set_page_scan_parameters,
+    .bt_reply_link_request = btm_reply_link_request,
 };
 
 btm_gap_interface_t* get_gap_instance(void)

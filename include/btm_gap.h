@@ -184,6 +184,7 @@ typedef void (*pairing_request_callback)(void* gap_handle, bt_address remote_add
 
 typedef void (*ble_irk_callback)(void* gap_handle, bt_common_key irk, bt_address ble_addr, ble_addr_type ble_addr_type);
 typedef void (*delete_linkey_callback)(void* gap_handle, bt_address remote_addr, bt_status reason);
+typedef void (*link_connect_request_callback)(void* gap_handle, bt_address remote_addr);
 
 typedef struct {
     /** set to sizeof(bt_callbacks_t) */
@@ -205,6 +206,7 @@ typedef struct {
     pairing_request_callback pairing_request_cb;
     ble_irk_callback ble_irk_cb;
     delete_linkey_callback delete_linkey_cb;
+    link_connect_request_callback link_connect_request_cb;
 } btm_gap_callbacks_t;
 
 /*gap interface*/
@@ -393,6 +395,7 @@ typedef struct {
     bt_result_code (*bt_set_local_address)(void* handle, bt_device_t* device);
     bt_result_code (*bt_set_inquiry_scan_parameters)(void* gap_handle, bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window);
     bt_result_code (*bt_set_page_scan_parameters)(void* gap_handle, bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window);
+    bt_result_code (*bt_reply_link_request)(void* gap_handle, bt_address remote_addr, bool accept);
 } btm_gap_interface_t;
 
 btm_gap_interface_t* get_gap_instance(void);
