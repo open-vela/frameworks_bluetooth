@@ -30,8 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#include <stdio.h>
-#include <sys/types.h>
+#include <stdint.h>
 
 // internel dependent
 #include "btm_manager.h"
@@ -45,46 +44,58 @@
 
 static spp_callbacks_t* sppCallbacks = NULL;
 
-static void spp_svr_connection_state_callback(const bt_address addr, uint16_t port, spp_connection_state_t state)
+static void spp_svr_connection_state_callback(const bt_address addr, uint16_t scn, uint16_t port, spp_connection_state_t state)
 {
     if (sppCallbacks)
-        sppCallbacks->connection_state_cb(addr, port, state);
+        sppCallbacks->connection_state_cb(addr, scn, port, state);
 }
 
-static void spp_svr_pty_open_callback(const bt_address addr, uint16_t port, char* name, int fd)
+static void spp_svr_pty_open_callback(const bt_address addr, uint16_t port, char* name)
 {
     if (sppCallbacks)
-        sppCallbacks->pty_open_cb(addr, port, name, fd);
+        sppCallbacks->pty_open_cb(addr, port, name);
 }
 
-static bt_result_code spp_if_server_start(void* handle, uint16_t port, uint16_t uuid16)
+static bt_result_code spp_if_server_start(void* handle, uint16_t scn, uint16_t uuid16)
 {
-    (void)handle;
-    return bts_spp_server_start(port, uuid16);
+    return bts_spp_server_start((spp_handle_t*)handle, scn, uuid16);
 }
 
-static bt_result_code spp_if_server_stop(void* handle, uint16_t port)
+static bt_result_code spp_if_server_stop(void* handle, uint16_t scn)
 {
-    (void)handle;
-    return bts_spp_server_stop(port);
+    return bts_spp_server_stop((spp_handle_t*)handle, scn);
 }
 
-static bt_result_code spp_if_client_connect(void* handle, bt_address addr, uint16_t port, uint16_t uuid16)
+static bt_result_code spp_if_client_connect(void* handle, bt_address addr, int16_t scn, uint16_t uuid16, uint16_t *port)
 {
-    (void)handle;
-    return bts_spp_client_connect(addr, port, uuid16);
+    return bts_spp_client_connect((spp_handle_t*)handle, addr, scn, uuid16, port);
 }
 
 static bt_result_code spp_if_disconnect(void* handle, bt_address addr, uint16_t port)
 {
-    (void)handle;
-    return bts_spp_disconnect(addr, port);
+    return bts_spp_disconnect((spp_handle_t*)handle, addr, port);
 }
 
-static void spp_if_set_callbacks(void* handle, spp_callbacks_t* callbacks)
+static void spp_if_set_callbacks(void** handle, spp_callbacks_t* callbacks)
 {
-    (void)handle;
+    spp_handle_t* spp_handle;
+
+    if (!handle || *handle)
+        return;
+
+    spp_handle = bts_spp_register_app(0, callbacks);
     sppCallbacks = callbacks;
+    *handle = (void *)spp_handle;
+}
+
+static void spp_if_reset_callbacks(void** handle)
+{
+    if (!handle)
+        return;
+
+    bts_spp_unregister_app((spp_handle_t*)*handle);
+    sppCallbacks = NULL;
+    *handle = NULL;
 }
 
 static spp_service_callbacks_t spp_service_cbs = {
@@ -100,6 +111,7 @@ static spp_interface_t sppInterface = {
     spp_if_client_connect,
     spp_if_disconnect,
     spp_if_set_callbacks,
+    spp_if_reset_callbacks
 };
 
 bt_result_code spp_service_start(void)
