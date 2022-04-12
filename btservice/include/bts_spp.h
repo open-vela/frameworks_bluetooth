@@ -36,21 +36,16 @@
 #include "btm_manager.h"
 #include "btm_spp.h"
 
-//typedef void (*spp_svr_connection_state_callback)(const bt_address addr, uint16_t port, spp_connection_state_t state);
-//typedef void (*spp_svr_pty_open_callback)(const bt_address addr, uint16_t port, char *name, int fd);
-//
-//typedef struct {
-//    size_t size;
-//    spp_svr_pty_open_callback pty_open_cb;
-//    spp_svr_connection_state_callback connection_state_cb;
-//} spp_service_callbacks_t;
+typedef struct spp_handle spp_handle_t;
 typedef spp_callbacks_t spp_service_callbacks_t;
 
 bt_result_code bts_spp_init(spp_callbacks_t* callbacks);
-bt_result_code bts_spp_server_start(uint16_t port, uint16_t uuid);
-bt_result_code bts_spp_server_stop(uint16_t port);
-bt_result_code bts_spp_client_connect(bt_address addr, uint16_t port, uint16_t uuid);
-bt_result_code bts_spp_disconnect(bt_address addr, uint16_t port);
+spp_handle_t*  bts_spp_register_app(int app_id, spp_callbacks_t *callbacks);
+bt_result_code bts_spp_server_start(spp_handle_t *handle, uint16_t scn, uint16_t uuid);
+bt_result_code bts_spp_server_stop(spp_handle_t *handle, uint16_t scn);
+bt_result_code bts_spp_client_connect(spp_handle_t *handle, bt_address addr, int16_t scn, uint16_t uuid, uint16_t *port);
+bt_result_code bts_spp_disconnect(spp_handle_t *handle, bt_address addr, uint16_t port);
+void bts_spp_unregister_app(spp_handle_t *handle);
 void bts_spp_cleanup(void);
 
 extern bt_result_code spp_service_start(void);

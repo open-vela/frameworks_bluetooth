@@ -1,9 +1,3 @@
-/**@file  btm_spp.h
-* @brief       bluetooth adapter for SPP service.
-* @details   including get all SPP profile interface
-* @date        2021-11-10
-* @version     V1.0
-*/
 /****************************************************************************
  *
  *   Copyright (C) 2021 Xiaomi InC. All rights reserved.
@@ -36,44 +30,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __BTM_SPP_H__
-#define __BTM_SPP_H__
+#ifndef __OPEN_PTY_H__
+#define __OPEN_PTY_H__
 
-#include "btm_manager.h"
-#define UNKNOWN_SERVER_CHANNEL_NUM -1
-#define BT_UUID_SERVCLASS_SERIAL_PORT 0x1101 /* Serial Port Profile (SPP) */
-
-typedef enum {
-    SPP_CONNECTION_STATE_DISCONNECTED,
-    SPP_CONNECTION_STATE_CONNECTING,
-    SPP_CONNECTION_STATE_CONNECTED,
-    SPP_CONNECTION_STATE_DISCONNECTING
-} spp_connection_state_t;
-
-typedef enum {
-    SPP_PTY_MODE_NORMAL,
-    SPP_PTY_MODE_RAW
-} spp_pty_mode_t;
-
-typedef void (*spp_connection_state_callback)(const bt_address addr, uint16_t scn, uint16_t port, spp_connection_state_t state);
-typedef void (*spp_pty_open_callback)(const bt_address addr, uint16_t port, char* name);
-
-typedef struct {
-    size_t size;
-    spp_pty_open_callback pty_open_cb;
-    spp_connection_state_callback connection_state_cb;
-} spp_callbacks_t;
-
-typedef struct {
-    size_t size;
-    bt_result_code (*server_start)(void* handle, uint16_t scn, uint16_t uuid16);
-    bt_result_code (*server_stop)(void* handle, uint16_t scn);
-    bt_result_code (*client_connect)(void* handle, bt_address addr, int16_t scn, uint16_t uuid16, uint16_t *port);
-    bt_result_code (*disconnect)(void* handle, bt_address addr, uint16_t port);
-    void (*set_callbacks)(void** handle, spp_callbacks_t* callbacks);
-    void (*reset_callbacks)(void** handle);
-} spp_interface_t;
-
-spp_interface_t* get_spp_interface(void);
+int open_pty(int *master, char *name);
 
 #endif

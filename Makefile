@@ -68,6 +68,7 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_SPP),y)
 	CSRCS +=udrv/uv/euv_pty.c
 	CSRCS +=btmanager/btm_spp.c
+	CSRCS +=btservice/spp/openpty.c
 	CSRCS +=btservice/spp/bts_spp.c
 	CSRCS +=btservice/spp/bts_spp_service.c
 endif
