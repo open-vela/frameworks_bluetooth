@@ -47,29 +47,29 @@ static spp_interface_t* get_service(void)
     return (spp_interface_t*)get_bluetooth_service_interface()->get_profile_interface(BT_PROFILE_SPP);
 }
 
-static bt_result_code spp_server_start(void* handle, uint16_t port, uint16_t uuid16)
+static bt_result_code spp_server_start(void* handle, uint16_t scn, uint16_t uuid16)
 {
     spp_interface_t* service = get_service();
     if (!service)
         return BT_RESULT_FAILED;
-    return service->server_start(handle, port, uuid16);
+    return service->server_start(handle, scn, uuid16);
 }
 
-static bt_result_code spp_server_stop(void* handle, uint16_t port)
+static bt_result_code spp_server_stop(void* handle, uint16_t scn)
 {
     spp_interface_t* service = get_service();
     if (!service)
         return BT_RESULT_FAILED;
-    return service->server_stop(handle, port);
+    return service->server_stop(handle, scn);
 }
 
-static bt_result_code spp_client_connect(void* handle, bt_address addr, uint16_t port, uint16_t uuid16)
+static bt_result_code spp_client_connect(void* handle, bt_address addr, int16_t scn, uint16_t uuid16, uint16_t *port)
 {
     spp_interface_t* service = get_service();
     if (!service)
         return BT_RESULT_FAILED;
     BT_LOGD("PERFORMANCE-SPP-BTM-CONNECT_START");
-    return service->client_connect(handle, addr, port, uuid16);
+    return service->client_connect(handle, addr, scn, uuid16, port);
 }
 
 static bt_result_code spp_disconnect(void* handle, bt_address addr, uint16_t port)
@@ -80,12 +80,20 @@ static bt_result_code spp_disconnect(void* handle, bt_address addr, uint16_t por
     return service->disconnect(handle, addr, port);
 }
 
-static void spp_set_callbacks(void* handle, spp_callbacks_t* callbacks)
+static void spp_set_callbacks(void** handle, spp_callbacks_t* callbacks)
 {
     spp_interface_t* service = get_service();
     if (!service)
         return;
     service->set_callbacks(handle, callbacks);
+}
+
+static void spp_reset_callbacks(void** handle)
+{
+    spp_interface_t* service = get_service();
+    if (!service)
+        return;
+    service->reset_callbacks(handle);
 }
 
 static spp_interface_t sppInterface = {
@@ -95,6 +103,7 @@ static spp_interface_t sppInterface = {
     spp_client_connect,
     spp_disconnect,
     spp_set_callbacks,
+    spp_reset_callbacks
 };
 
 spp_interface_t* get_spp_interface(void)
