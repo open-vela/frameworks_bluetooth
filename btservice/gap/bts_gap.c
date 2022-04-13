@@ -249,21 +249,10 @@ static void process_loop_in_gap(void* data, size_t data_size)
     }
     case GAP_ACL_STATE_CHANGED: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->connection_state_changed_cb)) {
-            bt_device_t new_device = {0};
+            bt_device_t new_device = { 0 };
 
-            bt_connection_state state = STATE_DISCONNECTED;
             memcpy(new_device.addr, gap_msg->event_data.data.acl_state_params.remote_addr, BT_ADDR_LENGTH);
-            switch (gap_msg->event_data.data.acl_state_params.state) {
-            case BT_ACL_STATE_CONNECTED:
-                state = STATE_CONNECTED;
-                break;
-            case BT_ACL_STATE_DISCONNECTED:
-                state = STATE_DISCONNECTED;
-                break;
-            default:
-                return;
-            }
-            g_bts_gap_callbacks->connection_state_changed_cb(&new_device, state);
+            g_bts_gap_callbacks->connection_state_changed_cb(&new_device, gap_msg->event_data.data.acl_state_params.state);
         }
         break;
     }
