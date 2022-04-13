@@ -298,15 +298,14 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
 
 void bts_service_cleanup(void)
 {
+    gap_bt_config_cleanup();
 }
 
 void stack_state_change(bt_service_state state)
 {
     service_state = state;
     if (BTM_STATE_ON == state) {
-        gap_bluetooth_device_init(bluetooth_upper_callbacks->adapter_state_changed_cb);
-        gap_bluetooth_bond_init();
-        gap_ble_whitelist_load();
+        gap_bt_config_init(bluetooth_upper_callbacks->adapter_state_changed_cb);
     } else {
         bluetooth_upper_callbacks->adapter_state_changed_cb(state);
     }
