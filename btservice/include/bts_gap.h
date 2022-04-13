@@ -129,15 +129,14 @@ bt_result_code bts_set_inquiry_scan_parameters(bt_scan_type scan_type, uint16_t 
 
 bt_result_code bts_reply_link_request(BD_ADDR remote_addr, bool accept);
 
-void gap_bt_bond_store(void);
-void gap_bluetooth_bond_init(void);
-void gap_ble_bond_store(ble_keys_t* key, uint8_t count);
-bt_result_code gap_bluetooth_device_init(bts_service_adapter_state_changed_callback cb);
+void gap_bt_config_init(bts_service_adapter_state_changed_callback cb);
 bt_result_code gap_bt_update_name(char* name, uint8_t size);
 bt_result_code gap_bt_update_io_capability(bt_io_capability io_capability);
 bt_result_code gap_bt_update_device_class(uint32_t class_of_device);
 bt_result_code gap_bt_update_scan_mode(bt_scan_mode scan_mode, bool bondable);
+void gap_bt_bond_store(void);
+void gap_ble_bond_store(ble_keys_t* key, uint8_t count);
 bt_result_code gap_ble_whitelist_store_update(bool added, bt_address addr);
-bt_result_code gap_ble_whitelist_load(void);
+void gap_bt_config_cleanup(void);
 
 #endif
