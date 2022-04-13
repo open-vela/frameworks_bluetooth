@@ -103,13 +103,14 @@ static void a2dp_sink_init(void)
         BT_LOGE("%s failed", __func__);
         return;
     }
+
     #if 0
     a2dp_sink.orb_fd = orb_advertise(ORB_ID(a2dp_state), NULL);
-    #endif
     if (a2dp_sink.orb_fd < 0) {
         BT_LOGE("a2dp_sink.orb_fd advertise failed");
         return;
     }
+    #endif
 
     bts_a2dp_audio_init(SVR_SINK);
 }
