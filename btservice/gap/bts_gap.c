@@ -330,11 +330,11 @@ static void process_loop_in_gap(void* data, size_t data_size)
         }
         break;
     }
-    default:
+    default: {
+        // BT_LOGD("%s, %d not handle", __func__, gap_msg->event);
         break;
     }
-
-    // }
+    }
 }
 
 static void handle_msg_received(bt_profile_id id, void* data, size_t size)
@@ -378,7 +378,6 @@ static void adapter_device_found_callback(remote_device_t* device)
 
 static void adapter_received_remote_name_callback(bt_address bd_addr, char* bt_name, uint8_t length)
 {
-    BT_LOGD("%s, bt_name:%s", __func__, bt_name);
     gap_msg_t* msg = gap_msg_new(GAP_REMOTE_NAME);
 
     msg->event_data.data.remote_name.bt_name = (char*)malloc(length + 1);
@@ -391,7 +390,6 @@ static void adapter_received_remote_name_callback(bt_address bd_addr, char* bt_n
 
 static void adapter_discovery_state_changed_callback(SERVICE_BT_DISCOVERY_STATE state)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_DISCOVERY_STATE_CHANGED);
     msg->event_data.data.discovery_state = state;
     gap_send_message(msg);
@@ -399,7 +397,6 @@ static void adapter_discovery_state_changed_callback(SERVICE_BT_DISCOVERY_STATE 
 
 static void adapter_pin_request_callback(SERVICE_PIN_REQUEST_DATA_S* request_data)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_PIN_CODE_REQUEST);
     memcpy(&msg->event_data.data.pin_request_data, request_data, sizeof(SERVICE_PIN_REQUEST_DATA_S));
     memcpy(msg->event_data.data.pin_request_data.bt_name, request_data->bt_name, sizeof(request_data->bt_name));
@@ -409,7 +406,6 @@ static void adapter_pin_request_callback(SERVICE_PIN_REQUEST_DATA_S* request_dat
 
 static void adapter_ssp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_data)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_SSP_REQUEST);
     memcpy(&msg->event_data.data.ssp_request_data, request_data, sizeof(SERVICE_SSP_REQUEST_DATA_S));
     memcpy(msg->event_data.data.ssp_request_data.bt_name, request_data->bt_name, sizeof(request_data->bt_name));
@@ -449,7 +445,7 @@ static char* bond_state_to_str(bt_bond_state state)
 
 static void adapter_bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_BOND_STATE state)
 {
-    BT_LOGD("%s, state:%s", __func__, bond_state_to_str(state));
+    bond_state_to_str(state);
     if ((SERVICE_BT_BOND_STATE_BONDED == state) || (SERVICE_BT_BOND_STATE_BLE_BONDED == state))
         BT_LOGD("%s: PERFORMANCE-GAP-BLUELET-BOND-END", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BOND_STATE_CHANGED);
@@ -469,28 +465,24 @@ static void adapter_acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S* acl_st
 
 static void adapter_ble_scan_result_callback(SERVICE_SCAN_RESULT_DATA_S* scan_result_data)
 {
-    // BT_LOGD("%s", __func__);
     const bts_le_scan_interface_t* scan_ift = get_bts_lescan_instance();
     BT_CBACK(scan_ift->callbacks, ble_scan_result, (scan_result_t*)scan_result_data);
 }
 
 static void adapter_ble_adv_started_callback(uint8_t adv_id)
 {
-    BT_LOGD("%s, adv_id:%d", __func__, adv_id);
     const bts_le_advertise_interface_t* adv_ift = get_bts_bleadv_instance();
     BT_CBACK(adv_ift->callbacks, ble_advtise_started_cb, adv_id);
 }
 
 static void adapter_ble_adv_stopped_callback(uint8_t adv_id)
 {
-    BT_LOGD("%s, adv_id:%d", __func__, adv_id);
     const bts_le_advertise_interface_t* adv_ift = get_bts_bleadv_instance();
     BT_CBACK(adv_ift->callbacks, ble_advtise_stopped_cb, adv_id);
 }
 
 static void adapter_bt_link_role_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_ROLE link_role)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_LINK_ROLE_CHANGED);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.link_role = link_role;
@@ -499,7 +491,6 @@ static void adapter_bt_link_role_changed_callback(BD_ADDR remote_addr, SERVICE_B
 
 static void adapter_scan_mode_changed_callback(SERVICE_BT_SCAN_MODE scan_mode)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_SCAN_MODE_CHANGED);
     msg->event_data.data.scan_mode = scan_mode;
     gap_send_message(msg);
@@ -508,7 +499,6 @@ static void adapter_scan_mode_changed_callback(SERVICE_BT_SCAN_MODE scan_mode)
 static void adapter_link_mode_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_MODE link_mode,
     uint16_t sniff_interval)
 {
-    //BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_LINK_MODE_CHANGED);
     msg->event_data.data.link_mode = link_mode;
     msg->event_data.valueint1 = sniff_interval;
@@ -517,7 +507,6 @@ static void adapter_link_mode_changed_callback(BD_ADDR remote_addr, SERVICE_BT_L
 
 static void adapter_link_connect_request_callback(BD_ADDR remote_addr)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_CONNECT_REQUEST);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     gap_send_message(msg);
@@ -525,7 +514,6 @@ static void adapter_link_connect_request_callback(BD_ADDR remote_addr)
 
 static void adapter_link_policy_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_POLICY link_policy)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_LINK_POLICY_CHANGED);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.link_policy = link_policy;
@@ -544,14 +532,12 @@ static void adapter_stack_state_changed_callback(SERVICE_BT_STACK_STATE stack_st
         return;
     }
     gap_msg_t* msg = gap_msg_new(GAP_STACK_STATE_CHANGED);
-    BT_LOGD("%s", __func__);
     msg->event_data.data.stack_state = state;
     gap_send_message(msg);
 }
 
 static void adapter_hci_event_callback(SERVICE_BT_HCI_EVENT_S* hci_event)
 {
-    //BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_HCI_EVENT);
     memcpy(&msg->event_data.data.hci_event, hci_event, sizeof(SERVICE_BT_HCI_EVENT_S));
     if (hci_event->length != 0) {
@@ -573,7 +559,6 @@ static void adapter_transport_write_packet_callback(uint8_t* hci_packet, uint32_
 
 static void adapter_update_br_link_key_callback(remote_device_t* bonded_device)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BR_LINK_KEY_CHANGED);
     memcpy(&msg->event_data.data.bonded_device, bonded_device, sizeof(remote_device_t));
     gap_send_message(msg);
@@ -590,7 +575,6 @@ static void adapter_delete_br_link_key_callback(bt_address remote_addr, SERVICE_
 
 static void adapter_pairing_request_callback(bt_address remote_addr, bool local_initiate, bool is_bondable)
 {
-    BT_LOGD("%s", __func__);
     //get total number of bonded devices
     int num = service_adapter_gap_get_bonded_devices(NULL, 0);
     if (num >= MAX_PAIR_DEVICE) {
@@ -608,7 +592,6 @@ static void adapter_pairing_request_callback(bt_address remote_addr, bool local_
 
 static void adapter_service_discovered_callback(BD_ADDR remote_addr, SERVICE_BR_SERVICE_S* services, uint16_t size)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_SERVICE_DISCOVERED);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.discovery_service.size = size;
@@ -623,7 +606,6 @@ static void adapter_service_discovered_callback(BD_ADDR remote_addr, SERVICE_BR_
 
 static void adapter_link_encryption_state_callback(BD_ADDR remote_addr, bool br_link, bool encryption_on)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_LINK_ENCRYPTION_STATE_CHANGED);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.link_encryption.br_link = br_link;
@@ -633,7 +615,6 @@ static void adapter_link_encryption_state_callback(BD_ADDR remote_addr, bool br_
 
 static void adapter_smp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_data)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_SMP_REQUEST);
     memcpy(&msg->event_data.data.ssp_request_data, request_data, sizeof(SERVICE_SSP_REQUEST_DATA_S));
     gap_send_message(msg);
@@ -641,7 +622,6 @@ static void adapter_smp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_dat
 
 static void adapter_update_ble_bonded_devices_callback(SERVICE_BLE_KEYS_S* bonded_device_list, uint8_t count_in)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_UPDATE_BLE_BONDED_DEVICES);
     if (count_in < 1) {
         BT_LOGD("count (%d) of bond devices", count_in);
@@ -694,7 +674,6 @@ static void adapter_ble_remove_resolving_list_callback(bt_address remote_addr, S
 
 static void adapter_ble_address_callback(bt_address ble_addr, SERVICE_BLE_ADDR_TYPE addr_type)
 {
-    BT_LOGD("%s, addr :%s", __func__, addr_str(ble_addr));
     gap_msg_t* msg = gap_msg_new(GAP_BLE_ADDRESS);
     memcpy(msg->event_data.bd_addr, ble_addr, BT_ADDR_LENGTH);
     msg->event_data.addr_type = addr_type;
@@ -704,7 +683,6 @@ static void adapter_ble_address_callback(bt_address ble_addr, SERVICE_BLE_ADDR_T
 static void adapter_ble_phy_update_callback(bt_address remote_addr, SERVICE_BLE_PHY_TYPE tx_phy,
     SERVICE_BLE_PHY_TYPE rx_phy, SERVICE_BT_STATUS status)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BLE_PHY_UPDATE);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.phy_update.tx_phy = tx_phy;
@@ -716,7 +694,6 @@ static void adapter_ble_phy_update_callback(bt_address remote_addr, SERVICE_BLE_
 static void adapter_ble_irk_callback(bt_common_key irk, bt_address ble_addr,
     SERVICE_BLE_ADDR_TYPE addr_type)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BLE_IRK);
     memcpy(msg->event_data.bd_addr, ble_addr, BT_ADDR_LENGTH);
     msg->event_data.addr_type = addr_type;
@@ -727,7 +704,6 @@ static void adapter_ble_irk_callback(bt_common_key irk, bt_address ble_addr,
 static void adapter_ble_packet_received_callback(bt_address remote_addr, uint16_t private_cid,
     uint8_t* packet, uint16_t packet_size)
 {
-    BT_LOGD("%s", __func__);
     gap_msg_t* msg = gap_msg_new(GAP_BLE_PACKET_RECEIVED);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.ble_packet_receive.packet = packet;
@@ -904,8 +880,6 @@ int bts_get_remote_services(bt_device_t* device, bt_uuid_t* service_list, uint8_
 
 bt_result_code bts_reply_pair_request(bt_device_t* device, int accept)
 {
-    BT_LOGD("%s", __func__);
-
     if (!device)
         return BT_RESULT_FAILED;
     service_adapter_gap_reply_pairing_request(device->addr, accept);
@@ -914,7 +888,6 @@ bt_result_code bts_reply_pair_request(bt_device_t* device, int accept)
 
 bt_result_code bts_ssp_reply(spp_reply_data_t* reply_data)
 {
-    BT_LOGD("%s", __func__);
     if (!reply_data)
         return BT_RESULT_FAILED;
     service_adapter_gap_ssp_reply((SERVICE_SSP_REPLY_DATA_S*)reply_data);

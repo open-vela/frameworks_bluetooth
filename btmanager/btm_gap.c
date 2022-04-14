@@ -36,7 +36,6 @@
 #define BT_GAP_INTERFACE(P_IF, MOTHOD, RET, ...)                 \
     do {                                                         \
         if ((P_IF) && (P_IF)->MOTHOD) {                          \
-            BT_LOGD("%s: GAP %s->%s", __func__, #P_IF, #MOTHOD); \
             RET = (P_IF)->MOTHOD(__VA_ARGS__);                   \
         } else {                                                 \
             BT_LOGE("%s GAP interface is NULL", __func__);       \
@@ -65,7 +64,6 @@ static void btm_remote_name_callback(void* gap_handle, bt_address bd_addr, char*
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->received_remote_name_callback_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->received_remote_name_callback_cb(gap_handle, bd_addr, bt_name, length);
 }
 
@@ -76,7 +74,6 @@ static void btm_discovery_state_changed_callback(void* gap_handle, bt_discovery_
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->discovery_state_changed_callback_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->discovery_state_changed_callback_cb(gap_handle, state);
 }
 
@@ -87,7 +84,6 @@ static void btm_ssp_request_callback(void* gap_handle, ssp_request_data_t* reque
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->ssp_request_callback_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->ssp_request_callback_cb(gap_handle, request_data);
 }
 
@@ -121,7 +117,6 @@ static void btm_connected_state_callback(void* gap_handle, bt_device_t* device, 
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->connection_state_callback_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->connection_state_callback_cb(gap_handle, device, state);
 }
 
@@ -132,7 +127,6 @@ static void btm_hci_event_callback(void* gap_handle, hci_event_t* hci_event)
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->hci_event_callback_cb))
         return;
-    //BT_LOGD("%s", __func__);
     context->gap_callbacks->hci_event_callback_cb(gap_handle, hci_event);
 }
 
@@ -143,7 +137,6 @@ static void btm_connection_state_changed_callback(void* gap_handle, bt_device_t*
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->connection_state_callback_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->connection_state_callback_cb(gap_handle, device, state);
 }
 
@@ -154,7 +147,6 @@ static void btm_local_name_callback(void* gap_handle, char* bt_name, uint8_t len
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->local_name_callback_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->local_name_callback_cb(gap_handle, bt_name, length);
 }
 
@@ -165,7 +157,6 @@ static void btm_local_device_class_callback(void* gap_handle, uint32_t device_cl
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->local_device_class_callback_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->local_device_class_callback_cb(gap_handle, device_class);
 }
 
@@ -176,7 +167,6 @@ static void btm_local_address_callback(void* gap_handle, bt_device_t* device)
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->local_address_callback_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->local_address_callback_cb(gap_handle, device);
 }
 
@@ -187,7 +177,6 @@ static void btm_smp_request_callback(void* gap_handle, ssp_request_data_t* reque
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->smp_requeset_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->smp_requeset_cb(gap_handle, request_data);
 }
 
@@ -198,7 +187,6 @@ static void btm_ble_phy_update_callback(void* gap_handle, bt_address remote_addr
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->ble_phy_update_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->ble_phy_update_cb(gap_handle, remote_addr, tx_phy, rx_phy, status);
 }
 
@@ -209,7 +197,6 @@ static void btm_ble_address_callback(void* gap_handle, bt_address bd_addr, ble_a
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->ble_address_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->ble_address_cb(gap_handle, bd_addr, addr_type);
 }
 
@@ -220,7 +207,6 @@ static void btm_pairing_request_callback(void* gap_handle, bt_address remote_add
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->pairing_request_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->pairing_request_cb(gap_handle, remote_addr, local_initiate, is_bondable);
 }
 
@@ -231,7 +217,6 @@ void btm_ble_irk_callback(void* gap_handle, bt_common_key irk, bt_address ble_ad
     gap_context_t* context = (gap_context_t*)gap_handle;
     if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->ble_irk_cb))
         return;
-    BT_LOGD("%s", __func__);
     context->gap_callbacks->ble_irk_cb(gap_handle, irk, ble_addr, addr_type);
 }
 

@@ -207,8 +207,6 @@ static bool is_profile(const char* p1, const char* p2)
 
 static const void* if_get_profile_interface(const char* profile_id)
 {
-    BT_LOGD("%s: id = %s", __func__, profile_id);
-
     /* sanity check */
 #if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
     if (is_profile(profile_id, BT_PROFILE_GATT))
