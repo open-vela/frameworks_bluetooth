@@ -173,7 +173,6 @@ uv_loop_t* get_service_loop(void)
 
 static void stack_schedule_loop(void* data)
 {
-    BT_LOGD("%s", __func__);
     uv_sem_post(&wait_stack);
     ScheduleLoop();
 }
@@ -234,7 +233,6 @@ static void bts_handle_uv_msg(uv_async_t* handle)
 
 static void service_schedule_loop(void* data)
 {
-    BT_LOGD("%s", __func__);
     uv_async_init(bt_dispatch_loop, &async_handle[THREAD_ID_SERVICE], bts_handle_uv_msg);
     uv_sem_post(&wait_service);
     uv_run(bt_dispatch_loop, UV_RUN_DEFAULT);

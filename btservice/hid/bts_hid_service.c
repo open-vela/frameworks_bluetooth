@@ -49,7 +49,6 @@ static hid_interface_t hid_if = {
 
 static void hid_init(void)
 {
-    BT_LOGD("%s", __func__);
     if (hid_if.hidd) {
         hid_if.hidd->init();
     }
@@ -57,7 +56,6 @@ static void hid_init(void)
 
 static void hid_cleanup(void)
 {
-    BT_LOGD("%s", __func__);
     if (hid_if.hidd) {
         hid_if.hidd->clean_up();
     }
