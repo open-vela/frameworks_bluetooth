@@ -372,7 +372,6 @@ static void ble_bond_store_callback(int status, const char* key, uv_buf_t value,
 
 void gap_ble_bond_store(ble_keys_t* key, uint8_t count)
 {
-    BT_LOGD("%s", __func__);
     bt_storage_t* bt_storage = gap_ble_get_bonded_devices(key, count);
     if (!bt_storage) {
         BT_LOGE("fail, bt_storage  nullptr");

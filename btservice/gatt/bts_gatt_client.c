@@ -167,7 +167,6 @@ static void on_client_connection_state_changed(bt_address remote_addr, profile_c
 static void on_client_service_discovered(bt_address remote_addr, gatt_element_t* element,
     uint16_t size)
 {
-    BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
@@ -199,7 +198,6 @@ static void on_client_service_discovered(bt_address remote_addr, gatt_element_t*
 static void on_client_read_result(bt_address remote_addr, gatt_element_t* element, uint8_t* value,
     uint16_t size, gatt_status status)
 {
-    BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
@@ -227,7 +225,6 @@ static void on_client_read_result(bt_address remote_addr, gatt_element_t* elemen
 static void on_client_write_result(bt_address remote_addr, gatt_element_t* element,
     gatt_status status)
 {
-    BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
@@ -252,7 +249,6 @@ static void on_client_write_result(bt_address remote_addr, gatt_element_t* eleme
 static void on_client_nofity_request(bt_address remote_addr, gatt_element_t* element,
     uint8_t* value, uint16_t size)
 {
-    BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
@@ -286,7 +282,6 @@ static void on_client_nofity_request(bt_address remote_addr, gatt_element_t* ele
 static void on_client_rssi_read(bt_address remote_addr, int32_t rssi,
     gatt_status status)
 {
-    BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
@@ -301,7 +296,6 @@ static void on_client_rssi_read(bt_address remote_addr, int32_t rssi,
 
 static void on_client_phy_read(bt_address remote_addr, ble_phy_type tx, ble_phy_type rx)
 {
-    BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
@@ -316,7 +310,6 @@ static void on_client_phy_read(bt_address remote_addr, ble_phy_type tx, ble_phy_
 
 static void on_client_phy_update(bt_address remote_addr, ble_phy_type tx, ble_phy_type rx, gatt_status status)
 {
-    BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
@@ -331,7 +324,6 @@ static void on_client_phy_update(bt_address remote_addr, ble_phy_type tx, ble_ph
 
 static void on_client_mtu_changed(bt_address remote_addr, uint32_t mtu, gatt_status status)
 {
-    BT_LOGD("%s", __func__);
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
@@ -543,7 +535,6 @@ static void handle_msg_received(bt_profile_id id, void* value, size_t size)
         BT_LOGE("error, invalid priofile id:%d", id);
         return;
     }
-    // BT_LOGD("%s", __func__);
     bts_gattc_msg_t* msg = (bts_gattc_msg_t*)(value);
     if (!msg) {
         BT_LOGE("%s fail, msg null", __func__);
