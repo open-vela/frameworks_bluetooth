@@ -69,6 +69,9 @@ static uv_loop_t* bt_dispatch_loop;
 static uv_mutex_t msg_mutex;
 static uv_thread_t thread_handle[2];
 static uv_async_t async_handle[1];
+static uv_sem_t wait_stack;
+static uv_sem_t wait_service;
+
 static bts_profile_callbacks profiles_callbacks[BT_PROFILE_MAX_ID];
 static struct list_node bts_msg_list = LIST_INITIAL_VALUE(bts_msg_list);
 
@@ -171,6 +174,7 @@ uv_loop_t* get_service_loop(void)
 static void stack_schedule_loop(void* data)
 {
     BT_LOGD("%s", __func__);
+    uv_sem_post(&wait_stack);
     ScheduleLoop();
 }
 
@@ -232,6 +236,7 @@ static void service_schedule_loop(void* data)
 {
     BT_LOGD("%s", __func__);
     uv_async_init(bt_dispatch_loop, &async_handle[THREAD_ID_SERVICE], bts_handle_uv_msg);
+    uv_sem_post(&wait_service);
     uv_run(bt_dispatch_loop, UV_RUN_DEFAULT);
 }
 
@@ -269,6 +274,14 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
         BT_LOGE("fail, uv_mutex_init err:%d", rc);
         return BT_RESULT_FAILED;
     }
+    int ret = uv_sem_init(&wait_stack, 0);
+    if (ret < 0)
+        return BT_RESULT_FAILED;
+
+    ret = uv_sem_init(&wait_service, 0);
+    if (ret < 0)
+        return BT_RESULT_FAILED;
+
     if (service_state != BTM_STATE_OFF)
         return BT_RESULT_FAILED;
     utils_log_init();
@@ -277,7 +290,7 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     bt_dispatch_loop = uv_loop_new();
     uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE, BTSTACK_THREAD_STACK_SIZE };
 
-    int ret = uv_thread_create_ex(&thread_handle[THREAD_ID_STACK], &options, stack_schedule_loop, NULL);
+    ret = uv_thread_create_ex(&thread_handle[THREAD_ID_STACK], &options, stack_schedule_loop, NULL);
     if (ret != 0) {
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
         return BT_RESULT_FAILED;
@@ -292,6 +305,10 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     }
     pthread_setname_np(thread_handle[THREAD_ID_SERVICE], "btservice_thread");
     service_state = BTM_STATE_TURNING_ON;
+    uv_sem_wait(&wait_service);
+    uv_sem_wait(&wait_stack);
+    uv_sem_destroy(&wait_service);
+    uv_sem_destroy(&wait_stack);
 
     return BT_RESULT_SUCCESS;
 }
