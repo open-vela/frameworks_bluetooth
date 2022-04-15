@@ -370,6 +370,8 @@ typedef enum {
     BT_ACL_STATE_LE_BONDED_FULL, /* LE bonded devices limit reached */
 } bt_acl_state;
 
+typedef bt_acl_state bt_connection_state;
+
 typedef enum {
     BT_SCAN_MODE_NONE,
     BT_SCAN_MODE_CONNECTABLE,
@@ -422,14 +424,6 @@ typedef enum {
     BTM_STATE_TURNING_ON,
     BTM_STATE_ON
 } btm_bt_state;
-
-/** Bluetooth connection state*/
-typedef enum {
-    STATE_DISCONNECTED = 0,
-    STATE_DISCONNECTING,
-    STATE_CONNECTING,
-    STATE_CONNECTED,
-} bt_connection_state;
 
 /** State of bluetooth manager*/
 typedef enum {
