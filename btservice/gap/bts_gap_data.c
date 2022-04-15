@@ -41,7 +41,7 @@
 
 #define BT_DEFAULT_DEVICE_CLASS (BT_COD_SERVICE_CAPTURING | BT_COD_SERVICE_AUDIO | BT_COD_WERABLE_WATCH)
 #define BT_DEFAULT_IO_CAPABILITY (SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT)
-#define GAP_CONFIG_INIT_TIMEOUT 1000
+#define GAP_CONFIG_INIT_TIMEOUT 1500
 #ifndef BT_DEVICE_NAME_MAX_LEN
 #define BT_DEVICE_NAME_MAX_LEN 248
 #endif
@@ -222,6 +222,10 @@ static void gap_update_device(bt_device_info_t* info)
 
 static void gap_config_load_default_device(void)
 {
+    if (state_on) {
+        BT_LOGW("discard default, and load app config");
+        return;
+    }
     bt_device_info_t info;
     memset(&info, 0, sizeof(bt_device_info_t));
     info.cod = BT_DEFAULT_DEVICE_CLASS;
