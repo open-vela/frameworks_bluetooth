@@ -484,12 +484,13 @@ static void euv_read_complete(euv_pty_t* handle, const uint8_t* buf, ssize_t siz
         goto unlock;
 
     if (size <= 0) {
-        if (buf)
+        if (buf && (device->cache_buf.length == 0))
             free((void *)buf);
+
         if (size < 0)
             spp_pty_device_close(device);
 
-        goto unlock;;
+        goto unlock;
     }
 
     spp_dumpbuffer("master read:", buf, size);
@@ -531,7 +532,6 @@ static void spp_cache_timeout(char* data)
 
 static void spp_cache_fragement(spp_pty_device_t* device, uint8_t* buffer, uint16_t length)
 {
-
     device->cache_buf.buffer_head = buffer;
     device->cache_buf.length = length;
     device->timer = start_timer(CACHE_SEND_TIMEOUT, 0, spp_cache_timeout, device);
