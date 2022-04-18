@@ -544,6 +544,9 @@ bt_result_code gap_bt_config_init(bts_service_adapter_state_changed_callback cb)
 
 #ifdef BT_CONFIG_DEVICE_INFO_ENABLE
     gap_config_load_device_info();
+#else
+    state_on = true;
+    adapter_state_changed_cb(BTM_STATE_ON);
 #endif
     gap_config_load_btbond_devices();
     gap_config_load_blebond_devices();
