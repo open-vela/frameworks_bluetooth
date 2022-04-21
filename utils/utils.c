@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <time.h>
 #include "btm_manager.h"
 #include "utils.h"
 
@@ -112,4 +112,13 @@ bool uuid_is_empty(bt_uuid_t uuid)
         }
     }
     return true;
+}
+
+uint64_t get_os_timestamp_us(void)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_BOOTTIME, &ts);
+
+    return (uint64_t)(((uint64_t)ts.tv_sec * 1000000L) + ((uint64_t)ts.tv_nsec / 1000));
 }

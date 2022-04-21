@@ -37,7 +37,7 @@
 #include "bts_a2dp_control.h"
 #include "bts_a2dp_source.h"
 #include "bts_a2dp_source_audio.h"
-#include "bts_a2dp_common.h"
+#include "utils.h"
 
 #include "stack_adapter_a2dp_source.h"
 #include "stack_adapter_service_base.h"

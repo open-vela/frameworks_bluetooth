@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "bts_service.h"
-#include "bts_a2dp_common.h"
+#include "utils.h"
 #include "a2dp_codec_sbc.h"
 #include "bts_a2dp_source_audio.h"
 

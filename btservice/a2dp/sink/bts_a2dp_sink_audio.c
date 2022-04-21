@@ -41,7 +41,7 @@
 #include "bts_a2dp_control.h"
 #include "bts_a2dp_sink.h"
 #include "bts_a2dp_sink_audio.h"
-#include "bts_a2dp_common.h"
+#include "utils.h"
 
 #include "utils/utils.h"
 #define LOG_TAG "a2dp_snk_stream"
