@@ -30,47 +30,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#include <stdio.h>
 #include <stdlib.h>
-
-#include "btm_manager.h"
 #include "bts_service.h"
-#include "bts_a2dp_codec.h"
-#include "bts_a2dp_source_audio.h"
+#include "bts_a2dp_sink_audio.h"
 
-#define LOG_TAG "a2dp_codec"
+#define LOG_TAG "sink_aac"
 #include "log.h"
 
-a2dp_codec_config_t g_current_config;
-
-static void a2dp_codec_config_set(a2dp_codec_config_t* config, uint16_t mtu)
+static a2dp_sink_packet_t* sink_aac_repackage(uint8_t *data, uint16_t length)
 {
-    if (config->codec_type == BTS_A2DP_TYPE_SBC) {
-        a2dp_source_sbc_update_config(mtu, &config->codec_param.sbc, config->specific_info);
-        config->bit_rate = config->codec_param.sbc.u32BitRate;
-#ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
-    } else if (config->codec_type == BTS_A2DP_TYPE_MPEG2_4_AAC) {
-        a2dp_source_aac_update_config(mtu, &config->codec_param.aac, config->specific_info);
-        config->bit_rate = config->codec_param.aac.u32BitRate;
-#endif
-    } else {
-        BT_LOGE("%s Unkonw Codec", __func__);
+    a2dp_sink_packet_t* packet = NULL;
+    uint8_t LOAS_HDRSIZE = 3;
+
+    /* pack aac loas header */
+    packet = malloc(sizeof(a2dp_sink_packet_t) + length + LOAS_HDRSIZE);
+    if (packet) {
+        packet->data[0] = 0x56;
+        packet->data[1] = 0xE0 | ((length >> 8) & 0x1f);
+        packet->data[2] = length & 0xff;
+        packet->length = length + LOAS_HDRSIZE;
+        memcpy(packet->data + LOAS_HDRSIZE, data, length);
     }
 
-    memcpy(&g_current_config, config, sizeof(g_current_config));
+    return packet;
 }
 
-void bts_a2dp_codec_set_config(a2dp_codec_config_t* config)
+static void sink_aac_packet_send_done(a2dp_sink_packet_t* packet)
 {
-    a2dp_codec_config_set(config, 0);
+    free(packet);
 }
 
-void bts_a2dp_codec_update_config(a2dp_codec_config_t* config, uint16_t mtu)
-{
-    a2dp_codec_config_set(config, mtu);
-}
+static const a2dp_sink_stream_interface_t a2dp_sink_stream_aac = {
+    sink_aac_repackage,
+    sink_aac_packet_send_done,
+};
 
-a2dp_codec_config_t* bts_a2dp_codec_get_config(void)
+const a2dp_sink_stream_interface_t* get_a2dp_sink_aac_stream_interface(void)
 {
-    return &g_current_config;
+    return &a2dp_sink_stream_aac;
 }

@@ -200,7 +200,7 @@ static void a2dp_source_aac_stream_init(void* param, uint32_t mtu,
     if (a2dp_aac_encoder_interval_ms < A2DP_AAC_ENCODER_INTERVAL_MS)
         a2dp_aac_encoder_interval_ms = A2DP_AAC_ENCODER_INTERVAL_MS;
 
-    BT_LOGD("%s, a2dp_aac_encoder_interval_ms:%d", __func__, a2dp_aac_encoder_interval_ms);
+    BT_LOGD("%s, a2dp_aac_encoder_interval_ms:%" PRIu32, __func__, a2dp_aac_encoder_interval_ms);
 }
 
 static void a2dp_source_aac_stream_reset(void)
