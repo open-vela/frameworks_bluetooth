@@ -60,5 +60,6 @@ void bts_a2dp_sink_setup_codec(bt_address bd_addr);
 void bts_a2dp_sink_audio_init(void);
 void bts_a2dp_sink_audio_cleanup(void);
 extern const a2dp_sink_stream_interface_t *get_a2dp_sink_sbc_stream_interface(void);
+extern const a2dp_sink_stream_interface_t* get_a2dp_sink_aac_stream_interface(void);
 
 #endif
