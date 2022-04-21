@@ -204,4 +204,5 @@ int str2hex(const char* str, char* hex, int len);
 char* addr_str(bt_address addr);
 char * uuid_str(bt_uuid_t uuid);
 bool uuid_is_empty(bt_uuid_t uuid);
+uint64_t get_os_timestamp_us(void);
 #endif
