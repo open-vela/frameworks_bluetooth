@@ -78,6 +78,10 @@ static const a2dp_sink_stream_interface_t *get_stream_interface(void)
     config = bts_a2dp_codec_get_config();
     if (config->codec_type == BTS_A2DP_TYPE_SBC)
         return get_a2dp_sink_sbc_stream_interface();
+#ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
+    else if (config->codec_type == BTS_A2DP_TYPE_MPEG2_4_AAC)
+        return get_a2dp_sink_aac_stream_interface();
+#endif
 
     abort();
     return NULL;

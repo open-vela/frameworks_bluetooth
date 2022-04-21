@@ -32,7 +32,9 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP),y)
 	CSRCS += btservice/a2dp/bts_a2dp_codec.c
 	CSRCS += btservice/a2dp/bts_a2dp_device.c
 	CSRCS += btservice/a2dp/codec/a2dp_codec_sbc.c
+ifeq ($(CONFIG_BLUETOOTH_A2DP_AAC_CODEC),y)
 	CSRCS += btservice/a2dp/codec/a2dp_codec_aac.c
+endif
 	CSRCS += udrv/uv/a2dp_ipc.c
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK),y)
@@ -41,6 +43,9 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK),y)
 	CSRCS += btservice/a2dp/sink/bts_a2dp_sink_audio.c
 	CSRCS += btservice/a2dp/sink/bts_a2dp_sink_service.c
 	CSRCS += btservice/a2dp/sink/bts_a2dp_sink_sbc_stream.c
+ifeq ($(CONFIG_BLUETOOTH_A2DP_AAC_CODEC),y)
+	CSRCS += btservice/a2dp/sink/bts_a2dp_sink_aac_stream.c
+endif
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SRC),y)
@@ -49,7 +54,9 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP_SRC),y)
 	CSRCS += btservice/a2dp/source/bts_a2dp_source_service.c
 	CSRCS += btservice/a2dp/source/bts_a2dp_source_audio.c
 	CSRCS += btservice/a2dp/source/bts_a2dp_source_sbc_stream.c
+ifeq ($(CONFIG_BLUETOOTH_A2DP_AAC_CODEC),y)
 	CSRCS += btservice/a2dp/source/bts_a2dp_source_aac_stream.c
+endif
 endif
 endif
 
