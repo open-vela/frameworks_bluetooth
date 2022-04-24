@@ -115,6 +115,12 @@ config BT_FRAMEWORK_LOG_LEVEL
     help
         Set bt framework log level <0~7>
 
+config BLUETOOTH_ORB_QUEUE_SIZE
+    int "Bt uorb queue size"
+    default 5
+    help
+        Set Bt uorb queue size
+
 if BLUETOOTH_A2DP
 config BLUETOOTH_A2DP_MAX_CONNECTIONS
 	int "Maximum A2dp connections"
@@ -134,7 +140,7 @@ config BLUETOOTH_A2DP_IPC_RPSMG_NAME
 	help
 		Bluetooth A2dp audio IPC rpmsg name
 
-endif #BLUETOOTH_A2DP_SRC
+endif #BLUETOOTH_A2DP
 
 if BLUETOOTH_SPP
 config BLUETOOTH_SPP_INSTANCE
