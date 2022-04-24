@@ -557,7 +557,8 @@ bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks
         return BT_RESULT_FAILED;
     }
 #ifndef CONFIG_ARCH_SIM
-    g_hfp_service.orb_fd = orb_advertise(ORB_ID(hfp_state), NULL);
+    g_hfp_service.orb_fd = orb_advertise_queue(ORB_ID(hfp_state),
+                                               NULL, CONFIG_BLUETOOTH_ORB_QUEUE_SIZE);
     if (g_hfp_service.orb_fd < 0) {
         BT_LOGE("g_hfp_service.orb_fd advertise failed");
         return BT_RESULT_FAILED;

@@ -264,7 +264,8 @@ static void a2dp_source_init(void)
         return;
     }
 #ifndef CONFIG_ARCH_SIM
-    a2dp_source.orb_fd = orb_advertise(ORB_ID(a2dp_state), NULL);
+    a2dp_source.orb_fd = orb_advertise_queue(ORB_ID(a2dp_state),
+                                             NULL, CONFIG_BLUETOOTH_ORB_QUEUE_SIZE);
     if (a2dp_source.orb_fd < 0) {
         BT_LOGE("a2dp_source.orb_fd advertise failed");
         return;
