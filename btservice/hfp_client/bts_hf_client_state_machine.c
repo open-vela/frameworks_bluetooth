@@ -66,6 +66,7 @@ typedef struct _hf_state_machine {
     uint8_t                 spk_volume;
     uint8_t                 mic_volume;
     uint8_t                 codec;
+    uint8_t                 call_in_progress;
     struct list_node        pending_actions;
     hf_client_service_t*    service;
 } hf_state_machine_t;
@@ -614,6 +615,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     case STACK_EVENT_CALL: {
         hf_client_call_t call = data->valueint1;
 
+        hfsm->call_in_progress = call;
         HF_SERVICE_CBACK(service->callbacks, call_cb, hfsm->addr, call);
         break;
     }
@@ -777,6 +779,14 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         break;
     }
 
+    case ACCEPT_CALL:
+        if (!hfsm->call_in_progress) {
+            status = service_adapter_hfp_answer_call(hfsm->addr);
+            if (status != SERVICE_BT_STATUS_SUCCESS)
+                BT_LOGE("Answer call failed");
+        }
+        break;
+
     case REJECT_CALL:
         status = service_adapter_hfp_call_control(hfsm->addr, HFP_CALL_CONTROL_CHLD_0, 0);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
@@ -826,6 +836,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
     case STACK_EVENT_CALL: {
         hf_client_call_t call = data->valueint1;
 
+        hfsm->call_in_progress = call;
         HF_SERVICE_CBACK(service->callbacks, call_cb, hfsm->addr, call);
         break;
     }
@@ -841,6 +852,17 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         hf_client_callheld_t held = data->valueint1;
 
         HF_SERVICE_CBACK(service->callbacks, callheld_cb, hfsm->addr, held);
+        break;
+    }
+
+    case STACK_EVENT_CLIP: {
+        if (!hfsm->call_in_progress) {
+            char* number = data->string1;
+            char* name = data->string2;
+
+            BT_LOGD("CLIP:number :%s, name: %s", number, name == NULL ? "NULL" : name);
+            HF_SERVICE_CBACK(service->callbacks, clip_cb, hfsm->addr, number, name);
+        }
         break;
     }
 
@@ -877,6 +899,8 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
             //set audio focus, route audio
             notify_audio_state_changed(hfsm->service, hfsm->addr, state);
             notify_connection_state_changed(hfsm->service, hfsm->addr, state);
+            if (hfsm->call_in_progress)
+                hfsm->call_in_progress = 0;
             hsm_transition_to(sm, &disconnected_state);
             break;
         case HF_CLIENT_CONNECTION_STATE_DISCONNECTING:
@@ -894,6 +918,8 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         switch (state) {
         case HF_CLIENT_AUDIO_STATE_DISCONNECTED:
             //set audio focus, route audio
+            if (hfsm->call_in_progress)
+                hfsm->call_in_progress = 0;
             notify_audio_state_changed(hfsm->service, hfsm->addr, state);
             hsm_transition_to(sm, &connected_state);
             break;
@@ -939,6 +965,7 @@ hf_state_machine_t* hf_client_state_machine_new(hf_client_service_t* context,
     if (!hfsm)
         return NULL;
 
+    hfsm->call_in_progress = 0;
     hfsm->connect_timer = NULL;
     hfsm->recognition_active = false;
     hfsm->service = context;
