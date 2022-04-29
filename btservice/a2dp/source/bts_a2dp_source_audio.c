@@ -68,7 +68,6 @@ typedef struct {
     struct circbuf_s stream_pool;
     uint8_t          read_congest;
     const a2dp_source_stream_interface_t* stream_interface;
-    //a2dp_stream_context_t stream_context;
 } a2dp_source_stream_t;
 
 a2dp_source_stream_t a2dp_src_stream;
