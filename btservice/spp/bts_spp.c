@@ -880,6 +880,9 @@ spp_handle_t* bts_spp_register_app(int app_id, spp_callbacks_t *callbacks)
 {
     spp_handle_t *handle = NULL;
 
+    if (!g_spp_handle.started)
+        return NULL;
+
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (g_spp_handle.registered == REGISTER_MAX)
         goto unlock;
@@ -1009,7 +1012,7 @@ unlock_exit:
 
 void bts_spp_unregister_app(spp_handle_t *handle)
 {
-    if (!handle)
+    if (!handle || !g_spp_handle.started)
         return;
 
     pthread_mutex_lock(&g_spp_handle.spp_lock);
@@ -1020,6 +1023,9 @@ void bts_spp_unregister_app(spp_handle_t *handle)
 
 void bts_spp_cleanup(void)
 {
+    if (!g_spp_handle.started)
+        return ;
+
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     spp_cleanup_all_device();
     spp_cleanup_all_server();
