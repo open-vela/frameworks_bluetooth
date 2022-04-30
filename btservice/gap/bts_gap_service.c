@@ -527,6 +527,14 @@ static bt_result_code bts_if_stop_service_discovery(void* gap_handle, bt_device_
     ret = bts_stop_service_discovery(device);
     return ret;
 }
+static bt_result_code bts_if_set_link_role(void* gap_handle, bt_device_t* device, bt_link_role role)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    if (!gap_is_handle_valid(gap_handle))
+        return ret;
+    ret = bts_set_link_role(device, role);
+    return ret;
+}
 #ifdef HCI_VSC_COMMAND
 /*VSC command*/
 static bt_result_code bts_if_send_hci_command(void* gap_handle, bt_hci_command_t* command, hci_command_complete_event event_type)
@@ -794,6 +802,7 @@ static btm_gap_interface_t gap_interface = {
     .bt_stop_discovery = bts_if_stop_discovery,
     .bt_start_service_discovery = bts_if_start_service_discovery,
     .bt_stop_service_discovery = bts_if_stop_service_discovery,
+    .bt_set_link_role = bts_if_set_link_role,
 #ifdef HCI_VSC_COMMAND
     .bt_send_hci_command = bts_if_send_hci_command,
 #endif

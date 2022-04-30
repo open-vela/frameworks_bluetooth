@@ -134,7 +134,7 @@ typedef void (*local_name_callback)(void* handle, char* bt_name, uint8_t length)
 
 typedef void (*local_address_callback)(void* handle, bt_device_t* device);
 
-/**  
+/**
  * @brief Get local device class.
  * @param[in] handle, gap handle, must be create before this funciton.
  * @return  init success or failed.
@@ -235,15 +235,15 @@ typedef struct {
     /**
  *@brief  Set local IO capability.
  * @param[in] handle - gap handle, must be create before this funciton.
- * @param[in] io_capability - local IO capability. 
+ * @param[in] io_capability - local IO capability.
  * @return   Bluetooth Error status code (0- Success).
  */
     bt_result_code (*bt_set_local_io_capability)(void* handle, bt_io_capability io_capability);
     /**
  *@brief  Set local name.
  * @param[in] handle - gap handle, must be create before this funciton.
- * @param[in] bt_name - local BT name, ended with 0. 
- * @param[in] len - length of bt_name.  
+ * @param[in] bt_name - local BT name, ended with 0.
+ * @param[in] len - length of bt_name.
  * @return   Bluetooth Error status code (0- Success).
  */
     bt_result_code (*bt_set_local_name)(void* handle, char* bt_name, uint8_t len);
@@ -317,7 +317,7 @@ typedef struct {
  *@brief  Set BT scan mode.
  * @param[in] handle - gap handle, must be create before this funciton.
  * @param[in]    scan_mode - BT scan mode (connectable, discoverable)
- * @param[in]    bondable - Bondable mode (0 - none bondable; 1 - bondable) 
+ * @param[in]    bondable - Bondable mode (0 - none bondable; 1 - bondable)
  * @return   Bluetooth Error status code (0- Success)
  */
     bt_result_code (*bt_set_scan_mode)(void* handle, bt_scan_mode scanMode, bool bondable);
@@ -334,6 +334,14 @@ typedef struct {
  * @return   Bluetooth Error status code (0- Success)
  */
     bt_result_code (*bt_stop_discovery)(void* handle);
+    /**
+ *@brief  Set BR/EDR link role.
+ * @param[in] handle - gap handle, must be create before this funciton.
+ * @param[in] device - reomte device info.
+ * @param[in] role - link role.
+ * @return   Bluetooth Error status code (0- Success)
+ */
+    bt_result_code (*bt_set_link_role)(void* handle, bt_device_t* device, bt_link_role role);
 
     /*VSC command*/
     /**
