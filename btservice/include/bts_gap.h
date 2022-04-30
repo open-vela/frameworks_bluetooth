@@ -95,7 +95,7 @@ bt_result_code bts_stop_discovery(void);
 
 bt_result_code bts_start_service_discovery(bt_device_t* device, bt_uuid_t uuid);
 bt_result_code bts_stop_service_discovery(bt_device_t* device);
-
+bt_result_code bts_set_link_role(bt_device_t* device, bt_link_role role);
 /*VSC command*/
 bt_result_code bts_send_hci_command(bt_hci_command_t* command, hci_command_complete_event event_type);
 

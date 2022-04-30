@@ -536,6 +536,15 @@ static bt_result_code btm_ble_stop_advertising(void* gap_handle, uint8_t adv_id)
     return ret;
 }
 
+static bt_result_code btm_set_link_role(void* gap_handle, bt_device_t* device, bt_link_role role)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    CHECK_PTR_RETURN(gap_handle, ret);
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_GAP_INTERFACE(context->service_interface, bt_set_link_role, ret, gap_handle, device, role);
+    return ret;
+}
+
 static bt_result_code btm_ble_set_static_identity(void* gap_handle, bt_device_t* device)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -767,6 +776,7 @@ static btm_gap_interface_t gap_interface = {
     .bt_stop_discovery = btm_stop_discovery,
     .bt_start_service_discovery = btm_start_service_discovery,
     .bt_stop_service_discovery = btm_stop_service_discovery,
+    .bt_set_link_role = btm_set_link_role,
 #ifdef HCI_VSC_COMMAND
     .bt_send_hci_command = btm_send_hci_command,
 #endif
