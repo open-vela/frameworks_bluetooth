@@ -788,7 +788,10 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         break;
 
     case REJECT_CALL:
-        status = service_adapter_hfp_call_control(hfsm->addr, HFP_CALL_CONTROL_CHLD_0, 0);
+        if (hfsm->call_in_progress)
+            status = service_adapter_hfp_call_control(hfsm->addr, HFP_CALL_CONTROL_CHLD_0, 0);
+        else
+            status = service_adapter_hfp_reject_call(hfsm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Reject call failed");
         }
