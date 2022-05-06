@@ -127,7 +127,7 @@ static bts_hidd_hdl_t* find_hidd_handle2(uint8_t dev_id)
 static bts_hidd_hdl_t* add_hidd_handle(bts_hidd_hdl_t handle)
 {
     bts_hidd_hdl_t* hidd = (bts_hidd_hdl_t*)malloc(sizeof(bts_hidd_hdl_t));
-    CHECK_PTR_RETURN(hidd, false);
+    CHECK_PTR_RETURN(hidd, NULL);
 
     memset(hidd, 0, sizeof(bts_hidd_hdl_t));
     hidd->device_id = gen_hid_dev_id();
