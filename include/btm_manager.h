@@ -244,3 +244,17 @@ btm_interface_t* get_bt_manager_interface(void);
             return ret;               \
         }                             \
     } while (0)
+
+#define BT_ASSERT(condtion, ret) \
+    do {                         \
+        if (condtion) {          \
+            return ret;          \
+        }                        \
+    } while (0)
+
+#define BT_ASSERT2(condtion) \
+    do {                     \
+        if (condtion) {      \
+            return;          \
+        }                    \
+    } while (0)

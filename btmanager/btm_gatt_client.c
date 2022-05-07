@@ -47,7 +47,7 @@ static void on_bts_gattc_connection_state_changed_cb(void* hdl, profile_connecti
 {
     BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BTM-STATE:%d", state);
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR(handle);
+    BT_ASSERT2(!handle);
     BT_CBACK(handle->callbacks, gattc_connection_state_changed_cb, handle, handle->remote_addr, state);
     if (state == PROFILE_DISCONNECTED) {
         BT_LOGD("free btm_gatt_client handle");
@@ -61,7 +61,7 @@ static void on_bts_gattc_service_discovered_cb(void* hdl, gatt_element_t* elemen
     uint16_t size)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR(handle);
+    BT_ASSERT2(!handle || !element || size < 1);
     BT_CBACK(handle->callbacks, gattc_service_discovered_cb, handle, handle->remote_addr, element, size);
 }
 
@@ -69,49 +69,49 @@ static void on_bts_gattc_read_result_cb(void* hdl, gatt_element_t* element, uint
     uint16_t size, gatt_status status)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR(handle);
+    BT_ASSERT2(!handle || !element || !value || size < 1);
     BT_CBACK(handle->callbacks, gattc_read_result_cb, handle, handle->remote_addr, element, value, size, status);
 }
 
 static void on_bts_gattc_write_result_cb(void* hdl, gatt_element_t* element, gatt_status status)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR(handle);
+    BT_ASSERT2(!handle || !element);
     BT_CBACK(handle->callbacks, gattc_write_result_cb, handle, handle->remote_addr, element, status);
 }
 
 static void on_bts_gattc_nofity_request_cb(void* hdl, gatt_element_t* element, uint8_t* value, uint16_t size)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR(handle);
+    BT_ASSERT2(!handle || !element || !value || size < 1);
     BT_CBACK(handle->callbacks, gattc_nofity_request_cb, handle, handle->remote_addr, element, value, size);
 }
 
 static void on_bts_gattc_rssi_read_cb(void* hdl, int32_t rssi, gatt_status status)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR(handle);
+    BT_ASSERT2(!handle);
     BT_CBACK(handle->callbacks, gattc_rssi_read_cb, handle, handle->remote_addr, rssi, status);
 }
 
 static void on_bts_gattc_phy_read_cb(void* hdl, ble_phy_type tx, ble_phy_type rx)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR(handle);
+    BT_ASSERT2(!handle);
     BT_CBACK(handle->callbacks, gattc_phy_read_cb, handle, handle->remote_addr, tx, rx);
 }
 
 static void on_bts_gattc_phy_update_cb(void* hdl, ble_phy_type tx, ble_phy_type rx)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR(handle);
+    BT_ASSERT2(!handle);
     BT_CBACK(handle->callbacks, gattc_phy_update_cb, handle, handle->remote_addr, tx, rx);
 }
 
 static void on_bts_gattc_mtu_changed_cb(void* hdl, uint32_t mtu)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR(handle);
+    BT_ASSERT2(!handle);
     BT_CBACK(handle->callbacks, gattc_mtu_changed_cb, handle, handle->remote_addr, mtu);
 }
 
@@ -130,7 +130,7 @@ static bts_gatt_client_callbacks client_callbacks = {
 static bt_result_code gatt_client_connect(void** hdl_ptr, bt_address remote_addr, btm_gatt_client_callbacks* callbacks)
 {
     BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BTM-CONNECT-START");
-    CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
+    BT_ASSERT(!client_interface, BT_RESULT_STATE_NOT_ON);
 
     btm_gattc_hdl_t** handle_ptr = (btm_gattc_hdl_t**)(hdl_ptr);
     *handle_ptr = (btm_gattc_hdl_t*)malloc(sizeof(btm_gattc_hdl_t));
@@ -164,8 +164,8 @@ static bt_result_code gatt_client_disconnect(void* hdl)
 {
     BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BTM-DISCONNECT-START");
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
+    BT_ASSERT(!handle, BT_RESULT_FAILED);
+    BT_ASSERT(!client_interface, BT_RESULT_STATE_NOT_ON);
     bt_result_code ret = client_interface->disconnect(handle->remote_addr);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, disconnect err:%d", ret);
@@ -180,8 +180,8 @@ static bt_result_code gatt_client_disconnect(void* hdl)
 static bt_result_code gatt_client_discover_services(void* hdl, bt_uuid_t uuid)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
+    BT_ASSERT(!handle, BT_RESULT_FAILED);
+    BT_ASSERT(!client_interface, BT_RESULT_STATE_NOT_ON);
     bt_result_code ret = client_interface->discover_services(handle->remote_addr, uuid);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, discover_services err:%d", ret);
@@ -193,8 +193,8 @@ static bt_result_code gatt_client_discover_services(void* hdl, bt_uuid_t uuid)
 static bt_result_code gatt_client_read_request(void* hdl, gatt_element_t* element)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
+    BT_ASSERT(!handle || !element, BT_RESULT_FAILED);
+    BT_ASSERT(!client_interface, BT_RESULT_STATE_NOT_ON);
     bt_result_code ret = client_interface->read_request(handle->remote_addr, element);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, read_request err:%d", ret);
@@ -207,8 +207,8 @@ static bt_result_code gatt_client_write_request(void* hdl, gatt_element_t* eleme
     uint16_t length)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
+    BT_ASSERT(!handle || !element || !value || length < 1, BT_RESULT_FAILED);
+    BT_ASSERT(!client_interface, BT_RESULT_STATE_NOT_ON);
     bt_result_code ret = client_interface->write_request(handle->remote_addr, element, value, length);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, write_request err:%d", ret);
@@ -220,8 +220,8 @@ static bt_result_code gatt_client_write_request(void* hdl, gatt_element_t* eleme
 static bt_result_code gatt_client_register_notification(void* hdl, gatt_element_t* element, bool enable)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
+    BT_ASSERT(!handle || !element, BT_RESULT_FAILED);
+    BT_ASSERT(!client_interface, BT_RESULT_STATE_NOT_ON);
     bt_result_code ret = client_interface->register_notification(handle->remote_addr, element, enable);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, register_notification err:%d", ret);
@@ -233,8 +233,8 @@ static bt_result_code gatt_client_register_notification(void* hdl, gatt_element_
 static bt_result_code gatt_client_read_rssi(void* hdl)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
+    BT_ASSERT(!handle, BT_RESULT_FAILED);
+    BT_ASSERT(!client_interface, BT_RESULT_STATE_NOT_ON);
     bt_result_code ret = client_interface->read_rssi(handle->remote_addr);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, read_rssi err:%d", ret);
@@ -246,8 +246,8 @@ static bt_result_code gatt_client_read_rssi(void* hdl)
 static bt_result_code gatt_client_read_phy(void* hdl)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
+    BT_ASSERT(!handle, BT_RESULT_FAILED);
+    BT_ASSERT(!client_interface, BT_RESULT_STATE_NOT_ON);
     bt_result_code ret = client_interface->read_phy(handle->remote_addr);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, read_phy err:%d", ret);
@@ -259,8 +259,8 @@ static bt_result_code gatt_client_read_phy(void* hdl)
 static bt_result_code gatt_client_update_phy(void* hdl, ble_phy_type tx_phy, ble_phy_type rx_phy)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
+    BT_ASSERT(!handle, BT_RESULT_FAILED);
+    BT_ASSERT(!client_interface, BT_RESULT_STATE_NOT_ON);
     bt_result_code ret = client_interface->update_phy(handle->remote_addr, tx_phy, rx_phy);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, read_phy err:%d", ret);
@@ -272,8 +272,8 @@ static bt_result_code gatt_client_update_phy(void* hdl, ble_phy_type tx_phy, ble
 static bt_result_code gatt_client_update_mtu(void* hdl, uint32_t mtu)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
+    BT_ASSERT(!handle, BT_RESULT_FAILED);
+    BT_ASSERT(!client_interface, BT_RESULT_STATE_NOT_ON);
     bt_result_code ret = client_interface->update_mtu(handle->remote_addr, mtu);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, read_phy err:%d", ret);
@@ -286,8 +286,8 @@ static bt_result_code gatt_client_update_connection_parameter(void* hdl, uint32_
     uint32_t latency, uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length)
 {
     btm_gattc_hdl_t* handle = (btm_gattc_hdl_t*)(hdl);
-    CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
-    CHECK_PTR_RETURN(client_interface, BT_RESULT_STATE_NOT_ON);
+    BT_ASSERT(!handle, BT_RESULT_FAILED);
+    BT_ASSERT(!client_interface, BT_RESULT_STATE_NOT_ON);
     bt_result_code ret = client_interface->update_connection_parameter(handle->remote_addr, min_interval, max_interval, latency, timeout, min_connection_event_length, max_connection_event_length);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail, update_connection_parameter err:%d", ret);
