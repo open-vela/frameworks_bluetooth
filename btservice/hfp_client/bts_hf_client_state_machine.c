@@ -944,6 +944,14 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
     case STACK_EVENT_CMD_RESULT:
         break;
 
+    case STACK_EVENT_RING_INDICATION: {
+        int active = data->valueint1;
+        hf_client_in_band_ring_state_t ring_state = data->valueint2;
+        if (!hfsm->call_in_progress && active)
+            HF_SERVICE_CBACK(service->callbacks, ring_indication_cb, hfsm->addr, ring_state);
+        break;
+    }
+
     default:
         break;
     }
