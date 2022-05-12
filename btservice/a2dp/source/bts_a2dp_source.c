@@ -66,6 +66,9 @@ static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE
 static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state);
 static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S* config);
 static void adp_stream_channel_mtu_cb(BD_ADDR remote_addr, uint16_t stream_chnl_mtu);
+#ifdef CONFIG_BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
+static void adp_peer_partial_reconnect_cb(BD_ADDR remote_addr);
+#endif
 static void a2dp_source_init(void);
 static void a2dp_source_cleanup(void);
 
@@ -73,10 +76,15 @@ static a2dp_source_t a2dp_source = {.enabled = false};
 
 static A2DP_SOURCE_CALLBACKS_S a2dp_callback = {
     sizeof(a2dp_callback),
-    adp_connection_state_changed_cb,
-    adp_stream_state_changed_cb,
-    adp_stream_config_changed_cb,
-    adp_stream_channel_mtu_cb
+    .a2dp_source_connection_state_changed_cb = adp_connection_state_changed_cb,
+    .a2dp_source_stream_state_changed_cb = adp_stream_state_changed_cb,
+    .a2dp_source_stream_config_changed_cb = adp_stream_config_changed_cb,
+    .a2dp_source_stream_channel_mtu_cb = adp_stream_channel_mtu_cb,
+#ifdef CONFIG_BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
+    .a2dp_source_peer_partial_reconnect_cb = adp_peer_partial_reconnect_cb,
+#else
+    .a2dp_source_peer_partial_reconnect_cb = NULL,
+#endif
 };
 
 static void set_active_peer(bt_address bd_addr)
@@ -254,6 +262,16 @@ static void adp_stream_channel_mtu_cb(BD_ADDR remote_addr, uint16_t stream_chnl_
     event->event_data.mtu = stream_chnl_mtu;
     do_in_a2dp_service(event);
 }
+
+#ifdef CONFIG_BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
+static void adp_peer_partial_reconnect_cb(BD_ADDR remote_addr)
+{
+    a2dp_event_t* event;
+
+    event = a2dp_event_new(PEER_PARTIAL_RECONN_EVT, remote_addr);
+    do_in_a2dp_service(event);
+}
+#endif
 
 static void a2dp_source_init(void)
 {
