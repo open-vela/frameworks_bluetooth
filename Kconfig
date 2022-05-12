@@ -151,6 +151,12 @@ config BLUETOOTH_A2DP_AAC_CODEC
 	help
 		Bluetooth A2dp AAC codec support
 
+config BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
+	bool "Bluetooth A2dp peer partial reconnect support"
+	default n
+	help
+		Bluetooth A2dp peer partial reconnect support
+
 endif #BLUETOOTH_A2DP
 
 if BLUETOOTH_SPP
