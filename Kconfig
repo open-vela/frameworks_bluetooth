@@ -51,6 +51,40 @@ config BLUETOOTH_A2DP_SINK
 	select BLUETOOTH_A2DP
 	select BLUETOOTH_AVRCP_CT
 
+if BLUETOOTH_A2DP
+config BLUETOOTH_A2DP_MAX_CONNECTIONS
+	int "Maximum A2dp connections"
+	default 1
+	help
+		Maximum A2dp connections
+
+config BLUETOOTH_A2DP_IPC_RPSMG_SERVER
+	bool "Bluetooth A2dp audio IPC rpmsg server"
+	default y
+	help
+		Bluetooth A2dp audio IPC rpmsg server
+
+config BLUETOOTH_A2DP_IPC_RPSMG_NAME
+	string "Bluetooth A2dp audio IPC rpmsg name"
+	default "cp"
+	help
+		Bluetooth A2dp audio IPC rpmsg name
+
+config BLUETOOTH_A2DP_AAC_CODEC
+	bool "Bluetooth A2dp AAC codec support"
+	default n
+	select AAC_ENABLED
+	help
+		Bluetooth A2dp AAC codec support
+
+config BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
+	bool "Bluetooth A2dp peer partial reconnect support"
+	default n
+	help
+		Bluetooth A2dp peer partial reconnect support
+
+endif #BLUETOOTH_A2DP
+
 config BLUETOOTH_HFP_HF
 	bool "Enable BT_HFP_HF"
 	default y
@@ -131,40 +165,6 @@ config BLUETOOTH_AUTO_SNIFF
 	bool "Bt auto sniff"
 	default y
 
-if BLUETOOTH_A2DP
-config BLUETOOTH_A2DP_MAX_CONNECTIONS
-	int "Maximum A2dp connections"
-	default 1
-	help
-		Maximum A2dp connections
-
-config BLUETOOTH_A2DP_IPC_RPSMG_SERVER
-	bool "Bluetooth A2dp audio IPC rpmsg server"
-	default y
-	help
-		Bluetooth A2dp audio IPC rpmsg server
-
-config BLUETOOTH_A2DP_IPC_RPSMG_NAME
-	string "Bluetooth A2dp audio IPC rpmsg name"
-	default "cp"
-	help
-		Bluetooth A2dp audio IPC rpmsg name
-
-config BLUETOOTH_A2DP_AAC_CODEC
-	bool "Bluetooth A2dp AAC codec support"
-	default n
-	select AAC_ENABLED
-	help
-		Bluetooth A2dp AAC codec support
-
-config BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
-	bool "Bluetooth A2dp peer partial reconnect support"
-	default n
-	help
-		Bluetooth A2dp peer partial reconnect support
-
-endif #BLUETOOTH_A2DP
-
 if BLUETOOTH_SPP
 config BLUETOOTH_SPP_INSTANCE
 	int "Maximum SPP instance count"
@@ -226,4 +226,21 @@ config BLUETOOTH_SNIFF_TIMEOUT
 		Bluetooth Auto-Sniff timeout
 endif # BLUETOOTH_AUTO_SNIFF
 
+config BLUETOOTH_VENDOR_DEPENDENCY
+	bool "Vendor dependency"
+	default false
+	help
+		Need depend on vendor code
+
+if BLUETOOTH_VENDOR_DEPENDENCY
+choice
+	prompt "Controller vendor"
+	default BLUETOOTH_VENDOR_DEPENDENCY_XIAOMI
+	config BLUETOOTH_VENDOR_DEPENDENCY_XIAOMI
+	bool "xiaomi"
+	config BLUETOOTH_VENDOR_DEPENDENCY_BES
+	bool "bes"
+endchoice
+
+endif #BLUETOOTH_VENDOR_DEPENDENCY
 endif # BLUETOOTH

@@ -53,6 +53,9 @@
 #include "bts_a2dp_state_machine.h"
 #include "bts_avrcp_target.h"
 #include "utils/utils.h"
+#ifdef CONFIG_BLUETOOTH_VENDOR_DEPENDENCY_BES
+#include "bt_drv_reg_op.h"
+#endif
 #define LOG_TAG "a2dp_stm"
 #include "log.h"
 
@@ -454,6 +457,11 @@ static void opened_enter(state_machine_t* sm)
     else if (prev_state == &started_state) {
         bts_avrcp_notify_play_state_changed(a2dp_sm->addr, PLAY_STATUS_PAUSED);
     }
+#endif
+#ifdef CONFIG_BLUETOOTH_VENDOR_DEPENDENCY_BES
+    uint16_t acl_handle = service_adapter_gap_get_acl_handle(a2dp_sm->addr);
+    bt_drv_reg_op_set_music_link(acl_handle-0x80);
+    BT_LOGD("%s acl handle:%08x,linkid:%08x", __func__, acl_handle, acl_handle-0x80);
 #endif
 }
 
