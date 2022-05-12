@@ -146,6 +146,9 @@ static char* stack_event_to_string(a2dp_event_type_t event)
         CASE_RETURN_STR(STREAM_STARTED_EVT)
         CASE_RETURN_STR(STREAM_SUSPENDED_EVT)
         CASE_RETURN_STR(STREAM_CLOSED_EVT)
+#ifdef CONFIG_BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
+        CASE_RETURN_STR(PEER_PARTIAL_RECONN_EVT)
+#endif
         CASE_RETURN_STR(CODEC_CONFIG_EVT)
         CASE_RETURN_STR(DEVICE_CODEC_STATE_CHANGE_EVT)
         CASE_RETURN_STR(DATA_IND_EVT)
@@ -329,6 +332,19 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
         hsm_transition_to(sm, &opened_state);
         break;
 
+#ifdef CONFIG_BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
+    case PEER_PARTIAL_RECONN_EVT:
+        if (a2dp_sm->peer_sep == SEP_SNK) {
+            SERVICE_BT_STATUS status;
+            status = service_adapter_a2dp_source_connect(data->bd_addr,
+                                                         A2DP_PREFERRED_CODEC);
+            if (status != SERVICE_BT_STATUS_SUCCESS) {
+                bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
+                    A2DP_CONNECTION_STATE_DISCONNECTED);
+            }
+        }
+        break;
+#endif
     default:
         break;
     }
@@ -358,12 +374,12 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
     a2dp_event_data_t* data = (a2dp_event_data_t*)p_data;
+    SERVICE_BT_STATUS status;
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),
         addr_str(a2dp_sm->addr));
     switch (event) {
     case DISCONNECT_REQ: {
-        SERVICE_BT_STATUS status;
         if (a2dp_sm->peer_sep == SEP_SNK)
             status = service_adapter_a2dp_source_disconnect(data->bd_addr);
         else
@@ -389,7 +405,6 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
         a2dp_sm->connect_timer = NULL;
         hsm_transition_to(sm, &idle_state);
         break;
-
     default:
         break;
     }
