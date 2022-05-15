@@ -641,6 +641,16 @@ typedef struct {
     uint32_t delay_variation;
 } bt_hidd_qos_settings_t;
 
+typedef struct bt_autosniff_params_t
+{
+    bool enable;                 /* enable sniff mode */
+    uint8_t idle_time;           /* Idle time in seconds before entering sniff mode */
+    uint16_t sniff_max_interval; /* sniff maximum interval */
+    uint16_t sniff_min_interval; /* sniff minimum interval */
+    uint16_t sniff_attempt;      /* sniff attempt */
+    uint16_t sniff_timeout;      /* sniff timeout */
+} bt_autosniff_params_t;
+
 /*******************************************************************************
  *
  * GATT server connection state changed callback
