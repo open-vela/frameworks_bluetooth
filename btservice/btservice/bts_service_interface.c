@@ -13,6 +13,7 @@
 #include "bts_service.h"
 #include "bts_service_interface.h"
 #include "bts_spp.h"
+#include "bts_panu.h"
 #include "log.h"
 
 typedef struct {
@@ -139,6 +140,9 @@ static bt_result_code bts_if_enable(void* handle)
 #ifdef CONFIG_BLUETOOTH_SPP
     spp_service_start();
 #endif
+#ifdef CONFIG_BLUETOOTH_PAN
+    pan_service_start();
+#endif
     return BT_RESULT_SUCCESS;
 }
 
@@ -150,7 +154,6 @@ static bt_result_code bts_if_disable(void* handle)
     if_handle = find_if_handle_by_handle(handle);
     if (!if_handle)
         return BT_RESULT_FAILED;
-    gap_disable(true);
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     a2dp_sink_service_stop();
 #endif
@@ -166,6 +169,10 @@ static bt_result_code bts_if_disable(void* handle)
 #ifdef CONFIG_BLUETOOTH_AVRCP_TG
     bts_avrcp_target_cleanup();
 #endif
+#ifdef CONFIG_BLUETOOTH_PAN
+    pan_service_stop();
+#endif
+    gap_disable(true);
     return BT_RESULT_SUCCESS;
 }
 
@@ -230,6 +237,10 @@ static const void* if_get_profile_interface(const char* profile_id)
 #ifdef CONFIG_BLUETOOTH_SPP
     if (is_profile(profile_id, BT_PROFILE_SPP))
         return (const void*)get_spp_service_interface();
+#endif
+#ifdef CONFIG_BLUETOOTH_PAN
+    if (is_profile(profile_id, BT_PROFILE_PAN))
+        return get_pan_service_interface();
 #endif
 #if defined(CONFIG_BLUETOOTH_HIDDEV)
     if (is_profile(profile_id, BT_PROFILE_HIDDEV))
