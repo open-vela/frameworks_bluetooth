@@ -32,6 +32,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifdef CONFIG_KVDB
+#include <kvdb.h>
+#endif
+
 #include "bts_service.h"
 #include "log.h"
 #include "stack_adapter_common.h"
@@ -56,6 +60,15 @@
 #define BT_KEY_BTBOND "key_btbond"
 #define BT_KEY_BLEBOND "key_blebond"
 #define BT_KEY_BLEWHITELIST "key_blewhitelist"
+
+#ifdef CONFIG_BLUETOOTH_AUTO_SNIFF
+#define KVDB_KEY_BT_SNIFF_ENABLE "persist.bluetooth.sniff.enable"
+#define KVDB_KEY_BT_SNIFF_IDLE_TIME "persist.bluetooth.sniff.idle_time"
+#define KVDB_KEY_BT_SNIFF_MIN_INTERVAL "persist.bluetooth.sniff.min_interval"
+#define KVDB_KEY_BT_SNIFF_MAX_INTERVAL "persist.bluetooth.sniff.max_interval"
+#define KVDB_KEY_BT_SNIFF_ATTEMPT "persist.bluetooth.sniff.attempt"
+#define KVDB_KEY_BT_SNIFF_TIMEOUT "persist.bluetooth.sniff.timeout"
+#endif
 
 typedef struct {
     uint32_t cod;
@@ -530,6 +543,43 @@ static void gap_config_load_ble_whitelist(void)
     }
 }
 
+#ifdef CONFIG_BLUETOOTH_AUTO_SNIFF
+static bt_result_code gap_config_load_sniff_param(void)
+{
+#ifdef CONFIG_KVDB
+    bool enable = property_get_bool(KVDB_KEY_BT_SNIFF_ENABLE, true);
+    uint32_t idle_time = property_get_int32(KVDB_KEY_BT_SNIFF_IDLE_TIME, CONFIG_BLUETOOTH_SNIFF_IDLE_TIME);
+    uint32_t sniff_min_interval = property_get_int32(KVDB_KEY_BT_SNIFF_MIN_INTERVAL, CONFIG_BLUETOOTH_SNIFF_MIN_INTERVAL);
+    uint32_t sniff_max_interval = property_get_int32(KVDB_KEY_BT_SNIFF_MAX_INTERVAL, CONFIG_BLUETOOTH_SNIFF_MAX_INTERVAL);
+    uint32_t sniff_attempt = property_get_int32(KVDB_KEY_BT_SNIFF_ATTEMPT, CONFIG_BLUETOOTH_SNIFF_ATTEMPT);
+    uint32_t sniff_timeout = property_get_int32(KVDB_KEY_BT_SNIFF_TIMEOUT, CONFIG_BLUETOOTH_SNIFF_TIMEOUT);
+#else
+    bool enable = true;
+    uint32_t idle_time = CONFIG_BLUETOOTH_SNIFF_IDLE_TIME;
+    uint32_t sniff_min_interval = CONFIG_BLUETOOTH_SNIFF_MIN_INTERVAL;
+    uint32_t sniff_max_interval = CONFIG_BLUETOOTH_SNIFF_MAX_INTERVAL;
+    uint32_t sniff_attempt = CONFIG_BLUETOOTH_SNIFF_ATTEMPT;
+    uint32_t sniff_timeout = CONFIG_BLUETOOTH_SNIFF_TIMEOUT;
+#endif
+    bt_autosniff_params_t par = {
+        .enable = enable,
+        .idle_time = idle_time,
+        .sniff_max_interval = sniff_max_interval,
+        .sniff_min_interval = sniff_min_interval,
+        .sniff_attempt = sniff_attempt,
+        .sniff_timeout = sniff_timeout,
+    };
+
+    SERVICE_BT_STATUS ret = service_adapter_gap_set_auto_sniff((struct SERVICE_AUTOSNIFF_PARAMS_S*)(&par));
+    if (ret != SERVICE_BT_STATUS_SUCCESS)
+    {
+        BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+#endif
+
 bt_result_code gap_bt_config_init(bts_service_adapter_state_changed_callback cb)
 {
     adapter_state_changed_cb = cb;
@@ -551,6 +601,9 @@ bt_result_code gap_bt_config_init(bts_service_adapter_state_changed_callback cb)
     gap_config_load_btbond_devices();
     gap_config_load_blebond_devices();
     gap_config_load_ble_whitelist();
+#ifdef CONFIG_BLUETOOTH_AUTO_SNIFF
+    gap_config_load_sniff_param();
+#endif
     return BT_RESULT_SUCCESS;
 }
 

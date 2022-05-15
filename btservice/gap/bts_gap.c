@@ -499,6 +499,7 @@ static void adapter_scan_mode_changed_callback(SERVICE_BT_SCAN_MODE scan_mode)
 static void adapter_link_mode_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_MODE link_mode,
     uint16_t sniff_interval)
 {
+    BT_LOGD("%s, addr :%s, link_mode:%d, sniff_interval:%d", __func__, addr_str(remote_addr), link_mode, sniff_interval);
     gap_msg_t* msg = gap_msg_new(GAP_LINK_MODE_CHANGED);
     msg->event_data.data.link_mode = link_mode;
     msg->event_data.valueint1 = sniff_interval;

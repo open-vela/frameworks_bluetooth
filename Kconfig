@@ -121,6 +121,10 @@ config BLUETOOTH_ORB_QUEUE_SIZE
     help
         Set Bt uorb queue size
 
+config BLUETOOTH_AUTO_SNIFF
+	bool "Bt auto sniff"
+	default y
+
 if BLUETOOTH_A2DP
 config BLUETOOTH_A2DP_MAX_CONNECTIONS
 	int "Maximum A2dp connections"
@@ -177,5 +181,37 @@ endif # BLUETOOTH_SPP
 config BLUETOOTH_LOCAL_THREAD
 	bool "Local Thread Transfer"
 	default n
+
+if BLUETOOTH_AUTO_SNIFF
+config BLUETOOTH_SNIFF_IDLE_TIME
+	int "Auto-Sniff idle time seconds"
+	default 10
+	help
+		Bluetooth Auto-Sniff idle time seconds
+
+config BLUETOOTH_SNIFF_MIN_INTERVAL
+	int "Auto-Sniff min interval"
+	default 640
+	help
+		Bluetooth Auto-Sniff min interval
+
+config BLUETOOTH_SNIFF_MAX_INTERVAL
+	int "Auto-Sniff max interval"
+	default 720
+	help
+		Bluetooth Auto-Sniff max interval
+
+config BLUETOOTH_SNIFF_ATTEMPT
+	int "Auto-Sniff attempt"
+	default 4
+	help
+		Bluetooth Auto-Sniff attempt
+
+config BLUETOOTH_SNIFF_TIMEOUT
+	int "Auto-Sniff timeout"
+	default 1
+	help
+		Bluetooth Auto-Sniff timeout
+endif # BLUETOOTH_AUTO_SNIFF
 
 endif # BLUETOOTH
