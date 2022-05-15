@@ -110,8 +110,9 @@
 */
 #define BT_PROFILE_LE_AUDIO "le_audio"
 
-/** 
- * @brief Bluetooth address length 
+#define BT_PROFILE_PAN  "pan"
+/**
+ * @brief Bluetooth address length
  */
 /*!
 * \def BT_ADDR_LENGTH

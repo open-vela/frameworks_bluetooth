@@ -452,6 +452,7 @@ typedef enum {
     BT_PROFILE_AV_RC_CTRL_ID,
     BT_PROFILE_SPP_ID,
     BT_PROFILE_LE_AUDIO_ID,
+    BT_PROFILE_PAN_ID,
     BT_PROFILE_MAX_ID,
 } bt_profile_id;
 
