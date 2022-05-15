@@ -80,6 +80,12 @@ ifeq ($(CONFIG_BLUETOOTH_SPP),y)
 	CSRCS +=btservice/spp/bts_spp_service.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_PAN), y)
+	CSRCS +=btmanager/btm_pan.c
+	CSRCS += btservice/pan/bts_panu.c
+	CSRCS += btservice/pan/bts_panu_service.c
+endif
+
 ifneq ($(findstring y, $(CONFIG_BLUETOOTH_LE_SCAN)_$(CONFIG_BLUETOOTH_LE_ADVERTISE)_$(CONFIG_BLUETOOTH_GATT_CLIENT)_$(CONFIG_BLUETOOTH_GATT_SERVER)), )
 	CSRCS +=btservice/gatt/bts_gatt_service.c
 endif
