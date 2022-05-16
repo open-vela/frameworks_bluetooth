@@ -118,6 +118,9 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_SPP
     { "spp", spp_command, "<SPP> Serial Port Profile" },
 #endif
+#ifdef CONFIG_BLUETOOTH_PAN
+    { "pan", pan_command, "<PAN> Personal Area Networking Profile" },
+#endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     { "hfp", hfp_client_command, "<HFP> HandFree Profile --Client" },
 #endif
@@ -289,12 +292,22 @@ static struct option gap_options[] = {
 
 static void bttool_command_init(void)
 {
+#ifdef CONFIG_BLUETOOTH_SPP
     spp_command_init();
+#endif
+#ifdef CONFIG_BLUETOOTH_PAN
+    pan_command_init();
+#endif
 }
 
 static void bttool_command_uninit(void)
 {
+#ifdef CONFIG_BLUETOOTH_SPP
     spp_command_uninit();
+#endif
+#ifdef CONFIG_BLUETOOTH_PAN
+    pan_command_uninit();
+#endif
 }
 
 static int start_discovery(void* handle, int argc, char** argv)
