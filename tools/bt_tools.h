@@ -57,6 +57,9 @@ typedef struct {
 extern int spp_command_init(void);
 extern void spp_command_uninit(void);
 extern int spp_command(void* handle, int argc, char* argv[]);
+extern int pan_command_init(void);
+extern void pan_command_uninit(void);
+extern int pan_command(void* handle, int argc, char* argv[]);
 extern int hfp_client_command(void* handle, int argc, char* argv[]);
 extern int gatt_server_command(void* handle, int argc, char* argv[]);
 extern int gatt_client_command(void* handle, int argc, char* argv[]);

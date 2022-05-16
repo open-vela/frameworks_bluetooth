@@ -133,6 +133,9 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_HIDDEV),y)
       CSRCS +=tools/hid_device.c
 endif
+ifeq ($(CONFIG_BLUETOOTH_PAN),y)
+      CSRCS +=tools/panu.c
+endif
 CSRCS +=tools/log.c
 endif
 
