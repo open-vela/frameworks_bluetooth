@@ -145,7 +145,7 @@ static int send_key(int fd, uint32_t keycode, int pressed)
     return write(g_keyboard_fd, &key, sizeof(key));
 }
 
-static void avrcp_tg_connection_state_handler(BD_ADDR addr,
+static void avrcp_tg_connection_state_handler(bt_address addr,
     SERVICE_PROFILE_CONNECTION_STATE state)
 {
     BT_LOGD("%s, device: %s, connection state : %d", __func__, addr_str(addr), state);
@@ -157,15 +157,19 @@ static void avrcp_tg_connection_state_handler(BD_ADDR addr,
     }
 }
 
-static void avrcp_passthrough_cmd_handler(BD_ADDR remote_addr,
+static void avrcp_passthrough_cmd_handler(bt_address remote_addr,
     SERVICE_AVRCP_PANEL_OPERATION op, SERVICE_AVRCP_PANEL_STATE state)
 {
     int i;
 
+#ifdef CONFIG_BLUETOOTH_A2DP_SRC
     if (!bts_a2dp_source_stream_ready()) {
         BT_LOGW("%s A2DP is not ready, Discarding passthrough cmd:%02x", __func__, op);
         return;
     }
+#else
+    return;
+#endif
 
     if (op == AVRCP_OPERATION_STOP && !bts_a2dp_source_stream_started()) {
         BT_LOGW("%s Stream suspended, Ignore STOP cmd", __func__);
@@ -190,6 +194,46 @@ static void avrcp_passthrough_cmd_handler(BD_ADDR remote_addr,
         BT_LOGW("%s AVRCP: unknown Key 0x%02X %s", __func__, op, ket_state(state));
 }
 
+static SERVICE_AVRCP_MEDIA_STATUS current_playback_status(void)
+{
+#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+    if (bts_a2dp_source_stream_started())
+        return MEDIA_PLAYING;
+    else if (bts_a2dp_source_stream_ready())
+        return MEDIA_PAUSED;
+    else
+        return MEDIA_STOPPED;
+#else
+    return MEDIA_ERROR;
+#endif
+}
+
+static void avrcp_register_notification_handler(bt_address addr,
+                        SERVICE_AVRCP_NOTIFICATION_EVENT event, uint32_t interval)
+{
+    switch (event) {
+        case AVRCP_NOTIFICATION_MEDIA_STATUS_CHANGED:
+            service_adapter_avrcp_target_notify_play_status_changed(addr, current_playback_status());
+            break;
+        case AVRCP_NOTIFICATION_TRACK_CHANGED:
+            service_adapter_avrcp_target_notify_track_changed(addr, FALSE);
+            break;
+        case AVRCP_NOTIFICATION_PLAY_POS_CHANGED:
+            service_adapter_avrcp_target_notify_play_position_changed(addr, 0);
+            break;
+        case AVRCP_NOTIFICATION_VOLUME_CHANGED:
+            service_adapter_avrcp_target_notify_volume_changed(addr, 50);
+            break;
+        default:
+            break;
+    }
+}
+
+static void avrcp_get_play_status_handler(BD_ADDR addr)
+{
+    service_adapter_avrcp_target_get_play_status_response(addr, current_playback_status(), 0, 0);
+}
+
 static void avrcp_service_msg_process(avrcp_msg_t* msg)
 {
     BT_LOGD("%s addr: %s, event: %s", __func__, addr_str(msg->addr), avrcp_event_to_string(msg->event));
@@ -202,11 +246,12 @@ static void avrcp_service_msg_process(avrcp_msg_t* msg)
         avrcp_passthrough_cmd_handler(msg->addr, msg->data.cmd.opcode, msg->data.cmd.state);
         break;
     case REGISTER_NOTIFICATION:
+        avrcp_register_notification_handler(msg->addr, msg->data.reg_notif.event,
+                                            msg->data.reg_notif.interval);
         break;
-    case SET_ABSOLUTE_VOLUME:
-        break;
-    case GET_ELEMENT_ATTR_REQUEST:
     case GET_PLAY_STATUS_REQUEST:
+        avrcp_get_play_status_handler(msg->addr);
+        break;
     default:
         BT_LOGW("%s Unsupport event", __func__);
         break;
@@ -268,26 +313,6 @@ static void adpt_get_play_status_request_cb(BD_ADDR remote_addr)
     do_in_avrcp_tg_service(&msg);
 }
 
-static void adpt_get_element_attr_request_cb(BD_ADDR remote_addr)
-{
-    avrcp_msg_t msg = {0};
-
-    msg.event = GET_ELEMENT_ATTR_REQUEST;
-    memcpy(msg.addr, remote_addr, sizeof(bt_address));
-    do_in_avrcp_tg_service(&msg);
-}
-
-static void adpt_set_volume_cb(BD_ADDR remote_addr, uint8_t volume)
-{
-    avrcp_msg_t msg;
-    memset(&msg, 0, sizeof(avrcp_msg_t));
-
-    msg.event = SET_ABSOLUTE_VOLUME;
-    msg.data.volume = volume;
-    memcpy(msg.addr, remote_addr, sizeof(bt_address));
-    do_in_avrcp_tg_service(&msg);
-}
-
 static void adpt_panel_operation_cb(BD_ADDR remote_addr,
     SERVICE_AVRCP_PANEL_OPERATION op, SERVICE_AVRCP_PANEL_STATE state)
 {
@@ -304,11 +329,11 @@ static void adpt_panel_operation_cb(BD_ADDR remote_addr,
 static AVRCP_TARGET_CALLBACKS_S g_avrcp_target = {
     .size = sizeof(g_avrcp_target),
     .avrcp_target_connection_state_changed_cb = adpt_connection_state_changed_cb,
-    .avrcp_target_received_get_element_attr_request_cb = adpt_get_element_attr_request_cb,
+    .avrcp_target_received_get_element_attr_request_cb = NULL,
     .avrcp_target_received_get_play_status_request_cb = adpt_get_play_status_request_cb,
     .avrcp_target_received_panel_operation_cb = adpt_panel_operation_cb,
     .avrcp_target_received_register_notification_request_cb = adpt_register_notification_request_cb,
-    .avrcp_target_received_set_volume_cb = adpt_set_volume_cb
+    .avrcp_target_received_set_volume_cb = NULL,
 };
 
 bt_result_code bts_avrcp_target_init(void)
