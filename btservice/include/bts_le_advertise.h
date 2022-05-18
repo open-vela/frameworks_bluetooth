@@ -52,6 +52,7 @@ typedef struct {
 
     uint8_t advertiser_id;
     advertise_param_t* param;
+    uint8_t state;
     const bts_ble_advertiser_callbacks* callbacks;
 
     void* btm_handle;
@@ -69,7 +70,7 @@ typedef struct {
 
     const stack_le_advertise_callbacks* callbacks;
     bt_result_code (*start_adv)(bts_leadv_hdl_t client);
-    bt_result_code (*stop_adv)(uint8_t advertiser_id);
+    bt_result_code (*stop_adv)(void *hdl);
 } bts_le_advertise_interface_t;
 
 const bts_le_advertise_interface_t* get_bts_bleadv_instance(void);

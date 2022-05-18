@@ -48,12 +48,32 @@ typedef struct
     void* data;
 } gatt_lesadv_msg_t;
 
+enum {
+    BTS_ADV_STATE_STARTING,
+    BTS_ADV_STATE_STARTED,
+    BTS_ADV_STATE_STOPING,
+    BTS_ADV_STATE_STOPPED,
+};
+
 static void send_msg(gatt_lesadv_msg_t* msg);
 static void handle_msg_received(bt_profile_id id, void* data, size_t size);
 
 static struct list_node advertiser_list = LIST_INITIAL_VALUE(advertiser_list);
 
-static bts_leadv_hdl_t* find_advertise_handle(uint8_t advertiser_id)
+static bts_leadv_hdl_t *find_advertise_handle(void *hdl)
+{
+    bts_leadv_hdl_t *client;
+    list_for_every_entry(&advertiser_list, client, bts_leadv_hdl_t, node)
+    {
+        if (client->btm_handle == hdl)
+        {
+            return client;
+        }
+    }
+    return NULL;
+}
+
+static bts_leadv_hdl_t* find_advertise_handle2(uint8_t advertiser_id)
 {
     bts_leadv_hdl_t* client;
     list_for_every_entry(&advertiser_list, client, bts_leadv_hdl_t, node)
@@ -65,7 +85,7 @@ static bts_leadv_hdl_t* find_advertise_handle(uint8_t advertiser_id)
     return NULL;
 }
 
-static void add_advertise_handle(bts_leadv_hdl_t advertiser)
+static void add_advertise_handle(bts_leadv_hdl_t advertiser, uint8_t state)
 {
     bts_leadv_hdl_t* client = (bts_leadv_hdl_t*)malloc(sizeof(bts_leadv_hdl_t));
     if (!client) {
@@ -78,6 +98,7 @@ static void add_advertise_handle(bts_leadv_hdl_t advertiser)
     client->param = advertiser.param;
     client->callbacks = advertiser.callbacks;
     client->btm_handle = advertiser.btm_handle;
+    client->state = state;
     list_add_tail(&advertiser_list, &client->node);
 }
 
@@ -98,20 +119,21 @@ static bt_result_code le_start_adv(bts_leadv_hdl_t client)
         return BT_RESULT_FAILED;
     }
 
-    add_advertise_handle(client);
+    add_advertise_handle(client, BTS_ADV_STATE_STARTING);
     return BT_RESULT_SUCCESS;
 }
 
-static bt_result_code le_stop_adv(uint8_t advertiser_id)
+static bt_result_code le_stop_adv(void* hdl)
 {
     BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-STOP");
-    bts_leadv_hdl_t* client = find_advertise_handle(advertiser_id);
+    bts_leadv_hdl_t* client = find_advertise_handle(hdl);
     if (!client) {
-        BT_LOGE("fail, invalid advertiser_id:%d", advertiser_id);
+        BT_LOGE("fail, invalid hdl");
         return BT_RESULT_FAILED;
     }
+    client->state = BTS_ADV_STATE_STOPING;
 
-    SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(advertiser_id);
+    SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(client->advertiser_id);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("service ble start adv fail, err:%" PRIu32, ret);
         remove_advertise_handle(client);
@@ -124,39 +146,50 @@ static bt_result_code le_stop_adv(uint8_t advertiser_id)
 static void on_ble_advtise_started_cb(uint8_t adv_id)
 {
     BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-STARTED");
-    bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
+    bts_leadv_hdl_t* client = find_advertise_handle2(adv_id);
     if (!client) {
         SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(adv_id);
         BT_LOGW("stop le adv, adv id:%d, ret:%" PRIu32, adv_id, ret);
         return;
     }
+    list_for_every_entry(&advertiser_list, client, bts_leadv_hdl_t, node)
+    {
+        if ((client->advertiser_id == adv_id) && (client->state == BTS_ADV_STATE_STARTING)) {
+            client->state = BTS_ADV_STATE_STARTED;
+            gatt_lesadv_msg_t *msg = (gatt_lesadv_msg_t *)malloc(sizeof(gatt_lesadv_msg_t));
+            if (!msg) {
+                BT_LOGE("error, malloc gatt_lesadv_msg_t failed");
+                return;
+            }
 
-    gatt_lesadv_msg_t* msg = (gatt_lesadv_msg_t*)malloc(sizeof(gatt_lesadv_msg_t));
-    memset(msg, 0, sizeof(gatt_lesadv_msg_t));
-    msg->event = ON_ADV_STARTED;
-    msg->handle = client;
-    send_msg(msg);
+            memset(msg, 0, sizeof(gatt_lesadv_msg_t));
+            msg->event = ON_ADV_STARTED;
+            msg->handle = client;
+            send_msg(msg);
+        }
+    }
 }
 
 static void on_ble_advtise_stopped_cb(uint8_t adv_id)
 {
     BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-STOPPED");
-    bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
-    if (!client) {
-        BT_LOGW("fail, invalid adv id:%d", adv_id);
-        return;
-    }
+    bts_leadv_hdl_t *client;
+    list_for_every_entry(&advertiser_list, client, bts_leadv_hdl_t, node)
+    {
+        if ((client->advertiser_id == adv_id) && (client->state != BTS_ADV_STATE_STARTING)) {
+            client->state = BTS_ADV_STATE_STOPPED;
+            gatt_lesadv_msg_t *msg = (gatt_lesadv_msg_t *)malloc(sizeof(gatt_lesadv_msg_t));
+            if (!msg) {
+                BT_LOGE("error, malloc gatt_lesadv_msg_t failed");
+                return;
+            }
 
-    gatt_lesadv_msg_t* msg = (gatt_lesadv_msg_t*)malloc(sizeof(gatt_lesadv_msg_t));
-    if (!msg) {
-        BT_LOGE("error, malloc gatt_lesadv_msg_t failed");
-        return;
+            memset(msg, 0, sizeof(gatt_lesadv_msg_t));
+            msg->event = ON_ADV_STOPPED;
+            msg->handle = client;
+            send_msg(msg);
+        }
     }
-
-    memset(msg, 0, sizeof(gatt_lesadv_msg_t));
-    msg->event = ON_ADV_STOPPED;
-    msg->handle = client;
-    send_msg(msg);
 }
 
 static const stack_le_advertise_callbacks le_callbacks = {
@@ -199,7 +232,6 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
         bts_leadv_hdl_t* handle = (bts_leadv_hdl_t*)(msg->handle);
         BT_CBACK(handle->callbacks, bts_le_advertise_stopped_cb, handle->btm_handle, handle->advertiser_id);
         remove_advertise_handle(handle);
-        bts_unregister_profile_process(BT_PROFILE_LEADV_ID);
         break;
     }
     default: {
