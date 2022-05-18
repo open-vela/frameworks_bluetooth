@@ -58,9 +58,7 @@ static void on_le_advertise_stopped(void* hdl, uint8_t adv_id)
     btm_leadv_hdl_t* handle = (btm_leadv_hdl_t*)hdl;
     CHECK_PTR(handle);
     BT_CBACK(handle->cb, le_advertise_stopped_cb, handle);
-    void** handle_ptr = handle->handle_ptr;
     free(handle);
-    *handle_ptr = NULL;
 }
 
 static void on_le_advertise_failed(void* hdl, int error)
@@ -121,7 +119,7 @@ static bt_result_code stop_advertising(void* hdl)
     btm_leadv_hdl_t* handle = (btm_leadv_hdl_t*)(hdl);
     CHECK_PTR_RETURN(handle, BT_RESULT_FAILED);
 
-    bt_result_code ret = advertiser_interface->stop_adv(handle->advertiser_id);
+    bt_result_code ret = advertiser_interface->stop_adv(handle);
     if (ret != BT_RESULT_SUCCESS) {
         BT_LOGE("fail,stop_adv err:%d", ret);
         void** handle_ptr = handle->handle_ptr;
