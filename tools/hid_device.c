@@ -318,7 +318,7 @@ static int hidd_register_device(void* handle, int argc, char** argv)
     hids_info.name = "BRT_HID_Device_Demo";
     hids_info.description = "A demo of HID Device implementation";
     hids_info.provider = "BARROT Technology Limited";
-    hids_info.hids_info.attr_mask = HID_ATTR_MASK_VIRTUAL_CABLE | HID_ATTR_MASK_RECONNECT_INITIATE /* | BTHID_ATTR_MASK_BOOT_DEVICE*/;
+    hids_info.hids_info.attr_mask = HID_ATTR_MASK_VIRTUAL_CABLE | HID_ATTR_MASK_RECONNECT_INITIATE | HID_ATTR_MASK_NORMALLY_CONNECTABLE /* | BTHID_ATTR_MASK_BOOT_DEVICE*/;
 
     switch (dev_type) {
     case APP_HID_DEVICE_KEYBOARD:
