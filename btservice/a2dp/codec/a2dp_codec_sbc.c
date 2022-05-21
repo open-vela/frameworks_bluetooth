@@ -162,8 +162,15 @@ uint32_t a2dp_sbc_frame_length(sbc_param_t* param)
 {
     uint32_t frame_len;
 
-    if (param == NULL)
+    if (param == NULL) {
+        BT_LOGE("%s, error param", __func__);
         return 0;
+    }
+
+    if (param->s16ChannelMode == SBC_MONO) {
+        BT_LOGE("%s, not support mono mode", __func__);
+        return 0;
+    }
 
     frame_len = 4 +
                 (4 *
