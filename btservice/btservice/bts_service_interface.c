@@ -163,6 +163,9 @@ static bt_result_code bts_if_disable(void* handle)
 #ifdef CONFIG_BLUETOOTH_SPP
     spp_service_stop();
 #endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_TG
+    bts_avrcp_target_cleanup();
+#endif
     return BT_RESULT_SUCCESS;
 }
 

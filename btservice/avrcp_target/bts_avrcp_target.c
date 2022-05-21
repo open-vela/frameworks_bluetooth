@@ -157,7 +157,7 @@ static void avrcp_tg_connection_state_handler(bt_address addr,
     }
 }
 
-static void avrcp_passthrough_cmd_handler(bt_address remote_addr,
+static void avrcp_passthrough_cmd_handler(bt_address addr,
     SERVICE_AVRCP_PANEL_OPERATION op, SERVICE_AVRCP_PANEL_STATE state)
 {
     int i;
@@ -212,9 +212,11 @@ static void avrcp_register_notification_handler(bt_address addr,
                         SERVICE_AVRCP_NOTIFICATION_EVENT event, uint32_t interval)
 {
     switch (event) {
-        case AVRCP_NOTIFICATION_MEDIA_STATUS_CHANGED:
-            service_adapter_avrcp_target_notify_play_status_changed(addr, current_playback_status());
+        case AVRCP_NOTIFICATION_MEDIA_STATUS_CHANGED:{
+            SERVICE_AVRCP_MEDIA_STATUS status = current_playback_status();
+            service_adapter_avrcp_target_notify_play_status_changed(addr, status);
             break;
+        }
         case AVRCP_NOTIFICATION_TRACK_CHANGED:
             service_adapter_avrcp_target_notify_track_changed(addr, FALSE);
             break;
@@ -347,7 +349,19 @@ bt_result_code bts_avrcp_target_init(void)
     return BT_RESULT_SUCCESS;
 }
 
-void bts_avrcp_target_uninit(void)
+bt_result_code bts_avrcp_notify_play_state_changed(bt_address addr, play_status_t status)
+{
+    SERVICE_BT_STATUS ret;
+
+    BT_LOGD("%s addr:%s, status:%d", __func__, addr_str(addr), status);
+    ret = service_adapter_avrcp_target_notify_play_status_changed(addr, status);
+    if (ret != SERVICE_BT_STATUS_SUCCESS)
+        return BT_RESULT_FAILED;
+
+    return BT_RESULT_SUCCESS;
+}
+
+void bts_avrcp_target_cleanup(void)
 {
     bts_unregister_profile_process(BT_PROFILE_AV_RC_TARGET_ID);
     service_adapter_avrcp_target_cleanup();

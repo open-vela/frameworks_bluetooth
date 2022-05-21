@@ -47,6 +47,7 @@
 #include "bts_a2dp_sink.h"
 #include "bts_a2dp_audio.h"
 #include "bts_a2dp_state_machine.h"
+#include "bts_avrcp_target.h"
 #include "utils/utils.h"
 #define LOG_TAG "a2dp_stm"
 #include "log.h"
@@ -164,6 +165,7 @@ static void broadcast_a2dp_state(int orb_fd, bt_address addr, int conn_state, in
     uORB_state.conn_state = conn_state;
     uORB_state.audio_state = audio_state;
     memcpy(uORB_state.addr, addr, 6);
+
     if (orb_fd > 0) {
         int ret = orb_publish(ORB_ID(a2dp_state), orb_fd, &uORB_state);
         if (ret != 0)
@@ -406,6 +408,8 @@ static void opened_enter(state_machine_t* sm)
         bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
         bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
             A2DP_CONNECTION_STATE_CONNECTED);
+    } else if (prev_state == &started_state) {
+        bts_avrcp_notify_play_state_changed(a2dp_sm->addr, PLAY_STATUS_PAUSED);
     }
 }
 
@@ -520,6 +524,7 @@ static void started_enter(state_machine_t* sm)
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
+
     bts_a2dp_report_audio_state(a2dp_sm, a2dp_sm->addr,
         A2DP_AUDIO_STATE_STARTED);
 }

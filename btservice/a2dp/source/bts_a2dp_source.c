@@ -138,7 +138,7 @@ static void a2dp_service_handle_event(a2dp_event_t* a2dp_event, uint8_t peer_sep
     case CODEC_CONFIG_EVT: {
         a2dp_codec_config_t* config;
         a2dp_device_t* device;
-        
+
         device = find_or_create_device(a2dp_event->event_data.bd_addr);
         if (device == NULL)
             break;
