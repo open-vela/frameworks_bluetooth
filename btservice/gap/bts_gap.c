@@ -264,6 +264,18 @@ static void process_loop_in_gap(void* data, size_t data_size)
             free(gap_msg->event_data.data.hci_event.params);
         break;
     }
+    case GAP_BLE_ADV_STARTED: {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->ble_adv_started_cb)) {
+            g_bts_gap_callbacks->ble_adv_started_cb(gap_msg->event_data.valueint1);
+        }
+        break;
+    }
+    case GAP_BLE_ADV_STOPPED: {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->ble_adv_stopped_cb)) {
+            g_bts_gap_callbacks->ble_adv_stopped_cb(gap_msg->event_data.valueint1);
+        }
+        break;
+    }
     case GAP_UPDATE_BLE_BONDED_DEVICES: {
         gap_ble_bond_store(gap_msg->event_data.data.ble_bonded_update.bonded_device_list, gap_msg->event_data.data.ble_bonded_update.count_in);
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->update_ble_bonede_device_cb)) {
@@ -471,14 +483,16 @@ static void adapter_ble_scan_result_callback(SERVICE_SCAN_RESULT_DATA_S* scan_re
 
 static void adapter_ble_adv_started_callback(uint8_t adv_id)
 {
-    const bts_le_advertise_interface_t* adv_ift = get_bts_bleadv_instance();
-    BT_CBACK(adv_ift->callbacks, ble_advtise_started_cb, adv_id);
+    gap_msg_t* msg = gap_msg_new(GAP_BLE_ADV_STARTED);
+    msg->event_data.valueint1 = adv_id;
+    gap_send_message(msg);
 }
 
 static void adapter_ble_adv_stopped_callback(uint8_t adv_id)
 {
-    const bts_le_advertise_interface_t* adv_ift = get_bts_bleadv_instance();
-    BT_CBACK(adv_ift->callbacks, ble_advtise_stopped_cb, adv_id);
+    gap_msg_t* msg = gap_msg_new(GAP_BLE_ADV_STOPPED);
+    msg->event_data.valueint1 = adv_id;
+    gap_send_message(msg);
 }
 
 static void adapter_bt_link_role_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_ROLE link_role)
@@ -1360,3 +1374,4 @@ bt_result_code bts_reply_link_request(BD_ADDR remote_addr, bool accept)
     }
     return BT_RESULT_SUCCESS;
 }
+

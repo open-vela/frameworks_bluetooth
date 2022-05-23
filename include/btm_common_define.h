@@ -5,6 +5,7 @@
 #define BT_ADDR_LENGTH (6) /*!< define the address length*/
 #define UUID_SIZE 16
 #define MAX_UUID_NUM 10
+#define BLE_MAX_ADV_NUM 8
 
 /*!
 * \def BT_DEV_NAME_MAX_SIZE

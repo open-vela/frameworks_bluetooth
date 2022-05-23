@@ -186,6 +186,9 @@ typedef void (*ble_irk_callback)(void* gap_handle, bt_common_key irk, bt_address
 typedef void (*delete_linkey_callback)(void* gap_handle, bt_address remote_addr, bt_status reason);
 typedef void (*link_connect_request_callback)(void* gap_handle, bt_address remote_addr);
 
+typedef void (*ble_adv_started_callback)(void *gap_handle, uint8_t adv_id);
+typedef void (*ble_adv_stopped_callback)(void *gap_handle, uint8_t adv_id);
+
 typedef struct {
     /** set to sizeof(bt_callbacks_t) */
     size_t size;
@@ -207,6 +210,8 @@ typedef struct {
     ble_irk_callback ble_irk_cb;
     delete_linkey_callback delete_linkey_cb;
     link_connect_request_callback link_connect_request_cb;
+    ble_adv_started_callback ble_adv_started_cb;
+    ble_adv_stopped_callback ble_adv_stopped_cb;
 } btm_gap_callbacks_t;
 
 /*gap interface*/
@@ -364,6 +369,8 @@ typedef struct {
 
     int (*bt_get_remote_services)(void* gap_handle, bt_device_t* remote_addr, bt_uuid_t* service_list, uint8_t count_in);
 
+    bt_result_code (*ble_start_advertising)(void* gap_handle, advertise_param_t* param);
+    bt_result_code (*ble_stop_advertising)(void* gap_handle, uint8_t adv_id);
     bt_result_code (*ble_set_static_identity)(void* gap_handle, bt_device_t* device);
     bt_result_code (*ble_set_public_identity)(void* gap_handle, bt_device_t* device);
     bt_result_code (*ble_get_current_irk)(void* gap_handle);
