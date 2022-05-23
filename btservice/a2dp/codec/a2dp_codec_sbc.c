@@ -160,36 +160,12 @@ static int a2dp_get_sbc_channel_count(a2dp_sbc_info_t *info)
 
 uint32_t a2dp_sbc_frame_length(sbc_param_t* param)
 {
-    uint32_t frame_len, frame_len2;
+    uint32_t frame_len;
 
     if (param == NULL)
         return 0;
 
-    if (param->s16ChannelMode == SBC_STEREO ||
-        param->s16ChannelMode == SBC_JOINT_STEREO) {
-        frame_len = 4 +
-                    (4 *
-                    param->s16NumOfSubBands *
-                    param->s16NumOfChannels) /
-                    8 +
-                    (((param->s16ChannelMode - 2) *
-                    param->s16NumOfSubBands) +
-                    (param->s16NumOfBlocks *
-                    param->s16BitPool)) /
-                    8;
-    } else {
-        frame_len = 4 +
-                    ((4 *
-                    param->s16NumOfSubBands *
-                    param->s16NumOfChannels) /
-                    8) +
-                    ((param->s16NumOfBlocks *
-                    param->s16NumOfChannels *
-                    param->s16BitPool) /
-                    8);
-    }
-
-    frame_len2 = 4 +
+    frame_len = 4 +
                 (4 *
                 param->s16NumOfSubBands *
                 param->s16NumOfChannels) /
@@ -200,7 +176,6 @@ uint32_t a2dp_sbc_frame_length(sbc_param_t* param)
                 (param->s16ChannelMode == SBC_JOINT_STEREO) *
                 param->s16NumOfSubBands)+ 7) /
                 8;
-    assert(frame_len == frame_len2);
 
     return frame_len;
 }
