@@ -142,6 +142,104 @@ static bt_command_t g_cmd_tables[] = {
     //{ "quit", quit_cmd, "Quit" },
 };
 
+static int le_start_advertising2(void* handle, int argc, char** argv)
+{
+    if (argc < 5) {
+        return -1;
+    }
+    int adv_type = atoi(argv[0]);
+    if (adv_type < BLE_EVENT_ADV_IND || adv_type > BLE_EVENT_SCAN_RSP) {
+        BT_LOGE("invalid adv_type:%d", adv_type);
+        return 0;
+    }
+
+    int interval = atoi(argv[1]);
+    int duration = atoi(argv[2]);
+    int filter_type = atoi(argv[3]);
+    uint8_t adv_id = atoi(argv[4]);
+    BT_LOGD("start ble adv type:%d, interval:%d, duration:%d, filter_type:%d, adv_id:%u", adv_type, interval, duration, filter_type, adv_id);
+    uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x03, 0x02, 0x00, 0xFF };
+    uint8_t s_rsp_data[] = { 0x09, 0x09, 0x42, 0x52, 0x54, 0x2D, 0x49, 0x44, 0x4D, 0x30 };
+    s_rsp_data[9] = 0x30 + adv_id;
+
+    advertise_param_t adv_para;
+    memset(&adv_para, 0, sizeof(advertise_param_t));
+    adv_para.params.adv_type = adv_type;
+    adv_para.params.channel_map = BLE_ADV_CHANNEL_DEFAULT;
+    adv_para.params.interval = interval;
+    adv_para.params.tx_power = -10;
+    adv_para.params.own_addr_type = BLE_ADDR_TYPE_UNKNOWN;
+    adv_para.duration = duration;
+    adv_para.adv_length = sizeof(s_adv_data);
+    adv_para.adv_data = (char*)s_adv_data;
+    adv_para.scan_rsp_data = (char*)s_rsp_data;
+    adv_para.scan_rsp_length = sizeof(s_rsp_data);
+    adv_para.params.filter_policy = filter_type;
+    bt_result_code ret = gap_test_interface->ble_start_advertising(g_gap_handle, &adv_para);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGD("start_advertising  fail, ret: %d", ret);
+        return 0;
+    }
+    return 0;
+}
+
+static int le_start_advertising(void* handle, int argc, char** argv)
+{
+    if (argc < 5) {
+        return -1;
+    }
+    int adv_type = atoi(argv[0]);
+    if (adv_type < BLE_EVENT_ADV_IND || adv_type > BLE_EVENT_EXT_SCAN_RSP) {
+        BT_LOGE("invalid adv_type:%d", adv_type);
+        return 0;
+    }
+
+    int interval = atoi(argv[1]);
+    int duration = atoi(argv[2]);
+    int filter_type = atoi(argv[3]);
+    uint8_t adv_id = atoi(argv[4]);
+    BT_LOGD("start ble adv type:%d, interval:%d, duration:%d, filter_type:%d, adv_id:%u", adv_type, interval, duration, filter_type, adv_id);
+    uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x09, 0x09, 0x42, 0x52, 0x54, 0x2D, 0x49, 0x44, 0x4D, 0x30, 0x03, 0x02, 0x00, 0xFF };
+    s_adv_data[12] = 0x30 + adv_id;
+
+    advertise_param_t adv_para;
+    memset(&adv_para, 0, sizeof(advertise_param_t));
+    adv_para.params.adv_type = adv_type;
+    adv_para.params.channel_map = BLE_ADV_CHANNEL_DEFAULT;
+    adv_para.params.interval = interval;
+    adv_para.params.tx_power = -10;
+    adv_para.params.own_addr_type = BLE_ADDR_TYPE_UNKNOWN;
+    adv_para.duration = duration;
+    adv_para.adv_length = sizeof(s_adv_data);
+    adv_para.adv_data = (char*)s_adv_data;
+    adv_para.scan_rsp_data = (char*)s_adv_data;
+    adv_para.scan_rsp_length = sizeof(s_adv_data);
+    adv_para.params.filter_policy = filter_type;
+    bt_result_code ret = gap_test_interface->ble_start_advertising(g_gap_handle, &adv_para);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGD("start_advertising  fail, ret: %d", ret);
+        return 0;
+    }
+    return 0;
+}
+
+static int le_stop_advertising(void* handle, int argc, char** argv)
+{
+    if (argc < 1) {
+        return -1;
+    }
+
+    int adv_id = atoi(argv[0]);
+    BT_LOGD("stop ble adv, adv_id:%d", adv_id);
+
+    bt_result_code ret = gap_test_interface->ble_stop_advertising(g_gap_handle, adv_id);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGD("start_advertising  fail, ret: %d", ret);
+        return 0;
+    }
+    return 0;
+}
+
 static bt_command_t g_gap_tables[] = {
     { "scan_mode", set_scan_mode, "\"set scan mode                                    param: <mode>  <bondable> \"" },
     { "inquiryparas", set_inquiry_scan_parameters, "\"set inquiry parameters                 param: <type>  <scan_interval>  <scan_window> \"" },
@@ -178,6 +276,10 @@ static bt_command_t g_gap_tables[] = {
     { "getresolvinglist", get_ble_resolvinglist_devices, "\"get ble resolvinglist device  \"" },
     { "btinforeset", bt_reset_btinfo, "\"bluetooth device info reset                              param: <0 use last device info, 1 use default device info> \"" },
     { "bleenccon", ble_create_encrypted_connect, "\"ble create encrypted connect      param: <addr> \"" },
+    { "start_adv", le_start_advertising, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration> <filter_type> <adv_id (0:legacy, 1~K: extend)>\"" },
+    { "start_adv2", le_start_advertising2, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration> <filter_type> <adv_id (0:legacy, 1~K: extend)>\"" },
+    { "stop_adv", le_stop_advertising, "\"stop le adv <adv_id>\"" },
+
 };
 
 static struct option gap_options[] = {
@@ -1013,6 +1115,16 @@ void test_delete_linkey_callback(void* gap_handle, bt_address remote_addr, bt_st
     BT_LOGD("%s, addr:%s, reason:%" PRIu32, __func__, addr_str(remote_addr), reason);
 }
 
+static void le_adv_started_callback(void* gap_handle, uint8_t adv_id)
+{
+    BT_LOGD("%s, adv_id:%d", __func__, adv_id);
+}
+
+static void le_adv_stopped_callback(void* gap_handle, uint8_t adv_id)
+{
+    BT_LOGD("%s, adv_id:%d", __func__, adv_id);
+}
+
 btm_gap_callbacks_t gap_test_tool_callbacks = {
     .discovery_state_changed_callback_cb = test_discovery_state_changed_callback,
     .device_found_callback_cb = test_device_found_callback,
@@ -1026,6 +1138,8 @@ btm_gap_callbacks_t gap_test_tool_callbacks = {
     .smp_requeset_cb = test_smp_request_callback,
     .pairing_request_cb = test_pairing_request_callback,
     .delete_linkey_cb = test_delete_linkey_callback,
+    .ble_adv_started_cb = le_adv_started_callback,
+    .ble_adv_stopped_cb = le_adv_stopped_callback,
 };
 
 static bt_mgr_callback_t mgt_cb = {

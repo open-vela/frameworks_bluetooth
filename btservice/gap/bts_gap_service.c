@@ -54,6 +54,23 @@
         }                                                                               \
     } while (0)
 
+#define BT_GAP_CB2(MOTHOD, COD, ...)                                                         \
+    do {                                                                                     \
+        bt_if_gap_handle_t* if_handle;                                                       \
+        struct list_node* handle_node;                                                       \
+        if (!g_gap_service)                                                                  \
+            break;                                                                           \
+        struct list_node* list = &g_gap_service->handle_list;                                \
+        list_for_every(list, handle_node)                                                    \
+        {                                                                                    \
+            if_handle = (bt_if_gap_handle_t*)handle_node;                                    \
+            if ((if_handle->gap_callbacks) && (if_handle->gap_callbacks)->MOTHOD && (COD)) { \
+                (if_handle->gap_callbacks)->MOTHOD(if_handle->gap_handle, __VA_ARGS__);      \
+                break;                                                                       \
+            }                                                                                \
+        }                                                                                    \
+    } while (0)
+
 typedef struct {
     struct list_node handle_list;
     bt_service_state bt_state;
@@ -65,6 +82,16 @@ typedef struct {
     void* gap_handle;
     const btm_gap_callbacks_t* gap_callbacks;
 } bt_if_gap_handle_t;
+
+typedef struct
+{
+    struct list_node node;
+
+    uint8_t advertiser_id;
+    void* gap_handle;
+} bts_leadv_hdl_t;
+
+static struct list_node ble_advertiser_list = LIST_INITIAL_VALUE(ble_advertiser_list);
 
 bt_gap_service_t* g_gap_service = NULL;
 
@@ -81,6 +108,65 @@ static bool gap_is_handle_valid(void* gap_handle)
             return true;
     }
     return false;
+}
+
+static uint8_t gen_ble_adv_id(void)
+{
+    for (uint8_t adv_id = 0; adv_id < BLE_MAX_ADV_NUM; adv_id++) {
+        bts_leadv_hdl_t* handle;
+        bool found = false;
+        list_for_every_entry(&ble_advertiser_list, handle, bts_leadv_hdl_t, node)
+        {
+            if (handle->advertiser_id == adv_id) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            return adv_id;
+        }
+    }
+    BT_LOGE("gen_ble_adv_id overflow");
+    return BLE_MAX_ADV_NUM;
+}
+
+static bts_leadv_hdl_t* add_advertise_handle(void* gap_handle)
+{
+    bts_leadv_hdl_t* client = (bts_leadv_hdl_t*)malloc(sizeof(bts_leadv_hdl_t));
+    if (!client) {
+        BT_LOGE("fail, malloc bts_leadv_hdl_t");
+        return NULL;
+    }
+    memset(client, 0, sizeof(bts_leadv_hdl_t));
+
+    uint8_t adv_id = gen_ble_adv_id();
+    if (adv_id == BLE_MAX_ADV_NUM) {
+        BT_LOGE("fail, gen_ble_adv_id");
+        free(client);
+        return NULL;
+    }
+    client->advertiser_id = adv_id;
+    client->gap_handle = gap_handle;
+    list_add_tail(&ble_advertiser_list, &client->node);
+    return client;
+}
+
+static void remove_advertise_handle(bts_leadv_hdl_t* advertiser)
+{
+    list_delete(&advertiser->node);
+    free(advertiser);
+}
+
+static bts_leadv_hdl_t* find_advertise_handle(uint8_t advertiser_id)
+{
+    bts_leadv_hdl_t* client;
+    list_for_every_entry(&ble_advertiser_list, client, bts_leadv_hdl_t, node)
+    {
+        if (client->advertiser_id == advertiser_id) {
+            return client;
+        }
+    }
+    return NULL;
 }
 
 static void gap_if_received_remote_name_callback(BD_ADDR bd_addr, char* bt_name, uint8_t length)
@@ -128,6 +214,33 @@ static void gap_if_adapter_state_changed_callback(SERVICE_BT_STACK_STATE state)
     BT_LOGD("%s", __func__);
 }
 
+static void gap_if_ble_advtise_started_callback(uint8_t adv_id)
+{
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-STARTED");
+    bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
+    if (!client) {
+        SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(adv_id);
+        BT_LOGW("stop le adv, adv id:%d, ret:%" PRIu32, adv_id, ret);
+        return;
+    }
+
+    BT_GAP_CB2(ble_adv_started_cb, if_handle->gap_handle == client->gap_handle, adv_id);
+}
+
+static void gap_if_ble_advtise_stopped_callback(uint8_t adv_id)
+{
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-STOPPED");
+    bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
+    if (!client) {
+        SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(adv_id);
+        BT_LOGW("stop le adv, adv id:%d, ret:%" PRIu32, adv_id, ret);
+        return;
+    }
+
+    BT_GAP_CB2(ble_adv_stopped_cb, if_handle->gap_handle == client->gap_handle, adv_id);
+    remove_advertise_handle(client);
+}
+
 static void gap_if_smp_request_callback(ssp_request_data_t* request_data)
 {
     BT_GAP_CB(smp_requeset_cb, request_data);
@@ -168,6 +281,8 @@ bts_gap_callback_t bts_gap_callbacks = {
     .bond_state_changed_cb = gap_if_bond_state_changed_callback,
     .connection_state_changed_cb = gap_if_connection_state_callback,
     .hci_event_cb = gap_if_hci_event_callback,
+    .ble_adv_started_cb = gap_if_ble_advtise_started_callback,
+    .ble_adv_stopped_cb = gap_if_ble_advtise_stopped_callback,
     .smp_request_cb = gap_if_smp_request_callback,
     .ble_phy_update_cb = gap_if_ble_phy_update_callback,
     .ble_address_cb = gap_if_ble_address_callback,
@@ -420,6 +535,56 @@ static bt_result_code bts_if_send_hci_command(void* gap_handle, bt_hci_command_t
     return ret;
 }
 #endif
+
+static bt_result_code bts_ble_start_advertising(void* gap_handle, advertise_param_t* param)
+{
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-START");
+    BT_ASSERT(!param, BT_RESULT_FAILED);
+    bts_leadv_hdl_t* client = add_advertise_handle(gap_handle);
+    BT_ASSERT(!client, BT_RESULT_FAILED);
+    param->adv_id = client->advertiser_id;
+
+    SERVICE_BT_STATUS ret = service_adapter_gap_start_ble_adv((SERVICE_SCAN_ADV_PARAMS_S*)(param));
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("service ble start adv fail, err:%" PRIu32, ret);
+        remove_advertise_handle(client);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
+static bool bts_check_ble_advertise_id(void* gap_handle, uint8_t adv_id)
+{
+    bts_leadv_hdl_t* client;
+    list_for_every_entry(&ble_advertiser_list, client, bts_leadv_hdl_t, node)
+    {
+        if (client->gap_handle == gap_handle && client->advertiser_id == adv_id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bt_result_code bts_ble_stop_advertising(void* gap_handle, uint8_t adv_id)
+{
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-STOP");
+    bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
+    BT_ASSERT(!client, BT_RESULT_FAILED);
+
+    if (!bts_check_ble_advertise_id(gap_handle, adv_id)) {
+        BT_LOGE("fail, check_ble_advertise_id adv_id %d invalid", adv_id);
+        return BT_RESULT_FAILED;
+    }
+
+    SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(client->advertiser_id);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("service ble stop adv fail, err:%" PRIu32, ret);
+        remove_advertise_handle(client);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
 static bt_result_code bts_if_ble_set_static_identity(void* gap_handle, bt_device_t* device)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -629,6 +794,8 @@ static btm_gap_interface_t gap_interface = {
 #ifdef HCI_VSC_COMMAND
     .bt_send_hci_command = bts_if_send_hci_command,
 #endif
+    .ble_start_advertising = bts_ble_start_advertising,
+    .ble_stop_advertising = bts_ble_stop_advertising,
     .ble_set_static_identity = bts_if_ble_set_static_identity,
     .ble_set_public_identity = bts_if_ble_set_public_identity,
     .ble_get_current_irk = bts_if_ble_get_current_irk,
