@@ -849,7 +849,7 @@ static void manager_state_changed_callback(btm_bt_state state)
             BT_LOGD("%s, btinfo_reset:%d", __func__, btinfo_reset);
             return;
         }
-        gap_test_interface->bt_set_local_device_class(g_gap_handle, COD_SERVICE_RENDERING | COD_SERVICE_AUDIO | COD_SERVICE_TELEPHONY | COD_AV_HEADSET);
+        gap_test_interface->bt_set_local_device_class(g_gap_handle, COD_SERVICE_RENDERING | COD_SERVICE_AUDIO | COD_SERVICE_TELEPHONY | COD_AV_HEADSET | COD_PERIPHERAL_KEYORPOINT);
         gap_test_interface->bt_set_scan_mode(g_gap_handle, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
         gap_test_interface->bt_set_local_io_capability(g_gap_handle, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
     }
