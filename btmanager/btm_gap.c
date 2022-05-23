@@ -245,6 +245,26 @@ static void btm_link_connect_request_callback(void* gap_handle, bt_address remot
     context->gap_callbacks->link_connect_request_cb(gap_handle, remote_addr);
 }
 
+static void btm_ble_adv_started_callback(void* gap_handle, uint8_t adv_id)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->ble_adv_started_cb))
+        return;
+    context->gap_callbacks->ble_adv_started_cb(gap_handle, adv_id);
+}
+
+static void btm_ble_adv_stopped_callback(void* gap_handle, uint8_t adv_id)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->ble_adv_stopped_cb))
+        return;
+    context->gap_callbacks->ble_adv_stopped_cb(gap_handle, adv_id);
+}
+
 static const btm_gap_callbacks_t service_callbacks = {
     .size = sizeof(btm_gap_callbacks_t),
     .bt_connection_state_changed_callback_cb = btm_connection_state_changed_callback,
@@ -265,6 +285,8 @@ static const btm_gap_callbacks_t service_callbacks = {
     .ble_irk_cb = btm_ble_irk_callback,
     .delete_linkey_cb = btm_delete_linkey_callback,
     .link_connect_request_cb = btm_link_connect_request_callback,
+    .ble_adv_started_cb = btm_ble_adv_started_callback,
+    .ble_adv_stopped_cb = btm_ble_adv_stopped_callback,
 };
 
 static bt_result_code btm_gap_register_callbacks(void* manager_handle, void** gap_handle, const btm_gap_callbacks_t* callbacks)
@@ -493,6 +515,24 @@ static bt_result_code btm_stop_service_discovery(void* gap_handle, bt_device_t* 
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
     BT_GAP_INTERFACE(context->service_interface, bt_stop_service_discovery, ret, gap_handle, device);
+    return ret;
+}
+
+static bt_result_code btm_ble_start_advertising(void* gap_handle, advertise_param_t* param)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    BT_ASSERT(!gap_handle, ret);
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_GAP_INTERFACE(context->service_interface, ble_start_advertising, ret, gap_handle, param);
+    return ret;
+}
+
+static bt_result_code btm_ble_stop_advertising(void* gap_handle, uint8_t adv_id)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    BT_ASSERT(!gap_handle, ret);
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_GAP_INTERFACE(context->service_interface, ble_stop_advertising, ret, gap_handle, adv_id);
     return ret;
 }
 
@@ -730,6 +770,8 @@ static btm_gap_interface_t gap_interface = {
 #ifdef HCI_VSC_COMMAND
     .bt_send_hci_command = btm_send_hci_command,
 #endif
+    .ble_start_advertising= btm_ble_start_advertising,
+    .ble_stop_advertising = btm_ble_stop_advertising,
     .ble_set_static_identity = btm_ble_set_static_identity,
     .ble_set_public_identity = btm_ble_set_public_identity,
     .ble_get_current_irk = btm_ble_get_current_irk,

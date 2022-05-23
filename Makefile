@@ -89,11 +89,6 @@ ifeq ($(CONFIG_BLUETOOTH_LE_SCAN),y)
 	CSRCS +=btservice/gatt/bts_le_scan.c
 endif
 
-ifeq ($(CONFIG_BLUETOOTH_LE_ADVERTISE),y)
-	CSRCS +=btmanager/btm_le_advertise.c
-	CSRCS +=btservice/gatt/bts_le_advertise.c
-endif
-
 ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT),y)
 	CSRCS +=btmanager/btm_gatt_client.c
 	CSRCS +=btservice/gatt/bts_gatt_client.c

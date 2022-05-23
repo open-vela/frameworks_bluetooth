@@ -70,8 +70,5 @@ const gatt_interface_t* gatt_get_interface(void)
 #if defined(CONFIG_BLUETOOTH_LE_SCAN)
     gatt_if.scanner = get_bts_lescan_instance();
 #endif
-#if defined(CONFIG_BLUETOOTH_LE_ADVERTISE)
-    gatt_if.advertiser = get_bts_bleadv_instance();
-#endif
     return &gatt_if;
 }
