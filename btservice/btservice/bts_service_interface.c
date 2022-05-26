@@ -14,6 +14,7 @@
 #include "bts_service_interface.h"
 #include "bts_spp.h"
 #include "bts_panu.h"
+#include "bts_avrcp.h"
 #include "log.h"
 
 typedef struct {
@@ -128,6 +129,9 @@ static bt_result_code bts_if_enable(void* handle)
 #ifdef CONFIG_BLUETOOTH_AVRCP_TG
     avrcp_target_service_start();
 #endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CT
+    avrcp_ctrl_service_start();
+#endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     a2dp_sink_service_start();
 #endif
@@ -168,6 +172,9 @@ static bt_result_code bts_if_disable(void* handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_AVRCP_TG
     avrcp_target_service_stop();
+#endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CT
+    avrcp_ctrl_service_stop();
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_service_stop();
@@ -233,6 +240,10 @@ static const void* if_get_profile_interface(const char* profile_id)
 #ifdef CONFIG_BLUETOOTH_AVRCP_TG
     if (is_profile(profile_id, BT_PROFILE_AV_RC_TARGET))
         return get_avrcp_tg_service_interface();
+#endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CT
+    if (is_profile(profile_id, BT_PROFILE_AV_RC_CTRL))
+        return get_avrcp_ctrl_service_interface();
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     if (is_profile(profile_id, BT_PROFILE_HANDSFREE_HF))

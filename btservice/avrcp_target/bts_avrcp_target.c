@@ -23,19 +23,20 @@
  ****************************************************************************/
 #include <errno.h>
 #include <fcntl.h>
-#include <nuttx/input/keyboard.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <nuttx/input/keyboard.h>
 
+#include "stack_adapter_avrcp.h"
+#include "stack_adapter_avrcp_target.h"
+#include "stack_adapter_common.h"
+#include "stack_adapter_service_base.h"
 #include "btm_manager.h"
 #include "btm_avrcp.h"
 #include "bts_a2dp_source.h"
 #include "bts_avrcp_target.h"
 #include "bts_service.h"
-#include "stack_adapter_avrcp_target.h"
-#include "stack_adapter_common.h"
-#include "stack_adapter_service_base.h"
 #include "utils/utils.h"
 #define LOG_TAG "avrcp_tg"
 #include "log.h"
@@ -83,6 +84,7 @@ static const struct {
 
 static int g_keyboard_fd = -1;
 static avrcp_tg_callbacks_t *g_avrcp_cbs = NULL;
+
 static const char* avrcp_event_to_string(uint8_t event)
 {
     switch (event) {
