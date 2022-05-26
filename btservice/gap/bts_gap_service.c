@@ -112,8 +112,10 @@ static bool gap_is_handle_valid(void* gap_handle)
 
 static uint8_t gen_ble_adv_id(void)
 {
-    for (uint8_t adv_id = 0; adv_id < BLE_MAX_ADV_NUM; adv_id++) {
-        bts_leadv_hdl_t* handle;
+    bts_leadv_hdl_t* handle = list_peek_tail_type(&ble_advertiser_list, bts_leadv_hdl_t, node);
+    uint8_t adv_id = handle ? (handle->advertiser_id + 1) % BLE_MAX_ADV_NUM : 0;
+
+    for (uint8_t i = 0; i < BLE_MAX_ADV_NUM; i++) {
         bool found = false;
         list_for_every_entry(&ble_advertiser_list, handle, bts_leadv_hdl_t, node)
         {
@@ -125,6 +127,7 @@ static uint8_t gen_ble_adv_id(void)
         if (!found) {
             return adv_id;
         }
+        adv_id = (handle->advertiser_id + 1) % BLE_MAX_ADV_NUM;
     }
     BT_LOGE("gen_ble_adv_id overflow");
     return BLE_MAX_ADV_NUM;
