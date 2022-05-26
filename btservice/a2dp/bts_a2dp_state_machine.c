@@ -459,7 +459,10 @@ static void opened_enter(state_machine_t* sm)
         /* if we are accept link as a2dp src, change the av link role to master */
         if (a2dp_sm->peer_sep == SEP_SNK)
             service_adapter_gap_set_link_role(a2dp_sm->addr, BT_ROLE_MASTER);
-
+#ifdef CONFIG_BLUETOOTH_AVRCP_CT
+        if (a2dp_sm->peer_sep == SEP_SRC)
+            service_adapter_avrcp_connect(a2dp_sm->addr);
+#endif
         bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
         bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
                                          A2DP_CONNECTION_STATE_CONNECTED);

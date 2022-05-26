@@ -48,8 +48,8 @@ static int volume_cmd(void* handle, int argc, char* argv[]);
 
 static const avrcp_tg_interface_t* avrcp_tg_interface = NULL;
 static bt_command_t g_avrcp_tg_tables[] = {
-    { "playback", playback_cmd, "\"notify playback status      param: <address> <status>\"" },
-    { "volume", volume_cmd, "\"notify volume changed param: <address> <volume>\"" },
+    { "playback", playback_cmd, "\"TG notify playback status      param: <address> <status>\"" },
+    { "volume", volume_cmd, "\"TG notify volume changed param: <address> <volume>\"" },
 };
 
 static void usage(void)
@@ -92,7 +92,7 @@ static int volume_cmd(void* handle, int argc, char* argv[])
     return 0;
 }
 
-int avrcp_target_command(void* handle, int argc, char* argv[])
+int avrcp_tg_command(void* handle, int argc, char* argv[])
 {
     int ret = -1;
 

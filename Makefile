@@ -65,6 +65,11 @@ ifeq ($(CONFIG_BLUETOOTH_AVRCP_TG),y)
 	CSRCS +=btservice/avrcp_target/bts_avrcp_target.c
 	CSRCS +=btservice/avrcp_target/bts_avrcp_target_service.c
 endif
+ifeq ($(CONFIG_BLUETOOTH_AVRCP_CT),y)
+	CSRCS +=btmanager/btm_avrcp_ctrl.c
+	CSRCS +=btservice/avrcp_ctrl/bts_avrcp_ctrl.c
+	CSRCS +=btservice/avrcp_ctrl/bts_avrcp_ctrl_service.c
+endif
 
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
 	CSRCS +=btmanager/btm_hfp_hf.c
@@ -128,6 +133,9 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK),y)
 endif
 ifeq ($(CONFIG_BLUETOOTH_AVRCP_TG),y)
 	 CSRCS +=tools/avrcp_tg.c
+endif
+ifeq ($(CONFIG_BLUETOOTH_AVRCP_CT),y)
+	 CSRCS +=tools/avrcp_ct.c
 endif
 ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER),y)
 	 CSRCS +=tools/gatt_server.c
