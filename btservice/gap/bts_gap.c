@@ -215,6 +215,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
         }
         if (gap_msg->event_data.data.remote_name.bt_name)
             free(gap_msg->event_data.data.remote_name.bt_name);
+        gap_bt_bond_store();
         break;
     }
     case GAP_SSP_REQUEST: {
