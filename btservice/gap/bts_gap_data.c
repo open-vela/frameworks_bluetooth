@@ -570,7 +570,7 @@ static bt_result_code gap_config_load_sniff_param(void)
         .sniff_timeout = sniff_timeout,
     };
 
-    SERVICE_BT_STATUS ret = service_adapter_gap_set_auto_sniff((struct SERVICE_AUTOSNIFF_PARAMS_S*)(&par));
+    SERVICE_BT_STATUS ret = service_adapter_gap_set_auto_sniff((SERVICE_AUTOSNIFF_PARAMS_S*)(&par));
     if (ret != SERVICE_BT_STATUS_SUCCESS)
     {
         BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
