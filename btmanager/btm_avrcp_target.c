@@ -21,6 +21,57 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include <stdio.h>
+#include <stdint.h>
 
 #include "btm_manager.h"
-#include <stdio.h>
+#include "btm_avrcp.h"
+#include "bts_avrcp_target.h"
+
+
+static bt_result_code avrc_get_play_status_rsp(bt_address addr,
+                                        play_status_t status,
+                                        uint32_t song_len, uint32_t song_pos)
+{
+    return BT_RESULT_UNSUPPORTED;
+}
+
+static bt_result_code avrc_play_status_notify(bt_address addr, play_status_t status)
+{
+    return bts_avrcp_notify_play_state_changed(addr, status);
+}
+
+static bt_result_code avrc_volume_changed_notify(bt_address addr, uint8_t volume)
+{
+    return bts_avrcp_notify_volume_changed(addr, volume);
+}
+
+static bt_result_code avrc_set_absolute_volume(bt_address addr, uint8_t volume)
+{
+    return BT_RESULT_UNSUPPORTED;
+}
+
+static bt_result_code avrc_set_callbacks(avrcp_tg_callbacks_t* callbacks)
+{
+    return BT_RESULT_UNSUPPORTED;
+}
+
+static void avrc_reset_callbacks(void)
+{
+
+}
+
+const avrcp_tg_interface_t avrcpTgInterface = {
+    sizeof(avrcpTgInterface),
+    avrc_get_play_status_rsp,
+    avrc_play_status_notify,
+    avrc_volume_changed_notify,
+    avrc_set_absolute_volume,
+    avrc_set_callbacks,
+    avrc_reset_callbacks
+};
+
+const avrcp_tg_interface_t *get_avrcp_tg_interface(void)
+{
+    return &avrcpTgInterface;
+}
