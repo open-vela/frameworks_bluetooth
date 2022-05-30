@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 #include "btm_manager.h"
+#include "btm_avrcp.h"
 #include "bts_a2dp_source.h"
 #include "bts_avrcp_target.h"
 #include "bts_service.h"
@@ -80,8 +81,8 @@ static const struct {
     { NULL, 0, 0 }
 };
 
-int g_keyboard_fd = -1;
-
+static int g_keyboard_fd = -1;
+//static avrcp_tg_callbacks_t *g_avrcp_cbs = NULL;
 static const char* avrcp_event_to_string(uint8_t event)
 {
     switch (event) {
@@ -224,7 +225,7 @@ static void avrcp_register_notification_handler(bt_address addr,
             service_adapter_avrcp_target_notify_play_position_changed(addr, 0);
             break;
         case AVRCP_NOTIFICATION_VOLUME_CHANGED:
-            service_adapter_avrcp_target_notify_volume_changed(addr, 50);
+            service_adapter_avrcp_target_notify_volume_changed(addr, 0x40);
             break;
         default:
             break;
@@ -361,8 +362,21 @@ bt_result_code bts_avrcp_notify_play_state_changed(bt_address addr, play_status_
     return BT_RESULT_SUCCESS;
 }
 
+bt_result_code bts_avrcp_notify_volume_changed(bt_address addr, uint8_t volume)
+{
+    SERVICE_BT_STATUS ret;
+
+    BT_LOGD("%s addr:%s, new volume:%d", __func__, addr_str(addr), volume);
+    ret = service_adapter_avrcp_target_notify_volume_changed(addr, volume);
+    if (ret != SERVICE_BT_STATUS_SUCCESS)
+        return BT_RESULT_FAILED;
+
+    return BT_RESULT_SUCCESS;
+}
+
 void bts_avrcp_target_cleanup(void)
 {
     bts_unregister_profile_process(BT_PROFILE_AV_RC_TARGET_ID);
     service_adapter_avrcp_target_cleanup();
 }
+
