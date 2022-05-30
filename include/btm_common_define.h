@@ -416,6 +416,7 @@ typedef enum {
     BT_RESULT_SUCCESS = 0, ///< success code.
     BT_RESULT_WAITING_FOR_INIT_STATUS_CHANGED = 1,
     BT_RESULT_ENABLE_ALLREADY_ON_GOING = 2,
+    BT_RESULT_UNSUPPORTED,
 } bt_result_code;
 
 /** State of bluetooth manager*/
