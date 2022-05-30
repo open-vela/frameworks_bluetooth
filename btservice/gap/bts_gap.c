@@ -499,6 +499,8 @@ static void adapter_ble_adv_stopped_callback(uint8_t adv_id)
 static void adapter_bt_link_role_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_ROLE link_role)
 {
     gap_msg_t* msg = gap_msg_new(GAP_LINK_ROLE_CHANGED);
+
+    BT_LOGI("link role changed:%d address: %s", link_role, addr_str(remote_addr));
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.link_role = link_role;
     gap_send_message(msg);
@@ -524,6 +526,8 @@ static void adapter_link_mode_changed_callback(BD_ADDR remote_addr, SERVICE_BT_L
 static void adapter_link_connect_request_callback(BD_ADDR remote_addr)
 {
     gap_msg_t* msg = gap_msg_new(GAP_CONNECT_REQUEST);
+
+    BT_LOGI("acl link connect request, addr:%s", addr_str(remote_addr));
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     gap_send_message(msg);
 }
