@@ -36,6 +36,7 @@
 #include <string.h>
 #include <connectivity/bt.h>
 #include <uORB/uORB.h>
+#include "stack_adapter_gap.h"
 #include "stack_adapter_a2dp_sink.h"
 #include "stack_adapter_a2dp_source.h"
 #include "stack_adapter_common.h"
@@ -420,9 +421,13 @@ static void opened_enter(state_machine_t* sm)
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
     if (prev_state == &idle_state || prev_state == &opening_state) {
+        /* if we are accept link as a2dp src, change the av link role to master */
+        if (a2dp_sm->peer_sep == SEP_SNK)
+            service_adapter_gap_set_link_role(a2dp_sm->addr, BT_ROLE_MASTER);
+
         bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
         bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
-            A2DP_CONNECTION_STATE_CONNECTED);
+                                         A2DP_CONNECTION_STATE_CONNECTED);
     } else if (prev_state == &started_state) {
         bts_avrcp_notify_play_state_changed(a2dp_sm->addr, PLAY_STATUS_PAUSED);
     }
