@@ -414,24 +414,24 @@ static void on_server_notify_sent(bt_address remote_addr, gatt_status status)
     }
 }
 
-static stack_gatt_server_callbacks gatt_server_cbs = {
+static GATT_SERVER_CALLBACKS_S gatt_server_cbs = {
     sizeof(GATT_SERVER_CALLBACKS_S),
-    .gatt_server_connection_state_changed_cb = on_server_connection_state_changed,
-    .gatt_server_elements_added_cb = on_server_elements_added,
-    .gatt_server_elements_removed_cb = on_server_elements_removed,
-    .gatt_server_phy_read_cb = on_server_phy_read,
-    .gatt_server_phy_update_cb = on_server_phy_update,
-    .gatt_server_received_element_read_request_cb = on_server_read_request,
-    .gatt_server_received_element_write_request_cb = on_server_write_request,
-    .gatt_server_mtu_changed_cb = on_server_mtu_changed,
-    .gatt_server_notification_sent_cb = on_server_notify_sent,
+    .gatt_server_connection_state_changed_cb = (gatt_server_connection_state_changed_callback)on_server_connection_state_changed,
+    .gatt_server_elements_added_cb = (gatt_server_elements_added_callback)on_server_elements_added,
+    .gatt_server_elements_removed_cb = (gatt_server_elements_removed_callback)on_server_elements_removed,
+    .gatt_server_phy_read_cb = (gatt_server_phy_read_callback)on_server_phy_read,
+    .gatt_server_phy_update_cb = (gatt_server_phy_update_callback)on_server_phy_update,
+    .gatt_server_received_element_read_request_cb = (gatt_server_received_element_read_request_callback)on_server_read_request,
+    .gatt_server_received_element_write_request_cb = (gatt_server_received_element_write_request_callback)on_server_write_request,
+    .gatt_server_mtu_changed_cb = (gatt_server_mtu_changed_callback)on_server_mtu_changed,
+    .gatt_server_notification_sent_cb = (gatt_server_notification_sent_callback)on_server_notify_sent,
 };
 
 static bt_result_code gatt_server_open(bts_gatts_hdl_t server)
 {
     if (list_is_empty(&gatts_list)) {
         bts_register_profile_process(BT_PROFILE_GATTS_ID, &handle_msg_received);
-        SERVICE_GATT_STATUS ret = service_adapter_gatt_server_open((GATT_SERVER_CALLBACKS_S*)(&gatt_server_cbs));
+        SERVICE_GATT_STATUS ret = service_adapter_gatt_server_open(&gatt_server_cbs);
         if (ret != GATT_SUCCESS) {
             BT_LOGE("fail, gatt server open, err:%d", ret);
             return BT_RESULT_FAILED;

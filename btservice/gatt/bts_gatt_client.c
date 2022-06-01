@@ -332,25 +332,25 @@ static void on_client_mtu_changed(bt_address remote_addr, uint32_t mtu, gatt_sta
     send_msg(msg);
 }
 
-static stack_gatt_client_callbacks gatt_client_cbs = {
-    .size = sizeof(gatt_client_cbs),
+static GATT_CLIENT_CALLBACKS_S gatt_client_cbs = {
+    .size = sizeof(GATT_CLIENT_CALLBACKS_S),
 
-    .gatt_client_connection_state_changed_cb = on_client_connection_state_changed,
-    .gatt_client_service_discovered_cb = on_client_service_discovered,
-    .gatt_client_element_read_cb = on_client_read_result,
-    .gatt_client_element_written_cb = on_client_write_result,
-    .gatt_client_element_changed_cb = on_client_nofity_request,
-    .gatt_client_remote_rssi_read_cb = on_client_rssi_read,
-    .gatt_client_phy_read_cb = on_client_phy_read,
-    .gatt_client_phy_update_cb = on_client_phy_update,
-    .gatt_client_mtu_changed_cb = on_client_mtu_changed,
+    .gatt_client_connection_state_changed_cb = (gatt_client_connection_state_changed_callback)on_client_connection_state_changed,
+    .gatt_client_service_discovered_cb = (gatt_client_service_discovered_callback)on_client_service_discovered,
+    .gatt_client_element_read_cb = (gatt_client_element_read_callback)on_client_read_result,
+    .gatt_client_element_written_cb = (gatt_client_element_written_callback)on_client_write_result,
+    .gatt_client_element_changed_cb = (gatt_client_element_changed_callback)on_client_nofity_request,
+    .gatt_client_remote_rssi_read_cb = (gatt_client_remote_rssi_read_callback)on_client_rssi_read,
+    .gatt_client_phy_read_cb = (gatt_client_phy_read_callback)on_client_phy_read,
+    .gatt_client_phy_update_cb = (gatt_client_phy_update_callback)on_client_phy_update,
+    .gatt_client_mtu_changed_cb = (gatt_client_mtu_changed_callback)on_client_mtu_changed,
 };
 
 static bt_result_code gatt_client_connect(bts_gattc_hdl_t handle)
 {
     BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BLUELET-CONNECTION-START, addr:%s", addr_str(handle.remote_addr));
     bts_register_profile_process(BT_PROFILE_GATTC_ID, &handle_msg_received);
-    gatt_status ret = service_adapter_gatt_client_connect(handle.remote_addr, (GATT_CLIENT_CALLBACKS_S*)(&gatt_client_cbs));
+    gatt_status ret = service_adapter_gatt_client_connect(handle.remote_addr, &gatt_client_cbs);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt handle connect, err:%d", ret);
         return BT_RESULT_FAILED;
