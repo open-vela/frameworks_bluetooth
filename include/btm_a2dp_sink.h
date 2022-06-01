@@ -51,19 +51,44 @@ typedef struct {
 typedef struct {
     size_t size;
 
-    /** connect to headset */
+    /**
+     * @brief Connect to the headset
+     * @param[in] handle    the A2DP handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*connect)(void* handle, bt_address addr);
 
-    /** dis-connect from headset */
+    /**
+     * @brief Dis-connect from headset
+     * @param[in] handle    the A2DP handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*disconnect)(void* handle, bt_address addr);
 
-    /** sets the connected device as active */
+    /**
+     * @brief Sets the connected device as active
+     * @note Not implemented, will be realized in the future
+     * @param[in] handle    the A2DP handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*set_active_device)(void* handle, bt_address addr);
 
+    /**
+     * @brief Set the a2dp sink event callback
+     * @param[in] handle    The A2DP handle (unused).
+     * @param[in] callbacks a2dp sink event callback function.
+     */
     void (*set_callbacks)(void* handle, a2dp_sink_callbacks_t* callbacks);
 
 } a2dp_sink_interface_t;
 
+/**
+ * @brief Get the a2dp sink interface
+ * @return Pointer to A2DP sink interface.
+ */
 extern const a2dp_sink_interface_t* get_a2dp_sink_interface(void);
 
 #endif

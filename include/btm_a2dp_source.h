@@ -40,6 +40,7 @@
 
 typedef void (*a2dp_audio_source_config_callback)(bt_address addr);
 
+/* A2DP sink interface structure */
 typedef struct {
     /** set to sizeof(a2dp_source_callbacks_t) */
     size_t size;
@@ -48,25 +49,58 @@ typedef struct {
     a2dp_audio_source_config_callback audio_source_config_cb;
 } a2dp_source_callbacks_t;
 
+/* A2DP source interface structure */
 typedef struct {
     size_t size;
 
-    /** connect to headset */
+    /**
+     * @brief Connect to the headset
+     * @param[in] handle    the A2DP handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*connect)(void* handle, bt_address addr);
 
-    /** dis-connect from headset */
+    /**
+     * @brief Dis-connect from headset
+     * @param[in] handle    the A2DP handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*disconnect)(void* handle, bt_address addr);
 
-    /** sets the connected device silence state */
+    /**
+     * @brief Sets the connected device silence state
+     * @note  Not implemented, will be realized in the future
+     * @param[in] handle    the A2DP handle (unused).
+     * @param[in] addr      address of peer device.
+     * @param[in] silence   true on enable silence, false on disable
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*set_silence_device)(void* handle, bt_address addr, bool silence);
 
-    /** sets the connected device as active */
+    /**
+     * @brief Sets the connected device as active
+     * @note  Not implemented, will be realized in the future
+     * @param[in] handle    the A2DP handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*set_active_device)(void* handle, bt_address addr);
 
+    /**
+     * @brief Set the a2dp source event callback
+     * @param[in] handle    The A2DP handle (unused).
+     * @param[in] callbacks a2dp source event callback function.
+     */
     void (*set_callbacks)(void* handle, a2dp_source_callbacks_t* callbacks);
 
 } a2dp_source_interface_t;
 
+/**
+ * @brief Get the a2dp source interface
+ * @return Pointer to a2dp source interface.
+ */
 extern const a2dp_source_interface_t* get_a2dp_source_interface(void);
 
 #endif

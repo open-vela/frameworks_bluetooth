@@ -126,17 +126,61 @@ typedef struct {
   avrcp_get_play_status_callback get_play_status_cb;
 } avrcp_tg_callbacks_t;
 
+/* avrcp target interface structure */
 typedef struct {
     size_t size;
+
+    /**
+     * @brief Response get playback status request
+     * @param[in] addr      address of peer device.
+     * @param[in] status    current playback status.
+     * @param[in] song_len  length of song which is playing
+     * @param[in] song_pos  position of song which is playing
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*get_play_status_rsp)(bt_address addr,
                                           play_status_t status,
                                           uint32_t song_len, uint32_t song_pos);
+
+    /**
+     * @brief notify playback status if peer had register playback notification
+     * @param[in] addr      address of peer device.
+     * @param[in] status    current playback status.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*play_status_notify)(bt_address addr, play_status_t status);
+
+    /**
+     * @brief notify volume change if peer had register volumechanged notification
+     * @param[in] addr      address of peer device.
+     * @param[in] volume    volume of mediaplayer, range in <0-0x7F>.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*volume_changed_notify)(bt_address addr, uint8_t volume);
+
+    /**
+     * @brief set absolute volume
+     * @param[in] addr      address of peer device.
+     * @param[in] volume    volume of mediaplayer, range in <0-0x7F>.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*set_absolute_volume)(bt_address addr, uint8_t volume);
+
+    /**
+     * @brief Set the avrcp target event callback
+     * @param[in] callbacks  avrcp target event callback function.
+     */
     bt_result_code (*set_callbacks)(avrcp_tg_callbacks_t* callbacks);
+
+    /**
+     * @brief Reset the avrcp target event callback
+     */
     void (*reset_callbacks)(void);
 } avrcp_tg_interface_t;
 
+/**
+ * @brief Get the avrcp target interface
+ * @return Pointer to avrcp target interface.
+ */
 const avrcp_tg_interface_t *get_avrcp_tg_interface(void);
 #endif

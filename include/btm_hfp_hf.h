@@ -143,29 +143,167 @@ typedef struct
     hf_client_ring_indication_callback ring_indication_cb;
 } hf_client_callbacks_t;
 
+/* HFP HF interface structure */
 typedef struct
 {
     size_t size;
+
+    /**
+     * @brief Connect to the audio gateway.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*connect)(void* handle, bt_address addr);
+
+    /**
+     * @brief Dis-connect from the audio gateway.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*disconnect)(void* handle, bt_address addr);
+
+    /**
+     * @brief Create an audio connection, SCO link.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*connect_audio)(void* handle, bt_address addr);
+
+    /**
+     * @brief Close audio connection, SCO link.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*disconnect_audio)(void* handle, bt_address addr);
+
+    /**
+     * @brief Start voice recognition.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*start_voice_recognition)(void* handle, bt_address addr);
+
+    /**
+     * @brief Stop voice recognition.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*stop_voice_recognition)(void* handle, bt_address addr);
+
+    /**
+     * @brief Volume control.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @param[in] type      type of volume control.
+     * @param[in] volume    expected set volume value, range in <1-15>.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*volume_control)(void* handle, bt_address addr, hf_client_volume_type_t type, int volume);
+
+    /**
+     * @brief Place a call with number a number.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @param[in] number    phone number to call.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*dial)(void* handle, bt_address addr, const char* number);
+
+    /**
+     * @brief Place a call with number specified by location.
+     * @note Speed dial
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @param[in] memory    location of memory number.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*dial_memory)(void* handle, bt_address addr, uint32_t memory);
+
+    /**
+     * @brief Place a call without number.
+     * @note Dial last call number
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*redial)(void* handle, bt_address addr);
+
+    /**
+     * @brief Accept the incoming call.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*accept_call)(void* handle, bt_address addr);
+
+    /**
+     * @brief Reject the incoming call.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*reject_call)(void* handle, bt_address addr);
+
+    /**
+     * @brief Hold the incoming call.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*hold_call)(void* handle, bt_address addr);
+
+    /**
+     * @brief Terminate the ongoing call.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*terminate_call)(void* handle, bt_address addr);
+
+    /**
+     * @brief Query the current calls in audio gateway side.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*query_current_calls)(void* handle, bt_address addr);
+
+    /**
+     * @brief Send AT command.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @param[in] cmd       at command
+     * @note at command must be end with "\r\n"
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*send_at_cmd)(void* handle, bt_address addr, const char* cmd);
+
+    /**
+     * @brief notify device battery value to audio gateway.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*update_battery_level)(void* handle, bt_address addr, uint8_t battery);
+
+    /**
+     * @brief Set the hand-free event callback
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] callbacks hand-free event callback function.
+     */
     void (*set_callbacks)(void* handle, hf_client_callbacks_t* callbacks);
 } hf_client_interface_t;
 
+/**
+ * @brief Get the hand-free interface
+ * @return Pointer to hand-free interface.
+ */
 const hf_client_interface_t* get_hf_client_interface(void);
 
 #endif

@@ -68,12 +68,42 @@ typedef struct {
 
 typedef struct {
     size_t size;
+
+    /**
+     * @brief Connect to the NAP server
+     * @param[in] handle    the pan handle (unused).
+     * @param[in] addr      address of peer device.
+     * @param[in] dst_role  remote pan server role.
+     * @param[in] src_role  local pan role.
+     * @note Only support PANU connect to NAP server, so dst_role must be 1, src_role must be 2.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*connect)(void* handle, bt_address addr, uint8_t dst_role, uint8_t src_role);
+
+    /**
+     * @brief Dis-connect from NAP server
+     * @param[in] handle    the pan handle (unused).
+     * @param[in] addr      address of peer device.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
     bt_result_code (*disconnect)(void* handle, bt_address addr);
+
+    /**
+     * @brief Set the pan event callback
+     * @param[in] callbacks  avrcp target event callback function.
+     */
     void (*set_callbacks)(void** handle, pan_callbacks_t* callbacks);
+
+    /**
+     * @brief Reset the pan event callback
+     */
     void (*reset_callbacks)(void** handle);
 } pan_interface_t;
 
+/**
+ * @brief Get the pan interface
+ * @return Pointer to pan interface.
+ */
 const pan_interface_t* get_pan_interface(void);
 
 #endif
