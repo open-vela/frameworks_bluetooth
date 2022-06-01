@@ -37,9 +37,39 @@
 
 #include "btm_manager.h"
 
+/**
+ * @brief: BLE scan result callback
+ * @note: handle must be create before this funciton.
+ * @param {void*} handle
+ * @param {scan_result_t*} result - scan result data from callback
+ * @return {*}
+ */
 typedef void (*lescan_result_callback)(void* handle, const scan_result_t* result);
+
+/**
+ * @brief: BLE scan failed callback
+ * @note: handle must be create before this funciton.
+ * @param {void*} handle
+ * @param {int} error - error number
+ * @return {*}
+ */
 typedef void (*lescan_failed_callback)(void* handle, int error);
+
+/**
+ * @brief: BLE scan started callback
+ * @note: handle must be create before this funciton.
+ * @param {void*} handle
+ * @param {scan_result_t*} result
+ * @return {*}
+ */
 typedef void (*lescan_started_callback)(void* handle);
+
+/**
+ * @brief: BLE scan stopped callback
+ * @note: handle must be create before this funciton.
+ * @param {void*} handle
+ * @return {*}
+ */
 typedef void (*lescan_stopped_callback)(void* handle);
 typedef struct {
     lescan_result_callback le_scan_result_cb;
@@ -51,11 +81,34 @@ typedef struct {
 typedef struct {
     size_t size;
 
+    /**
+     * @brief: Start BLE scan
+     * @note: handle must be create before this funciton.
+     * @param {void**} handle
+     * @param {ble_scan_filter_t*} filter - bd_addr- remote device addr, length- length of the adv_data_mask
+     *                      adv_data_mask - only reported to service layer if adv_data contains adv_data_mask
+     * @param {scan_params_t*} setttings - include scan_interval,scan_window,scan_phy
+     * @param {btm_le_scan_callbacks*} cb
+     * @return {bt_result_code} GATT Error status code (0- Success)
+     */
     bt_result_code (*start_scan)(void** handle, ble_scan_filter_t* filter, scan_params_t* setttings,
         btm_le_scan_callbacks* cb);
+
+    /**
+     * @brief: Stop BLE scan
+     * @note: handle must be create before this funciton.
+     * @param {void*} handle
+     * @return {bt_result_code} GATT Error status code (0- Success)
+     */
     bt_result_code (*stop_scan)(void* handle);
 } btm_le_scan_interface_t;
 
+/**
+ * @brief: BLE  scan interface from GAP interface
+ * @note:
+ * @param {void*} bt_mgr_interface
+ * @return {btm_gatt_client_interface_t} gatt client handle
+ */
 btm_le_scan_interface_t* get_btm_lescan_interface(void* bt_mgr_interface);
 
 #endif
