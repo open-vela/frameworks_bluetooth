@@ -1053,7 +1053,7 @@ int bts_get_ble_connected_devices(bt_device_t* device_list, int max_out)
     }
     memset(connected_list, 0, sizeof(SERVICE_REMOTE_BLE_DEVICE_S) * max_out);
 
-    ret = service_adapter_gap_ble_get_connected_devices(connected_list, MAX_CONNECTED_DEVICE);
+    ret = service_adapter_gap_ble_get_connected_devices(connected_list, max_out);
 
     for (int i = 0; i < ret; i++) {
         memcpy(device_list[i].addr, connected_list[i].bd_addr, BT_ADDR_LENGTH);

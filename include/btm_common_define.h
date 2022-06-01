@@ -1,21 +1,15 @@
 #ifndef __BTM_COMMON_DEFINE_H__
 #define __BTM_COMMON_DEFINE_H__
 
-
-#define BT_ADDR_LENGTH (6) /*!< define the address length*/
+#define BT_ADDR_LENGTH (6) /*define the address length*/
 #define UUID_SIZE 16
 #define MAX_UUID_NUM 10
 #define BLE_MAX_ADV_NUM 8
-
-/*!
-* \def BT_DEV_NAME_MAX_SIZE
-* Description
-*/
 #define BT_DEV_NAME_MAX_SIZE (63)
 
-#define SMP_KEYS_MAX_SIZE   80
+#define SMP_KEYS_MAX_SIZE 80
 #define BT_COMMON_KEY_LENGTH 16
-#define DEVICE_NAME_MAX_LEN  63
+#define DEVICE_NAME_MAX_LEN 63
 
 /* Page scan default parameters */
 #define PAGE_SCAN_R0_TYPE BR_SCAN_TYPE_STANDARD
@@ -55,47 +49,43 @@
 #define GATT_ATT_PROPERTY_EXTENDED_PROPS 0x80
 
 /* * HID supported features - bit mask */
-#define HID_ATTR_MASK_VIRTUAL_CABLE           0x0001
-#define HID_ATTR_MASK_RECONNECT_INITIATE      0x0002
-#define HID_ATTR_MASK_BOOT_DEVICE             0x0004
-#define HID_ATTR_MASK_BATTERY_POWER           0x0010
-#define HID_ATTR_MASK_REMOTE_WAKE             0x0020
-#define HID_ATTR_MASK_SUPERVISION_TIMEOUT     0x0080
-#define HID_ATTR_MASK_NORMALLY_CONNECTABLE    0x0100
-#define HID_ATTR_MASK_SSR_MAX_LATENCY         0x0200
-#define HID_ATTR_MASK_SSR_MIN_TIMEOUT         0x0400
-#define HID_ATTR_MASK_BREDR                   0x8000
+#define HID_ATTR_MASK_VIRTUAL_CABLE 0x0001
+#define HID_ATTR_MASK_RECONNECT_INITIATE 0x0002
+#define HID_ATTR_MASK_BOOT_DEVICE 0x0004
+#define HID_ATTR_MASK_BATTERY_POWER 0x0010
+#define HID_ATTR_MASK_REMOTE_WAKE 0x0020
+#define HID_ATTR_MASK_SUPERVISION_TIMEOUT 0x0080
+#define HID_ATTR_MASK_NORMALLY_CONNECTABLE 0x0100
+#define HID_ATTR_MASK_SSR_MAX_LATENCY 0x0200
+#define HID_ATTR_MASK_SSR_MIN_TIMEOUT 0x0400
+#define HID_ATTR_MASK_BREDR 0x8000
 
-
-#define COD_SERVICE_BITS(c) (c & 0xFFE000)      /* The major service classes field */
+#define COD_SERVICE_BITS(c) (c & 0xFFE000) /* The major service classes field */
 #define COD_DEVICE_MAJOR_BITS(c) (c & 0x001F00) /* The major device classes field */
 #define COD_DEVICE_CLASS_BITS(c) (c & 0x001FFC) /* The device classes field, including major and minor */
 
-#define COD_SERVICE_LDM 0x002000         /* Limited Discoverable Mode */
-#define COD_SERVICE_POSITION 0x010000    /* Positioning (Location identification) */
-#define COD_SERVICE_NETWORK 0x020000     /* Networking (LAN, Ad hoc, ...) */
-#define COD_SERVICE_RENDERING 0x040000   /* Rending (Printing, Speaker, ...) */
-#define COD_SERVICE_CAPTURING 0x080000   /* Capturing (Scanner, Microphone, ...) */
-#define COD_SERVICE_OBJECT 0x100000      /* Object Transfer (v-Inbox, v-Folder, ...) */
-#define COD_SERVICE_AUDIO 0x200000       /* Audio (Speaker, Microphone, Headset service, ...) */
-#define COD_SERVICE_TELEPHONY 0x400000   /* Telephony (Cordless telephony, Modem, Headset service, ...) */
+#define COD_SERVICE_LDM 0x002000 /* Limited Discoverable Mode */
+#define COD_SERVICE_POSITION 0x010000 /* Positioning (Location identification) */
+#define COD_SERVICE_NETWORK 0x020000 /* Networking (LAN, Ad hoc, ...) */
+#define COD_SERVICE_RENDERING 0x040000 /* Rending (Printing, Speaker, ...) */
+#define COD_SERVICE_CAPTURING 0x080000 /* Capturing (Scanner, Microphone, ...) */
+#define COD_SERVICE_OBJECT 0x100000 /* Object Transfer (v-Inbox, v-Folder, ...) */
+#define COD_SERVICE_AUDIO 0x200000 /* Audio (Speaker, Microphone, Headset service, ...) */
+#define COD_SERVICE_TELEPHONY 0x400000 /* Telephony (Cordless telephony, Modem, Headset service, ...) */
 #define COD_SERVICE_INFORMATION 0x800000 /* Information (WEB-server, WAP-server, ...) */
 
 /* * Major Device Classes bit mask */
 #define COD_DEVICE_MISCELLANEOUS 0x000000 /* Major Device Class - Miscellaneous */
 #define COD_DEVICE_COMPUTER 0x000100 /* Major Device Class - Computer (desktop, notebook, PDA, organizers, ...) */
-#define COD_DEVICE_PHONE 0x000200    /* Major Device Class - Phone (cellular, cordless, payphone, modem, ...) */
-#define COD_DEVICE_LAP 0x000300      /* Major Device Class - LAN/Network Access Point */
-#define COD_DEVICE_AV \
-    0x000400 /* Major Device Class - Audio/Video (headset, speaker, stereo, video display, vcr...) */
+#define COD_DEVICE_PHONE 0x000200 /* Major Device Class - Phone (cellular, cordless, payphone, modem, ...) */
+#define COD_DEVICE_LAP 0x000300 /* Major Device Class - LAN/Network Access Point */
+#define COD_DEVICE_AV 0x000400 /* Major Device Class - Audio/Video (headset, speaker, stereo, video display, vcr...) */
 #define COD_DEVICE_PERIPHERAL 0x000500 /* Major Device Class - Peripheral (mouse, joystick, keyboards, ...) */
-#define COD_DEVICE_IMAGING 0x000600    /* Major Device Class - Imaging (printing, scanner, camera, display, ...) */
-#define COD_DEVICE_WEARABLE 0x000700   /* Major Device Class - Wearable */
-#define COD_DEVICE_TOY 0x000800        /* Major Device Class - Toy */
-#define COD_DEVICE_HEALTH 0x000900     /* Major Device Class - Health */
-#define COD_DEVICE_UNCLASSIFIED                                                     \
-    0x001F00 /* Major Device Class - Uncategorized, specific device code not specified \
-              */
+#define COD_DEVICE_IMAGING 0x000600 /* Major Device Class - Imaging (printing, scanner, camera, display, ...) */
+#define COD_DEVICE_WEARABLE 0x000700 /* Major Device Class - Wearable */
+#define COD_DEVICE_TOY 0x000800 /* Major Device Class - Toy */
+#define COD_DEVICE_HEALTH 0x000900 /* Major Device Class - Health */
+#define COD_DEVICE_UNCLASSIFIED 0x001F00 /* Major Device Class - Uncategorized, specific device code not specified */
 
 /* * Minor Device Class - Computer major class */
 #define COD_COMPUTER_UNCLASSIFIED (COD_DEVICE_COMPUTER | 0x000000)
@@ -186,7 +176,6 @@
 #define COD_HEALTH_RATE_MONITOR (COD_DEVICE_HEALTH | 0x000018)
 #define COD_HEALTH_DATA_DISPLAY (COD_DEVICE_HEALTH | 0x00001C)
 
-
 typedef uint8_t bt_address[BT_ADDR_LENGTH];
 typedef uint8_t bt_uuid_t[UUID_SIZE];
 typedef struct {
@@ -252,7 +241,7 @@ typedef enum {
     BLE_EVENT_ADV_NONCONN_IND,
     BLE_EVENT_SCAN_RSP,
 
-     /* Legacy mode */
+    /* Legacy mode */
     BLE_EVENT_LEGACY_ADV_IND,
     BLE_EVENT_LEGACY_ADV_DIRECT_IND,
     BLE_EVENT_LEGACY_ADV_SCAN_IND,
@@ -315,9 +304,9 @@ typedef enum {
 } ble_adv_channel;
 
 typedef enum {
-    ADV_FILTER_WHITE_LIST_FOR_NONE,/* Scan and Connection requests from ANY devices */
-    ADV_FILTER_WHITE_LIST_FOR_SCAN,/* Connection requests from ANY devices; Scan requests from devices in the White List */
-    ADV_FILTER_WHITE_LIST_ROR_CONNECTION,/* Scan request form ANY devices; Connection requests from devices in the White List */
+    ADV_FILTER_WHITE_LIST_FOR_NONE, /* Scan and Connection requests from ANY devices */
+    ADV_FILTER_WHITE_LIST_FOR_SCAN, /* Connection requests from ANY devices; Scan requests from devices in the White List */
+    ADV_FILTER_WHITE_LIST_ROR_CONNECTION, /* Scan request form ANY devices; Connection requests from devices in the White List */
     ADV_FILTER_WHITE_LIST_FOR_ALL /* Scan and Connection reqeusts from devices in the White List */
 } ble_advertising_filter_policy;
 
@@ -350,9 +339,9 @@ typedef enum {
     BT_STATUS_UNSUPPORTED,
     BT_STATUS_PARM_INVALID,
     BT_STATUS_UNHANDLED,
-    BT_STATUS_AUTH_FAILURE,     /* remote accepts AUTH request, but AUTH failure */
-    BT_STATUS_RMT_DEV_DOWN,     /* remote device not in BT range */
-    BT_STATUS_AUTH_REJECTED,    /* remote rejects AUTH request */
+    BT_STATUS_AUTH_FAILURE, /* remote accepts AUTH request, but AUTH failure */
+    BT_STATUS_RMT_DEV_DOWN, /* remote device not in BT range */
+    BT_STATUS_AUTH_REJECTED, /* remote rejects AUTH request */
     BT_STATUS_RMT_DEV_TERMINATE /* remote disconnect the link actively */
 } bt_status_ext;
 
@@ -469,7 +458,6 @@ typedef enum {
     HID_BOOT_MOUSE_REPORT_ID = 0x02,
 } hid_boot_mode_report_id;
 
-
 typedef uint8_t bt_common_key[BT_COMMON_KEY_LENGTH];
 
 typedef struct
@@ -484,18 +472,17 @@ typedef struct
 } bt_device_t;
 
 typedef struct {
-    bt_address remote_addr;        // Remote BT address
-    bool accept;                // Accept pairing request
-    gap_spp_type type;  // type of the SSP reply
-    uint32_t passkey;           // passkey value if type is SPP_TYPE_PASSKEY_ENTRY
+    bt_address remote_addr; // Remote BT address
+    bool accept; // Accept pairing request
+    gap_spp_type type; // type of the SSP reply
+    uint32_t passkey; // passkey value if type is SPP_TYPE_PASSKEY_ENTRY
 } spp_reply_data_t;
 
 typedef struct {
     ble_connect_filter_policy filter_policy;
-    bt_address peer_addr;/* For BLE_CONNECT_FILTER_ADDR only */
-    ble_addr_type
-    peer_addr_type;/* For BLE_CONNECT_FILTER_ADDR only. Set to BLE_ADDR_ANONYMOUS if unknown. */
-    bool use_default_params;/* If TRUE, the following parameters are ignored. */
+    bt_address peer_addr; /* For BLE_CONNECT_FILTER_ADDR only */
+    ble_addr_type peer_addr_type; /* For BLE_CONNECT_FILTER_ADDR only. Set to BLE_ADDR_ANONYMOUS if unknown. */
+    bool use_default_params; /* If TRUE, the following parameters are ignored. */
     ble_phy_type init_phy;
     uint16_t scan_interval;
     uint16_t scan_window;
@@ -514,9 +501,9 @@ typedef struct {
 } scan_params_t;
 
 typedef struct {
-    bt_address bd_addr;           // remote device addr
-    uint8_t length;            // length of the adv_data_mask
-    uint8_t adv_data_mask[1];  // only reported to service layer if adv_data contains adv_data_mask
+    bt_address bd_addr; // remote device addr
+    uint8_t length; // length of the adv_data_mask
+    uint8_t adv_data_mask[1]; // only reported to service layer if adv_data contains adv_data_mask
 } ble_scan_filter_t;
 
 typedef struct {
@@ -531,31 +518,30 @@ typedef struct {
 
 typedef struct {
     ble_event_type adv_type;
-    bt_address peer_addr;/* For BLE_ADV_DIRECT_IND only */
-    ble_addr_type peer_addr_type;/* For BLE_ADV_DIRECT_IND only */
-    bt_address own_addr;/* Set if own_addr_type is BLE_ADDR_TYPE_RANDOM. Ignored otherwise */
-    ble_addr_type  own_addr_type;/* One of BLE_ADDR_TYPE_PUBLIC, BLE_ADDR_TYPE_RANDOM and BLE_ADDR_TYPE_UNKNOWN */
+    bt_address peer_addr; /* For BLE_ADV_DIRECT_IND only */
+    ble_addr_type peer_addr_type; /* For BLE_ADV_DIRECT_IND only */
+    bt_address own_addr; /* Set if own_addr_type is BLE_ADDR_TYPE_RANDOM. Ignored otherwise */
+    ble_addr_type own_addr_type; /* One of BLE_ADDR_TYPE_PUBLIC, BLE_ADDR_TYPE_RANDOM and BLE_ADDR_TYPE_UNKNOWN */
     uint32_t interval;
     int8_t tx_power; /* *Range:-20~10 */
     ble_adv_channel channel_map;
     ble_advertising_filter_policy filter_policy;
 } ble_adv_params_t;
 
-
 typedef struct {
-    uint8_t adv_id;                   // advertising id specified by upper layer
-    ble_adv_params_t params;  // advertising parameters
+    uint8_t adv_id; // advertising id specified by upper layer
+    ble_adv_params_t params; // advertising parameters
     uint16_t adv_length;
-    char *adv_data;  // advertising data
+    char* adv_data; // advertising data
     uint16_t scan_rsp_length;
-    char *scan_rsp_data;  // scan response data
-    int duration;         // duration for sending BLE ADV
+    char* scan_rsp_data; // scan response data
+    int duration; // duration for sending BLE ADV
 } advertise_param_t;
 
 typedef struct {
     uint32_t id; /* For the server application, this shall be assigned and managed by the application to identify each element uniquely.
-                  The id of an INCLUDED_SERVICE shall be the same as that of the PRIMARY_SERVICE or SECONDARY_SERVICE being included. */
-    /* For the client application, this is the attribute handle returned from service discovery procedure. */
+                              * The id of an INCLUDED_SERVICE shall be the same as that of the PRIMARY_SERVICE or SECONDARY_SERVICE being included.
+                             * For the client application, this is the attribute handle returned from service discovery procedure. */
     bt_uuid_t uuid;
     gatt_element_type type;
     uint32_t properties; /* bit masks, characteristic properties - for characteristic type only */
@@ -568,7 +554,6 @@ typedef struct {
     uint16_t length; /* value length */
     uint8_t value[0];
 } gatt_response_t;
-
 
 typedef struct {
     bt_address remote_addr;
@@ -585,34 +570,31 @@ typedef struct {
     char bt_name[BT_DEV_NAME_MAX_SIZE];
 } ssp_request_data_t;
 
-
 typedef uint32_t ACL_DISCONNECTED_REASON;
 
 typedef struct {
-    bt_address remote_addr;       // Remote BT address
+    bt_address remote_addr; // Remote BT address
     ble_addr_type addr_type;
-    bt_status status;  //
+    bt_status status; //
     bt_acl_state state;
     ACL_DISCONNECTED_REASON reasonCode;
 } acl_state_params_t;
 
-
 typedef struct {
-    uint8_t evt_code;  // HCI event code
-    uint8_t length;    // length of the params
-    char *params;    // parameters
+    uint8_t evt_code; // HCI event code
+    uint8_t length; // length of the params
+    char* params; // parameters
 } hci_event_t;
-
 
 typedef struct {
     bt_uuid_t uuid;
-    uint16_t profile_version;       /* Profile version of this service. 0x100 by default. */
-    uint8_t server_channel;         /* Server channel if this service is RFCOMM based. */
-    uint32_t features;              /* Supportedfeatures attribute value of this service. It is profile dependent. */
+    uint16_t profile_version; /* Profile version of this service. 0x100 by default. */
+    uint8_t server_channel; /* Server channel if this service is RFCOMM based. */
+    uint32_t features; /* Supportedfeatures attribute value of this service. It is profile dependent. */
 } br_service_t;
 
 typedef struct {
-    uint32_t attr_mask;/* BTHID_ATTR_MASK_VIRTUAL_CABLE etc. */
+    uint32_t attr_mask; /* BTHID_ATTR_MASK_VIRTUAL_CABLE etc. */
     uint8_t sub_class;
     uint8_t country_code;
     uint16_t vendor_id;
@@ -621,15 +603,14 @@ typedef struct {
     uint16_t supervision_timeout;
     uint16_t ssr_max_latency;
     uint16_t ssr_min_timeout;
-    uint16_t dsc_list_length;/* Length of desc_list */
-    uint8_t *dsc_list;/* List of descriptors. Each descriptor is constructed as: Type(1 Byte), Length(2 Bytes, Little Endian), Values(Length Bytes) */
+    uint16_t dsc_list_length; /* Length of desc_list */
+    uint8_t* dsc_list; /* List of descriptors. Each descriptor is constructed as: Type(1 Byte), Length(2 Bytes, Little Endian), Values(Length Bytes) */
 } hid_info_t;
 
-
 typedef struct {
-    const char *name;
-    const char *description;
-    const char *provider;
+    const char* name;
+    const char* description;
+    const char* provider;
     hid_info_t hids_info;
     bool br_hid;
     bool le_hid;
@@ -644,281 +625,13 @@ typedef struct {
     uint32_t delay_variation;
 } bt_hidd_qos_settings_t;
 
-typedef struct bt_autosniff_params_t
-{
-    bool enable;                 /* enable sniff mode */
-    uint8_t idle_time;           /* Idle time in seconds before entering sniff mode */
+typedef struct bt_autosniff_params_t {
+    bool enable; /* enable sniff mode */
+    uint8_t idle_time; /* Idle time in seconds before entering sniff mode */
     uint16_t sniff_max_interval; /* sniff maximum interval */
     uint16_t sniff_min_interval; /* sniff minimum interval */
-    uint16_t sniff_attempt;      /* sniff attempt */
-    uint16_t sniff_timeout;      /* sniff timeout */
+    uint16_t sniff_attempt; /* sniff attempt */
+    uint16_t sniff_timeout; /* sniff timeout */
 } bt_autosniff_params_t;
-
-/*******************************************************************************
- *
- * GATT server connection state changed callback
- * @param       remote_addr     - Remote address
- * @param       state           - connection state
- * @return      void
- *
- ******************************************************************************/
-typedef void (*server_connection_state_changed_callback)(bt_address remote_addr,
-        profile_connection_state state);
-
-/*******************************************************************************
- *
- * Indicates whether a local service has been added successfully
- * @param       status   - gatt status
- * @param       elements - added elements. It shall be the same buffer as the first
- *                         parameter of service_adapter_server_add_elements.
- * @param       size     - elements size
- * @return      void
- *
- ******************************************************************************/
-typedef void (*server_elements_added_callback)(gatt_status status,
-        gatt_element_t *elements,
-        uint16_t size);
-
-/*******************************************************************************
- *
- * Indicates whether a local service has been removed successfully
- * @param       status   - gatt status
- * @param       elements - Full elements of the removed service.
- *                         It shall be the same buffer as the first parameter of
- *                         service_adapter_server_add_elements.
- * @param       size     - elements size
- * @return      void
- *
- ******************************************************************************/
-typedef void (*server_elements_removed_callback)(gatt_status status,
-        gatt_element_t *elements,
-        uint16_t size);
-
-/*******************************************************************************
- *
- * PHY read callback
- * @param       remote_addr     - Remote address
- * @param       tx_phy          - transmitter PHY
- * @param       rx_phy          - transmitter PHY
- * @return      void
- *
- ******************************************************************************/
-typedef void (*server_phy_read_callback)(bt_address remote_addr, ble_phy_type tx_phy,
-        ble_phy_type rx_phy);
-
-/*******************************************************************************
- *
- * PHY changed callback
- * @param       remote_addr     - Remote address
- * @param       tx_phy          - transmitter PHY
- * @param       rx_phy          - transmitter PHY
- * @param       status          - operation status
- * @return      void
- *
- ******************************************************************************/
-typedef void (*server_phy_update_callback)(bt_address remote_addr, ble_phy_type tx_phy,
-        ble_phy_type rx_phy, gatt_status status);
-
-/*******************************************************************************
- *
- * A remote client has requested to read a local characteristic or descriptor
- * @param       remote_addr         - Remote address
- * @param       request_id          - request id
- * @param       element             - characteristic or descriptor
- * @return      void
- *
- ******************************************************************************/
-typedef void (*server_received_element_read_request_callback)(bt_address remote_addr,
-        uint32_t request_id,
-        gatt_element_t *element);
-
-/*******************************************************************************
- *
- * A remote client has requested to write a local characteristic or descriptor
- * @param       remote_addr         - Remote address
- * @param       request_id          - request id
- * @param       element             - characteristic or descriptor
- * @param       value               - buffer, keeps valid until service_adapter_server_send_response is called.
- * @param       offset              - offset of the value to write
- * @param       length              - buffer length
- * @return      void
- *
- ******************************************************************************/
-typedef void (*server_received_element_write_request_callback)(bt_address remote_addr,
-        uint32_t request_id,
-        gatt_element_t *element, uint8_t *value,
-        uint16_t offset, uint16_t length);
-
-/*******************************************************************************
- *
- * mtu changed callback
- * @param       remote_addr         - Remote address
- * @param       mtu                 - The new (ATT_MTU-3) value negotiated.
- *                                    The default mtu value is (23-3).
- *                                    3 is the ATT PDU header size.
- * @return      void
- *
- ******************************************************************************/
-typedef void (*server_mtu_changed_callback)(bt_address remote_addr, uint32_t mtu);
-
-/*******************************************************************************
- *
- * a notification or indication has been sent to a remote device
- * @param       remote_addr         - Remote address
- * @param       status              - GATT status
- * @return      void
- *
- ******************************************************************************/
-typedef void (*server_notification_sent_callback)(bt_address remote_addr,
-        gatt_status status);
-
-/*******************************************************************************
- *
- * GATT client connection state changed callback
- * @param       remote_addr     - Remote address
- * @param       state           - connection state
- * @return      void
- *
- ******************************************************************************/
-typedef void (*client_connection_state_changed_callback)(bt_address remote_addr,
-        profile_connection_state state);
-
-/*******************************************************************************
- *
- * the list of remote services, characteristics and descriptors
- * for the remote device have been updated
- * @param       remote_addr     - Remote address
- * @param       elements        - full list of elements. A NULL pointer means
- *                              end of the services discovery procedure.
- * @param       size            - elements size
- * @return      void
- *
- ******************************************************************************/
-typedef void (*client_service_discovered_callback)(bt_address remote_addr,
-        gatt_element_t *elements,
-        uint16_t size);
-
-/*******************************************************************************
- *
- * Callback reporting the result of a characteristic or descriptor read operation
- * @param       remote_addr     - Remote address
- * @param       element         - characteristic or descriptor
- * @param       value           - buffer
- * @param       length          - buffer length
- * @param       status          - operation status
- * @return      void
- *
- ******************************************************************************/
-typedef void (*client_element_read_callback)(bt_address remote_addr,
-        gatt_element_t *element, uint8_t *value,
-        uint16_t length, gatt_status status);
-
-/*******************************************************************************
- *
- * Callback reporting the result of a characteristic or descriptor write operation
- * @param       remote_addr     - Remote address
- * @param       element         - characteristic or descriptor
- * @param       status          - operation status
- * @return      void
- *
- ******************************************************************************/
-typedef void (*client_element_written_callback)(bt_address remote_addr,
-        gatt_element_t *element,
-        gatt_status status);
-
-/*******************************************************************************
- *
- * Callback triggered as a result of a remote characteristic notification
- * @param       remote_addr     - Remote address
- * @param       element         - characteristic
- * @param       value           - buffer
- * @param       length          - buffer length
- * @return      void
- *
- ******************************************************************************/
-typedef void (*client_element_changed_callback)(bt_address remote_addr,
-        gatt_element_t *element,
-        uint8_t *value, uint16_t length);
-
-/*******************************************************************************
- *
- * Callback reporting the RSSI for a remote device connection
- * @param       remote_addr     - Remote address
- * @param       rssi            - rssi
- * @param       status          - operation status
- * @return      void
- *
- ******************************************************************************/
-typedef void (*client_remote_rssi_read_callback)(bt_address remote_addr, int32_t rssi,
-        gatt_status status);
-
-/*******************************************************************************
- *
- * PHY read callback
- * @param       remote_addr     - Remote address
- * @param       tx_phy          - transmitter PHY
- * @param       rx_phy          - transmitter PHY
- * @return      void
- *
- ******************************************************************************/
-typedef void (*client_phy_read_callback)(bt_address remote_addr, ble_phy_type tx_phy,
-        ble_phy_type rx_phy);
-
-/*******************************************************************************
- *
- * PHY changed callback
- * @param       remote_addr     - Remote address
- * @param       tx_phy          - transmitter PHY
- * @param       rx_phy          - transmitter PHY
- * @param       status          - operation status
- * @return      void
- *
- ******************************************************************************/
-typedef void (*client_phy_update_callback)(bt_address remote_addr, ble_phy_type tx_phy,
-        ble_phy_type rx_phy, gatt_status status);
-
-/*******************************************************************************
- *
- * mtu changed callback
- * @param       remote_addr     - Remote address
- * @param       mtu             - The new (ATT_MTU-3) value negotiated.
- *                                The default mtu value is (23-3).
- *                                3 is the ATT PDU header size.
- * @param       status          - operation status
- * @return      void
- *
- ******************************************************************************/
-typedef void (*client_mtu_changed_callback)(bt_address remote_addr, uint32_t mtu,
-        gatt_status status);
-
-/* * Stack Gatt Server callback structure */
-typedef struct {
-    /* * set to sizeof(GATT_SERVER_CALLBACKS_S) */
-    uint8_t size;
-    server_connection_state_changed_callback gatt_server_connection_state_changed_cb;
-    server_elements_added_callback gatt_server_elements_added_cb;
-    server_elements_removed_callback gatt_server_elements_removed_cb;
-    server_phy_read_callback gatt_server_phy_read_cb;
-    server_phy_update_callback gatt_server_phy_update_cb;
-    server_received_element_read_request_callback gatt_server_received_element_read_request_cb;
-    server_received_element_write_request_callback gatt_server_received_element_write_request_cb;
-    server_mtu_changed_callback gatt_server_mtu_changed_cb;
-    server_notification_sent_callback gatt_server_notification_sent_cb;
-} stack_gatt_server_callbacks;
-
-/* * Stack Gatt Client callback structure */
-typedef struct {
-    /* * set to sizeof(GATT_CLIENT_CALLBACKS_S) */
-    uint8_t size;
-    client_connection_state_changed_callback gatt_client_connection_state_changed_cb;
-    client_service_discovered_callback gatt_client_service_discovered_cb;
-    client_element_read_callback gatt_client_element_read_cb;
-    client_element_written_callback gatt_client_element_written_cb;
-    client_element_changed_callback gatt_client_element_changed_cb;
-    client_remote_rssi_read_callback gatt_client_remote_rssi_read_cb;
-    client_phy_read_callback gatt_client_phy_read_cb;
-    client_phy_update_callback gatt_client_phy_update_cb;
-    client_mtu_changed_callback gatt_client_mtu_changed_cb;
-} stack_gatt_client_callbacks;
 
 #endif

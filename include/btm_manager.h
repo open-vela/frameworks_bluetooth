@@ -1,9 +1,3 @@
-/**@file  btm_manager.h
-* @brief       bluetooth adapter for bluetooth service.
-* @details   including get all profile interface
-* @date        2021-11-10
-* @version     V1.0
-*/
 /****************************************************************************
  *
  *   Copyright (C) 2021 Xiaomi InC. All rights reserved.
