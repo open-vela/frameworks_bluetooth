@@ -44,7 +44,6 @@ typedef enum {
     A2DP_CONNECTION_STATE_DISCONNECTING
 } a2dp_connection_state_t;
 
-/* Bluetooth AV datapath states */
 typedef enum {
     A2DP_AUDIO_STATE_REMOTE_SUSPEND = 0,
     A2DP_AUDIO_STATE_STOPPED,
