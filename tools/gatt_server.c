@@ -35,7 +35,7 @@
 #include "btm_manager.h"
 #include "log.h"
 
-#define THROUGHTPUT_HORIZON 2
+#define THROUGHTPUT_HORIZON 5
 
 typedef struct {
     struct list_node node;
@@ -330,6 +330,10 @@ static void test_server_mtu_changed_callback(void* handle, bt_address remote_add
 static void test_server_notify_sent_callback(void* handle, bt_address remote_addr, gatt_status status)
 {
     throughtput_cursor--;
+    if (status != GATT_STATUS_SUCCESS) {
+        BT_LOGD("%s addr:%s fail, status:%d", __func__, addr_str(remote_addr), status);
+        return;
+    }
     BT_LOGD("%s addr:%s, status:%d", __func__, addr_str(remote_addr), status);
 }
 
@@ -343,17 +347,10 @@ static void test_server_throughtout_notify(bt_address remote_addr, gatt_element_
     }
     throughtput_cursor = 1;
     uint32_t msg_counter = 1;
-#define NTF_TIMEOUT_3SEC (6000)
-    int timeout = NTF_TIMEOUT_3SEC;
     for (int i = 0; i < times; i++) {
-        while ((throughtput_cursor >= THROUGHTPUT_HORIZON) && (timeout-- > 0)) {
+        while (throughtput_cursor >= THROUGHTPUT_HORIZON) {
             usleep(500);
         }
-        if (timeout < 0) {
-            BT_LOGW("%s, timeout", __func__);
-            return;
-        }
-        timeout = NTF_TIMEOUT_3SEC;
         memset(payload, 1, mtu);
         payload[0] = (msg_counter >> 24) & 0xFF;
         payload[1] = (msg_counter >> 16) & 0xFF;
