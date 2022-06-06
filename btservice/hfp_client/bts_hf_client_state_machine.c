@@ -391,7 +391,6 @@ static void connected_enter(state_machine_t* sm)
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(hfsm->addr));
-    service_adapter_hfp_send_battery_value(hfsm->addr, 100);
 }
 
 static void connected_exit(state_machine_t* sm)
