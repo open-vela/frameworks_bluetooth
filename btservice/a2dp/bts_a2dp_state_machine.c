@@ -38,6 +38,7 @@
 #include <uORB/uORB.h>
 #include "stack_adapter_gap.h"
 #include "stack_adapter_a2dp_sink.h"
+#include "stack_adapter_avrcp.h"
 #include "stack_adapter_a2dp_source.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_service_base.h"
@@ -457,7 +458,11 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         else
             status = service_adapter_a2dp_sink_disconnect(data->bd_addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
-            BT_LOGE("Disconnect failed");
+            BT_LOGE("A2dp disconnect failed");
+        }
+        status = service_adapter_avrcp_disconnect(a2dp_sm->addr);
+        if (status != SERVICE_BT_STATUS_SUCCESS) {
+            BT_LOGE("Avrc disconnect failed");
         }
         hsm_transition_to(sm, &closing_state);
         break;
@@ -573,6 +578,10 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
             status = service_adapter_a2dp_sink_disconnect(a2dp_sm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect failed");
+        }
+        status = service_adapter_avrcp_disconnect(a2dp_sm->addr);
+        if (status != SERVICE_BT_STATUS_SUCCESS) {
+            BT_LOGE("Avrc disconnect failed");
         }
         bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
         hsm_transition_to(sm, &closing_state);
