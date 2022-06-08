@@ -778,6 +778,18 @@ typedef struct {
      * @return {bt_result_code} error status code (0- success)
      */
     bt_result_code (*bt_reply_link_request)(void* gap_handle, bt_address remote_addr, bool accept);
+
+    /**
+     * @brief: Specify a set of channels occupied by the other 2.4G wireless, e.g. WIFI,
+     * which coexists with the Bluetooth radio in the same device.
+     * @note: handle must be create before this funciton.
+     * @param {void*} gap_handle
+     * @param {bt_afh_radio_channel_info_t} channels - Specifies the set of channels. NULL specifies that no other
+ *                2.4G wireless is detected.
+     * @param {uint16_t} number - Number of channels. Ignored if channels is NULL.
+     * @return {bt_result_code} error status code (0- success)
+     */
+    bt_result_code (*bt_set_afh_channel_classification)(void* gap_handle, bt_afh_radio_channel_info_t* channels, uint16_t number);
 } btm_gap_interface_t;
 
 /**

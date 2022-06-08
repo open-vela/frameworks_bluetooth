@@ -753,6 +753,15 @@ static bt_result_code btm_set_page_scan_parameters(void* gap_handle, bt_scan_typ
     return ret;
 }
 
+static bt_result_code btm_set_afh_channel_classification(void* gap_handle, bt_afh_radio_channel_info_t* channels, uint16_t number)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    CHECK_PTR_RETURN(gap_handle, ret);
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_GAP_INTERFACE(context->service_interface, bt_set_afh_channel_classification, ret, gap_handle, channels, number);
+    return ret;
+}
+
 static btm_gap_interface_t gap_interface = {
     .size = sizeof(btm_gap_interface_t),
     .gap_register_callbacks = btm_gap_register_callbacks,
@@ -780,7 +789,7 @@ static btm_gap_interface_t gap_interface = {
 #ifdef HCI_VSC_COMMAND
     .bt_send_hci_command = btm_send_hci_command,
 #endif
-    .ble_start_advertising= btm_ble_start_advertising,
+    .ble_start_advertising = btm_ble_start_advertising,
     .ble_stop_advertising = btm_ble_stop_advertising,
     .ble_set_static_identity = btm_ble_set_static_identity,
     .ble_set_public_identity = btm_ble_set_public_identity,
@@ -809,6 +818,7 @@ static btm_gap_interface_t gap_interface = {
     .bt_set_inquiry_scan_parameters = btm_set_inquiry_scan_parameter,
     .bt_set_page_scan_parameters = btm_set_page_scan_parameters,
     .bt_reply_link_request = btm_reply_link_request,
+    .bt_set_afh_channel_classification = btm_set_afh_channel_classification,
 };
 
 btm_gap_interface_t* get_gap_instance(void)

@@ -133,6 +133,8 @@ bt_result_code bts_set_inquiry_scan_parameters(bt_scan_type scan_type, uint16_t 
 
 bt_result_code bts_reply_link_request(BD_ADDR remote_addr, bool accept);
 
+bt_result_code bts_set_afh_channel_classification(bt_afh_radio_channel_info_t* channels, uint16_t number);
+
 void gap_bt_config_init(bts_service_adapter_state_changed_callback cb);
 bt_result_code gap_bt_update_name(char* name, uint8_t size);
 bt_result_code gap_bt_update_io_capability(bt_io_capability io_capability);
