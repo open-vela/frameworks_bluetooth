@@ -47,6 +47,7 @@
 #define GATT_ATT_PROPERTY_INDICATE 0x20
 #define GATT_ATT_PROPERTY_SIGNED_WRITE 0x40
 #define GATT_ATT_PROPERTY_EXTENDED_PROPS 0x80
+#define GATT_ATT_PROPERTY_EXPOSED_OVER_BREDR 0x1000 /* Applies to Primary/Secondary Service type only */
 
 /* * HID supported features - bit mask */
 #define HID_ATTR_MASK_VIRTUAL_CABLE 0x0001
@@ -175,6 +176,27 @@
 #define COD_HEALTH_PULSE_OXIMETER (COD_DEVICE_HEALTH | 0x000014)
 #define COD_HEALTH_RATE_MONITOR (COD_DEVICE_HEALTH | 0x000018)
 #define COD_HEALTH_DATA_DISPLAY (COD_DEVICE_HEALTH | 0x00001C)
+
+/* Possible 2.4G none Bluetooth radio channel central frequency (MHz) */
+#define AFH_WIFI_CENTRAL_FREQUENCY_2412 2412
+#define AFH_WIFI_CENTRAL_FREQUENCY_2417 2417
+#define AFH_WIFI_CENTRAL_FREQUENCY_2422 2422
+#define AFH_WIFI_CENTRAL_FREQUENCY_2427 2427
+#define AFH_WIFI_CENTRAL_FREQUENCY_2432 2432
+#define AFH_WIFI_CENTRAL_FREQUENCY_2437 2437
+#define AFH_WIFI_CENTRAL_FREQUENCY_2442 2442
+#define AFH_WIFI_CENTRAL_FREQUENCY_2447 2447
+#define AFH_WIFI_CENTRAL_FREQUENCY_2452 2452
+#define AFH_WIFI_CENTRAL_FREQUENCY_2457 2457
+#define AFH_WIFI_CENTRAL_FREQUENCY_2462 2462
+#define AFH_WIFI_CENTRAL_FREQUENCY_2467 2467
+#define AFH_WIFI_CENTRAL_FREQUENCY_2472 2472
+#define AFH_WIFI_CENTRAL_FREQUENCY_2484 2484
+
+/* Possible 2.4G channel band width (MHz) */
+#define AFH_WIFI_BANDWIDTH_20 20
+#define AFH_WIFI_BANDWIDTH_22 22
+#define AFH_WIFI_BANDWIDTH_40 40
 
 typedef uint8_t bt_address[BT_ADDR_LENGTH];
 typedef uint8_t bt_uuid_t[UUID_SIZE];
@@ -633,5 +655,14 @@ typedef struct bt_autosniff_params_t {
     uint16_t sniff_attempt; /* sniff attempt */
     uint16_t sniff_timeout; /* sniff timeout */
 } bt_autosniff_params_t;
+
+typedef uint16_t AFH_RADIO_CENTRAL_FREQUENCY; /* AFH_WIFI_CENTRAL_FREQUENCY_2412 etc. */
+typedef uint16_t AFH_RADIO_BANDWIDTH; /* AFH_WIFI_BANDWIDTH_20 etc. */
+
+// Radio channel information
+typedef struct {
+    AFH_RADIO_CENTRAL_FREQUENCY central_frequency; /* Central frequency, in MHz, of this channel. */
+    AFH_RADIO_BANDWIDTH band_width; /* Bandwidth, in MHz, of this channel, e.g. AFH_WIFI_BANDWIDTH_20. */
+} bt_afh_radio_channel_info_t;
 
 #endif

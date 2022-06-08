@@ -64,6 +64,7 @@ static int get_local_address(void* handle, int argc, char** argv);
 static int set_local_io_capability(void* handle, int argc, char** argv);
 static int get_local_name(void* handle, int argc, char** argv);
 static int set_local_name(void* handle, int argc, char** argv);
+static int set_afh_channel_classification(void* handle, int argc, char** argv);
 
 static int get_remote_name(void* handle, int argc, char** argv);
 static int reply_pair_request(void* handle, int argc, char** argv);
@@ -285,7 +286,7 @@ static bt_command_t g_gap_tables[] = {
     { "start_adv", le_start_advertising, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration> <filter_type> <adv_id (0:legacy, 1~K: extend)>\"" },
     { "start_adv2", le_start_advertising2, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration> <filter_type> <adv_id (0:legacy, 1~K: extend)>\"" },
     { "stop_adv", le_stop_advertising, "\"stop le adv <adv_id>\"" },
-
+    { "setafh", set_afh_channel_classification, "\"bt set afh channel  : <freq_channal (0~13)> <band_width_idx(0:20M, 1:22M, 2:40M)\"" },
 };
 
 static struct option gap_options[] = {
@@ -408,6 +409,54 @@ static int set_page_scan_parameters(void* handle, int argc, char** argv)
     BT_LOGD("%s, scan_type:%d, scan_interval:%d, scan_window:%d", __func__, scan_type, scan_interval, scan_window);
 
     gap_test_interface->bt_set_page_scan_parameters(g_gap_handle, scan_type, scan_interval, scan_window);
+    return 0;
+}
+
+static int set_afh_channel_classification(void* handle, int argc, char** argv)
+{
+    if (argc < 2)
+        return -1;
+
+    AFH_RADIO_CENTRAL_FREQUENCY central_frequency[] = {
+        AFH_WIFI_CENTRAL_FREQUENCY_2412,
+        AFH_WIFI_CENTRAL_FREQUENCY_2417,
+        AFH_WIFI_CENTRAL_FREQUENCY_2422,
+        AFH_WIFI_CENTRAL_FREQUENCY_2427,
+        AFH_WIFI_CENTRAL_FREQUENCY_2432,
+        AFH_WIFI_CENTRAL_FREQUENCY_2437,
+        AFH_WIFI_CENTRAL_FREQUENCY_2442,
+        AFH_WIFI_CENTRAL_FREQUENCY_2447,
+        AFH_WIFI_CENTRAL_FREQUENCY_2452,
+        AFH_WIFI_CENTRAL_FREQUENCY_2457,
+        AFH_WIFI_CENTRAL_FREQUENCY_2462,
+        AFH_WIFI_CENTRAL_FREQUENCY_2467,
+        AFH_WIFI_CENTRAL_FREQUENCY_2472,
+        AFH_WIFI_CENTRAL_FREQUENCY_2484,
+    };
+    AFH_RADIO_BANDWIDTH band_width[] = {
+        AFH_WIFI_BANDWIDTH_20,
+        AFH_WIFI_BANDWIDTH_22,
+        AFH_WIFI_BANDWIDTH_40,
+    };
+
+    uint16_t freq_index = atoi(argv[0]);
+    if (freq_index >= sizeof(central_frequency) / sizeof(central_frequency[0])) {
+        BT_LOGE("%s, freq_index(%d) overflow", __func__, freq_index);
+        return 0;
+    }
+
+    uint16_t bondwidth_index = atoi(argv[1]);
+    if (bondwidth_index >= sizeof(band_width) / sizeof(band_width[0])) {
+        BT_LOGE("%s, freq_index:%d overflow", __func__, bondwidth_index);
+        return 0;
+    }
+
+    BT_LOGD("%s, central_frequency:%d, bandwidth:%d", __func__, (int)(central_frequency[freq_index]), (int)(band_width[bondwidth_index]));
+    bt_afh_radio_channel_info_t channel = {
+        .central_frequency = central_frequency[freq_index],
+        .band_width = band_width[bondwidth_index],
+    };
+    gap_test_interface->bt_set_afh_channel_classification(g_gap_handle, &channel, 1);
     return 0;
 }
 

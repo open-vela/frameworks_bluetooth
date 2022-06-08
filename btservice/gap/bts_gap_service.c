@@ -753,6 +753,13 @@ static bt_result_code bts_if_reply_link_request(void* gap_handle, bt_address rem
     return bts_reply_link_request(remote_addr, accept);
 }
 
+static bt_result_code bts_if_set_afh_channel_classification(void* gap_handle, bt_afh_radio_channel_info_t* channels, uint16_t number)
+{
+    if (!gap_is_handle_valid(gap_handle))
+        return BT_RESULT_FAILED;
+    return bts_set_afh_channel_classification(channels, number);
+}
+
 static bt_result_code bts_if_gap_cleanup(void* gap_handle)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -832,6 +839,7 @@ static btm_gap_interface_t gap_interface = {
     .bt_set_inquiry_scan_parameters = bts_if_set_inquiry_scan_parameters,
     .bt_set_page_scan_parameters = bts_if_set_page_scan_parameters,
     .bt_reply_link_request = bts_if_reply_link_request,
+    .bt_set_afh_channel_classification = bts_if_set_afh_channel_classification,
 };
 
 btm_gap_interface_t* get_gap_service_instance(void)
