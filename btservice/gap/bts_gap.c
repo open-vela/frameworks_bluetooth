@@ -1392,3 +1392,12 @@ bt_result_code bts_reply_link_request(BD_ADDR remote_addr, bool accept)
     return BT_RESULT_SUCCESS;
 }
 
+bt_result_code bts_set_afh_channel_classification(bt_afh_radio_channel_info_t* channels, uint16_t number)
+{
+    SERVICE_BT_STATUS ret = service_adapter_set_afh_channel_classification((SERVICE_RADIO_CHANNEL_INFO_S*)channels, number);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
