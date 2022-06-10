@@ -483,6 +483,11 @@ int spp_command(void* handle, int argc, char* argv[])
 {
     int ret = -1;
 
+    if (spp_interface == NULL) {
+        printf("can't exec spp command before bt enabled\n");
+        return 0;
+    }
+
     if (argc > 1) {
         for (int i = 0; i < ARRAY_SIZE(g_spp_tables); i++) {
             if (strcmp(g_spp_tables[i].cmd, argv[1]) == 0) {
