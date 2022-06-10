@@ -366,7 +366,11 @@ bool bts_a2dp_source_stream_ready(void)
         return false;
 
     state = a2dp_state_machine_get_state(a2dp_sm);
-    return (state == A2DP_STATE_OPENED || state == A2DP_STATE_STARTED);
+    if (state == A2DP_STATE_OPENED ||
+        (state == A2DP_STATE_STARTED && a2dp_state_machine_is_pending_stop(a2dp_sm)))
+        return true;
+
+    return false;
 }
 
 bool bts_a2dp_source_stream_started(void)
@@ -378,6 +382,9 @@ bool bts_a2dp_source_stream_started(void)
 
     a2dp_sm = get_state_machine(peer->bd_addr);
     if (!a2dp_sm)
+        return false;
+
+    if (a2dp_state_machine_is_pending_stop(a2dp_sm))
         return false;
 
     return a2dp_state_machine_get_state(a2dp_sm) == A2DP_STATE_STARTED;
