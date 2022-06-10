@@ -56,6 +56,7 @@
 
 #define A2DP_CONNECT_TIMEOUT 4 * 1000
 #define A2DP_START_TIMEOUT 2 * 1000
+#define A2DP_DELAY_START_TIMEOUT 100
 #ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
 #define A2DP_PREFERRED_CODEC    SERVICE_AVDTP_CODEC_TYPE_MPEG2_4_AAC
 #else
@@ -77,6 +78,7 @@ typedef struct _a2dp_state_machine {
     uint8_t peer_sep;
     uv_timer_t* connect_timer;
     uv_timer_t* start_timer;
+    uv_timer_t* delay_start_timer;
 } a2dp_state_machine_t;
 
 typedef struct {
@@ -251,7 +253,7 @@ static void a2dp_connect_timeout_callback(char* data)
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
     a2dp_event_t* a2dp_event;
 
-    a2dp_event = a2dp_event_new(CONNECT_TIMEOUT, NULL);
+    a2dp_event = a2dp_event_new(CONNECT_TIMEOUT, a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
 }
@@ -261,7 +263,17 @@ static void a2dp_start_timeout_callback(char* data)
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
     a2dp_event_t* a2dp_event;
 
-    a2dp_event = a2dp_event_new(START_TIMEOUT, NULL);
+    a2dp_event = a2dp_event_new(START_TIMEOUT, a2dp_sm->addr);
+    a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
+    a2dp_event_destory(a2dp_event);
+}
+
+static void a2dp_delay_start_timeout_callback(char* data)
+{
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
+    a2dp_event_t* a2dp_event;
+
+    a2dp_event = a2dp_event_new(STREAM_START_REQ, a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
 }
@@ -421,6 +433,7 @@ static void opened_enter(state_machine_t* sm)
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
+    a2dp_sm->pending = PENDING_NONE;
     if (prev_state == &idle_state || prev_state == &opening_state) {
         /* if we are accept link as a2dp src, change the av link role to master */
         if (a2dp_sm->peer_sep == SEP_SNK)
@@ -445,7 +458,7 @@ static void opened_exit(state_machine_t* sm)
 static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    a2dp_event_data_t* data = (a2dp_event_data_t*)p_data;
+
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),
         addr_str(a2dp_sm->addr));
@@ -454,9 +467,9 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         SERVICE_BT_STATUS status;
 
         if (a2dp_sm->peer_sep == SEP_SNK)
-            status = service_adapter_a2dp_source_disconnect(data->bd_addr);
+            status = service_adapter_a2dp_source_disconnect(a2dp_sm->addr);
         else
-            status = service_adapter_a2dp_sink_disconnect(data->bd_addr);
+            status = service_adapter_a2dp_sink_disconnect(a2dp_sm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("A2dp disconnect failed");
         }
@@ -470,11 +483,14 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     case STREAM_START_REQ: {
         SERVICE_BT_STATUS status;
 
+        if (a2dp_sm->delay_start_timer)
+            stop_timer(a2dp_sm->delay_start_timer);
+        a2dp_sm->delay_start_timer = NULL;
         if (!a2dp_sm->audio_ready) {
             BT_LOGE("A2DP Audio is not ready, Ignore start cmd");
             break;
         }
-        status = service_adapter_a2dp_source_start_stream(data->bd_addr);
+        status = service_adapter_a2dp_source_start_stream(a2dp_sm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Stream start failed");
             break;
@@ -489,8 +505,8 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
             flag_clear(a2dp_sm, PENDING_START);
             stop_timer(a2dp_sm->start_timer);
             a2dp_sm->start_timer = NULL;
-            // When pending on start request, then received stream close event
-            //call bts_a2dp_audio_on_started(), shoule ack start failure;
+            /* When pending on start request, then received stream close event
+               call bts_a2dp_audio_on_started(), shoule ack start failure; */
             bts_a2dp_audio_on_started(a2dp_sm->peer_sep, false);
             return true;
         }
@@ -500,11 +516,14 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
 
     case STREAM_STARTED_EVT:
         if (a2dp_sm->peer_sep == SEP_SNK) {
-            // If remote tries to start A2DP when DUT is A2DP Source, then Suspend.
-            // If A2DP is Sink and call is active, then disconnect the AVDTP channel.
+            /* If remote tries to start A2DP when DUT is A2DP Source, then Suspend.
+             If A2DP is Sink and call is active, then disconnect the AVDTP channel. */
             flag_clear(a2dp_sm, PENDING_START);
             stop_timer(a2dp_sm->start_timer);
             a2dp_sm->start_timer = NULL;
+            if (a2dp_sm->delay_start_timer)
+                stop_timer(a2dp_sm->delay_start_timer);
+            a2dp_sm->delay_start_timer = NULL;
         }
 
         if (!a2dp_sm->audio_ready) {
@@ -518,7 +537,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
 
     case STREAM_SUSPENDED_EVT:
     case STREAM_CLOSED_EVT:
-        a2dp_sm->pending = PENDING_NONE;
+        flag_clear(a2dp_sm, PENDING_STOP);
         bts_a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
 
@@ -589,6 +608,14 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
     }
 
     case STREAM_START_REQ:
+        /* received start request when we are in pending a2dp stream
+           suspend sub-state, we need restart stream and transmit state to
+           opened state, and wait for started event */
+        if (flag_isset(a2dp_sm, PENDING_STOP)) {
+            a2dp_sm->delay_start_timer = start_timer(A2DP_DELAY_START_TIMEOUT, 0, a2dp_delay_start_timeout_callback, a2dp_sm);
+            hsm_transition_to(sm, &opened_state);
+            break;
+        }
         // We were started remotely, just ACK back the local request
         if (a2dp_sm->peer_sep == SEP_SNK)
             bts_a2dp_audio_on_started(a2dp_sm->peer_sep, true);
@@ -603,6 +630,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
 #endif
     case STREAM_SUSPEND_REQ: {
         SERVICE_BT_STATUS status;
+        flag_set(a2dp_sm, PENDING_STOP);
         status = service_adapter_a2dp_source_suspend_stream(a2dp_sm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Stream suspend failed");
@@ -620,6 +648,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case STREAM_SUSPENDED_EVT:
         //If remote suspend, notify ffmpeg to
         // suspend/stop stream.
+        a2dp_sm->pending = PENDING_NONE;
         bts_a2dp_audio_on_suspended(a2dp_sm->peer_sep);
         bts_a2dp_report_audio_state(a2dp_sm, a2dp_sm->addr,
             A2DP_AUDIO_STATE_STOPPED);
@@ -627,6 +656,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case STREAM_CLOSED_EVT:
+        a2dp_sm->pending = PENDING_NONE;
         bts_a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         bts_a2dp_report_audio_state(a2dp_sm, a2dp_sm->addr,
             A2DP_AUDIO_STATE_STOPPED);
@@ -707,6 +737,7 @@ a2dp_state_machine_t* a2dp_state_machine_new(void* context, uint8_t peer_sep, bt
     a2dp_sm->peer_sep = peer_sep;
     a2dp_sm->start_timer = NULL;
     a2dp_sm->connect_timer = NULL;
+    a2dp_sm->delay_start_timer = NULL;
     hsm_ctor(&a2dp_sm->sm, (state_t*)&idle_state);
     memcpy(a2dp_sm->addr, bd_addr, sizeof(bt_address));
 
@@ -752,4 +783,12 @@ a2dp_state_t a2dp_state_machine_get_state(a2dp_state_machine_t* sm)
 const char* a2dp_state_machine_current_state(a2dp_state_machine_t* sm)
 {
     return hsm_get_current_state_name(&sm->sm);
+}
+
+bool a2dp_state_machine_is_pending_stop(a2dp_state_machine_t* sm)
+{
+    if (flag_isset(sm, PENDING_STOP))
+        return true;
+
+    return false;
 }
