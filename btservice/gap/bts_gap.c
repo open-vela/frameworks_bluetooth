@@ -398,11 +398,13 @@ static void adapter_received_remote_name_callback(bt_address bd_addr, char* bt_n
     msg->event_data.data.remote_name.bt_name[length] = '\0';
     memcpy(msg->event_data.bd_addr, bd_addr, BT_ADDR_LENGTH);
     msg->event_data.data.remote_name.length = length;
+    BT_LOGD("%s, addr :%s name:%s", __func__, addr_str(bd_addr), msg->event_data.data.remote_name.bt_name);
     gap_send_message(msg);
 }
 
 static void adapter_discovery_state_changed_callback(SERVICE_BT_DISCOVERY_STATE state)
 {
+    BT_LOGD("%s, state:%d", __func__, state);
     gap_msg_t* msg = gap_msg_new(GAP_DISCOVERY_STATE_CHANGED);
     msg->event_data.data.discovery_state = state;
     gap_send_message(msg);
@@ -516,7 +518,7 @@ static void adapter_scan_mode_changed_callback(SERVICE_BT_SCAN_MODE scan_mode)
 static void adapter_link_mode_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_MODE link_mode,
     uint16_t sniff_interval)
 {
-    BT_LOGD("%s, addr :%s, link_mode:%d, sniff_interval:%d", __func__, addr_str(remote_addr), link_mode, sniff_interval);
+    BT_LOGD("%s, addr :%s, link_mode:%d, sniff_interval:%dms", __func__, addr_str(remote_addr), link_mode, sniff_interval * 625 / 1000);
     gap_msg_t* msg = gap_msg_new(GAP_LINK_MODE_CHANGED);
     msg->event_data.data.link_mode = link_mode;
     msg->event_data.valueint1 = sniff_interval;
