@@ -168,7 +168,7 @@ void save_a2dp_codec_config(a2dp_peer_t* peer, a2dp_codec_config_t* config)
         return;
 
     memcpy(&peer->codec_config, config, sizeof(*config));
-    bts_a2dp_codec_set_config(&peer->codec_config);
+    bts_a2dp_codec_set_config(SEP_SRC, &peer->codec_config);
 }
 
 static void a2dp_snk_service_handle_event(a2dp_event_t* a2dp_event, uint8_t peer_sep, size_t size)

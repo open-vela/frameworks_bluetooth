@@ -47,6 +47,7 @@
 
 #define SVR_SOURCE  0
 #define SVR_SINK    1
+
 typedef struct {
     bt_address bd_addr;
     uint8_t is_sink;

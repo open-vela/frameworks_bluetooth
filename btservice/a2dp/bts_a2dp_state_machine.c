@@ -442,9 +442,12 @@ static void opened_enter(state_machine_t* sm)
         bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
         bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
                                          A2DP_CONNECTION_STATE_CONNECTED);
-    } else if (prev_state == &started_state) {
+    }
+#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+    else if (prev_state == &started_state) {
         bts_avrcp_notify_play_state_changed(a2dp_sm->addr, PLAY_STATUS_PAUSED);
     }
+#endif
 }
 
 static void opened_exit(state_machine_t* sm)

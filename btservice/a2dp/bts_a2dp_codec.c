@@ -36,6 +36,7 @@
 #include "btm_manager.h"
 #include "bts_service.h"
 #include "bts_a2dp_codec.h"
+#include "bts_a2dp_device.h"
 #include "bts_a2dp_source_audio.h"
 
 #define LOG_TAG "a2dp_codec"
@@ -43,14 +44,30 @@
 
 a2dp_codec_config_t g_current_config;
 
-static void a2dp_codec_config_set(a2dp_codec_config_t* config, uint16_t mtu)
+static void a2dp_codec_config_set(uint8_t peer_sep, a2dp_codec_config_t* config, uint16_t mtu)
 {
     if (config->codec_type == BTS_A2DP_TYPE_SBC) {
-        a2dp_source_sbc_update_config(mtu, &config->codec_param.sbc, config->specific_info);
+        if (peer_sep == SEP_SNK) {
+#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+            a2dp_source_sbc_update_config(mtu, &config->codec_param.sbc, config->specific_info);
+#endif
+        } else {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+            a2dp_codec_parse_sbc_param( &config->codec_param.sbc, config->specific_info);
+#endif
+        }
         config->bit_rate = config->codec_param.sbc.u32BitRate;
 #ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
     } else if (config->codec_type == BTS_A2DP_TYPE_MPEG2_4_AAC) {
-        a2dp_source_aac_update_config(mtu, &config->codec_param.aac, config->specific_info);
+        if (peer_sep == SEP_SNK) {
+#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+            a2dp_source_aac_update_config(mtu, &config->codec_param.aac, config->specific_info);
+#endif
+        } else {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+            a2dp_codec_parse_aac_param(&config->codec_param.aac, config->specific_info, 0);
+#endif
+        }
         config->bit_rate = config->codec_param.aac.u32BitRate;
 #endif
     } else {
@@ -60,14 +77,14 @@ static void a2dp_codec_config_set(a2dp_codec_config_t* config, uint16_t mtu)
     memcpy(&g_current_config, config, sizeof(g_current_config));
 }
 
-void bts_a2dp_codec_set_config(a2dp_codec_config_t* config)
+void bts_a2dp_codec_set_config(uint8_t peer_sep, a2dp_codec_config_t* config)
 {
-    a2dp_codec_config_set(config, 0);
+    a2dp_codec_config_set(peer_sep, config, 0);
 }
 
-void bts_a2dp_codec_update_config(a2dp_codec_config_t* config, uint16_t mtu)
+void bts_a2dp_codec_update_config(uint8_t peer_sep, a2dp_codec_config_t* config, uint16_t mtu)
 {
-    a2dp_codec_config_set(config, mtu);
+    a2dp_codec_config_set(peer_sep, config, mtu);
 }
 
 a2dp_codec_config_t* bts_a2dp_codec_get_config(void)
