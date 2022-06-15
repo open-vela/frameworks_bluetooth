@@ -78,6 +78,7 @@ int a2dp_source_sbc_update_config(uint32_t mtu, sbc_param_t* param, uint8_t* cod
 
     return 0;
 }
+
 static uint8_t calculate_max_frames_per_packet(void)
 {
     uint32_t frame_len = sbc_stream.frames_len;

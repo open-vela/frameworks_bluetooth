@@ -78,8 +78,8 @@ typedef struct {
 } a2dp_codec_config_t;
 
 a2dp_codec_config_t* bts_a2dp_codec_get_config(void);
-void bts_a2dp_codec_set_config(a2dp_codec_config_t* config);
-void bts_a2dp_codec_update_config(a2dp_codec_config_t* config, uint16_t mtu);
+void bts_a2dp_codec_set_config(uint8_t peer_sep, a2dp_codec_config_t* config);
+void bts_a2dp_codec_update_config(uint8_t peer_sep, a2dp_codec_config_t* config, uint16_t mtu);
 
 
 #endif
