@@ -56,6 +56,8 @@ void bts_a2dp_sink_on_connection_changed(bool connected);
 void bts_a2dp_sink_on_started(bool started);
 void bts_a2dp_sink_on_stopped(void);
 void bts_a2dp_sink_on_suspended(void);
+void bts_a2dp_sink_suspend(void);
+void bts_a2dp_sink_resume(void);
 void bts_a2dp_sink_setup_codec(bt_address bd_addr);
 void bts_a2dp_sink_audio_init(void);
 void bts_a2dp_sink_audio_cleanup(void);
