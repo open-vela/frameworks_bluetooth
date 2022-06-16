@@ -347,7 +347,23 @@ bool bts_a2dp_sink_stream_ready(void)
         return false;
 
     state = a2dp_state_machine_get_state(a2dp_sm);
-    return (state == A2DP_STATE_OPENED || state == A2DP_STATE_STARTED);
+    return (state == A2DP_STATE_OPENED);
+}
+
+bool bts_a2dp_sink_stream_started(void)
+{
+    a2dp_state_machine_t* a2dp_sm;
+    a2dp_state_t state;
+    a2dp_peer_t* peer = get_active_peer();
+    if (!peer)
+        return false;
+
+    a2dp_sm = get_state_machine(peer->bd_addr);
+    if (!a2dp_sm)
+        return false;
+
+    state = a2dp_state_machine_get_state(a2dp_sm);
+    return (state == A2DP_STATE_STARTED);
 }
 
 void bts_a2dp_sink_codec_state_change(void)

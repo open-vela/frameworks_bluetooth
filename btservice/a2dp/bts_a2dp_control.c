@@ -159,6 +159,10 @@ static void bts_a2dp_control_on_start(uint8_t ch_id)
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
         if (bts_a2dp_sink_stream_ready())
             evt = A2DP_CTRL_EVT_STARTED;
+        else if (bts_a2dp_sink_stream_started()) {
+            evt = A2DP_CTRL_EVT_STARTED;
+            bts_a2dp_sink_resume();
+        }
         else {
             BT_LOGW("%s: A2DP command start while sink stream is not ready", __func__);
             evt = A2DP_CTRL_EVT_START_FAIL;
@@ -172,8 +176,13 @@ static void bts_a2dp_control_on_start(uint8_t ch_id)
 static void bts_a2dp_control_on_stop(uint8_t ch_id)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
-    if (bts_a2dp_source_stream_started()) {
+    if (ch_id == A2DP_IPC_CH_ID_AV_SOURCE_CTRL && bts_a2dp_source_stream_started()) {
         bts_a2dp_source_stream_stop();
+    }
+#endif
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    if (ch_id == A2DP_IPC_CH_ID_AV_SINK_CTRL && bts_a2dp_sink_stream_started()) {
+        bts_a2dp_sink_suspend();
     }
 #endif
 
