@@ -56,6 +56,7 @@ bt_result_code bts_a2dp_sink_disconnect(bt_address addr);
 void bts_a2dp_sink_cleanup(void);
 a2dp_peer_t* bts_a2dp_sink_find_peer(bt_address addr);
 bool bts_a2dp_sink_stream_ready(void);
+bool bts_a2dp_sink_stream_started(void);
 void bts_a2dp_sink_codec_state_change(void);
 void bts_a2dp_sink_dump(void);
 

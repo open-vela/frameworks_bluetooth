@@ -49,7 +49,8 @@
 
 #define A2DP_SINK_MEDIA_TICK_MS 20
 #define A2DP_MAX_DELAY_PACKET_COUNT 5
-#define A2DP_MAX_ENQUEUE_PACKET_COUNT 28
+#define A2DP_MAX_ENQUEUE_PACKET_COUNT 14
+#define A2DP_ASYNC_SEND_COUNT 14
 
 typedef enum {
     STATE_OFF,
@@ -131,7 +132,7 @@ static void a2dp_sink_audio_handle_timer(char* arg)
 
     list_for_every_safe(queue, node, tmp)
     {
-        if (stream->packet_sending_cnt == A2DP_MAX_ENQUEUE_PACKET_COUNT) {
+        if (stream->packet_sending_cnt == A2DP_ASYNC_SEND_COUNT) {
             BT_LOGD("%s ipc blocking", __func__);
             goto out;
         }
@@ -156,19 +157,6 @@ out:
     uv_mutex_unlock(&stream->queue_lock);
 }
 
-static void bts_a2dp_sink_stop_audio_req(void)
-{
-    a2dp_sink_stream_t* stream = &sink_stream;
-
-    if (sink_stream.state == STATE_OFF)
-        return;
-
-    stop_timer(stream->media_alarm);
-    stream->media_alarm = NULL;
-    a2dp_sink_flush_packet_queue();
-    stream->state = STATE_FLUSHING;
-}
-
 void bts_a2dp_sink_packet_recieve(a2dp_sink_packet_t *packet)
 {
     a2dp_sink_stream_t* stream = &sink_stream;
@@ -177,8 +165,10 @@ void bts_a2dp_sink_packet_recieve(a2dp_sink_packet_t *packet)
     if (packet == NULL)
         return;
 
-    if (stream->state == STATE_FLUSHING)
+    if (stream->state != STATE_RUNNING) {
         free(packet);
+        return;
+    }
 
     uv_mutex_lock(&stream->queue_lock);
     if (list_length(queue) == A2DP_MAX_ENQUEUE_PACKET_COUNT) {
@@ -196,9 +186,9 @@ void bts_a2dp_sink_packet_recieve(a2dp_sink_packet_t *packet)
         BT_LOGD("%s start trans packet", __func__);
         stream->underflow_ts = 0;
         sink_stream.media_alarm = start_timer(10,
-                          A2DP_SINK_MEDIA_TICK_MS,
-                          a2dp_sink_audio_handle_timer,
-                          NULL);
+                                              A2DP_SINK_MEDIA_TICK_MS,
+                                              a2dp_sink_audio_handle_timer,
+                                              NULL);
         if (sink_stream.media_alarm == NULL)
             BT_LOGE("%s, media_alarm start error", __func__);
     }
@@ -238,14 +228,34 @@ void bts_a2dp_sink_on_started(bool started)
 
 void bts_a2dp_sink_on_stopped(void)
 {
+    a2dp_sink_stream_t* stream = &sink_stream;
+
     BT_LOGD("%s", __func__);
-    bts_a2dp_sink_stop_audio_req();
+    if (sink_stream.state == STATE_OFF)
+        return;
+
+    stop_timer(stream->media_alarm);
+    stream->media_alarm = NULL;
+    a2dp_sink_flush_packet_queue();
+    stream->state = STATE_OFF;
 }
 
 void bts_a2dp_sink_on_suspended(void)
 {
     BT_LOGD("%s", __func__);
-    bts_a2dp_sink_stop_audio_req();
+    bts_a2dp_sink_on_stopped();
+}
+
+void bts_a2dp_sink_suspend(void)
+{
+    BT_LOGD("%s", __func__);
+    bts_a2dp_sink_on_suspended();
+}
+
+void bts_a2dp_sink_resume(void)
+{
+    BT_LOGD("%s", __func__);
+    bts_a2dp_sink_on_started(true);
 }
 
 void bts_a2dp_sink_setup_codec(bt_address bd_addr)
