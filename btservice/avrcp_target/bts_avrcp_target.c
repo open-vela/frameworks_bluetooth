@@ -163,15 +163,6 @@ static void avrcp_passthrough_cmd_handler(bt_address addr,
 {
     int i;
 
-#ifdef CONFIG_BLUETOOTH_A2DP_SRC
-    if (!bts_a2dp_source_stream_ready()) {
-        BT_LOGW("%s A2DP is not ready, Discarding passthrough cmd:%02x", __func__, op);
-        return;
-    }
-#else
-    return;
-#endif
-
     if (op == AVRCP_OPERATION_STOP && !bts_a2dp_source_stream_started()) {
         BT_LOGW("%s Stream suspended, Ignore STOP cmd", __func__);
         return;
