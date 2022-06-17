@@ -83,6 +83,11 @@ config BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
 	help
 		Bluetooth A2dp peer partial reconnect support
 
+config BLUETOOTH_A2DP_CONNECT_TIMEOUT
+	int "Bluetooth A2dp connect timeout"
+	default 8
+	help
+		Bluetooth A2dp connect timeout
 endif #BLUETOOTH_A2DP
 
 config BLUETOOTH_HFP_HF
