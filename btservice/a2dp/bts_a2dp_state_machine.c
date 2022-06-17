@@ -34,8 +34,10 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef CONFIG_UORB
 #include <connectivity/bt.h>
 #include <uORB/uORB.h>
+#endif
 #include "stack_adapter_gap.h"
 #include "stack_adapter_a2dp_sink.h"
 #include "stack_adapter_avrcp.h"
@@ -165,6 +167,7 @@ static char* stack_event_to_string(a2dp_event_type_t event)
 
 static void broadcast_a2dp_state(int orb_fd, bt_address addr, int conn_state, int audio_state)
 {
+#ifdef CONFIG_UORB
     struct a2dp_state uORB_state;
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -178,6 +181,7 @@ static void broadcast_a2dp_state(int orb_fd, bt_address addr, int conn_state, in
         if (ret != 0)
             BT_LOGE("Failed to publish connection state");
     }
+#endif
 }
 
 static void bts_a2dp_report_connection_state(a2dp_state_machine_t* stm, bt_address addr, a2dp_connection_state_t state)
@@ -200,8 +204,9 @@ static void bts_a2dp_report_connection_state(a2dp_state_machine_t* stm, bt_addre
         if (src_service->callbacks)
             src_service->callbacks->connection_state_cb(addr, state);
     }
-    
+#ifdef CONFIG_UORB
     broadcast_a2dp_state(orb_fd, addr, state, A2DP_AUDIO_NOT_READY);
+#endif
 }
 
 static void bts_a2dp_report_audio_state(a2dp_state_machine_t* stm, bt_address addr, a2dp_audio_state_t state)
@@ -222,8 +227,9 @@ static void bts_a2dp_report_audio_state(a2dp_state_machine_t* stm, bt_address ad
         if (src_service->callbacks)
             src_service->callbacks->audio_state_cb(addr, state);
     }
-
+#ifdef CONFIG_UORB
     broadcast_a2dp_state(orb_fd, addr, PROFILE_CONN_CONNECTED, state);
+#endif
 }
 
 static void bts_a2dp_report_audio_config_state(a2dp_state_machine_t* stm, bt_address addr)
@@ -244,8 +250,9 @@ static void bts_a2dp_report_audio_config_state(a2dp_state_machine_t* stm, bt_add
         if (src_service->callbacks)
             src_service->callbacks->audio_source_config_cb(addr);
     }
-
+#ifdef CONFIG_UORB
     broadcast_a2dp_state(orb_fd, addr, PROFILE_CONN_CONNECTED, A2DP_AUDIO_STOPPED);
+#endif
 }
 
 static void a2dp_connect_timeout_callback(char* data)
