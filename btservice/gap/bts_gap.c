@@ -599,13 +599,6 @@ static void adapter_delete_br_link_key_callback(bt_address remote_addr, SERVICE_
 
 static void adapter_pairing_request_callback(bt_address remote_addr, bool local_initiate, bool is_bondable)
 {
-    //get total number of bonded devices
-    int num = service_adapter_gap_get_bonded_devices(NULL, 0);
-    if (num >= MAX_PAIR_DEVICE) {
-        service_adapter_gap_reply_pairing_request(remote_addr, 1);
-        BT_LOGE("%s, pair num is max, can not pair any device any more!", __func__);
-        return;
-    }
     gap_msg_t* msg = gap_msg_new(GAP_PAIR_REQUEST);
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
     msg->event_data.data.pair_request.is_bondable = is_bondable;
@@ -923,12 +916,6 @@ bt_result_code bts_create_bond(bt_device_t* device)
     if (!device)
         return BT_RESULT_FAILED;
     BT_LOGD("%s: PERFORMANCE-GAP-BLUELET-BOND-START", __func__);
-    //get total number of bonded devices
-    int num = service_adapter_gap_get_bonded_devices(NULL, 0);
-    if (num >= MAX_PAIR_DEVICE) {
-        BT_LOGE("%s, pair num is max, can not pair any device any more!", __func__);
-        return BT_RESULT_FAILED;
-    }
     SERVICE_BT_STATUS ret = service_adapter_gap_create_bond(device->addr);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
