@@ -38,8 +38,10 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef CONFIG_UORB
 #include <connectivity/bt.h>
 #include <uORB/uORB.h>
+#endif
 #include "stack_adapter_a2dp_source.h"
 #include "stack_adapter_service_base.h"
 
@@ -283,12 +285,14 @@ static void a2dp_source_init(void)
         return;
     }
 #ifndef CONFIG_ARCH_SIM
+#ifdef CONFIG_UORB
     a2dp_source.orb_fd = orb_advertise_queue(ORB_ID(a2dp_state),
                                              NULL, CONFIG_BLUETOOTH_ORB_QUEUE_SIZE);
     if (a2dp_source.orb_fd < 0) {
         BT_LOGE("a2dp_source.orb_fd advertise failed");
         return;
     }
+#endif
 #endif
 
     bts_a2dp_audio_init(SVR_SOURCE);
@@ -307,8 +311,10 @@ static void a2dp_source_cleanup(void)
     }
     a2dp_source.callbacks = NULL;
     a2dp_source.active_peer = NULL;
+#ifdef CONFIG_UORB
     if (a2dp_source.orb_fd > 0)
         orb_unadvertise(a2dp_source.orb_fd);
+#endif
     a2dp_source.orb_fd = -1;
     bts_unregister_profile_process(BT_PROFILE_ADVANCED_AUDIO_SOURCE_ID);
     bts_a2dp_audio_cleanup(SVR_SOURCE);

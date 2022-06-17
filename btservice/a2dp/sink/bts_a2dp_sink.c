@@ -38,8 +38,10 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef CONFIG_UORB
 #include <connectivity/bt.h>
 #include <uORB/uORB.h>
+#endif
 #include "stack_adapter_a2dp_sink.h"
 #include "stack_adapter_service_base.h"
 
@@ -123,8 +125,10 @@ static void a2dp_sink_cleanup(void)
 
     a2dp_sink.callbacks = NULL;
     a2dp_sink.active_peer = NULL;
+#ifdef CONFIG_UORB
     if (a2dp_sink.orb_fd > 0)
         orb_unadvertise(a2dp_sink.orb_fd);
+#endif
     a2dp_sink.orb_fd = -1;
     bts_unregister_profile_process(BT_PROFILE_ADVANCED_AUDIO_SINK_ID);
     list_for_every_safe(&a2dp_sink.device_list, node, tmp)
