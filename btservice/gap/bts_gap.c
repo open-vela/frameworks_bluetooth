@@ -480,8 +480,10 @@ static void adapter_acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S* acl_st
 
 static void adapter_ble_scan_result_callback(SERVICE_SCAN_RESULT_DATA_S* scan_result_data)
 {
+#if defined(CONFIG_BLUETOOTH_LE_SCAN)
     const bts_le_scan_interface_t* scan_ift = get_bts_lescan_instance();
     BT_CBACK(scan_ift->callbacks, ble_scan_result, (scan_result_t*)scan_result_data);
+#endif
 }
 
 static void adapter_ble_adv_started_callback(uint8_t adv_id)
