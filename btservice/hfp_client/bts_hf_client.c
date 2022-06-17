@@ -36,8 +36,10 @@
  ****************************************************************************/
 #include <stdio.h>
 #include <sys/types.h>
+#ifdef CONFIG_UORB
 #include <connectivity/bt.h>
 #include <uORB/uORB.h>
+#endif
 #include "stack_adapter_hfp.h"
 #include "stack_adapter_service_base.h"
 
@@ -503,8 +505,10 @@ static void hf_client_cleanup(void)
         device = (hf_client_device_t*)node;
         hf_client_device_delete(device);
     }
+#ifdef CONFIG_UORB
     if (g_hfp_service.orb_fd > 0)
         orb_unadvertise(g_hfp_service.orb_fd);
+#endif
     g_hfp_service.orb_fd = -1;
     service_adapter_hfp_cleanup();
     g_hfp_service.started = false;
@@ -557,12 +561,14 @@ bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks
         return BT_RESULT_FAILED;
     }
 #ifndef CONFIG_ARCH_SIM
+#ifdef CONFIG_UORB
     g_hfp_service.orb_fd = orb_advertise_queue(ORB_ID(hfp_state),
                                                NULL, CONFIG_BLUETOOTH_ORB_QUEUE_SIZE);
     if (g_hfp_service.orb_fd < 0) {
         BT_LOGE("g_hfp_service.orb_fd advertise failed");
         return BT_RESULT_FAILED;
     }
+#endif
 #endif
 
     g_hfp_service.started = true;
