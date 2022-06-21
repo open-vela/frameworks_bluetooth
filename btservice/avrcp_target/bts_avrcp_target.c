@@ -82,7 +82,7 @@ static const struct {
 };
 
 static int g_keyboard_fd = -1;
-//static avrcp_tg_callbacks_t *g_avrcp_cbs = NULL;
+static avrcp_tg_callbacks_t *g_avrcp_cbs = NULL;
 static const char* avrcp_event_to_string(uint8_t event)
 {
     switch (event) {
@@ -151,6 +151,9 @@ static void avrcp_tg_connection_state_handler(bt_address addr,
 {
     BT_LOGD("%s, device: %s, connection state : %d", __func__, addr_str(addr), state);
 
+    if (g_avrcp_cbs)
+        g_avrcp_cbs->connection_state_cb(addr, state);
+
     if (SERVICE_PROFILE_CONNECTED == state) {
         uinput_open();
     } else if (SERVICE_PROFILE_DISCONNECTED == state) {
@@ -186,17 +189,17 @@ static void avrcp_passthrough_cmd_handler(bt_address addr,
         BT_LOGW("%s AVRCP: unknown Key 0x%02X %s", __func__, op, ket_state(state));
 }
 
-static SERVICE_AVRCP_MEDIA_STATUS current_playback_status(void)
+static play_status_t current_playback_status(void)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
     if (bts_a2dp_source_stream_started())
-        return MEDIA_PLAYING;
+        return PLAY_STATUS_PLAYING;
     else if (bts_a2dp_source_stream_ready())
-        return MEDIA_PAUSED;
+        return PLAY_STATUS_PAUSED;
     else
-        return MEDIA_STOPPED;
+        return PLAY_STATUS_STOPPED;
 #else
-    return MEDIA_ERROR;
+    return PLAY_STATUS_ERROR;
 #endif
 }
 
@@ -205,8 +208,10 @@ static void avrcp_register_notification_handler(bt_address addr,
 {
     switch (event) {
         case AVRCP_NOTIFICATION_MEDIA_STATUS_CHANGED:{
-            SERVICE_AVRCP_MEDIA_STATUS status = current_playback_status();
-            service_adapter_avrcp_target_notify_play_status_changed(addr, status);
+            if (g_avrcp_cbs)
+                g_avrcp_cbs->playback_register_notification_cb(addr);
+            else
+                bts_avrcp_notify_play_state_changed(addr, current_playback_status());
             break;
         }
         case AVRCP_NOTIFICATION_TRACK_CHANGED:
@@ -221,11 +226,6 @@ static void avrcp_register_notification_handler(bt_address addr,
         default:
             break;
     }
-}
-
-static void avrcp_get_play_status_handler(BD_ADDR addr)
-{
-    service_adapter_avrcp_target_get_play_status_response(addr, current_playback_status(), 0, 0);
 }
 
 static void avrcp_service_msg_process(avrcp_msg_t* msg)
@@ -244,7 +244,10 @@ static void avrcp_service_msg_process(avrcp_msg_t* msg)
                                             msg->data.reg_notif.interval);
         break;
     case GET_PLAY_STATUS_REQUEST:
-        avrcp_get_play_status_handler(msg->addr);
+        if (g_avrcp_cbs)
+            g_avrcp_cbs->get_play_status_cb(msg->addr);
+        else
+            bts_avrcp_get_play_status_response(msg->addr, current_playback_status(), 0, 0);
         break;
     default:
         BT_LOGW("%s Unsupport event", __func__);
@@ -341,6 +344,17 @@ bt_result_code bts_avrcp_target_init(void)
     return BT_RESULT_SUCCESS;
 }
 
+bt_result_code bts_avrcp_get_play_status_response(bt_address addr, play_status_t status, uint32_t song_len, uint32_t song_pos)
+{
+    SERVICE_BT_STATUS ret;
+
+    ret = service_adapter_avrcp_target_get_play_status_response(addr, status, song_len, song_pos);
+    if (ret != SERVICE_BT_STATUS_SUCCESS)
+        return BT_RESULT_FAILED;
+
+    return BT_RESULT_SUCCESS;
+}
+
 bt_result_code bts_avrcp_notify_play_state_changed(bt_address addr, play_status_t status)
 {
     SERVICE_BT_STATUS ret;
@@ -363,6 +377,11 @@ bt_result_code bts_avrcp_notify_volume_changed(bt_address addr, uint8_t volume)
         return BT_RESULT_FAILED;
 
     return BT_RESULT_SUCCESS;
+}
+
+void bts_avrcp_set_callbacks(avrcp_tg_callbacks_t *cbs)
+{
+    g_avrcp_cbs = cbs;
 }
 
 void bts_avrcp_target_cleanup(void)

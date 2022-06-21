@@ -63,6 +63,7 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_AVRCP_TG),y)
 	CSRCS +=btmanager/btm_avrcp_target.c
 	CSRCS +=btservice/avrcp_target/bts_avrcp_target.c
+	CSRCS +=btservice/avrcp_target/bts_avrcp_target_service.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)
