@@ -126,7 +126,7 @@ static bt_result_code bts_if_enable(void* handle)
 
     gap_enable();
 #ifdef CONFIG_BLUETOOTH_AVRCP_TG
-    bts_avrcp_target_init();
+    avrcp_target_service_start();
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     a2dp_sink_service_start();
@@ -167,7 +167,7 @@ static bt_result_code bts_if_disable(void* handle)
     spp_service_stop();
 #endif
 #ifdef CONFIG_BLUETOOTH_AVRCP_TG
-    bts_avrcp_target_cleanup();
+    avrcp_target_service_stop();
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_service_stop();
@@ -229,6 +229,10 @@ static const void* if_get_profile_interface(const char* profile_id)
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
     if (is_profile(profile_id, BT_PROFILE_ADVANCED_AUDIO_SOURCE))
         return get_a2dp_source_service_interface();
+#endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_TG
+    if (is_profile(profile_id, BT_PROFILE_AV_RC_TARGET))
+        return get_avrcp_tg_service_interface();
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     if (is_profile(profile_id, BT_PROFILE_HANDSFREE_HF))

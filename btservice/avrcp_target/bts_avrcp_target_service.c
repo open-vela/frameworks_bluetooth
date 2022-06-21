@@ -27,42 +27,22 @@
 #include "btm_manager.h"
 #include "btm_avrcp.h"
 #include "bts_avrcp_target.h"
-#include "bts_service.h"
-#include "bts_service_interface.h"
-
-
-static avrcp_tg_interface_t* get_service(void)
-{
-    return (avrcp_tg_interface_t*)get_bluetooth_service_interface()->get_profile_interface(BT_PROFILE_AV_RC_TARGET);
-}
 
 static bt_result_code avrc_get_play_status_rsp(bt_address addr,
                                         play_status_t status,
                                         uint32_t song_len, uint32_t song_pos)
 {
-    avrcp_tg_interface_t* service = get_service();
-    if (!service)
-        return BT_RESULT_FAILED;
-
-    return service->get_play_status_rsp(addr, status, song_len, song_pos);
+    return bts_avrcp_get_play_status_response(addr, status, song_len, song_pos);
 }
 
 static bt_result_code avrc_play_status_notify(bt_address addr, play_status_t status)
 {
-    avrcp_tg_interface_t* service = get_service();
-    if (!service)
-        return BT_RESULT_FAILED;
-
-    return service->play_status_notify(addr, status);
+    return bts_avrcp_notify_play_state_changed(addr, status);
 }
 
 static bt_result_code avrc_volume_changed_notify(bt_address addr, uint8_t volume)
 {
-    avrcp_tg_interface_t* service = get_service();
-    if (!service)
-        return BT_RESULT_FAILED;
-
-    return service->volume_changed_notify(addr, volume);
+    return bts_avrcp_notify_volume_changed(addr, volume);
 }
 
 static bt_result_code avrc_set_absolute_volume(bt_address addr, uint8_t volume)
@@ -72,20 +52,14 @@ static bt_result_code avrc_set_absolute_volume(bt_address addr, uint8_t volume)
 
 static bt_result_code avrc_set_callbacks(avrcp_tg_callbacks_t* callbacks)
 {
-    avrcp_tg_interface_t* service = get_service();
-    if (!service)
-        return BT_RESULT_FAILED;
+    bts_avrcp_set_callbacks(callbacks);
 
-    return service->set_callbacks(callbacks);
+    return BT_RESULT_SUCCESS;
 }
 
 static void avrc_reset_callbacks(void)
 {
-    avrcp_tg_interface_t* service = get_service();
-    if (!service)
-        return;
-
-    service->reset_callbacks();
+    bts_avrcp_set_callbacks(NULL);
 }
 
 static const avrcp_tg_interface_t avrcpTgInterface = {
@@ -98,7 +72,17 @@ static const avrcp_tg_interface_t avrcpTgInterface = {
     avrc_reset_callbacks
 };
 
-const avrcp_tg_interface_t *get_avrcp_tg_interface(void)
+bt_result_code avrcp_target_service_start(void)
+{
+    return bts_avrcp_target_init();
+}
+
+void avrcp_target_service_stop(void)
+{
+    bts_avrcp_target_cleanup();
+}
+
+const avrcp_tg_interface_t *get_avrcp_tg_service_interface(void)
 {
     return &avrcpTgInterface;
 }
