@@ -119,11 +119,13 @@ typedef enum{
 
 typedef void (*avrcp_connection_state_callback)(bt_address addr, avrcp_connection_state_t state);
 typedef void (*avrcp_get_play_status_callback)(bt_address addr);
+typedef void (*avrcp_playback_register_notification_callback)(bt_address addr);
 
 typedef struct {
   size_t size;
   avrcp_connection_state_callback connection_state_cb;
   avrcp_get_play_status_callback get_play_status_cb;
+  avrcp_playback_register_notification_callback playback_register_notification_cb;
 } avrcp_tg_callbacks_t;
 
 /* avrcp target interface structure */
