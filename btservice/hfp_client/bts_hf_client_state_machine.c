@@ -982,13 +982,12 @@ hf_state_machine_t* hf_client_state_machine_new(hf_client_service_t* context,
     if (!hfsm)
         return NULL;
 
-    hfsm->call_in_progress = 0;
-    hfsm->connect_timer = NULL;
+    memset(hfsm, 0, sizeof(hf_state_machine_t));
     hfsm->recognition_active = false;
     hfsm->service = context;
+    memcpy(hfsm->addr, bd_addr, sizeof(bt_address));
     list_initialize(&hfsm->pending_actions);
     hsm_ctor(&hfsm->sm, (state_t*)&disconnected_state);
-    memcpy(hfsm->addr, bd_addr, sizeof(bt_address));
 
     return hfsm;
 }
