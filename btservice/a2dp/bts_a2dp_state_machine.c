@@ -65,7 +65,8 @@
 #define A2DP_CONNECT_TIMEOUT (CONFIG_BLUETOOTH_A2DP_CONNECT_TIMEOUT * 1000)
 #endif
 #define A2DP_START_TIMEOUT 2000
-#define A2DP_DELAY_START_TIMEOUT 100
+#define A2DP_START_WAIT_SUSPEND 500
+#define A2DP_DELAY_START 100
 #ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
 #define A2DP_PREFERRED_CODEC    SERVICE_AVDTP_CODEC_TYPE_MPEG2_4_AAC
 #else
@@ -447,7 +448,6 @@ static void opened_enter(state_machine_t* sm)
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(a2dp_sm->addr));
-    a2dp_sm->pending = PENDING_NONE;
     if (prev_state == &idle_state || prev_state == &opening_state) {
         /* if we are accept link as a2dp src, change the av link role to master */
         if (a2dp_sm->peer_sep == SEP_SNK)
@@ -559,6 +559,10 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
 
     case STREAM_SUSPENDED_EVT:
     case STREAM_CLOSED_EVT:
+        if (flag_isset(a2dp_sm, PENDING_STOP) && a2dp_sm->delay_start_timer) {
+            stop_timer(a2dp_sm->delay_start_timer);
+            a2dp_sm->delay_start_timer = start_timer(A2DP_DELAY_START, 0, a2dp_delay_start_timeout_callback, a2dp_sm);
+        }
         flag_clear(a2dp_sm, PENDING_STOP);
         bts_a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
@@ -634,7 +638,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
            suspend sub-state, we need restart stream and transmit state to
            opened state, and wait for started event */
         if (flag_isset(a2dp_sm, PENDING_STOP)) {
-            a2dp_sm->delay_start_timer = start_timer(A2DP_DELAY_START_TIMEOUT, 0, a2dp_delay_start_timeout_callback, a2dp_sm);
+            a2dp_sm->delay_start_timer = start_timer(A2DP_START_WAIT_SUSPEND, 0, a2dp_delay_start_timeout_callback, a2dp_sm);
             hsm_transition_to(sm, &opened_state);
             break;
         }
@@ -754,12 +758,9 @@ a2dp_state_machine_t* a2dp_state_machine_new(void* context, uint8_t peer_sep, bt
     if (!a2dp_sm)
         return NULL;
 
+    memset(a2dp_sm, 0, sizeof(a2dp_state_machine_t));
     a2dp_sm->service = context;
-    a2dp_sm->audio_ready = false;
     a2dp_sm->peer_sep = peer_sep;
-    a2dp_sm->start_timer = NULL;
-    a2dp_sm->connect_timer = NULL;
-    a2dp_sm->delay_start_timer = NULL;
     hsm_ctor(&a2dp_sm->sm, (state_t*)&idle_state);
     memcpy(a2dp_sm->addr, bd_addr, sizeof(bt_address));
 
