@@ -265,6 +265,18 @@ static void btm_ble_adv_stopped_callback(void* gap_handle, uint8_t adv_id)
     context->gap_callbacks->ble_adv_stopped_cb(gap_handle, adv_id);
 }
 
+static void btm_ble_connection_updated_callback(void* gap_handle, bt_address remote_addr, bt_status status,
+    uint16_t connection_interval, uint16_t peripheral_latency, uint16_t supervision_timeout)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->ble_connection_updated_cb))
+        return;
+    context->gap_callbacks->ble_connection_updated_cb(gap_handle, remote_addr, status, connection_interval,
+        peripheral_latency, supervision_timeout);
+}
+
 static const btm_gap_callbacks_t service_callbacks = {
     .size = sizeof(btm_gap_callbacks_t),
     .bt_connection_state_changed_callback_cb = btm_connection_state_changed_callback,
@@ -287,6 +299,7 @@ static const btm_gap_callbacks_t service_callbacks = {
     .link_connect_request_cb = btm_link_connect_request_callback,
     .ble_adv_started_cb = btm_ble_adv_started_callback,
     .ble_adv_stopped_cb = btm_ble_adv_stopped_callback,
+    .ble_connection_updated_cb = btm_ble_connection_updated_callback,
 };
 
 static bt_result_code btm_gap_register_callbacks(void* manager_handle, void** gap_handle, const btm_gap_callbacks_t* callbacks)

@@ -76,6 +76,7 @@ typedef enum {
     GAP_BR_LINK_KEY_CHANGED,
     GAP_DELETE_LINK_KEY_CHANGED,
     GAP_EVENT_MAX_ID,
+    GAP_BLE_CONNECTION_UPDATE,
 } gap_event_t;
 
 typedef SERVICE_REMOTE_DEVICE_S remote_device_t;
@@ -117,6 +118,12 @@ typedef struct {
 } ble_packet_receive_t;
 
 typedef struct {
+    uint16_t connection_interval;
+    uint16_t peripheral_latency;
+    uint16_t supervision_timeout;
+} ble_connection_update_t;
+
+typedef struct {
     bt_address bd_addr;
     ble_addr_type addr_type;
     uint32_t valueint1;
@@ -145,6 +152,7 @@ typedef struct {
         bt_common_key irk;
         ble_packet_receive_t ble_packet_receive;
         bt_device_t device;
+        ble_connection_update_t ble_conn_update;
     } data;
 } gap_event_data_t;
 
@@ -340,6 +348,13 @@ static void process_loop_in_gap(void* data, size_t data_size)
     case GAP_CONNECT_REQUEST: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->link_connect_request_cb)) {
             g_bts_gap_callbacks->link_connect_request_cb(gap_msg->event_data.bd_addr);
+        }
+        break;
+    }
+    case GAP_BLE_CONNECTION_UPDATE: {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->ble_connection_updated_cb)) {
+            g_bts_gap_callbacks->ble_connection_updated_cb(gap_msg->event_data.bd_addr, gap_msg->event_data.status, gap_msg->event_data.data.ble_conn_update.connection_interval,
+                gap_msg->event_data.data.ble_conn_update.peripheral_latency, gap_msg->event_data.data.ble_conn_update.supervision_timeout);
         }
         break;
     }
@@ -729,6 +744,18 @@ static void adapter_ble_packet_received_callback(bt_address remote_addr, uint16_
     gap_send_message(msg);
 }
 
+static void adapter_ble_connection_updated_callback(bt_address remote_addr, bt_status status, uint16_t connection_interval,
+    uint16_t peripheral_latency, uint16_t supervision_timeout)
+{
+    gap_msg_t* msg = gap_msg_new(GAP_BLE_CONNECTION_UPDATE);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
+    msg->event_data.status = status;
+    msg->event_data.data.ble_conn_update.connection_interval = connection_interval;
+    msg->event_data.data.ble_conn_update.peripheral_latency = peripheral_latency;
+    msg->event_data.data.ble_conn_update.supervision_timeout = supervision_timeout;
+    gap_send_message(msg);
+}
+
 GAP_CALLBACKS_S g_gap_callback = {
     .size = sizeof(GAP_CALLBACKS_S),
     .gap_stack_state_changed_cb = adapter_stack_state_changed_callback,
@@ -763,7 +790,8 @@ GAP_CALLBACKS_S g_gap_callback = {
     .gap_ble_address_cb = adapter_ble_address_callback,
     .gap_ble_phy_update_cb = adapter_ble_phy_update_callback,
     .gap_ble_irk_cb = adapter_ble_irk_callback,
-    .gap_ble_packet_received_cb = adapter_ble_packet_received_callback
+    .gap_ble_packet_received_cb = adapter_ble_packet_received_callback,
+    .gap_ble_connection_updated_cb = adapter_ble_connection_updated_callback,
 };
 
 bt_result_code gap_init(bts_gap_callback_t* cb)
