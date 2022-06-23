@@ -1168,6 +1168,13 @@ static void le_adv_stopped_callback(void* gap_handle, uint8_t adv_id)
     BT_LOGD("%s, adv_id:%d", __func__, adv_id);
 }
 
+static void test_ble_connection_updated_callback(void* gap_handle, bt_address remote_addr, bt_status status,
+    uint16_t connection_interval, uint16_t peripheral_latency, uint16_t supervision_timeout)
+{
+    BT_LOGD("%s, addr:%s, connection_interval:%d, peripheral_latency:%d, supervision_timeout:%d, status:%" PRIu32, __func__,
+        addr_str(remote_addr), connection_interval, peripheral_latency, supervision_timeout, status);
+}
+
 btm_gap_callbacks_t gap_test_tool_callbacks = {
     .discovery_state_changed_callback_cb = test_discovery_state_changed_callback,
     .device_found_callback_cb = test_device_found_callback,
@@ -1183,6 +1190,7 @@ btm_gap_callbacks_t gap_test_tool_callbacks = {
     .delete_linkey_cb = test_delete_linkey_callback,
     .ble_adv_started_cb = le_adv_started_callback,
     .ble_adv_stopped_cb = le_adv_stopped_callback,
+    .ble_connection_updated_cb = test_ble_connection_updated_callback,
 };
 
 static bt_mgr_callback_t mgt_cb = {
