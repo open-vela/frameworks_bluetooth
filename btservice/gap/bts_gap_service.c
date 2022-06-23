@@ -273,6 +273,12 @@ static void gap_if_link_connect_request_callback(bt_address remote_addr)
     BT_GAP_CB(link_connect_request_cb, remote_addr);
 }
 
+void gap_if_ble_connection_updated_callback(bt_address remote_addr, bt_status status, uint16_t connection_interval,
+    uint16_t peripheral_latency, uint16_t supervision_timeout)
+{
+    BT_GAP_CB(ble_connection_updated_cb, remote_addr, status, connection_interval, peripheral_latency, supervision_timeout);
+}
+
 bts_gap_callback_t bts_gap_callbacks = {
     .size = sizeof(bts_gap_callback_t),
     .adapter_state_changed_cb = gap_if_adapter_state_changed_callback,
@@ -292,6 +298,7 @@ bts_gap_callback_t bts_gap_callbacks = {
     .ble_irk_cb = gap_if_bts_ble_irk_callback,
     .delete_linkey_cb = gap_if_delete_linkey_callback,
     .link_connect_request_cb = gap_if_link_connect_request_callback,
+    .ble_connection_updated_cb = gap_if_ble_connection_updated_callback,
 };
 
 bt_result_code gap_service_init()

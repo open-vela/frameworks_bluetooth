@@ -29,6 +29,8 @@ typedef void (*bts_delete_linkey_callback)(bt_address remote_addr, bt_status rea
 typedef void (*bts_link_connect_request_callback)(bt_address remote_addr);
 typedef void (*bts_ble_adv_started_callback)(uint8_t adv_id);
 typedef void (*bts_ble_adv_stopped_callback)(uint8_t adv_id);
+typedef void (*bts_ble_connection_updated_callback)(bt_address remote_addr, bt_status status, uint16_t connection_interval,
+    uint16_t peripheral_latency, uint16_t supervision_timeout);
 
 typedef struct {
     /* * set to sizeof(GAP_CALLBACKS_S) */
@@ -51,6 +53,7 @@ typedef struct {
     bts_link_connect_request_callback link_connect_request_cb;
     bts_ble_adv_started_callback ble_adv_started_cb;
     bts_ble_adv_stopped_callback ble_adv_stopped_cb;
+    bts_ble_connection_updated_callback ble_connection_updated_cb;
 } bts_gap_callback_t;
 
 bt_result_code gap_init(bts_gap_callback_t* cb);

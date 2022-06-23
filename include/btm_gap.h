@@ -246,6 +246,20 @@ typedef void (*ble_adv_started_callback)(void* gap_handle, uint8_t adv_id);
  */
 typedef void (*ble_adv_stopped_callback)(void* gap_handle, uint8_t adv_id);
 
+/**
+ * @brief:BLE connection parameters update complete callback. Connection update can be initiated by either side.
+ * @note: handle must be create before this funciton.
+ * @param {void*} gap_handle
+ * @param {bt_address}  remote_addr - Remote address
+ * @param {bt_status}  status      - Result. If result is not SERVICE_BT_STATUS_SUCCESS, the parameter values followed shall be ignored.
+ * @param {uint16_t}   connection_interval - Connection interval (N) used for this connection. (N * 1.25ms)
+ * @param {uint16_t}   peripheral_latency - Peripheral latency for this connection in number of subrated connection events.
+ * @param {uint16_t}   supervision_timeout - Supervision timeout (N) for this connection. (N * 10ms)
+ * @return   void
+ */
+typedef void (*ble_connection_updated_callback)(void* gap_handle, bt_address remote_addr, bt_status status, uint16_t connection_interval,
+    uint16_t peripheral_latency, uint16_t supervision_timeout);
+
 typedef struct {
     /** set to sizeof(bt_callbacks_t) */
     size_t size;
@@ -269,6 +283,7 @@ typedef struct {
     link_connect_request_callback link_connect_request_cb;
     ble_adv_started_callback ble_adv_started_cb;
     ble_adv_stopped_callback ble_adv_stopped_cb;
+    ble_connection_updated_callback ble_connection_updated_cb;
 } btm_gap_callbacks_t;
 
 /*gap interface*/
