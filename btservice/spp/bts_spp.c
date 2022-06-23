@@ -506,11 +506,8 @@ static void euv_write_complete(euv_pty_t* handle, uint8_t* buf, int status)
 
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     device = find_pty_device_by_handle(handle);
-    if (!device || buf == NULL) {
-        if (buf != NULL)
-            BT_LOGW("%s, device closed, memory %p leak warning", __func__, buf);
+    if (!device || buf == NULL)
         goto unlock;
-    }
 
     service_adapter_spp_data_received_rsp(device->conn_port, buf);
     if (status != 0)
