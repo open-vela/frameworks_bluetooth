@@ -185,9 +185,9 @@ static uint32_t first_pending_action(hf_state_machine_t* hfsm)
     return 0;
 }
 
+#ifdef CONFIG_UORB
 static void broadcast_hfp_state(int orb_fd, bt_address addr, int conn_state, int audio_state)
 {
-#ifdef CONFIG_UORB
     struct hfp_state uORB_state;
     struct timespec ts;
 
@@ -201,8 +201,8 @@ static void broadcast_hfp_state(int orb_fd, bt_address addr, int conn_state, int
         if (ret != 0)
             BT_LOGE("Failed to publish state");
     }
-#endif
 }
+#endif
 
 static void notify_connection_state_changed(hf_client_service_t* service,
     bt_address addr,

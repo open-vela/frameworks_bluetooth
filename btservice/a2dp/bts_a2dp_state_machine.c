@@ -173,9 +173,9 @@ static char* stack_event_to_string(a2dp_event_type_t event)
     }
 }
 
+#ifdef CONFIG_UORB
 static void broadcast_a2dp_state(int orb_fd, bt_address addr, int conn_state, int audio_state)
 {
-#ifdef CONFIG_UORB
     struct a2dp_state uORB_state;
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -189,8 +189,8 @@ static void broadcast_a2dp_state(int orb_fd, bt_address addr, int conn_state, in
         if (ret != 0)
             BT_LOGE("Failed to publish connection state");
     }
-#endif
 }
+#endif
 
 static void bts_a2dp_report_connection_state(a2dp_state_machine_t* stm, bt_address addr, a2dp_connection_state_t state)
 {
@@ -214,6 +214,8 @@ static void bts_a2dp_report_connection_state(a2dp_state_machine_t* stm, bt_addre
     }
 #ifdef CONFIG_UORB
     broadcast_a2dp_state(orb_fd, addr, state, A2DP_AUDIO_NOT_READY);
+#else
+    (void)orb_fd;
 #endif
 }
 
@@ -237,6 +239,8 @@ static void bts_a2dp_report_audio_state(a2dp_state_machine_t* stm, bt_address ad
     }
 #ifdef CONFIG_UORB
     broadcast_a2dp_state(orb_fd, addr, PROFILE_CONN_CONNECTED, state);
+#else
+    (void)orb_fd;
 #endif
 }
 
@@ -260,6 +264,8 @@ static void bts_a2dp_report_audio_config_state(a2dp_state_machine_t* stm, bt_add
     }
 #ifdef CONFIG_UORB
     broadcast_a2dp_state(orb_fd, addr, PROFILE_CONN_CONNECTED, A2DP_AUDIO_STOPPED);
+#else
+    (void)orb_fd;
 #endif
 }
 
