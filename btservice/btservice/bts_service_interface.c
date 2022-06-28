@@ -76,7 +76,7 @@ static bt_result_code bts_if_init(void* handle, bt_service_if_callbacks* callbac
         bts_service_init(&service_callback);
         service->ble_state = STATE_BLE_OFF;
         service->bt_state = BTM_STATE_OFF;
-#if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
+#if defined(CONFIG_BLUETOOTH_LE_SCAN) || defined(CONFIG_BLUETOOTH_LE_ADVERTISE) || defined(CONFIG_BLUETOOTH_GATT_CLIENT) || defined(CONFIG_BLUETOOTH_GATT_SERVER)
         const gatt_interface_t* gatt_if = gatt_get_interface();
         if (gatt_if) {
             BT_LOGD("gatt init");
@@ -186,7 +186,7 @@ static void bts_if_cleanup(void* handle)
         return;
     service->bt_state = BTM_STATE_TURNING_ON;
     bts_service_cleanup();
-#if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
+#if defined(CONFIG_BLUETOOTH_LE_SCAN) || defined(CONFIG_BLUETOOTH_LE_ADVERTISE) || defined(CONFIG_BLUETOOTH_GATT_CLIENT) || defined(CONFIG_BLUETOOTH_GATT_SERVER)
     const gatt_interface_t* gatt_if = gatt_get_interface();
     if (!gatt_if) {
         BT_LOGD("gatt cleanup");
@@ -218,7 +218,7 @@ static bool is_profile(const char* p1, const char* p2)
 static const void* if_get_profile_interface(const char* profile_id)
 {
     /* sanity check */
-#if defined(CONFIG_BLUETOOTH_LE_SCAN) || (CONFIG_BLUETOOTH_LE_ADVERTISE) || (CONFIG_BLUETOOTH_GATT_CLIENT) || (CONFIG_BLUETOOTH_GATT_SERVER)
+#if defined(CONFIG_BLUETOOTH_LE_SCAN) || defined(CONFIG_BLUETOOTH_LE_ADVERTISE) || defined(CONFIG_BLUETOOTH_GATT_CLIENT) || defined(CONFIG_BLUETOOTH_GATT_SERVER)
     if (is_profile(profile_id, BT_PROFILE_GATT))
         return gatt_get_interface();
 #endif
