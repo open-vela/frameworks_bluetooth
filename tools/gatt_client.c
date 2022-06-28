@@ -43,6 +43,7 @@ typedef struct {
     void* handle;
     uint16_t gatt_mtu;
     bt_address remote_address;
+    profile_connection_state state;
 } gattc_device_t;
 
 typedef struct {
@@ -57,6 +58,8 @@ static struct list_node gattc_device_list = LIST_INITIAL_VALUE(gattc_device_list
 static struct list_node gattc_scan_result_list = LIST_INITIAL_VALUE(gattc_scan_result_list);
 static void* scan_handle;
 
+void gatt_client_connection_event(bt_address remote_address, bt_connection_state state);
+
 static gattc_device_t* find_gattc_device(bt_address remote_address)
 {
     gattc_device_t* device;
@@ -69,17 +72,17 @@ static gattc_device_t* find_gattc_device(bt_address remote_address)
     return NULL;
 }
 
-// static gattc_device_t* find_gattc_device2(void* handle)
-// {
-//     gattc_device_t* device;
-//     list_for_every_entry(&gattc_device_list, device, gattc_device_t, node)
-//     {
-//         if (device->handle == handle) {
-//             return device;
-//         }
-//     }
-//     return NULL;
-// }
+static gattc_device_t* find_gattc_device2(void* handle)
+{
+    gattc_device_t* device;
+    list_for_every_entry(&gattc_device_list, device, gattc_device_t, node)
+    {
+        if (device->handle == handle) {
+            return device;
+        }
+    }
+    return NULL;
+}
 
 static gattc_device_t* add_gattc_device(bt_address remote_address)
 {
@@ -91,6 +94,7 @@ static gattc_device_t* add_gattc_device(bt_address remote_address)
 
     memset(device, 0, sizeof(gattc_device_t));
     memcpy(device->remote_address, remote_address, sizeof(bt_address));
+    device->state = PROFILE_CONNECTING;
     list_add_tail(&gattc_device_list, &device->node);
     return device;
 }
@@ -195,6 +199,9 @@ static void on_client_connection_state_changed_callback(void* handle, bt_address
     if (state == PROFILE_DISCONNECTED) {
         gattc_device_t* device = find_gattc_device(remote_addr);
         remove_gattc_device(device);
+    } else if (state == PROFILE_CONNECTED) {
+        gattc_device_t* device = find_gattc_device(remote_addr);
+        device->state = PROFILE_CONNECTED;
     }
 }
 
@@ -322,6 +329,11 @@ static void test_client_throughtout_write(void* client_handle, uint32_t id, uint
     for (int i = 0; i < times; i++) {
         while (throughtput_cursor >= THROUGHTPUT_HORIZON) {
             usleep(500);
+            gattc_device_t* device = find_gattc_device2(client_handle);
+            if (!device || device->state == PROFILE_DISCONNECTED) {
+                BT_LOGD("%s conection not exist", __func__);
+                return;
+            }
         }
         memset(payload, 1, mtu);
         payload[0] = (msg_counter >> 24) & 0xFF;
@@ -765,6 +777,18 @@ static struct option gattc_options[] = {
     { "help", 0, 0, 'h' },
     { 0, 0, 0, 0 }
 };
+
+void gatt_client_connection_event(bt_address remote_address, bt_connection_state state)
+{
+    gattc_device_t* device = find_gattc_device(remote_address);
+    if (!device) {
+        return;
+    }
+    if (state == BT_ACL_STATE_LE_DISCONNECTED) {
+        BT_LOGD("%s,  address: %s disconnected", __func__, addr_str(remote_address));
+        device->state = PROFILE_DISCONNECTED;
+    }
+}
 
 int gatt_client_command(void* handle, int argc, char* argv[])
 {
