@@ -62,6 +62,7 @@ typedef struct {
     uint8_t          codec_info[10];
     uint8_t          packet_sending_cnt;
     uint64_t         underflow_ts;
+    uint32_t         block_ticks;
     stream_state_t   state;
     uv_mutex_t       queue_lock;
     uv_timer_t*      media_alarm;
@@ -133,10 +134,12 @@ static void a2dp_sink_audio_handle_timer(char* arg)
     list_for_every_safe(queue, node, tmp)
     {
         if (stream->packet_sending_cnt == A2DP_ASYNC_SEND_COUNT) {
-            BT_LOGD("%s ipc blocking", __func__);
+            if (stream->block_ticks++ > 2)
+                BT_LOGD("%s ipc blocking, block ticks:%d", __func__, stream->block_ticks);
             goto out;
         }
 
+        stream->block_ticks = 0;
         packet = (a2dp_sink_packet_t*)node;
         ret = a2dp_ipc_write(a2dp_ipc,
                        A2DP_IPC_CH_ID_AV_SINK_AUDIO,
@@ -185,6 +188,7 @@ void bts_a2dp_sink_packet_recieve(a2dp_sink_packet_t *packet)
         !stream->media_alarm) {
         BT_LOGD("%s start trans packet", __func__);
         stream->underflow_ts = 0;
+        stream->block_ticks = 0;
         sink_stream.media_alarm = start_timer(10,
                                               A2DP_SINK_MEDIA_TICK_MS,
                                               a2dp_sink_audio_handle_timer,
