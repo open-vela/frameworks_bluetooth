@@ -41,6 +41,7 @@ typedef struct {
     struct list_node node;
     uint16_t gatt_mtu;
     bt_address remote_address;
+    profile_connection_state state;
 } gatts_device_t;
 
 static void* gatts_handle;
@@ -48,6 +49,8 @@ static btm_gatt_server_interface_t* gatts_interface = NULL;
 static btm_interface_t* manager = NULL;
 static volatile uint16_t throughtput_cursor = 1;
 static struct list_node gatts_device_list = LIST_INITIAL_VALUE(gatts_device_list);
+
+void gatt_server_connection_event(bt_address remote_address, bt_connection_state state);
 
 enum {
     /* IDs of Private IOT service */
@@ -113,6 +116,7 @@ static gatts_device_t* add_gatts_device(bt_address remote_address)
 
     memset(device, 0, sizeof(gatts_device_t));
     device->gatt_mtu = 23;
+    device->state = PROFILE_CONNECTED;
     memcpy(device->remote_address, remote_address, sizeof(bt_address));
     list_add_tail(&gatts_device_list, &device->node);
     return device;
@@ -350,6 +354,11 @@ static void test_server_throughtout_notify(bt_address remote_addr, gatt_element_
     for (int i = 0; i < times; i++) {
         while (throughtput_cursor >= THROUGHTPUT_HORIZON) {
             usleep(500);
+            gatts_device_t* device = find_gatts_device(remote_addr);
+            if (!device || device->state == PROFILE_DISCONNECTED) {
+                BT_LOGD("%s conection not exist", __func__);
+                return;
+            }
         }
         memset(payload, 1, mtu);
         payload[0] = (msg_counter >> 24) & 0xFF;
@@ -637,6 +646,18 @@ static struct option gatts_options[] = {
     { "help", 0, 0, 'h' },
     { 0, 0, 0, 0 }
 };
+
+void gatt_server_connection_event(bt_address remote_address, bt_connection_state state)
+{
+    gatts_device_t* device = find_gatts_device(remote_address);
+    if (!device) {
+        return;
+    }
+    if (state == BT_ACL_STATE_LE_DISCONNECTED) {
+        BT_LOGD("%s,  address: %s disconnected", __func__, addr_str(remote_address));
+        device->state = PROFILE_DISCONNECTED;
+    }
+}
 
 int gatt_server_command(void* handle, int argc, char* argv[])
 {

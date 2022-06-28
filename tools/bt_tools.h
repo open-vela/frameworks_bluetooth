@@ -68,3 +68,5 @@ extern int a2dp_sink_command(void* handle, int argc, char* argv[]);
 extern int avrcp_target_command(void* handle, int argc, char* argv[]);
 extern int hid_device_command(void* handle, int argc, char* argv[]);
 extern int log_command(void* handle, int argc, char* argv[]);
+extern void gatt_server_connection_event(bt_address remote_address, bt_connection_state state);
+extern void gatt_client_connection_event(bt_address remote_address, bt_connection_state state);

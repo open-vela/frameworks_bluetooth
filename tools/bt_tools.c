@@ -1015,6 +1015,8 @@ void test_connection_state_changed_callback(void* handle, bt_device_t* device, b
 {
     //char* connection_state = NULL;
     BT_LOGD("%s, device %s, state:  %d", __func__, addr_str(device->addr), state);
+    gatt_server_connection_event(device->addr, state);
+    gatt_client_connection_event(device->addr, state);
 }
 
 void test_received_remote_name_callback(void* handle, bt_address bd_addr, char* bt_name, uint8_t length)
