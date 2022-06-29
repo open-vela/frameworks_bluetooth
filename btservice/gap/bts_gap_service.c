@@ -307,7 +307,9 @@ bt_result_code gap_service_init()
         g_gap_service = (bt_gap_service_t*)malloc(sizeof(bt_gap_service_t));
         gap_init(&bts_gap_callbacks);
         list_initialize(&g_gap_service->handle_list);
-    }
+    }  else
+        BT_LOGD("%s service had already been initialized: %p", __func__, g_gap_service);
+
     return BT_RESULT_SUCCESS;
 }
 
