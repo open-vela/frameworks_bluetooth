@@ -171,6 +171,8 @@ endif
 CFLAGS   += -I $(APPDIR)/external/bluelet/
 
 ifeq ($(CONFIG_BLUETOOTH_VENDOR_DEPENDENCY_BES), y)
+CSRCS +=vendor/controller.c
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/vendor}
 CFLAGS 	 += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/bes/framework/services/platform/drivers/bt}
 CFLAGS 	 += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/bes/framework/services/platform/hal}
 endif
