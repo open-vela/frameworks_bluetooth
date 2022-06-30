@@ -237,8 +237,10 @@ static void bts_a2dp_source_audio_handle_timer(char* arg)
     if (a2dp_src_stream.stream_state != STATE_RUNNING)
         return;
 
-    if (circbuf_used(&stream->stream_pool) == 0)
+    if (circbuf_used(&stream->stream_pool) == 0) {
+        BT_LOGD("a2dp src send frame, underflow 1 ticks");
         return;
+    }
 
     if (stream->stream_interface) {
         stream->stream_interface->send_frames(STREAM_DATA_RESERVED, get_os_timestamp_us());
