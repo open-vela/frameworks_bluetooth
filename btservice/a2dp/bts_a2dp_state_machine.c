@@ -536,7 +536,6 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
             /* When pending on start request, then received stream close event
                call bts_a2dp_audio_on_started(), shoule ack start failure; */
             bts_a2dp_audio_on_started(a2dp_sm->peer_sep, false);
-            return true;
         }
         bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
         hsm_transition_to(sm, &idle_state);
