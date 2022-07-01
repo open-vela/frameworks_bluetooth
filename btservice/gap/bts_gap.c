@@ -34,7 +34,9 @@
 #include "bts_service_interface.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_gap.h"
+#ifdef CONFIG_BLUETOOTH_VENDOR_DEPENDENCY
 #include "controller.h"
+#endif
 #include "utils.h"
 
 #define LOG_TAG "bts_gap"
@@ -171,8 +173,10 @@ typedef struct {
 
 struct list_node* g_msg_list;
 static bts_gap_callback_t* g_bts_gap_callbacks = NULL;
+#ifdef CONFIG_BLUETOOTH_VENDOR_DEPENDENCY
 static bool g_keep_alive_enable = false;
 static uv_timer_t *g_alive_timer = NULL;
+#endif
 /*process callback from stack */
 
 extern void InitTransportLayer(void);
@@ -197,6 +201,7 @@ static void gap_msg_destory(gap_msg_t* msg)
     free(msg);
 }
 
+#ifdef CONFIG_BLUETOOTH_VENDOR_DEPENDENCY
 static void do_check_controller_alive(char *data)
 {
     if (!controller_check_alive()) {
@@ -213,6 +218,7 @@ static void bts_gap_controller_keep_alive(bool enable)
     else if (!enable && g_keep_alive_enable)
         stop_timer(g_alive_timer);
 }
+#endif
 
 static void process_loop_in_gap(void* data, size_t data_size)
 {
@@ -226,11 +232,12 @@ static void process_loop_in_gap(void* data, size_t data_size)
     case GAP_STACK_STATE_CHANGED: {
         bt_service_state state = gap_msg->event_data.data.stack_state;
         const bluetooth_service_interface* service_interface = get_bluetooth_service_interface();
+#ifdef CONFIG_BLUETOOTH_VENDOR_DEPENDENCY
         if (state == BTM_STATE_ON)
             bts_gap_controller_keep_alive(true);
         else if (state == BTM_STATE_OFF)
             bts_gap_controller_keep_alive(false);
-
+#endif
         if (service_interface) {
             service_interface->stack_state_change(state);
         }
