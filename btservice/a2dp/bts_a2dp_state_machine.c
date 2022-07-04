@@ -65,7 +65,7 @@
 #define A2DP_CONNECT_TIMEOUT (CONFIG_BLUETOOTH_A2DP_CONNECT_TIMEOUT * 1000)
 #endif
 #define A2DP_START_TIMEOUT 5000
-#define A2DP_START_WAIT_SUSPEND 500
+#define A2DP_SUSPEND_TIMEOUT 5000
 #define A2DP_DELAY_START 100
 #ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
 #define A2DP_PREFERRED_CODEC    SERVICE_AVDTP_CODEC_TYPE_MPEG2_4_AAC
@@ -154,6 +154,7 @@ static char* stack_event_to_string(a2dp_event_type_t event)
         CASE_RETURN_STR(CONNECT_REQ)
         CASE_RETURN_STR(DISCONNECT_REQ)
         CASE_RETURN_STR(STREAM_START_REQ)
+        CASE_RETURN_STR(DELAY_STREAM_START_REQ)
         CASE_RETURN_STR(STREAM_SUSPEND_REQ)
         CASE_RETURN_STR(CONNECTED_EVT)
         CASE_RETURN_STR(DISCONNECTED_EVT)
@@ -294,7 +295,7 @@ static void a2dp_delay_start_timeout_callback(char* data)
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
     a2dp_event_t* a2dp_event;
 
-    a2dp_event = a2dp_event_new(STREAM_START_REQ, a2dp_sm->addr);
+    a2dp_event = a2dp_event_new(DELAY_STREAM_START_REQ, a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
 }
@@ -511,9 +512,11 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     case STREAM_START_REQ: {
         SERVICE_BT_STATUS status;
 
-        if (a2dp_sm->delay_start_timer)
-            stop_timer(a2dp_sm->delay_start_timer);
-        a2dp_sm->delay_start_timer = NULL;
+        /* if we are in suspending substate, ignore this request */
+        if (flag_isset(a2dp_sm, PENDING_STOP) || flag_isset(a2dp_sm, PENDING_START)) {
+            BT_LOGD("in suspending or starting substate, ignore this request");
+            break;
+        }
         if (!a2dp_sm->audio_ready) {
             BT_LOGE("A2DP Audio is not ready, Ignore start cmd");
             break;
@@ -527,7 +530,23 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         a2dp_sm->start_timer = start_timer(A2DP_START_TIMEOUT, 0, a2dp_start_timeout_callback, a2dp_sm);
         break;
     }
+    case DELAY_STREAM_START_REQ: {
+        SERVICE_BT_STATUS status;
 
+        if (a2dp_sm->delay_start_timer)
+            stop_timer(a2dp_sm->delay_start_timer);
+        a2dp_sm->delay_start_timer = NULL;
+        if (flag_isset(a2dp_sm, PENDING_START))
+            break;
+        status = service_adapter_a2dp_source_start_stream(a2dp_sm->addr);
+        if (status != SERVICE_BT_STATUS_SUCCESS) {
+            BT_LOGE("Stream delay start failed");
+            break;
+        }
+        flag_set(a2dp_sm, PENDING_START);
+        a2dp_sm->start_timer = start_timer(A2DP_START_TIMEOUT, 0, a2dp_start_timeout_callback, a2dp_sm);
+        break;
+    }
     case DISCONNECTED_EVT:
         if (flag_isset(a2dp_sm, PENDING_START)) {
             flag_clear(a2dp_sm, PENDING_START);
@@ -643,7 +662,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
            suspend sub-state, we need restart stream and transmit state to
            opened state, and wait for started event */
         if (flag_isset(a2dp_sm, PENDING_STOP)) {
-            a2dp_sm->delay_start_timer = start_timer(A2DP_START_WAIT_SUSPEND, 0, a2dp_delay_start_timeout_callback, a2dp_sm);
+            a2dp_sm->delay_start_timer = start_timer(A2DP_SUSPEND_TIMEOUT, 0, a2dp_delay_start_timeout_callback, a2dp_sm);
             hsm_transition_to(sm, &opened_state);
             break;
         }
@@ -661,6 +680,12 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
 #endif
     case STREAM_SUSPEND_REQ: {
         SERVICE_BT_STATUS status;
+
+        /* if device had already send suspend request, ignore it */
+        if (flag_isset(a2dp_sm, PENDING_STOP)) {
+            BT_LOGD("had already send suspend request, ignore it");
+            break;
+        }
         flag_set(a2dp_sm, PENDING_STOP);
         status = service_adapter_a2dp_source_suspend_stream(a2dp_sm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
