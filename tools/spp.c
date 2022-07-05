@@ -230,13 +230,15 @@ static void disconnect_timeout(char* arg)
     free((void*)arg);
 }
 
-static void connection_state_callback(const bt_address addr, uint16_t scn, uint16_t port, spp_connection_state_t state)
+static int connection_state_callback(const bt_address addr, uint16_t scn, uint16_t port, spp_connection_state_t state)
 {
     BT_LOGD("%s scn: %d, port: %d, state:%d", __func__, scn, port, state);
 
     if (state == SPP_CONNECTION_STATE_DISCONNECTED) {
         check_resource_release(port);
     }
+
+    return 0;
 }
 
 static void pty_open_callback(const bt_address addr, uint16_t port, char* name)

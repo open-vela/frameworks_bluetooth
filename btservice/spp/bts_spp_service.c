@@ -44,10 +44,11 @@
 
 static spp_callbacks_t* sppCallbacks = NULL;
 
-static void spp_svr_connection_state_callback(const bt_address addr, uint16_t scn, uint16_t port, spp_connection_state_t state)
+static int spp_svr_connection_state_callback(const bt_address addr, uint16_t scn, uint16_t port, spp_connection_state_t state)
 {
     if (sppCallbacks)
-        sppCallbacks->connection_state_cb(addr, scn, port, state);
+        return sppCallbacks->connection_state_cb(addr, scn, port, state);
+    return 0;
 }
 
 static void spp_svr_pty_open_callback(const bt_address addr, uint16_t port, char* name)
