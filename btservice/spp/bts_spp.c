@@ -431,14 +431,17 @@ static void spp_cleanup_all_device(void)
     }
 }
 
-static void spp_notify_connection_state(spp_pty_device_t* device, spp_connection_state_t state)
+static int spp_notify_connection_state(spp_pty_device_t* device, spp_connection_state_t state)
 {
+    int ret = 0;
     assert(device);
 
     if (device->cbs && device->cbs->connection_state_cb)
-        device->cbs->connection_state_cb(device->addr, device->scn, device->conn_id, state);
+        ret = device->cbs->connection_state_cb(device->addr, device->scn, device->conn_id, state);
     else if (g_spp_handle.cbs && g_spp_handle.cbs->connection_state_cb)
-        g_spp_handle.cbs->connection_state_cb(device->addr, device->scn, device->conn_id, state);
+        ret = g_spp_handle.cbs->connection_state_cb(device->addr, device->scn, device->conn_id, state);
+
+    return ret;
 }
 
 static void spp_notify_pty_opened(spp_pty_device_t* device)
@@ -596,6 +599,7 @@ static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t leng
 static void spp_on_connection_state_chaneged(bt_address addr, uint16_t port,
                                              spp_connection_state_t state)
 {
+    int ret;
     spp_pty_device_t* device;
 
     device = find_pty_device(SERVICE_CONN_ID(port));
@@ -612,14 +616,20 @@ static void spp_on_connection_state_chaneged(bt_address addr, uint16_t port,
     BT_LOGD("%s, addr: %s, scn: %d, port: %d, state: %d", 
             __func__, addr_str(addr), device->scn, device->conn_id, state);
     device->state = state;
-    spp_notify_connection_state(device, state);
+    ret = spp_notify_connection_state(device, state);
+
     if (state == SPP_CONNECTION_STATE_CONNECTED) {
         BT_LOGD("PERFORMANCE-SPP-BTM-CONNECTED");
-        device = spp_pty_device_open(device);
-        if (device == NULL)
-            return;
+        if (ret == 0) {
+            device = spp_pty_device_open(device);
+            if (device == NULL)
+                return;
 
-        spp_notify_pty_opened(device);
+            spp_notify_pty_opened(device);
+        } else {
+            BT_LOGD("upper want disconnect this port");
+            service_adapter_spp_disconnect_by_port(device->conn_port);
+        }
     } else if (state == SPP_CONNECTION_STATE_DISCONNECTED)
         spp_device_cleanup(device);
 }
@@ -691,9 +701,10 @@ static void spp_on_connection_update_mfs(uint16_t port, uint16_t mfs)
 
     device->mfs = mfs;
     device->next_to_read = mfs;
-    ret = euv_pty_read_start2(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
-    if (ret != 0) {
-        spp_pty_device_close(device);
+    if (device->handle) {
+        ret = euv_pty_read_start2(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
+        if (ret != 0)
+            spp_pty_device_close(device);
     }
 }
 
