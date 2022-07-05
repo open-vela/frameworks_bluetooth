@@ -53,7 +53,7 @@ typedef enum {
     SPP_PTY_MODE_RAW
 } spp_pty_mode_t;
 
-typedef void (*spp_connection_state_callback)(const bt_address addr, uint16_t scn, uint16_t port, spp_connection_state_t state);
+typedef int (*spp_connection_state_callback)(const bt_address addr, uint16_t scn, uint16_t port, spp_connection_state_t state);
 typedef void (*spp_pty_open_callback)(const bt_address addr, uint16_t port, char* name);
 
 /* SPP event callbacks structure */
