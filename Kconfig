@@ -27,6 +27,12 @@ config LIB_BLUELET
   help
     Enable support for the BARROT Bluetooth stack
 
+config BLUETOOTH_CLASS_OF_DEVICE
+	hex "bluetooth class of device"
+	default 0x00640404
+	help
+		bluetooth class of device
+
 config BLUETOOTH_AVRCP_TG
 	bool "Enable BT_AVRCP_TG"
 	default n
