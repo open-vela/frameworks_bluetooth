@@ -40,7 +40,9 @@
 typedef void (*avrcp_passthrough_rsp_callback)(bt_address addr, avrcp_passthr_cmd_t key_code,
                                               avrcp_key_state_t key_state, uint8_t response);
 typedef void (*avrcp_play_position_changed_callback)(bt_address addr, uint32_t song_len, uint32_t song_pos);
-typedef void (*avrcp_play_status_changed_callback)(bt_address addr, play_status_t play_status);
+typedef void (*avrcp_play_status_changed_callback)(bt_address addr, avrcp_play_status_t play_status);
+typedef void (*avrcp_register_notification_absvol_callback)(bt_address addr);
+typedef void (*avrcp_set_volume_callback)(bt_address addr, uint8_t volume);
 
 typedef struct {
     size_t size;
@@ -48,6 +50,8 @@ typedef struct {
     avrcp_passthrough_rsp_callback passthrough_rsp_cb;
     avrcp_play_position_changed_callback play_position_changed_cb;
     avrcp_play_status_changed_callback play_status_changed_cb;
+    avrcp_register_notification_absvol_callback register_notification_absvol_cb;
+    avrcp_set_volume_callback set_volume_cb;
 } avrc_ctrl_callbacks_t;
 
 typedef struct {
@@ -59,6 +63,9 @@ typedef struct {
 
     /** get the playback state */
     bt_result_code (*get_playback_state)(bt_address bd_addr);
+
+    /** notify volume changed */
+    bt_result_code (*volume_changed_notify)(bt_address bd_addr, uint8_t volume);
 
     /**
      * @brief Set the avrcp ctrl event callback

@@ -37,7 +37,7 @@ static avrcp_tg_interface_t* get_service(void)
 }
 
 static bt_result_code avrc_get_play_status_rsp(bt_address addr,
-                                        play_status_t status,
+                                        avrcp_play_status_t status,
                                         uint32_t song_len, uint32_t song_pos)
 {
     avrcp_tg_interface_t* service = get_service();
@@ -47,7 +47,7 @@ static bt_result_code avrc_get_play_status_rsp(bt_address addr,
     return service->get_play_status_rsp(addr, status, song_len, song_pos);
 }
 
-static bt_result_code avrc_play_status_notify(bt_address addr, play_status_t status)
+static bt_result_code avrc_play_status_notify(bt_address addr, avrcp_play_status_t status)
 {
     avrcp_tg_interface_t* service = get_service();
     if (!service)
@@ -56,18 +56,13 @@ static bt_result_code avrc_play_status_notify(bt_address addr, play_status_t sta
     return service->play_status_notify(addr, status);
 }
 
-static bt_result_code avrc_volume_changed_notify(bt_address addr, uint8_t volume)
+static bt_result_code avrc_set_absolute_volume(bt_address addr, uint8_t volume)
 {
     avrcp_tg_interface_t* service = get_service();
     if (!service)
         return BT_RESULT_FAILED;
 
-    return service->volume_changed_notify(addr, volume);
-}
-
-static bt_result_code avrc_set_absolute_volume(bt_address addr, uint8_t volume)
-{
-    return BT_RESULT_UNSUPPORTED;
+    return service->set_absolute_volume(addr, volume);
 }
 
 static bt_result_code avrc_set_callbacks(avrcp_tg_callbacks_t* callbacks)
@@ -92,7 +87,6 @@ static const avrcp_tg_interface_t avrcpTgInterface = {
     sizeof(avrcpTgInterface),
     avrc_get_play_status_rsp,
     avrc_play_status_notify,
-    avrc_volume_changed_notify,
     avrc_set_absolute_volume,
     avrc_set_callbacks,
     avrc_reset_callbacks

@@ -41,6 +41,10 @@ config BLUETOOTH_AVRCP_CT
 	bool "Enable BT_AVRCP_CT"
 	default n
 
+config BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
+	bool "Support avrcp absolute volume Feature"
+	default n
+
 config BLUETOOTH_A2DP
 	bool "Enable BT_A2DP"
 	default n
