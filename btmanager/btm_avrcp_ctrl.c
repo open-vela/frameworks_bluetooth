@@ -27,9 +27,8 @@
 #include "btm_manager.h"
 #include "bts_service.h"
 #include "btm_avrcp.h"
-#include "bts_avrcp.h"
+#include "bts_avrcp_ctrl.h"
 #include "bts_service_interface.h"
-
 
 static avrc_ctrl_interface_t* get_service(void)
 {
@@ -54,6 +53,15 @@ static bt_result_code avrcp_get_playback_state(bt_address addr)
     return service->get_playback_state(addr);
 }
 
+static bt_result_code avrc_volume_changed_notify(bt_address addr, uint8_t volume)
+{
+    avrc_ctrl_interface_t* service = get_service();
+    if (!service)
+        return BT_RESULT_FAILED;
+
+    return service->volume_changed_notify(addr, volume);
+}
+
 static bt_result_code avrcp_set_callbacks(const avrc_ctrl_callbacks_t* callbacks)
 {
     avrc_ctrl_interface_t* service = get_service();
@@ -76,6 +84,7 @@ static const avrc_ctrl_interface_t avrcpCtrlInterface = {
     sizeof(avrc_ctrl_interface_t),
     avrcp_send_pass_through_cmd,
     avrcp_get_playback_state,
+    avrc_volume_changed_notify,
     avrcp_set_callbacks,
     avrcp_reset_callbacks
 };
