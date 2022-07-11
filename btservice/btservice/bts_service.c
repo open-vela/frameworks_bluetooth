@@ -245,7 +245,7 @@ void create_config_folder(void)
 #ifdef CONFIG_BLUELET_HCI_SNOOP_LOG_PATH
     char folder_snoop[] = CONFIG_BLUELET_HCI_SNOOP_LOG_PATH;
 #else
-    char folder_snoop[] = "/data/misc/bt/snoop/";
+    char folder_snoop[] = "/data/misc/bt/snoop";
 #endif
 
     if (access(folder_misc, 0) != 0) {
