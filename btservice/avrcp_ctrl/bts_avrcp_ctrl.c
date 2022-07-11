@@ -163,7 +163,12 @@ static void adpt_received_notification_cb(BD_ADDR addr,
     memcpy(msg.addr, addr, 6);
     msg.msg_id = REGISTER_NOTIFICATION_RSP;
     msg.data.notification.event = event;
-    msg.data.notification.value = *(uint8_t *)value;
+    if (event == AVRCP_NOTIFICATION_PLAY_POS_CHANGED)
+        msg.data.notification.value = *(uint32_t *)value;
+    else if (event == AVRCP_NOTIFICATION_UIDS_CHANGED || event == AVRCP_NOTIFICATION_ADDRESSED_PLAYER_CHANGED)
+        msg.data.notification.value = *(uint16_t *)value;
+    else
+        msg.data.notification.value = *(uint8_t *)value;
 
     do_in_avrcp_ct_service(&msg);
 }
@@ -176,10 +181,12 @@ static void adpt_received_remote_capabilities_cb(BD_ADDR addr,
     while (capabilities->count) {
         switch (*caps-1) {
             case AVRCP_NOTIFICATION_MEDIA_STATUS_CHANGED:
-            case AVRCP_NOTIFICATION_PLAY_POS_CHANGED:
             case AVRCP_NOTIFICATION_VOLUME_CHANGED:
                 service_adapter_avrcp_register_notification(addr, *caps-1, 0);
-            break;
+                break;
+            case AVRCP_NOTIFICATION_PLAY_POS_CHANGED:
+                service_adapter_avrcp_register_notification(addr, *caps-1, 2);
+                break;
         }
         capabilities->count--;
         caps++;
