@@ -115,17 +115,36 @@ typedef enum{
     PLAY_STATUS_FWD_SEEK,
     PLAY_STATUS_REV_SEEK,
     PLAY_STATUS_ERROR
-} play_status_t;
+} avrcp_play_status_t;
+
+typedef enum {
+    NOTIFICATION_EVT_PALY_STATUS_CHANGED = 0x01,
+    NOTIFICATION_EVT_TRACK_CHANGED,
+    NOTIFICATION_EVT_TRACK_END,
+    NOTIFICATION_EVT_TRACK_START,
+    NOTIFICATION_EVT_PLAY_POS_CHANGED,
+    NOTIFICATION_EVT_BATTERY_STATUS_CHANGED,
+    NOTIFICATION_EVT_SYSTEM_STATUS_CHANGED,
+    NOTIFICATION_EVT_APP_SETTING_CHANGED,
+    NOTIFICATION_EVT_NOW_PLAYING_CONTENT_CHANGED,
+    NOTIFICATION_EVT_AVAILABLE_PLAYERS_CHANGED,
+    NOTIFICATION_EVT_ADDRESSED_PLAYER_CHANGED,
+    NOTIFICATION_EVT_UIDS_CHANGED,
+    NOTIFICATION_EVT_VOLUME_CHANGED,
+    NOTIFICATION_EVT_FLAG_INTERIM
+} avrcp_notification_event_t;
 
 typedef void (*avrcp_connection_state_callback)(bt_address addr, avrcp_connection_state_t state);
 typedef void (*avrcp_get_play_status_callback)(bt_address addr);
 typedef void (*avrcp_playback_register_notification_callback)(bt_address addr);
+typedef void (*avrcp_volume_changed_callback)(bt_address addr, uint8_t volume);
 
 typedef struct {
   size_t size;
   avrcp_connection_state_callback connection_state_cb;
   avrcp_get_play_status_callback get_play_status_cb;
   avrcp_playback_register_notification_callback playback_register_notification_cb;
+  avrcp_volume_changed_callback volume_changed_cb;
 } avrcp_tg_callbacks_t;
 
 /* avrcp target interface structure */
@@ -141,7 +160,7 @@ typedef struct {
      * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
      */
     bt_result_code (*get_play_status_rsp)(bt_address addr,
-                                          play_status_t status,
+                                          avrcp_play_status_t status,
                                           uint32_t song_len, uint32_t song_pos);
 
     /**
@@ -150,15 +169,7 @@ typedef struct {
      * @param[in] status    current playback status.
      * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
      */
-    bt_result_code (*play_status_notify)(bt_address addr, play_status_t status);
-
-    /**
-     * @brief notify volume change if peer had register volumechanged notification
-     * @param[in] addr      address of peer device.
-     * @param[in] volume    volume of mediaplayer, range in <0-0x7F>.
-     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
-     */
-    bt_result_code (*volume_changed_notify)(bt_address addr, uint8_t volume);
+    bt_result_code (*play_status_notify)(bt_address addr, avrcp_play_status_t status);
 
     /**
      * @brief set absolute volume

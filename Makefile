@@ -32,6 +32,7 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP),y)
 	CSRCS += btservice/a2dp/bts_a2dp_codec.c
 	CSRCS += btservice/a2dp/bts_a2dp_device.c
 	CSRCS += btservice/a2dp/codec/a2dp_codec_sbc.c
+	CSRCS += btservice/avrcp/bts_avrcp.c
 ifeq ($(CONFIG_BLUETOOTH_A2DP_AAC_CODEC),y)
 	CSRCS += btservice/a2dp/codec/a2dp_codec_aac.c
 endif
@@ -62,13 +63,11 @@ endif
 
 ifeq ($(CONFIG_BLUETOOTH_AVRCP_TG),y)
 	CSRCS +=btmanager/btm_avrcp_target.c
-	CSRCS +=btservice/avrcp_target/bts_avrcp_target.c
-	CSRCS +=btservice/avrcp_target/bts_avrcp_target_service.c
+	CSRCS +=btservice/avrcp/target/bts_avrcp_target.c
 endif
 ifeq ($(CONFIG_BLUETOOTH_AVRCP_CT),y)
 	CSRCS +=btmanager/btm_avrcp_ctrl.c
-	CSRCS +=btservice/avrcp_ctrl/bts_avrcp_ctrl.c
-	CSRCS +=btservice/avrcp_ctrl/bts_avrcp_ctrl_service.c
+	CSRCS +=btservice/avrcp/ctrl/bts_avrcp_ctrl.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF),y)

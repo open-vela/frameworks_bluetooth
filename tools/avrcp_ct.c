@@ -45,11 +45,13 @@
 
 static int pass_through_cmd(void* handle, int argc, char* argv[]);
 static int get_playback_status_cmd(void* handle, int argc, char* argv[]);
+static int volume_change_cmd(void* handle, int argc, char* argv[]);
 
 static const avrc_ctrl_interface_t* avrcp_ctrl_interface = NULL;
 static bt_command_t g_avrcp_ct_tables[] = {
     { "pass", pass_through_cmd, "\"CT send passthrough command      param: <address> <key>(play/pause/stop/next/prev)\"" },
     { "playstatus", get_playback_status_cmd, "\"CT get playback status param: <address> \"" },
+    { "volume", volume_change_cmd, "\"CT notify volume changed param: <address> \"" },
 };
 
 static void usage(void)
@@ -78,9 +80,21 @@ static void avrcp_play_position_changed_cb(bt_address addr, uint32_t song_len, u
     BT_LOGD("%s addr: %s, song_len:%"PRIu32", song_pos:%"PRIu32, __func__, addr_str(addr), song_len, song_pos);
 }
 
-static void avrcp_play_status_changed_cb(bt_address addr, play_status_t play_status)
+static void avrcp_play_status_changed_cb(bt_address addr, avrcp_play_status_t play_status)
 {
     BT_LOGD("%s addr: %s, play_status:%d", __func__, addr_str(addr), play_status);
+}
+
+static void avrcp_register_notification_absvol_cb(bt_address addr)
+{
+    BT_LOGD("%s addr: %s", __func__, addr_str(addr));
+    avrcp_ctrl_interface->volume_changed_notify(addr, 0x3F);
+}
+
+static void avrcp_set_volume_cb(bt_address addr, uint8_t volume)
+{
+    BT_LOGD("%s addr: %s, volume: %d", __func__, addr_str(addr), volume);
+    avrcp_ctrl_interface->volume_changed_notify(addr, volume);
 }
 
 static const avrc_ctrl_callbacks_t g_tools_avrcp_ctrl_cbs = {
@@ -88,7 +102,9 @@ static const avrc_ctrl_callbacks_t g_tools_avrcp_ctrl_cbs = {
     avrcp_connection_state_cb,
     avrcp_passthrough_rsp_cb,
     avrcp_play_position_changed_cb,
-    avrcp_play_status_changed_cb
+    avrcp_play_status_changed_cb,
+    avrcp_register_notification_absvol_cb,
+    avrcp_set_volume_cb,
 };
 
 static int pass_through_cmd(void* handle, int argc, char* argv[])
@@ -130,6 +146,22 @@ static int get_playback_status_cmd(void* handle, int argc, char* argv[])
     str2ba(argv[0], addr);
 
     avrcp_ctrl_interface->get_playback_state(addr);
+    return 0;
+}
+
+static int volume_change_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address addr;
+
+    if (argc < 2)
+        return -1;
+
+    str2ba(argv[0], addr);
+    int volume = atoi(argv[1]);
+    if (volume < 0)
+        return -1;
+
+    avrcp_ctrl_interface->volume_changed_notify(addr, volume);
     return 0;
 }
 

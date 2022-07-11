@@ -49,7 +49,7 @@ static int volume_cmd(void* handle, int argc, char* argv[]);
 static const avrcp_tg_interface_t* avrcp_tg_interface = NULL;
 static bt_command_t g_avrcp_tg_tables[] = {
     { "playback", playback_cmd, "\"TG notify playback status      param: <address> <status>\"" },
-    { "volume", volume_cmd, "\"TG notify volume changed param: <address> <volume>\"" },
+    { "volume", volume_cmd, "\"TG set absolute volume param: <address> <volume>\"" },
 };
 
 static void usage(void)
@@ -61,6 +61,36 @@ static void usage(void)
         printf("\t%-8s\t%s\n", g_avrcp_tg_tables[i].cmd, g_avrcp_tg_tables[i].help);
     }
 }
+
+void avrcp_connection_state_cb(bt_address addr, avrcp_connection_state_t state)
+{
+    BT_LOGD("%s, address: %s, state: %d", __func__, addr_str(addr), state);
+}
+
+void avrcp_get_play_status_cb(bt_address addr)
+{
+    BT_LOGD("%s, address: %s", __func__, addr_str(addr));
+    avrcp_tg_interface->get_play_status_rsp(addr, PLAY_STATUS_PAUSED, 0 , 0);
+}
+
+void avrcp_playback_register_notification_cb(bt_address addr)
+{
+    BT_LOGD("%s, address: %s", __func__, addr_str(addr));
+    avrcp_tg_interface->play_status_notify(addr, PLAY_STATUS_PAUSED);
+}
+
+void avrcp_volume_changed_cb(bt_address addr, uint8_t volume)
+{
+    BT_LOGD("%s, address: %s, volume:%d", __func__, addr_str(addr), volume);
+}
+
+static avrcp_tg_callbacks_t g_tools_avrcp_tg_cbs = {
+    sizeof(avrcp_tg_callbacks_t),
+    avrcp_connection_state_cb,
+    avrcp_get_play_status_cb,
+    avrcp_playback_register_notification_cb,
+    avrcp_volume_changed_cb
+};
 
 static int playback_cmd(void* handle, int argc, char* argv[])
 {
@@ -88,7 +118,7 @@ static int volume_cmd(void* handle, int argc, char* argv[])
     str2ba(argv[0], addr);
     volume = atoi(argv[1]);
 
-    avrcp_tg_interface->volume_changed_notify(addr, volume);
+    avrcp_tg_interface->set_absolute_volume(addr, volume);
     return 0;
 }
 
@@ -98,6 +128,7 @@ int avrcp_tg_command(void* handle, int argc, char* argv[])
 
     if (avrcp_tg_interface == NULL) {
         avrcp_tg_interface = get_avrcp_tg_interface();
+        avrcp_tg_interface->set_callbacks(&g_tools_avrcp_tg_cbs);
     }
 
     if (argc > 1) {

@@ -15,7 +15,7 @@
 #include "bts_service_interface.h"
 #include "bts_spp.h"
 #include "bts_panu.h"
-#include "bts_avrcp.h"
+#include "bts_avrcp_ctrl.h"
 #include "log.h"
 
 typedef struct {

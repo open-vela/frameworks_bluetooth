@@ -51,7 +51,7 @@
 #include "bts_a2dp_sink.h"
 #include "bts_a2dp_audio.h"
 #include "bts_a2dp_state_machine.h"
-#include "bts_avrcp_target.h"
+#include "bts_avrc.h"
 #include "utils/utils.h"
 #ifdef CONFIG_BLUETOOTH_VENDOR_DEPENDENCY_BES
 #include "bt_drv_reg_op.h"
