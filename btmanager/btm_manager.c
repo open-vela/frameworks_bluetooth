@@ -26,6 +26,7 @@
 #include "btm_manager.h"
 #include "bts_service.h"
 #include "bts_service_interface.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -40,19 +41,12 @@ const static bluetooth_service_interface* bluetooth_service = NULL;
 
 static manager_context_t* btm_context_init(void)
 {
-    manager_context_t* init_context = NULL;
-    init_context = (manager_context_t*)malloc(sizeof(manager_context_t));
-    if (!init_context) {
-        BT_LOGE("context init malloc failed!");
-        goto Exit;
-    }
+    manager_context_t* init_context = (manager_context_t*)malloc(sizeof(manager_context_t));
+    assert(init_context);
+
     init_context->callback = (bt_mgr_callback_t*)malloc(sizeof(bt_mgr_callback_t));
-    if (!init_context->callback) {
-        BT_LOGE("context init malloc failed!");
-        free(init_context);
-        init_context = NULL;
-    }
-Exit:
+    assert(init_context->callback);
+
     return init_context;
 }
 

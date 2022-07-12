@@ -1,4 +1,5 @@
 #define LOG_TAG "bts_service_interface"
+ #include <assert.h>
 #include <nuttx/list.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,8 +74,10 @@ static bt_result_code bts_if_init(void* handle, bt_service_if_callbacks* callbac
 {
     if (!service) {
         service = (bt_service_t*)malloc(sizeof(bt_service_t));
+        assert(service);
         list_initialize(&service->handle_list);
-        bts_service_init(&service_callback);
+        assert(bts_service_init(&service_callback) == BT_RESULT_SUCCESS);
+
         service->ble_state = STATE_BLE_OFF;
         service->bt_state = BTM_STATE_OFF;
 #if defined(CONFIG_BLUETOOTH_LE_SCAN) || defined(CONFIG_BLUETOOTH_LE_ADVERTISE) || defined(CONFIG_BLUETOOTH_GATT_CLIENT) || defined(CONFIG_BLUETOOTH_GATT_SERVER)
@@ -94,6 +97,7 @@ static bt_result_code bts_if_init(void* handle, bt_service_if_callbacks* callbac
 #endif
     }
     bt_if_handle_t* service_if_handle = (bt_if_handle_t*)malloc(sizeof(bt_if_handle_t));
+    assert(service_if_handle);
     service_if_handle->handle = handle;
     service_if_handle->callbacks = callbacks;
     list_add_tail(&service->handle_list, &service_if_handle->node);
