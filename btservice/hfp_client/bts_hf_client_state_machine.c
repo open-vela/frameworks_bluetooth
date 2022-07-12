@@ -383,6 +383,7 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
     case TIMEOUT:
         BT_LOGD("Connection timeout");
         //slc connection callback
+        notify_connection_state_changed(hfsm->service, hfsm->addr, HF_CLIENT_CONNECTION_STATE_DISCONNECTED);
         hsm_transition_to(sm, &disconnected_state);
         break;
 
