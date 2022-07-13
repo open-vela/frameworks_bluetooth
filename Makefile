@@ -16,6 +16,10 @@
 
 include $(APPDIR)/Make.defs
 
+ifneq ($(CONFIG_ARCH_BOARD_CUSTOM_NAME),)
+  BIN := $(TOPDIR)/$(CONFIG_ARCH_BOARD_CUSTOM_DIR)/libs/$(CONFIG_ARCH_BOARD_CUSTOM_NAME)/libframework.a
+endif
+
 CSRCS += btservice/btservice/bts_service.c
 CSRCS += btservice/btservice/bts_service_interface.c
 CSRCS += btservice/gap/bts_gap.c
@@ -195,6 +199,11 @@ ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	PROGNAME 	+= bttool
 	MAINSRC		+= tools/bt_tools.c
 endif
+
+CSRCS := $(wildcard $(CSRCS))
+
+distclean::
+	rm -rf $(TOPDIR)/$(CONFIG_ARCH_BOARD_CUSTOM_DIR)/libs/$(CONFIG_ARCH_BOARD_CUSTOM_NAME)
 
 include $(APPDIR)/Application.mk
 
