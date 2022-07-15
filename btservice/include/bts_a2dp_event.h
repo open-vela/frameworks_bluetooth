@@ -61,6 +61,7 @@ typedef enum {
     DATA_IND_EVT,
     CONNECT_TIMEOUT,
     START_TIMEOUT,
+    STREAM_SUSPEND_DELAY,
 } a2dp_event_type_t;
 
 typedef struct

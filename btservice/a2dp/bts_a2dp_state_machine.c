@@ -67,6 +67,7 @@
 #define A2DP_START_TIMEOUT 5000
 #define A2DP_SUSPEND_TIMEOUT 5000
 #define A2DP_DELAY_START 100
+#define A2DP_DELAY_SUSPEND 200
 #ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
 #define A2DP_PREFERRED_CODEC    SERVICE_AVDTP_CODEC_TYPE_MPEG2_4_AAC
 #else
@@ -89,6 +90,7 @@ typedef struct _a2dp_state_machine {
     uv_timer_t* connect_timer;
     uv_timer_t* start_timer;
     uv_timer_t* delay_start_timer;
+    uv_timer_t* delay_suspend_timer;
 } a2dp_state_machine_t;
 
 typedef struct {
@@ -169,6 +171,7 @@ static char* stack_event_to_string(a2dp_event_type_t event)
         CASE_RETURN_STR(DATA_IND_EVT)
         CASE_RETURN_STR(CONNECT_TIMEOUT)
         CASE_RETURN_STR(START_TIMEOUT)
+        CASE_RETURN_STR(STREAM_SUSPEND_DELAY)
     default:
         return "UNKNOWN_EVENT";
     }
@@ -296,6 +299,16 @@ static void a2dp_delay_start_timeout_callback(char* data)
     a2dp_event_t* a2dp_event;
 
     a2dp_event = a2dp_event_new(DELAY_STREAM_START_REQ, a2dp_sm->addr);
+    a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
+    a2dp_event_destory(a2dp_event);
+}
+
+static void a2dp_delay_suspend_timeout_callback(char* data)
+{
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
+    a2dp_event_t* a2dp_event;
+
+    a2dp_event = a2dp_event_new(STREAM_SUSPEND_REQ, a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
 }
@@ -660,7 +673,19 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
     }
 
+    case STREAM_SUSPEND_DELAY:
+        if (!a2dp_sm->delay_suspend_timer)
+            a2dp_sm->delay_suspend_timer = start_timer(A2DP_DELAY_SUSPEND, 0, a2dp_delay_suspend_timeout_callback, a2dp_sm);
+        break;
+
     case STREAM_START_REQ:
+        if (a2dp_sm->delay_suspend_timer) {
+            BT_LOGD("need stop suspend timer");
+            stop_timer(a2dp_sm->delay_suspend_timer);
+            a2dp_sm->delay_suspend_timer = NULL;
+            bts_a2dp_audio_on_started(a2dp_sm->peer_sep, true);
+            break;
+        }
         /* received start request when we are in pending a2dp stream
            suspend sub-state, we need restart stream and transmit state to
            opened state, and wait for started event */
@@ -683,6 +708,12 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
 #endif
     case STREAM_SUSPEND_REQ: {
         SERVICE_BT_STATUS status;
+
+        if (a2dp_sm->delay_suspend_timer) {
+            BT_LOGD("need stop suspend timer");
+            stop_timer(a2dp_sm->delay_suspend_timer);
+            a2dp_sm->delay_suspend_timer = NULL;
+        }
 
         /* if device had already send suspend request, ignore it */
         if (flag_isset(a2dp_sm, PENDING_STOP)) {
@@ -843,7 +874,7 @@ const char* a2dp_state_machine_current_state(a2dp_state_machine_t* sm)
 
 bool a2dp_state_machine_is_pending_stop(a2dp_state_machine_t* sm)
 {
-    if (flag_isset(sm, PENDING_STOP))
+    if (flag_isset(sm, PENDING_STOP) || sm->delay_suspend_timer)
         return true;
 
     return false;

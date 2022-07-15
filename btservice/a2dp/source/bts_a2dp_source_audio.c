@@ -47,7 +47,7 @@
 #include "log.h"
 
 #define MAX_FRAME_NUM_PER_TICK 14
-#define STREAM_DELAY_MS 100
+#define STREAM_DELAY_MS 10
 #define STREAM_FLUSH_SIZE (1024)
 #define STREAM_DATA_RESERVED offsetof(SERVICE_A2DP_SOURCE_PACKET_S, data)
 
@@ -310,7 +310,7 @@ static void bts_a2dp_source_start_audio_req(void)
 
 static void bts_a2dp_source_stop_audio_req(void)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, remaining:%d", __func__, circbuf_used(&a2dp_src_stream.stream_pool));
 
     if (a2dp_src_stream.stream_state != STATE_RUNNING)
         return;
@@ -405,7 +405,7 @@ void bts_a2dp_source_audio_init(void)
 {
     memset(&a2dp_src_stream, 0, sizeof(a2dp_src_stream));
     a2dp_src_stream.stream_state = STATE_OFF;
-    circbuf_init(&a2dp_src_stream.stream_pool, NULL, 4096);
+    circbuf_init(&a2dp_src_stream.stream_pool, NULL, 2048);
     bts_a2dp_control_init(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
 }
 
