@@ -100,7 +100,7 @@ typedef struct gap_ble_whitelist_data {
 } gap_ble_whitelist_data;
 
 static uv_db_t* handle = NULL;
-#ifdef BT_CONFIG_DEVICE_INFO_ENABLE
+#ifdef CONFIG_BLUETOOTH_DEVICE_INFO
 static bt_device_info_t device_info;
 #endif
 static bts_service_adapter_state_changed_callback adapter_state_changed_cb = NULL;
@@ -120,7 +120,7 @@ static void gap_init_timeout(char* data)
     adapter_state_changed_cb(BTM_STATE_ON);
 }
 
-#ifdef BT_CONFIG_DEVICE_INFO_ENABLE
+#ifdef CONFIG_BLUETOOTH_DEVICE_INFO
 static void update_device_info_callback(int status, const char* key, uv_buf_t value, void* cookie)
 {
     if (status != 0) {
@@ -155,7 +155,7 @@ bt_result_code gap_bt_update_name(char* name, uint8_t size)
         return BT_RESULT_FAILED;
     }
 
-#ifdef BT_CONFIG_DEVICE_INFO_ENABLE
+#ifdef CONFIG_BLUETOOTH_DEVICE_INFO
     memcpy(device_info.bt_name, name, size);
     return gap_uv_db_update_deviceinfo(BT_KEY_BTNAME);
 #else
@@ -171,7 +171,7 @@ bt_result_code gap_bt_update_scan_mode(bt_scan_mode scan_mode, bool bondable)
         return BT_RESULT_FAILED;
     }
 
-#ifdef BT_CONFIG_DEVICE_INFO_ENABLE
+#ifdef CONFIG_BLUETOOTH_DEVICE_INFO
     device_info.scan_mode = scan_mode;
     device_info.bondable = bondable;
 
@@ -189,7 +189,7 @@ bt_result_code gap_bt_update_io_capability(bt_io_capability io_capability)
         return BT_RESULT_FAILED;
     }
 
-#ifdef BT_CONFIG_DEVICE_INFO_ENABLE
+#ifdef CONFIG_BLUETOOTH_DEVICE_INFO
     device_info.io_capability = io_capability;
     return gap_uv_db_update_deviceinfo(BT_KEY_IOCAP);
 #else
@@ -205,7 +205,7 @@ bt_result_code gap_bt_update_device_class(uint32_t class_of_device)
         return BT_RESULT_FAILED;
     }
 
-#ifdef BT_CONFIG_DEVICE_INFO_ENABLE
+#ifdef CONFIG_BLUETOOTH_DEVICE_INFO
     device_info.cod = class_of_device;
     return gap_uv_db_update_deviceinfo(BT_KEY_COD);
 #else
@@ -213,7 +213,7 @@ bt_result_code gap_bt_update_device_class(uint32_t class_of_device)
 #endif
 }
 
-#ifdef BT_CONFIG_DEVICE_INFO_ENABLE
+#ifdef CONFIG_BLUETOOTH_DEVICE_INFO
 static void gap_update_device(bt_device_info_t* info)
 {
     if (!info) {
@@ -592,7 +592,7 @@ bt_result_code gap_bt_config_init(bts_service_adapter_state_changed_callback cb)
         return BT_RESULT_FAILED;
     }
 
-#ifdef BT_CONFIG_DEVICE_INFO_ENABLE
+#ifdef CONFIG_BLUETOOTH_DEVICE_INFO
     gap_config_load_device_info();
 #else
     state_on = true;
