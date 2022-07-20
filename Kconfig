@@ -254,4 +254,9 @@ choice
 endchoice
 
 endif #BLUETOOTH_VENDOR_DEPENDENCY
+
+config BLUETOOTH_DEVICE_INFO
+	bool "enable bluetooth device information stored in db"
+	default n
+
 endif # BLUETOOTH
