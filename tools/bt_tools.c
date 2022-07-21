@@ -305,6 +305,9 @@ static void bttool_command_init(void)
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_command_init();
 #endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CT
+    avrcct_command_init();
+#endif
 }
 
 static void bttool_command_uninit(void)
@@ -314,6 +317,9 @@ static void bttool_command_uninit(void)
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_command_uninit();
+#endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CT
+    avrcct_command_uninit();
 #endif
 }
 
