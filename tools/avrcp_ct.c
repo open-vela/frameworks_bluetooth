@@ -48,10 +48,11 @@ static int get_playback_status_cmd(void* handle, int argc, char* argv[]);
 static int volume_change_cmd(void* handle, int argc, char* argv[]);
 
 static const avrc_ctrl_interface_t* avrcp_ctrl_interface = NULL;
+static uint8_t g_abs_volume = 0x3F;
 static bt_command_t g_avrcp_ct_tables[] = {
     { "pass", pass_through_cmd, "\"CT send passthrough command      param: <address> <key>(play/pause/stop/next/prev)\"" },
     { "playstatus", get_playback_status_cmd, "\"CT get playback status param: <address> \"" },
-    { "volume", volume_change_cmd, "\"CT notify volume changed param: <address> \"" },
+    { "volume", volume_change_cmd, "\"CT notify volume changed param: <address> <volume> (range 1~127) \"" },
 };
 
 static void usage(void)
@@ -88,12 +89,13 @@ static void avrcp_play_status_changed_cb(bt_address addr, avrcp_play_status_t pl
 static void avrcp_register_notification_absvol_cb(bt_address addr)
 {
     BT_LOGD("%s addr: %s", __func__, addr_str(addr));
-    avrcp_ctrl_interface->volume_changed_notify(addr, 0x3F);
+    avrcp_ctrl_interface->volume_changed_notify(addr, g_abs_volume);
 }
 
 static void avrcp_set_volume_cb(bt_address addr, uint8_t volume)
 {
     BT_LOGD("%s addr: %s, volume: %d", __func__, addr_str(addr), volume);
+    g_abs_volume = volume;
     avrcp_ctrl_interface->volume_changed_notify(addr, volume);
 }
 
@@ -158,11 +160,29 @@ static int volume_change_cmd(void* handle, int argc, char* argv[])
 
     str2ba(argv[0], addr);
     int volume = atoi(argv[1]);
-    if (volume < 0)
+    if (volume < 0 || volume > 127)
         return -1;
 
     avrcp_ctrl_interface->volume_changed_notify(addr, volume);
+    g_abs_volume = volume;
+
     return 0;
+}
+
+int avrcct_command_init(void)
+{
+    if (!avrcp_ctrl_interface) {
+        avrcp_ctrl_interface = get_avrcp_ctrl_interface();
+        avrcp_ctrl_interface->set_callbacks(&g_tools_avrcp_ctrl_cbs);
+    }    
+
+    return 0;
+}
+
+void avrcct_command_uninit(void)
+{
+    avrcp_ctrl_interface->reset_callbacks();
+    avrcp_ctrl_interface = NULL;
 }
 
 int avrcp_ct_command(void* handle, int argc, char* argv[])
