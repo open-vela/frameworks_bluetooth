@@ -51,7 +51,7 @@
 #include "utils/log.h"
 #include "utils/utils.h"
 
-#define HF_CONNECT_TIMEOUT 4 * 1000
+#define HF_CONNECT_TIMEOUT 10 * 1000
 #define HF_SERVICE_CBACK(P_CB, P_CBACK, ...)                     \
     do {                                                         \
         if ((P_CB) && (P_CB)->P_CBACK) {                         \
