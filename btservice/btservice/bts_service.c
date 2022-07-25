@@ -313,7 +313,6 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
 
 void bts_service_cleanup(void)
 {
-    gap_bt_config_cleanup();
 }
 
 void stack_state_change(bt_service_state state)
