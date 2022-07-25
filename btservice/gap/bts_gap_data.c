@@ -607,7 +607,7 @@ bt_result_code gap_bt_config_init(bts_service_adapter_state_changed_callback cb)
     return BT_RESULT_SUCCESS;
 }
 
-void gap_bt_config_cleanup(void)
+void gap_bt_config_deinit(void)
 {
     if (handle)
         uv_db_close(handle);

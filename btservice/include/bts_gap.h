@@ -146,6 +146,6 @@ bt_result_code gap_bt_update_scan_mode(bt_scan_mode scan_mode, bool bondable);
 void gap_bt_bond_store(void);
 void gap_ble_bond_store(ble_keys_t* key, uint8_t count);
 bt_result_code gap_ble_whitelist_store_update(bool added, bt_address addr);
-void gap_bt_config_cleanup(void);
+void gap_bt_config_deinit(void);
 
 #endif

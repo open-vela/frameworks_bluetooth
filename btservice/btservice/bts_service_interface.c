@@ -184,6 +184,7 @@ static bt_result_code bts_if_disable(void* handle)
     pan_service_stop();
 #endif
     gap_disable(true);
+    gap_bt_config_deinit();
     return BT_RESULT_SUCCESS;
 }
 
