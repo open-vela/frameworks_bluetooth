@@ -63,6 +63,7 @@ typedef struct {
     uint8_t          packet_sending_cnt;
     uint64_t         underflow_ts;
     uint32_t         block_ticks;
+    bool             mute;
     stream_state_t   state;
     uv_mutex_t       queue_lock;
     uv_timer_t*      media_alarm;
@@ -135,7 +136,7 @@ static void a2dp_sink_audio_handle_timer(char* arg)
     {
         if (stream->packet_sending_cnt == A2DP_ASYNC_SEND_COUNT) {
             if (stream->block_ticks++ > 2)
-                BT_LOGD("%s ipc blocking, block ticks:%d", __func__, stream->block_ticks);
+                BT_LOGD("%s ipc blocking, block ticks:%" PRIu32, __func__, stream->block_ticks);
             goto out;
         }
 
@@ -218,12 +219,16 @@ void bts_a2dp_sink_on_connection_changed(bool connected)
         bts_a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SINK_CTRL, 1);
     } else {
         bts_a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SINK_CTRL, 0);
+        sink_stream.mute = false;
     }
 }
 
 void bts_a2dp_sink_on_started(bool started)
 {
     BT_LOGD("%s: %d", __func__, started);
+    if (sink_stream.mute)
+        return;
+
     if (sink_stream.state != STATE_RUNNING) {
         sink_stream.state = STATE_RUNNING;
         a2dp_sink_flush_packet_queue();
@@ -253,12 +258,16 @@ void bts_a2dp_sink_on_suspended(void)
 void bts_a2dp_sink_suspend(void)
 {
     BT_LOGD("%s", __func__);
+
+    sink_stream.mute = true;
     bts_a2dp_sink_on_suspended();
 }
 
 void bts_a2dp_sink_resume(void)
 {
     BT_LOGD("%s", __func__);
+
+    sink_stream.mute = false;
     bts_a2dp_sink_on_started(true);
 }
 
