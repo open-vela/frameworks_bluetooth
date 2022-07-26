@@ -147,7 +147,10 @@ static void avrcp_connection_state_changed(uint8_t role, BD_ADDR addr,
 static void target_connection_state_changed_cb(BD_ADDR addr,
     SERVICE_PROFILE_CONNECTION_STATE state)
 {
-    avrcp_connection_state_changed(AVRC_ROLE_TARGET, addr, state);
+    if (g_avrc_scb.service[AVRC_ROLE_TARGET].enabled)
+        avrcp_connection_state_changed(AVRC_ROLE_TARGET, addr, state);
+    else
+        avrcp_connection_state_changed(AVRC_ROLE_CTRL, addr, state);
 }
 
 static void register_notification_request_cb(BD_ADDR addr,
