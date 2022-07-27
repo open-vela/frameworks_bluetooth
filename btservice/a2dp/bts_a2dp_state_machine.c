@@ -604,6 +604,8 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
             a2dp_sm->delay_start_timer = start_timer(A2DP_DELAY_START, 0, a2dp_delay_start_timeout_callback, a2dp_sm);
         }
         flag_clear(a2dp_sm, PENDING_STOP);
+        bts_a2dp_report_audio_state(a2dp_sm, a2dp_sm->addr,
+                                    A2DP_AUDIO_STATE_STOPPED);
         bts_a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
 
