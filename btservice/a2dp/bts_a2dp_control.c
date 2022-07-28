@@ -182,7 +182,7 @@ static void bts_a2dp_control_on_stop(uint8_t ch_id)
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     if (ch_id == A2DP_IPC_CH_ID_AV_SINK_CTRL && bts_a2dp_sink_stream_started()) {
-        bts_a2dp_sink_suspend();
+        bts_a2dp_sink_mute();
     }
 #endif
 
