@@ -218,6 +218,7 @@ void bts_a2dp_sink_on_connection_changed(bool connected)
     if (connected) {
         bts_a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SINK_CTRL, 1);
     } else {
+        bts_a2dp_sink_on_stopped();
         bts_a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SINK_CTRL, 0);
         sink_stream.mute = false;
     }
@@ -239,10 +240,10 @@ void bts_a2dp_sink_on_stopped(void)
 {
     a2dp_sink_stream_t* stream = &sink_stream;
 
-    BT_LOGD("%s", __func__);
     if (sink_stream.state == STATE_OFF)
         return;
 
+    BT_LOGD("%s", __func__);
     stop_timer(stream->media_alarm);
     stream->media_alarm = NULL;
     a2dp_sink_flush_packet_queue();
@@ -255,7 +256,7 @@ void bts_a2dp_sink_on_suspended(void)
     bts_a2dp_sink_on_stopped();
 }
 
-void bts_a2dp_sink_suspend(void)
+void bts_a2dp_sink_mute(void)
 {
     BT_LOGD("%s", __func__);
 
@@ -289,8 +290,7 @@ void bts_a2dp_sink_audio_init(void)
 
 void bts_a2dp_sink_audio_cleanup(void)
 {
-    sink_stream.media_alarm = NULL;
-    sink_stream.state = STATE_OFF;
+    bts_a2dp_sink_on_stopped();
     a2dp_sink_flush_packet_queue();
     uv_mutex_destroy(&sink_stream.queue_lock);
     list_delete(&sink_stream.packet_queue);
