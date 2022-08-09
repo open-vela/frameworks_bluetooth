@@ -264,9 +264,11 @@ static void remote_capabilities_rsp_cb(BD_ADDR addr,
             case AVRCP_NOTIFICATION_MEDIA_STATUS_CHANGED:
                 service_adapter_avrcp_register_notification(addr, *caps-1, 0);
                 break;
+#if 0
             case AVRCP_NOTIFICATION_PLAY_POS_CHANGED:
                 service_adapter_avrcp_register_notification(addr, *caps-1, 2);
                 break;
+#endif
         }
         capabilities->count--;
         caps++;
