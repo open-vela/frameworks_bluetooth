@@ -3,7 +3,10 @@
 #include <nuttx/list.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#ifdef CONFIG_UORB
+#include <connectivity/bt.h>
+#include <uORB/uORB.h>
+#endif
 #include "bts_a2dp_source.h"
 #include "bts_a2dp_sink.h"
 #include "bts_avrcp_target.h"
@@ -22,6 +25,7 @@ typedef struct {
     struct list_node handle_list;
     bt_service_state bt_state;
     ble_service_state ble_state;
+    int orb_fd;
 } bt_service_t;
 
 typedef struct {
@@ -75,6 +79,16 @@ static bt_result_code bts_if_init(void* handle, bt_service_if_callbacks* callbac
     if (!service) {
         service = (bt_service_t*)malloc(sizeof(bt_service_t));
         assert(service);
+#ifndef CONFIG_ARCH_SIM
+#ifdef CONFIG_UORB
+        service->orb_fd = orb_advertise_multi_queue_persist(ORB_ID(bt_stack_state),
+                                                            NULL, NULL, 1);
+        if (service->orb_fd < 0) {
+            BT_LOGE("stack state orb_fd advertise failed");
+            return BT_RESULT_FAILED;
+        }
+#endif
+#endif
         list_initialize(&service->handle_list);
         assert(bts_service_init(&service_callback) == BT_RESULT_SUCCESS);
 
@@ -212,6 +226,10 @@ static void bts_if_cleanup(void* handle)
         hid_if->cleanup();
     }
 #endif
+#ifdef CONFIG_UORB
+    if (service->orb_fd > 0)
+        orb_unadvertise(service->orb_fd);
+#endif
 }
 
 static bool is_profile(const char* p1, const char* p2)
@@ -286,8 +304,32 @@ static btm_ble_state if_get_ble_state(void* handle)
         return service->ble_state;
 }
 
+#ifdef CONFIG_UORB
+static void broadcast_stack_state(int stack_state)
+{
+    struct bt_stack_state uORB_state;
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    uORB_state.timestamp = ts.tv_sec * 1000 + ts.tv_nsec / 1000000UL;
+    uORB_state.state = stack_state;
+
+    if (service->orb_fd > 0) {
+        int ret = orb_publish(ORB_ID(bt_stack_state), service->orb_fd, &uORB_state);
+        if (ret != 0)
+            BT_LOGE("Failed to publish stack state");
+    }
+}
+#endif
+
 static void bts_if_stack_state_change(bt_service_state state)
 {
+#ifdef CONFIG_UORB
+    if (state == BTM_STATE_ON) {
+        broadcast_stack_state(BT_STACK_STATE_ON);
+    } else if (state == BTM_STATE_OFF) {
+        broadcast_stack_state(BT_STACK_STATE_OFF);
+    }
+#endif
     stack_state_change(state);
 }
 
