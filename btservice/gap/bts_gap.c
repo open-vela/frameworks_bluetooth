@@ -507,6 +507,32 @@ static char* bond_state_to_str(bt_bond_state state)
     return bond_state;
 }
 
+static const char* acl_state_to_str(SERVICE_BT_ACL_STATE state)
+{
+    switch (state) {
+    case SERVICE_BT_ACL_STATE_CONNECTED:
+        return "CONNECTED";
+    case SERVICE_BT_ACL_STATE_CONNECTING:
+        return "CONNECTING";
+    case SERVICE_BT_ACL_STATE_CONNECT_REQUEST:
+        return "CONNECT_REQUEST";
+    case SERVICE_BT_ACL_STATE_DISCONNECTED:
+        return "DISCONNECTED";
+    case SERVICE_BT_ACL_STATE_LE_CONNECTED:
+        return "LE_CONNECTED";
+    case SERVICE_BT_ACL_STATE_LE_CONNECTING:
+        return "LE_CONNECTING";
+    case SERVICE_BT_ACL_STATE_LE_DISCONNECTED:
+        return "LE_DISCONNECTED";
+    case SERVICE_BT_ACL_STATE_BR_BONDED_FULL:
+        return "BR_BONDED_FULL";
+    case SERVICE_BT_ACL_STATE_LE_BONDED_FULL:
+        return "LE_BONDED_FULL";
+    default:
+        return "UNKONW";
+    }
+}
+
 static void adapter_bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_BOND_STATE state)
 {
     bond_state_to_str(state);
@@ -520,7 +546,9 @@ static void adapter_bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_
 
 static void adapter_acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S* acl_state_param)
 {
-    BT_LOGD("%s status:%" PRIu32 ", state:%d, reasonCode:%" PRIu32, __func__, acl_state_param->status, acl_state_param->state, acl_state_param->reasonCode);
+    BT_LOGD("%s status:%" PRIu32 ", state:%s, reasonCode:%" PRIu32 ", device[%s]", __func__,
+        acl_state_param->status, acl_state_to_str(acl_state_param->state),
+        acl_state_param->reasonCode, addr_str(acl_state_param->remote_addr));
 
     gap_msg_t* msg = gap_msg_new(GAP_ACL_STATE_CHANGED);
     memcpy(&msg->event_data.data.acl_state_params, acl_state_param, sizeof(SERVICE_ACL_STATE_PARAM_S));
