@@ -555,6 +555,7 @@ void bts_pan_cleanup(void)
     if (!g_pan.enable)
         return;
 
+    g_pan.enable = false;
     pthread_mutex_lock(&g_pan.pan_lock);
     pan_close_all_conn();
     list_delete(&g_pan.conn_list);
