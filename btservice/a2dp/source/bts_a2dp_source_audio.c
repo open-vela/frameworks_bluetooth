@@ -57,6 +57,17 @@ typedef enum {
     STATE_FLUSHING
 } stream_state_t;
 
+typedef enum {
+    UNDERFLOW_STATE_NONE = 0,
+    UNDERFLOW_STATE_PAUSED,
+    UNDERFLOW_STATE_RESUMING,
+} underflow_state_t;
+
+typedef struct {
+    uint32_t            ticks;
+    underflow_state_t   state;
+} a2dp_source_underflow_t;
+
 typedef struct {
     uint16_t         mtu;
     stream_state_t   stream_state;
@@ -67,6 +78,7 @@ typedef struct {
     uint32_t         max_tx_length;
     struct circbuf_s stream_pool;
     uint8_t          read_congest;
+    a2dp_source_underflow_t underflow;
     const a2dp_source_stream_interface_t* stream_interface;
 } a2dp_source_stream_t;
 
@@ -144,6 +156,12 @@ static void bts_a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t
             a2dp_ipc_read_stop(a2dp_ipc, ch_id);
 
         goto out;
+    }
+
+    if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_PAUSED){
+        bts_a2dp_source_stream_start();
+        a2dp_src_stream.underflow.state = UNDERFLOW_STATE_RESUMING;
+        return;
     }
 
     space = circbuf_space(&stream->stream_pool);
@@ -239,9 +257,16 @@ static void bts_a2dp_source_audio_handle_timer(char* arg)
 
     if (circbuf_used(&stream->stream_pool) == 0) {
         BT_LOGD("a2dp src send frame, underflow 1 ticks");
+
+        //BT_LOGD("a2dp src send frame, underflow 1 ticks");
+        if (a2dp_src_stream.underflow.ticks++ > 200 && a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
+            bts_a2dp_source_stream_stop();
+            a2dp_src_stream.underflow.state = UNDERFLOW_STATE_PAUSED;
+        }
         return;
     }
 
+    a2dp_src_stream.underflow.ticks = 0;
     if (stream->stream_interface) {
         stream->stream_interface->send_frames(STREAM_DATA_RESERVED, get_os_timestamp_us());
         bts_a2dp_source_start_read();
@@ -294,13 +319,17 @@ static void bts_a2dp_source_start_audio_req(void)
     if (stream->stream_state == STATE_FLUSHING)
         bts_a2dp_source_stop_flush();
 
-    circbuf_reset(&stream->stream_pool);
     stream->mtu = peer->mtu > 0 ? peer->mtu : MAX_2MBPS_AVDTP_MTU;
-    stream->read_congest = 0;
     stream->interval_ms = stream->stream_interface->get_interval_ms();
     stream->max_tx_length = stream->mtu;
-    bts_a2dp_source_start_read();
-    /*delay start, wait stream pool filling*/
+
+    if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
+        stream->read_congest = 0;
+        circbuf_reset(&stream->stream_pool);
+        bts_a2dp_source_start_read();
+    }
+    a2dp_src_stream.underflow.state = UNDERFLOW_STATE_NONE;
+    /* delay start, wait stream pool filling */
     stream->media_alarm = start_timer(STREAM_DELAY_MS,
                                       0,
                                       bts_a2dp_source_start_delay,
@@ -315,13 +344,15 @@ static void bts_a2dp_source_stop_audio_req(void)
     if (a2dp_src_stream.stream_state != STATE_RUNNING)
         return;
 
-    a2dp_ipc_read_stop(a2dp_ipc, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
-    circbuf_reset(&a2dp_src_stream.stream_pool);
+    if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
+        a2dp_ipc_read_stop(a2dp_ipc, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
+        bts_a2dp_source_start_flush();
+        circbuf_reset(&a2dp_src_stream.stream_pool);
+    }
     stop_timer(a2dp_src_stream.media_alarm);
     a2dp_src_stream.media_alarm = NULL;
     a2dp_src_stream.sequence_number = 0;
     a2dp_src_stream.stream_state = STATE_OFF;
-    bts_a2dp_source_start_flush();
     a2dp_src_stream.stream_interface->reset();
 }
 
