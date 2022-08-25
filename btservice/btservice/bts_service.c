@@ -77,6 +77,8 @@ static struct list_node bts_msg_list = LIST_INITIAL_VALUE(bts_msg_list);
 
 extern void InitTransportLayer(void);
 extern void ScheduleLoop(void);
+extern void TransportRecvData(void);
+extern int  GetTransportHandler(void);
 
 static void bts_uv_close_cb(uv_handle_t* handle)
 {
@@ -263,6 +265,38 @@ void create_config_folder(void)
     }
 }
 
+static void bts_service_h4_recv_handler(uv_poll_t *handle, int status,
+                                        int events)
+{
+  if (status < 0) {
+      BT_LOGE("fail, %s status:%d", __func__, status);
+      return;
+  }
+
+  if (events & UV_READABLE) {
+      TransportRecvData();
+      return;
+  }
+
+  BT_LOGE ("error, %s unexpected events:%d", __func__, events);
+}
+
+static void bts_service_transport_recv_loop(void)
+{
+  int fd = GetTransportHandler();
+  if (fd < 0) {
+      BT_LOGE("fail, %s invlaid fd:%d", __func__, fd);
+      return;
+  }
+
+  uv_poll_t *poll = bts_uv_poll_start(fd, UV_READABLE,
+                                      bts_service_h4_recv_handler, NULL);
+  if (!poll) {
+      BT_LOGE("fail, %s", __func__);
+      return;
+    }
+}
+
 bt_result_code bts_service_init(bt_service_callbacks* callbacks)
 {
     bluetooth_upper_callbacks = callbacks;
@@ -303,6 +337,8 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     }
     pthread_setname_np(thread_handle[THREAD_ID_SERVICE], "btservice_thread");
     service_state = BTM_STATE_TURNING_ON;
+    bts_service_transport_recv_loop();
+
     uv_sem_wait(&wait_service);
     uv_sem_wait(&wait_stack);
     uv_sem_destroy(&wait_service);
