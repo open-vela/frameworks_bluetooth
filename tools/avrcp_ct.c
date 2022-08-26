@@ -181,8 +181,10 @@ int avrcct_command_init(void)
 
 void avrcct_command_uninit(void)
 {
-    avrcp_ctrl_interface->reset_callbacks();
-    avrcp_ctrl_interface = NULL;
+    if (avrcp_ctrl_interface) {
+        avrcp_ctrl_interface->reset_callbacks();
+        avrcp_ctrl_interface = NULL;
+    }
 }
 
 int avrcp_ct_command(void* handle, int argc, char* argv[])
