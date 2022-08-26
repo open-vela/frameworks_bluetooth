@@ -63,7 +63,7 @@ typedef struct {
     uint8_t          packet_sending_cnt;
     uint64_t         underflow_ts;
     uint32_t         block_ticks;
-    bool             mute;
+    bool             ready;
     stream_state_t   state;
     uv_mutex_t       queue_lock;
     uv_timer_t*      media_alarm;
@@ -220,14 +220,13 @@ void bts_a2dp_sink_on_connection_changed(bool connected)
     } else {
         bts_a2dp_sink_on_stopped();
         bts_a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SINK_CTRL, 0);
-        sink_stream.mute = false;
     }
 }
 
 void bts_a2dp_sink_on_started(bool started)
 {
     BT_LOGD("%s: %d", __func__, started);
-    if (sink_stream.mute)
+    if (!sink_stream.ready)
         return;
 
     if (sink_stream.state != STATE_RUNNING) {
@@ -260,7 +259,7 @@ void bts_a2dp_sink_mute(void)
 {
     BT_LOGD("%s", __func__);
 
-    sink_stream.mute = true;
+    sink_stream.ready = false;
     bts_a2dp_sink_on_suspended();
 }
 
@@ -268,7 +267,7 @@ void bts_a2dp_sink_resume(void)
 {
     BT_LOGD("%s", __func__);
 
-    sink_stream.mute = false;
+    sink_stream.ready = true;
     bts_a2dp_sink_on_started(true);
 }
 
