@@ -328,7 +328,8 @@ static void bts_a2dp_source_start_audio_req(void)
         circbuf_reset(&stream->stream_pool);
         bts_a2dp_source_start_read();
     }
-    a2dp_src_stream.underflow.state = UNDERFLOW_STATE_NONE;
+    stream->underflow.ticks = 0;
+    stream->underflow.state = UNDERFLOW_STATE_NONE;
     /* delay start, wait stream pool filling */
     stream->media_alarm = start_timer(STREAM_DELAY_MS,
                                       0,
@@ -337,9 +338,12 @@ static void bts_a2dp_source_start_audio_req(void)
     stream->stream_state = STATE_RUNNING;
 }
 
-static void bts_a2dp_source_stop_audio_req(void)
+static void bts_a2dp_source_stop_audio_req(bool cleanup)
 {
     BT_LOGD("%s, remaining:%d", __func__, circbuf_used(&a2dp_src_stream.stream_pool));
+
+    if (cleanup)
+        memset(&a2dp_src_stream.underflow, 0, sizeof(a2dp_source_underflow_t));
 
     if (a2dp_src_stream.stream_state != STATE_RUNNING)
         return;
@@ -358,7 +362,7 @@ static void bts_a2dp_source_stop_audio_req(void)
 
 static void bts_a2dp_source_close_audio(void)
 {
-    bts_a2dp_source_stop_audio_req();
+    bts_a2dp_source_stop_audio_req(true);
     a2dp_ipc_read_stop(a2dp_ipc, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
 }
 
@@ -374,7 +378,7 @@ void bts_a2dp_source_on_connection_changed(bool connected)
         bts_a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, 1);
     } else {
         bts_a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, 0);
-        bts_a2dp_source_stop_audio_req();
+        bts_a2dp_source_stop_audio_req(true);
     }
 }
 
@@ -396,14 +400,14 @@ void bts_a2dp_source_on_stopped(void)
 {
     BT_LOGD("%s", __func__);
 
-    bts_a2dp_source_stop_audio_req();
+    bts_a2dp_source_stop_audio_req(false);
 }
 
 void bts_a2dp_source_on_suspended(void)
 {
     BT_LOGD("%s", __func__);
 
-    bts_a2dp_source_stop_audio_req();
+    bts_a2dp_source_stop_audio_req(false);
 }
 
 void bts_a2dp_source_setup_codec(bt_address bd_addr)
