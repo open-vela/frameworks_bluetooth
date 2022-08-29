@@ -149,6 +149,8 @@ bt_result_code gap_bt_update_name(char* name, uint8_t size)
         return BT_RESULT_FAILED;
     }
 
+    BT_LOGD("%s, name:%s", __func__, name);
+
     SERVICE_BT_STATUS ret = service_adapter_gap_set_local_name(name, size);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGD("set_local_name failed: %" PRIu32, ret);
@@ -165,6 +167,8 @@ bt_result_code gap_bt_update_name(char* name, uint8_t size)
 
 bt_result_code gap_bt_update_scan_mode(bt_scan_mode scan_mode, bool bondable)
 {
+    BT_LOGD("%s, mode:%d, bondable:%d", __func__, scan_mode, bondable);
+
     SERVICE_BT_STATUS ret = service_adapter_gap_set_scan_mode(scan_mode, bondable);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
@@ -183,6 +187,8 @@ bt_result_code gap_bt_update_scan_mode(bt_scan_mode scan_mode, bool bondable)
 
 bt_result_code gap_bt_update_io_capability(bt_io_capability io_capability)
 {
+    BT_LOGD("%s, io_capability:%d", __func__, io_capability);
+
     SERVICE_BT_STATUS ret = service_adapter_gap_set_local_io_capability(io_capability);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
@@ -199,6 +205,8 @@ bt_result_code gap_bt_update_io_capability(bt_io_capability io_capability)
 
 bt_result_code gap_bt_update_device_class(uint32_t class_of_device)
 {
+    BT_LOGD("%s, cod:%" PRIu32, __func__, class_of_device);
+
     SERVICE_BT_STATUS ret = service_adapter_gap_set_local_device_class(class_of_device);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
@@ -221,11 +229,12 @@ static void gap_update_device(bt_device_info_t* info)
         return;
     }
 
-    BT_LOGD("bt name:%s", info->bt_name);
-    BT_LOGD("io_capability:%d", info->io_capability);
-    BT_LOGD("scan_mode:%d", info->scan_mode);
-    BT_LOGD("device_class:0x%" PRIu32, info->cod);
-    BT_LOGD("bondable:%d", info->bondable);
+    BT_LOGD("load bt device db");
+    BT_LOGD("\t bt name:%s", info->bt_name);
+    BT_LOGD("\t io_capability:%d", info->io_capability);
+    BT_LOGD("\t scan_mode:%d", info->scan_mode);
+    BT_LOGD("\t device_class:%" PRIu32, info->cod);
+    BT_LOGD("\t bondable:%d", info->bondable);
 
     device_info.cod = info->cod;
     device_info.io_capability = info->io_capability;
