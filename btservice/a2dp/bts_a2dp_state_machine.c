@@ -515,6 +515,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Avrc disconnect failed");
         }
+        bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
         hsm_transition_to(sm, &closing_state);
         break;
     }
