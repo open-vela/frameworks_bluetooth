@@ -117,7 +117,7 @@ ifeq ($(CONFIG_BLUETOOTH_HIDDEV),y)
 	CSRCS +=btservice/hid/bts_hid_device.c
 endif
 
-ifeq ($(CONFIG_BLUETOOTH_TOOL_CHAIN), y)
+ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 ifeq ($(CONFIG_BLUETOOTH_SPP),y)
 	 CSRCS +=tools/spp.c
 endif
@@ -163,7 +163,7 @@ CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetoot
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/utils}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/udrv/include}
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/btservice/a2dp/codec}
-ifeq ($(CONFIG_BLUETOOTH_TOOL_CHAIN), y)
+ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/tools}
 endif
 
@@ -191,22 +191,7 @@ PRIORITY = SCHED_PRIORITY_DEFAULT
 STACKSIZE = 8192
 MODULE    = $(CONFIG_BLUETOOTH)
 
-ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GATTC), y)
-	MAINSRC   += samples/test_gattc.c
-	PROGNAME  += btsample_gattc
-endif
-
-ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GATTS), y)
-	MAINSRC   += samples/test_gatts.c
-	PROGNAME  += btsample_gatts
-endif
-
-ifeq ($(CONFIG_BLUETOOTH_SAMPLE_GAP), y)
-	MAINSRC   += samples/test_gap.c
-	PROGNAME  += btsample_gap
-endif
-
-ifeq ($(CONFIG_BLUETOOTH_TOOL_CHAIN), y)
+ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	PROGNAME 	+= bttool
 	MAINSRC		+= tools/bt_tools.c
 endif

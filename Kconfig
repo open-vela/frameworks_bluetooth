@@ -19,13 +19,8 @@ config BLUETOOTH
 	default n
 	select LIBUV
 	select LIBUV_EXTENSION
+	select LIB_BLUELET
 if BLUETOOTH
-
-config LIB_BLUELET
-  bool "BARROT Bluelet Stack"
-  default y
-  help
-    Enable support for the BARROT Bluetooth stack
 
 config BLUETOOTH_CLASS_OF_DEVICE
 	hex "bluetooth class of device"
@@ -160,7 +155,7 @@ config BLUETOOTH_PAN
 	help
 		Enable BT_PAN profile
 
-config BLUETOOTH_TOOL_CHAIN
+config BLUETOOTH_TOOLS
     bool "Enable bluetooth profile test tools"
     default y
 
