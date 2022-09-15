@@ -69,12 +69,6 @@ config BLUETOOTH_A2DP_IPC_RPSMG_SERVER
 	help
 		Bluetooth A2dp audio IPC rpmsg server
 
-config BLUETOOTH_A2DP_IPC_RPSMG_NAME
-	string "Bluetooth A2dp audio IPC rpmsg name"
-	default "cp"
-	help
-		Bluetooth A2dp audio IPC rpmsg name
-
 config BLUETOOTH_A2DP_AAC_CODEC
 	bool "Bluetooth A2dp AAC codec support"
 	default n
