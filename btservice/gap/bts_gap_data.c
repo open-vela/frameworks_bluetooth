@@ -463,6 +463,13 @@ static void load_blebond_devices_callback(int status, const char* key, uv_buf_t 
         BT_LOGE(" service_adapter_gap_set_le_bonded_device failed: %" PRIu32, ret);
         return;
     }
+
+    for (int i = 0; i < bt_storage->bonded_number; i++) {
+        uint8_t* ltk = &keys[i].smp_keys[12];
+        BT_LOGD("LTK: %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+        ltk[0], ltk[1], ltk[2], ltk[3], ltk[4], ltk[5], ltk[6], ltk[7],
+        ltk[8], ltk[9], ltk[10], ltk[11], ltk[12], ltk[13], ltk[14], ltk[15]);
+    }
 }
 
 static void gap_config_load_blebond_devices(void)
