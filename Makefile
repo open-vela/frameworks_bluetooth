@@ -16,7 +16,7 @@
 
 include $(APPDIR)/Make.defs
 
-BIN := libframework.a
+BIN := $(APPDIR)/staging/libframework.a
 
 CSRCS += btservice/btservice/bts_service.c
 CSRCS += btservice/btservice/bts_service_interface.c
