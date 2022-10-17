@@ -16,9 +16,7 @@
 
 include $(APPDIR)/Make.defs
 
-ifneq ($(CONFIG_ARCH_BOARD_CUSTOM_NAME),)
-  BIN := $(TOPDIR)/$(CONFIG_ARCH_BOARD_CUSTOM_DIR)/libs/$(CONFIG_ARCH_BOARD_CUSTOM_NAME)/libframework.a
-endif
+BIN := libframework.a
 
 CSRCS += btservice/btservice/bts_service.c
 CSRCS += btservice/btservice/bts_service_interface.c
@@ -201,9 +199,6 @@ ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 endif
 
 CSRCS := $(wildcard $(CSRCS))
-
-distclean::
-	rm -rf $(TOPDIR)/$(CONFIG_ARCH_BOARD_CUSTOM_DIR)/libs/$(CONFIG_ARCH_BOARD_CUSTOM_NAME)
 
 include $(APPDIR)/Application.mk
 
