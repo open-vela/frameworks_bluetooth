@@ -172,8 +172,8 @@ config BLUETOOTH_HIDDEV
 	default y
 
 config BLUETOOTH_MANAGER
-	bool "Enable bt manager"
-	default y
+  	bool "Enable bt manager"
+  	default y
 
 config BLUETOOTH_PAN
 	bool "Enable BT_PAN profile"
@@ -234,14 +234,6 @@ config BLUETOOTH_SPP_DUMPBUFFER
 		SPP dumpbuffer switch
 
 endif # BLUETOOTH_SPP
-
-if BLUETOOTH_HIDDEV
-config BLUETOOTH_HID_OVER_GATT
-	bool "hid over gatt(HOGP)"
-	default n
-	help
-		Bluetooth HID over gatt
-endif # BLUETOOTH_HIDDEV
 
 if BLUETOOTH_AUTO_SNIFF
 config BLUETOOTH_SNIFF_IDLE_TIME

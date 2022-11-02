@@ -178,8 +178,8 @@ ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/tools
 endif
 
-CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/external/bluelet/bluelet/src/samples/stack_adapter/inc
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/vendor/xiaomi/vela/bluelet/inc
+CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/bluelet/src/samples/stack_adapter/inc}
+CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/xiaomi/vela/bluelet/inc}
 
 CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/system/libuv/libuv/include
 ifneq ($(CONFIG_KVDB),)
@@ -187,8 +187,8 @@ ifneq ($(CONFIG_KVDB),)
 endif
 CFLAGS   += -I $(APPDIR)/external/bluelet/
 
-PRIORITY = CONFIG_BTTOOL_THREAD_PRIORITY
-STACKSIZE = CONFIG_BTTOOL_THREAD_STACK_SIZE
+PRIORITY = SCHED_PRIORITY_DEFAULT
+STACKSIZE = 8192
 MODULE    = $(CONFIG_BLUETOOTH)
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
