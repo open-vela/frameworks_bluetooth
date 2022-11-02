@@ -195,10 +195,6 @@ typedef struct
 
 struct list_node* g_msg_list;
 static bts_gap_callback_t* g_bts_gap_callbacks = NULL;
-static struct list_node bt_device_list = LIST_INITIAL_VALUE(bt_device_list);
-#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
-uint16_t g_conn_handle = 0;
-#endif
 
 /*process callback from stack */
 
