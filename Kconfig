@@ -127,22 +127,6 @@ config BLUETOOTH_MANAGER
   	bool "Enable bt manager"
   	default y
 
-config BLUETOOTH_SAMPLE_GATTC
-    bool "Enable ble scan and gatt client sample"
-    default n
-
-config BLUETOOTH_SAMPLE_GATTS
-    bool "Enable ble advertise and gatt server sample"
-    default n
-
-config BLUETOOTH_SAMPLE_LEADV
-    bool "Enable ble adv test"
-    default n
-
-config BLUETOOTH_SAMPLE_GAP
-    bool "Enable gap test"
-    default n
-
 config BLUETOOTH_PAN
 	bool "Enable BT_PAN profile"
 	default n
@@ -194,10 +178,6 @@ config BLUETOOTH_SPP_DUMPBUFFER
 
 endif # BLUETOOTH_SPP
 
-config BLUETOOTH_LOCAL_THREAD
-	bool "Local Thread Transfer"
-	default n
-
 if BLUETOOTH_AUTO_SNIFF
 config BLUETOOTH_SNIFF_IDLE_TIME
 	int "Auto-Sniff idle time seconds"
@@ -229,24 +209,6 @@ config BLUETOOTH_SNIFF_TIMEOUT
 	help
 		Bluetooth Auto-Sniff timeout
 endif # BLUETOOTH_AUTO_SNIFF
-
-config BLUETOOTH_VENDOR_DEPENDENCY
-	bool "Vendor dependency"
-	default false
-	help
-		Need depend on vendor code
-
-if BLUETOOTH_VENDOR_DEPENDENCY
-choice
-	prompt "Controller vendor"
-	default BLUETOOTH_VENDOR_DEPENDENCY_XIAOMI
-	config BLUETOOTH_VENDOR_DEPENDENCY_XIAOMI
-	bool "xiaomi"
-	config BLUETOOTH_VENDOR_DEPENDENCY_BES
-	bool "bes"
-endchoice
-
-endif #BLUETOOTH_VENDOR_DEPENDENCY
 
 config BLUETOOTH_DEVICE_INFO
 	bool "enable bluetooth device information stored in db"

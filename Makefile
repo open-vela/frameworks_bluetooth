@@ -171,23 +171,12 @@ endif
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/bluelet/src/samples/stack_adapter/inc}
 CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/xiaomi/vela/bluelet/inc}
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/bluelet/src/stack/portings/btunix}
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/bluelet/src/stack/include}
 
 CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/system/libuv/libuv/include}
 ifneq ($(CONFIG_KVDB),)
   CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/kvdb}
 endif
 CFLAGS   += -I $(APPDIR)/external/bluelet/
-
-ifeq ($(CONFIG_BLUETOOTH_VENDOR_DEPENDENCY), y)
-CSRCS +=vendor/controller.c
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/vendor}
-ifeq ($(CONFIG_BLUETOOTH_VENDOR_DEPENDENCY_BES), y)
-CFLAGS 	 += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/bes/framework/services/platform/drivers/bt}
-CFLAGS 	 += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/bes/framework/services/platform/hal}
-endif
-endif
 
 PRIORITY = SCHED_PRIORITY_DEFAULT
 STACKSIZE = 8192
