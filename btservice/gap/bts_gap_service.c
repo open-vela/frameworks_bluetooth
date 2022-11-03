@@ -221,7 +221,7 @@ static void gap_if_adapter_state_changed_callback(SERVICE_BT_STACK_STATE state)
 
 static void gap_if_ble_advtise_started_callback(uint8_t adv_id)
 {
-    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-STARTED");
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-STARTED: %d", adv_id);
     bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
     if (!client) {
         SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(adv_id);
@@ -234,7 +234,7 @@ static void gap_if_ble_advtise_started_callback(uint8_t adv_id)
 
 static void gap_if_ble_advtise_stopped_callback(uint8_t adv_id)
 {
-    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-STOPPED");
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-STOPPED: %d", adv_id);
     bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
     if (!client) {
         SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(adv_id);
@@ -546,6 +546,23 @@ static bt_result_code bts_if_set_link_role(void* gap_handle, bt_device_t* device
     ret = bts_set_link_role(device, role);
     return ret;
 }
+static bt_result_code bts_if_disconnect_bt_link(void* gap_handle, bt_device_t* device)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    if (!gap_is_handle_valid(gap_handle))
+        return ret;
+    ret = bts_disconnect_bt_link(device);
+    return ret;
+}
+static bt_result_code bts_if_enable_ctkd_bonding(void* gap_handle, bool brkey_to_lekey, bool lekey_to_brkey)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    if (!gap_is_handle_valid(gap_handle))
+        return ret;
+    ret = bts_enable_ctkd_bonding(brkey_to_lekey, lekey_to_brkey);
+    return ret;
+}
+
 #ifdef HCI_VSC_COMMAND
 /*VSC command*/
 static bt_result_code bts_if_send_hci_command(void* gap_handle, bt_hci_command_t* command, hci_command_complete_event event_type)
@@ -560,11 +577,12 @@ static bt_result_code bts_if_send_hci_command(void* gap_handle, bt_hci_command_t
 
 static bt_result_code bts_ble_start_advertising(void* gap_handle, advertise_param_t* param)
 {
-    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-START");
     BT_ASSERT(!param, BT_RESULT_FAILED);
     bts_leadv_hdl_t* client = add_advertise_handle(gap_handle);
     BT_ASSERT(!client, BT_RESULT_FAILED);
     param->adv_id = client->advertiser_id;
+
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-START: %d", client->advertiser_id);
 
     SERVICE_BT_STATUS ret = service_adapter_gap_start_ble_adv((SERVICE_SCAN_ADV_PARAMS_S*)(param));
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
@@ -589,7 +607,6 @@ static bool bts_check_ble_advertise_id(void* gap_handle, uint8_t adv_id)
 
 static bt_result_code bts_ble_stop_advertising(void* gap_handle, uint8_t adv_id)
 {
-    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-STOP");
     bts_leadv_hdl_t* client = find_advertise_handle(adv_id);
     BT_ASSERT(!client, BT_RESULT_FAILED);
 
@@ -598,6 +615,7 @@ static bt_result_code bts_ble_stop_advertising(void* gap_handle, uint8_t adv_id)
         return BT_RESULT_FAILED;
     }
 
+    BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-ADVERTISE-STOP: %d", client->advertiser_id);
     SERVICE_BT_STATUS ret = service_adapter_gap_stop_ble_adv(client->advertiser_id);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("service ble stop adv fail, err:%" PRIu32, ret);
@@ -821,6 +839,8 @@ static btm_gap_interface_t gap_interface = {
     .bt_start_service_discovery = bts_if_start_service_discovery,
     .bt_stop_service_discovery = bts_if_stop_service_discovery,
     .bt_set_link_role = bts_if_set_link_role,
+    .bt_disconnect_link = bts_if_disconnect_bt_link,
+    .bt_enable_ctkd_bonding = bts_if_enable_ctkd_bonding,
 #ifdef HCI_VSC_COMMAND
     .bt_send_hci_command = bts_if_send_hci_command,
 #endif

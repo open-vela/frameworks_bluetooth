@@ -1219,6 +1219,29 @@ bt_result_code bts_set_link_role(bt_device_t* device, bt_link_role role)
     }
     return BT_RESULT_SUCCESS;
 }
+
+bt_result_code bts_disconnect_bt_link(bt_device_t* device)
+{
+    if (!device)
+        return BT_RESULT_FAILED;
+    SERVICE_BT_STATUS ret = service_adapter_gap_disconnect_link(device->addr);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
+bt_result_code bts_enable_ctkd_bonding(bool brkey_to_lekey, bool lekey_to_brkey)
+{
+    SERVICE_BT_STATUS ret = service_adapter_gap_ble_enable_key_derivation(brkey_to_lekey, lekey_to_brkey);
+    if (ret != SERVICE_BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
+        return BT_RESULT_FAILED;
+    }
+    return BT_RESULT_SUCCESS;
+}
+
 #ifdef HCI_VSC_COMMAND
 /*VSC command*/
 bt_result_code bts_send_hci_command(bt_hci_command_t* command, hci_command_complete_event event_type)

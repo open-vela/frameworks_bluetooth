@@ -42,6 +42,7 @@
  * Pre-processor Definitions
  ****************************************************************************/
 #include "btm_common_define.h"
+#include "utils.h"
 /** Bluetooth profile name */
 /*!
 * \def BT_PROFILE_GAP
@@ -149,29 +150,29 @@ typedef struct {
  */
 typedef struct {
     size_t size;
-    /** create manager handle for app, and registe callback for manager. 
+    /** create manager handle for app, and registe callback for manager.
      * @brief
      * @param[out]  handle  create handle in bluetooth service, upper layer must save it until handle is clean up.
      * @param[in]  callbacks  callback for bluetooth manager
      * @return  init success or failed.
     */
     bt_result_code (*init)(void** handle, const bt_mgr_callback_t* callbacks);
-    /** enable bt module,  responsed by bt_manager_state_changed_callback. 
+    /** enable bt module,  responsed by bt_manager_state_changed_callback.
      * @param[in]  handle  unique handle for every app.
      * @return  interface called success or failed.
     */
     bt_result_code (*enable)(void* handle);
-    /** disable bt module ,  responsed by bt_manager_state_changed_callback. 
+    /** disable bt module ,  responsed by bt_manager_state_changed_callback.
      * @param[in]  handle  unique handle for every app.
     * @return  interface called success or failed.
     */
     bt_result_code (*disable)(void* handle);
-    /** enable ble module,  responsed by ble_manager_state_changed_callback. 
+    /** enable ble module,  responsed by ble_manager_state_changed_callback.
      * @param[in]  handle  unique handle for every app.
     * @return  interface called success or failed.
     */
     bt_result_code (*enable_ble)(void* handle);
-    /** disable ble module,  responsed by ble_manager_state_changed_callback. 
+    /** disable ble module,  responsed by ble_manager_state_changed_callback.
      * @param[in]  handle  unique handle for every app.
     * @return interface called success or failed.
     */
@@ -196,9 +197,9 @@ typedef struct {
     */
     const void* (*get_profile_interface)(const char* profile_id);
 } btm_interface_t;
-/**@brief get bluetooth manager interface. 
+/**@brief get bluetooth manager interface.
  * each app need call first.
- * 
+ *
  * @return  all functions in btm_interface_t struct.
  */
 btm_interface_t* get_bt_manager_interface(void);
