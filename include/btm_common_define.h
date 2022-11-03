@@ -177,6 +177,9 @@
 #define COD_HEALTH_RATE_MONITOR (COD_DEVICE_HEALTH | 0x000018)
 #define COD_HEALTH_DATA_DISPLAY (COD_DEVICE_HEALTH | 0x00001C)
 
+/* * Headset Device Class */
+#define IS_HEADSET(cod)  ((COD_SERVICE_BITS(cod) & COD_SERVICE_AUDIO) && COD_DEVICE_MAJOR_BITS(cod) == COD_DEVICE_AV)
+
 /* Possible 2.4G none Bluetooth radio channel central frequency (MHz) */
 #define AFH_WIFI_CENTRAL_FREQUENCY_CH1 2412
 #define AFH_WIFI_CENTRAL_FREQUENCY_STEP 5

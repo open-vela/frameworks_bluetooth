@@ -558,6 +558,24 @@ static bt_result_code btm_set_link_role(void* gap_handle, bt_device_t* device, b
     return ret;
 }
 
+static bt_result_code btm_disconnect_bt_link(void* gap_handle, bt_device_t* device)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    CHECK_PTR_RETURN(gap_handle, ret);
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_GAP_INTERFACE(context->service_interface, bt_disconnect_link, ret, gap_handle, device);
+    return ret;
+}
+
+static bt_result_code btm_enable_ctkd_bonding(void* gap_handle, bool brkey_to_lekey, bool lekey_to_brkey)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    CHECK_PTR_RETURN(gap_handle, ret);
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_GAP_INTERFACE(context->service_interface, bt_enable_ctkd_bonding, ret, gap_handle, brkey_to_lekey, lekey_to_brkey);
+    return ret;
+}
+
 static bt_result_code btm_ble_set_static_identity(void* gap_handle, bt_device_t* device)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -799,6 +817,8 @@ static btm_gap_interface_t gap_interface = {
     .bt_start_service_discovery = btm_start_service_discovery,
     .bt_stop_service_discovery = btm_stop_service_discovery,
     .bt_set_link_role = btm_set_link_role,
+    .bt_disconnect_link = btm_disconnect_bt_link,
+    .bt_enable_ctkd_bonding = btm_enable_ctkd_bonding,
 #ifdef HCI_VSC_COMMAND
     .bt_send_hci_command = btm_send_hci_command,
 #endif
