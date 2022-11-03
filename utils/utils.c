@@ -94,6 +94,37 @@ char* addr_str(bt_address addr)
     return g_bdaddr_str;
 }
 
+bool addr_is_empty(bt_address addr)
+{
+    for (int i = 0; i< sizeof(bt_address); i++) {
+        if (addr[i] != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void clear_addr(bt_address addr)
+{
+    memset(addr, 0, sizeof(bt_address));
+}
+
+bool same_addr(bt_address addr1, bt_address addr2)
+{
+    return (memcmp(addr1, addr2, sizeof(bt_address)) == 0);
+}
+
+int format_addr(char* addr_str, bt_address addr)
+{
+    return sscanf(addr_str, "%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx",
+        &addr[0], &addr[1], &addr[2], &addr[3], &addr[4], &addr[5]);
+}
+
+void addr_cpy(bt_address addr_dst, bt_address addr_src)
+{
+    memcpy(addr_dst, addr_src, sizeof(bt_address));
+}
+
 char * uuid_str(bt_uuid_t uuid)
 {
     static char uuid_s[36];

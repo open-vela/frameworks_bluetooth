@@ -236,12 +236,12 @@ typedef void (*link_connect_request_callback)(void* gap_handle, bt_address remot
 typedef void (*ble_adv_started_callback)(void* gap_handle, uint8_t adv_id);
 
 /**
- * @brief:ble advertising stopped callback, in response to  ble adv start  or  ble adv stop 
+ * @brief:ble advertising stopped callback, in response to  ble adv start  or  ble adv stop
  * it is also called when the advertising is terminated by the controller due to connection or advertising duration
  * timeout.
  * @note: handle must be create before this funciton.
  * @param {void*} gap_handle
- * @param {uint8_t} adv_id - advertising id 
+ * @param {uint8_t} adv_id - advertising id
  * @return {*}
  */
 typedef void (*ble_adv_stopped_callback)(void* gap_handle, uint8_t adv_id);
@@ -458,6 +458,25 @@ typedef struct {
      * @return {bt_result_code} error status code (0- success)
      */
     bt_result_code (*bt_set_link_role)(void* handle, bt_device_t* device, bt_link_role role);
+
+    /**
+     * @brief: gap disconnect bt link.
+     * @note: handle must be create before this funciton.
+     * @param {void*} handle
+     * @param {bt_device_t*} device - reomte device info.
+     * @return {bt_result_code} error status code (0- success)
+     */
+    bt_result_code (*bt_disconnect_link)(void* handle, bt_device_t* device);
+
+    /**
+     * @brief: gap enable CTKD bonding.
+     * @note: handle must be create before this funciton.
+     * @param {void*} handle
+     * @param {bool} brkey_to_lekey - br link key to le ltk.
+     * @param {bool} lekey_to_brkey - le ltk to br link key.
+     * @return {bt_result_code} error status code (0- success)
+     */
+    bt_result_code (*bt_enable_ctkd_bonding)(void* handle, bool brkey_to_lekey, bool lekey_to_brkey);
 
 #ifdef hci_vsc_command
     /**
@@ -748,7 +767,7 @@ typedef struct {
     uint32_t (*bt_get_local_device_class)(void* handle);
 
     /**
-     * @brief: gap set local address 
+     * @brief: gap set local address
      * @note: handle must be create before this funciton.
      * @param {void*} handle
      * @param {bt_device_t*} device - local device
