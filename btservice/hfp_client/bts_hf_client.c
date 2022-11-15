@@ -546,8 +546,11 @@ bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks
     uint32_t features = BT_HFP_BRSF_HF_HFINDICATORS | BT_HFP_BRSF_HF_RMTVOLCTRL |
                         BT_HFP_BRSF_HF_ENHANCED_CALLSTATUS | BT_HFP_BRSF_HF_NREC |
                         BT_HFP_BRSF_HF_3WAYCALL | BT_HFP_BRSF_HF_CLIP |
-                        BT_HFP_BRSF_HF_CODEC_NEGOTIATION | BT_HFP_BRSF_HF_BVRA;
-                        //BT_HFP_BRSF_HF_BVRA;
+                        BT_HFP_BRSF_HF_BVRA; //BT_HFP_BRSF_HF_BVRA;
+
+    if (property_get_bool("persist.bluetooth.hfp.codec_nego", true)) {
+        features |= BT_HFP_BRSF_HF_CODEC_NEGOTIATION;
+    }
 
     if (g_hfp_service.started)
         return BT_RESULT_SUCCESS;
