@@ -46,6 +46,8 @@ static gatt_interface_t gatt_if = {
 
 static bt_result_code gatt_init(void)
 {
+    gatts_init();
+    gattc_init();
     gatt_status ret = service_adapter_gatt_init();
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt_init ret:%d", ret);
@@ -56,6 +58,8 @@ static bt_result_code gatt_init(void)
 
 static void gatt_cleanup(void)
 {
+    gatts_deinit();
+    gattc_deinit();
     service_adapter_gatt_cleanup();
 }
 
