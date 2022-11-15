@@ -430,7 +430,6 @@ static GATT_SERVER_CALLBACKS_S gatt_server_cbs = {
 static bt_result_code gatt_server_open(bts_gatts_hdl_t server)
 {
     if (list_is_empty(&gatts_list)) {
-        bts_register_profile_process(BT_PROFILE_GATTS_ID, &handle_msg_received);
         SERVICE_GATT_STATUS ret = service_adapter_gatt_server_open(&gatt_server_cbs);
         if (ret != GATT_SUCCESS) {
             BT_LOGE("fail, gatt server open, err:%d", ret);
@@ -676,7 +675,6 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
         BT_CBACK(handle->callbacks, bts_gatts_server_closed_cb, handle->btm_handle);
         if (list_length(&gatts_list) == 1) {
             BT_LOGD("gatts unregistered");
-            bts_unregister_profile_process(BT_PROFILE_GATTS_ID);
         }
         remove_gatts_handle(handle);
         break;
@@ -744,4 +742,14 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
 static void send_msg(bts_gatts_msg_t* msg)
 {
     bts_send_uv_msg(BT_PROFILE_GATTS_ID, msg, sizeof(bts_gatts_msg_t));
+}
+
+void gatts_init(void)
+{
+    bts_register_profile_process(BT_PROFILE_GATTS_ID, &handle_msg_received);
+}
+
+void gatts_deinit(void)
+{
+    bts_unregister_profile_process(BT_PROFILE_GATTS_ID);
 }

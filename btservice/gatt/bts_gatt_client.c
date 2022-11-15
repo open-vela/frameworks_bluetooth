@@ -349,7 +349,6 @@ static GATT_CLIENT_CALLBACKS_S gatt_client_cbs = {
 static bt_result_code gatt_client_connect(bts_gattc_hdl_t handle)
 {
     BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BLUELET-CONNECTION-START, addr:%s", addr_str(handle.remote_addr));
-    bts_register_profile_process(BT_PROFILE_GATTC_ID, &handle_msg_received);
     gatt_status ret = service_adapter_gatt_client_connect(handle.remote_addr, &gatt_client_cbs);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt handle connect, err:%d", ret);
@@ -553,7 +552,6 @@ static void handle_msg_received(bt_profile_id id, void* value, size_t size)
         if (*state == PROFILE_DISCONNECTED) {
             BT_LOGD("remove_gatt_client handle");
             remove_gatt_client(handle);
-            bts_unregister_profile_process(BT_PROFILE_GATTC_ID);
         }
         break;
     }
@@ -616,4 +614,14 @@ static void handle_msg_received(bt_profile_id id, void* value, size_t size)
 static void send_msg(bts_gattc_msg_t* msg)
 {
     bts_send_uv_msg(BT_PROFILE_GATTC_ID, msg, sizeof(bts_gattc_msg_t));
+}
+
+void gattc_init(void)
+{
+    bts_register_profile_process(BT_PROFILE_GATTC_ID, &handle_msg_received);
+}
+
+void gattc_deinit(void)
+{
+    bts_unregister_profile_process(BT_PROFILE_GATTC_ID);
 }

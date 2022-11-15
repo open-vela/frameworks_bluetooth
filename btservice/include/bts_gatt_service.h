@@ -64,4 +64,8 @@ typedef struct {
 } gatt_interface_t;
 
 const gatt_interface_t* gatt_get_interface(void);
+void gatts_init(void);
+void gatts_deinit(void);
+void gattc_init(void);
+void gattc_deinit(void);
 #endif
