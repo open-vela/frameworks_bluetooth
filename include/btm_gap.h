@@ -260,6 +260,15 @@ typedef void (*ble_adv_stopped_callback)(void* gap_handle, uint8_t adv_id);
 typedef void (*ble_connection_updated_callback)(void* gap_handle, bt_address remote_addr, bt_status status, uint16_t connection_interval,
     uint16_t peripheral_latency, uint16_t supervision_timeout);
 
+/**
+ * @brief ble bonded device callback, called when new ble device bonded
+ * @note: handle must be create before this funciton.
+ * @param {void*} gap_handle
+ * @param {ble_keys_t*} bonded_device_list - bonded ble keys
+ * @param {uint8_t} count_in - number of ble bonded devices(keys)
+ */
+typedef void (*update_ble_bonede_device_callback)(void* gap_handle, ble_keys_t* bonded_device_list, uint8_t count_in);
+
 typedef struct {
     /** set to sizeof(bt_callbacks_t) */
     size_t size;
@@ -284,6 +293,7 @@ typedef struct {
     ble_adv_started_callback ble_adv_started_cb;
     ble_adv_stopped_callback ble_adv_stopped_cb;
     ble_connection_updated_callback ble_connection_updated_cb;
+    update_ble_bonede_device_callback update_ble_bonede_device_cb;
 } btm_gap_callbacks_t;
 
 /*gap interface*/

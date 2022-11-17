@@ -277,6 +277,16 @@ static void btm_ble_connection_updated_callback(void* gap_handle, bt_address rem
         peripheral_latency, supervision_timeout);
 }
 
+static void btm_update_ble_bonede_device_callback(void* gap_handle, ble_keys_t* bonded_device_list, uint8_t count_in)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->update_ble_bonede_device_cb))
+        return;
+    context->gap_callbacks->update_ble_bonede_device_cb(gap_handle, bonded_device_list, count_in);
+}
+
 static const btm_gap_callbacks_t service_callbacks = {
     .size = sizeof(btm_gap_callbacks_t),
     .bt_connection_state_changed_callback_cb = btm_connection_state_changed_callback,
@@ -300,6 +310,7 @@ static const btm_gap_callbacks_t service_callbacks = {
     .ble_adv_started_cb = btm_ble_adv_started_callback,
     .ble_adv_stopped_cb = btm_ble_adv_stopped_callback,
     .ble_connection_updated_cb = btm_ble_connection_updated_callback,
+    .update_ble_bonede_device_cb = btm_update_ble_bonede_device_callback,
 };
 
 static bt_result_code btm_gap_register_callbacks(void* manager_handle, void** gap_handle, const btm_gap_callbacks_t* callbacks)
