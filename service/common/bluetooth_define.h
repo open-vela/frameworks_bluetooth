@@ -1,0 +1,82 @@
+/****************************************************************************
+ *  Copyright (C) 2022 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+#ifndef __BLUETOOTH_DEFINE_H_
+#define __BLUETOOTH_DEFINE_H_
+
+#include "bluetooth.h"
+#include "bt_addr.h"
+#include "bt_uuid.h"
+// #define BLE_MAX_ADV_NUM 8
+
+#ifdef CONFIG_DEV_NAME_MAX_LEN
+#define BT_DEV_NAME_MAX_LEN (CONFIG_DEV_NAME_MAX_LEN)
+#else
+#define BT_DEV_NAME_MAX_LEN (64)
+#endif
+#define BT_LOC_NAME_MAX_LEN BT_DEV_NAME_MAX_LEN
+#define BT_REM_NAME_MAX_LEN BT_DEV_NAME_MAX_LEN
+
+#define SMP_KEYS_MAX_SIZE    80
+#define BT_COMMON_KEY_LENGTH 16
+
+#define DEFAULT_DEVICE_OF_CLASS 0x00640404
+#define DEFAULT_IO_CAPABILITY   BT_IO_CAPABILITY_NOINPUTNOOUTPUT
+#define DEFAULT_SCAN_MODE       BT_BR_SCAN_MODE_CONNECTABLE_DISCOVERABLE
+#define DEFAULT_BONDABLE_MODE   1
+
+typedef enum {
+    BT_LINKKEY_TYPE_COMBINATION_KEY,
+    BT_LINKKEY_TYPE_LOCAL_UNIT_KEY,
+    BT_LINKKEY_TYPE_REMOTE_UNIT_KEY,
+    BT_LINKKEY_TYPE_DEBUG_COMBINATION_KEY,
+    BT_LINKKEY_TYPE_UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192,
+    BT_LINKKEY_TYPE_AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192,
+    BT_LINKKEY_TYPE_CHANGED_COMBINATION_KEY,
+    BT_LINKKEY_TYPE_UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256,
+    BT_LINKKEY_TYPE_AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256
+} bt_link_key_type_t;
+
+typedef enum {
+    BT_LINK_MODE_ACTIVE,
+    BT_LINK_MODE_SNIFF
+} bt_link_mode_t;
+
+typedef struct {
+    bt_address_t addr;
+    ble_addr_type_t addr_type;
+    char name[BT_REM_NAME_MAX_LEN + 1];
+    char alias[BT_REM_NAME_MAX_LEN + 1];
+    uint32_t class_of_device;
+    uint8_t link_key[16];
+    bt_link_key_type_t link_key_type;
+    bt_device_type_t device_type;
+} remote_device_properties_t;
+
+typedef struct {
+    char name[BT_LOC_NAME_MAX_LEN + 1];
+    uint32_t class_of_device;
+    uint32_t io_capability;
+    uint32_t scan_mode;
+    uint32_t bondable;
+} adapter_storage_t;
+
+typedef struct {
+    uint16_t sniff_interval;
+    uint16_t sniff_attempt;
+    uint16_t sniff_timeout;
+} bt_sniff_params_t;
+
+#endif /* __BLUETOOTH_DEFINE_H_ */

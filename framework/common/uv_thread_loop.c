@@ -1,0 +1,326 @@
+/****************************************************************************
+ *  Copyright (C) 2022 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+
+#include <nuttx/list.h>
+#include <pthread.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+#include "uv_thread_loop.h"
+
+#define LOG_TAG "thread_loop"
+#include "utils/log.h"
+
+typedef struct thread_loop {
+    uv_async_t async;
+    uv_thread_t thread;
+    uv_mutex_t msg_lock;
+    uv_sem_t ready;
+    uv_sem_t exited;
+    uint8_t is_running;
+    struct list_node msg_queue;
+} loop_priv_t;
+
+typedef struct thread_timer {
+    uv_timer_t handle;
+    thread_timer_cb_t callback;
+    void *userdata;
+} timer_priv_t;
+
+typedef struct thread_poll {
+    uv_poll_t handle;
+    uv_poll_cb cb;
+    void *userdata;
+} poll_priv_t;
+
+typedef struct {
+    struct list_node node;
+    union {
+        thread_func_t func;
+    };
+    void *msg;
+} internel_msg_t;
+
+typedef struct {
+    thread_func_t func;
+    void *data;
+    uv_sem_t signal;
+} signal_msg_t;
+
+#define LOOP_THREAD_STACK_SIZE 4096
+
+static void set_ready(void *data)
+{
+    loop_priv_t *priv = data;
+
+    priv->is_running = 1;
+    uv_sem_init(&priv->exited, 0);
+    uv_sem_post(&priv->ready);
+    BT_LOGD("set_ready");
+}
+
+static void set_stop(void *data)
+{
+    uv_loop_t *loop = data;
+    loop_priv_t *priv = loop->data;
+
+    priv->is_running = 0;
+    uv_close((uv_handle_t *)&priv->async, NULL);
+    uv_stop(loop);
+    BT_LOGD("set_stopped");
+}
+
+static void thread_timer_cb(uv_timer_t *handle)
+{
+    timer_priv_t *timer = handle->data;
+
+    if (timer->callback)
+        timer->callback(handle, timer->userdata);
+}
+
+static void thread_sync_callback(void *data)
+{
+    signal_msg_t *msg = (signal_msg_t *)data;
+
+    msg->func(msg->data);
+    uv_sem_post(&msg->signal);
+}
+
+static void thread_message_callback(uv_async_t *handle)
+{
+    internel_msg_t *imsg;
+    loop_priv_t *priv = handle->data;
+
+    for (;;) {
+        uv_mutex_lock(&priv->msg_lock);
+        imsg = (internel_msg_t *)list_remove_head(&priv->msg_queue);
+        uv_mutex_unlock(&priv->msg_lock);
+        if (!imsg)
+            return;
+
+        imsg->func(imsg->msg);
+        free(imsg);
+    }
+}
+
+static void thread_schedule_loop(void *data)
+{
+    uv_loop_t *loop = data;
+    loop_priv_t *priv = loop->data;
+
+    int ret = uv_async_init(loop, &priv->async, thread_message_callback);
+    if (ret != 0) {
+        BT_LOGE("%s async error: %d", __func__, ret);
+        return;
+    }
+
+    priv->async.data = priv;
+    BT_LOGD("%s:%p, async:%p", __func__, loop, &priv->async);
+    do_in_thread_loop(loop, set_ready, priv);
+    uv_run(loop, UV_RUN_DEFAULT);
+    priv->is_running = 0;
+    uv_loop_close(loop);
+    uv_sem_post(&priv->exited);
+
+    BT_LOGD("%s quit", __func__);
+}
+
+static void handle_close_cb(uv_handle_t *handle)
+{
+    if (handle->data)
+        free(handle->data);
+}
+
+int thread_loop_init(uv_loop_t *loop)
+{
+    int ret;
+    loop_priv_t *priv = malloc(sizeof(loop_priv_t));
+    if (!priv)
+        return -ENOMEM;
+
+    priv->is_running = 0;
+    ret = uv_mutex_init(&priv->msg_lock);
+    if (ret != 0) {
+        BT_LOGE("%s mutex error: %d", __func__, ret);
+        return ret;
+    }
+
+    list_initialize(&priv->msg_queue);
+    uv_loop_init(loop);
+    loop->data = priv;
+
+    return 0;
+}
+
+int thread_loop_run(uv_loop_t *loop, bool start_thread, const char *name)
+{
+    loop_priv_t *priv = loop->data;
+
+    if (start_thread) {
+        int ret = uv_sem_init(&priv->ready, 0);
+        if (ret != 0) {
+            BT_LOGE("%s sem init error: %d", __func__, ret);
+            return ret;
+        }
+
+        uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE, LOOP_THREAD_STACK_SIZE };
+        ret = uv_thread_create_ex(&priv->thread, &options, thread_schedule_loop, (void *)loop);
+        if (ret != 0) {
+            BT_LOGE("loop thread create :%d", ret);
+            return ret;
+        }
+
+        pthread_setname_np(priv->thread, name);
+        uv_sem_wait(&priv->ready);
+        uv_sem_destroy(&priv->ready);
+        BT_LOGD("loop running now !!!");
+    } else {
+        BT_LOGD("loop running now !!!");
+        thread_schedule_loop(NULL);
+    }
+
+    return 0;
+}
+
+void thread_loop_exit(uv_loop_t *loop)
+{
+    struct list_node *node;
+    struct list_node *tmp;
+    loop_priv_t *priv = loop->data;
+
+    if (priv->is_running) {
+        do_in_thread_loop(loop, set_stop, (void *)loop);
+        uv_sem_wait(&priv->exited);
+        uv_sem_destroy(&priv->exited);
+    }
+
+    uv_mutex_lock(&priv->msg_lock);
+    list_for_every_safe(&priv->msg_queue, node, tmp)
+    {
+        list_delete(node);
+        free(node);
+    }
+    list_delete(&priv->msg_queue);
+    uv_mutex_unlock(&priv->msg_lock);
+    uv_mutex_destroy(&priv->msg_lock);
+}
+
+uv_poll_t *thread_loop_poll_fd(uv_loop_t *loop, int fd, int pevents, uv_poll_cb cb, void *userdata)
+{
+    assert(fd);
+    assert(cb);
+
+    poll_priv_t *priv = (poll_priv_t *)malloc(sizeof(poll_priv_t));
+    if (!priv)
+        return NULL;
+
+    priv->cb = cb;
+    priv->userdata = userdata;
+    priv->handle.data = priv;
+    int ret = uv_poll_init(loop, &priv->handle, fd);
+    if (ret != 0)
+        goto error;
+
+    ret = uv_poll_start(&priv->handle, pevents, cb);
+    if (ret != 0)
+        goto error;
+
+    return &priv->handle;
+
+error:
+    BT_LOGE("%s failed: %d", __func__, ret);
+    free(priv);
+    return NULL;
+}
+
+int thread_loop_reset_poll(uv_poll_t *poll, int pevents)
+{
+    assert(poll);
+
+    poll_priv_t *priv = poll->data;
+    uv_poll_stop(poll);
+
+    return uv_poll_start(poll, pevents, priv->cb);
+}
+
+void thread_loop_remove_poll(uv_poll_t *poll)
+{
+    if (!poll)
+        return;
+
+    uv_poll_stop(poll);
+    uv_close((uv_handle_t *)poll, handle_close_cb);
+}
+
+uv_timer_t *thread_loop_timer(uv_loop_t *loop, uint64_t timeout, uint64_t repeat, thread_timer_cb_t cb, void *userdata)
+{
+    if (!cb)
+        return NULL;
+
+    timer_priv_t *priv = malloc(sizeof(timer_priv_t));
+    if (!priv)
+        return NULL;
+
+    uv_timer_init(loop, &priv->handle);
+    priv->callback = cb;
+    priv->userdata = userdata;
+    priv->handle.data = priv;
+    uv_timer_start(&priv->handle, thread_timer_cb, timeout, repeat);
+
+    return &priv->handle;
+}
+
+uv_timer_t *thread_loop_timer_no_repeating(uv_loop_t *loop, uint64_t timeout, thread_timer_cb_t cb, void *userdata)
+{
+    return thread_loop_timer(loop, timeout, 0, cb, userdata);
+}
+
+void thread_loop_cancel_timer(uv_timer_t *timer)
+{
+    if (!timer)
+        return;
+
+    uv_timer_stop(timer);
+    uv_close((uv_handle_t *)timer, handle_close_cb);
+}
+
+void do_in_thread_loop(uv_loop_t *loop, thread_func_t func, void *data)
+{
+    loop_priv_t *priv = loop->data;
+    internel_msg_t *msg = (internel_msg_t *)malloc(sizeof(internel_msg_t));
+    assert(msg);
+
+    msg->func = func;
+    msg->msg = data;
+
+    uv_mutex_lock(&priv->msg_lock);
+    list_add_tail(&priv->msg_queue, &msg->node);
+    uv_mutex_unlock(&priv->msg_lock);
+
+    uv_async_send(&priv->async);
+}
+
+void do_in_thread_loop_sync(uv_loop_t *loop, thread_func_t func, void *data)
+{
+    signal_msg_t msg;
+
+    msg.func = func;
+    msg.data = data;
+    uv_sem_init(&msg.signal, 0);
+    do_in_thread_loop(loop, thread_sync_callback, &msg);
+    uv_sem_wait(&msg.signal);
+    uv_sem_destroy(&msg.signal);
+}
