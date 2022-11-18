@@ -48,4 +48,8 @@ typedef enum {
 }
 #endif
 
+<<<<<<< HEAD
 #endif /* _BT_STATUS_H__ */
+=======
+#endif /* _BT_STATUS_H__ */
+>>>>>>> bluetooth framework re-implement base

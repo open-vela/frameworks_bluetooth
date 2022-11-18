@@ -20,22 +20,29 @@
 extern "C" {
 #endif
 
+<<<<<<< HEAD
 #include <stdint.h>
 
 #include <nuttx/list.h>
 
 #include <uv.h>
 
+=======
+>>>>>>> bluetooth framework re-implement base
 #include "bt_addr.h"
 #include "bt_profile.h"
 #include "bt_status.h"
 #include "bt_uuid.h"
+<<<<<<< HEAD
 #include "callbacks_list.h"
 #include "uv_thread_loop.h"
 
 #ifndef BTSYMBOLS
 #define BTSYMBOLS(s) s
 #endif
+=======
+#include <stdint.h>
+>>>>>>> bluetooth framework re-implement base
 
 typedef enum {
     BT_IO_CAPABILITY_DISPLAYONLY = 0,
@@ -84,11 +91,14 @@ typedef enum {
 } bt_link_role_t;
 
 typedef enum {
+<<<<<<< HEAD
     BT_LINK_MODE_ACTIVE,
     BT_LINK_MODE_SNIFF
 } bt_link_mode_t;
 
 typedef enum {
+=======
+>>>>>>> bluetooth framework re-implement base
     BT_BR_LINK_POLICY_DISABLE_ALL,
     BT_BR_LINK_POLICY_ENABLE_ROLE_SWITCH,
     BT_BR_LINK_POLICY_ENABLE_SNIFF,
@@ -138,6 +148,7 @@ typedef enum {
 
 typedef uint8_t bt_128key_t[16];
 
+<<<<<<< HEAD
 #define COD_SERVICE_BITS(c) (c & 0xFFE000) /* The major service classes field */
 #define COD_DEVICE_MAJOR_BITS(c) (c & 0x001F00) /* The major device classes field */
 #define COD_DEVICE_CLASS_BITS(c) (c & 0x001FFC) /* The device classes field, including major and minor */
@@ -150,10 +161,25 @@ typedef uint8_t bt_128key_t[16];
 #define COD_SERVICE_OBJECT 0x100000 /* Object Transfer (v-Inbox, v-Folder, ...) */
 #define COD_SERVICE_AUDIO 0x200000 /* Audio (Speaker, Microphone, Headset service, ...) */
 #define COD_SERVICE_TELEPHONY 0x400000 /* Telephony (Cordless telephony, Modem, Headset service, ...) */
+=======
+#define COD_SERVICE_BITS(c)      (c & 0xFFE000) /* The major service classes field */
+#define COD_DEVICE_MAJOR_BITS(c) (c & 0x001F00) /* The major device classes field */
+#define COD_DEVICE_CLASS_BITS(c) (c & 0x001FFC) /* The device classes field, including major and minor */
+
+#define COD_SERVICE_LDM         0x002000 /* Limited Discoverable Mode */
+#define COD_SERVICE_POSITION    0x010000 /* Positioning (Location identification) */
+#define COD_SERVICE_NETWORK     0x020000 /* Networking (LAN, Ad hoc, ...) */
+#define COD_SERVICE_RENDERING   0x040000 /* Rending (Printing, Speaker, ...) */
+#define COD_SERVICE_CAPTURING   0x080000 /* Capturing (Scanner, Microphone, ...) */
+#define COD_SERVICE_OBJECT      0x100000 /* Object Transfer (v-Inbox, v-Folder, ...) */
+#define COD_SERVICE_AUDIO       0x200000 /* Audio (Speaker, Microphone, Headset service, ...) */
+#define COD_SERVICE_TELEPHONY   0x400000 /* Telephony (Cordless telephony, Modem, Headset service, ...) */
+>>>>>>> bluetooth framework re-implement base
 #define COD_SERVICE_INFORMATION 0x800000 /* Information (WEB-server, WAP-server, ...) */
 
 /* * Major Device Classes bit mask */
 #define COD_DEVICE_MISCELLANEOUS 0x000000 /* Major Device Class - Miscellaneous */
+<<<<<<< HEAD
 #define COD_DEVICE_COMPUTER 0x000100 /* Major Device Class - Computer (desktop, notebook, PDA, organizers, ...) */
 #define COD_DEVICE_PHONE 0x000200 /* Major Device Class - Phone (cellular, cordless, payphone, modem, ...) */
 #define COD_DEVICE_LAP 0x000300 /* Major Device Class - LAN/Network Access Point */
@@ -228,10 +254,87 @@ typedef uint8_t bt_128key_t[16];
 /* * Minor Device Class - Imaging major class */
 #define COD_IMAGING_DISPLAY (COD_DEVICE_IMAGING | 0x000010)
 #define COD_IMAGING_CAMERA (COD_DEVICE_IMAGING | 0x000020)
+=======
+#define COD_DEVICE_COMPUTER      0x000100 /* Major Device Class - Computer (desktop, notebook, PDA, organizers, ...) */
+#define COD_DEVICE_PHONE         0x000200 /* Major Device Class - Phone (cellular, cordless, payphone, modem, ...) */
+#define COD_DEVICE_LAP           0x000300 /* Major Device Class - LAN/Network Access Point */
+#define COD_DEVICE_AV            0x000400 /* Major Device Class - Audio/Video (headset, speaker, stereo, video display, vcr...) */
+#define COD_DEVICE_PERIPHERAL    0x000500 /* Major Device Class - Peripheral (mouse, joystick, keyboards, ...) */
+#define COD_DEVICE_IMAGING       0x000600 /* Major Device Class - Imaging (printing, scanner, camera, display, ...) */
+#define COD_DEVICE_WEARABLE      0x000700 /* Major Device Class - Wearable */
+#define COD_DEVICE_TOY           0x000800 /* Major Device Class - Toy */
+#define COD_DEVICE_HEALTH        0x000900 /* Major Device Class - Health */
+#define COD_DEVICE_UNCLASSIFIED  0x001F00 /* Major Device Class - Uncategorized, specific device code not specified */
+
+/* * Minor Device Class - Computer major class */
+#define COD_COMPUTER_UNCLASSIFIED (COD_DEVICE_COMPUTER | 0x000000)
+#define COD_COMPUTER_DESKTOP      (COD_DEVICE_COMPUTER | 0x000004)
+#define COD_COMPUTER_SERVER       (COD_DEVICE_COMPUTER | 0x000008)
+#define COD_COMPUTER_LAPTOP       (COD_DEVICE_COMPUTER | 0x00000C)
+#define COD_COMPUTER_HANDHELD     (COD_DEVICE_COMPUTER | 0x000010)
+#define COD_COMPUTER_PALMSIZED    (COD_DEVICE_COMPUTER | 0x000014)
+#define COD_COMPUTER_WEARABLE     (COD_DEVICE_COMPUTER | 0x000018)
+
+/* * Minor Device Class - Phone major class */
+#define COD_PHONE_UNCLASSIFIED     (COD_DEVICE_PHONE | 0x000000)
+#define COD_PHONE_CELLULAR         (COD_DEVICE_PHONE | 0x000004)
+#define COD_PHONE_CORDLESS         (COD_DEVICE_PHONE | 0x000008)
+#define COD_PHONE_SMARTPHONE       (COD_DEVICE_PHONE | 0x00000C)
+#define COD_PHONE_WIREDMODEM       (COD_DEVICE_PHONE | 0x000010)
+#define COD_PHONE_COMMONISDNACCESS (COD_DEVICE_PHONE | 0x000014)
+#define COD_PHONE_SIMCARDREADER    (COD_DEVICE_PHONE | 0x000018)
+
+/* * Minor Device Class - LAN/Network access point major class */
+#define COD_LAP_FULLY_AVAILABLE (COD_DEVICE_LAP | 0x000000)
+#define COD_LAP_17_UTILIZED     (COD_DEVICE_LAP | 0x000020)
+#define COD_LAP_33_UTILIZED     (COD_DEVICE_LAP | 0x000040)
+#define COD_LAP_50_UTILIZED     (COD_DEVICE_LAP | 0x000060)
+#define COD_LAP_67_UTILIZED     (COD_DEVICE_LAP | 0x000080)
+#define COD_LAP_83_UTILIZED     (COD_DEVICE_LAP | 0x0000A0)
+#define COD_LAP_99_UTILIZED     (COD_DEVICE_LAP | 0x0000C0)
+#define COD_LAP_UNAVAILABLE     (COD_DEVICE_LAP | 0x0000E0)
+
+/* * Minor Device Class - Audio/Video major class */
+#define COD_AV_UNCLASSIFIED        (COD_DEVICE_AV | 0x000000)
+#define COD_AV_HEADSET             (COD_DEVICE_AV | 0x000004)
+#define COD_AV_HANDSFREE           (COD_DEVICE_AV | 0x000008)
+#define COD_AV_HEADANDHAND         (COD_DEVICE_AV | 0x00000C)
+#define COD_AV_MICROPHONE          (COD_DEVICE_AV | 0x000010)
+#define COD_AV_LOUD_SPEAKER        (COD_DEVICE_AV | 0x000014)
+#define COD_AV_HEADPHONES          (COD_DEVICE_AV | 0x000018)
+#define COD_AV_PORTABLE_AUDIO      (COD_DEVICE_AV | 0x00001C)
+#define COD_AV_CAR_AUDIO           (COD_DEVICE_AV | 0x000020)
+#define COD_AV_SETTOPBOX           (COD_DEVICE_AV | 0x000024)
+#define COD_AV_HIFI_AUDIO          (COD_DEVICE_AV | 0x000028)
+#define COD_AV_VCR                 (COD_DEVICE_AV | 0x00002C)
+#define COD_AV_VIDEO_CAMERA        (COD_DEVICE_AV | 0x000030)
+#define COD_AV_CAMCORDER           (COD_DEVICE_AV | 0x000034)
+#define COD_AV_VIDEO_MONITOR       (COD_DEVICE_AV | 0x000038)
+#define COD_AV_DISPLAY_AND_SPEAKER (COD_DEVICE_AV | 0x00003C)
+#define COD_AV_VIDEO_CONFERENCING  (COD_DEVICE_AV | 0x000040)
+#define COD_AV_GAME_OR_TOY         (COD_DEVICE_AV | 0x000048)
+
+/* * Minor Device Class - Peripheral major class */
+#define COD_PERIPHERAL_UNCLASSIFIED  (COD_DEVICE_PERIPHERAL | 0x000000)
+#define COD_PERIPHERAL_JOYSTICK      (COD_DEVICE_PERIPHERAL | 0x000004)
+#define COD_PERIPHERAL_GAMEPAD       (COD_DEVICE_PERIPHERAL | 0x000008)
+#define COD_PERIPHERAL_REMCONTROL    (COD_DEVICE_PERIPHERAL | 0x00000C)
+#define COD_PERIPHERAL_SENSE         (COD_DEVICE_PERIPHERAL | 0x000010)
+#define COD_PERIPHERAL_TABLET        (COD_DEVICE_PERIPHERAL | 0x000014)
+#define COD_PERIPHERAL_SIMCARDREADER (COD_DEVICE_PERIPHERAL | 0x000018)
+#define COD_PERIPHERAL_KEYBOARD      (COD_DEVICE_PERIPHERAL | 0x000040)
+#define COD_PERIPHERAL_POINT         (COD_DEVICE_PERIPHERAL | 0x000080)
+#define COD_PERIPHERAL_KEYORPOINT    (COD_DEVICE_PERIPHERAL | 0x0000C0)
+
+/* * Minor Device Class - Imaging major class */
+#define COD_IMAGING_DISPLAY (COD_DEVICE_IMAGING | 0x000010)
+#define COD_IMAGING_CAMERA  (COD_DEVICE_IMAGING | 0x000020)
+>>>>>>> bluetooth framework re-implement base
 #define COD_IMAGING_SCANNER (COD_DEVICE_IMAGING | 0x000040)
 #define COD_IMAGING_PRINTER (COD_DEVICE_IMAGING | 0x000080)
 
 /* * Minor Device Class - Wearable major class */
+<<<<<<< HEAD
 #define COD_WERABLE_WATCH (COD_DEVICE_WEARABLE | 0x000004)
 #define COD_WERABLE_PAGER (COD_DEVICE_WEARABLE | 0x000008)
 #define COD_WERABLE_JACKET (COD_DEVICE_WEARABLE | 0x00000C)
@@ -253,6 +356,29 @@ typedef uint8_t bt_128key_t[16];
 #define COD_HEALTH_PULSE_OXIMETER (COD_DEVICE_HEALTH | 0x000014)
 #define COD_HEALTH_RATE_MONITOR (COD_DEVICE_HEALTH | 0x000018)
 #define COD_HEALTH_DATA_DISPLAY (COD_DEVICE_HEALTH | 0x00001C)
+=======
+#define COD_WERABLE_WATCH   (COD_DEVICE_WEARABLE | 0x000004)
+#define COD_WERABLE_PAGER   (COD_DEVICE_WEARABLE | 0x000008)
+#define COD_WERABLE_JACKET  (COD_DEVICE_WEARABLE | 0x00000C)
+#define COD_WERABLE_HELMET  (COD_DEVICE_WEARABLE | 0x000010)
+#define COD_WERABLE_GLASSES (COD_DEVICE_WEARABLE | 0x000014)
+
+/* * Minor Device Class - Toy major class */
+#define COD_TOY_ROBOT     (COD_DEVICE_TOY | 0x000004)
+#define COD_TOY_VEHICLE   (COD_DEVICE_TOY | 0x000008)
+#define COD_TOY_DOLL      (COD_DEVICE_TOY | 0x00000C)
+#define COD_TOY_CONROLLER (COD_DEVICE_TOY | 0x000010)
+#define COD_TOY_GAME      (COD_DEVICE_TOY | 0x000014)
+
+/* * Minor Device Class - Health major class */
+#define COD_HEALTH_BLOOD_PRESURE  (COD_DEVICE_HEALTH | 0x000004)
+#define COD_HEALTH_THERMOMETER    (COD_DEVICE_HEALTH | 0x000008)
+#define COD_HEALTH_WEIGHING_SCALE (COD_DEVICE_HEALTH | 0x00000C)
+#define COD_HEALTH_GLUCOSE_METER  (COD_DEVICE_HEALTH | 0x000010)
+#define COD_HEALTH_PULSE_OXIMETER (COD_DEVICE_HEALTH | 0x000014)
+#define COD_HEALTH_RATE_MONITOR   (COD_DEVICE_HEALTH | 0x000018)
+#define COD_HEALTH_DATA_DISPLAY   (COD_DEVICE_HEALTH | 0x00001C)
+>>>>>>> bluetooth framework re-implement base
 
 /* * Headset Device Class */
 #define IS_HEADSET(cod) ((COD_SERVICE_BITS(cod) & COD_SERVICE_AUDIO) && COD_DEVICE_MAJOR_BITS(cod) == COD_DEVICE_AV)
@@ -286,6 +412,7 @@ typedef struct {
     uint16_t max_ce_length;
 } ble_connect_params_t;
 
+<<<<<<< HEAD
 typedef struct {
     bool enable; /* enable sniff mode */
     uint8_t idle_time; /* Idle time in seconds before entering sniff mode */
@@ -308,6 +435,10 @@ typedef struct {
 
 /* Possible 2.4G none Bluetooth radio channel central frequency (MHz) */
 #define AFH_WIFI_CENTRAL_FREQUENCY_CH1 2412
+=======
+/* Possible 2.4G none Bluetooth radio channel central frequency (MHz) */
+#define AFH_WIFI_CENTRAL_FREQUENCY_CH1  2412
+>>>>>>> bluetooth framework re-implement base
 #define AFH_WIFI_CENTRAL_FREQUENCY_STEP 5
 #define AFH_WIFI_CHANNEL_TO_FREQ(ch) \
     (AFH_WIFI_CENTRAL_FREQUENCY_CH1 + ((ch - 1) * AFH_WIFI_CENTRAL_FREQUENCY_STEP))
@@ -319,11 +450,16 @@ enum {
 
 typedef bool (*bt_allocator_t)(void **data, uint32_t size);
 
+<<<<<<< HEAD
 typedef void (*bt_hci_event_callback_t)(bt_hci_event_t *hci_event, void *context);
 
 typedef struct bt_instance {
     uint32_t app_id;
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_BINDER_IPC
+=======
+typedef struct bt_instance {
+    uint32_t app_id;
+>>>>>>> bluetooth framework re-implement base
     void *manager_proxy;
     void *adapter_proxy;
     void *a2dp_proxy;
@@ -333,6 +469,7 @@ typedef struct bt_instance {
     void *gatt_proxy;
     void *spp_proxy;
     void *pan_proxy;
+<<<<<<< HEAD
     void *hidd_proxy;
     void *gattc_proxy;
     void *gatts_proxy;
@@ -371,6 +508,9 @@ typedef struct bt_instance {
     void *spp_cookie;
     void *hidd_cookie;
 #endif
+=======
+    void *hid_proxy;
+>>>>>>> bluetooth framework re-implement base
 } bt_instance_t;
 
 /**
@@ -378,14 +518,22 @@ typedef struct bt_instance {
  *
  * @return bt_instance_t* - ins on success, NULL on failure.
  */
+<<<<<<< HEAD
 bt_instance_t *BTSYMBOLS(bluetooth_create_instance)(void);
+=======
+bt_instance_t *bluetooth_create_instance(void);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get bluetooth client instance
  *
  * @return bt_instance_t* - ins if exist, NULL, if not exist.
  */
+<<<<<<< HEAD
 bt_instance_t *BTSYMBOLS(bluetooth_get_instance)(void);
+=======
+bt_instance_t *bluetooth_get_instance(void);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get profile proxy
@@ -394,14 +542,22 @@ bt_instance_t *BTSYMBOLS(bluetooth_get_instance)(void);
  * @param id - profile ID.
  * @return void* - profile proxy.
  */
+<<<<<<< HEAD
 void *BTSYMBOLS(bluetooth_get_proxy)(bt_instance_t *ins, enum profile_id id);
+=======
+void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Delete client instance
  *
  * @param ins - bluetooth client instance.
  */
+<<<<<<< HEAD
 void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t *ins);
+=======
+void bluetooth_delete_instance(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Start profile service
@@ -410,7 +566,11 @@ void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t *ins);
  * @param id - profile ID.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t *ins, enum profile_id id);
+=======
+bt_status_t bluetooth_start_service(bt_instance_t *ins, enum profile_id id);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Stop profile service
@@ -419,9 +579,13 @@ bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t *ins, enum profile_
  * @param id -profile ID.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bluetooth_stop_service)(bt_instance_t *ins, enum profile_id id);
 
 bool BTSYMBOLS(bluetooth_set_external_uv)(bt_instance_t *ins, uv_loop_t *ext_loop);
+=======
+bt_status_t bluetooth_stop_service(bt_instance_t *ins, enum profile_id id);
+>>>>>>> bluetooth framework re-implement base
 
 #ifdef __cplusplus
 }

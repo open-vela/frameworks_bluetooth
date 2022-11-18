@@ -16,10 +16,18 @@
 #ifndef _BT_SERVICE_LOOP_H__
 #define _BT_SERVICE_LOOP_H__
 
+<<<<<<< HEAD
 #include <nuttx/list.h>
 #include <stdint.h>
 
 #include "uv.h"
+=======
+#include <stdint.h>
+
+#ifdef CONFIG_OBELISK_LIBUV_LOOP
+#include "uv.h"
+#endif
+>>>>>>> bluetooth framework re-implement base
 
 enum service_poll_event {
     POLL_READABLE = 1,
@@ -30,6 +38,7 @@ enum service_poll_event {
 
 typedef struct service_timer service_timer_t;
 typedef struct service_poll service_poll_t;
+<<<<<<< HEAD
 typedef struct service_work service_work_t;
 typedef void (*service_poll_cb_t)(service_poll_t *poll, int revent, void *userdata);
 typedef void (*service_timer_cb_t)(service_timer_t *timer, void *userdata);
@@ -73,6 +82,14 @@ typedef struct service_work {
 
 int service_loop_init(void);
 int service_loop_run(bool start_thread, char *name);
+=======
+typedef void (*service_poll_cb_t)(service_poll_t *poll, int revent, void *userdata);
+typedef void (*service_timer_cb_t)(service_timer_t *timer, void *userdata);
+typedef void (*service_func_t)(void *data);
+
+int service_loop_init(void);
+int service_loop_run(bool start_thread);
+>>>>>>> bluetooth framework re-implement base
 void service_loop_exit(void);
 service_poll_t *service_loop_poll_fd(int fd, int pevents, service_poll_cb_t cb, void *userdata);
 int service_loop_reset_poll(service_poll_t *poll, int pevents);
@@ -80,6 +97,7 @@ void service_loop_remove_poll(service_poll_t *poll);
 service_timer_t *service_loop_timer(uint64_t timeout, uint64_t repeat, service_timer_cb_t cb, void *userdata);
 service_timer_t *service_loop_timer_no_repeating(uint64_t timeout, service_timer_cb_t cb, void *userdata);
 void service_loop_cancel_timer(service_timer_t *timer);
+<<<<<<< HEAD
 service_work_t *service_loop_work(void *user_data, service_work_cb_t work_cb,
                                   service_after_work_cb_t after_work_cb);
 void do_in_service_loop(service_func_t func, void *data);
@@ -91,3 +109,14 @@ uv_loop_t *get_service_uv_loop(void);
 uint64_t get_os_timestamp_us(void);
 
 #endif /* _BT_SERVICE_LOOP_H__ */
+=======
+void do_in_service_loop(service_func_t func, void *data);
+void do_in_service_loop_sync(service_func_t func, void *data);
+void add_init_process(service_func_t func);
+
+#ifdef CONFIG_OBELISK_LIBUV_LOOP
+uv_loop_t *get_service_uv_loop(void);
+#endif
+
+#endif /* _BT_SERVICE_LOOP_H__ */
+>>>>>>> bluetooth framework re-implement base
