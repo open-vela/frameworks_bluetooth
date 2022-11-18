@@ -21,7 +21,10 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+<<<<<<< HEAD
 #include <stdbool.h>
+=======
+>>>>>>> bluetooth framework re-implement base
 
 typedef struct {
     enum {
@@ -36,6 +39,7 @@ typedef struct {
     } val;
 } bt_uuid_t;
 
+<<<<<<< HEAD
 #define BT_UUID_DECLARE_16(value) \
     ((bt_uuid_t) { .type = BT_UUID16_TYPE, .val.u16 = (value) })
 #define BT_UUID_DECLARE_32(value) \
@@ -43,6 +47,8 @@ typedef struct {
 #define BT_UUID_DECLARE_128(value...) \
     ((bt_uuid_t) { .type = BT_UUID128_TYPE, .val.u128 = { value } })
 
+=======
+>>>>>>> bluetooth framework re-implement base
 void bt_uuid_to_uuid128(const bt_uuid_t *src, bt_uuid_t *uuid128);
 int bt_uuid_compare(const bt_uuid_t *uuid1, const bt_uuid_t *uuid2);
 int bt_uuid16_create(bt_uuid_t *uuid16, uint16_t value);

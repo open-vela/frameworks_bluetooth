@@ -17,7 +17,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+<<<<<<< HEAD
 #include <inttypes.h>
+=======
+>>>>>>> bluetooth framework re-implement base
 
 #include "bt_utils.h"
 #include "bt_uuid.h"
@@ -153,7 +156,11 @@ int bt_uuid_to_string(const bt_uuid_t *uuid, char *str, uint32_t len)
     STREAM_TO_UINT16(tmp4, p);
     STREAM_TO_UINT32(tmp5, p);
 
+<<<<<<< HEAD
     snprintf(str, len, "%08" PRIx32 "-%04x-%04x-%04x-%08" PRIx32 "%04x", tmp5, tmp4, tmp3, tmp2, tmp1, tmp0);
+=======
+    snprintf(str, len, "%08x-%04x-%04x-%04x-%08x%04x", tmp5, tmp4, tmp3, tmp2, tmp1, tmp0);
+>>>>>>> bluetooth framework re-implement base
 
     return 0;
 }

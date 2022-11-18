@@ -14,6 +14,7 @@
  * limitations under the License.
  ***************************************************************************/
 
+<<<<<<< HEAD
 #ifndef __NuttX__
 #define _GNU_SOURCE
 #endif
@@ -24,13 +25,25 @@
 
 #include <syslog.h>
 #include <nuttx/list.h>
+=======
+#include <nuttx/list.h>
+#include <pthread.h>
+#include <stdint.h>
+#include <stdlib.h>
+>>>>>>> bluetooth framework re-implement base
 
 #include "uv_thread_loop.h"
 
 #define LOG_TAG "thread_loop"
+<<<<<<< HEAD
 
 typedef struct thread_loop {
     char name[64];
+=======
+#include "utils/log.h"
+
+typedef struct thread_loop {
+>>>>>>> bluetooth framework re-implement base
     uv_async_t async;
     uv_thread_t thread;
     uv_mutex_t msg_lock;
@@ -40,6 +53,21 @@ typedef struct thread_loop {
     struct list_node msg_queue;
 } loop_priv_t;
 
+<<<<<<< HEAD
+=======
+typedef struct thread_timer {
+    uv_timer_t handle;
+    thread_timer_cb_t callback;
+    void *userdata;
+} timer_priv_t;
+
+typedef struct thread_poll {
+    uv_poll_t handle;
+    uv_poll_cb cb;
+    void *userdata;
+} poll_priv_t;
+
+>>>>>>> bluetooth framework re-implement base
 typedef struct {
     struct list_node node;
     union {
@@ -63,7 +91,11 @@ static void set_ready(void *data)
     priv->is_running = 1;
     uv_sem_init(&priv->exited, 0);
     uv_sem_post(&priv->ready);
+<<<<<<< HEAD
     syslog(LOG_DEBUG, "set_ready");
+=======
+    BT_LOGD("set_ready");
+>>>>>>> bluetooth framework re-implement base
 }
 
 static void set_stop(void *data)
@@ -74,7 +106,19 @@ static void set_stop(void *data)
     priv->is_running = 0;
     uv_close((uv_handle_t *)&priv->async, NULL);
     uv_stop(loop);
+<<<<<<< HEAD
     syslog(LOG_DEBUG, "set_stopped");
+=======
+    BT_LOGD("set_stopped");
+}
+
+static void thread_timer_cb(uv_timer_t *handle)
+{
+    timer_priv_t *timer = handle->data;
+
+    if (timer->callback)
+        timer->callback(handle, timer->userdata);
+>>>>>>> bluetooth framework re-implement base
 }
 
 static void thread_sync_callback(void *data)
@@ -109,24 +153,41 @@ static void thread_schedule_loop(void *data)
 
     int ret = uv_async_init(loop, &priv->async, thread_message_callback);
     if (ret != 0) {
+<<<<<<< HEAD
         syslog(LOG_ERR, "%s async error: %d", __func__, ret);
+=======
+        BT_LOGE("%s async error: %d", __func__, ret);
+>>>>>>> bluetooth framework re-implement base
         return;
     }
 
     priv->async.data = priv;
+<<<<<<< HEAD
     syslog(LOG_DEBUG, "%s:%p, async:%p", __func__, loop, &priv->async);
+=======
+    BT_LOGD("%s:%p, async:%p", __func__, loop, &priv->async);
+>>>>>>> bluetooth framework re-implement base
     do_in_thread_loop(loop, set_ready, priv);
     uv_run(loop, UV_RUN_DEFAULT);
     priv->is_running = 0;
     uv_loop_close(loop);
     uv_sem_post(&priv->exited);
 
+<<<<<<< HEAD
     syslog(LOG_DEBUG, "%s %s quit", priv->name, __func__);
+=======
+    BT_LOGD("%s quit", __func__);
+>>>>>>> bluetooth framework re-implement base
 }
 
 static void handle_close_cb(uv_handle_t *handle)
 {
+<<<<<<< HEAD
     free(handle);
+=======
+    if (handle->data)
+        free(handle->data);
+>>>>>>> bluetooth framework re-implement base
 }
 
 int thread_loop_init(uv_loop_t *loop)
@@ -139,8 +200,12 @@ int thread_loop_init(uv_loop_t *loop)
     priv->is_running = 0;
     ret = uv_mutex_init(&priv->msg_lock);
     if (ret != 0) {
+<<<<<<< HEAD
         free(priv);
         syslog(LOG_ERR, "%s mutex error: %d", __func__, ret);
+=======
+        BT_LOGE("%s mutex error: %d", __func__, ret);
+>>>>>>> bluetooth framework re-implement base
         return ret;
     }
 
@@ -158,13 +223,18 @@ int thread_loop_run(uv_loop_t *loop, bool start_thread, const char *name)
     if (start_thread) {
         int ret = uv_sem_init(&priv->ready, 0);
         if (ret != 0) {
+<<<<<<< HEAD
             syslog(LOG_ERR, "%s sem init error: %d", __func__, ret);
+=======
+            BT_LOGE("%s sem init error: %d", __func__, ret);
+>>>>>>> bluetooth framework re-implement base
             return ret;
         }
 
         uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE, LOOP_THREAD_STACK_SIZE };
         ret = uv_thread_create_ex(&priv->thread, &options, thread_schedule_loop, (void *)loop);
         if (ret != 0) {
+<<<<<<< HEAD
             syslog(LOG_ERR, "loop thread create :%d", ret);
             return ret;
         }
@@ -179,6 +249,18 @@ int thread_loop_run(uv_loop_t *loop, bool start_thread, const char *name)
         syslog(LOG_DEBUG, "%s loop running now !!!", priv->name);
     } else {
         syslog(LOG_DEBUG, "%s loop running now !!!", name);
+=======
+            BT_LOGE("loop thread create :%d", ret);
+            return ret;
+        }
+
+        pthread_setname_np(priv->thread, name);
+        uv_sem_wait(&priv->ready);
+        uv_sem_destroy(&priv->ready);
+        BT_LOGD("loop running now !!!");
+    } else {
+        BT_LOGD("loop running now !!!");
+>>>>>>> bluetooth framework re-implement base
         thread_schedule_loop(NULL);
     }
 
@@ -189,10 +271,13 @@ void thread_loop_exit(uv_loop_t *loop)
 {
     struct list_node *node;
     struct list_node *tmp;
+<<<<<<< HEAD
 
     if (!loop)
         return;
 
+=======
+>>>>>>> bluetooth framework re-implement base
     loop_priv_t *priv = loop->data;
 
     if (priv->is_running) {
@@ -210,7 +295,10 @@ void thread_loop_exit(uv_loop_t *loop)
     list_delete(&priv->msg_queue);
     uv_mutex_unlock(&priv->msg_lock);
     uv_mutex_destroy(&priv->msg_lock);
+<<<<<<< HEAD
     free(priv);
+=======
+>>>>>>> bluetooth framework re-implement base
 }
 
 uv_poll_t *thread_loop_poll_fd(uv_loop_t *loop, int fd, int pevents, uv_poll_cb cb, void *userdata)
@@ -218,6 +306,7 @@ uv_poll_t *thread_loop_poll_fd(uv_loop_t *loop, int fd, int pevents, uv_poll_cb 
     assert(fd);
     assert(cb);
 
+<<<<<<< HEAD
     uv_poll_t *handle = (uv_poll_t *)malloc(sizeof(uv_poll_t));
     if (!handle)
         return NULL;
@@ -246,6 +335,39 @@ int thread_loop_reset_poll(uv_poll_t *poll, int pevents, uv_poll_cb cb)
     uv_poll_stop(poll);
 
     return uv_poll_start(poll, pevents, cb);
+=======
+    poll_priv_t *priv = (poll_priv_t *)malloc(sizeof(poll_priv_t));
+    if (!priv)
+        return NULL;
+
+    priv->cb = cb;
+    priv->userdata = userdata;
+    priv->handle.data = priv;
+    int ret = uv_poll_init(loop, &priv->handle, fd);
+    if (ret != 0)
+        goto error;
+
+    ret = uv_poll_start(&priv->handle, pevents, cb);
+    if (ret != 0)
+        goto error;
+
+    return &priv->handle;
+
+error:
+    BT_LOGE("%s failed: %d", __func__, ret);
+    free(priv);
+    return NULL;
+}
+
+int thread_loop_reset_poll(uv_poll_t *poll, int pevents)
+{
+    assert(poll);
+
+    poll_priv_t *priv = poll->data;
+    uv_poll_stop(poll);
+
+    return uv_poll_start(poll, pevents, priv->cb);
+>>>>>>> bluetooth framework re-implement base
 }
 
 void thread_loop_remove_poll(uv_poll_t *poll)
@@ -257,11 +379,16 @@ void thread_loop_remove_poll(uv_poll_t *poll)
     uv_close((uv_handle_t *)poll, handle_close_cb);
 }
 
+<<<<<<< HEAD
 uv_timer_t *thread_loop_timer(uv_loop_t *loop, uint64_t timeout, uint64_t repeat, uv_timer_cb cb, void *userdata)
+=======
+uv_timer_t *thread_loop_timer(uv_loop_t *loop, uint64_t timeout, uint64_t repeat, thread_timer_cb_t cb, void *userdata)
+>>>>>>> bluetooth framework re-implement base
 {
     if (!cb)
         return NULL;
 
+<<<<<<< HEAD
     uv_timer_t *handle = malloc(sizeof(uv_timer_t));
     if (!handle)
         return NULL;
@@ -274,6 +401,22 @@ uv_timer_t *thread_loop_timer(uv_loop_t *loop, uint64_t timeout, uint64_t repeat
 }
 
 uv_timer_t *thread_loop_timer_no_repeating(uv_loop_t *loop, uint64_t timeout, uv_timer_cb cb, void *userdata)
+=======
+    timer_priv_t *priv = malloc(sizeof(timer_priv_t));
+    if (!priv)
+        return NULL;
+
+    uv_timer_init(loop, &priv->handle);
+    priv->callback = cb;
+    priv->userdata = userdata;
+    priv->handle.data = priv;
+    uv_timer_start(&priv->handle, thread_timer_cb, timeout, repeat);
+
+    return &priv->handle;
+}
+
+uv_timer_t *thread_loop_timer_no_repeating(uv_loop_t *loop, uint64_t timeout, thread_timer_cb_t cb, void *userdata)
+>>>>>>> bluetooth framework re-implement base
 {
     return thread_loop_timer(loop, timeout, 0, cb, userdata);
 }

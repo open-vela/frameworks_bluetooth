@@ -24,11 +24,16 @@
 #include "stack_adapter_gap.h"
 #include <nuttx/wireless/bluetooth/bt_ioctl.h>
 
+<<<<<<< HEAD
 #include "utils/btsnoop_log.h"
 #include "hci_h4.h"
 
 #define LOG_TAG "h4"
 #include "utils/log.h"
+=======
+#include "hci_h4.h"
+
+>>>>>>> bluetooth framework re-implement base
 /* Datatype in HCI_TL_RecvData */
 enum {
     HCI_DATATYPE_COMMAND = 1,
@@ -83,7 +88,10 @@ static int h4_send_data(uint8_t *buf, int count)
 int bt_sal_hci_transport_init(void)
 {
     g_tlfd = open(CONFIG_OBELISK_HCI_UART_NAME, O_RDWR | O_BINARY | O_CLOEXEC);
+<<<<<<< HEAD
     BT_LOGI("%s: g_tlfd = %d", __func__, g_tlfd);
+=======
+>>>>>>> bluetooth framework re-implement base
 
     return g_tlfd;
 }
@@ -132,14 +140,20 @@ void bt_sal_hci_transport_recv(void)
     if (ret != data_len)
         return;
 
+<<<<<<< HEAD
     btsnoop_log_capture(1, data, 1 + hdr_len + data_len);
+=======
+>>>>>>> bluetooth framework re-implement base
     service_adapter_gap_receive_hci_packet(data, 1 + hdr_len + data_len);
 }
 
 int bt_sal_hci_send_packet(uint8_t *buf, uint32_t len)
 {
+<<<<<<< HEAD
     btsnoop_log_capture(0, buf, len);
 
+=======
+>>>>>>> bluetooth framework re-implement base
     return h4_send_data(buf, len);
 }
 

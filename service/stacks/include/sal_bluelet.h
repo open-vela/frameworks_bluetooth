@@ -19,8 +19,12 @@
 #include "stack_adapter_common.h"
 
 #include "bt_device.h"
+<<<<<<< HEAD
 #include "bt_hfp.h"
 #include "bt_hid_device.h"
+=======
+#include "bt_hfp_ag.h"
+>>>>>>> bluetooth framework re-implement base
 #include "utils/log.h"
 
 static inline profile_connection_state_t bluelet_profile_connection_state(SERVICE_PROFILE_CONNECTION_STATE state)
@@ -49,6 +53,10 @@ static inline hfp_audio_state_t bluelet_hf_audio_state(SERVICE_HFP_SCO_STATE sta
     case SERVICE_HFP_SCO_DISCONNECTED:
         return HFP_AUDIO_STATE_DISCONNECTED;
     case SERVICE_HFP_SCO_UNKNOWN:
+<<<<<<< HEAD
+=======
+        return HFP_AUDIO_STATE_DISCONNECTED;
+>>>>>>> bluetooth framework re-implement base
     default:
         BT_LOGE("Unknow audio state: %d", state);
         return HFP_AUDIO_STATE_DISCONNECTED;
@@ -56,6 +64,7 @@ static inline hfp_audio_state_t bluelet_hf_audio_state(SERVICE_HFP_SCO_STATE sta
 }
 #endif
 
+<<<<<<< HEAD
 #if defined(CONFIG_BLUETOOTH_HID_DEVICE)
 static inline hid_app_state_t bluelet_hid_app_state(SERVICE_BTHD_APP_STATE state)
 {
@@ -98,4 +107,6 @@ static inline gatt_status_t bluelet_gatt_status(SERVICE_GATT_STATUS status)
 }
 #endif
 
+=======
+>>>>>>> bluetooth framework re-implement base
 #endif /* __BT_SAL_BLUELET_H__ */

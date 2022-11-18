@@ -29,6 +29,7 @@
 #define BT_LOC_NAME_MAX_LEN BT_DEV_NAME_MAX_LEN
 #define BT_REM_NAME_MAX_LEN BT_DEV_NAME_MAX_LEN
 
+<<<<<<< HEAD
 #define SMP_KEYS_MAX_SIZE 80
 #define BT_COMMON_KEY_LENGTH 16
 
@@ -41,6 +42,15 @@
 #define DEFAULT_IO_CAPABILITY BT_IO_CAPABILITY_NOINPUTNOOUTPUT
 #define DEFAULT_SCAN_MODE BT_BR_SCAN_MODE_CONNECTABLE_DISCOVERABLE
 #define DEFAULT_BONDABLE_MODE 1
+=======
+#define SMP_KEYS_MAX_SIZE    80
+#define BT_COMMON_KEY_LENGTH 16
+
+#define DEFAULT_DEVICE_OF_CLASS 0x00640404
+#define DEFAULT_IO_CAPABILITY   BT_IO_CAPABILITY_NOINPUTNOOUTPUT
+#define DEFAULT_SCAN_MODE       BT_BR_SCAN_MODE_CONNECTABLE_DISCOVERABLE
+#define DEFAULT_BONDABLE_MODE   1
+>>>>>>> bluetooth framework re-implement base
 
 typedef enum {
     BT_LINKKEY_TYPE_COMBINATION_KEY,
@@ -55,6 +65,7 @@ typedef enum {
 } bt_link_key_type_t;
 
 typedef enum {
+<<<<<<< HEAD
     BT_DBG_TYPE_HCI = 1,
     BT_DBG_TYPE_HCI_RAW,
     BT_DBG_TYPE_HCI_DUMP,
@@ -71,6 +82,11 @@ typedef enum {
     BT_DBG_TYPE_HFP,
     BT_DBG_TYPE_MAX
 } bt_debug_type_t;
+=======
+    BT_LINK_MODE_ACTIVE,
+    BT_LINK_MODE_SNIFF
+} bt_link_mode_t;
+>>>>>>> bluetooth framework re-implement base
 
 typedef struct {
     bt_address_t addr;
@@ -84,6 +100,7 @@ typedef struct {
 } remote_device_properties_t;
 
 typedef struct {
+<<<<<<< HEAD
     bt_address_t addr;
     ble_addr_type_t addr_type;
     uint8_t smp_key[80];
@@ -91,6 +108,8 @@ typedef struct {
 } remote_device_le_properties_t;
 
 typedef struct {
+=======
+>>>>>>> bluetooth framework re-implement base
     char name[BT_LOC_NAME_MAX_LEN + 1];
     uint32_t class_of_device;
     uint32_t io_capability;

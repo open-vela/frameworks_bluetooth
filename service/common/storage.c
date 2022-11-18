@@ -26,6 +26,7 @@
 #include "utils/log.h"
 #include "uv_ext.h"
 
+<<<<<<< HEAD
 #define BT_DB_FOLDER_PATH "/data/misc/bt"
 #define BT_DB_FILE_NAME "bt_storage.db"
 #define BT_DB_FILE_PATH BT_DB_FOLDER_PATH "/" BT_DB_FILE_NAME
@@ -35,6 +36,18 @@
 #define BT_KEY_BTBOND "BtBonded"
 #define BT_KEY_BLEBOND "BleBonded"
 #define BT_KEY_BLEWHITELIST "WhiteList"
+=======
+#define MISC_PATH               "/data/misc"
+#define BT_DB_FOLDER_PATH       "/data/misc/bt"
+#define BT_DB_FILE_NAME         "bt_storage.db"
+#define BT_DB_FILE_PATH         BT_DB_FOLDER_PATH "/" BT_DB_FILE_NAME
+#define REMOTE_DEVICE_FILE_NAME "device.db"
+
+#define BT_KEY_ADAPTER_INFO     "AdapterInfo"
+#define BT_KEY_BTBOND           "BtBonded"
+#define BT_KEY_BLEBOND          "BleBonded"
+#define BT_KEY_BLEWHITELIST     "WhiteList"
+>>>>>>> bluetooth framework re-implement base
 #define BT_KEY_BLERESOLVINGLIST "ResolvingList"
 
 typedef struct {
@@ -131,6 +144,7 @@ int bt_storage_load_adapter_info(adapter_storage_t *adapter)
     return 0;
 }
 
+<<<<<<< HEAD
 static int bt_storage_save_remote_device(const char *key, void *value, uint16_t value_size, uint16_t items)
 {
     uint16_t total_length = value_size * items;
@@ -144,10 +158,25 @@ static int bt_storage_save_remote_device(const char *key, void *value, uint16_t 
     int ret = storage_set_key(key, header, sizeof(key_header_t) + total_length);
     if (ret != 0)
         free(header);
+=======
+int bt_storage_save_bonded_device(remote_device_properties_t *remote, uint16_t size)
+{
+    uint16_t remote_length = sizeof(*remote) * size;
+    key_header_t *key = malloc(sizeof(key_header_t) + remote_length);
+
+    key->items = size;
+    key->key_length = remote_length;
+    if (remote && size)
+        memcpy(key->key_value, remote, remote_length);
+    int ret = storage_set_key(BT_KEY_BTBOND, key, sizeof(key_header_t) + remote_length);
+    if (ret != 0)
+        free(key);
+>>>>>>> bluetooth framework re-implement base
 
     return ret;
 }
 
+<<<<<<< HEAD
 int bt_storage_save_bonded_device(remote_device_properties_t *remote, uint16_t size)
 {
     return bt_storage_save_remote_device(BT_KEY_BTBOND, remote, sizeof(*remote), size);
@@ -163,11 +192,14 @@ int bt_storage_save_le_bonded_device(remote_device_le_properties_t *remote, uint
     return bt_storage_save_remote_device(BT_KEY_BLEBOND, remote, sizeof(*remote), size);
 }
 
+=======
+>>>>>>> bluetooth framework re-implement base
 int bt_storage_load_bonded_device(load_storage_callback_t cb)
 {
     return storage_get_key(BT_KEY_BTBOND, NULL, NULL, (void *)cb);
 }
 
+<<<<<<< HEAD
 int bt_storage_load_whitelist_device(load_storage_callback_t cb)
 {
     return storage_get_key(BT_KEY_BLEWHITELIST, NULL, NULL, (void *)cb);
@@ -178,6 +210,8 @@ int bt_storage_load_le_bonded_device(load_storage_callback_t cb)
     return storage_get_key(BT_KEY_BLEBOND, NULL, NULL, (void *)cb);
 }
 
+=======
+>>>>>>> bluetooth framework re-implement base
 void bt_storage_load_le_device_info(void)
 {
 }
@@ -190,9 +224,29 @@ int bt_storage_init(void)
 {
     int ret;
 
+<<<<<<< HEAD
     ret = uv_db_init(get_service_uv_loop(), &storage_handle, BT_DB_FILE_PATH);
     if (ret != 0)
         BT_LOGE("%s fail, ret:%d", __func__, ret);
+=======
+    if ((ret = access(MISC_PATH, 0)) && ret != 0) {
+        if ((ret = mkdir(MISC_PATH, 0777)) && ret != 0) {
+            BT_LOGD("misc folder create fail:%d", ret);
+            return ret;
+        }
+    }
+
+    if ((ret = access(BT_DB_FOLDER_PATH, 0)) && ret != 0) {
+        if ((ret = mkdir(BT_DB_FOLDER_PATH, 0777)) && ret != 0) {
+            BT_LOGD("storage folder create fail:%d", ret);
+            return ret;
+        }
+    }
+
+    ret = uv_db_init(get_service_uv_loop(), &storage_handle, BT_DB_FILE_PATH);
+    if (ret != 0)
+        BT_LOGD("%s fail, ret:%d", __func__, ret);
+>>>>>>> bluetooth framework re-implement base
 
     BT_LOGD("%s successed", __func__);
 
@@ -205,6 +259,9 @@ int bt_storage_cleanup(void)
     if (storage_handle)
         uv_db_close(storage_handle);
 
+<<<<<<< HEAD
     storage_handle = NULL;
+=======
+>>>>>>> bluetooth framework re-implement base
     return 0;
 }

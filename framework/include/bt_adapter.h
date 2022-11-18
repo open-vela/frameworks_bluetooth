@@ -23,10 +23,13 @@ extern "C" {
 #include "bluetooth.h"
 #include "bt_device.h"
 
+<<<<<<< HEAD
 #ifndef BTSYMBOLS
 #define BTSYMBOLS(s) s
 #endif
 
+=======
+>>>>>>> bluetooth framework re-implement base
 /**
  * @brief adapter state define
  *
@@ -102,6 +105,7 @@ typedef void (*on_pair_request_callback)(void *cookie, bt_address_t *addr);
 typedef void (*on_pair_display_callback)(void *cookie, bt_address_t *addr, bt_transport_t transport, bt_pair_type_t type, uint32_t passkey);
 
 /**
+<<<<<<< HEAD
  * @brief Connect request callback
  *
  * @param cookie - callback cookie
@@ -110,6 +114,8 @@ typedef void (*on_pair_display_callback)(void *cookie, bt_address_t *addr, bt_tr
 typedef void (*on_connect_request_callback)(void *cookie, bt_address_t *addr);
 
 /**
+=======
+>>>>>>> bluetooth framework re-implement base
  * @brief Connection state changed callback
  *
  * @param cookie - callback cookie
@@ -127,7 +133,11 @@ typedef void (*on_connection_state_changed_callback)(void *cookie, bt_address_t 
  * @param transport - transport type (0:BLE, 1:BREDR).
  * @param state - bond state.
  */
+<<<<<<< HEAD
 typedef void (*on_bond_state_changed_callback)(void *cookie, bt_address_t *addr, bt_transport_t transport, bond_state_t state, bool is_ctkd);
+=======
+typedef void (*on_bond_state_changed_callback)(void *cookie, bt_address_t *addr, bt_transport_t transport, bond_state_t state);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Remote device name changed callback
@@ -167,6 +177,7 @@ typedef void (*on_remote_cod_changed_callback)(void *cookie, bt_address_t *addr,
 typedef void (*on_remote_uuids_changed_callback)(void *cookie, bt_address_t *addr, bt_uuid_t *uuids, uint16_t size);
 
 /**
+<<<<<<< HEAD
  * @brief Remote device link mode changed callback
  *
  * @param cookie - callback cookie.
@@ -176,6 +187,8 @@ typedef void (*on_remote_uuids_changed_callback)(void *cookie, bt_address_t *add
  */
 typedef void (*on_remote_link_mode_changed_callback)(void *cookie, bt_address_t *addr, bt_link_mode_t mode, uint16_t sniff_interval);
 /**
+=======
+>>>>>>> bluetooth framework re-implement base
  * @brief Adapter callback structure
  *
  */
@@ -187,14 +200,20 @@ typedef struct {
     on_device_name_changed_callback on_device_name_changed;
     on_pair_request_callback on_pair_request;
     on_pair_display_callback on_pair_display;
+<<<<<<< HEAD
     on_connect_request_callback on_connect_request;
+=======
+>>>>>>> bluetooth framework re-implement base
     on_connection_state_changed_callback on_connection_state_changed;
     on_bond_state_changed_callback on_bond_state_changed;
     on_remote_name_changed_callback on_remote_name_changed;
     on_remote_alias_changed_callback on_remote_alias_changed;
     on_remote_cod_changed_callback on_remote_cod_changed;
     on_remote_uuids_changed_callback on_remote_uuids_changed;
+<<<<<<< HEAD
     on_remote_link_mode_changed_callback on_remote_link_mode_changed;
+=======
+>>>>>>> bluetooth framework re-implement base
 } adapter_callbacks_t;
 
 /**
@@ -215,7 +234,11 @@ typedef struct {
  * @param ins - bluetooth client instance.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_enable)(bt_instance_t *ins);
+=======
+bt_status_t bt_adapter_enable(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Disable bluetooth adapter
@@ -223,6 +246,7 @@ bt_status_t BTSYMBOLS(bt_adapter_enable)(bt_instance_t *ins);
  * @param ins - bluetooth client instance.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_disable)(bt_instance_t *ins);
 
 /**
@@ -240,6 +264,9 @@ bt_status_t BTSYMBOLS(bt_adapter_enable_le)(bt_instance_t *ins);
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_disable_le)(bt_instance_t *ins);
+=======
+bt_status_t bt_adapter_disable(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get adapter state
@@ -247,7 +274,11 @@ bt_status_t BTSYMBOLS(bt_adapter_disable_le)(bt_instance_t *ins);
  * @param ins - bluetooth client instance.
  * @return bt_adapter_state_t - adapter state.
  */
+<<<<<<< HEAD
 bt_adapter_state_t BTSYMBOLS(bt_adapter_get_state)(bt_instance_t *ins);
+=======
+bt_adapter_state_t bt_adapter_get_state(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get adapter device type
@@ -255,7 +286,11 @@ bt_adapter_state_t BTSYMBOLS(bt_adapter_get_state)(bt_instance_t *ins);
  * @param ins - bluetooth client instance.
  * @return bt_device_type_t - device type(0:EDR, 1:LE, 2:DUAL, 0xFF:unknow).
  */
+<<<<<<< HEAD
 bt_device_type_t BTSYMBOLS(bt_adapter_get_type)(bt_instance_t *ins);
+=======
+bt_device_type_t bt_adapter_get_type(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set discovery filter
@@ -263,7 +298,11 @@ bt_device_type_t BTSYMBOLS(bt_adapter_get_type)(bt_instance_t *ins);
  * @param ins - bluetooth client instance.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_set_discovery_filter)(bt_instance_t *ins);
+=======
+bt_status_t bt_adapter_set_discovery_filter(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Start discovery
@@ -272,7 +311,11 @@ bt_status_t BTSYMBOLS(bt_adapter_set_discovery_filter)(bt_instance_t *ins);
  * @param timeout - maximum amount of time specified(Time = N * 1.28s, Range: 1.28 to 61.44 s).
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_start_discovery)(bt_instance_t *ins, uint32_t timeout);
+=======
+bt_status_t bt_adapter_start_discovery(bt_instance_t *ins, uint32_t timeout);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Cancel discovery
@@ -280,7 +323,11 @@ bt_status_t BTSYMBOLS(bt_adapter_start_discovery)(bt_instance_t *ins, uint32_t t
  * @param ins - bluetooth client instance.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_cancel_discovery)(bt_instance_t *ins);
+=======
+bt_status_t bt_adapter_cancel_discovery(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Check adapter is discvering
@@ -289,7 +336,11 @@ bt_status_t BTSYMBOLS(bt_adapter_cancel_discovery)(bt_instance_t *ins);
  * @return true - adapter is discovering.
  * @return false - adapter is not discovering.
  */
+<<<<<<< HEAD
 bool BTSYMBOLS(bt_adapter_is_discovering)(bt_instance_t *ins);
+=======
+bool bt_adapter_is_discovering(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Read the bluetooth controller address(BD_ADDR)
@@ -297,7 +348,11 @@ bool BTSYMBOLS(bt_adapter_is_discovering)(bt_instance_t *ins);
  * @param ins - bluetooth client instance.
  * @param[out] addr - BDADDR, empty value on adapter not enabled.
  */
+<<<<<<< HEAD
 void BTSYMBOLS(bt_adapter_get_address)(bt_instance_t *ins, bt_address_t *addr);
+=======
+void bt_adapter_get_address(bt_instance_t *ins, bt_address_t *addr);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set adapter local name
@@ -306,7 +361,11 @@ void BTSYMBOLS(bt_adapter_get_address)(bt_instance_t *ins, bt_address_t *addr);
  * @param name - adapter local name.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_set_name)(bt_instance_t *ins, const char *name);
+=======
+bt_status_t bt_adapter_set_name(bt_instance_t *ins, const char *name);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get adapter local name
@@ -315,7 +374,11 @@ bt_status_t BTSYMBOLS(bt_adapter_set_name)(bt_instance_t *ins, const char *name)
  * @param[out] name - adapter local name from adapter service.
  * @param[in] length - maximum length of name buffer.
  */
+<<<<<<< HEAD
 void BTSYMBOLS(bt_adapter_get_name)(bt_instance_t *ins, char *name, int length);
+=======
+void bt_adapter_get_name(bt_instance_t *ins, char *name, int length);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get adapter supported uuids
@@ -325,7 +388,11 @@ void BTSYMBOLS(bt_adapter_get_name)(bt_instance_t *ins, char *name, int length);
  * @param[out] size - uuid size.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_get_uuids)(bt_instance_t *ins, bt_uuid_t *uuids, uint16_t *size);
+=======
+bt_status_t bt_adapter_get_uuids(bt_instance_t *ins, bt_uuid_t *uuids, uint16_t *size);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set adapter scan mode
@@ -335,7 +402,11 @@ bt_status_t BTSYMBOLS(bt_adapter_get_uuids)(bt_instance_t *ins, bt_uuid_t *uuids
  * @param bondable - bondable.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_set_scan_mode)(bt_instance_t *ins, bt_scan_mode_t mode, bool bondable);
+=======
+bt_status_t bt_adapter_set_scan_mode(bt_instance_t *ins, bt_scan_mode_t mode, bool bondable);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get adapter scan mode
@@ -343,7 +414,11 @@ bt_status_t BTSYMBOLS(bt_adapter_set_scan_mode)(bt_instance_t *ins, bt_scan_mode
  * @param ins - bluetooth client instance.
  * @return bt_scan_mode_t - scan mode (0:none, 1:connectable, 2:connectable_discoverable).
  */
+<<<<<<< HEAD
 bt_scan_mode_t BTSYMBOLS(bt_adapter_get_scan_mode)(bt_instance_t *ins);
+=======
+bt_scan_mode_t bt_adapter_get_scan_mode(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set adapter device class
@@ -352,7 +427,11 @@ bt_scan_mode_t BTSYMBOLS(bt_adapter_get_scan_mode)(bt_instance_t *ins);
  * @param cod - class of device, zero is invalid.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_set_device_class)(bt_instance_t *ins, uint32_t cod);
+=======
+bt_status_t bt_adapter_set_device_class(bt_instance_t *ins, uint32_t cod);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get adapter device class
@@ -360,7 +439,11 @@ bt_status_t BTSYMBOLS(bt_adapter_set_device_class)(bt_instance_t *ins, uint32_t 
  * @param ins - bluetooth client instance.
  * @return uint32_t - class of device, zero on adapter not enabled.
  */
+<<<<<<< HEAD
 uint32_t BTSYMBOLS(bt_adapter_get_device_class)(bt_instance_t *ins);
+=======
+uint32_t bt_adapter_get_device_class(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set BREDR adapter io capability
@@ -369,7 +452,11 @@ uint32_t BTSYMBOLS(bt_adapter_get_device_class)(bt_instance_t *ins);
  * @param cap - BREDR io capability.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_set_io_capability)(bt_instance_t *ins, bt_io_capability_t cap);
+=======
+bt_status_t bt_adapter_set_io_capability(bt_instance_t *ins, bt_io_capability_t cap);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get BREDR adapter io capability
@@ -377,6 +464,7 @@ bt_status_t BTSYMBOLS(bt_adapter_set_io_capability)(bt_instance_t *ins, bt_io_ca
  * @param ins - bluetooth client instance.
  * @return bt_io_capability_t - BREDR io capability.
  */
+<<<<<<< HEAD
 bt_io_capability_t BTSYMBOLS(bt_adapter_get_io_capability)(bt_instance_t *ins);
 
 bt_status_t BTSYMBOLS(bt_adapter_set_inquiry_scan_parameters)(bt_instance_t *ins, bt_scan_type_t type,
@@ -384,6 +472,10 @@ bt_status_t BTSYMBOLS(bt_adapter_set_inquiry_scan_parameters)(bt_instance_t *ins
 
 bt_status_t BTSYMBOLS(bt_adapter_set_page_scan_parameters)(bt_instance_t *ins, bt_scan_type_t type,
                                                            uint16_t interval, uint16_t window);
+=======
+bt_io_capability_t bt_adapter_get_io_capability(bt_instance_t *ins);
+
+>>>>>>> bluetooth framework re-implement base
 /**
  * @brief Get adapter bonded devices list
  *
@@ -393,7 +485,11 @@ bt_status_t BTSYMBOLS(bt_adapter_set_page_scan_parameters)(bt_instance_t *ins, b
  * @param allocator - address array allocator.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_get_bonded_devices)(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator);
+=======
+bt_status_t bt_adapter_get_bonded_devices(bt_instance_t *ins, bt_address_t **addr, int *num, bt_allocator_t allocator);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get adapter connected devices list
@@ -404,14 +500,22 @@ bt_status_t BTSYMBOLS(bt_adapter_get_bonded_devices)(bt_instance_t *ins, bt_tran
  * @param allocator - address array allocator.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_get_connected_devices)(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator);
+=======
+bt_status_t bt_adapter_get_connected_devices(bt_instance_t *ins, bt_address_t **addr, int *num, bt_allocator_t allocator);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Disconnect all connected device.
  * @note not support.
  * @param ins - bluetooth client instance.
  */
+<<<<<<< HEAD
 void BTSYMBOLS(bt_adapter_disconnect_all_devices)(bt_instance_t *ins);
+=======
+void bt_adapter_disconnect_all_devices(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Check BREDR adapter is supported
@@ -420,7 +524,11 @@ void BTSYMBOLS(bt_adapter_disconnect_all_devices)(bt_instance_t *ins);
  * @return true - support.
  * @return false - not support.
  */
+<<<<<<< HEAD
 bool BTSYMBOLS(bt_adapter_is_support_bredr)(bt_instance_t *ins);
+=======
+bool bt_adapter_is_support_bredr(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Register callback functions to adapter service
@@ -429,7 +537,11 @@ bool BTSYMBOLS(bt_adapter_is_support_bredr)(bt_instance_t *ins);
  * @param callbacks - adapter callback functions.
  * @return void* - callback cookie, NULL on failure.
  */
+<<<<<<< HEAD
 void *BTSYMBOLS(bt_adapter_register_callback)(bt_instance_t *ins, const adapter_callbacks_t *adapter_cbs);
+=======
+void *bt_adapter_register_callback(bt_instance_t *ins, const adapter_callbacks_t *adapter_cbs);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Unregister adapter callback function
@@ -439,7 +551,11 @@ void *BTSYMBOLS(bt_adapter_register_callback)(bt_instance_t *ins, const adapter_
  * @return true - on callback unregister success.
  * @return false - on callback cookie not found.
  */
+<<<<<<< HEAD
 bool BTSYMBOLS(bt_adapter_unregister_callback)(bt_instance_t *ins, void *cookie);
+=======
+bool bt_adapter_unregister_callback(bt_instance_t *ins, void *cookie);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Check LE adapter is enabled
@@ -448,7 +564,11 @@ bool BTSYMBOLS(bt_adapter_unregister_callback)(bt_instance_t *ins, void *cookie)
  * @return true - enabled.
  * @return false - disabled.
  */
+<<<<<<< HEAD
 bool BTSYMBOLS(bt_adapter_is_le_enabled)(bt_instance_t *ins);
+=======
+bool bt_adapter_is_le_enabled(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Check LE adapter is supported
@@ -457,6 +577,7 @@ bool BTSYMBOLS(bt_adapter_is_le_enabled)(bt_instance_t *ins);
  * @return true - support.
  * @return false - not support.
  */
+<<<<<<< HEAD
 bool BTSYMBOLS(bt_adapter_is_support_le)(bt_instance_t *ins);
 
 /**
@@ -467,6 +588,9 @@ bool BTSYMBOLS(bt_adapter_is_support_le)(bt_instance_t *ins);
  * @return false - not support.
  */
 bool BTSYMBOLS(bt_adapter_is_support_leaudio)(bt_instance_t *ins);
+=======
+bool bt_adapter_is_support_le(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get LE adapter address
@@ -476,7 +600,11 @@ bool BTSYMBOLS(bt_adapter_is_support_leaudio)(bt_instance_t *ins);
  * @param[out] type - LE address type.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_get_le_address)(bt_instance_t *ins, bt_address_t *addr, ble_addr_type_t *type);
+=======
+bt_status_t bt_adapter_get_le_address(bt_instance_t *ins, bt_address_t *addr, ble_addr_type_t *type);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set LE adapter private address
@@ -485,17 +613,28 @@ bt_status_t BTSYMBOLS(bt_adapter_get_le_address)(bt_instance_t *ins, bt_address_
  * @param addr - LE address.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_set_le_address)(bt_instance_t *ins, bt_address_t *addr);
+=======
+bt_status_t bt_adapter_set_le_address(bt_instance_t *ins, bt_address_t *addr);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set Le identity address
  *
  * @param ins - bluetooth client instance.
  * @param addr Le identity address
+<<<<<<< HEAD
  * @param is_public - true:public, false:static
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_set_le_identity_address)(bt_instance_t *ins, bt_address_t *addr, bool is_public);
+=======
+ * @param public - true:public, false:static
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t bt_adapter_set_le_identity_address(bt_instance_t *ins, bt_address_t *addr, bool public);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set LE adapter io capability
@@ -504,7 +643,11 @@ bt_status_t BTSYMBOLS(bt_adapter_set_le_identity_address)(bt_instance_t *ins, bt
  * @param le_io_cap - LE adapter io capability
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_set_le_io_capability)(bt_instance_t *ins, uint32_t le_io_cap);
+=======
+bt_status_t bt_adapter_set_le_io_capability(bt_instance_t *ins, uint32_t le_io_cap);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get LE adapter io capability
@@ -512,7 +655,11 @@ bt_status_t BTSYMBOLS(bt_adapter_set_le_io_capability)(bt_instance_t *ins, uint3
  * @param ins - bluetooth client instance.
  * @return uint32_t - LE adapter io capability
  */
+<<<<<<< HEAD
 uint32_t BTSYMBOLS(bt_adapter_get_le_io_capability)(bt_instance_t *ins);
+=======
+uint32_t bt_adapter_get_le_io_capability(bt_instance_t *ins);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set Le adapter appearance
@@ -521,7 +668,11 @@ uint32_t BTSYMBOLS(bt_adapter_get_le_io_capability)(bt_instance_t *ins);
  * @param appearance - le appearance, zero is invalid.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
+<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_adapter_set_le_appearance)(bt_instance_t *ins, uint16_t appearance);
+=======
+bt_status_t bt_adapter_set_le_appearance(bt_instance_t *ins, uint16_t appearance);
+>>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get Le adapter appearance
@@ -529,6 +680,7 @@ bt_status_t BTSYMBOLS(bt_adapter_set_le_appearance)(bt_instance_t *ins, uint16_t
  * @param ins - bluetooth client instance.
  * @return uint16_t - le appearance, zero on adapter not enabled.
  */
+<<<<<<< HEAD
 uint16_t BTSYMBOLS(bt_adapter_get_le_appearance)(bt_instance_t *ins);
 
 /**
@@ -551,8 +703,16 @@ bt_status_t BTSYMBOLS(bt_adapter_set_afh_channel_classification)(bt_instance_t *
                                                                  uint16_t band_width, uint16_t number);
 
 bt_status_t BTSYMBOLS(bt_adapter_set_auto_sniff)(bt_instance_t *ins, bt_auto_sniff_params_t *params);
+=======
+uint16_t bt_adapter_get_le_appearance(bt_instance_t *ins);
+
+>>>>>>> bluetooth framework re-implement base
 #ifdef __cplusplus
 }
 #endif
 
+<<<<<<< HEAD
 #endif
+=======
+#endif
+>>>>>>> bluetooth framework re-implement base

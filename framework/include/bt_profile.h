@@ -20,6 +20,7 @@
 extern "C" {
 #endif
 
+<<<<<<< HEAD
 #define PROFILE_A2DP_NAME "A2DP-Src"
 #define PROFILE_A2DP_SINK_NAME "A2DP-Sink"
 #define PROFILE_AVRCP_CT_NAME "AVRCP-CT"
@@ -60,6 +61,13 @@ enum profile_id {
     PROFILE_LEAUDIO_MCS,
     PROFILE_LEAUDIO_TBS,
     PROFILE_LEAUDIO_VMICP,
+=======
+enum profile_id {
+    PROFILE_A2DP,
+    PROFILE_A2DP_SINK,
+    PROFILE_HFP_HF,
+    PROFILE_HFP_AG,
+>>>>>>> bluetooth framework re-implement base
     PROFILE_MAX
 };
 
@@ -67,4 +75,8 @@ enum profile_id {
 }
 #endif
 
+<<<<<<< HEAD
 #endif /* _BT_PROFILE_H__ */
+=======
+#endif /* _BT_PROFILE_H__ */
+>>>>>>> bluetooth framework re-implement base
