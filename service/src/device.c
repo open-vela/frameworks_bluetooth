@@ -1,0 +1,414 @@
+/****************************************************************************
+ *  Copyright (C) 2022 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+#include <nuttx/list.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "adapter_internel.h"
+#include "bluetooth.h"
+#include "bluetooth_define.h"
+#include "bt_addr.h"
+#include "bt_device.h"
+#include "device.h"
+#define LOG_TAG "device"
+#include "utils/log.h"
+
+enum device_flags {
+    NAME_SET = 0x01,
+    ALIAS_SET = 0x02,
+    LINKKEY_SET = 0x04,
+};
+
+typedef struct remote_device {
+    char name[BT_REM_NAME_MAX_LEN];
+    char alias[BT_REM_NAME_MAX_LEN];
+    bt_address_t addr;
+    ble_addr_type_t addr_type;
+    uint32_t device_class;
+    bt_transport_t transport;
+    bt_device_type_t device_type;
+    uint32_t acl_handle;
+    uint32_t sco_handle;
+    int8_t rssi;
+    struct {
+        bt_uuid_t *uuids;
+        uint16_t uuid_cnt;
+    } uuids;
+    uint8_t battery_level;
+    uint8_t hfp_volume;
+    uint8_t media_volume;
+    connection_state_t connection_state;
+    bond_state_t bond_state;
+    bool local_initiate_bond;
+    bt_128key_t link_key;
+    bt_link_key_type_t link_key_type;
+    bt_address_t identity_addr;
+    uint16_t appearance;
+    uint8_t smp_data[80];
+    ble_phy_type_t tx_phy;
+    ble_phy_type_t rx_phy;
+    // uint8_t scan_repetition_mode;
+    // uint16_t clock_offset;
+} remote_device_t;
+
+typedef struct bt_device {
+    remote_device_t remote;
+    bool is_temporary;
+    uint32_t flags;
+    uint8_t create_type;
+} bt_device_t;
+
+static bt_device_t *device_create(bt_address_t *addr, bt_transport_t transport, ble_addr_type_t addr_type)
+{
+    bt_device_t *device = malloc(sizeof(bt_device_t));
+
+    if (!device)
+        return NULL;
+
+    memset(device, 0, sizeof(bt_device_t));
+
+    strcpy((char *)device->remote.name, "");
+    strcpy((char *)device->remote.alias, "");
+    memcpy(&device->remote.addr, addr, sizeof(bt_address_t));
+    bt_addr_set_empty(&device->remote.identity_addr);
+    device->remote.transport = transport;
+    device->remote.addr_type = addr_type;
+    device->remote.connection_state = CONNECTION_STATE_DISCONNECTED;
+    device->remote.bond_state = BOND_STATE_NONE;
+    device->remote.uuids.uuids = NULL;
+    device->remote.uuids.uuid_cnt = 0;
+    device->is_temporary = true;
+
+    return device;
+}
+
+bt_device_t *br_device_create(bt_address_t *addr)
+{
+    return device_create(addr, BT_TRANSPORT_BREDR, BT_LE_ADDR_TYPE_UNKNOWN);
+}
+
+bt_device_t *le_device_create(bt_address_t *addr, ble_addr_type_t addr_type)
+{
+    return device_create(addr, BT_TRANSPORT_BLE, addr_type);
+}
+
+void device_delete(bt_device_t *device)
+{
+    if (device->remote.uuids.uuids)
+        free(device->remote.uuids.uuids);
+    free(device);
+}
+
+bt_transport_t device_get_transport(bt_device_t *device)
+{
+    return device->remote.transport;
+}
+
+bt_address_t *device_get_address(bt_device_t *device)
+{
+    return &device->remote.addr;
+}
+
+bt_address_t *device_get_identity_address(bt_device_t *device)
+{
+    return &device->remote.identity_addr;
+}
+
+void device_set_identity_address(bt_device_t *device, bt_address_t *addr)
+{
+    memcpy(&device->remote.identity_addr, addr, sizeof(bt_address_t));
+}
+
+ble_addr_type_t device_get_address_type(bt_device_t *device)
+{
+    return device->remote.addr_type;
+}
+
+void device_set_device_type(bt_device_t *device, bt_device_type_t type)
+{
+    device->remote.device_type = type;
+}
+
+bt_device_type_t device_get_device_type(bt_device_t *device)
+{
+    return device->remote.device_type;
+}
+
+const char *device_get_name(bt_device_t *device)
+{
+    return (const char *)device->remote.name;
+}
+
+bool device_set_name(bt_device_t *device, const char *name)
+{
+    if (!strncmp(device->remote.name, name, BT_REM_NAME_MAX_LEN)) {
+        return false;
+    }
+
+    strncpy((char *)device->remote.name, name, BT_REM_NAME_MAX_LEN);
+    if (!strncmp(device->remote.alias, "", BT_REM_NAME_MAX_LEN))
+        strncpy((char *)device->remote.alias, name, BT_REM_NAME_MAX_LEN);
+
+    return true;
+}
+
+uint32_t device_get_device_class(bt_device_t *device)
+{
+    return device->remote.device_class;
+}
+
+bool device_set_device_class(bt_device_t *device, uint32_t cod)
+{
+    if (device->remote.device_class == cod) {
+        return false;
+    }
+
+    device->remote.device_class = cod;
+    return true;
+}
+
+uint16_t device_get_uuids_size(bt_device_t *device)
+{
+    return device->remote.uuids.uuid_cnt;
+}
+
+uint16_t device_get_uuids(bt_device_t *device, bt_uuid_t *uuids, uint16_t size)
+{
+    if (!device->remote.uuids.uuid_cnt)
+        return 0;
+
+    uint16_t min = size > device->remote.uuids.uuid_cnt ? device->remote.uuids.uuid_cnt : size;
+    memcpy(uuids, device->remote.uuids.uuids, sizeof(bt_uuid_t) * min);
+
+    return min;
+}
+
+bool device_set_uuids(bt_device_t *device, bt_uuid_t *uuids, uint16_t size)
+{
+    bool update = true;
+
+    if (!device->remote.uuids.uuid_cnt)
+        goto copy;
+
+    /* check uuid list is equal */
+    if (device->remote.uuids.uuid_cnt == size) {
+        bt_uuid_t *uuid1 = uuids;
+        for (int i = 0; i < size; i++) {
+            update = true;
+            bt_uuid_t *uuid2 = device->remote.uuids.uuids;
+            for (int j = 0; j < device->remote.uuids.uuid_cnt; j++) {
+                if (!bt_uuid_compare(uuid1, uuid2)) {
+                    update = false;
+                    break;
+                }
+                uuid2++;
+            }
+            uuid1++;
+        }
+    }
+
+    if (!update)
+        return false;
+
+    free(device->remote.uuids.uuids);
+copy:
+    device->remote.uuids.uuids = malloc(sizeof(bt_uuid_t) * size);
+    memcpy(device->remote.uuids.uuids, uuids, sizeof(bt_uuid_t) * size);
+    device->remote.uuids.uuid_cnt = size;
+
+    return true;
+}
+
+uint16_t device_get_appearance(bt_device_t *device)
+{
+    return device->remote.appearance;
+}
+
+void device_set_appearance(bt_device_t *device, uint16_t appearance)
+{
+    device->remote.appearance = appearance;
+}
+
+int8_t device_get_rssi(bt_device_t *device)
+{
+    return device->remote.rssi;
+}
+
+void device_set_rssi(bt_device_t *device, int8_t rssi)
+{
+    device->remote.rssi = rssi;
+}
+
+const char *device_get_alias(bt_device_t *device)
+{
+    return (const char *)device->remote.alias;
+}
+
+bool device_set_alias(bt_device_t *device, const char *alias)
+{
+    if (!strncmp(device->remote.alias, alias, BT_REM_NAME_MAX_LEN))
+        return false;
+
+    strncpy((char *)device->remote.alias, alias, BT_REM_NAME_MAX_LEN);
+    return true;
+}
+
+connection_state_t device_get_connection_state(bt_device_t *device)
+{
+    return device->remote.connection_state;
+}
+
+void device_set_connection_state(bt_device_t *device, connection_state_t state)
+{
+    device->remote.connection_state = state;
+}
+
+bool device_is_connected(bt_device_t *device)
+{
+    return device->remote.connection_state >= CONNECTION_STATE_CONNECTED;
+}
+
+bool device_is_encrypted(bt_device_t *device)
+{
+    return device->remote.connection_state > CONNECTION_STATE_CONNECTED;
+}
+
+uint16_t device_get_acl_handle(bt_device_t *device)
+{
+    return device->remote.acl_handle;
+}
+
+void device_set_acl_handle(bt_device_t *device, uint16_t handle)
+{
+    device->remote.acl_handle = handle;
+}
+
+void device_set_bond_initiate_local(bt_device_t *device, bool initiate_local)
+{
+    device->remote.local_initiate_bond = initiate_local;
+}
+
+bool device_is_bond_initiate_local(bt_device_t *device)
+{
+    return device->remote.local_initiate_bond;
+}
+
+bond_state_t device_get_bond_state(bt_device_t *device)
+{
+    return device->remote.bond_state;
+}
+
+void device_set_bond_state(bt_device_t *device, bond_state_t state)
+{
+    device->remote.bond_state = state;
+}
+
+bool device_is_bonded(bt_device_t *device)
+{
+    return device->remote.bond_state == BOND_STATE_BONDED;
+}
+
+uint8_t *device_get_link_key(bt_device_t *device)
+{
+    return device->remote.link_key;
+}
+
+void device_set_link_key(bt_device_t *device, bt_128key_t link_key)
+{
+    memcpy(device->remote.link_key, link_key, sizeof(bt_128key_t));
+}
+
+void device_delete_link_key(bt_device_t *device)
+{
+    memset(device->remote.link_key, 0, sizeof(bt_128key_t));
+}
+
+bt_link_key_type_t device_get_link_key_type(bt_device_t *device)
+{
+    return device->remote.link_key_type;
+}
+
+void device_set_link_key_type(bt_device_t *device, bt_link_key_type_t type)
+{
+    device->remote.link_key_type = type;
+}
+
+void device_set_le_phy(bt_device_t *device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+{
+    device->remote.tx_phy = tx_phy;
+    device->remote.rx_phy = rx_phy;
+}
+
+void device_get_le_phy(bt_device_t *device, ble_phy_type_t *tx_phy, ble_phy_type_t *rx_phy)
+{
+    *tx_phy = device->remote.tx_phy;
+    *rx_phy = device->remote.rx_phy;
+}
+
+void device_get_property(bt_device_t *device, remote_device_properties_t *prop)
+{
+    memcpy(&prop->addr, &device->remote.addr, sizeof(bt_address_t));
+    prop->addr_type = device->remote.addr_type;
+    strncpy(prop->name, device->remote.name, BT_REM_NAME_MAX_LEN);
+    strncpy(prop->alias, device->remote.alias, BT_REM_NAME_MAX_LEN);
+    prop->class_of_device = device->remote.device_class;
+    memcpy(prop->link_key, device->remote.link_key, 16);
+    prop->link_key_type = device->remote.link_key_type;
+    prop->device_type = device->remote.device_type;
+}
+
+static int linkkey_dump(bt_device_t *device, char *str)
+{
+    uint8_t *lk = device->remote.link_key;
+    uint8_t type = device->remote.link_key_type;
+
+    return sprintf(str, "%02x | %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+                   type, lk[0], lk[1], lk[2], lk[3], lk[4], lk[5], lk[6], lk[7], lk[8], lk[9], lk[10],
+                   lk[11], lk[12], lk[13], lk[14], lk[15]);
+}
+
+void device_dump(bt_device_t *device)
+{
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    char link_key_str[40] = { 0 };
+    char uuid_str[40] = { 0 };
+
+    bt_addr_ba2str(&device->remote.addr, addr_str);
+    printf("device: %s\n", addr_str);
+    printf("\tName: %s\n", device->remote.name);
+    printf("\tAlias: %s\n", device->remote.alias);
+    printf("\tClass: 0x%08x\n", device->remote.device_class);
+    printf("\tType: %d\n", device->remote.device_type);
+    printf("\tTransport: %d\n", device->remote.transport);
+    printf("\tRssi: %d\n", device->remote.rssi);
+    printf("\tBondState: %d\n", device->remote.bond_state);
+    printf("\tConnState: %d\n", device->remote.connection_state);
+    printf("\tisEnc: %d\n", device_is_encrypted(device));
+    linkkey_dump(device, link_key_str);
+    printf("\tLinkkey: %s\n", link_key_str);
+    if (device->remote.uuids.uuid_cnt) {
+        printf("\tUUIDs:\n");
+        bt_uuid_t *uuid = device->remote.uuids.uuids;
+        for (int i = 0; i < device->remote.uuids.uuid_cnt; i++) {
+            bt_uuid_to_string(uuid, uuid_str, 40);
+            printf("\t\tuuid[%-2d]: %s\n", i, uuid_str);
+            uuid++;
+        }
+    }
+}

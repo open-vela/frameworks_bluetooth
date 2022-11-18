@@ -1,0 +1,59 @@
+/****************************************************************************
+ *  Copyright (C) 2022 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+#ifndef __BT_SAL_BLUELET_H__
+#define __BT_SAL_BLUELET_H__
+
+#include "stack_adapter_common.h"
+
+#include "bt_device.h"
+#include "bt_hfp_ag.h"
+#include "utils/log.h"
+
+static inline profile_connection_state_t bluelet_profile_connection_state(SERVICE_PROFILE_CONNECTION_STATE state)
+{
+    switch (state) {
+    case SERVICE_PROFILE_DISCONNECTED:
+        return PROFILE_STATE_DISCONNECTED;
+    case SERVICE_PROFILE_CONNECTING:
+        return PROFILE_STATE_CONNECTING;
+    case SERVICE_PROFILE_CONNECTED:
+        return PROFILE_STATE_CONNECTED;
+    case SERVICE_PROFILE_DISCONNECTING:
+        return PROFILE_STATE_DISCONNECTING;
+    default:
+        BT_LOGE("Unknow connection state: %d", state);
+        return PROFILE_STATE_DISCONNECTED;
+    }
+}
+
+#if defined(CONFIG_BLUETOOTH_HFP_AG) || defined(CONFIG_BLUETOOTH_HFP_HF)
+static inline hfp_audio_state_t bluelet_hf_audio_state(SERVICE_HFP_SCO_STATE state)
+{
+    switch (state) {
+    case SERVICE_HFP_SCO_CONNECTED:
+        return HFP_AUDIO_STATE_CONNECTED;
+    case SERVICE_HFP_SCO_DISCONNECTED:
+        return HFP_AUDIO_STATE_DISCONNECTED;
+    case SERVICE_HFP_SCO_UNKNOWN:
+        return HFP_AUDIO_STATE_DISCONNECTED;
+    default:
+        BT_LOGE("Unknow audio state: %d", state);
+        return HFP_AUDIO_STATE_DISCONNECTED;
+    }
+}
+#endif
+
+#endif /* __BT_SAL_BLUELET_H__ */

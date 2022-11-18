@@ -1,0 +1,199 @@
+#
+# Copyright (C) 2020 Xiaomi Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+config BLUETOOTH
+	bool "Enable Framework Bluetooth"
+	default n
+	select LIBUV
+	select LIBUV_EXTENSION
+
+if BLUETOOTH
+config BLUETOOTH_BREDR_SUPPORT
+	bool "BREDR support"
+	default y
+
+config BLUETOOTH_BLE_SUPPORT
+	bool "LE support"
+	default n
+
+config BLUETOOTH_HCI_BRIDGE_MODE
+	bool "HCI bridge mode"
+	default n
+
+config BLUETOOTH_GATT
+	bool "Generic ATT profile support"
+	default y
+
+config BLUETOOTH_A2DP_SOURCE
+	bool "A2DP source profile support"
+	default n
+
+config BLUETOOTH_A2DP_SINK
+	bool "A2DP sink profile support"
+	default n
+
+config BLUETOOTH_HFP_HF
+	bool "HFP hands-free profile support"
+	default n
+if BLUETOOTH_HFP_HF
+config HFP_HF_MAX_CONNECTIONS
+	int "HFP hands-free max connections"
+	default 1
+endif
+
+config BLUETOOTH_HFP_AG
+	bool "HFP audio-gateway profile support"
+	default n
+if BLUETOOTH_HFP_AG
+config HFP_AG_MAX_CONNECTIONS
+	int "HFP audio-gateway max connections"
+	default 1
+endif
+
+config BLUETOOTH_SPP
+	bool "Serial port profile support"
+	default n
+
+config BLUETOOTH_PAN
+	bool "Personal area network profile support"
+	default n
+
+config BLUETOOTH_FRAMEWORK
+	bool "Enable bluetooth framework api"
+	default n
+	help
+		Enable bluetooth framework api
+
+if BLUETOOTH_FRAMEWORK
+choice
+  prompt "select bluetooth framework type"
+  default BLUETOOTH_FRAMEWORK_LOCAL
+  config BLUETOOTH_FRAMEWORK_LOCAL
+  	bool "use local api without ipc"
+  config BLUETOOTH_FRAMEWORK_BINDER_IPC
+  	bool "use binder ipc api"
+endchoice
+endif #BLUETOOTH_FRAMEWORK
+
+config BLUETOOTH_OBELISK
+	bool "Enable bluetooth service named OBELISK"
+	default n
+	help
+		Enable bluetooth obelisk
+
+if BLUETOOTH_OBELISK
+config BLUETOOTH_SERVER
+    bool "Bluetooth server enable"
+    default n
+    help
+        Enable bluetooth server
+
+if BLUETOOTH_SERVER
+config BLUETOOTH_SERVER_NAME
+	string "Blutooth server name"
+    default "bluetoothd"
+    help
+        Bluetooth default server name
+
+config BLUETOOTH_IPC_JOIN_LOOP
+	bool "Let ipc join service loop"
+	default n
+	help
+		Bluetooth ipc join service loop
+endif #BLUETOOTH_SERVER
+
+config OBELISK_LOG_LEVEL
+    int "Bluetooth service log level"
+    default 7
+    help
+        Set bt service log level <0~7>
+
+config OBELISK_HCI_UART_NAME
+	string "HCI uart driver name"
+	default "/dev/ttyBT0"
+
+choice
+  prompt "select service thread loop"
+  default OBELISK_LIBUV_LOOP
+  config OBELISK_LIBUV_LOOP
+  	bool "thread loop use uv loop"
+endchoice
+
+if BLUETOOTH_BREDR_SUPPORT
+choice
+  prompt "select br stack"
+  default OBELISK_BREDR_BLUELET
+  config OBELISK_BREDR_BLUELET
+  	bool "classic bt stack use bluelet"
+  	select LIB_BLUELET
+  config OBELISK_NOT_SUPPORT_CLASSIC_BT
+  	bool "not support classic bt stack"
+endchoice
+endif #BLUETOOTH_BREDR_SUPPORT
+
+if BLUETOOTH_BLE_SUPPORT
+choice
+  prompt "select le stack"
+  default OBELISK_LE_BLUELET
+  config OBELISK_LE_BLUELET
+  	bool "ble stack use bluelet"
+	select LIB_BLUELET
+  config OBELISK_NOT_SUPPORT_LE
+  	bool "not support ble stack"
+endchoice
+
+config OBELISK_LE_SCAN_ENABLE
+	bool "Enable Bluetooth le scan"
+	default n
+	help
+		Enable Bluetooth le scan
+
+config OBELISK_LE_SCANNER_MAX_NUM
+    int "LE scanner max register number"
+    default 2
+    help
+        le scanner max register number
+
+config OBELISK_LE_ADV_ENABLE
+	bool "Enable Bluetooth le advertising"
+	default n
+	help
+		Enable Bluetooth le advertising
+
+config OBELISK_LE_ADVERTISER_MAX_NUM
+    int "LE advertiser max register number"
+    default 2
+    help
+        Le scanner max register number
+
+if BLUETOOTH_HCI_BRIDGE_MODE
+config OBELISK_LE_HCI_UART_NAME
+	string "LE hci uart driver name"
+	default "/dev/ttyBLE0"
+endif #BLUETOOTH_HCI_BRIDGE_MODE
+
+config OBELISK_LE_AUDIO_SUPPORT
+	bool "LE audio support"
+	default n
+endif #BLUETOOTH_BLE_SUPPORT
+endif #BLUETOOTH_OBELISK
+
+config BLUETOOTH_TOOLS
+    bool "Enable bluetooth profile test tools"
+    default n
+	select BLUETOOTH_FRAMEWORK
+
+endif #BLUETOOTH
