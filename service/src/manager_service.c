@@ -15,6 +15,7 @@
  ***************************************************************************/
 
 #include <nuttx/list.h>
+<<<<<<< HEAD
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +26,18 @@
 #include "index_allocator.h"
 #include "manager_service.h"
 #include "service_manager.h"
+=======
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+#include "bt_status.h"
+#include "manager_service.h"
+#include "service_manager.h"
+#include "index_allocator.h"
+>>>>>>> bluetooth framework re-implement base
 #include "utils/log.h"
 
 #define BT_INST_HOST_NAME_LEN 64
@@ -36,7 +49,11 @@ typedef struct bt_instance {
     uint32_t handle;
     uint8_t ins_type;
     uint8_t host_name[BT_INST_HOST_NAME_LEN + 1];
+<<<<<<< HEAD
     uint32_t remote;
+=======
+    void *remote; /* reserved for callback binder*/
+>>>>>>> bluetooth framework re-implement base
     void *usr_data;
 } bt_instance_impl_t;
 
@@ -88,9 +105,12 @@ bt_status_t manager_create_instance(uint32_t handle, uint32_t type,
     if (ins)
         return BT_STATUS_FAIL;
 
+<<<<<<< HEAD
     if (g_instance_id == NULL)
         g_instance_id = index_allocator_create(10);
 
+=======
+>>>>>>> bluetooth framework re-implement base
     ins = malloc(sizeof(bt_instance_impl_t));
     if (!ins)
         return BT_STATUS_NOMEM;
@@ -118,7 +138,11 @@ bt_status_t manager_get_instance(const char *name, pid_t pid, uint32_t *handle)
     bt_instance_impl_t *ins = manager_find_instance(name, pid);
     if (ins == NULL) {
         *handle = 0;
+<<<<<<< HEAD
         return BT_STATUS_DEVICE_NOT_FOUND;
+=======
+        return BT_STATUS_NOT_FOUND;
+>>>>>>> bluetooth framework re-implement base
     }
 
     *handle = ins->handle;
@@ -139,11 +163,18 @@ bt_status_t manager_delete_instance(uint32_t app_id)
     return BT_STATUS_SUCCESS;
 }
 
+<<<<<<< HEAD
 #if defined(CONFIG_BLUETOOTH_OBELISK) && defined(__NuttX__)
 bt_status_t manager_start_service(uint32_t app_id, enum profile_id profile)
 {
     bt_instance_impl_t *ins = manager_find_instance_by_appid(app_id);
     if (!ins)
+=======
+bt_status_t manager_start_service(uint32_t app_id, enum profile_id profile)
+{
+    bt_instance_impl_t *ins = manager_find_instance_by_appid(app_id);
+    if (ins)
+>>>>>>> bluetooth framework re-implement base
         return BT_STATUS_NOT_FOUND;
 
     return service_manager_control(profile, CONTROL_CMD_START);
@@ -152,12 +183,19 @@ bt_status_t manager_start_service(uint32_t app_id, enum profile_id profile)
 bt_status_t manager_stop_service(uint32_t app_id, enum profile_id profile)
 {
     bt_instance_impl_t *ins = manager_find_instance_by_appid(app_id);
+<<<<<<< HEAD
     if (!ins)
+=======
+    if (ins)
+>>>>>>> bluetooth framework re-implement base
         return BT_STATUS_NOT_FOUND;
 
     return service_manager_control(profile, CONTROL_CMD_STOP);
 }
+<<<<<<< HEAD
 #endif
+=======
+>>>>>>> bluetooth framework re-implement base
 
 void bluetooth_permission_check(uint32_t app_id)
 {
@@ -165,11 +203,16 @@ void bluetooth_permission_check(uint32_t app_id)
 
 void manager_init(void)
 {
+<<<<<<< HEAD
     if (g_instance_id == NULL)
         g_instance_id = index_allocator_create(10);
 #if defined(CONFIG_BLUETOOTH_OBELISK) && defined(__NuttX__)
     service_manager_init();
 #endif
+=======
+    g_instance_id = index_allocator_create(10);
+    service_manager_init();
+>>>>>>> bluetooth framework re-implement base
 }
 
 void manager_cleanup(void)
@@ -184,8 +227,13 @@ void manager_cleanup(void)
     }
 
     index_allocator_delete(g_instance_id);
+<<<<<<< HEAD
     g_instance_id = NULL;
 #if defined(CONFIG_BLUETOOTH_OBELISK) && defined(__NuttX__)
     service_manager_cleanup();
 #endif
 }
+=======
+    service_manager_cleanup();
+}
+>>>>>>> bluetooth framework re-implement base

@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2023 Xiaomi Corporation
+ *  Copyright (C) 2022 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
+#include <stdint.h>
+#include <time.h>
 
-#include <stdlib.h>
-#include <string.h>
+uint64_t get_os_timestamp_us(void)
+{
+    struct timespec ts;
 
-#include "bluetooth.h"
-<<<<<<< HEAD
-=======
-#include "bt_tools.h"
->>>>>>> bluetooth framework re-implement base
+    clock_gettime(CLOCK_BOOTTIME, &ts);
 
-bool phy_is_vaild(uint8_t phy);
-int le_addr_type(const char *str, ble_addr_type_t *type);
-bool bttool_allocator(void **data, uint32_t size);
-<<<<<<< HEAD
-uint32_t get_timestamp_ms(void);
-=======
->>>>>>> bluetooth framework re-implement base
+    return (uint64_t)(((uint64_t)ts.tv_sec * 1000000L) + ((uint64_t)ts.tv_nsec / 1000));
+}

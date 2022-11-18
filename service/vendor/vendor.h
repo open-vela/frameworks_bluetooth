@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2023 Xiaomi Corporation
+ *  Copyright (C) 2022 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
+#ifndef _BT_CONTROLLER_VENDOR_H__
+#define _BT_CONTROLLER_VENDOR_H__
 
-#include <stdlib.h>
-#include <string.h>
-
-#include "bluetooth.h"
-<<<<<<< HEAD
-=======
-#include "bt_tools.h"
->>>>>>> bluetooth framework re-implement base
-
-bool phy_is_vaild(uint8_t phy);
-int le_addr_type(const char *str, ble_addr_type_t *type);
-bool bttool_allocator(void **data, uint32_t size);
-<<<<<<< HEAD
-uint32_t get_timestamp_ms(void);
-=======
->>>>>>> bluetooth framework re-implement base
+#endif /* _BT_CONTROLLER_VENDOR_H__ */
