@@ -40,6 +40,9 @@
 #include <connectivity/bt.h>
 #include <uORB/uORB.h>
 #endif
+#ifdef CONFIG_KVDB
+#include <kvdb.h>
+#endif
 #include "stack_adapter_hfp.h"
 #include "stack_adapter_service_base.h"
 
@@ -547,11 +550,11 @@ bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks
                         BT_HFP_BRSF_HF_ENHANCED_CALLSTATUS | BT_HFP_BRSF_HF_NREC |
                         BT_HFP_BRSF_HF_3WAYCALL | BT_HFP_BRSF_HF_CLIP |
                         BT_HFP_BRSF_HF_BVRA; //BT_HFP_BRSF_HF_BVRA;
-
+#ifdef CONFIG_KVDB
     if (property_get_bool("persist.bluetooth.hfp.codec_nego", true)) {
         features |= BT_HFP_BRSF_HF_CODEC_NEGOTIATION;
     }
-
+#endif
     if (g_hfp_service.started)
         return BT_RESULT_SUCCESS;
 
