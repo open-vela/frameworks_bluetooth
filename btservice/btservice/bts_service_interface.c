@@ -79,7 +79,9 @@ static bt_result_code bts_if_init(void* handle, bt_service_if_callbacks* callbac
     if (!service) {
         service = (bt_service_t*)malloc(sizeof(bt_service_t));
         assert(service);
-#ifndef CONFIG_ARCH_SIM
+#if defined(CONFIG_ARCH_SIM) && defined(CONFIG_BLUETOOTH_A2DP_IPC_RPSMG_SERVER)
+        service->orb_fd = -1;
+#else
 #ifdef CONFIG_UORB
         service->orb_fd = orb_advertise_multi_queue_persist(ORB_ID(bt_stack_state),
                                                             NULL, NULL, 1);
