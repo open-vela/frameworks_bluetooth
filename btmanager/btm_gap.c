@@ -33,13 +33,13 @@
 
 #include "log.h"
 
-#define BT_GAP_INTERFACE(P_IF, MOTHOD, RET, ...)                 \
-    do {                                                         \
-        if ((P_IF) && (P_IF)->MOTHOD) {                          \
-            RET = (P_IF)->MOTHOD(__VA_ARGS__);                   \
-        } else {                                                 \
-            BT_LOGE("%s GAP interface is NULL", __func__);       \
-        }                                                        \
+#define BT_GAP_INTERFACE(P_IF, MOTHOD, RET, ...)           \
+    do {                                                   \
+        if ((P_IF) && (P_IF)->MOTHOD) {                    \
+            RET = (P_IF)->MOTHOD(__VA_ARGS__);             \
+        } else {                                           \
+            BT_LOGE("%s GAP interface is NULL", __func__); \
+        }                                                  \
     } while (0)
 
 typedef struct {
@@ -287,6 +287,36 @@ static void btm_update_ble_bonede_device_callback(void* gap_handle, ble_keys_t* 
     context->gap_callbacks->update_ble_bonede_device_cb(gap_handle, bonded_device_list, count_in);
 }
 
+static void btm_ble_l2cap_connection_state_callback(void* gap_handle, bt_address remote_addr, ble_l2cap_state state, uint16_t psm, uint16_t cid, uint16_t mtu, uint16_t mps)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->ble_l2cap_connection_state_cb))
+        return;
+    context->gap_callbacks->ble_l2cap_connection_state_cb(gap_handle, remote_addr, state, psm, cid, mtu, mps);
+}
+
+static void btm_ble_packet_received_callback(void* gap_handle, bt_address remote_addr, uint16_t cid, uint8_t* packet, uint16_t packet_size)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->ble_packet_received_cb))
+        return;
+    context->gap_callbacks->ble_packet_received_cb(gap_handle, remote_addr, cid, packet, packet_size);
+}
+
+static void btm_ble_packet_sent_callback(void* gap_handle, bt_address remote_addr, uint16_t cid)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->ble_packet_received_cb))
+        return;
+    context->gap_callbacks->ble_packet_sent_cb(gap_handle, remote_addr, cid);
+}
+
 static const btm_gap_callbacks_t service_callbacks = {
     .size = sizeof(btm_gap_callbacks_t),
     .bt_connection_state_changed_callback_cb = btm_connection_state_changed_callback,
@@ -311,6 +341,9 @@ static const btm_gap_callbacks_t service_callbacks = {
     .ble_adv_stopped_cb = btm_ble_adv_stopped_callback,
     .ble_connection_updated_cb = btm_ble_connection_updated_callback,
     .update_ble_bonede_device_cb = btm_update_ble_bonede_device_callback,
+    .ble_l2cap_connection_state_cb = btm_ble_l2cap_connection_state_callback,
+    .ble_packet_received_cb = btm_ble_packet_received_callback,
+    .ble_packet_sent_cb = btm_ble_packet_sent_callback,
 };
 
 static bt_result_code btm_gap_register_callbacks(void* manager_handle, void** gap_handle, const btm_gap_callbacks_t* callbacks)
@@ -713,21 +746,21 @@ static bt_result_code btm_ble_set_phy(void* gap_handle, bt_device_t* device, ble
     return ret;
 }
 
-static bt_result_code btm_ble_add_private_channel(void* gap_handle, uint16_t private_cid)
+static bt_result_code btm_ble_listen_l2cap_channel(void* gap_handle, uint8_t psm, ble_l2cap_config_option_t* opt)
 {
     bt_result_code ret = BT_RESULT_FAILED;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, ble_add_private_channel, ret, gap_handle, private_cid);
+    BT_GAP_INTERFACE(context->service_interface, ble_listen_l2cap_channel, ret, gap_handle, psm, opt);
     return ret;
 }
 
-static bt_result_code btm_ble_send_packet(void* gap_handle, bt_device_t* device, uint16_t private_cid, uint8_t* packet, uint16_t packet_size)
+static bt_result_code btm_ble_send_packet(void* gap_handle, bt_device_t* device, uint16_t cid, uint8_t* packet, uint16_t packet_size)
 {
     bt_result_code ret = BT_RESULT_FAILED;
     CHECK_PTR_RETURN(gap_handle, ret);
     gap_context_t* context = (gap_context_t*)gap_handle;
-    BT_GAP_INTERFACE(context->service_interface, ble_send_packet, ret, gap_handle, device, private_cid, packet, packet_size);
+    BT_GAP_INTERFACE(context->service_interface, ble_send_packet, ret, gap_handle, device, cid, packet, packet_size);
     return ret;
 }
 static int btm_ble_get_bonded_devices(void* gap_handle, bt_device_t* device_list, int max_out)
@@ -849,7 +882,7 @@ static btm_gap_interface_t gap_interface = {
     .ble_add_resolving_list = btm_ble_add_resolving_list,
     .ble_remove_resolving_list = btm_ble_remove_resolving_list,
     .ble_set_phy = btm_ble_set_phy,
-    .ble_add_private_channel = btm_ble_add_private_channel,
+    .ble_listen_l2cap_channel = btm_ble_listen_l2cap_channel,
     .ble_send_packet = btm_ble_send_packet,
     .enter_bluetooth_test_mode = btm_enter_bluetooth_test_mode,
     .bt_set_local_address = btm_set_local_address,

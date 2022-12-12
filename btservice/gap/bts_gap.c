@@ -74,7 +74,9 @@ typedef enum {
     GAP_BLE_ADDRESS,
     GAP_BLE_PHY_UPDATE,
     GAP_BLE_IRK,
+    GAP_BLE_L2CAP_CONN_STATE,
     GAP_BLE_PACKET_RECEIVED,
+    GAP_BLE_PACKET_SENT,
     GAP_BR_LINK_KEY_CHANGED,
     GAP_DELETE_LINK_KEY_CHANGED,
     GAP_EVENT_MAX_ID,
@@ -114,7 +116,7 @@ typedef struct {
 } phy_update_changed_t;
 
 typedef struct {
-    uint16_t private_cid;
+    uint16_t cid;
     uint8_t* packet;
     uint16_t packet_size;
 } ble_packet_receive_t;
@@ -124,6 +126,14 @@ typedef struct {
     uint16_t peripheral_latency;
     uint16_t supervision_timeout;
 } ble_connection_update_t;
+
+typedef struct {
+    ble_l2cap_state state;
+    uint16_t psm;
+    uint16_t cid;
+    uint16_t mtu;
+    uint16_t mps;
+} ble_l2cap_conn_state_t;
 
 typedef struct {
     bt_address bd_addr;
@@ -155,6 +165,7 @@ typedef struct {
         ble_packet_receive_t ble_packet_receive;
         bt_device_t device;
         ble_connection_update_t ble_conn_update;
+        ble_l2cap_conn_state_t ble_l2cap_conn;
     } data;
 } gap_event_data_t;
 
@@ -253,7 +264,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
     }
     case GAP_BOND_STATE_CHANGED: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->bond_state_changed_cb)) {
-            bt_device_t new_device = {0};
+            bt_device_t new_device = { 0 };
 
             memcpy(new_device.addr, gap_msg->event_data.bd_addr, BT_ADDR_LENGTH);
             g_bts_gap_callbacks->bond_state_changed_cb(&new_device, gap_msg->event_data.data.bond_state);
@@ -362,6 +373,29 @@ static void process_loop_in_gap(void* data, size_t data_size)
         }
         break;
     }
+    case GAP_BLE_L2CAP_CONN_STATE: {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->ble_l2cap_connection_state_cb)) {
+            g_bts_gap_callbacks->ble_l2cap_connection_state_cb(gap_msg->event_data.bd_addr,
+                gap_msg->event_data.data.ble_l2cap_conn.state, gap_msg->event_data.data.ble_l2cap_conn.psm, gap_msg->event_data.data.ble_l2cap_conn.cid,
+                gap_msg->event_data.data.ble_l2cap_conn.mtu, gap_msg->event_data.data.ble_l2cap_conn.mps);
+        }
+        break;
+    }
+    case GAP_BLE_PACKET_RECEIVED: {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->ble_packet_received_cb)) {
+            g_bts_gap_callbacks->ble_packet_received_cb(
+                gap_msg->event_data.bd_addr, gap_msg->event_data.data.ble_packet_receive.cid,
+                gap_msg->event_data.data.ble_packet_receive.packet, gap_msg->event_data.data.ble_packet_receive.packet_size);
+            free(gap_msg->event_data.data.ble_packet_receive.packet);
+        }
+        break;
+    }
+    case GAP_BLE_PACKET_SENT: {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->ble_packet_sent_cb)) {
+            g_bts_gap_callbacks->ble_packet_sent_cb(gap_msg->event_data.bd_addr, (uint16_t)(gap_msg->event_data.valueint1));
+        }
+        break;
+    }
     default: {
         // BT_LOGD("%s, %d not handle", __func__, gap_msg->event);
         break;
@@ -372,7 +406,7 @@ static void process_loop_in_gap(void* data, size_t data_size)
 static void handle_msg_received(bt_profile_id id, void* data, size_t size)
 {
     process_loop_in_gap(data, size);
-    gap_msg_destory((gap_msg_t *)data);
+    gap_msg_destory((gap_msg_t*)data);
 }
 
 static void gap_send_message(gap_msg_t* msg)
@@ -810,17 +844,59 @@ static void adapter_ble_irk_callback(bt_common_key irk, bt_address ble_addr,
     gap_send_message(msg);
 }
 
-static void adapter_ble_packet_received_callback(bt_address remote_addr, uint16_t private_cid,
-    uint8_t* packet, uint16_t packet_size)
+static void adapter_ble_l2cap_connected_callback(bt_address remote_addr, struct SERVICE_BLE_L2CAP_CONN* conn)
 {
-    gap_msg_t* msg = gap_msg_new(GAP_BLE_PACKET_RECEIVED);
+    gap_msg_t* msg = gap_msg_new(GAP_BLE_L2CAP_CONN_STATE);
     if (!msg)
         return;
 
     memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
-    msg->event_data.data.ble_packet_receive.packet = packet;
+    msg->event_data.data.ble_l2cap_conn.state = BLE_LECAP_STATE_CONNECTED;
+    msg->event_data.data.ble_l2cap_conn.cid = conn->cid;
+    msg->event_data.data.ble_l2cap_conn.psm = conn->psm;
+    msg->event_data.data.ble_l2cap_conn.mtu = conn->incoming.mtu;
+    msg->event_data.data.ble_l2cap_conn.mps = conn->incoming.le_mps;
+    gap_send_message(msg);
+}
+
+static void adapter_ble_l2cap_disconnected_callback(bt_address remote_addr, uint16_t cid)
+{
+    gap_msg_t* msg = gap_msg_new(GAP_BLE_L2CAP_CONN_STATE);
+    if (!msg)
+        return;
+
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
+    msg->event_data.data.ble_l2cap_conn.state = BLE_LECAP_STATE_DISCONNECTED;
+    msg->event_data.data.ble_l2cap_conn.cid = cid;
+    gap_send_message(msg);
+}
+
+static void adapter_ble_packet_received_callback(bt_address remote_addr, uint16_t cid, uint8_t* packet, uint16_t packet_size)
+{
+    if (packet_size == 0) {
+        return;
+    }
+    gap_msg_t* msg = gap_msg_new(GAP_BLE_PACKET_RECEIVED);
+    if (!msg)
+        return;
+
+    uint8_t* payload = (uint8_t*)malloc(packet_size);
+    memcpy(payload, packet, packet_size);
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
+    msg->event_data.data.ble_packet_receive.packet = payload;
     msg->event_data.data.ble_packet_receive.packet_size = packet_size;
-    msg->event_data.data.ble_packet_receive.private_cid = private_cid;
+    msg->event_data.data.ble_packet_receive.cid = cid;
+    gap_send_message(msg);
+}
+
+static void adapter_ble_packet_sent_callback(bt_address remote_addr, uint16_t cid)
+{
+    gap_msg_t* msg = gap_msg_new(GAP_BLE_PACKET_SENT);
+    if (!msg)
+        return;
+
+    memcpy(msg->event_data.bd_addr, remote_addr, BT_ADDR_LENGTH);
+    msg->event_data.valueint1 = cid;
     gap_send_message(msg);
 }
 
@@ -874,6 +950,9 @@ GAP_CALLBACKS_S g_gap_callback = {
     .gap_ble_phy_update_cb = adapter_ble_phy_update_callback,
     .gap_ble_irk_cb = adapter_ble_irk_callback,
     .gap_ble_packet_received_cb = adapter_ble_packet_received_callback,
+    .gap_ble_packet_sent_cb = adapter_ble_packet_sent_callback,
+    .gap_ble_l2cap_disconnected_cb = adapter_ble_l2cap_disconnected_callback,
+    .gap_ble_l2cap_connected_cb = adapter_ble_l2cap_connected_callback,
     .gap_ble_connection_updated_cb = adapter_ble_connection_updated_callback,
 };
 
@@ -1455,21 +1534,20 @@ bt_result_code bts_ble_set_phy(bt_device_t* device, ble_phy_type tx_phy, ble_phy
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_add_private_channel(uint16_t private_cid)
+bt_result_code bts_ble_listen_l2cap_channel(uint8_t psm, ble_l2cap_config_option_t* opt)
 {
-    SERVICE_BT_STATUS ret = service_adapter_gap_ble_add_private_channel(private_cid);
+    SERVICE_BT_STATUS ret = service_adapter_gap_ble_add_public_channel(psm, (SERVICE_L2CAP_CONFIG_OPTION_S*)opt);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
         return BT_RESULT_FAILED;
     }
     return BT_RESULT_SUCCESS;
 }
-bt_result_code bts_ble_send_packet(bt_device_t* device, uint16_t private_cid,
-    uint8_t* packet, uint16_t packet_size)
+bt_result_code bts_ble_send_packet(bt_device_t* device, uint16_t cid, uint8_t* packet, uint16_t packet_size)
 {
     if (!device)
         return BT_RESULT_FAILED;
-    SERVICE_BT_STATUS ret = service_adapter_gap_ble_send_packet(device->addr, private_cid, packet, packet_size);
+    SERVICE_BT_STATUS ret = service_adapter_gap_ble_send_packet(device->addr, cid, packet, packet_size);
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("%s, ret:%" PRIu32, __func__, ret);
         return BT_RESULT_FAILED;
