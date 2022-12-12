@@ -112,9 +112,9 @@ static bool gap_is_handle_valid(void* gap_handle)
 
 static uint8_t gen_ble_adv_id(void)
 {
-    static uint8_t adv_id  = 0;
-    bts_leadv_hdl_t* handle ;
-    bts_leadv_hdl_t* tmp ;
+    static uint8_t adv_id = 0;
+    bts_leadv_hdl_t* handle;
+    bts_leadv_hdl_t* tmp;
 
     for (uint8_t i = 0; i < BLE_MAX_ADV_NUM; i++) {
         bool found = false;
@@ -286,6 +286,21 @@ void gap_if_update_ble_bonded_device_callback(ble_keys_t* bonded_device_list, ui
     BT_GAP_CB(update_ble_bonede_device_cb, bonded_device_list, count_in);
 }
 
+static void gap_if_ble_l2cap_connection_state_callback(bt_address remote_addr, ble_l2cap_state state, uint16_t psm, uint16_t cid, uint16_t mtu, uint16_t mps)
+{
+    BT_GAP_CB(ble_l2cap_connection_state_cb, remote_addr, state, psm, cid, mtu, mps);
+}
+
+static void gap_if_ble_packet_received_callback(bt_address remote_addr, uint16_t cid, uint8_t* packet, uint16_t packet_size)
+{
+    BT_GAP_CB(ble_packet_received_cb, remote_addr, cid, packet, packet_size);
+}
+
+static void gap_if_ble_packet_sent_callback(bt_address remote_addr, uint16_t cid)
+{
+    BT_GAP_CB(ble_packet_sent_cb, remote_addr, cid);
+}
+
 bts_gap_callback_t bts_gap_callbacks = {
     .size = sizeof(bts_gap_callback_t),
     .adapter_state_changed_cb = gap_if_adapter_state_changed_callback,
@@ -307,6 +322,9 @@ bts_gap_callback_t bts_gap_callbacks = {
     .link_connect_request_cb = gap_if_link_connect_request_callback,
     .ble_connection_updated_cb = gap_if_ble_connection_updated_callback,
     .update_ble_bonede_device_cb = gap_if_update_ble_bonded_device_callback,
+    .ble_l2cap_connection_state_cb = gap_if_ble_l2cap_connection_state_callback,
+    .ble_packet_received_cb = gap_if_ble_packet_received_callback,
+    .ble_packet_sent_cb = gap_if_ble_packet_sent_callback,
 };
 
 bt_result_code gap_service_init()
@@ -315,7 +333,7 @@ bt_result_code gap_service_init()
         g_gap_service = (bt_gap_service_t*)malloc(sizeof(bt_gap_service_t));
         gap_init(&bts_gap_callbacks);
         list_initialize(&g_gap_service->handle_list);
-    }  else
+    } else
         BT_LOGD("%s service had already been initialized: %p", __func__, g_gap_service);
 
     return BT_RESULT_SUCCESS;
@@ -741,20 +759,20 @@ static bt_result_code bts_if_ble_set_phy(void* gap_handle, bt_device_t* device, 
     ret = bts_ble_set_phy(device, tx_phy, rx_phy);
     return ret;
 }
-static bt_result_code bts_if_ble_add_private_channel(void* gap_handle, uint16_t private_cid)
+static bt_result_code bts_if_ble_listen_l2cap_channel(void* gap_handle, uint8_t psm, ble_l2cap_config_option_t* opt)
 {
     bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
-    ret = bts_ble_add_private_channel(private_cid);
+    ret = bts_ble_listen_l2cap_channel(psm, opt);
     return ret;
 }
-static bt_result_code bts_if_ble_send_packet(void* gap_handle, bt_device_t* device, uint16_t private_cid, uint8_t* packet, uint16_t packet_size)
+static bt_result_code bts_if_ble_send_packet(void* gap_handle, bt_device_t* device, uint16_t cid, uint8_t* packet, uint16_t packet_size)
 {
     bt_result_code ret = BT_RESULT_FAILED;
     if (!gap_is_handle_valid(gap_handle))
         return ret;
-    ret = bts_ble_send_packet(device, private_cid, packet, packet_size);
+    ret = bts_ble_send_packet(device, cid, packet, packet_size);
     return ret;
 }
 
@@ -866,7 +884,7 @@ static btm_gap_interface_t gap_interface = {
     .ble_add_resolving_list = bts_if_ble_add_resolving_list,
     .ble_remove_resolving_list = bts_if_ble_remove_resolving_list,
     .ble_set_phy = bts_if_ble_set_phy,
-    .ble_add_private_channel = bts_if_ble_add_private_channel,
+    .ble_listen_l2cap_channel = bts_if_ble_listen_l2cap_channel,
     .ble_send_packet = bts_if_ble_send_packet,
     .ble_get_bonded_devices = bts_if_get_ble_bonded_devices,
     .ble_get_connected_devices = bts_if_get_ble_connected_devices,

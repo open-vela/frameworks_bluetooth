@@ -233,6 +233,63 @@ static int le_start_advertising(void* handle, int argc, char** argv)
     return 0;
 }
 
+static int le_listen_l2cap_channel(void* handle, int argc, char** argv)
+{
+    if (argc < 4) {
+        return -1;
+    }
+
+    uint16_t psm = atoi(argv[0]);
+    ble_l2cap_config_option_t opt;
+    opt.mtu = atoi(argv[1]);
+    opt.credits = atoi(argv[2]);
+    opt.le_mps = atoi(argv[3]);
+
+    BT_LOGD("%s psm:%d, mtu:%d, init credits:%d, le_mps:%d", __func__, psm,
+        opt.mtu, opt.credits, opt.le_mps);
+    bt_result_code ret = gap_test_interface->ble_listen_l2cap_channel(g_gap_handle, psm, &opt);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGD("%s  fail, ret: %d", __func__, ret);
+        return 0;
+    }
+    return 0;
+}
+
+static int le_send_packet(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return -1;
+
+    bt_device_t* device = malloc(sizeof(bt_device_t));
+    if (!device) {
+        BT_LOGE("error, device malloc failed");
+        return 0;
+    }
+    memset(device, 0, sizeof(bt_device_t));
+
+    str2ba(argv[0], device->addr);
+
+    uint16_t cid = atoi(argv[1]);
+    size_t size = strlen(argv[2]);
+    uint8_t* payload = (uint8_t*)malloc(size);
+    if (!payload) {
+        BT_LOGE("error, failed to allocate payload");
+        return 0;
+    }
+    memcpy(payload, argv[2], size);
+
+    BT_LOGD("le_send_packet remote_addr:%s, cid:%d, value:", addr_str(device->addr), cid);
+    BT_HEXDUMP(payload, size);
+    bt_result_code ret = gap_test_interface->ble_send_packet(g_gap_handle, device, cid, payload, size);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGD("%s  fail, ret: %d", __func__, ret);
+    }
+
+    free(payload);
+    free(device);
+    return 0;
+}
+
 static int le_stop_advertising(void* handle, int argc, char** argv)
 {
     if (argc < 1) {
@@ -290,6 +347,8 @@ static bt_command_t g_gap_tables[] = {
     { "start_adv2", le_start_advertising2, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration> <filter_type> <adv_id (0:legacy, 1~K: extend)>\"" },
     { "stop_adv", le_stop_advertising, "\"stop le adv <adv_id>\"" },
     { "setafh", set_afh_channel_classification, "\"bt set afh channel  : <freq_channal (0~13)> <band_width(20/22/40Mbit)\"" },
+    { "le_l2caplisten", le_listen_l2cap_channel, "\"open le channel <psm>\"" },
+    { "le_l2capsend", le_send_packet, "\"send le channel packet <addr> <cid> <payload>\"" },
 };
 
 static struct option gap_options[] = {
@@ -427,7 +486,7 @@ static int set_afh_channel_classification(void* handle, int argc, char** argv)
         return -1;
 
     uint16_t ch = atoi(argv[0]);
-    uint16_t bondwidth= atoi(argv[1]);
+    uint16_t bondwidth = atoi(argv[1]);
 
     if (ch > 13 || ch <= 0) {
         return -1;
@@ -1016,7 +1075,7 @@ static void test_discovery_state_changed_callback(void* handle, bt_discovery_sta
 
 static void test_device_found_callback(void* handle, bt_device_t* device)
 {
-    BT_LOGD("%s, device name : %s, device %s, device class : %" PRIu32", rssi: %d ", __func__, device->name, addr_str(device->addr), device->cod, device->rssi);
+    BT_LOGD("%s, device name : %s, device %s, device class : %" PRIu32 ", rssi: %d ", __func__, device->name, addr_str(device->addr), device->cod, device->rssi);
     display_services((uint8_t*)(device->uuids), MAX_UUID_NUM);
 }
 
@@ -1190,6 +1249,18 @@ static void test_ble_connection_updated_callback(void* gap_handle, bt_address re
         addr_str(remote_addr), connection_interval, peripheral_latency, supervision_timeout, status);
 }
 
+static void test_ble_l2cap_connection_state_callback(void* gap_handle, bt_address remote_addr, ble_l2cap_state state, uint16_t psm, uint16_t cid, uint16_t mtu, uint16_t mps)
+{
+}
+
+static void test_ble_packet_received_callback(void* gap_handle, bt_address remote_addr, uint16_t cid, uint8_t* packet, uint16_t packet_size)
+{
+}
+
+static void test_ble_packet_sent_callback(void* gap_handle, bt_address remote_addr, uint16_t cid)
+{
+}
+
 btm_gap_callbacks_t gap_test_tool_callbacks = {
     .discovery_state_changed_callback_cb = test_discovery_state_changed_callback,
     .device_found_callback_cb = test_device_found_callback,
@@ -1206,6 +1277,9 @@ btm_gap_callbacks_t gap_test_tool_callbacks = {
     .ble_adv_started_cb = le_adv_started_callback,
     .ble_adv_stopped_cb = le_adv_stopped_callback,
     .ble_connection_updated_cb = test_ble_connection_updated_callback,
+    .ble_l2cap_connection_state_cb = test_ble_l2cap_connection_state_callback,
+    .ble_packet_received_cb = test_ble_packet_received_callback,
+    .ble_packet_sent_cb = test_ble_packet_sent_callback,
 };
 
 static bt_mgr_callback_t mgt_cb = {

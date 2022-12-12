@@ -269,6 +269,37 @@ typedef void (*ble_connection_updated_callback)(void* gap_handle, bt_address rem
  */
 typedef void (*update_ble_bonede_device_callback)(void* gap_handle, ble_keys_t* bonded_device_list, uint8_t count_in);
 
+/**
+ * @brief ble l2cap connected callback, called when peer ble l2cap connected
+ * @note: handle must be create before this funciton.
+ * @param {void*} gap_handle
+ * @param {bt_address}  remote_addr - Remote address
+ * @param {ble_l2cap_state*} state - l2cap connection state
+ * @param {uint16_t*} psm - connection psm - return 0 when state = disconnect
+ * @param {uint16_t*} cid - l2cap cid
+ */
+typedef void (*ble_l2cap_connection_state_callback)(void* gap_handle, bt_address remote_addr, ble_l2cap_state state, uint16_t psm, uint16_t cid, uint16_t mtu, uint16_t mps);
+
+/**
+ * @brief ble l2cap recv payload callback, called when peer ble l2cap send payload
+ * @note: handle must be create before this funciton.
+ * @param {void*} gap_handle
+ * @param {bt_address}  remote_addr - Remote address
+ * @param {uint8_t*} cid - l2cap cid
+ * @param {uint8_t*} packet - l2cap payload
+ * @param {uint16_t} packet_size - l2cap packet size
+ */
+typedef void (*ble_packet_received_callback)(void* gap_handle, bt_address remote_addr, uint16_t cid, uint8_t* packet, uint16_t packet_size);
+
+/**
+ * @brief ble l2cap sent payload callback, called when ble l2cap send ok
+ * @note: handle must be create before this funciton.
+ * @param {void*} gap_handle
+ * @param {bt_address}  remote_addr - Remote address
+ * @param {uint8_t*} cid - l2cap cid
+ */
+typedef void (*ble_packet_sent_callback)(void* gap_handle, bt_address remote_addr, uint16_t cid);
+
 typedef struct {
     /** set to sizeof(bt_callbacks_t) */
     size_t size;
@@ -294,6 +325,9 @@ typedef struct {
     ble_adv_stopped_callback ble_adv_stopped_cb;
     ble_connection_updated_callback ble_connection_updated_cb;
     update_ble_bonede_device_callback update_ble_bonede_device_cb;
+    ble_l2cap_connection_state_callback ble_l2cap_connection_state_cb;
+    ble_packet_received_callback ble_packet_received_cb;
+    ble_packet_sent_callback ble_packet_sent_cb;
 } btm_gap_callbacks_t;
 
 /*gap interface*/
@@ -685,25 +719,26 @@ typedef struct {
     bt_result_code (*ble_set_phy)(void* gap_handle, bt_device_t* device, ble_phy_type tx_phy, ble_phy_type rx_phy);
 
     /**
-     * @brief: gap add a private channel for receiving application defined packets over ble link.
+     * @brief: gap listen l2cap channel for receiving application defined packets over ble link.
      * @note: handle must be create before this funciton.
      * @param {void*} gap_handle
-     * @param {uint16_t} private_cid - application defined channel id. range: 0x20 - 0x3e (any value not assigned by sig yet)
+     * @param {uint8_t} psm - application l2cap psm id
+     * @param {ble_l2cap_config_option_t} opt - l2cap config option
      * @return {bt_result_code} error status code (0- success)
      */
-    bt_result_code (*ble_add_private_channel)(void* gap_handle, uint16_t private_cid);
+    bt_result_code (*ble_listen_l2cap_channel)(void* gap_handle, uint8_t psm, ble_l2cap_config_option_t* opt);
 
     /**
      * @brief: gap send application defined packets over ble link.
      * @note: handle must be create before this funciton.
      * @param {void*} gap_handle
      * @param {bt_device_t*} device - receive device
-     * @param {uint16_t} private_cid - private channel id
+     * @param {uint16_t} cid - l2cap channel id
      * @param {uint8_t*} packet -  packet to send
      * @param {uint16_t} packet_size -  size, in bytes, of the packet to send
      * @return {bt_result_code} error status code (0- success)
      */
-    bt_result_code (*ble_send_packet)(void* gap_handle, bt_device_t* device, uint16_t private_cid, uint8_t* packet, uint16_t packet_size);
+    bt_result_code (*ble_send_packet)(void* gap_handle, bt_device_t* device, uint16_t cid, uint8_t* packet, uint16_t packet_size);
 
     /**
      * @brief: gap get ble bonded device list, from the newest connected to the oldest connected.

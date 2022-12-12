@@ -654,4 +654,14 @@ typedef struct {
     AFH_RADIO_BANDWIDTH band_width; /* Bandwidth, in MHz, of this channel, e.g. AFH_WIFI_BANDWIDTH_20. */
 } bt_afh_radio_channel_info_t;
 
+typedef enum {
+    BLE_LECAP_STATE_DISCONNECTED,
+    BLE_LECAP_STATE_CONNECTED
+} ble_l2cap_state;
+
+typedef struct {
+    uint16_t mtu;
+    uint16_t credits;
+    uint16_t le_mps;
+} ble_l2cap_config_option_t;
 #endif
