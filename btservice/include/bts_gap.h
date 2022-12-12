@@ -31,6 +31,9 @@ typedef void (*bts_ble_adv_started_callback)(uint8_t adv_id);
 typedef void (*bts_ble_adv_stopped_callback)(uint8_t adv_id);
 typedef void (*bts_ble_connection_updated_callback)(bt_address remote_addr, bt_status status, uint16_t connection_interval,
     uint16_t peripheral_latency, uint16_t supervision_timeout);
+typedef void (*bts_ble_l2cap_connection_state_callback)(bt_address remote_addr, ble_l2cap_state state, uint16_t psm, uint16_t cid, uint16_t mtu, uint16_t mps);
+typedef void (*bts_ble_packet_received_callback)(bt_address remote_addr, uint16_t cid, uint8_t* packet, uint16_t packet_size);
+typedef void (*bts_ble_packet_sent_callback)(bt_address remote_addr, uint16_t cid);
 
 typedef struct {
     /* * set to sizeof(GAP_CALLBACKS_S) */
@@ -54,6 +57,9 @@ typedef struct {
     bts_ble_adv_started_callback ble_adv_started_cb;
     bts_ble_adv_stopped_callback ble_adv_stopped_cb;
     bts_ble_connection_updated_callback ble_connection_updated_cb;
+    bts_ble_l2cap_connection_state_callback ble_l2cap_connection_state_cb;
+    bts_ble_packet_received_callback ble_packet_received_cb;
+    bts_ble_packet_sent_callback ble_packet_sent_cb;
 } bts_gap_callback_t;
 
 bt_result_code gap_init(bts_gap_callback_t* cb);
@@ -118,9 +124,8 @@ bt_result_code bts_ble_remove_white_list(bt_device_t* device);
 bt_result_code bts_ble_add_resolving_list(bt_device_t* device);
 bt_result_code bts_ble_remove_resolving_list(bt_device_t* device);
 bt_result_code bts_ble_set_phy(bt_device_t* device, ble_phy_type tx_phy, ble_phy_type rx_phy);
-bt_result_code bts_ble_add_private_channel(uint16_t private_cid);
-bt_result_code bts_ble_send_packet(bt_device_t* device, uint16_t private_cid,
-    uint8_t* packet, uint16_t packet_size);
+bt_result_code bts_ble_listen_l2cap_channel(uint8_t psm, ble_l2cap_config_option_t* opt);
+bt_result_code bts_ble_send_packet(bt_device_t* device, uint16_t cid, uint8_t* packet, uint16_t packet_size);
 int bts_get_ble_bonded_devices(bt_device_t* device_list, int max_out);
 int bts_get_ble_connected_devices(bt_device_t* device_list, int max_out);
 int bts_get_ble_whitelist_devices(bt_device_t* device_list, int max_out);
