@@ -22,6 +22,13 @@ config BLUETOOTH
 	select LIB_BLUELET
 if BLUETOOTH
 
+config BLUETOOTH_THREAD_PRIORITY
+	int "bluetooth thread priority"
+	default 246
+	range 100 255
+	help
+		bluetooth thread priority
+
 config BLUETOOTH_CLASS_OF_DEVICE
 	hex "bluetooth class of device"
 	default 0x00640404
