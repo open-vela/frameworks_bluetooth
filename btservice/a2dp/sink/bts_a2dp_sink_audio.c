@@ -62,6 +62,7 @@ typedef struct {
     uint8_t          codec_info[10];
     uint8_t          packet_sending_cnt;
     uint64_t         underflow_ts;
+    uint64_t         last_ts;
     uint32_t         block_ticks;
     bool             ready;
     stream_state_t   state;
@@ -117,15 +118,19 @@ static void a2dp_sink_audio_handle_timer(char* arg)
     struct list_node *node, *tmp;
     int ret;
 
+    uint64_t now_us = get_os_timestamp_us();
+    if (stream->last_ts && ((now_us - stream->last_ts) > 30000))
+        BT_LOGE("===a2dp cpu busy time:%lld, buff_cnt:%d===", now_us - stream->last_ts, list_length(&sink_stream.packet_queue));
+    stream->last_ts = now_us;
+
     uv_mutex_lock(&stream->queue_lock);
     if (list_is_empty(queue) == true) {
         if (!stream->underflow_ts)
-            stream->underflow_ts = get_os_timestamp_us();
+            stream->underflow_ts = now_us;
         goto out;
     }
 
     if (stream->underflow_ts) {
-        uint64_t now_us = get_os_timestamp_us();
         uint64_t miss_tick = (now_us - stream->underflow_ts) / (uint64_t)(A2DP_SINK_MEDIA_TICK_MS * 1000);
         if (miss_tick > 2)
             BT_LOGD("%s underflow, miss ticks: %" PRIu64, __func__, miss_tick);
@@ -189,6 +194,7 @@ void bts_a2dp_sink_packet_recieve(a2dp_sink_packet_t *packet)
         !stream->media_alarm) {
         BT_LOGD("%s start trans packet", __func__);
         stream->underflow_ts = 0;
+        stream->last_ts = 0;
         stream->block_ticks = 0;
         sink_stream.media_alarm = start_timer(10,
                                               A2DP_SINK_MEDIA_TICK_MS,

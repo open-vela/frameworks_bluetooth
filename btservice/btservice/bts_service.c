@@ -320,8 +320,8 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     InitTransportLayer();
     gap_service_init();
     bt_dispatch_loop = uv_loop_new();
-    uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE, BTSTACK_THREAD_STACK_SIZE };
-
+    uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE | UV_THREAD_HAS_PRIORITY, BTSTACK_THREAD_STACK_SIZE };
+    options.priority = CONFIG_BLUETOOTH_THREAD_PRIORITY;
     ret = uv_thread_create_ex(&thread_handle[THREAD_ID_STACK], &options, stack_schedule_loop, NULL);
     if (ret != 0) {
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
@@ -330,6 +330,7 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     pthread_setname_np(thread_handle[THREAD_ID_STACK], "bluelet_thread");
 
     options.stack_size = BTSERVICE_THREAD_STACK_SIZE;
+    options.priority = CONFIG_BLUETOOTH_THREAD_PRIORITY;
     ret = uv_thread_create_ex(&thread_handle[THREAD_ID_SERVICE], &options, service_schedule_loop, NULL);
     if (ret != 0) {
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
