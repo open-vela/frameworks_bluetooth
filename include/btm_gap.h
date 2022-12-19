@@ -334,18 +334,18 @@ typedef void (*ble_packet_sent_callback)(void* gap_handle, bt_address remote_add
 typedef struct {
     /** set to sizeof(bt_callbacks_t) */
     size_t size;
-    bt_connection_state_changed_callback bt_connection_state_changed_callback_cb;
-    device_found_callback device_found_callback_cb;
-    received_remote_name_callback received_remote_name_callback_cb;
-    discovery_state_changed_callback discovery_state_changed_callback_cb;
-    ssp_request_callback ssp_request_callback_cb;
-    bond_state_changed_callback bond_state_changed_callback_cb;
-    hci_event_callback hci_event_callback_cb;
-    local_name_callback local_name_callback_cb;
-    local_device_class_callback local_device_class_callback_cb;
-    connection_state_callback connection_state_callback_cb;
-    local_address_callback local_address_callback_cb;
-    smp_request_callback smp_requeset_cb;
+    bt_connection_state_changed_callback bt_connection_state_changed_cb;
+    device_found_callback device_found_cb;
+    received_remote_name_callback received_remote_name_cb;
+    discovery_state_changed_callback discovery_state_changed_cb;
+    ssp_request_callback ssp_request_cb;
+    bond_state_changed_callback bond_state_changed_cb;
+    hci_event_callback hci_event_cb;
+    local_name_callback local_name_cb;
+    local_device_class_callback local_device_class_cb;
+    connection_state_callback connection_state_cb;
+    local_address_callback local_address_cb;
+    smp_request_callback smp_request_cb;
     ble_phy_update_callback ble_phy_update_cb;
     ble_address_callback ble_address_cb;
     pairing_request_callback pairing_request_cb;
@@ -580,7 +580,6 @@ typedef struct {
      * @return {bt_result_code} error status code (0- success)
      */
     bt_result_code (*bt_send_hci_command)(void* handle, bt_hci_command_t* command, hci_command_complete_event event_type);
-#endif
 
     /**
      * @brief: gap start br/edr service discovery

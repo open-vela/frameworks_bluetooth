@@ -210,4 +210,5 @@ void addr_cpy(bt_address addr_dst, bt_address addr_src);
 char * uuid_str(bt_uuid_t uuid);
 bool uuid_is_empty(bt_uuid_t uuid);
 uint64_t get_os_timestamp_us(void);
+bt_device_t* bt_set_addr(bt_device_t* device, bt_address addr);
 #endif
