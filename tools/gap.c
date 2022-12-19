@@ -111,9 +111,9 @@ void test_device_found_callback(void* gap_handle, bt_device_t* device)
 }
 
 const btm_gap_callbacks_t gap_callbacks = {
-    .discovery_state_changed_callback_cb = test_discovery_state_changed_callback,
+    .discovery_state_changed_cb = test_discovery_state_changed_callback,
     .state_changed_cb = test_adapter_state_changed_callback,
-    .device_found_callback_cb = test_device_found_callback,
+    .device_found_cb = test_device_found_callback,
 };
 
 int gap_command(void* handle, int argc, char* argv[])

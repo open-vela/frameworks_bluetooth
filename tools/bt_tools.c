@@ -1238,7 +1238,6 @@ void test_bond_state_changed_callback(void* handle, bt_device_t* device, bt_bond
     default:
         break;
     }
-    BT_LOGD("%s, state:%s ", __func__, bond_state);
     BT_LOGD("%s, device : %s, state: %s", __func__, addr_str(device->addr), bond_state);
 }
 void test_local_name_callback(void* handle, char* bt_name, uint8_t length)
@@ -1356,16 +1355,16 @@ static void test_ble_packet_sent_callback(void* gap_handle, bt_address remote_ad
 }
 
 btm_gap_callbacks_t gap_test_tool_callbacks = {
-    .discovery_state_changed_callback_cb = test_discovery_state_changed_callback,
-    .device_found_callback_cb = test_device_found_callback,
-    .connection_state_callback_cb = test_connection_state_changed_callback,
-    .received_remote_name_callback_cb = test_received_remote_name_callback,
-    .ssp_request_callback_cb = test_ssp_request_callback,
-    .bond_state_changed_callback_cb = test_bond_state_changed_callback,
-    .local_name_callback_cb = test_local_name_callback,
-    .local_address_callback_cb = test_local_address_callback,
-    .local_device_class_callback_cb = test_local_device_class_callback,
-    .smp_requeset_cb = test_smp_request_callback,
+    .discovery_state_changed_cb = test_discovery_state_changed_callback,
+    .device_found_cb = test_device_found_callback,
+    .connection_state_cb = test_connection_state_changed_callback,
+    .received_remote_name_cb = test_received_remote_name_callback,
+    .ssp_request_cb = test_ssp_request_callback,
+    .bond_state_changed_cb = test_bond_state_changed_callback,
+    .local_name_cb = test_local_name_callback,
+    .local_address_cb = test_local_address_callback,
+    .local_device_class_cb = test_local_device_class_callback,
+    .smp_request_cb = test_smp_request_callback,
     .pairing_request_cb = test_pairing_request_callback,
     .delete_linkey_cb = test_delete_linkey_callback,
     .ble_adv_started_cb = le_adv_started_callback,
