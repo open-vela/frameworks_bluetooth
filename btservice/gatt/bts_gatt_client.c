@@ -49,7 +49,7 @@ typedef struct
         ON_CLIENT_MTU_CHANGED,
     } event;
 
-    bts_gattc_hdl_t* handle;
+    bt_address remote_addr;
     size_t size;
     void* data;
 } bts_gattc_msg_t;
@@ -125,7 +125,7 @@ static bool remove_gatt_client(bts_gattc_hdl_t* gattc)
     return true;
 }
 
-static bts_gattc_msg_t* create_adp_msg(uint8_t event, bts_gattc_hdl_t* handle, void* data, size_t size)
+static bts_gattc_msg_t* create_adp_msg(uint8_t event, bt_address remote_addr, void* data, size_t size)
 {
     bts_gattc_msg_t* msg = (bts_gattc_msg_t*)malloc(sizeof(bts_gattc_msg_t));
     CHECK_PTR_RETURN(msg, NULL);
@@ -135,7 +135,7 @@ static bts_gattc_msg_t* create_adp_msg(uint8_t event, bts_gattc_hdl_t* handle, v
         return NULL;
     }
     msg->event = event;
-    msg->handle = handle;
+    memcpy(msg->remote_addr, remote_addr, sizeof(bt_address));
     msg->size = size;
     if (size == 0) {
         return msg;
@@ -156,10 +156,8 @@ static bts_gattc_msg_t* create_adp_msg(uint8_t event, bts_gattc_hdl_t* handle, v
 static void on_client_connection_state_changed(bt_address remote_addr, profile_connection_state state)
 {
     BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BLUELET-CONNECTION-STATE:%d, addr:%s", state, addr_str(remote_addr));
-    bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
-    CHECK_PTR(handle);
 
-    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_CONNECT_STATE, handle, &state, sizeof(profile_connection_state));
+    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_CONNECT_STATE, remote_addr, &state, sizeof(profile_connection_state));
     CHECK_PTR(msg);
     send_msg(msg);
 }
@@ -167,6 +165,10 @@ static void on_client_connection_state_changed(bt_address remote_addr, profile_c
 static void on_client_service_discovered(bt_address remote_addr, gatt_element_t* element,
     uint16_t size)
 {
+    if (size < 1) {
+        BT_LOGW("%s, remote device service null", __func__);
+        return;
+    }
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
@@ -186,7 +188,7 @@ static void on_client_service_discovered(bt_address remote_addr, gatt_element_t*
     }
     data.element = items - size;
     data.size = size;
-    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_SERVICE_DISCOVERED, handle, &data, sizeof(bts_gattc_service_discover_s));
+    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_SERVICE_DISCOVERED, remote_addr, &data, sizeof(bts_gattc_service_discover_s));
     if (!msg) {
         free(items);
         BT_LOGE("failed, create_adp_msg");
@@ -198,6 +200,11 @@ static void on_client_service_discovered(bt_address remote_addr, gatt_element_t*
 static void on_client_read_result(bt_address remote_addr, gatt_element_t* element, uint8_t* value,
     uint16_t size, gatt_status status)
 {
+    if (size < 1) {
+        BT_LOGW("%s, remote device att null", __func__);
+        return;
+    }
+
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
@@ -213,7 +220,7 @@ static void on_client_read_result(bt_address remote_addr, gatt_element_t* elemen
     memcpy(data.value, value, size);
     data.size = size;
     data.status = status;
-    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_READ_RESULT, handle, &data, sizeof(bts_gattc_read_result_s));
+    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_READ_RESULT, remote_addr, &data, sizeof(bts_gattc_read_result_s));
     if (!msg) {
         free(data.element);
         BT_LOGE("failed, create_adp_msg");
@@ -225,9 +232,6 @@ static void on_client_read_result(bt_address remote_addr, gatt_element_t* elemen
 static void on_client_write_result(bt_address remote_addr, gatt_element_t* element,
     gatt_status status)
 {
-    bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
-    CHECK_PTR(handle);
-
     bts_gattc_write_result_s data;
     memset(&data, 0, sizeof(data));
     data.element = (gatt_element_t*)malloc(sizeof(gatt_element_t));
@@ -237,7 +241,7 @@ static void on_client_write_result(bt_address remote_addr, gatt_element_t* eleme
     }
     memcpy(data.element, element, sizeof(gatt_element_t));
     data.status = status;
-    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_WRITE_RESULT, handle, &data, sizeof(bts_gattc_write_result_s));
+    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_WRITE_RESULT, remote_addr, &data, sizeof(bts_gattc_write_result_s));
     if (!msg) {
         free(data.element);
         BT_LOGE("failed, create_adp_msg");
@@ -249,6 +253,11 @@ static void on_client_write_result(bt_address remote_addr, gatt_element_t* eleme
 static void on_client_nofity_request(bt_address remote_addr, gatt_element_t* element,
     uint8_t* value, uint16_t size)
 {
+    if (size < 1) {
+        BT_LOGW("%s, remote device value null", __func__);
+        return;
+    }
+
     bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
     CHECK_PTR(handle);
 
@@ -269,7 +278,7 @@ static void on_client_nofity_request(bt_address remote_addr, gatt_element_t* ele
 
     memcpy(data.value, value, size);
     data.size = size;
-    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_NOTIFY_REQUEST, handle, &data, sizeof(bts_gattc_notify_request_s));
+    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_NOTIFY_REQUEST, remote_addr, &data, sizeof(bts_gattc_notify_request_s));
     if (!msg) {
         free(data.element);
         free(data.value);
@@ -282,52 +291,40 @@ static void on_client_nofity_request(bt_address remote_addr, gatt_element_t* ele
 static void on_client_rssi_read(bt_address remote_addr, int32_t rssi,
     gatt_status status)
 {
-    bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
-    CHECK_PTR(handle);
-
     bts_gattc_read_rssi_s data;
     memset(&data, 0, sizeof(data));
     data.rssi = rssi;
     data.status = status;
-    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_RSSI_READ, handle, &data, sizeof(bts_gattc_read_rssi_s));
+    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_RSSI_READ, remote_addr, &data, sizeof(bts_gattc_read_rssi_s));
     CHECK_PTR(msg);
     send_msg(msg);
 }
 
 static void on_client_phy_read(bt_address remote_addr, ble_phy_type tx, ble_phy_type rx)
 {
-    bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
-    CHECK_PTR(handle);
-
     bts_gattc_phy_type_s data;
     memset(&data, 0, sizeof(data));
     data.tx = tx;
     data.rx = rx;
-    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_PHY_READ, handle, &data, sizeof(bts_gattc_phy_type_s));
+    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_PHY_READ, remote_addr, &data, sizeof(bts_gattc_phy_type_s));
     CHECK_PTR(msg);
     send_msg(msg);
 }
 
 static void on_client_phy_update(bt_address remote_addr, ble_phy_type tx, ble_phy_type rx, gatt_status status)
 {
-    bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
-    CHECK_PTR(handle);
-
     bts_gattc_phy_type_s data;
     memset(&data, 0, sizeof(data));
     data.tx = tx;
     data.rx = rx;
-    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_PHY_UPDATE, handle, &data, sizeof(bts_gattc_phy_type_s));
+    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_PHY_UPDATE, remote_addr, &data, sizeof(bts_gattc_phy_type_s));
     CHECK_PTR(msg);
     send_msg(msg);
 }
 
 static void on_client_mtu_changed(bt_address remote_addr, uint32_t mtu, gatt_status status)
 {
-    bts_gattc_hdl_t* handle = find_gattc_handle(remote_addr);
-    CHECK_PTR(handle);
-
-    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_MTU_CHANGED, handle, &mtu, sizeof(uint32_t));
+    bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_MTU_CHANGED, remote_addr, &mtu, sizeof(uint32_t));
     CHECK_PTR(msg);
     send_msg(msg);
 }
@@ -539,7 +536,8 @@ static void handle_msg_received(bt_profile_id id, void* value, size_t size)
         BT_LOGE("%s fail, msg null", __func__);
         return;
     }
-    bts_gattc_hdl_t* handle = (bts_gattc_hdl_t*)(msg->handle);
+
+    bts_gattc_hdl_t* handle = find_gattc_handle(msg->remote_addr);
     if (!handle) {
         BT_LOGE("%s fail, handle null", __func__);
         return;
