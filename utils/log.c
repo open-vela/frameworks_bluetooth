@@ -45,8 +45,8 @@
 #include "log.h"
 
 static uint8_t  m_framework_log_enable;
-static uint8_t  m_log_level;
-static uint32_t m_stack_log_mask;
+static uint8_t  m_log_level = DEFAULT_BT_LOG_LEVEL;
+static uint32_t m_stack_log_mask = 0x0;
 
 static bool is_support_profile_mask(uint8_t pro)
 {
@@ -157,9 +157,10 @@ static void config_stack_log_by_mask(bool en, uint32_t mask)
 
 void utils_log_init(void)
 {
-    bool snoop_en, stack_en;
+    bool snoop_en = false, stack_en = false;
 
     service_adapter_debug_init();
+#ifdef CONFIG_KVDB
     //get stack profile or protocol config
     m_stack_log_mask =
         property_get_int32("persist.bluetooth.log.stack", 0x0);
@@ -177,7 +178,7 @@ void utils_log_init(void)
     //get framework log level config
     m_log_level =
         property_get_int32("persist.bluetooth.log.level", DEFAULT_BT_LOG_LEVEL);
-
+#endif
     m_framework_log_enable = 1;
     syslog(LOG_DEBUG, "Log Module: SNOOP:%d, STACK:%d, FRAMEWORK:%d\n", snoop_en, stack_en, m_framework_log_enable);
     if (stack_en)
@@ -191,13 +192,17 @@ int utils_log_enable(int id)
         //if (!(m_stack_log_mask & (1 << SERVICE_DEBUG_BT)))
         //    service_adapter_debug_enable(SERVICE_DEBUG_BT);
         service_adapter_debug_enable(SERVICE_DEBUG_HCI_DUMP);
+#ifdef CONFIG_KVDB
         property_set_bool("persist.bluetooth.log.snoop", true);
+#endif
         break;
     case LOG_ID_STACK:
         //service_adapter_debug_enable(SERVICE_DEBUG_BT);
         m_stack_log_mask |= (1 << SERVICE_DEBUG_BT) & 0xFFFFFFFF;
         config_stack_log_by_mask(true, m_stack_log_mask);
+#ifdef CONFIG_KVDB
         property_set_int32("persist.bluetooth.log.stack", m_stack_log_mask);
+#endif
         break;
     case LOG_ID_FRAMEWORK:
         m_framework_log_enable = 1;
@@ -205,8 +210,9 @@ int utils_log_enable(int id)
     default:
         return -1;
     }
-
+#ifdef CONFIG_KVDB
     property_commit();
+#endif
     syslog(LOG_DEBUG, "%s Log Enabled\n", log_id_str(id));
 
     return 0;
@@ -220,12 +226,16 @@ int utils_log_disable(int id)
         //    service_adapter_debug_disable(SERVICE_DEBUG_BT);
         //else
         service_adapter_debug_disable(SERVICE_DEBUG_HCI_DUMP);
+#ifdef CONFIG_KVDB
         property_set_bool("persist.bluetooth.log.snoop", false);
+#endif
         break;
     case LOG_ID_STACK:
         service_adapter_debug_disable(SERVICE_DEBUG_BT);
         m_stack_log_mask &= ~((1 << SERVICE_DEBUG_BT) & 0xFFFFFFFF);
+#ifdef CONFIG_KVDB
         property_set_int32("persist.bluetooth.log.stack", m_stack_log_mask);
+#endif
         break;
     case LOG_ID_FRAMEWORK:
         m_framework_log_enable = 0;
@@ -233,7 +243,9 @@ int utils_log_disable(int id)
     default:
         return -1;
     }
+#ifdef CONFIG_KVDB
     property_commit();
+#endif
     syslog(LOG_DEBUG, "%s Log Disabled\n", log_id_str(id));
 
     return 0;
@@ -245,9 +257,10 @@ uint8_t utils_set_log_level(uint8_t level)
         level = BT_LOG_LEVEL_DEBUG;
 
     m_log_level = level;
+#ifdef CONFIG_KVDB
     property_set_int32("persist.bluetooth.log.level", level);
     property_commit();
-
+#endif
     return m_log_level;
 }
 
@@ -262,9 +275,10 @@ int utils_set_log_mask_level(uint8_t id, uint8_t mask_bit, bool enable)
                 service_adapter_debug_disable(mask_bit);
                 m_stack_log_mask &= ~((1 << mask_bit) & 0xFFFFFFFF);
             }
-
+#ifdef CONFIG_KVDB
             property_set_int32("persist.bluetooth.log.stack", m_stack_log_mask);
             property_commit();
+#endif
             syslog(LOG_DEBUG, "%s Log %s\n", profile_mask_str(mask_bit), enable ? "Enabled" : "Disabled");
             return 0;
         }
