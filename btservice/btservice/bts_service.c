@@ -79,6 +79,7 @@ extern void InitTransportLayer(void);
 extern void ScheduleLoop(void);
 extern void TransportRecvData(void);
 extern int  GetTransportHandler(void);
+static void bts_service_transport_recv_loop(void);
 
 static void bts_uv_close_cb(uv_handle_t* handle)
 {
@@ -236,6 +237,7 @@ static void bts_handle_uv_msg(uv_async_t* handle)
 static void service_schedule_loop(void* data)
 {
     uv_async_init(bt_dispatch_loop, &async_handle[THREAD_ID_SERVICE], bts_handle_uv_msg);
+    bts_service_transport_recv_loop();
     uv_sem_post(&wait_service);
     uv_run(bt_dispatch_loop, UV_RUN_DEFAULT);
 }
@@ -338,7 +340,6 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     }
     pthread_setname_np(thread_handle[THREAD_ID_SERVICE], "btservice_thread");
     service_state = BTM_STATE_TURNING_ON;
-    bts_service_transport_recv_loop();
 
     uv_sem_wait(&wait_service);
     uv_sem_wait(&wait_stack);
