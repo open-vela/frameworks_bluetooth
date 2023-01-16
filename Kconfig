@@ -17,9 +17,9 @@
 config BLUETOOTH
 	bool "Enable Bluetooth"
 	default n
-	select LIBUV
-	select LIBUV_EXTENSION
-	select LIB_BLUELET
+	depends on LIBUV
+	depends on LIBUV_EXTENSION
+	depends on LIB_BLUELET
 if BLUETOOTH
 
 config BLUETOOTH_THREAD_PRIORITY
