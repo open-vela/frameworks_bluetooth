@@ -61,7 +61,6 @@ typedef struct
         ON_HIDD_CONNECTION_STATE_CHANGED,
     } event;
 
-    bts_hidd_hdl_t* handle;
     size_t size;
     void* data;
 } bts_hidd_msg_t;
@@ -145,13 +144,12 @@ static bool remove_hid_device(bts_hidd_hdl_t* hidd)
     return true;
 }
 
-static bts_hidd_msg_t* create_adp_msg(uint8_t event, bts_hidd_hdl_t* handle, void* data, size_t size)
+static bts_hidd_msg_t* create_adp_msg(uint8_t event, void* data, size_t size)
 {
     bts_hidd_msg_t* msg = (bts_hidd_msg_t*)malloc(sizeof(bts_hidd_msg_t));
     CHECK_PTR_RETURN(msg, NULL);
 
     msg->event = event;
-    msg->handle = handle;
     msg->size = size;
     if (size == 0) {
         return msg;
@@ -171,13 +169,10 @@ static bts_hidd_msg_t* create_adp_msg(uint8_t event, bts_hidd_hdl_t* handle, voi
 
 static void on_hidd_register_changed_callback(hid_app_state registered)
 {
-    bts_hidd_hdl_t* hidd;
-    list_for_every_entry(&hidd_list, hidd, bts_hidd_hdl_t, node)
-    {
-        bts_hidd_msg_t* msg = create_adp_msg(ON_HIDD_APP_STATE_CHANGED, hidd, &registered, sizeof(hid_app_state));
-        CHECK_PTR(msg);
-        send_msg(msg);
-    }
+    BT_LOGD("%s, registered:%d", __func__, registered);
+    bts_hidd_msg_t* msg = create_adp_msg(ON_HIDD_APP_STATE_CHANGED, &registered, sizeof(hid_app_state));
+    CHECK_PTR(msg);
+    send_msg(msg);
 }
 
 static void on_hidd_connection_changed_callback(bt_address remote_addr, bool le_hid, profile_connection_state state)
@@ -189,17 +184,9 @@ static void on_hidd_connection_changed_callback(bt_address remote_addr, bool le_
     conn.state = state;
     conn.le_hid = le_hid;
 
-    bts_hidd_hdl_t* hidd;
-    list_for_every_entry(&hidd_list, hidd, bts_hidd_hdl_t, node)
-    {
-        if (state == PROFILE_CONNECTED) { //handle first connection from peer
-            memcpy(hidd->remote_addr, remote_addr, sizeof(bt_address));
-        }
-
-        bts_hidd_msg_t* msg = create_adp_msg(ON_HIDD_CONNECTION_STATE_CHANGED, hidd, &conn, sizeof(bts_hidd_conn_s));
-        CHECK_PTR(msg);
-        send_msg(msg);
-    }
+    bts_hidd_msg_t* msg = create_adp_msg(ON_HIDD_CONNECTION_STATE_CHANGED, &conn, sizeof(bts_hidd_conn_s));
+    CHECK_PTR(msg);
+    send_msg(msg);
 }
 
 static void on_hidd_get_report_callback(bt_address remote_addr, uint8_t rpt_type, uint8_t rpt_id, uint16_t buffer_size)
@@ -297,26 +284,22 @@ static void hid_device_cleanup(void)
 
 static bt_result_code hid_device_register_device(bts_hidd_hdl_t handle, bt_hidd_sdp_settings_t sdp, bt_hidd_qos_settings_t tx_qos, bt_hidd_qos_settings_t rx_qos)
 {
-    bool empty = list_is_empty(&hidd_list);
-    if (empty) {
-        gatt_status ret = service_adapter_hid_device_register_app((SERVICE_HID_SERVICE_INFO_S*)(&sdp), NULL, NULL);
-        if (ret != GATT_STATUS_SUCCESS) {
-            BT_LOGE("fail, hid_device_register_app failed, error: %d", ret);
-            return BT_RESULT_FAILED;
-        }
-    }
-
     bts_hidd_hdl_t* hidd = add_hidd_handle(handle);
     if (!hidd) {
         BT_LOGE("fail, add_hidd_handle");
         return BT_RESULT_FAILED;
     }
 
-    if (!empty) {
-        hid_app_state state = BTHD_STATE_REGISTERED;
-        bts_hidd_msg_t* msg = create_adp_msg(ON_HIDD_APP_STATE_CHANGED, hidd, &state, sizeof(hid_app_state));
-        CHECK_PTR_RETURN(msg, BT_RESULT_FAILED);
-        send_msg(msg);
+    if (list_length(&hidd_list) == 1) {
+        gatt_status ret = service_adapter_hid_device_register_app((SERVICE_HID_SERVICE_INFO_S*)(&sdp), NULL, NULL);
+        if (ret != GATT_STATUS_SUCCESS) {
+            BT_LOGE("fail, hid_device_register_app failed, error: %d", ret);
+            remove_hid_device(hidd);
+            return BT_RESULT_FAILED;
+        }
+    } else {
+        BT_CBACK(hidd->callbacks, bts_hidd_app_state_changed_cb, hidd->btm_handle, hidd->device_id, BTHD_STATE_REGISTERED);
+        BT_LOGD("%s, registered", __func__);
     }
 
     return BT_RESULT_SUCCESS;
@@ -334,10 +317,9 @@ static bt_result_code hid_device_unregister_device(uint16_t device_id)
             return BT_RESULT_FAILED;
         }
     } else if (list_length(&hidd_list) > 1) {
-        hid_app_state state = BTHD_STATE_NOT_REGISTERED;
-        bts_hidd_msg_t* msg = create_adp_msg(ON_HIDD_APP_STATE_CHANGED, handle, &state, sizeof(hid_app_state));
-        CHECK_PTR_RETURN(msg, BT_RESULT_FAILED);
-        send_msg(msg);
+        BT_CBACK(handle->callbacks, bts_hidd_app_state_changed_cb, handle->btm_handle, handle->device_id, BTHD_STATE_NOT_REGISTERED);
+        remove_hid_device(handle);
+        BT_LOGD("%s, remove_hid_device handle", __func__);
     }
     return BT_RESULT_SUCCESS;
 }
@@ -548,32 +530,34 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
         BT_LOGE("%s fail, msg null", __func__);
         return;
     }
-    bts_hidd_hdl_t* handle = (bts_hidd_hdl_t*)(msg->handle);
-    if (!handle) {
-        BT_LOGE("%s fail, handle null", __func__);
-        return;
-    }
 
     switch (msg->event) {
     case ON_HIDD_APP_STATE_CHANGED: {
-        hid_app_state* registered = (hid_app_state*)(msg->data);
-        BT_CBACK(handle->callbacks, bts_hidd_app_state_changed_cb, handle->btm_handle, handle->device_id, *registered);
-        if (*registered) {
-#if defined HIDD_UINPUT_ENABLE
-            hidd_init_kbd();
-#endif
-        } else {
-            BT_LOGD("unregistered, remove_hid_device handle");
-            remove_hid_device(handle);
-#if defined HIDD_UINPUT_ENABLE
-            hidd_uninit_kbd();
-#endif
+        bts_hidd_hdl_t* handle;
+        bts_hidd_hdl_t* tmp;
+        list_for_every_entry_safe(&hidd_list, handle, tmp, bts_hidd_hdl_t, node) {
+            hid_app_state* registered = (hid_app_state*)(msg->data);
+            BT_CBACK(handle->callbacks, bts_hidd_app_state_changed_cb, handle->btm_handle, handle->device_id, *registered);
+            if (*registered) {
+    #if defined HIDD_UINPUT_ENABLE
+                hidd_init_kbd();
+    #endif
+            } else {
+                BT_LOGD("unregistered, remove_hid_device handle");
+                remove_hid_device(handle);
+    #if defined HIDD_UINPUT_ENABLE
+                hidd_uninit_kbd();
+    #endif
+            }
         }
         break;
     }
     case ON_HIDD_CONNECTION_STATE_CHANGED: {
-        bts_hidd_conn_s* conn = (bts_hidd_conn_s*)(msg->data);
-        BT_CBACK(handle->callbacks, bts_hidd_connection_state_changed_cb, handle->btm_handle, conn->remote_addr, conn->le_hid, conn->state);
+        bts_hidd_hdl_t* handle;
+        list_for_every_entry(&hidd_list, handle, bts_hidd_hdl_t, node) {
+            bts_hidd_conn_s* conn = (bts_hidd_conn_s*)(msg->data);
+            BT_CBACK(handle->callbacks, bts_hidd_connection_state_changed_cb, handle->btm_handle, conn->remote_addr, conn->le_hid, conn->state);
+        }
         break;
     }
     default: {
