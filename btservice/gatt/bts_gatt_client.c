@@ -174,7 +174,8 @@ static void on_client_service_discovered(bt_address remote_addr, gatt_element_t*
 
     bts_gattc_service_discover_s data;
     memset(&data, 0, sizeof(data));
-    gatt_element_t* items = (gatt_element_t*)malloc(sizeof(gatt_element_t) * size);
+    gatt_element_t* pitems = (gatt_element_t*)malloc(sizeof(gatt_element_t) * size);
+    gatt_element_t* items = pitems;
     if (!items) {
         BT_LOGE("error, malloc element failed");
         return;
@@ -190,7 +191,7 @@ static void on_client_service_discovered(bt_address remote_addr, gatt_element_t*
     data.size = size;
     bts_gattc_msg_t* msg = create_adp_msg(ON_CLIENT_SERVICE_DISCOVERED, remote_addr, &data, sizeof(bts_gattc_service_discover_s));
     if (!msg) {
-        free(items);
+        free(pitems);
         BT_LOGE("failed, create_adp_msg");
         return;
     }
