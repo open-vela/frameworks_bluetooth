@@ -40,6 +40,7 @@
 #include "callbacks_list.h"
 #include "device.h"
 #include "hci_error.h"
+#include "advertising.h"
 #include "sal_adapter_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
@@ -716,6 +717,13 @@ void adapter_on_le_enabled(bool enablebt)
     /* set resolvinglist list ? */
     /* enable cdtk */
     /* enable advertiser manager */
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
+    adv_manager_init();
+#endif
+
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
+    scan_manager_init();
+#endif
     /* enable scan manager */
     /* startup gatt service */
     if (enablebt)
@@ -725,6 +733,12 @@ void adapter_on_le_enabled(bool enablebt)
 void adapter_on_le_disabled(void)
 {
     BT_LOGD("%s", __func__);
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
+    adv_manager_cleanup();
+#endif
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
+    scan_manager_cleanup();
+#endif
     /* wait save info done*/
 }
 
@@ -1227,7 +1241,8 @@ bt_status_t adapter_set_scan_mode(bt_scan_mode_t mode, bool bondable)
 
     adapter_lock();
     CHECK_ADAPTER_READY();
-    if (adapter->properties.scan_mode == mode && adapter->properties.bondable == bondable)
+    if (adapter->properties.scan_mode == mode &&
+        adapter->properties.bondable == bondable)
         goto error;
 
     status = bt_sal_set_scan_mode(mode, bondable);
