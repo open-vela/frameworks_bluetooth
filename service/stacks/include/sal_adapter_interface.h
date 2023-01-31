@@ -21,7 +21,7 @@
 #include "bt_status.h"
 #include <stdint.h>
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-#include "bt_le_advertising.h"
+#include "bt_le_advertiser.h"
 #include "bt_le_scan.h"
 #include "scan_manager.h"
 #endif
