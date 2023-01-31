@@ -27,7 +27,6 @@
 #ifdef CONFIG_BLUETOOTH_HFP_AG
 #include "hfp_ag_service.h"
 #endif
-<<<<<<< HEAD
 #ifdef CONFIG_BLUETOOTH_GATT
 #include "gattc_service.h"
 #include "gatts_service.h"
@@ -83,19 +82,14 @@
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
 #include "avrcp_control_service.h"
 #endif
-=======
->>>>>>> bluetooth framework re-implement base
 
 #define LOG_TAG "bt_service"
 #include "utils/log.h"
 
-<<<<<<< HEAD
 #define MISC_PATH "/data/misc"
 #define BT_FOLDER_PATH MISC_PATH "/" \
                                  "bt"
 
-=======
->>>>>>> bluetooth framework re-implement base
 typedef struct {
     uint16_t profile_id;
     uint16_t event_id;
@@ -110,7 +104,6 @@ typedef struct {
 
 void bt_profile_init(void)
 {
-<<<<<<< HEAD
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     register_a2dp_sink_service();
 #endif
@@ -127,8 +120,6 @@ void bt_profile_init(void)
     register_avrcp_control_service();
 #endif
 
-=======
->>>>>>> bluetooth framework re-implement base
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     register_hfp_hf_service();
 #endif
@@ -136,7 +127,6 @@ void bt_profile_init(void)
 #ifdef CONFIG_BLUETOOTH_HFP_AG
     register_hfp_ag_service();
 #endif
-<<<<<<< HEAD
 
 #ifdef CONFIG_BLUETOOTH_SPP
     register_spp_service();
@@ -205,8 +195,6 @@ static int create_bt_folder(void)
 out:
     syslog(LOG_INFO, "data/misc/bt folder create: %d\n", ret);
     return ret;
-=======
->>>>>>> bluetooth framework re-implement base
 }
 
 void bt_service_event_dispatch(void *smsg)
@@ -252,25 +240,17 @@ void send_to_state_machine(state_machine_t *sm, uint16_t event_id, void *data)
 
 int bt_service_init(void)
 {
-<<<<<<< HEAD
     if (create_bt_folder() != 0)
         return -1;
 
     bt_log_server_init();
-=======
-    utils_log_init();
->>>>>>> bluetooth framework re-implement base
     bt_storage_init();
     bt_profile_init();
     adapter_init();
     manager_init();
-<<<<<<< HEAD
 
     if (stack_manager_init() != BT_STATUS_SUCCESS)
         return -1;
-=======
-    stack_manager_init();
->>>>>>> bluetooth framework re-implement base
 
     BT_LOGD("%s done", __func__);
     return 0;
@@ -282,15 +262,8 @@ int bt_service_cleanup(void)
     manager_cleanup();
     adapter_cleanup();
     bt_storage_cleanup();
-<<<<<<< HEAD
     bt_log_server_cleanup();
 
     BT_LOGD("%s done", __func__);
     return 0;
 }
-=======
-
-    BT_LOGD("%s done", __func__);
-    return 0;
-}
->>>>>>> bluetooth framework re-implement base

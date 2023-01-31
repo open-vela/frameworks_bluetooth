@@ -28,11 +28,8 @@ const bt_address_t bt_addr_any = {
     {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
 };
 
-<<<<<<< HEAD
 static char g_bdaddr_str[18];
 
-=======
->>>>>>> bluetooth framework re-implement base
 static int bachk(const char *str)
 {
     if (!str)
@@ -82,7 +79,6 @@ int bt_addr_ba2str(bt_address_t *addr, char *str)
                    addr->addr[2], addr->addr[1], addr->addr[0]);
 }
 
-<<<<<<< HEAD
 char *bt_addr_str(bt_address_t *addr)
 {
     bt_addr_ba2str(addr, g_bdaddr_str);
@@ -91,8 +87,6 @@ char *bt_addr_str(bt_address_t *addr)
     return g_bdaddr_str;
 }
 
-=======
->>>>>>> bluetooth framework re-implement base
 int bt_addr_str2ba(const char *str, bt_address_t *addr)
 {
     int i;
@@ -117,8 +111,4 @@ void bt_addr_swap(bt_address_t *src, bt_address_t *dest)
 {
     for (int i = 0; i < 6; i++)
         dest->addr[5 - i] = src->addr[i];
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> bluetooth framework re-implement base

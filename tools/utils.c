@@ -15,10 +15,7 @@
  ***************************************************************************/
 
 #include "utils.h"
-<<<<<<< HEAD
 #include "bt_tools.h"
-=======
->>>>>>> bluetooth framework re-implement base
 
 bool phy_is_vaild(uint8_t phy)
 {
@@ -34,7 +31,6 @@ int le_addr_type(const char *str, ble_addr_type_t *type)
 {
     *type = BT_LE_ADDR_TYPE_UNKNOWN;
 
-<<<<<<< HEAD
     if (!strncasecmp(str, "public_id", strlen("public_id")))
         *type = BT_LE_ADDR_TYPE_PUBLIC_ID;
     else if (!strncasecmp(str, "random_id", strlen("random_id")))
@@ -44,17 +40,6 @@ int le_addr_type(const char *str, ble_addr_type_t *type)
     else if (!strncasecmp(str, "random", strlen("random")))
         *type = BT_LE_ADDR_TYPE_RANDOM;
     else if (!strncasecmp(str, "anonymous", strlen("anonymous")))
-=======
-    if (strncasecmp(str, "public", strlen("public")))
-        *type = BT_LE_ADDR_TYPE_PUBLIC;
-    else if (strncasecmp(str, "random", strlen("random")))
-        *type = BT_LE_ADDR_TYPE_RANDOM;
-    else if (strncasecmp(str, "public_id", strlen("public_id")))
-        *type = BT_LE_ADDR_TYPE_PUBLIC_ID;
-    else if (strncasecmp(str, "random_id", strlen("random_id")))
-        *type = BT_LE_ADDR_TYPE_RANDOM_ID;
-    else if (strncasecmp(str, "anaonymous", strlen("anaonymous")))
->>>>>>> bluetooth framework re-implement base
         *type = BT_LE_ADDR_TYPE_ANONYMOUS;
     else
         return CMD_INVALID_PARAM;
@@ -69,7 +54,6 @@ bool bttool_allocator(void **data, uint32_t size)
         return false;
 
     return true;
-<<<<<<< HEAD
 }
 
 uint32_t get_timestamp_ms(void)
@@ -79,6 +63,4 @@ uint32_t get_timestamp_ms(void)
     clock_gettime(CLOCK_BOOTTIME, &ts);
 
     return (uint32_t)((ts.tv_sec * 1000L) + (ts.tv_nsec / 1000000));
-=======
->>>>>>> bluetooth framework re-implement base
 }
