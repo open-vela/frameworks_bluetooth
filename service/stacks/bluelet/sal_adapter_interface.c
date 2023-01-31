@@ -15,20 +15,24 @@
  ***************************************************************************/
 #define LOG_TAG "bluelet"
 
-#include "adapter_internel.h"
+#include <pthread.h>
+#include <stdint.h>
+#include <stdlib.h>
+
 #include "bluetooth.h"
 #include "bluetooth_define.h"
 #include "bt_adapter.h"
 #include "bt_device.h"
 #include "bt_status.h"
+
+#include "adapter_internel.h"
+
 #include "hci_h4.h"
 #include "sal.h"
 #include "service_loop.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_gap.h"
-#include <pthread.h>
-#include <stdint.h>
-#include <stdlib.h>
+
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 #include "advertising.h"
 #include "bt_le_scan.h"
