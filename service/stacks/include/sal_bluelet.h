@@ -48,7 +48,6 @@ static inline hfp_audio_state_t bluelet_hf_audio_state(SERVICE_HFP_SCO_STATE sta
     case SERVICE_HFP_SCO_DISCONNECTED:
         return HFP_AUDIO_STATE_DISCONNECTED;
     case SERVICE_HFP_SCO_UNKNOWN:
-        return HFP_AUDIO_STATE_DISCONNECTED;
     default:
         BT_LOGE("Unknow audio state: %d", state);
         return HFP_AUDIO_STATE_DISCONNECTED;

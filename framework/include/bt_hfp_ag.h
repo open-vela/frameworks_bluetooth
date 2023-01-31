@@ -1,0 +1,198 @@
+/****************************************************************************
+ *  Copyright (C) 2022 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+#ifndef __BT_HFP_AG_H__
+#define __BT_HFP_AG_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "bt_addr.h"
+#include "bt_device.h"
+#include "bt_hfp.h"
+#include <stddef.h>
+
+/**
+ * @brief HFP AG call state
+ *
+ */
+typedef enum {
+    HFP_AG_CALL_STATE_ACTIVE,
+    HFP_AG_CALL_STATE_HELD,
+    HFP_AG_CALL_STATE_DIALING,
+    HFP_AG_CALL_STATE_ALERTING,
+    HFP_AG_CALL_STATE_INCOMING,
+    HFP_AG_CALL_STATE_WAITING,
+    HFP_AG_CALL_STATE_IDLE,
+    HFP_AG_CALL_STATE_DISCONNECTED
+} hfp_ag_call_state_t;
+
+/**
+ * @brief HFP AG connection state changed callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ * @param state - connection state.
+ */
+typedef void (*hfp_ag_connection_state_callback)(void *cookie, bt_address_t *addr, profile_connection_state_t state);
+
+/**
+ * @brief HFP AG audio connection state changed callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ * @param state - hfp audio state.
+ */
+typedef void (*hfp_ag_audio_state_callback)(void *cookie, bt_address_t *addr, hfp_audio_state_t state);
+
+/**
+ * @brief voice recognition state changed callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ * @param started - is voice recognition started, true:started, false:stopped.
+ */
+typedef void (*hfp_ag_vr_cmd_callback)(void *cookie, bt_address_t *addr, bool started);
+
+/**
+ * @brief battery update callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ * @param value - battery level.
+ */
+typedef void (*hfp_ag_battery_update_callback)(void *cookie, bt_address_t *addr, uint8_t value);
+
+/**
+ * @brief HFP AG callback structure
+ *
+ */
+typedef struct
+{
+    size_t size;
+    hfp_ag_connection_state_callback connection_state_cb;
+    hfp_ag_audio_state_callback audio_state_cb;
+    hfp_ag_vr_cmd_callback vr_cmd_cb;
+    hfp_ag_battery_update_callback hf_battery_update_cb;
+} hfp_ag_callbacks_t;
+
+/**
+ * @brief Register HFP AG callback functions
+ *
+ * @param ins - bluetooth client instance.
+ * @param callbacks - HFP AG callback functions.
+ * @return void* - callback cookie.
+ */
+void *bt_hfp_ag_register_callbacks(bt_instance_t *ins, const hfp_ag_callbacks_t *callbacks);
+
+/**
+ * @brief Unregister HFP AG callback functions
+ *
+ * @param ins - bluetooth client instance.
+ * @param cookie - callback cookie.
+ * @return true - on unregister success.
+ * @return false - on callback cookie not found.
+ */
+bool bt_hfp_ag_unregister_callbacks(bt_instance_t *ins, void *cookie);
+
+/**
+ * @brief Check HFP AG is connected
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @return true - connected.
+ * @return false - not connected.
+ */
+bool bt_hfp_ag_is_connected(bt_instance_t *ins, bt_address_t *addr);
+
+/**
+ * @brief Check HFP AG audio connection is connected
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @return true - connected.
+ * @return false - not connected.
+ */
+bool bt_hfp_ag_is_audio_connected(bt_instance_t *ins, bt_address_t *addr);
+
+/**
+ * @brief Get HFP AG connection state
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @return profile_connection_state_t - connection state.
+ */
+profile_connection_state_t bt_hfp_ag_get_connection_state(bt_instance_t *ins, bt_address_t *addr);
+
+/**
+ * @brief Establish SLC with peer HF device
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t bt_hfp_ag_connect(bt_instance_t *ins, bt_address_t *addr);
+
+/**
+ * @brief Disconnect from HFP SLC
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t bt_hfp_ag_disconnect(bt_instance_t *ins, bt_address_t *addr);
+
+/**
+ * @brief Establish audio connection with peer HF device
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t bt_hfp_ag_connect_audio(bt_instance_t *ins, bt_address_t *addr);
+
+/**
+ * @brief Disconnect audio connection
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t bt_hfp_ag_disconnect_audio(bt_instance_t *ins, bt_address_t *addr);
+
+/**
+ * @brief Start voice recognition
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t bt_hfp_ag_start_voice_recognition(bt_instance_t *ins, bt_address_t *addr);
+
+/**
+ * @brief Stop voice recognition
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t bt_hfp_ag_stop_voice_recognition(bt_instance_t *ins, bt_address_t *addr);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __BT_HFP_AG_H__ */
