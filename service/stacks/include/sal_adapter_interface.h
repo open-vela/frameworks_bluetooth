@@ -21,11 +21,7 @@
 #include "bt_status.h"
 #include <stdint.h>
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-<<<<<<< HEAD
 #include "bt_le_advertiser.h"
-=======
-#include "bt_le_advertising.h"
->>>>>>> bluetooth framework re-implement base
 #include "bt_le_scan.h"
 #include "scan_manager.h"
 #endif
@@ -83,10 +79,7 @@ bt_status_t bt_sal_get_connected_devices(remote_device_properties_t *properties,
 bt_status_t bt_sal_start_service_discovery(bt_address_t *addr, bt_uuid_t *uuid);
 bt_status_t bt_sal_stop_service_discovery(bt_address_t *addr);
 bt_status_t bt_sal_set_link_role(bt_address_t *addr, bt_link_role_t role);
-<<<<<<< HEAD
 bt_status_t bt_sal_set_link_policy(bt_address_t *addr, bt_link_policy_t policy);
-=======
->>>>>>> bluetooth framework re-implement base
 bt_status_t bt_sal_set_link_mode(bt_address_t *addr,
                                  bt_link_mode_t mode,
                                  bt_sniff_params_t *param);
@@ -94,11 +87,7 @@ bt_status_t bt_sal_set_afh_channel_classification(uint16_t central_frequency,
                                                   uint16_t band_width,
                                                   uint16_t number);
 /* service adapter layer for LE */
-<<<<<<< HEAD
 // #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-=======
-//#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
->>>>>>> bluetooth framework re-implement base
 bt_status_t bt_sal_le_init(void);
 void bt_sal_le_cleanup(void);
 bt_status_t bt_sal_le_enable(void);
@@ -130,11 +119,7 @@ bt_status_t bt_sal_le_set_remote_irk(bt_address_t *addr, ble_addr_type_t type, b
 bt_status_t bt_sal_le_get_current_irk(void);
 bt_status_t bt_sal_le_set_address(bt_address_t *addr);
 bt_status_t bt_sal_le_get_address(void);
-<<<<<<< HEAD
 bt_status_t bt_sal_le_set_bonded_devices(remote_device_le_properties_t *props, uint16_t prop_cnt);
-=======
-bt_status_t bt_sal_le_set_bonded_devices(void);
->>>>>>> bluetooth framework re-implement base
 bt_status_t bt_sal_le_connect(bt_address_t *addr,
                               ble_addr_type_t type,
                               ble_connect_params_t *params);
@@ -164,15 +149,9 @@ bt_status_t bt_sal_le_set_appearance(uint16_t appearance);
 uint16_t bt_sal_le_get_appearance(void);
 bt_status_t bt_sal_le_enable_key_derivation(bool brkey_to_lekey,
                                             bool lekey_to_brkey);
-<<<<<<< HEAD
 
 bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t *buf,
                                     bt_hci_event_callback_t cb, void *context);
 bt_status_t bt_sal_set_auto_sniff(bt_auto_sniff_params_t *params);
 
 #endif /* __SAL_ADAPTER_INTERFACE_H_ */
-=======
-//#endif
-bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t *buf);
-#endif /* __SAL_ADAPTER_INTERFACE_H_ */
->>>>>>> bluetooth framework re-implement base

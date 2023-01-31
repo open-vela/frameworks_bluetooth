@@ -15,45 +15,31 @@
  ***************************************************************************/
 #define LOG_TAG "bluelet"
 
-<<<<<<< HEAD
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-=======
-#include "adapter_internel.h"
->>>>>>> bluetooth framework re-implement base
 #include "bluetooth.h"
 #include "bluetooth_define.h"
 #include "bt_adapter.h"
 #include "bt_device.h"
 #include "bt_status.h"
-<<<<<<< HEAD
 
 #include "adapter_internel.h"
 
-=======
->>>>>>> bluetooth framework re-implement base
 #include "hci_h4.h"
 #include "sal.h"
 #include "service_loop.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_gap.h"
-<<<<<<< HEAD
 #include "stack_adapter_gatt.h"
 
-=======
-#include <pthread.h>
-#include <stdint.h>
-#include <stdlib.h>
->>>>>>> bluetooth framework re-implement base
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 #include "advertising.h"
 #include "bt_le_scan.h"
 #include "sal_adapter_interface.h"
 #include "scan_manager.h"
 #endif
-<<<<<<< HEAD
 #ifdef CONFIG_BLUETOOTH_GATT
 #include "sal_gatt_client_interface.h"
 #include "sal_gatt_server_interface.h"
@@ -62,12 +48,6 @@
 
 #define BTSTACK_THREAD_STACK_SIZE 8192
 #define DEBUG_IMPL BT_LOGD("%s", __func__);
-=======
-#include "utils/log.h"
-
-#define BTSTACK_THREAD_STACK_SIZE 4096
-#define DEBUG_IMPL                BT_LOGD("%s", __func__);
->>>>>>> bluetooth framework re-implement base
 
 static uint8_t sal_pair_type(bt_pair_type_t type)
 {
@@ -120,53 +100,32 @@ static bt_status_t sal_status_translate(uint32_t status)
         return BT_STATUS_PARM_INVALID;
     case SERVICE_BT_STATUS_UNHANDLED:
         return BT_STATUS_ERROR_BUT_UNKNOWN;
-<<<<<<< HEAD
     default: {
         BT_LOGE("%s maybe hcierror code: %" PRIu32, __func__, status);
         return BT_STATUS_ERROR_BUT_UNKNOWN;
     }
     }
-=======
-    default:
-        return BT_STATUS_ERROR_BUT_UNKNOWN;
-    }
->>>>>>> bluetooth framework re-implement base
 }
 
 static void stack_state_changed_callback(SERVICE_BT_STACK_STATE stack_state)
 {
-<<<<<<< HEAD
     uint8_t state = BT_BREDR_STACK_STATE_OFF;
 
 #if defined(CONFIG_OBELISK_BREDR_BLUELET) && !defined(CONFIG_OBELISK_LE_BLUELET)
     state = stack_state == BT_STATE_ON ? BT_BREDR_STACK_STATE_ON : BT_BREDR_STACK_STATE_OFF;
-=======
-    uint8_t state = BT_STACK_STATE_OFF;
-
-#if defined(CONFIG_OBELISK_BREDR_BLUELET) && !defined(CONFIG_OBELISK_LE_BLUELET)
-    state = stack_state == BT_STATE_ON ? BT_STACK_STATE_ON : BT_STACK_STATE_OFF;
->>>>>>> bluetooth framework re-implement base
 #else
     switch (adapter_get_state()) {
     case BT_ADAPTER_STATE_BLE_TURNING_ON:
         state = stack_state == BT_STATE_ON ? BLE_STACK_STATE_ON : BLE_STACK_STATE_OFF;
         break;
     case BT_ADAPTER_STATE_TURNING_ON:
-<<<<<<< HEAD
         state = stack_state == BT_STATE_ON ? BT_BREDR_STACK_STATE_ON : BT_BREDR_STACK_STATE_OFF;
-=======
-        state = stack_state == BT_STATE_ON ? BT_STACK_STATE_ON : BT_STACK_STATE_OFF;
->>>>>>> bluetooth framework re-implement base
         break;
     case BT_ADAPTER_STATE_BLE_TURNING_OFF:
         state = BLE_STACK_STATE_OFF;
         break;
     case BT_ADAPTER_STATE_TURNING_OFF:
-<<<<<<< HEAD
         state = BT_BREDR_STACK_STATE_OFF;
-=======
-        state = BT_STACK_STATE_OFF;
->>>>>>> bluetooth framework re-implement base
         break;
     default:
         break;
@@ -259,10 +218,7 @@ static void pair_authentication_request(SERVICE_SSP_REQUEST_DATA_S *request_data
     bt_address_t addr;
     bt_pair_type_t type;
 
-<<<<<<< HEAD
     BT_LOGD("%s", __func__);
-=======
->>>>>>> bluetooth framework re-implement base
     memcpy(addr.addr, request_data->remote_addr, 6);
     switch (request_data->ssp_type) {
     case GAP_SPP_TYPE_PASSKEY_CONFIRMATION:
@@ -277,11 +233,8 @@ static void pair_authentication_request(SERVICE_SSP_REQUEST_DATA_S *request_data
     case GAP_SPP_TYPE_PASSKEY_NOTIFICATION:
         type = PAIR_TYPE_PASSKEY_NOTIFICATION;
         break;
-<<<<<<< HEAD
     default:
         return;
-=======
->>>>>>> bluetooth framework re-implement base
     }
 
     adapter_on_ssp_request(&addr, transport, request_data->cod,
@@ -297,19 +250,12 @@ static void ssp_request_callback(SERVICE_SSP_REQUEST_DATA_S *request_data)
 static void bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_BOND_STATE state)
 {
     bt_address_t addr;
-<<<<<<< HEAD
     bool is_ctkd = false; // is BR/EDR link key using cross-transport key derivation.
-=======
->>>>>>> bluetooth framework re-implement base
     bond_state_t bond_state;
     uint8_t link_type = BT_TRANSPORT_BLE;
 
     memcpy(addr.addr, remote_addr, 6);
-<<<<<<< HEAD
     if (state < SERVICE_BT_BOND_STATE_BLE_NONE || state == SERVICE_BT_BOND_STATE_BONDED_CTKD)
-=======
-    if (state < SERVICE_BT_BOND_STATE_BLE_NONE)
->>>>>>> bluetooth framework re-implement base
         link_type = BT_TRANSPORT_BREDR;
 
     bond_state = BOND_STATE_NONE;
@@ -317,23 +263,15 @@ static void bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_BOND_STA
         bond_state = BOND_STATE_BONDED;
     else if (state == SERVICE_BT_BOND_STATE_BONDING || state == SERVICE_BT_BOND_STATE_BLE_BONDING)
         bond_state = BOND_STATE_BONDING;
-<<<<<<< HEAD
     else if (state == SERVICE_BT_BOND_STATE_BONDED_CTKD) {
         bond_state = BOND_STATE_BONDED;
         is_ctkd = true;
     } else if (state == SERVICE_BT_BOND_STATE_SDP_DONE) {
-=======
-    else if (state == SERVICE_BT_BOND_STATE_SDP_DONE) {
->>>>>>> bluetooth framework re-implement base
         /* had bonded, ignore it*/
         return;
     }
 
-<<<<<<< HEAD
     adapter_on_bond_state_changed(&addr, bond_state, link_type, is_ctkd);
-=======
-    adapter_on_bond_state_changed(&addr, bond_state, link_type);
->>>>>>> bluetooth framework re-implement base
 }
 
 static void ble_scan_result_callback(SERVICE_SCAN_RESULT_DATA_S *scan_result_data)
@@ -397,11 +335,6 @@ static void link_policy_changed_callback(BD_ADDR remote_addr,
     adapter_on_link_policy_changed(&addr, link_policy);
 }
 
-<<<<<<< HEAD
-=======
-static void bt_hci_event_callback(SERVICE_BT_HCI_EVENT_S *hci_event) { DEBUG_IMPL }
-
->>>>>>> bluetooth framework re-implement base
 static void transport_write_packet_callback(uint8_t *hci_packet, uint32_t length)
 {
     assert(hci_packet);
@@ -445,11 +378,7 @@ static void service_discovered_callback(BD_ADDR remote_addr, SERVICE_BR_SERVICE_
 static void link_encryption_state_callback(BD_ADDR remote_addr, bool br_link, bool encryption_on)
 {
     bt_address_t addr;
-<<<<<<< HEAD
     BT_LOGD("%s isBRLink: %d, encrypted: %d", __func__, br_link, encryption_on);
-=======
-
->>>>>>> bluetooth framework re-implement base
     memcpy(addr.addr, remote_addr, 6);
     adapter_on_encryption_state_changed(&addr, encryption_on,
                                         br_link ? BT_TRANSPORT_BREDR : BT_TRANSPORT_BLE);
@@ -461,7 +390,6 @@ static void smp_request_callback(SERVICE_SSP_REQUEST_DATA_S *request_data)
 }
 
 static void update_ble_bonded_devices_callback(SERVICE_BLE_KEYS_S *bonded_device_list,
-<<<<<<< HEAD
                                                uint8_t count_in)
 {
     remote_device_le_properties_t *props = malloc(sizeof(remote_device_le_properties_t) * count_in);
@@ -494,11 +422,6 @@ static void ble_remove_white_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATU
     memcpy(addr.addr, remote_addr, 6);
     adapter_on_whitelist_update(&addr, false, sal_status_translate(status));
 }
-=======
-                                               uint8_t count_in) { DEBUG_IMPL }
-static void ble_add_white_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status) { DEBUG_IMPL }
-static void ble_remove_white_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status) { DEBUG_IMPL }
->>>>>>> bluetooth framework re-implement base
 static void ble_add_resolving_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status) { DEBUG_IMPL }
 static void ble_remove_resolving_list_callback(BD_ADDR remote_addr,
                                                SERVICE_BT_STATUS status) { DEBUG_IMPL }
@@ -546,7 +469,6 @@ static void ble_scan_stopped_callback(void)
 
 static void ble_connection_updated_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status,
                                             uint16_t connection_interval, uint16_t peripheral_latency,
-<<<<<<< HEAD
                                             uint16_t supervision_timeout)
 {
 #ifdef CONFIG_BLUETOOTH_GATT
@@ -560,9 +482,6 @@ static void ble_connection_updated_callback(BD_ADDR remote_addr, SERVICE_BT_STAT
     }
 #endif
 }
-=======
-                                            uint16_t supervision_timeout) { DEBUG_IMPL }
->>>>>>> bluetooth framework re-implement base
 
 static const GAP_CALLBACKS_S sal_gap_callbacks = {
     .size = sizeof(sal_gap_callbacks),
@@ -598,11 +517,7 @@ static const GAP_CALLBACKS_S sal_gap_callbacks = {
     .gap_link_mode_changed_cb = link_mode_changed_callback,
     /* done */
     .gap_link_policy_changed_cb = link_policy_changed_callback,
-<<<<<<< HEAD
     .gap_hci_event_cb = NULL,
-=======
-    .gap_hci_event_cb = bt_hci_event_callback,
->>>>>>> bluetooth framework re-implement base
     /* done */
     .gap_transport_write_packet_cb = transport_write_packet_callback,
     /* don't implement this callback */
@@ -668,11 +583,7 @@ static void hci_poll_recv(service_poll_t *poll, int revent, void *userdata)
         bt_sal_hci_transport_recv();
 }
 
-<<<<<<< HEAD
 static int hci_add_recv(void *data)
-=======
-static void hci_add_recv(void *data)
->>>>>>> bluetooth framework re-implement base
 {
     (void)data;
 
@@ -680,15 +591,10 @@ static void hci_add_recv(void *data)
     hci_handle = service_loop_poll_fd(hci_fd, POLL_READABLE, hci_poll_recv, NULL);
     if (!hci_handle) {
         BT_LOGD("hci fd:%d add poll failed", hci_fd);
-<<<<<<< HEAD
         return -1;
     }
 
     return 0;
-=======
-        assert(0);
-    }
->>>>>>> bluetooth framework re-implement base
 }
 
 static void *stack_schedule_loop(void *data)
@@ -696,11 +602,7 @@ static void *stack_schedule_loop(void *data)
     extern int ScheduleLoop(void);
     assert(data);
 
-<<<<<<< HEAD
     uv_sem_post((uv_sem_t *)data);
-=======
-    sem_post((sem_t *)data);
->>>>>>> bluetooth framework re-implement base
     ScheduleLoop();
     BT_LOGD("%s quit", __func__);
 
@@ -711,11 +613,7 @@ static bt_status_t bluelet_stack_init(void)
 {
     pthread_attr_t pattr;
     pthread_t thread_id;
-<<<<<<< HEAD
     uv_sem_t startup;
-=======
-    sem_t startup;
->>>>>>> bluetooth framework re-implement base
     bt_status_t status;
 
     if (stack_initialized)
@@ -727,18 +625,10 @@ static bt_status_t bluelet_stack_init(void)
         return BT_STATUS_FAIL;
 
     /* Register gap callbacks and initialize bluelet stack */
-<<<<<<< HEAD
     service_adapter_gap_init();
     service_adapter_gap_register_gap_callback((GAP_CALLBACKS_S *)&sal_gap_callbacks);
 
     uv_sem_init(&startup, 0);
-=======
-    service_adapter_debug_init();
-    service_adapter_gap_init();
-    service_adapter_gap_register_gap_callback((GAP_CALLBACKS_S *)&sal_gap_callbacks);
-
-    sem_init(&startup, 0, 0);
->>>>>>> bluetooth framework re-implement base
     pthread_attr_init(&pattr);
     pthread_attr_setstacksize(&pattr, BTSTACK_THREAD_STACK_SIZE);
 
@@ -750,11 +640,7 @@ static bt_status_t bluelet_stack_init(void)
         status = BT_STATUS_FAIL;
     } else {
         pthread_setname_np(thread_id, "bluelet_thread");
-<<<<<<< HEAD
         uv_sem_wait(&startup);
-=======
-        sem_wait(&startup);
->>>>>>> bluetooth framework re-implement base
 
         /* action polling start should do in service loop*/
         add_init_process(hci_add_recv);
@@ -762,11 +648,7 @@ static bt_status_t bluelet_stack_init(void)
     }
 
     pthread_attr_destroy(&pattr);
-<<<<<<< HEAD
     uv_sem_destroy(&startup);
-=======
-    sem_destroy(&startup);
->>>>>>> bluetooth framework re-implement base
     stack_initialized = true;
 
     return status;
@@ -806,11 +688,7 @@ bt_status_t bt_sal_enable(void)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (service_adapter_gap_get_stack_state() == BT_STATE_ON) {
-<<<<<<< HEAD
         adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_ON);
-=======
-        adapter_on_adapter_state_changed(BT_STACK_STATE_ON);
->>>>>>> bluetooth framework re-implement base
         return BT_STATUS_SUCCESS;
     }
 
@@ -826,11 +704,7 @@ bt_status_t bt_sal_disable(void)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (service_adapter_gap_get_stack_state() == BT_STATE_OFF) {
-<<<<<<< HEAD
         adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
-=======
-        adapter_on_adapter_state_changed(BT_STACK_STATE_OFF);
->>>>>>> bluetooth framework re-implement base
         return BT_STATUS_SUCCESS;
     }
 
@@ -1221,13 +1095,8 @@ bt_status_t bt_sal_ssp_get_local_oob_data(void)
 #endif
 }
 
-<<<<<<< HEAD
 static void bluelet_set_remote_property(remote_device_properties_t *prop,
                                         SERVICE_REMOTE_DEVICE_S *remote)
-=======
-void bluelet_set_remote_property(remote_device_properties_t *prop,
-                                 SERVICE_REMOTE_DEVICE_S *remote)
->>>>>>> bluetooth framework re-implement base
 {
     /* address */
     memcpy(prop->addr.addr, remote->bd_addr, 6);
@@ -1283,7 +1152,6 @@ bt_status_t bt_sal_set_bonded_devices(remote_device_properties_t *prop)
 #endif
 }
 
-<<<<<<< HEAD
 bt_status_t bt_sal_le_set_bonded_devices(remote_device_le_properties_t *props, uint16_t prop_cnt)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
@@ -1306,8 +1174,6 @@ bt_status_t bt_sal_le_set_bonded_devices(remote_device_le_properties_t *props, u
 #endif
 }
 
-=======
->>>>>>> bluetooth framework re-implement base
 /* useless */
 bt_status_t bt_sal_get_bonded_devices(remote_device_properties_t *props, int *cnt)
 {
@@ -1383,7 +1249,6 @@ bt_status_t bt_sal_set_link_role(bt_address_t *addr, bt_link_role_t role)
 #endif
 }
 
-<<<<<<< HEAD
 bt_status_t bt_sal_set_link_policy(bt_address_t *addr, bt_link_policy_t policy)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
@@ -1396,8 +1261,6 @@ bt_status_t bt_sal_set_link_policy(bt_address_t *addr, bt_link_policy_t policy)
 #endif
 }
 
-=======
->>>>>>> bluetooth framework re-implement base
 bt_status_t bt_sal_set_link_mode(bt_address_t *addr,
                                  bt_link_mode_t mode,
                                  bt_sniff_params_t *param)
@@ -1466,12 +1329,9 @@ bt_status_t bt_sal_le_enable(void)
     if (service_adapter_gap_enable() != SERVICE_BT_STATUS_SUCCESS)
         return BT_STATUS_FAIL;
 
-<<<<<<< HEAD
     if (service_adapter_gatt_init() != GATT_SUCCESS)
         return BT_STATUS_FAIL;
 
-=======
->>>>>>> bluetooth framework re-implement base
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
@@ -1489,11 +1349,8 @@ bt_status_t bt_sal_le_disable(void)
     if (service_adapter_gap_disable(true) != SERVICE_BT_STATUS_SUCCESS)
         return BT_STATUS_FAIL;
 
-<<<<<<< HEAD
     service_adapter_gatt_cleanup();
 
-=======
->>>>>>> bluetooth framework re-implement base
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
@@ -1521,10 +1378,7 @@ bt_status_t bt_sal_le_set_scan_parameters(ble_scan_params_t *params)
 
     scan_params.scan_interval = params->scan_interval;
     scan_params.scan_window = params->scan_window;
-<<<<<<< HEAD
     scan_params.scan_type = params->scan_type;
-=======
->>>>>>> bluetooth framework re-implement base
     scan_params.scan_phy = params->scan_phy;
     SAL_CHECK_RET(service_adapter_gap_set_ble_scan_parameters(&scan_params), SERVICE_BT_STATUS_SUCCESS);
 
@@ -1724,15 +1578,6 @@ bt_status_t bt_sal_le_get_address(void)
 #endif
 }
 
-<<<<<<< HEAD
-=======
-bt_status_t bt_sal_le_set_bonded_devices(void)
-{
-    // SERVICE_BT_STATUS ret = service_adapter_gap_ble_set_bonded_devices((SERVICE_BLE_KEYS_S*)bonded_device_list, count_in);
-    return BT_STATUS_NOT_SUPPORTED;
-}
-
->>>>>>> bluetooth framework re-implement base
 bt_status_t bt_sal_le_connect(bt_address_t *addr,
                               ble_addr_type_t type,
                               ble_connect_params_t *params)
@@ -1981,12 +1826,8 @@ bt_status_t bt_sal_le_enable_key_derivation(bool brkey_to_lekey,
 }
 
 /* HCI VSC command */
-<<<<<<< HEAD
 bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t *buf,
                                     bt_hci_event_callback_t cb, void *context)
-=======
-bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t *buf)
->>>>>>> bluetooth framework re-implement base
 {
     SERVICE_HCI_COMMAND_S *command = malloc(sizeof(SERVICE_HCI_COMMAND_S) + length);
 
@@ -1995,14 +1836,9 @@ bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, u
 
     command->ogf = ogf;
     command->ocf = ocf;
-<<<<<<< HEAD
     command->cb = (gap_hci_event_callback)cb;
     command->length = length;
     command->context = context;
-=======
-    command->cb = bt_hci_event_callback;
-    command->length = length;
->>>>>>> bluetooth framework re-implement base
     memcpy(command->params, buf, length);
     if (service_adapter_gap_send_hci_command(command) != SERVICE_BT_STATUS_SUCCESS) {
         free(command);
@@ -2012,7 +1848,6 @@ bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, u
 
     return BT_STATUS_SUCCESS;
 }
-<<<<<<< HEAD
 
 bt_status_t bt_sal_set_auto_sniff(bt_auto_sniff_params_t *params)
 {
@@ -2024,9 +1859,6 @@ bt_status_t bt_sal_set_auto_sniff(bt_auto_sniff_params_t *params)
     return BT_STATUS_NOT_SUPPORTED;
 #endif
 }
-=======
-//#endif
->>>>>>> bluetooth framework re-implement base
 
 #if 0
 /* Test */
@@ -2034,8 +1866,4 @@ bt_status_t bt_sal_enter_bluetooth_test_mode(test_mode mode)
 {
     SERVICE_BT_STATUS ret = service_adapter_gap_enter_bluetooth_test_mode((SERVICE_BT_TEST_MODE)mode);
 }
-<<<<<<< HEAD
 #endif
-=======
-#endif
->>>>>>> bluetooth framework re-implement base

@@ -21,7 +21,6 @@
 
 #include "bt_profile.h"
 #include "service_manager.h"
-<<<<<<< HEAD
 #include "adapter_internel.h"
 
 #define LOG_TAG "service_manager"
@@ -116,18 +115,6 @@ void register_service(const profile_service_t *service)
         service_slots[service->id].service = (profile_service_t *)service;
         service_slots[service->id].state = TURN_OFF;
         BT_LOGD("%s service register success", service->name);
-=======
-
-#define LOG_TAG "service_manager"
-#include "utils/log.h"
-static profile_service_t *service_slots[PROFILE_MAX];
-
-void register_service(const profile_service_t *service)
-{
-    if (!service_slots[service->id]) {
-        service_slots[service->id] = (profile_service_t *)service;
-        BT_LOGW("%s service register success", service->name);
->>>>>>> bluetooth framework re-implement base
     } else
         BT_LOGW("%s service had registered", service->name);
 }
@@ -135,14 +122,9 @@ void register_service(const profile_service_t *service)
 int service_manager_init(void)
 {
     for (int i = 0; i < PROFILE_MAX; i++) {
-<<<<<<< HEAD
         profile_service_t *profile = service_slots[i].service;
         if (profile && profile->init)
             profile->init();
-=======
-        if (service_slots[i] && service_slots[i]->init)
-            service_slots[i]->init();
->>>>>>> bluetooth framework re-implement base
     }
 
     return 0;
@@ -150,7 +132,6 @@ int service_manager_init(void)
 
 int service_manager_startup(uint8_t transport)
 {
-<<<<<<< HEAD
     if (check_is_all_startup(transport)) {
         BT_LOGD("%s all profile is startup", __func__);
         adapter_on_profile_services_startup(transport, true);
@@ -174,13 +155,6 @@ int service_manager_processmsg(profile_msg_t *msg)
         profile_service_t *profile = service_slots[i].service;
         if (profile && profile->process_msg)
             profile->process_msg(msg);
-=======
-    for (int i = 0; i < PROFILE_MAX; i++) {
-        profile_service_t *profile = service_slots[i];
-        if (profile && profile->startup && profile->auto_start &&
-            profile->transport == transport)
-            profile->startup(NULL);
->>>>>>> bluetooth framework re-implement base
     }
 
     return 0;
@@ -188,7 +162,6 @@ int service_manager_processmsg(profile_msg_t *msg)
 
 int service_manager_shutdown(uint8_t transport)
 {
-<<<<<<< HEAD
     if (check_is_all_shutdown(transport)) {
         BT_LOGD("%s all profile is shutdown", __func__);
         adapter_on_profile_services_shutdown(transport, true);
@@ -198,12 +171,6 @@ int service_manager_shutdown(uint8_t transport)
             if (profile && profile->shutdown && profile->transport == transport)
                 profile->shutdown(service_on_shutdown);
         }
-=======
-    for (int i = 0; i < PROFILE_MAX; i++) {
-        profile_service_t *profile = service_slots[i];
-        if (profile && profile->shutdown && profile->transport == transport)
-            profile->shutdown(NULL);
->>>>>>> bluetooth framework re-implement base
     }
 
     return 0;
@@ -211,7 +178,6 @@ int service_manager_shutdown(uint8_t transport)
 
 const void *service_manager_get_profile(enum profile_id id)
 {
-<<<<<<< HEAD
     assert(id < PROFILE_MAX);
     profile_service_t *profile = service_slots[id].service;
     if (!profile || !profile->get_profile_interface) {
@@ -220,16 +186,10 @@ const void *service_manager_get_profile(enum profile_id id)
     }
 
     return profile->get_profile_interface();
-=======
-    assert(id < PROFILE_MAX && service_slots[id] && service_slots[id]->get_profile_interface);
-
-    return service_slots[id]->get_profile_interface();
->>>>>>> bluetooth framework re-implement base
 }
 
 bt_status_t service_manager_control(enum profile_id id, control_cmd_t cmd)
 {
-<<<<<<< HEAD
     profile_service_t *profile = service_slots[id].service;
 
     switch (cmd) {
@@ -248,16 +208,6 @@ bt_status_t service_manager_control(enum profile_id id, control_cmd_t cmd)
             BT_LOGE("shutdown not implemented");
             return BT_STATUS_NOT_SUPPORTED;
         }
-=======
-    switch (cmd) {
-    case CONTROL_CMD_START:
-        if (service_slots[id] && service_slots[id]->startup)
-            return service_slots[id]->startup(NULL);
-        break;
-    case CONTROL_CMD_STOP:
-        if (service_slots[id] && service_slots[id]->shutdown)
-            return service_slots[id]->shutdown(NULL);
->>>>>>> bluetooth framework re-implement base
         break;
     case CONTROL_CMD_DUMP:
         break;
@@ -271,7 +221,6 @@ bt_status_t service_manager_control(enum profile_id id, control_cmd_t cmd)
 int service_manager_cleanup(void)
 {
     for (int i = 0; i < PROFILE_MAX; i++) {
-<<<<<<< HEAD
         profile_service_t *profile = service_slots[i].service;
         if (!profile)
             continue;
@@ -282,12 +231,6 @@ int service_manager_cleanup(void)
             BT_LOGE("%s profile cleanup method is NULL", profile->name);
         }
         service_slots[i].service = NULL;
-=======
-        if (service_slots[i] && service_slots[i]->cleanup) {
-            service_slots[i]->cleanup();
-        }
-        service_slots[i] = NULL;
->>>>>>> bluetooth framework re-implement base
     }
 
     return 0;

@@ -18,7 +18,6 @@
 
 #include "bluetooth_define.h"
 #include "bt_list.h"
-<<<<<<< HEAD
 
 enum device_flags {
     DFLAG_NAME_SET = 0x00000001,
@@ -30,8 +29,6 @@ enum device_flags {
     DFLAG_LE_KEY_SET = 0x00000064,
 };
 
-=======
->>>>>>> bluetooth framework re-implement base
 typedef struct bt_device bt_device_t;
 
 bt_device_t *br_device_create(bt_address_t *addr);
@@ -42,10 +39,7 @@ bt_address_t *device_get_address(bt_device_t *device);
 bt_address_t *device_get_identity_address(bt_device_t *device);
 void device_set_identity_address(bt_device_t *device, bt_address_t *addr);
 ble_addr_type_t device_get_address_type(bt_device_t *device);
-<<<<<<< HEAD
 void device_set_address_type(bt_device_t *device, ble_addr_type_t type);
-=======
->>>>>>> bluetooth framework re-implement base
 void device_set_device_type(bt_device_t *device, bt_device_type_t type);
 bt_device_type_t device_get_device_type(bt_device_t *device);
 const char *device_get_name(bt_device_t *device);
@@ -67,11 +61,8 @@ bool device_is_connected(bt_device_t *device);
 bool device_is_encrypted(bt_device_t *device);
 uint16_t device_get_acl_handle(bt_device_t *device);
 void device_set_acl_handle(bt_device_t *device, uint16_t handle);
-<<<<<<< HEAD
 bt_link_role_t device_get_local_role(bt_device_t *device);
 void device_set_local_role(bt_device_t *device, bt_link_role_t role);
-=======
->>>>>>> bluetooth framework re-implement base
 void device_set_bond_initiate_local(bt_device_t *device, bool initiate_local);
 bool device_is_bond_initiate_local(bt_device_t *device);
 bond_state_t device_get_bond_state(bt_device_t *device);
@@ -82,7 +73,6 @@ void device_set_link_key(bt_device_t *device, bt_128key_t link_key);
 void device_delete_link_key(bt_device_t *device);
 bt_link_key_type_t device_get_link_key_type(bt_device_t *device);
 void device_set_link_key_type(bt_device_t *device, bt_link_key_type_t type);
-<<<<<<< HEAD
 bt_link_policy_t device_get_link_policy(bt_device_t *device);
 void device_set_link_policy(bt_device_t *device, bt_link_policy_t policy);
 void device_set_le_phy(bt_device_t *device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
@@ -95,11 +85,6 @@ uint8_t *device_get_smp_key(bt_device_t *device);
 void device_set_smp_key(bt_device_t *device, uint8_t *smp_key);
 void device_delete_smp_key(bt_device_t *device);
 void device_get_le_property(bt_device_t *device, remote_device_le_properties_t *prop);
-=======
-void device_set_le_phy(bt_device_t *device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
-void device_get_le_phy(bt_device_t *device, ble_phy_type_t *tx_phy, ble_phy_type_t *rx_phy);
-void device_get_property(bt_device_t *device, remote_device_properties_t *prop);
->>>>>>> bluetooth framework re-implement base
 void device_dump(bt_device_t *device);
 
 #endif /* __REMOTE_DEVICE_H__ */

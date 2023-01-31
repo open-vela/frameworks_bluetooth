@@ -17,26 +17,18 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-<<<<<<< HEAD
 #ifdef CONFIG_KVDB
 #include <kvdb.h>
 #endif
-=======
->>>>>>> bluetooth framework re-implement base
 
 #include "adapter_internel.h"
 #include "bt_adapter.h"
 #include "btservice.h"
-<<<<<<< HEAD
 #include "media_system.h"
 #include "sal_adapter_interface.h"
 #include "service_manager.h"
 #include "state_machine.h"
 
-=======
-#include "sal_adapter_interface.h"
-#include "state_machine.h"
->>>>>>> bluetooth framework re-implement base
 #define LOG_TAG "adapter-stm"
 #include "bt_utils.h"
 #include "utils/log.h"
@@ -124,20 +116,13 @@ typedef struct adapter_state_machine {
     state_machine_t sm;
     bool ble_enabled;
     bool pending_turn_on;
-<<<<<<< HEAD
     bool a2dp_offloading;
     bool hfp_offloading;
     bool lea_offloading;
-=======
->>>>>>> bluetooth framework re-implement base
 } adapter_state_machine_t;
 
 #define ADPATER_STM_DEBUG 1
 #if ADPATER_STM_DEBUG
-<<<<<<< HEAD
-
-=======
->>>>>>> bluetooth framework re-implement base
 static const char *event_to_string(uint16_t event)
 {
     switch (event) {
@@ -147,7 +132,6 @@ static const char *event_to_string(uint16_t event)
         CASE_RETURN_STR(TURN_OFF_BLE)
         CASE_RETURN_STR(BREDR_ENABLED)
         CASE_RETURN_STR(BREDR_DISABLED)
-<<<<<<< HEAD
         CASE_RETURN_STR(BREDR_PROFILE_ENABLED)
         CASE_RETURN_STR(BREDR_PROFILE_DISABLED)
         CASE_RETURN_STR(BREDR_ENABLE_TIMEOUT)
@@ -162,14 +146,6 @@ static const char *event_to_string(uint16_t event)
         CASE_RETURN_STR(BLE_DISABLE_TIMEOUT)
         CASE_RETURN_STR(BLE_ENABLE_PROFILE_TIMEOUT)
         CASE_RETURN_STR(BLE_DISABLE_PROFILE_TIMEOUT)
-=======
-        CASE_RETURN_STR(BREDR_ENABLE_TIMEOUT)
-        CASE_RETURN_STR(BREDR_DISABLE_TIMEOUT)
-        CASE_RETURN_STR(BLE_ENABLED)
-        CASE_RETURN_STR(BLE_DISABLED)
-        CASE_RETURN_STR(BLE_ENABLE_TIMEOUT)
-        CASE_RETURN_STR(BLE_DISABLE_TIMEOUT)
->>>>>>> bluetooth framework re-implement base
     default:
         return "unknown";
     }
@@ -191,7 +167,6 @@ static const char *event_to_string(uint16_t event)
 #define ADAPTER_DBG_EVENT(__sm, __event)
 #endif
 
-<<<<<<< HEAD
 static bool a2dp_is_offloading(void)
 {
 #if defined(CONFIG_KVDB) && defined(__NuttX__)
@@ -219,8 +194,6 @@ static bool lea_is_offloading(void)
 #endif
 }
 
-=======
->>>>>>> bluetooth framework re-implement base
 static void off_enter(state_machine_t *sm)
 {
     adapter_state_machine_t *stm = (adapter_state_machine_t *)sm;
@@ -229,7 +202,6 @@ static void off_enter(state_machine_t *sm)
     stm->ble_enabled = false;
     stm->pending_turn_on = false;
     const state_t *prev = hsm_get_previous_state(sm);
-<<<<<<< HEAD
     if (prev) {
         adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_OFF);
     } else {
@@ -237,10 +209,6 @@ static void off_enter(state_machine_t *sm)
         stm->hfp_offloading = hfp_is_offloading();
         stm->lea_offloading = lea_is_offloading();
     }
-=======
-    if (prev)
-        adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_OFF);
->>>>>>> bluetooth framework re-implement base
 }
 
 static void off_exit(state_machine_t *sm)
@@ -248,7 +216,6 @@ static void off_exit(state_machine_t *sm)
     ADAPTER_DBG_EXIT(sm);
 }
 
-<<<<<<< HEAD
 static void adapter_notify_media_offloading(adapter_state_machine_t *stm)
 {
     profile_msg_t msg;
@@ -266,8 +233,6 @@ static void adapter_notify_media_offloading(adapter_state_machine_t *stm)
     service_manager_processmsg(&msg);
 }
 
-=======
->>>>>>> bluetooth framework re-implement base
 static bool off_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     adapter_state_machine_t *stm = (adapter_state_machine_t *)sm;
@@ -275,10 +240,7 @@ static bool off_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 
     switch (event) {
     case SYS_TURN_ON:
-<<<<<<< HEAD
         adapter_notify_media_offloading(stm);
-=======
->>>>>>> bluetooth framework re-implement base
         if (!adapter_is_support_le()) {
             hsm_transition_to(sm, &turning_on_state);
             break;
@@ -318,7 +280,6 @@ static bool ble_turning_on_process_event(state_machine_t *sm, uint32_t event, vo
 
     switch (event) {
     case BLE_ENABLED:
-<<<<<<< HEAD
         /* LE profile service startup */
         service_manager_startup(BT_TRANSPORT_BLE);
         break;
@@ -327,11 +288,6 @@ static bool ble_turning_on_process_event(state_machine_t *sm, uint32_t event, vo
         break;
     case BLE_ENABLE_TIMEOUT:
     case BLE_ENABLE_PROFILE_TIMEOUT:
-=======
-        hsm_transition_to(sm, &ble_on_state);
-        break;
-    case BLE_ENABLE_TIMEOUT:
->>>>>>> bluetooth framework re-implement base
         break;
     default:
         return false;
@@ -397,7 +353,6 @@ static bool turning_on_process_event(state_machine_t *sm, uint32_t event, void *
 
     switch (event) {
     case BREDR_ENABLED:
-<<<<<<< HEAD
         /* BREDR profile service startup */
         service_manager_startup(BT_TRANSPORT_BREDR);
         break;
@@ -406,11 +361,6 @@ static bool turning_on_process_event(state_machine_t *sm, uint32_t event, void *
         break;
     case BREDR_ENABLE_TIMEOUT:
     case BREDR_ENABLE_PROFILE_TIMEOUT:
-=======
-        hsm_transition_to(sm, &on_state);
-        break;
-    case BREDR_ENABLE_TIMEOUT:
->>>>>>> bluetooth framework re-implement base
         break;
     default:
         return false;
@@ -421,22 +371,16 @@ static bool turning_on_process_event(state_machine_t *sm, uint32_t event, void *
 
 static void on_state_enter(state_machine_t *sm)
 {
-<<<<<<< HEAD
     adapter_state_machine_t *stm = (adapter_state_machine_t *)sm;
 
-=======
->>>>>>> bluetooth framework re-implement base
     ADAPTER_DBG_ENTER(sm);
     const state_t *prev = hsm_get_previous_state(sm);
     adapter_on_br_enabled();
     adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_ON);
-<<<<<<< HEAD
 
     bt_media_set_a2dp_offloading(stm->a2dp_offloading);
     bt_media_set_hfp_offloading(stm->hfp_offloading);
     bt_media_set_lea_offloading(stm->lea_offloading);
-=======
->>>>>>> bluetooth framework re-implement base
 }
 
 static void on_state_exit(state_machine_t *sm)
@@ -462,12 +406,8 @@ static bool on_state_process_event(state_machine_t *sm, uint32_t event, void *p_
 static void turning_off_enter(state_machine_t *sm)
 {
     ADAPTER_DBG_ENTER(sm);
-<<<<<<< HEAD
     /* profile service shotdown */
     service_manager_shutdown(BT_TRANSPORT_BREDR);
-=======
-    bt_sal_disable();
->>>>>>> bluetooth framework re-implement base
     adapter_notify_state_change(BT_ADAPTER_STATE_ON, BT_ADAPTER_STATE_TURNING_OFF);
 }
 
@@ -482,12 +422,9 @@ static bool turning_off_process_event(state_machine_t *sm, uint32_t event, void 
     ADAPTER_DBG_EVENT(sm, event);
 
     switch (event) {
-<<<<<<< HEAD
     case BREDR_PROFILE_DISABLED:
         bt_sal_disable();
         break;
-=======
->>>>>>> bluetooth framework re-implement base
     case BREDR_DISABLED:
         if (adapter_is_support_le()) {
             hsm_transition_to(sm, &ble_turning_off_state);
@@ -496,10 +433,7 @@ static bool turning_off_process_event(state_machine_t *sm, uint32_t event, void 
         hsm_transition_to(sm, &off_state);
         break;
     case BREDR_DISABLE_TIMEOUT:
-<<<<<<< HEAD
     case BREDR_DISABLE_PROFILE_TIMEOUT:
-=======
->>>>>>> bluetooth framework re-implement base
         break;
     default:
         return false;
@@ -512,12 +446,8 @@ static void ble_turning_off_enter(state_machine_t *sm)
 {
     ADAPTER_DBG_ENTER(sm);
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-<<<<<<< HEAD
     /* LE profile service shotdown */
     service_manager_shutdown(BT_TRANSPORT_BLE);
-=======
-    bt_sal_le_disable();
->>>>>>> bluetooth framework re-implement base
     const state_t *prev = hsm_get_previous_state(sm);
     adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_BLE_TURNING_OFF);
 #else
@@ -540,20 +470,14 @@ static bool ble_turning_off_process_event(state_machine_t *sm, uint32_t event, v
     ADAPTER_DBG_EVENT(sm, event);
 
     switch (event) {
-<<<<<<< HEAD
     case BLE_PROFILE_DISABLED:
         bt_sal_le_disable();
         break;
-=======
->>>>>>> bluetooth framework re-implement base
     case BLE_DISABLED:
         hsm_transition_to(sm, &off_state);
         break;
     case BLE_DISABLE_TIMEOUT:
-<<<<<<< HEAD
     case BLE_DISABLE_PROFILE_TIMEOUT:
-=======
->>>>>>> bluetooth framework re-implement base
         break;
     default:
         return false;

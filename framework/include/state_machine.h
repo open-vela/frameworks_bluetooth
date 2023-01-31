@@ -22,10 +22,7 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stdlib.h>
-<<<<<<< HEAD
 #include <stdint.h>
-=======
->>>>>>> bluetooth framework re-implement base
 
 typedef struct _state_machine state_machine_t;
 
@@ -58,8 +55,4 @@ bool hsm_dispatch_event(state_machine_t *sm, uint32_t event, void *p_data);
 #ifdef __cplusplus
 }
 #endif
-<<<<<<< HEAD
 #endif
-=======
-#endif
->>>>>>> bluetooth framework re-implement base

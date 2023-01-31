@@ -32,8 +32,4 @@ bt_status_t manager_delete_instance(uint32_t app_id);
 bt_status_t manager_start_service(uint32_t app_id, enum profile_id profile);
 bt_status_t manager_stop_service(uint32_t app_id, enum profile_id profile);
 
-<<<<<<< HEAD
 #endif /* __MANAGER_SERVICE_H__ */
-=======
-#endif /* __MANAGER_SERVICE_H__ */
->>>>>>> bluetooth framework re-implement base

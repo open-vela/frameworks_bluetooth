@@ -29,24 +29,12 @@
 #define LOG_TAG "device"
 #include "utils/log.h"
 
-<<<<<<< HEAD
-=======
-enum device_flags {
-    NAME_SET = 0x01,
-    ALIAS_SET = 0x02,
-    LINKKEY_SET = 0x04,
-};
-
->>>>>>> bluetooth framework re-implement base
 typedef struct remote_device {
     char name[BT_REM_NAME_MAX_LEN];
     char alias[BT_REM_NAME_MAX_LEN];
     bt_address_t addr;
     ble_addr_type_t addr_type;
-<<<<<<< HEAD
     bt_link_role_t local_role;
-=======
->>>>>>> bluetooth framework re-implement base
     uint32_t device_class;
     bt_transport_t transport;
     bt_device_type_t device_type;
@@ -65,10 +53,7 @@ typedef struct remote_device {
     bool local_initiate_bond;
     bt_128key_t link_key;
     bt_link_key_type_t link_key_type;
-<<<<<<< HEAD
     bt_link_policy_t link_policy;
-=======
->>>>>>> bluetooth framework re-implement base
     bt_address_t identity_addr;
     uint16_t appearance;
     uint8_t smp_data[80];
@@ -87,11 +72,7 @@ typedef struct bt_device {
 
 static bt_device_t *device_create(bt_address_t *addr, bt_transport_t transport, ble_addr_type_t addr_type)
 {
-<<<<<<< HEAD
     bt_device_t *device = zalloc(sizeof(bt_device_t));
-=======
-    bt_device_t *device = malloc(sizeof(bt_device_t));
->>>>>>> bluetooth framework re-implement base
 
     if (!device)
         return NULL;
@@ -105,17 +86,11 @@ static bt_device_t *device_create(bt_address_t *addr, bt_transport_t transport, 
     device->remote.transport = transport;
     device->remote.addr_type = addr_type;
     device->remote.connection_state = CONNECTION_STATE_DISCONNECTED;
-<<<<<<< HEAD
     device->remote.local_role = BT_LINK_ROLE_UNKNOWN;
     device->remote.bond_state = BOND_STATE_NONE;
     device->remote.uuids.uuids = NULL;
     device->remote.uuids.uuid_cnt = 0;
     device->remote.link_policy = BT_BR_LINK_POLICY_ENABLE_ROLE_SWITCH_AND_SNIFF;
-=======
-    device->remote.bond_state = BOND_STATE_NONE;
-    device->remote.uuids.uuids = NULL;
-    device->remote.uuids.uuid_cnt = 0;
->>>>>>> bluetooth framework re-implement base
     device->is_temporary = true;
 
     return device;
@@ -155,15 +130,11 @@ bt_address_t *device_get_identity_address(bt_device_t *device)
 
 void device_set_identity_address(bt_device_t *device, bt_address_t *addr)
 {
-<<<<<<< HEAD
     if (addr) {
         memcpy(&device->remote.identity_addr, addr, sizeof(bt_address_t));
     } else {
         bt_addr_set_empty(&device->remote.identity_addr);
     }
-=======
-    memcpy(&device->remote.identity_addr, addr, sizeof(bt_address_t));
->>>>>>> bluetooth framework re-implement base
 }
 
 ble_addr_type_t device_get_address_type(bt_device_t *device)
@@ -171,14 +142,11 @@ ble_addr_type_t device_get_address_type(bt_device_t *device)
     return device->remote.addr_type;
 }
 
-<<<<<<< HEAD
 void device_set_address_type(bt_device_t *device, ble_addr_type_t type)
 {
     device->remote.addr_type = type;
 }
 
-=======
->>>>>>> bluetooth framework re-implement base
 void device_set_device_type(bt_device_t *device, bt_device_type_t type)
 {
     device->remote.device_type = type;
@@ -338,7 +306,6 @@ void device_set_acl_handle(bt_device_t *device, uint16_t handle)
     device->remote.acl_handle = handle;
 }
 
-<<<<<<< HEAD
 bt_link_role_t device_get_local_role(bt_device_t *device)
 {
     return device->remote.local_role;
@@ -349,8 +316,6 @@ void device_set_local_role(bt_device_t *device, bt_link_role_t role)
     device->remote.local_role = role;
 }
 
-=======
->>>>>>> bluetooth framework re-implement base
 void device_set_bond_initiate_local(bt_device_t *device, bool initiate_local)
 {
     device->remote.local_initiate_bond = initiate_local;
@@ -401,7 +366,6 @@ void device_set_link_key_type(bt_device_t *device, bt_link_key_type_t type)
     device->remote.link_key_type = type;
 }
 
-<<<<<<< HEAD
 bt_link_policy_t device_get_link_policy(bt_device_t *device)
 {
     return device->remote.link_policy;
@@ -412,8 +376,6 @@ void device_set_link_policy(bt_device_t *device, bt_link_policy_t policy)
     device->remote.link_policy = policy;
 }
 
-=======
->>>>>>> bluetooth framework re-implement base
 void device_set_le_phy(bt_device_t *device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     device->remote.tx_phy = tx_phy;
@@ -438,7 +400,6 @@ void device_get_property(bt_device_t *device, remote_device_properties_t *prop)
     prop->device_type = device->remote.device_type;
 }
 
-<<<<<<< HEAD
 void device_get_le_property(bt_device_t *device, remote_device_le_properties_t *prop)
 {
     memcpy(&prop->addr, &device->remote.addr, sizeof(bt_address_t));
@@ -479,8 +440,6 @@ void device_delete_smp_key(bt_device_t *device)
     memset(device->remote.smp_data, 0, sizeof(device->remote.smp_data));
 }
 
-=======
->>>>>>> bluetooth framework re-implement base
 static int linkkey_dump(bt_device_t *device, char *str)
 {
     uint8_t *lk = device->remote.link_key;
@@ -501,11 +460,7 @@ void device_dump(bt_device_t *device)
     printf("device: %s\n", addr_str);
     printf("\tName: %s\n", device->remote.name);
     printf("\tAlias: %s\n", device->remote.alias);
-<<<<<<< HEAD
     printf("\tClass: 0x%08" PRIx32 "\n", device->remote.device_class);
-=======
-    printf("\tClass: 0x%08x\n", device->remote.device_class);
->>>>>>> bluetooth framework re-implement base
     printf("\tType: %d\n", device->remote.device_type);
     printf("\tTransport: %d\n", device->remote.transport);
     printf("\tRssi: %d\n", device->remote.rssi);

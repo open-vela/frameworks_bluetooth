@@ -36,21 +36,15 @@ enum {
     ENC_STATE_CHANGE_EVT,
     LINK_KEY_UPDATE_EVT,
     LINK_KEY_REMOVED_EVT,
-<<<<<<< HEAD
     LINK_ROLE_CHANGED_EVT,
     LINK_MODE_CHANGED_EVT,
     LINK_POLICY_CHANGED_EVT,
-=======
->>>>>>> bluetooth framework re-implement base
     SDP_SEARCH_DONE_EVT,
     LE_ADDR_UPDATE_EVT,
     LE_PHY_UPDATE_EVT,
     LE_IRK_UPDATE_EVT,
-<<<<<<< HEAD
     LE_WHITELIST_UPDATE_EVT,
     LE_BONDED_DEVICE_UPDATE_EVT,
-=======
->>>>>>> bluetooth framework re-implement base
 };
 
 typedef struct {
@@ -69,11 +63,7 @@ typedef struct {
         bt_discovery_result_t result;
         struct {
             bt_address_t addr;
-<<<<<<< HEAD
             uint8_t name[BT_REM_NAME_MAX_LEN + 1];
-=======
-            uint8_t name[64];
->>>>>>> bluetooth framework re-implement base
         } remote_name;
     };
 } adapter_discovery_evt_t;
@@ -98,7 +88,6 @@ typedef struct {
             ble_addr_type_t type;
             bt_128key_t irk;
         } irk_update;
-<<<<<<< HEAD
         struct
         {
             /* data */
@@ -112,8 +101,6 @@ typedef struct {
             remote_device_le_properties_t *props;
             uint16_t bonded_devices_cnt;
         } bonded_devices;
-=======
->>>>>>> bluetooth framework re-implement base
     };
 } adapter_ble_evt_t;
 
@@ -129,30 +116,19 @@ typedef struct {
         struct {
             uint32_t cod;
             bool min_16_digit;
-<<<<<<< HEAD
             char name[BT_REM_NAME_MAX_LEN + 1];
-=======
-            char name[64];
->>>>>>> bluetooth framework re-implement base
         } pin_req;
         struct {
             uint32_t cod;
             bt_pair_type_t ssp_type;
             uint32_t pass_key;
             uint8_t link_type;
-<<<<<<< HEAD
             char name[BT_REM_NAME_MAX_LEN + 1];
-=======
-            char name[64];
->>>>>>> bluetooth framework re-implement base
         } ssp_req;
         struct {
             bond_state_t state;
             uint8_t link_type;
-<<<<<<< HEAD
             bool is_ctkd;
-=======
->>>>>>> bluetooth framework re-implement base
         } bond_state;
         struct {
             bool encrypted;
@@ -164,7 +140,6 @@ typedef struct {
             bt_status_t status;
         } link_key;
         struct {
-<<<<<<< HEAD
             bt_link_role_t role;
         } link_role;
         struct {
@@ -175,8 +150,6 @@ typedef struct {
             bt_link_policy_t policy;
         } link_policy;
         struct {
-=======
->>>>>>> bluetooth framework re-implement base
             uint16_t uuid_size;
             bt_uuid_t *uuids;
         } sdp;
@@ -191,13 +164,8 @@ enum {
 };
 
 enum {
-<<<<<<< HEAD
     BT_BREDR_STACK_STATE_OFF,
     BT_BREDR_STACK_STATE_ON,
-=======
-    BT_STACK_STATE_OFF,
-    BT_STACK_STATE_ON,
->>>>>>> bluetooth framework re-implement base
     BLE_STACK_STATE_OFF,
     BLE_STACK_STATE_ON
 };
@@ -213,7 +181,6 @@ enum adapter_event {
     */
     BREDR_ENABLED,
     BREDR_DISABLED,
-<<<<<<< HEAD
     BREDR_PROFILE_ENABLED,
     BREDR_PROFILE_DISABLED,
     BREDR_ENABLE_TIMEOUT,
@@ -228,25 +195,14 @@ enum adapter_event {
     BLE_DISABLE_TIMEOUT,
     BLE_ENABLE_PROFILE_TIMEOUT,
     BLE_DISABLE_PROFILE_TIMEOUT,
-=======
-    BREDR_ENABLE_TIMEOUT,
-    BREDR_DISABLE_TIMEOUT,
-    BLE_ENABLED,
-    BLE_DISABLED,
-    BLE_ENABLE_TIMEOUT,
-    BLE_DISABLE_TIMEOUT
->>>>>>> bluetooth framework re-implement base
 };
 
 /* adapter state machine API functions*/
 adapter_state_machine_t *adapter_state_machine_new(void *context);
 void adapter_state_machine_destory(adapter_state_machine_t *stm);
-<<<<<<< HEAD
 bt_status_t adapter_send_event(uint16_t event_id, void *data);
 bt_status_t adapter_on_profile_services_startup(uint8_t transport, bool ret);
 bt_status_t adapter_on_profile_services_shutdown(uint8_t transport, bool ret);
-=======
->>>>>>> bluetooth framework re-implement base
 /* adapter notification */
 void adapter_notify_state_change(bt_adapter_state_t prev, bt_adapter_state_t current);
 void adapter_on_le_enabled(bool enablebt);
@@ -268,11 +224,7 @@ void adapter_on_ssp_request(bt_address_t *addr, uint8_t transport,
                             uint32_t pass_key, const char *name);
 void adapter_on_pin_request(bt_address_t *addr, uint32_t cod,
                             bool min_16_digit, const char *name);
-<<<<<<< HEAD
 void adapter_on_bond_state_changed(bt_address_t *addr, bond_state_t state, uint8_t link_type, bool is_ctkd);
-=======
-void adapter_on_bond_state_changed(bt_address_t *addr, bond_state_t state, uint8_t link_type);
->>>>>>> bluetooth framework re-implement base
 void adapter_on_service_search_done(bt_address_t *addr, bt_uuid_t *uuids, uint16_t size);
 void adapter_on_encryption_state_changed(bt_address_t *addr, bool encrypted, uint8_t link_type);
 void adapter_on_link_key_update(bt_address_t *addr, bt_128key_t link_key, bt_link_key_type_t type);
@@ -283,12 +235,9 @@ void adapter_on_link_policy_changed(bt_address_t *addr, bt_link_policy_t policy)
 void adapter_on_le_addr_update(bt_address_t *addr, ble_addr_type_t type);
 void adapter_on_le_phy_update(bt_address_t *addr, ble_phy_type_t tx_phy,
                               ble_phy_type_t rx_phy, bt_status_t status);
-<<<<<<< HEAD
 void adapter_on_whitelist_update(bt_address_t *addr, bool is_added, bt_status_t status);
 void adapter_on_le_bonded_device_update(remote_device_le_properties_t *props, uint16_t bonded_devices_cnt);
 
-=======
->>>>>>> bluetooth framework re-implement base
 /* adapter framework invoke functions */
 void adapter_init(void);
 void adapter_cleanup(void);
@@ -313,15 +262,12 @@ uint32_t adapter_get_device_class(void);
 bt_status_t adapter_set_io_capability(bt_io_capability_t cap);
 
 bt_io_capability_t adapter_get_io_capability(void);
-<<<<<<< HEAD
 bt_status_t adapter_set_inquiry_scan_parameters(bt_scan_type_t type,
                                                 uint16_t interval,
                                                 uint16_t window);
 bt_status_t adapter_set_page_scan_parameters(bt_scan_type_t type,
                                              uint16_t interval,
                                              uint16_t window);
-=======
->>>>>>> bluetooth framework re-implement base
 bt_status_t adapter_set_le_io_capability(uint32_t le_io_cap);
 uint32_t adapter_get_le_io_capability(void);
 bt_status_t adapter_get_le_address(bt_address_t *addr, ble_addr_type_t *type);
@@ -329,23 +275,14 @@ bt_status_t adapter_set_le_address(bt_address_t *addr);
 bt_status_t adapter_set_le_identity_address(bt_address_t *addr, bool public);
 bt_status_t adapter_set_le_appearance(uint16_t appearance);
 uint16_t adapter_get_le_appearance(void);
-<<<<<<< HEAD
 bt_status_t adapter_get_bonded_devices(bt_transport_t transport, bt_address_t **addr, int *size, bt_allocator_t allocator);
 bt_status_t adapter_get_connected_devices(bt_transport_t transport, bt_address_t **addr, int *size, bt_allocator_t allocator);
-=======
-bt_status_t adapter_get_bonded_devices(bt_address_t **addr, int *size, bt_allocator_t allocator);
-bt_status_t adapter_get_connected_devices(bt_address_t **addr, int *size, bt_allocator_t allocator);
->>>>>>> bluetooth framework re-implement base
 void adapter_set_auto_accept_connection(bool enable);
 bool adapter_is_support_bredr(void);
 bool adapter_is_support_le(void);
 bool adapter_is_support_leaudio(void);
-<<<<<<< HEAD
 bt_status_t adapter_get_remote_identity_address(bt_address_t *bd_addr, bt_address_t *id_addr);
 bt_device_type_t adapter_get_remote_device_type(bt_address_t *addr);
-=======
-
->>>>>>> bluetooth framework re-implement base
 bool adapter_get_remote_name(bt_address_t *addr, char *name);
 uint32_t adapter_get_remote_device_class(bt_address_t *addr);
 bt_status_t adapter_get_remote_uuids(bt_address_t *addr, bt_uuid_t **uuids, uint16_t *size, bt_allocator_t allocator);
@@ -353,39 +290,25 @@ uint16_t adapter_get_remote_appearance(bt_address_t *addr);
 int8_t adapter_get_remote_rssi(bt_address_t *addr);
 bool adapter_get_remote_alias(bt_address_t *addr, char *alias);
 bt_status_t adapter_set_remote_alias(bt_address_t *addr, const char *alias);
-<<<<<<< HEAD
 bool adapter_is_remote_connected(bt_address_t *addr, bt_transport_t transport);
 bool adapter_is_remote_encrypted(bt_address_t *addr, bt_transport_t transport);
 bool adapter_is_bond_initiate_local(bt_address_t *addr, bt_transport_t transport);
 bond_state_t adapter_get_remote_bond_state(bt_address_t *addr, bt_transport_t transport);
 bool adapter_is_remote_bonded(bt_address_t *addr, bt_transport_t transport);
-=======
-bool adapter_is_remote_connected(bt_address_t *addr);
-bool adapter_is_remote_encrypted(bt_address_t *addr);
-bool adapter_is_bond_initiate_local(bt_address_t *addr);
-bond_state_t adapter_get_remote_bond_state(bt_address_t *addr);
-bool adapter_is_remote_bonded(bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 bt_status_t adapter_connect(bt_address_t *addr);
 bt_status_t adapter_disconnect(bt_address_t *addr);
 bt_status_t adapter_le_connect(bt_address_t *addr,
                                ble_addr_type_t type,
                                ble_connect_params_t *param);
 bt_status_t adapter_le_disconnect(bt_address_t *addr);
-<<<<<<< HEAD
 bt_status_t adapter_connect_request_reply(bt_address_t *addr, bool accept);
-=======
->>>>>>> bluetooth framework re-implement base
 bt_status_t adapter_le_set_phy(bt_address_t *addr,
                                ble_phy_type_t tx_phy,
                                ble_phy_type_t rx_phy);
 bt_status_t adapter_le_enable_key_derivation(bool brkey_to_lekey,
                                              bool lekey_to_brkey);
-<<<<<<< HEAD
 bt_status_t adapter_le_add_whitelist(bt_address_t *addr);
 bt_status_t adapter_le_remove_whitelist(bt_address_t *addr);
-=======
->>>>>>> bluetooth framework re-implement base
 bt_status_t adapter_create_bond(bt_address_t *addr, bt_transport_t transport);
 bt_status_t adapter_remove_bond(bt_address_t *addr, uint8_t transport);
 bt_status_t adapter_cancel_bond(bt_address_t *addr);
@@ -394,7 +317,6 @@ bt_status_t adapter_set_pairing_confirmation(bt_address_t *addr, uint8_t transpo
 bt_status_t adapter_set_pin_code(bt_address_t *addr, bool accept,
                                  char *pincode, int len);
 bt_status_t adapter_set_pass_key(bt_address_t *addr, uint8_t transport, bool accept, uint32_t passkey);
-<<<<<<< HEAD
 bt_status_t adapter_le_set_remote_oob_data(bt_address_t *addr, bt_128key_t tk_val, bt_128key_t c_val, bt_128key_t r_val);
 uint16_t adapter_get_acl_handle(bt_address_t *addr);
 bt_status_t adapter_switch_role(bt_address_t *addr, bt_link_role_t role);
@@ -402,9 +324,6 @@ bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
                                                    uint16_t band_width,
                                                    uint16_t number);
 bt_status_t adapter_set_auto_sniff(bt_auto_sniff_params_t *params);
-=======
-
->>>>>>> bluetooth framework re-implement base
 void *adapter_register_callback(void *remote, const adapter_callbacks_t *adapter_cbs);
 bool adapter_unregister_callback(void **remote, void *cookie);
 

@@ -29,6 +29,14 @@ config BLUETOOTH_BLE_SUPPORT
 	bool "LE support"
 	default n
 
+config BLUETOOTH_BLE_ADV
+	bool "LE advertising support"
+	default n
+
+config BLUETOOTH_BLE_SCAN
+	bool "LE scan support"
+	default n
+
 config BLUETOOTH_HCI_BRIDGE_MODE
 	bool "HCI bridge mode"
 	default n

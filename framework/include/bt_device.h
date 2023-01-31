@@ -25,13 +25,10 @@ extern "C" {
 #include "bt_status.h"
 #include <stdint.h>
 
-<<<<<<< HEAD
 #ifndef BTSYMBOLS
 #define BTSYMBOLS(s) s
 #endif
 
-=======
->>>>>>> bluetooth framework re-implement base
 /**
  * @brief Profile connection state
  *
@@ -68,7 +65,6 @@ typedef enum {
 } bond_state_t;
 
 /**
-<<<<<<< HEAD
  * @brief Get identity address of remote device
  *
  * @param ins - bluetooth client instance.
@@ -95,17 +91,6 @@ ble_addr_type_t BTSYMBOLS(bt_device_get_address_type)(bt_instance_t *ins, bt_add
  * @return bt_device_type_t - device type, zero on device not found.
  */
 bt_device_type_t BTSYMBOLS(bt_device_get_device_type)(bt_instance_t *ins, bt_address_t *addr);
-=======
- * @brief
- * @note Not support
- * @param ins
- * @param addr
- * @return bt_address_t*
- */
-bt_address_t *bt_device_get_identity_address(bt_instance_t *ins, bt_address_t *addr);
-ble_addr_type_t bt_device_get_address_type(bt_instance_t *ins, bt_address_t *addr);
-bt_device_type_t bt_device_get_device_type(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get remote device name
@@ -117,11 +102,7 @@ bt_device_type_t bt_device_get_device_type(bt_instance_t *ins, bt_address_t *add
  * @return true - on success.
  * @return false - on device not found.
  */
-<<<<<<< HEAD
 bool BTSYMBOLS(bt_device_get_name)(bt_instance_t *ins, bt_address_t *addr, char *name, uint32_t length);
-=======
-bool bt_device_get_name(bt_instance_t *ins, bt_address_t *addr, char *name, uint32_t length);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get remote device class
@@ -130,11 +111,7 @@ bool bt_device_get_name(bt_instance_t *ins, bt_address_t *addr, char *name, uint
  * @param addr - remote device address.
  * @return uint32_t - cod, zero on device not found.
  */
-<<<<<<< HEAD
 uint32_t BTSYMBOLS(bt_device_get_device_class)(bt_instance_t *ins, bt_address_t *addr);
-=======
-uint32_t bt_device_get_device_class(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get remote device support uuids
@@ -146,11 +123,7 @@ uint32_t bt_device_get_device_class(bt_instance_t *ins, bt_address_t *addr);
  * @param allocator - array allocator.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_get_uuids)(bt_instance_t *ins, bt_address_t *addr, bt_uuid_t **uuids, uint16_t *size, bt_allocator_t allocator);
-=======
-bt_status_t bt_device_get_uuids(bt_instance_t *ins, bt_address_t *addr, bt_uuid_t **uuids, uint16_t *size, bt_allocator_t allocator);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get remote device LE apperance
@@ -159,11 +132,7 @@ bt_status_t bt_device_get_uuids(bt_instance_t *ins, bt_address_t *addr, bt_uuid_
  * @param addr - remote device address.
  * @return uint16_t - apperance, zero on device not found.
  */
-<<<<<<< HEAD
 uint16_t BTSYMBOLS(bt_device_get_appearance)(bt_instance_t *ins, bt_address_t *addr);
-=======
-uint16_t bt_device_get_appearance(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get remote device RSSI
@@ -172,11 +141,7 @@ uint16_t bt_device_get_appearance(bt_instance_t *ins, bt_address_t *addr);
  * @param addr - remote device address.
  * @return int8_t - rssi.
  */
-<<<<<<< HEAD
 int8_t BTSYMBOLS(bt_device_get_rssi)(bt_instance_t *ins, bt_address_t *addr);
-=======
-int8_t bt_device_get_rssi(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get remote device alias, default use remote name if not set
@@ -188,11 +153,7 @@ int8_t bt_device_get_rssi(bt_instance_t *ins, bt_address_t *addr);
  * @return true on success.
  * @return false on device not found.
  */
-<<<<<<< HEAD
 bool BTSYMBOLS(bt_device_get_alias)(bt_instance_t *ins, bt_address_t *addr, char *alias, uint32_t length);
-=======
-bool bt_device_get_alias(bt_instance_t *ins, bt_address_t *addr, char *alias, uint32_t length);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set remote device alias
@@ -202,11 +163,7 @@ bool bt_device_get_alias(bt_instance_t *ins, bt_address_t *addr, char *alias, ui
  * @param alias - alias.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_set_alias)(bt_instance_t *ins, bt_address_t *addr, const char *alias);
-=======
-bt_status_t bt_device_set_alias(bt_instance_t *ins, bt_address_t *addr, const char *alias);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Check remote deivce is connected
@@ -216,11 +173,7 @@ bt_status_t bt_device_set_alias(bt_instance_t *ins, bt_address_t *addr, const ch
  * @return true - connected.
  * @return false - not connected.
  */
-<<<<<<< HEAD
 bool BTSYMBOLS(bt_device_is_connected)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport);
-=======
-bool bt_device_is_connected(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Check remote deivce is encrypted
@@ -230,11 +183,7 @@ bool bt_device_is_connected(bt_instance_t *ins, bt_address_t *addr);
  * @return true - encrypted
  * @return false - not encrypted
  */
-<<<<<<< HEAD
 bool BTSYMBOLS(bt_device_is_encrypted)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport);
-=======
-bool bt_device_is_encrypted(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Check is bond initiate from local
@@ -244,11 +193,7 @@ bool bt_device_is_encrypted(bt_instance_t *ins, bt_address_t *addr);
  * @return true - initiate from local.
  * @return false - initiate from remote.
  */
-<<<<<<< HEAD
 bool BTSYMBOLS(bt_device_is_bond_initiate_local)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport);
-=======
-bool bt_device_is_bond_initiate_local(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Get remote device bond state
@@ -257,11 +202,7 @@ bool bt_device_is_bond_initiate_local(bt_instance_t *ins, bt_address_t *addr);
  * @param addr - remote device address.
  * @return bond_state_t - bond state.
  */
-<<<<<<< HEAD
 bond_state_t BTSYMBOLS(bt_device_get_bond_state)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport);
-=======
-bond_state_t bt_device_get_bond_state(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Check remote device is bonded
@@ -271,11 +212,7 @@ bond_state_t bt_device_get_bond_state(bt_instance_t *ins, bt_address_t *addr);
  * @return true - bonded
  * @return false - not bonded
  */
-<<<<<<< HEAD
 bool BTSYMBOLS(bt_device_is_bonded)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport);
-=======
-bool bt_device_is_bonded(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Initiate bond to remote device
@@ -285,11 +222,7 @@ bool bt_device_is_bonded(bt_instance_t *ins, bt_address_t *addr);
  * @param transport - transport type (0:BLE, 1:BREDR).
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_create_bond)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport);
-=======
-bt_status_t bt_device_create_bond(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Remove bonded device
@@ -299,11 +232,7 @@ bt_status_t bt_device_create_bond(bt_instance_t *ins, bt_address_t *addr, bt_tra
  * @param transport - transport type (0:BLE, 1:BREDR).
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_remove_bond)(bt_instance_t *ins, bt_address_t *addr, uint8_t transport);
-=======
-bt_status_t bt_device_remove_bond(bt_instance_t *ins, bt_address_t *addr, uint8_t transport);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Cancel bonding
@@ -312,11 +241,7 @@ bt_status_t bt_device_remove_bond(bt_instance_t *ins, bt_address_t *addr, uint8_
  * @param addr - remote device address.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_cancel_bond)(bt_instance_t *ins, bt_address_t *addr);
-=======
-bt_status_t bt_device_cancel_bond(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Reply pairing request
@@ -326,11 +251,7 @@ bt_status_t bt_device_cancel_bond(bt_instance_t *ins, bt_address_t *addr);
  * @param accept - true:accept, false:reject.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_pair_request_reply)(bt_instance_t *ins, bt_address_t *addr, bool accept);
-=======
-bt_status_t bt_device_pair_request_reply(bt_instance_t *ins, bt_address_t *addr, bool accept);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set pairing confirmation
@@ -341,11 +262,7 @@ bt_status_t bt_device_pair_request_reply(bt_instance_t *ins, bt_address_t *addr,
  * @param accept - true:accept, false:reject.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_set_pairing_confirmation)(bt_instance_t *ins, bt_address_t *addr, uint8_t transport, bool accept);
-=======
-bt_status_t bt_device_set_pairing_confirmation(bt_instance_t *ins, bt_address_t *addr, uint8_t transport, bool accept);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set pairing PIN code
@@ -357,13 +274,8 @@ bt_status_t bt_device_set_pairing_confirmation(bt_instance_t *ins, bt_address_t 
  * @param len - length of pin code string
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_set_pin_code)(bt_instance_t *ins, bt_address_t *addr, bool accept,
                                               char *pincode, int len);
-=======
-bt_status_t bt_device_set_pin_code(bt_instance_t *ins, bt_address_t *addr, bool accept,
-                                   char *pincode, int len);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set simple securty pair passkey or LE smp key
@@ -375,7 +287,6 @@ bt_status_t bt_device_set_pin_code(bt_instance_t *ins, bt_address_t *addr, bool 
  * @param passkey - on transport is BREDR, mean ssp passkey; on transport is LE, mean smp key.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_set_pass_key)(bt_instance_t *ins, bt_address_t *addr, uint8_t transport, bool accept, uint32_t passkey);
 
 /**
@@ -389,9 +300,6 @@ bt_status_t BTSYMBOLS(bt_device_set_pass_key)(bt_instance_t *ins, bt_address_t *
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_device_set_le_oob_data)(bt_instance_t *ins, bt_address_t *addr, bt_128key_t tk_val, bt_128key_t c_val, bt_128key_t r_val);
-=======
-bt_status_t bt_device_set_pass_key(bt_instance_t *ins, bt_address_t *addr, uint8_t transport, bool accept, uint32_t passkey);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Connect to peer device
@@ -400,11 +308,7 @@ bt_status_t bt_device_set_pass_key(bt_instance_t *ins, bt_address_t *addr, uint8
  * @param addr - remote device address.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_connect)(bt_instance_t *ins, bt_address_t *addr);
-=======
-bt_status_t bt_device_connect(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Disconnect from ACL connection.
@@ -413,11 +317,7 @@ bt_status_t bt_device_connect(bt_instance_t *ins, bt_address_t *addr);
  * @param addr - remote device address.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_disconnect)(bt_instance_t *ins, bt_address_t *addr);
-=======
-bt_status_t bt_device_disconnect(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Connect to LE device
@@ -428,15 +328,9 @@ bt_status_t bt_device_disconnect(bt_instance_t *ins, bt_address_t *addr);
  * @param param - connect params.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_connect_le)(bt_instance_t *ins, bt_address_t *addr,
                                             ble_addr_type_t type,
                                             ble_connect_params_t *param);
-=======
-bt_status_t bt_device_connect_le(bt_instance_t *ins, bt_address_t *addr,
-                                 ble_addr_type_t type,
-                                 ble_connect_params_t *param);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Disconnect from LE connection
@@ -445,7 +339,6 @@ bt_status_t bt_device_connect_le(bt_instance_t *ins, bt_address_t *addr,
  * @param addr - remote LE device address.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_disconnect_le)(bt_instance_t *ins, bt_address_t *addr);
 
 /**
@@ -457,9 +350,6 @@ bt_status_t BTSYMBOLS(bt_device_disconnect_le)(bt_instance_t *ins, bt_address_t 
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_device_connect_request_reply)(bt_instance_t *ins, bt_address_t *addr, bool accept);
-=======
-bt_status_t bt_device_disconnect_le(bt_instance_t *ins, bt_address_t *addr);
->>>>>>> bluetooth framework re-implement base
 
 /**
  * @brief Set LE phy
@@ -470,7 +360,6 @@ bt_status_t bt_device_disconnect_le(bt_instance_t *ins, bt_address_t *addr);
  * @param rx_phy - rx phy (0:1M, 1:2M, 2:CODED).
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-<<<<<<< HEAD
 bt_status_t BTSYMBOLS(bt_device_set_le_phy)(bt_instance_t *ins, bt_address_t *addr,
                                             ble_phy_type_t tx_phy,
                                             ble_phy_type_t rx_phy);
@@ -490,17 +379,8 @@ void BTSYMBOLS(bt_device_connect_all_profile)(bt_instance_t *ins, bt_address_t *
 void BTSYMBOLS(bt_device_disconnect_all_profile)(bt_instance_t *ins, bt_address_t *addr);
 
 uint16_t BTSYMBOLS(bt_device_get_acl_handle)(bt_instance_t *ins, bt_address_t *addr);
-=======
-bt_status_t bt_device_set_le_phy(bt_instance_t *ins, bt_address_t *addr,
-                                 ble_phy_type_t tx_phy,
-                                 ble_phy_type_t rx_phy);
->>>>>>> bluetooth framework re-implement base
 #ifdef __cplusplus
 }
 #endif
 
-<<<<<<< HEAD
 #endif /* _BT_DEVICE_H__ */
-=======
-#endif /* _BT_DEVICE_H__ */
->>>>>>> bluetooth framework re-implement base

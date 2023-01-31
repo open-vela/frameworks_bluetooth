@@ -20,21 +20,15 @@
 #include <unistd.h>
 
 #include "adapter_internel.h"
-<<<<<<< HEAD
 #include "bluetooth_ipc.h"
 #include "bt_adapter.h"
 #include "btservice.h"
 #include "service_loop.h"
-=======
-#include "bt_adapter.h"
-#include "btservice.h"
->>>>>>> bluetooth framework re-implement base
 
 #include "utils/log.h"
 
 int main(int argc, char **argv)
 {
-<<<<<<< HEAD
     int ret;
 
     syslog(LOG_INFO, "bluetoothd main %d\n", __LINE__);
@@ -69,12 +63,3 @@ out:
     service_loop_exit();
     return ret;
 }
-=======
-    syslog(LOG_INFO, "bluetoothd main %d\n", __LINE__);
-    bt_service_init();
-
-    while (1)
-        sleep(10000);
-    return 0;
-}
->>>>>>> bluetooth framework re-implement base

@@ -19,13 +19,10 @@
 
 #include <stdarg.h>
 #include <syslog.h>
-<<<<<<< HEAD
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
 #include <inttypes.h>
-=======
->>>>>>> bluetooth framework re-implement base
 
 #ifndef LOG_TAG
 #define LOG_TAG "BT"
@@ -55,11 +52,7 @@ enum bt_log_level_ {
 #define BT_LOGI(fmt, args...)
 #define BT_LOGD(fmt, args...)
 #else
-<<<<<<< HEAD
 extern bool bt_log_print_check(uint8_t level);
-=======
-extern bool utils_log_print_check(uint8_t level);
->>>>>>> bluetooth framework re-implement base
 
 #define DEFAULT_BT_LOG_LEVEL CONFIG_OBELISK_LOG_LEVEL
 
@@ -70,38 +63,22 @@ extern bool utils_log_print_check(uint8_t level);
                                                ##args);
 #define BT_LOGE(fmt, ...)                                                     \
     do {                                                                      \
-<<<<<<< HEAD
         if (bt_log_print_check(BT_LOG_LEVEL_ERROR))                        \
-=======
-        if (utils_log_print_check(BT_LOG_LEVEL_ERROR))                        \
->>>>>>> bluetooth framework re-implement base
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__); \
     } while (0);
 #define BT_LOGW(fmt, ...)                                                       \
     do {                                                                        \
-<<<<<<< HEAD
         if (bt_log_print_check(BT_LOG_LEVEL_WARNING))                        \
-=======
-        if (utils_log_print_check(BT_LOG_LEVEL_WARNING))                        \
->>>>>>> bluetooth framework re-implement base
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_WARNING, fmt, ##__VA_ARGS__); \
     } while (0);
 #define BT_LOGI(fmt, ...)                                                    \
     do {                                                                     \
-<<<<<<< HEAD
         if (bt_log_print_check(BT_LOG_LEVEL_INFO))                        \
-=======
-        if (utils_log_print_check(BT_LOG_LEVEL_INFO))                        \
->>>>>>> bluetooth framework re-implement base
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_INFO, fmt, ##__VA_ARGS__); \
     } while (0);
 #define BT_LOGD(fmt, ...)                                                     \
     do {                                                                      \
-<<<<<<< HEAD
         if (bt_log_print_check(BT_LOG_LEVEL_DEBUG))                        \
-=======
-        if (utils_log_print_check(BT_LOG_LEVEL_DEBUG))                        \
->>>>>>> bluetooth framework re-implement base
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__); \
     } while (0);
 #endif
@@ -110,7 +87,6 @@ extern bool utils_log_print_check(uint8_t level);
     do {                                           \
         char _addr_str[BT_ADDR_STR_LENGTH] = { 0 }; \
         bt_addr_ba2str(_addr, _addr_str);            \
-<<<<<<< HEAD
         BT_LOGI(fmt, _addr_str, ##__VA_ARGS__);     \
     } while (0);
 
@@ -125,16 +101,3 @@ void bt_log_server_init(void);
 void bt_log_server_cleanup(void);
 
 #endif
-=======
-        BT_LOGD(fmt, _addr_str, ##__VA_ARGS__);     \
-    } while (0);
-
-void utils_log_init(void);
-int utils_log_enable(int id);
-int utils_log_disable(int id);
-uint8_t utils_set_log_level(uint8_t level);
-uint8_t utils_get_log_level(void);
-int utils_set_log_mask_level(uint8_t id, uint8_t mask_bit, bool enable);
-
-#endif
->>>>>>> bluetooth framework re-implement base

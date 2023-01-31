@@ -16,16 +16,11 @@
 #ifndef __BT_SAL_H__
 #define __BT_SAL_H__
 
-<<<<<<< HEAD
 #include "bluetooth_define.h"
 #include "utils/log.h"
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-=======
-#include "utils/log.h"
-
->>>>>>> bluetooth framework re-implement base
 #define SAL_NOT_SUPPORT                                    \
     {                                                      \
         BT_LOGW("interface [%s] not supported", __func__); \
@@ -38,7 +33,6 @@
             return BT_STATUS_PARM_INVALID; \
     }
 
-<<<<<<< HEAD
 #define SAL_CHECK_RET(cond, expect)                     \
     {                                                   \
         int __ret = cond;                               \
@@ -46,14 +40,6 @@
             BT_LOGE("[%s] return:%d", __func__, __ret); \
             return BT_STATUS_FAIL;                      \
         }                                               \
-=======
-#define SAL_CHECK_RET(ret, expect)                    \
-    {                                                 \
-        if (ret != expect) {                          \
-            BT_LOGE("[%s] return:%d", __func__, ret); \
-            return BT_STATUS_FAIL;                    \
-        }                                             \
->>>>>>> bluetooth framework re-implement base
     }
 
 #define SAL_ASSERT_PARAM(cond) \
@@ -61,7 +47,6 @@
         assert(cond);          \
     }
 
-<<<<<<< HEAD
 void bt_sal_debug_init(void);
 void bt_sal_debug_cleanup(void);
 bt_status_t bt_sal_debug_enable(void);
@@ -72,6 +57,3 @@ bt_status_t bt_sal_debug_set_log_enable(bt_debug_type_t type, bool enable);
 bt_status_t bt_sal_debug_update_log_mask(int mask);
 
 #endif /* __BT_SAL_H__ */
-=======
-#endif /* __BT_SAL_H__ */
->>>>>>> bluetooth framework re-implement base
