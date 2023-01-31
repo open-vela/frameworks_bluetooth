@@ -69,6 +69,10 @@ if BLUETOOTH_HFP_AG
 config HFP_AG_MAX_CONNECTIONS
 	int "HFP audio-gateway max connections"
 	default 1
+
+config BLUETOOTH_HFP_AG_PRIMARY_SLOT
+	int "HFP select primary modem slot"
+	default 0
 endif
 
 config BLUETOOTH_SPP
