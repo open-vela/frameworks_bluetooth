@@ -18,15 +18,8 @@
 #include <string.h>
 
 #include "bluetooth.h"
-<<<<<<< HEAD
-=======
-#include "bt_tools.h"
->>>>>>> bluetooth framework re-implement base
 
 bool phy_is_vaild(uint8_t phy);
 int le_addr_type(const char *str, ble_addr_type_t *type);
 bool bttool_allocator(void **data, uint32_t size);
-<<<<<<< HEAD
 uint32_t get_timestamp_ms(void);
-=======
->>>>>>> bluetooth framework re-implement base

@@ -26,14 +26,10 @@ int bt_storage_cleanup(void);
 int bt_storage_save_adapter_info(adapter_storage_t *adapter);
 int bt_storage_load_adapter_info(adapter_storage_t *adapter);
 int bt_storage_save_bonded_device(remote_device_properties_t *remote, uint16_t size);
-<<<<<<< HEAD
 int bt_storage_save_whitelist(remote_device_le_properties_t *remote, uint16_t size);
 int bt_storage_save_le_bonded_device(remote_device_le_properties_t *remote, uint16_t size);
 int bt_storage_load_bonded_device(load_storage_callback_t cb);
 int bt_storage_load_whitelist_device(load_storage_callback_t cb);
 int bt_storage_load_le_bonded_device(load_storage_callback_t cb);
 
-=======
-int bt_storage_load_bonded_device(load_storage_callback_t cb);
->>>>>>> bluetooth framework re-implement base
 #endif /* _BT_STORAGE_H__ */
