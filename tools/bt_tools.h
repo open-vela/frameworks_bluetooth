@@ -82,4 +82,8 @@ int hfp_hf_commond_init(void *handle);
 int hfp_hf_commond_uninit(void *handle);
 int hfp_hf_command_exec(void *handle, int argc, char *argv[]);
 
+int hfp_ag_commond_init(void *handle);
+int hfp_ag_commond_uninit(void *handle);
+int hfp_ag_command_exec(void *handle, int argc, char *argv[]);
+
 #endif /* __BT_TOOLS_H__ */
