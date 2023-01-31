@@ -35,8 +35,12 @@ ifeq ($(CONFIG_BLUETOOTH_OBELISK), y)
 	CSRCS += service/src/adapter_state.c
 	CSRCS += service/src/btservice.c
 	CSRCS += service/src/device.c
+ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += service/src/advertising.c
+endif
+ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
 	CSRCS += service/src/scan_manager.c
+endif
 	CSRCS += service/stacks/*.c
 	CSRCS += service/common/*.c
 	CSRCS += service/stacks/bluelet/*.c

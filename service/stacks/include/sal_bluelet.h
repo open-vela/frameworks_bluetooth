@@ -19,7 +19,7 @@
 #include "stack_adapter_common.h"
 
 #include "bt_device.h"
-#include "bt_hfp_ag.h"
+#include "bt_hfp.h"
 #include "utils/log.h"
 
 static inline profile_connection_state_t bluelet_profile_connection_state(SERVICE_PROFILE_CONNECTION_STATE state)
