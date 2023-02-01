@@ -290,6 +290,15 @@ static bt_result_code hid_device_register_device(bts_hidd_hdl_t handle, bt_hidd_
         return BT_RESULT_FAILED;
     }
 
+// fix hogp compatible with the miwear hid api
+#ifdef CONFIG_BLUETOOTH_HID_OVER_GATT
+    sdp.br_hid = false;
+    sdp.le_hid = true;
+#else
+    sdp.br_hid = true;
+    sdp.le_hid = false;
+#endif
+
     if (list_length(&hidd_list) == 1) {
         gatt_status ret = service_adapter_hid_device_register_app((SERVICE_HID_SERVICE_INFO_S*)(&sdp), NULL, NULL);
         if (ret != GATT_STATUS_SUCCESS) {
@@ -535,26 +544,28 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
     case ON_HIDD_APP_STATE_CHANGED: {
         bts_hidd_hdl_t* handle;
         bts_hidd_hdl_t* tmp;
-        list_for_every_entry_safe(&hidd_list, handle, tmp, bts_hidd_hdl_t, node) {
+        list_for_every_entry_safe(&hidd_list, handle, tmp, bts_hidd_hdl_t, node)
+        {
             hid_app_state* registered = (hid_app_state*)(msg->data);
             BT_CBACK(handle->callbacks, bts_hidd_app_state_changed_cb, handle->btm_handle, handle->device_id, *registered);
-            if (*registered) {
-    #if defined HIDD_UINPUT_ENABLE
+            if (*registered == BTHD_STATE_REGISTERED) {
+#if defined HIDD_UINPUT_ENABLE
                 hidd_init_kbd();
-    #endif
+#endif
             } else {
                 BT_LOGD("unregistered, remove_hid_device handle");
                 remove_hid_device(handle);
-    #if defined HIDD_UINPUT_ENABLE
+#if defined HIDD_UINPUT_ENABLE
                 hidd_uninit_kbd();
-    #endif
+#endif
             }
         }
         break;
     }
     case ON_HIDD_CONNECTION_STATE_CHANGED: {
         bts_hidd_hdl_t* handle;
-        list_for_every_entry(&hidd_list, handle, bts_hidd_hdl_t, node) {
+        list_for_every_entry(&hidd_list, handle, bts_hidd_hdl_t, node)
+        {
             bts_hidd_conn_s* conn = (bts_hidd_conn_s*)(msg->data);
             BT_CBACK(handle->callbacks, bts_hidd_connection_state_changed_cb, handle->btm_handle, conn->remote_addr, conn->le_hid, conn->state);
         }
