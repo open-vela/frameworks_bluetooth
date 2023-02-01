@@ -20,11 +20,18 @@
 extern "C" {
 #endif
 
+#define PROFILE_A2DP_NAME      "A2DP-Src"
+#define PROFILE_A2DP_SINK_NAME "A2DP-Sink"
+#define PROFILE_HFP_HF_NAME    "HFP-HF"
+#define PROFILE_HFP_AG_NAME    "HFP-AG"
+#define PROFILE_SPP_NAME       "SPP"
+
 enum profile_id {
     PROFILE_A2DP,
     PROFILE_A2DP_SINK,
     PROFILE_HFP_HF,
     PROFILE_HFP_AG,
+    PROFILE_SPP,
     PROFILE_MAX
 };
 

@@ -88,6 +88,7 @@ static void set_ready(void *data)
         list_delete(node);
         free(imsg);
     }
+
     uv_sem_post(&loop->ready);
     BT_LOGD("set_ready");
 }

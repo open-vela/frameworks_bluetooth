@@ -65,6 +65,7 @@ endif
 config BLUETOOTH_HFP_AG
 	bool "HFP audio-gateway profile support"
 	default n
+
 if BLUETOOTH_HFP_AG
 config HFP_AG_MAX_CONNECTIONS
 	int "HFP audio-gateway max connections"
@@ -78,6 +79,18 @@ endif
 config BLUETOOTH_SPP
 	bool "Serial port profile support"
 	default n
+	depends on SERIAL_TERMIOS
+	depends on PSEUDOTERM
+
+if BLUETOOTH_SPP
+config BLUETOOTH_SPP_MAX_CONNECTIONS
+	int "SPP max connections"
+	default 1
+
+config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
+	int "SPP server max connections"
+	default 1
+endif
 
 config BLUETOOTH_PAN
 	bool "Personal area network profile support"
