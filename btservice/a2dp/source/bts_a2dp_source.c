@@ -467,8 +467,8 @@ void bts_a2dp_source_dump(void)
         else
             is_active = 0;
         state = a2dp_state_machine_current_state(device->a2dp_sm);
-        printf("\tDevice[%d]: Addr: %s, State: %s, Active: %s\n", i, addr_str(device->bd_addr), state, is_active ? "true" : "false");
+        BT_LOGD("\tDevice[%d]: Addr: %s, State: %s, Active: %s\n", i, addr_str(device->bd_addr), state, is_active ? "true" : "false");
     }
     if (i == 0)
-        printf("\tNo A2dp Sink device found\n");
+        BT_LOGE("\tNo A2dp Sink device found\n");
 }
