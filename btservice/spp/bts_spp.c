@@ -613,7 +613,7 @@ static void spp_on_connection_state_chaneged(bt_address addr, uint16_t port,
         device->conn_port = port;
     }
 
-    BT_LOGD("%s, addr: %s, scn: %d, port: %d, state: %d", 
+    BT_LOGD("%s, addr: %s, scn: %d, port: %d, state: %d",
             __func__, addr_str(addr), device->scn, device->conn_id, state);
     device->state = state;
     ret = spp_notify_connection_state(device, state);
@@ -1061,17 +1061,17 @@ void bts_spp_state_dump(void)
     {
         i++;
         server = (spp_server_t*)node;
-        printf("\tServer[%d]: Scn:%d, UUID:%04" PRIx16"\n", i, server->scn, server->uuid);
+        BT_LOGD("\tServer[%d]: Scn:%d, UUID:%04" PRIx16"\n", i, server->scn, server->uuid);
     }
     if (i == 0)
-        printf("\tNo spp Server found\n");
+        BT_LOGE("\tNo spp Server found\n");
 
     i = 0;
     list_for_every(&g_spp_handle.dev_list, node)
     {
         i++;
         device = (spp_pty_device_t*)node;
-        printf("\tDevice[%d]: ID:%d, Addr:%s, State:%d, Scn:%d, UUID:%04" PRIx16
+        BT_LOGD("\tDevice[%d]: ID:%d, Addr:%s, State:%d, Scn:%d, UUID:%04" PRIx16
                 ", MFS:%d, Pty:[%d,%s], Rx:%" PRIu32 ", Tx:%" PRIu32"\n",
                 i, device->conn_id, addr_str(device->addr), device->state,
                 device->scn, device->uuid, device->mfs, device->mfd,
@@ -1079,5 +1079,5 @@ void bts_spp_state_dump(void)
     }
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
     if (i == 0)
-        printf("\tNo spp device found\n");
+        BT_LOGE("\tNo spp device found\n");
 }
