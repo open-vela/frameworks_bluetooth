@@ -25,6 +25,7 @@ extern "C" {
 #define PROFILE_HFP_HF_NAME    "HFP-HF"
 #define PROFILE_HFP_AG_NAME    "HFP-AG"
 #define PROFILE_SPP_NAME       "SPP"
+#define PROFILE_PANU_NAME      "PANU"
 
 enum profile_id {
     PROFILE_A2DP,
@@ -32,6 +33,7 @@ enum profile_id {
     PROFILE_HFP_HF,
     PROFILE_HFP_AG,
     PROFILE_SPP,
+    PROFILE_PANU,
     PROFILE_MAX
 };
 
