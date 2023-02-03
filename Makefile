@@ -67,6 +67,10 @@ ifeq ($(CONFIG_BLUETOOTH_SPP), y)
 	CSRCS += service/profiles/spp/*.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_PAN), y)
+	CSRCS += service/profiles/pan/*.c
+endif
+
 CSRCS += service/utils/*.c
 endif
 
@@ -89,9 +93,10 @@ endif #CONFIG_BLUETOOTH_HFP_AG
 ifeq ($(CONFIG_BLUETOOTH_SPP), y)
 	CSRCS += tools/spp.c
 endif
+ifeq ($(CONFIG_BLUETOOTH_PAN), y)
+	CSRCS += tools/panu.c
 endif
-
-
+endif
 
 # framework/service/stack/tools dependence
 CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/framework/include/}
