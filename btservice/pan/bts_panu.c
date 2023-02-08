@@ -30,70 +30,70 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#include <stdint.h>
-#include <stdlib.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <net/if.h>
 #include <nuttx/list.h>
-#include <nuttx/net/netdev.h>
 #include <nuttx/net/ethernet.h>
+#include <nuttx/net/netdev.h>
 #include <nuttx/net/tun.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
 
+#include "bts_panu.h"
+#include "bts_service.h"
 #include "netutils/netlib.h"
-#include "uv.h"
 #include "stack_adapter_gap.h"
 #include "stack_adapter_pan.h"
-#include "bts_service.h"
-#include "bts_panu.h"
 #include "utils/utils.h"
+#include "uv.h"
 
 #define LOG_TAG "bts_panu"
 #include "utils/log.h"
 
 #define PAN_MAX_CONNECTIONS 1
-#define TAP_MAX_PKT_WRITE_LEN   (CONFIG_NET_TUN_PKTSIZE - sizeof(eth_hdr_t))
+#define TAP_MAX_PKT_WRITE_LEN (CONFIG_NET_TUN_PKTSIZE - sizeof(eth_hdr_t))
 #define PAN_DEV_NAME "bt-pan"
 
 typedef struct {
     struct list_node conn_list;
-    bool             enable;
-    int              tun_fd;
-    char             tun_devname[16];
-    int              local_role;
-    uint8_t          peer_addr[6];
-    uv_poll_t*       poll_handle;
-    pthread_mutex_t  pan_lock;
+    bool enable;
+    int tun_fd;
+    char tun_devname[16];
+    int local_role;
+    uint8_t peer_addr[6];
+    uv_poll_t* poll_handle;
+    pthread_mutex_t pan_lock;
     pan_callbacks_t* pan_cbs;
 } pan_global_t;
 
 typedef struct {
     struct list_node node;
-    bt_address       addr;
-    bt_address       eth_addr;
-    uint8_t          local_role;
-    uint8_t          peer_role;
-    uint8_t          state;
+    bt_address addr;
+    bt_address eth_addr;
+    uint8_t local_role;
+    uint8_t peer_role;
+    uint8_t state;
 } pan_conn_t;
 
 typedef struct {
     pan_role_t remote_role;
     pan_role_t local_role;
     pan_connection_state_t state;
-}pan_conn_evt_t;
+} pan_conn_evt_t;
 
 typedef struct {
     uint16_t protocol;
-    uint8_t *packet;
+    uint8_t* packet;
     uint16_t length;
-}pan_data_evt_t;
+} pan_data_evt_t;
 
 typedef struct {
     enum {
         CONNECTION_EVT,
         DATA_IND_EVT,
     } evt_id;
-    bt_address       addr;
+    bt_address addr;
     union {
         pan_conn_evt_t conn_evt;
         pan_data_evt_t data_evt;
@@ -101,25 +101,25 @@ typedef struct {
 } pan_msg_t;
 
 typedef struct eth_hdr {
-  bt_address h_dest;
-  bt_address h_src;
-  short h_proto;
+    bt_address h_dest;
+    bt_address h_src;
+    short h_proto;
 } eth_hdr_t;
 
-static pan_global_t g_pan = {0};
+static pan_global_t g_pan = { 0 };
 static uint8_t pan_read_buf[TAP_MAX_PKT_WRITE_LEN];
 
-static pan_conn_t *pan_find_conn(bt_address addr);
-static void pan_conn_close(pan_conn_t *conn);
+static pan_conn_t* pan_find_conn(bt_address addr);
+static void pan_conn_close(pan_conn_t* conn);
 
 static uint8_t pan_conns(void)
 {
     return list_length(&g_pan.conn_list);
 }
 
-static pan_conn_t *pan_new_conn(bt_address addr)
+static pan_conn_t* pan_new_conn(bt_address addr)
 {
-    pan_conn_t *conn;
+    pan_conn_t* conn;
 
     if (pan_conns() == PAN_MAX_CONNECTIONS) {
         BT_LOGD("%s, PAN_MAX_CONNECTIONS", __func__);
@@ -136,13 +136,13 @@ static pan_conn_t *pan_new_conn(bt_address addr)
     return conn;
 }
 
-static void pan_free_conn(pan_conn_t *conn)
+static void pan_free_conn(pan_conn_t* conn)
 {
     list_delete(&conn->node);
     free(conn);
 }
 
-static pan_conn_t *pan_find_conn(bt_address addr)
+static pan_conn_t* pan_find_conn(bt_address addr)
 {
     pan_conn_t* conn;
     struct list_node* node;
@@ -159,25 +159,25 @@ static pan_conn_t *pan_find_conn(bt_address addr)
 
 static void pan_close_all_conn(void)
 {
-    pan_conn_t *conn;
+    pan_conn_t* conn;
     struct list_node* node;
     struct list_node* tmp;
 
     list_for_every_safe(&g_pan.conn_list, node, tmp)
     {
-        conn = (pan_conn_t *)node;
+        conn = (pan_conn_t*)node;
         pan_conn_close(conn);
     }
 }
 
-static int pan_tap_bridge_open(const char *devname)
+static int pan_tap_bridge_open(const char* devname)
 {
     struct ifreq ifr;
-    uint8_t local_addr[6],ethaddr[6];
+    uint8_t local_addr[6], ethaddr[6];
     int errcode;
     int ret;
 
-    g_pan.tun_fd = open("/dev/tun", O_RDWR);
+    g_pan.tun_fd = open("/dev/tun", O_RDWR | O_CLOEXEC);
     if (g_pan.tun_fd < 0) {
         errcode = errno;
         BT_LOGE("ERROR: Failed to open /dev/tun: %d\n", errcode);
@@ -231,9 +231,9 @@ void pan_tap_poll_data(uv_poll_t* handle, int status, int events)
             if (ret > 0) {
                 memcpy(&ethhdr, pan_read_buf, sizeof(eth_hdr_t));
                 service_adapter_pan_write(g_pan.peer_addr, ntohs(ethhdr.h_proto),
-                                        ethhdr.h_dest, ethhdr.h_src,
-                                        pan_read_buf+ sizeof(eth_hdr_t),
-                                        ret - sizeof(eth_hdr_t));
+                    ethhdr.h_dest, ethhdr.h_src,
+                    pan_read_buf + sizeof(eth_hdr_t),
+                    ret - sizeof(eth_hdr_t));
             }
             return;
         } else {
@@ -252,9 +252,9 @@ void pan_tap_poll_data(uv_poll_t* handle, int status, int events)
     pan_close_all_conn();
 }
 
-static pan_conn_t *pan_new_conn_open(bt_address addr, uint8_t local, uint8_t remote)
+static pan_conn_t* pan_new_conn_open(bt_address addr, uint8_t local, uint8_t remote)
 {
-    pan_conn_t *conn;
+    pan_conn_t* conn;
     int ret;
 
     memcpy(g_pan.peer_addr, addr, 6);
@@ -273,8 +273,8 @@ static pan_conn_t *pan_new_conn_open(bt_address addr, uint8_t local, uint8_t rem
         if (ret < 0)
             goto open_fail;
         g_pan.poll_handle = bts_uv_poll_start(g_pan.tun_fd,
-                            UV_DISCONNECT | UV_READABLE,
-                            pan_tap_poll_data, NULL);
+            UV_DISCONNECT | UV_READABLE,
+            pan_tap_poll_data, NULL);
         if (!g_pan.poll_handle)
             goto open_fail;
         if (g_pan.pan_cbs)
@@ -291,7 +291,7 @@ open_fail:
     return NULL;
 }
 
-static void pan_conn_close(pan_conn_t *conn)
+static void pan_conn_close(pan_conn_t* conn)
 {
     if (conn == NULL)
         return;
@@ -314,34 +314,34 @@ static void pan_conn_close(pan_conn_t *conn)
     }
 }
 
-static void on_pan_connection_state_changed(bt_address addr, pan_conn_evt_t *evt)
+static void on_pan_connection_state_changed(bt_address addr, pan_conn_evt_t* evt)
 {
-    pan_conn_t *conn;
+    pan_conn_t* conn;
 
     BT_LOGD("%s, addr: %s, remote_role: %d, local_role: %d, state: %d",
-                            __func__, addr_str(addr),evt->remote_role,
-                            evt->local_role, evt->state);
+        __func__, addr_str(addr), evt->remote_role,
+        evt->local_role, evt->state);
     if (g_pan.pan_cbs)
         g_pan.pan_cbs->connection_state_cb(evt->state, addr, evt->local_role, evt->remote_role);
 
     switch (evt->state) {
-        case SERVICE_PROFILE_DISCONNECTED: {
-            conn = pan_find_conn(addr);
-            pan_conn_close(conn);
-            break;
-        }
-        case SERVICE_PROFILE_CONNECTED:
-            conn = pan_new_conn_open(addr, evt->local_role, evt->remote_role);
-            break;
-        case SERVICE_PROFILE_CONNECTING:
-        case SERVICE_PROFILE_DISCONNECTING:
-        default:
-            break;
+    case SERVICE_PROFILE_DISCONNECTED: {
+        conn = pan_find_conn(addr);
+        pan_conn_close(conn);
+        break;
+    }
+    case SERVICE_PROFILE_CONNECTED:
+        conn = pan_new_conn_open(addr, evt->local_role, evt->remote_role);
+        break;
+    case SERVICE_PROFILE_CONNECTING:
+    case SERVICE_PROFILE_DISCONNECTING:
+    default:
+        break;
     }
 }
 
 static int on_pan_data_incoming(bt_address remote_addr, uint16_t protocol,
-                                uint8_t *packet, uint16_t length)
+    uint8_t* packet, uint16_t length)
 {
     if (g_pan.tun_fd > 0) {
         /* Send data to network interface */
@@ -356,20 +356,20 @@ static int on_pan_data_incoming(bt_address remote_addr, uint16_t protocol,
     return -1;
 }
 
-void pan_service_event_process(pan_msg_t *msg)
+void pan_service_event_process(pan_msg_t* msg)
 {
     switch (msg->evt_id) {
-        case CONNECTION_EVT:
-            on_pan_connection_state_changed(msg->addr, &msg->conn_evt);
-            break;
-        case DATA_IND_EVT:{
-            pan_data_evt_t *evt = &msg->data_evt;
-            on_pan_data_incoming(msg->addr, evt->protocol,
-                                 evt->packet, evt->length);
-            free(evt->packet);
-            break;
-        }
-        default:
+    case CONNECTION_EVT:
+        on_pan_connection_state_changed(msg->addr, &msg->conn_evt);
+        break;
+    case DATA_IND_EVT: {
+        pan_data_evt_t* evt = &msg->data_evt;
+        on_pan_data_incoming(msg->addr, evt->protocol,
+            evt->packet, evt->length);
+        free(evt->packet);
+        break;
+    }
+    default:
         break;
     }
 }
@@ -384,9 +384,9 @@ static void bts_pan_handle_service_msg(bt_profile_id id, void* data, size_t size
 }
 
 static void adp_pan_connection_state_cb(BD_ADDR remote_addr,
-                                        SERVICE_PAN_ROLE_TYPE remote_role,
-                                        SERVICE_PAN_ROLE_TYPE local_role,
-                                        SERVICE_PROFILE_CONNECTION_STATE state)
+    SERVICE_PAN_ROLE_TYPE remote_role,
+    SERVICE_PAN_ROLE_TYPE local_role,
+    SERVICE_PROFILE_CONNECTION_STATE state)
 {
     pan_msg_t* pan_msg = (pan_msg_t*)malloc(sizeof(pan_msg_t));
     if (pan_msg == NULL) {
@@ -396,17 +396,17 @@ static void adp_pan_connection_state_cb(BD_ADDR remote_addr,
 
     pan_msg->conn_evt.state = PAN_STATE_DISCONNECTED;
     switch (state) {
-        case SERVICE_PROFILE_CONNECTING:
-            pan_msg->conn_evt.state = PAN_STATE_CONNECTING;
-            break;
-        case SERVICE_PROFILE_CONNECTED:
-            pan_msg->conn_evt.state = PAN_STATE_CONNECTED;
-            break;
-        case SERVICE_PROFILE_DISCONNECTING:
-            pan_msg->conn_evt.state = PAN_STATE_DISCONNECTING;
-            break;
-        default:
-            break;
+    case SERVICE_PROFILE_CONNECTING:
+        pan_msg->conn_evt.state = PAN_STATE_CONNECTING;
+        break;
+    case SERVICE_PROFILE_CONNECTED:
+        pan_msg->conn_evt.state = PAN_STATE_CONNECTED;
+        break;
+    case SERVICE_PROFILE_DISCONNECTING:
+        pan_msg->conn_evt.state = PAN_STATE_DISCONNECTING;
+        break;
+    default:
+        break;
     }
     pan_msg->evt_id = CONNECTION_EVT;
     pan_msg->conn_evt.remote_role = remote_role;
@@ -417,12 +417,12 @@ static void adp_pan_connection_state_cb(BD_ADDR remote_addr,
 }
 
 static void adp_pan_data_received_cb(BD_ADDR remote_addr, uint16_t protocol,
-                                     uint8_t *dst_addr, uint8_t *src_addr,
-                                     uint8_t *data, uint16_t length)
+    uint8_t* dst_addr, uint8_t* src_addr,
+    uint8_t* data, uint16_t length)
 {
     pan_msg_t* pan_msg;
     eth_hdr_t ethhdr;
-    uint8_t *packet;
+    uint8_t* packet;
 
     pan_msg = (pan_msg_t*)malloc(sizeof(pan_msg_t));
     if (pan_msg == NULL) {
@@ -473,7 +473,7 @@ static const PAN_CALLBACKS_S pan_adp_callbacks = {
     .pan_multicast_filter_cb = NULL,
 };
 
-bt_result_code bts_pan_init(pan_callbacks_t *callbacks)
+bt_result_code bts_pan_init(pan_callbacks_t* callbacks)
 {
     SERVICE_BT_STATUS status;
 
@@ -488,7 +488,7 @@ bt_result_code bts_pan_init(pan_callbacks_t *callbacks)
     g_pan.pan_cbs = callbacks;
     list_initialize(&g_pan.conn_list);
     status = service_adapter_pan_init(PAN_MAX_CONNECTIONS, SERVICE_PAN_ROLE_PANU,
-                                      (PAN_CALLBACKS_S *)&pan_adp_callbacks);
+        (PAN_CALLBACKS_S*)&pan_adp_callbacks);
     if (status != SERVICE_BT_STATUS_SUCCESS) {
         pthread_mutex_destroy(&g_pan.pan_lock);
         list_delete(&g_pan.conn_list);
@@ -502,7 +502,7 @@ bt_result_code bts_pan_init(pan_callbacks_t *callbacks)
 
 bt_result_code bts_pan_connect(bt_address addr, uint8_t dst_role, uint8_t src_role)
 {
-    pan_conn_t *conn;
+    pan_conn_t* conn;
     SERVICE_BT_STATUS status;
     bt_result_code ret = BT_RESULT_FAILED;
 
@@ -528,7 +528,7 @@ exit:
 
 bt_result_code bts_pan_disconnect(bt_address addr)
 {
-    pan_conn_t *conn;
+    pan_conn_t* conn;
     SERVICE_BT_STATUS status;
     bt_result_code ret = BT_RESULT_FAILED;
 
@@ -564,4 +564,3 @@ void bts_pan_cleanup(void)
     bts_unregister_profile_process(BT_PROFILE_PAN_ID);
     service_adapter_pan_cleanup();
 }
-
