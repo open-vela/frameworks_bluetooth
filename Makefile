@@ -25,6 +25,9 @@ ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_LOCAL), y)
 	CSRCS += framework/api/*.c
 else ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_BINDER_IPC), y)
 	CSRCS += framework/binder/*.c
+	CSRCS += service/ipc/*.c
+	CSRCS += service/ipc/binder/parcel/*.c
+	CSRCS += service/ipc/binder/src/*.c
 else
 endif
 endif
@@ -122,13 +125,16 @@ endif
 	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/stacks}
 	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/stacks/include/}
 	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/common/}
+	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/ipc}
+	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/ipc/binder/include}
+	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/ipc/binder/parcel}
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/tools/}
 endif
 
-CFLAGS	+= -O0 #-Werror
+CFLAGS	+= -O0 -Wno-strict-prototypes #-Werror 
 PRIORITY  = SCHED_PRIORITY_DEFAULT
 STACKSIZE = 8192
 MODULE    = $(CONFIG_BLUETOOTH)
