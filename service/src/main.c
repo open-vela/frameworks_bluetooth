@@ -20,17 +20,34 @@
 #include <unistd.h>
 
 #include "adapter_internel.h"
+#include "bluetooth_ipc.h"
 #include "bt_adapter.h"
 #include "btservice.h"
+#include "service_loop.h"
 
 #include "utils/log.h"
 
 int main(int argc, char **argv)
 {
     syslog(LOG_INFO, "bluetoothd main %d\n", __LINE__);
-    bt_service_init();
 
-    while (1)
-        sleep(10000);
+    service_loop_init();
+    bt_service_init();
+    bluetooth_ipc_add_services();
+
+    /* add ipc fd to service loop or join main thread */
+    /*
+       blocked: libuv setup poll need change file to nonblock mode,
+       but binder transact need block mode
+    */
+#ifdef CONFIG_BLUETOOTH_IPC_JOIN_LOOP
+    bluetooth_ipc_join_service_loop();
+    service_loop_run(false);
+#else
+    service_loop_run(true);
+    bluetooth_ipc_join_thread_pool();
+#endif
+    service_loop_exit();
+
     return 0;
 }
