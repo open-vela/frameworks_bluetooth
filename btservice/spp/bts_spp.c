@@ -36,8 +36,8 @@
  ****************************************************************************/
 // stdlib
 #include <stddef.h>
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
 // nuttx
 #include <debug.h>
 #include <nuttx/list.h>
@@ -60,45 +60,45 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-#define REGISTER_MAX          5
-#define CONNECTIONS_MAX       CONFIG_BLUETOOTH_SPP_MAX_CONNECTIONS
+#define REGISTER_MAX 5
+#define CONNECTIONS_MAX CONFIG_BLUETOOTH_SPP_MAX_CONNECTIONS
 #define SERVER_CONNECTION_MAX CONFIG_BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
-#define INDEX_MAX             (CONNECTIONS_MAX >> 5)
-#define INVALID_FD            -1
-#define DEFAULT_PACKET_SIZE   (255)
-#define SEND_FC_EN            1
-#define SENDING_BUFS_QUOTA    13
-#define CACHE_SEND_TIMEOUT    15
+#define INDEX_MAX (CONNECTIONS_MAX >> 5)
+#define INVALID_FD -1
+#define DEFAULT_PACKET_SIZE (255)
+#define SEND_FC_EN 1
+#define SENDING_BUFS_QUOTA 13
+#define CACHE_SEND_TIMEOUT 15
 #ifdef CONFIG_BLUETOOTH_SPP_DUMPBUFFER
 #define spp_dumpbuffer(m, a, n) lib_dumpbuffer(m, a, n)
 #else
 #define spp_dumpbuffer(m, a, n)
 #endif
 
-#define STACK_SVR_PORT(scn)           (((scn << 1) & 0x3E) + 1)
+#define STACK_SVR_PORT(scn) (((scn << 1) & 0x3E) + 1)
 #define STACK_CONN_PORT(scn, conn_id, accept) \
-                                      ((conn_id << 6) + (accept ? STACK_SVR_PORT(scn) : ((scn << 1) & 0x3E)))
-#define SERVICE_SCN(port)             ((port & 0x3E) >> 1)
-#define SERVICE_CONN_ID(conn_port)    (conn_port >> 6)
+    ((conn_id << 6) + (accept ? STACK_SVR_PORT(scn) : ((scn << 1) & 0x3E)))
+#define SERVICE_SCN(port) ((port & 0x3E) >> 1)
+#define SERVICE_CONN_ID(conn_port) (conn_port >> 6)
 
 /****************************************************************************
  * Private Types
  ****************************************************************************/
 
 struct spp_service_global {
-    uint8_t          started;
-    uint8_t          registered;
-    uint8_t          conn_id_next;
-    uint32_t         server_channel_map;
-    uint32_t         conn_id_map[INDEX_MAX];
+    uint8_t started;
+    uint8_t registered;
+    uint8_t conn_id_next;
+    uint32_t server_channel_map;
+    uint32_t conn_id_map[INDEX_MAX];
     struct list_node dev_list;
     struct list_node server_list;
-    pthread_mutex_t  spp_lock;
+    pthread_mutex_t spp_lock;
     spp_service_callbacks_t* cbs;
 };
 
 typedef struct spp_handle {
-    int              app_id;
+    int app_id;
     spp_callbacks_t* cbs;
 } spp_handle_t;
 
@@ -109,30 +109,30 @@ typedef struct {
 
 typedef struct {
     struct list_node node;
-    uint16_t         scn;
-    uint16_t         uuid;
+    uint16_t scn;
+    uint16_t uuid;
     spp_callbacks_t* cbs;
 } spp_server_t;
 
 typedef struct {
     struct list_node node;
-    spp_server_t*    server;
-    euv_pty_t*       handle;
-    uv_timer_t*      timer;
-    cache_buf_t      cache_buf;
-    bool             accept;
-    bt_address       addr;
-    int16_t          scn;
-    uint16_t         conn_port;
-    uint16_t         conn_id;
-    uint16_t         uuid;
-    uint16_t         mfs;
-    uint16_t         next_to_read;
-    int              mfd;
-    char             pty_name[20];
-    uint8_t          remaining_quota;
-    uint32_t         rx_bytes;
-    uint32_t         tx_bytes;
+    spp_server_t* server;
+    euv_pty_t* handle;
+    uv_timer_t* timer;
+    cache_buf_t cache_buf;
+    bool accept;
+    bt_address addr;
+    int16_t scn;
+    uint16_t conn_port;
+    uint16_t conn_id;
+    uint16_t uuid;
+    uint16_t mfs;
+    uint16_t next_to_read;
+    int mfd;
+    char pty_name[20];
+    uint8_t remaining_quota;
+    uint32_t rx_bytes;
+    uint32_t tx_bytes;
     spp_connection_state_t state;
     spp_callbacks_t* cbs;
 } spp_pty_device_t;
@@ -145,10 +145,10 @@ typedef struct {
         CONN_REQ_RECEIVED,
         UPDATE_MFS
     } event;
-    uint16_t   port;
-    uint16_t   length;
-    uint16_t   sent_length;
-    uint8_t*   buffer;
+    uint16_t port;
+    uint16_t length;
+    uint16_t sent_length;
+    uint8_t* buffer;
     bt_address addr;
     spp_connection_state_t state;
 } spp_msg_t;
@@ -188,7 +188,7 @@ static int alloc_connection_id(void)
     int index;
     int bitno;
 
-    for (; ; ) {
+    for (;;) {
         minor = g_spp_handle.conn_id_next;
         if (g_spp_handle.conn_id_next >= CONNECTIONS_MAX)
             g_spp_handle.conn_id_next = 0;
@@ -251,24 +251,24 @@ static int scn_bit_free(uint16_t scn)
     return 0;
 }
 
-static spp_server_t *alloc_new_server(uint16_t scn, uint16_t uuid, spp_callbacks_t* cbs)
+static spp_server_t* alloc_new_server(uint16_t scn, uint16_t uuid, spp_callbacks_t* cbs)
 {
     if (scn_bit_alloc(scn) != 0)
         return NULL;
 
-    spp_server_t *server = malloc(sizeof(spp_server_t));
+    spp_server_t* server = malloc(sizeof(spp_server_t));
     if (!server)
         return NULL;
 
-    server->scn  = scn;
+    server->scn = scn;
     server->uuid = uuid;
-    server->cbs  = cbs;
+    server->cbs = cbs;
     list_add_tail(&g_spp_handle.server_list, &server->node);
 
     return server;
 }
 
-static void free_server_resource(spp_server_t *server)
+static void free_server_resource(spp_server_t* server)
 {
     scn_bit_free(server->scn);
     list_delete(&server->node);
@@ -288,7 +288,7 @@ static void spp_cleanup_all_server(void)
     }
 }
 
-static spp_server_t *find_server(uint16_t scn)
+static spp_server_t* find_server(uint16_t scn)
 {
     spp_server_t* server;
     struct list_node* node;
@@ -454,7 +454,7 @@ static void spp_notify_pty_opened(spp_pty_device_t* device)
         g_spp_handle.cbs->pty_open_cb(device->addr, device->conn_id, device->pty_name);
 }
 
-static void euv_alloc_buffer(euv_pty_t* handle, uint8_t** buf, size_t *len)
+static void euv_alloc_buffer(euv_pty_t* handle, uint8_t** buf, size_t* len)
 {
     spp_pty_device_t* device;
 
@@ -488,7 +488,7 @@ static void euv_read_complete(euv_pty_t* handle, const uint8_t* buf, ssize_t siz
 
     if (size <= 0) {
         if (buf && (device->cache_buf.length == 0))
-            free((void *)buf);
+            free((void*)buf);
 
         if (size < 0)
             spp_pty_device_close(device);
@@ -597,7 +597,7 @@ static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t leng
 }
 
 static void spp_on_connection_state_chaneged(bt_address addr, uint16_t port,
-                                             spp_connection_state_t state)
+    spp_connection_state_t state)
 {
     int ret;
     spp_pty_device_t* device;
@@ -614,7 +614,7 @@ static void spp_on_connection_state_chaneged(bt_address addr, uint16_t port,
     }
 
     BT_LOGD("%s, addr: %s, scn: %d, port: %d, state: %d",
-            __func__, addr_str(addr), device->scn, device->conn_id, state);
+        __func__, addr_str(addr), device->scn, device->conn_id, state);
     device->state = state;
     ret = spp_notify_connection_state(device, state);
 
@@ -635,7 +635,7 @@ static void spp_on_connection_state_chaneged(bt_address addr, uint16_t port,
 }
 
 static void spp_on_incoming_data_received(bt_address addr, uint16_t port,
-                                          uint8_t* buffer, uint16_t length)
+    uint8_t* buffer, uint16_t length)
 {
     spp_pty_device_t* device;
     int ret;
@@ -710,7 +710,7 @@ static void spp_on_connection_update_mfs(uint16_t port, uint16_t mfs)
 
 static void spp_service_event_process(spp_msg_t* msg)
 {
-    if (!msg)
+    if (!msg || !g_spp_handle.started)
         return;
 
     pthread_mutex_lock(&g_spp_handle.spp_lock);
@@ -754,9 +754,9 @@ static void do_in_spp_service(spp_msg_t* msg)
 }
 
 static void adp_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE_SPP_PORT conn_port,
-                                                  SERVICE_PROFILE_CONNECTION_STATE state)
+    SERVICE_PROFILE_CONNECTION_STATE state)
 {
-    spp_msg_t msg = {0};
+    spp_msg_t msg = { 0 };
     spp_connection_state_t conn_state = SPP_CONNECTION_STATE_DISCONNECTED;
 
     switch (state) {
@@ -786,7 +786,7 @@ static void adp_data_sent_callback(SERVICE_SPP_PORT conn_port, uint8_t* buffer, 
     uint16_t sent_length)
 {
 #if SEND_FC_EN
-    spp_msg_t msg = {0};
+    spp_msg_t msg = { 0 };
 
     msg.event = DATA_SENT;
     msg.port = conn_port;
@@ -800,9 +800,9 @@ static void adp_data_sent_callback(SERVICE_SPP_PORT conn_port, uint8_t* buffer, 
 }
 
 static void adp_data_received_callback(BD_ADDR remote_addr, SERVICE_SPP_PORT conn_port,
-                                       uint8_t* buffer, uint16_t length)
+    uint8_t* buffer, uint16_t length)
 {
-    spp_msg_t msg = {0};
+    spp_msg_t msg = { 0 };
 
     msg.event = DATA_RECEIVED;
     msg.port = conn_port;
@@ -815,7 +815,7 @@ static void adp_data_received_callback(BD_ADDR remote_addr, SERVICE_SPP_PORT con
 
 static void adp_server_connection_req_received_callback(BD_ADDR remote_addr, SERVICE_SPP_PORT svr_port)
 {
-    spp_msg_t msg = {0};
+    spp_msg_t msg = { 0 };
 
     msg.event = CONN_REQ_RECEIVED;
     msg.port = svr_port;
@@ -826,7 +826,7 @@ static void adp_server_connection_req_received_callback(BD_ADDR remote_addr, SER
 
 static void adp_connection_mfs_callback(SERVICE_SPP_PORT conn_port, uint16_t mfs)
 {
-    spp_msg_t msg = {0};
+    spp_msg_t msg = { 0 };
 
     msg.event = UPDATE_MFS;
     msg.port = conn_port;
@@ -884,9 +884,9 @@ bt_result_code bts_spp_init(spp_service_callbacks_t* callbacks)
     return BT_RESULT_SUCCESS;
 }
 
-spp_handle_t* bts_spp_register_app(int app_id, spp_callbacks_t *callbacks)
+spp_handle_t* bts_spp_register_app(int app_id, spp_callbacks_t* callbacks)
 {
-    spp_handle_t *handle = NULL;
+    spp_handle_t* handle = NULL;
 
     if (!g_spp_handle.started)
         return NULL;
@@ -912,7 +912,7 @@ bt_result_code bts_spp_server_start(spp_handle_t* handle, uint16_t scn, uint16_t
 {
     struct bt_uuid_16 uuid_src;
     struct bt_uuid_128 uuid_128_dst;
-    spp_server_t *server;
+    spp_server_t* server;
     bt_result_code ret = BT_RESULT_SUCCESS;
 
     if (!g_spp_handle.started)
@@ -936,7 +936,7 @@ unlock_exit:
 
 bt_result_code bts_spp_server_stop(spp_handle_t* handle, uint16_t scn)
 {
-    spp_server_t *server;
+    spp_server_t* server;
     bt_result_code ret = BT_RESULT_SUCCESS;
 
     if (!g_spp_handle.started)
@@ -957,7 +957,7 @@ unlock_exit:
     return ret;
 }
 
-bt_result_code bts_spp_client_connect(spp_handle_t* handle, bt_address addr, int16_t scn, uint16_t uuid, uint16_t *port)
+bt_result_code bts_spp_client_connect(spp_handle_t* handle, bt_address addr, int16_t scn, uint16_t uuid, uint16_t* port)
 {
     SERVICE_BT_STATUS status;
     spp_pty_device_t* device;
@@ -972,7 +972,7 @@ bt_result_code bts_spp_client_connect(spp_handle_t* handle, bt_address addr, int
     uuid_to_uuid128((struct bt_uuid*)&uuid_src, &uuid_128_dst);
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     device = alloc_new_device(addr, scn == UNKNOWN_SERVER_CHANNEL_NUM ? 0 : scn,
-                              uuid, false, (handle && handle->cbs) ? handle->cbs : NULL);
+        uuid, false, (handle && handle->cbs) ? handle->cbs : NULL);
     if (!device) {
         ret = BT_RESULT_FAILED;
         goto unlock_exit;
@@ -980,7 +980,7 @@ bt_result_code bts_spp_client_connect(spp_handle_t* handle, bt_address addr, int
 
     status = service_adapter_spp_client_open(addr, device->conn_port, uuid_128_dst.val);
     if (status != SERVICE_BT_STATUS_SUCCESS) {
-        //spp_notify_connection_state(device, SPP_CONNECTION_STATE_DISCONNECTED);
+        // spp_notify_connection_state(device, SPP_CONNECTION_STATE_DISCONNECTED);
         remove_pty_device(device);
         ret = BT_RESULT_FAILED;
         goto unlock_exit;
@@ -1018,7 +1018,7 @@ unlock_exit:
     return ret;
 }
 
-void bts_spp_unregister_app(spp_handle_t *handle)
+void bts_spp_unregister_app(spp_handle_t* handle)
 {
     if (!handle || !g_spp_handle.started)
         return;
@@ -1032,8 +1032,10 @@ void bts_spp_unregister_app(spp_handle_t *handle)
 void bts_spp_cleanup(void)
 {
     if (!g_spp_handle.started)
-        return ;
+        return;
 
+    g_spp_handle.started = 0;
+    bts_unregister_profile_process(BT_PROFILE_SPP_ID);
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     spp_cleanup_all_device();
     spp_cleanup_all_server();
@@ -1042,8 +1044,6 @@ void bts_spp_cleanup(void)
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
     pthread_mutex_destroy(&g_spp_handle.spp_lock);
     service_adapter_spp_cleanup();
-    bts_unregister_profile_process(BT_PROFILE_SPP_ID);
-    g_spp_handle.started = 0;
 }
 
 void bts_spp_state_dump(void)
@@ -1061,7 +1061,7 @@ void bts_spp_state_dump(void)
     {
         i++;
         server = (spp_server_t*)node;
-        BT_LOGD("\tServer[%d]: Scn:%d, UUID:%04" PRIx16"\n", i, server->scn, server->uuid);
+        BT_LOGD("\tServer[%d]: Scn:%d, UUID:%04" PRIx16 "\n", i, server->scn, server->uuid);
     }
     if (i == 0)
         BT_LOGE("\tNo spp Server found\n");
@@ -1072,10 +1072,10 @@ void bts_spp_state_dump(void)
         i++;
         device = (spp_pty_device_t*)node;
         BT_LOGD("\tDevice[%d]: ID:%d, Addr:%s, State:%d, Scn:%d, UUID:%04" PRIx16
-                ", MFS:%d, Pty:[%d,%s], Rx:%" PRIu32 ", Tx:%" PRIu32"\n",
-                i, device->conn_id, addr_str(device->addr), device->state,
-                device->scn, device->uuid, device->mfs, device->mfd,
-                device->pty_name, device->rx_bytes, device->tx_bytes);
+                ", MFS:%d, Pty:[%d,%s], Rx:%" PRIu32 ", Tx:%" PRIu32 "\n",
+            i, device->conn_id, addr_str(device->addr), device->state,
+            device->scn, device->uuid, device->mfs, device->mfd,
+            device->pty_name, device->rx_bytes, device->tx_bytes);
     }
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
     if (i == 0)
