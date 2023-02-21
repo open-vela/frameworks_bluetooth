@@ -53,7 +53,7 @@ config BLUETOOTH_A2DP
 
 config BLUETOOTH_A2DP_SRC
 	bool "Enable BT_A2DP_SRC"
-	default n
+	default y
 	select BLUETOOTH_A2DP
 	select BLUETOOTH_AVRCP_TG
 
@@ -98,7 +98,7 @@ endif #BLUETOOTH_A2DP
 
 config BLUETOOTH_HFP_HF
 	bool "Enable BT_HFP_HF"
-	default n
+	default y
 
 config BLUETOOTH_HFP_AG
 	bool "Enable BT_HFP_AG"
@@ -122,13 +122,13 @@ config BLUETOOTH_GATT_SERVER
 
 config BLUETOOTH_SPP
 	bool "Enable BT_SPP profile"
-	default n
+	default y
 	select PSEUDOTERM
 	select SERIAL_TERMIOS
 
 config BLUETOOTH_HIDDEV
 	bool "Enable BT_HIDDEV"
-	default n
+	default y
 
 config BLUETOOTH_MANAGER
 	bool "Enable bt manager"
@@ -158,7 +158,7 @@ config BLUETOOTH_ORB_QUEUE_SIZE
 
 config BLUETOOTH_AUTO_SNIFF
 	bool "Bt auto sniff"
-	default n
+	default y
 
 if BLUETOOTH_SPP
 config BLUETOOTH_SPP_INSTANCE
