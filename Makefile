@@ -16,8 +16,6 @@
 
 include $(APPDIR)/Make.defs
 
-BIN := $(APPDIR)/staging/libframework.a
-
 CSRCS += btservice/btservice/bts_service.c
 CSRCS += btservice/btservice/bts_service_interface.c
 CSRCS += btservice/gap/bts_gap.c
@@ -187,7 +185,17 @@ ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	MAINSRC		+= tools/bt_tools.c
 endif
 
+ASRCS := $(wildcard $(ASRCS))
 CSRCS := $(wildcard $(CSRCS))
+CXXSRCS := $(wildcard $(CXXSRCS))
+MAINSRC := $(wildcard $(MAINSRC))
+NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
+
+ifneq ($(NOEXPORTSRCS),)
+BIN := $(APPDIR)/staging/libbluetooth.a
+endif
+
+EXPORT_FILES := include
 
 include $(APPDIR)/Application.mk
 
