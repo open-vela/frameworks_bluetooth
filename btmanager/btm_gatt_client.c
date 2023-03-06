@@ -51,9 +51,7 @@ static void on_bts_gattc_connection_state_changed_cb(void* hdl, profile_connecti
     BT_CBACK(handle->callbacks, gattc_connection_state_changed_cb, handle, handle->remote_addr, state);
     if (state == PROFILE_DISCONNECTED) {
         BT_LOGD("free btm_gatt_client handle");
-        void** handle_ptr = handle->handle_ptr;
         free(handle);
-        *handle_ptr = NULL;
     }
 }
 
