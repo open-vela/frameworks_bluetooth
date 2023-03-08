@@ -98,6 +98,7 @@ typedef struct {
 
 typedef struct {
     bt_address addr;
+    gatt_element_t element;
     gatt_status status;
 } bts_gatts_notify_s;
 
@@ -399,7 +400,7 @@ static void on_server_mtu_changed(bt_address remote_addr, uint32_t mtu)
     }
 }
 
-static void on_server_notify_sent(bt_address remote_addr, gatt_status status)
+static void on_server_notify_sent(bt_address remote_addr, gatt_element_t* element, gatt_status status)
 {
     bts_gatts_hdl_t* handle;
     list_for_every_entry(&gatts_list, handle, bts_gatts_hdl_t, node)
@@ -407,6 +408,7 @@ static void on_server_notify_sent(bt_address remote_addr, gatt_status status)
         bts_gatts_notify_s data;
         memset(&data, 0, sizeof(data));
         memcpy(data.addr, remote_addr, sizeof(bt_address));
+        memcpy(&data.element, element, sizeof(gatt_element_t));
         data.status = status;
         bts_gatts_msg_t* msg = create_adp_msg(ON_SERVER_NOTIFICATION_SENT, handle, &data, sizeof(bts_gatts_notify_s));
         CHECK_PTR(msg);
@@ -726,7 +728,7 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
     }
     case ON_SERVER_NOTIFICATION_SENT: {
         bts_gatts_notify_s* value = (bts_gatts_notify_s*)(msg->data);
-        BT_CBACK(handle->callbacks, bts_gatts_notify_sent_cb, handle->btm_handle, value->addr, value->status);
+        BT_CBACK(handle->callbacks, bts_gatts_notify_sent_cb, handle->btm_handle, value->addr, &value->element, value->status);
         break;
     }
     default: {

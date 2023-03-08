@@ -54,7 +54,7 @@ typedef void (*bts_gatts_write_request_callback)(void* handle, bt_address remote
     gatt_element_t* element, uint8_t* value, uint16_t offset,
     uint16_t size);
 typedef void (*bts_gatts_mtu_changed_callback)(void* handle, bt_address remote_addr, uint32_t mtu);
-typedef void (*bts_gatts_notify_sent_callback)(void* handle, bt_address remote_addr, gatt_status status);
+typedef void (*bts_gatts_notify_sent_callback)(void* handle, bt_address remote_addr, gatt_element_t* element, gatt_status status);
 
 typedef struct {
     bts_gatts_connection_state_changed_callback bts_gatts_connection_state_changed_cb;
