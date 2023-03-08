@@ -161,7 +161,7 @@ typedef void (*btm_gatts_mtu_changed_callback)(void* handle, bt_address remote_a
  * @param {gatt_status} status - GATT status
  * @return {*}
  */
-typedef void (*btm_gatts_notify_sent_callback)(void* handle, bt_address remote_addr, gatt_status status);
+typedef void (*btm_gatts_notify_sent_callback)(void* handle, bt_address remote_addr, gatt_element_t* element, gatt_status status);
 
 typedef struct {
     btm_gatts_connection_state_changed_callback gatts_connection_state_changed_cb;
@@ -181,7 +181,7 @@ typedef struct {
     size_t size;
 
     /**
-     * @brief: gatt server open 
+     * @brief: gatt server open
      * @note: handle would be created
      * @param {void**} handle
      * @param {btm_gatt_server_callbacks*} callbacks - callback function struct

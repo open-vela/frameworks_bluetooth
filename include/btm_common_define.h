@@ -178,7 +178,7 @@
 #define COD_HEALTH_DATA_DISPLAY (COD_DEVICE_HEALTH | 0x00001C)
 
 /* * Headset Device Class */
-#define IS_HEADSET(cod)  ((COD_SERVICE_BITS(cod) & COD_SERVICE_AUDIO) && COD_DEVICE_MAJOR_BITS(cod) == COD_DEVICE_AV)
+#define IS_HEADSET(cod) ((COD_SERVICE_BITS(cod) & COD_SERVICE_AUDIO) && COD_DEVICE_MAJOR_BITS(cod) == COD_DEVICE_AV)
 
 /* Possible 2.4G none Bluetooth radio channel central frequency (MHz) */
 #define AFH_WIFI_CENTRAL_FREQUENCY_CH1 2412
@@ -279,7 +279,8 @@ typedef enum {
     BT_BOND_STATE_SDP_DONE,
     BT_BOND_STATE_BLE_NONE,
     BT_BOND_STATE_BLE_BONDING,
-    BT_BOND_STATE_BLE_BONDED
+    BT_BOND_STATE_BLE_BONDED,
+    BT_BOND_STATE_BONDED_CTKD,
 } bt_bond_state;
 
 /* * Local IO capability, shall be the same value defined in HCI Specification. */

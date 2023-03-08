@@ -125,11 +125,11 @@ static void on_bts_gatts_mtu_changed(void* hdl, bt_address remote_addr, uint32_t
     BT_CBACK(handle->callbacks, gatts_mtu_changed_cb, handle, remote_addr, mtu);
 }
 
-static void on_bts_gatts_notify_sent(void* hdl, bt_address remote_addr, gatt_status status)
+static void on_bts_gatts_notify_sent(void* hdl, bt_address remote_addr, gatt_element_t* element, gatt_status status)
 {
     btm_gatts_hdl_t* handle = hdl;
     BT_ASSERT2(!handle);
-    BT_CBACK(handle->callbacks, gatts_notify_sent_cb, handle, remote_addr, status);
+    BT_CBACK(handle->callbacks, gatts_notify_sent_cb, handle, remote_addr, element, status);
 }
 
 static bts_gatt_server_callbacks server_callbacks = {

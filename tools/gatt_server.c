@@ -172,19 +172,19 @@ static void gatt_display_service(gatt_element_t* elements, uint16_t size)
     while (item < item_end) {
         switch (item->type) {
         case GATT_PRIMARY_SERVICE:
-            BT_LOGD(">[%" PRIu32"][PRI]", item->id);
+            BT_LOGD(">[%" PRIu32 "][PRI]", item->id);
             break;
         case GATT_SECONDARY_SERVICE:
-            BT_LOGD(">[%" PRIu32"][SND]", item->id);
+            BT_LOGD(">[%" PRIu32 "][SND]", item->id);
             break;
         case GATT_INCLUDED_SERVICE:
-            BT_LOGD(">  [%" PRIu32"][INC]", item->id);
+            BT_LOGD(">  [%" PRIu32 "][INC]", item->id);
             break;
         case GATT_CHARACTERISTIC:
-            BT_LOGD(">  [%" PRIu32"][CHR]", item->id);
+            BT_LOGD(">  [%" PRIu32 "][CHR]", item->id);
             break;
         case GATT_DESCRIPTOR:
-            BT_LOGD(">    [%" PRIu32"][DES]", item->id);
+            BT_LOGD(">    [%" PRIu32 "][DES]", item->id);
             break;
         }
         BT_LOGD("[PROP:%" PRIu32, item->properties);
@@ -323,7 +323,7 @@ static void test_server_write_request_callback(void* handle, bt_address remote_a
 
 static void test_server_mtu_changed_callback(void* handle, bt_address remote_addr, uint32_t mtu)
 {
-    BT_LOGD("%s, addr:%s, mtu: %" PRIu32,  __func__, addr_str(remote_addr), mtu);
+    BT_LOGD("%s, addr:%s, mtu: %" PRIu32, __func__, addr_str(remote_addr), mtu);
     gatts_device_t* device = find_gatts_device(remote_addr);
     if (device) {
         BT_LOGD("update device:%s, mtu:%" PRIu32, addr_str(remote_addr), mtu);
@@ -331,7 +331,7 @@ static void test_server_mtu_changed_callback(void* handle, bt_address remote_add
     }
 }
 
-static void test_server_notify_sent_callback(void* handle, bt_address remote_addr, gatt_status status)
+static void test_server_notify_sent_callback(void* handle, bt_address remote_addr, gatt_element_t* element, gatt_status status)
 {
     throughtput_cursor--;
     if (status != GATT_STATUS_SUCCESS) {
@@ -343,7 +343,7 @@ static void test_server_notify_sent_callback(void* handle, bt_address remote_add
 
 static void test_server_throughtout_notify(bt_address remote_addr, gatt_element_t* element, uint32_t times, uint16_t mtu)
 {
-    BT_LOGD("mtu:%" PRIu16", times:%" PRIu32, mtu, times);
+    BT_LOGD("mtu:%" PRIu16 ", times:%" PRIu32, mtu, times);
     uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * mtu);
     if (!payload) {
         BT_LOGD("malloc payload fail");
@@ -631,7 +631,7 @@ static bt_command_t g_gatts_tables[] = {
     { "send_notify", gatts_send_notify, "\"send notify:<address> <payload> \"" },
     { "send_indicate", gatts_send_indicate, "\"send indicate:<address> <payload>\"" },
     { "throughput", gatts_do_throughput, "\"throughtout:<address> <times>\"" },
-   };
+};
 
 static void usage(void)
 {
