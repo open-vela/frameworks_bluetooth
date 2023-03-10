@@ -105,17 +105,17 @@ static bts_gattc_hdl_t* find_gattc_handle(bt_address addr)
     return NULL;
 }
 
-static bool add_gattc_handle(bts_gattc_hdl_t handle)
+static bts_gattc_hdl_t* add_gattc_handle(bts_gattc_hdl_t handle)
 {
     bts_gattc_hdl_t* gattc = (bts_gattc_hdl_t*)malloc(sizeof(bts_gattc_hdl_t));
-    CHECK_PTR_RETURN(gattc, false);
+    CHECK_PTR_RETURN(gattc, NULL);
     memset(gattc, 0, sizeof(bts_gattc_hdl_t));
 
     gattc->callbacks = handle.callbacks;
     gattc->btm_handle = handle.btm_handle;
     memcpy(gattc->remote_addr, handle.remote_addr, sizeof(bt_address));
     list_add_tail(&gattc_list, &gattc->node);
-    return true;
+    return gattc;
 }
 
 static bool remove_gatt_client(bts_gattc_hdl_t* gattc)
@@ -347,18 +347,24 @@ static GATT_CLIENT_CALLBACKS_S gatt_client_cbs = {
 static bt_result_code gatt_client_connect(bts_gattc_hdl_t handle)
 {
     BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BLUELET-CONNECTION-START, addr:%s", addr_str(handle.remote_addr));
-    gatt_status ret = service_adapter_gatt_client_connect(handle.remote_addr, &gatt_client_cbs);
-    if (ret != GATT_STATUS_SUCCESS) {
-        BT_LOGE("fail, gatt handle connect, err:%d", ret);
-        return BT_RESULT_FAILED;
+
+    bts_gattc_hdl_t* hdl = add_gattc_handle(handle);
+    if (!hdl) {
+        BT_LOGE("fail, add_gattc_handle");
+        goto err_add;
     }
 
-    bool ret2 = add_gattc_handle(handle);
-    if (!ret2) {
-        BT_LOGE("fail, add_gattc_handle, err:%d", ret);
-        return BT_RESULT_FAILED;
+    gatt_status ret = service_adapter_gatt_client_connect(hdl->remote_addr, &gatt_client_cbs);
+    if (ret != GATT_STATUS_SUCCESS) {
+        BT_LOGE("fail, gatt handle connect, err:%d", ret);
+        goto err_connect;
     }
-    return BT_RESULT_SUCCESS;
+    return ret;
+
+err_connect:
+    remove_gatt_client(hdl);
+err_add:
+    return BT_RESULT_FAILED;
 }
 
 static bt_result_code gatt_client_disconnect(bt_address addr)
