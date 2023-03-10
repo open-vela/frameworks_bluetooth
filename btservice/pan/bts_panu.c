@@ -358,6 +358,7 @@ static int on_pan_data_incoming(bt_address remote_addr, uint16_t protocol,
 
 void pan_service_event_process(pan_msg_t* msg)
 {
+    pthread_mutex_lock(&g_pan.pan_lock);
     switch (msg->evt_id) {
     case CONNECTION_EVT:
         on_pan_connection_state_changed(msg->addr, &msg->conn_evt);
@@ -372,6 +373,7 @@ void pan_service_event_process(pan_msg_t* msg)
     default:
         break;
     }
+    pthread_mutex_unlock(&g_pan.pan_lock);
 }
 
 static void bts_pan_handle_service_msg(bt_profile_id id, void* data, size_t size)
