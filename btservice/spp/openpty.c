@@ -39,7 +39,18 @@
 
 #include "openpty.h"
 
-int open_pty(int *master, char *name)
+static void disable_echo(int fd)
+{
+    struct termios echo;
+
+    tcgetattr(fd, &echo);
+
+    echo.c_lflag &= ~ECHO;
+
+    tcsetattr(fd, TCSANOW, &echo);
+}
+
+int open_pty(int* master, char* name)
 {
     char buf[64];
     int ret;
@@ -69,9 +80,11 @@ int open_pty(int *master, char *name)
     if (name != NULL)
         strcpy(name, buf);
 
+    disable_echo(*master);
+
     return 0;
 
 err:
-  close(*master);
-  return ret;
+    close(*master);
+    return ret;
 }
