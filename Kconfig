@@ -29,6 +29,18 @@ config BLUETOOTH_THREAD_PRIORITY
 	help
 		bluetooth thread priority
 
+config BTSTACK_THREAD_STACK_SIZE
+	int "btstack thread stack size"
+	default 4096
+	help
+		btstack thread stack size
+
+config BTSERVICE_THREAD_STACK_SIZE
+	int "btservice thread stack size"
+	default 8192
+	help
+		btservice thread stack size
+
 config BLUETOOTH_CLASS_OF_DEVICE
 	hex "bluetooth class of device"
 	default 0x00640404
