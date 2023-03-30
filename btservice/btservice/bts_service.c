@@ -43,8 +43,6 @@
 #define LOG_TAG "bts_service"
 #include "log.h"
 
-#define BTSTACK_THREAD_STACK_SIZE 4096
-#define BTSERVICE_THREAD_STACK_SIZE 8192
 typedef struct
 {
     process_in_timer func_in_timer;
@@ -78,7 +76,7 @@ static struct list_node bts_msg_list = LIST_INITIAL_VALUE(bts_msg_list);
 extern void InitTransportLayer(void);
 extern void ScheduleLoop(void);
 extern void TransportRecvData(void);
-extern int  GetTransportHandler(void);
+extern int GetTransportHandler(void);
 static void bts_service_transport_recv_loop(void);
 
 static void bts_uv_close_cb(uv_handle_t* handle)
@@ -267,35 +265,33 @@ void create_config_folder(void)
     }
 }
 
-static void bts_service_h4_recv_handler(uv_poll_t *handle, int status,
-                                        int events)
+static void bts_service_h4_recv_handler(uv_poll_t* handle, int status, int events)
 {
-  if (status < 0) {
-      BT_LOGE("fail, %s status:%d", __func__, status);
-      return;
-  }
+    if (status < 0) {
+        BT_LOGE("fail, %s status:%d", __func__, status);
+        return;
+    }
 
-  if (events & UV_READABLE) {
-      TransportRecvData();
-      return;
-  }
+    if (events & UV_READABLE) {
+        TransportRecvData();
+        return;
+    }
 
-  BT_LOGE ("error, %s unexpected events:%d", __func__, events);
+    BT_LOGE("error, %s unexpected events:%d", __func__, events);
 }
 
 static void bts_service_transport_recv_loop(void)
 {
-  int fd = GetTransportHandler();
-  if (fd < 0) {
-      BT_LOGE("fail, %s invlaid fd:%d", __func__, fd);
-      return;
-  }
+    int fd = GetTransportHandler();
+    if (fd < 0) {
+        BT_LOGE("fail, %s invlaid fd:%d", __func__, fd);
+        return;
+    }
 
-  uv_poll_t *poll = bts_uv_poll_start(fd, UV_READABLE,
-                                      bts_service_h4_recv_handler, NULL);
-  if (!poll) {
-      BT_LOGE("fail, %s", __func__);
-      return;
+    uv_poll_t* poll = bts_uv_poll_start(fd, UV_READABLE, bts_service_h4_recv_handler, NULL);
+    if (!poll) {
+        BT_LOGE("fail, %s", __func__);
+        return;
     }
 }
 
@@ -322,7 +318,7 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     InitTransportLayer();
     gap_service_init();
     bt_dispatch_loop = uv_loop_new();
-    uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE | UV_THREAD_HAS_PRIORITY, BTSTACK_THREAD_STACK_SIZE };
+    uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE | UV_THREAD_HAS_PRIORITY, CONFIG_BTSTACK_THREAD_STACK_SIZE };
     options.priority = CONFIG_BLUETOOTH_THREAD_PRIORITY;
     ret = uv_thread_create_ex(&thread_handle[THREAD_ID_STACK], &options, stack_schedule_loop, NULL);
     if (ret != 0) {
@@ -331,7 +327,7 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     }
     pthread_setname_np(thread_handle[THREAD_ID_STACK], "bluelet_thread");
 
-    options.stack_size = BTSERVICE_THREAD_STACK_SIZE;
+    options.stack_size = CONFIG_BTSERVICE_THREAD_STACK_SIZE;
     options.priority = CONFIG_BLUETOOTH_THREAD_PRIORITY;
     ret = uv_thread_create_ex(&thread_handle[THREAD_ID_SERVICE], &options, service_schedule_loop, NULL);
     if (ret != 0) {
