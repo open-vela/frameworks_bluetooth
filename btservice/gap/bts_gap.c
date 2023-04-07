@@ -870,7 +870,7 @@ static void adapter_update_ble_bonded_devices_callback(SERVICE_BLE_KEYS_S* bonde
 
 static void adapter_ble_add_white_list_callback(bt_address remote_addr, SERVICE_BT_STATUS status)
 {
-    BT_LOGD("%s, addr :%s", __func__, addr_str(remote_addr));
+    BT_LOGD("%s, addr :%s, status: %" PRIu32, __func__, addr_str(remote_addr), status);
     gap_msg_t* msg = gap_msg_new(GAP_BLE_ADD_WHITE_LIST);
     if (!msg)
         return;
@@ -882,7 +882,7 @@ static void adapter_ble_add_white_list_callback(bt_address remote_addr, SERVICE_
 
 static void adapter_ble_remove_white_list_callback(bt_address remote_addr, SERVICE_BT_STATUS status)
 {
-    BT_LOGD("%s, addr :%s", __func__, addr_str(remote_addr));
+    BT_LOGD("%s, addr :%s, status: %" PRIu32, __func__, addr_str(remote_addr), status);
     gap_msg_t* msg = gap_msg_new(GAP_BLE_REMOVE_WHITE_LIST);
     if (!msg)
         return;
@@ -894,7 +894,7 @@ static void adapter_ble_remove_white_list_callback(bt_address remote_addr, SERVI
 
 static void adapter_ble_add_resolving_list_callback(bt_address remote_addr, SERVICE_BT_STATUS status)
 {
-    BT_LOGD("%s, addr :%s", __func__, addr_str(remote_addr));
+    BT_LOGD("%s, addr :%s, status: %" PRIu32, __func__, addr_str(remote_addr), status);
     gap_msg_t* msg = gap_msg_new(GAP_ADD_BLE_RESOlVING_LIST);
     if (!msg)
         return;
@@ -906,7 +906,7 @@ static void adapter_ble_add_resolving_list_callback(bt_address remote_addr, SERV
 
 static void adapter_ble_remove_resolving_list_callback(bt_address remote_addr, SERVICE_BT_STATUS status)
 {
-    BT_LOGD("%s, addr :%s", __func__, addr_str(remote_addr));
+    BT_LOGD("%s, addr :%s, status: %" PRIu32, __func__, addr_str(remote_addr), status);
     gap_msg_t* msg = gap_msg_new(GAP_REMOVE_BLE_RESOlVING_LIST);
     if (!msg)
         return;
