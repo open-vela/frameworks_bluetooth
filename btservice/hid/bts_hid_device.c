@@ -59,6 +59,7 @@ typedef struct
     enum {
         ON_HIDD_APP_STATE_CHANGED = 0,
         ON_HIDD_CONNECTION_STATE_CHANGED,
+        ON_HIDD_INT_DATA_CB,
     } event;
 
     size_t size;
@@ -70,6 +71,13 @@ typedef struct {
     profile_connection_state state;
     bool le_hid;
 } bts_hidd_conn_s;
+
+typedef struct {
+    bt_address remote_addr;
+    uint8_t type;
+    uint16_t size;
+    uint8_t data[];
+} bts_hidd_reprort_t;
 
 static void send_msg(bts_hidd_msg_t* msg);
 static void handle_msg_received(bt_profile_id id, void* data, size_t size);
@@ -211,8 +219,20 @@ static void on_hidd_set_protocol_callback(bt_address remote_addr, uint8_t protoc
 
 static void on_hidd_intr_data_callback(bt_address remote_addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data)
 {
-    BT_LOGD("%s, addr:%s, Report Data [T-%d, L-%d]:", __func__, addr_str(remote_addr), rpt_type, rpt_size);
-    BT_HEXDUMP(rpt_data, rpt_size);
+    if (rpt_size == 0 || !rpt_data) {
+        return;
+    }
+
+    bts_hidd_reprort_t* reprot = (bts_hidd_reprort_t*)malloc(sizeof(bts_hidd_reprort_t) + rpt_size);
+    reprot->type = rpt_type;
+    reprot->size = rpt_size;
+    memcpy(reprot->remote_addr, remote_addr, sizeof(bt_address));
+    memcpy(reprot->data, rpt_data, rpt_size);
+
+    bts_hidd_msg_t* msg = create_adp_msg(ON_HIDD_INT_DATA_CB, reprot, sizeof(bts_hidd_reprort_t) + rpt_size);
+    CHECK_PTR(msg);
+    send_msg(msg);
+    free(reprot);
 }
 
 static void on_hidd_device_virtual_unplug_callback(bt_address remote_addr)
@@ -568,6 +588,15 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
         {
             bts_hidd_conn_s* conn = (bts_hidd_conn_s*)(msg->data);
             BT_CBACK(handle->callbacks, bts_hidd_connection_state_changed_cb, handle->btm_handle, conn->remote_addr, conn->le_hid, conn->state);
+        }
+        break;
+    }
+    case ON_HIDD_INT_DATA_CB: {
+        bts_hidd_hdl_t* handle;
+        list_for_every_entry(&hidd_list, handle, bts_hidd_hdl_t, node)
+        {
+            bts_hidd_reprort_t* reoport = (bts_hidd_reprort_t*)(msg->data);
+            BT_CBACK(handle->callbacks, bts_hidd_interrupt_data_cb, handle->btm_handle, reoport->remote_addr, reoport->type, reoport->size, reoport->data);
         }
         break;
     }
