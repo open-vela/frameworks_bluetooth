@@ -65,9 +65,17 @@ static void on_bts_hidd_connection_state_changed(void* hdl, bt_address remote_ad
     BT_CBACK(handle->callbacks, hidd_connection_state_changed_cb, handle, remote_addr, le_hid, state);
 }
 
+static void on_bts_hidd_interrupt_data_callback(void* hdl, bt_address remote_addr, uint8_t type, uint16_t size, uint8_t* data)
+{
+    btm_hidd_hdl_t* handle = (btm_hidd_hdl_t*)hdl;
+    CHECK_PTR(handle);
+    BT_CBACK(handle->callbacks, hidd_interrupt_data_cb, handle, remote_addr, type, size, data);
+}
+
 static bts_hid_device_callbacks bts_hidd_cb = {
     .bts_hidd_app_state_changed_cb = hidd_app_state_changed,
     .bts_hidd_connection_state_changed_cb = on_bts_hidd_connection_state_changed,
+    .bts_hidd_interrupt_data_cb = on_bts_hidd_interrupt_data_callback
 };
 
 static bt_result_code hidd_register_device(void** ptr, bt_hidd_sdp_settings_t sdp, bt_hidd_qos_settings_t tx_qos, bt_hidd_qos_settings_t rx_qos, bt_hid_device_callbacks* cb)

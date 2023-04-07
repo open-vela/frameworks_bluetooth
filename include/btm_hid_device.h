@@ -56,10 +56,12 @@ typedef void (*btm_hidd_device_state_changed_callback)(void* handle, hid_app_sta
  * @return {*}
  */
 typedef void (*btm_hidd_connection_state_changed_callback)(void* handle, bt_address remote_addr, bool le_hid, profile_connection_state state);
+typedef void (*btm_hidd_interrupt_data_callback)(void* handle, bt_address remote_addr, uint8_t type, uint16_t size, uint8_t* data);
 
 typedef struct {
     btm_hidd_device_state_changed_callback hidd_app_state_changed_cb;
     btm_hidd_connection_state_changed_callback hidd_connection_state_changed_cb;
+    btm_hidd_interrupt_data_callback hidd_interrupt_data_cb;
 } bt_hid_device_callbacks;
 
 typedef struct {

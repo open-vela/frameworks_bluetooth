@@ -44,10 +44,12 @@
 
 typedef void (*bts_hidd_app_state_changed_callback)(void* handle, uint8_t device_id, hid_app_state registered);
 typedef void (*bts_hidd_connection_state_changed_callback)(void* handle, bt_address remote_addr, bool le_hid, profile_connection_state state);
+typedef void (*bts_hidd_interrupt_data_callback)(void* handle, bt_address remote_addr, uint8_t type, uint16_t size, uint8_t* data);
 
 typedef struct {
     bts_hidd_app_state_changed_callback bts_hidd_app_state_changed_cb;
     bts_hidd_connection_state_changed_callback bts_hidd_connection_state_changed_cb;
+    bts_hidd_interrupt_data_callback bts_hidd_interrupt_data_cb;
 } bts_hid_device_callbacks;
 
 typedef struct
