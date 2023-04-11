@@ -52,25 +52,25 @@
 #include "utils/utils.h"
 
 #define HF_CONNECT_TIMEOUT 10 * 1000
-#define HF_SERVICE_CBACK(P_CB, P_CBACK, ...)                     \
-    do {                                                         \
-        if ((P_CB) && (P_CB)->P_CBACK) {                         \
-            (P_CB)->P_CBACK(__VA_ARGS__);                        \
-        }                                                        \
+#define HF_SERVICE_CBACK(P_CB, P_CBACK, ...) \
+    do {                                     \
+        if ((P_CB) && (P_CB)->P_CBACK) {     \
+            (P_CB)->P_CBACK(__VA_ARGS__);    \
+        }                                    \
     } while (0)
 
 typedef struct _hf_state_machine {
-    state_machine_t         sm;
-    bt_address              addr;
-    uint16_t                sco_conn_handle;
-    uv_timer_t*             connect_timer;
-    bool                    recognition_active;
-    uint8_t                 spk_volume;
-    uint8_t                 mic_volume;
-    uint8_t                 codec;
-    uint8_t                 call_in_progress;
-    struct list_node        pending_actions;
-    hf_client_service_t*    service;
+    state_machine_t sm;
+    bt_address addr;
+    uint16_t sco_conn_handle;
+    uv_timer_t* connect_timer;
+    bool recognition_active;
+    uint8_t spk_volume;
+    uint8_t mic_volume;
+    uint8_t codec;
+    uint8_t call_in_progress;
+    struct list_node pending_actions;
+    hf_client_service_t* service;
 } hf_state_machine_t;
 
 typedef struct {
@@ -255,6 +255,7 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
     hf_event_data_t* data = (hf_event_data_t*)p_data;
+    hf_client_service_t* service = hfsm->service;
     SERVICE_BT_STATUS status;
 
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
@@ -262,8 +263,8 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
         addr_str(hfsm->addr));
     switch (event) {
     case CONNECT:
-        //check bonded state
-        //check address (hfsm->addr == data->bd_addr)
+        // check bonded state
+        // check address (hfsm->addr == data->bd_addr)
         BT_LOGD("PERFORMANCE-HF-BLUELET-CONNECT_START");
         status = service_adapter_hfp_connect(hfsm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
@@ -277,7 +278,7 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
         break;
 
     case STACK_EVENT_CONNECTION_STATE_CHANGED: {
-        //check bonded state;
+        // check bonded state;
         hf_client_connection_state_t state = data->valueint1;
 
         switch (state) {
@@ -293,6 +294,21 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
         default:
             break;
         }
+        break;
+    }
+
+    case STACK_EVENT_CALL: {
+        hf_client_call_t call = data->valueint1;
+
+        hfsm->call_in_progress = call;
+        HF_SERVICE_CBACK(service->callbacks, call_cb, hfsm->addr, call);
+        break;
+    }
+
+    case STACK_EVENT_CALLSETUP: {
+        hf_client_callsetup_t setup = data->valueint1;
+
+        HF_SERVICE_CBACK(service->callbacks, callsetup_cb, hfsm->addr, setup);
         break;
     }
 
@@ -328,7 +344,7 @@ static void connecting_enter(state_machine_t* sm)
 
     BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
         addr_str(hfsm->addr));
-    //start connecting timeout timer
+    // start connecting timeout timer
     hfsm->connect_timer = start_timer(HF_CONNECT_TIMEOUT, 0, hf_connect_timeout_callback, hfsm);
 }
 
@@ -338,7 +354,7 @@ static void connecting_exit(state_machine_t* sm)
 
     BT_LOGD("state=%s Exit, peer=%s", hsm_get_current_state_name(sm),
         addr_str(hfsm->addr));
-    //stop timer
+    // stop timer
     stop_timer(hfsm->connect_timer);
     hfsm->connect_timer = NULL;
 }
@@ -347,6 +363,7 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
     hf_event_data_t* data = (hf_event_data_t*)p_data;
+    hf_client_service_t* service = hfsm->service;
 
     BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
         stack_event_to_string(event),
@@ -376,13 +393,28 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         break;
     }
 
+    case STACK_EVENT_CALL: {
+        hf_client_call_t call = data->valueint1;
+
+        hfsm->call_in_progress = call;
+        HF_SERVICE_CBACK(service->callbacks, call_cb, hfsm->addr, call);
+        break;
+    }
+
+    case STACK_EVENT_CALLSETUP: {
+        hf_client_callsetup_t setup = data->valueint1;
+
+        HF_SERVICE_CBACK(service->callbacks, callsetup_cb, hfsm->addr, setup);
+        break;
+    }
+
     case STACK_EVENT_CODEC_CHANGED:
         hfsm->codec = data->valueint1;
         break;
 
     case TIMEOUT:
         BT_LOGD("Connection timeout");
-        //slc connection callback
+        // slc connection callback
         notify_connection_state_changed(hfsm->service, hfsm->addr, HF_CLIENT_CONNECTION_STATE_DISCONNECTED);
         hsm_transition_to(sm, &disconnected_state);
         break;
@@ -421,11 +453,11 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         addr_str(hfsm->addr));
     switch (event) {
     case CONNECT:
-        //no handle
+        // no handle
         break;
 
     case DISCONNECT:
-        //do disconnect
+        // do disconnect
         status = service_adapter_hfp_disconnect(hfsm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect failed for :%s", addr_str(hfsm->addr));
@@ -435,7 +467,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     case CONNECT_AUDIO:
         status = service_adapter_hfp_create_sco(hfsm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
-            //callback audio state disconnted
+            // callback audio state disconnted
             BT_LOGE("Connect audio failed for :%s", addr_str(hfsm->addr));
         }
         break;
@@ -468,7 +500,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     case SET_MIC_VOLUME: {
         uint8_t vol = data->valueint1;
         vol = vol > 15 ? 15 : vol;
-        //transfer to hf volume
+        // transfer to hf volume
         service_adapter_hfp_set_volume(hfsm->addr, VOLUME_MIC, vol);
         break;
     }
@@ -476,7 +508,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     case SET_SPEAKER_VOLUME: {
         uint8_t vol = data->valueint1;
         vol = vol > 15 ? 15 : vol;
-        //transfer to hf volume
+        // transfer to hf volume
         service_adapter_hfp_set_volume(hfsm->addr, VOLUME_SPEAKER, vol);
         break;
     }
@@ -523,7 +555,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
 
     case HOLD_CALL:
         status = service_adapter_hfp_call_control(hfsm->addr, HFP_CALL_CONTROL_CHLD_2, 0);
-        //status = service_adapter_hfp_hold_call(hfsm->addr);
+        // status = service_adapter_hfp_hold_call(hfsm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             BT_LOGE("Hold call failed");
         }
@@ -578,7 +610,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
             hsm_transition_to(sm, &disconnected_state);
             break;
         case HF_CLIENT_CONNECTION_STATE_CONNECTED:
-            //service_adapter_hfp_set_volume(remote_addr, VOLUME_SPEAKER, vol);
+            // service_adapter_hfp_set_volume(remote_addr, VOLUME_SPEAKER, vol);
             notify_connection_state_changed(hfsm->service, hfsm->addr, state);
             hsm_transition_to(sm, &connected_state);
             break;
@@ -594,7 +626,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
 
         switch (state) {
         case HF_CLIENT_AUDIO_STATE_CONNECTED:
-            //set audio focus, route audio channel
+            // set audio focus, route audio channel
             if (hfsm->codec == SERVICE_HFP_CODEC_MSBC)
                 state = HF_CLIENT_AUDIO_STATE_CONNECTED_MSBC;
             notify_audio_state_changed(hfsm->service, hfsm->addr, state);
@@ -651,7 +683,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     }
 
     case STACK_EVENT_CALL_WAITING:
-        //not support
+        // not support
         break;
 
     case STACK_EVENT_CURRENT_CALLS: {
@@ -672,7 +704,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     case STACK_EVENT_VOLUME_CHANGED: {
         hf_client_volume_type_t type = data->valueint1;
         int vol = data->valueint2;
-        //set media volume, need call media interface
+        // set media volume, need call media interface
         BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
         HF_SERVICE_CBACK(service->callbacks, volume_change_cb, hfsm->addr, type, vol);
         break;
@@ -770,7 +802,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
     case SET_MIC_VOLUME: {
         uint8_t vol = data->valueint1;
         vol = vol > 15 ? 15 : vol;
-        //transfer to hf volume
+        // transfer to hf volume
         BT_LOGD("Set Mic Volume :%d", vol);
         service_adapter_hfp_set_volume(hfsm->addr, VOLUME_MIC, vol);
         break;
@@ -781,7 +813,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         vol = vol > 15 ? 15 : vol;
 
         BT_LOGD("Set Speaker Volume :%d", vol);
-        //transfer to hf volume
+        // transfer to hf volume
         service_adapter_hfp_set_volume(hfsm->addr, VOLUME_SPEAKER, vol);
         break;
     }
@@ -895,7 +927,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
     case STACK_EVENT_VOLUME_CHANGED: {
         hf_client_volume_type_t type = data->valueint1;
         int vol = data->valueint2;
-        //set media volume, need call media interface
+        // set media volume, need call media interface
         BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
         HF_SERVICE_CBACK(service->callbacks, volume_change_cb, hfsm->addr, type, vol);
         break;
@@ -906,7 +938,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
 
         switch (state) {
         case HF_CLIENT_CONNECTION_STATE_DISCONNECTED:
-            //set audio focus, route audio
+            // set audio focus, route audio
             notify_audio_state_changed(hfsm->service, hfsm->addr, state);
             notify_connection_state_changed(hfsm->service, hfsm->addr, state);
             if (hfsm->call_in_progress)
@@ -927,7 +959,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
 
         switch (state) {
         case HF_CLIENT_AUDIO_STATE_DISCONNECTED:
-            //set audio focus, route audio
+            // set audio focus, route audio
             if (hfsm->call_in_progress)
                 hfsm->call_in_progress = 0;
             notify_audio_state_changed(hfsm->service, hfsm->addr, state);
