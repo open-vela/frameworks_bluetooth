@@ -30,28 +30,28 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef CONFIG_UORB
 #include <connectivity/bt.h>
 #include <uORB/uORB.h>
 #endif
-#include "stack_adapter_gap.h"
 #include "stack_adapter_a2dp_sink.h"
-#include "stack_adapter_avrcp.h"
 #include "stack_adapter_a2dp_source.h"
+#include "stack_adapter_avrcp.h"
 #include "stack_adapter_common.h"
+#include "stack_adapter_gap.h"
 #include "stack_adapter_service_base.h"
 
-#include "state_machine.h"
-#include "bts_a2dp_event.h"
-#include "bts_a2dp_source.h"
-#include "bts_a2dp_sink.h"
 #include "bts_a2dp_audio.h"
+#include "bts_a2dp_event.h"
+#include "bts_a2dp_sink.h"
+#include "bts_a2dp_source.h"
 #include "bts_a2dp_state_machine.h"
 #include "bts_avrc.h"
+#include "state_machine.h"
 #include "utils/utils.h"
 
 #define LOG_TAG "a2dp_stm"
@@ -67,9 +67,9 @@
 #define A2DP_DELAY_START 100
 #define A2DP_DELAY_SUSPEND 200
 #ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
-#define A2DP_PREFERRED_CODEC    SERVICE_AVDTP_CODEC_TYPE_MPEG2_4_AAC
+#define A2DP_PREFERRED_CODEC SERVICE_AVDTP_CODEC_TYPE_MPEG2_4_AAC
 #else
-#define A2DP_PREFERRED_CODEC    SERVICE_AVDTP_CODEC_TYPE_SBC
+#define A2DP_PREFERRED_CODEC SERVICE_AVDTP_CODEC_TYPE_SBC
 #endif
 
 typedef enum pending_state {
@@ -198,7 +198,7 @@ static void bts_a2dp_report_connection_state(a2dp_state_machine_t* stm, bt_addre
 {
     int orb_fd;
     BT_LOGD("%s, addr:%s, state: %d", __func__, addr_str(addr), state);
-    if(state == A2DP_CONNECTION_STATE_CONNECTED)
+    if (state == A2DP_CONNECTION_STATE_CONNECTED)
         BT_LOGD("PERFORMANCE-A2DP-BTM-CONNECTED");
 
     if (stm->peer_sep == SEP_SRC) {
@@ -311,17 +311,17 @@ static void a2dp_delay_suspend_timeout_callback(char* data)
     a2dp_event_destory(a2dp_event);
 }
 
-static bool flag_isset(a2dp_state_machine_t *a2dp_sm, pending_state_t flag)
+static bool flag_isset(a2dp_state_machine_t* a2dp_sm, pending_state_t flag)
 {
     return (bool)(a2dp_sm->pending & flag);
 }
 
-static void flag_set(a2dp_state_machine_t *a2dp_sm, pending_state_t flag)
+static void flag_set(a2dp_state_machine_t* a2dp_sm, pending_state_t flag)
 {
     a2dp_sm->pending |= flag;
 }
 
-static void flag_clear(a2dp_state_machine_t *a2dp_sm, pending_state_t flag)
+static void flag_clear(a2dp_state_machine_t* a2dp_sm, pending_state_t flag)
 {
     a2dp_sm->pending &= ~flag;
 }
@@ -362,10 +362,10 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
         BT_LOGD("PERFORMANCE-A2DP-SRC-BLUELET-CONNECT-START");
         if (a2dp_sm->peer_sep == SEP_SNK)
             status = service_adapter_a2dp_source_connect(data->bd_addr,
-                                                         A2DP_PREFERRED_CODEC);
+                A2DP_PREFERRED_CODEC);
         else
             status = service_adapter_a2dp_sink_connect(data->bd_addr,
-                                                       A2DP_PREFERRED_CODEC);
+                A2DP_PREFERRED_CODEC);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
             bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
                 A2DP_CONNECTION_STATE_DISCONNECTED);
@@ -384,7 +384,7 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
         if (a2dp_sm->peer_sep == SEP_SNK) {
             SERVICE_BT_STATUS status;
             status = service_adapter_a2dp_source_connect(data->bd_addr,
-                                                         A2DP_PREFERRED_CODEC);
+                A2DP_PREFERRED_CODEC);
             if (status != SERVICE_BT_STATUS_SUCCESS) {
                 bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
                     A2DP_CONNECTION_STATE_DISCONNECTED);
@@ -476,7 +476,7 @@ static void opened_enter(state_machine_t* sm)
 #endif
         bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
         bts_a2dp_report_connection_state(a2dp_sm, a2dp_sm->addr,
-                                         A2DP_CONNECTION_STATE_CONNECTED);
+            A2DP_CONNECTION_STATE_CONNECTED);
     }
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
     else if (prev_state == &started_state) {
@@ -599,7 +599,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         }
         flag_clear(a2dp_sm, PENDING_STOP);
         bts_a2dp_report_audio_state(a2dp_sm, a2dp_sm->addr,
-                                    A2DP_AUDIO_STATE_STOPPED);
+            A2DP_AUDIO_STATE_STOPPED);
         bts_a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
 
@@ -725,14 +725,14 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
     }
 
     case DISCONNECTED_EVT:
-        //check active, if active should nofify ffmpeg to stop
+        // check active, if active should nofify ffmpeg to stop
         bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
         hsm_transition_to(sm, &idle_state);
         break;
 
     case STREAM_SUSPENDED_EVT:
-        //If remote suspend, notify ffmpeg to
-        // suspend/stop stream.
+        // If remote suspend, notify ffmpeg to
+        //  suspend/stop stream.
         a2dp_sm->pending = PENDING_NONE;
         bts_a2dp_audio_on_suspended(a2dp_sm->peer_sep);
         bts_a2dp_report_audio_state(a2dp_sm, a2dp_sm->addr,

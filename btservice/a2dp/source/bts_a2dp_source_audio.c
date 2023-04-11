@@ -32,16 +32,18 @@
  ****************************************************************************/
 #include <stdint.h>
 #include <stdlib.h>
+
 #include <nuttx/mm/circbuf.h>
-#include "bts_service.h"
+
 #include "bts_a2dp_codec.h"
 #include "bts_a2dp_control.h"
 #include "bts_a2dp_source.h"
 #include "bts_a2dp_source_audio.h"
+#include "bts_service.h"
 
+#include "a2dp_ipc.h"
 #include "stack_adapter_a2dp_source.h"
 #include "stack_adapter_service_base.h"
-#include "a2dp_ipc.h"
 #include "utils/utils.h"
 #define LOG_TAG "a2dp_src_stream"
 #include "log.h"
@@ -64,20 +66,20 @@ typedef enum {
 } underflow_state_t;
 
 typedef struct {
-    uint32_t            ticks;
-    underflow_state_t   state;
+    uint32_t ticks;
+    underflow_state_t state;
 } a2dp_source_underflow_t;
 
 typedef struct {
-    uint16_t         mtu;
-    stream_state_t   stream_state;
-    uint8_t          codec_info[10];
-    uint32_t         interval_ms;
-    uv_timer_t*      media_alarm;
-    uint32_t         sequence_number;
-    uint32_t         max_tx_length;
+    uint16_t mtu;
+    stream_state_t stream_state;
+    uint8_t codec_info[10];
+    uint32_t interval_ms;
+    uv_timer_t* media_alarm;
+    uint32_t sequence_number;
+    uint32_t max_tx_length;
     struct circbuf_s stream_pool;
-    uint8_t          read_congest;
+    uint8_t read_congest;
     a2dp_source_underflow_t underflow;
     const a2dp_source_stream_interface_t* stream_interface;
 } a2dp_source_stream_t;
@@ -87,7 +89,7 @@ extern a2dp_ipc_t* a2dp_ipc;
 
 static void bts_a2dp_source_read_congest(uint8_t ch_id);
 
-static const a2dp_source_stream_interface_t *get_stream_interface(void)
+static const a2dp_source_stream_interface_t* get_stream_interface(void)
 {
     a2dp_codec_config_t* config;
 
@@ -120,7 +122,7 @@ static void bts_a2dp_audio_data_alloc(uint8_t ch_id, uint8_t** buffer, size_t* l
         return;
     }
 
-    //check pool buffer space enough to read one frame
+    // check pool buffer space enough to read one frame
     space = circbuf_space(&stream->stream_pool);
     if (space == 0) {
         BT_LOGE("%s, no enough space to read", __func__);
@@ -128,8 +130,7 @@ static void bts_a2dp_audio_data_alloc(uint8_t ch_id, uint8_t** buffer, size_t* l
         return;
     }
 
-    next_to_read = space > stream->max_tx_length ?
-                   stream->max_tx_length : space;
+    next_to_read = space > stream->max_tx_length ? stream->max_tx_length : space;
 
     alloc_buffer = (void*)malloc(next_to_read);
     if (!alloc_buffer) {
@@ -158,7 +159,7 @@ static void bts_a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t
         goto out;
     }
 
-    if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_PAUSED){
+    if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_PAUSED) {
         bts_a2dp_source_stream_start();
         a2dp_src_stream.underflow.state = UNDERFLOW_STATE_RESUMING;
         return;
@@ -189,8 +190,7 @@ static void bts_a2dp_source_start_read(void)
 {
     a2dp_source_stream_t* stream = &a2dp_src_stream;
 
-    if (stream->stream_state != STATE_OFF &&
-        stream->read_congest != 1)
+    if (stream->stream_state != STATE_OFF && stream->read_congest != 1)
         return;
 
     if (circbuf_space(&stream->stream_pool) == 0)
@@ -258,7 +258,7 @@ static void bts_a2dp_source_audio_handle_timer(char* arg)
     if (circbuf_used(&stream->stream_pool) == 0) {
         BT_LOGD("a2dp src send frame, underflow 1 ticks");
 
-        //BT_LOGD("a2dp src send frame, underflow 1 ticks");
+        // BT_LOGD("a2dp src send frame, underflow 1 ticks");
         if (a2dp_src_stream.underflow.ticks++ > 200 && a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
             bts_a2dp_source_stream_stop();
             a2dp_src_stream.underflow.state = UNDERFLOW_STATE_PAUSED;
@@ -297,9 +297,9 @@ static void bts_a2dp_source_start_delay(char* arg)
     stop_timer(stream->media_alarm);
     stream->media_alarm = NULL;
     stream->media_alarm = start_timer(stream->interval_ms,
-                          stream->interval_ms,
-                          bts_a2dp_source_audio_handle_timer,
-                          NULL);
+        stream->interval_ms,
+        bts_a2dp_source_audio_handle_timer,
+        NULL);
     if (stream->stream_interface)
         stream->stream_interface->reset();
 }
@@ -332,9 +332,9 @@ static void bts_a2dp_source_start_audio_req(void)
     stream->underflow.state = UNDERFLOW_STATE_NONE;
     /* delay start, wait stream pool filling */
     stream->media_alarm = start_timer(STREAM_DELAY_MS,
-                                      0,
-                                      bts_a2dp_source_start_delay,
-                                      NULL);
+        0,
+        bts_a2dp_source_start_delay,
+        NULL);
     stream->stream_state = STATE_RUNNING;
 }
 
@@ -388,8 +388,7 @@ void bts_a2dp_source_on_started(bool started)
 
     if (started) {
         bts_a2dp_control_event(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_STARTED);
-        if (a2dp_src_stream.stream_state == STATE_OFF ||
-            a2dp_src_stream.stream_state == STATE_FLUSHING)
+        if (a2dp_src_stream.stream_state == STATE_OFF || a2dp_src_stream.stream_state == STATE_FLUSHING)
             bts_a2dp_source_start_audio_req();
     } else {
         bts_a2dp_control_event(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_START_FAIL);
@@ -431,8 +430,8 @@ void bts_a2dp_source_setup_codec(bt_address bd_addr)
     }
 
     stream->stream_interface->init(&config->codec_param.sbc, peer->mtu,
-                                   bts_a2dp_source_send_callback,
-                                   bts_a2dp_source_read_callback);
+        bts_a2dp_source_send_callback,
+        bts_a2dp_source_read_callback);
     bts_a2dp_source_start_flush();
 }
 
