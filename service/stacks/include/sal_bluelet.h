@@ -55,4 +55,31 @@ static inline hfp_audio_state_t bluelet_hf_audio_state(SERVICE_HFP_SCO_STATE sta
 }
 #endif
 
+#if defined(CONFIG_BLUETOOTH_GATT)
+#include "ble_gatt_defs.h"
+static inline gatt_status_t bluelet_gatt_status(SERVICE_GATT_STATUS status)
+{
+    switch(status) {
+    case GATT_SUCCESS:
+        return GATT_STATUS_SUCCESS;
+    case GATT_REQUEST_NOT_SUPPORTED:
+        return GATT_STATUS_REQUEST_NOT_SUPPORTED;
+    case GATT_INSUFFICIENT_AUTHENTICATION:
+        return GATT_STATUS_INSUFFICIENT_AUTHENTICATION;
+    case GATT_INSUFFICIENT_ENCRYPTION:
+        return GATT_STATUS_INSUFFICIENT_ENCRYPTION;
+    case GATT_READ_NOT_PERMITTED:
+        return GATT_STATUS_READ_NOT_PERMITTED;
+    case GATT_WRITE_NOT_PERMITTED:
+        return GATT_STATUS_WRITE_NOT_PERMITTED;
+    case GATT_INVALID_ATTRIBUTE_LENGTH:
+        return GATT_STATUS_INVALID_ATTRIBUTE_LENGTH;
+    case GATT_FAILURE:
+    default:
+        BT_LOGE("Unknow gatt state: %d", status);
+        return GATT_STATUS_FAILURE;
+    }
+}
+#endif
+
 #endif /* __BT_SAL_BLUELET_H__ */

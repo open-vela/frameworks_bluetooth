@@ -51,6 +51,7 @@ endif
 	CSRCS += service/profiles/*.c
 	CSRCS += service/profiles/system/*.c
 ifeq ($(CONFIG_BLUETOOTH_GATT), y)
+	CSRCS += service/profiles/gatt/*.c
 endif #CONFIG_BLUETOOTH_GATT
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SOURCE), y)
@@ -85,6 +86,10 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
 	CSRCS += tools/scan.c
 endif
+ifeq ($(CONFIG_BLUETOOTH_GATT), y)
+	CSRCS += tools/gatt_client.c
+	CSRCS += tools/gatt_server.c
+endif #CONFIG_BLUETOOTH_GATT
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF), y)
 	CSRCS += tools/hfp_hf.c
 endif #CONFIG_BLUETOOTH_HFP_HF

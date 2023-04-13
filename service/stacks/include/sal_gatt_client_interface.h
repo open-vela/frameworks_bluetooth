@@ -1,0 +1,33 @@
+/****************************************************************************
+ *  Copyright (C) 2022 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+#ifndef __SAL_GATT_CLIENT_INTERFACE_H__
+#define __SAL_GATT_CLIENT_INTERFACE_H__
+
+#include "bt_addr.h"
+#include "bt_status.h"
+#include "gattc_service.h"
+#include <stdint.h>
+
+bt_status_t bt_sal_gatt_client_connect(bt_address_t *addr, ble_addr_type_t addr_type);
+bt_status_t bt_sal_gatt_client_disconnect(bt_address_t *addr);
+bt_status_t bt_sal_gatt_client_discover_all_services(bt_address_t *addr);
+bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_address_t *addr, bt_uuid_t *uuid);
+bt_status_t bt_sal_gatt_client_read_element(bt_address_t *addr, uint16_t element_id);
+bt_status_t bt_sal_gatt_client_write_element(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length, gatt_write_type_t write_type);
+bt_status_t bt_sal_gatt_client_register_notifications(bt_address_t *addr, uint16_t element_id, bool enable, gatt_change_type_t change_type);
+bt_status_t bt_sal_gatt_client_send_mtu_req(bt_address_t *addr, uint32_t mtu);
+
+#endif /* __SAL_GATT_CLIENT_INTERFACE_H__ */

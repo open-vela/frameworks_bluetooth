@@ -35,6 +35,13 @@ typedef struct {
     } val;
 } bt_uuid_t;
 
+#define BT_UUID_DECLARE_16(value) \
+	((bt_uuid_t *) ((bt_uuid_t[]) {{.type = BT_UUID16_TYPE, .val.u16 = value}}))
+#define BT_UUID_DECLARE_32(value) \
+	((bt_uuid_t *) ((bt_uuid_t[]) {{.type = BT_UUID32_TYPE, .val.u32 = value}}))
+#define BT_UUID_DECLARE_128(value...) \
+	((bt_uuid_t *) ((bt_uuid_t[]) {{.type = BT_UUID128_TYPE, .val.u128 = value}}))
+
 void bt_uuid_to_uuid128(const bt_uuid_t *src, bt_uuid_t *uuid128);
 int bt_uuid_compare(const bt_uuid_t *uuid1, const bt_uuid_t *uuid2);
 int bt_uuid16_create(bt_uuid_t *uuid16, uint16_t value);

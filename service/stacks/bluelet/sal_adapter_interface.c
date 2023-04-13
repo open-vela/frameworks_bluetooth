@@ -32,6 +32,7 @@
 #include "service_loop.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_gap.h"
+#include "stack_adapter_gatt.h"
 
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 #include "advertising.h"
@@ -1239,6 +1240,9 @@ bt_status_t bt_sal_le_enable(void)
     }
 
     if (service_adapter_gap_enable() != SERVICE_BT_STATUS_SUCCESS)
+        return BT_STATUS_FAIL;
+
+    if (service_adapter_gatt_init() != GATT_SUCCESS)
         return BT_STATUS_FAIL;
 
     return BT_STATUS_SUCCESS;
