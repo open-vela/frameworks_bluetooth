@@ -1,0 +1,74 @@
+/****************************************************************************
+ *  Copyright (C) 2022 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+#ifndef __GATTC_SERVICE_H__
+#define __GATTC_SERVICE_H__
+
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+#include "ble_gatt_defs.h"
+#include "ble_gattc.h"
+#include "bt_device.h"
+#include "gatt_define.h"
+
+typedef enum {
+    GATTC_STATE_DISCONNECTED = 0,
+    GATTC_STATE_DISCONNECTING,
+    GATTC_STATE_CONNECTING,
+    GATTC_STATE_CONNECTED,
+    GATTC_STATE_DISCOVERING,
+} gattc_state_t;
+
+/*
+ * sal callback
+ */
+void if_gattc_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state);
+void if_gattc_on_service_discovered(bt_address_t *addr, gatt_element_t *elements, uint16_t size);
+void if_gattc_on_discover_completed(bt_address_t *addr, gatt_status_t status);
+void if_gattc_on_element_read(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length, gatt_status_t status);
+void if_gattc_on_element_written(bt_address_t *addr, uint16_t element_id, gatt_status_t status);
+void if_gattc_on_element_changed(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length);
+void if_gattc_on_mtu_changed(bt_address_t *addr, uint32_t mtu, gatt_status_t status);
+
+/*
+ * gattc remote
+ */
+void if_gattc_set_remote(void *conn_handle, void *remote);
+void *if_gattc_get_remote(void *conn_handle);
+
+typedef struct gattc_interface {
+    size_t size;
+    bt_status_t (*create_connect)(void **phandle, gattc_callbacks_t *callbacks);
+    bt_status_t (*delete_connect)(void *conn_handle);
+    bt_status_t (*connect)(void *conn_handle, bt_address_t *addr, ble_addr_type_t addr_type);
+    bt_status_t (*disconnect)(void *conn_handle);
+    bt_status_t (*discover_service)(void *conn_handle, bt_uuid_t *filter_uuid);
+    bt_status_t (*get_attribute_by_handle)(void *conn_handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc);
+    bt_status_t (*get_attribute_by_uuid)(void *conn_handle, bt_uuid_t *att_uuid, gatt_attr_desc_t *attr_desc);
+    bt_status_t (*read)(void *conn_handle, uint16_t attr_handle, gattc_read_cb_t read_cb);
+    bt_status_t (*write)(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, uint16_t offset, gattc_write_cb_t write_cb);
+    bt_status_t (*write_without_response)(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gattc_write_cb_t write_cb);
+    bt_status_t (*subscribe)(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_write_cb_t write_cb, gattc_notify_cb_t notify_cb);
+    bt_status_t (*unsubscribe)(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_write_cb_t write_cb);
+    bt_status_t (*exchange_mtu)(void *conn_handle, uint32_t mtu);
+} gattc_interface_t;
+
+/*
+ * register profile to service manager
+ */
+void register_gattc_service(void);
+
+#endif /* __GATTC_SERVICE_H__ */

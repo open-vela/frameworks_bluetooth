@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2022 Xiaomi Corporation
+ *  Copyright (C) 2023 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,36 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef _BT_PROFILE_H__
-#define _BT_PROFILE_H__
+
+#ifndef __BLE_GATTC_CALLBACKS_PROXY_H__
+#define __BLE_GATTC_CALLBACKS_PROXY_H__
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <uchar.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "ble_gattc.h"
 
-#define PROFILE_A2DP_NAME      "A2DP-Src"
-#define PROFILE_A2DP_SINK_NAME "A2DP-Sink"
-#define PROFILE_HFP_HF_NAME    "HFP-HF"
-#define PROFILE_HFP_AG_NAME    "HFP-AG"
-#define PROFILE_SPP_NAME       "SPP"
-#define PROFILE_PANU_NAME      "PANU"
-#define PROFILE_GATTC_NAME     "GATTC"
-#define PROFILE_GATTS_NAME     "GATTS"
+#include <android/binder_manager.h>
 
-enum profile_id {
-    PROFILE_A2DP,
-    PROFILE_A2DP_SINK,
-    PROFILE_HFP_HF,
-    PROFILE_HFP_AG,
-    PROFILE_SPP,
-    PROFILE_PANU,
-    PROFILE_GATTC,
-    PROFILE_GATTS,
-    PROFILE_MAX
-};
+const gattc_callbacks_t *BpBleGattClientCallbacks_getStatic(void);
+void BpBleGattClientCallbacks_onRead(void *handle, gatt_status_t status, uint16_t attr_handle, uint8_t *value, uint16_t length);
+void BpBleGattClientCallbacks_onWrite(void *handle, gatt_status_t status, uint16_t attr_handle, uint16_t offset);
+void BpBleGattClientCallbacks_onNotify(void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _BT_PROFILE_H__ */
+#endif /* __BLE_GATTC_CALLBACKS_PROXY_H__ */

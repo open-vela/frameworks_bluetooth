@@ -1,0 +1,815 @@
+/****************************************************************************
+ *  Copyright (C) 2022 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+#define LOG_TAG "gattc "
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+#include <stdint.h>
+#include <sys/types.h>
+
+#include "ble_gatts.h"
+#include "bt_list.h"
+#include "bt_profile.h"
+#include "gattc_event.h"
+#include "gattc_service.h"
+#include "index_allocator.h"
+#include "sal_gatt_client_interface.h"
+#include "service_loop.h"
+#include "service_manager.h"
+#include "utils/log.h"
+
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+#define CHECK_ENABLED()                   \
+    {                                     \
+        if (!g_gattc_manager.started)     \
+            return BT_STATUS_NOT_ENABLED; \
+    }
+
+#define CHECK_CONNECTION_VALID(_list, _conn)                                                   \
+    do {                                                                                       \
+        bt_list_node_t *_node;                                                                 \
+        if (!_conn)                                                                            \
+            return BT_STATUS_PARM_INVALID;                                                     \
+        for (_node = bt_list_head(_list); _node != NULL; _node = bt_list_next(_list, _node)) { \
+            if (bt_list_node(_node) == _conn)                                                  \
+                break;                                                                         \
+        }                                                                                      \
+        if (!_node)                                                                            \
+            return BT_STATUS_PARM_INVALID;                                                     \
+    } while (0)
+
+/****************************************************************************
+ * Private Types
+ ****************************************************************************/
+
+typedef struct
+{
+    bool started;
+    index_allocator_t *allocator;
+    bt_list_t *connections;
+    pthread_mutex_t device_lock;
+
+} gattc_manager_t;
+
+typedef struct
+{
+    bt_uuid_t *uuid;
+    uint16_t start_handle;
+    uint16_t end_handle;
+    gatt_element_t *elements;
+    int element_size;
+
+} gattc_service_t;
+
+typedef struct
+{
+    void *remote;
+    int conn_id;
+    gattc_state_t state;
+    pthread_mutex_t conn_lock;
+    void **user_phandle;
+    bt_address_t remote_addr;
+    gattc_manager_t *manager;
+    gattc_callbacks_t *callbacks;
+    bt_list_t *services;
+    bt_list_t *pend_ops;
+
+} gattc_connection_t;
+
+/****************************************************************************
+ * Private Function Prototypes
+ ****************************************************************************/
+
+/****************************************************************************
+ * Private Data
+ ****************************************************************************/
+static gattc_manager_t g_gattc_manager = {
+    .started = false,
+    .connections = NULL,
+};
+
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
+
+static bool connection_addr_cmp(void *connection, void *addr)
+{
+    return bt_addr_compare(&((gattc_connection_t *)connection)->remote_addr, addr) == 0;
+}
+
+static gattc_connection_t *find_gattc_connection_by_addr(bt_address_t *addr)
+{
+    return bt_list_find(g_gattc_manager.connections, connection_addr_cmp, addr);
+}
+
+static gattc_connection_t *gattc_connection_new(gattc_callbacks_t *callbacks)
+{
+    gattc_connection_t *connection = calloc(1, sizeof(gattc_connection_t));
+    if (!connection)
+        return NULL;
+
+    connection->conn_id = index_alloc(g_gattc_manager.allocator);
+    if (connection->conn_id < 0) {
+        free(connection);
+        return NULL;
+    }
+
+    connection->callbacks = callbacks;
+    connection->services = NULL;
+    connection->pend_ops = NULL;
+
+    return connection;
+}
+
+static void gattc_connection_delete(gattc_connection_t *connection)
+{
+    if (!connection)
+        return;
+
+    if (connection->state > GATTC_STATE_DISCONNECTING)
+        bt_sal_gatt_client_disconnect(&connection->remote_addr);
+    index_free(g_gattc_manager.allocator, connection->conn_id);
+    bt_list_free(connection->services);
+    connection->services = NULL;
+    bt_list_free(connection->pend_ops);
+    connection->pend_ops = NULL;
+    pthread_mutex_destroy(&connection->conn_lock);
+    free(connection);
+}
+
+static bool attribute_handle_cmp(void *service, void *handle)
+{
+    uint16_t f_handle = *(uint16_t *)handle;
+    gattc_service_t *f_service = (gattc_service_t *)service;
+    return (f_handle >= f_service->start_handle && f_handle <= f_service->end_handle);
+}
+
+static gatt_element_t *find_gattc_element_by_handle(gattc_connection_t *connection, uint16_t handle)
+{
+    gattc_service_t *service = bt_list_find(connection->services, attribute_handle_cmp, &handle);
+    if (!service)
+        return NULL;
+
+    gatt_element_t *element = service->elements;
+    for (int i = 0; i < service->element_size; i++, element++) {
+        if (element->handle == handle)
+            return element;
+    }
+
+    return NULL;
+}
+
+static gatt_element_t *find_gattc_element_by_uuid(gattc_connection_t *connection, bt_uuid_t *att_uuid)
+{
+    bt_list_node_t *node;
+    bt_list_t *list = connection->services;
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        gattc_service_t *service = (gattc_service_t *)bt_list_node(node);
+        gatt_element_t *element = service->elements;
+        for (int i = 0; i < service->element_size; i++, element++) {
+            if (!bt_uuid_compare(&element->uuid, att_uuid)) {
+                return element;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+static gattc_service_t *gattc_service_new(bt_uuid_t *uuid)
+{
+    gattc_service_t *service = malloc(sizeof(gattc_service_t));
+    if (!service)
+        return NULL;
+
+    service->uuid = uuid;
+    service->start_handle = 0;
+    service->end_handle = 0;
+    service->elements = NULL;
+    service->element_size = 0;
+
+    return service;
+}
+
+static void gattc_service_delete(gattc_service_t *service)
+{
+    if (!service)
+        return;
+
+    if (service->elements)
+        free(service->elements);
+    free(service);
+}
+
+static void gattc_pendops_delete(gattc_op_t *operation)
+{
+    if (!operation)
+        return;
+
+    free(operation);
+}
+
+static gattc_op_t *gattc_pendops_execute_out(gattc_connection_t *connection, gattc_request_t request, uint16_t attr_handle)
+{
+    bt_list_node_t *node;
+    bt_list_t *list = connection->pend_ops;
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        gattc_op_t *operation = (gattc_op_t *)bt_list_node(node);
+        if (operation->request != request) {
+            continue;
+        }
+        if (request == GATTC_REQ_READ && operation->param.read.attr_handle == attr_handle) {
+            return operation;
+        } else if (request == GATTC_REQ_WRITE && operation->param.write.attr_handle == attr_handle) {
+            return operation;
+        }
+    }
+
+    return NULL;
+}
+
+static void gattc_process_message(void *data)
+{
+    gattc_msg_t *msg = (gattc_msg_t *)data;
+    BT_LOGD("%s, event %d", __func__, msg->event);
+
+    pthread_mutex_lock(&g_gattc_manager.device_lock);
+    gattc_connection_t *connection = find_gattc_connection_by_addr(&msg->addr);
+    if (!connection)
+        goto end;
+
+    switch (msg->event) {
+    case GATTC_EVENT_CONNECT_CHANGE: {
+        profile_connection_state_t connect_state = msg->param.connect_change.connect_state;
+        if (connect_state == PROFILE_STATE_CONNECTED) {
+            connection->state = GATTC_STATE_CONNECTED;
+            GATT_CBACK(connection->callbacks, on_connected, connection, &connection->remote_addr);
+        } else if (connect_state == PROFILE_STATE_DISCONNECTED) {
+            connection->state = GATTC_STATE_DISCONNECTED;
+            GATT_CBACK(connection->callbacks, on_disconnected, connection, &connection->remote_addr, msg->param.connect_change.reason);
+            bt_addr_set_empty(&connection->remote_addr);
+            bt_list_clear(connection->services);
+        }
+    } break;
+    case GATTC_EVENT_DISCOVER_RESULT: {
+        gattc_service_t *service = bt_list_find(connection->services, attribute_handle_cmp, &msg->param.discover_res.elements[0].handle);
+        if (service) {
+            bt_list_remove(connection->services, service);
+        }
+
+        service = gattc_service_new(&msg->param.discover_res.elements->uuid);
+        service->start_handle = msg->param.discover_res.elements[0].handle;
+        service->end_handle = msg->param.discover_res.elements[msg->param.discover_res.size - 1].handle;
+        service->elements = msg->param.discover_res.elements;
+        service->element_size = msg->param.discover_res.size;
+        bt_list_add_tail(connection->services, service);
+
+        GATT_CBACK(connection->callbacks, on_discover, connection, GATT_STATUS_SUCCESS, service->uuid, service->start_handle, service->end_handle);
+    } break;
+    case GATTC_EVENT_DISOCVER_CMPL: {
+        connection->state = GATTC_STATE_CONNECTED;
+        GATT_CBACK(connection->callbacks, on_discover, connection, GATT_STATUS_SUCCESS, NULL, 0, 0);
+    } break;
+    case GATTC_EVENT_READ: {
+        gattc_op_t *operation = gattc_pendops_execute_out(connection, GATTC_REQ_READ, msg->param.read.element_id);
+        if (operation) {
+            gattc_read_cb_t read_cb = operation->param.read.read_cb;
+            read_cb(connection, msg->param.read.status, msg->param.read.element_id, msg->param.read.value, msg->param.read.length);
+            bt_list_remove(connection->pend_ops, operation);
+        }
+    } break;
+    case GATTC_EVENT_WRITE: {
+        gattc_op_t *operation = gattc_pendops_execute_out(connection, GATTC_REQ_WRITE, msg->param.write.element_id);
+        if (operation) {
+            gattc_write_cb_t write_cb = operation->param.write.write_cb;
+            write_cb(connection, msg->param.write.status, msg->param.write.element_id, 0);
+            bt_list_remove(connection->pend_ops, operation);
+        }
+    } break;
+    case GATTC_EVENT_NOTIFY: {
+        gatt_element_t *element = find_gattc_element_by_handle(connection, msg->param.notify.element_id);
+        if (element && element->notify_cb)
+            element->notify_cb(connection, msg->param.notify.element_id, msg->param.notify.value, msg->param.notify.length);
+    } break;
+    case GATTC_EVENT_MTU_CFG: {
+        GATT_CBACK(connection->callbacks, on_mtu_exchange, connection, msg->param.cfg_mtu.status, msg->param.cfg_mtu.mtu);
+    } break;
+    default: {
+
+    } break;
+    }
+
+end:
+    pthread_mutex_unlock(&g_gattc_manager.device_lock);
+    gattc_msg_destory(msg);
+}
+
+static bt_status_t gattc_send_message(gattc_msg_t *msg)
+{
+    assert(msg);
+
+    do_in_service_loop(gattc_process_message, msg);
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t if_gattc_init(void)
+{
+    BT_LOGD("%s", __func__);
+
+    memset(&g_gattc_manager, 0, sizeof(g_gattc_manager));
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t if_gattc_startup(profile_on_startup_t cb)
+{
+    bt_status_t status;
+    pthread_mutexattr_t attr;
+    gattc_manager_t *manager = &g_gattc_manager;
+
+    BT_LOGD("%s", __func__);
+    if (manager->started)
+        return BT_STATUS_SUCCESS;
+
+    manager->allocator = index_allocator_create(CONFIG_BLUETOOTH_GATTC_MAX_CONNECTIONS - 1);
+    if (!manager->allocator) {
+        status = BT_STATUS_NOMEM;
+        goto fail;
+    }
+
+    manager->connections = bt_list_new((bt_list_free_cb_t)gattc_connection_delete);
+    if (!manager->connections) {
+        status = BT_STATUS_NOMEM;
+        goto fail;
+    }
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&manager->device_lock, &attr);
+
+    manager->started = true;
+    return BT_STATUS_SUCCESS;
+
+fail:
+    index_allocator_delete(manager->allocator);
+    bt_list_free(manager->connections);
+    manager->connections = NULL;
+    pthread_mutex_destroy(&manager->device_lock);
+    return status;
+}
+
+static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
+{
+    gattc_manager_t *manager = &g_gattc_manager;
+
+    BT_LOGD("%s", __func__);
+    if (!manager->started)
+        return BT_STATUS_SUCCESS;
+
+    pthread_mutex_lock(&manager->device_lock);
+    index_allocator_delete(manager->allocator);
+    bt_list_free(manager->connections);
+    manager->connections = NULL;
+    manager->started = false;
+    pthread_mutex_unlock(&manager->device_lock);
+    pthread_mutex_destroy(&manager->device_lock);
+
+    return BT_STATUS_SUCCESS;
+}
+
+static void if_gattc_cleanup(void)
+{
+    BT_LOGD("%s", __func__);
+}
+
+static int if_gattc_dump(void)
+{
+    BT_LOGD("%s", __func__);
+    return 0;
+}
+
+static bt_status_t if_gattc_create_connect(void **phandle, gattc_callbacks_t *callbacks)
+{
+    bt_status_t status;
+    pthread_mutexattr_t attr;
+
+    CHECK_ENABLED();
+    if (!phandle)
+        return BT_STATUS_PARM_INVALID;
+
+    pthread_mutex_lock(&g_gattc_manager.device_lock);
+    gattc_connection_t *connection = gattc_connection_new(callbacks);
+    if (!connection) {
+        pthread_mutex_unlock(&g_gattc_manager.device_lock);
+        BT_LOGE("New gattc connection alloc failed");
+        return BT_STATUS_NOMEM;
+    }
+
+    connection->services = bt_list_new((bt_list_free_cb_t)gattc_service_delete);
+    if (!connection->services) {
+        pthread_mutex_unlock(&g_gattc_manager.device_lock);
+        status = BT_STATUS_NOMEM;
+        goto fail;
+    }
+
+    connection->pend_ops = bt_list_new((bt_list_free_cb_t)gattc_pendops_delete);
+    if (!connection->pend_ops) {
+        pthread_mutex_unlock(&g_gattc_manager.device_lock);
+        status = BT_STATUS_NOMEM;
+        goto fail;
+    }
+
+    bt_list_add_tail(g_gattc_manager.connections, connection);
+    pthread_mutex_unlock(&g_gattc_manager.device_lock);
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&connection->conn_lock, &attr);
+
+    connection->remote = NULL;
+    connection->manager = &g_gattc_manager;
+    connection->state = GATTC_STATE_DISCONNECTED;
+    connection->user_phandle = phandle;
+    *phandle = connection;
+
+    return BT_STATUS_SUCCESS;
+
+fail:
+    gattc_connection_delete(connection);
+    return status;
+}
+
+static bt_status_t if_gattc_delete_connect(void *conn_handle)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    void** user_phandle = connection->user_phandle;
+    bt_sal_gatt_client_disconnect(&connection->remote_addr);
+    bt_list_free(connection->services);
+    connection->services = NULL;
+    pthread_mutex_lock(&g_gattc_manager.device_lock);
+    bt_list_remove(g_gattc_manager.connections, connection);
+    pthread_mutex_unlock(&g_gattc_manager.device_lock);
+    *user_phandle = NULL;
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t if_gattc_connect(void *conn_handle, bt_address_t *addr, ble_addr_type_t addr_type)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    bt_status_t status = bt_sal_gatt_client_connect(addr, addr_type);
+    if (status == BT_STATUS_SUCCESS) {
+        connection->state = GATTC_STATE_CONNECTING;
+        memcpy(&connection->remote_addr, addr, sizeof(connection->remote_addr));
+    }
+
+    return status;
+}
+
+static bt_status_t if_gattc_disconnect(void *conn_handle)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    bt_status_t status = bt_sal_gatt_client_disconnect(&connection->remote_addr);
+    if (status == BT_STATUS_SUCCESS)
+        connection->state = GATTC_STATE_DISCONNECTING;
+
+    return status;
+}
+
+static bt_status_t if_gattc_discover_service(void *conn_handle, bt_uuid_t *filter_uuid)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    bt_status_t status;
+    if (!filter_uuid) {
+        status = bt_sal_gatt_client_discover_all_services(&connection->remote_addr);
+    } else {
+        status = bt_sal_gatt_client_discover_service_by_uuid(&connection->remote_addr, filter_uuid);
+    }
+    if (status == BT_STATUS_SUCCESS)
+        connection->state = GATTC_STATE_DISCOVERING;
+
+    return status;
+}
+
+static bt_status_t if_gattc_get_attribute_by_handle(void *conn_handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+    if (!attr_desc)
+        return BT_STATUS_PARM_INVALID;
+
+    gatt_element_t *element = find_gattc_element_by_handle(connection, attr_handle);
+    if (!element)
+        return BT_STATUS_NO_RESOURCES;
+
+    attr_desc->handle = element->handle;
+    attr_desc->type = element->type;
+    attr_desc->properties = element->properties;
+    memcpy(&attr_desc->uuid, &element->uuid, sizeof(attr_desc->uuid));
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t if_gattc_get_attribute_by_uuid(void *conn_handle, bt_uuid_t *att_uuid, gatt_attr_desc_t *attr_desc)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+    if (!attr_desc)
+        return BT_STATUS_PARM_INVALID;
+
+    gatt_element_t *element = find_gattc_element_by_uuid(connection, att_uuid);
+    if (!element)
+        return BT_STATUS_NO_RESOURCES;
+
+    attr_desc->handle = element->handle;
+    attr_desc->type = element->type;
+    attr_desc->properties = element->properties;
+    memcpy(&attr_desc->uuid, &element->uuid, sizeof(attr_desc->uuid));
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t if_gattc_read(void *conn_handle, uint16_t attr_handle, gattc_read_cb_t read_cb)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    bt_status_t status = bt_sal_gatt_client_read_element(&connection->remote_addr, attr_handle);
+
+    if (read_cb && status == BT_STATUS_SUCCESS) {
+        gattc_op_t *op = gattc_op_new(GATTC_REQ_READ);
+        op->param.read.conn_handle = conn_handle;
+        op->param.read.attr_handle = attr_handle;
+        op->param.read.read_cb = read_cb;
+        bt_list_add_tail(connection->pend_ops, op);
+    }
+
+    return status;
+}
+
+static bt_status_t if_gattc_write(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, uint16_t offset, gattc_write_cb_t write_cb)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    bt_status_t status = bt_sal_gatt_client_write_element(&connection->remote_addr, attr_handle,
+                                                          value, length, GATT_WRITE_TYPE_RSP);
+
+    if (write_cb && status == BT_STATUS_SUCCESS) {
+        gattc_op_t *op = gattc_op_new(GATTC_REQ_WRITE);
+        op->param.write.conn_handle = conn_handle;
+        op->param.write.attr_handle = attr_handle;
+        op->param.write.write_cb = write_cb;
+        op->param.write.type = GATT_WRITE_TYPE_RSP;
+        bt_list_add_tail(connection->pend_ops, op);
+    }
+
+    return status;
+}
+
+static bt_status_t if_gattc_write_without_response(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gattc_write_cb_t write_cb)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    bt_status_t status = bt_sal_gatt_client_write_element(&connection->remote_addr, attr_handle,
+                                                          value, length, GATT_WRITE_TYPE_NO_RSP);
+
+    if (write_cb && status == BT_STATUS_SUCCESS) {
+        gattc_op_t *op = gattc_op_new(GATTC_REQ_WRITE);
+        op->param.write.conn_handle = conn_handle;
+        op->param.write.attr_handle = attr_handle;
+        op->param.write.write_cb = write_cb;
+        op->param.write.type = GATT_WRITE_TYPE_NO_RSP;
+        bt_list_add_tail(connection->pend_ops, op);
+    }
+
+    return status;
+}
+
+static bt_status_t if_gattc_subscribe(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_write_cb_t write_cb, gattc_notify_cb_t notify_cb)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    gatt_element_t *element = find_gattc_element_by_handle(connection, value_handle);
+    if (!element)
+        return BT_STATUS_NO_RESOURCES;
+
+    element->notify_cb = notify_cb;
+
+    bt_status_t status = bt_sal_gatt_client_register_notifications(&connection->remote_addr, value_handle, true, GATT_CHANGE_TYPE_NOTIFY);
+    if (write_cb && status == BT_STATUS_SUCCESS) {
+        gattc_op_t *op = gattc_op_new(GATTC_REQ_WRITE);
+        op->param.write.conn_handle = conn_handle;
+        op->param.write.attr_handle = value_handle;
+        op->param.write.write_cb = write_cb;
+        op->param.write.type = GATT_WRITE_TYPE_RSP;
+        bt_list_add_tail(connection->pend_ops, op);
+    }
+
+    return status;
+}
+
+static bt_status_t if_gattc_unsubscribe(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_write_cb_t write_cb)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    gatt_element_t *element = find_gattc_element_by_handle(connection, value_handle);
+    if (!element)
+        return BT_STATUS_NO_RESOURCES;
+
+    element->notify_cb = NULL;
+
+    bt_status_t status = bt_sal_gatt_client_register_notifications(&connection->remote_addr, value_handle, false, GATT_CHANGE_TYPE_NOTIFY);
+    if (write_cb && status == BT_STATUS_SUCCESS) {
+        gattc_op_t *op = gattc_op_new(GATTC_REQ_WRITE);
+        op->param.write.conn_handle = conn_handle;
+        op->param.write.attr_handle = value_handle;
+        op->param.write.write_cb = write_cb;
+        op->param.write.type = GATT_WRITE_TYPE_RSP;
+        bt_list_add_tail(connection->pend_ops, op);
+    }
+
+    return status;
+}
+
+static bt_status_t if_gattc_exchange_mtu(void *conn_handle, uint32_t mtu)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    return bt_sal_gatt_client_send_mtu_req(&connection->remote_addr, mtu);
+}
+
+static const gattc_interface_t gattc_if = {
+    .size = sizeof(gattc_if),
+    .create_connect = if_gattc_create_connect,
+    .delete_connect = if_gattc_delete_connect,
+    .connect = if_gattc_connect,
+    .disconnect = if_gattc_disconnect,
+    .discover_service = if_gattc_discover_service,
+    .get_attribute_by_handle = if_gattc_get_attribute_by_handle,
+    .get_attribute_by_uuid = if_gattc_get_attribute_by_uuid,
+    .read = if_gattc_read,
+    .write = if_gattc_write,
+    .write_without_response = if_gattc_write_without_response,
+    .subscribe = if_gattc_subscribe,
+    .unsubscribe = if_gattc_unsubscribe,
+    .exchange_mtu = if_gattc_exchange_mtu,
+};
+
+static const void *get_gattc_profile_interface(void)
+{
+    return &gattc_if;
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+void if_gattc_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state)
+{
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_CONNECT_CHANGE, addr, 0);
+    msg->param.connect_change.connect_state = state;
+    msg->param.connect_change.reason = 0;
+    gattc_send_message(msg);
+}
+
+void if_gattc_on_service_discovered(bt_address_t *addr, gatt_element_t *elements, uint16_t size)
+{
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_DISCOVER_RESULT, addr, 0);
+    msg->param.discover_res.elements = elements;
+    msg->param.discover_res.size = size;
+    gattc_send_message(msg);
+}
+
+void if_gattc_on_discover_completed(bt_address_t *addr, gatt_status_t status)
+{
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_DISOCVER_CMPL, addr, 0);
+    msg->param.discover_cmpl.status = status;
+    gattc_send_message(msg);
+}
+
+void if_gattc_on_element_read(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length, gatt_status_t status)
+{
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_READ, addr, length);
+    msg->param.read.status = status;
+    msg->param.read.element_id = element_id;
+    msg->param.read.length = length;
+    memcpy(msg->param.read.value, value, length);
+    gattc_send_message(msg);
+}
+
+void if_gattc_on_element_written(bt_address_t *addr, uint16_t element_id, gatt_status_t status)
+{
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_WRITE, addr, 0);
+    msg->param.write.status = status;
+    msg->param.write.element_id = element_id;
+    gattc_send_message(msg);
+}
+
+void if_gattc_on_element_changed(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length)
+{
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_NOTIFY, addr, length);
+    msg->param.notify.is_notify = true;
+    msg->param.notify.element_id = element_id;
+    msg->param.notify.length = length;
+    memcpy(msg->param.notify.value, value, length);
+    gattc_send_message(msg);
+}
+
+void if_gattc_on_mtu_changed(bt_address_t *addr, uint32_t mtu, gatt_status_t status)
+{
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_MTU_CFG, addr, 0);
+    msg->param.cfg_mtu.status = status;
+    msg->param.cfg_mtu.mtu = mtu;
+    gattc_send_message(msg);
+}
+
+void if_gattc_set_remote(void *conn_handle, void *remote)
+{
+    if (!conn_handle)
+        return;
+
+    gattc_connection_t *connection = conn_handle;
+    connection->remote = remote;
+}
+
+void *if_gattc_get_remote(void *conn_handle)
+{
+    if (!conn_handle)
+        return NULL;
+
+    gattc_connection_t *connection = conn_handle;
+    return connection->remote;
+}
+
+static const profile_service_t gattc_service = {
+    .auto_start = true,
+    .name = PROFILE_GATTC_NAME,
+    .id = PROFILE_GATTC,
+    .transport = BT_TRANSPORT_BLE,
+    .uuid = {BT_UUID128_TYPE, { 0 }},
+    .init = if_gattc_init,
+    .startup = if_gattc_startup,
+    .shutdown = if_gattc_shutdown,
+    .process_msg = NULL,
+    .get_state = NULL,
+    .get_profile_interface = get_gattc_profile_interface,
+    .cleanup = if_gattc_cleanup,
+    .dump = if_gattc_dump,
+};
+
+void register_gattc_service(void)
+{
+    register_service(&gattc_service);
+}

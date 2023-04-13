@@ -725,6 +725,8 @@ void adapter_on_le_enabled(bool enablebt)
     scan_manager_init();
 #endif
     /* enable scan manager */
+    /* profile service startup */
+    service_manager_startup(BT_TRANSPORT_BLE);
     /* startup gatt service */
     if (enablebt)
         send_to_state_machine((state_machine_t *)adapter->stm, SYS_TURN_ON, NULL);
