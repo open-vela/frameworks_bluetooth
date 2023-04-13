@@ -13,36 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef _BT_PROFILE_H__
-#define _BT_PROFILE_H__
+#include <stdlib.h>
+#include <string.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "gatts_event.h"
 
-#define PROFILE_A2DP_NAME      "A2DP-Src"
-#define PROFILE_A2DP_SINK_NAME "A2DP-Sink"
-#define PROFILE_HFP_HF_NAME    "HFP-HF"
-#define PROFILE_HFP_AG_NAME    "HFP-AG"
-#define PROFILE_SPP_NAME       "SPP"
-#define PROFILE_PANU_NAME      "PANU"
-#define PROFILE_GATTC_NAME     "GATTC"
-#define PROFILE_GATTS_NAME     "GATTS"
+gatts_msg_t *gatts_msg_new(gatts_event_t event, uint16_t playload_length)
+{
+    gatts_msg_t *msg;
 
-enum profile_id {
-    PROFILE_A2DP,
-    PROFILE_A2DP_SINK,
-    PROFILE_HFP_HF,
-    PROFILE_HFP_AG,
-    PROFILE_SPP,
-    PROFILE_PANU,
-    PROFILE_GATTC,
-    PROFILE_GATTS,
-    PROFILE_MAX
-};
+    msg = (gatts_msg_t *)malloc(sizeof(gatts_msg_t) + playload_length);
+    if (msg == NULL)
+        return NULL;
 
-#ifdef __cplusplus
+    msg->event = event;
+
+    return msg;
 }
-#endif
 
-#endif /* _BT_PROFILE_H__ */
+void gatts_msg_destory(gatts_msg_t *msg)
+{
+    free(msg);
+}
+
+gatts_op_t *gatts_op_new(gatts_request_t request)
+{
+    gatts_op_t *operation;
+
+    operation = (gatts_op_t *)malloc(sizeof(gatts_op_t));
+    if (operation == NULL)
+        return NULL;
+
+    operation->request = request;
+
+    return operation;
+}
+
+void gatts_op_destory(gatts_op_t *operation)
+{
+    free(operation);
+}

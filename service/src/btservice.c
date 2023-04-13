@@ -27,6 +27,10 @@
 #ifdef CONFIG_BLUETOOTH_HFP_AG
 #include "hfp_ag_service.h"
 #endif
+#ifdef CONFIG_BLUETOOTH_GATT
+#include "gattc_service.h"
+#include "gatts_service.h"
+#endif
 #ifdef CONFIG_BLUETOOTH_SPP
 #include "spp_service.h"
 #endif
@@ -64,6 +68,11 @@ void bt_profile_init(void)
 
 #ifdef CONFIG_BLUETOOTH_PAN
     register_pan_service();
+#endif
+
+#ifdef CONFIG_BLUETOOTH_GATT
+    register_gattc_service();
+    register_gatts_service();
 #endif
 }
 
