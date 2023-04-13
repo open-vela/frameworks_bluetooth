@@ -93,5 +93,14 @@ int spp_command_exec(void *handle, int argc, char *argv[]);
 int pan_command_init(void *handle);
 void pan_command_uninit(void *handle);
 int pan_command_exec(void *handle, int argc, char *argv[]);
+
+int gattc_command_init(void *handle);
+int gattc_command_uninit(void *handle);
+int gattc_command_exec(void *handle, int argc, char *argv[]);
+
+int gatts_command_init(void *handle);
+int gatts_command_uninit(void *handle);
+int gatts_command_exec(void *handle, int argc, char *argv[]);
+
 #endif /* __BT_TOOLS_H__ */
 
