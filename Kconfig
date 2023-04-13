@@ -45,6 +45,12 @@ config BLUETOOTH_GATT
 	bool "Generic ATT profile support"
 	default y
 
+if BLUETOOTH_GATT
+config BLUETOOTH_GATTC_MAX_CONNECTIONS
+	int "GATT client max connections"
+	default 8
+endif
+
 config BLUETOOTH_A2DP_SOURCE
 	bool "A2DP source profile support"
 	default n
