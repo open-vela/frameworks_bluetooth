@@ -156,23 +156,23 @@ CSRCS +=utils/utils.c
 CSRCS +=utils/log.c
 CSRCS +=btservice/state_machine/state_machine.c
 
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/}
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/include}
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/btservice/include}
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/btservice/state_machine}
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/utils}
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/udrv/include}
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/btservice/a2dp/codec}
+CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/
+CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/include
+CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/btservice/include
+CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/btservice/state_machine
+CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/utils
+CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/udrv/include
+CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/btservice/a2dp/codec
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
-	CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/tools}
+	CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/tools
 endif
 
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/bluelet/src/samples/stack_adapter/inc}
-CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/xiaomi/vela/bluelet/inc}
+CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/external/bluelet/bluelet/src/samples/stack_adapter/inc
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/vendor/xiaomi/vela/bluelet/inc
 
-CFLAGS   += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/system/libuv/libuv/include}
+CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/system/libuv/libuv/include
 ifneq ($(CONFIG_KVDB),)
-  CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/kvdb}
+  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/kvdb
 endif
 CFLAGS   += -I $(APPDIR)/external/bluelet/
 
