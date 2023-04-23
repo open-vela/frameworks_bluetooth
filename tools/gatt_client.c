@@ -213,19 +213,19 @@ static void gatt_display_service(gatt_element_t* elements, uint16_t size)
     while (item < item_end) {
         switch (item->type) {
         case GATT_PRIMARY_SERVICE:
-            BT_LOGD(">[%" PRIu32"][PRI]", item->id);
+            BT_LOGD(">[%" PRIu32 "][PRI]", item->id);
             break;
         case GATT_SECONDARY_SERVICE:
-            BT_LOGD(">[%" PRIu32"][SND]", item->id);
+            BT_LOGD(">[%" PRIu32 "][SND]", item->id);
             break;
         case GATT_INCLUDED_SERVICE:
-            BT_LOGD(">  [%" PRIu32"][INC]", item->id);
+            BT_LOGD(">  [%" PRIu32 "][INC]", item->id);
             break;
         case GATT_CHARACTERISTIC:
-            BT_LOGD(">  [%" PRIu32"][CHR]", item->id);
+            BT_LOGD(">  [%" PRIu32 "][CHR]", item->id);
             break;
         case GATT_DESCRIPTOR:
-            BT_LOGD(">    [%" PRIu32"][DES]", item->id);
+            BT_LOGD(">    [%" PRIu32 "][DES]", item->id);
             break;
         }
         BT_LOGD("[PROP:%" PRIu32, item->properties);
@@ -511,7 +511,7 @@ static int gattc_update_connection_parameter(void* handle, int argc, char** argv
     uint32_t timeout = atoi(argv[4]);
     uint32_t min_connection_event_length = atoi(argv[5]);
     uint32_t max_connection_event_length = atoi(argv[6]);
-    BT_LOGD("min_interval: %" PRIu32", max_interval: %" PRIu32", latency: %" PRIu32", timeout: %" PRIu32", min_connection_event_length: %" PRIu32", max_connection_event_length%" PRIu32, min_interval, max_interval, latency, timeout, min_connection_event_length, max_connection_event_length);
+    BT_LOGD("min_interval: %" PRIu32 ", max_interval: %" PRIu32 ", latency: %" PRIu32 ", timeout: %" PRIu32 ", min_connection_event_length: %" PRIu32 ", max_connection_event_length%" PRIu32, min_interval, max_interval, latency, timeout, min_connection_event_length, max_connection_event_length);
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
@@ -581,13 +581,13 @@ static int gattc_write_request(void* handle, int argc, char** argv)
 
     size_t size = strlen(argv[2]);
     uint8_t* payload = (uint8_t*)malloc(size);
-    if(!payload) {
+    if (!payload) {
         BT_LOGE("error, failed to allocate payload");
         return 0;
     }
     memcpy(payload, argv[2], size);
 
-    BT_LOGD("%s, remote_addr:%s, id:%" PRIu32", size:%d, value", __func__, addr_str(remote_address), id, size);
+    BT_LOGD("%s, remote_addr:%s, id:%" PRIu32 ", size:%d, value", __func__, addr_str(remote_address), id, size);
     BT_HEXDUMP(payload, size);
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
@@ -667,7 +667,7 @@ static int gattc_throughtout_write(void* handle, int argc, char** argv)
     str2ba(argv[0], remote_address);
     uint32_t times = atoi(argv[1]);
     uint32_t id = atoi(argv[2]);
-    BT_LOGD("throughtout_write, characteristic id:%" PRIu32", remote_addr:[%s], times:%" PRIu32, id, addr_str(remote_address), times);
+    BT_LOGD("throughtout_write, characteristic id:%" PRIu32 ", remote_addr:[%s], times:%" PRIu32, id, addr_str(remote_address), times);
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {
         BT_LOGD("device not found");
@@ -712,12 +712,18 @@ static int gattc_start_scan(void* handle, int argc, char** argv)
     int interval = atoi(argv[3]);
     int window = atoi(argv[4]);
     uint8_t phy = atoi(argv[5]);
+    uint8_t type = (argc > 6) ? atoi(argv[6]) : 0;
     scan_params.scan_interval = interval;
     scan_params.scan_window = window;
     scan_params.scan_phy = phy;
-    BT_LOGD("%s, scan params interval:%d, widow:%d, phy:%d", __func__, interval, window, phy);
+    scan_params.scan_type = type;
+    BT_LOGD("%s, scan params interval:%d, widow:%d, phy:%d, type:%d", __func__, interval, window, phy, type);
     if (phy > 2) {
         BT_LOGE("fail, invalid phy:%d", phy);
+        return 0;
+    }
+    if (type > 1) {
+        BT_LOGE("fail, invalid type:%d", type);
         return 0;
     }
 
@@ -760,7 +766,7 @@ static bt_command_t g_gattc_tables[] = {
     { "enable_cccd", gattc_enable_cccd, "\"gatt client enable cccd :<address> <charateristic id>\"" },
     { "disable_cccd", gattc_disable_cccd, "\"gatt client disable cccd:<address> <charateristic id>\"" },
     { "throughtout_write", gattc_throughtout_write, "\"gatt client throughtout write  :<address> <times> <write charateristic id>\"" },
-    { "start_scan", gattc_start_scan, "\"gatt start le scan  {phy(0: 1M, 1: 2M, 2: LE_Coded)}: <enable filter 0:disable 1:enable ><filter_addr> <filter_mask>  <scan_interval> <scan_windows> <scan_phy> \"" },
+    { "start_scan", gattc_start_scan, "\"gatt start le scan  {phy(0: 1M, 1: 2M, 2: LE_Coded)}: <enable filter 0:disable 1:enable ><filter_addr> <filter_mask>  <scan_interval> <scan_windows> <scan_phy> <scan_type> \"" },
     { "stop_scan", gattc_stop_scan, "\"gatt stop le scan  \"" },
 };
 
