@@ -220,6 +220,11 @@ typedef enum {
 } ble_phy_type;
 
 typedef enum {
+    BLE_SCAN_PASSIVE_TYPE,
+    BLE_SCAN_ACTIVE_TYPE
+} ble_scan_type;
+
+typedef enum {
     SPP_TYPE_PASSKEY_CONFIRMATION,
     SPP_TYPE_PASSKEY_ENTRY,
     SPP_TYPE_CONSENT,
@@ -509,6 +514,7 @@ typedef struct {
     int scan_interval;
     int scan_window;
     ble_phy_type scan_phy;
+    ble_scan_type scan_type;
 } scan_params_t;
 
 typedef struct {
