@@ -74,6 +74,7 @@ static bts_profile_callbacks profiles_callbacks[BT_PROFILE_MAX_ID];
 static struct list_node bts_msg_list = LIST_INITIAL_VALUE(bts_msg_list);
 
 extern void InitTransportLayer(void);
+extern void DeinitTransportLayer(void);
 extern void ScheduleLoop(void);
 extern void TransportRecvData(void);
 extern int GetTransportHandler(void);
@@ -347,6 +348,7 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
 
 void bts_service_cleanup(void)
 {
+    DeinitTransportLayer();
 }
 
 void stack_state_change(bt_service_state state)
