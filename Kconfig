@@ -149,6 +149,7 @@ config BLUETOOTH_MANAGER
 config BLUETOOTH_PAN
 	bool "Enable BT_PAN profile"
 	default n
+	depends on NET_TUN
 	help
 		Enable BT_PAN profile
 
