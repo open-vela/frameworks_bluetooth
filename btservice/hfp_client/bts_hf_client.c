@@ -46,12 +46,12 @@
 #include "stack_adapter_hfp.h"
 #include "stack_adapter_service_base.h"
 
-#include "btm_manager.h"
-#include "bts_service.h"
 #include "btm_hfp_hf.h"
+#include "btm_manager.h"
 #include "bts_hf_client.h"
 #include "bts_hf_client_event.h"
 #include "bts_hf_client_state_machine.h"
+#include "bts_service.h"
 
 #include "utils/log.h"
 
@@ -262,7 +262,7 @@ static void adp_codec_changed_cb(BD_ADDR remote_addr, SERVICE_HFP_CONFIG_S* conf
     hf_state_machine_t* sm;
     hf_client_msg_t* msg;
 
-    BT_LOGD(" HF codec config [codec:%d][sample rate:%" PRIu32"][bit width:%d]", config->codec,
+    BT_LOGD(" HF codec config [codec:%d][sample rate:%" PRIu32 "][bit width:%d]", config->codec,
         config->sample_rate, config->bit_width);
 
     sm = get_state_machine(remote_addr);
@@ -546,10 +546,7 @@ static void bts_hf_client_handle_service_msg(bt_profile_id id, void* data, size_
 bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks)
 {
     SERVICE_BT_STATUS status;
-    uint32_t features = BT_HFP_BRSF_HF_HFINDICATORS | BT_HFP_BRSF_HF_RMTVOLCTRL |
-                        BT_HFP_BRSF_HF_ENHANCED_CALLSTATUS | BT_HFP_BRSF_HF_NREC |
-                        BT_HFP_BRSF_HF_3WAYCALL | BT_HFP_BRSF_HF_CLIP |
-                        BT_HFP_BRSF_HF_BVRA; //BT_HFP_BRSF_HF_BVRA;
+    uint32_t features = BT_HFP_BRSF_HF_HFINDICATORS | BT_HFP_BRSF_HF_RMTVOLCTRL | BT_HFP_BRSF_HF_ENHANCED_CALLSTATUS | BT_HFP_BRSF_HF_NREC | BT_HFP_BRSF_HF_3WAYCALL | BT_HFP_BRSF_HF_CLIP | BT_HFP_BRSF_HF_BVRA; //BT_HFP_BRSF_HF_BVRA;
 #ifdef CONFIG_KVDB
     if (property_get_bool("persist.bluetooth.hfp.codec_nego", true)) {
         features |= BT_HFP_BRSF_HF_CODEC_NEGOTIATION;
@@ -569,7 +566,7 @@ bt_result_code bts_hf_client_init(const hf_client_service_callbacks_t* callbacks
 #ifndef CONFIG_ARCH_SIM
 #ifdef CONFIG_UORB
     g_hfp_service.orb_fd = orb_advertise_queue(ORB_ID(hfp_state),
-                                               NULL, CONFIG_BLUETOOTH_ORB_QUEUE_SIZE);
+        NULL, CONFIG_BLUETOOTH_ORB_QUEUE_SIZE);
     if (g_hfp_service.orb_fd < 0) {
         BT_LOGE("g_hfp_service.orb_fd advertise failed");
         return BT_RESULT_FAILED;
@@ -820,6 +817,29 @@ bt_result_code bts_hf_client_terminate_call(bt_address bd_addr)
     msg = HF_MSG_NEW(TERMINATE_CALL, bd_addr);
     if (!msg)
         return BT_RESULT_ALLOC_BUFFER_FAILED;
+    hf_client_send_message(sm, msg);
+
+    return BT_RESULT_SUCCESS;
+}
+
+bt_result_code bts_hf_client_control_call(bt_address bd_addr,
+    hf_client_call_control_t chld,
+    uint8_t index)
+
+{
+    hf_state_machine_t* sm;
+    hf_client_msg_t* msg;
+
+    sm = get_state_machine(bd_addr);
+    if (!sm)
+        return BT_RESULT_FAILED;
+
+    msg = HF_MSG_NEW(CONTROL_CALL, bd_addr);
+    if (!msg)
+        return BT_RESULT_ALLOC_BUFFER_FAILED;
+    msg->event_data.valueint1 = chld;
+    msg->event_data.valueint2 = index;
+
     hf_client_send_message(sm, msg);
 
     return BT_RESULT_SUCCESS;

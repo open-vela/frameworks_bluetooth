@@ -87,6 +87,15 @@ typedef enum {
 } hf_client_callheld_t;
 
 typedef enum {
+    HF_CLIENT_CALL_CONTROL_CHLD_0, /* Releases all held calls or sets User Determined User Busy (UDUB) for a waiting call */
+    HF_CLIENT_CALL_CONTROL_CHLD_1, /* Releases all active calls (if any exist) and accepts the other (held or waiting) call */
+    HF_CLIENT_CALL_CONTROL_CHLD_2, /* Places all active calls (if any exist) on hold and accepts the other (held or waiting) call */
+    HF_CLIENT_CALL_CONTROL_CHLD_3, /* Adds a held call to the conversation */
+    HF_CLIENT_CALL_CONTROL_CHLD_4 /* Connects the two calls and disconnects the subscriber from both calls (Explicit Call Transfer).
+                                  Support for this value and its associated functionality is optional for the HF */
+} hf_client_call_control_t;
+
+typedef enum {
     HF_CLIENT_CALL_DIRECTION_OUTGOING = 0,
     HF_CLIENT_CALL_DIRECTION_INCOMING
 } hf_client_call_direction_t;
@@ -273,6 +282,18 @@ typedef struct
      * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
      */
     bt_result_code (*query_current_calls)(void* handle, bt_address addr);
+
+    /**
+     * @control the phone calls in audio gateway side.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] addr      address of peer device.
+     * @param[in] chld      action of phone calls.
+     * @param[in] index      index of phone calls.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
+    bt_result_code (*control_call)(void* handle, bt_address addr,
+        hf_client_call_control_t chld,
+        uint8_t index);
 
     /**
      * @brief Send AT command.
