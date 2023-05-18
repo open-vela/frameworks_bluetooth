@@ -66,6 +66,7 @@ extern bt_result_code bts_hf_client_accept_call(bt_address bd_addr);
 extern bt_result_code bts_hf_client_reject_call(bt_address bd_addr);
 extern bt_result_code bts_hf_client_hold_call(bt_address bd_addr);
 extern bt_result_code bts_hf_client_terminate_call(bt_address bd_addr);
+extern bt_result_code bts_hf_client_control_call(bt_address bd_addr, hf_client_call_control_t chld, uint8_t index);
 extern bt_result_code bts_hf_client_query_current_calls(bt_address bd_addr);
 extern bt_result_code bts_hf_client_send_at_cmd(bt_address bd_addr, const char* cmd);
 extern bt_result_code bts_hf_client_update_battery_level(bt_address bd_addr, uint8_t battery);

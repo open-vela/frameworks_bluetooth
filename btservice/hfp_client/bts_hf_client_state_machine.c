@@ -141,6 +141,7 @@ static char* stack_event_to_string(hf_client_event_t event)
         CASE_RETURN_STR(QUERY_CURRENT_CALLS)
         CASE_RETURN_STR(UPDATE_BATTERY_LEVEL)
         CASE_RETURN_STR(SEND_AT_COMMAND)
+        CASE_RETURN_STR(CONTROL_CALL)
         CASE_RETURN_STR(TIMEOUT)
         CASE_RETURN_STR(STACK_EVENT)
         CASE_RETURN_STR(STACK_EVENT_AUDIO_REQ)
@@ -568,6 +569,13 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         }
         break;
 
+    case CONTROL_CALL: {
+        hf_client_call_control_t chld = data->valueint1;
+        uint8_t index = data->valueint2;
+        service_adapter_hfp_call_control(hfsm->addr, chld, index);
+        break;
+    }
+
     case QUERY_CURRENT_CALLS:
         status = service_adapter_hfp_get_current_calls(hfsm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
@@ -849,6 +857,13 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
             BT_LOGE("Terminate call failed");
         }
         break;
+
+    case CONTROL_CALL: {
+        hf_client_call_control_t chld = data->valueint1;
+        uint8_t index = data->valueint2;
+        service_adapter_hfp_call_control(hfsm->addr, chld, index);
+        break;
+    }
 
     case QUERY_CURRENT_CALLS:
         status = service_adapter_hfp_get_current_calls(hfsm->addr);
