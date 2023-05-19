@@ -56,6 +56,7 @@ static int accept_call_cmd(void* handle, int argc, char* argv[]);
 static int reject_call_cmd(void* handle, int argc, char* argv[]);
 static int hold_call_cmd(void* handle, int argc, char* argv[]);
 static int terminate_call_cmd(void* handle, int argc, char* argv[]);
+static int control_call_cmd(void* handle, int argc, char* argv[]);
 static int query_current_calls_cmd(void* handle, int argc, char* argv[]);
 static int updata_battery_level_cmd(void* handle, int argc, char* argv[]);
 static int send_at_cmd_cmd(void* handle, int argc, char* argv[]);
@@ -76,6 +77,7 @@ static bt_command_t g_hfp_tables[] = {
     { "reject", reject_call_cmd, "\"reject an incoming voice call  :<address>\"" },
     { "hold", hold_call_cmd, "\"hold an Three-way calling      :<address>\"" },
     { "term", terminate_call_cmd, "\"terminate a call               :<address>\"" },
+    { "control_call", control_call_cmd, "\"control a call               :<address> <chld> <index>\"" },
     { "query", query_current_calls_cmd, "\"query current calls            :<address>\"" },
     { "bat", updata_battery_level_cmd, "\"update battery level range in <0~100>           :<address> <battery>\"" },
     { "at", send_at_cmd_cmd, "\"send customize AT command to peer  :<address> <at>\"" },
@@ -267,6 +269,22 @@ static int terminate_call_cmd(void* handle, int argc, char* argv[])
 
     str2ba(argv[0], addr);
     hf_interface->terminate_call(NULL, addr);
+
+    return 0;
+}
+
+static int control_call_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address addr;
+    hf_client_call_control_t chld;
+    uint8_t index;
+    if (argc < 1 || hf_interface == NULL)
+        return -1;
+
+    str2ba(argv[0], addr);
+    chld = (uint8_t)atoi(argv[1]);
+    index = (uint8_t)atoi(argv[2]);
+    hf_interface->control_call(NULL, addr, chld, index);
 
     return 0;
 }

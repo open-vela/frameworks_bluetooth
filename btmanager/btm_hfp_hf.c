@@ -181,6 +181,18 @@ static bt_result_code hf_query_current_calls(void* handle, bt_address addr)
     return service->query_current_calls(handle, addr);
 }
 
+static bt_result_code hf_control_call(void* handle,
+    bt_address addr,
+    hf_client_call_control_t chld,
+    uint8_t index)
+{
+    hf_client_interface_t* service = get_service();
+    if (!service)
+        return BT_RESULT_FAILED;
+
+    return service->control_call(handle, addr, chld, index);
+}
+
 static bt_result_code hf_send_at_cmd(void* handle, bt_address addr, const char* cmd)
 {
     hf_client_interface_t* service = get_service();
@@ -225,6 +237,7 @@ static const hf_client_interface_t hfInterface = {
     hf_hold_call,
     hf_terminate_call,
     hf_query_current_calls,
+    hf_control_call,
     hf_send_at_cmd,
     hf_update_battery_level,
     set_callbacks,
