@@ -109,6 +109,7 @@ static bool remove_gattc_device(gattc_device_t* device)
     return true;
 }
 
+#ifdef BLE_SCAN_RESULT_OVERRIDE
 static bool find_scan_device(const bt_address remote_address)
 {
     gattc_scan_result_t* device;
@@ -144,6 +145,7 @@ static void clear_scan_devices(void)
         free(device);
     }
 }
+#endif
 
 static void on_scan_started_callback(void* handle)
 {
@@ -153,23 +155,29 @@ static void on_scan_started_callback(void* handle)
 static void on_scan_stopped_callback(void* handle)
 {
     BT_LOGD("%s", __func__);
+#ifdef BLE_SCAN_RESULT_OVERRIDE
     clear_scan_devices();
+#endif
 }
 
 static void on_scan_failed_callback(void* handle, int error)
 {
     BT_LOGD("%s err:%d", __func__, error);
+#ifdef BLE_SCAN_RESULT_OVERRIDE
     clear_scan_devices();
+#endif
 }
 
 static void on_scan_result_callback(void* handle, const scan_result_t* result)
 {
+#ifdef BLE_SCAN_RESULT_OVERRIDE
     if (find_scan_device(result->remote_addr)) {
         return;
     }
     add_scan_device(result->remote_addr);
+#endif
     BT_LOGD("%s addr:%s, addr_type:%d, device_type:%d, evt_type:%d, rssi:%d", __func__, addr_str(((scan_result_t*)result)->remote_addr), result->addr_type, result->device_type, result->evt_type, result->rssi);
-    // BT_HEXDUMP(result->adv_data, result->length);
+    lib_dumpbuffer("LE_Adv:", (const uint8_t *)result->adv_data, result->length);
 }
 
 static char* profile_state_to_str(profile_connection_state state)
