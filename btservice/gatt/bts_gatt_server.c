@@ -668,7 +668,7 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
     bts_gatts_hdl_t* handle = find_gatts_handle(msg->server_if);
     if (!handle) {
         BT_LOGE("event:%d, null handle", msg->event);
-        return;
+        goto exit;
     }
 
     switch (msg->event) {
@@ -739,6 +739,7 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
         break;
     }
     }
+exit:
     if (msg->size > 0)
         free(msg->data);
     free(msg);
