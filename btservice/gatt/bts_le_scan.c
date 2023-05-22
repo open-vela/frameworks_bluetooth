@@ -274,7 +274,7 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
     bts_lescan_hdl_t* handle = find_scan_handle(msg->scanner_id);
     if (!handle) {
         BT_LOGE("%s fail, handle null", __func__);
-        return;
+        goto exit;
     }
 
     switch (msg->event) {
@@ -300,6 +300,7 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
         break;
     }
     }
+exit:
     if (msg->size > 0)
         free(msg->data);
     free(msg);
