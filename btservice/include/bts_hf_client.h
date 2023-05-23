@@ -70,6 +70,7 @@ extern bt_result_code bts_hf_client_control_call(bt_address bd_addr, hf_client_c
 extern bt_result_code bts_hf_client_query_current_calls(bt_address bd_addr);
 extern bt_result_code bts_hf_client_send_at_cmd(bt_address bd_addr, const char* cmd);
 extern bt_result_code bts_hf_client_update_battery_level(bt_address bd_addr, uint8_t battery);
+extern bt_result_code bts_hf_client_send_dtmf(bt_address bd_addr, uint8_t dtmf);
 extern void bts_hf_client_cleanup(void);
 
 extern bt_result_code hf_client_service_start(void);

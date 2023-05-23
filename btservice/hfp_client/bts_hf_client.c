@@ -900,6 +900,26 @@ bt_result_code bts_hf_client_update_battery_level(bt_address bd_addr, uint8_t ba
     return BT_RESULT_SUCCESS;
 }
 
+/* AT+VTS=... 3GPP Spec P179 C.2.11 */
+bt_result_code bts_hf_client_send_dtmf(bt_address bd_addr, uint8_t dtmf)
+{
+    hf_state_machine_t* sm;
+    hf_client_msg_t* msg;
+
+    sm = get_state_machine(bd_addr);
+    if (!sm)
+        return BT_RESULT_FAILED;
+
+    msg = HF_MSG_NEW(SEND_DTMF, bd_addr);
+    if (!msg)
+        return BT_RESULT_ALLOC_BUFFER_FAILED;
+
+    msg->event_data.valueint1 = dtmf;
+
+    hf_client_send_message(sm, msg);
+    return BT_RESULT_SUCCESS;
+}
+
 void bts_hf_client_cleanup(void)
 {
     hf_client_msg_t* msg;

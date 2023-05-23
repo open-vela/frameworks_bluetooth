@@ -314,6 +314,15 @@ typedef struct
     bt_result_code (*update_battery_level)(void* handle, bt_address addr, uint8_t battery);
 
     /**
+     * @send dtmf key code to audio gateway.
+     * @param[in] handle    the hand-free handle (unused).
+     * @param[in] bd_addr      address of peer device.
+     * @param[in] dtmf      send dtmf key code.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
+    bt_result_code (*send_dtmf)(void* handle, bt_address bd_addr, uint8_t dtmf);
+
+    /**
      * @brief Set the hand-free event callback
      * @param[in] handle    the hand-free handle (unused).
      * @param[in] callbacks hand-free event callback function.

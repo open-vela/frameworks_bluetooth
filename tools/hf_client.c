@@ -42,6 +42,8 @@
 #include "euv_pty.h"
 #include "utils/log.h"
 
+#define HFP_CHECK_DTMF(idx) (((idx) <= '9' && (idx) >= '0') || ((idx) <= 'D' && (idx) >= 'A') || (idx) == '*' || (idx) == '#')
+
 static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int connect_audio_cmd(void* handle, int argc, char* argv[]);
@@ -59,6 +61,7 @@ static int terminate_call_cmd(void* handle, int argc, char* argv[]);
 static int control_call_cmd(void* handle, int argc, char* argv[]);
 static int query_current_calls_cmd(void* handle, int argc, char* argv[]);
 static int updata_battery_level_cmd(void* handle, int argc, char* argv[]);
+static int send_dtmf_cmd(void* handle, int argc, char* argv[]);
 static int send_at_cmd_cmd(void* handle, int argc, char* argv[]);
 
 static const hf_client_interface_t* hf_interface = NULL;
@@ -80,6 +83,7 @@ static bt_command_t g_hfp_tables[] = {
     { "control_call", control_call_cmd, "\"control a call               :<address> <chld> <index>\"" },
     { "query", query_current_calls_cmd, "\"query current calls            :<address>\"" },
     { "bat", updata_battery_level_cmd, "\"update battery level range in <0~100>           :<address> <battery>\"" },
+    { "dtmf", send_dtmf_cmd, "\"dtmf range in <0123456789*#ABCD>           :<address> <dtmf>\"" },
     { "at", send_at_cmd_cmd, "\"send customize AT command to peer  :<address> <at>\"" },
 };
 
@@ -315,6 +319,26 @@ static int updata_battery_level_cmd(void* handle, int argc, char* argv[])
         return -EINVAL;
 
     hf_interface->update_battery_level(NULL, addr, battery);
+
+    return 0;
+}
+
+static int send_dtmf_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address addr;
+    uint8_t dtmf;
+
+    if (argc < 2 || hf_interface == NULL)
+        return -1;
+
+    str2ba(argv[0], addr);
+    dtmf = (argv[1])[0];
+    if (!HFP_CHECK_DTMF(dtmf)) {
+        BT_LOGE("dtmf range in <0123456789*#ABCD>");
+        return 0;
+    }
+
+    hf_interface->send_dtmf(NULL, addr, dtmf);
 
     return 0;
 }
