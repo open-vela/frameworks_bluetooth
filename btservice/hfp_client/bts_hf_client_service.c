@@ -205,6 +205,11 @@ static bt_result_code hf_update_battery_level(void* handle, bt_address addr, uin
     return bts_hf_client_update_battery_level(addr, battery);
 }
 
+static bt_result_code hf_send_dtmf(void* handle, bt_address bd_addr, uint8_t dtmf)
+{
+    return bts_hf_client_send_dtmf(bd_addr, dtmf);
+}
+
 static void set_callbacks(void* handle, hf_client_callbacks_t* callbacks)
 {
     hfCallbacks = callbacks;
@@ -245,6 +250,7 @@ static const hf_client_interface_t hfInterface = {
     hf_control_call,
     hf_send_at_cmd,
     hf_update_battery_level,
+    hf_send_dtmf,
     set_callbacks,
 };
 
