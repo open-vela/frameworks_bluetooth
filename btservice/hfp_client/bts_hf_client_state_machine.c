@@ -114,7 +114,7 @@ static const state_t connected_state = {
 };
 
 static const state_t audio_on_state = {
-    .state_name = "AduioOn",
+    .state_name = "AudioOn",
     .enter = audio_on_enter,
     .exit = audio_on_exit,
     .process_event = audio_on_process_event,
@@ -142,6 +142,7 @@ static char* stack_event_to_string(hf_client_event_t event)
         CASE_RETURN_STR(UPDATE_BATTERY_LEVEL)
         CASE_RETURN_STR(SEND_AT_COMMAND)
         CASE_RETURN_STR(CONTROL_CALL)
+        CASE_RETURN_STR(SEND_DTMF)
         CASE_RETURN_STR(TIMEOUT)
         CASE_RETURN_STR(STACK_EVENT)
         CASE_RETURN_STR(STACK_EVENT_AUDIO_REQ)
@@ -602,6 +603,13 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         }
         break;
 
+    case SEND_DTMF:
+        status = service_adapter_hfp_tx_dtmf(hfsm->addr, (uint8_t)data->valueint1);
+        if (status != SERVICE_BT_STATUS_SUCCESS) {
+            BT_LOGE("Tx Dtmf failed");
+        }
+        break;
+
     case STACK_EVENT_AUDIO_REQ:
         status = service_adapter_gap_accept_sco_link(hfsm->addr);
         if (status != SERVICE_BT_STATUS_SUCCESS) {
@@ -878,6 +886,15 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
             BT_LOGE("Update battery level failed");
         }
         break;
+
+    case SEND_DTMF: {
+        /* system call interface */
+        status = service_adapter_hfp_tx_dtmf(hfsm->addr, (uint8_t)data->valueint1);
+        if (status != SERVICE_BT_STATUS_SUCCESS) {
+            BT_LOGE("Tx Dtmf failed");
+        }
+        break;
+    }
 
     case STACK_EVENT_VR_STATE_CHANGED: {
         hf_client_vr_state_t state = data->valueint1;
