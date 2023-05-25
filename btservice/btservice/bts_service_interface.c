@@ -1,5 +1,5 @@
 #define LOG_TAG "bts_service_interface"
- #include <assert.h>
+#include <assert.h>
 #include <nuttx/list.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,18 +7,19 @@
 #include <connectivity/bt.h>
 #include <uORB/uORB.h>
 #endif
-#include "bts_a2dp_source.h"
 #include "bts_a2dp_sink.h"
+#include "bts_a2dp_source.h"
+#include "bts_ag_server.h"
+#include "bts_avrcp_ctrl.h"
 #include "bts_avrcp_target.h"
 #include "bts_gap.h"
 #include "bts_gatt_service.h"
 #include "bts_hf_client.h"
 #include "bts_hid_service.h"
+#include "bts_panu.h"
 #include "bts_service.h"
 #include "bts_service_interface.h"
 #include "bts_spp.h"
-#include "bts_panu.h"
-#include "bts_avrcp_ctrl.h"
 #include "log.h"
 
 typedef struct {
@@ -84,7 +85,7 @@ static bt_result_code bts_if_init(void* handle, bt_service_if_callbacks* callbac
 #else
 #ifdef CONFIG_UORB
         service->orb_fd = orb_advertise_multi_queue_persist(ORB_ID(bt_stack_state),
-                                                            NULL, NULL, 1);
+            NULL, NULL, 1);
         if (service->orb_fd < 0) {
             BT_LOGE("stack state orb_fd advertise failed");
             return BT_RESULT_FAILED;
@@ -158,6 +159,9 @@ static bt_result_code bts_if_enable(void* handle)
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
     a2dp_source_service_start();
 #endif
+#ifdef CONFIG_BLUETOOTH_HFP_AG
+    ag_server_service_start();
+#endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     hf_client_service_start();
 #endif
@@ -184,6 +188,10 @@ static bt_result_code bts_if_disable(void* handle)
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
     a2dp_source_service_stop();
 #endif
+#ifdef CONFIG_BLUETOOTH_HFP_AG
+    ag_server_service_stop();
+#endif
+
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     hf_client_service_stop();
 #endif
@@ -269,6 +277,10 @@ static const void* if_get_profile_interface(const char* profile_id)
 #ifdef CONFIG_BLUETOOTH_AVRCP_CT
     if (is_profile(profile_id, BT_PROFILE_AV_RC_CTRL))
         return get_avrcp_ctrl_service_interface();
+#endif
+#ifdef CONFIG_BLUETOOTH_HFP_AG
+    if (is_profile(profile_id, BT_PROFILE_HANDSFREE_AG))
+        return (const void*)get_ag_server_service_interface();
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     if (is_profile(profile_id, BT_PROFILE_HANDSFREE_HF))

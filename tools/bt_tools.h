@@ -63,6 +63,7 @@ extern int avrcct_command_init(void);
 extern void avrcct_command_uninit(void);
 extern int pan_command(void* handle, int argc, char* argv[]);
 extern int hfp_client_command(void* handle, int argc, char* argv[]);
+extern int hfp_server_command(void* handle, int argc, char* argv[]);
 extern int gatt_server_command(void* handle, int argc, char* argv[]);
 extern int gatt_client_command(void* handle, int argc, char* argv[]);
 extern int a2dp_source_command(void* handle, int argc, char* argv[]);
