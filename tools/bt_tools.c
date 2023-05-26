@@ -125,6 +125,10 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     { "hfp", hfp_client_command, "<HFP> HandFree Profile --Client" },
 #endif
+#ifdef CONFIG_BLUETOOTH_HFP_AG
+    { "hfp_ag", hfp_server_command, "<HFP> HandFree Profile --Server" },
+#endif
+
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
     { "a2dpsrc", a2dp_source_command, "<A2DP> Advanced Audio Distribution Profile --Source" },
 #endif
