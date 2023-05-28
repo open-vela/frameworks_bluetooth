@@ -595,6 +595,7 @@ typedef uint32_t ACL_DISCONNECTED_REASON;
 typedef struct {
     bt_address remote_addr; // Remote BT address
     ble_addr_type addr_type;
+    uint16_t connection_handle;
     bt_status status; //
     bt_acl_state state;
     ACL_DISCONNECTED_REASON reasonCode;

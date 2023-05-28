@@ -65,7 +65,7 @@
 #endif
 
 static void adpt_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state);
-static void adpt_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state);
+static void adpt_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state, uint16_t sink_cid);
 static void adpt_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S *config);
 static void adpt_packet_received_cb(BD_ADDR remote_addr, SERVICE_A2DP_SINK_DATA_S *data);
 static void adpt_stream_req_received_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_REQUEST request);
@@ -240,7 +240,7 @@ static void adpt_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFIL
     do_in_a2dp_snk_service(a2dp_event_new(event, remote_addr));
 }
 
-static void adpt_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state)
+static void adpt_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state, uint16_t sink_cid)
 {
     a2dp_event_type_t event;
 
