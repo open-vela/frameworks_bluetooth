@@ -532,6 +532,31 @@ const bts_gattc_interface_t* get_bts_gattc_instance(void)
     return &gatt_client_intance;
 }
 
+static void gatt_client_state_change_callback(bts_gattc_hdl_t* handle)
+{
+    BT_CBACK(handle->callbacks, bts_gattc_connection_state_changed_cb,
+        handle->btm_handle, handle->current_state);
+
+    if (handle->current_state == PROFILE_DISCONNECTED) {
+        BT_LOGD("remove_gatt_client handle");
+        remove_gatt_client(handle);
+    }
+}
+
+static void gattc_connection_timeout(char* data)
+{
+    bts_gattc_hdl_t* handle = (bts_gattc_hdl_t*)data;
+
+    BT_LOGD("%s", __func__);
+
+    stop_timer(handle->timer);
+    handle->timer = NULL;
+
+    if (handle->pre_state != handle->current_state) {
+        gatt_client_state_change_callback(handle);
+    }
+}
+
 static void handle_msg_received(bt_profile_id id, void* value, size_t size)
 {
     if (id != BT_PROFILE_GATTC_ID) {
@@ -552,12 +577,24 @@ static void handle_msg_received(bt_profile_id id, void* value, size_t size)
 
     switch (msg->event) {
     case ON_CLIENT_CONNECT_STATE: {
+        int timeout;
         profile_connection_state* state = (profile_connection_state*)(msg->data);
-        BT_CBACK(handle->callbacks, bts_gattc_connection_state_changed_cb, handle->btm_handle, *state);
-        if (*state == PROFILE_DISCONNECTED) {
-            BT_LOGD("remove_gatt_client handle");
-            remove_gatt_client(handle);
+
+        handle->pre_state = handle->current_state;
+        handle->current_state = *state;
+        if (handle->timer) {
+            BT_LOGD("handle->timer alive");
+            return;
         }
+
+        if (handle->current_state == PROFILE_CONNECTING) {
+            handle->pre_state = PROFILE_CONNECTING;
+            timeout = CONFIG_BLUETOOTH_TGAP_CONN_INTERVAL_MAX * 6 + BLUETOOTH_SCHEDULE_DELAY_MS;
+            BT_LOGD("start_timer gattc connecting");
+            handle->timer = start_timer(timeout, 0, gattc_connection_timeout, handle);
+        }
+
+        gatt_client_state_change_callback(handle);
         break;
     }
     case ON_CLIENT_SERVICE_DISCOVERED: {

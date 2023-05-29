@@ -186,6 +186,8 @@
 #define AFH_WIFI_CHANNEL_TO_FREQ(ch) \
     (AFH_WIFI_CENTRAL_FREQUENCY_CH1 + ((ch - 1) * AFH_WIFI_CENTRAL_FREQUENCY_STEP))
 
+#define BLUETOOTH_SCHEDULE_DELAY_MS 80
+
 typedef uint8_t bt_address[BT_ADDR_LENGTH];
 typedef uint8_t bt_uuid_t[UUID_SIZE];
 typedef struct {
@@ -408,8 +410,8 @@ typedef enum {
 } hid_app_state;
 
 /**@enum bt_result_code
-* @brief Result code of bluetooth manager
-*/
+ * @brief Result code of bluetooth manager
+ */
 typedef enum {
     BT_RESULT_STATE_ALLREADY_ON = -7,
     BT_RESULT_STATE_ALLREADY_OFF = -6,
@@ -556,9 +558,10 @@ typedef struct {
 } advertise_param_t;
 
 typedef struct {
-    uint32_t id; /* For the server application, this shall be assigned and managed by the application to identify each element uniquely.
-                              * The id of an INCLUDED_SERVICE shall be the same as that of the PRIMARY_SERVICE or SECONDARY_SERVICE being included.
-                             * For the client application, this is the attribute handle returned from service discovery procedure. */
+    uint32_t id; /* For the server application, this shall be assigned and managed by the application to identify each
+                  * element uniquely.  The id of an INCLUDED_SERVICE shall be the same as that of the PRIMARY_SERVICE
+                  * or SECONDARY_SERVICE being included.  For the client application, this is the attribute handle
+                  *  returned from  service discovery procedure. */
     bt_uuid_t uuid;
     gatt_element_type type;
     uint32_t properties; /* bit masks, characteristic properties - for characteristic type only */
