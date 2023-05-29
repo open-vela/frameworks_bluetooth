@@ -37,6 +37,7 @@
 #include <stddef.h>
 
 #include "btm_manager.h"
+#include "uv.h"
 
 typedef void (*bts_gattc_connect_state_changed_callback)(void* handle, profile_connection_state state);
 typedef void (*bts_gattc_services_discovered_callback)(void* handle, gatt_element_t* element, uint16_t size);
@@ -67,6 +68,9 @@ typedef struct
     const bts_gatt_client_callbacks* callbacks;
     bt_address remote_addr;
     void* btm_handle;
+    uv_timer_t* timer;
+    profile_connection_state pre_state;
+    profile_connection_state current_state;
 } bts_gattc_hdl_t;
 
 typedef struct {

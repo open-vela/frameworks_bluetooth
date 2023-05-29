@@ -175,17 +175,69 @@ typedef struct {
     gap_event_data_t event_data;
 } gap_msg_t;
 
-typedef struct {
+typedef enum {
+    BT_ROLE_UNKOWN,
+    BT_ROLE_BR_MASTER,
+    BT_ROLE_BR_SLVAER,
+    BT_ROLE_BLE_MASTER,
+    BT_ROLE_BLE_SLVAER,
+} bt_link_role_t;
+
+typedef struct
+{
     struct list_node node;
-    bt_device_t* device;
-} list_device_t;
+    bt_address remote_address;
+    bt_link_role_t role;
+    uv_timer_t* timer;
+    bt_acl_state pre_state;
+    bt_acl_state current_state;
+} bluetooth_device_t;
 
 struct list_node* g_msg_list;
 static bts_gap_callback_t* g_bts_gap_callbacks = NULL;
+static struct list_node bt_device_list = LIST_INITIAL_VALUE(bt_device_list);
 
 /*process callback from stack */
 
 extern void InitTransportLayer(void);
+
+static bluetooth_device_t* find_bt_device(bt_address remote_address)
+{
+    bluetooth_device_t* device;
+    list_for_every_entry(&bt_device_list, device, bluetooth_device_t, node)
+    {
+        if (!memcmp(device->remote_address, remote_address, sizeof(bt_address))) {
+            return device;
+        }
+    }
+    return NULL;
+}
+
+static bluetooth_device_t* add_bt_device(bt_address remote_address)
+{
+    bluetooth_device_t* device = (bluetooth_device_t*)malloc(sizeof(bluetooth_device_t));
+    if (!device) {
+        BT_LOGE("malloc device fail");
+        return NULL;
+    }
+
+    memset(device, 0, sizeof(bluetooth_device_t));
+    memcpy(device->remote_address, remote_address, sizeof(bt_address));
+    device->current_state = BT_ACL_STATE_DISCONNECTED;
+    device->pre_state = BT_ACL_STATE_DISCONNECTED;
+    list_add_tail(&bt_device_list, &device->node);
+    return device;
+}
+
+static bool remove_bt_device(bluetooth_device_t* device)
+{
+    if (!device) {
+        return false;
+    }
+    list_delete(&device->node);
+    free(device);
+    return true;
+}
 
 static gap_msg_t* gap_msg_new(gap_event_t event)
 {
@@ -205,6 +257,33 @@ static void gap_msg_destory(gap_msg_t* msg)
 {
 
     free(msg);
+}
+
+static void bluetooth_state_change_callback(bluetooth_device_t* device)
+{
+    bt_device_t new_device = { 0 };
+
+    memcpy(new_device.addr, device->remote_address, BT_ADDR_LENGTH);
+    g_bts_gap_callbacks->connection_state_changed_cb(&new_device, device->current_state);
+
+    if (device->current_state == BT_ACL_STATE_LE_DISCONNECTED
+        || device->current_state == BT_ACL_STATE_DISCONNECTED) {
+        remove_bt_device(device);
+    }
+}
+
+static void bt_connection_state_timeout(char* data)
+{
+    bluetooth_device_t* device = (bluetooth_device_t*)data;
+
+    BT_LOGD("%s addr:%s", __func__, addr_str(device->remote_address));
+
+    stop_timer(device->timer);
+    device->timer = NULL;
+
+    if (device->pre_state != device->current_state) {
+        bluetooth_state_change_callback(device);
+    }
 }
 
 static void process_loop_in_gap(void* data, size_t data_size)
@@ -273,10 +352,36 @@ static void process_loop_in_gap(void* data, size_t data_size)
     }
     case GAP_ACL_STATE_CHANGED: {
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->connection_state_changed_cb)) {
-            bt_device_t new_device = { 0 };
+            bt_address bt_addr;
+            bluetooth_device_t* device;
+            bt_acl_state acl_state;
+            int timeout;
 
-            memcpy(new_device.addr, gap_msg->event_data.data.acl_state_params.remote_addr, BT_ADDR_LENGTH);
-            g_bts_gap_callbacks->connection_state_changed_cb(&new_device, gap_msg->event_data.data.acl_state_params.state);
+            acl_state = gap_msg->event_data.data.acl_state_params.state;
+            memcpy(bt_addr, gap_msg->event_data.data.acl_state_params.remote_addr, BT_ADDR_LENGTH);
+
+            device = find_bt_device(bt_addr);
+            if (!device) {
+                device = add_bt_device(bt_addr);
+            }
+            device->pre_state = device->current_state;
+            device->current_state = acl_state;
+
+            if (device->role == BT_ROLE_BLE_MASTER && device->timer) {
+                BT_LOGD("delay remote le master(%s) state :%d", addr_str(device->remote_address),
+                    device->current_state);
+                return;
+            }
+
+            if (device->current_state == BT_ACL_STATE_LE_CONNECTING) {
+                BT_LOGD("start_timer remote le master(%s) connecting", addr_str(bt_addr));
+                device->role = BT_ROLE_BLE_MASTER;
+                device->pre_state = BT_ACL_STATE_LE_CONNECTING;
+                timeout = CONFIG_BLUETOOTH_TGAP_CONN_INTERVAL_MAX * 6 + BLUETOOTH_SCHEDULE_DELAY_MS;
+                device->timer = start_timer(timeout, 0, bt_connection_state_timeout, device);
+            }
+
+            bluetooth_state_change_callback(device);
         }
         break;
     }
@@ -427,7 +532,7 @@ bt_result_code bts_start_discovery(uint32_t timeout)
 
 static void adapter_device_found_callback(remote_device_t* device)
 {
-    //BT_LOGD("%s: PERFORMANCE-GAP-BLUELET-DISCOVERY-END", __func__);
+    // BT_LOGD("%s: PERFORMANCE-GAP-BLUELET-DISCOVERY-END", __func__);
     if ((!g_bts_gap_callbacks) || (!g_bts_gap_callbacks->device_found_cb))
         return;
     gap_msg_t* msg = gap_msg_new(GAP_DEVICE_FOUND);
@@ -1141,7 +1246,7 @@ bt_result_code bts_remove_bond(bt_device_t* device)
 int bts_get_bonded_devices(bt_device_t* device_list, int max_out)
 {
     int ret = 0;
-    //get total number of paired devices
+    // get total number of paired devices
     if ((NULL == device_list) || (max_out == 0)) {
         ret = service_adapter_gap_get_bonded_devices(NULL, 0);
         return ret;
@@ -1173,7 +1278,7 @@ int bts_get_bonded_devices(bt_device_t* device_list, int max_out)
 int bts_get_connected_devices(bt_device_t* device_list, int max_out)
 {
     int ret = 0;
-    //get total number of paired devices
+    // get total number of paired devices
     if ((NULL == device_list) || (max_out == 0)) {
         ret = service_adapter_gap_get_connected_devices(NULL, 0);
         return ret;
@@ -1197,7 +1302,7 @@ int bts_get_connected_devices(bt_device_t* device_list, int max_out)
 int bts_get_ble_bonded_devices(bt_device_t* device_list, int max_out)
 {
     int ret = 0;
-    //get total number of paired devices
+    // get total number of paired devices
     if ((NULL == device_list) || (max_out == 0)) {
         ret = service_adapter_gap_ble_get_bonded_devices(NULL, 0);
         return ret;
@@ -1222,7 +1327,7 @@ int bts_get_ble_bonded_devices(bt_device_t* device_list, int max_out)
 int bts_get_ble_connected_devices(bt_device_t* device_list, int max_out)
 {
     int ret = 0;
-    //get total number of paired devices
+    // get total number of paired devices
     if ((NULL == device_list) || (max_out == 0)) {
         ret = service_adapter_gap_ble_get_connected_devices(NULL, 0);
         return ret;
@@ -1248,7 +1353,7 @@ int bts_get_ble_connected_devices(bt_device_t* device_list, int max_out)
 int bts_get_ble_whitelist_devices(bt_device_t* device_list, int max_out)
 {
     int ret = 0;
-    //get total number of paired devices
+    // get total number of paired devices
     if ((NULL == device_list) || (max_out == 0)) {
         ret = service_adapter_gap_ble_get_white_list_devices(NULL, 0);
         return ret;
@@ -1274,7 +1379,7 @@ int bts_get_ble_whitelist_devices(bt_device_t* device_list, int max_out)
 int bts_get_ble_resolvinglist_devices(bt_device_t* device_list, int max_out)
 {
     int ret = 0;
-    //get total number of paired devices
+    // get total number of paired devices
     if ((NULL == device_list) || (max_out == 0)) {
         ret = service_adapter_gap_ble_get_resolving_list_devices(NULL, 0);
         return ret;

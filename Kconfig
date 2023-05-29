@@ -242,4 +242,10 @@ config BLUETOOTH_DEVICE_INFO
 	bool "enable bluetooth device information stored in db"
 	default n
 
+config BLUETOOTH_TGAP_CONN_INTERVAL_MAX
+	int "Bluetooth stack default MAX BLE connection intervel"
+	default 50
+	help
+		Bluetooth default MAX BLE connection intervel
+
 endif # BLUETOOTH
