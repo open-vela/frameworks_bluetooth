@@ -69,12 +69,6 @@ typedef struct _ag_state_machine {
 
 #define AG_TIMEOUT 10000
 #define AG_STM_DEBUG 1
-#define BT_ADDR_LOG(fmt, _addr, ...)                \
-    do {                                            \
-        char _addr_str[BT_ADDR_STR_LENGTH] = { 0 }; \
-        ba2str(_addr, _addr_str);                   \
-        BT_LOGD(fmt, _addr_str, ##__VA_ARGS__);     \
-    } while (0);
 
 #if AG_STM_DEBUG
 static void ag_stm_trans_debug(state_machine_t* sm, bt_address bd_addr, const char* action);
@@ -351,14 +345,79 @@ void ag_service_notify_ag_at_command(ag_server_service_t* service,
     AG_SERVICE_CBACK(service->callbacks, at_command_cb, bd_addr, at_command);
 }
 
+static void default_connection_event_process(state_machine_t* sm, ag_server_data_t* data)
+{
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    profile_connection_state_t state = data->valueint1;
+
+    switch (state) {
+    case PROFILE_STATE_DISCONNECTED:
+        ag_service_notify_connection_state_changed(agsm->service,
+            agsm->bd_addr,
+            PROFILE_STATE_DISCONNECTED);
+        hsm_transition_to(sm, &disconnected_state);
+        break;
+    case PROFILE_STATE_CONNECTING:
+        ag_service_notify_connection_state_changed(agsm->service,
+            agsm->bd_addr,
+            PROFILE_STATE_CONNECTING);
+        hsm_transition_to(sm, &connecting_state);
+        break;
+    case PROFILE_STATE_CONNECTED:
+        ag_service_notify_connection_state_changed(agsm->service,
+            agsm->bd_addr,
+            PROFILE_STATE_CONNECTED);
+        hsm_transition_to(sm, &connected_state);
+        break;
+    case PROFILE_STATE_DISCONNECTING:
+        ag_service_notify_connection_state_changed(agsm->service,
+            agsm->bd_addr,
+            PROFILE_STATE_DISCONNECTING);
+        hsm_transition_to(sm, &disconnecting_state);
+        break;
+    default:
+        BT_LOGE("default_connection_event_process Unexpected state:%" PRIu32 "", state);
+        break;
+    }
+}
+
+static void default_audio_connection_event_process(state_machine_t* sm, ag_server_data_t* data)
+{
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    hfp_audio_state_t state = data->valueint1;
+
+    switch (state) {
+    case HFP_AUDIO_STATE_DISCONNECTED:
+        ag_service_notify_audio_state_changed(agsm->service,
+            agsm->bd_addr,
+            HFP_AUDIO_STATE_DISCONNECTED);
+        hsm_transition_to(sm, &connected_state);
+        break;
+    case HFP_AUDIO_STATE_CONNECTED:
+        if (agsm->codec == SERVICE_HFP_CODEC_MSBC) {
+            BT_LOGD("audio_on_enter SERVICE_HFP_CODEC_MSBC");
+            ag_service_notify_audio_state_changed(agsm->service, agsm->bd_addr, HFP_AUDIO_STATE_CONNECTED_MSBC);
+        } else {
+            BT_LOGD("audio_on_enter SERVICE_HFP_CODEC_CVSD");
+            ag_service_notify_audio_state_changed(agsm->service, agsm->bd_addr, HFP_AUDIO_STATE_CONNECTED);
+        }
+        hsm_transition_to(sm, &audio_on_state);
+        break;
+    case HFP_AUDIO_STATE_CONNECTING:
+    case HFP_AUDIO_STATE_CONNECTED_MSBC:
+    case HFP_AUDIO_STATE_DISCONNECTING:
+        BT_LOGW("Ignored audio connection state:%d", state);
+        break;
+    default:
+        BT_LOGE("default_audio_connection_event_process Unexpected state:%" PRIu32 "", state);
+        break;
+    }
+}
+
 static void disconnected_enter(state_machine_t* sm)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, agsm->bd_addr);
-    if (hsm_get_previous_state(sm))
-        ag_service_notify_connection_state_changed(agsm->service,
-            agsm->bd_addr,
-            PROFILE_STATE_DISCONNECTED);
 }
 
 static void disconnected_exit(state_machine_t* sm)
@@ -376,33 +435,17 @@ static bool disconnected_process_event(state_machine_t* sm,
 
     switch (event) {
     case CONNECT:
-        BT_ADDR_LOG("stm hfp ag service_adapter_hfp_ag_connect %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_connect %s", addr_str(agsm->bd_addr));
         if (service_adapter_hfp_ag_connect(agsm->bd_addr) != BT_STATUS_SUCCESS) {
-            BT_ADDR_LOG("Connect failed for %s", agsm->bd_addr);
-            ag_service_notify_connection_state_changed(agsm->service,
-                agsm->bd_addr,
-                PROFILE_STATE_DISCONNECTED);
+            BT_LOGD("Connect failed for %s", addr_str(agsm->bd_addr));
             return false;
         }
-        hsm_transition_to(sm, &connecting_state);
         break;
-    case STACK_EVENT_CONNECTION_STATE_CHANGED: {
-        profile_connection_state_t state = data->valueint1;
-        switch (state) {
-        case PROFILE_STATE_CONNECTED:
-            hsm_transition_to(sm, &connected_state);
-            break;
-        case PROFILE_STATE_CONNECTING:
-            hsm_transition_to(sm, &connecting_state);
-            break;
-        case PROFILE_STATE_DISCONNECTED:
-        case PROFILE_STATE_DISCONNECTING:
-            BT_LOGW("Ignored connection state:%d", state);
-            break;
-        }
-    } break;
+    case STACK_EVENT_CONNECTION_STATE_CHANGED:
+        default_connection_event_process(sm, data);
+        break;
     case CIND_RESP: {
-        BT_ADDR_LOG("stm hfp ag CIND_RESP %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag CIND_RESP %s", addr_str(agsm->bd_addr));
         SERVICE_HFP_AG_CIND_RESPONSE_S resp = {};
         resp.device_status.service = data->valueint1;
         resp.device_status.signal = data->valueint2;
@@ -412,7 +455,7 @@ static bool disconnected_process_event(state_machine_t* sm,
         resp.call = data->valueint5;
         resp.call_setup = data->valueint6;
         resp.call_held = data->valueint7;
-        BT_ADDR_LOG("service_adapter_hfp_ag_cind_response %s", agsm->bd_addr);
+        BT_LOGD("service_adapter_hfp_ag_cind_response %s", addr_str(agsm->bd_addr));
         service_adapter_hfp_ag_cind_response(agsm->bd_addr, resp);
         break;
     }
@@ -443,10 +486,6 @@ static void connecting_enter(state_machine_t* sm)
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, agsm->bd_addr);
     agsm->connect_timer = start_timer(AG_TIMEOUT, 0, ag_connect_timeout_callback, agsm);
-
-    ag_service_notify_connection_state_changed(agsm->service,
-        agsm->bd_addr,
-        PROFILE_STATE_CONNECTING);
 }
 
 static void connecting_exit(state_machine_t* sm)
@@ -465,28 +504,17 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
 
     switch (event) {
     case DISCONNECT:
-        /* handle ? */
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_disconnect %s", addr_str(agsm->bd_addr));
+        if (service_adapter_hfp_ag_disconnect(agsm->bd_addr) != BT_STATUS_SUCCESS)
+            BT_LOGD("Disconnect failed for :%s", addr_str(agsm->bd_addr));
         break;
     case CONNECT_TIMEOUT:
-        BT_ADDR_LOG("stm hfp ag CONNECT_TIMEOUT service_adapter_hfp_ag_disconnect %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag CONNECT_TIMEOUT service_adapter_hfp_ag_disconnect %s", addr_str(agsm->bd_addr));
         service_adapter_hfp_ag_disconnect(agsm->bd_addr);
-        hsm_transition_to(sm, &disconnected_state);
         break;
-    case STACK_EVENT_CONNECTION_STATE_CHANGED: {
-        profile_connection_state_t state = data->valueint1;
-        switch (state) {
-        case PROFILE_STATE_CONNECTED:
-            hsm_transition_to(sm, &connected_state);
-            break;
-        case PROFILE_STATE_DISCONNECTED:
-            hsm_transition_to(sm, &disconnected_state);
-            break;
-        case PROFILE_STATE_CONNECTING:
-        case PROFILE_STATE_DISCONNECTING:
-            BT_LOGW("Ignored connection state:%d", state);
-            break;
-        }
-    } break;
+    case STACK_EVENT_CONNECTION_STATE_CHANGED:
+        default_connection_event_process(sm, data);
+        break;
     case STACK_EVENT_CODEC_CHANGED:
         agsm->codec = data->valueint1;
         break;
@@ -495,7 +523,7 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         break;
     }
     case CIND_RESP: {
-        BT_ADDR_LOG("stm hfp ag CIND_RESP %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag CIND_RESP %s", addr_str(agsm->bd_addr));
         SERVICE_HFP_AG_CIND_RESPONSE_S resp = {};
         resp.device_status.service = data->valueint1;
         resp.device_status.signal = data->valueint2;
@@ -505,7 +533,7 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         resp.call = data->valueint5;
         resp.call_setup = data->valueint6;
         resp.call_held = data->valueint7;
-        BT_ADDR_LOG("service_adapter_hfp_ag_cind_response %s", agsm->bd_addr);
+        BT_LOGD("service_adapter_hfp_ag_cind_response %s", addr_str(agsm->bd_addr));
         service_adapter_hfp_ag_cind_response(agsm->bd_addr, resp);
         break;
     }
@@ -521,9 +549,6 @@ static void disconnecting_enter(state_machine_t* sm)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, agsm->bd_addr);
-    ag_service_notify_connection_state_changed(agsm->service,
-        agsm->bd_addr,
-        PROFILE_STATE_DISCONNECTING);
 }
 
 static void disconnecting_exit(state_machine_t* sm)
@@ -538,17 +563,9 @@ static bool disconnecting_process_event(state_machine_t* sm, uint32_t event, voi
     ag_server_data_t* data = (ag_server_data_t*)p_data;
     AG_DBG_EVENT(sm, agsm->bd_addr, event);
     switch (event) {
-    case STACK_EVENT_CONNECTION_STATE_CHANGED: {
-        profile_connection_state_t state = data->valueint1;
-        switch (state) {
-        case PROFILE_STATE_DISCONNECTED:
-            hsm_transition_to(sm, &disconnected_state);
-            break;
-        default:
-            BT_LOGW("Ignored connection state:%d", state);
-            break;
-        }
-    } break;
+    case STACK_EVENT_CONNECTION_STATE_CHANGED:
+        default_connection_event_process(sm, data);
+        break;
     default:
         BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
@@ -565,19 +582,19 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
     switch (event) {
     case VOICE_RECOGNITION_START:
         if (!agsm->recognition_active) {
-            BT_ADDR_LOG("stm hfp ag service_adapter_hfp_ag_enable_voice_recognition %s", agsm->bd_addr);
+            BT_LOGD("stm hfp ag service_adapter_hfp_ag_enable_voice_recognition %s", addr_str(agsm->bd_addr));
             service_adapter_hfp_ag_enable_voice_recognition(agsm->bd_addr);
         }
         break;
     case VOICE_RECOGNITION_STOP:
         if (agsm->recognition_active) {
-            BT_ADDR_LOG("stm hfp ag service_adapter_hfp_ag_disable_voice_recognition %s", agsm->bd_addr);
+            BT_LOGD("stm hfp ag service_adapter_hfp_ag_disable_voice_recognition %s", addr_str(agsm->bd_addr));
             service_adapter_hfp_ag_disable_voice_recognition(agsm->bd_addr);
         }
         break;
     case PHONE_STATE_CHANGE: {
         SERVICE_HFP_AG_PHONE_NUMBER_S* phone_number = NULL;
-        BT_ADDR_LOG("stm hfp ag service_adapter_hfp_ag_phone_state_change %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_phone_state_change %s", addr_str(agsm->bd_addr));
         if (data->string1) {
             uint8_t num_len = strlen(data->string1);
             phone_number = malloc(sizeof(SERVICE_HFP_AG_PHONE_NUMBER_S) + num_len);
@@ -596,7 +613,7 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
     }
     case DEVICE_STATUS_CHANGED: {
         SERVICE_HFP_AG_DEVICE_STATUS_S status = {};
-        BT_ADDR_LOG("stm hfp ag service_adapter_hfp_ag_notify_device_status_changed %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_notify_device_status_changed %s", addr_str(agsm->bd_addr));
         status.service = data->valueint1;
         status.signal = data->valueint3;
         status.roam = data->valueint2;
@@ -605,28 +622,28 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
     }
     case SET_INBAND_RING_ENABLE:
-        BT_ADDR_LOG("stm hfp ag service_adapter_hfp_ag_set_inband_ring_enable %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_set_inband_ring_enable %s", addr_str(agsm->bd_addr));
         service_adapter_hfp_ag_set_inband_ring_enable(agsm->bd_addr, true);
         break;
     case SEND_AT_COMMAND: {
         SERVICE_HFP_AG_AT_CMD_S cmd = {};
-        BT_ADDR_LOG("stm hfp ag service_adapter_hfp_ag_send_at_cmd %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_send_at_cmd %s", addr_str(agsm->bd_addr));
         cmd.at_string = (char*)data->string1;
         cmd.at_length = strlen(data->string1);
         service_adapter_hfp_ag_send_at_cmd(agsm->bd_addr, &cmd);
         break;
     }
     case DIALING_RESULT:
-        BT_ADDR_LOG("stm hfp ag service_adapter_hfp_ag_dial_response %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_dial_response %s", addr_str(agsm->bd_addr));
         service_adapter_hfp_ag_dial_response(agsm->bd_addr, data->valueint1);
         break;
     case STACK_EVENT_VR_STATE_CHANGED:
-        BT_ADDR_LOG("stm hfp ag STACK_EVENT_VR_STATE_CHANGED %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag STACK_EVENT_VR_STATE_CHANGED %s", addr_str(agsm->bd_addr));
         agsm->recognition_active = data->valueint1;
         ag_service_notify_vr_state_changed(agsm->service, agsm->bd_addr, data->valueint1);
         break;
     case STACK_EVENT_CODEC_CHANGED:
-        BT_ADDR_LOG("stm hfp ag STACK_EVENT_CODEC_CHANGED %s codec", agsm->bd_addr);
+        BT_LOGD("stm hfp ag STACK_EVENT_CODEC_CHANGED %s codec", addr_str(agsm->bd_addr));
         agsm->codec = data->valueint1;
         break;
     case STACK_EVENT_VOLUME_CHANGED:
@@ -678,7 +695,7 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         /* system call interface */
         break;
     case CIND_RESP: {
-        BT_ADDR_LOG("stm hfp ag CLCC_RESP %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag CLCC_RESP %s", addr_str(agsm->bd_addr));
         SERVICE_HFP_AG_CIND_RESPONSE_S resp = {};
         resp.device_status.service = data->valueint1;
         resp.device_status.signal = data->valueint2;
@@ -688,13 +705,13 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         resp.call = data->valueint5;
         resp.call_setup = data->valueint6;
         resp.call_held = data->valueint7;
-        BT_ADDR_LOG("service_adapter_hfp_ag_cind_response %s", agsm->bd_addr);
+        BT_LOGD("service_adapter_hfp_ag_cind_response %s", addr_str(agsm->bd_addr));
         service_adapter_hfp_ag_cind_response(agsm->bd_addr, resp);
         break;
     }
     case CLCC_RESP: {
         /* system call interface */
-        BT_ADDR_LOG("stm hfp ag CLCC_RESP %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag CLCC_RESP %s", addr_str(agsm->bd_addr));
         uint8_t num_len = 0;
         SERVICE_HFP_AG_CLCC_RESPONSE_S* resp = NULL;
 
@@ -725,7 +742,7 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case COPS_RESP: {
         char* operation_name = NULL;
         /* system call interface */
-        BT_ADDR_LOG("stm hfp ag COPS_RESP %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag COPS_RESP %s", addr_str(agsm->bd_addr));
         operation_name = data->string1;
         BT_LOGD("Operation name:%s", operation_name);
         service_adapter_hfp_ag_cops_response(agsm->bd_addr, (char*)operation_name,
@@ -740,35 +757,10 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
     return true;
 }
 
-static void default_connection_event_process(state_machine_t* sm, ag_server_data_t* data)
-{
-    profile_connection_state_t state = data->valueint1;
-
-    switch (state) {
-    case PROFILE_STATE_DISCONNECTED:
-        hsm_transition_to(sm, &disconnected_state);
-        break;
-    case PROFILE_STATE_DISCONNECTING:
-        hsm_transition_to(sm, &disconnecting_state);
-        break;
-    case PROFILE_STATE_CONNECTING:
-    case PROFILE_STATE_CONNECTED:
-        BT_LOGW("Ignored connection state:%d", state);
-        break;
-    }
-}
-
 static void connected_enter(state_machine_t* sm)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, agsm->bd_addr);
-    //uint8_t previous_state = hsm_get_state_value(hsm_get_previous_state(sm));
-    //if (previous_state < HFP_AG_STATE_CONNECTED)
-    ag_service_notify_connection_state_changed(agsm->service,
-        agsm->bd_addr,
-        PROFILE_STATE_CONNECTED);
-    //else
-    //ag_service_notify_audio_state_changed(agsm->service, &agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
 }
 
 static void connected_exit(state_machine_t* sm)
@@ -785,26 +777,22 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
 
     switch (event) {
     case DISCONNECT:
-        BT_ADDR_LOG("stm hfp ag service_adapter_hfp_ag_disconnect %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_disconnect %s", addr_str(agsm->bd_addr));
         if (service_adapter_hfp_ag_disconnect(agsm->bd_addr) != BT_STATUS_SUCCESS)
-            BT_ADDR_LOG("Disconnect failed for :%s", agsm->bd_addr);
-
-        hsm_transition_to(sm, &disconnecting_state);
+            BT_LOGD("Disconnect failed for :%s", addr_str(agsm->bd_addr));
         break;
     case CONNECT_AUDIO:
-        BT_ADDR_LOG("stm hfp ag service_adapter_hfp_ag_create_sco %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_create_sco %s", addr_str(agsm->bd_addr));
         if (service_adapter_hfp_ag_create_sco(agsm->bd_addr) != BT_STATUS_SUCCESS) {
-            BT_ADDR_LOG("create_sco failed for :%s", agsm->bd_addr);
-            ag_service_notify_audio_state_changed(agsm->service, agsm->bd_addr,
-                HFP_AUDIO_STATE_DISCONNECTED);
+            BT_LOGD("create_sco failed for :%s", addr_str(agsm->bd_addr));
             return false;
         }
         hsm_transition_to(sm, &audio_connecting_state);
         break;
     case STACK_EVENT_AUDIO_REQ:
-        BT_ADDR_LOG("stm hfp ag service_adapter_gap_accept_sco_link %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag service_adapter_gap_accept_sco_link %s", addr_str(agsm->bd_addr));
         if (service_adapter_gap_accept_sco_link(agsm->bd_addr) != BT_STATUS_SUCCESS) {
-            BT_ADDR_LOG("Reply audio request fail:%s", agsm->bd_addr);
+            BT_LOGD("Reply audio request fail:%s", addr_str(agsm->bd_addr));
             return false;
         }
         hsm_transition_to(sm, &audio_connecting_state);
@@ -812,20 +800,9 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     case STACK_EVENT_CONNECTION_STATE_CHANGED:
         default_connection_event_process(sm, data);
         break;
-    case STACK_EVENT_AUDIO_STATE_CHANGED: {
-        hfp_audio_state_t state = data->valueint1;
-
-        switch (state) {
-        case HFP_AUDIO_STATE_CONNECTED:
-            hsm_transition_to(sm, &audio_on_state);
-            break;
-        case HFP_AUDIO_STATE_DISCONNECTED:
-            break;
-        default:
-            BT_LOGW("Ignored audio connection state:%d", state);
-            break;
-        }
-    } break;
+    case STACK_EVENT_AUDIO_STATE_CHANGED:
+        default_audio_connection_event_process(sm, data);
+        break;
     default:
         default_process_event(sm, event, p_data);
         break;
@@ -837,7 +814,6 @@ static void audio_connecting_enter(state_machine_t* sm)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, agsm->bd_addr);
-    ag_service_notify_audio_state_changed(agsm->service, agsm->bd_addr, HFP_AUDIO_STATE_CONNECTING);
 }
 
 static void audio_connecting_exit(state_machine_t* sm)
@@ -854,9 +830,16 @@ static bool audio_connecting_process_event(state_machine_t* sm, uint32_t event, 
 
     switch (event) {
     case DISCONNECT:
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_disconnect %s", addr_str(agsm->bd_addr));
+        if (service_adapter_hfp_ag_disconnect(agsm->bd_addr) != BT_STATUS_SUCCESS)
+            BT_LOGD("Disconnect failed for :%s", addr_str(agsm->bd_addr));
+        break;
     case DISCONNECT_AUDIO:
-        /* TODO: handle */
-        BT_LOGD("defer DISCONNECT/DISCONNECT_AUDIO message");
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_disconnect_sco %s", addr_str(agsm->bd_addr));
+        if (service_adapter_hfp_ag_disconnect_sco(agsm->bd_addr) != BT_STATUS_SUCCESS) {
+            return false;
+        }
+        hsm_transition_to(sm, &audio_disconnecting_state);
         break;
     case STACK_EVENT_AUDIO_REQ:
         BT_LOGD("already in audio connecting state");
@@ -865,23 +848,11 @@ static bool audio_connecting_process_event(state_machine_t* sm, uint32_t event, 
         /* TODO: handle */
         break;
     case STACK_EVENT_CONNECTION_STATE_CHANGED:
-        default_connection_event_process(sm, p_data);
+        default_connection_event_process(sm, data);
         break;
-    case STACK_EVENT_AUDIO_STATE_CHANGED: {
-        hfp_audio_state_t state = data->valueint1;
-
-        switch (state) {
-        case HFP_AUDIO_STATE_CONNECTED:
-            hsm_transition_to(sm, &audio_on_state);
-            break;
-        case HFP_AUDIO_STATE_DISCONNECTED:
-            hsm_transition_to(sm, &connected_state);
-            break;
-        default:
-            BT_LOGW("Ignored audio connection state:%d", state);
-            break;
-        }
-    } break;
+    case STACK_EVENT_AUDIO_STATE_CHANGED:
+        default_audio_connection_event_process(sm, data);
+        break;
     default:
         default_process_event(sm, event, p_data);
         break;
@@ -897,13 +868,6 @@ static void audio_on_enter(state_machine_t* sm)
     /* TODO: set remote volume */
     /* TODO: set sample rate */
     /* TODO: set sco device avaliable */
-    if (agsm->codec == SERVICE_HFP_CODEC_MSBC) {
-        BT_LOGD("audio_on_enter SERVICE_HFP_CODEC_MSBC");
-        ag_service_notify_audio_state_changed(agsm->service, agsm->bd_addr, HFP_AUDIO_STATE_CONNECTED_MSBC);
-    } else {
-        BT_LOGD("audio_on_enter SERVICE_HFP_CODEC_CVSD");
-        ag_service_notify_audio_state_changed(agsm->service, agsm->bd_addr, HFP_AUDIO_STATE_CONNECTED);
-    }
 }
 
 static void audio_on_exit(state_machine_t* sm)
@@ -921,14 +885,13 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
 
     switch (event) {
     case DISCONNECT:
-        /* TODO: disconnect audio first */
-        BT_LOGD("defer DISCONNECT message");
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_disconnect %s", addr_str(agsm->bd_addr));
+        if (service_adapter_hfp_ag_disconnect(agsm->bd_addr) != BT_STATUS_SUCCESS)
+            BT_LOGD("Disconnect failed for :%s", addr_str(agsm->bd_addr));
         break;
     case DISCONNECT_AUDIO:
-        BT_ADDR_LOG("stm hfp ag service_adapter_hfp_ag_disconnect_sco %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_disconnect_sco %s", addr_str(agsm->bd_addr));
         if (service_adapter_hfp_ag_disconnect_sco(agsm->bd_addr) != BT_STATUS_SUCCESS) {
-            ag_service_notify_audio_state_changed(agsm->service, agsm->bd_addr, HFP_AUDIO_STATE_DISCONNECTED);
-            hsm_transition_to(sm, &connected_state);
             return false;
         }
         hsm_transition_to(sm, &audio_disconnecting_state);
@@ -938,7 +901,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         /* TODO: should support VOICE_RECOGNITION_STOP */
         break;
     case SET_VOLUME: {
-        BT_ADDR_LOG("stm hfp ag service_adapter_hfp_ag_set_volume %s", agsm->bd_addr);
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_set_volume %s", addr_str(agsm->bd_addr));
 
         uint8_t vol = data->valueint1 > 15 ? 15 : data->valueint1;
         /* android don't support set Mic volume */
@@ -946,21 +909,11 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         service_adapter_hfp_ag_set_volume(agsm->bd_addr, VOLUME_SPEAKER, vol);
     } break;
     case STACK_EVENT_CONNECTION_STATE_CHANGED:
-        default_connection_event_process(sm, p_data);
+        default_connection_event_process(sm, data);
         break;
-    case STACK_EVENT_AUDIO_STATE_CHANGED: {
-        hfp_audio_state_t state = data->valueint1;
-
-        switch (state) {
-        case HFP_AUDIO_STATE_DISCONNECTED:
-            hsm_transition_to(sm, &connected_state);
-            break;
-        case HFP_AUDIO_STATE_CONNECTED:
-        default:
-            BT_LOGW("Ignored audio connection state:%d", state);
-            break;
-        }
-    } break;
+    case STACK_EVENT_AUDIO_STATE_CHANGED:
+        default_audio_connection_event_process(sm, data);
+        break;
     default:
         default_process_event(sm, event, p_data);
         break;
@@ -972,7 +925,6 @@ static void audio_disconnecting_enter(state_machine_t* sm)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, agsm->bd_addr);
-    ag_service_notify_audio_state_changed(agsm->service, agsm->bd_addr, HFP_AUDIO_STATE_DISCONNECTING);
 }
 
 static void audio_disconnecting_exit(state_machine_t* sm)
@@ -989,24 +941,16 @@ static bool audio_disconnecting_process_event(state_machine_t* sm, uint32_t even
 
     switch (event) {
     case DISCONNECT:
-        /* TODO: handle */
+        BT_LOGD("stm hfp ag service_adapter_hfp_ag_disconnect %s", addr_str(agsm->bd_addr));
+        if (service_adapter_hfp_ag_disconnect(agsm->bd_addr) != BT_STATUS_SUCCESS)
+            BT_LOGD("Disconnect failed for :%s", addr_str(agsm->bd_addr));
         break;
     case STACK_EVENT_CONNECTION_STATE_CHANGED:
-        default_connection_event_process(sm, p_data);
+        default_connection_event_process(sm, data);
         break;
-    case STACK_EVENT_AUDIO_STATE_CHANGED: {
-        hfp_audio_state_t state = data->valueint1;
-
-        switch (state) {
-        case HFP_AUDIO_STATE_DISCONNECTED:
-            hsm_transition_to(sm, &connected_state);
-            break;
-        case HFP_AUDIO_STATE_CONNECTED:
-        default:
-            BT_LOGW("Ignored audio connection state:%d", state);
-            break;
-        }
-    } break;
+    case STACK_EVENT_AUDIO_STATE_CHANGED:
+        default_audio_connection_event_process(sm, data);
+        break;
     default:
         default_process_event(sm, event, p_data);
         break;
