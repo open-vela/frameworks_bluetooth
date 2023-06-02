@@ -1069,6 +1069,8 @@ static void manager_state_changed_callback(btm_bt_state state)
         gap_test_interface->bt_set_local_device_class(g_gap_handle, CONFIG_BLUETOOTH_CLASS_OF_DEVICE);
         gap_test_interface->bt_set_scan_mode(g_gap_handle, SCAN_MODE_CONNECTABLE_DISCOVERABLE, true);
         gap_test_interface->bt_set_local_io_capability(g_gap_handle, SERVICE_BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
+        gap_test_interface->bt_set_inquiry_scan_parameters(g_gap_handle, PAGE_SCAN_MR1_TYPE, PAGE_SCAN_MR1_INTERVAL, PAGE_SCAN_MR1_WINDOW);
+        gap_test_interface->bt_set_page_scan_parameters(g_gap_handle, PAGE_SCAN_FR1_TYPE, PAGE_SCAN_FR1_INTERVAL, PAGE_SCAN_FR1_WINDOW);
     }
 }
 
@@ -1294,11 +1296,6 @@ static int enable_cmd(void* handle, int argc, char** argv)
 {
     manager->enable(handle);
     bttool_command_init();
-
-    if (gap_test_interface) {
-        gap_test_interface->bt_set_inquiry_scan_parameters(g_gap_handle, PAGE_SCAN_MR1_TYPE, PAGE_SCAN_MR1_INTERVAL, PAGE_SCAN_MR1_WINDOW);
-        gap_test_interface->bt_set_page_scan_parameters(g_gap_handle, PAGE_SCAN_FR1_TYPE, PAGE_SCAN_FR1_INTERVAL, PAGE_SCAN_FR1_WINDOW);
-    }
 
     return 0;
 }
