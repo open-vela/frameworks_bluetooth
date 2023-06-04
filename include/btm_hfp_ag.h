@@ -284,6 +284,20 @@ typedef struct
 typedef struct
 {
     size_t size;
+    /**
+     * @brief Start ag server
+     * @param[in] handle    The ag application handle.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
+    bt_result_code (*server_start)(void);
+
+    /**
+     * @brief Stop ag server
+     * @param[in] handle    The ag application handle.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
+    bt_result_code (*server_stop)(void);
+
     bool (*is_connected)(void* handle, bt_address addr);
     bool (*is_audio_connected)(void* handle, bt_address addr);
     ag_server_state_t (*get_connection_state)(void* handle, bt_address addr);

@@ -46,6 +46,22 @@ static ag_server_interface_t* get_service(void)
     return (ag_server_interface_t*)get_bluetooth_service_interface()->get_profile_interface(BT_PROFILE_HANDSFREE_AG);
 }
 
+static bt_result_code ag_start(void)
+{
+    ag_server_interface_t* service = get_service();
+    if (!service)
+        return BT_RESULT_FAILED;
+    return service->server_start();
+}
+
+static bt_result_code ag_stop(void)
+{
+    ag_server_interface_t* service = get_service();
+    if (!service)
+        return BT_RESULT_FAILED;
+    return service->server_stop();
+}
+
 static bool ag_is_connected(void* handle, bt_address addr)
 {
     ag_server_interface_t* service = get_service();
@@ -257,6 +273,8 @@ static void set_callbacks(void* handle, ag_server_callbacks_t* callbacks)
 
 static const ag_server_interface_t agInterface = {
     sizeof(ag_server_interface_t),
+    ag_start,
+    ag_stop,
     ag_is_connected,
     ag_is_audio_connected,
     ag_get_connection_state,

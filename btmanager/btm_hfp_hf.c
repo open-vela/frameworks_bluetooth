@@ -46,6 +46,22 @@ static hf_client_interface_t* get_service(void)
     return (hf_client_interface_t*)get_bluetooth_service_interface()->get_profile_interface(BT_PROFILE_HANDSFREE_HF);
 }
 
+static bt_result_code hf_start(void)
+{
+    hf_client_interface_t* service = get_service();
+    if (!service)
+        return BT_RESULT_FAILED;
+    return service->server_start();
+}
+
+static bt_result_code hf_stop(void)
+{
+    hf_client_interface_t* service = get_service();
+    if (!service)
+        return BT_RESULT_FAILED;
+    return service->server_stop();
+}
+
 static bt_result_code hf_connect(void* handle, bt_address addr)
 {
     hf_client_interface_t* service = get_service();
@@ -231,6 +247,8 @@ static void set_callbacks(void* handle, hf_client_callbacks_t* callbacks)
 
 static const hf_client_interface_t hfInterface = {
     sizeof(hf_client_interface_t),
+    hf_start,
+    hf_stop,
     hf_connect,
     hf_disconnect,
     hf_connect_audio,
