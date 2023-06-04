@@ -160,10 +160,10 @@ static bt_result_code bts_if_enable(void* handle)
     a2dp_source_service_start();
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_AG
-    ag_server_service_start();
+    ag_service_start();
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
-    hf_client_service_start();
+    hf_service_start();
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
     spp_service_start();
@@ -189,11 +189,11 @@ static bt_result_code bts_if_disable(void* handle)
     a2dp_source_service_stop();
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_AG
-    ag_server_service_stop();
+    ag_service_stop();
 #endif
 
 #ifdef CONFIG_BLUETOOTH_HFP_HF
-    hf_client_service_stop();
+    hf_service_stop();
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
     spp_service_stop();

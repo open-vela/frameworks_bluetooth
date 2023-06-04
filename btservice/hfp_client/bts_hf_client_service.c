@@ -230,8 +230,29 @@ static const hf_client_service_callbacks_t hf_client_svr_callbacks = {
     hf_svr_ring_indication_callback,
 };
 
+bt_result_code hf_service_start(void)
+{
+    bt_result_code ret;
+
+    ret = bts_hf_client_init(&hf_client_svr_callbacks);
+    if (ret != BT_RESULT_SUCCESS)
+        return ret;
+
+    BT_LOGD("hf_client Service Started");
+    return ret;
+}
+
+bt_result_code hf_service_stop(void)
+{
+    bts_hf_client_cleanup();
+    BT_LOGD("hf_client Service Stoped");
+    return 0;
+}
+
 static const hf_client_interface_t hfInterface = {
     sizeof(hf_client_interface_t),
+    hf_service_start,
+    hf_service_stop,
     hf_connect,
     hf_disconnect,
     hf_connect_audio,
@@ -253,24 +274,6 @@ static const hf_client_interface_t hfInterface = {
     hf_send_dtmf,
     set_callbacks,
 };
-
-bt_result_code hf_client_service_start(void)
-{
-    bt_result_code ret;
-
-    ret = bts_hf_client_init(&hf_client_svr_callbacks);
-    if (ret != BT_RESULT_SUCCESS)
-        return ret;
-
-    BT_LOGD("HF Client Service Started");
-    return ret;
-}
-
-void hf_client_service_stop(void)
-{
-    bts_hf_client_cleanup();
-    BT_LOGD("HF Client Service Stoped");
-}
 
 const hf_client_interface_t* get_hf_client_service_interface(void)
 {

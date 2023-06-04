@@ -331,8 +331,29 @@ static const ag_server_service_callbacks_t ag_server_svr_callbacks = {
     ag_svr_cops_callback
 };
 
+bt_result_code ag_service_start()
+{
+    bt_result_code ret;
+
+    ret = bts_ag_server_init(&ag_server_svr_callbacks);
+    if (ret != BT_RESULT_SUCCESS)
+        return ret;
+
+    BT_LOGD("ag server Service Started");
+    return ret;
+}
+
+bt_result_code ag_service_stop()
+{
+    bts_ag_server_cleanup();
+    BT_LOGD("ag server Service Stoped");
+    return 0;
+}
+
 static const ag_server_interface_t agInterface = {
     sizeof(ag_server_interface_t),
+    ag_service_start,
+    ag_service_stop,
     ag_is_connected,
     ag_is_audio_connected,
     ag_get_connection_state,
@@ -352,24 +373,6 @@ static const ag_server_interface_t agInterface = {
     ag_cops_response,
     set_callbacks,
 };
-
-bt_result_code ag_server_service_start(void)
-{
-    bt_result_code ret;
-
-    ret = bts_ag_server_init(&ag_server_svr_callbacks);
-    if (ret != BT_RESULT_SUCCESS)
-        return ret;
-
-    BT_LOGD("ag server Service Started");
-    return ret;
-}
-
-void ag_server_service_stop(void)
-{
-    bts_ag_server_cleanup();
-    BT_LOGD("ag server Service Stoped");
-}
 
 const ag_server_interface_t* get_ag_server_service_interface(void)
 {

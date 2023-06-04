@@ -156,6 +156,19 @@ typedef struct
 typedef struct
 {
     size_t size;
+    /**
+     * @brief Start hf service
+     * @param[in] handle    The hf application handle.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
+    bt_result_code (*server_start)(void);
+
+    /**
+     * @brief Stop hf service
+     * @param[in] handle    The hf application handle.
+     * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
+     */
+    bt_result_code (*server_stop)(void);
 
     /**
      * @brief Connect to the audio gateway.
