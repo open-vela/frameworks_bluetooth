@@ -73,8 +73,8 @@ extern bt_result_code bts_hf_client_update_battery_level(bt_address bd_addr, uin
 extern bt_result_code bts_hf_client_send_dtmf(bt_address bd_addr, uint8_t dtmf);
 extern void bts_hf_client_cleanup(void);
 
-extern bt_result_code hf_client_service_start(void);
-extern void hf_client_service_stop(void);
+extern bt_result_code hf_service_start(void);
+extern bt_result_code hf_service_stop(void);
 extern const hf_client_interface_t* get_hf_client_service_interface(void);
 
 #endif

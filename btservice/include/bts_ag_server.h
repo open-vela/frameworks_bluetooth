@@ -101,7 +101,7 @@ extern bt_result_code bts_ag_server_cops_response(bt_address bd_addr,
     char* operator_name, uint16_t length);
 
 extern void ag_server_cleanup(void);
-extern bt_result_code ag_server_service_start(void);
-extern void ag_server_service_stop(void);
+extern bt_result_code ag_service_start(void);
+extern bt_result_code ag_service_stop(void);
 extern const ag_server_interface_t* get_ag_server_service_interface(void);
 #endif
