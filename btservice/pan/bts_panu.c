@@ -602,9 +602,9 @@ void bts_pan_cleanup(void)
     g_pan.enable = false;
     pthread_mutex_lock(&g_pan.pan_lock);
     pan_close_all_conn();
+    bts_unregister_profile_process(BT_PROFILE_PAN_ID);
     list_delete(&g_pan.conn_list);
     pthread_mutex_unlock(&g_pan.pan_lock);
     pthread_mutex_destroy(&g_pan.pan_lock);
-    bts_unregister_profile_process(BT_PROFILE_PAN_ID);
     service_adapter_pan_cleanup();
 }
