@@ -274,7 +274,7 @@ static int pan_get_tun_packet_size(const char* devname)
     }
 
     close(sockfd);
-    return ifr.ifr_mtu - sizeof(eth_hdr_t);
+    return ifr.ifr_mtu;
 }
 
 static pan_conn_t* pan_new_conn_open(bt_address addr, uint8_t local, uint8_t remote)
