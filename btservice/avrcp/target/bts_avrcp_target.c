@@ -148,7 +148,11 @@ static void handle_avrcp_passthrough_cmd(bt_address addr,
 {
     int i;
 
-    if (op == PASSTHROUGH_CMD_ID_STOP && !bts_a2dp_source_stream_started()) {
+    if (op == PASSTHROUGH_CMD_ID_STOP
+#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+        && !bts_a2dp_source_stream_started()
+#endif
+       ) {
         BT_LOGW("%s Stream suspended, Ignore STOP cmd", __func__);
         return;
     }
