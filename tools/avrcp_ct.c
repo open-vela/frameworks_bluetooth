@@ -50,19 +50,21 @@ static int volume_change_cmd(void* handle, int argc, char* argv[]);
 static const avrc_ctrl_interface_t* avrcp_ctrl_interface = NULL;
 static uint8_t g_abs_volume = 0x3F;
 static bt_command_t g_avrcp_ct_tables[] = {
-    { "pass", pass_through_cmd, "\"CT send passthrough command      param: <address> <key>(play/pause/stop/next/prev)\"" },
-    { "playstatus", get_playback_status_cmd, "\"CT get playback status param: <address> \"" },
-    { "volume", volume_change_cmd, "\"CT notify volume changed param: <address> <volume> (range 1~127) \"" },
+    BT_CMD("pass", pass_through_cmd, "\"CT send passthrough command      param: <address> <key>(play/pause/stop/next/prev)\""),
+    BT_CMD("playstatus", get_playback_status_cmd, "\"CT get playback status param: <address> \""),
+    BT_CMD("volume", volume_change_cmd, "\"CT notify volume changed param: <address> <volume> (range 1~127) \""),
 };
 
 static void usage(void)
 {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     printf("Usage:\n");
     printf("\taddress: peer device address like 00:01:02:03:04:05\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_avrcp_ct_tables); i++) {
         printf("\t%-8s\t%s\n", g_avrcp_ct_tables[i].cmd, g_avrcp_ct_tables[i].help);
     }
+#endif
 }
 
 static void avrcp_connection_state_cb(bt_address addr, avrcp_connection_state_t state)

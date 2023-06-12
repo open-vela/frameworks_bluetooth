@@ -761,34 +761,38 @@ static int gattc_stop_scan(void* handle, int argc, char** argv)
 }
 
 static bt_command_t g_gattc_tables[] = {
-    { "connect", gattc_connect, "\"gatt client connect  :<address>\"" },
-    { "disconnect", gattc_disconnect, "\"gatt disconnec :<address>t\"" },
-    { "read_rssi", gattc_read_rssi, "\"gatt client read rssi  :<address>\"" },
-    { "read_phy", gattc_read_phy, "\"gatt client read phy  :<address>\"" },
-    { "update_mtu", gattc_update_mtu, "\"gatt client update mtu  :<address> <mtu>\"" },
-    { "update_phy", gattc_update_phy, "\"gatt client update phy(0: 1M, 1: 2M, 2: LE_Coded)  :<address> <tx phy> <rx phy>\"" },
-    { "update_conn", gattc_update_connection_parameter, "\"gatt client update connect  parameter  :<address> <min_interval>  <max_interval> <latency> <timeout> <min_connection_event_length> <max_connection_event_length>  \"" },
-    { "discover_services", gattc_discover_services, "\"gatt client discover all services <address> \"" },
-    { "read_request", gattc_read_request, "\"gatt client read request:<address> <charateristic id>\"" },
-    { "write_request", gattc_write_request, "\"gatt client write request :<address> <charateristic id> <payload>\"" },
-    { "enable_cccd", gattc_enable_cccd, "\"gatt client enable cccd :<address> <charateristic id>\"" },
-    { "disable_cccd", gattc_disable_cccd, "\"gatt client disable cccd:<address> <charateristic id>\"" },
-    { "throughtout_write", gattc_throughtout_write, "\"gatt client throughtout write  :<address> <times> <write charateristic id>\"" },
-    { "start_scan", gattc_start_scan, "\"gatt start le scan  {phy(0: 1M, 1: 2M, 2: LE_Coded)}: <enable filter 0:disable 1:enable ><filter_addr> <filter_mask>  <scan_interval> <scan_windows> <scan_phy> <scan_type> \"" },
-    { "stop_scan", gattc_stop_scan, "\"gatt stop le scan  \"" },
+    BT_CMD("connect", gattc_connect, "\"gatt client connect  :<address>\""),
+    BT_CMD("disconnect", gattc_disconnect, "\"gatt disconnec :<address>t\""),
+    BT_CMD("read_rssi", gattc_read_rssi, "\"gatt client read rssi  :<address>\""),
+    BT_CMD("read_phy", gattc_read_phy, "\"gatt client read phy  :<address>\""),
+    BT_CMD("update_mtu", gattc_update_mtu, "\"gatt client update mtu  :<address> <mtu>\""),
+    BT_CMD("update_phy", gattc_update_phy, "\"gatt client update phy(0: 1M, 1: 2M, 2: LE_Coded)  :<address> <tx phy> <rx phy>\""),
+    BT_CMD("update_conn", gattc_update_connection_parameter, "\"gatt client update connect  parameter  :<address> <min_interval>  <max_interval> <latency> <timeout> <min_connection_event_length> <max_connection_event_length>  \""),
+    BT_CMD("discover_services", gattc_discover_services, "\"gatt client discover all services <address> \""),
+    BT_CMD("read_request", gattc_read_request, "\"gatt client read request:<address> <charateristic id>\""),
+    BT_CMD("write_request", gattc_write_request, "\"gatt client write request :<address> <charateristic id> <payload>\""),
+    BT_CMD("enable_cccd", gattc_enable_cccd, "\"gatt client enable cccd :<address> <charateristic id>\""),
+    BT_CMD("disable_cccd", gattc_disable_cccd, "\"gatt client disable cccd:<address> <charateristic id>\""),
+    BT_CMD("throughtout_write", gattc_throughtout_write, "\"gatt client throughtout write  :<address> <times> <write charateristic id>\""),
+    BT_CMD("start_scan", gattc_start_scan, "\"gatt start le scan  {phy(0: 1M, 1: 2M, 2: LE_Coded)}: <enable filter 0:disable 1:enable ><filter_addr> <filter_mask>  <scan_interval> <scan_windows> <scan_phy> <scan_type> \""),
+    BT_CMD("stop_scan", gattc_stop_scan, "\"gatt stop le scan  \""),
 };
 
 static void usage(void)
 {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     printf("Usage:\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_gattc_tables); i++) {
         printf("\t%-8s\t%s\n", g_gattc_tables[i].cmd, g_gattc_tables[i].help);
     }
+#endif
 }
 
 static struct option gattc_options[] = {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     { "help", 0, 0, 'h' },
+#endif
     { 0, 0, 0, 0 }
 };
 

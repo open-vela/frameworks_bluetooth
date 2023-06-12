@@ -38,7 +38,9 @@
 
 static struct option log_options[] = {
     { "level",   1, NULL, 'l' },
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     { "help",    0, NULL, 'h' },
+#endif
     { 0, 0, 0, 0 }
 };
 
@@ -49,9 +51,9 @@ static int unmask_cmd(void* handle, int argc, char* argv[]);
 static int level_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_log_tables[] = {
-    { "enable",  enable_cmd,    "\"Enable Log <LogID> (SNOOP: 0, STACK: 1, FRAMEWORK: 2)\"" },
-    { "disable", disable_cmd,   "\"Disable Log <LogID>\"" },
-    { "mask",    mask_cmd,      "\"Enable Stack Profile & Protocol Log <bit>\"\n"
+    BT_CMD("enable",  enable_cmd,    "\"Enable Log <LogID> (SNOOP: 0, STACK: 1, FRAMEWORK: 2)\"" ),
+    BT_CMD("disable", disable_cmd,   "\"Disable Log <LogID>\"" ),
+    BT_CMD("mask",    mask_cmd,      "\"Enable Stack Profile & Protocol Log <bit>\"\n"
                                 "\t\t\tExample enable HCI and L2CAP: \"bttool> log mask 1 2\" \n"
                                 "\t\t\tProfile && Protocol Enum:\n"
                                 "\t\t\t  HCI:   1\n"
@@ -65,13 +67,14 @@ static bt_command_t g_log_tables[] = {
                                 "\t\t\t  AVRCP: 16\n"
                                 "\t\t\t  SMP:   18\n"
                                 "\t\t\t  HFP:   25\n"
-                                "\t\t\t  RAW PDU:29\n"},
-    { "unmask",  unmask_cmd,     "\"Disable Stack Profile & Protocol Log <bit>\"" },
-    { "level",   level_cmd, "\"Set framework log level, (OFF:0,ERR:3,WARN:4,INFO:6,DBG:7)\"" },
+                                "\t\t\t  RAW PDU:29\n"),
+    BT_CMD("unmask",  unmask_cmd,     "\"Disable Stack Profile & Protocol Log <bit>\"" ),
+    BT_CMD("level",   level_cmd, "\"Set framework log level, (OFF:0,ERR:3,WARN:4,INFO:6,DBG:7)\"" ),
 };
 
 static void usage(void)
 {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     printf("Usage:\n");
     printf("Options:\n"
            "\t--level\\-l  \t\"Set framework log level, (OFF:0,ERR:3,WARN:4,INFO:6,DBG:7)\"\n"
@@ -80,6 +83,7 @@ static void usage(void)
     for (int i = 0; i < ARRAY_SIZE(g_log_tables); i++) {
         printf("\t%-8s\t%s\n", g_log_tables[i].cmd, g_log_tables[i].help);
     }
+#endif
 }
 
 static int enable_cmd(void* handle, int argc, char* argv[])

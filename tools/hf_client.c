@@ -66,40 +66,44 @@ static int send_at_cmd_cmd(void* handle, int argc, char* argv[]);
 
 static const hf_client_interface_t* hf_interface = NULL;
 static bt_command_t g_hfp_tables[] = {
-    { "connect", connect_cmd, "\"establish hfp SLC connection   :<address>\"" },
-    { "disconnect", disconnect_cmd, "\"disconnect hfp SLC connection  :<address>\"" },
-    { "connectaudio", connect_audio_cmd, "\"establish hfp SCO connection   :<address>\"" },
-    { "disconnectaudio", disconnect_audio_cmd, "\"disconnect hfp SCO connection  :<address>\"" },
-    { "startvr", start_voice_recognition_cmd, "\"start voice recognition        :<address>\"" },
-    { "stopvr", stop_voice_recognition_cmd, "\"stop voice recognition         :<address>\"" },
-    { "volc", volume_control_cmd, "\"volume control, type(0:spk, 1:mic), vol(1~15)\t:<address> <type> <volume>\"" },
-    { "dial", dial_cmd, "\"dial phone number              :<address> <number>\"" },
-    { "dialm", dial_memory_cmd, "\"Place a call using memory dialing  :<address> <memory>\"" },
-    { "redial", redial_cmd, "\"redial the last number         :<address>\"" },
-    { "accept", accept_call_cmd, "\"accept an incoming voice call  :<address>\"" },
-    { "reject", reject_call_cmd, "\"reject an incoming voice call  :<address>\"" },
-    { "hold", hold_call_cmd, "\"hold an Three-way calling      :<address>\"" },
-    { "term", terminate_call_cmd, "\"terminate a call               :<address>\"" },
-    { "control_call", control_call_cmd, "\"control a call               :<address> <chld> <index>\"" },
-    { "query", query_current_calls_cmd, "\"query current calls            :<address>\"" },
-    { "bat", updata_battery_level_cmd, "\"update battery level range in <0~100>           :<address> <battery>\"" },
-    { "dtmf", send_dtmf_cmd, "\"dtmf range in <0123456789*#ABCD>           :<address> <dtmf>\"" },
-    { "at", send_at_cmd_cmd, "\"send customize AT command to peer  :<address> <at>\"" },
+    BT_CMD("connect", connect_cmd, "\"establish hfp SLC connection   :<address>\"" ),
+    BT_CMD("disconnect", disconnect_cmd, "\"disconnect hfp SLC connection  :<address>\"" ),
+    BT_CMD("connectaudio", connect_audio_cmd, "\"establish hfp SCO connection   :<address>\"" ),
+    BT_CMD("disconnectaudio", disconnect_audio_cmd, "\"disconnect hfp SCO connection  :<address>\"" ),
+    BT_CMD("startvr", start_voice_recognition_cmd, "\"start voice recognition        :<address>\"" ),
+    BT_CMD("stopvr", stop_voice_recognition_cmd, "\"stop voice recognition         :<address>\"" ),
+    BT_CMD("volc", volume_control_cmd, "\"volume control, type(0:spk, 1:mic), vol(1~15)\t:<address> <type> <volume>\"" ),
+    BT_CMD("dial", dial_cmd, "\"dial phone number              :<address> <number>\"" ),
+    BT_CMD("dialm", dial_memory_cmd, "\"Place a call using memory dialing  :<address> <memory>\"" ),
+    BT_CMD("redial", redial_cmd, "\"redial the last number         :<address>\"" ),
+    BT_CMD("accept", accept_call_cmd, "\"accept an incoming voice call  :<address>\"" ),
+    BT_CMD("reject", reject_call_cmd, "\"reject an incoming voice call  :<address>\"" ),
+    BT_CMD("hold", hold_call_cmd, "\"hold an Three-way calling      :<address>\"" ),
+    BT_CMD("term", terminate_call_cmd, "\"terminate a call               :<address>\"" ),
+    BT_CMD("control_call", control_call_cmd, "\"control a call               :<address> <chld> <index>\"" ),
+    BT_CMD("query", query_current_calls_cmd, "\"query current calls            :<address>\"" ),
+    BT_CMD("bat", updata_battery_level_cmd, "\"update battery level range in <0~100>           :<address> <battery>\"" ),
+    BT_CMD("dtmf", send_dtmf_cmd, "\"dtmf range in <0123456789*#ABCD>           :<address> <dtmf>\"" ),
+    BT_CMD("at", send_at_cmd_cmd, "\"send customize AT command to peer  :<address> <at>\"" ),
 };
 
 static struct option hfp_options[] = {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     { "help", 0, 0, 'h' },
+#endif
     { 0, 0, 0, 0 }
 };
 
 static void usage(void)
 {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     printf("Usage:\n");
     printf("\taddress: peer device address like 00:01:02:03:04:05\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_hfp_tables); i++) {
         printf("\t%-8s\t%s\n", g_hfp_tables[i].cmd, g_hfp_tables[i].help);
     }
+#endif
 }
 
 static int connect_cmd(void* handle, int argc, char* argv[])
