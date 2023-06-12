@@ -30,6 +30,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
+
+#ifndef __FRAMEWORKS_BLUETOOTH_TOOLS_BT_TOOLS_H
+#define __FRAMEWORKS_BLUETOOTH_TOOLS_BT_TOOLS_H
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
@@ -40,10 +44,20 @@
 
 #include "btm_manager.h"
 #include "utils/utils.h"
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
+#ifdef CONFIG_NSH_DISABLE_HELP
+#  define BT_CMD(cmd, func, help) \
+          { cmd, func, }
+#else
+#  define BT_CMD(cmd, func, help) \
+          { cmd, func, help }
+#endif
 
 /****************************************************************************
  * Public Types
@@ -51,7 +65,9 @@
 typedef struct {
     char* cmd;
     int (*func)(void* handle, int argc, char** argv);
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     char* help;
+#endif
 } bt_command_t;
 
 extern int spp_command_init(void);
@@ -74,3 +90,4 @@ extern int hid_device_command(void* handle, int argc, char* argv[]);
 extern int log_command(void* handle, int argc, char* argv[]);
 extern void gatt_server_connection_event(bt_address remote_address, bt_connection_state state);
 extern void gatt_client_connection_event(bt_address remote_address, bt_connection_state state);
+#endif

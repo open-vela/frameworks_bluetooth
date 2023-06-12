@@ -488,25 +488,29 @@ static int hidd_unplug(void* handle, int argc, char** argv)
 }
 
 static bt_command_t g_hidd_tables[] = {
-    { "register", hidd_register_device, "\"hidd register(KEYBOARD = 1,DEVICE_MOUSE = 2,KBMS_COMBO = 3) <type>\"" },
-    { "unregister", hidd_unregister_device, "\"hidd unregister\"" },
-    { "connect", hidd_connect, "\"hidd connect  :<address>\"" },
-    { "disconnect", hidd_disconnect, "\"hidd disconnect :<address>t\"" },
-    { "send_report", hidd_send_report, "\"hidd send report test: <address> <report_id> <data>\"" },
-    { "unplug", hidd_unplug, "\"hidd unplug  :<address>\"" },
+    BT_CMD("register", hidd_register_device, "\"hidd register(KEYBOARD = 1,DEVICE_MOUSE = 2,KBMS_COMBO = 3) <type>\""),
+    BT_CMD("unregister", hidd_unregister_device, "\"hidd unregister\""),
+    BT_CMD("connect", hidd_connect, "\"hidd connect  :<address>\""),
+    BT_CMD("disconnect", hidd_disconnect, "\"hidd disconnect :<address>t\""),
+    BT_CMD("send_report", hidd_send_report, "\"hidd send report test: <address> <report_id> <data>\""),
+    BT_CMD("unplug", hidd_unplug, "\"hidd unplug  :<address>\""),
 };
 
 static void usage(void)
 {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     printf("Usage:\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_hidd_tables); i++) {
         printf("\t%-8s\t%s\n", g_hidd_tables[i].cmd, g_hidd_tables[i].help);
     }
+#endif
 }
 
 static struct option gattc_options[] = {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     { "help", 0, 0, 'h' },
+#endif
     { 0, 0, 0, 0 }
 };
 
