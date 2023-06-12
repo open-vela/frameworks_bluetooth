@@ -536,7 +536,7 @@ static void connection_state_changed_callback(BD_ADDR remote_addr,
 }
 
 static void sco_connection_state_changed_callback(BD_ADDR remote_addr,
-    SERVICE_HFP_SCO_STATE state)
+    SERVICE_HFP_SCO_STATE state, uint16_t sco_connection_handle)
 {
     ag_server_audio_state_changed(remote_addr, bluelet_hf_audio_state(state));
 }
