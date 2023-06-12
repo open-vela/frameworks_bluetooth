@@ -157,6 +157,14 @@ config BLUETOOTH_TOOLS
     bool "Enable bluetooth profile test tools"
     default y
 
+if BLUETOOTH_TOOLS
+
+config BLUETOOTH_DISABLE_HELP
+	bool "Disable bttools help menu to save the code size"
+	default n
+
+endif
+
 config BT_FRAMEWORK_LOG_LEVEL
     int "Bt framework log level"
     default 7

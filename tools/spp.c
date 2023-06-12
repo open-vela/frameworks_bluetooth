@@ -85,18 +85,19 @@ static sem_t spp_send_sem;
 static transmit_context_t trans_ctx = {0};
 static void* g_spp_handle = NULL;
 static bt_command_t g_spp_tables[] = {
-    { "start", start_server_cmd,    "\"start spp server        param: <port> <uuid>\", note:server port must be odd number, range in (1~28) 1,2,3,...,28"},
-    { "stop", stop_server_cmd,      "\"stop  spp server        param: <port>\"" },
-    { "connect", connect_cmd,       "\"connect spp device      param: <address> <port> <uuid>\"" },
-    { "disconnect", disconnect_cmd, "\"disconnect peer device  param: <address> <port>\"" },
-    { "write", write_cmd,           "\"write data to peer      param: <port> <data>\"" },
-    { "send", send_cmd,             "\"transmit bulk data      param: <port> <length> <iterations>\"" },
-    { "speed", speed_cmd,           "\"performance test        param: <port> <iteration>\" note:iteration * 990 shoule less than free memory" },
-    { "dump", dump_cmd,             "\"dump spp current state\"" },
+    BT_CMD("start", start_server_cmd,    "\"start spp server        param: <port> <uuid>\", note:server port must be odd number, range in (1~28) 1,2,3,...,28"),
+    BT_CMD("stop", stop_server_cmd,      "\"stop  spp server        param: <port>\""),
+    BT_CMD("connect", connect_cmd,       "\"connect spp device      param: <address> <port> <uuid>\""),
+    BT_CMD("disconnect", disconnect_cmd, "\"disconnect peer device  param: <address> <port>\""),
+    BT_CMD("write", write_cmd,           "\"write data to peer      param: <port> <data>\""),
+    BT_CMD("send", send_cmd,             "\"transmit bulk data      param: <port> <length> <iterations>\""),
+    BT_CMD("speed", speed_cmd,           "\"performance test        param: <port> <iteration>\" note:iteration * 990 shoule less than free memory"),
+    BT_CMD("dump", dump_cmd,             "\"dump spp current state\""),
 };
 
 static void usage(void)
 {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     printf("Usage:\n");
     printf("\tport: serial port (1~32)\n"
            "\tuuid: uuid default 0x1101\n"
@@ -105,6 +106,7 @@ static void usage(void)
     for (int i = 0; i < ARRAY_SIZE(g_spp_tables); i++) {
         printf("\t%-8s\t%s\n", g_spp_tables[i].cmd, g_spp_tables[i].help);
     }
+#endif
 }
 
 static spp_device_t* find_pty_by_port(int port)

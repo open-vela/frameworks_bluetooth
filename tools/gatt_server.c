@@ -620,30 +620,34 @@ static int gatts_do_throughput(void* handle, int argc, char** argv)
 }
 
 static bt_command_t g_gatts_tables[] = {
-    { "open", gatts_open, "\"open gatt server\"" },
-    { "close", gatts_close, "\"close gatt server\"" },
-    { "connect", gatts_connect, "\"gatt server connect   :<address>\"" },
-    { "disconnect", gatts_disconnect, "\"gatt server disconnect  :<address>\"" },
-    { "add", gatts_add, "\"add gatt service\"" },
-    { "remove", gatts_remove, "\"remove gatt service\"" },
-    { "read_phy", gatts_read_phy, "\"read phy:<address>\"" },
-    { "update_phy", gatts_update_phy, "\"update phy(0: 1M, 1: 2M, 2: LE_Coded) :<address> <tx> <rx>\"" },
-    { "send_notify", gatts_send_notify, "\"send notify:<address> <payload> \"" },
-    { "send_indicate", gatts_send_indicate, "\"send indicate:<address> <payload>\"" },
-    { "throughput", gatts_do_throughput, "\"throughtout:<address> <times>\"" },
+    BT_CMD("open", gatts_open, "\"open gatt server\""),
+    BT_CMD("close", gatts_close, "\"close gatt server\""),
+    BT_CMD("connect", gatts_connect, "\"gatt server connect   :<address>\""),
+    BT_CMD("disconnect", gatts_disconnect, "\"gatt server disconnect  :<address>\""),
+    BT_CMD("add", gatts_add, "\"add gatt service\""),
+    BT_CMD("remove", gatts_remove, "\"remove gatt service\""),
+    BT_CMD("read_phy", gatts_read_phy, "\"read phy:<address>\""),
+    BT_CMD("update_phy", gatts_update_phy, "\"update phy(0: 1M, 1: 2M, 2: LE_Coded) :<address> <tx> <rx>\""),
+    BT_CMD("send_notify", gatts_send_notify, "\"send notify:<address> <payload> \""),
+    BT_CMD("send_indicate", gatts_send_indicate, "\"send indicate:<address> <payload>\""),
+    BT_CMD("throughput", gatts_do_throughput, "\"throughtout:<address> <times>\""),
 };
 
 static void usage(void)
 {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     printf("Usage:\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_gatts_tables); i++) {
         printf("\t%-8s\t%s\n", g_gatts_tables[i].cmd, g_gatts_tables[i].help);
     }
+#endif
 }
 
 static struct option gatts_options[] = {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     { "help", 0, 0, 'h' },
+#endif
     { 0, 0, 0, 0 }
 };
 

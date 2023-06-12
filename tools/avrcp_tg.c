@@ -48,18 +48,20 @@ static int volume_cmd(void* handle, int argc, char* argv[]);
 
 static const avrcp_tg_interface_t* avrcp_tg_interface = NULL;
 static bt_command_t g_avrcp_tg_tables[] = {
-    { "playback", playback_cmd, "\"TG notify playback status      param: <address> <status>\"" },
-    { "volume", volume_cmd, "\"TG set absolute volume param: <address> <volume>\"" },
+    BT_CMD("playback", playback_cmd, "\"TG notify playback status      param: <address> <status>\""),
+    BT_CMD("volume", volume_cmd, "\"TG set absolute volume param: <address> <volume>\""),
 };
 
 static void usage(void)
 {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     printf("Usage:\n");
     printf("\taddress: peer device address like 00:01:02:03:04:05\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_avrcp_tg_tables); i++) {
         printf("\t%-8s\t%s\n", g_avrcp_tg_tables[i].cmd, g_avrcp_tg_tables[i].help);
     }
+#endif
 }
 
 void avrcp_connection_state_cb(bt_address addr, avrcp_connection_state_t state)

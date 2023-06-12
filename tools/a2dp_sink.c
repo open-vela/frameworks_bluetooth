@@ -49,19 +49,21 @@ static int dump_cmd(void* handle, int argc, char* argv[]);
 
 static const a2dp_sink_interface_t* a2dp_sink_interface = NULL;
 static bt_command_t g_a2dp_sink_tables[] = {
-    { "connect", connect_cmd, "\"connect a2dp source device      param: <address> \"" },
-    { "disconnect", disconnect_cmd, "\"disconnect peer a2dp source device  param: <address>\"" },
-    { "dump", dump_cmd, "\"dump a2dp device state\"" },
+    BT_CMD("connect", connect_cmd, "\"connect a2dp source device      param: <address> \""),
+    BT_CMD("disconnect", disconnect_cmd, "\"disconnect peer a2dp source device  param: <address>\""),
+    BT_CMD("dump", dump_cmd, "\"dump a2dp device state\""),
 };
 
 static void usage(void)
 {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     printf("Usage:\n");
     printf("\taddress: peer device address like 00:01:02:03:04:05\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_a2dp_sink_tables); i++) {
         printf("\t%-8s\t%s\n", g_a2dp_sink_tables[i].cmd, g_a2dp_sink_tables[i].help);
     }
+#endif
 }
 
 static void connection_state_callback(bt_address addr, a2dp_connection_state_t state)

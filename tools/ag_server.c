@@ -62,39 +62,43 @@ static int cops_response_cmd(void* handle, int argc, char* argv[]);
 
 static const ag_server_interface_t* ag_interface = NULL;
 static bt_command_t g_hfp_ag_tables[] = {
-    { "is_connected_cmd", is_connected_cmd, "\"get connected state :<address>\"" },
-    { "is_audio_connected_cmd", is_audio_connected_cmd, "\"get audio connected state :<address>\"" },
-    { "get_connection_state_cmd", get_connection_state_cmd, "\"get connection state :<address>\"" },
+    BT_CMD("is_connected_cmd", is_connected_cmd, "\"get connected state :<address>\""),
+    BT_CMD("is_audio_connected_cmd", is_audio_connected_cmd, "\"get audio connected state :<address>\""),
+    BT_CMD("get_connection_state_cmd", get_connection_state_cmd, "\"get connection state :<address>\""),
 
-    { "connect", connect_cmd, "\"establish hfp SLC connection :<address>\"" },
-    { "disconnect", disconnect_cmd, "\"disconnect hfp SLC connection :<address>\"" },
-    { "connect_audio", connect_audio_cmd, "\"establish hfp SCO connection :<address>\"" },
-    { "disconnect_audio", disconnect_audio_cmd, "\"disconnect hfp sco connection :<address>\"" },
-    { "start_voice_recognition", start_voice_recognition_cmd, "\"start voice recognition :<address>\"" },
-    { "stop_voice_recognition", stop_voice_recognition_cmd, "\"stop voice recognition :<address>\"" },
-    { "phone_state_change", phone_state_change_cmd, "\"phone state change :<address> <num_active> <num_held> <call_state> <type> <number name>\"" },
-    { "device_status_changed", device_status_changed_cmd, "\"device status changed :<address> <network> <roam> <signal> <battery>\"" },
-    { "set_inband_ring_enable_cmd", set_inband_ring_enable_cmd, "\"set inband ring enable :<address>\"" },
-    { "send_at_command_cmd", send_at_command_cmd, "\"send at command cmd :<address> <AT> \"" },
-    { "dial_result", dial_result_cmd, "\"dial result :<address> <dial>\"" },
-    { "cind_response", cind_response_cmd, "\"cind response :<address> <service> <signal> <roam> <battery> <call> <call_setup> <call_held>\"" },
-    { "clcc_response", clcc_response_cmd, "\"clcc response :<address> <index> <dir> <status> <mode> <mpty> <number>\"" },
-    { "cops_response", cops_response_cmd, "\"cops response :<address> <operator_name> <length>\"" }
+    BT_CMD("connect", connect_cmd, "\"establish hfp SLC connection :<address>\""),
+    BT_CMD("disconnect", disconnect_cmd, "\"disconnect hfp SLC connection :<address>\""),
+    BT_CMD("connect_audio", connect_audio_cmd, "\"establish hfp SCO connection :<address>\""),
+    BT_CMD("disconnect_audio", disconnect_audio_cmd, "\"disconnect hfp sco connection :<address>\""),
+    BT_CMD("start_voice_recognition", start_voice_recognition_cmd, "\"start voice recognition :<address>\""),
+    BT_CMD("stop_voice_recognition", stop_voice_recognition_cmd, "\"stop voice recognition :<address>\""),
+    BT_CMD("phone_state_change", phone_state_change_cmd, "\"phone state change :<address> <num_active> <num_held> <call_state> <type> <number name>\""),
+    BT_CMD("device_status_changed", device_status_changed_cmd, "\"device status changed :<address> <network> <roam> <signal> <battery>\""),
+    BT_CMD("set_inband_ring_enable_cmd", set_inband_ring_enable_cmd, "\"set inband ring enable :<address>\""),
+    BT_CMD("send_at_command_cmd", send_at_command_cmd, "\"send at command cmd :<address> <AT> \""),
+    BT_CMD("dial_result", dial_result_cmd, "\"dial result :<address> <dial>\""),
+    BT_CMD("cind_response", cind_response_cmd, "\"cind response :<address> <service> <signal> <roam> <battery> <call> <call_setup> <call_held>\""),
+    BT_CMD("clcc_response", clcc_response_cmd, "\"clcc response :<address> <index> <dir> <status> <mode> <mpty> <number>\""),
+    BT_CMD("cops_response", cops_response_cmd, "\"cops response :<address> <operator_name> <length>\""),
 };
 
 static struct option hfp_options[] = {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     { "help", 0, 0, 'h' },
+#endif
     { 0, 0, 0, 0 }
 };
 
 static void usage(void)
 {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     printf("Usage:\n");
     printf("\taddress: peer device address like 00:01:02:03:04:05\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_hfp_ag_tables); i++) {
         printf("\t%-8s\t%s\n", g_hfp_ag_tables[i].cmd, g_hfp_ag_tables[i].help);
     }
+#endif
 }
 
 static int is_connected_cmd(void* handle, int argc, char* argv[])

@@ -103,7 +103,9 @@ static uint16_t auto_accept = 0;
 static bool btinfo_reset = true;
 
 static struct option main_options[] = {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     { "help", 0, 0, 'h' },
+#endif
     { "version", 0, 0, 'v' },
     { "daemon", 0, 0, 'd' },
     { "set", 0, 0, 's' },
@@ -111,49 +113,49 @@ static struct option main_options[] = {
 };
 
 static bt_command_t g_cmd_tables[] = {
-    { "enable", enable_cmd, "enable stack" },
-    { "disable", disable_cmd, "disable stack" },
-    { "get_state", get_state_cmd, "get stack state" },
-    { "get_ble_state", get_ble_state_cmd, "get stack ble state" },
+    BT_CMD("enable", enable_cmd, "enable stack"),
+    BT_CMD("disable", disable_cmd, "disable stack"),
+    BT_CMD("get_state", get_state_cmd, "get stack state"),
+    BT_CMD("get_ble_state", get_ble_state_cmd, "get stack ble state"),
 
 #ifdef CONFIG_BLUETOOTH_SPP
-    { "spp", spp_command, "<SPP> Serial Port Profile" },
+    BT_CMD("spp", spp_command, "<SPP> Serial Port Profile"),
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
-    { "pan", pan_command, "<PAN> Personal Area Networking Profile" },
+    BT_CMD("pan", pan_command, "<PAN> Personal Area Networking Profile"),
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
-    { "hfp", hfp_client_command, "<HFP> HandFree Profile --Client" },
+    BT_CMD("hfp", hfp_client_command, "<HFP> HandFree Profile --Client"),
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_AG
-    { "hfp_ag", hfp_server_command, "<HFP> HandFree Profile --Server" },
+    BT_CMD("hfp_ag", hfp_server_command, "<HFP> HandFree Profile --Server"),
 #endif
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
-    { "a2dpsrc", a2dp_source_command, "<A2DP> Advanced Audio Distribution Profile --Source" },
+    BT_CMD("a2dpsrc", a2dp_source_command, "<A2DP> Advanced Audio Distribution Profile --Source"),
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-    { "a2dpsnk", a2dp_sink_command, "<A2DP> Advanced Audio Distribution Profile --Sink" },
+    BT_CMD("a2dpsnk", a2dp_sink_command, "<A2DP> Advanced Audio Distribution Profile --Sink"),
 #endif
 #ifdef CONFIG_BLUETOOTH_AVRCP_TG
-    { "avrctg", avrcp_tg_command, "<AVRCP> AVRCP target" },
+    BT_CMD("avrctg", avrcp_tg_command, "<AVRCP> AVRCP target"),
 #endif
 #ifdef CONFIG_BLUETOOTH_AVRCP_CT
-    { "avrcct", avrcp_ct_command, "<AVRCP> AVRCP controller" },
+    BT_CMD("avrcct", avrcp_ct_command, "<AVRCP> AVRCP controller"),
 #endif
-    { "gap", gap_cmd, "<GAP> General profile" },
+    BT_CMD("gap", gap_cmd, "<GAP> General profile"),
 #ifdef CONFIG_BLUETOOTH_GATT_SERVER
-    { "gatts", gatt_server_command, "<GATT> gatt server and le advertise" },
+    BT_CMD("gatts", gatt_server_command, "<GATT> gatt server and le advertise"),
 #endif
 #ifdef CONFIG_BLUETOOTH_GATT_CLIENT
-    { "gattc", gatt_client_command, "<GATT> gatt server and le scan" },
+    BT_CMD("gattc", gatt_client_command, "<GATT> gatt server and le scan"),
 #endif
 #if defined(CONFIG_BLUETOOTH_HIDDEV)
-    { "hidd", hid_device_command, "hid device profile" },
+    BT_CMD("hidd", hid_device_command, "hid device profile"),
 #endif
-    { "log", log_command, "log control" },
-    { "help", usage_cmd, "Usage for bttools" },
-    //{ "quit", quit_cmd, "Quit" },
+    BT_CMD("log", log_command, "log control"),
+    BT_CMD("help", usage_cmd, "Usage for bttools"),
+    //BT_CMD("quit", quit_cmd, "Quit"),
 };
 
 static int le_start_advertising2(void* handle, int argc, char** argv)
@@ -312,51 +314,53 @@ static int le_stop_advertising(void* handle, int argc, char** argv)
 }
 
 static bt_command_t g_gap_tables[] = {
-    { "scan_mode", set_scan_mode, "\"set scan mode                                    param: <mode>  <bondable> \"" },
-    { "inquiryparas", set_inquiry_scan_parameters, "\"set inquiry parameters                 param: <type>  <scan_interval>  <scan_window> \"" },
-    { "pageparas", set_page_scan_parameters, "\"set page parameters                 param: <type>  <scan_interval>  <scan_window> \"" },
-    { "discovery", start_discovery, "\"start bluetooth discovery             param: <timer(n*1.28s)> \"" },
-    { "stopdiscovery", stop_discovery, "\"stop bluetooth discovery \"" },
-    { "getaddr", get_local_address, "\"get local address      \"" },
-    { "setIO", set_local_io_capability, "\"set local capaliblity                        param: <iocapability> \"" },
-    { "getname", get_local_name, "\"get local name  \"" },
-    { "setname", set_local_name, "\"change local name \"" },
-    { "remotename", get_remote_name, "\"get remote name                            param: <addr> \"" },
-    { "replypair", reply_pair_request, "\"replay pair request                         param: <addr> <accept>\"" },
-    { "createbond", create_bond, "\"create bond device                         param: <addr> \"" },
-    { "cancelbond", cancel_bond, "\"cancel create bond                          param: <addr> \"" },
-    { "removebond", remove_bond, "\"remove bond device                       param: <addr> \"" },
-    { "getbonded", get_bonded_devices, "\"get bonded device  \"" },
-    { "getconnected", get_connected_devices, "\"get connected device   \"" },
-    { "servicediscovery", start_service_discovery, "\"start service discovery                   param: <addr> <uuid>\"" },
-    { "stopservicediscovery", stop_service_discovery, "\"stop service discovery                  param: <addr> \"" },
-    { "getremoteservice", get_remote_services, "\"get remote service                           param: <addr> \"" },
-    { "setclass", set_local_device_class, "\"set local class                                    param: <class> \"" },
-    { "getclass", get_local_device_class, "\"get local class \"" },
-    { "setblepubaddr", ble_set_public_address, "\"set ble  publica ddress     param: <addr> \"" },
-    { "setbleaddr", ble_set_address, "\"set ble address                                  param: <addr> \"" },
-    { "autoaccept", set_auto_accept_pair, "\"auto accept pair                               param: <accept:0 auto accpet, 1 not auto accept> \"" },
-    { "addwhitelist", add_whitelist_device, "\"add whitle list device                    param: <addr> \"" },
-    { "removewhitelist", remove_whitelist_device, "\"remove whitle list device            param: <addr> \"" },
-    { "addresolvinglist", add_resolving_device, "\"add resovling list device               param: <addr> \"" },
-    { "removesolvinglist", remove_resolving_device, "\"remove resovling list device      param: <addr> \"" },
-    { "sspreply", ssp_reply, "\"reply remote relpyrequest      param: <addr> <keycode> \"" },
-    { "getblebonded", get_ble_bonded_devices, "\"get ble bonded device  \"" },
-    { "getbleconnected", get_ble_connected_devices, "\"get ble connected device  \"" },
-    { "getwhitelist", get_ble_whitelist_devices, "\"get ble whitelist device  \"" },
-    { "getresolvinglist", get_ble_resolvinglist_devices, "\"get ble resolvinglist device  \"" },
-    { "btinforeset", bt_reset_btinfo, "\"bluetooth device info reset                              param: <0 use last device info, 1 use default device info> \"" },
-    { "bleenccon", ble_create_encrypted_connect, "\"ble create encrypted connect      param: <addr> \"" },
-    { "start_adv", le_start_advertising, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration> <filter_type> <adv_id (0:legacy, 1~K: extend)>\"" },
-    { "start_adv2", le_start_advertising2, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration> <filter_type> <adv_id (0:legacy, 1~K: extend)>\"" },
-    { "stop_adv", le_stop_advertising, "\"stop le adv <adv_id>\"" },
-    { "setafh", set_afh_channel_classification, "\"bt set afh channel  : <freq_channal (0~13)> <band_width(20/22/40Mbit)\"" },
-    { "le_l2caplisten", le_listen_l2cap_channel, "\"open le channel <psm>\"" },
-    { "le_l2capsend", le_send_packet, "\"send le channel packet <addr> <cid> <payload>\"" },
+    BT_CMD("scan_mode", set_scan_mode, "\"set scan mode                                    param: <mode>  <bondable> \""),
+    BT_CMD("inquiryparas", set_inquiry_scan_parameters, "\"set inquiry parameters                 param: <type>  <scan_interval>  <scan_window> \""),
+    BT_CMD("pageparas", set_page_scan_parameters, "\"set page parameters                 param: <type>  <scan_interval>  <scan_window> \""),
+    BT_CMD("discovery", start_discovery, "\"start bluetooth discovery             param: <timer(n*1.28s)> \""),
+    BT_CMD("stopdiscovery", stop_discovery, "\"stop bluetooth discovery \""),
+    BT_CMD("getaddr", get_local_address, "\"get local address      \""),
+    BT_CMD("setIO", set_local_io_capability, "\"set local capaliblity                        param: <iocapability> \""),
+    BT_CMD("getname", get_local_name, "\"get local name  \""),
+    BT_CMD("setname", set_local_name, "\"change local name \""),
+    BT_CMD("remotename", get_remote_name, "\"get remote name                            param: <addr> \""),
+    BT_CMD("replypair", reply_pair_request, "\"replay pair request                         param: <addr> <accept>\""),
+    BT_CMD("createbond", create_bond, "\"create bond device                         param: <addr> \""),
+    BT_CMD("cancelbond", cancel_bond, "\"cancel create bond                          param: <addr> \""),
+    BT_CMD("removebond", remove_bond, "\"remove bond device                       param: <addr> \""),
+    BT_CMD("getbonded", get_bonded_devices, "\"get bonded device  \""),
+    BT_CMD("getconnected", get_connected_devices, "\"get connected device   \""),
+    BT_CMD("servicediscovery", start_service_discovery, "\"start service discovery                   param: <addr> <uuid>\""),
+    BT_CMD("stopservicediscovery", stop_service_discovery, "\"stop service discovery                  param: <addr> \""),
+    BT_CMD("getremoteservice", get_remote_services, "\"get remote service                           param: <addr> \""),
+    BT_CMD("setclass", set_local_device_class, "\"set local class                                    param: <class> \""),
+    BT_CMD("getclass", get_local_device_class, "\"get local class \""),
+    BT_CMD("setblepubaddr", ble_set_public_address, "\"set ble  publica ddress     param: <addr> \""),
+    BT_CMD("setbleaddr", ble_set_address, "\"set ble address                                  param: <addr> \""),
+    BT_CMD("autoaccept", set_auto_accept_pair, "\"auto accept pair                               param: <accept:0 auto accpet, 1 not auto accept> \""),
+    BT_CMD("addwhitelist", add_whitelist_device, "\"add whitle list device                    param: <addr> \""),
+    BT_CMD("removewhitelist", remove_whitelist_device, "\"remove whitle list device            param: <addr> \""),
+    BT_CMD("addresolvinglist", add_resolving_device, "\"add resovling list device               param: <addr> \""),
+    BT_CMD("removesolvinglist", remove_resolving_device, "\"remove resovling list device      param: <addr> \""),
+    BT_CMD("sspreply", ssp_reply, "\"reply remote relpyrequest      param: <addr> <keycode> \""),
+    BT_CMD("getblebonded", get_ble_bonded_devices, "\"get ble bonded device  \""),
+    BT_CMD("getbleconnected", get_ble_connected_devices, "\"get ble connected device  \""),
+    BT_CMD("getwhitelist", get_ble_whitelist_devices, "\"get ble whitelist device  \""),
+    BT_CMD("getresolvinglist", get_ble_resolvinglist_devices, "\"get ble resolvinglist device  \""),
+    BT_CMD("btinforeset", bt_reset_btinfo, "\"bluetooth device info reset                              param: <0 use last device info, 1 use default device info> \""),
+    BT_CMD("bleenccon", ble_create_encrypted_connect, "\"ble create encrypted connect      param: <addr> \""),
+    BT_CMD("start_adv", le_start_advertising, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration> <filter_type> <adv_id (0:legacy, 1~K: extend)>\""),
+    BT_CMD("start_adv2", le_start_advertising2, "\"start le adv: <type (0:ADV_IND, 1:DIRECT_IND, 2:SCAN_IND, 3:NONCONN_IND, 4:SCAN_RSP)> <interval> <duration> <filter_type> <adv_id (0:legacy, 1~K: extend)>\""),
+    BT_CMD("stop_adv", le_stop_advertising, "\"stop le adv <adv_id>\""),
+    BT_CMD("setafh", set_afh_channel_classification, "\"bt set afh channel  : <freq_channal (0~13)> <band_width(20/22/40Mbit)\""),
+    BT_CMD("le_l2caplisten", le_listen_l2cap_channel, "\"open le channel <psm>\""),
+    BT_CMD("le_l2capsend", le_send_packet, "\"send le channel packet <addr> <cid> <payload>\""),
 };
 
 static struct option gap_options[] = {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     { "help", 0, 0, 'h' },
+#endif
     { 0, 0, 0, 0 }
 };
 
@@ -982,12 +986,14 @@ static int ble_create_encrypted_connect(void* handle, int argc, char** argv)
 
 static void gap_usage(void)
 {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     printf("Usage:\n");
     printf("\taddress: peer device address like 00:01:02:03:04:05\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_gap_tables); i++) {
         printf("\t%-8s\t%s\n", g_gap_tables[i].cmd, g_gap_tables[i].help);
     }
+#endif
 }
 
 int gap_cmd(void* handle, int argc, char* argv[])
@@ -1339,6 +1345,7 @@ static int quit_cmd(void* handle, int argc, char** argv)
 
 static void usage(void)
 {
+#ifndef CONFIG_BLUETOOTH_DISABLE_HELP
     printf("Usage:\n"
            "\tbttool [options] <command> [command parameters]\n");
     printf("Options:\n"
@@ -1350,6 +1357,7 @@ static void usage(void)
     printf("\n"
            "For more information on the usage of each command use:\n"
            "\tbttool <command> --help\n");
+#endif
 }
 
 static void show_version(void)
