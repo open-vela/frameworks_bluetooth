@@ -587,6 +587,15 @@ static bt_result_code bts_if_enable_ctkd_bonding(void* gap_handle, bool brkey_to
     return ret;
 }
 
+static bt_result_code bts_if_set_auto_sniff(void* gap_handle, bool enable, uint8_t idle_time)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    if (!gap_is_handle_valid(gap_handle))
+        return ret;
+    ret = bts_set_auto_sniff(enable, idle_time);
+    return ret;
+}
+
 #ifdef HCI_VSC_COMMAND
 /*VSC command*/
 static bt_result_code bts_if_send_hci_command(void* gap_handle, bt_hci_command_t* command, hci_command_complete_event event_type)
@@ -865,6 +874,7 @@ static btm_gap_interface_t gap_interface = {
     .bt_set_link_role = bts_if_set_link_role,
     .bt_disconnect_link = bts_if_disconnect_bt_link,
     .bt_enable_ctkd_bonding = bts_if_enable_ctkd_bonding,
+    .bt_set_auto_sniff = bts_if_set_auto_sniff,
 #ifdef HCI_VSC_COMMAND
     .bt_send_hci_command = bts_if_send_hci_command,
 #endif

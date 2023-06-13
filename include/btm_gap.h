@@ -522,6 +522,16 @@ typedef struct {
      */
     bt_result_code (*bt_enable_ctkd_bonding)(void* handle, bool brkey_to_lekey, bool lekey_to_brkey);
 
+    /**
+     * @brief: gap set auto sniff.
+     * @note: handle must be create before this funciton.
+     * @param {void*} handle
+     * @param {bool} enable - enable or disable auto sniff.
+     * @param {bool} idle_time - auto sniff idle time.
+     * @return {bt_result_code} error status code (0- success)
+     */
+    bt_result_code (*bt_set_auto_sniff)(void* handle, bool enable, uint8_t idle_time);
+
 #ifdef hci_vsc_command
     /**
      * @brief: gap gap send hci command for testing purpose. these command should use the hci_command_complete_event

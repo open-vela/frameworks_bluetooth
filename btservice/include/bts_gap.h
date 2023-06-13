@@ -107,6 +107,7 @@ bt_result_code bts_stop_service_discovery(bt_device_t* device);
 bt_result_code bts_set_link_role(bt_device_t* device, bt_link_role role);
 bt_result_code bts_disconnect_bt_link(bt_device_t* device);
 bt_result_code bts_enable_ctkd_bonding(bool brkey_to_lekey, bool lekey_to_brkey);
+bt_result_code bts_set_auto_sniff(bool enable, uint8_t idle_time);
 /*VSC command*/
 bt_result_code bts_send_hci_command(bt_hci_command_t* command, hci_command_complete_event event_type);
 
