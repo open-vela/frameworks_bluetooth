@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef CONFIG_OFONO
+
 #include <dbus/dbus.h>
 
 #include "bt_list.h"
@@ -1064,3 +1066,4 @@ bool tele_network_is_roaming(tele_client_t *tele, int slot)
 
     return strcmp(status, "roaming") == 0;
 }
+#endif
