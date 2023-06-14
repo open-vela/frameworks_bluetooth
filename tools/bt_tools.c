@@ -182,7 +182,7 @@ static bt_command_t g_cmd_tables[] = {
 };
 
 static bt_command_t g_set_cmd_tables[] = {
-    {"scanmode",   set_scanmode_cmd,      0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)"                              },
+    { "scanmode",  set_scanmode_cmd,      0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)"                              },
     { "iocap",     set_iocap_cmd,         0, "params: <io capability> (0:displayonly, 1:yes&no, 2:keyboardonly, 3:no-in/no-out 4:keyboard&display)"},
     { "name",      set_local_name_cmd,    0, "params: <local name>, example \"vela-bt\""                                                           },
     { "class",     set_local_cod_cmd,     0, "params: <local class of device>, example: 0x00640404"                                                },
@@ -194,7 +194,7 @@ static bt_command_t g_set_cmd_tables[] = {
 };
 
 static bt_command_t g_get_cmd_tables[] = {
-    {"scanmode",   get_scanmode_cmd,          0, "get adapter scan mode"            },
+    { "scanmode",  get_scanmode_cmd,          0, "get adapter scan mode"            },
     { "iocap",     get_iocap_cmd,             0, "get adapter io capability"        },
     { "addr",      get_local_addr_cmd,        0, "get adapter local addr"           },
     { "leaddr",    get_le_addr_cmd,           0, "get ble adapter addr"             },
@@ -321,47 +321,47 @@ static int discovery_cmd(void *handle, int argc, char **argv)
 
 static void set_usage(void)
 {
-    printf("Usage:\n"
-           "\tset [options] <command> [command parameters]\n");
-    printf("Options:\n"
-           "\t--help\tDisplay help\n");
-    printf("Commands:\n");
+    PRINT("Usage:\n"
+          "\tset [options] <command> [command parameters]\n");
+    PRINT("Options:\n"
+          "\t--help\tDisplay help\n");
+    PRINT("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_set_cmd_tables); i++) {
-        printf("\t%-8s\t%s\n", g_set_cmd_tables[i].cmd, g_set_cmd_tables[i].help);
+        PRINT("\t%-8s\t%s\n", g_set_cmd_tables[i].cmd, g_set_cmd_tables[i].help);
     }
-    printf("\n"
-           "For more information on the usage of each command use:\n"
-           "\tset help\n");
+    PRINT("\n"
+          "For more information on the usage of each command use:\n"
+          "\tset help\n");
 }
 
 static void get_usage(void)
 {
-    printf("Usage:\n"
-           "\tget [options] <command> [command parameters]\n");
-    printf("Options:\n"
-           "\t--help\tDisplay help\n");
-    printf("Commands:\n");
+    PRINT("Usage:\n"
+          "\tget [options] <command> [command parameters]\n");
+    PRINT("Options:\n"
+          "\t--help\tDisplay help\n");
+    PRINT("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_get_cmd_tables); i++) {
-        printf("\t%-8s\t%s\n", g_get_cmd_tables[i].cmd, g_get_cmd_tables[i].help);
+        PRINT("\t%-8s\t%s\n", g_get_cmd_tables[i].cmd, g_get_cmd_tables[i].help);
     }
-    printf("\n"
-           "For more information on the usage of each command use:\n"
-           "\tget help\n");
+    PRINT("\n"
+          "For more information on the usage of each command use:\n"
+          "\tget help\n");
 }
 
 static void pair_usage(void)
 {
-    printf("Usage:\n"
-           "\tpair [options] <command> [command parameters]\n");
-    printf("Options:\n"
-           "\t--help\tDisplay help\n");
-    printf("Commands:\n");
+    PRINT("Usage:\n"
+          "\tpair [options] <command> [command parameters]\n");
+    PRINT("Options:\n"
+          "\t--help\tDisplay help\n");
+    PRINT("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_pair_cmd_tables); i++) {
-        printf("\t%-8s\t%s\n", g_pair_cmd_tables[i].cmd, g_pair_cmd_tables[i].help);
+        PRINT("\t%-8s\t%s\n", g_pair_cmd_tables[i].cmd, g_pair_cmd_tables[i].help);
     }
-    printf("\n"
-           "For more information on the usage of each command use:\n"
-           "\tpair help\n");
+    PRINT("\n"
+          "For more information on the usage of each command use:\n"
+          "\tpair help\n");
 }
 
 static int set_adapter_cmd(void *handle, int argc, char **argv)
@@ -1116,17 +1116,17 @@ static int quit_cmd(void *handle, int argc, char **argv)
 
 static void usage(void)
 {
-    printf("Usage:\n"
-           "\tbttool [options] <command> [command parameters]\n");
-    printf("Options:\n"
-           "\t--help\tDisplay help\n");
-    printf("Commands:\n");
+    PRINT("Usage:\n"
+          "\tbttool [options] <command> [command parameters]\n");
+    PRINT("Options:\n"
+          "\t--help\tDisplay help\n");
+    PRINT("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_cmd_tables); i++) {
-        printf("\t%-8s\t%s\n", g_cmd_tables[i].cmd, g_cmd_tables[i].help);
+        PRINT("\t%-8s\t%s\n", g_cmd_tables[i].cmd, g_cmd_tables[i].help);
     }
-    printf("\n"
-           "For more information on the usage of each command use:\n"
-           "\tbttool <command> --help\n");
+    PRINT("\n"
+          "For more information on the usage of each command use:\n"
+          "\tbttool <command> --help\n");
 }
 
 static void show_version(void)

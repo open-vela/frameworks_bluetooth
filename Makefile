@@ -102,39 +102,42 @@ endif
 endif
 
 # framework/service/stack/tools dependence
-CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/framework/include/}
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/framework/include
 
-ifeq ($(CONFIG_LIB_OFONO), y)
-	CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/dbus/dbus}
-	CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/glib/glib/glib}
-	CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/glib/glib/}
-	CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/glib/}
-	CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/utils/gdbus}
+ifeq ($(CONFIG_OFONO), y)
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/dbus/dbus
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/glib/glib/glib
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/glib/glib
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/glib
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/utils/gdbus
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_OBELISK), y)
 ifneq ($(CONFIG_OBELISK_BREDR_BLUELET)$(CONFIG_OBELISK_LE_BLUELET),)
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/external/bluelet/bluelet/src/samples/stack_adapter/inc}
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/vendor/xiaomi/vela/bluelet/inc}
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/bluelet/bluelet/src/samples/stack_adapter/inc
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/vendor/xiaomi/vela/bluelet/inc
 endif
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/}
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/src/}
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/profiles/}
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/profiles/include/}
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/profiles/system/}
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/stacks}
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/stacks/include/}
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/common/}
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/ipc}
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/ipc/binder/include}
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/service/ipc/binder/parcel}
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/src
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/common
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/include
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/system
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks/include
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/ipc
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/ipc/binder/include
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/ipc/binder/parcel
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
-	CFLAGS	+= ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(APPDIR)/frameworks/bluetooth/tools/}
+	CFLAGS	+= ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/tools
 endif
 
-CFLAGS	+= -O0 -Wno-strict-prototypes #-Werror 
+ifeq ($(CONFIG_ARCH_SIM),y)
+CFLAGS	 += -O0
+endif
+CFLAGS	 += -Wno-strict-prototypes #-Werror
 PRIORITY  = SCHED_PRIORITY_DEFAULT
 STACKSIZE = 8192
 MODULE    = $(CONFIG_BLUETOOTH)
@@ -156,6 +159,7 @@ ASRCS := $(wildcard $(ASRCS))
 CSRCS := $(wildcard $(CSRCS))
 CXXSRCS := $(wildcard $(CXXSRCS))
 MAINSRC := $(wildcard $(MAINSRC))
+
 NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
 
 ifneq ($(NOEXPORTSRCS),)
