@@ -1,7 +1,6 @@
 /****************************************************************************
  *
  *   Copyright (C) 2023 Xiaomi InC. All rights reserved.
- *   Copyright (C) 2023 Xiaomi InC. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,40 +30,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __A2DP_SINK_AUDIO_H__
-#define __A2DP_SINK_AUDIO_H__
+#ifndef __A2DP_IPC_H__
+#define __A2DP_IPC_H__
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+#include "stdbool.h"
+#include "uv.h"
 
-#include "bluetooth_define.h"
-#include "bluetooth_define.h"
-#include <nuttx/list.h>
+typedef enum {
+    IPC_OPEN_EVT = 0x0001,
+    IPC_CLOSE_EVT = 0x0002,
+    IPC_RX_DATA_EVT = 0x0004,
+    IPC_RX_DATA_READY_EVT = 0x0008,
+    IPC_TX_DATA_READY_EVT = 0x0010
+} a2dp_ipc_event_t;
 
-typedef struct {
-    struct list_node node;
-    uint32_t time_stamp;
-    uint16_t seq;
-    uint16_t length;
-    uint8_t data[0];
-} a2dp_sink_packet_t;
-} a2dp_sink_packet_t;
+typedef struct _a2dp_ipc a2dp_ipc_t;
+typedef void (*ipc_event_cb_t)(uint8_t ch_id, a2dp_ipc_event_t event);
+typedef void (*ipc_alloc_cb_t)(uint8_t ch_id, uint8_t **buffer, size_t *len);
+typedef void (*ipc_read_cb_t)(uint8_t ch_id, uint8_t *buffer, ssize_t len);
+typedef void (*ipc_write_cb_t)(uint8_t ch_id, uint8_t *buffer);
 
-typedef struct {
-    a2dp_sink_packet_t *(*repackage)(uint8_t *data, uint16_t length);
-    void (*packet_send_done)(a2dp_sink_packet_t *packet);
-} a2dp_sink_stream_interface_t;
+#define A2DP_IPC_CH_ID_AV_CTRL         0
+#define A2DP_IPC_CH_ID_AV_AUDIO        1
+#define A2DP_IPC_CH_ID_AV_SOURCE_CTRL  0
+#define A2DP_IPC_CH_ID_AV_SOURCE_AUDIO 1
+#define A2DP_IPC_CH_ID_AV_SINK_CTRL    2
+#define A2DP_IPC_CH_ID_AV_SINK_AUDIO   3
+#define A2DP_IPC_CH_NUM                4
+#define A2DP_IPC_CH_ID_ALL             5 /* used to address all the ch id at once */
 
-a2dp_sink_packet_t *a2dp_sink_new_packet(uint32_t timestamp,
-                                         uint16_t seq, uint8_t *data, uint16_t length);
-void a2dp_sink_packet_recieve(a2dp_sink_packet_t *packet);
-bool a2dp_sink_on_connection_changed(bool connected);
-void a2dp_sink_on_started(bool started);
-void a2dp_sink_on_stopped(void);
-void a2dp_sink_on_suspended(void);
-void a2dp_sink_mute(void);
-void a2dp_sink_resume(void);
-void a2dp_sink_setup_codec(bt_address_t *bd_addr);
-void a2dp_sink_audio_init(void);
-void a2dp_sink_audio_cleanup(void);
+const char *dump_a2dp_ipc_event(uint8_t event);
 
-extern const a2dp_sink_stream_interface_t *get_a2dp_sink_sbc_stream_interface(void);
+a2dp_ipc_t *a2dp_ipc_init(uv_loop_t *loop);
+bool a2dp_ipc_open(a2dp_ipc_t *a2dp, uint8_t ch_id, const char *path, ipc_event_cb_t cb);
+void a2dp_ipc_close(a2dp_ipc_t *a2dp, uint8_t ch_id);
+int a2dp_ipc_write(a2dp_ipc_t *a2dp, uint8_t ch_id, const uint8_t *data, uint16_t len, ipc_write_cb_t cb);
+int a2dp_ipc_read_start(a2dp_ipc_t *a2dp, uint8_t ch_id, ipc_alloc_cb_t alloc_cb, ipc_read_cb_t read_cb);
+int a2dp_ipc_read_stop(a2dp_ipc_t *a2dp, uint8_t ch_id);
 
 #endif
