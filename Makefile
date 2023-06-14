@@ -53,10 +53,29 @@ ifeq ($(CONFIG_BLUETOOTH_GATT), y)
 	CSRCS += service/profiles/gatt/*.c
 endif #CONFIG_BLUETOOTH_GATT
 
+ifeq ($(CONFIG_BLUETOOTH_A2DP), y)
+  CSRCS += service/profiles/a2dp/*.c
+  CSRCS += service/profiles/a2dp/codec/*.c
+  CSRCS += service/profiles/avrcp/*.c
+  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/a2dp
+  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/a2dp/codec
+  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/avrcp
+endif #CONFIG_BLUETOOTH_A2DP
+
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SOURCE), y)
+  CSRCS += service/profiles/a2dp/source/*.c
 endif #CONFIG_BLUETOOTH_A2DP_SOURCE
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
+  CSRCS += service/profiles/a2dp/sink/*.c
+endif #CONFIG_BLUETOOTH_A2DP_SINK
+
+ifeq ($(CONFIG_BLUETOOTH_AVRCP_TARGET), y)
+  CSRCS += service/profiles/avrcp/target/*.c
+endif #CONFIG_BLUETOOTH_A2DP_SOURCE
+
+ifeq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL), y)
+  CSRCS += service/profiles/avrcp/control/*.c
 endif #CONFIG_BLUETOOTH_A2DP_SINK
 
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF), y)

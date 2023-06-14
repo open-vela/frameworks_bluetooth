@@ -83,6 +83,22 @@
 #include "avrcp_control_service.h"
 #endif
 
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+#include "a2dp_sink_service.h"
+#endif
+
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+#include "a2dp_source_service.h"
+#endif
+
+#ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
+#include "avrcp_target_service.h"
+#endif
+
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+#include "avrcp_control_service.h"
+#endif
+
 #define LOG_TAG "bt_service"
 #include "utils/log.h"
 

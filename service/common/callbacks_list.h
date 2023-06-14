@@ -14,6 +14,9 @@
  * limitations under the License.
  ***************************************************************************/
 
+#ifndef __SERVICE_COMMON_CALLBACKS_LIST_H
+#define __SERVICE_COMMON_CALLBACKS_LIST_H
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
@@ -56,3 +59,5 @@ remote_callback_t *bt_remote_callbacks_register(callbacks_list_t *cbsl, void *re
 bool bt_remote_callbacks_unregister(callbacks_list_t *cbsl, void **remote, remote_callback_t *rcbks);
 void bt_callbacks_foreach(callbacks_list_t *cbsl, void *context);
 void bt_callbacks_list_free(callbacks_list_t *cbsl);
+
+#endif
