@@ -1,0 +1,440 @@
+/****************************************************************************
+ *  Copyright (C) 2023 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+#define LOG_TAG "a2dp_source"
+
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <nuttx/list.h>
+
+#include "adapter_internel.h"
+#include "bt_addr.h"
+#include "callbacks_list.h"
+#include "sal_a2dp_source_interface.h"
+#include "service_loop.h"
+#include "service_manager.h"
+
+#include "a2dp_source_service.h"
+
+#include "a2dp_ipc.h"
+#include "bt_a2dp_source.h"
+
+#include "utils/log.h"
+
+#ifndef CONFIG_BLUETOOTH_A2DP_MAX_CONNECTIONS
+#define A2DP_MAX_CONNECTION (1)
+#else
+#define A2DP_MAX_CONNECTION CONFIG_BLUETOOTH_A2DP_MAX_CONNECTIONS
+#endif
+
+#define A2DP_SOURCE_CALLBACK_FOREACH(_list, _cback, ...) \
+    BT_CALLBACK_FOREACH(_list, a2dp_source_callbacks_t, _cback, ##__VA_ARGS__)
+
+typedef struct {
+    struct list_node list;
+    bool enabled;
+    pthread_mutex_t mutex;
+    callbacks_list_t *callbacks;
+    a2dp_peer_t *active_peer;
+} a2dp_source_global_t;
+
+static a2dp_source_global_t g_a2dp_source = { 0 };
+
+static void set_active_peer(bt_address_t *bd_addr)
+{
+    a2dp_device_t *device = find_a2dp_device_by_addr(&g_a2dp_source.list, bd_addr);
+
+    g_a2dp_source.active_peer = &device->peer;
+}
+
+static a2dp_peer_t *get_active_peer(void)
+{
+    return g_a2dp_source.active_peer;
+}
+
+static a2dp_device_t *find_or_create_device(bt_address_t *bd_addr)
+{
+    a2dp_device_t *device = find_a2dp_device_by_addr(&g_a2dp_source.list, bd_addr);
+    if (device)
+        return device;
+
+    device = a2dp_device_new(&g_a2dp_source, SEP_SNK, bd_addr);
+    if (!device) {
+        BT_LOGE("A2DP new source device alloc failed");
+        return NULL;
+    }
+    list_add_tail(&g_a2dp_source.list, &device->node);
+
+    return device;
+}
+
+static a2dp_state_machine_t *get_state_machine(bt_address_t *bd_addr)
+{
+    a2dp_device_t *device = find_or_create_device(bd_addr);
+
+    if (!device)
+        return NULL;
+
+    return device->a2dp_sm;
+}
+
+static void save_a2dp_codec_config(a2dp_peer_t *peer, a2dp_codec_config_t *config)
+{
+    if (peer == NULL || config == NULL)
+        return;
+
+    memcpy(&peer->codec_config, config, sizeof(*config));
+    a2dp_codec_set_config(SEP_SNK, &peer->codec_config);
+}
+
+static void a2dp_service_handle_event(void *data)
+{
+    a2dp_event_t *event = data;
+
+    switch (event->event) {
+    case CODEC_CONFIG_EVT: {
+        a2dp_codec_config_t *config;
+        a2dp_device_t *device;
+
+        device = find_or_create_device(&event->event_data.bd_addr);
+        if (device == NULL)
+            break;
+
+        config = event->event_data.data;
+        BT_LOGD("CODEC_CONFIG_EVT : codec_type: %d, sample_rate: %" PRIu32 ", bits_per_sample: %d, channel_mode: %d",
+                config->codec_type,
+                config->sample_rate,
+                config->bits_per_sample,
+                config->channel_mode);
+        save_a2dp_codec_config(&device->peer, config);
+        break;
+    }
+    case STREAM_MTU_CONFIG_EVT: {
+        a2dp_device_t *device = find_or_create_device(&event->event_data.bd_addr);
+        if (device == NULL)
+            break;
+
+        device->peer.mtu = event->event_data.mtu;
+        BT_LOGD("STREAM_MTU_CONFIG_EVT :%d", device->peer.mtu);
+        a2dp_codec_update_config(SEP_SNK, &device->peer.codec_config, device->peer.mtu);
+        break;
+    }
+    default: {
+        a2dp_state_machine_t *a2dp_sm;
+
+        a2dp_sm = get_state_machine(&event->event_data.bd_addr);
+        if (!a2dp_sm)
+            break;
+
+        if (event->event == CONNECTED_EVT)
+            set_active_peer(&event->event_data.bd_addr);
+
+        a2dp_state_machine_handle_event(a2dp_sm, event);
+        break;
+    }
+    }
+
+    a2dp_event_destory(event);
+}
+
+static void do_in_a2dp_service(a2dp_event_t *a2dp_event)
+{
+    if (a2dp_event == NULL)
+        return;
+
+    do_in_service_loop(a2dp_service_handle_event, a2dp_event);
+}
+
+void bt_sal_a2dp_source_event_callback(a2dp_event_t *event)
+{
+    do_in_a2dp_service(event);
+}
+
+a2dp_peer_t *a2dp_source_active_peer(void)
+{
+    return get_active_peer();
+}
+
+a2dp_peer_t *a2dp_source_find_peer(bt_address_t *addr)
+{
+    a2dp_device_t *device = find_a2dp_device_by_addr(&g_a2dp_source.list, addr);
+
+    if (!device)
+        return NULL;
+
+    return &device->peer;
+}
+
+void a2dp_source_stream_start(void)
+{
+    a2dp_peer_t *peer = a2dp_source_active_peer();
+    if (!peer)
+        return;
+
+    do_in_a2dp_service(a2dp_event_new(STREAM_START_REQ, peer->bd_addr));
+}
+
+void a2dp_source_stream_stop(void)
+{
+    a2dp_peer_t *peer = a2dp_source_active_peer();
+    if (!peer)
+        return;
+
+    do_in_a2dp_service(a2dp_event_new(STREAM_SUSPEND_DELAY, peer->bd_addr));
+}
+
+bool a2dp_source_stream_ready(void)
+{
+    a2dp_state_machine_t *a2dp_sm;
+    a2dp_state_t state;
+    a2dp_peer_t *peer = a2dp_source_active_peer();
+    if (!peer)
+        return false;
+
+    a2dp_sm = get_state_machine(peer->bd_addr);
+    if (!a2dp_sm)
+        return false;
+
+    state = a2dp_state_machine_get_state(a2dp_sm);
+    if (state == A2DP_STATE_OPENED ||
+        (state == A2DP_STATE_STARTED && a2dp_state_machine_is_pending_stop(a2dp_sm)))
+        return true;
+
+    return false;
+}
+
+bool a2dp_source_stream_started(void)
+{
+    a2dp_state_machine_t *a2dp_sm;
+    a2dp_peer_t *peer = a2dp_source_active_peer();
+    if (!peer)
+        return false;
+
+    a2dp_sm = get_state_machine(peer->bd_addr);
+    if (!a2dp_sm)
+        return false;
+
+    if (a2dp_state_machine_is_pending_stop(a2dp_sm))
+        return false;
+
+    return a2dp_state_machine_get_state(a2dp_sm) == A2DP_STATE_STARTED;
+}
+
+void a2dp_source_codec_state_change(void)
+{
+    a2dp_peer_t *peer = a2dp_source_active_peer();
+    if (!peer)
+        return;
+
+    do_in_a2dp_service(a2dp_event_new(DEVICE_CODEC_STATE_CHANGE_EVT, peer->bd_addr));
+}
+
+// show Device[1]: Addr: 04:7F:0E:00:00:1B, State: Opened, Active: true
+static int a2dp_source_dump(void)
+{
+    a2dp_device_t *device;
+    struct list_node *node;
+    int i = 0;
+    uint8_t is_active;
+    const char *state;
+    list_for_every(&g_a2dp_source.list, node)
+    {
+        i++;
+        device = (a2dp_device_t *)node;
+        if (memcmp(&device->bd_addr, g_a2dp_source.active_peer, 6) == 0)
+            is_active = 1;
+        else
+            is_active = 0;
+        state = a2dp_state_machine_current_state(device->a2dp_sm);
+        BT_LOGD("\tDevice[%d]: Addr: %s, State: %s, Active: %s\n", i,
+                bt_addr_str(&device->bd_addr), state, is_active ? "true" : "false");
+    }
+    if (i == 0)
+        BT_LOGE("\tNo A2dp Sink device found\n");
+
+    return 0;
+}
+
+static bt_status_t a2dp_source_init(void)
+{
+    pthread_mutexattr_t attr;
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    if (pthread_mutex_init(&g_a2dp_source.mutex, &attr) < 0)
+        return BT_STATUS_FAIL;
+
+    g_a2dp_source.callbacks = bt_callbacks_list_new(2);
+
+    a2dp_audio_init(SVR_SOURCE);
+
+    return BT_STATUS_SUCCESS;
+}
+
+static void a2dp_source_cleanup(void)
+{
+    a2dp_device_t *device;
+    struct list_node *node;
+    struct list_node *tmp;
+
+    g_a2dp_source.active_peer = NULL;
+    list_for_every_safe(&g_a2dp_source.list, node, tmp)
+    {
+        device = (a2dp_device_t *)node;
+        a2dp_device_delete(device);
+    }
+    a2dp_audio_cleanup(SVR_SOURCE);
+
+    bt_callbacks_list_free(g_a2dp_source.callbacks);
+    g_a2dp_source.callbacks = NULL;
+    pthread_mutex_destroy(&g_a2dp_source.mutex);
+}
+
+static bt_status_t a2dp_source_startup(profile_on_startup_t cb)
+{
+    pthread_mutex_lock(&g_a2dp_source.mutex);
+    if (g_a2dp_source.enabled) {
+        pthread_mutex_unlock(&g_a2dp_source.mutex);
+        return BT_STATUS_NOT_ENABLED;
+    }
+
+    list_initialize(&g_a2dp_source.list);
+    if (bt_sal_a2dp_source_init(A2DP_MAX_CONNECTION) != BT_STATUS_SUCCESS) {
+        pthread_mutex_unlock(&g_a2dp_source.mutex);
+        list_delete(&g_a2dp_source.list);
+        return BT_STATUS_FAIL;
+    }
+
+    g_a2dp_source.enabled = true;
+    pthread_mutex_unlock(&g_a2dp_source.mutex);
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t a2dp_source_shutdown(profile_on_shutdown_t cb)
+{
+    pthread_mutex_lock(&g_a2dp_source.mutex);
+    if (!g_a2dp_source.enabled) {
+        pthread_mutex_unlock(&g_a2dp_source.mutex);
+        return BT_STATUS_SUCCESS;
+    }
+
+    g_a2dp_source.enabled = false;
+    list_delete(&g_a2dp_source.list);
+    bt_sal_a2dp_source_cleanup();
+    pthread_mutex_unlock(&g_a2dp_source.mutex);
+
+    return BT_STATUS_SUCCESS;
+}
+
+void a2dp_source_service_notify_connection_state_changed(
+    bt_address_t *addr, a2dp_connection_state_t state)
+{
+    BT_LOGD("%s", __FUNCTION__);
+    A2DP_SOURCE_CALLBACK_FOREACH(g_a2dp_source.callbacks, connection_state_cb, addr, state);
+}
+
+void a2dp_source_service_notify_audio_state_changed(
+    bt_address_t *addr, a2dp_audio_state_t state)
+{
+    BT_LOGD("%s", __FUNCTION__);
+    A2DP_SOURCE_CALLBACK_FOREACH(g_a2dp_source.callbacks, audio_state_cb, addr, state);
+}
+
+void a2dp_source_service_notify_audio_source_config_changed(
+    bt_address_t *addr)
+{
+    BT_LOGD("%s", __FUNCTION__);
+    A2DP_SOURCE_CALLBACK_FOREACH(g_a2dp_source.callbacks, audio_source_config_cb, addr);
+}
+
+static void *a2dp_source_register_callbacks(void *remote, const a2dp_source_callbacks_t *callbacks)
+{
+    return bt_remote_callbacks_register(g_a2dp_source.callbacks, remote, (void *)callbacks);
+}
+
+static bool a2dp_source_unregister_callbacks(void **remote, void *cookie)
+{
+    return bt_remote_callbacks_unregister(g_a2dp_source.callbacks, remote, cookie);
+}
+
+static bt_status_t a2dp_source_connect(bt_address_t *addr)
+{
+    if (!g_a2dp_source.enabled)
+        return BT_STATUS_FAIL;
+
+    do_in_a2dp_service(a2dp_event_new(CONNECT_REQ, addr));
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t a2dp_source_disconnect(bt_address_t *addr)
+{
+    if (!g_a2dp_source.enabled)
+        return BT_STATUS_FAIL;
+
+    do_in_a2dp_service(a2dp_event_new(DISCONNECT_REQ, addr));
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t a2dp_source_set_silence_device(bt_address_t *addr, bool silence)
+{
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t a2dp_source_set_active_device(bt_address_t *addr)
+{
+    return BT_STATUS_SUCCESS;
+}
+
+static const a2dp_source_interface_t a2dp_sourceInterface = {
+    .size = sizeof(a2dp_sourceInterface),
+    .register_callbacks = a2dp_source_register_callbacks,
+    .unregister_callbacks = a2dp_source_unregister_callbacks,
+    .connect = a2dp_source_connect,
+    .disconnect = a2dp_source_disconnect,
+    .set_silence_device = a2dp_source_set_silence_device,
+    .set_active_device = a2dp_source_set_active_device,
+};
+
+static const void *get_a2dp_source_profile_interface(void)
+{
+    return (void *)&a2dp_sourceInterface;
+}
+
+static const profile_service_t a2dp_source_service = {
+    .auto_start = true,
+    .name = PROFILE_A2DP_NAME,
+    .id = PROFILE_A2DP,
+    .transport = BT_TRANSPORT_BREDR,
+    .uuid = {BT_UUID128_TYPE, { 0 }},
+    .init = a2dp_source_init,
+    .startup = a2dp_source_startup,
+    .shutdown = a2dp_source_shutdown,
+    .process_msg = NULL,
+    .get_state = NULL,
+    .get_profile_interface = get_a2dp_source_profile_interface,
+    .cleanup = a2dp_source_cleanup,
+    .dump = a2dp_source_dump,
+};
+
+void register_a2dp_source_service(void)
+{
+    register_service(&a2dp_source_service);
+}

@@ -30,9 +30,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __OPEN_PTY_H__
-#define __OPEN_PTY_H__
+#include <stdlib.h>
+#include <string.h>
 
-int open_pty(int *master, char *name);
+#include "a2dp_event.h"
 
-#endif
+a2dp_event_t *a2dp_event_new(a2dp_event_type_t event,
+                             bt_address_t *bd_addr)
+{
+    a2dp_event_t *a2dp_event;
+
+    a2dp_event = (a2dp_event_t *)malloc(sizeof(a2dp_event_t));
+    if (a2dp_event == NULL)
+        return NULL;
+
+    a2dp_event->event = event;
+    memset(&a2dp_event->event_data, 0, sizeof(a2dp_event->event_data));
+    if (bd_addr != NULL)
+        memcpy(&a2dp_event->event_data.bd_addr, bd_addr, sizeof(bt_address_t));
+
+    return a2dp_event;
+}
+
+void a2dp_event_destory(a2dp_event_t *a2dp_event)
+{
+    free(a2dp_event->event_data.data);
+    free(a2dp_event);
+}

@@ -226,6 +226,8 @@ static void pair_authentication_request(SERVICE_SSP_REQUEST_DATA_S *request_data
     case GAP_SPP_TYPE_PASSKEY_NOTIFICATION:
         type = PAIR_TYPE_PASSKEY_NOTIFICATION;
         break;
+    default:
+        return;
     }
 
     adapter_on_ssp_request(&addr, transport, request_data->cod,
