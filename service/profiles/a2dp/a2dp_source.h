@@ -30,9 +30,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __OPEN_PTY_H__
-#define __OPEN_PTY_H__
+#ifndef __A2DP_SOURCE_H__
+#define __A2DP_SOURCE_H__
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+#include "a2dp_device.h"
+#include "bt_a2dp_source.h"
+#include <nuttx/list.h>
 
-int open_pty(int *master, char *name);
+void a2dp_source_stream_start(void);
+void a2dp_source_stream_stop(void);
+void a2dp_source_codec_state_change(void);
+bool a2dp_source_stream_ready(void);
+bool a2dp_source_stream_started(void);
+a2dp_peer_t *a2dp_source_find_peer(bt_address_t *addr);
+a2dp_peer_t *a2dp_source_active_peer(void);
 
+void a2dp_source_service_notify_connection_state_changed(bt_address_t *addr, a2dp_connection_state_t state);
+void a2dp_source_service_notify_audio_state_changed(bt_address_t *addr, a2dp_audio_state_t state);
+void a2dp_source_service_notify_audio_source_config_changed(bt_address_t *addr);
 #endif

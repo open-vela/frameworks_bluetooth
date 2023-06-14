@@ -30,9 +30,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __OPEN_PTY_H__
-#define __OPEN_PTY_H__
+#ifndef __A2DP_AUDIO_H__
+#define __A2DP_AUDIO_H__
 
-int open_pty(int *master, char *name);
+#include "bluetooth_define.h"
+
+void a2dp_audio_on_connection_changed(uint8_t peer_sep, bool connected);
+void a2dp_audio_on_started(uint8_t peer_sep, bool started);
+void a2dp_audio_on_stopped(uint8_t peer_sep);
+void a2dp_audio_on_suspended(uint8_t peer_sep);
+void a2dp_audio_setup_codec(uint8_t peer_sep, bt_address_t *bd_addr);
+
+void a2dp_audio_init(uint8_t svr_class);
+void a2dp_audio_cleanup(uint8_t svr_class);
 
 #endif

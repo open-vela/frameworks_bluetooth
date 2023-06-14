@@ -52,4 +52,6 @@ void add_init_process(service_func_t func);
 uv_loop_t *get_service_uv_loop(void);
 #endif
 
+uint64_t get_os_timestamp_us(void);
+
 #endif /* _BT_SERVICE_LOOP_H__ */

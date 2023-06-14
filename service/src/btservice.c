@@ -37,8 +37,25 @@
 #ifdef CONFIG_BLUETOOTH_PAN
 #include "pan_service.h"
 #endif
+
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
 #include "lea_server_service.h"
+#endif
+
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+#include "a2dp_sink_service.h"
+#endif
+
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+#include "a2dp_source_service.h"
+#endif
+
+#ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
+#include "avrcp_target_service.h"
+#endif
+
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+#include "avrcp_control_service.h"
 #endif
 
 #define LOG_TAG "bt_service"
@@ -58,6 +75,22 @@ typedef struct {
 
 void bt_profile_init(void)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    register_a2dp_sink_service();
+#endif
+
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+    register_a2dp_source_service();
+#endif
+
+#ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
+    register_avrcp_target_service();
+#endif
+
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    register_avrcp_control_service();
+#endif
+
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     register_hfp_hf_service();
 #endif
