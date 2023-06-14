@@ -38,7 +38,7 @@
 #define CMD_USAGE_FAULT      (-8)
 #define CMD_ERROR            (-9)
 
-#define BTTOOL_PRINT_USE_SYSLOG 1
+#define BTTOOL_PRINT_USE_SYSLOG 0
 
 #define LOG_TAG "[bttool]"
 
