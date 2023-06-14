@@ -30,9 +30,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __OPEN_PTY_H__
-#define __OPEN_PTY_H__
+#include "a2dp_sink_audio.h"
+#include <stdlib.h>
+#include <string.h>
 
-int open_pty(int *master, char *name);
+#define LOG_TAG "sink_aac"
+#include "utils/log.h"
 
-#endif
+static a2dp_sink_packet_t *sink_aac_repackage(uint8_t *data, uint16_t length)
+{
+    a2dp_sink_packet_t *packet = NULL;
+    uint8_t LOAS_HDRSIZE = 3;
+
+    /* pack aac loas header */
+    packet = malloc(sizeof(a2dp_sink_packet_t) + length + LOAS_HDRSIZE);
+    if (packet) {
+        packet->data[0] = 0x56;
+        packet->data[1] = 0xE0 | ((length >> 8) & 0x1f);
+        packet->data[2] = length & 0xff;
+        packet->length = length + LOAS_HDRSIZE;
+        memcpy(packet->data + LOAS_HDRSIZE, data, length);
+    }
+
+    return packet;
+}
+
+static void sink_aac_packet_send_done(a2dp_sink_packet_t *packet)
+{
+    free(packet);
+}
+
+static const a2dp_sink_stream_interface_t a2dp_sink_stream_aac = {
+    sink_aac_repackage,
+    sink_aac_packet_send_done,
+};
+
+const a2dp_sink_stream_interface_t *get_a2dp_sink_aac_stream_interface(void)
+{
+    return &a2dp_sink_stream_aac;
+}

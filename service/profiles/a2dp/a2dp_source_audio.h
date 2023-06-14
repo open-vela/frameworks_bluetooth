@@ -30,9 +30,41 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __OPEN_PTY_H__
-#define __OPEN_PTY_H__
+#ifndef __A2DP_SOURCE_AUDIO_H__
+#define __A2DP_SOURCE_AUDIO_H__
 
-int open_pty(int *master, char *name);
+#include "a2dp_codec_aac.h"
+#include "a2dp_codec_sbc.h"
+#include "bluetooth_define.h"
+
+#define AVDT_MEDIA_OFFSET   23
+#define MAX_2MBPS_AVDTP_MTU 663 // 2DH5 MTU=679, -12 for AVDTP, -4 for L2CAP
+#define MAX_3MBPS_AVDTP_MTU 1005 // 3DH5 MTU=1021, -12 for AVDTP, -4 for L2CAP
+
+typedef void (*frame_send_callback)(uint8_t *buf, uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp);
+typedef int (*frame_read_callback)(uint8_t *buf, uint16_t frame_len);
+
+typedef struct {
+    void (*init)(void *param, uint32_t mtu,
+                 frame_send_callback send_cb,
+                 frame_read_callback read_cb);
+    void (*reset)(void);
+    void (*cleanup)(void);
+    void (*send_frames)(uint16_t header_reserve, uint64_t timestamp);
+    int (*get_interval_ms)(void);
+} a2dp_source_stream_interface_t;
+
+void a2dp_source_audio_init(void);
+void a2dp_source_audio_cleanup(void);
+void a2dp_source_on_connection_changed(bool connected);
+void a2dp_source_on_started(bool started);
+void a2dp_source_on_stopped(void);
+void a2dp_source_on_suspended(void);
+bool a2dp_source_is_streaming(void);
+void a2dp_source_setup_codec(bt_address_t *bd_addr);
+int a2dp_source_sbc_update_config(uint32_t mtu, sbc_param_t *param, uint8_t *codec_info);
+int a2dp_source_aac_update_config(uint32_t mtu, aac_encoder_param_t *param, uint8_t *codec_info);
+extern const a2dp_source_stream_interface_t *get_a2dp_source_sbc_stream_interface(void);
+extern const a2dp_source_stream_interface_t *get_a2dp_source_aac_stream_interface(void);
 
 #endif

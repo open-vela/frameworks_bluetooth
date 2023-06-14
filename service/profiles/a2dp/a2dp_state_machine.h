@@ -30,9 +30,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __OPEN_PTY_H__
-#define __OPEN_PTY_H__
+#ifndef __A2DP_STATE_MACHINE_H__
+#define __A2DP_STATE_MACHINE_H__
 
-int open_pty(int *master, char *name);
+#include "a2dp_event.h"
 
+typedef enum {
+    A2DP_STATE_IDLE,
+    A2DP_STATE_OPENING,
+    A2DP_STATE_OPENED,
+    A2DP_STATE_STARTED,
+    A2DP_STATE_CLOSING
+} a2dp_state_t;
+
+typedef struct _a2dp_state_machine a2dp_state_machine_t;
+
+a2dp_state_machine_t *a2dp_state_machine_new(void *context, uint8_t peer_sep, bt_address_t *bd_addr);
+void a2dp_state_machine_destory(a2dp_state_machine_t *a2dp_sm);
+void a2dp_state_machine_handle_event(a2dp_state_machine_t *sm, a2dp_event_t *a2dp_event);
+a2dp_state_t a2dp_state_machine_get_state(a2dp_state_machine_t *sm);
+const char *a2dp_state_machine_current_state(a2dp_state_machine_t *sm);
+bool a2dp_state_machine_is_pending_stop(a2dp_state_machine_t *sm);
 #endif

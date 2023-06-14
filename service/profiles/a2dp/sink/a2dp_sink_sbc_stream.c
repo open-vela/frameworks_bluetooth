@@ -30,9 +30,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __OPEN_PTY_H__
-#define __OPEN_PTY_H__
 
-int open_pty(int *master, char *name);
+#include "a2dp_sink_audio.h"
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
-#endif
+#define LOG_TAG "sink_sbc"
+#include "utils/log.h"
+
+static a2dp_sink_packet_t *sink_sbc_repackage(uint8_t *data, uint16_t length)
+{
+    a2dp_sink_packet_t *packet = NULL;
+    /* sbc packed header, skip it */
+    uint8_t SBC_HDRSIZE = 1;
+
+    length -= SBC_HDRSIZE;
+    packet = malloc(sizeof(a2dp_sink_packet_t) + length);
+    if (packet) {
+        packet->length = length;
+        memcpy(packet->data, data + SBC_HDRSIZE, length);
+    }
+
+    return packet;
+}
+
+static void sink_sbc_packet_send_done(a2dp_sink_packet_t *packet)
+{
+    free(packet);
+}
+
+static const a2dp_sink_stream_interface_t a2dp_sink_stream_sbc = {
+    sink_sbc_repackage,
+    sink_sbc_packet_send_done,
+};
+
+const a2dp_sink_stream_interface_t *get_a2dp_sink_sbc_stream_interface(void)
+{
+    return &a2dp_sink_stream_sbc;
+}

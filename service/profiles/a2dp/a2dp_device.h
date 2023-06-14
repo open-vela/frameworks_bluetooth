@@ -30,9 +30,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __OPEN_PTY_H__
-#define __OPEN_PTY_H__
+#ifndef __A2DP_DEVICE_H__
+#define __A2DP_DEVICE_H__
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+#include <nuttx/list.h>
 
-int open_pty(int *master, char *name);
+#include "a2dp_codec.h"
+#include "a2dp_event.h"
+#include "a2dp_state_machine.h"
+#include "bt_a2dp.h"
+
+#define SEP_SRC     0 /* Source SEP */
+#define SEP_SNK     1 /* Sink SEP */
+#define SEP_INVALID 3 /* Invalid SEP */
+
+#define SVR_SOURCE 0
+#define SVR_SINK   1
+
+typedef struct {
+    bt_address_t *bd_addr;
+    uint8_t is_sink;
+    a2dp_codec_config_t codec_config;
+    uint16_t mtu;
+} a2dp_peer_t;
+
+typedef struct {
+    struct list_node node;
+    a2dp_state_machine_t *a2dp_sm;
+    bt_address_t bd_addr;
+    a2dp_peer_t peer;
+    uint8_t peer_sep;
+} a2dp_device_t;
+
+a2dp_device_t *find_a2dp_device_by_addr(struct list_node *list, bt_address_t *bd_addr);
+a2dp_device_t *a2dp_device_new(void *ctx, uint8_t peer_sep, bt_address_t *bd_addr);
+void a2dp_device_delete(a2dp_device_t *device);
 
 #endif

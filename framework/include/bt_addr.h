@@ -40,6 +40,7 @@ void bt_addr_set_empty(bt_address_t *addr);
 int bt_addr_compare(bt_address_t *a, bt_address_t *b);
 int bt_addr_ba2str(bt_address_t *addr, char *str);
 int bt_addr_str2ba(const char *str, bt_address_t *addr);
+char *bt_addr_str(bt_address_t *addr);
 void bt_addr_set(bt_address_t *addr, uint8_t *bd);
 void bt_addr_swap(bt_address_t *src, bt_address_t *dest);
 

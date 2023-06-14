@@ -30,9 +30,54 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __OPEN_PTY_H__
-#define __OPEN_PTY_H__
+#ifndef __A2DP_CODEC_H__
+#define __A2DP_CODEC_H__
 
-int open_pty(int *master, char *name);
+#include "a2dp_codec_aac.h"
+#include "a2dp_codec_sbc.h"
+#include <sys/types.h>
+
+typedef enum {
+    BTS_A2DP_TYPE_SBC,
+    BTS_A2DP_TYPE_MPEG1_2_AUDIO,
+    BTS_A2DP_TYPE_MPEG2_4_AAC,
+    BTS_A2DP_TYPE_ATRAC,
+    BTS_A2DP_TYPE_OPUS,
+    BTS_A2DP_TYPE_H263,
+    BTS_A2DP_TYPE_MPEG4_VSP,
+    BTS_A2DP_TYPE_H263_PROF3,
+    BTS_A2DP_TYPE_H263_PROF8,
+    BTS_A2DP_TYPE_LHDC,
+    BTS_A2DP_TYPE_NON_A2DP
+} a2dp_codec_index_t;
+
+typedef uint32_t a2dp_codec_sample_rate_t;
+
+typedef enum {
+    BTS_A2DP_CODEC_BITS_PER_SAMPLE_8 = 0x0,
+    BTS_A2DP_CODEC_BITS_PER_SAMPLE_16 = 0x1,
+} a2dp_codec_bits_per_sample_t;
+
+typedef enum {
+    BTS_A2DP_CODEC_CHANNEL_MODE_MONO = 0x0,
+    BTS_A2DP_CODEC_CHANNEL_MODE_STEREO = 0x1
+} a2dp_codec_channel_mode_t;
+
+typedef struct {
+    a2dp_codec_index_t codec_type;
+    a2dp_codec_sample_rate_t sample_rate;
+    a2dp_codec_bits_per_sample_t bits_per_sample;
+    a2dp_codec_channel_mode_t channel_mode;
+    uint32_t bit_rate;
+    uint8_t specific_info[20];
+    union {
+        sbc_param_t sbc;
+        aac_encoder_param_t aac;
+    } codec_param;
+} a2dp_codec_config_t;
+
+a2dp_codec_config_t *a2dp_codec_get_config(void);
+void a2dp_codec_set_config(uint8_t peer_sep, a2dp_codec_config_t *config);
+void a2dp_codec_update_config(uint8_t peer_sep, a2dp_codec_config_t *config, uint16_t mtu);
 
 #endif

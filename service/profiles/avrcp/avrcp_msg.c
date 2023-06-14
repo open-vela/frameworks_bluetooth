@@ -30,9 +30,27 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __OPEN_PTY_H__
-#define __OPEN_PTY_H__
+#include <stdlib.h>
+#include <string.h>
 
-int open_pty(int *master, char *name);
+#include "avrcp_msg.h"
 
-#endif
+avrcp_msg_t *avrcp_msg_new(rc_msg_id_t msg, bt_address_t *bd_addr)
+{
+    avrcp_msg_t *avrcp_msg;
+
+    avrcp_msg = (avrcp_msg_t *)malloc(sizeof(avrcp_msg_t));
+    if (avrcp_msg == NULL)
+        return NULL;
+
+    avrcp_msg->id = msg;
+    if (bd_addr != NULL)
+        memcpy(&avrcp_msg->addr, bd_addr, sizeof(bt_address_t));
+
+    return avrcp_msg;
+}
+
+void avrcp_msg_destory(avrcp_msg_t *avrcp_msg)
+{
+    free(avrcp_msg);
+}

@@ -28,6 +28,8 @@ const bt_address_t bt_addr_any = {
     {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
 };
 
+static char g_bdaddr_str[18];
+
 static int bachk(const char *str)
 {
     if (!str)
@@ -75,6 +77,14 @@ int bt_addr_ba2str(bt_address_t *addr, char *str)
     return sprintf(str, "%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X",
                    addr->addr[5], addr->addr[4], addr->addr[3],
                    addr->addr[2], addr->addr[1], addr->addr[0]);
+}
+
+char *bt_addr_str(bt_address_t *addr)
+{
+    bt_addr_ba2str(addr, g_bdaddr_str);
+    g_bdaddr_str[17] = '\0';
+
+    return g_bdaddr_str;
 }
 
 int bt_addr_str2ba(const char *str, bt_address_t *addr)

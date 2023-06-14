@@ -51,13 +51,42 @@ config BLUETOOTH_GATTC_MAX_CONNECTIONS
 	default 8
 endif
 
+config BLUETOOTH_AVRCP_TARGET
+  bool "Audio/Video Remote Control Profile (Target) support"
+  default n
+
+config BLUETOOTH_AVRCP_CONTROL
+  bool "Audio/Video Remote Control Profile (control) support"
+  default n
+
+config BLUETOOTH_A2DP
+  bool "Advanced Audio Distribution Profile"
+  default n
+
 config BLUETOOTH_A2DP_SOURCE
 	bool "A2DP source profile support"
 	default n
+	select BLUETOOTH_AVRCP_TARGET
 
 config BLUETOOTH_A2DP_SINK
 	bool "A2DP sink profile support"
 	default n
+	select BLUETOOTH_AVRCP_CONTROL
+
+if BLUETOOTH_A2DP
+config BLUETOOTH_A2DP_MAX_CONNECTIONS
+  int "Maximum A2dp connections"
+  default 1
+  help
+    Maximum A2dp connections
+
+config BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
+  bool "Bluetooth A2dp peer partial reconnect support"
+  default n
+  help
+    Bluetooth A2dp peer partial reconnect support
+
+endif #BLUETOOTH_A2DP
 
 config BLUETOOTH_HFP_HF
 	bool "HFP hands-free profile support"

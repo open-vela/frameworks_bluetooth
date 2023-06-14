@@ -22,6 +22,8 @@ extern "C" {
 
 #define PROFILE_A2DP_NAME      "A2DP-Src"
 #define PROFILE_A2DP_SINK_NAME "A2DP-Sink"
+#define PROFILE_AVRCP_CT_NAME  "AVRCP-CT"
+#define PROFILE_AVRCP_TG_NAME  "AVRCP-TG"
 #define PROFILE_HFP_HF_NAME    "HFP-HF"
 #define PROFILE_HFP_AG_NAME    "HFP-AG"
 #define PROFILE_SPP_NAME       "SPP"
@@ -32,6 +34,8 @@ extern "C" {
 enum profile_id {
     PROFILE_A2DP,
     PROFILE_A2DP_SINK,
+    PROFILE_AVRCP_CT,
+    PROFILE_AVRCP_TG,
     PROFILE_HFP_HF,
     PROFILE_HFP_AG,
     PROFILE_SPP,

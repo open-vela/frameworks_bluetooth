@@ -30,9 +30,38 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __OPEN_PTY_H__
-#define __OPEN_PTY_H__
+#ifndef __A2DP_CONTROL_H__
+#define __A2DP_CONTROL_H__
 
-int open_pty(int *master, char *name);
+#if 0
+#define A2DP_SINK_CTRL_PATH   "/data/misc/bluedroid/.sink_ctrl"
+#define A2DP_SINK_DATA_PATH   "/data/misc/bluedroid/.sink_data"
+#define A2DP_SOURCE_CTRL_PATH "/data/misc/bluedroid/.source_ctrl"
+#define A2DP_SOURCE_DATA_PATH "/data/misc/bluedroid/.source_data"
+#else
+#define A2DP_SINK_CTRL_PATH   "sink_ctrl"
+#define A2DP_SINK_DATA_PATH   "sink_data"
+#define A2DP_SOURCE_CTRL_PATH "source_ctrl"
+#define A2DP_SOURCE_DATA_PATH "source_data"
+#endif
 
+#define A2DP_CTRL_EVT_HEADER_LEN 1
+
+typedef enum {
+    A2DP_CTRL_CMD_START,
+    A2DP_CTRL_CMD_STOP,
+    A2DP_CTRL_CMD_CONFIG_DONE
+} a2dp_ctrl_cmd_t;
+
+typedef enum {
+    A2DP_CTRL_EVT_STARTED,
+    A2DP_CTRL_EVT_START_FAIL,
+    A2DP_CTRL_EVT_STOPPED,
+    A2DP_CTRL_EVT_UPDATE_CONFIG
+} a2dp_ctrl_evt_t;
+
+extern void a2dp_control_init(uint8_t ctrl_id, uint8_t data_id);
+extern void a2dp_control_cleanup(void);
+extern void a2dp_control_event(uint8_t ch_id, a2dp_ctrl_evt_t evt);
+extern void a2dp_control_update_audio_config(uint8_t ch_id, uint8_t isvalid);
 #endif
