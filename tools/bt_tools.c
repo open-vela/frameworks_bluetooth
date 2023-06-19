@@ -20,6 +20,8 @@
 #include <string.h>
 #include <system/readline.h>
 
+#include "adapter_internel.h"
+
 #include "bluetooth.h"
 #include "bt_adapter.h"
 #include "bt_tools.h"
@@ -459,7 +461,7 @@ static int set_apperance_cmd(void *handle, int argc, char **argv)
 
     uint32_t appearance = strtoul(argv[0], NULL, 16);
     bt_adapter_set_le_appearance(handle, appearance);
-    PRINT("Set Le Apperance:0x%04x", appearance);
+    PRINT("Set Le Apperance:0x%04" PRIx32 "", appearance);
 
     return CMD_OK;
 }
@@ -538,7 +540,7 @@ static int set_local_name_cmd(void *handle, int argc, char **argv)
 
 static int get_local_cod_cmd(void *handle, int argc, char **argv)
 {
-    PRINT("Local class of device: 0x%08x", bt_adapter_get_device_class(handle));
+    PRINT("Local class of device: 0x%08" PRIx32 "", bt_adapter_get_device_class(handle));
     return CMD_OK;
 }
 
@@ -552,7 +554,7 @@ static int set_local_cod_cmd(void *handle, int argc, char **argv)
     if (bt_adapter_set_device_class(handle, cod) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
-    PRINT("Local class of device:0x%08x set success", cod);
+    PRINT("Local class of device:0x%08" PRIx32 " set success", cod);
     return CMD_OK;
 }
 
@@ -992,7 +994,7 @@ static void device_dump(void *handle, bt_address_t *addr)
     PRINT("\tName: %s", name);
     bt_device_get_alias(handle, addr, name, 64);
     PRINT("\tAlias: %s", name);
-    PRINT("\tClass: 0x%08x", bt_device_get_device_class(handle, addr));
+    PRINT("\tClass: 0x%08" PRIx32 "", bt_device_get_device_class(handle, addr));
     PRINT("\tDeviceType: %d", bt_device_get_device_type(handle, addr));
     PRINT("\tRssi: %d", bt_device_get_rssi(handle, addr));
     PRINT("\tIsConnected: %d", bt_device_is_connected(handle, addr));
@@ -1180,7 +1182,7 @@ static void on_discovery_state_changed_cb(void *cookie, bt_discovery_state_t sta
 
 static void on_discovery_result_cb(void *cookie, bt_discovery_result_t *result)
 {
-    PRINT_ADDR("Inquiring: device [%s], name: %s, cod: %08x, rssi: %d", &result->addr, result->name, result->cod, result->rssi);
+    PRINT_ADDR("Inquiring: device [%s], name: %s, cod: %08" PRIx32 ", rssi: %d", &result->addr, result->name, result->cod, result->rssi);
 }
 
 static void on_scan_mode_changed_cb(void *cookie, bt_scan_mode_t mode)
@@ -1213,16 +1215,16 @@ static void on_pair_display_cb(void *cookie, bt_address_t *addr, bt_transport_t 
     sprintf(buff, "Pair Display [%s][%s]", addr_str, LINK_TYPE(transport));
     switch (type) {
     case PAIR_TYPE_PASSKEY_CONFIRMATION:
-        sprintf(buff1, "[SSP][CONFIRM][%d] please reply:", passkey);
+        sprintf(buff1, "[SSP][CONFIRM][%" PRIu32 "] please reply:", passkey);
         break;
     case PAIR_TYPE_PASSKEY_ENTRY:
-        sprintf(buff1, "[SSP][ENTRY][%d], please reply:", passkey);
+        sprintf(buff1, "[SSP][ENTRY][%" PRIu32 "], please reply:", passkey);
         break;
     case PAIR_TYPE_CONSENT:
         sprintf(buff1, "[SSP][CONSENT]");
         break;
     case PAIR_TYPE_PASSKEY_NOTIFICATION:
-        sprintf(buff1, "[SSP][NOTIFY][%d]", passkey);
+        sprintf(buff1, "[SSP][NOTIFY][%" PRIu32 "]", passkey);
         break;
     case PAIR_TYPE_PIN_CODE:
         sprintf(buff1, "[PIN] please reply:");
@@ -1255,7 +1257,7 @@ static void on_remote_alias_changed_cb(void *cookie, bt_address_t *addr, const c
 
 static void on_remote_cod_changed_cb(void *cookie, bt_address_t *addr, uint32_t cod)
 {
-    PRINT_ADDR("Device [%s] class changed: 0x%08x", addr, cod);
+    PRINT_ADDR("Device [%s] class changed: 0x%08" PRIx32 "", addr, cod);
 }
 
 static void on_remote_uuids_changed_cb(void *cookie, bt_address_t *addr, bt_uuid_t *uuids, uint16_t size)
