@@ -30,12 +30,13 @@
             return BT_STATUS_PARM_INVALID; \
     }
 
-#define SAL_CHECK_RET(ret, expect)                    \
-    {                                                 \
-        if (ret != expect) {                          \
-            BT_LOGE("[%s] return:%d", __func__, ret); \
-            return BT_STATUS_FAIL;                    \
-        }                                             \
+#define SAL_CHECK_RET(cond, expect)                     \
+    {                                                   \
+        int __ret = cond;                               \
+        if (__ret != expect) {                          \
+            BT_LOGE("[%s] return:%d", __func__, __ret); \
+            return BT_STATUS_FAIL;                      \
+        }                                               \
     }
 
 #define SAL_ASSERT_PARAM(cond) \
