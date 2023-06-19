@@ -308,7 +308,7 @@ static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void
         }
     } break;
     default:
-        BT_LOGW("Unexpected event:%d", event);
+        BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
     }
     return true;
@@ -366,7 +366,7 @@ static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *
         process_cind_request(agsm);
         break;
     default:
-        BT_LOGW("Unexpected event:%d", event);
+        BT_LOGW("Unexpected event:%" PRId32 "", event);
         break;
     }
     return true;
@@ -403,7 +403,7 @@ static bool disconnecting_process_event(state_machine_t *sm, uint32_t event, voi
         }
     } break;
     default:
-        BT_LOGW("Unexpected event:%d", event);
+        BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
     }
     return true;
@@ -414,7 +414,7 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_d
     ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
     hfp_ag_data_t *data = (hfp_ag_data_t *)p_data;
 
-    BT_LOGD("%s, event:%d", __func__, event);
+    BT_LOGD("%s, event:%" PRIu32 "", __func__, event);
     switch (event) {
     case VOICE_RECOGNITION_START:
         if (!agsm->recognition_active) {
@@ -512,7 +512,7 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_d
         /* system call interface */
         break;
     default:
-        BT_LOGW("Unexpected event:%d", event);
+        BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
     }
     return true;

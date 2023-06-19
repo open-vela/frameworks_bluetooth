@@ -15,6 +15,7 @@
  ***************************************************************************/
 
 #include "utils.h"
+#include "bt_tools.h"
 
 bool phy_is_vaild(uint8_t phy)
 {

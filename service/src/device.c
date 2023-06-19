@@ -393,7 +393,7 @@ void device_dump(bt_device_t *device)
     printf("device: %s\n", addr_str);
     printf("\tName: %s\n", device->remote.name);
     printf("\tAlias: %s\n", device->remote.alias);
-    printf("\tClass: 0x%08x\n", device->remote.device_class);
+    printf("\tClass: 0x%08" PRIx32 "\n", device->remote.device_class);
     printf("\tType: %d\n", device->remote.device_type);
     printf("\tTransport: %d\n", device->remote.transport);
     printf("\tRssi: %d\n", device->remote.rssi);
