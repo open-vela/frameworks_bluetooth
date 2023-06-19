@@ -509,7 +509,7 @@ static void process_connection_state_changed_evt(bt_address_t *addr, acl_state_p
 {
     bt_device_t *device;
 
-    BT_ADDR_LOG("ACL connection state changed, addr:%s, link:%d, state:%s, status:%d, reason:%d", addr,
+    BT_ADDR_LOG("ACL connection state changed, addr:%s, link:%d, state:%s, status:%d, reason:%" PRIu32 "", addr,
                 acl_params->link_type, acl_connection_str(acl_params->connection_state),
                 acl_params->status, acl_params->hci_reason_code);
 
@@ -764,7 +764,7 @@ void adapter_on_br_enabled(void)
             "\tName:%s\n"
             "\tAddress:%s\n"
             "\tIoCap:%" PRIu32 "\n"
-            "\tScanmode:%" PRIu32 "\n"
+            "\tScanmode:%d\n"
             "\tBondable:%d\n"
             "\tDeviceClass:0x%08" PRIx32 "\n",
             props->name, addrstr,

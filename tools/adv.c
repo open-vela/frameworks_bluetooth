@@ -179,7 +179,7 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
             }
 
             params.tx_power = power;
-            PRINT("tx_power: %d dBm", power);
+            PRINT("tx_power: %" PRId32 " dBm", power);
         } break;
         case 'c': {
             int32_t channel = atoi(optarg);
@@ -223,7 +223,7 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
                 PRINT("error duration, range in 0x0001~0xFFFF");
                 return CMD_INVALID_PARAM;
             }
-            PRINT("duration: %d ms", duration * 10);
+            PRINT("duration: %" PRId32 " ms", duration * 10);
         } break;
         case 'P': {
             bt_address_t peeraddr;
@@ -354,10 +354,10 @@ static int stop_adv_cmd(void *handle, int argc, char *argv[])
         case 'h': {
             uint32_t advhandle = strtoul(optarg, NULL, 16);
             if (!advhandle) {
-                PRINT("Invalid handle:0x%08x", advhandle);
+                PRINT("Invalid handle:0x%08" PRIx32 "", advhandle);
                 return CMD_INVALID_PARAM;
             }
-            PRINT("Stop adv handle:0x%08x", advhandle);
+            PRINT("Stop adv handle:0x%08" PRIx32 "", advhandle);
             bt_le_stop_advertising(handle, (bt_advertiser_t *)advhandle);
             return CMD_OK;
         } break;

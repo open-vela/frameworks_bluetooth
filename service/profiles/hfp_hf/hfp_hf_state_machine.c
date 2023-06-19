@@ -244,7 +244,7 @@ static hfp_current_call_t *hf_call_new(uint32_t idx,
 {
     hfp_current_call_t *call = malloc(sizeof(hfp_current_call_t));
 
-    BT_LOGD("Current Call[%d]: dir:%d, state:%d, mpty:%d, number:%s", idx, dir, state, mpty, number);
+    BT_LOGD("Current Call[%" PRIu32 "]: dir:%d, state:%d, mpty:%d, number:%s", idx, dir, state, mpty, number);
     call->index = idx;
     call->dir = dir;
     call->state = state;
@@ -551,7 +551,7 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
 {
     hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
     bt_status_t status;
-    BT_LOGD("%s, event=%d", __func__, event);
+    BT_LOGD("%s, event=%" PRIu32 "", __func__, event);
 
     switch (event) {
     case ACCEPT_CALL:
@@ -671,7 +671,7 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
         hfsm->codec = data->valueint1;
         break;
     default:
-        BT_LOGW("Unexpected event:%d", event);
+        BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
     }
 

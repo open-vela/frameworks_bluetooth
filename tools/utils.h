@@ -18,7 +18,6 @@
 #include <string.h>
 
 #include "bluetooth.h"
-#include "bt_tools.h"
 
 bool phy_is_vaild(uint8_t phy);
 int le_addr_type(const char *str, ble_addr_type_t *type);
