@@ -33,6 +33,10 @@ bt_instance_t *bluetooth_create_instance(void)
     char name[64] = { 0 };
 
     bt_instance_t *ins = zalloc(sizeof(bt_instance_t));
+    if (!ins) {
+        return NULL;
+    }
+
     binder = BtManager_getService((BpBtManager **)&ins->manager_proxy, MANAGER_BINDER_INSTANCE);
     if (!binder)
         goto bail;
