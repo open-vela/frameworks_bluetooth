@@ -35,6 +35,10 @@ bt_instance_t *bluetooth_create_instance(void)
     service_loop_run(true);
 #endif
     bt_instance_t *ins = malloc(sizeof(bt_instance_t));
+    if (!ins) {
+        return NULL;
+    }
+
     pid_t pid = getpid();
 
     bt_status_t status = manager_create_instance((uint32_t)ins, BLUETOOTH_SYSTEM, "local", pid, 0, &app_id);
