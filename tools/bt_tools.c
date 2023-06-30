@@ -117,10 +117,10 @@ static struct option le_conn_options[] = {
 
 #define LE_CONN_USAGE "\n"                                                                                                         \
                       "\t -a or --addr, peer le device address\n"                                                                  \
-                      "\t -t or --type, peer le device address type, address type(public/random/public_id/random_id/anaonymous)\n" \
+                      "\t -t or --type, peer le device address type, address type(0:public,1:random,2:public_id,3:random_id)\n"    \
                       "\t -d or --default, use default parameter\n"                                                                \
                       "\t -f or --filter, connection filter policy, (0:addr,1:whitelist)\n"                                        \
-                      "\t -p or --phy, init phy type\n"                                                                            \
+                      "\t -p or --phy, init phy type, (0:1M,1:2M,2:Coded)\n"                                                                            \
                       "\t -l or --latency, connection latency Range: 0x0000 to 0x01F3\n"                                           \
                       "\t --conn_interval_min, Range: 0x0006 to 0x0C80\n"                                                          \
                       "\t --conn_interval_max, Range: 0x0006 to 0x0C80\n"                                                          \
@@ -134,7 +134,7 @@ static struct option le_conn_options[] = {
                       "\t\t\t- start <timeout>(Range: 1.28 to 61.44 s)\n" \
                       "\t\t\t- stop"
 
-#define SET_LE_PHY_USAGE "set le tx and rx phy, params: <addr><txphy><rxphy>(0:1M, 1:2M, 3:CODED)"
+#define SET_LE_PHY_USAGE "set le tx and rx phy, params: <addr><txphy><rxphy>(0:1M, 1:2M, 2:CODED)"
 
 static bt_command_t g_cmd_tables[] = {
     {"enable",        enable_cmd,            0, "enable stack"                                             },
@@ -204,7 +204,7 @@ static bt_command_t g_set_cmd_tables[] = {
     { "class",     set_local_cod_cmd,     0, "params: <local class of device>, example: 0x00640404"                                                },
     { "apperance", set_apperance_cmd,     0, "set le adapter apperance, params: <apperance>"                                                       },
     { "leaddr",    set_le_addr_cmd,       0, "set ble adapter addr, params: <leaddr>"                                                              },
-    { "id",        set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr>"                                                      },
+    { "id",        set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>"                                                      },
     { "help",      NULL,                  0, "show set help info"                                                                                  },
  //{ "", , "set " },
 };
@@ -227,12 +227,12 @@ static bt_command_t g_get_cmd_tables[] = {
 #define PAIR_CONFIRM_USAGE "set ssp confirmation, params: <addr> <transport> (0:BLE, 1:BREDR)<conform>(0 :reject, 1: accept)"
 
 static bt_command_t g_pair_cmd_tables[] = {
-    {"auto",     pair_set_auto_cmd,    0, "enable pair auto reply, params: <enable>(0:disable, 1:enable)"        },
-    { "reply",   pair_reply_cmd,       0, "reply the pair request, params: <addr><accept?>(0 :reject, 1: accept)"},
-    { "pin",     pair_set_pincode_cmd, 0, "input pin code, params: <addr><pincode>"                              },
-    { "passkey", pair_set_passkey_cmd, 0, PAIR_PASSKEY_USAGE                                                     },
-    { "confirm", pair_set_confirm_cmd, 0, PAIR_CONFIRM_USAGE                                                     },
-    { "help",    NULL,                 0, "show pair help info"                                                  },
+    {"auto",     pair_set_auto_cmd,    0, "enable pair auto reply, params: <enable>(0:disable, 1:enable)"         },
+    { "reply",   pair_reply_cmd,       0, "reply the pair request, params: <addr><accept?>(0 :reject, 1: accept)" },
+    { "pin",     pair_set_pincode_cmd, 0, "input pin code, params: <addr><accept?>(0 :reject, 1: accept)<pincode>"},
+    { "passkey", pair_set_passkey_cmd, 0, PAIR_PASSKEY_USAGE                                                      },
+    { "confirm", pair_set_confirm_cmd, 0, PAIR_CONFIRM_USAGE                                                      },
+    { "help",    NULL,                 0, "show pair help info"                                                   },
  //{ "", , "set " },
 };
 
@@ -548,12 +548,12 @@ static int set_identity_addr_cmd(void *handle, int argc, char **argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int public = atoi(argv[1]);
-    if (public != 0 || public != 1) {
+    int type = atoi(argv[1]);
+    if (type != 0 && type != 1) {
         return CMD_INVALID_PARAM;
     }
 
-    bt_adapter_set_le_identity_address(handle, &addr, public);
+    bt_adapter_set_le_identity_address(handle, &addr, type);
 
     return CMD_OK;
 }
