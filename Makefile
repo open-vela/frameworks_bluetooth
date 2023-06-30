@@ -19,7 +19,6 @@ include $(APPDIR)/Make.defs
 ifeq ($(CONFIG_BLUETOOTH), y)
 
 CSRCS += framework/common/*.c
-CSRCS += framework/common/utils/*.c
 
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK), y)
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_LOCAL), y)
@@ -90,6 +89,7 @@ endif
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CSRCS += tools/utils.c
+	CSRCS += tools/uv_thread_loop.c
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += tools/adv.c
 endif
@@ -123,7 +123,6 @@ endif
 
 # framework/service/stack/tools dependence
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/framework/include
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/framework/common
 
 ifeq ($(CONFIG_OFONO), y)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/dbus/dbus
