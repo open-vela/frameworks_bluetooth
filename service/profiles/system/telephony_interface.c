@@ -691,6 +691,7 @@ tele_client_t *tele_client_connect(const char *name)
     g_dbus_client_set_disconnect_watch(dbus_client, ofono_disconnect_handler, tele);
     g_dbus_client_set_proxy_handlers(dbus_client, ofono_interface_proxy_added,
                                      ofono_interface_proxy_removed,
+                                     NULL,
                                      ofono_property_changed, tele);
     g_dbus_client_set_signal_watch(dbus_client, ofono_interface_signal_callback, tele);
     g_dbus_client_set_ready_watch(dbus_client, ofono_client_ready_cb, tele);
