@@ -55,12 +55,12 @@ static void *spp_app_handle = NULL;
 static uv_loop_t spp_thread_loop;
 
 static bt_command_t g_spp_tables[] = {
-    {"start",       start_server_cmd, 0, "\"start spp server        param: <port> <uuid>\", range in (1~28) 1,2,3,...,28"},
-    { "stop",       stop_server_cmd,  0, "\"stop  spp server        param: <port>\""                                     },
-    { "connect",    connect_cmd,      0, "\"connect spp device      param: <address> <port> <uuid>\""                    },
-    { "disconnect", disconnect_cmd,   0, "\"disconnect peer device  param: <address> <port>\""                           },
-    { "write",      write_cmd,        0, "\"write data to peer      param: <port> <data>\""                              },
-    { "dump",       dump_cmd,         0, "\"dump spp current state\""                                                    },
+    {"start",       start_server_cmd, 0, "\"start spp server        param: <scn>(range in [1,28]) <uuid>\""},
+    { "stop",       stop_server_cmd,  0, "\"stop  spp server        param: <scn>(range in [1,28])\""       },
+    { "connect",    connect_cmd,      0, "\"connect spp device      param: <address> <port> <uuid>\""      },
+    { "disconnect", disconnect_cmd,   0, "\"disconnect peer device  param: <address> <port>\""             },
+    { "write",      write_cmd,        0, "\"write data to peer      param: <port> <data>\""                },
+    { "dump",       dump_cmd,         0, "\"dump spp current state\""                                      },
 };
 
 static void usage(void)
