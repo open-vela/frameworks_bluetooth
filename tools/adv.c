@@ -51,18 +51,18 @@ static struct option adv_stop_options[] = {
 
 static bt_command_t g_adv_tables[] = {
     {"start",     start_adv_cmd,    1, "start advertising\n"
-                                 "\t  -t or --adv_type, advertising type opt(adv_ind/direct_ind/nonconn_ind/scan_ind/scan_rsp_ind)\n"
+                                 "\t  -t or --adv_type, advertising type opt(adv_ind/direct_ind/nonconn_ind/scan_ind)\n"
                                  "\t  -m or --mode,     advertising mode opt(legacy/ext/auto, default auto)\n"
                                  "\t  -i or --interval, advertising intervel range 0x20~0x4000\n"
-                                 "\t  -n or --name,     advertising name less than 28 bytes \n"
+                                 "\t  -n or --name,     advertising name no more than 29 bytes \n"
                                  "\t  -P or --peer_addr, if directed advertising is performed, shall be valid\n"
                                  "\t  -T or --peer_addr_type, if directed advertising is performed, shall be valid\n"
                                  "\t  -O or --own_addr, update advertising own random address, only own addr type is random valid\n"
-                                 "\t  -R or --own_addr_type, address type(public/random/public_id/random_id/anaonymous)\n"
+                                 "\t  -R or --own_addr_type, address type(public/random/public_id/random_id/anonymous)\n"
                                  "\t  -p or --tx_power, advertising tx power range -20~10 dBm\n"
                                  "\t  -c or --channel, advertising channel map opt (37/38/39, 0 means default)\n"
                                  "\t  -f or --filter, advertising white list filter policy(none/scan/conn/all)\n"
-                                 "\t  -d or --duration, advertising duration, only extended adv valid, range 0x10~0xFFFF\n"
+                                 "\t  -d or --duration, advertising duration, only extended adv valid, range 0x0~0xFFFF\n"
                                  "\t  -D or --default, use default advertising data and scan response data\n"},
     { "stop",     stop_adv_cmd,     1, "stop  advertising  \n"
                                "\t  -i or --advid, advertising ID, advertising_start_cb notify \n"
@@ -220,7 +220,7 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
         case 'd': {
             int32_t duration = atoi(optarg);
             if (duration < 0 || duration > 0xFFFF) {
-                PRINT("error duration, range in 0x0001~0xFFFF");
+                PRINT("error duration, range in 0x0000~0xFFFF");
                 return CMD_INVALID_PARAM;
             }
             PRINT("duration: %" PRId32 " ms", duration * 10);

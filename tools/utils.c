@@ -31,15 +31,15 @@ int le_addr_type(const char *str, ble_addr_type_t *type)
 {
     *type = BT_LE_ADDR_TYPE_UNKNOWN;
 
-    if (strncasecmp(str, "public", strlen("public")))
-        *type = BT_LE_ADDR_TYPE_PUBLIC;
-    else if (strncasecmp(str, "random", strlen("random")))
-        *type = BT_LE_ADDR_TYPE_RANDOM;
-    else if (strncasecmp(str, "public_id", strlen("public_id")))
+    if (!strncasecmp(str, "public_id", strlen("public_id")))
         *type = BT_LE_ADDR_TYPE_PUBLIC_ID;
-    else if (strncasecmp(str, "random_id", strlen("random_id")))
+    else if (!strncasecmp(str, "random_id", strlen("random_id")))
         *type = BT_LE_ADDR_TYPE_RANDOM_ID;
-    else if (strncasecmp(str, "anaonymous", strlen("anaonymous")))
+    else if (!strncasecmp(str, "public", strlen("public")))
+        *type = BT_LE_ADDR_TYPE_PUBLIC;
+    else if (!strncasecmp(str, "random", strlen("random")))
+        *type = BT_LE_ADDR_TYPE_RANDOM;
+    else if (!strncasecmp(str, "anonymous", strlen("anonymous")))
         *type = BT_LE_ADDR_TYPE_ANONYMOUS;
     else
         return CMD_INVALID_PARAM;

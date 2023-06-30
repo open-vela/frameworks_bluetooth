@@ -97,7 +97,7 @@ static int start_scan_cmd(void *handle, int argc, char *argv[])
                 settings.scan_phy = BT_LE_1M_PHY;
             else if (strncmp(optarg, "2M", 2) == 0)
                 settings.scan_phy = BT_LE_2M_PHY;
-            else if (strncmp(optarg, "Coded", 2) == 0)
+            else if (strncmp(optarg, "Coded", 5) == 0)
                 settings.scan_phy = BT_LE_CODED_PHY;
             else {
                 PRINT("Invalid scan phy:%s", optarg);
