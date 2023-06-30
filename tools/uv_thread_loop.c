@@ -14,15 +14,17 @@
  * limitations under the License.
  ***************************************************************************/
 
-#include <nuttx/list.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <syslog.h>
+#include <nuttx/list.h>
+
+
 #include "uv_thread_loop.h"
 
 #define LOG_TAG "thread_loop"
-#include "utils/log.h"
 
 typedef struct thread_loop {
     uv_async_t async;
@@ -69,7 +71,7 @@ static void set_ready(void *data)
     priv->is_running = 1;
     uv_sem_init(&priv->exited, 0);
     uv_sem_post(&priv->ready);
-    BT_LOGD("set_ready");
+    syslog(LOG_DEBUG, "set_ready");
 }
 
 static void set_stop(void *data)
@@ -80,7 +82,7 @@ static void set_stop(void *data)
     priv->is_running = 0;
     uv_close((uv_handle_t *)&priv->async, NULL);
     uv_stop(loop);
-    BT_LOGD("set_stopped");
+    syslog(LOG_DEBUG, "set_stopped");
 }
 
 static void thread_timer_cb(uv_timer_t *handle)
@@ -123,19 +125,19 @@ static void thread_schedule_loop(void *data)
 
     int ret = uv_async_init(loop, &priv->async, thread_message_callback);
     if (ret != 0) {
-        BT_LOGE("%s async error: %d", __func__, ret);
+        syslog(LOG_ERR, "%s async error: %d", __func__, ret);
         return;
     }
 
     priv->async.data = priv;
-    BT_LOGD("%s:%p, async:%p", __func__, loop, &priv->async);
+    syslog(LOG_DEBUG, "%s:%p, async:%p", __func__, loop, &priv->async);
     do_in_thread_loop(loop, set_ready, priv);
     uv_run(loop, UV_RUN_DEFAULT);
     priv->is_running = 0;
     uv_loop_close(loop);
     uv_sem_post(&priv->exited);
 
-    BT_LOGD("%s quit", __func__);
+    syslog(LOG_DEBUG, "%s quit", __func__);
 }
 
 static void handle_close_cb(uv_handle_t *handle)
@@ -154,7 +156,7 @@ int thread_loop_init(uv_loop_t *loop)
     priv->is_running = 0;
     ret = uv_mutex_init(&priv->msg_lock);
     if (ret != 0) {
-        BT_LOGE("%s mutex error: %d", __func__, ret);
+        syslog(LOG_ERR, "%s mutex error: %d", __func__, ret);
         return ret;
     }
 
@@ -172,23 +174,23 @@ int thread_loop_run(uv_loop_t *loop, bool start_thread, const char *name)
     if (start_thread) {
         int ret = uv_sem_init(&priv->ready, 0);
         if (ret != 0) {
-            BT_LOGE("%s sem init error: %d", __func__, ret);
+            syslog(LOG_ERR, "%s sem init error: %d", __func__, ret);
             return ret;
         }
 
         uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE, LOOP_THREAD_STACK_SIZE };
         ret = uv_thread_create_ex(&priv->thread, &options, thread_schedule_loop, (void *)loop);
         if (ret != 0) {
-            BT_LOGE("loop thread create :%d", ret);
+            syslog(LOG_ERR, "loop thread create :%d", ret);
             return ret;
         }
 
         pthread_setname_np(priv->thread, name);
         uv_sem_wait(&priv->ready);
         uv_sem_destroy(&priv->ready);
-        BT_LOGD("loop running now !!!");
+        syslog(LOG_DEBUG, "loop running now !!!");
     } else {
-        BT_LOGD("loop running now !!!");
+        syslog(LOG_DEBUG, "loop running now !!!");
         thread_schedule_loop(NULL);
     }
 
@@ -241,7 +243,7 @@ uv_poll_t *thread_loop_poll_fd(uv_loop_t *loop, int fd, int pevents, uv_poll_cb 
     return &priv->handle;
 
 error:
-    BT_LOGE("%s failed: %d", __func__, ret);
+    syslog(LOG_ERR, "%s failed: %d", __func__, ret);
     free(priv);
     return NULL;
 }
