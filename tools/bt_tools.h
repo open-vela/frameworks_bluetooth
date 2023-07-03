@@ -102,5 +102,8 @@ int gatts_command_init(void *handle);
 int gatts_command_uninit(void *handle);
 int gatts_command_exec(void *handle, int argc, char *argv[]);
 
-#endif /* __BT_TOOLS_H__ */
+int lea_server_command_init(void *handle);
+void lea_server_command_uninit(void *handle);
+int leas_command_exec(void *handle, int argc, char *argv[]);
 
+#endif /* __BT_TOOLS_H__ */

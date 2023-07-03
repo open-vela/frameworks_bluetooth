@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
+#ifndef _BT_TIME_H__
+#define _BT_TIME_H__
+
 #include <stdint.h>
-#include <time.h>
 
-uint64_t get_os_timestamp_us(void)
-{
-    struct timespec ts;
+uint64_t get_os_timestamp_us(void);
 
-    clock_gettime(CLOCK_BOOTTIME, &ts);
-
-    return (uint64_t)(((uint64_t)ts.tv_sec * 1000000L) + ((uint64_t)ts.tv_nsec / 1000));
-}
+#endif /* _BT_STORAGE_H__ */

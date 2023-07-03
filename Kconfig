@@ -232,4 +232,33 @@ config BLUETOOTH_TOOLS
 	default n
 	select BLUETOOTH_FRAMEWORK
 
+config BLUETOOTH_LEAUDIO_CLIENT
+	bool "enable bluetooth leaudio client feature"
+	default n
+
+config BLUETOOTH_LEAUDIO_SERVER
+	bool "enable bluetooth leaudio server feature"
+	default n
+
+if BLUETOOTH_LEAUDIO_SERVER
+config BLUETOOTH_LEAUDIO_SERVER_SINK_ASE_NUMBER
+	int "leaudio server sink number"
+	default 1
+	help
+		leaudio server sink ase number
+
+config BLUETOOTH_LEAUDIO_SERVER_SOURCE_ASE_NUMBER
+	int "leaudio server source number"
+	default 1
+	help
+		leaudio server source ase number
+
+config BLUETOOTH_LEAUDIO_SERVER_BASS_STATE_NUMBER
+	int "leaudio server bass state number"
+	default 1
+	help
+		leaudio server bass state number
+
+endif # BLUETOOTH_LEAUDIO_SERVER
+
 endif #BLUETOOTH

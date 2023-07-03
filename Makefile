@@ -76,6 +76,16 @@ ifeq ($(CONFIG_BLUETOOTH_PAN), y)
 	CSRCS += service/profiles/pan/*.c
 endif
 
+ifneq ($(findstring y, $(CONFIG_BLUETOOTH_LEAUDIO_CLIENT)_$(CONFIG_BLUETOOTH_LEAUDIO_SERVER)), )
+	CSRCS += service/profiles/leaudio/audio_ipc/*.c
+	CSRCS += service/profiles/leaudio/*.c
+endif
+
+ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_SERVER), y)
+	CSRCS += service/profiles/leaudio/server/*.c
+endif
+
+CSRCS += service/utils/*.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
@@ -104,6 +114,11 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_PAN), y)
 	CSRCS += tools/panu.c
 endif
+
+ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_SERVER), y)
+	CSRCS += tools/lea_server.c
+endif
+
 endif
 
 # framework/service/stack/tools dependence
