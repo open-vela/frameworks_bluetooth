@@ -37,6 +37,10 @@
 #ifdef CONFIG_BLUETOOTH_PAN
 #include "pan_service.h"
 #endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
+#include "lea_server_service.h"
+#endif
+
 #define LOG_TAG "bt_service"
 #include "utils/log.h"
 
@@ -73,6 +77,10 @@ void bt_profile_init(void)
 #ifdef CONFIG_BLUETOOTH_GATT
     register_gattc_service();
     register_gatts_service();
+#endif
+
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
+    register_lea_server_service();
 #endif
 }
 
