@@ -13,37 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef _BT_PROFILE_H__
-#define _BT_PROFILE_H__
+#include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nuttx/time.h>
 
-#define PROFILE_A2DP_NAME      "A2DP-Src"
-#define PROFILE_A2DP_SINK_NAME "A2DP-Sink"
-#define PROFILE_HFP_HF_NAME    "HFP-HF"
-#define PROFILE_HFP_AG_NAME    "HFP-AG"
-#define PROFILE_SPP_NAME       "SPP"
-#define PROFILE_PANU_NAME      "PANU"
-#define PROFILE_GATTC_NAME     "GATTC"
-#define PROFILE_GATTS_NAME     "GATTS"
+#include "bt_time.h"
 
-enum profile_id {
-    PROFILE_A2DP,
-    PROFILE_A2DP_SINK,
-    PROFILE_HFP_HF,
-    PROFILE_HFP_AG,
-    PROFILE_SPP,
-    PROFILE_PANU,
-    PROFILE_GATTC,
-    PROFILE_GATTS,
-    PROFILE_LEAUDIO_SERVER,
-    PROFILE_MAX
-};
+uint64_t get_os_timestamp_us(void)
+{
+    struct timespec ts;
 
-#ifdef __cplusplus
+    clock_gettime(CLOCK_BOOTTIME, &ts);
+
+    return (uint64_t)(((uint64_t)ts.tv_sec * 1000000L) + ((uint64_t)ts.tv_nsec / 1000));
 }
-#endif
-
-#endif /* _BT_PROFILE_H__ */

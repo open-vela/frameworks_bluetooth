@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef CONFIG_BLUETOOTH_PAN
 #include "stack_adapter_common.h"
 #include "stack_adapter_pan.h"
 
@@ -26,7 +27,6 @@
 #include "sal_bluelet.h"
 #include "sal_pan_interface.h"
 
-#ifdef CONFIG_BLUETOOTH_PAN
 void connection_state_change_cb(BD_ADDR remote_addr, SERVICE_PAN_ROLE_TYPE remote_role,
                                 SERVICE_PAN_ROLE_TYPE local_role,
                                 SERVICE_PROFILE_CONNECTION_STATE state)

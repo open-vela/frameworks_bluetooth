@@ -179,6 +179,9 @@ static bt_command_t g_cmd_tables[] = {
     { "gattc",         gattc_command_exec,  0, "gattc cmd"                                                },
     { "gatts",         gatts_command_exec,  0, "gatts cmd"                                                },
 #endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
+    { "leas",         leas_command_exec,    0, "lea server cmd, input \'leas\' show usage"                },
+#endif
     { "dump",         dump_cmd,             0, "dump adapter state"                                       },
     { "help",         usage_cmd,            0, "Usage for bttools"                                        },
     { "quit",         quit_cmd,             0, "Quit"                                                     },
@@ -244,6 +247,9 @@ static void bt_tool_init(void *handle)
 #ifdef CONFIG_BLUETOOTH_GATT
     gattc_command_init(handle);
     gatts_command_init(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
+    lea_server_command_init(handle);
 #endif
 }
 

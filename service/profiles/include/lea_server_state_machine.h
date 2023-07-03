@@ -13,37 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef _BT_PROFILE_H__
-#define _BT_PROFILE_H__
+#ifndef __LEA_SERVER_STATE_MACHINE_H__
+#define __LEA_SERVER_STATE_MACHINE_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "lea_server_event.h"
+#include "state_machine.h"
 
-#define PROFILE_A2DP_NAME      "A2DP-Src"
-#define PROFILE_A2DP_SINK_NAME "A2DP-Sink"
-#define PROFILE_HFP_HF_NAME    "HFP-HF"
-#define PROFILE_HFP_AG_NAME    "HFP-AG"
-#define PROFILE_SPP_NAME       "SPP"
-#define PROFILE_PANU_NAME      "PANU"
-#define PROFILE_GATTC_NAME     "GATTC"
-#define PROFILE_GATTS_NAME     "GATTS"
+typedef struct _lea_server_state_machine lea_server_state_machine_t;
 
-enum profile_id {
-    PROFILE_A2DP,
-    PROFILE_A2DP_SINK,
-    PROFILE_HFP_HF,
-    PROFILE_HFP_AG,
-    PROFILE_SPP,
-    PROFILE_PANU,
-    PROFILE_GATTC,
-    PROFILE_GATTS,
-    PROFILE_LEAUDIO_SERVER,
-    PROFILE_MAX
-};
+lea_server_state_machine_t *lea_server_state_machine_new(bt_address_t *addr, void *context);
+void lea_server_state_machine_destory(lea_server_state_machine_t *leas_sm);
+void lea_server_state_machine_dispatch(lea_server_state_machine_t *leas_sm, lea_server_msg_t *msg);
+uint32_t lea_server_state_machine_get_state(lea_server_state_machine_t *leas_sm);
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _BT_PROFILE_H__ */
+#endif /* __LEA_SERVER_STATE_MACHINE_H__ */

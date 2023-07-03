@@ -15,16 +15,16 @@
  ***************************************************************************/
 
 #include <nuttx/list.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "bt_status.h"
+#include "index_allocator.h"
 #include "manager_service.h"
 #include "service_manager.h"
-#include "index_allocator.h"
 #include "utils/log.h"
 
 #define BT_INST_HOST_NAME_LEN 64
@@ -139,7 +139,7 @@ bt_status_t manager_delete_instance(uint32_t app_id)
 bt_status_t manager_start_service(uint32_t app_id, enum profile_id profile)
 {
     bt_instance_impl_t *ins = manager_find_instance_by_appid(app_id);
-    if (ins)
+    if (!ins)
         return BT_STATUS_NOT_FOUND;
 
     return service_manager_control(profile, CONTROL_CMD_START);
@@ -148,7 +148,7 @@ bt_status_t manager_start_service(uint32_t app_id, enum profile_id profile)
 bt_status_t manager_stop_service(uint32_t app_id, enum profile_id profile)
 {
     bt_instance_impl_t *ins = manager_find_instance_by_appid(app_id);
-    if (ins)
+    if (!ins)
         return BT_STATUS_NOT_FOUND;
 
     return service_manager_control(profile, CONTROL_CMD_STOP);
