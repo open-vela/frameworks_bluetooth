@@ -376,7 +376,7 @@ static void default_connection_event_process(state_machine_t* sm, ag_server_data
         hsm_transition_to(sm, &disconnecting_state);
         break;
     default:
-        BT_LOGE("default_connection_event_process Unexpected state:%" PRIu32 "", state);
+        BT_LOGE("default_connection_event_process Unexpected state:%d", state);
         break;
     }
 }
@@ -409,7 +409,7 @@ static void default_audio_connection_event_process(state_machine_t* sm, ag_serve
         BT_LOGW("Ignored audio connection state:%d", state);
         break;
     default:
-        BT_LOGE("default_audio_connection_event_process Unexpected state:%" PRIu32 "", state);
+        BT_LOGE("default_audio_connection_event_process Unexpected state:%d", state);
         break;
     }
 }
