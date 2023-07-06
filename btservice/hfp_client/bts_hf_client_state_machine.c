@@ -930,13 +930,11 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
     }
 
     case STACK_EVENT_CLIP: {
-        if (!hfsm->call_in_progress) {
-            char* number = data->string1;
-            char* name = data->string2;
+        char* number = data->string1;
+        char* name = data->string2;
 
-            BT_LOGD("CLIP:number :%s, name: %s", number, name == NULL ? "NULL" : name);
-            HF_SERVICE_CBACK(service->callbacks, clip_cb, hfsm->addr, number, name);
-        }
+        BT_LOGD("CLIP:number :%s, name: %s", number, name == NULL ? "NULL" : name);
+        HF_SERVICE_CBACK(service->callbacks, clip_cb, hfsm->addr, number, name);
         break;
     }
 
