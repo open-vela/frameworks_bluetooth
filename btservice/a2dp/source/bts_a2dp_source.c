@@ -46,15 +46,15 @@
 #include "stack_adapter_service_base.h"
 
 #include "a2dp_ipc.h"
-#include "btm_manager.h"
-#include "bts_service.h"
 #include "btm_a2dp_source.h"
-#include "bts_a2dp_source.h"
-#include "bts_a2dp_device.h"
-#include "bts_a2dp_codec.h"
-#include "bts_a2dp_event.h"
+#include "btm_manager.h"
 #include "bts_a2dp_audio.h"
+#include "bts_a2dp_codec.h"
+#include "bts_a2dp_device.h"
+#include "bts_a2dp_event.h"
+#include "bts_a2dp_source.h"
 #include "bts_a2dp_state_machine.h"
+#include "bts_service.h"
 #include "utils/log.h"
 #include "utils/utils.h"
 
@@ -74,7 +74,7 @@ static void adp_peer_partial_reconnect_cb(BD_ADDR remote_addr);
 static void a2dp_source_init(void);
 static void a2dp_source_cleanup(void);
 
-static a2dp_source_t a2dp_source = {.enabled = false};
+static a2dp_source_t a2dp_source = { .enabled = false };
 
 static A2DP_SOURCE_CALLBACKS_S a2dp_callback = {
     sizeof(a2dp_callback),
@@ -154,7 +154,7 @@ static void a2dp_service_handle_event(a2dp_event_t* a2dp_event, uint8_t peer_sep
             break;
 
         config = a2dp_event->event_data.data;
-        BT_LOGD("CODEC_CONFIG_EVT : codec_type: %d, sample_rate: %" PRIu32", bits_per_sample: %d, channel_mode: %d",
+        BT_LOGD("CODEC_CONFIG_EVT : codec_type: %d, sample_rate: %" PRIu32 ", bits_per_sample: %d, channel_mode: %d",
             config->codec_type,
             config->sample_rate,
             config->bits_per_sample,
@@ -242,12 +242,13 @@ static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM
 static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S* config)
 {
     a2dp_event_t* event;
-    a2dp_codec_config_t codec_config = {0};
+    a2dp_codec_config_t codec_config = { 0 };
 
     codec_config.codec_type = config->codec;
     codec_config.sample_rate = config->sample_rate;
     codec_config.channel_mode = config->channel;
     codec_config.bits_per_sample = config->bit_width;
+    codec_config.packet_size = A2DP_PERIOD_BYTES;
     memcpy(codec_config.specific_info, config->codec_info, config->codec_info_len);
     event = a2dp_event_new(CODEC_CONFIG_EVT, remote_addr);
     event->event_data.data = malloc(sizeof(codec_config));
@@ -287,7 +288,7 @@ static void a2dp_source_init(void)
 #ifndef CONFIG_ARCH_SIM
 #ifdef CONFIG_UORB
     a2dp_source.orb_fd = orb_advertise_queue(ORB_ID(a2dp_state),
-                                             NULL, CONFIG_BLUETOOTH_ORB_QUEUE_SIZE);
+        NULL, CONFIG_BLUETOOTH_ORB_QUEUE_SIZE);
     if (a2dp_source.orb_fd < 0) {
         BT_LOGE("a2dp_source.orb_fd advertise failed");
         return;
@@ -372,8 +373,7 @@ bool bts_a2dp_source_stream_ready(void)
         return false;
 
     state = a2dp_state_machine_get_state(a2dp_sm);
-    if (state == A2DP_STATE_OPENED ||
-        (state == A2DP_STATE_STARTED && a2dp_state_machine_is_pending_stop(a2dp_sm)))
+    if (state == A2DP_STATE_OPENED || (state == A2DP_STATE_STARTED && a2dp_state_machine_is_pending_stop(a2dp_sm)))
         return true;
 
     return false;
@@ -450,7 +450,7 @@ void bts_a2dp_source_cleanup(void)
     do_in_a2dp_service(a2dp_event_new(CLEANUP, NULL));
 }
 
-//show Device[1]: Addr: 04:7F:0E:00:00:1B, State: Opened, Active: true
+// show Device[1]: Addr: 04:7F:0E:00:00:1B, State: Opened, Active: true
 void bts_a2dp_source_dump(void)
 {
     a2dp_device_t* device;

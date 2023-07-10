@@ -34,9 +34,12 @@
 #define __BTS_A2DP_CODEC_H__
 
 #include <sys/types.h>
-#include "btm_manager.h"
-#include "a2dp_codec_sbc.h"
+
 #include "a2dp_codec_aac.h"
+#include "a2dp_codec_sbc.h"
+#include "btm_manager.h"
+
+#define A2DP_PERIOD_BYTES 1024
 
 typedef enum {
     BTS_A2DP_TYPE_SBC,
@@ -55,7 +58,7 @@ typedef enum {
 typedef uint32_t bts_a2dp_codec_sample_rate_t;
 
 typedef enum {
-    BTS_A2DP_CODEC_BITS_PER_SAMPLE_8 =  0x0,
+    BTS_A2DP_CODEC_BITS_PER_SAMPLE_8 = 0x0,
     BTS_A2DP_CODEC_BITS_PER_SAMPLE_16 = 0x1,
 } bts_a2dp_codec_bits_per_sample_t;
 
@@ -70,7 +73,9 @@ typedef struct {
     bts_a2dp_codec_bits_per_sample_t bits_per_sample;
     bts_a2dp_codec_channel_mode_t channel_mode;
     uint32_t bit_rate;
-    uint8_t  specific_info[20];
+    uint32_t frame_size;
+    uint32_t packet_size;
+    uint8_t specific_info[20];
     union {
         sbc_param_t sbc;
         aac_encoder_param_t aac;
@@ -80,6 +85,5 @@ typedef struct {
 a2dp_codec_config_t* bts_a2dp_codec_get_config(void);
 void bts_a2dp_codec_set_config(uint8_t peer_sep, a2dp_codec_config_t* config);
 void bts_a2dp_codec_update_config(uint8_t peer_sep, a2dp_codec_config_t* config, uint16_t mtu);
-
 
 #endif
