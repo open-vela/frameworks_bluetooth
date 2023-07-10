@@ -33,14 +33,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "a2dp_ipc.h"
 #include "btm_manager.h"
-#include "bts_service.h"
 #include "bts_a2dp_codec.h"
 #include "bts_a2dp_control.h"
 #include "bts_a2dp_sink.h"
 #include "bts_a2dp_source.h"
 #include "bts_a2dp_source_audio.h"
-#include "a2dp_ipc.h"
+#include "bts_service.h"
 
 #include "utils.h"
 #define LOG_TAG "a2dp_control"
@@ -48,7 +48,7 @@
 
 a2dp_ipc_t* a2dp_ipc = NULL;
 
-static const char *a2dp_ipc_path[] = {
+static const char* a2dp_ipc_path[] = {
     A2DP_SOURCE_CTRL_PATH,
     A2DP_SOURCE_DATA_PATH,
     A2DP_SINK_CTRL_PATH,
@@ -115,6 +115,10 @@ void bts_a2dp_control_update_audio_config(uint8_t ch_id, uint8_t isvalid)
         UINT32_TO_STREAM(p, codec_config->channel_mode);
         /* set bit rate*/
         UINT32_TO_STREAM(p, codec_config->bit_rate);
+        /* set frame size*/
+        UINT32_TO_STREAM(p, codec_config->frame_size);
+        /* set packet size*/
+        UINT32_TO_STREAM(p, codec_config->packet_size);
         if (codec_config->codec_type == BTS_A2DP_TYPE_SBC) {
             len += 20;
             /* set sbc channel mode*/
@@ -202,7 +206,7 @@ static void bts_a2dp_recv_ctrl_data(uint8_t ch_id, a2dp_ctrl_cmd_t cmd)
 {
     BT_LOGD("%s: a2dp-ctrl-cmd : %s", __func__,
         audio_a2dp_hw_dump_ctrl_cmd(cmd));
-    //check length
+    // check length
     switch (cmd) {
     case A2DP_CTRL_CMD_START:
         bts_a2dp_control_on_start(ch_id);
@@ -225,7 +229,7 @@ static void bts_a2dp_recv_ctrl_data(uint8_t ch_id, a2dp_ctrl_cmd_t cmd)
         audio_a2dp_hw_dump_ctrl_cmd(cmd));
 }
 
-static void bts_a2dp_ctrl_buffer_alloc(uint8_t ch_id, uint8_t** buffer, size_t *len)
+static void bts_a2dp_ctrl_buffer_alloc(uint8_t ch_id, uint8_t** buffer, size_t* len)
 {
     *len = 128;
     *buffer = malloc(*len);
@@ -243,14 +247,14 @@ static void bts_a2dp_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t 
         return;
     }
 
-    while(len) {
+    while (len) {
         /* get cmd code*/
         STREAM_TO_UINT8(cmd, pbuf);
         len--;
         /* process cmd*/
         bts_a2dp_recv_ctrl_data(ch_id, cmd);
     }
-    //free the buffer alloced by bts_a2dp_ctrl_buffer_alloc
+    // free the buffer alloced by bts_a2dp_ctrl_buffer_alloc
     free(buffer);
 }
 
@@ -328,7 +332,7 @@ void bts_a2dp_control_init(uint8_t ctrl_id, uint8_t data_id)
 void bts_a2dp_control_cleanup(void)
 {
     /* don't close ipc when bt stack disable*/
-    //if (a2dp_ipc) {
-    //    a2dp_ipc_close(a2dp_ipc, A2DP_IPC_CH_ID_ALL);
-    //}
+    // if (a2dp_ipc) {
+    //     a2dp_ipc_close(a2dp_ipc, A2DP_IPC_CH_ID_ALL);
+    // }
 }

@@ -46,13 +46,13 @@
 #include "stack_adapter_service_base.h"
 
 #include "a2dp_ipc.h"
-#include "btm_manager.h"
 #include "btm_a2dp_sink.h"
-#include "bts_a2dp_sink.h"
-#include "bts_a2dp_device.h"
-#include "bts_a2dp_codec.h"
-#include "bts_a2dp_event.h"
+#include "btm_manager.h"
 #include "bts_a2dp_audio.h"
+#include "bts_a2dp_codec.h"
+#include "bts_a2dp_device.h"
+#include "bts_a2dp_event.h"
+#include "bts_a2dp_sink.h"
 #include "bts_a2dp_state_machine.h"
 #include "bts_service.h"
 #include "utils/log.h"
@@ -66,19 +66,19 @@
 
 static void adpt_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state);
 static void adpt_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state, uint16_t sink_cid);
-static void adpt_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S *config);
-static void adpt_packet_received_cb(BD_ADDR remote_addr, SERVICE_A2DP_SINK_DATA_S *data);
+static void adpt_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S* config);
+static void adpt_packet_received_cb(BD_ADDR remote_addr, SERVICE_A2DP_SINK_DATA_S* data);
 static void adpt_stream_req_received_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_REQUEST request);
 static void do_in_a2dp_snk_service(a2dp_event_t* a2dp_event);
 
-static a2dp_sink_t a2dp_sink = {.enabled = false};
+static a2dp_sink_t a2dp_sink = { .enabled = false };
 
 static A2DP_SINK_CALLBACKS_S a2dp_sink_callback = {
     sizeof(a2dp_sink_callback),
     adpt_connection_state_changed_cb,
     adpt_stream_state_changed_cb,
     adpt_stream_config_changed_cb,
-    //CONFIG_SBC should be disabled, we dont need it.
+    // CONFIG_SBC should be disabled, we dont need it.
     NULL,
     adpt_packet_received_cb,
     adpt_stream_req_received_cb,
@@ -106,13 +106,13 @@ static void a2dp_sink_init(void)
         return;
     }
 
-    #if 0
+#if 0
     a2dp_sink.orb_fd = orb_advertise(ORB_ID(a2dp_state), NULL);
     if (a2dp_sink.orb_fd < 0) {
         BT_LOGE("a2dp_sink.orb_fd advertise failed");
         return;
     }
-    #endif
+#endif
 
     bts_a2dp_audio_init(SVR_SINK);
 }
@@ -193,7 +193,7 @@ static void a2dp_snk_service_handle_event(a2dp_event_t* a2dp_event, uint8_t peer
             break;
 
         config = a2dp_event->event_data.data;
-        BT_LOGD("CODEC_CONFIG_EVT : codec_type: %d, sample_rate: %" PRIu32", bits_per_sample: %d, channel_mode: %d",
+        BT_LOGD("CODEC_CONFIG_EVT : codec_type: %d, sample_rate: %" PRIu32 ", bits_per_sample: %d, channel_mode: %d",
             config->codec_type,
             config->sample_rate,
             config->bits_per_sample,
@@ -265,15 +265,16 @@ static void adpt_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREA
     do_in_a2dp_snk_service(a2dp_event_new(event, remote_addr));
 }
 
-static void adpt_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S *config)
+static void adpt_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S* config)
 {
     a2dp_event_t* event;
-    a2dp_codec_config_t codec_config = {0};
+    a2dp_codec_config_t codec_config = { 0 };
 
     codec_config.codec_type = config->codec;
     codec_config.sample_rate = config->sample_rate;
     codec_config.channel_mode = config->channel;
     codec_config.bits_per_sample = config->bit_width;
+    codec_config.packet_size = A2DP_PERIOD_BYTES;
     memcpy(codec_config.specific_info, config->codec_info, config->codec_info_len);
     event = a2dp_event_new(CODEC_CONFIG_EVT, remote_addr);
     event->event_data.data = malloc(sizeof(codec_config));
@@ -282,19 +283,19 @@ static void adpt_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STRE
     do_in_a2dp_snk_service(event);
 }
 
-static void adpt_packet_received_cb(BD_ADDR remote_addr, SERVICE_A2DP_SINK_DATA_S *data)
+static void adpt_packet_received_cb(BD_ADDR remote_addr, SERVICE_A2DP_SINK_DATA_S* data)
 {
-    uint8_t *p;
+    uint8_t* p;
     uint8_t offset;
     uint16_t seq, pktlen;
     uint32_t timestamp;
-    a2dp_event_t * event;
-    a2dp_sink_packet_t *packet;
+    a2dp_event_t* event;
+    a2dp_sink_packet_t* packet;
     if (data == NULL || data->p_buffer == NULL)
         return;
 
     p = data->p_buffer;
-    offset = 12 + (*p & 0x0F) * 4; //rtp header + ssrc
+    offset = 12 + (*p & 0x0F) * 4; // rtp header + ssrc
     pktlen = data->length - offset;
     p += 2;
     BE_STREAM_TO_UINT16(seq, p);
@@ -307,7 +308,7 @@ static void adpt_packet_received_cb(BD_ADDR remote_addr, SERVICE_A2DP_SINK_DATA_
     event = a2dp_event_new(DATA_IND_EVT, remote_addr);
     event->event_data.packet = packet;
     do_in_a2dp_snk_service(event);
-    //bts_a2dp_sink_packet_recieve(packet);
+    // bts_a2dp_sink_packet_recieve(packet);
 }
 
 static void adpt_stream_req_received_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_REQUEST request)
@@ -424,8 +425,7 @@ void bts_a2dp_sink_cleanup(void)
     do_in_a2dp_snk_service(a2dp_event_new(CLEANUP, NULL));
 }
 
-//show Device[1]: Addr: 04:7F:0E:00:00:1B, State: Opened, Active: true
+// show Device[1]: Addr: 04:7F:0E:00:00:1B, State: Opened, Active: true
 void bts_a2dp_sink_dump(void)
 {
-
 }
