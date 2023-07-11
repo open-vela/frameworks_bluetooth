@@ -1,0 +1,63 @@
+/****************************************************************************
+ *  Copyright (C) 2022 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+#ifndef __SAL_LEA_CCPC_INTERFACE_H__
+#define __SAL_LEA_CCPC_INTERFACE_H__
+
+#include <stdint.h>
+
+#include "bt_addr.h"
+#include "bt_status.h"
+#include "bt_lea_ccpc.h"
+#include "stack_adapter_common.h"
+#include "stack_adapter_lea_ccp.h"
+
+bt_status_t bt_sal_lea_tbc_read_bearer_provider_name(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_bearer_uci(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_bearer_technology(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_bearer_uri_schemes_supported_list(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_bearer_signal_strength(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_bearer_signal_strength_report_interval(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_content_control_id(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_status_flags(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_call_control_optional_opcodes(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_incoming_call(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_incoming_call_target_bearer_uri(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_call_state(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_bearer_list_current_calls(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_read_call_friendly_name(bt_address_t *addr, uint32_t tbs_id);
+bt_status_t bt_sal_lea_tbc_call_control_by_index(bt_address_t *addr, uint32_t tbs_id, uint8_t opcode, uint8_t call_index);
+bt_status_t bt_sal_lea_tbc_originate_call(bt_address_t *addr, uint32_t tbs_id, uint8_t *uri);
+bt_status_t bt_sal_lea_tbc_join_calls(bt_address_t *addr, uint32_t tbs_id, uint8_t number, uint8_t *call_indexes);
+
+
+void adpt_lea_tbc_bearer_provider_name_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t* name);
+void adpt_lea_tbc_bearer_uci_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t* uci);
+void adpt_lea_tbc_bearer_technology_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t technology);
+void adpt_lea_tbc_bearer_uri_schemes_supported_list_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t* uri_schemes);
+void adpt_lea_tbc_bearer_signal_strength_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t strength);
+void adpt_lea_tbc_bearer_signal_strength_report_interval_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t interval);
+void adpt_lea_tbc_content_control_id_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t ccid);
+void adpt_lea_tbc_status_flags_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint16_t status_flags);
+void adpt_lea_tbc_call_control_optional_opcodes_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint16_t opcodes);
+void adpt_lea_tbc_incoming_call_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index, uint8_t* uri);
+void adpt_lea_tbc_incoming_call_target_bearer_uri_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index, uint8_t* uri);
+void adpt_lea_tbc_call_state_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint32_t number, SERVICE_LEA_TBS_CALL_STATE_S* states_s);
+void adpt_lea_tbc_bearer_list_current_calls_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint32_t number, SERVICE_LEA_TBS_CALLS_LIST_ITEM_S* calls);
+void adpt_lea_tbc_call_friendly_name_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index, uint8_t* name);
+void adpt_lea_tbc_termination_reason_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index, uint8_t reason);
+void adpt_lea_tbc_call_control_result_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t opcode, uint8_t call_index, uint8_t result);
+
+#endif /* __SAL_LEA_CCPC_INTERFACE_H__ */
