@@ -22,6 +22,13 @@
 #include "bt_device.h"
 #include "bt_lea_server.h"
 
+enum { /* UUIDs */
+    GATT_UUID_MEDIA_CONTROL = 0x1848,
+    GATT_UUID_GENERIC_MEDIA_CONTROL = 0x1849,
+    GATT_UUID_TELEPHONE_BEARER = 0x184B,
+    GATT_UUID_GENERIC_TELEPHONE_BEARER = 0x184C,
+};
+
 typedef enum {
     ADPT_LEA_ASE_STATE_IDLE,
     ADPT_LEA_ASE_STATE_CODEC_CONFIG,

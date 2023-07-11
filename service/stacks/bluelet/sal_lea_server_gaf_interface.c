@@ -27,9 +27,11 @@
 #include "bluetooth.h"
 #include "bt_status.h"
 #include "lea_audio_common.h"
+#include "lea_ccpc_service.h"
 #include "lea_server_service.h"
 #include "sal.h"
 #include "sal_bluelet.h"
+#include "sal_lea_ccpc_interface.h"
 #include "sal_lea_server_interface.h"
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
@@ -120,7 +122,29 @@ static LEA_AUDIO_STREAM_CALLBACK_S adpt_audio_stream_callbacks = {
 };
 
 static const LEA_MCC_CALLBACK_S adpt_lea_mcp_client_callbacks;
-static const LEA_TBC_CALLBACK_S adpt_lea_ccp_client_callbacks;
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
+static const LEA_TBC_CALLBACK_S adpt_lea_ccp_client_callbacks = {
+    .lea_tbc_bearer_provider_name_cb = adpt_lea_tbc_bearer_provider_name_callback,
+    .lea_tbc_bearer_uci_cb = adpt_lea_tbc_bearer_uci_callback,
+    .lea_tbc_bearer_technology_cb = adpt_lea_tbc_bearer_technology_callback,
+    .lea_tbc_bearer_uri_schemes_supported_list_cb = adpt_lea_tbc_bearer_uri_schemes_supported_list_callback,
+    .lea_tbc_bearer_signal_strength_cb = adpt_lea_tbc_bearer_signal_strength_callback,
+    .lea_tbc_bearer_signal_strength_report_interval_cb = adpt_lea_tbc_bearer_signal_strength_report_interval_callback,
+    .lea_tbc_content_control_id_cb = adpt_lea_tbc_content_control_id_callback,
+    .lea_tbc_status_flags_cb = adpt_lea_tbc_status_flags_callback,
+    .lea_tbc_call_control_optional_opcodes_cb = adpt_lea_tbc_call_control_optional_opcodes_callback,
+
+    .lea_tbc_incoming_call_cb = adpt_lea_tbc_incoming_call_callback,
+    .lea_tbc_incoming_call_target_bearer_uri_cb = adpt_lea_tbc_incoming_call_target_bearer_uri_callback,
+    .lea_tbc_call_state_cb = adpt_lea_tbc_call_state_callback,
+    .lea_tbc_bearer_list_current_calls_cb = adpt_lea_tbc_bearer_list_current_calls_callback,
+    .lea_tbc_call_friendly_name_cb = adpt_lea_tbc_call_friendly_name_callback,
+    .lea_tbc_termination_reason_cb = adpt_lea_tbc_termination_reason_callback,
+
+    .lea_tbc_call_control_result_cb = adpt_lea_tbc_call_control_result_callback,
+};
+#endif
+
 static const LEA_VCS_CALLBACK_S adpt_lea_vcs_server_callbacks;
 static const LEA_MICS_CALLBACK_S adpt_lea_mics_server_callbacks;
 static const LEA_VOCS_CALLBACK_S adpt_lea_vocs_server_callbacks;
@@ -213,6 +237,11 @@ static void adpt_remote_services_callback(BD_ADDR remote_addr, uint8_t number, S
         SERVICE_LEA_PRIMARY_SERVICE_S *end = current + number;
         while (current < end) {
             BT_LOGD("%s, sid:[%04d], type:[%04x]", __func__, current->sid, current->type);
+            if (current->type == GATT_UUID_GENERIC_TELEPHONE_BEARER) {
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
+                adpt_tbs_sid_changed(current->sid);
+#endif
+            }
             current++;
         }
     }
@@ -360,7 +389,9 @@ static const LEA_INIT_INFO_CALLBACK_S server_callbacks = {
     .lea_mcp_server_cbks = NULL,
     .lea_mcp_client_cbks = &adpt_lea_mcp_client_callbacks,
     .lea_ccp_server_cbks = NULL,
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
     .lea_ccp_client_cbks = &adpt_lea_ccp_client_callbacks,
+#endif
     .lea_vcs_server_cbks = &adpt_lea_vcs_server_callbacks,
     .lea_vcs_client_cbks = NULL,
     .lea_mics_server_cbks = &adpt_lea_mics_server_callbacks,

@@ -43,6 +43,7 @@ enum profile_id {
     PROFILE_GATTC,
     PROFILE_GATTS,
     PROFILE_LEAUDIO_SERVER,
+    PROFILE_LEA_CCPC,
     PROFILE_MAX
 };
 

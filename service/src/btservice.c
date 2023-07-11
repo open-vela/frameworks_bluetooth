@@ -41,6 +41,9 @@
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
 #include "lea_server_service.h"
 #endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
+#include "lea_ccpc_service.h"
+#endif
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
 #include "a2dp_sink_service.h"
@@ -114,6 +117,10 @@ void bt_profile_init(void)
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
     register_lea_server_service();
+#endif
+
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
+    register_lea_ccpc_service();
 #endif
 }
 
