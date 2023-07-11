@@ -106,4 +106,8 @@ int lea_server_command_init(void *handle);
 void lea_server_command_uninit(void *handle);
 int leas_command_exec(void *handle, int argc, char *argv[]);
 
+int lea_ccpc_command_init(void *handle);
+void lea_ccpc_command_uninit(void *handle);
+int lea_ccpc_command_exec(void *handle, int argc, char *argv[]);
+
 #endif /* __BT_TOOLS_H__ */

@@ -269,6 +269,19 @@ config BLUETOOTH_LEAUDIO_SERVER
 	bool "enable bluetooth leaudio server feature"
 	default n
 
+config BLUETOOTH_LEAUDIO_CCPC
+	bool "enable bluetooth leaudio ccpc feature"
+	default n
+
+if BLUETOOTH_LEAUDIO_CCPC
+config BLUETOOTH_LEAUDIO_SERVER_CALL_CONTROL_NUMBER
+	int "leaudio tbs server number"
+	default 1
+	help
+		leaudio tbs server number
+
+endif # BLUETOOTH_LEAUDIO_CCPC
+
 if BLUETOOTH_LEAUDIO_SERVER
 config BLUETOOTH_LEAUDIO_SERVER_SINK_ASE_NUMBER
 	int "leaudio server sink number"
