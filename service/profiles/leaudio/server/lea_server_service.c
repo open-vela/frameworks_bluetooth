@@ -639,8 +639,16 @@ void lea_server_on_stream_started(lea_audio_stream_t *audio)
 
 void lea_server_on_stream_stopped(uint32_t stream_id)
 {
-    lea_server_msg_t *msg = lea_server_msg_new(STACK_EVENT_STREAM_STOPPED,
-                                               NULL);
+    lea_audio_stream_t *stream;
+    lea_server_msg_t *msg;
+
+    stream = lea_server_find_stream(stream_id);
+    if (!stream) {
+        BT_LOGE("%s, failed stream_id:%d", __func__, stream_id);
+        return;
+    }
+
+    msg = lea_server_msg_new(STACK_EVENT_STREAM_STOPPED, &stream->addr);
     if (!msg)
         return;
 
@@ -650,8 +658,16 @@ void lea_server_on_stream_stopped(uint32_t stream_id)
 
 void lea_server_on_stream_suspend(uint32_t stream_id)
 {
-    lea_server_msg_t *msg = lea_server_msg_new(STACK_EVENT_STREAM_SUSPEND,
-                                               NULL);
+    lea_audio_stream_t *stream;
+    lea_server_msg_t *msg;
+
+    stream = lea_server_find_stream(stream_id);
+    if (!stream) {
+        BT_LOGE("%s, failed stream_id:%d", __func__, stream_id);
+        return;
+    }
+
+    msg = lea_server_msg_new(STACK_EVENT_STREAM_SUSPEND, &stream->addr);
     if (!msg)
         return;
 
@@ -661,8 +677,16 @@ void lea_server_on_stream_suspend(uint32_t stream_id)
 
 void lea_server_on_stream_resume(uint32_t stream_id)
 {
-    lea_server_msg_t *msg = lea_server_msg_new(STACK_EVENT_STREAM_RESUME,
-                                               NULL);
+    lea_audio_stream_t *stream;
+    lea_server_msg_t *msg;
+
+    stream = lea_server_find_stream(stream_id);
+    if (!stream) {
+        BT_LOGE("%s, failed stream_id:%d", __func__, stream_id);
+        return;
+    }
+
+    msg = lea_server_msg_new(STACK_EVENT_STREAM_RESUME, &stream->addr);
     if (!msg)
         return;
 
@@ -672,8 +696,16 @@ void lea_server_on_stream_resume(uint32_t stream_id)
 
 void lea_server_on_metedata_updated(uint32_t stream_id)
 {
-    lea_server_msg_t *msg = lea_server_msg_new(STACK_EVENT_METADATA_UPDATED,
-                                               NULL);
+    lea_audio_stream_t *stream;
+    lea_server_msg_t *msg;
+
+    stream = lea_server_find_stream(stream_id);
+    if (!stream) {
+        BT_LOGE("%s, failed stream_id:%d", __func__, stream_id);
+        return;
+    }
+
+    msg = lea_server_msg_new(STACK_EVENT_METADATA_UPDATED, &stream->addr);
     if (!msg)
         return;
 
@@ -709,8 +741,16 @@ void lea_server_on_stream_recv(uint32_t stream_id, uint32_t time_stamp,
 
 void lea_server_on_stream_send(uint32_t stream_id)
 {
-    lea_server_msg_t *msg = lea_server_msg_new(STACK_EVENT_STREAN_SENT,
-                                               NULL);
+    lea_audio_stream_t *stream;
+    lea_server_msg_t *msg;
+
+    stream = lea_server_find_stream(stream_id);
+    if (!stream) {
+        BT_LOGE("%s, failed stream_id:%d", __func__, stream_id);
+        return;
+    }
+
+    msg = lea_server_msg_new(STACK_EVENT_STREAN_SENT, &stream->addr);
     if (!msg)
         return;
 
