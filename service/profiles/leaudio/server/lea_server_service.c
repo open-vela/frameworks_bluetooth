@@ -1023,16 +1023,8 @@ void lea_server_on_stream_started(lea_audio_stream_t *audio)
 
 void lea_server_on_stream_stopped(uint32_t stream_id)
 {
-    lea_audio_stream_t *stream;
-    lea_server_msg_t *msg;
-
-    stream = lea_server_find_stream(stream_id);
-    if (!stream) {
-        BT_LOGE("%s, failed stream_id:0x%08x", __func__, stream_id);
-        return;
-    }
-
-    msg = lea_server_msg_new(STACK_EVENT_STREAM_STOPPED, &stream->addr);
+    lea_server_msg_t *msg = lea_server_msg_new(STACK_EVENT_STREAM_STOPPED,
+                                               NULL);
     if (!msg)
         return;
 
@@ -1042,16 +1034,8 @@ void lea_server_on_stream_stopped(uint32_t stream_id)
 
 void lea_server_on_stream_suspend(uint32_t stream_id)
 {
-    lea_audio_stream_t *stream;
-    lea_server_msg_t *msg;
-
-    stream = lea_server_find_stream(stream_id);
-    if (!stream) {
-        BT_LOGE("%s, failed stream_id:0x%08x", __func__, stream_id);
-        return;
-    }
-
-    msg = lea_server_msg_new(STACK_EVENT_STREAM_SUSPEND, &stream->addr);
+    lea_server_msg_t *msg = lea_server_msg_new(STACK_EVENT_STREAM_SUSPEND,
+                                               NULL);
     if (!msg)
         return;
 
@@ -1061,16 +1045,8 @@ void lea_server_on_stream_suspend(uint32_t stream_id)
 
 void lea_server_on_stream_resume(uint32_t stream_id)
 {
-    lea_audio_stream_t *stream;
-    lea_server_msg_t *msg;
-
-    stream = lea_server_find_stream(stream_id);
-    if (!stream) {
-        BT_LOGE("%s, failed stream_id:0x%08x", __func__, stream_id);
-        return;
-    }
-
-    msg = lea_server_msg_new(STACK_EVENT_STREAM_RESUME, &stream->addr);
+    lea_server_msg_t *msg = lea_server_msg_new(STACK_EVENT_STREAM_RESUME,
+                                               NULL);
     if (!msg)
         return;
 
@@ -1080,16 +1056,8 @@ void lea_server_on_stream_resume(uint32_t stream_id)
 
 void lea_server_on_metedata_updated(uint32_t stream_id)
 {
-    lea_audio_stream_t *stream;
-    lea_server_msg_t *msg;
-
-    stream = lea_server_find_stream(stream_id);
-    if (!stream) {
-        BT_LOGE("%s, failed stream_id:0x%08x", __func__, stream_id);
-        return;
-    }
-
-    msg = lea_server_msg_new(STACK_EVENT_METADATA_UPDATED, &stream->addr);
+    lea_server_msg_t *msg = lea_server_msg_new(STACK_EVENT_METADATA_UPDATED,
+                                               NULL);
     if (!msg)
         return;
 
@@ -1113,34 +1081,17 @@ void lea_server_on_stream_recv(uint32_t stream_id, uint32_t time_stamp,
     if (!packet)
         return;
 
-    // todo mix from many stream ?
-    lea_audio_sink_packet_recv(packet);
+    msg->data.valueint1 = stream_id;
+    msg->data.datapointer = packet;
+    lea_server_send_message(msg);
 }
 
-bt_status_t lea_server_streams_started(bt_address_t *addr)
+void lea_server_on_stream_send(uint32_t stream_id)
 {
-    lea_server_service_t *service = &g_lea_server_service;
-    bt_list_t *list = service->leas_stream;
-    lea_audio_stream_t *stream;
-    bt_list_node_t *node;
-    lea_server_msg_t *msg;
-    lea_server_state_machine_t *leas_sm;
-
-    leas_sm = get_state_machine(addr);
-    if (!leas_sm) {
-        BT_LOGE("failed, %s leas_sm null", __func__);
-        return BT_STATUS_NOMEM;
-    }
-
-    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
-        stream = bt_list_node(node);
-        BT_LOGD("%s addr:%s, started:%d, stream_id:0x%08x", __func__, bt_addr_str(&stream->addr),
-                stream->started, stream->stream_id);
-        if (stream->started && (bt_addr_compare(addr, &stream->addr) == 0)) {
-            msg = lea_server_msg_new_ext(STACK_EVENT_STREAM_STARTED,
-                                         &stream->addr, stream, sizeof(lea_audio_stream_t));
-            if (!msg)
-                return BT_STATUS_NOMEM;
+    lea_server_msg_t *msg = lea_server_msg_new(STACK_EVENT_STREAN_SENT,
+                                               NULL);
+    if (!msg)
+        return;
 
             lea_server_state_machine_dispatch(leas_sm, msg);
         }
