@@ -476,8 +476,8 @@ bt_status_t lea_audio_source_update_codec(uint32_t stream_id, lea_audio_config_t
     UINT32_TO_STREAM(p, audio_config->bit_rate);
 
     len += 8;
-    UINT32_TO_STREAM(p, audio_config->lc3.frame_size);
-    UINT32_TO_STREAM(p, audio_config->lc3.octets);
+    UINT32_TO_STREAM(p, audio_config->frame_size);
+    UINT32_TO_STREAM(p, audio_config->packet_size);
 
     lea_ctrl_event_with_data(IPC_CH_ID_AV_SOURCE_CTRL, AUDIO_CTRL_EVT_UPDATE_CONFIG, buffer, len);
     return BT_STATUS_SUCCESS;

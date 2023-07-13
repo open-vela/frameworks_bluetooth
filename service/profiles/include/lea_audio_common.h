@@ -39,27 +39,14 @@
  * Public Types
  ****************************************************************************/
 typedef struct {
-    uint32_t frame_size;
-    uint32_t octets;
-} lc3_param_t;
-
-typedef struct {
-    uint16_t freq;
-    uint16_t mode;
-} sbc_param_t;
-
-typedef struct {
     uint8_t codec_type;
     uint32_t sample_rate;
     uint8_t bits_per_sample;
     uint8_t channel_mode;
     uint32_t bit_rate;
     uint16_t sdu_size;
-    uint8_t specific_info[20];
-    union {
-        lc3_param_t lc3;
-        sbc_param_t sbc;
-    };
+    uint32_t frame_size;
+    uint32_t packet_size;
 } lea_audio_config_t;
 
 typedef struct {

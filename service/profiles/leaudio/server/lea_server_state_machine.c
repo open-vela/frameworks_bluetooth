@@ -443,8 +443,8 @@ static lea_audio_config_t lea_server_covert_audio_codec(lea_codec_config_t *conf
     audio_config.bits_per_sample = 1; // CODEC_BITS_PER_SAMPLE_16
     audio_config.channel_mode = lea_server_channel_mode(config->allocation);
     audio_config.bit_rate = lea_server_get_bitrate(config);
-    audio_config.lc3.frame_size = audio_config.sample_rate * (config->duration == 0 ? 0.0075 : 0.01);
-    audio_config.lc3.octets = config->octets * lea_server_get_channels(config->allocation);
+    audio_config.frame_size = audio_config.sample_rate * (config->duration == 0 ? 0.0075 : 0.01);
+    audio_config.packet_size = config->octets * lea_server_get_channels(config->allocation) * config->blocks;
 
     return audio_config;
 }
