@@ -282,6 +282,38 @@ config BLUETOOTH_LEAUDIO_SERVER_CALL_CONTROL_NUMBER
 
 endif # BLUETOOTH_LEAUDIO_CCPC
 
+config BLUETOOTH_LEAUDIO_VMICPS
+	bool "enable bluetooth leaudio vmicps feature"
+	default n
+
+if BLUETOOTH_LEAUDIO_VMICPS
+config BLUETOOTH_LEAUDIO_VCS_VOLUME_STEP
+	int "leaudio server vcs volume step size"
+	default 2
+	help
+		leaudio server vcs volume step size
+config BLUETOOTH_LEAUDIO_VCS_VOCS_NUMBER
+	int "leaudio server vcs vocs numnber"
+	default 0
+	help
+		leaudio server vcs vocs number
+config BLUETOOTH_LEAUDIO_VCS_AICS_NUMBER
+	int "leaudio server vcs vocs numnber"
+	default 0
+	help
+		leaudio server vcs aics number
+config BLUETOOTH_LEAUDIO_VCS_VOLUME_INITIAL
+	int "leaudio server vcs initial volume value"
+	default 125
+	help
+		leaudio server vcs volume initial value
+config BLUETOOTH_LEAUDIO_MICS_AICS_NUMBER
+	int "leaudio server mics aics numnber"
+	default 0
+	help
+		leaudio server mics aics number
+endif # BLUETOOTH_LEAUDIO_VMICPS
+
 if BLUETOOTH_LEAUDIO_SERVER
 config BLUETOOTH_LEAUDIO_SERVER_SINK_ASE_NUMBER
 	int "leaudio server sink number"

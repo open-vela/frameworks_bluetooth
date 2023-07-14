@@ -382,7 +382,7 @@ void lea_ccpc_command_uninit(void *handle)
 
     bt_lea_ccpc_unregister_callbacks(handle, ccpc_callbacks);
 
-    ret = bluetooth_stop_service(handle, PROFILE_LEA_CCPC);
+    ret = bluetooth_stop_service(handle, PROFILE_LEAUDIO_CCPC);
     if (ret != BT_STATUS_SUCCESS) {
         PRINT("%s, failed ret:%d", __func__, ret);
     }

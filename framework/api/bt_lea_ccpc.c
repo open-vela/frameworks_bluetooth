@@ -22,7 +22,7 @@
 
 static lea_ccpc_interface_t *get_profile_service(void)
 {
-    return (lea_ccpc_interface_t *)service_manager_get_profile(PROFILE_LEA_CCPC);
+    return (lea_ccpc_interface_t *)service_manager_get_profile(PROFILE_LEAUDIO_CCPC);
 }
 
 void *bt_lea_ccpc_register_callbacks(bt_instance_t *ins, const lea_ccpc_callbacks_t *callbacks)
