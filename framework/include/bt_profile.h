@@ -30,6 +30,7 @@ extern "C" {
 #define PROFILE_PANU_NAME      "PANU"
 #define PROFILE_GATTC_NAME     "GATTC"
 #define PROFILE_GATTS_NAME     "GATTS"
+#define PROFILE_VMICPS_NAME    "VMICPS"
 
 enum profile_id {
     PROFILE_A2DP,
@@ -43,7 +44,8 @@ enum profile_id {
     PROFILE_GATTC,
     PROFILE_GATTS,
     PROFILE_LEAUDIO_SERVER,
-    PROFILE_LEA_CCPC,
+    PROFILE_LEAUDIO_CCPC,
+    PROFILE_LEAUDIO_VMICPS,
     PROFILE_MAX
 };
 
