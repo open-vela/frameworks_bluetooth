@@ -1278,7 +1278,7 @@ static int lea_ccpc_dump(void)
 static const profile_service_t lea_ccpc_service = {
     .auto_start = true,
     .name = "lea_ccpc",
-    .id = PROFILE_LEA_CCPC,
+    .id = PROFILE_LEAUDIO_CCPC,
     .transport = BT_TRANSPORT_BLE,
     .uuid = {BT_UUID128_TYPE, { 0 }},
     .init = lea_ccpc_init,

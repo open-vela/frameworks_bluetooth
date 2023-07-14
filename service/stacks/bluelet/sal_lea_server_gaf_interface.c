@@ -29,10 +29,12 @@
 #include "lea_audio_common.h"
 #include "lea_ccpc_service.h"
 #include "lea_server_service.h"
+#include "lea_vmicps_service.h"
 #include "sal.h"
 #include "sal_bluelet.h"
 #include "sal_lea_ccpc_interface.h"
 #include "sal_lea_server_interface.h"
+#include "sal_lea_vmicps_interface.h"
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
 
@@ -145,8 +147,17 @@ static const LEA_TBC_CALLBACK_S adpt_lea_ccp_client_callbacks = {
 };
 #endif
 
-static const LEA_VCS_CALLBACK_S adpt_lea_vcs_server_callbacks;
-static const LEA_MICS_CALLBACK_S adpt_lea_mics_server_callbacks;
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
+static const LEA_VCS_CALLBACK_S adpt_lea_vcs_server_callbacks = {
+    .lea_vcs_set_volume_state_cb = adpt_lea_vcs_set_volume_state_callback,
+    .lea_vcs_set_volume_flags_cb = adpt_lea_vcs_set_volume_flags_callback,
+};
+
+static const LEA_MICS_CALLBACK_S adpt_lea_mics_server_callbacks = {
+    .lea_mics_set_mute_cb = adpt_lea_mics_set_mute_callback,
+};
+#endif
+
 static const LEA_VOCS_CALLBACK_S adpt_lea_vocs_server_callbacks;
 static const LEA_AICS_CALLBACK_S adpt_lea_aics_server_callbacks;
 
@@ -249,11 +260,28 @@ static void adpt_remote_services_callback(BD_ADDR remote_addr, uint8_t number, S
 
 static bool adpt_req_vcs_info_callback(SERVICE_LEA_VCS_INFO_S *info)
 {
+    BT_LOGD("%s", __func__);
+    info->step_size = CONFIG_BLUETOOTH_LEAUDIO_VCS_VOLUME_STEP;
+    info->volume = CONFIG_BLUETOOTH_LEAUDIO_VCS_VOLUME_INITIAL;
+    info->mute = LEA_VCS_MUTE_STATE_UNMUTED;
+    info->vsps_flag = LEA_VCS_VSPS_RESET_VOLUME_SETTING;
+    info->vocs_number = CONFIG_BLUETOOTH_LEAUDIO_VCS_VOCS_NUMBER;
+    info->aics_number = CONFIG_BLUETOOTH_LEAUDIO_VCS_AICS_NUMBER;
+    info->vocs_list = NULL;
+    info->aics_list = NULL;
+    info->vocs_recycle_func = NULL;
+    info->aics_recycle_func = NULL;
+    return TRUE;
     return true;
 }
 
 static bool adpt_req_mics_info_callback(SERVICE_LEA_MICS_INFO_S *info)
 {
+    BT_LOGD("%s", __func__);
+    info->mute = LEA_AI_MUTE_STATE_UNMUTED;
+    info->aics_number = CONFIG_BLUETOOTH_LEAUDIO_MICS_AICS_NUMBER;
+    info->aics_list = NULL;
+    info->recycle_func = NULL;
     return true;
 }
 
@@ -392,6 +420,7 @@ static const LEA_INIT_INFO_CALLBACK_S server_callbacks = {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
     .lea_ccp_client_cbks = &adpt_lea_ccp_client_callbacks,
 #endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
     .lea_vcs_server_cbks = &adpt_lea_vcs_server_callbacks,
     .lea_vcs_client_cbks = NULL,
     .lea_mics_server_cbks = &adpt_lea_mics_server_callbacks,
@@ -400,6 +429,7 @@ static const LEA_INIT_INFO_CALLBACK_S server_callbacks = {
     .lea_vocs_client_cbks = NULL,
     .lea_aics_server_cbks = &adpt_lea_aics_server_callbacks,
     .lea_aics_client_cbks = NULL,
+#endif
     .lea_csip_server_cbks = &adpt_lea_csip_server_callbacks,
     .lea_csip_client_cbks = NULL,
     .lea_uc_server_cbks = &adpt_lea_uc_server_callbacks,
