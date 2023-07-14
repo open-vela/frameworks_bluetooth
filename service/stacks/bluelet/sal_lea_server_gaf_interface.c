@@ -96,7 +96,7 @@ static SERVICE_LEA_PAC_INFO_S leas_pac_info[3] = {
         LEA_SUPPORTED_CHANNEL_COUNT_1 | LEA_SUPPORTED_CHANNEL_COUNT_2, 60, 155, 2 },
      1,
      &media_sink_metadata },
-    { LEA_PAC_TYPE_SINK_PAC,
+    { LEA_PAC_TYPE_SOURCE_PAC,
      3,
      LEAS_PAC_LC3_CODEC,
      { LEA_CSC_MASK_ALL, LEAS_PACS_CALL_SOURCE_SUPPORTED_SF, LEAS_PACS_FRAME_DURATION,
@@ -328,6 +328,7 @@ static void adpt_streaming_start_callback(SERVICE_LEA_AUDIO_STREAM_S *lea_stream
     audio_stream.stream_id = lea_stream->stream_id;
     audio_stream.iso_handle = lea_stream->iso_handle;
     audio_stream.max_sdu = lea_stream->max_sdu;
+    audio_stream.is_source = bt_sal_lea_is_source_stream(lea_stream->stream_id);
     memcpy(&audio_stream.codec_cfg, &lea_stream->codec_cfg, sizeof(lea_codec_config_t));
     audio_stream.channal_num = lea_server_get_channel(audio_stream.codec_cfg.allocation);
     audio_stream.sdu_size = audio_stream.channal_num * audio_stream.codec_cfg.blocks * audio_stream.codec_cfg.octets;
