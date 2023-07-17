@@ -1498,6 +1498,28 @@ bool adapter_is_support_leaudio(void)
     return false;
 }
 
+bt_device_type_t adapter_get_remote_device_type(bt_address_t *addr)
+{
+    bt_device_t *device;
+    bt_device_type_t device_type = 0;
+
+    adapter_lock();
+    device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    if (device != NULL) {
+        device_type |= device_get_device_type(device);
+        device_type |= BT_DEVICE_TYPE_BREDR;
+    }
+
+    device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+    if (device != NULL) {
+        device_type |= device_get_device_type(device);
+        device_type |= BT_DEVICE_TYPE_BLE;
+    }
+    adapter_unlock();
+
+    return device_type;
+}
+
 bool adapter_get_remote_name(bt_address_t *addr, char *name)
 {
     bt_device_t *device;

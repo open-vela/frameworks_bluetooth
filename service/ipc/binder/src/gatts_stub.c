@@ -136,7 +136,7 @@ static binder_status_t IBleGattServer_Class_onTransact(AIBinder *binder, transac
             if (attr_inst->read_cb)
                 attr_inst->read_cb = BpBleGattServerCallbacks_onRead;
             if (attr_inst->write_cb)
-                attr_inst->wrtie_cb = BpBleGattServerCallbacks_onWrite;
+                attr_inst->write_cb = BpBleGattServerCallbacks_onWrite;
         }
 
         status = profile->create_service_table((void *)handle, srv_db);
