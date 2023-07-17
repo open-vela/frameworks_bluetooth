@@ -1050,7 +1050,6 @@ static void device_dump(void *handle, bt_address_t *addr)
     PRINT("\tAlias: %s", name);
     PRINT("\tClass: 0x%08" PRIx32 "", bt_device_get_device_class(handle, addr));
     PRINT("\tDeviceType: %d", bt_device_get_device_type(handle, addr));
-    PRINT("\tRssi: %d", bt_device_get_rssi(handle, addr));
     PRINT("\tIsConnected: %d", bt_device_is_connected(handle, addr));
     PRINT("\tIsEnc: %d", bt_device_is_encrypted(handle, addr));
     PRINT("\tIsBonded: %d", bt_device_is_bonded(handle, addr));
