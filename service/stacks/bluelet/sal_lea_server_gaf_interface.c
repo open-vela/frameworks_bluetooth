@@ -28,11 +28,13 @@
 #include "bt_status.h"
 #include "lea_audio_common.h"
 #include "lea_ccpc_service.h"
+#include "lea_mcpc_service.h"
 #include "lea_server_service.h"
 #include "lea_vmicps_service.h"
 #include "sal.h"
 #include "sal_bluelet.h"
 #include "sal_lea_ccpc_interface.h"
+#include "sal_lea_mcpc_interface.h"
 #include "sal_lea_server_interface.h"
 #include "sal_lea_vmicps_interface.h"
 
@@ -123,7 +125,37 @@ static LEA_AUDIO_STREAM_CALLBACK_S adpt_audio_stream_callbacks = {
     .lea_received_iso_data_cb = adpt_stream_recv_callback,
 };
 
-static const LEA_MCC_CALLBACK_S adpt_lea_mcp_client_callbacks;
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPC
+static const LEA_MCC_CALLBACK_S adpt_lea_mcp_client_callbacks = {
+    .lea_mcc_media_player_name_cb = adpt_lea_mcc_media_player_name_callback,
+    .lea_mcc_media_player_icon_object_id_cb = adpt_lea_mcc_media_player_icon_object_id_callback,
+    .lea_mcc_media_player_icon_url_cb = adpt_lea_mcc_media_player_icon_url_callback,
+
+    .lea_mcc_playback_speed_cb = adpt_lea_mcc_playback_speed_callback,
+    .lea_mcc_seeking_speed_cb = adpt_lea_mcc_seeking_speed_callback,
+    .lea_mcc_playing_order_cb = adpt_lea_mcc_playing_order_callback,
+    .lea_mcc_playing_orders_supported_cb = adpt_lea_mcc_playing_orders_supported_callback,
+    .lea_mcc_media_control_opcodes_supported_cb = adpt_lea_mcc_media_control_opcodes_supported_callback,
+    .lea_mcc_content_control_id_cb = adpt_lea_mcc_content_control_id_callback,
+
+    .lea_mcc_track_changed_cb = adpt_lea_mcc_track_changed_callback,
+    .lea_mcc_track_title_cb = adpt_lea_mcc_track_title_callback,
+    .lea_mcc_track_duration_cb = adpt_lea_mcc_track_duration_callback,
+    .lea_mcc_track_position_cb = adpt_lea_mcc_track_position_callback,
+
+    .lea_mcc_media_state_cb = adpt_lea_mcc_media_state_callback,
+    .lea_mcc_media_control_result_cb = adpt_lea_mcc_media_control_result_callback,
+    .lea_mcc_search_control_result_cb = adpt_lea_mcc_search_control_result_callback,
+
+    .lea_mcc_current_track_segments_object_id_cb = adpt_lea_mcc_current_track_segments_object_id_callback,
+    .lea_mcc_current_track_object_id_cb = adpt_lea_mcc_current_track_object_id_callback,
+    .lea_mcc_next_track_object_id_cb = adpt_lea_mcc_next_track_object_id_callback,
+    .lea_mcc_parent_group_object_id_cb = adpt_lea_mcc_parent_group_object_id_callback,
+    .lea_mcc_current_group_object_id_cb = adpt_lea_mcc_current_group_object_id_callback,
+    .lea_mcc_search_results_object_id_cb = adpt_lea_mcc_search_results_object_id_callback,
+};
+#endif
+
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
 static const LEA_TBC_CALLBACK_S adpt_lea_ccp_client_callbacks = {
     .lea_tbc_bearer_provider_name_cb = adpt_lea_tbc_bearer_provider_name_callback,
@@ -248,6 +280,11 @@ static void adpt_remote_services_callback(BD_ADDR remote_addr, uint8_t number, S
         SERVICE_LEA_PRIMARY_SERVICE_S *end = current + number;
         while (current < end) {
             BT_LOGD("%s, sid:[%04d], type:[%04x]", __func__, current->sid, current->type);
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPC
+            if (current->type == GATT_UUID_GENERIC_MEDIA_CONTROL) {
+                adapt_mcs_sid_changed(current->sid);
+            }
+#endif
             if (current->type == GATT_UUID_GENERIC_TELEPHONE_BEARER) {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
                 adpt_tbs_sid_changed(current->sid);
@@ -415,7 +452,9 @@ static const LEA_INIT_INFO_CALLBACK_S server_callbacks = {
     .lea_generic_cbks = &adpt_generic_callbacks,
     .lea_audio_stream_cbks = &adpt_audio_stream_callbacks,
     .lea_mcp_server_cbks = NULL,
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPC
     .lea_mcp_client_cbks = &adpt_lea_mcp_client_callbacks,
+#endif
     .lea_ccp_server_cbks = NULL,
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
     .lea_ccp_client_cbks = &adpt_lea_ccp_client_callbacks,
