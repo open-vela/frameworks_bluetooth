@@ -489,6 +489,8 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
             return stat;
 
         bool ret = adapter_get_remote_name(&addr, name);
+        if (!ret)
+            return STATUS_FAILED_TRANSACTION;
         stat = AParcel_writeString(out, name, strlen(name));
         if (stat != STATUS_OK)
             return stat;
@@ -555,6 +557,8 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
             return stat;
 
         bool ret = adapter_get_remote_alias(&addr, name);
+        if (!ret)
+            return STATUS_FAILED_TRANSACTION;
         stat = AParcel_writeString(out, name, strlen(name));
         if (stat != STATUS_OK)
             return stat;
