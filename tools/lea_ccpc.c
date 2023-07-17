@@ -42,7 +42,7 @@ static int ccpc_call_control_by_index(void* handle, int argc, char* argv[]);
 static int ccpc_originate_call(void* handle, int argc, char* argv[]);
 static int ccpc_join_calls(void* handle, int argc, char* argv[]);
 
-#define CCPC_CALL_CONTROL   "call control by index                   param: <addr><opcode><call_index>"
+#define CCPC_CALL_CONTROL   "call control by index                   param: <addr><opcode>"
 #define CCPC_ORIGINATE_CALL "originate                               param: <addr><uri>"
 #define CCPC_JOIN_CALL      "join                                    param: <addr><number><call_index1><call_index2>"
 
