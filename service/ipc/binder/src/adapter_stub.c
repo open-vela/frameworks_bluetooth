@@ -470,6 +470,17 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
 #endif
         break;
     }
+    case IREMOTE_GET_DEVICE_TYPE: {
+        bt_device_type_t device_type;
+
+        stat = AParcel_readAddress(in, &addr);
+        if (stat != STATUS_OK)
+            return stat;
+        device_type = adapter_get_remote_device_type(&addr);
+        stat = AParcel_writeUint32(out, device_type);
+
+        break;
+    }
     case IREMOTE_GET_NAME: {
         char name[BT_REM_NAME_MAX_LEN + 1];
 

@@ -34,7 +34,7 @@ ble_addr_type_t bt_device_get_address_type(bt_instance_t *ins, bt_address_t *add
 
 bt_device_type_t bt_device_get_device_type(bt_instance_t *ins, bt_address_t *addr)
 {
-    return 0;
+    return adapter_get_remote_device_type(addr);
 }
 
 bool bt_device_get_name(bt_instance_t *ins, bt_address_t *addr, char *name, uint32_t length)

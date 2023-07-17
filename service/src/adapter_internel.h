@@ -232,7 +232,7 @@ void adapter_set_auto_accept_connection(bool enable);
 bool adapter_is_support_bredr(void);
 bool adapter_is_support_le(void);
 bool adapter_is_support_leaudio(void);
-
+bt_device_type_t adapter_get_remote_device_type(bt_address_t *addr);
 bool adapter_get_remote_name(bt_address_t *addr, char *name);
 uint32_t adapter_get_remote_device_class(bt_address_t *addr);
 bt_status_t adapter_get_remote_uuids(bt_address_t *addr, bt_uuid_t **uuids, uint16_t *size, bt_allocator_t allocator);
