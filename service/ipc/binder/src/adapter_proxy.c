@@ -1020,6 +1020,32 @@ bt_status_t BpBtAdapter_stopScan(BpBtAdapter *bpBinder, bt_scanner_t *scanner)
     return BT_STATUS_SUCCESS;
 }
 
+bt_device_type_t BpBtAdapter_getRemoteDeviceType(BpBtAdapter *bpBinder, bt_address_t *addr)
+{
+    binder_status_t stat = STATUS_OK;
+    AParcel *parcelIn, *parcelOut;
+    AIBinder *binder = bpBinder->binder;
+    bt_device_type_t device_type;
+
+    stat = AIBinder_prepareTransaction(binder, &parcelIn);
+    if (stat != STATUS_OK)
+        return 0;
+
+    stat = AParcel_writeAddress(parcelIn, addr);
+    if (stat != STATUS_OK)
+        return 0;
+
+    stat = AIBinder_transact(binder, IREMOTE_GET_DEVICE_TYPE, &parcelIn, &parcelOut, 0 /*flags*/);
+    if (stat != STATUS_OK)
+        return 0;
+
+    stat = AParcel_readUint32(parcelOut, &device_type);
+    if (stat != STATUS_OK)
+        return 0;
+
+    return device_type;
+}
+
 bool BpBtAdapter_getRemoteName(BpBtAdapter *bpBinder, bt_address_t *addr, char *name, uint32_t length)
 {
     binder_status_t stat = STATUS_OK;
@@ -1161,15 +1187,12 @@ int8_t BpBtAdapter_getRemoteRssi(BpBtAdapter *bpBinder, bt_address_t *addr)
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
         return 0;
-
     stat = AParcel_writeAddress(parcelIn, addr);
     if (stat != STATUS_OK)
         return 0;
-
     stat = AIBinder_transact(binder, IREMOTE_GET_RSSI, &parcelIn, &parcelOut, 0 /*flags*/);
     if (stat != STATUS_OK)
         return 0;
-
     stat = AParcel_readByte(parcelOut, &rssi);
     if (stat != STATUS_OK)
         return 0;

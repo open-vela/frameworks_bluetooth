@@ -86,6 +86,7 @@ bt_scanner_t *BpBtAdapter_startScanSettings(BpBtAdapter *bpBinder,
                                             ble_scan_settings_t *settings,
                                             AIBinder *cbksBinder);
 bt_status_t BpBtAdapter_stopScan(BpBtAdapter *bpBinder, bt_scanner_t *scanner);
+bt_device_type_t BpBtAdapter_getRemoteDeviceType(BpBtAdapter *bpBinder, bt_address_t *addr);
 bool BpBtAdapter_getRemoteName(BpBtAdapter *bpBinder, bt_address_t *addr, char *name, uint32_t length);
 uint32_t BpBtAdapter_getRemoteDeviceClass(BpBtAdapter *bpBinder, bt_address_t *addr);
 bt_status_t BpBtAdapter_getRemoteUuids(BpBtAdapter *bpBinder, bt_address_t *addr, bt_uuid_t **uuids, uint16_t *size, bt_allocator_t allocator);
