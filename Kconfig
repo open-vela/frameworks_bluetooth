@@ -272,6 +272,7 @@ config BLUETOOTH_LEAUDIO_SERVER
 config BLUETOOTH_LEAUDIO_CCPC
 	bool "enable bluetooth leaudio ccpc feature"
 	default n
+	depends on BLUETOOTH_LEAUDIO_SERVER
 
 if BLUETOOTH_LEAUDIO_CCPC
 config BLUETOOTH_LEAUDIO_SERVER_CALL_CONTROL_NUMBER
@@ -281,6 +282,20 @@ config BLUETOOTH_LEAUDIO_SERVER_CALL_CONTROL_NUMBER
 		leaudio tbs server number
 
 endif # BLUETOOTH_LEAUDIO_CCPC
+
+config BLUETOOTH_LEAUDIO_MCPC
+	bool "enable bluetooth leaudio ccpc feature"
+	default n
+	depends on BLUETOOTH_LEAUDIO_SERVER
+
+if BLUETOOTH_LEAUDIO_MCPC
+config BLUETOOTH_LEAUDIO_SERVER_MEDIA_CONTROL_NUMBER
+       int "leaudio mcs server number"
+       default 1
+       help
+            leaudio mcs server number
+
+endif # BLUETOOTH_LEAUDIO_MCPC
 
 config BLUETOOTH_LEAUDIO_VMICPS
 	bool "enable bluetooth leaudio vmicps feature"

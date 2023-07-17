@@ -106,6 +106,10 @@ int lea_server_command_init(void *handle);
 void lea_server_command_uninit(void *handle);
 int leas_command_exec(void *handle, int argc, char *argv[]);
 
+int lea_mcpc_commond_init(void *handle);
+void lea_mcpc_commond_uninit(void *handle);
+int lea_mcpc_command_exec(void *handle, int argc, char *argv[]);
+
 int lea_ccpc_command_init(void *handle);
 void lea_ccpc_command_uninit(void *handle);
 int lea_ccpc_command_exec(void *handle, int argc, char *argv[]);
