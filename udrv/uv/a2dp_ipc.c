@@ -126,7 +126,7 @@ static void ipc_chnl_listen_cb(uv_stream_t* stream, int status)
     ret = uv_accept(stream, (uv_stream_t*)ch->cli_pipe);
     if (ret != 0) {
         BT_LOGE("accept error %s", uv_strerror(ret));
-        uv_close((uv_handle_t *)ch->cli_pipe, ipc_chnl_close_cb);
+        uv_close((uv_handle_t*)ch->cli_pipe, ipc_chnl_close_cb);
         return;
     }
 
@@ -142,9 +142,9 @@ static void ipc_chnl_read_alloc_cb(uv_handle_t* handle, size_t suggested_size,
     ipc_read_t* rreq = (ipc_read_t*)handle->data;
     (void)suggested_size;
 
-    rreq->alloc_cb(rreq->ch->ch_id, (uint8_t **)&buf->base, &buf->len);
-    //buf->base = malloc(rreq->read_size);
-    //buf->len = rreq->read_size;
+    rreq->alloc_cb(rreq->ch->ch_id, (uint8_t**)&buf->base, &buf->len);
+    // buf->base = malloc(rreq->read_size);
+    // buf->len = rreq->read_size;
 }
 
 static void ipc_chnl_write_cb(uv_write_t* req, int status)
@@ -175,7 +175,9 @@ static void ipc_chnl_read_cb(uv_stream_t* stream, ssize_t nread,
     uint8_t need_close = 0;
 
     if (nread < 0) {
-        need_close = 1;
+        if (nread != UV_ENOBUFS) {
+            need_close = 1;
+        }
         BT_LOGE("%s nread:%d", __func__, nread);
     }
 
@@ -264,7 +266,7 @@ bool a2dp_ipc_open(a2dp_ipc_t* a2dp, uint8_t ch_id, const char* path, ipc_event_
 
     return true;
 error:
-    uv_close((uv_handle_t *)ch->svr_pipe, ipc_chnl_close_cb);
+    uv_close((uv_handle_t*)ch->svr_pipe, ipc_chnl_close_cb);
     return false;
 }
 
@@ -358,7 +360,7 @@ int a2dp_ipc_read_start(a2dp_ipc_t* a2dp, uint8_t ch_id, ipc_alloc_cb_t alloc_cb
         return -ENOMEM;
     }
 
-    //rreq->read_size = read_size;
+    // rreq->read_size = read_size;
     rreq->read_cb = read_cb;
     rreq->alloc_cb = alloc_cb;
     rreq->ch = ch;
@@ -391,7 +393,7 @@ int a2dp_ipc_read_stop(a2dp_ipc_t* a2dp, uint8_t ch_id)
 
     ret = uv_read_stop((uv_stream_t*)ch->cli_pipe);
 
-    //free read request
+    // free read request
     free(ch->cli_pipe->data);
     ch->cli_pipe->data = NULL;
     if (ret != 0) {

@@ -16,7 +16,7 @@
 
 typedef void (*bts_process_loop_data)(void* data, size_t data_size);
 
-//process block command in work loop
+// process block command in work loop
 typedef void (*bts_process_int_work_func)(int command_id, char* data, size_t data_size);
 
 typedef void (*process_in_timer)(char* data);
@@ -40,6 +40,13 @@ typedef struct {
     bts_service_adapter_state_changed_callback adapter_state_changed_cb;
     bts_service_adapter_ble_state_changed_callback adapter_state_ble_changed_cb;
 } bt_service_callbacks;
+
+typedef void (*bts_service_event_poll_cb)(void* data);
+#ifdef CONFIG_EVENT_FD
+int bts_service_event_poll_signal(uv_poll_t* handle);
+uv_poll_t* bts_service_event_poll_start(bts_service_event_poll_cb cb, void* userdata);
+void bts_service_event_poll_stop(uv_poll_t* handle);
+#endif
 
 uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb, void* userdata);
 void bts_uv_poll_stop(uv_poll_t* handle);

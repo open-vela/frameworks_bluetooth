@@ -26,6 +26,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/eventfd.h>
 #include <sys/stat.h>
 
 #include "btm_gap.h"
@@ -43,8 +44,7 @@
 #define LOG_TAG "bts_service"
 #include "log.h"
 
-typedef struct
-{
+typedef struct {
     process_in_timer func_in_timer;
     void* data;
 } timer_process_data_t;
@@ -61,6 +61,11 @@ typedef struct {
     size_t size;
 } bts_profile_msg_t;
 
+typedef struct {
+    bts_service_event_poll_cb cb;
+    void* priv;
+} bts_event_poll_t;
+
 bt_service_state service_state = BTM_STATE_OFF;
 static bt_service_callbacks* bluetooth_upper_callbacks = NULL;
 static uv_loop_t* bt_dispatch_loop;
@@ -69,6 +74,9 @@ static uv_thread_t thread_handle[2];
 static uv_async_t async_handle[1];
 static uv_sem_t wait_stack;
 static uv_sem_t wait_service;
+#ifdef CONFIG_EVENT_FD
+static uv_poll_t* bt_event_poll;
+#endif
 
 static bts_profile_callbacks profiles_callbacks[BT_PROFILE_MAX_ID];
 static struct list_node bts_msg_list = LIST_INITIAL_VALUE(bts_msg_list);
@@ -80,12 +88,73 @@ extern void TransportRecvData(void);
 extern int GetTransportHandler(void);
 static void bts_service_transport_recv_loop(void);
 
+#ifdef CONFIG_EVENT_FD
+int bts_service_event_poll_signal(uv_poll_t* handle)
+{
+    return eventfd_write(handle->io_watcher.fd, 1ULL);
+}
+
+static void bts_service_event_poll_handler(uv_poll_t* handle, int status,
+    int events)
+{
+    bts_event_poll_t* event = handle->data;
+    eventfd_t value;
+
+    if (eventfd_read(handle->io_watcher.fd, &value) < 0) {
+        BT_LOGE("%s fail to read event fd: %d", __func__, handle->io_watcher.fd);
+    }
+
+    if (event->cb)
+        event->cb(event->priv);
+}
+
+void bts_service_event_poll_stop(uv_poll_t* handle)
+{
+    bts_event_poll_t* event = handle->data;
+
+    handle->data = NULL;
+    bts_uv_poll_stop(handle);
+    free(event);
+}
+
+uv_poll_t* bts_service_event_poll_start(bts_service_event_poll_cb cb,
+    void* userdata)
+{
+    bts_event_poll_t* event;
+    uv_poll_t* handle = NULL;
+    int fd;
+
+    fd = eventfd(0, EFD_SEMAPHORE);
+    if (fd >= 0) {
+
+        event = malloc(sizeof(bts_event_poll_t));
+        if (!event) {
+            close(fd);
+            return NULL;
+        }
+
+        event->cb = cb;
+        event->priv = userdata;
+
+        handle = bts_uv_poll_start(fd, UV_READABLE, bts_service_event_poll_handler,
+            event);
+        if (!handle) {
+            free(event);
+            close(fd);
+        }
+    }
+
+    return handle;
+}
+#endif
+
 static void bts_uv_close_cb(uv_handle_t* handle)
 {
     free(handle);
 }
 
-uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb, void* userdata)
+uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb,
+    void* userdata)
 {
     uv_poll_t* handle = (uv_poll_t*)malloc(sizeof(uv_poll_t));
     if (!handle) {
@@ -107,6 +176,15 @@ uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb, void* userdata)
         free(handle);
         return NULL;
     }
+
+#ifdef CONFIG_EVENT_FD
+    if (service_state >= BTM_STATE_TURNING_ON) {
+        ret = bts_service_event_poll_signal(bt_event_poll);
+        if (ret < 0)
+            BT_LOGE("eventfd_write failed: %d", ret);
+    }
+#endif
+
     return handle;
 }
 
@@ -138,7 +216,8 @@ static void timer_hadler_cb(uv_timer_t* timer)
     return;
 }
 
-uv_timer_t* start_timer(int timeout, int repeat, process_in_timer timer_callback, void* data)
+uv_timer_t* start_timer(int timeout, int repeat,
+    process_in_timer timer_callback, void* data)
 {
     uv_timer_t* timer;
     if (NULL == timer_callback) {
@@ -168,10 +247,7 @@ void stop_timer(uv_timer_t* timer)
     uv_close((uv_handle_t*)timer, bts_uv_close_cb);
 }
 
-uv_loop_t* get_service_loop(void)
-{
-    return bt_dispatch_loop;
-}
+uv_loop_t* get_service_loop(void) { return bt_dispatch_loop; }
 
 static void stack_schedule_loop(void* data)
 {
@@ -235,8 +311,12 @@ static void bts_handle_uv_msg(uv_async_t* handle)
 
 static void service_schedule_loop(void* data)
 {
-    uv_async_init(bt_dispatch_loop, &async_handle[THREAD_ID_SERVICE], bts_handle_uv_msg);
+    uv_async_init(bt_dispatch_loop, &async_handle[THREAD_ID_SERVICE],
+        bts_handle_uv_msg);
     bts_service_transport_recv_loop();
+#ifdef CONFIG_EVENT_FD
+    bt_event_poll = bts_service_event_poll_start(NULL, NULL);
+#endif
     uv_sem_post(&wait_service);
     uv_run(bt_dispatch_loop, UV_RUN_DEFAULT);
 }
@@ -266,7 +346,8 @@ void create_config_folder(void)
     }
 }
 
-static void bts_service_h4_recv_handler(uv_poll_t* handle, int status, int events)
+static void bts_service_h4_recv_handler(uv_poll_t* handle, int status,
+    int events)
 {
     if (status < 0) {
         BT_LOGE("fail, %s status:%d", __func__, status);
@@ -319,9 +400,11 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     InitTransportLayer();
     gap_service_init();
     bt_dispatch_loop = uv_loop_new();
-    uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE | UV_THREAD_HAS_PRIORITY, CONFIG_BTSTACK_THREAD_STACK_SIZE };
+    uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE | UV_THREAD_HAS_PRIORITY,
+        CONFIG_BTSTACK_THREAD_STACK_SIZE };
     options.priority = CONFIG_BLUETOOTH_THREAD_PRIORITY;
-    ret = uv_thread_create_ex(&thread_handle[THREAD_ID_STACK], &options, stack_schedule_loop, NULL);
+    ret = uv_thread_create_ex(&thread_handle[THREAD_ID_STACK], &options,
+        stack_schedule_loop, NULL);
     if (ret != 0) {
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
         return BT_RESULT_FAILED;
@@ -330,7 +413,8 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
 
     options.stack_size = CONFIG_BTSERVICE_THREAD_STACK_SIZE;
     options.priority = CONFIG_BLUETOOTH_THREAD_PRIORITY;
-    ret = uv_thread_create_ex(&thread_handle[THREAD_ID_SERVICE], &options, service_schedule_loop, NULL);
+    ret = uv_thread_create_ex(&thread_handle[THREAD_ID_SERVICE], &options,
+        service_schedule_loop, NULL);
     if (ret != 0) {
         BT_LOGE("fail uv_thread_create, ret:%d", ret);
         return BT_RESULT_FAILED;
@@ -346,10 +430,7 @@ bt_result_code bts_service_init(bt_service_callbacks* callbacks)
     return BT_RESULT_SUCCESS;
 }
 
-void bts_service_cleanup(void)
-{
-    DeinitTransportLayer();
-}
+void bts_service_cleanup(void) { DeinitTransportLayer(); }
 
 void stack_state_change(bt_service_state state)
 {
