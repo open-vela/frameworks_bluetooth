@@ -66,6 +66,7 @@ config BLUETOOTH_A2DP
 config BLUETOOTH_A2DP_SRC
 	bool "Enable BT_A2DP_SRC"
 	default y
+	depends on EVENT_FD
 	select BLUETOOTH_A2DP
 	select BLUETOOTH_AVRCP_TG
 
