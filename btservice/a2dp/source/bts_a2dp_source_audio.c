@@ -117,8 +117,7 @@ static void bts_a2dp_audio_data_alloc(uint8_t ch_id, uint8_t** buffer, size_t* l
     uint8_t* alloc_buffer;
 
     if (stream->stream_state == STATE_FLUSHING) {
-        *len = STREAM_FLUSH_SIZE;
-        *buffer = (uint8_t*)malloc(STREAM_FLUSH_SIZE);
+        *buffer = NULL;
         return;
     }
 
@@ -148,10 +147,7 @@ static void bts_a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t
     a2dp_source_stream_t* stream = &a2dp_src_stream;
     int space;
 
-    if (buffer == NULL)
-        return;
-
-    if (len <= 0) {
+    if (buffer == NULL || len <= 0) {
         BT_LOGD("%s, status:%d", __func__, len);
         if (len < 0)
             a2dp_ipc_read_stop(a2dp_ipc, ch_id);
@@ -183,7 +179,7 @@ out:
 
 static void bts_a2dp_audio_data_flush(uint8_t ch_id, uint8_t* buffer, ssize_t len)
 {
-    free(buffer);
+    a2dp_ipc_read_stop(a2dp_ipc, ch_id);
 }
 
 static void bts_a2dp_source_start_read(void)
