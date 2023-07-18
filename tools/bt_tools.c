@@ -201,14 +201,14 @@ static bt_command_t g_cmd_tables[] = {
 };
 
 static bt_command_t g_set_cmd_tables[] = {
-    {"scanmode",   set_scanmode_cmd,      0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)"                              },
-    { "iocap",     set_iocap_cmd,         0, "params: <io capability> (0:displayonly, 1:yes&no, 2:keyboardonly, 3:no-in/no-out 4:keyboard&display)"},
-    { "name",      set_local_name_cmd,    0, "params: <local name>, example \"vela-bt\""                                                           },
-    { "class",     set_local_cod_cmd,     0, "params: <local class of device>, example: 0x00640404"                                                },
-    { "apperance", set_apperance_cmd,     0, "set le adapter apperance, params: <apperance>"                                                       },
-    { "leaddr",    set_le_addr_cmd,       0, "set ble adapter addr, params: <leaddr>"                                                              },
-    { "id",        set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>"                                          },
-    { "help",      NULL,                  0, "show set help info"                                                                                  },
+    {"scanmode",   set_scanmode_cmd,      0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)"                                            },
+    { "iocap",     set_iocap_cmd,         0, "params: <io capability> (0:displayonly, 1:yes&no, 2:keyboardonly, 3:no-in/no-out 4:keyboard&display)"              },
+    { "name",      set_local_name_cmd,    0, "params: <local name>, example \"vela-bt\""                                                                         },
+    { "class",     set_local_cod_cmd,     0, "params: <local class of device>, range in 0x0-0xFFFFFC, the 2 least significant shall be 0b00, example: 0x00640404"},
+    { "apperance", set_apperance_cmd,     0, "set le adapter apperance, params: <apperance>"                                                                     },
+    { "leaddr",    set_le_addr_cmd,       0, "set ble adapter addr, params: <leaddr>"                                                                            },
+    { "id",        set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>"                                                        },
+    { "help",      NULL,                  0, "show set help info"                                                                                                },
  //{ "", , "set " },
 };
 
@@ -604,6 +604,9 @@ static int set_local_cod_cmd(void *handle, int argc, char **argv)
         return CMD_PARAM_NOT_ENOUGH;
 
     uint32_t cod = strtol(argv[0], NULL, 16);
+
+    if (cod < 0 || cod > 0xFFFFFF || cod & 0x3)
+        return CMD_INVALID_PARAM;
 
     if (bt_adapter_set_device_class(handle, cod) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
