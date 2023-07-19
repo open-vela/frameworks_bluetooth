@@ -253,7 +253,7 @@ static void spp_cleanup_all_server(void)
     struct list_node *node;
     struct list_node *tmp;
 
-    list_for_every_safe(&g_spp_handle.devices, node, tmp)
+    list_for_every_safe(&g_spp_handle.servers, node, tmp)
     {
         server = (spp_server_t *)node;
         free_server_resource(server);
@@ -312,6 +312,9 @@ static spp_pty_device_t *find_pty_device(uint16_t conn_id)
     spp_pty_device_t *device;
     struct list_node *node;
 
+    if (!g_spp_handle.started)
+        return NULL;
+
     list_for_every(&g_spp_handle.devices, node)
     {
         device = (spp_pty_device_t *)node;
@@ -327,6 +330,9 @@ static spp_pty_device_t *find_pty_device_by_handle(euv_pty_t *handle)
 {
     spp_pty_device_t *device;
     struct list_node *node;
+
+    if (!g_spp_handle.started)
+        return NULL;
 
     list_for_every(&g_spp_handle.devices, node)
     {
