@@ -115,23 +115,23 @@ static struct option le_conn_options[] = {
     { 0,                   0,                 0, 0  }
 };
 
-#define LE_CONN_USAGE "\n"                                                                                                      \
-                      "\t -a or --addr, peer le device address\n"                                                               \
-                      "\t -t or --type, peer le device address type, address type(0:public,1:random,2:public_id,3:random_id)\n" \
-                      "\t -d or --default, use default parameter\n"                                                             \
-                      "\t -f or --filter, connection filter policy, (0:addr,1:whitelist)\n"                                     \
-                      "\t -p or --phy, init phy type, (0:1M,1:2M,2:Coded)\n"                                                    \
-                      "\t -l or --latency, connection latency Range: 0x0000 to 0x01F3\n"                                        \
-                      "\t --conn_interval_min, Range: 0x0006 to 0x0C80\n"                                                       \
-                      "\t --conn_interval_max, Range: 0x0006 to 0x0C80\n"                                                       \
-                      "\t -T or --timeout, supervision timeout Range: 0x000A to 0x0C80\n"                                       \
-                      "\t --scan_interval, Range: 0x0004 to 0x4000\n"                                                           \
-                      "\t --scan_window, Range: 0x0004 to 0x4000\n"                                                             \
-                      "\t --min_ce_length, Range: 0x0000 to 0xFFFF\n"                                                           \
+#define LE_CONN_USAGE "\n"                                                                                                         \
+                      "\t -a or --addr, peer le device address\n"                                                                  \
+                      "\t -t or --type, peer le device address type, address type(0:public,1:random,2:public_id,3:random_id)\n"    \
+                      "\t -d or --default, use default parameter\n"                                                                \
+                      "\t -f or --filter, connection filter policy, (0:addr,1:whitelist)\n"                                        \
+                      "\t -p or --phy, init phy type, (0:1M,1:2M,2:Coded)\n"                                                       \
+                      "\t -l or --latency, connection latency Range: 0x0000 to 0x01F3\n"                                           \
+                      "\t --conn_interval_min, Range: 0x0006 to 0x0C80\n"                                                          \
+                      "\t --conn_interval_max, Range: 0x0006 to 0x0C80\n"                                                          \
+                      "\t -T or --timeout, supervision timeout Range: 0x000A to 0x0C80\n"                                          \
+                      "\t --scan_interval, Range: 0x0004 to 0x4000\n"                                                              \
+                      "\t --scan_window, Range: 0x0004 to 0x4000\n"                                                                \
+                      "\t --min_ce_length, Range: 0x0000 to 0xFFFF\n"                                                              \
                       "\t --max_ce_length, Range: 0x0000 to 0xFFFF\n"
 
 #define INQUIRY_USAGE "inquiry device\n"                                  \
-                      "\t\t\t- start <timeout>(Range: 1.28 to 61.44 s)\n" \
+                      "\t\t\t- start <timeout>(Range: 1-48, i.e., 1.28-61.44s)\n" \
                       "\t\t\t- stop"
 
 #define SET_LE_PHY_USAGE "set le tx and rx phy, params: <addr><txphy><rxphy>(0:1M, 1:2M, 2:CODED)"
@@ -355,7 +355,7 @@ static int discovery_cmd(void *handle, int argc, char **argv)
             return CMD_PARAM_NOT_ENOUGH;
 
         int timeout = atoi(argv[1]);
-        if (timeout <= 0) {
+        if (timeout <= 0 || timeout > 48) {
             PRINT("%s, invalid timeout value:%d", __func__, timeout);
             return CMD_INVALID_PARAM;
         }
