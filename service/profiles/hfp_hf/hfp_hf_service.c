@@ -36,8 +36,8 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-#ifndef CONFIG_HFP_AG_MAX_CONNECTIONS
-#define CONFIG_HFP_AG_MAX_CONNECTIONS 1
+#ifndef CONFIG_HFP_HF_MAX_CONNECTIONS
+#define CONFIG_HFP_HF_MAX_CONNECTIONS 1
 #endif
 
 #define CHECK_ENABLED()                   \
