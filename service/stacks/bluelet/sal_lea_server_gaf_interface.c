@@ -285,11 +285,11 @@ static void adpt_remote_services_callback(BD_ADDR remote_addr, uint8_t number, S
                 adapt_mcs_sid_changed(current->sid);
             }
 #endif
-            if (current->type == GATT_UUID_GENERIC_TELEPHONE_BEARER) {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
+            if (current->type == GATT_UUID_GENERIC_TELEPHONE_BEARER) {
                 adpt_tbs_sid_changed(current->sid);
-#endif
             }
+#endif
             current++;
         }
     }

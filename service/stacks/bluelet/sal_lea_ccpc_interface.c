@@ -171,19 +171,37 @@ void adpt_lea_tbc_bearer_list_current_calls_callback(BD_ADDR tbs_addr, uint32_t 
                                                      SERVICE_LEA_TBS_CALLS_LIST_ITEM_S *calls)
 {
     bt_address_t addr;
+    const char *uri;
+    uint8_t size;
+    LEA_TBS_CALLS_LIST_ITEM_S *calls_list;
 
-    if (number != 0 && (calls != NULL)) {
-        const char *uri = (const char *)calls->call_uri;
-        LEA_TBS_CALLS_LIST_ITEM_S *calls_list;
-        calls_list = (LEA_TBS_CALLS_LIST_ITEM_S *)malloc((sizeof(LEA_TBS_CALLS_LIST_ITEM_S *) + strlen(uri) + 1) * number);
-        memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
-
-        calls_list->index = calls->index;
-        calls_list->state = calls->state;
-        calls_list->flags = calls->flags;
-        strcpy(calls_list->call_uri, uri);
-        lea_ccpc_on_bearer_list_current_calls(&addr, tbs_id, number, strlen(uri) + 1, calls_list);
+    if (number < 1) {
+        BT_LOGW("%s ,the number of bearer list current call is zero!", __func__);
+        return;
     }
+
+    for (int i = 0; i < number; i++) {
+        uri = (const char *)(calls + i)->call_uri;
+        size += sizeof(LEA_TBS_CALLS_LIST_ITEM_S) + strlen(uri) + 1;
+    }
+    calls_list = (LEA_TBS_CALLS_LIST_ITEM_S *)malloc(size);
+    LEA_TBS_CALLS_LIST_ITEM_S *sub_call = calls_list;
+    void *p = sub_call;
+
+    memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
+
+    for (int i = 0; i < number; i++) {
+        sub_call->index = (calls + i)->index;
+        sub_call->state = (calls + i)->state;
+        sub_call->flags = (calls + i)->flags;
+        uri = (const char *)(calls + i)->call_uri;
+        strcpy((sub_call)->call_uri, uri);
+        p += sizeof(LEA_TBS_CALLS_LIST_ITEM_S) + strlen(uri) + 1;
+        sub_call = p;
+    }
+    lea_ccpc_on_bearer_list_current_calls(&addr, tbs_id, number, size, calls_list);
+
+    stack_adapter_lea_ccp_recycle_calls_list_s(number, calls);
 }
 
 void adpt_lea_tbc_call_friendly_name_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index,
