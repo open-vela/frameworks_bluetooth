@@ -24,46 +24,46 @@
 #include "bt_tools.h"
 
 /// lea_interface_t
-static int ccpc_read_bearer_provider_name(void* handle, int argc, char* argv[]);
-static int ccpc_read_bearer_uci(void* handle, int argc, char* argv[]);
-static int ccpc_read_bearer_technology(void* handle, int argc, char* argv[]);
-static int ccpc_read_bearer_uri_schemes_supported_list(void* handle, int argc, char* argv[]);
-static int ccpc_read_bearer_signal_strength(void* handle, int argc, char* argv[]);
-static int ccpc_read_bearer_signal_strength_report_interval(void* handle, int argc, char* argv[]);
-static int ccpc_read_content_control_id(void* handle, int argc, char* argv[]);
-static int ccpc_read_status_flags(void* handle, int argc, char* argv[]);
-static int ccpc_read_call_control_optional_opcodes(void* handle, int argc, char* argv[]);
-static int ccpc_read_incoming_call(void* handle, int argc, char* argv[]);
-static int ccpc_read_incoming_call_target_bearer_uri(void* handle, int argc, char* argv[]);
-static int ccpc_read_call_state(void* handle, int argc, char* argv[]);
-static int ccpc_read_bearer_list_current_calls(void* handle, int argc, char* argv[]);
-static int ccpc_read_call_friendly_name(void* handle, int argc, char* argv[]);
-static int ccpc_call_control_by_index(void* handle, int argc, char* argv[]);
-static int ccpc_originate_call(void* handle, int argc, char* argv[]);
-static int ccpc_join_calls(void* handle, int argc, char* argv[]);
+static int ccpc_read_bearer_provider_name(void *handle, int argc, char *argv[]);
+static int ccpc_read_bearer_uci(void *handle, int argc, char *argv[]);
+static int ccpc_read_bearer_technology(void *handle, int argc, char *argv[]);
+static int ccpc_read_bearer_uri_schemes_supported_list(void *handle, int argc, char *argv[]);
+static int ccpc_read_bearer_signal_strength(void *handle, int argc, char *argv[]);
+static int ccpc_read_bearer_signal_strength_report_interval(void *handle, int argc, char *argv[]);
+static int ccpc_read_content_control_id(void *handle, int argc, char *argv[]);
+static int ccpc_read_status_flags(void *handle, int argc, char *argv[]);
+static int ccpc_read_call_control_optional_opcodes(void *handle, int argc, char *argv[]);
+static int ccpc_read_incoming_call(void *handle, int argc, char *argv[]);
+static int ccpc_read_incoming_call_target_bearer_uri(void *handle, int argc, char *argv[]);
+static int ccpc_read_call_state(void *handle, int argc, char *argv[]);
+static int ccpc_read_bearer_list_current_calls(void *handle, int argc, char *argv[]);
+static int ccpc_read_call_friendly_name(void *handle, int argc, char *argv[]);
+static int ccpc_call_control_by_index(void *handle, int argc, char *argv[]);
+static int ccpc_originate_call(void *handle, int argc, char *argv[]);
+static int ccpc_join_calls(void *handle, int argc, char *argv[]);
 
 #define CCPC_CALL_CONTROL   "call control by index                   param: <addr><opcode>"
 #define CCPC_ORIGINATE_CALL "originate                               param: <addr><uri>"
 #define CCPC_JOIN_CALL      "join                                    param: <addr><number><call_index1><call_index2>"
 
 static bt_command_t g_lea_ccpc_tables[] = {
-    { "readprovidername",    ccpc_read_bearer_provider_name,                    0, "read bearer provider name               param: <addr>" },
-    { "readuci",             ccpc_read_bearer_uci,                              0, "read bearer uci                         param: <addr>" },
-    { "readtech",            ccpc_read_bearer_technology,                       0, "read bearer technology                  param: <addr>" },
-    { "readurischemeslist",  ccpc_read_bearer_uri_schemes_supported_list,       0, "read bearer uri schemes supported list  param: <addr>" },
-    { "readstrength",        ccpc_read_bearer_signal_strength,                  0, "read bearer signal strength             param: <addr>" },
-    { "readinterval",        ccpc_read_bearer_signal_strength_report_interval,  0, "read ss report interval                 param: <addr>" },
-    { "readccid",            ccpc_read_content_control_id,                      0, "read ccid                               param: <addr>" },
-    { "readstatusflags",     ccpc_read_status_flags,                            0, "read status flags                       param: <addr>" },
-    { "readopcode",          ccpc_read_call_control_optional_opcodes,           0, "read call control optional opcode       param: <addr>" },
-    { "readincoming",        ccpc_read_incoming_call,                           0, "read incoming call                      param: <addr>" },
-    { "readtargeturi",       ccpc_read_incoming_call_target_bearer_uri,         0, "read incoming call target bearer uri    param: <addr>" },
-    { "readcallstate",       ccpc_read_call_state,                              0, "read call state                         param: <addr>" },
-    { "readlistcall",        ccpc_read_bearer_list_current_calls,               0, "read bearer list current call           param: <addr>" },
-    { "readfriendlyname",    ccpc_read_call_friendly_name,                      0, "read call friendly name                 param: <addr>" },
-    { "callcontrol",         ccpc_call_control_by_index,                        0, CCPC_CALL_CONTROL                                       },
-    { "originate",           ccpc_originate_call,                               0, CCPC_ORIGINATE_CALL                                     },
-    { "join",                ccpc_join_calls,                                   0, CCPC_JOIN_CALL                                          },
+    {"readprovidername",    ccpc_read_bearer_provider_name,                   0, "read bearer provider name               param: <addr>"},
+    { "readuci",            ccpc_read_bearer_uci,                             0, "read bearer uci                         param: <addr>"},
+    { "readtech",           ccpc_read_bearer_technology,                      0, "read bearer technology                  param: <addr>"},
+    { "readurischemeslist", ccpc_read_bearer_uri_schemes_supported_list,      0, "read bearer uri schemes supported list  param: <addr>"},
+    { "readstrength",       ccpc_read_bearer_signal_strength,                 0, "read bearer signal strength             param: <addr>"},
+    { "readinterval",       ccpc_read_bearer_signal_strength_report_interval, 0, "read ss report interval                 param: <addr>"},
+    { "readccid",           ccpc_read_content_control_id,                     0, "read ccid                               param: <addr>"},
+    { "readstatusflags",    ccpc_read_status_flags,                           0, "read status flags                       param: <addr>"},
+    { "readopcode",         ccpc_read_call_control_optional_opcodes,          0, "read call control optional opcode       param: <addr>"},
+    { "readincoming",       ccpc_read_incoming_call,                          0, "read incoming call                      param: <addr>"},
+    { "readtargeturi",      ccpc_read_incoming_call_target_bearer_uri,        0, "read incoming call target bearer uri    param: <addr>"},
+    { "readcallstate",      ccpc_read_call_state,                             0, "read call state                         param: <addr>"},
+    { "readlistcall",       ccpc_read_bearer_list_current_calls,              0, "read bearer list current call           param: <addr>"},
+    { "readfriendlyname",   ccpc_read_call_friendly_name,                     0, "read call friendly name                 param: <addr>"},
+    { "callcontrol",        ccpc_call_control_by_index,                       0, CCPC_CALL_CONTROL                                      },
+    { "originate",          ccpc_originate_call,                              0, CCPC_ORIGINATE_CALL                                    },
+    { "join",               ccpc_join_calls,                                  0, CCPC_JOIN_CALL                                         },
 };
 
 static struct option lea_ccpc_options[] = {
@@ -357,7 +357,6 @@ static int ccpc_join_calls(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-
 static void ccpc_test_callback(void *context, bt_address_t *addr)
 {
     PRINT_ADDR("ccpc_test_callback, addr:%s", addr);
@@ -367,7 +366,6 @@ static const lea_ccpc_callbacks_t lea_ccpc_cbs = {
     sizeof(lea_ccpc_cbs),
     ccpc_test_callback,
 };
-
 
 int lea_ccpc_command_init(void *handle)
 {
