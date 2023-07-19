@@ -112,12 +112,18 @@ static bool lea_ccpc_find_call_index(uint8_t opcode, uint8_t *index)
     }
     case LEA_CCPC_CALL_CONTROL_TERMINATE: {
         call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_INCOMING);
-        if (!call_states) {
-            call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_LOCALLY_HELD);
-            if (!call_states) {
-                call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_ACTIVE);
-            }
-        }
+        if (call_states)
+            break;
+
+        call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_LOCALLY_HELD);
+        if (call_states)
+            break;
+
+        call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_ACTIVE);
+        if (call_states)
+            break;
+
+        call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_ALERTING);
 
         break;
     }
@@ -251,12 +257,15 @@ static void lea_ccpc_process_debug(lea_ccpc_msg_t *msg)
     case STACK_EVENT_READ_BEARER_LIST_CURRENT_CALL: {
         LEA_TBS_CALLS_LIST_ITEM_S *calls;
         calls = (LEA_TBS_CALLS_LIST_ITEM_S *)msg->event_data.dataarry;
+        void *p = calls;
         BT_LOGD("%s, event:%d, tbs_id:%d, number:%d", __func__,
                 msg->event, msg->event_data.tbs_id, msg->event_data.valueint32);
         for (int i = 0; i < msg->event_data.valueint32; i++) {
             BT_LOGD("index:%d, state:%d, flags:%d, uri:%s",
-                    (calls + i)->index, (calls + i)->state,
-                    (calls + i)->flags, (calls + i)->call_uri);
+                    calls->index, calls->state,
+                    calls->flags, calls->call_uri);
+            p += sizeof(LEA_TBS_CALLS_LIST_ITEM_S) + strlen(calls->call_uri) + 1;
+            calls = p;
         }
         break;
     }
@@ -690,15 +699,14 @@ void lea_ccpc_on_bearer_list_current_calls(bt_address_t *addr, uint32_t tbs_id, 
         return;
     }
 
-    msg = lea_ccpc_msg_new_ext(STACK_EVENT_READ_BEARER_LIST_CURRENT_CALL, addr, tbs_id,
-                               (sizeof(LEA_TBS_CALLS_LIST_ITEM_S) + size) * number);
+    msg = lea_ccpc_msg_new_ext(STACK_EVENT_READ_BEARER_LIST_CURRENT_CALL, addr, tbs_id, size);
     if (!msg) {
         BT_LOGE("%s, Failed to create msg", __func__);
         return;
     }
 
     msg->event_data.valueint32 = number;
-    memcpy(&msg->event_data.dataarry, calls, (sizeof(LEA_TBS_CALLS_LIST_ITEM_S) + size) * number);
+    memcpy(&msg->event_data.dataarry, calls, size);
 
     lea_ccpc_send_msg(msg);
 }
@@ -758,7 +766,7 @@ void lea_ccpc_on_call_control_result(bt_address_t *addr, uint32_t tbs_id, uint8_
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-static bt_status_t bts_lea_ccpc_read_bearer_provider_name(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_bearer_provider_name(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -767,21 +775,21 @@ static bt_status_t bts_lea_ccpc_read_bearer_provider_name(void *handle, bt_addre
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_bearer_provider_name(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_bearer_uci(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_bearer_uci(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -790,21 +798,21 @@ static bt_status_t bts_lea_ccpc_read_bearer_uci(void *handle, bt_address_t *addr
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_bearer_uci(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_bearer_technology(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_bearer_technology(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -813,21 +821,21 @@ static bt_status_t bts_lea_ccpc_read_bearer_technology(void *handle, bt_address_
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_bearer_technology(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_bearer_uri_schemes_supported_list(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_bearer_uri_schemes_supported_list(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -836,21 +844,21 @@ static bt_status_t bts_lea_ccpc_read_bearer_uri_schemes_supported_list(void *han
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_bearer_uri_schemes_supported_list(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_bearer_signal_strength(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_bearer_signal_strength(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -859,22 +867,21 @@ static bt_status_t bts_lea_ccpc_read_bearer_signal_strength(void *handle, bt_add
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_bearer_signal_strength(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_bearer_signal_strength_report_interval(void *handle,
-                                                                            bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_bearer_signal_strength_report_interval(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -883,21 +890,21 @@ static bt_status_t bts_lea_ccpc_read_bearer_signal_strength_report_interval(void
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_bearer_signal_strength_report_interval(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_content_control_id(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_content_control_id(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -906,21 +913,21 @@ static bt_status_t bts_lea_ccpc_read_content_control_id(void *handle, bt_address
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_content_control_id(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_status_flags(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_status_flags(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -929,21 +936,21 @@ static bt_status_t bts_lea_ccpc_read_status_flags(void *handle, bt_address_t *ad
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_status_flags(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_call_control_optional_opcodes(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_call_control_optional_opcodes(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -952,21 +959,21 @@ static bt_status_t bts_lea_ccpc_read_call_control_optional_opcodes(void *handle,
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_call_control_optional_opcodes(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_incoming_call(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_incoming_call(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -975,21 +982,21 @@ static bt_status_t bts_lea_ccpc_read_incoming_call(void *handle, bt_address_t *a
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_incoming_call(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_incoming_call_target_bearer_uri(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_incoming_call_target_bearer_uri(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -998,21 +1005,21 @@ static bt_status_t bts_lea_ccpc_read_incoming_call_target_bearer_uri(void *handl
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_incoming_call_target_bearer_uri(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_call_state(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_call_state(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -1021,21 +1028,21 @@ static bt_status_t bts_lea_ccpc_read_call_state(void *handle, bt_address_t *addr
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_call_state(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_bearer_list_current_calls(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_bearer_list_current_calls(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -1044,21 +1051,21 @@ static bt_status_t bts_lea_ccpc_read_bearer_list_current_calls(void *handle, bt_
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_bearer_list_current_calls(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_read_call_friendly_name(void *handle, bt_address_t *addr)
+static bt_status_t bts_lea_ccpc_read_call_friendly_name(bt_address_t *addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -1067,21 +1074,21 @@ static bt_status_t bts_lea_ccpc_read_call_friendly_name(void *handle, bt_address
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_read_call_friendly_name(addr, service->tbs_info.sid);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_call_control_by_index(void *handle, bt_address_t *addr, uint8_t opcode)
+static bt_status_t bts_lea_ccpc_call_control_by_index(bt_address_t *addr, uint8_t opcode)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -1091,16 +1098,16 @@ static bt_status_t bts_lea_ccpc_call_control_by_index(void *handle, bt_address_t
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
 
     if (lea_ccpc_find_call_index(opcode, &call_index)) {
         ret = bt_sal_lea_tbc_call_control_by_index(addr, service->tbs_info.sid, opcode, call_index);
         if (ret != BT_STATUS_SUCCESS) {
             BT_LOGE("%s fail, err:%d ", __func__, ret);
-            return BT_STATUS_FAIL;
             pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+            return BT_STATUS_FAIL;
         }
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
@@ -1108,7 +1115,7 @@ static bt_status_t bts_lea_ccpc_call_control_by_index(void *handle, bt_address_t
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_originate_call(void *handle, bt_address_t *addr, uint8_t *uri)
+static bt_status_t bts_lea_ccpc_originate_call(bt_address_t *addr, uint8_t *uri)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -1117,21 +1124,21 @@ static bt_status_t bts_lea_ccpc_originate_call(void *handle, bt_address_t *addr,
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_originate_call(addr, service->tbs_info.sid, uri);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccpc_join_calls(void *handle, bt_address_t *addr, uint8_t number,
+static bt_status_t bts_lea_ccpc_join_calls(bt_address_t *addr, uint8_t number,
                                            uint8_t *call_indexes)
 {
     CHECK_ENABLED();
@@ -1141,14 +1148,14 @@ static bt_status_t bts_lea_ccpc_join_calls(void *handle, bt_address_t *addr, uin
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     if (!service->tbs_info.num) {
         BT_LOGE("%s, tbs num is unexpected", __func__);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     ret = bt_sal_lea_tbc_join_calls(addr, service->tbs_info.sid, number, call_indexes);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
-        return BT_STATUS_FAIL;
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
+        return BT_STATUS_FAIL;
     }
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
@@ -1277,7 +1284,7 @@ static int lea_ccpc_dump(void)
 
 static const profile_service_t lea_ccpc_service = {
     .auto_start = true,
-    .name = "lea_ccpc",
+    .name = PROFILE_CCPC_NAME,
     .id = PROFILE_LEAUDIO_CCPC,
     .transport = BT_TRANSPORT_BLE,
     .uuid = {BT_UUID128_TYPE, { 0 }},
