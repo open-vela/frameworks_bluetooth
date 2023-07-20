@@ -15,7 +15,7 @@
  ***************************************************************************/
 #include <stdint.h>
 
-#include <nuttx/time.h>
+#include <time.h>
 
 #include "bt_time.h"
 
