@@ -40,8 +40,8 @@ static int get_scanmode_cmd(void *handle, int argc, char **argv);
 static int set_iocap_cmd(void *handle, int argc, char **argv);
 static int get_iocap_cmd(void *handle, int argc, char **argv);
 static int get_local_addr_cmd(void *handle, int argc, char **argv);
-static int get_apperance_cmd(void *handle, int argc, char **argv);
-static int set_apperance_cmd(void *handle, int argc, char **argv);
+static int get_appearance_cmd(void *handle, int argc, char **argv);
+static int set_appearance_cmd(void *handle, int argc, char **argv);
 static int set_le_addr_cmd(void *handle, int argc, char **argv);
 static int get_le_addr_cmd(void *handle, int argc, char **argv);
 static int set_identity_addr_cmd(void *handle, int argc, char **argv);
@@ -205,7 +205,7 @@ static bt_command_t g_set_cmd_tables[] = {
     { "iocap",     set_iocap_cmd,         0, "params: <io capability> (0:displayonly, 1:yes&no, 2:keyboardonly, 3:no-in/no-out 4:keyboard&display)"              },
     { "name",      set_local_name_cmd,    0, "params: <local name>, example \"vela-bt\""                                                                         },
     { "class",     set_local_cod_cmd,     0, "params: <local class of device>, range in 0x0-0xFFFFFC, the 2 least significant shall be 0b00, example: 0x00640404"},
-    { "apperance", set_apperance_cmd,     0, "set le adapter apperance, params: <apperance>"                                                                     },
+    { "appearance",set_appearance_cmd,    0, "set le adapter appearance, params: <appearance>"                                                                   },
     { "leaddr",    set_le_addr_cmd,       0, "set ble adapter addr, params: <leaddr>"                                                                            },
     { "id",        set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>"                                                        },
     { "help",      NULL,                  0, "show set help info"                                                                                                },
@@ -218,7 +218,7 @@ static bt_command_t g_get_cmd_tables[] = {
     { "addr",      get_local_addr_cmd,        0, "get adapter local addr"           },
     { "leaddr",    get_le_addr_cmd,           0, "get ble adapter addr"             },
     { "name",      get_local_name_cmd,        0, "get adapter local name"           },
-    { "apperance", get_apperance_cmd,         0, "get le adapter apperance"         },
+    { "appearance",get_appearance_cmd,        0, "get le adapter appearance"        },
     { "class",     get_local_cod_cmd,         0, "get adapter local class of device"},
     { "bonded",    get_bonded_devices_cmd,    0, "get bonded devices"               },
     { "connected", get_connected_devices_cmd, 0, "get connected devices"            },
@@ -499,23 +499,23 @@ static int get_local_addr_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int get_apperance_cmd(void *handle, int argc, char **argv)
+static int get_appearance_cmd(void *handle, int argc, char **argv)
 {
     uint16_t appearance;
 
     appearance = bt_adapter_get_le_appearance(handle);
-    PRINT("Le Apperance:0x%04x", appearance);
+    PRINT("Le appearance:0x%04x", appearance);
     return CMD_OK;
 }
 
-static int set_apperance_cmd(void *handle, int argc, char **argv)
+static int set_appearance_cmd(void *handle, int argc, char **argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
     uint32_t appearance = strtoul(argv[0], NULL, 16);
     bt_adapter_set_le_appearance(handle, appearance);
-    PRINT("Set Le Apperance:0x%04" PRIx32 "", appearance);
+    PRINT("Set Le appearance:0x%04" PRIx32 "", appearance);
 
     return CMD_OK;
 }
