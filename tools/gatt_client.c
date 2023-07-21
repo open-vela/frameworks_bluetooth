@@ -33,15 +33,15 @@ static int enable_cccd_cmd(void *handle, int argc, char *argv[]);
 static int disable_cccd_cmd(void *handle, int argc, char *argv[]);
 static int exchange_mtu_cmd(void *handle, int argc, char *argv[]);
 
-#define GATTC_CONNECTION_MAX    (CONFIG_BLUETOOTH_GATTC_MAX_CONNECTIONS)
-static gattc_handle_t g_gattc_handles[GATTC_CONNECTION_MAX] = {0};
+#define GATTC_CONNECTION_MAX (CONFIG_BLUETOOTH_GATTC_MAX_CONNECTIONS)
+static gattc_handle_t g_gattc_handles[GATTC_CONNECTION_MAX] = { 0 };
 
-#define CHECK_CONNCTION_ID(id)                          \
-    {                                                   \
-        if (id < 0 || id >= GATTC_CONNECTION_MAX) {     \
-            PRINT("invalid connection id: %d", id);     \
-            return CMD_INVALID_OPT;                     \
-        }                                               \
+#define CHECK_CONNCTION_ID(id)                      \
+    {                                               \
+        if (id < 0 || id >= GATTC_CONNECTION_MAX) { \
+            PRINT("invalid connection id: %d", id); \
+            return CMD_INVALID_OPT;                 \
+        }                                           \
     }
 
 static bt_command_t g_gattc_tables[] = {
@@ -120,16 +120,6 @@ static int discover_services_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void read_complete_cb(void *conn_handle, gatt_status_t status,
-                             uint16_t attr_handle, uint8_t *value, uint16_t length)
-{
-    PRINT("gattc connection read complete, handle 0x%04x status:%d", attr_handle, status);
-    for (int i = 0; i < length; i++) {
-        printf("0x%02x ", value[i]);
-    }
-    printf("\n");
-}
-
 static int read_request_cmd(void *handle, int argc, char *argv[])
 {
     if (argc < 2)
@@ -140,16 +130,10 @@ static int read_request_cmd(void *handle, int argc, char *argv[])
 
     uint16_t attr_handle = strtol(argv[1], NULL, 16);
 
-    if (ble_gattc_read(g_gattc_handles[conn_id], attr_handle, read_complete_cb) != BT_STATUS_SUCCESS)
+    if (ble_gattc_read(g_gattc_handles[conn_id], attr_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
-}
-
-static void write_complete_cb(void *conn_handle, gatt_status_t status,
-                              uint16_t attr_handle, uint16_t offset)
-{
-    PRINT("gattc connection write complete, handle 0x%04x status:%d", attr_handle, status);
 }
 
 static int write_request_cmd(void *handle, int argc, char *argv[])
@@ -166,7 +150,7 @@ static int write_request_cmd(void *handle, int argc, char *argv[])
 
     if (!strcmp(argv[2], "str")) {
         if (ble_gattc_write_without_response(g_gattc_handles[conn_id], attr_handle,
-            (uint8_t*)argv[3], strlen(argv[3]), write_complete_cb) != BT_STATUS_SUCCESS)
+            (uint8_t*)argv[3], strlen(argv[3])) != BT_STATUS_SUCCESS)
             return CMD_ERROR;
     } else if (!strcmp(argv[2], "hex")) {
         len = argc - 3;
@@ -179,8 +163,7 @@ static int write_request_cmd(void *handle, int argc, char *argv[])
 
         for (i = 0; i < len; i++)
             value[i] = (uint8_t)(strtol(argv[3 + i], NULL, 16) & 0xFF);
-        if (ble_gattc_write_without_response(g_gattc_handles[conn_id], attr_handle,
-            value, len, write_complete_cb) != BT_STATUS_SUCCESS)
+        if (ble_gattc_write_without_response(g_gattc_handles[conn_id], attr_handle, value, len) != BT_STATUS_SUCCESS)
             goto error;
     } else
         return CMD_INVALID_PARAM;
@@ -215,11 +198,10 @@ static int enable_cccd_cmd(void *handle, int argc, char *argv[])
 
     uint16_t value_handle = strtol(argv[1], NULL, 16);
     uint16_t cccd_handle = 0;
-    if (argc >= 3)
+    if (argc > 2)
         cccd_handle = strtol(argv[2], NULL, 16);
 
-    if (ble_gattc_subscribe(g_gattc_handles[conn_id], value_handle, cccd_handle,
-        write_complete_cb, notify_received_cb) != BT_STATUS_SUCCESS)
+    if (ble_gattc_subscribe(g_gattc_handles[conn_id], value_handle, cccd_handle, notify_received_cb) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -235,11 +217,10 @@ static int disable_cccd_cmd(void *handle, int argc, char *argv[])
 
     uint16_t value_handle = strtol(argv[1], NULL, 16);
     uint16_t cccd_handle = 0;
-    if (argc >= 3)
+    if (argc > 2)
         cccd_handle = strtol(argv[2], NULL, 16);
 
-    if (ble_gattc_unsubscribe(g_gattc_handles[conn_id], value_handle, cccd_handle,
-        write_complete_cb) != BT_STATUS_SUCCESS)
+    if (ble_gattc_unsubscribe(g_gattc_handles[conn_id], value_handle, cccd_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -345,11 +326,27 @@ static void mtu_exchange_callback(void *conn_handle, gatt_status_t status, uint3
     PRINT("gattc_mtu_exchange_callback, status:%d, mtu:%d", status, mtu);
 }
 
+static void read_complete_callback(void *conn_handle, gatt_status_t status, uint16_t attr_handle, uint8_t *value, uint16_t length)
+{
+    PRINT("gattc connection read complete, handle 0x%04x status:%d", attr_handle, status);
+    for (int i = 0; i < length; i++) {
+        printf("0x%02x ", value[i]);
+    }
+    printf("\n");
+}
+
+static void write_complete_callback(void *conn_handle, gatt_status_t status, uint16_t attr_handle, uint16_t offset)
+{
+    PRINT("gattc connection write complete, handle 0x%04x status:%d", attr_handle, status);
+}
+
 static gattc_callbacks_t gattc_cbs = {
     sizeof(gattc_cbs),
     connect_callback,
     disconnect_callback,
     discover_callback,
+    read_complete_callback,
+    write_complete_callback,
     mtu_exchange_callback,
 };
 
