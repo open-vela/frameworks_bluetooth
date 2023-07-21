@@ -99,11 +99,17 @@ bt_status_t ble_gatts_response(gatts_handle_t srv_handle, uint32_t req_handle, u
 bt_status_t ble_gatts_notify(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb)
 {
     IBleGattServerCallbacks *cbks = srv_handle;
-    return BpBleGattServer_notify(cbks->proxy, cbks->cookie, attr_handle, value, length, cmpl_cb);
+    bt_status_t status = BpBleGattServer_notify(cbks->proxy, cbks->cookie, attr_handle, value, length);
+    if (status == BT_STATUS_SUCCESS && cmpl_cb)
+        BleGattServerCallbacks_addPending(cbks, attr_handle, cmpl_cb);
+    return status;
 }
 
 bt_status_t ble_gatts_indicate(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb)
 {
     IBleGattServerCallbacks *cbks = srv_handle;
-    return BpBleGattServer_indicate(cbks->proxy, cbks->cookie, attr_handle, value, length, cmpl_cb);
+    bt_status_t status = BpBleGattServer_indicate(cbks->proxy, cbks->cookie, attr_handle, value, length);
+    if (status == BT_STATUS_SUCCESS && cmpl_cb)
+        BleGattServerCallbacks_addPending(cbks, attr_handle, cmpl_cb);
+    return status;
 }

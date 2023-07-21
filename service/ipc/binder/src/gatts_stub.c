@@ -121,26 +121,27 @@ static binder_status_t IBleGattServer_Class_onTransact(AIBinder *binder, transac
         break;
     }
     case IGATT_SERVER_CREATE_SERVICE_TABLE: {
-        gatt_srv_db_t *srv_db;
+        gatt_srv_db_t srv_db;
 
         stat = AParcel_readUint32(in, &handle);
         if (stat != STATUS_OK)
             return stat;
 
-        // stat = AParcel_readServiceTable(in, &srv_db);
-        // if (stat != STATUS_OK)
-        //     return stat;
+        stat = AParcel_readServiceTable(in, &srv_db.attr_db, &srv_db.attr_num);
+        if (stat != STATUS_OK) // cleanup srv_db.attr_db ?
+            return stat;
 
-        gatt_attr_db_t *attr_inst = srv_db->attr_db;
-        for (int i = 0; i < srv_db->attr_num; i++, attr_inst++) {
+        gatt_attr_db_t *attr_inst = srv_db.attr_db;
+        for (int i = 0; i < srv_db.attr_num; i++, attr_inst++) {
             if (attr_inst->read_cb)
                 attr_inst->read_cb = BpBleGattServerCallbacks_onRead;
             if (attr_inst->write_cb)
                 attr_inst->write_cb = BpBleGattServerCallbacks_onWrite;
         }
 
-        status = profile->create_service_table((void *)handle, srv_db);
+        status = profile->create_service_table((void *)handle, &srv_db);
         stat = AParcel_writeUint32(reply, status);
+        free(srv_db.attr_db);
         break;
     }
     case IGATT_SERVER_START: {

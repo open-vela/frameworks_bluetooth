@@ -651,3 +651,150 @@ binder_status_t AParcel_readBleScanResult(const AParcel *parcel, ble_scan_result
 
     return stat;
 }
+
+static binder_status_t AParcel_writeAttribute(AParcel *parcel, gatt_attr_db_t *attribute)
+{
+    binder_status_t stat;
+
+    stat = AParcel_writeByte(parcel, attribute->handle);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_writeUuid(parcel, attribute->uuid);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_writeUint32(parcel, attribute->type);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_writeUint32(parcel, attribute->properties);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_writeUint32(parcel, attribute->permissions);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_writeUint32(parcel, attribute->rsp_type);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_writeUint32(parcel, (uint32_t)attribute->read_cb);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_writeUint32(parcel, (uint32_t)attribute->write_cb);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_writeByteArray(parcel, (const int8_t *)attribute->attr_value, attribute->attr_length);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_writeUint32(parcel, attribute->attr_length);
+    if (stat != STATUS_OK)
+        return stat;
+
+    return stat;
+}
+
+static binder_status_t AParcel_writeParcelableAttribute(AParcel *parcel, const void *arrayData,
+                                                        size_t index)
+{
+    gatt_attr_db_t *attribute = (gatt_attr_db_t *)arrayData + index;
+
+    return AParcel_writeAttribute(parcel, attribute);
+}
+
+binder_status_t AParcel_writeServiceTable(AParcel *parcel, gatt_attr_db_t *attribute, int32_t length)
+{
+    binder_status_t stat = AParcel_writeInt32(parcel, length);
+    if (stat != STATUS_OK)
+        return stat;
+
+    return AParcel_writeParcelableArray(parcel, (void *)attribute, length, AParcel_writeParcelableAttribute);
+}
+
+static binder_status_t AParcel_readAttribute(const AParcel *parcel, gatt_attr_db_t *attribute)
+{
+    binder_status_t stat = STATUS_OK;
+
+    stat = AParcel_readByte(parcel, (int8_t *)&attribute->handle);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_readUuid(parcel, attribute->uuid);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_readUint32(parcel, &attribute->type);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_readUint32(parcel, &attribute->properties);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_readUint32(parcel, &attribute->permissions);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_readUint32(parcel, &attribute->rsp_type);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_readUint32(parcel, (uint32_t *)&attribute->read_cb);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_readUint32(parcel, (uint32_t *)&attribute->write_cb);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_readByteArray(parcel, (void *)&attribute->attr_value, AParcelUtils_byteArrayAllocator);
+    if (stat != STATUS_OK)
+        return stat;
+
+    stat = AParcel_readUint32(parcel, &attribute->attr_length);
+    if (stat != STATUS_OK)
+        return stat;
+
+    return stat;
+}
+
+static binder_status_t AParcel_readParcelableAttribute(const AParcel *parcel, void *arrayData,
+                                                       size_t index)
+{
+    gatt_attr_db_t *attribute = (gatt_attr_db_t *)arrayData + index;
+
+    attribute->uuid = malloc(sizeof(bt_uuid_t));
+    if (!attribute->uuid)
+        return STATUS_NO_MEMORY;
+
+    return AParcel_readAttribute(parcel, attribute);
+}
+
+static bool AParcel_parcelableAttributeAllocator(void *arrayData, int32_t length)
+{
+    return true;
+}
+
+binder_status_t AParcel_readServiceTable(const AParcel *parcel, gatt_attr_db_t **attribute, int32_t *length)
+{
+    binder_status_t stat = AParcel_readInt32(parcel, length);
+    if (stat != STATUS_OK)
+        return stat;
+
+    if (*length == 0)
+        return STATUS_OK;
+
+    *attribute = malloc(sizeof(gatt_attr_db_t) * (*length));
+    if (!(*attribute))
+        return STATUS_NO_MEMORY;
+
+    memset(*attribute, 0, sizeof(gatt_attr_db_t) * (*length));
+    return AParcel_readParcelableArray(parcel, (void *)*attribute,
+                                       AParcel_parcelableAttributeAllocator,
+                                       AParcel_readParcelableAttribute);
+}
