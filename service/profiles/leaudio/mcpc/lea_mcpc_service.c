@@ -23,12 +23,14 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "adapter_internel.h"
 #include "bt_lea_mcpc.h"
 #include "bt_profile.h"
 #include "bt_addr.h"
 #include "callbacks_list.h"
 #include "lea_mcpc_service.h"
 #include "lea_mcpc_event.h"
+#include "media_session.h"
 #include "sal_lea_mcpc_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
@@ -53,16 +55,19 @@ typedef struct
     bts_mcs_info_s mcs_info;
     callbacks_list_t *callbacks;
     pthread_mutex_t device_lock;
+    void *media_session_handle;
 } mcpc_service_t;
 
 static mcpc_service_t g_mcpc_service = {
     .started = false,
     .callbacks = NULL,
+    .media_session_handle = NULL,
 };
 
 static void lea_mcpc_process_message(void *data)
 {
     mcpc_event_t *msg = (mcpc_event_t *)data;
+
     switch (msg->event) {
         case MCP_MEDIA_PLAYER_NAME: {
             MCPC_CALLBACK_FOREACH(g_mcpc_service.callbacks, test_cb, &msg->remote_addr, msg->event);
@@ -343,6 +348,7 @@ void lea_mcpc_on_track_position(bt_address_t *addr, uint32_t mcs_id, int32_t pos
 void lea_mcpc_on_media_state(bt_address_t *addr, uint32_t mcs_id, uint8_t state)
 {
     mcpc_event_t* event;
+    BT_LOGD("%s, media state:%d ", __func__, state);
 
     event = mcpc_event_new(MCP_READ_MEDIA_STATE, addr, mcs_id);
     if (!event) {
@@ -357,6 +363,7 @@ void lea_mcpc_on_media_state(bt_address_t *addr, uint32_t mcs_id, uint8_t state)
 void lea_mcpc_on_media_control_result(bt_address_t *addr, uint32_t mcs_id, uint8_t opcode, uint8_t result)
 {
     mcpc_event_t* event;
+    BT_LOGD("%s, opcode:%d ,result:%d", __func__, opcode, result);
 
     event = mcpc_event_new(MCP_MEDIA_CONTROL_REQ, addr, mcs_id);
     if (!event) {
@@ -367,6 +374,17 @@ void lea_mcpc_on_media_control_result(bt_address_t *addr, uint32_t mcs_id, uint8
     event->event_data.valueuint8_1 = result;
 
     lea_mcpc_send_msg(event);
+
+    if (result != LEA_MEDIA_CONTROL_SUCCESS) {
+        BT_LOGW("%s, Failed to control remote device!", __func__);
+        return;
+    }
+
+    if (opcode == MCC_MEDIA_CONTROL_PREVIOUS_TRACK) {
+        media_session_notify(&g_mcpc_service.media_session_handle, MEDIA_EVENT_PREVED, 0, NULL);
+    } else if (opcode == MCC_MEDIA_CONTROL_NEXT_TRACK) {
+        media_session_notify(&g_mcpc_service.media_session_handle, MEDIA_EVENT_NEXTED, 0, NULL);
+    }
 }
 
 void lea_mcpc_on_search_control_result(bt_address_t *addr, uint32_t mcs_id, uint8_t result)
@@ -1019,6 +1037,7 @@ static bt_status_t bts_mcp_media_control_request(bt_address_t *addr,
 {
     CHECK_ENABLED();
     bt_status_t ret;
+    BT_LOGD("%s, opcode:%d ", __func__, opcode);
 
     pthread_mutex_lock(&g_mcpc_service.device_lock);
     if (!g_mcpc_service.mcs_info.num) {
@@ -1094,6 +1113,57 @@ static const void *get_lea_mcpc_profile_interface(void)
 {
     return &leMcpInterface;
 }
+
+static bool mcpc_allocator(void **data, uint32_t size)
+{
+    *data = malloc(size);
+    if (!(*data))
+        return false;
+
+    return true;
+}
+
+static void lea_mcps_media_seesion_event_callback(void* cookie, int event, int ret, const char* data)
+{
+    BT_LOGD("%s, event:%d ", __func__, event);
+
+    bt_status_t rt;
+    bt_address_t *addrs = NULL;
+    int num = 0;
+
+    rt = adapter_get_connected_devices(&addrs, &num, mcpc_allocator, BT_TRANSPORT_BLE);
+    if (rt != BT_STATUS_SUCCESS || num < 1) {
+        BT_LOGE("%s, Le connected devices get failed", __func__);
+        return;
+    }
+
+    switch (event) {
+        case MEDIA_EVENT_START: {
+            bts_mcp_media_control_request(addrs + num - 1, MCC_MEDIA_CONTROL_PLAY, 0); // addrs + num - 1: the latest connected device
+            break;
+        }
+        case MEDIA_EVENT_PAUSE: {
+            bts_mcp_media_control_request(addrs + num - 1, MCC_MEDIA_CONTROL_PAUSE, 0);
+            break;
+        }
+        case MEDIA_EVENT_STOP: {
+            bts_mcp_media_control_request(addrs + num - 1, MCC_MEDIA_CONTROL_STOP, 0);
+            break;
+        }
+        case MEDIA_EVENT_PREV: {
+            bts_mcp_media_control_request(addrs + num - 1, MCC_MEDIA_CONTROL_PREVIOUS_TRACK, 0);
+            break;
+        }
+        case MEDIA_EVENT_NEXT: {
+            bts_mcp_media_control_request(addrs + num - 1, MCC_MEDIA_CONTROL_NEXT_TRACK, 0);
+            break;
+        }
+        default:
+            BT_LOGW("%s, Unknown event!", __func__);
+            break;
+    }
+}
+
 static bt_status_t lea_mcpc_init(void)
 {
     BT_LOGD("%s", __func__);
@@ -1103,6 +1173,7 @@ static bt_status_t lea_mcpc_init(void)
 
 static bt_status_t lea_mcpc_startup(profile_on_startup_t cb)
 {
+    BT_LOGD("%s", __func__);
     bt_status_t status;
     pthread_mutexattr_t attr;
     mcpc_service_t *service = &g_mcpc_service;
@@ -1118,6 +1189,12 @@ static bt_status_t lea_mcpc_startup(profile_on_startup_t cb)
         goto fail;
     }
     service->started = true;
+    service->media_session_handle = media_session_register(service,
+        lea_mcps_media_seesion_event_callback);
+    if (!service->media_session_handle) {
+        BT_LOGE("%s media session open failed.", __func__);
+        return BT_STATUS_FAIL;
+    }
     return BT_STATUS_SUCCESS;
 fail:
     bt_callbacks_list_free(service->callbacks);
@@ -1127,11 +1204,12 @@ fail:
 
 static bt_status_t lea_mcpc_shutdown(profile_on_shutdown_t cb)
 {
-    BT_LOGE("%s", __func__);
+    BT_LOGD("%s", __func__);
     if (!g_mcpc_service.started)
         return BT_STATUS_SUCCESS;
     pthread_mutex_lock(&g_mcpc_service.device_lock);
     g_mcpc_service.started = false;
+    media_session_unregister(&g_mcpc_service.media_session_handle);
     pthread_mutex_unlock(&g_mcpc_service.device_lock);
     pthread_mutex_destroy(&g_mcpc_service.device_lock);
     bt_callbacks_list_free(g_mcpc_service.callbacks);
