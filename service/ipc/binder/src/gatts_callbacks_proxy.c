@@ -151,7 +151,7 @@ static void BpBtGattServerCallbacks_onNotifyComplete(void *handle, gatt_status_t
 
     stat = AParcel_writeUint32(parcelIn, (uint32_t)status);
     if (stat != STATUS_OK)
-        return;
+        return 0;
 
     stat = AParcel_writeUint32(parcelIn, (uint32_t)attr_handle);
     if (stat != STATUS_OK)
@@ -160,8 +160,9 @@ static void BpBtGattServerCallbacks_onNotifyComplete(void *handle, gatt_status_t
     stat = AIBinder_transact(binder, ICBKS_GATT_SERVER_NOTIFY_COMPLETE, &parcelIn, &parcelOut, 0 /*flags*/);
     if (stat != STATUS_OK) {
         BT_LOGE("%s transact error:%d", __func__, stat);
-        return;
     }
+
+    return 0;
 }
 
 static const gatts_callbacks_t static_gatts_cbks = {

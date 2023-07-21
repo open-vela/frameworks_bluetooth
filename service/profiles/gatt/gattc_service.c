@@ -87,7 +87,6 @@ typedef struct
     gattc_manager_t *manager;
     gattc_callbacks_t *callbacks;
     bt_list_t *services;
-    bt_list_t *pend_ops;
 
 } gattc_connection_t;
 
@@ -132,7 +131,6 @@ static gattc_connection_t *gattc_connection_new(gattc_callbacks_t *callbacks)
     connection->conn_id = new_id;
     connection->callbacks = callbacks;
     connection->services = NULL;
-    connection->pend_ops = NULL;
 
     return connection;
 }
@@ -147,8 +145,6 @@ static void gattc_connection_delete(gattc_connection_t *connection)
     index_free(g_gattc_manager.allocator, connection->conn_id);
     bt_list_free(connection->services);
     connection->services = NULL;
-    bt_list_free(connection->pend_ops);
-    connection->pend_ops = NULL;
     pthread_mutex_destroy(&connection->conn_lock);
     free(connection);
 }
@@ -471,13 +467,6 @@ static bt_status_t if_gattc_create_connect(void *remote, void **phandle, gattc_c
 
     connection->services = bt_list_new((bt_list_free_cb_t)gattc_service_delete);
     if (!connection->services) {
-        pthread_mutex_unlock(&g_gattc_manager.device_lock);
-        status = BT_STATUS_NOMEM;
-        goto fail;
-    }
-
-    connection->pend_ops = bt_list_new((bt_list_free_cb_t)gattc_pendops_delete);
-    if (!connection->pend_ops) {
         pthread_mutex_unlock(&g_gattc_manager.device_lock);
         status = BT_STATUS_NOMEM;
         goto fail;
