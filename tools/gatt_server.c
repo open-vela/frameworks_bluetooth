@@ -42,22 +42,22 @@ enum {
     GATT_SERVICE_CUSTOM = 3
 };
 
-#define GET_SERVICE_HANDLE(id, handle)                  \
-    {                                                   \
-        switch (id) {                                   \
-        case GATT_SERVICE_DIS:                          \
-            handle = g_dis_handle;                      \
-            break;                                      \
-        case GATT_SERVICE_BAS:                          \
-            handle = g_bas_handle;                      \
-            break;                                      \
-        case GATT_SERVICE_CUSTOM:                       \
-            handle = g_custom_handle;                   \
-            break;                                      \
-        default:                                        \
-            PRINT("invalid service id: %d", id);        \
-            return CMD_INVALID_OPT;                     \
-        }                                               \
+#define GET_SERVICE_HANDLE(id, handle)           \
+    {                                            \
+        switch (id) {                            \
+        case GATT_SERVICE_DIS:                   \
+            handle = g_dis_handle;               \
+            break;                               \
+        case GATT_SERVICE_BAS:                   \
+            handle = g_bas_handle;               \
+            break;                               \
+        case GATT_SERVICE_CUSTOM:                \
+            handle = g_custom_handle;            \
+            break;                               \
+        default:                                 \
+            PRINT("invalid service id: %d", id); \
+            return CMD_INVALID_OPT;              \
+        }                                        \
     }
 
 enum {
@@ -117,10 +117,10 @@ uint16_t rx_char_on_write(void *srv_handle, uint16_t attr_handle, const uint8_t 
 const char model_number_str[] = "vela_bt";
 const char manufacturer_name_str[] = "xiaomi";
 const uint8_t pnp_id[7] = {
-	0x02,       // pnp_vid_src
-	0x8F, 0x03, // pnp_vid
-	0x34, 0x12, // pnp_pid
-	0x00, 0x01  // pnp_ver
+    0x02, // pnp_vid_src
+    0x8F, 0x03, // pnp_vid
+    0x34, 0x12, // pnp_pid
+    0x00, 0x01 // pnp_ver
 };
 
 static gatt_attr_db_t s_dis_attr_db[] = {
@@ -167,15 +167,15 @@ static gatt_srv_db_t s_iot_service_db = {
 };
 
 static bt_command_t g_gatts_tables[] = {
-    { "register",   register_cmd,   0, "\"register gatt service(DIS = 1, BAS = 2, CUSTOM = 3) :<id>\""           },
-    { "unregister", unregister_cmd, 0, "\"unregister gatt service :<id>\""         },
-    { "start",      start_cmd,      0, "\"start gatt service :<id>\""              },
-    { "stop",       stop_cmd,       0, "\"stop gatt service :<id>\""               },
-    { "connect",    connect_cmd,    0, "\"connect remote device :<id><address>\""  },
-    { "disconnect", disconnect_cmd, 0, "\"disconnect remote device :<id>\""        },
-    { "notify_battery",  notify_bas_cmd,   0, "\"send battery notification :<level>(0-100)\"" },
-    { "notify_custom",   notify_cus_cmd,   0, "\"send custom notification :<playload>\""    },
-    { "indicate_custom", indicate_cus_cmd, 0, "\"send custom indication   :<playload>\""    },
+    {"register",         register_cmd,     0, "\"register gatt service(DIS = 1, BAS = 2, CUSTOM = 3) :<id>\""},
+    { "unregister",      unregister_cmd,   0, "\"unregister gatt service :<id>\""                            },
+    { "start",           start_cmd,        0, "\"start gatt service :<id>\""                                 },
+    { "stop",            stop_cmd,         0, "\"stop gatt service :<id>\""                                  },
+    { "connect",         connect_cmd,      0, "\"connect remote device :<id><address>\""                     },
+    { "disconnect",      disconnect_cmd,   0, "\"disconnect remote device :<id>\""                           },
+    { "notify_battery",  notify_bas_cmd,   0, "\"send battery notification :<level>(0-100)\""                },
+    { "notify_custom",   notify_cus_cmd,   0, "\"send custom notification :<playload>\""                     },
+    { "indicate_custom", indicate_cus_cmd, 0, "\"send custom indication   :<playload>\""                     },
 };
 
 static struct option gatts_options[] = {
@@ -279,7 +279,7 @@ static int stop_cmd(void *handle, int argc, char *argv[])
 
 static void notify_complete_cb(void *srv_handle, gatt_status_t status, uint16_t attr_handle)
 {
-    PRINT("gatts service notify complete, status:%d", status);
+    PRINT("gatts service notify complete, handle 0x%04x status:%d", attr_handle, status);
 }
 
 static int notify_bas_cmd(void *handle, int argc, char *argv[])

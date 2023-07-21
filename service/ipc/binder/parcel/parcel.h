@@ -21,6 +21,7 @@
 
 #include "bt_le_advertiser.h"
 #include "bt_le_scan.h"
+#include "ble_gatts.h"
 #include "bluetooth.h"
 #include "bt_hfp_hf.h"
 #include "bt_uuid.h"
@@ -49,4 +50,8 @@ binder_status_t AParcel_readBleAdvParam(const AParcel *parcel, ble_adv_params_t 
 
 binder_status_t AParcel_writeBleScanResult(AParcel *parcel, ble_scan_result_t *result);
 binder_status_t AParcel_readBleScanResult(const AParcel *parcel, ble_scan_result_t **outResult);
+
+binder_status_t AParcel_writeServiceTable(AParcel *parcel, gatt_attr_db_t *attribute, int32_t length);
+binder_status_t AParcel_readServiceTable(const AParcel *parcel, gatt_attr_db_t **attribute, int32_t *length);
+
 #endif

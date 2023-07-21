@@ -49,7 +49,7 @@ typedef struct {
 
 typedef struct {
     gatt_attr_db_t *attr_db;
-    uint16_t attr_num;
+    int32_t attr_num;
 } gatt_srv_db_t;
 
 typedef void (*gatts_connected_cb_t)(gatts_handle_t srv_handle, bt_address_t *addr);

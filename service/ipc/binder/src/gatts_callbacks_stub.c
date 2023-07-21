@@ -45,6 +45,20 @@ static void IBleGattServerCallbacks_Class_onDestroy(void *userData)
     BT_LOGD("%s", __func__);
 }
 
+static pend_notify_t *BleGattServerCallbacks_findPendNotify(IBleGattServerCallbacks *cbks, uint16_t attr_handle)
+{
+    struct list_node *node;
+
+    list_for_every(&cbks->pending_list, node)
+    {
+        pend_notify_t *pend_notify = (pend_notify_t *)node;
+        if (pend_notify->attr_handle == attr_handle)
+            return pend_notify;
+    }
+
+    return NULL;
+}
+
 static binder_status_t IBleGattServerCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
@@ -57,7 +71,8 @@ static binder_status_t IBleGattServerCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        cbks->callbacks->on_connected(cbks, &addr);
+        if (cbks->callbacks && cbks->callbacks->on_connected)
+            cbks->callbacks->on_connected(cbks, &addr);
         break;
     }
     case ICBKS_GATT_SERVER_DISCONNECTED: {
@@ -71,7 +86,8 @@ static binder_status_t IBleGattServerCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        cbks->callbacks->on_disconnected(cbks, &addr, (uint8_t)reason);
+        if (cbks->callbacks && cbks->callbacks->on_disconnected)
+            cbks->callbacks->on_disconnected(cbks, &addr, (uint8_t)reason);
         break;
     }
     case ICBKS_GATT_SERVER_STARTED: {
@@ -81,7 +97,8 @@ static binder_status_t IBleGattServerCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        cbks->callbacks->on_started(cbks, status);
+        if (cbks->callbacks && cbks->callbacks->on_started)
+            cbks->callbacks->on_started(cbks, status);
         break;
     }
     case ICBKS_GATT_SERVER_STOPPED: {
@@ -91,7 +108,8 @@ static binder_status_t IBleGattServerCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        cbks->callbacks->on_stopped(cbks, status);
+        if (cbks->callbacks && cbks->callbacks->on_stopped)
+            cbks->callbacks->on_stopped(cbks, status);
         break;
     }
     case ICBKS_GATT_SERVER_MTU_CHANGED: {
@@ -105,7 +123,8 @@ static binder_status_t IBleGattServerCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        cbks->callbacks->on_mtu_changed(cbks, &addr, mtu);
+        if (cbks->callbacks && cbks->callbacks->on_mtu_changed)
+            cbks->callbacks->on_mtu_changed(cbks, &addr, mtu);
         break;
     }
     case ICBKS_GATT_SERVER_READ: {
@@ -171,7 +190,13 @@ static binder_status_t IBleGattServerCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        // cbks->on_complete(cbks, status, (uint16_t)attr_handle);
+        pend_notify_t *pend_notify = BleGattServerCallbacks_findPendNotify(cbks, (uint16_t)attr_handle);
+        if (pend_notify) {
+            if (pend_notify->on_complete)
+                pend_notify->on_complete(cbks, status, (uint16_t)attr_handle);
+            list_delete(&pend_notify->node);
+            free(pend_notify);
+        }
         break;
     }
     default:
@@ -224,6 +249,7 @@ IBleGattServerCallbacks *BleGattServerCallbacks_new(const gatts_callbacks_t *cal
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
     cbks->callbacks = callbacks;
+    list_initialize(&cbks->pending_list);
 
     binder = BleGattServerCallbacks_getBinder(cbks);
     AIBinder_decStrong(binder);
@@ -238,5 +264,27 @@ void BleGattServerCallbacks_delete(IBleGattServerCallbacks *cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
+    struct list_node *node;
+    struct list_node *tmp;
+
+    list_for_every_safe(&cbks->pending_list, node, tmp)
+    {
+        pend_notify_t *pend_notify = (pend_notify_t *)node;
+        list_delete(&pend_notify->node);
+        free(pend_notify);
+    }
+
+    list_delete(&cbks->pending_list);
     free(cbks);
+}
+
+void BleGattServerCallbacks_addPending(IBleGattServerCallbacks *cbks, uint16_t attr_handle, gatts_complete_cb_t cmpl_cb)
+{
+    pend_notify_t *pend_notify = malloc(sizeof(pend_notify_t));
+    if (!pend_notify)
+        return;
+
+    pend_notify->attr_handle = attr_handle;
+    pend_notify->on_complete = cmpl_cb;
+    list_add_tail(&cbks->pending_list, &pend_notify->node);
 }

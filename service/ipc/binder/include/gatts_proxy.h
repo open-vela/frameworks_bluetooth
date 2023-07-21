@@ -40,8 +40,8 @@ bt_status_t BpBleGattServer_createServiceTable(BpBleGattServer *bpBinder, void *
 bt_status_t BpBleGattServer_start(BpBleGattServer *bpBinder, void *handle);
 bt_status_t BpBleGattServer_stop(BpBleGattServer *bpBinder, void *handle);
 bt_status_t BpBleGattServer_response(BpBleGattServer *bpBinder, void *handle, uint32_t req_handle, uint8_t *value, uint16_t length);
-bt_status_t BpBleGattServer_notify(BpBleGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
-bt_status_t BpBleGattServer_indicate(BpBleGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
+bt_status_t BpBleGattServer_notify(BpBleGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
+bt_status_t BpBleGattServer_indicate(BpBleGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
 #ifdef __cplusplus
 }
 #endif

@@ -164,6 +164,9 @@ bt_status_t BpBleGattServer_createServiceTable(BpBleGattServer *bpBinder, void *
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
+    if (!srv_db)
+        return BT_STATUS_PARM_INVALID;
+
     AIBinder *binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -174,9 +177,9 @@ bt_status_t BpBleGattServer_createServiceTable(BpBleGattServer *bpBinder, void *
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    // stat = AParcel_writeServiceTable(parcelIn, srv_db);
-    // if (stat != STATUS_OK)
-    //     return BT_STATUS_IPC_ERROR;
+    stat = AParcel_writeServiceTable(parcelIn, srv_db->attr_db, srv_db->attr_num);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
 
     stat = AIBinder_transact(binder, IGATT_SERVER_CREATE_SERVICE_TABLE, &parcelIn, &parcelOut, 0 /*flags*/);
     if (stat != STATUS_OK)
@@ -291,7 +294,7 @@ bt_status_t BpBleGattServer_response(BpBleGattServer *bpBinder, void *handle, ui
     return status;
 }
 
-bt_status_t BpBleGattServer_notify(BpBleGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb)
+bt_status_t BpBleGattServer_notify(BpBleGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -333,7 +336,7 @@ bt_status_t BpBleGattServer_notify(BpBleGattServer *bpBinder, void *handle, uint
     return status;
 }
 
-bt_status_t BpBleGattServer_indicate(BpBleGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb)
+bt_status_t BpBleGattServer_indicate(BpBleGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;

@@ -17,6 +17,7 @@
 #ifndef __BLE_GATTS_CALLBACKS_STUB_H__
 #define __BLE_GATTS_CALLBACKS_STUB_H__
 
+#include <nuttx/list.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <uchar.h>
@@ -29,10 +30,17 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
+    struct list_node node;
+    uint16_t attr_handle;
+    gatts_complete_cb_t on_complete;
+} pend_notify_t;
+
+typedef struct {
     AIBinder_Class *clazz;
     AIBinder_Weak *WeakBinder;
     const gatts_callbacks_t *callbacks;
     const gatt_srv_db_t *srv_db;
+    struct list_node pending_list;
     void *proxy;
     void *cookie;
 } IBleGattServerCallbacks;
@@ -52,6 +60,7 @@ AIBinder *BleGattServerCallbacks_getBinder(IBleGattServerCallbacks *adapter);
 binder_status_t BleGattServerCallbacks_associateClass(AIBinder *binder);
 IBleGattServerCallbacks *BleGattServerCallbacks_new(const gatts_callbacks_t *callbacks);
 void BleGattServerCallbacks_delete(IBleGattServerCallbacks *cbks);
+void BleGattServerCallbacks_addPending(IBleGattServerCallbacks *cbks, uint16_t attr_handle, gatts_complete_cb_t cmpl_cb);
 
 #ifdef __cplusplus
 }
