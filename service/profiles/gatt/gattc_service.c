@@ -87,7 +87,6 @@ typedef struct
     gattc_manager_t *manager;
     gattc_callbacks_t *callbacks;
     bt_list_t *services;
-    bt_list_t *pend_ops;
 
 } gattc_connection_t;
 
@@ -131,7 +130,6 @@ static gattc_connection_t *gattc_connection_new(gattc_callbacks_t *callbacks)
 
     connection->callbacks = callbacks;
     connection->services = NULL;
-    connection->pend_ops = NULL;
 
     return connection;
 }
@@ -146,8 +144,6 @@ static void gattc_connection_delete(gattc_connection_t *connection)
     index_free(g_gattc_manager.allocator, connection->conn_id);
     bt_list_free(connection->services);
     connection->services = NULL;
-    bt_list_free(connection->pend_ops);
-    connection->pend_ops = NULL;
     pthread_mutex_destroy(&connection->conn_lock);
     free(connection);
 }
@@ -216,33 +212,6 @@ static void gattc_service_delete(gattc_service_t *service)
     free(service);
 }
 
-static void gattc_pendops_delete(gattc_op_t *operation)
-{
-    if (!operation)
-        return;
-
-    free(operation);
-}
-
-static gattc_op_t *gattc_pendops_execute_out(gattc_connection_t *connection, gattc_request_t request, uint16_t attr_handle)
-{
-    bt_list_node_t *node;
-    bt_list_t *list = connection->pend_ops;
-    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
-        gattc_op_t *operation = (gattc_op_t *)bt_list_node(node);
-        if (operation->request != request) {
-            continue;
-        }
-        if (request == GATTC_REQ_READ && operation->param.read.attr_handle == attr_handle) {
-            return operation;
-        } else if (request == GATTC_REQ_WRITE && operation->param.write.attr_handle == attr_handle) {
-            return operation;
-        }
-    }
-
-    return NULL;
-}
-
 static void gattc_process_message(void *data)
 {
     gattc_msg_t *msg = (gattc_msg_t *)data;
@@ -283,23 +252,13 @@ static void gattc_process_message(void *data)
     } break;
     case GATTC_EVENT_DISOCVER_CMPL: {
         connection->state = GATTC_STATE_CONNECTED;
-        GATT_CBACK(connection->callbacks, on_discover, connection, GATT_STATUS_SUCCESS, NULL, 0, 0);
+        GATT_CBACK(connection->callbacks, on_discover, connection, msg->param.discover_cmpl.status, NULL, 0, 0);
     } break;
     case GATTC_EVENT_READ: {
-        gattc_op_t *operation = gattc_pendops_execute_out(connection, GATTC_REQ_READ, msg->param.read.element_id);
-        if (operation) {
-            gattc_read_cb_t read_cb = operation->param.read.read_cb;
-            read_cb(connection, msg->param.read.status, msg->param.read.element_id, msg->param.read.value, msg->param.read.length);
-            bt_list_remove(connection->pend_ops, operation);
-        }
+        GATT_CBACK(connection->callbacks, on_read, connection, msg->param.read.status, msg->param.read.element_id, msg->param.read.value, msg->param.read.length);
     } break;
     case GATTC_EVENT_WRITE: {
-        gattc_op_t *operation = gattc_pendops_execute_out(connection, GATTC_REQ_WRITE, msg->param.write.element_id);
-        if (operation) {
-            gattc_write_cb_t write_cb = operation->param.write.write_cb;
-            write_cb(connection, msg->param.write.status, msg->param.write.element_id, 0);
-            bt_list_remove(connection->pend_ops, operation);
-        }
+        GATT_CBACK(connection->callbacks, on_written, connection, msg->param.write.status, msg->param.write.element_id, 0);
     } break;
     case GATTC_EVENT_NOTIFY: {
         gatt_element_t *element = find_gattc_element_by_handle(connection, msg->param.notify.element_id);
@@ -428,13 +387,6 @@ static bt_status_t if_gattc_create_connect(void **phandle, gattc_callbacks_t *ca
         goto fail;
     }
 
-    connection->pend_ops = bt_list_new((bt_list_free_cb_t)gattc_pendops_delete);
-    if (!connection->pend_ops) {
-        pthread_mutex_unlock(&g_gattc_manager.device_lock);
-        status = BT_STATUS_NOMEM;
-        goto fail;
-    }
-
     bt_list_add_tail(g_gattc_manager.connections, connection);
     pthread_mutex_unlock(&g_gattc_manager.device_lock);
 
@@ -462,7 +414,7 @@ static bt_status_t if_gattc_delete_connect(void *conn_handle)
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    void** user_phandle = connection->user_phandle;
+    void **user_phandle = connection->user_phandle;
     bt_sal_gatt_client_disconnect(&connection->remote_addr);
     bt_list_free(connection->services);
     connection->services = NULL;
@@ -512,7 +464,7 @@ static bt_status_t if_gattc_discover_service(void *conn_handle, bt_uuid_t *filte
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
     bt_status_t status;
-    if (!filter_uuid) {
+    if (!filter_uuid || !filter_uuid->type) {
         status = bt_sal_gatt_client_discover_all_services(&connection->remote_addr);
     } else {
         status = bt_sal_gatt_client_discover_service_by_uuid(&connection->remote_addr, filter_uuid);
@@ -565,71 +517,39 @@ static bt_status_t if_gattc_get_attribute_by_uuid(void *conn_handle, bt_uuid_t *
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t if_gattc_read(void *conn_handle, uint16_t attr_handle, gattc_read_cb_t read_cb)
+static bt_status_t if_gattc_read(void *conn_handle, uint16_t attr_handle)
 {
     gattc_connection_t *connection = conn_handle;
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    bt_status_t status = bt_sal_gatt_client_read_element(&connection->remote_addr, attr_handle);
-
-    if (read_cb && status == BT_STATUS_SUCCESS) {
-        gattc_op_t *op = gattc_op_new(GATTC_REQ_READ);
-        op->param.read.conn_handle = conn_handle;
-        op->param.read.attr_handle = attr_handle;
-        op->param.read.read_cb = read_cb;
-        bt_list_add_tail(connection->pend_ops, op);
-    }
-
-    return status;
+    return bt_sal_gatt_client_read_element(&connection->remote_addr, attr_handle);
 }
 
-static bt_status_t if_gattc_write(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, uint16_t offset, gattc_write_cb_t write_cb)
+static bt_status_t if_gattc_write(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, uint16_t offset)
 {
     gattc_connection_t *connection = conn_handle;
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    bt_status_t status = bt_sal_gatt_client_write_element(&connection->remote_addr, attr_handle,
-                                                          value, length, GATT_WRITE_TYPE_RSP);
-
-    if (write_cb && status == BT_STATUS_SUCCESS) {
-        gattc_op_t *op = gattc_op_new(GATTC_REQ_WRITE);
-        op->param.write.conn_handle = conn_handle;
-        op->param.write.attr_handle = attr_handle;
-        op->param.write.write_cb = write_cb;
-        op->param.write.type = GATT_WRITE_TYPE_RSP;
-        bt_list_add_tail(connection->pend_ops, op);
-    }
-
-    return status;
+    return bt_sal_gatt_client_write_element(&connection->remote_addr, attr_handle,
+                                            value, length, GATT_WRITE_TYPE_RSP);
 }
 
-static bt_status_t if_gattc_write_without_response(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gattc_write_cb_t write_cb)
+static bt_status_t if_gattc_write_without_response(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     gattc_connection_t *connection = conn_handle;
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    bt_status_t status = bt_sal_gatt_client_write_element(&connection->remote_addr, attr_handle,
-                                                          value, length, GATT_WRITE_TYPE_NO_RSP);
-
-    if (write_cb && status == BT_STATUS_SUCCESS) {
-        gattc_op_t *op = gattc_op_new(GATTC_REQ_WRITE);
-        op->param.write.conn_handle = conn_handle;
-        op->param.write.attr_handle = attr_handle;
-        op->param.write.write_cb = write_cb;
-        op->param.write.type = GATT_WRITE_TYPE_NO_RSP;
-        bt_list_add_tail(connection->pend_ops, op);
-    }
-
-    return status;
+    return bt_sal_gatt_client_write_element(&connection->remote_addr, attr_handle,
+                                            value, length, GATT_WRITE_TYPE_NO_RSP);
 }
 
-static bt_status_t if_gattc_subscribe(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_write_cb_t write_cb, gattc_notify_cb_t notify_cb)
+static bt_status_t if_gattc_subscribe(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb)
 {
     gattc_connection_t *connection = conn_handle;
 
@@ -642,20 +562,10 @@ static bt_status_t if_gattc_subscribe(void *conn_handle, uint16_t value_handle, 
 
     element->notify_cb = notify_cb;
 
-    bt_status_t status = bt_sal_gatt_client_register_notifications(&connection->remote_addr, value_handle, true, GATT_CHANGE_TYPE_NOTIFY);
-    if (write_cb && status == BT_STATUS_SUCCESS) {
-        gattc_op_t *op = gattc_op_new(GATTC_REQ_WRITE);
-        op->param.write.conn_handle = conn_handle;
-        op->param.write.attr_handle = value_handle;
-        op->param.write.write_cb = write_cb;
-        op->param.write.type = GATT_WRITE_TYPE_RSP;
-        bt_list_add_tail(connection->pend_ops, op);
-    }
-
-    return status;
+    return bt_sal_gatt_client_register_notifications(&connection->remote_addr, value_handle, true, GATT_CHANGE_TYPE_NOTIFY);
 }
 
-static bt_status_t if_gattc_unsubscribe(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_write_cb_t write_cb)
+static bt_status_t if_gattc_unsubscribe(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle)
 {
     gattc_connection_t *connection = conn_handle;
 
@@ -668,17 +578,7 @@ static bt_status_t if_gattc_unsubscribe(void *conn_handle, uint16_t value_handle
 
     element->notify_cb = NULL;
 
-    bt_status_t status = bt_sal_gatt_client_register_notifications(&connection->remote_addr, value_handle, false, GATT_CHANGE_TYPE_NOTIFY);
-    if (write_cb && status == BT_STATUS_SUCCESS) {
-        gattc_op_t *op = gattc_op_new(GATTC_REQ_WRITE);
-        op->param.write.conn_handle = conn_handle;
-        op->param.write.attr_handle = value_handle;
-        op->param.write.write_cb = write_cb;
-        op->param.write.type = GATT_WRITE_TYPE_RSP;
-        bt_list_add_tail(connection->pend_ops, op);
-    }
-
-    return status;
+    return bt_sal_gatt_client_register_notifications(&connection->remote_addr, value_handle, false, GATT_CHANGE_TYPE_NOTIFY);
 }
 
 static bt_status_t if_gattc_exchange_mtu(void *conn_handle, uint32_t mtu)

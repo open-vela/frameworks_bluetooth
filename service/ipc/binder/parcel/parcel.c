@@ -136,6 +136,11 @@ binder_status_t AParcel_writeUuid(AParcel *parcel, bt_uuid_t *uuid)
 {
     binder_status_t stat;
 
+    if (uuid == NULL) {
+        stat = AParcel_writeUint32(parcel, 0);
+        return stat;
+    }
+
     stat = AParcel_writeUint32(parcel, uuid->type);
     if (stat != STATUS_OK)
         return stat;
@@ -161,7 +166,9 @@ binder_status_t AParcel_readUuid(const AParcel *parcel, bt_uuid_t *uuid)
     if (stat != STATUS_OK)
         return stat;
 
-    if (uuid->type == BT_UUID16_TYPE) {
+    if (uuid->type == 0) {
+        stat = STATUS_OK;
+    } else if (uuid->type == BT_UUID16_TYPE) {
         stat = AParcel_readUint32(parcel, &uuid32);
         uuid->val.u16 = uuid32;
     } else if (uuid->type == BT_UUID32_TYPE) {

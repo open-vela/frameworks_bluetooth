@@ -67,7 +67,7 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
             return STATUS_FAILED_TRANSACTION;
         }
 
-        if (profile->create_connect((void **)&handle, BpBleGattClientCallbacks_getStatic()) != BT_STATUS_SUCCESS) {
+        if (profile->create_connect((void **)&handle, (gattc_callbacks_t *)BpBleGattClientCallbacks_getStatic()) != BT_STATUS_SUCCESS) {
             AIBinder_decStrong(remote);
             stat = AParcel_writeUint32(reply, (uint32_t)NULL);
         } else {
@@ -148,9 +148,22 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
             return stat;
 
         status = profile->get_attribute_by_handle((void *)handle, attr_handle, &attr_desc);
-        // stat = AParcel_writeAttrDesc(reply, &attr_desc);
-        // if (stat != STATUS_OK)
-        //     return stat;
+
+        stat = AParcel_writeUint32(reply, (uint32_t)attr_desc.handle);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_writeUuid(reply, &attr_desc.uuid);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_writeUint32(reply, attr_desc.type);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_writeUint32(reply, attr_desc.properties);
+        if (stat != STATUS_OK)
+            return stat;
 
         stat = AParcel_writeUint32(reply, status);
         break;
@@ -168,9 +181,22 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
             return stat;
 
         status = profile->get_attribute_by_uuid((void *)handle, &uuid, &attr_desc);
-        // stat = AParcel_writeAttrDesc(reply, &attr_desc);
-        // if (stat != STATUS_OK)
-        //     return stat;
+
+        stat = AParcel_writeUint32(reply, (uint32_t)attr_desc.handle);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_writeUuid(reply, &attr_desc.uuid);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_writeUint32(reply, attr_desc.type);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_writeUint32(reply, attr_desc.properties);
+        if (stat != STATUS_OK)
+            return stat;
 
         stat = AParcel_writeUint32(reply, status);
         break;
@@ -186,7 +212,7 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->read((void *)handle, attr_handle, BpBleGattClientCallbacks_onRead);
+        status = profile->read((void *)handle, attr_handle);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -211,7 +237,7 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->write((void *)handle, (uint16_t)attr_handle, value, (uint16_t)length, 0, BpBleGattClientCallbacks_onWrite);
+        status = profile->write((void *)handle, (uint16_t)attr_handle, value, (uint16_t)length, 0);
         free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
@@ -237,7 +263,7 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->write_without_response((void *)handle, (uint16_t)attr_handle, value, (uint16_t)length, BpBleGattClientCallbacks_onWrite);
+        status = profile->write_without_response((void *)handle, (uint16_t)attr_handle, value, (uint16_t)length);
         free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
@@ -258,7 +284,7 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->subscribe((void *)handle, (uint16_t)value_handle, (uint16_t)cccd_handle, BpBleGattClientCallbacks_onWrite, BpBleGattClientCallbacks_onNotify);
+        status = profile->subscribe((void *)handle, (uint16_t)value_handle, (uint16_t)cccd_handle, BpBleGattClientCallbacks_onNotify);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -278,7 +304,7 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->unsubscribe((void *)handle, (uint16_t)value_handle, (uint16_t)cccd_handle, BpBleGattClientCallbacks_onWrite);
+        status = profile->unsubscribe((void *)handle, (uint16_t)value_handle, (uint16_t)cccd_handle);
         stat = AParcel_writeUint32(reply, status);
         break;
     }

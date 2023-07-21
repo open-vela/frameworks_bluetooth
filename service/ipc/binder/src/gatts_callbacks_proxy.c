@@ -157,7 +157,7 @@ const gatts_callbacks_t *BpBleGattServerCallbacks_getStatic(void)
     return &static_gatts_cbks;
 }
 
-void BpBleGattServerCallbacks_onRead(void *handle, uint16_t attr_handle, uint32_t req_handle)
+uint16_t BpBleGattServerCallbacks_onRead(void *handle, uint16_t attr_handle, uint32_t req_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -165,24 +165,25 @@ void BpBleGattServerCallbacks_onRead(void *handle, uint16_t attr_handle, uint32_
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
-        return;
+        return 0;
 
     stat = AParcel_writeUint32(parcelIn, (uint32_t)attr_handle);
     if (stat != STATUS_OK)
-        return;
+        return 0;
 
     stat = AParcel_writeUint32(parcelIn, (uint32_t)req_handle);
     if (stat != STATUS_OK)
-        return;
+        return 0;
 
     stat = AIBinder_transact(binder, ICBKS_GATT_SERVER_READ, &parcelIn, &parcelOut, 0 /*flags*/);
     if (stat != STATUS_OK) {
         BT_LOGE("%s transact error:%d", __func__, stat);
-        return;
     }
+
+    return 0;
 }
 
-void BpBleGattServerCallbacks_onWrite(void *handle, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
+uint16_t BpBleGattServerCallbacks_onWrite(void *handle, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -190,29 +191,30 @@ void BpBleGattServerCallbacks_onWrite(void *handle, uint16_t attr_handle, const 
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
-        return;
+        return 0;
 
     stat = AParcel_writeUint32(parcelIn, (uint32_t)attr_handle);
     if (stat != STATUS_OK)
-        return;
+        return 0;
 
     stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
     if (stat != STATUS_OK)
-        return;
+        return 0;
 
     stat = AParcel_writeUint32(parcelIn, (uint32_t)length);
     if (stat != STATUS_OK)
-        return;
+        return 0;
 
     stat = AParcel_writeUint32(parcelIn, (uint32_t)offset);
     if (stat != STATUS_OK)
-        return;
+        return 0;
 
     stat = AIBinder_transact(binder, ICBKS_GATT_SERVER_WRITE, &parcelIn, &parcelOut, 0 /*flags*/);
     if (stat != STATUS_OK) {
         BT_LOGE("%s transact error:%d", __func__, stat);
-        return;
     }
+
+    return length;
 }
 
 void BpBleGattServerCallbacks_onComplete(void *handle, gatt_status_t status, uint16_t attr_handle)

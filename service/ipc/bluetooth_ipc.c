@@ -23,6 +23,8 @@
 #include "hfp_ag_stub.h"
 #include "spp_stub.h"
 #include "pan_stub.h"
+#include "gattc_stub.h"
+#include "gatts_stub.h"
 #endif
 #include "utils/log.h"
 
@@ -41,6 +43,10 @@ static IBtSpp binderSpp = { 0 };
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
 static IBtPan binderPan = { 0 };
+#endif
+#ifdef CONFIG_BLUETOOTH_GATT
+static IBleGattClient binderGattc = { 0 };
+static IBleGattServer binderGatts = { 0 };
 #endif
 
 static void ipc_pollin_process(service_poll_t *poll, int revent, void *userdata)
@@ -108,6 +114,19 @@ bt_status_t bluetooth_ipc_add_services(void)
     stat = BtPan_addService(&binderPan, PAN_BINDER_INSTANCE);
     if (stat != STATUS_OK) {
         BT_LOGD("Add Pan Service Failed:%d", stat);
+        return BT_STATUS_IPC_ERROR;
+    }
+#endif
+
+#ifdef CONFIG_BLUETOOTH_GATT
+    stat = BleGattClient_addService(&binderGattc, GATT_CLIENT_BINDER_INSTANCE);
+    if (stat != STATUS_OK) {
+        BT_LOGD("Add Gattc Service Failed:%d", stat);
+        return BT_STATUS_IPC_ERROR;
+    }
+    stat = BleGattServer_addService(&binderGatts, GATT_SERVER_BINDER_INSTANCE);
+    if (stat != STATUS_OK) {
+        BT_LOGD("Add Gatts Service Failed:%d", stat);
         return BT_STATUS_IPC_ERROR;
     }
 #endif

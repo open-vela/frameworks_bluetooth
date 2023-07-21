@@ -58,11 +58,11 @@ typedef struct gattc_interface {
     bt_status_t (*discover_service)(void *conn_handle, bt_uuid_t *filter_uuid);
     bt_status_t (*get_attribute_by_handle)(void *conn_handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc);
     bt_status_t (*get_attribute_by_uuid)(void *conn_handle, bt_uuid_t *att_uuid, gatt_attr_desc_t *attr_desc);
-    bt_status_t (*read)(void *conn_handle, uint16_t attr_handle, gattc_read_cb_t read_cb);
-    bt_status_t (*write)(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, uint16_t offset, gattc_write_cb_t write_cb);
-    bt_status_t (*write_without_response)(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gattc_write_cb_t write_cb);
-    bt_status_t (*subscribe)(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_write_cb_t write_cb, gattc_notify_cb_t notify_cb);
-    bt_status_t (*unsubscribe)(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_write_cb_t write_cb);
+    bt_status_t (*read)(void *conn_handle, uint16_t attr_handle);
+    bt_status_t (*write)(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, uint16_t offset);
+    bt_status_t (*write_without_response)(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
+    bt_status_t (*subscribe)(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb);
+    bt_status_t (*unsubscribe)(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle);
     bt_status_t (*exchange_mtu)(void *conn_handle, uint32_t mtu);
 } gattc_interface_t;
 
