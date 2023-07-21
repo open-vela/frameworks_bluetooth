@@ -45,6 +45,20 @@ static void IBleGattClientCallbacks_Class_onDestroy(void *userData)
     BT_LOGD("%s", __func__);
 }
 
+static notify_callback_t *BleGattClientCallbacks_findNotifyCallback(IBleGattClientCallbacks *cbks, uint16_t attr_handle)
+{
+    struct list_node *node;
+
+    list_for_every(&cbks->notify_list, node)
+    {
+        notify_callback_t *notify_callback = (notify_callback_t *)node;
+        if (notify_callback->attr_handle == attr_handle)
+            return notify_callback;
+    }
+
+    return NULL;
+}
+
 static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
@@ -57,7 +71,8 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        cbks->callbacks->on_connected(cbks, &addr);
+        if (cbks->callbacks && cbks->callbacks->on_connected)
+            cbks->callbacks->on_connected(cbks, &addr);
         break;
     }
     case ICBKS_GATT_CLIENT_DISCONNECTED: {
@@ -71,7 +86,8 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        cbks->callbacks->on_disconnected(cbks, &addr, (uint8_t)reason);
+        if (cbks->callbacks && cbks->callbacks->on_disconnected)
+            cbks->callbacks->on_disconnected(cbks, &addr, (uint8_t)reason);
         break;
     }
     case ICBKS_GATT_CLIENT_DISCOVER: {
@@ -96,7 +112,8 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        cbks->callbacks->on_discover(cbks, status, &uuid, (uint16_t)start_handle, (uint16_t)end_handle);
+        if (cbks->callbacks && cbks->callbacks->on_discover)
+            cbks->callbacks->on_discover(cbks, status, &uuid, (uint16_t)start_handle, (uint16_t)end_handle);
         break;
     }
     case ICBKS_GATT_CLIENT_MTU_EXCHANGE: {
@@ -111,7 +128,8 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        cbks->callbacks->on_mtu_exchange(cbks, status, mtu);
+        if (cbks->callbacks && cbks->callbacks->on_mtu_exchange)
+            cbks->callbacks->on_mtu_exchange(cbks, status, mtu);
         break;
     }
     case ICBKS_GATT_CLIENT_READ: {
@@ -136,7 +154,8 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        // cbks->on_read(cbks, status, (uint16_t)attr_handle, value, (uint16_t)length);
+        if (cbks->callbacks && cbks->callbacks->on_read)
+            cbks->callbacks->on_read(cbks, status, (uint16_t)attr_handle, value, (uint16_t)length);
         free(value);
         break;
     }
@@ -157,7 +176,8 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        // cbks->on_wrtie(cbks, status, (uint16_t)attr_handle, (uint16_t)offset);
+        if (cbks->callbacks && cbks->callbacks->on_written)
+            cbks->callbacks->on_written(cbks, status, (uint16_t)attr_handle, (uint16_t)offset);
         break;
     }
     case ICBKS_GATT_CLIENT_NOTIFY: {
@@ -177,7 +197,9 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        // cbks->on_notify(cbks, (uint16_t)attr_handle, value, (uint16_t)length);
+        notify_callback_t *notify_callback = BleGattClientCallbacks_findNotifyCallback(cbks, (uint16_t)attr_handle);
+        if (notify_callback && notify_callback->on_notify)
+            notify_callback->on_notify(cbks, (uint16_t)attr_handle, value, (uint16_t)length);
         free(value);
         break;
     }
@@ -231,6 +253,7 @@ IBleGattClientCallbacks *BleGattClientCallbacks_new(const gattc_callbacks_t *cal
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
     cbks->callbacks = callbacks;
+    list_initialize(&cbks->notify_list);
 
     binder = BleGattClientCallbacks_getBinder(cbks);
     AIBinder_decStrong(binder);
@@ -245,5 +268,45 @@ void BleGattClientCallbacks_delete(IBleGattClientCallbacks *cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
+    struct list_node *node;
+    struct list_node *tmp;
+
+    list_for_every_safe(&cbks->notify_list, node, tmp)
+    {
+        notify_callback_t *notify_callback = (notify_callback_t *)node;
+        list_delete(&notify_callback->node);
+        free(notify_callback);
+    }
+
+    list_delete(&cbks->notify_list);
     free(cbks);
+}
+
+void BleGattClientCallbacks_registerNotify(IBleGattClientCallbacks *cbks, uint16_t value_handle, gattc_notify_cb_t notify_cb)
+{
+    notify_callback_t *notify_callback = BleGattClientCallbacks_findNotifyCallback(cbks, value_handle);
+
+    if (notify_callback) {
+        notify_callback->on_notify = notify_cb;
+        return;
+    }
+
+    notify_callback = malloc(sizeof(notify_callback_t));
+    if (!notify_callback)
+        return;
+
+    notify_callback->attr_handle = value_handle;
+    notify_callback->on_notify = notify_cb;
+    list_add_tail(&cbks->notify_list, &notify_callback->node);
+}
+
+void BleGattClientCallbacks_unregisterNotify(IBleGattClientCallbacks *cbks, uint16_t value_handle)
+{
+    notify_callback_t *notify_callback = BleGattClientCallbacks_findNotifyCallback(cbks, value_handle);
+
+    if (!notify_callback)
+        return;
+
+    list_delete(&notify_callback->node);
+    free(notify_callback);
 }

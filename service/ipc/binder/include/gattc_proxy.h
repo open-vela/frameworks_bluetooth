@@ -39,11 +39,11 @@ bt_status_t BpBleGattClient_disconnect(BpBleGattClient *bpBinder, void *handle);
 bt_status_t BpBleGattClient_discoverService(BpBleGattClient *bpBinder, void *handle, bt_uuid_t *filter_uuid);
 bt_status_t BpBleGattClient_getAttributeByHandle(BpBleGattClient *bpBinder, void *handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc);
 bt_status_t BpBleGattClient_getAttributeByUUID(BpBleGattClient *bpBinder, void *handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc);
-bt_status_t BpBleGattClient_read(BpBleGattClient *bpBinder, void *handle, uint16_t attr_handle, gattc_read_cb_t read_cb);
-bt_status_t BpBleGattClient_write(BpBleGattClient *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length, uint16_t offset, gattc_write_cb_t write_cb);
-bt_status_t BpBleGattClient_writeWithoutResponse(BpBleGattClient *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gattc_write_cb_t write_cb);
-bt_status_t BpBleGattClient_subscribe(BpBleGattClient *bpBinder, void *handle, uint16_t value_handle, uint16_t cccd_handle, gattc_write_cb_t write_cb, gattc_notify_cb_t notify_cb);
-bt_status_t BpBleGattClient_unsubscribe(BpBleGattClient *bpBinder, void *handle, uint16_t value_handle, uint16_t cccd_handle, gattc_write_cb_t write_cb);
+bt_status_t BpBleGattClient_read(BpBleGattClient *bpBinder, void *handle, uint16_t attr_handle);
+bt_status_t BpBleGattClient_write(BpBleGattClient *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length, uint16_t offset);
+bt_status_t BpBleGattClient_writeWithoutResponse(BpBleGattClient *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
+bt_status_t BpBleGattClient_subscribe(BpBleGattClient *bpBinder, void *handle, uint16_t value_handle, uint16_t cccd_handle);
+bt_status_t BpBleGattClient_unsubscribe(BpBleGattClient *bpBinder, void *handle, uint16_t value_handle, uint16_t cccd_handle);
 bt_status_t BpBleGattClient_exchangeMtu(BpBleGattClient *bpBinder, void *handle, uint32_t mtu);
 #ifdef __cplusplus
 }

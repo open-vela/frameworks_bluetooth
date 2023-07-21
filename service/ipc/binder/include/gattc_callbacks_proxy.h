@@ -29,8 +29,6 @@ extern "C" {
 #include <android/binder_manager.h>
 
 const gattc_callbacks_t *BpBleGattClientCallbacks_getStatic(void);
-void BpBleGattClientCallbacks_onRead(void *handle, gatt_status_t status, uint16_t attr_handle, uint8_t *value, uint16_t length);
-void BpBleGattClientCallbacks_onWrite(void *handle, gatt_status_t status, uint16_t attr_handle, uint16_t offset);
 void BpBleGattClientCallbacks_onNotify(void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
 
 #ifdef __cplusplus
