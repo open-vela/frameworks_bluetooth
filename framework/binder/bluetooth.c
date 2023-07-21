@@ -24,6 +24,8 @@
 #include "spp_proxy.h"
 #include "hfp_hf_proxy.h"
 #include "hfp_ag_proxy.h"
+#include "gattc_proxy.h"
+#include "gatts_proxy.h"
 #endif
 #include "bluetooth.h"
 
@@ -107,6 +109,18 @@ void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id)
         }
         return ins->pan_proxy;
     }
+    case PROFILE_GATTC: {
+        if (!ins->gattc_proxy) {
+            ins->gattc_proxy = BpBleGattClient_new(GATT_CLIENT_BINDER_INSTANCE);
+        }
+        return ins->gattc_proxy;
+    }
+    case PROFILE_GATTS: {
+        if (!ins->gatts_proxy) {
+            ins->gatts_proxy = BpBleGattServer_new(GATT_SERVER_BINDER_INSTANCE);
+        }
+        return ins->gatts_proxy;
+    }
     default:
         break;
     }
@@ -126,6 +140,13 @@ void bluetooth_delete_instance(bt_instance_t *ins)
 
     if (ins->pan_proxy)
         BpBtPan_delete(ins->pan_proxy);
+
+    if (ins->gattc_proxy)
+        BpBleGattClient_delete(ins->gattc_proxy);
+
+    if (ins->gatts_proxy)
+        BpBleGattServer_delete(ins->gatts_proxy);
+
     BpBtAdapter_delete(ins->adapter_proxy);
     BpBtManager_deleteInstance(ins->manager_proxy, ins->app_id);
     BpBtManager_delete(ins->manager_proxy);

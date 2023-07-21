@@ -67,7 +67,7 @@ static binder_status_t IBleGattServer_Class_onTransact(AIBinder *binder, transac
             return STATUS_FAILED_TRANSACTION;
         }
 
-        if (profile->register_service((void **)&handle, BpBleGattServerCallbacks_getStatic()) != BT_STATUS_SUCCESS) {
+        if (profile->register_service((void **)&handle, (gatts_callbacks_t *)BpBleGattServerCallbacks_getStatic()) != BT_STATUS_SUCCESS) {
             AIBinder_decStrong(remote);
             stat = AParcel_writeUint32(reply, (uint32_t)NULL);
         } else {
