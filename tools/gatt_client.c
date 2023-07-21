@@ -54,8 +54,8 @@ static bt_command_t g_gattc_tables[] = {
     { "write_request", write_request_cmd,     0, "\"write request :<conn id><char id><type>(str or hex)<playload>\n"
                                             "\t\t\t  e.g., write_request 0 0001 str HelloWorld!\n"
                                             "\t\t\t  e.g., write_request 0 0001 hex 00 01 02 03\n"                  },
-    { "enable_cccd",   enable_cccd_cmd,       0, "\"enable cccd :<conn id><char id>\""                              },
-    { "disable_cccd",  disable_cccd_cmd,      0, "\"disable cccd :<conn id><char id>\""                             },
+    { "enable_cccd",   enable_cccd_cmd,       0, "\"enable cccd :<conn id><char id><cccd_id>\""                     },
+    { "disable_cccd",  disable_cccd_cmd,      0, "\"disable cccd :<conn id><char id><cccd_id>\""                    },
     { "exchange_mtu",  exchange_mtu_cmd,      0, "\"exchange mtu :<conn id><mtu>\""                                 },
 };
 
@@ -207,14 +207,16 @@ static void notify_received_cb(void *conn_handle, uint16_t attr_handle,
 
 static int enable_cccd_cmd(void *handle, int argc, char *argv[])
 {
-    if (argc < 3)
+    if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
     int conn_id = atoi(argv[0]);
     CHECK_CONNCTION_ID(conn_id);
 
     uint16_t value_handle = strtol(argv[1], NULL, 16);
-    uint16_t cccd_handle = strtol(argv[2], NULL, 16);
+    uint16_t cccd_handle = 0;
+    if (argc >= 3)
+        cccd_handle = strtol(argv[2], NULL, 16);
 
     if (ble_gattc_subscribe(g_gattc_handles[conn_id], value_handle, cccd_handle,
         write_complete_cb, notify_received_cb) != BT_STATUS_SUCCESS)
@@ -225,14 +227,16 @@ static int enable_cccd_cmd(void *handle, int argc, char *argv[])
 
 static int disable_cccd_cmd(void *handle, int argc, char *argv[])
 {
-    if (argc < 3)
+    if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
     int conn_id = atoi(argv[0]);
     CHECK_CONNCTION_ID(conn_id);
 
     uint16_t value_handle = strtol(argv[1], NULL, 16);
-    uint16_t cccd_handle = strtol(argv[2], NULL, 16);
+    uint16_t cccd_handle = 0;
+    if (argc >= 3)
+        cccd_handle = strtol(argv[2], NULL, 16);
 
     if (ble_gattc_unsubscribe(g_gattc_handles[conn_id], value_handle, cccd_handle,
         write_complete_cb) != BT_STATUS_SUCCESS)
