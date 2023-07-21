@@ -227,6 +227,7 @@ IBtGattClientCallbacks *BtGattClientCallbacks_new(const gattc_callbacks_t *callb
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
     cbks->callbacks = callbacks;
+    list_initialize(&cbks->notify_list);
 
     binder = BtGattClientCallbacks_getBinder(cbks);
     AIBinder_decStrong(binder);
@@ -241,5 +242,45 @@ void BtGattClientCallbacks_delete(IBtGattClientCallbacks *cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
+    struct list_node *node;
+    struct list_node *tmp;
+
+    list_for_every_safe(&cbks->notify_list, node, tmp)
+    {
+        notify_callback_t *notify_callback = (notify_callback_t *)node;
+        list_delete(&notify_callback->node);
+        free(notify_callback);
+    }
+
+    list_delete(&cbks->notify_list);
     free(cbks);
+}
+
+void BleGattClientCallbacks_registerNotify(IBleGattClientCallbacks *cbks, uint16_t value_handle, gattc_notify_cb_t notify_cb)
+{
+    notify_callback_t *notify_callback = BleGattClientCallbacks_findNotifyCallback(cbks, value_handle);
+
+    if (notify_callback) {
+        notify_callback->on_notify = notify_cb;
+        return;
+    }
+
+    notify_callback = malloc(sizeof(notify_callback_t));
+    if (!notify_callback)
+        return;
+
+    notify_callback->attr_handle = value_handle;
+    notify_callback->on_notify = notify_cb;
+    list_add_tail(&cbks->notify_list, &notify_callback->node);
+}
+
+void BleGattClientCallbacks_unregisterNotify(IBleGattClientCallbacks *cbks, uint16_t value_handle)
+{
+    notify_callback_t *notify_callback = BleGattClientCallbacks_findNotifyCallback(cbks, value_handle);
+
+    if (!notify_callback)
+        return;
+
+    list_delete(&notify_callback->node);
+    free(notify_callback);
 }
