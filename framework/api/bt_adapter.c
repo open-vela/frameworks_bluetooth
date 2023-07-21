@@ -180,12 +180,12 @@ bt_status_t bt_adapter_le_enable_key_derivation(bt_instance_t *ins,
 
 bt_status_t bt_adapter_get_bonded_devices(bt_instance_t *ins, bt_address_t **addr, int *num, bt_allocator_t allocator)
 {
-    return adapter_get_bonded_devices(addr, num, allocator);
+    return adapter_get_bonded_devices(addr, num, allocator, BT_TRANSPORT_BREDR);
 }
 
 bt_status_t bt_adapter_get_connected_devices(bt_instance_t *ins, bt_address_t **addr, int *num, bt_allocator_t allocator)
 {
-    return adapter_get_connected_devices(addr, num, allocator);
+    return adapter_get_connected_devices(addr, num, allocator, BT_TRANSPORT_BREDR);
 }
 
 void bt_adapter_disconnect_all_devices(bt_instance_t *ins)

@@ -302,7 +302,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         bt_address_t *addrs = NULL;
         int size = 0;
 
-        status = adapter_get_bonded_devices(&addrs, &size, AParcelUtils_btCommonAllocator);
+        status = adapter_get_bonded_devices(&addrs, &size, AParcelUtils_btCommonAllocator, BT_TRANSPORT_BREDR);
         if (addrs && size) {
             stat = AParcel_writeAddressArray(out, addrs, size);
             free(addrs);
@@ -316,7 +316,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         bt_address_t *addrs = NULL;
         int size = 0;
 
-        status = adapter_get_connected_devices(&addrs, &size, AParcelUtils_btCommonAllocator);
+        status = adapter_get_connected_devices(&addrs, &size, AParcelUtils_btCommonAllocator, BT_TRANSPORT_BREDR);
         if (addrs && size) {
             stat = AParcel_writeAddressArray(out, addrs, size);
             free(addrs);

@@ -190,11 +190,20 @@ static void adapter_properties_copy(adapter_properties_t *prop, adapter_storage_
     prop->bondable = storage->bondable;
 }
 
-static int get_devices_cnt(int flag)
+static int get_devices_cnt(int flag, uint8_t transport)
 {
-    bt_list_t *list = g_adapter_service.devices;
+    bt_list_t *list;
     bt_list_node_t *node;
     int cnt = 0;
+
+    if (transport == BT_TRANSPORT_BLE) {
+        list = g_adapter_service.le_devices;
+    } else if (transport == BT_TRANSPORT_BREDR) {
+        list = g_adapter_service.devices;
+    } else {
+        BT_LOGE("%s, transport invalid!", __func__);
+        return cnt;
+    }
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         bt_device_t *device = bt_list_node(node);
@@ -233,7 +242,7 @@ static void adapter_update_bonded_device(void)
     bt_list_t *list = g_adapter_service.devices;
     bt_list_node_t *node;
 
-    int size = get_devices_cnt(1);
+    int size = get_devices_cnt(1, BT_TRANSPORT_BREDR);
     if (!size) {
         bt_storage_save_bonded_device(NULL, 0);
         return;
@@ -483,7 +492,7 @@ static void process_connect_request_evt(bt_address_t *addr)
     device = adapter_find_create_classic_device(addr);
     bt_sal_get_remote_device_info(addr, &remote);
     device_set_device_class(device, remote.class_of_device);
-    if (get_devices_cnt(2) < adapter->max_acl_connections)
+    if (get_devices_cnt(2, BT_TRANSPORT_BREDR) < adapter->max_acl_connections)
         accept = true;
 
     BT_ADDR_LOG("ACL Connect Request from :%s %s", addr, accept ? "accept" : "reject");
@@ -1424,14 +1433,22 @@ uint16_t adapter_get_le_appearance(void)
     return appearance;
 }
 
-static bt_status_t adapter_get_devices(int flag, bt_address_t **addr, int *size, bt_allocator_t allocator)
+static bt_status_t adapter_get_devices(int flag, bt_address_t **addr, int *size, bt_allocator_t allocator, uint8_t transport)
 {
-    bt_list_t *list = g_adapter_service.devices;
+    bt_list_t *list;
     bt_list_node_t *node;
+
+    if (transport == BT_TRANSPORT_BLE) {
+        list = g_adapter_service.le_devices;
+    } else if (transport == BT_TRANSPORT_BREDR) {
+        list = g_adapter_service.devices;
+    } else {
+        return BT_STATUS_PARM_INVALID;
+    }
 
     *size = 0;
     adapter_lock();
-    int cnt = get_devices_cnt(flag);
+    int cnt = get_devices_cnt(flag, transport);
     if (!cnt) {
         adapter_unlock();
         return BT_STATUS_SUCCESS;
@@ -1456,14 +1473,14 @@ static bt_status_t adapter_get_devices(int flag, bt_address_t **addr, int *size,
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t adapter_get_bonded_devices(bt_address_t **addr, int *size, bt_allocator_t allocator)
+bt_status_t adapter_get_bonded_devices(bt_address_t **addr, int *size, bt_allocator_t allocator, uint8_t transport)
 {
-    return adapter_get_devices(1, addr, size, allocator);
+    return adapter_get_devices(1, addr, size, allocator, transport);
 }
 
-bt_status_t adapter_get_connected_devices(bt_address_t **addr, int *size, bt_allocator_t allocator)
+bt_status_t adapter_get_connected_devices(bt_address_t **addr, int *size, bt_allocator_t allocator, uint8_t transport)
 {
-    return adapter_get_devices(2, addr, size, allocator);
+    return adapter_get_devices(2, addr, size, allocator, transport);
 }
 
 /*
