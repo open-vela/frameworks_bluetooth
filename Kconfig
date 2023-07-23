@@ -350,4 +350,43 @@ config BLUETOOTH_LEAUDIO_SERVER_BASS_STATE_NUMBER
 
 endif # BLUETOOTH_LEAUDIO_SERVER
 
+if BLUETOOTH_LEAUDIO_CLIENT
+config BLUETOOTH_LEAUDIO_CLIENT_MAX_CONNECTIONS
+	int "leaudio client max connections"
+	default 4
+	help
+		leaudio client max connections
+
+config BLUETOOTH_LEAUDIO_CLIENT_MAX_ALLOC_NUMBER
+	int "leaudio client max alloc number"
+	default 64
+	help
+		leaudio client max group
+
+config BLUETOOTH_LEAUDIO_CLIENT_ASE_MAX_NUMBER
+	int "leaudio client max ase number"
+	default 2
+	help
+		leaudio client max ase number
+
+config BLUETOOTH_LEAUDIO_CLIENT_PAC_MAX_NUMBER
+	int "leaudio client max pac number"
+	default 3
+	help
+		leaudio client max pac number
+
+config BLUETOOTH_LEAUDIO_CLIENT_CIS_MAX_NUMBER
+	int "leaudio client max cis number"
+	default 2
+	help
+		leaudio client max cis number
+
+config BLUETOOTH_LEAUDIO_CLIENT_METADATA_MAX_NUMBER
+	int "leaudio client max metadata number"
+	default 4
+	help
+		leaudio client max metadata number
+
+endif # BLUETOOTH_LEAUDIO_CLIENT
+
 endif #BLUETOOTH
