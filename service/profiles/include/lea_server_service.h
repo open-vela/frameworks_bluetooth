@@ -21,50 +21,7 @@
  ****************************************************************************/
 #include "bt_device.h"
 #include "bt_lea_server.h"
-
-enum { /* UUIDs */
-    GATT_UUID_MEDIA_CONTROL = 0x1848,
-    GATT_UUID_GENERIC_MEDIA_CONTROL = 0x1849,
-    GATT_UUID_TELEPHONE_BEARER = 0x184B,
-    GATT_UUID_GENERIC_TELEPHONE_BEARER = 0x184C,
-};
-
-typedef enum {
-    ADPT_LEA_ASE_STATE_IDLE,
-    ADPT_LEA_ASE_STATE_CODEC_CONFIG,
-    ADPT_LEA_ASE_STATE_QOS_CONFIG,
-    ADPT_LEA_ASE_STATE_ENABLING,
-    ADPT_LEA_ASE_STATE_STREAMING,
-    ADPT_LEA_ASE_STATE_DISABLING,
-    ADPT_LEA_ASE_STATE_RELEASING,
-} lea_adpt_ase_state_t;
-
-typedef struct {
-    uint8_t format;
-    uint16_t company_id;
-    uint16_t codec_id;
-} lea_codec_id_t;
-
-typedef struct {
-    lea_codec_id_t codec_id;
-    uint16_t mask;
-    uint8_t frequency;
-    uint8_t duration;
-    uint32_t allocation;
-    uint16_t octets;
-    uint8_t blocks;
-} lea_codec_config_t;
-
-typedef struct {
-    uint32_t stream_id;
-    uint16_t iso_handle;
-    uint16_t max_sdu;
-    uint8_t channal_num;
-    bt_address_t addr;
-    uint16_t sdu_size;
-    bool is_source;
-    lea_codec_config_t codec_cfg;
-} lea_audio_stream_t;
+#include "lea_audio_common.h"
 
 typedef struct lea_server_interface {
     size_t size;
