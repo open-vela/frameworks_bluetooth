@@ -138,7 +138,7 @@ static const lea_server_callbacks_t lea_server_cbs = {
     server_connection_state_callback,
 };
 
-int lea_server_command_init(void *handle)
+int leas_command_init(void *handle)
 {
     bt_status_t ret;
 
@@ -152,7 +152,7 @@ int lea_server_command_init(void *handle)
     return 0;
 }
 
-void lea_server_command_uninit(void *handle)
+void leas_command_uninit(void *handle)
 {
     bt_status_t ret;
 

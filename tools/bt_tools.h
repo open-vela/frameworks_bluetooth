@@ -46,10 +46,10 @@
 /* use syslog */
 #include <debug.h>
 
-#define PRINT(fmt, args...) syslog(LOG_DEBUG, LOG_TAG" " fmt "\n", ##args)
+#define PRINT(fmt, args...) syslog(LOG_DEBUG, LOG_TAG " " fmt "\n", ##args)
 #else
 /* use printf */
-#define PRINT(fmt, args...) printf(LOG_TAG" " fmt "\n", ##args)
+#define PRINT(fmt, args...) printf(LOG_TAG " " fmt "\n", ##args)
 #endif
 
 #define PRINT_ADDR(fmt, addr, ...)                 \
@@ -102,8 +102,8 @@ int gatts_command_init(void *handle);
 int gatts_command_uninit(void *handle);
 int gatts_command_exec(void *handle, int argc, char *argv[]);
 
-int lea_server_command_init(void *handle);
-void lea_server_command_uninit(void *handle);
+int leas_command_init(void *handle);
+void leas_command_uninit(void *handle);
 int leas_command_exec(void *handle, int argc, char *argv[]);
 
 int lea_mcpc_commond_init(void *handle);
@@ -117,5 +117,9 @@ int lea_ccpc_command_exec(void *handle, int argc, char *argv[]);
 int lea_vmicps_command_init(void *handle);
 void lea_vmicps_command_uninit(void *handle);
 int vmicps_command_exec(void *handle, int argc, char *argv[]);
+
+int leac_command_init(void *handle);
+void leac_command_uninit(void *handle);
+int leac_command_exec(void *handle, int argc, char *argv[]);
 
 #endif /* __BT_TOOLS_H__ */
