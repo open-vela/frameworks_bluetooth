@@ -115,19 +115,19 @@ static struct option le_conn_options[] = {
     { 0,                   0,                 0, 0  }
 };
 
-#define LE_CONN_USAGE "\n"                                                                                                         \
-                      "\t -a or --addr, peer le device address\n"                                                                  \
-                      "\t -t or --type, peer le device address type, address type(0:public,1:random,2:public_id,3:random_id)\n"    \
-                      "\t -d or --default, use default parameter\n"                                                                \
-                      "\t -f or --filter, connection filter policy, (0:addr,1:whitelist)\n"                                        \
-                      "\t -p or --phy, init phy type, (0:1M,1:2M,2:Coded)\n"                                                                            \
-                      "\t -l or --latency, connection latency Range: 0x0000 to 0x01F3\n"                                           \
-                      "\t --conn_interval_min, Range: 0x0006 to 0x0C80\n"                                                          \
-                      "\t --conn_interval_max, Range: 0x0006 to 0x0C80\n"                                                          \
-                      "\t -T or --timeout, supervision timeout Range: 0x000A to 0x0C80\n"                                          \
-                      "\t --scan_interval, Range: 0x0004 to 0x4000\n"                                                              \
-                      "\t --scan_window, Range: 0x0004 to 0x4000\n"                                                                \
-                      "\t --min_ce_length, Range: 0x0000 to 0xFFFF\n"                                                              \
+#define LE_CONN_USAGE "\n"                                                                                                      \
+                      "\t -a or --addr, peer le device address\n"                                                               \
+                      "\t -t or --type, peer le device address type, address type(0:public,1:random,2:public_id,3:random_id)\n" \
+                      "\t -d or --default, use default parameter\n"                                                             \
+                      "\t -f or --filter, connection filter policy, (0:addr,1:whitelist)\n"                                     \
+                      "\t -p or --phy, init phy type, (0:1M,1:2M,2:Coded)\n"                                                    \
+                      "\t -l or --latency, connection latency Range: 0x0000 to 0x01F3\n"                                        \
+                      "\t --conn_interval_min, Range: 0x0006 to 0x0C80\n"                                                       \
+                      "\t --conn_interval_max, Range: 0x0006 to 0x0C80\n"                                                       \
+                      "\t -T or --timeout, supervision timeout Range: 0x000A to 0x0C80\n"                                       \
+                      "\t --scan_interval, Range: 0x0004 to 0x4000\n"                                                           \
+                      "\t --scan_window, Range: 0x0004 to 0x4000\n"                                                             \
+                      "\t --min_ce_length, Range: 0x0000 to 0xFFFF\n"                                                           \
                       "\t --max_ce_length, Range: 0x0000 to 0xFFFF\n"
 
 #define INQUIRY_USAGE "inquiry device\n"                                  \
@@ -191,6 +191,9 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
     { "vmicps",       vmicps_command_exec,   0, "vcp/micp server cmd, input \'vmicps\' show usage"         },
 #endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
+    { "leac",         leac_command_exec,     0, "lea client cmd, input \'leac\' show usage"                },
+#endif
     { "dump",         dump_cmd,              0, "dump adapter state"                                       },
     { "help",         usage_cmd,             0, "Usage for bttools"                                        },
     { "quit",         quit_cmd,              0, "Quit"                                                     },
@@ -204,7 +207,7 @@ static bt_command_t g_set_cmd_tables[] = {
     { "class",     set_local_cod_cmd,     0, "params: <local class of device>, example: 0x00640404"                                                },
     { "apperance", set_apperance_cmd,     0, "set le adapter apperance, params: <apperance>"                                                       },
     { "leaddr",    set_le_addr_cmd,       0, "set ble adapter addr, params: <leaddr>"                                                              },
-    { "id",        set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>"                                                      },
+    { "id",        set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>"                                          },
     { "help",      NULL,                  0, "show set help info"                                                                                  },
  //{ "", , "set " },
 };
@@ -258,7 +261,10 @@ static void bt_tool_init(void *handle)
     gatts_command_init(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
-    lea_server_command_init(handle);
+    leas_command_init(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
+    leac_command_init(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPC
     lea_mcpc_commond_init(handle);
