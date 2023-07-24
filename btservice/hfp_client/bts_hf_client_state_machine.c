@@ -443,6 +443,26 @@ static void connected_exit(state_machine_t* sm)
         addr_str(hfsm->addr));
 }
 
+#ifdef CONFIG_BLUETOOTH_HFP_I2S_OFFLOAD
+static void hf_set_codec_params(uint16_t sco_conn_handle, uint8_t codec, uint8_t start)
+{
+    SERVICE_HCI_COMMAND_S* command = malloc(sizeof(SERVICE_HCI_COMMAND_S) + sizeof(char) * 4);
+    hci_command_complete_event event_type = HCI_COMMAND_COMPLETED_BY_VENDOR_SPECIFIC_EVENT;
+    command->ogf = 0x3f;
+    command->ocf = 0x00;
+    command->cb = NULL;
+    command->length = 5;
+    command->params[0] = 0x02;
+    command->params[1] = start;
+    command->params[2] = (sco_conn_handle & 0x00FF);
+    command->params[3] = (sco_conn_handle & 0xFF00) >> 8;
+    command->params[4] = codec;
+    BT_LOGD("HCI_Set_Codec_Config: sco_handle:%d, codec:%d", sco_conn_handle, codec);
+    service_adapter_gap_send_hci_command_v1(command, event_type);
+    free(command);
+}
+#endif
+
 static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
@@ -647,6 +667,11 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
                 state = HF_CLIENT_AUDIO_STATE_CONNECTED_MSBC;
             notify_audio_state_changed(hfsm->service, hfsm->addr, state);
             hfsm->sco_conn_handle = data->valueint2;
+
+#ifdef CONFIG_BLUETOOTH_HFP_I2S_OFFLOAD
+            hf_set_codec_params(hfsm->sco_conn_handle, hfsm->codec, 0);
+#endif
+
             hsm_transition_to(sm, &audio_on_state);
             break;
         case HF_CLIENT_AUDIO_STATE_DISCONNECTED:
@@ -721,6 +746,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         hf_client_volume_type_t type = data->valueint1;
         int vol = data->valueint2;
         // set media volume, need call media interface
+
         BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
         HF_SERVICE_CBACK(service->callbacks, volume_change_cb, hfsm->addr, type, vol);
         break;
@@ -958,6 +984,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         hf_client_volume_type_t type = data->valueint1;
         int vol = data->valueint2;
         // set media volume, need call media interface
+
         BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
         HF_SERVICE_CBACK(service->callbacks, volume_change_cb, hfsm->addr, type, vol);
         break;
@@ -993,6 +1020,9 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
             if (hfsm->call_in_progress)
                 hfsm->call_in_progress = 0;
             notify_audio_state_changed(hfsm->service, hfsm->addr, state);
+#ifdef CONFIG_BLUETOOTH_HFP_I2S_OFFLOAD
+            hf_set_codec_params(hfsm->sco_conn_handle, hfsm->codec, 1);
+#endif
             hsm_transition_to(sm, &connected_state);
             break;
         case HF_CLIENT_AUDIO_STATE_CONNECTED:

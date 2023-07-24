@@ -30,13 +30,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include "bts_service.h"
+
 #include "bts_a2dp_device.h"
 #include "bts_a2dp_sink_audio.h"
 #include "bts_a2dp_source_audio.h"
+#include "bts_service.h"
 #include "utils/utils.h"
+#include <stdio.h>
+#include <stdlib.h>
 #define LOG_TAG "a2dp_audio"
 #include "log.h"
 
@@ -92,6 +93,7 @@ void bts_a2dp_audio_on_suspended(uint8_t peer_sep)
 #endif
 }
 
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
 void bts_a2dp_audio_setup_codec(uint8_t peer_sep, bt_address bd_addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
@@ -105,6 +107,7 @@ void bts_a2dp_audio_setup_codec(uint8_t peer_sep, bt_address bd_addr)
 #endif
     }
 }
+#endif
 
 void bts_a2dp_audio_init(uint8_t svr_class)
 {

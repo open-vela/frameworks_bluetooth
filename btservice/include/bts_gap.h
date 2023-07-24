@@ -18,7 +18,7 @@ typedef void (*bts_device_found_callback)(bt_device_t* device);
 typedef void (*bts_bond_state_changed_callback)(bt_device_t* device, bt_bond_state state);
 typedef void (*bts_connection_state_callback)(bt_device_t* device, bt_connection_state state);
 typedef void (*bts_hci_event_callback)(hci_event_t* hci_event);
-//typedef void (*bts_service_discovered_callback)( bt_address remote_addr, br_service_t* services, uint16_t size);
+// typedef void (*bts_service_discovered_callback)( bt_address remote_addr, br_service_t* services, uint16_t size);
 typedef void (*bts_update_ble_bonded_devices_callback)(ble_keys_t* bonded_device_list, uint8_t count_in);
 typedef void (*bts_smp_request_callback)(ssp_request_data_t* request_data);
 typedef void (*bts_ble_phy_update_callback)(bt_address remote_addr, ble_phy_type tx_phy, ble_phy_type rx_phy, bt_status status);
@@ -155,5 +155,8 @@ void gap_bt_bond_store(void);
 void gap_ble_bond_store(ble_keys_t* key, uint8_t count);
 bt_result_code gap_ble_whitelist_store_update(bool added, bt_address addr);
 void gap_bt_config_deinit(void);
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+uint16_t gap_get_acl_handle(void);
+#endif
 
 #endif

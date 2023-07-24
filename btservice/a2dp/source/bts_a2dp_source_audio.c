@@ -48,6 +48,7 @@
 #define LOG_TAG "a2dp_src_stream"
 #include "log.h"
 
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
 #define MAX_FRAME_NUM_PER_TICK 14
 #define STREAM_DELAY_MS 10
 #define STREAM_FLUSH_SIZE (1024)
@@ -85,8 +86,10 @@ typedef struct {
 } a2dp_source_stream_t;
 
 a2dp_source_stream_t a2dp_src_stream;
+#endif
 extern a2dp_ipc_t* a2dp_ipc;
 
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
 static void bts_a2dp_source_read_congest(uint8_t ch_id);
 
 static const a2dp_source_stream_interface_t* get_stream_interface(void)
@@ -366,6 +369,7 @@ bool bts_a2dp_source_is_streaming(void)
 {
     return a2dp_src_stream.media_alarm ? true : false;
 }
+#endif
 
 void bts_a2dp_source_on_connection_changed(bool connected)
 {
@@ -374,7 +378,9 @@ void bts_a2dp_source_on_connection_changed(bool connected)
         bts_a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, 1);
     } else {
         bts_a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, 0);
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
         bts_a2dp_source_stop_audio_req(true);
+#endif
     }
 }
 
@@ -384,8 +390,10 @@ void bts_a2dp_source_on_started(bool started)
 
     if (started) {
         bts_a2dp_control_event(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_STARTED);
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
         if (a2dp_src_stream.stream_state == STATE_OFF || a2dp_src_stream.stream_state == STATE_FLUSHING)
             bts_a2dp_source_start_audio_req();
+#endif
     } else {
         bts_a2dp_control_event(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_START_FAIL);
     }
@@ -394,17 +402,20 @@ void bts_a2dp_source_on_started(bool started)
 void bts_a2dp_source_on_stopped(void)
 {
     BT_LOGD("%s", __func__);
-
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
     bts_a2dp_source_stop_audio_req(false);
+#endif
 }
 
 void bts_a2dp_source_on_suspended(void)
 {
     BT_LOGD("%s", __func__);
-
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
     bts_a2dp_source_stop_audio_req(false);
+#endif
 }
 
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
 void bts_a2dp_source_setup_codec(bt_address bd_addr)
 {
     a2dp_source_stream_t* stream = &a2dp_src_stream;
@@ -430,18 +441,23 @@ void bts_a2dp_source_setup_codec(bt_address bd_addr)
         bts_a2dp_source_read_callback);
     bts_a2dp_source_start_flush();
 }
+#endif
 
 void bts_a2dp_source_audio_init(void)
 {
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
     memset(&a2dp_src_stream, 0, sizeof(a2dp_src_stream));
     a2dp_src_stream.stream_state = STATE_OFF;
     circbuf_init(&a2dp_src_stream.stream_pool, NULL, 2048);
+#endif
     bts_a2dp_control_init(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
 }
 
 void bts_a2dp_source_audio_cleanup(void)
 {
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
     bts_a2dp_source_close_audio();
     circbuf_uninit(&a2dp_src_stream.stream_pool);
+#endif
     bts_a2dp_control_cleanup();
 }

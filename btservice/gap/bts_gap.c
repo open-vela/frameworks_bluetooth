@@ -196,6 +196,9 @@ typedef struct
 struct list_node* g_msg_list;
 static bts_gap_callback_t* g_bts_gap_callbacks = NULL;
 static struct list_node bt_device_list = LIST_INITIAL_VALUE(bt_device_list);
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+uint16_t g_conn_handle = 0;
+#endif
 
 /*process callback from stack */
 
@@ -664,7 +667,9 @@ static void adapter_acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S* acl_st
     BT_LOGD("%s status:%" PRIu32 ", state:%s, reasonCode:%" PRIu32 ", device[%s]", __func__,
         acl_state_param->status, acl_state_to_str(acl_state_param->state),
         acl_state_param->reasonCode, addr_str(acl_state_param->remote_addr));
-
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+    g_conn_handle = acl_state_param->connection_handle;
+#endif
     gap_msg_t* msg = gap_msg_new(GAP_ACL_STATE_CHANGED);
     memcpy(&msg->event_data.data.acl_state_params, acl_state_param, sizeof(SERVICE_ACL_STATE_PARAM_S));
     gap_send_message(msg);
@@ -1709,3 +1714,10 @@ bt_result_code bts_set_afh_channel_classification(bt_afh_radio_channel_info_t* c
     }
     return BT_RESULT_SUCCESS;
 }
+
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+uint16_t gap_get_acl_handle(void)
+{
+    return g_conn_handle;
+}
+#endif

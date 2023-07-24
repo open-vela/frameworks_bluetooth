@@ -43,6 +43,7 @@
 #include <uORB/uORB.h>
 #endif
 #include "stack_adapter_a2dp_source.h"
+#include "stack_adapter_gap.h"
 #include "stack_adapter_service_base.h"
 
 #include "a2dp_ipc.h"
@@ -54,6 +55,7 @@
 #include "bts_a2dp_event.h"
 #include "bts_a2dp_source.h"
 #include "bts_a2dp_state_machine.h"
+#include "bts_gap.h"
 #include "bts_service.h"
 #include "utils/log.h"
 #include "utils/utils.h"
@@ -62,6 +64,13 @@
 #define A2DP_MAX_CONNECTION (1)
 #else
 #define A2DP_MAX_CONNECTION CONFIG_BLUETOOTH_A2DP_MAX_CONNECTIONS
+#endif
+
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+uint16_t g_mtu = -1;
+uint16_t a2dp_sink_cid = 0;
+uint8_t codec_type = 0;
+
 #endif
 
 static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state);
@@ -134,7 +143,42 @@ static void save_a2dp_codec_config(a2dp_peer_t* peer, a2dp_codec_config_t* confi
 
     memcpy(&peer->codec_config, config, sizeof(*config));
     bts_a2dp_codec_set_config(SEP_SNK, &peer->codec_config);
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+    codec_type = config->codec_type;
+#endif
 }
+
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+static void a2dp_set_codec_params(uint8_t codec, uint8_t start, uint16_t frame_sample)
+{
+    SERVICE_HCI_COMMAND_S* command = malloc(sizeof(SERVICE_HCI_COMMAND_S) + 18);
+    hci_command_complete_event event_type = HCI_COMMAND_COMPLETED_BY_VENDOR_SPECIFIC_EVENT;
+    command->ogf = 0x3f;
+    command->ocf = 0x00;
+    command->cb = NULL;
+    command->length = 18;
+    command->params[0] = 0x03;
+    command->params[1] = start;
+    command->params[2] = gap_get_acl_handle() & 0x00FF; // 3:handle
+    command->params[3] = (gap_get_acl_handle() & 0xFF00) >> 8; // 4:handle
+    command->params[4] = (codec == BTS_A2DP_TYPE_SBC) ? 0x03 : 0x04; // 5:codec type
+    command->params[5] = a2dp_sink_cid & 0x00FF; // 6:cid
+    command->params[6] = (a2dp_sink_cid & 0xFF00) >> 8; // 7:cid
+    command->params[7] = frame_sample & 0x00FF; // 8:frame sample
+    command->params[8] = (frame_sample & 0xFF00) >> 8; // 9:frame sample
+    command->params[9] = 0; // frame length, reserved
+    command->params[10] = 0; // frame length, reserved
+    command->params[11] = (g_mtu & 0x00FF);
+    command->params[12] = (g_mtu & 0x00FF) >> 8; // MTU
+    command->params[13] = 0; // Padding
+    command->params[14] = 0; // Extension
+    command->params[15] = 0; // Marker
+    command->params[16] = 96; // Payload Type
+    command->params[17] = 1; // SSRC
+    service_adapter_gap_send_hci_command_v1(command, event_type);
+    free(command);
+}
+#endif
 
 static void a2dp_service_handle_event(a2dp_event_t* a2dp_event, uint8_t peer_sep, size_t size)
 {
@@ -182,6 +226,19 @@ static void a2dp_service_handle_event(a2dp_event_t* a2dp_event, uint8_t peer_sep
         if (a2dp_event->event == CONNECTED_EVT)
             set_active_peer(a2dp_event->event_data.bd_addr);
 
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+        uint16_t frame_sample = 0;
+        if (codec_type == BTS_A2DP_TYPE_SBC) {
+            frame_sample = a2dp_sbc_frame_sample();
+        } else if (codec_type == BTS_A2DP_TYPE_SBC) {
+            frame_sample = 1024;
+        }
+        if (a2dp_event->event == STREAM_STARTED_EVT) {
+            a2dp_set_codec_params(codec_type, 2, frame_sample);
+        } else if (a2dp_event->event == STREAM_SUSPENDED_EVT || a2dp_event->event == STREAM_CLOSED_EVT) {
+            a2dp_set_codec_params(codec_type, 3, frame_sample);
+        }
+#endif
         a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
         break;
     }
@@ -235,7 +292,9 @@ static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM
     default:
         return;
     }
-
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+    a2dp_sink_cid = sink_cid;
+#endif
     do_in_a2dp_service(a2dp_event_new(event, remote_addr));
 }
 
@@ -263,6 +322,10 @@ static void adp_stream_channel_mtu_cb(BD_ADDR remote_addr, uint16_t stream_chnl_
 
     event = a2dp_event_new(STREAM_MTU_CONFIG_EVT, remote_addr);
     event->event_data.mtu = stream_chnl_mtu;
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+    g_mtu = stream_chnl_mtu;
+#endif
+
     do_in_a2dp_service(event);
 }
 
