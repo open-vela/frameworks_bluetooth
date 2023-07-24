@@ -263,7 +263,7 @@ void ag_server_connection_state_changed(bt_address bd_addr, profile_connection_s
     ag_server_send_message(sm, msg);
 }
 
-void ag_server_audio_state_changed(bt_address bd_addr, hfp_audio_state_t state)
+void ag_server_audio_state_changed(bt_address bd_addr, hfp_audio_state_t state, uint16_t sco_connection_handle)
 {
     ag_state_machine_t* sm;
     ag_server_msg_t* msg;
@@ -275,6 +275,7 @@ void ag_server_audio_state_changed(bt_address bd_addr, hfp_audio_state_t state)
     if (!msg)
         return;
     msg->data.valueint1 = state;
+    msg->data.valueint2 = sco_connection_handle;
     ag_server_send_message(sm, msg);
 }
 
@@ -538,7 +539,7 @@ static void connection_state_changed_callback(BD_ADDR remote_addr,
 static void sco_connection_state_changed_callback(BD_ADDR remote_addr,
     SERVICE_HFP_SCO_STATE state, uint16_t sco_connection_handle)
 {
-    ag_server_audio_state_changed(remote_addr, bluelet_hf_audio_state(state));
+    ag_server_audio_state_changed(remote_addr, bluelet_hf_audio_state(state), sco_connection_handle);
 }
 
 static void codec_changed_callback(BD_ADDR remote_addr, SERVICE_HFP_CONFIG_S* config)

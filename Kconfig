@@ -107,6 +107,18 @@ config BLUETOOTH_A2DP_CONNECT_TIMEOUT
 	default 8
 	help
 		Bluetooth A2dp connect timeout
+
+config BLUETOOTH_A2DP_ADSP_CODEC
+	bool "Bluetooth use adsp to codec not ffmpeg"
+	default n
+	help
+		Bluetooth use adsp to codec not ffmpeg
+
+config BLUETOOTH_A2DP_I2S_OFFLOAD
+	bool "Bluetooth use i2s to transfer audio data"
+	default n
+	help
+		Bluetooth use i2s to transfer audio data
 endif #BLUETOOTH_A2DP
 
 config BLUETOOTH_HFP_HF
@@ -115,6 +127,10 @@ config BLUETOOTH_HFP_HF
 
 config BLUETOOTH_HFP_AG
 	bool "Enable BT_HFP_AG"
+	default n
+
+config BLUETOOTH_HFP_I2S_OFFLOAD
+	bool "Enable BLUETOOTH_HFP_I2S_OFFLOAD"
 	default n
 
 config BLUETOOTH_LE_SCAN

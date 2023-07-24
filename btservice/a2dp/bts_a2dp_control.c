@@ -276,7 +276,12 @@ static void bts_a2dp_ctrl_cb(uint8_t ch_id, a2dp_ipc_event_t event)
     case IPC_OPEN_EVT:
         bts_a2dp_ctrl_start(ch_id);
 #ifdef CONFIG_BLUETOOTH_A2DP_SRC
+        // when adsp connect us, we need to send audio config whatever case.
+#ifdef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
+        if (ch_id == A2DP_IPC_CH_ID_AV_SOURCE_CTRL)
+#else
         if (ch_id == A2DP_IPC_CH_ID_AV_SOURCE_CTRL && bts_a2dp_source_stream_ready())
+#endif
             bts_a2dp_control_update_audio_config(ch_id, 1);
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
@@ -296,6 +301,7 @@ static void bts_a2dp_ctrl_cb(uint8_t ch_id, a2dp_ipc_event_t event)
     }
 }
 
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
 static void bts_a2dp_data_cb(uint8_t ch_id, a2dp_ipc_event_t event)
 {
     BT_LOGD("%s, path:[%s], event:%s", __func__, a2dp_ipc_path[ch_id], dump_a2dp_ipc_event(event));
@@ -318,6 +324,7 @@ static void bts_a2dp_data_cb(uint8_t ch_id, a2dp_ipc_event_t event)
         break;
     }
 }
+#endif
 
 void bts_a2dp_control_init(uint8_t ctrl_id, uint8_t data_id)
 {
@@ -326,7 +333,9 @@ void bts_a2dp_control_init(uint8_t ctrl_id, uint8_t data_id)
     }
 
     a2dp_ipc_open(a2dp_ipc, ctrl_id, a2dp_ipc_path[ctrl_id], bts_a2dp_ctrl_cb);
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
     a2dp_ipc_open(a2dp_ipc, data_id, a2dp_ipc_path[data_id], bts_a2dp_data_cb);
+#endif
 }
 
 void bts_a2dp_control_cleanup(void)

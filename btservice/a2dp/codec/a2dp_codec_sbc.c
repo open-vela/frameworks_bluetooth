@@ -30,11 +30,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
+#include <assert.h>
+#include <errno.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <errno.h>
-#include <assert.h>
 
 #include "a2dp_codec_sbc.h"
 #include "sbc_encoder.h"
@@ -42,17 +42,21 @@
 #define LOG_TAG "a2dp_codec_sbc"
 #include "log.h"
 
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+uint16_t frame_sample = 0;
+#endif
+
 typedef struct {
-    uint8_t samp_freq;    /* Sampling frequency */
-    uint8_t ch_mode;      /* Channel mode */
-    uint8_t block_len;    /* Block length */
+    uint8_t samp_freq; /* Sampling frequency */
+    uint8_t ch_mode; /* Channel mode */
+    uint8_t block_len; /* Block length */
     uint8_t num_subbands; /* Number of subbands */
     uint8_t alloc_method; /* Allocation method */
-    uint8_t min_bitpool;  /* Minimum bitpool */
-    uint8_t max_bitpool;  /* Maximum bitpool */
+    uint8_t min_bitpool; /* Minimum bitpool */
+    uint8_t max_bitpool; /* Maximum bitpool */
 } a2dp_sbc_info_t;
 
-static int a2dp_parse_sbc_info(a2dp_sbc_info_t *info, uint8_t* codec_info)
+static int a2dp_parse_sbc_info(a2dp_sbc_info_t* info, uint8_t* codec_info)
 {
     if (info == NULL || codec_info == NULL) {
         return -1;
@@ -71,89 +75,89 @@ static int a2dp_parse_sbc_info(a2dp_sbc_info_t *info, uint8_t* codec_info)
     return 0;
 }
 
-static int a2dp_get_sbc_allocation_method(a2dp_sbc_info_t *info)
+static int a2dp_get_sbc_allocation_method(a2dp_sbc_info_t* info)
 {
     switch (info->alloc_method) {
-        case A2DP_SBC_ALLOC_MD_S:
-            return SBC_SNR;
-        case A2DP_SBC_ALLOC_MD_L:
-            return SBC_LOUDNESS;
-        default:
-            break;
+    case A2DP_SBC_ALLOC_MD_S:
+        return SBC_SNR;
+    case A2DP_SBC_ALLOC_MD_L:
+        return SBC_LOUDNESS;
+    default:
+        break;
     }
 
     return -1;
 }
 
-static int a2dp_get_sbc_blocks(a2dp_sbc_info_t *info)
+static int a2dp_get_sbc_blocks(a2dp_sbc_info_t* info)
 {
     switch (info->block_len) {
-        case A2DP_SBC_BLOCKS_4:
-            return SBC_BLOCK_0;
-        case A2DP_SBC_BLOCKS_8:
-            return SBC_BLOCK_1;
-        case A2DP_SBC_BLOCKS_12:
-            return SBC_BLOCK_2;
-        case A2DP_SBC_BLOCKS_16:
-            return SBC_BLOCK_3;
-        default:
-            break;
+    case A2DP_SBC_BLOCKS_4:
+        return SBC_BLOCK_0;
+    case A2DP_SBC_BLOCKS_8:
+        return SBC_BLOCK_1;
+    case A2DP_SBC_BLOCKS_12:
+        return SBC_BLOCK_2;
+    case A2DP_SBC_BLOCKS_16:
+        return SBC_BLOCK_3;
+    default:
+        break;
     }
 
     return -1;
 }
 
-static int a2dp_get_sbc_subbands(a2dp_sbc_info_t *info)
+static int a2dp_get_sbc_subbands(a2dp_sbc_info_t* info)
 {
     switch (info->num_subbands) {
-        case A2DP_SBC_SUBBAND_4:
-            return SUB_BANDS_4;
-        case A2DP_SBC_SUBBAND_8:
-            return SUB_BANDS_8;
-        default:
-            break;
+    case A2DP_SBC_SUBBAND_4:
+        return SUB_BANDS_4;
+    case A2DP_SBC_SUBBAND_8:
+        return SUB_BANDS_8;
+    default:
+        break;
     }
 
     return -1;
 }
 
-static int a2dp_get_sbc_samp_frequency(a2dp_sbc_info_t *info)
+static int a2dp_get_sbc_samp_frequency(a2dp_sbc_info_t* info)
 {
     switch (info->samp_freq) {
-        case A2DP_SBC_SAMP_FREQ_16:
-            return SBC_SF_16000;
-        case A2DP_SBC_SAMP_FREQ_32:
-            return SBC_SF_32000;
-        case A2DP_SBC_SAMP_FREQ_44:
-            return SBC_SF_44100;
-        case A2DP_SBC_SAMP_FREQ_48:
-            return SBC_SF_48000;
-        default:
-            break;
+    case A2DP_SBC_SAMP_FREQ_16:
+        return SBC_SF_16000;
+    case A2DP_SBC_SAMP_FREQ_32:
+        return SBC_SF_32000;
+    case A2DP_SBC_SAMP_FREQ_44:
+        return SBC_SF_44100;
+    case A2DP_SBC_SAMP_FREQ_48:
+        return SBC_SF_48000;
+    default:
+        break;
     }
 
     return -1;
 }
 
-static int a2dp_get_sbc_channel_mode(a2dp_sbc_info_t *info)
+static int a2dp_get_sbc_channel_mode(a2dp_sbc_info_t* info)
 {
     switch (info->ch_mode) {
-        case A2DP_SBC_CH_MD_MONO:
-            return SBC_MONO;
-        case A2DP_SBC_CH_MD_DUAL:
-            return SBC_DUAL;
-        case A2DP_SBC_CH_MD_STEREO:
-            return SBC_STEREO;
-        case A2DP_SBC_CH_MD_JOINT:
-            return SBC_JOINT_STEREO;
-        default:
-            break;
-  }
+    case A2DP_SBC_CH_MD_MONO:
+        return SBC_MONO;
+    case A2DP_SBC_CH_MD_DUAL:
+        return SBC_DUAL;
+    case A2DP_SBC_CH_MD_STEREO:
+        return SBC_STEREO;
+    case A2DP_SBC_CH_MD_JOINT:
+        return SBC_JOINT_STEREO;
+    default:
+        break;
+    }
 
-  return -1;
+    return -1;
 }
 
-static int a2dp_get_sbc_channel_count(a2dp_sbc_info_t *info)
+static int a2dp_get_sbc_channel_count(a2dp_sbc_info_t* info)
 {
     return SBC_MAX_NUM_OF_CHANNELS;
 }
@@ -172,17 +176,7 @@ uint32_t a2dp_sbc_frame_length(sbc_param_t* param)
         return 0;
     }
 
-    frame_len = 4 +
-                (4 *
-                param->s16NumOfSubBands *
-                param->s16NumOfChannels) /
-                8 +
-                ((param->s16NumOfBlocks *
-                param->s16BitPool *
-                (1 + (param->s16ChannelMode == SBC_DUAL)) +
-                (param->s16ChannelMode == SBC_JOINT_STEREO) *
-                param->s16NumOfSubBands)+ 7) /
-                8;
+    frame_len = 4 + (4 * param->s16NumOfSubBands * param->s16NumOfChannels) / 8 + ((param->s16NumOfBlocks * param->s16BitPool * (1 + (param->s16ChannelMode == SBC_DUAL)) + (param->s16ChannelMode == SBC_JOINT_STEREO) * param->s16NumOfSubBands) + 7) / 8;
 
     return frame_len;
 }
@@ -232,7 +226,9 @@ void a2dp_codec_parse_sbc_param(sbc_param_t* param, uint8_t* codec_info)
     param->s16AllocationMethod = a2dp_get_sbc_allocation_method(&si);
     param->s16BitPool = si.max_bitpool;
     param->u32BitRate = a2dp_sbc_bit_rate(param);
-
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+    frame_sample = param->s16NumOfSubBands * param->s16NumOfBlocks;
+#endif
     BT_LOGD("%s:\n \
                 s16SamplingFreq:%d,\n \
                 s16ChannelMode:%d,\n \
@@ -241,12 +237,20 @@ void a2dp_codec_parse_sbc_param(sbc_param_t* param, uint8_t* codec_info)
                 s16NumOfBlocks:%d,\n \
                 s16AllocationMethod:%d,\n \
                 s16BitPool:%d,\n \
-                u32BitRate:%" PRIu32, __func__, param->s16SamplingFreq,
-                param->s16ChannelMode,
-                param->s16NumOfSubBands,
-                param->s16NumOfChannels,
-                param->s16NumOfBlocks,
-                param->s16AllocationMethod,
-                param->s16BitPool,
-                param->u32BitRate);
+                u32BitRate:%" PRIu32,
+        __func__, param->s16SamplingFreq,
+        param->s16ChannelMode,
+        param->s16NumOfSubBands,
+        param->s16NumOfChannels,
+        param->s16NumOfBlocks,
+        param->s16AllocationMethod,
+        param->s16BitPool,
+        param->u32BitRate);
 }
+
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+uint16_t a2dp_sbc_frame_sample(void)
+{
+    return frame_sample;
+}
+#endif

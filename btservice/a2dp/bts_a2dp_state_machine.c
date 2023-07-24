@@ -606,7 +606,9 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     case DEVICE_CODEC_STATE_CHANGE_EVT:
         a2dp_sm->audio_ready = true;
         bts_a2dp_report_audio_config_state(a2dp_sm, a2dp_sm->addr);
+#ifndef CONFIG_BLUETOOTH_A2DP_ADSP_CODEC
         bts_a2dp_audio_setup_codec(a2dp_sm->peer_sep, a2dp_sm->addr);
+#endif
         break;
 
     case START_TIMEOUT: {
