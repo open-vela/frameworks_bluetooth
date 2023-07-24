@@ -86,23 +86,23 @@ void bt_sal_spp_cleanup(void)
     service_adapter_spp_cleanup();
 }
 
-bt_status_t bt_sal_spp_server_start(uint16_t scn, bt_uuid_t *uuid128, uint8_t max_conn_cnt)
+bt_status_t bt_sal_spp_server_start(uint16_t svr_port, bt_uuid_t *uuid128, uint8_t max_conn_cnt)
 {
-    if (scn == 0 || scn > 29 || max_conn_cnt > 31)
+    if (svr_port < 3 || svr_port > 57 || !(svr_port & 0x01) || max_conn_cnt > 31)
         return BT_STATUS_PARM_INVALID;
 
-    SAL_CHECK_RET(service_adapter_spp_server_open(scn, uuid128 ? uuid128->val.u128 : NULL, max_conn_cnt),
+    SAL_CHECK_RET(service_adapter_spp_server_open(svr_port, uuid128 ? uuid128->val.u128 : NULL, max_conn_cnt),
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_spp_server_stop(uint16_t scn)
+bt_status_t bt_sal_spp_server_stop(uint16_t svr_port)
 {
-    if (scn == 0 || scn > 29)
+    if (svr_port < 3 || svr_port > 57 || !(svr_port & 0x01))
         return BT_STATUS_PARM_INVALID;
 
-    SAL_CHECK_RET(service_adapter_spp_server_close(scn), SERVICE_BT_STATUS_SUCCESS);
+    SAL_CHECK_RET(service_adapter_spp_server_close(svr_port), SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
