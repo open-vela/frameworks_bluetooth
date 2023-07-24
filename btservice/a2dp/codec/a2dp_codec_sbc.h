@@ -81,5 +81,7 @@ void a2dp_codec_parse_sbc_param(sbc_param_t* param, uint8_t* codec_info);
 uint16_t a2dp_sbc_sample_frequency(uint16_t sample_frequency);
 uint32_t a2dp_sbc_frame_length(sbc_param_t* param);
 uint32_t a2dp_sbc_bit_rate(sbc_param_t* param);
-
+#ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
+uint16_t a2dp_sbc_frame_sample(void);
+#endif
 #endif

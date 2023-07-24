@@ -381,6 +381,26 @@ static void default_connection_event_process(state_machine_t* sm, ag_server_data
     }
 }
 
+#ifdef CONFIG_BLUETOOTH_HFP_I2S_OFFLOAD
+static void ag_set_codec_params(uint16_t sco_conn_handle, uint8_t codec, uint8_t start)
+{
+    SERVICE_HCI_COMMAND_S* command = malloc(sizeof(SERVICE_HCI_COMMAND_S) + sizeof(char) * 4);
+    hci_command_complete_event event_type = HCI_COMMAND_COMPLETED_BY_VENDOR_SPECIFIC_EVENT;
+    command->ogf = 0x3f;
+    command->ocf = 0x00;
+    command->cb = NULL;
+    command->length = 5;
+    command->params[0] = 0x02;
+    command->params[1] = start;
+    command->params[2] = (sco_conn_handle & 0x00FF);
+    command->params[3] = (sco_conn_handle & 0xFF00) >> 8;
+    command->params[4] = codec;
+    BT_LOGD("HCI_Set_Codec_Config: sco_handle:%d, codec:%d", sco_conn_handle, codec);
+    service_adapter_gap_send_hci_command_v1(command, event_type);
+    free(command);
+}
+#endif
+
 static void default_audio_connection_event_process(state_machine_t* sm, ag_server_data_t* data)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
@@ -391,6 +411,9 @@ static void default_audio_connection_event_process(state_machine_t* sm, ag_serve
         ag_service_notify_audio_state_changed(agsm->service,
             agsm->bd_addr,
             HFP_AUDIO_STATE_DISCONNECTED);
+#ifdef CONFIG_BLUETOOTH_HFP_I2S_OFFLOAD
+        ag_set_codec_params(data->valueint2, agsm->codec, 1);
+#endif
         hsm_transition_to(sm, &connected_state);
         break;
     case HFP_AUDIO_STATE_CONNECTED:
@@ -401,6 +424,9 @@ static void default_audio_connection_event_process(state_machine_t* sm, ag_serve
             BT_LOGD("audio_on_enter SERVICE_HFP_CODEC_CVSD");
             ag_service_notify_audio_state_changed(agsm->service, agsm->bd_addr, HFP_AUDIO_STATE_CONNECTED);
         }
+#ifdef CONFIG_BLUETOOTH_HFP_I2S_OFFLOAD
+        ag_set_codec_params(data->valueint2, agsm->codec, 0);
+#endif
         hsm_transition_to(sm, &audio_on_state);
         break;
     case HFP_AUDIO_STATE_CONNECTING:
@@ -905,7 +931,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
 
         uint8_t vol = data->valueint1 > 15 ? 15 : data->valueint1;
         /* android don't support set Mic volume */
-        //VOLUME_SPEAKER VOLUME_MIC;
+        // VOLUME_SPEAKER VOLUME_MIC;
         service_adapter_hfp_ag_set_volume(agsm->bd_addr, VOLUME_SPEAKER, vol);
     } break;
     case STACK_EVENT_CONNECTION_STATE_CHANGED:
@@ -973,7 +999,7 @@ ag_state_machine_t* ag_server_state_machine_new(void* context, bt_address bd_add
     agsm->audio_timer = NULL;
     agsm->dial_out_timer = NULL;
     memcpy(agsm->bd_addr, bd_addr, sizeof(bt_address));
-    //list_initialize(&hfsm->pending_actions);
+    // list_initialize(&hfsm->pending_actions);
     hsm_ctor(&agsm->sm, (state_t*)&disconnected_state);
 
     return agsm;
