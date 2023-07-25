@@ -21,6 +21,8 @@
 #include <kvdb.h>
 #endif
 
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
+
 #include "stack_adapter_gap.h"
 #include "stack_adapter_lea_gaf.h"
 
@@ -526,3 +528,5 @@ bt_status_t bt_sal_lea_send_iso_data(lea_send_iso_data_t *packet)
 
     return BT_STATUS_SUCCESS;
 }
+
+#endif //CONFIG_BLUETOOTH_LEAUDIO_CLIENT
