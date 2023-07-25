@@ -24,6 +24,15 @@
 #include "lea_audio_common.h"
 
 typedef struct {
+    bool is_source;
+    uint32_t pac_id;
+    lea_codec_id_t codec_id;
+    lea_codec_cap_t codec_cap;
+    uint8_t metadata_number;
+    lea_metadata_t metadata_value[CONFIG_BLUETOOTH_LEAUDIO_CLIENT_METADATA_MAX_NUMBER];
+} lea_client_capability_t;
+
+typedef struct {
     uint8_t target_latency;
     uint8_t target_phy;
     lea_codec_config_t codec_cfg;

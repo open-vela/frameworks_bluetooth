@@ -162,15 +162,6 @@ typedef struct
 } lea_metadata_t;
 
 typedef struct {
-    bool is_source;
-    uint32_t pac_id;
-    lea_codec_id_t codec_id;
-    lea_codec_cap_t codec_cap;
-    uint8_t metadata_number;
-    lea_metadata_t metadata_value[CONFIG_BLUETOOTH_LEAUDIO_CLIENT_METADATA_MAX_NUMBER];
-} lea_client_capability_t;
-
-typedef struct {
     uint32_t stream_id;
     uint16_t iso_handle;
     uint16_t max_sdu;
