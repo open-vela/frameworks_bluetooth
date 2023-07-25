@@ -104,6 +104,7 @@ static bool remove_gattc_device(gattc_device_t* device)
     if (!device) {
         return false;
     }
+    device->handle = NULL;
     list_delete(&device->node);
     free(device);
     return true;
@@ -177,7 +178,7 @@ static void on_scan_result_callback(void* handle, const scan_result_t* result)
     add_scan_device(result->remote_addr);
 #endif
     BT_LOGD("%s addr:%s, addr_type:%d, device_type:%d, evt_type:%d, rssi:%d", __func__, addr_str(((scan_result_t*)result)->remote_addr), result->addr_type, result->device_type, result->evt_type, result->rssi);
-    lib_dumpbuffer("LE_Adv:", (const uint8_t *)result->adv_data, result->length);
+    lib_dumpbuffer("LE_Adv:", (const uint8_t*)result->adv_data, result->length);
 }
 
 static char* profile_state_to_str(profile_connection_state state)
