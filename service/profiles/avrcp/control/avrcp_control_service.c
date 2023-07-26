@@ -34,13 +34,13 @@
 #include "utils/log.h"
 
 #define AVRCP_CONTROL_CALLBACK_FOREACH(_list, _cback, ...) \
-  BT_CALLBACK_FOREACH(_list, avrcp_control_callbacks_t, _cback, ##__VA_ARGS__)
+    BT_CALLBACK_FOREACH(_list, avrcp_control_callbacks_t, _cback, ##__VA_ARGS__)
 
 typedef struct {
-    struct list_node  list;
-    bool              enable;
-    pthread_mutex_t   mutex;
-    callbacks_list_t  *callbacks;
+    struct list_node list;
+    bool enable;
+    pthread_mutex_t mutex;
+    callbacks_list_t *callbacks;
 } avrcp_control_global_t;
 
 static avrcp_control_global_t g_avrcp_control = { 0 };
@@ -115,20 +115,20 @@ static bool avrcp_control_unregister_callbacks(void **remote, void *cookie)
 
 static void avrcp_control_service_handle_event(void *data)
 {
-    avrcp_msg_t* msg = data;
+    avrcp_msg_t *msg = data;
 
     switch (msg->id) {
-      case PASSTHROUHT_CMD:
+    case PASSTHROUHT_CMD:
         bt_sal_avrcp_control_send_pass_through_cmd(&msg->addr,
-            msg->data.passthr_cmd.opcode, msg->data.passthr_cmd.state);
+                                                   msg->data.passthr_cmd.opcode, msg->data.passthr_cmd.state);
         break;
-      case GET_PLAYBACK_STATE:
+    case GET_PLAYBACK_STATE:
         bt_sal_avrcp_control_get_playback_state(&msg->addr);
         break;
-      case VOLUME_CHANGED_NOTIFY:
+    case VOLUME_CHANGED_NOTIFY:
         bt_sal_avrcp_control_volume_changed_notify(&msg->addr, msg->data.absvol.volume);
         break;
-      default:
+    default:
         BT_LOGW("%s Unsupport message", __func__);
         break;
     }
@@ -138,34 +138,36 @@ static void avrcp_control_service_handle_event(void *data)
 
 static void avrcp_control_service_handle_callback(void *data)
 {
-    avrcp_msg_t* msg = data;
+    avrcp_msg_t *msg = data;
 
     switch (msg->id) {
-      case CONNECTION_STATE_CHANGED:
+    case CONNECTION_STATE_CHANGED:
         AVRCP_CONTROL_CALLBACK_FOREACH(g_avrcp_control.callbacks,
-            connection_state_cb, &msg->addr, msg->data.conn_state);
+                                       connection_state_cb, &msg->addr, msg->data.conn_state);
         break;
-      case PASSTHROUHT_CMD_RSP:
+    case PASSTHROUHT_CMD_RSP: {
         rc_passthr_rsp_t *rsp = &msg->data.passthr_rsp;
         AVRCP_CONTROL_CALLBACK_FOREACH(g_avrcp_control.callbacks,
-            passthrough_rsp_cb, &msg->addr, rsp->cmd, rsp->state, rsp->rsp);
-        break;
-      case REGISTER_NOTIFICATION_RSP:
+                                       passthrough_rsp_cb, &msg->addr, rsp->cmd, rsp->state, rsp->rsp);
+    }
+
+    break;
+    case REGISTER_NOTIFICATION_RSP: {
         rc_notification_rsp_t *notify = &msg->data.notify_rsp;
         if (notify->event == NOTIFICATION_EVT_PALY_STATUS_CHANGED)
-          AVRCP_CONTROL_CALLBACK_FOREACH(g_avrcp_control.callbacks, play_status_changed_cb,
-              &msg->addr, notify->value);
+            AVRCP_CONTROL_CALLBACK_FOREACH(g_avrcp_control.callbacks, play_status_changed_cb,
+                                           &msg->addr, notify->value);
         else if (notify->event == NOTIFICATION_EVT_PLAY_POS_CHANGED)
-          AVRCP_CONTROL_CALLBACK_FOREACH(g_avrcp_control.callbacks, play_position_changed_cb,
-              &msg->addr, 0, notify->value);
-        break;
-      case GET_PLAY_STATUS_RSP:
+            AVRCP_CONTROL_CALLBACK_FOREACH(g_avrcp_control.callbacks, play_position_changed_cb,
+                                           &msg->addr, 0, notify->value);
+    } break;
+    case GET_PLAY_STATUS_RSP: {
         rc_play_status_t *status = &msg->data.playstatus;
         AVRCP_CONTROL_CALLBACK_FOREACH(g_avrcp_control.callbacks, play_status_changed_cb, &msg->addr, status->status);
         AVRCP_CONTROL_CALLBACK_FOREACH(g_avrcp_control.callbacks, play_position_changed_cb,
-            &msg->addr, status->song_len, status->song_pos);
-        break;
-      default:
+                                       &msg->addr, status->song_len, status->song_pos);
+    } break;
+    default:
         BT_LOGW("%s Unsupport message", __func__);
         break;
     }
@@ -184,37 +186,37 @@ static void do_in_avrcp_service(avrcp_msg_t *msg)
 static bt_status_t avrcp_control_send_pass_through_cmd(
     bt_address_t *bd_addr, avrcp_passthr_cmd_t key_code, avrcp_key_state_t key_state)
 {
-  avrcp_msg_t *msg = avrcp_msg_new(PASSTHROUHT_CMD, bd_addr);
+    avrcp_msg_t *msg = avrcp_msg_new(PASSTHROUHT_CMD, bd_addr);
 
-  if (msg == NULL)
-    return BT_STATUS_NOMEM;
+    if (msg == NULL)
+        return BT_STATUS_NOMEM;
 
-  msg->data.passthr_cmd.opcode = key_code;
-  msg->data.passthr_cmd.state = key_state;
+    msg->data.passthr_cmd.opcode = key_code;
+    msg->data.passthr_cmd.state = key_state;
 
-  do_in_avrcp_service(msg);
+    do_in_avrcp_service(msg);
 
-  return BT_STATUS_SUCCESS;
+    return BT_STATUS_SUCCESS;
 }
 
 static bt_status_t avrcp_control_get_playback_state(bt_address_t *bd_addr)
 {
-  do_in_avrcp_service(avrcp_msg_new(GET_PLAYBACK_STATE, bd_addr));
-  return BT_STATUS_SUCCESS;
+    do_in_avrcp_service(avrcp_msg_new(GET_PLAYBACK_STATE, bd_addr));
+    return BT_STATUS_SUCCESS;
 }
 
 static bt_status_t avrcp_control_volume_changed_notify(bt_address_t *bd_addr, uint8_t volume)
 {
-  avrcp_msg_t *msg = avrcp_msg_new(VOLUME_CHANGED_NOTIFY, bd_addr);
+    avrcp_msg_t *msg = avrcp_msg_new(VOLUME_CHANGED_NOTIFY, bd_addr);
 
-  if (msg == NULL)
-    return BT_STATUS_NOMEM;
+    if (msg == NULL)
+        return BT_STATUS_NOMEM;
 
-  msg->data.absvol.volume = volume;
+    msg->data.absvol.volume = volume;
 
-  do_in_avrcp_service(msg);
+    do_in_avrcp_service(msg);
 
-  return BT_STATUS_SUCCESS;
+    return BT_STATUS_SUCCESS;
 }
 
 static const avrcp_control_interface_t avrcp_controlInterface = {
@@ -254,10 +256,10 @@ static const profile_service_t avrcp_control_service = {
 
 void bt_sal_avrcp_control_event_callback(avrcp_msg_t *msg)
 {
-  if (msg == NULL)
-    return;
+    if (msg == NULL)
+        return;
 
-  do_in_service_loop(avrcp_control_service_handle_callback, msg);
+    do_in_service_loop(avrcp_control_service_handle_callback, msg);
 }
 
 void register_avrcp_control_service(void)
