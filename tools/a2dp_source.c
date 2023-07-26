@@ -174,7 +174,8 @@ static void a2dpsrc_event_poll_cb(void* data)
 
     if (info->state != SAMPLE_AUDIO_ACTIVE) {
         buff = A2DPSRC_CTRL_CMD_STOP;
-        send(info->ctrl_fd, &buff, 1, MSG_NOSIGNAL);
+        if (send(info->ctrl_fd, &buff, 1, MSG_NOSIGNAL) < 0)
+            info->state = SAMPLE_AUDIO_TERMINATING;
         a2dpsrc_sample_audio_free(info);
     }
 }
@@ -244,11 +245,6 @@ static int play_cmd(void* handle, int argc, char* argv[])
 
     if (g_a2dpsrc_sample_info) {
         BT_LOGE("repeated attempts on A2DP sample audio");
-        return 0;
-    }
-
-    if (access(argv[0], F_OK | R_OK) < 0) {
-        BT_LOGE("file \"%s\" does not exist", argv[0]);
         return 0;
     }
 
