@@ -405,8 +405,10 @@ error:
 
 static void spp_pty_device_close(spp_pty_device_t* device)
 {
-    if (device->timer != NULL)
+    if (device->timer != NULL) {
         stop_timer(device->timer);
+        device->timer = NULL;
+    }
 
     if (device->handle) {
         euv_pty_close(device->handle);
@@ -528,19 +530,26 @@ unlock:
 
 static void spp_cache_timeout(char* data)
 {
-    spp_pty_device_t* device = (spp_pty_device_t*)data;
+    spp_pty_device_t* device;
+
+    pthread_mutex_lock(&g_spp_handle.spp_lock);
+    device = find_pty_device_by_handle((euv_pty_t*)data);
+    if (!device)
+        goto unlock;
 
     if (device->cache_buf.length == 0)
-        return;
+        goto unlock;
 
     do_spp_write(device, NULL, 0);
+unlock:
+    pthread_mutex_unlock(&g_spp_handle.spp_lock);
 }
 
 static void spp_cache_fragement(spp_pty_device_t* device, uint8_t* buffer, uint16_t length)
 {
     device->cache_buf.buffer_head = buffer;
     device->cache_buf.length = length;
-    device->timer = start_timer(CACHE_SEND_TIMEOUT, 0, spp_cache_timeout, device);
+    device->timer = start_timer(CACHE_SEND_TIMEOUT, 0, spp_cache_timeout, device->handle);
     device->next_to_read = device->mfs - length;
 }
 
