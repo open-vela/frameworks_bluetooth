@@ -122,4 +122,8 @@ int leac_command_init(void *handle);
 void leac_command_uninit(void *handle);
 int leac_command_exec(void *handle, int argc, char *argv[]);
 
+int lea_tbs_command_init(void *handle);
+void lea_tbs_command_uninit(void *handle);
+int lea_tbs_command_exec(void *handle, int argc, char *argv[]);
+
 #endif /* __BT_TOOLS_H__ */

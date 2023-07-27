@@ -69,17 +69,17 @@ static lea_ccpc_service_t g_ccpc_service = {
  ****************************************************************************/
 static bool lea_ccpc_call_cmp_index(void *ccp_call, void *call_index)
 {
-    return ((LEA_TBS_CALL_STATE_S *)ccp_call)->index == *((uint8_t *)call_index);
+    return ((lea_tbs_call_state_t *)ccp_call)->index == *((uint8_t *)call_index);
 }
 
 static bool lea_ccpc_call_cmp_state(void *ccp_call, void *call_state)
 {
-    return ((LEA_TBS_CALL_STATE_S *)ccp_call)->state == *((uint8_t *)call_state);
+    return ((lea_tbs_call_state_t *)ccp_call)->state == *((uint8_t *)call_state);
 }
 
-LEA_TBS_CALL_STATE_S *lea_ccpc_find_call_by_index(uint8_t call_index)
+lea_tbs_call_state_t *lea_ccpc_find_call_by_index(uint8_t call_index)
 {
-    LEA_TBS_CALL_STATE_S *ccp_call;
+    lea_tbs_call_state_t *ccp_call;
 
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     ccp_call = bt_list_find(g_ccpc_service.lea_calls, lea_ccpc_call_cmp_index, &call_index);
@@ -88,9 +88,9 @@ LEA_TBS_CALL_STATE_S *lea_ccpc_find_call_by_index(uint8_t call_index)
     return ccp_call;
 }
 
-LEA_TBS_CALL_STATE_S *lea_ccpc_find_call_by_state(uint8_t call_state)
+lea_tbs_call_state_t *lea_ccpc_find_call_by_state(uint8_t call_state)
 {
-    LEA_TBS_CALL_STATE_S *ccp_call;
+    lea_tbs_call_state_t *ccp_call;
 
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
     ccp_call = bt_list_find(g_ccpc_service.lea_calls, lea_ccpc_call_cmp_state, &call_state);
@@ -101,39 +101,39 @@ LEA_TBS_CALL_STATE_S *lea_ccpc_find_call_by_state(uint8_t call_state)
 
 static bool lea_ccpc_find_call_index(uint8_t opcode, uint8_t *index)
 {
-    LEA_TBS_CALL_STATE_S *call_states;
+    lea_tbs_call_state_t *call_states;
     bool valied = false;
 
     switch (opcode) {
-    case LEA_CCPC_CALL_CONTROL_ACCEPT: {
-        call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_INCOMING);
+    case ADPT_LEA_TBS_CALL_CONTROL_ACCEPT: {
+        call_states = lea_ccpc_find_call_by_state(ADPT_LEA_TBS_CALL_STATE_INCOMING);
 
         break;
     }
-    case LEA_CCPC_CALL_CONTROL_TERMINATE: {
-        call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_INCOMING);
+    case ADPT_LEA_TBS_CALL_CONTROL_TERMINATE: {
+        call_states = lea_ccpc_find_call_by_state(ADPT_LEA_TBS_CALL_STATE_INCOMING);
         if (call_states)
             break;
 
-        call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_LOCALLY_HELD);
+        call_states = lea_ccpc_find_call_by_state(ADPT_LEA_TBS_CALL_STATE_LOCALLY_HELD);
         if (call_states)
             break;
 
-        call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_ACTIVE);
+        call_states = lea_ccpc_find_call_by_state(ADPT_LEA_TBS_CALL_STATE_ACTIVE);
         if (call_states)
             break;
 
-        call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_ALERTING);
+        call_states = lea_ccpc_find_call_by_state(ADPT_LEA_TBS_CALL_STATE_ALERTING);
 
         break;
     }
-    case LEA_CCPC_CALL_CONTROL_LOCAL_HOLD: {
-        call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_ACTIVE);
+    case ADPT_LEA_TBS_CALL_CONTROL_LOCAL_HOLD: {
+        call_states = lea_ccpc_find_call_by_state(ADPT_LEA_TBS_CALL_STATE_ACTIVE);
 
         break;
     }
-    case LEA_CCPC_CALL_CONTROL_LOCAL_RETRIEVE: {
-        call_states = lea_ccpc_find_call_by_state(LEA_CCPC_CALL_STATE_LOCALLY_HELD);
+    case ADPT_LEA_TBS_CALL_CONTROL_LOCAL_RETRIEVE: {
+        call_states = lea_ccpc_find_call_by_state(ADPT_LEA_TBS_CALL_STATE_LOCALLY_HELD);
 
         break;
     }
@@ -150,28 +150,25 @@ static bool lea_ccpc_find_call_index(uint8_t opcode, uint8_t *index)
     return valied;
 }
 
-LEA_TBS_CALL_STATE_S *lea_ccpc_add_call(uint8_t index, uint8_t state, uint8_t flags)
+lea_tbs_call_state_t *lea_ccpc_add_call(lea_tbs_call_state_t *call)
 {
-    LEA_TBS_CALL_STATE_S *ccp_call;
+    lea_tbs_call_state_t *ccp_call;
 
-    ccp_call = malloc(sizeof(LEA_TBS_CALL_STATE_S));
+    ccp_call = malloc(sizeof(lea_tbs_call_state_t));
     if (!ccp_call) {
         BT_LOGE("error, malloc %s", __func__);
         return NULL;
     }
-    ccp_call->index = index;
-    ccp_call->state = state;
-    ccp_call->flags = flags;
+    memcpy(ccp_call, call, sizeof(lea_tbs_call_state_t));
 
     pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
-    bt_list_clear(g_ccpc_service.lea_calls);
     bt_list_add_tail(g_ccpc_service.lea_calls, ccp_call);
     pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
     return ccp_call;
 }
 
-static void lea_ccpc_call_delete(LEA_TBS_CALL_STATE_S *ccp_call)
+static void lea_ccpc_call_delete(lea_tbs_call_state_t *ccp_call)
 {
     if (!ccp_call)
         return;
@@ -241,8 +238,8 @@ static void lea_ccpc_process_debug(lea_ccpc_msg_t *msg)
         break;
     }
     case STACK_EVENT_READ_CALL_STATE: {
-        LEA_TBS_CALL_STATE_S *call_states;
-        call_states = (LEA_TBS_CALL_STATE_S *)msg->event_data.dataarry;
+        lea_tbs_call_state_t *call_states;
+        call_states = (lea_tbs_call_state_t *)msg->event_data.dataarry;
         BT_LOGD("%s, event:%d, tbs_id:%d, number:%d", __func__,
                 msg->event, msg->event_data.tbs_id, msg->event_data.valueint32);
         for (int i = 0; i < msg->event_data.valueint32; i++) {
@@ -255,8 +252,8 @@ static void lea_ccpc_process_debug(lea_ccpc_msg_t *msg)
     }
 
     case STACK_EVENT_READ_BEARER_LIST_CURRENT_CALL: {
-        LEA_TBS_CALLS_LIST_ITEM_S *calls;
-        calls = (LEA_TBS_CALLS_LIST_ITEM_S *)msg->event_data.dataarry;
+        lea_tbs_call_list_item_t *calls;
+        calls = (lea_tbs_call_list_item_t *)msg->event_data.dataarry;
         void *p = calls;
         BT_LOGD("%s, event:%d, tbs_id:%d, number:%d", __func__,
                 msg->event, msg->event_data.tbs_id, msg->event_data.valueint32);
@@ -264,7 +261,7 @@ static void lea_ccpc_process_debug(lea_ccpc_msg_t *msg)
             BT_LOGD("index:%d, state:%d, flags:%d, uri:%s",
                     calls->index, calls->state,
                     calls->flags, calls->call_uri);
-            p += sizeof(LEA_TBS_CALLS_LIST_ITEM_S) + strlen(calls->call_uri) + 1;
+            p += sizeof(lea_tbs_call_list_item_t) + strlen(calls->call_uri) + 1;
             calls = p;
         }
         break;
@@ -414,17 +411,18 @@ static void lea_ccpc_process_message(void *data)
     }
 
     case STACK_EVENT_READ_CALL_STATE: {
-        LEA_TBS_CALL_STATE_S *call_states;
-        call_states = (LEA_TBS_CALL_STATE_S *)msg->event_data.dataarry;
+        lea_tbs_call_state_t *call_states;
+        lea_tbs_call_state_t *ccp_call;
+        call_states = (lea_tbs_call_state_t *)msg->event_data.dataarry;
 
         pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
         service->info->tbs_id = msg->event_data.tbs_id;
         for (int i = 0; i < msg->event_data.valueint32; i++) {
-            if (lea_ccpc_find_call_by_index((call_states + i)->index) == NULL ||
-                lea_ccpc_find_call_by_state((call_states + i)->state) == NULL) {
-                lea_ccpc_add_call((call_states + i)->index,
-                                  (call_states + i)->state,
-                                  (call_states + i)->flags);
+            ccp_call = lea_ccpc_find_call_by_index((call_states + i)->index);
+            if (!ccp_call) {
+                lea_ccpc_add_call(call_states + i);
+            } else {
+                memcpy(ccp_call, call_states + i, sizeof(lea_tbs_call_state_t));
             }
         }
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
@@ -457,6 +455,7 @@ static void lea_ccpc_process_message(void *data)
         pthread_mutex_lock(&g_ccpc_service.ccpc_lock);
         service->info->tbs_id = msg->event_data.tbs_id;
         service->info->call_index = msg->event_data.valueint8_0;
+        bt_list_remove(g_ccpc_service.lea_calls, lea_ccpc_find_call_by_index(msg->event_data.valueint8_0));
         pthread_mutex_unlock(&g_ccpc_service.ccpc_lock);
 
         CCPC_CALLBACK_FOREACH(g_ccpc_service.callbacks, test_cb, &msg->remote_addr);
@@ -667,7 +666,7 @@ void lea_ccpc_on_incoming_call_target_bearer_uri(bt_address_t *addr, uint32_t tb
 }
 
 void lea_ccpc_on_call_state(bt_address_t *addr, uint32_t tbs_id, uint32_t number,
-                            LEA_TBS_CALL_STATE_S *states_s)
+                            lea_tbs_call_state_t *states_s)
 {
     lea_ccpc_msg_t *msg;
 
@@ -677,20 +676,20 @@ void lea_ccpc_on_call_state(bt_address_t *addr, uint32_t tbs_id, uint32_t number
     }
 
     msg = lea_ccpc_msg_new_ext(STACK_EVENT_READ_CALL_STATE, addr, tbs_id,
-                               sizeof(LEA_TBS_CALL_STATE_S) * number);
+                               sizeof(lea_tbs_call_state_t) * number);
     if (!msg) {
         BT_LOGE("%s, Failed to create msg", __func__);
         return;
     }
 
     msg->event_data.valueint32 = number;
-    memcpy(&msg->event_data.dataarry, states_s, sizeof(LEA_TBS_CALL_STATE_S) * number);
+    memcpy(&msg->event_data.dataarry, states_s, sizeof(lea_tbs_call_state_t) * number);
 
     lea_ccpc_send_msg(msg);
 }
 
 void lea_ccpc_on_bearer_list_current_calls(bt_address_t *addr, uint32_t tbs_id, uint32_t number, size_t size,
-                                           LEA_TBS_CALLS_LIST_ITEM_S *calls)
+                                           lea_tbs_call_list_item_t *calls)
 {
     lea_ccpc_msg_t *msg;
 
@@ -729,7 +728,7 @@ void lea_ccpc_on_call_friendly_name(bt_address_t *addr, uint32_t tbs_id, uint8_t
 }
 
 void lea_ccpc_on_termination_reason(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index,
-                                    uint8_t reason)
+                                    lea_adpt_termination_reason_t reason)
 {
     lea_ccpc_msg_t *msg;
 
@@ -746,7 +745,7 @@ void lea_ccpc_on_termination_reason(bt_address_t *addr, uint32_t tbs_id, uint8_t
 }
 
 void lea_ccpc_on_call_control_result(bt_address_t *addr, uint32_t tbs_id, uint8_t opcode,
-                                     uint8_t call_index, uint8_t result)
+                                     uint8_t call_index, lea_adpt_call_control_result_t result)
 {
     lea_ccpc_msg_t *msg;
 

@@ -33,6 +33,7 @@
 #include "sal.h"
 #include "sal_bluelet.h"
 #include "sal_lea_client_interface.h"
+#include "sal_lea_tbs_interface.h"
 
 static void adpt_stack_state_callback(bool enabled);
 static void adpt_storage_callback(void *data, uint32_t size);
@@ -59,8 +60,26 @@ static const LEA_AUDIO_STREAM_CALLBACK_S adpt_audio_stream_callbacks = {
     .lea_received_iso_data_cb = adpt_stream_recv_callback,
 };
 
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
+static const LEA_TBS_CALLBACK_S adpt_lea_ccp_server_callbacks = {
+    .lea_tbs_state_cb = adpt_lea_tbs_state_callback,
+    .lea_tbs_bearer_set_cb = adpt_lea_tbs_bearer_set_callback,
+    .lea_tbs_call_added_cb = adpt_lea_tbs_call_added_callback,
+    .lea_tbs_call_removed_cb = adpt_lea_tbs_call_removed_callback,
+
+    .lea_tbs_accept_cb = adpt_lea_tbs_accept_callback,
+    .lea_tbs_terminate_cb = adpt_lea_tbs_terminate_callback,
+    .lea_tbs_local_hold_cb = adpt_lea_tbs_local_hold_callback,
+    .lea_tbs_local_retrieve_cb = adpt_lea_tbs_local_retrieve_callback,
+    .lea_tbs_originate_cb = adpt_lea_tbs_originate_callback,
+    .lea_tbs_join_cb = adpt_lea_tbs_join_callback,
+};
+#endif
+
 static const LEA_MCS_CALLBACK_S adpt_lea_mcp_server_callbacks;
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
 static const LEA_TBS_CALLBACK_S adpt_lea_ccp_server_callbacks;
+#endif
 static const LEA_VCC_CALLBACK_S adpt_lea_vcs_client_callbacks;
 static const LEA_MICC_CALLBACK_S adpt_lea_mics_client_callbacks;
 static const LEA_VOCC_CALLBACK_S adpt_lea_vocs_client_callbacks;
@@ -364,7 +383,9 @@ static const LEA_INIT_INFO_CALLBACK_S client_callbacks = {
     .lea_generic_cbks = &adpt_generic_callbacks,
     .lea_audio_stream_cbks = &adpt_audio_stream_callbacks,
     .lea_mcp_server_cbks = &adpt_lea_mcp_server_callbacks,
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
     .lea_ccp_server_cbks = &adpt_lea_ccp_server_callbacks,
+#endif
     .lea_vcs_client_cbks = &adpt_lea_vcs_client_callbacks,
     .lea_mics_client_cbks = &adpt_lea_mics_client_callbacks,
     .lea_vocs_client_cbks = &adpt_lea_vocs_client_callbacks,

@@ -23,70 +23,8 @@ extern "C" {
 
 #include "bt_addr.h"
 #include "bt_device.h"
+#include "lea_audio_common.h"
 #include <stddef.h>
-
-#define MAX_CALL_PROVIDER_NAME_SIZE 16
-#define MAX_URI_SCHEMES_SIZE        16
-#define MAX_CALL_URI_SIZE           16
-#define MAX_UCI_SIZE                8
-#define MAX_FRIENDLY_NAME_SIZE      8
-
-/* LE Audio TBS struct */
-typedef struct {
-    uint32_t tbs_id; /**< ID of the TBS instance the telephone bearer attached to.*/
-    void *bearer_ref; /**< Application specified bearer identity. */
-    char provider_name[MAX_CALL_PROVIDER_NAME_SIZE]; /**< Initial Bearer Provider Name. Zero terminated UTF-8 string. */
-    char uci[MAX_UCI_SIZE]; /**< Bearer UCI. Zero terminated UTF-8 string. */
-    char uri_schemes[MAX_URI_SCHEMES_SIZE]; /**< Initial list of Bearer URI schemes supported. Zero terminated UTF-8 string. */
-    uint8_t technology; /**< Initial Bearer Technology, one of #SERVICE_LEA_TBS_BEARER_TECHNLOGY.  */
-    uint8_t signal_strength; /**< Initial Bearer Signal Strength, 0 indicates no service; 1 to 100 indicates the valid signal strength. 255 indicates that signal strength is unavailable or has no meaning.  */
-    uint8_t signal_strength_report_interval; /**< Initial Signal Strength reporting interval in seconds. 0 to 255. 0 indicates that reporting signal strength only when it is changed. */
-    uint16_t status_flags; /**< Server feature status. Bits of #SERVICE_LEA_TBS_STATUS_FLAGS. */
-    uint16_t optional_opcodes_supported; /**< Call control point optional Opcodes supported. Bits of #SERVICE_LEA_TBS_SUPPORTED_CALL_CONTROL_OPCODES. */
-} LEA_TELEPHONE_BEARER_S;
-
-typedef struct {
-    uint8_t index; /**< Call Index, 1 to 255. */
-    uint8_t state; /**< Initial Call State, one of #SERVICE_LEA_TBS_CALL_STATE. */
-    uint8_t flags; /**< Initial Call flags, bits of #SERVICE_LEA_TBS_CALL_FLAGS. */
-    char call_uri[MAX_CALL_URI_SIZE]; /**< The Incoming Call URI or Outgoing Call URI. Zero terminated UTF-8 string. Set to NULL if the URI is unknown. */
-    char incoming_target_uri[MAX_CALL_URI_SIZE]; /**< The Incoming Call Target Bearer URI. Zero terminated UTF-8 string. Set to NULL for an outgoing call or if the URI is unknown. */
-    char friendly_name[MAX_FRIENDLY_NAME_SIZE]; /**< The Friendly Name of the incoming or outgoing call. Zero terminated UTF-8 string. Set to NULL if the URI is unknown. */
-} LEA_TBS_CALL_S;
-
-typedef struct {
-    uint8_t index; /**< Call Index, 1 to 255. */
-    uint8_t state; /**< Call State, one of #SERVICE_LEA_TBS_CALL_STATE. */
-    uint8_t flags; /**< Call flags, bits of #SERVICE_LEA_TBS_CALL_FLAGS. */
-} LEA_TBS_CALL_STATE_S;
-
-typedef struct {
-    uint8_t index; /**< Call Index, 1 to 255. */
-    uint8_t state; /**< Call State, one of #SERVICE_LEA_TBS_CALL_STATE. */
-    uint8_t flags; /**< Call flags, bits of #SERVICE_LEA_TBS_CALL_FLAGS. */
-    char call_uri[0]; /**< The Incoming Call URI or Outgoing Call URI. Zero terminated UTF-8 string. Set to NULL if the URI is unknown. */
-} LEA_TBS_CALLS_LIST_ITEM_S;
-
-/** TBS call states. */
-typedef enum {
-    LEA_CCPC_CALL_STATE_INCOMING, /**< Incoming call: a remote party is calling. */
-    LEA_CCPC_CALL_STATE_DIALING, /**< Dialing (outgoing call): Call the remote party, but remote party is not being alerted. */
-    LEA_CCPC_CALL_STATE_ALERTING, /**< Alerting (outgoing call): Remote party is being alerted. */
-    LEA_CCPC_CALL_STATE_ACTIVE, /**< Active (ongoing call): The call is in an active conversation. */
-    LEA_CCPC_CALL_STATE_LOCALLY_HELD, /**< Locally Held: The call is held locally. */
-    LEA_CCPC_CALL_STATE_REMOTELY_HELD, /**< Remotely Held: The call is held by the remote party. */
-    LEA_CCPC_CALL_STATE_BOTH_HELD, /**< Locally and Remotely Held: The call is held both locally and remotely. */
-} LEA_TBS_CALL_STATE;
-
-/** Call control point opcodes. */
-typedef enum {
-    LEA_CCPC_CALL_CONTROL_ACCEPT, /**< Accept the specified incoming call. */
-    LEA_CCPC_CALL_CONTROL_TERMINATE, /**< End the specified active, alerting, dialing, incoming or held call. */
-    LEA_CCPC_CALL_CONTROL_LOCAL_HOLD, /**< Place the specified active or incoming call on local hold. */
-    LEA_CCPC_CALL_CONTROL_LOCAL_RETRIEVE, /**< If the specified call is locally held, move it to an active call. Or, if it is locally and remotely held, move it to a remotely held call.*/
-    LEA_CCPC_CALL_CONTROL_ORIGINATE, /**< Initiate a call to the remote party identified by the URI. */
-    LEA_CCPC_CALL_CONTROL_JOIN, /**< Put calls (not in remotely held state) in the list to active and join the calls. Any calls in one of the remotely held state move to remotely held state and are joined with the other calls. */
-} LEA_CALL_CONTROL_OPCODE;
 
 /**
  * @brief LE Audio ccpc test callback
