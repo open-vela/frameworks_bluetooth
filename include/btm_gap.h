@@ -247,6 +247,37 @@ typedef void (*ble_adv_started_callback)(void* gap_handle, uint8_t adv_id);
 typedef void (*ble_adv_stopped_callback)(void* gap_handle, uint8_t adv_id);
 
 /**
+ * @brief:bt link mode change callback
+ * @note: handle must be create before this funciton.
+ * @param {void*} gap_handle
+ * @param {bt_address}  remote_addr - Remote address
+ * @param {bool} active - active or sniff mode
+ * @param {uint16_t} interval - sniff interval
+ * @return {*}
+ */
+typedef void (*link_mode_change_callback)(void* gap_handle, bt_address remote_addr, bool active, uint16_t interval);
+
+/**
+ * @brief:bt scan mode change callback
+ * @note: handle must be create before this funciton.
+ * @param {void*} gap_handle
+ * @param {bt_scan_mode}  scan_mode - Scan Mode
+ * @return {*}
+ */
+typedef void (*scan_mode_change_callback)(void* gap_handle, bt_scan_mode scan_mode);
+
+/**
+ * @brief:link encryption state change callback
+ * @note: handle must be create before this funciton.
+ * @param {void*} gap_handle
+ * @param {bt_address}  remote_addr - Remote address
+ * @param {bool}  br_link - BLE or BR/EDR Link
+ * @param {bool}  encryption_on - encryption ON or OFF
+ * @return {*}
+ */
+typedef void (*link_encryption_change_callback)(void* gap_handle, bt_address remote_addr, bool br_link, bool encryption_on);
+
+/**
  * @brief:BLE connection parameters update complete callback. Connection update can be initiated by either side.
  * @note: handle must be create before this funciton.
  * @param {void*} gap_handle
@@ -323,6 +354,9 @@ typedef struct {
     link_connect_request_callback link_connect_request_cb;
     ble_adv_started_callback ble_adv_started_cb;
     ble_adv_stopped_callback ble_adv_stopped_cb;
+    link_mode_change_callback link_mode_change_cb;
+    scan_mode_change_callback scan_mode_change_cb;
+    link_encryption_change_callback link_encryption_change_cb;
     ble_connection_updated_callback ble_connection_updated_cb;
     update_ble_bonede_device_callback update_ble_bonede_device_cb;
     ble_l2cap_connection_state_callback ble_l2cap_connection_state_cb;

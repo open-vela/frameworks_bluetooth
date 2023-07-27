@@ -265,6 +265,36 @@ static void btm_ble_adv_stopped_callback(void* gap_handle, uint8_t adv_id)
     context->gap_callbacks->ble_adv_stopped_cb(gap_handle, adv_id);
 }
 
+static void btm_link_mode_change_callback(void* gap_handle, bt_address remote_addr, bool active, uint16_t interval)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->link_mode_change_cb))
+        return;
+    context->gap_callbacks->link_mode_change_cb(gap_handle, remote_addr, active, interval);
+}
+
+static void btm_scan_mode_change_callback(void* gap_handle, bt_scan_mode scan_mode)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->scan_mode_change_cb))
+        return;
+    context->gap_callbacks->scan_mode_change_cb(gap_handle, scan_mode);
+}
+
+static void btm_link_encryption_change_callback(void* gap_handle, bt_address remote_addr, bool br_link, bool encryption_on)
+{
+    if (!gap_handle)
+        return;
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    if ((NULL == context->gap_callbacks) || (NULL == context->gap_callbacks->link_encryption_change_cb))
+        return;
+    context->gap_callbacks->link_encryption_change_cb(gap_handle, remote_addr, br_link, encryption_on);
+}
+
 static void btm_ble_connection_updated_callback(void* gap_handle, bt_address remote_addr, bt_status status,
     uint16_t connection_interval, uint16_t peripheral_latency, uint16_t supervision_timeout)
 {
@@ -339,6 +369,9 @@ static const btm_gap_callbacks_t service_callbacks = {
     .link_connect_request_cb = btm_link_connect_request_callback,
     .ble_adv_started_cb = btm_ble_adv_started_callback,
     .ble_adv_stopped_cb = btm_ble_adv_stopped_callback,
+    .link_mode_change_cb = btm_link_mode_change_callback,
+    .scan_mode_change_cb = btm_scan_mode_change_callback,
+    .link_encryption_change_cb = btm_link_encryption_change_callback,
     .ble_connection_updated_cb = btm_ble_connection_updated_callback,
     .update_ble_bonede_device_cb = btm_update_ble_bonede_device_callback,
     .ble_l2cap_connection_state_cb = btm_ble_l2cap_connection_state_callback,
