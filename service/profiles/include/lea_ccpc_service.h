@@ -31,18 +31,18 @@ typedef struct {
 
 typedef struct {
     uint32_t tbs_id;
-    char provider_name[MAX_CALL_PROVIDER_NAME_SIZE];
-    char uci[MAX_UCI_SIZE];
+    char provider_name[MAX_PROVIDER_NAME_LENGTH];
+    char uci[MAX_UCI_LENGTH];
     uint8_t technology;
-    char uri_schemes[MAX_URI_SCHEMES_SIZE];
+    char uri_schemes[MAX_URI_SCHEMES_LENGTH];
     uint8_t strength;
     uint8_t interval;
     uint8_t ccid;
     uint16_t status_flags;
     uint16_t opcodes;
     uint8_t call_index;
-    char uri[MAX_CALL_URI_SIZE];
-    char friendly_name[MAX_CALL_PROVIDER_NAME_SIZE];
+    char uri[MAX_CALL_URI_LENGTH];
+    char friendly_name[MAX_PROVIDER_NAME_LENGTH];
 } bearer_tele_info_t;
 
 /*
@@ -59,11 +59,11 @@ void lea_ccpc_on_status_flags(bt_address_t *addr, uint32_t tbs_id, uint16_t stat
 void lea_ccpc_on_call_control_optional_opcodes(bt_address_t *addr, uint32_t tbs_id, uint16_t opcodes);
 void lea_ccpc_on_incoming_call(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, size_t size, const char *uri);
 void lea_ccpc_on_incoming_call_target_bearer_uri(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, size_t size, const char *uri);
-void lea_ccpc_on_call_state(bt_address_t *addr, uint32_t tbs_id, uint32_t number, LEA_TBS_CALL_STATE_S *states_s);
-void lea_ccpc_on_bearer_list_current_calls(bt_address_t *addr, uint32_t tbs_id, uint32_t number, size_t size, LEA_TBS_CALLS_LIST_ITEM_S *calls);
+void lea_ccpc_on_call_state(bt_address_t *addr, uint32_t tbs_id, uint32_t number, lea_tbs_call_state_t *states_s);
+void lea_ccpc_on_bearer_list_current_calls(bt_address_t *addr, uint32_t tbs_id, uint32_t number, size_t size, lea_tbs_call_list_item_t *calls);
 void lea_ccpc_on_call_friendly_name(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, size_t size, const char *name);
-void lea_ccpc_on_termination_reason(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, uint8_t reason);
-void lea_ccpc_on_call_control_result(bt_address_t *addr, uint32_t tbs_id, uint8_t opcode, uint8_t call_index, uint8_t result);
+void lea_ccpc_on_termination_reason(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, lea_adpt_termination_reason_t reason);
+void lea_ccpc_on_call_control_result(bt_address_t *addr, uint32_t tbs_id, uint8_t opcode, uint8_t call_index, lea_adpt_call_control_result_t result);
 
 typedef struct {
     size_t size;
