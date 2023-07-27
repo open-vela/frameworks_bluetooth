@@ -194,6 +194,9 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
     { "leac",         leac_command_exec,     0, "lea client cmd, input \'leac\' show usage"                },
 #endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
+    { "tbs",          lea_tbs_command_exec,  0, "lea tbs cmd, input \'tbs\' show usage"                    },
+#endif
     { "dump",         dump_cmd,              0, "dump adapter state"                                       },
     { "help",         usage_cmd,             0, "Usage for bttools"                                        },
     { "quit",         quit_cmd,              0, "Quit"                                                     },
@@ -272,6 +275,9 @@ static void bt_tool_init(void *handle)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
     lea_ccpc_command_init(handle);
 #endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
+    lea_tbs_command_init(handle);
+#endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
     lea_vmicps_command_init(handle);
 #endif
@@ -306,6 +312,9 @@ static void bt_tool_uninit(void *handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
     lea_ccpc_command_uninit(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
+    lea_tbs_command_uninit(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
     lea_vmicps_command_uninit(handle);
