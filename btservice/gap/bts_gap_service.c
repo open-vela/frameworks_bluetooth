@@ -246,6 +246,21 @@ static void gap_if_ble_advtise_stopped_callback(uint8_t adv_id)
     remove_advertise_handle(client);
 }
 
+static void gap_if_link_mode_change_callback(bt_address remote_addr, bool active, uint16_t interval)
+{
+    BT_GAP_CB(link_mode_change_cb, remote_addr, active, interval);
+}
+
+static void gap_if_scan_mode_change_callback(bt_scan_mode scan_mode)
+{
+    BT_GAP_CB(scan_mode_change_cb, scan_mode);
+}
+
+static void gap_if_link_encryption_change_callback(bt_address remote_addr, bool br_link, bool encryption_on)
+{
+    BT_GAP_CB(link_encryption_change_cb, remote_addr, br_link, encryption_on);
+}
+
 static void gap_if_smp_request_callback(ssp_request_data_t* request_data)
 {
     BT_GAP_CB(smp_requeset_cb, request_data);
@@ -314,6 +329,9 @@ bts_gap_callback_t bts_gap_callbacks = {
     .hci_event_cb = gap_if_hci_event_callback,
     .ble_adv_started_cb = gap_if_ble_advtise_started_callback,
     .ble_adv_stopped_cb = gap_if_ble_advtise_stopped_callback,
+    .link_mode_change_cb = gap_if_link_mode_change_callback,
+    .scan_mode_change_cb = gap_if_scan_mode_change_callback,
+    .link_encryption_change_cb = gap_if_link_encryption_change_callback,
     .smp_request_cb = gap_if_smp_request_callback,
     .ble_phy_update_cb = gap_if_ble_phy_update_callback,
     .ble_address_cb = gap_if_ble_address_callback,
