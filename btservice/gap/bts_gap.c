@@ -408,6 +408,18 @@ static void process_loop_in_gap(void* data, size_t data_size)
         }
         break;
     }
+    case GAP_LINK_MODE_CHANGED: {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->link_mode_change_cb)) {
+            g_bts_gap_callbacks->link_mode_change_cb(gap_msg->event_data.bd_addr, (gap_msg->event_data.data.link_mode == BT_MODE_ACTIVE) ? true : false, gap_msg->event_data.valueint1);
+        }
+        break;
+    }
+    case GAP_SCAN_MODE_CHANGED: {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->scan_mode_change_cb)) {
+            g_bts_gap_callbacks->scan_mode_change_cb(gap_msg->event_data.data.scan_mode);
+        }
+        break;
+    }
     case GAP_UPDATE_BLE_BONDED_DEVICES: {
         gap_ble_bond_store(gap_msg->event_data.data.ble_bonded_update.bonded_device_list, gap_msg->event_data.data.ble_bonded_update.count_in);
         if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->update_ble_bonede_device_cb)) {
@@ -458,6 +470,13 @@ static void process_loop_in_gap(void* data, size_t data_size)
     case GAP_SERVICE_DISCOVERED: {
         if (!gap_msg->event_data.data.discovery_service.services)
             free(gap_msg->event_data.data.discovery_service.services);
+        break;
+    }
+    case GAP_LINK_ENCRYPTION_STATE_CHANGED: {
+        if ((g_bts_gap_callbacks) && (g_bts_gap_callbacks->link_encryption_change_cb)) {
+            g_bts_gap_callbacks->link_encryption_change_cb(gap_msg->event_data.bd_addr, gap_msg->event_data.data.link_encryption.br_link,
+                gap_msg->event_data.data.link_encryption.encryption_on);
+        }
         break;
     }
     case GAP_BLE_ADD_WHITE_LIST: {
