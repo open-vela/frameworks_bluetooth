@@ -269,10 +269,26 @@ config BLUETOOTH_LEAUDIO_SERVER
 	bool "enable bluetooth leaudio server feature"
 	default n
 
+config BLUETOOTH_LEAUDIO_TBS
+	bool "enable bluetooth leaudio tbs feature"
+	default n
+	depends on BLUETOOTH_LEAUDIO_CLIENT
+
 config BLUETOOTH_LEAUDIO_CCPC
 	bool "enable bluetooth leaudio ccpc feature"
 	default n
 	depends on BLUETOOTH_LEAUDIO_SERVER
+
+if BLUETOOTH_LEAUDIO_TBS
+config BLUETOOTH_LEAUDIO_TBS_PRIMARY_SLOT
+	int "LE Audio TBS select primary modem slot"
+	default 0
+
+config BLUETOOTH_LEAUDIO_TBS_CALL_NAME
+	string "LE Audio call name"
+	default "/ril_0/voicecall0"
+
+endif # BLUETOOTH_LEAUDIO_TBS
 
 if BLUETOOTH_LEAUDIO_CCPC
 config BLUETOOTH_LEAUDIO_SERVER_CALL_CONTROL_NUMBER
