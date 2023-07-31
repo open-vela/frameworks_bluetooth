@@ -44,8 +44,8 @@ bt_status_t bt_sal_lea_ucc_group_request_release(uint32_t group_id);
 bt_status_t bt_sal_lea_ucc_group_request_update_metadata(uint32_t group_id, uint8_t number, lea_metadata_t *data);
 bt_status_t bt_sal_lea_ucc_group_request_delete(uint32_t group_id);
 
-lea_send_iso_data_t *bt_sal_lea_alloc_send_buffer(uint16_t length, uint16_t handle);
-bool bt_sal_lea_is_source_stream(uint32_t stream_id);
-bt_status_t bt_sal_lea_send_iso_data(lea_send_iso_data_t *packet);
+lea_send_iso_data_t *bt_sal_leac_alloc_send_buffer(uint16_t length, uint16_t handle);
+bool bt_sal_leac_is_source_stream(uint32_t stream_id);
+bt_status_t bt_sal_leac_send_iso_data(lea_send_iso_data_t *packet);
 
 #endif /* __SAL_LEA_CLIENT_INTERFACE_H__ */

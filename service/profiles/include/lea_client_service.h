@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef __LEA_SERVER_SERVICE_H__
-#define __LEA_SERVER_SERVICE_H__
+#ifndef __LEA_CLIENT_SERVICE_H__
+#define __LEA_CLIENT_SERVICE_H__
 
 /****************************************************************************
  * Included Files

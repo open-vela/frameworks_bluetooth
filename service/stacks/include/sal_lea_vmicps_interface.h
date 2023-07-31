@@ -28,7 +28,6 @@
 typedef struct {
     uint8_t volume;
     uint8_t mute;
-    uint8_t change_counter;
 } service_lea_vcs_volume_state_s;
 
 bt_status_t bt_sal_vmicps_notify_vcs_volume(int volume);
@@ -37,7 +36,7 @@ bt_status_t bt_sal_vmicps_notify_vcs_volume_flags(int flags);
 bt_status_t bt_sal_vmicps_notify_mics_mute(int mute);
 
 // leaudio vcs callbacks from barrot stack
-void adpt_lea_vcs_set_volume_state_callback(service_lea_vcs_volume_state_s *vol_state);
+void adpt_lea_vcs_set_volume_state_callback(SERVICE_LEA_VCS_VOLUME_STATE_S *vol_state);
 void adpt_lea_vcs_set_volume_flags_callback(uint8_t vol_flags);
 
 // leaudio mics callbacks from barrot stack

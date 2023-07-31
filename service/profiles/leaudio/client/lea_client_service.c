@@ -360,7 +360,7 @@ static void on_lea_audio_send(uint32_t stream_id, uint8_t *buffer, uint16_t leng
         return;
     }
 
-    iso_pkt = bt_sal_lea_alloc_send_buffer(stream->sdu_size, stream->iso_handle);
+    iso_pkt = bt_sal_leac_alloc_send_buffer(stream->sdu_size, stream->iso_handle);
     iso_pkt->sdu_length = stream->sdu_size;
 
     size = lea_audio_source_read(stream->stream_id, iso_pkt->sdu, iso_pkt->sdu_length);
@@ -369,7 +369,7 @@ static void on_lea_audio_send(uint32_t stream_id, uint8_t *buffer, uint16_t leng
         return;
     }
 
-    bt_sal_lea_send_iso_data(iso_pkt);
+    bt_sal_leac_send_iso_data(iso_pkt);
 }
 
 static bt_status_t lea_client_init(void)
@@ -695,7 +695,7 @@ lea_audio_stream_t *lea_client_add_stream(
     }
 
     audio_stream->stream_id = stream_id;
-    audio_stream->is_source = bt_sal_lea_is_source_stream(stream_id);
+    audio_stream->is_source = bt_sal_leac_is_source_stream(stream_id);
     memcpy(&audio_stream->addr, remote_addr, sizeof(bt_address_t));
 
     pthread_mutex_lock(&service->stream_lock);
