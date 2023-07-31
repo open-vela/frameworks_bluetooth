@@ -1077,7 +1077,7 @@ static void lea_audio_send_data(lea_audio_stream_t *stream, uint8_t *buffer, uin
     memcpy(iso_pkt->sdu, buffer, length);
     iso_pkt->sdu_length = length;
 
-    bt_sal_lea_send_iso_data(iso_pkt);
+    bt_sal_leac_send_iso_data(iso_pkt);
 }
 
 static void on_lea_source_audio_send(uint8_t *buffer, uint16_t length)

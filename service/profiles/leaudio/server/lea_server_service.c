@@ -862,7 +862,7 @@ lea_audio_stream_t *lea_server_add_stream(
     }
 
     audio_stream->stream_id = stream_id;
-    audio_stream->is_source = bt_sal_lea_is_source_stream(stream_id);
+    audio_stream->is_source = bt_sal_leas_is_source_stream(stream_id);
     memcpy(&audio_stream->addr, remote_addr, sizeof(bt_address_t));
     pthread_mutex_lock(&service->stream_lock);
     bt_list_add_tail(service->leas_stream, audio_stream);

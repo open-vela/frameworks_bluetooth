@@ -299,7 +299,7 @@ static void bt_tool_uninit(void *handle)
     gatts_command_uninit(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
-    lea_server_command_uninit(handle);
+    leas_command_uninit(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPC
     lea_mcpc_commond_uninit(handle);
