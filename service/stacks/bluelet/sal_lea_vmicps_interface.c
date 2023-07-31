@@ -30,10 +30,13 @@
 #include "sal_lea_vmicps_interface.h"
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
-void adpt_lea_vcs_set_volume_state_callback(service_lea_vcs_volume_state_s *vol_state)
+void adpt_lea_vcs_set_volume_state_callback(SERVICE_LEA_VCS_VOLUME_STATE_S *vol_state)
 {
     BT_LOGD("%s volume:%d, mute:%d", __func__, vol_state->volume, vol_state->mute);
-    lea_vmicps_on_vcs_volume_state_changed(vol_state);
+    service_lea_vcs_volume_state_s volume_state;
+    volume_state.volume = vol_state->volume;
+    volume_state.mute = vol_state->mute;
+    lea_vmicps_on_vcs_volume_state_changed(&volume_state);
 }
 
 void adpt_lea_vcs_set_volume_flags_callback(uint8_t vol_flags)

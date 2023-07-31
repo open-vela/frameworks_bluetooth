@@ -22,7 +22,6 @@
 #include "bt_device.h"
 #include "bt_lea_vmicps.h"
 #include "sal_lea_vmicps_interface.h"
-#include "stack_adapter_lea_common.h"
 
 void lea_vmicps_on_vcs_volume_state_changed(service_lea_vcs_volume_state_s *vol_state);
 void lea_vmicps_on_vcs_volume_flags_changed(uint8_t flags);

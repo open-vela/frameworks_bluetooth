@@ -338,7 +338,7 @@ static void adpt_streaming_start_callback(SERVICE_LEA_AUDIO_STREAM_S *lea_stream
     audio_stream.stream_id = lea_stream->stream_id;
     audio_stream.iso_handle = lea_stream->iso_handle;
     audio_stream.max_sdu = lea_stream->max_sdu;
-    audio_stream.is_source = bt_sal_lea_is_source_stream(lea_stream->stream_id);
+    audio_stream.is_source = bt_sal_leac_is_source_stream(lea_stream->stream_id);
     memcpy(&audio_stream.codec_cfg, &lea_stream->codec_cfg, sizeof(lea_codec_config_t));
     audio_stream.channal_num = lea_client_get_channel(audio_stream.codec_cfg.allocation);
     audio_stream.sdu_size = audio_stream.channal_num * audio_stream.codec_cfg.blocks * audio_stream.codec_cfg.octets;
@@ -511,18 +511,18 @@ void bt_sal_lea_client_cleanup()
     stack_adapter_lea_cleanup();
 }
 
-bool bt_sal_lea_is_source_stream(uint32_t stream_id)
+bool bt_sal_leac_is_source_stream(uint32_t stream_id)
 {
     SERVICE_LEA_ISO_STREAM_ID_S *sid = (SERVICE_LEA_ISO_STREAM_ID_S *)&stream_id;
     return sid->features & LEA_IGIS_FEATURE_SOURCE;
 }
 
-lea_send_iso_data_t *bt_sal_lea_alloc_send_buffer(uint16_t length, uint16_t handle)
+lea_send_iso_data_t *bt_sal_leac_alloc_send_buffer(uint16_t length, uint16_t handle)
 {
     return (lea_send_iso_data_t *)stack_adapter_lea_get_iso_data_sent_buffer(length, handle);
 }
 
-bt_status_t bt_sal_lea_send_iso_data(lea_send_iso_data_t *packet)
+bt_status_t bt_sal_leac_send_iso_data(lea_send_iso_data_t *packet)
 {
     SAL_CHECK_RET(stack_adapter_lea_send_iso_data((SERVICE_LEA_SENT_ISO_DATA_S *)packet), SERVICE_BT_STATUS_SUCCESS);
 

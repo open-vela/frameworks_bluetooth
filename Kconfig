@@ -300,6 +300,7 @@ endif # BLUETOOTH_LEAUDIO_MCPC
 config BLUETOOTH_LEAUDIO_VMICPS
 	bool "enable bluetooth leaudio vmicps feature"
 	default n
+	depends on BLUETOOTH_LEAUDIO_SERVER
 
 if BLUETOOTH_LEAUDIO_VMICPS
 config BLUETOOTH_LEAUDIO_VCS_VOLUME_STEP
