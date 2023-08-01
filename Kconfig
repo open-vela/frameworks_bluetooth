@@ -29,6 +29,18 @@ config BLUETOOTH_THREAD_PRIORITY
 	help
 		bluetooth thread priority
 
+config BTTOOL_THREAD_PRIORITY
+	int "bttool thread priority"
+	default 250
+	help
+		bttool thread priority
+
+config BTTOOL_THREAD_STACK_SIZE
+	int "bttool thread stack size"
+	default 8196
+	help
+		bttool thread stack size
+
 config BTSTACK_THREAD_STACK_SIZE
 	int "btstack thread stack size"
 	default 4096
