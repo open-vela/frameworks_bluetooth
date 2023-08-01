@@ -54,6 +54,9 @@
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
 #include "lea_client_service.h"
 #endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPS
+#include "lea_mcps_service.h"
+#endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
 #include "lea_tbs_service.h"
 #endif
@@ -146,6 +149,10 @@ void bt_profile_init(void)
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
     register_lea_client_service();
+#endif
+
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPS
+    register_lea_mcps_service();
 #endif
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
