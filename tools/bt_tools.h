@@ -122,6 +122,10 @@ int leac_command_init(void *handle);
 void leac_command_uninit(void *handle);
 int leac_command_exec(void *handle, int argc, char *argv[]);
 
+int lea_mcps_commond_init(void *handle);
+void lea_mcps_commond_uninit(void *handle);
+int lea_mcps_command_exec(void *handle, int argc, char *argv[]);
+
 int lea_tbs_command_init(void *handle);
 void lea_tbs_command_uninit(void *handle);
 int lea_tbs_command_exec(void *handle, int argc, char *argv[]);

@@ -119,6 +119,10 @@ ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_CLIENT), y)
 	CSRCS += service/profiles/leaudio/client/*.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_MCPS), y)
+    CSRCS += service/profiles/leaudio/mcs/*.c
+endif
+
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_TBS), y)
 	CSRCS += service/profiles/leaudio/tbs/*.c
 endif
@@ -172,6 +176,10 @@ endif
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_CLIENT), y)
 	CSRCS += tools/lea_client.c
+endif
+
+ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_MCPS), y)
+    CSRCS += tools/lea_mcps.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_TBS), y)
