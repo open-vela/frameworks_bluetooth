@@ -60,6 +60,9 @@
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
 #include "lea_tbs_service.h"
 #endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
+#include "lea_vmicpc_service.h"
+#endif
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
 #include "a2dp_sink_service.h"
@@ -157,6 +160,10 @@ void bt_profile_init(void)
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
     register_lea_tbs_service();
+#endif
+
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
+    register_lea_vmicpc_service();
 #endif
 }
 

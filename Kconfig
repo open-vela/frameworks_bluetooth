@@ -318,6 +318,11 @@ config BLUETOOTH_LEAUDIO_SERVER_MEDIA_CONTROL_NUMBER
 
 endif # BLUETOOTH_LEAUDIO_MCPC
 
+config BLUETOOTH_LEAUDIO_VMICPC
+	bool "enable bluetooth leaudio vmicpc feature"
+	default n
+	depends on BLUETOOTH_LEAUDIO_CLIENT
+
 config BLUETOOTH_LEAUDIO_VMICPS
 	bool "enable bluetooth leaudio vmicps feature"
 	default n
