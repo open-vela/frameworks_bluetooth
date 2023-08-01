@@ -33,6 +33,7 @@
 #include "sal.h"
 #include "sal_bluelet.h"
 #include "sal_lea_client_interface.h"
+#include "sal_lea_mcps_interface.h"
 #include "sal_lea_tbs_interface.h"
 
 static void adpt_stack_state_callback(bool enabled);
@@ -60,6 +61,53 @@ static const LEA_AUDIO_STREAM_CALLBACK_S adpt_audio_stream_callbacks = {
     .lea_received_iso_data_cb = adpt_stream_recv_callback,
 };
 
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPS
+static const LEA_MCS_CALLBACK_S adpt_lea_mcp_server_callbacks = {
+    .lea_mcs_state_cb = adpt_lea_mcs_state_callback,
+    .lea_mcs_player_set_cb = adpt_lea_mcs_player_set_callback,
+    .lea_mcs_object_added_cb = adpt_lea_mcs_object_added_callback,
+
+    .lea_mcs_set_position_cb = adpt_lea_mcs_set_position_callback,
+    .lea_mcs_set_playback_speed_cb = adpt_lea_mcs_set_playback_speed_callback,
+    .lea_mcs_set_current_track_cb = adpt_lea_mcs_set_current_track_callback,
+    .lea_mcs_set_next_track_cb = adpt_lea_mcs_set_next_track_callback,
+    .lea_mcs_set_current_group_cb = adpt_lea_mcs_set_current_group_callback,
+    .lea_mcs_set_playing_order_cb = adpt_lea_mcs_set_playing_order_callback,
+
+    .lea_mcs_play_cb = adpt_lea_mcs_play_callback,
+    .lea_mcs_pause_cb = adpt_lea_mcs_pause_callback,
+    .lea_mcs_fast_rewind_cb = adpt_lea_mcs_fast_rewind_callback,
+    .lea_mcs_fast_forward_cb = adpt_lea_mcs_fast_forward_callback,
+    .lea_mcs_stop_cb = adpt_lea_mcs_stop_callback,
+    .lea_mcs_move_cb = adpt_lea_mcs_move_callback,
+    .lea_mcs_previous_segment_cb = adpt_lea_mcs_previous_segment_callback,
+    .lea_mcs_next_segment_cb = adpt_lea_mcs_next_segment_callback,
+    .lea_mcs_first_segment_cb = adpt_lea_mcs_first_segment_callback,
+    .lea_mcs_last_segment_cb = adpt_lea_mcs_last_segment_callback,
+    .lea_mcs_goto_segment_cb = adpt_lea_mcs_goto_segment_callback,
+    .lea_mcs_previous_track_cb = adpt_lea_mcs_previous_track_callback,
+    .lea_mcs_next_track_cb = adpt_lea_mcs_next_track_callback,
+    .lea_mcs_first_track_cb = adpt_lea_mcs_first_track_callback,
+    .lea_mcs_last_track_cb = adpt_lea_mcs_last_track_callback,
+    .lea_mcs_goto_track_cb = adpt_lea_mcs_goto_track_callback,
+    .lea_mcs_previous_group_cb = adpt_lea_mcs_previous_group_callback,
+    .lea_mcs_next_group_cb = adpt_lea_mcs_next_group_callback,
+    .lea_mcs_first_group_cb = adpt_lea_mcs_first_group_callback,
+    .lea_mcs_last_group_cb = adpt_lea_mcs_last_group_callback,
+    .lea_mcs_goto_group_cb = adpt_lea_mcs_goto_group_callback,
+
+    .lea_mcs_search_track_name_cb = adpt_lea_mcs_search_track_name_callback,
+    .lea_mcs_search_artist_name_cb = adpt_lea_mcs_search_artist_name_callback,
+    .lea_mcs_search_album_name_cb = adpt_lea_mcs_search_album_name_callback,
+    .lea_mcs_search_group_name_cb = adpt_lea_mcs_search_group_name_callback,
+    .lea_mcs_search_earliest_year_cb = adpt_lea_mcs_search_earliest_year_callback,
+    .lea_mcs_search_latest_year_cb = adpt_lea_mcs_search_latest_year_callback,
+    .lea_mcs_search_genre_cb = adpt_lea_mcs_search_genre_callback,
+    .lea_mcs_search_tracks_cb = adpt_lea_mcs_search_tracks_callback,
+    .lea_mcs_search_groups_cb = adpt_lea_mcs_search_groups_callback,
+};
+#endif
+
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
 static const LEA_TBS_CALLBACK_S adpt_lea_ccp_server_callbacks = {
     .lea_tbs_state_cb = adpt_lea_tbs_state_callback,
@@ -76,7 +124,9 @@ static const LEA_TBS_CALLBACK_S adpt_lea_ccp_server_callbacks = {
 };
 #endif
 
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPS
 static const LEA_MCS_CALLBACK_S adpt_lea_mcp_server_callbacks;
+#endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
 static const LEA_TBS_CALLBACK_S adpt_lea_ccp_server_callbacks;
 #endif
@@ -382,7 +432,9 @@ static void adpt_stream_recv_callback(LEA_IS_ID stream_id, SERVICE_LEA_RECV_ISO_
 static const LEA_INIT_INFO_CALLBACK_S client_callbacks = {
     .lea_generic_cbks = &adpt_generic_callbacks,
     .lea_audio_stream_cbks = &adpt_audio_stream_callbacks,
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPS
     .lea_mcp_server_cbks = &adpt_lea_mcp_server_callbacks,
+#endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
     .lea_ccp_server_cbks = &adpt_lea_ccp_server_callbacks,
 #endif
