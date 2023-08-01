@@ -35,6 +35,7 @@
 #include "sal_lea_client_interface.h"
 #include "sal_lea_mcps_interface.h"
 #include "sal_lea_tbs_interface.h"
+#include "sal_lea_vmicpc_interface.h"
 
 static void adpt_stack_state_callback(bool enabled);
 static void adpt_storage_callback(void *data, uint32_t size);
@@ -132,8 +133,21 @@ static const LEA_TBS_CALLBACK_S adpt_lea_ccp_server_callbacks;
 #endif
 static const LEA_VCC_CALLBACK_S adpt_lea_vcs_client_callbacks;
 static const LEA_MICC_CALLBACK_S adpt_lea_mics_client_callbacks;
+
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
+static const LEA_VCC_CALLBACK_S adpt_lea_vcs_client_callbacks = {
+    .lea_vcc_volume_state_cb = adpt_lea_vcc_volume_state_cbk,
+    .lea_vcc_volume_flags_cb = adpt_lea_vcc_volume_flags_cbk,
+};
+
+static const LEA_MICC_CALLBACK_S adpt_lea_mics_client_callbacks = {
+    .lea_micc_mute_cb = adpt_lea_micc_mute_cbk,
+};
+
 static const LEA_VOCC_CALLBACK_S adpt_lea_vocs_client_callbacks;
 static const LEA_AICC_CALLBACK_S adpt_lea_aics_client_callbacks;
+#endif
+
 static const LEA_CSIC_CALLBACK_S adpt_lea_csip_client_callbacks;
 static const LEA_BCSRC_CALLBACK_S adpt_lea_bcsrc_callabcks;
 
@@ -438,10 +452,12 @@ static const LEA_INIT_INFO_CALLBACK_S client_callbacks = {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
     .lea_ccp_server_cbks = &adpt_lea_ccp_server_callbacks,
 #endif
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
     .lea_vcs_client_cbks = &adpt_lea_vcs_client_callbacks,
     .lea_mics_client_cbks = &adpt_lea_mics_client_callbacks,
     .lea_vocs_client_cbks = &adpt_lea_vocs_client_callbacks,
     .lea_aics_client_cbks = &adpt_lea_aics_client_callbacks,
+#endif
     .lea_csip_client_cbks = &adpt_lea_csip_client_callbacks,
     .lea_uc_client_cbks = &adpt_lea_ucc_client_callbacks,
     .lea_bcsrc_cbks = &adpt_lea_bcsrc_callabcks,
