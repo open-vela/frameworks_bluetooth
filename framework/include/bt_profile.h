@@ -35,6 +35,7 @@ extern "C" {
 #define PROFILE_TBS_NAME       "TBS"
 #define PROFILE_CCPC_NAME      "CCPC"
 #define PROFILE_VMICPS_NAME    "VMICPS"
+#define PROFILE_VMICPC_NAME    "VMICPC"
 
 enum profile_id {
     PROFILE_A2DP,
@@ -54,6 +55,7 @@ enum profile_id {
     PROFILE_LEAUDIO_CLIENT,
     PROFILE_LEAUDIO_MCPS,
     PROFILE_LEAUDIO_TBS,
+    PROFILE_LEAUDIO_VMICPC,
     PROFILE_MAX
 };
 
