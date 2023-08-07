@@ -37,6 +37,7 @@
 #include <string.h>
 #include <system/readline.h>
 
+#include "btm_common_define.h"
 #include "btm_gap.h"
 #include "btm_manager.h"
 #include "stack_adapter_gap.h"
@@ -86,6 +87,7 @@ static int bt_reset_btinfo(void* handle, int argc, char** argv);
 static int ble_set_public_address(void* handle, int argc, char** argv);
 static int add_whitelist_device(void* handle, int argc, char** argv);
 static int add_resolving_device(void* handle, int argc, char** argv);
+static int add_irk_to_resolving_list(void* handle, int argc, char** argv);
 static int remove_whitelist_device(void* handle, int argc, char** argv);
 static int remove_resolving_device(void* handle, int argc, char** argv);
 static int get_ble_bonded_devices(void* handle, int argc, char** argv);
@@ -343,6 +345,7 @@ static bt_command_t g_gap_tables[] = {
     BT_CMD("removewhitelist", remove_whitelist_device, "\"remove whitle list device            param: <addr> \""),
     BT_CMD("addresolvinglist", add_resolving_device, "\"add resovling list device               param: <addr> \""),
     BT_CMD("removesolvinglist", remove_resolving_device, "\"remove resovling list device      param: <addr> \""),
+    BT_CMD("addirk", add_irk_to_resolving_list, "\"add irk to resovling list         param: <id addr type><id addr><peer IRK> \""),
     BT_CMD("sspreply", ssp_reply, "\"reply remote relpyrequest      param: <addr> <keycode> \""),
     BT_CMD("getblebonded", get_ble_bonded_devices, "\"get ble bonded device  \""),
     BT_CMD("getbleconnected", get_ble_connected_devices, "\"get ble connected device  \""),
@@ -835,6 +838,7 @@ static int add_resolving_device(void* handle, int argc, char** argv)
     free(device);
     return 0;
 }
+
 static int remove_whitelist_device(void* handle, int argc, char** argv)
 {
     if (argc < 1)
@@ -870,6 +874,58 @@ static int remove_resolving_device(void* handle, int argc, char** argv)
     free(device);
     return 0;
 }
+
+static int add_irk_to_resolving_list(void* handle, int argc, char** argv)
+{
+    if (argc != 3)
+        return -1;
+
+    if (strlen(argv[2]) != BT_COMMON_KEY_LENGTH << 1) {
+        BT_LOGE("invalid peer IRK length");
+        return 0;
+    }
+
+    bt_device_t* device = malloc(sizeof(bt_device_t));
+    bt_common_key peer_irk;
+    uint8_t* p_irk;
+    char bytes[3] = { 0 };
+    int i;
+    int ret;
+
+    if (!device) {
+        BT_LOGE("error, device malloc failed");
+        return 0;
+    }
+    memset(device, 0, sizeof(bt_device_t));
+
+    device->addr_type = atoi(argv[0]);
+    str2ba(argv[1], device->addr);
+
+    p_irk = peer_irk;
+    for (i = 0; i < strlen(argv[2]); i += 2) {
+        memcpy(bytes, argv[2] + i, 2);
+        *p_irk++ = ret = strtol(bytes, NULL, 16);
+        if (ret < 0)
+            goto out;
+    }
+
+    BT_LOGD("peer identity address type = %d", device->addr_type);
+    BT_LOGD("peer identity address = %02x:%02x:%02x:%02x:%02x:%02x",
+        device->addr[5], device->addr[4], device->addr[3],
+        device->addr[2], device->addr[1], device->addr[0]);
+    BT_LOGD("peer IRK = %02x%02x%02x%02x:%02x%02x%02x%02x:%02x%02x%02x%02x:%02x%02x%02x%02x",
+        peer_irk[0], peer_irk[1], peer_irk[2], peer_irk[3],
+        peer_irk[4], peer_irk[5], peer_irk[6], peer_irk[7],
+        peer_irk[8], peer_irk[9], peer_irk[10], peer_irk[11],
+        peer_irk[12], peer_irk[13], peer_irk[14], peer_irk[15]);
+
+    gap_test_interface->ble_add_irk_to_resolving_list(g_gap_handle, device, peer_irk);
+
+out:
+    free(device);
+    return 0;
+}
+
 static int get_ble_bonded_devices(void* handle, int argc, char** argv)
 {
     int num = gap_test_interface->ble_get_bonded_devices(g_gap_handle, NULL, 0);

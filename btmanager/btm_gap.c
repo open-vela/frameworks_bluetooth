@@ -515,7 +515,7 @@ static bt_result_code btm_set_scan_mode(void* gap_handle, bt_scan_mode scan_mode
     return ret;
 }
 
-//bt_result_code btGapSetLinkMode(bt_address remote_addr, BTLinkMode link_mode);
+// bt_result_code btGapSetLinkMode(bt_address remote_addr, BTLinkMode link_mode);
 static bt_result_code btm_start_discovery(void* gap_handle, uint32_t timeout)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -746,6 +746,15 @@ static bt_result_code btm_ble_remove_resolving_list(void* gap_handle, bt_device_
     return ret;
 }
 
+static bt_result_code btm_ble_add_irk_to_resolving_list(void* gap_handle, bt_device_t* device, bt_common_key peer_irk)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    CHECK_PTR_RETURN(gap_handle, ret);
+    gap_context_t* context = (gap_context_t*)gap_handle;
+    BT_GAP_INTERFACE(context->service_interface, ble_add_irk_to_resolving_list, ret, gap_handle, device, peer_irk);
+    return ret;
+}
+
 static bt_result_code btm_ble_set_phy(void* gap_handle, bt_device_t* device, ble_phy_type tx_phy, ble_phy_type rx_phy)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -891,6 +900,7 @@ static btm_gap_interface_t gap_interface = {
     .ble_remove_white_list = btm_ble_remove_white_list,
     .ble_add_resolving_list = btm_ble_add_resolving_list,
     .ble_remove_resolving_list = btm_ble_remove_resolving_list,
+    .ble_add_irk_to_resolving_list = btm_ble_add_irk_to_resolving_list,
     .ble_set_phy = btm_ble_set_phy,
     .ble_listen_l2cap_channel = btm_ble_listen_l2cap_channel,
     .ble_send_packet = btm_ble_send_packet,
