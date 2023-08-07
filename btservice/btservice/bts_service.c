@@ -178,7 +178,7 @@ uv_poll_t* bts_uv_poll_start(int fd, int pevents, uv_poll_cb cb,
     }
 
 #ifdef CONFIG_EVENT_FD
-    if (service_state >= BTM_STATE_TURNING_ON) {
+    if (service_state >= BTM_STATE_TURNING_ON && bt_event_poll) {
         ret = bts_service_event_poll_signal(bt_event_poll);
         if (ret < 0)
             BT_LOGE("eventfd_write failed: %d", ret);
