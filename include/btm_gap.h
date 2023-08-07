@@ -418,11 +418,11 @@ typedef struct {
     bt_result_code (*bt_ssp_reply)(void* gap_handle, spp_reply_data_t* reply_data);
 
     /**
-     * @brief: gap  create bonding with remote deivce, including acl link creation
-    *  and required pairing (bonding) procedure and sdp procedure
+     * @brief: gap create bonding with remote deivce, including acl link creation
+     *  and required pairing (bonding) procedure and sdp procedure
      * @note: handle must be create before this funciton.
      * @param {void*} handle
-     * @param {bt_device_t*} device -  reomte device info.
+     * @param {bt_device_t*} device - reomte device info.
      * @return {bt_result_code} error status code (0- success)
      */
     bt_result_code (*bt_create_bond)(void* handle, bt_device_t* device);
@@ -718,6 +718,16 @@ typedef struct {
     bt_result_code (*ble_remove_resolving_list)(void* gap_handle, bt_device_t* device);
 
     /**
+     * @brief: gap add a record to the contrller resolving list with specified IRKs.
+     * @note: handle must be create before this funciton.
+     * @param {void*} gap_handle
+     * @param {bt_device_t*} device - remote device
+     * @param {bt_common_key} peer_irk - IRK for remote device
+     * @return {bt_result_code} error status code (0- success)
+     */
+    bt_result_code (*ble_add_irk_to_resolving_list)(void* gap_handle, bt_device_t* device, bt_common_key peer_irk);
+
+    /**
      * @brief: gap set the current transmitter phy and receiver phy of the connection.
      * @note: handle must be create before this funciton.
      * @param {void*} gap_handle
@@ -835,11 +845,11 @@ typedef struct {
      * @note: handle must be create before this funciton.
      * @param {void*} gap_handle
      * @param {bt_scan_type} scan_type - bt scan type (standard, interlaced).
-       *                    scan_type_unknown to ignore.
-     * @param {uint16_t} scan_interval -  inquiry scan interval. range 0x0012 - 0x1000 (unit 0.625ms).
-       *                        any invalid value to ignore.
-     * @param {uint16_t} scan_window -  inquiry scan window. range 0x0011 - scan_interval (unit 0.625ms).
-                             any invalid value to ignore.
+     *                                   scan_type_unknown to ignore.
+     * @param {uint16_t} scan_interval - inquiry scan interval. range 0x0012 - 0x1000 (unit 0.625ms).
+     *                                   any invalid value to ignore.
+     * @param {uint16_t} scan_window -   inquiry scan window. range 0x0011 - scan_interval (unit 0.625ms).
+                                         any invalid value to ignore.
      * @return {bt_result_code} error status code (0- success)
      */
     bt_result_code (*bt_set_inquiry_scan_parameters)(void* gap_handle, bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window);
@@ -849,11 +859,11 @@ typedef struct {
      * @note: handle must be create before this funciton.
      * @param {void*} gap_handle
      * @param {bt_scan_type} scan_type - bt scan type (standard, interlaced).
-       *                    scan_type_unknown to ignore.
-     * @param {uint16_t} scan_interval -  page scan interval. range 0x0012 - 0x1000 (unit 0.625ms).
-                               any invalid value to ignore.
-     * @param {uint16_t} scan_window -  page scan window. range 0x0011 - scan_interval (unit 0.625ms).
-                             any invalid value to ignore.
+     *                                   scan_type_unknown to ignore.
+     * @param {uint16_t} scan_interval - page scan interval. range 0x0012 - 0x1000 (unit 0.625ms).
+     *                                   any invalid value to ignore.
+     * @param {uint16_t} scan_window -   page scan window. range 0x0011 - scan_interval (unit 0.625ms).
+     *                                   any invalid value to ignore.
      * @return {bt_result_code} error status code (0- success)
      */
     bt_result_code (*bt_set_page_scan_parameters)(void* gap_handle, bt_scan_type scan_type, uint16_t scan_interval, uint16_t scan_window);
@@ -874,7 +884,7 @@ typedef struct {
      * @note: handle must be create before this funciton.
      * @param {void*} gap_handle
      * @param {bt_afh_radio_channel_info_t} channels - Specifies the set of channels. NULL specifies that no other
- *                2.4G wireless is detected.
+     *                                                 2.4G wireless is detected.
      * @param {uint16_t} number - Number of channels. Ignored if channels is NULL.
      * @return {bt_result_code} error status code (0- success)
      */
