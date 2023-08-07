@@ -760,6 +760,14 @@ static bt_result_code bts_if_ble_remove_resolving_list(void* gap_handle, bt_devi
     ret = bts_ble_remove_resolving_list(device);
     return ret;
 }
+static bt_result_code bts_if_ble_add_irk_to_resolving_list(void* gap_handle, bt_device_t* device, bt_common_key peer_irk)
+{
+    bt_result_code ret = BT_RESULT_FAILED;
+    if (!gap_is_handle_valid(gap_handle))
+        return ret;
+    ret = service_adapter_gap_ble_set_remote_irk(device->addr, device->addr_type, peer_irk);
+    return ret;
+}
 static bt_result_code bts_if_ble_set_phy(void* gap_handle, bt_device_t* device, ble_phy_type tx_phy, ble_phy_type rx_phy)
 {
     bt_result_code ret = BT_RESULT_FAILED;
@@ -893,6 +901,7 @@ static btm_gap_interface_t gap_interface = {
     .ble_remove_white_list = bts_if_ble_remove_white_list,
     .ble_add_resolving_list = bts_if_ble_add_resolving_list,
     .ble_remove_resolving_list = bts_if_ble_remove_resolving_list,
+    .ble_add_irk_to_resolving_list = bts_if_ble_add_irk_to_resolving_list,
     .ble_set_phy = bts_if_ble_set_phy,
     .ble_listen_l2cap_channel = bts_if_ble_listen_l2cap_channel,
     .ble_send_packet = bts_if_ble_send_packet,
