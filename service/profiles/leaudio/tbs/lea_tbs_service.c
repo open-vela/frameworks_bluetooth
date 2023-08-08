@@ -198,7 +198,8 @@ static void lea_tbs_process_message(void *data)
             return;
         }
 
-        if (call->state == ADPT_LEA_TBS_CALL_STATE_ACTIVE) {
+        if (call->state == ADPT_LEA_TBS_CALL_STATE_INCOMING || call->state == ADPT_LEA_TBS_CALL_STATE_ACTIVE
+            || call->state == ADPT_LEA_TBS_CALL_STATE_REMOTELY_HELD) {
             tele_service_hold_call();
             lea_tbs_call_control_response(msg->event_data.valueint8, ADPT_LEA_TBS_CALL_CONTROL_SUCCESS);
         } else {

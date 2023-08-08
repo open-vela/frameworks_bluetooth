@@ -42,8 +42,9 @@
 #define BTS_DEFAULT_STATUS_FLAGS                    LEA_TBS_STATUS_INBAND_RINGTONE_ENABLED | LEA_TBS_STATUS_SERVER_IN_SILENT_MODE
 #define BTS_DEFAULT_OPTIONAL_OPCODE_SUPPORTED       LEA_TBS_SUPPORTED_CCP_OP_LOCAL_HOLD | LEA_TBS_SUPPORTED_CCP_OP_JOIN
 
-static char *BTS_DEFAULT_UCI = "GTBS";
-static char *BTS_DEFAULT_URI_SCHEMES = "tel";
+static const char *BTS_DEFAULT_NAME = "unknown";
+static const char *BTS_DEFAULT_UCI = "GTBS";
+static const char *BTS_DEFAULT_URI_SCHEMES = "tel";
 
 static tapi_context context;
 static bt_list_t *g_current_calls = NULL;
@@ -207,6 +208,10 @@ lea_tbs_call_state_t *lea_tbs_find_call_by_state(uint8_t call_state)
 
 lea_tbs_calls_t *lea_tbs_tele_add_call(tapi_call_info *call_info)
 {
+    BT_LOGD("%s", __func__);
+    if (lea_tbs_find_call_by_index(get_call_index(call_info->call_id)) != NULL)
+        return NULL;
+
     lea_tbs_calls_t *call_s;
 
     call_s = (lea_tbs_calls_t *)malloc(sizeof(lea_tbs_calls_t));
@@ -229,7 +234,7 @@ lea_tbs_calls_t *lea_tbs_tele_add_call(tapi_call_info *call_info)
 
 static void tbs_on_tapi_client_ready(const char *client_name, void *user_data)
 {
-    char *operator;
+    char *name = BTS_DEFAULT_NAME;
     tapi_signal_strength ss;
     tapi_pref_net_mode value;
     lea_tbs_telephone_bearer_t *bearer;
@@ -237,12 +242,12 @@ static void tbs_on_tapi_client_ready(const char *client_name, void *user_data)
     if (client_name != NULL)
         BT_LOGD("%s :tapi is ready for %s\n", __func__, client_name);
 
-    tapi_network_get_display_name(context, PRIMARY_SLOT, &operator);
+    tapi_network_get_display_name(context, PRIMARY_SLOT, &name);
     tapi_get_pref_net_mode(context, PRIMARY_SLOT, &value);
     tapi_network_get_signalstrength(context, PRIMARY_SLOT, &ss);
 
     bearer->bearer_ref = (void *)BTS_DEFAULT_BEARER_REF;
-    strcpy((char *)bearer->provider_name, operator);
+    strcpy((char *)bearer->provider_name, name);
     strcpy((char *)bearer->uci, BTS_DEFAULT_UCI);
     strcpy((char *)bearer->uri_schemes, BTS_DEFAULT_URI_SCHEMES);
     bearer->technology = net_mode_to_tbs_tech(value);
@@ -274,6 +279,7 @@ static void tbs_call_list_query_complete(tapi_async_result *result)
         (state_s + i)->index = get_call_index(call_info[i].call_id);
         (state_s + i)->state = call_state_to_tbs_state(call_info[i].state);
         (state_s + i)->flags = lea_tbs_get_call_flags(call_state_to_tbs_state(call_info[i].state));
+        BT_LOGD("%s, state:%d", __func__, (state_s + i)->state);
 
         sub_call = lea_tbs_find_call_by_index((state_s + i)->index);
         if (!sub_call) {
@@ -285,42 +291,18 @@ static void tbs_call_list_query_complete(tapi_async_result *result)
     lea_tbs_call_state_changed(result->arg2, state_s);
 }
 
-static void tbs_tele_call_info_call_async_fun(tapi_async_result *result)
-{
-    uint8_t call_index;
-    uint8_t terminate_reason;
-    if (result->msg_id == MSG_CALL_PROPERTY_CHANGED_MESSAGE_IND) {
-        tapi_call_get_all_calls(context, PRIMARY_SLOT, tbs_call_list_query_complete);
-    } else if (result->msg_id == MSG_CALL_DISCONNECTED_REASON_MESSAGE_IND) {
-        call_index = get_call_index((char *)result->data);
-        terminate_reason = call_term_reason_to_tbs_reason(result->arg2);
-        lea_tbs_notify_termination_reason(call_index, terminate_reason);
-    }
-}
-
 static void tbs_call_manager_call_async_fun(tapi_async_result *result)
 {
+    uint8_t call_index;
+    lea_adpt_termination_reason_t reason;
     tapi_call_info *call_info;
+    tapi_cell_identity **cell_list;
+    tapi_cell_identity *cell;
+    int param = result->arg2;
 
-    if (result->msg_id == MSG_CALL_ADD_MESSAGE_IND) {
-        call_info = (tapi_call_info *)result->data;
+    call_info = (tapi_call_info*)result->data;
 
-        tapi_call_get_all_calls(context, PRIMARY_SLOT, tbs_call_list_query_complete);
-        tapi_call_register_call_info_change(context, PRIMARY_SLOT, call_info->call_id,
-                                            MSG_CALL_PROPERTY_CHANGED_MESSAGE_IND, NULL, tbs_tele_call_info_call_async_fun);
-        tapi_call_register_call_info_change(context, PRIMARY_SLOT, call_info->call_id,
-                                            MSG_CALL_DISCONNECTED_REASON_MESSAGE_IND, NULL, tbs_tele_call_info_call_async_fun);
-        lea_tbs_tele_add_call(call_info);
-
-    } else if (result->msg_id == MSG_CALL_REMOVE_MESSAGE_IND) {
-        uint8_t call_index = get_call_index((char *)result->data);
-
-        bt_list_remove(g_current_calls, lea_tbs_find_call_by_index(call_index));
-        lea_tbs_remove_call(call_index);
-    } else if (result->msg_id == MSG_CELLINFO_CHANGE_IND) {
-        tapi_cell_identity **cell_list;
-        tapi_cell_identity *cell;
-        int param = result->arg2;
+    if (result->msg_id == MSG_CELLINFO_CHANGE_IND) {
         cell_list = result->data;
 
         if (cell_list != NULL) {
@@ -332,12 +314,18 @@ static void tbs_call_manager_call_async_fun(tapi_async_result *result)
         lea_tbs_provider_name_changed((uint8_t *)cell->alpha_long);
         lea_tbs_bearer_technology_changed(cell->type);
         lea_tbs_rssi_value_changed(cell->signal_strength.rsrp);
-    } else if (result->msg_id == TBS_EVENT_REQUEST_DIAL_DONE) {
-        if (result->status == OK) {
-            tapi_call_get_all_calls(context, PRIMARY_SLOT, tbs_call_list_query_complete);
-        } else {
-            BT_LOGD("dial failed");
-        }
+    }
+
+    if (call_info->state != CALL_STATUS_DISCONNECTED) {
+        lea_tbs_tele_add_call(call_info);
+        tapi_call_get_all_calls(context, PRIMARY_SLOT, tbs_call_list_query_complete);
+    } else {
+        call_index = get_call_index(call_info->call_id);
+        reason = call_term_reason_to_tbs_reason(call_info->disconnect_reason);
+
+        lea_tbs_notify_termination_reason(call_index, reason);
+        bt_list_remove(g_current_calls, lea_tbs_find_call_by_index(call_index));
+        lea_tbs_remove_call(get_call_index(call_info->call_id));
     }
 }
 
@@ -345,18 +333,13 @@ static int tbs_listen_call_manager_change()
 {
     int watch_id;
 
-    watch_id = tapi_call_register_managercall_change(context, PRIMARY_SLOT,
-                                                     MSG_CALL_ADD_MESSAGE_IND, NULL, tbs_call_manager_call_async_fun);
+    watch_id = tapi_call_register_call_state_change(context, PRIMARY_SLOT, NULL,
+                                                    tbs_call_manager_call_async_fun);
     if (watch_id < 0)
         return watch_id;
 
-    watch_id = tapi_call_register_managercall_change(context, PRIMARY_SLOT,
-                                                     MSG_CALL_REMOVE_MESSAGE_IND, NULL, tbs_call_manager_call_async_fun);
-    if (watch_id < 0)
-        return watch_id;
-
-    watch_id = tapi_network_register(context, PRIMARY_SLOT,
-                                     MSG_CELLINFO_CHANGE_IND, NULL, tbs_call_manager_call_async_fun);
+    watch_id = tapi_network_register(context, PRIMARY_SLOT, MSG_CELLINFO_CHANGE_IND,
+                                     NULL, tbs_call_manager_call_async_fun);
     if (watch_id < 0)
         return watch_id;
 
@@ -365,7 +348,6 @@ static int tbs_listen_call_manager_change()
 
 bt_status_t tele_service_accept_call(char *call_id)
 {
-    tapi_call_new_voice_call_proxy(context, PRIMARY_SLOT, call_id);
     tapi_call_answer_by_id(context, PRIMARY_SLOT, call_id);
 
     return BT_STATUS_SUCCESS;
@@ -375,7 +357,6 @@ bt_status_t tele_service_terminate_call(char *call_id)
 {
     isRemoteControl = true;
 
-    tapi_call_new_voice_call_proxy(context, PRIMARY_SLOT, call_id);
     tapi_call_hangup_by_id(context, PRIMARY_SLOT, call_id);
 
     return BT_STATUS_SUCCESS;
@@ -397,7 +378,8 @@ bt_status_t tele_service_unhold_call()
 
 bt_status_t tele_service_originate_call(char *uri)
 {
-    tapi_call_dial(context, PRIMARY_SLOT, uri, 0, TBS_EVENT_REQUEST_DIAL_DONE, tbs_call_manager_call_async_fun);
+    tapi_call_dial(context, PRIMARY_SLOT, uri, 0, TBS_EVENT_REQUEST_DIAL_DONE,
+                   NULL);
 
     return BT_STATUS_SUCCESS;
 }
