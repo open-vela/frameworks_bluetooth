@@ -506,12 +506,19 @@ unlock:
 
 static void spp_cache_timeout(service_timer_t *timer, void *data)
 {
-    spp_pty_device_t *device = (spp_pty_device_t *)data;
+    spp_pty_device_t *device;
+
+    pthread_mutex_lock(&g_spp_handle.spp_lock);
+    device = find_pty_device_by_handle((euv_pty_t *)data);
+    if (!device)
+        goto unlock;
 
     if (device->cache_buf.length == 0)
-        return;
+        goto unlock;
 
     do_spp_write(device, NULL, 0);
+unlock:
+    pthread_mutex_unlock(&g_spp_handle.spp_lock);
 }
 
 static void spp_cache_fragement(spp_pty_device_t *device, uint8_t *buffer, uint16_t length)
@@ -519,7 +526,9 @@ static void spp_cache_fragement(spp_pty_device_t *device, uint8_t *buffer, uint1
     device->cache_buf.buffer_head = buffer;
     device->cache_buf.length = length;
     /* cache timer */
-    device->timer = service_loop_timer_no_repeating(CACHE_SEND_TIMEOUT, spp_cache_timeout, device);
+    device->timer = service_loop_timer_no_repeating(CACHE_SEND_TIMEOUT,
+                                                    spp_cache_timeout,
+                                                    device->handle);
     device->next_to_read = device->mfs - length;
 }
 
