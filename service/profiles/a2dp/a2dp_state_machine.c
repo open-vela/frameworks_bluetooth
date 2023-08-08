@@ -142,6 +142,34 @@ static const state_t closing_state = {
     .process_event = closing_process_event,
 };
 
+#define A2DP_STM_DEBUG 1
+#if A2DP_STM_DEBUG
+static char *stack_event_to_string(a2dp_event_type_t event);
+
+#define A2DP_TRANS_DBG(_sm, _addr, _action)                                                     \
+    do {                                                                                        \
+        char __addr_str[BT_ADDR_STR_LENGTH] = { 0 };                                            \
+        bt_addr_ba2str(_addr, __addr_str);                                                      \
+        BT_LOGD("%s State=%s, Peer=[%s]", _action, hsm_get_current_state_name(sm), __addr_str); \
+    } while (0);
+
+#define A2DP_DBG_ENTER(__sm, __addr) A2DP_TRANS_DBG(__sm, __addr, "Enter")
+#define A2DP_DBG_EXIT(__sm, __addr)  A2DP_TRANS_DBG(__sm, __addr, "Exit ")
+#define A2DP_DBG_EVENT(__sm, __addr, __event)                                                      \
+    do {                                                                                           \
+        char __addr_str[BT_ADDR_STR_LENGTH] = { 0 };                                               \
+        bt_addr_ba2str(__addr, __addr_str);                                                        \
+        if (__event != DATA_IND_EVT)                                                               \
+            BT_LOGD("ProcessEvent, State=%s, Peer=[%s], Event=%s", hsm_get_current_state_name(sm), \
+                    __addr_str, stack_event_to_string(event));                                     \
+    } while (0);
+#else
+#define A2DP_DBG_ENTER(__sm, __addr)
+#define A2DP_DBG_EXIT(__sm, __addr)
+#define A2DP_DBG_EVENT(__sm, __addr, __event)
+#endif
+
+#if A2DP_STM_DEBUG
 static char *stack_event_to_string(a2dp_event_type_t event)
 {
     switch (event) {
@@ -168,6 +196,7 @@ static char *stack_event_to_string(a2dp_event_type_t event)
         return "UNKNOWN_EVENT";
     }
 }
+#endif
 
 static void a2dp_report_connection_state(a2dp_state_machine_t *stm, bt_address_t *addr, a2dp_connection_state_t state)
 {
@@ -264,8 +293,8 @@ static void idle_enter(state_machine_t *sm)
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
     const state_t *prev_state = hsm_get_previous_state(sm);
 
-    BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
-            bt_addr_str(&a2dp_sm->addr));
+    A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
+
     a2dp_sm->audio_ready = false;
     if (prev_state != NULL) {
         a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
@@ -277,8 +306,7 @@ static void idle_exit(state_machine_t *sm)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
 
-    BT_LOGD("state=%s Exit, peer=%s", hsm_get_current_state_name(sm),
-            bt_addr_str(&a2dp_sm->addr));
+    A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
 }
 
 static bool idle_process_event(state_machine_t *sm, uint32_t event, void *p_data)
@@ -286,9 +314,7 @@ static bool idle_process_event(state_machine_t *sm, uint32_t event, void *p_data
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
     a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
 
-    BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
-            stack_event_to_string(event),
-            bt_addr_str(&a2dp_sm->addr));
+    A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
     case CONNECT_REQ: {
         bt_status_t status;
@@ -333,8 +359,7 @@ static void opening_enter(state_machine_t *sm)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
 
-    BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
-            bt_addr_str(&a2dp_sm->addr));
+    A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
     a2dp_sm->connect_timer = service_loop_timer(A2DP_CONNECT_TIMEOUT, 0, a2dp_connect_timeout_callback, a2dp_sm);
     a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr, A2DP_CONNECTION_STATE_CONNECTING);
 }
@@ -343,8 +368,7 @@ static void opening_exit(state_machine_t *sm)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
 
-    BT_LOGD("state=%s Exit, peer=%s", hsm_get_current_state_name(sm),
-            bt_addr_str(&a2dp_sm->addr));
+    A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
 }
 
 static bool opening_process_event(state_machine_t *sm, uint32_t event, void *p_data)
@@ -352,9 +376,8 @@ static bool opening_process_event(state_machine_t *sm, uint32_t event, void *p_d
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
     a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
     bt_status_t status;
-    BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
-            stack_event_to_string(event),
-            bt_addr_str(&a2dp_sm->addr));
+
+    A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
     case DISCONNECT_REQ: {
         if (a2dp_sm->peer_sep == SEP_SNK)
@@ -394,8 +417,7 @@ static void opened_enter(state_machine_t *sm)
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
     const state_t *prev_state = hsm_get_previous_state(sm);
 
-    BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
-            bt_addr_str(&a2dp_sm->addr));
+    A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
     if (prev_state == &idle_state || prev_state == &opening_state) {
         /* if we are accept link as a2dp src, change the av link role to master */
         if (a2dp_sm->peer_sep == SEP_SNK)
@@ -419,17 +441,14 @@ static void opened_exit(state_machine_t *sm)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
 
-    BT_LOGD("state=%s Exit, peer=%s", hsm_get_current_state_name(sm),
-            bt_addr_str(&a2dp_sm->addr));
+    A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
 }
 
 static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
 
-    BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
-            stack_event_to_string(event),
-            bt_addr_str(&a2dp_sm->addr));
+    A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
     case DISCONNECT_REQ: {
         bt_status_t status;
@@ -558,9 +577,7 @@ static void started_enter(state_machine_t *sm)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
 
-    BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
-            bt_addr_str(&a2dp_sm->addr));
-
+    A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
     a2dp_report_audio_state(a2dp_sm, &a2dp_sm->addr,
                             A2DP_AUDIO_STATE_STARTED);
 }
@@ -569,17 +586,14 @@ static void started_exit(state_machine_t *sm)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
 
-    BT_LOGD("state=%s Exit, peer=%s", hsm_get_current_state_name(sm),
-            bt_addr_str(&a2dp_sm->addr));
+    A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
 }
 
 static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
-    if (event != DATA_IND_EVT)
-        BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
-                stack_event_to_string(event),
-                bt_addr_str(&a2dp_sm->addr));
+
+    A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
     case DISCONNECT_REQ: {
         bt_status_t status;
@@ -693,8 +707,7 @@ static void closing_enter(state_machine_t *sm)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
 
-    BT_LOGD("state=%s Enter, peer=%s", hsm_get_current_state_name(sm),
-            bt_addr_str(&a2dp_sm->addr));
+    A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
     a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
     a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
                                  A2DP_CONNECTION_STATE_DISCONNECTING);
@@ -704,16 +717,14 @@ static void closing_exit(state_machine_t *sm)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
 
-    BT_LOGD("state=%s Exit, peer=%s", hsm_get_current_state_name(sm),
-            bt_addr_str(&a2dp_sm->addr));
+    A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
 }
 
 static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
-    BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
-            stack_event_to_string(event),
-            bt_addr_str(&a2dp_sm->addr));
+
+    A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
     case STREAM_SUSPEND_REQ:
     case STREAM_CLOSED_EVT:
