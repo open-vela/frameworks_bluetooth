@@ -148,7 +148,7 @@ static const LEA_VOCC_CALLBACK_S adpt_lea_vocs_client_callbacks;
 static const LEA_AICC_CALLBACK_S adpt_lea_aics_client_callbacks;
 #endif
 
-static const LEA_CSIC_CALLBACK_S adpt_lea_csip_client_callbacks;
+extern const LEA_CSIC_CALLBACK_S adpt_lea_csip_client_callbacks;
 static const LEA_BCSRC_CALLBACK_S adpt_lea_bcsrc_callabcks;
 
 void adpt_lea_ucc_pac_callback(BD_ADDR remote_addr, SERVICE_LEA_PAC_INFO_S *pac_info)
@@ -618,4 +618,4 @@ bt_status_t bt_sal_leac_send_iso_data(lea_send_iso_data_t *packet)
     return BT_STATUS_SUCCESS;
 }
 
-#endif //CONFIG_BLUETOOTH_LEAUDIO_CLIENT
+#endif // CONFIG_BLUETOOTH_LEAUDIO_CLIENT

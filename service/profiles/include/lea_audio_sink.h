@@ -70,6 +70,8 @@ bt_status_t lea_audio_sink_update_codec(uint32_t stream_id, lea_audio_config_t *
 
 void lea_audio_sink_packet_recv(uint32_t stream_id, lea_recv_iso_data_t *packet);
 
+bool lea_audio_sink_is_started(void);
+
 void lea_audio_sink_cleanup(void);
 
 #endif

@@ -58,6 +58,15 @@ typedef struct lea_client_interface {
     bt_status_t (*connect_audio)(bt_address_t *addr, uint8_t context);
     bt_status_t (*disconnect)(bt_address_t *addr);
     bt_status_t (*disconnect_audio)(bt_address_t *addr);
+    bt_status_t (*get_group_id)(bt_address_t *addr, uint32_t *group_id);
+    bt_status_t (*discovery_member_start)(uint32_t group_id);
+    bt_status_t (*discovery_member_stop)(uint32_t group_id);
+    bt_status_t (*group_add_member)(uint32_t group_id, bt_address_t *addr);
+    bt_status_t (*group_remove_member)(uint32_t group_id, bt_address_t *addr);
+    bt_status_t (*group_connect_audio)(uint32_t group_id, uint8_t context);
+    bt_status_t (*group_disconnect_audio)(uint32_t group_id);
+    bt_status_t (*group_lock)(uint32_t group_id);
+    bt_status_t (*group_unlock)(uint32_t group_id);
     profile_connection_state_t (*get_connection_state)(bt_address_t *addr);
 } lea_client_interface_t;
 
@@ -82,12 +91,12 @@ void lea_client_on_audio_localtion_event(bt_address_t *addr, bool is_source, uin
 void lea_client_on_available_audio_contexts_event(bt_address_t *addr, uint32_t sink_ctxs, uint32_t source_ctxs);
 void lea_client_on_supported_audio_contexts_event(bt_address_t *addr, uint32_t sink_ctxs, uint32_t source_ctxs);
 
-bt_status_t lea_client_ucc_add_streams(bt_address_t *addr);
-bt_status_t lea_client_ucc_remove_streams(bt_address_t *addr);
-bt_status_t lea_client_ucc_config_codec(bt_address_t *addr);
-bt_status_t lea_client_ucc_config_qos(bt_address_t *addr);
-bt_status_t lea_client_ucc_enable(bt_address_t *addr);
-bt_status_t lea_client_ucc_disable(bt_address_t *addr);
+bt_status_t lea_client_ucc_add_streams(uint32_t group_id, bt_address_t *addr);
+bt_status_t lea_client_ucc_remove_streams(uint32_t group_id, bt_address_t *addr);
+bt_status_t lea_client_ucc_config_codec(uint32_t group_id, bt_address_t *addr);
+bt_status_t lea_client_ucc_config_qos(uint32_t group_id, bt_address_t *addr);
+bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t *addr);
+bt_status_t lea_client_ucc_disable(uint32_t group_id, bt_address_t *addr);
 
 void lea_client_on_stream_added(bt_address_t *addr, uint32_t stream_id);
 void lea_client_on_stream_removed(bt_address_t *addr, uint32_t stream_id);
@@ -98,6 +107,24 @@ void lea_client_on_metedata_updated(uint32_t stream_id);
 void lea_client_on_stream_recv(uint32_t stream_id, uint32_t time_stamp,
                                uint16_t seq_number, uint8_t *sdu, uint16_t size);
 void lea_client_on_stream_send(uint32_t stream_id);
+
+/*
+ * sal callback
+ */
+
+void lea_client_on_csip_sirk_event(bt_address_t *addr, uint8_t type, uint8_t *sirk);
+void lea_client_on_csip_size_event(bt_address_t *addr, uint8_t cs_size);
+void lea_client_on_csip_member_lock(bt_address_t *addr, uint8_t lock);
+void lea_client_on_csip_member_rank_event(bt_address_t *addr, uint8_t rank);
+void lea_client_on_csip_set_created(uint8_t *sirk);
+void lea_client_on_csip_set_size_updated(uint8_t *sirk, uint8_t size);
+void lea_client_on_csip_set_removed(uint8_t *sirk);
+void lea_client_on_csip_set_member_discovered(bt_address_t *addr, uint8_t *sirk);
+void lea_client_on_csip_set_member_added(bt_address_t *addr, uint8_t *sirk);
+void lea_client_on_csip_set_member_removed(bt_address_t *addr, uint8_t *sirk);
+void lea_client_on_csip_discovery_terminated(uint8_t *sirk);
+void lea_client_on_csip_set_lock_changed(uint8_t *sirk, bool locked, lea_csip_lock_status result);
+void lea_client_on_csip_set_ordered_access(uint8_t *sirk, lea_csip_lock_status result);
 
 /*
  * register profile to service manager

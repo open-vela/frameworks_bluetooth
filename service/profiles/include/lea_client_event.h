@@ -85,6 +85,35 @@ typedef struct
     lea_client_data_t data;
 } lea_client_msg_t;
 
+typedef enum {
+    STACK_EVENT_CSIP_CS_SIRK = 0,
+    STACK_EVENT_CSIP_CS_SIZE,
+    STACK_EVENT_CSIP_CS_CREATED,
+    STACK_EVENT_CSIP_CS_SIZE_UPDATED,
+    STACK_EVENT_CSIP_CS_DELETED,
+    STACK_EVENT_CSIP_CS_LOCKED,
+    STACK_EVENT_CSIP_CS_UNLOCKED,
+    STACK_EVENT_CSIP_CS_ORDERED_ACCESS,
+    STACK_EVENT_CSIP_MEMBER_RANK,
+    STACK_EVENT_CSIP_MEMBER_DISCOVERED,
+    STACK_EVENT_CSIP_MEMBER_ADD,
+    STACK_EVENT_CSIP_MEMBER_REMOVED,
+    STACK_EVENT_CSIP_MEMBER_DISCOVERY_TERMINATED,
+    STACK_EVENT_CSIP_MEMBER_LOCKED,
+    STACK_EVENT_CSIP_MEMBER_UNLOCKED,
+} lea_csip_event_t;
+
+typedef struct {
+    uint8_t valueint8;
+    uint8_t dataarry[1];
+} lea_csip_event_data_t;
+
+typedef struct {
+    bt_address_t addr;
+    lea_csip_event_t event;
+    lea_csip_event_data_t event_data;
+} lea_csip_msg_t;
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -95,5 +124,9 @@ lea_client_msg_t *lea_client_msg_new(lea_client_event_t event,
 lea_client_msg_t *lea_client_msg_new_ext(lea_client_event_t event, bt_address_t *addr, uint32_t size);
 
 void lea_client_msg_destory(lea_client_msg_t *msg);
+
+lea_csip_msg_t *lea_csip_msg_new(lea_csip_event_t event, bt_address_t *remote_addr);
+lea_csip_msg_t *lea_csip_msg_new_ext(lea_csip_event_t event, bt_address_t *remote_addr, size_t size);
+void lea_csip_msg_destory(lea_csip_msg_t *ccp_msg);
 
 #endif /* __LEA_CLIENT_EVENT_H__ */

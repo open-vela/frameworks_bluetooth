@@ -76,3 +76,66 @@ profile_connection_state_t bt_lea_client_get_connection_state(bt_instance_t *ins
 
     return profile->get_connection_state(addr);
 }
+
+bt_status_t bt_lea_client_get_group_id(bt_instance_t *ins, bt_address_t *addr, uint32_t *group_id)
+{
+    lea_client_interface_t *profile = get_profile_service();
+
+    return profile->get_group_id(addr, group_id);
+}
+
+bt_status_t bt_lea_client_discovery_member_start(bt_instance_t *ins, uint32_t group_id)
+{
+    lea_client_interface_t *profile = get_profile_service();
+
+    return profile->discovery_member_start(group_id);
+}
+
+bt_status_t bt_lea_client_discovery_member_stop(bt_instance_t *ins, uint32_t group_id)
+{
+    lea_client_interface_t *profile = get_profile_service();
+
+    return profile->discovery_member_stop(group_id);
+}
+
+bt_status_t bt_lea_client_group_add_member(bt_instance_t *ins, uint32_t group_id, bt_address_t *addr)
+{
+    lea_client_interface_t *profile = get_profile_service();
+
+    return profile->group_add_member(group_id, addr);
+}
+
+bt_status_t bt_lea_client_group_remove_member(bt_instance_t *ins, uint32_t group_id, bt_address_t *addr)
+{
+    lea_client_interface_t *profile = get_profile_service();
+
+    return profile->group_remove_member(group_id, addr);
+}
+
+bt_status_t bt_lea_client_group_connect_audio(bt_instance_t *ins, uint32_t group_id, uint8_t context)
+{
+    lea_client_interface_t *profile = get_profile_service();
+
+    return profile->group_connect_audio(group_id, context);
+}
+
+bt_status_t bt_lea_client_group_disconnect_audio(bt_instance_t *ins, uint32_t group_id)
+{
+    lea_client_interface_t *profile = get_profile_service();
+
+    return profile->group_disconnect_audio(group_id);
+}
+
+bt_status_t bt_lea_client_group_lock(bt_instance_t *ins, uint32_t group_id)
+{
+    lea_client_interface_t *profile = get_profile_service();
+
+    return profile->group_lock(group_id);
+}
+
+bt_status_t bt_lea_client_group_unlock(bt_instance_t *ins, uint32_t group_id)
+{
+    lea_client_interface_t *profile = get_profile_service();
+
+    return profile->group_unlock(group_id);
+}

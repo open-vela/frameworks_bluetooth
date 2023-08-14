@@ -192,6 +192,8 @@ out:
 static void lea_audio_sink_handler(service_timer_t *timer, void *data)
 {
     lea_source_stream_t *stream = (lea_source_stream_t *)data;
+    uint8_t buf[512];
+    int size;
 
     if (stream->stream_state != STREAM_STATE_RUNNING) {
         BT_LOGD("%s state:%d", __func__, stream->stream_state);
@@ -204,7 +206,14 @@ static void lea_audio_sink_handler(service_timer_t *timer, void *data)
     }
 
     ipc_read_start(g_source_ipc, IPC_CH_ID_AV_SOURCE_AUDIO, lea_audio_sink_alloc, lea_audio_sink_recv);
-    g_source_callbacks->lea_audio_send_cb(stream->stream_id, NULL, 0);
+
+    if (stream->sdu_size > 512) {
+        BT_LOGE("%s, sdu_size:%d over", __func__, stream->sdu_size);
+        return;
+    }
+
+    size = lea_audio_source_read(stream->stream_id, buf, stream->sdu_size);
+    g_source_callbacks->lea_audio_send_cb(stream->stream_id, buf, size);
 }
 
 int lea_audio_source_read(uint32_t stream_id, uint8_t *buf, uint16_t frame_len)
@@ -481,6 +490,12 @@ bt_status_t lea_audio_source_update_codec(uint32_t stream_id, lea_audio_config_t
 
     lea_ctrl_event_with_data(IPC_CH_ID_AV_SOURCE_CTRL, AUDIO_CTRL_EVT_UPDATE_CONFIG, buffer, len);
     return BT_STATUS_SUCCESS;
+}
+
+bool lea_audio_source_is_started(void)
+{
+    lea_source_stream_t *stream = &g_source_stream;
+    return stream->stream_state != STREAM_STATE_OFF;
 }
 
 void lea_audio_source_cleanup(void)

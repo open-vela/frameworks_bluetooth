@@ -168,6 +168,24 @@ void bt_list_remove(bt_list_t *list, void *data)
     }
 }
 
+void bt_list_move(bt_list_t *src, bt_list_t *des, void *data)
+{
+    assert(src);
+    struct list_node *node;
+    struct list_node *tmp;
+
+    list_for_every_safe(&src->list, node, tmp)
+    {
+        bt_list_node_t *bt_node = (bt_list_node_t *)node;
+        if (bt_node->data == data) {
+            list_delete(&bt_node->node);
+            bt_list_add_tail(des, data);
+            src->length--;
+            break;
+        }
+    }
+}
+
 void bt_list_foreach(bt_list_t *list, bt_list_iter_cb cb, void *context)
 {
     assert(list);

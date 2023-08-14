@@ -30,6 +30,7 @@ bt_status_t bt_sal_lea_client_connect(bt_address_t *addr);
 bt_status_t bt_sal_lea_client_disconnect(bt_address_t *addr);
 bt_status_t bt_sal_lea_ucc_discovery_service(bt_address_t *addr);
 bt_status_t bt_sal_lea_ucc_group_create(uint32_t *group_id, uint8_t salt, lea_ase_config_codec_t *codec, lea_ase_config_qos_t *qos);
+bt_status_t bt_sal_lea_ucc_group_delete(uint32_t group_id);
 bt_status_t bt_sal_lea_alloc_stream_id(uint32_t group_id, uint8_t cis_id, uint8_t ase_id, bool is_source,
                                        uint32_t *stream_id);
 bt_status_t bt_sal_lea_free_stream_id(uint32_t stream_id);
