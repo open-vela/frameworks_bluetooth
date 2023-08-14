@@ -261,8 +261,8 @@ static bool opening_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case CONNECT_AUDIO: {
-        lea_client_ucc_add_streams(&leas_sm->addr);
-        lea_client_ucc_config_codec(&leas_sm->addr);
+        lea_client_ucc_add_streams(data->valueint1, &leas_sm->addr);
+        lea_client_ucc_config_codec(data->valueint1, &leas_sm->addr);
         hsm_transition_to(sm, &opened_state);
         break;
     }
@@ -320,13 +320,13 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
     }
     case STACK_EVENT_ASE_CODEC_CONFIG: {
         if (!data->valueint1 && !data->valueint2) {
-            lea_client_ucc_config_qos(&leas_sm->addr);
+            lea_client_ucc_config_qos(data->valueint3, &leas_sm->addr);
         }
         break;
     }
     case STACK_EVENT_ASE_QOS_CONFIG: {
         if (!data->valueint1 && !data->valueint2) {
-            lea_client_ucc_enable(&leas_sm->addr);
+            lea_client_ucc_enable(data->valueint3, &leas_sm->addr);
             // transfer started_state in qos state, STACK_EVENT_ASE_ENABLING would
             // come after stream started.
             hsm_transition_to(sm, &started_state);
@@ -434,9 +434,7 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
     lea_client_state_machine_t *leas_sm = (lea_client_state_machine_t *)sm;
     lea_client_data_t *data = (lea_client_data_t *)p_data;
 
-    if (event != STACK_EVENT_STREAN_RECV) {
-        LEAS_DBG_EVENT(sm, &leas_sm->addr, event);
-    }
+    LEAS_DBG_EVENT(sm, &leas_sm->addr, event);
 
     switch (event) {
     case STACK_EVENT_CONNECTION_STATE: {
@@ -455,21 +453,30 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
     }
     case STACK_EVENT_STREAM_STARTED: {
         lea_audio_stream_t *remote_stream = (lea_audio_stream_t *)data->dataarry;
-        lea_audio_stream_t *local_stream;
+        lea_audio_stream_t *audio_stream;
         lea_audio_config_t audio_config;
 
-        local_stream = lea_client_find_update_stream(remote_stream);
-        if (!local_stream) {
+        audio_stream = lea_client_find_update_stream(remote_stream);
+        if (!audio_stream) {
             return false;
         }
 
-        memcpy(&local_stream->addr, &leas_sm->addr, sizeof(bt_address_t));
-        audio_config = lea_client_covert_audio_codec(&local_stream->codec_cfg);
-        if (!local_stream->is_source) {
-            lea_audio_source_update_codec(local_stream->stream_id, &audio_config, local_stream->sdu_size);
+        memcpy(&audio_stream->addr, &leas_sm->addr, sizeof(bt_address_t));
+        audio_stream->started = true;
+        audio_config = lea_client_covert_audio_codec(&audio_stream->codec_cfg);
+        if (!audio_stream->is_source) {
+            if (lea_audio_source_is_started()) {
+                BT_LOGD("%s, already started", __func__);
+                break;
+            }
+            lea_audio_source_update_codec(audio_stream->stream_id, &audio_config, audio_stream->sdu_size);
         } else {
-            lea_audio_sink_update_codec(local_stream->stream_id, &audio_config, local_stream->sdu_size);
-            lea_audio_sink_start(local_stream->stream_id);
+            if (lea_audio_sink_is_started()) {
+                BT_LOGD("%s, already started", __func__);
+                break;
+            }
+            lea_audio_sink_update_codec(audio_stream->stream_id, &audio_config, audio_stream->sdu_size);
+            lea_audio_sink_start(audio_stream->stream_id);
         }
         break;
     }
@@ -482,6 +489,7 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
             return false;
         }
 
+        stream->started = false;
         if (!stream->is_source) {
             lea_audio_source_stop(data->valueint1);
         } else {
@@ -489,12 +497,8 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         }
         break;
     }
-    case STACK_EVENT_STREAN_RECV: {
-        lea_audio_sink_packet_recv(data->valueint1, data->datapointer);
-        break;
-    }
     case STACK_EVENT_ASE_DISABLING: {
-        lea_client_ucc_remove_streams(&leas_sm->addr);
+        lea_client_ucc_remove_streams(data->valueint3, &leas_sm->addr);
         hsm_transition_to(sm, &closing_state);
         break;
     }
@@ -507,7 +511,7 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case DISCONNECT_AUDIO: {
-        lea_client_ucc_disable(&leas_sm->addr);
+        lea_client_ucc_disable(data->valueint1, &leas_sm->addr);
         break;
     }
     default:
@@ -551,8 +555,8 @@ static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case CONNECT_AUDIO: {
-        lea_client_ucc_add_streams(&leas_sm->addr);
-        lea_client_ucc_config_codec(&leas_sm->addr);
+        lea_client_ucc_add_streams(data->valueint1, &leas_sm->addr);
+        lea_client_ucc_config_codec(data->valueint1, &leas_sm->addr);
         hsm_transition_to(sm, &opened_state);
         break;
     }

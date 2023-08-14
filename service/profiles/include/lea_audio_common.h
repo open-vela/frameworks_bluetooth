@@ -248,6 +248,7 @@ typedef struct {
     bt_address_t addr;
     uint16_t sdu_size;
     bool is_source;
+    bool started;
     uint8_t target_latency;
     uint8_t target_phy;
     lea_codec_config_t codec_cfg;

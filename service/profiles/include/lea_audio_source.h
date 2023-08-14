@@ -62,7 +62,10 @@ bt_status_t lea_audio_source_resume(uint32_t stream_id);
 
 bt_status_t lea_audio_source_update_codec(uint32_t stream_id, lea_audio_config_t *codec, uint16_t sdu_size);
 
+bool lea_audio_source_is_started(void);
+
 int lea_audio_source_read(uint32_t stream_id, uint8_t *buf, uint16_t frame_len);
+
 void lea_audio_source_cleanup(void);
 
 #endif
