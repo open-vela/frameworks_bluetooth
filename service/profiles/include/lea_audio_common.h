@@ -186,6 +186,8 @@ typedef enum {
     ADPT_LEA_TBS_CALL_CONTROL_INVALID_OUTGOING_URI, /**< The Outgoing URI is incorrect or invalid. */
 } lea_adpt_call_control_result_t;
 
+#pragma push
+#pragma pack(1)
 typedef struct {
     uint8_t format;
     uint16_t company_id;
@@ -223,9 +225,11 @@ typedef struct {
     uint32_t frame_size;
     uint32_t packet_size;
 } lea_audio_config_t;
+#pragma pop
 
 typedef struct
 {
+    uint8_t length; /**< includes the length of type and value. */
     uint8_t type;
     union {
         uint32_t preferred_contexts;
