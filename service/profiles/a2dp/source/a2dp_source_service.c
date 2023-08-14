@@ -31,7 +31,6 @@
 
 #include "a2dp_source_service.h"
 
-#include "a2dp_ipc.h"
 #include "bt_a2dp_source.h"
 
 #include "utils/log.h"
