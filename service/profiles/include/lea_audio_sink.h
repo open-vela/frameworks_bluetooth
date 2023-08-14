@@ -77,6 +77,8 @@ bool lea_audio_sink_is_started(void);
 
 bool lea_audio_sink_ctrl_is_connected(void);
 
+bool lea_audio_sink_is_started(void);
+
 void lea_audio_sink_cleanup(void);
 
 #endif
