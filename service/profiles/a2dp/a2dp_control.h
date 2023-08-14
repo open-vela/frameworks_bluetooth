@@ -33,17 +33,15 @@
 #ifndef __A2DP_CONTROL_H__
 #define __A2DP_CONTROL_H__
 
-#if 0
-#define A2DP_SINK_CTRL_PATH   "/data/misc/bluedroid/.sink_ctrl"
-#define A2DP_SINK_DATA_PATH   "/data/misc/bluedroid/.sink_data"
-#define A2DP_SOURCE_CTRL_PATH "/data/misc/bluedroid/.source_ctrl"
-#define A2DP_SOURCE_DATA_PATH "/data/misc/bluedroid/.source_data"
-#else
+#define AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL  0
+#define AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO 1
+#define AUDIO_TRANS_CH_ID_AV_SINK_CTRL    2
+#define AUDIO_TRANS_CH_ID_AV_SINK_AUDIO   3
+
 #define A2DP_SINK_CTRL_PATH   "sink_ctrl"
 #define A2DP_SINK_DATA_PATH   "sink_data"
 #define A2DP_SOURCE_CTRL_PATH "source_ctrl"
 #define A2DP_SOURCE_DATA_PATH "source_data"
-#endif
 
 #define A2DP_CTRL_EVT_HEADER_LEN 1
 
