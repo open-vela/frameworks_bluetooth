@@ -30,7 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#define LOG_TAG "a2dp_ipc"
+#define LOG_TAG "audio_transport"
 
 /****************************************************************************
  * Included Files
@@ -38,76 +38,77 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "a2dp_ipc.h"
 #include "bt_utils.h"
 #include "utils/log.h"
+
+#include "audio_transport.h"
 
 typedef enum {
     IPC_DISCONNTECTED = -1,
     IPC_CONNTECTED
-} ipc_conn_state_t;
+} transport_conn_state_t;
 
 typedef struct {
     void *ipc_handle;
     uint8_t ch_id;
     uv_pipe_t *svr_pipe;
     uv_pipe_t *cli_pipe;
-    ipc_conn_state_t state;
-    ipc_event_cb_t event_cb;
-} ipc_channel_t;
+    transport_conn_state_t state;
+    transport_event_cb_t event_cb;
+} transport_channel_t;
 
 typedef struct {
     uv_write_t req;
     uint8_t *buffer;
-    ipc_channel_t *ch;
-    ipc_write_cb_t write_cb;
-} ipc_write_t;
+    transport_channel_t *ch;
+    transport_write_cb_t write_cb;
+} transport_write_t;
 
 typedef struct {
     uint16_t read_size;
-    ipc_channel_t *ch;
-    ipc_alloc_cb_t alloc_cb;
-    ipc_read_cb_t read_cb;
-} ipc_read_t;
+    transport_channel_t *ch;
+    transport_alloc_cb_t alloc_cb;
+    transport_read_cb_t read_cb;
+} transport_read_t;
 
-typedef struct _a2dp_ipc {
+typedef struct _audio_transport {
     uv_loop_t *loop;
-    ipc_channel_t ch[A2DP_IPC_CH_NUM];
-} a2dp_ipc_t;
+    transport_channel_t ch[AUDIO_TRANS_CH_NUM];
+} audio_transport_t;
 
-const char *dump_a2dp_ipc_event(uint8_t event)
+const char *audio_transport_dump_event(uint8_t event)
 {
     switch (event) {
-        CASE_RETURN_STR(IPC_OPEN_EVT)
-        CASE_RETURN_STR(IPC_CLOSE_EVT)
-        CASE_RETURN_STR(IPC_RX_DATA_EVT)
-        CASE_RETURN_STR(IPC_RX_DATA_READY_EVT)
-        CASE_RETURN_STR(IPC_TX_DATA_READY_EVT)
+        CASE_RETURN_STR(TRANSPORT_OPEN_EVT)
+        CASE_RETURN_STR(TRANSPORT_CLOSE_EVT)
+        CASE_RETURN_STR(TRANSPORT_RX_DATA_EVT)
+        CASE_RETURN_STR(TRANSPORT_RX_DATA_READY_EVT)
+        CASE_RETURN_STR(TRANSPORT_TX_DATA_READY_EVT)
     default:
         return "UNKNOWN MSG ID";
     }
 }
 
-static void ipc_chnl_close_cb(uv_handle_t *handle)
+static void transport_chnl_close_cb(uv_handle_t *handle)
 {
     free(handle);
 }
 
-static void a2dp_ipc_connection_close(ipc_channel_t *ch)
+static void audio_transport_connection_close(transport_channel_t *ch)
 {
     if (ch->state == IPC_CONNTECTED) {
         ch->state = IPC_DISCONNTECTED;
         free(ch->cli_pipe->data);
         ch->cli_pipe->data = NULL;
-        uv_close((uv_handle_t *)ch->cli_pipe, ipc_chnl_close_cb);
+        uv_close((uv_handle_t *)ch->cli_pipe, transport_chnl_close_cb);
         if (ch->event_cb)
-            ch->event_cb(ch->ch_id, IPC_CLOSE_EVT);
+            ch->event_cb(ch->ch_id, TRANSPORT_CLOSE_EVT);
     }
 }
 
-static void ipc_chnl_listen_cb(uv_stream_t *stream, int status)
+static void transport_chnl_listen_cb(uv_stream_t *stream, int status)
 {
-    ipc_channel_t *ch = stream->data;
+    transport_channel_t *ch = stream->data;
     int ret;
 
     if (status != 0) {
@@ -126,20 +127,20 @@ static void ipc_chnl_listen_cb(uv_stream_t *stream, int status)
     ret = uv_accept(stream, (uv_stream_t *)ch->cli_pipe);
     if (ret != 0) {
         BT_LOGE("accept error %s", uv_strerror(ret));
-        uv_close((uv_handle_t *)ch->cli_pipe, ipc_chnl_close_cb);
+        uv_close((uv_handle_t *)ch->cli_pipe, transport_chnl_close_cb);
         return;
     }
 
     ch->cli_pipe->data = NULL;
     ch->state = IPC_CONNTECTED;
     if (ch->event_cb)
-        ch->event_cb(ch->ch_id, IPC_OPEN_EVT);
+        ch->event_cb(ch->ch_id, TRANSPORT_OPEN_EVT);
 }
 
-static void ipc_chnl_read_alloc_cb(uv_handle_t *handle, size_t suggested_size,
-                                   uv_buf_t *buf)
+static void transport_chnl_read_alloc_cb(uv_handle_t *handle, size_t suggested_size,
+                                         uv_buf_t *buf)
 {
-    ipc_read_t *rreq = (ipc_read_t *)handle->data;
+    transport_read_t *rreq = (transport_read_t *)handle->data;
     (void)suggested_size;
 
     rreq->alloc_cb(rreq->ch->ch_id, (uint8_t **)&buf->base, &buf->len);
@@ -147,10 +148,10 @@ static void ipc_chnl_read_alloc_cb(uv_handle_t *handle, size_t suggested_size,
     // buf->len = rreq->read_size;
 }
 
-static void ipc_chnl_write_cb(uv_write_t *req, int status)
+static void transport_chnl_write_cb(uv_write_t *req, int status)
 {
-    ipc_write_t *wreq = (ipc_write_t *)req->data;
-    ipc_channel_t *ch = wreq->ch;
+    transport_write_t *wreq = (transport_write_t *)req->data;
+    transport_channel_t *ch = wreq->ch;
     uint8_t need_close = 0;
 
     if (status != 0) {
@@ -164,14 +165,14 @@ static void ipc_chnl_write_cb(uv_write_t *req, int status)
     free(wreq);
 
     if (need_close)
-        a2dp_ipc_connection_close(ch);
+        audio_transport_connection_close(ch);
 }
 
-static void ipc_chnl_read_cb(uv_stream_t *stream, ssize_t nread,
-                             const uv_buf_t *buf)
+static void transport_chnl_read_cb(uv_stream_t *stream, ssize_t nread,
+                                   const uv_buf_t *buf)
 {
-    ipc_read_t *rreq = (ipc_read_t *)stream->data;
-    ipc_channel_t *ch = rreq->ch;
+    transport_read_t *rreq = (transport_read_t *)stream->data;
+    transport_channel_t *ch = rreq->ch;
     uint8_t need_close = 0;
 
     if (nread < 0) {
@@ -187,60 +188,61 @@ static void ipc_chnl_read_cb(uv_stream_t *stream, ssize_t nread,
         rreq->read_cb(ch->ch_id, (uint8_t *)buf->base, nread);
 
     if (need_close)
-        a2dp_ipc_connection_close(ch);
+        audio_transport_connection_close(ch);
 }
 
-a2dp_ipc_t *a2dp_ipc_init(uv_loop_t *loop)
+audio_transport_t *audio_transport_init(uv_loop_t *loop)
 {
-    a2dp_ipc_t *a2dp;
+    audio_transport_t *transport;
 
     if (!loop)
         return NULL;
 
-    a2dp = (a2dp_ipc_t *)malloc(sizeof(a2dp_ipc_t));
-    if (!a2dp) {
+    transport = (audio_transport_t *)malloc(sizeof(audio_transport_t));
+    if (!transport) {
         BT_LOGE("%s malloc failed", __func__);
         return NULL;
     }
 
-    a2dp->loop = loop;
-    for (uint8_t i = 0; i < A2DP_IPC_CH_NUM; i++) {
-        a2dp->ch[i].state = IPC_DISCONNTECTED;
-        a2dp->ch[i].event_cb = NULL;
+    transport->loop = loop;
+    for (uint8_t i = 0; i < AUDIO_TRANS_CH_NUM; i++) {
+        transport->ch[i].state = IPC_DISCONNTECTED;
+        transport->ch[i].event_cb = NULL;
     }
 
-    return a2dp;
+    return transport;
 }
 
-bool a2dp_ipc_open(a2dp_ipc_t *a2dp, uint8_t ch_id, const char *path, ipc_event_cb_t cb)
+bool audio_transport_open(audio_transport_t *transport, uint8_t ch_id,
+                          const char *path, transport_event_cb_t cb)
 {
-    ipc_channel_t *ch;
+    transport_channel_t *ch;
     uv_fs_t fs;
     int ret;
 
-    if (ch_id >= A2DP_IPC_CH_NUM || !a2dp)
+    if (ch_id >= AUDIO_TRANS_CH_NUM || !transport)
         return false;
 
-    ch = &a2dp->ch[ch_id];
+    ch = &transport->ch[ch_id];
 
     if (ch->state == IPC_CONNTECTED)
         return true;
 
     ch->svr_pipe = malloc(sizeof(uv_pipe_t));
-    ret = uv_pipe_init(a2dp->loop, ch->svr_pipe, 0);
+    ret = uv_pipe_init(transport->loop, ch->svr_pipe, 0);
     if (ret != 0) {
         free(ch->svr_pipe);
         BT_LOGE("server pipe init error %s", uv_strerror(ret));
         return false;
     }
 
-    ret = uv_fs_unlink(a2dp->loop, &fs, path, NULL);
+    ret = uv_fs_unlink(transport->loop, &fs, path, NULL);
     if (ret != 0 && ret != UV_ENOENT) {
         BT_LOGE("unlink error: %s", uv_strerror(ret));
         goto error;
     }
 
-#ifndef CONFIG_BLUETOOTH_A2DP_IPC_RPSMG_SERVER
+#ifndef CONFIG_BLUETOOTH_audio_transport_RPSMG_SERVER
     ret = uv_pipe_bind(ch->svr_pipe, path);
 #else
     ret = uv_pipe_rpmsg_bind(ch->svr_pipe, path, "");
@@ -250,64 +252,66 @@ bool a2dp_ipc_open(a2dp_ipc_t *a2dp, uint8_t ch_id, const char *path, ipc_event_
         goto error;
     }
 
-    ret = uv_listen((uv_stream_t *)ch->svr_pipe, 128, ipc_chnl_listen_cb);
+    ret = uv_listen((uv_stream_t *)ch->svr_pipe, 128, transport_chnl_listen_cb);
     if (ret != 0) {
         BT_LOGE("listen error: %s", uv_strerror(ret));
         goto error;
     }
     ch->ch_id = ch_id;
     ch->event_cb = cb;
-    ch->ipc_handle = (void *)a2dp;
+    ch->ipc_handle = (void *)transport;
     ch->svr_pipe->data = ch;
 
     BT_LOGD("%s path{%d}[%s] success", __func__, ch_id, path);
 
     return true;
 error:
-    uv_close((uv_handle_t *)ch->svr_pipe, ipc_chnl_close_cb);
+    uv_close((uv_handle_t *)ch->svr_pipe, transport_chnl_close_cb);
     return false;
 }
 
-void a2dp_ipc_close(a2dp_ipc_t *a2dp, uint8_t ch_id)
+void audio_transport_close(audio_transport_t *transport, uint8_t ch_id)
 {
-    ipc_channel_t *ch;
+    transport_channel_t *ch;
 
-    if (!a2dp)
+    if (!transport)
         return;
 
-    if (ch_id != A2DP_IPC_CH_ID_ALL) {
-        ch = &a2dp->ch[ch_id];
+    if (ch_id != AUDIO_TRANS_CH_ID_ALL) {
+        ch = &transport->ch[ch_id];
         if (ch->state == IPC_DISCONNTECTED)
             return;
 
-        a2dp_ipc_connection_close(ch);
-        uv_close((uv_handle_t *)ch->svr_pipe, ipc_chnl_close_cb);
+        audio_transport_connection_close(ch);
+        uv_close((uv_handle_t *)ch->svr_pipe, transport_chnl_close_cb);
         return;
     }
 
-    for (int i = 0; i < A2DP_IPC_CH_NUM; i++) {
-        ch = &a2dp->ch[i];
-        a2dp_ipc_connection_close(ch);
-        uv_close((uv_handle_t *)ch->svr_pipe, ipc_chnl_close_cb);
+    for (int i = 0; i < AUDIO_TRANS_CH_NUM; i++) {
+        ch = &transport->ch[i];
+        audio_transport_connection_close(ch);
+        uv_close((uv_handle_t *)ch->svr_pipe, transport_chnl_close_cb);
     }
-    free(a2dp);
+    free(transport);
 }
 
-int a2dp_ipc_write(a2dp_ipc_t *a2dp, uint8_t ch_id, const uint8_t *data, uint16_t len, ipc_write_cb_t cb)
+int audio_transport_write(audio_transport_t *transport, uint8_t ch_id,
+                          const uint8_t *data, uint16_t len,
+                          transport_write_cb_t cb)
 {
-    ipc_write_t *wreq;
-    ipc_channel_t *ch;
+    transport_write_t *wreq;
+    transport_channel_t *ch;
     uv_buf_t uv_buf;
     int ret;
 
-    if (ch_id >= A2DP_IPC_CH_NUM || !a2dp)
+    if (ch_id >= AUDIO_TRANS_CH_NUM || !transport)
         return -EINVAL;
 
-    ch = &a2dp->ch[ch_id];
+    ch = &transport->ch[ch_id];
     if (ch->state != IPC_CONNTECTED) {
         return -1;
     }
-    wreq = (ipc_write_t *)malloc(sizeof(ipc_write_t));
+    wreq = (transport_write_t *)malloc(sizeof(transport_write_t));
     if (!wreq) {
         BT_LOGE("write req alloc failed");
         return -ENOMEM;
@@ -327,32 +331,35 @@ int a2dp_ipc_write(a2dp_ipc_t *a2dp, uint8_t ch_id, const uint8_t *data, uint16_
     uv_buf = uv_buf_init((char *)tmpbuf, len);
     ret = uv_write(&wreq->req, (uv_stream_t *)ch->cli_pipe,
                    &uv_buf, 1,
-                   ipc_chnl_write_cb);
+                   transport_chnl_write_cb);
     if (ret != 0) {
         BT_LOGE("write error: %s", uv_strerror(ret));
         free(wreq);
         free(tmpbuf);
-        a2dp_ipc_connection_close(ch);
+        audio_transport_connection_close(ch);
         return ret;
     }
 
     return 0;
 }
 
-int a2dp_ipc_read_start(a2dp_ipc_t *a2dp, uint8_t ch_id, ipc_alloc_cb_t alloc_cb, ipc_read_cb_t read_cb)
+int audio_transport_read_start(audio_transport_t *transport,
+                               uint8_t ch_id,
+                               transport_alloc_cb_t alloc_cb,
+                               transport_read_cb_t read_cb)
 {
-    ipc_channel_t *ch;
-    ipc_read_t *rreq;
+    transport_channel_t *ch;
+    transport_read_t *rreq;
     int ret;
 
-    if (ch_id >= A2DP_IPC_CH_NUM || !a2dp)
+    if (ch_id >= AUDIO_TRANS_CH_NUM || !transport)
         return -EINVAL;
 
-    ch = &a2dp->ch[ch_id];
+    ch = &transport->ch[ch_id];
     if (ch->state != IPC_CONNTECTED) {
         return -1;
     }
-    rreq = (ipc_read_t *)malloc(sizeof(ipc_read_t));
+    rreq = (transport_read_t *)malloc(sizeof(transport_read_t));
     if (!rreq) {
         BT_LOGE("read req alloc failed");
         return -ENOMEM;
@@ -364,27 +371,27 @@ int a2dp_ipc_read_start(a2dp_ipc_t *a2dp, uint8_t ch_id, ipc_alloc_cb_t alloc_cb
     rreq->ch = ch;
     ch->cli_pipe->data = rreq;
     ret = uv_read_start((uv_stream_t *)ch->cli_pipe,
-                        ipc_chnl_read_alloc_cb,
-                        ipc_chnl_read_cb);
+                        transport_chnl_read_alloc_cb,
+                        transport_chnl_read_cb);
     if (ret != 0 && ret != UV_EALREADY) {
         BT_LOGE("read start error :%s", uv_strerror(ret));
         free(rreq);
-        a2dp_ipc_connection_close(ch);
+        audio_transport_connection_close(ch);
         return ret;
     }
 
     return 0;
 }
 
-int a2dp_ipc_read_stop(a2dp_ipc_t *a2dp, uint8_t ch_id)
+int audio_transport_read_stop(audio_transport_t *transport, uint8_t ch_id)
 {
-    ipc_channel_t *ch;
+    transport_channel_t *ch;
     int ret;
 
-    if (ch_id >= A2DP_IPC_CH_NUM || !a2dp)
+    if (ch_id >= AUDIO_TRANS_CH_NUM || !transport)
         return -EINVAL;
 
-    ch = &a2dp->ch[ch_id];
+    ch = &transport->ch[ch_id];
     if (ch->state != IPC_CONNTECTED) {
         return -1;
     }

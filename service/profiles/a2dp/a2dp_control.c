@@ -37,7 +37,7 @@
 
 #include "a2dp_codec.h"
 #include "a2dp_control.h"
-#include "a2dp_ipc.h"
+#include "audio_transport.h"
 #include "a2dp_sink.h"
 #include "a2dp_source.h"
 #include "a2dp_source_audio.h"
@@ -46,9 +46,9 @@
 #define LOG_TAG "a2dp_control"
 #include "utils/log.h"
 
-a2dp_ipc_t *a2dp_ipc = NULL;
+audio_transport_t *a2dp_transport = NULL;
 
-static const char *a2dp_ipc_path[] = {
+static const char *audio_transport_path[] = {
     A2DP_SOURCE_CTRL_PATH,
     A2DP_SOURCE_DATA_PATH,
     A2DP_SINK_CTRL_PATH,
@@ -80,8 +80,8 @@ static void a2dp_ctrl_event_with_data(uint8_t ch_id, a2dp_ctrl_evt_t event, uint
     }
 
     /* send event */
-    if (a2dp_ipc != NULL) {
-        a2dp_ipc_write(a2dp_ipc, ch_id, stream, data_len + A2DP_CTRL_EVT_HEADER_LEN, NULL);
+    if (a2dp_transport!= NULL) {
+        audio_transport_write(a2dp_transport, ch_id, stream, data_len + A2DP_CTRL_EVT_HEADER_LEN, NULL);
     }
 }
 
@@ -143,7 +143,7 @@ static void a2dp_control_on_start(uint8_t ch_id)
 {
     a2dp_ctrl_evt_t evt = A2DP_CTRL_EVT_START_FAIL;
 
-    if (ch_id == A2DP_IPC_CH_ID_AV_SOURCE_CTRL) {
+    if (ch_id == AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         if (a2dp_source_stream_ready()) {
             a2dp_source_stream_start();
@@ -173,12 +173,12 @@ static void a2dp_control_on_start(uint8_t ch_id)
 static void a2dp_control_on_stop(uint8_t ch_id)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    if (ch_id == A2DP_IPC_CH_ID_AV_SOURCE_CTRL && a2dp_source_stream_started()) {
+    if (ch_id == AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL && a2dp_source_stream_started()) {
         a2dp_source_stream_stop();
     }
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-    if (ch_id == A2DP_IPC_CH_ID_AV_SINK_CTRL) {
+    if (ch_id == AUDIO_TRANS_CH_ID_AV_SINK_CTRL) {
         a2dp_sink_mute();
     }
 #endif
@@ -189,11 +189,11 @@ static void a2dp_control_on_stop(uint8_t ch_id)
 static void a2dp_control_on_config_done(uint8_t ch_id)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    if (ch_id == A2DP_IPC_CH_ID_AV_SOURCE_CTRL)
+    if (ch_id == AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL)
         a2dp_source_codec_state_change();
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-    if (ch_id == A2DP_IPC_CH_ID_AV_SINK_CTRL)
+    if (ch_id == AUDIO_TRANS_CH_ID_AV_SINK_CTRL)
         a2dp_sink_codec_state_change();
 #endif
 }
@@ -239,7 +239,7 @@ static void a2dp_ctrl_data_received(uint8_t ch_id, uint8_t *buffer, ssize_t len)
     if (len <= 0) {
         free(buffer);
         if (len < 0)
-            a2dp_ipc_read_stop(a2dp_ipc, ch_id);
+            audio_transport_read_stop(a2dp_transport, ch_id);
         return;
     }
 
@@ -256,32 +256,32 @@ static void a2dp_ctrl_data_received(uint8_t ch_id, uint8_t *buffer, ssize_t len)
 
 static void a2dp_ctrl_start(uint8_t ch_id)
 {
-    a2dp_ipc_read_start(a2dp_ipc, ch_id, a2dp_ctrl_buffer_alloc, a2dp_ctrl_data_received);
+    audio_transport_read_start(a2dp_transport, ch_id, a2dp_ctrl_buffer_alloc, a2dp_ctrl_data_received);
 }
 
 static void a2dp_ctrl_stop(uint8_t ch_id)
 {
-    a2dp_ipc_read_stop(a2dp_ipc, ch_id);
+    audio_transport_read_stop(a2dp_transport, ch_id);
 }
 
-static void a2dp_ctrl_cb(uint8_t ch_id, a2dp_ipc_event_t event)
+static void a2dp_ctrl_cb(uint8_t ch_id, audio_transport_event_t event)
 {
-    BT_LOGD("%s, path:[%s], event:%s", __func__, a2dp_ipc_path[ch_id], dump_a2dp_ipc_event(event));
+    BT_LOGD("%s, path:[%s], event:%s", __func__, audio_transport_path[ch_id], audio_transport_dump_event(event));
 
     switch (event) {
-    case IPC_OPEN_EVT:
+    case TRANSPORT_OPEN_EVT:
         a2dp_ctrl_start(ch_id);
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-        if (ch_id == A2DP_IPC_CH_ID_AV_SOURCE_CTRL && a2dp_source_stream_ready())
+        if (ch_id == AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL && a2dp_source_stream_ready())
             a2dp_control_update_audio_config(ch_id, 1);
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-        if (ch_id == A2DP_IPC_CH_ID_AV_SINK_CTRL && a2dp_sink_stream_ready())
+        if (ch_id == AUDIO_TRANS_CH_ID_AV_SINK_CTRL && a2dp_sink_stream_ready())
             a2dp_control_update_audio_config(ch_id, 1);
 #endif
         break;
 
-    case IPC_CLOSE_EVT:
+    case TRANSPORT_CLOSE_EVT:
         a2dp_ctrl_stop(ch_id);
         break;
 
@@ -292,15 +292,15 @@ static void a2dp_ctrl_cb(uint8_t ch_id, a2dp_ipc_event_t event)
     }
 }
 
-static void a2dp_data_cb(uint8_t ch_id, a2dp_ipc_event_t event)
+static void a2dp_data_cb(uint8_t ch_id, audio_transport_event_t event)
 {
-    BT_LOGD("%s, path:[%s], event:%s", __func__, a2dp_ipc_path[ch_id], dump_a2dp_ipc_event(event));
+    BT_LOGD("%s, path:[%s], event:%s", __func__, audio_transport_path[ch_id], audio_transport_dump_event(event));
 
     switch (event) {
-    case IPC_OPEN_EVT:
+    case TRANSPORT_OPEN_EVT:
         break;
 
-    case IPC_CLOSE_EVT:
+    case TRANSPORT_CLOSE_EVT:
         BT_LOGD("%s: ## AUDIO PATH DETACHED ##", __func__);
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         if (a2dp_source_is_streaming())
@@ -317,18 +317,18 @@ static void a2dp_data_cb(uint8_t ch_id, a2dp_ipc_event_t event)
 
 void a2dp_control_init(uint8_t ctrl_id, uint8_t data_id)
 {
-    if (a2dp_ipc == NULL) {
-        a2dp_ipc = a2dp_ipc_init(get_service_uv_loop());
+    if (a2dp_transport== NULL) {
+        a2dp_transport= audio_transport_init(get_service_uv_loop());
     }
 
-    a2dp_ipc_open(a2dp_ipc, ctrl_id, a2dp_ipc_path[ctrl_id], a2dp_ctrl_cb);
-    a2dp_ipc_open(a2dp_ipc, data_id, a2dp_ipc_path[data_id], a2dp_data_cb);
+    audio_transport_open(a2dp_transport, ctrl_id, audio_transport_path[ctrl_id], a2dp_ctrl_cb);
+    audio_transport_open(a2dp_transport, data_id, audio_transport_path[data_id], a2dp_data_cb);
 }
 
 void a2dp_control_cleanup(void)
 {
     /* don't close ipc when bt stack disable*/
-    // if (a2dp_ipc) {
-    //     a2dp_ipc_close(a2dp_ipc, A2DP_IPC_CH_ID_ALL);
+    // if (a2dp_transport) {
+    //     audio_transport_close(a2dp_transport, audio_transport_CH_ID_ALL);
     // }
 }

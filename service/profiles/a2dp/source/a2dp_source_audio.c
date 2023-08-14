@@ -42,7 +42,7 @@
 #include "a2dp_source.h"
 #include "a2dp_source_audio.h"
 
-#include "a2dp_ipc.h"
+#include "audio_transport.h"
 #include "utils.h"
 #define LOG_TAG "a2dp_src_stream"
 #include "utils/log.h"
@@ -85,7 +85,7 @@ typedef struct {
 } a2dp_source_stream_t;
 
 a2dp_source_stream_t a2dp_src_stream;
-extern a2dp_ipc_t *a2dp_ipc;
+extern audio_transport_t *a2dp_transport;
 
 static void a2dp_source_read_congest(uint8_t ch_id);
 
@@ -130,7 +130,7 @@ static void a2dp_audio_data_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
     alloc_buffer = (void *)malloc(next_to_read);
     if (!alloc_buffer) {
         *buffer = NULL;
-        a2dp_ipc_read_stop(a2dp_ipc, ch_id);
+        audio_transport_read_stop(a2dp_transport, ch_id);
         return;
     }
 
@@ -149,7 +149,7 @@ static void a2dp_audio_data_received(uint8_t ch_id, uint8_t *buffer, ssize_t len
     if (len <= 0) {
         BT_LOGD("%s, status:%d", __func__, len);
         if (len < 0)
-            a2dp_ipc_read_stop(a2dp_ipc, ch_id);
+            audio_transport_read_stop(a2dp_transport, ch_id);
 
         goto out;
     }
@@ -192,8 +192,8 @@ static void a2dp_source_start_read(void)
         return;
 
     stream->read_congest = 0;
-    a2dp_ipc_read_start(a2dp_ipc,
-                        A2DP_IPC_CH_ID_AV_SOURCE_AUDIO,
+    audio_transport_read_start(a2dp_transport,
+                        AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO,
                         a2dp_audio_data_alloc,
                         a2dp_audio_data_received);
 }
@@ -201,7 +201,7 @@ static void a2dp_source_start_read(void)
 static void a2dp_source_read_congest(uint8_t ch_id)
 {
     a2dp_src_stream.read_congest = 1;
-    a2dp_ipc_read_stop(a2dp_ipc, ch_id);
+    audio_transport_read_stop(a2dp_transport, ch_id);
 }
 
 static void a2dp_source_send_callback(uint8_t *buf, uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp)
@@ -259,8 +259,8 @@ static void a2dp_source_start_flush(void)
 {
     if (a2dp_src_stream.stream_state == STATE_OFF) {
         a2dp_src_stream.stream_state = STATE_FLUSHING;
-        a2dp_ipc_read_start(a2dp_ipc,
-                            A2DP_IPC_CH_ID_AV_SOURCE_AUDIO,
+        audio_transport_read_start(a2dp_transport,
+                            AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO,
                             a2dp_audio_data_alloc,
                             a2dp_audio_data_flush);
     }
@@ -269,7 +269,7 @@ static void a2dp_source_start_flush(void)
 static void a2dp_source_stop_flush(void)
 {
     a2dp_src_stream.stream_state = STATE_OFF;
-    a2dp_ipc_read_stop(a2dp_ipc, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
+    audio_transport_read_stop(a2dp_transport, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
 }
 
 static void a2dp_source_start_delay(service_timer_t *timer, void *arg)
@@ -331,7 +331,7 @@ static void a2dp_source_stop_audio_req(bool cleanup)
         return;
 
     if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
-        a2dp_ipc_read_stop(a2dp_ipc, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
+        audio_transport_read_stop(a2dp_transport, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
         a2dp_source_start_flush();
         circbuf_reset(&a2dp_src_stream.stream_pool);
     }
@@ -345,7 +345,7 @@ static void a2dp_source_stop_audio_req(bool cleanup)
 static void a2dp_source_close_audio(void)
 {
     a2dp_source_stop_audio_req(true);
-    a2dp_ipc_read_stop(a2dp_ipc, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
+    audio_transport_read_stop(a2dp_transport, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
 }
 
 bool a2dp_source_is_streaming(void)
@@ -357,9 +357,9 @@ void a2dp_source_on_connection_changed(bool connected)
 {
     BT_LOGD("%s, %d", __func__, connected);
     if (connected) {
-        a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, 1);
+        a2dp_control_update_audio_config(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, 1);
     } else {
-        a2dp_control_update_audio_config(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, 0);
+        a2dp_control_update_audio_config(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, 0);
         a2dp_source_stop_audio_req(true);
     }
 }
@@ -369,11 +369,11 @@ void a2dp_source_on_started(bool started)
     BT_LOGD("%s: %d", __func__, started);
 
     if (started) {
-        a2dp_control_event(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_STARTED);
+        a2dp_control_event(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_STARTED);
         if (a2dp_src_stream.stream_state == STATE_OFF || a2dp_src_stream.stream_state == STATE_FLUSHING)
             a2dp_source_start_audio_req();
     } else {
-        a2dp_control_event(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_START_FAIL);
+        a2dp_control_event(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_START_FAIL);
     }
 }
 
@@ -422,7 +422,7 @@ void a2dp_source_audio_init(void)
     memset(&a2dp_src_stream, 0, sizeof(a2dp_src_stream));
     a2dp_src_stream.stream_state = STATE_OFF;
     circbuf_init(&a2dp_src_stream.stream_pool, NULL, 2048);
-    a2dp_control_init(A2DP_IPC_CH_ID_AV_SOURCE_CTRL, A2DP_IPC_CH_ID_AV_SOURCE_AUDIO);
+    a2dp_control_init(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
 }
 
 void a2dp_source_audio_cleanup(void)
