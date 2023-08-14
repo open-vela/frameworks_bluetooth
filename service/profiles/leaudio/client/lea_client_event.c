@@ -46,3 +46,29 @@ void lea_client_msg_destory(lea_client_msg_t *msg)
     // dataptr would free by caller at anytime
     free(msg);
 }
+
+lea_csip_msg_t *lea_csip_msg_new(lea_csip_event_t event, bt_address_t *remote_addr)
+{
+    return lea_csip_msg_new_ext(event, remote_addr, 0);
+}
+
+lea_csip_msg_t *lea_csip_msg_new_ext(lea_csip_event_t event, bt_address_t *remote_addr, size_t size)
+{
+    lea_csip_msg_t *csip_msg;
+
+    csip_msg = (lea_csip_msg_t *)malloc(sizeof(lea_csip_msg_t) + size);
+    if (csip_msg == NULL)
+        return NULL;
+
+    csip_msg->event = event;
+    memset(&csip_msg->event_data, 0, sizeof(csip_msg->event_data) + size);
+    if (remote_addr != NULL)
+        memcpy(&csip_msg->addr, remote_addr, sizeof(bt_address_t));
+
+    return csip_msg;
+}
+
+void lea_csip_msg_destory(lea_csip_msg_t *csip_msg)
+{
+    free(csip_msg);
+}

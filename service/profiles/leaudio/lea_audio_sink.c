@@ -540,6 +540,13 @@ void lea_audio_sink_packet_recv(uint32_t stream_id, lea_recv_iso_data_t *packet)
     uv_mutex_unlock(&stream->queue_lock);
 }
 
+bool lea_audio_sink_is_started(void)
+{
+    lea_sink_stream_t *stream = &g_sink_stream;
+
+    return stream->ready;
+}
+
 void lea_audio_sink_cleanup(void)
 {
     ipc_close(g_sink_ipc, IPC_CH_ID_AV_SINK_CTRL);

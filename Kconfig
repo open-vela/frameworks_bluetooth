@@ -384,6 +384,12 @@ config BLUETOOTH_LEAUDIO_CLIENT_MAX_CONNECTIONS
 	help
 		leaudio client max connections
 
+config BLUETOOTH_LEAUDIO_CLIENT_MAX_GROUP
+	int "leaudio client max group"
+	default 4
+	help
+		leaudio client max connections
+
 config BLUETOOTH_LEAUDIO_CLIENT_MAX_ALLOC_NUMBER
 	int "leaudio client max alloc number"
 	default 64
