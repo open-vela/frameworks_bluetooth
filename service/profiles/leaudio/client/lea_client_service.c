@@ -57,13 +57,24 @@
  ****************************************************************************/
 #define LEA_CLIENT_SRIK_SIZE        16
 #define LEA_CLIENT_GROUP_ID_DEFAULT 0
-#define LEA_CLIENT_MAX_STREAM_NUM   (CONFIG_BLUETOOTH_LEAUDIO_CLIENT_ASE_MAX_NUMBER * CONFIG_BLUETOOTH_LEAUDIO_CLIENT_MAX_GROUP)
+
+typedef enum {
+    LEA_ASCS_OP_IDLE,
+    LEA_ASCS_OP_CODEC,
+    LEA_ASCS_OP_QOS,
+    LEA_ASCS_OP_ENABLING,
+    LEA_ASCS_OP_STREAMING,
+    LEA_ASCS_OP_DISABLING,
+    LEA_ASCS_OP_RELEASING,
+} lea_client_ascs_op_t;
+
 typedef struct {
     bool is_source;
     uint8_t ase_id;
     uint8_t ase_state;
     uint32_t stream_id;
-} lea_client_endpoint;
+    lea_client_ascs_op_t op;
+} lea_client_endpoint_t;
 
 typedef struct
 {
@@ -85,11 +96,12 @@ typedef struct
     pthread_mutex_t device_lock;
 
     lea_client_capability_t pac[CONFIG_BLUETOOTH_LEAUDIO_CLIENT_PAC_MAX_NUMBER];
-    lea_client_endpoint ase[CONFIG_BLUETOOTH_LEAUDIO_CLIENT_ASE_MAX_NUMBER];
+    lea_client_endpoint_t ase[CONFIG_BLUETOOTH_LEAUDIO_CLIENT_ASE_MAX_NUMBER];
 } lea_client_device_t;
+
 typedef struct {
     uint8_t cs_size;
-    uint8_t state;
+    lea_client_ascs_op_t op;
     uint8_t sirk[LEA_CLIENT_SRIK_SIZE];
 
     uint32_t group_id;
@@ -114,6 +126,7 @@ typedef struct
  ****************************************************************************/
 static lea_client_state_machine_t *get_state_machine(bt_address_t *addr);
 static bt_status_t lea_client_send_message(lea_client_msg_t *msg);
+static lea_client_group_t *find_group_by_id(uint32_t group_id);
 
 static void on_lea_audio_suspend(uint32_t stream_id);
 static void on_lea_audio_resume(uint32_t stream_id);
@@ -193,6 +206,19 @@ static lea_client_device_t *find_device_by_group_addr(lea_client_group_t *group,
     return bt_list_find(group->devices, device_addr_cmp_cb, addr);
 }
 
+static lea_client_device_t *find_device_by_groupid_addr(uint32_t group_id, bt_address_t *addr)
+{
+    lea_client_group_t *group;
+
+    group = find_group_by_id(group_id);
+    if (!group) {
+        BT_LOGE("%s, group(%u) not found", __func__, group_id);
+        return NULL;
+    }
+
+    return find_device_by_group_addr(group, addr);
+}
+
 static lea_client_group_t *find_group_by_addr(bt_address_t *addr)
 {
     lea_client_service_t *service = &g_lea_client_service;
@@ -226,6 +252,21 @@ static lea_client_device_t *find_device_by_addr(bt_address_t *addr)
             return device;
         }
     }
+    return NULL;
+}
+
+static lea_client_endpoint_t *find_ase_by_device_streamid(lea_client_device_t *device, uint32_t stream_id)
+{
+    lea_client_endpoint_t *ase;
+    int index;
+
+    for (index = 0; index < device->ase_number; index++) {
+        ase = &device->ase[index];
+        if (ase->stream_id == stream_id) {
+            return ase;
+        }
+    }
+
     return NULL;
 }
 
@@ -418,6 +459,37 @@ static void group_move_member(lea_client_group_t *src, lea_client_group_t *des, 
     bt_list_move(src->devices, des->devices, device);
 }
 
+static bool check_group_completed_by_op(uint32_t group_id, lea_client_ascs_op_t op)
+{
+    bt_list_t *list;
+    lea_client_device_t *device;
+    bt_list_node_t *node;
+    lea_client_group_t *group;
+    int index;
+
+    group = find_group_by_id(group_id);
+    if (!group) {
+        return false;
+    }
+
+    if (group->op == op) {
+        return true;
+    }
+
+    list = group->devices;
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        device = bt_list_node(node);
+        for (index = 0; index < device->ase_number; index++) {
+            if (device->ase[index].op != op) {
+                return false;
+            }
+        }
+    }
+
+    group->op = op;
+    return true;
+}
+
 static lea_client_state_machine_t *get_state_machine(bt_address_t *addr)
 {
     lea_client_service_t *service = &g_lea_client_service;
@@ -527,6 +599,14 @@ static void lea_csip_process_message(void *data)
         break;
     }
     case STACK_EVENT_CSIP_CS_CREATED: {
+        lea_client_group_t *group;
+
+        group = find_group_by_sirk(msg->event_data.dataarry);
+        if (group) {
+            BT_LOGE("%s, group exist", __func__);
+            return;
+        }
+
         lea_client_group_new(msg->event_data.dataarry);
         break;
     }
@@ -601,6 +681,7 @@ static void lea_csip_process_message(void *data)
             BT_LOGE("%s, group not found", __func__);
             return;
         }
+
         LEAC_CALLBACK_FOREACH(service->callbacks, client_group_member_discovered_cb, group->group_id, &msg->addr);
         break;
     }
@@ -643,8 +724,8 @@ static void lea_csip_process_message(void *data)
             BT_LOGE("%s, group not found", __func__);
             return;
         }
-        LEAC_CALLBACK_FOREACH(service->callbacks, client_group_discovery_stop_cb, group->group_id);
 
+        LEAC_CALLBACK_FOREACH(service->callbacks, client_group_discovery_stop_cb, group->group_id);
         break;
     }
     default: {
@@ -887,16 +968,17 @@ static bt_status_t lea_client_get_group_id(bt_address_t *addr, uint32_t *group_i
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t get_ases_streams_id_form_group(uint32_t group_id, uint8_t *num, uint32_t *stream_ids)
+static bt_status_t get_ases_streams_id_form_group(uint32_t group_id, uint8_t *num, uint32_t *stream_ids)
 {
     lea_client_service_t *service = &g_lea_client_service;
     bt_list_node_t *cnode;
     bt_list_t *clist;
     lea_client_device_t *device;
     lea_client_group_t *group;
-    int index;
+    int index, cnt;
 
     *num = 0;
+    cnt = 0;
     group = find_group_by_id(group_id);
     if (!group) {
         BT_LOGE("%s, group no exist", __func__);
@@ -908,9 +990,10 @@ bt_status_t get_ases_streams_id_form_group(uint32_t group_id, uint8_t *num, uint
     for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
         device = bt_list_node(cnode);
         for (index = 0; index < device->ase_number; index++) {
-            stream_ids[*num++] = device->ase[index].stream_id;
+            stream_ids[cnt++] = device->ase[index].stream_id;
         }
     }
+    *num = cnt;
     pthread_mutex_unlock(&service->group_lock);
 
     return BT_STATUS_SUCCESS;
@@ -919,19 +1002,12 @@ bt_status_t get_ases_streams_id_form_group(uint32_t group_id, uint8_t *num, uint
 static bt_status_t get_ases_streams_id_from_addr(uint32_t group_id, bt_address_t *addr, uint8_t *num, uint32_t *stream_ids)
 {
     lea_client_device_t *device;
-    lea_client_group_t *group;
     int index;
 
-    group = find_group_by_id(group_id);
-    if (!group) {
-        BT_LOGE("%s, group no exist", __func__);
-        return BT_STATUS_NOT_FOUND;
-    }
-
-    device = find_device_by_group_addr(group, addr);
+    device = find_device_by_groupid_addr(group_id, addr);
     if (!device) {
-        BT_LOGE("%s, device no exist", __func__);
-        return BT_STATUS_DEVICE_NOT_FOUND;
+        BT_LOGE("%s, device not found", __func__);
+        return BT_STATUS_NOT_FOUND;
     }
 
     pthread_mutex_lock(&device->device_lock);
@@ -1097,19 +1173,13 @@ static bt_status_t lea_client_discovery_member_stop(uint32_t group_id)
 static bt_status_t lea_client_group_add_member(uint32_t group_id, bt_address_t *addr)
 {
     lea_client_service_t *service = &g_lea_client_service;
-    lea_client_group_t *group;
     lea_client_device_t *device;
     lea_client_state_machine_t *leasm;
 
     CHECK_ENABLED();
-    group = find_group_by_id(group_id);
-    if (!group) {
-        return BT_STATUS_NOT_FOUND;
-    }
-
-    device = find_device_by_group_addr(group, addr);
+    device = find_device_by_groupid_addr(group_id, addr);
     if (device) {
-        return BT_STATUS_SUCCESS;
+        goto end;
     }
 
     leasm = lea_client_state_machine_new(addr, (void *)service);
@@ -1121,6 +1191,7 @@ static bt_status_t lea_client_group_add_member(uint32_t group_id, bt_address_t *
     device = lea_client_device_new(addr, leasm);
     group_add_member(group_id, device);
 
+end:
     LEAC_CALLBACK_FOREACH(service->callbacks, client_group_member_added_cb, group_id, addr);
     return BT_STATUS_SUCCESS;
 }
@@ -1335,7 +1406,7 @@ void lea_client_notify_connection_state_changed(bt_address_t *addr,
     LEAC_CALLBACK_FOREACH(service->callbacks, client_connection_state_cb, state, addr);
 }
 
-static bt_status_t lea_client_ucc_get_prefer_stream(bt_address_t *addr, lea_client_endpoint *endpoint, lea_audio_stream_t *stream)
+static bt_status_t lea_client_ucc_get_prefer_stream(bt_address_t *addr, lea_client_endpoint_t *endpoint, lea_audio_stream_t *stream)
 {
     lea_client_device_t *device;
 
@@ -1383,7 +1454,7 @@ static void lea_client_free_cis_id(uint8_t cis_id)
     index_free(service->index_allocator, cis_id);
 }
 
-static bt_status_t lea_client_get_stream_id(uint32_t group_id, bt_address_t *addr, lea_client_endpoint *endpoint,
+static bt_status_t lea_client_get_stream_id(uint32_t group_id, bt_address_t *addr, lea_client_endpoint_t *endpoint,
                                             uint8_t cis_id, uint32_t *stream_id)
 {
     CHECK_ENABLED();
@@ -1398,7 +1469,6 @@ static bt_status_t lea_client_get_stream_id(uint32_t group_id, bt_address_t *add
 
 bt_status_t lea_client_ucc_add_streams(uint32_t group_id, bt_address_t *addr)
 {
-    lea_client_group_t *group;
     lea_client_device_t *device;
     lea_audio_stream_t stream;
     int index;
@@ -1406,15 +1476,9 @@ bt_status_t lea_client_ucc_add_streams(uint32_t group_id, bt_address_t *addr)
     bt_status_t ret;
     uint32_t stream_id;
 
-    group = find_group_by_id(group_id);
-    if (!group) {
-        BT_LOGE("%s, group no exist", __func__);
-        return BT_STATUS_NOT_FOUND;
-    }
-
-    device = find_device_by_group_addr(group, addr);
+    device = find_device_by_groupid_addr(group_id, addr);
     if (!device) {
-        BT_LOGE("%s, device no exist", __func__);
+        BT_LOGE("%s, device not found", __func__);
         return BT_STATUS_NOT_FOUND;
     }
 
@@ -1494,17 +1558,44 @@ bt_status_t lea_client_ucc_config_codec(uint32_t group_id, bt_address_t *addr)
     return bt_sal_lea_ucc_group_request_codec(group_id, number, stream_ids);
 }
 
-bt_status_t lea_client_ucc_config_qos(uint32_t group_id, bt_address_t *addr)
+bt_status_t lea_client_ucc_config_qos(uint32_t group_id, bt_address_t *addr, uint32_t stream_id)
 {
+    lea_client_service_t *service = &g_lea_client_service;
+    bool completed;
     uint8_t number;
-    uint32_t stream_ids[LEA_CLIENT_MAX_STREAM_NUM];
     bt_status_t ret;
+    uint32_t stream_ids[LEA_CLIENT_MAX_STREAM_NUM];
+    lea_client_device_t *device;
+    lea_client_endpoint_t *ase;
 
-    ret = get_ases_streams_id_from_addr(group_id, addr, &number, stream_ids);
+    device = find_device_by_groupid_addr(group_id, addr);
+    if (!device) {
+        return BT_STATUS_NOT_FOUND;
+    }
+
+    ase = find_ase_by_device_streamid(device, stream_id);
+    if (!ase) {
+        return BT_STATUS_NOT_FOUND;
+    }
+
+    pthread_mutex_lock(&device->device_lock);
+    ase->op = LEA_ASCS_OP_QOS;
+    pthread_mutex_unlock(&device->device_lock);
+
+    pthread_mutex_lock(&service->group_lock);
+    completed = check_group_completed_by_op(group_id, LEA_ASCS_OP_QOS);
+    pthread_mutex_unlock(&service->group_lock);
+    if (!completed) {
+        BT_LOGD("%s, addr:%s group not completed", __func__, bt_addr_str(addr));
+        return BT_STATUS_FAIL;
+    }
+
+    ret = get_ases_streams_id_form_group(group_id, &number, stream_ids);
     if (ret != BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, get_ases_streams_id_from_addr failed", __func__);
+        BT_LOGE("%s, get_ases_streams_id_form_group failed", __func__);
         return ret;
     }
+    BT_LOGD("%s, addr:%s, number:%d", __func__, bt_addr_str(addr), number);
 
     if (number > LEA_CLIENT_MAX_STREAM_NUM) {
         BT_LOGE("%s, stream number(%d) over max(%d)", __func__, number,
@@ -1516,19 +1607,47 @@ bt_status_t lea_client_ucc_config_qos(uint32_t group_id, bt_address_t *addr)
                                             stream_ids);
 }
 
-bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t *addr)
+bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t *addr, uint32_t stream_id)
 {
+    lea_client_service_t *service = &g_lea_client_service;
     uint8_t number;
     bt_status_t ret;
     int index;
     uint32_t stream_ids[LEA_CLIENT_MAX_STREAM_NUM];
-    lea_metadata_t metadata[CONFIG_BLUETOOTH_LEAUDIO_CLIENT_METADATA_MAX_NUMBER];
+    lea_metadata_t metadata[LEA_CLIENT_MAX_STREAM_NUM];
+    bool completed;
+    lea_client_device_t *device;
+    lea_client_endpoint_t *ase;
+    lea_client_msg_t *msg;
 
-    ret = get_ases_streams_id_from_addr(group_id, addr, &number, stream_ids);
+    device = find_device_by_groupid_addr(group_id, addr);
+    if (!device) {
+        return BT_STATUS_NOT_FOUND;
+    }
+
+    ase = find_ase_by_device_streamid(device, stream_id);
+    if (!ase) {
+        return BT_STATUS_NOT_FOUND;
+    }
+
+    pthread_mutex_lock(&device->device_lock);
+    ase->op = LEA_ASCS_OP_ENABLING;
+    pthread_mutex_unlock(&device->device_lock);
+
+    pthread_mutex_lock(&service->group_lock);
+    completed = check_group_completed_by_op(group_id, LEA_ASCS_OP_ENABLING);
+    pthread_mutex_unlock(&service->group_lock);
+    if (!completed) {
+        BT_LOGD("%s, addr:%s group not completed", __func__, bt_addr_str(addr));
+        return BT_STATUS_FAIL;
+    }
+
+    ret = get_ases_streams_id_form_group(group_id, &number, stream_ids);
     if (ret != BT_STATUS_SUCCESS) {
-        BT_LOGE("%s, get_ases_streams_id_from_addr failed", __func__);
+        BT_LOGE("%s, get_ases_streams_id_form_group failed", __func__);
         return ret;
     }
+    BT_LOGD("%s, addr:%s, number:%d", __func__, bt_addr_str(addr), number);
 
     if (number > LEA_CLIENT_MAX_STREAM_NUM) {
         BT_LOGE("%s, stream number(%d) over max(%d)", __func__, number,
@@ -1536,14 +1655,24 @@ bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t *addr)
         return BT_STATUS_NOMEM;
     }
 
-    for (index = 0; index < CONFIG_BLUETOOTH_LEAUDIO_CLIENT_METADATA_MAX_NUMBER; index++) {
+    for (index = 0; index < LEA_CLIENT_MAX_STREAM_NUM; index++) {
         // todo prefer from current ctx and remote/local supported ctx
         metadata[index].streaming_contexts = ADPT_LEA_CONTEXT_TYPE_CONVERSATIONAL;
         metadata[index].type = ADPT_LEA_METADATA_PREFERRED_AUDIO_CONTEXTS;
     }
 
+    // barrot stack stream started event come before enabling, here let sm come into started state
+    msg = lea_client_msg_new(STACK_EVENT_ASE_ENABLING, addr);
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    msg->data.valueint1 = stream_id;
+    msg->data.valueint2 = 0;
+    msg->data.valueint3 = group_id;
+    lea_client_send_message(msg);
+
     // todo prefer streams according to context
-    return bt_sal_lea_ucc_group_request_enable(group_id, 1, stream_ids, metadata);
+    return bt_sal_lea_ucc_group_request_enable(group_id, number, stream_ids, metadata);
 }
 
 bt_status_t lea_client_ucc_disable(uint32_t group_id, bt_address_t *addr)
@@ -1622,6 +1751,7 @@ void lea_client_on_ascs_event(bt_address_t *addr, uint8_t ase_state, bool is_sou
 {
     lea_client_device_t *device;
     int index;
+    bool found = false;
 
     device = find_device_by_addr(addr);
     if (!device) {
@@ -1630,19 +1760,18 @@ void lea_client_on_ascs_event(bt_address_t *addr, uint8_t ase_state, bool is_sou
     }
 
     pthread_mutex_lock(&device->device_lock);
-    if (ase_state == ADPT_LEA_ASE_STATE_IDLE && device->ase_number < CONFIG_BLUETOOTH_LEAUDIO_CLIENT_ASE_MAX_NUMBER) {
-        device->ase[device->ase_number].is_source = is_source;
-        device->ase[device->ase_number].ase_id = ase_id;
-        device->ase_number++;
-        pthread_mutex_unlock(&device->device_lock);
-        return;
-    }
-
     for (index = 0; index < device->ase_number; index++) {
         if (device->ase[index].ase_id == ase_id) {
             device->ase[index].ase_state = ase_state;
+            found = true;
             break;
         }
+    }
+
+    if (!found) {
+        device->ase[device->ase_number].is_source = is_source;
+        device->ase[device->ase_number].ase_id = ase_id;
+        device->ase_number++;
     }
 
     pthread_mutex_unlock(&device->device_lock);
