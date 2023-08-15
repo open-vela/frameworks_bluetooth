@@ -167,7 +167,7 @@ void adpt_lea_ucc_pac_callback(BD_ADDR remote_addr, SERVICE_LEA_PAC_INFO_S *pac_
     cap.metadata_number = pac_info->metadata_number;
     memcpy(cap.metadata_value, pac_info->metadata, sizeof(pac_info->metadata) * cap.metadata_number);
 
-    BT_LOGD("%s, pac_id:0x%08x, type:%s, codec_format:%d", __func__, pac_info->pac_id, pac_info->pac_type == LEA_PAC_TYPE_SINK_PAC ? "Sink" : "Source", pac_info->codec_id.format);
+    BT_LOGD("%s, addr:%s, pac_id:0x%08x, type:%s, codec_format:%d", __func__, bt_addr_str(&addr), pac_info->pac_id, pac_info->pac_type == LEA_PAC_TYPE_SINK_PAC ? "Sink" : "Source", pac_info->codec_id.format);
     BT_LOGD("frequencies:%d, durations:%d, channels:%d, frame_octets_min:%d, frame_octets_max:%d, max_frames:%d",
             cc->frequencies, cc->durations, cc->channels, cc->frame_octets_min, cc->frame_octets_max, cc->max_frames);
 
@@ -183,7 +183,7 @@ void adpt_lea_ucc_ase_callback(BD_ADDR remote_addr, SERVICE_LEA_ASE_VALUE_S *ase
 
     memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
 
-    BT_LOGD("%s, ASE_ID:%d, State:%s, Type:%s", __func__, ase->ase_id,
+    BT_LOGD("%s, addr:%s, ASE_ID:%d, State:%s, Type:%s", __func__, bt_addr_str(&addr), ase->ase_id,
             state[ase->ase_state], ase->ase_type == LEA_ASE_TYPE_SOURCE_ASE ? "Source" : "Sink");
 
     switch (ase->ase_state) {
@@ -217,8 +217,9 @@ void adpt_lea_ucc_sink_audio_locations_callback(BD_ADDR remote_addr, uint32_t lo
 {
     bt_address_t addr;
 
-    BT_LOGD("%s, location:0x%08x", __func__, location);
     memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
+
+    BT_LOGD("%s, addr:%s, location:0x%08x", __func__, bt_addr_str(&addr), location);
     lea_client_on_audio_localtion_event(&addr, false, location);
 }
 
@@ -226,8 +227,9 @@ void adpt_lea_ucc_source_audio_locations_callback(BD_ADDR remote_addr, uint32_t 
 {
     bt_address_t addr;
 
-    BT_LOGD("%s, location:0x%08x", __func__, location);
     memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
+
+    BT_LOGD("%s, addr:%s, location:0x%08x", __func__, bt_addr_str(&addr), location);
     lea_client_on_audio_localtion_event(&addr, true, location);
 }
 
@@ -236,8 +238,9 @@ void apdt_lea_ucc_available_audio_contexts_callback(BD_ADDR remote_addr, uint16_
 {
     bt_address_t addr;
 
-    BT_LOGD("%s, sink_ctxs:0x%04x, source_ctxs:0x%04x", __func__, sink_ctxs, src_ctxs);
     memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
+
+    BT_LOGD("%s, addr:%s, sink_ctxs:0x%04x, source_ctxs:0x%04x", __func__, bt_addr_str(&addr), sink_ctxs, src_ctxs);
     lea_client_on_available_audio_contexts_event(&addr, sink_ctxs, src_ctxs);
 }
 
@@ -246,8 +249,9 @@ void adpt_lea_ucc_supported_audio_contexts_callback(BD_ADDR remote_addr, uint16_
 {
     bt_address_t addr;
 
-    BT_LOGD("%s, sink_ctxs:0x%04x, source_ctxs:0x%04x", __func__, sink_ctxs, src_ctxs);
     memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
+
+    BT_LOGD("%s, addr:%s, sink_ctxs:0x%04x, source_ctxs:0x%04x", __func__, bt_addr_str(&addr), sink_ctxs, src_ctxs);
     lea_client_on_supported_audio_contexts_event(&addr, sink_ctxs, src_ctxs);
 }
 
@@ -261,8 +265,9 @@ void adpt_lea_ucc_config_codec_complete_callback(BD_ADDR remote_addr, LEA_IS_ID 
 {
     bt_address_t addr;
 
-    BT_LOGD("[Stream: 0x%08x][UCC configuring codec complete, result %d]\r\n>", stream_id, result);
     memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
+
+    BT_LOGD("addr:%s, [Stream: 0x%08x][UCC configuring codec complete, result %d]", bt_addr_str(&addr), stream_id, result);
     lea_client_on_ascs_completed(&addr, stream_id, LEA_ASE_OP_CONFIG_CODEC, result);
 }
 
@@ -271,8 +276,9 @@ void adpt_lea_ucc_config_qos_complete_callback(BD_ADDR remote_addr, LEA_IS_ID st
 {
     bt_address_t addr;
 
-    BT_LOGD("[Stream: 0x%08x][UCC configuring QoS complete, result %d]\r\n>", stream_id, result);
     memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
+
+    BT_LOGD("addr:%s, [Stream: 0x%08x][UCC configuring QoS complete, result %d]", bt_addr_str(&addr), stream_id, result);
     lea_client_on_ascs_completed(&addr, stream_id, LEA_ASE_OP_CONFIG_QOS, result);
 }
 
@@ -281,8 +287,9 @@ void adpt_lea_ucc_enable_complete_callback(BD_ADDR remote_addr, LEA_IS_ID stream
 {
     bt_address_t addr;
 
-    BT_LOGD("[Stream: 0x%08x][UCC enabling complete, result %d]\r\n>", stream_id, result);
     memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
+
+    BT_LOGD("addr:%s, [Stream: 0x%08x][UCC enabling complete, result %d]", bt_addr_str(&addr), stream_id, result);
     lea_client_on_ascs_completed(&addr, stream_id, LEA_ASE_OP_ENABLE, result);
 }
 
@@ -291,8 +298,9 @@ void adpt_lea_ucc_disable_complete_callback(BD_ADDR remote_addr, LEA_IS_ID strea
 {
     bt_address_t addr;
 
-    BT_LOGD("[Stream: 0x%08x][UCC disabling complete, result %d]\r\n>", stream_id, result);
     memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
+
+    BT_LOGD("addr:%s, [Stream: 0x%08x][UCC disabling complete, result %d]", bt_addr_str(&addr), stream_id, result);
     lea_client_on_ascs_completed(&addr, stream_id, LEA_ASE_OP_DISABLE, result);
 }
 
@@ -301,8 +309,9 @@ void adpt_lea_ucc_release_complete_callback(BD_ADDR remote_addr, LEA_IS_ID strea
 {
     bt_address_t addr;
 
-    BT_LOGD("[Stream: 0x%08x][UCC releasing complete, result %d]\r\n>", stream_id, result);
     memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
+
+    BT_LOGD("addr:%s, [Stream: 0x%08x][UCC releasing complete, result %d]", bt_addr_str(&addr), stream_id, result);
     lea_client_on_ascs_completed(&addr, stream_id, LEA_ASE_OP_RELEASE, result);
 }
 
@@ -311,8 +320,9 @@ void adpt_lea_ucc_update_metadata_complete_callback(BD_ADDR remote_addr, LEA_IS_
 {
     bt_address_t addr;
 
-    BT_LOGD("[Stream: 0x%08x][UCC updating metadata complete, result %d]\r\n>", stream_id, result);
     memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
+
+    BT_LOGD("addr:%s, [Stream: 0x%08x][UCC updating metadata complete, result %d]", bt_addr_str(&addr), stream_id, result);
     lea_client_on_ascs_completed(&addr, stream_id, LEA_ASE_OP_UPDATE_METADATA, result);
 }
 
@@ -324,7 +334,10 @@ void adpt_lea_ucc_cap_annoucement_callback(BD_ADDR remote_addr, uint8_t type)
 void adpt_lea_ucc_bap_annoucement_callback(BD_ADDR remote_addr,
                                            SERVICE_LEA_BAP_ANNOUNCEMENT_S *announcement)
 {
-    BT_LOGD("%s, type:%d, available sink_ctx:0x%04x, available source_ctx:0x%04x",
+    bt_address_t addr;
+
+    memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
+    BT_LOGD("%s, addr:%s, type:%d, available sink_ctx:0x%04x, available source_ctx:0x%04x", bt_addr_str(&addr),
             __func__, announcement->type, announcement->available_ctx.sink, announcement->available_ctx.source);
 }
 
@@ -568,7 +581,7 @@ bt_status_t bt_sal_lea_ucc_group_request_qos(uint32_t group_id, uint8_t stream_n
 
 bt_status_t bt_sal_lea_ucc_group_request_enable(uint32_t group_id, uint8_t stream_num, uint32_t *stream_ids, lea_metadata_t *metadata)
 {
-    SERVICE_LEA_ASE_ENABLING_PARAM_S enable_par[CONFIG_BLUETOOTH_LEAUDIO_CLIENT_ASE_MAX_NUMBER];
+    SERVICE_LEA_ASE_ENABLING_PARAM_S enable_par[LEA_CLIENT_MAX_STREAM_NUM];
     int index;
     SERVICE_LEA_METADATA_S md;
 
