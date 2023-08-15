@@ -94,8 +94,8 @@ void lea_client_on_supported_audio_contexts_event(bt_address_t *addr, uint32_t s
 bt_status_t lea_client_ucc_add_streams(uint32_t group_id, bt_address_t *addr);
 bt_status_t lea_client_ucc_remove_streams(uint32_t group_id, bt_address_t *addr);
 bt_status_t lea_client_ucc_config_codec(uint32_t group_id, bt_address_t *addr);
-bt_status_t lea_client_ucc_config_qos(uint32_t group_id, bt_address_t *addr);
-bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t *addr);
+bt_status_t lea_client_ucc_config_qos(uint32_t group_id, bt_address_t *addr, uint32_t stream_id);
+bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t *addr, uint32_t stream_id);
 bt_status_t lea_client_ucc_disable(uint32_t group_id, bt_address_t *addr);
 
 void lea_client_on_stream_added(bt_address_t *addr, uint32_t stream_id);

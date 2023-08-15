@@ -319,21 +319,23 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         break;
     }
     case STACK_EVENT_ASE_CODEC_CONFIG: {
-        if (!data->valueint1 && !data->valueint2) {
-            lea_client_ucc_config_qos(data->valueint3, &leas_sm->addr);
+        if (data->valueint2) {
+            BT_LOGD("addr%s, stream:0x%08x, codec fail result:%d", bt_addr_str(&leas_sm->addr), data->valueint1, data->valueint2);
+            return false;
         }
+        lea_client_ucc_config_qos(data->valueint3, &leas_sm->addr, data->valueint1);
         break;
     }
     case STACK_EVENT_ASE_QOS_CONFIG: {
-        if (!data->valueint1 && !data->valueint2) {
-            lea_client_ucc_enable(data->valueint3, &leas_sm->addr);
-            // transfer started_state in qos state, STACK_EVENT_ASE_ENABLING would
-            // come after stream started.
-            hsm_transition_to(sm, &started_state);
+        if (data->valueint2) {
+            BT_LOGD("addr%s, stream:0x%08x, qos fail result:%d", bt_addr_str(&leas_sm->addr), data->valueint1, data->valueint2);
+            return false;
         }
+        lea_client_ucc_enable(data->valueint3, &leas_sm->addr, data->valueint1);
         break;
     }
     case STACK_EVENT_ASE_ENABLING: {
+        hsm_transition_to(sm, &started_state);
         break;
     }
     case DISCONNECT_DEVICE: {
