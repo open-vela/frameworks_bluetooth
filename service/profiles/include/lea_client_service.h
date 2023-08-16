@@ -29,7 +29,7 @@ typedef struct {
     lea_codec_id_t codec_id;
     lea_codec_cap_t codec_cap;
     uint8_t metadata_number;
-    lea_metadata_t metadata_value[CONFIG_BLUETOOTH_LEAUDIO_CLIENT_METADATA_MAX_NUMBER];
+    lea_metadata_t metadata_value[LEA_CLIENT_MAX_STREAM_NUM];
 } lea_client_capability_t;
 
 typedef struct {
