@@ -360,7 +360,6 @@ typedef struct
 
 typedef struct
 {
-    uint8_t length; /**< includes the length of type and value. */
     uint8_t type;
     union {
         uint32_t preferred_contexts;
