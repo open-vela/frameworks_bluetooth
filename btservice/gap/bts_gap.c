@@ -664,7 +664,7 @@ static void adapter_bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_
 
 static void adapter_acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S* acl_state_param)
 {
-    BT_LOGD("%s status:%" PRIu32 ", state:%s, reasonCode:%" PRIu32 ", device[%s]", __func__,
+    BT_LOGD("%s status:%" PRIu32 ", state:%s, reasonCode:0x%" PRIX32 ", device[%s]", __func__,
         acl_state_param->status, acl_state_to_str(acl_state_param->state),
         acl_state_param->reasonCode, addr_str(acl_state_param->remote_addr));
 #ifdef CONFIG_BLUETOOTH_A2DP_I2S_OFFLOAD
