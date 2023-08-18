@@ -471,14 +471,14 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
                 BT_LOGD("%s, already started", __func__);
                 break;
             }
-            lea_audio_source_update_codec(audio_stream->stream_id, &audio_config, audio_stream->sdu_size);
+            lea_audio_source_update_codec(&audio_config, audio_stream->sdu_size);
         } else {
             if (lea_audio_sink_is_started()) {
                 BT_LOGD("%s, already started", __func__);
                 break;
             }
-            lea_audio_sink_update_codec(audio_stream->stream_id, &audio_config, audio_stream->sdu_size);
-            lea_audio_sink_start(audio_stream->stream_id);
+            lea_audio_sink_update_codec(&audio_config, audio_stream->sdu_size);
+            lea_audio_sink_start();
         }
         break;
     }
@@ -493,9 +493,9 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
 
         stream->started = false;
         if (!stream->is_source) {
-            lea_audio_source_stop(data->valueint1);
+            lea_audio_source_stop();
         } else {
-            lea_audio_sink_stop(data->valueint1);
+            lea_audio_sink_stop();
         }
         break;
     }

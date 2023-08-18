@@ -59,7 +59,6 @@ void lea_server_on_stream_suspend(uint32_t stream_id);
 void lea_server_on_metedata_updated(uint32_t stream_id);
 void lea_server_on_stream_recv(uint32_t stream_id, uint32_t time_stamp,
                                uint16_t seq_number, uint8_t *sdu, uint16_t size);
-void lea_server_on_stream_send(uint32_t stream_id);
 void lea_server_on_ascs_event(bt_address_t *addr, lea_adpt_ase_state_t event, void *data);
 
 /*

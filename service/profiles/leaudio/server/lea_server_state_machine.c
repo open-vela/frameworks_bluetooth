@@ -354,9 +354,9 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         }
 
         if (stream->is_source) {
-            lea_audio_source_stop(data->valueint1);
+            lea_audio_source_stop();
         } else {
-            lea_audio_sink_stop(data->valueint1);
+            lea_audio_sink_stop();
         }
         break;
     }
@@ -454,9 +454,7 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
     lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
     lea_server_data_t *data = (lea_server_data_t *)p_data;
 
-    if (event != STACK_EVENT_STREAN_RECV) {
-        LEAS_DBG_EVENT(sm, &leas_sm->addr, event);
-    }
+    LEAS_DBG_EVENT(sm, &leas_sm->addr, event);
 
     switch (event) {
     case STACK_EVENT_CONNECTION_STATE: {
@@ -488,21 +486,22 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
     }
     case STACK_EVENT_STREAM_STARTED: {
         lea_audio_stream_t *remote_stream = (lea_audio_stream_t *)data->dataarry;
-        lea_audio_stream_t *local_stream;
+        lea_audio_stream_t *audio_stream;
         lea_audio_config_t audio_config;
 
-        local_stream = lea_server_find_update_stream(remote_stream);
-        if (!local_stream) {
+        audio_stream = lea_server_find_update_stream(remote_stream);
+        if (!audio_stream) {
             return false;
         }
+        audio_stream->started = true;
 
-        memcpy(&local_stream->addr, &leas_sm->addr, sizeof(bt_address_t));
-        audio_config = lea_server_covert_audio_codec(&local_stream->codec_cfg);
-        if (local_stream->is_source) {
-            lea_audio_source_update_codec(local_stream->stream_id, &audio_config, local_stream->sdu_size);
+        memcpy(&audio_stream->addr, &leas_sm->addr, sizeof(bt_address_t));
+        audio_config = lea_server_covert_audio_codec(&audio_stream->codec_cfg);
+        if (audio_stream->is_source) {
+            lea_audio_source_update_codec(&audio_config, audio_stream->sdu_size);
         } else {
-            lea_audio_sink_update_codec(local_stream->stream_id, &audio_config, local_stream->sdu_size);
-            lea_audio_sink_start(local_stream->stream_id);
+            lea_audio_sink_update_codec(&audio_config, audio_stream->sdu_size);
+            lea_audio_sink_start();
         }
         break;
     }
@@ -514,20 +513,17 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
             BT_LOGE("failed, stream %d not found", data->valueint1);
             return false;
         }
+        stream->started = false;
 
         if (stream->is_source) {
-            lea_audio_source_stop(data->valueint1);
+            lea_audio_source_stop();
         } else {
-            lea_audio_sink_stop(data->valueint1);
+            lea_audio_sink_stop();
         }
         break;
     }
     case STACK_EVENT_ASE_DISABLING: {
         hsm_transition_to(sm, &closing_state);
-        break;
-    }
-    case STACK_EVENT_STREAN_RECV: {
-        lea_audio_sink_packet_recv(data->valueint1, data->datapointer);
         break;
     }
     case STACK_EVENT_ASE_RELEASING: {

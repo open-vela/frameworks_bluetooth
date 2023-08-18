@@ -77,7 +77,6 @@ typedef struct {
     uv_mutex_t queue_lock;
     service_timer_t *recv_timer;
     struct list_node packet_queue;
-    uint32_t stream_id;
     lea_audio_config_t audio_config;
 } lea_sink_stream_t;
 
@@ -141,30 +140,28 @@ static const char *ipc_event_to_string(ipc_event_t event)
 
 static void lea_sink_recv_ctrl_data(audio_ctrl_cmd_t cmd)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
-
     BT_LOGD("%s: lea-ctrl-cmd : %s", __func__, audio_event_to_string(cmd));
 
     switch (cmd) {
     case AUDIO_CTRL_CMD_START: {
-        lea_audio_sink_start(stream->stream_id);
+        lea_audio_sink_start();
         lea_control_event(IPC_CH_ID_AV_SINK_CTRL, AUDIO_CTRL_EVT_STARTED);
         if (g_sink_callbacks) {
-            g_sink_callbacks->lea_audio_resume_cb(stream->stream_id);
+            g_sink_callbacks->lea_audio_resume_cb();
         }
         break;
     }
     case AUDIO_CTRL_CMD_STOP: {
-        lea_audio_sink_stop(stream->stream_id);
+        lea_audio_sink_stop();
         lea_control_event(IPC_CH_ID_AV_SINK_CTRL, AUDIO_CTRL_EVT_STOPPED);
         if (g_sink_callbacks) {
-            g_sink_callbacks->lea_audio_suspend_cb(stream->stream_id);
+            g_sink_callbacks->lea_audio_suspend_cb();
         }
         break;
     }
     case AUDIO_CTRL_CMD_CONFIG_DONE: {
         if (g_sink_callbacks) {
-            g_sink_callbacks->lea_audio_meatadata_updated_cb(stream->stream_id);
+            g_sink_callbacks->lea_audio_meatadata_updated_cb();
         }
         break;
     }
@@ -343,13 +340,24 @@ static void lea_sink_flush_packet_queue(void)
  * Public function
  ****************************************************************************/
 
-bt_status_t lea_audio_sink_init(lea_sink_callabcks_t *callback)
+void lea_audio_sink_set_callback(lea_sink_callabcks_t *callback)
 {
     g_sink_callbacks = callback;
-    g_sink_stream.recv_timer = NULL;
-    g_sink_stream.state = STREAM_STATE_OFF;
-    uv_mutex_init(&g_sink_stream.queue_lock);
-    list_initialize(&g_sink_stream.packet_queue);
+}
+
+bt_status_t lea_audio_sink_init(void)
+{
+    lea_sink_stream_t *stream = &g_sink_stream;
+
+    if (g_sink_ipc) {
+        BT_LOGD("%s, already inited", __func__);
+        return BT_STATUS_SUCCESS;
+    }
+
+    stream->recv_timer = NULL;
+    stream->state = STREAM_STATE_OFF;
+    uv_mutex_init(&stream->queue_lock);
+    list_initialize(&stream->packet_queue);
 
     g_sink_ipc = ipc_init(get_service_uv_loop());
     if (!g_sink_ipc) {
@@ -396,11 +404,10 @@ void lea_audio_sink_packet_free(lea_recv_iso_data_t *packet)
     free(packet);
 }
 
-bt_status_t lea_audio_sink_start(uint32_t stream_id)
+bt_status_t lea_audio_sink_start(void)
 {
     lea_sink_stream_t *stream = &g_sink_stream;
 
-    stream->stream_id = stream_id;
     stream->ready = true;
 
     if (stream->state == STREAM_STATE_RUNNING) {
@@ -414,7 +421,7 @@ bt_status_t lea_audio_sink_start(uint32_t stream_id)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t lea_audio_sink_stop(uint32_t stream_id)
+bt_status_t lea_audio_sink_stop(void)
 {
     lea_sink_stream_t *stream = &g_sink_stream;
 
@@ -426,13 +433,14 @@ bt_status_t lea_audio_sink_stop(uint32_t stream_id)
 
     service_loop_cancel_timer(stream->recv_timer);
     stream->recv_timer = NULL;
+
     lea_sink_flush_packet_queue();
     stream->state = STREAM_STATE_OFF;
 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t lea_audio_sink_suspend(uint32_t stream_id)
+bt_status_t lea_audio_sink_suspend(void)
 {
     lea_sink_stream_t *stream = &g_sink_stream;
 
@@ -441,10 +449,10 @@ bt_status_t lea_audio_sink_suspend(uint32_t stream_id)
         return BT_STATUS_FAIL;
     }
 
-    return lea_audio_sink_stop(stream->stream_id);
+    return lea_audio_sink_stop();
 }
 
-bt_status_t lea_audio_sink_resume(uint32_t stream_id)
+bt_status_t lea_audio_sink_resume(void)
 {
     lea_sink_stream_t *stream = &g_sink_stream;
 
@@ -453,10 +461,10 @@ bt_status_t lea_audio_sink_resume(uint32_t stream_id)
         return BT_STATUS_FAIL;
     }
 
-    return lea_audio_sink_start(stream->stream_id);
+    return lea_audio_sink_start();
 }
 
-bt_status_t lea_audio_sink_mute(uint32_t stream_id, bool mute)
+bt_status_t lea_audio_sink_mute(bool mute)
 {
     lea_sink_stream_t *stream = &g_sink_stream;
 
@@ -466,13 +474,13 @@ bt_status_t lea_audio_sink_mute(uint32_t stream_id, bool mute)
     }
 
     if (mute) {
-        return lea_audio_sink_stop(stream->stream_id);
+        return lea_audio_sink_stop();
     } else {
-        return lea_audio_sink_resume(stream->stream_id);
+        return lea_audio_sink_resume();
     }
 }
 
-bt_status_t lea_audio_sink_update_codec(uint32_t stream_id, lea_audio_config_t *audio_config, uint16_t sdu_size)
+bt_status_t lea_audio_sink_update_codec(lea_audio_config_t *audio_config, uint16_t sdu_size)
 {
     lea_sink_stream_t *stream = &g_sink_stream;
     uint8_t buffer[64];
@@ -481,7 +489,6 @@ bt_status_t lea_audio_sink_update_codec(uint32_t stream_id, lea_audio_config_t *
 
     (void)sdu_size;
     memcpy(&stream->audio_config, audio_config, sizeof(lea_audio_config_t));
-    stream->stream_id = stream_id;
     audio_config->sdu_size = sdu_size;
 
     len = 21;
@@ -506,7 +513,7 @@ bt_status_t lea_audio_sink_update_codec(uint32_t stream_id, lea_audio_config_t *
     return BT_STATUS_SUCCESS;
 }
 
-void lea_audio_sink_packet_recv(uint32_t stream_id, lea_recv_iso_data_t *packet)
+void lea_audio_sink_packet_recv(lea_recv_iso_data_t *packet)
 {
     lea_sink_stream_t *stream = &g_sink_stream;
     struct list_node *queue = &stream->packet_queue;
@@ -549,6 +556,9 @@ bool lea_audio_sink_is_started(void)
 
 void lea_audio_sink_cleanup(void)
 {
+    lea_sink_stream_t *stream = &g_sink_stream;
+
+    stream->ready = false;
     ipc_close(g_sink_ipc, IPC_CH_ID_AV_SINK_CTRL);
     ipc_close(g_sink_ipc, IPC_CH_ID_AV_SINK_AUDIO);
     ipc_cleanup(g_sink_ipc);

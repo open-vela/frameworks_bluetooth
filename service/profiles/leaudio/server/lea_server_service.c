@@ -76,10 +76,14 @@ typedef struct
 static lea_server_state_machine_t *get_state_machine(bt_address_t *addr);
 static bt_status_t lea_server_send_message(lea_server_msg_t *msg);
 
-static void on_lea_audio_suspend(uint32_t stream_id);
-static void on_lea_audio_resume(uint32_t stream_id);
-static void on_lea_meatadata_updated(uint32_t stream_id);
-static void on_lea_audio_send(uint32_t stream_id, uint8_t *buffer, uint16_t length);
+static void on_lea_sink_audio_suspend();
+static void on_lea_sink_audio_resume();
+static void on_lea_sink_meatadata_updated();
+
+static void on_lea_source_audio_suspend();
+static void on_lea_source_audio_resume();
+static void on_lea_source_meatadata_updated();
+static void on_lea_source_audio_send(uint8_t *buffer, uint16_t length);
 
 static void *lea_server_register_callbacks(void *remote, const lea_server_callbacks_t *callbacks);
 static bool lea_server_unregister_callbacks(void **remote, void *cookie);
@@ -101,16 +105,16 @@ static lea_server_service_t g_lea_server_service = {
 };
 
 static lea_sink_callabcks_t lea_sink_callbacks = {
-    .lea_audio_meatadata_updated_cb = on_lea_meatadata_updated,
-    .lea_audio_resume_cb = on_lea_audio_resume,
-    .lea_audio_suspend_cb = on_lea_audio_suspend,
+    .lea_audio_meatadata_updated_cb = on_lea_sink_meatadata_updated,
+    .lea_audio_resume_cb = on_lea_sink_audio_resume,
+    .lea_audio_suspend_cb = on_lea_sink_audio_suspend,
 };
 
 static lea_source_callabcks_t lea_source_callbacks = {
-    .lea_audio_meatadata_updated_cb = on_lea_meatadata_updated,
-    .lea_audio_resume_cb = on_lea_audio_resume,
-    .lea_audio_suspend_cb = on_lea_audio_suspend,
-    .lea_audio_send_cb = on_lea_audio_send,
+    .lea_audio_meatadata_updated_cb = on_lea_source_meatadata_updated,
+    .lea_audio_resume_cb = on_lea_source_audio_resume,
+    .lea_audio_suspend_cb = on_lea_source_audio_suspend,
+    .lea_audio_send_cb = on_lea_source_audio_send,
 };
 
 static const lea_server_interface_t LEAServerInterface = {
@@ -255,87 +259,85 @@ static bt_status_t lea_server_send_event(bt_address_t *addr, lea_server_event_t 
     return lea_server_send_message(msg);
 }
 
-static void on_lea_audio_suspend(uint32_t stream_id)
+static void streams_send_message(bool is_source, lea_server_event_t event)
 {
+    lea_server_service_t *service = &g_lea_server_service;
+    bt_list_t *list = service->leas_stream;
     lea_audio_stream_t *stream;
+    bt_list_node_t *node;
     lea_server_msg_t *msg;
 
-    stream = lea_server_find_stream(stream_id);
-    if (!stream) {
-        BT_LOGW("%s, failed stream id(0x%08x) invalid", __func__, stream_id);
-        return;
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        stream = bt_list_node(node);
+        if (stream->started && (stream->is_source == is_source)) {
+            msg = lea_server_msg_new(event, &stream->addr);
+            if (!msg)
+                return;
+
+            msg->data.valueint1 = stream->stream_id;
+            lea_server_send_message(msg);
+        }
     }
-
-    msg = lea_server_msg_new(STACK_EVENT_STREAM_SUSPEND, &stream->addr);
-    if (!msg)
-        return;
-
-    BT_LOGD("%s, Stream ID:0x%08x", __func__, stream_id);
-    msg->data.valueint1 = stream_id;
-    lea_server_send_message(msg);
 }
 
-static void on_lea_audio_resume(uint32_t stream_id)
+static void on_lea_sink_audio_suspend()
 {
-    lea_audio_stream_t *stream;
-    lea_server_msg_t *msg;
-
-    stream = lea_server_find_stream(stream_id);
-    if (!stream) {
-        BT_LOGW("%s, failed stream id(0x%08x) invalid", __func__, stream_id);
-        return;
-    }
-
-    msg = lea_server_msg_new(STACK_EVENT_STREAM_RESUME, &stream->addr);
-    if (!msg)
-        return;
-
-    BT_LOGD("%s, Stream ID:0x%08x", __func__, stream_id);
-    msg->data.valueint1 = stream_id;
-    lea_server_send_message(msg);
+    // todo suspend
+    BT_LOGD("%s", __func__);
 }
 
-static void on_lea_meatadata_updated(uint32_t stream_id)
+static void on_lea_sink_audio_resume()
 {
-    lea_audio_stream_t *stream;
-    lea_server_msg_t *msg;
-
-    stream = lea_server_find_stream(stream_id);
-    if (!stream) {
-        BT_LOGW("%s, failed stream id(0x%08x) invalid", __func__, stream_id);
-        return;
-    }
-
-    msg = lea_server_msg_new(STACK_EVENT_METADATA_UPDATED, &stream->addr);
-    if (!msg)
-        return;
-
-    BT_LOGD("%s, Stream ID:0x%08x", __func__, stream_id);
-    msg->data.valueint1 = stream_id;
-    lea_server_send_message(msg);
+    // todo resume
+    BT_LOGD("%s", __func__);
 }
 
-static void on_lea_audio_send(uint32_t stream_id, uint8_t *buffer, uint16_t length)
+static void on_lea_sink_meatadata_updated()
 {
-    lea_audio_stream_t *stream;
+    streams_send_message(false, STACK_EVENT_METADATA_UPDATED);
+}
+
+static void on_lea_source_audio_suspend()
+{
+    // todo suspend
+    BT_LOGD("%s", __func__);
+}
+
+static void on_lea_source_audio_resume()
+{
+    // todo resume
+    BT_LOGD("%s", __func__);
+}
+
+static void on_lea_source_meatadata_updated()
+{
+    streams_send_message(true, STACK_EVENT_METADATA_UPDATED);
+}
+
+static void lea_audio_send_data(lea_audio_stream_t *stream, uint8_t *buffer, uint16_t length)
+{
     lea_send_iso_data_t *iso_pkt;
-    int size;
-
-    stream = lea_server_find_stream(stream_id);
-    if (!stream) {
-        return;
-    }
 
     iso_pkt = bt_sal_leas_alloc_send_buffer(stream->sdu_size, stream->iso_handle);
-    iso_pkt->sdu_length = stream->sdu_size;
-
-    size = lea_audio_source_read(stream->stream_id, iso_pkt->sdu, iso_pkt->sdu_length);
-    if (size != iso_pkt->sdu_length) {
-        BT_LOGE("%s, size:%d frame_size:%d", __func__, size, iso_pkt->sdu_length);
-        return;
-    }
+    memcpy(iso_pkt->sdu, buffer, length);
+    iso_pkt->sdu_length = length;
 
     bt_sal_leas_send_iso_data(iso_pkt);
+}
+
+static void on_lea_source_audio_send(uint8_t *buffer, uint16_t length)
+{
+    lea_server_service_t *service = &g_lea_server_service;
+    bt_list_t *list = service->leas_stream;
+    lea_audio_stream_t *stream;
+    bt_list_node_t *node;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        stream = bt_list_node(node);
+        if (stream->started && stream->is_source) {
+            lea_audio_send_data(stream, buffer, length);
+        }
+    }
 }
 
 static bt_status_t lea_server_init(void)
@@ -343,12 +345,12 @@ static bt_status_t lea_server_init(void)
     bt_status_t ret;
 
     BT_LOGD("%s", __func__);
-    ret = lea_audio_sink_init(&lea_sink_callbacks);
+    ret = lea_audio_sink_init();
     if (ret != BT_STATUS_SUCCESS) {
         return ret;
     }
 
-    ret = lea_audio_source_init(&lea_source_callbacks);
+    ret = lea_audio_source_init();
     if (ret != BT_STATUS_SUCCESS) {
         return ret;
     }
@@ -628,6 +630,12 @@ void lea_server_on_stream_started(lea_audio_stream_t *audio)
         return;
     }
 
+    if (stream->is_source) {
+        lea_audio_source_set_callback(&lea_source_callbacks);
+    } else {
+        lea_audio_sink_set_callback(&lea_sink_callbacks);
+    }
+
     msg = lea_server_msg_new_ext(STACK_EVENT_STREAM_STARTED,
                                  &stream->addr, sizeof(lea_audio_stream_t));
     if (!msg)
@@ -717,7 +725,6 @@ void lea_server_on_stream_recv(uint32_t stream_id, uint32_t time_stamp,
                                uint16_t seq_number, uint8_t *sdu, uint16_t size)
 {
     lea_audio_stream_t *stream;
-    lea_server_msg_t *msg;
     lea_recv_iso_data_t *packet;
 
     stream = lea_server_find_stream(stream_id);
@@ -726,36 +733,12 @@ void lea_server_on_stream_recv(uint32_t stream_id, uint32_t time_stamp,
         return;
     }
 
-    msg = lea_server_msg_new(STACK_EVENT_STREAN_RECV, &stream->addr);
-    if (!msg)
-        return;
-
     packet = lea_audio_sink_packet_alloc(time_stamp, seq_number, sdu, size);
     if (!packet)
         return;
 
-    msg->data.valueint1 = stream_id;
-    msg->data.datapointer = packet;
-    lea_server_send_message(msg);
-}
-
-void lea_server_on_stream_send(uint32_t stream_id)
-{
-    lea_audio_stream_t *stream;
-    lea_server_msg_t *msg;
-
-    stream = lea_server_find_stream(stream_id);
-    if (!stream) {
-        BT_LOGE("%s, failed stream_id:%d", __func__, stream_id);
-        return;
-    }
-
-    msg = lea_server_msg_new(STACK_EVENT_STREAN_SENT, &stream->addr);
-    if (!msg)
-        return;
-
-    msg->data.valueint1 = stream_id;
-    lea_server_send_message(msg);
+    // todo mix from many stream ?
+    lea_audio_sink_packet_recv(packet);
 }
 
 void lea_server_on_ascs_event(bt_address_t *addr, lea_adpt_ase_state_t evt, void *data)

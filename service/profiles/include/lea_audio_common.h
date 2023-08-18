@@ -315,10 +315,12 @@ typedef struct {
     char call_uri[0]; /**< The Incoming Call URI or Outgoing Call URI. Zero terminated UTF-8 string. Set to NULL if the URI is unknown. */
 } lea_tbs_call_list_item_t;
 
-typedef void (*lea_audio_suspend_callback)(uint32_t stream_id);
-typedef void (*lea_audio_resume_callback)(uint32_t stream_id);
-typedef void (*lea_audio_meatadata_updated_callback)(uint32_t stream_id);
-typedef void (*lea_audio_send_callback)(uint32_t stream_id, uint8_t *buffer,
-                                        uint16_t length);
+typedef void (*lea_audio_suspend_callback)(void);
+
+typedef void (*lea_audio_resume_callback)(void);
+
+typedef void (*lea_audio_meatadata_updated_callback)(void);
+
+typedef void (*lea_audio_send_callback)(uint8_t *buffer, uint16_t length);
 
 #endif
