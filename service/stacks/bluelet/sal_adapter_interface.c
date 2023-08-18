@@ -103,23 +103,23 @@ static bt_status_t sal_status_translate(uint32_t status)
 
 static void stack_state_changed_callback(SERVICE_BT_STACK_STATE stack_state)
 {
-    uint8_t state = BT_STACK_STATE_OFF;
+    uint8_t state = BT_BREDR_STACK_STATE_OFF;
 
 #if defined(CONFIG_OBELISK_BREDR_BLUELET) && !defined(CONFIG_OBELISK_LE_BLUELET)
-    state = stack_state == BT_STATE_ON ? BT_STACK_STATE_ON : BT_STACK_STATE_OFF;
+    state = stack_state == BT_STATE_ON ? BT_BREDR_STACK_STATE_ON : BT_BREDR_STACK_STATE_OFF;
 #else
     switch (adapter_get_state()) {
     case BT_ADAPTER_STATE_BLE_TURNING_ON:
         state = stack_state == BT_STATE_ON ? BLE_STACK_STATE_ON : BLE_STACK_STATE_OFF;
         break;
     case BT_ADAPTER_STATE_TURNING_ON:
-        state = stack_state == BT_STATE_ON ? BT_STACK_STATE_ON : BT_STACK_STATE_OFF;
+        state = stack_state == BT_STATE_ON ? BT_BREDR_STACK_STATE_ON : BT_BREDR_STACK_STATE_OFF;
         break;
     case BT_ADAPTER_STATE_BLE_TURNING_OFF:
         state = BLE_STACK_STATE_OFF;
         break;
     case BT_ADAPTER_STATE_TURNING_OFF:
-        state = BT_STACK_STATE_OFF;
+        state = BT_BREDR_STACK_STATE_OFF;
         break;
     default:
         break;
@@ -637,7 +637,7 @@ bt_status_t bt_sal_enable(void)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (service_adapter_gap_get_stack_state() == BT_STATE_ON) {
-        adapter_on_adapter_state_changed(BT_STACK_STATE_ON);
+        adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_ON);
         return BT_STATUS_SUCCESS;
     }
 
@@ -653,7 +653,7 @@ bt_status_t bt_sal_disable(void)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (service_adapter_gap_get_stack_state() == BT_STATE_OFF) {
-        adapter_on_adapter_state_changed(BT_STACK_STATE_OFF);
+        adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
         return BT_STATUS_SUCCESS;
     }
 
