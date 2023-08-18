@@ -68,7 +68,7 @@ a2dp_device_t *a2dp_device_new(void *ctx, uint8_t peer_sep, bt_address_t *bd_add
         return NULL;
 
     memcpy(&device->bd_addr, bd_addr, sizeof(bt_address_t));
-    memcpy(&device->peer.bd_addr, bd_addr, sizeof(bt_address_t));
+    device->peer.bd_addr = &device->bd_addr;
     a2dp_sm = a2dp_state_machine_new(ctx, peer_sep, bd_addr);
     if (!a2dp_sm) {
         BT_LOGE("Create state machine failed");

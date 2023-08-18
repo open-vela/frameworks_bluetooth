@@ -69,6 +69,8 @@ typedef struct {
     a2dp_codec_bits_per_sample_t bits_per_sample;
     a2dp_codec_channel_mode_t channel_mode;
     uint32_t bit_rate;
+    uint32_t frame_size;
+    uint32_t packet_size;
     uint8_t specific_info[20];
     union {
         sbc_param_t sbc;

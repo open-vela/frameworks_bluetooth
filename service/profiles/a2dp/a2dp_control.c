@@ -37,10 +37,10 @@
 
 #include "a2dp_codec.h"
 #include "a2dp_control.h"
-#include "audio_transport.h"
 #include "a2dp_sink.h"
 #include "a2dp_source.h"
 #include "a2dp_source_audio.h"
+#include "audio_transport.h"
 
 #include "bt_utils.h"
 #define LOG_TAG "a2dp_control"
@@ -80,7 +80,7 @@ static void a2dp_ctrl_event_with_data(uint8_t ch_id, a2dp_ctrl_evt_t event, uint
     }
 
     /* send event */
-    if (a2dp_transport!= NULL) {
+    if (a2dp_transport != NULL) {
         audio_transport_write(a2dp_transport, ch_id, stream, data_len + A2DP_CTRL_EVT_HEADER_LEN, NULL);
     }
 }
@@ -102,7 +102,7 @@ void a2dp_control_update_audio_config(uint8_t ch_id, uint8_t isvalid)
         /* set valid code */
         UINT8_TO_STREAM(p, 0);
     } else {
-        len = 21;
+        len = 29;
         /* set valid code */
         UINT8_TO_STREAM(p, 1);
         /* set codec type*/
@@ -115,6 +115,10 @@ void a2dp_control_update_audio_config(uint8_t ch_id, uint8_t isvalid)
         UINT32_TO_STREAM(p, codec_config->channel_mode);
         /* set bit rate*/
         UINT32_TO_STREAM(p, codec_config->bit_rate);
+        /* set frame size*/
+        UINT32_TO_STREAM(p, codec_config->frame_size);
+        /* set packet size*/
+        UINT32_TO_STREAM(p, codec_config->packet_size);
         if (codec_config->codec_type == BTS_A2DP_TYPE_SBC) {
             len += 20;
             /* set sbc channel mode*/
@@ -317,8 +321,8 @@ static void a2dp_data_cb(uint8_t ch_id, audio_transport_event_t event)
 
 void a2dp_control_init(uint8_t ctrl_id, uint8_t data_id)
 {
-    if (a2dp_transport== NULL) {
-        a2dp_transport= audio_transport_init(get_service_uv_loop());
+    if (a2dp_transport == NULL) {
+        a2dp_transport = audio_transport_init(get_service_uv_loop());
     }
 
     audio_transport_open(a2dp_transport, ctrl_id, audio_transport_path[ctrl_id], a2dp_ctrl_cb);

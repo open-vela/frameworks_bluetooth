@@ -101,6 +101,7 @@ static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREA
     codec_config.sample_rate = config->sample_rate;
     codec_config.channel_mode = config->channel;
     codec_config.bits_per_sample = config->bit_width;
+    codec_config.packet_size = 1024;
     memcpy(codec_config.specific_info, config->codec_info, config->codec_info_len);
     event = a2dp_event_new(CODEC_CONFIG_EVT, (void *)remote_addr);
     event->event_data.data = malloc(sizeof(codec_config));
