@@ -582,6 +582,21 @@ static void on_lea_source_audio_send(uint8_t *buffer, uint16_t length)
     }
 }
 
+static void on_lea_source_audio_send(uint8_t *buffer, uint16_t length)
+{
+    lea_server_service_t *service = &g_lea_server_service;
+    bt_list_t *list = service->leas_stream;
+    lea_audio_stream_t *stream;
+    bt_list_node_t *node;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        stream = bt_list_node(node);
+        if (stream->started && stream->is_source) {
+            lea_audio_send_data(stream, buffer, length);
+        }
+    }
+}
+
 static bt_status_t lea_server_init(void)
 {
     lea_server_service_t *service = &g_lea_server_service;
