@@ -21,6 +21,10 @@
 #ifdef CONFIG_KVDB
 #include <kvdb.h>
 #endif
+#ifdef CONFIG_UORB
+#include <connectivity/bt.h>
+#include <uORB/uORB.h>
+#endif
 
 #include "adapter_internel.h"
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
@@ -40,7 +44,6 @@
 #include "callbacks_list.h"
 #include "device.h"
 #include "hci_error.h"
-#include "advertising.h"
 #include "sal_adapter_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
@@ -88,6 +91,7 @@ typedef struct adapter_service {
     bool is_discovering;
     uint8_t max_acl_connections;
     callbacks_list_t *adapter_callbacks;
+    int adapter_state_adv;
     // bt_list_t              *remote_callbacks;
     // bt_list_t              *connected_devices;
 } adapter_service_t;
@@ -672,11 +676,38 @@ static void handle_ble_event(void *data)
     free(data);
 }
 
+static void adapter_broadcast_state(int state)
+{
+#ifdef CONFIG_UORB
+    adapter_service_t *adapter = &g_adapter_service;
+    struct bt_stack_state uORB_state;
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    uORB_state.timestamp = ts.tv_sec * 1000 + ts.tv_nsec / 1000000UL;
+    uORB_state.state = state;
+
+    if (adapter->adapter_state_adv > 0) {
+        int ret = orb_publish(ORB_ID(bt_stack_state), adapter->adapter_state_adv, &uORB_state);
+        if (ret != 0)
+            BT_LOGE("Failed to publish stack state, ret: %d", ret);
+    } else
+        BT_LOGE("%s error advertise orb fd: %d", __func__, adapter->adapter_state_adv);
+#else
+    BT_LOGW("%s FAIL, enable uorb first", __func__);
+#endif
+}
+
 void adapter_notify_state_change(bt_adapter_state_t prev, bt_adapter_state_t current)
 {
     adapter_service_t *adapter = &g_adapter_service;
 
     BT_LOGD("%s, prev:%d--->current:%d", __func__, prev, current);
+    if (current == BT_ADAPTER_STATE_ON)
+        adapter_broadcast_state(BT_STACK_STATE_ON);
+    else if (current == BT_ADAPTER_STATE_OFF)
+        adapter_broadcast_state(BT_STACK_STATE_OFF);
+
     adapter_lock();
     adapter->adapter_state = current;
     adapter_unlock();
@@ -689,7 +720,7 @@ void adapter_on_adapter_state_changed(uint8_t stack_state)
     adapter_service_t *adapter = &g_adapter_service;
 
     switch (stack_state) {
-    case BT_STACK_STATE_ON: {
+    case BT_BREDR_STACK_STATE_ON: {
         adapter_storage_t storage;
         bt_storage_load_adapter_info(&storage);
         adapter_properties_copy(&adapter->properties, &storage);
@@ -698,7 +729,7 @@ void adapter_on_adapter_state_changed(uint8_t stack_state)
         /* waiting for device load finished */
         return;
     }
-    case BT_STACK_STATE_OFF:
+    case BT_BREDR_STACK_STATE_OFF:
         event = BREDR_DISABLED;
         break;
     case BLE_STACK_STATE_ON:
@@ -1033,6 +1064,14 @@ void adapter_init(void)
     adapter->le_devices = bt_list_new(adapter_delete_device);
     adapter->adapter_callbacks = bt_callbacks_list_new(2);
     adapter->stm = adapter_state_machine_new(NULL);
+    adapter->adapter_state_adv = -1;
+#ifdef CONFIG_UORB
+    adapter->adapter_state_adv =
+        orb_advertise_multi_queue_persist(ORB_ID(bt_stack_state),
+                                          NULL, NULL, 1);
+    if (adapter->adapter_state_adv < 0)
+        BT_LOGE("adapter service state advertise failed :%d", adapter->adapter_state_adv);
+#endif
 }
 
 void *adapter_register_callback(void *remote, const adapter_callbacks_t *adapter_cbs)
@@ -1087,6 +1126,10 @@ void adapter_cleanup(void)
 
     /*TODO: disable adapter services brefore cleanup */
     //
+#ifdef CONFIG_UORB
+    if (adapter->adapter_state_adv > 0)
+        orb_unadvertise(adapter->adapter_state_adv);
+#endif
     adapter_lock();
     bt_list_free(adapter->devices);
     bt_callbacks_list_free(adapter->adapter_callbacks);
