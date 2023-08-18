@@ -50,21 +50,23 @@ typedef struct {
  * Public Fucntion
  ****************************************************************************/
 
-bt_status_t lea_audio_source_init(lea_source_callabcks_t *callback);
+void lea_audio_source_set_callback(lea_source_callabcks_t *callback);
 
-bt_status_t lea_audio_source_start(uint32_t stream_id);
+bt_status_t lea_audio_source_init(void);
 
-bt_status_t lea_audio_source_stop(uint32_t stream_id);
+bt_status_t lea_audio_source_start(void);
 
-bt_status_t lea_audio_source_suspend(uint32_t stream_id);
+bt_status_t lea_audio_source_stop(void);
 
-bt_status_t lea_audio_source_resume(uint32_t stream_id);
+bt_status_t lea_audio_source_suspend(void);
 
-bt_status_t lea_audio_source_update_codec(uint32_t stream_id, lea_audio_config_t *codec, uint16_t sdu_size);
+bt_status_t lea_audio_source_resume(void);
+
+bt_status_t lea_audio_source_update_codec(lea_audio_config_t *codec, uint16_t sdu_size);
 
 bool lea_audio_source_is_started(void);
 
-int lea_audio_source_read(uint32_t stream_id, uint8_t *buf, uint16_t frame_len);
+int lea_audio_source_read(uint8_t *buf, uint16_t frame_len);
 
 void lea_audio_source_cleanup(void);
 

@@ -81,7 +81,6 @@ typedef struct {
     uint32_t max_tx_length;
     uint8_t read_congest;
     uint16_t sdu_size;
-    uint32_t stream_id;
     lea_audio_config_t audio_config;
     struct circbuf_s stream_pool;
 } lea_source_stream_t;
@@ -96,10 +95,6 @@ static ipc_handle_t *g_source_ipc;
 
 /****************************************************************************
  * Private function
- ****************************************************************************/
-
-/****************************************************************************
- * Public function
  ****************************************************************************/
 
 static void lea_ctrl_event_with_data(uint8_t ch_id, audio_ctrl_evt_t event, uint8_t *data, uint8_t data_len)
@@ -212,64 +207,8 @@ static void lea_audio_sink_handler(service_timer_t *timer, void *data)
         return;
     }
 
-    size = lea_audio_source_read(stream->stream_id, buf, stream->sdu_size);
-    g_source_callbacks->lea_audio_send_cb(stream->stream_id, buf, size);
-}
-
-int lea_audio_source_read(uint32_t stream_id, uint8_t *buf, uint16_t frame_len)
-{
-    lea_source_stream_t *stream = &g_source_stream;
-    uint16_t remaining_size;
-
-    remaining_size = circbuf_used(&stream->stream_pool);
-    if (remaining_size < frame_len) {
-        return 0;
-    }
-
-    circbuf_read(&stream->stream_pool, buf, frame_len);
-
-    return frame_len;
-}
-
-bt_status_t lea_audio_source_start(uint32_t stream_id)
-{
-    lea_source_stream_t *stream = &g_source_stream;
-
-    BT_LOGD("%s", __func__);
-
-    circbuf_reset(&stream->stream_pool);
-    service_loop_cancel_timer(stream->send_timer);
-    stream->send_timer = NULL;
-    stream->stream_id = stream_id;
-
-    if (stream->stream_state == STREAM_STATE_RUNNING) {
-        BT_LOGD("%s. was running", __func__);
-        return BT_STATUS_FAIL;
-    }
-
-    stream->send_timer = service_loop_timer(20, 10, lea_audio_sink_handler, stream);
-    stream->stream_state = STREAM_STATE_RUNNING;
-
-    return BT_STATUS_SUCCESS;
-}
-
-bt_status_t lea_audio_source_stop(uint32_t stream_id)
-{
-    lea_source_stream_t *stream = &g_source_stream;
-
-    BT_LOGD("%s", __func__);
-
-    if (stream->stream_state != STREAM_STATE_RUNNING) {
-        BT_LOGE("%s, was stopped", __func__);
-        return false;
-    }
-
-    ipc_read_stop(g_source_ipc, IPC_CH_ID_AV_SOURCE_AUDIO);
-    service_loop_cancel_timer(stream->send_timer);
-    stream->send_timer = NULL;
-    stream->stream_state = STREAM_STATE_OFF;
-
-    return true;
+    size = lea_audio_source_read(buf, stream->sdu_size);
+    g_source_callbacks->lea_audio_send_cb(buf, size);
 }
 
 static void lea_ctrl_buffer_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
@@ -291,32 +230,30 @@ static const char *audio_event_to_string(audio_ctrl_cmd_t event)
 
 static void lea_recv_ctrl_data(uint8_t ch_id, audio_ctrl_cmd_t cmd)
 {
-    lea_source_stream_t *stream = &g_source_stream;
-
     BT_LOGD("%s: lea-ctrl-cmd : %s", __func__, audio_event_to_string(cmd));
 
     switch (cmd) {
     case AUDIO_CTRL_CMD_START: {
-        lea_audio_source_start(stream->stream_id);
+        lea_audio_source_start();
         lea_control_event(IPC_CH_ID_AV_SOURCE_CTRL, AUDIO_CTRL_EVT_STARTED);
         if (g_source_callbacks) {
-            g_source_callbacks->lea_audio_resume_cb(stream->stream_id);
+            g_source_callbacks->lea_audio_resume_cb();
         }
         break;
     }
 
     case AUDIO_CTRL_CMD_STOP: {
-        lea_audio_source_stop(stream->stream_id);
+        lea_audio_source_stop();
         lea_control_event(IPC_CH_ID_AV_SOURCE_CTRL, AUDIO_CTRL_EVT_STOPPED);
         if (g_source_callbacks) {
-            g_source_callbacks->lea_audio_suspend_cb(stream->stream_id);
+            g_source_callbacks->lea_audio_suspend_cb();
         }
         break;
     }
 
     case AUDIO_CTRL_CMD_CONFIG_DONE: {
         if (g_source_callbacks) {
-            g_source_callbacks->lea_audio_meatadata_updated_cb(stream->stream_id);
+            g_source_callbacks->lea_audio_meatadata_updated_cb();
         }
         break;
     }
@@ -419,13 +356,22 @@ static void lea_source_data_cb(uint8_t ch_id, ipc_event_t event)
  * Public function
  ****************************************************************************/
 
-bt_status_t lea_audio_source_init(lea_source_callabcks_t *callback)
+void lea_audio_source_set_callback(lea_source_callabcks_t *callback)
+{
+    g_source_callbacks = callback;
+}
+
+bt_status_t lea_audio_source_init(void)
 {
     lea_source_stream_t *stream = &g_source_stream;
 
+    if (g_source_ipc) {
+        BT_LOGD("%s, already inited", __func__);
+        return BT_STATUS_SUCCESS;
+    }
+
     stream->send_timer = NULL;
     stream->stream_state = STREAM_STATE_OFF;
-    g_source_callbacks = callback;
 
     g_source_ipc = ipc_init(get_service_uv_loop());
     if (!g_source_ipc) {
@@ -447,17 +393,57 @@ bt_status_t lea_audio_source_init(lea_source_callabcks_t *callback)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t lea_audio_source_suspend(uint32_t stream_id)
+bt_status_t lea_audio_source_start(void)
 {
-    return lea_audio_source_stop(stream_id);
+    lea_source_stream_t *stream = &g_source_stream;
+
+    BT_LOGD("%s", __func__);
+
+    circbuf_reset(&stream->stream_pool);
+    service_loop_cancel_timer(stream->send_timer);
+    stream->send_timer = NULL;
+
+    if (stream->stream_state == STREAM_STATE_RUNNING) {
+        BT_LOGD("%s. was running", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    stream->send_timer = service_loop_timer(20, 10, lea_audio_sink_handler, stream);
+    stream->stream_state = STREAM_STATE_RUNNING;
+
+    return BT_STATUS_SUCCESS;
 }
 
-bt_status_t lea_audio_source_resume(uint32_t stream_id)
+bt_status_t lea_audio_source_stop(void)
 {
-    return lea_audio_source_start(stream_id);
+    lea_source_stream_t *stream = &g_source_stream;
+
+    BT_LOGD("%s", __func__);
+
+    if (stream->stream_state != STREAM_STATE_RUNNING) {
+        BT_LOGE("%s, was stopped", __func__);
+        return BT_STATUS_SUCCESS;
+    }
+
+    ipc_read_stop(g_source_ipc, IPC_CH_ID_AV_SOURCE_AUDIO);
+    service_loop_cancel_timer(stream->send_timer);
+    stream->send_timer = NULL;
+    stream->stream_state = STREAM_STATE_OFF;
+
+    return BT_STATUS_SUCCESS;
 }
 
-bt_status_t lea_audio_source_update_codec(uint32_t stream_id, lea_audio_config_t *audio_config, uint16_t sdu_size)
+bt_status_t lea_audio_source_suspend(void)
+{
+    return lea_audio_source_stop();
+}
+
+bt_status_t lea_audio_source_resume(void)
+{
+    return lea_audio_source_start();
+}
+
+bt_status_t lea_audio_source_update_codec(lea_audio_config_t *audio_config, uint16_t sdu_size)
 {
     lea_source_stream_t *stream = &g_source_stream;
     uint8_t buffer[64];
@@ -465,7 +451,6 @@ bt_status_t lea_audio_source_update_codec(uint32_t stream_id, lea_audio_config_t
     uint8_t *p = buffer;
 
     memcpy(&stream->audio_config, audio_config, sizeof(lea_audio_config_t));
-    stream->stream_id = stream_id;
     stream->sdu_size = sdu_size;
 
     BT_LOGD("%s, codec_type:%d, sample_rate:%d, bits_per_sample:%d, channel_mode:%d, bit_rate:%d", __func__, audio_config->codec_type, audio_config->sample_rate, audio_config->bits_per_sample, audio_config->channel_mode, audio_config->bit_rate);
@@ -495,11 +480,30 @@ bt_status_t lea_audio_source_update_codec(uint32_t stream_id, lea_audio_config_t
 bool lea_audio_source_is_started(void)
 {
     lea_source_stream_t *stream = &g_source_stream;
+
     return stream->stream_state != STREAM_STATE_OFF;
+}
+
+int lea_audio_source_read(uint8_t *buf, uint16_t frame_len)
+{
+    lea_source_stream_t *stream = &g_source_stream;
+    uint16_t remaining_size;
+
+    remaining_size = circbuf_used(&stream->stream_pool);
+    if (remaining_size < frame_len) {
+        return 0;
+    }
+
+    circbuf_read(&stream->stream_pool, buf, frame_len);
+
+    return frame_len;
 }
 
 void lea_audio_source_cleanup(void)
 {
+    lea_source_stream_t *stream = &g_source_stream;
+
+    stream->stream_state = STREAM_STATE_OFF;
     ipc_close(g_source_ipc, IPC_CH_ID_AV_SOURCE_CTRL);
     ipc_close(g_source_ipc, IPC_CH_ID_AV_SOURCE_AUDIO);
     ipc_cleanup(g_source_ipc);
