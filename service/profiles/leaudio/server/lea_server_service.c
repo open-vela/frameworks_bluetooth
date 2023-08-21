@@ -63,9 +63,18 @@ typedef struct
     pthread_mutex_t stream_lock;
 } lea_server_service_t;
 
+typedef struct {
+    uint8_t ase_id;
+    uint8_t ase_state;
+    uint16_t type;
+} lea_server_endpoint_t;
+
 typedef struct
 {
     bt_address_t addr;
+
+    uint8_t ase_number;
+    lea_server_endpoint_t ase[2]; // CONFIG_BLUETOOTH_LEAUDIO_SERVER_SINK_ASE_NUMBER + CONFIG_BLUETOOTH_LEAUDIO_SERVER_SOURCE_ASE_NUMBER
     lea_server_state_machine_t *leasm;
     profile_connection_state_t state;
 } lea_server_device_t;
@@ -92,7 +101,8 @@ static bt_status_t lea_server_start_announce(int8_t adv_id, uint8_t announce_typ
                                              uint8_t *adv_data, uint16_t adv_size,
                                              uint8_t *md_data, uint16_t md_size);
 static bt_status_t lea_server_stop_announce(int8_t adv_id);
-static bt_status_t lea_server_disconnect(bt_address_t *addr);
+static bt_status_t lea_server_disconnect_device(bt_address_t *addr);
+static bt_status_t lea_server_disconnect_audio(bt_address_t *addr);
 
 /****************************************************************************
  * Private Data
@@ -124,7 +134,8 @@ static const lea_server_interface_t LEAServerInterface = {
     .start_announce = lea_server_start_announce,
     .stop_announce = lea_server_stop_announce,
     .get_connection_state = lea_server_get_connection_state,
-    .disconnect = lea_server_disconnect,
+    .disconnect = lea_server_disconnect_device,
+    .disconnect_audio = lea_server_disconnect_audio,
 };
 
 /****************************************************************************
@@ -144,7 +155,7 @@ static lea_server_device_t *find_lea_server_device_by_addr(bt_address_t *addr)
 static lea_server_device_t *lea_server_device_new(bt_address_t *addr,
                                                   lea_server_state_machine_t *leasm)
 {
-    lea_server_device_t *device = malloc(sizeof(lea_server_device_t));
+    lea_server_device_t *device = calloc(1, sizeof(lea_server_device_t));
     if (!device)
         return NULL;
 
@@ -456,14 +467,41 @@ static bt_status_t lea_server_stop_announce(int8_t adv_id)
     return bt_sal_lea_server_stop_announce(adv_id);
 }
 
-static bt_status_t lea_server_disconnect(bt_address_t *addr)
+static bt_status_t lea_server_disconnect_device(bt_address_t *addr)
 {
+    profile_connection_state_t state;
+
     CHECK_ENABLED();
-    profile_connection_state_t state = lea_server_get_connection_state(addr);
+    state = lea_server_get_connection_state(addr);
     if (state == PROFILE_STATE_DISCONNECTED || state == PROFILE_STATE_DISCONNECTING)
         return BT_STATUS_FAIL;
 
     return bt_sal_lea_server_disconnect(addr);
+}
+
+static bt_status_t lea_server_disconnect_audio(bt_address_t *addr)
+{
+    profile_connection_state_t state;
+    lea_server_device_t *device;
+    int index;
+    lea_server_endpoint_t *ase;
+
+    CHECK_ENABLED();
+    state = lea_server_get_connection_state(addr);
+    if (state == PROFILE_STATE_DISCONNECTED || state == PROFILE_STATE_DISCONNECTING)
+        return BT_STATUS_FAIL;
+
+    device = find_lea_server_device_by_addr(addr);
+    if (!device) {
+        return BT_STATUS_DEVICE_NOT_FOUND;
+    }
+
+    for (index = 0; index < device->ase_number; index++) {
+        ase = device->ase[index];
+        bt_sal_lea_server_request_disable(addr, ase->ase_id);
+    }
+
+    return BT_STATUS_SUCCESS;
 }
 
 static const void *get_leas_profile_interface(void)
@@ -482,6 +520,29 @@ static bool lea_server_stream_cmp(void *audio_stream, void *stream_id)
     return ((lea_audio_stream_t *)audio_stream)->stream_id == *((uint32_t *)stream_id);
 }
 
+static void update_server_ase(lea_server_device_t *device, uint8_t id, uint8_t state, uint16_t type)
+{
+    int index;
+    bool found = false;
+
+    pthread_mutex_lock(&device->device_lock);
+    for (index = 0; index < device->ase_number; index++) {
+        if (device->ase[index].ase_id == id) {
+            device->ase[index].ase_state = state;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        device->ase[device->ase_number].type = type;
+        device->ase[device->ase_number].ase_id = id;
+        device->ase_number++;
+    }
+
+    pthread_mutex_unlock(&device->device_lock);
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -491,7 +552,7 @@ lea_audio_stream_t *lea_server_add_stream(
 {
     lea_audio_stream_t *audio_stream;
 
-    audio_stream = malloc(sizeof(lea_audio_stream_t));
+    audio_stream = calloc(1, sizeof(lea_audio_stream_t));
     if (!audio_stream) {
         BT_LOGE("error, malloc %s", __func__);
         return NULL;
@@ -741,11 +802,19 @@ void lea_server_on_stream_recv(uint32_t stream_id, uint32_t time_stamp,
     lea_audio_sink_packet_recv(packet);
 }
 
-void lea_server_on_ascs_event(bt_address_t *addr, lea_adpt_ase_state_t evt, void *data)
+void lea_server_on_ascs_event(bt_address_t *addr, uint8_t id, uint8_t state, uint16_t type);
 {
     lea_server_event_t event;
+    lea_server_device_t *device;
 
-    switch (evt) {
+    device = find_device_by_addr(addr);
+    if (!device) {
+        BT_LOGE("%s, device not exist", __func__);
+        return;
+    }
+
+    update_server_ase(device, id, state, type);
+    switch (state) {
     case ADPT_LEA_ASE_STATE_IDLE: {
         event = STACK_EVENT_ASE_IDLE;
     } break;
