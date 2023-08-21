@@ -35,11 +35,4 @@ bt_status_t bt_sal_vmicps_notify_vcs_mute(int mute);
 bt_status_t bt_sal_vmicps_notify_vcs_volume_flags(int flags);
 bt_status_t bt_sal_vmicps_notify_mics_mute(int mute);
 
-// leaudio vcs callbacks from barrot stack
-void adpt_lea_vcs_set_volume_state_callback(SERVICE_LEA_VCS_VOLUME_STATE_S *vol_state);
-void adpt_lea_vcs_set_volume_flags_callback(uint8_t vol_flags);
-
-// leaudio mics callbacks from barrot stack
-void adpt_lea_mics_set_mute_callback(uint8_t mute);
-
 #endif /* __SAL_LEA_VMICPS_INTERFACE_H__ */

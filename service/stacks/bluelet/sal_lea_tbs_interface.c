@@ -29,61 +29,91 @@
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
 
-void adpt_lea_tbs_state_callback(uint32_t tbs_id, uint8_t ccid, bool added)
+static void adpt_lea_tbs_state_callback(uint32_t tbs_id, uint8_t ccid, bool added);
+static void adpt_lea_tbs_bearer_set_callback(uint32_t tbs_id, void *bearer_ref, bool result);
+static void adpt_lea_tbs_call_added_callback(uint32_t tbs_id, uint8_t call_index, bool result);
+static void adpt_lea_tbs_call_removed_callback(uint32_t tbs_id, uint8_t call_index);
+static void adpt_lea_tbs_accept_callback(uint32_t tbs_id, uint8_t call_index);
+static void adpt_lea_tbs_terminate_callback(uint32_t tbs_id, uint8_t call_index);
+static void adpt_lea_tbs_local_hold_callback(uint32_t tbs_id, uint8_t call_index);
+static void adpt_lea_tbs_local_retrieve_callback(uint32_t tbs_id, uint8_t call_index);
+static void adpt_lea_tbs_originate_callback(uint32_t tbs_id, SERVICE_LEA_UTF8_STR *uri);
+static void adpt_lea_tbs_join_callback(uint32_t tbs_id, uint8_t index_number, uint8_t *index_list);
+
+const LEA_TBS_CALLBACK_S adpt_lea_ccp_server_callbacks = {
+    .lea_tbs_state_cb = adpt_lea_tbs_state_callback,
+    .lea_tbs_bearer_set_cb = adpt_lea_tbs_bearer_set_callback,
+    .lea_tbs_call_added_cb = adpt_lea_tbs_call_added_callback,
+    .lea_tbs_call_removed_cb = adpt_lea_tbs_call_removed_callback,
+
+    .lea_tbs_accept_cb = adpt_lea_tbs_accept_callback,
+    .lea_tbs_terminate_cb = adpt_lea_tbs_terminate_callback,
+    .lea_tbs_local_hold_cb = adpt_lea_tbs_local_hold_callback,
+    .lea_tbs_local_retrieve_cb = adpt_lea_tbs_local_retrieve_callback,
+    .lea_tbs_originate_cb = adpt_lea_tbs_originate_callback,
+    .lea_tbs_join_cb = adpt_lea_tbs_join_callback,
+};
+
+/****************************************************************************
+ * Private function
+ ****************************************************************************/
+
+static void adpt_lea_tbs_state_callback(uint32_t tbs_id, uint8_t ccid, bool added)
 {
     lea_tbs_on_state_changed(tbs_id, ccid, added);
 }
 
-void adpt_lea_tbs_bearer_set_callback(uint32_t tbs_id, void *bearer_ref, bool result)
+static void adpt_lea_tbs_bearer_set_callback(uint32_t tbs_id, void *bearer_ref, bool result)
 {
     lea_tbs_on_bearer_info_set(tbs_id, bearer_ref, result);
 }
 
-void adpt_lea_tbs_call_added_callback(uint32_t tbs_id, uint8_t call_index,
-                                      bool result)
+static void adpt_lea_tbs_call_added_callback(uint32_t tbs_id, uint8_t call_index,
+                                             bool result)
 {
     lea_tbs_on_call_added(tbs_id, call_index, result);
 }
 
-void adpt_lea_tbs_call_removed_callback(uint32_t tbs_id, uint8_t call_index)
+static void adpt_lea_tbs_call_removed_callback(uint32_t tbs_id, uint8_t call_index)
 {
     lea_tbs_on_call_removed(tbs_id, call_index);
 }
 
-void adpt_lea_tbs_accept_callback(uint32_t tbs_id, uint8_t call_index)
+static void adpt_lea_tbs_accept_callback(uint32_t tbs_id, uint8_t call_index)
 {
     lea_tbs_on_accept_call(tbs_id, call_index);
 }
 
-void adpt_lea_tbs_terminate_callback(uint32_t tbs_id, uint8_t call_index)
+static void adpt_lea_tbs_terminate_callback(uint32_t tbs_id, uint8_t call_index)
 {
     lea_tbs_on_terminate_call(tbs_id, call_index);
 }
 
-void adpt_lea_tbs_local_hold_callback(uint32_t tbs_id, uint8_t call_index)
+static void adpt_lea_tbs_local_hold_callback(uint32_t tbs_id, uint8_t call_index)
 {
     lea_tbs_on_local_hold_call(tbs_id, call_index);
 }
 
-void adpt_lea_tbs_local_retrieve_callback(uint32_t tbs_id, uint8_t call_index)
+static void adpt_lea_tbs_local_retrieve_callback(uint32_t tbs_id, uint8_t call_index)
 {
     lea_tbs_on_local_retrieve_call(tbs_id, call_index);
 }
 
-void adpt_lea_tbs_originate_callback(uint32_t tbs_id, SERVICE_LEA_UTF8_STR *uri)
+static void adpt_lea_tbs_originate_callback(uint32_t tbs_id, SERVICE_LEA_UTF8_STR *uri)
 {
     lea_tbs_on_originate_call(tbs_id, (size_t)uri->length + 1, (char *)uri->string);
 }
 
-void adpt_lea_tbs_join_callback(uint32_t tbs_id, uint8_t index_number,
-                                uint8_t *index_list)
+static void adpt_lea_tbs_join_callback(uint32_t tbs_id, uint8_t index_number,
+                                       uint8_t *index_list)
 {
     lea_tbs_on_join_call(tbs_id, index_number, strlen((char *)index_list) + 1, (char *)index_list);
 }
 
 /****************************************************************************
- *
+ * Public function
  ****************************************************************************/
+
 bt_status_t bt_sal_lea_tbs_add(uint32_t tbs_id)
 {
     SAL_CHECK_RET(stack_adapter_lea_tbs_add(tbs_id), SERVICE_BT_STATUS_SUCCESS);

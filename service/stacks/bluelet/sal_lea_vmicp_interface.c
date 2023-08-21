@@ -25,14 +25,32 @@
 #include "sal_lea_vmicpc_interface.h"
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
-void adpt_lea_vcc_volume_state_cbk(BD_ADDR vcs_addr, SERVICE_LEA_VCS_VOLUME_STATE_S *vol_state)
+
+static void adpt_lea_vcc_volume_state_cbk(BD_ADDR vcs_addr, SERVICE_LEA_VCS_VOLUME_STATE_S *vol_state);
+static void adpt_lea_vcc_volume_flags_cbk(BD_ADDR vcs_addr, uint8_t vol_flags);
+static void adpt_lea_micc_mute_cbk(BD_ADDR mics_addr, uint8_t mute);
+
+const LEA_VCC_CALLBACK_S adpt_lea_vcs_client_callbacks = {
+    .lea_vcc_volume_state_cb = adpt_lea_vcc_volume_state_cbk,
+    .lea_vcc_volume_flags_cb = adpt_lea_vcc_volume_flags_cbk,
+};
+
+const LEA_MICC_CALLBACK_S adpt_lea_mics_client_callbacks = {
+    .lea_micc_mute_cb = adpt_lea_micc_mute_cbk,
+};
+
+/****************************************************************************
+ * Private function
+ ****************************************************************************/
+
+static void adpt_lea_vcc_volume_state_cbk(BD_ADDR vcs_addr, SERVICE_LEA_VCS_VOLUME_STATE_S *vol_state)
 {
     bt_address_t addr = { 0 };
 
     memcpy(addr.addr, vcs_addr, BD_ADDR_SIZE);
     lea_vmicpc_on_volume_state_changed(&addr, vol_state->volume, vol_state->mute);
 }
-void adpt_lea_vcc_volume_flags_cbk(BD_ADDR vcs_addr, uint8_t vol_flags)
+static void adpt_lea_vcc_volume_flags_cbk(BD_ADDR vcs_addr, uint8_t vol_flags)
 {
     bt_address_t addr = { 0 };
 
@@ -40,7 +58,7 @@ void adpt_lea_vcc_volume_flags_cbk(BD_ADDR vcs_addr, uint8_t vol_flags)
     lea_vmicpc_on_volume_flags_changed(&addr, vol_flags);
 }
 
-void adpt_lea_micc_mute_cbk(BD_ADDR mics_addr, uint8_t mute)
+static void adpt_lea_micc_mute_cbk(BD_ADDR mics_addr, uint8_t mute)
 {
     bt_address_t addr = { 0 };
 
@@ -49,8 +67,9 @@ void adpt_lea_micc_mute_cbk(BD_ADDR mics_addr, uint8_t mute)
 }
 
 /****************************************************************************
- *
+ * Public function
  ****************************************************************************/
+
 bt_status_t bt_sal_vmicpc_read_volume_state(bt_address_t *addr)
 {
     SAL_CHECK_RET(stack_adapter_lea_vcc_read_volume_state(addr->addr), SERVICE_BT_STATUS_SUCCESS);

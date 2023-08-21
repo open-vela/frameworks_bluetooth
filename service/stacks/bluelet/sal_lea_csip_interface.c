@@ -68,6 +68,10 @@ const LEA_CSIC_CALLBACK_S adpt_lea_csip_client_callbacks = {
     .lea_csic_ordered_access_result_cb = adpt_lea_csip_ordered_access_result_callback,
 };
 
+/****************************************************************************
+ * Private function
+ ****************************************************************************/
+
 static void adpt_lea_csip_sirk_callback(BD_ADDR remote_addr, uint8_t type, LEA_CSIP_SIRK sirk)
 {
     bt_address_t addr;
@@ -172,6 +176,10 @@ static void adpt_lea_csip_ordered_access_result_callback(LEA_CSIP_SIRK sirk, SER
     BT_LOGD("%s", __func__);
     lea_client_on_csip_set_ordered_access(sirk, result);
 }
+
+/****************************************************************************
+ * Public function
+ ****************************************************************************/
 
 bt_status_t bt_sal_lea_csip_read_sirk(bt_address_t *addr)
 {
