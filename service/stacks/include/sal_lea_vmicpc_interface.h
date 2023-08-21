@@ -29,10 +29,4 @@ bt_status_t bt_sal_vmicpc_set_mute(bt_address_t *addr, int mute);
 bt_status_t bt_sal_vmicpc_read_mic_state(bt_address_t *addr);
 bt_status_t bt_sal_vmicpc_set_mic_state(bt_address_t *addr, int mute);
 
-// callback
-void adpt_lea_vcc_volume_state_cbk(BD_ADDR vcs_addr, SERVICE_LEA_VCS_VOLUME_STATE_S *vol_state);
-void adpt_lea_vcc_volume_flags_cbk(BD_ADDR vcs_addr, uint8_t vol_flags);
-
-void adpt_lea_micc_mute_cbk(BD_ADDR mics_addr, uint8_t mute);
-
 #endif /* __SAL_LEA_VMICPC_INTERFACE_H__ */

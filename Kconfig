@@ -334,26 +334,43 @@ config BLUETOOTH_LEAUDIO_VCS_VOLUME_STEP
 	default 2
 	help
 		leaudio server vcs volume step size
-config BLUETOOTH_LEAUDIO_VCS_VOCS_NUMBER
-	int "leaudio server vcs vocs numnber"
+
+config BLUETOOTH_LEAUDIO_VOCS_NUMBER
+	int "leaudio server vocs numnber"
 	default 0
 	help
-		leaudio server vcs vocs number
-config BLUETOOTH_LEAUDIO_VCS_AICS_NUMBER
-	int "leaudio server vcs vocs numnber"
+		leaudio server vocs number
+
+config BLUETOOTH_LEAUDIO_AICS_NUMBER
+	int "leaudio server aics numnber"
 	default 0
 	help
-		leaudio server vcs aics number
+		leaudio server aics number
+
 config BLUETOOTH_LEAUDIO_VCS_VOLUME_INITIAL
 	int "leaudio server vcs initial volume value"
 	default 125
 	help
 		leaudio server vcs volume initial value
-config BLUETOOTH_LEAUDIO_MICS_AICS_NUMBER
-	int "leaudio server mics aics numnber"
+
+config BLUETOOTH_LEAUDIO_VCS_UNMUTED
+	int "leaudio server vcs unmute"
 	default 0
 	help
-		leaudio server mics aics number
+		leaudio server vcs unmute
+
+config BLUETOOTH_LEAUDIO_VCS_VOLUME_DEFAULT_SETTING
+	int "leaudio server vcs vol settings"
+	default 0
+	help
+		leaudio server vcs vol settings
+
+config BLUETOOTH_LEAUDIO_MICS_NUMBER
+	int "leaudio server mics numnber"
+	default 0
+	help
+		leaudio server mics number
+
 endif # BLUETOOTH_LEAUDIO_VMICPS
 
 if BLUETOOTH_LEAUDIO_SERVER
