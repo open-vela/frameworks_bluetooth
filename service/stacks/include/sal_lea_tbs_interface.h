@@ -35,15 +35,4 @@ bt_status_t bt_sal_lea_tbs_call_state_changed(uint32_t tbs_id, uint8_t number, S
 bt_status_t bt_sal_lea_tbs_notify_termination_reason(uint32_t tbs_id, uint8_t call_index, lea_adpt_termination_reason_t reason);
 bt_status_t bt_sal_lea_tbs_call_control_response(uint32_t tbs_id, uint8_t call_index, lea_adpt_call_control_result_t result);
 
-void adpt_lea_tbs_state_callback(uint32_t tbs_id, uint8_t ccid, bool added);
-void adpt_lea_tbs_bearer_set_callback(uint32_t tbs_id, void *bearer_ref, bool result);
-void adpt_lea_tbs_call_added_callback(uint32_t tbs_id, uint8_t call_index, bool result);
-void adpt_lea_tbs_call_removed_callback(uint32_t tbs_id, uint8_t call_index);
-void adpt_lea_tbs_accept_callback(uint32_t tbs_id, uint8_t call_index);
-void adpt_lea_tbs_terminate_callback(uint32_t tbs_id, uint8_t call_index);
-void adpt_lea_tbs_local_hold_callback(uint32_t tbs_id, uint8_t call_index);
-void adpt_lea_tbs_local_retrieve_callback(uint32_t tbs_id, uint8_t call_index);
-void adpt_lea_tbs_originate_callback(uint32_t tbs_id, SERVICE_LEA_UTF8_STR *uri);
-void adpt_lea_tbs_join_callback(uint32_t tbs_id, uint8_t index_number, uint8_t *index_list);
-
 #endif /* __SAL_LEA_TBS_INTERFACE_H__ */

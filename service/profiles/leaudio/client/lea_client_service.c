@@ -34,6 +34,7 @@
 #include "lea_client_service.h"
 #include "lea_client_state_machine.h"
 #include "sal_lea_client_interface.h"
+#include "sal_lea_common.h"
 #include "sal_lea_csip_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
@@ -546,7 +547,7 @@ static void lea_client_do_shutdown(void)
 
     lea_audio_sink_cleanup();
     lea_audio_source_cleanup();
-    bt_sal_lea_client_cleanup();
+    bt_sal_lea_cleanup();
 }
 
 static void lea_client_process_message(void *data)
@@ -808,11 +809,11 @@ static void lea_audio_send_data(lea_audio_stream_t *stream, uint8_t *buffer, uin
 {
     lea_send_iso_data_t *iso_pkt;
 
-    iso_pkt = bt_sal_leac_alloc_send_buffer(stream->sdu_size, stream->iso_handle);
+    iso_pkt = bt_sal_lea_alloc_send_buffer(stream->sdu_size, stream->iso_handle);
     memcpy(iso_pkt->sdu, buffer, length);
     iso_pkt->sdu_length = length;
 
-    bt_sal_leac_send_iso_data(iso_pkt);
+    bt_sal_lea_send_iso_data(iso_pkt);
 }
 
 static void on_lea_source_audio_send(uint8_t *buffer, uint16_t length)
@@ -879,7 +880,7 @@ static bt_status_t lea_client_startup(profile_on_startup_t cb)
     pthread_mutex_init(&service->group_lock, &attr);
     pthread_mutex_init(&service->stream_lock, &attr);
 
-    status = bt_sal_lea_client_init();
+    status = bt_sal_lea_init();
     if (status != BT_STATUS_SUCCESS)
         goto fail;
 
@@ -1322,7 +1323,7 @@ lea_audio_stream_t *lea_client_add_stream(
 
     audio_stream->stream_id = stream_id;
     audio_stream->started = false;
-    audio_stream->is_source = bt_sal_leac_is_source_stream(stream_id);
+    audio_stream->is_source = bt_sal_lea_is_source_stream(stream_id);
     memcpy(&audio_stream->addr, addr, sizeof(bt_address_t));
 
     pthread_mutex_lock(&service->stream_lock);
@@ -1912,7 +1913,7 @@ void lea_client_on_stream_started(lea_audio_stream_t *audio)
         return;
     }
 
-    if (stream->is_source) {
+    if (!stream->is_source) {
         lea_audio_source_set_callback(&lea_source_callbacks);
     } else {
         lea_audio_sink_set_callback(&lea_sink_callbacks);
