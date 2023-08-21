@@ -213,8 +213,8 @@ static void adpt_lea_ascs_ase_cbk(BD_ADDR remote_addr, SERVICE_LEA_ASE_VALUE_S *
     memcpy(addr.addr, remote_addr, 6);
     // char* state[] = { "Idle", "Codec_Config", "QoS_Config", "Enabling", "Streaming", "Disabling", "Releasing" };
 
-    // BT_LOGD("%s, remote_addr:%s, ASE_ID:%d, State:%s, Type:%x", __func__, addr_str(remote_addr), ase->ase_id,
-    //     state[ase->ase_state], ase->ase_type);
+    BT_LOGD("%s, remote_addr:%s, ASE_ID:%d, State:%s, Type:%x", __func__, bt_addr_str(&addr), ase->ase_id,
+            state[ase->ase_state], ase->ase_type);
 
     switch (ase->ase_state) {
     case ADPT_LEA_ASE_STATE_CODEC_CONFIG: {
@@ -239,7 +239,7 @@ static void adpt_lea_ascs_ase_cbk(BD_ADDR remote_addr, SERVICE_LEA_ASE_VALUE_S *
         break;
     }
 
-    lea_server_on_ascs_event(&addr, ase->ase_state, NULL);
+    lea_server_on_ascs_event(&addr, ase->ase_id, ase->ase_state, ase->ase_type);
 }
 
 static const LEA_UCS_CALLBACK_S adpt_lea_uc_server_callbacks = {
@@ -541,6 +541,16 @@ bt_status_t bt_sal_lea_server_disconnect(bt_address_t *addr)
 
     memcpy(bd_addr, addr, sizeof(BD_ADDR));
     SAL_CHECK_RET(stack_adapter_lea_disconnect(bd_addr), SERVICE_BT_STATUS_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_sal_lea_server_request_disable(bt_address_t *addr, uint8_t ase_id)
+{
+    BD_ADDR bd_addr;
+
+    memcpy(bd_addr, addr, sizeof(BD_ADDR));
+    SAL_CHECK_RET(stack_adapter_lea_ucs_auto_disalbe(bd_addr, bd_addr), SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }

@@ -35,6 +35,7 @@ typedef struct lea_server_interface {
                                   uint8_t *md_data, uint16_t md_size);
     bt_status_t (*stop_announce)(int8_t adv_id);
     bt_status_t (*disconnect)(bt_address_t *addr);
+    bt_status_t (*disconnect_audio)(bt_address_t *addr);
     profile_connection_state_t (*get_connection_state)(bt_address_t *addr);
 } lea_server_interface_t;
 
@@ -59,7 +60,7 @@ void lea_server_on_stream_suspend(uint32_t stream_id);
 void lea_server_on_metedata_updated(uint32_t stream_id);
 void lea_server_on_stream_recv(uint32_t stream_id, uint32_t time_stamp,
                                uint16_t seq_number, uint8_t *sdu, uint16_t size);
-void lea_server_on_ascs_event(bt_address_t *addr, lea_adpt_ase_state_t event, void *data);
+void lea_server_on_ascs_event(bt_address_t *addr, uint8_t id, uint8_t state, uint16_t type);
 
 /*
  * register profile to service manager

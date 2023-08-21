@@ -52,4 +52,7 @@ bt_status_t bt_lea_server_stop_announce(bt_instance_t *ins, uint8_t adv_id);
 bt_status_t bt_lea_server_disconnect(bt_instance_t *ins, bt_address_t *addr);
 
 profile_connection_state_t bt_lea_server_get_connection_state(bt_instance_t *ins, bt_address_t *addr);
+
+bt_status_t bt_lea_server_disconnect_audio(bt_instance_t *ins, bt_address_t *addr);
+
 #endif
