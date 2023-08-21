@@ -29,6 +29,7 @@
 #include "lea_client_state_machine.h"
 #include "sal_adapter_interface.h"
 #include "sal_lea_client_interface.h"
+#include "sal_lea_common.h"
 #include "service_loop.h"
 
 #include "bt_utils.h"
@@ -267,7 +268,7 @@ static bool opening_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case DISCONNECT_DEVICE: {
-        bt_sal_lea_client_disconnect(&leas_sm->addr);
+        bt_sal_lea_disconnect(&leas_sm->addr);
         break;
     }
     default:
@@ -339,7 +340,7 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         break;
     }
     case DISCONNECT_DEVICE: {
-        bt_sal_lea_client_disconnect(&leas_sm->addr);
+        bt_sal_lea_disconnect(&leas_sm->addr);
         break;
     }
     default:
@@ -509,7 +510,7 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case DISCONNECT_DEVICE: {
-        bt_sal_lea_client_disconnect(&leas_sm->addr);
+        bt_sal_lea_disconnect(&leas_sm->addr);
         break;
     }
     case DISCONNECT_AUDIO: {
@@ -575,7 +576,7 @@ static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case DISCONNECT_DEVICE: {
-        bt_sal_lea_client_disconnect(&leas_sm->addr);
+        bt_sal_lea_disconnect(&leas_sm->addr);
         break;
     }
     default:

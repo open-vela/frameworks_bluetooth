@@ -13,20 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef __SAL_LEA_VMICPC_INTERFACE_H__
-#define __SAL_LEA_VMICPC_INTERFACE_H__
+#ifndef __SAL_LEA_CSIS_INTERFACE_H__
+#define __SAL_LEA_CSIS_INTERFACE_H__
 
-#include "bt_status.h"
-#include "stack_adapter_lea_vmicp.h"
 #include <stdint.h>
 
-bt_status_t bt_sal_vmicpc_read_volume_state(bt_address_t *addr);
-bt_status_t bt_sal_vmicpc_read_volume_flags(bt_address_t *addr);
-bt_status_t bt_sal_vmicpc_change_volume(bt_address_t *addr, int dir);
-bt_status_t bt_sal_vmicpc_change_unmute_volume(bt_address_t *addr, int dir);
-bt_status_t bt_sal_vmicpc_set_absolute_volume(bt_address_t *addr, int vol);
-bt_status_t bt_sal_vmicpc_set_mute(bt_address_t *addr, int mute);
-bt_status_t bt_sal_vmicpc_read_mic_state(bt_address_t *addr);
-bt_status_t bt_sal_vmicpc_set_mic_state(bt_address_t *addr, int mute);
+#include "stack_adapter_gap.h"
+#include "stack_adapter_lea_gaf.h"
 
-#endif /* __SAL_LEA_VMICPC_INTERFACE_H__ */
+#include "bt_addr.h"
+#include "bt_status.h"
+
+bool adpt_req_csis_info_callback(SERVICE_LEA_CSIS_S *info);
+
+#endif /* __SAL_LEA_CSIP_INTERFACE_H__ */

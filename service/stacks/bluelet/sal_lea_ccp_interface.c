@@ -33,7 +33,49 @@
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
 
-void adpt_lea_tbc_bearer_provider_name_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t *name)
+static void adpt_lea_tbc_bearer_provider_name_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t *name);
+static void adpt_lea_tbc_bearer_uci_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t *uci);
+static void adpt_lea_tbc_bearer_technology_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t technology);
+static void adpt_lea_tbc_bearer_uri_schemes_supported_list_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t *uri_schemes);
+static void adpt_lea_tbc_bearer_signal_strength_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t strength);
+static void adpt_lea_tbc_bearer_signal_strength_report_interval_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t interval);
+static void adpt_lea_tbc_content_control_id_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t ccid);
+static void adpt_lea_tbc_status_flags_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint16_t status_flags);
+static void adpt_lea_tbc_call_control_optional_opcodes_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint16_t opcodes);
+static void adpt_lea_tbc_incoming_call_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index, uint8_t *uri);
+static void adpt_lea_tbc_incoming_call_target_bearer_uri_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index, uint8_t *uri);
+static void adpt_lea_tbc_call_state_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint32_t number, SERVICE_LEA_TBS_CALL_STATE_S *states_s);
+static void adpt_lea_tbc_bearer_list_current_calls_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint32_t number, SERVICE_LEA_TBS_CALLS_LIST_ITEM_S *calls);
+static void adpt_lea_tbc_call_friendly_name_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index, uint8_t *name);
+static void adpt_lea_tbc_termination_reason_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index, uint8_t reason);
+static void adpt_lea_tbc_call_control_result_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t opcode, uint8_t call_index, uint8_t result);
+
+const LEA_TBC_CALLBACK_S adpt_lea_ccp_client_callbacks = {
+    .lea_tbc_bearer_provider_name_cb = adpt_lea_tbc_bearer_provider_name_callback,
+    .lea_tbc_bearer_uci_cb = adpt_lea_tbc_bearer_uci_callback,
+    .lea_tbc_bearer_technology_cb = adpt_lea_tbc_bearer_technology_callback,
+    .lea_tbc_bearer_uri_schemes_supported_list_cb = adpt_lea_tbc_bearer_uri_schemes_supported_list_callback,
+    .lea_tbc_bearer_signal_strength_cb = adpt_lea_tbc_bearer_signal_strength_callback,
+    .lea_tbc_bearer_signal_strength_report_interval_cb = adpt_lea_tbc_bearer_signal_strength_report_interval_callback,
+    .lea_tbc_content_control_id_cb = adpt_lea_tbc_content_control_id_callback,
+    .lea_tbc_status_flags_cb = adpt_lea_tbc_status_flags_callback,
+    .lea_tbc_call_control_optional_opcodes_cb = adpt_lea_tbc_call_control_optional_opcodes_callback,
+
+    .lea_tbc_incoming_call_cb = adpt_lea_tbc_incoming_call_callback,
+    .lea_tbc_incoming_call_target_bearer_uri_cb = adpt_lea_tbc_incoming_call_target_bearer_uri_callback,
+    .lea_tbc_call_state_cb = adpt_lea_tbc_call_state_callback,
+    .lea_tbc_bearer_list_current_calls_cb = adpt_lea_tbc_bearer_list_current_calls_callback,
+    .lea_tbc_call_friendly_name_cb = adpt_lea_tbc_call_friendly_name_callback,
+    .lea_tbc_termination_reason_cb = adpt_lea_tbc_termination_reason_callback,
+
+    .lea_tbc_call_control_result_cb = adpt_lea_tbc_call_control_result_callback,
+};
+
+/****************************************************************************
+ * Private function
+ ****************************************************************************/
+
+static void adpt_lea_tbc_bearer_provider_name_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t *name)
 {
     bt_address_t addr;
     const char *nullname = UNKNOWN_INFO;
@@ -47,7 +89,7 @@ void adpt_lea_tbc_bearer_provider_name_callback(BD_ADDR tbs_addr, uint32_t tbs_i
     }
 }
 
-void adpt_lea_tbc_bearer_uci_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t *uci)
+static void adpt_lea_tbc_bearer_uci_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t *uci)
 {
     bt_address_t addr;
     const char *nulluri = UNKNOWN_INFO;
@@ -60,7 +102,7 @@ void adpt_lea_tbc_bearer_uci_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t
     }
 }
 
-void adpt_lea_tbc_bearer_technology_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t technology)
+static void adpt_lea_tbc_bearer_technology_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t technology)
 {
     bt_address_t addr;
 
@@ -68,8 +110,8 @@ void adpt_lea_tbc_bearer_technology_callback(BD_ADDR tbs_addr, uint32_t tbs_id, 
     lea_ccpc_on_bearer_technology(&addr, tbs_id, technology);
 }
 
-void adpt_lea_tbc_bearer_uri_schemes_supported_list_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
-                                                             uint8_t *uri_schemes)
+static void adpt_lea_tbc_bearer_uri_schemes_supported_list_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
+                                                                    uint8_t *uri_schemes)
 {
     bt_address_t addr;
     const char *nulluri_schemes = UNKNOWN_INFO;
@@ -84,7 +126,7 @@ void adpt_lea_tbc_bearer_uri_schemes_supported_list_callback(BD_ADDR tbs_addr, u
     }
 }
 
-void adpt_lea_tbc_bearer_signal_strength_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t strength)
+static void adpt_lea_tbc_bearer_signal_strength_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t strength)
 {
     bt_address_t addr;
 
@@ -92,8 +134,8 @@ void adpt_lea_tbc_bearer_signal_strength_callback(BD_ADDR tbs_addr, uint32_t tbs
     lea_ccpc_on_bearer_signal_strength(&addr, tbs_id, strength);
 }
 
-void adpt_lea_tbc_bearer_signal_strength_report_interval_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
-                                                                  uint8_t interval)
+static void adpt_lea_tbc_bearer_signal_strength_report_interval_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
+                                                                         uint8_t interval)
 {
     bt_address_t addr;
 
@@ -101,7 +143,7 @@ void adpt_lea_tbc_bearer_signal_strength_report_interval_callback(BD_ADDR tbs_ad
     lea_ccpc_on_bearer_signal_strength_report_interval(&addr, tbs_id, interval);
 }
 
-void adpt_lea_tbc_content_control_id_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t ccid)
+static void adpt_lea_tbc_content_control_id_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t ccid)
 {
     bt_address_t addr;
 
@@ -109,7 +151,7 @@ void adpt_lea_tbc_content_control_id_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
     lea_ccpc_on_content_control_id(&addr, tbs_id, ccid);
 }
 
-void adpt_lea_tbc_status_flags_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint16_t status_flags)
+static void adpt_lea_tbc_status_flags_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint16_t status_flags)
 {
     bt_address_t addr;
 
@@ -117,8 +159,8 @@ void adpt_lea_tbc_status_flags_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint1
     lea_ccpc_on_status_flags(&addr, tbs_id, status_flags);
 }
 
-void adpt_lea_tbc_call_control_optional_opcodes_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
-                                                         uint16_t opcodes)
+static void adpt_lea_tbc_call_control_optional_opcodes_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
+                                                                uint16_t opcodes)
 {
     bt_address_t addr;
 
@@ -126,8 +168,8 @@ void adpt_lea_tbc_call_control_optional_opcodes_callback(BD_ADDR tbs_addr, uint3
     lea_ccpc_on_call_control_optional_opcodes(&addr, tbs_id, opcodes);
 }
 
-void adpt_lea_tbc_incoming_call_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index,
-                                         uint8_t *uri)
+static void adpt_lea_tbc_incoming_call_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index,
+                                                uint8_t *uri)
 {
     bt_address_t addr;
     const char *nulluri = UNKNOWN_INFO;
@@ -141,8 +183,8 @@ void adpt_lea_tbc_incoming_call_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint
     }
 }
 
-void adpt_lea_tbc_incoming_call_target_bearer_uri_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
-                                                           uint8_t call_index, uint8_t *uri)
+static void adpt_lea_tbc_incoming_call_target_bearer_uri_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
+                                                                  uint8_t call_index, uint8_t *uri)
 {
     bt_address_t addr;
     const char *nulluri = UNKNOWN_INFO;
@@ -156,8 +198,8 @@ void adpt_lea_tbc_incoming_call_target_bearer_uri_callback(BD_ADDR tbs_addr, uin
     }
 }
 
-void adpt_lea_tbc_call_state_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint32_t number,
-                                      SERVICE_LEA_TBS_CALL_STATE_S *states_s)
+static void adpt_lea_tbc_call_state_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint32_t number,
+                                             SERVICE_LEA_TBS_CALL_STATE_S *states_s)
 {
     bt_address_t addr;
 
@@ -167,8 +209,8 @@ void adpt_lea_tbc_call_state_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint32_
     stack_adapter_lea_mem_free(states_s);
 }
 
-void adpt_lea_tbc_bearer_list_current_calls_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint32_t number,
-                                                     SERVICE_LEA_TBS_CALLS_LIST_ITEM_S *calls)
+static void adpt_lea_tbc_bearer_list_current_calls_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint32_t number,
+                                                            SERVICE_LEA_TBS_CALLS_LIST_ITEM_S *calls)
 {
     bt_address_t addr;
     const char *uri;
@@ -204,8 +246,8 @@ void adpt_lea_tbc_bearer_list_current_calls_callback(BD_ADDR tbs_addr, uint32_t 
     stack_adapter_lea_ccp_recycle_calls_list_s(number, calls);
 }
 
-void adpt_lea_tbc_call_friendly_name_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index,
-                                              uint8_t *name)
+static void adpt_lea_tbc_call_friendly_name_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index,
+                                                     uint8_t *name)
 {
     bt_address_t addr;
     const char *nullname = UNKNOWN_INFO;
@@ -219,8 +261,8 @@ void adpt_lea_tbc_call_friendly_name_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
     }
 }
 
-void adpt_lea_tbc_termination_reason_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index,
-                                              uint8_t reason)
+static void adpt_lea_tbc_termination_reason_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index,
+                                                     uint8_t reason)
 {
     bt_address_t addr;
 
@@ -228,16 +270,17 @@ void adpt_lea_tbc_termination_reason_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
     lea_ccpc_on_termination_reason(&addr, tbs_id, call_index, reason);
 }
 
-void adpt_lea_tbc_call_control_result_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t opcode,
-                                               uint8_t call_index, uint8_t result)
+static void adpt_lea_tbc_call_control_result_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t opcode,
+                                                      uint8_t call_index, uint8_t result)
 {
     bt_address_t addr;
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
     lea_ccpc_on_call_control_result(&addr, tbs_id, opcode, call_index, result);
 }
+
 /****************************************************************************
- * Private function
+ * Public function
  ****************************************************************************/
 
 bt_status_t bt_sal_lea_tbc_read_bearer_provider_name(bt_address_t *addr, uint32_t tbs_id)

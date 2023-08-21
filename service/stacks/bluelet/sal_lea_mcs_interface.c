@@ -31,161 +31,250 @@
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPS
 
+static void adpt_lea_mcs_state_callback(uint32_t mcs_id, uint8_t ccid, bool added);
+static void adpt_lea_mcs_player_set_callback(uint32_t mcs_id, void *player_ref, bool result);
+static void adpt_lea_mcs_object_added_callback(uint32_t mcs_id, void *obj_ref, LEA_OBJ_ID obj_id);
+static void adpt_lea_mcs_set_position_callback(uint32_t mcs_id, int32_t position);
+static void adpt_lea_mcs_set_playback_speed_callback(uint32_t mcs_id, int8_t speed);
+static void adpt_lea_mcs_set_current_track_callback(uint32_t mcs_id, LEA_OBJ_ID track_id);
+static void adpt_lea_mcs_set_next_track_callback(uint32_t mcs_id, LEA_OBJ_ID track_id);
+static void adpt_lea_mcs_set_current_group_callback(uint32_t mcs_id, LEA_OBJ_ID group_id);
+static void adpt_lea_mcs_set_playing_order_callback(uint32_t mcs_id, uint8_t order);
+static void adpt_lea_mcs_play_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_pause_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_fast_rewind_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_fast_forward_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_stop_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_move_callback(uint32_t mcs_id, int32_t offset);
+static void adpt_lea_mcs_previous_segment_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_next_segment_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_first_segment_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_last_segment_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_goto_segment_callback(uint32_t mcs_id, int32_t n_segment);
+static void adpt_lea_mcs_previous_track_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_next_track_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_first_track_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_last_track_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_goto_track_callback(uint32_t mcs_id, int32_t n_track);
+static void adpt_lea_mcs_previous_group_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_next_group_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_first_group_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_last_group_callback(uint32_t mcs_id);
+static void adpt_lea_mcs_goto_group_callback(uint32_t mcs_id, int32_t n_group);
+static void adpt_lea_mcs_search_track_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition);
+static void adpt_lea_mcs_search_artist_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition);
+static void adpt_lea_mcs_search_album_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition);
+static void adpt_lea_mcs_search_group_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition);
+static void adpt_lea_mcs_search_earliest_year_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *year, bool last_condition);
+static void adpt_lea_mcs_search_latest_year_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *year, bool last_condition);
+static void adpt_lea_mcs_search_genre_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition);
+static void adpt_lea_mcs_search_tracks_callback(uint32_t mcs_id, bool last_condition);
+static void adpt_lea_mcs_search_groups_callback(uint32_t mcs_id, bool last_condition);
+
 static uint32_t tmp_player_ref = 1;
 static char *MEDIA_PLAYER_NAME = "MiPlayer";
 static char *MEDIA_PLAYER_ICON_URL = "www.xiaomi.com";
 
-void adpt_lea_mcs_state_callback(uint32_t mcs_id, uint8_t ccid, bool added)
+const LEA_MCS_CALLBACK_S adpt_lea_mcp_server_callbacks = {
+    .lea_mcs_state_cb = adpt_lea_mcs_state_callback,
+    .lea_mcs_player_set_cb = adpt_lea_mcs_player_set_callback,
+    .lea_mcs_object_added_cb = adpt_lea_mcs_object_added_callback,
+
+    .lea_mcs_set_position_cb = adpt_lea_mcs_set_position_callback,
+    .lea_mcs_set_playback_speed_cb = adpt_lea_mcs_set_playback_speed_callback,
+    .lea_mcs_set_current_track_cb = adpt_lea_mcs_set_current_track_callback,
+    .lea_mcs_set_next_track_cb = adpt_lea_mcs_set_next_track_callback,
+    .lea_mcs_set_current_group_cb = adpt_lea_mcs_set_current_group_callback,
+    .lea_mcs_set_playing_order_cb = adpt_lea_mcs_set_playing_order_callback,
+
+    .lea_mcs_play_cb = adpt_lea_mcs_play_callback,
+    .lea_mcs_pause_cb = adpt_lea_mcs_pause_callback,
+    .lea_mcs_fast_rewind_cb = adpt_lea_mcs_fast_rewind_callback,
+    .lea_mcs_fast_forward_cb = adpt_lea_mcs_fast_forward_callback,
+    .lea_mcs_stop_cb = adpt_lea_mcs_stop_callback,
+    .lea_mcs_move_cb = adpt_lea_mcs_move_callback,
+    .lea_mcs_previous_segment_cb = adpt_lea_mcs_previous_segment_callback,
+    .lea_mcs_next_segment_cb = adpt_lea_mcs_next_segment_callback,
+    .lea_mcs_first_segment_cb = adpt_lea_mcs_first_segment_callback,
+    .lea_mcs_last_segment_cb = adpt_lea_mcs_last_segment_callback,
+    .lea_mcs_goto_segment_cb = adpt_lea_mcs_goto_segment_callback,
+    .lea_mcs_previous_track_cb = adpt_lea_mcs_previous_track_callback,
+    .lea_mcs_next_track_cb = adpt_lea_mcs_next_track_callback,
+    .lea_mcs_first_track_cb = adpt_lea_mcs_first_track_callback,
+    .lea_mcs_last_track_cb = adpt_lea_mcs_last_track_callback,
+    .lea_mcs_goto_track_cb = adpt_lea_mcs_goto_track_callback,
+    .lea_mcs_previous_group_cb = adpt_lea_mcs_previous_group_callback,
+    .lea_mcs_next_group_cb = adpt_lea_mcs_next_group_callback,
+    .lea_mcs_first_group_cb = adpt_lea_mcs_first_group_callback,
+    .lea_mcs_last_group_cb = adpt_lea_mcs_last_group_callback,
+    .lea_mcs_goto_group_cb = adpt_lea_mcs_goto_group_callback,
+
+    .lea_mcs_search_track_name_cb = adpt_lea_mcs_search_track_name_callback,
+    .lea_mcs_search_artist_name_cb = adpt_lea_mcs_search_artist_name_callback,
+    .lea_mcs_search_album_name_cb = adpt_lea_mcs_search_album_name_callback,
+    .lea_mcs_search_group_name_cb = adpt_lea_mcs_search_group_name_callback,
+    .lea_mcs_search_earliest_year_cb = adpt_lea_mcs_search_earliest_year_callback,
+    .lea_mcs_search_latest_year_cb = adpt_lea_mcs_search_latest_year_callback,
+    .lea_mcs_search_genre_cb = adpt_lea_mcs_search_genre_callback,
+    .lea_mcs_search_tracks_cb = adpt_lea_mcs_search_tracks_callback,
+    .lea_mcs_search_groups_cb = adpt_lea_mcs_search_groups_callback,
+};
+
+/****************************************************************************
+ * Private function
+ ****************************************************************************/
+
+static void adpt_lea_mcs_state_callback(uint32_t mcs_id, uint8_t ccid, bool added)
 {
     lea_on_mcps_state(mcs_id, ccid, added);
 }
 
-void adpt_lea_mcs_player_set_callback(uint32_t mcs_id, void* player_ref, bool result)
+static void adpt_lea_mcs_player_set_callback(uint32_t mcs_id, void *player_ref, bool result)
 {
     lea_on_mcps_player_info_set_result(mcs_id, player_ref, result);
 }
 
-void adpt_lea_mcs_object_added_callback(uint32_t mcs_id, void* obj_ref, LEA_OBJ_ID obj_id)
+static void adpt_lea_mcs_object_added_callback(uint32_t mcs_id, void *obj_ref, LEA_OBJ_ID obj_id)
 {
-    lea_on_mcps_object_added_result(mcs_id, obj_ref, obj_id); //todo
+    lea_on_mcps_object_added_result(mcs_id, obj_ref, obj_id); // todo
 }
 
-void adpt_lea_mcs_set_position_callback(uint32_t mcs_id, int32_t position)
+static void adpt_lea_mcs_set_position_callback(uint32_t mcs_id, int32_t position)
 {
     lea_on_mcps_set_position_result(mcs_id, position);
 }
 
-void adpt_lea_mcs_set_playback_speed_callback(uint32_t mcs_id, int8_t speed)
+static void adpt_lea_mcs_set_playback_speed_callback(uint32_t mcs_id, int8_t speed)
 {
     lea_on_mcps_set_playback_speed_result(mcs_id, speed);
 }
 
-void adpt_lea_mcs_set_current_track_callback(uint32_t mcs_id, LEA_OBJ_ID track_id)
+static void adpt_lea_mcs_set_current_track_callback(uint32_t mcs_id, LEA_OBJ_ID track_id)
 {
     lea_on_mcps_set_current_track_result(mcs_id, track_id);
 }
 
-void adpt_lea_mcs_set_next_track_callback(uint32_t mcs_id, LEA_OBJ_ID track_id)
+static void adpt_lea_mcs_set_next_track_callback(uint32_t mcs_id, LEA_OBJ_ID track_id)
 {
     lea_on_mcps_set_next_track_result(mcs_id, track_id);
 }
 
-void adpt_lea_mcs_set_current_group_callback(uint32_t mcs_id, LEA_OBJ_ID group_id)
+static void adpt_lea_mcs_set_current_group_callback(uint32_t mcs_id, LEA_OBJ_ID group_id)
 {
     lea_on_mcps_set_current_group_result(mcs_id, group_id);
 }
 
-void adpt_lea_mcs_set_playing_order_callback(uint32_t mcs_id, uint8_t order)
+static void adpt_lea_mcs_set_playing_order_callback(uint32_t mcs_id, uint8_t order)
 {
     lea_on_mcps_set_playing_order_result(mcs_id, order);
 }
 
-void adpt_lea_mcs_play_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_play_callback(uint32_t mcs_id)
 {
     lea_on_mcps_play_result(mcs_id);
 }
 
-void adpt_lea_mcs_pause_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_pause_callback(uint32_t mcs_id)
 {
     lea_on_mcps_pause_result(mcs_id);
 }
 
-void adpt_lea_mcs_fast_rewind_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_fast_rewind_callback(uint32_t mcs_id)
 {
     lea_on_mcps_fast_rewind_result(mcs_id);
 }
 
-void adpt_lea_mcs_fast_forward_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_fast_forward_callback(uint32_t mcs_id)
 {
     lea_on_mcps_fast_forward_result(mcs_id);
 }
 
-void adpt_lea_mcs_stop_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_stop_callback(uint32_t mcs_id)
 {
     lea_on_mcps_stop_result(mcs_id);
 }
 
-void adpt_lea_mcs_move_callback(uint32_t mcs_id, int32_t offset)
+static void adpt_lea_mcs_move_callback(uint32_t mcs_id, int32_t offset)
 {
     lea_on_mcps_move_result(mcs_id, offset);
 }
 
-void adpt_lea_mcs_previous_segment_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_previous_segment_callback(uint32_t mcs_id)
 {
     lea_on_mcps_previous_segment_result(mcs_id);
 }
 
-void adpt_lea_mcs_next_segment_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_next_segment_callback(uint32_t mcs_id)
 {
     lea_on_mcps_next_segment_result(mcs_id);
 }
 
-void adpt_lea_mcs_first_segment_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_first_segment_callback(uint32_t mcs_id)
 {
     lea_on_mcps_first_segment_result(mcs_id);
 }
 
-void adpt_lea_mcs_last_segment_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_last_segment_callback(uint32_t mcs_id)
 {
     lea_on_mcps_last_segment_result(mcs_id);
 }
 
-void adpt_lea_mcs_goto_segment_callback(uint32_t mcs_id, int32_t n_segment)
+static void adpt_lea_mcs_goto_segment_callback(uint32_t mcs_id, int32_t n_segment)
 {
     lea_on_mcps_goto_segment_result(mcs_id, n_segment);
 }
 
-void adpt_lea_mcs_previous_track_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_previous_track_callback(uint32_t mcs_id)
 {
     lea_on_mcps_previous_track_result(mcs_id);
 }
 
-void adpt_lea_mcs_next_track_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_next_track_callback(uint32_t mcs_id)
 {
     lea_on_mcps_next_track_result(mcs_id);
 }
 
-void adpt_lea_mcs_first_track_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_first_track_callback(uint32_t mcs_id)
 {
     lea_on_mcps_first_track_result(mcs_id);
 }
 
-void adpt_lea_mcs_last_track_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_last_track_callback(uint32_t mcs_id)
 {
     lea_on_mcps_last_track_result(mcs_id);
 }
 
-void adpt_lea_mcs_goto_track_callback(uint32_t mcs_id, int32_t n_track)
+static void adpt_lea_mcs_goto_track_callback(uint32_t mcs_id, int32_t n_track)
 {
     lea_on_mcps_goto_track_result(mcs_id, n_track);
 }
 
-void adpt_lea_mcs_previous_group_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_previous_group_callback(uint32_t mcs_id)
 {
     lea_on_mcps_previous_group_result(mcs_id);
 }
 
-void adpt_lea_mcs_next_group_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_next_group_callback(uint32_t mcs_id)
 {
     lea_on_mcps_next_group_result(mcs_id);
 }
 
-void adpt_lea_mcs_first_group_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_first_group_callback(uint32_t mcs_id)
 {
     lea_on_mcps_first_group_result(mcs_id);
 }
 
-void adpt_lea_mcs_last_group_callback(uint32_t mcs_id)
+static void adpt_lea_mcs_last_group_callback(uint32_t mcs_id)
 {
     lea_on_mcps_last_group_result(mcs_id);
 }
 
-void adpt_lea_mcs_goto_group_callback(uint32_t mcs_id, int32_t n_group)
+static void adpt_lea_mcs_goto_group_callback(uint32_t mcs_id, int32_t n_group)
 {
     lea_on_mcps_goto_group_result(mcs_id, n_group);
 }
 
-void adpt_lea_mcs_search_track_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition)
+static void adpt_lea_mcs_search_track_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition)
 {
     char *nullname = UNKNOWN_INFO;
     if (name == NULL) {
@@ -195,7 +284,7 @@ void adpt_lea_mcs_search_track_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_S
     }
 }
 
-void adpt_lea_mcs_search_artist_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition)
+static void adpt_lea_mcs_search_artist_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition)
 {
     char *nullname = UNKNOWN_INFO;
     if (name == NULL) {
@@ -205,7 +294,7 @@ void adpt_lea_mcs_search_artist_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_
     }
 }
 
-void adpt_lea_mcs_search_album_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition)
+static void adpt_lea_mcs_search_album_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition)
 {
     char *nullname = UNKNOWN_INFO;
     if (name == NULL) {
@@ -215,7 +304,7 @@ void adpt_lea_mcs_search_album_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_S
     }
 }
 
-void adpt_lea_mcs_search_group_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition)
+static void adpt_lea_mcs_search_group_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition)
 {
     char *nullname = UNKNOWN_INFO;
     if (name == NULL) {
@@ -225,7 +314,7 @@ void adpt_lea_mcs_search_group_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_S
     }
 }
 
-void adpt_lea_mcs_search_earliest_year_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *year, bool last_condition)
+static void adpt_lea_mcs_search_earliest_year_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *year, bool last_condition)
 {
     char *nullyear = UNKNOWN_INFO;
     if (year == NULL) {
@@ -235,7 +324,7 @@ void adpt_lea_mcs_search_earliest_year_callback(uint32_t mcs_id, SERVICE_LEA_UTF
     }
 }
 
-void adpt_lea_mcs_search_latest_year_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *year, bool last_condition)
+static void adpt_lea_mcs_search_latest_year_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *year, bool last_condition)
 {
     char *nullyear = UNKNOWN_INFO;
     if (year == NULL) {
@@ -245,7 +334,7 @@ void adpt_lea_mcs_search_latest_year_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_
     }
 }
 
-void adpt_lea_mcs_search_genre_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition)
+static void adpt_lea_mcs_search_genre_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition)
 {
     char *nullname = UNKNOWN_INFO;
     if (name == NULL) {
@@ -255,20 +344,20 @@ void adpt_lea_mcs_search_genre_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *n
     }
 }
 
-void adpt_lea_mcs_search_tracks_callback(uint32_t mcs_id, bool last_condition)
+static void adpt_lea_mcs_search_tracks_callback(uint32_t mcs_id, bool last_condition)
 {
     lea_on_mcps_search_tracks_result(mcs_id, last_condition);
 }
 
-void adpt_lea_mcs_search_groups_callback(uint32_t mcs_id, bool last_condition)
+static void adpt_lea_mcs_search_groups_callback(uint32_t mcs_id, bool last_condition)
 {
     lea_on_mcps_search_groups_result(mcs_id, last_condition);
 }
 
-
 /****************************************************************************
- *
+ * Public function
  ****************************************************************************/
+
 bt_status_t bt_sal_lea_mcs_add(uint32_t mcs_id)
 {
     SAL_CHECK_RET(stack_adapter_lea_mcs_add(mcs_id), SERVICE_BT_STATUS_SUCCESS);
@@ -286,9 +375,9 @@ bt_status_t bt_sal_lea_mcs_set_media_player_info(uint32_t mcs_id)
     BT_LOGD("%s ", __func__);
 
     SERVICE_LEA_MEDIA_PLAYER_S *mediaplayerinfo;
-    mediaplayerinfo= (SERVICE_LEA_MEDIA_PLAYER_S*)malloc(sizeof(SERVICE_LEA_MEDIA_PLAYER_S));
+    mediaplayerinfo = (SERVICE_LEA_MEDIA_PLAYER_S *)malloc(sizeof(SERVICE_LEA_MEDIA_PLAYER_S));
 
-    mediaplayerinfo->mcs_id = mcs_id; //lea_mcs_id;
+    mediaplayerinfo->mcs_id = mcs_id; // lea_mcs_id;
     mediaplayerinfo->player_ref = (void *)tmp_player_ref;
     mediaplayerinfo->player_name = (uint8_t *)MEDIA_PLAYER_NAME;
     mediaplayerinfo->player_icon_url = (uint8_t *)MEDIA_PLAYER_ICON_URL;
