@@ -66,6 +66,13 @@ bt_status_t bt_lea_server_disconnect(bt_instance_t *ins, bt_address_t *addr)
     return profile->disconnect(addr);
 }
 
+bt_status_t bt_lea_server_disconnect_audio(bt_instance_t *ins, bt_address_t *addr)
+{
+    lea_server_interface_t *profile = get_profile_service();
+
+    return profile->disconnect_audio(addr);
+}
+
 profile_connection_state_t bt_lea_server_get_connection_state(bt_instance_t *ins, bt_address_t *addr)
 {
     lea_server_interface_t *profile = get_profile_service();

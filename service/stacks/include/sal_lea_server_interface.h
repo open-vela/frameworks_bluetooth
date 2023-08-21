@@ -27,17 +27,19 @@ bt_status_t bt_sal_lea_server_init(void);
 void bt_sal_lea_server_cleanup(void);
 
 bt_status_t bt_sal_lea_server_start_announce(uint8_t id, uint8_t type,
-    uint8_t* adv_data, uint8_t adv_size,
-    uint8_t* md_data, uint8_t md_size);
+                                             uint8_t *adv_data, uint8_t adv_size,
+                                             uint8_t *md_data, uint8_t md_size);
 
 bt_status_t bt_sal_lea_server_stop_announce(uint8_t adv_id);
 
-bt_status_t bt_sal_lea_server_disconnect(bt_address_t* addr);
+bt_status_t bt_sal_lea_server_disconnect(bt_address_t *addr);
 
-lea_send_iso_data_t* bt_sal_leas_alloc_send_buffer(uint16_t length, uint16_t handle);
+bt_status_t bt_sal_lea_server_request_disable(bt_address_t *addr, uint8_t ase_id);
+
+lea_send_iso_data_t *bt_sal_leas_alloc_send_buffer(uint16_t length, uint16_t handle);
 
 bool bt_sal_leas_is_source_stream(uint32_t stream_id);
 
-bt_status_t bt_sal_leas_send_iso_data(lea_send_iso_data_t* packet);
+bt_status_t bt_sal_leas_send_iso_data(lea_send_iso_data_t *packet);
 
 #endif /* __SAL_LEA_SERVER_INTERFACE_H__ */

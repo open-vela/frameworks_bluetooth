@@ -25,14 +25,16 @@
 
 static int start_announce_cmd(void *handle, int argc, char *argv[]);
 static int stop_announce_cmd(void *handle, int argc, char *argv[]);
-static int disconnect_cmd(void *handle, int argc, char *argv[]);
+static int disconnect_device(void *handle, int argc, char *argv[]);
 static int get_connection_state(void *handle, int argc, char *argv[]);
+static int disconnect_audio(void *handle, int argc, char *argv[]);
 
 static bt_command_t g_lea_server_tables[] = {
-    {"startance",   start_announce_cmd,   0, "\"start lea announce, params: <adv_id> <announce_type>\""},
-    { "stopance",   stop_announce_cmd,    0, "\"stop lea announce, params: <adv_id>\""                 },
-    { "disconnect", disconnect_cmd,       0, "\"disconnect lea connection, params: <address>\""        },
-    { "constate",   get_connection_state, 0, "\"get lea connection state, params: <address>\""         },
+    {"startance",        start_announce_cmd,   0, "\"start lea announce, params: <adv_id> <announce_type>\""},
+    { "stopance",        stop_announce_cmd,    0, "\"stop lea announce, params: <adv_id>\""                 },
+    { "disconnect",      disconnect_device,    0, "\"disconnect lea connection, params: <address>\""        },
+    { "constate",        get_connection_state, 0, "\"get lea connection state, params: <address>\""         },
+    { "disconnectaudio", disconnect_audio,     0, "\"disconnect lea audio, params: <address>\""             },
 };
 
 static struct option lea_server_options[] = {
@@ -87,7 +89,7 @@ static int stop_announce_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_cmd(void *handle, int argc, char *argv[])
+static int disconnect_device(void *handle, int argc, char *argv[])
 {
     bt_address_t addr;
     if (argc < 1)
@@ -97,6 +99,21 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
         return CMD_INVALID_ADDR;
 
     if (bt_lea_server_disconnect(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int disconnect_audio(void *handle, int argc, char *argv[])
+{
+    bt_address_t addr;
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (bt_lea_server_disconnect_audio(handle, &addr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
