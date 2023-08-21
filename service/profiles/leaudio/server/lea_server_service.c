@@ -597,6 +597,21 @@ static void on_lea_source_audio_send(uint8_t *buffer, uint16_t length)
     }
 }
 
+static void on_lea_source_audio_send(uint8_t *buffer, uint16_t length)
+{
+    lea_server_service_t *service = &g_lea_server_service;
+    bt_list_t *list = service->leas_stream;
+    lea_audio_stream_t *stream;
+    bt_list_node_t *node;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        stream = bt_list_node(node);
+        if (stream->started && stream->is_source) {
+            lea_audio_send_data(stream, buffer, length);
+        }
+    }
+}
+
 static bt_status_t lea_server_init(void)
 {
     lea_server_service_t *service = &g_lea_server_service;
@@ -1096,12 +1111,11 @@ void lea_server_on_stream_recv(uint32_t stream_id, uint32_t time_stamp,
     if (!packet)
         return;
 
-    msg->data.valueint1 = stream_id;
-    msg->data.datapointer = packet;
-    lea_server_send_message(msg);
+    // todo mix from many stream ?
+    lea_audio_sink_packet_recv(packet);
 }
 
-void lea_server_on_stream_send(uint32_t stream_id)
+void lea_server_on_ascs_event(bt_address_t *addr, uint8_t id, uint8_t state, uint16_t type);
 {
     lea_server_msg_t *msg = lea_server_msg_new(STACK_EVENT_STREAN_SENT,
                                                NULL);
