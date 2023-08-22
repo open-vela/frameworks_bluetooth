@@ -102,7 +102,7 @@ void bts_a2dp_control_update_audio_config(uint8_t ch_id, uint8_t isvalid)
         /* set valid code */
         UINT8_TO_STREAM(p, 0);
     } else {
-        len = 21;
+        len = 29;
         /* set valid code */
         UINT8_TO_STREAM(p, 1);
         /* set codec type*/
