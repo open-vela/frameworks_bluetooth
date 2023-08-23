@@ -31,6 +31,7 @@
  *
  ****************************************************************************/
 #include "a2dp_device.h"
+#include "a2dp_control.h"
 #include "a2dp_sink_audio.h"
 #include "a2dp_source_audio.h"
 #include "bt_utils.h"
@@ -38,6 +39,8 @@
 #include <stdlib.h>
 #define LOG_TAG "a2dp_audio"
 #include "utils/log.h"
+
+static int g_audio_flag = 0;
 
 void a2dp_audio_on_connection_changed(uint8_t peer_sep, bool connected)
 {
@@ -108,13 +111,15 @@ void a2dp_audio_setup_codec(uint8_t peer_sep, bt_address_t *bd_addr)
 void a2dp_audio_init(uint8_t svr_class)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    if (svr_class == SVR_SOURCE)
+    if (svr_class == SVR_SOURCE) {
         a2dp_source_audio_init();
-    else
+        g_audio_flag |= 1 << SVR_SOURCE;
+    } else
 #endif
     {
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
         a2dp_sink_audio_init();
+        g_audio_flag |= 1 << SVR_SINK;
 #endif
     }
 }
@@ -122,13 +127,18 @@ void a2dp_audio_init(uint8_t svr_class)
 void a2dp_audio_cleanup(uint8_t svr_class)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    if (svr_class == SVR_SOURCE)
+    if (svr_class == SVR_SOURCE) {
         a2dp_source_audio_cleanup();
-    else
+        g_audio_flag &= ~(1 << SVR_SOURCE);
+    } else
 #endif
     {
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
         a2dp_sink_audio_cleanup();
+        g_audio_flag &= ~(1 << SVR_SINK);
 #endif
     }
+
+    if (!g_audio_flag)
+        a2dp_control_cleanup();
 }

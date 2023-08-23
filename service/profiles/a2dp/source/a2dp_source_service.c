@@ -54,6 +54,9 @@ typedef struct {
 
 static a2dp_source_global_t g_a2dp_source = { 0 };
 
+static void source_shutdown(void *data);
+static void source_startup(void *data);
+
 static void set_active_peer(bt_address_t *bd_addr)
 {
     a2dp_device_t *device = find_a2dp_device_by_addr(&g_a2dp_source.list, bd_addr);
@@ -106,6 +109,12 @@ static void a2dp_service_handle_event(void *data)
     a2dp_event_t *event = data;
 
     switch (event->event) {
+        case A2DP_STARTUP:
+        source_startup(NULL);
+        break;
+    case A2DP_SHUTDOWN:
+        source_shutdown(NULL);
+        break;
     case CODEC_CONFIG_EVT: {
         a2dp_codec_config_t *config;
         a2dp_device_t *device;
@@ -280,28 +289,32 @@ static bt_status_t a2dp_source_init(void)
 
     g_a2dp_source.callbacks = bt_callbacks_list_new(2);
 
-    a2dp_audio_init(SVR_SOURCE);
-
     return BT_STATUS_SUCCESS;
 }
 
 static void a2dp_source_cleanup(void)
 {
-    a2dp_device_t *device;
-    struct list_node *node;
-    struct list_node *tmp;
-
     g_a2dp_source.active_peer = NULL;
-    list_for_every_safe(&g_a2dp_source.list, node, tmp)
-    {
-        device = (a2dp_device_t *)node;
-        a2dp_device_delete(device);
-    }
-    a2dp_audio_cleanup(SVR_SOURCE);
 
     bt_callbacks_list_free(g_a2dp_source.callbacks);
     g_a2dp_source.callbacks = NULL;
     pthread_mutex_destroy(&g_a2dp_source.mutex);
+}
+
+static void source_startup(void *data)
+{
+    pthread_mutex_lock(&g_a2dp_source.mutex);
+
+    list_initialize(&g_a2dp_source.list);
+    if (bt_sal_a2dp_source_init(A2DP_MAX_CONNECTION) != BT_STATUS_SUCCESS) {
+        pthread_mutex_unlock(&g_a2dp_source.mutex);
+        return;
+        list_delete(&g_a2dp_source.list);
+    }
+
+    a2dp_audio_init(SVR_SOURCE);
+    g_a2dp_source.enabled = true;
+    pthread_mutex_unlock(&g_a2dp_source.mutex);
 }
 
 static bt_status_t a2dp_source_startup(profile_on_startup_t cb)
@@ -311,18 +324,29 @@ static bt_status_t a2dp_source_startup(profile_on_startup_t cb)
         pthread_mutex_unlock(&g_a2dp_source.mutex);
         return BT_STATUS_NOT_ENABLED;
     }
-
-    list_initialize(&g_a2dp_source.list);
-    if (bt_sal_a2dp_source_init(A2DP_MAX_CONNECTION) != BT_STATUS_SUCCESS) {
-        pthread_mutex_unlock(&g_a2dp_source.mutex);
-        list_delete(&g_a2dp_source.list);
-        return BT_STATUS_FAIL;
-    }
-
-    g_a2dp_source.enabled = true;
     pthread_mutex_unlock(&g_a2dp_source.mutex);
+    do_in_a2dp_service(a2dp_event_new(A2DP_STARTUP, NULL));
 
     return BT_STATUS_SUCCESS;
+}
+
+static void source_shutdown(void *data)
+{
+    a2dp_device_t *device;
+    struct list_node *node;
+    struct list_node *tmp;
+
+    pthread_mutex_lock(&g_a2dp_source.mutex);
+    g_a2dp_source.enabled = false;
+    a2dp_audio_cleanup(SVR_SOURCE);
+    list_for_every_safe(&g_a2dp_source.list, node, tmp)
+    {
+        device = (a2dp_device_t *)node;
+        a2dp_device_delete(device);
+    }
+    list_delete(&g_a2dp_source.list);
+    bt_sal_a2dp_source_cleanup();
+    pthread_mutex_unlock(&g_a2dp_source.mutex);
 }
 
 static bt_status_t a2dp_source_shutdown(profile_on_shutdown_t cb)
@@ -332,11 +356,8 @@ static bt_status_t a2dp_source_shutdown(profile_on_shutdown_t cb)
         pthread_mutex_unlock(&g_a2dp_source.mutex);
         return BT_STATUS_SUCCESS;
     }
-
-    g_a2dp_source.enabled = false;
-    list_delete(&g_a2dp_source.list);
-    bt_sal_a2dp_source_cleanup();
     pthread_mutex_unlock(&g_a2dp_source.mutex);
+    do_in_a2dp_service(a2dp_event_new(A2DP_SHUTDOWN, NULL));
 
     return BT_STATUS_SUCCESS;
 }

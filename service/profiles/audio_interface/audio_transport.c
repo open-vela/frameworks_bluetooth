@@ -289,8 +289,10 @@ void audio_transport_close(audio_transport_t *transport, uint8_t ch_id)
 
     for (int i = 0; i < AUDIO_TRANS_CH_NUM; i++) {
         ch = &transport->ch[i];
-        audio_transport_connection_close(ch);
-        uv_close((uv_handle_t *)ch->svr_pipe, transport_chnl_close_cb);
+        if (ch->state == IPC_CONNTECTED) {
+            audio_transport_connection_close(ch);
+            uv_close((uv_handle_t *)ch->svr_pipe, transport_chnl_close_cb);
+        }
     }
     free(transport);
 }
