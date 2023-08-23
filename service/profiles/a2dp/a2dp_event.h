@@ -38,8 +38,8 @@
 #include "a2dp_sink_audio.h"
 
 typedef enum {
-    ENABLE = 1,
-    CLEANUP,
+    A2DP_STARTUP = 1,
+    A2DP_SHUTDOWN,
     CONNECT_REQ,
     DISCONNECT_REQ,
     STREAM_START_REQ,
