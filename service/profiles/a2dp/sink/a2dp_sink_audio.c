@@ -146,7 +146,7 @@ static void a2dp_sink_audio_handle_timer(service_timer_t *timer, void *arg)
         stream->block_ticks = 0;
         packet = (a2dp_sink_packet_t *)node;
         ret = audio_transport_write(a2dp_transport,
-                                    CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO,
+                                    AUDIO_TRANS_CH_ID_AV_SINK_AUDIO,
                                     packet->data, packet->length,
                                     a2dp_sink_write_done);
         if (ret != 0) {
@@ -286,7 +286,7 @@ void a2dp_sink_audio_init(void)
     sink_stream.state = STATE_OFF;
     uv_mutex_init(&sink_stream.queue_lock);
     list_initialize(&sink_stream.packet_queue);
-    a2dp_control_init(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO);
+    a2dp_control_init(AUDIO_TRANS_CH_ID_AV_SINK_CTRL, AUDIO_TRANS_CH_ID_AV_SINK_AUDIO);
 }
 
 void a2dp_sink_audio_cleanup(void)
@@ -295,5 +295,5 @@ void a2dp_sink_audio_cleanup(void)
     a2dp_sink_flush_packet_queue();
     uv_mutex_destroy(&sink_stream.queue_lock);
     list_delete(&sink_stream.packet_queue);
-    a2dp_control_cleanup();
+    a2dp_control_ch_close(AUDIO_TRANS_CH_ID_AV_SINK_CTRL, AUDIO_TRANS_CH_ID_AV_SINK_AUDIO);
 }

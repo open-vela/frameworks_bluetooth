@@ -193,7 +193,7 @@ static void a2dp_source_start_read(void)
 
     stream->read_congest = 0;
     audio_transport_read_start(a2dp_transport,
-                               CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO,
+                               AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO,
                                a2dp_audio_data_alloc,
                                a2dp_audio_data_received);
 }
@@ -260,7 +260,7 @@ static void a2dp_source_start_flush(void)
     if (a2dp_src_stream.stream_state == STATE_OFF) {
         a2dp_src_stream.stream_state = STATE_FLUSHING;
         audio_transport_read_start(a2dp_transport,
-                                   CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO,
+                                   AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO,
                                    a2dp_audio_data_alloc,
                                    a2dp_audio_data_flush);
     }
@@ -269,7 +269,7 @@ static void a2dp_source_start_flush(void)
 static void a2dp_source_stop_flush(void)
 {
     a2dp_src_stream.stream_state = STATE_OFF;
-    audio_transport_read_stop(a2dp_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO);
+    audio_transport_read_stop(a2dp_transport, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
 }
 
 static void a2dp_source_start_delay(service_timer_t *timer, void *arg)
@@ -331,7 +331,7 @@ static void a2dp_source_stop_audio_req(bool cleanup)
         return;
 
     if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
-        audio_transport_read_stop(a2dp_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO);
+        audio_transport_read_stop(a2dp_transport, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
         a2dp_source_start_flush();
         circbuf_reset(&a2dp_src_stream.stream_pool);
     }
@@ -345,7 +345,7 @@ static void a2dp_source_stop_audio_req(bool cleanup)
 static void a2dp_source_close_audio(void)
 {
     a2dp_source_stop_audio_req(true);
-    audio_transport_read_stop(a2dp_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO);
+    audio_transport_read_stop(a2dp_transport, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
 }
 
 bool a2dp_source_is_streaming(void)
@@ -357,9 +357,9 @@ void a2dp_source_on_connection_changed(bool connected)
 {
     BT_LOGD("%s, %d", __func__, connected);
     if (connected) {
-        a2dp_control_update_audio_config(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, 1);
+        a2dp_control_update_audio_config(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, 1);
     } else {
-        a2dp_control_update_audio_config(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, 0);
+        a2dp_control_update_audio_config(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, 0);
         a2dp_source_stop_audio_req(true);
     }
 }
@@ -369,11 +369,11 @@ void a2dp_source_on_started(bool started)
     BT_LOGD("%s: %d", __func__, started);
 
     if (started) {
-        a2dp_control_event(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, A2DP_CTRL_EVT_STARTED);
+        a2dp_control_event(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_STARTED);
         if (a2dp_src_stream.stream_state == STATE_OFF || a2dp_src_stream.stream_state == STATE_FLUSHING)
             a2dp_source_start_audio_req();
     } else {
-        a2dp_control_event(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, A2DP_CTRL_EVT_START_FAIL);
+        a2dp_control_event(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_START_FAIL);
     }
 }
 
@@ -422,12 +422,12 @@ void a2dp_source_audio_init(void)
     memset(&a2dp_src_stream, 0, sizeof(a2dp_src_stream));
     a2dp_src_stream.stream_state = STATE_OFF;
     circbuf_init(&a2dp_src_stream.stream_pool, NULL, 2048);
-    a2dp_control_init(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO);
+    a2dp_control_init(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
 }
 
 void a2dp_source_audio_cleanup(void)
 {
     a2dp_source_close_audio();
     circbuf_uninit(&a2dp_src_stream.stream_pool);
-    a2dp_control_cleanup();
+    a2dp_control_ch_close(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
 }
