@@ -26,6 +26,8 @@
 
 #include "hci_h4.h"
 
+#define LOG_TAG "h4"
+#include "utils/log.h"
 /* Datatype in HCI_TL_RecvData */
 enum {
     HCI_DATATYPE_COMMAND = 1,
@@ -80,6 +82,7 @@ static int h4_send_data(uint8_t *buf, int count)
 int bt_sal_hci_transport_init(void)
 {
     g_tlfd = open(CONFIG_OBELISK_HCI_UART_NAME, O_RDWR | O_BINARY | O_CLOEXEC);
+    BT_LOGI("%s: g_tlfd = %d", __func__, g_tlfd);
 
     return g_tlfd;
 }
