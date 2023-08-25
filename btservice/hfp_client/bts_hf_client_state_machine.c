@@ -165,6 +165,12 @@ static char* stack_event_to_string(hf_client_event_t event)
     }
 }
 
+#define HF_DBG_EVT(_state, _evt, _addrstr)                                                        \
+    do {                                                                                          \
+        if (_evt != SET_MIC_VOLUME && _evt != SET_SPEAKER_VOLUME)                                 \
+            BT_LOGD("state=%s, event=%s peer=%s", _state, stack_event_to_string(_evt), _addrstr); \
+    } while (0);
+
 static void add_pending_action(hf_state_machine_t* hfsm, uint32_t cmd_code)
 {
     hf_at_cmd_t* cmd = malloc(sizeof(hf_at_cmd_t));
@@ -470,9 +476,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     hf_event_data_t* data = (hf_event_data_t*)p_data;
     SERVICE_BT_STATUS status;
 
-    BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
-        stack_event_to_string(event),
-        addr_str(hfsm->addr));
+    HF_DBG_EVT(hsm_get_current_state_name(sm), event, addr_str(hfsm->addr));
     switch (event) {
     case CONNECT:
         // no handle
@@ -746,8 +750,6 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         hf_client_volume_type_t type = data->valueint1;
         int vol = data->valueint2;
         // set media volume, need call media interface
-
-        BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
         HF_SERVICE_CBACK(service->callbacks, volume_change_cb, hfsm->addr, type, vol);
         break;
     }
@@ -818,9 +820,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
     hf_event_data_t* data = (hf_event_data_t*)p_data;
     SERVICE_BT_STATUS status;
 
-    BT_LOGD("state=%s, event=%s peer=%s", hsm_get_current_state_name(sm),
-        stack_event_to_string(event),
-        addr_str(hfsm->addr));
+    HF_DBG_EVT(hsm_get_current_state_name(sm), event, addr_str(hfsm->addr));
     switch (event) {
     case DISCONNECT:
         break;
@@ -845,7 +845,6 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         uint8_t vol = data->valueint1;
         vol = vol > 15 ? 15 : vol;
         // transfer to hf volume
-        BT_LOGD("Set Mic Volume :%d", vol);
         service_adapter_hfp_set_volume(hfsm->addr, VOLUME_MIC, vol);
         break;
     }
@@ -853,8 +852,6 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
     case SET_SPEAKER_VOLUME: {
         uint8_t vol = data->valueint1;
         vol = vol > 15 ? 15 : vol;
-
-        BT_LOGD("Set Speaker Volume :%d", vol);
         // transfer to hf volume
         service_adapter_hfp_set_volume(hfsm->addr, VOLUME_SPEAKER, vol);
         break;
@@ -984,7 +981,6 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         hf_client_volume_type_t type = data->valueint1;
         int vol = data->valueint2;
         // set media volume, need call media interface
-
         BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
         HF_SERVICE_CBACK(service->callbacks, volume_change_cb, hfsm->addr, type, vol);
         break;
