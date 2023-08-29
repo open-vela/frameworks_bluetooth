@@ -124,7 +124,7 @@ uv_poll_t* bts_service_event_poll_start(bts_service_event_poll_cb cb,
     uv_poll_t* handle = NULL;
     int fd;
 
-    fd = eventfd(0, EFD_SEMAPHORE);
+    fd = eventfd(0, EFD_SEMAPHORE | EFD_CLOEXEC);
     if (fd >= 0) {
 
         event = malloc(sizeof(bts_event_poll_t));
