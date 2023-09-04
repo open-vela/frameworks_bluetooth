@@ -1167,13 +1167,37 @@ void test_received_remote_name_callback(void* handle, bt_address bd_addr, char* 
 
 void test_ssp_request_callback(void* handle, ssp_request_data_t* request_data)
 {
+    char* buffer = malloc(CONFIG_NSH_LINELEN);
+    if (!buffer) {
+        BT_LOGE("error, buffer malloc failed");
+        return;
+    }
+    memset(buffer, 0, CONFIG_NSH_LINELEN);
+
     BT_LOGD("%s, : request_data->ssp_type: %d, name : %s", __func__, request_data->ssp_type, request_data->bt_name);
     spp_reply_data_t reply;
 
     if (request_data->ssp_type == SPP_TYPE_PASSKEY_CONFIRMATION) {
         memcpy(reply.remote_addr, request_data->remote_addr, 6);
-        reply.accept = true;
         reply.type = SPP_TYPE_PASSKEY_CONFIRMATION;
+        if (!auto_accept) {
+            reply.accept = true;
+        } else {
+            while (1) {
+                BT_LOGD("2. request ssp reply, please input y or n -----------------");
+                int len = readline(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
+                buffer[len] = '\0';
+                if (len < 0)
+                    goto exit;
+                if (buffer[0] == 'y') {
+                    reply.accept = true;
+                    break;
+                } else if (buffer[0] == 'n') {
+                    reply.accept = false;
+                    break;
+                }
+            }
+        }
         gap_test_interface->bt_ssp_reply(g_gap_handle, &reply);
     }
     if (request_data->ssp_type == SPP_TYPE_PASSKEY_ENTRY) {
@@ -1183,6 +1207,9 @@ void test_ssp_request_callback(void* handle, ssp_request_data_t* request_data)
         BT_LOGD("%s, device %s, psss key: %" PRIu32, __func__, addr_str(request_data->remote_addr), request_data->cod);
         BT_LOGD("please input with sspreply command!");
     }
+
+exit:
+    free(buffer);
 }
 
 void test_bond_state_changed_callback(void* handle, bt_device_t* device, bt_bond_state state)
@@ -1277,7 +1304,7 @@ void test_pairing_request_callback(void* handle, bt_address remote_addr, bool lo
         goto exit;
     }
     while (1) {
-        BT_LOGD("auto accept not open, please input y or n -----------------");
+        BT_LOGD("1. request pair reply, please input y or n -----------------");
         int len = readline(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
         buffer[len] = '\0';
         if (len < 0)
