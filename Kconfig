@@ -45,6 +45,54 @@ config BLUETOOTH_GATT
 	bool "Generic ATT profile support"
 	default y
 
+config BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL
+    int "Bluetooth Audio Transport Source Ctrl Channel ID"
+	default 0
+
+config BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO
+    int "Bluetooth Audio Transport Source Audio Channel ID"
+	default 1
+
+config BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL
+    int "Bluetooth Audio Transport Sink Ctrl Channel ID"
+	default 2
+
+config BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO
+    int "Bluetooth Audio Transport Sink Audio Channel ID"
+	default 3
+
+config BLUETOOTH_A2DP_SINK_CTRL_PATH
+	string "Bluetooth A2DP Audio Transport Sink Ctrl Path"
+	default "a2dp_sink_ctrl"
+
+config BLUETOOTH_A2DP_SINK_DATA_PATH
+	string "Bluetooth A2DP Audio Transport Sink Data Path"
+	default "a2dp_sink_data"
+
+config BLUETOOTH_A2DP_SOURCE_CTRL_PATH
+	string "Bluetooth A2DP Audio Transport Source Ctrl Path"
+	default "a2dp_source_ctrl"
+
+config BLUETOOTH_A2DP_SOURCE_DATA_PATH
+	string "Bluetooth A2DP Audio Transport Source Data Path"
+	default "a2dp_source_data"
+
+config BLUETOOTH_LEA_SINK_CTRL_PATH
+	string "Bluetooth LE Audio Transport Sink Ctrl Path"
+	default "lea_sink_ctrl"
+
+config BLUETOOTH_LEA_SINK_DATA_PATH
+	string "Bluetooth LE Audio Transport Sink Data Path"
+	default "lea_sink_data"
+
+config BLUETOOTH_LEA_SOURCE_CTRL_PATH
+	string "Bluetooth LE Audio Transport Source Ctrl Path"
+	default "lea_source_ctrl"
+
+config BLUETOOTH_LEA_SOURCE_DATA_PATH
+	string "Bluetooth LE Audio Transport Source Data Path"
+	default "lea_source_data"
+
 if BLUETOOTH_GATT
 config BLUETOOTH_GATTC_MAX_CONNECTIONS
 	int "GATT client max connections"
@@ -67,11 +115,13 @@ config BLUETOOTH_A2DP_SOURCE
 	bool "A2DP source profile support"
 	default n
 	select BLUETOOTH_AVRCP_TARGET
+	depends on BLUETOOTH_A2DP
 
 config BLUETOOTH_A2DP_SINK
 	bool "A2DP sink profile support"
 	default n
 	select BLUETOOTH_AVRCP_CONTROL
+	depends on BLUETOOTH_A2DP
 
 if BLUETOOTH_A2DP
 config BLUETOOTH_A2DP_MAX_CONNECTIONS

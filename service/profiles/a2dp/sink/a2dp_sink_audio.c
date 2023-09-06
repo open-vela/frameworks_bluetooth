@@ -35,9 +35,9 @@
 #include <stdlib.h>
 
 #include "a2dp_control.h"
-#include "audio_transport.h"
 #include "a2dp_sink.h"
 #include "a2dp_sink_audio.h"
+#include "audio_transport.h"
 #include "bt_utils.h"
 
 #include "service_loop.h"
@@ -146,9 +146,9 @@ static void a2dp_sink_audio_handle_timer(service_timer_t *timer, void *arg)
         stream->block_ticks = 0;
         packet = (a2dp_sink_packet_t *)node;
         ret = audio_transport_write(a2dp_transport,
-                             AUDIO_TRANS_CH_ID_AV_SINK_AUDIO,
-                             packet->data, packet->length,
-                             a2dp_sink_write_done);
+                                    CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO,
+                                    packet->data, packet->length,
+                                    a2dp_sink_write_done);
         if (ret != 0) {
             BT_LOGE("%s, packet write failed", __func__);
             goto out;
@@ -218,10 +218,10 @@ void a2dp_sink_on_connection_changed(bool connected)
 {
     BT_LOGD("%s, %d", __func__, connected);
     if (connected) {
-        a2dp_control_update_audio_config(AUDIO_TRANS_CH_ID_AV_SINK_CTRL, 1);
+        a2dp_control_update_audio_config(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, 1);
     } else {
         a2dp_sink_on_stopped();
-        a2dp_control_update_audio_config(AUDIO_TRANS_CH_ID_AV_SINK_CTRL, 0);
+        a2dp_control_update_audio_config(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, 0);
     }
 }
 
@@ -286,7 +286,7 @@ void a2dp_sink_audio_init(void)
     sink_stream.state = STATE_OFF;
     uv_mutex_init(&sink_stream.queue_lock);
     list_initialize(&sink_stream.packet_queue);
-    a2dp_control_init(AUDIO_TRANS_CH_ID_AV_SINK_CTRL, AUDIO_TRANS_CH_ID_AV_SINK_AUDIO);
+    a2dp_control_init(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO);
 }
 
 void a2dp_sink_audio_cleanup(void)
