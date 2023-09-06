@@ -728,6 +728,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
 
     case DISCONNECTED_EVT:
         // check active, if active should nofify ffmpeg to stop
+        a2dp_sm->pending = PENDING_NONE;
         bts_a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
         hsm_transition_to(sm, &idle_state);
         break;
@@ -790,10 +791,13 @@ static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case STREAM_SUSPEND_REQ:
     case STREAM_CLOSED_EVT:
     case STREAM_SUSPENDED_EVT:
+        a2dp_sm->pending = PENDING_NONE;
         bts_a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
 
     case DISCONNECTED_EVT:
+        if (a2dp_sm->pending)
+            a2dp_sm->pending = PENDING_NONE;
         hsm_transition_to(sm, &idle_state);
         break;
 
