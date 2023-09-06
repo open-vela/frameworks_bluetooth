@@ -49,6 +49,7 @@ endif
 	CSRCS += service/stacks/bluelet/*.c
 	CSRCS += service/profiles/*.c
 	CSRCS += service/profiles/system/*.c
+	CSRCS += service/profiles/audio_interface/*.c
 ifeq ($(CONFIG_BLUETOOTH_GATT), y)
 	CSRCS += service/profiles/gatt/*.c
 endif #CONFIG_BLUETOOTH_GATT
