@@ -242,7 +242,7 @@ bool audio_transport_open(audio_transport_t *transport, uint8_t ch_id,
         goto error;
     }
 
-#ifndef CONFIG_BLUETOOTH_audio_transport_RPSMG_SERVER
+#ifndef CONFIG_BLUETOOTH_AUDIO_TRANSPORT_RPSMG_SERVER
     ret = uv_pipe_bind(ch->svr_pipe, path);
 #else
     ret = uv_pipe_rpmsg_bind(ch->svr_pipe, path, "");
