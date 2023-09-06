@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "audio_ipc/audio_ipc.h"
+#include "audio_transport.h"
 #include "bt_utils.h"
 #include "lea_audio_sink.h"
 #include "lea_audio_source.h"
@@ -91,7 +91,7 @@ typedef struct {
 
 static lea_source_stream_t g_source_stream;
 static lea_source_callabcks_t *g_source_callbacks;
-static ipc_handle_t *g_source_ipc;
+static audio_transport_t *g_source_transport;
 
 /****************************************************************************
  * Private function
@@ -110,8 +110,8 @@ static void lea_ctrl_event_with_data(uint8_t ch_id, audio_ctrl_evt_t event, uint
     }
 
     /* send event */
-    if (g_source_ipc != NULL) {
-        ipc_write(g_source_ipc, ch_id, stream, data_len + CTRL_EVT_HEADER_LEN, NULL);
+    if (g_source_transport != NULL) {
+        audio_transport_write(g_source_transport, ch_id, stream, data_len + CTRL_EVT_HEADER_LEN, NULL);
     }
 }
 
@@ -144,7 +144,7 @@ static void lea_audio_sink_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
     alloc_buffer = (void *)malloc(next_to_read);
     if (!alloc_buffer) {
         *buffer = NULL;
-        ipc_read_stop(g_source_ipc, ch_id);
+        audio_transport_read_stop(g_source_transport, ch_id);
         return;
     }
 
@@ -163,7 +163,7 @@ static void lea_audio_sink_recv(uint8_t ch_id, uint8_t *buffer, ssize_t len)
     if (len <= 0) {
         BT_LOGD("%s, status:%d", __func__, len);
         if (len < 0)
-            ipc_read_stop(g_source_ipc, ch_id);
+            audio_transport_read_stop(g_source_transport, ch_id);
 
         goto out;
     }
@@ -177,7 +177,7 @@ static void lea_audio_sink_recv(uint8_t ch_id, uint8_t *buffer, ssize_t len)
     circbuf_write(&stream->stream_pool, buffer, len);
     space = circbuf_space(&stream->stream_pool);
     if (space == 0) {
-        ipc_read_stop(g_source_ipc, ch_id);
+        audio_transport_read_stop(g_source_transport, ch_id);
     }
 
 out:
@@ -200,7 +200,7 @@ static void lea_audio_sink_handler(service_timer_t *timer, void *data)
         return;
     }
 
-    ipc_read_start(g_source_ipc, IPC_CH_ID_AV_SOURCE_AUDIO, lea_audio_sink_alloc, lea_audio_sink_recv);
+    audio_transport_read_start(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO, lea_audio_sink_alloc, lea_audio_sink_recv);
 
     if (stream->sdu_size > 512) {
         BT_LOGE("%s, sdu_size:%d over", __func__, stream->sdu_size);
@@ -235,7 +235,7 @@ static void lea_recv_ctrl_data(uint8_t ch_id, audio_ctrl_cmd_t cmd)
     switch (cmd) {
     case AUDIO_CTRL_CMD_START: {
         lea_audio_source_start();
-        lea_control_event(IPC_CH_ID_AV_SOURCE_CTRL, AUDIO_CTRL_EVT_STARTED);
+        lea_control_event(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, AUDIO_CTRL_EVT_STARTED);
         if (g_source_callbacks) {
             g_source_callbacks->lea_audio_resume_cb();
         }
@@ -244,7 +244,7 @@ static void lea_recv_ctrl_data(uint8_t ch_id, audio_ctrl_cmd_t cmd)
 
     case AUDIO_CTRL_CMD_STOP: {
         lea_audio_source_stop();
-        lea_control_event(IPC_CH_ID_AV_SOURCE_CTRL, AUDIO_CTRL_EVT_STOPPED);
+        lea_control_event(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, AUDIO_CTRL_EVT_STOPPED);
         if (g_source_callbacks) {
             g_source_callbacks->lea_audio_suspend_cb();
         }
@@ -272,7 +272,7 @@ static void lea_ctrl_data_received(uint8_t ch_id, uint8_t *buffer, ssize_t len)
     if (len <= 0) {
         free(buffer);
         if (len < 0)
-            ipc_read_stop(g_source_ipc, ch_id);
+            audio_transport_read_stop(g_source_transport, ch_id);
         return;
     }
 
@@ -289,41 +289,29 @@ static void lea_ctrl_data_received(uint8_t ch_id, uint8_t *buffer, ssize_t len)
 
 static void lea_source_ctrl_start(void)
 {
-    ipc_read_start(g_source_ipc, IPC_CH_ID_AV_SOURCE_CTRL, lea_ctrl_buffer_alloc, lea_ctrl_data_received);
+    audio_transport_read_start(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, lea_ctrl_buffer_alloc, lea_ctrl_data_received);
 }
 
 static void lea_source_ctrl_stop(void)
 {
-    ipc_read_stop(g_source_ipc, IPC_CH_ID_AV_SOURCE_CTRL);
+    audio_transport_read_stop(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL);
 }
 
-static const char *ipc_event_to_string(ipc_event_t event)
+static void lea_source_ctrl_cb(uint8_t ch_id, audio_transport_event_t event)
 {
-    switch (event) {
-        CASE_RETURN_STR(IPC_OPEN_EVT)
-        CASE_RETURN_STR(IPC_CLOSE_EVT)
-        CASE_RETURN_STR(IPC_RX_DATA_EVT)
-        CASE_RETURN_STR(IPC_RX_DATA_READY_EVT)
-        CASE_RETURN_STR(IPC_TX_DATA_READY_EVT)
-    default:
-        return "UNKNOWN MSG EVENT";
-    }
-}
-static void lea_source_ctrl_cb(uint8_t ch_id, ipc_event_t event)
-{
-    BT_LOGD("%s: ch_id:%d audio-ctrl-cmd : %s", __func__, ch_id, ipc_event_to_string(event));
+    BT_LOGD("%s: ch_id:%d audio-ctrl-cmd : %s", __func__, ch_id, audio_transport_dump_event(event));
 
-    if (ch_id != IPC_CH_ID_AV_SOURCE_CTRL) {
+    if (ch_id != CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL) {
         BT_LOGE("fail, ch_id:%d", ch_id);
         return;
     }
 
     switch (event) {
-    case IPC_OPEN_EVT: {
+    case TRANSPORT_OPEN_EVT: {
         lea_source_ctrl_start();
         break;
     }
-    case IPC_CLOSE_EVT: {
+    case TRANSPORT_CLOSE_EVT: {
         lea_source_ctrl_stop();
         break;
     }
@@ -334,15 +322,15 @@ static void lea_source_ctrl_cb(uint8_t ch_id, ipc_event_t event)
     }
 }
 
-static void lea_source_data_cb(uint8_t ch_id, ipc_event_t event)
+static void lea_source_data_cb(uint8_t ch_id, audio_transport_event_t event)
 {
-    BT_LOGD("%s: ch_id:%d audio-ctrl-cmd : %s", __func__, ch_id, ipc_event_to_string(event));
+    BT_LOGD("%s: ch_id:%d audio-ctrl-cmd : %s", __func__, ch_id, audio_transport_dump_event(event));
 
     switch (event) {
-    case IPC_OPEN_EVT: {
+    case TRANSPORT_OPEN_EVT: {
         break;
     }
-    case IPC_CLOSE_EVT: {
+    case TRANSPORT_CLOSE_EVT: {
         break;
     }
     default: {
@@ -365,7 +353,7 @@ bt_status_t lea_audio_source_init(void)
 {
     lea_source_stream_t *stream = &g_source_stream;
 
-    if (g_source_ipc) {
+    if (g_source_transport) {
         BT_LOGD("%s, already inited", __func__);
         return BT_STATUS_SUCCESS;
     }
@@ -373,19 +361,21 @@ bt_status_t lea_audio_source_init(void)
     stream->send_timer = NULL;
     stream->stream_state = STREAM_STATE_OFF;
 
-    g_source_ipc = ipc_init(get_service_uv_loop());
-    if (!g_source_ipc) {
-        BT_LOGE("fail, source_ipc_init");
+    g_source_transport = audio_transport_init(get_service_uv_loop());
+    if (!g_source_transport) {
+        BT_LOGE("fail, audio_transport_init");
         return BT_STATUS_FAIL;
     }
 
-    if (!ipc_open(g_source_ipc, IPC_CH_ID_AV_SOURCE_CTRL, "source_ctrl", lea_source_ctrl_cb)) {
-        BT_LOGE("fail, ipc_open sink ctrl");
+    if (!audio_transport_open(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL,
+                              CONFIG_BLUETOOTH_LEA_SOURCE_CTRL_PATH, lea_source_ctrl_cb)) {
+        BT_LOGE("fail, audio_transport_open source ctrl");
         return BT_STATUS_FAIL;
     }
 
-    if (!ipc_open(g_source_ipc, IPC_CH_ID_AV_SOURCE_AUDIO, "source_data", lea_source_data_cb)) {
-        BT_LOGE("fail, ipc_open sink audio");
+    if (!audio_transport_open(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO,
+                              CONFIG_BLUETOOTH_LEA_SOURCE_DATA_PATH, lea_source_data_cb)) {
+        BT_LOGE("fail, audio_transport_open source audio");
         return BT_STATUS_FAIL;
     }
 
@@ -425,7 +415,7 @@ bt_status_t lea_audio_source_stop(void)
         return BT_STATUS_SUCCESS;
     }
 
-    ipc_read_stop(g_source_ipc, IPC_CH_ID_AV_SOURCE_AUDIO);
+    audio_transport_read_stop(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO);
     service_loop_cancel_timer(stream->send_timer);
     stream->send_timer = NULL;
     stream->stream_state = STREAM_STATE_OFF;
@@ -473,7 +463,7 @@ bt_status_t lea_audio_source_update_codec(lea_audio_config_t *audio_config, uint
     UINT32_TO_STREAM(p, audio_config->frame_size);
     UINT32_TO_STREAM(p, audio_config->packet_size);
 
-    lea_ctrl_event_with_data(IPC_CH_ID_AV_SOURCE_CTRL, AUDIO_CTRL_EVT_UPDATE_CONFIG, buffer, len);
+    lea_ctrl_event_with_data(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, AUDIO_CTRL_EVT_UPDATE_CONFIG, buffer, len);
     return BT_STATUS_SUCCESS;
 }
 
@@ -504,9 +494,8 @@ void lea_audio_source_cleanup(void)
     lea_source_stream_t *stream = &g_source_stream;
 
     stream->stream_state = STREAM_STATE_OFF;
-    ipc_close(g_source_ipc, IPC_CH_ID_AV_SOURCE_CTRL);
-    ipc_close(g_source_ipc, IPC_CH_ID_AV_SOURCE_AUDIO);
-    ipc_cleanup(g_source_ipc);
-    g_source_ipc = NULL;
+    audio_transport_close(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL);
+    audio_transport_close(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO);
+    g_source_transport = NULL;
     g_source_callbacks = NULL;
 }
