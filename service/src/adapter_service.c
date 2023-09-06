@@ -676,9 +676,9 @@ static void handle_ble_event(void *data)
     free(data);
 }
 
+#ifdef CONFIG_UORB
 static void adapter_broadcast_state(int state)
 {
-#ifdef CONFIG_UORB
     adapter_service_t *adapter = &g_adapter_service;
     struct bt_stack_state uORB_state;
     struct timespec ts;
@@ -693,20 +693,21 @@ static void adapter_broadcast_state(int state)
             BT_LOGE("Failed to publish stack state, ret: %d", ret);
     } else
         BT_LOGE("%s error advertise orb fd: %d", __func__, adapter->adapter_state_adv);
-#else
-    BT_LOGW("%s FAIL, enable uorb first", __func__);
-#endif
 }
+#endif
 
 void adapter_notify_state_change(bt_adapter_state_t prev, bt_adapter_state_t current)
 {
     adapter_service_t *adapter = &g_adapter_service;
 
     BT_LOGD("%s, prev:%d--->current:%d", __func__, prev, current);
+
+#ifdef CONFIG_UORB
     if (current == BT_ADAPTER_STATE_ON)
         adapter_broadcast_state(BT_STACK_STATE_ON);
     else if (current == BT_ADAPTER_STATE_OFF)
         adapter_broadcast_state(BT_STACK_STATE_OFF);
+#endif
 
     adapter_lock();
     adapter->adapter_state = current;
