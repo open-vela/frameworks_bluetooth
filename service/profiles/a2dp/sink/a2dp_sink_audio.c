@@ -297,7 +297,7 @@ void a2dp_sink_audio_init(void)
     sink_stream.state = STATE_OFF;
     uv_mutex_init(&sink_stream.queue_lock);
     list_initialize(&sink_stream.packet_queue);
-    a2dp_control_init(AUDIO_TRANS_CH_ID_AV_SINK_CTRL, AUDIO_TRANS_CH_ID_AV_SINK_AUDIO);
+    a2dp_control_init(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO);
 }
 
 void a2dp_sink_audio_cleanup(void)

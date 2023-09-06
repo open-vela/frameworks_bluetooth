@@ -147,7 +147,7 @@ static void a2dp_control_on_start(uint8_t ch_id)
 {
     a2dp_ctrl_evt_t evt = A2DP_CTRL_EVT_START_FAIL;
 
-    if (ch_id == AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL) {
+    if (ch_id == CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         if (a2dp_source_stream_ready()) {
             a2dp_source_stream_start();
@@ -177,12 +177,12 @@ static void a2dp_control_on_start(uint8_t ch_id)
 static void a2dp_control_on_stop(uint8_t ch_id)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    if (ch_id == AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL && a2dp_source_stream_started()) {
+    if (ch_id == CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL && a2dp_source_stream_started()) {
         a2dp_source_stream_stop();
     }
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-    if (ch_id == AUDIO_TRANS_CH_ID_AV_SINK_CTRL) {
+    if (ch_id == CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL) {
         a2dp_sink_mute();
     }
 #endif
@@ -193,11 +193,11 @@ static void a2dp_control_on_stop(uint8_t ch_id)
 static void a2dp_control_on_config_done(uint8_t ch_id)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    if (ch_id == AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL)
+    if (ch_id == CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL)
         a2dp_source_codec_state_change();
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-    if (ch_id == AUDIO_TRANS_CH_ID_AV_SINK_CTRL)
+    if (ch_id == CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL)
         a2dp_sink_codec_state_change();
 #endif
 }
@@ -276,11 +276,11 @@ static void a2dp_ctrl_cb(uint8_t ch_id, audio_transport_event_t event)
     case TRANSPORT_OPEN_EVT:
         a2dp_ctrl_start(ch_id);
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-        if (ch_id == AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL && a2dp_source_stream_ready())
+        if (ch_id == CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL && a2dp_source_stream_ready())
             a2dp_control_update_audio_config(ch_id, 1);
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-        if (ch_id == AUDIO_TRANS_CH_ID_AV_SINK_CTRL && a2dp_sink_stream_ready())
+        if (ch_id == CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL && a2dp_sink_stream_ready())
             a2dp_control_update_audio_config(ch_id, 1);
 #endif
         break;
