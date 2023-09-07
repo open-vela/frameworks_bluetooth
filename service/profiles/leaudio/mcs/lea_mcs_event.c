@@ -16,26 +16,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "lea_mcps_event.h"
+#include "lea_mcs_event.h"
 
-mcps_event_t *mcps_event_new(mcps_event_type_t event, uint32_t mcs_id)
+mcs_event_t *mcs_event_new(mcs_event_type_t event, uint32_t mcs_id)
 {
-    return mcps_event_new_ext(event, mcs_id, 0);
+    return mcs_event_new_ext(event, mcs_id, 0);
 }
 
-mcps_event_t *mcps_event_new_ext(mcps_event_type_t event, uint32_t mcs_id, size_t size) {
-    mcps_event_t* mcps_event;
+mcs_event_t *mcs_event_new_ext(mcs_event_type_t event, uint32_t mcs_id, size_t size)
+{
+    mcs_event_t *mcs_event;
 
-    mcps_event = (mcps_event_t*)malloc(sizeof(mcps_event_t) + size);
-    if (mcps_event == NULL)
+    mcs_event = (mcs_event_t *)malloc(sizeof(mcs_event_t) + size);
+    if (mcs_event == NULL)
         return NULL;
 
-    mcps_event->event = event;
-    memset(&mcps_event->event_data, 0, sizeof(mcps_event->event_data) + size);
-    mcps_event->event_data.mcs_id = mcs_id;
-    return mcps_event;
+    mcs_event->event = event;
+    memset(&mcs_event->event_data, 0, sizeof(mcs_event->event_data) + size);
+    mcs_event->event_data.mcs_id = mcs_id;
+    return mcs_event;
 }
 
-void mcps_event_destory(mcps_event_t *mcps_event) {
-    free(mcps_event);
+void mcs_event_destory(mcs_event_t *mcs_event)
+{
+    free(mcs_event);
 }

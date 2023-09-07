@@ -17,18 +17,18 @@
 #include <string.h>
 
 #include "bt_addr.h"
-#include "lea_mcpc_event.h"
+#include "lea_mcp_event.h"
 
-mcpc_event_t* mcpc_event_new(mcpc_event_type_t event, bt_address_t *remote_addr, uint32_t mcs_id)
+mcp_event_t *mcp_event_new(mcp_event_type_t event, bt_address_t *remote_addr, uint32_t mcs_id)
 {
-    return mcpc_event_new_ext(event, remote_addr, mcs_id, 0);
+    return mcp_event_new_ext(event, remote_addr, mcs_id, 0);
 }
 
-mcpc_event_t* mcpc_event_new_ext(mcpc_event_type_t event, bt_address_t *remote_addr, uint32_t mcs_id, size_t size)
+mcp_event_t *mcp_event_new_ext(mcp_event_type_t event, bt_address_t *remote_addr, uint32_t mcs_id, size_t size)
 {
-    mcpc_event_t* mcp_event;
+    mcp_event_t *mcp_event;
 
-    mcp_event = (mcpc_event_t*)malloc(sizeof(mcpc_event_t) + size);
+    mcp_event = (mcp_event_t *)malloc(sizeof(mcp_event_t) + size);
     if (mcp_event == NULL)
         return NULL;
 
@@ -41,7 +41,7 @@ mcpc_event_t* mcpc_event_new_ext(mcpc_event_type_t event, bt_address_t *remote_a
     return mcp_event;
 }
 
-void mcpc_event_destory(mcpc_event_t* mcp_event)
+void mcp_event_destory(mcp_event_t *mcp_event)
 {
     free(mcp_event);
 }

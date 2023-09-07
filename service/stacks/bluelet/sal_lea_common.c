@@ -29,15 +29,15 @@
 #include "lea_audio_common.h"
 #include "lea_ccp_service.h"
 #include "lea_client_service.h"
-#include "lea_mcpc_service.h"
+#include "lea_mcp_service.h"
 #include "lea_server_service.h"
 #include "sal.h"
 #include "sal_bluelet.h"
 #include "sal_lea_ccp_interface.h"
 #include "sal_lea_client_interface.h"
 #include "sal_lea_csis_interface.h"
-#include "sal_lea_mcpc_interface.h"
-#include "sal_lea_mcps_interface.h"
+#include "sal_lea_mcp_interface.h"
+#include "sal_lea_mcs_interface.h"
 #include "sal_lea_server_interface.h"
 #include "sal_lea_tbs_interface.h"
 #include "sal_lea_vmicpc_interface.h"
@@ -70,12 +70,12 @@ static const LEA_AUDIO_STREAM_CALLBACK_S adpt_audio_stream_callbacks = {
 };
 static bool g_lea_inited = false;
 
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPS
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCS
 extern const LEA_MCS_CALLBACK_S adpt_lea_mcp_server_callbacks;
 #endif
 
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPC
-extern const LEA_MCC_CALLBACK_S adpt_lea_mcp_client_callbacks;
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCP
+extern const LEA_MCP_CALLBACK_S adpt_lea_mcp_client_callbacks;
 #endif
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
@@ -114,10 +114,10 @@ extern const LEA_UCS_CALLBACK_S adpt_lea_uc_server_callbacks;
 static const LEA_INIT_INFO_CALLBACK_S lea_callbacks = {
     .lea_generic_cbks = &adpt_generic_callbacks,
     .lea_audio_stream_cbks = &adpt_audio_stream_callbacks,
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPS
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCS
     .lea_mcp_server_cbks = &adpt_lea_mcp_server_callbacks,
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPC
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCP
     .lea_mcp_client_cbks = &adpt_lea_mcp_client_callbacks,
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
@@ -210,7 +210,7 @@ static void adpt_remote_services_callback(BD_ADDR remote_addr, uint8_t number, S
         SERVICE_LEA_PRIMARY_SERVICE_S *end = current + number;
         while (current < end) {
             BT_LOGD("%s, sid:[%04d], type:[%04x]", __func__, current->sid, current->type);
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPC
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCP
             if (current->type == GATT_UUID_GENERIC_MEDIA_CONTROL) {
                 adapt_mcs_sid_changed(current->sid);
             }

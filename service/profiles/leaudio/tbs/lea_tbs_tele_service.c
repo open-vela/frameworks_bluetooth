@@ -300,7 +300,7 @@ static void tbs_call_manager_call_async_fun(tapi_async_result *result)
     tapi_cell_identity *cell;
     int param = result->arg2;
 
-    call_info = (tapi_call_info*)result->data;
+    call_info = (tapi_call_info *)result->data;
 
     if (result->msg_id == MSG_CELLINFO_CHANGE_IND) {
         cell_list = result->data;

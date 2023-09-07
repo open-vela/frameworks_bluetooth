@@ -20,7 +20,7 @@
 
 #include "bluetooth.h"
 #include "bt_adapter.h"
-#include "bt_lea_mcps.h"
+#include "bt_lea_mcs.h"
 #include "bt_tools.h"
 
 static int le_mcs_add(void *handle, int argc, char *argv[]);
@@ -39,37 +39,37 @@ static int mcs_next_track_changed(void *handle, int argc, char *argv[]);
 static int mcs_current_group_changed(void *handle, int argc, char *argv[]);
 static int mcs_parent_group_changed(void *handle, int argc, char *argv[]);
 
-static bt_command_t g_lea_mcps_tables[] = {
-    { "add",                   le_mcs_add,                     0, "MCS instance add                             param: <NULL>"                   },
-    { "remove",                le_mcs_remove,                  0, "MCS instance remove                          param: <NULL>"                   },
-    { "mediastatechanged",     mcs_media_state_changed,        0, "MCS notify media state                       param: <state>"                  },
-    { "setmediaplayer",        mcs_set_media_player_info,      0, "set media player info                        param: <NULL>"                   },
-    { "mediacontrolrsp",       mcs_media_control_response,     0, "notify media control point process result    param: <result>"                 },
-    { "playingorderchanged",   mcs_playing_order_changed,      0, "MCS notify playing order changed             param: <order>"                  },
-    { "playbackspeedchanged",  mcs_playback_speed_changed,     0, "MCS notify playback speed changed            param: <speed>"                  },
-    { "seekingspeedchanged",   mcs_seeking_speed_changed,      0, "MCS notify seeking speed changed             param: <speed>"                  },
-    { "tracktitlechanged",     mcs_track_title_changed,        0, "MCS notify track title changed               param: <title>"                  },
-    { "trackdurationchanged",  mcs_track_duration_changed,     0, "MCS notify track duration changed            param: <duration>"               },
-    { "trackpositionchanged",  mcs_track_position_changed,     0, "MCS notify track position changed            param: <position>"               },
-    { "currenttrackchanged",   mcs_current_track_changed,      0, "MCS notify current track changed             param: <track_id[6] six octets>" },
-    { "nexttrackchanged",      mcs_next_track_changed,         0, "MCS notify next track changed                param: <track_id[6] six octets>" },
-    { "currentgroupchanged",   mcs_current_group_changed,      0, "MCS notify current group changed             param: <group_id[6] six octets>" },
-    { "parentgroupchanged",    mcs_parent_group_changed,       0, "MCS notify parent group changed              param: <group_id[6] six octets>" },
+static bt_command_t g_lea_mcs_tables[] = {
+    {"add",                   le_mcs_add,                 0, "MCS instance add                             param: <NULL>"                  },
+    { "remove",               le_mcs_remove,              0, "MCS instance remove                          param: <NULL>"                  },
+    { "mediastatechanged",    mcs_media_state_changed,    0, "MCS notify media state                       param: <state>"                 },
+    { "setmediaplayer",       mcs_set_media_player_info,  0, "set media player info                        param: <NULL>"                  },
+    { "mediacontrolrsp",      mcs_media_control_response, 0, "notify media control point process result    param: <result>"                },
+    { "playingorderchanged",  mcs_playing_order_changed,  0, "MCS notify playing order changed             param: <order>"                 },
+    { "playbackspeedchanged", mcs_playback_speed_changed, 0, "MCS notify playback speed changed            param: <speed>"                 },
+    { "seekingspeedchanged",  mcs_seeking_speed_changed,  0, "MCS notify seeking speed changed             param: <speed>"                 },
+    { "tracktitlechanged",    mcs_track_title_changed,    0, "MCS notify track title changed               param: <title>"                 },
+    { "trackdurationchanged", mcs_track_duration_changed, 0, "MCS notify track duration changed            param: <duration>"              },
+    { "trackpositionchanged", mcs_track_position_changed, 0, "MCS notify track position changed            param: <position>"              },
+    { "currenttrackchanged",  mcs_current_track_changed,  0, "MCS notify current track changed             param: <track_id[6] six octets>"},
+    { "nexttrackchanged",     mcs_next_track_changed,     0, "MCS notify next track changed                param: <track_id[6] six octets>"},
+    { "currentgroupchanged",  mcs_current_group_changed,  0, "MCS notify current group changed             param: <group_id[6] six octets>"},
+    { "parentgroupchanged",   mcs_parent_group_changed,   0, "MCS notify parent group changed              param: <group_id[6] six octets>"},
 };
 
-static struct option lea_mcps_options[] = {
+static struct option lea_mcs_options[] = {
     {"help", 0, 0, 'h'},
     { 0,     0, 0, 0  }
 };
 
-static void *mcps_callbacks = NULL;
+static void *mcs_callbacks = NULL;
 static void usage(void)
 {
     printf("Usage:\n");
     printf("\taddress: peer device address like 00:01:02:03:04:05\n");
     printf("Commands:\n");
-    for (int i = 0; i < ARRAY_SIZE(g_lea_mcps_tables); i++) {
-        printf("\t%-8s\t%s\n", g_lea_mcps_tables[i].cmd, g_lea_mcps_tables[i].help);
+    for (int i = 0; i < ARRAY_SIZE(g_lea_mcs_tables); i++) {
+        printf("\t%-8s\t%s\n", g_lea_mcs_tables[i].cmd, g_lea_mcs_tables[i].help);
     }
 }
 
@@ -266,41 +266,39 @@ static int mcs_parent_group_changed(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-
-static void lea_mcps_test_callback(void *cookie, uint8_t event)
+static void lea_mcs_test_callback(void *cookie, uint8_t event)
 {
-    printf("lea_mcps_test_callback");
+    printf("lea_mcs_test_callback");
 }
 
-static const lea_mcps_callbacks_t lea_mcps_cbs = {
-    sizeof(lea_mcps_cbs),
-    lea_mcps_test_callback,
+static const lea_mcs_callbacks_t lea_mcs_cbs = {
+    sizeof(lea_mcs_cbs),
+    lea_mcs_test_callback,
 };
 
-
-int lea_mcps_commond_init(void *handle)
+int lea_mcs_commond_init(void *handle)
 {
-    mcps_callbacks = bt_lea_mcps_register_callbacks(handle, &lea_mcps_cbs);
+    mcs_callbacks = bt_lea_mcs_register_callbacks(handle, &lea_mcs_cbs);
 
     return CMD_OK;
 }
 
-void lea_mcps_commond_uninit(void *handle)
+void lea_mcs_commond_uninit(void *handle)
 {
     bt_status_t ret;
 
-    bt_lea_mcps_unregister_callbacks(handle, mcps_callbacks);
-    ret = bluetooth_stop_service(handle, PROFILE_LEAUDIO_MCPS);
+    bt_lea_mcs_unregister_callbacks(handle, mcs_callbacks);
+    ret = bluetooth_stop_service(handle, PROFILE_LEAUDIO_MCS);
     if (ret != BT_STATUS_SUCCESS) {
         PRINT("%s, failed ret:%d", __func__, ret);
     }
 }
 
-int lea_mcps_command_exec(void *handle, int argc, char *argv[])
+int lea_mcs_command_exec(void *handle, int argc, char *argv[])
 {
     int opt, ret = CMD_USAGE_FAULT;
 
-    while ((opt = getopt_long(argc, argv, "h", lea_mcps_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "h", lea_mcs_options, NULL)) != -1) {
         switch (opt) {
         case 'h':
             usage();
@@ -311,7 +309,7 @@ int lea_mcps_command_exec(void *handle, int argc, char *argv[])
     }
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, g_lea_mcps_tables, ARRAY_SIZE(g_lea_mcps_tables), argc, argv);
+        ret = execute_command_in_table(handle, g_lea_mcs_tables, ARRAY_SIZE(g_lea_mcs_tables), argc, argv);
 
     if (ret < 0) {
         printf("UnKnow command %s\n", argv[0]);

@@ -106,9 +106,9 @@ int leas_command_init(void *handle);
 void leas_command_uninit(void *handle);
 int leas_command_exec(void *handle, int argc, char *argv[]);
 
-int lea_mcpc_commond_init(void *handle);
-void lea_mcpc_commond_uninit(void *handle);
-int lea_mcpc_command_exec(void *handle, int argc, char *argv[]);
+int lea_mcp_commond_init(void *handle);
+void lea_mcp_commond_uninit(void *handle);
+int lea_mcp_command_exec(void *handle, int argc, char *argv[]);
 
 int lea_ccp_command_init(void *handle);
 void lea_ccp_command_uninit(void *handle);
@@ -122,9 +122,9 @@ int leac_command_init(void *handle);
 void leac_command_uninit(void *handle);
 int leac_command_exec(void *handle, int argc, char *argv[]);
 
-int lea_mcps_commond_init(void *handle);
-void lea_mcps_commond_uninit(void *handle);
-int lea_mcps_command_exec(void *handle, int argc, char *argv[]);
+int lea_mcs_commond_init(void *handle);
+void lea_mcs_commond_uninit(void *handle);
+int lea_mcs_command_exec(void *handle, int argc, char *argv[]);
 
 int lea_tbs_command_init(void *handle);
 void lea_tbs_command_uninit(void *handle);

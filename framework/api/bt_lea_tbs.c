@@ -106,7 +106,7 @@ bt_status_t bt_lea_tbs_rssi_value_changed(bt_instance_t *ins, uint8_t strength)
 }
 
 bt_status_t bt_lea_tbs_rssi_interval_changed(bt_instance_t *ins,
-                                                               uint8_t interval)
+                                             uint8_t interval)
 {
     lea_tbs_interface_t *profile = get_profile_service();
 

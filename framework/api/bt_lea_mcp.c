@@ -13,51 +13,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#include <stdint.h>
-#include "bt_lea_mcpc.h"
+#include "bt_lea_mcp.h"
 #include "bt_profile.h"
-#include "lea_mcpc_service.h"
+#include "lea_mcp_service.h"
 #include "service_manager.h"
 #include "utils/log.h"
+#include <stdint.h>
 
-
-static lea_mcpc_interface_t *get_profile_service(void)
+static lea_mcp_interface_t *get_profile_service(void)
 {
-    return (lea_mcpc_interface_t *)service_manager_get_profile(PROFILE_LEAUDIO_MCPC);
+    return (lea_mcp_interface_t *)service_manager_get_profile(PROFILE_LEAUDIO_MCP);
 }
 
-void *bt_lea_mcpc_register_callbacks(bt_instance_t *ins, const lea_mcpc_callbacks_t *callbacks)
+void *bt_lea_mcp_register_callbacks(bt_instance_t *ins, const lea_mcp_callbacks_t *callbacks)
 {
-    lea_mcpc_interface_t *profile = get_profile_service();
+    lea_mcp_interface_t *profile = get_profile_service();
 
-    return profile->set_callbacks(NULL, (lea_mcpc_callbacks_t *)callbacks);
+    return profile->set_callbacks(NULL, (lea_mcp_callbacks_t *)callbacks);
 }
 
-bool bt_lea_mcpc_unregister_callbacks(bt_instance_t *ins, void *cookie)
+bool bt_lea_mcp_unregister_callbacks(bt_instance_t *ins, void *cookie)
 {
-    lea_mcpc_interface_t *profile = get_profile_service();
+    lea_mcp_interface_t *profile = get_profile_service();
 
     return profile->reset_callbacks(NULL, cookie);
 }
 
-bt_status_t bt_lea_mcpc_read_info(bt_instance_t *ins, bt_address_t *addr, uint8_t opcode)
+bt_status_t bt_lea_mcp_read_info(bt_instance_t *ins, bt_address_t *addr, uint8_t opcode)
 {
-    lea_mcpc_interface_t *profile = get_profile_service();
+    lea_mcp_interface_t *profile = get_profile_service();
 
     return profile->read_remote_mcs_info(addr, opcode);
 }
 
-bt_status_t bt_lea_mcpc_media_control_request(bt_instance_t *ins, bt_address_t *addr, uint32_t opcode, int32_t n)
+bt_status_t bt_lea_mcp_media_control_request(bt_instance_t *ins, bt_address_t *addr, uint32_t opcode, int32_t n)
 {
-    lea_mcpc_interface_t *profile = get_profile_service();
+    lea_mcp_interface_t *profile = get_profile_service();
 
     return profile->media_control_request(addr, opcode, n);
 }
 
-bt_status_t bt_lea_mcpc_search_control_request(bt_instance_t *ins, bt_address_t *addr, uint8_t number, uint32_t type, uint8_t *parameter)
+bt_status_t bt_lea_mcp_search_control_request(bt_instance_t *ins, bt_address_t *addr, uint8_t number, uint32_t type, uint8_t *parameter)
 {
-    lea_mcpc_interface_t *profile = get_profile_service();
+    lea_mcp_interface_t *profile = get_profile_service();
 
     return profile->search_control_request(addr, number, type, parameter);
 }
-

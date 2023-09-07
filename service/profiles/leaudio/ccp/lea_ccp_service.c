@@ -41,7 +41,7 @@
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCP
 #define CHECK_ENABLED()                   \
     {                                     \
-        if (!g_ccp_service.started)      \
+        if (!g_ccp_service.started)       \
             return BT_STATUS_NOT_ENABLED; \
     }
 
@@ -493,7 +493,7 @@ static bt_status_t lea_ccp_send_msg(lea_ccp_msg_t *msg)
  * sal callbacks
  ****************************************************************************/
 void lea_ccp_on_bearer_provider_name(bt_address_t *addr, uint32_t tbs_id, size_t size,
-                                      const char *name)
+                                     const char *name)
 {
     lea_ccp_msg_t *msg;
 
@@ -539,7 +539,7 @@ void lea_ccp_on_bearer_technology(bt_address_t *addr, uint32_t tbs_id, uint8_t t
 }
 
 void lea_ccp_on_bearer_uri_schemes_supported_list(bt_address_t *addr, uint32_t tbs_id, size_t size,
-                                                   const char *uri_schemes)
+                                                  const char *uri_schemes)
 {
     lea_ccp_msg_t *msg;
 
@@ -570,7 +570,7 @@ void lea_ccp_on_bearer_signal_strength(bt_address_t *addr, uint32_t tbs_id, uint
 }
 
 void lea_ccp_on_bearer_signal_strength_report_interval(bt_address_t *addr, uint32_t tbs_id,
-                                                        uint8_t interval)
+                                                       uint8_t interval)
 {
     lea_ccp_msg_t *msg;
 
@@ -649,7 +649,7 @@ void lea_ccp_on_incoming_call(bt_address_t *addr, uint32_t tbs_id, uint8_t call_
 }
 
 void lea_ccp_on_incoming_call_target_bearer_uri(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index,
-                                                 size_t size, const char *uri)
+                                                size_t size, const char *uri)
 {
     lea_ccp_msg_t *msg;
 
@@ -666,7 +666,7 @@ void lea_ccp_on_incoming_call_target_bearer_uri(bt_address_t *addr, uint32_t tbs
 }
 
 void lea_ccp_on_call_state(bt_address_t *addr, uint32_t tbs_id, uint32_t number,
-                            lea_tbs_call_state_t *states_s)
+                           lea_tbs_call_state_t *states_s)
 {
     lea_ccp_msg_t *msg;
 
@@ -676,7 +676,7 @@ void lea_ccp_on_call_state(bt_address_t *addr, uint32_t tbs_id, uint32_t number,
     }
 
     msg = lea_ccp_msg_new_ext(STACK_EVENT_READ_CALL_STATE, addr, tbs_id,
-                               sizeof(lea_tbs_call_state_t) * number);
+                              sizeof(lea_tbs_call_state_t) * number);
     if (!msg) {
         BT_LOGE("%s, Failed to create msg", __func__);
         return;
@@ -689,7 +689,7 @@ void lea_ccp_on_call_state(bt_address_t *addr, uint32_t tbs_id, uint32_t number,
 }
 
 void lea_ccp_on_bearer_list_current_calls(bt_address_t *addr, uint32_t tbs_id, uint32_t number, size_t size,
-                                           lea_tbs_call_list_item_t *calls)
+                                          lea_tbs_call_list_item_t *calls)
 {
     lea_ccp_msg_t *msg;
 
@@ -711,7 +711,7 @@ void lea_ccp_on_bearer_list_current_calls(bt_address_t *addr, uint32_t tbs_id, u
 }
 
 void lea_ccp_on_call_friendly_name(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, size_t size,
-                                    const char *name)
+                                   const char *name)
 {
     lea_ccp_msg_t *msg;
 
@@ -728,7 +728,7 @@ void lea_ccp_on_call_friendly_name(bt_address_t *addr, uint32_t tbs_id, uint8_t 
 }
 
 void lea_ccp_on_termination_reason(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index,
-                                    lea_adpt_termination_reason_t reason)
+                                   lea_adpt_termination_reason_t reason)
 {
     lea_ccp_msg_t *msg;
 
@@ -745,7 +745,7 @@ void lea_ccp_on_termination_reason(bt_address_t *addr, uint32_t tbs_id, uint8_t 
 }
 
 void lea_ccp_on_call_control_result(bt_address_t *addr, uint32_t tbs_id, uint8_t opcode,
-                                     uint8_t call_index, lea_adpt_call_control_result_t result)
+                                    uint8_t call_index, lea_adpt_call_control_result_t result)
 {
     lea_ccp_msg_t *msg;
 
@@ -1138,7 +1138,7 @@ static bt_status_t bts_lea_ccp_originate_call(bt_address_t *addr, uint8_t *uri)
 }
 
 static bt_status_t bts_lea_ccp_join_calls(bt_address_t *addr, uint8_t number,
-                                           uint8_t *call_indexes)
+                                          uint8_t *call_indexes)
 {
     CHECK_ENABLED();
     bt_status_t ret;
