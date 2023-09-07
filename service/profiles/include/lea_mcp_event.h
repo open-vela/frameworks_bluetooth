@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef __LEA_MCPC_EVENT_H__
-#define __LEA_MCPC_EVENT_H__
+#ifndef __LEA_MCP_EVENT_H__
+#define __LEA_MCP_EVENT_H__
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 #include "bt_addr.h"
-#include "bt_lea_mcpc.h"
+#include "bt_lea_mcp.h"
 #include <stdint.h>
 
 typedef enum {
-    MCP_MEDIA_PLAYER_NAME,
+    MCP_MEDIA_PLAYER_NAME_CHANGED,
     MCP_MEDIA_PLAYER_ICON_OBJ_ID,
     MCP_MEDIA_PLAYER_ICON_URL,
     MCP_READ_PLAYBACK_SPEED,
@@ -46,31 +46,31 @@ typedef enum {
     MCP_CURRENT_GROUP_OBJ_ID,
     MCP_SEARCH_RESULTS_OBJ_ID,
     MCP_READ_CCID
-} mcpc_event_type_t;
+} mcp_event_type_t;
 
 typedef struct {
     uint32_t mcs_id;
-    int8_t   valueint8;
-    uint8_t  valueuint8_0;
-    uint8_t  valueuint8_1;
+    int8_t valueint8;
+    uint8_t valueuint8_0;
+    uint8_t valueuint8_1;
     uint16_t valueuint16;
-    int32_t  valueint32;
+    int32_t valueint32;
     uint32_t valueuint32;
-    lea_mcpc_object_id obj_id;
+    lea_mcp_object_id obj_id;
     char string1[0];
-} mcpc_event_data_t;
+} mcp_event_data_t;
 
 typedef struct {
     bt_address_t remote_addr;
-    mcpc_event_type_t event;
-    mcpc_event_data_t event_data;
-} mcpc_event_t;
+    mcp_event_type_t event;
+    mcp_event_data_t event_data;
+} mcp_event_t;
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-mcpc_event_t* mcpc_event_new(mcpc_event_type_t event, bt_address_t *remote_addr, uint32_t mcs_id);
-mcpc_event_t* mcpc_event_new_ext(mcpc_event_type_t event, bt_address_t *remote_addr, uint32_t mcs_id, size_t size);
-void mcpc_event_destory(mcpc_event_t* mcp_event);
+mcp_event_t *mcp_event_new(mcp_event_type_t event, bt_address_t *remote_addr, uint32_t mcs_id);
+mcp_event_t *mcp_event_new_ext(mcp_event_type_t event, bt_address_t *remote_addr, uint32_t mcs_id, size_t size);
+void mcp_event_destory(mcp_event_t *mcp_event);
 
-#endif /* __LEA_MCPC_EVENT_H__ */
+#endif /* __LEA_MCP_EVENT_H__ */

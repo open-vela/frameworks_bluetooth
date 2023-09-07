@@ -115,123 +115,123 @@ static struct option le_conn_options[] = {
     { 0,                   0,                 0, 0  }
 };
 
-#define LE_CONN_USAGE "\n"                                                                                                         \
-                      "\t -a or --addr, peer le device address\n"                                                                  \
-                      "\t -t or --type, peer le device address type, address type(0:public,1:random,2:public_id,3:random_id)\n"    \
-                      "\t -d or --default, use default parameter\n"                                                                \
-                      "\t -f or --filter, connection filter policy, (0:addr,1:whitelist)\n"                                        \
-                      "\t -p or --phy, init phy type, (0:1M,1:2M,2:Coded)\n"                                                       \
-                      "\t -l or --latency, connection latency Range: 0x0000 to 0x01F3\n"                                           \
-                      "\t --conn_interval_min, Range: 0x0006 to 0x0C80\n"                                                          \
-                      "\t --conn_interval_max, Range: 0x0006 to 0x0C80\n"                                                          \
-                      "\t -T or --timeout, supervision timeout Range: 0x000A to 0x0C80\n"                                          \
-                      "\t --scan_interval, Range: 0x0004 to 0x4000\n"                                                              \
-                      "\t --scan_window, Range: 0x0004 to 0x4000\n"                                                                \
-                      "\t --min_ce_length, Range: 0x0000 to 0xFFFF\n"                                                              \
+#define LE_CONN_USAGE "\n"                                                                                                      \
+                      "\t -a or --addr, peer le device address\n"                                                               \
+                      "\t -t or --type, peer le device address type, address type(0:public,1:random,2:public_id,3:random_id)\n" \
+                      "\t -d or --default, use default parameter\n"                                                             \
+                      "\t -f or --filter, connection filter policy, (0:addr,1:whitelist)\n"                                     \
+                      "\t -p or --phy, init phy type, (0:1M,1:2M,2:Coded)\n"                                                    \
+                      "\t -l or --latency, connection latency Range: 0x0000 to 0x01F3\n"                                        \
+                      "\t --conn_interval_min, Range: 0x0006 to 0x0C80\n"                                                       \
+                      "\t --conn_interval_max, Range: 0x0006 to 0x0C80\n"                                                       \
+                      "\t -T or --timeout, supervision timeout Range: 0x000A to 0x0C80\n"                                       \
+                      "\t --scan_interval, Range: 0x0004 to 0x4000\n"                                                           \
+                      "\t --scan_window, Range: 0x0004 to 0x4000\n"                                                             \
+                      "\t --min_ce_length, Range: 0x0000 to 0xFFFF\n"                                                           \
                       "\t --max_ce_length, Range: 0x0000 to 0xFFFF\n"
 
-#define INQUIRY_USAGE "inquiry device\n"                                  \
+#define INQUIRY_USAGE "inquiry device\n"                                          \
                       "\t\t\t- start <timeout>(Range: 1-48, i.e., 1.28-61.44s)\n" \
                       "\t\t\t- stop"
 
 #define SET_LE_PHY_USAGE "set le tx and rx phy, params: <addr><txphy><rxphy>(0:1M, 1:2M, 2:CODED)"
 
 static bt_command_t g_cmd_tables[] = {
-    {"enable",        enable_cmd,            0, "enable stack"                                             },
-    { "disable",      disable_cmd,           0, "disable stack"                                            },
-    { "state",        get_state_cmd,         0, "get adapter state"                                        },
-    { "inquiry",      discovery_cmd,         0, INQUIRY_USAGE                                              },
-    { "set",          set_adapter_cmd,       0, "set adapter information, input \'set help\' show usage"   },
-    { "get",          get_adapter_cmd,       0, "get adapter information, input \'get help\' show usage"   },
-    { "pair",         pair_cmd,              0, "reply pair request, input \'pair help\' show usage"       },
-    { "connect",      connect_cmd,           0, "connect classic peer device, params: <addr>"              },
-    { "disconnect",   disconnect_cmd,        0, "disconnect peer device, params: <addr>"                   },
-    { "leconnect",    le_connect_cmd,        1, "connect le peer device, input \'leconnect -h\' show usage"},
-    { "ledisconnect", le_disconnect_cmd,     0, "disconnect le peer device, params: <addr>"                },
-    { "createbond",   create_bond_cmd,       0, "create bond, params: <addr> <transport>(0:BLE, 1:BREDR)"  },
-    { "cancelbond",   cancel_bond_cmd,       0, "cancel bond, params: <addr>"                              },
-    { "removebond",   remove_bond_cmd,       0, "remove bond, params: <addr> <transport>(0:BLE, 1:BREDR)"  },
-    { "setalias",     device_set_alias_cmd,  0, "set device alias, params: <addr>"                         },
-    { "device",       device_show_cmd,       0, "show device information, params: <addr>"                  },
-    { "search",       search_cmd,            0, "service serach <addr>, Not implemented"                   },
-    { "start",        start_service_cmd,     0, "start profile service, Not implemented"                   },
-    { "stop",         stop_service_cmd,      0, "stop profile service,  Not implemented"                   },
-    { "setphy",       set_phy_cmd,           0, SET_LE_PHY_USAGE                                           },
+    {"enable",        enable_cmd,           0, "enable stack"                                             },
+    { "disable",      disable_cmd,          0, "disable stack"                                            },
+    { "state",        get_state_cmd,        0, "get adapter state"                                        },
+    { "inquiry",      discovery_cmd,        0, INQUIRY_USAGE                                              },
+    { "set",          set_adapter_cmd,      0, "set adapter information, input \'set help\' show usage"   },
+    { "get",          get_adapter_cmd,      0, "get adapter information, input \'get help\' show usage"   },
+    { "pair",         pair_cmd,             0, "reply pair request, input \'pair help\' show usage"       },
+    { "connect",      connect_cmd,          0, "connect classic peer device, params: <addr>"              },
+    { "disconnect",   disconnect_cmd,       0, "disconnect peer device, params: <addr>"                   },
+    { "leconnect",    le_connect_cmd,       1, "connect le peer device, input \'leconnect -h\' show usage"},
+    { "ledisconnect", le_disconnect_cmd,    0, "disconnect le peer device, params: <addr>"                },
+    { "createbond",   create_bond_cmd,      0, "create bond, params: <addr> <transport>(0:BLE, 1:BREDR)"  },
+    { "cancelbond",   cancel_bond_cmd,      0, "cancel bond, params: <addr>"                              },
+    { "removebond",   remove_bond_cmd,      0, "remove bond, params: <addr> <transport>(0:BLE, 1:BREDR)"  },
+    { "setalias",     device_set_alias_cmd, 0, "set device alias, params: <addr>"                         },
+    { "device",       device_show_cmd,      0, "show device information, params: <addr>"                  },
+    { "search",       search_cmd,           0, "service serach <addr>, Not implemented"                   },
+    { "start",        start_service_cmd,    0, "start profile service, Not implemented"                   },
+    { "stop",         stop_service_cmd,     0, "stop profile service,  Not implemented"                   },
+    { "setphy",       set_phy_cmd,          0, SET_LE_PHY_USAGE                                           },
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
-    { "adv",          adv_command_exec,      0, "advertising cmd,   input \'adv\' show usage"              },
+    { "adv",          adv_command_exec,     0, "advertising cmd,   input \'adv\' show usage"              },
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-    { "scan",         scan_command_exec,     0, "scan cmd,          input \'scan\' show usage"             },
+    { "scan",         scan_command_exec,    0, "scan cmd,          input \'scan\' show usage"             },
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
-    { "hf",           hfp_hf_command_exec,   0, "hands-free cmd,    input \'hf\' show usage"               },
+    { "hf",           hfp_hf_command_exec,  0, "hands-free cmd,    input \'hf\' show usage"               },
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_AG
-    { "ag",           hfp_ag_command_exec,   0, "audio-gateway cmd, input \'ag\' show usage"               },
+    { "ag",           hfp_ag_command_exec,  0, "audio-gateway cmd, input \'ag\' show usage"               },
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
-    { "spp",          spp_command_exec,      0, "serial port cmd,   input \'spp\' show usage"              },
+    { "spp",          spp_command_exec,     0, "serial port cmd,   input \'spp\' show usage"              },
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
-    { "pan",          pan_command_exec,      0, "pan cmd,           input \'pan\' show usage"              },
+    { "pan",          pan_command_exec,     0, "pan cmd,           input \'pan\' show usage"              },
 #endif
 #ifdef CONFIG_BLUETOOTH_GATT
-    { "gattc",        gattc_command_exec,    0, "gattc cmd"                                                },
-    { "gatts",        gatts_command_exec,    0, "gatts cmd"                                                },
+    { "gattc",        gattc_command_exec,   0, "gattc cmd"                                                },
+    { "gatts",        gatts_command_exec,   0, "gatts cmd"                                                },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
-    { "leas",         leas_command_exec,     0, "lea server cmd, input \'leas\' show usage"                },
+    { "leas",         leas_command_exec,    0, "lea server cmd, input \'leas\' show usage"                },
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPC
-    { "mcpc",         lea_mcpc_command_exec, 0, "leaudio mcpc cmd,  input \'mcpc\' show usage"             },
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCP
+    { "mcp",          lea_mcp_command_exec, 0, "leaudio mcp cmd,  input \'mcp\' show usage"               },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCP
-    { "ccp",         lea_ccp_command_exec, 0, "lea ccp cmd, input \'ccp\' show usage"                  },
+    { "ccp",          lea_ccp_command_exec, 0, "lea ccp cmd, input \'ccp\' show usage"                    },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
-    { "vmicps",       vmicps_command_exec,   0, "vcp/micp server cmd, input \'vmicps\' show usage"         },
+    { "vmicps",       vmicps_command_exec,  0, "vcp/micp server cmd, input \'vmicps\' show usage"         },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
-    { "leac",         leac_command_exec,     0, "lea client cmd, input \'leac\' show usage"                },
+    { "leac",         leac_command_exec,    0, "lea client cmd, input \'leac\' show usage"                },
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPS
-    { "mcps",         lea_mcps_command_exec, 0, "leaudio mcpc cmd,  input \'mcps\' show usage"             },
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCS
+    { "mcs",          lea_mcs_command_exec, 0, "leaudio mcp cmd,  input \'mcs\' show usage"               },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
-    { "tbs",          lea_tbs_command_exec,  0, "lea tbs cmd, input \'tbs\' show usage"                    },
+    { "tbs",          lea_tbs_command_exec, 0, "lea tbs cmd, input \'tbs\' show usage"                    },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
-    { "vmicpc",       vmicpc_command_exec,   0, "vcp/micp client cmd, input \'vmicpc\' show usage"         },
+    { "vmicpc",       vmicpc_command_exec,  0, "vcp/micp client cmd, input \'vmicpc\' show usage"         },
 #endif
-    { "dump",         dump_cmd,              0, "dump adapter state"                                       },
-    { "help",         usage_cmd,             0, "Usage for bttools"                                        },
-    { "quit",         quit_cmd,              0, "Quit"                                                     },
-    { "q",            quit_cmd,              0, "Quit"                                                     },
+    { "dump",         dump_cmd,             0, "dump adapter state"                                       },
+    { "help",         usage_cmd,            0, "Usage for bttools"                                        },
+    { "quit",         quit_cmd,             0, "Quit"                                                     },
+    { "q",            quit_cmd,             0, "Quit"                                                     },
 };
 
 static bt_command_t g_set_cmd_tables[] = {
-    {"scanmode",   set_scanmode_cmd,      0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)"                                            },
-    { "iocap",     set_iocap_cmd,         0, "params: <io capability> (0:displayonly, 1:yes&no, 2:keyboardonly, 3:no-in/no-out 4:keyboard&display)"              },
-    { "name",      set_local_name_cmd,    0, "params: <local name>, example \"vela-bt\""                                                                         },
-    { "class",     set_local_cod_cmd,     0, "params: <local class of device>, range in 0x0-0xFFFFFC, the 2 least significant shall be 0b00, example: 0x00640404"},
-    { "appearance",set_appearance_cmd,    0, "set le adapter appearance, params: <appearance>"                                                                   },
-    { "leaddr",    set_le_addr_cmd,       0, "set ble adapter addr, params: <leaddr>"                                                                            },
-    { "id",        set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>"                                                        },
-    { "help",      NULL,                  0, "show set help info"                                                                                                },
+    {"scanmode",    set_scanmode_cmd,      0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)"                                            },
+    { "iocap",      set_iocap_cmd,         0, "params: <io capability> (0:displayonly, 1:yes&no, 2:keyboardonly, 3:no-in/no-out 4:keyboard&display)"              },
+    { "name",       set_local_name_cmd,    0, "params: <local name>, example \"vela-bt\""                                                                         },
+    { "class",      set_local_cod_cmd,     0, "params: <local class of device>, range in 0x0-0xFFFFFC, the 2 least significant shall be 0b00, example: 0x00640404"},
+    { "appearance", set_appearance_cmd,    0, "set le adapter appearance, params: <appearance>"                                                                   },
+    { "leaddr",     set_le_addr_cmd,       0, "set ble adapter addr, params: <leaddr>"                                                                            },
+    { "id",         set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>"                                                        },
+    { "help",       NULL,                  0, "show set help info"                                                                                                },
  //{ "", , "set " },
 };
 
 static bt_command_t g_get_cmd_tables[] = {
-    {"scanmode",   get_scanmode_cmd,          0, "get adapter scan mode"            },
-    { "iocap",     get_iocap_cmd,             0, "get adapter io capability"        },
-    { "addr",      get_local_addr_cmd,        0, "get adapter local addr"           },
-    { "leaddr",    get_le_addr_cmd,           0, "get ble adapter addr"             },
-    { "name",      get_local_name_cmd,        0, "get adapter local name"           },
-    { "appearance",get_appearance_cmd,        0, "get le adapter appearance"        },
-    { "class",     get_local_cod_cmd,         0, "get adapter local class of device"},
-    { "bonded",    get_bonded_devices_cmd,    0, "get bonded devices"               },
-    { "connected", get_connected_devices_cmd, 0, "get connected devices"            },
-    { "help",      NULL,                      0, "show get help info"               },
+    {"scanmode",    get_scanmode_cmd,          0, "get adapter scan mode"            },
+    { "iocap",      get_iocap_cmd,             0, "get adapter io capability"        },
+    { "addr",       get_local_addr_cmd,        0, "get adapter local addr"           },
+    { "leaddr",     get_le_addr_cmd,           0, "get ble adapter addr"             },
+    { "name",       get_local_name_cmd,        0, "get adapter local name"           },
+    { "appearance", get_appearance_cmd,        0, "get le adapter appearance"        },
+    { "class",      get_local_cod_cmd,         0, "get adapter local class of device"},
+    { "bonded",     get_bonded_devices_cmd,    0, "get bonded devices"               },
+    { "connected",  get_connected_devices_cmd, 0, "get connected devices"            },
+    { "help",       NULL,                      0, "show get help info"               },
  //{ "", , "get " },
 };
 
@@ -275,11 +275,11 @@ static void bt_tool_init(void *handle)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
     leac_command_init(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPC
-    lea_mcpc_commond_init(handle);
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCP
+    lea_mcp_commond_init(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPS
-    lea_mcps_commond_init(handle);
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCS
+    lea_mcs_commond_init(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCP
     lea_ccp_command_init(handle);
@@ -319,11 +319,11 @@ static void bt_tool_uninit(void *handle)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
     leas_command_uninit(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPC
-    lea_mcpc_commond_uninit(handle);
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCP
+    lea_mcp_commond_uninit(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPS
-    lea_mcps_commond_uninit(handle);
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCS
+    lea_mcs_commond_uninit(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCP
     lea_ccp_command_uninit(handle);
@@ -403,46 +403,46 @@ static int discovery_cmd(void *handle, int argc, char **argv)
 static void set_usage(void)
 {
     printf("Usage:\n"
-          "\tset [options] <command> [command parameters]\n");
+           "\tset [options] <command> [command parameters]\n");
     printf("Options:\n"
-          "\t--help\tDisplay help\n");
+           "\t--help\tDisplay help\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_set_cmd_tables); i++) {
         printf("\t%-8s\t%s\n", g_set_cmd_tables[i].cmd, g_set_cmd_tables[i].help);
     }
     printf("\n"
-          "For more information on the usage of each command use:\n"
-          "\tset help\n");
+           "For more information on the usage of each command use:\n"
+           "\tset help\n");
 }
 
 static void get_usage(void)
 {
     printf("Usage:\n"
-          "\tget [options] <command> [command parameters]\n");
+           "\tget [options] <command> [command parameters]\n");
     printf("Options:\n"
-          "\t--help\tDisplay help\n");
+           "\t--help\tDisplay help\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_get_cmd_tables); i++) {
         printf("\t%-8s\t%s\n", g_get_cmd_tables[i].cmd, g_get_cmd_tables[i].help);
     }
     printf("\n"
-          "For more information on the usage of each command use:\n"
-          "\tget help\n");
+           "For more information on the usage of each command use:\n"
+           "\tget help\n");
 }
 
 static void pair_usage(void)
 {
     printf("Usage:\n"
-          "\tpair [options] <command> [command parameters]\n");
+           "\tpair [options] <command> [command parameters]\n");
     printf("Options:\n"
-          "\t--help\tDisplay help\n");
+           "\t--help\tDisplay help\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_pair_cmd_tables); i++) {
         printf("\t%-8s\t%s\n", g_pair_cmd_tables[i].cmd, g_pair_cmd_tables[i].help);
     }
     printf("\n"
-          "For more information on the usage of each command use:\n"
-          "\tpair help\n");
+           "For more information on the usage of each command use:\n"
+           "\tpair help\n");
 }
 
 static int set_adapter_cmd(void *handle, int argc, char **argv)
@@ -1200,16 +1200,16 @@ static int quit_cmd(void *handle, int argc, char **argv)
 static void usage(void)
 {
     printf("Usage:\n"
-          "\tbttool [options] <command> [command parameters]\n");
+           "\tbttool [options] <command> [command parameters]\n");
     printf("Options:\n"
-          "\t--help\tDisplay help\n");
+           "\t--help\tDisplay help\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_cmd_tables); i++) {
         printf("\t%-8s\t%s\n", g_cmd_tables[i].cmd, g_cmd_tables[i].help);
     }
     printf("\n"
-          "For more information on the usage of each command use:\n"
-          "\tbttool <command> --help\n");
+           "For more information on the usage of each command use:\n"
+           "\tbttool <command> --help\n");
 }
 
 static void show_version(void)
