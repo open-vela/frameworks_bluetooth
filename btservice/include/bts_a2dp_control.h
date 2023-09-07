@@ -39,10 +39,10 @@
 #define A2DP_SOURCE_CTRL_PATH "/data/misc/bluedroid/.source_ctrl"
 #define A2DP_SOURCE_DATA_PATH "/data/misc/bluedroid/.source_data"
 #else
-#define A2DP_SINK_CTRL_PATH "sink_ctrl"
-#define A2DP_SINK_DATA_PATH "sink_data"
-#define A2DP_SOURCE_CTRL_PATH "source_ctrl"
-#define A2DP_SOURCE_DATA_PATH "source_data"
+#define A2DP_SINK_CTRL_PATH "a2dp_sink_ctrl"
+#define A2DP_SINK_DATA_PATH "a2dp_sink_data"
+#define A2DP_SOURCE_CTRL_PATH "a2dp_source_ctrl"
+#define A2DP_SOURCE_DATA_PATH "a2dp_source_data"
 #endif
 
 #define A2DP_CTRL_EVT_HEADER_LEN 1
