@@ -17,33 +17,33 @@
 #include <string.h>
 
 #include "bt_addr.h"
-#include "lea_ccpc_event.h"
+#include "lea_ccp_event.h"
 
-lea_ccpc_msg_t *lea_ccpc_msg_new(lea_ccpc_event_t event, bt_address_t *remote_addr,
+lea_ccp_msg_t *lea_ccp_msg_new(lea_ccp_event_t event, bt_address_t *remote_addr,
                                  uint32_t tbs_id)
 {
-    return lea_ccpc_msg_new_ext(event, remote_addr, tbs_id, 0);
+    return lea_ccp_msg_new_ext(event, remote_addr, tbs_id, 0);
 }
 
-lea_ccpc_msg_t *lea_ccpc_msg_new_ext(lea_ccpc_event_t event, bt_address_t *remote_addr,
+lea_ccp_msg_t *lea_ccp_msg_new_ext(lea_ccp_event_t event, bt_address_t *remote_addr,
                                      uint32_t tbs_id, size_t size)
 {
-    lea_ccpc_msg_t *ccpc_msg;
+    lea_ccp_msg_t *ccp_msg;
 
-    ccpc_msg = (lea_ccpc_msg_t *)malloc(sizeof(lea_ccpc_msg_t) + size);
-    if (ccpc_msg == NULL)
+    ccp_msg = (lea_ccp_msg_t *)malloc(sizeof(lea_ccp_msg_t) + size);
+    if (ccp_msg == NULL)
         return NULL;
 
-    ccpc_msg->event = event;
-    memset(&ccpc_msg->event_data, 0, sizeof(ccpc_msg->event_data) + size);
+    ccp_msg->event = event;
+    memset(&ccp_msg->event_data, 0, sizeof(ccp_msg->event_data) + size);
     if (remote_addr != NULL)
-        memcpy(&ccpc_msg->remote_addr, remote_addr, sizeof(bt_address_t));
+        memcpy(&ccp_msg->remote_addr, remote_addr, sizeof(bt_address_t));
 
-    ccpc_msg->event_data.tbs_id = tbs_id;
-    return ccpc_msg;
+    ccp_msg->event_data.tbs_id = tbs_id;
+    return ccp_msg;
 }
 
-void lea_ccpc_msg_destory(lea_ccpc_msg_t *ccpc_msg)
+void lea_ccp_msg_destory(lea_ccp_msg_t *ccp_msg)
 {
-    free(ccpc_msg);
+    free(ccp_msg);
 }

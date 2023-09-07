@@ -23,15 +23,15 @@
 #include "stack_adapter_lea_gaf.h"
 
 #include "bluetooth.h"
-#include "bt_lea_ccpc.h"
-#include "lea_ccpc_service.h"
+#include "bt_lea_ccp.h"
+#include "lea_ccp_service.h"
 #include "sal.h"
 #include "sal_bluelet.h"
-#include "sal_lea_ccpc_interface.h"
+#include "sal_lea_ccp_interface.h"
 
 #define UNKNOWN_INFO "unknown"
 
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_CCPC
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_CCP
 
 static void adpt_lea_tbc_bearer_provider_name_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t *name);
 static void adpt_lea_tbc_bearer_uci_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t *uci);
@@ -82,9 +82,9 @@ static void adpt_lea_tbc_bearer_provider_name_callback(BD_ADDR tbs_addr, uint32_
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
     if (name == NULL) {
-        lea_ccpc_on_bearer_provider_name(&addr, tbs_id, strlen(nullname) + 1, nullname);
+        lea_ccp_on_bearer_provider_name(&addr, tbs_id, strlen(nullname) + 1, nullname);
     } else {
-        lea_ccpc_on_bearer_provider_name(&addr, tbs_id, strlen((const char *)name) + 1,
+        lea_ccp_on_bearer_provider_name(&addr, tbs_id, strlen((const char *)name) + 1,
                                          (const char *)name);
     }
 }
@@ -96,9 +96,9 @@ static void adpt_lea_tbc_bearer_uci_callback(BD_ADDR tbs_addr, uint32_t tbs_id, 
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
     if (uci == NULL) {
-        lea_ccpc_on_bearer_uci(&addr, tbs_id, strlen(nulluri) + 1, nulluri);
+        lea_ccp_on_bearer_uci(&addr, tbs_id, strlen(nulluri) + 1, nulluri);
     } else {
-        lea_ccpc_on_bearer_uci(&addr, tbs_id, strlen((const char *)uci) + 1, (const char *)uci);
+        lea_ccp_on_bearer_uci(&addr, tbs_id, strlen((const char *)uci) + 1, (const char *)uci);
     }
 }
 
@@ -107,7 +107,7 @@ static void adpt_lea_tbc_bearer_technology_callback(BD_ADDR tbs_addr, uint32_t t
     bt_address_t addr;
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
-    lea_ccpc_on_bearer_technology(&addr, tbs_id, technology);
+    lea_ccp_on_bearer_technology(&addr, tbs_id, technology);
 }
 
 static void adpt_lea_tbc_bearer_uri_schemes_supported_list_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
@@ -118,10 +118,10 @@ static void adpt_lea_tbc_bearer_uri_schemes_supported_list_callback(BD_ADDR tbs_
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
     if (uri_schemes == NULL) {
-        lea_ccpc_on_bearer_uri_schemes_supported_list(&addr, tbs_id, strlen(nulluri_schemes) + 1,
+        lea_ccp_on_bearer_uri_schemes_supported_list(&addr, tbs_id, strlen(nulluri_schemes) + 1,
                                                       nulluri_schemes);
     } else {
-        lea_ccpc_on_bearer_uri_schemes_supported_list(&addr, tbs_id, strlen((const char *)uri_schemes) + 1,
+        lea_ccp_on_bearer_uri_schemes_supported_list(&addr, tbs_id, strlen((const char *)uri_schemes) + 1,
                                                       (const char *)uri_schemes);
     }
 }
@@ -131,7 +131,7 @@ static void adpt_lea_tbc_bearer_signal_strength_callback(BD_ADDR tbs_addr, uint3
     bt_address_t addr;
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
-    lea_ccpc_on_bearer_signal_strength(&addr, tbs_id, strength);
+    lea_ccp_on_bearer_signal_strength(&addr, tbs_id, strength);
 }
 
 static void adpt_lea_tbc_bearer_signal_strength_report_interval_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
@@ -140,7 +140,7 @@ static void adpt_lea_tbc_bearer_signal_strength_report_interval_callback(BD_ADDR
     bt_address_t addr;
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
-    lea_ccpc_on_bearer_signal_strength_report_interval(&addr, tbs_id, interval);
+    lea_ccp_on_bearer_signal_strength_report_interval(&addr, tbs_id, interval);
 }
 
 static void adpt_lea_tbc_content_control_id_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t ccid)
@@ -148,7 +148,7 @@ static void adpt_lea_tbc_content_control_id_callback(BD_ADDR tbs_addr, uint32_t 
     bt_address_t addr;
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
-    lea_ccpc_on_content_control_id(&addr, tbs_id, ccid);
+    lea_ccp_on_content_control_id(&addr, tbs_id, ccid);
 }
 
 static void adpt_lea_tbc_status_flags_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint16_t status_flags)
@@ -156,7 +156,7 @@ static void adpt_lea_tbc_status_flags_callback(BD_ADDR tbs_addr, uint32_t tbs_id
     bt_address_t addr;
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
-    lea_ccpc_on_status_flags(&addr, tbs_id, status_flags);
+    lea_ccp_on_status_flags(&addr, tbs_id, status_flags);
 }
 
 static void adpt_lea_tbc_call_control_optional_opcodes_callback(BD_ADDR tbs_addr, uint32_t tbs_id,
@@ -165,7 +165,7 @@ static void adpt_lea_tbc_call_control_optional_opcodes_callback(BD_ADDR tbs_addr
     bt_address_t addr;
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
-    lea_ccpc_on_call_control_optional_opcodes(&addr, tbs_id, opcodes);
+    lea_ccp_on_call_control_optional_opcodes(&addr, tbs_id, opcodes);
 }
 
 static void adpt_lea_tbc_incoming_call_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t call_index,
@@ -176,9 +176,9 @@ static void adpt_lea_tbc_incoming_call_callback(BD_ADDR tbs_addr, uint32_t tbs_i
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
     if (uri == NULL) {
-        lea_ccpc_on_incoming_call(&addr, tbs_id, call_index, strlen(nulluri) + 1, nulluri);
+        lea_ccp_on_incoming_call(&addr, tbs_id, call_index, strlen(nulluri) + 1, nulluri);
     } else {
-        lea_ccpc_on_incoming_call(&addr, tbs_id, call_index, strlen((const char *)uri) + 1,
+        lea_ccp_on_incoming_call(&addr, tbs_id, call_index, strlen((const char *)uri) + 1,
                                   (const char *)uri);
     }
 }
@@ -191,9 +191,9 @@ static void adpt_lea_tbc_incoming_call_target_bearer_uri_callback(BD_ADDR tbs_ad
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
     if (uri == NULL) {
-        lea_ccpc_on_incoming_call_target_bearer_uri(&addr, tbs_id, call_index, strlen(nulluri) + 1, nulluri);
+        lea_ccp_on_incoming_call_target_bearer_uri(&addr, tbs_id, call_index, strlen(nulluri) + 1, nulluri);
     } else {
-        lea_ccpc_on_incoming_call_target_bearer_uri(&addr, tbs_id, call_index, strlen((const char *)uri) + 1,
+        lea_ccp_on_incoming_call_target_bearer_uri(&addr, tbs_id, call_index, strlen((const char *)uri) + 1,
                                                     (const char *)uri);
     }
 }
@@ -204,7 +204,7 @@ static void adpt_lea_tbc_call_state_callback(BD_ADDR tbs_addr, uint32_t tbs_id, 
     bt_address_t addr;
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
-    lea_ccpc_on_call_state(&addr, tbs_id, number, (lea_tbs_call_state_t *)states_s);
+    lea_ccp_on_call_state(&addr, tbs_id, number, (lea_tbs_call_state_t *)states_s);
 
     stack_adapter_lea_mem_free(states_s);
 }
@@ -241,7 +241,7 @@ static void adpt_lea_tbc_bearer_list_current_calls_callback(BD_ADDR tbs_addr, ui
         p += sizeof(lea_tbs_call_list_item_t) + strlen(uri) + 1;
         sub_call = p;
     }
-    lea_ccpc_on_bearer_list_current_calls(&addr, tbs_id, number, size, calls_list);
+    lea_ccp_on_bearer_list_current_calls(&addr, tbs_id, number, size, calls_list);
 
     stack_adapter_lea_ccp_recycle_calls_list_s(number, calls);
 }
@@ -254,9 +254,9 @@ static void adpt_lea_tbc_call_friendly_name_callback(BD_ADDR tbs_addr, uint32_t 
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
     if (name == NULL) {
-        lea_ccpc_on_call_friendly_name(&addr, tbs_id, call_index, strlen(nullname) + 1, nullname);
+        lea_ccp_on_call_friendly_name(&addr, tbs_id, call_index, strlen(nullname) + 1, nullname);
     } else {
-        lea_ccpc_on_call_friendly_name(&addr, tbs_id, call_index, strlen((const char *)name) + 1,
+        lea_ccp_on_call_friendly_name(&addr, tbs_id, call_index, strlen((const char *)name) + 1,
                                        (const char *)name);
     }
 }
@@ -267,7 +267,7 @@ static void adpt_lea_tbc_termination_reason_callback(BD_ADDR tbs_addr, uint32_t 
     bt_address_t addr;
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
-    lea_ccpc_on_termination_reason(&addr, tbs_id, call_index, reason);
+    lea_ccp_on_termination_reason(&addr, tbs_id, call_index, reason);
 }
 
 static void adpt_lea_tbc_call_control_result_callback(BD_ADDR tbs_addr, uint32_t tbs_id, uint8_t opcode,
@@ -276,7 +276,7 @@ static void adpt_lea_tbc_call_control_result_callback(BD_ADDR tbs_addr, uint32_t
     bt_address_t addr;
 
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
-    lea_ccpc_on_call_control_result(&addr, tbs_id, opcode, call_index, result);
+    lea_ccp_on_call_control_result(&addr, tbs_id, opcode, call_index, result);
 }
 
 /****************************************************************************

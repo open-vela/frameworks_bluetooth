@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef __SAL_LEA_CCPC_INTERFACE_H__
-#define __SAL_LEA_CCPC_INTERFACE_H__
+#ifndef __SAL_LEA_CCP_INTERFACE_H__
+#define __SAL_LEA_CCP_INTERFACE_H__
 
 #include <stdint.h>
 
 #include "bt_addr.h"
-#include "bt_lea_ccpc.h"
+#include "bt_lea_ccp.h"
 #include "bt_status.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_lea_ccp.h"
@@ -42,4 +42,4 @@ bt_status_t bt_sal_lea_tbc_call_control_by_index(bt_address_t *addr, uint32_t tb
 bt_status_t bt_sal_lea_tbc_originate_call(bt_address_t *addr, uint32_t tbs_id, uint8_t *uri);
 bt_status_t bt_sal_lea_tbc_join_calls(bt_address_t *addr, uint32_t tbs_id, uint8_t number, uint8_t *call_indexes);
 
-#endif /* __SAL_LEA_CCPC_INTERFACE_H__ */
+#endif /* __SAL_LEA_CCP_INTERFACE_H__ */
