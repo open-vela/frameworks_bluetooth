@@ -30,6 +30,9 @@ typedef struct {
     uint8_t mute;
 } service_lea_vcs_volume_state_s;
 
+bool adpt_req_vcs_info_callback(SERVICE_LEA_VCS_INFO_S *info);
+bool adpt_req_mics_info_callback(SERVICE_LEA_MICS_INFO_S *info);
+
 bt_status_t bt_sal_vmicps_notify_vcs_volume(int volume);
 bt_status_t bt_sal_vmicps_notify_vcs_mute(int mute);
 bt_status_t bt_sal_vmicps_notify_vcs_volume_flags(int flags);
