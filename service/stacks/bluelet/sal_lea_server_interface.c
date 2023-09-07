@@ -28,7 +28,7 @@
 #include "bluetooth.h"
 #include "bt_status.h"
 #include "lea_audio_common.h"
-#include "lea_ccpc_service.h"
+#include "lea_ccp_service.h"
 #include "lea_mcpc_service.h"
 #include "lea_server_service.h"
 #include "lea_vmicps_service.h"

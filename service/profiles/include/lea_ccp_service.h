@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef __LEA_CCPC_SERVICE_H__
-#define __LEA_CCPC_SERVICE_H__
+#ifndef __LEA_CCP_SERVICE_H__
+#define __LEA_CCP_SERVICE_H__
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 #include "bt_device.h"
-#include "bt_lea_ccpc.h"
-#include "sal_lea_ccpc_interface.h"
+#include "bt_lea_ccp.h"
+#include "sal_lea_ccp_interface.h"
 #include "stddef.h"
 
 typedef struct {
@@ -48,22 +48,22 @@ typedef struct {
 /*
  * sal callback
  */
-void lea_ccpc_on_bearer_provider_name(bt_address_t *addr, uint32_t tbs_id, size_t size, const char *name);
-void lea_ccpc_on_bearer_uci(bt_address_t *addr, uint32_t tbs_id, size_t size, const char *uci);
-void lea_ccpc_on_bearer_technology(bt_address_t *addr, uint32_t tbs_id, uint8_t technology);
-void lea_ccpc_on_bearer_uri_schemes_supported_list(bt_address_t *addr, uint32_t tbs_id, size_t size, const char *uri_schemes);
-void lea_ccpc_on_bearer_signal_strength(bt_address_t *addr, uint32_t tbs_id, uint8_t strength);
-void lea_ccpc_on_bearer_signal_strength_report_interval(bt_address_t *addr, uint32_t tbs_id, uint8_t interval);
-void lea_ccpc_on_content_control_id(bt_address_t *addr, uint32_t tbs_id, uint8_t ccid);
-void lea_ccpc_on_status_flags(bt_address_t *addr, uint32_t tbs_id, uint16_t status_flags);
-void lea_ccpc_on_call_control_optional_opcodes(bt_address_t *addr, uint32_t tbs_id, uint16_t opcodes);
-void lea_ccpc_on_incoming_call(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, size_t size, const char *uri);
-void lea_ccpc_on_incoming_call_target_bearer_uri(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, size_t size, const char *uri);
-void lea_ccpc_on_call_state(bt_address_t *addr, uint32_t tbs_id, uint32_t number, lea_tbs_call_state_t *states_s);
-void lea_ccpc_on_bearer_list_current_calls(bt_address_t *addr, uint32_t tbs_id, uint32_t number, size_t size, lea_tbs_call_list_item_t *calls);
-void lea_ccpc_on_call_friendly_name(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, size_t size, const char *name);
-void lea_ccpc_on_termination_reason(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, lea_adpt_termination_reason_t reason);
-void lea_ccpc_on_call_control_result(bt_address_t *addr, uint32_t tbs_id, uint8_t opcode, uint8_t call_index, lea_adpt_call_control_result_t result);
+void lea_ccp_on_bearer_provider_name(bt_address_t *addr, uint32_t tbs_id, size_t size, const char *name);
+void lea_ccp_on_bearer_uci(bt_address_t *addr, uint32_t tbs_id, size_t size, const char *uci);
+void lea_ccp_on_bearer_technology(bt_address_t *addr, uint32_t tbs_id, uint8_t technology);
+void lea_ccp_on_bearer_uri_schemes_supported_list(bt_address_t *addr, uint32_t tbs_id, size_t size, const char *uri_schemes);
+void lea_ccp_on_bearer_signal_strength(bt_address_t *addr, uint32_t tbs_id, uint8_t strength);
+void lea_ccp_on_bearer_signal_strength_report_interval(bt_address_t *addr, uint32_t tbs_id, uint8_t interval);
+void lea_ccp_on_content_control_id(bt_address_t *addr, uint32_t tbs_id, uint8_t ccid);
+void lea_ccp_on_status_flags(bt_address_t *addr, uint32_t tbs_id, uint16_t status_flags);
+void lea_ccp_on_call_control_optional_opcodes(bt_address_t *addr, uint32_t tbs_id, uint16_t opcodes);
+void lea_ccp_on_incoming_call(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, size_t size, const char *uri);
+void lea_ccp_on_incoming_call_target_bearer_uri(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, size_t size, const char *uri);
+void lea_ccp_on_call_state(bt_address_t *addr, uint32_t tbs_id, uint32_t number, lea_tbs_call_state_t *states_s);
+void lea_ccp_on_bearer_list_current_calls(bt_address_t *addr, uint32_t tbs_id, uint32_t number, size_t size, lea_tbs_call_list_item_t *calls);
+void lea_ccp_on_call_friendly_name(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, size_t size, const char *name);
+void lea_ccp_on_termination_reason(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, lea_adpt_termination_reason_t reason);
+void lea_ccp_on_call_control_result(bt_address_t *addr, uint32_t tbs_id, uint8_t opcode, uint8_t call_index, lea_adpt_call_control_result_t result);
 
 typedef struct {
     size_t size;
@@ -84,18 +84,18 @@ typedef struct {
     bt_status_t (*call_control_by_index)(bt_address_t *tbs_addr, uint8_t opcode);
     bt_status_t (*originate_call)(bt_address_t *tbs_addr, uint8_t *uri);
     bt_status_t (*join_calls)(bt_address_t *tbs_addr, uint8_t number, uint8_t *call_indexes);
-    void *(*register_callbacks)(void *handle, lea_ccpc_callbacks_t *callbacks);
+    void *(*register_callbacks)(void *handle, lea_ccp_callbacks_t *callbacks);
     bool (*unregister_callbacks)(void **handle, void *cookie);
-} lea_ccpc_interface_t;
+} lea_ccp_interface_t;
 
 /*
  * register profile to service manager
  */
-void register_lea_ccpc_service(void);
+void register_lea_ccp_service(void);
 
 /*
  * set tbs id infomation
  */
 void adpt_tbs_sid_changed(uint32_t sid);
 
-#endif /* __LEA_CCPC_SERVICE_H__ */
+#endif /* __LEA_CCP_SERVICE_H__ */
