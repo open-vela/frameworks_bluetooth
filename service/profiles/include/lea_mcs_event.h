@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef __LEA_MCPS_EVENT_H__
-#define __LEA_MCPS_EVENT_H__
+#ifndef __LEA_MCS_EVENT_H__
+#define __LEA_MCS_EVENT_H__
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include "bt_lea_mcs.h"
 #include <stdint.h>
-#include "bt_lea_mcps.h"
 
 typedef enum {
     MCS_STATE = 0,
@@ -64,7 +64,7 @@ typedef enum {
     MCS_SEARCH_GENRE,
     MCS_SEARCH_TRACKS,
     MCS_SEARCH_GROUPS
-} mcps_event_type_t;
+} mcs_event_type_t;
 
 typedef struct {
     uint32_t mcs_id;
@@ -77,18 +77,18 @@ typedef struct {
     void *ref;
     lea_object_id obj_id;
     uint8_t dataarry[1];
-} mcps_event_data_t;
+} mcs_event_data_t;
 
 typedef struct {
-    mcps_event_type_t event;
-    mcps_event_data_t event_data;
-} mcps_event_t;
+    mcs_event_type_t event;
+    mcs_event_data_t event_data;
+} mcs_event_t;
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-mcps_event_t *mcps_event_new(mcps_event_type_t event, uint32_t mcs_id);
-mcps_event_t *mcps_event_new_ext(mcps_event_type_t event, uint32_t mcs_id, size_t size);
-void mcps_event_destory(mcps_event_t* mcps_event);
+mcs_event_t *mcs_event_new(mcs_event_type_t event, uint32_t mcs_id);
+mcs_event_t *mcs_event_new_ext(mcs_event_type_t event, uint32_t mcs_id, size_t size);
+void mcs_event_destory(mcs_event_t *mcs_event);
 
-#endif /* __LEA_MCPS_EVENT_H__ */
+#endif /* __LEA_MCS_EVENT_H__ */

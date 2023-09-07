@@ -14,8 +14,8 @@
  * limitations under the License.
  ***************************************************************************/
 
-#ifndef __BT_LEA_MCPS_H__
-#define __BT_LEA_MCPS_H__
+#ifndef __BT_LEA_MCS_H__
+#define __BT_LEA_MCS_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,10 +58,10 @@ typedef struct {
 
 /** @brief Date time structure. */
 typedef struct {
-    uint16_t year;   /**< 1582 to 9999, 0 is unknown, all others are RFU */
-    uint8_t month;   /**< 1 to 12, 0 as unknown, all others are RFU */
-    uint8_t day;     /**< 1 to 31, 0 as unknown, all others are RFU */
-    uint8_t hours;   /**< 0 to 23, All others are RFU */
+    uint16_t year; /**< 1582 to 9999, 0 is unknown, all others are RFU */
+    uint8_t month; /**< 1 to 12, 0 as unknown, all others are RFU */
+    uint8_t day; /**< 1 to 31, 0 as unknown, all others are RFU */
+    uint8_t hours; /**< 0 to 23, All others are RFU */
     uint8_t minutes; /**< 0 to 59, All others are RFU */
     uint8_t seconds; /**< 0 to 59, All others are RFU */
 } lea_date_time_t;
@@ -74,22 +74,21 @@ typedef struct {
     uint32_t size; /**< Size of the object */
     uint8_t type; /**< Type of the object, one of #SERVICE_LEA_MCS_OBJECT_TYPE. */
     lea_date_time_t
-    first_created; /**< The date and time when the object is first created. Set to all 0s if unknown. */
+        first_created; /**< The date and time when the object is first created. Set to all 0s if unknown. */
     lea_date_time_t
-    last_modified; /**< The date and time when the object content is last modified. Set to all 0s if unknown. */
+        last_modified; /**< The date and time when the object content is last modified. Set to all 0s if unknown. */
 } lea_media_object_t;
 
-typedef void (*lea_mcps_server_state_callback)(void *cookie, uint8_t event);
+typedef void (*lea_mcs_server_state_callback)(void *cookie, uint8_t event);
 
 typedef struct
 {
     size_t size;
-    lea_mcps_server_state_callback mcs_state_cb;
-} lea_mcps_callbacks_t;
+    lea_mcs_server_state_callback mcs_state_cb;
+} lea_mcs_callbacks_t;
 
-
-void *bt_lea_mcps_register_callbacks(bt_instance_t *ins, const lea_mcps_callbacks_t *callbacks);
-bool bt_lea_mcps_unregister_callbacks(bt_instance_t *ins, void *cookie);
+void *bt_lea_mcs_register_callbacks(bt_instance_t *ins, const lea_mcs_callbacks_t *callbacks);
+bool bt_lea_mcs_unregister_callbacks(bt_instance_t *ins, void *cookie);
 bt_status_t bt_lea_mcs_service_add(bt_instance_t *ins);
 bt_status_t bt_lea_mcs_service_remove(bt_instance_t *ins);
 bt_status_t bt_lea_mcs_playing_order_changed(bt_instance_t *ins, uint8_t order);
@@ -110,4 +109,4 @@ bt_status_t bt_lea_mcs_media_control_point_response(bt_instance_t *ins, lea_adpt
 }
 #endif
 
-#endif /* __BT_LEA_MCPS_H__ */
+#endif /* __BT_LEA_MCS_H__ */

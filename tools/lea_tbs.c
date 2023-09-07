@@ -42,7 +42,7 @@ static int tbs_call_control_response(void *handle, int argc, char *argv[]);
 #define TBS_ADD_CALL   "add a call param: <index><state><flags><call_uri><incoming_target_uri><friendly_name>"
 
 static bt_command_t g_lea_tbs_tables[] = {
-    { "add",            tbs_add,                                     0, "add TBS instance                         param: <NULL>"                       },
+    {"add",             tbs_add,                                     0, "add TBS instance                         param: <NULL>"                       },
     { "remove",         tbs_remove,                                  0, "remove TBS instance                      param: <NULL>"                       },
     { "tele",           tbs_set_telephone_bearer_info,               0, TBS_SET_BEARER                                                                 },
     { "call",           tbs_add_call,                                0, TBS_ADD_CALL                                                                   },

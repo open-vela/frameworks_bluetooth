@@ -198,8 +198,7 @@ static void lea_tbs_process_message(void *data)
             return;
         }
 
-        if (call->state == ADPT_LEA_TBS_CALL_STATE_INCOMING || call->state == ADPT_LEA_TBS_CALL_STATE_ACTIVE
-            || call->state == ADPT_LEA_TBS_CALL_STATE_REMOTELY_HELD) {
+        if (call->state == ADPT_LEA_TBS_CALL_STATE_INCOMING || call->state == ADPT_LEA_TBS_CALL_STATE_ACTIVE || call->state == ADPT_LEA_TBS_CALL_STATE_REMOTELY_HELD) {
             tele_service_hold_call();
             lea_tbs_call_control_response(msg->event_data.valueint8, ADPT_LEA_TBS_CALL_CONTROL_SUCCESS);
         } else {
@@ -640,7 +639,7 @@ bt_status_t lea_tbs_status_flags_changed(uint8_t status_flags)
 }
 
 bt_status_t lea_tbs_call_state_changed(uint8_t number,
-                                           lea_tbs_call_state_t *state_s)
+                                       lea_tbs_call_state_t *state_s)
 {
     CHECK_ENABLED();
     bt_status_t ret;

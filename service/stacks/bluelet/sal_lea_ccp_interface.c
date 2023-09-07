@@ -85,7 +85,7 @@ static void adpt_lea_tbc_bearer_provider_name_callback(BD_ADDR tbs_addr, uint32_
         lea_ccp_on_bearer_provider_name(&addr, tbs_id, strlen(nullname) + 1, nullname);
     } else {
         lea_ccp_on_bearer_provider_name(&addr, tbs_id, strlen((const char *)name) + 1,
-                                         (const char *)name);
+                                        (const char *)name);
     }
 }
 
@@ -119,10 +119,10 @@ static void adpt_lea_tbc_bearer_uri_schemes_supported_list_callback(BD_ADDR tbs_
     memcpy(addr.addr, tbs_addr, BD_ADDR_SIZE);
     if (uri_schemes == NULL) {
         lea_ccp_on_bearer_uri_schemes_supported_list(&addr, tbs_id, strlen(nulluri_schemes) + 1,
-                                                      nulluri_schemes);
+                                                     nulluri_schemes);
     } else {
         lea_ccp_on_bearer_uri_schemes_supported_list(&addr, tbs_id, strlen((const char *)uri_schemes) + 1,
-                                                      (const char *)uri_schemes);
+                                                     (const char *)uri_schemes);
     }
 }
 
@@ -179,7 +179,7 @@ static void adpt_lea_tbc_incoming_call_callback(BD_ADDR tbs_addr, uint32_t tbs_i
         lea_ccp_on_incoming_call(&addr, tbs_id, call_index, strlen(nulluri) + 1, nulluri);
     } else {
         lea_ccp_on_incoming_call(&addr, tbs_id, call_index, strlen((const char *)uri) + 1,
-                                  (const char *)uri);
+                                 (const char *)uri);
     }
 }
 
@@ -194,7 +194,7 @@ static void adpt_lea_tbc_incoming_call_target_bearer_uri_callback(BD_ADDR tbs_ad
         lea_ccp_on_incoming_call_target_bearer_uri(&addr, tbs_id, call_index, strlen(nulluri) + 1, nulluri);
     } else {
         lea_ccp_on_incoming_call_target_bearer_uri(&addr, tbs_id, call_index, strlen((const char *)uri) + 1,
-                                                    (const char *)uri);
+                                                   (const char *)uri);
     }
 }
 
@@ -257,7 +257,7 @@ static void adpt_lea_tbc_call_friendly_name_callback(BD_ADDR tbs_addr, uint32_t 
         lea_ccp_on_call_friendly_name(&addr, tbs_id, call_index, strlen(nullname) + 1, nullname);
     } else {
         lea_ccp_on_call_friendly_name(&addr, tbs_id, call_index, strlen((const char *)name) + 1,
-                                       (const char *)name);
+                                      (const char *)name);
     }
 }
 

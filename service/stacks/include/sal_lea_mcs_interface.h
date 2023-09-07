@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef __SAL_LEA_MCPS_INTERFACE_H__
-#define __SAL_LEA_MCPS_INTERFACE_H__
+#ifndef __SAL_LEA_MCP_INTERFACE_H__
+#define __SAL_LEA_MCP_INTERFACE_H__
 
 #include "bt_status.h"
 #include "stack_adapter_lea_common.h"
 #include <stdint.h>
-
-bool adpt_req_vcs_info_callback(SERVICE_LEA_VCS_INFO_S *info);
-bool adpt_req_mics_info_callback(SERVICE_LEA_MICS_INFO_S *info);
 
 bt_status_t bt_sal_lea_mcs_add(uint32_t mcs_id);
 bt_status_t bt_sal_lea_mcs_remove(uint32_t mcs_id);
@@ -40,4 +37,4 @@ bt_status_t bt_sal_lea_mcs_current_group_changed(uint32_t mcs_id, LEA_OBJ_ID gro
 bt_status_t bt_sal_lea_mcs_parent_group_changed(uint32_t mcs_id, LEA_OBJ_ID group_id);
 bt_status_t bt_sal_lea_mcs_media_control_response(uint32_t mcs_id, SERVICE_LEA_MEDIA_CONTROL_RESULT result);
 
-#endif /* __SAL_LEA_MCPS_INTERFACE_H__ */
+#endif /* __SAL_LEA_MCP_INTERFACE_H__ */

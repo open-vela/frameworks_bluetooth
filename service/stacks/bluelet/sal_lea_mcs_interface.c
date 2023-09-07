@@ -22,14 +22,14 @@
 #include "stack_adapter_lea_mcp.h"
 
 #include "bluetooth.h"
-#include "lea_mcps_service.h"
+#include "lea_mcs_service.h"
 #include "sal.h"
 #include "sal_bluelet.h"
-#include "sal_lea_mcps_interface.h"
+#include "sal_lea_mcs_interface.h"
 
 #define UNKNOWN_INFO "unknown"
 
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCPS
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCS
 
 static void adpt_lea_mcs_state_callback(uint32_t mcs_id, uint8_t ccid, bool added);
 static void adpt_lea_mcs_player_set_callback(uint32_t mcs_id, void *player_ref, bool result);
@@ -126,161 +126,161 @@ const LEA_MCS_CALLBACK_S adpt_lea_mcp_server_callbacks = {
 
 static void adpt_lea_mcs_state_callback(uint32_t mcs_id, uint8_t ccid, bool added)
 {
-    lea_on_mcps_state(mcs_id, ccid, added);
+    lea_on_mcs_state(mcs_id, ccid, added);
 }
 
 static void adpt_lea_mcs_player_set_callback(uint32_t mcs_id, void *player_ref, bool result)
 {
-    lea_on_mcps_player_info_set_result(mcs_id, player_ref, result);
+    lea_on_mcs_player_info_set_result(mcs_id, player_ref, result);
 }
 
 static void adpt_lea_mcs_object_added_callback(uint32_t mcs_id, void *obj_ref, LEA_OBJ_ID obj_id)
 {
-    lea_on_mcps_object_added_result(mcs_id, obj_ref, obj_id); // todo
+    lea_on_mcs_object_added_result(mcs_id, obj_ref, obj_id); // todo
 }
 
 static void adpt_lea_mcs_set_position_callback(uint32_t mcs_id, int32_t position)
 {
-    lea_on_mcps_set_position_result(mcs_id, position);
+    lea_on_mcs_set_position_result(mcs_id, position);
 }
 
 static void adpt_lea_mcs_set_playback_speed_callback(uint32_t mcs_id, int8_t speed)
 {
-    lea_on_mcps_set_playback_speed_result(mcs_id, speed);
+    lea_on_mcs_set_playback_speed_result(mcs_id, speed);
 }
 
 static void adpt_lea_mcs_set_current_track_callback(uint32_t mcs_id, LEA_OBJ_ID track_id)
 {
-    lea_on_mcps_set_current_track_result(mcs_id, track_id);
+    lea_on_mcs_set_current_track_result(mcs_id, track_id);
 }
 
 static void adpt_lea_mcs_set_next_track_callback(uint32_t mcs_id, LEA_OBJ_ID track_id)
 {
-    lea_on_mcps_set_next_track_result(mcs_id, track_id);
+    lea_on_mcs_set_next_track_result(mcs_id, track_id);
 }
 
 static void adpt_lea_mcs_set_current_group_callback(uint32_t mcs_id, LEA_OBJ_ID group_id)
 {
-    lea_on_mcps_set_current_group_result(mcs_id, group_id);
+    lea_on_mcs_set_current_group_result(mcs_id, group_id);
 }
 
 static void adpt_lea_mcs_set_playing_order_callback(uint32_t mcs_id, uint8_t order)
 {
-    lea_on_mcps_set_playing_order_result(mcs_id, order);
+    lea_on_mcs_set_playing_order_result(mcs_id, order);
 }
 
 static void adpt_lea_mcs_play_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_play_result(mcs_id);
+    lea_on_mcs_play_result(mcs_id);
 }
 
 static void adpt_lea_mcs_pause_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_pause_result(mcs_id);
+    lea_on_mcs_pause_result(mcs_id);
 }
 
 static void adpt_lea_mcs_fast_rewind_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_fast_rewind_result(mcs_id);
+    lea_on_mcs_fast_rewind_result(mcs_id);
 }
 
 static void adpt_lea_mcs_fast_forward_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_fast_forward_result(mcs_id);
+    lea_on_mcs_fast_forward_result(mcs_id);
 }
 
 static void adpt_lea_mcs_stop_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_stop_result(mcs_id);
+    lea_on_mcs_stop_result(mcs_id);
 }
 
 static void adpt_lea_mcs_move_callback(uint32_t mcs_id, int32_t offset)
 {
-    lea_on_mcps_move_result(mcs_id, offset);
+    lea_on_mcs_move_result(mcs_id, offset);
 }
 
 static void adpt_lea_mcs_previous_segment_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_previous_segment_result(mcs_id);
+    lea_on_mcs_previous_segment_result(mcs_id);
 }
 
 static void adpt_lea_mcs_next_segment_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_next_segment_result(mcs_id);
+    lea_on_mcs_next_segment_result(mcs_id);
 }
 
 static void adpt_lea_mcs_first_segment_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_first_segment_result(mcs_id);
+    lea_on_mcs_first_segment_result(mcs_id);
 }
 
 static void adpt_lea_mcs_last_segment_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_last_segment_result(mcs_id);
+    lea_on_mcs_last_segment_result(mcs_id);
 }
 
 static void adpt_lea_mcs_goto_segment_callback(uint32_t mcs_id, int32_t n_segment)
 {
-    lea_on_mcps_goto_segment_result(mcs_id, n_segment);
+    lea_on_mcs_goto_segment_result(mcs_id, n_segment);
 }
 
 static void adpt_lea_mcs_previous_track_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_previous_track_result(mcs_id);
+    lea_on_mcs_previous_track_result(mcs_id);
 }
 
 static void adpt_lea_mcs_next_track_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_next_track_result(mcs_id);
+    lea_on_mcs_next_track_result(mcs_id);
 }
 
 static void adpt_lea_mcs_first_track_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_first_track_result(mcs_id);
+    lea_on_mcs_first_track_result(mcs_id);
 }
 
 static void adpt_lea_mcs_last_track_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_last_track_result(mcs_id);
+    lea_on_mcs_last_track_result(mcs_id);
 }
 
 static void adpt_lea_mcs_goto_track_callback(uint32_t mcs_id, int32_t n_track)
 {
-    lea_on_mcps_goto_track_result(mcs_id, n_track);
+    lea_on_mcs_goto_track_result(mcs_id, n_track);
 }
 
 static void adpt_lea_mcs_previous_group_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_previous_group_result(mcs_id);
+    lea_on_mcs_previous_group_result(mcs_id);
 }
 
 static void adpt_lea_mcs_next_group_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_next_group_result(mcs_id);
+    lea_on_mcs_next_group_result(mcs_id);
 }
 
 static void adpt_lea_mcs_first_group_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_first_group_result(mcs_id);
+    lea_on_mcs_first_group_result(mcs_id);
 }
 
 static void adpt_lea_mcs_last_group_callback(uint32_t mcs_id)
 {
-    lea_on_mcps_last_group_result(mcs_id);
+    lea_on_mcs_last_group_result(mcs_id);
 }
 
 static void adpt_lea_mcs_goto_group_callback(uint32_t mcs_id, int32_t n_group)
 {
-    lea_on_mcps_goto_group_result(mcs_id, n_group);
+    lea_on_mcs_goto_group_result(mcs_id, n_group);
 }
 
 static void adpt_lea_mcs_search_track_name_callback(uint32_t mcs_id, SERVICE_LEA_UTF8_STR *name, bool last_condition)
 {
     char *nullname = UNKNOWN_INFO;
     if (name == NULL) {
-        lea_on_mcps_search_track_name_result(mcs_id, strlen(nullname) + 1, nullname, last_condition);
+        lea_on_mcs_search_track_name_result(mcs_id, strlen(nullname) + 1, nullname, last_condition);
     } else {
-        lea_on_mcps_search_track_name_result(mcs_id, name->length + 1, (char *)name->string, last_condition);
+        lea_on_mcs_search_track_name_result(mcs_id, name->length + 1, (char *)name->string, last_condition);
     }
 }
 
@@ -288,9 +288,9 @@ static void adpt_lea_mcs_search_artist_name_callback(uint32_t mcs_id, SERVICE_LE
 {
     char *nullname = UNKNOWN_INFO;
     if (name == NULL) {
-        lea_on_mcps_search_artist_name_result(mcs_id, strlen(nullname) + 1, nullname, last_condition);
+        lea_on_mcs_search_artist_name_result(mcs_id, strlen(nullname) + 1, nullname, last_condition);
     } else {
-        lea_on_mcps_search_artist_name_result(mcs_id, name->length + 1, (char *)name->string, last_condition);
+        lea_on_mcs_search_artist_name_result(mcs_id, name->length + 1, (char *)name->string, last_condition);
     }
 }
 
@@ -298,9 +298,9 @@ static void adpt_lea_mcs_search_album_name_callback(uint32_t mcs_id, SERVICE_LEA
 {
     char *nullname = UNKNOWN_INFO;
     if (name == NULL) {
-        lea_on_mcps_search_album_name_result(mcs_id, strlen(nullname) + 1, nullname, last_condition);
+        lea_on_mcs_search_album_name_result(mcs_id, strlen(nullname) + 1, nullname, last_condition);
     } else {
-        lea_on_mcps_search_album_name_result(mcs_id, name->length + 1, (char *)name->string, last_condition);
+        lea_on_mcs_search_album_name_result(mcs_id, name->length + 1, (char *)name->string, last_condition);
     }
 }
 
@@ -308,9 +308,9 @@ static void adpt_lea_mcs_search_group_name_callback(uint32_t mcs_id, SERVICE_LEA
 {
     char *nullname = UNKNOWN_INFO;
     if (name == NULL) {
-        lea_on_mcps_search_group_name_result(mcs_id, strlen(nullname) + 1, nullname, last_condition);
+        lea_on_mcs_search_group_name_result(mcs_id, strlen(nullname) + 1, nullname, last_condition);
     } else {
-        lea_on_mcps_search_group_name_result(mcs_id, name->length + 1, (char *)name->string, last_condition);
+        lea_on_mcs_search_group_name_result(mcs_id, name->length + 1, (char *)name->string, last_condition);
     }
 }
 
@@ -318,9 +318,9 @@ static void adpt_lea_mcs_search_earliest_year_callback(uint32_t mcs_id, SERVICE_
 {
     char *nullyear = UNKNOWN_INFO;
     if (year == NULL) {
-        lea_on_mcps_search_earliest_year_result(mcs_id, strlen(nullyear) + 1, nullyear, last_condition);
+        lea_on_mcs_search_earliest_year_result(mcs_id, strlen(nullyear) + 1, nullyear, last_condition);
     } else {
-        lea_on_mcps_search_earliest_year_result(mcs_id, year->length + 1, (char *)year->string, last_condition);
+        lea_on_mcs_search_earliest_year_result(mcs_id, year->length + 1, (char *)year->string, last_condition);
     }
 }
 
@@ -328,9 +328,9 @@ static void adpt_lea_mcs_search_latest_year_callback(uint32_t mcs_id, SERVICE_LE
 {
     char *nullyear = UNKNOWN_INFO;
     if (year == NULL) {
-        lea_on_mcps_search_latest_year_result(mcs_id, strlen(nullyear) + 1, nullyear, last_condition);
+        lea_on_mcs_search_latest_year_result(mcs_id, strlen(nullyear) + 1, nullyear, last_condition);
     } else {
-        lea_on_mcps_search_latest_year_result(mcs_id, year->length + 1, (char *)year->string, last_condition);
+        lea_on_mcs_search_latest_year_result(mcs_id, year->length + 1, (char *)year->string, last_condition);
     }
 }
 
@@ -338,20 +338,20 @@ static void adpt_lea_mcs_search_genre_callback(uint32_t mcs_id, SERVICE_LEA_UTF8
 {
     char *nullname = UNKNOWN_INFO;
     if (name == NULL) {
-        lea_on_mcps_search_genre_result(mcs_id, strlen(nullname) + 1, nullname, last_condition);
+        lea_on_mcs_search_genre_result(mcs_id, strlen(nullname) + 1, nullname, last_condition);
     } else {
-        lea_on_mcps_search_genre_result(mcs_id, name->length + 1, (char *)name->string, last_condition);
+        lea_on_mcs_search_genre_result(mcs_id, name->length + 1, (char *)name->string, last_condition);
     }
 }
 
 static void adpt_lea_mcs_search_tracks_callback(uint32_t mcs_id, bool last_condition)
 {
-    lea_on_mcps_search_tracks_result(mcs_id, last_condition);
+    lea_on_mcs_search_tracks_result(mcs_id, last_condition);
 }
 
 static void adpt_lea_mcs_search_groups_callback(uint32_t mcs_id, bool last_condition)
 {
-    lea_on_mcps_search_groups_result(mcs_id, last_condition);
+    lea_on_mcs_search_groups_result(mcs_id, last_condition);
 }
 
 /****************************************************************************

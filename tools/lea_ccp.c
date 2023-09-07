@@ -61,9 +61,9 @@ static bt_command_t g_lea_ccp_tables[] = {
     { "readcallstate",      ccp_read_call_state,                             0, "read call state                         param: <addr>"},
     { "readlistcall",       ccp_read_bearer_list_current_calls,              0, "read bearer list current call           param: <addr>"},
     { "readfriendlyname",   ccp_read_call_friendly_name,                     0, "read call friendly name                 param: <addr>"},
-    { "callcontrol",        ccp_call_control_by_index,                       0, ccp_CALL_CONTROL                                      },
-    { "originate",          ccp_originate_call,                              0, ccp_ORIGINATE_CALL                                    },
-    { "join",               ccp_join_calls,                                  0, ccp_JOIN_CALL                                         },
+    { "callcontrol",        ccp_call_control_by_index,                       0, ccp_CALL_CONTROL                                       },
+    { "originate",          ccp_originate_call,                              0, ccp_ORIGINATE_CALL                                     },
+    { "join",               ccp_join_calls,                                  0, ccp_JOIN_CALL                                          },
 };
 
 static struct option lea_ccp_options[] = {
