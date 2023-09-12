@@ -69,6 +69,7 @@ typedef struct
     uint8_t peer_sep;
     uint16_t mtu;
     void *data;
+    void *cb;
     a2dp_sink_packet_t *packet;
 } a2dp_event_data_t;
 

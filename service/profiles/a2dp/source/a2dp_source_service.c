@@ -110,10 +110,10 @@ static void a2dp_service_handle_event(void *data)
 
     switch (event->event) {
         case A2DP_STARTUP:
-        source_startup(NULL);
+        source_startup(event->event_data.cb);
         break;
     case A2DP_SHUTDOWN:
-        source_shutdown(NULL);
+        source_shutdown(event->event_data.cb);
         break;
     case CODEC_CONFIG_EVT: {
         a2dp_codec_config_t *config;
@@ -303,17 +303,21 @@ static void a2dp_source_cleanup(void)
 
 static void source_startup(void *data)
 {
+    profile_on_startup_t on_startup = (profile_on_startup_t)data;
+
     pthread_mutex_lock(&g_a2dp_source.mutex);
 
     list_initialize(&g_a2dp_source.list);
     if (bt_sal_a2dp_source_init(A2DP_MAX_CONNECTION) != BT_STATUS_SUCCESS) {
         pthread_mutex_unlock(&g_a2dp_source.mutex);
-        return;
         list_delete(&g_a2dp_source.list);
+        on_startup(PROFILE_A2DP, false);
+        return;
     }
 
     a2dp_audio_init(SVR_SOURCE);
     g_a2dp_source.enabled = true;
+    on_startup(PROFILE_A2DP, true);
     pthread_mutex_unlock(&g_a2dp_source.mutex);
 }
 
@@ -322,10 +326,13 @@ static bt_status_t a2dp_source_startup(profile_on_startup_t cb)
     pthread_mutex_lock(&g_a2dp_source.mutex);
     if (g_a2dp_source.enabled) {
         pthread_mutex_unlock(&g_a2dp_source.mutex);
-        return BT_STATUS_NOT_ENABLED;
+        return BT_STATUS_BUSY;
     }
     pthread_mutex_unlock(&g_a2dp_source.mutex);
-    do_in_a2dp_service(a2dp_event_new(A2DP_STARTUP, NULL));
+
+    a2dp_event_t *evt = a2dp_event_new(A2DP_STARTUP, NULL);
+    evt->event_data.cb = cb;
+    do_in_a2dp_service(evt);
 
     return BT_STATUS_SUCCESS;
 }
@@ -335,6 +342,7 @@ static void source_shutdown(void *data)
     a2dp_device_t *device;
     struct list_node *node;
     struct list_node *tmp;
+    profile_on_shutdown_t on_shutdown = (profile_on_shutdown_t)data;
 
     pthread_mutex_lock(&g_a2dp_source.mutex);
     g_a2dp_source.enabled = false;
@@ -346,6 +354,7 @@ static void source_shutdown(void *data)
     }
     list_delete(&g_a2dp_source.list);
     bt_sal_a2dp_source_cleanup();
+    on_shutdown(PROFILE_A2DP, true);
     pthread_mutex_unlock(&g_a2dp_source.mutex);
 }
 
@@ -357,7 +366,10 @@ static bt_status_t a2dp_source_shutdown(profile_on_shutdown_t cb)
         return BT_STATUS_SUCCESS;
     }
     pthread_mutex_unlock(&g_a2dp_source.mutex);
-    do_in_a2dp_service(a2dp_event_new(A2DP_SHUTDOWN, NULL));
+
+    a2dp_event_t *evt = a2dp_event_new(A2DP_SHUTDOWN, NULL);
+    evt->event_data.cb = cb;
+    do_in_a2dp_service(evt);
 
     return BT_STATUS_SUCCESS;
 }
@@ -423,6 +435,11 @@ static bt_status_t a2dp_source_set_active_device(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
+static int a2dp_src_get_state(void)
+{
+    return 1;
+}
+
 static const a2dp_source_interface_t a2dp_sourceInterface = {
     .size = sizeof(a2dp_sourceInterface),
     .register_callbacks = a2dp_source_register_callbacks,
@@ -448,7 +465,7 @@ static const profile_service_t a2dp_source_service = {
     .startup = a2dp_source_startup,
     .shutdown = a2dp_source_shutdown,
     .process_msg = NULL,
-    .get_state = NULL,
+    .get_state = a2dp_src_get_state,
     .get_profile_interface = get_a2dp_source_profile_interface,
     .cleanup = a2dp_source_cleanup,
     .dump = a2dp_source_dump,

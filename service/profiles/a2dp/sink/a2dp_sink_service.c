@@ -108,10 +108,10 @@ static void a2dp_snk_service_handle_event(void *data)
 
     switch (event->event) {
     case A2DP_STARTUP:
-        sink_startup(NULL);
+        sink_startup(event->event_data.cb);
         break;
     case A2DP_SHUTDOWN:
-        sink_shutdown(NULL);
+        sink_shutdown(event->event_data.cb);
         break;
     case CODEC_CONFIG_EVT: {
         a2dp_codec_config_t *config;
@@ -234,6 +234,8 @@ static void a2dp_sink_cleanup(void)
 
 static void sink_startup(void *data)
 {
+    profile_on_startup_t on_startup = (profile_on_startup_t)data;
+
     pthread_mutex_lock(&g_a2dp_sink.mutex);
 
     list_initialize(&g_a2dp_sink.list);
@@ -241,12 +243,14 @@ static void sink_startup(void *data)
         pthread_mutex_unlock(&g_a2dp_sink.mutex);
         list_delete(&g_a2dp_sink.list);
         /* callback notify startup failed */
+        on_startup(PROFILE_A2DP_SINK, false);
         return;
     }
 
     a2dp_audio_init(SVR_SINK);
 
     g_a2dp_sink.enabled = true;
+    on_startup(PROFILE_A2DP_SINK, true);
     pthread_mutex_unlock(&g_a2dp_sink.mutex);
 }
 
@@ -259,7 +263,9 @@ static bt_status_t a2dp_sink_startup(profile_on_startup_t cb)
     }
 
     pthread_mutex_unlock(&g_a2dp_sink.mutex);
-    do_in_a2dp_snk_service(a2dp_event_new(A2DP_STARTUP, NULL));
+    a2dp_event_t *evt = a2dp_event_new(A2DP_STARTUP, NULL);
+    evt->event_data.cb = cb;
+    do_in_a2dp_snk_service(evt);
     return BT_STATUS_SUCCESS;
 }
 
@@ -268,6 +274,7 @@ static void sink_shutdown(void *data)
     a2dp_device_t *device;
     struct list_node *node;
     struct list_node *tmp;
+    profile_on_shutdown_t on_shutdown = (profile_on_shutdown_t)data;
 
     pthread_mutex_lock(&g_a2dp_sink.mutex);
     g_a2dp_sink.enabled = false;
@@ -280,6 +287,7 @@ static void sink_shutdown(void *data)
     }
     list_delete(&g_a2dp_sink.list);
     bt_sal_a2dp_sink_cleanup();
+    on_shutdown(PROFILE_A2DP_SINK, true);
     pthread_mutex_unlock(&g_a2dp_sink.mutex);
 }
 
@@ -293,7 +301,9 @@ static bt_status_t a2dp_sink_shutdown(profile_on_shutdown_t cb)
     }
 
     pthread_mutex_unlock(&g_a2dp_sink.mutex);
-    do_in_a2dp_snk_service(a2dp_event_new(A2DP_SHUTDOWN, NULL));
+    a2dp_event_t *evt = a2dp_event_new(A2DP_SHUTDOWN, NULL);
+    evt->event_data.cb = cb;
+    do_in_a2dp_snk_service(evt);
 
     return BT_STATUS_SUCCESS;
 }
@@ -333,6 +343,11 @@ static bt_status_t a2dp_sink_set_active_device(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
+static int a2dp_sink_get_state(void)
+{
+    return 1;
+}
+
 static const a2dp_sink_interface_t a2dp_sinkInterface = {
     .size = sizeof(a2dp_sinkInterface),
     .register_callbacks = a2dp_sink_register_callbacks,
@@ -362,7 +377,7 @@ static const profile_service_t a2dp_sink_service = {
     .startup = a2dp_sink_startup,
     .shutdown = a2dp_sink_shutdown,
     .process_msg = NULL,
-    .get_state = NULL,
+    .get_state = a2dp_sink_get_state,
     .get_profile_interface = get_a2dp_sink_profile_interface,
     .cleanup = a2dp_sink_cleanup,
     .dump = a2dp_sink_dump,

@@ -762,12 +762,10 @@ void adapter_on_le_enabled(bool enablebt)
     adv_manager_init();
 #endif
 
+    /* enable scan manager */
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_manager_init();
 #endif
-    /* enable scan manager */
-    /* profile service startup */
-    service_manager_startup(BT_TRANSPORT_BLE);
     /* startup gatt service */
     if (enablebt)
         send_to_state_machine((state_machine_t *)adapter->stm, SYS_TURN_ON, NULL);
@@ -813,16 +811,12 @@ void adapter_on_br_enabled(void)
             props->name, addrstr,
             props->io_capability, props->scan_mode, props->bondable,
             props->class_of_device);
-    /* profile service startup */
-    service_manager_startup(BT_TRANSPORT_BREDR);
 }
 
 void adapter_on_br_disabled(void)
 {
     BT_LOGD("%s", __func__);
 
-    /* profile service shotdown */
-    service_manager_shutdown(BT_TRANSPORT_BREDR);
     adapter_lock();
     bt_list_clear(g_adapter_service.devices);
     adapter_unlock();
@@ -1096,6 +1090,39 @@ bool adapter_unregister_remote_callback(void **remote, void *cookie)
     return true;
 }
 #endif
+
+bt_status_t adapter_send_event(uint16_t event_id, void *data)
+{
+    adapter_service_t *adapter = &g_adapter_service;
+
+    send_to_state_machine((state_machine_t *)adapter->stm, event_id, data);
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t adapter_on_profile_services_startup(uint8_t transport, bool ret)
+{
+    adapter_service_t *adapter = &g_adapter_service;
+
+    BT_LOGD("%s transport all profiles is startup", transport == BT_TRANSPORT_BREDR ? "BREDR" : "BLE");
+
+    uint16_t event = transport == BT_TRANSPORT_BREDR ? BREDR_PROFILE_ENABLED : BLE_PROFILE_ENABLED;
+    send_to_state_machine((state_machine_t *)adapter->stm, event, NULL);
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t adapter_on_profile_services_shutdown(uint8_t transport, bool ret)
+{
+    adapter_service_t *adapter = &g_adapter_service;
+
+    BT_LOGD("%s transport all profiles is shutdown", transport == BT_TRANSPORT_BREDR ? "BREDR" : "BLE");
+
+    uint16_t event = transport == BT_TRANSPORT_BREDR ? BREDR_PROFILE_DISABLED : BLE_PROFILE_DISABLED;
+    send_to_state_machine((state_machine_t *)adapter->stm, event, NULL);
+
+    return BT_STATUS_SUCCESS;
+}
 
 bt_status_t adapter_enable(uint8_t opt)
 {

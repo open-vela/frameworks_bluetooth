@@ -152,17 +152,28 @@ enum adapter_event {
     */
     BREDR_ENABLED,
     BREDR_DISABLED,
+    BREDR_PROFILE_ENABLED,
+    BREDR_PROFILE_DISABLED,
     BREDR_ENABLE_TIMEOUT,
     BREDR_DISABLE_TIMEOUT,
+    BREDR_ENABLE_PROFILE_TIMEOUT,
+    BREDR_DISABLE_PROFILE_TIMEOUT,
     BLE_ENABLED,
     BLE_DISABLED,
+    BLE_PROFILE_ENABLED,
+    BLE_PROFILE_DISABLED,
     BLE_ENABLE_TIMEOUT,
-    BLE_DISABLE_TIMEOUT
+    BLE_DISABLE_TIMEOUT,
+    BLE_ENABLE_PROFILE_TIMEOUT,
+    BLE_DISABLE_PROFILE_TIMEOUT,
 };
 
 /* adapter state machine API functions*/
 adapter_state_machine_t *adapter_state_machine_new(void *context);
 void adapter_state_machine_destory(adapter_state_machine_t *stm);
+bt_status_t adapter_send_event(uint16_t event_id, void *data);
+bt_status_t adapter_on_profile_services_startup(uint8_t transport, bool ret);
+bt_status_t adapter_on_profile_services_shutdown(uint8_t transport, bool ret);
 /* adapter notification */
 void adapter_notify_state_change(bt_adapter_state_t prev, bt_adapter_state_t current);
 void adapter_on_le_enabled(bool enablebt);
