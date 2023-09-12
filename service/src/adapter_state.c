@@ -23,6 +23,8 @@
 #include "btservice.h"
 #include "sal_adapter_interface.h"
 #include "state_machine.h"
+#include "service_manager.h"
+
 #define LOG_TAG "adapter-stm"
 #include "bt_utils.h"
 #include "utils/log.h"
@@ -114,6 +116,7 @@ typedef struct adapter_state_machine {
 
 #define ADPATER_STM_DEBUG 1
 #if ADPATER_STM_DEBUG
+
 static const char *event_to_string(uint16_t event)
 {
     switch (event) {
@@ -123,12 +126,20 @@ static const char *event_to_string(uint16_t event)
         CASE_RETURN_STR(TURN_OFF_BLE)
         CASE_RETURN_STR(BREDR_ENABLED)
         CASE_RETURN_STR(BREDR_DISABLED)
+        CASE_RETURN_STR(BREDR_PROFILE_ENABLED)
+        CASE_RETURN_STR(BREDR_PROFILE_DISABLED)
         CASE_RETURN_STR(BREDR_ENABLE_TIMEOUT)
         CASE_RETURN_STR(BREDR_DISABLE_TIMEOUT)
+        CASE_RETURN_STR(BREDR_ENABLE_PROFILE_TIMEOUT)
+        CASE_RETURN_STR(BREDR_DISABLE_PROFILE_TIMEOUT)
         CASE_RETURN_STR(BLE_ENABLED)
         CASE_RETURN_STR(BLE_DISABLED)
+        CASE_RETURN_STR(BLE_PROFILE_ENABLED)
+        CASE_RETURN_STR(BLE_PROFILE_DISABLED)
         CASE_RETURN_STR(BLE_ENABLE_TIMEOUT)
         CASE_RETURN_STR(BLE_DISABLE_TIMEOUT)
+        CASE_RETURN_STR(BLE_ENABLE_PROFILE_TIMEOUT)
+        CASE_RETURN_STR(BLE_DISABLE_PROFILE_TIMEOUT)
     default:
         return "unknown";
     }
@@ -213,9 +224,14 @@ static bool ble_turning_on_process_event(state_machine_t *sm, uint32_t event, vo
 
     switch (event) {
     case BLE_ENABLED:
+        /* LE profile service startup */
+        service_manager_startup(BT_TRANSPORT_BLE);
+        break;
+    case BLE_PROFILE_ENABLED:
         hsm_transition_to(sm, &ble_on_state);
         break;
     case BLE_ENABLE_TIMEOUT:
+    case BLE_ENABLE_PROFILE_TIMEOUT:
         break;
     default:
         return false;
@@ -281,9 +297,14 @@ static bool turning_on_process_event(state_machine_t *sm, uint32_t event, void *
 
     switch (event) {
     case BREDR_ENABLED:
+        /* BREDR profile service startup */
+        service_manager_startup(BT_TRANSPORT_BREDR);
+        break;
+    case BREDR_PROFILE_ENABLED:
         hsm_transition_to(sm, &on_state);
         break;
     case BREDR_ENABLE_TIMEOUT:
+    case BREDR_ENABLE_PROFILE_TIMEOUT:
         break;
     default:
         return false;
@@ -323,7 +344,8 @@ static bool on_state_process_event(state_machine_t *sm, uint32_t event, void *p_
 static void turning_off_enter(state_machine_t *sm)
 {
     ADAPTER_DBG_ENTER(sm);
-    bt_sal_disable();
+    /* profile service shotdown */
+    service_manager_shutdown(BT_TRANSPORT_BREDR);
     adapter_notify_state_change(BT_ADAPTER_STATE_ON, BT_ADAPTER_STATE_TURNING_OFF);
 }
 
@@ -338,6 +360,9 @@ static bool turning_off_process_event(state_machine_t *sm, uint32_t event, void 
     ADAPTER_DBG_EVENT(sm, event);
 
     switch (event) {
+    case BREDR_PROFILE_DISABLED:
+        bt_sal_disable();
+        break;
     case BREDR_DISABLED:
         if (adapter_is_support_le()) {
             hsm_transition_to(sm, &ble_turning_off_state);
@@ -346,6 +371,7 @@ static bool turning_off_process_event(state_machine_t *sm, uint32_t event, void 
         hsm_transition_to(sm, &off_state);
         break;
     case BREDR_DISABLE_TIMEOUT:
+    case BREDR_DISABLE_PROFILE_TIMEOUT:
         break;
     default:
         return false;
@@ -358,7 +384,8 @@ static void ble_turning_off_enter(state_machine_t *sm)
 {
     ADAPTER_DBG_ENTER(sm);
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    bt_sal_le_disable();
+    /* LE profile service shotdown */
+    service_manager_shutdown(BT_TRANSPORT_BLE);
     const state_t *prev = hsm_get_previous_state(sm);
     adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_BLE_TURNING_OFF);
 #else
@@ -381,10 +408,14 @@ static bool ble_turning_off_process_event(state_machine_t *sm, uint32_t event, v
     ADAPTER_DBG_EVENT(sm, event);
 
     switch (event) {
+    case BLE_PROFILE_DISABLED:
+        bt_sal_le_disable();
+        break;
     case BLE_DISABLED:
         hsm_transition_to(sm, &off_state);
         break;
     case BLE_DISABLE_TIMEOUT:
+    case BLE_DISABLE_PROFILE_TIMEOUT:
         break;
     default:
         return false;

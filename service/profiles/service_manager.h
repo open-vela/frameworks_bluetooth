@@ -31,8 +31,8 @@ typedef enum control_cmd {
     CONTROL_CMD_DUMP
 } control_cmd_t;
 
-typedef void (*profile_on_startup_t)(void *context);
-typedef void (*profile_on_shutdown_t)(void *context);
+typedef void (*profile_on_startup_t)(enum profile_id id, bool ret);
+typedef void (*profile_on_shutdown_t)(enum profile_id id, bool ret);
 typedef struct profile_service {
     bool auto_start;
     const char *name;
