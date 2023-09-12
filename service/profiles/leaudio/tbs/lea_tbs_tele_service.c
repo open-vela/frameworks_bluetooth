@@ -318,7 +318,7 @@ static void tbs_call_manager_call_async_fun(tapi_async_result *result)
         lea_tbs_rssi_value_changed(cell->signal_strength.rsrp);
     }
 
-    if (call_info->state != CALL_STATUS_DISCONNECTED) {
+if (call_info->state != CALL_STATUS_DISCONNECTED) {
         lea_tbs_tele_add_call(call_info);
         tapi_call_get_all_calls(context, PRIMARY_SLOT, TBS_EVENT_REQUEST_CALL_LIST_DONE,
                                 tbs_call_list_query_complete);
