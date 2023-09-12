@@ -20,7 +20,7 @@
 
 #include "bluetooth.h"
 #include "bt_adapter.h"
-#include "bt_lea_vmicps.h"
+#include "bt_lea_vmics.h"
 #include "bt_tools.h"
 
 // vcs server interface
@@ -31,7 +31,7 @@ static int vcs_vol_flags_set(void *handle, int argc, char **argv);
 // mics server interface
 static int mics_mute_set(void *handle, int argc, char **argv);
 
-static bt_command_t g_lea_vmicps_tables[] = {
+static bt_command_t g_lea_vmics_tables[] = {
   // vcs server interface
     {"vcsvolume",    vcs_volume_set,    0, "\"leaudio server set volume param: volume(0~255)\""                       },
     { "vcsmute",     vcs_mute_set,      0, "\"leaudio server set mute state param: mute(0:unmute,1:mute)\""           },
@@ -39,19 +39,19 @@ static bt_command_t g_lea_vmicps_tables[] = {
     { "micsmute",    mics_mute_set,     0, "\"leaudio server set mute state param: mute(0:unmute,1:mute, 2:disable)\""},
 };
 
-static struct option lea_vmicps_options[] = {
+static struct option lea_vmics_options[] = {
     {"help", 0, 0, 'h'},
     { 0,     0, 0, 0  }
 };
 
-static void *vmicps_callbacks = NULL;
+static void *vmics_callbacks = NULL;
 
 static void usage(void)
 {
     printf("Usage:\n");
     printf("Commands:\n");
-    for (int i = 0; i < ARRAY_SIZE(g_lea_vmicps_tables); i++) {
-        printf("\t%-8s\t%s\n", g_lea_vmicps_tables[i].cmd, g_lea_vmicps_tables[i].help);
+    for (int i = 0; i < ARRAY_SIZE(g_lea_vmics_tables); i++) {
+        printf("\t%-8s\t%s\n", g_lea_vmics_tables[i].cmd, g_lea_vmics_tables[i].help);
     }
 }
 
@@ -107,32 +107,32 @@ static int mics_mute_set(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static void vmicps_test_callback(void *context, int unused)
+static void vmics_test_callback(void *context, int unused)
 {
-    PRINT("vmicps_test_callback unused:%d", unused);
+    PRINT("vmics_test_callback unused:%d", unused);
 }
 
-static const lea_vmicps_callbacks_t lea_vmicps_cbs = {
-    sizeof(lea_vmicps_cbs),
-    vmicps_test_callback,
+static const lea_vmics_callbacks_t lea_vmics_cbs = {
+    sizeof(lea_vmics_cbs),
+    vmics_test_callback,
 };
 
-int lea_vmicps_command_init(void *handle)
+int lea_vmics_command_init(void *handle)
 {
-    vmicps_callbacks = bt_lea_vmicps_register_callbacks(handle, &lea_vmicps_cbs);
+    vmics_callbacks = bt_lea_vmics_register_callbacks(handle, &lea_vmics_cbs);
     return CMD_OK;
 }
 
-void lea_vmicps_command_uninit(void *handle)
+void lea_vmics_command_uninit(void *handle)
 {
-    bt_lea_vmicps_unregister_callbacks(handle, vmicps_callbacks);
+    bt_lea_vmics_unregister_callbacks(handle, vmics_callbacks);
 }
 
-int vmicps_command_exec(void *handle, int argc, char *argv[])
+int vmics_command_exec(void *handle, int argc, char *argv[])
 {
     int opt, ret = CMD_USAGE_FAULT;
 
-    while ((opt = getopt_long(argc, argv, "h", lea_vmicps_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "h", lea_vmics_options, NULL)) != -1) {
         switch (opt) {
         case 'h':
             usage();
@@ -143,7 +143,7 @@ int vmicps_command_exec(void *handle, int argc, char *argv[])
     }
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, g_lea_vmicps_tables, ARRAY_SIZE(g_lea_vmicps_tables), argc, argv);
+        ret = execute_command_in_table(handle, g_lea_vmics_tables, ARRAY_SIZE(g_lea_vmics_tables), argc, argv);
 
     if (ret < 0) {
         printf("UnKnow command %s\n", argv[0]);

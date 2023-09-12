@@ -33,6 +33,7 @@
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
 
 #define TBS_EVENT_REQUEST_DIAL_DONE 0x71
+#define TBS_EVENT_REQUEST_CALL_LIST_DONE 0x76
 #define PRIMARY_SLOT                CONFIG_BLUETOOTH_LEAUDIO_TBS_PRIMARY_SLOT
 
 #define BTS_DEFAULT_BEARER_REF                      "1"
@@ -316,9 +317,10 @@ static void tbs_call_manager_call_async_fun(tapi_async_result *result)
         lea_tbs_rssi_value_changed(cell->signal_strength.rsrp);
     }
 
-    if (call_info->state != CALL_STATUS_DISCONNECTED) {
+if (call_info->state != CALL_STATUS_DISCONNECTED) {
         lea_tbs_tele_add_call(call_info);
-        tapi_call_get_all_calls(context, PRIMARY_SLOT, tbs_call_list_query_complete);
+        tapi_call_get_all_calls(context, PRIMARY_SLOT, TBS_EVENT_REQUEST_CALL_LIST_DONE,
+                                tbs_call_list_query_complete);
     } else {
         call_index = get_call_index(call_info->call_id);
         reason = call_term_reason_to_tbs_reason(call_info->disconnect_reason);

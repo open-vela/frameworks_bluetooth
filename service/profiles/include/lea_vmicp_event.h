@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2023 Xiaomi Corporation
+ *  Copyright (C) 2022 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef __LEA_VMICPS_EVENT_H__
-#define __LEA_VMICPS_EVENT_H__
+#ifndef __LEA_VMICP_EVENT_H__
+#define __LEA_VMICP_EVENT_H__
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 #include "bt_addr.h"
-#include "bt_lea_vmicps.h"
+#include "bt_lea_vmicp.h"
 #include <stdint.h>
 
 typedef struct {
@@ -29,25 +29,26 @@ typedef struct {
 } bts_vmicp_vol_state_s;
 
 typedef enum {
-    STACK_EVENT_VCS_VOLUME_STATE = 0,
-    STACK_EVENT_VCS_VOLUME_FLAGS,
-    STACK_EVENT_MICS_MUTE_STATE
-} lea_vmicps_event_t;
+    STACK_EVENT_VCC_VOLUME_STATE = 0,
+    STACK_EVENT_VCC_VOLUME_FLAGS,
+    STACK_EVENT_MICC_MUTE_STATE
+} lea_vmicp_event_t;
 
 typedef struct {
-    lea_vmicps_event_t event;
+    bt_address_t remote_addr;
+    lea_vmicp_event_t event;
     union {
         bts_vmicp_vol_state_s vol_state;
         uint8_t vol_flags;
         uint8_t mic_mute_state;
     } data;
-} lea_vmicps_msg_t;
+} lea_vmicp_msg_t;
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-lea_vmicps_msg_t *lea_vmicps_msg_new(lea_vmicps_event_t event);
+lea_vmicp_msg_t *lea_vmicp_msg_new(lea_vmicp_event_t event, bt_address_t *remote_addr);
 
-void lea_vmicps_msg_destory(lea_vmicps_msg_t *msg);
+void lea_vmicp_msg_destory(lea_vmicp_msg_t *msg);
 
-#endif /* __LEA_VMICPS_EVENT_H__ */
+#endif /* __LEA_VMICP_EVENT_H__ */

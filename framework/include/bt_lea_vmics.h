@@ -13,44 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef __BT_LEA_VMICPS_H__
-#define __BT_LEA_VMICPS_H__
+#ifndef __BT_LEA_VMICS_H__
+#define __BT_LEA_VMICS_H__
 
 #include <stddef.h>
 
 #include "bt_device.h"
 
 /**
- * @brief LE Audio vmicps test callback
+ * @brief LE Audio vmics test callback
  *
  * @param cookie - callback cookie.
  */
-typedef void (*lea_vmicps_test_callback)(void *cookie, int unused);
+typedef void (*lea_vmics_test_callback)(void *cookie, int unused);
 
 typedef struct
 {
     size_t size;
-    lea_vmicps_test_callback test_cb;
-} lea_vmicps_callbacks_t;
+    lea_vmics_test_callback test_cb;
+} lea_vmics_callbacks_t;
 
 /**
- * @brief Register LE Audio vmicps callback functions
+ * @brief Register LE Audio vmics callback functions
  *
  * @param ins - bluetooth client instance.
- * @param callbacks - LE Audio vmicps callback functions.
+ * @param callbacks - LE Audio vmics callback functions.
  * @return void* - callback cookie.
  */
-void *bt_lea_vmicps_register_callbacks(bt_instance_t *ins, const lea_vmicps_callbacks_t *callbacks);
+void *bt_lea_vmics_register_callbacks(bt_instance_t *ins, const lea_vmics_callbacks_t *callbacks);
 
 /**
- * @brief Unregister LE Audio vmicps callback functions
+ * @brief Unregister LE Audio vmics callback functions
  *
  * @param ins - bluetooth client instance.
  * @param cookie - callback cookie.
  * @return true - on unregister success.
  * @return false - on callback cookie not found.
  */
-bool bt_lea_vmicps_unregister_callbacks(bt_instance_t *ins, void *cookie);
+bool bt_lea_vmics_unregister_callbacks(bt_instance_t *ins, void *cookie);
 
 /**
  * @brief Set Volume. Users use this function to tell the client the current value.
