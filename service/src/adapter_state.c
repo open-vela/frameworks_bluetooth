@@ -123,6 +123,7 @@ typedef struct adapter_state_machine {
 
 #define ADPATER_STM_DEBUG 1
 #if ADPATER_STM_DEBUG
+
 static const char *event_to_string(uint16_t event)
 {
     switch (event) {
