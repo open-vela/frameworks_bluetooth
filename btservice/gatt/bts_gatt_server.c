@@ -51,6 +51,7 @@ typedef struct
         ON_SERVER_NOTIFICATION_SENT,
     } event;
 
+    uint8_t server_if;
     bts_gatts_hdl_t* handle;
     size_t size;
     void* data;
@@ -181,6 +182,7 @@ static bts_gatts_msg_t* create_adp_msg(uint8_t event, bts_gatts_hdl_t* handle, v
     msg->event = event;
     msg->handle = handle;
     msg->size = size;
+    msg->server_if = handle->server_if;
     if (size == 0) {
         return msg;
     }
@@ -663,11 +665,12 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
         return;
     }
 
-    bts_gatts_hdl_t* handle = (bts_gatts_hdl_t*)(msg->handle);
+    bts_gatts_hdl_t* handle = find_gatts_handle(msg->server_if);
     if (!handle) {
-        BT_LOGE("%s fail, handle null", __func__);
+        BT_LOGE("event:%d, null handle", msg->event);
         return;
     }
+
     switch (msg->event) {
     case ON_SERVER_OPENED: {
         BT_CBACK(handle->callbacks, bts_gatts_server_opened_cb, handle->btm_handle, handle->server_if);
