@@ -19,12 +19,12 @@
 #include <stdlib.h>
 
 #include "bluetooth.h"
-#include "lea_vmicpc_service.h"
+#include "lea_vmicp_service.h"
 #include "sal.h"
 
-#include "sal_lea_vmicpc_interface.h"
+#include "sal_lea_vmicp_interface.h"
 
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
 
 static void adpt_lea_vcc_volume_state_cbk(BD_ADDR vcs_addr, SERVICE_LEA_VCS_VOLUME_STATE_S *vol_state);
 static void adpt_lea_vcc_volume_flags_cbk(BD_ADDR vcs_addr, uint8_t vol_flags);
@@ -48,14 +48,14 @@ static void adpt_lea_vcc_volume_state_cbk(BD_ADDR vcs_addr, SERVICE_LEA_VCS_VOLU
     bt_address_t addr = { 0 };
 
     memcpy(addr.addr, vcs_addr, BD_ADDR_SIZE);
-    lea_vmicpc_on_volume_state_changed(&addr, vol_state->volume, vol_state->mute);
+    lea_vmicp_on_volume_state_changed(&addr, vol_state->volume, vol_state->mute);
 }
 static void adpt_lea_vcc_volume_flags_cbk(BD_ADDR vcs_addr, uint8_t vol_flags)
 {
     bt_address_t addr = { 0 };
 
     memcpy(addr.addr, vcs_addr, BD_ADDR_SIZE);
-    lea_vmicpc_on_volume_flags_changed(&addr, vol_flags);
+    lea_vmicp_on_volume_flags_changed(&addr, vol_flags);
 }
 
 static void adpt_lea_micc_mute_cbk(BD_ADDR mics_addr, uint8_t mute)
@@ -63,26 +63,26 @@ static void adpt_lea_micc_mute_cbk(BD_ADDR mics_addr, uint8_t mute)
     bt_address_t addr = { 0 };
 
     memcpy(addr.addr, mics_addr, BD_ADDR_SIZE);
-    lea_vmicpc_on_mic_state_changed(&addr, mute);
+    lea_vmicp_on_mic_state_changed(&addr, mute);
 }
 
 /****************************************************************************
  * Public function
  ****************************************************************************/
 
-bt_status_t bt_sal_vmicpc_read_volume_state(bt_address_t *addr)
+bt_status_t bt_sal_vmicp_read_volume_state(bt_address_t *addr)
 {
     SAL_CHECK_RET(stack_adapter_lea_vcc_read_volume_state(addr->addr), SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_vmicpc_read_volume_flags(bt_address_t *addr)
+bt_status_t bt_sal_vmicp_read_volume_flags(bt_address_t *addr)
 {
     SAL_CHECK_RET(stack_adapter_lea_vcc_read_volume_flags(addr->addr), SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_vmicpc_change_volume(bt_address_t *addr, int dir)
+bt_status_t bt_sal_vmicp_change_volume(bt_address_t *addr, int dir)
 {
     if (dir) {
         SAL_CHECK_RET(stack_adapter_lea_vcc_volume_up(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -92,7 +92,7 @@ bt_status_t bt_sal_vmicpc_change_volume(bt_address_t *addr, int dir)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_vmicpc_change_unmute_volume(bt_address_t *addr, int dir)
+bt_status_t bt_sal_vmicp_change_unmute_volume(bt_address_t *addr, int dir)
 {
     if (dir) {
         SAL_CHECK_RET(stack_adapter_lea_vcc_unmute_volume_up(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -102,13 +102,13 @@ bt_status_t bt_sal_vmicpc_change_unmute_volume(bt_address_t *addr, int dir)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_vmicpc_set_absolute_volume(bt_address_t *addr, int vol)
+bt_status_t bt_sal_vmicp_set_absolute_volume(bt_address_t *addr, int vol)
 {
     SAL_CHECK_RET(stack_adapter_lea_vcc_set_absolute_volume(addr->addr, vol), SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_vmicpc_set_mute(bt_address_t *addr, int mute)
+bt_status_t bt_sal_vmicp_set_mute(bt_address_t *addr, int mute)
 {
     if (mute) {
         SAL_CHECK_RET(stack_adapter_lea_vcc_mute(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -118,13 +118,13 @@ bt_status_t bt_sal_vmicpc_set_mute(bt_address_t *addr, int mute)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_vmicpc_read_mic_state(bt_address_t *addr)
+bt_status_t bt_sal_vmicp_read_mic_state(bt_address_t *addr)
 {
     SAL_CHECK_RET(stack_adapter_lea_micc_read_mute(addr->addr), SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_vmicpc_set_mic_state(bt_address_t *addr, int mute)
+bt_status_t bt_sal_vmicp_set_mic_state(bt_address_t *addr, int mute)
 {
     if (mute) {
         SAL_CHECK_RET(stack_adapter_lea_micc_set_muted(addr->addr), SERVICE_BT_STATUS_SUCCESS);

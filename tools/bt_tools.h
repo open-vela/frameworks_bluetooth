@@ -114,9 +114,9 @@ int lea_ccp_command_init(void *handle);
 void lea_ccp_command_uninit(void *handle);
 int lea_ccp_command_exec(void *handle, int argc, char *argv[]);
 
-int lea_vmicps_command_init(void *handle);
-void lea_vmicps_command_uninit(void *handle);
-int vmicps_command_exec(void *handle, int argc, char *argv[]);
+int lea_vmics_command_init(void *handle);
+void lea_vmics_command_uninit(void *handle);
+int vmics_command_exec(void *handle, int argc, char *argv[]);
 
 int leac_command_init(void *handle);
 void leac_command_uninit(void *handle);
@@ -130,8 +130,8 @@ int lea_tbs_command_init(void *handle);
 void lea_tbs_command_uninit(void *handle);
 int lea_tbs_command_exec(void *handle, int argc, char *argv[]);
 
-int lea_vmicpc_command_init(void *handle);
-void lea_vmicpc_command_uninit(void *handle);
-int vmicpc_command_exec(void *handle, int argc, char *argv[]);
+int lea_vmicp_command_init(void *handle);
+void lea_vmicp_command_uninit(void *handle);
+int vmicp_command_exec(void *handle, int argc, char *argv[]);
 
 #endif /* __BT_TOOLS_H__ */

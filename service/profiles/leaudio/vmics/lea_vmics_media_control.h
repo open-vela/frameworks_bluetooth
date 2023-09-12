@@ -13,26 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
+#ifndef __LEA_VMICS_MEDIA_CONTROL_H__
+#define __LEA_VMICS_MEDIA_CONTROL_H__
 
-#include <stdlib.h>
-#include <string.h>
+#include <stdint.h>
 
-#include "lea_vmicps_event.h"
+/****************************************************************************
+ * Public Function
+ ****************************************************************************/
 
-lea_vmicps_msg_t *lea_vmicps_msg_new(lea_vmicps_event_t event)
-{
-    lea_vmicps_msg_t *msg;
+// server interface
+void lea_vcs_vol_state_request(void *volume_session, uint8_t volume, uint8_t mute);
+void lea_vcs_vol_flags_request(uint8_t flags);
+void lea_mics_mic_mute_request(uint8_t mute);
 
-    msg = (lea_vmicps_msg_t *)malloc(sizeof(lea_vmicps_msg_t));
-    if (!msg)
-        return NULL;
+uint8_t lea_vcs_get_volume(void *volume_session);
+uint8_t lea_vcs_get_mute(void);
 
-    msg->event = event;
-    memset(&msg->data, 0, sizeof(msg->data));
-    return msg;
-}
-
-void lea_vmicps_msg_destory(lea_vmicps_msg_t *msg)
-{
-    free(msg);
-}
+#endif /* __LEA_VMICS_MEDIA_CONTROL_H__ */

@@ -14,13 +14,13 @@
  * limitations under the License.
  ***************************************************************************/
 
-#ifndef __SAL_LEA_VMICPS_INTERFACE_H__
-#define __SAL_LEA_VMICPS_INTERFACE_H__
+#ifndef __SAL_LEA_VMICS_INTERFACE_H__
+#define __SAL_LEA_VMICS_INTERFACE_H__
 
 #include <stdint.h>
 
 #include "bt_addr.h"
-#include "bt_lea_vmicps.h"
+#include "bt_lea_vmics.h"
 #include "bt_status.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_lea_vmicp.h"
@@ -33,9 +33,9 @@ typedef struct {
 bool adpt_req_vcs_info_callback(SERVICE_LEA_VCS_INFO_S *info);
 bool adpt_req_mics_info_callback(SERVICE_LEA_MICS_INFO_S *info);
 
-bt_status_t bt_sal_vmicps_notify_vcs_volume(int volume);
-bt_status_t bt_sal_vmicps_notify_vcs_mute(int mute);
-bt_status_t bt_sal_vmicps_notify_vcs_volume_flags(int flags);
-bt_status_t bt_sal_vmicps_notify_mics_mute(int mute);
+bt_status_t bt_sal_vmics_notify_vcs_volume(int volume);
+bt_status_t bt_sal_vmics_notify_vcs_mute(int mute);
+bt_status_t bt_sal_vmics_notify_vcs_volume_flags(int flags);
+bt_status_t bt_sal_vmics_notify_mics_mute(int mute);
 
-#endif /* __SAL_LEA_VMICPS_INTERFACE_H__ */
+#endif /* __SAL_LEA_VMICS_INTERFACE_H__ */

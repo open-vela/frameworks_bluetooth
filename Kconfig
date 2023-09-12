@@ -368,17 +368,17 @@ config BLUETOOTH_LEAUDIO_SERVER_MEDIA_CONTROL_NUMBER
 
 endif # BLUETOOTH_LEAUDIO_MCP
 
-config BLUETOOTH_LEAUDIO_VMICPC
-	bool "enable bluetooth leaudio vmicpc feature"
+config BLUETOOTH_LEAUDIO_VMICP
+	bool "enable bluetooth leaudio vmicp feature"
 	default n
 	depends on BLUETOOTH_LEAUDIO_CLIENT
 
-config BLUETOOTH_LEAUDIO_VMICPS
-	bool "enable bluetooth leaudio vmicps feature"
+config BLUETOOTH_LEAUDIO_VMICS
+	bool "enable bluetooth leaudio vmics feature"
 	default n
 	depends on BLUETOOTH_LEAUDIO_SERVER
 
-if BLUETOOTH_LEAUDIO_VMICPS
+if BLUETOOTH_LEAUDIO_VMICS
 config BLUETOOTH_LEAUDIO_VCS_VOLUME_STEP
 	int "leaudio server vcs volume step size"
 	default 2
@@ -421,7 +421,7 @@ config BLUETOOTH_LEAUDIO_MICS_NUMBER
 	help
 		leaudio server mics number
 
-endif # BLUETOOTH_LEAUDIO_VMICPS
+endif # BLUETOOTH_LEAUDIO_VMICS
 
 if BLUETOOTH_LEAUDIO_SERVER
 config BLUETOOTH_LEAUDIO_SERVER_SINK_ASE_NUMBER
