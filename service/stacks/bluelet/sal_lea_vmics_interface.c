@@ -23,13 +23,13 @@
 #include "stack_adapter_lea_vmicp.h"
 
 #include "bluetooth.h"
-#include "bt_lea_vmicps.h"
-#include "lea_vmicps_service.h"
+#include "bt_lea_vmics.h"
+#include "lea_vmics_service.h"
 #include "sal.h"
 #include "sal_bluelet.h"
-#include "sal_lea_vmicps_interface.h"
+#include "sal_lea_vmics_interface.h"
 
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
 
 // leaudio vcs callbacks from barrot stack
 static void adpt_lea_vcs_set_volume_state_callback(SERVICE_LEA_VCS_VOLUME_STATE_S *vol_state);
@@ -55,19 +55,19 @@ static void adpt_lea_vcs_set_volume_state_callback(SERVICE_LEA_VCS_VOLUME_STATE_
     service_lea_vcs_volume_state_s volume_state;
     volume_state.volume = vol_state->volume;
     volume_state.mute = vol_state->mute;
-    lea_vmicps_on_vcs_volume_state_changed(&volume_state);
+    lea_vmics_on_vcs_volume_state_changed(&volume_state);
 }
 
 static void adpt_lea_vcs_set_volume_flags_callback(uint8_t vol_flags)
 {
     BT_LOGD("%s flags:%d", __func__, vol_flags);
-    lea_vmicps_on_vcs_volume_flags_changed(vol_flags);
+    lea_vmics_on_vcs_volume_flags_changed(vol_flags);
 }
 
 static void adpt_lea_mics_set_mute_callback(uint8_t mute)
 {
     BT_LOGD("%s mute:%d", __func__, mute);
-    lea_vmicps_on_mics_mute_state_changed(mute);
+    lea_vmics_on_mics_mute_state_changed(mute);
 }
 
 /****************************************************************************
@@ -98,25 +98,25 @@ bool adpt_req_mics_info_callback(SERVICE_LEA_MICS_INFO_S *info)
     return true;
 }
 
-bt_status_t bt_sal_vmicps_notify_vcs_volume(int volume)
+bt_status_t bt_sal_vmics_notify_vcs_volume(int volume)
 {
     SAL_CHECK_RET(stack_adapter_lea_vcs_volume_changed(volume), SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_vmicps_notify_vcs_mute(int mute)
+bt_status_t bt_sal_vmics_notify_vcs_mute(int mute)
 {
     SAL_CHECK_RET(stack_adapter_lea_vcs_mute_changed(mute), SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_vmicps_notify_vcs_volume_flags(int flags)
+bt_status_t bt_sal_vmics_notify_vcs_volume_flags(int flags)
 {
     SAL_CHECK_RET(stack_adapter_lea_vcs_volume_flags_changed(flags), SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_vmicps_notify_mics_mute(int mute)
+bt_status_t bt_sal_vmics_notify_mics_mute(int mute)
 {
     SAL_CHECK_RET(stack_adapter_lea_mics_mute_changed(mute), SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;

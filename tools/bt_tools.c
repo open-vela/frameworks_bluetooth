@@ -188,8 +188,8 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCP
     { "ccp",          lea_ccp_command_exec, 0, "lea ccp cmd, input \'ccp\' show usage"                    },
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
-    { "vmicps",       vmicps_command_exec,  0, "vcp/micp server cmd, input \'vmicps\' show usage"         },
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
+    { "vmics",       vmics_command_exec,  0, "vcp/micp server cmd, input \'vmics\' show usage"         },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
     { "leac",         leac_command_exec,    0, "lea client cmd, input \'leac\' show usage"                },
@@ -200,8 +200,8 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
     { "tbs",          lea_tbs_command_exec, 0, "lea tbs cmd, input \'tbs\' show usage"                    },
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
-    { "vmicpc",       vmicpc_command_exec,  0, "vcp/micp client cmd, input \'vmicpc\' show usage"         },
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
+    { "vmicp",       vmicp_command_exec,  0, "vcp/micp client cmd, input \'vmicp\' show usage"         },
 #endif
     { "dump",         dump_cmd,             0, "dump adapter state"                                       },
     { "help",         usage_cmd,            0, "Usage for bttools"                                        },
@@ -287,11 +287,11 @@ static void bt_tool_init(void *handle)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
     lea_tbs_command_init(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
-    lea_vmicps_command_init(handle);
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
+    lea_vmics_command_init(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
-    lea_vmicpc_command_init(handle);
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
+    lea_vmicp_command_init(handle);
 #endif
 }
 
@@ -331,11 +331,11 @@ static void bt_tool_uninit(void *handle)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
     lea_tbs_command_uninit(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
-    lea_vmicps_command_uninit(handle);
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
+    lea_vmics_command_uninit(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
-    lea_vmicpc_command_uninit(handle);
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
+    lea_vmicp_command_uninit(handle);
 #endif
 }
 

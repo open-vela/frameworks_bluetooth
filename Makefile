@@ -112,8 +112,8 @@ ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_MCP), y)
 	CSRCS += service/profiles/leaudio/mcp/*.c
 endif
 
-ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICPS), y)
-	CSRCS += service/profiles/leaudio/vmicps/*.c
+ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICS), y)
+	CSRCS += service/profiles/leaudio/vmics/*.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_CLIENT), y)
@@ -128,8 +128,8 @@ ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_TBS), y)
 	CSRCS += service/profiles/leaudio/tbs/*.c
 endif
 
-ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICPC), y)
-	CSRCS += service/profiles/leaudio/vmicpc/*.c
+ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICP), y)
+	CSRCS += service/profiles/leaudio/vmicp/*.c
 endif
 
 CSRCS += service/utils/*.c
@@ -175,15 +175,15 @@ ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_CCP), y)
 	CSRCS += tools/lea_ccp.c
 endif
 
-ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICPS), y)
-	CSRCS += tools/lea_vmicps.c
+ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICS), y)
+	CSRCS += tools/lea_vmics.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_CLIENT), y)
 	CSRCS += tools/lea_client.c
 endif
-ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICPC), y)
-	CSRCS += tools/lea_vmicpc.c
+ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICP), y)
+	CSRCS += tools/lea_vmicp.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_MCS), y)

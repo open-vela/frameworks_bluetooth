@@ -31,7 +31,7 @@
 #include "lea_ccp_service.h"
 #include "lea_mcp_service.h"
 #include "lea_server_service.h"
-#include "lea_vmicps_service.h"
+#include "lea_vmics_service.h"
 #include "sal.h"
 #include "sal_bluelet.h"
 #include "sal_lea_server_interface.h"

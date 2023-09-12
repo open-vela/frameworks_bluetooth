@@ -17,13 +17,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "lea_vmicpc_event.h"
+#include "lea_vmicp_event.h"
 
-lea_vmicpc_msg_t *lea_vmicpc_msg_new(lea_vmicpc_event_t event, bt_address_t *remote_addr)
+lea_vmicp_msg_t *lea_vmicp_msg_new(lea_vmicp_event_t event, bt_address_t *remote_addr)
 {
-    lea_vmicpc_msg_t *msg;
+    lea_vmicp_msg_t *msg;
 
-    msg = (lea_vmicpc_msg_t *)malloc(sizeof(lea_vmicpc_msg_t));
+    msg = (lea_vmicp_msg_t *)malloc(sizeof(lea_vmicp_msg_t));
     if (!msg)
         return NULL;
 
@@ -34,7 +34,7 @@ lea_vmicpc_msg_t *lea_vmicpc_msg_new(lea_vmicpc_event_t event, bt_address_t *rem
     return msg;
 }
 
-void lea_vmicpc_msg_destory(lea_vmicpc_msg_t *msg)
+void lea_vmicp_msg_destory(lea_vmicp_msg_t *msg)
 {
     free(msg);
 }

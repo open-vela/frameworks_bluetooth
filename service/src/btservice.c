@@ -47,8 +47,8 @@
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCP
 #include "lea_ccp_service.h"
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
-#include "lea_vmicps_service.h"
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
+#include "lea_vmics_service.h"
 #endif
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
@@ -60,8 +60,8 @@
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
 #include "lea_tbs_service.h"
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
-#include "lea_vmicpc_service.h"
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
+#include "lea_vmicp_service.h"
 #endif
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
@@ -146,8 +146,8 @@ void bt_profile_init(void)
     register_lea_ccp_service();
 #endif
 
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
-    register_lea_vmicps_service();
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
+    register_lea_vmics_service();
 #endif
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
@@ -162,8 +162,8 @@ void bt_profile_init(void)
     register_lea_tbs_service();
 #endif
 
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
-    register_lea_vmicpc_service();
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
+    register_lea_vmicp_service();
 #endif
 }
 

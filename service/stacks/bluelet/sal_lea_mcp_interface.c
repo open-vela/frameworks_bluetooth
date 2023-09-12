@@ -52,7 +52,7 @@ static void adpt_lea_mcp_current_group_object_id_callback(BD_ADDR mcs_addr, uint
 static void adpt_lea_mcp_search_results_object_id_callback(BD_ADDR mcs_addr, uint32_t mcs_id, LEA_OBJ_ID obj_id);
 static void adpt_lea_mcp_content_control_id_callback(BD_ADDR mcs_addr, uint32_t mcs_id, uint8_t ccid);
 
-const LEA_MCP_CALLBACK_S adpt_lea_mcp_client_callbacks = {
+const LEA_MCC_CALLBACK_S adpt_lea_mcp_client_callbacks = {
     .lea_mcc_media_player_name_cb = adpt_lea_mcp_media_player_name_callback,
     .lea_mcc_media_player_icon_object_id_cb = adpt_lea_mcp_media_player_icon_object_id_callback,
     .lea_mcc_media_player_icon_url_cb = adpt_lea_mcp_media_player_icon_url_callback,

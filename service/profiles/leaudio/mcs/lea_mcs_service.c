@@ -1144,7 +1144,7 @@ static void mcs_session_event_callback(void *cookie, int event,
     }
 }
 
-static bt_status_t lea_mcs_init()
+static bt_status_t lea_mcs_media_init()
 {
     int ret, playerState;
     uint32_t position, duration;
@@ -1186,7 +1186,7 @@ static bt_status_t lea_mcs_init()
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t lea_mcs_cleanup()
+static bt_status_t lea_mcs_media_cleanup()
 {
     lea_mcs_remove();
 
@@ -1537,7 +1537,7 @@ static bt_status_t lea_mcs_startup(profile_on_startup_t cb)
 
     service->started = true;
 
-    lea_mcs_init();
+    lea_mcs_media_init();
 
     return BT_STATUS_SUCCESS;
 
@@ -1553,7 +1553,7 @@ static bt_status_t lea_mcs_shutdown(profile_on_shutdown_t cb)
         return BT_STATUS_SUCCESS;
 
     pthread_mutex_lock(&g_mcs_service.device_lock);
-    lea_mcs_cleanup();
+    lea_mcs_media_cleanup();
 
     g_mcs_service.started = false;
 

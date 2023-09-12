@@ -13,21 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef __LEA_VMICPS_MEDIA_CONTROL_H__
-#define __LEA_VMICPS_MEDIA_CONTROL_H__
-
-#include <stdint.h>
+#ifndef __LEA_VMICS_EVENT_H__
+#define __LEA_VMICS_EVENT_H__
 
 /****************************************************************************
- * Public Function
+ * Included Files
  ****************************************************************************/
+#include "bt_addr.h"
+#include "bt_lea_vmics.h"
+#include <stdint.h>
 
-// server interface
-void lea_vcs_vol_state_request(void* volume_session, uint8_t volume, uint8_t mute);
-void lea_vcs_vol_flags_request(uint8_t flags);
-void lea_mics_mic_mute_request(uint8_t mute);
+typedef struct {
+    uint8_t volume;
+    uint8_t mute;
+} bts_vmicp_vol_state_s;
 
-uint8_t lea_vcs_get_volume(void* volume_session);
-uint8_t lea_vcs_get_mute(void);
+typedef enum {
+    STACK_EVENT_VCS_VOLUME_STATE = 0,
+    STACK_EVENT_VCS_VOLUME_FLAGS,
+    STACK_EVENT_MICS_MUTE_STATE
+} lea_vmics_event_t;
 
-#endif /* __LEA_VMICPS_MEDIA_CONTROL_H__ */
+typedef struct {
+    lea_vmics_event_t event;
+    union {
+        bts_vmicp_vol_state_s vol_state;
+        uint8_t vol_flags;
+        uint8_t mic_mute_state;
+    } data;
+} lea_vmics_msg_t;
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+lea_vmics_msg_t *lea_vmics_msg_new(lea_vmics_event_t event);
+
+void lea_vmics_msg_destory(lea_vmics_msg_t *msg);
+
+#endif /* __LEA_VMICS_EVENT_H__ */

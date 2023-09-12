@@ -40,8 +40,8 @@
 #include "sal_lea_mcs_interface.h"
 #include "sal_lea_server_interface.h"
 #include "sal_lea_tbs_interface.h"
-#include "sal_lea_vmicpc_interface.h"
-#include "sal_lea_vmicps_interface.h"
+#include "sal_lea_vmicp_interface.h"
+#include "sal_lea_vmics_interface.h"
 
 static void adpt_stack_state_callback(bool enabled);
 static void adpt_storage_callback(void *data, uint32_t size);
@@ -75,7 +75,7 @@ extern const LEA_MCS_CALLBACK_S adpt_lea_mcp_server_callbacks;
 #endif
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_MCP
-extern const LEA_MCP_CALLBACK_S adpt_lea_mcp_client_callbacks;
+extern const LEA_MCC_CALLBACK_S adpt_lea_mcp_client_callbacks;
 #endif
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
@@ -86,14 +86,14 @@ extern const LEA_TBS_CALLBACK_S adpt_lea_ccp_server_callbacks;
 extern const LEA_TBC_CALLBACK_S adpt_lea_ccp_client_callbacks;
 #endif
 
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
 extern const LEA_VCC_CALLBACK_S adpt_lea_vcs_client_callbacks;
 extern const LEA_MICC_CALLBACK_S adpt_lea_mics_client_callbacks;
 static const LEA_VOCC_CALLBACK_S adpt_lea_vocs_client_callbacks; // todo
 static const LEA_AICC_CALLBACK_S adpt_lea_aics_client_callbacks; // todo
 #endif
 
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
 extern const LEA_VCS_CALLBACK_S adpt_lea_vcs_server_callbacks;
 extern const LEA_MICS_CALLBACK_S adpt_lea_mics_server_callbacks;
 static const LEA_VOCS_CALLBACK_S adpt_lea_vocs_server_callbacks; // todo
@@ -126,13 +126,13 @@ static const LEA_INIT_INFO_CALLBACK_S lea_callbacks = {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCP
     .lea_ccp_client_cbks = &adpt_lea_ccp_client_callbacks,
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPC
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     .lea_vcs_client_cbks = &adpt_lea_vcs_client_callbacks,
     .lea_mics_client_cbks = &adpt_lea_mics_client_callbacks,
     .lea_vocs_client_cbks = &adpt_lea_vocs_client_callbacks,
     .lea_aics_client_cbks = &adpt_lea_aics_client_callbacks,
 #endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICPS
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
     .lea_vcs_server_cbks = &adpt_lea_vcs_server_callbacks,
     .lea_mics_server_cbks = &adpt_lea_mics_server_callbacks,
     .lea_vocs_server_cbks = &adpt_lea_vocs_server_callbacks,
