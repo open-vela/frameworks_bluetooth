@@ -127,7 +127,8 @@ static void update_device_info_callback(int status, const char* key, uv_buf_t va
         BT_LOGW("%s, status:%d, key:%s, cookie:%s", __func__, status, key, (char*)cookie);
         return;
     }
-    uv_db_commit(handle);
+    if (handle)
+        uv_db_commit(handle);
 }
 
 static bt_result_code gap_uv_db_update_deviceinfo(char* val)
@@ -339,7 +340,8 @@ static void bt_bond_store_callback(int status, const char* key, uv_buf_t value, 
 {
     bt_storage_t* bt_storage = (bt_storage_t*)cookie;
     free(bt_storage);
-    uv_db_commit(handle);
+    if (handle)
+        uv_db_commit(handle);
 }
 
 void gap_bt_bond_store(void)
@@ -415,7 +417,8 @@ static void ble_bond_store_callback(int status, const char* key, uv_buf_t value,
 {
     bt_storage_t* bt_storage = (bt_storage_t*)cookie;
     free(bt_storage);
-    uv_db_commit(handle);
+    if (handle)
+        uv_db_commit(handle);
 }
 
 void gap_ble_bond_store(ble_keys_t* key, uint8_t count)
@@ -502,7 +505,8 @@ static void ble_whitelist_store_callback(int status, const char* key, uv_buf_t v
 {
     gap_ble_whitelist_data* ble_whitelist = (gap_ble_whitelist_data*)cookie;
     free(ble_whitelist);
-    uv_db_commit(handle);
+    if (handle)
+        uv_db_commit(handle);
 }
 
 bt_result_code gap_ble_whitelist_store_update(bool added, bt_address addr)
@@ -645,6 +649,8 @@ bt_result_code gap_bt_config_init(bts_service_adapter_state_changed_callback cb)
 
 void gap_bt_config_deinit(void)
 {
-    if (handle)
+    if (handle) {
         uv_db_close(handle);
+        handle = NULL;
+    }
 }
