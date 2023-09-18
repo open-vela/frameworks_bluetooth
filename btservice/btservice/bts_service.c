@@ -438,6 +438,9 @@ void stack_state_change(bt_service_state state)
     if (BTM_STATE_ON == state) {
         gap_bt_config_init(bluetooth_upper_callbacks->adapter_state_changed_cb);
     } else {
+        if (BTM_STATE_OFF == state) {
+            gap_bt_config_deinit();
+        }
         bluetooth_upper_callbacks->adapter_state_changed_cb(state);
     }
 }
