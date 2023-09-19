@@ -25,6 +25,7 @@
 
 static int connect_cmd(void *handle, int argc, char *argv[]);
 static int disconnect_cmd(void *handle, int argc, char *argv[]);
+static int get_hfp_connection_state_cmd(void *handle, int argc, char *argv[]);
 static int connect_audio_cmd(void *handle, int argc, char *argv[]);
 static int disconnect_audio_cmd(void *handle, int argc, char *argv[]);
 static int start_voice_recognition_cmd(void *handle, int argc, char *argv[]);
@@ -65,22 +66,23 @@ static int send_at_cmd_cmd(void *handle, int argc, char *argv[]);
                         "\t\t\t" CHLD_3_DESC "\n"
 
 static bt_command_t g_hfp_tables[] = {
-    {"connect",          connect_cmd,                 0, "Establish hfp SLC connection   params: <address>"              },
-    { "disconnect",      disconnect_cmd,              0, "Disconnect hfp SLC connection  params: <address>"              },
-    { "connectaudio",    connect_audio_cmd,           0, "Establish hfp SCO connection   params: <address>"              },
-    { "disconnectaudio", disconnect_audio_cmd,        0, "Disconnect hfp SCO connection  params: <address>"              },
-    { "startvr",         start_voice_recognition_cmd, 0, "Start voice recognition        params: <address>"              },
-    { "stopvr",          stop_voice_recognition_cmd,  0, "Stop voice recognition         params: <address>"              },
-    { "dial",            dial_cmd,                    0, "Dial phone number              params: <address> <number>"     },
-    { "dialm",           dial_memory_cmd,             0, "Place a call using memory dialing  params: :<address> <memory>"},
-    { "redial",          redial_cmd,                  0, "Redial the last number         params: <address>"              },
-    { "accept",          accept_call_cmd,             0, ACCEPT_CALL_USAGE                                               },
-    { "reject",          reject_call_cmd,             0, REJECT_CALL_USAGE                                               },
-    { "hold",            hold_call_cmd,               0, "Hold an Three-way calling      params: <address>"              },
-    { "term",            terminate_call_cmd,          0, HANGUP_CALL_USAGE                                               },
-    { "control",         control_call_cmd,            0, HOLD_CALL_USAGE                                                 },
-    { "query",           query_current_calls_cmd,     0, "Query current calls            params: <address>"              },
-    { "sendat",          send_at_cmd_cmd,             0, "Send customize AT command to peer  params: <address> <atcmd>"  },
+    {"connect",          connect_cmd,                  0, "Establish hfp SLC connection   params: <address>"              },
+    { "disconnect",      disconnect_cmd,               0, "Disconnect hfp SLC connection  params: <address>"              },
+    { "connectaudio",    connect_audio_cmd,            0, "Establish hfp SCO connection   params: <address>"              },
+    { "disconnectaudio", disconnect_audio_cmd,         0, "Disconnect hfp SCO connection  params: <address>"              },
+    { "startvr",         start_voice_recognition_cmd,  0, "Start voice recognition        params: <address>"              },
+    { "stopvr",          stop_voice_recognition_cmd,   0, "Stop voice recognition         params: <address>"              },
+    { "dial",            dial_cmd,                     0, "Dial phone number              params: <address> <number>"     },
+    { "dialm",           dial_memory_cmd,              0, "Place a call using memory dialing  params: :<address> <memory>"},
+    { "redial",          redial_cmd,                   0, "Redial the last number         params: <address>"              },
+    { "accept",          accept_call_cmd,              0, ACCEPT_CALL_USAGE                                               },
+    { "reject",          reject_call_cmd,              0, REJECT_CALL_USAGE                                               },
+    { "hold",            hold_call_cmd,                0, "Hold an Three-way calling      params: <address>"              },
+    { "term",            terminate_call_cmd,           0, HANGUP_CALL_USAGE                                               },
+    { "control",         control_call_cmd,             0, HOLD_CALL_USAGE                                                 },
+    { "query",           query_current_calls_cmd,      0, "Query current calls            params: <address>"              },
+    { "sendat",          send_at_cmd_cmd,              0, "Send customize AT command to peer  params: <address> <atcmd>"  },
+    { "state",           get_hfp_connection_state_cmd, 0, "get hfp profile state"                                         },
 };
 
 static struct option hfp_options[] = {
@@ -127,6 +129,19 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
         return CMD_ERROR;
 
     return CMD_OK;
+}
+
+static int get_hfp_connection_state_cmd(void *handle, int argc, char *argv[])
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    int state = bt_hfp_hf_get_connection_state(handle, &addr);
+    return state;
 }
 
 static int connect_audio_cmd(void *handle, int argc, char *argv[])
