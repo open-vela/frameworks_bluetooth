@@ -116,7 +116,7 @@ static void hf_device_delete(hf_device_t *device)
     if (!device)
         return;
 
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(DISCONNECT, &device->addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_DISCONNECT, &device->addr);
     if (msg == NULL)
         return;
 
@@ -156,10 +156,59 @@ static hf_state_machine_t *get_state_machine(bt_address_t *addr)
     return hfsm;
 }
 
-static void hf_shutdown(void)
+static uint32_t get_hf_features(void)
 {
-    if (!g_hfp_service.started)
+#ifdef CONFIG_KVDB
+    return property_get_int32("persist.bluetooth.hfp.hf_features", hf_support_features);
+#else
+    return hf_support_features;
+#endif
+}
+
+static void hf_startup(profile_on_startup_t on_startup)
+{
+    bt_status_t status;
+    pthread_mutexattr_t attr;
+    hf_service_t *service = &g_hfp_service;
+
+    if (service->started) {
+        on_startup(PROFILE_HFP_HF, true);
         return;
+    }
+
+    service->max_connections = CONFIG_HFP_HF_MAX_CONNECTIONS;
+    service->hf_devices = bt_list_new((bt_list_free_cb_t)hf_device_delete);
+    service->callbacks = bt_callbacks_list_new(2);
+    if (!service->hf_devices || !service->callbacks) {
+        status = BT_STATUS_NOMEM;
+        goto fail;
+    }
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&service->device_lock, &attr);
+
+    status = bt_sal_hfp_hf_init(get_hf_features(), CONFIG_HFP_HF_MAX_CONNECTIONS);
+    if (status != BT_STATUS_SUCCESS)
+        goto fail;
+
+    service->started = true;
+    on_startup(PROFILE_HFP_HF, true);
+
+    return;
+fail:
+    bt_list_free(service->hf_devices);
+    bt_callbacks_list_free(service->callbacks);
+    pthread_mutex_destroy(&service->device_lock);
+    on_startup(PROFILE_HFP_HF, false);
+}
+
+static void hf_shutdown(profile_on_shutdown_t on_shutdown)
+{
+    if (!g_hfp_service.started) {
+        on_shutdown(PROFILE_HFP_HF, true);
+        return;
+    }
 
     pthread_mutex_lock(&g_hfp_service.device_lock);
     g_hfp_service.started = false;
@@ -170,6 +219,7 @@ static void hf_shutdown(void)
     bt_callbacks_list_free(g_hfp_service.callbacks);
     g_hfp_service.callbacks = NULL;
     bt_sal_hfp_hf_cleanup();
+    on_shutdown(PROFILE_HFP_HF, true);
 }
 
 static void hf_dispatch_msg_foreach(void *data, void *context)
@@ -184,12 +234,15 @@ static void hfp_hf_process_message(void *data)
     hfp_hf_msg_t *msg = (hfp_hf_msg_t *)data;
 
     switch (msg->event) {
-    case SHUTDOWN:
-        hf_shutdown();
+    case HF_STARTUP:
+        hf_startup((profile_on_startup_t)msg->data.valueint1);
         break;
-    case UPDATE_BATTERY_LEVEL:
-    case SET_MIC_VOLUME:
-    case SET_SPEAKER_VOLUME:
+    case HF_SHUTDOWN:
+        hf_shutdown((profile_on_shutdown_t)msg->data.valueint1);
+        break;
+    case HF_UPDATE_BATTERY_LEVEL:
+    case HF_SET_MIC_VOLUME:
+    case HF_SET_SPEAKER_VOLUME:
         pthread_mutex_lock(&g_hfp_service.device_lock);
         bt_list_foreach(g_hfp_service.hf_devices, hf_dispatch_msg_foreach, msg);
         pthread_mutex_unlock(&g_hfp_service.device_lock);
@@ -254,55 +307,31 @@ static void hfp_hf_cleanup(void)
     BT_LOGD("%s", __func__);
 }
 
-static uint32_t get_hf_features(void)
-{
-#ifdef CONFIG_KVDB
-    return property_get_int32("persist.bluetooth.hfp.hf_features", hf_support_features);
-#else
-    return hf_support_features;
-#endif
-}
-
 static bt_status_t hfp_hf_startup(profile_on_startup_t cb)
 {
-    bt_status_t status;
-    pthread_mutexattr_t attr;
-    hf_service_t *service = &g_hfp_service;
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STARTUP, NULL);
+    if (!msg)
+        return BT_STATUS_NOMEM;
 
-    BT_LOGD("%s", __func__);
-    if (service->started)
-        return BT_STATUS_SUCCESS;
+    msg->data.valueint1 = (uint32_t)cb;
 
-    service->max_connections = CONFIG_HFP_HF_MAX_CONNECTIONS;
-    service->hf_devices = bt_list_new((bt_list_free_cb_t)hf_device_delete);
-    service->callbacks = bt_callbacks_list_new(2);
-    if (!service->hf_devices || !service->callbacks) {
-        status = BT_STATUS_NOMEM;
-        goto fail;
-    }
-
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&service->device_lock, &attr);
-
-    status = bt_sal_hfp_hf_init(get_hf_features(), CONFIG_HFP_HF_MAX_CONNECTIONS);
-    if (status != BT_STATUS_SUCCESS)
-        goto fail;
-
-    service->started = true;
-    return BT_STATUS_SUCCESS;
-fail:
-    bt_list_free(service->hf_devices);
-    bt_callbacks_list_free(service->callbacks);
-    pthread_mutex_destroy(&service->device_lock);
-    return status;
+    return hfp_hf_send_message(msg);
 }
 
 static bt_status_t hfp_hf_shutdown(profile_on_shutdown_t cb)
 {
-    BT_LOGD("%s", __func__);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_SHUTDOWN, NULL);
+    if (!msg)
+        return BT_STATUS_NOMEM;
 
-    return hfp_hf_send_event(NULL, SHUTDOWN);
+    msg->data.valueint1 = (uint32_t)cb;
+
+    return hfp_hf_send_message(msg);
+}
+
+static int hfp_hf_get_state(void)
+{
+    return 1;
 }
 
 static void *hfp_hf_register_callbacks(void *remote, const hfp_hf_callbacks_t *callbacks)
@@ -383,7 +412,7 @@ static bt_status_t hfp_hf_connect(bt_address_t *addr)
     if (get_current_connnection_cnt() >= g_hfp_service.max_connections)
         return BT_STATUS_NO_RESOURCES;
 
-    return hfp_hf_send_event(addr, CONNECT);
+    return hfp_hf_send_event(addr, HF_CONNECT);
 }
 
 static bt_status_t hfp_hf_disconnect(bt_address_t *addr)
@@ -393,7 +422,7 @@ static bt_status_t hfp_hf_disconnect(bt_address_t *addr)
     if (state == PROFILE_STATE_DISCONNECTED || state == PROFILE_STATE_DISCONNECTING)
         return BT_STATUS_FAIL;
 
-    return hfp_hf_send_event(addr, DISCONNECT);
+    return hfp_hf_send_event(addr, HF_DISCONNECT);
 }
 
 static bt_status_t hfp_hf_connect_audio(bt_address_t *addr)
@@ -402,7 +431,7 @@ static bt_status_t hfp_hf_connect_audio(bt_address_t *addr)
     if (!hfp_hf_is_connected(addr) || hfp_hf_is_audio_connected(addr))
         return BT_STATUS_FAIL;
 
-    return hfp_hf_send_event(addr, CONNECT_AUDIO);
+    return hfp_hf_send_event(addr, HF_CONNECT_AUDIO);
 }
 
 static bt_status_t hfp_hf_disconnect_audio(bt_address_t *addr)
@@ -411,7 +440,7 @@ static bt_status_t hfp_hf_disconnect_audio(bt_address_t *addr)
     if (!hfp_hf_is_audio_connected(addr))
         return BT_STATUS_FAIL;
 
-    return hfp_hf_send_event(addr, DISCONNECT_AUDIO);
+    return hfp_hf_send_event(addr, HF_DISCONNECT_AUDIO);
 }
 
 static bt_status_t hfp_hf_start_voice_recognition(bt_address_t *addr)
@@ -420,7 +449,7 @@ static bt_status_t hfp_hf_start_voice_recognition(bt_address_t *addr)
     if (!hfp_hf_is_connected(addr))
         return BT_STATUS_FAIL;
 
-    return hfp_hf_send_event(addr, VOICE_RECOGNITION_START);
+    return hfp_hf_send_event(addr, HF_VOICE_RECOGNITION_START);
 }
 
 static bt_status_t hfp_hf_stop_voice_recognition(bt_address_t *addr)
@@ -429,7 +458,7 @@ static bt_status_t hfp_hf_stop_voice_recognition(bt_address_t *addr)
     if (!hfp_hf_is_connected(addr))
         return BT_STATUS_FAIL;
 
-    return hfp_hf_send_event(addr, VOICE_RECOGNITION_STOP);
+    return hfp_hf_send_event(addr, HF_VOICE_RECOGNITION_STOP);
 }
 
 #if 0
@@ -454,7 +483,7 @@ static bt_status_t hfp_hf_dial(bt_address_t *addr, const char *number)
     if (!hfp_hf_is_connected(addr))
         return BT_STATUS_FAIL;
 
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(DIAL_NUMBER, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_DIAL_NUMBER, addr);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -468,7 +497,7 @@ static bt_status_t hfp_hf_dial_memory(bt_address_t *addr, uint32_t memory)
     if (!hfp_hf_is_connected(addr))
         return BT_STATUS_FAIL;
 
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(DIAL_MEMORY, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_DIAL_MEMORY, addr);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -482,7 +511,7 @@ static bt_status_t hfp_hf_redial(bt_address_t *addr)
     if (!hfp_hf_is_connected(addr))
         return BT_STATUS_FAIL;
 
-    return hfp_hf_send_event(addr, DIAL_LAST);
+    return hfp_hf_send_event(addr, HF_DIAL_LAST);
 }
 
 static bt_status_t hfp_hf_accept_call(bt_address_t *addr, hfp_call_accept_t flag)
@@ -491,7 +520,7 @@ static bt_status_t hfp_hf_accept_call(bt_address_t *addr, hfp_call_accept_t flag
     if (!hfp_hf_is_connected(addr))
         return BT_STATUS_FAIL;
 
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(ACCEPT_CALL, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_ACCEPT_CALL, addr);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -505,7 +534,7 @@ static bt_status_t hfp_hf_reject_call(bt_address_t *addr)
     if (!hfp_hf_is_connected(addr))
         return BT_STATUS_FAIL;
 
-    return hfp_hf_send_event(addr, REJECT_CALL);
+    return hfp_hf_send_event(addr, HF_REJECT_CALL);
 }
 
 static bt_status_t hfp_hf_hold_call(bt_address_t *addr)
@@ -514,7 +543,7 @@ static bt_status_t hfp_hf_hold_call(bt_address_t *addr)
     if (!hfp_hf_is_connected(addr))
         return BT_STATUS_FAIL;
 
-    return hfp_hf_send_event(addr, HOLD_CALL);
+    return hfp_hf_send_event(addr, HF_HOLD_CALL);
 }
 
 static bt_status_t hfp_hf_terminate_call(bt_address_t *addr)
@@ -523,7 +552,7 @@ static bt_status_t hfp_hf_terminate_call(bt_address_t *addr)
     if (!hfp_hf_is_connected(addr))
         return BT_STATUS_FAIL;
 
-    return hfp_hf_send_event(addr, TERMINATE_CALL);
+    return hfp_hf_send_event(addr, HF_TERMINATE_CALL);
 }
 
 static bt_status_t hfp_hf_control_call(bt_address_t *addr, hfp_call_control_t chld, uint8_t index)
@@ -532,7 +561,7 @@ static bt_status_t hfp_hf_control_call(bt_address_t *addr, hfp_call_control_t ch
     if (!hfp_hf_is_connected(addr))
         return BT_STATUS_FAIL;
 
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(CONTROL_CALL, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_CONTROL_CALL, addr);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -582,7 +611,7 @@ static bt_status_t hfp_hf_send_at_cmd(bt_address_t *addr, const char *cmd)
     if (!hfp_hf_is_connected(addr))
         return BT_STATUS_FAIL;
 
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(SEND_AT_COMMAND, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_SEND_AT_COMMAND, addr);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -681,7 +710,7 @@ void hf_service_notify_ring_indication(bt_address_t *addr, bool inband_ring_tone
 
 void hfp_hf_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state)
 {
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_CONNECTION_STATE_CHANGED, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_CONNECTION_STATE_CHANGED, addr);
     if (!msg)
         return;
 
@@ -693,7 +722,7 @@ void hfp_hf_on_audio_connection_state_changed(bt_address_t *addr,
                                               hfp_audio_state_t state,
                                               uint16_t sco_connection_handle)
 {
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_AUDIO_STATE_CHANGED, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_AUDIO_STATE_CHANGED, addr);
     if (!msg)
         return;
 
@@ -708,7 +737,7 @@ void hfp_hf_on_codec_changed(bt_address_t *addr, hfp_codec_config_t *config)
     BT_LOGD("HF codec config [codec:%d][sample rate:%" PRIu32 "][bit width:%d]", config->codec,
             config->sample_rate, config->bit_width);
 
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_CODEC_CHANGED, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_CODEC_CHANGED, addr);
     if (!msg)
         return;
 
@@ -718,7 +747,7 @@ void hfp_hf_on_codec_changed(bt_address_t *addr, hfp_codec_config_t *config)
 
 void hfp_hf_on_call_setup_state_changed(bt_address_t *addr, hfp_callsetup_t setup)
 {
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_CALLSETUP, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_CALLSETUP, addr);
     if (!msg)
         return;
 
@@ -728,7 +757,7 @@ void hfp_hf_on_call_setup_state_changed(bt_address_t *addr, hfp_callsetup_t setu
 
 void hfp_hf_on_call_active_state_changed(bt_address_t *addr, hfp_call_t state)
 {
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_CALL, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_CALL, addr);
     if (!msg)
         return;
 
@@ -738,7 +767,7 @@ void hfp_hf_on_call_active_state_changed(bt_address_t *addr, hfp_call_t state)
 
 void hfp_hf_on_call_held_state_changed(bt_address_t *addr, hfp_callheld_t state)
 {
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_CALLHELD, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_CALLHELD, addr);
     if (!msg)
         return;
 
@@ -748,7 +777,7 @@ void hfp_hf_on_call_held_state_changed(bt_address_t *addr, hfp_callheld_t state)
 
 void hfp_hf_on_volume_changed(bt_address_t *addr, hfp_volume_type_t type, uint8_t volume)
 {
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_VOLUME_CHANGED, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_VOLUME_CHANGED, addr);
     if (!msg)
         return;
 
@@ -760,7 +789,7 @@ void hfp_hf_on_volume_changed(bt_address_t *addr, hfp_volume_type_t type, uint8_
 
 void hfp_hf_on_ring_active_state_changed(bt_address_t *addr, bool active, hfp_in_band_ring_state_t inband_ring)
 {
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_RING_INDICATION, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_RING_INDICATION, addr);
     if (!msg)
         return;
 
@@ -772,7 +801,7 @@ void hfp_hf_on_ring_active_state_changed(bt_address_t *addr, bool active, hfp_in
 
 void hfp_hf_on_voice_recognition_state_changed(bt_address_t *addr, bool started)
 {
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_VR_STATE_CHANGED, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_VR_STATE_CHANGED, addr);
     if (!msg)
         return;
 
@@ -782,7 +811,7 @@ void hfp_hf_on_voice_recognition_state_changed(bt_address_t *addr, bool started)
 
 void hfp_hf_on_received_at_cmd_resp(bt_address_t *addr, char *response, uint16_t response_length)
 {
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_CMD_RESPONSE, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_CMD_RESPONSE, addr);
     if (!msg)
         return;
 
@@ -792,7 +821,7 @@ void hfp_hf_on_received_at_cmd_resp(bt_address_t *addr, char *response, uint16_t
 
 void hfp_hf_on_received_sco_connection_req(bt_address_t *addr)
 {
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_AUDIO_REQ, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_AUDIO_REQ, addr);
     if (!msg)
         return;
 
@@ -801,7 +830,7 @@ void hfp_hf_on_received_sco_connection_req(bt_address_t *addr)
 
 void hfp_hf_on_clip(bt_address_t *addr, const char *number, const char *name)
 {
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_CLIP, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_CLIP, addr);
     if (!msg)
         return;
 
@@ -817,7 +846,7 @@ void hfp_hf_on_current_call_response(bt_address_t *addr, uint32_t idx,
                                      hfp_call_mpty_type_t mpty,
                                      const char *number, uint32_t type)
 {
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_CURRENT_CALLS, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_CURRENT_CALLS, addr);
     if (!msg)
         return;
 
@@ -839,7 +868,7 @@ void hfp_hf_on_at_command_result_response(bt_address_t *addr, uint32_t at_cmd_co
         return;
     }
 
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(STACK_EVENT_CMD_RESULT, addr);
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_CMD_RESULT, addr);
     if (!msg)
         return;
 
@@ -858,7 +887,7 @@ static const profile_service_t hfp_hf_service = {
     .startup = hfp_hf_startup,
     .shutdown = hfp_hf_shutdown,
     .process_msg = NULL,
-    .get_state = NULL,
+    .get_state = hfp_hf_get_state,
     .get_profile_interface = get_hf_profile_interface,
     .cleanup = hfp_hf_cleanup,
     .dump = hfp_hf_dump,
