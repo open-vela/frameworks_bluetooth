@@ -757,10 +757,10 @@ static bt_status_t spp_startup(profile_on_startup_t cb)
 {
     bt_status_t status;
 
-    BT_LOGD("%s", __func__);
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (g_spp_handle.started) {
         pthread_mutex_unlock(&g_spp_handle.spp_lock);
+        cb(PROFILE_SPP, true);
         return BT_STATUS_SUCCESS;
     }
 
@@ -772,21 +772,23 @@ static bt_status_t spp_startup(profile_on_startup_t cb)
     if (status != BT_STATUS_SUCCESS) {
         pthread_mutex_unlock(&g_spp_handle.spp_lock);
         list_delete(&g_spp_handle.devices);
+        cb(PROFILE_SPP, false);
         return BT_STATUS_FAIL;
     }
 
     g_spp_handle.started = 1;
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
+    cb(PROFILE_SPP, true);
 
     return BT_STATUS_SUCCESS;
 }
 
 static bt_status_t spp_shutdown(profile_on_shutdown_t cb)
 {
-    BT_LOGD("%s", __func__);
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (!g_spp_handle.started) {
         pthread_mutex_unlock(&g_spp_handle.spp_lock);
+        cb(PROFILE_SPP, false);
         return BT_STATUS_NOT_ENABLED;
     }
 
@@ -799,8 +801,14 @@ static bt_status_t spp_shutdown(profile_on_shutdown_t cb)
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
     /* cleanup spp stack */
     bt_sal_spp_cleanup();
+    cb(PROFILE_SPP, true);
 
     return BT_STATUS_SUCCESS;
+}
+
+static int spp_get_state(void)
+{
+    return 1;
 }
 
 static void *spp_register_app(void *remote, const spp_callbacks_t *callbacks)
@@ -1155,7 +1163,7 @@ static const profile_service_t spp_service = {
     .startup = spp_startup,
     .shutdown = spp_shutdown,
     .process_msg = NULL,
-    .get_state = NULL,
+    .get_state = spp_get_state,
     .get_profile_interface = get_spp_profile_interface,
     .cleanup = spp_cleanup,
     .dump = spp_dump,
