@@ -59,6 +59,26 @@
         PRINT(fmt, addr_str, ##__VA_ARGS__);       \
     } while (0);
 
+#define PRINT_HEXDUMP_MAX 1024
+#define PRINT_HEXDUMP(array, size)                                                \
+    do {                                                                          \
+        if (size < 1) {                                                           \
+            break;                                                                \
+        }                                                                         \
+        if (size > PRINT_HEXDUMP_MAX) {                                           \
+            PRINT("print error, size:%d over flow(%d)", size, PRINT_HEXDUMP_MAX); \
+            break;                                                                \
+        }                                                                         \
+        uint8_t *bytes = (uint8_t *)array;                                        \
+        char hexstring[PRINT_HEXDUMP_MAX] = "";                                   \
+        char hex[8] = "";                                                         \
+        for (int i = 0; i < size; i++) {                                          \
+            snprintf(hex, 8, "0x%02X ", bytes[i]);                                \
+            strcat(hexstring, hex);                                               \
+        }                                                                         \
+        PRINT("%s", hexstring);                                                   \
+    } while (0)
+
 /****************************************************************************
  * Public Types
  ****************************************************************************/
@@ -97,6 +117,10 @@ int hfp_ag_command_exec(void *handle, int argc, char *argv[]);
 int spp_command_init(void *handle);
 void spp_command_uninit(void *handle);
 int spp_command_exec(void *handle, int argc, char *argv[]);
+
+int hidd_command_init(void *handle);
+void hidd_command_uninit(void *handle);
+int hidd_command_exec(void *handle, int argc, char *argv[]);
 
 int pan_command_init(void *handle);
 void pan_command_uninit(void *handle);
