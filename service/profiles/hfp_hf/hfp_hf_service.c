@@ -850,7 +850,7 @@ void hfp_hf_on_at_command_result_response(bt_address_t *addr, uint32_t at_cmd_co
 
 static const profile_service_t hfp_hf_service = {
     .auto_start = true,
-    .name = "hfp_hf",
+    .name = PROFILE_HFP_HF_NAME,
     .id = PROFILE_HFP_HF,
     .transport = BT_TRANSPORT_BREDR,
     .uuid = {BT_UUID128_TYPE, { 0 }},
