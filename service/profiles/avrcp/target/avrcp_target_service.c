@@ -403,8 +403,8 @@ static int avrcp_target_dump(void)
 
 static const profile_service_t avrcp_target_service = {
     .auto_start = true,
-    .name = PROFILE_AVRCP_CT_NAME,
-    .id = PROFILE_AVRCP_CT,
+    .name = PROFILE_AVRCP_TG_NAME,
+    .id = PROFILE_AVRCP_TG,
     .transport = BT_TRANSPORT_BREDR,
     .uuid = {BT_UUID128_TYPE, { 0 }},
     .init = avrcp_target_init,
