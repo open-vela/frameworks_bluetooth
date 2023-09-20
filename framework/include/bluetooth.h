@@ -294,7 +294,7 @@ typedef struct bt_instance {
     void *gatt_proxy;
     void *spp_proxy;
     void *pan_proxy;
-    void *hid_proxy;
+    void *hidd_proxy;
     void *gattc_proxy;
     void *gatts_proxy;
     void *lea_server_proxy;

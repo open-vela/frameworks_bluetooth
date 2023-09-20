@@ -27,6 +27,7 @@ extern "C" {
 #define PROFILE_HFP_HF_NAME    "HFP-HF"
 #define PROFILE_HFP_AG_NAME    "HFP-AG"
 #define PROFILE_SPP_NAME       "SPP"
+#define PROFILE_HID_DEV_NAME   "HID-DEV"
 #define PROFILE_PANU_NAME      "PANU"
 #define PROFILE_GATTC_NAME     "GATTC"
 #define PROFILE_GATTS_NAME     "GATTS"
@@ -45,6 +46,7 @@ enum profile_id {
     PROFILE_HFP_HF,
     PROFILE_HFP_AG,
     PROFILE_SPP,
+    PROFILE_HID_DEV,
     PROFILE_PANU,
     PROFILE_GATTC,
     PROFILE_GATTS,

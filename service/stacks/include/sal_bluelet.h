@@ -20,6 +20,7 @@
 
 #include "bt_device.h"
 #include "bt_hfp.h"
+#include "bt_hid_device.h"
 #include "utils/log.h"
 
 static inline profile_connection_state_t bluelet_profile_connection_state(SERVICE_PROFILE_CONNECTION_STATE state)
@@ -55,11 +56,26 @@ static inline hfp_audio_state_t bluelet_hf_audio_state(SERVICE_HFP_SCO_STATE sta
 }
 #endif
 
+#if defined(CONFIG_BLUETOOTH_HID_DEVICE)
+static inline hid_app_state_t bluelet_hid_app_state(SERVICE_BTHD_APP_STATE state)
+{
+    switch (state) {
+    case BTHD_APP_STATE_NOT_REGISTERED:
+        return HID_APP_STATE_NOT_REGISTERED;
+    case BTHD_APP_STATE_REGISTERED:
+        return HID_APP_STATE_REGISTERED;
+    default:
+        BT_LOGE("Unknow hidd app state: %d", state);
+        return HID_APP_STATE_NOT_REGISTERED;
+    }
+}
+#endif
+
 #if defined(CONFIG_BLUETOOTH_GATT)
 #include "ble_gatt_defs.h"
 static inline gatt_status_t bluelet_gatt_status(SERVICE_GATT_STATUS status)
 {
-    switch(status) {
+    switch (status) {
     case GATT_SUCCESS:
         return GATT_STATUS_SUCCESS;
     case GATT_REQUEST_NOT_SUPPORTED:

@@ -178,6 +178,10 @@ config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
 	default 1
 endif
 
+config BLUETOOTH_HID_DEVICE
+	bool "HID device profile support"
+	default n
+
 config BLUETOOTH_PAN
 	bool "Personal area network profile support"
 	default n
