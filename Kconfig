@@ -442,6 +442,22 @@ config BLUETOOTH_LEAUDIO_SERVER_BASS_STATE_NUMBER
 	help
 		leaudio server bass state number
 
+config BLUETOOTH_LEAUDIO_SERVER_SOURCE
+	bool "enable leaudio server source"
+	default y
+
+config BLUETOOTH_LEAUDIO_SERVER_SOURCE_LOCATION
+	int "leaudio server source location"
+	default 1
+	help
+		leaudio server source location
+
+config BLUETOOTH_LEAUDIO_SERVER_SINK_LOCATION
+	int "leaudio server sink location"
+	default 1
+	help
+		leaudio server sink location
+
 endif # BLUETOOTH_LEAUDIO_SERVER
 
 if BLUETOOTH_LEAUDIO_CLIENT

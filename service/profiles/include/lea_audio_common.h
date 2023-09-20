@@ -112,6 +112,7 @@ typedef enum {
     ADPT_LEA_CONTEXT_TYPE_ALERTS = LEA_BIT(10),
     ADPT_LEA_CONTEXT_TYPE_EMERGENCY_ALARM = LEA_BIT(11),
 } lea_adpt_context_types_t;
+
 typedef enum {
     ADPT_LEA_ASE_STATE_IDLE,
     ADPT_LEA_ASE_STATE_CODEC_CONFIG,
@@ -196,6 +197,52 @@ typedef enum {
     ADPT_LEA_TBS_CALL_CONTROL_INVALID_OUTGOING_URI, /**< The Outgoing URI is incorrect or invalid. */
 } lea_adpt_call_control_result_t;
 
+typedef enum {
+    ADPT_LEA_PAC_TYPE_SINK_PAC = 0x2BC9,
+    ADPT_LEA_PAC_TYPE_SOURCE_PAC = 0x2BCB,
+} lea_pac_type_t;
+
+typedef enum {
+    ADPT_LEA_FORMAT_TRANSPARENT = 0x03,
+    ADPT_LEA_FORMAT_LC3 = 0x06,
+    ADPT_LEA_FORMAT_G729A = 0x07,
+    ADPT_LEA_FORMAT_VENDOR = 0xFF,
+} lea_codec_fromat;
+
+typedef enum {
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_8000 = LEA_BIT(0),
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_11025 = LEA_BIT(1),
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_16000 = LEA_BIT(2),
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_22050 = LEA_BIT(3),
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_24000 = LEA_BIT(4),
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_32000 = LEA_BIT(5),
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_44100 = LEA_BIT(6),
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_48000 = LEA_BIT(7),
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_88200 = LEA_BIT(8),
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_96000 = LEA_BIT(9),
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_176400 = LEA_BIT(10),
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_192000 = LEA_BIT(11),
+    ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_384000 = LEA_BIT(12),
+} lea_sample_frequencies_t;
+
+typedef enum {
+    ADPT_LEA_SUPPORTED_FRAME_DURATION_7_5 = LEA_BIT(0),
+    ADPT_LEA_SUPPORTED_FRAME_DURATION_10 = LEA_BIT(1),
+    ADPT_LEA_PREFERRED_FRAME_DURATION_7_5 = LEA_BIT(4),
+    ADPT_LEA_PREFERRED_FRAME_DURATION_10 = LEA_BIT(5),
+} lea_frame_durations_t;
+
+typedef enum {
+    ADPT_LEA_SUPPORTED_CHANNEL_COUNT_1 = LEA_BIT(0),
+    ADPT_LEA_SUPPORTED_CHANNEL_COUNT_2 = LEA_BIT(1),
+    ADPT_LEA_SUPPORTED_CHANNEL_COUNT_3 = LEA_BIT(2),
+    ADPT_LEA_SUPPORTED_CHANNEL_COUNT_4 = LEA_BIT(3),
+    ADPT_LEA_SUPPORTED_CHANNEL_COUNT_5 = LEA_BIT(4),
+    ADPT_LEA_SUPPORTED_CHANNEL_COUNT_6 = LEA_BIT(5),
+    ADPT_LEA_SUPPORTED_CHANNEL_COUNT_7 = LEA_BIT(6),
+    ADPT_LEA_SUPPORTED_CHANNEL_COUNT_8 = LEA_BIT(7),
+} lea_channal_counts_t;
+
 typedef struct {
     uint8_t format;
     uint16_t company_id;
@@ -249,6 +296,39 @@ typedef struct
         uint8_t vendor_specific[64];
     };
 } lea_metadata_t;
+
+typedef struct {
+    lea_pac_type_t pac_type;
+    uint32_t pac_id;
+    lea_codec_id_t codec_id;
+    lea_codec_cap_t codec_pac;
+    uint8_t md_number;
+    lea_metadata_t *md_value;
+} lea_pac_info_t;
+
+typedef struct
+{
+    uint16_t sink;
+    uint16_t source;
+} lea_audio_context_t;
+
+typedef struct {
+    uint8_t pac_number;
+    lea_pac_info_t *pac_list;
+    uint32_t sink_location;
+    uint32_t source_location;
+    lea_audio_context_t supported_ctx;
+    lea_audio_context_t available_ctx;
+} lea_pacs_info_t;
+
+typedef struct {
+    uint8_t sink_ase_number;
+    uint8_t source_ase_number;
+} lea_ascs_info_t;
+
+typedef struct {
+    uint8_t bass_number;
+} lea_bass_info_t;
 
 typedef struct {
     uint32_t stream_id;
