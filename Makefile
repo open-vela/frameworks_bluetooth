@@ -91,6 +91,10 @@ ifeq ($(CONFIG_BLUETOOTH_SPP), y)
 	CSRCS += service/profiles/spp/*.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_HID_DEVICE), y)
+	CSRCS += service/profiles/hid/*.c
+endif
+
 ifeq ($(CONFIG_BLUETOOTH_PAN), y)
 	CSRCS += service/profiles/pan/*.c
 endif
@@ -164,6 +168,9 @@ endif #CONFIG_BLUETOOTH_HFP_AG
 
 ifeq ($(CONFIG_BLUETOOTH_SPP), y)
 	CSRCS += tools/spp.c
+endif
+ifeq ($(CONFIG_BLUETOOTH_HID_DEVICE), y)
+	CSRCS += tools/hid_device.c
 endif
 ifeq ($(CONFIG_BLUETOOTH_PAN), y)
 	CSRCS += tools/panu.c
