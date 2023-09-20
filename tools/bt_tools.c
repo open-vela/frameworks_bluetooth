@@ -178,12 +178,15 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_SPP
     { "spp",          spp_command_exec,       0, "serial port cmd,   input \'spp\' show usage"              },
 #endif
+#ifdef CONFIG_BLUETOOTH_HID_DEVICE
+    { "hidd",         hidd_command_exec,      0, "hid device cmd,    input \'hidd\' show usage"             },
+#endif
 #ifdef CONFIG_BLUETOOTH_PAN
     { "pan",          pan_command_exec,       0, "pan cmd,           input \'pan\' show usage"              },
 #endif
 #ifdef CONFIG_BLUETOOTH_GATT
-    { "gattc",        gattc_command_exec,     0, "gattc cmd"                                                },
-    { "gatts",        gatts_command_exec,     0, "gatts cmd"                                                },
+    { "gattc",        gattc_command_exec,     0, "gatt client cmd    input \'gattc\' show usage"            },
+    { "gatts",        gatts_command_exec,     0, "gatt server cmd    input \'gatts\' show usage"            },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
     { "leas",         leas_command_exec,      0, "lea server cmd, input \'leas\' show usage"                },
@@ -274,6 +277,9 @@ static void bt_tool_init(void *handle)
 #ifdef CONFIG_BLUETOOTH_SPP
     spp_command_init(handle);
 #endif
+#ifdef CONFIG_BLUETOOTH_HID_DEVICE
+    hidd_command_init(handle);
+#endif
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_command_init(handle);
 #endif
@@ -326,6 +332,9 @@ static void bt_tool_uninit(void *handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
     spp_command_uninit(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_HID_DEVICE
+    hidd_command_uninit(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_command_uninit(handle);

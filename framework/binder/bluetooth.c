@@ -22,6 +22,7 @@
 #include "bluetooth_proxy.h"
 #include "pan_proxy.h"
 #include "spp_proxy.h"
+#include "hid_device_proxy.h"
 #include "hfp_hf_proxy.h"
 #include "hfp_ag_proxy.h"
 #include "gattc_proxy.h"
@@ -102,6 +103,12 @@ void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id)
             ins->spp_proxy = BpBtSpp_new(SPP_BINDER_INSTANCE);
         }
         return ins->spp_proxy;
+    }
+    case PROFILE_HID_DEV: {
+        if (!ins->hidd_proxy) {
+            ins->hidd_proxy = BpBtHidd_new(HID_DEVICE_BINDER_INSTANCE);
+        }
+        return ins->hidd_proxy;
     }
     case PROFILE_PANU: {
         if (!ins->pan_proxy) {
