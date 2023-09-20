@@ -468,6 +468,7 @@ static bt_status_t pan_startup(profile_on_startup_t cb)
     pthread_mutex_lock(&g_pan.pan_lock);
     if (g_pan.enable) {
         pthread_mutex_unlock(&g_pan.pan_lock);
+        cb(PROFILE_PANU, true);
         return BT_STATUS_NOT_ENABLED;
     }
 
@@ -477,11 +478,13 @@ static bt_status_t pan_startup(profile_on_startup_t cb)
     if (bt_sal_pan_init(PAN_MAX_CONNECTIONS, PAN_ROLE_PANU) != BT_STATUS_SUCCESS) {
         pthread_mutex_unlock(&g_pan.pan_lock);
         list_delete(&g_pan.conn_list);
+        cb(PROFILE_PANU, false);
         return BT_STATUS_FAIL;
     }
 
     g_pan.enable = true;
     pthread_mutex_unlock(&g_pan.pan_lock);
+    cb(PROFILE_PANU, true);
 
     return BT_STATUS_SUCCESS;
 }
@@ -492,6 +495,7 @@ static bt_status_t pan_shutdown(profile_on_shutdown_t cb)
     pthread_mutex_lock(&g_pan.pan_lock);
     if (!g_pan.enable) {
         pthread_mutex_unlock(&g_pan.pan_lock);
+        cb(PROFILE_PANU, true);
         return BT_STATUS_SUCCESS;
     }
 
@@ -500,8 +504,14 @@ static bt_status_t pan_shutdown(profile_on_shutdown_t cb)
     list_delete(&g_pan.conn_list);
     pthread_mutex_unlock(&g_pan.pan_lock);
     bt_sal_pan_cleanup();
+    cb(PROFILE_PANU, true);
 
     return BT_STATUS_SUCCESS;
+}
+
+static int pan_get_state(void)
+{
+    return 1;
 }
 
 static void *pan_register_callbacks(void *remote, const pan_callbacks_t *callbacks)
@@ -602,7 +612,7 @@ static const profile_service_t pan_service = {
     .startup = pan_startup,
     .shutdown = pan_shutdown,
     .process_msg = NULL,
-    .get_state = NULL,
+    .get_state = pan_get_state,
     .get_profile_interface = get_pan_profile_interface,
     .cleanup = pan_cleanup,
     .dump = pan_dump,
