@@ -19,6 +19,7 @@
 #include "bt_status.h"
 
 void tele_service_init(void);
+void tele_service_cleanup(void);
 bt_status_t tele_service_dial_number(char *number);
 bt_status_t tele_service_answer_call(void);
 bt_status_t tele_service_reject_call(void);
