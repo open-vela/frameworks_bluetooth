@@ -137,42 +137,42 @@ static void hf_stm_event_debug(state_machine_t *sm, bt_address_t *addr, uint32_t
 static const char *stack_event_to_string(hfp_hf_event_t event)
 {
     switch (event) {
-        CASE_RETURN_STR(CONNECT)
-        CASE_RETURN_STR(DISCONNECT)
-        CASE_RETURN_STR(CONNECT_AUDIO)
-        CASE_RETURN_STR(DISCONNECT_AUDIO)
-        CASE_RETURN_STR(VOICE_RECOGNITION_START)
-        CASE_RETURN_STR(VOICE_RECOGNITION_STOP)
-        CASE_RETURN_STR(SET_MIC_VOLUME)
-        CASE_RETURN_STR(SET_SPEAKER_VOLUME)
-        CASE_RETURN_STR(DIAL_NUMBER)
-        CASE_RETURN_STR(DIAL_MEMORY)
-        CASE_RETURN_STR(DIAL_LAST)
-        CASE_RETURN_STR(ACCEPT_CALL)
-        CASE_RETURN_STR(REJECT_CALL)
-        CASE_RETURN_STR(HOLD_CALL)
-        CASE_RETURN_STR(TERMINATE_CALL)
-        CASE_RETURN_STR(QUERY_CURRENT_CALLS)
-        CASE_RETURN_STR(UPDATE_BATTERY_LEVEL)
-        CASE_RETURN_STR(SEND_AT_COMMAND)
-        CASE_RETURN_STR(CONTROL_CALL)
-        CASE_RETURN_STR(TIMEOUT)
-        CASE_RETURN_STR(STACK_EVENT)
-        CASE_RETURN_STR(STACK_EVENT_AUDIO_REQ)
-        CASE_RETURN_STR(STACK_EVENT_CONNECTION_STATE_CHANGED)
-        CASE_RETURN_STR(STACK_EVENT_AUDIO_STATE_CHANGED)
-        CASE_RETURN_STR(STACK_EVENT_VR_STATE_CHANGED)
-        CASE_RETURN_STR(STACK_EVENT_CALL)
-        CASE_RETURN_STR(STACK_EVENT_CALLSETUP)
-        CASE_RETURN_STR(STACK_EVENT_CALLHELD)
-        CASE_RETURN_STR(STACK_EVENT_CLIP)
-        CASE_RETURN_STR(STACK_EVENT_CALL_WAITING)
-        CASE_RETURN_STR(STACK_EVENT_CURRENT_CALLS)
-        CASE_RETURN_STR(STACK_EVENT_VOLUME_CHANGED)
-        CASE_RETURN_STR(STACK_EVENT_CMD_RESPONSE)
-        CASE_RETURN_STR(STACK_EVENT_CMD_RESULT)
-        CASE_RETURN_STR(STACK_EVENT_RING_INDICATION)
-        CASE_RETURN_STR(STACK_EVENT_CODEC_CHANGED)
+        CASE_RETURN_STR(HF_CONNECT)
+        CASE_RETURN_STR(HF_DISCONNECT)
+        CASE_RETURN_STR(HF_CONNECT_AUDIO)
+        CASE_RETURN_STR(HF_DISCONNECT_AUDIO)
+        CASE_RETURN_STR(HF_VOICE_RECOGNITION_START)
+        CASE_RETURN_STR(HF_VOICE_RECOGNITION_STOP)
+        CASE_RETURN_STR(HF_SET_MIC_VOLUME)
+        CASE_RETURN_STR(HF_SET_SPEAKER_VOLUME)
+        CASE_RETURN_STR(HF_DIAL_NUMBER)
+        CASE_RETURN_STR(HF_DIAL_MEMORY)
+        CASE_RETURN_STR(HF_DIAL_LAST)
+        CASE_RETURN_STR(HF_ACCEPT_CALL)
+        CASE_RETURN_STR(HF_REJECT_CALL)
+        CASE_RETURN_STR(HF_HOLD_CALL)
+        CASE_RETURN_STR(HF_TERMINATE_CALL)
+        CASE_RETURN_STR(HF_QUERY_CURRENT_CALLS)
+        CASE_RETURN_STR(HF_UPDATE_BATTERY_LEVEL)
+        CASE_RETURN_STR(HF_SEND_AT_COMMAND)
+        CASE_RETURN_STR(HF_CONTROL_CALL)
+        CASE_RETURN_STR(HF_TIMEOUT)
+        CASE_RETURN_STR(HF_STACK_EVENT)
+        CASE_RETURN_STR(HF_STACK_EVENT_AUDIO_REQ)
+        CASE_RETURN_STR(HF_STACK_EVENT_CONNECTION_STATE_CHANGED)
+        CASE_RETURN_STR(HF_STACK_EVENT_AUDIO_STATE_CHANGED)
+        CASE_RETURN_STR(HF_STACK_EVENT_VR_STATE_CHANGED)
+        CASE_RETURN_STR(HF_STACK_EVENT_CALL)
+        CASE_RETURN_STR(HF_STACK_EVENT_CALLSETUP)
+        CASE_RETURN_STR(HF_STACK_EVENT_CALLHELD)
+        CASE_RETURN_STR(HF_STACK_EVENT_CLIP)
+        CASE_RETURN_STR(HF_STACK_EVENT_CALL_WAITING)
+        CASE_RETURN_STR(HF_STACK_EVENT_CURRENT_CALLS)
+        CASE_RETURN_STR(HF_STACK_EVENT_VOLUME_CHANGED)
+        CASE_RETURN_STR(HF_STACK_EVENT_CMD_RESPONSE)
+        CASE_RETURN_STR(HF_STACK_EVENT_CMD_RESULT)
+        CASE_RETURN_STR(HF_STACK_EVENT_RING_INDICATION)
+        CASE_RETURN_STR(HF_STACK_EVENT_CODEC_CHANGED)
     default:
         return "UNKNOWN_HF_EVENT";
     }
@@ -340,7 +340,7 @@ static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void
 
     HF_DBG_EVENT(sm, &hfsm->addr, event);
     switch (event) {
-    case CONNECT:
+    case HF_CONNECT:
         if (bt_sal_hfp_hf_connect(&hfsm->addr) != BT_STATUS_SUCCESS) {
             BT_ADDR_LOG("Connect failed for %s", &hfsm->addr);
             hf_service_notify_connection_state_changed(&hfsm->addr, PROFILE_STATE_DISCONNECTED);
@@ -348,7 +348,7 @@ static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void
         }
         hsm_transition_to(sm, &connecting_state);
         break;
-    case STACK_EVENT_CONNECTION_STATE_CHANGED: {
+    case HF_STACK_EVENT_CONNECTION_STATE_CHANGED: {
         profile_connection_state_t state = data->valueint1;
 
         switch (state) {
@@ -379,7 +379,7 @@ static void connect_timeout(service_timer_t *timer, void *data)
 {
     hf_state_machine_t *hfsm = (hf_state_machine_t *)data;
 
-    hfp_hf_send_event(&hfsm->addr, TIMEOUT);
+    hfp_hf_send_event(&hfsm->addr, HF_TIMEOUT);
 }
 
 static void connecting_enter(state_machine_t *sm)
@@ -409,7 +409,7 @@ static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *
 
     HF_DBG_EVENT(sm, &hfsm->addr, event);
     switch (event) {
-    case STACK_EVENT_CONNECTION_STATE_CHANGED: {
+    case HF_STACK_EVENT_CONNECTION_STATE_CHANGED: {
         profile_connection_state_t state = data->valueint1;
         switch (state) {
         case PROFILE_STATE_DISCONNECTED:
@@ -427,16 +427,16 @@ static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *
         }
         break;
     }
-    case STACK_EVENT_CODEC_CHANGED:
+    case HF_STACK_EVENT_CODEC_CHANGED:
         hfsm->codec = data->valueint1;
         break;
-    case STACK_EVENT_CALL:
-    case STACK_EVENT_CALLSETUP:
-    case STACK_EVENT_CALLHELD:
-    case STACK_EVENT_CLIP:
+    case HF_STACK_EVENT_CALL:
+    case HF_STACK_EVENT_CALLSETUP:
+    case HF_STACK_EVENT_CALLHELD:
+    case HF_STACK_EVENT_CLIP:
         hfsm->need_query = true;
         break;
-    case TIMEOUT:
+    case HF_TIMEOUT:
         BT_LOGI("Connection timeout");
         // try to disconnect peer device
         bt_sal_hfp_hf_disconnect(&hfsm->addr);
@@ -554,19 +554,19 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
     BT_LOGD("%s, event=%" PRIu32 "", __func__, event);
 
     switch (event) {
-    case ACCEPT_CALL:
+    case HF_ACCEPT_CALL:
         accept_call(hfsm, data->valueint1);
         break;
-    case REJECT_CALL:
+    case HF_REJECT_CALL:
         reject_call(hfsm);
         break;
-    case HOLD_CALL:
+    case HF_HOLD_CALL:
         hold_call(hfsm);
         break;
-    case TERMINATE_CALL:
+    case HF_TERMINATE_CALL:
         hangup_call(hfsm);
         break;
-    case CONTROL_CALL: {
+    case HF_CONTROL_CALL: {
         hfp_call_control_t chld = data->valueint1;
         if (chld > 4) {
             BT_LOGE("Call control error code:%d, line:%d", chld, __LINE__);
@@ -576,37 +576,37 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
         if (status != BT_STATUS_SUCCESS)
             BT_LOGE("Call control error:%d, line:%d", status, __LINE__);
     } break;
-    case QUERY_CURRENT_CALLS:
+    case HF_QUERY_CURRENT_CALLS:
         status = bt_sal_hfp_hf_get_current_calls(&hfsm->addr);
         if (status != BT_STATUS_SUCCESS)
             BT_LOGE("Query current call failed");
         break;
-    case SEND_AT_COMMAND: {
+    case HF_SEND_AT_COMMAND: {
         status = bt_sal_hfp_hf_send_at_cmd(&hfsm->addr, data->string1, strlen(data->string1));
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Send at command failed");
         }
         break;
     }
-    case UPDATE_BATTERY_LEVEL:
+    case HF_UPDATE_BATTERY_LEVEL:
         status = bt_sal_hfp_hf_send_battery_level(&hfsm->addr, (uint8_t)data->valueint1);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Update battery level failed");
         }
         break;
-    case STACK_EVENT_VR_STATE_CHANGED: {
+    case HF_STACK_EVENT_VR_STATE_CHANGED: {
         hfp_hf_vr_state_t state = data->valueint1;
 
         hfsm->recognition_active = (state == HFP_HF_VR_STATE_STOPPED) ? false : true;
         hf_service_notify_vr_state_changed(&hfsm->addr, hfsm->recognition_active);
         break;
     }
-    case STACK_EVENT_CALL:
-    case STACK_EVENT_CALLSETUP:
-    case STACK_EVENT_CALLHELD:
+    case HF_STACK_EVENT_CALL:
+    case HF_STACK_EVENT_CALLSETUP:
+    case HF_STACK_EVENT_CALLHELD:
         bt_sal_hfp_hf_get_current_calls(&hfsm->addr);
         break;
-    case STACK_EVENT_CLIP: {
+    case HF_STACK_EVENT_CLIP: {
         /* TODO: update call name */
         char *number = data->string1;
         char *name = data->string2;
@@ -614,10 +614,10 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
         set_current_call_name(hfsm, number, name);
         break;
     }
-    case STACK_EVENT_CALL_WAITING:
+    case HF_STACK_EVENT_CALL_WAITING:
         // not support
         break;
-    case STACK_EVENT_CURRENT_CALLS: {
+    case HF_STACK_EVENT_CURRENT_CALLS: {
         int index = data->valueint1;
         hfp_call_direction_t dir = data->valueint2;
         hfp_hf_call_state_t state = data->valueint3;
@@ -630,20 +630,20 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
         }
         break;
     }
-    case STACK_EVENT_VOLUME_CHANGED: {
+    case HF_STACK_EVENT_VOLUME_CHANGED: {
         hfp_volume_type_t type = data->valueint1;
         int vol = data->valueint2;
         // set media volume, need call media interface
         BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
         break;
     }
-    case STACK_EVENT_CMD_RESPONSE: {
+    case HF_STACK_EVENT_CMD_RESPONSE: {
         const char *resp = data->string1;
 
         hf_service_notify_cmd_complete(&hfsm->addr, resp);
         break;
     }
-    case STACK_EVENT_CMD_RESULT: {
+    case HF_STACK_EVENT_CMD_RESULT: {
         uint32_t cmd_code = data->valueint1;
         uint32_t cmd_result = data->valueint2;
         uint32_t pending;
@@ -660,14 +660,14 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
         }
         break;
     }
-    case STACK_EVENT_RING_INDICATION: {
+    case HF_STACK_EVENT_RING_INDICATION: {
         int active = data->valueint1;
         bool inband = data->valueint2 == HFP_IN_BAND_RINGTONE_PROVIDED;
         if (active)
             hf_service_notify_ring_indication(&hfsm->addr, inband);
         break;
     }
-    case STACK_EVENT_CODEC_CHANGED:
+    case HF_STACK_EVENT_CODEC_CHANGED:
         hfsm->codec = data->valueint1;
         break;
     default:
@@ -706,42 +706,42 @@ static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p
 
     HF_DBG_EVENT(sm, &hfsm->addr, event);
     switch (event) {
-    case DISCONNECT:
+    case HF_DISCONNECT:
         // do disconnect
         if (bt_sal_hfp_hf_disconnect(&hfsm->addr) != BT_STATUS_SUCCESS)
             BT_ADDR_LOG("Disconnect failed for :%s", &hfsm->addr);
 
         hsm_transition_to(sm, &disconnected_state);
         break;
-    case CONNECT_AUDIO:
+    case HF_CONNECT_AUDIO:
         if (bt_sal_hfp_hf_connect_audio(&hfsm->addr) != BT_STATUS_SUCCESS) {
             BT_ADDR_LOG("Connect audio failed for :%s", &hfsm->addr);
             hf_service_notify_audio_state_changed(&hfsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
         }
         break;
-    case DISCONNECT_AUDIO:
+    case HF_DISCONNECT_AUDIO:
         if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS)
             BT_ADDR_LOG("Disconnect audio failed for :%s", &hfsm->addr);
         break;
-    case VOICE_RECOGNITION_START:
+    case HF_VOICE_RECOGNITION_START:
         if (!hfsm->recognition_active) {
             if (bt_sal_hfp_hf_start_voice_recognition(&hfsm->addr) != BT_STATUS_SUCCESS)
                 BT_LOGE("Could not start voice recognition");
         }
         break;
-    case VOICE_RECOGNITION_STOP:
+    case HF_VOICE_RECOGNITION_STOP:
         if (hfsm->recognition_active) {
             if (bt_sal_hfp_hf_stop_voice_recognition(&hfsm->addr) != BT_STATUS_SUCCESS)
                 BT_LOGE("Could not stop voice recognition");
         }
         break;
-    case DIAL_NUMBER:
+    case HF_DIAL_NUMBER:
         status = bt_sal_hfp_hf_dial_number(&hfsm->addr, data->string1);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Dial number: %s failed", data->string1);
         }
         break;
-    case DIAL_MEMORY: {
+    case HF_DIAL_MEMORY: {
         int memory = data->valueint1;
         BT_LOGD("Dial memory: %d", memory);
         status = bt_sal_hfp_hf_dial_memory(&hfsm->addr, memory);
@@ -751,20 +751,20 @@ static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p
         add_pending_action(hfsm, HFP_ATCMD_CODE_ATD);
         break;
     }
-    case DIAL_LAST: {
+    case HF_DIAL_LAST: {
         status = bt_sal_hfp_hf_dial_number(&hfsm->addr, NULL);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Dial Last failed");
         }
         break;
     }
-    case STACK_EVENT_AUDIO_REQ:
+    case HF_STACK_EVENT_AUDIO_REQ:
         status = bt_sal_reply_sco_link_request(&hfsm->addr, true);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Accept Sco connection failed");
         }
         break;
-    case STACK_EVENT_CONNECTION_STATE_CHANGED: {
+    case HF_STACK_EVENT_CONNECTION_STATE_CHANGED: {
         profile_connection_state_t state = data->valueint1;
 
         switch (state) {
@@ -778,7 +778,7 @@ static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p
         }
         break;
     }
-    case STACK_EVENT_AUDIO_STATE_CHANGED: {
+    case HF_STACK_EVENT_AUDIO_STATE_CHANGED: {
         hfp_audio_state_t state = data->valueint1;
 
         switch (state) {
@@ -829,20 +829,20 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
 
     HF_DBG_EVENT(sm, &hfsm->addr, event);
     switch (event) {
-    case DISCONNECT:
+    case HF_DISCONNECT:
         // do disconnect
         if (bt_sal_hfp_hf_disconnect(&hfsm->addr) != BT_STATUS_SUCCESS)
             BT_ADDR_LOG("Disconnect failed for :%s", &hfsm->addr);
 
         hsm_transition_to(sm, &disconnected_state);
         break;
-    case DISCONNECT_AUDIO:
+    case HF_DISCONNECT_AUDIO:
         status = bt_sal_hfp_hf_disconnect_audio(&hfsm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect Sco connection failed");
         }
         break;
-    case VOICE_RECOGNITION_STOP:
+    case HF_VOICE_RECOGNITION_STOP:
         if (hfsm->recognition_active) {
             status = bt_sal_hfp_hf_stop_voice_recognition(&hfsm->addr);
             if (status != BT_STATUS_SUCCESS) {
@@ -850,14 +850,14 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
             }
         }
         break;
-    case SET_MIC_VOLUME: {
+    case HF_SET_MIC_VOLUME: {
         uint8_t vol = data->valueint1;
         vol = vol > 15 ? 15 : vol;
         BT_LOGD("Set Mic Volume :%d", vol);
         bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_MIC, vol);
         break;
     }
-    case SET_SPEAKER_VOLUME: {
+    case HF_SET_SPEAKER_VOLUME: {
         uint8_t vol = data->valueint1;
         vol = vol > 15 ? 15 : vol;
 
@@ -865,7 +865,7 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
         bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_SPK, vol);
         break;
     }
-    case STACK_EVENT_CONNECTION_STATE_CHANGED: {
+    case HF_STACK_EVENT_CONNECTION_STATE_CHANGED: {
         profile_connection_state_t state = data->valueint1;
 
         switch (state) {
@@ -880,7 +880,7 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
         }
         break;
     }
-    case STACK_EVENT_AUDIO_STATE_CHANGED: {
+    case HF_STACK_EVENT_AUDIO_STATE_CHANGED: {
         hfp_audio_state_t state = data->valueint1;
 
         switch (state) {
