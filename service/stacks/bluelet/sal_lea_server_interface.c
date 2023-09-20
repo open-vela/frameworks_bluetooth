@@ -36,25 +36,6 @@
 #include "sal_bluelet.h"
 #include "sal_lea_server_interface.h"
 
-#define LEAS_CALL_SINK_METADATA_PREFER_CONTEX LEA_CONTEXT_TYPE_CONVERSATIONAL | LEA_CONTEXT_TYPE_INSTRUCTIONAL | LEA_CONTEXT_TYPE_VOICE_ASSISTANTS | LEA_CONTEXT_TYPE_SOUND_EFFECTS | LEA_CONTEXT_TYPE_NOTIFICATIONS | LEA_CONTEXT_TYPE_RINGTONE | LEA_CONTEXT_TYPE_ALERTS | LEA_CONTEXT_TYPE_EMERGENCY_ALARM
-
-#define LEAS_MEDIA_SINK_METADATA_PREFER_CONTEX LEA_CONTEXT_TYPE_MEDIA | LEA_CONTEXT_TYPE_GAME | LEA_CONTEXT_TYPE_LIVE
-
-#define LEAS_CALL_SOURCE_METADATA_PREFER_CONTEX LEA_CONTEXT_TYPE_CONVERSATIONAL | LEA_CONTEXT_TYPE_VOICE_ASSISTANTS | LEA_CONTEXT_TYPE_LIVE
-
-#define LEAS_PACS_CALL_SINK_SUPPORTED_SF LEA_SUPPORTED_SAMPLE_FREQUENCY_8000 | LEA_SUPPORTED_SAMPLE_FREQUENCY_16000 | LEA_SUPPORTED_SAMPLE_FREQUENCY_24000 | LEA_SUPPORTED_SAMPLE_FREQUENCY_32000
-
-#define LEAS_PACS_CALL_SOURCE_SUPPORTED_SF (LEA_SUPPORTED_SAMPLE_FREQUENCY_8000 | LEA_SUPPORTED_SAMPLE_FREQUENCY_16000 | LEA_SUPPORTED_SAMPLE_FREQUENCY_24000 | LEA_SUPPORTED_SAMPLE_FREQUENCY_32000)
-
-#define LEAS_PACS_MEDIA_SINK_SUPPORTED_SF (LEA_SUPPORTED_SAMPLE_FREQUENCY_32000 | LEA_SUPPORTED_SAMPLE_FREQUENCY_44100 | LEA_SUPPORTED_SAMPLE_FREQUENCY_48000)
-
-#define LEAS_PACS_FRAME_DURATION (LEA_SUPPORTED_FRAME_DURATION_7_5 | LEA_SUPPORTED_FRAME_DURATION_10 | LEA_PREFERRED_FRAME_DURATION_10)
-
-#define LEAS_PAC_LC3_CODEC          \
-    {                               \
-        LEA_CODING_FORMAT_LC3, 0, 0 \
-    }
-
 static void adpt_lea_pacs_set_sink_locations_cbk(uint32_t locations);
 static void adpt_lea_pacs_set_source_locations_cbk(uint32_t locations);
 static void adpt_lea_ascs_ase_cbk(BD_ADDR remote_addr, SERVICE_LEA_ASE_VALUE_S *ase);
@@ -63,36 +44,6 @@ const LEA_UCS_CALLBACK_S adpt_lea_uc_server_callbacks = {
     .lea_pacs_set_sink_locations_cb = adpt_lea_pacs_set_sink_locations_cbk,
     .lea_pacs_set_source_locations_cb = adpt_lea_pacs_set_source_locations_cbk,
     .lea_ascs_ase_cb = adpt_lea_ascs_ase_cbk,
-};
-
-static SERVICE_LEA_METADATA_S call_sink_metadata = { LEA_METADATA_PREFERRED_AUDIO_CONTEXTS, { LEAS_CALL_SINK_METADATA_PREFER_CONTEX } };
-
-static SERVICE_LEA_METADATA_S media_sink_metadata = { LEA_METADATA_PREFERRED_AUDIO_CONTEXTS, { LEAS_MEDIA_SINK_METADATA_PREFER_CONTEX } };
-
-static SERVICE_LEA_METADATA_S call_source_metadata = { LEA_METADATA_PREFERRED_AUDIO_CONTEXTS, { LEAS_CALL_SOURCE_METADATA_PREFER_CONTEX } };
-
-static SERVICE_LEA_PAC_INFO_S leas_pac_info[3] = {
-    {LEA_PAC_TYPE_SINK_PAC,
-     1,
-     LEAS_PAC_LC3_CODEC,
-     { LEA_CSC_MASK_ALL, LEAS_PACS_CALL_SINK_SUPPORTED_SF, LEAS_PACS_FRAME_DURATION,
-        LEA_SUPPORTED_CHANNEL_COUNT_1, 26, 80, 1 },
-     1,
-     &call_sink_metadata  },
-    { LEA_PAC_TYPE_SINK_PAC,
-     2,
-     LEAS_PAC_LC3_CODEC,
-     { LEA_CSC_MASK_ALL, LEAS_PACS_MEDIA_SINK_SUPPORTED_SF, LEAS_PACS_FRAME_DURATION,
-        LEA_SUPPORTED_CHANNEL_COUNT_1 | LEA_SUPPORTED_CHANNEL_COUNT_2, 60, 155, 2 },
-     1,
-     &media_sink_metadata },
-    { LEA_PAC_TYPE_SOURCE_PAC,
-     3,
-     LEAS_PAC_LC3_CODEC,
-     { LEA_CSC_MASK_ALL, LEAS_PACS_CALL_SOURCE_SUPPORTED_SF, LEAS_PACS_FRAME_DURATION,
-        LEA_SUPPORTED_CHANNEL_COUNT_1, 26, 80, 1 },
-     1,
-     &call_source_metadata},
 };
 
 /****************************************************************************
@@ -151,29 +102,17 @@ static void adpt_lea_ascs_ase_cbk(BD_ADDR remote_addr, SERVICE_LEA_ASE_VALUE_S *
 
 bool adpt_req_pacs_info_callback(SERVICE_LEA_PACS_INFO_S *info)
 {
-    info->pac_number = 3;
-    info->pac_list = leas_pac_info;
-    info->sink_location = LEA_AUDIO_LOCATION_FRONT_LEFT | LEA_AUDIO_LOCATION_FRONT_RIGHT; /* Stereo output */
-    info->source_location = LEA_AUDIO_LOCATION_FRONT_LEFT; /* One-MIC input */
-    info->supported_ctx.sink = LEA_CONTEXT_TYPE_ALL;
-    info->supported_ctx.source = LEAS_CALL_SOURCE_METADATA_PREFER_CONTEX;
-    info->available_ctx.sink = LEA_CONTEXT_TYPE_ALL;
-    info->available_ctx.source = LEAS_CALL_SOURCE_METADATA_PREFER_CONTEX;
-    info->recycle_func = NULL; /* pac_list is constant, not to recycle */
-    return true;
+    return lea_server_on_pacs_info_request((lea_pacs_info_t *)info);
 }
 
 bool adpt_req_ascs_info_callback(SERVICE_LEA_ASCS_INFO_S *info)
 {
-    info->sink_ase_number = CONFIG_BLUETOOTH_LEAUDIO_SERVER_SINK_ASE_NUMBER;
-    info->source_ase_number = CONFIG_BLUETOOTH_LEAUDIO_SERVER_SOURCE_ASE_NUMBER;
-    return true;
+    return lea_server_on_ascs_info_request((lea_ascs_info_t *)info);
 }
 
 bool adpt_req_bass_info_callback(SERVICE_LEA_BASS_INFO_S *info)
 {
-    info->state_number = CONFIG_BLUETOOTH_LEAUDIO_SERVER_BASS_STATE_NUMBER;
-    return true;
+    return lea_server_on_bass_info_request((lea_bass_info_t *)info);
 }
 
 void adpt_server_stream_state_callback(bt_address_t *addr, uint32_t stream_id, bool added)
@@ -223,7 +162,7 @@ bt_status_t bt_sal_lea_server_start_announce(uint8_t adv_id, uint8_t type,
     ext_ad.adv_data_length = adv_size;
     ext_ad.adv_data = adv_data;
     ext_ad.available_ctx.sink = LEA_CONTEXT_TYPE_ALL;
-    ext_ad.available_ctx.source = LEAS_CALL_SOURCE_METADATA_PREFER_CONTEX;
+    ext_ad.available_ctx.source = (LEA_CONTEXT_TYPE_CONVERSATIONAL | LEA_CONTEXT_TYPE_VOICE_ASSISTANTS | LEA_CONTEXT_TYPE_LIVE);
     md.type = LEA_METADATA_EXTENDED_METADATA;
     md.u.vendor_specific.data_length = md_size - 1;
     md.u.vendor_specific.data = md_data;

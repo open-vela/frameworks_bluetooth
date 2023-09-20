@@ -42,13 +42,66 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
+#define LEAS_CALLBACK_FOREACH(_list, _cback, ...) BT_CALLBACK_FOREACH(_list, lea_server_callbacks_t, _cback, ##__VA_ARGS__)
+
+#define LEAS_CONTEXT_TYPE_ALL (ADPT_LEA_CONTEXT_TYPE_CONVERSATIONAL |   \
+                               ADPT_LEA_CONTEXT_TYPE_MEDIA |            \
+                               ADPT_LEA_CONTEXT_TYPE_GAME |             \
+                               ADPT_LEA_CONTEXT_TYPE_INSTRUCTIONAL |    \
+                               ADPT_LEA_CONTEXT_TYPE_VOICE_ASSISTANTS | \
+                               ADPT_LEA_CONTEXT_TYPE_LIVE |             \
+                               ADPT_LEA_CONTEXT_TYPE_SOUND_EFFECTS |    \
+                               ADPT_LEA_CONTEXT_TYPE_NOTIFICATIONS |    \
+                               ADPT_LEA_CONTEXT_TYPE_RINGTONE |         \
+                               ADPT_LEA_CONTEXT_TYPE_ALERTS |           \
+                               ADPT_LEA_CONTEXT_TYPE_EMERGENCY_ALARM)
+
+#ifndef CONFIG_LEAS_CALL_SINK_SUPPORTED_SAMPLE_FREQUENCY
+#define CONFIG_LEAS_CALL_SINK_SUPPORTED_SAMPLE_FREQUENCY (ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_8000 |  \
+                                                          ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_16000 | \
+                                                          ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_24000)
+#endif
+
+#ifndef CONFIG_LEAS_CALL_SOURCE_SUPPORTED_SAMPLE_FREQUENCY
+#define CONFIG_LEAS_CALL_SOURCE_SUPPORTED_SAMPLE_FREQUENCY (ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_8000 |  \
+                                                            ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_16000 | \
+                                                            ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_24000)
+#endif
+
+#ifndef CONFIG_LEAS_MEDIA_SINK_SUPPORTED_SAMPLE_FREQUENCY
+#define CONFIG_LEAS_MEDIA_SINK_SUPPORTED_SAMPLE_FREQUENCY (ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_16000 | \
+                                                           ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_32000 | \
+                                                           ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_48000)
+#endif
+
+#ifndef CONFIG_LEAS_CALL_SINK_METADATA_PREFER_CONTEX
+#define CONFIG_LEAS_CALL_SINK_METADATA_PREFER_CONTEX (ADPT_LEA_CONTEXT_TYPE_CONVERSATIONAL |   \
+                                                      ADPT_LEA_CONTEXT_TYPE_INSTRUCTIONAL |    \
+                                                      ADPT_LEA_CONTEXT_TYPE_VOICE_ASSISTANTS | \
+                                                      ADPT_LEA_CONTEXT_TYPE_SOUND_EFFECTS |    \
+                                                      ADPT_LEA_CONTEXT_TYPE_NOTIFICATIONS |    \
+                                                      ADPT_LEA_CONTEXT_TYPE_RINGTONE |         \
+                                                      ADPT_LEA_CONTEXT_TYPE_ALERTS |           \
+                                                      ADPT_LEA_CONTEXT_TYPE_EMERGENCY_ALARM)
+#endif
+
+#ifndef CONFIG_LEAS_CALL_SOURCE_METADATA_PREFER_CONTEX
+#define CONFIG_LEAS_CALL_SOURCE_METADATA_PREFER_CONTEX (ADPT_LEA_CONTEXT_TYPE_CONVERSATIONAL | ADPT_LEA_CONTEXT_TYPE_VOICE_ASSISTANTS | ADPT_LEA_CONTEXT_TYPE_LIVE)
+#endif
+
+#ifndef CONFIG_LEAS_MEDIA_SINK_METADATA_PREFER_CONTEX
+#define CONFIG_LEAS_MEDIA_SINK_METADATA_PREFER_CONTEX (ADPT_LEA_CONTEXT_TYPE_MEDIA | ADPT_LEA_CONTEXT_TYPE_GAME | ADPT_LEA_CONTEXT_TYPE_LIVE)
+#endif
+
+#ifndef CONFIG_LEAS_PACS_FRAME_DURATION
+#define CONFIG_LEAS_PACS_FRAME_DURATION (ADPT_LEA_SUPPORTED_FRAME_DURATION_10 | ADPT_LEA_PREFERRED_FRAME_DURATION_10)
+#endif
+
 #define CHECK_ENABLED()                    \
     {                                      \
         if (!g_lea_server_service.started) \
             return BT_STATUS_NOT_ENABLED;  \
     }
-
-#define LEAS_CALLBACK_FOREACH(_list, _cback, ...) BT_CALLBACK_FOREACH(_list, lea_server_callbacks_t, _cback, ##__VA_ARGS__)
 
 /****************************************************************************
  * Private Types
@@ -57,6 +110,8 @@ typedef struct
 {
     bool started;
     uint8_t max_connections;
+    uint32_t sink_location;
+    uint32_t source_location;
     bt_list_t *leas_devices;
     bt_list_t *leas_stream;
     callbacks_list_t *callbacks;
@@ -115,13 +170,13 @@ static lea_server_service_t g_lea_server_service = {
     .callbacks = NULL,
 };
 
-static lea_sink_callabcks_t lea_sink_callbacks = {
+static lea_sink_callabcks_t g_lea_sink_callbacks = {
     .lea_audio_meatadata_updated_cb = on_lea_sink_meatadata_updated,
     .lea_audio_resume_cb = on_lea_sink_audio_resume,
     .lea_audio_suspend_cb = on_lea_sink_audio_suspend,
 };
 
-static lea_source_callabcks_t lea_source_callbacks = {
+static lea_source_callabcks_t g_lea_source_callbacks = {
     .lea_audio_meatadata_updated_cb = on_lea_source_meatadata_updated,
     .lea_audio_resume_cb = on_lea_source_audio_resume,
     .lea_audio_suspend_cb = on_lea_source_audio_suspend,
@@ -139,18 +194,65 @@ static const lea_server_interface_t LEAServerInterface = {
     .disconnect_audio = lea_server_disconnect_audio,
 };
 
+static lea_metadata_t g_metadata_info[] = {
+    {.type = ADPT_LEA_METADATA_PREFERRED_AUDIO_CONTEXTS,
+     .preferred_contexts = CONFIG_LEAS_CALL_SINK_METADATA_PREFER_CONTEX  },
+    { .type = ADPT_LEA_METADATA_PREFERRED_AUDIO_CONTEXTS,
+     .preferred_contexts = CONFIG_LEAS_CALL_SOURCE_METADATA_PREFER_CONTEX},
+    { .type = ADPT_LEA_METADATA_PREFERRED_AUDIO_CONTEXTS,
+     .preferred_contexts = CONFIG_LEAS_MEDIA_SINK_METADATA_PREFER_CONTEX }
+};
+
+static lea_pac_info_t g_pacs_info[] = {
+    {.pac_type = ADPT_LEA_PAC_TYPE_SINK_PAC,    .pac_id = 1, .codec_id.format = ADPT_LEA_FORMAT_LC3, .codec_pac = {
+                                                                                                       .mask = 0x1F,
+                                                                                                       .frequencies = CONFIG_LEAS_CALL_SINK_SUPPORTED_SAMPLE_FREQUENCY,
+                                                                                                       .durations = CONFIG_LEAS_PACS_FRAME_DURATION,
+                                                                                                       .channels = ADPT_LEA_SUPPORTED_CHANNEL_COUNT_1,
+                                                                                                       .frame_octets_min = 26,
+                                                                                                       .frame_octets_max = 80,
+                                                                                                       .max_frames = 1,
+                                                                                                   },
+     .md_number = sizeof(g_metadata_info[0]) / sizeof(lea_metadata_t),
+     .md_value = &g_metadata_info[0]},
+    { .pac_type = ADPT_LEA_PAC_TYPE_SOURCE_PAC, .pac_id = 2, .codec_id.format = ADPT_LEA_FORMAT_LC3, .codec_pac = {
+                                                                                                         .mask = 0x1F,
+                                                                                                         .frequencies = CONFIG_LEAS_CALL_SOURCE_SUPPORTED_SAMPLE_FREQUENCY,
+                                                                                                         .durations = CONFIG_LEAS_PACS_FRAME_DURATION,
+                                                                                                         .channels = ADPT_LEA_SUPPORTED_CHANNEL_COUNT_1,
+                                                                                                         .frame_octets_min = 26,
+                                                                                                         .frame_octets_max = 80,
+                                                                                                         .max_frames = 1,
+                                                                                                     },
+     .md_number = sizeof(g_metadata_info[1]) / sizeof(lea_metadata_t),
+     .md_value = &g_metadata_info[1]},
+    { .pac_type = ADPT_LEA_PAC_TYPE_SINK_PAC,   .pac_id = 3, .codec_id.format = ADPT_LEA_FORMAT_LC3, .codec_pac = {
+                                                                                                       .mask = 0x1F,
+                                                                                                       .frequencies = CONFIG_LEAS_MEDIA_SINK_SUPPORTED_SAMPLE_FREQUENCY,
+                                                                                                       .durations = CONFIG_LEAS_PACS_FRAME_DURATION,
+                                                                                                       .channels = ADPT_LEA_SUPPORTED_CHANNEL_COUNT_1,
+                                                                                                       .frame_octets_min = 60,
+                                                                                                       .frame_octets_max = 155,
+                                                                                                       .max_frames = 1,
+                                                                                                   },
+     .md_number = sizeof(g_metadata_info[2]) / sizeof(lea_metadata_t),
+     .md_value = &g_metadata_info[2]},
+};
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
-static bool lea_server_device_cmp(void *device, void *addr)
+static bool
+lea_server_device_cmp(void *device, void *addr)
 {
     return bt_addr_compare(&((lea_server_device_t *)device)->addr, addr) == 0;
 }
 
 static lea_server_device_t *find_lea_server_device_by_addr(bt_address_t *addr)
 {
-    return bt_list_find(g_lea_server_service.leas_devices,
-                        lea_server_device_cmp, addr);
+    lea_server_service_t *service = &g_lea_server_service;
+
+    return bt_list_find(service->leas_devices, lea_server_device_cmp, addr);
 }
 
 static lea_server_device_t *lea_server_device_new(bt_address_t *addr,
@@ -183,17 +285,18 @@ static void lea_server_device_delete(lea_server_device_t *device)
 
 static lea_server_state_machine_t *get_state_machine(bt_address_t *addr)
 {
+    lea_server_service_t *service = &g_lea_server_service;
     lea_server_state_machine_t *leasm;
     lea_server_device_t *device;
 
-    if (!g_lea_server_service.started)
+    if (!service->started)
         return NULL;
 
     device = find_lea_server_device_by_addr(addr);
     if (device)
         return device->leasm;
 
-    leasm = lea_server_state_machine_new(addr, (void *)&g_lea_server_service);
+    leasm = lea_server_state_machine_new(addr, (void *)service);
     if (!leasm) {
         BT_LOGE("Create state machine failed");
         return NULL;
@@ -206,26 +309,28 @@ static lea_server_state_machine_t *get_state_machine(bt_address_t *addr)
         return NULL;
     }
 
-    bt_list_add_tail(g_lea_server_service.leas_devices, device);
+    bt_list_add_tail(service->leas_devices, device);
 
     return leasm;
 }
 
 static void lea_server_do_shutdown(void)
 {
-    if (!g_lea_server_service.started)
+    lea_server_service_t *service = &g_lea_server_service;
+
+    if (!service->started)
         return;
 
-    pthread_mutex_lock(&g_lea_server_service.device_lock);
-    g_lea_server_service.started = false;
-    bt_list_free(g_lea_server_service.leas_devices);
-    bt_list_free(g_lea_server_service.leas_stream);
-    g_lea_server_service.leas_devices = NULL;
-    g_lea_server_service.leas_stream = NULL;
-    pthread_mutex_unlock(&g_lea_server_service.device_lock);
-    pthread_mutex_destroy(&g_lea_server_service.device_lock);
-    bt_callbacks_list_free(g_lea_server_service.callbacks);
-    g_lea_server_service.callbacks = NULL;
+    pthread_mutex_lock(&service->device_lock);
+    service->started = false;
+    bt_list_free(service->leas_devices);
+    bt_list_free(service->leas_stream);
+    service->leas_devices = NULL;
+    service->leas_stream = NULL;
+    pthread_mutex_unlock(&service->device_lock);
+    pthread_mutex_destroy(&service->device_lock);
+    bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
     lea_audio_sink_cleanup();
     lea_audio_source_cleanup();
     bt_sal_lea_cleanup();
@@ -233,6 +338,7 @@ static void lea_server_do_shutdown(void)
 
 static void lea_server_process_message(void *data)
 {
+    lea_server_service_t *service = &g_lea_server_service;
     lea_server_msg_t *msg = (lea_server_msg_t *)data;
 
     switch (msg->event) {
@@ -240,11 +346,11 @@ static void lea_server_process_message(void *data)
         lea_server_do_shutdown();
         break;
     default: {
-        pthread_mutex_lock(&g_lea_server_service.device_lock);
+        pthread_mutex_lock(&service->device_lock);
         lea_server_state_machine_t *leasm = get_state_machine(&msg->data.addr);
         if (leasm)
             lea_server_state_machine_dispatch(leasm, msg);
-        pthread_mutex_unlock(&g_lea_server_service.device_lock);
+        pthread_mutex_unlock(&service->device_lock);
         break;
     }
     }
@@ -393,6 +499,14 @@ static bt_status_t lea_server_startup(profile_on_startup_t cb)
         status = BT_STATUS_NOMEM;
         goto fail;
     }
+
+#ifdef CONFIG_KVDB
+    service->sink_location = property_get_int32("persist.bluetooth.lea.sinkloc", CONFIG_BLUETOOTH_LEAUDIO_SERVER_SINK_LOCATION);
+    service->source_location = property_get_int32("persist.bluetooth.lea.srcloc", CONFIG_BLUETOOTH_LEAUDIO_SERVER_SOURCE_LOCATION);
+#else
+    service->sink_location = CONFIG_BLUETOOTH_LEAUDIO_SERVER_SINK_LOCATION;
+    service->source_location = CONFIG_BLUETOOTH_LEAUDIO_SERVER_SOURCE_LOCATION;
+#endif
 
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
@@ -575,6 +689,7 @@ static void update_server_ase(lea_server_device_t *device, uint8_t id, uint8_t s
 lea_audio_stream_t *lea_server_add_stream(
     uint32_t stream_id, bt_address_t *remote_addr)
 {
+    lea_server_service_t *service = &g_lea_server_service;
     lea_audio_stream_t *audio_stream;
 
     audio_stream = calloc(1, sizeof(lea_audio_stream_t));
@@ -586,70 +701,78 @@ lea_audio_stream_t *lea_server_add_stream(
     audio_stream->stream_id = stream_id;
     audio_stream->is_source = bt_sal_lea_is_source_stream(stream_id);
     memcpy(&audio_stream->addr, remote_addr, sizeof(bt_address_t));
-    pthread_mutex_lock(&g_lea_server_service.stream_lock);
-    bt_list_add_tail(g_lea_server_service.leas_stream, audio_stream);
-    pthread_mutex_unlock(&g_lea_server_service.stream_lock);
+    pthread_mutex_lock(&service->stream_lock);
+    bt_list_add_tail(service->leas_stream, audio_stream);
+    pthread_mutex_unlock(&service->stream_lock);
 
     return audio_stream;
 }
 
 lea_audio_stream_t *lea_server_find_stream(uint32_t stream_id)
 {
+    lea_server_service_t *service = &g_lea_server_service;
     lea_audio_stream_t *stream;
 
-    pthread_mutex_lock(&g_lea_server_service.stream_lock);
-    stream = bt_list_find(g_lea_server_service.leas_stream, lea_server_stream_cmp, &stream_id);
-    pthread_mutex_unlock(&g_lea_server_service.stream_lock);
+    pthread_mutex_lock(&service->stream_lock);
+    stream = bt_list_find(service->leas_stream, lea_server_stream_cmp, &stream_id);
+    pthread_mutex_unlock(&service->stream_lock);
 
     return stream;
 }
 
 lea_audio_stream_t *lea_server_find_update_stream(lea_audio_stream_t *stream)
 {
+    lea_server_service_t *service = &g_lea_server_service;
     lea_audio_stream_t *local_stream = NULL;
 
-    pthread_mutex_lock(&g_lea_server_service.stream_lock);
-    local_stream = bt_list_find(g_lea_server_service.leas_stream, lea_server_stream_cmp, &stream->stream_id);
+    pthread_mutex_lock(&service->stream_lock);
+    local_stream = bt_list_find(service->leas_stream, lea_server_stream_cmp, &stream->stream_id);
     if (local_stream) {
         memcpy(local_stream, stream, sizeof(lea_audio_stream_t));
     }
-    pthread_mutex_unlock(&g_lea_server_service.stream_lock);
+    pthread_mutex_unlock(&service->stream_lock);
 
     return local_stream;
 }
 
 void lea_server_remove_stream(uint32_t stream_id)
 {
+    lea_server_service_t *service = &g_lea_server_service;
     lea_audio_stream_t *audio_stream;
 
-    pthread_mutex_lock(&g_lea_server_service.stream_lock);
-    audio_stream = bt_list_find(g_lea_server_service.leas_stream, lea_server_stream_cmp, &stream_id);
-    bt_list_remove(g_lea_server_service.leas_stream, audio_stream);
-    pthread_mutex_unlock(&g_lea_server_service.stream_lock);
+    pthread_mutex_lock(&service->stream_lock);
+    audio_stream = bt_list_find(service->leas_stream, lea_server_stream_cmp, &stream_id);
+    bt_list_remove(service->leas_stream, audio_stream);
+    pthread_mutex_unlock(&service->stream_lock);
 }
 
 void lea_server_remove_streams()
 {
-    pthread_mutex_lock(&g_lea_server_service.stream_lock);
-    bt_list_clear(g_lea_server_service.leas_stream);
-    pthread_mutex_unlock(&g_lea_server_service.stream_lock);
+    lea_server_service_t *service = &g_lea_server_service;
+
+    pthread_mutex_lock(&service->stream_lock);
+    bt_list_clear(service->leas_stream);
+    pthread_mutex_unlock(&service->stream_lock);
 }
 
 void lea_server_notify_stack_state_changed(lea_server_stack_state_t
                                                enabled)
 {
+    lea_server_service_t *service = &g_lea_server_service;
+
     BT_LOGD("%s", __func__);
-    LEAS_CALLBACK_FOREACH(g_lea_server_service.callbacks,
+    LEAS_CALLBACK_FOREACH(service->callbacks,
                           server_stack_state_cb, enabled);
 }
 
 void lea_server_notify_connection_state_changed(bt_address_t *addr,
                                                 profile_connection_state_t state)
 {
+    lea_server_service_t *service = &g_lea_server_service;
     BT_LOGD("%s", __func__);
 
     lea_server_update_connection_state(addr, state);
-    LEAS_CALLBACK_FOREACH(g_lea_server_service.callbacks,
+    LEAS_CALLBACK_FOREACH(service->callbacks,
                           server_connection_state_cb, state, addr);
 }
 
@@ -719,9 +842,9 @@ void lea_server_on_stream_started(lea_audio_stream_t *audio)
     }
 
     if (stream->is_source) {
-        lea_audio_source_set_callback(&lea_source_callbacks);
+        lea_audio_source_set_callback(&g_lea_source_callbacks);
     } else {
-        lea_audio_sink_set_callback(&lea_sink_callbacks);
+        lea_audio_sink_set_callback(&g_lea_sink_callbacks);
     }
 
     msg = lea_server_msg_new_ext(STACK_EVENT_STREAM_STARTED,
@@ -870,6 +993,40 @@ void lea_server_on_ascs_event(bt_address_t *addr, uint8_t id, uint8_t state, uin
     }
 
     lea_server_send_event(addr, event);
+}
+
+bool lea_server_on_pacs_info_request(lea_pacs_info_t *pacs_info)
+{
+    lea_server_service_t *service = &g_lea_server_service;
+
+    pacs_info->pac_number = sizeof(g_pacs_info) / sizeof(g_pacs_info[0]);
+    pacs_info->pac_list = g_pacs_info;
+
+    pacs_info->sink_location = service->sink_location;
+    pacs_info->supported_ctx.sink = LEAS_CONTEXT_TYPE_ALL;
+    pacs_info->available_ctx.sink = LEAS_CONTEXT_TYPE_ALL;
+
+#ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER_SOURCE
+    pacs_info->source_location = service->source_location;
+    pacs_info->supported_ctx.source = CONFIG_LEAS_CALL_SOURCE_METADATA_PREFER_CONTEX | ADPT_LEA_CONTEXT_TYPE_UNSPECIFIED;
+    pacs_info->available_ctx.source = CONFIG_LEAS_CALL_SOURCE_METADATA_PREFER_CONTEX | ADPT_LEA_CONTEXT_TYPE_UNSPECIFIED;
+#endif
+
+    return true;
+}
+
+bool lea_server_on_ascs_info_request(lea_ascs_info_t *ascs_info)
+{
+    ascs_info->sink_ase_number = CONFIG_BLUETOOTH_LEAUDIO_SERVER_SINK_ASE_NUMBER;
+    ascs_info->source_ase_number = CONFIG_BLUETOOTH_LEAUDIO_SERVER_SOURCE_ASE_NUMBER;
+
+    return true;
+}
+
+bool lea_server_on_bass_info_request(lea_bass_info_t *pacs_info)
+{
+    pacs_info->bass_number = CONFIG_BLUETOOTH_LEAUDIO_SERVER_BASS_STATE_NUMBER;
+    return true;
 }
 
 static const profile_service_t lea_server_service = {
