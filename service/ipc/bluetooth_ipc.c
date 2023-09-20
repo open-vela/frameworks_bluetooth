@@ -22,6 +22,7 @@
 #include "hfp_hf_stub.h"
 #include "hfp_ag_stub.h"
 #include "spp_stub.h"
+#include "hid_device_stub.h"
 #include "pan_stub.h"
 #include "gattc_stub.h"
 #include "gatts_stub.h"
@@ -40,6 +41,9 @@ static IBtHfpHf binderHfpHf = { 0 };
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
 static IBtSpp binderSpp = { 0 };
+#endif
+#ifdef CONFIG_BLUETOOTH_HID_DEVICE
+static IBtHidd binderHidd = { 0 };
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
 static IBtPan binderPan = { 0 };
@@ -106,6 +110,14 @@ bt_status_t bluetooth_ipc_add_services(void)
     stat = BtSpp_addService(&binderSpp, SPP_BINDER_INSTANCE);
     if (stat != STATUS_OK) {
         BT_LOGD("Add Spp Service Failed:%d", stat);
+        return BT_STATUS_IPC_ERROR;
+    }
+#endif
+
+#ifdef CONFIG_BLUETOOTH_HID_DEVICE
+    stat = BtHidd_addService(&binderHidd, HID_DEVICE_BINDER_INSTANCE);
+    if (stat != STATUS_OK) {
+        BT_LOGD("Add HidDevice Service Failed:%d", stat);
         return BT_STATUS_IPC_ERROR;
     }
 #endif
