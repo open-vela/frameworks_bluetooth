@@ -302,7 +302,6 @@ bt_status_t hfp_ag_send_event(bt_address_t *addr, hfp_ag_event_t evt)
 
 static bt_status_t hfp_ag_init(void)
 {
-    BT_LOGD("%s", __func__);
     return BT_STATUS_SUCCESS;
 }
 
@@ -335,7 +334,6 @@ static int hfp_ag_get_state(void)
 
 static void hfp_ag_cleanup(void)
 {
-    BT_LOGD("%s", __func__);
 }
 
 static void *hfp_ag_register_callbacks(void *remote, const hfp_ag_callbacks_t *callbacks)

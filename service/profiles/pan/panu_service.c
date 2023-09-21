@@ -442,7 +442,6 @@ static bt_status_t pan_init(void)
 {
     pthread_mutexattr_t attr;
 
-    BT_LOGD("%s", __func__);
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     if (pthread_mutex_init(&g_pan.pan_lock, &attr) < 0)
@@ -455,8 +454,6 @@ static bt_status_t pan_init(void)
 
 static void pan_cleanup(void)
 {
-    BT_LOGD("%s", __func__);
-
     bt_callbacks_list_free(g_pan.callbacks);
     g_pan.callbacks = NULL;
     pthread_mutex_destroy(&g_pan.pan_lock);
@@ -464,7 +461,6 @@ static void pan_cleanup(void)
 
 static bt_status_t pan_startup(profile_on_startup_t cb)
 {
-    BT_LOGD("%s", __func__);
     pthread_mutex_lock(&g_pan.pan_lock);
     if (g_pan.enable) {
         pthread_mutex_unlock(&g_pan.pan_lock);
@@ -491,7 +487,6 @@ static bt_status_t pan_startup(profile_on_startup_t cb)
 
 static bt_status_t pan_shutdown(profile_on_shutdown_t cb)
 {
-    BT_LOGD("%s", __func__);
     pthread_mutex_lock(&g_pan.pan_lock);
     if (!g_pan.enable) {
         pthread_mutex_unlock(&g_pan.pan_lock);
