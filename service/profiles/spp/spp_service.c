@@ -740,8 +740,6 @@ static bt_status_t spp_init(void)
 {
     pthread_mutexattr_t attr;
 
-    BT_LOGD("%s", __func__);
-
     memset(&g_spp_handle, 0, sizeof(g_spp_handle));
     g_spp_handle.started = 0;
 
@@ -1003,7 +1001,6 @@ unlock_exit:
 
 static void spp_cleanup(void)
 {
-    BT_LOGD("%s", __func__);
     pthread_mutex_destroy(&g_spp_handle.spp_lock);
 }
 
