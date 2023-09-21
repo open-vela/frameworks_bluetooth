@@ -78,6 +78,10 @@ int scan_command_init(void *handle);
 void scan_command_uninit(void *handle);
 int scan_command_exec(void *handle, int argc, char *argv[]);
 
+int a2dp_sink_commond_init(void *handle);
+int a2dp_sink_commond_uninit(void *handle);
+int a2dp_sink_command_exec(void *handle, int argc, char *argv[]);
+
 int a2dp_src_commond_init(void *handle);
 int a2dp_src_commond_uninit(void *handle);
 int a2dp_src_command_exec(void *handle, int argc, char *argv[]);
