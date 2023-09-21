@@ -298,13 +298,11 @@ static uint8_t get_current_connnection_cnt(void)
 
 static bt_status_t hfp_hf_init(void)
 {
-    BT_LOGD("%s", __func__);
     return BT_STATUS_SUCCESS;
 }
 
 static void hfp_hf_cleanup(void)
 {
-    BT_LOGD("%s", __func__);
 }
 
 static bt_status_t hfp_hf_startup(profile_on_startup_t cb)
