@@ -527,7 +527,7 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case STACK_EVENT_ASE_RELEASING: {
-        hsm_transition_to(sm, &closed_state);
+        hsm_transition_to(sm, &closing_state);
         break;
     }
     default:
@@ -578,7 +578,7 @@ static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case STACK_EVENT_ASE_RELEASING: {
-        hsm_transition_to(sm, &closed_state);
+        hsm_transition_to(sm, &closing_state);
         break;
     }
     default:

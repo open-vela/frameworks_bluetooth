@@ -837,7 +837,7 @@ void lea_server_on_stream_started(lea_audio_stream_t *audio)
 
     stream = lea_server_find_stream(audio->stream_id);
     if (!stream) {
-        BT_LOGE("%s, failed stream_id:%d", __func__, audio->stream_id);
+        BT_LOGE("%s, failed stream_id:0x%08x", __func__, audio->stream_id);
         return;
     }
 
@@ -863,7 +863,7 @@ void lea_server_on_stream_stopped(uint32_t stream_id)
 
     stream = lea_server_find_stream(stream_id);
     if (!stream) {
-        BT_LOGE("%s, failed stream_id:%d", __func__, stream_id);
+        BT_LOGE("%s, failed stream_id:0x%08x", __func__, stream_id);
         return;
     }
 
@@ -882,7 +882,7 @@ void lea_server_on_stream_suspend(uint32_t stream_id)
 
     stream = lea_server_find_stream(stream_id);
     if (!stream) {
-        BT_LOGE("%s, failed stream_id:%d", __func__, stream_id);
+        BT_LOGE("%s, failed stream_id:0x%08x", __func__, stream_id);
         return;
     }
 
@@ -901,7 +901,7 @@ void lea_server_on_stream_resume(uint32_t stream_id)
 
     stream = lea_server_find_stream(stream_id);
     if (!stream) {
-        BT_LOGE("%s, failed stream_id:%d", __func__, stream_id);
+        BT_LOGE("%s, failed stream_id:0x%08x", __func__, stream_id);
         return;
     }
 
@@ -920,7 +920,7 @@ void lea_server_on_metedata_updated(uint32_t stream_id)
 
     stream = lea_server_find_stream(stream_id);
     if (!stream) {
-        BT_LOGE("%s, failed stream_id:%d", __func__, stream_id);
+        BT_LOGE("%s, failed stream_id:0x%08x", __func__, stream_id);
         return;
     }
 
@@ -940,7 +940,7 @@ void lea_server_on_stream_recv(uint32_t stream_id, uint32_t time_stamp,
 
     stream = lea_server_find_stream(stream_id);
     if (!stream) {
-        BT_LOGE("%s, failed stream_id:%d", __func__, stream_id);
+        BT_LOGE("%s, failed stream_id:0x%08x", __func__, stream_id);
         return;
     }
 
