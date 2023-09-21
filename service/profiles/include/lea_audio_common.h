@@ -70,6 +70,7 @@ typedef enum {
     ADPT_LEA_MCS1_ID,
     ADPT_LEA_GTBS_ID,
     ADPT_LEA_TBS1_ID,
+    ADPT_LEA_CSIS1_ID,
     ADPT_LEA_SERVICE_MAX_ID,
 } bt_lea_service_id;
 
@@ -243,6 +244,12 @@ typedef enum {
     ADPT_LEA_SUPPORTED_CHANNEL_COUNT_8 = LEA_BIT(7),
 } lea_channal_counts_t;
 
+typedef enum {
+    ADPT_LEA_SIRK_TYPE_ENCRYPTED,
+    ADPT_LEA_SIRK_TYPE_PLAIN_TEXT,
+    ADPT_LEA_SIRK_TYPE_OOB_ONLY = 0xFF,
+} lea_sirk_type_t;
+
 typedef struct {
     uint8_t format;
     uint16_t company_id;
@@ -329,6 +336,20 @@ typedef struct {
 typedef struct {
     uint8_t bass_number;
 } lea_bass_info_t;
+
+typedef struct {
+    uint32_t csis_id;
+    uint8_t set_size;
+    uint8_t sirk[16];
+    uint8_t sirk_type;
+    uint8_t rank;
+} lea_csis_info_t;
+
+typedef struct {
+    uint8_t csis_number;
+    uint8_t rfu;
+    lea_csis_info_t *csis_info;
+} lea_csis_infos_t;
 
 typedef struct {
     uint32_t stream_id;

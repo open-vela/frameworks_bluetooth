@@ -458,6 +458,18 @@ config BLUETOOTH_LEAUDIO_SERVER_SINK_LOCATION
 	help
 		leaudio server sink location
 
+config BLUETOOTH_LEAUDIO_SERVER_CSIS_SIZE
+	int "leaudio server csis set size"
+	default 1
+	help
+		leaudio server csis set size
+
+config BLUETOOTH_LEAUDIO_SERVER_CSIS_RANK
+	int "leaudio server csis rank"
+	default 1
+	help
+		leaudio server csis rank
+
 endif # BLUETOOTH_LEAUDIO_SERVER
 
 if BLUETOOTH_LEAUDIO_CLIENT

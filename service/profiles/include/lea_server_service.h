@@ -62,9 +62,12 @@ void lea_server_on_stream_recv(uint32_t stream_id, uint32_t time_stamp,
                                uint16_t seq_number, uint8_t *sdu, uint16_t size);
 void lea_server_on_ascs_event(bt_address_t *addr, uint8_t id, uint8_t state, uint16_t type);
 
+void lea_server_on_csis_lock_state_changed(uint32_t csis_id, bt_address_t *addr, uint8_t lock);
+
 bool lea_server_on_pacs_info_request(lea_pacs_info_t *pacs_info);
 bool lea_server_on_ascs_info_request(lea_ascs_info_t *ascs_info);
-bool lea_server_on_bass_info_request(lea_bass_info_t *pacs_info);
+bool lea_server_on_bass_info_request(lea_bass_info_t *bass_info);
+bool lea_server_on_csis_info_request(lea_csis_infos_t *csis_info);
 
 /*
  * register profile to service manager

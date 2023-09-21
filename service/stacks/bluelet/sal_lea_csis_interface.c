@@ -31,9 +31,7 @@
 #include "sal_bluelet.h"
 #include "sal_lea_csis_interface.h"
 
-static void adpt_lea_csis_member_lock_cbk(uint32_t csis_id, BD_ADDR csis_addr, uint8_t lock);
-
-static const char *default_sirk = "13579a24680b";
+static void adpt_lea_csis_member_lock_cbk(uint32_t csis_id, BD_ADDR remote_addr, uint8_t lock);
 
 const LEA_CSIS_CALLBACK_S adpt_lea_csip_server_callbacks = {
     .lea_csis_member_lock_cb = adpt_lea_csis_member_lock_cbk,
@@ -43,16 +41,13 @@ const LEA_CSIS_CALLBACK_S adpt_lea_csip_server_callbacks = {
  * Private function
  ****************************************************************************/
 
-static void adpt_lea_csis_recycle_func(uint32_t number, void *csis_s)
-{
-    free(csis_s);
-}
-
-static void adpt_lea_csis_member_lock_cbk(uint32_t csis_id, BD_ADDR csis_addr,
+static void adpt_lea_csis_member_lock_cbk(uint32_t csis_id, BD_ADDR remote_addr,
                                           uint8_t lock)
 {
-    char *lock_s[] = { "NA", "Unlocked", "Locked" };
-    BT_LOGD("%s, [CSIS 0x%08x][%s]", __func__, csis_id, lock_s[lock]);
+    bt_address_t addr;
+
+    memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
+    lea_server_on_csis_lock_state_changed(csis_id, &addr, lock);
 }
 
 /****************************************************************************
@@ -61,22 +56,7 @@ static void adpt_lea_csis_member_lock_cbk(uint32_t csis_id, BD_ADDR csis_addr,
 
 bool adpt_req_csis_info_callback(SERVICE_LEA_CSIS_S *info)
 {
-    char value[BT_COMMON_KEY_SIZE] = { 0 };
-
-    BT_LOGD("%s", __func__);
-    info->csis_number = 1;
-    info->csis_info = malloc(sizeof(SERVICE_LEA_CSIS_INFO_S));
-    info->csis_info[0].csis_id = 0x47;
-    info->csis_info[0].set_size = property_get_int32("persist.bluetooth.csis.set_size", 1);
-    info->csis_info[0].sirk_type = LEA_SIRK_TYPE_ENCRYPTED;
-    info->csis_info[0].rank = property_get_int32("persist.bluetooth.csis.rank", 1);
-
-    property_get("persist.bluetooth.csis.set_sirk", value, default_sirk);
-    for (int i = 0; i < BT_COMMON_KEY_SIZE; i++) {
-        info->csis_info[0].sirk[i] = strtol(&value[i], NULL, 16);
-    }
-
-    info->recycle_func = adpt_lea_csis_recycle_func;
-    return TRUE;
+    return lea_server_on_csis_info_request((lea_csis_infos_t *)info);
 }
+
 #endif /* __SAL_LEA_CSIS_INTERFACE_H__ */
