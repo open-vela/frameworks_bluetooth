@@ -239,6 +239,16 @@ static lea_pac_info_t g_pacs_info[] = {
      .md_value = &g_metadata_info[2]},
 };
 
+static lea_csis_info_t g_csis_info[] = {
+    {
+     .csis_id = ADPT_LEA_CSIS1_ID,
+     .set_size = CONFIG_BLUETOOTH_LEAUDIO_SERVER_CSIS_SIZE,
+     .rank = CONFIG_BLUETOOTH_LEAUDIO_SERVER_CSIS_RANK,
+     .sirk_type = ADPT_LEA_SIRK_TYPE_ENCRYPTED,
+     .sirk = { 0xB8, 0x03, 0xEA, 0xC6, 0xAF, 0xBB, 0x65, 0xA2, 0x5A, 0x41, 0xF1, 0x53, 0x05, 0x68, 0x8E, 0x83 },
+     },
+};
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -995,6 +1005,12 @@ void lea_server_on_ascs_event(bt_address_t *addr, uint8_t id, uint8_t state, uin
     lea_server_send_event(addr, event);
 }
 
+void lea_server_on_csis_lock_state_changed(uint32_t csis_id, bt_address_t *addr, uint8_t lock)
+{
+    char *state[] = { "NA", "Unlocked", "Locked" };
+    BT_LOGD("%s, addr:%s(%s)", __func__, bt_addr_str(addr), state[lock]);
+}
+
 bool lea_server_on_pacs_info_request(lea_pacs_info_t *pacs_info)
 {
     lea_server_service_t *service = &g_lea_server_service;
@@ -1023,9 +1039,30 @@ bool lea_server_on_ascs_info_request(lea_ascs_info_t *ascs_info)
     return true;
 }
 
-bool lea_server_on_bass_info_request(lea_bass_info_t *pacs_info)
+bool lea_server_on_bass_info_request(lea_bass_info_t *bass_info)
 {
-    pacs_info->bass_number = CONFIG_BLUETOOTH_LEAUDIO_SERVER_BASS_STATE_NUMBER;
+    bass_info->bass_number = CONFIG_BLUETOOTH_LEAUDIO_SERVER_BASS_STATE_NUMBER;
+    return true;
+}
+
+bool lea_server_on_csis_info_request(lea_csis_infos_t *csis_info)
+{
+    uint8_t number;
+    lea_csis_info_t *info;
+
+    number = sizeof(g_csis_info) / sizeof(g_csis_info[0]);
+    csis_info->csis_number = number;
+    csis_info->csis_info = g_csis_info;
+
+#ifdef CONFIG_KVDB
+    for (uint8_t index = 0; index < number; index++) {
+        info = &g_csis_info[index];
+        info->set_size = property_get_int32("persist.bluetooth.csis.set_size", 1);
+        info->rank = property_get_int32("persist.bluetooth.csis.rank", 1);
+        property_get_buffer("persist.bluetooth.csis.set_sirk", info->sirk, 16);
+    }
+#endif
+
     return true;
 }
 
