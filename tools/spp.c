@@ -82,8 +82,6 @@ static const char* TRANS_EOF = "EOF";
 
 static struct list_node device_list = LIST_INITIAL_VALUE(device_list);
 static spp_interface_t* spp_interface = NULL;
-static uv_timer_t* spp_timer = NULL;
-static sem_t spp_sem;
 static sem_t spp_send_sem;
 static transmit_context_t trans_ctx = { 0 };
 static void* g_spp_handle = NULL;
@@ -176,7 +174,6 @@ static void spp_data_received(euv_pty_t* handle, const uint8_t* buf, ssize_t siz
         break;
     case TRANS_SENDING:
         if (strncmp((const char*)buf, TRANS_EOF, strlen(TRANS_EOF)) == 0) {
-            ctx->state = TRANS_NONE;
             ctx->end_timestamp = get_os_timestamp_us() / 1000;
             show_result(ctx->start_timestamp, ctx->end_timestamp, ctx->trans_total_size);
             spp_trans_reset();
@@ -187,14 +184,12 @@ static void spp_data_received(euv_pty_t* handle, const uint8_t* buf, ssize_t siz
     case TRANS_RECVING:
         ctx->received_size += size;
         if (ctx->received_size >= ctx->trans_total_size) {
-            ctx->state = TRANS_NONE;
             ctx->end_timestamp = get_os_timestamp_us() / 1000;
             show_result(ctx->start_timestamp, ctx->end_timestamp, ctx->trans_total_size);
             euv_pty_write(handle, (uint8_t*)TRANS_EOF, 4, NULL);
             spp_trans_reset();
         }
         break;
-    case TRANS_WRITING:
     default:
         break;
     }
@@ -225,25 +220,13 @@ static void check_resource_release(uint16_t port)
     free(device);
 }
 
-static void disconnect_timeout(char* arg)
-{
-    uint16_t port;
-
-    if (arg == NULL)
-        return;
-
-    port = (uint16_t)*arg;
-    check_resource_release(port);
-    stop_timer(spp_timer);
-    free((void*)arg);
-}
-
 static int connection_state_callback(const bt_address addr, uint16_t scn, uint16_t port, spp_connection_state_t state)
 {
     BT_LOGD("%s scn: %d, port: %d, state:%d", __func__, scn, port, state);
 
     if (state == SPP_CONNECTION_STATE_DISCONNECTED) {
         check_resource_release(port);
+        spp_trans_reset();
     }
 
     return 0;
@@ -283,8 +266,11 @@ static int start_server_cmd(void* handle, int argc, char* argv[])
     else
         uuid = BT_UUID_SERVCLASS_SERIAL_PORT;
 
-    if (spp_interface->server_start(handle, scn, uuid) < 0)
-        BT_LOGD("server_start failed, scn:%d, uuid: 0x%04x\n", scn, uuid);
+    BT_LOGD("%s, scn:%d, uuid: 0x%04x\n", __func__, scn, uuid);
+    bt_result_code ret = spp_interface->server_start(handle, scn, uuid);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGD("failed, server_start ret: %d", ret);
+    }
 
     return 0;
 }
@@ -295,17 +281,21 @@ static int stop_server_cmd(void* handle, int argc, char* argv[])
         return -1;
 
     uint16_t scn = atoi(argv[0]);
-    spp_interface->server_stop(handle, scn);
+    BT_LOGD("%s, scn:%d", __func__, scn);
+    bt_result_code ret = spp_interface->server_stop(handle, scn);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGD("fail, server_stop ret: %d", ret);
+    }
 
     return 0;
 }
 
 static int connect_cmd(void* handle, int argc, char* argv[])
 {
+    bt_address addr;
     int16_t scn;
     uint16_t uuid;
     uint16_t port;
-    bt_address addr;
 
     if (argc < 2)
         return -1;
@@ -318,38 +308,37 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     else
         uuid = BT_UUID_SERVCLASS_SERIAL_PORT;
 
-    if (spp_interface->client_connect(handle, addr, scn, uuid, &port) < 0) {
-        BT_LOGD("connect scn:%d, failed\n", scn);
-        return 0;
+    BT_LOGD("%s, address:%s scn:%d, uuid:0x%04x", __func__, argv[0], scn, uuid);
+    bt_result_code ret = spp_interface->client_connect(handle, addr, scn, uuid, &port);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGD("failed, client_connect ret: %d", ret);
     }
+    BT_LOGD("succed, generate connection port: %d", port);
 
-    BT_LOGD("%s, address:%s scn:%d, port:%d, uuid:0x%04x", __func__, argv[0], scn, port, uuid);
     return 0;
 }
 
 static int disconnect_cmd(void* handle, int argc, char* argv[])
 {
     spp_device_t* device;
-    uint16_t* p_port;
     bt_address addr;
     uint16_t port;
 
     if (argc < 2)
         return -1;
 
-    p_port = malloc(sizeof(uint16_t));
+    str2ba(argv[0], addr);
     port = atoi(argv[1]);
-    *p_port = port;
     device = find_pty_by_port(port);
     if (device == NULL) {
-        free(p_port);
         return -1;
     }
 
     BT_LOGD("%s, address:%s port:%d", __func__, argv[0], port);
-    str2ba(argv[0], addr);
-    spp_interface->disconnect(handle, addr, port);
-    spp_timer = start_timer(2000, 0, disconnect_timeout, (void*)p_port);
+    bt_result_code ret = spp_interface->disconnect(handle, addr, port);
+    if (ret != BT_RESULT_SUCCESS) {
+        BT_LOGD("failed, disconnect ret: %d", ret);
+    }
 
     return 0;
 }
@@ -490,7 +479,6 @@ static spp_callbacks_t spp_test_cbs = {
 int spp_command_init(void)
 {
     if (spp_interface == NULL) {
-        sem_init(&spp_sem, 0, 50);
         sem_init(&spp_send_sem, 0, 0);
         spp_interface = get_spp_interface();
         g_spp_handle = NULL;
@@ -502,7 +490,6 @@ int spp_command_init(void)
 
 void spp_command_uninit(void)
 {
-    sem_destroy(&spp_sem);
     sem_destroy(&spp_send_sem);
     if (spp_interface)
         spp_interface->reset_callbacks(&g_spp_handle);
