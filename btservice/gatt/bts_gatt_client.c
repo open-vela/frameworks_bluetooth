@@ -54,7 +54,8 @@ typedef struct
     void* data;
 } bts_gattc_msg_t;
 
-typedef struct {
+typedef struct
+{
     gatt_element_t* element;
     uint16_t size;
 } bts_gattc_service_discover_s;
@@ -64,18 +65,21 @@ typedef struct bts_gatt_client {
     gatt_status status;
 } bts_gattc_write_result_s;
 
-typedef struct {
+typedef struct
+{
     gatt_element_t* element;
     uint8_t* value;
     uint16_t size;
 } bts_gattc_notify_request_s;
 
-typedef struct {
+typedef struct
+{
     int32_t rssi;
     gatt_status status;
 } bts_gattc_read_rssi_s;
 
-typedef struct {
+typedef struct
+{
     ble_phy_type tx;
     ble_phy_type rx;
 } bts_gattc_phy_type_s;
@@ -347,6 +351,7 @@ static GATT_CLIENT_CALLBACKS_S gatt_client_cbs = {
 static bt_result_code gatt_client_connect(bts_gattc_hdl_t handle)
 {
     BT_LOGD("PERFORMANCE-GATT-CLIENT-PROFILE-BLUELET-CONNECTION-START, addr:%s", addr_str(handle.remote_addr));
+    gatt_status ret = GATT_STATUS_FAILURE;
 
     bts_gattc_hdl_t* hdl = add_gattc_handle(handle);
     if (!hdl) {
@@ -354,7 +359,7 @@ static bt_result_code gatt_client_connect(bts_gattc_hdl_t handle)
         goto err_add;
     }
 
-    gatt_status ret = service_adapter_gatt_client_connect(hdl->remote_addr, &gatt_client_cbs);
+    ret = service_adapter_gatt_client_connect(hdl->remote_addr, &gatt_client_cbs);
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt handle connect, err:%d", ret);
         goto err_connect;
