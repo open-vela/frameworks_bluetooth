@@ -155,7 +155,7 @@ static bt_command_t g_cmd_tables[] = {
 #endif
     BT_CMD("log", log_command, "log control"),
     BT_CMD("help", usage_cmd, "Usage for bttools"),
-    //BT_CMD("quit", quit_cmd, "Quit"),
+    // BT_CMD("quit", quit_cmd, "Quit"),
 };
 
 static int le_start_advertising2(void* handle, int argc, char** argv)
@@ -280,6 +280,7 @@ static int le_send_packet(void* handle, int argc, char** argv)
     uint8_t* payload = (uint8_t*)malloc(size);
     if (!payload) {
         BT_LOGE("error, failed to allocate payload");
+        free(device);
         return 0;
     }
     memcpy(payload, argv[2], size);
@@ -1093,7 +1094,7 @@ static void test_device_found_callback(void* handle, bt_device_t* device)
 
 void test_connection_state_changed_callback(void* handle, bt_device_t* device, bt_connection_state state)
 {
-    //char* connection_state = NULL;
+    // char* connection_state = NULL;
     BT_LOGD("%s, device %s, state:  %d", __func__, addr_str(device->addr), state);
 #ifdef CONFIG_BLUETOOTH_GATT_SERVER
     gatt_server_connection_event(device->addr, state);
@@ -1413,7 +1414,7 @@ int main(int argc, char** argv)
         }
     }
 
-    //btm_manager init
+    // btm_manager init
     manager = get_bt_manager_interface();
     manager->init(&manager_handle, &mgt_cb);
     if (daemon_enable) {
@@ -1469,6 +1470,6 @@ int main(int argc, char** argv)
     }
 
     free(buffer);
-    //exit(1);
+    // exit(1);
     return 0;
 }
