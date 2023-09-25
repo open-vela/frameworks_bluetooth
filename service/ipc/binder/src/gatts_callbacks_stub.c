@@ -257,7 +257,7 @@ void BtGattServerCallbacks_delete(IBtGattServerCallbacks *cbks)
     free(cbks);
 }
 
-void BleGattServerCallbacks_addPending(IBleGattServerCallbacks *cbks, uint16_t attr_handle, gatts_complete_cb_t cmpl_cb)
+void BtGattServerCallbacks_addPending(IBtGattServerCallbacks *cbks, uint16_t attr_handle, gatts_complete_cb_t cmpl_cb)
 {
     pend_notify_t *pend_notify = malloc(sizeof(pend_notify_t));
     if (!pend_notify)

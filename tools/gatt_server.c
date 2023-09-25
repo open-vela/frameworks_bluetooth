@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ble_gatts.h"
+#include "bt_gatts.h"
 #include "bluetooth.h"
 #include "bt_tools.h"
 
@@ -88,34 +88,28 @@ uint8_t read_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'V', 'E', 'L', 'A', 
 
 uint16_t tx_char_ccc_changed(void *srv_handle, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
 {
-    printf("gatts service TX char ccc changed, new value:");
-    for (int i = 0; i < length; i++) {
-        printf("0x%02x ", value[i]);
-    }
-    printf("\n");
+    PRINT("gatts service TX char ccc changed, new value:");
+    PRINT_HEXDUMP(value, length);
     return length;
 }
 
 uint16_t rx_char_on_read(void *srv_handle, uint16_t attr_handle, uint32_t req_handle)
 {
     PRINT("gatts service RX char received read request.");
-    bt_status_t ret = ble_gatts_response(srv_handle, req_handle, read_char_value, sizeof(read_char_value));
+    bt_status_t ret = bt_gatts_response(srv_handle, req_handle, read_char_value, sizeof(read_char_value));
     PRINT("gatts service RX char response. status: %d", ret);
     return 0;
 }
 
 uint16_t rx_char_on_write(void *srv_handle, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
 {
-    printf("gatts service RX char received write request, value:");
-    for (int i = 0; i < length; i++) {
-        printf("0x%02x ", value[i]);
-    }
-    printf("\n");
+    PRINT("gatts service RX char received write request, value:");
+    PRINT_HEXDUMP(value, length);
     return length;
 }
 
-const char model_number_str[] = "vela_bt";
-const char manufacturer_name_str[] = "xiaomi";
+const char model_number_str[] = "Vela_bt";
+const char manufacturer_name_str[] = "Xiaomi";
 const uint8_t pnp_id[7] = {
     0x02, // pnp_vid_src
     0x8F, 0x03, // pnp_vid
@@ -154,7 +148,7 @@ static gatt_attr_db_t s_iot_attr_db[] = {
     /* Private Characteristic for TX - 0xFF01 */
     GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0xFF01), GATT_PROP_NOTIFY | GATT_PROP_INDICATE, 0, NULL, 0, IOT_SERVICE_TX_CHR_ID),
     /* Client Characteristic Configuration Descriptor - 0x2902 */
-    GATT_H_CCCD(GATT_PERM_READ | GATT_PERM_WRITE, tx_char_ccc_changed, IOT_SERVICE_TX_CHR_CCC_ID),
+    GATT_H_CCCD(GATT_PERM_READ | GATT_PERM_WRITE | GATT_PERM_AUTHEN_REQUIRED, tx_char_ccc_changed, IOT_SERVICE_TX_CHR_CCC_ID),
     /* Private Characteristic for RX - 0xFF02 */
     GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF02), GATT_PROP_READ | GATT_PROP_WRITE_NR, GATT_PERM_READ | GATT_PERM_WRITE, rx_char_on_read, rx_char_on_write, IOT_SERVICE_RX_CHR_ID),
     /* Private Characteristic for read operation demo - 0xFF05 */
@@ -206,7 +200,7 @@ static int connect_cmd(void *handle, int argc, char *argv[])
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
-    if (ble_gatts_connect(service_handle, &addr, BT_LE_ADDR_TYPE_UNKNOWN) != BT_STATUS_SUCCESS)
+    if (bt_gatts_connect(service_handle, &addr, BT_LE_ADDR_TYPE_UNKNOWN) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -221,7 +215,7 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
-    if (ble_gatts_disconnect(service_handle) != BT_STATUS_SUCCESS)
+    if (bt_gatts_disconnect(service_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -253,10 +247,10 @@ static int start_cmd(void *handle, int argc, char *argv[])
         return CMD_INVALID_OPT;
     }
 
-    if (ble_gatts_create_service_table(service_handle, service_db) != BT_STATUS_SUCCESS)
+    if (bt_gatts_create_service_table(service_handle, service_db) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
-    if (ble_gatts_start(service_handle) != BT_STATUS_SUCCESS)
+    if (bt_gatts_start(service_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -271,7 +265,7 @@ static int stop_cmd(void *handle, int argc, char *argv[])
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
-    if (ble_gatts_stop(service_handle) != BT_STATUS_SUCCESS)
+    if (bt_gatts_stop(service_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -294,7 +288,7 @@ static int notify_bas_cmd(void *handle, int argc, char *argv[])
     }
 
     battery_level = new_level;
-    if (ble_gatts_notify(g_bas_handle, BAS_BATTERY_LEVEL_CHR_ID, (uint8_t *)&battery_level, sizeof(battery_level), notify_complete_cb) != BT_STATUS_SUCCESS)
+    if (bt_gatts_notify(g_bas_handle, BAS_BATTERY_LEVEL_CHR_ID, (uint8_t *)&battery_level, sizeof(battery_level), notify_complete_cb) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -305,7 +299,7 @@ static int notify_cus_cmd(void *handle, int argc, char *argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (ble_gatts_notify(g_custom_handle, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[0], strlen(argv[0]), notify_complete_cb) != BT_STATUS_SUCCESS)
+    if (bt_gatts_notify(g_custom_handle, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[0], strlen(argv[0]), notify_complete_cb) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -321,7 +315,7 @@ static int indicate_cus_cmd(void *handle, int argc, char *argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (ble_gatts_indicate(g_custom_handle, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[0], strlen(argv[0]), indicate_complete_cb) != BT_STATUS_SUCCESS)
+    if (bt_gatts_indicate(g_custom_handle, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[0], strlen(argv[0]), indicate_complete_cb) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -332,9 +326,9 @@ static void connect_callback(void *srv_handle, bt_address_t *addr)
     PRINT_ADDR("gatts_connect_callback, addr:%s", addr);
 }
 
-static void disconnect_callback(void *srv_handle, bt_address_t *addr, uint8_t reason)
+static void disconnect_callback(void *srv_handle, bt_address_t *addr)
 {
-    PRINT_ADDR("gatts_disconnect_callback, addr:%s, reason:%d", addr, reason);
+    PRINT_ADDR("gatts_disconnect_callback, addr:%s", addr);
 }
 
 static void start_callback(void *srv_handle, gatt_status_t status)
@@ -375,21 +369,21 @@ static int register_cmd(void *handle, int argc, char *argv[])
             PRINT("dis has registed, please unregister then try again");
             return CMD_OK;
         }
-        ret = ble_gatts_register_service(handle, &g_dis_handle, &gatts_cbs);
+        ret = bt_gatts_register_service(handle, &g_dis_handle, &gatts_cbs);
         break;
     case GATT_SERVICE_BAS:
         if (g_bas_handle) {
             PRINT("bas has registed, please unregister then try again");
             return CMD_OK;
         }
-        ret = ble_gatts_register_service(handle, &g_bas_handle, &gatts_cbs);
+        ret = bt_gatts_register_service(handle, &g_bas_handle, &gatts_cbs);
         break;
     case GATT_SERVICE_CUSTOM:
         if (g_custom_handle) {
             PRINT("custom service has registed, please unregister then try again");
             return CMD_OK;
         }
-        ret = ble_gatts_register_service(handle, &g_custom_handle, &gatts_cbs);
+        ret = bt_gatts_register_service(handle, &g_custom_handle, &gatts_cbs);
         break;
     default:
         PRINT("invalid service id: %d", service_id);
@@ -413,10 +407,10 @@ static int unregister_cmd(void *handle, int argc, char *argv[])
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
-    if (ble_gatts_unregister_service(service_handle) != BT_STATUS_SUCCESS)
+    if (bt_gatts_unregister_service(service_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
-    PRINT("unregister service succed, service_id: %d", service_id);
+    PRINT("unregister service successful, service_id: %d", service_id);
     return CMD_OK;
 }
 

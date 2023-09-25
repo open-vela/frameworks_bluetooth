@@ -256,9 +256,9 @@ void BtGattClientCallbacks_delete(IBtGattClientCallbacks *cbks)
     free(cbks);
 }
 
-void BleGattClientCallbacks_registerNotify(IBleGattClientCallbacks *cbks, uint16_t value_handle, gattc_notify_cb_t notify_cb)
+void BtGattClientCallbacks_registerNotify(IBtGattClientCallbacks *cbks, uint16_t value_handle, gattc_notify_cb_t notify_cb)
 {
-    notify_callback_t *notify_callback = BleGattClientCallbacks_findNotifyCallback(cbks, value_handle);
+    notify_callback_t *notify_callback = BtGattClientCallbacks_findNotifyCallback(cbks, value_handle);
 
     if (notify_callback) {
         notify_callback->on_notify = notify_cb;
@@ -274,9 +274,9 @@ void BleGattClientCallbacks_registerNotify(IBleGattClientCallbacks *cbks, uint16
     list_add_tail(&cbks->notify_list, &notify_callback->node);
 }
 
-void BleGattClientCallbacks_unregisterNotify(IBleGattClientCallbacks *cbks, uint16_t value_handle)
+void BtGattClientCallbacks_unregisterNotify(IBtGattClientCallbacks *cbks, uint16_t value_handle)
 {
-    notify_callback_t *notify_callback = BleGattClientCallbacks_findNotifyCallback(cbks, value_handle);
+    notify_callback_t *notify_callback = BtGattClientCallbacks_findNotifyCallback(cbks, value_handle);
 
     if (!notify_callback)
         return;
