@@ -14,8 +14,8 @@
  * limitations under the License.
  ***************************************************************************/
 
-#ifndef __BLE_GATTS_STUB_H__
-#define __BLE_GATTS_STUB_H__
+#ifndef __BT_GATTS_STUB_H__
+#define __BT_GATTS_STUB_H__
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -31,12 +31,12 @@ typedef struct {
     AIBinder_Class *clazz;
     AIBinder_Weak *WeakBinder;
     void *usr_data;
-} IBleGattServer;
+} IBtGattServer;
 
 typedef struct {
     AIBinder_Class *clazz;
     AIBinder *binder;
-} BpBleGattServer;
+} BpBtGattServer;
 
 typedef enum {
     IGATT_SERVER_REGISTER_SERVICE = FIRST_CALL_TRANSACTION,
@@ -49,14 +49,14 @@ typedef enum {
     IGATT_SERVER_RESPONSE,
     IGATT_SERVER_NOTIFY,
     IGATT_SERVER_INDICATE,
-} IBleGattServer_Call;
+} IBtGattServer_Call;
 
 #define GATT_SERVER_BINDER_INSTANCE "Vela.Bluetooth.Gatt.Server"
 
-binder_status_t BleGattServer_addService(IBleGattServer *iGatts, const char *instance);
-AIBinder *BleGattServer_getService(BpBleGattServer **bpGatts, const char *instance);
+binder_status_t BtGattServer_addService(IBtGattServer *iGatts, const char *instance);
+AIBinder *BtGattServer_getService(BpBtGattServer **bpGatts, const char *instance);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __BLE_GATTS_STUB_H__ */
+#endif /* __BT_GATTS_STUB_H__ */

@@ -15,7 +15,7 @@
  ***************************************************************************/
 #define LOG_TAG "gattc"
 
-#include "ble_gattc.h"
+#include "bt_gattc.h"
 #include "bt_profile.h"
 #include "gattc_service.h"
 #include "service_manager.h"
@@ -27,91 +27,91 @@ static gattc_interface_t *get_profile_service(void)
     return (gattc_interface_t *)service_manager_get_profile(PROFILE_GATTC);
 }
 
-bt_status_t ble_gattc_create_connect(bt_instance_t *ins, gattc_handle_t *phandle, gattc_callbacks_t *callbacks)
+bt_status_t bt_gattc_create_connect(bt_instance_t *ins, gattc_handle_t *phandle, gattc_callbacks_t *callbacks)
 {
     gattc_interface_t *profile = get_profile_service();
 
     return profile->create_connect(phandle, callbacks);
 }
 
-bt_status_t ble_gattc_delete_connect(gattc_handle_t conn_handle)
+bt_status_t bt_gattc_delete_connect(gattc_handle_t conn_handle)
 {
     gattc_interface_t *profile = get_profile_service();
 
     return profile->delete_connect(conn_handle);
 }
 
-bt_status_t ble_gattc_connect(gattc_handle_t conn_handle, bt_address_t *addr, ble_addr_type_t addr_type)
+bt_status_t bt_gattc_connect(gattc_handle_t conn_handle, bt_address_t *addr, ble_addr_type_t addr_type)
 {
     gattc_interface_t *profile = get_profile_service();
 
     return profile->connect(conn_handle, addr, addr_type);
 }
 
-bt_status_t ble_gattc_disconnect(gattc_handle_t conn_handle)
+bt_status_t bt_gattc_disconnect(gattc_handle_t conn_handle)
 {
     gattc_interface_t *profile = get_profile_service();
 
     return profile->disconnect(conn_handle);
 }
 
-bt_status_t ble_gattc_discover_service(gattc_handle_t conn_handle, bt_uuid_t *filter_uuid)
+bt_status_t bt_gattc_discover_service(gattc_handle_t conn_handle, bt_uuid_t *filter_uuid)
 {
     gattc_interface_t *profile = get_profile_service();
 
     return profile->discover_service(conn_handle, filter_uuid);
 }
 
-bt_status_t ble_gattc_get_attribute_by_handle(gattc_handle_t conn_handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc)
+bt_status_t bt_gattc_get_attribute_by_handle(gattc_handle_t conn_handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc)
 {
     gattc_interface_t *profile = get_profile_service();
 
     return profile->get_attribute_by_handle(conn_handle, attr_handle, attr_desc);
 }
 
-bt_status_t ble_gattc_get_attribute_by_uuid(gattc_handle_t conn_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc)
+bt_status_t bt_gattc_get_attribute_by_uuid(gattc_handle_t conn_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc)
 {
     gattc_interface_t *profile = get_profile_service();
 
     return profile->get_attribute_by_uuid(conn_handle, attr_uuid, attr_desc);
 }
 
-bt_status_t ble_gattc_read(gattc_handle_t conn_handle, uint16_t attr_handle)
+bt_status_t bt_gattc_read(gattc_handle_t conn_handle, uint16_t attr_handle)
 {
     gattc_interface_t *profile = get_profile_service();
 
     return profile->read(conn_handle, attr_handle);
 }
 
-bt_status_t ble_gattc_write(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, uint16_t offset)
+bt_status_t bt_gattc_write(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     gattc_interface_t *profile = get_profile_service();
 
-    return profile->write(conn_handle, attr_handle, value, length, offset);
+    return profile->write(conn_handle, attr_handle, value, length);
 }
 
-bt_status_t ble_gattc_write_without_response(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t bt_gattc_write_without_response(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     gattc_interface_t *profile = get_profile_service();
 
     return profile->write_without_response(conn_handle, attr_handle, value, length);
 }
 
-bt_status_t ble_gattc_subscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb)
+bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb)
 {
     gattc_interface_t *profile = get_profile_service();
 
     return profile->subscribe(conn_handle, value_handle, cccd_handle, notify_cb);
 }
 
-bt_status_t ble_gattc_unsubscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle)
+bt_status_t bt_gattc_unsubscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle)
 {
     gattc_interface_t *profile = get_profile_service();
 
     return profile->unsubscribe(conn_handle, value_handle, cccd_handle);
 }
 
-bt_status_t ble_gattc_exchange_mtu(gattc_handle_t conn_handle, uint32_t mtu)
+bt_status_t bt_gattc_exchange_mtu(gattc_handle_t conn_handle, uint32_t mtu)
 {
     gattc_interface_t *profile = get_profile_service();
 

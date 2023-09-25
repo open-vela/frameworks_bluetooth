@@ -27,7 +27,7 @@
 #include "parcel.h"
 #include "utils/log.h"
 
-void *BpBleGattClient_createConnect(BpBleGattClient *bpBinder, AIBinder *cbksBinder)
+void *BpBtGattClient_createConnect(BpBtGattClient *bpBinder, AIBinder *cbksBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -57,7 +57,7 @@ void *BpBleGattClient_createConnect(BpBleGattClient *bpBinder, AIBinder *cbksBin
     return (void *)handle;
 }
 
-bt_status_t BpBleGattClient_deleteConnect(BpBleGattClient *bpBinder, void *handle)
+bt_status_t BpBtGattClient_deleteConnect(BpBtGattClient *bpBinder, void *handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -87,7 +87,7 @@ bt_status_t BpBleGattClient_deleteConnect(BpBleGattClient *bpBinder, void *handl
     return status;
 }
 
-bt_status_t BpBleGattClient_connect(BpBleGattClient *bpBinder, void *handle, bt_address_t *addr, ble_addr_type_t addr_type)
+bt_status_t BpBtGattClient_connect(BpBtGattClient *bpBinder, void *handle, bt_address_t *addr, ble_addr_type_t addr_type)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -125,7 +125,7 @@ bt_status_t BpBleGattClient_connect(BpBleGattClient *bpBinder, void *handle, bt_
     return status;
 }
 
-bt_status_t BpBleGattClient_disconnect(BpBleGattClient *bpBinder, void *handle)
+bt_status_t BpBtGattClient_disconnect(BpBtGattClient *bpBinder, void *handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -155,7 +155,7 @@ bt_status_t BpBleGattClient_disconnect(BpBleGattClient *bpBinder, void *handle)
     return status;
 }
 
-bt_status_t BpBleGattClient_discoverService(BpBleGattClient *bpBinder, void *handle, bt_uuid_t *filter_uuid)
+bt_status_t BpBtGattClient_discoverService(BpBtGattClient *bpBinder, void *handle, bt_uuid_t *filter_uuid)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -189,7 +189,7 @@ bt_status_t BpBleGattClient_discoverService(BpBleGattClient *bpBinder, void *han
     return state;
 }
 
-bt_status_t BpBleGattClient_getAttributeByHandle(BpBleGattClient *bpBinder, void *handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc)
+bt_status_t BpBtGattClient_getAttributeByHandle(BpBtGattClient *bpBinder, void *handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -244,7 +244,7 @@ bt_status_t BpBleGattClient_getAttributeByHandle(BpBleGattClient *bpBinder, void
     return status;
 }
 
-bt_status_t BpBleGattClient_getAttributeByUUID(BpBleGattClient *bpBinder, void *handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc)
+bt_status_t BpBtGattClient_getAttributeByUUID(BpBtGattClient *bpBinder, void *handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -299,7 +299,7 @@ bt_status_t BpBleGattClient_getAttributeByUUID(BpBleGattClient *bpBinder, void *
     return status;
 }
 
-bt_status_t BpBleGattClient_read(BpBleGattClient *bpBinder, void *handle, uint16_t attr_handle)
+bt_status_t BpBtGattClient_read(BpBtGattClient *bpBinder, void *handle, uint16_t attr_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -333,7 +333,7 @@ bt_status_t BpBleGattClient_read(BpBleGattClient *bpBinder, void *handle, uint16
     return status;
 }
 
-bt_status_t BpBleGattClient_write(BpBleGattClient *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length, uint16_t offset)
+bt_status_t BpBtGattClient_write(BpBtGattClient *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -356,11 +356,11 @@ bt_status_t BpBleGattClient_write(BpBleGattClient *bpBinder, void *handle, uint1
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeUint32(parcelIn, (uint32_t)length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
@@ -375,7 +375,7 @@ bt_status_t BpBleGattClient_write(BpBleGattClient *bpBinder, void *handle, uint1
     return status;
 }
 
-bt_status_t BpBleGattClient_writeWithoutResponse(BpBleGattClient *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t BpBtGattClient_writeWithoutResponse(BpBtGattClient *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -398,11 +398,11 @@ bt_status_t BpBleGattClient_writeWithoutResponse(BpBleGattClient *bpBinder, void
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeUint32(parcelIn, (uint32_t)length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
@@ -417,7 +417,7 @@ bt_status_t BpBleGattClient_writeWithoutResponse(BpBleGattClient *bpBinder, void
     return status;
 }
 
-bt_status_t BpBleGattClient_subscribe(BpBleGattClient *bpBinder, void *handle, uint16_t value_handle, uint16_t cccd_handle)
+bt_status_t BpBtGattClient_subscribe(BpBtGattClient *bpBinder, void *handle, uint16_t value_handle, uint16_t cccd_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -455,7 +455,7 @@ bt_status_t BpBleGattClient_subscribe(BpBleGattClient *bpBinder, void *handle, u
     return status;
 }
 
-bt_status_t BpBleGattClient_unsubscribe(BpBleGattClient *bpBinder, void *handle, uint16_t value_handle, uint16_t cccd_handle)
+bt_status_t BpBtGattClient_unsubscribe(BpBtGattClient *bpBinder, void *handle, uint16_t value_handle, uint16_t cccd_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -493,7 +493,7 @@ bt_status_t BpBleGattClient_unsubscribe(BpBleGattClient *bpBinder, void *handle,
     return status;
 }
 
-bt_status_t BpBleGattClient_exchangeMtu(BpBleGattClient *bpBinder, void *handle, uint32_t mtu)
+bt_status_t BpBtGattClient_exchangeMtu(BpBtGattClient *bpBinder, void *handle, uint32_t mtu)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;

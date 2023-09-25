@@ -19,9 +19,9 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-#include "ble_gatt_defs.h"
-#include "ble_gattc.h"
-#include "ble_gatts.h"
+#include "bt_gatt_defs.h"
+#include "bt_gattc.h"
+#include "bt_gatts.h"
 #include "bt_uuid.h"
 #include <stdint.h>
 

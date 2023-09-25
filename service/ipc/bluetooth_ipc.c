@@ -49,8 +49,8 @@ static IBtHidd binderHidd = { 0 };
 static IBtPan binderPan = { 0 };
 #endif
 #ifdef CONFIG_BLUETOOTH_GATT
-static IBleGattClient binderGattc = { 0 };
-static IBleGattServer binderGatts = { 0 };
+static IBtGattClient binderGattc = { 0 };
+static IBtGattServer binderGatts = { 0 };
 #endif
 
 static void ipc_pollin_process(service_poll_t *poll, int revent, void *userdata)
@@ -131,12 +131,12 @@ bt_status_t bluetooth_ipc_add_services(void)
 #endif
 
 #ifdef CONFIG_BLUETOOTH_GATT
-    stat = BleGattClient_addService(&binderGattc, GATT_CLIENT_BINDER_INSTANCE);
+    stat = BtGattClient_addService(&binderGattc, GATT_CLIENT_BINDER_INSTANCE);
     if (stat != STATUS_OK) {
         BT_LOGD("Add Gattc Service Failed:%d", stat);
         return BT_STATUS_IPC_ERROR;
     }
-    stat = BleGattServer_addService(&binderGatts, GATT_SERVER_BINDER_INSTANCE);
+    stat = BtGattServer_addService(&binderGatts, GATT_SERVER_BINDER_INSTANCE);
     if (stat != STATUS_OK) {
         BT_LOGD("Add Gatts Service Failed:%d", stat);
         return BT_STATUS_IPC_ERROR;

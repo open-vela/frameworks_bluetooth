@@ -31,20 +31,20 @@
 #include "parcel.h"
 #include "utils/log.h"
 
-#define BLE_GATT_CLIENT_DESC "BluetoothGattClient"
+#define BT_GATT_CLIENT_DESC "BluetoothGattClient"
 
-static void *IBleGattClient_Class_onCreate(void *arg)
+static void *IBtGattClient_Class_onCreate(void *arg)
 {
     BT_LOGD("%s", __func__);
     return arg;
 }
 
-static void IBleGattClient_Class_onDestroy(void *userData)
+static void IBtGattClient_Class_onDestroy(void *userData)
 {
     BT_LOGD("%s", __func__);
 }
 
-static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *reply)
+static binder_status_t IBtGattClient_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *reply)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
     uint32_t handle;
@@ -62,12 +62,12 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
         if (stat != STATUS_OK)
             return stat;
 
-        if (!BleGattClientCallbacks_associateClass(remote)) {
+        if (!BtGattClientCallbacks_associateClass(remote)) {
             AIBinder_decStrong(remote);
             return STATUS_FAILED_TRANSACTION;
         }
 
-        if (profile->create_connect((void **)&handle, (gattc_callbacks_t *)BpBleGattClientCallbacks_getStatic()) != BT_STATUS_SUCCESS) {
+        if (profile->create_connect((void **)&handle, (gattc_callbacks_t *)BpBtGattClientCallbacks_getStatic()) != BT_STATUS_SUCCESS) {
             AIBinder_decStrong(remote);
             stat = AParcel_writeUint32(reply, (uint32_t)NULL);
         } else {
@@ -229,15 +229,15 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&value, AParcelUtils_byteArrayAllocator);
-        if (stat != STATUS_OK)
-            return stat;
-
         stat = AParcel_readUint32(in, &length);
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->write((void *)handle, (uint16_t)attr_handle, value, (uint16_t)length, 0);
+        stat = AParcel_readByteArray(in, (void *)&value, AParcelUtils_byteArrayAllocator);
+        if (stat != STATUS_OK)
+            return stat;
+
+        status = profile->write((void *)handle, (uint16_t)attr_handle, value, (uint16_t)length);
         free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
@@ -255,11 +255,11 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&value, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readUint32(in, &length);
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readUint32(in, &length);
+        stat = AParcel_readByteArray(in, (void *)&value, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             return stat;
 
@@ -284,7 +284,7 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->subscribe((void *)handle, (uint16_t)value_handle, (uint16_t)cccd_handle, BpBleGattClientCallbacks_onNotify);
+        status = profile->subscribe((void *)handle, (uint16_t)value_handle, (uint16_t)cccd_handle, BpBtGattClientCallbacks_onNotify);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -330,16 +330,16 @@ static binder_status_t IBleGattClient_Class_onTransact(AIBinder *binder, transac
     return stat;
 }
 
-static const AIBinder_Class *BleGattClient_getClass(void)
+static const AIBinder_Class *BtGattClient_getClass(void)
 {
 
-    AIBinder_Class *clazz = AIBinder_Class_define(BLE_GATT_CLIENT_DESC, IBleGattClient_Class_onCreate,
-                                                  IBleGattClient_Class_onDestroy, IBleGattClient_Class_onTransact);
+    AIBinder_Class *clazz = AIBinder_Class_define(BT_GATT_CLIENT_DESC, IBtGattClient_Class_onCreate,
+                                                  IBtGattClient_Class_onDestroy, IBtGattClient_Class_onTransact);
 
     return clazz;
 }
 
-static AIBinder *BleGattClient_getBinder(IBleGattClient *iGattc)
+static AIBinder *BtGattClient_getBinder(IBtGattClient *iGattc)
 {
     AIBinder *binder = NULL;
 
@@ -359,10 +359,10 @@ static AIBinder *BleGattClient_getBinder(IBleGattClient *iGattc)
     return binder;
 }
 
-binder_status_t BleGattClient_addService(IBleGattClient *iGattc, const char *instance)
+binder_status_t BtGattClient_addService(IBtGattClient *iGattc, const char *instance)
 {
-    iGattc->clazz = (AIBinder_Class *)BleGattClient_getClass();
-    AIBinder *binder = BleGattClient_getBinder(iGattc);
+    iGattc->clazz = (AIBinder_Class *)BtGattClient_getClass();
+    AIBinder *binder = BtGattClient_getBinder(iGattc);
     iGattc->usr_data = NULL;
 
     binder_status_t status = AServiceManager_addService(binder, instance);
@@ -371,13 +371,13 @@ binder_status_t BleGattClient_addService(IBleGattClient *iGattc, const char *ins
     return status;
 }
 
-BpBleGattClient *BpBleGattClient_new(const char *instance)
+BpBtGattClient *BpBtGattClient_new(const char *instance)
 {
     AIBinder *binder = NULL;
     AIBinder_Class *clazz;
-    BpBleGattClient *bpBinder = NULL;
+    BpBtGattClient *bpBinder = NULL;
 
-    clazz = (AIBinder_Class *)BleGattClient_getClass();
+    clazz = (AIBinder_Class *)BtGattClient_getClass();
     binder = AServiceManager_getService(instance);
     if (!binder)
         return NULL;
@@ -404,20 +404,20 @@ bail:
     return NULL;
 }
 
-void BpBleGattClient_delete(BpBleGattClient *bpBinder)
+void BpBtGattClient_delete(BpBtGattClient *bpBinder)
 {
     AIBinder_decStrong(bpBinder->binder);
     free(bpBinder);
 }
 
-AIBinder *BleGattClient_getService(BpBleGattClient **bpGattc, const char *instance)
+AIBinder *BtGattClient_getService(BpBtGattClient **bpGattc, const char *instance)
 {
-    BpBleGattClient *bpBinder = *bpGattc;
+    BpBtGattClient *bpBinder = *bpGattc;
 
     if (bpBinder && bpBinder->binder)
         return bpBinder->binder;
 
-    bpBinder = BpBleGattClient_new(instance);
+    bpBinder = BpBtGattClient_new(instance);
     if (!bpBinder)
         return NULL;
 

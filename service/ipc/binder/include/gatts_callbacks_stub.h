@@ -14,8 +14,8 @@
  * limitations under the License.
  ***************************************************************************/
 
-#ifndef __BLE_GATTS_CALLBACKS_STUB_H__
-#define __BLE_GATTS_CALLBACKS_STUB_H__
+#ifndef __BT_GATTS_CALLBACKS_STUB_H__
+#define __BT_GATTS_CALLBACKS_STUB_H__
 
 #include <nuttx/list.h>
 #include <stdbool.h>
@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-#include "ble_gatts.h"
+#include "bt_gatts.h"
 #include <android/binder_manager.h>
 
 typedef struct {
@@ -43,7 +43,7 @@ typedef struct {
     struct list_node pending_list;
     void *proxy;
     void *cookie;
-} IBleGattServerCallbacks;
+} IBtGattServerCallbacks;
 
 typedef enum {
     ICBKS_GATT_SERVER_CONNECTED = FIRST_CALL_TRANSACTION,
@@ -54,15 +54,15 @@ typedef enum {
     ICBKS_GATT_SERVER_READ,
     ICBKS_GATT_SERVER_WRITE,
     ICBKS_GATT_SERVER_COMPLETE
-} IBleGattServerCallbacks_Call;
+} IBtGattServerCallbacks_Call;
 
-AIBinder *BleGattServerCallbacks_getBinder(IBleGattServerCallbacks *adapter);
-binder_status_t BleGattServerCallbacks_associateClass(AIBinder *binder);
-IBleGattServerCallbacks *BleGattServerCallbacks_new(const gatts_callbacks_t *callbacks);
-void BleGattServerCallbacks_delete(IBleGattServerCallbacks *cbks);
-void BleGattServerCallbacks_addPending(IBleGattServerCallbacks *cbks, uint16_t attr_handle, gatts_complete_cb_t cmpl_cb);
+AIBinder *BtGattServerCallbacks_getBinder(IBtGattServerCallbacks *adapter);
+binder_status_t BtGattServerCallbacks_associateClass(AIBinder *binder);
+IBtGattServerCallbacks *BtGattServerCallbacks_new(const gatts_callbacks_t *callbacks);
+void BtGattServerCallbacks_delete(IBtGattServerCallbacks *cbks);
+void BtGattServerCallbacks_addPending(IBtGattServerCallbacks *cbks, uint16_t attr_handle, gatts_complete_cb_t cmpl_cb);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __BLE_GATTS_CALLBACKS_STUB_H__ */
+#endif /* __BT_GATTS_CALLBACKS_STUB_H__ */
