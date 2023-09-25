@@ -233,6 +233,9 @@ static void hfp_hf_process_message(void *data)
 {
     hfp_hf_msg_t *msg = (hfp_hf_msg_t *)data;
 
+    if (!g_hfp_service.started && msg->event != HF_STARTUP)
+        return;
+
     switch (msg->event) {
     case HF_STARTUP:
         hf_startup((profile_on_startup_t)msg->data.valueint1);

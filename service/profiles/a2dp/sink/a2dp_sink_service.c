@@ -106,6 +106,9 @@ static void a2dp_snk_service_handle_event(void *data)
 {
     a2dp_event_t *event = data;
 
+    if (!g_a2dp_sink.enabled && event->event != A2DP_STARTUP)
+        return;
+
     switch (event->event) {
     case A2DP_STARTUP:
         sink_startup(event->event_data.cb);
