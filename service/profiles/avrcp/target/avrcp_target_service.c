@@ -232,7 +232,7 @@ static void handle_avrcp_passthrough_cmd(bt_address_t *addr,
     int i;
 
     if (op == PASSTHROUGH_CMD_ID_STOP
-#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         && !a2dp_source_stream_started()
 #endif
        ) {
@@ -260,7 +260,7 @@ static void handle_avrcp_passthrough_cmd(bt_address_t *addr,
 
 static avrcp_play_status_t current_playback_status(void)
 {
-#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     if (a2dp_source_stream_started())
         return PLAY_STATUS_PLAYING;
     else if (a2dp_source_stream_ready())
