@@ -21,7 +21,7 @@
 
 #include "bt_le_advertiser.h"
 #include "bt_le_scan.h"
-#include "ble_gatts.h"
+#include "bt_gatts.h"
 #include "bluetooth.h"
 #include "bt_hfp_hf.h"
 #include "bt_uuid.h"

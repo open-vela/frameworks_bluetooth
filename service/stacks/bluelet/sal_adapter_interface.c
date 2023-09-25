@@ -1264,6 +1264,8 @@ bt_status_t bt_sal_le_disable(void)
     if (service_adapter_gap_disable(true) != SERVICE_BT_STATUS_SUCCESS)
         return BT_STATUS_FAIL;
 
+    service_adapter_gatt_cleanup();
+
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;

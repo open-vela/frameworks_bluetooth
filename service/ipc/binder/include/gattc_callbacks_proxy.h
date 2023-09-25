@@ -14,8 +14,8 @@
  * limitations under the License.
  ***************************************************************************/
 
-#ifndef __BLE_GATTC_CALLBACKS_PROXY_H__
-#define __BLE_GATTC_CALLBACKS_PROXY_H__
+#ifndef __BT_GATTC_CALLBACKS_PROXY_H__
+#define __BT_GATTC_CALLBACKS_PROXY_H__
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -24,14 +24,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "ble_gattc.h"
+#include "bt_gattc.h"
 
 #include <android/binder_manager.h>
 
-const gattc_callbacks_t *BpBleGattClientCallbacks_getStatic(void);
-void BpBleGattClientCallbacks_onNotify(void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
+const gattc_callbacks_t *BpBtGattClientCallbacks_getStatic(void);
+void BpBtGattClientCallbacks_onNotify(void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __BLE_GATTC_CALLBACKS_PROXY_H__ */
+#endif /* __BT_GATTC_CALLBACKS_PROXY_H__ */

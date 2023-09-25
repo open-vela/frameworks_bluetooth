@@ -118,13 +118,13 @@ void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id)
     }
     case PROFILE_GATTC: {
         if (!ins->gattc_proxy) {
-            ins->gattc_proxy = BpBleGattClient_new(GATT_CLIENT_BINDER_INSTANCE);
+            ins->gattc_proxy = BpBtGattClient_new(GATT_CLIENT_BINDER_INSTANCE);
         }
         return ins->gattc_proxy;
     }
     case PROFILE_GATTS: {
         if (!ins->gatts_proxy) {
-            ins->gatts_proxy = BpBleGattServer_new(GATT_SERVER_BINDER_INSTANCE);
+            ins->gatts_proxy = BpBtGattServer_new(GATT_SERVER_BINDER_INSTANCE);
         }
         return ins->gatts_proxy;
     }
@@ -149,10 +149,10 @@ void bluetooth_delete_instance(bt_instance_t *ins)
         BpBtPan_delete(ins->pan_proxy);
 
     if (ins->gattc_proxy)
-        BpBleGattClient_delete(ins->gattc_proxy);
+        BpBtGattClient_delete(ins->gattc_proxy);
 
     if (ins->gatts_proxy)
-        BpBleGattServer_delete(ins->gatts_proxy);
+        BpBtGattServer_delete(ins->gatts_proxy);
 
     BpBtAdapter_delete(ins->adapter_proxy);
     BpBtManager_deleteInstance(ins->manager_proxy, ins->app_id);
