@@ -46,7 +46,7 @@ static void a2dp_codec_config_set(uint8_t peer_sep, a2dp_codec_config_t *config,
 {
     if (config->codec_type == BTS_A2DP_TYPE_SBC) {
         if (peer_sep == SEP_SNK) {
-#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
             a2dp_source_sbc_update_config(mtu, &config->codec_param.sbc, config->specific_info);
 #endif
         } else {
@@ -58,7 +58,7 @@ static void a2dp_codec_config_set(uint8_t peer_sep, a2dp_codec_config_t *config,
 #ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
     } else if (config->codec_type == BTS_A2DP_TYPE_MPEG2_4_AAC) {
         if (peer_sep == SEP_SNK) {
-#ifdef CONFIG_BLUETOOTH_A2DP_SRC
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
             a2dp_source_aac_update_config(mtu, &config->codec_param.aac, config->specific_info);
 #endif
         } else {
