@@ -14,14 +14,14 @@
  * limitations under the License.
  ***************************************************************************/
 
-#ifndef __BLE_GATTS_H__
-#define __BLE_GATTS_H__
+#ifndef __BT_GATTS_H__
+#define __BT_GATTS_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "ble_gatt_defs.h"
+#include "bt_gatt_defs.h"
 #include "bluetooth.h"
 #include "bt_addr.h"
 #include "bt_status.h"
@@ -53,7 +53,7 @@ typedef struct {
 } gatt_srv_db_t;
 
 typedef void (*gatts_connected_cb_t)(gatts_handle_t srv_handle, bt_address_t *addr);
-typedef void (*gatts_disconnected_cb_t)(gatts_handle_t srv_handle, bt_address_t *addr, uint8_t reason);
+typedef void (*gatts_disconnected_cb_t)(gatts_handle_t srv_handle, bt_address_t *addr);
 typedef void (*gatts_started_cb_t)(gatts_handle_t srv_handle, gatt_status_t status);
 typedef void (*gatts_stopped_cb_t)(gatts_handle_t srv_handle, gatt_status_t status);
 typedef void (*gatts_mtu_changed_cb_t)(gatts_handle_t srv_handle, bt_address_t *addr, uint32_t mtu);
@@ -69,19 +69,19 @@ typedef struct {
 
 typedef void (*gatts_complete_cb_t)(gatts_handle_t srv_handle, gatt_status_t status, uint16_t attr_handle);
 
-bt_status_t ble_gatts_register_service(bt_instance_t *ins, gatts_handle_t *phandle, gatts_callbacks_t *callbacks);
-bt_status_t ble_gatts_unregister_service(gatts_handle_t srv_handle);
-bt_status_t ble_gatts_connect(gatts_handle_t srv_handle, bt_address_t *addr, ble_addr_type_t addr_type);
-bt_status_t ble_gatts_disconnect(gatts_handle_t srv_handle);
-bt_status_t ble_gatts_create_service_table(gatts_handle_t srv_handle, gatt_srv_db_t *srv_db);
-bt_status_t ble_gatts_start(gatts_handle_t srv_handle);
-bt_status_t ble_gatts_stop(gatts_handle_t srv_handle);
-bt_status_t ble_gatts_response(gatts_handle_t srv_handle, uint32_t req_handle, uint8_t *value, uint16_t length);
-bt_status_t ble_gatts_notify(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
-bt_status_t ble_gatts_indicate(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
+bt_status_t bt_gatts_register_service(bt_instance_t *ins, gatts_handle_t *phandle, gatts_callbacks_t *callbacks);
+bt_status_t bt_gatts_unregister_service(gatts_handle_t srv_handle);
+bt_status_t bt_gatts_connect(gatts_handle_t srv_handle, bt_address_t *addr, ble_addr_type_t addr_type);
+bt_status_t bt_gatts_disconnect(gatts_handle_t srv_handle);
+bt_status_t bt_gatts_create_service_table(gatts_handle_t srv_handle, gatt_srv_db_t *srv_db);
+bt_status_t bt_gatts_start(gatts_handle_t srv_handle);
+bt_status_t bt_gatts_stop(gatts_handle_t srv_handle);
+bt_status_t bt_gatts_response(gatts_handle_t srv_handle, uint32_t req_handle, uint8_t *value, uint16_t length);
+bt_status_t bt_gatts_notify(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
+bt_status_t bt_gatts_indicate(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __BLE_GATTS_H__ */
+#endif /* __BT_GATTS_H__ */

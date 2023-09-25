@@ -56,14 +56,14 @@ typedef struct
          * @brief GATTC_EVENT_CONNECT_CHANGE
          */
         struct gattc_connect_change_evt_param {
-            int32_t connect_state;
+            int32_t state;
             uint8_t reason;
         } connect_change;
 
         /**
          * @brief GATTC_EVENT_DISCOVER_RESULT
          */
-        struct gattc_discover_res_evt_param {
+        struct gattc_discover_result_evt_param {
             gatt_element_t *elements;
             uint16_t size;
         } discover_res;
@@ -71,7 +71,7 @@ typedef struct
         /**
          * @brief GATTC_EVENT_DISOCVER_CMPL
          */
-        struct gattc_discover_cmpl_evt_param {
+        struct gattc_discover_complete_evt_param {
             gatt_status_t status;
         } discover_cmpl;
 

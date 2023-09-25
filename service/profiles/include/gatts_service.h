@@ -19,8 +19,8 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-#include "ble_gatt_defs.h"
-#include "ble_gatts.h"
+#include "bt_gatt_defs.h"
+#include "bt_gatts.h"
 #include "bt_device.h"
 #include "gatt_define.h"
 

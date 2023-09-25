@@ -19,8 +19,8 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-#include "ble_gatt_defs.h"
-#include "ble_gattc.h"
+#include "bt_gatt_defs.h"
+#include "bt_gattc.h"
 #include "bt_device.h"
 #include "gatt_define.h"
 
@@ -59,7 +59,7 @@ typedef struct gattc_interface {
     bt_status_t (*get_attribute_by_handle)(void *conn_handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc);
     bt_status_t (*get_attribute_by_uuid)(void *conn_handle, bt_uuid_t *att_uuid, gatt_attr_desc_t *attr_desc);
     bt_status_t (*read)(void *conn_handle, uint16_t attr_handle);
-    bt_status_t (*write)(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, uint16_t offset);
+    bt_status_t (*write)(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
     bt_status_t (*write_without_response)(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
     bt_status_t (*subscribe)(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb);
     bt_status_t (*unsubscribe)(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle);

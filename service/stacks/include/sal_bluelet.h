@@ -72,7 +72,7 @@ static inline hid_app_state_t bluelet_hid_app_state(SERVICE_BTHD_APP_STATE state
 #endif
 
 #if defined(CONFIG_BLUETOOTH_GATT)
-#include "ble_gatt_defs.h"
+#include "bt_gatt_defs.h"
 static inline gatt_status_t bluelet_gatt_status(SERVICE_GATT_STATUS status)
 {
     switch (status) {

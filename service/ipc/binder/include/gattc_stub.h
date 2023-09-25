@@ -14,8 +14,8 @@
  * limitations under the License.
  ***************************************************************************/
 
-#ifndef __BLE_GATTC_STUB_H__
-#define __BLE_GATTC_STUB_H__
+#ifndef __BT_GATTC_STUB_H__
+#define __BT_GATTC_STUB_H__
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -31,12 +31,12 @@ typedef struct {
     AIBinder_Class *clazz;
     AIBinder_Weak *WeakBinder;
     void *usr_data;
-} IBleGattClient;
+} IBtGattClient;
 
 typedef struct {
     AIBinder_Class *clazz;
     AIBinder *binder;
-} BpBleGattClient;
+} BpBtGattClient;
 
 typedef enum {
     IGATT_CLIENT_CREATE_CONNECT = FIRST_CALL_TRANSACTION,
@@ -52,14 +52,14 @@ typedef enum {
     IGATT_CLIENT_SUBSCRIBE,
     IGATT_CLIENT_UNSUBSCRIBE,
     IGATT_CLIENT_EXCHANGE_MTU,
-} IBleGattClient_Call;
+} IBtGattClient_Call;
 
 #define GATT_CLIENT_BINDER_INSTANCE "Vela.Bluetooth.Gatt.Client"
 
-binder_status_t BleGattClient_addService(IBleGattClient *iGattc, const char *instance);
-AIBinder *BleGattClient_getService(BpBleGattClient **bpGattc, const char *instance);
+binder_status_t BtGattClient_addService(IBtGattClient *iGattc, const char *instance);
+AIBinder *BtGattClient_getService(BpBtGattClient **bpGattc, const char *instance);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __BLE_GATTC_STUB_H__ */
+#endif /* __BT_GATTC_STUB_H__ */

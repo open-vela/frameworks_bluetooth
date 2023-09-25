@@ -27,7 +27,7 @@
 #include "parcel.h"
 #include "utils/log.h"
 
-void *BpBleGattServer_registerService(BpBleGattServer *bpBinder, AIBinder *cbksBinder)
+void *BpBtGattServer_registerService(BpBtGattServer *bpBinder, AIBinder *cbksBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -57,7 +57,7 @@ void *BpBleGattServer_registerService(BpBleGattServer *bpBinder, AIBinder *cbksB
     return (void *)handle;
 }
 
-bt_status_t BpBleGattServer_unregisterService(BpBleGattServer *bpBinder, void *handle)
+bt_status_t BpBtGattServer_unregisterService(BpBtGattServer *bpBinder, void *handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -87,7 +87,7 @@ bt_status_t BpBleGattServer_unregisterService(BpBleGattServer *bpBinder, void *h
     return status;
 }
 
-bt_status_t BpBleGattServer_connect(BpBleGattServer *bpBinder, void *handle, bt_address_t *addr, ble_addr_type_t addr_type)
+bt_status_t BpBtGattServer_connect(BpBtGattServer *bpBinder, void *handle, bt_address_t *addr, ble_addr_type_t addr_type)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -125,7 +125,7 @@ bt_status_t BpBleGattServer_connect(BpBleGattServer *bpBinder, void *handle, bt_
     return status;
 }
 
-bt_status_t BpBleGattServer_disconnect(BpBleGattServer *bpBinder, void *handle)
+bt_status_t BpBtGattServer_disconnect(BpBtGattServer *bpBinder, void *handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -155,7 +155,7 @@ bt_status_t BpBleGattServer_disconnect(BpBleGattServer *bpBinder, void *handle)
     return status;
 }
 
-bt_status_t BpBleGattServer_createServiceTable(BpBleGattServer *bpBinder, void *handle, gatt_srv_db_t *srv_db)
+bt_status_t BpBtGattServer_createServiceTable(BpBtGattServer *bpBinder, void *handle, gatt_srv_db_t *srv_db)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -192,7 +192,7 @@ bt_status_t BpBleGattServer_createServiceTable(BpBleGattServer *bpBinder, void *
     return state;
 }
 
-bt_status_t BpBleGattServer_start(BpBleGattServer *bpBinder, void *handle)
+bt_status_t BpBtGattServer_start(BpBtGattServer *bpBinder, void *handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -222,7 +222,7 @@ bt_status_t BpBleGattServer_start(BpBleGattServer *bpBinder, void *handle)
     return status;
 }
 
-bt_status_t BpBleGattServer_stop(BpBleGattServer *bpBinder, void *handle)
+bt_status_t BpBtGattServer_stop(BpBtGattServer *bpBinder, void *handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -252,7 +252,7 @@ bt_status_t BpBleGattServer_stop(BpBleGattServer *bpBinder, void *handle)
     return status;
 }
 
-bt_status_t BpBleGattServer_response(BpBleGattServer *bpBinder, void *handle, uint32_t req_handle, uint8_t *value, uint16_t length)
+bt_status_t BpBtGattServer_response(BpBtGattServer *bpBinder, void *handle, uint32_t req_handle, uint8_t *value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -275,11 +275,11 @@ bt_status_t BpBleGattServer_response(BpBleGattServer *bpBinder, void *handle, ui
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeUint32(parcelIn, (uint32_t)length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
@@ -294,7 +294,7 @@ bt_status_t BpBleGattServer_response(BpBleGattServer *bpBinder, void *handle, ui
     return status;
 }
 
-bt_status_t BpBleGattServer_notify(BpBleGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t BpBtGattServer_notify(BpBtGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -317,11 +317,11 @@ bt_status_t BpBleGattServer_notify(BpBleGattServer *bpBinder, void *handle, uint
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeUint32(parcelIn, (uint32_t)length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
@@ -336,7 +336,7 @@ bt_status_t BpBleGattServer_notify(BpBleGattServer *bpBinder, void *handle, uint
     return status;
 }
 
-bt_status_t BpBleGattServer_indicate(BpBleGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t BpBtGattServer_indicate(BpBtGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -359,11 +359,11 @@ bt_status_t BpBleGattServer_indicate(BpBleGattServer *bpBinder, void *handle, ui
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeUint32(parcelIn, (uint32_t)length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 

@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#include "ble_gatts.h"
+#include "bt_gatts.h"
 #include "bt_list.h"
 #include "bt_profile.h"
 #include "gattc_event.h"
@@ -218,19 +218,22 @@ static void gattc_process_message(void *data)
     BT_LOGD("%s, event %d", __func__, msg->event);
 
     pthread_mutex_lock(&g_gattc_manager.device_lock);
+    if (!g_gattc_manager.started)
+        goto end;
+
     gattc_connection_t *connection = find_gattc_connection_by_addr(&msg->addr);
     if (!connection)
         goto end;
 
     switch (msg->event) {
     case GATTC_EVENT_CONNECT_CHANGE: {
-        profile_connection_state_t connect_state = msg->param.connect_change.connect_state;
+        profile_connection_state_t connect_state = msg->param.connect_change.state;
         if (connect_state == PROFILE_STATE_CONNECTED) {
             connection->state = GATTC_STATE_CONNECTED;
             GATT_CBACK(connection->callbacks, on_connected, connection, &connection->remote_addr);
         } else if (connect_state == PROFILE_STATE_DISCONNECTED) {
             connection->state = GATTC_STATE_DISCONNECTED;
-            GATT_CBACK(connection->callbacks, on_disconnected, connection, &connection->remote_addr, msg->param.connect_change.reason);
+            GATT_CBACK(connection->callbacks, on_disconnected, connection, &connection->remote_addr);
             bt_addr_set_empty(&connection->remote_addr);
             bt_list_clear(connection->services);
         }
@@ -258,7 +261,7 @@ static void gattc_process_message(void *data)
         GATT_CBACK(connection->callbacks, on_read, connection, msg->param.read.status, msg->param.read.element_id, msg->param.read.value, msg->param.read.length);
     } break;
     case GATTC_EVENT_WRITE: {
-        GATT_CBACK(connection->callbacks, on_written, connection, msg->param.write.status, msg->param.write.element_id, 0);
+        GATT_CBACK(connection->callbacks, on_written, connection, msg->param.write.status, msg->param.write.element_id);
     } break;
     case GATTC_EVENT_NOTIFY: {
         gatt_element_t *element = find_gattc_element_by_handle(connection, msg->param.notify.element_id);
@@ -289,9 +292,16 @@ static bt_status_t gattc_send_message(gattc_msg_t *msg)
 
 static bt_status_t if_gattc_init(void)
 {
-    BT_LOGD("%s", __func__);
+    pthread_mutexattr_t attr;
 
     memset(&g_gattc_manager, 0, sizeof(g_gattc_manager));
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    if (pthread_mutex_init(&g_gattc_manager.device_lock, &attr) < 0)
+        return BT_STATUS_FAIL;
+
+    g_gattc_manager.started = false;
 
     return BT_STATUS_SUCCESS;
 }
@@ -299,11 +309,11 @@ static bt_status_t if_gattc_init(void)
 static bt_status_t if_gattc_startup(profile_on_startup_t cb)
 {
     bt_status_t status;
-    pthread_mutexattr_t attr;
     gattc_manager_t *manager = &g_gattc_manager;
 
-    BT_LOGD("%s", __func__);
+    pthread_mutex_lock(&manager->device_lock);
     if (manager->started) {
+        pthread_mutex_unlock(&manager->device_lock);
         cb(PROFILE_GATTC, true);
         return BT_STATUS_SUCCESS;
     }
@@ -320,11 +330,8 @@ static bt_status_t if_gattc_startup(profile_on_startup_t cb)
         goto fail;
     }
 
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&manager->device_lock, &attr);
-
     manager->started = true;
+    pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTC, true);
 
     return BT_STATUS_SUCCESS;
@@ -333,8 +340,9 @@ fail:
     index_allocator_delete(manager->allocator);
     bt_list_free(manager->connections);
     manager->connections = NULL;
+    pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTC, false);
-    pthread_mutex_destroy(&manager->device_lock);
+
     return status;
 }
 
@@ -342,32 +350,32 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
 {
     gattc_manager_t *manager = &g_gattc_manager;
 
-    BT_LOGD("%s", __func__);
     if (!manager->started) {
         cb(PROFILE_GATTC, true);
         return BT_STATUS_SUCCESS;
     }
 
     pthread_mutex_lock(&manager->device_lock);
-    index_allocator_delete(manager->allocator);
     bt_list_free(manager->connections);
     manager->connections = NULL;
+    index_allocator_delete(manager->allocator);
     manager->started = false;
     cb(PROFILE_GATTC, true);
     pthread_mutex_unlock(&manager->device_lock);
-    pthread_mutex_destroy(&manager->device_lock);
+    cb(PROFILE_GATTC, true);
 
     return BT_STATUS_SUCCESS;
+}
+
+static void if_gattc_cleanup(void)
+{
+    g_gattc_manager.started = false;
+    pthread_mutex_destroy(&g_gattc_manager.device_lock);
 }
 
 static int if_gattc_get_state(void)
 {
     return 1;
-}
-
-static void if_gattc_cleanup(void)
-{
-    BT_LOGD("%s", __func__);
 }
 
 static int if_gattc_dump(void)
@@ -540,7 +548,7 @@ static bt_status_t if_gattc_read(void *conn_handle, uint16_t attr_handle)
     return bt_sal_gatt_client_read_element(&connection->remote_addr, attr_handle);
 }
 
-static bt_status_t if_gattc_write(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, uint16_t offset)
+static bt_status_t if_gattc_write(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     gattc_connection_t *connection = conn_handle;
 
@@ -623,7 +631,7 @@ static const gattc_interface_t gattc_if = {
 
 static const void *get_gattc_profile_interface(void)
 {
-    return &gattc_if;
+    return (void *)&gattc_if;
 }
 
 /****************************************************************************
@@ -632,7 +640,7 @@ static const void *get_gattc_profile_interface(void)
 void if_gattc_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state)
 {
     gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_CONNECT_CHANGE, addr, 0);
-    msg->param.connect_change.connect_state = state;
+    msg->param.connect_change.state = state;
     msg->param.connect_change.reason = 0;
     gattc_send_message(msg);
 }

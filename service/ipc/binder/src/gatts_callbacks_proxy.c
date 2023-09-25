@@ -30,7 +30,7 @@
 
 #include "utils/log.h"
 
-static void BpBleGattServerCallbacks_onConnected(void *handle, bt_address_t *addr)
+static void BpBtGattServerCallbacks_onConnected(void *handle, bt_address_t *addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -51,7 +51,7 @@ static void BpBleGattServerCallbacks_onConnected(void *handle, bt_address_t *add
     }
 }
 
-static void BpBleGattServerCallbacks_onDisconnected(void *handle, bt_address_t *addr, uint8_t reason)
+static void BpBtGattServerCallbacks_onDisconnected(void *handle, bt_address_t *addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -65,10 +65,6 @@ static void BpBleGattServerCallbacks_onDisconnected(void *handle, bt_address_t *
     if (stat != STATUS_OK)
         return;
 
-    stat = AParcel_writeUint32(parcelIn, (uint32_t)reason);
-    if (stat != STATUS_OK)
-        return;
-
     stat = AIBinder_transact(binder, ICBKS_GATT_SERVER_DISCONNECTED, &parcelIn, &parcelOut, 0 /*flags*/);
     if (stat != STATUS_OK) {
         BT_LOGE("%s transact error:%d", __func__, stat);
@@ -76,7 +72,7 @@ static void BpBleGattServerCallbacks_onDisconnected(void *handle, bt_address_t *
     }
 }
 
-static void BpBleGattServerCallbacks_onStarted(void *handle, gatt_status_t status)
+static void BpBtGattServerCallbacks_onStarted(void *handle, gatt_status_t status)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -97,7 +93,7 @@ static void BpBleGattServerCallbacks_onStarted(void *handle, gatt_status_t statu
     }
 }
 
-static void BpBleGattServerCallbacks_onStopped(void *handle, gatt_status_t status)
+static void BpBtGattServerCallbacks_onStopped(void *handle, gatt_status_t status)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -118,7 +114,7 @@ static void BpBleGattServerCallbacks_onStopped(void *handle, gatt_status_t statu
     }
 }
 
-static void BpBleGattServerCallbacks_onMtuChanged(void *handle, bt_address_t *addr, uint32_t mtu)
+static void BpBtGattServerCallbacks_onMtuChanged(void *handle, bt_address_t *addr, uint32_t mtu)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -145,19 +141,19 @@ static void BpBleGattServerCallbacks_onMtuChanged(void *handle, bt_address_t *ad
 
 static const gatts_callbacks_t static_gatts_cbks = {
     sizeof(static_gatts_cbks),
-    BpBleGattServerCallbacks_onConnected,
-    BpBleGattServerCallbacks_onDisconnected,
-    BpBleGattServerCallbacks_onStarted,
-    BpBleGattServerCallbacks_onStopped,
-    BpBleGattServerCallbacks_onMtuChanged,
+    BpBtGattServerCallbacks_onConnected,
+    BpBtGattServerCallbacks_onDisconnected,
+    BpBtGattServerCallbacks_onStarted,
+    BpBtGattServerCallbacks_onStopped,
+    BpBtGattServerCallbacks_onMtuChanged,
 };
 
-const gatts_callbacks_t *BpBleGattServerCallbacks_getStatic(void)
+const gatts_callbacks_t *BpBtGattServerCallbacks_getStatic(void)
 {
     return &static_gatts_cbks;
 }
 
-uint16_t BpBleGattServerCallbacks_onRead(void *handle, uint16_t attr_handle, uint32_t req_handle)
+uint16_t BpBtGattServerCallbacks_onRead(void *handle, uint16_t attr_handle, uint32_t req_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -183,7 +179,7 @@ uint16_t BpBleGattServerCallbacks_onRead(void *handle, uint16_t attr_handle, uin
     return 0;
 }
 
-uint16_t BpBleGattServerCallbacks_onWrite(void *handle, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
+uint16_t BpBtGattServerCallbacks_onWrite(void *handle, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -217,7 +213,7 @@ uint16_t BpBleGattServerCallbacks_onWrite(void *handle, uint16_t attr_handle, co
     return length;
 }
 
-void BpBleGattServerCallbacks_onComplete(void *handle, gatt_status_t status, uint16_t attr_handle)
+void BpBtGattServerCallbacks_onComplete(void *handle, gatt_status_t status, uint16_t attr_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;

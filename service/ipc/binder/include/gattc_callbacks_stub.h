@@ -14,8 +14,8 @@
  * limitations under the License.
  ***************************************************************************/
 
-#ifndef __BLE_GATTC_CALLBACKS_STUB_H__
-#define __BLE_GATTC_CALLBACKS_STUB_H__
+#ifndef __BT_GATTC_CALLBACKS_STUB_H__
+#define __BT_GATTC_CALLBACKS_STUB_H__
 
 #include <nuttx/list.h>
 #include <stdbool.h>
@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-#include "ble_gattc.h"
+#include "bt_gattc.h"
 #include <android/binder_manager.h>
 
 typedef struct {
@@ -42,7 +42,7 @@ typedef struct {
     struct list_node notify_list;
     void *proxy;
     void *cookie;
-} IBleGattClientCallbacks;
+} IBtGattClientCallbacks;
 
 typedef enum {
     ICBKS_GATT_CLIENT_CONNECTED = FIRST_CALL_TRANSACTION,
@@ -52,16 +52,16 @@ typedef enum {
     ICBKS_GATT_CLIENT_READ,
     ICBKS_GATT_CLIENT_WRITE,
     ICBKS_GATT_CLIENT_NOTIFY
-} IBleGattClientCallbacks_Call;
+} IBtGattClientCallbacks_Call;
 
-AIBinder *BleGattClientCallbacks_getBinder(IBleGattClientCallbacks *adapter);
-binder_status_t BleGattClientCallbacks_associateClass(AIBinder *binder);
-IBleGattClientCallbacks *BleGattClientCallbacks_new(const gattc_callbacks_t *callbacks);
-void BleGattClientCallbacks_delete(IBleGattClientCallbacks *cbks);
-void BleGattClientCallbacks_registerNotify(IBleGattClientCallbacks *cbks, uint16_t value_handle, gattc_notify_cb_t notify_cb);
-void BleGattClientCallbacks_unregisterNotify(IBleGattClientCallbacks *cbks, uint16_t value_handle);
+AIBinder *BtGattClientCallbacks_getBinder(IBtGattClientCallbacks *adapter);
+binder_status_t BtGattClientCallbacks_associateClass(AIBinder *binder);
+IBtGattClientCallbacks *BtGattClientCallbacks_new(const gattc_callbacks_t *callbacks);
+void BtGattClientCallbacks_delete(IBtGattClientCallbacks *cbks);
+void BtGattClientCallbacks_registerNotify(IBtGattClientCallbacks *cbks, uint16_t value_handle, gattc_notify_cb_t notify_cb);
+void BtGattClientCallbacks_unregisterNotify(IBtGattClientCallbacks *cbks, uint16_t value_handle);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __BLE_GATTC_CALLBACKS_STUB_H__ */
+#endif /* __BT_GATTC_CALLBACKS_STUB_H__ */

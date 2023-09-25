@@ -71,7 +71,7 @@ typedef struct
          */
         struct gatts_connect_change_evt_param {
             bt_address_t addr;
-            int32_t connect_state;
+            int32_t state;
             uint8_t reason;
         } connect_change;
 

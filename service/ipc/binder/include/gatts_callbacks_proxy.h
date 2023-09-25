@@ -14,8 +14,8 @@
  * limitations under the License.
  ***************************************************************************/
 
-#ifndef __BLE_GATTS_CALLBACKS_PROXY_H__
-#define __BLE_GATTS_CALLBACKS_PROXY_H__
+#ifndef __BT_GATTS_CALLBACKS_PROXY_H__
+#define __BT_GATTS_CALLBACKS_PROXY_H__
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -24,16 +24,16 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "ble_gatts.h"
+#include "bt_gatts.h"
 
 #include <android/binder_manager.h>
 
-const gatts_callbacks_t *BpBleGattServerCallbacks_getStatic(void);
-uint16_t BpBleGattServerCallbacks_onRead(void *handle, uint16_t attr_handle, uint32_t req_handle);
-uint16_t BpBleGattServerCallbacks_onWrite(void *handle, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset);
-void BpBleGattServerCallbacks_onComplete(void *handle, gatt_status_t status, uint16_t attr_handle);
+const gatts_callbacks_t *BpBtGattServerCallbacks_getStatic(void);
+uint16_t BpBtGattServerCallbacks_onRead(void *handle, uint16_t attr_handle, uint32_t req_handle);
+uint16_t BpBtGattServerCallbacks_onWrite(void *handle, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset);
+void BpBtGattServerCallbacks_onComplete(void *handle, gatt_status_t status, uint16_t attr_handle);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __BLE_GATTS_CALLBACKS_PROXY_H__ */
+#endif /* __BT_GATTS_CALLBACKS_PROXY_H__ */

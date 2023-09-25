@@ -30,22 +30,22 @@
 #include "bluetooth.h"
 #include "utils/log.h"
 
-#define BLE_GATT_CLIENT_CALLBACK_DESC "BluetoothGattClientCallback"
+#define BT_GATT_CLIENT_CALLBACK_DESC "BluetoothGattClientCallback"
 
-static const AIBinder_Class *kIBleGattClientCallbacks_Class = NULL;
+static const AIBinder_Class *kIBtGattClientCallbacks_Class = NULL;
 
-static void *IBleGattClientCallbacks_Class_onCreate(void *arg)
+static void *IBtGattClientCallbacks_Class_onCreate(void *arg)
 {
     BT_LOGD("%s", __func__);
     return arg;
 }
 
-static void IBleGattClientCallbacks_Class_onDestroy(void *userData)
+static void IBtGattClientCallbacks_Class_onDestroy(void *userData)
 {
     BT_LOGD("%s", __func__);
 }
 
-static notify_callback_t *BleGattClientCallbacks_findNotifyCallback(IBleGattClientCallbacks *cbks, uint16_t attr_handle)
+static notify_callback_t *BtGattClientCallbacks_findNotifyCallback(IBtGattClientCallbacks *cbks, uint16_t attr_handle)
 {
     struct list_node *node;
 
@@ -59,10 +59,10 @@ static notify_callback_t *BleGattClientCallbacks_findNotifyCallback(IBleGattClie
     return NULL;
 }
 
-static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
+static binder_status_t IBtGattClientCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
-    IBleGattClientCallbacks *cbks = AIBinder_getUserData(binder);
+    IBtGattClientCallbacks *cbks = AIBinder_getUserData(binder);
     bt_address_t addr;
 
     switch (code) {
@@ -76,18 +76,12 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
         break;
     }
     case ICBKS_GATT_CLIENT_DISCONNECTED: {
-        uint32_t reason;
-
         stat = AParcel_readAddress(in, &addr);
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readUint32(in, &reason);
-        if (stat != STATUS_OK)
-            return stat;
-
         if (cbks->callbacks && cbks->callbacks->on_disconnected)
-            cbks->callbacks->on_disconnected(cbks, &addr, (uint8_t)reason);
+            cbks->callbacks->on_disconnected(cbks, &addr);
         break;
     }
     case ICBKS_GATT_CLIENT_DISCOVER: {
@@ -146,11 +140,11 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&value, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readUint32(in, &length);
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readUint32(in, &length);
+        stat = AParcel_readByteArray(in, (void *)&value, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             return stat;
 
@@ -162,7 +156,6 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
     case ICBKS_GATT_CLIENT_WRITE: {
         uint32_t status;
         uint32_t attr_handle;
-        uint32_t offset;
 
         stat = AParcel_readUint32(in, &status);
         if (stat != STATUS_OK)
@@ -172,12 +165,8 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readUint32(in, &offset);
-        if (stat != STATUS_OK)
-            return stat;
-
         if (cbks->callbacks && cbks->callbacks->on_written)
-            cbks->callbacks->on_written(cbks, status, (uint16_t)attr_handle, (uint16_t)offset);
+            cbks->callbacks->on_written(cbks, status, (uint16_t)attr_handle);
         break;
     }
     case ICBKS_GATT_CLIENT_NOTIFY: {
@@ -189,15 +178,15 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&value, AParcelUtils_byteArrayAllocator);
-        if (stat != STATUS_OK)
-            return stat;
-
         stat = AParcel_readUint32(in, &length);
         if (stat != STATUS_OK)
             return stat;
 
-        notify_callback_t *notify_callback = BleGattClientCallbacks_findNotifyCallback(cbks, (uint16_t)attr_handle);
+        stat = AParcel_readByteArray(in, (void *)&value, AParcelUtils_byteArrayAllocator);
+        if (stat != STATUS_OK)
+            return stat;
+
+        notify_callback_t *notify_callback = BtGattClientCallbacks_findNotifyCallback(cbks, (uint16_t)attr_handle);
         if (notify_callback && notify_callback->on_notify)
             notify_callback->on_notify(cbks, (uint16_t)attr_handle, value, (uint16_t)length);
         free(value);
@@ -210,7 +199,7 @@ static binder_status_t IBleGattClientCallbacks_Class_onTransact(AIBinder *binder
     return stat;
 }
 
-AIBinder *BleGattClientCallbacks_getBinder(IBleGattClientCallbacks *cbks)
+AIBinder *BtGattClientCallbacks_getBinder(IBtGattClientCallbacks *cbks)
 {
     AIBinder *binder = NULL;
 
@@ -230,38 +219,38 @@ AIBinder *BleGattClientCallbacks_getBinder(IBleGattClientCallbacks *cbks)
     return binder;
 }
 
-binder_status_t BleGattClientCallbacks_associateClass(AIBinder *binder)
+binder_status_t BtGattClientCallbacks_associateClass(AIBinder *binder)
 {
-    if (!kIBleGattClientCallbacks_Class) {
-        kIBleGattClientCallbacks_Class =
-            AIBinder_Class_define(BLE_GATT_CLIENT_CALLBACK_DESC, IBleGattClientCallbacks_Class_onCreate,
-                                  IBleGattClientCallbacks_Class_onDestroy, IBleGattClientCallbacks_Class_onTransact);
+    if (!kIBtGattClientCallbacks_Class) {
+        kIBtGattClientCallbacks_Class =
+            AIBinder_Class_define(BT_GATT_CLIENT_CALLBACK_DESC, IBtGattClientCallbacks_Class_onCreate,
+                                  IBtGattClientCallbacks_Class_onDestroy, IBtGattClientCallbacks_Class_onTransact);
     }
 
-    return AIBinder_associateClass(binder, kIBleGattClientCallbacks_Class);
+    return AIBinder_associateClass(binder, kIBtGattClientCallbacks_Class);
 }
 
-IBleGattClientCallbacks *BleGattClientCallbacks_new(const gattc_callbacks_t *callbacks)
+IBtGattClientCallbacks *BtGattClientCallbacks_new(const gattc_callbacks_t *callbacks)
 {
     AIBinder_Class *clazz;
     AIBinder *binder;
-    IBleGattClientCallbacks *cbks = malloc(sizeof(IBleGattClientCallbacks));
+    IBtGattClientCallbacks *cbks = malloc(sizeof(IBtGattClientCallbacks));
 
-    clazz = AIBinder_Class_define(BLE_GATT_CLIENT_CALLBACK_DESC, IBleGattClientCallbacks_Class_onCreate,
-                                  IBleGattClientCallbacks_Class_onDestroy, IBleGattClientCallbacks_Class_onTransact);
+    clazz = AIBinder_Class_define(BT_GATT_CLIENT_CALLBACK_DESC, IBtGattClientCallbacks_Class_onCreate,
+                                  IBtGattClientCallbacks_Class_onDestroy, IBtGattClientCallbacks_Class_onTransact);
 
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
     cbks->callbacks = callbacks;
     list_initialize(&cbks->notify_list);
 
-    binder = BleGattClientCallbacks_getBinder(cbks);
+    binder = BtGattClientCallbacks_getBinder(cbks);
     AIBinder_decStrong(binder);
 
     return cbks;
 }
 
-void BleGattClientCallbacks_delete(IBleGattClientCallbacks *cbks)
+void BtGattClientCallbacks_delete(IBtGattClientCallbacks *cbks)
 {
     assert(cbks);
 
@@ -282,9 +271,9 @@ void BleGattClientCallbacks_delete(IBleGattClientCallbacks *cbks)
     free(cbks);
 }
 
-void BleGattClientCallbacks_registerNotify(IBleGattClientCallbacks *cbks, uint16_t value_handle, gattc_notify_cb_t notify_cb)
+void BtGattClientCallbacks_registerNotify(IBtGattClientCallbacks *cbks, uint16_t value_handle, gattc_notify_cb_t notify_cb)
 {
-    notify_callback_t *notify_callback = BleGattClientCallbacks_findNotifyCallback(cbks, value_handle);
+    notify_callback_t *notify_callback = BtGattClientCallbacks_findNotifyCallback(cbks, value_handle);
 
     if (notify_callback) {
         notify_callback->on_notify = notify_cb;
@@ -300,9 +289,9 @@ void BleGattClientCallbacks_registerNotify(IBleGattClientCallbacks *cbks, uint16
     list_add_tail(&cbks->notify_list, &notify_callback->node);
 }
 
-void BleGattClientCallbacks_unregisterNotify(IBleGattClientCallbacks *cbks, uint16_t value_handle)
+void BtGattClientCallbacks_unregisterNotify(IBtGattClientCallbacks *cbks, uint16_t value_handle)
 {
-    notify_callback_t *notify_callback = BleGattClientCallbacks_findNotifyCallback(cbks, value_handle);
+    notify_callback_t *notify_callback = BtGattClientCallbacks_findNotifyCallback(cbks, value_handle);
 
     if (!notify_callback)
         return;

@@ -72,6 +72,9 @@ static void gatts_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE
 
 static void gatts_elements_added_callback(SERVICE_GATT_STATUS status, SERVICE_GATT_ELEMENT_S *elements, uint16_t size)
 {
+    if (!g_gatt_db_list)
+        return;
+
     sal_gatt_database_t *db_group = bt_list_find(g_gatt_db_list, gatt_db_group_cmp, &elements->id);
     if (db_group != NULL) {
         if_gatts_on_elements_added(bluelet_gatt_status(status), (uint16_t)elements->id, size);
@@ -80,6 +83,9 @@ static void gatts_elements_added_callback(SERVICE_GATT_STATUS status, SERVICE_GA
 
 static void gatts_elements_removed_callback(SERVICE_GATT_STATUS status, SERVICE_GATT_ELEMENT_S *elements, uint16_t size)
 {
+    if (!g_gatt_db_list)
+        return;
+
     sal_gatt_database_t *db_group = bt_list_find(g_gatt_db_list, gatt_db_group_cmp, &elements->id);
     if (db_group != NULL) {
         if_gatts_on_elements_removed(bluelet_gatt_status(status), (uint16_t)elements->id, size);
@@ -151,6 +157,7 @@ bt_status_t bt_sal_gatt_server_disable(void)
 {
     SAL_CHECK_RET(service_adapter_gatt_server_close(), GATT_SUCCESS);
     bt_list_free(g_gatt_db_list);
+    g_gatt_db_list = NULL;
 
     return BT_STATUS_SUCCESS;
 }

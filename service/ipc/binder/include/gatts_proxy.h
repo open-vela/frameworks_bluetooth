@@ -14,8 +14,8 @@
  * limitations under the License.
  ***************************************************************************/
 
-#ifndef __BLE_GATTS_PROXY_H__
-#define __BLE_GATTS_PROXY_H__
+#ifndef __BT_GATTS_PROXY_H__
+#define __BT_GATTS_PROXY_H__
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -23,26 +23,26 @@
 
 #include <android/binder_manager.h>
 
-#include "ble_gatts.h"
+#include "bt_gatts.h"
 #include "gatts_stub.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-BpBleGattServer *BpBleGattServer_new(const char *instance);
-void BpBleGattServer_delete(BpBleGattServer *bpBinder);
-void *BpBleGattServer_registerService(BpBleGattServer *bpBinder, AIBinder *cbksBinder);
-bt_status_t BpBleGattServer_unregisterService(BpBleGattServer *bpBinder, void *handle);
-bt_status_t BpBleGattServer_connect(BpBleGattServer *bpBinder, void *handle, bt_address_t *addr, ble_addr_type_t addr_type);
-bt_status_t BpBleGattServer_disconnect(BpBleGattServer *bpBinder, void *handle);
-bt_status_t BpBleGattServer_createServiceTable(BpBleGattServer *bpBinder, void *handle, gatt_srv_db_t *srv_db);
-bt_status_t BpBleGattServer_start(BpBleGattServer *bpBinder, void *handle);
-bt_status_t BpBleGattServer_stop(BpBleGattServer *bpBinder, void *handle);
-bt_status_t BpBleGattServer_response(BpBleGattServer *bpBinder, void *handle, uint32_t req_handle, uint8_t *value, uint16_t length);
-bt_status_t BpBleGattServer_notify(BpBleGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
-bt_status_t BpBleGattServer_indicate(BpBleGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
+BpBtGattServer *BpBtGattServer_new(const char *instance);
+void BpBtGattServer_delete(BpBtGattServer *bpBinder);
+void *BpBtGattServer_registerService(BpBtGattServer *bpBinder, AIBinder *cbksBinder);
+bt_status_t BpBtGattServer_unregisterService(BpBtGattServer *bpBinder, void *handle);
+bt_status_t BpBtGattServer_connect(BpBtGattServer *bpBinder, void *handle, bt_address_t *addr, ble_addr_type_t addr_type);
+bt_status_t BpBtGattServer_disconnect(BpBtGattServer *bpBinder, void *handle);
+bt_status_t BpBtGattServer_createServiceTable(BpBtGattServer *bpBinder, void *handle, gatt_srv_db_t *srv_db);
+bt_status_t BpBtGattServer_start(BpBtGattServer *bpBinder, void *handle);
+bt_status_t BpBtGattServer_stop(BpBtGattServer *bpBinder, void *handle);
+bt_status_t BpBtGattServer_response(BpBtGattServer *bpBinder, void *handle, uint32_t req_handle, uint8_t *value, uint16_t length);
+bt_status_t BpBtGattServer_notify(BpBtGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
+bt_status_t BpBtGattServer_indicate(BpBtGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
 #ifdef __cplusplus
 }
 #endif
-#endif /* __BLE_GATTS_PROXY_H__ */
+#endif /* __BT_GATTS_PROXY_H__ */
