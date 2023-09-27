@@ -128,6 +128,7 @@ typedef struct
 static lea_client_state_machine_t *get_state_machine(bt_address_t *addr);
 static bt_status_t lea_client_send_message(lea_client_msg_t *msg);
 static lea_client_group_t *find_group_by_id(uint32_t group_id);
+static void client_startup(void *data);
 
 static void on_lea_sink_audio_suspend(void);
 static void on_lea_sink_audio_resume(void);
@@ -556,6 +557,9 @@ static void lea_client_process_message(void *data)
     lea_client_msg_t *msg = (lea_client_msg_t *)data;
 
     switch (msg->event) {
+    case STARTUP:
+        client_startup(msg->data.datapointer);
+        break;
     case SHUTDOWN:
         lea_client_do_shutdown();
         break;
@@ -834,35 +838,13 @@ static void on_lea_source_audio_send(uint8_t *buffer, uint16_t length)
 
 static bt_status_t lea_client_init(void)
 {
-    bt_status_t ret;
-
-    BT_LOGD("%s", __func__);
-    ret = lea_audio_sink_init();
-    if (ret != BT_STATUS_SUCCESS) {
-        return ret;
-    }
-
-    ret = lea_audio_source_init();
-    if (ret != BT_STATUS_SUCCESS) {
-        return ret;
-    }
-
-    return BT_STATUS_SUCCESS;
-}
-
-static void lea_client_cleanup(void)
-{
-    BT_LOGD("%s", __func__);
-}
-
-static bt_status_t lea_client_startup(profile_on_startup_t cb)
-{
-    bt_status_t status;
     pthread_mutexattr_t attr;
     lea_client_service_t *service = &g_lea_client_service;
 
-    if (service->started)
-        return BT_STATUS_SUCCESS;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&service->group_lock, &attr);
+    pthread_mutex_init(&service->stream_lock, &attr);
 
     service->max_connections = CONFIG_BLUETOOTH_LEAUDIO_CLIENT_MAX_CONNECTIONS;
     service->leac_groups = bt_list_new((bt_list_free_cb_t)group_delete_cb);
@@ -870,32 +852,77 @@ static bt_status_t lea_client_startup(profile_on_startup_t cb)
     service->callbacks = bt_callbacks_list_new(2);
     service->index_allocator = index_allocator_create(CONFIG_BLUETOOTH_LEAUDIO_CLIENT_MAX_ALLOC_NUMBER);
     service->index_allocator->id_next = LEA_CLIENT_GROUP_ID_DEFAULT + 1;
-    if (!service->leac_groups || !service->leac_streams || !service->callbacks || !service->index_allocator) {
-        status = BT_STATUS_NOMEM;
-        goto fail;
-    }
 
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&service->group_lock, &attr);
-    pthread_mutex_init(&service->stream_lock, &attr);
+    BT_LOGD("%s", __func__);
 
-    status = bt_sal_lea_init();
-    if (status != BT_STATUS_SUCCESS)
-        goto fail;
-
-    lea_client_group_new(NULL);
-    service->started = true;
     return BT_STATUS_SUCCESS;
+}
 
-fail:
+static void lea_client_cleanup(void)
+{
+    lea_client_service_t *service = &g_lea_client_service;
+    BT_LOGD("%s", __func__);
+
+    pthread_mutex_lock(&service->group_lock);
     bt_list_free(service->leac_groups);
     bt_list_free(service->leac_streams);
     index_allocator_delete(service->index_allocator);
     bt_callbacks_list_free(service->callbacks);
     pthread_mutex_destroy(&service->group_lock);
     pthread_mutex_destroy(&service->stream_lock);
-    return status;
+    pthread_mutex_unlock(&service->group_lock);
+}
+
+static void client_startup(void *data)
+{
+    bt_status_t ret;
+    lea_client_service_t *service = &g_lea_client_service;
+    profile_on_startup_t on_startup = (profile_on_startup_t)data;
+
+    pthread_mutex_lock(&service->group_lock);
+
+    ret = bt_sal_lea_init();
+    if (ret != BT_STATUS_SUCCESS) {
+        goto end;
+    }
+
+    ret = lea_audio_sink_init();
+    if (ret != BT_STATUS_SUCCESS) {
+        goto end;
+    }
+
+    ret = lea_audio_source_init();
+    if (ret != BT_STATUS_SUCCESS) {
+        goto end;
+    }
+
+    lea_client_group_new(NULL);
+    service->started = true;
+    on_startup(PROFILE_LEAUDIO_CLIENT, true);
+    ret = BT_STATUS_SUCCESS;
+
+end:
+    pthread_mutex_unlock(&service->group_lock);
+}
+
+static bt_status_t lea_client_startup(profile_on_startup_t cb)
+{
+    lea_client_service_t *service = &g_lea_client_service;
+
+    BT_LOGD("%s", __func__);
+    pthread_mutex_lock(&service->group_lock);
+    if (service->started) {
+        pthread_mutex_unlock(&service->group_lock);
+        return BT_STATUS_SUCCESS;
+    }
+    pthread_mutex_unlock(&service->group_lock);
+
+    lea_client_msg_t *msg = lea_client_msg_new(STARTUP, NULL);
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    msg->data.datapointer = cb;
+    return lea_client_send_message(msg);
 }
 
 static bt_status_t lea_client_shutdown(profile_on_shutdown_t cb)
@@ -1358,6 +1385,11 @@ static int lea_client_dump(void)
 static bool lea_client_stream_cmp(void *audio_stream, void *stream_id)
 {
     return ((lea_audio_stream_t *)audio_stream)->stream_id == *((uint32_t *)stream_id);
+}
+
+static int lea_client_get_state(void)
+{
+    return 1;
 }
 
 /****************************************************************************
@@ -2264,7 +2296,7 @@ static const profile_service_t lea_client_service = {
     .startup = lea_client_startup,
     .shutdown = lea_client_shutdown,
     .process_msg = NULL,
-    .get_state = NULL,
+    .get_state = lea_client_get_state,
     .get_profile_interface = get_leac_profile_interface,
     .cleanup = lea_client_cleanup,
     .dump = lea_client_dump,
