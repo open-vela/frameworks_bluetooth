@@ -348,6 +348,40 @@ bt_status_t BpBtHidd_responseReport(BpBtHidd *bpBinder, bt_address_t *addr, uint
     return status;
 }
 
+bt_status_t BpBtHidd_reportError(BpBtHidd *bpBinder, bt_address_t *addr, hid_status_error_t error)
+{
+    binder_status_t stat = STATUS_OK;
+    AParcel *parcelIn, *parcelOut;
+    uint32_t status;
+
+    if (!bpBinder || !bpBinder->binder)
+        return BT_STATUS_PARM_INVALID;
+
+    AIBinder *binder = bpBinder->binder;
+
+    stat = AIBinder_prepareTransaction(binder, &parcelIn);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AParcel_writeAddress(parcelIn, addr);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AParcel_writeInt32(parcelIn, (int32_t)error);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AIBinder_transact(binder, IHIDD_REPORT_ERROR, &parcelIn, &parcelOut, 0 /*flags*/);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AParcel_readUint32(parcelOut, &status);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    return status;
+}
+
 bt_status_t BpBtHidd_virtualUnplug(BpBtHidd *bpBinder, bt_address_t *addr)
 {
     binder_status_t stat = STATUS_OK;

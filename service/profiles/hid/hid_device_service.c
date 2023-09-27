@@ -396,6 +396,23 @@ exit:
     return status;
 }
 
+static bt_status_t hid_device_report_error(bt_address_t *addr, hid_status_error_t error)
+{
+    bt_status_t status;
+
+    pthread_mutex_lock(&g_hidd_handle.hid_lock);
+    if (!g_hidd_handle.started) {
+        status = BT_STATUS_NOT_ENABLED;
+        goto exit;
+    }
+
+    status = bt_sal_hid_device_report_error(addr, error);
+
+exit:
+    pthread_mutex_unlock(&g_hidd_handle.hid_lock);
+    return status;
+}
+
 static bt_status_t hid_device_virtual_unplug(bt_address_t *addr)
 {
     bt_status_t status;
@@ -423,6 +440,7 @@ static hid_device_interface_t deviceInterface = {
     .disconnect = hid_device_disconnect,
     .send_report = hid_device_send_report,
     .response_report = hid_device_response_report,
+    .report_error = hid_device_report_error,
     .virtual_unplug = hid_device_virtual_unplug,
 };
 

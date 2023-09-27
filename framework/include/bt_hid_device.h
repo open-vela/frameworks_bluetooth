@@ -83,6 +83,27 @@ typedef enum {
 } hid_report_type_t;
 
 /**
+ * @brief hid status code
+ *
+ */
+typedef enum {
+    HID_STATUS_OK = 0,
+    HID_STATUS_HANDSHAKE_NOT_READY,
+    HID_STATUS_HANDSHAKE_INVALID_REPORT_ID,
+    HID_STATUS_HANDSHAKE_UNSUPPORTED_REQ,
+    HID_STATUS_HANDSHAKE_INVALID_PARAM,
+    HID_STATUS_HANDSHAKE_UNSPECIFIED_ERROR,
+    HID_STATUS_UNSPECIFIED_ERROR,
+    HID_ERROR_SDP,
+    HID_ERROR_SET_PROTOCOL,
+    HID_ERROR_DATABASE_FULL,
+    HID_ERROR_DEVICE_TYPE_UNSUPPORTED,
+    HID_ERROR_NO_RESOURCES,
+    HID_ERROR_AUTHENTICATION_FAILED,
+    HID_ERROR_OPERATION_NOT_ALLOWED,
+} hid_status_error_t;
+
+/**
  * @brief hid app state
  *
  */
@@ -245,6 +266,16 @@ bt_status_t bt_hid_device_send_report(bt_instance_t *ins, bt_address_t *addr, ui
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t bt_hid_device_response_report(bt_instance_t *ins, bt_address_t *addr, uint8_t rpt_type, uint8_t *rpt_data, int rpt_size);
+
+/**
+ * @brief Notifies status to the Host using SET_REPORT command
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer device.
+ * @param error - error code.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t bt_hid_device_report_error(bt_instance_t *ins, bt_address_t *addr, hid_status_error_t error);
 
 /**
  * @brief Virtual unplug the current hid host

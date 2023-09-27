@@ -261,6 +261,23 @@ static binder_status_t IBtHidd_Class_onTransact(AIBinder *binder, transaction_co
         stat = AParcel_writeUint32(reply, status);
         break;
     }
+    case IHIDD_REPORT_ERROR: {
+        uint32_t status;
+        bt_address_t addr;
+        int32_t error_code;
+
+        stat = AParcel_readAddress(in, &addr);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_readInt32(in, &error_code);
+        if (stat != STATUS_OK)
+            return stat;
+
+        status = profile->report_error(&addr, error_code);
+        stat = AParcel_writeUint32(reply, status);
+        break;
+    }
     case IHIDD_VIRTUAL_UNPLUG: {
         uint32_t status;
         bt_address_t addr;
