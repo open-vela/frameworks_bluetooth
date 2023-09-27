@@ -282,6 +282,16 @@ bt_status_t BTSYMBOLS(bt_hid_device_response_report)(bt_instance_t *ins, bt_addr
 bt_status_t BTSYMBOLS(bt_hid_device_report_error)(bt_instance_t *ins, bt_address_t *addr, hid_status_error_t error);
 
 /**
+ * @brief Notifies status to the Host using SET_REPORT command
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer device.
+ * @param error - error code.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t bt_hid_device_report_error(bt_instance_t *ins, bt_address_t *addr, hid_status_error_t error);
+
+/**
  * @brief Virtual unplug the current hid host
  *
  * @param ins - bluetooth client instance.
