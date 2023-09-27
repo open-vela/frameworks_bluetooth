@@ -54,7 +54,6 @@ static void set_report_cb(BD_ADDR remote_addr, uint8_t rpt_type,
     bt_address_t addr;
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
     hid_device_on_set_report(&addr, rpt_type, rpt_size, rpt_data);
-    service_adapter_hid_device_report_error(remote_addr, BTHID_OK);
 }
 
 static void set_protocol_cb(BD_ADDR remote_addr, uint8_t protocol)
@@ -158,6 +157,15 @@ bt_status_t bt_sal_hid_device_get_report_response(bt_address_t *addr, uint8_t rp
     SAL_CHECK_PARAM(rpt_data);
 
     SAL_CHECK_RET(service_adapter_hid_device_get_report_response(addr->addr, rpt_type, rpt_data, rpt_size), SERVICE_BT_STATUS_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_sal_hid_device_report_error(bt_address_t *addr, hid_status_error_t error)
+{
+    SAL_CHECK_PARAM(addr);
+
+    SAL_CHECK_RET(service_adapter_hid_device_report_error(addr->addr, error), SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }

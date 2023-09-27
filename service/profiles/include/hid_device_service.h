@@ -32,6 +32,7 @@ typedef struct hid_device_interface {
     bt_status_t (*disconnect)(bt_address_t *addr);
     bt_status_t (*send_report)(bt_address_t *addr, uint8_t rpt_id, uint8_t *rpt_data, int rpt_size);
     bt_status_t (*response_report)(bt_address_t *addr, uint8_t rpt_type, uint8_t *rpt_data, int rpt_size);
+    bt_status_t (*report_error)(bt_address_t *addr, hid_status_error_t error);
     bt_status_t (*virtual_unplug)(bt_address_t *addr);
 } hid_device_interface_t;
 
