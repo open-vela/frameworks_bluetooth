@@ -84,6 +84,13 @@ bt_status_t bt_hid_device_response_report(bt_instance_t *ins, bt_address_t *addr
     return profile->response_report(addr, rpt_type, rpt_data, rpt_size);
 }
 
+bt_status_t bt_hid_device_report_error(bt_instance_t *ins, bt_address_t *addr, hid_status_error_t error)
+{
+    hid_device_interface_t *profile = get_profile_service();
+
+    return profile->report_error(addr, error);
+}
+
 bt_status_t bt_hid_device_virtual_unplug(bt_instance_t *ins, bt_address_t *addr)
 {
     hid_device_interface_t *profile = get_profile_service();

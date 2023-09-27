@@ -25,17 +25,23 @@ static int unregister_cmd(void *handle, int argc, char *argv[]);
 static int connect_cmd(void *handle, int argc, char *argv[]);
 static int disconnect_cmd(void *handle, int argc, char *argv[]);
 static int send_report_cmd(void *handle, int argc, char *argv[]);
+static int send_keyboard_cmd(void *handle, int argc, char *argv[]);
+static int send_mouse_cmd(void *handle, int argc, char *argv[]);
+static int send_consumer_cmd(void *handle, int argc, char *argv[]);
 static int unplug_cmd(void *handle, int argc, char *argv[]);
 static int dump_cmd(void *handle, int argc, char *argv[]);
 
 static bt_command_t g_hidd_tables[] = {
-    {"register",     register_cmd,    0, "\"register HID app: <type>(1:KEYBOARD, 2:MOUSE, 3:KBMS_COMBO) <transport>(0:BLE, 1:BREDR)\""},
-    { "unregister",  unregister_cmd,  0, "\"unregister HID app \""                                                                    },
-    { "connect",     connect_cmd,     0, "\"connect HID host param: <address> \""                                                     },
-    { "disconnect",  disconnect_cmd,  0, "\"disconnect HID host param: <address>\""                                                   },
-    { "send_report", send_report_cmd, 0, "\"send report param: <address> <report id> <report data> \""                                },
-    { "unplug",      unplug_cmd,      0, "\"virtual unplug param: <address> \""                                                       },
-    { "dump",        dump_cmd,        0, "\"dump HID device current state\""                                                          },
+    {"register",       register_cmd,      0, "\"register HID app: <type>(1:KEYBOARD, 2:MOUSE, 3:KBMS_COMBO) <transport>(0:BLE, 1:BREDR)\""},
+    { "unregister",    unregister_cmd,    0, "\"unregister HID app \""                                                                    },
+    { "connect",       connect_cmd,       0, "\"connect HID host param: <address> \""                                                     },
+    { "disconnect",    disconnect_cmd,    0, "\"disconnect HID host param: <address>\""                                                   },
+    { "send_report",   send_report_cmd,   0, "\"send report param: <address> <report id> <report data> \""                                },
+    { "send_keyboard", send_keyboard_cmd, 0, "\"send keyboard report: <address> <modifier key> <normal key>\""                            },
+    { "send_mouse",    send_mouse_cmd,    0, "\"send mouse report: <address> <X axises>(-127~128) <Y axises>(-127~128)\""                 },
+    { "send_consumer", send_consumer_cmd, 0, "\"send consumer report: <address> <consumer key>\""                                         },
+    { "unplug",        unplug_cmd,        0, "\"virtual unplug param: <address> \""                                                       },
+    { "dump",          dump_cmd,          0, "\"dump HID device current state\""                                                          },
 };
 
 static void *hidd_callbacks = NULL;
@@ -216,6 +222,7 @@ static void hidd_set_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt_typ
     bt_addr_ba2str(addr, addr_str);
     PRINT("%s, addr:%s, report type: %d, report data:", __func__, addr_str, rpt_type);
     PRINT_HEXDUMP(rpt_data, rpt_size);
+    bt_hid_device_report_error(cookie, addr, HID_STATUS_OK);
 }
 
 static void hidd_receive_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt_type,
@@ -412,6 +419,83 @@ static int send_report_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
+static int send_keyboard_cmd(void *handle, int argc, char *argv[])
+{
+    bt_address_t addr;
+    uint8_t rpt_data[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+    if (argc < 3)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    PRINT("%s, address:%s", __func__, argv[0]);
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    rpt_data[0] = strtol(argv[1], NULL, 16);
+    rpt_data[2] = strtol(argv[2], NULL, 16);
+
+    PRINT("modifier key: 0x%02X, normal key: 0x%02X", rpt_data[0], rpt_data[2]);
+    if (bt_hid_device_send_report(handle, &addr, 0, rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    memset(rpt_data, 0, sizeof(rpt_data));
+    if (bt_hid_device_send_report(handle, &addr, 0, rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int send_mouse_cmd(void *handle, int argc, char *argv[])
+{
+    bt_address_t addr;
+    int8_t rpt_data[4] = { 0x00, 0x00, 0x00, 0x00 };
+
+    if (argc < 3)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    PRINT("%s, address:%s", __func__, argv[0]);
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    rpt_data[1] = atoi(argv[1]);
+    rpt_data[2] = atoi(argv[2]);
+
+    PRINT("X axises: %d, Y axises: %d", rpt_data[0], rpt_data[2]);
+    if (bt_hid_device_send_report(handle, &addr, 0, (uint8_t *)rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    memset(rpt_data, 0, sizeof(rpt_data));
+    if (bt_hid_device_send_report(handle, &addr, 0, (uint8_t *)rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int send_consumer_cmd(void *handle, int argc, char *argv[])
+{
+    bt_address_t addr;
+    uint8_t rpt_data[2] = { 0x01, 0x00 };
+
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    PRINT("%s, address:%s", __func__, argv[0]);
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    rpt_data[1] = strtol(argv[1], NULL, 16);
+
+    PRINT("consumer key: 0x%02X", rpt_data[1]);
+    if (bt_hid_device_send_report(handle, &addr, 1, rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    rpt_data[1] = 0;
+    if (bt_hid_device_send_report(handle, &addr, 1, rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
 static int unplug_cmd(void *handle, int argc, char *argv[])
 {
     bt_address_t addr;
@@ -465,7 +549,7 @@ int hidd_command_exec(void *handle, int argc, char *argv[])
         ret = execute_command_in_table(handle, g_hidd_tables, ARRAY_SIZE(g_hidd_tables), argc, argv);
 
     if (ret < 0) {
-        printf("UnKnow command %s\n", argv[1]);
+        printf("Erroneous command %s\n", argv[1]);
         usage();
     }
 

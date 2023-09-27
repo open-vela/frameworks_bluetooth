@@ -40,6 +40,7 @@ bt_status_t BpBtHidd_connect(BpBtHidd *bpBinder, bt_address_t *addr);
 bt_status_t BpBtHidd_disconnect(BpBtHidd *bpBinder, bt_address_t *addr);
 bt_status_t BpBtHidd_sendReport(BpBtHidd *bpBinder, bt_address_t *addr, uint8_t rpt_id, uint8_t *rpt_data, int rpt_size);
 bt_status_t BpBtHidd_responseReport(BpBtHidd *bpBinder, bt_address_t *addr, uint8_t rpt_type, uint8_t *rpt_data, int rpt_size);
+bt_status_t BpBtHidd_reportError(BpBtHidd *bpBinder, bt_address_t *addr, hid_status_error_t error);
 bt_status_t BpBtHidd_virtualUnplug(BpBtHidd *bpBinder, bt_address_t *addr);
 
 #ifdef __cplusplus

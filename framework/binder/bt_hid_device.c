@@ -102,6 +102,13 @@ bt_status_t bt_hid_device_response_report(bt_instance_t *ins, bt_address_t *addr
     return BpBtHidd_responseReport(hidd, addr, rpt_type, rpt_data, rpt_size);
 }
 
+bt_status_t bt_hid_device_report_error(bt_instance_t *ins, bt_address_t *addr, hid_status_error_t error)
+{
+    BpBtHidd *hidd = (BpBtHidd *)bluetooth_get_proxy(ins, PROFILE_HID_DEV);
+
+    return BpBtHidd_reportError(hidd, addr, error);
+}
+
 bt_status_t bt_hid_device_virtual_unplug(bt_instance_t *ins, bt_address_t *addr)
 {
     BpBtHidd *hidd = (BpBtHidd *)bluetooth_get_proxy(ins, PROFILE_HID_DEV);
