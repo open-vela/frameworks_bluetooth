@@ -1000,6 +1000,61 @@ static bt_status_t get_ases_streams_id_form_group(uint32_t group_id, uint8_t *nu
     return BT_STATUS_SUCCESS;
 }
 
+static bool conext_match_audio_derection(lea_adpt_context_types_t context, bool source)
+{
+    switch (context) {
+    case ADPT_LEA_CONTEXT_TYPE_UNSPECIFIED:
+    case ADPT_LEA_CONTEXT_TYPE_CONVERSATIONAL:
+        return true;
+    case ADPT_LEA_CONTEXT_TYPE_VOICE_ASSISTANTS:
+        return source;
+    case ADPT_LEA_CONTEXT_TYPE_INSTRUCTIONAL:
+    case ADPT_LEA_CONTEXT_TYPE_NOTIFICATIONS:
+    case ADPT_LEA_CONTEXT_TYPE_SOUND_EFFECTS:
+    case ADPT_LEA_CONTEXT_TYPE_RINGTONE:
+    case ADPT_LEA_CONTEXT_TYPE_ALERTS:
+    case ADPT_LEA_CONTEXT_TYPE_EMERGENCY_ALARM:
+    case ADPT_LEA_CONTEXT_TYPE_LIVE:
+    case ADPT_LEA_CONTEXT_TYPE_GAME:
+    case ADPT_LEA_CONTEXT_TYPE_MEDIA:
+        return !source;
+    case ADPT_LEA_CONTEXT_TYPE_PROHIBITED:
+    default:
+        return false;
+    }
+}
+
+static bt_status_t get_ases_streams_id_form_context(uint32_t group_id, uint8_t *num, uint32_t *stream_ids)
+{
+    lea_client_service_t *service = &g_lea_client_service;
+    bt_list_node_t *cnode;
+    bt_list_t *clist;
+    lea_client_device_t *device;
+    lea_client_group_t *group;
+    int index, cnt;
+
+    *num = 0;
+    cnt = 0;
+    group = find_group_by_id(group_id);
+    if (!group) {
+        BT_LOGE("%s, group no exist", __func__);
+        return BT_STATUS_NOT_FOUND;
+    }
+
+    clist = group->devices;
+    pthread_mutex_lock(&service->group_lock);
+    for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
+        device = bt_list_node(cnode);
+        for (index = 0; index < device->ase_number && conext_match_audio_derection(group->context, device->ase[index].is_source); index++) {
+            stream_ids[cnt++] = device->ase[index].stream_id;
+        }
+    }
+    *num = cnt;
+    pthread_mutex_unlock(&service->group_lock);
+
+    return BT_STATUS_SUCCESS;
+}
+
 static bt_status_t get_ases_streams_id_from_addr(uint32_t group_id, bt_address_t *addr, uint8_t *num, uint32_t *stream_ids)
 {
     lea_client_device_t *device;
@@ -1484,14 +1539,12 @@ bt_status_t lea_client_ucc_add_streams(uint32_t group_id, bt_address_t *addr)
     }
 
     pthread_mutex_lock(&device->device_lock);
-    if (!device->cis_id) {
-        ret = lea_client_alloc_cis_id(&cis_id);
-        if (ret != BT_STATUS_SUCCESS) {
-            BT_LOGE("%s, alloc_cis_id failed", __func__);
-            goto end;
-        }
-        device->cis_id = cis_id;
+    ret = lea_client_alloc_cis_id(&cis_id);
+    if (ret != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, alloc_cis_id failed", __func__);
+        goto end;
     }
+    device->cis_id = cis_id;
 
     for (index = 0; index < device->ase_number; index++) {
         ret = lea_client_get_stream_id(group_id, addr, &device->ase[index], device->cis_id, &stream_id);
@@ -1620,8 +1673,15 @@ bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t *addr, uint32_
     lea_client_device_t *device;
     lea_client_endpoint_t *ase;
     lea_client_msg_t *msg;
+    lea_client_group_t *group;
 
-    device = find_device_by_groupid_addr(group_id, addr);
+    group = find_group_by_id(group_id);
+    if (!group) {
+        BT_LOGE("%s, group no exist", __func__);
+        return BT_STATUS_NOT_FOUND;
+    }
+
+    device = find_device_by_group_addr(group, addr);
     if (!device) {
         return BT_STATUS_NOT_FOUND;
     }
@@ -1643,7 +1703,7 @@ bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t *addr, uint32_
         return BT_STATUS_FAIL;
     }
 
-    ret = get_ases_streams_id_form_group(group_id, &number, stream_ids);
+    ret = get_ases_streams_id_form_context(group_id, &number, stream_ids);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s, get_ases_streams_id_form_group failed", __func__);
         return ret;
@@ -1658,8 +1718,8 @@ bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t *addr, uint32_
 
     for (index = 0; index < LEA_CLIENT_MAX_STREAM_NUM; index++) {
         // todo prefer from current ctx and remote/local supported ctx
-        metadata[index].streaming_contexts = ADPT_LEA_CONTEXT_TYPE_CONVERSATIONAL;
-        metadata[index].type = ADPT_LEA_METADATA_PREFERRED_AUDIO_CONTEXTS;
+        metadata[index].streaming_contexts = group->context;
+        metadata[index].type = ADPT_LEA_METADATA_STREAMING_AUDIO_CONTEXTS;
     }
 
     // barrot stack stream started event come before enabling, here let sm come into started state
