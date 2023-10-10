@@ -15,6 +15,7 @@
  ***************************************************************************/
 #include <nuttx/list.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "bluetooth.h"
 
@@ -25,6 +26,10 @@
 
 #define LOG_TAG "adver"
 #include "utils/log.h"
+
+#ifndef CONFIG_OBELISK_LE_ADVERTISER_MAX_NUM
+#define CONFIG_OBELISK_LE_ADVERTISER_MAX_NUM 2
+#endif
 
 typedef struct {
     uint8_t *adv_data;

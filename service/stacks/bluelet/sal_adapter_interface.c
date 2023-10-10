@@ -550,7 +550,7 @@ static void *stack_schedule_loop(void *data)
     extern int ScheduleLoop(void);
     assert(data);
 
-    sem_post((sem_t *)data);
+    uv_sem_post((uv_sem_t *)data);
     ScheduleLoop();
     BT_LOGD("%s quit", __func__);
 
@@ -561,7 +561,7 @@ static bt_status_t bluelet_stack_init(void)
 {
     pthread_attr_t pattr;
     pthread_t thread_id;
-    sem_t startup;
+    uv_sem_t startup;
     bt_status_t status;
 
     if (stack_initialized)
@@ -577,7 +577,7 @@ static bt_status_t bluelet_stack_init(void)
     service_adapter_gap_init();
     service_adapter_gap_register_gap_callback((GAP_CALLBACKS_S *)&sal_gap_callbacks);
 
-    sem_init(&startup, 0, 0);
+    uv_sem_init(&startup, 0);
     pthread_attr_init(&pattr);
     pthread_attr_setstacksize(&pattr, BTSTACK_THREAD_STACK_SIZE);
 
@@ -589,7 +589,7 @@ static bt_status_t bluelet_stack_init(void)
         status = BT_STATUS_FAIL;
     } else {
         pthread_setname_np(thread_id, "bluelet_thread");
-        sem_wait(&startup);
+        uv_sem_wait(&startup);
 
         /* action polling start should do in service loop*/
         add_init_process(hci_add_recv);
@@ -597,7 +597,7 @@ static bt_status_t bluelet_stack_init(void)
     }
 
     pthread_attr_destroy(&pattr);
-    sem_destroy(&startup);
+    uv_sem_destroy(&startup);
     stack_initialized = true;
 
     return status;

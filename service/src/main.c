@@ -42,9 +42,9 @@ int main(int argc, char **argv)
     */
 #ifdef CONFIG_BLUETOOTH_IPC_JOIN_LOOP
     bluetooth_ipc_join_service_loop();
-    service_loop_run(false);
+    service_loop_run(false, "bt_service");
 #else
-    service_loop_run(true);
+    service_loop_run(true, "bt_service");
     bluetooth_ipc_join_thread_pool();
 #endif
     service_loop_exit();

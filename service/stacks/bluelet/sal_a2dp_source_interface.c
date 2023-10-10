@@ -124,7 +124,7 @@ static void adp_peer_partial_reconnect_cb(BD_ADDR remote_addr)
 {
     a2dp_event_t *event;
 
-    event = a2dp_event_new(PEER_PARTIAL_RECONN_EVT, remote_addr);
+    event = a2dp_event_new(PEER_PARTIAL_RECONN_EVT, (void *)remote_addr);
 
     bt_sal_a2dp_source_event_callback(event);
 }

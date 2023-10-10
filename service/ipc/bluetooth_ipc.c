@@ -19,15 +19,17 @@
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_BINDER_IPC
 #include "adapter_stub.h"
 #include "bluetooth_stub.h"
-#include "hfp_hf_stub.h"
-#include "hfp_ag_stub.h"
-#include "spp_stub.h"
-#include "hid_device_stub.h"
-#include "pan_stub.h"
 #include "gattc_stub.h"
 #include "gatts_stub.h"
+#include "hfp_ag_stub.h"
+#include "hfp_hf_stub.h"
+#include "hid_device_stub.h"
+#include "pan_stub.h"
+#include "spp_stub.h"
 #endif
 #include "utils/log.h"
+
+#include "bt_socket.h"
 
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_BINDER_IPC
 static IBtManager binderManager = { 0 };
@@ -157,8 +159,21 @@ void bluetooth_ipc_join_service_loop(void)
 }
 
 #else
+
+static void add_ipc_server_setup(void *data)
+{
+    int ret;
+    ret = bt_socket_server_init("bluetooth", CONFIG_BLUETOOTH_SOCKET_PORT);
+    if (ret < 0) {
+        BT_LOGE("%s error: %d", __func__, ret);
+        assert(0);
+    }
+}
+
 bt_status_t bluetooth_ipc_add_services(void)
 {
+    add_init_process(add_ipc_server_setup);
+    return BT_STATUS_SUCCESS;
 }
 
 void bluetooth_ipc_join_thread_pool(void)

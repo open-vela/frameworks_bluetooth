@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include "euv_pty.h"
 

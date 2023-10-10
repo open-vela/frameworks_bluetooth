@@ -25,6 +25,12 @@ extern "C" {
 #include "bt_status.h"
 #include "bt_uuid.h"
 #include <stdint.h>
+#include "callbacks_list.h"
+#include <uv.h>
+
+#ifndef BTSYMBOLS
+# define BTSYMBOLS(s) s
+#endif
 
 typedef enum {
     BT_IO_CAPABILITY_DISPLAYONLY = 0,
@@ -298,6 +304,12 @@ typedef struct bt_instance {
     void *gattc_proxy;
     void *gatts_proxy;
     void *lea_server_proxy;
+
+    void *packet;
+    uv_sem_t sem;
+    callbacks_list_t *adapter_callbacks;
+    int peer_fd;
+    void *adapter_cookie;
 } bt_instance_t;
 
 /**
@@ -305,14 +317,14 @@ typedef struct bt_instance {
  *
  * @return bt_instance_t* - ins on success, NULL on failure.
  */
-bt_instance_t *bluetooth_create_instance(void);
+bt_instance_t *BTSYMBOLS(bluetooth_create_instance)(void);
 
 /**
  * @brief Get bluetooth client instance
  *
  * @return bt_instance_t* - ins if exist, NULL, if not exist.
  */
-bt_instance_t *bluetooth_get_instance(void);
+bt_instance_t *BTSYMBOLS(bluetooth_get_instance)(void);
 
 /**
  * @brief Get profile proxy
@@ -321,14 +333,14 @@ bt_instance_t *bluetooth_get_instance(void);
  * @param id - profile ID.
  * @return void* - profile proxy.
  */
-void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id);
+void *BTSYMBOLS(bluetooth_get_proxy)(bt_instance_t *ins, enum profile_id id);
 
 /**
  * @brief Delete client instance
  *
  * @param ins - bluetooth client instance.
  */
-void bluetooth_delete_instance(bt_instance_t *ins);
+void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t *ins);
 
 /**
  * @brief Start profile service
@@ -337,7 +349,7 @@ void bluetooth_delete_instance(bt_instance_t *ins);
  * @param id - profile ID.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bluetooth_start_service(bt_instance_t *ins, enum profile_id id);
+bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t *ins, enum profile_id id);
 
 /**
  * @brief Stop profile service
@@ -346,7 +358,7 @@ bt_status_t bluetooth_start_service(bt_instance_t *ins, enum profile_id id);
  * @param id -profile ID.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bluetooth_stop_service(bt_instance_t *ins, enum profile_id id);
+bt_status_t BTSYMBOLS(bluetooth_stop_service)(bt_instance_t *ins, enum profile_id id);
 
 #ifdef __cplusplus
 }

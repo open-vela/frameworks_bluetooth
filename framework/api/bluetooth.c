@@ -22,26 +22,26 @@
 #include "manager_service.h"
 #endif
 #include "bluetooth.h"
+#include "bt_internal.h"
+#include "manager_service.h"
 
 /*
 
 */
-bt_instance_t *bluetooth_create_instance(void)
+bt_instance_t *BTSYMBOLS(bluetooth_create_instance)(void)
 {
     uint32_t app_id;
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
     service_loop_init();
     bt_service_init();
-    service_loop_run(true);
+    service_loop_run(true, "bt_service");
 #endif
-    bt_instance_t *ins = malloc(sizeof(bt_instance_t));
+    bt_instance_t *ins = zalloc(sizeof(bt_instance_t));
     if (!ins) {
         return NULL;
     }
 
-    pid_t pid = getpid();
-
-    bt_status_t status = manager_create_instance((uint32_t)ins, BLUETOOTH_SYSTEM, "local", pid, 0, &app_id);
+    bt_status_t status = manager_create_instance((uint32_t)ins, BLUETOOTH_SYSTEM, "local", getpid(), 0, &app_id);
     if (status != BT_STATUS_SUCCESS) {
         free(ins);
         return NULL;
@@ -52,19 +52,19 @@ bt_instance_t *bluetooth_create_instance(void)
     return ins;
 }
 
-bt_instance_t *bluetooth_get_instance(void)
+bt_instance_t *BTSYMBOLS(bluetooth_get_instance)(void)
 {
-    uint32_t handle = 0;
-    pid_t pid = getpid();
+    bt_status_t status;
+    uint32_t handle;
 
-    handle = manager_get_instance("local", pid, &handle);
-    if (handle)
+    status = manager_get_instance("local", getpid(), &handle);
+    if (status == BT_STATUS_SUCCESS && handle)
         return (bt_instance_t *)handle;
     else
-        return bluetooth_create_instance();
+        return BTSYMBOLS(bluetooth_create_instance)();
 }
 
-void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id)
+void *BTSYMBOLS(bluetooth_get_proxy)(bt_instance_t *ins, enum profile_id id)
 {
     switch (id) {
     case PROFILE_HFP_HF:
@@ -80,7 +80,7 @@ void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id)
     return NULL;
 }
 
-void bluetooth_delete_instance(bt_instance_t *ins)
+void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t *ins)
 {
     manager_delete_instance(ins->app_id);
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
@@ -90,12 +90,12 @@ void bluetooth_delete_instance(bt_instance_t *ins)
     free(ins);
 }
 
-bt_status_t bluetooth_start_service(bt_instance_t *ins, enum profile_id id)
+bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t *ins, enum profile_id id)
 {
     return manager_start_service(ins->app_id, id);
 }
 
-bt_status_t bluetooth_stop_service(bt_instance_t *ins, enum profile_id id)
+bt_status_t BTSYMBOLS(bluetooth_stop_service)(bt_instance_t *ins, enum profile_id id)
 {
     return manager_stop_service(ins->app_id, id);
 }

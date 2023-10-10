@@ -36,7 +36,7 @@ typedef struct bt_instance {
     uint32_t handle;
     uint8_t ins_type;
     uint8_t host_name[BT_INST_HOST_NAME_LEN + 1];
-    void *remote; /* reserved for callback binder*/
+    uint32_t remote;
     void *usr_data;
 } bt_instance_impl_t;
 
@@ -88,6 +88,9 @@ bt_status_t manager_create_instance(uint32_t handle, uint32_t type,
     if (ins)
         return BT_STATUS_FAIL;
 
+    if (g_instance_id == NULL)
+        g_instance_id = index_allocator_create(10);
+
     ins = malloc(sizeof(bt_instance_impl_t));
     if (!ins)
         return BT_STATUS_NOMEM;
@@ -115,7 +118,7 @@ bt_status_t manager_get_instance(const char *name, pid_t pid, uint32_t *handle)
     bt_instance_impl_t *ins = manager_find_instance(name, pid);
     if (ins == NULL) {
         *handle = 0;
-        return BT_STATUS_NOT_FOUND;
+        return BT_STATUS_DEVICE_NOT_FOUND;
     }
 
     *handle = ins->handle;
@@ -136,6 +139,7 @@ bt_status_t manager_delete_instance(uint32_t app_id)
     return BT_STATUS_SUCCESS;
 }
 
+#if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
 bt_status_t manager_start_service(uint32_t app_id, enum profile_id profile)
 {
     bt_instance_impl_t *ins = manager_find_instance_by_appid(app_id);
@@ -153,6 +157,7 @@ bt_status_t manager_stop_service(uint32_t app_id, enum profile_id profile)
 
     return service_manager_control(profile, CONTROL_CMD_STOP);
 }
+#endif
 
 void bluetooth_permission_check(uint32_t app_id)
 {
@@ -161,7 +166,9 @@ void bluetooth_permission_check(uint32_t app_id)
 void manager_init(void)
 {
     g_instance_id = index_allocator_create(10);
+#if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
     service_manager_init();
+#endif
 }
 
 void manager_cleanup(void)
@@ -176,5 +183,7 @@ void manager_cleanup(void)
     }
 
     index_allocator_delete(g_instance_id);
+#if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
     service_manager_cleanup();
+#endif
 }

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#include <debug.h>
 #include <nuttx/list.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,7 +49,7 @@ static int write_cmd(void *handle, int argc, char *argv[]);
 static int dump_cmd(void *handle, int argc, char *argv[]);
 
 static struct list_node device_list = LIST_INITIAL_VALUE(device_list);
-static sem_t spp_sem;
+static uv_sem_t spp_sem;
 static void *spp_app_handle = NULL;
 static uv_loop_t spp_thread_loop;
 
@@ -93,9 +92,10 @@ static spp_device_t *find_pty_by_port(int port)
     return NULL;
 }
 
-static int spp_sem_post(sem_t *sem)
+static int spp_sem_post(uv_sem_t *sem)
 {
-    return sem_post(sem);
+    uv_sem_post(sem);
+    return 0;
 }
 
 static void spp_data_received(euv_pty_t *handle, const uint8_t *buf, ssize_t size)
@@ -337,7 +337,7 @@ static int write_cmd(void *handle, int argc, char *argv[])
         return CMD_ERROR;
     }
 
-    sem_wait(&spp_sem);
+    uv_sem_wait(&spp_sem);
     msg->port = port;
     msg->buf = buf;
     msg->len = strlen(argv[1]);
@@ -359,7 +359,7 @@ static spp_callbacks_t spp_cbs = {
 
 int spp_command_init(void *handle)
 {
-    sem_init(&spp_sem, 0, 10);
+    uv_sem_init(&spp_sem, 10);
     thread_loop_init(&spp_thread_loop);
     thread_loop_run(&spp_thread_loop, true, "spp_client");
     spp_app_handle = bt_spp_register_app(handle, &spp_cbs);
@@ -370,7 +370,7 @@ int spp_command_init(void *handle)
 void spp_command_uninit(void *handle)
 {
     bt_spp_unregister_app(handle, spp_app_handle);
-    sem_destroy(&spp_sem);
+    uv_sem_destroy(&spp_sem);
     thread_loop_exit(&spp_thread_loop);
 }
 
