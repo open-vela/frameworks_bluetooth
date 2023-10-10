@@ -22,6 +22,7 @@
 #include "bt_device.h"
 #include "bt_internal.h"
 #include "device.h"
+#include "bt_internal.h"
 
 bt_status_t BTSYMBOLS(bt_device_get_identity_address)(bt_instance_t *ins, bt_address_t *bd_addr, bt_address_t *id_addr)
 {
