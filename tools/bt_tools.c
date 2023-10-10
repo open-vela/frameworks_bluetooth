@@ -18,7 +18,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __NuttX__
 #include <system/readline.h>
+#else
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif
 
 #include "adapter_internel.h"
 
@@ -1216,7 +1221,9 @@ static int stop_service_cmd(void *handle, int argc, char **argv)
 
 static int dump_cmd(void *handle, int argc, char **argv)
 {
+#if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
     adapter_dump_all_device();
+#endif
     return CMD_OK;
 }
 
@@ -1442,7 +1449,7 @@ int main(int argc, char **argv)
     int opt;
     int _argc = 0;
     char *_argv[32];
-    char *buffer;
+    char *buffer = NULL;
     char *saveptr;
     int ret, len;
 
@@ -1460,13 +1467,20 @@ int main(int argc, char **argv)
         }
     }
 
+#ifdef __NuttX__
     buffer = malloc(CONFIG_NSH_LINELEN);
     if (!buffer)
         return -ENOMEM;
+#endif
 
     pthread_mutex_init(&bt_lock, NULL);
     pthread_cond_init(&disable_cond, NULL);
     g_bttool_ins = bluetooth_create_instance();
+    if (g_bttool_ins == NULL) {
+      PRINT("create instance error\n");
+      return -1;
+    }
+
     adapter_callback = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs);
 
     while (1) {
@@ -1474,7 +1488,13 @@ int main(int argc, char **argv)
         fflush(stdout);
 
         memset(_argv, 0, sizeof(_argv));
-        len = readline(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
+#ifdef __NuttX__
+        len = readline_stream(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
+#else
+        free(buffer);
+        buffer = readline(NULL);
+        len = strnlen(buffer, CONFIG_NSH_LINELEN);
+#endif
         buffer[len] = '\0';
         if (len < 0)
             continue;
