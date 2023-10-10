@@ -23,11 +23,23 @@ CSRCS += framework/common/*.c
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK), y)
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_LOCAL), y)
 	CSRCS += framework/api/*.c
+ifeq ($(CONFIG_BLUETOOTH_BLE_AUDIO),)
+  CSRCS := $(filter-out $(wildcard framework/api/bt_lea*),$(wildcard $(CSRCS)))
+endif
 else ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_BINDER_IPC), y)
 	CSRCS += framework/binder/*.c
 	CSRCS += service/ipc/*.c
 	CSRCS += service/ipc/binder/parcel/*.c
 	CSRCS += service/ipc/binder/src/*.c
+else ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC), y)
+	CSRCS += framework/api/*.c
+ifeq ($(CONFIG_BLUETOOTH_BLE_AUDIO),)
+  CSRCS := $(filter-out $(wildcard framework/api/bt_lea*),$(wildcard $(CSRCS)))
+endif
+	CSRCS += service/ipc/*.c
+	CSRCS += service/ipc/socket/src/*.c
+	CSRCS += framework/socket/*.c
+  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/ipc/socket/include
 else
 endif
 endif
@@ -47,8 +59,15 @@ endif
 	CSRCS += service/stacks/*.c
 	CSRCS += service/common/*.c
 	CSRCS += service/stacks/bluelet/*.c
+ifeq ($(CONFIG_BLUETOOTH_BLE_AUDIO),)
+  CSRCS := $(filter-out $(wildcard service/stacks/bluelet/sal_lea_*),$(wildcard $(CSRCS)))
+endif
 	CSRCS += service/profiles/*.c
 	CSRCS += service/profiles/system/*.c
+ifeq ($(CONFIG_BLUETOOTH_A2DP),)
+  CSRCS := $(filter-out $(wildcard service/profiles/system/bt_player.c),$(wildcard $(CSRCS)))
+  CSRCS := $(filter-out $(wildcard service/profiles/system/media_system.c),$(wildcard $(CSRCS)))
+endif
 	CSRCS += service/profiles/audio_interface/*.c
 ifeq ($(CONFIG_BLUETOOTH_GATT), y)
 	CSRCS += service/profiles/gatt/*.c
@@ -260,6 +279,8 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	PROGNAME += bttool
 	MAINSRC  += tools/bt_tools.c
+	PROGNAME += adapter_test
+	MAINSRC  += tests/adapter_test.c
 endif
 endif
 

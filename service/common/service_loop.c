@@ -222,6 +222,8 @@ int service_loop_run(bool start_thread, char *name)
     service_loop_t *loop = handle->data;
 
     if (start_thread) {
+        char t_name[64];
+
         int ret = uv_sem_init(&loop->ready, 0);
         if (ret != 0) {
             BT_LOGE("%s sem init error: %d", __func__, ret);

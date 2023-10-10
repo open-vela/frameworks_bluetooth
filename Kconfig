@@ -37,6 +37,10 @@ config BLUETOOTH_BLE_SCAN
 	bool "LE scan support"
 	default n
 
+config BLUETOOTH_BLE_AUDIO
+       bool "LE audio support"
+       default n
+
 config BLUETOOTH_HCI_BRIDGE_MODE
 	bool "HCI bridge mode"
 	default n
@@ -211,10 +215,34 @@ choice
 	default BLUETOOTH_FRAMEWORK_LOCAL
 	config BLUETOOTH_FRAMEWORK_LOCAL
 		bool "use local api without ipc"
+	config BLUETOOTH_FRAMEWORK_SOCKET_IPC
+		bool "use socket ipc api"
 	config BLUETOOTH_FRAMEWORK_BINDER_IPC
 		bool "use binder ipc api"
 endchoice
 endif #BLUETOOTH_FRAMEWORK
+
+if BLUETOOTH_FRAMEWORK_SOCKET_IPC
+
+config BLUETOOTH_RPMSG_CPUNAME
+	string "Blutooth rpmsg cpu name"
+	default "cp"
+	help
+		Bluetooth rpmsg cpu name
+
+config BLUETOOTH_RPMSG_CPUNAME
+	string "Blutooth rpmsg cpu name"
+	default "cp"
+	help
+		Bluetooth default server name
+
+config BLUETOOTH_SOCKET_PORT
+	int "Bluetooth socket port num"
+	default 140704
+	help
+		Socket port of inet
+
+endif #BLUETOOTH_FRAMEWORK_SOCKET_IPC
 
 config BLUETOOTH_OBELISK
 	bool "Enable bluetooth service named OBELISK"

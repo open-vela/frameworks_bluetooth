@@ -22,6 +22,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <inttypes.h>
+#ifdef __NuttX__
+#include <debug.h>
+#endif
 
 #include "utils.h"
 
@@ -78,6 +83,13 @@
         }                                                                         \
         PRINT("%s", hexstring);                                                   \
     } while (0)
+#ifndef CONFIG_NSH_LINELEN
+#define CONFIG_NSH_LINELEN 80
+#endif
+
+#ifndef __NuttX__
+#define lib_dumpbuffer(a,b,c)
+#endif
 
 /****************************************************************************
  * Public Types
