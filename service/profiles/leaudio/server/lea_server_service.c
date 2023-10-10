@@ -510,7 +510,7 @@ static bt_status_t lea_server_startup(profile_on_startup_t cb)
         goto fail;
     }
 
-#ifdef CONFIG_KVDB
+#if defined(CONFIG_KVDB) && defined(__NuttX__)
     service->sink_location = property_get_int32("persist.bluetooth.lea.sinkloc", CONFIG_BLUETOOTH_LEAUDIO_SERVER_SINK_LOCATION);
     service->source_location = property_get_int32("persist.bluetooth.lea.srcloc", CONFIG_BLUETOOTH_LEAUDIO_SERVER_SOURCE_LOCATION);
 #else
@@ -1054,7 +1054,7 @@ bool lea_server_on_csis_info_request(lea_csis_infos_t *csis_info)
     csis_info->csis_number = number;
     csis_info->csis_info = g_csis_info;
 
-#ifdef CONFIG_KVDB
+#if defined(CONFIG_KVDB) && defined(__NuttX__)
     for (uint8_t index = 0; index < number; index++) {
         info = &g_csis_info[index];
         info->set_size = property_get_int32("persist.bluetooth.csis.set_size", 1);

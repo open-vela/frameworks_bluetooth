@@ -1,0 +1,221 @@
+/****************************************************************************
+ *  Copyright (C) 2022 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+
+#ifdef __BT_MESSAGE_CODE__
+  BT_ADAPTER_MESSAGE_START,
+  BT_ADAPTER_ENABLE,
+  BT_ADAPTER_DISABLE,
+  BT_ADAPTER_ENABLE_LE,
+  BT_ADAPTER_DISABLE_LE,
+  BT_ADAPTER_GET_STATE,
+  BT_ADAPTER_GET_TYPE,
+  BT_ADAPTER_SET_DISCOVERY_FILTER,
+  BT_ADAPTER_START_DISCOVERY,
+  BT_ADAPTER_CANCEL_DISCOVERY,
+  BT_ADAPTER_IS_DISCOVERING,
+  BT_ADAPTER_GET_ADDRESS,
+  BT_ADAPTER_SET_NAME,
+  BT_ADAPTER_GET_NAME,
+  BT_ADAPTER_GET_UUIDS,
+  BT_ADAPTER_SET_SCAN_MODE,
+  BT_ADAPTER_GET_SCAN_MODE,
+  BT_ADAPTER_SET_DEVICE_CLASS,
+  BT_ADAPTER_GET_DEVICE_CLASS,
+  BT_ADAPTER_SET_IO_CAPABILITY,
+  BT_ADAPTER_GET_IO_CAPABILITY,
+  BT_ADAPTER_GET_BONDED_DEVICES,
+  BT_ADAPTER_GET_CONNECTED_DEVICES,
+  BT_ADAPTER_DISCONNECT_ALL_DEVICES,
+  BT_ADAPTER_IS_SUPPORT_BREDR,
+  BT_ADAPTER_REGISTER_CALLBACK,
+  BT_ADAPTER_UNREGISTER_CALLBACK,
+  BT_ADAPTER_IS_LE_ENABLED,
+  BT_ADAPTER_IS_SUPPORT_LE,
+  BT_ADAPTER_IS_SUPPORT_LEAUDIO,
+  BT_ADAPTER_GET_LE_ADDRESS,
+  BT_ADAPTER_SET_LE_ADDRESS,
+  BT_ADAPTER_SET_LE_IDENTITY_ADDRESS,
+  BT_ADAPTER_SET_LE_IO_CAPABILITY,
+  BT_ADAPTER_GET_LE_IO_CAPABILITY,
+  BT_ADAPTER_SET_LE_APPEARANCE,
+  BT_ADAPTER_GET_LE_APPEARANCE,
+  BT_ADAPTER_MESSAGE_END,
+
+  BT_ADAPTER_CALLBACK_START,
+  BT_ADAPTER_ON_ADAPTER_STATE_CHANGED,
+  BT_ADAPTER_ON_DISCOVERY_STATE_CHANGED,
+  BT_ADAPTER_ON_DISCOVERY_RESULT,
+  BT_ADAPTER_ON_SCAN_MODE_CHANGED,
+  BT_ADAPTER_ON_DEVICE_NAME_CHANGED,
+  BT_ADAPTER_ON_PAIR_REQUEST,
+  BT_ADAPTER_ON_PAIR_DISPLAY,
+  BT_ADAPTER_ON_CONNECTION_STATE_CHANGED,
+  BT_ADAPTER_ON_BOND_STATE_CHANGED,
+  BT_ADAPTER_ON_REMOTE_NAME_CHANGED,
+  BT_ADAPTER_ON_REMOTE_ALIAS_CHANGED,
+  BT_ADAPTER_ON_REMOTE_COD_CHANGED,
+  BT_ADAPTER_ON_REMOTE_UUIDS_CHANGED,
+  BT_ADAPTER_CALLBACK_END,
+#endif
+
+#ifndef _BT_MESSAGE_ADAPTER_H__
+#define _BT_MESSAGE_ADAPTER_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "bt_adapter.h"
+
+typedef union
+{
+  bt_status_t        status;
+  bt_adapter_state_t state;
+  bt_device_type_t   dtype;
+  bool               bbool;
+  bt_scan_mode_t     mode;
+  uint32_t           v32;
+  uint16_t           v16;
+  bt_io_capability_t ioc;
+} bt_adapter_result_t;
+
+typedef union
+{
+  union {
+    bt_address_t addr;
+  } _bt_adapter_get_address,
+    _bt_adapter_set_le_address;
+
+  union {
+    char name[64];
+  } _bt_adapter_set_name,
+    _bt_adapter_get_name;
+
+  union {
+    uint32_t v32;
+  } _bt_adapter_start_discovery,
+    _bt_adapter_set_device_class,
+    _bt_adapter_set_le_io_capability;
+
+  union {
+    uint16_t size;
+    bt_uuid_t uuids[16];
+  } _bt_adapter_get_uuids;
+
+  union {
+    bt_scan_mode_t mode;
+    bool bondable;
+  } _bt_adapter_set_scan_mode;
+
+  union {
+    bt_io_capability_t cap;
+  } _bt_adapter_set_io_capability;
+
+  union {
+    bt_address_t addr;
+    ble_addr_type_t type;
+  } _bt_adapter_get_le_address;
+
+  union {
+    bt_address_t addr;
+    bool public;
+  } _bt_adapter_set_le_identity_address;
+
+  union {
+    uint16_t v16;
+  } _bt_adapter_set_le_appearance;
+
+  union {
+    int num;
+    bt_address_t *addr;
+  } _bt_adapter_get_bonded_devices,
+    _bt_adapter_get_connected_devices;
+
+} bt_message_adapter_t;
+
+typedef struct
+{
+  union {
+    bt_adapter_state_t state;
+  } _on_adapter_state_changed;
+
+  union {
+    bt_discovery_state_t state;
+  } _on_discovery_state_changed;
+
+  union {
+    bt_discovery_result_t result;
+  } _on_discovery_result;
+
+  union {
+    bt_scan_mode_t mode;
+  } _on_scan_mode_changed;
+
+  union {
+    char device_name[64];
+  } _on_device_name_changed;
+
+  union {
+    bt_address_t addr;
+  } _on_pair_request;
+
+  union {
+    bt_address_t addr;
+    bt_transport_t transport;
+    bt_pair_type_t type;
+    uint32_t passkey;
+  } _on_pair_display;
+
+  union {
+    bt_address_t addr;
+    bt_transport_t transport;
+    connection_state_t state;
+  } _on_connection_state_changed;
+
+  union {
+    bt_address_t addr;
+    bt_transport_t transport;
+    bond_state_t state;
+  } _on_bond_state_changed;
+
+  union {
+    bt_address_t addr;
+    char name[64];
+  } _on_remote_name_changed;
+
+  union {
+    bt_address_t addr;
+    char alias[64];
+  } _on_remote_alias_changed;
+
+  union {
+    bt_address_t addr;
+    uint32_t cod;
+  } _on_remote_cod_changed;
+
+  union {
+    bt_address_t addr;
+    bt_uuid_t uuids;
+    uint16_t size;
+  } _on_remote_uuids_changed;
+
+} bt_message_adapter_callbacks_t;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _BT_MESSAGE_ADAPTER_H__ */

@@ -32,7 +32,6 @@
  ****************************************************************************/
 #include "utils/log.h"
 #include "bt_tools.h"
-#include <debug.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -49,9 +48,9 @@ static int unmask_cmd(void *handle, int argc, char *argv[]);
 static int level_cmd(void *handle, int argc, char *argv[]);
 
 static bt_command_t g_log_tables[] = {
-    {"enable",   enable_cmd,  "\"Enable Log <LogID> (SNOOP: 0, STACK: 1, FRAMEWORK: 2)\""     },
-    { "disable", disable_cmd, "\"Disable Log <LogID>\""                                       },
-    { "mask",    mask_cmd,    "\"Enable Stack Profile & Protocol Log <bit>\"\n"
+    {"enable",   enable_cmd,  0, "\"Enable Log <LogID> (SNOOP: 0, STACK: 1, FRAMEWORK: 2)\""     },
+    { "disable", disable_cmd, 0, "\"Disable Log <LogID>\""                                       },
+    { "mask",    mask_cmd,    0, "\"Enable Stack Profile & Protocol Log <bit>\"\n"
                         "\t\t\tExample enable HCI and L2CAP: \"bttool> log mask 1 2\" \n"
                         "\t\t\tProfile && Protocol Enum:\n"
                         "\t\t\t  HCI:   1\n"
@@ -66,8 +65,8 @@ static bt_command_t g_log_tables[] = {
                         "\t\t\t  SMP:   18\n"
                         "\t\t\t  HFP:   25\n"
                         "\t\t\t  RAW PDU:29\n"                      },
-    { "unmask",  unmask_cmd,  "\"Disable Stack Profile & Protocol Log <bit>\""                },
-    { "level",   level_cmd,   "\"Set framework log level, (OFF:0,ERR:3,WARN:4,INFO:6,DBG:7)\""},
+    { "unmask",  unmask_cmd,  0, "\"Disable Stack Profile & Protocol Log <bit>\""                },
+    { "level",   level_cmd,   0, "\"Set framework log level, (OFF:0,ERR:3,WARN:4,INFO:6,DBG:7)\""},
 };
 
 static void usage(void)
