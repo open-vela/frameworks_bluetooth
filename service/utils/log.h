@@ -19,6 +19,10 @@
 
 #include <stdarg.h>
 #include <syslog.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <assert.h>
+#include <inttypes.h>
 
 #ifndef LOG_TAG
 #define LOG_TAG "BT"

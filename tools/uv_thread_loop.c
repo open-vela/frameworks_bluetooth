@@ -14,9 +14,13 @@
  * limitations under the License.
  ***************************************************************************/
 
+#ifndef __NuttX__
+#define _GNU_SOURCE
+#endif
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include <syslog.h>
 #include <nuttx/list.h>

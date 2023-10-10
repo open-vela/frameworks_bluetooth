@@ -65,7 +65,7 @@ static binder_status_t IBtManager_Class_onTransact(AIBinder *binder, transaction
         if (stat != STATUS_OK)
             return stat;
 
-        bt_status_t status = manager_create_instance(handle, type, hostName, pid, uid, &appId);
+        bt_status_t status = manager_create_instance(handle, type, hostName, (pid_t)pid, uid, &appId);
         free(hostName);
 
         stat = AParcel_writeUint32(reply, appId);
@@ -103,7 +103,7 @@ static binder_status_t IBtManager_Class_onTransact(AIBinder *binder, transaction
             return stat;
 
         BT_LOGD("UID:%d, PID:%d, hostname:%s", uid, pid, hostName);
-        bt_status_t status = manager_get_instance(hostName, pid, &handle);
+        bt_status_t status = manager_get_instance(hostName, (pid_t)pid, &handle);
         free(hostName);
 
         stat = AParcel_writeUint32(reply, handle);

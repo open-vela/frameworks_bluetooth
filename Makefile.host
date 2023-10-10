@@ -1,0 +1,92 @@
+############################################################################
+# apps/system/lzf/Makefile.host
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.  The
+# ASF licenses this file to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance with the
+# License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+############################################################################
+
+############################################################################
+# USAGE:
+#
+#   1. TOPDIR and APPDIR must be defined on the make command line:  TOPDIR
+#      is the full path to the nuttx/ directory; APPDIR is the full path to
+#      the apps/ directory.  For example:
+#
+#        make -f Makefile.host TOPDIR=/home/me/projects/nuttx
+#          APPDIR=/home/me/projects/apps
+#
+#   2. Add CONFIG_DEBUG_FEATURES=y to the make command line to enable debug output
+#   3. Make sure to clean old target .o files before making new host .o
+#      files.
+#
+############################################################################
+
+include $(APPDIR)/Make.defs
+
+BIN      = bttool$(HOSTEXEEXT)
+CFLAGS := -I.
+CFLAGS += -I service/src
+CFLAGS += -I framework/include
+CFLAGS += -I tools
+CFLAGS += -I service
+CFLAGS += -I service/common
+CFLAGS += -I service/ipc/socket/include
+CFLAGS += -I service/stacks
+CFLAGS += -I service/stacks/include
+CFLAGS += -I service/profiles
+CFLAGS += -I service/profiles/include
+CFLAGS += -DFAR= -DOK=0 -m32
+
+LDLIBS += -lpthread -lreadline -luv
+
+BTDIR = $(APPDIR)/frameworks/bluetooth
+
+CSRCS := $(wildcard framework/common/*.c)
+CSRCS += $(wildcard framework/socket/*.c)
+CSRCS += $(wildcard tools/*.c)
+CSRCS := $(filter-out $(wildcard tools/lea*) tools/log.c,$(wildcard $(CSRCS)))
+CSRCS += service/ipc/socket/src/bt_socket_client.c
+CSRCS += service/ipc/socket/src/bt_socket_adapter.c
+CSRCS += service/common/service_loop.c
+CSRCS += service/src/manager_service.c
+CSRCS += service/common/callbacks_list.c
+CSRCS += service/common/index_allocator.c
+CSRCS += service/utils/log.c
+
+CINC  := nuttx/config.h
+CINC  += nuttx/list.h
+CINC  += nuttx/nuttx.h
+
+all: $(BIN)
+.PHONY: clean
+
+nuttx/config.h:
+	$(Q) mkdir -p nuttx
+	$(Q) ln -sf $(TOPDIR)/include/nuttx/config.h nuttx/
+
+nuttx/list.h:
+	$(Q) mkdir -p nuttx
+	$(Q) ln -sf $(TOPDIR)/include/nuttx/list.h nuttx/
+
+nuttx/nuttx.h:
+	$(Q) mkdir -p nuttx
+	$(Q) ln -sf $(TOPDIR)/include/nuttx/nuttx.h nuttx/
+
+$(BIN): $(CINC) $(CSRCS)
+	$(Q) $(HOSTCC) $(CFLAGS) -o $@ $(filter-out $(CINC), $^) $(LDLIBS)
+
+clean:
+	rm -rf $(BIN) nuttx

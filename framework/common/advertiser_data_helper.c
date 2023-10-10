@@ -14,9 +14,10 @@
  * limitations under the License.
  ***************************************************************************/
 
-#include <debug.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <syslog.h>
+#include "bt_tools.h"
 
 #include "advertiser_data.h"
 

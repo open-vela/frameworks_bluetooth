@@ -175,7 +175,7 @@ static uint8_t get_current_connnection_cnt(void)
 
 static uint32_t get_ag_features(void)
 {
-#ifdef CONFIG_KVDB
+#if defined(CONFIG_KVDB) && defined(__NuttX__)
     return property_get_int32("persist.bluetooth.hfp.ag_features", ag_support_features);
 #else
     return ag_support_features;

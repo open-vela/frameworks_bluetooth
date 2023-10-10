@@ -158,7 +158,7 @@ static hf_state_machine_t *get_state_machine(bt_address_t *addr)
 
 static uint32_t get_hf_features(void)
 {
-#ifdef CONFIG_KVDB
+#if defined(CONFIG_KVDB) && defined(__NuttX__)
     return property_get_int32("persist.bluetooth.hfp.hf_features", hf_support_features);
 #else
     return hf_support_features;

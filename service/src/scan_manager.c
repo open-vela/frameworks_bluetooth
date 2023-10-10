@@ -18,6 +18,7 @@
 #include <nuttx/list.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "bluetooth.h"
 #include "bt_le_scan.h"
@@ -25,6 +26,10 @@
 #include "scan_manager.h"
 #include "service_loop.h"
 #include "utils/log.h"
+
+#ifndef CONFIG_OBELISK_LE_SCANNER_MAX_NUM
+#define CONFIG_OBELISK_LE_SCANNER_MAX_NUM 2
+#endif
 
 typedef struct scanner {
     struct list_node scanning_node;

@@ -38,7 +38,7 @@ static struct option scan_options[] = {
 static bt_command_t g_scanner_tables[] = {
     {"start", start_scan_cmd, 0, "start scan\n"
                                   "\t  -p or --phy, le scan phy (1M/2M/Coded)\n"
-                                  "\t  -m or --mode, scan mode (0:low power mode, 1:balance mode, 1:low latency mode)\n"
+                                  "\t  -m or --mode, scan mode (0:low power mode, 1:balance mode, 2:low latency mode)\n"
                                   "\t  -l or --legacy, is legacy scan (1: true, 0: false)\n"},
     { "stop", stop_scan_cmd,  0, "stop scan"                                                                                },
     { "dump", dump_scan_cmd,  0, "dump scan state"                                                                          },

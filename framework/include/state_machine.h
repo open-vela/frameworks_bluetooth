@@ -22,6 +22,7 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 typedef struct _state_machine state_machine_t;
 

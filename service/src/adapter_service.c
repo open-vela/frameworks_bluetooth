@@ -1203,7 +1203,7 @@ bool adapter_is_le_enabled(void)
 
 bt_device_type_t adapter_get_type(void)
 {
-#ifdef CONFIG_KVDB
+#if defined(CONFIG_KVDB) && defined(__NuttX__)
     return property_get_int32("persist.bluetooth.adapter.type", 2);
 #else
     return BT_DEVICE_TYPE_DUAL;
