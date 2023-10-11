@@ -159,6 +159,125 @@ static bt_status_t lea_client_group_unlock(uint32_t group_id);
 /****************************************************************************
  * Private Data
  ****************************************************************************/
+
+static const lea_lc3_config_t g_lea_lc3_configs[] = {
+  /* Index starts from 1: Odd is 7.5 ms; Even is 10 ms. */
+    {0,
+     0,
+     0  },
+
+ /* ADPT_LC3SET_8_1_1 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_8000,
+     ADPT_LEA_FRAME_DURATION_7_5,
+     26 },
+
+ /* ADPT_LEA_LC3_SET_8_2_2 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_8000,
+     ADPT_LEA_FRAME_DURATION_10,
+     30 },
+
+ /* ADPT_LEA_LC3_SET_16_1_3 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_16000,
+     ADPT_LEA_FRAME_DURATION_7_5,
+     30 },
+
+ /* ADPT_LEA_LC3_SET_16_2_4 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_16000,
+     ADPT_LEA_FRAME_DURATION_10,
+     40 },
+
+ /* ADPT_LEA_LC3_SET_24_1_5 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_24000,
+     ADPT_LEA_FRAME_DURATION_7_5,
+     45 },
+
+ /* ADPT_LEA_LC3_SET_24_2_6 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_24000,
+     ADPT_LEA_FRAME_DURATION_10,
+     60 },
+
+ /* ADPT_LEA_LC3_SET_32_1_7 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_32000,
+     ADPT_LEA_FRAME_DURATION_7_5,
+     60 },
+
+ /* ADPT_LEA_LC3_SET_32_2_8 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_32000,
+     ADPT_LEA_FRAME_DURATION_10,
+     80 },
+
+ /* ADPT_LEA_LC3_SET_441_1_9 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_44100,
+     ADPT_LEA_FRAME_DURATION_7_5,
+     97 },
+
+ /* ADPT_LEA_LC3_SET_441_2_10 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_44100,
+     ADPT_LEA_FRAME_DURATION_10,
+     130},
+
+ /* ADPT_LEA_LC3_SET_48_1_11 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_48000,
+     ADPT_LEA_FRAME_DURATION_7_5,
+     75 },
+
+ /* ADPT_LEA_LC3_SET_48_2_12 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_48000,
+     ADPT_LEA_FRAME_DURATION_10,
+     100},
+
+ /* ADPT_LEA_LC3_SET_48_3_13 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_48000,
+     ADPT_LEA_FRAME_DURATION_7_5,
+     90 },
+
+ /* ADPT_LEA_LC3_SET_48_4_14 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_48000,
+     ADPT_LEA_FRAME_DURATION_10,
+     120},
+
+ /* ADPT_LEA_LC3_SET_48_5_15 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_48000,
+     ADPT_LEA_FRAME_DURATION_7_5,
+     117},
+
+ /* ADPT_LEA_LC3_SET_48_6_16 */
+    {
+     ADPT_LEA_SAMPLE_FREQUENCY_48000,
+     ADPT_LEA_FRAME_DURATION_10,
+     155},
+};
+
+static const uint8_t g_voice_context_config[] = { ADPT_LEA_LC3_SET_16_2_4, ADPT_LEA_LC3_SET_8_2_2, ADPT_LEA_LC3_SET_24_2_6 };
+static const uint8_t g_media_context_config[] = { ADPT_LEA_LC3_SET_32_2_8, ADPT_LEA_LC3_SET_24_2_6, ADPT_LEA_LC3_SET_16_2_4 };
+static const uint8_t g_live_context_config[] = { ADPT_LEA_LC3_SET_16_2_4, ADPT_LEA_LC3_SET_24_2_6, ADPT_LEA_LC3_SET_32_2_8 };
+
+static const lea_lc3_prefer_config g_lc3_local_prefer_configs[] = {
+    {ADPT_LEA_CONTEXT_TYPE_CONVERSATIONAL | ADPT_LEA_CONTEXT_TYPE_INSTRUCTIONAL | ADPT_LEA_CONTEXT_TYPE_VOICE_ASSISTANTS | ADPT_LEA_CONTEXT_TYPE_SOUND_EFFECTS | ADPT_LEA_CONTEXT_TYPE_NOTIFICATIONS | ADPT_LEA_CONTEXT_TYPE_RINGTONE | ADPT_LEA_CONTEXT_TYPE_ALERTS | ADPT_LEA_CONTEXT_TYPE_EMERGENCY_ALARM,
+     sizeof(g_voice_context_config), (uint8_t *)g_voice_context_config},
+
+    { ADPT_LEA_CONTEXT_TYPE_MEDIA,
+     sizeof(g_media_context_config), (uint8_t *)g_media_context_config},
+
+    { ADPT_LEA_CONTEXT_TYPE_UNSPECIFIED | ADPT_LEA_CONTEXT_TYPE_GAME | ADPT_LEA_CONTEXT_TYPE_LIVE,
+     sizeof(g_live_context_config),  (uint8_t *)g_live_context_config },
+};
+
 static lea_client_service_t g_lea_client_service = {
     .started = false,
     .leac_streams = NULL,
@@ -1103,10 +1222,73 @@ static bt_status_t get_ases_streams_id_from_addr(uint32_t group_id, bt_address_t
     return BT_STATUS_SUCCESS;
 }
 
+static bool lea_client_ucc_source_context_is_valid(uint16_t context, lea_client_device_t *device)
+{
+    // Check Available_Audio_Contexts and Supported_Audio_Contexts bit set
+    if ((LEA_BIT(context) & device->source_avaliable_ctx) && (LEA_BIT(context) & device->source_supported_ctx)) {
+        return true;
+    }
+
+    // Check Available_Audio_Contexts and Supported_Audio_Contexts  «Unspecified» bit set
+    if (!(LEA_BIT(context) & device->source_supported_ctx) && (device->source_avaliable_ctx & LEA_BIT(ADPT_LEA_CTX_ID_UNSPECIFIED)) && (device->source_supported_ctx & LEA_BIT(ADPT_LEA_CTX_ID_UNSPECIFIED))) {
+        return true;
+    }
+
+    return false;
+}
+
+static bool lea_client_ucc_sink_context_is_valid(uint16_t context, lea_client_device_t *device)
+{
+    // Check Available_Audio_Contexts and Supported_Audio_Contexts bit set
+    if ((LEA_BIT(context) & device->sink_avaliable_ctx) && (LEA_BIT(context) & device->sink_supported_ctx)) {
+        return true;
+    }
+
+    // Check Available_Audio_Contexts and Supported_Audio_Contexts  «Unspecified» bit set
+    if (!(LEA_BIT(context) & device->sink_supported_ctx) && (device->sink_avaliable_ctx & LEA_BIT(ADPT_LEA_CTX_ID_UNSPECIFIED)) && (device->sink_supported_ctx & LEA_BIT(ADPT_LEA_CTX_ID_UNSPECIFIED))) {
+        return true;
+    }
+
+    return false;
+}
+
+static uint16_t lea_client_get_initiator_contexts(uint8_t context)
+{
+    int num;
+    uint16_t contexts;
+
+    num = sizeof(g_lc3_local_prefer_configs) / sizeof(g_lc3_local_prefer_configs[0]);
+    for (int index = 0; index < num; index++) {
+        contexts = g_lc3_local_prefer_configs[index].contexts;
+        if (contexts & LEA_BIT(context)) {
+            return contexts;
+        }
+    }
+
+    return ADPT_LEA_CONTEXT_TYPE_PROHIBITED;
+}
+
+static const lea_lc3_prefer_config *lea_client_get_initiator_lc3_config(uint8_t context)
+{
+    int num;
+    const lea_lc3_prefer_config *config;
+
+    num = sizeof(g_lc3_local_prefer_configs) / sizeof(g_lc3_local_prefer_configs[0]);
+    for (int index = 0; index < num; index++) {
+        config = &g_lc3_local_prefer_configs[index];
+        if (config->contexts & LEA_BIT(context)) {
+            return config;
+        }
+    }
+
+    return NULL;
+}
+
 static bt_status_t connect_audio_internal(lea_client_group_t *group, lea_client_device_t *device)
 {
     profile_connection_state_t state;
     lea_client_msg_t *msg;
+    uint16_t local_contexts;
 
     pthread_mutex_lock(&device->device_lock);
     state = device->state;
@@ -1114,6 +1296,13 @@ static bt_status_t connect_audio_internal(lea_client_group_t *group, lea_client_
     if (state != PROFILE_STATE_CONNECTED) {
         BT_LOGE("%s, device no connected", __func__);
         return BT_STATUS_NO_RESOURCES;
+    }
+
+    local_contexts = lea_client_get_initiator_contexts(group->context);
+    BT_LOGD("%s, local_contexts:0x%08x", __func__, local_contexts);
+    if (!lea_client_ucc_sink_context_is_valid(group->context, device) && !lea_client_ucc_source_context_is_valid(group->context, device)) {
+        BT_LOGE("%s, local_contexts:0x%08x not avaliable", __func__, local_contexts);
+        return BT_STATUS_NOT_SUPPORTED;
     }
 
     msg = lea_client_msg_new(CONNECT_AUDIO, &device->addr);
