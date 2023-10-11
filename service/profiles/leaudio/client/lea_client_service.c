@@ -18,6 +18,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include <debug.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
@@ -71,6 +72,7 @@ typedef enum {
 
 typedef struct {
     bool is_source;
+    bool active;
     uint8_t ase_id;
     uint8_t ase_state;
     uint32_t stream_id;
@@ -107,7 +109,7 @@ typedef struct {
 
     uint32_t group_id;
     bt_list_t *devices;
-    lea_adpt_context_types_t context;
+    uint8_t context;
 } lea_client_group_t;
 
 typedef struct
@@ -605,7 +607,7 @@ static bool check_group_completed_by_op(uint32_t group_id, lea_client_ascs_op_t 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         device = bt_list_node(node);
         for (index = 0; index < device->ase_number; index++) {
-            if (device->ase[index].op != op) {
+            if (device->ase[index].active && (device->ase[index].op != op)) {
                 return false;
             }
         }
@@ -1146,30 +1148,6 @@ static bt_status_t get_ases_streams_id_form_group(uint32_t group_id, uint8_t *nu
     return BT_STATUS_SUCCESS;
 }
 
-static bool conext_match_audio_derection(lea_adpt_context_types_t context, bool source)
-{
-    switch (context) {
-    case ADPT_LEA_CONTEXT_TYPE_UNSPECIFIED:
-    case ADPT_LEA_CONTEXT_TYPE_CONVERSATIONAL:
-        return true;
-    case ADPT_LEA_CONTEXT_TYPE_VOICE_ASSISTANTS:
-        return source;
-    case ADPT_LEA_CONTEXT_TYPE_INSTRUCTIONAL:
-    case ADPT_LEA_CONTEXT_TYPE_NOTIFICATIONS:
-    case ADPT_LEA_CONTEXT_TYPE_SOUND_EFFECTS:
-    case ADPT_LEA_CONTEXT_TYPE_RINGTONE:
-    case ADPT_LEA_CONTEXT_TYPE_ALERTS:
-    case ADPT_LEA_CONTEXT_TYPE_EMERGENCY_ALARM:
-    case ADPT_LEA_CONTEXT_TYPE_LIVE:
-    case ADPT_LEA_CONTEXT_TYPE_GAME:
-    case ADPT_LEA_CONTEXT_TYPE_MEDIA:
-        return !source;
-    case ADPT_LEA_CONTEXT_TYPE_PROHIBITED:
-    default:
-        return false;
-    }
-}
-
 static bt_status_t get_ases_streams_id_form_context(uint32_t group_id, uint8_t *num, uint32_t *stream_ids)
 {
     lea_client_service_t *service = &g_lea_client_service;
@@ -1191,8 +1169,10 @@ static bt_status_t get_ases_streams_id_form_context(uint32_t group_id, uint8_t *
     pthread_mutex_lock(&service->group_lock);
     for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
         device = bt_list_node(cnode);
-        for (index = 0; index < device->ase_number && conext_match_audio_derection(group->context, device->ase[index].is_source); index++) {
-            stream_ids[cnt++] = device->ase[index].stream_id;
+        for (index = 0; index < device->ase_number; index++) {
+            if (device->ase[index].active) {
+                stream_ids[cnt++] = device->ase[index].stream_id;
+            }
         }
     }
     *num = cnt;
@@ -1320,6 +1300,12 @@ static bt_status_t lea_client_connect_audio(bt_address_t *addr, uint8_t context)
     lea_client_device_t *device;
 
     CHECK_ENABLED();
+
+    if (context >= ADPT_LEA_CTX_ID_NUMBER) {
+        BT_LOGE("%s, context(%d) not support", __func__, context);
+        return BT_STATUS_NOT_SUPPORTED;
+    }
+
     group = find_group_by_addr(addr);
     if (!group) {
         BT_LOGE("%s, group no exist", __func__);
@@ -1683,26 +1669,183 @@ void lea_client_notify_connection_state_changed(bt_address_t *addr,
     LEAC_CALLBACK_FOREACH(service->callbacks, client_connection_state_cb, state, addr);
 }
 
-static bt_status_t lea_client_ucc_get_prefer_stream(bt_address_t *addr, lea_client_endpoint_t *endpoint, lea_audio_stream_t *stream)
+static bool leac_client_lc3_duation_checked(const lea_client_capability_t *pac, const lea_lc3_config_t *lc3_config)
 {
-    lea_client_device_t *device;
+    bool duration_10 = lc3_config->duration;
+    bool ret = false;
 
-    device = find_device_by_addr(addr);
-    if (!device) {
-        BT_LOGE("%s, device no exist", __func__);
-        return BT_STATUS_DEVICE_NOT_FOUND;
+    if (duration_10) {
+        if (pac->codec_cap.durations & ADPT_LEA_PREFERRED_FRAME_DURATION_10) {
+            ret = true;
+        } else if (pac->codec_cap.durations & ADPT_LEA_SUPPORTED_FRAME_DURATION_10) {
+            ret = true;
+        }
+    } else {
+        if (pac->codec_cap.durations & ADPT_LEA_PREFERRED_FRAME_DURATION_7_5) {
+            ret = true;
+        } else if (pac->codec_cap.durations & ADPT_LEA_SUPPORTED_FRAME_DURATION_7_5) {
+            ret = true;
+        }
     }
 
-    // todo prefer from current context and remote capabilty
-    memcpy(&stream->addr, addr, sizeof(bt_address_t));
+    return ret;
+}
+
+static bool leac_client_lc3_frequency_checked(const lea_client_capability_t *pac, const lea_lc3_config_t *lc3_config)
+{
+    bool ret = false;
+
+    if (lc3_config->frequency < 1) {
+        BT_LOGE("%s, invalid frequency(%d)", __func__, lc3_config->frequency);
+        return false;
+    }
+
+    if (pac->codec_cap.frequencies & (1 << (lc3_config->frequency - 1))) {
+        ret = true;
+    }
+
+    return ret;
+}
+
+static bool leac_client_lc3_octets_checked(const lea_client_capability_t *pac, const lea_lc3_config_t *lc3_config)
+{
+    bool ret = false;
+
+    if ((lc3_config->octets >= pac->codec_cap.frame_octets_min) && (lc3_config->octets <= pac->codec_cap.frame_octets_max)) {
+        ret = true;
+    }
+
+    return ret;
+}
+
+static lea_lc3_set_id_t lea_client_get_prefer_lc3_set_id_from_pac(lea_client_capability_t *pac, uint8_t context)
+{
+    int index;
+    uint8_t *set_ids;
+    lea_lc3_set_id_t set_id;
+    const lea_lc3_config_t *lc3_config;
+    const lea_lc3_prefer_config *local_config;
+
+    local_config = lea_client_get_initiator_lc3_config(context);
+    set_ids = local_config->set_10_ids;
+    set_id = ADPT_LEA_LC3_SET_UNKNOWN;
+
+    for (index = 0; index < local_config->set_number; index++) {
+        set_id = set_ids[index];
+        lc3_config = &g_lea_lc3_configs[set_id];
+
+        if (leac_client_lc3_frequency_checked(pac, lc3_config) && leac_client_lc3_octets_checked(pac, lc3_config) && leac_client_lc3_duation_checked(pac, lc3_config)) {
+            break;
+        }
+
+        set_id = ADPT_LEA_LC3_SET_UNKNOWN;
+    }
+
+    return set_id;
+}
+
+static void lea_client_dump_pac(lea_client_device_t *device)
+{
+    lea_client_capability_t *pac;
+
+    for (int pac_index = 0; pac_index < device->pac_number; pac_index++) {
+        pac = &device->pac[pac_index];
+        BT_LOGD("pac id:0x%08x", pac->pac_id);
+        for (int md_index = 0; md_index < pac->metadata_number; md_index++) {
+            BT_LOGD("pac md type:%d", pac->metadata_value[md_index].type);
+            lib_dumpbuffer("pac md value", pac->metadata_value[md_index].extended_metadata, sizeof(pac->metadata_value[md_index].extended_metadata));
+        }
+    }
+}
+
+static lea_lc3_set_id_t lea_client_get_prefer_lc3_set_id_from_ase(uint8_t context, lea_client_device_t *device, lea_client_endpoint_t *ase)
+{
+    lea_client_capability_t *pac;
+    uint32_t preferred_contexts;
+    lea_lc3_set_id_t lc3_set_id;
+
+    for (int pac_index = 0; pac_index < device->pac_number; pac_index++) {
+        pac = &device->pac[pac_index];
+        preferred_contexts = ADPT_LEA_CONTEXT_TYPE_PROHIBITED;
+
+        if (ase->is_source != pac->is_source) {
+            continue;
+        }
+
+        for (int md_index = 0; md_index < pac->metadata_number; md_index++) {
+            if (pac->metadata_value[md_index].type == ADPT_LEA_METADATA_PREFERRED_AUDIO_CONTEXTS) {
+                preferred_contexts = pac->metadata_value[md_index].preferred_contexts;
+                break;
+            }
+        }
+
+        if (preferred_contexts & LEA_BIT(context)) {
+            lc3_set_id = lea_client_get_prefer_lc3_set_id_from_pac(pac, context);
+            if (lc3_set_id != ADPT_LEA_LC3_SET_UNKNOWN) {
+                return lc3_set_id;
+            }
+        }
+    }
+
+    return ADPT_LEA_LC3_SET_UNKNOWN;
+}
+
+static lea_lc3_set_id_t lea_client_get_avaliable_lc3_set_id_from_ase(uint8_t context, lea_client_device_t *device, lea_client_endpoint_t *ase)
+{
+    lea_client_capability_t *pac;
+    uint32_t avaliable_contexts;
+    lea_lc3_set_id_t lc3_set_id;
+
+    if (ase->is_source) {
+        avaliable_contexts = device->source_avaliable_ctx;
+    } else {
+        avaliable_contexts = device->sink_avaliable_ctx;
+    }
+
+    for (int pac_index = 0; pac_index < device->pac_number; pac_index++) {
+        pac = &device->pac[pac_index];
+
+        if (ase->is_source != pac->is_source) {
+            continue;
+        }
+
+        if (avaliable_contexts & LEA_BIT(context)) {
+            lc3_set_id = lea_client_get_prefer_lc3_set_id_from_pac(pac, context);
+            if (lc3_set_id != ADPT_LEA_LC3_SET_UNKNOWN) {
+                return lc3_set_id;
+            }
+        }
+    }
+
+    return ADPT_LEA_LC3_SET_UNKNOWN;
+}
+
+static bt_status_t lea_client_ucc_get_prefer_stream(lea_client_group_t *group, lea_client_device_t *device, lea_client_endpoint_t *endpoint, lea_audio_stream_t *stream)
+{
+    lea_lc3_set_id_t lc3_set_id;
+
+    lc3_set_id = lea_client_get_prefer_lc3_set_id_from_ase(group->context, device, endpoint);
+    if (lc3_set_id == ADPT_LEA_LC3_SET_UNKNOWN) {
+        BT_LOGD("%s, try lea_client_get_avaliable_pac", __func__);
+        lc3_set_id = lea_client_get_avaliable_lc3_set_id_from_ase(group->context, device, endpoint);
+        if (lc3_set_id == ADPT_LEA_LC3_SET_UNKNOWN) {
+            BT_LOGE("%s, lea_client_get_avaliable_pac fail", __func__);
+            return BT_STATUS_FAIL;
+        }
+    }
+    BT_LOGD("%s, lc3_set_id:%d", __func__, lc3_set_id);
+
+    memcpy(&stream->addr, &device->addr, sizeof(bt_address_t));
     stream->stream_id = endpoint->stream_id;
     stream->target_latency = ADPT_LEA_ASE_TARGET_BALANCED;
     stream->target_phy = ADPT_LEA_ASE_TARGET_PHY_2M;
 
     stream->codec_cfg.codec_id.format = 0x06; // LC3
-    stream->codec_cfg.frequency = 6; // 32k
-    stream->codec_cfg.duration = 1; // 10ms
-    stream->codec_cfg.octets = 80;
+    stream->codec_cfg.frequency = g_lea_lc3_configs[lc3_set_id].frequency;
+    stream->codec_cfg.duration = g_lea_lc3_configs[lc3_set_id].duration;
+    stream->codec_cfg.octets = g_lea_lc3_configs[lc3_set_id].octets;
+
+    // todo prefer blocks and allocation
     stream->codec_cfg.blocks = 1;
     stream->codec_cfg.allocation = 0x01;
 
@@ -1752,8 +1895,15 @@ bt_status_t lea_client_ucc_add_streams(uint32_t group_id, bt_address_t *addr)
     uint8_t cis_id;
     bt_status_t ret;
     uint32_t stream_id;
+    lea_client_group_t *group;
 
-    device = find_device_by_groupid_addr(group_id, addr);
+    group = find_group_by_id(group_id);
+    if (!group) {
+        BT_LOGE("%s, device not found", __func__);
+        return BT_STATUS_NOT_FOUND;
+    }
+
+    device = find_device_by_group_addr(group, addr);
     if (!device) {
         BT_LOGE("%s, device not found", __func__);
         return BT_STATUS_NOT_FOUND;
@@ -1766,6 +1916,7 @@ bt_status_t lea_client_ucc_add_streams(uint32_t group_id, bt_address_t *addr)
         goto end;
     }
     device->cis_id = cis_id;
+    lea_client_dump_pac(device);
 
     for (index = 0; index < device->ase_number; index++) {
         ret = lea_client_get_stream_id(group_id, addr, &device->ase[index], device->cis_id, &stream_id);
@@ -1774,7 +1925,8 @@ bt_status_t lea_client_ucc_add_streams(uint32_t group_id, bt_address_t *addr)
             goto end;
         }
         device->ase[index].stream_id = stream_id;
-        if (lea_client_ucc_get_prefer_stream(addr, &device->ase[index], &stream) == BT_STATUS_SUCCESS) {
+        if (lea_client_ucc_get_prefer_stream(group, device, &device->ase[index], &stream) == BT_STATUS_SUCCESS) {
+            device->ase[index].active = true;
             bt_sal_lea_ucc_group_add_stream(group_id, &stream);
         }
     }
@@ -1808,6 +1960,10 @@ bt_status_t lea_client_ucc_remove_streams(uint32_t group_id, bt_address_t *addr)
         return BT_STATUS_NOT_FOUND;
     }
     lea_client_free_cis_id(device->cis_id);
+
+    for (int index = 0; index < device->ase_number; index++) {
+        device->ase[index].active = false;
+    }
 
     return bt_sal_lea_ucc_group_remove_stream(group_id, number, stream_ids);
 }
@@ -1937,9 +2093,8 @@ bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t *addr, uint32_
         return BT_STATUS_NOMEM;
     }
 
-    for (index = 0; index < LEA_CLIENT_MAX_STREAM_NUM; index++) {
-        // todo prefer from current ctx and remote/local supported ctx
-        metadata[index].streaming_contexts = group->context;
+    for (index = 0; index < number; index++) {
+        metadata[index].streaming_contexts = LEA_BIT(group->context);
         metadata[index].type = ADPT_LEA_METADATA_STREAMING_AUDIO_CONTEXTS;
     }
 

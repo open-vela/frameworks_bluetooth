@@ -94,7 +94,7 @@ static void adpt_lea_ucc_pac_callback(BD_ADDR remote_addr, SERVICE_LEA_PAC_INFO_
     memcpy(&cap.codec_id, &pac_info->codec_id, sizeof(pac_info->codec_id));
     memcpy(&cap.codec_cap, &pac_info->codec_cap, sizeof(pac_info->codec_cap));
     cap.metadata_number = pac_info->metadata_number;
-    memcpy(cap.metadata_value, pac_info->metadata, sizeof(pac_info->metadata) * cap.metadata_number);
+    memcpy(cap.metadata_value, pac_info->metadata, sizeof(SERVICE_LEA_METADATA_S) * cap.metadata_number);
 
     BT_LOGD("%s, addr:%s, pac_id:0x%08x, type:%s, codec_format:%d", __func__, bt_addr_str(&addr), pac_info->pac_id, pac_info->pac_type == LEA_PAC_TYPE_SINK_PAC ? "Sink" : "Source", pac_info->codec_id.format);
     BT_LOGD("frequencies:%d, durations:%d, channels:%d, frame_octets_min:%d, frame_octets_max:%d, max_frames:%d",
@@ -381,9 +381,9 @@ bt_status_t bt_sal_lea_ucc_group_request_enable(uint32_t group_id, uint8_t strea
     int index;
     SERVICE_LEA_METADATA_S md;
 
-    md.type = metadata->type;
-    md.u.streaming_contexts = metadata->streaming_contexts;
     for (index = 0; index < stream_num; index++) {
+        md.type = metadata[index].type;
+        md.u.streaming_contexts = metadata[index].streaming_contexts;
         enable_par[index].stream_id = stream_ids[index];
         enable_par[index].metadata_number = 1;
         enable_par[index].metadata = &md;
