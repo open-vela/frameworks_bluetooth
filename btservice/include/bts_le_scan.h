@@ -73,6 +73,8 @@ typedef struct {
     const stack_le_scan_callbacks* callbacks;
     bt_result_code (*start_scan)(bts_lescan_hdl_t client);
     bt_result_code (*stop_scan)(uint8_t scanner_id);
+    void (*init)(void);
+    void (*deinit)(void);
 } bts_le_scan_interface_t;
 
 const bts_le_scan_interface_t* get_bts_lescan_instance(void);
