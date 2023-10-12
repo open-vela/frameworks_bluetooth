@@ -143,10 +143,19 @@ static bts_lescan_msg_t* create_adp_msg(uint8_t event, bts_lescan_hdl_t* handle,
     return msg;
 }
 
+static void scan_init(void)
+{
+    bts_register_profile_process(BT_PROFILE_LESCAN_ID, &handle_msg_received);
+}
+
+static void scan_deinit(void)
+{
+    bts_unregister_profile_process(BT_PROFILE_LESCAN_ID);
+}
+
 static bt_result_code start_scan(bts_lescan_hdl_t handle)
 {
     BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-SCAN-START");
-    bts_register_profile_process(BT_PROFILE_LESCAN_ID, &handle_msg_received);
     SERVICE_BT_STATUS ret = service_adapter_gap_set_ble_scan_filter((SERVICE_BLE_SCAN_FILTER_S*)(handle.filter));
     if (ret != SERVICE_BT_STATUS_SUCCESS) {
         BT_LOGE("set ble scan filter fail, err:%" PRIu32, ret);
@@ -241,6 +250,8 @@ static const bts_le_scan_interface_t ble_scan_intance = {
     .callbacks = &le_scanner_cbs,
     .start_scan = start_scan,
     .stop_scan = stop_scan,
+    .init = scan_init,
+    .deinit = scan_deinit,
 };
 
 const bts_le_scan_interface_t* get_bts_lescan_instance(void)
@@ -279,7 +290,6 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
     case ON_SCAN_STOPPED: {
         BT_CBACK(handle->callbacks, bts_ble_scan_stopped_cb, handle->btm_handle);
         remove_scan_handle(handle);
-        bts_unregister_profile_process(BT_PROFILE_LESCAN_ID);
         break;
     }
     case ON_SCAN_FAILED: {

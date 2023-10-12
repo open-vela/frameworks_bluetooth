@@ -48,6 +48,11 @@ static bt_result_code gatt_init(void)
 {
     gatts_init();
     gattc_init();
+
+    if (gatt_if.scanner) {
+        gatt_if.scanner->init();
+    }
+
     gatt_status ret = service_adapter_gatt_init();
     if (ret != GATT_STATUS_SUCCESS) {
         BT_LOGE("fail, gatt_init ret:%d", ret);
@@ -60,6 +65,11 @@ static void gatt_cleanup(void)
 {
     gatts_deinit();
     gattc_deinit();
+
+    if (gatt_if.scanner) {
+        gatt_if.scanner->deinit();
+    }
+
     service_adapter_gatt_cleanup();
 }
 
