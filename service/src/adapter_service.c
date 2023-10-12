@@ -723,10 +723,18 @@ void adapter_on_adapter_state_changed(uint8_t stack_state)
     switch (stack_state) {
     case BT_BREDR_STACK_STATE_ON: {
         adapter_storage_t storage;
+        int ret;
+
         bt_storage_load_adapter_info(&storage);
         adapter_properties_copy(&adapter->properties, &storage);
+
         /* load bonded devices to stack (name/address/cod/alias/linkkey) */
-        bt_storage_load_bonded_device(bonded_device_loaded);
+        ret = bt_storage_load_bonded_device(bonded_device_loaded);
+        if (ret < 0) {
+            BT_LOGE("%s, load_bonded_device err:%d", __func__, ret);
+            bonded_device_loaded(NULL, 0, 0);
+        }
+
         /* waiting for device load finished */
         return;
     }
