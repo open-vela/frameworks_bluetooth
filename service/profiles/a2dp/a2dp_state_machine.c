@@ -48,7 +48,7 @@
 #include "a2dp_state_machine.h"
 #include "bt_utils.h"
 #include "state_machine.h"
-
+#include "media_system.h"
 #include "bt_avrcp.h"
 
 #include "service_loop.h"
@@ -201,12 +201,15 @@ static char *stack_event_to_string(a2dp_event_type_t event)
 static void a2dp_report_connection_state(a2dp_state_machine_t *stm, bt_address_t *addr, a2dp_connection_state_t state)
 {
     BT_LOGD("%s, addr:%s, state: %d", __func__, bt_addr_str(addr), state);
-    if (state == A2DP_CONNECTION_STATE_CONNECTED)
-        BT_LOGD("PERFORMANCE-A2DP-BTM-CONNECTED");
 
     if (stm->peer_sep == SEP_SRC) {
         a2dp_sink_service_notify_connection_state_changed(addr, state);
     } else {
+        /* is active device? */
+        if (state == A2DP_CONNECTION_STATE_DISCONNECTED) {
+            if (bt_media_set_a2dp_unavailable() != BT_STATUS_SUCCESS)
+                BT_LOGE("set A2DP unavailable fail");
+        }
         a2dp_source_service_notify_connection_state_changed(addr, state);
     }
 }
@@ -218,6 +221,7 @@ static void a2dp_report_audio_state(a2dp_state_machine_t *stm, bt_address_t *add
     if (stm->peer_sep == SEP_SRC) {
         a2dp_sink_service_notify_audio_state_changed(addr, state);
     } else {
+        /* handle device change ? */
         a2dp_source_service_notify_audio_state_changed(addr, state);
     }
 }
@@ -229,6 +233,8 @@ static void a2dp_report_audio_config_state(a2dp_state_machine_t *stm, bt_address
     if (stm->peer_sep == SEP_SRC) {
         a2dp_sink_service_notify_audio_sink_config_changed(addr);
     } else {
+        if (bt_media_set_a2dp_available() != BT_STATUS_SUCCESS)
+            BT_LOGE("set A2DP available fail");
         a2dp_source_service_notify_audio_source_config_changed(addr);
     }
 }
@@ -318,7 +324,6 @@ static bool idle_process_event(state_machine_t *sm, uint32_t event, void *p_data
     switch (event) {
     case CONNECT_REQ: {
         bt_status_t status;
-        BT_LOGD("PERFORMANCE-A2DP-SRC-BLUELET-CONNECT-START");
         if (a2dp_sm->peer_sep == SEP_SNK)
             status = bt_sal_a2dp_source_connect(&data->bd_addr);
         else
