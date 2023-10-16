@@ -44,7 +44,7 @@ typedef struct
         ON_SCAN_FAILED,
     } event;
 
-    bts_lescan_hdl_t* handle;
+    uint8_t scanner_id;
     size_t size;
     void* data;
 } bts_lescan_msg_t;
@@ -115,7 +115,7 @@ static bool remove_scan_handle(bts_lescan_hdl_t* handle)
     return true;
 }
 
-static bts_lescan_msg_t* create_adp_msg(uint8_t event, bts_lescan_hdl_t* handle, void* data, size_t size)
+static bts_lescan_msg_t* create_adp_msg(uint8_t event, uint8_t scanner_id, void* data, size_t size)
 {
     bts_lescan_msg_t* msg = (bts_lescan_msg_t*)malloc(sizeof(bts_lescan_msg_t));
     CHECK_PTR_RETURN(msg, NULL);
@@ -125,7 +125,7 @@ static bts_lescan_msg_t* create_adp_msg(uint8_t event, bts_lescan_hdl_t* handle,
         return NULL;
     }
     msg->event = event;
-    msg->handle = handle;
+    msg->scanner_id = scanner_id;
     msg->size = size;
     if (size == 0) {
         return msg;
@@ -182,7 +182,7 @@ static bt_result_code start_scan(bts_lescan_hdl_t handle)
     bts_lescan_hdl_t* handle2 = find_scan_handle(id);
     CHECK_PTR_RETURN(handle2, BT_RESULT_FAILED);
 
-    send_msg(create_adp_msg(ON_SCAN_STARTED, handle2, NULL, 0));
+    send_msg(create_adp_msg(ON_SCAN_STARTED, id, NULL, 0));
     BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-SCAN-STARTED");
     return BT_RESULT_SUCCESS;
 }
@@ -199,7 +199,7 @@ static bt_result_code stop_scan(uint8_t scanner_id)
         BT_LOGE("set ble stop scan, err:%" PRIu32, ret);
         return BT_RESULT_FAILED;
     }
-    send_msg(create_adp_msg(ON_SCAN_STOPPED, handle, NULL, 0));
+    send_msg(create_adp_msg(ON_SCAN_STOPPED, scanner_id, NULL, 0));
     BT_LOGD("PERFORMANCE-LE-GAP-PROFILE-BLUELET-SCAN-STOPPED");
     return BT_RESULT_SUCCESS;
 }
@@ -232,7 +232,7 @@ void on_ble_scan_result(const scan_result_t* scan_result_data)
         memcpy(value->adv_data, scan_result_data->adv_data, scan_result_data->length);
 
         msg->event = ON_SCAN_RESULT;
-        msg->handle = handle;
+        msg->scanner_id = handle->scanner_id;
         msg->size = sizeof(scan_result_t) + scan_result_data->length;
         msg->data = value;
 
@@ -271,7 +271,7 @@ static void handle_msg_received(bt_profile_id id, void* data, size_t size)
         return;
     }
 
-    bts_lescan_hdl_t* handle = (bts_lescan_hdl_t*)(msg->handle);
+    bts_lescan_hdl_t* handle = find_scan_handle(msg->scanner_id);
     if (!handle) {
         BT_LOGE("%s fail, handle null", __func__);
         return;
