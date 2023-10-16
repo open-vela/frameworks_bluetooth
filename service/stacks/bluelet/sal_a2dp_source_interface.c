@@ -57,7 +57,6 @@ static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE
         event = DISCONNECTED_EVT;
         break;
     case SERVICE_PROFILE_CONNECTED:
-        BT_LOGD("PERFORMANCE-A2DP-SRC-BLUELET-CONNECTED");
         event = CONNECTED_EVT;
         break;
     default:
