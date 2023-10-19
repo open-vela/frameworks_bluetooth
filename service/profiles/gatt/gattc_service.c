@@ -399,6 +399,11 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
     return BT_STATUS_SUCCESS;
 }
 
+static int if_gattc_get_state(void)
+{
+    return 1;
+}
+
 static void if_gattc_cleanup(void)
 {
     g_gattc_manager.started = false;

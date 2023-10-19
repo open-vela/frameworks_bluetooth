@@ -447,6 +447,11 @@ static bt_status_t if_gatts_shutdown(profile_on_shutdown_t cb)
     return BT_STATUS_SUCCESS;
 }
 
+static int if_gatts_get_state(void)
+{
+    return 1;
+}
+
 static void if_gatts_cleanup(void)
 {
     g_gatts_manager.started = false;

@@ -396,9 +396,10 @@ static int register_cmd(void *handle, int argc, char *argv[])
         return CMD_INVALID_OPT;
     }
 
-    PRINT("register service succed, service_id: %d", service_id);
     if (ret != BT_STATUS_SUCCESS)
         return CMD_ERROR;
+
+    PRINT("register service successful, service_id: %d", service_id);
 
     return CMD_OK;
 }
