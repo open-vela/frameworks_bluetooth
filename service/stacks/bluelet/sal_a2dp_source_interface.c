@@ -129,65 +129,97 @@ static void adp_peer_partial_reconnect_cb(BD_ADDR remote_addr)
     bt_sal_a2dp_source_event_callback(event);
 }
 #endif
+#endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
 
 bt_status_t bt_sal_a2dp_source_init(uint8_t max_connection)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     SAL_CHECK_RET(service_adapter_a2dp_source_init(max_connection, &a2dp_source_cbks),
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 void bt_sal_a2dp_source_cleanup(void)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     service_adapter_a2dp_source_cleanup();
+#endif
 }
 
 bt_status_t bt_sal_a2dp_source_connect(bt_address_t *addr)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     SAL_CHECK_RET(service_adapter_a2dp_source_connect((void *)addr, A2DP_PREFERRED_CODEC),
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_a2dp_source_disconnect(bt_address_t *addr)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     SAL_CHECK_RET(service_adapter_a2dp_source_disconnect((void *)addr),
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_a2dp_source_set_silence_device(bt_address_t *addr, bool silence)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_a2dp_source_set_active_device(bt_address_t *addr)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_a2dp_source_start_stream(bt_address_t *remote_addr)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     SAL_CHECK_RET(service_adapter_a2dp_source_start_stream((void *)remote_addr),
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_a2dp_source_suspend_stream(bt_address_t *remote_addr)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     SAL_CHECK_RET(service_adapter_a2dp_source_suspend_stream((void *)remote_addr),
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_a2dp_source_send_data(bt_address_t *remote_addr, uint8_t *buf,
                                          uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp, uint32_t seq)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     SERVICE_A2DP_SOURCE_PACKET_S *packet;
 
     if (buf == NULL) {
@@ -210,6 +242,7 @@ bt_status_t bt_sal_a2dp_source_send_data(bt_address_t *remote_addr, uint8_t *buf
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
-
-#endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
