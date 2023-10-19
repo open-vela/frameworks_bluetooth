@@ -175,7 +175,7 @@ int log_command(void *handle, int argc, char *argv[])
         }
     }
     if (ret < 0) {
-        printf("UnKnow command %s\n", argv[1]);
+        printf("Erroneous command %s\n", argv[1]);
         usage();
     }
 

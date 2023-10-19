@@ -396,7 +396,7 @@ int adv_command_exec(void *handle, int argc, char *argv[])
         ret = execute_command_in_table_offset(handle, g_adv_tables, ARRAY_SIZE(g_adv_tables), argc, argv, 0);
 
     if (ret < 0) {
-        printf("UnKnow command %s\n", argv[1]);
+        printf("Erroneous command %s\n", argv[1]);
         usage();
     }
 
