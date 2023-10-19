@@ -382,7 +382,7 @@ int spp_command_exec(void *handle, int argc, char *argv[])
         ret = execute_command_in_table(handle, g_spp_tables, ARRAY_SIZE(g_spp_tables), argc, argv);
 
     if (ret < 0) {
-        printf("UnKnow command %s\n", argv[1]);
+        printf("Erroneous command %s\n", argv[1]);
         usage();
     }
 
