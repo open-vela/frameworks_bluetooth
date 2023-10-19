@@ -303,8 +303,10 @@ static bt_status_t if_gattc_startup(profile_on_startup_t cb)
     gattc_manager_t *manager = &g_gattc_manager;
 
     BT_LOGD("%s", __func__);
-    if (manager->started)
+    if (manager->started) {
+        cb(PROFILE_GATTC, true);
         return BT_STATUS_SUCCESS;
+    }
 
     manager->allocator = index_allocator_create(CONFIG_BLUETOOTH_GATTC_MAX_CONNECTIONS - 1);
     if (!manager->allocator) {
@@ -323,12 +325,15 @@ static bt_status_t if_gattc_startup(profile_on_startup_t cb)
     pthread_mutex_init(&manager->device_lock, &attr);
 
     manager->started = true;
+    cb(PROFILE_GATTC, true);
+
     return BT_STATUS_SUCCESS;
 
 fail:
     index_allocator_delete(manager->allocator);
     bt_list_free(manager->connections);
     manager->connections = NULL;
+    cb(PROFILE_GATTC, false);
     pthread_mutex_destroy(&manager->device_lock);
     return status;
 }
@@ -338,18 +343,26 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
     gattc_manager_t *manager = &g_gattc_manager;
 
     BT_LOGD("%s", __func__);
-    if (!manager->started)
+    if (!manager->started) {
+        cb(PROFILE_GATTC, true);
         return BT_STATUS_SUCCESS;
+    }
 
     pthread_mutex_lock(&manager->device_lock);
     index_allocator_delete(manager->allocator);
     bt_list_free(manager->connections);
     manager->connections = NULL;
     manager->started = false;
+    cb(PROFILE_GATTC, true);
     pthread_mutex_unlock(&manager->device_lock);
     pthread_mutex_destroy(&manager->device_lock);
 
     return BT_STATUS_SUCCESS;
+}
+
+static int if_gattc_get_state(void)
+{
+    return 1;
 }
 
 static void if_gattc_cleanup(void)
@@ -703,7 +716,7 @@ static const profile_service_t gattc_service = {
     .startup = if_gattc_startup,
     .shutdown = if_gattc_shutdown,
     .process_msg = NULL,
-    .get_state = NULL,
+    .get_state = if_gattc_get_state,
     .get_profile_interface = get_gattc_profile_interface,
     .cleanup = if_gattc_cleanup,
     .dump = if_gattc_dump,

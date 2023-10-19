@@ -317,8 +317,10 @@ static bt_status_t if_gatts_startup(profile_on_startup_t cb)
     gatts_manager_t *manager = &g_gatts_manager;
 
     BT_LOGD("%s", __func__);
-    if (manager->started)
+    if (manager->started) {
+        cb(PROFILE_GATTS, true);
         return BT_STATUS_SUCCESS;
+    }
 
     manager->services = bt_list_new((bt_list_free_cb_t)gatts_service_delete);
     if (!manager->services) {
@@ -336,11 +338,14 @@ static bt_status_t if_gatts_startup(profile_on_startup_t cb)
 
     manager->started = true;
     manager->state = GATTS_CONN_STATE_DISCONNECTED;
+    cb(PROFILE_GATTS, true);
+
     return BT_STATUS_SUCCESS;
 
 fail:
     bt_list_free(manager->services);
     manager->services = NULL;
+    cb(PROFILE_GATTS, false);
     pthread_mutex_destroy(&manager->device_lock);
     return status;
 }
@@ -350,19 +355,27 @@ static bt_status_t if_gatts_shutdown(profile_on_shutdown_t cb)
     gatts_manager_t *manager = &g_gatts_manager;
 
     BT_LOGD("%s", __func__);
-    if (!manager->started)
+    if (!manager->started) {
+        cb(PROFILE_GATTS, true);
         return BT_STATUS_SUCCESS;
+    }
 
     pthread_mutex_lock(&manager->device_lock);
     bt_list_free(manager->services);
     manager->services = NULL;
     manager->started = false;
     manager->state = GATTS_CONN_STATE_DISCONNECTED;
+    cb(PROFILE_GATTS, true);
     pthread_mutex_unlock(&manager->device_lock);
     pthread_mutex_destroy(&manager->device_lock);
     bt_sal_gatt_server_disable();
 
     return BT_STATUS_SUCCESS;
+}
+
+static int if_gatts_get_state(void)
+{
+    return 1;
 }
 
 static void if_gatts_cleanup(void)
@@ -729,7 +742,7 @@ static const profile_service_t gatts_service = {
     .startup = if_gatts_startup,
     .shutdown = if_gatts_shutdown,
     .process_msg = NULL,
-    .get_state = NULL,
+    .get_state = if_gatts_get_state,
     .get_profile_interface = get_gatts_profile_interface,
     .cleanup = if_gatts_cleanup,
     .dump = if_gatts_dump,
