@@ -30,7 +30,6 @@
 #include "sal_bluelet.h"
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-
 #ifndef CONFIG_BLUETOOTH_A2DP_MAX_CONNECTIONS
 #define A2DP_MAX_CONNECTION (1)
 #else
@@ -147,47 +146,68 @@ static void adpt_stream_req_received_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM
 {
     bt_sal_a2dp_sink_event_callback(a2dp_event_new(PEER_STREAM_START_REQ, (void *)remote_addr));
 }
+#endif
 
 bt_status_t bt_sal_a2dp_sink_init(uint8_t max_connection)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
     SAL_CHECK_RET(service_adapter_a2dp_sink_init(max_connection, &a2dp_sink_cbks),
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 void bt_sal_a2dp_sink_cleanup(void)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
     service_adapter_a2dp_sink_cleanup();
+#endif
 }
 
 bt_status_t bt_sal_a2dp_sink_connect(bt_address_t *addr)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
     SAL_CHECK_RET(service_adapter_a2dp_sink_connect((void *)addr, A2DP_PREFERRED_CODEC),
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_a2dp_sink_disconnect(bt_address_t *addr)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
     SAL_CHECK_RET(service_adapter_a2dp_sink_disconnect((void *)addr),
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_a2dp_sink_set_active_device(bt_address_t *addr)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_a2dp_sink_start_stream(bt_address_t *addr)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
     SAL_CHECK_RET(service_adapter_a2dp_sink_accept_start_stream_req((void *)addr),
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
-
-#endif /* CONFIG_BLUETOOTH_A2DP_SINK */

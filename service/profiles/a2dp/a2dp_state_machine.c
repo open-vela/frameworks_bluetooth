@@ -46,10 +46,10 @@
 #include "a2dp_sink.h"
 #include "a2dp_source.h"
 #include "a2dp_state_machine.h"
-#include "bt_utils.h"
-#include "state_machine.h"
-#include "media_system.h"
 #include "bt_avrcp.h"
+#include "bt_utils.h"
+#include "media_system.h"
+#include "state_machine.h"
 
 #include "service_loop.h"
 
@@ -203,14 +203,18 @@ static void a2dp_report_connection_state(a2dp_state_machine_t *stm, bt_address_t
     BT_LOGD("%s, addr:%s, state: %d", __func__, bt_addr_str(addr), state);
 
     if (stm->peer_sep == SEP_SRC) {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
         a2dp_sink_service_notify_connection_state_changed(addr, state);
+#endif
     } else {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         /* is active device? */
         if (state == A2DP_CONNECTION_STATE_DISCONNECTED) {
             if (bt_media_set_a2dp_unavailable() != BT_STATUS_SUCCESS)
                 BT_LOGE("set A2DP unavailable fail");
         }
         a2dp_source_service_notify_connection_state_changed(addr, state);
+#endif
     }
 }
 
@@ -219,10 +223,14 @@ static void a2dp_report_audio_state(a2dp_state_machine_t *stm, bt_address_t *add
     BT_LOGD("%s, addr:%s, state: %d", __func__, bt_addr_str(addr), state);
 
     if (stm->peer_sep == SEP_SRC) {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
         a2dp_sink_service_notify_audio_state_changed(addr, state);
+#endif
     } else {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         /* handle device change ? */
         a2dp_source_service_notify_audio_state_changed(addr, state);
+#endif
     }
 }
 
@@ -231,11 +239,15 @@ static void a2dp_report_audio_config_state(a2dp_state_machine_t *stm, bt_address
     BT_LOGD("%s, addr:%s", __func__, bt_addr_str(addr));
 
     if (stm->peer_sep == SEP_SRC) {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
         a2dp_sink_service_notify_audio_sink_config_changed(addr);
+#endif
     } else {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         if (bt_media_set_a2dp_available() != BT_STATUS_SUCCESS)
             BT_LOGE("set A2DP available fail");
         a2dp_source_service_notify_audio_source_config_changed(addr);
+#endif
     }
 }
 
