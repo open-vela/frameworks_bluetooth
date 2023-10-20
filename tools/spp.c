@@ -494,6 +494,7 @@ void spp_command_uninit(void)
     if (spp_interface)
         spp_interface->reset_callbacks(&g_spp_handle);
     spp_interface = NULL;
+    spp_trans_reset();
 }
 
 int spp_command(void* handle, int argc, char* argv[])
