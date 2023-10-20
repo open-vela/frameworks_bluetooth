@@ -376,6 +376,7 @@ static int write_cmd(void* handle, int argc, char* argv[])
         return -1;
     }
 
+    trans_ctx.port = port;
     trans_ctx.state = TRANS_WRITING;
     trans_ctx.bulk_length = strlen(argv[1]);
     trans_ctx.bulk_count = 1;
@@ -405,6 +406,7 @@ static int send_cmd(void* handle, int argc, char* argv[])
         return -1;
     }
 
+    trans_ctx.port = port;
     trans_ctx.state = TRANS_WRITING;
     trans_ctx.bulk_length = atoi(argv[1]);
     trans_ctx.bulk_count = atoi(argv[2]);
@@ -439,6 +441,7 @@ static int speed_cmd(void* handle, int argc, char* argv[])
         return -1;
     }
 
+    trans_ctx.port = port;
     trans_ctx.state = TRANS_SENDING;
     trans_ctx.bulk_length = 990;
     trans_ctx.bulk_count = times;
@@ -494,6 +497,7 @@ void spp_command_uninit(void)
     if (spp_interface)
         spp_interface->reset_callbacks(&g_spp_handle);
     spp_interface = NULL;
+    check_resource_release(trans_ctx.port);
     spp_trans_reset();
 }
 
