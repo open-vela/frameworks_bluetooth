@@ -57,23 +57,23 @@ static AVRCP_CALLBACKS_S avrcp_ctrl_cbks = {
 static void ctrl_connection_state_changed_cb(BD_ADDR addr,
                                              SERVICE_PROFILE_CONNECTION_STATE state)
 {
-    avrcp_msg_t *msg = avrcp_msg_new(CONNECTION_STATE_CHANGED, (void *)addr);
+    avrcp_msg_t *msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, (void *)addr);
 
     if (msg == NULL)
         return;
 
     switch (state) {
     case SERVICE_PROFILE_CONNECTING:
-        msg->data.conn_state = AVRC_CONNECTION_STATE_CONNECTING;
+        msg->data.conn_state = PROFILE_STATE_CONNECTING;
         break;
     case SERVICE_PROFILE_CONNECTED:
-        msg->data.conn_state = AVRC_CONNECTION_STATE_CONNECTED;
+        msg->data.conn_state = PROFILE_STATE_CONNECTED;
         break;
     case SERVICE_PROFILE_DISCONNECTING:
-        msg->data.conn_state = AVRC_CONNECTION_STATE_DISCONNECTING;
+        msg->data.conn_state = PROFILE_STATE_DISCONNECTING;
         break;
     default:
-        msg->data.conn_state = AVRC_CONNECTION_STATE_DISCONNECTED;
+        msg->data.conn_state = PROFILE_STATE_DISCONNECTED;
         break;
     }
 
@@ -84,7 +84,7 @@ static void panel_rsp_cb(BD_ADDR addr,
                          SERVICE_AVRCP_RESPONSE response,
                          SERVICE_AVRCP_PANEL_OPERATION op, SERVICE_AVRCP_PANEL_STATE state)
 {
-    avrcp_msg_t *msg = avrcp_msg_new(PASSTHROUHT_CMD_RSP, (void *)addr);
+    avrcp_msg_t *msg = avrcp_msg_new(AVRC_PASSTHROUHT_CMD_RSP, (void *)addr);
 
     if (msg == NULL)
         return;
@@ -104,13 +104,13 @@ static void register_notification_event_cb(BD_ADDR addr,
 
     if (event == AVRCP_NOTIFICATION_VOLUME_CHANGED) {
         /* only target register volume changed notification */
-        msg = avrcp_msg_new(REGISTER_NOTIFICATION_ABSVOL_RSP, (void *)addr);
+        msg = avrcp_msg_new(AVRC_REGISTER_NOTIFICATION_ABSVOL_RSP, (void *)addr);
         if (msg == NULL)
             return;
 
         msg->data.absvol.volume = *(uint8_t *)value;
     } else {
-        msg = avrcp_msg_new(REGISTER_NOTIFICATION_RSP, (void *)addr);
+        msg = avrcp_msg_new(AVRC_REGISTER_NOTIFICATION_RSP, (void *)addr);
         if (msg == NULL)
             return;
 
@@ -152,7 +152,7 @@ static void get_play_status_rsp_cb(BD_ADDR addr,
                                    SERVICE_AVRCP_MEDIA_STATUS media_status,
                                    uint32_t song_length, uint32_t position)
 {
-    avrcp_msg_t *msg = avrcp_msg_new(GET_PLAY_STATUS_RSP, (void *)addr);
+    avrcp_msg_t *msg = avrcp_msg_new(AVRC_GET_PLAY_STATUS_RSP, (void *)addr);
 
     if (msg == NULL)
         return;
