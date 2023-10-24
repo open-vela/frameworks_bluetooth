@@ -25,9 +25,6 @@ typedef void (*avrcp_volume_changed_callback)(void *cookie, bt_address_t *addr, 
 typedef struct {
     size_t size;
     avrcp_connection_state_callback connection_state_cb;
-    avrcp_get_play_status_callback get_play_status_cb;
-    avrcp_playback_register_notification_callback playback_register_notification_cb;
-    avrcp_volume_changed_callback volume_changed_cb;
 } avrcp_target_callbacks_t;
 
 void *bt_avrcp_target_register_callbacks(bt_instance_t *ins, const avrcp_target_callbacks_t *callbacks);
