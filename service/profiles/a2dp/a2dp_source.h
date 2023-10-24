@@ -47,7 +47,7 @@ bool a2dp_source_stream_started(void);
 a2dp_peer_t *a2dp_source_find_peer(bt_address_t *addr);
 a2dp_peer_t *a2dp_source_active_peer(void);
 
-void a2dp_source_service_notify_connection_state_changed(bt_address_t *addr, a2dp_connection_state_t state);
+void a2dp_source_service_notify_connection_state_changed(bt_address_t *addr, profile_connection_state_t state);
 void a2dp_source_service_notify_audio_state_changed(bt_address_t *addr, a2dp_audio_state_t state);
 void a2dp_source_service_notify_audio_source_config_changed(bt_address_t *addr);
 #endif

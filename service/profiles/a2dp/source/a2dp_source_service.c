@@ -379,7 +379,7 @@ static bt_status_t a2dp_source_shutdown(profile_on_shutdown_t cb)
 }
 
 void a2dp_source_service_notify_connection_state_changed(
-    bt_address_t *addr, a2dp_connection_state_t state)
+    bt_address_t *addr, profile_connection_state_t state)
 {
     BT_LOGD("%s", __FUNCTION__);
     A2DP_SOURCE_CALLBACK_FOREACH(g_a2dp_source.callbacks, connection_state_cb, addr, state);
@@ -407,6 +407,24 @@ static void *a2dp_source_register_callbacks(void *remote, const a2dp_source_call
 static bool a2dp_source_unregister_callbacks(void **remote, void *cookie)
 {
     return bt_remote_callbacks_unregister(g_a2dp_source.callbacks, remote, cookie);
+}
+
+static bool a2dp_source_is_connected(bt_address_t *addr)
+{
+    /* TODO: */
+    return false;
+}
+
+static bool a2dp_source_is_playing(bt_address_t *addr)
+{
+    /* TODO: */
+    return false;
+}
+
+static profile_connection_state_t a2dp_source_get_connection_state(bt_address_t *addr)
+{
+    /* TODO: */
+    return PROFILE_STATE_DISCONNECTED;
 }
 
 static bt_status_t a2dp_source_connect(bt_address_t *addr)
@@ -448,6 +466,9 @@ static const a2dp_source_interface_t a2dp_sourceInterface = {
     .size = sizeof(a2dp_sourceInterface),
     .register_callbacks = a2dp_source_register_callbacks,
     .unregister_callbacks = a2dp_source_unregister_callbacks,
+    .is_connected = a2dp_source_is_connected,
+    .is_playing = a2dp_source_is_playing,
+    .get_connection_state = a2dp_source_get_connection_state,
     .connect = a2dp_source_connect,
     .disconnect = a2dp_source_disconnect,
     .set_silence_device = a2dp_source_set_silence_device,
