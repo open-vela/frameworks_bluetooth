@@ -22,13 +22,6 @@
 #include "bt_device.h"
 
 typedef enum {
-    AVRC_CONNECTION_STATE_DISCONNECTED = 0,
-    AVRC_CONNECTION_STATE_CONNECTING,
-    AVRC_CONNECTION_STATE_CONNECTED,
-    AVRC_CONNECTION_STATE_DISCONNECTING
-} avrcp_connection_state_t;
-
-typedef enum {
     PASSTHROUGH_CMD_ID_SELECT,
     PASSTHROUGH_CMD_ID_UP,
     PASSTHROUGH_CMD_ID_DOWN,
@@ -122,6 +115,6 @@ typedef enum {
     NOTIFICATION_EVT_FLAG_INTERIM
 } avrcp_notification_event_t;
 
-typedef void (*avrcp_connection_state_callback)(void *cookie, bt_address_t *addr, avrcp_connection_state_t state);
+typedef void (*avrcp_connection_state_callback)(void *cookie, bt_address_t *addr, profile_connection_state_t state);
 
 #endif /* __BT_AVRCP_H__ */
