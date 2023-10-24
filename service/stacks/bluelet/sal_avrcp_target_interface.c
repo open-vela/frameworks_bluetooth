@@ -52,23 +52,23 @@ static AVRCP_TARGET_CALLBACKS_S avrcp_target_cbks = {
 static void target_connection_state_changed_cb(BD_ADDR addr,
                                                SERVICE_PROFILE_CONNECTION_STATE state)
 {
-    avrcp_msg_t *msg = avrcp_msg_new(CONNECTION_STATE_CHANGED, (void *)addr);
+    avrcp_msg_t *msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, (void *)addr);
 
     if (msg == NULL)
         return;
 
     switch (state) {
     case SERVICE_PROFILE_CONNECTING:
-        msg->data.conn_state = AVRC_CONNECTION_STATE_CONNECTING;
+        msg->data.conn_state = PROFILE_STATE_CONNECTING;
         break;
     case SERVICE_PROFILE_CONNECTED:
-        msg->data.conn_state = AVRC_CONNECTION_STATE_CONNECTED;
+        msg->data.conn_state = PROFILE_STATE_CONNECTED;
         break;
     case SERVICE_PROFILE_DISCONNECTING:
-        msg->data.conn_state = AVRC_CONNECTION_STATE_DISCONNECTING;
+        msg->data.conn_state = PROFILE_STATE_DISCONNECTING;
         break;
     default:
-        msg->data.conn_state = AVRC_CONNECTION_STATE_DISCONNECTED;
+        msg->data.conn_state = PROFILE_STATE_DISCONNECTED;
         break;
     }
 
@@ -81,11 +81,11 @@ static void register_notification_request_cb(BD_ADDR addr,
     avrcp_msg_t *msg;
 
     if (event == AVRCP_NOTIFICATION_VOLUME_CHANGED) {
-        msg = avrcp_msg_new(REGISTER_NOTIFICATION_ABSVOL_REQ, (void *)addr);
+        msg = avrcp_msg_new(AVRC_REGISTER_NOTIFICATION_ABSVOL_REQ, (void *)addr);
         if (msg == NULL)
             return;
     } else {
-        msg = avrcp_msg_new(REGISTER_NOTIFICATION_REQ, (void *)addr);
+        msg = avrcp_msg_new(AVRC_REGISTER_NOTIFICATION_REQ, (void *)addr);
         if (msg == NULL)
             return;
 
@@ -98,7 +98,7 @@ static void register_notification_request_cb(BD_ADDR addr,
 
 static void get_play_status_request_cb(BD_ADDR addr)
 {
-    avrcp_msg_t *msg = avrcp_msg_new(GET_PLAY_STATUS_REQ, (void *)addr);
+    avrcp_msg_t *msg = avrcp_msg_new(AVRC_GET_PLAY_STATUS_REQ, (void *)addr);
 
     if (msg == NULL)
         return;
@@ -110,7 +110,7 @@ static void panel_operation_cb(BD_ADDR addr,
                                SERVICE_AVRCP_PANEL_OPERATION op,
                                SERVICE_AVRCP_PANEL_STATE state)
 {
-    avrcp_msg_t *msg = avrcp_msg_new(PASSTHROUHT_CMD, (void *)addr);
+    avrcp_msg_t *msg = avrcp_msg_new(AVRC_PASSTHROUHT_CMD, (void *)addr);
 
     if (msg == NULL)
         return;
@@ -123,7 +123,7 @@ static void panel_operation_cb(BD_ADDR addr,
 
 static void absolute_volume_cb(BD_ADDR addr, uint8_t volume)
 {
-    avrcp_msg_t *msg = avrcp_msg_new(SET_ABSOLUTE_VOLUME, (void *)addr);
+    avrcp_msg_t *msg = avrcp_msg_new(AVRC_SET_ABSOLUTE_VOLUME, (void *)addr);
 
     if (msg == NULL)
         return;
