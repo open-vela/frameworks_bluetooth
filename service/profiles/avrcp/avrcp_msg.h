@@ -38,24 +38,26 @@
 #include "bt_avrcp.h"
 
 typedef enum {
-    CONNECTION_STATE_CHANGED,
-    GET_ELEMENT_ATTR_REQ,
-    GET_PLAY_STATUS_REQ,
-    PASSTHROUHT_CMD,
-    REGISTER_NOTIFICATION_REQ,
-    REGISTER_NOTIFICATION_ABSVOL_RSP,
-    PASSTHROUHT_CMD_RSP,
-    GET_CAPABILITY_RSP,
-    SET_ABSOLUTE_VOLUME,
-    REGISTER_NOTIFICATION_ABSVOL_REQ,
-    REGISTER_NOTIFICATION_RSP,
-    GET_ELEMENT_ATTRIBUTES_RSP,
-    GET_PLAY_STATUS_RSP,
+    AVRC_STARTUP,
+    AVRC_SHUTDOWN,
+    AVRC_CONNECTION_STATE_CHANGED,
+    AVRC_GET_ELEMENT_ATTR_REQ,
+    AVRC_GET_PLAY_STATUS_REQ,
+    AVRC_PASSTHROUHT_CMD,
+    AVRC_REGISTER_NOTIFICATION_REQ,
+    AVRC_REGISTER_NOTIFICATION_ABSVOL_RSP,
+    AVRC_PASSTHROUHT_CMD_RSP,
+    AVRC_GET_CAPABILITY_RSP,
+    AVRC_SET_ABSOLUTE_VOLUME,
+    AVRC_REGISTER_NOTIFICATION_ABSVOL_REQ,
+    AVRC_REGISTER_NOTIFICATION_RSP,
+    AVRC_GET_ELEMENT_ATTRIBUTES_RSP,
+    AVRC_GET_PLAY_STATUS_RSP,
 
-    GET_PLAYBACK_STATE,
-    VOLUME_CHANGED_NOTIFY,
+    AVRC_GET_PLAYBACK_STATE,
+    AVRC_VOLUME_CHANGED_NOTIFY,
 
-    PLAYSTATUS_NOTIFY,
+    AVRC_PLAYSTATUS_NOTIFY,
 } rc_msg_id_t;
 
 typedef struct {
@@ -99,7 +101,7 @@ typedef struct {
     rc_msg_id_t id;
     uint8_t role;
     union {
-        avrcp_connection_state_t conn_state;
+        profile_connection_state_t conn_state;
         rc_passthr_cmd_t passthr_cmd;
         rc_register_notification_t notify_req;
         rc_passthr_rsp_t passthr_rsp;
@@ -107,6 +109,7 @@ typedef struct {
         rc_capabilities_t cap;
         rc_notification_rsp_t notify_rsp;
         rc_absvol_t absvol;
+        void *context;
     } data;
 } avrcp_msg_t;
 
