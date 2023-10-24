@@ -44,10 +44,10 @@ typedef struct {
     callbacks_list_t *callbacks;
 } avrcp_target_servie_t;
 
-static avrcp_target_servie_t g_avrc_tg_service = { 0 };
+static avrcp_target_servie_t g_avrc_target = { 0 };
 
 static void target_startup(profile_on_startup_t startup);
-static void target_cleanup(profile_on_shutdown_t shutdown);
+static void target_shutdown(profile_on_shutdown_t shutdown);
 
 static void handle_avrcp_target_connection_state(avrcp_msg_t *msg)
 {
@@ -56,7 +56,7 @@ static void handle_avrcp_target_connection_state(avrcp_msg_t *msg)
     BT_LOGD("%s, device: %s, connection state : %d", __func__, bt_addr_str(addr), state);
 
     if (PROFILE_STATE_CONNECTED == state) {
-        AVRCP_TARGET_CALLBACK_FOREACH(g_avrc_tg_service.callbacks,
+        AVRCP_TARGET_CALLBACK_FOREACH(g_avrc_target.callbacks,
                                       connection_state_cb, &msg->addr, msg->data.conn_state);
     }
 }
@@ -91,7 +91,7 @@ static avrcp_play_status_t current_playback_status(void)
 
 static void handle_avrcp_play_status_request(avrcp_msg_t *msg)
 {
-    AVRCP_TARGET_CALLBACK_FOREACH(g_avrc_tg_service.callbacks, get_play_status_cb, &msg->addr);
+    AVRCP_TARGET_CALLBACK_FOREACH(g_avrc_target.callbacks, get_play_status_cb, &msg->addr);
     bt_sal_avrcp_target_get_play_status_rsp(&msg->addr, current_playback_status(), 0, 0);
 }
 
@@ -102,7 +102,7 @@ static void handle_avrcp_register_notification(avrcp_msg_t *msg)
 
     switch (event) {
     case NOTIFICATION_EVT_PALY_STATUS_CHANGED: {
-        AVRCP_TARGET_CALLBACK_FOREACH(g_avrc_tg_service.callbacks, playback_register_notification_cb, &msg->addr);
+        AVRCP_TARGET_CALLBACK_FOREACH(g_avrc_target.callbacks, playback_register_notification_cb, &msg->addr);
         bt_sal_avrcp_target_play_status_notify(addr, current_playback_status());
         break;
     }
@@ -151,7 +151,7 @@ static void avrcp_target_service_handle_event(void *data)
         target_startup((profile_on_startup_t)msg->data.context);
         break;
     case AVRC_SHUTDOWN:
-        target_cleanup((profile_on_shutdown_t)msg->data.context);
+        target_shutdown((profile_on_shutdown_t)msg->data.context);
         break;
     default:
         break;
@@ -174,62 +174,62 @@ static bt_status_t avrcp_target_init(void)
 
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    if (pthread_mutex_init(&g_avrc_tg_service.mutex, &attr) < 0)
+    if (pthread_mutex_init(&g_avrc_target.mutex, &attr) < 0)
         return BT_STATUS_FAIL;
 
-    g_avrc_tg_service.callbacks = bt_callbacks_list_new(2);
+    g_avrc_target.callbacks = bt_callbacks_list_new(2);
 
     return BT_STATUS_SUCCESS;
 }
 
 static void avrcp_target_cleanup(void)
 {
-    bt_callbacks_list_free(g_avrc_tg_service.callbacks);
-    g_avrc_tg_service.callbacks = NULL;
-    pthread_mutex_destroy(&g_avrc_tg_service.mutex);
+    bt_callbacks_list_free(g_avrc_target.callbacks);
+    g_avrc_target.callbacks = NULL;
+    pthread_mutex_destroy(&g_avrc_target.mutex);
 }
 
 static void target_startup(profile_on_startup_t startup)
 {
-    pthread_mutex_lock(&g_avrc_tg_service.mutex);
+    pthread_mutex_lock(&g_avrc_target.mutex);
 
-    list_initialize(&g_avrc_tg_service.list);
+    list_initialize(&g_avrc_target.list);
     if (bt_sal_avrcp_target_init() != BT_STATUS_SUCCESS) {
-        list_delete(&g_avrc_tg_service.list);
+        list_delete(&g_avrc_target.list);
         startup(PROFILE_AVRCP_TG, false);
-        pthread_mutex_unlock(&g_avrc_tg_service.mutex);
+        pthread_mutex_unlock(&g_avrc_target.mutex);
         return;
     }
 
-    g_avrc_tg_service.enable = true;
+    g_avrc_target.enable = true;
     startup(PROFILE_AVRCP_TG, true);
-    pthread_mutex_unlock(&g_avrc_tg_service.mutex);
+    pthread_mutex_unlock(&g_avrc_target.mutex);
 }
 
-static void target_cleanup(profile_on_shutdown_t shutdown)
+static void target_shutdown(profile_on_shutdown_t shutdown)
 {
-    pthread_mutex_lock(&g_avrc_tg_service.mutex);
-    if (!g_avrc_tg_service.enable) {
-        pthread_mutex_unlock(&g_avrc_tg_service.mutex);
+    pthread_mutex_lock(&g_avrc_target.mutex);
+    if (!g_avrc_target.enable) {
+        pthread_mutex_unlock(&g_avrc_target.mutex);
         shutdown(PROFILE_AVRCP_TG, true);
         return;
     }
 
-    g_avrc_tg_service.enable = false;
-    list_delete(&g_avrc_tg_service.list);
+    g_avrc_target.enable = false;
+    list_delete(&g_avrc_target.list);
     bt_sal_avrcp_target_cleanup();
     shutdown(PROFILE_AVRCP_TG, true);
-    pthread_mutex_unlock(&g_avrc_tg_service.mutex);
+    pthread_mutex_unlock(&g_avrc_target.mutex);
 }
 
 static bt_status_t avrcp_target_startup(profile_on_startup_t cb)
 {
-    pthread_mutex_lock(&g_avrc_tg_service.mutex);
-    if (g_avrc_tg_service.enable) {
-        pthread_mutex_unlock(&g_avrc_tg_service.mutex);
+    pthread_mutex_lock(&g_avrc_target.mutex);
+    if (g_avrc_target.enable) {
+        pthread_mutex_unlock(&g_avrc_target.mutex);
         return BT_STATUS_NOT_ENABLED;
     }
-    pthread_mutex_unlock(&g_avrc_tg_service.mutex);
+    pthread_mutex_unlock(&g_avrc_target.mutex);
 
     avrcp_msg_t *msg = avrcp_msg_new(AVRC_STARTUP, NULL);
     msg->data.context = cb;
@@ -240,12 +240,12 @@ static bt_status_t avrcp_target_startup(profile_on_startup_t cb)
 
 static bt_status_t avrcp_target_shutdown(profile_on_shutdown_t cb)
 {
-    pthread_mutex_lock(&g_avrc_tg_service.mutex);
-    if (!g_avrc_tg_service.enable) {
-        pthread_mutex_unlock(&g_avrc_tg_service.mutex);
+    pthread_mutex_lock(&g_avrc_target.mutex);
+    if (!g_avrc_target.enable) {
+        pthread_mutex_unlock(&g_avrc_target.mutex);
         return BT_STATUS_SUCCESS;
     }
-    pthread_mutex_unlock(&g_avrc_tg_service.mutex);
+    pthread_mutex_unlock(&g_avrc_target.mutex);
 
     avrcp_msg_t *msg = avrcp_msg_new(AVRC_SHUTDOWN, NULL);
     msg->data.context = cb;
@@ -256,12 +256,12 @@ static bt_status_t avrcp_target_shutdown(profile_on_shutdown_t cb)
 
 static void *avrcp_target_register_callbacks(void *remote, const avrcp_target_callbacks_t *callbacks)
 {
-    return bt_remote_callbacks_register(g_avrc_tg_service.callbacks, remote, (void *)callbacks);
+    return bt_remote_callbacks_register(g_avrc_target.callbacks, remote, (void *)callbacks);
 }
 
 static bool avrcp_target_unregister_callbacks(void **remote, void *cookie)
 {
-    return bt_remote_callbacks_unregister(g_avrc_tg_service.callbacks, remote, cookie);
+    return bt_remote_callbacks_unregister(g_avrc_target.callbacks, remote, cookie);
 }
 
 static const avrcp_target_interface_t avrcp_targetInterface = {
