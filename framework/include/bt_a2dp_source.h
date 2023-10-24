@@ -30,6 +30,9 @@ typedef struct {
 
 void *bt_a2dp_source_register_callbacks(bt_instance_t *ins, const a2dp_source_callbacks_t *callbacks);
 bool bt_a2dp_source_unregister_callbacks(bt_instance_t *ins, void *cookie);
+bool bt_a2dp_source_is_connected(bt_instance_t *ins, bt_address_t *addr);
+bool bt_a2dp_source_is_playing(bt_instance_t *ins, bt_address_t *addr);
+profile_connection_state_t bt_a2dp_source_get_connection_state(bt_instance_t *ins, bt_address_t *addr);
 bt_status_t bt_a2dp_source_connect(bt_instance_t *ins, bt_address_t *addr);
 bt_status_t bt_a2dp_source_disconnect(bt_instance_t *ins, bt_address_t *addr);
 bt_status_t bt_a2dp_source_set_silence_device(bt_address_t *addr, bool silence);

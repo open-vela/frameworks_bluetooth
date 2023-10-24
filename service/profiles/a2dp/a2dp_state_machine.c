@@ -198,7 +198,7 @@ static char *stack_event_to_string(a2dp_event_type_t event)
 }
 #endif
 
-static void a2dp_report_connection_state(a2dp_state_machine_t *stm, bt_address_t *addr, a2dp_connection_state_t state)
+static void a2dp_report_connection_state(a2dp_state_machine_t *stm, bt_address_t *addr, profile_connection_state_t state)
 {
     BT_LOGD("%s, addr:%s, state: %d", __func__, bt_addr_str(addr), state);
 
@@ -209,7 +209,7 @@ static void a2dp_report_connection_state(a2dp_state_machine_t *stm, bt_address_t
     } else {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         /* is active device? */
-        if (state == A2DP_CONNECTION_STATE_DISCONNECTED) {
+        if (state == PROFILE_STATE_DISCONNECTED) {
             if (bt_media_set_a2dp_unavailable() != BT_STATUS_SUCCESS)
                 BT_LOGE("set A2DP unavailable fail");
         }
@@ -316,7 +316,7 @@ static void idle_enter(state_machine_t *sm)
     a2dp_sm->audio_ready = false;
     if (prev_state != NULL) {
         a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
-                                     A2DP_CONNECTION_STATE_DISCONNECTED);
+                                     PROFILE_STATE_DISCONNECTED);
     }
 }
 
@@ -342,7 +342,7 @@ static bool idle_process_event(state_machine_t *sm, uint32_t event, void *p_data
             status = bt_sal_a2dp_sink_connect(&data->bd_addr);
         if (status != BT_STATUS_SUCCESS) {
             a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
-                                         A2DP_CONNECTION_STATE_DISCONNECTED);
+                                         PROFILE_STATE_DISCONNECTED);
             break;
         }
         hsm_transition_to(sm, &opening_state);
@@ -360,7 +360,7 @@ static bool idle_process_event(state_machine_t *sm, uint32_t event, void *p_data
             status = bt_sal_a2dp_source_connect(&data->bd_addr);
             if (status != BT_STATUS_SUCCESS) {
                 a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
-                                             A2DP_CONNECTION_STATE_DISCONNECTED);
+                                             PROFILE_STATE_DISCONNECTED);
             }
         }
         break;
@@ -378,7 +378,7 @@ static void opening_enter(state_machine_t *sm)
 
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
     a2dp_sm->connect_timer = service_loop_timer(A2DP_CONNECT_TIMEOUT, 0, a2dp_connect_timeout_callback, a2dp_sm);
-    a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr, A2DP_CONNECTION_STATE_CONNECTING);
+    a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr, PROFILE_STATE_CONNECTING);
 }
 
 static void opening_exit(state_machine_t *sm)
@@ -445,7 +445,7 @@ static void opened_enter(state_machine_t *sm)
 #endif
         a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
         a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
-                                     A2DP_CONNECTION_STATE_CONNECTED);
+                                     PROFILE_STATE_CONNECTED);
     }
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     else if (prev_state == &started_state) {
@@ -727,7 +727,7 @@ static void closing_enter(state_machine_t *sm)
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
     a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
     a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
-                                 A2DP_CONNECTION_STATE_DISCONNECTING);
+                                 PROFILE_STATE_DISCONNECTING);
 }
 
 static void closing_exit(state_machine_t *sm)

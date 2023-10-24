@@ -42,6 +42,27 @@ bool bt_a2dp_sink_unregister_callbacks(bt_instance_t *ins, void *cookie)
     return profile->unregister_callbacks(NULL, cookie);
 }
 
+bool bt_a2dp_sink_is_connected(bt_instance_t *ins, bt_address_t *addr)
+{
+    a2dp_sink_interface_t *profile = get_profile_service();
+
+    return profile->is_connected(addr);
+}
+
+bool bt_a2dp_sink_is_playing(bt_instance_t *ins, bt_address_t *addr)
+{
+    a2dp_sink_interface_t *profile = get_profile_service();
+
+    return profile->is_playing(addr);
+}
+
+profile_connection_state_t bt_a2dp_sink_get_connection_state(bt_instance_t *ins, bt_address_t *addr)
+{
+    a2dp_sink_interface_t *profile = get_profile_service();
+
+    return profile->get_connection_state(addr);
+}
+
 bt_status_t bt_a2dp_sink_connect(bt_instance_t *ins, bt_address_t *addr)
 {
     a2dp_sink_interface_t *profile = get_profile_service();

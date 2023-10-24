@@ -321,6 +321,24 @@ static bool a2dp_sink_unregister_callbacks(void **remote, void *cookie)
     return bt_remote_callbacks_unregister(g_a2dp_sink.callbacks, remote, cookie);
 }
 
+static bool a2dp_sink_is_connected(bt_address_t *addr)
+{
+    /* TODO: */
+    return false;
+}
+
+static bool a2dp_sink_is_playing(bt_address_t *addr)
+{
+    /* TODO: */
+    return false;
+}
+
+static profile_connection_state_t a2dp_sink_get_connection_state(bt_address_t *addr)
+{
+    /* TODO: */
+    return PROFILE_STATE_DISCONNECTED;
+}
+
 static bt_status_t a2dp_sink_connect(bt_address_t *addr)
 {
     if (!g_a2dp_sink.enabled)
@@ -355,6 +373,9 @@ static const a2dp_sink_interface_t a2dp_sinkInterface = {
     .size = sizeof(a2dp_sinkInterface),
     .register_callbacks = a2dp_sink_register_callbacks,
     .unregister_callbacks = a2dp_sink_unregister_callbacks,
+    .is_connected = a2dp_sink_is_connected,
+    .is_playing = a2dp_sink_is_playing,
+    .get_connection_state = a2dp_sink_get_connection_state,
     .connect = a2dp_sink_connect,
     .disconnect = a2dp_sink_disconnect,
     .set_active_device = a2dp_sink_set_active_device,
@@ -392,7 +413,7 @@ void bt_sal_a2dp_sink_event_callback(a2dp_event_t *event)
 }
 
 void a2dp_sink_service_notify_connection_state_changed(
-    bt_address_t *addr, a2dp_connection_state_t state)
+    bt_address_t *addr, profile_connection_state_t state)
 {
     BT_LOGD("%s", __FUNCTION__);
     A2DP_SINK_CALLBACK_FOREACH(g_a2dp_sink.callbacks, connection_state_cb, addr, state);

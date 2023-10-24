@@ -22,20 +22,13 @@
 #include "bt_device.h"
 
 typedef enum {
-    A2DP_CONNECTION_STATE_DISCONNECTED = 0,
-    A2DP_CONNECTION_STATE_CONNECTING,
-    A2DP_CONNECTION_STATE_CONNECTED,
-    A2DP_CONNECTION_STATE_DISCONNECTING
-} a2dp_connection_state_t;
-
-typedef enum {
     A2DP_AUDIO_STATE_REMOTE_SUSPEND = 0,
     A2DP_AUDIO_STATE_STOPPED,
     A2DP_AUDIO_STATE_STARTED,
 } a2dp_audio_state_t;
 
 typedef void (*a2dp_connection_state_callback)(void *cookie, bt_address_t *addr,
-                                               a2dp_connection_state_t state);
+                                               profile_connection_state_t state);
 
 typedef void (*a2dp_audio_state_callback)(void *cookie, bt_address_t *addr,
                                           a2dp_audio_state_t state);
