@@ -91,7 +91,7 @@ static int get_state_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void a2dp_sink_connection_state_cb(void *cookie, bt_address_t *addr, a2dp_connection_state_t state)
+static void a2dp_sink_connection_state_cb(void *cookie, bt_address_t *addr, profile_connection_state_t state)
 {
     PRINT_ADDR("a2dp_sink_connection_state_cb, addr:%s, state:%d", addr, state);
 }
