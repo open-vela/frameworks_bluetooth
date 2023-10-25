@@ -23,7 +23,7 @@
 
 #include "lea_vmics_media_control.h"
 #include "media_session.h"
-#include "media_wrapper.h"
+#include "media_api.h"
 #include "utils.h"
 #include "utils/log.h"
 
