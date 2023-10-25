@@ -96,11 +96,13 @@ static void transport_chnl_close_cb(uv_handle_t *handle)
 
 static void audio_transport_connection_close(transport_channel_t *ch)
 {
-    if (ch->state == IPC_CONNTECTED) {
+    if (ch->state == IPC_CONNTECTED && ch->cli_pipe) {
         ch->state = IPC_DISCONNTECTED;
         free(ch->cli_pipe->data);
         ch->cli_pipe->data = NULL;
         uv_close((uv_handle_t *)ch->cli_pipe, transport_chnl_close_cb);
+        ch->cli_pipe = NULL;
+        /* TODO: notify after handle closed? */
         if (ch->event_cb)
             ch->event_cb(ch->ch_id, TRANSPORT_CLOSE_EVT);
     }
@@ -279,11 +281,14 @@ void audio_transport_close(audio_transport_t *transport, uint8_t ch_id)
 
     if (ch_id != AUDIO_TRANS_CH_ID_ALL) {
         ch = &transport->ch[ch_id];
-        if (ch->state == IPC_DISCONNTECTED)
-            return;
+        if (ch->state != IPC_DISCONNTECTED)
+            audio_transport_connection_close(ch);
 
-        audio_transport_connection_close(ch);
-        uv_close((uv_handle_t *)ch->svr_pipe, transport_chnl_close_cb);
+        if (ch->svr_pipe) {
+            uv_close((uv_handle_t *)ch->svr_pipe, transport_chnl_close_cb);
+            ch->svr_pipe = NULL;
+        }
+
         return;
     }
 
