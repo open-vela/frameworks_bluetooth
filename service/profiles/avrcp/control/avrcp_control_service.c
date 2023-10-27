@@ -92,6 +92,7 @@ static bt_status_t avrcp_control_init(void)
 {
     pthread_mutexattr_t attr;
 
+    memset(&g_avrc_controller, 0, sizeof(g_avrc_controller));
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     if (pthread_mutex_init(&g_avrc_controller.mutex, &attr) < 0)

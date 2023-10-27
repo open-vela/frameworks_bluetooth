@@ -86,7 +86,6 @@ bt_status_t bt_media_set_hfp_samplerate(uint16_t samplerate)
     return BT_STATUS_SUCCESS;
 }
 
-
 bt_status_t bt_media_listen_voice_call_volume_change(void)
 {
     return BT_STATUS_SUCCESS;
@@ -136,10 +135,5 @@ bt_status_t bt_media_set_sco_unavailable(void)
     if (media_policy_set_devices_unavailable(MEDIA_DEVICE_SCO) != 0)
         return BT_STATUS_FAIL;
 
-    return BT_STATUS_SUCCESS;
-}
-
-bt_status_t bt_media_create_player(void)
-{
     return BT_STATUS_SUCCESS;
 }
