@@ -90,12 +90,12 @@ typedef enum {
 } avrcp_key_state_t;
 
 typedef enum {
-    PLAY_STATUS_STOPPED,
+    PLAY_STATUS_STOPPED = 0,
     PLAY_STATUS_PLAYING,
     PLAY_STATUS_PAUSED,
     PLAY_STATUS_FWD_SEEK,
     PLAY_STATUS_REV_SEEK,
-    PLAY_STATUS_ERROR
+    PLAY_STATUS_ERROR,
 } avrcp_play_status_t;
 
 typedef enum {
