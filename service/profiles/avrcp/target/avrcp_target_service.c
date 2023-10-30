@@ -35,7 +35,7 @@
 
 #include "utils/log.h"
 
-#define AVRCP_TARGET_CALLBACK_FOREACH(_list, _cback, ...) \
+#define AVRCP_TG_CALLBACK_FOREACH(_list, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, avrcp_target_callbacks_t, _cback, ##__VA_ARGS__)
 
 #define POS_NOT_SUPPORT 0xFFFFFFFF
@@ -75,7 +75,7 @@ static bool tg_device_cmp(void *device, void *addr)
 
 static avrcp_tg_device_t *tg_device_find(bt_address_t *addr)
 {
-    if (!addr)
+    if (!g_avrc_target.devices || !addr)
         return NULL;
 
     return bt_list_find(g_avrc_target.devices, tg_device_cmp, addr);
@@ -173,14 +173,14 @@ static void handle_avrcp_connection_state(avrcp_msg_t *msg)
     case PROFILE_STATE_CONNECTING:
         if (!device) {
             /* target as acceptor */
-            tg_device_create(addr, false);
+            device = tg_device_create(addr, false);
             device->state = state;
         }
         break;
     case PROFILE_STATE_CONNECTED: {
         if (!device) {
             /* target as acceptor */
-            tg_device_create(addr, false);
+            device = tg_device_create(addr, false);
             device->state = state;
         }
 
@@ -192,11 +192,12 @@ static void handle_avrcp_connection_state(avrcp_msg_t *msg)
         device->controller = g_avrc_target.controller;
     } break;
     case PROFILE_STATE_DISCONNECTING:
+        break;
     default:
         assert(0);
     }
 
-    AVRCP_TARGET_CALLBACK_FOREACH(g_avrc_target.callbacks, connection_state_cb, addr, state);
+    AVRCP_TG_CALLBACK_FOREACH(g_avrc_target.callbacks, connection_state_cb, addr, state);
 }
 
 static void handle_avrcp_passthrough_cmd(bt_address_t *addr,

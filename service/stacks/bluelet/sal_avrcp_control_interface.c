@@ -130,22 +130,18 @@ static void register_notification_event_cb(BD_ADDR addr,
 static void remote_capabilities_rsp_cb(BD_ADDR addr,
                                        SERVICE_AVRCP_CAPABILITY_RSP_S *capabilities)
 {
-    uint8_t *caps = (void *)capabilities->capability;
+    avrcp_msg_t *msg;
+    uint8_t *caps = capabilities->capability;
 
-    while (capabilities->count) {
-        switch (*caps - 1) {
-        case AVRCP_NOTIFICATION_MEDIA_STATUS_CHANGED:
-            service_adapter_avrcp_register_notification(addr, *caps - 1, 0);
-            break;
-#if 0
-            case AVRCP_NOTIFICATION_PLAY_POS_CHANGED:
-                service_adapter_avrcp_register_notification(addr, *caps-1, 2);
-                break;
-#endif
-        }
-        capabilities->count--;
-        caps++;
-    }
+    msg = avrcp_msg_new(AVRC_GET_CAPABILITY_RSP, (void *)addr);
+    if (msg == NULL)
+        return;
+
+    msg->data.cap.company_id = capabilities->id;
+    msg->data.cap.cap_count = capabilities->count;
+    msg->data.cap.capabilities[capabilities->count] = 0;
+    memcpy(msg->data.cap.capabilities, caps, capabilities->count);
+    bt_sal_avrcp_control_event_callback(msg);
 }
 
 static void get_play_status_rsp_cb(BD_ADDR addr,
@@ -239,6 +235,20 @@ bt_status_t bt_sal_avrcp_control_disconnect(bt_address_t *bd_addr)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     SAL_CHECK_RET(service_adapter_avrcp_disconnect((void *)bd_addr),
+                  SERVICE_BT_STATUS_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
+bt_status_t bt_sal_avrcp_control_register_notification(bt_address_t *bd_addr,
+                                                       avrcp_notification_event_t event,
+                                                       uint32_t interval)
+{
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    SAL_CHECK_RET(service_adapter_avrcp_register_notification((void *)bd_addr, event - 1, interval),
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
