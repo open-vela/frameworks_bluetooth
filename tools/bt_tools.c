@@ -78,24 +78,25 @@ static void *adapter_callback = NULL;
 static pthread_mutex_t bt_lock;
 static pthread_cond_t disable_cond;
 
+static struct {
+    int cmd_err_code;
+    const char *cmd_err_code_desc;
+} cmd_err_map[] = {
+    {CMD_OK,                "OK"                  },
+    { CMD_INVALID_PARAM,    "Invalid Parameter"   },
+    { CMD_INVALID_OPT,      "Invalid Option"      },
+    { CMD_INVALID_ADDR,     "Invalid Address"     },
+    { CMD_PARAM_NOT_ENOUGH, "Parameter Not Enough"},
+    { CMD_UNKNOWN,          "Unknown Command"     },
+    { CMD_USAGE_FAULT,      "Command Usage Fault" },
+    { CMD_ERROR,            "API Return Error"    },
+};
+
 static struct option main_options[] = {
     {"help",     0, 0, 'h'},
     { "version", 0, 0, 'v'},
     { 0,         0, 0, 0  }
 };
-
-#if 0
-static struct option sub_options[] = {
-    {"addr",       required_argument, 0, 'a'},
-    { "transport", required_argument, 0, 't'},
-    { "name",      required_argument, 0, 'n'},
-    { "iocap",     required_argument, 0, 'i'},
-    { "class",     required_argument, 0, 'c'},
-    { "scanmode",  required_argument, 0, 'm'},
-    { 0,           0,                 0, 0  }
-};
-
-#endif
 
 static struct option le_conn_options[] = {
     {"addr",               required_argument, 0, 'a'},
@@ -364,6 +365,16 @@ static void bt_tool_uninit(void *handle)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     lea_vmicp_command_uninit(handle);
 #endif
+}
+
+static const char *cmd_err_str(int err_code)
+{
+    for (int i = 0; i < ARRAY_SIZE(cmd_err_map); i++) {
+        if (cmd_err_map[i].cmd_err_code == err_code)
+            return cmd_err_map[i].cmd_err_code_desc;
+    }
+
+    return "Correct code ?";
 }
 
 static void do_disable_wait(void *handle)
@@ -1492,7 +1503,7 @@ int main(int argc, char **argv)
             if (ret != CMD_OK) {
                 if (ret == -2)
                     break;
-                PRINT("cmd execute error:%d", ret);
+                PRINT("cmd execute error: [%s]", cmd_err_str(ret));
             }
         }
     }
