@@ -73,8 +73,9 @@ typedef struct {
 } rc_play_status_t;
 
 typedef struct {
+    uint8_t company_id;
     uint8_t cap_count;
-    uint8_t *capabilities;
+    uint8_t capabilities[255];
 } rc_capabilities_t;
 
 typedef struct {

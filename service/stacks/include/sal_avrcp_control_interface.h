@@ -33,7 +33,9 @@ bt_status_t bt_sal_avrcp_control_volume_changed_notify(bt_address_t *bd_addr, ui
 
 bt_status_t bt_sal_avrcp_control_connect(bt_address_t *bd_addr);
 bt_status_t bt_sal_avrcp_control_disconnect(bt_address_t *bd_addr);
-
+bt_status_t bt_sal_avrcp_control_register_notification(bt_address_t *bd_addr,
+                                                       avrcp_notification_event_t event,
+                                                       uint32_t interval);
 void bt_sal_avrcp_control_event_callback(avrcp_msg_t *msg);
 
 #endif /* __SAL_AVRCP_CONTROL_INTERFACE_H__ */

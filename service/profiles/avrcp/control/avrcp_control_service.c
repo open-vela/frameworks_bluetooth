@@ -24,29 +24,106 @@
 
 #include "adapter_internel.h"
 #include "bt_addr.h"
+#include "bt_player.h"
 #include "callbacks_list.h"
-#include "sal_avrcp_control_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
 
 #include "avrcp_control_service.h"
 
+#include "sal_avrcp_control_interface.h"
+
 #include "utils/log.h"
 
-#define AVRCP_CONTROL_CALLBACK_FOREACH(_list, _cback, ...) \
+#define AVRCP_CT_CALLBACK_FOREACH(_list, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, avrcp_control_callbacks_t, _cback, ##__VA_ARGS__)
 
 typedef struct {
     struct list_node list;
     bool enable;
+    bt_list_t *devices;
     pthread_mutex_t mutex;
     callbacks_list_t *callbacks;
 } avrcp_controller_service_t;
 
+typedef struct {
+    bt_address_t addr;
+    bool initiator;
+    bt_media_player_t *player;
+    profile_connection_state_t state;
+} avrcp_ct_device_t;
+
 static void controller_startup(profile_on_startup_t startup);
 static void controller_shutdown(profile_on_shutdown_t shutdown);
+static void avrcp_ct_on_play(bt_media_player_t *player, void *context);
+static void avrcp_ct_on_pause(bt_media_player_t *player, void *context);
+static void avrcp_ct_on_stop(bt_media_player_t *player, void *context);
+static void avrcp_ct_on_next(bt_media_player_t *player, void *context);
+static void avrcp_ct_on_prev(bt_media_player_t *player, void *context);
 
 static avrcp_controller_service_t g_avrc_controller = { 0 };
+static bt_media_player_callback_t g_player_cb = {
+    NULL,
+    avrcp_ct_on_play,
+    avrcp_ct_on_pause,
+    avrcp_ct_on_stop,
+    avrcp_ct_on_next,
+    avrcp_ct_on_prev
+};
+
+static bool ct_device_cmp(void *device, void *addr)
+{
+    return bt_addr_compare(&((avrcp_ct_device_t *)device)->addr, addr) == 0;
+}
+
+static avrcp_ct_device_t *ct_device_find(bt_address_t *addr)
+{
+    if (!g_avrc_controller.devices || !addr)
+        return NULL;
+
+    return bt_list_find(g_avrc_controller.devices, ct_device_cmp, addr);
+}
+
+static avrcp_ct_device_t *ct_device_create(bt_address_t *addr, bool initiator)
+{
+    avrcp_ct_device_t *device;
+
+    if (!addr)
+        return NULL;
+
+    device = malloc(sizeof(avrcp_ct_device_t));
+    if (!device)
+        return NULL;
+
+    memcpy(&device->addr, addr, sizeof(bt_address_t));
+    device->initiator = initiator;
+    device->player = NULL;
+    device->state = PROFILE_STATE_DISCONNECTED;
+
+    bt_list_add_tail(g_avrc_controller.devices, device);
+
+    return device;
+}
+
+static void ct_device_destory(void *data)
+{
+    avrcp_ct_device_t *device = data;
+    assert(device);
+
+    if (device->player)
+        bt_media_player_destory(device->player);
+
+    if (device->state != PROFILE_STATE_DISCONNECTED) {
+        // disconnected first
+    }
+
+    free(device);
+}
+
+static void ct_device_remove(avrcp_ct_device_t *device)
+{
+    bt_list_remove(g_avrc_controller.devices, device);
+}
 
 static void avrcp_controller_service_handle_event(void *data)
 {
@@ -67,13 +144,202 @@ static void avrcp_controller_service_handle_event(void *data)
     avrcp_msg_destory(msg);
 }
 
+static void send_pass_through_cmd(avrcp_ct_device_t *device, avrcp_passthr_cmd_t cmd)
+{
+    bt_sal_avrcp_control_send_pass_through_cmd(&device->addr, cmd, AVRCP_KEY_PRESSED);
+    bt_sal_avrcp_control_send_pass_through_cmd(&device->addr, cmd, AVRCP_KEY_RELEASED);
+}
+
+static void avrcp_ct_on_play(bt_media_player_t *player, void *context)
+{
+    avrcp_ct_device_t *device = context;
+
+    send_pass_through_cmd(device, PASSTHROUGH_CMD_ID_PLAY);
+}
+
+static void avrcp_ct_on_pause(bt_media_player_t *player, void *context)
+{
+    avrcp_ct_device_t *device = context;
+
+    send_pass_through_cmd(device, PASSTHROUGH_CMD_ID_PAUSE);
+}
+
+static void avrcp_ct_on_stop(bt_media_player_t *player, void *context)
+{
+    avrcp_ct_device_t *device = context;
+
+    send_pass_through_cmd(device, PASSTHROUGH_CMD_ID_STOP);
+}
+
+static void avrcp_ct_on_next(bt_media_player_t *player, void *context)
+{
+    avrcp_ct_device_t *device = context;
+
+    send_pass_through_cmd(device, PASSTHROUGH_CMD_ID_FORWARD);
+}
+
+static void avrcp_ct_on_prev(bt_media_player_t *player, void *context)
+{
+    avrcp_ct_device_t *device = context;
+
+    send_pass_through_cmd(device, PASSTHROUGH_CMD_ID_BACKWARD);
+}
+
+static void handle_avrcp_connection_state(avrcp_msg_t *msg)
+{
+    avrcp_ct_device_t *device = NULL;
+    bt_address_t *addr = &msg->addr;
+    profile_connection_state_t state = msg->data.conn_state;
+    BT_LOGD("%s, device: %s, connection state : %d", __func__, bt_addr_str(addr), state);
+
+    device = ct_device_find(addr);
+    /* set device state */
+    if (device)
+        device->state = state;
+
+    switch (state) {
+    case PROFILE_STATE_DISCONNECTED:
+        /* destory device and release resource if device is existed*/
+        if (device)
+            ct_device_remove(device);
+        break;
+    case PROFILE_STATE_CONNECTING:
+        if (!device) {
+            device = ct_device_create(addr, false);
+            device->state = state;
+        }
+        break;
+    case PROFILE_STATE_CONNECTED: {
+        if (!device) {
+            device = ct_device_create(addr, false);
+            device->state = state;
+        }
+        device->player = bt_media_player_create(device, &g_player_cb);
+    } break;
+    case PROFILE_STATE_DISCONNECTING:
+        break;
+    default:
+        assert(0);
+    }
+
+    AVRCP_CT_CALLBACK_FOREACH(g_avrc_controller.callbacks, connection_state_cb, addr, state);
+}
+
+static void handle_avrcp_get_play_status_response(avrcp_msg_t *msg)
+{
+    avrcp_ct_device_t *device = NULL;
+    bt_address_t *addr = &msg->addr;
+    rc_play_status_t *playstatus = &msg->data.playstatus;
+
+    device = ct_device_find(addr);
+    if (!device)
+        return;
+
+    BT_LOGD("%s", __func__);
+    bt_media_player_set_status(device->player, playstatus->status);
+    bt_media_player_set_duration(device->player, playstatus->song_len);
+    bt_media_player_set_position(device->player, playstatus->song_pos);
+}
+
+static void handle_avrcp_get_capability_response(avrcp_msg_t *msg)
+{
+    avrcp_ct_device_t *device = NULL;
+    bt_address_t *addr = &msg->addr;
+    uint8_t *cap = msg->data.cap.capabilities;
+
+    device = ct_device_find(addr);
+    if (!device)
+        return;
+
+    BT_LOGD("%s", __func__);
+    while (msg->data.cap.cap_count) {
+        switch (*cap) {
+        case NOTIFICATION_EVT_PALY_STATUS_CHANGED:
+            bt_sal_avrcp_control_register_notification(addr, *cap, 0);
+            bt_sal_avrcp_control_get_playback_state(addr);
+            break;
+        case NOTIFICATION_EVT_PLAY_POS_CHANGED:
+            bt_sal_avrcp_control_register_notification(addr, *cap, 2);
+            break;
+        case NOTIFICATION_EVT_VOLUME_CHANGED:
+            /* don't work on controller role */
+            break;
+        default:
+            break;
+        }
+        cap++;
+        msg->data.cap.cap_count--;
+    }
+}
+
+static void handle_avrcp_passthrough_cmd_response(avrcp_msg_t *msg)
+{
+    avrcp_ct_device_t *device = NULL;
+    bt_address_t *addr = &msg->addr;
+
+    device = ct_device_find(addr);
+    if (!device)
+        return;
+
+    BT_LOGD("passthrough cmd:%d, state:%d, response:%d", msg->data.passthr_rsp.cmd,
+            msg->data.passthr_rsp.state, msg->data.passthr_rsp.rsp);
+}
+
+static void handle_avrcp_register_notification_response(avrcp_msg_t *msg)
+{
+    avrcp_ct_device_t *device = NULL;
+    bt_address_t *addr = &msg->addr;
+
+    device = ct_device_find(addr);
+    if (!device)
+        return;
+
+    BT_LOGD("%s, evt:%d", __func__, msg->data.notify_rsp.event);
+    switch (msg->data.notify_rsp.event) {
+    case NOTIFICATION_EVT_PALY_STATUS_CHANGED: {
+        bt_media_status_t status = msg->data.notify_rsp.value;
+
+        bt_media_player_set_status(device->player, status);
+        if (status == BT_MEDIA_PLAY_STATUS_FWD_SEEK ||
+            status == BT_MEDIA_PLAY_STATUS_REV_SEEK)
+            bt_sal_avrcp_control_get_playback_state(addr);
+        break;
+    }
+    case NOTIFICATION_EVT_PLAY_POS_CHANGED: {
+        bt_media_player_set_status(device->player, msg->data.notify_rsp.value);
+        break;
+    }
+    case NOTIFICATION_EVT_VOLUME_CHANGED: {
+        /* don't work on controller role */
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 static void avrcp_control_service_handle_callback(void *data)
 {
     avrcp_msg_t *msg = data;
 
     switch (msg->id) {
+    case AVRC_CONNECTION_STATE_CHANGED:
+        handle_avrcp_connection_state(msg);
+        break;
+    case AVRC_GET_PLAY_STATUS_RSP:
+        handle_avrcp_get_play_status_response(msg);
+        break;
+    case AVRC_GET_CAPABILITY_RSP:
+        handle_avrcp_get_capability_response(msg);
+        break;
+    case AVRC_PASSTHROUHT_CMD_RSP:
+        handle_avrcp_passthrough_cmd_response(msg);
+        break;
+    case AVRC_REGISTER_NOTIFICATION_RSP:
+        handle_avrcp_register_notification_response(msg);
+        break;
     default:
-        BT_LOGW("%s Unsupport message", __func__);
+        BT_LOGW("%s Unsupport message:%d", __func__, msg->id);
         break;
     }
 
@@ -119,7 +385,13 @@ static void controller_startup(profile_on_startup_t startup)
         return;
     }
 
-    list_initialize(&g_avrc_controller.list);
+    g_avrc_controller.devices = bt_list_new(ct_device_destory);
+    if (!g_avrc_controller.devices) {
+        startup(PROFILE_AVRCP_CT, false);
+        pthread_mutex_unlock(&g_avrc_controller.mutex);
+        return;
+    }
+
     if (bt_sal_avrcp_control_init() != BT_STATUS_SUCCESS) {
         list_delete(&g_avrc_controller.list);
         startup(PROFILE_AVRCP_CT, false);
@@ -142,7 +414,8 @@ static void controller_shutdown(profile_on_shutdown_t shutdown)
     }
 
     g_avrc_controller.enable = false;
-    list_delete(&g_avrc_controller.list);
+    bt_list_free(g_avrc_controller.devices);
+    g_avrc_controller.devices = NULL;
     bt_sal_avrcp_control_cleanup();
     shutdown(PROFILE_AVRCP_CT, true);
     pthread_mutex_unlock(&g_avrc_controller.mutex);
