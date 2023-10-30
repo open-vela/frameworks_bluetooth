@@ -115,6 +115,19 @@ typedef enum {
     NOTIFICATION_EVT_FLAG_INTERIM
 } avrcp_notification_event_t;
 
+typedef enum {
+    AVRCP_RESPONSE_NOT_IMPLEMENTED,
+    AVRCP_RESPONSE_ACCEPTED,
+    AVRCP_RESPONSE_REJECTED,
+    AVRCP_RESPONSE_IN_TRANSITION,
+    AVRCP_RESPONSE_IMPLEMENTED_STABLE,
+    AVRCP_RESPONSE_CHANGED,
+    AVRCP_RESPONSE_INTERIM,
+    AVRCP_RESPONSE_BROWSING,
+    AVRCP_RESPONSE_SKIPPED,
+    AVRCP_RESPONSE_TIMEOUT
+} avrcp_response_t;
+
 typedef void (*avrcp_connection_state_callback)(void *cookie, bt_address_t *addr, profile_connection_state_t state);
 
 #endif /* __BT_AVRCP_H__ */

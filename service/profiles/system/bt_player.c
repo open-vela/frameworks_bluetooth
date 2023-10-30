@@ -27,8 +27,10 @@ typedef struct bt_media_controller {
     bt_media_notify_callback_t cb;
 } bt_media_controller_t;
 
-typedef struct {
-    void *session;
+typedef struct bt_media_player {
+    void *mediasession;
+    void *context;
+    bt_media_player_callback_t *cb;
 } bt_media_player_t;
 
 static void notify_media_event(bt_media_controller_t *controller,
@@ -207,11 +209,100 @@ bt_status_t bt_media_player_get_durations(bt_media_controller_t *controller, uin
     return BT_STATUS_SUCCESS;
 }
 
-bt_media_player_t *bt_media_player_create(void)
+static void media_control_event_cb(void *cookie, int event,
+                                   int ret, const char *extra)
 {
-    return NULL;
+    bt_media_player_t *player = cookie;
+
+    switch (event) {
+    case MEDIA_EVENT_START:
+        player->cb->on_play(player, player->context);
+        break;
+    case MEDIA_EVENT_PAUSE:
+        player->cb->on_pause(player, player->context);
+        break;
+    case MEDIA_EVENT_STOP:
+        player->cb->on_stop(player, player->context);
+        break;
+    case MEDIA_EVENT_PREV:
+        player->cb->on_prev_song(player, player->context);
+        break;
+    case MEDIA_EVENT_NEXT:
+        player->cb->on_next_song(player, player->context);
+        break;
+    default:
+        break;
+    }
+}
+
+bt_media_player_t *bt_media_player_create(void *context, bt_media_player_callback_t *cb)
+{
+    if (context == NULL || cb == NULL)
+        return NULL;
+
+    bt_media_player_t *player = malloc(sizeof(*player));
+    if (!player)
+        return NULL;
+
+    player->mediasession = media_session_register(player, media_control_event_cb);
+    if (!player->mediasession) {
+        free(player);
+        return NULL;
+    }
+    player->cb = cb;
+    player->context = context;
+
+    return player;
 }
 
 void bt_media_player_destory(bt_media_player_t *player)
 {
+    if (!player)
+        return;
+
+    if (player->mediasession) {
+        media_session_notify(player->mediasession, MEDIA_EVENT_STOPPED, 0, NULL);
+        media_session_unregister(player->mediasession);
+    }
+
+    free(player);
+}
+
+bt_status_t bt_media_player_set_status(bt_media_player_t *player, bt_media_status_t status)
+{
+    int event;
+
+    switch (status) {
+    case BT_MEDIA_PLAY_STATUS_STOPPED:
+        event = MEDIA_EVENT_STOPPED;
+        break;
+    case BT_MEDIA_PLAY_STATUS_PLAYING:
+        event = MEDIA_EVENT_STARTED;
+        break;
+    case BT_MEDIA_PLAY_STATUS_PAUSED:
+        event = MEDIA_EVENT_PAUSED;
+        break;
+    case BT_MEDIA_PLAY_STATUS_FWD_SEEK:
+        event = MEDIA_EVENT_NEXTED;
+        break;
+    case BT_MEDIA_PLAY_STATUS_REV_SEEK:
+        event = MEDIA_EVENT_PREVED;
+        break;
+    default:
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    media_session_notify(player->mediasession, event, 0, NULL);
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_media_player_set_duration(bt_media_player_t *player, uint32_t duration)
+{
+    return BT_STATUS_NOT_SUPPORTED;
+}
+
+bt_status_t bt_media_player_set_position(bt_media_player_t *player, uint32_t position)
+{
+    return BT_STATUS_NOT_SUPPORTED;
 }
