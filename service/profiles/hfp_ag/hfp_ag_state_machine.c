@@ -490,11 +490,18 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_d
         tele_service_hangup_call();
         break;
     case AG_STACK_EVENT_DIAL_NUMBER: {
-        BT_LOGD("Dial number:%s", data->string1);
-        /* system call interface */
-        if (tele_service_dial_number(data->string1) != BT_STATUS_SUCCESS)
+        if (data->string1) {
+            BT_LOGD("Dial number:%s", data->string1);
+            /* system call interface */
+            if (tele_service_dial_number(data->string1) != BT_STATUS_SUCCESS)
+                bt_sal_hfp_ag_dial_response(&agsm->addr, HFP_ATCMD_RESULT_ERROR);
+            else
+                agsm->dial_out_timer = service_loop_timer_no_repeating(5000, dial_out_timeout, NULL);
+        }
+        else {
+            BT_LOGD("Redial last number, currently not supported");
             bt_sal_hfp_ag_dial_response(&agsm->addr, HFP_ATCMD_RESULT_ERROR);
-        agsm->dial_out_timer = service_loop_timer_no_repeating(5000, dial_out_timeout, NULL);
+        }
     } break;
     case AG_STACK_EVENT_DIAL_MEMORY:
         /* system call interface */
