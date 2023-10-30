@@ -55,6 +55,7 @@ static bt_command_t g_adv_tables[] = {
                                  "\t  -m or --mode,     advertising mode opt(legacy/ext/auto, default auto)\n"
                                  "\t  -i or --interval, advertising intervel range 0x20~0x4000\n"
                                  "\t  -n or --name,     advertising name no more than 29 bytes \n"
+                                 "\t  -a or --appearance, advertising appearance range 0000~FFFF \n"
                                  "\t  -P or --peer_addr, if directed advertising is performed, shall be valid\n"
                                  "\t  -T or --peer_addr_type, if directed advertising is performed, shall be valid\n"
                                  "\t  -O or --own_addr, update advertising own random address, only own addr type is random valid\n"
@@ -108,6 +109,7 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
     uint16_t adv_len, scan_rsp_len;
     bt_advertiser_t *adv_handle;
     char *name = "VELA_BT";
+    uint16_t appearance = 0;
     int opt;
 
     params.adv_type = BT_LE_ADV_IND;
@@ -122,7 +124,7 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
     params.duration = 0;
 
     optind = 0;
-    while ((opt = getopt_long(argc, argv, "+t:m:i:n:p:c:f:d:P:T:O:R:D", adv_options,
+    while ((opt = getopt_long(argc, argv, "+t:m:i:n:a:p:c:f:d:P:T:O:R:D", adv_options,
                               NULL)) != -1) {
         switch (opt) {
         case 't':
@@ -171,6 +173,10 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
             name = optarg;
             PRINT("adv name: %s ", optarg);
         } break;
+        case 'a': {
+            appearance = strtol(optarg, NULL, 16);
+            PRINT("adv appearance: 0x%04x ", appearance);
+        }
         case 'p': {
             int32_t power = atoi(optarg);
             if (power < -20 || power > 10) {
@@ -288,7 +294,7 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
         adv = advertiser_data_new();
 
         /* set adv flags 0x08 */
-        advertiser_data_set_flags(adv, BT_AD_FLAG_DUAL_MODE);
+        advertiser_data_set_flags(adv, BT_AD_FLAG_DUAL_MODE | BT_AD_FLAG_GENERAL_DISCOVERABLE);
 
         /* add spp uuid */
         bt_uuid16_create(&uuid, 0x1101);
@@ -297,6 +303,10 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
         /* add handsfree uuid */
         bt_uuid16_create(&uuid, 0x111E);
         advertiser_data_add_service_uuid(adv, &uuid);
+
+        /* set adv appearance */
+        if (appearance)
+            advertiser_data_set_appearance(adv, appearance);
 
         /* build adverser data */
         p_adv_data = advertiser_data_build(adv, &adv_len);
