@@ -33,11 +33,6 @@ static bt_command_t g_lea_mcp_tables[] = {
     { "searchrequest",       mcp_search_control_request, 0, "mcp search request       param: <addr><number><type><parameter>"        },
 };
 
-static struct option lea_mcp_options[] = {
-    {"help", 0, 0, 'h'},
-    { 0,     0, 0, 0  }
-};
-
 static void *mcp_callbacks = NULL;
 
 static void usage(void)
@@ -133,25 +128,13 @@ void lea_mcp_commond_uninit(void *handle)
 
 int lea_mcp_command_exec(void *handle, int argc, char *argv[])
 {
-    int opt, ret = CMD_USAGE_FAULT;
-
-    while ((opt = getopt_long(argc, argv, "h", lea_mcp_options, NULL)) != -1) {
-        switch (opt) {
-        case 'h':
-            usage();
-            return CMD_OK;
-        default:
-            break;
-        }
-    }
+    int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
         ret = execute_command_in_table(handle, g_lea_mcp_tables, ARRAY_SIZE(g_lea_mcp_tables), argc, argv);
 
-    if (ret < 0) {
-        printf("Erroneous command %s\n", argv[0]);
+    if (ret < 0)
         usage();
-    }
 
     return ret;
 }

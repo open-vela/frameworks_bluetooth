@@ -175,10 +175,8 @@ int scan_command_exec(void *handle, int argc, char *argv[])
                                               ARRAY_SIZE(g_scanner_tables),
                                               argc, argv, 0);
 
-    if (ret < 0) {
-        printf("Erroneous command %s\n", argv[1]);
+    if (ret < 0)
         usage();
-    }
 
     return ret;
 }
