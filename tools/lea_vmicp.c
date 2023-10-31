@@ -46,11 +46,6 @@ static bt_command_t g_lea_vmicp_tables[] = {
     { "micmuteset",      micc_mute_state_set,   0, "set mic mute state              param1: <addr> param2:mute(1)/unmute(0)"},
 };
 
-static struct option lea_vmicp_options[] = {
-    {"help", 0, 0, 'h'},
-    { 0,     0, 0, 0  }
-};
-
 static void *vmicp_callbacks = NULL;
 
 static void usage(void)
@@ -233,25 +228,13 @@ void lea_vmicp_command_uninit(void *handle)
 
 int vmicp_command_exec(void *handle, int argc, char *argv[])
 {
-    int opt, ret = CMD_USAGE_FAULT;
-
-    while ((opt = getopt_long(argc, argv, "h", lea_vmicp_options, NULL)) != -1) {
-        switch (opt) {
-        case 'h':
-            usage();
-            return CMD_OK;
-        default:
-            break;
-        }
-    }
+    int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
         ret = execute_command_in_table(handle, g_lea_vmicp_tables, ARRAY_SIZE(g_lea_vmicp_tables), argc, argv);
 
-    if (ret < 0) {
-        printf("Erroneous command %s\n", argv[0]);
+    if (ret < 0)
         usage();
-    }
 
     return ret;
 }

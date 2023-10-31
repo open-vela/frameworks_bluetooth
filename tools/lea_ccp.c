@@ -66,11 +66,6 @@ static bt_command_t g_lea_ccp_tables[] = {
     { "join",               ccp_join_calls,                                  0, ccp_JOIN_CALL                                          },
 };
 
-static struct option lea_ccp_options[] = {
-    {"help", 0, 0, 'h'},
-    { 0,     0, 0, 0  }
-};
-
 static void *ccp_callbacks = NULL;
 
 static void usage(void)
@@ -388,25 +383,13 @@ void lea_ccp_command_uninit(void *handle)
 
 int lea_ccp_command_exec(void *handle, int argc, char *argv[])
 {
-    int opt, ret = CMD_USAGE_FAULT;
-
-    while ((opt = getopt_long(argc, argv, "h", lea_ccp_options, NULL)) != -1) {
-        switch (opt) {
-        case 'h':
-            usage();
-            return CMD_OK;
-        default:
-            break;
-        }
-    }
+    int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
         ret = execute_command_in_table(handle, g_lea_ccp_tables, ARRAY_SIZE(g_lea_ccp_tables), argc, argv);
 
-    if (ret < 0) {
-        printf("Erroneous command %s\n", argv[0]);
+    if (ret < 0)
         usage();
-    }
 
     return ret;
 }

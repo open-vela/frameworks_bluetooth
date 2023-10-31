@@ -39,10 +39,6 @@ static bt_command_t g_hfp_ag_tables[] = {
     { "stopvr",          stop_voice_recognition_cmd,  0, "\"stop voice recognition       , params: <address>\""},
 };
 
-static struct option hfp_ag_options[] = {
-    {"help", 0, 0, 'h'},
-    { 0,     0, 0, 0  }
-};
 static void *ag_callbacks = NULL;
 
 static void usage(void)
@@ -189,25 +185,13 @@ int hfp_ag_commond_uninit(void *handle)
 
 int hfp_ag_command_exec(void *handle, int argc, char *argv[])
 {
-    int opt, ret = CMD_USAGE_FAULT;
-
-    while ((opt = getopt_long(argc, argv, "h", hfp_ag_options, NULL)) != -1) {
-        switch (opt) {
-        case 'h':
-            usage();
-            return CMD_OK;
-        default:
-            break;
-        }
-    }
+    int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
         ret = execute_command_in_table(handle, g_hfp_ag_tables, ARRAY_SIZE(g_hfp_ag_tables), argc, argv);
 
-    if (ret < 0) {
-        printf("Erroneous command %s\n", argv[0]);
+    if (ret < 0)
         usage();
-    }
 
     return ret;
 }
