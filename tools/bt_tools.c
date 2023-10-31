@@ -1426,7 +1426,7 @@ int execute_command_in_table_offset(void *handle, bt_command_t *table, uint32_t 
         }
         cmd++;
     }
-    PRINT("UnKnow command %s", argv[0]);
+    PRINT("Erroneous command %s", argv[0]);
 
     return CMD_UNKNOWN;
 }
