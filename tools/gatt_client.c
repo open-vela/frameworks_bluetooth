@@ -18,8 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bt_gattc.h"
 #include "bluetooth.h"
+#include "bt_gattc.h"
 #include "bt_tools.h"
 
 static int create_cmd(void *handle, int argc, char *argv[]);
@@ -45,23 +45,18 @@ static gattc_handle_t g_gattc_handles[GATTC_CONNECTION_MAX] = { 0 };
     }
 
 static bt_command_t g_gattc_tables[] = {
-    { "create",        create_cmd,            0, "\"create gatt client :\""                                         },
-    { "delete",        delete_cmd,            0, "\"delete gatt client :<conn id>\""                                },
-    { "connect",       connect_cmd,           0, "\"connect remote device :<conn id><address>\""                    },
-    { "disconnect",    disconnect_cmd,        0, "\"disconnect remote device :<conn id>\""                          },
-    { "discover",      discover_services_cmd, 0, "\"discover all services :<conn id>\""                             },
-    { "read_request",  read_request_cmd,      0, "\"read request :<conn id><char id>\""                             },
+    {"create",         create_cmd,            0, "\"create gatt client :\""                                                                        },
+    { "delete",        delete_cmd,            0, "\"delete gatt client :<conn id>\""                                                               },
+    { "connect",       connect_cmd,           0, "\"connect remote device :<conn id><address>\""                                                   },
+    { "disconnect",    disconnect_cmd,        0, "\"disconnect remote device :<conn id>\""                                                         },
+    { "discover",      discover_services_cmd, 0, "\"discover all services :<conn id>\""                                                            },
+    { "read_request",  read_request_cmd,      0, "\"read request :<conn id><char id>\""                                                            },
     { "write_request", write_request_cmd,     0, "\"write request :<conn id><char id><type>(str or hex)<playload>\n"
-                                            "\t\t\t  e.g., write_request 0 0001 str HelloWorld!\n"
-                                            "\t\t\t  e.g., write_request 0 0001 hex 00 01 02 03\n"                  },
-    { "enable_cccd",   enable_cccd_cmd,       0, "\"enable cccd :<conn id><char id><cccd_id>\""                     },
-    { "disable_cccd",  disable_cccd_cmd,      0, "\"disable cccd :<conn id><char id><cccd_id>\""                    },
-    { "exchange_mtu",  exchange_mtu_cmd,      0, "\"exchange mtu :<conn id><mtu>\""                                 },
-};
-
-static struct option gattc_options[] = {
-    {"help", 0, 0, 'h'},
-    { 0,     0, 0, 0  }
+                                             "\t\t\t  e.g., write_request 0 0001 str HelloWorld!\n"
+                                             "\t\t\t  e.g., write_request 0 0001 hex 00 01 02 03\n"},
+    { "enable_cccd",   enable_cccd_cmd,       0, "\"enable cccd :<conn id><char id><cccd_id>\""                                                    },
+    { "disable_cccd",  disable_cccd_cmd,      0, "\"disable cccd :<conn id><char id><cccd_id>\""                                                   },
+    { "exchange_mtu",  exchange_mtu_cmd,      0, "\"exchange mtu :<conn id><mtu>\""                                                                },
 };
 
 static void usage(void)
@@ -150,7 +145,7 @@ static int write_request_cmd(void *handle, int argc, char *argv[])
 
     if (!strcmp(argv[2], "str")) {
         if (bt_gattc_write_without_response(g_gattc_handles[conn_id], attr_handle,
-            (uint8_t*)argv[3], strlen(argv[3])) != BT_STATUS_SUCCESS)
+                                            (uint8_t *)argv[3], strlen(argv[3])) != BT_STATUS_SUCCESS)
             return CMD_ERROR;
     } else if (!strcmp(argv[2], "hex")) {
         len = argc - 3;
@@ -392,25 +387,13 @@ int gattc_command_uninit(void *handle)
 
 int gattc_command_exec(void *handle, int argc, char *argv[])
 {
-    int opt, ret = CMD_USAGE_FAULT;
-
-    while ((opt = getopt_long(argc, argv, "h", gattc_options, NULL)) != -1) {
-        switch (opt) {
-        case 'h':
-            usage();
-            return CMD_OK;
-        default:
-            break;
-        }
-    }
+    int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
         ret = execute_command_in_table(handle, g_gattc_tables, ARRAY_SIZE(g_gattc_tables), argc, argv);
 
-    if (ret < 0) {
-        printf("Erroneous command %s\n", argv[0]);
+    if (ret < 0)
         usage();
-    }
 
     return ret;
 }

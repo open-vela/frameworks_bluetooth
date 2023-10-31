@@ -18,8 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bt_gatts.h"
 #include "bluetooth.h"
+#include "bt_gatts.h"
 #include "bt_tools.h"
 
 static int register_cmd(void *handle, int argc, char *argv[]);
@@ -170,11 +170,6 @@ static bt_command_t g_gatts_tables[] = {
     { "notify_battery",  notify_bas_cmd,   0, "\"send battery notification :<level>(0-100)\""                },
     { "notify_custom",   notify_cus_cmd,   0, "\"send custom notification :<playload>\""                     },
     { "indicate_custom", indicate_cus_cmd, 0, "\"send custom indication   :<playload>\""                     },
-};
-
-static struct option gatts_options[] = {
-    {"help", 0, 0, 'h'},
-    { 0,     0, 0, 0  }
 };
 
 static void usage(void)
@@ -426,25 +421,13 @@ int gatts_command_uninit(void *handle)
 
 int gatts_command_exec(void *handle, int argc, char *argv[])
 {
-    int opt, ret = CMD_USAGE_FAULT;
-
-    while ((opt = getopt_long(argc, argv, "h", gatts_options, NULL)) != -1) {
-        switch (opt) {
-        case 'h':
-            usage();
-            return CMD_OK;
-        default:
-            break;
-        }
-    }
+    int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
         ret = execute_command_in_table(handle, g_gatts_tables, ARRAY_SIZE(g_gatts_tables), argc, argv);
 
-    if (ret < 0) {
-        printf("Erroneous command %s\n", argv[0]);
+    if (ret < 0)
         usage();
-    }
 
     return ret;
 }

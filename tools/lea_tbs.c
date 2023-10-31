@@ -58,11 +58,6 @@ static bt_command_t g_lea_tbs_tables[] = {
     { "resp",           tbs_call_control_response,                   0, "TBS call control response                param: <call_index><result>"         },
 };
 
-static struct option lea_tbs_options[] = {
-    {"help", 0, 0, 'h'},
-    { 0,     0, 0, 0  }
-};
-
 static void *tbs_callbacks = NULL;
 
 static void usage(void)
@@ -306,25 +301,13 @@ void lea_tbs_command_uninit(void *handle)
 
 int lea_tbs_command_exec(void *handle, int argc, char *argv[])
 {
-    int opt, ret = CMD_USAGE_FAULT;
-
-    while ((opt = getopt_long(argc, argv, "h", lea_tbs_options, NULL)) != -1) {
-        switch (opt) {
-        case 'h':
-            usage();
-            return CMD_OK;
-        default:
-            break;
-        }
-    }
+    int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
         ret = execute_command_in_table(handle, g_lea_tbs_tables, ARRAY_SIZE(g_lea_tbs_tables), argc, argv);
 
-    if (ret < 0) {
-        printf("Erroneous command %s\n", argv[0]);
+    if (ret < 0)
         usage();
-    }
 
     return ret;
 }
