@@ -82,7 +82,7 @@ typedef struct {
 } spp_callbacks_t;
 
 /**
- * @brief Register app app
+ * @brief Register spp app
  *
  * @param ins - bluetooth client instance.
  * @param callbacks - spp callback functions.
