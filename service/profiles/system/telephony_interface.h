@@ -89,6 +89,7 @@ typedef struct tele_call_ {
     bool is_emergency;
     bool is_multiparty;
     bool is_remote_multiparty;
+    bool is_incoming;
 } tele_call_t;
 
 /* manager */
