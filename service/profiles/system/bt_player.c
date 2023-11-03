@@ -30,6 +30,7 @@ typedef struct bt_media_controller {
 typedef struct bt_media_player {
     void *mediasession;
     void *context;
+    bt_media_status_t play_status;
     bt_media_player_callback_t *cb;
 } bt_media_player_t;
 
@@ -251,6 +252,7 @@ bt_media_player_t *bt_media_player_create(void *context, bt_media_player_callbac
     }
     player->cb = cb;
     player->context = context;
+    player->play_status = BT_MEDIA_PLAY_STATUS_ERROR;
 
     return player;
 }
@@ -271,6 +273,9 @@ void bt_media_player_destory(bt_media_player_t *player)
 bt_status_t bt_media_player_set_status(bt_media_player_t *player, bt_media_status_t status)
 {
     int event;
+
+    if (player->play_status == status)
+        return BT_STATUS_SUCCESS;
 
     switch (status) {
     case BT_MEDIA_PLAY_STATUS_STOPPED:
@@ -293,6 +298,7 @@ bt_status_t bt_media_player_set_status(bt_media_player_t *player, bt_media_statu
     }
 
     media_session_notify(player->mediasession, event, 0, NULL);
+    player->play_status = status;
 
     return BT_STATUS_SUCCESS;
 }
@@ -304,5 +310,8 @@ bt_status_t bt_media_player_set_duration(bt_media_player_t *player, uint32_t dur
 
 bt_status_t bt_media_player_set_position(bt_media_player_t *player, uint32_t position)
 {
+    if (position < 0)
+        return BT_STATUS_PARM_INVALID;
+
     return BT_STATUS_NOT_SUPPORTED;
 }

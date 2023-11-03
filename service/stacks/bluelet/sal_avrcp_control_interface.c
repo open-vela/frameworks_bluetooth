@@ -243,6 +243,18 @@ bt_status_t bt_sal_avrcp_control_disconnect(bt_address_t *bd_addr)
 #endif
 }
 
+bt_status_t bt_sal_avrcp_control_get_capabilities(bt_address_t *bd_addr, uint8_t cap_id)
+{
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    SAL_CHECK_RET(service_adapter_avrcp_get_remote_capabilities((void *)bd_addr, cap_id),
+                  SERVICE_BT_STATUS_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
 bt_status_t bt_sal_avrcp_control_register_notification(bt_address_t *bd_addr,
                                                        avrcp_notification_event_t event,
                                                        uint32_t interval)

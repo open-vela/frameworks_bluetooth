@@ -1287,6 +1287,7 @@ static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
         /* set name */
         /* set io cap */
         /* set class */
+        bt_adapter_set_device_class(g_bttool_ins, COD_SERVICE_AUDIO | COD_DEVICE_AV | COD_AV_HEADSET | COD_AV_HANDSFREE);
         /* set scan mode */
     } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
         /* code */
