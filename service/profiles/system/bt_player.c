@@ -372,5 +372,8 @@ bt_status_t bt_media_player_set_duration(bt_media_player_t *player, uint32_t dur
 
 bt_status_t bt_media_player_set_position(bt_media_player_t *player, uint32_t position)
 {
+    if (position < 0)
+        return BT_STATUS_PARM_INVALID;
+
     return BT_STATUS_NOT_SUPPORTED;
 }
