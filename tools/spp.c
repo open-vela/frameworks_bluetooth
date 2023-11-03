@@ -161,7 +161,7 @@ static void pty_open_process(void *data)
     spp_cmd_t *msg = data;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
-    int fd = open(msg->name, O_RDWR | O_NOCTTY);
+    int fd = open(msg->name, O_RDWR | O_NOCTTY | O_CLOEXEC);
     if (fd < 0)
         return;
 
