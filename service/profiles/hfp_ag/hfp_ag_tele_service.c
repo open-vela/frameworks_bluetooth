@@ -275,6 +275,24 @@ static void update_call_state(hfp_ag_call_state_t new_state)
 
     number = call->line_identification;
 
+    switch(new_state) {
+        case HFP_AG_CALL_STATE_INCOMING:
+        case HFP_AG_CALL_STATE_WAITING:
+            call->is_incoming = true;
+            break;
+        case HFP_AG_CALL_STATE_DIALING:
+        case HFP_AG_CALL_STATE_ALERTING:
+            call->is_incoming = false;
+            break;
+        case HFP_AG_CALL_STATE_IDLE:
+        case HFP_AG_CALL_STATE_DISCONNECTED:
+            call->is_incoming = false; // reset.
+            break;
+        default:
+            /* nothing to do at this stage */
+            break;
+    }
+
     if (new_state == HFP_AG_CALL_STATE_ALERTING &&
         g_call_state != HFP_AG_CALL_STATE_DIALING) {
         phone_state_change(active_call_nums, held_call_nums,
@@ -418,19 +436,24 @@ void tele_service_query_current_call(bt_address_t *addr)
     tele_call_t *call;
     int index = 0;
 
-    if (!is_connected || !is_online)
+    if (!is_connected || !is_online) {
+        /* Send "OK\r\n" */
         bt_sal_hfp_ag_clcc_response(addr, 0, 0, 0, 0, 0, 0, NULL);
+        return;
+    }
 
     for (node = bt_list_head(list); node != NULL;
          node = bt_list_next(list, node)) {
         index++;
         call = bt_list_node(node);
-        bt_sal_hfp_ag_clcc_response(addr, index, HFP_CALL_DIRECTION_OUTGOING,
+        /* Send "+CLCC" result code. */
+        bt_sal_hfp_ag_clcc_response(addr, index, call->is_incoming,
                                     call->call_state, HFP_CALL_MODE_VOICE,
                                     call->is_multiparty, HFP_CALL_ADDRTYPE_UNKNOWN,
                                     call->line_identification);
     }
 
+    /* Send "OK\r\n" */
     bt_sal_hfp_ag_clcc_response(addr, 0, 0, 0, 0, 0, 0, NULL);
 }
 

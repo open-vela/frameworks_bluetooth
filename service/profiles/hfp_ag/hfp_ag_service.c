@@ -209,7 +209,7 @@ static void ag_startup(profile_on_startup_t on_startup)
     if (status != BT_STATUS_SUCCESS)
         goto fail;
 
-    // tele_service_init();
+    tele_service_init();
     service->started = true;
     on_startup(PROFILE_HFP_AG, true);
     return;
