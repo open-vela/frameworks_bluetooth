@@ -84,6 +84,7 @@ static avrcp_tg_device_t *tg_device_find(bt_address_t *addr)
 static avrcp_tg_device_t *tg_device_create(bt_address_t *addr, bool initiator)
 {
     avrcp_tg_device_t *device;
+    char _addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     if (!addr)
         return NULL;
@@ -101,13 +102,20 @@ static avrcp_tg_device_t *tg_device_create(bt_address_t *addr, bool initiator)
 
     bt_list_add_tail(g_avrc_target.devices, device);
 
+    bt_addr_ba2str(addr, _addr_str);
+    BT_LOGD("%s [%s] success", __func__, _addr_str);
+
     return device;
 }
 
 static void tg_device_destory(void *data)
 {
     avrcp_tg_device_t *device = data;
+    char _addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     assert(device);
+
+    bt_addr_ba2str(&device->addr, _addr_str);
+    BT_LOGD("%s [%s] success", __func__, _addr_str);
 
     if (device->pos_update)
         service_loop_cancel_timer(device->pos_update);
@@ -126,23 +134,33 @@ static void tg_device_remove(avrcp_tg_device_t *device)
 static avrcp_tg_device_t *get_active_device(void)
 {
     /* get a2dp active device */
-    return bt_list_node(bt_list_head(g_avrc_target.devices));
+    bt_list_node_t *node = bt_list_head(g_avrc_target.devices);
+    if (node == NULL)
+        return NULL;
+
+    return bt_list_node(node);
 }
 
 static void media_player_notify_cb(bt_media_controller_t *controller, void *context,
                                    bt_media_event_t event, uint32_t value)
 {
+    char _addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     avrcp_tg_device_t *device = get_active_device();
-    assert(device);
+    if (!device)
+        return;
 
+    bt_addr_ba2str(&device->addr, _addr_str);
+    BT_LOGD("%s: device=[%s], evt=%s, value=%d", __func__, _addr_str, bt_media_evt_str(event), value);
     switch (event) {
     case BT_MEDIA_EVT_PREPARED:
         break;
-    case BT_MEDIA_EVT_PLAYBACK_STATUS_CHANGED:
+    case BT_MEDIA_EVT_PLAYSTATUS_CHANGED:
+        BT_LOGD("send playstatus notification --> %s", bt_media_status_str(value));
         device->play_status = value;
         bt_sal_avrcp_target_play_status_notify(&device->addr, value);
         break;
     case BT_MEDIA_EVT_POSITION_CHANGED:
+        BT_LOGD("send position notification --> position: %d", value);
         bt_sal_avrcp_target_notify_play_position_changed(&device->addr, value);
         break;
     case BT_MEDIA_EVT_TRACK_CHANGED:
@@ -157,7 +175,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t *msg)
     avrcp_tg_device_t *device = NULL;
     bt_address_t *addr = &msg->addr;
     profile_connection_state_t state = msg->data.conn_state;
-    BT_LOGD("%s, device: %s, connection state : %d", __func__, bt_addr_str(addr), state);
+    BT_LOGD("avrc tg connnection --> device:[%s], state: %d", bt_addr_str(addr), state);
 
     device = tg_device_find(addr);
     /* set device state */
@@ -213,6 +231,10 @@ static void handle_avrcp_passthrough_cmd(bt_address_t *addr,
         return;
     }
 
+    BT_LOGD("passthrough cmd: %d, state: %d", op, state);
+    if (state != AVRCP_KEY_PRESSED)
+        return;
+
     switch (op) {
     case PASSTHROUGH_CMD_ID_PLAY:
         status = bt_media_player_play(device->controller);
@@ -253,6 +275,7 @@ static void handle_avrcp_play_status_request(avrcp_msg_t *msg)
         return;
     }
 
+    BT_LOGD("handle get playback status request:");
     controller = device->controller;
     if (bt_media_player_get_playback_status(controller, &playback) != BT_STATUS_SUCCESS)
         playback = device->play_status;
@@ -260,6 +283,7 @@ static void handle_avrcp_play_status_request(avrcp_msg_t *msg)
     bt_media_player_get_position(controller, &position);
     bt_media_player_get_durations(controller, &durations);
 
+    BT_LOGD("playback status: %s, duration: 0x%08x, position: 0x%08x", bt_media_status_str(playback), durations, position);
     bt_sal_avrcp_target_get_play_status_rsp(addr, playback, durations, position);
 }
 
@@ -278,6 +302,7 @@ static void handle_avrcp_register_notification(avrcp_msg_t *msg)
 
     controller = device->controller;
     device->registered_events |= (1 << event);
+    BT_LOGD("register notification event: %d", event);
     switch (event) {
     case NOTIFICATION_EVT_PALY_STATUS_CHANGED: {
         bt_media_status_t playback;
@@ -292,6 +317,7 @@ static void handle_avrcp_register_notification(avrcp_msg_t *msg)
         if (bt_media_player_get_playback_status(controller, &playback) != BT_STATUS_SUCCESS)
             playback = device->play_status;
 
+        BT_LOGD("send playstatus notification --> %s", bt_media_status_str(playback));
         bt_sal_avrcp_target_play_status_notify(addr, playback);
         break;
     }
@@ -324,6 +350,7 @@ static void avrcp_target_service_handle_callback(void *data)
 {
     avrcp_msg_t *msg = data;
 
+    BT_LOGD("%s, %d", __func__, msg->id);
     switch (msg->id) {
     case AVRC_CONNECTION_STATE_CHANGED:
         handle_avrcp_connection_state(msg);

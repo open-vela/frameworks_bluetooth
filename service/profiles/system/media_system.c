@@ -22,16 +22,9 @@
 #include "media_system.h"
 #include "utils/log.h"
 
-#define SELECT_BT_FIRST
-
 bt_status_t bt_media_set_a2dp_available(void)
 {
     int is_available = 0;
-
-    #ifdef SELECT_BT_FIRST
-    if (media_process_command("astreamselect@SelBT", "map", "0 -1", NULL, 0) != 0)
-        return BT_STATUS_FAIL;
-    #endif
 
     /* check A2DP device is available */
     if (media_policy_is_devices_available(MEDIA_DEVICE_A2DP, &is_available) != 0)
@@ -52,11 +45,6 @@ bt_status_t bt_media_set_a2dp_available(void)
 bt_status_t bt_media_set_a2dp_unavailable(void)
 {
     int is_available = 0;
-
-    #ifdef SELECT_BT_FIRST
-    if (media_process_command("astreamselect@SelBT", "map", "-1 -1", NULL, 0) != 0)
-        return BT_STATUS_FAIL;
-    #endif
 
     /* check A2DP device is unavailable */
     if (media_policy_is_devices_available(MEDIA_DEVICE_A2DP, &is_available) != 0)
