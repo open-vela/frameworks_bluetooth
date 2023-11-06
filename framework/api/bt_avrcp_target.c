@@ -41,25 +41,3 @@ bool bt_avrcp_target_unregister_callbacks(bt_instance_t *ins, void *cookie)
 
     return profile->unregister_callbacks(NULL, cookie);
 }
-
-bt_status_t bt_avrcp_target_get_play_status_rsp(bt_address_t *addr, avrcp_play_status_t status,
-                                                uint32_t song_len, uint32_t song_pos)
-{
-    avrcp_target_interface_t *profile = get_profile_service();
-
-    return profile->get_play_status_rsp(addr, status, song_len, song_pos);
-}
-
-bt_status_t bt_avrcp_target_play_status_notify(bt_address_t *addr, avrcp_play_status_t status)
-{
-    avrcp_target_interface_t *profile = get_profile_service();
-
-    return profile->play_status_notify(addr, status);
-}
-
-bt_status_t bt_avrcp_target_set_absolute_volume(bt_address_t *addr, uint8_t volume)
-{
-    avrcp_target_interface_t *profile = get_profile_service();
-
-    return profile->set_absolute_volume(addr, volume);
-}

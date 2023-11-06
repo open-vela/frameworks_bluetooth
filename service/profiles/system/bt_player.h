@@ -28,7 +28,7 @@ typedef enum {
 
 typedef enum {
     BT_MEDIA_EVT_PREPARED = 0,
-    BT_MEDIA_EVT_PLAYBACK_STATUS_CHANGED,
+    BT_MEDIA_EVT_PLAYSTATUS_CHANGED,
     BT_MEDIA_EVT_POSITION_CHANGED,
     BT_MEDIA_EVT_TRACK_CHANGED,
     BT_MEDIA_EVT_UNSUPPORT,
@@ -49,6 +49,8 @@ typedef struct {
 typedef void (*bt_media_notify_callback_t)(bt_media_controller_t *controller, void *context,
                                            bt_media_event_t event, uint32_t value);
 
+char *bt_media_evt_str(bt_media_event_t evt);
+char *bt_media_status_str(uint8_t status);
 bt_media_controller_t *bt_media_controller_create(void *context, bt_media_notify_callback_t cb);
 void bt_media_controller_set_context(bt_media_controller_t *controller, void *context);
 void bt_media_controller_destory(bt_media_controller_t *controller);
