@@ -17,8 +17,8 @@
 config BLUETOOTH
 	bool "Enable Framework Bluetooth"
 	default n
-	select LIBUV
-	select LIBUV_EXTENSION
+	depends on LIBUV
+	depends on LIBUV_EXTENSION
 
 if BLUETOOTH
 config BLUETOOTH_BREDR_SUPPORT
@@ -110,6 +110,7 @@ config BLUETOOTH_AVRCP_CONTROL
 config BLUETOOTH_A2DP
   bool "Advanced Audio Distribution Profile"
   default n
+  depends on MEDIA
 
 config BLUETOOTH_A2DP_SOURCE
 	bool "A2DP source profile support"
