@@ -249,8 +249,8 @@ static void handle_avrcp_get_play_status_response(avrcp_msg_t *msg)
     if (!device)
         return;
 
-    BT_LOGD("playback status rsp --> status: %d, songlen: %d, position: %d",
-            playstatus->status, playstatus->song_len, playstatus->song_pos);
+    BT_LOGD("playback status rsp --> status: %s, songlen: %d, position: %d",
+            bt_media_status_str(playstatus->status), playstatus->song_len, playstatus->song_pos);
     bt_media_player_set_status(device->player, playstatus->status);
     bt_media_player_set_duration(device->player, playstatus->song_len);
     bt_media_player_set_position(device->player, playstatus->song_pos);
@@ -313,7 +313,7 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t *msg)
     switch (msg->data.notify_rsp.event) {
     case NOTIFICATION_EVT_PALY_STATUS_CHANGED: {
         bt_media_status_t status = msg->data.notify_rsp.value;
-        BT_LOGD("playback status changed: %d, get status now...", status);
+        BT_LOGD("playback status changed: %s, get status now...", bt_media_status_str(status));
         bt_media_player_set_status(device->player, status);
         bt_sal_avrcp_control_get_playback_state(addr);
         break;

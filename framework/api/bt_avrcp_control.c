@@ -41,25 +41,3 @@ bool bt_avrcp_control_unregister_callbacks(bt_instance_t *ins, void *cookie)
 
     return profile->unregister_callbacks(NULL, cookie);
 }
-
-bt_status_t bt_avrcp_control_send_pass_through_cmd(bt_address_t *bd_addr,
-                                                   avrcp_passthr_cmd_t key_code, avrcp_key_state_t key_state)
-{
-    avrcp_control_interface_t *profile = get_profile_service();
-
-    return profile->send_pass_through_cmd(bd_addr, key_code, key_state);
-}
-
-bt_status_t bt_avrcp_control_get_playback_state(bt_address_t *bd_addr)
-{
-    avrcp_control_interface_t *profile = get_profile_service();
-
-    return profile->get_playback_state(bd_addr);
-}
-
-bt_status_t bt_avrcp_control_volume_changed_notify(bt_address_t *bd_addr, uint8_t volume)
-{
-    avrcp_control_interface_t *profile = get_profile_service();
-
-    return profile->volume_changed_notify(bd_addr, volume);
-}

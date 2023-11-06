@@ -19,7 +19,8 @@
 
 #include <media_api.h>
 
-#include "bt_player.h"
+#include <bt_player.h>
+#include <bt_utils.h>
 
 typedef struct bt_media_controller {
     void *mediasession;
@@ -52,22 +53,52 @@ static void media_session_event_cb(void *cookie, int event, int ret,
         notify_media_event(controller, BT_MEDIA_EVT_PREPARED, 0);
         break;
     case MEDIA_EVENT_STARTED:
-        notify_media_event(controller, BT_MEDIA_EVT_PLAYBACK_STATUS_CHANGED, BT_MEDIA_PLAY_STATUS_PLAYING);
+        notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_PLAYING);
         break;
     case MEDIA_EVENT_PAUSED:
-        notify_media_event(controller, BT_MEDIA_EVT_PLAYBACK_STATUS_CHANGED, BT_MEDIA_PLAY_STATUS_PAUSED);
+        notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_PAUSED);
         break;
     case MEDIA_EVENT_STOPPED:
-        notify_media_event(controller, BT_MEDIA_EVT_PLAYBACK_STATUS_CHANGED, BT_MEDIA_PLAY_STATUS_STOPPED);
+        notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_STOPPED);
         break;
     case MEDIA_EVENT_PREVED:
-        notify_media_event(controller, BT_MEDIA_EVT_PLAYBACK_STATUS_CHANGED, BT_MEDIA_PLAY_STATUS_REV_SEEK);
+        notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_REV_SEEK);
         break;
     case MEDIA_EVENT_NEXTED:
-        notify_media_event(controller, BT_MEDIA_EVT_PLAYBACK_STATUS_CHANGED, BT_MEDIA_PLAY_STATUS_FWD_SEEK);
+        notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_FWD_SEEK);
         break;
     default:
         return;
+    }
+}
+
+char *bt_media_evt_str(bt_media_event_t evt)
+{
+    switch (evt) {
+        CASE_RETURN_STR(BT_MEDIA_EVT_PREPARED);
+        CASE_RETURN_STR(BT_MEDIA_EVT_PLAYSTATUS_CHANGED);
+        CASE_RETURN_STR(BT_MEDIA_EVT_POSITION_CHANGED);
+        CASE_RETURN_STR(BT_MEDIA_EVT_TRACK_CHANGED);
+    default:
+        return "ERROR";
+    }
+}
+
+char *bt_media_status_str(uint8_t status)
+{
+    switch (status) {
+    case BT_MEDIA_PLAY_STATUS_STOPPED:
+        return "STOPPED";
+    case BT_MEDIA_PLAY_STATUS_PLAYING:
+        return "PLAYING";
+    case BT_MEDIA_PLAY_STATUS_PAUSED:
+        return "PAUSED";
+    case BT_MEDIA_PLAY_STATUS_FWD_SEEK:
+        return "FWD_SEEK";
+    case BT_MEDIA_PLAY_STATUS_REV_SEEK:
+        return "PREV_SEEK";
+    default:
+        return "ERROR";
     }
 }
 
