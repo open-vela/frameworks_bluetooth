@@ -154,12 +154,6 @@ static void a2dp_audio_data_received(uint8_t ch_id, uint8_t *buffer, ssize_t len
         goto out;
     }
 
-    if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_PAUSED) {
-        a2dp_source_stream_start();
-        a2dp_src_stream.underflow.state = UNDERFLOW_STATE_RESUMING;
-        return;
-    }
-
     space = circbuf_space(&stream->stream_pool);
     if (len > space) {
         BT_LOGE("%s, unexpected len:%d", __func__, len);
@@ -172,6 +166,10 @@ static void a2dp_audio_data_received(uint8_t ch_id, uint8_t *buffer, ssize_t len
         a2dp_source_read_congest(ch_id);
     }
 
+    if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_PAUSED) {
+        a2dp_source_stream_start();
+        a2dp_src_stream.underflow.state = UNDERFLOW_STATE_RESUMING;
+    }
 out:
     free(buffer);
 }
@@ -238,17 +236,23 @@ static void a2dp_source_audio_handle_timer(service_timer_t *timer, void *arg)
         return;
 
     if (circbuf_used(&stream->stream_pool) == 0) {
-        BT_LOGD("a2dp src send frame, underflow 1 ticks");
+        if (!a2dp_src_stream.underflow.ticks)
+            BT_LOGD("a2dp src send frame, underflow");
 
-        // BT_LOGD("a2dp src send frame, underflow 1 ticks");
-        if (a2dp_src_stream.underflow.ticks++ > 200 && a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
+        // underflow 2000ms auto suspend
+        if (a2dp_src_stream.underflow.ticks++ > 100 && a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
             a2dp_source_stream_stop();
             a2dp_src_stream.underflow.state = UNDERFLOW_STATE_PAUSED;
         }
         return;
     }
 
-    a2dp_src_stream.underflow.ticks = 0;
+    if (a2dp_src_stream.underflow.ticks) {
+        BT_LOGD("a2dp src send frame resume, underflowed %d ticks", a2dp_src_stream.underflow.ticks);
+        a2dp_src_stream.underflow.ticks = 0;
+        a2dp_src_stream.underflow.state = UNDERFLOW_STATE_NONE;
+    }
+
     if (stream->stream_interface) {
         stream->stream_interface->send_frames(STREAM_DATA_RESERVED, get_os_timestamp_us());
         a2dp_source_start_read();
@@ -327,7 +331,8 @@ static void a2dp_source_stop_audio_req(bool cleanup)
     if (cleanup)
         memset(&a2dp_src_stream.underflow, 0, sizeof(a2dp_source_underflow_t));
 
-    if (a2dp_src_stream.stream_state != STATE_RUNNING)
+    if (a2dp_src_stream.stream_state != STATE_RUNNING ||
+        a2dp_src_stream.underflow.state == UNDERFLOW_STATE_PAUSED)
         return;
 
     if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
