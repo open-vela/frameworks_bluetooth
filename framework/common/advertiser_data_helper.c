@@ -79,7 +79,7 @@ static const ad_type_desc_t ad_type_map[] = {
 
 static const char *show_ad_type_desc(uint8_t type)
 {
-    for (int i = 0; i <= BT_AD_MANUFACTURER_DATA; i++) {
+    for (int i = 0; i < sizeof(ad_type_map) / sizeof(ad_type_map[0]); i++) {
         if (ad_type_map[i].ad_type == type)
             return ad_type_map[i].desc;
     }
@@ -89,6 +89,10 @@ static const char *show_ad_type_desc(uint8_t type)
 
 static void advertiser_data_info(adv_data_t *ad)
 {
+    if (ad->len < 1) {
+        return;
+    }
+
     syslog(4, "AdvType:(%s)\n", show_ad_type_desc(ad->type));
     lib_dumpbuffer("AdvData:", ad->data, ad->len - 1);
 
