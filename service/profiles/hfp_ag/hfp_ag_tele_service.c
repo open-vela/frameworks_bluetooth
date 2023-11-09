@@ -275,22 +275,22 @@ static void update_call_state(hfp_ag_call_state_t new_state)
 
     number = call->line_identification;
 
-    switch(new_state) {
-        case HFP_AG_CALL_STATE_INCOMING:
-        case HFP_AG_CALL_STATE_WAITING:
-            call->is_incoming = true;
-            break;
-        case HFP_AG_CALL_STATE_DIALING:
-        case HFP_AG_CALL_STATE_ALERTING:
-            call->is_incoming = false;
-            break;
-        case HFP_AG_CALL_STATE_IDLE:
-        case HFP_AG_CALL_STATE_DISCONNECTED:
-            call->is_incoming = false; // reset.
-            break;
-        default:
-            /* nothing to do at this stage */
-            break;
+    switch (new_state) {
+    case HFP_AG_CALL_STATE_INCOMING:
+    case HFP_AG_CALL_STATE_WAITING:
+        call->is_incoming = true;
+        break;
+    case HFP_AG_CALL_STATE_DIALING:
+    case HFP_AG_CALL_STATE_ALERTING:
+        call->is_incoming = false;
+        break;
+    case HFP_AG_CALL_STATE_IDLE:
+    case HFP_AG_CALL_STATE_DISCONNECTED:
+        call->is_incoming = false; // reset.
+        break;
+    default:
+        /* nothing to do at this stage */
+        break;
     }
 
     if (new_state == HFP_AG_CALL_STATE_ALERTING &&
@@ -315,12 +315,19 @@ void tele_service_init(void)
 {
     g_current_calls = bt_list_new(NULL);
     tele_context = tele_client_connect("HFP-AG");
+    if (!tele_context) {
+        BT_LOGD("tele client connect failed");
+        return;
+    }
+
     tele_register_callbacks(tele_context, PRIMARY_SLOT, &tele_cbs);
     BT_LOGD("%s end", __func__);
 }
 
 void tele_service_cleanup(void)
 {
+    if (!tele_context)
+        return;
     tele_unregister_callbacks(tele_context, PRIMARY_SLOT, &tele_cbs);
     tele_client_disconnect(tele_context);
     bt_list_clear(g_current_calls);
