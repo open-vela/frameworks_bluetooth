@@ -428,7 +428,7 @@ static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *
         break;
     }
     case HF_STACK_EVENT_CODEC_CHANGED:
-        hfsm->codec = data->valueint1;
+        agsm->codec = data->valueint1 == HFP_CODEC_MSBC : HFP_CODEC_MSBC ? HFP_CODEC_CVSD;
         break;
     case HF_STACK_EVENT_CALL:
     case HF_STACK_EVENT_CALLSETUP:
@@ -668,7 +668,7 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
         break;
     }
     case HF_STACK_EVENT_CODEC_CHANGED:
-        hfsm->codec = data->valueint1;
+        agsm->codec = data->valueint1 == HFP_CODEC_MSBC : HFP_CODEC_MSBC ? HFP_CODEC_CVSD;
         break;
     default:
         BT_LOGW("Unexpected event:%" PRIu32 "", event);
