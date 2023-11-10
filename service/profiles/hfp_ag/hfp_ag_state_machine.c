@@ -360,7 +360,7 @@ static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *
         }
     } break;
     case AG_STACK_EVENT_CODEC_CHANGED:
-        agsm->codec = data->valueint1 == HFP_CODEC_MSBC : HFP_CODEC_MSBC ? HFP_CODEC_CVSD;
+        agsm->codec = data->valueint1 == HFP_CODEC_MSBC ? HFP_CODEC_MSBC : HFP_CODEC_CVSD;
         break;
     case AG_STACK_EVENT_AT_CIND_REQUEST:
         process_cind_request(agsm);
@@ -454,7 +454,7 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_d
         ag_service_notify_vr_state_changed(&agsm->addr, data->valueint1);
         break;
     case AG_STACK_EVENT_CODEC_CHANGED:
-        agsm->codec = data->valueint1 == HFP_CODEC_MSBC : HFP_CODEC_MSBC ? HFP_CODEC_CVSD;
+        agsm->codec = data->valueint1 == HFP_CODEC_MSBC ? HFP_CODEC_MSBC : HFP_CODEC_CVSD;
         break;
     case AG_STACK_EVENT_VOLUME_CHANGED:
         /* set system volume */
