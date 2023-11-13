@@ -45,6 +45,14 @@ config BLUETOOTH_GATT
 	bool "Generic ATT profile support"
 	default y
 
+config BLUETOOTH_SERVICE_LOOP_THREAD_STACK_SIZE
+	int "bluetooth service loop thread stack size "
+	default 8192
+
+config BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY
+	int "bluetooth service loop thread priority "
+	default 100
+
 config BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL
     int "Bluetooth Audio Transport Source Ctrl Channel ID"
 	default 0
