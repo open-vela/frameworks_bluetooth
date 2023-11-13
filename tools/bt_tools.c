@@ -1302,7 +1302,7 @@ void test_pairing_request_callback(void* handle, bt_address remote_addr, bool lo
         goto exit;
     }
     while (1) {
-        BT_LOGD("1. request pair reply, please input y or n -----------------");
+        BT_LOGD("auto accept not open, please input y or n -----------------");
         int len = readline_stream(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
         buffer[len] = '\0';
         if (len < 0)
