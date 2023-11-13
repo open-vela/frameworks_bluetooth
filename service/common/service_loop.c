@@ -68,7 +68,6 @@ typedef struct {
     uv_sem_t signal;
 } signal_msg_t;
 
-#define SERVICE_LOOP_THREAD_STACK_SIZE 8192
 static service_loop_t bt_service_loop = { 0 };
 
 static void set_ready(void *data)
@@ -226,7 +225,9 @@ int service_loop_run(bool start_thread)
             return ret;
         }
 
-        uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE, SERVICE_LOOP_THREAD_STACK_SIZE };
+        uv_thread_options_t options = {
+            UV_THREAD_HAS_STACK_SIZE | UV_THREAD_HAS_PRIORITY, CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_STACK_SIZE, CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY
+        };
         ret = uv_thread_create_ex(&loop->thread, &options, service_schedule_loop, NULL);
         if (ret != 0) {
             BT_LOGE("service loop thread create :%d", ret);
