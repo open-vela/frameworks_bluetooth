@@ -1183,7 +1183,7 @@ void test_ssp_request_callback(void* handle, ssp_request_data_t* request_data)
         } else {
             while (1) {
                 BT_LOGD("2. request ssp reply, please input y or n -----------------");
-                int len = readline(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
+                int len = readline_stream(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
                 buffer[len] = '\0';
                 if (len < 0)
                     goto exit;
@@ -1303,7 +1303,7 @@ void test_pairing_request_callback(void* handle, bt_address remote_addr, bool lo
     }
     while (1) {
         BT_LOGD("1. request pair reply, please input y or n -----------------");
-        int len = readline(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
+        int len = readline_stream(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
         buffer[len] = '\0';
         if (len < 0)
             goto exit;
@@ -1518,7 +1518,7 @@ int main(int argc, char** argv)
         fflush(stdout);
 
         memset(_argv, 0, sizeof(_argv));
-        len = readline(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
+        len = readline_stream(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
         buffer[len] = '\0';
         if (len < 0)
             continue;
