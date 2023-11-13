@@ -142,6 +142,7 @@ static void lea_audio_sink_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
 
     next_to_read = space > stream->sdu_size ? stream->sdu_size : space;
     alloc_buffer = (void *)malloc(next_to_read);
+
     if (!alloc_buffer) {
         *buffer = NULL;
         audio_transport_read_stop(g_source_transport, ch_id);
@@ -161,7 +162,6 @@ static void lea_audio_sink_recv(uint8_t ch_id, uint8_t *buffer, ssize_t len)
         return;
 
     if (len <= 0) {
-        BT_LOGD("%s, status:%d", __func__, len);
         if (len < 0)
             audio_transport_read_stop(g_source_transport, ch_id);
 
@@ -177,6 +177,7 @@ static void lea_audio_sink_recv(uint8_t ch_id, uint8_t *buffer, ssize_t len)
     circbuf_write(&stream->stream_pool, buffer, len);
     space = circbuf_space(&stream->stream_pool);
     if (space == 0) {
+        BT_LOGD("%s, stream_pool over", __func__);
         audio_transport_read_stop(g_source_transport, ch_id);
     }
 
@@ -207,8 +208,10 @@ static void lea_audio_sink_handler(service_timer_t *timer, void *data)
         return;
     }
 
-    size = lea_audio_source_read(buf, stream->sdu_size);
-    g_source_callbacks->lea_audio_send_cb(buf, size);
+    while (circbuf_used(&stream->stream_pool) >= stream->sdu_size) {
+        size = lea_audio_source_read(buf, stream->sdu_size);
+        g_source_callbacks->lea_audio_send_cb(buf, size);
+    }
 }
 
 static void lea_ctrl_buffer_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
@@ -340,6 +343,34 @@ static void lea_source_data_cb(uint8_t ch_id, audio_transport_event_t event)
     }
 }
 
+static bt_status_t lea_source_update_config(lea_audio_config_t *audio_config, bool enable)
+{
+    uint8_t buffer[64];
+    uint8_t len;
+    uint8_t *p = buffer;
+
+    len = 21;
+    /* set valid code */
+    UINT8_TO_STREAM(p, 1);
+    /* set codec type*/
+    UINT32_TO_STREAM(p, audio_config->codec_type);
+    /* set sample rate*/
+    UINT32_TO_STREAM(p, audio_config->sample_rate);
+    /* set bits_per_sample*/
+    UINT32_TO_STREAM(p, audio_config->bits_per_sample);
+    /* set channel_mode*/
+    UINT32_TO_STREAM(p, audio_config->channel_mode);
+    /* set bit rate*/
+    UINT32_TO_STREAM(p, audio_config->bit_rate);
+
+    len += 8;
+    UINT32_TO_STREAM(p, audio_config->frame_size);
+    UINT32_TO_STREAM(p, audio_config->packet_size);
+
+    lea_ctrl_event_with_data(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, AUDIO_CTRL_EVT_UPDATE_CONFIG, buffer, len);
+    return BT_STATUS_SUCCESS;
+}
+
 /****************************************************************************
  * Public function
  ****************************************************************************/
@@ -360,6 +391,7 @@ bt_status_t lea_audio_source_init(void)
 
     stream->send_timer = NULL;
     stream->stream_state = STREAM_STATE_OFF;
+    stream->interval_ms = 10; // todo get from lc3 config
 
     g_source_transport = audio_transport_init(get_service_uv_loop());
     if (!g_source_transport) {
@@ -398,7 +430,7 @@ bt_status_t lea_audio_source_start(void)
         return BT_STATUS_FAIL;
     }
 
-    stream->send_timer = service_loop_timer(20, 10, lea_audio_sink_handler, stream);
+    stream->send_timer = service_loop_timer(stream->interval_ms, stream->interval_ms, lea_audio_sink_handler, stream);
     stream->stream_state = STREAM_STATE_RUNNING;
 
     return BT_STATUS_SUCCESS;
@@ -415,6 +447,7 @@ bt_status_t lea_audio_source_stop(void)
         return BT_STATUS_SUCCESS;
     }
 
+    lea_source_update_config(&stream->audio_config, false);
     audio_transport_read_stop(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO);
     service_loop_cancel_timer(stream->send_timer);
     stream->send_timer = NULL;
@@ -436,35 +469,13 @@ bt_status_t lea_audio_source_resume(void)
 bt_status_t lea_audio_source_update_codec(lea_audio_config_t *audio_config, uint16_t sdu_size)
 {
     lea_source_stream_t *stream = &g_source_stream;
-    uint8_t buffer[64];
-    uint8_t len;
-    uint8_t *p = buffer;
 
     memcpy(&stream->audio_config, audio_config, sizeof(lea_audio_config_t));
     stream->sdu_size = sdu_size;
 
     BT_LOGD("%s, codec_type:%d, sample_rate:%d, bits_per_sample:%d, channel_mode:%d, bit_rate:%d", __func__, audio_config->codec_type, audio_config->sample_rate, audio_config->bits_per_sample, audio_config->channel_mode, audio_config->bit_rate);
 
-    len = 21;
-    /* set valid code */
-    UINT8_TO_STREAM(p, 1);
-    /* set codec type*/
-    UINT32_TO_STREAM(p, audio_config->codec_type);
-    /* set sample rate*/
-    UINT32_TO_STREAM(p, audio_config->sample_rate);
-    /* set bits_per_sample*/
-    UINT32_TO_STREAM(p, audio_config->bits_per_sample);
-    /* set channel_mode*/
-    UINT32_TO_STREAM(p, audio_config->channel_mode);
-    /* set bit rate*/
-    UINT32_TO_STREAM(p, audio_config->bit_rate);
-
-    len += 8;
-    UINT32_TO_STREAM(p, audio_config->frame_size);
-    UINT32_TO_STREAM(p, audio_config->packet_size);
-
-    lea_ctrl_event_with_data(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, AUDIO_CTRL_EVT_UPDATE_CONFIG, buffer, len);
-    return BT_STATUS_SUCCESS;
+    return lea_source_update_config(audio_config, true);
 }
 
 bool lea_audio_source_is_started(void)
@@ -477,16 +488,8 @@ bool lea_audio_source_is_started(void)
 int lea_audio_source_read(uint8_t *buf, uint16_t frame_len)
 {
     lea_source_stream_t *stream = &g_source_stream;
-    uint16_t remaining_size;
 
-    remaining_size = circbuf_used(&stream->stream_pool);
-    if (remaining_size < frame_len) {
-        return 0;
-    }
-
-    circbuf_read(&stream->stream_pool, buf, frame_len);
-
-    return frame_len;
+    return circbuf_read(&stream->stream_pool, buf, frame_len);
 }
 
 void lea_audio_source_cleanup(void)

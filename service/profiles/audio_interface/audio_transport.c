@@ -182,10 +182,6 @@ static void transport_chnl_read_cb(uv_stream_t *stream, ssize_t nread,
         BT_LOGE("%s nread:%d", __func__, nread);
     }
 
-    if (nread == 0) {
-        BT_LOGW("%s, nread:%d", __func__, nread);
-    }
-
     if (rreq->read_cb)
         rreq->read_cb(ch->ch_id, (uint8_t *)buf->base, nread);
 
