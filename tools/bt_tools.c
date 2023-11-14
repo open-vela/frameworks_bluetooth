@@ -1474,7 +1474,7 @@ int main(int argc, char **argv)
         fflush(stdout);
 
         memset(_argv, 0, sizeof(_argv));
-        len = readline(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
+        len = readline_stream(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
         buffer[len] = '\0';
         if (len < 0)
             continue;
