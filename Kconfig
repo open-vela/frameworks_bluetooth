@@ -46,27 +46,27 @@ config BLUETOOTH_GATT
 	default y
 
 config BLUETOOTH_SERVICE_LOOP_THREAD_STACK_SIZE
-	int "bluetooth service loop thread stack size "
+	int "bluetooth service loop thread stack size"
 	default 8192
 
 config BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY
-	int "bluetooth service loop thread priority "
+	int "bluetooth service loop thread priority"
 	default 100
 
 config BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL
-    int "Bluetooth Audio Transport Source Ctrl Channel ID"
+	int "Bluetooth Audio Transport Source Ctrl Channel ID"
 	default 0
 
 config BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO
-    int "Bluetooth Audio Transport Source Audio Channel ID"
+	int "Bluetooth Audio Transport Source Audio Channel ID"
 	default 1
 
 config BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL
-    int "Bluetooth Audio Transport Sink Ctrl Channel ID"
+	int "Bluetooth Audio Transport Sink Ctrl Channel ID"
 	default 2
 
 config BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO
-    int "Bluetooth Audio Transport Sink Audio Channel ID"
+	int "Bluetooth Audio Transport Sink Audio Channel ID"
 	default 3
 
 config BLUETOOTH_A2DP_SINK_CTRL_PATH
@@ -108,17 +108,17 @@ config BLUETOOTH_GATTC_MAX_CONNECTIONS
 endif
 
 config BLUETOOTH_AVRCP_TARGET
-  bool "Audio/Video Remote Control Profile (Target) support"
-  default n
+	bool "Audio/Video Remote Control Profile (Target) support"
+	default n
 
 config BLUETOOTH_AVRCP_CONTROL
-  bool "Audio/Video Remote Control Profile (control) support"
-  default n
+	bool "Audio/Video Remote Control Profile (control) support"
+	default n
 
 config BLUETOOTH_A2DP
-  bool "Advanced Audio Distribution Profile"
-  default n
-  depends on MEDIA
+	bool "Advanced Audio Distribution Profile"
+	default n
+	depends on MEDIA
 
 config BLUETOOTH_A2DP_SOURCE
 	bool "A2DP source profile support"
@@ -134,16 +134,16 @@ config BLUETOOTH_A2DP_SINK
 
 if BLUETOOTH_A2DP
 config BLUETOOTH_A2DP_MAX_CONNECTIONS
-  int "Maximum A2dp connections"
-  default 1
-  help
-    Maximum A2dp connections
+	int "Maximum A2dp connections"
+	default 1
+	help
+		Maximum A2dp connections
 
 config BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
-  bool "Bluetooth A2dp peer partial reconnect support"
-  default n
-  help
-    Bluetooth A2dp peer partial reconnect support
+	bool "Bluetooth A2dp peer partial reconnect support"
+	default n
+	help
+		Bluetooth A2dp peer partial reconnect support
 
 endif #BLUETOOTH_A2DP
 
@@ -363,9 +363,9 @@ config BLUETOOTH_LEAUDIO_SERVER_CALL_CONTROL_NUMBER
 endif # BLUETOOTH_LEAUDIO_CCP
 
 config BLUETOOTH_LEAUDIO_MCS
-    bool "enable bluetooth leaudio mcs feature"
-    default n
-    depends on BLUETOOTH_LEAUDIO_CLIENT
+	bool "enable bluetooth leaudio mcs feature"
+	default n
+	depends on BLUETOOTH_LEAUDIO_CLIENT
 
 config BLUETOOTH_LEAUDIO_MCP
 	bool "enable bluetooth leaudio mcp feature"
@@ -374,10 +374,10 @@ config BLUETOOTH_LEAUDIO_MCP
 
 if BLUETOOTH_LEAUDIO_MCP
 config BLUETOOTH_LEAUDIO_SERVER_MEDIA_CONTROL_NUMBER
-       int "leaudio mcs server number"
-       default 1
-       help
-            leaudio mcs server number
+	int "leaudio mcs server number"
+	default 1
+	help
+		leaudio mcs server number
 
 endif # BLUETOOTH_LEAUDIO_MCP
 
