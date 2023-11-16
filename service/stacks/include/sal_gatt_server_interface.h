@@ -34,5 +34,7 @@ bt_status_t bt_sal_gatt_server_cancel_connection(bt_address_t *addr);
 bt_status_t bt_sal_gatt_server_send_response(bt_address_t *addr, uint32_t request_id, uint8_t *value, uint16_t length);
 bt_status_t bt_sal_gatt_server_send_notification(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length);
 bt_status_t bt_sal_gatt_server_send_indication(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length);
+bt_status_t bt_sal_gatt_server_read_phy(bt_address_t *addr);
+bt_status_t bt_sal_gatt_server_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 
 #endif /* __SAL_GATT_SERVER_INTERFACE_H__ */

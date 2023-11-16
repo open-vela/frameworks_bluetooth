@@ -612,6 +612,18 @@ static bt_status_t if_gattc_exchange_mtu(void *conn_handle, uint32_t mtu)
     return bt_sal_gatt_client_send_mtu_req(&connection->remote_addr, mtu);
 }
 
+static bt_status_t if_gattc_update_connection_parameter(void *conn_handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
+                                                        uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    return bt_sal_gatt_client_update_connection_parameter(&connection->remote_addr, min_interval, max_interval, latency,
+                                                          timeout, min_connection_event_length, max_connection_event_length);
+}
+
 static const gattc_interface_t gattc_if = {
     .size = sizeof(gattc_if),
     .create_connect = if_gattc_create_connect,
@@ -627,6 +639,7 @@ static const gattc_interface_t gattc_if = {
     .subscribe = if_gattc_subscribe,
     .unsubscribe = if_gattc_unsubscribe,
     .exchange_mtu = if_gattc_exchange_mtu,
+    .update_connection_parameter = if_gattc_update_connection_parameter,
 };
 
 static const void *get_gattc_profile_interface(void)

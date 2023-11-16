@@ -288,3 +288,19 @@ bt_status_t bt_sal_gatt_server_send_indication(bt_address_t *addr, uint16_t elem
 
     return BT_STATUS_SUCCESS;
 }
+
+bt_status_t bt_sal_gatt_server_read_phy(bt_address_t *addr)
+{
+    SAL_CHECK_PARAM(addr);
+    SAL_CHECK_RET(service_adapter_gatt_server_read_phy(addr->addr), GATT_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_sal_gatt_server_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+{
+    SAL_CHECK_PARAM(addr);
+    SAL_CHECK_RET(service_adapter_gatt_server_set_phy(addr->addr, tx_phy, rx_phy), GATT_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+}

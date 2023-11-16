@@ -32,6 +32,7 @@ static int write_request_cmd(void *handle, int argc, char *argv[]);
 static int enable_cccd_cmd(void *handle, int argc, char *argv[]);
 static int disable_cccd_cmd(void *handle, int argc, char *argv[]);
 static int exchange_mtu_cmd(void *handle, int argc, char *argv[]);
+static int update_conn_cmd(void *handle, int argc, char *argv[]);
 
 #define GATTC_CONNECTION_MAX (CONFIG_BLUETOOTH_GATTC_MAX_CONNECTIONS)
 static gattc_handle_t g_gattc_handles[GATTC_CONNECTION_MAX] = { 0 };
@@ -45,18 +46,19 @@ static gattc_handle_t g_gattc_handles[GATTC_CONNECTION_MAX] = { 0 };
     }
 
 static bt_command_t g_gattc_tables[] = {
-    {"create",         create_cmd,            0, "\"create gatt client :\""                                                                        },
-    { "delete",        delete_cmd,            0, "\"delete gatt client :<conn id>\""                                                               },
-    { "connect",       connect_cmd,           0, "\"connect remote device :<conn id><address>\""                                                   },
-    { "disconnect",    disconnect_cmd,        0, "\"disconnect remote device :<conn id>\""                                                         },
-    { "discover",      discover_services_cmd, 0, "\"discover all services :<conn id>\""                                                            },
-    { "read_request",  read_request_cmd,      0, "\"read request :<conn id><char id>\""                                                            },
+    {"create",         create_cmd,            0, "\"create gatt client :\""                                                                                                                          },
+    { "delete",        delete_cmd,            0, "\"delete gatt client :<conn id>\""                                                                                                                 },
+    { "connect",       connect_cmd,           0, "\"connect remote device :<conn id><address>\""                                                                                                     },
+    { "disconnect",    disconnect_cmd,        0, "\"disconnect remote device :<conn id>\""                                                                                                           },
+    { "discover",      discover_services_cmd, 0, "\"discover all services :<conn id>\""                                                                                                              },
+    { "read_request",  read_request_cmd,      0, "\"read request :<conn id><char id>\""                                                                                                              },
     { "write_request", write_request_cmd,     0, "\"write request :<conn id><char id><type>(str or hex)<playload>\n"
                                              "\t\t\t  e.g., write_request 0 0001 str HelloWorld!\n"
-                                             "\t\t\t  e.g., write_request 0 0001 hex 00 01 02 03\n"},
-    { "enable_cccd",   enable_cccd_cmd,       0, "\"enable cccd :<conn id><char id><cccd_id>\""                                                    },
-    { "disable_cccd",  disable_cccd_cmd,      0, "\"disable cccd :<conn id><char id><cccd_id>\""                                                   },
-    { "exchange_mtu",  exchange_mtu_cmd,      0, "\"exchange mtu :<conn id><mtu>\""                                                                },
+                                             "\t\t\t  e.g., write_request 0 0001 hex 00 01 02 03\""                                                  },
+    { "enable_cccd",   enable_cccd_cmd,       0, "\"enable cccd :<conn id><char id><cccd_id>\""                                                                                                      },
+    { "disable_cccd",  disable_cccd_cmd,      0, "\"disable cccd :<conn id><char id><cccd_id>\""                                                                                                     },
+    { "exchange_mtu",  exchange_mtu_cmd,      0, "\"exchange mtu :<conn id><mtu>\""                                                                                                                  },
+    { "update_conn",   update_conn_cmd,       0, "\"update connection parameter :<conn id><min_interval><max_interval><latency><timeout><min_connection_event_length><max_connection_event_length>\""},
 };
 
 static void usage(void)
@@ -226,9 +228,31 @@ static int exchange_mtu_cmd(void *handle, int argc, char *argv[])
     int conn_id = atoi(argv[0]);
     CHECK_CONNCTION_ID(conn_id);
 
-    int mtu = atoi(argv[1]);
+    uint32_t mtu = atoi(argv[1]);
 
     if (bt_gattc_exchange_mtu(g_gattc_handles[conn_id], mtu) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int update_conn_cmd(void *handle, int argc, char *argv[])
+{
+    if (argc < 7)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    int conn_id = atoi(argv[0]);
+    CHECK_CONNCTION_ID(conn_id);
+
+    uint32_t min_interval = atoi(argv[1]);
+    uint32_t max_interval = atoi(argv[2]);
+    uint32_t latency = atoi(argv[3]);
+    uint32_t timeout = atoi(argv[4]);
+    uint32_t min_connection_event_length = atoi(argv[5]);
+    uint32_t max_connection_event_length = atoi(argv[6]);
+
+    if (bt_gattc_update_connection_parameter(g_gattc_handles[conn_id], min_interval, max_interval, latency,
+                                             timeout, min_connection_event_length, max_connection_event_length) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;

@@ -117,3 +117,12 @@ bt_status_t bt_gattc_exchange_mtu(gattc_handle_t conn_handle, uint32_t mtu)
 
     return profile->exchange_mtu(conn_handle, mtu);
 }
+
+bt_status_t bt_gattc_update_connection_parameter(gattc_handle_t conn_handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
+                                                 uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length)
+{
+    gattc_interface_t *profile = get_profile_service();
+
+    return profile->update_connection_parameter(conn_handle, min_interval, max_interval, latency,
+                                                timeout, min_connection_event_length, max_connection_event_length);
+}

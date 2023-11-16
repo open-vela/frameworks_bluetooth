@@ -45,6 +45,8 @@ bt_status_t BpBtGattClient_writeWithoutResponse(BpBtGattClient *bpBinder, void *
 bt_status_t BpBtGattClient_subscribe(BpBtGattClient *bpBinder, void *handle, uint16_t value_handle, uint16_t cccd_handle);
 bt_status_t BpBtGattClient_unsubscribe(BpBtGattClient *bpBinder, void *handle, uint16_t value_handle, uint16_t cccd_handle);
 bt_status_t BpBtGattClient_exchangeMtu(BpBtGattClient *bpBinder, void *handle, uint32_t mtu);
+bt_status_t BpBtGattClient_updateConnectionParameter(BpBtGattClient *bpBinder, void *handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
+                                                     uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length);
 #ifdef __cplusplus
 }
 #endif

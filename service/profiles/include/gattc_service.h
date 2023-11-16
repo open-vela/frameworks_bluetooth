@@ -19,9 +19,9 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include "bt_device.h"
 #include "bt_gatt_defs.h"
 #include "bt_gattc.h"
-#include "bt_device.h"
 #include "gatt_define.h"
 
 typedef enum {
@@ -64,6 +64,8 @@ typedef struct gattc_interface {
     bt_status_t (*subscribe)(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb);
     bt_status_t (*unsubscribe)(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle);
     bt_status_t (*exchange_mtu)(void *conn_handle, uint32_t mtu);
+    bt_status_t (*update_connection_parameter)(void *conn_handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
+                                               uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length);
 } gattc_interface_t;
 
 /*
