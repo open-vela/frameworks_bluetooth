@@ -351,7 +351,7 @@ static bt_status_t lea_source_update_config(lea_audio_config_t *audio_config, bo
 
     len = 21;
     /* set valid code */
-    UINT8_TO_STREAM(p, 1);
+    UINT8_TO_STREAM(p, enable);
     /* set codec type*/
     UINT32_TO_STREAM(p, audio_config->codec_type);
     /* set sample rate*/
