@@ -299,6 +299,24 @@ static void opened_exit(state_machine_t *sm)
     LEAS_DBG_EXIT(sm, &leas_sm->addr);
 }
 
+static void lea_server_stop_audio(uint32_t stream_id)
+{
+    lea_audio_stream_t *stream;
+
+    stream = lea_server_find_stream(stream_id);
+    if (!stream) {
+        BT_LOGW("failed, stream %d not found", stream_id);
+        return;
+    }
+
+    stream->started = false;
+    if (stream->is_source) {
+        lea_audio_source_stop();
+    } else {
+        lea_audio_sink_stop();
+    }
+}
+
 static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
@@ -345,19 +363,7 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         break;
     }
     case STACK_EVENT_STREAM_STOPPED: {
-        lea_audio_stream_t *stream;
-
-        stream = lea_server_find_stream(data->valueint1);
-        if (!stream) {
-            BT_LOGE("failed, stream %d not found", data->valueint1);
-            return false;
-        }
-
-        if (stream->is_source) {
-            lea_audio_source_stop();
-        } else {
-            lea_audio_sink_stop();
-        }
+        lea_server_stop_audio(data->valueint1);
         break;
     }
     default:
