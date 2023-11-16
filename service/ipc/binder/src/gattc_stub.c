@@ -323,6 +323,47 @@ static binder_status_t IBtGattClient_Class_onTransact(AIBinder *binder, transact
         stat = AParcel_writeUint32(reply, status);
         break;
     }
+    case IGATT_CLIENT_UPDATE_CONNECTION_PARAM: {
+        uint32_t min_interval;
+        uint32_t max_interval;
+        uint32_t latency;
+        uint32_t timeout;
+        uint32_t min_connection_event_length;
+        uint32_t max_connection_event_length;
+
+        stat = AParcel_readUint32(in, &handle);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_readUint32(in, &min_interval);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_readUint32(in, &max_interval);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_readUint32(in, &latency);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_readUint32(in, &timeout);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_readUint32(in, &min_connection_event_length);
+        if (stat != STATUS_OK)
+            return stat;
+
+        stat = AParcel_readUint32(in, &max_connection_event_length);
+        if (stat != STATUS_OK)
+            return stat;
+
+        status = profile->update_connection_parameter((void *)handle, min_interval, max_interval, latency,
+                                                      timeout, min_connection_event_length, max_connection_event_length);
+        stat = AParcel_writeUint32(reply, status);
+        break;
+    }
     default:
         break;
     }

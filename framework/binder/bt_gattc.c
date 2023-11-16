@@ -128,3 +128,11 @@ bt_status_t bt_gattc_exchange_mtu(gattc_handle_t conn_handle, uint32_t mtu)
     IBtGattClientCallbacks *cbks = conn_handle;
     return BpBtGattClient_exchangeMtu(cbks->proxy, cbks->cookie, mtu);
 }
+
+bt_status_t bt_gattc_update_connection_parameter(gattc_handle_t conn_handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
+                                                 uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length)
+{
+    IBtGattClientCallbacks *cbks = conn_handle;
+    return BpBtGattClient_updateConnectionParameter(cbks->proxy, cbks->cookie, min_interval, max_interval, latency,
+                                                    timeout, min_connection_event_length, max_connection_event_length);
+}

@@ -21,9 +21,9 @@
 extern "C" {
 #endif
 
-#include "bt_gatt_defs.h"
 #include "bluetooth.h"
 #include "bt_addr.h"
+#include "bt_gatt_defs.h"
 #include "bt_status.h"
 #include "bt_uuid.h"
 #include <stddef.h>
@@ -70,6 +70,8 @@ bt_status_t bt_gattc_write_without_response(gattc_handle_t conn_handle, uint16_t
 bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb);
 bt_status_t bt_gattc_unsubscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle);
 bt_status_t bt_gattc_exchange_mtu(gattc_handle_t conn_handle, uint32_t mtu);
+bt_status_t bt_gattc_update_connection_parameter(gattc_handle_t conn_handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
+                                                 uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length);
 
 #ifdef __cplusplus
 }

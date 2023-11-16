@@ -526,3 +526,58 @@ bt_status_t BpBtGattClient_exchangeMtu(BpBtGattClient *bpBinder, void *handle, u
 
     return status;
 }
+
+bt_status_t BpBtGattClient_updateConnectionParameter(BpBtGattClient *bpBinder, void *handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
+                                                     uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length)
+{
+    binder_status_t stat = STATUS_OK;
+    AParcel *parcelIn, *parcelOut;
+    uint32_t status;
+
+    if (!bpBinder || !bpBinder->binder)
+        return BT_STATUS_PARM_INVALID;
+
+    AIBinder *binder = bpBinder->binder;
+
+    stat = AIBinder_prepareTransaction(binder, &parcelIn);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)handle);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)min_interval);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)max_interval);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)latency);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)timeout);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)min_connection_event_length);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)max_connection_event_length);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AIBinder_transact(binder, IGATT_CLIENT_UPDATE_CONNECTION_PARAM, &parcelIn, &parcelOut, 0 /*flags*/);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    stat = AParcel_readUint32(parcelOut, &status);
+    if (stat != STATUS_OK)
+        return BT_STATUS_IPC_ERROR;
+
+    return status;
+}
