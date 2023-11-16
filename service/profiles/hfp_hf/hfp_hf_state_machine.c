@@ -316,6 +316,17 @@ static void query_current_calls_final(hf_state_machine_t *hfsm)
     bt_list_clear(ulist);
 }
 
+static void state_machine_reset_calls(hf_state_machine_t *hfsm)
+{
+    bt_list_clear(hfsm->current_calls);
+    bt_list_clear(hfsm->update_calls);
+    while(first_pending_action(hfsm)); /* discard pending actions */
+    if (hfsm->connect_timer)
+        service_loop_cancel_timer(hfsm->connect_timer);
+    hfsm->recognition_active = false;
+    hfsm->call_in_progress = 0;
+}
+
 static void disconnected_enter(state_machine_t *sm)
 {
     hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
@@ -324,6 +335,9 @@ static void disconnected_enter(state_machine_t *sm)
     hfsm->need_query = false;
     if (hsm_get_previous_state(sm))
         hf_service_notify_connection_state_changed(&hfsm->addr, PROFILE_STATE_DISCONNECTED);
+
+    /* reset cached info */
+    state_machine_reset_calls(hfsm);
 }
 
 static void disconnected_exit(state_machine_t *sm)
