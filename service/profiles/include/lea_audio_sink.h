@@ -60,7 +60,7 @@ void lea_audio_sink_packet_free(lea_recv_iso_data_t *packet);
 
 bt_status_t lea_audio_sink_start(void);
 
-bt_status_t lea_audio_sink_stop(void);
+bt_status_t lea_audio_sink_stop(bool update_codec);
 
 bt_status_t lea_audio_sink_suspend(void);
 
