@@ -113,6 +113,10 @@ static void bt_socket_client_msg_process(bt_client_msg_t* msg)
     } else if (packet->code > BT_PAN_CALLBACK_START && packet->code < BT_PAN_CALLBACK_END) {
         bt_socket_client_pan_callback(NULL, -1, msg->ins, packet);
 #endif
+#ifdef CONFIG_BLUETOOTH_PBAP_PCE
+    } else if (packet->code > BT_PBAP_PCE_CALLBACK_START && packet->code < BT_PBAP_PCE_CALLBACK_END) {
+        bt_socket_client_pbap_pce_callback(NULL, -1, msg->ins, packet);
+#endif
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
     } else if (packet->code > BT_HID_DEVICE_CALLBACK_START && packet->code < BT_HID_DEVICE_CALLBACK_END) {
         bt_socket_client_hid_device_callback(NULL, -1, msg->ins, packet);
@@ -225,7 +229,7 @@ static int bt_socket_client_receive(uv_poll_t* poll, int fd, void* userdata)
     }
 
     if (packet->code > BT_MESSAGE_START && packet->code < BT_MESSAGE_END) {
-        if (ins->cpacket == NULL)
+        if (ins->packet == NULL)
             return BT_STATUS_SUCCESS;
 
         memcpy(ins->cpacket, packet, sizeof(*packet));

@@ -112,6 +112,13 @@ void bt_socket_server_hfp_hf_process(service_poll_t* poll,
 int bt_socket_client_hfp_hf_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
+/* PBAP */
+void bt_socket_server_pbap_pce_process(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+
+int bt_socket_client_pbap_pce_callback(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+
 /* Advertiser */
 
 void bt_socket_server_advertiser_process(service_poll_t* poll,

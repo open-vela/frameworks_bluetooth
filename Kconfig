@@ -237,6 +237,10 @@ config BLUETOOTH_L2CAP_OUTGOING_MTU
 
 endif #BLUETOOTH_L2CAP
 
+config BLUETOOTH_PBAP_PCE
+	bool "Phone Book Client Supported"
+	default n
+
 config BLUETOOTH_MAX_REGISTER_NUM
 	int "Max register callback nums"
 	default 4

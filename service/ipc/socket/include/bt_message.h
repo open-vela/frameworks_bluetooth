@@ -38,6 +38,7 @@ extern "C" {
 #include "bt_message_l2cap.h"
 #include "bt_message_manager.h"
 #include "bt_message_pan.h"
+#include "bt_message_pbap_pce.h"
 #include "bt_message_scan.h"
 #include "bt_message_spp.h"
 
@@ -59,6 +60,7 @@ typedef enum {
 #include "bt_message_l2cap.h"
 #include "bt_message_manager.h"
 #include "bt_message_pan.h"
+#include "bt_message_pbap_pce.h"
 #include "bt_message_scan.h"
 #include "bt_message_spp.h"
     BT_MESSAGE_END,
@@ -78,6 +80,7 @@ typedef enum {
 #include "bt_message_l2cap.h"
 #include "bt_message_manager.h"
 #include "bt_message_pan.h"
+#include "bt_message_pbap_pce.h"
 #include "bt_message_scan.h"
 #include "bt_message_spp.h"
     BT_CALLBACK_END,
@@ -102,6 +105,7 @@ typedef struct
         bt_gatts_result_t gatts_r;
         bt_spp_result_t spp_r;
         bt_pan_result_t pan_r;
+        bt_pbap_pce_result_t pbap_pce_r;
         bt_hid_device_result_t hidd_r;
         bt_l2cap_result_t l2cap_r;
     };
@@ -142,6 +146,9 @@ typedef struct
 
         bt_message_pan_t pan_pl;
         bt_message_pan_callbacks_t pan_cb;
+
+        bt_message_pbap_pce_t pbap_pce_pl;
+        bt_message_pbap_pce_callbacks_t pbap_pce_cb;
 
         bt_message_hid_device_t hidd_pl;
         bt_message_hid_device_callbacks_t hidd_cb;

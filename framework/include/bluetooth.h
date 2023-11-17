@@ -390,12 +390,14 @@ typedef struct bt_instance {
     callbacks_list_t* hfp_ag_callbacks;
     callbacks_list_t* hfp_hf_callbacks;
     callbacks_list_t* panu_callbacks;
+    callbacks_list_t* pbap_pce_callbacks;
     callbacks_list_t* spp_callbacks;
     callbacks_list_t* hidd_callbacks;
     callbacks_list_t* l2cap_callbacks;
     void* hfp_ag_cookie;
     void* hfp_hf_cookie;
     void* panu_cookie;
+    void* pbap_pce_cookie;
     void* spp_cookie;
     void* hidd_cookie;
     void* l2cap_cookie;
