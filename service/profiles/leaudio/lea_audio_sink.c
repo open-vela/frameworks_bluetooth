@@ -139,8 +139,7 @@ static void lea_sink_recv_ctrl_data(audio_ctrl_cmd_t cmd)
         break;
     }
     case AUDIO_CTRL_CMD_STOP: {
-        lea_audio_sink_stop();
-        lea_control_event(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, AUDIO_CTRL_EVT_STOPPED);
+        lea_audio_sink_stop(false);
         if (g_sink_callbacks) {
             g_sink_callbacks->lea_audio_suspend_cb();
         }
@@ -439,23 +438,28 @@ bt_status_t lea_audio_sink_start(void)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t lea_audio_sink_stop(void)
+bt_status_t lea_audio_sink_stop(bool update_codec)
 {
     lea_sink_stream_t *stream = &g_sink_stream;
 
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, update_codec:%d", __func__, update_codec);
     stream->ready = false;
     if (stream->state == STREAM_STATE_OFF) {
         BT_LOGD("%s stream was stopped", __func__)
         return BT_STATUS_FAIL;
     }
 
-    lea_sink_update_codec(&stream->audio_config, false);
+    if (update_codec) {
+        lea_sink_update_codec(&stream->audio_config, false);
+    }
+
     service_loop_cancel_timer(stream->recv_timer);
     stream->recv_timer = NULL;
 
     lea_sink_flush_packet_queue();
     stream->state = STREAM_STATE_OFF;
+
+    lea_control_event(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, AUDIO_CTRL_EVT_STOPPED);
 
     return BT_STATUS_SUCCESS;
 }
@@ -469,7 +473,7 @@ bt_status_t lea_audio_sink_suspend(void)
         return BT_STATUS_FAIL;
     }
 
-    return lea_audio_sink_stop();
+    return lea_audio_sink_stop(false);
 }
 
 bt_status_t lea_audio_sink_resume(void)
@@ -494,7 +498,7 @@ bt_status_t lea_audio_sink_mute(bool mute)
     }
 
     if (mute) {
-        return lea_audio_sink_stop();
+        return lea_audio_sink_stop(false);
     } else {
         return lea_audio_sink_resume();
     }

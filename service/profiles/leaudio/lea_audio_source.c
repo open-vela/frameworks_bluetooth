@@ -246,8 +246,7 @@ static void lea_recv_ctrl_data(uint8_t ch_id, audio_ctrl_cmd_t cmd)
     }
 
     case AUDIO_CTRL_CMD_STOP: {
-        lea_audio_source_stop();
-        lea_control_event(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, AUDIO_CTRL_EVT_STOPPED);
+        lea_audio_source_stop(false);
         if (g_source_callbacks) {
             g_source_callbacks->lea_audio_suspend_cb();
         }
@@ -343,7 +342,7 @@ static void lea_source_data_cb(uint8_t ch_id, audio_transport_event_t event)
     }
 }
 
-static bt_status_t lea_source_update_config(lea_audio_config_t *audio_config, bool enable)
+static bt_status_t lea_source_update_codec(lea_audio_config_t *audio_config, bool enable)
 {
     uint8_t buffer[64];
     uint8_t len;
@@ -436,29 +435,34 @@ bt_status_t lea_audio_source_start(void)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t lea_audio_source_stop(void)
+bt_status_t lea_audio_source_stop(bool update_codec)
 {
     lea_source_stream_t *stream = &g_source_stream;
 
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s,update_codec:%d", __func__, update_codec);
 
     if (stream->stream_state != STREAM_STATE_RUNNING) {
         BT_LOGE("%s, was stopped", __func__);
         return BT_STATUS_SUCCESS;
     }
 
-    lea_source_update_config(&stream->audio_config, false);
+    if (update_codec) {
+        lea_source_update_codec(&stream->audio_config, false);
+    }
+
     audio_transport_read_stop(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO);
     service_loop_cancel_timer(stream->send_timer);
     stream->send_timer = NULL;
     stream->stream_state = STREAM_STATE_OFF;
+
+    lea_control_event(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, AUDIO_CTRL_EVT_STOPPED);
 
     return BT_STATUS_SUCCESS;
 }
 
 bt_status_t lea_audio_source_suspend(void)
 {
-    return lea_audio_source_stop();
+    return lea_audio_source_stop(false);
 }
 
 bt_status_t lea_audio_source_resume(void)
@@ -475,7 +479,7 @@ bt_status_t lea_audio_source_update_codec(lea_audio_config_t *audio_config, uint
 
     BT_LOGD("%s, codec_type:%d, sample_rate:%d, bits_per_sample:%d, channel_mode:%d, bit_rate:%d", __func__, audio_config->codec_type, audio_config->sample_rate, audio_config->bits_per_sample, audio_config->channel_mode, audio_config->bit_rate);
 
-    return lea_source_update_config(audio_config, true);
+    return lea_source_update_codec(audio_config, true);
 }
 
 bool lea_audio_source_is_started(void)

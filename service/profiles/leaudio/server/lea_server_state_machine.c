@@ -311,9 +311,9 @@ static void lea_server_stop_audio(uint32_t stream_id)
 
     stream->started = false;
     if (stream->is_source) {
-        lea_audio_source_stop();
+        lea_audio_source_stop(true);
     } else {
-        lea_audio_sink_stop();
+        lea_audio_sink_stop(true);
     }
 }
 
@@ -512,20 +512,7 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case STACK_EVENT_STREAM_STOPPED: {
-        lea_audio_stream_t *stream;
-
-        stream = lea_server_find_stream(data->valueint1);
-        if (!stream) {
-            BT_LOGE("failed, stream %d not found", data->valueint1);
-            return false;
-        }
-        stream->started = false;
-
-        if (stream->is_source) {
-            lea_audio_source_stop();
-        } else {
-            lea_audio_sink_stop();
-        }
+        lea_server_stop_audio(data->valueint1);
         break;
     }
     case STACK_EVENT_ASE_DISABLING: {

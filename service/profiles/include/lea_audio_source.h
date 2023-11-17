@@ -56,7 +56,7 @@ bt_status_t lea_audio_source_init(void);
 
 bt_status_t lea_audio_source_start(void);
 
-bt_status_t lea_audio_source_stop(void);
+bt_status_t lea_audio_source_stop(bool update_codec);
 
 bt_status_t lea_audio_source_suspend(void);
 
