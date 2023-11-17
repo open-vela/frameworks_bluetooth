@@ -444,9 +444,9 @@ static void lea_client_stop_audio(uint32_t stream_id)
 
     stream->started = false;
     if (!stream->is_source) {
-        lea_audio_source_stop();
+        lea_audio_source_stop(true);
     } else {
-        lea_audio_sink_stop();
+        lea_audio_sink_stop(true);
     }
 }
 
