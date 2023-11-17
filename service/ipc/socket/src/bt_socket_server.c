@@ -183,6 +183,8 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
         bt_socket_server_spp_process(poll, fd, ins, &packet);
     } else if (packet.code > BT_PAN_MESSAGE_START && packet.code < BT_PAN_MESSAGE_END) {
         bt_socket_server_pan_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_PBAP_PCE_MESSAGE_START && packet.code < BT_PBAP_PCE_MESSAGE_END) {
+        bt_socket_server_pbap_pce_process(poll, fd, ins, &packet);
     } else if (packet.code > BT_HID_DEVICE_MESSAGE_START && packet.code < BT_HID_DEVICE_MESSAGE_END) {
         bt_socket_server_hid_device_process(poll, fd, ins, &packet);
 #ifdef CONFIG_BLUETOOTH_L2CAP
