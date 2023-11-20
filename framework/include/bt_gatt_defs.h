@@ -55,14 +55,15 @@ typedef enum {
 #define GATT_PERM_MITM_REQUIRED    0x10
 
 /* Characteristic Properties */
-#define GATT_PROP_BROADCAST      0x01
-#define GATT_PROP_READ           0x02
-#define GATT_PROP_WRITE_NR       0x04
-#define GATT_PROP_WRITE          0x08
-#define GATT_PROP_NOTIFY         0x10
-#define GATT_PROP_INDICATE       0x20
-#define GATT_PROP_SIGNED_WRITE   0x40
-#define GATT_PROP_EXTENDED_PROPS 0x80
+#define GATT_PROP_BROADCAST          0x01
+#define GATT_PROP_READ               0x02
+#define GATT_PROP_WRITE_NR           0x04
+#define GATT_PROP_WRITE              0x08
+#define GATT_PROP_NOTIFY             0x10
+#define GATT_PROP_INDICATE           0x20
+#define GATT_PROP_SIGNED_WRITE       0x40
+#define GATT_PROP_EXTENDED_PROPS     0x80
+#define GATT_PROP_EXPOSED_OVER_BREDR 0x1000 /* Applies to Primary/Secondary Service type only */
 
 /* GATT Attribute Helper Macros */
 #define GATT_H_ATTRIBUTE(_uuid, _type, _prop, _perm, _rsp, _read, _write, _value, _length, _handle) \
@@ -90,6 +91,14 @@ typedef enum {
 /* GATT_H_INCLUDE_SERVICE */
 #define GATT_H_INCLUDE_SERVICE(_service) \
     GATT_H_ATTRIBUTE(_service, GATT_INCLUDED_SERVICE, 0, GATT_PERM_READ, ATTR_AUTO_RSP, NULL, NULL, NULL, 0, 0)
+
+/* GATT_H_PRIMARY_SERVICE_OVER_BREDR */
+#define GATT_H_PRIMARY_SERVICE_OVER_BREDR(_service, _handle) \
+    GATT_H_ATTRIBUTE(_service, GATT_PRIMARY_SERVICE, GATT_PROP_EXPOSED_OVER_BREDR, GATT_PERM_READ, ATTR_AUTO_RSP, NULL, NULL, NULL, 0, _handle)
+
+/* GATT_H_SECONDARY_SERVICE_OVER_BREDR */
+#define GATT_H_SECONDARY_SERVICE_OVER_BREDR(_service, _handle) \
+    GATT_H_ATTRIBUTE(_service, GATT_SECONDARY_SERVICE, GATT_PROP_EXPOSED_OVER_BREDR, GATT_PERM_READ, ATTR_AUTO_RSP, NULL, NULL, NULL, 0, _handle)
 
 /* GATT_H_CHARACTERISTIC */
 #define GATT_H_CHARACTERISTIC(_uuid, _prop, _perm, _rsp, _read, _write, _value, _length, _handle) \
