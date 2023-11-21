@@ -92,6 +92,24 @@ static spp_device_t *find_pty_by_port(int port)
     return NULL;
 }
 
+static spp_device_t *find_pty_by_handle(void *handle)
+{
+    struct list_node *list = &device_list;
+    struct list_node *node;
+    spp_device_t *device;
+
+    list_for_every(list, node)
+    {
+        device = (spp_device_t *)node;
+        if (device->pty == handle) {
+            return device;
+        }
+    }
+
+    PRINT("Device not found for handle:%p", handle);
+    return NULL;
+}
+
 static int spp_sem_post(uv_sem_t *sem)
 {
     uv_sem_post(sem);
@@ -110,7 +128,14 @@ static void pty_read_cb(euv_pty_t *handle, const uint8_t *buf, ssize_t size)
     else if (size < 0) {
         PRINT("%s read failed, status:%d", __func__, size);
         euv_pty_read_stop(handle);
-        euv_pty_close(handle);
+        spp_device_t *device = find_pty_by_handle(handle);
+        if (device == NULL)
+            return;
+
+        euv_pty_close(device->pty);
+        device->pty = NULL;
+        list_delete(&device->node);
+        free(device);
     }
 }
 
@@ -138,6 +163,8 @@ static void connection_state_process(void *data)
 
     if (msg->state == PROFILE_STATE_DISCONNECTED)
         check_resource_release(msg->port);
+
+    free(msg);
 }
 
 static void connection_state_callback(void *handle, bt_address_t *addr, uint16_t scn,
@@ -171,6 +198,7 @@ static void pty_open_process(void *data)
     spp_device_t *device = malloc(sizeof(spp_device_t));
     device->fd = fd;
     device->port = msg->port;
+    free(msg);
     device->pty = euv_pty_init(&spp_thread_loop, fd, UV_TTY_MODE_IO);
     if (device->pty == NULL) {
         free(device);

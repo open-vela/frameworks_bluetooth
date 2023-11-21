@@ -21,6 +21,9 @@ extern "C" {
 #endif
 
 #include "bluetooth.h"
+#ifndef BTSYMBOLS
+# define BTSYMBOLS(s) s
+#endif
 
 /**
  * @brief Advertising type
@@ -138,7 +141,7 @@ typedef struct {
  * @param cbs - advertiser callback functions.
  * @return bt_advertiser_t* - advertiser handle.
  */
-bt_advertiser_t *bt_le_start_advertising(bt_instance_t *ins,
+bt_advertiser_t *BTSYMBOLS(bt_le_start_advertising)(bt_instance_t *ins,
                                          ble_adv_params_t *params,
                                          uint8_t *adv_data,
                                          uint16_t adv_len,
@@ -152,7 +155,7 @@ bt_advertiser_t *bt_le_start_advertising(bt_instance_t *ins,
  * @param ins - bluetooth client instance.
  * @param adver - advertiser handle.
  */
-void bt_le_stop_advertising(bt_instance_t *ins, bt_advertiser_t *adver);
+void BTSYMBOLS(bt_le_stop_advertising)(bt_instance_t *ins, bt_advertiser_t *adver);
 
 /**
  * @brief Stop LE advertising by adver id
@@ -160,7 +163,7 @@ void bt_le_stop_advertising(bt_instance_t *ins, bt_advertiser_t *adver);
  * @param ins - bluetooth client instance.
  * @param adv_id - advertiser ID.
  */
-void bt_le_stop_advertising_id(bt_instance_t *ins, uint8_t adv_id);
+void BTSYMBOLS(bt_le_stop_advertising_id)(bt_instance_t *ins, uint8_t adv_id);
 
 /**
  * @brief Check is advertising supported
@@ -169,7 +172,7 @@ void bt_le_stop_advertising_id(bt_instance_t *ins, uint8_t adv_id);
  * @return true - support.
  * @return false - not support.
  */
-bool bt_le_advertising_is_supported(bt_instance_t *ins);
+bool BTSYMBOLS(bt_le_advertising_is_supported)(bt_instance_t *ins);
 
 #ifdef __cplusplus
 }

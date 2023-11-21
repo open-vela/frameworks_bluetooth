@@ -20,27 +20,76 @@
 
 #include "bluetooth.h"
 #include "bt_le_scan.h"
+#include "bt_socket.h"
 #include "scan_manager.h"
 
 #include "utils/log.h"
 
 bt_scanner_t *bt_le_start_scan(bt_instance_t *ins, const scanner_callbacks_t *cbs)
 {
-    return NULL;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    bt_scan_remote_t *scan = malloc(sizeof(*scan));
+    if (scan == NULL)
+        return NULL;
+
+    scan->callback = (scanner_callbacks_t *)cbs;
+    packet.scan_pl._bt_le_start_scan.remote = (uint32_t)scan;
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_START);
+    if (status != BT_STATUS_SUCCESS || !packet.scan_r.remote) {
+        free(scan);
+        return NULL;
+    }
+
+    scan->remote = packet.scan_r.remote;
+    return scan;
 }
 
 bt_scanner_t *bt_le_start_scan_settings(bt_instance_t *ins,
                                         ble_scan_settings_t *settings,
                                         const scanner_callbacks_t *cbs)
 {
-    return NULL;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    bt_scan_remote_t *scan = malloc(sizeof(*scan));
+    if (scan == NULL)
+        return NULL;
+
+    scan->callback = (scanner_callbacks_t *)cbs;
+    packet.scan_pl._bt_le_start_scan_settings.remote = (uint32_t)scan;
+    if (settings)
+        memcpy(&packet.scan_pl._bt_le_start_scan_settings.settings, settings, sizeof(*settings));
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_START_SETTINGS);
+    if (status != BT_STATUS_SUCCESS || !packet.scan_r.remote) {
+        free(scan);
+        return NULL;
+    }
+
+    scan->remote = packet.scan_r.remote;
+    return scan;
 }
 
 void bt_le_stop_scan(bt_instance_t *ins, bt_scanner_t *scanner)
 {
+    bt_message_packet_t packet;
+
+    packet.scan_pl._bt_le_stop_scan.remote = ((bt_scan_remote_t *)scanner)->remote;
+    bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_STOP);
 }
 
 bool bt_le_scan_is_supported(bt_instance_t *ins)
 {
-    return false;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_IS_SUPPORT);
+    if (status != BT_STATUS_SUCCESS || !packet.scan_r.vbool) {
+        return false;
+    }
+
+    return true;
 }

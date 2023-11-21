@@ -19,26 +19,81 @@
 
 #include "bt_pan.h"
 #include "bt_profile.h"
+#include "bt_socket.h"
 #include "pan_service.h"
 #include "service_manager.h"
 #include "utils/log.h"
 
 void *bt_pan_register_callbacks(bt_instance_t *ins, const pan_callbacks_t *callbacks)
 {
-    return NULL;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    void *handle;
+
+    if (ins->panu_callbacks != NULL) {
+        return NULL;
+    }
+
+    ins->panu_callbacks = bt_callbacks_list_new(1);
+
+    handle = bt_remote_callbacks_register(ins->panu_callbacks, NULL, (void *)callbacks);
+    if (handle == NULL)
+        return handle;
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PAN_REGISTER_CALLBACKS);
+    if (status != BT_STATUS_SUCCESS || packet.pan_r.status != BT_STATUS_SUCCESS) {
+        bt_callbacks_list_free(ins->panu_callbacks);
+        return NULL;
+    }
+
+    return handle;
 }
 
 bool bt_pan_unregister_callbacks(bt_instance_t *ins, void *cookie)
 {
-    return false;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    bt_remote_callbacks_unregister(ins->panu_callbacks, NULL, cookie);
+    bt_callbacks_list_free(ins->panu_callbacks);
+    ins->panu_callbacks = NULL;
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PAN_UNREGISTER_CALLBACKS);
+    if (status != BT_STATUS_SUCCESS || packet.pan_r.status != BT_STATUS_SUCCESS) {
+        return false;
+    }
+
+    return true;
 }
 
 bt_status_t bt_pan_connect(bt_instance_t *ins, bt_address_t *addr, uint8_t dst_role, uint8_t src_role)
 {
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.pan_pl._bt_pan_connect.addr, addr, sizeof(*addr));
+    packet.pan_pl._bt_pan_connect.dst_role = dst_role;
+    packet.pan_pl._bt_pan_connect.src_role = src_role;
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PAN_CONNECT);
+    if (status != BT_STATUS_SUCCESS || packet.pan_r.status != BT_STATUS_SUCCESS) {
+        return packet.pan_r.status;
+    }
+
     return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_pan_disconnect(bt_instance_t *ins, bt_address_t *addr)
 {
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.pan_pl._bt_pan_disconnect.addr, addr, sizeof(*addr));
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_PAN_DISCONNECT);
+    if (status != BT_STATUS_SUCCESS || packet.pan_r.status != BT_STATUS_SUCCESS) {
+        return packet.pan_r.status;
+    }
+
     return BT_STATUS_SUCCESS;
 }

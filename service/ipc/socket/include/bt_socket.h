@@ -48,6 +48,8 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
                           const char *name, const char *cpu,
                           int port);
 
+void bt_socket_client_deinit(bt_instance_t *ins);
+
 int bt_socket_client_sendrecv(bt_instance_t *ins,
                               bt_message_packet_t *packet,
                               bt_message_type_t code);
@@ -92,6 +94,34 @@ void bt_socket_server_hfp_hf_process(service_poll_t *poll,
 int bt_socket_client_hfp_hf_callback(service_poll_t *poll,
     int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 
+/* Advertiser */
+
+void bt_socket_server_advertiser_process(service_poll_t *poll,
+                                         int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+
+int bt_socket_client_advertiser_callback(service_poll_t *poll,
+                                         int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+/* Scan */
+
+void bt_socket_server_scan_process(service_poll_t *poll,
+                                   int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+
+int bt_socket_client_scan_callback(service_poll_t *poll,
+                                   int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+/* Spp */
+
+void bt_socket_server_spp_process(service_poll_t *poll,
+                                  int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+
+int bt_socket_client_spp_callback(service_poll_t *poll,
+                                  int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+/* Pan */
+
+void bt_socket_server_pan_process(service_poll_t *poll,
+                                  int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+
+int bt_socket_client_pan_callback(service_poll_t *poll,
+                                  int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 #ifdef __cplusplus
 }
 #endif
