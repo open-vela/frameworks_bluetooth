@@ -41,7 +41,6 @@
 #include "index_allocator.h"
 #include "openpty.h"
 #include "utils/log.h"
-#include "bt_tools.h"
 
 /****************************************************************************
  * Pre-processor Definitions
