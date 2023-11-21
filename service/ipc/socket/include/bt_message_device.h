@@ -75,7 +75,7 @@ typedef union
 
 typedef union
 {
-  union {
+  struct {
     bt_address_t addr;
   } _bt_device_get_identity_address,
     _bt_device_get_address_type,
@@ -94,71 +94,71 @@ typedef union
     _bt_device_disconnect_le,
     _bt_device_addr;
 
-  union {
+  struct {
     bt_address_t addr;
     char name[64];
     uint32_t length;
   } _bt_device_get_name;
 
-  union {
+  struct {
     bt_address_t addr;
     bt_uuid_t uuids[16];
     uint16_t size;
   } _bt_device_get_uuids;
 
-  union {
+  struct {
     bt_address_t addr;
     char alias[64];
     uint32_t length;
   } _bt_device_get_alias;
 
-  union {
+  struct {
     bt_address_t addr;
     char alias[64];
   } _bt_device_set_alias;
 
-  union {
+  struct {
     bt_address_t addr;
     bt_transport_t transport;
   } _bt_device_create_bond;
 
-  union {
+  struct {
     bt_address_t addr;
     bt_transport_t transport;
   } _bt_device_remove_bond;
 
-  union {
+  struct {
     bt_address_t addr;
     bool accept;
   } _bt_device_pair_request_reply;
 
-  union {
+  struct {
     bt_address_t addr;
     uint8_t transport;
     bool accept;
   } _bt_device_set_pairing_confirmation;
 
-  union {
+  struct {
     bt_address_t addr;
     bool accept;
     char pincode[64];
     int len;
   } _bt_device_set_pin_code;
 
-  union {
+  struct {
     bt_address_t addr;
     uint8_t transport;
     bool accept;
     uint32_t passkey;
   } _bt_device_set_pass_key;
 
-  union {
+  struct {
     bt_address_t addr;
     ble_addr_type_t type;
     ble_connect_params_t param;
   } _bt_device_connect_le;
 
-  union {
+  struct {
     bt_address_t addr;
     ble_phy_type_t tx_phy;
     ble_phy_type_t rx_phy;
