@@ -20,13 +20,14 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+#include <uv.h>
+
 #include "bt_addr.h"
 #include "bt_profile.h"
 #include "bt_status.h"
 #include "bt_uuid.h"
-#include <stdint.h>
 #include "callbacks_list.h"
-#include <uv.h>
 
 #ifndef BTSYMBOLS
 # define BTSYMBOLS(s) s
@@ -311,10 +312,14 @@ typedef struct bt_instance {
     callbacks_list_t *adapter_callbacks;
     callbacks_list_t *hfp_ag_callbacks;
     callbacks_list_t *hfp_hf_callbacks;
+    callbacks_list_t *panu_callbacks;
+    callbacks_list_t *spp_callbacks;
     int peer_fd;
     void *adapter_cookie;
     void *hfp_ag_cookie;
     void *hfp_hf_cookie;
+    void *panu_cookie;
+    void *spp_cookie;
 } bt_instance_t;
 
 /**

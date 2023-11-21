@@ -23,8 +23,12 @@ extern "C" {
 
 #include <stddef.h>
 
-#include "bt_addr.h"
+#include "bluetooth.h"
 #include "bt_device.h"
+
+#ifndef BTSYMBOLS
+# define BTSYMBOLS(s) s
+#endif
 
 /**
  * @brief Unknow server channel number
@@ -88,7 +92,7 @@ typedef struct {
  * @param callbacks - spp callback functions.
  * @return void* - spp app handle, NULL on failure.
  */
-void *bt_spp_register_app(bt_instance_t *ins, const spp_callbacks_t *callbacks);
+void *BTSYMBOLS(bt_spp_register_app)(bt_instance_t *ins, const spp_callbacks_t *callbacks);
 
 /**
  * @brief Unregister spp app
@@ -97,7 +101,7 @@ void *bt_spp_register_app(bt_instance_t *ins, const spp_callbacks_t *callbacks);
  * @param handle - spp app handle.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_spp_unregister_app(bt_instance_t *ins, void *handle);
+bt_status_t BTSYMBOLS(bt_spp_unregister_app)(bt_instance_t *ins, void *handle);
 
 /**
  * @brief Start spp server
@@ -109,7 +113,7 @@ bt_status_t bt_spp_unregister_app(bt_instance_t *ins, void *handle);
  * @param max_connection - maximum of client connections.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_spp_server_start(bt_instance_t *ins, void *handle, uint16_t scn, bt_uuid_t *uuid, uint8_t max_connection);
+bt_status_t BTSYMBOLS(bt_spp_server_start)(bt_instance_t *ins, void *handle, uint16_t scn, bt_uuid_t *uuid, uint8_t max_connection);
 
 /**
  * @brief Stop spp server
@@ -119,7 +123,7 @@ bt_status_t bt_spp_server_start(bt_instance_t *ins, void *handle, uint16_t scn, 
  * @param scn - server channel number, range in <1-28>.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_spp_server_stop(bt_instance_t *ins, void *handle, uint16_t scn);
+bt_status_t BTSYMBOLS(bt_spp_server_stop)(bt_instance_t *ins, void *handle, uint16_t scn);
 
 /**
  * @brief Connect to spp server
@@ -133,7 +137,7 @@ bt_status_t bt_spp_server_stop(bt_instance_t *ins, void *handle, uint16_t scn);
  * @param[out] port - point to unique port of connection.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_spp_connect(bt_instance_t *ins, void *handle, bt_address_t *addr, int16_t scn, bt_uuid_t *uuid, uint16_t *port);
+bt_status_t BTSYMBOLS(bt_spp_connect)(bt_instance_t *ins, void *handle, bt_address_t *addr, int16_t scn, bt_uuid_t *uuid, uint16_t *port);
 
 /**
  * @brief Disconnect to spp server
@@ -144,7 +148,7 @@ bt_status_t bt_spp_connect(bt_instance_t *ins, void *handle, bt_address_t *addr,
  * @param port unique port of connection.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_spp_disconnect(bt_instance_t *ins, void *handle, bt_address_t *addr, uint16_t port);
+bt_status_t BTSYMBOLS(bt_spp_disconnect)(bt_instance_t *ins, void *handle, bt_address_t *addr, uint16_t port);
 
 #ifdef __cplusplus
 }

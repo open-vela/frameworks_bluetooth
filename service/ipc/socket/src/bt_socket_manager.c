@@ -33,20 +33,20 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include "bluetooth.h"
+#include "manager_service.h"
 #include "bt_internal.h"
 #include "bt_message.h"
-#include "bluetooth.h"
-#include "service_loop.h"
-#include "callbacks_list.h"
 #include "bt_socket.h"
+#include "callbacks_list.h"
+#include "service_loop.h"
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
-  BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-
+    BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
 
 /****************************************************************************
  * Private Types
@@ -59,30 +59,56 @@
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-
+#if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
 void bt_socket_server_manager_process(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet)
+                                      int fd, bt_instance_t *ins, bt_message_packet_t *packet)
 {
-  switch (packet->code)
-  {
-    case BT_MANAGER_CREATE_INSTANCE:
-      {
+    switch (packet->code) {
+    case BT_MANAGER_CREATE_INSTANCE: {
+        packet->manager_r.status =
+            manager_create_instance(packet->manager_pl._bluetooth_create_instance.handle,
+                                    packet->manager_pl._bluetooth_create_instance.type,
+                                    packet->manager_pl._bluetooth_create_instance.cpu_name,
+                                    packet->manager_pl._bluetooth_create_instance.pid, 0,
+                                    &packet->manager_r.v32);
         break;
-      }
-    
+    }
+    case BT_MANAGER_DELETE_INSTANCE: {
+        packet->manager_r.status =
+            manager_delete_instance(packet->manager_pl._bluetooth_delete_instance.v32);
+        break;
+    }
+    case BT_MANAGER_GET_INSTANCE: {
+        packet->manager_r.status =
+            manager_get_instance(packet->manager_pl._bluetooth_get_instance.cpu_name,
+                                 packet->manager_pl._bluetooth_get_instance.pid,
+                                 &packet->manager_r.v32);
+        break;
+    }
+    case BT_MANAGER_START_SERVICE: {
+        packet->manager_r.status =
+            manager_start_service(packet->manager_pl._bluetooth_start_service.appid,
+                                  packet->manager_pl._bluetooth_start_service.id);
+        break;
+    }
+    case BT_MANAGER_STOP_SERVICE: {
+        packet->manager_r.status =
+            manager_stop_service(packet->manager_pl._bluetooth_stop_service.appid,
+                                  packet->manager_pl._bluetooth_stop_service.id);
+        break;
+    }
     default:
-      break;
-  }
+        break;
+    }
 }
-
+#endif
 int bt_socket_client_manager_callback(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet)
+                                      int fd, bt_instance_t *ins, bt_message_packet_t *packet)
 {
-  switch (packet->code)
-  {
+    switch (packet->code) {
     default:
-      return BT_STATUS_PARM_INVALID;
-  }
+        return BT_STATUS_PARM_INVALID;
+    }
 
-  return BT_STATUS_SUCCESS;
+    return BT_STATUS_SUCCESS;
 }

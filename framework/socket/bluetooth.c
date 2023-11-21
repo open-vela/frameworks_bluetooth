@@ -56,6 +56,21 @@ bt_instance_t *bluetooth_create_instance(void)
       bluetooth_delete_instance(ins);
       ins = NULL;
     }
+#if 0
+    packet.manager_pl._bluetooth_create_instance.pid = getpid();
+    packet.manager_pl._bluetooth_create_instance.handle = (uint32_t)ins;
+    packet.manager_pl._bluetooth_create_instance.type = BLUETOOTH_USER;
+    snprintf(packet.manager_pl._bluetooth_create_instance.cpu_name,
+             sizeof(packet.manager_pl._bluetooth_create_instance.cpu_name),
+             "%s", CONFIG_RPTUN_LOCAL_CPUNAME);
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_MANAGER_CREATE_INSTANCE);
+    if (status != BT_STATUS_SUCCESS || packet.manager_r.status != BT_STATUS_SUCCESS) {
+        bluetooth_delete_instance(ins);
+        return NULL;
+    }
+    ins->app_id = packet.manager_r.v32;
+#endif
 
     return ins;
 }
@@ -79,16 +94,37 @@ void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id)
 
 void bluetooth_delete_instance(bt_instance_t *ins)
 {
+    bt_socket_client_deinit(ins);
     manager_delete_instance(ins->app_id);
     free(ins);
 }
 
 bt_status_t bluetooth_start_service(bt_instance_t *ins, enum profile_id id)
 {
-    return BT_STATUS_FAIL;
+    bt_status_t status;
+    bt_message_packet_t packet;
+
+    packet.manager_pl._bluetooth_start_service.appid = ins->app_id;
+    packet.manager_pl._bluetooth_start_service.id = id;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_MANAGER_START_SERVICE);
+    if (status != BT_STATUS_SUCCESS || packet.manager_r.status != BT_STATUS_SUCCESS) {
+        return packet.manager_r.status;
+    }
+
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bluetooth_stop_service(bt_instance_t *ins, enum profile_id id)
 {
-    return BT_STATUS_FAIL;
+    bt_status_t status;
+    bt_message_packet_t packet;
+
+    packet.manager_pl._bluetooth_stop_service.appid = ins->app_id;
+    packet.manager_pl._bluetooth_stop_service.id = id;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_MANAGER_STOP_SERVICE);
+    if (status != BT_STATUS_SUCCESS || packet.manager_r.status != BT_STATUS_SUCCESS) {
+        return packet.manager_r.status;
+    }
+
+    return BT_STATUS_SUCCESS;
 }

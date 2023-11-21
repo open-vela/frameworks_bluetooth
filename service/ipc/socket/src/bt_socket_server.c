@@ -75,7 +75,7 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
         packet.code < BT_MANAGER_MESSAGE_END) {
         bt_socket_server_manager_process(poll, fd, ins, &packet);
     } else if (packet.code > BT_ADAPTER_MESSAGE_START &&
-        packet.code < BT_ADAPTER_MESSAGE_END) {
+               packet.code < BT_ADAPTER_MESSAGE_END) {
         bt_socket_server_adapter_process(poll, fd, ins, &packet);
     } else if (packet.code > BT_DEVICE_MESSAGE_START &&
                packet.code < BT_DEVICE_MESSAGE_END) {
@@ -86,6 +86,18 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
     } else if (packet.code > BT_HFP_HF_MESSAGE_START &&
                packet.code < BT_HFP_HF_MESSAGE_END) {
         bt_socket_server_hfp_hf_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_ADVERTISER_MESSAGE_START &&
+               packet.code < BT_ADVERTISER_MESSAGE_END) {
+        bt_socket_server_advertiser_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_SCAN_MESSAGE_START &&
+               packet.code < BT_SCAN_MESSAGE_END) {
+        bt_socket_server_scan_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_SPP_MESSAGE_START &&
+               packet.code < BT_SPP_MESSAGE_END) {
+        bt_socket_server_spp_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_PAN_MESSAGE_START &&
+               packet.code < BT_PAN_MESSAGE_END) {
+        bt_socket_server_pan_process(poll, fd, ins, &packet);
     } else {
         return BT_STATUS_PARM_INVALID;
     }
@@ -207,9 +219,14 @@ int bt_socket_server_send(bt_instance_t *ins, bt_message_packet_t *packet,
 
     packet->code = code;
 
+    //do {
     ret = send(ins->peer_fd, packet, sizeof(*packet), 0);
-    if (ret <= 0)
+    //} while ((ret == -1 && errno == EINTR) || (ret && ret != sizeof(*packet)));
+
+    if (ret <= 0) {
+        syslog(0, "%s fail:%d !!!!!!!!!\n", __func__, ret);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }

@@ -16,8 +16,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <syslog.h>
-#include "bt_tools.h"
+#include <debug.h>
 
 #include "advertiser_data.h"
 

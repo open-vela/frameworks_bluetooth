@@ -18,8 +18,12 @@
 
 #include <stddef.h>
 
-#include "bt_addr.h"
+#include "bluetooth.h"
 #include "bt_device.h"
+
+#ifndef BTSYMBOLS
+# define BTSYMBOLS(s) s
+#endif
 
 /**
  * @brief Pan role type define.
@@ -86,7 +90,7 @@ typedef struct {
  * @param callbacks - pan callback functions.
  * @return void* - callback cookie, NULL on failure.
  */
-void *bt_pan_register_callbacks(bt_instance_t *ins, const pan_callbacks_t *callbacks);
+void *BTSYMBOLS(bt_pan_register_callbacks)(bt_instance_t *ins, const pan_callbacks_t *callbacks);
 
 /**
  * @brief Unregister pan callback function
@@ -96,7 +100,7 @@ void *bt_pan_register_callbacks(bt_instance_t *ins, const pan_callbacks_t *callb
  * @return true - on callback unregister success
  * @return false - on callback cookie not found
  */
-bool bt_pan_unregister_callbacks(bt_instance_t *ins, void *cookie);
+bool BTSYMBOLS(bt_pan_unregister_callbacks)(bt_instance_t *ins, void *cookie);
 
 /**
  * @brief  Connect to pan device
@@ -107,7 +111,7 @@ bool bt_pan_unregister_callbacks(bt_instance_t *ins, void *cookie);
  * @param src_role - src pan role, reference type pan_role_t.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_pan_connect(bt_instance_t *ins, bt_address_t *addr, uint8_t dst_role, uint8_t src_role);
+bt_status_t BTSYMBOLS(bt_pan_connect)(bt_instance_t *ins, bt_address_t *addr, uint8_t dst_role, uint8_t src_role);
 
 /**
  * @brief Disconnect from pan connection
@@ -116,6 +120,6 @@ bt_status_t bt_pan_connect(bt_instance_t *ins, bt_address_t *addr, uint8_t dst_r
  * @param addr - address of peer device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_pan_disconnect(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_pan_disconnect)(bt_instance_t *ins, bt_address_t *addr);
 
 #endif /* __BT_PAN_H__ */
