@@ -93,7 +93,9 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
             return BT_STATUS_SUCCESS;
 
         memcpy(ins->packet, &packet, sizeof(packet));
-        uv_sem_post(&ins->sem);
+        uv_mutex_lock(&ins->mutex);
+        uv_cond_signal(&ins->cond);
+        uv_mutex_unlock(&ins->mutex);
         return BT_STATUS_SUCCESS;
     }
 
@@ -190,17 +192,23 @@ int bt_socket_client_sendrecv(bt_instance_t *ins, bt_message_packet_t *packet,
 {
     int ret;
 
+    uv_mutex_lock(&ins->mutex);
+
     packet->code = code;
 
     ins->packet = packet;
 
     ret = send(ins->peer_fd, packet, sizeof(*packet), 0);
-    if (ret <= 0)
+    if (ret <= 0) {
+        uv_mutex_unlock(&ins->mutex);
         return BT_STATUS_FAIL;
+    }
 
-    uv_sem_wait(&ins->sem);
+    uv_cond_wait(&ins->cond, &ins->mutex);
 
     ins->packet = NULL;
+
+    uv_mutex_unlock(&ins->mutex);
 
     return BT_STATUS_SUCCESS;
 }
@@ -210,7 +218,8 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
 {
     service_loop_init();
 
-    uv_sem_init(&ins->sem, 0);
+    uv_cond_init(&ins->cond);
+    uv_mutex_init(&ins->mutex);
 
     ins->peer_fd = bt_socket_client_connect(family, name, cpu, port);
     if (ins->peer_fd <= 0 ||
