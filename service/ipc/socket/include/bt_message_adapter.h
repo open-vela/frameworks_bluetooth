@@ -94,51 +94,51 @@ typedef union
 
 typedef union
 {
-  union {
+  struct {
     bt_address_t addr;
   } _bt_adapter_get_address,
     _bt_adapter_set_le_address;
 
-  union {
+  struct {
     char name[64];
   } _bt_adapter_set_name,
     _bt_adapter_get_name;
 
-  union {
+  struct {
     uint32_t v32;
   } _bt_adapter_start_discovery,
     _bt_adapter_set_device_class,
     _bt_adapter_set_le_io_capability;
 
-  union {
+  struct {
     uint16_t size;
     bt_uuid_t uuids[16];
   } _bt_adapter_get_uuids;
 
-  union {
+  struct {
     bt_scan_mode_t mode;
     bool bondable;
   } _bt_adapter_set_scan_mode;
 
-  union {
+  struct {
     bt_io_capability_t cap;
   } _bt_adapter_set_io_capability;
 
-  union {
+  struct {
     bt_address_t addr;
     ble_addr_type_t type;
   } _bt_adapter_get_le_address;
 
-  union {
+  struct {
     bt_address_t addr;
     bool public;
   } _bt_adapter_set_le_identity_address;
 
-  union {
+  struct {
     uint16_t v16;
   } _bt_adapter_set_le_appearance;
 
-  union {
+  struct {
     int num;
     bt_address_t *addr;
   } _bt_adapter_get_bonded_devices,
@@ -146,67 +146,67 @@ typedef union
 
 } bt_message_adapter_t;
 
-typedef struct
+typedef union
 {
-  union {
+  struct {
     bt_adapter_state_t state;
   } _on_adapter_state_changed;
 
-  union {
+  struct {
     bt_discovery_state_t state;
   } _on_discovery_state_changed;
 
-  union {
+  struct {
     bt_discovery_result_t result;
   } _on_discovery_result;
 
-  union {
+  struct {
     bt_scan_mode_t mode;
   } _on_scan_mode_changed;
 
-  union {
+  struct {
     char device_name[64];
   } _on_device_name_changed;
 
-  union {
+  struct {
     bt_address_t addr;
   } _on_pair_request;
 
-  union {
+  struct {
     bt_address_t addr;
     bt_transport_t transport;
     bt_pair_type_t type;
     uint32_t passkey;
   } _on_pair_display;
 
-  union {
+  struct {
     bt_address_t addr;
     bt_transport_t transport;
     connection_state_t state;
   } _on_connection_state_changed;
 
-  union {
+  struct {
     bt_address_t addr;
     bt_transport_t transport;
     bond_state_t state;
   } _on_bond_state_changed;
 
-  union {
+  struct {
     bt_address_t addr;
     char name[64];
   } _on_remote_name_changed;
 
-  union {
+  struct {
     bt_address_t addr;
     char alias[64];
   } _on_remote_alias_changed;
 
-  union {
+  struct {
     bt_address_t addr;
     uint32_t cod;
   } _on_remote_cod_changed;
 
-  union {
+  struct {
     bt_address_t addr;
     bt_uuid_t uuids;
     uint16_t size;
