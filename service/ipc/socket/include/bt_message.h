@@ -30,6 +30,11 @@ extern "C" {
 #include "bt_message_device.h"
 #include "bt_message_hfp_ag.h"
 #include "bt_message_hfp_hf.h"
+#include "bt_message_advertiser.h"
+#include "bt_message_scan.h"
+#include "bt_message_spp.h"
+#include "bt_message_pan.h"
+
 #include "service_loop.h"
 
 typedef enum {
@@ -39,6 +44,10 @@ typedef enum {
 #include "bt_message_device.h"
 #include "bt_message_hfp_ag.h"
 #include "bt_message_hfp_hf.h"
+#include "bt_message_advertiser.h"
+#include "bt_message_scan.h"
+#include "bt_message_spp.h"
+#include "bt_message_pan.h"
 #undef __BT_MESSAGE_CODE__
 } bt_message_type_t;
 
@@ -51,6 +60,10 @@ typedef struct
     bt_device_result_t  devs_r;
     bt_hfp_ag_result_t hfp_ag_r;
     bt_hfp_hf_result_t hfp_hf_r;
+    bt_advertiser_result_t adv_r;
+    bt_scan_result_t scan_r;
+    bt_spp_result_t spp_r;
+    bt_pan_result_t pan_r;
   };
   union {
     bt_message_manager_t manager_pl;
@@ -64,6 +77,18 @@ typedef struct
     bt_message_hfp_hf_callbacks_t hfp_hf_cb;
 
     bt_message_device_t devs_pl;
+
+    bt_message_advertiser_t adv_pl;
+    bt_message_advertiser_callbacks_t adv_cb;
+
+    bt_message_scan_t scan_pl;
+    bt_message_scan_callbacks_t scan_cb;
+
+    bt_message_spp_t spp_pl;
+    bt_message_spp_callbacks_t spp_cb;
+
+    bt_message_pan_t pan_pl;
+    bt_message_pan_callbacks_t pan_cb;
   };
 } bt_message_packet_t;
 

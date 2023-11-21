@@ -20,28 +20,29 @@
 
 #include "bluetooth.h"
 #include "bt_le_scan.h"
+#include "bt_internal.h"
 #include "scan_manager.h"
 
 #include "utils/log.h"
 
-bt_scanner_t *bt_le_start_scan(bt_instance_t *ins, const scanner_callbacks_t *cbs)
+bt_scanner_t *BTSYMBOLS(bt_le_start_scan)(bt_instance_t *ins, const scanner_callbacks_t *cbs)
 {
     return scanner_start_scan(NULL, cbs);
 }
 
-bt_scanner_t *bt_le_start_scan_settings(bt_instance_t *ins,
+bt_scanner_t *BTSYMBOLS(bt_le_start_scan_settings)(bt_instance_t *ins,
                                         ble_scan_settings_t *settings,
                                         const scanner_callbacks_t *cbs)
 {
     return scanner_start_scan_settings(NULL, settings, cbs);
 }
 
-void bt_le_stop_scan(bt_instance_t *ins, bt_scanner_t *scanner)
+void BTSYMBOLS(bt_le_stop_scan)(bt_instance_t *ins, bt_scanner_t *scanner)
 {
     scanner_stop_scan(scanner);
 }
 
-bool bt_le_scan_is_supported(bt_instance_t *ins)
+bool BTSYMBOLS(bt_le_scan_is_supported)(bt_instance_t *ins)
 {
     return scan_is_supported();
 }

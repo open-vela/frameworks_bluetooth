@@ -68,13 +68,25 @@ typedef struct _work_msg {
 static void bt_socket_client_work(service_work_t *work, void *userdata)
 {
     bt_client_msg_t *msg = userdata;
-    if (msg->packet.code > BT_ADAPTER_CALLBACK_START && msg->packet.code < BT_ADAPTER_CALLBACK_END) {
-        bt_socket_client_adapter_callback(NULL, -1, msg->ins, &msg->packet);
-    } else if (msg->packet.code > BT_HFP_AG_CALLBACK_START && msg->packet.code < BT_HFP_AG_CALLBACK_END) {
+    bt_message_packet_t *packet = &msg->packet;
+
+    if (packet->code > BT_ADAPTER_CALLBACK_START && packet->code < BT_ADAPTER_CALLBACK_END) {
+        bt_socket_client_adapter_callback(NULL, -1, msg->ins, packet);
+    } else if (packet->code > BT_HFP_AG_CALLBACK_START && packet->code < BT_HFP_AG_CALLBACK_END) {
         bt_socket_client_hfp_ag_callback(NULL, -1, msg->ins, &msg->packet);
-    } else if (msg->packet.code > BT_HFP_HF_CALLBACK_START && msg->packet.code < BT_HFP_HF_CALLBACK_END) {
+    } else if (packet->code > BT_HFP_HF_CALLBACK_START && packet->code < BT_HFP_HF_CALLBACK_END) {
         bt_socket_client_hfp_hf_callback(NULL, -1, msg->ins, &msg->packet);
+    } else if (packet->code > BT_ADVERTISER_CALLBACK_START && packet->code < BT_ADVERTISER_CALLBACK_END) {
+        bt_socket_client_advertiser_callback(NULL, -1, msg->ins, packet);
+    } else if (packet->code > BT_SCAN_CALLBACK_START && packet->code < BT_SCAN_CALLBACK_END) {
+        bt_socket_client_scan_callback(NULL, -1, msg->ins, packet);
+    } else if (packet->code > BT_SPP_CALLBACK_START && packet->code < BT_SPP_CALLBACK_END) {
+        bt_socket_client_spp_callback(NULL, -1, msg->ins, packet);
+    } else if (packet->code > BT_PAN_CALLBACK_START && packet->code < BT_PAN_CALLBACK_END) {
+        bt_socket_client_pan_callback(NULL, -1, msg->ins, packet);
+    } else {
     }
+
     free(msg);
 }
 
@@ -95,7 +107,11 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
     if ((packet.code > BT_ADAPTER_MESSAGE_START && packet.code < BT_ADAPTER_MESSAGE_END) ||
         (packet.code > BT_DEVICE_MESSAGE_START && packet.code < BT_DEVICE_MESSAGE_END) ||
         (packet.code > BT_HFP_AG_MESSAGE_START && packet.code < BT_HFP_AG_MESSAGE_END) ||
-        (packet.code > BT_HFP_HF_MESSAGE_START && packet.code < BT_HFP_HF_MESSAGE_END)) {
+        (packet.code > BT_HFP_HF_MESSAGE_START && packet.code < BT_HFP_HF_MESSAGE_END) ||
+        (packet.code > BT_ADVERTISER_MESSAGE_START && packet.code < BT_ADVERTISER_MESSAGE_END) ||
+        (packet.code > BT_SCAN_MESSAGE_START && packet.code < BT_SCAN_MESSAGE_END) ||
+        (packet.code > BT_SPP_MESSAGE_START && packet.code < BT_SPP_MESSAGE_END) ||
+        (packet.code > BT_PAN_MESSAGE_START && packet.code < BT_PAN_MESSAGE_END)) {
         if (ins->packet == NULL)
             return BT_STATUS_SUCCESS;
 
@@ -108,7 +124,11 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
 
     if ((packet.code > BT_ADAPTER_CALLBACK_START && packet.code < BT_ADAPTER_CALLBACK_END) ||
         (packet.code > BT_HFP_AG_CALLBACK_START && packet.code < BT_HFP_AG_CALLBACK_END) ||
-        (packet.code > BT_HFP_HF_CALLBACK_START && packet.code < BT_HFP_HF_CALLBACK_END)) {
+        (packet.code > BT_HFP_HF_CALLBACK_START && packet.code < BT_HFP_HF_CALLBACK_END) ||
+        (packet.code > BT_ADVERTISER_CALLBACK_START && packet.code < BT_ADVERTISER_CALLBACK_END) ||
+        (packet.code > BT_SCAN_CALLBACK_START && packet.code < BT_SCAN_CALLBACK_END) ||
+        (packet.code > BT_SPP_CALLBACK_START && packet.code < BT_SPP_CALLBACK_END) ||
+        (packet.code > BT_PAN_CALLBACK_START && packet.code < BT_PAN_CALLBACK_END)) {
         bt_client_msg_t *msg = malloc(sizeof(*msg));
         if (!msg)
             return BT_STATUS_NOMEM;
@@ -206,8 +226,12 @@ int bt_socket_client_sendrecv(bt_instance_t *ins, bt_message_packet_t *packet,
 
     ins->packet = packet;
 
+    //do {
     ret = send(ins->peer_fd, packet, sizeof(*packet), 0);
+    //} while ((ret == -1 && errno == EINTR) || (ret && ret != sizeof(*packet)));
+
     if (ret <= 0) {
+        syslog(0, "%s fail:%d !!!!!!!!!\n", __func__, ret);
         uv_mutex_unlock(&ins->mutex);
         return BT_STATUS_FAIL;
     }
@@ -238,4 +262,12 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
     service_loop_run(true, "bt_client");
 
     return BT_STATUS_SUCCESS;
+}
+
+void bt_socket_client_deinit(bt_instance_t *ins)
+{
+    // remove poll
+    // disconnect fd
+    // loop exit
+    // service_loop_exit();
 }
