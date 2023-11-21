@@ -326,7 +326,6 @@ int bt_socket_client_sendrecv(bt_instance_t *ins, bt_message_packet_t *packet,
     ins->cpacket = packet;
 
     ret = send(ins->peer_fd, packet, sizeof(*packet), 0);
-
     if (ret <= 0) {
         uv_mutex_unlock(&ins->mutex);
         return BT_STATUS_FAIL;
