@@ -305,8 +305,9 @@ typedef struct bt_instance {
     void *gatts_proxy;
     void *lea_server_proxy;
 
+    uv_mutex_t mutex;
+    uv_cond_t  cond;
     void *packet;
-    uv_sem_t sem;
     callbacks_list_t *adapter_callbacks;
     int peer_fd;
     void *adapter_cookie;

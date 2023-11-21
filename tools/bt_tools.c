@@ -265,6 +265,8 @@ static bt_command_t g_pair_cmd_tables[] = {
 
 static void bt_tool_init(void *handle)
 {
+#ifndef CONFIG_BLUETOOTH_SERVER
+
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_command_init(handle);
 #endif
@@ -317,10 +319,14 @@ static void bt_tool_init(void *handle)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     lea_vmicp_command_init(handle);
 #endif
+
+#endif /* CONFIG_BLUETOOTH_SERVER */
 }
 
 static void bt_tool_uninit(void *handle)
 {
+#ifndef CONFIG_BLUETOOTH_SERVER
+
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_command_uninit(handle);
 #endif
@@ -370,6 +376,8 @@ static void bt_tool_uninit(void *handle)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     lea_vmicp_command_uninit(handle);
 #endif
+
+#endif /* CONFIG_BLUETOOTH_SERVER */
 }
 
 static const char *cmd_err_str(int err_code)
