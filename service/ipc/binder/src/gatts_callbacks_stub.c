@@ -228,7 +228,6 @@ IBtGattServerCallbacks *BtGattServerCallbacks_new(const gatts_callbacks_t *callb
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
     cbks->callbacks = callbacks;
-    list_initialize(&cbks->pending_list);
 
     binder = BtGattServerCallbacks_getBinder(cbks);
     AIBinder_decStrong(binder);
@@ -243,27 +242,5 @@ void BtGattServerCallbacks_delete(IBtGattServerCallbacks *cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    struct list_node *node;
-    struct list_node *tmp;
-
-    list_for_every_safe(&cbks->pending_list, node, tmp)
-    {
-        pend_notify_t *pend_notify = (pend_notify_t *)node;
-        list_delete(&pend_notify->node);
-        free(pend_notify);
-    }
-
-    list_delete(&cbks->pending_list);
     free(cbks);
-}
-
-void BtGattServerCallbacks_addPending(IBtGattServerCallbacks *cbks, uint16_t attr_handle, gatts_complete_cb_t cmpl_cb)
-{
-    pend_notify_t *pend_notify = malloc(sizeof(pend_notify_t));
-    if (!pend_notify)
-        return;
-
-    pend_notify->attr_handle = attr_handle;
-    pend_notify->on_complete = cmpl_cb;
-    list_add_tail(&cbks->pending_list, &pend_notify->node);
 }
