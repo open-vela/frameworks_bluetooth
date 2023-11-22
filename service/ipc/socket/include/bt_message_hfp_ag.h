@@ -54,7 +54,7 @@
     } bt_hfp_ag_result_t;
 
     typedef union {
-        union {
+        struct {
             bt_address_t addr;
         } _bt_hfp_ag_is_connected,
             _bt_hfp_ag_is_audio_connected,
@@ -68,22 +68,22 @@
     } bt_message_hfp_ag_t;
 
     typedef struct {
-        union {
+        struct {
             bt_address_t addr;
             profile_connection_state_t state;
         } _on_connection_state_changed;
 
-        union {
+        struct {
             bt_address_t addr;
             hfp_audio_state_t state;
         } _on_audio_state_changed;
 
-        union {
+        struct {
             bt_address_t addr;
             bool started;
         } _on_voice_recognition_state_changed;
 
-        union {
+        struct {
             bt_address_t addr;
             uint8_t value;
         } _on_battery_level_changed;

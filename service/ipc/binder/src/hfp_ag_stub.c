@@ -68,7 +68,6 @@ static binder_status_t IBtHfpAg_Class_onTransact(AIBinder *binder, transaction_c
         void *cookie = profile->register_callbacks(remote, BpBtHfpAgCallbacks_getStatic());
         stat = AParcel_writeUint32(reply, (uint32_t)cookie);
         break;
-        break;
     }
     case IHFP_AG_UNREGISTER_CALLBACK: {
         AIBinder *remote = NULL;
