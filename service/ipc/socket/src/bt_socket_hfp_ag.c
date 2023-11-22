@@ -60,7 +60,7 @@
  * Private Functions
  ****************************************************************************/
 
-#if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
+#if 1 // defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
 static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr, profile_connection_state_t state)
 {
     bt_message_packet_t packet = { 0 };
