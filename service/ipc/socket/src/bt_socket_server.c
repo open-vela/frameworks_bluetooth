@@ -1,5 +1,5 @@
 /****************************************************************************
- * frameworks/media/media_daemon.c
+ * service/ipc/socket/src/bt_socket_server.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -83,6 +83,9 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
     } else if (packet.code > BT_HFP_AG_MESSAGE_START &&
                packet.code < BT_HFP_AG_MESSAGE_END) {
         bt_socket_server_hfp_ag_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_HFP_HF_MESSAGE_START &&
+               packet.code < BT_HFP_HF_MESSAGE_END) {
+        bt_socket_server_hfp_hf_process(poll, fd, ins, &packet);
     } else {
         return BT_STATUS_PARM_INVALID;
     }

@@ -1,5 +1,5 @@
 /****************************************************************************
- * frameworks/media/media_daemon.c
+ * service/ipc/socket/src/bt_socket_hfp_ag.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -39,7 +39,9 @@
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
+#include "hfp_ag_service.h"
 #include "service_loop.h"
+#include "service_manager.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -47,7 +49,7 @@
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (ins->adapter_callbacks)
+#define CBLIST (ins->hfp_ag_callbacks)
 
 /****************************************************************************
  * Private Types
@@ -57,7 +59,7 @@
  * Private Functions
  ****************************************************************************/
 
-#if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
+#if 1 // defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
 static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr, profile_connection_state_t state)
 {
     bt_message_packet_t packet;
@@ -116,25 +118,34 @@ const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
 void bt_socket_server_hfp_ag_process(service_poll_t *poll, int fd,
                                      bt_instance_t *ins, bt_message_packet_t *packet)
 {
+    hfp_ag_interface_t *profile;
+
     switch (packet->code) {
     case BT_HFP_AG_REGISTER_CALLBACK:
         if (ins->hfp_ag_cookie == NULL) {
-            ins->hfp_ag_cookie = bt_hfp_ag_register_callbacks(ins, (void *)&g_hfp_ag_socket_cbs);
+            profile = (hfp_ag_interface_t *)service_manager_get_profile(PROFILE_HFP_AG);
+            if (profile) {
+                ins->hfp_ag_cookie = profile->register_callbacks((void *)ins, (void *)&g_hfp_ag_socket_cbs);
             if (ins->hfp_ag_cookie)
                 packet->hfp_ag_r.status = BT_STATUS_SUCCESS;
             else
                 packet->hfp_ag_r.status = BT_STATUS_NO_RESOURCES;
+            } else {
+                packet->hfp_ag_r.status = BT_STATUS_SERVICE_NOT_FOUND;
+            }
         } else {
             packet->hfp_ag_r.status = BT_STATUS_BUSY;
         }
         break;
     case BT_HFP_AG_UNREGISTER_CALLBACK:
         if (ins->hfp_ag_cookie) {
-            bt_hfp_ag_unregister_callbacks((void **)&ins, ins->adapter_cookie);
+            profile = (hfp_ag_interface_t *)service_manager_get_profile(PROFILE_HFP_AG);
+            if (profile)
+                profile->unregister_callbacks((void **)&ins, ins->hfp_ag_cookie);
             ins->hfp_ag_cookie = NULL;
             packet->hfp_ag_r.status = BT_STATUS_SUCCESS;
         } else {
-            packet->hfp_ag_r.status = BT_STATUS_SERVICE_NOT_FOUND;
+            packet->hfp_ag_r.status = BT_STATUS_NOT_FOUND;
         }
         break;
     case BT_HFP_AG_IS_CONNECTED:

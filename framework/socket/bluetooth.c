@@ -29,7 +29,7 @@ bt_instance_t *bluetooth_create_instance(void)
     bt_instance_t *ins;
     uint32_t app_id;
 
-    ins = malloc(sizeof(bt_instance_t));
+    ins = zalloc(sizeof(bt_instance_t));
     if (ins == NULL) {
         return NULL;
     }

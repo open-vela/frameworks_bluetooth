@@ -25,8 +25,13 @@ extern "C" {
 #include "bt_device.h"
 #include <stddef.h>
 
+/* According to HFP 1.9: Phone number string (max. 32 digits) */
 #define HFP_PHONENUM_DIGITS_MAX 32
 #define HFP_NAME_DIGITS_MAX 64
+/* Although not explicitly stated in HFP, it is limited to 512
+   for better compatibility.
+   Also defined as BTA_HF_CLIENT_AT_MAX_LEN (512) at Android */
+#define HFP_AT_LEN_MAX 512
 
 typedef enum {
     HFP_AUDIO_STATE_DISCONNECTED,

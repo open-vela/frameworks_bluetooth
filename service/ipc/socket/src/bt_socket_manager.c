@@ -1,5 +1,5 @@
 /****************************************************************************
- * frameworks/media/media_daemon.c
+ * service/ipc/socket/src/bt_socket_manager.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
