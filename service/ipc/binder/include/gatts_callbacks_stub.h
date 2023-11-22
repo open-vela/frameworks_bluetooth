@@ -30,17 +30,10 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    struct list_node node;
-    uint16_t attr_handle;
-    gatts_complete_cb_t on_complete;
-} pend_notify_t;
-
-typedef struct {
     AIBinder_Class *clazz;
     AIBinder_Weak *WeakBinder;
     const gatts_callbacks_t *callbacks;
     const gatt_srv_db_t *srv_db;
-    struct list_node pending_list;
     void *proxy;
     void *cookie;
 } IBtGattServerCallbacks;
@@ -53,14 +46,13 @@ typedef enum {
     ICBKS_GATT_SERVER_MTU_CHANGED,
     ICBKS_GATT_SERVER_READ,
     ICBKS_GATT_SERVER_WRITE,
-    ICBKS_GATT_SERVER_COMPLETE
+    ICBKS_GATT_SERVER_NOTIFY_COMPLETE
 } IBtGattServerCallbacks_Call;
 
 AIBinder *BtGattServerCallbacks_getBinder(IBtGattServerCallbacks *adapter);
 binder_status_t BtGattServerCallbacks_associateClass(AIBinder *binder);
 IBtGattServerCallbacks *BtGattServerCallbacks_new(const gatts_callbacks_t *callbacks);
 void BtGattServerCallbacks_delete(IBtGattServerCallbacks *cbks);
-void BtGattServerCallbacks_addPending(IBtGattServerCallbacks *cbks, uint16_t attr_handle, gatts_complete_cb_t cmpl_cb);
 
 #ifdef __cplusplus
 }

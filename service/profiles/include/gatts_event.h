@@ -158,7 +158,6 @@ typedef struct
          */
         struct gatts_notify_req_param {
             void *srv_handle;
-            void *cmpl_cb;
             gatt_change_type_t type;
             uint16_t attr_handle;
         } notify;

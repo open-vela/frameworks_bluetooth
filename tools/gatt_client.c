@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#include <nuttx/config.h>
 #include <getopt.h>
+#include <nuttx/config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -176,13 +176,6 @@ error:
     return CMD_ERROR;
 }
 
-static void notify_received_cb(void *conn_handle, uint16_t attr_handle,
-                               uint8_t *value, uint16_t length)
-{
-    PRINT("gattc connection receive notify, handle 0x%04x:", attr_handle);
-    PRINT_HEXDUMP(value, length);
-}
-
 static int enable_cccd_cmd(void *handle, int argc, char *argv[])
 {
     if (argc < 2)
@@ -196,7 +189,7 @@ static int enable_cccd_cmd(void *handle, int argc, char *argv[])
     if (argc > 2)
         cccd_handle = strtol(argv[2], NULL, 16);
 
-    if (bt_gattc_subscribe(g_gattc_handles[conn_id], value_handle, cccd_handle, notify_received_cb) != BT_STATUS_SUCCESS)
+    if (bt_gattc_subscribe(g_gattc_handles[conn_id], value_handle, cccd_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -354,6 +347,13 @@ static void write_complete_callback(void *conn_handle, gatt_status_t status, uin
     PRINT("gattc connection write complete, handle 0x%04x status:%d", attr_handle, status);
 }
 
+static void notify_received_callback(void *conn_handle, uint16_t attr_handle,
+                                     uint8_t *value, uint16_t length)
+{
+    PRINT("gattc connection receive notify, handle 0x%04x:", attr_handle);
+    PRINT_HEXDUMP(value, length);
+}
+
 static gattc_callbacks_t gattc_cbs = {
     sizeof(gattc_cbs),
     connect_callback,
@@ -361,6 +361,7 @@ static gattc_callbacks_t gattc_cbs = {
     discover_callback,
     read_complete_callback,
     write_complete_callback,
+    notify_received_callback,
     mtu_exchange_callback,
 };
 

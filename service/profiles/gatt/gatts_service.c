@@ -88,7 +88,6 @@ typedef struct
     gatt_element_t *elements;
     int32_t element_size;
     gatts_callbacks_t *callbacks;
-    bt_list_t *pend_ops;
 
 } gatts_service_t;
 
@@ -155,7 +154,6 @@ static gatts_service_t *gatts_service_new(gatts_callbacks_t *callbacks)
     service->elements = NULL;
     service->element_size = 0;
     service->callbacks = callbacks;
-    service->pend_ops = NULL;
 
     return service;
 }
@@ -165,37 +163,10 @@ static void gatts_service_delete(gatts_service_t *service)
     if (!service)
         return;
 
-    bt_list_free(service->pend_ops);
-    service->pend_ops = NULL;
     pthread_mutex_destroy(&service->srv_lock);
     if (service->elements)
         free(service->elements);
     free(service);
-}
-
-static void gatts_pendops_delete(gatts_op_t *operation)
-{
-    if (!operation)
-        return;
-
-    free(operation);
-}
-
-static gatts_op_t *gatts_pendops_execute_out(gatts_service_t *service, gatts_request_t request, uint16_t attr_handle)
-{
-    bt_list_node_t *node;
-    bt_list_t *list = service->pend_ops;
-    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
-        gatts_op_t *operation = (gatts_op_t *)bt_list_node(node);
-        if (operation->request != request) {
-            continue;
-        }
-        if (request == GATTS_REQ_NOTIFY && ((operation->param.notify.attr_handle + service->srv_id) == attr_handle)) {
-            return operation;
-        }
-    }
-
-    return NULL;
 }
 
 static void gatts_process_message(void *data)
@@ -275,14 +246,8 @@ static void gatts_process_message(void *data)
         break;
     case GATTS_EVENT_CHANGE_SEND: {
         service = find_gatts_service_by_id(msg->param.change_send.element_id);
-        if (!service)
-            break;
-
-        gatts_op_t *operation = gatts_pendops_execute_out(service, GATTS_REQ_NOTIFY, msg->param.change_send.element_id);
-        if (operation) {
-            gatts_complete_cb_t cmpl_cb = operation->param.notify.cmpl_cb;
-            cmpl_cb(service, msg->param.change_send.status, operation->param.notify.attr_handle);
-            bt_list_remove(service->pend_ops, operation);
+        if (service) {
+            GATT_CBACK(service->callbacks, on_notify_complete, service, msg->param.change_send.status, msg->param.change_send.element_id ^ service->srv_id);
         }
     } break;
     default: {
@@ -398,7 +363,6 @@ static int if_gatts_dump(void)
 
 static bt_status_t if_gatts_register_service(void *remote, void **phandle, gatts_callbacks_t *callbacks)
 {
-    bt_status_t status;
     pthread_mutexattr_t attr;
 
     CHECK_ENABLED();
@@ -411,13 +375,6 @@ static bt_status_t if_gatts_register_service(void *remote, void **phandle, gatts
         pthread_mutex_unlock(&g_gatts_manager.device_lock);
         BT_LOGE("New gatts service alloc failed");
         return BT_STATUS_NOMEM;
-    }
-
-    service->pend_ops = bt_list_new((bt_list_free_cb_t)gatts_pendops_delete);
-    if (!service->pend_ops) {
-        pthread_mutex_unlock(&g_gatts_manager.device_lock);
-        status = BT_STATUS_NOMEM;
-        goto fail;
     }
 
     bt_list_add_tail(g_gatts_manager.services, service);
@@ -434,10 +391,6 @@ static bt_status_t if_gatts_register_service(void *remote, void **phandle, gatts
     *phandle = service;
 
     return BT_STATUS_SUCCESS;
-
-fail:
-    gatts_service_delete(service);
-    return status;
 }
 
 static bt_status_t if_gatts_unregister_service(void *srv_handle)
@@ -585,7 +538,7 @@ static bt_status_t if_gatts_response(void *srv_handle, uint32_t req_handle, uint
     return bt_sal_gatt_server_send_response(&manager->remote_addr, req_handle, value, length);
 }
 
-static bt_status_t if_gatts_notify(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb)
+static bt_status_t if_gatts_notify(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     gatts_service_t *service = srv_handle;
 
@@ -595,22 +548,11 @@ static bt_status_t if_gatts_notify(void *srv_handle, uint16_t attr_handle, uint8
         return BT_STATUS_PARM_INVALID;
 
     gatts_manager_t *manager = service->manager;
-    bt_status_t status = bt_sal_gatt_server_send_notification(&manager->remote_addr,
-                                                              attr_handle + service->srv_id, value, length);
-
-    if (cmpl_cb && status == BT_STATUS_SUCCESS) {
-        gatts_op_t *op = gatts_op_new(GATTS_REQ_NOTIFY);
-        op->param.notify.srv_handle = srv_handle;
-        op->param.notify.cmpl_cb = cmpl_cb;
-        op->param.notify.type = GATT_CHANGE_TYPE_NOTIFY;
-        op->param.notify.attr_handle = attr_handle;
-        bt_list_add_tail(service->pend_ops, op);
-    }
-
-    return status;
+    return bt_sal_gatt_server_send_notification(&manager->remote_addr,
+                                                attr_handle + service->srv_id, value, length);
 }
 
-static bt_status_t if_gatts_indicate(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb)
+static bt_status_t if_gatts_indicate(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     gatts_service_t *service = srv_handle;
 
@@ -620,19 +562,8 @@ static bt_status_t if_gatts_indicate(void *srv_handle, uint16_t attr_handle, uin
         return BT_STATUS_PARM_INVALID;
 
     gatts_manager_t *manager = service->manager;
-    bt_status_t status = bt_sal_gatt_server_send_indication(&manager->remote_addr,
-                                                            attr_handle + service->srv_id, value, length);
-
-    if (cmpl_cb && status == BT_STATUS_SUCCESS) {
-        gatts_op_t *op = gatts_op_new(GATTS_REQ_NOTIFY);
-        op->param.notify.srv_handle = srv_handle;
-        op->param.notify.cmpl_cb = cmpl_cb;
-        op->param.notify.type = GATT_CHANGE_TYPE_INDICATE;
-        op->param.notify.attr_handle = attr_handle;
-        bt_list_add_tail(service->pend_ops, op);
-    }
-
-    return status;
+    return bt_sal_gatt_server_send_indication(&manager->remote_addr,
+                                              attr_handle + service->srv_id, value, length);
 }
 
 static const gatts_interface_t gatts_if = {
@@ -718,6 +649,7 @@ void if_gatts_on_notification_sent(bt_address_t *addr, uint16_t element_id, gatt
     gatts_msg_t *msg = gatts_msg_new(GATTS_EVENT_CHANGE_SEND, 0);
     msg->param.change_send.element_id = element_id;
     msg->param.change_send.status = status;
+    memcpy(&msg->param.change_send.addr, addr, sizeof(bt_address_t));
     gatts_send_message(msg);
 }
 

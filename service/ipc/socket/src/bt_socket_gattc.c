@@ -81,8 +81,8 @@ static void on_disconnected_cb(gattc_handle_t conn_handle, bt_address_t *addr)
     memcpy(&packet.gattc_cb._on_disconnected.addr, addr, sizeof(bt_address_t));
     bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_DISCONNECTED);
 }
-static void on_discover_cb(gattc_handle_t conn_handle, gatt_status_t status, bt_uuid_t *uuid,
-                           uint16_t start_handle, uint16_t end_handle)
+static void on_discovered_cb(gattc_handle_t conn_handle, gatt_status_t status, bt_uuid_t *uuid,
+                             uint16_t start_handle, uint16_t end_handle)
 {
     bt_message_packet_t packet;
     bt_gattc_remote_t *gattc_remote = if_gattc_get_remote(conn_handle);
@@ -90,7 +90,10 @@ static void on_discover_cb(gattc_handle_t conn_handle, gatt_status_t status, bt_
     packet.gattc_cb._on_discovered.status = status;
     packet.gattc_cb._on_discovered.start_handle = start_handle;
     packet.gattc_cb._on_discovered.end_handle = end_handle;
-    memcpy(&packet.gattc_cb._on_discovered.uuid, uuid, sizeof(bt_uuid_t));
+    if (uuid == NULL)
+        packet.gattc_cb._on_discovered.uuid.type = 0;
+    else
+        memcpy(&packet.gattc_cb._on_discovered.uuid, uuid, sizeof(bt_uuid_t));
     bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_DISCOVERED);
 }
 static void on_read_cb(gattc_handle_t conn_handle, gatt_status_t status, uint16_t attr_handle,
@@ -108,7 +111,7 @@ static void on_read_cb(gattc_handle_t conn_handle, gatt_status_t status, uint16_
     packet.gattc_cb._on_read.status = status;
     packet.gattc_cb._on_read.attr_handle = attr_handle;
     packet.gattc_cb._on_read.length = length;
-    memcpy(&packet.gattc_cb._on_read.value, value, length);
+    memcpy(packet.gattc_cb._on_read.value, value, length);
     bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_READ);
 }
 static void on_written_cb(gattc_handle_t conn_handle, gatt_status_t status, uint16_t attr_handle)
@@ -118,7 +121,23 @@ static void on_written_cb(gattc_handle_t conn_handle, gatt_status_t status, uint
     packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
     packet.gattc_cb._on_written.status = status;
     packet.gattc_cb._on_written.attr_handle = attr_handle;
-    bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_WRITE);
+    bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_WRITTEN);
+}
+static void on_notified_cb(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+{
+    bt_message_packet_t packet;
+    bt_gattc_remote_t *gattc_remote = if_gattc_get_remote(conn_handle);
+
+    if (length > sizeof(packet.gattc_cb._on_notified.value)) {
+        BT_LOGW("exceeds gattc maximum attr value size :%d", length);
+        length = sizeof(packet.gattc_cb._on_notified.value);
+    }
+
+    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_notified.attr_handle = attr_handle;
+    packet.gattc_cb._on_notified.length = length;
+    memcpy(packet.gattc_cb._on_notified.value, value, length);
+    bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_NOTIFIED);
 }
 static void on_mtu_exchange_cb(gattc_handle_t conn_handle, gatt_status_t status, uint32_t mtu)
 {
@@ -132,9 +151,10 @@ static void on_mtu_exchange_cb(gattc_handle_t conn_handle, gatt_status_t status,
 const static gattc_callbacks_t g_gattc_socket_cbs = {
     .on_connected = on_connected_cb,
     .on_disconnected = on_disconnected_cb,
-    .on_discovered = on_discover_cb,
+    .on_discovered = on_discovered_cb,
     .on_read = on_read_cb,
     .on_written = on_written_cb,
+    .on_notified = on_notified_cb,
     .on_mtu_exchange = on_mtu_exchange_cb,
 };
 /****************************************************************************
@@ -202,33 +222,38 @@ void bt_socket_server_gattc_process(service_poll_t *poll, int fd,
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_read)(
                                            packet->gattc_pl._bt_gattc_read.handle,
                                            packet->gattc_pl._bt_gattc_read.attr_handle);
+        break;
     case BT_GATT_CLIENT_WRITE:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_write)(
                                            packet->gattc_pl._bt_gattc_write.handle,
                                            packet->gattc_pl._bt_gattc_write.attr_handle,
                                            packet->gattc_pl._bt_gattc_write.value,
                                            packet->gattc_pl._bt_gattc_write.length);
+        break;
     case BT_GATT_CLIENT_WRITE_NR:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_write_without_response)(
                                            packet->gattc_pl._bt_gattc_write.handle,
                                            packet->gattc_pl._bt_gattc_write.attr_handle,
                                            packet->gattc_pl._bt_gattc_write.value,
                                            packet->gattc_pl._bt_gattc_write.length);
+        break;
     case BT_GATT_CLIENT_SUBSCRIBE:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_subscribe)(
                                            packet->gattc_pl._bt_gattc_subscribe.handle,
                                            packet->gattc_pl._bt_gattc_subscribe.value_handle,
-                                           packet->gattc_pl._bt_gattc_subscribe.cccd_handle,
-                                           NULL);
+                                           packet->gattc_pl._bt_gattc_subscribe.cccd_handle);
+        break;
     case BT_GATT_CLIENT_UNSUBSCRIBE:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_unsubscribe)(
                                            packet->gattc_pl._bt_gattc_unsubscribe.handle,
                                            packet->gattc_pl._bt_gattc_unsubscribe.value_handle,
                                            packet->gattc_pl._bt_gattc_unsubscribe.cccd_handle);
+        break;
     case BT_GATT_CLIENT_EXCHANGE_MTU:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_exchange_mtu)(
                                            packet->gattc_pl._bt_gattc_exchange_mtu.handle,
                                            packet->gattc_pl._bt_gattc_exchange_mtu.mtu);
+        break;
     case BT_GATT_CLIENT_UPDATE_CONNECTION_PARAM:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_update_connection_parameter)(
                                            packet->gattc_pl._bt_gattc_update_connection_param.handle,
@@ -282,14 +307,18 @@ int bt_socket_client_gattc_callback(service_poll_t *poll,
                         packet->gattc_cb._on_read.value,
                         packet->gattc_cb._on_read.length);
         break;
-    case BT_GATT_CLIENT_ON_WRITE:
+    case BT_GATT_CLIENT_ON_WRITTEN:
         CALLBACK_REMOTE(gattc_remote, gattc_callbacks_t,
                         on_written,
                         packet->gattc_cb._on_written.status,
                         packet->gattc_cb._on_written.attr_handle);
         break;
-    case BT_GATT_CLIENT_ON_NOTIFY:
-
+    case BT_GATT_CLIENT_ON_NOTIFIED:
+        CALLBACK_REMOTE(gattc_remote, gattc_callbacks_t,
+                        on_notified,
+                        packet->gattc_cb._on_notified.attr_handle,
+                        packet->gattc_cb._on_notified.value,
+                        packet->gattc_cb._on_notified.length);
         break;
     default:
         return BT_STATUS_PARM_INVALID;

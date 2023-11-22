@@ -139,12 +139,38 @@ static void BpBtGattServerCallbacks_onMtuChanged(void *handle, bt_address_t *add
     }
 }
 
+static void BpBtGattServerCallbacks_onNotifyComplete(void *handle, gatt_status_t status, uint16_t attr_handle)
+{
+    binder_status_t stat = STATUS_OK;
+    AParcel *parcelIn, *parcelOut;
+    AIBinder *binder = if_gatts_get_remote(handle);
+
+    stat = AIBinder_prepareTransaction(binder, &parcelIn);
+    if (stat != STATUS_OK)
+        return;
+
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)status);
+    if (stat != STATUS_OK)
+        return;
+
+    stat = AParcel_writeUint32(parcelIn, (uint32_t)attr_handle);
+    if (stat != STATUS_OK)
+        return;
+
+    stat = AIBinder_transact(binder, ICBKS_GATT_SERVER_NOTIFY_COMPLETE, &parcelIn, &parcelOut, 0 /*flags*/);
+    if (stat != STATUS_OK) {
+        BT_LOGE("%s transact error:%d", __func__, stat);
+        return;
+    }
+}
+
 static const gatts_callbacks_t static_gatts_cbks = {
     sizeof(static_gatts_cbks),
     BpBtGattServerCallbacks_onConnected,
     BpBtGattServerCallbacks_onDisconnected,
     BpBtGattServerCallbacks_onStarted,
     BpBtGattServerCallbacks_onStopped,
+    BpBtGattServerCallbacks_onNotifyComplete,
     BpBtGattServerCallbacks_onMtuChanged,
 };
 
@@ -211,29 +237,4 @@ uint16_t BpBtGattServerCallbacks_onWrite(void *handle, uint16_t attr_handle, con
     }
 
     return length;
-}
-
-void BpBtGattServerCallbacks_onComplete(void *handle, gatt_status_t status, uint16_t attr_handle)
-{
-    binder_status_t stat = STATUS_OK;
-    AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gatts_get_remote(handle);
-
-    stat = AIBinder_prepareTransaction(binder, &parcelIn);
-    if (stat != STATUS_OK)
-        return;
-
-    stat = AParcel_writeUint32(parcelIn, (uint32_t)status);
-    if (stat != STATUS_OK)
-        return;
-
-    stat = AParcel_writeUint32(parcelIn, (uint32_t)attr_handle);
-    if (stat != STATUS_OK)
-        return;
-
-    stat = AIBinder_transact(binder, ICBKS_GATT_SERVER_COMPLETE, &parcelIn, &parcelOut, 0 /*flags*/);
-    if (stat != STATUS_OK) {
-        BT_LOGE("%s transact error:%d", __func__, stat);
-        return;
-    }
 }

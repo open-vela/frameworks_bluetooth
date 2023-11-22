@@ -45,20 +45,6 @@ static void IBtGattClientCallbacks_Class_onDestroy(void *userData)
     BT_LOGD("%s", __func__);
 }
 
-static notify_callback_t *BtGattClientCallbacks_findNotifyCallback(IBtGattClientCallbacks *cbks, uint16_t attr_handle)
-{
-    struct list_node *node;
-
-    list_for_every(&cbks->notify_list, node)
-    {
-        notify_callback_t *notify_callback = (notify_callback_t *)node;
-        if (notify_callback->attr_handle == attr_handle)
-            return notify_callback;
-    }
-
-    return NULL;
-}
-
 static binder_status_t IBtGattClientCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
@@ -84,7 +70,7 @@ static binder_status_t IBtGattClientCallbacks_Class_onTransact(AIBinder *binder,
             cbks->callbacks->on_disconnected(cbks, &addr);
         break;
     }
-    case ICBKS_GATT_CLIENT_DISCOVER: {
+    case ICBKS_GATT_CLIENT_DISCOVERED: {
         uint32_t status;
         bt_uuid_t uuid;
         uint32_t start_handle;
@@ -153,7 +139,7 @@ static binder_status_t IBtGattClientCallbacks_Class_onTransact(AIBinder *binder,
         free(value);
         break;
     }
-    case ICBKS_GATT_CLIENT_WRITE: {
+    case ICBKS_GATT_CLIENT_WRITTEN: {
         uint32_t status;
         uint32_t attr_handle;
 
@@ -169,7 +155,7 @@ static binder_status_t IBtGattClientCallbacks_Class_onTransact(AIBinder *binder,
             cbks->callbacks->on_written(cbks, status, (uint16_t)attr_handle);
         break;
     }
-    case ICBKS_GATT_CLIENT_NOTIFY: {
+    case ICBKS_GATT_CLIENT_NOTIFIED: {
         uint32_t attr_handle;
         uint8_t *value;
         uint32_t length;
@@ -186,9 +172,8 @@ static binder_status_t IBtGattClientCallbacks_Class_onTransact(AIBinder *binder,
         if (stat != STATUS_OK)
             return stat;
 
-        notify_callback_t *notify_callback = BtGattClientCallbacks_findNotifyCallback(cbks, (uint16_t)attr_handle);
-        if (notify_callback && notify_callback->on_notify)
-            notify_callback->on_notify(cbks, (uint16_t)attr_handle, value, (uint16_t)length);
+        if (cbks->callbacks && cbks->callbacks->on_notified)
+            cbks->callbacks->on_notified(cbks, (uint16_t)attr_handle, value, (uint16_t)length);
         free(value);
         break;
     }
@@ -242,7 +227,6 @@ IBtGattClientCallbacks *BtGattClientCallbacks_new(const gattc_callbacks_t *callb
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
     cbks->callbacks = callbacks;
-    list_initialize(&cbks->notify_list);
 
     binder = BtGattClientCallbacks_getBinder(cbks);
     AIBinder_decStrong(binder);
@@ -257,45 +241,5 @@ void BtGattClientCallbacks_delete(IBtGattClientCallbacks *cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    struct list_node *node;
-    struct list_node *tmp;
-
-    list_for_every_safe(&cbks->notify_list, node, tmp)
-    {
-        notify_callback_t *notify_callback = (notify_callback_t *)node;
-        list_delete(&notify_callback->node);
-        free(notify_callback);
-    }
-
-    list_delete(&cbks->notify_list);
     free(cbks);
-}
-
-void BtGattClientCallbacks_registerNotify(IBtGattClientCallbacks *cbks, uint16_t value_handle, gattc_notify_cb_t notify_cb)
-{
-    notify_callback_t *notify_callback = BtGattClientCallbacks_findNotifyCallback(cbks, value_handle);
-
-    if (notify_callback) {
-        notify_callback->on_notify = notify_cb;
-        return;
-    }
-
-    notify_callback = malloc(sizeof(notify_callback_t));
-    if (!notify_callback)
-        return;
-
-    notify_callback->attr_handle = value_handle;
-    notify_callback->on_notify = notify_cb;
-    list_add_tail(&cbks->notify_list, &notify_callback->node);
-}
-
-void BtGattClientCallbacks_unregisterNotify(IBtGattClientCallbacks *cbks, uint16_t value_handle)
-{
-    notify_callback_t *notify_callback = BtGattClientCallbacks_findNotifyCallback(cbks, value_handle);
-
-    if (!notify_callback)
-        return;
-
-    list_delete(&notify_callback->node);
-    free(notify_callback);
 }

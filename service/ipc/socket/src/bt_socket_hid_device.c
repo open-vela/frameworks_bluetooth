@@ -103,7 +103,7 @@ static void on_set_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt_type,
     memcpy(&packet.hidd_cb._on_set_report.addr, addr, sizeof(bt_address_t));
     packet.hidd_cb._on_set_report.rpt_type = rpt_type;
     packet.hidd_cb._on_set_report.rpt_size = rpt_size;
-    memcpy(&packet.hidd_cb._on_set_report.rpt_data, rpt_data, rpt_size);
+    memcpy(packet.hidd_cb._on_set_report.rpt_data, rpt_data, rpt_size);
     bt_socket_server_send(ins, &packet, BT_HID_DEVICE_ON_SET_REPORT);
 }
 static void on_receive_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt_type,
@@ -120,7 +120,7 @@ static void on_receive_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt_t
     memcpy(&packet.hidd_cb._on_receive_report.addr, addr, sizeof(bt_address_t));
     packet.hidd_cb._on_receive_report.rpt_type = rpt_type;
     packet.hidd_cb._on_receive_report.rpt_size = rpt_size;
-    memcpy(&packet.hidd_cb._on_receive_report.rpt_data, rpt_data, rpt_size);
+    memcpy(packet.hidd_cb._on_receive_report.rpt_data, rpt_data, rpt_size);
     bt_socket_server_send(ins, &packet, BT_HID_DEVICE_ON_RECEIVE_REPORT);
 }
 static void on_virtual_unplug_cb(void *cookie, bt_address_t *addr)

@@ -266,11 +266,6 @@ static int stop_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void notify_complete_cb(void *srv_handle, gatt_status_t status, uint16_t attr_handle)
-{
-    PRINT("gatts service notify complete, handle 0x%04x status:%d", attr_handle, status);
-}
-
 static int notify_bas_cmd(void *handle, int argc, char *argv[])
 {
     if (argc < 1)
@@ -283,7 +278,7 @@ static int notify_bas_cmd(void *handle, int argc, char *argv[])
     }
 
     battery_level = new_level;
-    if (bt_gatts_notify(g_bas_handle, BAS_BATTERY_LEVEL_CHR_ID, (uint8_t *)&battery_level, sizeof(battery_level), notify_complete_cb) != BT_STATUS_SUCCESS)
+    if (bt_gatts_notify(g_bas_handle, BAS_BATTERY_LEVEL_CHR_ID, (uint8_t *)&battery_level, sizeof(battery_level)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -294,15 +289,10 @@ static int notify_cus_cmd(void *handle, int argc, char *argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_gatts_notify(g_custom_handle, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[0], strlen(argv[0]), notify_complete_cb) != BT_STATUS_SUCCESS)
+    if (bt_gatts_notify(g_custom_handle, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[0], strlen(argv[0])) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
-}
-
-static void indicate_complete_cb(void *srv_handle, gatt_status_t status, uint16_t attr_handle)
-{
-    PRINT("gatts service indicate complete, status:%d", status);
 }
 
 static int indicate_cus_cmd(void *handle, int argc, char *argv[])
@@ -310,7 +300,7 @@ static int indicate_cus_cmd(void *handle, int argc, char *argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_gatts_indicate(g_custom_handle, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[0], strlen(argv[0]), indicate_complete_cb) != BT_STATUS_SUCCESS)
+    if (bt_gatts_indicate(g_custom_handle, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[0], strlen(argv[0])) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -336,6 +326,11 @@ static void stop_callback(void *srv_handle, gatt_status_t status)
     PRINT("gatts service stop complete, status:%d", status);
 }
 
+static void notify_complete_callback(void *srv_handle, gatt_status_t status, uint16_t attr_handle)
+{
+    PRINT("gatts service notify complete, handle 0x%04x status:%d", attr_handle, status);
+}
+
 static void mtu_change_callback(void *srv_handle, bt_address_t *addr, uint32_t mtu)
 {
     PRINT_ADDR("gatts_mtu_change_callback, addr:%s, mtu:%d", addr, mtu);
@@ -347,6 +342,7 @@ static gatts_callbacks_t gatts_cbs = {
     disconnect_callback,
     start_callback,
     stop_callback,
+    notify_complete_callback,
     mtu_change_callback,
 };
 

@@ -84,16 +84,16 @@ bt_status_t BTSYMBOLS(bt_gatts_response)(gatts_handle_t srv_handle, uint32_t req
     return profile->response(srv_handle, req_handle, value, length);
 }
 
-bt_status_t BTSYMBOLS(bt_gatts_notify)(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb)
+bt_status_t BTSYMBOLS(bt_gatts_notify)(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     gatts_interface_t *profile = get_profile_service();
 
-    return profile->notify(srv_handle, attr_handle, value, length, cmpl_cb);
+    return profile->notify(srv_handle, attr_handle, value, length);
 }
 
-bt_status_t BTSYMBOLS(bt_gatts_indicate)(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb)
+bt_status_t BTSYMBOLS(bt_gatts_indicate)(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     gatts_interface_t *profile = get_profile_service();
 
-    return profile->indicate(srv_handle, attr_handle, value, length, cmpl_cb);
+    return profile->indicate(srv_handle, attr_handle, value, length);
 }

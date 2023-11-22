@@ -31,7 +31,6 @@ extern "C" {
 const gatts_callbacks_t *BpBtGattServerCallbacks_getStatic(void);
 uint16_t BpBtGattServerCallbacks_onRead(void *handle, uint16_t attr_handle, uint32_t req_handle);
 uint16_t BpBtGattServerCallbacks_onWrite(void *handle, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset);
-void BpBtGattServerCallbacks_onComplete(void *handle, gatt_status_t status, uint16_t attr_handle);
 
 #ifdef __cplusplus
 }

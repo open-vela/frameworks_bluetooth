@@ -45,20 +45,6 @@ static void IBtGattServerCallbacks_Class_onDestroy(void *userData)
     BT_LOGD("%s", __func__);
 }
 
-static pend_notify_t *BtGattServerCallbacks_findPendNotify(IBtGattServerCallbacks *cbks, uint16_t attr_handle)
-{
-    struct list_node *node;
-
-    list_for_every(&cbks->pending_list, node)
-    {
-        pend_notify_t *pend_notify = (pend_notify_t *)node;
-        if (pend_notify->attr_handle == attr_handle)
-            return pend_notify;
-    }
-
-    return NULL;
-}
-
 static binder_status_t IBtGattServerCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
@@ -176,7 +162,7 @@ static binder_status_t IBtGattServerCallbacks_Class_onTransact(AIBinder *binder,
         free(value);
         break;
     }
-    case ICBKS_GATT_SERVER_COMPLETE: {
+    case ICBKS_GATT_SERVER_NOTIFY_COMPLETE: {
         uint32_t status;
         uint32_t attr_handle;
 
@@ -188,13 +174,8 @@ static binder_status_t IBtGattServerCallbacks_Class_onTransact(AIBinder *binder,
         if (stat != STATUS_OK)
             return stat;
 
-        pend_notify_t *pend_notify = BtGattServerCallbacks_findPendNotify(cbks, (uint16_t)attr_handle);
-        if (pend_notify) {
-            if (pend_notify->on_complete)
-                pend_notify->on_complete(cbks, status, (uint16_t)attr_handle);
-            list_delete(&pend_notify->node);
-            free(pend_notify);
-        }
+        if (cbks->callbacks && cbks->callbacks->on_notify_complete)
+            cbks->callbacks->on_notify_complete(cbks, status, (uint16_t)attr_handle);
         break;
     }
     default:
@@ -247,7 +228,6 @@ IBtGattServerCallbacks *BtGattServerCallbacks_new(const gatts_callbacks_t *callb
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
     cbks->callbacks = callbacks;
-    list_initialize(&cbks->pending_list);
 
     binder = BtGattServerCallbacks_getBinder(cbks);
     AIBinder_decStrong(binder);
@@ -262,27 +242,5 @@ void BtGattServerCallbacks_delete(IBtGattServerCallbacks *cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    struct list_node *node;
-    struct list_node *tmp;
-
-    list_for_every_safe(&cbks->pending_list, node, tmp)
-    {
-        pend_notify_t *pend_notify = (pend_notify_t *)node;
-        list_delete(&pend_notify->node);
-        free(pend_notify);
-    }
-
-    list_delete(&cbks->pending_list);
     free(cbks);
-}
-
-void BtGattServerCallbacks_addPending(IBtGattServerCallbacks *cbks, uint16_t attr_handle, gatts_complete_cb_t cmpl_cb)
-{
-    pend_notify_t *pend_notify = malloc(sizeof(pend_notify_t));
-    if (!pend_notify)
-        return;
-
-    pend_notify->attr_handle = attr_handle;
-    pend_notify->on_complete = cmpl_cb;
-    list_add_tail(&cbks->pending_list, &pend_notify->node);
 }

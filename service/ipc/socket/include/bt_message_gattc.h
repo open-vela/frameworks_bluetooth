@@ -38,8 +38,8 @@
     BT_GATT_CLIENT_ON_DISCOVERED,
     BT_GATT_CLIENT_ON_MTU_EXCHANGE,
     BT_GATT_CLIENT_ON_READ,
-    BT_GATT_CLIENT_ON_WRITE,
-    BT_GATT_CLIENT_ON_NOTIFY,
+    BT_GATT_CLIENT_ON_WRITTEN,
+    BT_GATT_CLIENT_ON_NOTIFIED,
     BT_GATT_CLIENT_CALLBACK_END,
 #endif
 
@@ -117,7 +117,6 @@ typedef union {
         gattc_handle_t handle;
         uint16_t value_handle;
         uint16_t cccd_handle;
-        gattc_notify_cb_t notify_cb;
     } _bt_gattc_subscribe;
 
     struct {
@@ -191,7 +190,7 @@ typedef union {
         uint16_t attr_handle;
         uint16_t length;
         uint8_t value[512];
-    } _on_notify;
+    } _on_notified;
 
 } bt_message_gattc_callbacks_t;
 

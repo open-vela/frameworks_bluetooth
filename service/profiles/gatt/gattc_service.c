@@ -265,9 +265,7 @@ static void gattc_process_message(void *data)
         GATT_CBACK(connection->callbacks, on_written, connection, msg->param.write.status, msg->param.write.element_id);
     } break;
     case GATTC_EVENT_NOTIFY: {
-        gatt_element_t *element = find_gattc_element_by_handle(connection, msg->param.notify.element_id);
-        if (element && element->notify_cb)
-            element->notify_cb(connection, msg->param.notify.element_id, msg->param.notify.value, msg->param.notify.length);
+        GATT_CBACK(connection->callbacks, on_notified, connection, msg->param.notify.element_id, msg->param.notify.value, msg->param.notify.length);
     } break;
     case GATTC_EVENT_MTU_CFG: {
         GATT_CBACK(connection->callbacks, on_mtu_exchange, connection, msg->param.cfg_mtu.status, msg->param.cfg_mtu.mtu);
@@ -571,7 +569,7 @@ static bt_status_t if_gattc_write_without_response(void *conn_handle, uint16_t a
                                             value, length, GATT_WRITE_TYPE_NO_RSP);
 }
 
-static bt_status_t if_gattc_subscribe(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb)
+static bt_status_t if_gattc_subscribe(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle)
 {
     gattc_connection_t *connection = conn_handle;
 
@@ -582,7 +580,7 @@ static bt_status_t if_gattc_subscribe(void *conn_handle, uint16_t value_handle, 
     if (!element)
         return BT_STATUS_NO_RESOURCES;
 
-    element->notify_cb = notify_cb;
+    element->notify_enable = true;
 
     return bt_sal_gatt_client_register_notifications(&connection->remote_addr, value_handle, true, GATT_CHANGE_TYPE_NOTIFY);
 }
@@ -598,7 +596,7 @@ static bt_status_t if_gattc_unsubscribe(void *conn_handle, uint16_t value_handle
     if (!element)
         return BT_STATUS_NO_RESOURCES;
 
-    element->notify_cb = NULL;
+    element->notify_enable = false;
 
     return bt_sal_gatt_client_register_notifications(&connection->remote_addr, value_handle, false, GATT_CHANGE_TYPE_NOTIFY);
 }
