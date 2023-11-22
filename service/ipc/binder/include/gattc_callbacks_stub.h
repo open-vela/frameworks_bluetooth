@@ -30,16 +30,9 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    struct list_node node;
-    uint16_t attr_handle;
-    gattc_notify_cb_t on_notify;
-} notify_callback_t;
-
-typedef struct {
     AIBinder_Class *clazz;
     AIBinder_Weak *WeakBinder;
     const gattc_callbacks_t *callbacks;
-    struct list_node notify_list;
     void *proxy;
     void *cookie;
 } IBtGattClientCallbacks;
