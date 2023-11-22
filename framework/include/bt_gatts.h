@@ -52,8 +52,8 @@ typedef struct {
 } gatt_attr_db_t;
 
 typedef struct {
-    gatt_attr_db_t *attr_db;
     int32_t attr_num;
+    gatt_attr_db_t *attr_db;
 } gatt_srv_db_t;
 
 typedef void (*gatts_connected_cb_t)(gatts_handle_t srv_handle, bt_address_t *addr);
@@ -61,6 +61,7 @@ typedef void (*gatts_disconnected_cb_t)(gatts_handle_t srv_handle, bt_address_t 
 typedef void (*gatts_started_cb_t)(gatts_handle_t srv_handle, gatt_status_t status);
 typedef void (*gatts_stopped_cb_t)(gatts_handle_t srv_handle, gatt_status_t status);
 typedef void (*gatts_mtu_changed_cb_t)(gatts_handle_t srv_handle, bt_address_t *addr, uint32_t mtu);
+typedef void (*gatts_nofity_complete_cb_t)(gatts_handle_t srv_handle, gatt_status_t status, uint16_t attr_handle);
 
 typedef struct {
     uint32_t size;
@@ -68,10 +69,9 @@ typedef struct {
     gatts_disconnected_cb_t on_disconnected;
     gatts_started_cb_t on_started;
     gatts_stopped_cb_t on_stopped;
+    gatts_nofity_complete_cb_t on_notify_complete;
     gatts_mtu_changed_cb_t on_mtu_changed;
 } gatts_callbacks_t;
-
-typedef void (*gatts_complete_cb_t)(gatts_handle_t srv_handle, gatt_status_t status, uint16_t attr_handle);
 
 bt_status_t BTSYMBOLS(bt_gatts_register_service)(bt_instance_t *ins, gatts_handle_t *phandle, gatts_callbacks_t *callbacks);
 bt_status_t BTSYMBOLS(bt_gatts_unregister_service)(gatts_handle_t srv_handle);
@@ -81,8 +81,8 @@ bt_status_t BTSYMBOLS(bt_gatts_create_service_table)(gatts_handle_t srv_handle, 
 bt_status_t BTSYMBOLS(bt_gatts_start)(gatts_handle_t srv_handle);
 bt_status_t BTSYMBOLS(bt_gatts_stop)(gatts_handle_t srv_handle);
 bt_status_t BTSYMBOLS(bt_gatts_response)(gatts_handle_t srv_handle, uint32_t req_handle, uint8_t *value, uint16_t length);
-bt_status_t BTSYMBOLS(bt_gatts_notify)(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
-bt_status_t BTSYMBOLS(bt_gatts_indicate)(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
+bt_status_t BTSYMBOLS(bt_gatts_notify)(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
+bt_status_t BTSYMBOLS(bt_gatts_indicate)(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
 
 #ifdef __cplusplus
 }

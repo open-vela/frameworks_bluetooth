@@ -30,16 +30,9 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    struct list_node node;
-    uint16_t attr_handle;
-    gattc_notify_cb_t on_notify;
-} notify_callback_t;
-
-typedef struct {
     AIBinder_Class *clazz;
     AIBinder_Weak *WeakBinder;
     const gattc_callbacks_t *callbacks;
-    struct list_node notify_list;
     void *proxy;
     void *cookie;
 } IBtGattClientCallbacks;
@@ -47,19 +40,17 @@ typedef struct {
 typedef enum {
     ICBKS_GATT_CLIENT_CONNECTED = FIRST_CALL_TRANSACTION,
     ICBKS_GATT_CLIENT_DISCONNECTED,
-    ICBKS_GATT_CLIENT_DISCOVER,
+    ICBKS_GATT_CLIENT_DISCOVERED,
     ICBKS_GATT_CLIENT_MTU_EXCHANGE,
     ICBKS_GATT_CLIENT_READ,
-    ICBKS_GATT_CLIENT_WRITE,
-    ICBKS_GATT_CLIENT_NOTIFY
+    ICBKS_GATT_CLIENT_WRITTEN,
+    ICBKS_GATT_CLIENT_NOTIFIED
 } IBtGattClientCallbacks_Call;
 
 AIBinder *BtGattClientCallbacks_getBinder(IBtGattClientCallbacks *adapter);
 binder_status_t BtGattClientCallbacks_associateClass(AIBinder *binder);
 IBtGattClientCallbacks *BtGattClientCallbacks_new(const gattc_callbacks_t *callbacks);
 void BtGattClientCallbacks_delete(IBtGattClientCallbacks *cbks);
-void BtGattClientCallbacks_registerNotify(IBtGattClientCallbacks *cbks, uint16_t value_handle, gattc_notify_cb_t notify_cb);
-void BtGattClientCallbacks_unregisterNotify(IBtGattClientCallbacks *cbks, uint16_t value_handle);
 
 #ifdef __cplusplus
 }

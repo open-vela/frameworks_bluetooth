@@ -34,9 +34,9 @@
     BT_GATT_SERVER_ON_STARTED,
     BT_GATT_SERVER_ON_STOPPED,
     BT_GATT_SERVER_ON_MTU_CHANGED,
-    BT_GATT_SERVER_ON_READ,
-    BT_GATT_SERVER_ON_WRITE,
-    BT_GATT_SERVER_ON_COMPLETE,
+    BT_GATT_SERVER_ON_READ_REQUEST,
+    BT_GATT_SERVER_ON_WRITE_REQUEST,
+    BT_GATT_SERVER_NOTIFY_COMPLETE,
     BT_GATT_SERVER_CALLBACK_END,
 #endif
 
@@ -53,6 +53,7 @@
 typedef struct {
     bt_instance_t *ins;
     gatts_callbacks_t *callback;
+    const gatt_srv_db_t *srv_db;
     void *cookie;
 } bt_gatts_remote_t;
 
@@ -84,7 +85,8 @@ typedef union {
 
     struct {
         gatts_handle_t handle;
-        gatt_srv_db_t srv_db;
+        int32_t attr_num;
+        gatt_attr_db_t attr_db[0];
     } _bt_gatts_create_srv_tbl;
 
     struct {
@@ -107,7 +109,6 @@ typedef union {
         uint16_t attr_handle;
         uint16_t length;
         uint8_t value[512];
-        gatts_complete_cb_t cmpl_cb;
     } _bt_gatts_notify;
 
 } bt_message_gatts_t;
@@ -145,9 +146,23 @@ typedef union {
 
     struct {
         void *remote;
+        uint16_t attr_handle;
+        uint32_t req_handle;
+    } _on_read_request;
+
+    struct {
+        void *remote;
+        uint16_t attr_handle;
+        uint16_t offset;
+        uint16_t length;
+        uint8_t value[512];
+    } _on_write_request;
+
+    struct {
+        void *remote;
         gatt_status_t status;
         uint16_t attr_handle;
-    } _on_complete;
+    } _on_nofity_complete;
 
 } bt_message_gatts_callbacks_t;
 

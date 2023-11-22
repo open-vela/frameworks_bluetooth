@@ -65,8 +65,8 @@ typedef struct gatts_interface {
     bt_status_t (*start)(void *srv_handle);
     bt_status_t (*stop)(void *srv_handle);
     bt_status_t (*response)(void *srv_handle, uint32_t req_handle, uint8_t *value, uint16_t length);
-    bt_status_t (*notify)(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
-    bt_status_t (*indicate)(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
+    bt_status_t (*notify)(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
+    bt_status_t (*indicate)(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
 } gatts_interface_t;
 
 /*

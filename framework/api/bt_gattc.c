@@ -98,11 +98,11 @@ bt_status_t BTSYMBOLS(bt_gattc_write_without_response)(gattc_handle_t conn_handl
     return profile->write_without_response(conn_handle, attr_handle, value, length);
 }
 
-bt_status_t BTSYMBOLS(bt_gattc_subscribe)(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb)
+bt_status_t BTSYMBOLS(bt_gattc_subscribe)(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle)
 {
     gattc_interface_t *profile = get_profile_service();
 
-    return profile->subscribe(conn_handle, value_handle, cccd_handle, notify_cb);
+    return profile->subscribe(conn_handle, value_handle, cccd_handle);
 }
 
 bt_status_t BTSYMBOLS(bt_gattc_unsubscribe)(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle)

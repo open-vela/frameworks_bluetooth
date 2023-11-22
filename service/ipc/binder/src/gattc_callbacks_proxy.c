@@ -72,7 +72,7 @@ static void BpBtGattClientCallbacks_onDisconnected(void *handle, bt_address_t *a
     }
 }
 
-static void BpBtGattClientCallbacks_onDiscover(void *handle, gatt_status_t status, bt_uuid_t *uuid, uint16_t start_handle, uint16_t end_handle)
+static void BpBtGattClientCallbacks_onDiscovered(void *handle, gatt_status_t status, bt_uuid_t *uuid, uint16_t start_handle, uint16_t end_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -98,7 +98,7 @@ static void BpBtGattClientCallbacks_onDiscover(void *handle, gatt_status_t statu
     if (stat != STATUS_OK)
         return;
 
-    stat = AIBinder_transact(binder, ICBKS_GATT_CLIENT_DISCOVER, &parcelIn, &parcelOut, 0 /*flags*/);
+    stat = AIBinder_transact(binder, ICBKS_GATT_CLIENT_DISCOVERED, &parcelIn, &parcelOut, 0 /*flags*/);
     if (stat != STATUS_OK) {
         BT_LOGE("%s transact error:%d", __func__, stat);
         return;
@@ -181,29 +181,14 @@ static void BpBtGattClientCallbacks_onWritten(void *handle, gatt_status_t status
     if (stat != STATUS_OK)
         return;
 
-    stat = AIBinder_transact(binder, ICBKS_GATT_CLIENT_WRITE, &parcelIn, &parcelOut, 0 /*flags*/);
+    stat = AIBinder_transact(binder, ICBKS_GATT_CLIENT_WRITTEN, &parcelIn, &parcelOut, 0 /*flags*/);
     if (stat != STATUS_OK) {
         BT_LOGE("%s transact error:%d", __func__, stat);
         return;
     }
 }
 
-static const gattc_callbacks_t static_gattc_cbks = {
-    sizeof(static_gattc_cbks),
-    BpBtGattClientCallbacks_onConnected,
-    BpBtGattClientCallbacks_onDisconnected,
-    BpBtGattClientCallbacks_onDiscover,
-    BpBtGattClientCallbacks_onRead,
-    BpBtGattClientCallbacks_onWritten,
-    BpBtGattClientCallbacks_onMtuExchange,
-};
-
-const gattc_callbacks_t *BpBtGattClientCallbacks_getStatic(void)
-{
-    return &static_gattc_cbks;
-}
-
-void BpBtGattClientCallbacks_onNotify(void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+static void BpBtGattClientCallbacks_onNotified(void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -225,9 +210,25 @@ void BpBtGattClientCallbacks_onNotify(void *handle, uint16_t attr_handle, uint8_
     if (stat != STATUS_OK)
         return;
 
-    stat = AIBinder_transact(binder, ICBKS_GATT_CLIENT_NOTIFY, &parcelIn, &parcelOut, 0 /*flags*/);
+    stat = AIBinder_transact(binder, ICBKS_GATT_CLIENT_NOTIFIED, &parcelIn, &parcelOut, 0 /*flags*/);
     if (stat != STATUS_OK) {
         BT_LOGE("%s transact error:%d", __func__, stat);
         return;
     }
+}
+
+static const gattc_callbacks_t static_gattc_cbks = {
+    sizeof(static_gattc_cbks),
+    BpBtGattClientCallbacks_onConnected,
+    BpBtGattClientCallbacks_onDisconnected,
+    BpBtGattClientCallbacks_onDiscovered,
+    BpBtGattClientCallbacks_onRead,
+    BpBtGattClientCallbacks_onWritten,
+    BpBtGattClientCallbacks_onNotified,
+    BpBtGattClientCallbacks_onMtuExchange,
+};
+
+const gattc_callbacks_t *BpBtGattClientCallbacks_getStatic(void)
+{
+    return &static_gattc_cbks;
 }

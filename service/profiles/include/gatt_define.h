@@ -85,7 +85,7 @@ typedef struct {
         /* gatt client content */
         struct {
 
-            gattc_notify_cb_t notify_cb;
+            bool notify_enable;
         };
     };
 

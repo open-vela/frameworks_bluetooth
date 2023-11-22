@@ -213,7 +213,7 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->notify((void *)handle, (uint16_t)attr_handle, value, (uint16_t)length, BpBtGattServerCallbacks_onComplete);
+        status = profile->notify((void *)handle, (uint16_t)attr_handle, value, (uint16_t)length);
         free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
@@ -239,7 +239,7 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->indicate((void *)handle, (uint16_t)attr_handle, value, (uint16_t)length, BpBtGattServerCallbacks_onComplete);
+        status = profile->indicate((void *)handle, (uint16_t)attr_handle, value, (uint16_t)length);
         free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
