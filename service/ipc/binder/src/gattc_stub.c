@@ -283,7 +283,7 @@ static binder_status_t IBtGattClient_Class_onTransact(AIBinder *binder, transact
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->subscribe((void *)handle, (uint16_t)value_handle, (uint16_t)cccd_handle, BpBtGattClientCallbacks_onNotify);
+        status = profile->subscribe((void *)handle, (uint16_t)value_handle, (uint16_t)cccd_handle);
         stat = AParcel_writeUint32(reply, status);
         break;
     }

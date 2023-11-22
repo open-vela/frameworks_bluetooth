@@ -105,22 +105,16 @@ bt_status_t bt_gattc_write_without_response(gattc_handle_t conn_handle, uint16_t
     return BpBtGattClient_writeWithoutResponse(cbks->proxy, cbks->cookie, attr_handle, value, length);
 }
 
-bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb)
+bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle)
 {
     IBtGattClientCallbacks *cbks = conn_handle;
-    bt_status_t status = BpBtGattClient_subscribe(cbks->proxy, cbks->cookie, value_handle, cccd_handle);
-    if (status == BT_STATUS_SUCCESS && notify_cb)
-        BtGattClientCallbacks_registerNotify(cbks, value_handle, notify_cb);
-    return status;
+    return BpBtGattClient_subscribe(cbks->proxy, cbks->cookie, value_handle, cccd_handle);
 }
 
 bt_status_t bt_gattc_unsubscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle)
 {
     IBtGattClientCallbacks *cbks = conn_handle;
-    bt_status_t status = BpBtGattClient_unsubscribe(cbks->proxy, cbks->cookie, value_handle, cccd_handle);
-    if (status == BT_STATUS_SUCCESS)
-        BtGattClientCallbacks_unregisterNotify(cbks, value_handle);
-    return status;
+    return BpBtGattClient_unsubscribe(cbks->proxy, cbks->cookie, value_handle, cccd_handle);
 }
 
 bt_status_t bt_gattc_exchange_mtu(gattc_handle_t conn_handle, uint32_t mtu)
