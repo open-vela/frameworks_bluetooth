@@ -16,6 +16,7 @@
 #define LOG_TAG "hfp_ag_api"
 
 #include "bt_hfp_ag.h"
+#include "bt_internal.h"
 #include "bt_profile.h"
 #include "hfp_ag_service.h"
 #include "service_manager.h"
@@ -27,77 +28,77 @@ static hfp_ag_interface_t *get_profile_service(void)
     return (hfp_ag_interface_t *)service_manager_get_profile(PROFILE_HFP_AG);
 }
 
-void *bt_hfp_ag_register_callbacks(bt_instance_t *ins, const hfp_ag_callbacks_t *callbacks)
+void *BTSYMBOLS(bt_hfp_ag_register_callbacks)(bt_instance_t *ins, const hfp_ag_callbacks_t *callbacks)
 {
     hfp_ag_interface_t *profile = get_profile_service();
 
     return profile->register_callbacks(NULL, callbacks);
 }
 
-bool bt_hfp_ag_unregister_callbacks(bt_instance_t *ins, void *cookie)
+bool BTSYMBOLS(bt_hfp_ag_unregister_callbacks)(bt_instance_t *ins, void *cookie)
 {
     hfp_ag_interface_t *profile = get_profile_service();
 
     return profile->unregister_callbacks(NULL, cookie);
 }
 
-bool bt_hfp_ag_is_connected(bt_instance_t *ins, bt_address_t *addr)
+bool BTSYMBOLS(bt_hfp_ag_is_connected)(bt_instance_t *ins, bt_address_t *addr)
 {
     hfp_ag_interface_t *profile = get_profile_service();
 
     return profile->is_connected(addr);
 }
 
-bool bt_hfp_ag_is_audio_connected(bt_instance_t *ins, bt_address_t *addr)
+bool BTSYMBOLS(bt_hfp_ag_is_audio_connected)(bt_instance_t *ins, bt_address_t *addr)
 {
     hfp_ag_interface_t *profile = get_profile_service();
 
     return profile->is_audio_connected(addr);
 }
 
-profile_connection_state_t bt_hfp_ag_get_connection_state(bt_instance_t *ins, bt_address_t *addr)
+profile_connection_state_t BTSYMBOLS(bt_hfp_ag_get_connection_state)(bt_instance_t *ins, bt_address_t *addr)
 {
     hfp_ag_interface_t *profile = get_profile_service();
 
     return profile->get_connection_state(addr);
 }
 
-bt_status_t bt_hfp_ag_connect(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t BTSYMBOLS(bt_hfp_ag_connect)(bt_instance_t *ins, bt_address_t *addr)
 {
     hfp_ag_interface_t *profile = get_profile_service();
 
     return profile->connect(addr);
 }
 
-bt_status_t bt_hfp_ag_disconnect(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t BTSYMBOLS(bt_hfp_ag_disconnect)(bt_instance_t *ins, bt_address_t *addr)
 {
     hfp_ag_interface_t *profile = get_profile_service();
 
     return profile->disconnect(addr);
 }
 
-bt_status_t bt_hfp_ag_connect_audio(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t BTSYMBOLS(bt_hfp_ag_connect_audio)(bt_instance_t *ins, bt_address_t *addr)
 {
     hfp_ag_interface_t *profile = get_profile_service();
 
     return profile->connect_audio(addr);
 }
 
-bt_status_t bt_hfp_ag_disconnect_audio(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t BTSYMBOLS(bt_hfp_ag_disconnect_audio)(bt_instance_t *ins, bt_address_t *addr)
 {
     hfp_ag_interface_t *profile = get_profile_service();
 
     return profile->disconnect_audio(addr);
 }
 
-bt_status_t bt_hfp_ag_start_voice_recognition(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t BTSYMBOLS(bt_hfp_ag_start_voice_recognition)(bt_instance_t *ins, bt_address_t *addr)
 {
     hfp_ag_interface_t *profile = get_profile_service();
 
     return profile->start_voice_recognition(addr);
 }
 
-bt_status_t bt_hfp_ag_stop_voice_recognition(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t BTSYMBOLS(bt_hfp_ag_stop_voice_recognition)(bt_instance_t *ins, bt_address_t *addr)
 {
     hfp_ag_interface_t *profile = get_profile_service();
 

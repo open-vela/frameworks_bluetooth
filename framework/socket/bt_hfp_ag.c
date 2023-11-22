@@ -15,64 +15,165 @@
  ***************************************************************************/
 #define LOG_TAG "hfp_ag_api"
 
+#include <stdint.h>
+
 #include "bt_hfp_ag.h"
 #include "bt_profile.h"
+#include "bt_socket.h"
 #include "hfp_ag_service.h"
 #include "service_manager.h"
 #include "utils/log.h"
-#include <stdint.h>
 
 void *bt_hfp_ag_register_callbacks(bt_instance_t *ins, const hfp_ag_callbacks_t *callbacks)
 {
-    return NULL;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    void *cookie;
+
+    if (ins->hfp_ag_callbacks != NULL)
+        return NULL;
+
+    ins->hfp_ag_callbacks = bt_callbacks_list_new(2);
+
+    cookie = bt_remote_callbacks_register(ins->hfp_ag_callbacks, NULL, (void *)callbacks);
+    if (cookie == NULL)
+        return NULL;
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_REGISTER_CALLBACK);
+    if (status != BT_STATUS_SUCCESS || packet.hfp_ag_r.status != BT_STATUS_SUCCESS)
+        return NULL;
+
+    return cookie;
 }
 
 bool bt_hfp_ag_unregister_callbacks(bt_instance_t *ins, void *cookie)
 {
-    return false;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    bt_remote_callbacks_unregister(ins->hfp_ag_callbacks, NULL, cookie);
+    ins->hfp_ag_callbacks = NULL;
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_UNREGISTER_CALLBACK);
+    if (status != BT_STATUS_SUCCESS || packet.hfp_ag_r.status != BT_STATUS_SUCCESS)
+        return false;
+
+    return true;
 }
 
 bool bt_hfp_ag_is_connected(bt_instance_t *ins, bt_address_t *addr)
 {
-    return false;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_is_connected.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_IS_CONNECTED);
+    if (status != BT_STATUS_SUCCESS)
+        return false;
+
+    return packet.hfp_ag_r.value_bool;
 }
 
 bool bt_hfp_ag_is_audio_connected(bt_instance_t *ins, bt_address_t *addr)
 {
-    return false;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_is_audio_connected.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_IS_AUDIO_CONNECTED);
+    if (status != BT_STATUS_SUCCESS)
+        return false;
+
+    return packet.hfp_ag_r.value_bool;
 }
 
 profile_connection_state_t bt_hfp_ag_get_connection_state(bt_instance_t *ins, bt_address_t *addr)
 {
-    return PROFILE_STATE_DISCONNECTED;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_get_connection_state.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_GET_CONNECTION_STATE);
+    if (status != BT_STATUS_SUCCESS)
+        return PROFILE_STATE_DISCONNECTED;
+
+    return packet.hfp_ag_r.profile_conn_state;
 }
 
 bt_status_t bt_hfp_ag_connect(bt_instance_t *ins, bt_address_t *addr)
 {
-    return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_connect.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_CONNECT);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
 }
 
 bt_status_t bt_hfp_ag_disconnect(bt_instance_t *ins, bt_address_t *addr)
 {
-    return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_disconnect.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_DISCONNECT);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
 }
 
 bt_status_t bt_hfp_ag_connect_audio(bt_instance_t *ins, bt_address_t *addr)
 {
-    return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_connect_audio.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_CONNECT_AUDIO);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
 }
 
 bt_status_t bt_hfp_ag_disconnect_audio(bt_instance_t *ins, bt_address_t *addr)
 {
-    return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_disconnect_audio.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_DISCONNECT_AUDIO);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
 }
 
 bt_status_t bt_hfp_ag_start_voice_recognition(bt_instance_t *ins, bt_address_t *addr)
 {
-    return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_start_voice_recognition.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_START_VOICE_RECOGNITION);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
 }
 
 bt_status_t bt_hfp_ag_stop_voice_recognition(bt_instance_t *ins, bt_address_t *addr)
 {
-    return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_stop_voice_recognition.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_STOP_VOICE_RECOGNITION);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
 }

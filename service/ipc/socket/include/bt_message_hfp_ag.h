@@ -1,0 +1,96 @@
+/****************************************************************************
+ *  Copyright (C) 2022 Xiaomi Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ***************************************************************************/
+
+#ifdef __BT_MESSAGE_CODE__
+    BT_HFP_AG_MESSAGE_START,
+    BT_HFP_AG_REGISTER_CALLBACK,
+    BT_HFP_AG_UNREGISTER_CALLBACK,
+    BT_HFP_AG_IS_CONNECTED,
+    BT_HFP_AG_IS_AUDIO_CONNECTED,
+    BT_HFP_AG_GET_CONNECTION_STATE,
+    BT_HFP_AG_CONNECT,
+    BT_HFP_AG_DISCONNECT,
+    BT_HFP_AG_CONNECT_AUDIO,
+    BT_HFP_AG_DISCONNECT_AUDIO,
+    BT_HFP_AG_START_VOICE_RECOGNITION,
+    BT_HFP_AG_STOP_VOICE_RECOGNITION,
+    BT_HFP_AG_MESSAGE_END,
+
+    BT_HFP_AG_CALLBACK_START,
+    BT_HFP_AG_ON_CONNECTION_STATE_CHANGED,
+    BT_HFP_AG_ON_AUDIO_STATE_CHANGED,
+    BT_HFP_AG_ON_VOICE_RECOGNITION_STATE_CHANGED,
+    BT_HFP_AG_ON_BATTERY_LEVEL_CHANGED,
+    BT_HFP_AG_CALLBACK_END,
+#endif
+
+#ifndef _BT_MESSAGE_HFP_AG_H__
+#define _BT_MESSAGE_HFP_AG_H__
+
+#ifdef __cplusplus
+    extern "C"
+{
+#endif
+
+#include "bt_hfp_ag.h"
+
+    typedef union {
+        bt_status_t status;
+        profile_connection_state_t profile_conn_state;
+        bool value_bool;
+    } bt_hfp_ag_result_t;
+
+    typedef union {
+        union {
+            bt_address_t addr;
+        } _bt_hfp_ag_is_connected,
+            _bt_hfp_ag_is_audio_connected,
+            _bt_hfp_ag_get_connection_state,
+            _bt_hfp_ag_connect,
+            _bt_hfp_ag_disconnect,
+            _bt_hfp_ag_connect_audio,
+            _bt_hfp_ag_disconnect_audio,
+            _bt_hfp_ag_start_voice_recognition,
+            _bt_hfp_ag_stop_voice_recognition;
+    } bt_message_hfp_ag_t;
+
+    typedef struct {
+        union {
+            bt_address_t addr;
+            profile_connection_state_t state;
+        } _on_connection_state_changed;
+
+        union {
+            bt_address_t addr;
+            hfp_audio_state_t state;
+        } _on_audio_state_changed;
+
+        union {
+            bt_address_t addr;
+            bool started;
+        } _on_voice_recognition_state_changed;
+
+        union {
+            bt_address_t addr;
+            uint8_t value;
+        } _on_battery_level_changed;
+    } bt_message_hfp_ag_callbacks_t;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _BT_MESSAGE_HFP_AG_H__ */

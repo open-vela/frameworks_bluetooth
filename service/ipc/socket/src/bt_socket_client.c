@@ -68,8 +68,11 @@ typedef struct _work_msg {
 static void bt_socket_client_work(service_work_t *work, void *userdata)
 {
     bt_client_msg_t *msg = userdata;
-
-    bt_socket_client_adapter_callback(NULL, -1, msg->ins, &msg->packet);
+    if (msg->packet.code > BT_ADAPTER_CALLBACK_START && msg->packet.code < BT_ADAPTER_CALLBACK_END) {
+        bt_socket_client_adapter_callback(NULL, -1, msg->ins, &msg->packet);
+    } else if (msg->packet.code > BT_HFP_AG_CALLBACK_START && msg->packet.code < BT_HFP_AG_CALLBACK_END) {
+        bt_socket_client_hfp_ag_callback(NULL, -1, msg->ins, &msg->packet);
+    }
     free(msg);
 }
 
@@ -88,7 +91,8 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
         return ret;
 
     if ((packet.code > BT_ADAPTER_MESSAGE_START && packet.code < BT_ADAPTER_MESSAGE_END) ||
-        (packet.code > BT_DEVICE_MESSAGE_START && packet.code < BT_DEVICE_MESSAGE_END)) {
+        (packet.code > BT_DEVICE_MESSAGE_START && packet.code < BT_DEVICE_MESSAGE_END) ||
+        (packet.code > BT_HFP_AG_MESSAGE_START && packet.code < BT_HFP_AG_MESSAGE_END)) {
         if (ins->packet == NULL)
             return BT_STATUS_SUCCESS;
 
@@ -99,8 +103,8 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
         return BT_STATUS_SUCCESS;
     }
 
-    if (packet.code > BT_ADAPTER_CALLBACK_START &&
-        packet.code < BT_ADAPTER_CALLBACK_END) {
+    if ((packet.code > BT_ADAPTER_CALLBACK_START && packet.code < BT_ADAPTER_CALLBACK_END) ||
+        (packet.code > BT_HFP_AG_CALLBACK_START && packet.code < BT_HFP_AG_CALLBACK_END)) {
         bt_client_msg_t *msg = malloc(sizeof(*msg));
         if (!msg)
             return BT_STATUS_NOMEM;
