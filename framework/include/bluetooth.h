@@ -309,8 +309,10 @@ typedef struct bt_instance {
     uv_cond_t  cond;
     void *packet;
     callbacks_list_t *adapter_callbacks;
+    callbacks_list_t *hfp_ag_callbacks;
     int peer_fd;
     void *adapter_cookie;
+    void *hfp_ag_cookie;
 } bt_instance_t;
 
 /**
