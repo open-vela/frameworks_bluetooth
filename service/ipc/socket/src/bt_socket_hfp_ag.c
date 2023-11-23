@@ -33,9 +33,10 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include "bt_internal.h"
+
 #include "bluetooth.h"
 #include "bt_hfp_ag.h"
-#include "bt_internal.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
