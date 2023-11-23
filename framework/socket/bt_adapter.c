@@ -355,6 +355,7 @@ bt_status_t bt_adapter_set_io_capability(bt_instance_t *ins, bt_io_capability_t 
   bt_message_packet_t packet;
   bt_status_t status;
 
+  packet.adpt_pl._bt_adapter_set_io_capability.cap = cap;
   status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_IO_CAPABILITY);
   if (status != BT_STATUS_SUCCESS)
     {
