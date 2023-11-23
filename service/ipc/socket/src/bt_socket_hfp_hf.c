@@ -33,9 +33,10 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include "bt_internal.h"
+
 #include "bluetooth.h"
 #include "bt_hfp_hf.h"
-#include "bt_internal.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
@@ -212,7 +213,7 @@ void bt_socket_server_hfp_hf_process(service_poll_t *poll, int fd,
     case BT_HFP_HF_DIAL:
         packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_dial)(ins,
                                                 &packet->hfp_hf_pl._bt_hfp_hf_dial.addr,
-                                                &packet->hfp_hf_pl._bt_hfp_hf_dial.number);
+                                                (const char *)&packet->hfp_hf_pl._bt_hfp_hf_dial.number);
         break;
     case BT_HFP_HF_DIAL_MEMORY:
         packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_dial_memory)(ins,
@@ -256,7 +257,7 @@ void bt_socket_server_hfp_hf_process(service_poll_t *poll, int fd,
     case BT_HFP_HF_SEND_AT_CMD:
         packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_send_at_cmd)(ins,
                                                 &packet->hfp_hf_pl._bt_hfp_hf_send_at_cmd.addr,
-                                                &packet->hfp_hf_pl._bt_hfp_hf_send_at_cmd.cmd);
+                                                (const char *)&packet->hfp_hf_pl._bt_hfp_hf_send_at_cmd.cmd);
         break;
     default:
         break;
