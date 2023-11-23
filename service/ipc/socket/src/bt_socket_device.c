@@ -179,14 +179,14 @@ void bt_socket_server_device_process(service_poll_t *poll,
       }
     case BT_DEVICE_IS_BONDED:
       {
-        packet->devs_r.bstate =
+        packet->devs_r.bbool =
           BTSYMBOLS(bt_device_is_bonded)(ins,
               &packet->devs_pl._bt_device_addr.addr);
         break;
       }
     case BT_DEVICE_CREATE_BOND:
       {
-        packet->devs_r.state =
+        packet->devs_r.status =
           BTSYMBOLS(bt_device_create_bond)(ins,
               &packet->devs_pl._bt_device_create_bond.addr,
               packet->devs_pl._bt_device_create_bond.transport);
@@ -194,7 +194,7 @@ void bt_socket_server_device_process(service_poll_t *poll,
       }
     case BT_DEVICE_REMOVE_BOND:
       {
-        packet->devs_r.state =
+        packet->devs_r.status =
           BTSYMBOLS(bt_device_remove_bond)(ins,
               &packet->devs_pl._bt_device_remove_bond.addr,
               packet->devs_pl._bt_device_remove_bond.transport);
@@ -202,14 +202,14 @@ void bt_socket_server_device_process(service_poll_t *poll,
       }
     case BT_DEVICE_CANCEL_BOND:
       {
-        packet->devs_r.state =
+        packet->devs_r.status =
           BTSYMBOLS(bt_device_cancel_bond)(ins,
               &packet->devs_pl._bt_device_addr.addr);
         break;
       }
     case BT_DEVICE_PAIR_REQUEST_REPLY:
       {
-        packet->devs_r.state =
+        packet->devs_r.status =
           BTSYMBOLS(bt_device_pair_request_reply)(ins,
               &packet->devs_pl._bt_device_pair_request_reply.addr,
               packet->devs_pl._bt_device_pair_request_reply.accept);
@@ -217,7 +217,7 @@ void bt_socket_server_device_process(service_poll_t *poll,
       }
     case BT_DEVICE_SET_PAIRING_CONFIRMATION:
       {
-        packet->devs_r.state =
+        packet->devs_r.status =
           BTSYMBOLS(bt_device_set_pairing_confirmation)(ins,
               &packet->devs_pl._bt_device_set_pairing_confirmation.addr,
               packet->devs_pl._bt_device_set_pairing_confirmation.transport,
@@ -226,7 +226,7 @@ void bt_socket_server_device_process(service_poll_t *poll,
       }
     case BT_DEVICE_SET_PIN_CODE:
       {
-        packet->devs_r.state =
+        packet->devs_r.status =
           BTSYMBOLS(bt_device_set_pin_code)(ins,
               &packet->devs_pl._bt_device_set_pin_code.addr,
               packet->devs_pl._bt_device_set_pin_code.accept,
@@ -236,7 +236,7 @@ void bt_socket_server_device_process(service_poll_t *poll,
       }
     case BT_DEVICE_SET_PASS_KEY:
       {
-        packet->devs_r.state =
+        packet->devs_r.status =
           BTSYMBOLS(bt_device_set_pass_key)(ins,
               &packet->devs_pl._bt_device_set_pass_key.addr,
               packet->devs_pl._bt_device_set_pass_key.transport,
@@ -246,21 +246,21 @@ void bt_socket_server_device_process(service_poll_t *poll,
       }
     case BT_DEVICE_CONNECT:
       {
-        packet->devs_r.state =
+        packet->devs_r.status =
           BTSYMBOLS(bt_device_connect)(ins,
               &packet->devs_pl._bt_device_addr.addr);
         break;
       }
     case BT_DEVICE_DISCONNECT:
       {
-        packet->devs_r.state =
+        packet->devs_r.status =
           BTSYMBOLS(bt_device_disconnect)(ins,
               &packet->devs_pl._bt_device_addr.addr);
         break;
       }
     case BT_DEVICE_CONNECT_LE:
       {
-        packet->devs_r.state =
+        packet->devs_r.status =
           BTSYMBOLS(bt_device_connect_le)(ins,
               &packet->devs_pl._bt_device_connect_le.addr,
               packet->devs_pl._bt_device_connect_le.type,
@@ -269,14 +269,14 @@ void bt_socket_server_device_process(service_poll_t *poll,
       }
     case BT_DEVICE_DISCONNECT_LE:
       {
-        packet->devs_r.state =
+        packet->devs_r.status =
           BTSYMBOLS(bt_device_disconnect_le)(ins,
               &packet->devs_pl._bt_device_addr.addr);
         break;
       }
     case BT_DEVICE_SET_LE_PHY:
       {
-        packet->devs_r.state =
+        packet->devs_r.status =
           BTSYMBOLS(bt_device_set_le_phy)(ins,
               &packet->devs_pl._bt_device_set_le_phy.addr,
               packet->devs_pl._bt_device_set_le_phy.tx_phy,
