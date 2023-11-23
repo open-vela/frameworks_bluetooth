@@ -310,12 +310,16 @@ typedef struct bt_instance {
     uv_cond_t  cond;
     void *packet;
     callbacks_list_t *adapter_callbacks;
+    callbacks_list_t *a2dp_sink_callbacks;
+    callbacks_list_t *a2dp_source_callbacks;
+    void *adapter_cookie;
+    void *a2dp_sink_cookie;
+    void *a2dp_source_cookie;
     callbacks_list_t *hfp_ag_callbacks;
     callbacks_list_t *hfp_hf_callbacks;
     callbacks_list_t *panu_callbacks;
     callbacks_list_t *spp_callbacks;
     int peer_fd;
-    void *adapter_cookie;
     void *hfp_ag_cookie;
     void *hfp_hf_cookie;
     void *panu_cookie;
