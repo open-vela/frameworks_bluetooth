@@ -26,6 +26,10 @@ extern "C" {
 #include "bt_hfp.h"
 #include <stddef.h>
 
+#ifndef BTSYMBOLS
+# define BTSYMBOLS(s) s
+#endif
+
 /**
  * @brief HFP HF call state
  *
