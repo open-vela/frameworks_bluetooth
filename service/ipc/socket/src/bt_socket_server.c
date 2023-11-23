@@ -80,6 +80,12 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
     } else if (packet.code > BT_DEVICE_MESSAGE_START &&
                packet.code < BT_DEVICE_MESSAGE_END) {
         bt_socket_server_device_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_A2DP_SOURCE_MESSAGE_START &&
+               packet.code < BT_A2DP_SOURCE_MESSAGE_END){
+        bt_socket_server_a2dp_source_process(poll, fd, ins, &packet);
+    } else if(packet.code > BT_A2DP_SINK_MESSAGE_START &&
+               packet.code < BT_A2DP_SINK_MESSAGE_END){
+        bt_socket_server_a2dp_sink_process(poll, fd, ins, &packet);
     } else if (packet.code > BT_HFP_AG_MESSAGE_START &&
                packet.code < BT_HFP_AG_MESSAGE_END) {
         bt_socket_server_hfp_ag_process(poll, fd, ins, &packet);

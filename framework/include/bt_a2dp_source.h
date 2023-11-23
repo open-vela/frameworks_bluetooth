@@ -18,6 +18,10 @@
 
 #include "bt_a2dp.h"
 
+#ifndef BTSYMBOLS
+# define BTSYMBOLS(s) s
+#endif
+
 typedef void (*a2dp_audio_source_config_callback)(void *cookie, bt_address_t *addr);
 
 typedef struct {
@@ -28,14 +32,14 @@ typedef struct {
     a2dp_audio_source_config_callback audio_source_config_cb;
 } a2dp_source_callbacks_t;
 
-void *bt_a2dp_source_register_callbacks(bt_instance_t *ins, const a2dp_source_callbacks_t *callbacks);
-bool bt_a2dp_source_unregister_callbacks(bt_instance_t *ins, void *cookie);
-bool bt_a2dp_source_is_connected(bt_instance_t *ins, bt_address_t *addr);
-bool bt_a2dp_source_is_playing(bt_instance_t *ins, bt_address_t *addr);
-profile_connection_state_t bt_a2dp_source_get_connection_state(bt_instance_t *ins, bt_address_t *addr);
-bt_status_t bt_a2dp_source_connect(bt_instance_t *ins, bt_address_t *addr);
-bt_status_t bt_a2dp_source_disconnect(bt_instance_t *ins, bt_address_t *addr);
-bt_status_t bt_a2dp_source_set_silence_device(bt_address_t *addr, bool silence);
-bt_status_t bt_a2dp_source_set_active_device(bt_address_t *addr);
+void *BTSYMBOLS(bt_a2dp_source_register_callbacks)(bt_instance_t *ins, const a2dp_source_callbacks_t *callbacks);
+bool BTSYMBOLS(bt_a2dp_source_unregister_callbacks)(bt_instance_t *ins, void *cookie);
+bool BTSYMBOLS(bt_a2dp_source_is_connected)(bt_instance_t *ins, bt_address_t *addr);
+bool BTSYMBOLS(bt_a2dp_source_is_playing)(bt_instance_t *ins, bt_address_t *addr);
+profile_connection_state_t BTSYMBOLS(bt_a2dp_source_get_connection_state)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_a2dp_source_connect)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_a2dp_source_disconnect)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_a2dp_source_set_silence_device)(bt_address_t *addr, bool silence);
+bt_status_t BTSYMBOLS(bt_a2dp_source_set_active_device)(bt_address_t *addr);
 
 #endif /* __BT_A2DP_SOURCE_H__ */

@@ -76,6 +76,10 @@ static void bt_socket_client_work(service_work_t *work, void *userdata)
         bt_socket_client_hfp_ag_callback(NULL, -1, msg->ins, &msg->packet);
     } else if (packet->code > BT_HFP_HF_CALLBACK_START && packet->code < BT_HFP_HF_CALLBACK_END) {
         bt_socket_client_hfp_hf_callback(NULL, -1, msg->ins, &msg->packet);
+    } else if (msg->packet.code > BT_A2DP_SINK_CALLBACK_START && msg->packet.code < BT_A2DP_SINK_CALLBACK_END){
+        bt_socket_client_a2dp_sink_callback(NULL, -1, msg->ins, &msg->packet);
+    } else if (msg->packet.code > BT_A2DP_SOURCE_CALLBACK_START && msg->packet.code < BT_A2DP_SOURCE_CALLBACK_END){
+        bt_socket_client_a2dp_source_callback(NULL, -1, msg->ins, &msg->packet);
     } else if (packet->code > BT_ADVERTISER_CALLBACK_START && packet->code < BT_ADVERTISER_CALLBACK_END) {
         bt_socket_client_advertiser_callback(NULL, -1, msg->ins, packet);
     } else if (packet->code > BT_SCAN_CALLBACK_START && packet->code < BT_SCAN_CALLBACK_END) {
@@ -106,6 +110,8 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
 
     if ((packet.code > BT_ADAPTER_MESSAGE_START && packet.code < BT_ADAPTER_MESSAGE_END) ||
         (packet.code > BT_DEVICE_MESSAGE_START && packet.code < BT_DEVICE_MESSAGE_END) ||
+        (packet.code > BT_A2DP_SOURCE_MESSAGE_START && packet.code < BT_A2DP_SOURCE_MESSAGE_END) ||
+        (packet.code > BT_A2DP_SINK_MESSAGE_START && packet.code < BT_A2DP_SINK_MESSAGE_END) ||
         (packet.code > BT_HFP_AG_MESSAGE_START && packet.code < BT_HFP_AG_MESSAGE_END) ||
         (packet.code > BT_HFP_HF_MESSAGE_START && packet.code < BT_HFP_HF_MESSAGE_END) ||
         (packet.code > BT_ADVERTISER_MESSAGE_START && packet.code < BT_ADVERTISER_MESSAGE_END) ||
@@ -123,6 +129,8 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
     }
 
     if ((packet.code > BT_ADAPTER_CALLBACK_START && packet.code < BT_ADAPTER_CALLBACK_END) ||
+        (packet.code > BT_A2DP_SINK_CALLBACK_START && packet.code < BT_A2DP_SINK_CALLBACK_END) ||
+        (packet.code > BT_A2DP_SOURCE_CALLBACK_START && packet.code < BT_A2DP_SOURCE_CALLBACK_END) ||
         (packet.code > BT_HFP_AG_CALLBACK_START && packet.code < BT_HFP_AG_CALLBACK_END) ||
         (packet.code > BT_HFP_HF_CALLBACK_START && packet.code < BT_HFP_HF_CALLBACK_END) ||
         (packet.code > BT_ADVERTISER_CALLBACK_START && packet.code < BT_ADVERTISER_CALLBACK_END) ||

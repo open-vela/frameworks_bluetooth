@@ -27,6 +27,8 @@ extern "C" {
 #include "bluetooth.h"
 #include "bt_message_manager.h"
 #include "bt_message_adapter.h"
+#include "bt_message_a2dp_sink.h"
+#include "bt_message_a2dp_source.h"
 #include "bt_message_device.h"
 #include "bt_message_hfp_ag.h"
 #include "bt_message_hfp_hf.h"
@@ -42,6 +44,8 @@ typedef enum {
 #include "bt_message_manager.h"
 #include "bt_message_adapter.h"
 #include "bt_message_device.h"
+#include "bt_message_a2dp_sink.h"
+#include "bt_message_a2dp_source.h"
 #include "bt_message_hfp_ag.h"
 #include "bt_message_hfp_hf.h"
 #include "bt_message_advertiser.h"
@@ -58,6 +62,8 @@ typedef struct
     bt_manager_result_t manager_r;
     bt_adapter_result_t adpt_r;
     bt_device_result_t  devs_r;
+    bt_a2dp_sink_result_t a2dp_sink_r;
+    bt_a2dp_source_result_t a2dp_source_r;
     bt_hfp_ag_result_t hfp_ag_r;
     bt_hfp_hf_result_t hfp_hf_r;
     bt_advertiser_result_t adv_r;
@@ -68,6 +74,10 @@ typedef struct
   union {
     bt_message_manager_t manager_pl;
 
+    bt_message_a2dp_sink_t a2dp_sink_pl;
+    bt_message_a2dp_sink_callbacks_t a2dp_sink_cb;
+    bt_message_a2dp_source_t  a2dp_source_pl;
+    bt_message_a2dp_source_callbacks_t a2dp_source_cb;
     bt_message_adapter_t adpt_pl;
     bt_message_adapter_callbacks_t adpt_cb;
 
