@@ -53,7 +53,14 @@
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
+static bool socket_allocator(void **data, uint32_t size)
+{
+    *data = malloc(size);
+    if (!(*data))
+        return false;
 
+    return true;
+}
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -102,11 +109,11 @@ void bt_socket_server_device_process(service_poll_t *poll,
         packet->devs_r.status = BTSYMBOLS(bt_device_get_uuids)(ins,
             &packet->devs_pl._bt_device_get_uuids.addr,
             &uuid,
-            &packet->devs_pl._bt_device_get_uuids.size, NULL);
+            &packet->devs_pl._bt_device_get_uuids.size, socket_allocator);
 
         if (packet->devs_pl._bt_device_get_uuids.size > 0) {
           if (packet->devs_pl._bt_device_get_uuids.size >
-              nitems(&packet->devs_pl._bt_device_get_uuids.uuids)) {
+              nitems(packet->devs_pl._bt_device_get_uuids.uuids)) {
             packet->devs_pl._bt_device_get_uuids.size =
               nitems(packet->devs_pl._bt_device_get_uuids.uuids);
           }

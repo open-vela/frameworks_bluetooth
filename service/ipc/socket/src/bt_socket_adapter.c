@@ -59,6 +59,15 @@
  ****************************************************************************/
 
 #if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
+static bool socket_allocator(void **data, uint32_t size)
+{
+    *data = malloc(size);
+    if (!(*data))
+        return false;
+
+    return true;
+}
+
 static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
 {
   bt_message_packet_t packet;
@@ -348,7 +357,7 @@ void bt_socket_server_adapter_process(service_poll_t *poll,
       {
         bt_address_t *addr;
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_get_bonded_devices)(ins, &addr,
-            &packet->adpt_pl._bt_adapter_get_bonded_devices.num, NULL);
+            &packet->adpt_pl._bt_adapter_get_bonded_devices.num, socket_allocator);
 
         if (packet->adpt_pl._bt_adapter_get_bonded_devices.num > 0) {
           if (packet->adpt_pl._bt_adapter_get_bonded_devices.num >
@@ -367,7 +376,7 @@ void bt_socket_server_adapter_process(service_poll_t *poll,
       {
         bt_address_t *addr;
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_get_connected_devices)(ins, &addr,
-            &packet->adpt_pl._bt_adapter_get_connected_devices.num, NULL);
+            &packet->adpt_pl._bt_adapter_get_connected_devices.num, socket_allocator);
         if (packet->adpt_pl._bt_adapter_get_connected_devices.num > 0) {
           if (packet->adpt_pl._bt_adapter_get_connected_devices.num >
               nitems(packet->adpt_pl._bt_adapter_get_connected_devices.addr)) {
