@@ -319,11 +319,13 @@ typedef struct bt_instance {
     callbacks_list_t *hfp_hf_callbacks;
     callbacks_list_t *panu_callbacks;
     callbacks_list_t *spp_callbacks;
+    callbacks_list_t *hidd_callbacks;
     int peer_fd;
     void *hfp_ag_cookie;
     void *hfp_hf_cookie;
     void *panu_cookie;
     void *spp_cookie;
+    void *hidd_cookie;
 } bt_instance_t;
 
 /**
