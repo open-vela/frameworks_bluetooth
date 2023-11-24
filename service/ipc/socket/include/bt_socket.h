@@ -134,6 +134,14 @@ void bt_socket_server_pan_process(service_poll_t *poll,
 
 int bt_socket_client_pan_callback(service_poll_t *poll,
                                   int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+
+/* HID device */
+
+void bt_socket_server_hid_device_process(service_poll_t *poll,
+                                         int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+
+int bt_socket_client_hid_device_callback(service_poll_t *poll,
+                                         int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 #ifdef __cplusplus
 }
 #endif

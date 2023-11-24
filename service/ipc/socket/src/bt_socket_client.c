@@ -88,6 +88,8 @@ static void bt_socket_client_work(service_work_t *work, void *userdata)
         bt_socket_client_spp_callback(NULL, -1, msg->ins, packet);
     } else if (packet->code > BT_PAN_CALLBACK_START && packet->code < BT_PAN_CALLBACK_END) {
         bt_socket_client_pan_callback(NULL, -1, msg->ins, packet);
+    } else if (packet->code > BT_HID_DEVICE_CALLBACK_START && packet->code < BT_HID_DEVICE_CALLBACK_END) {
+        bt_socket_client_hid_device_callback(NULL, -1, msg->ins, packet);
     } else {
     }
 
@@ -117,7 +119,8 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
         (packet.code > BT_ADVERTISER_MESSAGE_START && packet.code < BT_ADVERTISER_MESSAGE_END) ||
         (packet.code > BT_SCAN_MESSAGE_START && packet.code < BT_SCAN_MESSAGE_END) ||
         (packet.code > BT_SPP_MESSAGE_START && packet.code < BT_SPP_MESSAGE_END) ||
-        (packet.code > BT_PAN_MESSAGE_START && packet.code < BT_PAN_MESSAGE_END)) {
+        (packet.code > BT_PAN_MESSAGE_START && packet.code < BT_PAN_MESSAGE_END) ||
+        (packet.code > BT_HID_DEVICE_MESSAGE_START && packet.code < BT_HID_DEVICE_MESSAGE_END)) {
         if (ins->packet == NULL)
             return BT_STATUS_SUCCESS;
 
@@ -136,7 +139,8 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
         (packet.code > BT_ADVERTISER_CALLBACK_START && packet.code < BT_ADVERTISER_CALLBACK_END) ||
         (packet.code > BT_SCAN_CALLBACK_START && packet.code < BT_SCAN_CALLBACK_END) ||
         (packet.code > BT_SPP_CALLBACK_START && packet.code < BT_SPP_CALLBACK_END) ||
-        (packet.code > BT_PAN_CALLBACK_START && packet.code < BT_PAN_CALLBACK_END)) {
+        (packet.code > BT_PAN_CALLBACK_START && packet.code < BT_PAN_CALLBACK_END) ||
+        (packet.code > BT_HID_DEVICE_CALLBACK_START && packet.code < BT_HID_DEVICE_CALLBACK_END)) {
         bt_client_msg_t *msg = malloc(sizeof(*msg));
         if (!msg)
             return BT_STATUS_NOMEM;
