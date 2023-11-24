@@ -36,6 +36,7 @@ extern "C" {
 #include "bt_message_scan.h"
 #include "bt_message_spp.h"
 #include "bt_message_pan.h"
+#include "bt_message_hid_device.h"
 
 #include "service_loop.h"
 
@@ -52,6 +53,7 @@ typedef enum {
 #include "bt_message_scan.h"
 #include "bt_message_spp.h"
 #include "bt_message_pan.h"
+#include "bt_message_hid_device.h"
 #undef __BT_MESSAGE_CODE__
 } bt_message_type_t;
 
@@ -70,6 +72,7 @@ typedef struct
     bt_scan_result_t scan_r;
     bt_spp_result_t spp_r;
     bt_pan_result_t pan_r;
+    bt_hid_device_result_t hidd_r;
   };
   union {
     bt_message_manager_t manager_pl;
@@ -99,6 +102,9 @@ typedef struct
 
     bt_message_pan_t pan_pl;
     bt_message_pan_callbacks_t pan_cb;
+
+    bt_message_hid_device_t hidd_pl;
+    bt_message_hid_device_callbacks_t hidd_cb;
   };
 } bt_message_packet_t;
 

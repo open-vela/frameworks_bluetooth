@@ -26,6 +26,10 @@ extern "C" {
 #include "bt_addr.h"
 #include "bt_device.h"
 
+#ifndef BTSYMBOLS
+# define BTSYMBOLS(s) s
+#endif
+
 /* * Descriptor types in the SDP record */
 #define HID_SDP_DESCRIPTOR_REPORT   (0x22)
 #define HID_SDP_DESCRIPTOR_PHYSICAL (0x23)
@@ -196,7 +200,7 @@ typedef struct {
  * @param callbacks - hid device callback functions.
  * @return void* - callback cookie, NULL on failure.
  */
-void *bt_hid_device_register_callbacks(bt_instance_t *ins, const hid_device_callbacks_t *callbacks);
+void *BTSYMBOLS(bt_hid_device_register_callbacks)(bt_instance_t *ins, const hid_device_callbacks_t *callbacks);
 
 /**
  * @brief Unregister hid device callback function
@@ -206,7 +210,7 @@ void *bt_hid_device_register_callbacks(bt_instance_t *ins, const hid_device_call
  * @return true - on callback unregister success
  * @return false - on callback cookie not found
  */
-bool bt_hid_device_unregister_callbacks(bt_instance_t *ins, void *cookie);
+bool BTSYMBOLS(bt_hid_device_unregister_callbacks)(bt_instance_t *ins, void *cookie);
 
 /**
  * @brief Register hid app
@@ -215,7 +219,7 @@ bool bt_hid_device_unregister_callbacks(bt_instance_t *ins, void *cookie);
  * @param sdp_setting - hid device sdp setting.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_hid_device_register_app(bt_instance_t *ins, hid_device_sdp_settings_t *sdp_setting, bool le_hid);
+bt_status_t BTSYMBOLS(bt_hid_device_register_app)(bt_instance_t *ins, hid_device_sdp_settings_t *sdp_setting, bool le_hid);
 
 /**
  * @brief Unregister hid app
@@ -223,7 +227,7 @@ bt_status_t bt_hid_device_register_app(bt_instance_t *ins, hid_device_sdp_settin
  * @param ins - bluetooth client instance.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_hid_device_unregister_app(bt_instance_t *ins);
+bt_status_t BTSYMBOLS(bt_hid_device_unregister_app)(bt_instance_t *ins);
 
 /**
  * @brief Connect to hid host
@@ -232,7 +236,7 @@ bt_status_t bt_hid_device_unregister_app(bt_instance_t *ins);
  * @param addr - address of peer device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_hid_device_connect(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hid_device_connect)(bt_instance_t *ins, bt_address_t *addr);
 
 /**
  * @brief Disconnect to hid host
@@ -241,7 +245,7 @@ bt_status_t bt_hid_device_connect(bt_instance_t *ins, bt_address_t *addr);
  * @param addr - address of peer device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_hid_device_disconnect(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hid_device_disconnect)(bt_instance_t *ins, bt_address_t *addr);
 
 /**
  * @brief Send report to hid host
@@ -253,7 +257,7 @@ bt_status_t bt_hid_device_disconnect(bt_instance_t *ins, bt_address_t *addr);
  * @param rpt_size - size of the report data.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_hid_device_send_report(bt_instance_t *ins, bt_address_t *addr, uint8_t rpt_id, uint8_t *rpt_data, int rpt_size);
+bt_status_t BTSYMBOLS(bt_hid_device_send_report)(bt_instance_t *ins, bt_address_t *addr, uint8_t rpt_id, uint8_t *rpt_data, int rpt_size);
 
 /**
  * @brief Response report to the Host using GET_REPORT command
@@ -265,7 +269,7 @@ bt_status_t bt_hid_device_send_report(bt_instance_t *ins, bt_address_t *addr, ui
  * @param rpt_size - size of the report data.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_hid_device_response_report(bt_instance_t *ins, bt_address_t *addr, uint8_t rpt_type, uint8_t *rpt_data, int rpt_size);
+bt_status_t BTSYMBOLS(bt_hid_device_response_report)(bt_instance_t *ins, bt_address_t *addr, uint8_t rpt_type, uint8_t *rpt_data, int rpt_size);
 
 /**
  * @brief Notifies status to the Host using SET_REPORT command
@@ -275,7 +279,7 @@ bt_status_t bt_hid_device_response_report(bt_instance_t *ins, bt_address_t *addr
  * @param error - error code.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_hid_device_report_error(bt_instance_t *ins, bt_address_t *addr, hid_status_error_t error);
+bt_status_t BTSYMBOLS(bt_hid_device_report_error)(bt_instance_t *ins, bt_address_t *addr, hid_status_error_t error);
 
 /**
  * @brief Virtual unplug the current hid host
@@ -284,7 +288,7 @@ bt_status_t bt_hid_device_report_error(bt_instance_t *ins, bt_address_t *addr, h
  * @param addr - address of peer device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_hid_device_virtual_unplug(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hid_device_virtual_unplug)(bt_instance_t *ins, bt_address_t *addr);
 
 #ifdef __cplusplus
 }
