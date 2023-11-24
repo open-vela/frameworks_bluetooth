@@ -142,7 +142,7 @@ typedef union
 
   struct {
     int num;
-    bt_address_t *addr;
+    bt_address_t addr[32];
   } _bt_adapter_get_bonded_devices,
     _bt_adapter_get_connected_devices;
 
