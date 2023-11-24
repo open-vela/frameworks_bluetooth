@@ -289,7 +289,7 @@ bt_status_t BTSYMBOLS(bt_hid_device_report_error)(bt_instance_t *ins, bt_address
  * @param error - error code.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_hid_device_report_error(bt_instance_t *ins, bt_address_t *addr, hid_status_error_t error);
+bt_status_t BTSYMBOLS(bt_hid_device_report_error)(bt_instance_t *ins, bt_address_t *addr, hid_status_error_t error);
 
 /**
  * @brief Virtual unplug the current hid host
