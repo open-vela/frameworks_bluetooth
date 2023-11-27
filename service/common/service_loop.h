@@ -19,9 +19,7 @@
 #include <nuttx/list.h>
 #include <stdint.h>
 
-#ifdef CONFIG_OBELISK_LIBUV_LOOP
 #include "uv.h"
-#endif
 
 enum service_poll_event {
     POLL_READABLE = 1,
@@ -86,9 +84,7 @@ void do_in_service_loop(service_func_t func, void *data);
 void do_in_service_loop_sync(service_func_t func, void *data);
 void add_init_process(service_func_t func);
 
-#ifdef CONFIG_OBELISK_LIBUV_LOOP
 uv_loop_t *get_service_uv_loop(void);
-#endif
 
 uint64_t get_os_timestamp_us(void);
 

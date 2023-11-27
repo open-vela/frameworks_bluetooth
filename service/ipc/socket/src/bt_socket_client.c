@@ -280,6 +280,7 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
     poll = service_loop_poll_fd(ins->peer_fd, POLL_READABLE,
                                 bt_socket_client_handle_event, ins);
     if (poll == NULL) {
+        bt_socket_client_deinit(ins);
         return BT_STATUS_PARM_INVALID;
     }
 
