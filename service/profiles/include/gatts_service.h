@@ -19,9 +19,9 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include "bt_device.h"
 #include "bt_gatt_defs.h"
 #include "bt_gatts.h"
-#include "bt_device.h"
 #include "gatt_define.h"
 
 typedef enum {
@@ -53,12 +53,11 @@ void if_gatts_on_notification_sent(bt_address_t *addr, uint16_t element_id, gatt
 /*
  * gatts remote
  */
-void if_gatts_set_remote(void *srv_handle, void *remote);
 void *if_gatts_get_remote(void *srv_handle);
 
 typedef struct gatts_interface {
     size_t size;
-    bt_status_t (*register_service)(void **phandle, gatts_callbacks_t *callbacks);
+    bt_status_t (*register_service)(void *remote, void **phandle, gatts_callbacks_t *callbacks);
     bt_status_t (*unregister_service)(void *srv_handle);
     bt_status_t (*connect)(void *srv_handle, bt_address_t *addr, ble_addr_type_t addr_type);
     bt_status_t (*disconnect)(void *srv_handle);

@@ -396,7 +396,7 @@ static int if_gatts_dump(void)
     return 0;
 }
 
-static bt_status_t if_gatts_register_service(void **phandle, gatts_callbacks_t *callbacks)
+static bt_status_t if_gatts_register_service(void *remote, void **phandle, gatts_callbacks_t *callbacks)
 {
     bt_status_t status;
     pthread_mutexattr_t attr;
@@ -427,7 +427,7 @@ static bt_status_t if_gatts_register_service(void **phandle, gatts_callbacks_t *
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&service->srv_lock, &attr);
 
-    service->remote = NULL;
+    service->remote = remote;
     service->manager = &g_gatts_manager;
     service->state = GATTS_SRV_STATE_IDLE;
     service->user_phandle = phandle;
@@ -596,7 +596,7 @@ static bt_status_t if_gatts_notify(void *srv_handle, uint16_t attr_handle, uint8
 
     gatts_manager_t *manager = service->manager;
     bt_status_t status = bt_sal_gatt_server_send_notification(&manager->remote_addr,
-                                                attr_handle + service->srv_id, value, length);
+                                                              attr_handle + service->srv_id, value, length);
 
     if (cmpl_cb && status == BT_STATUS_SUCCESS) {
         gatts_op_t *op = gatts_op_new(GATTS_REQ_NOTIFY);
@@ -621,7 +621,7 @@ static bt_status_t if_gatts_indicate(void *srv_handle, uint16_t attr_handle, uin
 
     gatts_manager_t *manager = service->manager;
     bt_status_t status = bt_sal_gatt_server_send_indication(&manager->remote_addr,
-                                                attr_handle + service->srv_id, value, length);
+                                                            attr_handle + service->srv_id, value, length);
 
     if (cmpl_cb && status == BT_STATUS_SUCCESS) {
         gatts_op_t *op = gatts_op_new(GATTS_REQ_NOTIFY);
@@ -719,15 +719,6 @@ void if_gatts_on_notification_sent(bt_address_t *addr, uint16_t element_id, gatt
     msg->param.change_send.element_id = element_id;
     msg->param.change_send.status = status;
     gatts_send_message(msg);
-}
-
-void if_gatts_set_remote(void *srv_handle, void *remote)
-{
-    if (!srv_handle)
-        return;
-
-    gatts_service_t *service = srv_handle;
-    service->remote = remote;
 }
 
 void *if_gatts_get_remote(void *srv_handle)

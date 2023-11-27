@@ -120,6 +120,20 @@ void bt_socket_server_scan_process(service_poll_t *poll,
 
 int bt_socket_client_scan_callback(service_poll_t *poll,
                                    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+/* Gatt client */
+
+void bt_socket_server_gattc_process(service_poll_t *poll,
+                                    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+
+int bt_socket_client_gattc_callback(service_poll_t *poll,
+                                    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+/* Gatt server */
+
+void bt_socket_server_gatts_process(service_poll_t *poll,
+                                    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+
+int bt_socket_client_gatts_callback(service_poll_t *poll,
+                                    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 /* Spp */
 
 void bt_socket_server_spp_process(service_poll_t *poll,

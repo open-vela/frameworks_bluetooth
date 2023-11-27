@@ -19,71 +19,258 @@
 
 #include "bt_gattc.h"
 #include "bt_profile.h"
+#include "bt_socket.h"
 #include "gattc_service.h"
 #include "service_manager.h"
 #include "utils/log.h"
 
 bt_status_t bt_gattc_create_connect(bt_instance_t *ins, gattc_handle_t *phandle, gattc_callbacks_t *callbacks)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote;
+
+    gattc_remote = (bt_gattc_remote_t *)malloc(sizeof(bt_gattc_remote_t));
+    if (!gattc_remote)
+        return BT_STATUS_NOMEM;
+
+    gattc_remote->ins = ins;
+    gattc_remote->callback = callbacks;
+
+    packet.gattc_pl._bt_gattc_create.cookie = gattc_remote;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_GATT_CLIENT_CREATE_CONNECT);
+    if (status != BT_STATUS_SUCCESS) {
+        free(gattc_remote);
+        return status;
+    }
+    if (packet.gattc_r.status != BT_STATUS_SUCCESS) {
+        free(gattc_remote);
+        return packet.gattc_r.status;
+    }
+
+    gattc_remote->cookie = packet.gattc_r.handle;
+    *phandle = gattc_remote;
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_gattc_delete_connect(gattc_handle_t conn_handle)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_delete.handle = gattc_remote->cookie;
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_DELETE_CONNECT);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+    if (packet.gattc_r.status != BT_STATUS_SUCCESS) {
+        return packet.gattc_r.status;
+    }
+
+    free(gattc_remote);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_gattc_connect(gattc_handle_t conn_handle, bt_address_t *addr, ble_addr_type_t addr_type)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_connect.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_connect.addr_type = addr_type;
+    memcpy(&packet.gattc_pl._bt_gattc_connect.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_CONNECT);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
 }
 
 bt_status_t bt_gattc_disconnect(gattc_handle_t conn_handle)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_disconnect.handle = gattc_remote->cookie;
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_DISCONNECT);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
 }
 
 bt_status_t bt_gattc_discover_service(gattc_handle_t conn_handle, bt_uuid_t *filter_uuid)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_discover_service.handle = gattc_remote->cookie;
+    if (filter_uuid == NULL)
+        packet.gattc_pl._bt_gattc_discover_service.filter_uuid.type = 0;
+    else
+        memcpy(&packet.gattc_pl._bt_gattc_discover_service.filter_uuid, filter_uuid, sizeof(bt_uuid_t));
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_DISCOVER_SERVICE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
 }
 
 bt_status_t bt_gattc_get_attribute_by_handle(gattc_handle_t conn_handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_get_attr_by_handle.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_get_attr_by_handle.attr_handle = attr_handle;
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_GET_ATTRIBUTE_BY_HANDLE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    memcpy(attr_desc, &packet.gattc_r.attr_desc, sizeof(gatt_attr_desc_t));
+    return packet.gattc_r.status;
 }
 
 bt_status_t bt_gattc_get_attribute_by_uuid(gattc_handle_t conn_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_get_attr_by_uuid.handle = gattc_remote->cookie;
+    memcpy(&packet.gattc_pl._bt_gattc_get_attr_by_uuid.attr_uuid, attr_uuid, sizeof(bt_uuid_t));
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_GET_ATTRIBUTE_BY_UUID);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    memcpy(attr_desc, &packet.gattc_r.attr_desc, sizeof(gatt_attr_desc_t));
+    return packet.gattc_r.status;
 }
 
 bt_status_t bt_gattc_read(gattc_handle_t conn_handle, uint16_t attr_handle)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_read.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_read.attr_handle = attr_handle;
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_READ);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
 }
 
 bt_status_t bt_gattc_write(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    if (length > sizeof(packet.gattc_pl._bt_gattc_write.value))
+        return BT_STATUS_PARM_INVALID;
+
+    packet.gattc_pl._bt_gattc_write.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_write.attr_handle = attr_handle;
+    packet.gattc_pl._bt_gattc_write.length = length;
+    memcpy(packet.gattc_pl._bt_gattc_write.value, value, length);
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_WRITE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
 }
 
 bt_status_t bt_gattc_write_without_response(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    if (length > sizeof(packet.gattc_pl._bt_gattc_write.value))
+        return BT_STATUS_PARM_INVALID;
+
+    packet.gattc_pl._bt_gattc_write.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_write.attr_handle = attr_handle;
+    packet.gattc_pl._bt_gattc_write.length = length;
+    memcpy(packet.gattc_pl._bt_gattc_write.value, value, length);
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_WRITE_NR);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
 }
 
-bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb)
+bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_subscribe.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_subscribe.value_handle = value_handle;
+    packet.gattc_pl._bt_gattc_subscribe.cccd_handle = cccd_handle;
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_SUBSCRIBE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
 }
 
 bt_status_t bt_gattc_unsubscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_unsubscribe.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_unsubscribe.value_handle = value_handle;
+    packet.gattc_pl._bt_gattc_unsubscribe.cccd_handle = cccd_handle;
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_UNSUBSCRIBE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
 }
 
 bt_status_t bt_gattc_exchange_mtu(gattc_handle_t conn_handle, uint32_t mtu)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_exchange_mtu.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_exchange_mtu.mtu = mtu;
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_EXCHANGE_MTU);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
+}
+
+bt_status_t bt_gattc_update_connection_parameter(gattc_handle_t conn_handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
+                                                 uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_update_connection_param.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_update_connection_param.min_interval = min_interval;
+    packet.gattc_pl._bt_gattc_update_connection_param.max_interval = max_interval;
+    packet.gattc_pl._bt_gattc_update_connection_param.latency = latency;
+    packet.gattc_pl._bt_gattc_update_connection_param.timeout = timeout;
+    packet.gattc_pl._bt_gattc_update_connection_param.min_connection_event_length = min_connection_event_length;
+    packet.gattc_pl._bt_gattc_update_connection_param.max_connection_event_length = max_connection_event_length;
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_UPDATE_CONNECTION_PARAM);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
 }

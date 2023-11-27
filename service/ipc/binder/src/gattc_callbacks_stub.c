@@ -106,8 +106,8 @@ static binder_status_t IBtGattClientCallbacks_Class_onTransact(AIBinder *binder,
         if (stat != STATUS_OK)
             return stat;
 
-        if (cbks->callbacks && cbks->callbacks->on_discover)
-            cbks->callbacks->on_discover(cbks, status, &uuid, (uint16_t)start_handle, (uint16_t)end_handle);
+        if (cbks->callbacks && cbks->callbacks->on_discovered)
+            cbks->callbacks->on_discovered(cbks, status, &uuid, (uint16_t)start_handle, (uint16_t)end_handle);
         break;
     }
     case ICBKS_GATT_CLIENT_MTU_EXCHANGE: {

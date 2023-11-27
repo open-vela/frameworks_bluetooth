@@ -28,6 +28,10 @@ extern "C" {
 #include "bt_uuid.h"
 #include <stddef.h>
 
+#ifndef BTSYMBOLS
+# define BTSYMBOLS(s) s
+#endif
+
 typedef void *gattc_handle_t;
 
 typedef struct {
@@ -49,7 +53,7 @@ typedef struct {
     uint32_t size;
     gattc_connected_cb_t on_connected;
     gattc_disconnected_cb_t on_disconnected;
-    gattc_discover_cb_t on_discover;
+    gattc_discover_cb_t on_discovered;
     gattc_read_cb_t on_read;
     gattc_write_cb_t on_written;
     gattc_mtu_exchange_cb_t on_mtu_exchange;
@@ -57,21 +61,22 @@ typedef struct {
 
 typedef void (*gattc_notify_cb_t)(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
 
-bt_status_t bt_gattc_create_connect(bt_instance_t *ins, gattc_handle_t *phandle, gattc_callbacks_t *callbacks);
-bt_status_t bt_gattc_delete_connect(gattc_handle_t conn_handle);
-bt_status_t bt_gattc_connect(gattc_handle_t conn_handle, bt_address_t *addr, ble_addr_type_t addr_type);
-bt_status_t bt_gattc_disconnect(gattc_handle_t conn_handle);
-bt_status_t bt_gattc_discover_service(gattc_handle_t conn_handle, bt_uuid_t *filter_uuid);
-bt_status_t bt_gattc_get_attribute_by_handle(gattc_handle_t conn_handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc);
-bt_status_t bt_gattc_get_attribute_by_uuid(gattc_handle_t conn_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc);
-bt_status_t bt_gattc_read(gattc_handle_t conn_handle, uint16_t attr_handle);
-bt_status_t bt_gattc_write(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
-bt_status_t bt_gattc_write_without_response(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
-bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb);
-bt_status_t bt_gattc_unsubscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle);
-bt_status_t bt_gattc_exchange_mtu(gattc_handle_t conn_handle, uint32_t mtu);
-bt_status_t bt_gattc_update_connection_parameter(gattc_handle_t conn_handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
-                                                 uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length);
+bt_status_t BTSYMBOLS(bt_gattc_create_connect)(bt_instance_t *ins, gattc_handle_t *phandle, gattc_callbacks_t *callbacks);
+bt_status_t BTSYMBOLS(bt_gattc_delete_connect)(gattc_handle_t conn_handle);
+bt_status_t BTSYMBOLS(bt_gattc_connect)(gattc_handle_t conn_handle, bt_address_t *addr, ble_addr_type_t addr_type);
+bt_status_t BTSYMBOLS(bt_gattc_disconnect)(gattc_handle_t conn_handle);
+bt_status_t BTSYMBOLS(bt_gattc_discover_service)(gattc_handle_t conn_handle, bt_uuid_t *filter_uuid);
+bt_status_t BTSYMBOLS(bt_gattc_get_attribute_by_handle)(gattc_handle_t conn_handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc);
+bt_status_t BTSYMBOLS(bt_gattc_get_attribute_by_uuid)(gattc_handle_t conn_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc);
+bt_status_t BTSYMBOLS(bt_gattc_read)(gattc_handle_t conn_handle, uint16_t attr_handle);
+bt_status_t BTSYMBOLS(bt_gattc_write)(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
+bt_status_t BTSYMBOLS(bt_gattc_write_without_response)(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
+bt_status_t BTSYMBOLS(bt_gattc_subscribe)(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle, gattc_notify_cb_t notify_cb);
+bt_status_t BTSYMBOLS(bt_gattc_unsubscribe)(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle);
+bt_status_t BTSYMBOLS(bt_gattc_exchange_mtu)(gattc_handle_t conn_handle, uint32_t mtu);
+bt_status_t BTSYMBOLS(bt_gattc_update_connection_parameter)(gattc_handle_t conn_handle, uint32_t min_interval, uint32_t max_interval,
+                                                            uint32_t latency, uint32_t timeout, uint32_t min_connection_event_length,
+                                                            uint32_t max_connection_event_length);
 
 #ifdef __cplusplus
 }
