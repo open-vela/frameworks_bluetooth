@@ -116,7 +116,7 @@
         } _bt_hfp_hf_send_at_cmd;
     } bt_message_hfp_hf_t;
 
-    typedef struct {
+    typedef union {
         struct {
             bt_address_t addr;
             profile_connection_state_t state;
