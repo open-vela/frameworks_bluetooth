@@ -21,7 +21,9 @@
   BT_LE_SCAN_STOP,
   BT_LE_SCAN_IS_SUPPORT,
   BT_SCAN_MESSAGE_END,
+#endif
 
+#ifdef __BT_CALLBACK_CODE__
   BT_SCAN_CALLBACK_START,
   BT_LE_ON_SCAN_RESULT,
   BT_LE_ON_SCAN_START_STATUS,
@@ -39,7 +41,7 @@ extern "C" {
 #include "bluetooth.h"
 #include "bt_le_scan.h"
 
-typedef struct
+typedef union
 {
   bt_status_t        status;
   uint32_t           remote;

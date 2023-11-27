@@ -15,13 +15,15 @@
  ***************************************************************************/
 
 #ifdef __BT_MESSAGE_CODE__
-BT_PAN_MESSAGE_START,
+    BT_PAN_MESSAGE_START,
     BT_PAN_REGISTER_CALLBACKS,
     BT_PAN_UNREGISTER_CALLBACKS,
     BT_PAN_CONNECT,
     BT_PAN_DISCONNECT,
     BT_PAN_MESSAGE_END,
+#endif
 
+#ifdef __BT_CALLBACK_CODE__
     BT_PAN_CALLBACK_START,
     BT_PAN_NETIF_STATE_CB,
     BT_PAN_CONNECTION_STATE_CB,
@@ -39,7 +41,7 @@ BT_PAN_MESSAGE_START,
 #include "bluetooth.h"
 #include "bt_pan.h"
 
-typedef struct
+typedef union
 {
     bt_status_t status;
     uint32_t v32;

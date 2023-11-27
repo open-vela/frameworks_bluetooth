@@ -57,9 +57,77 @@
  * Private Types
  ****************************************************************************/
 
+typedef struct
+{
+    struct list_node    node;
+    int                 offset;
+    bt_message_packet_t packet;
+} bt_packet_cache_t;
+
+static struct list_node g_msg_queue = LIST_INITIAL_VALUE(g_msg_queue);
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
+
+static int bt_socket_server_send_internal(bt_instance_t *ins,
+                                          void *packet, int size, int offset)
+{
+    int ret;
+
+    ret = send(ins->peer_fd, (char *)packet + offset, size, 0);
+    if (ret == 0) {
+        return -1;
+    } else if (ret < 0) {
+        if (errno == EINTR || errno == EAGAIN) {
+            ret = 0;
+        } else {
+            return -1;
+        }
+    }
+
+    return ret;
+}
+
+static int bt_socket_server_trysend(bt_instance_t *ins)
+{
+    bt_packet_cache_t *cache;
+    struct list_node *node;
+    struct list_node *tmp;
+    bool reset = false;
+    int size;
+    int ret;
+
+    list_for_every_safe(&g_msg_queue, node, tmp) {
+        reset = true;
+        cache = (bt_packet_cache_t *)node;
+        size = sizeof(cache->packet) - cache->offset;
+        ret = bt_socket_server_send_internal(ins, &cache->packet,
+                                             size, cache->offset);
+        if (ret < 0) {
+            service_loop_remove_poll(ins->poll);
+            ins->poll = NULL;
+            list_delete(node);
+            free(node);
+        } else if (ret != size) {
+            cache->offset += size;
+        } else {
+            list_delete(node);
+            free(node);
+        }
+    }
+
+    if (list_length(&g_msg_queue) > 0) {
+        if (ins->poll) {
+            service_loop_reset_poll(ins->poll, POLL_READABLE | POLL_WRITABLE);
+        }
+        return -1;
+    } else if (reset && ins->poll) {
+        service_loop_reset_poll(ins->poll, POLL_READABLE);
+    }
+
+    return 0;
+}
 
 static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata)
 {
@@ -117,11 +185,7 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
         return BT_STATUS_PARM_INVALID;
     }
 
-    ret = send(fd, &packet, sizeof(packet), 0);
-    if (ret <= 0)
-        return BT_STATUS_FAIL;
-
-    return BT_STATUS_SUCCESS;
+    return bt_socket_server_send(ins, &packet, packet.code);
 }
 
 static void bt_socket_server_handle_event(service_poll_t *poll,
@@ -173,6 +237,7 @@ static void bt_socket_server_callback(service_poll_t *poll,
         }
 
         remote_ins->peer_fd = fd;
+        remote_ins->poll = poll;
     }
 }
 
@@ -230,17 +295,33 @@ static int bt_socket_server_listen(int family, const char *name, int port)
 int bt_socket_server_send(bt_instance_t *ins, bt_message_packet_t *packet,
                           bt_message_type_t code)
 {
+    bt_packet_cache_t *cache;
     int ret;
 
     packet->code = code;
 
-    //do {
-    ret = send(ins->peer_fd, packet, sizeof(*packet), 0);
-    //} while ((ret == -1 && errno == EINTR) || (ret && ret != sizeof(*packet)));
+    ret = bt_socket_server_trysend(ins);
+    if (ret == 0) {
+        ret = bt_socket_server_send_internal(ins, packet, sizeof(*packet), 0);
+        if (ret < 0) {
+            service_loop_remove_poll(ins->poll);
+            ins->poll = NULL;
+            return ret;
+        }
+    } else {
+        ret = 0;
+    }
 
-    if (ret <= 0) {
-        syslog(0, "%s fail:%d !!!!!!!!!\n", __func__, ret);
-        return BT_STATUS_FAIL;
+    if (ret != sizeof(*packet) && ins->poll) {
+        cache = malloc(sizeof(*cache));
+        if (cache == NULL)
+            return BT_STATUS_NOMEM;
+
+        list_add_tail(&g_msg_queue, &cache->node);
+        memcpy(&cache->packet, packet, sizeof(*packet));
+        cache->offset = ret;
+
+        service_loop_reset_poll(ins->poll, POLL_READABLE | POLL_WRITABLE);
     }
 
     return BT_STATUS_SUCCESS;

@@ -44,6 +44,7 @@ extern "C" {
 
 typedef enum {
 #define __BT_MESSAGE_CODE__
+    BT_MESSAGE_START,
 #include "bt_message_manager.h"
 #include "bt_message_adapter.h"
 #include "bt_message_device.h"
@@ -58,6 +59,25 @@ typedef enum {
 #include "bt_message_spp.h"
 #include "bt_message_pan.h"
 #include "bt_message_hid_device.h"
+    BT_MESSAGE_END,
+#undef __BT_MESSAGE_CODE__
+#define __BT_CALLBACK_CODE__
+    BT_CALLBACK_START,
+#include "bt_message_manager.h"
+#include "bt_message_adapter.h"
+#include "bt_message_device.h"
+#include "bt_message_a2dp_sink.h"
+#include "bt_message_a2dp_source.h"
+#include "bt_message_hfp_ag.h"
+#include "bt_message_hfp_hf.h"
+#include "bt_message_advertiser.h"
+#include "bt_message_scan.h"
+#include "bt_message_gattc.h"
+#include "bt_message_gatts.h"
+#include "bt_message_spp.h"
+#include "bt_message_pan.h"
+#include "bt_message_hid_device.h"
+    BT_CALLBACK_END,
 #undef __BT_MESSAGE_CODE__
 } bt_message_type_t;
 

@@ -1497,7 +1497,7 @@ int main(int argc, char **argv)
 
         memset(_argv, 0, sizeof(_argv));
 #ifdef __NuttX__
-        len = readline(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
+        len = readline_stream(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
 #else
         free(buffer);
         buffer = readline(NULL);

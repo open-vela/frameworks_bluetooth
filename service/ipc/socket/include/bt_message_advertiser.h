@@ -21,7 +21,9 @@
   BT_LE_STOP_ADVERTISING_ID,
   BT_LE_ADVERTISING_IS_SUPPORT,
   BT_ADVERTISER_MESSAGE_END,
+#endif
 
+#ifdef __BT_CALLBACK_CODE__
   BT_ADVERTISER_CALLBACK_START,
   BT_LE_ON_ADVERTISER_START,
   BT_LE_ON_ADVERTISER_STOPPED,
@@ -39,7 +41,7 @@ extern "C" {
 #include "bt_le_advertiser.h"
 
 
-typedef struct
+typedef union
 {
   bt_status_t        status;
   uint32_t           remote;

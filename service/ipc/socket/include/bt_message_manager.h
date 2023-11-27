@@ -22,7 +22,9 @@
   BT_MANAGER_START_SERVICE,
   BT_MANAGER_STOP_SERVICE,
   BT_MANAGER_MESSAGE_END,
+#endif
 
+#ifdef __BT_CALLBACK_CODE__
   BT_MANAGER_CALLBACK_START,
   BT_MANAGER_CALLBACK_END,
 #endif
@@ -36,7 +38,7 @@ extern "C" {
 
 #include "bluetooth.h"
 
-typedef struct
+typedef union
 {
   bt_status_t        status;
   uint32_t           v32;

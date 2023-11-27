@@ -107,54 +107,48 @@ static void bt_socket_client_after_work(service_work_t *work, void *userdata)
 static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata)
 {
     bt_instance_t *ins = userdata;
-    bt_message_packet_t packet;
+    bt_message_packet_t *packet;
     int ret;
 
-    ret = recv(fd, &packet, sizeof(packet), 0);
-    if (ret <= 0)
-        return ret;
+    packet = ins->packet;
 
-    if ((packet.code > BT_ADAPTER_MESSAGE_START && packet.code < BT_ADAPTER_MESSAGE_END) ||
-        (packet.code > BT_DEVICE_MESSAGE_START && packet.code < BT_DEVICE_MESSAGE_END) ||
-        (packet.code > BT_A2DP_SOURCE_MESSAGE_START && packet.code < BT_A2DP_SOURCE_MESSAGE_END) ||
-        (packet.code > BT_A2DP_SINK_MESSAGE_START && packet.code < BT_A2DP_SINK_MESSAGE_END) ||
-        (packet.code > BT_HFP_AG_MESSAGE_START && packet.code < BT_HFP_AG_MESSAGE_END) ||
-        (packet.code > BT_HFP_HF_MESSAGE_START && packet.code < BT_HFP_HF_MESSAGE_END) ||
-        (packet.code > BT_ADVERTISER_MESSAGE_START && packet.code < BT_ADVERTISER_MESSAGE_END) ||
-        (packet.code > BT_SCAN_MESSAGE_START && packet.code < BT_SCAN_MESSAGE_END) ||
-        (packet.code > BT_GATT_CLIENT_MESSAGE_START && packet.code < BT_GATT_CLIENT_MESSAGE_END) ||
-        (packet.code > BT_GATT_SERVER_MESSAGE_START && packet.code < BT_GATT_SERVER_MESSAGE_END) ||
-        (packet.code > BT_SPP_MESSAGE_START && packet.code < BT_SPP_MESSAGE_END) ||
-        (packet.code > BT_PAN_MESSAGE_START && packet.code < BT_PAN_MESSAGE_END) ||
-        (packet.code > BT_HID_DEVICE_MESSAGE_START && packet.code < BT_HID_DEVICE_MESSAGE_END)) {
-        if (ins->packet == NULL)
+    ret = recv(fd, (char *)packet + ins->offset, sizeof(*packet) - ins->offset, 0);
+    if (ret == 0) {
+        service_loop_remove_poll(poll);
+        return ret;
+    } else if (ret < 0) {
+        if (errno == EINTR || errno == EAGAIN) {
+            return BT_STATUS_SUCCESS;
+        }
+        return ret;
+    }
+
+    ins->offset += ret;
+
+    if (ins->offset != sizeof(*packet)) {
+        return BT_STATUS_SUCCESS;
+    } else {
+        ins->offset = 0;
+    }
+
+    if (packet->code > BT_MESSAGE_START && packet->code < BT_MESSAGE_END) {
+        if (ins->cpacket == NULL)
             return BT_STATUS_SUCCESS;
 
-        memcpy(ins->packet, &packet, sizeof(packet));
+        memcpy(ins->cpacket, packet, sizeof(*packet));
         uv_mutex_lock(&ins->mutex);
         uv_cond_signal(&ins->cond);
         uv_mutex_unlock(&ins->mutex);
         return BT_STATUS_SUCCESS;
     }
 
-    if ((packet.code > BT_ADAPTER_CALLBACK_START && packet.code < BT_ADAPTER_CALLBACK_END) ||
-        (packet.code > BT_A2DP_SINK_CALLBACK_START && packet.code < BT_A2DP_SINK_CALLBACK_END) ||
-        (packet.code > BT_A2DP_SOURCE_CALLBACK_START && packet.code < BT_A2DP_SOURCE_CALLBACK_END) ||
-        (packet.code > BT_HFP_AG_CALLBACK_START && packet.code < BT_HFP_AG_CALLBACK_END) ||
-        (packet.code > BT_HFP_HF_CALLBACK_START && packet.code < BT_HFP_HF_CALLBACK_END) ||
-        (packet.code > BT_ADVERTISER_CALLBACK_START && packet.code < BT_ADVERTISER_CALLBACK_END) ||
-        (packet.code > BT_SCAN_CALLBACK_START && packet.code < BT_SCAN_CALLBACK_END) ||
-        (packet.code > BT_GATT_CLIENT_CALLBACK_START && packet.code < BT_GATT_CLIENT_CALLBACK_END) ||
-        (packet.code > BT_GATT_SERVER_CALLBACK_START && packet.code < BT_GATT_SERVER_CALLBACK_END) ||
-        (packet.code > BT_SPP_CALLBACK_START && packet.code < BT_SPP_CALLBACK_END) ||
-        (packet.code > BT_PAN_CALLBACK_START && packet.code < BT_PAN_CALLBACK_END) ||
-        (packet.code > BT_HID_DEVICE_CALLBACK_START && packet.code < BT_HID_DEVICE_CALLBACK_END)) {
+    if (packet->code > BT_CALLBACK_START && packet->code < BT_CALLBACK_END) {
         bt_client_msg_t *msg = malloc(sizeof(*msg));
         if (!msg)
             return BT_STATUS_NOMEM;
 
         msg->ins = ins;
-        memcpy(&msg->packet, &packet, sizeof(packet));
+        memcpy(&msg->packet, packet, sizeof(*packet));
         if (!service_loop_work(msg, bt_socket_client_work, bt_socket_client_after_work)) {
             free(msg);
             return BT_STATUS_FAIL;
@@ -244,21 +238,18 @@ int bt_socket_client_sendrecv(bt_instance_t *ins, bt_message_packet_t *packet,
 
     packet->code = code;
 
-    ins->packet = packet;
+    ins->cpacket = packet;
 
-    //do {
     ret = send(ins->peer_fd, packet, sizeof(*packet), 0);
-    //} while ((ret == -1 && errno == EINTR) || (ret && ret != sizeof(*packet)));
 
     if (ret <= 0) {
-        syslog(0, "%s fail:%d !!!!!!!!!\n", __func__, ret);
         uv_mutex_unlock(&ins->mutex);
         return BT_STATUS_FAIL;
     }
 
     uv_cond_wait(&ins->cond, &ins->mutex);
 
-    ins->packet = NULL;
+    ins->cpacket = NULL;
 
     uv_mutex_unlock(&ins->mutex);
 
@@ -268,16 +259,31 @@ int bt_socket_client_sendrecv(bt_instance_t *ins, bt_message_packet_t *packet,
 int bt_socket_client_init(bt_instance_t *ins, int family,
                           const char *name, const char *cpu, int port)
 {
+    service_poll_t *poll;
     service_loop_init();
+
+    ins->packet = malloc(sizeof(bt_message_packet_t));
+    if (ins->packet == NULL)
+        return BT_STATUS_NOMEM;
+
+    ins->offset = 0;
 
     uv_cond_init(&ins->cond);
     uv_mutex_init(&ins->mutex);
 
     ins->peer_fd = bt_socket_client_connect(family, name, cpu, port);
-    if (ins->peer_fd <= 0 ||
-        (service_loop_poll_fd(ins->peer_fd, POLL_READABLE,
-                              bt_socket_client_handle_event, ins) == NULL))
+    if (ins->peer_fd <= 0) {
+        bt_socket_client_deinit(ins);
         return BT_STATUS_PARM_INVALID;
+    }
+
+    poll = service_loop_poll_fd(ins->peer_fd, POLL_READABLE,
+                                bt_socket_client_handle_event, ins);
+    if (poll == NULL) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    ins->poll = poll;
 
     service_loop_run(true, "bt_client");
 
@@ -286,8 +292,17 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
 
 void bt_socket_client_deinit(bt_instance_t *ins)
 {
-    // remove poll
-    // disconnect fd
-    // loop exit
-    // service_loop_exit();
+    uv_cond_destroy(&ins->cond);
+    uv_mutex_destroy(&ins->mutex);
+
+    if (ins->packet)
+        free(ins->packet);
+
+    if (ins->poll)
+        service_loop_remove_poll(ins->poll);
+
+    if (ins->peer_fd > 0)
+        close(ins->peer_fd);
+
+    service_loop_exit();
 }
