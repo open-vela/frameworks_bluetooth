@@ -69,10 +69,12 @@ void *BTSYMBOLS(bluetooth_get_proxy)(bt_instance_t *ins, enum profile_id id)
     switch (id) {
     case PROFILE_HFP_HF:
         /* for binder ipc*/
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_BINDER_IPC
         if (!ins->hfp_hf_proxy) {
             ins->hfp_hf_proxy = NULL;
         }
         return ins->hfp_hf_proxy;
+#endif
 
     default:
         break;

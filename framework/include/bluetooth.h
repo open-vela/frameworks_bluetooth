@@ -28,6 +28,7 @@ extern "C" {
 #include "bt_status.h"
 #include "bt_uuid.h"
 #include "callbacks_list.h"
+#include "service_loop.h"
 
 #ifndef BTSYMBOLS
 # define BTSYMBOLS(s) s
@@ -292,6 +293,7 @@ typedef bool (*bt_allocator_t)(void **data, uint32_t size);
 
 typedef struct bt_instance {
     uint32_t app_id;
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_BINDER_IPC
     void *manager_proxy;
     void *adapter_proxy;
     void *a2dp_proxy;
@@ -305,27 +307,36 @@ typedef struct bt_instance {
     void *gattc_proxy;
     void *gatts_proxy;
     void *lea_server_proxy;
+#endif
 
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
+    service_poll_t *poll;
     uv_mutex_t mutex;
     uv_cond_t  cond;
+    int peer_fd;
+
+    int offset;
     void *packet;
+    void *cpacket;
+
     callbacks_list_t *adapter_callbacks;
     callbacks_list_t *a2dp_sink_callbacks;
     callbacks_list_t *a2dp_source_callbacks;
     void *adapter_cookie;
     void *a2dp_sink_cookie;
     void *a2dp_source_cookie;
+
     callbacks_list_t *hfp_ag_callbacks;
     callbacks_list_t *hfp_hf_callbacks;
     callbacks_list_t *panu_callbacks;
     callbacks_list_t *spp_callbacks;
     callbacks_list_t *hidd_callbacks;
-    int peer_fd;
     void *hfp_ag_cookie;
     void *hfp_hf_cookie;
     void *panu_cookie;
     void *spp_cookie;
     void *hidd_cookie;
+#endif
 } bt_instance_t;
 
 /**
