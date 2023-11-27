@@ -67,7 +67,7 @@
             _bt_hfp_ag_stop_voice_recognition;
     } bt_message_hfp_ag_t;
 
-    typedef struct {
+    typedef union {
         struct {
             bt_address_t addr;
             profile_connection_state_t state;
