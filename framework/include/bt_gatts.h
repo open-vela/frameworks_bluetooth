@@ -21,12 +21,16 @@
 extern "C" {
 #endif
 
-#include "bt_gatt_defs.h"
 #include "bluetooth.h"
 #include "bt_addr.h"
+#include "bt_gatt_defs.h"
 #include "bt_status.h"
 #include "bt_uuid.h"
 #include <stddef.h>
+
+#ifndef BTSYMBOLS
+# define BTSYMBOLS(s) s
+#endif
 
 typedef void *gatts_handle_t;
 
@@ -69,16 +73,16 @@ typedef struct {
 
 typedef void (*gatts_complete_cb_t)(gatts_handle_t srv_handle, gatt_status_t status, uint16_t attr_handle);
 
-bt_status_t bt_gatts_register_service(bt_instance_t *ins, gatts_handle_t *phandle, gatts_callbacks_t *callbacks);
-bt_status_t bt_gatts_unregister_service(gatts_handle_t srv_handle);
-bt_status_t bt_gatts_connect(gatts_handle_t srv_handle, bt_address_t *addr, ble_addr_type_t addr_type);
-bt_status_t bt_gatts_disconnect(gatts_handle_t srv_handle);
-bt_status_t bt_gatts_create_service_table(gatts_handle_t srv_handle, gatt_srv_db_t *srv_db);
-bt_status_t bt_gatts_start(gatts_handle_t srv_handle);
-bt_status_t bt_gatts_stop(gatts_handle_t srv_handle);
-bt_status_t bt_gatts_response(gatts_handle_t srv_handle, uint32_t req_handle, uint8_t *value, uint16_t length);
-bt_status_t bt_gatts_notify(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
-bt_status_t bt_gatts_indicate(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
+bt_status_t BTSYMBOLS(bt_gatts_register_service)(bt_instance_t *ins, gatts_handle_t *phandle, gatts_callbacks_t *callbacks);
+bt_status_t BTSYMBOLS(bt_gatts_unregister_service)(gatts_handle_t srv_handle);
+bt_status_t BTSYMBOLS(bt_gatts_connect)(gatts_handle_t srv_handle, bt_address_t *addr, ble_addr_type_t addr_type);
+bt_status_t BTSYMBOLS(bt_gatts_disconnect)(gatts_handle_t srv_handle);
+bt_status_t BTSYMBOLS(bt_gatts_create_service_table)(gatts_handle_t srv_handle, gatt_srv_db_t *srv_db);
+bt_status_t BTSYMBOLS(bt_gatts_start)(gatts_handle_t srv_handle);
+bt_status_t BTSYMBOLS(bt_gatts_stop)(gatts_handle_t srv_handle);
+bt_status_t BTSYMBOLS(bt_gatts_response)(gatts_handle_t srv_handle, uint32_t req_handle, uint8_t *value, uint16_t length);
+bt_status_t BTSYMBOLS(bt_gatts_notify)(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
+bt_status_t BTSYMBOLS(bt_gatts_indicate)(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length, gatts_complete_cb_t cmpl_cb);
 
 #ifdef __cplusplus
 }

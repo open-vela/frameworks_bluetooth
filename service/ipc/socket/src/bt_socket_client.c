@@ -84,6 +84,10 @@ static void bt_socket_client_work(service_work_t *work, void *userdata)
         bt_socket_client_advertiser_callback(NULL, -1, msg->ins, packet);
     } else if (packet->code > BT_SCAN_CALLBACK_START && packet->code < BT_SCAN_CALLBACK_END) {
         bt_socket_client_scan_callback(NULL, -1, msg->ins, packet);
+    } else if (packet->code > BT_GATT_CLIENT_CALLBACK_START && packet->code < BT_GATT_CLIENT_CALLBACK_END) {
+        bt_socket_client_gattc_callback(NULL, -1, msg->ins, packet);
+    } else if (packet->code > BT_GATT_SERVER_CALLBACK_START && packet->code < BT_GATT_SERVER_CALLBACK_END) {
+        bt_socket_client_gatts_callback(NULL, -1, msg->ins, packet);
     } else if (packet->code > BT_SPP_CALLBACK_START && packet->code < BT_SPP_CALLBACK_END) {
         bt_socket_client_spp_callback(NULL, -1, msg->ins, packet);
     } else if (packet->code > BT_PAN_CALLBACK_START && packet->code < BT_PAN_CALLBACK_END) {
@@ -118,6 +122,8 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
         (packet.code > BT_HFP_HF_MESSAGE_START && packet.code < BT_HFP_HF_MESSAGE_END) ||
         (packet.code > BT_ADVERTISER_MESSAGE_START && packet.code < BT_ADVERTISER_MESSAGE_END) ||
         (packet.code > BT_SCAN_MESSAGE_START && packet.code < BT_SCAN_MESSAGE_END) ||
+        (packet.code > BT_GATT_CLIENT_MESSAGE_START && packet.code < BT_GATT_CLIENT_MESSAGE_END) ||
+        (packet.code > BT_GATT_SERVER_MESSAGE_START && packet.code < BT_GATT_SERVER_MESSAGE_END) ||
         (packet.code > BT_SPP_MESSAGE_START && packet.code < BT_SPP_MESSAGE_END) ||
         (packet.code > BT_PAN_MESSAGE_START && packet.code < BT_PAN_MESSAGE_END) ||
         (packet.code > BT_HID_DEVICE_MESSAGE_START && packet.code < BT_HID_DEVICE_MESSAGE_END)) {
@@ -138,6 +144,8 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
         (packet.code > BT_HFP_HF_CALLBACK_START && packet.code < BT_HFP_HF_CALLBACK_END) ||
         (packet.code > BT_ADVERTISER_CALLBACK_START && packet.code < BT_ADVERTISER_CALLBACK_END) ||
         (packet.code > BT_SCAN_CALLBACK_START && packet.code < BT_SCAN_CALLBACK_END) ||
+        (packet.code > BT_GATT_CLIENT_CALLBACK_START && packet.code < BT_GATT_CLIENT_CALLBACK_END) ||
+        (packet.code > BT_GATT_SERVER_CALLBACK_START && packet.code < BT_GATT_SERVER_CALLBACK_END) ||
         (packet.code > BT_SPP_CALLBACK_START && packet.code < BT_SPP_CALLBACK_END) ||
         (packet.code > BT_PAN_CALLBACK_START && packet.code < BT_PAN_CALLBACK_END) ||
         (packet.code > BT_HID_DEVICE_CALLBACK_START && packet.code < BT_HID_DEVICE_CALLBACK_END)) {
