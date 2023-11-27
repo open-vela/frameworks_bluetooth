@@ -44,30 +44,31 @@ else
 endif
 endif
 
+CSRCS += service/src/manager_service.c
+CSRCS += service/common/*.c
+
 ifeq ($(CONFIG_BLUETOOTH_OBELISK), y)
-	CSRCS += service/src/manager_service.c
 	CSRCS += service/src/adapter_service.c
 	CSRCS += service/src/adapter_state.c
 	CSRCS += service/src/btservice.c
 	CSRCS += service/src/device.c
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += service/src/advertising.c
-endif
+endif #CONFIG_BLUETOOTH_BLE_ADV
 ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
 	CSRCS += service/src/scan_manager.c
-endif
+endif #CONFIG_BLUETOOTH_BLE_SCAN
 	CSRCS += service/stacks/*.c
-	CSRCS += service/common/*.c
 	CSRCS += service/stacks/bluelet/*.c
 ifeq ($(CONFIG_BLUETOOTH_BLE_AUDIO),)
   CSRCS := $(filter-out $(wildcard service/stacks/bluelet/sal_lea_*),$(wildcard $(CSRCS)))
-endif
+endif #CONFIG_BLUETOOTH_BLE_AUDIO
 	CSRCS += service/profiles/*.c
 	CSRCS += service/profiles/system/*.c
 ifeq ($(CONFIG_BLUETOOTH_A2DP),)
   CSRCS := $(filter-out $(wildcard service/profiles/system/bt_player.c),$(wildcard $(CSRCS)))
   CSRCS := $(filter-out $(wildcard service/profiles/system/media_system.c),$(wildcard $(CSRCS)))
-endif
+endif #CONFIG_BLUETOOTH_A2DP
 	CSRCS += service/profiles/audio_interface/*.c
 ifeq ($(CONFIG_BLUETOOTH_GATT), y)
 	CSRCS += service/profiles/gatt/*.c
@@ -108,55 +109,55 @@ endif #CONFIG_BLUETOOTH_HFP_AG
 
 ifeq ($(CONFIG_BLUETOOTH_SPP), y)
 	CSRCS += service/profiles/spp/*.c
-endif
+endif #CONFIG_BLUETOOTH_SPP
 
 ifeq ($(CONFIG_BLUETOOTH_HID_DEVICE), y)
 	CSRCS += service/profiles/hid/*.c
-endif
+endif #CONFIG_BLUETOOTH_HID_DEVICE
 
 ifeq ($(CONFIG_BLUETOOTH_PAN), y)
 	CSRCS += service/profiles/pan/*.c
-endif
+endif #CONFIG_BLUETOOTH_PAN
 
 ifneq ($(findstring y, $(CONFIG_BLUETOOTH_LEAUDIO_CLIENT)_$(CONFIG_BLUETOOTH_LEAUDIO_SERVER)), )
 	CSRCS += service/profiles/leaudio/audio_ipc/*.c
 	CSRCS += service/profiles/leaudio/*.c
-endif
+endif #CONFIG_BLUETOOTH_LEAUDIO_CLIENT/CONFIG_BLUETOOTH_LEAUDIO_SERVER
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_SERVER), y)
 	CSRCS += service/profiles/leaudio/server/*.c
-endif
+endif #CONFIG_BLUETOOTH_LEAUDIO_SERVER
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_CCP), y)
 	CSRCS += service/profiles/leaudio/ccp/*.c
-endif
+endif #CONFIG_BLUETOOTH_LEAUDIO_CCP
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_MCP), y)
 	CSRCS += service/profiles/leaudio/mcp/*.c
-endif
+endif #CONFIG_BLUETOOTH_LEAUDIO_MCP
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICS), y)
 	CSRCS += service/profiles/leaudio/vmics/*.c
-endif
+endif #CONFIG_BLUETOOTH_LEAUDIO_VMICS
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_CLIENT), y)
 	CSRCS += service/profiles/leaudio/client/*.c
-endif
+endif #CONFIG_BLUETOOTH_LEAUDIO_CLIENT
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_MCS), y)
 	CSRCS += service/profiles/leaudio/mcs/*.c
-endif
+endif #CONFIG_BLUETOOTH_LEAUDIO_MCS
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_TBS), y)
 	CSRCS += service/profiles/leaudio/tbs/*.c
-endif
+endif #CONFIG_BLUETOOTH_LEAUDIO_TBS
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICP), y)
 	CSRCS += service/profiles/leaudio/vmicp/*.c
-endif
+endif #CONFIG_BLUETOOTH_LEAUDIO_VMICP
 
 CSRCS += service/utils/*.c
-endif
+endif #CONFIG_BLUETOOTH_OBELISK
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CSRCS += tools/utils.c
@@ -239,19 +240,20 @@ ifeq ($(CONFIG_OFONO), y)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/utils/gdbus
 endif
 
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/src
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/common
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/include
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/system
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks/include
+
 ifeq ($(CONFIG_BLUETOOTH_OBELISK), y)
 ifneq ($(CONFIG_OBELISK_BREDR_BLUELET)$(CONFIG_OBELISK_LE_BLUELET),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/bluelet/bluelet/src/samples/stack_adapter/inc
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/vendor/xiaomi/vela/bluelet/inc
 endif
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/src
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/common
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/include
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/system
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks/include
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/ipc
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/ipc/binder/include
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/ipc/binder/parcel

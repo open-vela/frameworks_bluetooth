@@ -53,7 +53,8 @@ bt_instance_t *bluetooth_create_instance(void)
     }
 
     if (status != BT_STATUS_SUCCESS) {
-      bluetooth_delete_instance(ins);
+      manager_delete_instance(ins->app_id);
+      free(ins);
       ins = NULL;
     }
 #if 0
