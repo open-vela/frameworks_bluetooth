@@ -34,6 +34,8 @@ extern "C" {
 #include "bt_message_hfp_hf.h"
 #include "bt_message_advertiser.h"
 #include "bt_message_scan.h"
+#include "bt_message_gattc.h"
+#include "bt_message_gatts.h"
 #include "bt_message_spp.h"
 #include "bt_message_pan.h"
 #include "bt_message_hid_device.h"
@@ -51,6 +53,8 @@ typedef enum {
 #include "bt_message_hfp_hf.h"
 #include "bt_message_advertiser.h"
 #include "bt_message_scan.h"
+#include "bt_message_gattc.h"
+#include "bt_message_gatts.h"
 #include "bt_message_spp.h"
 #include "bt_message_pan.h"
 #include "bt_message_hid_device.h"
@@ -70,6 +74,8 @@ typedef struct
     bt_hfp_hf_result_t hfp_hf_r;
     bt_advertiser_result_t adv_r;
     bt_scan_result_t scan_r;
+    bt_gattc_result_t gattc_r;
+    bt_gatts_result_t gatts_r;
     bt_spp_result_t spp_r;
     bt_pan_result_t pan_r;
     bt_hid_device_result_t hidd_r;
@@ -96,6 +102,12 @@ typedef struct
 
     bt_message_scan_t scan_pl;
     bt_message_scan_callbacks_t scan_cb;
+
+    bt_message_gattc_t gattc_pl;
+    bt_message_gattc_callbacks_t gattc_cb;
+
+    bt_message_gatts_t gatts_pl;
+    bt_message_gatts_callbacks_t gatts_cb;
 
     bt_message_spp_t spp_pl;
     bt_message_spp_callbacks_t spp_cb;

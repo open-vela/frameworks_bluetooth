@@ -252,11 +252,11 @@ static void gattc_process_message(void *data)
         service->element_size = msg->param.discover_res.size;
         bt_list_add_tail(connection->services, service);
 
-        GATT_CBACK(connection->callbacks, on_discover, connection, GATT_STATUS_SUCCESS, service->uuid, service->start_handle, service->end_handle);
+        GATT_CBACK(connection->callbacks, on_discovered, connection, GATT_STATUS_SUCCESS, service->uuid, service->start_handle, service->end_handle);
     } break;
     case GATTC_EVENT_DISOCVER_CMPL: {
         connection->state = GATTC_STATE_CONNECTED;
-        GATT_CBACK(connection->callbacks, on_discover, connection, msg->param.discover_cmpl.status, NULL, 0, 0);
+        GATT_CBACK(connection->callbacks, on_discovered, connection, msg->param.discover_cmpl.status, NULL, 0, 0);
     } break;
     case GATTC_EVENT_READ: {
         GATT_CBACK(connection->callbacks, on_read, connection, msg->param.read.status, msg->param.read.element_id, msg->param.read.value, msg->param.read.length);
@@ -385,7 +385,7 @@ static int if_gattc_dump(void)
     return 0;
 }
 
-static bt_status_t if_gattc_create_connect(void **phandle, gattc_callbacks_t *callbacks)
+static bt_status_t if_gattc_create_connect(void *remote, void **phandle, gattc_callbacks_t *callbacks)
 {
     bt_status_t status;
     pthread_mutexattr_t attr;
@@ -416,7 +416,7 @@ static bt_status_t if_gattc_create_connect(void **phandle, gattc_callbacks_t *ca
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&connection->conn_lock, &attr);
 
-    connection->remote = NULL;
+    connection->remote = remote;
     connection->manager = &g_gattc_manager;
     connection->state = GATTC_STATE_DISCONNECTED;
     connection->user_phandle = phandle;
@@ -708,15 +708,6 @@ void if_gattc_on_mtu_changed(bt_address_t *addr, uint32_t mtu, gatt_status_t sta
     msg->param.cfg_mtu.status = status;
     msg->param.cfg_mtu.mtu = mtu;
     gattc_send_message(msg);
-}
-
-void if_gattc_set_remote(void *conn_handle, void *remote)
-{
-    if (!conn_handle)
-        return;
-
-    gattc_connection_t *connection = conn_handle;
-    connection->remote = remote;
 }
 
 void *if_gattc_get_remote(void *conn_handle)

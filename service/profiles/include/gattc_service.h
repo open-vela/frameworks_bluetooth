@@ -46,12 +46,11 @@ void if_gattc_on_mtu_changed(bt_address_t *addr, uint32_t mtu, gatt_status_t sta
 /*
  * gattc remote
  */
-void if_gattc_set_remote(void *conn_handle, void *remote);
 void *if_gattc_get_remote(void *conn_handle);
 
 typedef struct gattc_interface {
     size_t size;
-    bt_status_t (*create_connect)(void **phandle, gattc_callbacks_t *callbacks);
+    bt_status_t (*create_connect)(void *remote, void **phandle, gattc_callbacks_t *callbacks);
     bt_status_t (*delete_connect)(void *conn_handle);
     bt_status_t (*connect)(void *conn_handle, bt_address_t *addr, ble_addr_type_t addr_type);
     bt_status_t (*disconnect)(void *conn_handle);

@@ -67,11 +67,10 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
             return STATUS_FAILED_TRANSACTION;
         }
 
-        if (profile->register_service((void **)&handle, (gatts_callbacks_t *)BpBtGattServerCallbacks_getStatic()) != BT_STATUS_SUCCESS) {
+        if (profile->register_service((void *)remote, (void **)&handle, (gatts_callbacks_t *)BpBtGattServerCallbacks_getStatic()) != BT_STATUS_SUCCESS) {
             AIBinder_decStrong(remote);
             stat = AParcel_writeUint32(reply, (uint32_t)NULL);
         } else {
-            if_gatts_set_remote((void *)handle, (void *)remote);
             stat = AParcel_writeUint32(reply, (uint32_t)handle);
         }
         break;
