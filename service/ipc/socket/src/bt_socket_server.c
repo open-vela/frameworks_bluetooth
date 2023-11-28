@@ -329,15 +329,15 @@ int bt_socket_server_send(bt_instance_t *ins, bt_message_packet_t *packet,
 
 int bt_socket_server_init(const char *name, int port)
 {
-    service_poll_t *lpoll;
+    service_poll_t *lpoll = NULL;
     int local;
 #ifdef CONFIG_NET_IPv4
-    service_poll_t *ipoll;
-    int inet;
+    service_poll_t *ipoll = NULL;
+    int inet = -1;
 #endif
 #ifdef CONFIG_NET_RPMSG
-    service_poll_t *rpoll;
-    int rpmsg;
+    service_poll_t *rpoll = NULL;
+    int rpmsg = -1;
 #endif
 
     local = bt_socket_server_listen(PF_LOCAL, name, port);
