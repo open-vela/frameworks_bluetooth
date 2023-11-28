@@ -129,3 +129,11 @@ bt_status_t bluetooth_stop_service(bt_instance_t *ins, enum profile_id id)
 
     return BT_STATUS_SUCCESS;
 }
+
+#include "uv.h"
+bool bluetooth_set_external_uv(bt_instance_t *ins, uv_loop_t *ext_loop)
+{
+    ins->external_loop = ext_loop;
+
+    return true;
+}

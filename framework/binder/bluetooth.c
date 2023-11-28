@@ -169,3 +169,9 @@ bt_status_t bluetooth_stop_service(bt_instance_t *ins, enum profile_id id)
 {
     return BpBtManager_stopService(ins->manager_proxy, ins->app_id, id);
 }
+
+#include "uv.h"
+bool bluetooth_set_external_uv(bt_instance_t *ins, uv_loop_t *ext_loop)
+{
+    return false;
+}

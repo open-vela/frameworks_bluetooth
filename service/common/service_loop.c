@@ -369,7 +369,8 @@ static void service_after_work_cb(uv_work_t *req, int status)
     assert(status == 0);
     assert(work);
 
-    work->after_work_cb(work, work->userdata);
+    if (work->after_work_cb)
+        work->after_work_cb(work, work->userdata);
     free(work);
 }
 
