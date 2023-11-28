@@ -300,7 +300,7 @@ static void discover_callback(void *conn_handle, gatt_status_t status, bt_uuid_t
             printf(">    [0x%04x][DES]", attr_desc.handle);
             break;
         }
-        printf("[PROP:0x%04x", attr_desc.properties);
+        printf("[PROP:0x%04" PRIx32, attr_desc.properties);
         if (attr_desc.properties) {
             printf(",");
             if (attr_desc.properties & GATT_PROP_READ) {
@@ -333,7 +333,7 @@ static void discover_callback(void *conn_handle, gatt_status_t status, bt_uuid_t
 
 static void mtu_exchange_callback(void *conn_handle, gatt_status_t status, uint32_t mtu)
 {
-    PRINT("gattc_mtu_exchange_callback, status:%d, mtu:%d", status, mtu);
+    PRINT("gattc_mtu_exchange_callback, status:%d, mtu:%" PRIu32, status, mtu);
 }
 
 static void read_complete_callback(void *conn_handle, gatt_status_t status, uint16_t attr_handle, uint8_t *value, uint16_t length)
