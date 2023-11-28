@@ -328,12 +328,12 @@ static void stop_callback(void *srv_handle, gatt_status_t status)
 
 static void notify_complete_callback(void *srv_handle, gatt_status_t status, uint16_t attr_handle)
 {
-    PRINT("gatts service notify complete, handle 0x%04x status:%d", attr_handle, status);
+    PRINT("gatts service notify complete, handle 0x%04" PRIx16 " status:%d", attr_handle, status);
 }
 
 static void mtu_change_callback(void *srv_handle, bt_address_t *addr, uint32_t mtu)
 {
-    PRINT_ADDR("gatts_mtu_change_callback, addr:%s, mtu:%d", addr, mtu);
+    PRINT_ADDR("gatts_mtu_change_callback, addr:%s, mtu:%" PRIu32, addr, mtu);
 }
 
 static gatts_callbacks_t gatts_cbs = {
