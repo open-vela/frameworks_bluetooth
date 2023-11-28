@@ -28,7 +28,7 @@ extern "C" {
 #include "bt_status.h"
 #include "bt_uuid.h"
 #include "callbacks_list.h"
-#include "service_loop.h"
+#include "uv_thread_loop.h"
 
 #ifndef BTSYMBOLS
 # define BTSYMBOLS(s) s
@@ -310,10 +310,11 @@ typedef struct bt_instance {
 #endif
 
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
-    service_poll_t *poll;
+    void *poll;
     uv_mutex_t mutex;
     uv_cond_t  cond;
     int peer_fd;
+    uv_loop_t *client_loop;
     uv_loop_t *external_loop;
     int offset;
     void *packet;

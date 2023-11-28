@@ -269,6 +269,7 @@ void service_loop_exit(void)
     list_delete(&loop->msg_queue);
     uv_mutex_unlock(&loop->msg_lock);
     uv_mutex_destroy(&loop->msg_lock);
+    free(loop);
 }
 
 service_poll_t *service_loop_poll_fd(int fd, int pevents, service_poll_cb_t cb, void *userdata)

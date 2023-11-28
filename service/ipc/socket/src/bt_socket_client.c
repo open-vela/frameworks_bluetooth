@@ -40,14 +40,14 @@
 #include <netpacket/rpmsg.h>
 #endif
 
-#include "adapter_internel.h"
+//#include "adapter_internel.h"
 #include "bluetooth.h"
 #include "bt_adapter.h"
-#include "bt_internal.h"
+//#include "bt_internal.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
-#include "service_loop.h"
+#include "uv_thread_loop.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -99,11 +99,6 @@ static void bt_socket_client_msg_process(bt_client_msg_t *msg)
     free(msg);
 }
 
-static void bt_socket_client_work(service_work_t *work, void *userdata)
-{
-    bt_socket_client_msg_process(userdata);
-}
-
 static void bt_socket_client_async_close(uv_handle_t *handle)
 {
     free(handle);
@@ -134,7 +129,34 @@ static bt_status_t bt_socket_client_async_to_external(bt_instance_t *ins, bt_cli
     return BT_STATUS_SUCCESS;
 }
 
-static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata)
+static void bt_socket_client_work(uv_work_t *req)
+{
+    bt_socket_client_msg_process(req->data);
+}
+
+static void bt_socket_client_after_work(uv_work_t *req, int status)
+{
+    assert(status == 0);
+    assert(req);
+
+    free(req);
+}
+
+static bt_status_t bt_socket_client_queue_work(bt_instance_t *ins, bt_client_msg_t *msg)
+{
+    uv_work_t *work = zalloc(sizeof(*work));
+    if (work == NULL)
+        return BT_STATUS_NOMEM;
+
+    work->data = msg;
+    if (uv_queue_work(ins->client_loop, work, bt_socket_client_work, bt_socket_client_after_work) != 0) {
+        free(work);
+        return BT_STATUS_FAIL;
+    }
+
+    return BT_STATUS_SUCCESS;
+}
+static int bt_socket_client_receive(uv_poll_t *poll, int fd, void *userdata)
 {
     bt_instance_t *ins = userdata;
     bt_message_packet_t *packet;
@@ -144,7 +166,7 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
 
     ret = recv(fd, (char *)packet + ins->offset, sizeof(*packet) - ins->offset, 0);
     if (ret == 0) {
-        service_loop_remove_poll(poll);
+        thread_loop_remove_poll(poll);
         return ret;
     } else if (ret < 0) {
         if (errno == EINTR || errno == EAGAIN) {
@@ -186,7 +208,7 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
                 return status;
             }
         } else {
-            if (!service_loop_work(msg, bt_socket_client_work, NULL)) {
+            if (bt_socket_client_queue_work(ins, msg) != BT_STATUS_SUCCESS) {
                 free(msg);
                 return BT_STATUS_FAIL;
             }
@@ -196,24 +218,23 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
     return BT_STATUS_SUCCESS;
 }
 
-static void bt_socket_client_handle_event(service_poll_t *poll,
-                                          int revent, void *userdata)
+static void bt_socket_client_handle_event(uv_poll_t* poll, int status, int events)
 {
     uv_os_fd_t fd;
     int ret;
 
-    ret = uv_fileno((uv_handle_t *)&poll->handle, &fd);
+    ret = uv_fileno((uv_handle_t *)poll, &fd);
     if (ret) {
-        service_loop_remove_poll(poll);
+        thread_loop_remove_poll(poll);
         return;
     }
 
-    if (revent & POLL_ERROR || revent & POLL_DISCONNECT) {
-        service_loop_remove_poll(poll);
-    } else if (revent & POLL_READABLE) {
-        ret = bt_socket_client_receive(poll, fd, userdata);
+    if (status != 0 || events & UV_DISCONNECT) {
+        thread_loop_remove_poll(poll);
+    } else if (events & UV_READABLE) {
+        ret = bt_socket_client_receive(poll, fd, poll->data);
         if (ret != BT_STATUS_SUCCESS)
-            service_loop_remove_poll(poll);
+            thread_loop_remove_poll(poll);
     }
 }
 
@@ -297,12 +318,23 @@ int bt_socket_client_sendrecv(bt_instance_t *ins, bt_message_packet_t *packet,
 int bt_socket_client_init(bt_instance_t *ins, int family,
                           const char *name, const char *cpu, int port)
 {
-    service_poll_t *poll;
-    service_loop_init();
+    uv_poll_t *poll;
+
+    ins->client_loop = malloc(sizeof(uv_loop_t));
+    if (!ins->client_loop)
+        return BT_STATUS_NOMEM;
+
+    if (thread_loop_init(ins->client_loop) != 0) {
+        free(ins->client_loop);
+        ins->client_loop = NULL;
+        return BT_STATUS_FAIL;
+    }
 
     ins->packet = malloc(sizeof(bt_message_packet_t));
-    if (ins->packet == NULL)
+    if (ins->packet == NULL) {
+        bt_socket_client_deinit(ins);
         return BT_STATUS_NOMEM;
+    }
 
     ins->offset = 0;
 
@@ -315,7 +347,7 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
         return BT_STATUS_PARM_INVALID;
     }
 
-    poll = service_loop_poll_fd(ins->peer_fd, POLL_READABLE,
+    poll = thread_loop_poll_fd(ins->client_loop, ins->peer_fd, UV_READABLE,
                                 bt_socket_client_handle_event, ins);
     if (poll == NULL) {
         bt_socket_client_deinit(ins);
@@ -324,7 +356,7 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
 
     ins->poll = poll;
 
-    service_loop_run(true, "bt_client");
+    thread_loop_run(ins->client_loop, true, "bt_client");
 
     return BT_STATUS_SUCCESS;
 }
@@ -338,10 +370,13 @@ void bt_socket_client_deinit(bt_instance_t *ins)
         free(ins->packet);
 
     if (ins->poll)
-        service_loop_remove_poll(ins->poll);
+        thread_loop_remove_poll((uv_poll_t *)ins->poll);
 
     if (ins->peer_fd > 0)
         close(ins->peer_fd);
 
-    service_loop_exit();
+    thread_loop_exit(ins->client_loop);
+
+    if (ins->client_loop)
+        free(ins->client_loop);
 }

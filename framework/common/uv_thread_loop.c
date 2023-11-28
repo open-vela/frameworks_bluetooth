@@ -40,18 +40,6 @@ typedef struct thread_loop {
     struct list_node msg_queue;
 } loop_priv_t;
 
-typedef struct thread_timer {
-    uv_timer_t handle;
-    thread_timer_cb_t callback;
-    void *userdata;
-} timer_priv_t;
-
-typedef struct thread_poll {
-    uv_poll_t handle;
-    uv_poll_cb cb;
-    void *userdata;
-} poll_priv_t;
-
 typedef struct {
     struct list_node node;
     union {
@@ -87,14 +75,6 @@ static void set_stop(void *data)
     uv_close((uv_handle_t *)&priv->async, NULL);
     uv_stop(loop);
     syslog(LOG_DEBUG, "set_stopped");
-}
-
-static void thread_timer_cb(uv_timer_t *handle)
-{
-    timer_priv_t *timer = handle->data;
-
-    if (timer->callback)
-        timer->callback(handle, timer->userdata);
 }
 
 static void thread_sync_callback(void *data)
@@ -146,8 +126,7 @@ static void thread_schedule_loop(void *data)
 
 static void handle_close_cb(uv_handle_t *handle)
 {
-    if (handle->data)
-        free(handle->data);
+    free(handle);
 }
 
 int thread_loop_init(uv_loop_t *loop)
@@ -160,6 +139,7 @@ int thread_loop_init(uv_loop_t *loop)
     priv->is_running = 0;
     ret = uv_mutex_init(&priv->msg_lock);
     if (ret != 0) {
+        free(priv);
         syslog(LOG_ERR, "%s mutex error: %d", __func__, ret);
         return ret;
     }
@@ -176,6 +156,7 @@ int thread_loop_run(uv_loop_t *loop, bool start_thread, const char *name)
     loop_priv_t *priv = loop->data;
 
     if (start_thread) {
+        char t_name[64];
         int ret = uv_sem_init(&priv->ready, 0);
         if (ret != 0) {
             syslog(LOG_ERR, "%s sem init error: %d", __func__, ret);
@@ -189,12 +170,16 @@ int thread_loop_run(uv_loop_t *loop, bool start_thread, const char *name)
             return ret;
         }
 
-        pthread_setname_np(priv->thread, name);
+        if (name != NULL && strlen(name) > 0)
+            snprintf(t_name, sizeof(t_name), "%s_%d", name, getpid());
+        else
+            snprintf(t_name, sizeof(t_name), "loop_%d", getpid());
+        pthread_setname_np(priv->thread, t_name);
         uv_sem_wait(&priv->ready);
         uv_sem_destroy(&priv->ready);
-        syslog(LOG_DEBUG, "loop running now !!!");
+        syslog(LOG_DEBUG, "%s loop running now !!!", t_name);
     } else {
-        syslog(LOG_DEBUG, "loop running now !!!");
+        syslog(LOG_DEBUG, "%s loop running now !!!", name);
         thread_schedule_loop(NULL);
     }
 
@@ -222,6 +207,7 @@ void thread_loop_exit(uv_loop_t *loop)
     list_delete(&priv->msg_queue);
     uv_mutex_unlock(&priv->msg_lock);
     uv_mutex_destroy(&priv->msg_lock);
+    free(priv);
 }
 
 uv_poll_t *thread_loop_poll_fd(uv_loop_t *loop, int fd, int pevents, uv_poll_cb cb, void *userdata)
@@ -229,37 +215,34 @@ uv_poll_t *thread_loop_poll_fd(uv_loop_t *loop, int fd, int pevents, uv_poll_cb 
     assert(fd);
     assert(cb);
 
-    poll_priv_t *priv = (poll_priv_t *)malloc(sizeof(poll_priv_t));
-    if (!priv)
+    uv_poll_t *handle = (uv_poll_t *)malloc(sizeof(uv_poll_t));
+    if (!handle)
         return NULL;
 
-    priv->cb = cb;
-    priv->userdata = userdata;
-    priv->handle.data = priv;
-    int ret = uv_poll_init(loop, &priv->handle, fd);
+    handle->data = userdata;
+    int ret = uv_poll_init(loop, handle, fd);
     if (ret != 0)
         goto error;
 
-    ret = uv_poll_start(&priv->handle, pevents, cb);
+    ret = uv_poll_start(handle, pevents, cb);
     if (ret != 0)
         goto error;
 
-    return &priv->handle;
+    return handle;
 
 error:
     syslog(LOG_ERR, "%s failed: %d", __func__, ret);
-    free(priv);
+    free(handle);
     return NULL;
 }
 
-int thread_loop_reset_poll(uv_poll_t *poll, int pevents)
+int thread_loop_reset_poll(uv_poll_t *poll, int pevents, uv_poll_cb cb)
 {
     assert(poll);
 
-    poll_priv_t *priv = poll->data;
     uv_poll_stop(poll);
 
-    return uv_poll_start(poll, pevents, priv->cb);
+    return uv_poll_start(poll, pevents, cb);
 }
 
 void thread_loop_remove_poll(uv_poll_t *poll)
@@ -271,25 +254,23 @@ void thread_loop_remove_poll(uv_poll_t *poll)
     uv_close((uv_handle_t *)poll, handle_close_cb);
 }
 
-uv_timer_t *thread_loop_timer(uv_loop_t *loop, uint64_t timeout, uint64_t repeat, thread_timer_cb_t cb, void *userdata)
+uv_timer_t *thread_loop_timer(uv_loop_t *loop, uint64_t timeout, uint64_t repeat, uv_timer_cb cb, void *userdata)
 {
     if (!cb)
         return NULL;
 
-    timer_priv_t *priv = malloc(sizeof(timer_priv_t));
-    if (!priv)
+    uv_timer_t *handle = malloc(sizeof(uv_timer_t));
+    if (!handle)
         return NULL;
 
-    uv_timer_init(loop, &priv->handle);
-    priv->callback = cb;
-    priv->userdata = userdata;
-    priv->handle.data = priv;
-    uv_timer_start(&priv->handle, thread_timer_cb, timeout, repeat);
+    uv_timer_init(loop, handle);
+    handle->data = userdata;
+    uv_timer_start(handle, cb, timeout, repeat);
 
-    return &priv->handle;
+    return handle;
 }
 
-uv_timer_t *thread_loop_timer_no_repeating(uv_loop_t *loop, uint64_t timeout, thread_timer_cb_t cb, void *userdata)
+uv_timer_t *thread_loop_timer_no_repeating(uv_loop_t *loop, uint64_t timeout, uv_timer_cb cb, void *userdata)
 {
     return thread_loop_timer(loop, timeout, 0, cb, userdata);
 }
