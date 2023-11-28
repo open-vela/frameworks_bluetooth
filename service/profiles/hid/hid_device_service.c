@@ -46,12 +46,12 @@
 
 typedef struct {
     bool started;
-    uint8_t registered;
+    hid_app_state_t app_state;
     bt_address_t peer_addr;
-    profile_connection_state_t state;
+    profile_connection_state_t conn_state;
     pthread_mutex_t hid_lock;
     callbacks_list_t *callbacks;
-} hid_device_global_t;
+} hid_device_handle_t;
 
 typedef struct {
     enum {
@@ -127,7 +127,7 @@ typedef struct {
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-static hid_device_global_t g_hidd_handle = { .started = false };
+static hid_device_handle_t g_hidd_handle = { .started = false };
 
 /****************************************************************************
  * Private Functions
@@ -140,17 +140,20 @@ static void hid_device_event_process(void *data)
         return;
 
     pthread_mutex_lock(&g_hidd_handle.hid_lock);
-    if (!g_hidd_handle.started)
+    if (!g_hidd_handle.started) {
+        BT_LOGW("%s HID device is stopped, msg id:%d", __func__, msg->event);
         goto end;
+    }
 
     switch (msg->event) {
     case APP_REGISTER_EVT:
         if (msg->app_register.state == HID_APP_STATE_NOT_REGISTERED)
-            g_hidd_handle.registered = 0;
+            g_hidd_handle.app_state = HID_APP_STATE_NOT_REGISTERED;
         HIDD_CALLBACK_FOREACH(g_hidd_handle.callbacks, app_state_cb, msg->app_register.state);
         break;
     case CONNECT_CHANGE_EVT:
-        g_hidd_handle.state = msg->connect_change.state;
+        BT_ADDR_LOG("HID-DEVICE-CONNECTION-STATE-EVENT from:%s, state:%d", &msg->connect_change.addr, msg->connect_change.state);
+        g_hidd_handle.conn_state = msg->connect_change.state;
         if (msg->connect_change.state == PROFILE_STATE_CONNECTING)
             memcpy(&g_hidd_handle.peer_addr, &msg->connect_change.addr, sizeof(bt_address_t));
         else if (msg->connect_change.state == PROFILE_STATE_DISCONNECTED)
@@ -229,8 +232,8 @@ static bt_status_t hid_device_startup(profile_on_startup_t cb)
     }
 
     g_hidd_handle.started = true;
-    g_hidd_handle.registered = 0;
-    g_hidd_handle.state = PROFILE_STATE_DISCONNECTED;
+    g_hidd_handle.app_state = HID_APP_STATE_NOT_REGISTERED;
+    g_hidd_handle.conn_state = PROFILE_STATE_DISCONNECTED;
     pthread_mutex_unlock(&g_hidd_handle.hid_lock);
     cb(PROFILE_HID_DEV, true);
 
@@ -246,11 +249,12 @@ static bt_status_t hid_device_shutdown(profile_on_shutdown_t cb)
         return BT_STATUS_NOT_ENABLED;
     }
 
-    if (g_hidd_handle.state == PROFILE_STATE_CONNECTED || g_hidd_handle.state == PROFILE_STATE_CONNECTING)
+    if (g_hidd_handle.conn_state == PROFILE_STATE_CONNECTED || g_hidd_handle.conn_state == PROFILE_STATE_CONNECTING)
         bt_sal_hid_device_disconnect(&g_hidd_handle.peer_addr);
     g_hidd_handle.started = false;
-    g_hidd_handle.registered = 0;
-    g_hidd_handle.state = PROFILE_STATE_DISCONNECTED;
+    g_hidd_handle.app_state = HID_APP_STATE_NOT_REGISTERED;
+    g_hidd_handle.conn_state = PROFILE_STATE_DISCONNECTED;
+    bt_addr_set_empty(&g_hidd_handle.peer_addr);
     pthread_mutex_unlock(&g_hidd_handle.hid_lock);
     /* cleanup hid device stack */
     bt_sal_hid_device_cleanup();
@@ -273,7 +277,12 @@ static int hid_device_get_state(void)
 
 static int hid_device_dump(void)
 {
-    BT_LOGD("%s", __func__);
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+
+    bt_addr_ba2str(&g_hidd_handle.peer_addr, addr_str);
+    BT_LOGI("HID Device[0]:");
+    BT_LOGI("\tApp state:%s", (g_hidd_handle.app_state == HID_APP_STATE_REGISTERED) ? "registered" : "not registed");
+    BT_LOGI("\tConnection state:%d, peer:%s", g_hidd_handle.conn_state, addr_str);
 
     return 0;
 }
@@ -298,14 +307,15 @@ static bt_status_t hid_device_register_app(hid_device_sdp_settings_t *sdp, bool 
         goto exit;
     }
 
-    if (g_hidd_handle.registered) {
+    if (g_hidd_handle.app_state == HID_APP_STATE_REGISTERED) {
+        BT_LOGI("%s, HID app has registered!", __func__);
         status = BT_STATUS_NO_RESOURCES;
         goto exit;
     }
 
     status = bt_sal_hid_device_register_app(sdp, le_hid);
     if (status == BT_STATUS_SUCCESS) {
-        g_hidd_handle.registered = 1;
+        g_hidd_handle.app_state = HID_APP_STATE_REGISTERED;
     }
 
 exit:
@@ -320,6 +330,11 @@ static bt_status_t hid_device_unregister_app(void)
     pthread_mutex_lock(&g_hidd_handle.hid_lock);
     if (!g_hidd_handle.started) {
         status = BT_STATUS_NOT_ENABLED;
+        goto exit;
+    }
+
+    if (g_hidd_handle.app_state == HID_APP_STATE_NOT_REGISTERED) {
+        status = BT_STATUS_NOT_FOUND;
         goto exit;
     }
 
@@ -340,6 +355,12 @@ static bt_status_t hid_device_connect(bt_address_t *addr)
         goto exit;
     }
 
+    if (!bt_addr_is_empty(&g_hidd_handle.peer_addr)) {
+        BT_ADDR_LOG("HID device has connected to %s, %s!", &g_hidd_handle.peer_addr, __func__);
+        status = BT_STATUS_BUSY;
+        goto exit;
+    }
+
     status = bt_sal_hid_device_connect(addr);
 
 exit:
@@ -354,6 +375,12 @@ static bt_status_t hid_device_disconnect(bt_address_t *addr)
     pthread_mutex_lock(&g_hidd_handle.hid_lock);
     if (!g_hidd_handle.started) {
         status = BT_STATUS_NOT_ENABLED;
+        goto exit;
+    }
+
+    if (bt_addr_compare(addr, &g_hidd_handle.peer_addr)) {
+        BT_ADDR_LOG("%s is not current HID host, %s!", addr, __func__);
+        status = BT_STATUS_DEVICE_NOT_FOUND;
         goto exit;
     }
 
@@ -374,6 +401,12 @@ static bt_status_t hid_device_send_report(bt_address_t *addr, uint8_t rpt_id, ui
         goto exit;
     }
 
+    if (bt_addr_compare(addr, &g_hidd_handle.peer_addr)) {
+        BT_ADDR_LOG("%s is not current HID host, %s!", addr, __func__);
+        status = BT_STATUS_DEVICE_NOT_FOUND;
+        goto exit;
+    }
+
     status = bt_sal_hid_device_send_report(addr, rpt_id, rpt_data, rpt_size);
 
 exit:
@@ -388,6 +421,12 @@ static bt_status_t hid_device_response_report(bt_address_t *addr, uint8_t rpt_ty
     pthread_mutex_lock(&g_hidd_handle.hid_lock);
     if (!g_hidd_handle.started) {
         status = BT_STATUS_NOT_ENABLED;
+        goto exit;
+    }
+
+    if (bt_addr_compare(addr, &g_hidd_handle.peer_addr)) {
+        BT_ADDR_LOG("%s is not current HID host, %s!", addr, __func__);
+        status = BT_STATUS_DEVICE_NOT_FOUND;
         goto exit;
     }
 
@@ -408,6 +447,12 @@ static bt_status_t hid_device_report_error(bt_address_t *addr, hid_status_error_
         goto exit;
     }
 
+    if (bt_addr_compare(addr, &g_hidd_handle.peer_addr)) {
+        BT_ADDR_LOG("%s is not current HID host, %s!", addr, __func__);
+        status = BT_STATUS_DEVICE_NOT_FOUND;
+        goto exit;
+    }
+
     status = bt_sal_hid_device_report_error(addr, error);
 
 exit:
@@ -422,6 +467,12 @@ static bt_status_t hid_device_virtual_unplug(bt_address_t *addr)
     pthread_mutex_lock(&g_hidd_handle.hid_lock);
     if (!g_hidd_handle.started) {
         status = BT_STATUS_NOT_ENABLED;
+        goto exit;
+    }
+
+    if (bt_addr_compare(addr, &g_hidd_handle.peer_addr)) {
+        BT_ADDR_LOG("%s is not current HID host, %s!", addr, __func__);
+        status = BT_STATUS_DEVICE_NOT_FOUND;
         goto exit;
     }
 
