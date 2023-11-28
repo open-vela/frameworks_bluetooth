@@ -20,7 +20,6 @@
 #include "bt_status.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include <uchar.h>
 
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
 #  define bluetooth_ipc_add_services()

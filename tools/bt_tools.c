@@ -390,6 +390,7 @@ static const char *cmd_err_str(int err_code)
     return "Correct code ?";
 }
 
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
 static void do_disable_wait(void *handle)
 {
     pthread_mutex_lock(&bt_lock);
@@ -404,6 +405,7 @@ static void disable_done_signal(void *handle)
     pthread_cond_signal(&disable_cond);
     pthread_mutex_unlock(&bt_lock);
 }
+#endif
 
 static int enable_cmd(void *handle, int argc, char **argv)
 {
@@ -1298,17 +1300,25 @@ static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
 {
     PRINT("Context:%p, Adapter state changed: %d", cookie, state);
     if (state == BT_ADAPTER_STATE_ON) {
+        char name[64 + 1];
+
         bt_tool_init(g_bttool_ins);
-        /* set name */
-        /* set io cap */
-        /* set class */
-        bt_adapter_set_device_class(g_bttool_ins, COD_SERVICE_AUDIO | COD_DEVICE_AV | COD_AV_HEADSET | COD_AV_HANDSFREE);
-        /* set scan mode */
+        /* get name */
+        bt_adapter_get_name(g_bttool_ins, name, 64);
+        /* get io cap */
+        bt_io_capability_t cap = bt_adapter_get_io_capability(g_bttool_ins);
+        /* get class */
+        uint32_t class = bt_adapter_get_device_class(g_bttool_ins);
+        /* get scan mode */
+        bt_scan_mode_t mode = bt_adapter_get_scan_mode(g_bttool_ins);
+        PRINT("Adapter Name: %s, Cap: %d, Class: %08" PRIX32 ", Mode:%d", name, cap, class, mode);
     } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
         /* code */
         bt_tool_uninit(g_bttool_ins);
     } else if (state == BT_ADAPTER_STATE_OFF) {
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
         disable_done_signal(g_bttool_ins);
+#endif
     }
 }
 
@@ -1537,9 +1547,11 @@ int main(int argc, char **argv)
         }
     }
 
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
     if (bt_adapter_get_state(g_bttool_ins) != BT_ADAPTER_STATE_OFF) {
         do_disable_wait(g_bttool_ins);
     }
+#endif
 
     bt_adapter_unregister_callback(g_bttool_ins, adapter_callback);
     bluetooth_delete_instance(g_bttool_ins);
