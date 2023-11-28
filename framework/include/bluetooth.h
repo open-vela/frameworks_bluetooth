@@ -314,7 +314,7 @@ typedef struct bt_instance {
     uv_mutex_t mutex;
     uv_cond_t  cond;
     int peer_fd;
-
+    uv_loop_t *external_loop;
     int offset;
     void *packet;
     void *cpacket;
@@ -386,6 +386,8 @@ bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t *ins, enum profile_
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bluetooth_stop_service)(bt_instance_t *ins, enum profile_id id);
+
+bool BTSYMBOLS(bluetooth_set_external_uv)(bt_instance_t *ins, uv_loop_t *ext_loop);
 
 #ifdef __cplusplus
 }

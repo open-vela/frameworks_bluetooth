@@ -65,9 +65,8 @@ typedef struct _work_msg {
  * Private Functions
  ****************************************************************************/
 
-static void bt_socket_client_work(service_work_t *work, void *userdata)
+static void bt_socket_client_msg_process(bt_client_msg_t *msg)
 {
-    bt_client_msg_t *msg = userdata;
     bt_message_packet_t *packet = &msg->packet;
 
     if (packet->code > BT_ADAPTER_CALLBACK_START && packet->code < BT_ADAPTER_CALLBACK_END) {
@@ -76,9 +75,9 @@ static void bt_socket_client_work(service_work_t *work, void *userdata)
         bt_socket_client_hfp_ag_callback(NULL, -1, msg->ins, &msg->packet);
     } else if (packet->code > BT_HFP_HF_CALLBACK_START && packet->code < BT_HFP_HF_CALLBACK_END) {
         bt_socket_client_hfp_hf_callback(NULL, -1, msg->ins, &msg->packet);
-    } else if (msg->packet.code > BT_A2DP_SINK_CALLBACK_START && msg->packet.code < BT_A2DP_SINK_CALLBACK_END){
+    } else if (msg->packet.code > BT_A2DP_SINK_CALLBACK_START && msg->packet.code < BT_A2DP_SINK_CALLBACK_END) {
         bt_socket_client_a2dp_sink_callback(NULL, -1, msg->ins, &msg->packet);
-    } else if (msg->packet.code > BT_A2DP_SOURCE_CALLBACK_START && msg->packet.code < BT_A2DP_SOURCE_CALLBACK_END){
+    } else if (msg->packet.code > BT_A2DP_SOURCE_CALLBACK_START && msg->packet.code < BT_A2DP_SOURCE_CALLBACK_END) {
         bt_socket_client_a2dp_source_callback(NULL, -1, msg->ins, &msg->packet);
     } else if (packet->code > BT_ADVERTISER_CALLBACK_START && packet->code < BT_ADVERTISER_CALLBACK_END) {
         bt_socket_client_advertiser_callback(NULL, -1, msg->ins, packet);
@@ -100,8 +99,39 @@ static void bt_socket_client_work(service_work_t *work, void *userdata)
     free(msg);
 }
 
-static void bt_socket_client_after_work(service_work_t *work, void *userdata)
+static void bt_socket_client_work(service_work_t *work, void *userdata)
 {
+    bt_socket_client_msg_process(userdata);
+}
+
+static void bt_socket_client_async_close(uv_handle_t *handle)
+{
+    free(handle);
+}
+
+static void bt_socket_client_async_cb(uv_async_t *handle)
+{
+    bt_socket_client_msg_process(handle->data);
+    uv_close((uv_handle_t *)handle, bt_socket_client_async_close);
+}
+
+static bt_status_t bt_socket_client_async_to_external(bt_instance_t *ins, bt_client_msg_t *msg)
+{
+    uv_async_t *async = malloc(sizeof(*async));
+
+    if (!async)
+        return BT_STATUS_NOMEM;
+
+    int ret = uv_async_init(ins->external_loop, async, bt_socket_client_async_cb);
+    if (ret != 0) {
+        free(async);
+        return BT_STATUS_BUSY;
+    }
+
+    async->data = msg;
+    uv_async_send(async);
+
+    return BT_STATUS_SUCCESS;
 }
 
 static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata)
@@ -149,9 +179,17 @@ static int bt_socket_client_receive(service_poll_t *poll, int fd, void *userdata
 
         msg->ins = ins;
         memcpy(&msg->packet, packet, sizeof(*packet));
-        if (!service_loop_work(msg, bt_socket_client_work, bt_socket_client_after_work)) {
-            free(msg);
-            return BT_STATUS_FAIL;
+        if (ins->external_loop) {
+            bt_status_t status = bt_socket_client_async_to_external(ins, msg);
+            if (status != BT_STATUS_SUCCESS) {
+                free(msg);
+                return status;
+            }
+        } else {
+            if (!service_loop_work(msg, bt_socket_client_work, NULL)) {
+                free(msg);
+                return BT_STATUS_FAIL;
+            }
         }
     }
 
