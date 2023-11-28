@@ -196,7 +196,7 @@ static void hidd_connection_state_cb(void *cookie, bt_address_t *addr, bool le_h
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     bt_addr_ba2str(addr, addr_str);
-    PRINT("%s, addr:%s, hid: %s, state:%d", __func__, addr_str, le_hid ? "le" : "br", state);
+    PRINT("%s, addr:%s, transport: %s, state:%d", __func__, addr_str, le_hid ? "le" : "br", state);
 }
 
 static void hidd_get_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt_type,
@@ -299,20 +299,31 @@ static int register_cmd(void *handle, int argc, char *argv[])
     hidd_setting.hids_info.dsc_list[2] = (uint8_t)(desc_len >> 8);
     memcpy(hidd_setting.hids_info.dsc_list + 3, desc_list, desc_len);
 
-    if (bt_hid_device_register_app(handle, &hidd_setting, transport == BT_TRANSPORT_BLE) != BT_STATUS_SUCCESS)
+    bt_status_t ret = bt_hid_device_register_app(handle, &hidd_setting, transport == BT_TRANSPORT_BLE);
+    if (ret != BT_STATUS_SUCCESS) {
+        if (ret == BT_STATUS_NO_RESOURCES) {
+            PRINT("HID app has registed, please unregister then try again");
+        }
         return CMD_ERROR;
+    }
 
     free(hidd_setting.hids_info.dsc_list);
-    PRINT("hid device register app, type:%s", argv[0]);
+    PRINT("HID device register app, type:%s", argv[0]);
 
     return CMD_OK;
 }
 
 static int unregister_cmd(void *handle, int argc, char *argv[])
 {
-    PRINT("hid device unregister app");
+    bt_status_t ret = bt_hid_device_unregister_app(handle);
+    if (ret != BT_STATUS_SUCCESS) {
+        if (ret == BT_STATUS_NOT_FOUND) {
+            PRINT("HID app isn't registed, please register then try again");
+        }
+        return CMD_ERROR;
+    }
 
-    bt_hid_device_unregister_app(handle);
+    PRINT("HID device unregister app");
 
     return CMD_OK;
 }
@@ -330,7 +341,7 @@ static int connect_cmd(void *handle, int argc, char *argv[])
     if (bt_hid_device_connect(handle, &addr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
-    PRINT("hid device connect host, address:%s", argv[0]);
+    PRINT("HID device connect host, address:%s", argv[0]);
 
     return CMD_OK;
 }
@@ -342,11 +353,13 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    PRINT("hid device disconnect host, address:%s", argv[0]);
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    bt_hid_device_disconnect(handle, &addr);
+    if (bt_hid_device_disconnect(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("HID device disconnect host, address:%s", argv[0]);
 
     return CMD_OK;
 }
@@ -508,7 +521,7 @@ static int unplug_cmd(void *handle, int argc, char *argv[])
     if (bt_hid_device_virtual_unplug(handle, &addr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
-    PRINT("hid device virtual unplug success, address:%s", argv[0]);
+    PRINT("HID device virtual unplug success, address:%s", argv[0]);
 
     return CMD_OK;
 }
