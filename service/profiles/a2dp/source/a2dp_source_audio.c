@@ -237,7 +237,7 @@ static void a2dp_source_audio_handle_timer(service_timer_t *timer, void *arg)
 
     if (circbuf_used(&stream->stream_pool) == 0) {
         if (!a2dp_src_stream.underflow.ticks)
-            BT_LOGD("a2dp src send frame, underflow");
+            BT_LOGD("a2dp src send frame, underflowed");
 
         // underflow 2000ms auto suspend
         if (a2dp_src_stream.underflow.ticks++ > 100 && a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
@@ -248,7 +248,7 @@ static void a2dp_source_audio_handle_timer(service_timer_t *timer, void *arg)
     }
 
     if (a2dp_src_stream.underflow.ticks) {
-        BT_LOGD("a2dp src send frame resume, underflowed %d ticks", a2dp_src_stream.underflow.ticks);
+        BT_LOGD("a2dp src send frame resume, underflowed %" PRIu32 "ticks", a2dp_src_stream.underflow.ticks);
         a2dp_src_stream.underflow.ticks = 0;
         a2dp_src_stream.underflow.state = UNDERFLOW_STATE_NONE;
     }

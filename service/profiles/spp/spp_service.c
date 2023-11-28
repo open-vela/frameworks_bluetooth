@@ -1007,7 +1007,7 @@ static void spp_cleanup(void)
 static int spp_dump(void)
 {
     spp_pty_device_t *device;
-    spp_server_t *server;
+    spp_server_t *server = NULL;
     struct list_node *node;
     int i = 0;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
@@ -1033,7 +1033,8 @@ static int spp_dump(void)
         i++;
         device = (spp_pty_device_t *)node;
         bt_addr_ba2str(&device->addr, addr_str);
-        bt_uuid_to_string(&server->uuid, uuid_str, 40);
+        if (server)
+            bt_uuid_to_string(&server->uuid, uuid_str, 40);
         printf("\tDevice[%d]: ID:%d, Addr:%s, State:%d, Scn:%d, UUID:%s" PRIx16
                ", MFS:%d, Pty:[%d,%s], Rx:%" PRIu32 ", Tx:%" PRIu32 "\n",
                i, device->conn_id, addr_str, device->state,
