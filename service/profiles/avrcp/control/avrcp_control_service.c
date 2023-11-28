@@ -249,7 +249,7 @@ static void handle_avrcp_get_play_status_response(avrcp_msg_t *msg)
     if (!device)
         return;
 
-    BT_LOGD("playback status rsp --> status: %s, songlen: %d, position: %d",
+    BT_LOGD("playback status rsp --> status: %s, songlen: %" PRIu32 ", position: %" PRIu32,
             bt_media_status_str(playstatus->status), playstatus->song_len, playstatus->song_pos);
     bt_media_player_set_status(device->player, playstatus->status);
     bt_media_player_set_duration(device->player, playstatus->song_len);
@@ -319,7 +319,7 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t *msg)
         break;
     }
     case NOTIFICATION_EVT_PLAY_POS_CHANGED: {
-        BT_LOGD("song position is: %d", msg->data.notify_rsp.value);
+        BT_LOGD("song position is: %" PRIu32, msg->data.notify_rsp.value);
         bt_media_player_set_position(device->player, msg->data.notify_rsp.value);
         break;
     }

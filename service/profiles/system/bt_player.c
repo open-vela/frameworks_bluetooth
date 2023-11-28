@@ -220,7 +220,7 @@ bt_status_t bt_media_player_get_position(bt_media_controller_t *controller, uint
     if (!controller || !positions)
         return BT_STATUS_PARM_INVALID;
 
-    if (media_session_get_position(controller->mediasession, positions) != 0) {
+    if (media_session_get_position(controller->mediasession, (unsigned int *)positions) != 0) {
         *positions = 0xFFFFFFFF;
         return BT_STATUS_NOT_SUPPORTED;
     }
@@ -233,7 +233,7 @@ bt_status_t bt_media_player_get_durations(bt_media_controller_t *controller, uin
     if (!controller || !durations)
         return BT_STATUS_PARM_INVALID;
 
-    if (media_session_get_duration(controller->mediasession, durations) != 0) {
+    if (media_session_get_duration(controller->mediasession, (unsigned int *)durations) != 0) {
         *durations = 0xFFFFFFFF;
         return BT_STATUS_NOT_SUPPORTED;
     }

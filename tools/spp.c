@@ -159,7 +159,7 @@ static void connection_state_process(void *data)
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     bt_addr_ba2str(&msg->addr, addr_str);
-    PRINT("%s addr:%s, scn: %d, port: %d, state:%d", __func__, addr_str, msg->scn, msg->port, msg->state);
+    PRINT("%s addr:%s, scn: %" PRIx16 ", port: %" PRIx16 ", state:%" PRIu32, __func__, addr_str, msg->scn, msg->port, msg->state);
 
     if (msg->state == PROFILE_STATE_DISCONNECTED)
         check_resource_release(msg->port);

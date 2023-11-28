@@ -150,7 +150,7 @@ static void media_player_notify_cb(bt_media_controller_t *controller, void *cont
         return;
 
     bt_addr_ba2str(&device->addr, _addr_str);
-    BT_LOGD("%s: device=[%s], evt=%s, value=%d", __func__, _addr_str, bt_media_evt_str(event), value);
+    BT_LOGD("%s: device=[%s], evt=%s, value=%" PRIu32, __func__, _addr_str, bt_media_evt_str(event), value);
     switch (event) {
     case BT_MEDIA_EVT_PREPARED:
         break;
@@ -160,7 +160,7 @@ static void media_player_notify_cb(bt_media_controller_t *controller, void *cont
         bt_sal_avrcp_target_play_status_notify(&device->addr, value);
         break;
     case BT_MEDIA_EVT_POSITION_CHANGED:
-        BT_LOGD("send position notification --> position: %d", value);
+        BT_LOGD("send position notification --> position: %" PRIu32, value);
         bt_sal_avrcp_target_notify_play_position_changed(&device->addr, value);
         break;
     case BT_MEDIA_EVT_TRACK_CHANGED:
@@ -283,7 +283,7 @@ static void handle_avrcp_play_status_request(avrcp_msg_t *msg)
     bt_media_player_get_position(controller, &position);
     bt_media_player_get_durations(controller, &durations);
 
-    BT_LOGD("playback status: %s, duration: 0x%08x, position: 0x%08x", bt_media_status_str(playback), durations, position);
+    BT_LOGD("playback status: %s, duration: 0x%08" PRIx32 ", position: 0x%08" PRIx32, bt_media_status_str(playback), durations, position);
     bt_sal_avrcp_target_get_play_status_rsp(addr, playback, durations, position);
 }
 
