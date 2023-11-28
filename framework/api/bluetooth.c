@@ -101,3 +101,9 @@ bt_status_t BTSYMBOLS(bluetooth_stop_service)(bt_instance_t *ins, enum profile_i
 {
     return manager_stop_service(ins->app_id, id);
 }
+
+#include "uv.h"
+bool BTSYMBOLS(bluetooth_set_external_uv)(bt_instance_t *ins, uv_loop_t *ext_loop)
+{
+    return false;
+}
