@@ -108,6 +108,7 @@ typedef struct ag_interface {
                                          hfp_roaming_state_t roam,
                                          uint8_t signal, uint8_t battery);
     bt_status_t (*dial_response)(uint8_t result);
+    bt_status_t (*send_at_command)(bt_address_t *addr, const char *at_command);
 } hfp_ag_interface_t;
 
 /*
