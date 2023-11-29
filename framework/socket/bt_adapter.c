@@ -55,6 +55,9 @@ bool bt_adapter_unregister_callback(bt_instance_t *ins, void *cookie)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  if (!ins->adapter_callbacks)
+      return false;
+
   bt_remote_callbacks_unregister(ins->adapter_callbacks, NULL, cookie);
   bt_callbacks_list_free(ins->adapter_callbacks);
   ins->adapter_callbacks = NULL;
