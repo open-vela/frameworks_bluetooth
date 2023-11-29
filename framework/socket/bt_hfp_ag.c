@@ -177,3 +177,18 @@ bt_status_t bt_hfp_ag_stop_voice_recognition(bt_instance_t *ins, bt_address_t *a
 
     return packet.hfp_ag_r.status;
 }
+
+bt_status_t bt_hfp_ag_send_at_command(bt_instance_t *ins, bt_address_t *addr, const char *at_command)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr, addr, sizeof(bt_address_t));
+    strncpy(packet.hfp_ag_pl._bt_hfp_ag_send_at_cmd.cmd, at_command,
+            sizeof(packet.hfp_ag_pl._bt_hfp_ag_send_at_cmd.cmd));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_SEND_AT_COMMAND);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
+}

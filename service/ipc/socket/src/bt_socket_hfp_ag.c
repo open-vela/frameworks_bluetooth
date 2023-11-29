@@ -186,6 +186,11 @@ void bt_socket_server_hfp_ag_process(service_poll_t *poll, int fd,
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_stop_voice_recognition)(ins,
                                                 &packet->hfp_ag_pl._bt_hfp_ag_stop_voice_recognition.addr);
         break;
+    case BT_HFP_AG_SEND_AT_COMMAND:
+        packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_send_at_command)(ins,
+                                                &packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr,
+                                                packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.cmd);
+        break;
     default:
         break;
     }

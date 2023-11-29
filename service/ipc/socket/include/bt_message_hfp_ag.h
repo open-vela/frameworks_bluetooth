@@ -27,6 +27,7 @@
     BT_HFP_AG_DISCONNECT_AUDIO,
     BT_HFP_AG_START_VOICE_RECOGNITION,
     BT_HFP_AG_STOP_VOICE_RECOGNITION,
+    BT_HFP_AG_SEND_AT_COMMAND,
     BT_HFP_AG_MESSAGE_END,
 #endif
 
@@ -67,6 +68,11 @@
             _bt_hfp_ag_disconnect_audio,
             _bt_hfp_ag_start_voice_recognition,
             _bt_hfp_ag_stop_voice_recognition;
+
+        struct {
+            bt_address_t addr;
+            char cmd[HFP_AT_LEN_MAX + 1];
+        } _bt_hfp_ag_send_at_cmd;
     } bt_message_hfp_ag_t;
 
     typedef union {

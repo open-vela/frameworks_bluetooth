@@ -195,6 +195,15 @@ bt_status_t BTSYMBOLS(bt_hfp_ag_start_voice_recognition)(bt_instance_t *ins, bt_
  */
 bt_status_t BTSYMBOLS(bt_hfp_ag_stop_voice_recognition)(bt_instance_t *ins, bt_address_t *addr);
 
+/**
+ * @brief Send AT Command
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @param at_command - the AT command to be send.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_ag_send_at_command)(bt_instance_t *ins, bt_address_t *addr, const char *at_command);
 #ifdef __cplusplus
 }
 #endif

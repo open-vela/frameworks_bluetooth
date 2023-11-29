@@ -91,6 +91,7 @@ typedef struct hf_interface {
     bt_status_t (*control_call)(bt_address_t *addr, hfp_call_control_t chld, uint8_t index);
     bt_status_t (*query_current_calls)(bt_address_t *addr, hfp_current_call_t **calls, int *num, bt_allocator_t allocator);
     bt_status_t (*send_at_cmd)(bt_address_t *addr, const char *cmd);
+    /* ToDo: bt_status_t (*update_battery_level)(bt_address_t addr, uint8_t battery); */
 } hfp_hf_interface_t;
 
 /*
