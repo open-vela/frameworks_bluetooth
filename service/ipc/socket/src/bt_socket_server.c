@@ -109,8 +109,10 @@ static int bt_socket_server_trysend(bt_instance_t *ins)
             ins->poll = NULL;
             list_delete(node);
             free(node);
+            break;
         } else if (ret != size) {
-            cache->offset += size;
+            cache->offset += ret;
+            break;
         } else {
             list_delete(node);
             free(node);
@@ -182,6 +184,7 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
                packet.code < BT_HID_DEVICE_MESSAGE_END) {
         bt_socket_server_hid_device_process(poll, fd, ins, &packet);
     } else {
+        assert(0);
         return BT_STATUS_PARM_INVALID;
     }
 
