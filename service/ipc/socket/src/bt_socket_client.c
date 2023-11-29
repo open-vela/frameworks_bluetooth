@@ -136,7 +136,6 @@ static void bt_socket_client_work(uv_work_t *req)
 
 static void bt_socket_client_after_work(uv_work_t *req, int status)
 {
-    assert(status == 0);
     assert(req);
 
     free(req);
