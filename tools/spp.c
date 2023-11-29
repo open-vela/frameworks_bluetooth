@@ -51,7 +51,7 @@ static int dump_cmd(void *handle, int argc, char *argv[]);
 static struct list_node device_list = LIST_INITIAL_VALUE(device_list);
 static uv_sem_t spp_sem;
 static void *spp_app_handle = NULL;
-static uv_loop_t spp_thread_loop;
+static uv_loop_t spp_thread_loop = {0};
 
 static bt_command_t g_spp_tables[] = {
     {"start",       start_server_cmd, 0, "\"start spp server        param: <scn>(range in [1,28]) <uuid>\""},
@@ -400,6 +400,7 @@ void spp_command_uninit(void *handle)
     bt_spp_unregister_app(handle, spp_app_handle);
     uv_sem_destroy(&spp_sem);
     thread_loop_exit(&spp_thread_loop);
+    memset(&spp_thread_loop, 0, sizeof(spp_thread_loop));
 }
 
 int spp_command_exec(void *handle, int argc, char *argv[])
