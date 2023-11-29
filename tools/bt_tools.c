@@ -25,8 +25,6 @@
 #include <readline/history.h>
 #endif
 
-#include "adapter_internel.h"
-
 #include "bluetooth.h"
 #include "bt_adapter.h"
 #include "bt_tools.h"
@@ -82,6 +80,7 @@ static bt_instance_t *g_bttool_ins = NULL;
 static void *adapter_callback = NULL;
 static pthread_mutex_t bt_lock;
 static pthread_cond_t disable_cond;
+static bool g_cmd_had_inited = false;
 
 static struct {
     int cmd_err_code;
@@ -265,8 +264,6 @@ static bt_command_t g_pair_cmd_tables[] = {
 
 static void bt_tool_init(void *handle)
 {
-#ifndef CONFIG_BLUETOOTH_SERVER
-
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_command_init(handle);
 #endif
@@ -319,13 +316,13 @@ static void bt_tool_init(void *handle)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     lea_vmicp_command_init(handle);
 #endif
-
-#endif /* CONFIG_BLUETOOTH_SERVER */
+    g_cmd_had_inited = true;
 }
 
 static void bt_tool_uninit(void *handle)
 {
-#ifndef CONFIG_BLUETOOTH_SERVER
+    if (!g_cmd_had_inited)
+        return;
 
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_command_uninit(handle);
@@ -376,8 +373,7 @@ static void bt_tool_uninit(void *handle)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     lea_vmicp_command_uninit(handle);
 #endif
-
-#endif /* CONFIG_BLUETOOTH_SERVER */
+    g_cmd_had_inited = false;
 }
 
 static const char *cmd_err_str(int err_code)
@@ -1231,9 +1227,6 @@ static int stop_service_cmd(void *handle, int argc, char **argv)
 
 static int dump_cmd(void *handle, int argc, char **argv)
 {
-#if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
-    adapter_dump_all_device();
-#endif
     return CMD_OK;
 }
 
@@ -1311,7 +1304,7 @@ static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
         uint32_t class = bt_adapter_get_device_class(g_bttool_ins);
         /* get scan mode */
         bt_scan_mode_t mode = bt_adapter_get_scan_mode(g_bttool_ins);
-        PRINT("Adapter Name: %s, Cap: %d, Class: %08" PRIX32 ", Mode:%d", name, cap, class, mode);
+        PRINT("Adapter Name: %s, Cap: %d, Class: 0x%08" PRIX32 ", Mode:%d", name, cap, class, mode);
     } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
         /* code */
         bt_tool_uninit(g_bttool_ins);
@@ -1552,9 +1545,13 @@ int main(int argc, char **argv)
         do_disable_wait(g_bttool_ins);
     }
 #endif
-
+    bt_tool_uninit(g_bttool_ins);
     bt_adapter_unregister_callback(g_bttool_ins, adapter_callback);
     bluetooth_delete_instance(g_bttool_ins);
     free(buffer);
+
+    g_bttool_ins = NULL;
+    adapter_callback = NULL;
+
     return 0;
 }
