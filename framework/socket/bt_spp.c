@@ -56,6 +56,9 @@ bt_status_t bt_spp_unregister_app(bt_instance_t *ins, void *handle)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    if (!ins->spp_callbacks)
+      return false;
+
     bt_remote_callbacks_unregister(ins->spp_callbacks, NULL, handle);
     bt_callbacks_list_free(ins->spp_callbacks);
     ins->spp_callbacks = NULL;

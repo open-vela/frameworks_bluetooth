@@ -71,6 +71,9 @@ void bt_le_stop_advertising(bt_instance_t *ins, bt_advertiser_t *adver)
 {
     bt_message_packet_t packet;
 
+    if (!adver)
+        return;
+
     packet.adv_pl._bt_le_stop_advertising.adver = (uint32_t)((bt_advertiser_remote_t *)adver)->remote;
     bt_socket_client_sendrecv(ins, &packet, BT_LE_STOP_ADVERTISING);
 }

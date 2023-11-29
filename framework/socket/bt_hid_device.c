@@ -56,6 +56,9 @@ bool bt_hid_device_unregister_callbacks(bt_instance_t *ins, void *cookie)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    if (!ins->hidd_callbacks)
+      return false;
+
     bt_remote_callbacks_unregister(ins->hidd_callbacks, NULL, cookie);
     bt_callbacks_list_free(ins->hidd_callbacks);
     ins->hidd_callbacks = NULL;

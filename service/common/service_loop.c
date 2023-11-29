@@ -121,7 +121,7 @@ static void service_schedule_loop(void *data)
     uv_loop_close(loop->handle);
     uv_sem_post(&loop->exited);
 
-    BT_LOGD("%s quit", __func__);
+    BT_LOGD("%s %s quit", loop->name, __func__);
 }
 
 static void service_timer_cb(uv_timer_t *handle)
@@ -212,8 +212,6 @@ int service_loop_run(bool start_thread, char *name)
     service_loop_t *loop = handle->data;
 
     if (start_thread) {
-        char t_name[64];
-
         int ret = uv_sem_init(&loop->ready, 0);
         if (ret != 0) {
             BT_LOGE("%s sem init error: %d", __func__, ret);
@@ -232,13 +230,13 @@ int service_loop_run(bool start_thread, char *name)
         }
 
         if (name != NULL && strlen(name) > 0)
-            snprintf(t_name, sizeof(t_name), "%s_%d", name, getpid());
+            snprintf(loop->name, sizeof(loop->name), "%s_%d", name, getpid());
         else
-            snprintf(t_name, sizeof(t_name), "loop_%d", getpid());
-        pthread_setname_np(loop->thread, t_name);
+            snprintf(loop->name, sizeof(loop->name), "loop_%d", getpid());
+        pthread_setname_np(loop->thread, loop->name);
         uv_sem_wait(&loop->ready);
         uv_sem_destroy(&loop->ready);
-        BT_LOGD("%s loop running now !!!", t_name);
+        BT_LOGD("%s loop running now !!!", loop->name);
     } else {
         BT_LOGD("service loop running now !!!");
         service_schedule_loop(loop);

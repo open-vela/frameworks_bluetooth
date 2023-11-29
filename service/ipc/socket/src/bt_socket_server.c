@@ -228,7 +228,7 @@ static void bt_socket_server_handle_event(service_poll_t *poll,
         if (ret)
             bt_socket_server_ins_release(ins);
     } else if (revent & POLL_WRITABLE) {
-        bt_socket_server_trysend(userdata);
+        bt_socket_server_trysend(ins);
     }
 }
 

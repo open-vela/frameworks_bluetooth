@@ -55,6 +55,9 @@ bool bt_hfp_ag_unregister_callbacks(bt_instance_t *ins, void *cookie)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    if (!ins->hfp_ag_callbacks)
+      return false;
+
     bt_remote_callbacks_unregister(ins->hfp_ag_callbacks, NULL, cookie);
     bt_callbacks_list_free(ins->hfp_ag_callbacks);
     ins->hfp_ag_callbacks = NULL;
