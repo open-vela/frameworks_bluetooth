@@ -64,8 +64,6 @@ typedef struct
     bt_message_packet_t packet;
 } bt_packet_cache_t;
 
-static struct list_node g_msg_queue = LIST_INITIAL_VALUE(g_msg_queue);
-
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -98,7 +96,7 @@ static int bt_socket_server_trysend(bt_instance_t *ins)
     int size;
     int ret;
 
-    list_for_every_safe(&g_msg_queue, node, tmp) {
+    list_for_every_safe(&ins->msg_queue, node, tmp) {
         reset = true;
         cache = (bt_packet_cache_t *)node;
         size = sizeof(cache->packet) - cache->offset;
@@ -119,7 +117,7 @@ static int bt_socket_server_trysend(bt_instance_t *ins)
         }
     }
 
-    if (list_length(&g_msg_queue) > 0) {
+    if (list_length(&ins->msg_queue) > 0) {
         if (ins->poll) {
             service_loop_reset_poll(ins->poll, POLL_READABLE | POLL_WRITABLE);
         }
@@ -191,24 +189,46 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
     return bt_socket_server_send(ins, &packet, packet.code);
 }
 
+static void bt_socket_server_ins_release(bt_instance_t *ins)
+{
+    struct list_node *node;
+    struct list_node *tmp;
+
+    if (ins->poll)
+        service_loop_remove_poll(ins->poll);
+
+    list_for_every_safe(&ins->msg_queue, node, tmp) {
+        list_delete(node);
+        free(node);
+    }
+
+    if (ins->peer_fd)
+        close(ins->peer_fd);
+
+    free(ins);
+}
+
 static void bt_socket_server_handle_event(service_poll_t *poll,
                                           int revent, void *userdata)
 {
     uv_os_fd_t fd;
     int ret;
+    bt_instance_t *ins = userdata;
 
     ret = uv_fileno((uv_handle_t *)&poll->handle, &fd);
     if (ret) {
-        service_loop_remove_poll(poll);
+        bt_socket_server_ins_release(ins);
         return;
     }
 
     if (revent & POLL_ERROR || revent & POLL_DISCONNECT) {
-        service_loop_remove_poll(poll);
+        bt_socket_server_ins_release(ins);
     } else if (revent & POLL_READABLE) {
         ret = bt_socket_server_receive(poll, fd, userdata);
         if (ret)
-            service_loop_remove_poll(poll);
+            bt_socket_server_ins_release(ins);
+    } else if (revent & POLL_WRITABLE) {
+        bt_socket_server_trysend(userdata);
     }
 }
 
@@ -233,14 +253,14 @@ static void bt_socket_server_callback(service_poll_t *poll,
         service_loop_remove_poll(poll);
     } else if (revent & POLL_READABLE) {
         remote_ins = zalloc(sizeof(bt_instance_t));
-        if (service_loop_poll_fd(fd, POLL_READABLE,
-                                 bt_socket_server_handle_event, remote_ins) == NULL) {
+        list_initialize(&remote_ins->msg_queue);
+        remote_ins->peer_fd = fd;
+        remote_ins->poll = service_loop_poll_fd(fd, POLL_READABLE,
+                                 bt_socket_server_handle_event, remote_ins);
+        if (!remote_ins->poll) {
             free(remote_ins);
             close(fd);
         }
-
-        remote_ins->peer_fd = fd;
-        remote_ins->poll = poll;
     }
 }
 
@@ -320,7 +340,7 @@ int bt_socket_server_send(bt_instance_t *ins, bt_message_packet_t *packet,
         if (cache == NULL)
             return BT_STATUS_NOMEM;
 
-        list_add_tail(&g_msg_queue, &cache->node);
+        list_add_tail(&ins->msg_queue, &cache->node);
         memcpy(&cache->packet, packet, sizeof(*packet));
         cache->offset = ret;
 

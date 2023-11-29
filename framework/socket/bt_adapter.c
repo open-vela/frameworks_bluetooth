@@ -35,12 +35,15 @@ void *bt_adapter_register_callback(bt_instance_t *ins, const adapter_callbacks_t
   ins->adapter_callbacks = bt_callbacks_list_new(2);
 
   handle = bt_remote_callbacks_register(ins->adapter_callbacks, NULL, (void *)adapter_cbs);
-  if (handle == NULL)
+  if (handle == NULL) {
+    bt_callbacks_list_free(ins->adapter_callbacks);
     return handle;
+  }
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_REGISTER_CALLBACK);
   if (status != BT_STATUS_SUCCESS || packet.adpt_r.status != BT_STATUS_SUCCESS)
     {
+      bt_callbacks_list_free(ins->adapter_callbacks);
       return NULL;
     }
 
@@ -53,6 +56,7 @@ bool bt_adapter_unregister_callback(bt_instance_t *ins, void *cookie)
   bt_status_t status;
 
   bt_remote_callbacks_unregister(ins->adapter_callbacks, NULL, cookie);
+  bt_callbacks_list_free(ins->adapter_callbacks);
   ins->adapter_callbacks = NULL;
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_UNREGISTER_CALLBACK);

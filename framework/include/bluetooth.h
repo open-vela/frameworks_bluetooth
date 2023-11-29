@@ -21,6 +21,9 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+
+#include <nuttx/list.h>
+
 #include <uv.h>
 
 #include "bt_addr.h"
@@ -319,6 +322,7 @@ typedef struct bt_instance {
     int offset;
     void *packet;
     void *cpacket;
+    struct list_node msg_queue;
 
     callbacks_list_t *adapter_callbacks;
     callbacks_list_t *a2dp_sink_callbacks;

@@ -37,8 +37,10 @@ void *bt_pan_register_callbacks(bt_instance_t *ins, const pan_callbacks_t *callb
     ins->panu_callbacks = bt_callbacks_list_new(1);
 
     handle = bt_remote_callbacks_register(ins->panu_callbacks, NULL, (void *)callbacks);
-    if (handle == NULL)
-        return handle;
+    if (handle == NULL) {
+        bt_callbacks_list_free(ins->panu_callbacks);
+        return NULL;
+    }
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_PAN_REGISTER_CALLBACKS);
     if (status != BT_STATUS_SUCCESS || packet.pan_r.status != BT_STATUS_SUCCESS) {

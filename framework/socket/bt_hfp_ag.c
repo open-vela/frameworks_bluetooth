@@ -36,12 +36,16 @@ void *bt_hfp_ag_register_callbacks(bt_instance_t *ins, const hfp_ag_callbacks_t 
     ins->hfp_ag_callbacks = bt_callbacks_list_new(2);
 
     cookie = bt_remote_callbacks_register(ins->hfp_ag_callbacks, NULL, (void *)callbacks);
-    if (cookie == NULL)
+    if (cookie == NULL) {
+        bt_callbacks_list_free(ins->hfp_ag_callbacks);
         return NULL;
+    }
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_REGISTER_CALLBACK);
-    if (status != BT_STATUS_SUCCESS || packet.hfp_ag_r.status != BT_STATUS_SUCCESS)
+    if (status != BT_STATUS_SUCCESS || packet.hfp_ag_r.status != BT_STATUS_SUCCESS) {
+        bt_callbacks_list_free(ins->hfp_ag_callbacks);
         return NULL;
+    }
 
     return cookie;
 }
@@ -52,6 +56,7 @@ bool bt_hfp_ag_unregister_callbacks(bt_instance_t *ins, void *cookie)
     bt_status_t status;
 
     bt_remote_callbacks_unregister(ins->hfp_ag_callbacks, NULL, cookie);
+    bt_callbacks_list_free(ins->hfp_ag_callbacks);
     ins->hfp_ag_callbacks = NULL;
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_UNREGISTER_CALLBACK);

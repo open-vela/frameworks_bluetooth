@@ -37,8 +37,10 @@ void *bt_hid_device_register_callbacks(bt_instance_t *ins, const hid_device_call
     ins->hidd_callbacks = bt_callbacks_list_new(1);
 
     cookie = bt_remote_callbacks_register(ins->hidd_callbacks, NULL, (void *)callbacks);
-    if (cookie == NULL)
+    if (cookie == NULL) {
+        bt_callbacks_list_free(ins->hidd_callbacks);
         return NULL;
+    }
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_HID_DEVICE_REGISTER_CALLBACK);
     if (status != BT_STATUS_SUCCESS || packet.hidd_r.status != BT_STATUS_SUCCESS) {
