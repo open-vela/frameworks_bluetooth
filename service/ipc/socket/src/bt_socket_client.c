@@ -192,9 +192,7 @@ static int bt_socket_client_receive(uv_poll_t *poll, int fd, void *userdata)
         uv_cond_signal(&ins->cond);
         uv_mutex_unlock(&ins->mutex);
         return BT_STATUS_SUCCESS;
-    }
-
-    if (packet->code > BT_CALLBACK_START && packet->code < BT_CALLBACK_END) {
+    } else if (packet->code > BT_CALLBACK_START && packet->code < BT_CALLBACK_END) {
         bt_client_msg_t *msg = malloc(sizeof(*msg));
         if (!msg)
             return BT_STATUS_NOMEM;
@@ -213,6 +211,8 @@ static int bt_socket_client_receive(uv_poll_t *poll, int fd, void *userdata)
                 return BT_STATUS_FAIL;
             }
         }
+    } else {
+        assert(0);
     }
 
     return BT_STATUS_SUCCESS;
