@@ -31,6 +31,7 @@
 #define LOG_TAG "thread_loop"
 
 typedef struct thread_loop {
+    char name[64];
     uv_async_t async;
     uv_thread_t thread;
     uv_mutex_t msg_lock;
@@ -121,7 +122,7 @@ static void thread_schedule_loop(void *data)
     uv_loop_close(loop);
     uv_sem_post(&priv->exited);
 
-    syslog(LOG_DEBUG, "%s quit", __func__);
+    syslog(LOG_DEBUG, "%s %s quit", priv->name, __func__);
 }
 
 static void handle_close_cb(uv_handle_t *handle)
@@ -156,7 +157,6 @@ int thread_loop_run(uv_loop_t *loop, bool start_thread, const char *name)
     loop_priv_t *priv = loop->data;
 
     if (start_thread) {
-        char t_name[64];
         int ret = uv_sem_init(&priv->ready, 0);
         if (ret != 0) {
             syslog(LOG_ERR, "%s sem init error: %d", __func__, ret);
@@ -171,13 +171,13 @@ int thread_loop_run(uv_loop_t *loop, bool start_thread, const char *name)
         }
 
         if (name != NULL && strlen(name) > 0)
-            snprintf(t_name, sizeof(t_name), "%s_%d", name, getpid());
+            snprintf(priv->name, sizeof(priv->name), "%s_%d", name, getpid());
         else
-            snprintf(t_name, sizeof(t_name), "loop_%d", getpid());
-        pthread_setname_np(priv->thread, t_name);
+            snprintf(priv->name, sizeof(priv->name), "loop_%d", getpid());
+        pthread_setname_np(priv->thread, priv->name);
         uv_sem_wait(&priv->ready);
         uv_sem_destroy(&priv->ready);
-        syslog(LOG_DEBUG, "%s loop running now !!!", t_name);
+        syslog(LOG_DEBUG, "%s loop running now !!!", priv->name);
     } else {
         syslog(LOG_DEBUG, "%s loop running now !!!", name);
         thread_schedule_loop(NULL);

@@ -56,6 +56,9 @@ bool bt_a2dp_source_unregister_callbacks(bt_instance_t *ins, void *cookie)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  if (!ins->a2dp_source_callbacks)
+      return false;
+
   bt_remote_callbacks_unregister(ins->a2dp_source_callbacks, NULL, cookie);
   bt_callbacks_list_free(ins->a2dp_source_callbacks);
   ins->a2dp_source_callbacks = NULL;
@@ -65,7 +68,7 @@ bool bt_a2dp_source_unregister_callbacks(bt_instance_t *ins, void *cookie)
     {
       return false;
     }
-  
+
   return true;
 }
 

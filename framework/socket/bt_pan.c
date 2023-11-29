@@ -56,6 +56,9 @@ bool bt_pan_unregister_callbacks(bt_instance_t *ins, void *cookie)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    if (!ins->panu_callbacks)
+      return false;
+
     bt_remote_callbacks_unregister(ins->panu_callbacks, NULL, cookie);
     bt_callbacks_list_free(ins->panu_callbacks);
     ins->panu_callbacks = NULL;

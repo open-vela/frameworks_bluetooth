@@ -38,6 +38,7 @@ typedef void (*service_work_cb_t)(service_work_t *work, void *userdata);
 typedef void (*service_after_work_cb_t)(service_work_t *work, void *userdata);
 
 typedef struct service_loop {
+    char name[64];
     uv_loop_t *handle;
     uv_async_t async;
     uv_thread_t thread;
