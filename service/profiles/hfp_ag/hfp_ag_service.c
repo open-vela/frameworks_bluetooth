@@ -512,6 +512,17 @@ bt_status_t hfp_ag_dial_result(uint8_t result)
     return hfp_ag_send_message(msg);
 }
 
+bt_status_t hfp_ag_send_at_command(bt_address_t *addr, const char *at_command)
+{
+    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_SEND_AT_COMMAND, addr);
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    AG_MSG_ADD_STR(msg, 1, at_command, strlen(at_command));
+
+    return hfp_ag_send_message(msg);
+}
+
 static const hfp_ag_interface_t agInterface = {
     .size = sizeof(agInterface),
     .register_callbacks = hfp_ag_register_callbacks,
@@ -528,6 +539,7 @@ static const hfp_ag_interface_t agInterface = {
     .phone_state_change = hfp_ag_phone_state_change,
     .device_status_changed = hfp_ag_device_status_changed,
     .dial_response = hfp_ag_dial_result,
+    .send_at_command = hfp_ag_send_at_command,
 };
 
 static const void *get_ag_profile_interface(void)

@@ -104,3 +104,10 @@ bt_status_t BTSYMBOLS(bt_hfp_ag_stop_voice_recognition)(bt_instance_t *ins, bt_a
 
     return profile->stop_voice_recognition(addr);
 }
+
+bt_status_t BTSYMBOLS(bt_hfp_ag_send_at_command)(bt_instance_t *ins, bt_address_t *addr, const char *at_command)
+{
+    hfp_ag_interface_t *profile = get_profile_service();
+
+    return profile->send_at_command(addr, at_command);
+}
