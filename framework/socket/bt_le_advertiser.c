@@ -58,7 +58,7 @@ bt_advertiser_t *bt_le_start_advertising(bt_instance_t *ins,
     packet.adv_pl._bt_le_start_advertising.scan_rsp_len = scan_rsp_len;
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_LE_START_ADVERTISING);
-    if (status != BT_STATUS_SUCCESS || packet.adv_r.remote) {
+    if (status != BT_STATUS_SUCCESS || !packet.adv_r.remote) {
         free(adv);
         return NULL;
     }
