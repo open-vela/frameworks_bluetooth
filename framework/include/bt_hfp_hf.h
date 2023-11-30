@@ -375,6 +375,16 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_query_current_calls)(bt_instance_t *ins, bt_addr
  */
 bt_status_t BTSYMBOLS(bt_hfp_hf_send_at_cmd)(bt_instance_t *ins, bt_address_t *addr, const char *cmd);
 
+/**
+ * @brief Update battery level
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer AG device.
+ * @param level - the battery level, valid from 0 to 100.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_hf_update_battery_level)(bt_instance_t *ins, bt_address_t *addr, uint8_t level);
+
 #ifdef __cplusplus
 }
 #endif

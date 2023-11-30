@@ -145,12 +145,24 @@ static int stop_voice_recognition_cmd(void *handle, int argc, char *argv[])
 
 static int send_at_cmd_cmd(void *handle, int argc, char *argv[])
 {
+    bt_address_t addr;
+    int len = 0;
+    char at_buf[64];
+
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    bt_address_t addr;
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
+
+    len = strlen(argv[1]);
+    if (len + 3 > 64)
+        return CMD_INVALID_PARAM;
+
+    memcpy(at_buf, argv[1], len);
+    at_buf[len] = '\r';
+    at_buf[len + 1] = '\n';
+    at_buf[len + 2] = '\0';
 
     if (bt_hfp_ag_send_at_command(handle, &addr, argv[1]) != BT_STATUS_SUCCESS)
         return CMD_ERROR;

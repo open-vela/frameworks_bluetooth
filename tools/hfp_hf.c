@@ -40,6 +40,7 @@ static int terminate_call_cmd(void *handle, int argc, char *argv[]);
 static int control_call_cmd(void *handle, int argc, char *argv[]);
 static int query_current_calls_cmd(void *handle, int argc, char *argv[]);
 static int send_at_cmd_cmd(void *handle, int argc, char *argv[]);
+static int update_battery_level_cmd(void *handle, int argc, char *argv[]);
 
 #define CHLD_0_DESC "0: Releases all held calls or sets User Determined User Busy (UDUB) for a waiting call"
 #define CHLD_1_DESC "1: Releases all active calls (if any exist) and accepts the other (held or waiting) call"
@@ -48,41 +49,42 @@ static int send_at_cmd_cmd(void *handle, int argc, char *argv[]);
 #define CHLD_4_DESC "4: Connects the two calls and disconnects the subscriber from both calls (Explicit Call Transfer)." \
                     "Support for this value and its associated functionality is optional for the HF"
 
-#define ACCEPT_CALL_USAGE "Accept voice call              params: <address><flag>\n"             \
+#define ACCEPT_CALL_USAGE "Accept voice call                    params: <address> <flag>\n"       \
                           "\t\t\t0: Accept an incoming call, invalid when is no incoming call\n" \
                           "\t\t\t" CHLD_1_DESC "\n"                                              \
                           "\t\t\t" CHLD_2_DESC "\n"
 
-#define REJECT_CALL_USAGE "Reject  voice call             params: <address>\n" \
+#define REJECT_CALL_USAGE "Reject  voice call                   params: <address>\n" \
                           "\t\t\treject an incoming call if any exist, otherwise then releases all held calls or a waiting call"
 
-#define HANGUP_CALL_USAGE "Terminate a call               params: <address>\n" \
+#define HANGUP_CALL_USAGE "Terminate a call                     params: <address>\n" \
                           "\t\t\thangup an active/dialing/alerting voice call if any exist, otherwise then releases all held calls."
 
-#define HOLD_CALL_USAGE "Control multi call               params: <address> <control>\n" \
-                        "\t\t\t" CHLD_0_DESC "\n"                                        \
-                        "\t\t\t" CHLD_1_DESC "\n"                                        \
-                        "\t\t\t" CHLD_2_DESC "\n"                                        \
-                        "\t\t\t" CHLD_3_DESC "\n"
+#define HOLD_CALL_USAGE   "Control multi call                   params: <address> <control>\n" \
+                          "\t\t\t" CHLD_0_DESC "\n"                                              \
+                          "\t\t\t" CHLD_1_DESC "\n"                                              \
+                          "\t\t\t" CHLD_2_DESC "\n"                                              \
+                          "\t\t\t" CHLD_3_DESC "\n"
 
 static bt_command_t g_hfp_tables[] = {
-    {"connect",          connect_cmd,                  0, "Establish hfp SLC connection   params: <address>"              },
-    { "disconnect",      disconnect_cmd,               0, "Disconnect hfp SLC connection  params: <address>"              },
-    { "connectaudio",    connect_audio_cmd,            0, "Establish hfp SCO connection   params: <address>"              },
-    { "disconnectaudio", disconnect_audio_cmd,         0, "Disconnect hfp SCO connection  params: <address>"              },
-    { "startvr",         start_voice_recognition_cmd,  0, "Start voice recognition        params: <address>"              },
-    { "stopvr",          stop_voice_recognition_cmd,   0, "Stop voice recognition         params: <address>"              },
-    { "dial",            dial_cmd,                     0, "Dial phone number              params: <address> <number>"     },
-    { "dialm",           dial_memory_cmd,              0, "Place a call using memory dialing  params: :<address> <memory>"},
-    { "redial",          redial_cmd,                   0, "Redial the last number         params: <address>"              },
-    { "accept",          accept_call_cmd,              0, ACCEPT_CALL_USAGE                                               },
-    { "reject",          reject_call_cmd,              0, REJECT_CALL_USAGE                                               },
-    { "hold",            hold_call_cmd,                0, "Hold an Three-way calling      params: <address>"              },
-    { "term",            terminate_call_cmd,           0, HANGUP_CALL_USAGE                                               },
-    { "control",         control_call_cmd,             0, HOLD_CALL_USAGE                                                 },
-    { "query",           query_current_calls_cmd,      0, "Query current calls            params: <address>"              },
-    { "sendat",          send_at_cmd_cmd,              0, "Send customize AT command to peer  params: <address> <atcmd>"  },
-    { "state",           get_hfp_connection_state_cmd, 0, "get hfp profile state"                                         },
+    { "connect",         connect_cmd,                  0, "Establish hfp SLC connection         params: <address>"          },
+    { "disconnect",      disconnect_cmd,               0, "Disconnect hfp SLC connection        params: <address>"          },
+    { "connectaudio",    connect_audio_cmd,            0, "Establish hfp SCO connection         params: <address>"          },
+    { "disconnectaudio", disconnect_audio_cmd,         0, "Disconnect hfp SCO connection        params: <address>"          },
+    { "startvr",         start_voice_recognition_cmd,  0, "Start voice recognition              params: <address>"          },
+    { "stopvr",          stop_voice_recognition_cmd,   0, "Stop voice recognition               params: <address>"          },
+    { "dial",            dial_cmd,                     0, "Dial phone number                    params: <address> <number>" },
+    { "dialm",           dial_memory_cmd,              0, "Place a call using memory dialing    params: <address> <memory>"},
+    { "redial",          redial_cmd,                   0, "Redial the last number               params: <address>"          },
+    { "accept",          accept_call_cmd,              0, ACCEPT_CALL_USAGE                                                 },
+    { "reject",          reject_call_cmd,              0, REJECT_CALL_USAGE                                                 },
+    { "hold",            hold_call_cmd,                0, "Hold an Three-way calling            params: <address>"          },
+    { "term",            terminate_call_cmd,           0, HANGUP_CALL_USAGE                                                 },
+    { "control",         control_call_cmd,             0, HOLD_CALL_USAGE                                                   },
+    { "query",           query_current_calls_cmd,      0, "Query current calls                  params: <address>"          },
+    { "sendat",          send_at_cmd_cmd,              0, "Send customize AT command to peer    params: <address> <atcmd>"  },
+    { "battery",         update_battery_level_cmd,     0, "Update battery level within [0, 100] params: <address> <level>\""},
+    { "state",           get_hfp_connection_state_cmd, 0, "get hfp profile state"                                           },
 };
 
 static void *hf_callbacks = NULL;
@@ -358,11 +360,12 @@ static int query_current_calls_cmd(void *handle, int argc, char *argv[])
 
 static int send_at_cmd_cmd(void *handle, int argc, char *argv[])
 {
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
     bt_address_t addr;
     int len = 0;
     char at_buf[64];
-    if (argc < 2)
-        return CMD_PARAM_NOT_ENOUGH;
 
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
@@ -375,7 +378,27 @@ static int send_at_cmd_cmd(void *handle, int argc, char *argv[])
     at_buf[len] = '\r';
     at_buf[len + 1] = '\n';
     at_buf[len + 2] = '\0';
-    bt_hfp_hf_send_at_cmd(handle, &addr, at_buf);
+    if (bt_hfp_hf_send_at_cmd(handle, &addr, at_buf) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int update_battery_level_cmd(void *handle, int argc, char *argv[])
+{
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    int level = atoi(argv[1]);
+    if (level < 0 || level > 100)
+        return CMD_INVALID_PARAM;
+
+    if (bt_hfp_hf_update_battery_level(handle, &addr, level) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
 
     return CMD_OK;
 }
