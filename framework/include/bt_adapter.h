@@ -468,10 +468,10 @@ bt_status_t BTSYMBOLS(bt_adapter_set_le_address)(bt_instance_t *ins, bt_address_
  *
  * @param ins - bluetooth client instance.
  * @param addr Le identity address
- * @param public - true:public, false:static
+ * @param is_public - true:public, false:static
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_adapter_set_le_identity_address)(bt_instance_t *ins, bt_address_t *addr, bool public);
+bt_status_t BTSYMBOLS(bt_adapter_set_le_identity_address)(bt_instance_t *ins, bt_address_t *addr, bool is_public);
 
 /**
  * @brief Set LE adapter io capability
