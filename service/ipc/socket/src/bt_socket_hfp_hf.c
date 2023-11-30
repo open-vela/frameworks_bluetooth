@@ -298,6 +298,11 @@ void bt_socket_server_hfp_hf_process(service_poll_t *poll, int fd,
                                                                  &packet->hfp_hf_pl._bt_hfp_hf_send_dtmf.addr,
                                                                  packet->hfp_hf_pl._bt_hfp_hf_send_dtmf.dtmf);
         break;
+    case BT_HFP_HF_UPDATE_BATTERY_LEVEL:
+        packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_update_battery_level)(ins,
+                                                &packet->hfp_hf_pl._bt_hfp_hf_update_battery_level.addr,
+                                                packet->hfp_hf_pl._bt_hfp_hf_update_battery_level.level);
+        break;
     default:
         break;
     }
