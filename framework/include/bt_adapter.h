@@ -507,6 +507,18 @@ bt_status_t BTSYMBOLS(bt_adapter_set_le_appearance)(bt_instance_t *ins, uint16_t
  */
 uint16_t BTSYMBOLS(bt_adapter_get_le_appearance)(bt_instance_t *ins);
 
+/**
+ * @brief Enable/Disable cross transport key derivation.
+ *
+ * @param ins - bluetooth client instance.
+ * @param brkey_to_lekey - Enable or disable generating LE LTK from BR link key.
+ * @param lekey_to_brkey - Enable or disable generating BR link key from LE LTK.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_adapter_le_enable_key_derivation)(bt_instance_t *ins,
+                                                bool brkey_to_lekey,
+                                                bool lekey_to_brkey);
+
 #ifdef __cplusplus
 }
 #endif
