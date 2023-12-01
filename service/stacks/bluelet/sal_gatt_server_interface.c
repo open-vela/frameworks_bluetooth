@@ -28,11 +28,13 @@
 #include "sal_gatt_server_interface.h"
 
 typedef struct {
-    uint16_t group_id;
+    uint16_t start_handle;
+    uint16_t end_handle;
+    int elements_size;
     SERVICE_GATT_ELEMENT_S *elements;
-    uint32_t elements_size;
 } sal_gatt_database_t;
 
+static pthread_mutex_t db_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static bt_list_t *g_gatt_db_list = NULL;
 
 static void gatt_db_free(void *data)
@@ -45,7 +47,9 @@ static void gatt_db_free(void *data)
 
 static bool gatt_db_group_cmp(void *gatt_db, void *handle)
 {
-    return (((sal_gatt_database_t *)gatt_db)->group_id == GATT_ELEMENT_GROUP_ID(*((uint16_t *)handle)));
+    uint16_t f_handle = *(uint16_t *)handle;
+    sal_gatt_database_t *f_gatt_db = (sal_gatt_database_t *)gatt_db;
+    return (f_handle >= f_gatt_db->start_handle && f_handle <= f_gatt_db->end_handle);
 }
 
 static SERVICE_GATT_ELEMENT_S *gatt_db_find_element_by_handle(bt_list_t *db_list, uint16_t handle)
@@ -72,10 +76,14 @@ static void gatts_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE
 
 static void gatts_elements_added_callback(SERVICE_GATT_STATUS status, SERVICE_GATT_ELEMENT_S *elements, uint16_t size)
 {
+    sal_gatt_database_t *db_group;
+
     if (!g_gatt_db_list)
         return;
 
-    sal_gatt_database_t *db_group = bt_list_find(g_gatt_db_list, gatt_db_group_cmp, &elements->id);
+    pthread_mutex_lock(&db_lock);
+    db_group = bt_list_find(g_gatt_db_list, gatt_db_group_cmp, &elements->id);
+    pthread_mutex_unlock(&db_lock);
     if (db_group != NULL) {
         if_gatts_on_elements_added(bluelet_gatt_status(status), (uint16_t)elements->id, size);
     }
@@ -83,24 +91,36 @@ static void gatts_elements_added_callback(SERVICE_GATT_STATUS status, SERVICE_GA
 
 static void gatts_elements_removed_callback(SERVICE_GATT_STATUS status, SERVICE_GATT_ELEMENT_S *elements, uint16_t size)
 {
+    sal_gatt_database_t *db_group;
+    uint16_t element_id = elements->id;
+
     if (!g_gatt_db_list)
         return;
 
-    sal_gatt_database_t *db_group = bt_list_find(g_gatt_db_list, gatt_db_group_cmp, &elements->id);
+    pthread_mutex_lock(&db_lock);
+    db_group = bt_list_find(g_gatt_db_list, gatt_db_group_cmp, &element_id);
     if (db_group != NULL) {
-        if_gatts_on_elements_removed(bluelet_gatt_status(status), (uint16_t)elements->id, size);
         bt_list_remove(g_gatt_db_list, db_group);
+    }
+    pthread_mutex_unlock(&db_lock);
+
+    if (db_group != NULL) {
+        if_gatts_on_elements_removed(bluelet_gatt_status(status), element_id, size);
     }
 }
 
 static void gatts_phy_read_callback(BD_ADDR remote_addr, SERVICE_BLE_PHY_TYPE tx_phy, SERVICE_BLE_PHY_TYPE rx_phy)
 {
-    // TODO
+    bt_address_t addr;
+    memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
+    if_gatts_on_phy_read(&addr, tx_phy, rx_phy);
 }
 
 static void gatts_phy_update_callback(BD_ADDR remote_addr, SERVICE_BLE_PHY_TYPE tx_phy, SERVICE_BLE_PHY_TYPE rx_phy, SERVICE_GATT_STATUS status)
 {
-    // TODO
+    bt_address_t addr;
+    memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
+    if_gatts_on_phy_updated(&addr, tx_phy, rx_phy, bluelet_gatt_status(status));
 }
 
 static void gatts_received_element_read_request_callback(BD_ADDR remote_addr, uint32_t request_id, SERVICE_GATT_ELEMENT_S *element)
@@ -115,7 +135,7 @@ static void gatts_received_element_write_request_callback(BD_ADDR remote_addr, u
 {
     bt_address_t addr;
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
-    if_gatts_on_received_element_write_request(&addr, request_id, element->id, value, offset, length, !(element->properties & GATT_PROPERTY_WRITE_NO_RESPONSE));
+    if_gatts_on_received_element_write_request(&addr, request_id, element->id, value, offset, length);
 }
 
 static void gatts_mtu_changed_callback(BD_ADDR remote_addr, uint32_t mtu)
@@ -148,7 +168,9 @@ static GATT_SERVER_CALLBACKS_S gatts_callbacks = {
 bt_status_t bt_sal_gatt_server_enable(void)
 {
     SAL_CHECK_RET(service_adapter_gatt_server_open(&gatts_callbacks), GATT_SUCCESS);
+    pthread_mutex_lock(&db_lock);
     g_gatt_db_list = bt_list_new(gatt_db_free);
+    pthread_mutex_unlock(&db_lock);
 
     return BT_STATUS_SUCCESS;
 }
@@ -156,35 +178,44 @@ bt_status_t bt_sal_gatt_server_enable(void)
 bt_status_t bt_sal_gatt_server_disable(void)
 {
     SAL_CHECK_RET(service_adapter_gatt_server_close(), GATT_SUCCESS);
+    pthread_mutex_lock(&db_lock);
     bt_list_free(g_gatt_db_list);
     g_gatt_db_list = NULL;
+    pthread_mutex_unlock(&db_lock);
 
     return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t *elements, uint16_t size)
 {
+    sal_gatt_database_t *db_group;
+
     SAL_CHECK_PARAM(elements);
     SAL_CHECK_PARAM(size);
 
-    sal_gatt_database_t *db_group = bt_list_find(g_gatt_db_list, gatt_db_group_cmp, &elements->handle);
+    pthread_mutex_lock(&db_lock);
+    db_group = bt_list_find(g_gatt_db_list, gatt_db_group_cmp, &elements->handle);
     if (db_group == NULL) {
         db_group = (sal_gatt_database_t *)malloc(sizeof(sal_gatt_database_t));
         if (db_group == NULL)
             return BT_STATUS_NOMEM;
 
-        db_group->group_id = GATT_ELEMENT_GROUP_ID(elements->handle);
-        db_group->elements = NULL;
+        db_group->start_handle = 0;
+        db_group->end_handle = 0;
         db_group->elements_size = 0;
+        db_group->elements = NULL;
         bt_list_add_tail(g_gatt_db_list, db_group);
     }
+    pthread_mutex_unlock(&db_lock);
 
     SERVICE_GATT_ELEMENT_S *sal_elements = (SERVICE_GATT_ELEMENT_S *)realloc(db_group->elements, sizeof(SERVICE_GATT_ELEMENT_S) * size);
     if (sal_elements == NULL)
         return BT_STATUS_NOMEM;
 
-    db_group->elements = sal_elements;
+    db_group->start_handle = elements[0].handle;
+    db_group->end_handle = elements[size - 1].handle;
     db_group->elements_size = size;
+    db_group->elements = sal_elements;
     for (int i = 0; i < size; i++, sal_elements++) {
         sal_elements->id = elements[i].handle;
         sal_elements->type = elements[i].type;
@@ -200,10 +231,14 @@ bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t *elements, uint16_t s
 
 bt_status_t bt_sal_gatt_server_remove_elements(gatt_element_t *elements, uint16_t size)
 {
+    sal_gatt_database_t *db_group;
+
     SAL_CHECK_PARAM(elements);
     SAL_CHECK_PARAM(size);
 
-    sal_gatt_database_t *db_group = bt_list_find(g_gatt_db_list, gatt_db_group_cmp, &elements->handle);
+    pthread_mutex_lock(&db_lock);
+    db_group = bt_list_find(g_gatt_db_list, gatt_db_group_cmp, &elements->handle);
+    pthread_mutex_unlock(&db_lock);
     if (db_group == NULL)
         return BT_STATUS_NO_RESOURCES;
 
@@ -263,10 +298,14 @@ bt_status_t bt_sal_gatt_server_send_response(bt_address_t *addr, uint32_t reques
 
 bt_status_t bt_sal_gatt_server_send_notification(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length)
 {
+    SERVICE_GATT_ELEMENT_S *sal_element;
+
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_PARAM(value);
 
-    SERVICE_GATT_ELEMENT_S *sal_element = gatt_db_find_element_by_handle(g_gatt_db_list, element_id);
+    pthread_mutex_lock(&db_lock);
+    sal_element = gatt_db_find_element_by_handle(g_gatt_db_list, element_id);
+    pthread_mutex_unlock(&db_lock);
     if (sal_element == NULL)
         return BT_STATUS_FAIL;
 
@@ -277,10 +316,14 @@ bt_status_t bt_sal_gatt_server_send_notification(bt_address_t *addr, uint16_t el
 
 bt_status_t bt_sal_gatt_server_send_indication(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length)
 {
+    SERVICE_GATT_ELEMENT_S *sal_element;
+
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_PARAM(value);
 
-    SERVICE_GATT_ELEMENT_S *sal_element = gatt_db_find_element_by_handle(g_gatt_db_list, element_id);
+    pthread_mutex_lock(&db_lock);
+    sal_element = gatt_db_find_element_by_handle(g_gatt_db_list, element_id);
+    pthread_mutex_unlock(&db_lock);
     if (sal_element == NULL)
         return BT_STATUS_FAIL;
 
