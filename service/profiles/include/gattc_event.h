@@ -34,7 +34,10 @@ typedef enum {
     GATTC_EVENT_READ,
     GATTC_EVENT_WRITE,
     GATTC_EVENT_NOTIFY,
-    GATTC_EVENT_MTU_CFG,
+    GATTC_EVENT_MTU_UPDATE,
+    GATTC_EVENT_PHY_READ,
+    GATTC_EVENT_PHY_UPDATE,
+    GATTC_EVENT_RSSI_READ,
 } gattc_event_t;
 
 typedef enum {
@@ -44,6 +47,9 @@ typedef enum {
     GATTC_REQ_READ,
     GATTC_REQ_WRITE,
     GATTC_REQ_EXCHANGE_MTU,
+    GATTC_REQ_READ_PHY,
+    GATTC_REQ_UPDATE_PHY,
+    GATTC_REQ_READ_RSSI,
 } gattc_request_t;
 
 typedef struct
@@ -104,12 +110,29 @@ typedef struct
         } notify;
 
         /**
-         * @brief GATTC_EVENT_MTU_CFG
+         * @brief GATTC_EVENT_MTU_UPDATE
          */
-        struct gattc_cfg_mtu_evt_param {
+        struct gattc_mtu_evt_param {
             gatt_status_t status;
             uint32_t mtu;
-        } cfg_mtu;
+        } mtu;
+
+        /**
+         * @brief GATTC_EVENT_PHY
+         */
+        struct gattc_phy_evt_param {
+            gatt_status_t status;
+            ble_phy_type_t tx_phy;
+            ble_phy_type_t rx_phy;
+        } phy;
+
+        /**
+         * @brief GATTC_EVENT_RSSI_READ
+         */
+        struct gattc_rssi_read_evt_param {
+            gatt_status_t status;
+            int32_t rssi;
+        } rssi_read;
 
     } param;
 
@@ -150,7 +173,6 @@ typedef struct
         struct gattc_read_req_param {
             void *conn_handle;
             uint16_t attr_handle;
-            void *read_cb;
         } read;
 
         /**
@@ -159,7 +181,6 @@ typedef struct
         struct gattc_write_req_param {
             void *conn_handle;
             uint16_t attr_handle;
-            void *write_cb;
             gatt_write_type_t type;
         } write;
 
@@ -170,6 +191,22 @@ typedef struct
             void *conn_handle;
             uint32_t mtu;
         } exchange_mtu;
+
+        /**
+         * @brief GATTC_REQ_PHY
+         */
+        struct gattc_phy_req_param {
+            void *conn_handle;
+            ble_phy_type_t tx_phy;
+            ble_phy_type_t rx_phy;
+        } phy;
+
+        /**
+         * @brief GATTC_REQ_READ_RSSI
+         */
+        struct gattc_read_rssi_req_param {
+            void *conn_handle;
+        } read_rssi;
 
     } param;
 

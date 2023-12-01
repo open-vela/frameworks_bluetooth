@@ -35,7 +35,7 @@ bt_status_t bt_gattc_create_connect(bt_instance_t *ins, gattc_handle_t *phandle,
         return BT_STATUS_NOMEM;
 
     gattc_remote->ins = ins;
-    gattc_remote->callback = callbacks;
+    gattc_remote->callbacks = callbacks;
 
     packet.gattc_pl._bt_gattc_create.cookie = gattc_remote;
     status = bt_socket_client_sendrecv(ins, &packet, BT_GATT_CLIENT_CREATE_CONNECT);
@@ -269,6 +269,50 @@ bt_status_t bt_gattc_update_connection_parameter(gattc_handle_t conn_handle, uin
     packet.gattc_pl._bt_gattc_update_connection_param.min_connection_event_length = min_connection_event_length;
     packet.gattc_pl._bt_gattc_update_connection_param.max_connection_event_length = max_connection_event_length;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_UPDATE_CONNECTION_PARAM);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
+}
+
+bt_status_t bt_gattc_read_phy(gattc_handle_t conn_handle)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_phy.handle = gattc_remote->cookie;
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_READ_PHY);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
+}
+
+bt_status_t bt_gattc_update_phy(gattc_handle_t conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_phy.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_phy.tx_phy = tx_phy;
+    packet.gattc_pl._bt_gattc_phy.rx_phy = rx_phy;
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_UPDATE_PHY);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gattc_r.status;
+}
+
+bt_status_t bt_gattc_read_rssi(gattc_handle_t conn_handle)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+
+    packet.gattc_pl._bt_gattc_rssi.handle = gattc_remote->cookie;
+    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_READ_RSSI);
     if (status != BT_STATUS_SUCCESS)
         return status;
 

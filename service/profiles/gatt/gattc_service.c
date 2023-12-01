@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#include "bt_gatts.h"
 #include "bt_list.h"
 #include "bt_profile.h"
 #include "gattc_event.h"
@@ -267,8 +266,17 @@ static void gattc_process_message(void *data)
     case GATTC_EVENT_NOTIFY: {
         GATT_CBACK(connection->callbacks, on_notified, connection, msg->param.notify.element_id, msg->param.notify.value, msg->param.notify.length);
     } break;
-    case GATTC_EVENT_MTU_CFG: {
-        GATT_CBACK(connection->callbacks, on_mtu_exchange, connection, msg->param.cfg_mtu.status, msg->param.cfg_mtu.mtu);
+    case GATTC_EVENT_MTU_UPDATE: {
+        GATT_CBACK(connection->callbacks, on_mtu_updated, connection, msg->param.mtu.status, msg->param.mtu.mtu);
+    } break;
+    case GATTC_EVENT_PHY_READ: {
+        GATT_CBACK(connection->callbacks, on_phy_read, connection, msg->param.phy.tx_phy, msg->param.phy.rx_phy);
+    } break;
+    case GATTC_EVENT_PHY_UPDATE: {
+        GATT_CBACK(connection->callbacks, on_phy_updated, connection, msg->param.phy.status, msg->param.phy.tx_phy, msg->param.phy.rx_phy);
+    } break;
+    case GATTC_EVENT_RSSI_READ: {
+        GATT_CBACK(connection->callbacks, on_rssi_read, connection, msg->param.rssi_read.status, msg->param.rssi_read.rssi);
     } break;
     default: {
 
@@ -623,6 +631,36 @@ static bt_status_t if_gattc_update_connection_parameter(void *conn_handle, uint3
                                                           timeout, min_connection_event_length, max_connection_event_length);
 }
 
+static bt_status_t if_gattc_read_phy(void *conn_handle)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    return bt_sal_gatt_client_read_phy(&connection->remote_addr);
+}
+
+static bt_status_t if_gattc_update_phy(void *conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    return bt_sal_gatt_client_set_phy(&connection->remote_addr, tx_phy, rx_phy);
+}
+
+static bt_status_t if_gattc_read_rssi(void *conn_handle)
+{
+    gattc_connection_t *connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    return bt_sal_gatt_client_read_remote_rssi(&connection->remote_addr);
+}
+
 static const gattc_interface_t gattc_if = {
     .size = sizeof(gattc_if),
     .create_connect = if_gattc_create_connect,
@@ -639,6 +677,9 @@ static const gattc_interface_t gattc_if = {
     .unsubscribe = if_gattc_unsubscribe,
     .exchange_mtu = if_gattc_exchange_mtu,
     .update_connection_parameter = if_gattc_update_connection_parameter,
+    .read_phy = if_gattc_read_phy,
+    .update_phy = if_gattc_update_phy,
+    .read_rssi = if_gattc_read_rssi,
 };
 
 static const void *get_gattc_profile_interface(void)
@@ -702,9 +743,34 @@ void if_gattc_on_element_changed(bt_address_t *addr, uint16_t element_id, uint8_
 
 void if_gattc_on_mtu_changed(bt_address_t *addr, uint32_t mtu, gatt_status_t status)
 {
-    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_MTU_CFG, addr, 0);
-    msg->param.cfg_mtu.status = status;
-    msg->param.cfg_mtu.mtu = mtu;
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_MTU_UPDATE, addr, 0);
+    msg->param.mtu.status = status;
+    msg->param.mtu.mtu = mtu;
+    gattc_send_message(msg);
+}
+
+void if_gattc_on_phy_read(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+{
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_PHY_READ, addr, 0);
+    msg->param.phy.tx_phy = tx_phy;
+    msg->param.phy.rx_phy = rx_phy;
+    gattc_send_message(msg);
+}
+
+void if_gattc_on_phy_updated(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, gatt_status_t status)
+{
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_PHY_UPDATE, addr, 0);
+    msg->param.phy.status = status;
+    msg->param.phy.tx_phy = tx_phy;
+    msg->param.phy.rx_phy = rx_phy;
+    gattc_send_message(msg);
+}
+
+void if_gattc_on_rssi_read(bt_address_t *addr, int32_t rssi, gatt_status_t status)
+{
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_RSSI_READ, addr, 0);
+    msg->param.rssi_read.status = status;
+    msg->param.rssi_read.rssi = rssi;
     gattc_send_message(msg);
 }
 

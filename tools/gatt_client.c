@@ -34,6 +34,9 @@ static int enable_cccd_cmd(void *handle, int argc, char *argv[]);
 static int disable_cccd_cmd(void *handle, int argc, char *argv[]);
 static int exchange_mtu_cmd(void *handle, int argc, char *argv[]);
 static int update_conn_cmd(void *handle, int argc, char *argv[]);
+static int read_phy_cmd(void *handle, int argc, char *argv[]);
+static int update_phy_cmd(void *handle, int argc, char *argv[]);
+static int read_rssi_cmd(void *handle, int argc, char *argv[]);
 
 #define GATTC_CONNECTION_MAX (CONFIG_BLUETOOTH_GATTC_MAX_CONNECTIONS)
 static gattc_handle_t g_gattc_handles[GATTC_CONNECTION_MAX] = { 0 };
@@ -60,6 +63,9 @@ static bt_command_t g_gattc_tables[] = {
     { "disable_cccd",  disable_cccd_cmd,      0, "\"disable cccd :<conn id><char id><cccd_id>\""                                                                                                     },
     { "exchange_mtu",  exchange_mtu_cmd,      0, "\"exchange mtu :<conn id><mtu>\""                                                                                                                  },
     { "update_conn",   update_conn_cmd,       0, "\"update connection parameter :<conn id><min_interval><max_interval><latency><timeout><min_connection_event_length><max_connection_event_length>\""},
+    { "read_phy",      read_phy_cmd,          0, "\"read phy :<conn id>\""                                                                                                                           },
+    { "update_phy",    update_phy_cmd,        0, "\"update phy(0: 1M, 1: 2M, 3: LE_Coded) :<conn id><tx><rx>\""                                                                                      },
+    { "read_rssi",     read_rssi_cmd,         0, "\"read remote rssi :<conn id>\""                                                                                                                   },
 };
 
 static void usage(void)
@@ -252,6 +258,51 @@ static int update_conn_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
+static int read_phy_cmd(void *handle, int argc, char *argv[])
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    int conn_id = atoi(argv[0]);
+    CHECK_CONNCTION_ID(conn_id);
+
+    if (bt_gattc_read_phy(g_gattc_handles[conn_id]) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int update_phy_cmd(void *handle, int argc, char *argv[])
+{
+    if (argc < 3)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    int conn_id = atoi(argv[0]);
+    CHECK_CONNCTION_ID(conn_id);
+
+    int tx = atoi(argv[1]);
+    int rx = atoi(argv[2]);
+
+    if (bt_gattc_update_phy(g_gattc_handles[conn_id], tx, rx) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int read_rssi_cmd(void *handle, int argc, char *argv[])
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    int conn_id = atoi(argv[0]);
+    CHECK_CONNCTION_ID(conn_id);
+
+    if (bt_gattc_read_rssi(g_gattc_handles[conn_id]) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
 static void connect_callback(void *conn_handle, bt_address_t *addr)
 {
     PRINT_ADDR("gattc_connect_callback, addr:%s", addr);
@@ -331,11 +382,6 @@ static void discover_callback(void *conn_handle, gatt_status_t status, bt_uuid_t
     printf(">");
 }
 
-static void mtu_exchange_callback(void *conn_handle, gatt_status_t status, uint32_t mtu)
-{
-    PRINT("gattc_mtu_exchange_callback, status:%d, mtu:%" PRIu32, status, mtu);
-}
-
 static void read_complete_callback(void *conn_handle, gatt_status_t status, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     PRINT("gattc connection read complete, handle 0x%04x status:%d", attr_handle, status);
@@ -354,6 +400,26 @@ static void notify_received_callback(void *conn_handle, uint16_t attr_handle,
     PRINT_HEXDUMP(value, length);
 }
 
+static void mtu_updated_callback(void *conn_handle, gatt_status_t status, uint32_t mtu)
+{
+    PRINT("gattc_mtu_updated_callback, status:%d, mtu:%" PRIu32, status, mtu);
+}
+
+static void phy_read_callback(void *conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+{
+    PRINT("gattc read phy complete, tx:%d, rx:%d", tx_phy, rx_phy);
+}
+
+static void phy_updated_callback(void *conn_handle, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+{
+    PRINT("gattc phy updated, status:%d, tx:%d, rx:%d", status, tx_phy, rx_phy);
+}
+
+static void rssi_read_callback(void *conn_handle, gatt_status_t status, int32_t rssi)
+{
+    PRINT("gattc read rssi complete, status:%d, rssi:%d", status, rssi);
+}
+
 static gattc_callbacks_t gattc_cbs = {
     sizeof(gattc_cbs),
     connect_callback,
@@ -362,7 +428,10 @@ static gattc_callbacks_t gattc_cbs = {
     read_complete_callback,
     write_complete_callback,
     notify_received_callback,
-    mtu_exchange_callback,
+    mtu_updated_callback,
+    phy_read_callback,
+    phy_updated_callback,
+    rssi_read_callback,
 };
 
 static int create_cmd(void *handle, int argc, char *argv[])

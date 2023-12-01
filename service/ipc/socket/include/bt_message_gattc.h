@@ -30,6 +30,9 @@
     BT_GATT_CLIENT_UNSUBSCRIBE,
     BT_GATT_CLIENT_EXCHANGE_MTU,
     BT_GATT_CLIENT_UPDATE_CONNECTION_PARAM,
+    BT_GATT_CLIENT_READ_PHY,
+    BT_GATT_CLIENT_UPDATE_PHY,
+    BT_GATT_CLIENT_READ_RSSI,
     BT_GATT_CLIENT_MESSAGE_END,
 #endif
 
@@ -38,10 +41,13 @@
     BT_GATT_CLIENT_ON_CONNECTED,
     BT_GATT_CLIENT_ON_DISCONNECTED,
     BT_GATT_CLIENT_ON_DISCOVERED,
-    BT_GATT_CLIENT_ON_MTU_EXCHANGE,
+    BT_GATT_CLIENT_ON_MTU_UPDATED,
     BT_GATT_CLIENT_ON_READ,
     BT_GATT_CLIENT_ON_WRITTEN,
     BT_GATT_CLIENT_ON_NOTIFIED,
+    BT_GATT_CLIENT_ON_PHY_READ,
+    BT_GATT_CLIENT_ON_PHY_UPDATED,
+    BT_GATT_CLIENT_ON_RSSI_READ,
     BT_GATT_CLIENT_CALLBACK_END,
 #endif
 
@@ -57,7 +63,7 @@
 
 typedef struct {
     bt_instance_t *ins;
-    gattc_callbacks_t *callback;
+    gattc_callbacks_t *callbacks;
     void *cookie;
 } bt_gattc_remote_t;
 
@@ -142,6 +148,16 @@ typedef union {
         uint32_t max_connection_event_length;
     } _bt_gattc_update_connection_param;
 
+    struct {
+        gattc_handle_t handle;
+        ble_phy_type_t tx_phy;
+        ble_phy_type_t rx_phy;
+    } _bt_gattc_phy;
+
+    struct {
+        gattc_handle_t handle;
+    } _bt_gattc_rssi;
+
 } bt_message_gattc_t;
 
 typedef union {
@@ -171,7 +187,7 @@ typedef union {
         void *remote;
         gatt_status_t status;
         uint32_t mtu;
-    } _on_mtu_exchange;
+    } _on_mtu_updated;
 
     struct {
         void *remote;
@@ -193,6 +209,19 @@ typedef union {
         uint16_t length;
         uint8_t value[512];
     } _on_notified;
+
+    struct {
+        void *remote;
+        gatt_status_t status;
+        ble_phy_type_t tx_phy;
+        ble_phy_type_t rx_phy;
+    } _on_phy_updated;
+
+    struct {
+        void *remote;
+        gatt_status_t status;
+        int32_t rssi;
+    } _on_rssi_read;
 
 } bt_message_gattc_callbacks_t;
 
