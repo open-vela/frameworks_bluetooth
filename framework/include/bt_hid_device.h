@@ -34,6 +34,12 @@ extern "C" {
 #define HID_SDP_DESCRIPTOR_REPORT (0x22)
 #define HID_SDP_DESCRIPTOR_PHYSICAL (0x23)
 
+/* Descriptor length of HID DEVICE INFO */
+#define MAX_HID_DEVICE_NAME 32
+#define MAX_HID_DEVICE_DES 100
+#define MAX_HID_DEVICE_PRI 32
+#define MAX_DSC_LIST_LENGTH 512
+
 /* * HID supported features - bit mask */
 #define HID_ATTR_MASK_VIRTUAL_CABLE 0x0001
 #define HID_ATTR_MASK_RECONNECT_INITIATE 0x0002
@@ -61,7 +67,7 @@ typedef struct {
     uint16_t ssr_max_latency;
     uint16_t ssr_min_timeout;
     uint16_t dsc_list_length; /* Length of desc_list */
-    uint8_t *dsc_list; /* List of descriptors. Each descriptor is constructed as: Type(1 Byte), Length(2 Bytes, Little Endian), Values(Length Bytes) */
+    uint8_t dsc_list[ MAX_DSC_LIST_LENGTH ]; /* List of descriptors. Each descriptor is constructed as: Type(1 Byte), Length(2 Bytes, Little Endian), Values(Length Bytes) */
 } hid_info_t;
 
 /**
@@ -69,9 +75,9 @@ typedef struct {
  *
  */
 typedef struct {
-    const char *name;
-    const char *description;
-    const char *provider;
+    char name[MAX_HID_DEVICE_NAME];
+    char description[MAX_HID_DEVICE_DES];
+    char provider[MAX_HID_DEVICE_PRI];
     hid_info_t hids_info;
 } hid_device_sdp_settings_t;
 

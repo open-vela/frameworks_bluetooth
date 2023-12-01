@@ -266,9 +266,9 @@ static int register_cmd(void *handle, int argc, char *argv[])
         return CMD_INVALID_PARAM;
 
     memset(&hidd_setting, 0, sizeof(hid_device_sdp_settings_t));
-    hidd_setting.name = "HID_Device_Demo";
-    hidd_setting.description = "A demo of HID Device implementation";
-    hidd_setting.provider = "Xiaomi Vela";
+    strncpy(hidd_setting.name, "HID_Device_Demo", MAX_HID_DEVICE_NAME);
+    strncpy(hidd_setting.description, "A demo of HID Device implementation", MAX_HID_DEVICE_DES);
+    strncpy(hidd_setting.provider, "Xiaomi Vela", MAX_HID_DEVICE_PRI);
     hidd_setting.hids_info.attr_mask = HID_ATTR_MASK_VIRTUAL_CABLE | HID_ATTR_MASK_RECONNECT_INITIATE | HID_ATTR_MASK_NORMALLY_CONNECTABLE /* | BTHID_ATTR_MASK_BOOT_DEVICE*/;
 
     switch (app_type) {
@@ -293,7 +293,6 @@ static int register_cmd(void *handle, int argc, char *argv[])
     hidd_setting.hids_info.product_id = 0x1234;
     hidd_setting.hids_info.version = 0x100;
     hidd_setting.hids_info.dsc_list_length = (uint16_t)(desc_len + 3); /* 3 bytes for Descriptor Type and Length */
-    hidd_setting.hids_info.dsc_list = malloc(desc_len + 3);
     hidd_setting.hids_info.dsc_list[0] = HID_SDP_DESCRIPTOR_REPORT;
     hidd_setting.hids_info.dsc_list[1] = (uint8_t)(desc_len & 0xFF);
     hidd_setting.hids_info.dsc_list[2] = (uint8_t)(desc_len >> 8);
@@ -301,8 +300,6 @@ static int register_cmd(void *handle, int argc, char *argv[])
 
     if (bt_hid_device_register_app(handle, &hidd_setting, transport == BT_TRANSPORT_BLE) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
-
-    free(hidd_setting.hids_info.dsc_list);
 
     PRINT("hid device register app, type:%s", argv[0]);
 
