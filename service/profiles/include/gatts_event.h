@@ -28,21 +28,25 @@
  ****************************************************************************/
 
 typedef enum {
-    GATTS_EVENT_START,
-    GATTS_EVENT_STOP,
+    GATTS_EVENT_ATTR_TABLE_ADDED,
+    GATTS_EVENT_ATTR_TABLE_REMOVED,
     GATTS_EVENT_CONNECT_CHANGE,
     GATTS_EVENT_READ_REQUEST,
     GATTS_EVENT_WRITE_REQUEST,
-    GATTS_EVENT_MTU,
+    GATTS_EVENT_MTU_CHANGE,
     GATTS_EVENT_CHANGE_SEND,
+    GATTS_EVENT_PHY_READ,
+    GATTS_EVENT_PHY_UPDATE,
 } gatts_event_t;
 
 typedef enum {
-    GATTS_REQ_START,
-    GATTS_REQ_STOP,
+    GATTS_REQ_ADD_ATTR_TABLE,
+    GATTS_REQ_REMOVE_ATTR_TABLE,
     GATTS_REQ_CONNECT,
     GATTS_REQ_DISCONNECT,
     GATTS_REQ_NOTIFY,
+    GATTS_REQ_READ_PHY,
+    GATTS_REQ_UPDATE_PHY,
 } gatts_request_t;
 
 typedef struct
@@ -51,20 +55,20 @@ typedef struct
 
     union {
         /**
-         * @brief GATTS_EVENT_START
+         * @brief GATTS_EVENT_ATTR_TABLE_ADDED
          */
-        struct gatts_start_evt_param {
+        struct gatts_attr_table_added_evt_param {
             uint16_t element_id;
             gatt_status_t status;
-        } start;
+        } added;
 
         /**
-         * @brief GATTS_EVENT_STOP
+         * @brief GATTS_EVENT_ATTR_TABLE_REMOVED
          */
-        struct gatts_stop_evt_param {
+        struct gatts_attr_table_removed_evt_param {
             uint16_t element_id;
             gatt_status_t status;
-        } stop;
+        } removed;
 
         /**
          * @brief GATTS_EVENT_CONNECT_CHANGE
@@ -91,19 +95,18 @@ typedef struct
             uint16_t element_id;
             uint32_t request_id;
             bt_address_t addr;
-            bool need_rsp;
             uint16_t offset;
             uint16_t length;
             uint8_t value[0];
         } write;
 
         /**
-         * @brief GATTS_EVENT_MTU
+         * @brief GATTS_EVENT_MTU_CHANGE
          */
         struct gatts_mtu_evt_param {
             bt_address_t addr;
             uint32_t mtu;
-        } mtu;
+        } mtu_change;
 
         /**
          * @brief GATTS_EVENT_CHANGE_SEND
@@ -113,6 +116,16 @@ typedef struct
             gatt_status_t status;
             bt_address_t addr;
         } change_send;
+
+        /**
+         * @brief GATTS_EVENT_PHY
+         */
+        struct gatts_phy_evt_param {
+            bt_address_t addr;
+            gatt_status_t status;
+            ble_phy_type_t tx_phy;
+            ble_phy_type_t rx_phy;
+        } phy;
 
     } param;
 
@@ -125,18 +138,19 @@ typedef struct
     union {
 
         /**
-         * @brief GATTS_REQ_START
+         * @brief GATTS_REQ_ADD_ATTR_TABLE
          */
         struct gatts_start_req_param {
             void *srv_handle;
-        } start;
+        } add;
 
         /**
-         * @brief GATTS_REQ_STOP
+         * @brief GATTS_REQ_REMOVE_ATTR_TABLE
          */
         struct gatts_stop_req_param {
             void *srv_handle;
-        } stop;
+            uint16_t attr_handle;
+        } remove;
 
         /**
          * @brief GATTS_REQ_CONNECT
@@ -158,9 +172,17 @@ typedef struct
          */
         struct gatts_notify_req_param {
             void *srv_handle;
-            gatt_change_type_t type;
             uint16_t attr_handle;
         } notify;
+
+        /**
+         * @brief GATTS_REQ_PHY
+         */
+        struct gatts_phy_req_param {
+            void *srv_handle;
+            ble_phy_type_t tx_phy;
+            ble_phy_type_t rx_phy;
+        } phy;
 
     } param;
 

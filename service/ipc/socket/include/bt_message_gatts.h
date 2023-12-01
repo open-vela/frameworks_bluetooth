@@ -20,12 +20,15 @@
     BT_GATT_SERVER_UNREGISTER_SERVICE,
     BT_GATT_SERVER_CONNECT,
     BT_GATT_SERVER_DISCONNECT,
-    BT_GATT_SERVER_CREATE_SERVICE_TABLE,
-    BT_GATT_SERVER_START,
-    BT_GATT_SERVER_STOP,
+    BT_GATT_SERVER_ADD_ATTR_TABLE,
+    BT_GATT_SERVER_REMOVE_ATTR_TABLE,
+    BT_GATT_SERVER_SET_ATTR_VALUE,
+    BT_GATT_SERVER_GET_ATTR_VALUE,
     BT_GATT_SERVER_RESPONSE,
     BT_GATT_SERVER_NOTIFY,
     BT_GATT_SERVER_INDICATE,
+    BT_GATT_SERVER_READ_PHY,
+    BT_GATT_SERVER_UPDATE_PHY,
     BT_GATT_SERVER_MESSAGE_END,
 #endif
 
@@ -33,12 +36,14 @@
     BT_GATT_SERVER_CALLBACK_START,
     BT_GATT_SERVER_ON_CONNECTED,
     BT_GATT_SERVER_ON_DISCONNECTED,
-    BT_GATT_SERVER_ON_STARTED,
-    BT_GATT_SERVER_ON_STOPPED,
+    BT_GATT_SERVER_ON_ATTR_TABLE_ADDED,
+    BT_GATT_SERVER_ON_ATTR_TABLE_REMOVED,
     BT_GATT_SERVER_ON_MTU_CHANGED,
     BT_GATT_SERVER_ON_READ_REQUEST,
     BT_GATT_SERVER_ON_WRITE_REQUEST,
     BT_GATT_SERVER_NOTIFY_COMPLETE,
+    BT_GATT_SERVER_ON_PHY_READ,
+    BT_GATT_SERVER_ON_PHY_UPDATED,
     BT_GATT_SERVER_CALLBACK_END,
 #endif
 
@@ -54,15 +59,19 @@
 
 typedef struct {
     bt_instance_t *ins;
-    gatts_callbacks_t *callback;
-    const gatt_srv_db_t *srv_db;
+    gatts_callbacks_t *callbacks;
     void *cookie;
+    bt_list_t *db_list;
 } bt_gatts_remote_t;
 
 typedef struct {
     bt_status_t status;
     union {
         gatts_handle_t handle;
+        struct {
+            uint16_t length;
+            uint8_t value[32];
+        };
     };
 } bt_gatts_result_t;
 
@@ -88,16 +97,29 @@ typedef union {
     struct {
         gatts_handle_t handle;
         int32_t attr_num;
-        gatt_attr_db_t attr_db[0];
-    } _bt_gatts_create_srv_tbl;
+        union {
+            uint8_t data[512];
+            gatt_attr_db_t attr_db[0];
+        };
+    } _bt_gatts_add_attr_table;
 
     struct {
         gatts_handle_t handle;
-    } _bt_gatts_start;
+        uint16_t attr_handle;
+    } _bt_gatts_remove_attr_table;
 
     struct {
         gatts_handle_t handle;
-    } _bt_gatts_stop;
+        uint16_t attr_handle;
+        uint16_t length;
+        uint8_t value[32];
+    } _bt_gatts_set_attr_value;
+
+    struct {
+        gatts_handle_t handle;
+        uint16_t attr_handle;
+        uint16_t length;
+    } _bt_gatts_get_attr_value;
 
     struct {
         gatts_handle_t handle;
@@ -112,6 +134,12 @@ typedef union {
         uint16_t length;
         uint8_t value[512];
     } _bt_gatts_notify;
+
+    struct {
+        gatts_handle_t handle;
+        ble_phy_type_t tx_phy;
+        ble_phy_type_t rx_phy;
+    } _bt_gatts_phy;
 
 } bt_message_gatts_t;
 
@@ -133,12 +161,14 @@ typedef union {
     struct {
         void *remote;
         gatt_status_t status;
-    } _on_started;
+        uint16_t attr_handle;
+    } _on_attr_table_added;
 
     struct {
         void *remote;
         gatt_status_t status;
-    } _on_stopped;
+        uint16_t attr_handle;
+    } _on_attr_table_removed;
 
     struct {
         void *remote;
@@ -165,6 +195,13 @@ typedef union {
         gatt_status_t status;
         uint16_t attr_handle;
     } _on_nofity_complete;
+
+    struct {
+        void *remote;
+        gatt_status_t status;
+        ble_phy_type_t tx_phy;
+        ble_phy_type_t rx_phy;
+    } _on_phy_updated;
 
 } bt_message_gatts_callbacks_t;
 

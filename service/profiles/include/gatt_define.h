@@ -75,11 +75,12 @@ typedef struct {
         /* gatt server content */
         struct {
             gatt_attr_rsp_t rsp_type;
-            void *user_data; /** user data array */
-            uint16_t data_length; /** user data length */
 
             attribute_read_cb_t read_cb;
             attribute_written_cb_t write_cb;
+
+            uint16_t attr_length; /** attr data length */
+            void *attr_data; /** attr data array */
         };
 
         /* gatt client content */

@@ -24,28 +24,52 @@
 #include "service_manager.h"
 #include "utils/log.h"
 
+static bt_gatts_remote_t *gatts_remote_new(bt_instance_t *ins, gatts_callbacks_t *callbacks)
+{
+    bt_gatts_remote_t *remote = malloc(sizeof(bt_gatts_remote_t));
+    if (!remote)
+        return NULL;
+
+    remote->db_list = bt_list_new(NULL);
+    if (!remote->db_list) {
+        free(remote);
+        return NULL;
+    }
+
+    remote->ins = ins;
+    remote->callbacks = callbacks;
+    remote->cookie = NULL;
+
+    return remote;
+}
+
+static void gatts_remote_destroy(bt_gatts_remote_t *remote)
+{
+    if (!remote)
+        return;
+
+    bt_list_free(remote->db_list);
+    free(remote);
+}
+
 bt_status_t bt_gatts_register_service(bt_instance_t *ins, gatts_handle_t *phandle, gatts_callbacks_t *callbacks)
 {
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gatts_remote_t *gatts_remote;
 
-    gatts_remote = (bt_gatts_remote_t *)malloc(sizeof(bt_gatts_remote_t));
+    gatts_remote = gatts_remote_new(ins, callbacks);
     if (!gatts_remote)
         return BT_STATUS_NOMEM;
-
-    gatts_remote->ins = ins;
-    gatts_remote->callback = callbacks;
-    gatts_remote->srv_db = NULL;
 
     packet.gatts_pl._bt_gatts_register.cookie = gatts_remote;
     status = bt_socket_client_sendrecv(ins, &packet, BT_GATT_SERVER_REGISTER_SERVICE);
     if (status != BT_STATUS_SUCCESS) {
-        free(gatts_remote);
+        gatts_remote_destroy(gatts_remote);
         return status;
     }
     if (packet.gatts_r.status != BT_STATUS_SUCCESS) {
-        free(gatts_remote);
+        gatts_remote_destroy(gatts_remote);
         return packet.gatts_r.status;
     }
 
@@ -69,7 +93,7 @@ bt_status_t bt_gatts_unregister_service(gatts_handle_t srv_handle)
         return packet.gatts_r.status;
     }
 
-    free(gatts_remote);
+    gatts_remote_destroy(gatts_remote);
     return BT_STATUS_SUCCESS;
 }
 
@@ -103,50 +127,108 @@ bt_status_t bt_gatts_disconnect(gatts_handle_t srv_handle)
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_create_service_table(gatts_handle_t srv_handle, gatt_srv_db_t *srv_db)
+bt_status_t bt_gatts_add_attr_table(gatts_handle_t srv_handle, gatt_srv_db_t *srv_db)
 {
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    uint8_t *raw_data = packet.gatts_pl._bt_gatts_add_attr_table.data;
+    uint32_t data_length = sizeof(gatt_attr_db_t) * srv_db->attr_num;
+    gatt_attr_db_t *attr_inst = srv_db->attr_db;
 
-    packet.gatts_pl._bt_gatts_create_srv_tbl.handle = gatts_remote->cookie;
-    packet.gatts_pl._bt_gatts_create_srv_tbl.attr_num = srv_db->attr_num;
-    memcpy(packet.gatts_pl._bt_gatts_create_srv_tbl.attr_db, srv_db->attr_db, sizeof(gatt_attr_db_t) * srv_db->attr_num);
-    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_CREATE_SERVICE_TABLE);
+    if (data_length > sizeof(packet.gatts_pl._bt_gatts_add_attr_table.data))
+        return BT_STATUS_PARM_INVALID;
+
+    memcpy(packet.gatts_pl._bt_gatts_add_attr_table.attr_db, attr_inst, data_length);
+    raw_data += data_length;
+    for (int i = 0; i < srv_db->attr_num; i++, attr_inst++) {
+        if (attr_inst->rsp_type == ATTR_AUTO_RSP && attr_inst->attr_length) {
+            memcpy(raw_data, attr_inst->attr_value, attr_inst->attr_length);
+            raw_data += attr_inst->attr_length;
+            data_length += attr_inst->attr_length;
+        }
+
+        if (data_length > sizeof(packet.gatts_pl._bt_gatts_add_attr_table.data))
+            return BT_STATUS_PARM_INVALID;
+    }
+
+    packet.gatts_pl._bt_gatts_add_attr_table.handle = gatts_remote->cookie;
+    packet.gatts_pl._bt_gatts_add_attr_table.attr_num = srv_db->attr_num;
+    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_ADD_ATTR_TABLE);
     if (status != BT_STATUS_SUCCESS)
         return status;
 
     if (packet.gatts_r.status == BT_STATUS_SUCCESS) {
-        gatts_remote->srv_db = srv_db;
+        bt_list_add_tail(gatts_remote->db_list, srv_db);
     }
 
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_start(gatts_handle_t srv_handle)
+bt_status_t bt_gatts_remove_attr_table(gatts_handle_t srv_handle, uint16_t attr_handle)
 {
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
 
-    packet.gatts_pl._bt_gatts_start.handle = gatts_remote->cookie;
-    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_START);
+    packet.gatts_pl._bt_gatts_remove_attr_table.handle = gatts_remote->cookie;
+    packet.gatts_pl._bt_gatts_remove_attr_table.attr_handle = attr_handle;
+    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_REMOVE_ATTR_TABLE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    if (packet.gatts_r.status == BT_STATUS_SUCCESS) {
+        bt_list_node_t *node;
+        bt_list_t *list = gatts_remote->db_list;
+        for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+            gatt_srv_db_t *srv_db = (gatt_srv_db_t *)bt_list_node(node);
+            if (srv_db->attr_db->handle == attr_handle) {
+                bt_list_remove(gatts_remote->db_list, srv_db);
+                break;
+            }
+        }
+    }
+
+    return packet.gatts_r.status;
+}
+
+bt_status_t bt_gatts_set_attr_value(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+
+    if (length > sizeof(packet.gatts_pl._bt_gatts_set_attr_value.value))
+        return BT_STATUS_PARM_INVALID;
+
+    packet.gatts_pl._bt_gatts_set_attr_value.handle = gatts_remote->cookie;
+    packet.gatts_pl._bt_gatts_set_attr_value.attr_handle = attr_handle;
+    packet.gatts_pl._bt_gatts_set_attr_value.length = length;
+    memcpy(packet.gatts_pl._bt_gatts_set_attr_value.value, value, length);
+    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_SET_ATTR_VALUE);
     if (status != BT_STATUS_SUCCESS)
         return status;
 
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_stop(gatts_handle_t srv_handle)
+bt_status_t bt_gatts_get_attr_value(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t *length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
 
-    packet.gatts_pl._bt_gatts_stop.handle = gatts_remote->cookie;
-    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_STOP);
+    packet.gatts_pl._bt_gatts_get_attr_value.handle = gatts_remote->cookie;
+    packet.gatts_pl._bt_gatts_get_attr_value.attr_handle = attr_handle;
+    packet.gatts_pl._bt_gatts_get_attr_value.length = *length;
+    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_GET_ATTR_VALUE);
     if (status != BT_STATUS_SUCCESS)
         return status;
+
+    if (packet.gatts_r.status == BT_STATUS_SUCCESS) {
+        *length = packet.gatts_r.length;
+        memcpy(value, packet.gatts_r.value, *length);
+    }
 
     return packet.gatts_r.status;
 }
@@ -205,6 +287,36 @@ bt_status_t bt_gatts_indicate(gatts_handle_t srv_handle, uint16_t attr_handle, u
     packet.gatts_pl._bt_gatts_notify.length = length;
     memcpy(packet.gatts_pl._bt_gatts_notify.value, value, length);
     status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_INDICATE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gatts_r.status;
+}
+
+bt_status_t bt_gatts_read_phy(gatts_handle_t srv_handle)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+
+    packet.gatts_pl._bt_gatts_phy.handle = gatts_remote->cookie;
+    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_READ_PHY);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gatts_r.status;
+}
+
+bt_status_t bt_gatts_update_phy(gatts_handle_t srv_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+
+    packet.gatts_pl._bt_gatts_phy.handle = gatts_remote->cookie;
+    packet.gatts_pl._bt_gatts_phy.tx_phy = tx_phy;
+    packet.gatts_pl._bt_gatts_phy.rx_phy = rx_phy;
+    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_UPDATE_PHY);
     if (status != BT_STATUS_SUCCESS)
         return status;
 

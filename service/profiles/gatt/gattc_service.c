@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#define LOG_TAG "gattc "
+#define LOG_TAG "gattc"
 /****************************************************************************
  * Included Files
  ****************************************************************************/
@@ -72,8 +72,8 @@ typedef struct
     bt_uuid_t *uuid;
     uint16_t start_handle;
     uint16_t end_handle;
-    gatt_element_t *elements;
     int element_size;
+    gatt_element_t *elements;
 
 } gattc_service_t;
 

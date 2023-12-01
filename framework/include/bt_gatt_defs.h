@@ -76,8 +76,8 @@ typedef enum {
         .rsp_type = _rsp,                                                                           \
         .read_cb = _read,                                                                           \
         .write_cb = _write,                                                                         \
-        .attr_value = _value,                                                                       \
-        .attr_length = _length                                                                      \
+        .attr_length = _length,                                                                     \
+        .attr_value = _value                                                                        \
     }
 
 /* GATT_H_PRIMARY_SERVICE */
@@ -89,8 +89,8 @@ typedef enum {
     GATT_H_ATTRIBUTE(_service, GATT_SECONDARY_SERVICE, 0, GATT_PERM_READ, ATTR_AUTO_RSP, NULL, NULL, NULL, 0, _handle)
 
 /* GATT_H_INCLUDE_SERVICE */
-#define GATT_H_INCLUDE_SERVICE(_service) \
-    GATT_H_ATTRIBUTE(_service, GATT_INCLUDED_SERVICE, 0, GATT_PERM_READ, ATTR_AUTO_RSP, NULL, NULL, NULL, 0, 0)
+#define GATT_H_INCLUDE_SERVICE(_service, _handle) \
+    GATT_H_ATTRIBUTE(_service, GATT_INCLUDED_SERVICE, 0, GATT_PERM_READ, ATTR_AUTO_RSP, NULL, NULL, NULL, 0, _handle)
 
 /* GATT_H_PRIMARY_SERVICE_OVER_BREDR */
 #define GATT_H_PRIMARY_SERVICE_OVER_BREDR(_service, _handle) \
