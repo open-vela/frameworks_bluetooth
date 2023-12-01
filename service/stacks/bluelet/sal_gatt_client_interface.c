@@ -86,17 +86,23 @@ static void gattc_element_changed_callback(BD_ADDR remote_addr, SERVICE_GATT_ELE
 
 static void gattc_remote_rssi_read_callback(BD_ADDR remote_addr, int32_t rssi, SERVICE_GATT_STATUS status)
 {
-    // TODO
+    bt_address_t addr;
+    memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
+    if_gattc_on_rssi_read(&addr, rssi, bluelet_gatt_status(status));
 }
 
 static void gattc_phy_read_callback(BD_ADDR remote_addr, SERVICE_BLE_PHY_TYPE tx_phy, SERVICE_BLE_PHY_TYPE rx_phy)
 {
-    // TODO
+    bt_address_t addr;
+    memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
+    if_gattc_on_phy_read(&addr, tx_phy, rx_phy);
 }
 
 static void gattc_phy_update_callback(BD_ADDR remote_addr, SERVICE_BLE_PHY_TYPE tx_phy, SERVICE_BLE_PHY_TYPE rx_phy, SERVICE_GATT_STATUS status)
 {
-    // TODO
+    bt_address_t addr;
+    memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
+    if_gattc_on_phy_updated(&addr, tx_phy, rx_phy, bluelet_gatt_status(status));
 }
 
 static void gattc_mtu_changed_callback(BD_ADDR remote_addr, uint32_t mtu, SERVICE_GATT_STATUS status)

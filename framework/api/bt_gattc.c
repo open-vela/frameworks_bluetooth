@@ -127,3 +127,24 @@ bt_status_t BTSYMBOLS(bt_gattc_update_connection_parameter)(gattc_handle_t conn_
     return profile->update_connection_parameter(conn_handle, min_interval, max_interval, latency,
                                                 timeout, min_connection_event_length, max_connection_event_length);
 }
+
+bt_status_t BTSYMBOLS(bt_gattc_read_phy)(gattc_handle_t conn_handle)
+{
+    gattc_interface_t *profile = get_profile_service();
+
+    return profile->read_phy(conn_handle);
+}
+
+bt_status_t BTSYMBOLS(bt_gattc_update_phy)(gattc_handle_t conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+{
+    gattc_interface_t *profile = get_profile_service();
+
+    return profile->update_phy(conn_handle, tx_phy, rx_phy);
+}
+
+bt_status_t BTSYMBOLS(bt_gattc_read_rssi)(gattc_handle_t conn_handle)
+{
+    gattc_interface_t *profile = get_profile_service();
+
+    return profile->read_rssi(conn_handle);
+}

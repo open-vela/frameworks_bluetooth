@@ -42,6 +42,9 @@ void if_gattc_on_element_read(bt_address_t *addr, uint16_t element_id, uint8_t *
 void if_gattc_on_element_written(bt_address_t *addr, uint16_t element_id, gatt_status_t status);
 void if_gattc_on_element_changed(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length);
 void if_gattc_on_mtu_changed(bt_address_t *addr, uint32_t mtu, gatt_status_t status);
+void if_gattc_on_phy_read(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
+void if_gattc_on_phy_updated(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, gatt_status_t status);
+void if_gattc_on_rssi_read(bt_address_t *addr, int32_t rssi, gatt_status_t status);
 
 /*
  * gattc remote
@@ -65,6 +68,9 @@ typedef struct gattc_interface {
     bt_status_t (*exchange_mtu)(void *conn_handle, uint32_t mtu);
     bt_status_t (*update_connection_parameter)(void *conn_handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
                                                uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length);
+    bt_status_t (*read_phy)(void *conn_handle);
+    bt_status_t (*update_phy)(void *conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
+    bt_status_t (*read_rssi)(void *conn_handle);
 } gattc_interface_t;
 
 /*
