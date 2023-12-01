@@ -26,6 +26,7 @@
   BT_DEVICE_GET_RSSI,
   BT_DEVICE_GET_ALIAS,
   BT_DEVICE_SET_ALIAS,
+  BT_DEVICE_GET_ACL_HANDLE,
   BT_DEVICE_IS_CONNECTED,
   BT_DEVICE_IS_ENCRYPTED,
   BT_DEVICE_IS_BOND_INITIATE_LOCAL,
@@ -83,16 +84,12 @@ typedef union
     _bt_device_get_device_class,
     _bt_device_get_appearance,
     _bt_device_get_rssi,
-    _bt_device_is_connected,
-    _bt_device_is_encrypted,
-    _bt_device_is_bond_initiate_local,
-    _bt_device_get_bond_state,
-    _bt_device_is_bonded,
     _bt_device_cancel_bond,
     _bt_device_connect,
     _bt_device_disconnect,
     _bt_device_disconnect_le,
-    _bt_device_addr;
+    _bt_device_addr,
+    _bt_device_get_acl_handle;
 
   struct {
     bt_address_t addr;
@@ -120,12 +117,13 @@ typedef union
   struct {
     bt_address_t addr;
     bt_transport_t transport;
-  } _bt_device_create_bond;
-
-  struct {
-    bt_address_t addr;
-    bt_transport_t transport;
-  } _bt_device_remove_bond;
+  } _bt_device_create_bond,
+    _bt_device_remove_bond,
+    _bt_device_is_connected,
+    _bt_device_is_encrypted,
+    _bt_device_is_bond_initiate_local,
+    _bt_device_get_bond_state,
+    _bt_device_is_bonded;
 
   struct {
     bt_address_t addr;

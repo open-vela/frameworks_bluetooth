@@ -212,6 +212,7 @@ static void pair_authentication_request(SERVICE_SSP_REQUEST_DATA_S *request_data
     bt_address_t addr;
     bt_pair_type_t type;
 
+    BT_LOGD("%s", __func__);
     memcpy(addr.addr, request_data->remote_addr, 6);
     switch (request_data->ssp_type) {
     case GAP_SPP_TYPE_PASSKEY_CONFIRMATION:
@@ -369,7 +370,7 @@ static void service_discovered_callback(BD_ADDR remote_addr, SERVICE_BR_SERVICE_
 static void link_encryption_state_callback(BD_ADDR remote_addr, bool br_link, bool encryption_on)
 {
     bt_address_t addr;
-
+    BT_LOGD("%s isBRLink: %d, encrypted: %d", __func__, br_link, encryption_on);
     memcpy(addr.addr, remote_addr, 6);
     adapter_on_encryption_state_changed(&addr, encryption_on,
                                         br_link ? BT_TRANSPORT_BREDR : BT_TRANSPORT_BLE);
@@ -381,9 +382,38 @@ static void smp_request_callback(SERVICE_SSP_REQUEST_DATA_S *request_data)
 }
 
 static void update_ble_bonded_devices_callback(SERVICE_BLE_KEYS_S *bonded_device_list,
-                                               uint8_t count_in) { DEBUG_IMPL }
-static void ble_add_white_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status) { DEBUG_IMPL }
-static void ble_remove_white_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status) { DEBUG_IMPL }
+                                               uint8_t count_in)
+{
+    remote_device_le_properties_t *props = malloc(sizeof(remote_device_le_properties_t) * count_in);
+
+    remote_device_le_properties_t *prop = props;
+    for (int i = 0; i < count_in; i++) {
+        memcpy(prop->addr.addr, bonded_device_list->bd_addr, sizeof(prop->addr.addr));
+        prop->addr_type = bonded_device_list->addr_type;
+        memcpy(prop->smp_key, bonded_device_list->smp_keys, sizeof(bonded_device_list->smp_keys));
+        prop++;
+        bonded_device_list++;
+    }
+
+    adapter_on_le_bonded_device_update(props, count_in);
+    free(props);
+}
+
+static void ble_add_white_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status)
+{
+    bt_address_t addr;
+
+    memcpy(addr.addr, remote_addr, 6);
+    adapter_on_whitelist_update(&addr, true, sal_status_translate(status));
+}
+
+static void ble_remove_white_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status)
+{
+    bt_address_t addr;
+
+    memcpy(addr.addr, remote_addr, 6);
+    adapter_on_whitelist_update(&addr, false, sal_status_translate(status));
+}
 static void ble_add_resolving_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status) { DEBUG_IMPL }
 static void ble_remove_resolving_list_callback(BD_ADDR remote_addr,
                                                SERVICE_BT_STATUS status) { DEBUG_IMPL }
@@ -1044,7 +1074,7 @@ bt_status_t bt_sal_ssp_get_local_oob_data(void)
 #endif
 }
 
-void bluelet_set_remote_property(remote_device_properties_t *prop,
+static void bluelet_set_remote_property(remote_device_properties_t *prop,
                                  SERVICE_REMOTE_DEVICE_S *remote)
 {
     /* address */
@@ -1095,6 +1125,28 @@ bt_status_t bt_sal_set_bonded_devices(remote_device_properties_t *prop)
     remote.device_type = prop->device_type;
 
     SAL_CHECK_RET(service_adapter_gap_set_bonded_device(&remote), SERVICE_BT_STATUS_SUCCESS);
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
+bt_status_t bt_sal_le_set_bonded_devices(remote_device_le_properties_t *props, uint16_t prop_cnt)
+{
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+    SAL_CHECK_PARAM(props);
+    SERVICE_BLE_KEYS_S *devices = malloc(sizeof(SERVICE_BLE_KEYS_S) * prop_cnt);
+
+    SERVICE_BLE_KEYS_S *remote = devices;
+    for (int i = 0; i < prop_cnt; i++) {
+        memcpy(remote->smp_keys, props->smp_key, sizeof(remote->smp_keys));
+        props++;
+        remote++;
+    }
+
+    service_adapter_gap_ble_set_bonded_devices(devices, prop_cnt);
+    free(devices);
+
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
@@ -1490,12 +1542,6 @@ bt_status_t bt_sal_le_get_address(void)
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
-}
-
-bt_status_t bt_sal_le_set_bonded_devices(void)
-{
-    // SERVICE_BT_STATUS ret = service_adapter_gap_ble_set_bonded_devices((SERVICE_BLE_KEYS_S*)bonded_device_list, count_in);
-    return BT_STATUS_NOT_SUPPORTED;
 }
 
 bt_status_t bt_sal_le_connect(bt_address_t *addr,

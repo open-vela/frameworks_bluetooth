@@ -201,12 +201,12 @@ uint16_t bt_adapter_get_le_appearance(bt_instance_t *ins)
     return BpBtAdapter_getLeAppearance((BpBtAdapter *)ins->adapter_proxy);
 }
 
-bt_status_t bt_adapter_get_bonded_devices(bt_instance_t *ins, bt_address_t **addr, int *num, bt_allocator_t allocator)
+bt_status_t bt_adapter_get_bonded_devices(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator)
 {
     return BpBtAdapter_getBondedDevices((BpBtAdapter *)ins->adapter_proxy, addr, num, allocator);
 }
 
-bt_status_t bt_adapter_get_connected_devices(bt_instance_t *ins, bt_address_t **addr, int *num, bt_allocator_t allocator)
+bt_status_t bt_adapter_get_connected_devices(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator)
 {
     return BpBtAdapter_getConnectedDevices((BpBtAdapter *)ins->adapter_proxy, addr, num, allocator);
 }

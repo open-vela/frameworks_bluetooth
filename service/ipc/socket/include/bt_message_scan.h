@@ -18,6 +18,7 @@
   BT_SCAN_MESSAGE_START,
   BT_LE_SCAN_START,
   BT_LE_SCAN_START_SETTINGS,
+  BT_LE_SCAN_START_WITH_FILTERS,
   BT_LE_SCAN_STOP,
   BT_LE_SCAN_IS_SUPPORT,
   BT_SCAN_MESSAGE_END,
@@ -64,6 +65,13 @@ typedef union
   } _bt_le_start_scan,
     _bt_le_stop_scan,
     _bt_le_start_scan_settings;
+
+    struct {
+    uint32_t remote;
+    ble_scan_settings_t settings;
+    uint8_t filter_data[256];
+    uint16_t filter_length;
+  } _bt_le_start_scan_with_filters;
 } bt_message_scan_t;
 
 typedef struct

@@ -18,6 +18,17 @@
 
 #include "bluetooth_define.h"
 #include "bt_list.h"
+
+enum device_flags {
+    DFLAG_NAME_SET = 0x00000001,
+    DFLAG_ALIAS_SET = 0x00000002,
+    DFLAG_LINKKEY_SET = 0x00000004,
+    DFLAG_WHITELIST_ADDED = 0x00000008,
+    DFLAG_CONNECTED = 0x00000016,
+    DFLAG_BONDED = 0x00000032,
+    DFLAG_LE_KEY_SET = 0x00000064,
+};
+
 typedef struct bt_device bt_device_t;
 
 bt_device_t *br_device_create(bt_address_t *addr);
@@ -28,6 +39,7 @@ bt_address_t *device_get_address(bt_device_t *device);
 bt_address_t *device_get_identity_address(bt_device_t *device);
 void device_set_identity_address(bt_device_t *device, bt_address_t *addr);
 ble_addr_type_t device_get_address_type(bt_device_t *device);
+void device_set_address_type(bt_device_t *device, ble_addr_type_t type);
 void device_set_device_type(bt_device_t *device, bt_device_type_t type);
 bt_device_type_t device_get_device_type(bt_device_t *device);
 const char *device_get_name(bt_device_t *device);
@@ -62,6 +74,13 @@ void device_set_link_key_type(bt_device_t *device, bt_link_key_type_t type);
 void device_set_le_phy(bt_device_t *device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 void device_get_le_phy(bt_device_t *device, ble_phy_type_t *tx_phy, ble_phy_type_t *rx_phy);
 void device_get_property(bt_device_t *device, remote_device_properties_t *prop);
+void device_set_flags(bt_device_t *device, uint32_t flags);
+void device_clear_flag(bt_device_t *device, uint32_t flag);
+bool device_check_flag(bt_device_t *device, uint32_t flag);
+uint8_t *device_get_smp_key(bt_device_t *device);
+void device_set_smp_key(bt_device_t *device, uint8_t *smp_key);
+void device_delete_smp_key(bt_device_t *device);
+void device_get_le_property(bt_device_t *device, remote_device_le_properties_t *prop);
 void device_dump(bt_device_t *device);
 
 #endif /* __REMOTE_DEVICE_H__ */

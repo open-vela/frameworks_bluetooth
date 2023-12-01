@@ -186,62 +186,76 @@ bt_status_t bt_device_set_alias(bt_instance_t *ins, bt_address_t *addr, const ch
   return packet.devs_r.status;
 }
 
-bool bt_device_is_connected(bt_instance_t *ins, bt_address_t *addr)
+bool bt_device_is_connected(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport)
 {
   bt_message_packet_t packet;
   bt_status_t status;
 
+  packet.devs_pl._bt_device_is_connected.transport = transport;
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_IS_CONNECTED);
   if (status != BT_STATUS_SUCCESS)
   {
-    return status;
+    return false;
   }
 
   return packet.devs_r.bbool;
 }
 
-bool bt_device_is_encrypted(bt_instance_t *ins, bt_address_t *addr)
+bool bt_device_is_encrypted(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport)
 {
   bt_message_packet_t packet;
   bt_status_t status;
 
+  packet.devs_pl._bt_device_is_encrypted.transport = transport;
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_IS_ENCRYPTED);
   if (status != BT_STATUS_SUCCESS)
   {
-    return status;
+    return false;
   }
 
   return packet.devs_r.bbool;
 }
 
-bool bt_device_is_bond_initiate_local(bt_instance_t *ins, bt_address_t *addr)
+bool bt_device_is_bond_initiate_local(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport)
 {
   bt_message_packet_t packet;
   bt_status_t status;
 
+  packet.devs_pl._bt_device_is_bond_initiate_local.transport = transport;
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_IS_BOND_INITIATE_LOCAL);
   if (status != BT_STATUS_SUCCESS)
   {
-    return status;
+    return false;
   }
 
   return packet.devs_r.bbool;
 }
 
-bond_state_t bt_device_get_bond_state(bt_instance_t *ins, bt_address_t *addr)
-{
-  return BOND_STATE_NONE;
-}
-
-bool bt_device_is_bonded(bt_instance_t *ins, bt_address_t *addr)
+bond_state_t bt_device_get_bond_state(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport)
 {
   bt_message_packet_t packet;
   bt_status_t status;
 
+  packet.devs_pl._bt_device_get_bond_state.transport = transport;
+  status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_BOND_STATE);
+  if (status != BT_STATUS_SUCCESS)
+  {
+    return BOND_STATE_NONE;
+  }
+
+  return packet.devs_r.bstate;
+}
+
+bool bt_device_is_bonded(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport)
+{
+  bt_message_packet_t packet;
+  bt_status_t status;
+
+  packet.devs_pl._bt_device_is_bonded.transport = transport;
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_IS_BONDED);
   if (status != BT_STATUS_SUCCESS)
   {
-    return status;
+    return false;
   }
 
   return packet.devs_r.bbool;
@@ -448,4 +462,18 @@ bt_status_t bt_device_set_pass_key(bt_instance_t *ins, bt_address_t *addr, uint8
   }
 
   return packet.devs_r.status;
+}
+
+uint16_t bt_device_get_acl_handle(bt_instance_t *ins, bt_address_t *addr)
+{
+  bt_message_packet_t packet;
+  bt_status_t status;
+
+  status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_ACL_HANDLE);
+  if (status != BT_STATUS_SUCCESS)
+  {
+    return 0;
+  }
+
+  return packet.devs_r.v16;
 }

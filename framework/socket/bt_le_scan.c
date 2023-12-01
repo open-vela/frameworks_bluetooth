@@ -73,6 +73,39 @@ bt_scanner_t *bt_le_start_scan_settings(bt_instance_t *ins,
     return scan;
 }
 
+bt_scanner_t *bt_le_start_scan_with_filters(bt_instance_t *ins,
+                                        ble_scan_settings_t *settings,
+                                        uint8_t *filter_data,
+                                        uint16_t filter_length,
+                                        const scanner_callbacks_t *cbs)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    bt_scan_remote_t *scan = malloc(sizeof(*scan));
+    if (scan == NULL)
+        return NULL;
+
+    scan->callback = (scanner_callbacks_t *)cbs;
+    packet.scan_pl._bt_le_start_scan_with_filters.remote = (uint32_t)scan;
+    if (settings)
+        memcpy(&packet.scan_pl._bt_le_start_scan_with_filters.settings, settings, sizeof(*settings));
+
+    if (filter_data) {
+        memcpy(&packet.scan_pl._bt_le_start_scan_with_filters.filter_data, filter_data, filter_length);
+        packet.scan_pl._bt_le_start_scan_with_filters.filter_length = filter_length;
+    }
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_START_WITH_FILTERS);
+    if (status != BT_STATUS_SUCCESS || !packet.scan_r.remote) {
+        free(scan);
+        return NULL;
+    }
+
+    scan->remote = packet.scan_r.remote;
+    return scan;
+}
+
 void bt_le_stop_scan(bt_instance_t *ins, bt_scanner_t *scanner)
 {
     bt_message_packet_t packet;

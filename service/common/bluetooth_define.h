@@ -66,6 +66,13 @@ typedef struct {
 } remote_device_properties_t;
 
 typedef struct {
+    bt_address_t addr;
+    ble_addr_type_t addr_type;
+    uint8_t smp_key[80];
+    bt_device_type_t device_type;
+} remote_device_le_properties_t;
+
+typedef struct {
     char name[BT_LOC_NAME_MAX_LEN + 1];
     uint32_t class_of_device;
     uint32_t io_capability;
