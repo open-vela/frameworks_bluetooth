@@ -118,7 +118,7 @@ bt_status_t bt_sal_le_set_remote_irk(bt_address_t *addr, ble_addr_type_t type, b
 bt_status_t bt_sal_le_get_current_irk(void);
 bt_status_t bt_sal_le_set_address(bt_address_t *addr);
 bt_status_t bt_sal_le_get_address(void);
-bt_status_t bt_sal_le_set_bonded_devices(void);
+bt_status_t bt_sal_le_set_bonded_devices(remote_device_le_properties_t *props, uint16_t prop_cnt);
 bt_status_t bt_sal_le_connect(bt_address_t *addr,
                               ble_addr_type_t type,
                               ble_connect_params_t *params);

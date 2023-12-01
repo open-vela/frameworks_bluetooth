@@ -495,11 +495,60 @@ uint16_t bt_adapter_get_le_appearance(bt_instance_t *ins)
   return packet.adpt_r.v16;
 }
 
-bt_status_t bt_adapter_get_bonded_devices(bt_instance_t *ins, bt_address_t **addr, int *num, bt_allocator_t allocator)
+bt_status_t bt_adapter_le_enable_key_derivation(bt_instance_t *ins,
+                                                            bool brkey_to_lekey,
+                                                            bool lekey_to_brkey)
 {
   bt_message_packet_t packet;
   bt_status_t status;
 
+  packet.adpt_pl._bt_adapter_le_enable_key_derivation.brkey_to_lekey = brkey_to_lekey;
+  packet.adpt_pl._bt_adapter_le_enable_key_derivation.lekey_to_brkey = lekey_to_brkey;
+  status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_LE_ENABLE_KEY_DERIVATION);
+  if (status != BT_STATUS_SUCCESS)
+    {
+      return status;
+    }
+
+  return packet.adpt_r.status;
+}
+
+bt_status_t bt_adapter_le_add_whitelist(bt_instance_t *ins, bt_address_t *addr)
+{
+  bt_message_packet_t packet;
+  bt_status_t status;
+
+  memcpy(&packet.adpt_pl._bt_adapter_le_add_whitelist.addr, addr, sizeof(*addr));
+  status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_LE_ADD_WHITELIST);
+  if (status != BT_STATUS_SUCCESS)
+    {
+      return status;
+    }
+
+  return packet.adpt_r.status;
+}
+
+bt_status_t bt_adapter_le_remove_whitelist(bt_instance_t *ins, bt_address_t *addr)
+{
+  bt_message_packet_t packet;
+  bt_status_t status;
+
+  memcpy(&packet.adpt_pl._bt_adapter_le_remove_whitelist.addr, addr, sizeof(*addr));
+  status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_LE_REMOVE_WHITELIST);
+  if (status != BT_STATUS_SUCCESS)
+    {
+      return status;
+    }
+
+  return packet.adpt_r.status;
+}
+
+bt_status_t bt_adapter_get_bonded_devices(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator)
+{
+  bt_message_packet_t packet;
+  bt_status_t status;
+
+  packet.adpt_pl._bt_adapter_get_bonded_devices.transport = transport;
   status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_BONDED_DEVICES);
   if (status != BT_STATUS_SUCCESS)
     {
@@ -510,7 +559,7 @@ bt_status_t bt_adapter_get_bonded_devices(bt_instance_t *ins, bt_address_t **add
 
   if (*num > 0)
     {
-      *addr = malloc(sizeof(bt_address_t) * *num);
+      *addr = allocator(sizeof(bt_address_t) * *num);
       if (*addr == NULL)
         return BT_STATUS_NOMEM;
       memcpy(*addr, packet.adpt_pl._bt_adapter_get_bonded_devices.addr,
@@ -520,11 +569,12 @@ bt_status_t bt_adapter_get_bonded_devices(bt_instance_t *ins, bt_address_t **add
   return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_get_connected_devices(bt_instance_t *ins, bt_address_t **addr, int *num, bt_allocator_t allocator)
+bt_status_t bt_adapter_get_connected_devices(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator)
 {
   bt_message_packet_t packet;
   bt_status_t status;
 
+  packet.adpt_pl._bt_adapter_get_connected_devices.transport = transport;
   status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_CONNECTED_DEVICES);
   if (status != BT_STATUS_SUCCESS)
     {
@@ -535,7 +585,7 @@ bt_status_t bt_adapter_get_connected_devices(bt_instance_t *ins, bt_address_t **
 
   if (*num > 0)
     {
-      *addr = malloc(sizeof(bt_address_t) * *num);
+      *addr = allocator(sizeof(bt_address_t) * *num);
       if (*addr == NULL)
         return BT_STATUS_NOMEM;
       memcpy(*addr, packet.adpt_pl._bt_adapter_get_connected_devices.addr,

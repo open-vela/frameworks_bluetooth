@@ -21,6 +21,7 @@
 #include "bt_addr.h"
 #include "bt_status.h"
 #include "avrcp_control_service.h"
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
 
 #include "avrcp_msg.h"
 
@@ -38,5 +39,5 @@ bt_status_t bt_sal_avrcp_control_register_notification(bt_address_t *bd_addr,
                                                        avrcp_notification_event_t event,
                                                        uint32_t interval);
 void bt_sal_avrcp_control_event_callback(avrcp_msg_t *msg);
-
+#endif
 #endif /* __SAL_AVRCP_CONTROL_INTERFACE_H__ */

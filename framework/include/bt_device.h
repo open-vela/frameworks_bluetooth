@@ -156,7 +156,7 @@ bt_status_t BTSYMBOLS(bt_device_set_alias)(bt_instance_t *ins, bt_address_t *add
  * @return true - connected.
  * @return false - not connected.
  */
-bool BTSYMBOLS(bt_device_is_connected)(bt_instance_t *ins, bt_address_t *addr);
+bool BTSYMBOLS(bt_device_is_connected)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport);
 
 /**
  * @brief Check remote deivce is encrypted
@@ -166,7 +166,7 @@ bool BTSYMBOLS(bt_device_is_connected)(bt_instance_t *ins, bt_address_t *addr);
  * @return true - encrypted
  * @return false - not encrypted
  */
-bool BTSYMBOLS(bt_device_is_encrypted)(bt_instance_t *ins, bt_address_t *addr);
+bool BTSYMBOLS(bt_device_is_encrypted)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport);
 
 /**
  * @brief Check is bond initiate from local
@@ -176,7 +176,7 @@ bool BTSYMBOLS(bt_device_is_encrypted)(bt_instance_t *ins, bt_address_t *addr);
  * @return true - initiate from local.
  * @return false - initiate from remote.
  */
-bool BTSYMBOLS(bt_device_is_bond_initiate_local)(bt_instance_t *ins, bt_address_t *addr);
+bool BTSYMBOLS(bt_device_is_bond_initiate_local)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport);
 
 /**
  * @brief Get remote device bond state
@@ -185,7 +185,7 @@ bool BTSYMBOLS(bt_device_is_bond_initiate_local)(bt_instance_t *ins, bt_address_
  * @param addr - remote device address.
  * @return bond_state_t - bond state.
  */
-bond_state_t BTSYMBOLS(bt_device_get_bond_state)(bt_instance_t *ins, bt_address_t *addr);
+bond_state_t BTSYMBOLS(bt_device_get_bond_state)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport);
 
 /**
  * @brief Check remote device is bonded
@@ -195,7 +195,7 @@ bond_state_t BTSYMBOLS(bt_device_get_bond_state)(bt_instance_t *ins, bt_address_
  * @return true - bonded
  * @return false - not bonded
  */
-bool BTSYMBOLS(bt_device_is_bonded)(bt_instance_t *ins, bt_address_t *addr);
+bool BTSYMBOLS(bt_device_is_bonded)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport);
 
 /**
  * @brief Initiate bond to remote device
@@ -338,6 +338,8 @@ void BTSYMBOLS(bt_device_connect_all_profile)(bt_instance_t *ins, bt_address_t *
  * @param ins - bluetooth client instance.
  */
 void BTSYMBOLS(bt_device_disconnect_all_profile)(bt_instance_t *ins, bt_address_t *addr);
+
+uint16_t BTSYMBOLS(bt_device_get_acl_handle)(bt_instance_t *ins, bt_address_t *addr);
 #ifdef __cplusplus
 }
 #endif
