@@ -21,8 +21,8 @@
 #ifdef __NuttX__
 #include <system/readline.h>
 #else
-#include <readline/readline.h>
 #include <readline/history.h>
+#include <readline/readline.h>
 #endif
 
 #include "bluetooth.h"
@@ -236,16 +236,16 @@ static bt_command_t g_set_cmd_tables[] = {
 };
 
 static bt_command_t g_get_cmd_tables[] = {
-    {"scanmode",    get_scanmode_cmd,          0, "get adapter scan mode"            },
-    { "iocap",      get_iocap_cmd,             0, "get adapter io capability"        },
-    { "addr",       get_local_addr_cmd,        0, "get adapter local addr"           },
-    { "leaddr",     get_le_addr_cmd,           0, "get ble adapter addr"             },
-    { "name",       get_local_name_cmd,        0, "get adapter local name"           },
-    { "appearance", get_appearance_cmd,        0, "get le adapter appearance"        },
-    { "class",      get_local_cod_cmd,         0, "get adapter local class of device"},
-    { "bonded",     get_bonded_devices_cmd,    0, "get bonded devices"               },
-    { "connected",  get_connected_devices_cmd, 0, "get connected devices"            },
-    { "help",       NULL,                      0, "show get help info"               },
+    {"scanmode",    get_scanmode_cmd,          0, "get adapter scan mode"                                   },
+    { "iocap",      get_iocap_cmd,             0, "get adapter io capability"                               },
+    { "addr",       get_local_addr_cmd,        0, "get adapter local addr"                                  },
+    { "leaddr",     get_le_addr_cmd,           0, "get ble adapter addr"                                    },
+    { "name",       get_local_name_cmd,        0, "get adapter local name"                                  },
+    { "appearance", get_appearance_cmd,        0, "get le adapter appearance"                               },
+    { "class",      get_local_cod_cmd,         0, "get adapter local class of device"                       },
+    { "bonded",     get_bonded_devices_cmd,    0, "get bonded devices, params:<transport>(0:BLE, 1:BREDR)"  },
+    { "connected",  get_connected_devices_cmd, 0, "get connected devices params:<transport>(0:BLE, 1:BREDR)"},
+    { "help",       NULL,                      0, "show get help info"                                      },
  //{ "", , "get " },
 };
 
@@ -1113,7 +1113,7 @@ static const char *bond_state_to_string(bond_state_t state)
     }
 }
 
-static void device_dump(void *handle, bt_address_t *addr)
+static void device_dump(void *handle, bt_address_t *addr, bt_transport_t transport)
 {
     char uuid_str[40] = { 0 };
     char name[64] = { 0 };
@@ -1123,26 +1123,36 @@ static void device_dump(void *handle, bt_address_t *addr)
 
     bt_addr_ba2str(addr, addr_str);
     PRINT("device [%s]", addr_str);
-    bt_device_get_name(handle, addr, name, 64);
-    PRINT("\tName: %s", name);
-    bt_device_get_alias(handle, addr, name, 64);
-    PRINT("\tAlias: %s", name);
-    PRINT("\tClass: 0x%08" PRIx32 "", bt_device_get_device_class(handle, addr));
-    PRINT("\tDeviceType: %d", bt_device_get_device_type(handle, addr));
-    PRINT("\tIsConnected: %d", bt_device_is_connected(handle, addr));
-    PRINT("\tIsEnc: %d", bt_device_is_encrypted(handle, addr));
-    PRINT("\tIsBonded: %d", bt_device_is_bonded(handle, addr));
-    PRINT("\tBondState: %s", bond_state_to_string(bt_device_get_bond_state(handle, addr)));
-    PRINT("\tIsBondInitiateLocal: %d", bt_device_is_bond_initiate_local(handle, addr));
-    bt_device_get_uuids(handle, addr, &uuids, &uuid_cnt, bttool_allocator);
-    if (uuid_cnt) {
-        PRINT("\tUUIDs:[%d]", uuid_cnt);
-        for (int i = 0; i < uuid_cnt; i++) {
-            bt_uuid_to_string(uuids + i, uuid_str, 40);
-            PRINT("\t\tuuid[%-2d]: %s", i, uuid_str);
+    if (transport == BT_TRANSPORT_BREDR) {
+        bt_device_get_name(handle, addr, name, 64);
+        PRINT("\tName: %s", name);
+        bt_device_get_alias(handle, addr, name, 64);
+        PRINT("\tAlias: %s", name);
+        PRINT("\tClass: 0x%08" PRIx32 "", bt_device_get_device_class(handle, addr));
+        PRINT("\tDeviceType: %d", bt_device_get_device_type(handle, addr));
+        PRINT("\tIsConnected: %d", bt_device_is_connected(handle, addr, transport));
+        if (bt_device_is_connected(handle, addr, transport))
+            PRINT("\tACLHandle: %d", bt_device_get_acl_handle(handle, addr));
+        PRINT("\tIsEnc: %d", bt_device_is_encrypted(handle, addr, transport));
+        PRINT("\tIsBonded: %d", bt_device_is_bonded(handle, addr, transport));
+        PRINT("\tBondState: %s", bond_state_to_string(bt_device_get_bond_state(handle, addr, transport)));
+        PRINT("\tIsBondInitiateLocal: %d", bt_device_is_bond_initiate_local(handle, addr, transport));
+        bt_device_get_uuids(handle, addr, &uuids, &uuid_cnt, bttool_allocator);
+        if (uuid_cnt) {
+            PRINT("\tUUIDs:[%d]", uuid_cnt);
+            for (int i = 0; i < uuid_cnt; i++) {
+                bt_uuid_to_string(uuids + i, uuid_str, 40);
+                PRINT("\t\tuuid[%-2d]: %s", i, uuid_str);
+            }
         }
+        free(uuids);
+    } else {
+        PRINT("\tIsConnected: %d", bt_device_is_connected(handle, addr, transport));
+        PRINT("\tIsEnc: %d", bt_device_is_encrypted(handle, addr, transport));
+        PRINT("\tIsBonded: %d", bt_device_is_bonded(handle, addr, transport));
+        PRINT("\tBondState: %s", bond_state_to_string(bt_device_get_bond_state(handle, addr, transport)));
+        PRINT("\tIsBondInitiateLocal: %d", bt_device_is_bond_initiate_local(handle, addr, transport));
     }
-    free(uuids);
 }
 
 static int device_show_cmd(void *handle, int argc, char **argv)
@@ -1155,7 +1165,7 @@ static int device_show_cmd(void *handle, int argc, char **argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    device_dump(handle, &addr);
+    device_dump(handle, &addr, BT_TRANSPORT_BREDR);
 
     return CMD_OK;
 }
@@ -1184,12 +1194,19 @@ static int get_bonded_devices_cmd(void *handle, int argc, char **argv)
     bt_address_t *addrs = NULL;
     int num = 0;
 
-    PRINT("%s", __func__);
-    bt_adapter_get_bonded_devices(handle, &addrs, &num, bttool_allocator);
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    int transport = atoi(argv[0]);
+    if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
+        return CMD_INVALID_PARAM;
+
+    bt_adapter_get_bonded_devices(handle, transport, &addrs, &num, bttool_allocator);
     for (int i = 0; i < num; i++) {
-        device_dump(handle, addrs + i);
+        device_dump(handle, addrs + i, transport);
     }
     free(addrs);
+    PRINT("bonded device cnt:%" PRId32, num);
 
     return CMD_OK;
 }
@@ -1199,12 +1216,19 @@ static int get_connected_devices_cmd(void *handle, int argc, char **argv)
     bt_address_t *addrs = NULL;
     int num = 0;
 
-    PRINT("%s", __func__);
-    bt_adapter_get_connected_devices(handle, &addrs, &num, bttool_allocator);
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    int transport = atoi(argv[0]);
+    if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
+        return CMD_INVALID_PARAM;
+
+    bt_adapter_get_connected_devices(handle, transport, &addrs, &num, bttool_allocator);
     for (int i = 0; i < num; i++) {
-        device_dump(handle, addrs + i);
+        device_dump(handle, addrs + i, transport);
     }
     free(addrs);
+    PRINT("connected device cnt:%" PRId32, num);
 
     return CMD_OK;
 }
@@ -1304,6 +1328,8 @@ static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
         uint32_t class = bt_adapter_get_device_class(g_bttool_ins);
         /* get scan mode */
         bt_scan_mode_t mode = bt_adapter_get_scan_mode(g_bttool_ins);
+        /* enable key derivation */
+        bt_adapter_le_enable_key_derivation(g_bttool_ins, true, true);
         PRINT("Adapter Name: %s, Cap: %d, Class: 0x%08" PRIX32 ", Mode:%d", name, cap, class, mode);
     } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
         /* code */
@@ -1488,8 +1514,8 @@ int main(int argc, char **argv)
     pthread_cond_init(&disable_cond, NULL);
     g_bttool_ins = bluetooth_create_instance();
     if (g_bttool_ins == NULL) {
-      PRINT("create instance error\n");
-      return -1;
+        PRINT("create instance error\n");
+        return -1;
     }
 
     adapter_callback = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs);

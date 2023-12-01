@@ -217,8 +217,6 @@ choice
 		bool "use local api without ipc"
 	config BLUETOOTH_FRAMEWORK_SOCKET_IPC
 		bool "use socket ipc api"
-	config BLUETOOTH_FRAMEWORK_BINDER_IPC
-		bool "use binder ipc api"
 endchoice
 endif #BLUETOOTH_FRAMEWORK
 
