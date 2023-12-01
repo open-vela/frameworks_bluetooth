@@ -45,10 +45,13 @@ typedef struct {
 typedef void (*gattc_connected_cb_t)(gattc_handle_t conn_handle, bt_address_t *addr);
 typedef void (*gattc_disconnected_cb_t)(gattc_handle_t conn_handle, bt_address_t *addr);
 typedef void (*gattc_discover_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, bt_uuid_t *uuid, uint16_t start_handle, uint16_t end_handle);
-typedef void (*gattc_mtu_exchange_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, uint32_t mtu);
+typedef void (*gattc_mtu_updated_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, uint32_t mtu);
 typedef void (*gattc_read_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, uint16_t attr_handle, uint8_t *value, uint16_t length);
 typedef void (*gattc_write_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, uint16_t attr_handle);
 typedef void (*gattc_notify_cb_t)(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
+typedef void (*gattc_phy_read_cb_t)(gattc_handle_t conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
+typedef void (*gattc_phy_updated_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
+typedef void (*gattc_rssi_read_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, int32_t rssi);
 
 typedef struct {
     uint32_t size;
@@ -58,7 +61,10 @@ typedef struct {
     gattc_read_cb_t on_read;
     gattc_write_cb_t on_written;
     gattc_notify_cb_t on_notified;
-    gattc_mtu_exchange_cb_t on_mtu_exchange;
+    gattc_mtu_updated_cb_t on_mtu_updated;
+    gattc_phy_read_cb_t on_phy_read;
+    gattc_phy_updated_cb_t on_phy_updated;
+    gattc_rssi_read_cb_t on_rssi_read;
 } gattc_callbacks_t;
 
 bt_status_t BTSYMBOLS(bt_gattc_create_connect)(bt_instance_t *ins, gattc_handle_t *phandle, gattc_callbacks_t *callbacks);
@@ -77,6 +83,9 @@ bt_status_t BTSYMBOLS(bt_gattc_exchange_mtu)(gattc_handle_t conn_handle, uint32_
 bt_status_t BTSYMBOLS(bt_gattc_update_connection_parameter)(gattc_handle_t conn_handle, uint32_t min_interval, uint32_t max_interval,
                                                             uint32_t latency, uint32_t timeout, uint32_t min_connection_event_length,
                                                             uint32_t max_connection_event_length);
+bt_status_t BTSYMBOLS(bt_gattc_read_phy)(gattc_handle_t conn_handle);
+bt_status_t BTSYMBOLS(bt_gattc_update_phy)(gattc_handle_t conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
+bt_status_t BTSYMBOLS(bt_gattc_read_rssi)(gattc_handle_t conn_handle);
 
 #ifdef __cplusplus
 }
