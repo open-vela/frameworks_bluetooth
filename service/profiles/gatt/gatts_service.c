@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#define LOG_TAG "gatts "
+#define LOG_TAG "gatts"
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 #include <stdint.h>
 #include <sys/types.h>
 
-#include "bt_gatts.h"
 #include "bt_list.h"
 #include "bt_profile.h"
 #include "gatts_event.h"
@@ -72,22 +71,30 @@ typedef struct
     bool started;
     gatts_conn_state_t state;
     bt_address_t remote_addr;
-    bt_list_t *services;
     pthread_mutex_t device_lock;
+    bt_list_t *services;
+    bt_list_t *pend_ops;
 
 } gatts_manager_t;
 
 typedef struct
 {
+    uint16_t start_handle;
+    uint16_t end_handle;
+    int element_size;
+    gatt_element_t elements[0];
+
+} service_table_t;
+
+typedef struct
+{
     void *remote;
     uint16_t srv_id;
-    gatts_srv_state_t state;
     pthread_mutex_t srv_lock;
     void **user_phandle;
     gatts_manager_t *manager;
-    gatt_element_t *elements;
-    int32_t element_size;
     gatts_callbacks_t *callbacks;
+    bt_list_t *tables;
 
 } gatts_service_t;
 
@@ -102,16 +109,33 @@ static gatts_manager_t g_gatts_manager = {
     .started = false,
     .state = GATTS_CONN_STATE_DISCONNECTED,
     .services = NULL,
+    .pend_ops = NULL,
 };
 
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
 
-static gatt_element_t *find_gatts_element_by_id(gatts_service_t *service, uint16_t element_id)
+static bool element_id_cmp(void *table, void *id)
 {
-    gatt_element_t *element = service->elements;
-    for (int i = 0; i < service->element_size; i++, element++) {
+    uint16_t f_handle = *(uint16_t *)id;
+    service_table_t *f_svc_table = (service_table_t *)table;
+    return (f_handle >= f_svc_table->start_handle && f_handle <= f_svc_table->end_handle);
+}
+
+static service_table_t *find_service_table_by_id(gatts_service_t *service, uint16_t element_id)
+{
+    return bt_list_find(service->tables, element_id_cmp, &element_id);
+}
+
+static gatt_element_t *find_service_element_by_id(gatts_service_t *service, uint16_t element_id)
+{
+    service_table_t *svc_table = find_service_table_by_id(service, element_id);
+    if (!svc_table)
+        return NULL;
+
+    gatt_element_t *element = svc_table->elements;
+    for (int i = 0; i < svc_table->element_size; i++, element++) {
         if (element->handle == element_id)
             return element;
     }
@@ -125,7 +149,7 @@ static bool service_id_cmp(void *service, void *id)
 
 static gatts_service_t *find_gatts_service_by_id(uint16_t srv_id)
 {
-    srv_id &= GATT_ELEMENT_GROUP_MASK;
+    srv_id = GATT_ELEMENT_GROUP_ID(srv_id);
     return bt_list_find(g_gatts_manager.services, service_id_cmp, &srv_id);
 }
 
@@ -140,6 +164,31 @@ static uint16_t generate_service_id(void)
     return 0;
 }
 
+static service_table_t *service_table_new(int element_size)
+{
+    service_table_t *table = malloc(sizeof(service_table_t) + sizeof(gatt_element_t) * element_size);
+    if (!table)
+        return NULL;
+
+    table->element_size = element_size;
+
+    return table;
+}
+
+static void service_table_delete(service_table_t *table)
+{
+    if (!table)
+        return;
+
+    gatt_element_t *elements = table->elements;
+    for (int i = 0; i < table->element_size; i++, elements++) {
+        if (elements->attr_data)
+            free(elements->attr_data);
+    }
+
+    free(table);
+}
+
 static gatts_service_t *gatts_service_new(gatts_callbacks_t *callbacks)
 {
     uint16_t new_id = generate_service_id();
@@ -150,9 +199,13 @@ static gatts_service_t *gatts_service_new(gatts_callbacks_t *callbacks)
     if (!service)
         return NULL;
 
+    service->tables = bt_list_new((bt_list_free_cb_t)service_table_delete);
+    if (!service->tables) {
+        free(service);
+        return NULL;
+    }
+
     service->srv_id = new_id;
-    service->elements = NULL;
-    service->element_size = 0;
     service->callbacks = callbacks;
 
     return service;
@@ -164,9 +217,29 @@ static void gatts_service_delete(gatts_service_t *service)
         return;
 
     pthread_mutex_destroy(&service->srv_lock);
-    if (service->elements)
-        free(service->elements);
+    bt_list_free(service->tables);
     free(service);
+}
+
+static void gatts_pendops_delete(gatts_op_t *operation)
+{
+    if (!operation)
+        return;
+
+    free(operation);
+}
+
+static gatts_op_t *gatts_pendops_execute_out(gatts_manager_t *manager, gatts_request_t request)
+{
+    bt_list_node_t *node;
+    bt_list_t *list = manager->pend_ops;
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        gatts_op_t *operation = (gatts_op_t *)bt_list_node(node);
+        if (operation->request == request) {
+            return operation;
+        }
+    }
+    return NULL;
 }
 
 static void gatts_process_message(void *data)
@@ -180,18 +253,20 @@ static void gatts_process_message(void *data)
         goto end;
 
     switch (msg->event) {
-    case GATTS_EVENT_START: {
-        service = find_gatts_service_by_id(msg->param.start.element_id);
+    case GATTS_EVENT_ATTR_TABLE_ADDED: {
+        service = find_gatts_service_by_id(msg->param.added.element_id);
         if (service) {
-            service->state = GATTS_SRV_STATE_STARTED;
-            GATT_CBACK(service->callbacks, on_started, service, msg->param.start.status);
+            GATT_CBACK(service->callbacks, on_attr_table_added, service, msg->param.added.status, msg->param.added.element_id ^ service->srv_id);
         }
     } break;
-    case GATTS_EVENT_STOP: {
-        service = find_gatts_service_by_id(msg->param.stop.element_id);
+    case GATTS_EVENT_ATTR_TABLE_REMOVED: {
+        service = find_gatts_service_by_id(msg->param.removed.element_id);
         if (service) {
-            service->state = GATTS_SRV_STATE_IDLE;
-            GATT_CBACK(service->callbacks, on_stopped, service, msg->param.stop.status);
+            service_table_t *svc_table = find_service_table_by_id(service, msg->param.removed.element_id);
+            if (svc_table) {
+                bt_list_remove(service->tables, svc_table);
+            }
+            GATT_CBACK(service->callbacks, on_attr_table_removed, service, msg->param.removed.status, msg->param.removed.element_id ^ service->srv_id);
         }
     } break;
     case GATTS_EVENT_CONNECT_CHANGE: {
@@ -210,12 +285,12 @@ static void gatts_process_message(void *data)
         if (!service)
             break;
 
-        gatt_element_t *element = find_gatts_element_by_id(service, msg->param.read.element_id);
+        gatt_element_t *element = find_service_element_by_id(service, msg->param.read.element_id);
         if (!element)
             break;
 
         if (element->rsp_type == ATTR_AUTO_RSP) {
-            bt_sal_gatt_server_send_response(&msg->param.read.addr, msg->param.read.request_id, element->user_data, element->data_length);
+            bt_sal_gatt_server_send_response(&msg->param.read.addr, msg->param.read.request_id, element->attr_data, element->attr_length);
         } else if (element->read_cb) {
             element->read_cb(service, msg->param.read.element_id ^ service->srv_id, msg->param.read.request_id);
         }
@@ -225,29 +300,48 @@ static void gatts_process_message(void *data)
         if (!service)
             break;
 
-        gatt_element_t *element = find_gatts_element_by_id(service, msg->param.write.element_id);
+        gatt_element_t *element = find_service_element_by_id(service, msg->param.write.element_id);
         if (!element)
             break;
 
         if (element->rsp_type == ATTR_AUTO_RSP) {
-            if (element->user_data) {
-                msg->param.write.length = MIN(element->data_length, msg->param.write.length);
-                memcpy(element->user_data, msg->param.write.value, msg->param.write.length);
+            if (element->attr_data) {
+                msg->param.write.length = MIN(element->attr_length, msg->param.write.length);
+                memcpy(element->attr_data, msg->param.write.value, msg->param.write.length);
             }
         } else if (element->write_cb) {
             element->write_cb(service, msg->param.write.element_id ^ service->srv_id, msg->param.write.value, msg->param.write.length, msg->param.write.offset);
         }
 
-        if (msg->param.write.need_rsp)
-            bt_sal_gatt_server_send_response(&msg->param.write.addr, msg->param.write.request_id, NULL, 0);
+        bt_sal_gatt_server_send_response(&msg->param.write.addr, msg->param.write.request_id, NULL, 0);
     } break;
-    case GATTS_EVENT_MTU:
-        GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_mtu_changed, &msg->param.mtu.addr, msg->param.mtu.mtu);
+    case GATTS_EVENT_MTU_CHANGE:
+        GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_mtu_changed, &msg->param.mtu_change.addr, msg->param.mtu_change.mtu);
         break;
     case GATTS_EVENT_CHANGE_SEND: {
         service = find_gatts_service_by_id(msg->param.change_send.element_id);
         if (service) {
             GATT_CBACK(service->callbacks, on_notify_complete, service, msg->param.change_send.status, msg->param.change_send.element_id ^ service->srv_id);
+        }
+    } break;
+    case GATTS_EVENT_PHY_READ: {
+        gatts_op_t *operation = gatts_pendops_execute_out(&g_gatts_manager, GATTS_REQ_READ_PHY);
+        if (operation) {
+            service = (gatts_service_t *)operation->param.phy.srv_handle;
+            GATT_CBACK(service->callbacks, on_phy_read, service, msg->param.phy.tx_phy, msg->param.phy.rx_phy);
+            bt_list_remove(g_gatts_manager.pend_ops, operation);
+        }
+    } break;
+    case GATTS_EVENT_PHY_UPDATE: {
+        if (msg->param.phy.status == GATT_STATUS_SUCCESS) {
+            GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_phy_updated, msg->param.phy.status, msg->param.phy.tx_phy, msg->param.phy.rx_phy);
+        } else {
+            gatts_op_t *operation = gatts_pendops_execute_out(&g_gatts_manager, GATTS_REQ_UPDATE_PHY);
+            if (operation) {
+                service = (gatts_service_t *)operation->param.phy.srv_handle;
+                GATT_CBACK(service->callbacks, on_phy_updated, service, msg->param.phy.status, msg->param.phy.tx_phy, msg->param.phy.rx_phy);
+                bt_list_remove(g_gatts_manager.pend_ops, operation);
+            }
         }
     } break;
     default: {
@@ -302,6 +396,12 @@ static bt_status_t if_gatts_startup(profile_on_startup_t cb)
         goto fail;
     }
 
+    manager->pend_ops = bt_list_new((bt_list_free_cb_t)gatts_pendops_delete);
+    if (!manager->pend_ops) {
+        status = BT_STATUS_NOMEM;
+        goto fail;
+    }
+
     status = bt_sal_gatt_server_enable();
     if (status != BT_STATUS_SUCCESS)
         goto fail;
@@ -316,6 +416,8 @@ static bt_status_t if_gatts_startup(profile_on_startup_t cb)
 fail:
     bt_list_free(manager->services);
     manager->services = NULL;
+    bt_list_free(manager->pend_ops);
+    manager->pend_ops = NULL;
     pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTS, false);
 
@@ -334,6 +436,8 @@ static bt_status_t if_gatts_shutdown(profile_on_shutdown_t cb)
     pthread_mutex_lock(&manager->device_lock);
     bt_list_free(manager->services);
     manager->services = NULL;
+    bt_list_free(manager->pend_ops);
+    manager->pend_ops = NULL;
     manager->started = false;
     manager->state = GATTS_CONN_STATE_DISCONNECTED;
     cb(PROFILE_GATTS, true);
@@ -386,7 +490,6 @@ static bt_status_t if_gatts_register_service(void *remote, void **phandle, gatts
 
     service->remote = remote;
     service->manager = &g_gatts_manager;
-    service->state = GATTS_SRV_STATE_IDLE;
     service->user_phandle = phandle;
     *phandle = service;
 
@@ -400,9 +503,14 @@ static bt_status_t if_gatts_unregister_service(void *srv_handle)
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
+    bt_list_node_t *node;
+    bt_list_t *list = service->tables;
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        service_table_t *svc_table = (service_table_t *)bt_list_node(node);
+        bt_sal_gatt_server_remove_elements(svc_table->elements, svc_table->element_size);
+    }
+
     void **user_phandle = service->user_phandle;
-    if (service->state != GATTS_SRV_STATE_IDLE)
-        bt_sal_gatt_server_remove_elements(service->elements, service->element_size);
     pthread_mutex_lock(&g_gatts_manager.device_lock);
     bt_list_remove(g_gatts_manager.services, service);
     pthread_mutex_unlock(&g_gatts_manager.device_lock);
@@ -441,88 +549,111 @@ static bt_status_t if_gatts_disconnect(void *srv_handle)
     return status;
 }
 
-static bt_status_t if_gatts_create_service_table(void *srv_handle, gatt_srv_db_t *srv_db)
+static bt_status_t if_gatts_add_attr_table(void *srv_handle, gatt_srv_db_t *srv_db)
 {
     gatts_service_t *service = srv_handle;
 
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
-    if (!srv_db)
+
+    service_table_t *svc_table = find_service_table_by_id(service, srv_db->attr_db[0].handle + service->srv_id);
+    if (svc_table)
         return BT_STATUS_PARM_INVALID;
 
-    if (service->state != GATTS_SRV_STATE_IDLE)
-        return BT_STATUS_BUSY;
-
-    gatt_element_t *elements = (gatt_element_t *)realloc(service->elements, sizeof(gatt_element_t) * srv_db->attr_num);
-    if (elements == NULL)
+    svc_table = service_table_new(srv_db->attr_num);
+    if (svc_table == NULL)
         return BT_STATUS_NOMEM;
 
-    service->elements = elements;
-    service->element_size = srv_db->attr_num;
-
+    gatt_element_t *elements = svc_table->elements;
     gatt_attr_db_t *attr_inst = srv_db->attr_db;
     for (int i = 0; i < srv_db->attr_num; i++, elements++, attr_inst++) {
 
-        if (elements->type == GATT_INCLUDED_SERVICE) {
-            bt_list_node_t *node;
-            bt_list_t *list = g_gatts_manager.services;
-            for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
-                gatts_service_t *include_service = (gatts_service_t *)bt_list_node(node);
-                if (!bt_uuid_compare(&include_service->elements[0].uuid, attr_inst->uuid)) {
-                    elements->handle = include_service->elements[0].handle;
-                    break;
-                }
-            }
-        } else {
-            elements->handle = service->srv_id + attr_inst->handle;
-        }
-
+        elements->handle = service->srv_id + attr_inst->handle;
         elements->type = attr_inst->type;
         elements->properties = attr_inst->properties;
         elements->permissions = attr_inst->permissions;
         elements->rsp_type = attr_inst->rsp_type;
-        elements->user_data = attr_inst->attr_value;
-        elements->data_length = attr_inst->attr_length;
-
         elements->read_cb = attr_inst->read_cb;
         elements->write_cb = attr_inst->write_cb;
+        elements->attr_length = attr_inst->attr_length;
+        elements->attr_data = NULL;
+        if (elements->rsp_type == ATTR_AUTO_RSP && elements->attr_length) {
+            elements->attr_data = malloc(elements->attr_length);
+            memcpy(elements->attr_data, attr_inst->attr_value, elements->attr_length);
+        }
 
         elements->uuid.type = BT_UUID128_TYPE;
-        bt_uuid_to_uuid128(attr_inst->uuid, &elements->uuid);
+        bt_uuid_to_uuid128(&attr_inst->uuid, &elements->uuid);
+    }
+    svc_table->start_handle = svc_table->elements[0].handle;
+    svc_table->end_handle = svc_table->elements[svc_table->element_size - 1].handle;
+
+    bt_status_t status = bt_sal_gatt_server_add_elements(svc_table->elements, svc_table->element_size);
+    if (status != BT_STATUS_SUCCESS) {
+        service_table_delete(svc_table);
+        return status;
     }
 
+    bt_list_add_tail(service->tables, svc_table);
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t if_gatts_start(void *srv_handle)
+static bt_status_t if_gatts_remove_attr_table(void *srv_handle, uint16_t attr_handle)
 {
     gatts_service_t *service = srv_handle;
 
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
-    if (service->state != GATTS_SRV_STATE_IDLE)
-        return BT_STATUS_BUSY;
+    service_table_t *svc_table = find_service_table_by_id(service, attr_handle + service->srv_id);
+    if (!svc_table)
+        return BT_STATUS_PARM_INVALID;
 
-    bt_status_t status = bt_sal_gatt_server_add_elements(service->elements, service->element_size);
-    if (status == BT_STATUS_SUCCESS)
-        service->state = GATTS_SRV_STATE_STARTING;
-
-    return status;
+    return bt_sal_gatt_server_remove_elements(svc_table->elements, svc_table->element_size);
 }
 
-static bt_status_t if_gatts_stop(void *srv_handle)
+static bt_status_t if_gatts_set_attr_value(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     gatts_service_t *service = srv_handle;
 
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
-    bt_status_t status = bt_sal_gatt_server_remove_elements(service->elements, service->element_size);
-    if (status == BT_STATUS_SUCCESS)
-        service->state = GATTS_SRV_STATE_STOPPING;
+    if (!value)
+        return BT_STATUS_PARM_INVALID;
 
-    return status;
+    gatt_element_t *element = find_service_element_by_id(service, attr_handle + service->srv_id);
+    if (!element)
+        return BT_STATUS_PARM_INVALID;
+
+    if (!element->attr_data || !element->attr_length)
+        return BT_STATUS_NOT_FOUND;
+
+    length = MIN(element->attr_length, length);
+    memcpy(element->attr_data, value, length);
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t if_gatts_get_attr_value(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t *length)
+{
+    gatts_service_t *service = srv_handle;
+
+    CHECK_ENABLED();
+    CHECK_SERVICE_VALID(g_gatts_manager.services, service);
+
+    if (!value || !length)
+        return BT_STATUS_PARM_INVALID;
+
+    gatt_element_t *element = find_service_element_by_id(service, attr_handle + service->srv_id);
+    if (!element)
+        return BT_STATUS_PARM_INVALID;
+
+    if (!element->attr_data || !element->attr_length)
+        return BT_STATUS_NOT_FOUND;
+
+    *length = MIN(element->attr_length, *length);
+    memcpy(value, element->attr_data, *length);
+    return BT_STATUS_SUCCESS;
 }
 
 static bt_status_t if_gatts_response(void *srv_handle, uint32_t req_handle, uint8_t *value, uint16_t length)
@@ -566,18 +697,59 @@ static bt_status_t if_gatts_indicate(void *srv_handle, uint16_t attr_handle, uin
                                               attr_handle + service->srv_id, value, length);
 }
 
+static bt_status_t if_gatts_read_phy(void *srv_handle)
+{
+    gatts_service_t *service = srv_handle;
+
+    CHECK_ENABLED();
+    CHECK_SERVICE_VALID(g_gatts_manager.services, service);
+
+    gatts_manager_t *manager = service->manager;
+    bt_status_t status = bt_sal_gatt_server_read_phy(&manager->remote_addr);
+
+    if (status == BT_STATUS_SUCCESS && service->callbacks->on_phy_read) {
+        gatts_op_t *op = gatts_op_new(GATTS_REQ_READ_PHY);
+        op->param.phy.srv_handle = srv_handle;
+        bt_list_add_tail(manager->pend_ops, op);
+    }
+    return status;
+}
+
+static bt_status_t if_gatts_update_phy(void *srv_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+{
+    gatts_service_t *service = srv_handle;
+
+    CHECK_ENABLED();
+    CHECK_SERVICE_VALID(g_gatts_manager.services, service);
+
+    gatts_manager_t *manager = service->manager;
+    bt_status_t status = bt_sal_gatt_server_set_phy(&manager->remote_addr, tx_phy, rx_phy);
+
+    if (status == BT_STATUS_SUCCESS && service->callbacks->on_phy_updated) {
+        gatts_op_t *op = gatts_op_new(GATTS_REQ_UPDATE_PHY);
+        op->param.phy.srv_handle = srv_handle;
+        op->param.phy.tx_phy = tx_phy;
+        op->param.phy.rx_phy = rx_phy;
+        bt_list_add_tail(manager->pend_ops, op);
+    }
+    return status;
+}
+
 static const gatts_interface_t gatts_if = {
     .size = sizeof(gatts_if),
     .register_service = if_gatts_register_service,
     .unregister_service = if_gatts_unregister_service,
     .connect = if_gatts_connect,
     .disconnect = if_gatts_disconnect,
-    .create_service_table = if_gatts_create_service_table,
-    .start = if_gatts_start,
-    .stop = if_gatts_stop,
+    .add_attr_table = if_gatts_add_attr_table,
+    .remove_attr_table = if_gatts_remove_attr_table,
+    .set_attr_value = if_gatts_set_attr_value,
+    .get_attr_value = if_gatts_get_attr_value,
     .response = if_gatts_response,
     .notify = if_gatts_notify,
     .indicate = if_gatts_indicate,
+    .read_phy = if_gatts_read_phy,
+    .update_phy = if_gatts_update_phy,
 };
 
 static const void *get_gatts_profile_interface(void)
@@ -599,17 +771,17 @@ void if_gatts_on_connection_state_changed(bt_address_t *addr, profile_connection
 
 void if_gatts_on_elements_added(gatt_status_t status, uint16_t element_id, uint16_t size)
 {
-    gatts_msg_t *msg = gatts_msg_new(GATTS_EVENT_START, 0);
-    msg->param.start.element_id = element_id;
-    msg->param.start.status = status;
+    gatts_msg_t *msg = gatts_msg_new(GATTS_EVENT_ATTR_TABLE_ADDED, 0);
+    msg->param.added.element_id = element_id;
+    msg->param.added.status = status;
     gatts_send_message(msg);
 }
 
 void if_gatts_on_elements_removed(gatt_status_t status, uint16_t element_id, uint16_t size)
 {
-    gatts_msg_t *msg = gatts_msg_new(GATTS_EVENT_STOP, 0);
-    msg->param.start.element_id = element_id;
-    msg->param.stop.status = status;
+    gatts_msg_t *msg = gatts_msg_new(GATTS_EVENT_ATTR_TABLE_REMOVED, 0);
+    msg->param.removed.element_id = element_id;
+    msg->param.removed.status = status;
     gatts_send_message(msg);
 }
 
@@ -623,13 +795,12 @@ void if_gatts_on_received_element_read_request(bt_address_t *addr, uint32_t requ
 }
 
 void if_gatts_on_received_element_write_request(bt_address_t *addr, uint32_t request_id, uint16_t element_id,
-                                                uint8_t *value, uint16_t offset, uint16_t length, bool need_rsp)
+                                                uint8_t *value, uint16_t offset, uint16_t length)
 {
     gatts_msg_t *msg = gatts_msg_new(GATTS_EVENT_WRITE_REQUEST, length);
     msg->param.write.element_id = element_id;
     msg->param.write.request_id = request_id;
     memcpy(&msg->param.write.addr, addr, sizeof(bt_address_t));
-    msg->param.write.need_rsp = need_rsp;
     msg->param.write.offset = offset;
     msg->param.write.length = length;
     memcpy(msg->param.write.value, value, length);
@@ -638,9 +809,9 @@ void if_gatts_on_received_element_write_request(bt_address_t *addr, uint32_t req
 
 void if_gatts_on_mtu_changed(bt_address_t *addr, uint32_t mtu)
 {
-    gatts_msg_t *msg = gatts_msg_new(GATTS_EVENT_MTU, 0);
-    memcpy(&msg->param.mtu.addr, addr, sizeof(bt_address_t));
-    msg->param.mtu.mtu = mtu;
+    gatts_msg_t *msg = gatts_msg_new(GATTS_EVENT_MTU_CHANGE, 0);
+    memcpy(&msg->param.mtu_change.addr, addr, sizeof(bt_address_t));
+    msg->param.mtu_change.mtu = mtu;
     gatts_send_message(msg);
 }
 
@@ -650,6 +821,25 @@ void if_gatts_on_notification_sent(bt_address_t *addr, uint16_t element_id, gatt
     msg->param.change_send.element_id = element_id;
     msg->param.change_send.status = status;
     memcpy(&msg->param.change_send.addr, addr, sizeof(bt_address_t));
+    gatts_send_message(msg);
+}
+
+void if_gatts_on_phy_read(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+{
+    gatts_msg_t *msg = gatts_msg_new(GATTS_EVENT_PHY_READ, 0);
+    msg->param.phy.tx_phy = tx_phy;
+    msg->param.phy.rx_phy = rx_phy;
+    memcpy(&msg->param.phy.addr, addr, sizeof(bt_address_t));
+    gatts_send_message(msg);
+}
+
+void if_gatts_on_phy_updated(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, gatt_status_t status)
+{
+    gatts_msg_t *msg = gatts_msg_new(GATTS_EVENT_PHY_UPDATE, 0);
+    msg->param.phy.status = status;
+    msg->param.phy.tx_phy = tx_phy;
+    msg->param.phy.rx_phy = rx_phy;
+    memcpy(&msg->param.phy.addr, addr, sizeof(bt_address_t));
     gatts_send_message(msg);
 }
 
