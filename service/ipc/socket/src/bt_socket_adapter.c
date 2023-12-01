@@ -356,7 +356,9 @@ void bt_socket_server_adapter_process(service_poll_t *poll,
     case BT_ADAPTER_GET_BONDED_DEVICES:
       {
         bt_address_t *addr;
-        packet->adpt_r.status = BTSYMBOLS(bt_adapter_get_bonded_devices)(ins, &addr,
+        packet->adpt_r.status = BTSYMBOLS(bt_adapter_get_bonded_devices)(ins,
+            packet->adpt_pl._bt_adapter_get_bonded_devices.transport,
+            &addr,
             &packet->adpt_pl._bt_adapter_get_bonded_devices.num, socket_allocator);
 
         if (packet->adpt_pl._bt_adapter_get_bonded_devices.num > 0) {
@@ -375,7 +377,9 @@ void bt_socket_server_adapter_process(service_poll_t *poll,
     case BT_ADAPTER_GET_CONNECTED_DEVICES:
       {
         bt_address_t *addr;
-        packet->adpt_r.status = BTSYMBOLS(bt_adapter_get_connected_devices)(ins, &addr,
+        packet->adpt_r.status = BTSYMBOLS(bt_adapter_get_connected_devices)(ins,
+            packet->adpt_pl._bt_adapter_get_connected_devices.transport,
+            &addr,
             &packet->adpt_pl._bt_adapter_get_connected_devices.num, socket_allocator);
         if (packet->adpt_pl._bt_adapter_get_connected_devices.num > 0) {
           if (packet->adpt_pl._bt_adapter_get_connected_devices.num >
@@ -449,6 +453,25 @@ void bt_socket_server_adapter_process(service_poll_t *poll,
     case BT_ADAPTER_GET_LE_APPEARANCE:
       {
         packet->adpt_r.v16 = BTSYMBOLS(bt_adapter_get_le_appearance)(ins);
+        break;
+      }
+    case BT_ADAPTER_LE_ENABLE_KEY_DERIVATION:
+      {
+        packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_enable_key_derivation)(ins,
+            packet->adpt_pl._bt_adapter_le_enable_key_derivation.brkey_to_lekey,
+            packet->adpt_pl._bt_adapter_le_enable_key_derivation.lekey_to_brkey);
+        break;
+      }
+    case BT_ADAPTER_LE_REMOVE_WHITELIST:
+      {
+        packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_add_whitelist)(ins,
+            &packet->adpt_pl._bt_adapter_le_add_whitelist.addr);
+        break;
+      }
+    case BT_ADAPTER_LE_ADD_WHITELIST:
+      {
+        packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_remove_whitelist)(ins,
+            &packet->adpt_pl._bt_adapter_le_remove_whitelist.addr);
         break;
       }
     case BT_ADAPTER_REGISTER_CALLBACK:

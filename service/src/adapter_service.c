@@ -92,8 +92,6 @@ typedef struct adapter_service {
     uint8_t max_acl_connections;
     callbacks_list_t *adapter_callbacks;
     int adapter_state_adv;
-    // bt_list_t              *remote_callbacks;
-    // bt_list_t              *connected_devices;
 } adapter_service_t;
 
 static adapter_service_t g_adapter_service;
@@ -120,8 +118,10 @@ static bt_device_t *adapter_find_device(const bt_address_t *addr, bt_transport_t
 
     if (transport == BT_TRANSPORT_BREDR)
         list = g_adapter_service.devices;
-    else
+    else if (transport == BT_TRANSPORT_BLE)
         list = g_adapter_service.le_devices;
+    else
+        return NULL;
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         bt_device_t *device = bt_list_node(node);
@@ -211,7 +211,9 @@ static int get_devices_cnt(int flag, uint8_t transport)
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         bt_device_t *device = bt_list_node(node);
-        if ((flag == 1 && device_is_bonded(device)) || (flag == 2 && device_is_connected(device)))
+        if ((flag == DFLAG_BONDED && device_is_bonded(device)) ||
+            (flag == DFLAG_CONNECTED && device_is_connected(device)) ||
+            (device_check_flag(device, flag)))
             cnt++;
     }
 
@@ -221,8 +223,10 @@ static int get_devices_cnt(int flag, uint8_t transport)
 static void bonded_device_loaded(void *data, uint16_t length, uint16_t items)
 {
     if (data && items) {
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
         remote_device_properties_t *remote = (remote_device_properties_t *)data;
 
+        BT_LOGD("load classic bonded device successfully:");
         for (int i = 0; i < items; i++) {
             bt_device_t *device = br_device_create(&remote->addr);
             device_set_name(device, remote->name);
@@ -233,12 +237,61 @@ static void bonded_device_loaded(void *data, uint16_t length, uint16_t items)
             device_set_link_key_type(device, remote->link_key_type);
             device_set_bond_state(device, BOND_STATE_BONDED);
             bt_list_add_tail(g_adapter_service.devices, device);
+            bt_addr_ba2str(&remote->addr, addr_str);
+            uint8_t *lk = remote->link_key;
+            BT_LOGD("BONDED DEVICE[%d], Name:[%s] Addr:[%s] LinkKey: [%02X] | [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
+                    i, remote->name, addr_str, remote->link_key_type, lk[0], lk[1], lk[2], lk[3], lk[4], lk[5], lk[6],
+                    lk[7], lk[8], lk[9], lk[10], lk[11], lk[12], lk[13], lk[14], lk[15]);
             bt_sal_set_bonded_devices(remote);
             remote++;
         }
     }
+    BT_LOGD("classic bonded device cnt: %" PRIu16, items);
 
     send_to_state_machine((state_machine_t *)g_adapter_service.stm, BREDR_ENABLED, NULL);
+}
+
+static void whitelist_device_loaded(void *data, uint16_t length, uint16_t items)
+{
+    if (data && items) {
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+        remote_device_le_properties_t *remote = (remote_device_le_properties_t *)data;
+        BT_LOGD("load whitelist device successfully:");
+        for (int i = 0; i < items; i++) {
+            bt_device_t *device = adapter_find_create_le_device(&remote->addr, remote->addr_type);
+            device_set_flags(device, DFLAG_WHITELIST_ADDED);
+            bt_addr_ba2str(&remote->addr, addr_str);
+            BT_LOGD("LE WHITELIST[%d] [%s]", i, addr_str);
+            bt_sal_le_add_white_list(&remote->addr);
+            remote++;
+        }
+    }
+    BT_LOGD("ble whitelist device cnt: %" PRIu16, items);
+}
+
+static void le_bonded_device_loaded(void *data, uint16_t length, uint16_t items)
+{
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+
+    if (data && items) {
+        remote_device_le_properties_t *remote = (remote_device_le_properties_t *)data;
+        BT_LOGD("load ble bonded device successfully:");
+        for (int i = 0; i < items; i++) {
+            bt_device_t *device = adapter_find_create_le_device(&remote->addr, remote->addr_type);
+            device_set_bond_state(device, BOND_STATE_BONDED);
+            device_set_smp_key(device, remote->smp_key);
+            bt_addr_ba2str(&remote->addr, addr_str);
+            uint8_t *ltk = &remote->smp_key[12];
+            BT_LOGD("LE BOND DEVICE[%d], Addr:[%s] Atype:[%d] LTK: [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
+                    i, addr_str, remote->addr_type, ltk[0], ltk[1], ltk[2], ltk[3], ltk[4], ltk[5], ltk[6], ltk[7],
+                    ltk[8], ltk[9], ltk[10], ltk[11], ltk[12], ltk[13], ltk[14], ltk[15]);
+            remote++;
+        }
+
+        bt_sal_le_set_bonded_devices(data, items);
+    }
+
+    BT_LOGD("ble bonded device cnt: %" PRIu16, items);
 }
 
 static void adapter_update_bonded_device(void)
@@ -246,7 +299,7 @@ static void adapter_update_bonded_device(void)
     bt_list_t *list = g_adapter_service.devices;
     bt_list_node_t *node;
 
-    int size = get_devices_cnt(1, BT_TRANSPORT_BREDR);
+    int size = get_devices_cnt(DFLAG_BONDED, BT_TRANSPORT_BREDR);
     if (!size) {
         bt_storage_save_bonded_device(NULL, 0);
         return;
@@ -264,6 +317,33 @@ static void adapter_update_bonded_device(void)
     }
 
     bt_storage_save_bonded_device(remotes, size);
+}
+
+static void adapter_update_whitelist(void)
+{
+    BT_LOGD("%s", __func__);
+
+    bt_list_t *list = g_adapter_service.le_devices;
+    bt_list_node_t *node;
+
+    int size = get_devices_cnt(DFLAG_WHITELIST_ADDED, BT_TRANSPORT_BLE);
+    if (!size) {
+        bt_storage_save_whitelist(NULL, 0);
+        return;
+    }
+
+    remote_device_le_properties_t remotes[size];
+    size = 0;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        bt_device_t *device = bt_list_node(node);
+        if (device_check_flag(device, DFLAG_WHITELIST_ADDED)) {
+            device_get_le_property(device, &remotes[size]);
+            size++;
+        }
+    }
+
+    bt_storage_save_whitelist(remotes, size);
 }
 
 static void adapter_save_properties(void)
@@ -332,7 +412,6 @@ static void process_ssp_request_evt(bt_address_t *addr, uint8_t link_type,
                                     uint32_t pass_key, const char *name)
 {
     bt_device_t *device;
-
     adapter_lock();
 
     device = adapter_find_device(addr, link_type);
@@ -379,6 +458,8 @@ static void process_bond_state_change_evt(bt_address_t *addr, bond_state_t state
         if (state == BOND_STATE_BONDED) {
             device_set_device_type(device, BT_DEVICE_TYPE_BLE);
             device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_LE);
+        } else if (state == BOND_STATE_NONE) {
+            device_delete_smp_key(device);
         }
     }
 
@@ -407,7 +488,13 @@ static void process_enc_state_change_evt(bt_address_t *addr, bool encrypted,
     bt_device_t *device;
 
     adapter_lock();
-    device = adapter_find_create_classic_device(addr);
+    if (link_type == BT_TRANSPORT_BREDR)
+        device = adapter_find_create_classic_device(addr);
+    else if (link_type == BT_TRANSPORT_BLE)
+        device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+    else
+        return;
+
     if (encrypted) {
         if (link_type == BT_TRANSPORT_BREDR)
             device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_BREDR);
@@ -422,11 +509,17 @@ static void process_link_key_update_evt(bt_address_t *addr, bt_128key_t link_key
                                         bt_link_key_type_t type)
 {
     bt_device_t *device;
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     adapter_lock();
     device = adapter_find_create_classic_device(addr);
     device_set_link_key(device, link_key);
     device_set_link_key_type(device, type);
+    bt_addr_ba2str(addr, addr_str);
+    uint8_t *lk = link_key;
+    BT_LOGD("DEVICE[%s] LinkKey: %02X | [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
+            addr_str, type, lk[0], lk[1], lk[2], lk[3], lk[4], lk[5], lk[6],
+            lk[7], lk[8], lk[9], lk[10], lk[11], lk[12], lk[13], lk[14], lk[15]);
     adapter_unlock();
 }
 
@@ -496,7 +589,7 @@ static void process_connect_request_evt(bt_address_t *addr)
     device = adapter_find_create_classic_device(addr);
     bt_sal_get_remote_device_info(addr, &remote);
     device_set_device_class(device, remote.class_of_device);
-    if (get_devices_cnt(2, BT_TRANSPORT_BREDR) < adapter->max_acl_connections)
+    if (get_devices_cnt(DFLAG_CONNECTED, BT_TRANSPORT_BREDR) < adapter->max_acl_connections)
         accept = true;
 
     BT_ADDR_LOG("ACL Connect Request from :%s %s", addr, accept ? "accept" : "reject");
@@ -535,6 +628,8 @@ static void process_connection_state_changed_evt(bt_address_t *addr, acl_state_p
     device_set_connection_state(device, acl_params->connection_state);
     if (acl_params->connection_state == CONNECTION_STATE_CONNECTED) {
         device_set_acl_handle(device, bt_sal_get_acl_link_handle(addr));
+        //if (acl_params->link_type == BT_TRANSPORT_BLE)
+        //    adapter_le_add_whitelist(addr);
     }
     adapter_unlock();
     /* send connection changed notification */
@@ -659,6 +754,69 @@ static void process_le_phy_update_evt(bt_address_t *addr, ble_phy_type_t tx_phy,
     adapter_unlock();
 }
 
+static void process_le_whitelist_update_evt(bt_address_t *addr, bool isadded, bt_status_t status)
+{
+    BT_LOGD("%s isadded:%d, status:%d", __func__, isadded, status);
+    adapter_lock();
+
+    bt_device_t *device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+    if (device == NULL) {
+        bt_sal_le_remove_white_list(addr);
+        adapter_unlock();
+        return;
+    }
+
+    if (device_check_flag(device, DFLAG_WHITELIST_ADDED) && status == BT_STATUS_SUCCESS) {
+        adapter_unlock();
+        return;
+    }
+
+    if (isadded && status == BT_STATUS_SUCCESS) {
+        device_set_flags(device, DFLAG_WHITELIST_ADDED);
+    } else {
+        device_clear_flag(device, DFLAG_WHITELIST_ADDED);
+    }
+
+    adapter_update_whitelist();
+
+    adapter_unlock();
+}
+
+static void process_le_bonded_device_update_evt(remote_device_le_properties_t *props, uint16_t bonded_devices_cnt)
+{
+    bt_device_t *device;
+    remote_device_le_properties_t *prop = props;
+    char addr_str[BT_ADDR_STR_LENGTH];
+
+    adapter_lock();
+    for (int i = 0; i < bonded_devices_cnt; i++) {
+        device = adapter_find_device(&prop->addr, BT_TRANSPORT_BLE);
+        if (!device)
+            continue;
+
+        /* device had bonded and smpkey had stored */
+        if (device_check_flag(device, DFLAG_LE_KEY_SET)) {
+            device_delete_smp_key(device);
+        }
+
+        device_set_address_type(device, prop->addr_type);
+        /* store smp key to mapped device struct */
+        device_set_smp_key(device, prop->smp_key);
+
+        bt_addr_ba2str(&prop->addr, addr_str);
+        uint8_t *ltk = &prop->smp_key[12];
+        BT_LOGD("LE BOND DEVICE[%d]: Addr:[%s] Atype:[%d] LTK: [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
+                i, addr_str, prop->addr_type, ltk[0], ltk[1], ltk[2], ltk[3], ltk[4], ltk[5], ltk[6], ltk[7],
+                ltk[8], ltk[9], ltk[10], ltk[11], ltk[12], ltk[13], ltk[14], ltk[15]);
+        prop++;
+    }
+
+    /* update all bonded le device to storage */
+    bt_storage_save_le_bonded_device(props, bonded_devices_cnt);
+    free(props);
+    adapter_unlock();
+}
+
 static void handle_ble_event(void *data)
 {
     adapter_ble_evt_t *evt = (adapter_ble_evt_t *)data;
@@ -670,6 +828,17 @@ static void handle_ble_event(void *data)
     case LE_PHY_UPDATE_EVT:
         process_le_phy_update_evt(&evt->phy_update.addr, evt->phy_update.tx_phy,
                                   evt->phy_update.rx_phy, evt->phy_update.status);
+        break;
+    case LE_WHITELIST_UPDATE_EVT:
+        process_le_whitelist_update_evt(&evt->whitelist.addr,
+                                        evt->whitelist.is_added,
+                                        evt->whitelist.status);
+        break;
+    case LE_BONDED_DEVICE_UPDATE_EVT:
+        process_le_bonded_device_update_evt(evt->bonded_devices.props,
+                                            evt->bonded_devices.bonded_devices_cnt);
+        break;
+    default:
         break;
     }
 
@@ -756,15 +925,28 @@ void adapter_on_adapter_state_changed(uint8_t stack_state)
 void adapter_on_le_enabled(bool enablebt)
 {
     adapter_service_t *adapter = &g_adapter_service;
+    int ret;
+
     BT_LOGD("%s", __func__);
     /* get le address async */
     bt_sal_le_get_address();
     /* set le io capability ? */
     /* set appearance ? */
     /* load bonded device to stack ? SMP keys */
+    ret = bt_storage_load_le_bonded_device(le_bonded_device_loaded);
+    if (ret < 0) {
+        le_bonded_device_loaded(NULL, 0, 0);
+    }
     /* set white list ? */
+    ret = bt_storage_load_whitelist_device(whitelist_device_loaded);
+    if (ret < 0) {
+        whitelist_device_loaded(NULL, 0, 0);
+    }
+
     /* set resolvinglist list ? */
     /* enable cdtk */
+    //bt_sal_le_enable_key_derivation(true, true);
+
     /* enable advertiser manager */
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
     adv_manager_init();
@@ -1047,6 +1229,35 @@ void adapter_on_le_phy_update(bt_address_t *addr, ble_phy_type_t tx_phy,
     evt->phy_update.tx_phy = tx_phy;
     evt->phy_update.rx_phy = rx_phy;
     evt->phy_update.status = status;
+
+    do_in_service_loop(handle_ble_event, evt);
+}
+
+void adapter_on_whitelist_update(bt_address_t *addr, bool is_added, bt_status_t status)
+{
+    BT_LOGD("%s", __func__);
+
+    adapter_ble_evt_t *evt = malloc(sizeof(adapter_ble_evt_t));
+
+    evt->evt_id = LE_WHITELIST_UPDATE_EVT;
+    memcpy(&evt->whitelist.addr, addr, sizeof(*addr));
+    evt->whitelist.is_added = is_added;
+    evt->whitelist.status = status;
+
+    do_in_service_loop(handle_ble_event, evt);
+}
+
+void adapter_on_le_bonded_device_update(remote_device_le_properties_t *props, uint16_t bonded_devices_cnt)
+{
+    BT_LOGD("%s", __func__);
+
+    adapter_ble_evt_t *evt = malloc(sizeof(adapter_ble_evt_t));
+
+    evt->evt_id = LE_BONDED_DEVICE_UPDATE_EVT;
+    size_t prop_size = sizeof(remote_device_le_properties_t) * bonded_devices_cnt;
+    evt->bonded_devices.props = malloc(prop_size);
+    evt->bonded_devices.bonded_devices_cnt = bonded_devices_cnt;
+    memcpy(evt->bonded_devices.props, props, prop_size);
 
     do_in_service_loop(handle_ble_event, evt);
 }
@@ -1542,7 +1753,8 @@ static bt_status_t adapter_get_devices(int flag, bt_address_t **addr, int *size,
     cnt = 0;
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         bt_device_t *device = bt_list_node(node);
-        if ((flag == 1 && device_is_bonded(device)) || (flag == 2 && device_is_connected(device))) {
+        if ((flag == DFLAG_BONDED && device_is_bonded(device)) ||
+            (flag == DFLAG_CONNECTED && device_is_connected(device))) {
             memcpy(*addr + cnt, device_get_address(device), sizeof(bt_address_t));
             cnt++;
         }
@@ -1552,14 +1764,14 @@ static bt_status_t adapter_get_devices(int flag, bt_address_t **addr, int *size,
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t adapter_get_bonded_devices(bt_address_t **addr, int *size, bt_allocator_t allocator, uint8_t transport)
+bt_status_t adapter_get_bonded_devices(bt_transport_t transport, bt_address_t **addr, int *size, bt_allocator_t allocator)
 {
-    return adapter_get_devices(1, addr, size, allocator, transport);
+    return adapter_get_devices(DFLAG_BONDED, addr, size, allocator, transport);
 }
 
-bt_status_t adapter_get_connected_devices(bt_address_t **addr, int *size, bt_allocator_t allocator, uint8_t transport)
+bt_status_t adapter_get_connected_devices(bt_transport_t transport, bt_address_t **addr, int *size, bt_allocator_t allocator)
 {
-    return adapter_get_devices(2, addr, size, allocator, transport);
+    return adapter_get_devices(DFLAG_CONNECTED, addr, size, allocator, transport);
 }
 
 /*
@@ -1734,12 +1946,12 @@ bt_status_t adapter_set_remote_alias(bt_address_t *addr, const char *alias)
     return BT_STATUS_SUCCESS;
 }
 
-bool adapter_is_remote_connected(bt_address_t *addr)
+bool adapter_is_remote_connected(bt_address_t *addr, bt_transport_t transport)
 {
     bt_device_t *device;
 
     adapter_lock();
-    device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    device = adapter_find_device(addr, transport);
     if (device == NULL) {
         adapter_unlock();
         return false;
@@ -1751,12 +1963,12 @@ bool adapter_is_remote_connected(bt_address_t *addr)
     return connected;
 }
 
-bool adapter_is_remote_encrypted(bt_address_t *addr)
+bool adapter_is_remote_encrypted(bt_address_t *addr, bt_transport_t transport)
 {
     bt_device_t *device;
 
     adapter_lock();
-    device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    device = adapter_find_device(addr, transport);
     if (device == NULL) {
         adapter_unlock();
         return false;
@@ -1768,12 +1980,12 @@ bool adapter_is_remote_encrypted(bt_address_t *addr)
     return enc;
 }
 
-bool adapter_is_bond_initiate_local(bt_address_t *addr)
+bool adapter_is_bond_initiate_local(bt_address_t *addr, bt_transport_t transport)
 {
     bt_device_t *device;
 
     adapter_lock();
-    device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    device = adapter_find_device(addr, transport);
     if (device == NULL) {
         adapter_unlock();
         return false;
@@ -1785,12 +1997,12 @@ bool adapter_is_bond_initiate_local(bt_address_t *addr)
     return isbondlocal;
 }
 
-bond_state_t adapter_get_remote_bond_state(bt_address_t *addr)
+bond_state_t adapter_get_remote_bond_state(bt_address_t *addr, bt_transport_t transport)
 {
     bt_device_t *device;
 
     adapter_lock();
-    device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    device = adapter_find_device(addr, transport);
     if (device == NULL) {
         adapter_unlock();
         return BOND_STATE_NONE;
@@ -1802,12 +2014,12 @@ bond_state_t adapter_get_remote_bond_state(bt_address_t *addr)
     return state;
 }
 
-bool adapter_is_remote_bonded(bt_address_t *addr)
+bool adapter_is_remote_bonded(bt_address_t *addr, bt_transport_t transport)
 {
     bt_device_t *device;
 
     adapter_lock();
-    device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    device = adapter_find_device(addr, transport);
     if (device == NULL) {
         adapter_unlock();
         return false;
@@ -1927,6 +2139,58 @@ bt_status_t adapter_le_enable_key_derivation(bool brkey_to_lekey,
                                              bool lekey_to_brkey)
 {
     return bt_sal_le_enable_key_derivation(brkey_to_lekey, lekey_to_brkey);
+}
+
+bt_status_t adapter_le_add_whitelist(bt_address_t *addr)
+{
+    adapter_service_t *adapter = &g_adapter_service;
+    bt_device_t *device;
+    BT_LOGD("%s", __func__);
+    adapter_lock();
+    if (adapter->adapter_state != BT_ADAPTER_STATE_ON) {
+        adapter_unlock();
+        return BT_STATUS_NOT_ENABLED;
+    }
+
+    device = adapter_find_create_le_device(addr, BT_LE_ADDR_TYPE_PUBLIC);
+    if (!device) {
+        adapter_unlock();
+        return BT_STATUS_NOMEM;
+    }
+
+    if (device_check_flag(device, DFLAG_WHITELIST_ADDED)) {
+        adapter_unlock();
+        return BT_STATUS_SUCCESS;
+    }
+
+    adapter_unlock();
+    return bt_sal_le_add_white_list(addr);
+}
+
+bt_status_t adapter_le_remove_whitelist(bt_address_t *addr)
+{
+    adapter_service_t *adapter = &g_adapter_service;
+    bt_device_t *device;
+
+    adapter_lock();
+    if (adapter->adapter_state != BT_ADAPTER_STATE_ON) {
+        adapter_unlock();
+        return BT_STATUS_NOT_ENABLED;
+    }
+
+    device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+    if (!device) {
+        adapter_unlock();
+        return BT_STATUS_DEVICE_NOT_FOUND;
+    }
+
+    if (!device_check_flag(device, DFLAG_WHITELIST_ADDED)) {
+        adapter_unlock();
+        return BT_STATUS_SUCCESS;
+    }
+
+    adapter_unlock();
+    return bt_sal_le_remove_white_list(addr);
 }
 
 bt_status_t adapter_create_bond(bt_address_t *addr, bt_transport_t transport)
@@ -2067,6 +2331,21 @@ bt_status_t adapter_set_pass_key(bt_address_t *addr, uint8_t transport, bool acc
         return bt_sal_ssp_reply(addr, accept, PAIR_TYPE_PASSKEY_ENTRY, passkey);
     else
         return bt_sal_le_smp_reply(addr, accept, PAIR_TYPE_PASSKEY_ENTRY, passkey);
+}
+
+uint16_t adapter_get_acl_handle(bt_address_t *addr)
+{
+    adapter_lock();
+    uint16_t handle;
+    bt_device_t *device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    if (!device || !device_is_connected(device)) {
+        adapter_unlock();
+        return 0;
+    }
+
+    handle = device_get_acl_handle(device);
+    adapter_unlock();
+    return handle;
 }
 
 void adapter_get_support_profiles(void) { }

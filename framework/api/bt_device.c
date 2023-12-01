@@ -73,29 +73,29 @@ bt_status_t BTSYMBOLS(bt_device_set_alias)(bt_instance_t *ins, bt_address_t *add
     return adapter_set_remote_alias(addr, alias);
 }
 
-bool BTSYMBOLS(bt_device_is_connected)(bt_instance_t *ins, bt_address_t *addr)
+bool BTSYMBOLS(bt_device_is_connected)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport)
 {
-    return adapter_is_remote_connected(addr);
+    return adapter_is_remote_connected(addr, transport);
 }
 
-bool BTSYMBOLS(bt_device_is_encrypted)(bt_instance_t *ins, bt_address_t *addr)
+bool BTSYMBOLS(bt_device_is_encrypted)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport)
 {
-    return adapter_is_remote_encrypted(addr);
+    return adapter_is_remote_encrypted(addr, transport);
 }
 
-bool BTSYMBOLS(bt_device_is_bond_initiate_local)(bt_instance_t *ins, bt_address_t *addr)
+bool BTSYMBOLS(bt_device_is_bond_initiate_local)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport)
 {
-    return adapter_is_bond_initiate_local(addr);
+    return adapter_is_bond_initiate_local(addr, transport);
 }
 
-bond_state_t BTSYMBOLS(bt_device_get_bond_state)(bt_instance_t *ins, bt_address_t *addr)
+bond_state_t BTSYMBOLS(bt_device_get_bond_state)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport)
 {
-    return adapter_get_remote_bond_state(addr);
+    return adapter_get_remote_bond_state(addr, transport);
 }
 
-bool BTSYMBOLS(bt_device_is_bonded)(bt_instance_t *ins, bt_address_t *addr)
+bool BTSYMBOLS(bt_device_is_bonded)(bt_instance_t *ins, bt_address_t *addr, bt_transport_t transport)
 {
-    return adapter_is_remote_bonded(addr);
+    return adapter_is_remote_bonded(addr, transport);
 }
 
 bt_status_t BTSYMBOLS(bt_device_connect)(bt_instance_t *ins, bt_address_t *addr)
@@ -170,4 +170,9 @@ bt_status_t BTSYMBOLS(bt_device_set_pin_code)(bt_instance_t *ins, bt_address_t *
 bt_status_t BTSYMBOLS(bt_device_set_pass_key)(bt_instance_t *ins, bt_address_t *addr, uint8_t transport, bool accept, uint32_t passkey)
 {
     return adapter_set_pass_key(addr, transport, accept, passkey);
+}
+
+uint16_t BTSYMBOLS(bt_device_get_acl_handle)(bt_instance_t *ins, bt_address_t *addr)
+{
+    return adapter_get_acl_handle(addr);
 }

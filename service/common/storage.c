@@ -132,25 +132,51 @@ int bt_storage_load_adapter_info(adapter_storage_t *adapter)
     return 0;
 }
 
-int bt_storage_save_bonded_device(remote_device_properties_t *remote, uint16_t size)
+static int bt_storage_save_remote_device(const char *key, void *value, uint16_t value_size, uint16_t items)
 {
-    uint16_t remote_length = sizeof(*remote) * size;
-    key_header_t *key = malloc(sizeof(key_header_t) + remote_length);
+    uint16_t total_length = value_size * items;
+    key_header_t *header = malloc(sizeof(key_header_t) + total_length);
 
-    key->items = size;
-    key->key_length = remote_length;
-    if (remote && size)
-        memcpy(key->key_value, remote, remote_length);
-    int ret = storage_set_key(BT_KEY_BTBOND, key, sizeof(key_header_t) + remote_length);
+    header->items = items;
+    header->key_length = total_length;
+    if (value && items)
+        memcpy(header->key_value, value, total_length);
+
+    int ret = storage_set_key(key, header, sizeof(key_header_t) + total_length);
     if (ret != 0)
-        free(key);
+        free(header);
 
     return ret;
+}
+
+int bt_storage_save_bonded_device(remote_device_properties_t *remote, uint16_t size)
+{
+    return bt_storage_save_remote_device(BT_KEY_BTBOND, remote, sizeof(*remote), size);
+}
+
+int bt_storage_save_whitelist(remote_device_le_properties_t *remote, uint16_t size)
+{
+   return bt_storage_save_remote_device(BT_KEY_BLEWHITELIST, remote, sizeof(*remote), size);
+}
+
+int bt_storage_save_le_bonded_device(remote_device_le_properties_t *remote, uint16_t size)
+{
+   return bt_storage_save_remote_device(BT_KEY_BLEBOND, remote, sizeof(*remote), size);
 }
 
 int bt_storage_load_bonded_device(load_storage_callback_t cb)
 {
     return storage_get_key(BT_KEY_BTBOND, NULL, NULL, (void *)cb);
+}
+
+int bt_storage_load_whitelist_device(load_storage_callback_t cb)
+{
+    return storage_get_key(BT_KEY_BLEWHITELIST, NULL, NULL, (void *)cb);
+}
+
+int bt_storage_load_le_bonded_device(load_storage_callback_t cb)
+{
+    return storage_get_key(BT_KEY_BLEBOND, NULL, NULL, (void *)cb);
 }
 
 void bt_storage_load_le_device_info(void)

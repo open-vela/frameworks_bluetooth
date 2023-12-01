@@ -29,12 +29,6 @@
 #define LOG_TAG "device"
 #include "utils/log.h"
 
-enum device_flags {
-    NAME_SET = 0x01,
-    ALIAS_SET = 0x02,
-    LINKKEY_SET = 0x04,
-};
-
 typedef struct remote_device {
     char name[BT_REM_NAME_MAX_LEN];
     char alias[BT_REM_NAME_MAX_LEN];
@@ -76,7 +70,7 @@ typedef struct bt_device {
 
 static bt_device_t *device_create(bt_address_t *addr, bt_transport_t transport, ble_addr_type_t addr_type)
 {
-    bt_device_t *device = malloc(sizeof(bt_device_t));
+    bt_device_t *device = zalloc(sizeof(bt_device_t));
 
     if (!device)
         return NULL;
@@ -138,6 +132,11 @@ void device_set_identity_address(bt_device_t *device, bt_address_t *addr)
 ble_addr_type_t device_get_address_type(bt_device_t *device)
 {
     return device->remote.addr_type;
+}
+
+void device_set_address_type(bt_device_t *device, ble_addr_type_t type)
+{
+    device->remote.addr_type = type;
 }
 
 void device_set_device_type(bt_device_t *device, bt_device_type_t type)
@@ -371,6 +370,46 @@ void device_get_property(bt_device_t *device, remote_device_properties_t *prop)
     memcpy(prop->link_key, device->remote.link_key, 16);
     prop->link_key_type = device->remote.link_key_type;
     prop->device_type = device->remote.device_type;
+}
+
+void device_get_le_property(bt_device_t *device, remote_device_le_properties_t *prop)
+{
+    memcpy(&prop->addr, &device->remote.addr, sizeof(bt_address_t));
+    prop->addr_type = device->remote.addr_type;
+    memcpy(prop->smp_key, device->remote.smp_data, 80);
+    prop->device_type = device->remote.device_type;
+}
+
+void device_set_flags(bt_device_t *device, uint32_t flags)
+{
+    device->flags |= flags;
+}
+
+void device_clear_flag(bt_device_t *device, uint32_t flag)
+{
+    device->flags &= ~flag;
+}
+
+bool device_check_flag(bt_device_t *device, uint32_t flag)
+{
+    return device->flags & flag;
+}
+
+uint8_t *device_get_smp_key(bt_device_t *device)
+{
+    return device->remote.smp_data;
+}
+
+void device_set_smp_key(bt_device_t *device, uint8_t *smp_key)
+{
+    device_set_flags(device, DFLAG_LE_KEY_SET);
+    memcpy(device->remote.smp_data, smp_key, sizeof(device->remote.smp_data));
+}
+
+void device_delete_smp_key(bt_device_t *device)
+{
+    device_clear_flag(device, DFLAG_LE_KEY_SET);
+    memset(device->remote.smp_data, 0, sizeof(device->remote.smp_data));
 }
 
 static int linkkey_dump(bt_device_t *device, char *str)

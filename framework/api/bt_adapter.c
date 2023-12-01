@@ -179,14 +179,24 @@ bt_status_t BTSYMBOLS(bt_adapter_le_enable_key_derivation)(bt_instance_t *ins,
     return adapter_le_enable_key_derivation(brkey_to_lekey, lekey_to_brkey);
 }
 
-bt_status_t BTSYMBOLS(bt_adapter_get_bonded_devices)(bt_instance_t *ins, bt_address_t **addr, int *num, bt_allocator_t allocator)
+bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist)(bt_instance_t *ins, bt_address_t *addr)
 {
-    return adapter_get_bonded_devices(addr, num, allocator, BT_TRANSPORT_BREDR);
+    return adapter_le_add_whitelist(addr);
 }
 
-bt_status_t BTSYMBOLS(bt_adapter_get_connected_devices)(bt_instance_t *ins, bt_address_t **addr, int *num, bt_allocator_t allocator)
+bt_status_t BTSYMBOLS(bt_adapter_le_remove_whitelist)(bt_instance_t *ins, bt_address_t *addr)
 {
-    return adapter_get_connected_devices(addr, num, allocator, BT_TRANSPORT_BREDR);
+    return adapter_le_remove_whitelist(addr);
+}
+
+bt_status_t BTSYMBOLS(bt_adapter_get_bonded_devices)(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator)
+{
+    return adapter_get_bonded_devices(transport, addr, num, allocator);
+}
+
+bt_status_t BTSYMBOLS(bt_adapter_get_connected_devices)(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator)
+{
+    return adapter_get_connected_devices(transport, addr, num, allocator);
 }
 
 void BTSYMBOLS(bt_adapter_disconnect_all_devices)(bt_instance_t *ins)

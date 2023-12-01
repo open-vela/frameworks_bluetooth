@@ -369,7 +369,7 @@ bt_io_capability_t BTSYMBOLS(bt_adapter_get_io_capability)(bt_instance_t *ins);
  * @param allocator - address array allocator.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_adapter_get_bonded_devices)(bt_instance_t *ins, bt_address_t **addr, int *num, bt_allocator_t allocator);
+bt_status_t BTSYMBOLS(bt_adapter_get_bonded_devices)(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator);
 
 /**
  * @brief Get adapter connected devices list
@@ -380,7 +380,7 @@ bt_status_t BTSYMBOLS(bt_adapter_get_bonded_devices)(bt_instance_t *ins, bt_addr
  * @param allocator - address array allocator.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_adapter_get_connected_devices)(bt_instance_t *ins, bt_address_t **addr, int *num, bt_allocator_t allocator);
+bt_status_t BTSYMBOLS(bt_adapter_get_connected_devices)(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator);
 
 /**
  * @brief Disconnect all connected device.
@@ -519,6 +519,9 @@ bt_status_t BTSYMBOLS(bt_adapter_le_enable_key_derivation)(bt_instance_t *ins,
                                                 bool brkey_to_lekey,
                                                 bool lekey_to_brkey);
 
+bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist)(bt_instance_t *ins, bt_address_t *addr);
+
+bt_status_t BTSYMBOLS(bt_adapter_le_remove_whitelist)(bt_instance_t *ins, bt_address_t *addr);
 #ifdef __cplusplus
 }
 #endif

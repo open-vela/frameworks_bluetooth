@@ -36,6 +36,9 @@ typedef struct scanner {
     void *remote;
     uint8_t scanner_id;
     bool is_scanning;
+    ble_scan_filter_policy_t policy;
+    uint8_t *filter_data;
+    uint16_t filter_length;
     const scanner_callbacks_t *callbacks;
 } scanner_t;
 
@@ -67,6 +70,7 @@ static scanner_t *alloc_new_scanner(void *remote, const scanner_callbacks_t *cbs
     if (!app)
         return NULL;
 
+    memset(app, 0, sizeof(scanner_t));
     app->remote = remote;
     app->callbacks = cbs;
 
@@ -77,6 +81,8 @@ static void delete_scanner(scanner_t *scanner)
 {
     if (scanner->is_scanning)
         list_delete(&scanner->scanning_node);
+
+    free(scanner->filter_data);
     free(scanner);
 }
 
@@ -98,6 +104,29 @@ static bool scanner_is_registered(scanner_t *scanner)
     return false;
 }
 
+static uint8_t *findsubblock(uint8_t *sub_block, uint16_t sub_block_len,
+                                      uint8_t *sch_block,
+                                      uint16_t sch_block_len)
+{
+    uint16_t i, j;
+
+    if (!sch_block_len || !sub_block_len || sch_block_len < sub_block_len) {
+        return NULL;
+    }
+    for (i = 0; i <= sch_block_len - sub_block_len; i++) {
+        for (j = 0; j < sub_block_len; j++) {
+            if (*(sch_block + i + j) == *(sub_block + j)) {
+                if ((j + 1) == sub_block_len) {
+                    return (sch_block + i);
+                }
+            } else {
+                break;
+            }
+        }
+    }
+    return NULL;
+}
+
 static void notify_scanners_scan_result(void *data)
 {
     struct list_node *node;
@@ -106,6 +135,12 @@ static void notify_scanners_scan_result(void *data)
     list_for_every(&scanner_manager.scanning_list, node)
     {
         scanner_t *scanner = (scanner_t *)node;
+        if (scanner->filter_data && scanner->filter_length) {
+            if (findsubblock(scanner->filter_data, scanner->filter_length,
+                             (uint8_t *)result->adv_data, result->length) == NULL) {
+                continue;
+            }
+        }
         scanner->callbacks->on_scan_result(get_remote(scanner), result);
     }
 
@@ -291,9 +326,11 @@ bt_scanner_t *scanner_start_scan(void *remote, const scanner_callbacks_t *cbs)
     return (bt_scanner_t *)scanner;
 }
 
-bt_scanner_t *scanner_start_scan_settings(void *remote,
-                                          ble_scan_settings_t *settings,
-                                          const scanner_callbacks_t *cbs)
+bt_scanner_t *scanner_start_scan_with_filters(void *remote,
+                                        ble_scan_settings_t *settings,
+                                        uint8_t *filter_data,
+                                        uint16_t filter_length,
+                                        const scanner_callbacks_t *cbs)
 {
     scanner_t *scanner = alloc_new_scanner(remote, cbs);
     if (!scanner)
@@ -305,6 +342,12 @@ bt_scanner_t *scanner_start_scan_settings(void *remote,
         return NULL;
     }
 
+    if (filter_data && filter_length) {
+        scanner->filter_data = malloc(filter_length);
+        memcpy(scanner->filter_data, filter_data, filter_length);
+        scanner->filter_length = filter_length;
+    }
+
     start->scanner = scanner;
     start->use_setting = true;
     memcpy(&start->settings, settings, sizeof(*settings));
@@ -312,6 +355,13 @@ bt_scanner_t *scanner_start_scan_settings(void *remote,
     do_in_service_loop(start_scan, (void *)start);
 
     return (bt_scanner_t *)scanner;
+}
+
+bt_scanner_t *scanner_start_scan_settings(void *remote,
+                                          ble_scan_settings_t *settings,
+                                          const scanner_callbacks_t *cbs)
+{
+    return scanner_start_scan_with_filters(remote, settings, NULL, 0, cbs);
 }
 
 void scanner_stop_scan(bt_scanner_t *scanner)

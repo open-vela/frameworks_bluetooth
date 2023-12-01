@@ -34,13 +34,13 @@
 #include <sys/un.h>
 
 #include "bluetooth.h"
-#include "bt_le_scan.h"
-#include "scan_manager.h"
 #include "bt_internal.h"
+#include "bt_le_scan.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
 #include "manager_service.h"
+#include "scan_manager.h"
 #include "service_loop.h"
 
 /****************************************************************************
@@ -119,7 +119,7 @@ void bt_socket_server_scan_process(service_poll_t *poll,
         scan->remote = packet->scan_pl._bt_le_start_scan.remote;
         packet->scan_r.remote = (uint32_t)scanner_start_scan(scan, &g_scanner_socket_cb);
         if (!packet->scan_r.remote)
-            free (scan);
+            free(scan);
         break;
     }
     case BT_LE_SCAN_START_SETTINGS: {
@@ -128,9 +128,24 @@ void bt_socket_server_scan_process(service_poll_t *poll,
         scan->ins = ins;
         scan->remote = packet->scan_pl._bt_le_start_scan_settings.remote;
         packet->scan_r.remote = (uint32_t)scanner_start_scan_settings(scan,
-            &packet->scan_pl._bt_le_start_scan_settings.settings, &g_scanner_socket_cb);
+                    &packet->scan_pl._bt_le_start_scan_settings.settings, &g_scanner_socket_cb);
         if (!packet->scan_r.remote) {
-            free (scan);
+            free(scan);
+        }
+        break;
+    }
+    case BT_LE_SCAN_START_WITH_FILTERS: {
+        bt_scan_remote_t *scan = malloc(sizeof(*scan));
+
+        scan->ins = ins;
+        scan->remote = packet->scan_pl._bt_le_start_scan_with_filters.remote;
+        packet->scan_r.remote = (uint32_t)scanner_start_scan_with_filters(scan,
+                    &packet->scan_pl._bt_le_start_scan_with_filters.settings,
+                    packet->scan_pl._bt_le_start_scan_with_filters.filter_data,
+                    packet->scan_pl._bt_le_start_scan_with_filters.filter_length,
+                    &g_scanner_socket_cb);
+        if (!packet->scan_r.remote) {
+            free(scan);
         }
         break;
     }
@@ -168,7 +183,7 @@ int bt_socket_client_scan_callback(service_poll_t *poll,
 
         scan->callback->on_scan_start_status(scan, packet->scan_cb._on_scan_status_cb.status);
         if (packet->scan_cb._on_scan_status_cb.status != 0)
-            free (scan);
+            free(scan);
         break;
     }
     case BT_LE_ON_SCAN_STOPPED: {

@@ -40,6 +40,8 @@ enum {
     LE_ADDR_UPDATE_EVT,
     LE_PHY_UPDATE_EVT,
     LE_IRK_UPDATE_EVT,
+    LE_WHITELIST_UPDATE_EVT,
+    LE_BONDED_DEVICE_UPDATE_EVT,
 };
 
 typedef struct {
@@ -83,6 +85,19 @@ typedef struct {
             ble_addr_type_t type;
             bt_128key_t irk;
         } irk_update;
+        struct
+        {
+            /* data */
+            bt_address_t addr;
+            bool is_added;
+            bt_status_t status;
+        } whitelist;
+        struct
+        {
+            /* data */
+            remote_device_le_properties_t *props;
+            uint16_t bonded_devices_cnt;
+        } bonded_devices;
     };
 } adapter_ble_evt_t;
 
@@ -206,6 +221,9 @@ void adapter_on_link_policy_changed(bt_address_t *addr, bt_link_policy_t policy)
 void adapter_on_le_addr_update(bt_address_t *addr, ble_addr_type_t type);
 void adapter_on_le_phy_update(bt_address_t *addr, ble_phy_type_t tx_phy,
                               ble_phy_type_t rx_phy, bt_status_t status);
+void adapter_on_whitelist_update(bt_address_t *addr, bool is_added, bt_status_t status);
+void adapter_on_le_bonded_device_update(remote_device_le_properties_t *props, uint16_t bonded_devices_cnt);
+
 /* adapter framework invoke functions */
 void adapter_init(void);
 void adapter_cleanup(void);
@@ -237,8 +255,8 @@ bt_status_t adapter_set_le_address(bt_address_t *addr);
 bt_status_t adapter_set_le_identity_address(bt_address_t *addr, bool public);
 bt_status_t adapter_set_le_appearance(uint16_t appearance);
 uint16_t adapter_get_le_appearance(void);
-bt_status_t adapter_get_bonded_devices(bt_address_t **addr, int *size, bt_allocator_t allocator, uint8_t transport);
-bt_status_t adapter_get_connected_devices(bt_address_t **addr, int *size, bt_allocator_t allocator, uint8_t transport);
+bt_status_t adapter_get_bonded_devices(bt_transport_t transport, bt_address_t **addr, int *size, bt_allocator_t allocator);
+bt_status_t adapter_get_connected_devices(bt_transport_t transport, bt_address_t **addr, int *size, bt_allocator_t allocator);
 void adapter_set_auto_accept_connection(bool enable);
 bool adapter_is_support_bredr(void);
 bool adapter_is_support_le(void);
@@ -251,11 +269,11 @@ uint16_t adapter_get_remote_appearance(bt_address_t *addr);
 int8_t adapter_get_remote_rssi(bt_address_t *addr);
 bool adapter_get_remote_alias(bt_address_t *addr, char *alias);
 bt_status_t adapter_set_remote_alias(bt_address_t *addr, const char *alias);
-bool adapter_is_remote_connected(bt_address_t *addr);
-bool adapter_is_remote_encrypted(bt_address_t *addr);
-bool adapter_is_bond_initiate_local(bt_address_t *addr);
-bond_state_t adapter_get_remote_bond_state(bt_address_t *addr);
-bool adapter_is_remote_bonded(bt_address_t *addr);
+bool adapter_is_remote_connected(bt_address_t *addr, bt_transport_t transport);
+bool adapter_is_remote_encrypted(bt_address_t *addr, bt_transport_t transport);
+bool adapter_is_bond_initiate_local(bt_address_t *addr, bt_transport_t transport);
+bond_state_t adapter_get_remote_bond_state(bt_address_t *addr, bt_transport_t transport);
+bool adapter_is_remote_bonded(bt_address_t *addr, bt_transport_t transport);
 bt_status_t adapter_connect(bt_address_t *addr);
 bt_status_t adapter_disconnect(bt_address_t *addr);
 bt_status_t adapter_le_connect(bt_address_t *addr,
@@ -267,6 +285,8 @@ bt_status_t adapter_le_set_phy(bt_address_t *addr,
                                ble_phy_type_t rx_phy);
 bt_status_t adapter_le_enable_key_derivation(bool brkey_to_lekey,
                                              bool lekey_to_brkey);
+bt_status_t adapter_le_add_whitelist(bt_address_t *addr);
+bt_status_t adapter_le_remove_whitelist(bt_address_t *addr);
 bt_status_t adapter_create_bond(bt_address_t *addr, bt_transport_t transport);
 bt_status_t adapter_remove_bond(bt_address_t *addr, uint8_t transport);
 bt_status_t adapter_cancel_bond(bt_address_t *addr);
@@ -275,6 +295,7 @@ bt_status_t adapter_set_pairing_confirmation(bt_address_t *addr, uint8_t transpo
 bt_status_t adapter_set_pin_code(bt_address_t *addr, bool accept,
                                  char *pincode, int len);
 bt_status_t adapter_set_pass_key(bt_address_t *addr, uint8_t transport, bool accept, uint32_t passkey);
+uint16_t adapter_get_acl_handle(bt_address_t *addr);
 
 void *adapter_register_callback(void *remote, const adapter_callbacks_t *adapter_cbs);
 bool adapter_unregister_callback(void **remote, void *cookie);

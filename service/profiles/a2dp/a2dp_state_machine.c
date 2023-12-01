@@ -477,10 +477,12 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("A2dp disconnect failed");
         }
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
         status = bt_sal_avrcp_control_disconnect(&a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Avrc disconnect failed");
         }
+#endif
         a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
         hsm_transition_to(sm, &closing_state);
         break;
@@ -621,10 +623,12 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect failed");
         }
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
         status = bt_sal_avrcp_control_disconnect(&a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Avrc disconnect failed");
         }
+#endif
         hsm_transition_to(sm, &closing_state);
         break;
     }

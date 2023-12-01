@@ -37,6 +37,11 @@ bt_scanner_t *scanner_start_scan(void *remote, const scanner_callbacks_t *cbs);
 bt_scanner_t *scanner_start_scan_settings(void *remote,
                                           ble_scan_settings_t *settings,
                                           const scanner_callbacks_t *cbs);
+bt_scanner_t *scanner_start_scan_with_filters(void *remote,
+                                        ble_scan_settings_t *settings,
+                                        uint8_t *filter_data,
+                                        uint16_t filter_length,
+                                        const scanner_callbacks_t *cbs);
 void scanner_stop_scan(bt_scanner_t *scanner);
 bool scan_is_supported(void);
 void scan_manager_init(void);

@@ -52,6 +52,9 @@
   BT_ADAPTER_GET_LE_IO_CAPABILITY,
   BT_ADAPTER_SET_LE_APPEARANCE,
   BT_ADAPTER_GET_LE_APPEARANCE,
+  BT_ADAPTER_LE_ENABLE_KEY_DERIVATION,
+  BT_ADAPTER_LE_ADD_WHITELIST,
+  BT_ADAPTER_LE_REMOVE_WHITELIST,
   BT_ADAPTER_MESSAGE_END,
 #endif
 
@@ -99,7 +102,9 @@ typedef union
   struct {
     bt_address_t addr;
   } _bt_adapter_get_address,
-    _bt_adapter_set_le_address;
+    _bt_adapter_set_le_address,
+    _bt_adapter_le_add_whitelist,
+    _bt_adapter_le_remove_whitelist;
 
   struct {
     char name[64];
@@ -141,10 +146,16 @@ typedef union
   } _bt_adapter_set_le_appearance;
 
   struct {
+    bt_transport_t transport;
     int num;
     bt_address_t addr[32];
   } _bt_adapter_get_bonded_devices,
     _bt_adapter_get_connected_devices;
+
+  struct {
+    bool brkey_to_lekey;
+    bool lekey_to_brkey;
+  } _bt_adapter_le_enable_key_derivation;
 
 } bt_message_adapter_t;
 

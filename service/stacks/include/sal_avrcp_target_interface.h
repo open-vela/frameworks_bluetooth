@@ -21,9 +21,8 @@
 #include "bt_addr.h"
 #include "bt_status.h"
 #include "avrcp_target_service.h"
-
+#ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
 #include "avrcp_msg.h"
-
 bt_status_t bt_sal_avrcp_target_init(void);
 void bt_sal_avrcp_target_cleanup(void);
 
@@ -37,5 +36,5 @@ bt_status_t bt_sal_avrcp_target_notify_play_position_changed(bt_address_t *addr,
 bt_status_t bt_sal_avrcp_target_register_volume_changed(bt_address_t *addr);
 
 void bt_sal_avrcp_target_event_callback(avrcp_msg_t *msg);
-
+#endif
 #endif /* __SAL_AVRCP_TARGET_INTERFACE_H__ */

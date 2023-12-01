@@ -26,11 +26,6 @@ ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_LOCAL), y)
 ifeq ($(CONFIG_BLUETOOTH_BLE_AUDIO),)
   CSRCS := $(filter-out $(wildcard framework/api/bt_lea*),$(wildcard $(CSRCS)))
 endif
-else ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_BINDER_IPC), y)
-	CSRCS += framework/binder/*.c
-	CSRCS += service/ipc/*.c
-	CSRCS += service/ipc/binder/parcel/*.c
-	CSRCS += service/ipc/binder/src/*.c
 else ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC), y)
 	CSRCS += framework/api/*.c
 ifeq ($(CONFIG_BLUETOOTH_BLE_AUDIO),)
@@ -255,8 +250,6 @@ ifneq ($(CONFIG_OBELISK_BREDR_BLUELET)$(CONFIG_OBELISK_LE_BLUELET),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/vendor/xiaomi/vela/bluelet/inc
 endif
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/ipc
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/ipc/binder/include
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/ipc/binder/parcel
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)

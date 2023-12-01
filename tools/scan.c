@@ -32,6 +32,7 @@ static struct option scan_options[] = {
     {"phy",     required_argument, 0, 'p'},
     { "mode",   required_argument, 0, 'm'},
     { "legacy", required_argument, 0, 'l'},
+    { "filter", required_argument, 0, 'f'},
     { 0,        0,                 0, 0  }
 };
 
@@ -39,7 +40,8 @@ static bt_command_t g_scanner_tables[] = {
     {"start", start_scan_cmd, 0, "start scan\n"
                                   "\t  -p or --phy, le scan phy (1M/2M/Coded)\n"
                                   "\t  -m or --mode, scan mode (0:low power mode, 1:balance mode, 2:low latency mode)\n"
-                                  "\t  -l or --legacy, is legacy scan (1: true, 0: false)\n"},
+                                  "\t  -l or --legacy, is legacy scan (1: true, 0: false)\n"
+                                  "\t  -f or --filter, filter advertiser complete name\n"},
     { "stop", stop_scan_cmd,  0, "stop scan"                                                                                },
     { "dump", dump_scan_cmd,  0, "dump scan state"                                                                          },
 };
@@ -83,13 +85,16 @@ static const scanner_callbacks_t scanner_callbacks = {
 static int start_scan_cmd(void *handle, int argc, char *argv[])
 {
     int opt;
+    uint8_t *filter_data = NULL;
+    uint16_t filter_len = 0;
+    advertiser_data_t *filter;
     ble_scan_settings_t settings = { BT_SCAN_MODE_LOW_POWER, 0, BT_LE_1M_PHY };
-
+    
     if (g_scanner)
         return CMD_ERROR;
 
     optind = 0;
-    while ((opt = getopt_long(argc, argv, "p:m:l", scan_options,
+    while ((opt = getopt_long(argc, argv, "p:m:l:f", scan_options,
                               NULL)) != -1) {
         switch (opt) {
         case 'p': {
@@ -126,13 +131,27 @@ static int start_scan_cmd(void *handle, int argc, char *argv[])
 
             settings.legacy = legacy;
         } break;
+        case 'f': {
+            filter = advertiser_data_new();
+
+            /* set adv complete name */
+            advertiser_data_set_name(filter, "Vela_test");
+
+            /* build scan response data */
+            filter_data = advertiser_data_build(filter, &filter_len);
+        } break;
         default:
             break;
         }
     }
 
-    if (optind > 1) {
-        g_scanner = bt_le_start_scan_settings(handle, &settings, &scanner_callbacks);
+    if (optind >= 1) {
+        if (filter_data) {
+            g_scanner = bt_le_start_scan_with_filters(handle, &settings, filter_data, filter_len, &scanner_callbacks);
+            advertiser_data_free(filter);
+        }
+        else
+            g_scanner = bt_le_start_scan_settings(handle, &settings, &scanner_callbacks);
     } else {
         g_scanner = bt_le_start_scan(handle, &scanner_callbacks);
     }
