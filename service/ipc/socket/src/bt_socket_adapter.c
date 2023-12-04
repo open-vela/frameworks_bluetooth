@@ -490,7 +490,11 @@ void bt_socket_server_adapter_process(service_poll_t *poll,
       {
         if (ins->adapter_cookie)
         {
-          adapter_unregister_callback((void **)&ins, ins->adapter_cookie);
+          if (adapter_unregister_callback((void **)&ins, ins->adapter_cookie)) {
+            packet->adpt_r.status = BT_STATUS_SUCCESS;
+          } else {
+            packet->adpt_r.status = BT_STATUS_FAIL;
+          }
           ins->adapter_cookie = NULL;
         }
         break;
