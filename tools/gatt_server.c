@@ -397,6 +397,13 @@ static void phy_updated_callback(void *srv_handle, gatt_status_t status, ble_phy
     PRINT("gatts phy updated, status:%d, tx:%d, rx:%d", status, tx_phy, rx_phy);
 }
 
+static void conn_param_changed_callback(void *srv_handle, bt_address_t *addr, uint16_t connection_interval,
+                                        uint16_t peripheral_latency, uint16_t supervision_timeout)
+{
+    PRINT_ADDR("gatts_conn_param_changed_callback, addr:%s, interval:%d, latency:%d, timeout:%d", addr, connection_interval,
+               peripheral_latency, supervision_timeout);
+}
+
 static gatts_callbacks_t gatts_cbs = {
     sizeof(gatts_cbs),
     connect_callback,
@@ -407,6 +414,7 @@ static gatts_callbacks_t gatts_cbs = {
     mtu_changed_callback,
     phy_read_callback,
     phy_updated_callback,
+    conn_param_changed_callback,
 };
 
 static int register_cmd(void *handle, int argc, char *argv[])
