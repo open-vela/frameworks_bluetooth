@@ -64,6 +64,8 @@ typedef void (*gatts_mtu_changed_cb_t)(gatts_handle_t srv_handle, bt_address_t *
 typedef void (*gatts_nofity_complete_cb_t)(gatts_handle_t srv_handle, gatt_status_t status, uint16_t attr_handle);
 typedef void (*gatts_phy_read_cb_t)(gatts_handle_t srv_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 typedef void (*gatts_phy_updated_cb_t)(gatts_handle_t srv_handle, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
+typedef void (*gatts_connection_parameter_changed_cb_t)(gatts_handle_t srv_handle, bt_address_t *addr, uint16_t connection_interval,
+                                                        uint16_t peripheral_latency, uint16_t supervision_timeout);
 
 typedef struct {
     uint32_t size;
@@ -75,6 +77,7 @@ typedef struct {
     gatts_mtu_changed_cb_t on_mtu_changed;
     gatts_phy_read_cb_t on_phy_read;
     gatts_phy_updated_cb_t on_phy_updated;
+    gatts_connection_parameter_changed_cb_t on_conn_param_changed;
 
 } gatts_callbacks_t;
 

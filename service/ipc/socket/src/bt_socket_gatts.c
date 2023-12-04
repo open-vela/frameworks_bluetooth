@@ -164,6 +164,18 @@ static uint16_t on_write_request_cb(gatts_handle_t srv_handle, uint16_t attr_han
     bt_socket_server_send(gatts_remote->ins, &packet, BT_GATT_SERVER_ON_WRITE_REQUEST);
     return length;
 }
+static void on_conn_param_changed_cb(gatts_handle_t srv_handle, bt_address_t *addr, uint16_t connection_interval,
+                                     uint16_t peripheral_latency, uint16_t supervision_timeout)
+{
+    bt_message_packet_t packet;
+    bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
+    packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
+    memcpy(&packet.gatts_cb._on_conn_param_changed.addr, addr, sizeof(bt_address_t));
+    packet.gatts_cb._on_conn_param_changed.interval = connection_interval;
+    packet.gatts_cb._on_conn_param_changed.latency = peripheral_latency;
+    packet.gatts_cb._on_conn_param_changed.timeout = supervision_timeout;
+    bt_socket_server_send(gatts_remote->ins, &packet, BT_GATT_SERVER_ON_CONN_PARAM_CHANGED);
+}
 const static gatts_callbacks_t g_gatts_socket_cbs = {
     .on_connected = on_connected_cb,
     .on_disconnected = on_disconnected_cb,
@@ -173,6 +185,7 @@ const static gatts_callbacks_t g_gatts_socket_cbs = {
     .on_mtu_changed = on_mtu_changed_cb,
     .on_phy_read = on_phy_read_cb,
     .on_phy_updated = on_phy_updated_cb,
+    .on_conn_param_changed = on_conn_param_changed_cb,
 };
 /****************************************************************************
  * Public Functions
@@ -350,6 +363,14 @@ int bt_socket_client_gatts_callback(service_poll_t *poll,
                         packet->gatts_cb._on_phy_updated.status,
                         packet->gatts_cb._on_phy_updated.tx_phy,
                         packet->gatts_cb._on_phy_updated.rx_phy);
+        break;
+    case BT_GATT_SERVER_ON_CONN_PARAM_CHANGED:
+        CALLBACK_REMOTE(gatts_remote, gatts_callbacks_t,
+                        on_conn_param_changed,
+                        &packet->gatts_cb._on_conn_param_changed.addr,
+                        packet->gatts_cb._on_conn_param_changed.interval,
+                        packet->gatts_cb._on_conn_param_changed.latency,
+                        packet->gatts_cb._on_conn_param_changed.timeout);
         break;
     case BT_GATT_SERVER_ON_READ_REQUEST: {
         bt_list_node_t *node;

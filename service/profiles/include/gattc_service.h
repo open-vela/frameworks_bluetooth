@@ -45,6 +45,8 @@ void if_gattc_on_mtu_changed(bt_address_t *addr, uint32_t mtu, gatt_status_t sta
 void if_gattc_on_phy_read(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 void if_gattc_on_phy_updated(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, gatt_status_t status);
 void if_gattc_on_rssi_read(bt_address_t *addr, int32_t rssi, gatt_status_t status);
+void if_gattc_on_connection_parameter_updated(bt_address_t *addr, uint16_t connection_interval, uint16_t peripheral_latency,
+                                              uint16_t supervision_timeout, gatt_status_t status);
 
 /*
  * gattc remote

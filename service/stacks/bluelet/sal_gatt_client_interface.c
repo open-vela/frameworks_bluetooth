@@ -26,6 +26,8 @@
 #include "sal_bluelet.h"
 #include "sal_gatt_client_interface.h"
 
+#ifdef CONFIG_BLUETOOTH_GATT
+
 static void gattc_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state)
 {
     bt_address_t addr;
@@ -249,3 +251,5 @@ bt_status_t bt_sal_gatt_client_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy
 
     return BT_STATUS_SUCCESS;
 }
+
+#endif
