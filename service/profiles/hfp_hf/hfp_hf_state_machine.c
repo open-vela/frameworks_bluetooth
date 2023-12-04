@@ -226,14 +226,14 @@ static bool call_index_cmp(void *data, void *context)
 {
     hfp_current_call_t *call = (hfp_current_call_t *)data;
 
-    return call->index == *((uint32_t *)context);
+    return call->index == *((int *)context);
 }
 
 static bool call_state_cmp(void *data, void *context)
 {
     hfp_current_call_t *call = (hfp_current_call_t *)data;
 
-    return call->state == *((uint32_t *)context);
+    return call->state == *((hfp_hf_call_state_t *)context);
 }
 
 static hfp_current_call_t *hf_call_new(uint32_t idx,
