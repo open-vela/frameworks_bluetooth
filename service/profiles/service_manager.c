@@ -169,7 +169,10 @@ const void *service_manager_get_profile(enum profile_id id)
 {
     assert(id < PROFILE_MAX);
     profile_service_t *profile = service_slots[id].service;
-    assert(profile && profile->get_profile_interface);
+    if (!profile || !profile->get_profile_interface) {
+        BT_LOGE("%s profile-id:%d is not found, profile:%p\n", __func__, id, profile);
+        assert(0);
+    }
 
     return profile->get_profile_interface();
 }
