@@ -420,6 +420,13 @@ static void rssi_read_callback(void *conn_handle, gatt_status_t status, int32_t 
     PRINT("gattc read rssi complete, status:%d, rssi:%" PRIi32, status, rssi);
 }
 
+static void conn_param_updated_callback(void *conn_handle, gatt_status_t status, uint16_t connection_interval,
+                                        uint16_t peripheral_latency, uint16_t supervision_timeout)
+{
+    PRINT("gattc connection paramter updated, status:%d, interval:%d, latency:%d, timeout:%d", status, connection_interval,
+          peripheral_latency, supervision_timeout);
+}
+
 static gattc_callbacks_t gattc_cbs = {
     sizeof(gattc_cbs),
     connect_callback,
@@ -432,6 +439,7 @@ static gattc_callbacks_t gattc_cbs = {
     phy_read_callback,
     phy_updated_callback,
     rssi_read_callback,
+    conn_param_updated_callback,
 };
 
 static int create_cmd(void *handle, int argc, char *argv[])

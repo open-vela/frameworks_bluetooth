@@ -37,6 +37,8 @@
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 #include "advertising.h"
 #include "bt_le_scan.h"
+#include "gattc_service.h"
+#include "gatts_service.h"
 #include "sal_adapter_interface.h"
 #include "scan_manager.h"
 #endif
