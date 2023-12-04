@@ -316,6 +316,9 @@ static void gatts_process_message(void *data)
         bt_sal_gatt_server_send_response(&msg->param.write.addr, msg->param.write.request_id, NULL, 0);
     } break;
     case GATTS_EVENT_MTU_CHANGE:
+        if (bt_addr_compare(&g_gatts_manager.remote_addr, &msg->param.mtu_change.addr))
+            break;
+
         GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_mtu_changed, &msg->param.mtu_change.addr, msg->param.mtu_change.mtu);
         break;
     case GATTS_EVENT_CHANGE_SEND: {
@@ -342,6 +345,15 @@ static void gatts_process_message(void *data)
                 GATT_CBACK(service->callbacks, on_phy_updated, service, msg->param.phy.status, msg->param.phy.tx_phy, msg->param.phy.rx_phy);
                 bt_list_remove(g_gatts_manager.pend_ops, operation);
             }
+        }
+    } break;
+    case GATTS_EVENT_CONN_PARAM_CHANGE: {
+        if (bt_addr_compare(&g_gatts_manager.remote_addr, &msg->param.conn_param.addr))
+            break;
+
+        if (msg->param.conn_param.status == GATT_STATUS_SUCCESS) {
+            GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_conn_param_changed, &msg->param.conn_param.addr,
+                                   msg->param.conn_param.interval, msg->param.conn_param.latency, msg->param.conn_param.timeout);
         }
     } break;
     default: {
@@ -840,6 +852,18 @@ void if_gatts_on_phy_updated(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_
     msg->param.phy.tx_phy = tx_phy;
     msg->param.phy.rx_phy = rx_phy;
     memcpy(&msg->param.phy.addr, addr, sizeof(bt_address_t));
+    gatts_send_message(msg);
+}
+
+void if_gatts_on_connection_parameter_changed(bt_address_t *addr, uint16_t connection_interval, uint16_t peripheral_latency,
+                                              uint16_t supervision_timeout, gatt_status_t status)
+{
+    gatts_msg_t *msg = gatts_msg_new(GATTS_EVENT_CONN_PARAM_CHANGE, 0);
+    msg->param.conn_param.status = status;
+    msg->param.conn_param.interval = connection_interval;
+    msg->param.conn_param.latency = peripheral_latency;
+    msg->param.conn_param.timeout = supervision_timeout;
+    memcpy(&msg->param.conn_param.addr, addr, sizeof(bt_address_t));
     gatts_send_message(msg);
 }
 

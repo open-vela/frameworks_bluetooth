@@ -48,6 +48,7 @@
     BT_GATT_CLIENT_ON_PHY_READ,
     BT_GATT_CLIENT_ON_PHY_UPDATED,
     BT_GATT_CLIENT_ON_RSSI_READ,
+    BT_GATT_CLIENT_ON_CONN_PARAM_UPDATED,
     BT_GATT_CLIENT_CALLBACK_END,
 #endif
 
@@ -222,6 +223,14 @@ typedef union {
         gatt_status_t status;
         int32_t rssi;
     } _on_rssi_read;
+
+    struct {
+        void *remote;
+        gatt_status_t status;
+        uint16_t interval;
+        uint16_t latency;
+        uint16_t timeout;
+    } _on_conn_param_updated;
 
 } bt_message_gattc_callbacks_t;
 

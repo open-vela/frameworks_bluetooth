@@ -52,6 +52,8 @@ typedef void (*gattc_notify_cb_t)(gattc_handle_t conn_handle, uint16_t attr_hand
 typedef void (*gattc_phy_read_cb_t)(gattc_handle_t conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 typedef void (*gattc_phy_updated_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 typedef void (*gattc_rssi_read_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, int32_t rssi);
+typedef void (*gattc_connection_parameter_updated_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, uint16_t connection_interval,
+                                                        uint16_t peripheral_latency, uint16_t supervision_timeout);
 
 typedef struct {
     uint32_t size;
@@ -65,6 +67,7 @@ typedef struct {
     gattc_phy_read_cb_t on_phy_read;
     gattc_phy_updated_cb_t on_phy_updated;
     gattc_rssi_read_cb_t on_rssi_read;
+    gattc_connection_parameter_updated_cb_t on_conn_param_updated;
 } gattc_callbacks_t;
 
 bt_status_t BTSYMBOLS(bt_gattc_create_connect)(bt_instance_t *ins, gattc_handle_t *phandle, gattc_callbacks_t *callbacks);

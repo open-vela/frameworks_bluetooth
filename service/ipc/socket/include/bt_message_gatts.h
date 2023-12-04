@@ -44,6 +44,7 @@
     BT_GATT_SERVER_NOTIFY_COMPLETE,
     BT_GATT_SERVER_ON_PHY_READ,
     BT_GATT_SERVER_ON_PHY_UPDATED,
+    BT_GATT_SERVER_ON_CONN_PARAM_CHANGED,
     BT_GATT_SERVER_CALLBACK_END,
 #endif
 
@@ -202,6 +203,14 @@ typedef union {
         ble_phy_type_t tx_phy;
         ble_phy_type_t rx_phy;
     } _on_phy_updated;
+
+    struct {
+        void *remote;
+        bt_address_t addr;
+        uint16_t interval;
+        uint16_t latency;
+        uint16_t timeout;
+    } _on_conn_param_changed;
 
 } bt_message_gatts_callbacks_t;
 

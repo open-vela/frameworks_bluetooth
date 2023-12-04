@@ -38,6 +38,7 @@ typedef enum {
     GATTC_EVENT_PHY_READ,
     GATTC_EVENT_PHY_UPDATE,
     GATTC_EVENT_RSSI_READ,
+    GATTC_EVENT_CONN_PARAM_UPDATE,
 } gattc_event_t;
 
 typedef enum {
@@ -133,6 +134,16 @@ typedef struct
             gatt_status_t status;
             int32_t rssi;
         } rssi_read;
+
+        /**
+         * @brief GATTC_EVENT_CONN_PARAM_UPDATE
+         */
+        struct gattc_conn_param_update_evt_param {
+            gatt_status_t status;
+            uint16_t interval;
+            uint16_t latency;
+            uint16_t timeout;
+        } conn_param;
 
     } param;
 

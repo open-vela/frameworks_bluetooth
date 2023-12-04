@@ -37,6 +37,7 @@ typedef enum {
     GATTS_EVENT_CHANGE_SEND,
     GATTS_EVENT_PHY_READ,
     GATTS_EVENT_PHY_UPDATE,
+    GATTS_EVENT_CONN_PARAM_CHANGE,
 } gatts_event_t;
 
 typedef enum {
@@ -126,6 +127,17 @@ typedef struct
             ble_phy_type_t tx_phy;
             ble_phy_type_t rx_phy;
         } phy;
+
+        /**
+         * @brief GATTS_EVENT_CONN_PARAM_CHANGE
+         */
+        struct gatts_conn_param_evt_param {
+            bt_address_t addr;
+            gatt_status_t status;
+            uint16_t interval;
+            uint16_t latency;
+            uint16_t timeout;
+        } conn_param;
 
     } param;
 
