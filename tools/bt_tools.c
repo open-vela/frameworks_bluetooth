@@ -1206,7 +1206,7 @@ static int get_bonded_devices_cmd(void *handle, int argc, char **argv)
         device_dump(handle, addrs + i, transport);
     }
     free(addrs);
-    PRINT("bonded device cnt:%" PRId32, num);
+    PRINT("bonded device cnt:%d", num);
 
     return CMD_OK;
 }
@@ -1228,7 +1228,7 @@ static int get_connected_devices_cmd(void *handle, int argc, char **argv)
         device_dump(handle, addrs + i, transport);
     }
     free(addrs);
-    PRINT("connected device cnt:%" PRId32, num);
+    PRINT("connected device cnt:%d", num);
 
     return CMD_OK;
 }
