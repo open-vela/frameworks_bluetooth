@@ -27,6 +27,8 @@
 #include "sal_bluelet.h"
 #include "sal_gatt_server_interface.h"
 
+#ifdef CONFIG_BLUETOOTH_GATT
+
 typedef struct {
     uint16_t start_handle;
     uint16_t end_handle;
@@ -347,3 +349,5 @@ bt_status_t bt_sal_gatt_server_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy
 
     return BT_STATUS_SUCCESS;
 }
+
+#endif

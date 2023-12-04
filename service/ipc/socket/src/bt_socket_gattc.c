@@ -176,6 +176,18 @@ static void on_rssi_read_cb(gattc_handle_t conn_handle, gatt_status_t status, in
     packet.gattc_cb._on_rssi_read.rssi = rssi;
     bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_RSSI_READ);
 }
+static void on_conn_param_updated_cb(gattc_handle_t conn_handle, gatt_status_t status, uint16_t connection_interval,
+                                     uint16_t peripheral_latency, uint16_t supervision_timeout)
+{
+    bt_message_packet_t packet;
+    bt_gattc_remote_t *gattc_remote = if_gattc_get_remote(conn_handle);
+    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_conn_param_updated.status = status;
+    packet.gattc_cb._on_conn_param_updated.interval = connection_interval;
+    packet.gattc_cb._on_conn_param_updated.latency = peripheral_latency;
+    packet.gattc_cb._on_conn_param_updated.timeout = supervision_timeout;
+    bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_CONN_PARAM_UPDATED);
+}
 const static gattc_callbacks_t g_gattc_socket_cbs = {
     .on_connected = on_connected_cb,
     .on_disconnected = on_disconnected_cb,
@@ -187,6 +199,7 @@ const static gattc_callbacks_t g_gattc_socket_cbs = {
     .on_phy_read = on_phy_read_cb,
     .on_phy_updated = on_phy_updated_cb,
     .on_rssi_read = on_rssi_read_cb,
+    .on_conn_param_updated = on_conn_param_updated_cb,
 };
 /****************************************************************************
  * Public Functions
@@ -383,6 +396,14 @@ int bt_socket_client_gattc_callback(service_poll_t *poll,
                         on_rssi_read,
                         packet->gattc_cb._on_rssi_read.status,
                         packet->gattc_cb._on_rssi_read.rssi);
+        break;
+    case BT_GATT_CLIENT_ON_CONN_PARAM_UPDATED:
+        CALLBACK_REMOTE(gattc_remote, gattc_callbacks_t,
+                        on_conn_param_updated,
+                        packet->gattc_cb._on_conn_param_updated.status,
+                        packet->gattc_cb._on_conn_param_updated.interval,
+                        packet->gattc_cb._on_conn_param_updated.latency,
+                        packet->gattc_cb._on_conn_param_updated.timeout);
         break;
     default:
         return BT_STATUS_PARM_INVALID;

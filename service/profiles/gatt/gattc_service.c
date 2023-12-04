@@ -278,6 +278,10 @@ static void gattc_process_message(void *data)
     case GATTC_EVENT_RSSI_READ: {
         GATT_CBACK(connection->callbacks, on_rssi_read, connection, msg->param.rssi_read.status, msg->param.rssi_read.rssi);
     } break;
+    case GATTC_EVENT_CONN_PARAM_UPDATE: {
+        GATT_CBACK(connection->callbacks, on_conn_param_updated, connection, msg->param.conn_param.status, msg->param.conn_param.interval,
+                   msg->param.conn_param.latency, msg->param.conn_param.timeout);
+    } break;
     default: {
 
     } break;
@@ -771,6 +775,17 @@ void if_gattc_on_rssi_read(bt_address_t *addr, int32_t rssi, gatt_status_t statu
     gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_RSSI_READ, addr, 0);
     msg->param.rssi_read.status = status;
     msg->param.rssi_read.rssi = rssi;
+    gattc_send_message(msg);
+}
+
+void if_gattc_on_connection_parameter_updated(bt_address_t *addr, uint16_t connection_interval, uint16_t peripheral_latency,
+                                              uint16_t supervision_timeout, gatt_status_t status)
+{
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_CONN_PARAM_UPDATE, addr, 0);
+    msg->param.conn_param.status = status;
+    msg->param.conn_param.interval = connection_interval;
+    msg->param.conn_param.latency = peripheral_latency;
+    msg->param.conn_param.timeout = supervision_timeout;
     gattc_send_message(msg);
 }
 
