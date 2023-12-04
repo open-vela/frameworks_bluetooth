@@ -417,7 +417,7 @@ static void phy_updated_callback(void *conn_handle, gatt_status_t status, ble_ph
 
 static void rssi_read_callback(void *conn_handle, gatt_status_t status, int32_t rssi)
 {
-    PRINT("gattc read rssi complete, status:%d, rssi:%d", status, rssi);
+    PRINT("gattc read rssi complete, status:%d, rssi:%" PRIi32, status, rssi);
 }
 
 static gattc_callbacks_t gattc_cbs = {
