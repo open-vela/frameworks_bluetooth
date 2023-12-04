@@ -195,8 +195,7 @@ bt_status_t bt_hfp_hf_dial(bt_instance_t *ins, bt_address_t *addr, const char *n
       return BT_STATUS_PARM_INVALID;
 
     memcpy(&packet.hfp_hf_pl._bt_hfp_hf_dial.addr, addr, sizeof(bt_address_t));
-    strncpy(packet.hfp_hf_pl._bt_hfp_hf_dial.number, number,
-            sizeof(packet.hfp_hf_pl._bt_hfp_hf_dial.number));
+    strncpy(packet.hfp_hf_pl._bt_hfp_hf_dial.number, number, HFP_PHONENUM_DIGITS_MAX);
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_HF_DIAL);
     if (status != BT_STATUS_SUCCESS)
         return status;
@@ -303,14 +302,21 @@ bt_status_t bt_hfp_hf_query_current_calls(bt_instance_t *ins, bt_address_t *addr
 {
     bt_message_packet_t packet;
     bt_status_t status;
+    int size;
 
     memcpy(&packet.hfp_hf_pl._bt_hfp_hf_query_current_calls.addr, addr, sizeof(bt_address_t));
-    packet.hfp_hf_pl._bt_hfp_hf_query_current_calls.calls = calls;
-    packet.hfp_hf_pl._bt_hfp_hf_query_current_calls.num = num;
-    packet.hfp_hf_pl._bt_hfp_hf_query_current_calls.allocator = allocator;
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_HF_QUERY_CURRENT_CALLS);
     if (status != BT_STATUS_SUCCESS)
         return status;
+
+    *num = packet.hfp_hf_pl._bt_hfp_hf_query_current_calls.num;
+    size = packet.hfp_hf_pl._bt_hfp_hf_query_current_calls.num * sizeof(hfp_current_call_t);
+    if (size) {
+        if (!allocator((void **)calls, size))
+            return BT_STATUS_NOMEM;
+
+        memcpy(*calls, &packet.hfp_hf_pl._bt_hfp_hf_query_current_calls.calls, size);
+    }
 
     return packet.hfp_hf_r.status;
 }
@@ -324,8 +330,7 @@ bt_status_t bt_hfp_hf_send_at_cmd(bt_instance_t *ins, bt_address_t *addr, const 
       return BT_STATUS_PARM_INVALID;
 
     memcpy(&packet.hfp_hf_pl._bt_hfp_hf_send_at_cmd.addr, addr, sizeof(bt_address_t));
-    strncpy(packet.hfp_hf_pl._bt_hfp_hf_send_at_cmd.cmd, cmd,
-            sizeof(packet.hfp_hf_pl._bt_hfp_hf_send_at_cmd.cmd));
+    strncpy(packet.hfp_hf_pl._bt_hfp_hf_send_at_cmd.cmd, cmd, HFP_AT_LEN_MAX);
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_HF_SEND_AT_CMD);
     if (status != BT_STATUS_SUCCESS)
         return status;
