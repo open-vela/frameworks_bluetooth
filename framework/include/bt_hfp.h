@@ -32,6 +32,8 @@ extern "C" {
    for better compatibility.
    Also defined as BTA_HF_CLIENT_AT_MAX_LEN (512) at Android */
 #define HFP_AT_LEN_MAX 512
+#define HFP_CALL_LIST_MAX 16
+
 
 typedef enum {
     HFP_AUDIO_STATE_DISCONNECTED,

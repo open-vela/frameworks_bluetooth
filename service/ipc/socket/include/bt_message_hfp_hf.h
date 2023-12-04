@@ -107,10 +107,9 @@
         } _bt_hfp_hf_control_call;
 
         struct {
-            bt_address_t addr;
-            hfp_current_call_t **calls;
-            int *num;
-            bt_allocator_t allocator;
+            bt_address_t addr;                           /* @param[in]  */
+            int num;                                     /* @param[out] */
+            hfp_current_call_t calls[HFP_CALL_LIST_MAX]; /* @param[out] */
         } _bt_hfp_hf_query_current_calls;
 
         struct {

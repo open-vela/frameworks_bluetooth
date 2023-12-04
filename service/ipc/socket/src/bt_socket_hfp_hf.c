@@ -111,8 +111,7 @@ static void on_at_cmd_complete_cb(void *cookie, bt_address_t *addr, const char *
     bt_instance_t *ins = cookie;
 
     memcpy(&packet.hfp_hf_cb._on_at_cmd_complete_cb.addr, addr, sizeof(bt_address_t));
-    strncpy(packet.hfp_hf_cb._on_at_cmd_complete_cb.resp, resp,
-            sizeof(packet.hfp_hf_cb._on_at_cmd_complete_cb.resp));
+    strncpy(packet.hfp_hf_cb._on_at_cmd_complete_cb.resp, resp, HFP_AT_LEN_MAX);
 
     bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_AT_CMD_COMPLETE);
 }
@@ -136,6 +135,15 @@ const static hfp_hf_callbacks_t g_hfp_hf_socket_cbs = {
     .cmd_complete_cb = on_at_cmd_complete_cb,
     .ring_indication_cb = on_ring_indication_cb,
 };
+
+static bool bt_socket_allocator(void **data, uint32_t size)
+{
+    *data = zalloc(size);
+    if (!(*data))
+        return false;
+
+    return true;
+}
 
 /****************************************************************************
  * Public Functions
@@ -247,12 +255,18 @@ void bt_socket_server_hfp_hf_process(service_poll_t *poll, int fd,
                                                 packet->hfp_hf_pl._bt_hfp_hf_control_call.chld,
                                                 packet->hfp_hf_pl._bt_hfp_hf_control_call.index);
         break;
-    case BT_HFP_HF_QUERY_CURRENT_CALLS:
+    case BT_HFP_HF_QUERY_CURRENT_CALLS: {
+        hfp_current_call_t *calls = NULL;
+        int num = 0;
         packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_query_current_calls)(ins,
                                                 &packet->hfp_hf_pl._bt_hfp_hf_query_current_calls.addr,
-                                                packet->hfp_hf_pl._bt_hfp_hf_query_current_calls.calls,
-                                                packet->hfp_hf_pl._bt_hfp_hf_query_current_calls.num,
-                                                packet->hfp_hf_pl._bt_hfp_hf_query_current_calls.allocator);
+                                                &calls, &num, (bt_allocator_t)bt_socket_allocator);
+        packet->hfp_hf_pl._bt_hfp_hf_query_current_calls.num = num;
+        memcpy(packet->hfp_hf_pl._bt_hfp_hf_query_current_calls.calls, calls, sizeof(hfp_current_call_t) * MIN(num, HFP_CALL_LIST_MAX));
+        if (calls)
+            free(calls);
+
+        }
         break;
     case BT_HFP_HF_SEND_AT_CMD:
         packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_send_at_cmd)(ins,
