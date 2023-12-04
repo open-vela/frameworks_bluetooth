@@ -82,7 +82,7 @@ bt_instance_t *bluetooth_get_instance(void)
     uint32_t handle;
 
     status = manager_get_instance("local", getpid(), &handle);
-    if (status)
+    if (status == BT_STATUS_SUCCESS)
         return (bt_instance_t *)handle;
     else
         return bluetooth_create_instance();
