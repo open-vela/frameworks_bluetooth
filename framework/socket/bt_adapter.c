@@ -559,7 +559,7 @@ bt_status_t bt_adapter_get_bonded_devices(bt_instance_t *ins, bt_transport_t tra
 
   if (*num > 0)
     {
-      *addr = allocator(sizeof(bt_address_t) * *num);
+      allocator((void **)addr, sizeof(bt_address_t) * *num);
       if (*addr == NULL)
         return BT_STATUS_NOMEM;
       memcpy(*addr, packet.adpt_pl._bt_adapter_get_bonded_devices.addr,
@@ -585,7 +585,7 @@ bt_status_t bt_adapter_get_connected_devices(bt_instance_t *ins, bt_transport_t 
 
   if (*num > 0)
     {
-      *addr = allocator(sizeof(bt_address_t) * *num);
+      allocator((void **)addr, sizeof(bt_address_t) * *num);
       if (*addr == NULL)
         return BT_STATUS_NOMEM;
       memcpy(*addr, packet.adpt_pl._bt_adapter_get_connected_devices.addr,
