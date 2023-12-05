@@ -632,6 +632,18 @@ static bt_status_t hfp_hf_update_battery_level(bt_address_t *addr, uint8_t level
     return hfp_hf_send_message(msg);
 }
 
+static bt_status_t hfp_hf_send_dtmf(bt_address_t *addr, char dtmf)
+{
+    CHECK_ENABLED();
+
+    hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_SEND_DTMF, addr);
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    msg->data.valueint1 = dtmf;
+    return hfp_hf_send_message(msg);
+}
+
 static const hfp_hf_interface_t HfInterface = {
     sizeof(HfInterface),
     .register_callbacks = hfp_hf_register_callbacks,
@@ -656,6 +668,7 @@ static const hfp_hf_interface_t HfInterface = {
     .query_current_calls = hfp_hf_query_current_calls,
     .send_at_cmd = hfp_hf_send_at_cmd,
     .update_battery_level = hfp_hf_update_battery_level,
+    .send_dtmf = hfp_hf_send_dtmf,
 };
 
 static const void *get_hf_profile_interface(void)

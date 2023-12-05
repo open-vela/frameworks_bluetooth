@@ -351,3 +351,17 @@ bt_status_t bt_hfp_hf_update_battery_level(bt_instance_t *ins, bt_address_t *add
 
     return packet.hfp_hf_r.status;
 }
+
+bt_status_t bt_hfp_hf_send_dtmf(bt_instance_t *ins, bt_address_t *addr, char dtmf)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.hfp_hf_pl._bt_hfp_hf_send_dtmf.addr, addr, sizeof(bt_address_t));
+    packet.hfp_hf_pl._bt_hfp_hf_send_dtmf.dtmf = dtmf;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_HF_SEND_DTMF);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_hf_r.status;
+}

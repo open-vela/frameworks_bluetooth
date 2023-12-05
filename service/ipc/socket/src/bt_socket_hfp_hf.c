@@ -262,7 +262,8 @@ void bt_socket_server_hfp_hf_process(service_poll_t *poll, int fd,
                                                 &packet->hfp_hf_pl._bt_hfp_hf_query_current_calls.addr,
                                                 &calls, &num, (bt_allocator_t)bt_socket_allocator);
         packet->hfp_hf_pl._bt_hfp_hf_query_current_calls.num = num;
-        memcpy(packet->hfp_hf_pl._bt_hfp_hf_query_current_calls.calls, calls, sizeof(hfp_current_call_t) * MIN(num, HFP_CALL_LIST_MAX));
+        memcpy(packet->hfp_hf_pl._bt_hfp_hf_query_current_calls.calls, calls,
+               sizeof(hfp_current_call_t) * MIN(num, HFP_CALL_LIST_MAX));
         if (calls)
             free(calls);
 
@@ -277,6 +278,11 @@ void bt_socket_server_hfp_hf_process(service_poll_t *poll, int fd,
         packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_update_battery_level)(ins,
                                                 &packet->hfp_hf_pl._bt_hfp_hf_update_battery_level.addr,
                                                 packet->hfp_hf_pl._bt_hfp_hf_update_battery_level.level);
+        break;
+    case BT_HFP_HF_SEND_DTMF:
+        packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_send_dtmf)(ins,
+                                                &packet->hfp_hf_pl._bt_hfp_hf_send_dtmf.addr,
+                                                packet->hfp_hf_pl._bt_hfp_hf_send_dtmf.dtmf);
         break;
     default:
         break;
