@@ -38,6 +38,7 @@
     BT_HFP_HF_QUERY_CURRENT_CALLS,
     BT_HFP_HF_SEND_AT_CMD,
     BT_HFP_HF_UPDATE_BATTERY_LEVEL,
+    BT_HFP_HF_SEND_DTMF,
     BT_HFP_HF_MESSAGE_END,
 #endif
 
@@ -121,6 +122,11 @@
             bt_address_t addr;
             uint8_t level;
         } _bt_hfp_hf_update_battery_level;
+
+        struct {
+            bt_address_t addr;
+            char dtmf;
+        } _bt_hfp_hf_send_dtmf;
     } bt_message_hfp_hf_t;
 
     typedef union {

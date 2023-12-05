@@ -41,6 +41,7 @@ static int control_call_cmd(void *handle, int argc, char *argv[]);
 static int query_current_calls_cmd(void *handle, int argc, char *argv[]);
 static int send_at_cmd_cmd(void *handle, int argc, char *argv[]);
 static int update_battery_level_cmd(void *handle, int argc, char *argv[]);
+static int send_dtmf_cmd(void *handle, int argc, char *argv[]);
 
 #define CHLD_0_DESC "0: Releases all held calls or sets User Determined User Busy (UDUB) for a waiting call"
 #define CHLD_1_DESC "1: Releases all active calls (if any exist) and accepts the other (held or waiting) call"
@@ -49,7 +50,7 @@ static int update_battery_level_cmd(void *handle, int argc, char *argv[]);
 #define CHLD_4_DESC "4: Connects the two calls and disconnects the subscriber from both calls (Explicit Call Transfer)." \
                     "Support for this value and its associated functionality is optional for the HF"
 
-#define ACCEPT_CALL_USAGE "Accept voice call                    params: <address> <flag>\n"       \
+#define ACCEPT_CALL_USAGE "Accept voice call                    params: <address> <flag>\n"      \
                           "\t\t\t0: Accept an incoming call, invalid when is no incoming call\n" \
                           "\t\t\t" CHLD_1_DESC "\n"                                              \
                           "\t\t\t" CHLD_2_DESC "\n"
@@ -60,11 +61,14 @@ static int update_battery_level_cmd(void *handle, int argc, char *argv[]);
 #define HANGUP_CALL_USAGE "Terminate a call                     params: <address>\n" \
                           "\t\t\thangup an active/dialing/alerting voice call if any exist, otherwise then releases all held calls."
 
-#define HOLD_CALL_USAGE   "Control multi call                   params: <address> <control>\n" \
+#define HOLD_CALL_USAGE   "Control multi call                   params: <address> <control>\n"   \
                           "\t\t\t" CHLD_0_DESC "\n"                                              \
                           "\t\t\t" CHLD_1_DESC "\n"                                              \
                           "\t\t\t" CHLD_2_DESC "\n"                                              \
                           "\t\t\t" CHLD_3_DESC "\n"
+
+#define SEND_DTMF_USAGE   "Send DTMF code                       params: <address> <dtmf>\n"           \
+                          "\t\t\t<dtmf>: one of \"0, 1, 2, 3, 4, 5, 6, 7, 8, 9, *, #, A, B, C, D\"\n" \
 
 static bt_command_t g_hfp_tables[] = {
     { "connect",         connect_cmd,                  0, "Establish hfp SLC connection         params: <address>"          },
@@ -74,7 +78,7 @@ static bt_command_t g_hfp_tables[] = {
     { "startvr",         start_voice_recognition_cmd,  0, "Start voice recognition              params: <address>"          },
     { "stopvr",          stop_voice_recognition_cmd,   0, "Stop voice recognition               params: <address>"          },
     { "dial",            dial_cmd,                     0, "Dial phone number                    params: <address> <number>" },
-    { "dialm",           dial_memory_cmd,              0, "Place a call using memory dialing    params: <address> <memory>"},
+    { "dialm",           dial_memory_cmd,              0, "Place a call using memory dialing    params: <address> <memory>" },
     { "redial",          redial_cmd,                   0, "Redial the last number               params: <address>"          },
     { "accept",          accept_call_cmd,              0, ACCEPT_CALL_USAGE                                                 },
     { "reject",          reject_call_cmd,              0, REJECT_CALL_USAGE                                                 },
@@ -84,6 +88,7 @@ static bt_command_t g_hfp_tables[] = {
     { "query",           query_current_calls_cmd,      0, "Query current calls                  params: <address>"          },
     { "sendat",          send_at_cmd_cmd,              0, "Send customize AT command to peer    params: <address> <atcmd>"  },
     { "battery",         update_battery_level_cmd,     0, "Update battery level within [0, 100] params: <address> <level>\""},
+    { "dtmf",            send_dtmf_cmd,                0, SEND_DTMF_USAGE                                                   },
     { "state",           get_hfp_connection_state_cmd, 0, "get hfp profile state"                                           },
 };
 
@@ -398,6 +403,31 @@ static int update_battery_level_cmd(void *handle, int argc, char *argv[])
         return CMD_INVALID_PARAM;
 
     if (bt_hfp_hf_update_battery_level(handle, &addr, level) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int send_dtmf_cmd(void *handle, int argc, char *argv[])
+{
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (strlen(argv[1]) != 1)
+        return CMD_INVALID_PARAM;
+
+    char dtmf = argv[1][0];
+    if (((dtmf < '0') || (dtmf > '9')) &&
+        ((dtmf < 'A') || (dtmf > 'D')) &&
+        (dtmf != '*') && (dtmf != '#'))
+        return CMD_INVALID_PARAM;
+
+    if (bt_hfp_hf_send_dtmf(handle, &addr, dtmf) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
