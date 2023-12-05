@@ -24,6 +24,40 @@
 #include "service_manager.h"
 #include "utils/log.h"
 
+static bt_status_t safety_assemble_sdp_array(uint8_t **sdp_ptr, size_t *remaining_space, const char *src)
+{
+    uint32_t src_len = strlen(src);
+    if (src_len + 1 > *remaining_space) {
+        return BT_STATUS_NO_RESOURCES;
+    }
+
+    memcpy(*sdp_ptr, src, src_len);
+    (*sdp_ptr)[src_len] = '\0';
+    *sdp_ptr += (src_len + 1);
+    *remaining_space -= (src_len + 1);
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t safety_assemble_hid_info(uint8_t **sdp_ptr, size_t *remaining_space, const hid_info_t *hid_info)
+{
+    if (sizeof(hid_info_t) > *remaining_space) {
+        return BT_STATUS_NO_RESOURCES;
+    }
+    memcpy(*sdp_ptr, hid_info, sizeof(hid_info_t));
+    *sdp_ptr += sizeof(hid_info_t);
+    *remaining_space -= sizeof(hid_info_t);
+
+    if (hid_info->dsc_list_length > *remaining_space) {
+        return BT_STATUS_NO_RESOURCES;
+    }
+    memcpy(*sdp_ptr, hid_info->dsc_list, hid_info->dsc_list_length);
+    *sdp_ptr += hid_info->dsc_list_length;
+    *remaining_space -= hid_info->dsc_list_length;
+
+    return BT_STATUS_SUCCESS;
+}
+
 void *bt_hid_device_register_callbacks(bt_instance_t *ins, const hid_device_callbacks_t *callbacks)
 {
     bt_message_packet_t packet;
@@ -76,7 +110,25 @@ bt_status_t bt_hid_device_register_app(bt_instance_t *ins, hid_device_sdp_settin
     bt_status_t status;
 
     packet.hidd_pl._bt_hid_device_register_app.le_hid = le_hid;
-    memcpy(&packet.hidd_pl._bt_hid_device_register_app.sdp, sdp, sizeof(hid_device_sdp_settings_t));
+    uint8_t *sdp_ptr = packet.hidd_pl._bt_hid_device_register_app.sdp;
+    size_t remaining_space = sizeof(packet.hidd_pl._bt_hid_device_register_app.sdp);
+
+    if (BT_STATUS_SUCCESS != safety_assemble_sdp_array(&sdp_ptr, &remaining_space, sdp->name)) {
+        return BT_STATUS_NO_RESOURCES;
+    }
+
+    if (BT_STATUS_SUCCESS != safety_assemble_sdp_array(&sdp_ptr, &remaining_space, sdp->description)) {
+        return BT_STATUS_NO_RESOURCES;
+    }
+
+    if (BT_STATUS_SUCCESS != safety_assemble_sdp_array(&sdp_ptr, &remaining_space, sdp->provider)) {
+        return BT_STATUS_NO_RESOURCES;
+    }
+
+    if (BT_STATUS_SUCCESS != safety_assemble_hid_info(&sdp_ptr, &remaining_space, &sdp->hids_info)) {
+        return BT_STATUS_NO_RESOURCES;
+    }
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_HID_DEVICE_REGISTER_APP);
     if (status != BT_STATUS_SUCCESS)
         return status;

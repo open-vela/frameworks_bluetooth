@@ -138,6 +138,29 @@ const static hid_device_callbacks_t g_hid_device_socket_cbs = {
     .receive_report_cb = on_receive_report_cb,
     .virtual_unplug_cb = on_virtual_unplug_cb,
 };
+
+static void parse_and_copy_sdp(char *sdp_data, hid_device_sdp_settings_t *sdp_setting)
+{
+    uint32_t data_offset = 0;
+
+    sdp_setting->name = sdp_data;
+    data_offset = (strlen(sdp_setting->name) + 1);
+    sdp_data += data_offset;
+
+    sdp_setting->description = sdp_data;
+    data_offset = (strlen(sdp_setting->description) + 1);
+    sdp_data += data_offset;
+
+    sdp_setting->provider = sdp_data;
+    data_offset = (strlen(sdp_setting->provider) + 1);
+    sdp_data += data_offset;
+
+    memcpy(&sdp_setting->hids_info, sdp_data, sizeof(hid_info_t));
+    sdp_data += sizeof(hid_info_t);
+
+    sdp_setting->hids_info.dsc_list = (uint8_t*)sdp_data;
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -145,6 +168,8 @@ void bt_socket_server_hid_device_process(service_poll_t *poll, int fd,
                                          bt_instance_t *ins, bt_message_packet_t *packet)
 {
     hid_device_interface_t *profile;
+    hid_device_sdp_settings_t temp_sdp_setting;
+
     switch (packet->code) {
     case BT_HID_DEVICE_REGISTER_CALLBACK:
         if (ins->hidd_cookie == NULL) {
@@ -169,8 +194,9 @@ void bt_socket_server_hid_device_process(service_poll_t *poll, int fd,
         }
         break;
     case BT_HID_DEVICE_REGISTER_APP:
+        parse_and_copy_sdp((char *)packet->hidd_pl._bt_hid_device_register_app.sdp, &temp_sdp_setting);
         packet->hidd_r.status = BTSYMBOLS(bt_hid_device_register_app)(ins,
-                                          &packet->hidd_pl._bt_hid_device_register_app.sdp,
+                                          &temp_sdp_setting,
                                           packet->hidd_pl._bt_hid_device_register_app.le_hid);
         break;
     case BT_HID_DEVICE_UNREGISTER_APP:
