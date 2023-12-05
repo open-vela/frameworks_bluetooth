@@ -294,7 +294,19 @@ bt_status_t bt_device_connect_le(bt_instance_t *ins,
     ble_addr_type_t type,
     ble_connect_params_t *param)
 {
-  return BT_STATUS_SUCCESS;
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    memcpy(&packet.devs_pl._bt_device_connect_le.addr, addr, sizeof(*addr));
+    packet.devs_pl._bt_device_connect_le.type = type;
+    memcpy(&packet.devs_pl._bt_device_connect_le.param, param, sizeof(*param));
+    status = bt_device_send(ins, addr, &packet, BT_DEVICE_CONNECT_LE);
+    if (status != BT_STATUS_SUCCESS)
+    {
+      return status;
+    }
+
+    return packet.devs_r.status;
 }
 
 bt_status_t bt_device_disconnect_le(bt_instance_t *ins, bt_address_t *addr)
