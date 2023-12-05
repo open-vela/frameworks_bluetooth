@@ -50,6 +50,8 @@
 
 #include "bt_hid_device.h"
 
+#define MAX_BT_HID_DEVICE_REGISTER_APP_SDP 512
+
 typedef union {
     bt_status_t status;
     bool value_bool;
@@ -58,7 +60,7 @@ typedef union {
 typedef union {
     struct {
         bool le_hid;
-        hid_device_sdp_settings_t sdp;
+        uint8_t sdp[MAX_BT_HID_DEVICE_REGISTER_APP_SDP];
     } _bt_hid_device_register_app;
 
     struct {
