@@ -42,5 +42,6 @@ bt_status_t bt_sal_hfp_hf_start_voice_recognition(bt_address_t *addr);
 bt_status_t bt_sal_hfp_hf_stop_voice_recognition(bt_address_t *addr);
 bt_status_t bt_sal_hfp_hf_send_battery_level(bt_address_t *addr, uint8_t value);
 bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t *addr, const char *cmd, uint16_t len);
+bt_status_t bt_sal_hfp_hf_send_dtmf(bt_address_t *addr, char dtmf);
 
 #endif /* __SAL_HFP_HF_INTERFACE_H__ */

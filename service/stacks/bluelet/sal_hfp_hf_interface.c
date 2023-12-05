@@ -344,4 +344,13 @@ bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t *addr, const char *cmd, uint1
 
     return BT_STATUS_SUCCESS;
 }
+
+bt_status_t bt_sal_hfp_hf_send_dtmf(bt_address_t *addr, char dtmf)
+{
+    SAL_CHECK_PARAM(addr);
+    SAL_CHECK_RET(service_adapter_hfp_tx_dtmf(addr->addr, dtmf), SERVICE_BT_STATUS_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+}
+
 #endif

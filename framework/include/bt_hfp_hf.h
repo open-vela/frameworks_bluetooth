@@ -385,6 +385,16 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_send_at_cmd)(bt_instance_t *ins, bt_address_t *a
  */
 bt_status_t BTSYMBOLS(bt_hfp_hf_update_battery_level)(bt_instance_t *ins, bt_address_t *addr, uint8_t level);
 
+/**
+ * @brief Send Dual Tone Multi-Frequency (DTMF) code
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer AG device.
+ * @param dtmf - the DTMF code, one of ['0'-'9', 'A'-'D', '*', '#'].
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_hf_send_dtmf)(bt_instance_t *ins, bt_address_t *addr, char dtmf);
+
 #ifdef __cplusplus
 }
 #endif

@@ -152,10 +152,11 @@ static const char *stack_event_to_string(hfp_hf_event_t event)
         CASE_RETURN_STR(HF_REJECT_CALL)
         CASE_RETURN_STR(HF_HOLD_CALL)
         CASE_RETURN_STR(HF_TERMINATE_CALL)
-        CASE_RETURN_STR(HF_QUERY_CURRENT_CALLS)
-        CASE_RETURN_STR(HF_UPDATE_BATTERY_LEVEL)
-        CASE_RETURN_STR(HF_SEND_AT_COMMAND)
         CASE_RETURN_STR(HF_CONTROL_CALL)
+        CASE_RETURN_STR(HF_QUERY_CURRENT_CALLS)
+        CASE_RETURN_STR(HF_SEND_AT_COMMAND)
+        CASE_RETURN_STR(HF_UPDATE_BATTERY_LEVEL)
+        CASE_RETURN_STR(HF_SEND_DTMF)
         CASE_RETURN_STR(HF_TIMEOUT)
         CASE_RETURN_STR(HF_STACK_EVENT)
         CASE_RETURN_STR(HF_STACK_EVENT_AUDIO_REQ)
@@ -589,7 +590,8 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
         status = bt_sal_hfp_hf_call_control(&hfsm->addr, chld, 0);
         if (status != BT_STATUS_SUCCESS)
             BT_LOGE("Call control error:%d, line:%d", status, __LINE__);
-    } break;
+        break;
+    }
     case HF_QUERY_CURRENT_CALLS:
         status = bt_sal_hfp_hf_get_current_calls(&hfsm->addr);
         if (status != BT_STATUS_SUCCESS)
@@ -597,16 +599,19 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
         break;
     case HF_SEND_AT_COMMAND: {
         status = bt_sal_hfp_hf_send_at_cmd(&hfsm->addr, data->string1, strlen(data->string1));
-        if (status != BT_STATUS_SUCCESS) {
+        if (status != BT_STATUS_SUCCESS)
             BT_LOGE("Send at command failed");
-        }
         break;
     }
     case HF_UPDATE_BATTERY_LEVEL:
         status = bt_sal_hfp_hf_send_battery_level(&hfsm->addr, (uint8_t)data->valueint1);
-        if (status != BT_STATUS_SUCCESS) {
+        if (status != BT_STATUS_SUCCESS)
             BT_LOGE("Update battery level failed");
-        }
+        break;
+    case HF_SEND_DTMF:
+        status = bt_sal_hfp_hf_send_dtmf(&hfsm->addr, (char)data->valueint1);
+        if (status != BT_STATUS_SUCCESS)
+            BT_LOGE("Send dtmf failed");
         break;
     case HF_STACK_EVENT_VR_STATE_CHANGED: {
         hfp_hf_vr_state_t state = data->valueint1;
