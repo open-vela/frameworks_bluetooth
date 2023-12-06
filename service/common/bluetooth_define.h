@@ -49,11 +49,6 @@ typedef enum {
     BT_LINKKEY_TYPE_AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256
 } bt_link_key_type_t;
 
-typedef enum {
-    BT_LINK_MODE_ACTIVE,
-    BT_LINK_MODE_SNIFF
-} bt_link_mode_t;
-
 typedef struct {
     bt_address_t addr;
     ble_addr_type_t addr_type;

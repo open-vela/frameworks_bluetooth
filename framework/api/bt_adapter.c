@@ -137,6 +137,18 @@ bt_io_capability_t BTSYMBOLS(bt_adapter_get_io_capability)(bt_instance_t *ins)
     return adapter_get_io_capability();
 }
 
+bt_status_t BTSYMBOLS(bt_adapter_set_inquiry_scan_parameters)(bt_instance_t *ins, bt_scan_type_t type,
+                                                uint16_t interval, uint16_t window)
+{
+    return adapter_set_inquiry_scan_parameters(type, interval, window);
+}
+
+bt_status_t BTSYMBOLS(bt_adapter_set_page_scan_parameters)(bt_instance_t *ins, bt_scan_type_t type,
+                                                uint16_t interval, uint16_t window)
+{
+    return adapter_set_page_scan_parameters(type, interval, window);
+}
+
 bt_status_t BTSYMBOLS(bt_adapter_set_le_io_capability)(bt_instance_t *ins, uint32_t le_io_cap)
 {
     return adapter_set_le_io_capability(le_io_cap);
@@ -197,6 +209,17 @@ bt_status_t BTSYMBOLS(bt_adapter_get_bonded_devices)(bt_instance_t *ins, bt_tran
 bt_status_t BTSYMBOLS(bt_adapter_get_connected_devices)(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator)
 {
     return adapter_get_connected_devices(transport, addr, num, allocator);
+}
+
+bt_status_t BTSYMBOLS(bt_adapter_set_afh_channel_classification)(bt_instance_t *ins, uint16_t central_frequency,
+                                                  uint16_t band_width, uint16_t number)
+{
+    return adapter_set_afh_channel_classification(central_frequency, band_width, number);
+}
+
+bt_status_t BTSYMBOLS(bt_adapter_set_auto_sniff)(bt_instance_t *ins, bt_auto_sniff_params_t *params)
+{
+    return adapter_set_auto_sniff(params);
 }
 
 void BTSYMBOLS(bt_adapter_disconnect_all_devices)(bt_instance_t *ins)

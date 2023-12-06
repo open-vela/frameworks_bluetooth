@@ -36,6 +36,8 @@
   BT_ADAPTER_GET_DEVICE_CLASS,
   BT_ADAPTER_SET_IO_CAPABILITY,
   BT_ADAPTER_GET_IO_CAPABILITY,
+  BT_ADAPTER_SET_INQUIRY_SCAN_PARAMETERS,
+  BT_ADAPTER_SET_PAGE_SCAN_PARAMETERS,
   BT_ADAPTER_GET_BONDED_DEVICES,
   BT_ADAPTER_GET_CONNECTED_DEVICES,
   BT_ADAPTER_DISCONNECT_ALL_DEVICES,
@@ -55,6 +57,8 @@
   BT_ADAPTER_LE_ENABLE_KEY_DERIVATION,
   BT_ADAPTER_LE_ADD_WHITELIST,
   BT_ADAPTER_LE_REMOVE_WHITELIST,
+  BT_ADAPTER_SET_AFH_CHANNEL_CLASSFICATION,
+  BT_ADAPTER_SET_AUTO_SNIFF,
   BT_ADAPTER_MESSAGE_END,
 #endif
 
@@ -73,6 +77,7 @@
   BT_ADAPTER_ON_REMOTE_ALIAS_CHANGED,
   BT_ADAPTER_ON_REMOTE_COD_CHANGED,
   BT_ADAPTER_ON_REMOTE_UUIDS_CHANGED,
+  BT_ADAPTER_ON_REMOTE_LINK_MODE_CHANGED,
   BT_ADAPTER_CALLBACK_END,
 #endif
 
@@ -157,6 +162,22 @@ typedef union
     bool lekey_to_brkey;
   } _bt_adapter_le_enable_key_derivation;
 
+  struct {
+    bt_scan_type_t type;
+    uint16_t interval;
+    uint16_t window;
+  } _bt_adapter_set_inquiry_scan_parameters,
+    _bt_adapter_set_page_scan_parameters;
+
+  struct {
+    uint16_t central_frequency;
+    uint16_t band_width;
+    uint16_t number;
+  } _bt_adapter_set_afh_channel_classification;
+
+  struct {
+    bt_auto_sniff_params_t params;
+  } _bt_adapter_set_auto_sniff;
 } bt_message_adapter_t;
 
 typedef union
@@ -224,6 +245,12 @@ typedef union
     bt_uuid_t uuids;
     uint16_t size;
   } _on_remote_uuids_changed;
+
+  struct {
+    bt_address_t addr;
+    bt_link_mode_t mode;
+    uint16_t sniff_interval;
+  } _on_remote_link_mode_changed;
 
 } bt_message_adapter_callbacks_t;
 

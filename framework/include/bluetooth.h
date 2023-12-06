@@ -84,6 +84,11 @@ typedef enum {
 } bt_link_role_t;
 
 typedef enum {
+    BT_LINK_MODE_ACTIVE,
+    BT_LINK_MODE_SNIFF
+} bt_link_mode_t;
+
+typedef enum {
     BT_BR_LINK_POLICY_DISABLE_ALL,
     BT_BR_LINK_POLICY_ENABLE_ROLE_SWITCH,
     BT_BR_LINK_POLICY_ENABLE_SNIFF,
@@ -280,6 +285,20 @@ typedef struct {
     uint16_t min_ce_length;
     uint16_t max_ce_length;
 } ble_connect_params_t;
+
+typedef struct {
+    bool enable;               /* enable sniff mode */
+    uint8_t idle_time;           /* Idle time in seconds before entering sniff mode */
+    uint16_t sniff_max_interval; /* sniff maximum interval */
+    uint16_t sniff_min_interval; /* sniff minimum interval */
+    uint16_t sniff_attempt;      /* sniff attempt */
+    uint16_t sniff_timeout;      /* sniff timeout */
+} bt_auto_sniff_params_t;
+
+/* Possible 2.4G channel band width (MHz) */
+#define AFH_WIFI_BANDWIDTH_20             20
+#define AFH_WIFI_BANDWIDTH_22             22
+#define AFH_WIFI_BANDWIDTH_40             40
 
 /* Possible 2.4G none Bluetooth radio channel central frequency (MHz) */
 #define AFH_WIFI_CENTRAL_FREQUENCY_CH1  2412

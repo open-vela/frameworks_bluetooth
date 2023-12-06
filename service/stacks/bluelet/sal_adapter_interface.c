@@ -1824,7 +1824,17 @@ bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, u
 
     return BT_STATUS_SUCCESS;
 }
-//#endif
+
+bt_status_t bt_sal_set_auto_sniff(bt_auto_sniff_params_t *params)
+{
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    SAL_CHECK_RET(service_adapter_gap_set_auto_sniff((SERVICE_AUTOSNIFF_PARAMS_S *)params), SERVICE_BT_STATUS_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
 
 #if 0
 /* Test */

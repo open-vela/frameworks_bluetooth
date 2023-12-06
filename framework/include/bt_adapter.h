@@ -159,6 +159,15 @@ typedef void (*on_remote_cod_changed_callback)(void *cookie, bt_address_t *addr,
 typedef void (*on_remote_uuids_changed_callback)(void *cookie, bt_address_t *addr, bt_uuid_t *uuids, uint16_t size);
 
 /**
+ * @brief Remote device link mode changed callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - remote addr.
+ * @param mode - link mode.
+ * @param sniff_interval - sniff interval.
+ */
+typedef void (*on_remote_link_mode_changed_callback)(void *cookie, bt_address_t *addr, bt_link_mode_t mode, uint16_t sniff_interval);
+/**
  * @brief Adapter callback structure
  *
  */
@@ -176,6 +185,7 @@ typedef struct {
     on_remote_alias_changed_callback on_remote_alias_changed;
     on_remote_cod_changed_callback on_remote_cod_changed;
     on_remote_uuids_changed_callback on_remote_uuids_changed;
+    on_remote_link_mode_changed_callback on_remote_link_mode_changed;
 } adapter_callbacks_t;
 
 /**
@@ -360,6 +370,12 @@ bt_status_t BTSYMBOLS(bt_adapter_set_io_capability)(bt_instance_t *ins, bt_io_ca
  */
 bt_io_capability_t BTSYMBOLS(bt_adapter_get_io_capability)(bt_instance_t *ins);
 
+
+bt_status_t BTSYMBOLS(bt_adapter_set_inquiry_scan_parameters)(bt_instance_t *ins, bt_scan_type_t type,
+                                                            uint16_t interval, uint16_t window);
+
+bt_status_t BTSYMBOLS(bt_adapter_set_page_scan_parameters)(bt_instance_t *ins, bt_scan_type_t type,
+                                                        uint16_t interval, uint16_t window);
 /**
  * @brief Get adapter bonded devices list
  *
@@ -522,6 +538,11 @@ bt_status_t BTSYMBOLS(bt_adapter_le_enable_key_derivation)(bt_instance_t *ins,
 bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist)(bt_instance_t *ins, bt_address_t *addr);
 
 bt_status_t BTSYMBOLS(bt_adapter_le_remove_whitelist)(bt_instance_t *ins, bt_address_t *addr);
+
+bt_status_t BTSYMBOLS(bt_adapter_set_afh_channel_classification)(bt_instance_t *ins, uint16_t central_frequency,
+                                                  uint16_t band_width, uint16_t number);
+
+bt_status_t BTSYMBOLS(bt_adapter_set_auto_sniff)(bt_instance_t *ins, bt_auto_sniff_params_t *params);
 #ifdef __cplusplus
 }
 #endif
