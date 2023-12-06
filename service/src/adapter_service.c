@@ -628,8 +628,8 @@ static void process_connection_state_changed_evt(bt_address_t *addr, acl_state_p
     device_set_connection_state(device, acl_params->connection_state);
     if (acl_params->connection_state == CONNECTION_STATE_CONNECTED) {
         device_set_acl_handle(device, bt_sal_get_acl_link_handle(addr));
-        //if (acl_params->link_type == BT_TRANSPORT_BLE)
-        //    adapter_le_add_whitelist(addr);
+        // if (acl_params->link_type == BT_TRANSPORT_BLE)
+        //     adapter_le_add_whitelist(addr);
     }
     adapter_unlock();
     /* send connection changed notification */
@@ -945,7 +945,7 @@ void adapter_on_le_enabled(bool enablebt)
 
     /* set resolvinglist list ? */
     /* enable cdtk */
-    //bt_sal_le_enable_key_derivation(true, true);
+    // bt_sal_le_enable_key_derivation(true, true);
 
     /* enable advertiser manager */
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
@@ -1022,6 +1022,17 @@ static void handle_scan_mode_changed(void *data)
     adapter_unlock();
     /* notify properties changed */
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_scan_mode_changed, scan_mode);
+}
+
+static void handle_link_event(void *data)
+{
+    adapter_remote_event_t *evt = (adapter_remote_event_t *)data;
+    switch (evt->evt_id) {
+        case LINK_MODE_CHANGED_EVT:
+            CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_remote_link_mode_changed,
+                            &evt->addr, evt->link_mode.mode, evt->link_mode.sniff_interval);
+        break;
+    }
 }
 
 void adapter_on_scan_mode_changed(bt_scan_mode_t mode)
@@ -1197,6 +1208,13 @@ void adapter_on_link_role_changed(bt_address_t *addr, bt_link_role_t role)
 void adapter_on_link_mode_changed(bt_address_t *addr, bt_link_mode_t mode, uint16_t sniff_interval)
 {
     BT_LOGD("%s", __func__);
+    adapter_remote_event_t *evt = create_remote_event(addr, LINK_MODE_CHANGED_EVT);
+    if (!evt)
+        return;
+
+    evt->link_mode.mode = mode;
+    evt->link_mode.sniff_interval = sniff_interval;
+    do_in_service_loop(handle_link_event, evt);
 }
 
 void adapter_on_link_policy_changed(bt_address_t *addr, bt_link_policy_t policy)
@@ -1635,6 +1653,20 @@ bt_io_capability_t adapter_get_io_capability(void)
     adapter_unlock();
 
     return cap;
+}
+
+bt_status_t adapter_set_inquiry_scan_parameters(bt_scan_type_t type,
+                                                uint16_t interval,
+                                                uint16_t window)
+{
+    return bt_sal_set_inquiry_scan_parameters(type, interval, window);
+}
+
+bt_status_t adapter_set_page_scan_parameters(bt_scan_type_t type,
+                                             uint16_t interval,
+                                             uint16_t window)
+{
+    return bt_sal_set_page_scan_parameters(type, interval, window);
 }
 
 bt_status_t adapter_get_le_address(bt_address_t *addr, ble_addr_type_t *type)
@@ -2346,6 +2378,18 @@ uint16_t adapter_get_acl_handle(bt_address_t *addr)
     handle = device_get_acl_handle(device);
     adapter_unlock();
     return handle;
+}
+
+bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
+                                                  uint16_t band_width,
+                                                  uint16_t number)
+{
+    return bt_sal_set_afh_channel_classification(central_frequency, band_width, number);
+}
+
+bt_status_t adapter_set_auto_sniff(bt_auto_sniff_params_t *params)
+{
+    return bt_sal_set_auto_sniff(params);
 }
 
 void adapter_get_support_profiles(void) { }

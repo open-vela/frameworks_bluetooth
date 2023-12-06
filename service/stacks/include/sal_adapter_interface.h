@@ -150,4 +150,5 @@ bt_status_t bt_sal_le_enable_key_derivation(bool brkey_to_lekey,
                                             bool lekey_to_brkey);
 //#endif
 bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t *buf);
+bt_status_t bt_sal_set_auto_sniff(bt_auto_sniff_params_t *params);
 #endif /* __SAL_ADAPTER_INTERFACE_H_ */

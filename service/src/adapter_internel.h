@@ -36,6 +36,7 @@ enum {
     ENC_STATE_CHANGE_EVT,
     LINK_KEY_UPDATE_EVT,
     LINK_KEY_REMOVED_EVT,
+    LINK_MODE_CHANGED_EVT,
     SDP_SEARCH_DONE_EVT,
     LE_ADDR_UPDATE_EVT,
     LE_PHY_UPDATE_EVT,
@@ -135,6 +136,10 @@ typedef struct {
             bt_link_key_type_t type;
             bt_status_t status;
         } link_key;
+        struct {
+            bt_link_mode_t mode;
+            uint16_t sniff_interval;
+        } link_mode;
         struct {
             uint16_t uuid_size;
             bt_uuid_t *uuids;
@@ -248,6 +253,12 @@ uint32_t adapter_get_device_class(void);
 bt_status_t adapter_set_io_capability(bt_io_capability_t cap);
 
 bt_io_capability_t adapter_get_io_capability(void);
+bt_status_t adapter_set_inquiry_scan_parameters(bt_scan_type_t type,
+                                                uint16_t interval,
+                                                uint16_t window);
+bt_status_t adapter_set_page_scan_parameters(bt_scan_type_t type,
+                                             uint16_t interval,
+                                             uint16_t window);
 bt_status_t adapter_set_le_io_capability(uint32_t le_io_cap);
 uint32_t adapter_get_le_io_capability(void);
 bt_status_t adapter_get_le_address(bt_address_t *addr, ble_addr_type_t *type);
@@ -296,7 +307,10 @@ bt_status_t adapter_set_pin_code(bt_address_t *addr, bool accept,
                                  char *pincode, int len);
 bt_status_t adapter_set_pass_key(bt_address_t *addr, uint8_t transport, bool accept, uint32_t passkey);
 uint16_t adapter_get_acl_handle(bt_address_t *addr);
-
+bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
+                                                  uint16_t band_width,
+                                                  uint16_t number);
+bt_status_t adapter_set_auto_sniff(bt_auto_sniff_params_t *params);
 void *adapter_register_callback(void *remote, const adapter_callbacks_t *adapter_cbs);
 bool adapter_unregister_callback(void **remote, void *cookie);
 
