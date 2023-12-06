@@ -119,7 +119,7 @@ typedef void (*on_connection_state_changed_callback)(void *cookie, bt_address_t 
  * @param transport - transport type (0:BLE, 1:BREDR).
  * @param state - bond state.
  */
-typedef void (*on_bond_state_changed_callback)(void *cookie, bt_address_t *addr, bt_transport_t transport, bond_state_t state);
+typedef void (*on_bond_state_changed_callback)(void *cookie, bt_address_t *addr, bt_transport_t transport, bond_state_t state, bool is_ctkd);
 
 /**
  * @brief Remote device name changed callback
