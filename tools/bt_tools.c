@@ -48,6 +48,7 @@ static int set_appearance_cmd(void *handle, int argc, char **argv);
 static int set_le_addr_cmd(void *handle, int argc, char **argv);
 static int get_le_addr_cmd(void *handle, int argc, char **argv);
 static int set_identity_addr_cmd(void *handle, int argc, char **argv);
+static int set_scan_parameters_cmd(void *handle, int argc, char **argv);
 static int get_local_name_cmd(void *handle, int argc, char **argv);
 static int set_local_name_cmd(void *handle, int argc, char **argv);
 static int get_local_cod_cmd(void *handle, int argc, char **argv);
@@ -224,14 +225,20 @@ static bt_command_t g_cmd_tables[] = {
 };
 
 static bt_command_t g_set_cmd_tables[] = {
-    {"scanmode",    set_scanmode_cmd,      0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)"                                            },
-    { "iocap",      set_iocap_cmd,         0, "params: <io capability> (0:displayonly, 1:yes&no, 2:keyboardonly, 3:no-in/no-out 4:keyboard&display)"              },
-    { "name",       set_local_name_cmd,    0, "params: <local name>, example \"vela-bt\""                                                                         },
-    { "class",      set_local_cod_cmd,     0, "params: <local class of device>, range in 0x0-0xFFFFFC, the 2 least significant shall be 0b00, example: 0x00640404"},
-    { "appearance", set_appearance_cmd,    0, "set le adapter appearance, params: <appearance>"                                                                   },
-    { "leaddr",     set_le_addr_cmd,       0, "set ble adapter addr, params: <leaddr>"                                                                            },
-    { "id",         set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>"                                                        },
-    { "help",       NULL,                  0, "show set help info"                                                                                                },
+    { "scanmode", set_scanmode_cmd, 0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)" },
+    { "iocap", set_iocap_cmd, 0, "params: <io capability> (0:displayonly, 1:yes&no, 2:keyboardonly, 3:no-in/no-out 4:keyboard&display)" },
+    { "name", set_local_name_cmd, 0, "params: <local name>, example \"vela-bt\"" },
+    { "class", set_local_cod_cmd, 0, "params: <local class of device>, range in 0x0-0xFFFFFC, the 2 least significant shall be 0b00, example: 0x00640404" },
+    { "appearance", set_appearance_cmd, 0, "set le adapter appearance, params: <appearance>" },
+    { "leaddr", set_le_addr_cmd, 0, "set ble adapter addr, params: <leaddr>" },
+    { "id", set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>" },
+    {
+     "scanparams",
+     set_scan_parameters_cmd,
+     0,
+     "set scan parameters, params: <mode>(0: INQUIRY, 1: PAGE), <type>(0: standard, 1: interlaced), <interval>(range in 18-4096), <window>(range in 17-4096)",
+     },
+    { "help", NULL, 0, "show set help info" },
  //{ "", , "set " },
 };
 
@@ -636,6 +643,35 @@ static int set_identity_addr_cmd(void *handle, int argc, char **argv)
     }
 
     bt_adapter_set_le_identity_address(handle, &addr, type);
+
+    return CMD_OK;
+}
+
+static int set_scan_parameters_cmd(void *handle, int argc, char **argv)
+{
+    if (argc < 4)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    int is_page = atoi(argv[0]);
+    if (is_page != 0 && is_page != 1)
+        return CMD_INVALID_PARAM;
+
+    int type = atoi(argv[1]);
+    if (type != 0 && type != 1)
+        return CMD_INVALID_PARAM;
+
+    int interval = atoi(argv[2]);
+    if (interval < 0x12 || interval > 0x1000)
+        return CMD_INVALID_PARAM;
+
+    int window = atoi(argv[3]);
+    if (window < 0x11 || window > 0x1000)
+        return CMD_INVALID_PARAM;
+
+    if (!is_page)
+        bt_adapter_set_inquiry_scan_parameters(handle, type, interval, window);
+    else
+        bt_adapter_set_page_scan_parameters(handle, type, interval, window);
 
     return CMD_OK;
 }
@@ -1441,6 +1477,11 @@ static void on_remote_uuids_changed_cb(void *cookie, bt_address_t *addr, bt_uuid
     }
 }
 
+static void on_remote_link_mode_changed_cb(void *cookie, bt_address_t *addr, bt_link_mode_t mode, uint16_t sniff_interval)
+{
+    PRINT("%s mode:%d, interval:%" PRIu16, __func__, mode, sniff_interval);
+}
+
 const static adapter_callbacks_t g_adapter_cbs = {
     .on_adapter_state_changed = on_adapter_state_changed_cb,
     .on_discovery_state_changed = on_discovery_state_changed_cb,
@@ -1455,6 +1496,7 @@ const static adapter_callbacks_t g_adapter_cbs = {
     .on_remote_alias_changed = on_remote_alias_changed_cb,
     .on_remote_cod_changed = on_remote_cod_changed_cb,
     .on_remote_uuids_changed = on_remote_uuids_changed_cb,
+    .on_remote_link_mode_changed = on_remote_link_mode_changed_cb,
 };
 
 int execute_command_in_table_offset(void *handle, bt_command_t *table, uint32_t table_size, int argc, char *argv[], uint8_t offset)
