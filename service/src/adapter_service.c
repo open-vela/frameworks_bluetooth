@@ -436,7 +436,7 @@ static void process_ssp_request_evt(bt_address_t *addr, uint8_t link_type,
 }
 
 static void process_bond_state_change_evt(bt_address_t *addr, bond_state_t state,
-                                          uint8_t link_type)
+                                          uint8_t link_type, bool is_ctkd)
 {
     remote_device_properties_t remote;
     bt_device_t *device;
@@ -466,7 +466,7 @@ static void process_bond_state_change_evt(bt_address_t *addr, bond_state_t state
     device_set_bond_state(device, state);
     adapter_unlock();
     /* send bond state change notification */
-    CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_bond_state_changed, addr, link_type, state);
+    CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_bond_state_changed, addr, link_type, state, is_ctkd);
 }
 
 static void process_service_search_done_evt(bt_address_t *addr, bt_uuid_t *uuids, uint16_t size)
@@ -556,7 +556,8 @@ static void handle_security_event(void *data)
         break;
     case BOND_STATE_CHANGE_EVT:
         process_bond_state_change_evt(&evt->addr, evt->bond_state.state,
-                                      evt->bond_state.link_type);
+                                      evt->bond_state.link_type,
+                                      evt->bond_state.is_ctkd);
         break;
     case SDP_SEARCH_DONE_EVT:
         process_service_search_done_evt(&evt->addr, evt->sdp.uuids, evt->sdp.uuid_size);
@@ -1140,7 +1141,7 @@ void adapter_on_ssp_request(bt_address_t *addr, uint8_t transport,
     do_in_service_loop(handle_security_event, evt);
 }
 
-void adapter_on_bond_state_changed(bt_address_t *addr, bond_state_t state, uint8_t link_type)
+void adapter_on_bond_state_changed(bt_address_t *addr, bond_state_t state, uint8_t link_type, bool is_ctkd)
 {
     adapter_remote_event_t *evt = create_remote_event(addr, BOND_STATE_CHANGE_EVT);
     if (!evt)
@@ -1148,6 +1149,7 @@ void adapter_on_bond_state_changed(bt_address_t *addr, bond_state_t state, uint8
 
     evt->bond_state.state = state;
     evt->bond_state.link_type = link_type;
+    evt->bond_state.is_ctkd = is_ctkd;
     do_in_service_loop(handle_security_event, evt);
 }
 
@@ -2313,7 +2315,7 @@ bt_status_t adapter_pair_request_reply(bt_address_t *addr, bool accept)
     if (status == BT_STATUS_SUCCESS && accept) {
         /* callback bonding */
         CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_bond_state_changed,
-                         addr, BT_TRANSPORT_BREDR, BOND_STATE_BONDING);
+                         addr, BT_TRANSPORT_BREDR, BOND_STATE_BONDING, false);
     }
 
     return status;

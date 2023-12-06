@@ -1441,10 +1441,10 @@ static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr, bt_
     PRINT_ADDR("Device [%s][%s] connection state: %d", addr, LINK_TYPE(transport), state);
 }
 
-static void on_bond_state_changed_cb(void *cookie, bt_address_t *addr, bt_transport_t transport, bond_state_t state)
+static void on_bond_state_changed_cb(void *cookie, bt_address_t *addr, bt_transport_t transport, bond_state_t state, bool is_ctkd)
 {
     g_bond_state = state;
-    PRINT_ADDR("Device [%s][%s] bond state: %s", addr, LINK_TYPE(transport), bond_state_to_string(state));
+    PRINT_ADDR("Device [%s][%s] bond state: %s, is_ctkd: %d", addr, LINK_TYPE(transport), bond_state_to_string(state), is_ctkd);
 }
 
 static void on_remote_name_changed_cb(void *cookie, bt_address_t *addr, const char *name)

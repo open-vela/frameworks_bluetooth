@@ -246,11 +246,12 @@ static void ssp_request_callback(SERVICE_SSP_REQUEST_DATA_S *request_data)
 static void bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_BOND_STATE state)
 {
     bt_address_t addr;
+    bool is_ctkd = false;// is BR/EDR link key using cross-transport key derivation.
     bond_state_t bond_state;
     uint8_t link_type = BT_TRANSPORT_BLE;
 
     memcpy(addr.addr, remote_addr, 6);
-    if (state < SERVICE_BT_BOND_STATE_BLE_NONE)
+    if (state < SERVICE_BT_BOND_STATE_BLE_NONE || state == SERVICE_BT_BOND_STATE_BONDED_CTKD)
         link_type = BT_TRANSPORT_BREDR;
 
     bond_state = BOND_STATE_NONE;
@@ -258,12 +259,16 @@ static void bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_BOND_STA
         bond_state = BOND_STATE_BONDED;
     else if (state == SERVICE_BT_BOND_STATE_BONDING || state == SERVICE_BT_BOND_STATE_BLE_BONDING)
         bond_state = BOND_STATE_BONDING;
+    else if (state == SERVICE_BT_BOND_STATE_BONDED_CTKD) {
+        bond_state = BOND_STATE_BONDED;
+        is_ctkd = true;
+    }
     else if (state == SERVICE_BT_BOND_STATE_SDP_DONE) {
         /* had bonded, ignore it*/
         return;
     }
 
-    adapter_on_bond_state_changed(&addr, bond_state, link_type);
+    adapter_on_bond_state_changed(&addr, bond_state, link_type, is_ctkd);
 }
 
 static void ble_scan_result_callback(SERVICE_SCAN_RESULT_DATA_S *scan_result_data)

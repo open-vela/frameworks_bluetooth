@@ -151,7 +151,7 @@ static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr,
 }
 
 static void on_bond_state_changed_cb(void *cookie, bt_address_t *addr,
-    bt_transport_t transport, bond_state_t state)
+    bt_transport_t transport, bond_state_t state, bool is_ctkd)
 {
   bt_message_packet_t packet;
   bt_instance_t *ins = cookie;
@@ -159,6 +159,7 @@ static void on_bond_state_changed_cb(void *cookie, bt_address_t *addr,
   memcpy(&packet.adpt_cb._on_bond_state_changed.addr, addr, sizeof(bt_address_t));
   packet.adpt_cb._on_bond_state_changed.transport = transport;
   packet.adpt_cb._on_bond_state_changed.state = state;
+  packet.adpt_cb._on_bond_state_changed.is_ctkd = is_ctkd;
 
   bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_BOND_STATE_CHANGED);
 }
@@ -617,7 +618,8 @@ int bt_socket_client_adapter_callback(service_poll_t *poll,
             on_bond_state_changed,
             &packet->adpt_cb._on_bond_state_changed.addr,
             packet->adpt_cb._on_bond_state_changed.transport,
-            packet->adpt_cb._on_bond_state_changed.state);
+            packet->adpt_cb._on_bond_state_changed.state,
+            packet->adpt_cb._on_bond_state_changed.is_ctkd);
         break;
       }
     case BT_ADAPTER_ON_REMOTE_NAME_CHANGED:

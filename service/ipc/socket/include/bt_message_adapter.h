@@ -223,6 +223,7 @@ typedef union
     bt_address_t addr;
     bt_transport_t transport;
     bond_state_t state;
+    bool is_ctkd;
   } _on_bond_state_changed;
 
   struct {
