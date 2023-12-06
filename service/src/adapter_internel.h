@@ -126,6 +126,7 @@ typedef struct {
         struct {
             bond_state_t state;
             uint8_t link_type;
+            bool is_ctkd;
         } bond_state;
         struct {
             bool encrypted;
@@ -215,7 +216,7 @@ void adapter_on_ssp_request(bt_address_t *addr, uint8_t transport,
                             uint32_t pass_key, const char *name);
 void adapter_on_pin_request(bt_address_t *addr, uint32_t cod,
                             bool min_16_digit, const char *name);
-void adapter_on_bond_state_changed(bt_address_t *addr, bond_state_t state, uint8_t link_type);
+void adapter_on_bond_state_changed(bt_address_t *addr, bond_state_t state, uint8_t link_type, bool is_ctkd);
 void adapter_on_service_search_done(bt_address_t *addr, bt_uuid_t *uuids, uint16_t size);
 void adapter_on_encryption_state_changed(bt_address_t *addr, bool encrypted, uint8_t link_type);
 void adapter_on_link_key_update(bt_address_t *addr, bt_128key_t link_key, bt_link_key_type_t type);
