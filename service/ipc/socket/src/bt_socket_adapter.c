@@ -210,6 +210,18 @@ static void on_remote_uuids_changed_cb(void *cookie, bt_address_t *addr, bt_uuid
   bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_REMOTE_UUIDS_CHANGED);
 }
 
+static void on_remote_link_mode_changed_cb(void *cookie, bt_address_t *addr, bt_link_mode_t mode, uint16_t sniff_interval)
+{
+  bt_message_packet_t packet;
+  bt_instance_t *ins = cookie;
+
+  memcpy(&packet.adpt_cb._on_remote_link_mode_changed.addr, addr, sizeof(bt_address_t));
+  packet.adpt_cb._on_remote_link_mode_changed.mode = mode;
+  packet.adpt_cb._on_remote_link_mode_changed.sniff_interval = sniff_interval;
+
+  bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_REMOTE_LINK_MODE_CHANGED);
+}
+
 const static adapter_callbacks_t g_adapter_socket_cbs =
 {
   .on_adapter_state_changed = on_adapter_state_changed_cb,
@@ -225,6 +237,7 @@ const static adapter_callbacks_t g_adapter_socket_cbs =
   .on_remote_alias_changed = on_remote_alias_changed_cb,
   .on_remote_cod_changed = on_remote_cod_changed_cb,
   .on_remote_uuids_changed = on_remote_uuids_changed_cb,
+  .on_remote_link_mode_changed = on_remote_link_mode_changed_cb,
 };
 
 /****************************************************************************
@@ -353,6 +366,20 @@ void bt_socket_server_adapter_process(service_poll_t *poll,
         packet->adpt_r.ioc = BTSYMBOLS(bt_adapter_get_io_capability)(ins);
         break;
       }
+    case BT_ADAPTER_SET_INQUIRY_SCAN_PARAMETERS: {
+      packet->adpt_r.status = BTSYMBOLS(bt_adapter_set_inquiry_scan_parameters)(ins,
+          packet->adpt_pl._bt_adapter_set_inquiry_scan_parameters.type,
+          packet->adpt_pl._bt_adapter_set_inquiry_scan_parameters.interval,
+          packet->adpt_pl._bt_adapter_set_inquiry_scan_parameters.window);
+      break;
+    }
+    case BT_ADAPTER_SET_PAGE_SCAN_PARAMETERS: {
+      packet->adpt_r.status = BTSYMBOLS(bt_adapter_set_page_scan_parameters)(ins,
+          packet->adpt_pl._bt_adapter_set_page_scan_parameters.type,
+          packet->adpt_pl._bt_adapter_set_page_scan_parameters.interval,
+          packet->adpt_pl._bt_adapter_set_page_scan_parameters.window);
+      break;
+    }
     case BT_ADAPTER_GET_BONDED_DEVICES:
       {
         bt_address_t *addr;
@@ -393,6 +420,18 @@ void bt_socket_server_adapter_process(service_poll_t *poll,
         }
         break;
       }
+    case BT_ADAPTER_SET_AFH_CHANNEL_CLASSFICATION: {
+      packet->adpt_r.status = BTSYMBOLS(bt_adapter_set_afh_channel_classification)(ins,
+          packet->adpt_pl._bt_adapter_set_afh_channel_classification.central_frequency,
+          packet->adpt_pl._bt_adapter_set_afh_channel_classification.band_width,
+          packet->adpt_pl._bt_adapter_set_afh_channel_classification.number);
+      break;
+    }
+    case BT_ADAPTER_SET_AUTO_SNIFF: {
+      packet->adpt_r.status = BTSYMBOLS(bt_adapter_set_auto_sniff)(ins,
+          &packet->adpt_pl._bt_adapter_set_auto_sniff.params);
+      break;
+    }
     case BT_ADAPTER_DISCONNECT_ALL_DEVICES:
       {
         BTSYMBOLS(bt_adapter_disconnect_all_devices)(ins);
@@ -613,6 +652,14 @@ int bt_socket_client_adapter_callback(service_poll_t *poll,
             &packet->adpt_cb._on_remote_uuids_changed.uuids,
             packet->adpt_cb._on_remote_uuids_changed.size);
         break;
+      }
+    case BT_ADAPTER_ON_REMOTE_LINK_MODE_CHANGED:
+      {
+        CALLBACK_FOREACH(CBLIST, adapter_callbacks_t,
+            on_remote_link_mode_changed,
+            &packet->adpt_cb._on_remote_link_mode_changed.addr,
+            packet->adpt_cb._on_remote_link_mode_changed.mode,
+            packet->adpt_cb._on_remote_link_mode_changed.sniff_interval);
       }
     default:
       return BT_STATUS_PARM_INVALID;
