@@ -83,7 +83,7 @@ static advertising_info_t *advertiser_info_copy(ble_adv_params_t *params,
                                                 uint8_t *scan_rsp_data,
                                                 uint16_t scan_rsp_len)
 {
-    advertising_info_t *adv_info = malloc(sizeof(advertising_info_t));
+    advertising_info_t *adv_info = calloc(1, sizeof(advertising_info_t));
     if (!adv_info)
         goto fail;
 
