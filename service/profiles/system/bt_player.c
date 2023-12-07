@@ -49,22 +49,19 @@ static void media_session_event_cb(void *cookie, int event, int ret,
     bt_media_controller_t *controller = cookie;
 
     switch (event) {
-    case MEDIA_EVENT_PREPARED:
-        notify_media_event(controller, BT_MEDIA_EVT_PREPARED, 0);
-        break;
-    case MEDIA_EVENT_STARTED:
+    case MEDIA_EVENT_START:
         notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_PLAYING);
         break;
-    case MEDIA_EVENT_PAUSED:
+    case MEDIA_EVENT_PAUSE:
         notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_PAUSED);
         break;
-    case MEDIA_EVENT_STOPPED:
+    case MEDIA_EVENT_STOP:
         notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_STOPPED);
         break;
-    case MEDIA_EVENT_PREVED:
+    case MEDIA_EVENT_PREV_SONG:
         notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_REV_SEEK);
         break;
-    case MEDIA_EVENT_NEXTED:
+    case MEDIA_EVENT_NEXT_SONG:
         notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_FWD_SEEK);
         break;
     default:
@@ -110,7 +107,7 @@ bt_media_controller_t *bt_media_controller_create(void *context, bt_media_notify
     if (controller == NULL)
         return NULL;
 
-    controller->mediasession = media_session_open(MEDIA_STREAM_MUSIC);
+    controller->mediasession = media_session_open(NULL);
     if (!controller->mediasession) {
         free(controller);
         return NULL;
@@ -256,10 +253,10 @@ static void media_control_event_cb(void *cookie, int event,
     case MEDIA_EVENT_STOP:
         player->cb->on_stop(player, player->context);
         break;
-    case MEDIA_EVENT_PREV:
+    case MEDIA_EVENT_PREV_SONG:
         player->cb->on_prev_song(player, player->context);
         break;
-    case MEDIA_EVENT_NEXT:
+    case MEDIA_EVENT_NEXT_SONG:
         player->cb->on_next_song(player, player->context);
         break;
     default:
@@ -310,19 +307,19 @@ bt_status_t bt_media_player_set_status(bt_media_player_t *player, bt_media_statu
 
     switch (status) {
     case BT_MEDIA_PLAY_STATUS_STOPPED:
-        event = MEDIA_EVENT_STOPPED;
+        event = MEDIA_EVENT_STOP;
         break;
     case BT_MEDIA_PLAY_STATUS_PLAYING:
-        event = MEDIA_EVENT_STARTED;
+        event = MEDIA_EVENT_START;
         break;
     case BT_MEDIA_PLAY_STATUS_PAUSED:
-        event = MEDIA_EVENT_PAUSED;
+        event = MEDIA_EVENT_PAUSE;
         break;
     case BT_MEDIA_PLAY_STATUS_FWD_SEEK:
-        event = MEDIA_EVENT_NEXTED;
+        event = MEDIA_EVENT_NEXT_SONG;
         break;
     case BT_MEDIA_PLAY_STATUS_REV_SEEK:
-        event = MEDIA_EVENT_PREVED;
+        event = MEDIA_EVENT_PREV_SONG;
         break;
     default:
         return BT_STATUS_PARM_INVALID;
