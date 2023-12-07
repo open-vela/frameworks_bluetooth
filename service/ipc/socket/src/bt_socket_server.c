@@ -160,12 +160,16 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
     } else if (packet.code > BT_HFP_HF_MESSAGE_START &&
                packet.code < BT_HFP_HF_MESSAGE_END) {
         bt_socket_server_hfp_hf_process(poll, fd, ins, &packet);
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
     } else if (packet.code > BT_ADVERTISER_MESSAGE_START &&
                packet.code < BT_ADVERTISER_MESSAGE_END) {
         bt_socket_server_advertiser_process(poll, fd, ins, &packet);
+#endif
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
     } else if (packet.code > BT_SCAN_MESSAGE_START &&
                packet.code < BT_SCAN_MESSAGE_END) {
         bt_socket_server_scan_process(poll, fd, ins, &packet);
+#endif
     } else if (packet.code > BT_GATT_CLIENT_MESSAGE_START &&
                packet.code < BT_GATT_CLIENT_MESSAGE_END) {
         bt_socket_server_gattc_process(poll, fd, ins, &packet);
