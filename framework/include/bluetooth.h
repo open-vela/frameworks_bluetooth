@@ -338,10 +338,12 @@ typedef struct bt_instance {
     int peer_fd;
     uv_loop_t *client_loop;
     uv_loop_t *external_loop;
+    uv_async_t *external_async;
     int offset;
     void *packet;
     void *cpacket;
     struct list_node msg_queue;
+    uv_mutex_t lock;
 
     callbacks_list_t *adapter_callbacks;
     callbacks_list_t *a2dp_sink_callbacks;
