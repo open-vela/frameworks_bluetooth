@@ -57,6 +57,7 @@
  * Private Types
  ****************************************************************************/
 typedef struct _work_msg {
+    struct list_node node;
     bt_instance_t *ins;
     bt_message_packet_t packet;
 } bt_client_msg_t;
@@ -104,27 +105,40 @@ static void bt_socket_client_async_close(uv_handle_t *handle)
     free(handle);
 }
 
+
 static void bt_socket_client_async_cb(uv_async_t *handle)
 {
-    bt_socket_client_msg_process(handle->data);
-    uv_close((uv_handle_t *)handle, bt_socket_client_async_close);
+    bt_instance_t *ins = handle->data;
+
+    uv_mutex_lock(&ins->lock);
+    for (;;) {
+        bt_client_msg_t *msg = (bt_client_msg_t *)list_remove_head(&ins->msg_queue);
+        if (!msg) {
+            uv_mutex_unlock(&ins->lock);
+            return;
+        }
+
+        bt_socket_client_msg_process(msg);
+    }
+    uv_mutex_unlock(&ins->lock);
 }
 
 static bt_status_t bt_socket_client_async_to_external(bt_instance_t *ins, bt_client_msg_t *msg)
 {
-    uv_async_t *async = malloc(sizeof(*async));
-
-    if (!async)
-        return BT_STATUS_NOMEM;
-
-    int ret = uv_async_init(ins->external_loop, async, bt_socket_client_async_cb);
-    if (ret != 0) {
-        free(async);
-        return BT_STATUS_BUSY;
+    uv_mutex_lock(&ins->lock);
+    if (!ins->external_async) {
+        ins->external_async = malloc(sizeof(uv_async_t));
+        int ret = uv_async_init(ins->external_loop, ins->external_async, bt_socket_client_async_cb);
+        if (ret != 0){
+            uv_mutex_unlock(&ins->lock);
+            return BT_STATUS_BUSY;
+        }
+        ins->external_async->data = ins;
     }
 
-    async->data = msg;
-    uv_async_send(async);
+    list_add_tail(&ins->msg_queue, &msg->node);
+    uv_async_send(ins->external_async);
+    uv_mutex_unlock(&ins->lock);
 
     return BT_STATUS_SUCCESS;
 }
@@ -155,6 +169,7 @@ static bt_status_t bt_socket_client_queue_work(bt_instance_t *ins, bt_client_msg
 
     return BT_STATUS_SUCCESS;
 }
+
 static int bt_socket_client_receive(uv_poll_t *poll, int fd, void *userdata)
 {
     bt_instance_t *ins = userdata;
@@ -336,6 +351,8 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
     }
 
     ins->offset = 0;
+    list_initialize(&ins->msg_queue);
+    uv_mutex_init(&ins->lock);
 
     uv_cond_init(&ins->cond);
     uv_mutex_init(&ins->mutex);
@@ -373,6 +390,18 @@ void bt_socket_client_deinit(bt_instance_t *ins)
 
     if (ins->peer_fd > 0)
         close(ins->peer_fd);
+
+    if (ins->external_loop && ins->external_async) {
+        struct list_node *node;
+        struct list_node *tmp;
+        uv_mutex_lock(&ins->lock);
+        list_for_every_safe(&ins->msg_queue, node, tmp) {
+            list_delete(node);
+            free(node);
+        }
+        uv_close((uv_handle_t *)ins->external_async, bt_socket_client_async_close);
+        uv_mutex_unlock(&ins->lock);
+    }
 
     thread_loop_exit(ins->client_loop);
 
