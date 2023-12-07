@@ -1362,6 +1362,7 @@ bt_status_t bt_sal_le_set_scan_parameters(ble_scan_params_t *params)
 
     scan_params.scan_interval = params->scan_interval;
     scan_params.scan_window = params->scan_window;
+    scan_params.scan_type = params->scan_type;
     scan_params.scan_phy = params->scan_phy;
     SAL_CHECK_RET(service_adapter_gap_set_ble_scan_parameters(&scan_params), SERVICE_BT_STATUS_SUCCESS);
 
