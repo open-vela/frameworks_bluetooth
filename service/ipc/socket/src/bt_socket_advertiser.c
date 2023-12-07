@@ -53,7 +53,7 @@
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
-#if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
+#if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__) && defined(CONFIG_BLUETOOTH_BLE_SCAN)
 
 static void on_advertising_start_cb(bt_advertiser_t *adv, uint8_t adv_id, uint8_t status)
 {
