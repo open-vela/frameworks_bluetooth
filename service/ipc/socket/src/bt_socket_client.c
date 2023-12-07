@@ -113,6 +113,7 @@ static void bt_socket_client_async_close(uv_handle_t *handle)
     free(handle);
 }
 
+
 static void bt_socket_client_async_cb(uv_async_t *handle)
 {
     bt_instance_t *ins = handle->data;
