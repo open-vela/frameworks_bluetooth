@@ -921,8 +921,8 @@ void inactive_state_command_handler(int event)
 {
     BT_LOGD("%s, event:%d ", __func__, event);
     switch (event) {
-    case MEDIA_EVENT_PREPARED: {
-        current_state = ADPT_LEA_MCS_MEDIA_STATE_PAUSED;
+    case MEDIA_EVENT_START: {
+        current_state = ADPT_LEA_MCS_MEDIA_STATE_PLAYING;
         lea_mcs_media_state_changed(current_state);
         break;
     }
@@ -936,17 +936,16 @@ void playing_state_command_handler(int event)
 {
     BT_LOGD("%s, event:%d ", __func__, event);
     switch (event) {
-    case MEDIA_EVENT_STOPPED: {
+    case MEDIA_EVENT_STOP: {
         current_state = ADPT_LEA_MCS_MEDIA_STATE_INACTIVE;
         lea_mcs_media_state_changed(current_state);
         break;
     }
-    case MEDIA_EVENT_STARTED: {
+    case MEDIA_EVENT_START: {
         current_state = ADPT_LEA_MCS_MEDIA_STATE_PLAYING;
         break;
     }
-    case MEDIA_EVENT_PAUSED:
-    case MEDIA_EVENT_COMPLETED: {
+    case MEDIA_EVENT_PAUSE: {
         current_state = ADPT_LEA_MCS_MEDIA_STATE_PAUSED;
         if (isRemoteControl) {
             lea_mcs_media_control_response(ADPT_LEA_MCS_MEDIA_CONTROL_SUCCESS);
@@ -955,15 +954,17 @@ void playing_state_command_handler(int event)
         lea_mcs_media_state_changed(current_state);
         break;
     }
-    case MEDIA_EVENT_SEEKED: {
+#if 0
+    case MEDIA_EVENT_SEEK: {
         if (isRemoteControl) {
             lea_mcs_media_control_response(ADPT_LEA_MCS_MEDIA_CONTROL_SUCCESS);
             isRemoteControl = false;
         }
         break;
     }
-    case MEDIA_EVENT_PREVED:
-    case MEDIA_EVENT_NEXTED: {
+#endif
+    case MEDIA_EVENT_PREV_SONG:
+    case MEDIA_EVENT_NEXT_SONG: {
         int temp_id = mcs_cur_track_oid;
         mcs_cur_track_oid = mcs_next_track_oid;
         mcs_next_track_oid = temp_id;
@@ -987,12 +988,12 @@ void paused_state_command_handler(int event)
 {
     BT_LOGD("%s, event:%d ", __func__, event);
     switch (event) {
-    case MEDIA_EVENT_STOPPED: {
+    case MEDIA_EVENT_STOP: {
         current_state = ADPT_LEA_MCS_MEDIA_STATE_INACTIVE;
         lea_mcs_media_state_changed(current_state);
         break;
     }
-    case MEDIA_EVENT_STARTED: {
+    case MEDIA_EVENT_START: {
         current_state = ADPT_LEA_MCS_MEDIA_STATE_PLAYING;
         if (isRemoteControl) {
             lea_mcs_media_control_response(ADPT_LEA_MCS_MEDIA_CONTROL_SUCCESS);
@@ -1001,19 +1002,21 @@ void paused_state_command_handler(int event)
         lea_mcs_media_state_changed(current_state);
         break;
     }
-    case MEDIA_EVENT_PAUSED: {
+    case MEDIA_EVENT_PAUSE: {
         current_state = ADPT_LEA_MCS_MEDIA_STATE_PAUSED;
         break;
     }
-    case MEDIA_EVENT_SEEKED: {
+#if 0
+    case MEDIA_EVENT_SEEK: {
         if (isRemoteControl) {
             lea_mcs_media_control_response(ADPT_LEA_MCS_MEDIA_CONTROL_SUCCESS);
             isRemoteControl = false;
         }
         break;
     }
-    case MEDIA_EVENT_PREVED:
-    case MEDIA_EVENT_NEXTED: {
+#endif
+    case MEDIA_EVENT_PREV_SONG:
+    case MEDIA_EVENT_NEXT_SONG: {
         int temp_id = mcs_cur_track_oid;
         mcs_cur_track_oid = mcs_next_track_oid;
         mcs_next_track_oid = temp_id;
@@ -1037,12 +1040,12 @@ void seeking_state_command_handler(int event)
 {
     BT_LOGD("%s, event:%d ", __func__, event);
     switch (event) {
-    case MEDIA_EVENT_STOPPED: {
+    case MEDIA_EVENT_STOP: {
         current_state = ADPT_LEA_MCS_MEDIA_STATE_INACTIVE;
         lea_mcs_media_state_changed(current_state);
         break;
     }
-    case MEDIA_EVENT_STARTED: {
+    case MEDIA_EVENT_START: {
         current_state = ADPT_LEA_MCS_MEDIA_STATE_PLAYING;
         if (isRemoteControl) {
             lea_mcs_media_control_response(ADPT_LEA_MCS_MEDIA_CONTROL_SUCCESS);
@@ -1052,9 +1055,7 @@ void seeking_state_command_handler(int event)
         lea_mcs_media_state_changed(current_state);
         break;
     }
-    case MEDIA_EVENT_PREPARED:
-    case MEDIA_EVENT_PAUSED:
-    case MEDIA_EVENT_COMPLETED: {
+    case MEDIA_EVENT_PAUSE: {
         current_state = ADPT_LEA_MCS_MEDIA_STATE_PAUSED;
         if (isRemoteControl) {
             lea_mcs_media_control_response(ADPT_LEA_MCS_MEDIA_CONTROL_SUCCESS);
@@ -1064,15 +1065,17 @@ void seeking_state_command_handler(int event)
         lea_mcs_media_state_changed(current_state);
         break;
     }
-    case MEDIA_EVENT_SEEKED: {
+#if 0
+    case MEDIA_EVENT_SEEK: {
         if (isRemoteControl) {
             lea_mcs_media_control_response(ADPT_LEA_MCS_MEDIA_CONTROL_SUCCESS);
             isRemoteControl = false;
         }
         break;
     }
-    case MEDIA_EVENT_PREVED:
-    case MEDIA_EVENT_NEXTED: {
+#endif
+    case MEDIA_EVENT_PREV_SONG:
+    case MEDIA_EVENT_NEXT_SONG: {
         current_state = ADPT_LEA_MCS_MEDIA_STATE_PAUSED;
         int temp_id = mcs_cur_track_oid;
         mcs_cur_track_oid = mcs_next_track_oid;
@@ -1105,16 +1108,12 @@ static lea_adpt_mcs_media_state_t playerState2McsState(int playerState)
 {
     lea_adpt_mcs_media_state_t McsState;
 
-    if (playerState == MEDIA_EVENT_PREPARED) {
-        McsState = ADPT_LEA_MCS_MEDIA_STATE_PAUSED;
-    } else if (playerState == MEDIA_EVENT_STARTED) {
+    if (playerState == MEDIA_EVENT_START) {
         McsState = ADPT_LEA_MCS_MEDIA_STATE_PLAYING;
-    } else if (playerState == MEDIA_EVENT_PAUSED) {
+    } else if (playerState == MEDIA_EVENT_PAUSE) {
         McsState = ADPT_LEA_MCS_MEDIA_STATE_PAUSED;
-    } else if (playerState == MEDIA_EVENT_STOPPED) {
+    } else if (playerState == MEDIA_EVENT_STOP) {
         McsState = ADPT_LEA_MCS_MEDIA_STATE_INACTIVE;
-    } else if (playerState == MEDIA_EVENT_COMPLETED) {
-        McsState = ADPT_LEA_MCS_MEDIA_STATE_PAUSED;
     } else {
         McsState = ADPT_LEA_MCS_MEDIA_STATE_LAST;
     }

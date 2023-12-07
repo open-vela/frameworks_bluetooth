@@ -381,9 +381,9 @@ void lea_mcp_on_media_control_result(bt_address_t *addr, uint32_t mcs_id, uint8_
     }
 
     if (opcode == MCP_MEDIA_CONTROL_PREVIOUS_TRACK) {
-        media_session_notify(&g_mcp_service.media_session_handle, MEDIA_EVENT_PREVED, 0, NULL);
+        media_session_notify(&g_mcp_service.media_session_handle, MEDIA_EVENT_PREV_SONG, 0, NULL);
     } else if (opcode == MCP_MEDIA_CONTROL_NEXT_TRACK) {
-        media_session_notify(&g_mcp_service.media_session_handle, MEDIA_EVENT_NEXTED, 0, NULL);
+        media_session_notify(&g_mcp_service.media_session_handle, MEDIA_EVENT_NEXT_SONG, 0, NULL);
     }
 }
 
@@ -1150,11 +1150,11 @@ static void lea_mcs_media_seesion_event_callback(void *cookie, int event, int re
         bts_mcp_media_control_request(addrs + num - 1, MCP_MEDIA_CONTROL_STOP, 0);
         break;
     }
-    case MEDIA_EVENT_PREV: {
+    case MEDIA_EVENT_PREV_SONG: {
         bts_mcp_media_control_request(addrs + num - 1, MCP_MEDIA_CONTROL_PREVIOUS_TRACK, 0);
         break;
     }
-    case MEDIA_EVENT_NEXT: {
+    case MEDIA_EVENT_NEXT_SONG: {
         bts_mcp_media_control_request(addrs + num - 1, MCP_MEDIA_CONTROL_NEXT_TRACK, 0);
         break;
     }
