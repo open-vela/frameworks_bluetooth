@@ -215,6 +215,7 @@ static int setup_scan_parameter(ble_scan_settings_t *settings, ble_scan_params_t
         return BT_SCAN_STATUS_START_FAIL;
 
     param->scan_phy = settings->scan_phy;
+    param->scan_type = settings->scan_type;
 
     switch (settings->scan_mode) {
     case BT_SCAN_MODE_LOW_POWER:
@@ -240,7 +241,7 @@ static void start_scan(void *data)
 {
     scanner_ctrl_t *start = data;
     scanner_t *scanner = start->scanner;
-    ble_scan_params_t params = { 100, 100, BT_LE_1M_PHY };
+    ble_scan_params_t params = { 100, 100, BT_LE_SCAN_TYPE_PASSIVE, BT_LE_1M_PHY };
 
     uint32_t status = register_scanner(scanner);
     if (status != BT_SCAN_STATUS_SUCCESS) {

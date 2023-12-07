@@ -29,7 +29,8 @@ static int dump_scan_cmd(void *handle, int argc, char *argv[]);
 static bt_scanner_t *g_scanner = NULL;
 
 static struct option scan_options[] = {
-    {"phy",     required_argument, 0, 'p'},
+    {"type",    required_argument, 0, 't'},
+    { "phy",    required_argument, 0, 'p'},
     { "mode",   required_argument, 0, 'm'},
     { "legacy", required_argument, 0, 'l'},
     { "filter", required_argument, 0, 'f'},
@@ -38,12 +39,13 @@ static struct option scan_options[] = {
 
 static bt_command_t g_scanner_tables[] = {
     {"start", start_scan_cmd, 0, "start scan\n"
+                                  "\t  -t or --type, le scan type (0: passive, 1: active)\n"
                                   "\t  -p or --phy, le scan phy (1M/2M/Coded)\n"
                                   "\t  -m or --mode, scan mode (0:low power mode, 1:balance mode, 2:low latency mode)\n"
                                   "\t  -l or --legacy, is legacy scan (1: true, 0: false)\n"
                                   "\t  -f or --filter, filter advertiser complete name\n"},
-    { "stop", stop_scan_cmd,  0, "stop scan"                                                                                },
-    { "dump", dump_scan_cmd,  0, "dump scan state"                                                                          },
+    { "stop", stop_scan_cmd,  0, "stop scan"                                                                             },
+    { "dump", dump_scan_cmd,  0, "dump scan state"                                                                       },
 };
 
 static void usage(void)
@@ -88,15 +90,24 @@ static int start_scan_cmd(void *handle, int argc, char *argv[])
     uint8_t *filter_data = NULL;
     uint16_t filter_len = 0;
     advertiser_data_t *filter;
-    ble_scan_settings_t settings = { BT_SCAN_MODE_LOW_POWER, 0, BT_LE_1M_PHY };
-    
+    ble_scan_settings_t settings = { BT_SCAN_MODE_LOW_POWER, 0, BT_LE_SCAN_TYPE_PASSIVE, BT_LE_1M_PHY };
+
     if (g_scanner)
         return CMD_ERROR;
 
     optind = 0;
-    while ((opt = getopt_long(argc, argv, "p:m:l:f", scan_options,
+    while ((opt = getopt_long(argc, argv, "t:p:m:l:f", scan_options,
                               NULL)) != -1) {
         switch (opt) {
+        case 't': {
+            int type = atoi(optarg);
+            if (type != 0 && type != 1) {
+                PRINT("Invalid type:%s", optarg);
+                return CMD_INVALID_OPT;
+            }
+
+            settings.scan_type = type;
+        } break;
         case 'p': {
             if (strncmp(optarg, "1M", 2) == 0)
                 settings.scan_phy = BT_LE_1M_PHY;
@@ -149,8 +160,7 @@ static int start_scan_cmd(void *handle, int argc, char *argv[])
         if (filter_data) {
             g_scanner = bt_le_start_scan_with_filters(handle, &settings, filter_data, filter_len, &scanner_callbacks);
             advertiser_data_free(filter);
-        }
-        else
+        } else
             g_scanner = bt_le_start_scan_settings(handle, &settings, &scanner_callbacks);
     } else {
         g_scanner = bt_le_start_scan(handle, &scanner_callbacks);
