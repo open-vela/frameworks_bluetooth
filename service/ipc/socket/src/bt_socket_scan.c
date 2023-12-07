@@ -54,7 +54,7 @@
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
-#if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
+#if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__) && defined(CONFIG_BLUETOOTH_BLE_SCAN)
 #include "utils/log.h"
 
 static void on_scan_result_cb(bt_scanner_t *scanner, ble_scan_result_t *result)

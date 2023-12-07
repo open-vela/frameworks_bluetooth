@@ -44,7 +44,7 @@
 #endif
 #include "utils/log.h"
 
-#define BTSTACK_THREAD_STACK_SIZE 4096
+#define BTSTACK_THREAD_STACK_SIZE 8192
 #define DEBUG_IMPL                BT_LOGD("%s", __func__);
 
 static uint8_t sal_pair_type(bt_pair_type_t type)
