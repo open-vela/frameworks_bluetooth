@@ -62,6 +62,11 @@ enum {
 
 typedef void bt_scanner_t;
 
+typedef enum {
+    BT_LE_SCAN_TYPE_PASSIVE = 0,
+    BT_LE_SCAN_TYPE_ACTIVE
+} ble_scan_type_t;
+
 /**
  * @brief Scan result structure
  *
@@ -91,6 +96,7 @@ typedef struct {
 typedef struct {
     int scan_mode;
     bool legacy;
+    ble_scan_type_t scan_type;
     ble_phy_type_t scan_phy;
     ble_scan_filter_policy_t policy;
 } ble_scan_settings_t;
@@ -102,6 +108,7 @@ typedef struct {
 typedef struct {
     int scan_interval;
     int scan_window;
+    ble_scan_type_t scan_type;
     ble_phy_type_t scan_phy;
 } ble_scan_params_t;
 
