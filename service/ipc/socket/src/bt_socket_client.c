@@ -110,17 +110,17 @@ static void bt_socket_client_async_cb(uv_async_t *handle)
 {
     bt_instance_t *ins = handle->data;
 
-    uv_mutex_lock(&ins->lock);
     for (;;) {
+        uv_mutex_lock(&ins->lock);
         bt_client_msg_t *msg = (bt_client_msg_t *)list_remove_head(&ins->msg_queue);
         if (!msg) {
             uv_mutex_unlock(&ins->lock);
             return;
         }
+        uv_mutex_unlock(&ins->lock);
 
         bt_socket_client_msg_process(msg);
     }
-    uv_mutex_unlock(&ins->lock);
 }
 
 static bt_status_t bt_socket_client_async_to_external(bt_instance_t *ins, bt_client_msg_t *msg)
@@ -402,6 +402,8 @@ void bt_socket_client_deinit(bt_instance_t *ins)
         uv_close((uv_handle_t *)ins->external_async, bt_socket_client_async_close);
         uv_mutex_unlock(&ins->lock);
     }
+
+    uv_mutex_destroy(&ins->lock);
 
     thread_loop_exit(ins->client_loop);
 
