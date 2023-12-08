@@ -88,24 +88,24 @@ enum {
 
 uint8_t read_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'V', 'E', 'L', 'A', '!' };
 
-uint16_t tx_char_ccc_changed(void *srv_handle, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
+uint16_t tx_char_ccc_changed(void *srv_handle, bt_address_t *addr, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
 {
-    PRINT("gatts service TX char ccc changed, new value:");
+    PRINT_ADDR("gatts service TX char ccc changed, addr:%s, new value:", addr);
     PRINT_HEXDUMP(value, length);
     return length;
 }
 
-uint16_t rx_char_on_read(void *srv_handle, uint16_t attr_handle, uint32_t req_handle)
+uint16_t rx_char_on_read(void *srv_handle, bt_address_t *addr, uint16_t attr_handle, uint32_t req_handle)
 {
-    PRINT("gatts service RX char received read request.");
-    bt_status_t ret = bt_gatts_response(srv_handle, req_handle, read_char_value, sizeof(read_char_value));
+    PRINT_ADDR("gatts service RX char received read request, addr:%s", addr);
+    bt_status_t ret = bt_gatts_response(srv_handle, addr, req_handle, read_char_value, sizeof(read_char_value));
     PRINT("gatts service RX char response. status: %d", ret);
     return 0;
 }
 
-uint16_t rx_char_on_write(void *srv_handle, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
+uint16_t rx_char_on_write(void *srv_handle, bt_address_t *addr, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
 {
-    PRINT("gatts service RX char received write request, value:");
+    PRINT_ADDR("gatts service RX char received write request, addr:%s, value:", addr);
     PRINT_HEXDUMP(value, length);
     return length;
 }
@@ -163,17 +163,17 @@ static gatt_srv_db_t s_iot_service_db = {
 };
 
 static bt_command_t g_gatts_tables[] = {
-    {"register",         register_cmd,     0, "\"register gatt service(DIS = 1, BAS = 2, CUSTOM = 3) :<id>\""},
-    { "unregister",      unregister_cmd,   0, "\"unregister gatt service :<id>\""                            },
-    { "start",           start_cmd,        0, "\"start gatt service :<id>\""                                 },
-    { "stop",            stop_cmd,         0, "\"stop gatt service :<id>\""                                  },
-    { "connect",         connect_cmd,      0, "\"connect remote device :<id><address>\""                     },
-    { "disconnect",      disconnect_cmd,   0, "\"disconnect remote device :<id>\""                           },
-    { "notify_battery",  notify_bas_cmd,   0, "\"send battery notification :<level>(0-100)\""                },
-    { "notify_custom",   notify_cus_cmd,   0, "\"send custom notification :<playload>\""                     },
-    { "indicate_custom", indicate_cus_cmd, 0, "\"send custom indication   :<playload>\""                     },
-    { "read_phy",        read_phy_cmd,     0, "\"read phy :<id>\""                                           },
-    { "update_phy",      update_phy_cmd,   0, "\"update phy(0: 1M, 1: 2M, 3: LE_Coded) :<id><tx><rx>\""      },
+    {"register",         register_cmd,     0, "\"register gatt service(DIS = 1, BAS = 2, CUSTOM = 3) :<id>\""   },
+    { "unregister",      unregister_cmd,   0, "\"unregister gatt service :<id>\""                               },
+    { "start",           start_cmd,        0, "\"start gatt service :<id>\""                                    },
+    { "stop",            stop_cmd,         0, "\"stop gatt service :<id>\""                                     },
+    { "connect",         connect_cmd,      0, "\"connect remote device :<id><address>\""                        },
+    { "disconnect",      disconnect_cmd,   0, "\"disconnect remote device :<id><address>\""                     },
+    { "notify_battery",  notify_bas_cmd,   0, "\"send battery notification :<address><level>(0-100)\""          },
+    { "notify_custom",   notify_cus_cmd,   0, "\"send custom notification :<address><playload>\""               },
+    { "indicate_custom", indicate_cus_cmd, 0, "\"send custom indication   :<address><playload>\""               },
+    { "read_phy",        read_phy_cmd,     0, "\"read phy :<id><address>\""                                     },
+    { "update_phy",      update_phy_cmd,   0, "\"update phy(0: 1M, 1: 2M, 3: LE_Coded) :<id><address><tx><rx>\""},
 };
 
 static void usage(void)
@@ -207,14 +207,18 @@ static int connect_cmd(void *handle, int argc, char *argv[])
 
 static int disconnect_cmd(void *handle, int argc, char *argv[])
 {
-    if (argc < 1)
+    if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[1], &addr) < 0)
+        return CMD_INVALID_ADDR;
 
     gatts_handle_t service_handle;
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
-    if (bt_gatts_disconnect(service_handle) != BT_STATUS_SUCCESS)
+    if (bt_gatts_disconnect(service_handle, &addr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -286,17 +290,24 @@ static int stop_cmd(void *handle, int argc, char *argv[])
 
 static int notify_bas_cmd(void *handle, int argc, char *argv[])
 {
-    if (argc < 1)
+    if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int new_level = atoi(argv[0]);
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    int new_level = atoi(argv[1]);
     if (new_level < 0 || new_level > 100) {
         PRINT("invalid battery level: %d", new_level);
         return CMD_INVALID_OPT;
     }
 
     battery_level = new_level;
-    if (bt_gatts_notify(g_bas_handle, BAS_BATTERY_LEVEL_CHR_ID, (uint8_t *)&battery_level, sizeof(battery_level)) != BT_STATUS_SUCCESS)
+    if (bt_gatts_set_attr_value(g_bas_handle, BAS_BATTERY_LEVEL_CHR_ID, (uint8_t *)&battery_level, sizeof(battery_level)) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    if (bt_gatts_notify(g_bas_handle, &addr, BAS_BATTERY_LEVEL_CHR_ID, (uint8_t *)&battery_level, sizeof(battery_level)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -304,10 +315,14 @@ static int notify_bas_cmd(void *handle, int argc, char *argv[])
 
 static int notify_cus_cmd(void *handle, int argc, char *argv[])
 {
-    if (argc < 1)
+    if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_gatts_notify(g_custom_handle, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[0], strlen(argv[0])) != BT_STATUS_SUCCESS)
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (bt_gatts_notify(g_custom_handle, &addr, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[1], strlen(argv[1])) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -315,10 +330,14 @@ static int notify_cus_cmd(void *handle, int argc, char *argv[])
 
 static int indicate_cus_cmd(void *handle, int argc, char *argv[])
 {
-    if (argc < 1)
+    if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_gatts_indicate(g_custom_handle, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[0], strlen(argv[0])) != BT_STATUS_SUCCESS)
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (bt_gatts_indicate(g_custom_handle, &addr, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[1], strlen(argv[1])) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -326,14 +345,18 @@ static int indicate_cus_cmd(void *handle, int argc, char *argv[])
 
 static int read_phy_cmd(void *handle, int argc, char *argv[])
 {
-    if (argc < 1)
+    if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[1], &addr) < 0)
+        return CMD_INVALID_ADDR;
 
     gatts_handle_t service_handle;
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
-    if (bt_gatts_read_phy(service_handle) != BT_STATUS_SUCCESS)
+    if (bt_gatts_read_phy(service_handle, &addr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -341,17 +364,21 @@ static int read_phy_cmd(void *handle, int argc, char *argv[])
 
 static int update_phy_cmd(void *handle, int argc, char *argv[])
 {
-    if (argc < 3)
+    if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int tx = atoi(argv[1]);
-    int rx = atoi(argv[2]);
+    int tx = atoi(argv[2]);
+    int rx = atoi(argv[3]);
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[1], &addr) < 0)
+        return CMD_INVALID_ADDR;
 
     gatts_handle_t service_handle;
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
-    if (bt_gatts_update_phy(service_handle, tx, rx) != BT_STATUS_SUCCESS)
+    if (bt_gatts_update_phy(service_handle, &addr, tx, rx) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -377,9 +404,9 @@ static void attr_table_removed_callback(void *srv_handle, gatt_status_t status, 
     PRINT("gatts remove attribute table complete, handle 0x%" PRIx16 ", status:%d", attr_handle, status);
 }
 
-static void notify_complete_callback(void *srv_handle, gatt_status_t status, uint16_t attr_handle)
+static void notify_complete_callback(void *srv_handle, bt_address_t *addr, gatt_status_t status, uint16_t attr_handle)
 {
-    PRINT("gatts service notify complete, handle 0x%" PRIx16 ", status:%d", attr_handle, status);
+    PRINT_ADDR("gatts service notify complete, addr:%s, handle 0x%" PRIx16 ", status:%d", addr, attr_handle, status);
 }
 
 static void mtu_changed_callback(void *srv_handle, bt_address_t *addr, uint32_t mtu)
@@ -387,14 +414,14 @@ static void mtu_changed_callback(void *srv_handle, bt_address_t *addr, uint32_t 
     PRINT_ADDR("gatts_mtu_changed_callback, addr:%s, mtu:%" PRIu32, addr, mtu);
 }
 
-static void phy_read_callback(void *srv_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+static void phy_read_callback(void *srv_handle, bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
-    PRINT("gatts read phy complete, tx:%d, rx:%d", tx_phy, rx_phy);
+    PRINT_ADDR("gatts read phy complete, addr:%s, tx:%d, rx:%d", addr, tx_phy, rx_phy);
 }
 
-static void phy_updated_callback(void *srv_handle, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+static void phy_updated_callback(void *srv_handle, bt_address_t *addr, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
-    PRINT("gatts phy updated, status:%d, tx:%d, rx:%d", status, tx_phy, rx_phy);
+    PRINT_ADDR("gatts phy updated, addr:%s, status:%d, tx:%d, rx:%d", addr, status, tx_phy, rx_phy);
 }
 
 static void conn_param_changed_callback(void *srv_handle, bt_address_t *addr, uint16_t connection_interval,

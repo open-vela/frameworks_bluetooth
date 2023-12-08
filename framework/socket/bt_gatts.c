@@ -113,13 +113,14 @@ bt_status_t bt_gatts_connect(gatts_handle_t srv_handle, bt_address_t *addr, ble_
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_disconnect(gatts_handle_t srv_handle)
+bt_status_t bt_gatts_disconnect(gatts_handle_t srv_handle, bt_address_t *addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
 
     packet.gatts_pl._bt_gatts_disconnect.handle = gatts_remote->cookie;
+    memcpy(&packet.gatts_pl._bt_gatts_disconnect.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_DISCONNECT);
     if (status != BT_STATUS_SUCCESS)
         return status;
@@ -233,7 +234,7 @@ bt_status_t bt_gatts_get_attr_value(gatts_handle_t srv_handle, uint16_t attr_han
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_response(gatts_handle_t srv_handle, uint32_t req_handle, uint8_t *value, uint16_t length)
+bt_status_t bt_gatts_response(gatts_handle_t srv_handle, bt_address_t *addr, uint32_t req_handle, uint8_t *value, uint16_t length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -243,6 +244,7 @@ bt_status_t bt_gatts_response(gatts_handle_t srv_handle, uint32_t req_handle, ui
         return BT_STATUS_PARM_INVALID;
 
     packet.gatts_pl._bt_gatts_response.handle = gatts_remote->cookie;
+    memcpy(&packet.gatts_pl._bt_gatts_response.addr, addr, sizeof(bt_address_t));
     packet.gatts_pl._bt_gatts_response.req_handle = req_handle;
     packet.gatts_pl._bt_gatts_response.length = length;
     memcpy(packet.gatts_pl._bt_gatts_response.value, value, length);
@@ -253,7 +255,7 @@ bt_status_t bt_gatts_response(gatts_handle_t srv_handle, uint32_t req_handle, ui
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_notify(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t bt_gatts_notify(gatts_handle_t srv_handle, bt_address_t *addr, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -263,6 +265,7 @@ bt_status_t bt_gatts_notify(gatts_handle_t srv_handle, uint16_t attr_handle, uin
         return BT_STATUS_PARM_INVALID;
 
     packet.gatts_pl._bt_gatts_notify.handle = gatts_remote->cookie;
+    memcpy(&packet.gatts_pl._bt_gatts_notify.addr, addr, sizeof(bt_address_t));
     packet.gatts_pl._bt_gatts_notify.attr_handle = attr_handle;
     packet.gatts_pl._bt_gatts_notify.length = length;
     memcpy(packet.gatts_pl._bt_gatts_notify.value, value, length);
@@ -273,7 +276,7 @@ bt_status_t bt_gatts_notify(gatts_handle_t srv_handle, uint16_t attr_handle, uin
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_indicate(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t bt_gatts_indicate(gatts_handle_t srv_handle, bt_address_t *addr, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -283,6 +286,7 @@ bt_status_t bt_gatts_indicate(gatts_handle_t srv_handle, uint16_t attr_handle, u
         return BT_STATUS_PARM_INVALID;
 
     packet.gatts_pl._bt_gatts_notify.handle = gatts_remote->cookie;
+    memcpy(&packet.gatts_pl._bt_gatts_notify.addr, addr, sizeof(bt_address_t));
     packet.gatts_pl._bt_gatts_notify.attr_handle = attr_handle;
     packet.gatts_pl._bt_gatts_notify.length = length;
     memcpy(packet.gatts_pl._bt_gatts_notify.value, value, length);
@@ -293,13 +297,14 @@ bt_status_t bt_gatts_indicate(gatts_handle_t srv_handle, uint16_t attr_handle, u
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_read_phy(gatts_handle_t srv_handle)
+bt_status_t bt_gatts_read_phy(gatts_handle_t srv_handle, bt_address_t *addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
 
     packet.gatts_pl._bt_gatts_phy.handle = gatts_remote->cookie;
+    memcpy(&packet.gatts_pl._bt_gatts_phy.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_READ_PHY);
     if (status != BT_STATUS_SUCCESS)
         return status;
@@ -307,13 +312,14 @@ bt_status_t bt_gatts_read_phy(gatts_handle_t srv_handle)
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_update_phy(gatts_handle_t srv_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+bt_status_t bt_gatts_update_phy(gatts_handle_t srv_handle, bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
 
     packet.gatts_pl._bt_gatts_phy.handle = gatts_remote->cookie;
+    memcpy(&packet.gatts_pl._bt_gatts_phy.addr, addr, sizeof(bt_address_t));
     packet.gatts_pl._bt_gatts_phy.tx_phy = tx_phy;
     packet.gatts_pl._bt_gatts_phy.rx_phy = rx_phy;
     status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_UPDATE_PHY);
