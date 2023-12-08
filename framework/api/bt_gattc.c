@@ -70,11 +70,11 @@ bt_status_t BTSYMBOLS(bt_gattc_get_attribute_by_handle)(gattc_handle_t conn_hand
     return profile->get_attribute_by_handle(conn_handle, attr_handle, attr_desc);
 }
 
-bt_status_t BTSYMBOLS(bt_gattc_get_attribute_by_uuid)(gattc_handle_t conn_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc)
+bt_status_t BTSYMBOLS(bt_gattc_get_attribute_by_uuid)(gattc_handle_t conn_handle, uint16_t start_handle, uint16_t end_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc)
 {
     gattc_interface_t *profile = get_profile_service();
 
-    return profile->get_attribute_by_uuid(conn_handle, attr_uuid, attr_desc);
+    return profile->get_attribute_by_uuid(conn_handle, start_handle, end_handle, attr_uuid, attr_desc);
 }
 
 bt_status_t BTSYMBOLS(bt_gattc_read)(gattc_handle_t conn_handle, uint16_t attr_handle)
@@ -98,18 +98,18 @@ bt_status_t BTSYMBOLS(bt_gattc_write_without_response)(gattc_handle_t conn_handl
     return profile->write_without_response(conn_handle, attr_handle, value, length);
 }
 
-bt_status_t BTSYMBOLS(bt_gattc_subscribe)(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle)
+bt_status_t BTSYMBOLS(bt_gattc_subscribe)(gattc_handle_t conn_handle, uint16_t attr_handle)
 {
     gattc_interface_t *profile = get_profile_service();
 
-    return profile->subscribe(conn_handle, value_handle, cccd_handle);
+    return profile->subscribe(conn_handle, attr_handle);
 }
 
-bt_status_t BTSYMBOLS(bt_gattc_unsubscribe)(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle)
+bt_status_t BTSYMBOLS(bt_gattc_unsubscribe)(gattc_handle_t conn_handle, uint16_t attr_handle)
 {
     gattc_interface_t *profile = get_profile_service();
 
-    return profile->unsubscribe(conn_handle, value_handle, cccd_handle);
+    return profile->unsubscribe(conn_handle, attr_handle);
 }
 
 bt_status_t BTSYMBOLS(bt_gattc_exchange_mtu)(gattc_handle_t conn_handle, uint32_t mtu)

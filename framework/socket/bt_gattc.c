@@ -136,13 +136,15 @@ bt_status_t bt_gattc_get_attribute_by_handle(gattc_handle_t conn_handle, uint16_
     return packet.gattc_r.status;
 }
 
-bt_status_t bt_gattc_get_attribute_by_uuid(gattc_handle_t conn_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc)
+bt_status_t bt_gattc_get_attribute_by_uuid(gattc_handle_t conn_handle, uint16_t start_handle, uint16_t end_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc)
 {
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
 
     packet.gattc_pl._bt_gattc_get_attr_by_uuid.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_get_attr_by_uuid.start_handle = start_handle;
+    packet.gattc_pl._bt_gattc_get_attr_by_uuid.end_handle = end_handle;
     memcpy(&packet.gattc_pl._bt_gattc_get_attr_by_uuid.attr_uuid, attr_uuid, sizeof(bt_uuid_t));
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_GET_ATTRIBUTE_BY_UUID);
     if (status != BT_STATUS_SUCCESS)
@@ -207,15 +209,14 @@ bt_status_t bt_gattc_write_without_response(gattc_handle_t conn_handle, uint16_t
     return packet.gattc_r.status;
 }
 
-bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle)
+bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t attr_handle)
 {
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
 
     packet.gattc_pl._bt_gattc_subscribe.handle = gattc_remote->cookie;
-    packet.gattc_pl._bt_gattc_subscribe.value_handle = value_handle;
-    packet.gattc_pl._bt_gattc_subscribe.cccd_handle = cccd_handle;
+    packet.gattc_pl._bt_gattc_subscribe.attr_handle = attr_handle;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_SUBSCRIBE);
     if (status != BT_STATUS_SUCCESS)
         return status;
@@ -223,15 +224,14 @@ bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t value_handle
     return packet.gattc_r.status;
 }
 
-bt_status_t bt_gattc_unsubscribe(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle)
+bt_status_t bt_gattc_unsubscribe(gattc_handle_t conn_handle, uint16_t attr_handle)
 {
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
 
-    packet.gattc_pl._bt_gattc_unsubscribe.handle = gattc_remote->cookie;
-    packet.gattc_pl._bt_gattc_unsubscribe.value_handle = value_handle;
-    packet.gattc_pl._bt_gattc_unsubscribe.cccd_handle = cccd_handle;
+    packet.gattc_pl._bt_gattc_subscribe.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_subscribe.attr_handle = attr_handle;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_UNSUBSCRIBE);
     if (status != BT_STATUS_SUCCESS)
         return status;
