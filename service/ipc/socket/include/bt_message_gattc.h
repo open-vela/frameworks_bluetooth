@@ -44,6 +44,7 @@
     BT_GATT_CLIENT_ON_MTU_UPDATED,
     BT_GATT_CLIENT_ON_READ,
     BT_GATT_CLIENT_ON_WRITTEN,
+    BT_GATT_CLIENT_ON_SUBSCRIBED,
     BT_GATT_CLIENT_ON_NOTIFIED,
     BT_GATT_CLIENT_ON_PHY_READ,
     BT_GATT_CLIENT_ON_PHY_UPDATED,
@@ -107,6 +108,8 @@ typedef union {
 
     struct {
         gattc_handle_t handle;
+        uint16_t start_handle;
+        uint16_t end_handle;
         bt_uuid_t attr_uuid;
     } _bt_gattc_get_attr_by_uuid;
 
@@ -124,15 +127,8 @@ typedef union {
 
     struct {
         gattc_handle_t handle;
-        uint16_t value_handle;
-        uint16_t cccd_handle;
+        uint16_t attr_handle;
     } _bt_gattc_subscribe;
-
-    struct {
-        gattc_handle_t handle;
-        uint16_t value_handle;
-        uint16_t cccd_handle;
-    } _bt_gattc_unsubscribe;
 
     struct {
         gattc_handle_t handle;
@@ -179,9 +175,9 @@ typedef union {
     struct {
         void *remote;
         gatt_status_t status;
-        bt_uuid_t uuid;
         uint16_t start_handle;
         uint16_t end_handle;
+        bt_uuid_t uuid;
     } _on_discovered;
 
     struct {
@@ -203,6 +199,13 @@ typedef union {
         gatt_status_t status;
         uint16_t attr_handle;
     } _on_written;
+
+    struct {
+        void *remote;
+        gatt_status_t status;
+        uint16_t attr_handle;
+        bool enable;
+    } _on_subscribed;
 
     struct {
         void *remote;

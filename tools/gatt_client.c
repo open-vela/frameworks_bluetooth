@@ -59,8 +59,8 @@ static bt_command_t g_gattc_tables[] = {
     { "write_request", write_request_cmd,     0, "\"write request :<conn id><char id><type>(str or hex)<playload>\n"
                                              "\t\t\t  e.g., write_request 0 0001 str HelloWorld!\n"
                                              "\t\t\t  e.g., write_request 0 0001 hex 00 01 02 03\""                                                  },
-    { "enable_cccd",   enable_cccd_cmd,       0, "\"enable cccd :<conn id><char id><cccd_id>\""                                                                                                      },
-    { "disable_cccd",  disable_cccd_cmd,      0, "\"disable cccd :<conn id><char id><cccd_id>\""                                                                                                     },
+    { "enable_cccd",   enable_cccd_cmd,       0, "\"enable cccd :<conn id><char id>\""                                                                                                               },
+    { "disable_cccd",  disable_cccd_cmd,      0, "\"disable cccd :<conn id><char id>\""                                                                                                              },
     { "exchange_mtu",  exchange_mtu_cmd,      0, "\"exchange mtu :<conn id><mtu>\""                                                                                                                  },
     { "update_conn",   update_conn_cmd,       0, "\"update connection parameter :<conn id><min_interval><max_interval><latency><timeout><min_connection_event_length><max_connection_event_length>\""},
     { "read_phy",      read_phy_cmd,          0, "\"read phy :<conn id>\""                                                                                                                           },
@@ -190,12 +190,9 @@ static int enable_cccd_cmd(void *handle, int argc, char *argv[])
     int conn_id = atoi(argv[0]);
     CHECK_CONNCTION_ID(conn_id);
 
-    uint16_t value_handle = strtol(argv[1], NULL, 16);
-    uint16_t cccd_handle = 0;
-    if (argc > 2)
-        cccd_handle = strtol(argv[2], NULL, 16);
+    uint16_t attr_handle = strtol(argv[1], NULL, 16);
 
-    if (bt_gattc_subscribe(g_gattc_handles[conn_id], value_handle, cccd_handle) != BT_STATUS_SUCCESS)
+    if (bt_gattc_subscribe(g_gattc_handles[conn_id], attr_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -209,12 +206,9 @@ static int disable_cccd_cmd(void *handle, int argc, char *argv[])
     int conn_id = atoi(argv[0]);
     CHECK_CONNCTION_ID(conn_id);
 
-    uint16_t value_handle = strtol(argv[1], NULL, 16);
-    uint16_t cccd_handle = 0;
-    if (argc > 2)
-        cccd_handle = strtol(argv[2], NULL, 16);
+    uint16_t attr_handle = strtol(argv[1], NULL, 16);
 
-    if (bt_gattc_unsubscribe(g_gattc_handles[conn_id], value_handle, cccd_handle) != BT_STATUS_SUCCESS)
+    if (bt_gattc_unsubscribe(g_gattc_handles[conn_id], attr_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -322,7 +316,7 @@ static void discover_callback(void *conn_handle, gatt_status_t status, bt_uuid_t
         return;
     }
 
-    if (!uuid) {
+    if (!uuid || !uuid->type) {
         PRINT("gattc_discover_callback completed");
         return;
     }
@@ -393,6 +387,11 @@ static void write_complete_callback(void *conn_handle, gatt_status_t status, uin
     PRINT("gattc connection write complete, handle 0x%04x status:%d", attr_handle, status);
 }
 
+static void subscribe_complete_callback(void *conn_handle, gatt_status_t status, uint16_t attr_handle, bool enable)
+{
+    PRINT("gattc connection subscribe complete, handle 0x%04x status:%d enable:%d", attr_handle, status, enable);
+}
+
 static void notify_received_callback(void *conn_handle, uint16_t attr_handle,
                                      uint8_t *value, uint16_t length)
 {
@@ -434,6 +433,7 @@ static gattc_callbacks_t gattc_cbs = {
     discover_callback,
     read_complete_callback,
     write_complete_callback,
+    subscribe_complete_callback,
     notify_received_callback,
     mtu_updated_callback,
     phy_read_callback,

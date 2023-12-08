@@ -123,6 +123,16 @@ static void on_written_cb(gattc_handle_t conn_handle, gatt_status_t status, uint
     packet.gattc_cb._on_written.attr_handle = attr_handle;
     bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_WRITTEN);
 }
+static void on_subscribed_cb(gattc_handle_t conn_handle, gatt_status_t status, uint16_t attr_handle, bool enable)
+{
+    bt_message_packet_t packet;
+    bt_gattc_remote_t *gattc_remote = if_gattc_get_remote(conn_handle);
+    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_subscribed.status = status;
+    packet.gattc_cb._on_subscribed.attr_handle = attr_handle;
+    packet.gattc_cb._on_subscribed.enable = enable;
+    bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_SUBSCRIBED);
+}
 static void on_notified_cb(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     bt_message_packet_t packet;
@@ -194,6 +204,7 @@ const static gattc_callbacks_t g_gattc_socket_cbs = {
     .on_discovered = on_discovered_cb,
     .on_read = on_read_cb,
     .on_written = on_written_cb,
+    .on_subscribed = on_subscribed_cb,
     .on_notified = on_notified_cb,
     .on_mtu_updated = on_mtu_updated_cb,
     .on_phy_read = on_phy_read_cb,
@@ -259,6 +270,8 @@ void bt_socket_server_gattc_process(service_poll_t *poll, int fd,
     case BT_GATT_CLIENT_GET_ATTRIBUTE_BY_UUID:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_get_attribute_by_uuid)(
                                            packet->gattc_pl._bt_gattc_get_attr_by_uuid.handle,
+                                           packet->gattc_pl._bt_gattc_get_attr_by_uuid.start_handle,
+                                           packet->gattc_pl._bt_gattc_get_attr_by_uuid.end_handle,
                                            &packet->gattc_pl._bt_gattc_get_attr_by_uuid.attr_uuid,
                                            &packet->gattc_r.attr_desc);
         break;
@@ -284,14 +297,12 @@ void bt_socket_server_gattc_process(service_poll_t *poll, int fd,
     case BT_GATT_CLIENT_SUBSCRIBE:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_subscribe)(
                                            packet->gattc_pl._bt_gattc_subscribe.handle,
-                                           packet->gattc_pl._bt_gattc_subscribe.value_handle,
-                                           packet->gattc_pl._bt_gattc_subscribe.cccd_handle);
+                                           packet->gattc_pl._bt_gattc_subscribe.attr_handle);
         break;
     case BT_GATT_CLIENT_UNSUBSCRIBE:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_unsubscribe)(
-                                           packet->gattc_pl._bt_gattc_unsubscribe.handle,
-                                           packet->gattc_pl._bt_gattc_unsubscribe.value_handle,
-                                           packet->gattc_pl._bt_gattc_unsubscribe.cccd_handle);
+                                           packet->gattc_pl._bt_gattc_subscribe.handle,
+                                           packet->gattc_pl._bt_gattc_subscribe.attr_handle);
         break;
     case BT_GATT_CLIENT_EXCHANGE_MTU:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_exchange_mtu)(
@@ -370,6 +381,13 @@ int bt_socket_client_gattc_callback(service_poll_t *poll,
                         on_written,
                         packet->gattc_cb._on_written.status,
                         packet->gattc_cb._on_written.attr_handle);
+        break;
+    case BT_GATT_CLIENT_ON_SUBSCRIBED:
+        CALLBACK_REMOTE(gattc_remote, gattc_callbacks_t,
+                        on_subscribed,
+                        packet->gattc_cb._on_subscribed.status,
+                        packet->gattc_cb._on_subscribed.attr_handle,
+                        packet->gattc_cb._on_subscribed.enable);
         break;
     case BT_GATT_CLIENT_ON_NOTIFIED:
         CALLBACK_REMOTE(gattc_remote, gattc_callbacks_t,

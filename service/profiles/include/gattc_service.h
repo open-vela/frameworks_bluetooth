@@ -29,7 +29,6 @@ typedef enum {
     GATTC_STATE_DISCONNECTING,
     GATTC_STATE_CONNECTING,
     GATTC_STATE_CONNECTED,
-    GATTC_STATE_DISCOVERING,
 } gattc_state_t;
 
 /*
@@ -40,6 +39,7 @@ void if_gattc_on_service_discovered(bt_address_t *addr, gatt_element_t *elements
 void if_gattc_on_discover_completed(bt_address_t *addr, gatt_status_t status);
 void if_gattc_on_element_read(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length, gatt_status_t status);
 void if_gattc_on_element_written(bt_address_t *addr, uint16_t element_id, gatt_status_t status);
+void if_gattc_on_element_subscribed(bt_address_t *addr, uint16_t element_id, gatt_status_t status, bool enable);
 void if_gattc_on_element_changed(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length);
 void if_gattc_on_mtu_changed(bt_address_t *addr, uint32_t mtu, gatt_status_t status);
 void if_gattc_on_phy_read(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
@@ -61,12 +61,12 @@ typedef struct gattc_interface {
     bt_status_t (*disconnect)(void *conn_handle);
     bt_status_t (*discover_service)(void *conn_handle, bt_uuid_t *filter_uuid);
     bt_status_t (*get_attribute_by_handle)(void *conn_handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc);
-    bt_status_t (*get_attribute_by_uuid)(void *conn_handle, bt_uuid_t *att_uuid, gatt_attr_desc_t *attr_desc);
+    bt_status_t (*get_attribute_by_uuid)(void *conn_handle, uint16_t start_handle, uint16_t end_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc);
     bt_status_t (*read)(void *conn_handle, uint16_t attr_handle);
     bt_status_t (*write)(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
     bt_status_t (*write_without_response)(void *conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
-    bt_status_t (*subscribe)(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle);
-    bt_status_t (*unsubscribe)(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle);
+    bt_status_t (*subscribe)(void *conn_handle, uint16_t attr_handle);
+    bt_status_t (*unsubscribe)(void *conn_handle, uint16_t attr_handle);
     bt_status_t (*exchange_mtu)(void *conn_handle, uint32_t mtu);
     bt_status_t (*update_connection_parameter)(void *conn_handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
                                                uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length);
