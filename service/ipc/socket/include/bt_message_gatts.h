@@ -93,6 +93,7 @@ typedef union {
 
     struct {
         gatts_handle_t handle;
+        bt_address_t addr;
     } _bt_gatts_disconnect;
 
     struct {
@@ -124,6 +125,7 @@ typedef union {
 
     struct {
         gatts_handle_t handle;
+        bt_address_t addr;
         uint32_t req_handle;
         uint16_t length;
         uint8_t value[512];
@@ -131,6 +133,7 @@ typedef union {
 
     struct {
         gatts_handle_t handle;
+        bt_address_t addr;
         uint16_t attr_handle;
         uint16_t length;
         uint8_t value[512];
@@ -138,6 +141,7 @@ typedef union {
 
     struct {
         gatts_handle_t handle;
+        bt_address_t addr;
         ble_phy_type_t tx_phy;
         ble_phy_type_t rx_phy;
     } _bt_gatts_phy;
@@ -179,12 +183,14 @@ typedef union {
 
     struct {
         void *remote;
+        bt_address_t addr;
         uint16_t attr_handle;
         uint32_t req_handle;
     } _on_read_request;
 
     struct {
         void *remote;
+        bt_address_t addr;
         uint16_t attr_handle;
         uint16_t offset;
         uint16_t length;
@@ -193,12 +199,14 @@ typedef union {
 
     struct {
         void *remote;
+        bt_address_t addr;
         gatt_status_t status;
         uint16_t attr_handle;
     } _on_nofity_complete;
 
     struct {
         void *remote;
+        bt_address_t addr;
         gatt_status_t status;
         ble_phy_type_t tx_phy;
         ble_phy_type_t rx_phy;

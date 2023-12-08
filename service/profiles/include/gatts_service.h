@@ -45,7 +45,7 @@ void if_gatts_on_notification_sent(bt_address_t *addr, uint16_t element_id, gatt
 void if_gatts_on_phy_read(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 void if_gatts_on_phy_updated(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, gatt_status_t status);
 void if_gatts_on_connection_parameter_changed(bt_address_t *addr, uint16_t connection_interval, uint16_t peripheral_latency,
-                                              uint16_t supervision_timeout, gatt_status_t status);
+                                              uint16_t supervision_timeout);
 
 /*
  * gatts remote
@@ -57,16 +57,16 @@ typedef struct gatts_interface {
     bt_status_t (*register_service)(void *remote, void **phandle, gatts_callbacks_t *callbacks);
     bt_status_t (*unregister_service)(void *srv_handle);
     bt_status_t (*connect)(void *srv_handle, bt_address_t *addr, ble_addr_type_t addr_type);
-    bt_status_t (*disconnect)(void *srv_handle);
+    bt_status_t (*disconnect)(void *srv_handle, bt_address_t *addr);
     bt_status_t (*add_attr_table)(void *srv_handle, gatt_srv_db_t *srv_db);
     bt_status_t (*remove_attr_table)(void *srv_handle, uint16_t attr_handle);
     bt_status_t (*set_attr_value)(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
     bt_status_t (*get_attr_value)(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t *length);
-    bt_status_t (*response)(void *srv_handle, uint32_t req_handle, uint8_t *value, uint16_t length);
-    bt_status_t (*notify)(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
-    bt_status_t (*indicate)(void *srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
-    bt_status_t (*read_phy)(void *srv_handle);
-    bt_status_t (*update_phy)(void *srv_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
+    bt_status_t (*response)(void *srv_handle, bt_address_t *addr, uint32_t req_handle, uint8_t *value, uint16_t length);
+    bt_status_t (*notify)(void *srv_handle, bt_address_t *addr, uint16_t attr_handle, uint8_t *value, uint16_t length);
+    bt_status_t (*indicate)(void *srv_handle, bt_address_t *addr, uint16_t attr_handle, uint8_t *value, uint16_t length);
+    bt_status_t (*read_phy)(void *srv_handle, bt_address_t *addr);
+    bt_status_t (*update_phy)(void *srv_handle, bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 } gatts_interface_t;
 
 /*
