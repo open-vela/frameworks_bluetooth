@@ -84,18 +84,18 @@ typedef struct
          * @brief GATTS_EVENT_READ_REQUEST
          */
         struct gatts_read_evt_param {
+            bt_address_t addr;
             uint16_t element_id;
             uint32_t request_id;
-            bt_address_t addr;
         } read;
 
         /**
          * @brief GATTS_EVENT_WRITER_REQUEST
          */
         struct gatts_write_evt_param {
+            bt_address_t addr;
             uint16_t element_id;
             uint32_t request_id;
-            bt_address_t addr;
             uint16_t offset;
             uint16_t length;
             uint8_t value[0];
@@ -113,9 +113,9 @@ typedef struct
          * @brief GATTS_EVENT_CHANGE_SEND
          */
         struct gatts_send_change_evt_param {
+            bt_address_t addr;
             uint16_t element_id;
             gatt_status_t status;
-            bt_address_t addr;
         } change_send;
 
         /**
@@ -133,7 +133,6 @@ typedef struct
          */
         struct gatts_conn_param_evt_param {
             bt_address_t addr;
-            gatt_status_t status;
             uint16_t interval;
             uint16_t latency;
             uint16_t timeout;

@@ -262,4 +262,13 @@ bt_status_t bt_sal_gatt_client_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy
     return BT_STATUS_SUCCESS;
 }
 
+void bt_sal_gatt_client_connection_updated_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status, uint16_t connection_interval,
+                                                    uint16_t peripheral_latency, uint16_t supervision_timeout)
+{
+    bt_address_t addr;
+    memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
+    if_gattc_on_connection_parameter_updated(&addr, connection_interval, peripheral_latency, supervision_timeout,
+                                             bluelet_gatt_status(status));
+}
+
 #endif

@@ -231,7 +231,6 @@ static void gattc_pendops_delete(gattc_op_t *operation)
 static void gattc_process_message(void *data)
 {
     gattc_msg_t *msg = (gattc_msg_t *)data;
-    BT_LOGD("%s, event %d", __func__, msg->event);
 
     pthread_mutex_lock(&g_gattc_manager.device_lock);
     if (!g_gattc_manager.started)

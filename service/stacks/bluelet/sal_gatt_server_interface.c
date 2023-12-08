@@ -38,6 +38,7 @@ typedef struct {
 
 static pthread_mutex_t db_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static bt_list_t *g_gatt_db_list = NULL;
+static bt_list_t *g_peer_addr_list = NULL;
 
 static void gatt_db_free(void *data)
 {
@@ -69,9 +70,41 @@ static SERVICE_GATT_ELEMENT_S *gatt_db_find_element_by_handle(bt_list_t *db_list
     return NULL;
 }
 
+static bool peer_addr_cmp(void *peer, void *addr)
+{
+    return memcmp(peer, addr, BT_ADDR_LENGTH) == 0;
+}
+
+static bt_address_t *gatts_add_peer_addr(bt_list_t *addr_list, BD_ADDR remote_addr)
+{
+    bt_address_t *addr = bt_list_find(addr_list, peer_addr_cmp, remote_addr);
+    if (addr)
+        return addr;
+
+    addr = malloc(sizeof(bt_address_t));
+    if (!addr)
+        return NULL;
+
+    memcpy(addr->addr, remote_addr, BT_ADDR_LENGTH);
+    bt_list_add_tail(addr_list, addr);
+    return addr;
+}
+
+static void gatts_remove_peer_addr(bt_list_t *addr_list, BD_ADDR remote_addr)
+{
+    bt_address_t *addr = bt_list_find(addr_list, peer_addr_cmp, remote_addr);
+    if (addr)
+        bt_list_remove(addr_list, addr);
+}
+
 static void gatts_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state)
 {
     bt_address_t addr;
+    if (state == SERVICE_PROFILE_CONNECTED) {
+        gatts_add_peer_addr(g_peer_addr_list, remote_addr);
+    } else if (state == SERVICE_PROFILE_DISCONNECTED) {
+        gatts_remove_peer_addr(g_peer_addr_list, remote_addr);
+    }
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
     if_gatts_on_connection_state_changed(&addr, bluelet_profile_connection_state(state));
 }
@@ -142,9 +175,11 @@ static void gatts_received_element_write_request_callback(BD_ADDR remote_addr, u
 
 static void gatts_mtu_changed_callback(BD_ADDR remote_addr, uint32_t mtu)
 {
-    bt_address_t addr;
-    memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
-    if_gatts_on_mtu_changed(&addr, mtu);
+    if (bt_list_find(g_peer_addr_list, peer_addr_cmp, remote_addr)) {
+        bt_address_t addr;
+        memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
+        if_gatts_on_mtu_changed(&addr, mtu);
+    }
 }
 
 static void gatts_notification_sent_callback(BD_ADDR remote_addr, SERVICE_GATT_ELEMENT_S *element, SERVICE_GATT_STATUS status)
@@ -172,6 +207,7 @@ bt_status_t bt_sal_gatt_server_enable(void)
     SAL_CHECK_RET(service_adapter_gatt_server_open(&gatts_callbacks), GATT_SUCCESS);
     pthread_mutex_lock(&db_lock);
     g_gatt_db_list = bt_list_new(gatt_db_free);
+    g_peer_addr_list = bt_list_new(free);
     pthread_mutex_unlock(&db_lock);
 
     return BT_STATUS_SUCCESS;
@@ -183,6 +219,8 @@ bt_status_t bt_sal_gatt_server_disable(void)
     pthread_mutex_lock(&db_lock);
     bt_list_free(g_gatt_db_list);
     g_gatt_db_list = NULL;
+    bt_list_free(g_peer_addr_list);
+    g_peer_addr_list = NULL;
     pthread_mutex_unlock(&db_lock);
 
     return BT_STATUS_SUCCESS;
@@ -348,6 +386,16 @@ bt_status_t bt_sal_gatt_server_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy
     SAL_CHECK_RET(service_adapter_gatt_server_set_phy(addr->addr, tx_phy, rx_phy), GATT_SUCCESS);
 
     return BT_STATUS_SUCCESS;
+}
+
+void bt_sal_gatt_server_connection_changed_callback(BD_ADDR remote_addr, uint16_t connection_interval,
+                                                    uint16_t peripheral_latency, uint16_t supervision_timeout)
+{
+    if (bt_list_find(g_peer_addr_list, peer_addr_cmp, remote_addr)) {
+        bt_address_t addr;
+        memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
+        if_gatts_on_connection_parameter_changed(&addr, connection_interval, peripheral_latency, supervision_timeout);
+    }
 }
 
 #endif

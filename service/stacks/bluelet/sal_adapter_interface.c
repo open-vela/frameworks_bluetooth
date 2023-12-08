@@ -37,9 +37,9 @@
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 #include "advertising.h"
 #include "bt_le_scan.h"
-#include "gattc_service.h"
-#include "gatts_service.h"
 #include "sal_adapter_interface.h"
+#include "sal_gatt_client_interface.h"
+#include "sal_gatt_server_interface.h"
 #include "scan_manager.h"
 #endif
 #include "utils/log.h"
@@ -471,12 +471,17 @@ static void ble_connection_updated_callback(BD_ADDR remote_addr, SERVICE_BT_STAT
                                             uint16_t supervision_timeout)
 {
 #ifdef CONFIG_BLUETOOTH_GATT
-    bt_address_t addr;
-    memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
-    if_gattc_on_connection_parameter_updated(&addr, connection_interval, peripheral_latency,
-                                             supervision_timeout, status);
-    if_gatts_on_connection_parameter_changed(&addr, connection_interval, peripheral_latency,
-                                             supervision_timeout, status);
+    extern void bt_sal_gatt_client_connection_updated_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status, uint16_t connection_interval,
+                                                               uint16_t peripheral_latency, uint16_t supervision_timeout);
+    extern void bt_sal_gatt_server_connection_changed_callback(BD_ADDR remote_addr, uint16_t connection_interval,
+                                                               uint16_t peripheral_latency, uint16_t supervision_timeout);
+
+    bt_sal_gatt_client_connection_updated_callback(remote_addr, status, connection_interval,
+                                                   peripheral_latency, supervision_timeout);
+    if (status == SERVICE_BT_STATUS_SUCCESS) {
+        bt_sal_gatt_server_connection_changed_callback(remote_addr, connection_interval,
+                                                       peripheral_latency, supervision_timeout);
+    }
 #endif
 }
 
