@@ -33,6 +33,7 @@ typedef enum {
     GATTC_EVENT_DISOCVER_CMPL,
     GATTC_EVENT_READ,
     GATTC_EVENT_WRITE,
+    GATTC_EVENT_SUBSCRIBE,
     GATTC_EVENT_NOTIFY,
     GATTC_EVENT_MTU_UPDATE,
     GATTC_EVENT_PHY_READ,
@@ -47,6 +48,7 @@ typedef enum {
     GATTC_REQ_DISCOVER,
     GATTC_REQ_READ,
     GATTC_REQ_WRITE,
+    GATTC_REQ_SUBSCRIBE,
     GATTC_REQ_EXCHANGE_MTU,
     GATTC_REQ_READ_PHY,
     GATTC_REQ_UPDATE_PHY,
@@ -99,6 +101,15 @@ typedef struct
             gatt_status_t status;
             uint16_t element_id;
         } write;
+
+        /**
+         * @brief GATTC_EVENT_SUBSCRIBE
+         */
+        struct gattc_subscribe_evt_param {
+            gatt_status_t status;
+            uint16_t element_id;
+            bool enable;
+        } subscribe;
 
         /**
          * @brief GATTC_EVENT_NOTIFY

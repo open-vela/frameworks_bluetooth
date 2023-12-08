@@ -76,7 +76,12 @@ static void gattc_element_written_callback(BD_ADDR remote_addr, SERVICE_GATT_ELE
 {
     bt_address_t addr;
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
-    if_gattc_on_element_written(&addr, element->id, bluelet_gatt_status(status));
+
+    if (element->properties & (GATT_PROPERTY_NOTIFY | GATT_PROPERTY_INDICATE)) {
+        if_gattc_on_element_subscribed(&addr, element->id, bluelet_gatt_status(status), element->permissions);
+    } else {
+        if_gattc_on_element_written(&addr, element->id, bluelet_gatt_status(status));
+    }
 }
 
 static void gattc_element_changed_callback(BD_ADDR remote_addr, SERVICE_GATT_ELEMENT_S *element, uint8_t *value, uint16_t length)
@@ -155,7 +160,11 @@ bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_address_t *addr, bt_u
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_PARAM(uuid);
-    SAL_CHECK_RET(service_adapter_gatt_client_discover_service(addr->addr, uuid->val.u128), GATT_SUCCESS);
+
+    bt_uuid_t uuid128;
+    bt_uuid_to_uuid128(uuid, &uuid128);
+
+    SAL_CHECK_RET(service_adapter_gatt_client_discover_service(addr->addr, uuid128.val.u128), GATT_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
@@ -198,6 +207,7 @@ bt_status_t bt_sal_gatt_client_register_notifications(bt_address_t *addr, uint16
     SERVICE_GATT_ELEMENT_S char_element = {
         .id = element_id,
         .type = CHARACTERISTIC,
+        .permissions = enable,
     };
     if (change_type == GATT_CHANGE_TYPE_NOTIFY)
         char_element.properties = GATT_PROPERTY_NOTIFY;

@@ -48,6 +48,7 @@ typedef void (*gattc_discover_cb_t)(gattc_handle_t conn_handle, gatt_status_t st
 typedef void (*gattc_mtu_updated_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, uint32_t mtu);
 typedef void (*gattc_read_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, uint16_t attr_handle, uint8_t *value, uint16_t length);
 typedef void (*gattc_write_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, uint16_t attr_handle);
+typedef void (*gattc_subscribe_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, uint16_t attr_handle, bool enable);
 typedef void (*gattc_notify_cb_t)(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
 typedef void (*gattc_phy_read_cb_t)(gattc_handle_t conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 typedef void (*gattc_phy_updated_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
@@ -62,6 +63,7 @@ typedef struct {
     gattc_discover_cb_t on_discovered;
     gattc_read_cb_t on_read;
     gattc_write_cb_t on_written;
+    gattc_subscribe_cb_t on_subscribed;
     gattc_notify_cb_t on_notified;
     gattc_mtu_updated_cb_t on_mtu_updated;
     gattc_phy_read_cb_t on_phy_read;
@@ -76,12 +78,12 @@ bt_status_t BTSYMBOLS(bt_gattc_connect)(gattc_handle_t conn_handle, bt_address_t
 bt_status_t BTSYMBOLS(bt_gattc_disconnect)(gattc_handle_t conn_handle);
 bt_status_t BTSYMBOLS(bt_gattc_discover_service)(gattc_handle_t conn_handle, bt_uuid_t *filter_uuid);
 bt_status_t BTSYMBOLS(bt_gattc_get_attribute_by_handle)(gattc_handle_t conn_handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc);
-bt_status_t BTSYMBOLS(bt_gattc_get_attribute_by_uuid)(gattc_handle_t conn_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc);
+bt_status_t BTSYMBOLS(bt_gattc_get_attribute_by_uuid)(gattc_handle_t conn_handle, uint16_t start_handle, uint16_t end_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc);
 bt_status_t BTSYMBOLS(bt_gattc_read)(gattc_handle_t conn_handle, uint16_t attr_handle);
 bt_status_t BTSYMBOLS(bt_gattc_write)(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
 bt_status_t BTSYMBOLS(bt_gattc_write_without_response)(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
-bt_status_t BTSYMBOLS(bt_gattc_subscribe)(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle);
-bt_status_t BTSYMBOLS(bt_gattc_unsubscribe)(gattc_handle_t conn_handle, uint16_t value_handle, uint16_t cccd_handle);
+bt_status_t BTSYMBOLS(bt_gattc_subscribe)(gattc_handle_t conn_handle, uint16_t attr_handle);
+bt_status_t BTSYMBOLS(bt_gattc_unsubscribe)(gattc_handle_t conn_handle, uint16_t attr_handle);
 bt_status_t BTSYMBOLS(bt_gattc_exchange_mtu)(gattc_handle_t conn_handle, uint32_t mtu);
 bt_status_t BTSYMBOLS(bt_gattc_update_connection_parameter)(gattc_handle_t conn_handle, uint32_t min_interval, uint32_t max_interval,
                                                             uint32_t latency, uint32_t timeout, uint32_t min_connection_event_length,

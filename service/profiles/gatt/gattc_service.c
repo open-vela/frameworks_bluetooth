@@ -87,6 +87,7 @@ typedef struct
     gattc_manager_t *manager;
     gattc_callbacks_t *callbacks;
     bt_list_t *services;
+    bt_list_t *pend_ops;
 
 } gattc_connection_t;
 
@@ -118,18 +119,20 @@ static gattc_connection_t *find_gattc_connection_by_addr(bt_address_t *addr)
 
 static gattc_connection_t *gattc_connection_new(gattc_callbacks_t *callbacks)
 {
-    gattc_connection_t *connection = calloc(1, sizeof(gattc_connection_t));
-    if (!connection)
+    int new_id = index_alloc(g_gattc_manager.allocator);
+    if (new_id < 0)
         return NULL;
 
-    connection->conn_id = index_alloc(g_gattc_manager.allocator);
-    if (connection->conn_id < 0) {
-        free(connection);
+    gattc_connection_t *connection = calloc(1, sizeof(gattc_connection_t));
+    if (!connection) {
+        index_free(g_gattc_manager.allocator, new_id);
         return NULL;
     }
 
+    connection->conn_id = new_id;
     connection->callbacks = callbacks;
     connection->services = NULL;
+    connection->pend_ops = NULL;
 
     return connection;
 }
@@ -144,6 +147,8 @@ static void gattc_connection_delete(gattc_connection_t *connection)
     index_free(g_gattc_manager.allocator, connection->conn_id);
     bt_list_free(connection->services);
     connection->services = NULL;
+    bt_list_free(connection->pend_ops);
+    connection->pend_ops = NULL;
     pthread_mutex_destroy(&connection->conn_lock);
     free(connection);
 }
@@ -170,15 +175,18 @@ static gatt_element_t *find_gattc_element_by_handle(gattc_connection_t *connecti
     return NULL;
 }
 
-static gatt_element_t *find_gattc_element_by_uuid(gattc_connection_t *connection, bt_uuid_t *att_uuid)
+static gatt_element_t *find_gattc_element_by_uuid(gattc_connection_t *connection, uint16_t start_handle, uint16_t end_handle, bt_uuid_t *attr_uuid)
 {
     bt_list_node_t *node;
     bt_list_t *list = connection->services;
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         gattc_service_t *service = (gattc_service_t *)bt_list_node(node);
+        if (service->end_handle < start_handle || service->start_handle > end_handle)
+            continue;
+
         gatt_element_t *element = service->elements;
         for (int i = 0; i < service->element_size; i++, element++) {
-            if (!bt_uuid_compare(&element->uuid, att_uuid)) {
+            if (element->handle >= start_handle && element->handle <= end_handle && !bt_uuid_compare(&element->uuid, attr_uuid)) {
                 return element;
             }
         }
@@ -210,6 +218,14 @@ static void gattc_service_delete(gattc_service_t *service)
     if (service->elements)
         free(service->elements);
     free(service);
+}
+
+static void gattc_pendops_delete(gattc_op_t *operation)
+{
+    if (!operation)
+        return;
+
+    free(operation);
 }
 
 static void gattc_process_message(void *data)
@@ -254,7 +270,6 @@ static void gattc_process_message(void *data)
         GATT_CBACK(connection->callbacks, on_discovered, connection, GATT_STATUS_SUCCESS, service->uuid, service->start_handle, service->end_handle);
     } break;
     case GATTC_EVENT_DISOCVER_CMPL: {
-        connection->state = GATTC_STATE_CONNECTED;
         GATT_CBACK(connection->callbacks, on_discovered, connection, msg->param.discover_cmpl.status, NULL, 0, 0);
     } break;
     case GATTC_EVENT_READ: {
@@ -263,8 +278,18 @@ static void gattc_process_message(void *data)
     case GATTC_EVENT_WRITE: {
         GATT_CBACK(connection->callbacks, on_written, connection, msg->param.write.status, msg->param.write.element_id);
     } break;
+    case GATTC_EVENT_SUBSCRIBE: {
+        if (msg->param.subscribe.status == GATT_STATUS_SUCCESS) {
+            gatt_element_t *element = find_gattc_element_by_handle(connection, msg->param.subscribe.element_id);
+            element->notify_enable = msg->param.subscribe.enable;
+        }
+        GATT_CBACK(connection->callbacks, on_subscribed, connection, msg->param.subscribe.status, msg->param.subscribe.element_id, msg->param.subscribe.enable);
+    } break;
     case GATTC_EVENT_NOTIFY: {
-        GATT_CBACK(connection->callbacks, on_notified, connection, msg->param.notify.element_id, msg->param.notify.value, msg->param.notify.length);
+        gatt_element_t *element = find_gattc_element_by_handle(connection, msg->param.notify.element_id);
+        if (element && element->notify_enable) {
+            GATT_CBACK(connection->callbacks, on_notified, connection, msg->param.notify.element_id, msg->param.notify.value, msg->param.notify.length);
+        }
     } break;
     case GATTC_EVENT_MTU_UPDATE: {
         GATT_CBACK(connection->callbacks, on_mtu_updated, connection, msg->param.mtu.status, msg->param.mtu.mtu);
@@ -419,6 +444,13 @@ static bt_status_t if_gattc_create_connect(void *remote, void **phandle, gattc_c
         goto fail;
     }
 
+    connection->pend_ops = bt_list_new((bt_list_free_cb_t)gattc_pendops_delete);
+    if (!connection->pend_ops) {
+        pthread_mutex_unlock(&g_gattc_manager.device_lock);
+        status = BT_STATUS_NOMEM;
+        goto fail;
+    }
+
     bt_list_add_tail(g_gattc_manager.connections, connection);
     pthread_mutex_unlock(&g_gattc_manager.device_lock);
 
@@ -501,8 +533,6 @@ static bt_status_t if_gattc_discover_service(void *conn_handle, bt_uuid_t *filte
     } else {
         status = bt_sal_gatt_client_discover_service_by_uuid(&connection->remote_addr, filter_uuid);
     }
-    if (status == BT_STATUS_SUCCESS)
-        connection->state = GATTC_STATE_DISCOVERING;
 
     return status;
 }
@@ -528,7 +558,7 @@ static bt_status_t if_gattc_get_attribute_by_handle(void *conn_handle, uint16_t 
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t if_gattc_get_attribute_by_uuid(void *conn_handle, bt_uuid_t *att_uuid, gatt_attr_desc_t *attr_desc)
+static bt_status_t if_gattc_get_attribute_by_uuid(void *conn_handle, uint16_t start_handle, uint16_t end_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc)
 {
     gattc_connection_t *connection = conn_handle;
 
@@ -537,7 +567,7 @@ static bt_status_t if_gattc_get_attribute_by_uuid(void *conn_handle, bt_uuid_t *
     if (!attr_desc)
         return BT_STATUS_PARM_INVALID;
 
-    gatt_element_t *element = find_gattc_element_by_uuid(connection, att_uuid);
+    gatt_element_t *element = find_gattc_element_by_uuid(connection, start_handle, end_handle, attr_uuid);
     if (!element)
         return BT_STATUS_NO_RESOURCES;
 
@@ -581,36 +611,24 @@ static bt_status_t if_gattc_write_without_response(void *conn_handle, uint16_t a
                                             value, length, GATT_WRITE_TYPE_NO_RSP);
 }
 
-static bt_status_t if_gattc_subscribe(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle)
+static bt_status_t if_gattc_subscribe(void *conn_handle, uint16_t attr_handle)
 {
     gattc_connection_t *connection = conn_handle;
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    gatt_element_t *element = find_gattc_element_by_handle(connection, value_handle);
-    if (!element)
-        return BT_STATUS_NO_RESOURCES;
-
-    element->notify_enable = true;
-
-    return bt_sal_gatt_client_register_notifications(&connection->remote_addr, value_handle, true, GATT_CHANGE_TYPE_NOTIFY);
+    return bt_sal_gatt_client_register_notifications(&connection->remote_addr, attr_handle, true, GATT_CHANGE_TYPE_NOTIFY);
 }
 
-static bt_status_t if_gattc_unsubscribe(void *conn_handle, uint16_t value_handle, uint16_t cccd_handle)
+static bt_status_t if_gattc_unsubscribe(void *conn_handle, uint16_t attr_handle)
 {
     gattc_connection_t *connection = conn_handle;
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    gatt_element_t *element = find_gattc_element_by_handle(connection, value_handle);
-    if (!element)
-        return BT_STATUS_NO_RESOURCES;
-
-    element->notify_enable = false;
-
-    return bt_sal_gatt_client_register_notifications(&connection->remote_addr, value_handle, false, GATT_CHANGE_TYPE_NOTIFY);
+    return bt_sal_gatt_client_register_notifications(&connection->remote_addr, attr_handle, false, GATT_CHANGE_TYPE_NOTIFY);
 }
 
 static bt_status_t if_gattc_exchange_mtu(void *conn_handle, uint32_t mtu)
@@ -732,6 +750,15 @@ void if_gattc_on_element_written(bt_address_t *addr, uint16_t element_id, gatt_s
     gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_WRITE, addr, 0);
     msg->param.write.status = status;
     msg->param.write.element_id = element_id;
+    gattc_send_message(msg);
+}
+
+void if_gattc_on_element_subscribed(bt_address_t *addr, uint16_t element_id, gatt_status_t status, bool enable)
+{
+    gattc_msg_t *msg = gattc_msg_new(GATTC_EVENT_SUBSCRIBE, addr, 0);
+    msg->param.subscribe.status = status;
+    msg->param.subscribe.element_id = element_id;
+    msg->param.subscribe.enable = enable;
     gattc_send_message(msg);
 }
 
