@@ -22,6 +22,14 @@
 #include "bt_gatts.h"
 #include "bt_tools.h"
 
+#define THROUGHTPUT_HORIZON 5
+
+typedef struct {
+    struct list_node node;
+    bt_address_t remote_address;
+    uint16_t gatt_mtu;
+} gatts_device_t;
+
 static int register_cmd(void *handle, int argc, char *argv[]);
 static int unregister_cmd(void *handle, int argc, char *argv[]);
 static int start_cmd(void *handle, int argc, char *argv[]);
@@ -33,10 +41,14 @@ static int notify_cus_cmd(void *handle, int argc, char *argv[]);
 static int indicate_cus_cmd(void *handle, int argc, char *argv[]);
 static int read_phy_cmd(void *handle, int argc, char *argv[]);
 static int update_phy_cmd(void *handle, int argc, char *argv[]);
+static int throughput_cmd(void *handle, int argc, char *argv[]);
 
 static gatts_handle_t g_dis_handle = NULL;
 static gatts_handle_t g_bas_handle = NULL;
 static gatts_handle_t g_custom_handle = NULL;
+static volatile uint32_t throughtput_cursor = 0;
+static uint16_t cccd_enable = 0;
+static struct list_node gatts_device_list = LIST_INITIAL_VALUE(gatts_device_list);
 
 enum {
     GATT_SERVICE_DIS = 1,
@@ -92,6 +104,8 @@ uint16_t tx_char_ccc_changed(void *srv_handle, bt_address_t *addr, uint16_t attr
 {
     PRINT_ADDR("gatts service TX char ccc changed, addr:%s, new value:", addr);
     PRINT_HEXDUMP(value, length);
+    if (attr_handle == IOT_SERVICE_TX_CHR_CCC_ID)
+        cccd_enable = value[0];
     return length;
 }
 
@@ -174,6 +188,7 @@ static bt_command_t g_gatts_tables[] = {
     { "indicate_custom", indicate_cus_cmd, 0, "\"send custom indication   :<address><playload>\""               },
     { "read_phy",        read_phy_cmd,     0, "\"read phy :<id><address>\""                                     },
     { "update_phy",      update_phy_cmd,   0, "\"update phy(0: 1M, 1: 2M, 3: LE_Coded) :<id><address><tx><rx>\""},
+    { "throughput",      throughput_cmd,   0, "\"throughput test :<address><seconds>\""                         },
 };
 
 static void usage(void)
@@ -183,6 +198,41 @@ static void usage(void)
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_gatts_tables); i++) {
         printf("\t%-8s\t%s\n", g_gatts_tables[i].cmd, g_gatts_tables[i].help);
+    }
+}
+
+static gatts_device_t *find_gatts_device(bt_address_t *addr)
+{
+    struct list_node *node;
+    list_for_every(&gatts_device_list, node)
+    {
+        gatts_device_t *device = (gatts_device_t *)node;
+        if (!bt_addr_compare(&device->remote_address, addr)) {
+            return device;
+        }
+    }
+    return NULL;
+}
+
+static gatts_device_t *add_gatts_device(bt_address_t *addr)
+{
+    gatts_device_t *device = (gatts_device_t *)malloc(sizeof(gatts_device_t));
+    if (!device) {
+        PRINT("malloc device failed!");
+        return NULL;
+    }
+
+    memcpy(&device->remote_address, addr, sizeof(bt_address_t));
+    device->gatt_mtu = 23;
+    list_add_tail(&gatts_device_list, &device->node);
+    return device;
+}
+
+static void remove_gatts_device(gatts_device_t *device)
+{
+    if (device) {
+        list_delete(&device->node);
+        free(device);
     }
 }
 
@@ -217,6 +267,12 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
     gatts_handle_t service_handle;
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
+
+    gatts_device_t *device = find_gatts_device(&addr);
+    if (!device) {
+        PRINT_ADDR("device:%s is not connected", &addr);
+        return CMD_INVALID_ADDR;
+    }
 
     if (bt_gatts_disconnect(service_handle, &addr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -297,6 +353,12 @@ static int notify_bas_cmd(void *handle, int argc, char *argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
+    gatts_device_t *device = find_gatts_device(&addr);
+    if (!device) {
+        PRINT_ADDR("device:%s is not connected", &addr);
+        return CMD_INVALID_ADDR;
+    }
+
     int new_level = atoi(argv[1]);
     if (new_level < 0 || new_level > 100) {
         PRINT("invalid battery level: %d", new_level);
@@ -322,6 +384,12 @@ static int notify_cus_cmd(void *handle, int argc, char *argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
+    gatts_device_t *device = find_gatts_device(&addr);
+    if (!device) {
+        PRINT_ADDR("device:%s is not connected", &addr);
+        return CMD_INVALID_ADDR;
+    }
+
     if (bt_gatts_notify(g_custom_handle, &addr, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[1], strlen(argv[1])) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
@@ -336,6 +404,12 @@ static int indicate_cus_cmd(void *handle, int argc, char *argv[])
     bt_address_t addr;
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
+
+    gatts_device_t *device = find_gatts_device(&addr);
+    if (!device) {
+        PRINT_ADDR("device:%s is not connected", &addr);
+        return CMD_INVALID_ADDR;
+    }
 
     if (bt_gatts_indicate(g_custom_handle, &addr, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[1], strlen(argv[1])) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -355,6 +429,12 @@ static int read_phy_cmd(void *handle, int argc, char *argv[])
     gatts_handle_t service_handle;
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
+
+    gatts_device_t *device = find_gatts_device(&addr);
+    if (!device) {
+        PRINT_ADDR("device:%s is not connected", &addr);
+        return CMD_INVALID_ADDR;
+    }
 
     if (bt_gatts_read_phy(service_handle, &addr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -378,8 +458,94 @@ static int update_phy_cmd(void *handle, int argc, char *argv[])
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
+    gatts_device_t *device = find_gatts_device(&addr);
+    if (!device) {
+        PRINT_ADDR("device:%s is not connected", &addr);
+        return CMD_INVALID_ADDR;
+    }
+
     if (bt_gatts_update_phy(service_handle, &addr, tx, rx) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int throughput_cmd(void *handle, int argc, char *argv[])
+{
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (!g_custom_handle) {
+        PRINT("please register and start custom service at first !");
+        return CMD_ERROR;
+    }
+
+    gatts_device_t *device = find_gatts_device(&addr);
+    if (!device) {
+        PRINT_ADDR("device:%s is not connected", &addr);
+        return CMD_INVALID_ADDR;
+    }
+
+    if (!cccd_enable) {
+        PRINT("please enable cccd of custom tx char at first !");
+        return CMD_ERROR;
+    }
+
+    uint32_t notify_length = device->gatt_mtu;
+    uint8_t *payload = (uint8_t *)malloc(sizeof(uint8_t) * notify_length);
+    if (!payload) {
+        PRINT("notify payload malloc failed");
+        return CMD_ERROR;
+    }
+
+    uint32_t test_time = atoi(argv[1]);
+    uint32_t run_time = 0;
+    uint32_t notify_count = 0;
+    uint32_t bit_rate = 0;
+    struct timespec start_ts;
+
+    clock_gettime(CLOCK_BOOTTIME, &start_ts);
+    throughtput_cursor = 0;
+
+    PRINT("gatts notify throughput test start, mtu = %d, time = %ds.", notify_length, test_time);
+    while (1) {
+        struct timespec current_ts;
+        clock_gettime(CLOCK_BOOTTIME, &current_ts);
+
+        if (run_time < (current_ts.tv_sec - start_ts.tv_sec)) {
+            run_time = (current_ts.tv_sec - start_ts.tv_sec);
+            bit_rate = notify_length * notify_count / run_time;
+            PRINT("gatts notify Bit rate = %d Byte/s, = %d bit/s, time = %ds.", bit_rate, bit_rate << 3, run_time);
+        }
+
+        device = find_gatts_device(&addr);
+        if (!device || run_time >= test_time) {
+            break;
+        }
+
+        if (throughtput_cursor >= THROUGHTPUT_HORIZON) {
+            usleep(500);
+            continue;
+        }
+
+        memset(payload, notify_count & 0xFF, notify_length);
+        int ret = bt_gatts_notify(g_custom_handle, &addr, IOT_SERVICE_TX_CHR_ID, payload, notify_length);
+        if (ret != BT_STATUS_SUCCESS) {
+            PRINT("notify failed, ret: %d.", ret);
+            break;
+        }
+        throughtput_cursor++;
+        notify_count++;
+    }
+    free(payload);
+
+    bit_rate = notify_length * notify_count / run_time;
+    PRINT("gatts notify throughput test finish, Bit rate = %d Byte/s, = %d bit/s, time = %ds.",
+          bit_rate, bit_rate << 3, run_time);
 
     return CMD_OK;
 }
@@ -387,10 +553,13 @@ static int update_phy_cmd(void *handle, int argc, char *argv[])
 static void connect_callback(void *srv_handle, bt_address_t *addr)
 {
     PRINT_ADDR("gatts_connect_callback, addr:%s", addr);
+    add_gatts_device(addr);
 }
 
 static void disconnect_callback(void *srv_handle, bt_address_t *addr)
 {
+    gatts_device_t *device = find_gatts_device(addr);
+    remove_gatts_device(device);
     PRINT_ADDR("gatts_disconnect_callback, addr:%s", addr);
 }
 
@@ -406,11 +575,24 @@ static void attr_table_removed_callback(void *srv_handle, gatt_status_t status, 
 
 static void notify_complete_callback(void *srv_handle, bt_address_t *addr, gatt_status_t status, uint16_t attr_handle)
 {
-    PRINT_ADDR("gatts service notify complete, addr:%s, handle 0x%" PRIx16 ", status:%d", addr, attr_handle, status);
+    if (status != GATT_STATUS_SUCCESS) {
+        PRINT_ADDR("gatts service notify failed, addr:%s, handle 0x%" PRIx16 ", status:%d", addr, attr_handle, status);
+        return;
+    }
+
+    if (throughtput_cursor) {
+        throughtput_cursor--;
+    } else {
+        PRINT_ADDR("gatts service notify complete, addr:%s, handle 0x%" PRIx16 ", status:%d", addr, attr_handle, status);
+    }
 }
 
 static void mtu_changed_callback(void *srv_handle, bt_address_t *addr, uint32_t mtu)
 {
+    gatts_device_t *device = find_gatts_device(addr);
+    if (device) {
+        device->gatt_mtu = mtu;
+    }
     PRINT_ADDR("gatts_mtu_changed_callback, addr:%s, mtu:%" PRIu32, addr, mtu);
 }
 
