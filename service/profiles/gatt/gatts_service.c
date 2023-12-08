@@ -310,9 +310,6 @@ static void gatts_process_message(void *data)
         }
     } break;
     case GATTS_EVENT_MTU_CHANGE:
-        if (bt_addr_compare(&g_gatts_manager.remote_addr, &msg->param.mtu_change.addr))
-            break;
-
         GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_mtu_changed, &msg->param.mtu_change.addr, msg->param.mtu_change.mtu);
         break;
     case GATTS_EVENT_CHANGE_SEND: {
