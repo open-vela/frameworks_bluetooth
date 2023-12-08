@@ -251,7 +251,7 @@ static hfp_current_call_t *hf_call_new(uint32_t idx,
     call->state = state;
     call->mpty = mpty;
     snprintf(call->number, HFP_PHONENUM_DIGITS_MAX, "%s", number);
-    snprintf(call->name, HFP_NAME_DIGITS_MAX, "%s", "Unknown");
+    snprintf(call->name, HFP_NAME_DIGITS_MAX, "%s", "");
 
     return call;
 }
