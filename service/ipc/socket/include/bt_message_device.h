@@ -43,6 +43,7 @@
   BT_DEVICE_DISCONNECT,
   BT_DEVICE_CONNECT_LE,
   BT_DEVICE_DISCONNECT_LE,
+  BT_DEVICE_CONNECT_REQUEST_REPLY,
   BT_DEVICE_SET_LE_PHY,
   BT_DEVICE_CONNECT_ALL_PROFILE,
   BT_DEVICE_DISCONNECT_ALL_PROFILE,
@@ -155,6 +156,11 @@ typedef union
     ble_addr_type_t type;
     ble_connect_params_t param;
   } _bt_device_connect_le;
+
+  struct {
+    bt_address_t addr;
+    bool accept;
+  } _bt_device_connect_request_reply;
 
   struct {
     bt_address_t addr;

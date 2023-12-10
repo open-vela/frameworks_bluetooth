@@ -1436,6 +1436,12 @@ static void on_pair_display_cb(void *cookie, bt_address_t *addr, bt_transport_t 
     PRINT("%s", buff);
 }
 
+static void on_connect_request_cb(void *cookie, bt_address_t *addr)
+{
+    bt_device_connect_request_reply(g_bttool_ins, addr, true);
+    PRINT_ADDR("Incoming connect request from [%s], auto accepted", addr);
+}
+
 static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr, bt_transport_t transport, connection_state_t state)
 {
     PRINT_ADDR("Device [%s][%s] connection state: %d", addr, LINK_TYPE(transport), state);
@@ -1490,6 +1496,7 @@ const static adapter_callbacks_t g_adapter_cbs = {
     .on_device_name_changed = on_device_name_changed_cb,
     .on_pair_request = on_pair_request_cb,
     .on_pair_display = on_pair_display_cb,
+    .on_connect_request = on_connect_request_cb,
     .on_connection_state_changed = on_connection_state_changed_cb,
     .on_bond_state_changed = on_bond_state_changed_cb,
     .on_remote_name_changed = on_remote_name_changed_cb,

@@ -121,6 +121,11 @@ bt_status_t BTSYMBOLS(bt_device_disconnect_le)(bt_instance_t *ins, bt_address_t 
     return adapter_le_disconnect(addr);
 }
 
+bt_status_t BTSYMBOLS(bt_device_connect_request_reply)(bt_instance_t *ins, bt_address_t *addr, bool accept)
+{
+    return adapter_connect_request_reply(addr, accept);
+}
+
 void BTSYMBOLS(bt_device_connect_all_profile)(bt_instance_t *ins, bt_address_t *addr)
 {
 }

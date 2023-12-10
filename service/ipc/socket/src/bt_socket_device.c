@@ -286,6 +286,14 @@ void bt_socket_server_device_process(service_poll_t *poll,
               &packet->devs_pl._bt_device_addr.addr);
         break;
       }
+    case BT_DEVICE_CONNECT_REQUEST_REPLY:
+      {
+        packet->devs_r.status =
+          BTSYMBOLS(bt_device_connect_request_reply)(ins,
+              &packet->devs_pl._bt_device_connect_request_reply.addr,
+              packet->devs_pl._bt_device_connect_request_reply.accept);
+        break;
+      }
     case BT_DEVICE_SET_LE_PHY:
       {
         packet->devs_r.status =
