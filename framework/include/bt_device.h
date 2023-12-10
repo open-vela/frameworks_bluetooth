@@ -313,6 +313,16 @@ bt_status_t BTSYMBOLS(bt_device_connect_le)(bt_instance_t *ins, bt_address_t *ad
 bt_status_t BTSYMBOLS(bt_device_disconnect_le)(bt_instance_t *ins, bt_address_t *addr);
 
 /**
+ * @brief Reply connect request
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.
+ * @param accept - true:accept, false:reject.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_device_connect_request_reply)(bt_instance_t *ins, bt_address_t *addr, bool accept);
+
+/**
  * @brief Set LE phy
  *
  * @param ins - bluetooth client instance.
