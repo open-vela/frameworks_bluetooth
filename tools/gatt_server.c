@@ -511,7 +511,7 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
     clock_gettime(CLOCK_BOOTTIME, &start_ts);
     throughtput_cursor = 0;
 
-    PRINT("gatts notify throughput test start, mtu = %d, time = %ds.", notify_length, test_time);
+    PRINT("gatts notify throughput test start, mtu = %" PRIu32 ", time = %" PRIu32 "s.", notify_length, test_time);
     while (1) {
         struct timespec current_ts;
         clock_gettime(CLOCK_BOOTTIME, &current_ts);
@@ -519,7 +519,7 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
         if (run_time < (current_ts.tv_sec - start_ts.tv_sec)) {
             run_time = (current_ts.tv_sec - start_ts.tv_sec);
             bit_rate = notify_length * notify_count / run_time;
-            PRINT("gatts notify Bit rate = %d Byte/s, = %d bit/s, time = %ds.", bit_rate, bit_rate << 3, run_time);
+            PRINT("gatts notify Bit rate = %" PRIu32 " Byte/s, = %" PRIu32 " bit/s, time = %" PRIu32 "s.", bit_rate, bit_rate << 3, run_time);
         }
 
         device = find_gatts_device(&addr);
@@ -544,7 +544,7 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
     free(payload);
 
     bit_rate = notify_length * notify_count / run_time;
-    PRINT("gatts notify throughput test finish, Bit rate = %d Byte/s, = %d bit/s, time = %ds.",
+    PRINT("gatts notify throughput test finish, Bit rate = %" PRIu32 " Byte/s, = %" PRIu32 " bit/s, time = %" PRIu32 "s.",
           bit_rate, bit_rate << 3, run_time);
 
     return CMD_OK;
@@ -609,8 +609,8 @@ static void phy_updated_callback(void *srv_handle, bt_address_t *addr, gatt_stat
 static void conn_param_changed_callback(void *srv_handle, bt_address_t *addr, uint16_t connection_interval,
                                         uint16_t peripheral_latency, uint16_t supervision_timeout)
 {
-    PRINT_ADDR("gatts_conn_param_changed_callback, addr:%s, interval:%d, latency:%d, timeout:%d", addr, connection_interval,
-               peripheral_latency, supervision_timeout);
+    PRINT_ADDR("gatts_conn_param_changed_callback, addr:%s, interval:%" PRIu16 ", latency:%" PRIu16 ", timeout:%" PRIu16,
+               addr, connection_interval, peripheral_latency, supervision_timeout);
 }
 
 static gatts_callbacks_t gatts_cbs = {

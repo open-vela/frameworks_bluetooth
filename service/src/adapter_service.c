@@ -584,20 +584,25 @@ static void process_connect_request_evt(bt_address_t *addr)
     adapter_service_t *adapter = &g_adapter_service;
     remote_device_properties_t remote;
     bt_device_t *device;
-    bool accept = false;
+    bool reject = false;
+
+    BT_ADDR_LOG("ACL Connect Request from :%s", addr);
 
     adapter_lock();
     device = adapter_find_create_classic_device(addr);
     bt_sal_get_remote_device_info(addr, &remote);
     device_set_device_class(device, remote.class_of_device);
-    if (get_devices_cnt(DFLAG_CONNECTED, BT_TRANSPORT_BREDR) < adapter->max_acl_connections)
-        accept = true;
-
-    BT_ADDR_LOG("ACL Connect Request from :%s %s", addr, accept ? "accept" : "reject");
-    /*  if a2dp source support, accept link with master role ? */
-    if (bt_sal_reply_link_request(addr, accept) == BT_STATUS_SUCCESS && accept)
-        device_set_connection_state(device, CONNECTION_STATE_CONNECTING);
+    if (get_devices_cnt(DFLAG_CONNECTED, BT_TRANSPORT_BREDR) >= adapter->max_acl_connections) {
+        reject = true;
+        BT_LOGW("Reject connect request without available connection");
+        /*  if a2dp source support, accept link with master role ? */
+        bt_sal_reply_link_request(addr, false);
+    }
     adapter_unlock();
+    if (!reject) {
+        /* send connect request notification */
+        CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_connect_request, addr);
+    }
 }
 
 static const char *acl_connection_str(connection_state_t state)
@@ -1029,9 +1034,9 @@ static void handle_link_event(void *data)
 {
     adapter_remote_event_t *evt = (adapter_remote_event_t *)data;
     switch (evt->evt_id) {
-        case LINK_MODE_CHANGED_EVT:
-            CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_remote_link_mode_changed,
-                            &evt->addr, evt->link_mode.mode, evt->link_mode.sniff_interval);
+    case LINK_MODE_CHANGED_EVT:
+        CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_remote_link_mode_changed,
+                         &evt->addr, evt->link_mode.mode, evt->link_mode.sniff_interval);
         break;
     }
 }
@@ -2153,6 +2158,24 @@ bt_status_t adapter_le_disconnect(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
+bt_status_t adapter_connect_request_reply(bt_address_t *addr, bool accept)
+{
+    adapter_lock();
+    bt_device_t *device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    if (!device) {
+        adapter_unlock();
+        return BT_STATUS_DEVICE_NOT_FOUND;
+    }
+    adapter_unlock();
+    bt_status_t status;
+    status = bt_sal_reply_link_request(addr, accept);
+    if (status == BT_STATUS_SUCCESS && accept) {
+        device_set_connection_state(device, CONNECTION_STATE_CONNECTING);
+    }
+
+    return status;
+}
+
 bt_status_t adapter_le_set_phy(bt_address_t *addr,
                                ble_phy_type_t tx_phy,
                                ble_phy_type_t rx_phy)
@@ -2383,8 +2406,8 @@ uint16_t adapter_get_acl_handle(bt_address_t *addr)
 }
 
 bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
-                                                  uint16_t band_width,
-                                                  uint16_t number)
+                                                   uint16_t band_width,
+                                                   uint16_t number)
 {
     return bt_sal_set_afh_channel_classification(central_frequency, band_width, number);
 }

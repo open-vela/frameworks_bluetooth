@@ -292,6 +292,7 @@ bt_status_t adapter_le_connect(bt_address_t *addr,
                                ble_addr_type_t type,
                                ble_connect_params_t *param);
 bt_status_t adapter_le_disconnect(bt_address_t *addr);
+bt_status_t adapter_connect_request_reply(bt_address_t *addr, bool accept);
 bt_status_t adapter_le_set_phy(bt_address_t *addr,
                                ble_phy_type_t tx_phy,
                                ble_phy_type_t rx_phy);

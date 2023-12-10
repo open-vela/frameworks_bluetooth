@@ -71,6 +71,7 @@
   BT_ADAPTER_ON_DEVICE_NAME_CHANGED,
   BT_ADAPTER_ON_PAIR_REQUEST,
   BT_ADAPTER_ON_PAIR_DISPLAY,
+  BT_ADAPTER_ON_CONNECT_REQUEST,
   BT_ADAPTER_ON_CONNECTION_STATE_CHANGED,
   BT_ADAPTER_ON_BOND_STATE_CHANGED,
   BT_ADAPTER_ON_REMOTE_NAME_CHANGED,
@@ -212,6 +213,10 @@ typedef union
     bt_pair_type_t type;
     uint32_t passkey;
   } _on_pair_display;
+
+  struct {
+    bt_address_t addr;
+  } _on_connect_request;
 
   struct {
     bt_address_t addr;

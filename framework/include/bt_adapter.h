@@ -102,6 +102,14 @@ typedef void (*on_pair_request_callback)(void *cookie, bt_address_t *addr);
 typedef void (*on_pair_display_callback)(void *cookie, bt_address_t *addr, bt_transport_t transport, bt_pair_type_t type, uint32_t passkey);
 
 /**
+ * @brief Connect request callback
+ *
+ * @param cookie - callback cookie
+ * @param addr - remote addr.
+ */
+typedef void (*on_connect_request_callback)(void *cookie, bt_address_t *addr);
+
+/**
  * @brief Connection state changed callback
  *
  * @param cookie - callback cookie
@@ -179,6 +187,7 @@ typedef struct {
     on_device_name_changed_callback on_device_name_changed;
     on_pair_request_callback on_pair_request;
     on_pair_display_callback on_pair_display;
+    on_connect_request_callback on_connect_request;
     on_connection_state_changed_callback on_connection_state_changed;
     on_bond_state_changed_callback on_bond_state_changed;
     on_remote_name_changed_callback on_remote_name_changed;

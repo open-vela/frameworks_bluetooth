@@ -137,6 +137,16 @@ static void on_pair_display_cb(void *cookie, bt_address_t *addr,
   bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_PAIR_DISPLAY);
 }
 
+static void on_connect_request_cb(void *cookie, bt_address_t *addr)
+{
+  bt_message_packet_t packet;
+  bt_instance_t *ins = cookie;
+
+  memcpy(&packet.adpt_cb._on_connect_request.addr, addr, sizeof(bt_address_t));
+
+  bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_CONNECT_REQUEST);
+}
+
 static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr,
     bt_transport_t transport, connection_state_t state)
 {
@@ -232,6 +242,7 @@ const static adapter_callbacks_t g_adapter_socket_cbs =
   .on_device_name_changed = on_device_name_changed_cb,
   .on_pair_request = on_pair_request_cb,
   .on_pair_display = on_pair_display_cb,
+  .on_connect_request = on_connect_request_cb,
   .on_connection_state_changed = on_connection_state_changed_cb,
   .on_bond_state_changed = on_bond_state_changed_cb,
   .on_remote_name_changed = on_remote_name_changed_cb,
@@ -601,6 +612,13 @@ int bt_socket_client_adapter_callback(service_poll_t *poll,
             packet->adpt_cb._on_pair_display.type,
             packet->adpt_cb._on_pair_display.passkey);
 
+        break;
+      }
+    case BT_ADAPTER_ON_CONNECT_REQUEST:
+      {
+        CALLBACK_FOREACH(CBLIST, adapter_callbacks_t,
+            on_connect_request,
+            &packet->adpt_cb._on_connect_request.addr);
         break;
       }
     case BT_ADAPTER_ON_CONNECTION_STATE_CHANGED:

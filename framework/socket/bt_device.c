@@ -323,6 +323,22 @@ bt_status_t bt_device_disconnect_le(bt_instance_t *ins, bt_address_t *addr)
   return packet.devs_r.status;
 }
 
+bt_status_t bt_device_connect_request_reply(bt_instance_t *ins, bt_address_t *addr, bool accept)
+{
+  bt_message_packet_t packet;
+  bt_status_t status;
+
+  memcpy(&packet.devs_pl._bt_device_connect_request_reply.addr, addr, sizeof(*addr));
+  packet.devs_pl._bt_device_connect_request_reply.accept = accept;
+  status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_CONNECT_REQUEST_REPLY);
+  if (status != BT_STATUS_SUCCESS)
+  {
+    return status;
+  }
+
+  return packet.devs_r.status;
+}
+
 void bt_device_connect_all_profile(bt_instance_t *ins, bt_address_t *addr)
 {
   bt_message_packet_t packet;
