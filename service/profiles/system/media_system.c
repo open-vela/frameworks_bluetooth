@@ -68,7 +68,7 @@ bt_status_t bt_media_set_hfp_samplerate(uint16_t samplerate)
         return BT_STATUS_PARM_INVALID;
 
     /* set hfp samplerate, dev/pcm1c/p device ioctl */
-    if (media_policy_set_hfp_samplerate(samplerate == 8000 ? MEDIA_SAMPLERATE_8000 : MEDIA_SAMPLERATE_16000) != 0)
+    if (media_policy_set_hfp_samplerate(samplerate) != 0)
         return BT_STATUS_FAIL;
 
     return BT_STATUS_SUCCESS;
