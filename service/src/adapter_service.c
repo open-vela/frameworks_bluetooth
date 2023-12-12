@@ -859,6 +859,7 @@ static void adapter_broadcast_state(int state)
     struct timespec ts;
 
     clock_gettime(CLOCK_MONOTONIC, &ts);
+    memset(&uORB_state, 0, sizeof(uORB_state));
     uORB_state.timestamp = ts.tv_sec * 1000 + ts.tv_nsec / 1000000UL;
     uORB_state.state = state;
 

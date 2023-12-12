@@ -259,7 +259,7 @@ endif
 ifeq ($(CONFIG_ARCH_SIM),y)
 CFLAGS	 += -O0
 endif
-CFLAGS	 += -Wno-strict-prototypes #-Werror
+CFLAGS	 += -Wno-strict-prototypes #-fno-short-enums -Wl,-no-enum-size-warning #-Werror
 PRIORITY  = SCHED_PRIORITY_DEFAULT
 STACKSIZE = 8192
 MODULE    = $(CONFIG_BLUETOOTH)

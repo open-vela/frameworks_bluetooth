@@ -57,6 +57,10 @@ config BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY
 	int "bluetooth service loop thread priority"
 	default 100
 
+config BLUETOOTH_AUDIO_TRANS_RPSMG_SERVER
+	bool "Rpmsg audio transport server"
+	default n
+
 config BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL
 	int "Bluetooth Audio Transport Source Ctrl Channel ID"
 	default 0

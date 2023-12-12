@@ -79,8 +79,24 @@ bt_status_t bt_media_listen_voice_call_volume_change(void)
     return BT_STATUS_SUCCESS;
 }
 
+bt_status_t bt_media_get_voice_call_volume(uint16_t *volume)
+{
+    int vol = 0;
+    if (media_policy_get_stream_volume(MEDIA_STREAM_SCO, &vol) != 0) {
+        return BT_STATUS_FAIL;
+    }
+
+    *volume = (uint16_t)vol;
+
+    return BT_STATUS_SUCCESS;
+}
+
+//media_policy_get_stream_volume
 bt_status_t bt_media_set_voice_call_volume(uint16_t volume)
 {
+    if (media_policy_set_stream_volume(MEDIA_STREAM_SCO, (int)volume) != 0)
+        return BT_STATUS_FAIL;
+
     return BT_STATUS_SUCCESS;
 }
 

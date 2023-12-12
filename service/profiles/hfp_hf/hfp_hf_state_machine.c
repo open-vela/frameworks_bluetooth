@@ -30,6 +30,8 @@
 #include "sal_hfp_hf_interface.h"
 #include "service_loop.h"
 
+#include "media_system.h"
+
 #include "bt_utils.h"
 #include "utils/log.h"
 
@@ -934,9 +936,11 @@ static void audio_on_enter(state_machine_t *sm)
     HF_DBG_ENTER(sm, &hfsm->addr);
     /* TODO: get volume */
     /* TODO: set remote volume */
-    /* TODO: set sco available */
     /* TODO: set samplerate */
+    bt_media_set_hfp_samplerate(hfsm->codec == HFP_CODEC_MSBC ? 16000 : 8000);
     /* TODO: request audio focus */
+    /* TODO: set sco available */
+    bt_media_set_sco_available();
     hf_service_notify_audio_state_changed(&hfsm->addr, HFP_AUDIO_STATE_CONNECTED);
 }
 
@@ -946,6 +950,7 @@ static void audio_on_exit(state_machine_t *sm)
 
     HF_DBG_EXIT(sm, &hfsm->addr);
     /* TODO: set sco unavailable */
+    bt_media_set_sco_unavailable();
     /* TODO: abandon audio focus */
     hf_service_notify_audio_state_changed(&hfsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
 }
