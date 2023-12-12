@@ -32,6 +32,17 @@ typedef enum {
     HFP_HF_STATE_AUDIO_CONNECTED
 } hfp_hf_state_t;
 
+typedef struct {
+    hfp_call_t call_status;
+    uint64_t call_timestamp_us;
+    hfp_callsetup_t callsetup_status;
+    uint64_t callsetup_timestamp_us;
+    hfp_callheld_t callheld_status;
+    uint64_t callheld_timestamp_us;
+
+    uint64_t webchat_flag_timestamp_us;
+} hfp_hf_call_status_t;
+
 /*
  * sal callback
  */
