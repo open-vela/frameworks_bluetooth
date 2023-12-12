@@ -180,7 +180,7 @@ void lea_mcp_on_media_player_name(bt_address_t *addr, uint32_t mcs_id, size_t si
 {
     mcp_event_t *event;
 
-    event = mcp_event_new_ext(MCP_MEDIA_PLAYER_NAME, addr, mcs_id, size);
+    event = mcp_event_new_ext(MCP_MEDIA_PLAYER_NAME_CHANGED, addr, mcs_id, size);
     if (!event) {
         BT_LOGE("%s, Failed to create msg", __func__);
         return;
@@ -1131,7 +1131,7 @@ static void lea_mcs_media_seesion_event_callback(void *cookie, int event, int re
     bt_address_t *addrs = NULL;
     int num = 0;
 
-    rt = adapter_get_connected_devices(&addrs, &num, mcp_allocator, BT_TRANSPORT_BLE);
+    rt = adapter_get_connected_devices(BT_TRANSPORT_BLE, &addrs, &num, mcp_allocator);
     if (rt != BT_STATUS_SUCCESS || num < 1) {
         BT_LOGE("%s, Le connected devices get failed", __func__);
         return;

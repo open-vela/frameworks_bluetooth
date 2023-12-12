@@ -1068,7 +1068,7 @@ bool lea_server_on_csis_info_request(lea_csis_infos_t *csis_info)
 
 static const profile_service_t lea_server_service = {
     .auto_start = true,
-    .name = "lea_server",
+    .name = PROFILE_LEA_SERVER_NAME,
     .id = PROFILE_LEAUDIO_SERVER,
     .transport = BT_TRANSPORT_BLE,
     .uuid = {BT_UUID128_TYPE, { 0 }},
