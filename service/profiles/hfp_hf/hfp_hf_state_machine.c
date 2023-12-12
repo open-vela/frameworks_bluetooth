@@ -861,6 +861,36 @@ static void connected_exit(state_machine_t *sm)
     HF_DBG_EXIT(sm, &hfsm->addr);
 }
 
+
+static bool check_sco_allowed(state_machine_t *sm)
+{
+#ifndef CONFIG_HFP_HF_WEBCHAT_BLOCKER
+    return true;
+#else
+    hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
+    uint64_t current_timestamp_us = get_os_timestamp_us();
+    int64_t us_diff;
+
+    /** Verdict 1: reject SCO request without approprite call or callsetup status received */
+    if ((hfsm->call_status.call_status == HFP_CALL_NO_CALLS_IN_PROGRESS) &&
+        ((hfsm->call_status.callsetup_status == HFP_CALLSETUP_NONE) ||
+         (hfsm->call_status.callsetup_status == HFP_CALLSETUP_OUTGOING)))
+        goto reject;
+
+    /** Verdict 2: reject SCO request if the recent call is speculated to be a web chat */
+    us_diff = calc_us_diff(hfsm->call_status.webchat_flag_timestamp_us, current_timestamp_us);
+    if ((us_diff >= 0) && (us_diff < HF_WEBCHAT_BLOCK_PERIOD))
+        goto reject;
+
+
+    return true;
+
+reject:
+    hfsm->call_status.webchat_flag_timestamp_us = current_timestamp_us;
+    return false;
+#endif
+}
+
 static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
@@ -922,7 +952,13 @@ static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p
         break;
     }
     case HF_STACK_EVENT_AUDIO_REQ:
-        status = bt_sal_reply_sco_link_request(&hfsm->addr, true);
+        if (check_sco_allowed(sm)) {
+            BT_LOGD("Accept Sco connection");
+            status = bt_sal_reply_sco_link_request(&hfsm->addr, true);
+        } else {
+            BT_LOGD("Reject Sco connection");
+            status = bt_sal_reply_sco_link_request(&hfsm->addr, false);
+        }
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Accept Sco request failed");
         }
