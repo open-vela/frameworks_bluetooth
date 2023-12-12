@@ -25,7 +25,6 @@
 #ifdef CONFIG_KVDB
 #include <kvdb.h>
 #endif
-#include "bt_tools.h"
 
 #include "bt_lea_client.h"
 #include "bt_profile.h"
