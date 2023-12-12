@@ -159,6 +159,11 @@ if BLUETOOTH_HFP_HF
 config HFP_HF_MAX_CONNECTIONS
 	int "HFP hands-free max connections"
 	default 1
+
+config HFP_HF_WEBCHAT_BLOCKER
+	bool "Block webchat automatically"
+	default y
+
 endif #BLUETOOTH_HFP_HF
 
 config BLUETOOTH_HFP_AG
