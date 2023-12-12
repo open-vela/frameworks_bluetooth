@@ -42,10 +42,10 @@ typedef struct _hf_state_machine {
     uint8_t spk_volume;
     uint8_t mic_volume;
     uint8_t codec;
-    uint8_t call_in_progress;
     struct list_node pending_actions;
     bt_list_t *current_calls;
     bt_list_t *update_calls;
+    hfp_hf_call_status_t call_status;
     uint8_t need_query;
     void *service;
 } hf_state_machine_t;
@@ -55,8 +55,9 @@ typedef struct {
     uint32_t cmd_code;
 } hf_at_cmd_t;
 
-#define HF_CONNECT_TIMEOUT 10 * 1000
+#define HF_CONNECT_TIMEOUT (10 * 1000)
 #define HF_STM_DEBUG       1
+#define HF_WEBCHAT_VERDICT (300 * 1000)
 
 #if HF_STM_DEBUG
 static void hf_stm_trans_debug(state_machine_t *sm, bt_address_t *addr, const char *action);
@@ -325,7 +326,6 @@ static void state_machine_reset_calls(hf_state_machine_t *hfsm)
     if (hfsm->connect_timer)
         service_loop_cancel_timer(hfsm->connect_timer);
     hfsm->recognition_active = false;
-    hfsm->call_in_progress = 0;
 }
 
 static void disconnected_enter(state_machine_t *sm)
@@ -417,6 +417,73 @@ static void connecting_exit(state_machine_t *sm)
     hfsm->connect_timer = NULL;
 }
 
+static int64_t calc_us_diff(uint64_t prev_us, uint64_t next_us)
+{
+    if ((next_us >= prev_us) && ((next_us - prev_us) < (1ULL << 63)))
+        return (next_us - prev_us);
+
+    return -1;
+}
+
+static void channel_type_verdict(state_machine_t *sm, uint32_t event, uint32_t status,
+                                 uint64_t current_timestamp_us)
+{
+    hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
+    int64_t us_diff;
+
+    switch (event) {
+    case HF_STACK_EVENT_CALL:
+        if ((hfsm->call_status.call_status == HFP_CALL_NO_CALLS_IN_PROGRESS) &&
+            (hfsm->call_status.callsetup_status == HFP_CALLSETUP_OUTGOING) &&
+            ((hfp_call_t)status == HFP_CALL_CALLS_IN_PROGRESS)) {
+            us_diff = calc_us_diff(hfsm->call_status.callsetup_timestamp_us, current_timestamp_us);
+            if ((us_diff >= 0) && (us_diff < HF_WEBCHAT_VERDICT)) {
+                BT_LOGD("%s: this might be a video chat from WeChat", __func__);
+                hfsm->call_status.webchat_flag_timestamp_us = current_timestamp_us;
+                /** TODO: reject the following SCO request */
+            }
+        }
+        break;
+    case HF_STACK_EVENT_CALLSETUP:
+        break;
+    case HF_STACK_EVENT_CALLHELD:
+        break;
+    default:
+        break;
+    }
+}
+
+static void update_call_status(state_machine_t *sm, uint32_t event, uint32_t status)
+{
+    hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
+    uint64_t current_timestamp_us = get_os_timestamp_us();
+
+    channel_type_verdict(sm, event, status, current_timestamp_us);
+
+    switch (event) {
+    case HF_STACK_EVENT_CALL:
+        hfsm->call_status.call_status = (hfp_call_t)status;
+        hfsm->call_status.call_timestamp_us = current_timestamp_us;
+        BT_LOGD("%s: call:%d, timestamp = %d", __func__, hfsm->call_status.call_status,
+                hfsm->call_status.call_timestamp_us);
+        break;
+    case HF_STACK_EVENT_CALLSETUP:
+        hfsm->call_status.callsetup_status = (hfp_callsetup_t)status;
+        hfsm->call_status.callsetup_timestamp_us = current_timestamp_us;
+        BT_LOGD("%s: callsetup:%d, timestamp = %d", __func__, hfsm->call_status.callsetup_status,
+                hfsm->call_status.callsetup_timestamp_us);
+        break;
+    case HF_STACK_EVENT_CALLHELD:
+        hfsm->call_status.callheld_status = (hfp_callheld_t)status;
+        hfsm->call_status.callheld_timestamp_us = current_timestamp_us;
+        BT_LOGD("%s: callheld:%d, timestamp = %d", __func__, hfsm->call_status.callheld_status,
+                hfsm->call_status.callsetup_timestamp_us);
+        break;
+    default:
+        break;
+    }
+}
+
 static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
@@ -448,6 +515,9 @@ static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *
     case HF_STACK_EVENT_CALL:
     case HF_STACK_EVENT_CALLSETUP:
     case HF_STACK_EVENT_CALLHELD:
+        update_call_status(sm, event, data->valueint1);
+        hfsm->need_query = true;
+        break;
     case HF_STACK_EVENT_CLIP:
         hfsm->need_query = true;
         break;
@@ -623,10 +693,10 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
     case HF_STACK_EVENT_CALL:
     case HF_STACK_EVENT_CALLSETUP:
     case HF_STACK_EVENT_CALLHELD:
+        update_call_status(sm, event, data->valueint1);
         bt_sal_hfp_hf_get_current_calls(&hfsm->addr);
         break;
     case HF_STACK_EVENT_CLIP: {
-        /* TODO: update call name */
         char *number = data->string1;
         char *name = data->string2;
         BT_LOGD("CLIP:number :%s, name: %s", number, name == NULL ? "NULL" : name);
