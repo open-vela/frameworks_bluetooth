@@ -32,7 +32,6 @@ extern "C" {
 
 /**
  * @brief HFP HF call state
- *
  */
 typedef enum {
     HFP_HF_CALL_STATE_ACTIVE = 0,
@@ -46,8 +45,15 @@ typedef enum {
 } hfp_hf_call_state_t;
 
 /**
+ * @brief HFP HF channel type
+ */
+typedef enum {
+    HFP_HF_CHANNEL_TYP_PHONE = 0,
+    HFP_HF_CHANNEL_TYP_WEBCHAT,
+} hfp_hf_channel_type_t;
+
+/**
  * @brief HFP call info structure
- *
  */
 typedef struct {
     int index;
