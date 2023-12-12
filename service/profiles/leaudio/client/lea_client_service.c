@@ -25,7 +25,6 @@
 #ifdef CONFIG_KVDB
 #include <kvdb.h>
 #endif
-#include "bt_tools.h"
 
 #include "bt_lea_client.h"
 #include "bt_profile.h"
@@ -45,7 +44,6 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-#define LOG_TAG "lea_client"
 
 #define CHECK_ENABLED()                    \
     {                                      \
@@ -2633,7 +2631,7 @@ void lea_client_on_csip_set_ordered_access(uint8_t *sirk, lea_csip_lock_status r
 
 static const profile_service_t lea_client_service = {
     .auto_start = true,
-    .name = "lea_client",
+    .name = PROFILE_LEA_CLIENT_NAME,
     .id = PROFILE_LEAUDIO_CLIENT,
     .transport = BT_TRANSPORT_BLE,
     .uuid = {BT_UUID128_TYPE, { 0 }},

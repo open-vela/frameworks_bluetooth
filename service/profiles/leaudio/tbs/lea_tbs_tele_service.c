@@ -32,9 +32,9 @@
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
 
-#define TBS_EVENT_REQUEST_DIAL_DONE 0x71
+#define TBS_EVENT_REQUEST_DIAL_DONE      0x71
 #define TBS_EVENT_REQUEST_CALL_LIST_DONE 0x76
-#define PRIMARY_SLOT                CONFIG_BLUETOOTH_LEAUDIO_TBS_PRIMARY_SLOT
+#define PRIMARY_SLOT                     CONFIG_BLUETOOTH_LEAUDIO_TBS_PRIMARY_SLOT
 
 #define BTS_DEFAULT_BEARER_REF                      "1"
 #define BTS_DEFAULT_TECH                            LEA_TBS_BEARER_5G
@@ -235,10 +235,11 @@ lea_tbs_calls_t *lea_tbs_tele_add_call(tapi_call_info *call_info)
 
 static void tbs_on_tapi_client_ready(const char *client_name, void *user_data)
 {
-    char *name = BTS_DEFAULT_NAME;
-    tapi_signal_strength ss;
-    tapi_pref_net_mode value;
+    char *name = (char *)BTS_DEFAULT_NAME;
+    tapi_signal_strength ss = { 0 };
+    tapi_pref_net_mode value = NETWORK_PREF_NET_TYPE_ANY;
     lea_tbs_telephone_bearer_t *bearer;
+
     bearer = (lea_tbs_telephone_bearer_t *)malloc(sizeof(lea_tbs_telephone_bearer_t));
     if (client_name != NULL)
         BT_LOGD("%s :tapi is ready for %s\n", __func__, client_name);
@@ -317,7 +318,7 @@ static void tbs_call_manager_call_async_fun(tapi_async_result *result)
         lea_tbs_rssi_value_changed(cell->signal_strength.rsrp);
     }
 
-if (call_info->state != CALL_STATUS_DISCONNECTED) {
+    if (call_info->state != CALL_STATUS_DISCONNECTED) {
         lea_tbs_tele_add_call(call_info);
         tapi_call_get_all_calls(context, PRIMARY_SLOT, TBS_EVENT_REQUEST_CALL_LIST_DONE,
                                 tbs_call_list_query_complete);
