@@ -119,10 +119,12 @@ static void a2dp_snk_service_handle_event(void *data)
     case CODEC_CONFIG_EVT: {
         a2dp_codec_config_t *config;
         a2dp_device_t *device;
-
+        pthread_mutex_lock(&g_a2dp_sink.mutex);
         device = find_or_create_device(&event->event_data.bd_addr);
-        if (!device)
+        if (!device) {
+            pthread_mutex_unlock(&g_a2dp_sink.mutex);
             break;
+        }
 
         config = event->event_data.data;
         BT_LOGD("CODEC_CONFIG_EVT : codec_type: %d, sample_rate: %" PRIu32 ", bits_per_sample: %d, channel_mode: %d",
@@ -131,6 +133,7 @@ static void a2dp_snk_service_handle_event(void *data)
                 config->bits_per_sample,
                 config->channel_mode);
         save_a2dp_codec_config(&device->peer, config);
+        pthread_mutex_unlock(&g_a2dp_sink.mutex);
         break;
     }
     case PEER_STREAM_START_REQ:
@@ -138,15 +141,18 @@ static void a2dp_snk_service_handle_event(void *data)
         break;
     default: {
         a2dp_state_machine_t *a2dp_sm;
-
+        pthread_mutex_lock(&g_a2dp_sink.mutex);
         a2dp_sm = get_state_machine(&event->event_data.bd_addr);
-        if (!a2dp_sm)
+        if (!a2dp_sm) {
+            pthread_mutex_unlock(&g_a2dp_sink.mutex);
             break;
+        }
 
         if (event->event == CONNECTED_EVT)
             set_active_peer(&event->event_data.bd_addr);
 
         a2dp_state_machine_handle_event(a2dp_sm, event);
+        pthread_mutex_unlock(&g_a2dp_sink.mutex);
         break;
     }
     }
@@ -323,26 +329,70 @@ static bool a2dp_sink_unregister_callbacks(void **remote, void *cookie)
 
 static bool a2dp_sink_is_connected(bt_address_t *addr)
 {
-    /* TODO: */
-    return false;
+    pthread_mutex_lock(&g_a2dp_sink.mutex);
+    if (!g_a2dp_sink.enabled) {
+        pthread_mutex_unlock(&g_a2dp_sink.mutex);
+        return false;
+    }
+
+    a2dp_device_t *device = find_a2dp_device_by_addr(&g_a2dp_sink.list, addr);
+    if (!device) {
+        pthread_mutex_unlock(&g_a2dp_sink.mutex);
+        return false;
+    }
+
+    profile_connection_state_t state = a2dp_state_machine_get_connection_state(device->a2dp_sm);
+    pthread_mutex_unlock(&g_a2dp_sink.mutex);
+
+    return state == PROFILE_STATE_CONNECTED;
 }
 
 static bool a2dp_sink_is_playing(bt_address_t *addr)
 {
-    /* TODO: */
-    return false;
+    pthread_mutex_lock(&g_a2dp_sink.mutex);
+    if (!g_a2dp_sink.enabled) {
+        pthread_mutex_unlock(&g_a2dp_sink.mutex);
+        return false;
+    }
+
+    a2dp_device_t *device = find_a2dp_device_by_addr(&g_a2dp_sink.list, addr);
+    if (!device) {
+        pthread_mutex_unlock(&g_a2dp_sink.mutex);
+        return false;
+    }
+
+    a2dp_state_t state = a2dp_state_machine_get_state(device->a2dp_sm);
+    pthread_mutex_unlock(&g_a2dp_sink.mutex);
+    return state == A2DP_STATE_STARTED;
 }
 
 static profile_connection_state_t a2dp_sink_get_connection_state(bt_address_t *addr)
 {
-    /* TODO: */
-    return PROFILE_STATE_DISCONNECTED;
+    pthread_mutex_lock(&g_a2dp_sink.mutex);
+    if (!g_a2dp_sink.enabled) {
+        pthread_mutex_unlock(&g_a2dp_sink.mutex);
+        return PROFILE_STATE_DISCONNECTED;
+    }
+
+    a2dp_device_t *device = find_a2dp_device_by_addr(&g_a2dp_sink.list, addr);
+    if (!device) {
+        pthread_mutex_unlock(&g_a2dp_sink.mutex);
+        return PROFILE_STATE_DISCONNECTED;
+    }
+
+    profile_connection_state_t state = a2dp_state_machine_get_connection_state(device->a2dp_sm);
+    pthread_mutex_unlock(&g_a2dp_sink.mutex);
+    return state;
 }
 
 static bt_status_t a2dp_sink_connect(bt_address_t *addr)
 {
-    if (!g_a2dp_sink.enabled)
+    pthread_mutex_lock(&g_a2dp_sink.mutex);
+    if (!g_a2dp_sink.enabled) {
+        pthread_mutex_unlock(&g_a2dp_sink.mutex);
         return BT_STATUS_FAIL;
+    }
+    pthread_mutex_unlock(&g_a2dp_sink.mutex);
 
     do_in_a2dp_snk_service(a2dp_event_new(CONNECT_REQ, addr));
 
@@ -351,8 +401,12 @@ static bt_status_t a2dp_sink_connect(bt_address_t *addr)
 
 static bt_status_t a2dp_sink_disconnect(bt_address_t *addr)
 {
-    if (!g_a2dp_sink.enabled)
+    pthread_mutex_lock(&g_a2dp_sink.mutex);
+    if (!g_a2dp_sink.enabled) {
+        pthread_mutex_unlock(&g_a2dp_sink.mutex);
         return BT_STATUS_FAIL;
+    }
+    pthread_mutex_unlock(&g_a2dp_sink.mutex);
 
     do_in_a2dp_snk_service(a2dp_event_new(DISCONNECT_REQ, addr));
 
