@@ -34,6 +34,7 @@
 #define __A2DP_STATE_MACHINE_H__
 
 #include "a2dp_event.h"
+#include "bt_device.h"
 
 typedef enum {
     A2DP_STATE_IDLE,
@@ -50,5 +51,6 @@ void a2dp_state_machine_destory(a2dp_state_machine_t *a2dp_sm);
 void a2dp_state_machine_handle_event(a2dp_state_machine_t *sm, a2dp_event_t *a2dp_event);
 a2dp_state_t a2dp_state_machine_get_state(a2dp_state_machine_t *sm);
 const char *a2dp_state_machine_current_state(a2dp_state_machine_t *sm);
+profile_connection_state_t a2dp_state_machine_get_connection_state(a2dp_state_machine_t *sm);
 bool a2dp_state_machine_is_pending_stop(a2dp_state_machine_t *sm);
 #endif

@@ -109,6 +109,7 @@ static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_d
 
 static const state_t idle_state = {
     .state_name = "Idle",
+    .state_value = A2DP_STATE_IDLE,
     .enter = idle_enter,
     .exit = idle_exit,
     .process_event = idle_process_event,
@@ -116,6 +117,7 @@ static const state_t idle_state = {
 
 static const state_t opening_state = {
     .state_name = "Opening",
+    .state_value = A2DP_STATE_OPENING,
     .enter = opening_enter,
     .exit = opening_exit,
     .process_event = opening_process_event,
@@ -123,6 +125,7 @@ static const state_t opening_state = {
 
 static const state_t opened_state = {
     .state_name = "Opened",
+    .state_value = A2DP_STATE_OPENED,
     .enter = opened_enter,
     .exit = opened_exit,
     .process_event = opened_process_event,
@@ -130,6 +133,7 @@ static const state_t opened_state = {
 
 static const state_t started_state = {
     .state_name = "Started",
+    .state_value = A2DP_STATE_STARTED,
     .enter = started_enter,
     .exit = started_exit,
     .process_event = started_process_event,
@@ -137,6 +141,7 @@ static const state_t started_state = {
 
 static const state_t closing_state = {
     .state_name = "Closing",
+    .state_value = A2DP_STATE_CLOSING,
     .enter = closing_enter,
     .exit = closing_exit,
     .process_event = closing_process_event,
@@ -807,22 +812,30 @@ void a2dp_state_machine_handle_event(a2dp_state_machine_t *sm,
 a2dp_state_t a2dp_state_machine_get_state(a2dp_state_machine_t *sm)
 {
     const state_t *cur_state = hsm_get_current_state(&sm->sm);
-    a2dp_state_t state;
-    if (cur_state == (state_t *)&idle_state) {
-        state = A2DP_STATE_IDLE;
-    } else if (cur_state == (state_t *)&opening_state) {
-        state = A2DP_STATE_OPENING;
-    } else if (cur_state == (state_t *)&opened_state) {
-        state = A2DP_STATE_OPENED;
-    } else if (cur_state == (state_t *)&started_state) {
-        state = A2DP_STATE_STARTED;
-    } else if (cur_state == (state_t *)&closing_state) {
-        state = A2DP_STATE_CLOSING;
-    } else {
-        state = A2DP_STATE_IDLE;
+
+    if (!cur_state)
+        return A2DP_STATE_IDLE;
+
+    return cur_state->state_value;
+}
+
+profile_connection_state_t a2dp_state_machine_get_connection_state(a2dp_state_machine_t *sm)
+{
+    a2dp_state_t state = a2dp_state_machine_get_state(sm);
+
+    if (state == A2DP_STATE_IDLE) {
+        return PROFILE_STATE_DISCONNECTED;
+    } else if (state == A2DP_STATE_OPENING) {
+        return PROFILE_STATE_CONNECTING;
+    } else if (state == A2DP_STATE_OPENED) {
+        return PROFILE_STATE_CONNECTED;
+    } else if (state == A2DP_STATE_STARTED) {
+        return PROFILE_STATE_CONNECTED;
+    } else if (state == A2DP_STATE_CLOSING) {
+        return PROFILE_STATE_DISCONNECTING;
     }
 
-    return state;
+    return PROFILE_STATE_DISCONNECTED;
 }
 
 const char *a2dp_state_machine_current_state(a2dp_state_machine_t *sm)

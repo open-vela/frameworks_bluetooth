@@ -34,7 +34,7 @@ void *bt_a2dp_sink_register_callbacks(bt_instance_t *ins, const a2dp_sink_callba
   ins->a2dp_sink_callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
 
   handle = bt_remote_callbacks_register(ins->a2dp_sink_callbacks, NULL, (void *)callbacks);
-  if (handle == NULL) 
+  if (handle == NULL)
   {
     bt_callbacks_list_free(ins->a2dp_sink_callbacks);
     return handle;
