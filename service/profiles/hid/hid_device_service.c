@@ -186,7 +186,7 @@ static bt_status_t hid_device_init(void)
     memset(&g_hidd_handle, 0, sizeof(g_hidd_handle));
     g_hidd_handle.started = false;
 
-    g_hidd_handle.callbacks = bt_callbacks_list_new(2);
+    g_hidd_handle.callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
     if (!g_hidd_handle.callbacks) {
         status = BT_STATUS_NOMEM;
         goto fail;

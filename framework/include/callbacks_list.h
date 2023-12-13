@@ -46,8 +46,9 @@ typedef struct {
         for (_node = bt_list_head(_list); _node != NULL; _node = bt_list_next(_list, _node)) { \
             remote_callback_t *_rcbk = (remote_callback_t *)bt_list_node(_node);               \
             _type *_cbs = (_type *)_rcbk->callbacks;                                           \
+            void *_remote = _rcbk->remote ? _rcbk->remote : _rcbk;                             \
             if (_cbs && _cbs->_cback)                                                          \
-                _cbs->_cback(_rcbk->remote, args);                                             \
+                _cbs->_cback(_remote, args);                                                   \
         }                                                                                      \
         pthread_mutex_unlock(&_cbsl->lock);                                                    \
     } while (0)
@@ -59,5 +60,6 @@ remote_callback_t *bt_remote_callbacks_register(callbacks_list_t *cbsl, void *re
 bool bt_remote_callbacks_unregister(callbacks_list_t *cbsl, void **remote, remote_callback_t *rcbks);
 void bt_callbacks_foreach(callbacks_list_t *cbsl, void *context);
 void bt_callbacks_list_free(callbacks_list_t *cbsl);
+uint8_t bt_callbacks_list_count(callbacks_list_t *cbsl);
 
 #endif

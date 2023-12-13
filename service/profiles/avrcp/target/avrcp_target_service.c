@@ -408,7 +408,7 @@ static bt_status_t avrcp_target_init(void)
     if (pthread_mutex_init(&g_avrc_target.mutex, &attr) < 0)
         return BT_STATUS_FAIL;
 
-    g_avrc_target.callbacks = bt_callbacks_list_new(2);
+    g_avrc_target.callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
 
     return BT_STATUS_SUCCESS;
 }
