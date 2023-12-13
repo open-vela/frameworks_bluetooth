@@ -48,6 +48,7 @@ typedef struct advertiser {
 } advertiser_t;
 
 typedef struct {
+    bool started;
     index_allocator_t *adv_allocator;
     struct list_node advertiser_list;
 } adv_manager_t;
@@ -182,6 +183,9 @@ static void advertiser_start_event(void *data)
     int adv_id;
 
     free(start);
+    if (!adv_manager.started)
+        return;
+
     adv_id = index_alloc(adv_manager.adv_allocator);
     if (adv_id < 0) {
         adver->callbacks.on_advertising_start(get_adver(adver), 0, BT_ADV_STATUS_START_NOMEM);
@@ -223,6 +227,9 @@ static void advertiser_stop_event(void *data)
     uint8_t adv_id = stop->adv_id;
 
     free(stop);
+    if (!adv_manager.started)
+        return;
+
     if (adver) {
         if (!is_advertiser_exist(adver)) {
             BT_LOGD("%s, advertiser: %p not exist", __func__, adver);
@@ -244,6 +251,9 @@ static void advertiser_notify_state(void *data)
     adv_event_t *advstate = (adv_event_t *)data;
     advertiser_t *adver;
 
+    if (!adv_manager.started)
+        return;
+
     if (advstate->state == LE_ADVERTISING_STARTED) {
         adver = get_advertiser_if_exist(advstate->adv_id);
         if (adver) {
@@ -263,6 +273,9 @@ static void advertisers_cleanup(void *data)
     struct list_node *node;
     struct list_node *tmp;
 
+    if (!adv_manager.started)
+        return;
+
     list_for_every_safe(&adv_manager.advertiser_list, node, tmp)
     {
         advertiser_t *adver = (advertiser_t *)node;
@@ -271,6 +284,7 @@ static void advertisers_cleanup(void *data)
 
     list_delete(&adv_manager.advertiser_list);
     index_allocator_delete(adv_manager.adv_allocator);
+    adv_manager.started = false;
 }
 
 void advertising_on_state_changed(uint8_t adv_id, uint8_t state)
@@ -348,6 +362,7 @@ void adv_manager_init(void)
     adv_manager.adv_allocator = index_allocator_create(CONFIG_OBELISK_LE_ADVERTISER_MAX_NUM);
     assert(adv_manager.adv_allocator);
     list_initialize(&adv_manager.advertiser_list);
+    adv_manager.started = true;
 }
 
 void adv_manager_cleanup(void)
