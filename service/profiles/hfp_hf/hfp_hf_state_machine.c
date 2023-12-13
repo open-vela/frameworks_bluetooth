@@ -60,7 +60,7 @@ typedef struct {
 #define HF_STM_DEBUG            1
 #define HF_CONNECT_TIMEOUT      (10 * 1000)
 #define HF_WEBCHAT_VERDICT      (300 * 1000)
-#define HF_WEBCHAT_BLOCK_PERIOD (100 * 1000)
+#define HF_WEBCHAT_BLOCK_PERIOD (500 * 1000)
 
 #if HF_STM_DEBUG
 static void hf_stm_trans_debug(state_machine_t *sm, bt_address_t *addr, const char *action);
@@ -437,13 +437,18 @@ static void channel_type_verdict(state_machine_t *sm, uint32_t event, uint32_t s
 
     switch (event) {
     case HF_STACK_EVENT_CALL:
-        if ((hfsm->call_status.call_status == HFP_CALL_NO_CALLS_IN_PROGRESS) &&
-            (hfsm->call_status.callsetup_status == HFP_CALLSETUP_OUTGOING) &&
-            ((hfp_call_t)status == HFP_CALL_CALLS_IN_PROGRESS)) {
+        if (((hfp_call_t)status == HFP_CALL_CALLS_IN_PROGRESS) &&
+            (hfsm->call_status.call_status == HFP_CALL_NO_CALLS_IN_PROGRESS) &&
+            ((hfsm->call_status.callsetup_status == HFP_CALLSETUP_OUTGOING) ||
+             (hfsm->call_status.callsetup_status == HFP_CALLSETUP_ALERTING))) {
             us_diff = calc_us_diff(hfsm->call_status.callsetup_timestamp_us, current_timestamp_us);
             if ((us_diff >= 0) && (us_diff < HF_WEBCHAT_VERDICT)) {
                 BT_LOGD("%s: this might be a video chat from WeChat", __func__);
                 hfsm->call_status.webchat_flag_timestamp_us = current_timestamp_us;
+                if (hf_state_machine_get_state(hfsm) == HFP_HF_STATE_AUDIO_CONNECTED) {
+                    if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS)
+                        BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
+                }
             }
         }
         break;
@@ -793,36 +798,6 @@ static void connected_exit(state_machine_t *sm)
     HF_DBG_EXIT(sm, &hfsm->addr);
 }
 
-
-static bool check_sco_allowed(state_machine_t *sm)
-{
-#ifndef CONFIG_HFP_HF_WEBCHAT_BLOCKER
-    return true;
-#else
-    hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
-    uint64_t current_timestamp_us = get_os_timestamp_us();
-    int64_t us_diff;
-
-    /** Verdict 1: reject SCO request without approprite call or callsetup status received */
-    if ((hfsm->call_status.call_status == HFP_CALL_NO_CALLS_IN_PROGRESS) &&
-        ((hfsm->call_status.callsetup_status == HFP_CALLSETUP_NONE) ||
-         (hfsm->call_status.callsetup_status == HFP_CALLSETUP_OUTGOING)))
-        goto reject;
-
-    /** Verdict 2: reject SCO request if the recent call is speculated to be a web chat */
-    us_diff = calc_us_diff(hfsm->call_status.webchat_flag_timestamp_us, current_timestamp_us);
-    if ((us_diff >= 0) && (us_diff < HF_WEBCHAT_BLOCK_PERIOD))
-        goto reject;
-
-
-    return true;
-
-reject:
-    hfsm->call_status.webchat_flag_timestamp_us = current_timestamp_us;
-    return false;
-#endif
-}
-
 static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
@@ -884,15 +859,9 @@ static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p
         break;
     }
     case HF_STACK_EVENT_AUDIO_REQ:
-        if (check_sco_allowed(sm)) {
-            BT_LOGD("Accept Sco connection");
-            status = bt_sal_reply_sco_link_request(&hfsm->addr, true);
-        } else {
-            BT_LOGD("Reject Sco connection");
-            status = bt_sal_reply_sco_link_request(&hfsm->addr, false);
-        }
+        status = bt_sal_reply_sco_link_request(&hfsm->addr, true);
         if (status != BT_STATUS_SUCCESS) {
-            BT_LOGE("Reply Sco request failed");
+            BT_LOGE("Accept Sco request failed");
         }
         break;
     case HF_STACK_EVENT_CONNECTION_STATE_CHANGED: {
@@ -929,18 +898,43 @@ static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p
     return true;
 }
 
+static bool check_sco_allowed(state_machine_t *sm)
+{
+#ifdef CONFIG_HFP_HF_WEBCHAT_BLOCKER
+    hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
+    uint64_t current_timestamp_us = get_os_timestamp_us();
+    int64_t us_diff;
+
+    /** Verdict 1: reject SCO request if the recent call is speculated to be a web chat */
+    us_diff = calc_us_diff(hfsm->call_status.webchat_flag_timestamp_us, current_timestamp_us);
+    if ((us_diff >= 0) && (us_diff < HF_WEBCHAT_BLOCK_PERIOD)) {
+        hfsm->call_status.webchat_flag_timestamp_us = current_timestamp_us;
+        return false;
+    }
+
+    return true;
+#endif
+    return true;
+}
+
 static void audio_on_enter(state_machine_t *sm)
 {
     hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
 
     HF_DBG_ENTER(sm, &hfsm->addr);
-    /* TODO: get volume */
-    /* TODO: set remote volume */
-    /* TODO: set samplerate */
-    bt_media_set_hfp_samplerate(hfsm->codec == HFP_CODEC_MSBC ? 16000 : 8000);
-    /* TODO: request audio focus */
-    /* TODO: set sco available */
-    bt_media_set_sco_available();
+    if (check_sco_allowed(sm)) {/* would terminate audio connection when needed */
+        /* TODO: get volume */
+        /* TODO: set remote volume */
+        /* TODO: set samplerate */
+        bt_media_set_hfp_samplerate(hfsm->codec == HFP_CODEC_MSBC ? 16000 : 8000);
+        /* TODO: request audio focus */
+        /* TODO: set sco available */
+        bt_media_set_sco_available();
+    } else {
+        BT_LOGI("SCO is not allowed");
+        if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS)
+            BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
+    }
     hf_service_notify_audio_state_changed(&hfsm->addr, HFP_AUDIO_STATE_CONNECTED);
 }
 
