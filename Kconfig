@@ -212,6 +212,10 @@ config BLUETOOTH_PAN
 	help
 		config NET_TUN_PKTSIZE should set 1518
 
+config BLUETOOTH_MAX_REGISTER_NUM
+	int "Max register callback nums"
+	default 4
+
 config BLUETOOTH_FRAMEWORK
 	bool "Enable bluetooth framework api"
 	default n
