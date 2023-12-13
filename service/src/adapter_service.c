@@ -1302,7 +1302,7 @@ void adapter_init(void)
     adapter->max_acl_connections = 10;
     adapter->devices = bt_list_new(adapter_delete_device);
     adapter->le_devices = bt_list_new(adapter_delete_device);
-    adapter->adapter_callbacks = bt_callbacks_list_new(2);
+    adapter->adapter_callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
     adapter->stm = adapter_state_machine_new(NULL);
     adapter->adapter_state_adv = -1;
 #ifdef CONFIG_UORB

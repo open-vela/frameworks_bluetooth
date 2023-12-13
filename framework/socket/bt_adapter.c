@@ -27,11 +27,14 @@ void *bt_adapter_register_callback(bt_instance_t *ins, const adapter_callbacks_t
     bt_status_t status;
     void *handle;
 
-    if (ins->adapter_callbacks != NULL) {
-        return NULL;
+    if (ins->adapter_callbacks) {
+        handle = bt_remote_callbacks_register(ins->adapter_callbacks, NULL, (void *)adapter_cbs);
+        return handle;
     }
 
-    ins->adapter_callbacks = bt_callbacks_list_new(2);
+    ins->adapter_callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
+    if (ins->adapter_callbacks == NULL)
+        return NULL;
 
     handle = bt_remote_callbacks_register(ins->adapter_callbacks, NULL, (void *)adapter_cbs);
     if (handle == NULL) {
@@ -57,6 +60,10 @@ bool bt_adapter_unregister_callback(bt_instance_t *ins, void *cookie)
         return false;
 
     bt_remote_callbacks_unregister(ins->adapter_callbacks, NULL, cookie);
+    if (bt_callbacks_list_count(ins->adapter_callbacks) > 0) {
+        return true;
+    }
+
     bt_callbacks_list_free(ins->adapter_callbacks);
     ins->adapter_callbacks = NULL;
 

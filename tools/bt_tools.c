@@ -79,6 +79,7 @@ static int quit_cmd(void *handle, int argc, char **argv);
 
 static bt_instance_t *g_bttool_ins = NULL;
 static void *adapter_callback = NULL;
+static void *adapter_callback2 = NULL;
 static pthread_mutex_t bt_lock;
 static pthread_cond_t disable_cond;
 static bool g_cmd_had_inited = false;
@@ -1377,6 +1378,11 @@ static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
     }
 }
 
+static void on_adapter_state_changed_cb_2(void *cookie, bt_adapter_state_t state)
+{
+    PRINT("Context2:%p, Adapter state changed: %d", cookie, state);
+}
+
 static void on_discovery_state_changed_cb(void *cookie, bt_discovery_state_t state)
 {
     PRINT("Discovery state: %s", state == BT_DISCOVERY_STATE_STARTED ? "Started" : "Stopped");
@@ -1506,6 +1512,10 @@ const static adapter_callbacks_t g_adapter_cbs = {
     .on_remote_link_mode_changed = on_remote_link_mode_changed_cb,
 };
 
+const static adapter_callbacks_t g_adapter_cbs_2 = {
+    .on_adapter_state_changed = on_adapter_state_changed_cb_2,
+};
+
 int execute_command_in_table_offset(void *handle, bt_command_t *table, uint32_t table_size, int argc, char *argv[], uint8_t offset)
 {
     int ret;
@@ -1568,7 +1578,7 @@ int main(int argc, char **argv)
     }
 
     adapter_callback = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs);
-
+    adapter_callback2 = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs_2);
     while (1) {
         printf("bttool> ");
         fflush(stdout);
@@ -1621,6 +1631,7 @@ int main(int argc, char **argv)
     }
 #endif
     bt_tool_uninit(g_bttool_ins);
+    bt_adapter_unregister_callback(g_bttool_ins, adapter_callback2);
     bt_adapter_unregister_callback(g_bttool_ins, adapter_callback);
     bluetooth_delete_instance(g_bttool_ins);
     free(buffer);

@@ -447,7 +447,7 @@ static bt_status_t pan_init(void)
     if (pthread_mutex_init(&g_pan.pan_lock, &attr) < 0)
         return BT_STATUS_FAIL;
 
-    g_pan.callbacks = bt_callbacks_list_new(2);
+    g_pan.callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
 
     return BT_STATUS_SUCCESS;
 }

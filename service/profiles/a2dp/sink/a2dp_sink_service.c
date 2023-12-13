@@ -222,7 +222,7 @@ static bt_status_t a2dp_sink_init(void)
     if (pthread_mutex_init(&g_a2dp_sink.mutex, &attr) < 0)
         return BT_STATUS_FAIL;
 
-    g_a2dp_sink.callbacks = bt_callbacks_list_new(2);
+    g_a2dp_sink.callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
 
     return BT_STATUS_SUCCESS;
 }

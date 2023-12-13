@@ -29,10 +29,11 @@ void *bt_a2dp_source_register_callbacks(bt_instance_t *ins, const a2dp_source_ca
 
   if (ins->a2dp_source_callbacks != NULL)
     {
-      return NULL;
+      handle = bt_remote_callbacks_register(ins->a2dp_source_callbacks, NULL, (void *)callbacks);
+      return handle;
     }
 
-  ins->a2dp_source_callbacks = bt_callbacks_list_new(2);
+  ins->a2dp_source_callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
 
   handle = bt_remote_callbacks_register(ins->a2dp_source_callbacks, NULL, (void *)callbacks);
   if (handle == NULL)
@@ -60,6 +61,9 @@ bool bt_a2dp_source_unregister_callbacks(bt_instance_t *ins, void *cookie)
       return false;
 
   bt_remote_callbacks_unregister(ins->a2dp_source_callbacks, NULL, cookie);
+  if (bt_callbacks_list_count(ins->a2dp_source_callbacks) > 0) {
+        return true;
+  }
   bt_callbacks_list_free(ins->a2dp_source_callbacks);
   ins->a2dp_source_callbacks = NULL;
 

@@ -195,7 +195,7 @@ static void ag_startup(profile_on_startup_t on_startup)
 
     service->max_connections = CONFIG_HFP_AG_MAX_CONNECTIONS;
     service->ag_devices = bt_list_new((bt_list_free_cb_t)ag_device_delete);
-    service->callbacks = bt_callbacks_list_new(2);
+    service->callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
     if (!service->ag_devices || !service->callbacks) {
         status = BT_STATUS_NOMEM;
         goto fail;
