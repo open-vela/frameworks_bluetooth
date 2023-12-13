@@ -30,10 +30,12 @@ void *bt_hfp_ag_register_callbacks(bt_instance_t *ins, const hfp_ag_callbacks_t 
     bt_status_t status;
     void *cookie;
 
-    if (ins->hfp_ag_callbacks != NULL)
-        return NULL;
+    if (ins->hfp_ag_callbacks != NULL) {
+        cookie = bt_remote_callbacks_register(ins->hfp_ag_callbacks, NULL, (void *)callbacks);
+        return cookie;
+    }
 
-    ins->hfp_ag_callbacks = bt_callbacks_list_new(2);
+    ins->hfp_ag_callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
 
     cookie = bt_remote_callbacks_register(ins->hfp_ag_callbacks, NULL, (void *)callbacks);
     if (cookie == NULL) {
@@ -59,6 +61,9 @@ bool bt_hfp_ag_unregister_callbacks(bt_instance_t *ins, void *cookie)
       return false;
 
     bt_remote_callbacks_unregister(ins->hfp_ag_callbacks, NULL, cookie);
+    if (bt_callbacks_list_count(ins->hfp_ag_callbacks) > 0) {
+        return true;
+    }
     bt_callbacks_list_free(ins->hfp_ag_callbacks);
     ins->hfp_ag_callbacks = NULL;
 

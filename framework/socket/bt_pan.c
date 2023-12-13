@@ -31,7 +31,8 @@ void *bt_pan_register_callbacks(bt_instance_t *ins, const pan_callbacks_t *callb
     void *handle;
 
     if (ins->panu_callbacks != NULL) {
-        return NULL;
+        handle = bt_remote_callbacks_register(ins->panu_callbacks, NULL, (void *)callbacks);
+        return handle;
     }
 
     ins->panu_callbacks = bt_callbacks_list_new(1);
@@ -60,6 +61,9 @@ bool bt_pan_unregister_callbacks(bt_instance_t *ins, void *cookie)
       return false;
 
     bt_remote_callbacks_unregister(ins->panu_callbacks, NULL, cookie);
+    if (bt_callbacks_list_count(ins->panu_callbacks) > 0) {
+        return true;
+    }
     bt_callbacks_list_free(ins->panu_callbacks);
     ins->panu_callbacks = NULL;
 

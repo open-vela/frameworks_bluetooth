@@ -136,3 +136,14 @@ void bt_callbacks_list_free(callbacks_list_t *cbsl)
     pthread_mutex_destroy(&cbsl->lock);
     free(cbsl);
 }
+
+uint8_t bt_callbacks_list_count(callbacks_list_t *cbsl)
+{
+    uint8_t registed;
+
+    pthread_mutex_lock(&cbsl->lock);
+    registed = cbsl->registed;
+    pthread_mutex_unlock(&cbsl->lock);
+
+    return registed;
+}
