@@ -87,6 +87,10 @@ bool bt_device_get_name(bt_instance_t *ins, bt_address_t *addr, char *name, uint
     return status;
   }
 
+  char *nr = packet.devs_pl._bt_device_get_name.name;
+  int len = (strlen(nr) > length ) ? length : strlen(nr);
+  memcpy(name, nr, len);
+
   return packet.devs_r.bbool;
 }
 
