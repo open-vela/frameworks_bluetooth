@@ -84,6 +84,8 @@ static int get_state_cmd(void *handle, int argc, char *argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
+    int state = bt_a2dp_sink_get_connection_state(handle, &addr);
+    PRINT("A2DP sink connection state: %d", state);
     return CMD_OK;
 }
 
