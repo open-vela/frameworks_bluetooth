@@ -24,13 +24,6 @@
 #include "bt_gattc.h"
 #include "gatt_define.h"
 
-typedef enum {
-    GATTC_STATE_DISCONNECTED = 0,
-    GATTC_STATE_DISCONNECTING,
-    GATTC_STATE_CONNECTING,
-    GATTC_STATE_CONNECTED,
-} gattc_state_t;
-
 /*
  * sal callback
  */
