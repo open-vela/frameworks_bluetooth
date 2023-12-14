@@ -471,16 +471,13 @@ static void ble_connection_updated_callback(BD_ADDR remote_addr, SERVICE_BT_STAT
                                             uint16_t supervision_timeout)
 {
 #ifdef CONFIG_BLUETOOTH_GATT
-    extern void bt_sal_gatt_client_connection_updated_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status, uint16_t connection_interval,
-                                                               uint16_t peripheral_latency, uint16_t supervision_timeout);
-    extern void bt_sal_gatt_server_connection_changed_callback(BD_ADDR remote_addr, uint16_t connection_interval,
-                                                               uint16_t peripheral_latency, uint16_t supervision_timeout);
+    bt_address_t addr;
 
-    bt_sal_gatt_client_connection_updated_callback(remote_addr, status, connection_interval,
-                                                   peripheral_latency, supervision_timeout);
+    memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
+    bt_sal_gatt_client_connection_updated_callback(&addr, connection_interval, peripheral_latency, supervision_timeout,
+                                                   sal_status_translate(status));
     if (status == SERVICE_BT_STATUS_SUCCESS) {
-        bt_sal_gatt_server_connection_changed_callback(remote_addr, connection_interval,
-                                                       peripheral_latency, supervision_timeout);
+        bt_sal_gatt_server_connection_changed_callback(&addr, connection_interval, peripheral_latency, supervision_timeout);
     }
 #endif
 }
