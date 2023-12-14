@@ -464,6 +464,11 @@ static void hf_ring_indication_callback(void *context, bt_address_t *addr, bool 
     PRINT_ADDR("hf_ring_indication_callback, addr:%s, inband-ring:%d", addr, inband_ring_tone);
 }
 
+static void hf_vol_changed_callback(void *context, bt_address_t *addr, hfp_volume_type_t type, int volume)
+{
+    PRINT_ADDR("hf_vol_changed_callback, addr:%s, type:%s, vol:%d", addr, type ? "Microphone" : "Speaker", volume);
+}
+
 static const hfp_hf_callbacks_t hfp_hf_cbs = {
     sizeof(hfp_hf_cbs),
     hf_connection_state_callback,
@@ -472,6 +477,7 @@ static const hfp_hf_callbacks_t hfp_hf_cbs = {
     hf_call_state_change_callback,
     hf_cmd_complete_callback,
     hf_ring_indication_callback,
+    hf_vol_changed_callback,
 };
 
 int hfp_hf_commond_init(void *handle)

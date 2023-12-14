@@ -78,6 +78,7 @@ void hf_service_notify_vr_state_changed(bt_address_t *addr, bool started);
 void hf_service_notify_call_state_changed(bt_address_t *addr, hfp_current_call_t *call);
 void hf_service_notify_cmd_complete(bt_address_t *addr, const char *resp);
 void hf_service_notify_ring_indication(bt_address_t *addr, bool inband_ring_tone);
+void hf_service_notify_volume_changed(bt_address_t *addr, hfp_volume_type_t type, int volume);
 bt_status_t hfp_hf_send_event(bt_address_t *addr, hfp_hf_event_t evt);
 
 typedef struct hf_interface {
