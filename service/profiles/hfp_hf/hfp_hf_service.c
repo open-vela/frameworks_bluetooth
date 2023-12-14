@@ -722,6 +722,12 @@ void hf_service_notify_ring_indication(bt_address_t *addr, bool inband_ring_tone
     HF_CALLBACK_FOREACH(g_hfp_service.callbacks, ring_indication_cb, addr, inband_ring_tone);
 }
 
+void hf_service_notify_volume_changed(bt_address_t *addr, hfp_volume_type_t type, int volume)
+{
+    BT_LOGD("%s", __func__);
+    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, vol_changed_cb, addr, type, volume);
+}
+
 void hfp_hf_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state)
 {
     hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_CONNECTION_STATE_CHANGED, addr);
