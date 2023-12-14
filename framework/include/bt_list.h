@@ -20,8 +20,8 @@
 #include <stddef.h>
 
 typedef void (*bt_list_free_cb_t)(void *data);
-typedef struct bt_list bt_list_t;
-typedef struct bt_list_node bt_list_node_t;
+typedef struct _bt_list bt_list_t;
+typedef struct _bt_list_node bt_list_node_t;
 typedef void (*bt_list_iter_cb)(void *data, void *context);
 typedef bool (*bt_list_find_cb)(void *data, void *context);
 
