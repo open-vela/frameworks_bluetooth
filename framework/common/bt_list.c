@@ -20,13 +20,13 @@
 
 #include "bt_list.h"
 
-typedef struct bt_list {
+typedef struct _bt_list {
     struct list_node list;
     size_t length;
     bt_list_free_cb_t free_cb;
 } bt_list_t;
 
-typedef struct bt_list_node {
+typedef struct _bt_list_node {
     struct list_node node;
     void *data;
 } bt_list_node_t;
