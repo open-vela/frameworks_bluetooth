@@ -448,16 +448,17 @@ static void process_bond_state_change_evt(bt_address_t *addr, bond_state_t state
             device_set_bond_state(device, BOND_STATE_BONDED);
             bt_sal_get_remote_device_info(addr, &remote);
             device_set_device_type(device, remote.device_type);
-            device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_BREDR);
             /* update bonded device info */
             adapter_update_bonded_device();
-            bt_sal_start_service_discovery(addr, NULL);
+            //device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_BREDR);
+            if (device_is_connected(device))
+                bt_sal_start_service_discovery(addr, NULL);
         }
     } else {
         device = adapter_find_create_le_device(addr, BT_LE_ADDR_TYPE_PUBLIC);
         if (state == BOND_STATE_BONDED) {
             device_set_device_type(device, BT_DEVICE_TYPE_BLE);
-            device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_LE);
+            //device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_LE);
         } else if (state == BOND_STATE_NONE) {
             device_delete_smp_key(device);
         }
