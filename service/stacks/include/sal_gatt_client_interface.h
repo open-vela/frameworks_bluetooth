@@ -34,5 +34,7 @@ bt_status_t bt_sal_gatt_client_update_connection_parameter(bt_address_t *addr, u
 bt_status_t bt_sal_gatt_client_read_remote_rssi(bt_address_t *addr);
 bt_status_t bt_sal_gatt_client_read_phy(bt_address_t *addr);
 bt_status_t bt_sal_gatt_client_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
+void bt_sal_gatt_client_connection_updated_callback(bt_address_t *addr, uint16_t connection_interval, uint16_t peripheral_latency,
+                                                    uint16_t supervision_timeout, bt_status_t status);
 
 #endif /* __SAL_GATT_CLIENT_INTERFACE_H__ */

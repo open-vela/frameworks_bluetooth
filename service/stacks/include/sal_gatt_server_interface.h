@@ -36,5 +36,7 @@ bt_status_t bt_sal_gatt_server_send_notification(bt_address_t *addr, uint16_t el
 bt_status_t bt_sal_gatt_server_send_indication(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length);
 bt_status_t bt_sal_gatt_server_read_phy(bt_address_t *addr);
 bt_status_t bt_sal_gatt_server_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
+void bt_sal_gatt_server_connection_changed_callback(bt_address_t *addr, uint16_t connection_interval, uint16_t peripheral_latency,
+                                                    uint16_t supervision_timeout);
 
 #endif /* __SAL_GATT_SERVER_INTERFACE_H__ */
