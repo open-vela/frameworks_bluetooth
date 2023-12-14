@@ -735,6 +735,7 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
         int vol = data->valueint2;
         // set media volume, need call media interface
         BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
+        hf_service_notify_volume_changed(&hfsm->addr, type, vol);
         break;
     }
     case HF_STACK_EVENT_CMD_RESPONSE: {

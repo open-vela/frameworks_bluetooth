@@ -155,6 +155,16 @@ typedef void (*hfp_hf_signal_strength_changed_callback)(void *cookie, bt_address
 typedef void (*hfp_hf_operator_changed_callback)(void *cookie, bt_address_t *addr, char *name);
 
 /**
+ * @brief HFP HF volume control callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer AG device.
+ * @param type - the type of volume, 0:gain of speaker, 1:gain of microphone.
+ * @param volume - the gain level, range 0-15.
+ */
+typedef void (*hfp_hf_volume_changed_callback)(void *cookie, bt_address_t *addr, hfp_volume_type_t type, int volume);
+
+/**
  * @brief HFP HF callback structure
  *
  */
@@ -167,6 +177,7 @@ typedef struct
     hfp_hf_call_state_change_callback call_state_changed_cb;
     hfp_hf_cmd_complete_callback cmd_complete_cb;
     hfp_hf_ring_indication_callback ring_indication_cb;
+    hfp_hf_volume_changed_callback vol_changed_cb;
 } hfp_hf_callbacks_t;
 
 /**
