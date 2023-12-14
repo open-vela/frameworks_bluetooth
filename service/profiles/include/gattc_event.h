@@ -150,7 +150,7 @@ typedef struct
          * @brief GATTC_EVENT_CONN_PARAM_UPDATE
          */
         struct gattc_conn_param_update_evt_param {
-            gatt_status_t status;
+            bt_status_t status;
             uint16_t interval;
             uint16_t latency;
             uint16_t timeout;

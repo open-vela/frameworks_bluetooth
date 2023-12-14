@@ -388,13 +388,11 @@ bt_status_t bt_sal_gatt_server_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy
     return BT_STATUS_SUCCESS;
 }
 
-void bt_sal_gatt_server_connection_changed_callback(BD_ADDR remote_addr, uint16_t connection_interval,
-                                                    uint16_t peripheral_latency, uint16_t supervision_timeout)
+void bt_sal_gatt_server_connection_changed_callback(bt_address_t *addr, uint16_t connection_interval, uint16_t peripheral_latency,
+                                                    uint16_t supervision_timeout)
 {
-    if (bt_list_find(g_peer_addr_list, peer_addr_cmp, remote_addr)) {
-        bt_address_t addr;
-        memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
-        if_gatts_on_connection_parameter_changed(&addr, connection_interval, peripheral_latency, supervision_timeout);
+    if (bt_list_find(g_peer_addr_list, peer_addr_cmp, addr->addr)) {
+        if_gatts_on_connection_parameter_changed(addr, connection_interval, peripheral_latency, supervision_timeout);
     }
 }
 

@@ -186,7 +186,7 @@ static void on_rssi_read_cb(gattc_handle_t conn_handle, gatt_status_t status, in
     packet.gattc_cb._on_rssi_read.rssi = rssi;
     bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_RSSI_READ);
 }
-static void on_conn_param_updated_cb(gattc_handle_t conn_handle, gatt_status_t status, uint16_t connection_interval,
+static void on_conn_param_updated_cb(gattc_handle_t conn_handle, bt_status_t status, uint16_t connection_interval,
                                      uint16_t peripheral_latency, uint16_t supervision_timeout)
 {
     bt_message_packet_t packet;

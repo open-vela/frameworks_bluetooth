@@ -53,7 +53,7 @@ typedef void (*gattc_notify_cb_t)(gattc_handle_t conn_handle, uint16_t attr_hand
 typedef void (*gattc_phy_read_cb_t)(gattc_handle_t conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 typedef void (*gattc_phy_updated_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 typedef void (*gattc_rssi_read_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, int32_t rssi);
-typedef void (*gattc_connection_parameter_updated_cb_t)(gattc_handle_t conn_handle, gatt_status_t status, uint16_t connection_interval,
+typedef void (*gattc_connection_parameter_updated_cb_t)(gattc_handle_t conn_handle, bt_status_t status, uint16_t connection_interval,
                                                         uint16_t peripheral_latency, uint16_t supervision_timeout);
 
 typedef struct {
