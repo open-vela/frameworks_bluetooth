@@ -80,7 +80,7 @@ typedef struct
 {
     void *remote;
     int conn_id;
-    gattc_state_t state;
+    profile_connection_state_t state;
     pthread_mutex_t conn_lock;
     void **user_phandle;
     bt_address_t remote_addr;
@@ -142,7 +142,7 @@ static void gattc_connection_delete(gattc_connection_t *connection)
     if (!connection)
         return;
 
-    if (connection->state > GATTC_STATE_DISCONNECTING)
+    if (connection->state == PROFILE_STATE_CONNECTING || connection->state == PROFILE_STATE_CONNECTED)
         bt_sal_gatt_client_disconnect(&connection->remote_addr);
     index_free(g_gattc_manager.allocator, connection->conn_id);
     bt_list_free(connection->services);
@@ -243,11 +243,12 @@ static void gattc_process_message(void *data)
     switch (msg->event) {
     case GATTC_EVENT_CONNECT_CHANGE: {
         profile_connection_state_t connect_state = msg->param.connect_change.state;
+        BT_ADDR_LOG("GATTC-CONNECTION-STATE-EVENT from:%s, state:%d", &connection->remote_addr, connect_state);
         if (connect_state == PROFILE_STATE_CONNECTED) {
-            connection->state = GATTC_STATE_CONNECTED;
+            connection->state = connect_state;
             GATT_CBACK(connection->callbacks, on_connected, connection, &connection->remote_addr);
         } else if (connect_state == PROFILE_STATE_DISCONNECTED) {
-            connection->state = GATTC_STATE_DISCONNECTED;
+            connection->state = connect_state;
             GATT_CBACK(connection->callbacks, on_disconnected, connection, &connection->remote_addr);
             bt_addr_set_empty(&connection->remote_addr);
             bt_list_clear(connection->services);
@@ -415,7 +416,39 @@ static int if_gattc_get_state(void)
 
 static int if_gattc_dump(void)
 {
-    BT_LOGD("%s", __func__);
+    bt_list_node_t *cnode;
+    bt_list_t *clist = g_gattc_manager.connections;
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    char uuid_str[40] = { 0 };
+
+    pthread_mutex_lock(&g_gattc_manager.device_lock);
+
+    for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
+        gattc_connection_t *connection = (gattc_connection_t *)bt_list_node(cnode);
+        bt_list_node_t *snode;
+        bt_list_t *slist = connection->services;
+        int s_id = 0;
+
+        bt_addr_ba2str(&connection->remote_addr, addr_str);
+        BT_LOGI("GATT Client[%d]: State:%d, Peer:%s", connection->conn_id, connection->state, addr_str);
+        for (snode = bt_list_head(slist); snode != NULL; snode = bt_list_next(slist, snode)) {
+            gattc_service_t *service = (gattc_service_t *)bt_list_node(snode);
+            gatt_element_t *element = service->elements;
+
+            BT_LOGI("\tAttribute Table[%d]: Handle:0x%04x~0x%04x, Num:%d", s_id++, service->start_handle, service->end_handle, service->element_size);
+            for (int i = 0; i < service->element_size; i++, element++) {
+                bt_uuid_to_string(&element->uuid, uuid_str, 40);
+                BT_LOGI("\t\t>[0x%04x][Type:%d][Prop:%04x][UUID:%s]", element->handle, element->type, element->properties,
+                        uuid_str);
+            }
+        }
+
+        if (bt_list_is_empty(slist))
+            BT_LOGI("\tNo Services found");
+    }
+
+    pthread_mutex_unlock(&g_gattc_manager.device_lock);
+
     return 0;
 }
 
@@ -459,7 +492,7 @@ static bt_status_t if_gattc_create_connect(void *remote, void **phandle, gattc_c
 
     connection->remote = remote;
     connection->manager = &g_gattc_manager;
-    connection->state = GATTC_STATE_DISCONNECTED;
+    connection->state = PROFILE_STATE_DISCONNECTED;
     connection->user_phandle = phandle;
     *phandle = connection;
 
@@ -496,9 +529,10 @@ static bt_status_t if_gattc_connect(void *conn_handle, bt_address_t *addr, ble_a
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
+    BT_ADDR_LOG("GATTC-CONNECT-REQUEST addr:%s", addr);
     bt_status_t status = bt_sal_gatt_client_connect(addr, addr_type);
     if (status == BT_STATUS_SUCCESS) {
-        connection->state = GATTC_STATE_CONNECTING;
+        connection->state = PROFILE_STATE_CONNECTING;
         memcpy(&connection->remote_addr, addr, sizeof(connection->remote_addr));
     }
 
@@ -512,9 +546,10 @@ static bt_status_t if_gattc_disconnect(void *conn_handle)
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
+    BT_ADDR_LOG("GATTC-DISCONNECT-REQUEST addr:%s", &connection->remote_addr);
     bt_status_t status = bt_sal_gatt_client_disconnect(&connection->remote_addr);
     if (status == BT_STATUS_SUCCESS)
-        connection->state = GATTC_STATE_DISCONNECTING;
+        connection->state = PROFILE_STATE_DISCONNECTING;
 
     return status;
 }
