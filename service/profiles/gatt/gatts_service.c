@@ -267,6 +267,7 @@ static void gatts_process_message(void *data)
     } break;
     case GATTS_EVENT_CONNECT_CHANGE: {
         profile_connection_state_t connect_state = msg->param.connect_change.state;
+        BT_ADDR_LOG("GATTS-CONNECTION-STATE-EVENT from:%s, state:%d", &msg->param.connect_change.addr, connect_state);
         if (connect_state == PROFILE_STATE_CONNECTED) {
             GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_connected, &msg->param.connect_change.addr);
         } else if (connect_state == PROFILE_STATE_DISCONNECTED) {
@@ -459,7 +460,38 @@ static int if_gatts_get_state(void)
 
 static int if_gatts_dump(void)
 {
-    BT_LOGD("%s", __func__);
+    bt_list_node_t *snode;
+    bt_list_t *slist = g_gatts_manager.services;
+    int s_id = 0;
+    char uuid_str[40] = { 0 };
+
+    pthread_mutex_lock(&g_gatts_manager.device_lock);
+
+    for (snode = bt_list_head(slist); snode != NULL; snode = bt_list_next(slist, snode)) {
+        gatts_service_t *service = (gatts_service_t *)bt_list_node(snode);
+        bt_list_node_t *tnode;
+        bt_list_t *tlist = service->tables;
+        int t_id = 0;
+
+        BT_LOGI("GATT Service[%d]: ID:0x%04x", s_id++, service->srv_id);
+        for (tnode = bt_list_head(tlist); tnode != NULL; tnode = bt_list_next(tlist, tnode)) {
+            service_table_t *table = (service_table_t *)bt_list_node(tnode);
+            gatt_element_t *element = table->elements;
+
+            BT_LOGI("\tAttribute Table[%d]: Handle:0x%04x~0x%04x, Num:%d", t_id++, table->start_handle, table->end_handle, table->element_size);
+            for (int i = 0; i < table->element_size; i++, element++) {
+                bt_uuid_to_string(&element->uuid, uuid_str, 40);
+                BT_LOGI("\t\t>[0x%04x][Type:%d][Prop:%04x][UUID:%s]", element->handle, element->type, element->properties,
+                        uuid_str);
+            }
+        }
+
+        if (bt_list_is_empty(tlist))
+            BT_LOGI("\tNo Attributes were added");
+    }
+
+    pthread_mutex_unlock(&g_gatts_manager.device_lock);
+
     return 0;
 }
 
@@ -524,6 +556,7 @@ static bt_status_t if_gatts_connect(void *srv_handle, bt_address_t *addr, ble_ad
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
+    BT_ADDR_LOG("GATTS-CONNECT-REQUEST addr:%s", addr);
     return bt_sal_gatt_server_connect(addr, addr_type);
 }
 
@@ -534,6 +567,7 @@ static bt_status_t if_gatts_disconnect(void *srv_handle, bt_address_t *addr)
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
+    BT_ADDR_LOG("GATTS-DISCONNECT-REQUEST addr:%s", addr);
     return bt_sal_gatt_server_cancel_connection(addr);
 }
 

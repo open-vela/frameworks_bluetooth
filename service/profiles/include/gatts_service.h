@@ -24,13 +24,6 @@
 #include "bt_gatts.h"
 #include "gatt_define.h"
 
-typedef enum {
-    GATTS_CONN_STATE_DISCONNECTED = 0,
-    GATTS_CONN_STATE_DISCONNECTING,
-    GATTS_CONN_STATE_CONNECTING,
-    GATTS_CONN_STATE_CONNECTED,
-} gatts_conn_state_t;
-
 /*
  * sal callback
  */
