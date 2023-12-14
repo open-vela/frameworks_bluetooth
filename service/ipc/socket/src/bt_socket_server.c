@@ -52,7 +52,7 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-
+static bt_list_t *g_instances_list = NULL;
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -67,6 +67,15 @@ typedef struct
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
+static bool ins_compare(void *data, void *context)
+{
+    return data == context;
+}
+
+static bool bt_socket_server_is_ins_detached(bt_instance_t *ins)
+{
+    return (bt_list_find(g_instances_list, ins_compare, ins) == NULL);
+}
 
 static int bt_socket_server_send_internal(bt_instance_t *ins,
                                           void *packet, int size, int offset)
@@ -209,6 +218,7 @@ static void bt_socket_server_ins_release(bt_instance_t *ins)
     if (ins->peer_fd)
         close(ins->peer_fd);
 
+    bt_list_remove(g_instances_list, ins);
     free(ins);
 }
 
@@ -265,6 +275,7 @@ static void bt_socket_server_callback(service_poll_t *poll,
             free(remote_ins);
             close(fd);
         }
+        bt_list_add_tail(g_instances_list, remote_ins);
     }
 }
 
@@ -280,6 +291,8 @@ static int bt_socket_server_listen(int family, const char *name, int port)
     int addr_len;
     int ret;
     int fd;
+
+    g_instances_list = bt_list_new(NULL);
 
     fd = socket(family, SOCK_STREAM | SOCK_NONBLOCK, 0);
     if (fd < 0)
@@ -325,6 +338,9 @@ int bt_socket_server_send(bt_instance_t *ins, bt_message_packet_t *packet,
     bt_packet_cache_t *cache;
     int ret;
 
+    if (bt_socket_server_is_ins_detached(ins))
+        return -1;
+
     packet->code = code;
 
     ret = bt_socket_server_trysend(ins);
@@ -351,7 +367,7 @@ int bt_socket_server_send(bt_instance_t *ins, bt_message_packet_t *packet,
         service_loop_reset_poll(ins->poll, POLL_READABLE | POLL_WRITABLE);
     }
 
-    return BT_STATUS_SUCCESS;
+    return 0;
 }
 
 int bt_socket_server_init(const char *name, int port)
@@ -367,6 +383,7 @@ int bt_socket_server_init(const char *name, int port)
     int rpmsg = -1;
 #endif
 
+    g_instances_list = bt_list_new(NULL);
     local = bt_socket_server_listen(PF_LOCAL, name, port);
     if (local > 0) {
         lpoll = service_loop_poll_fd(local, POLL_READABLE,
@@ -399,6 +416,8 @@ int bt_socket_server_init(const char *name, int port)
     return OK;
 
 fail:
+    if (g_instances_list)
+        bt_list_free(g_instances_list);
     if (lpoll != NULL)
         service_loop_remove_poll(lpoll);
     if (local > 0)
