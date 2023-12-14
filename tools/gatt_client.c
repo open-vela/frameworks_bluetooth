@@ -536,7 +536,7 @@ static void rssi_read_callback(void *conn_handle, gatt_status_t status, int32_t 
     PRINT("gattc read rssi complete, status:%d, rssi:%" PRIi32, status, rssi);
 }
 
-static void conn_param_updated_callback(void *conn_handle, gatt_status_t status, uint16_t connection_interval,
+static void conn_param_updated_callback(void *conn_handle, bt_status_t status, uint16_t connection_interval,
                                         uint16_t peripheral_latency, uint16_t supervision_timeout)
 {
     PRINT("gattc connection paramter updated, status:%d, interval:%" PRIu16 ", latency:%" PRIu16 ", timeout:%" PRIu16,
