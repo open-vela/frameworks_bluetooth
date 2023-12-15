@@ -200,7 +200,7 @@ static void pty_read_cb(euv_pty_t* handle, const uint8_t* buf, ssize_t size)
     if (size > 0)
         spp_data_received(handle, buf, size);
     else if (size < 0) {
-        BT_LOGE("%s read failed, status:%d", __func__, size);
+        BT_LOGE("%s read failed, status:%zd", __func__, size);
         euv_pty_read_stop(handle);
         euv_pty_close(handle);
     }
