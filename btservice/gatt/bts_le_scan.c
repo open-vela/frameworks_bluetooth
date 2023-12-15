@@ -121,7 +121,7 @@ static bts_lescan_msg_t* create_adp_msg(uint8_t event, uint8_t scanner_id, void*
     CHECK_PTR_RETURN(msg, NULL);
 
     if (size < 0) {
-        BT_LOGE("fail, invlaid size:%d", size);
+        BT_LOGE("fail, invlaid size:%zu", size);
         return NULL;
     }
     msg->event = event;

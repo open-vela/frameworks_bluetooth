@@ -176,7 +176,7 @@ static bts_gatts_msg_t* create_adp_msg(uint8_t event, bts_gatts_hdl_t* handle, v
     CHECK_PTR_RETURN(msg, NULL);
 
     if (size < 0) {
-        BT_LOGE("fail, invlaid size:%d", size);
+        BT_LOGE("fail, invlaid size:%zu", size);
         return NULL;
     }
     msg->event = event;
