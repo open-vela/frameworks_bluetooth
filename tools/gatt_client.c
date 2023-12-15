@@ -596,7 +596,7 @@ static int gattc_write_request(void* handle, int argc, char** argv)
     }
     memcpy(payload, argv[2], size);
 
-    BT_LOGD("%s, remote_addr:%s, id:%" PRIu32 ", size:%d, value", __func__, addr_str(remote_address), id, size);
+    BT_LOGD("%s, remote_addr:%s, id:%" PRIu32 ", size:%zu, value", __func__, addr_str(remote_address), id, size);
     BT_HEXDUMP(payload, size);
     gattc_device_t* device = find_gattc_device(remote_address);
     if (!device) {

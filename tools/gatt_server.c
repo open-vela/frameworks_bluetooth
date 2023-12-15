@@ -231,14 +231,14 @@ static void test_server_closed_callback(void* handle)
 static void test_server_service_added_callback(void* handle, gatt_status status, gatt_element_t* element,
     size_t size)
 {
-    BT_LOGD("%s, status: %d, size: %d", __func__, status, size);
+    BT_LOGD("%s, status: %d, size: %zu", __func__, status, size);
     gatt_display_service(element, size);
 }
 
 static void test_server_service_removed_callback(void* handle, gatt_status status, gatt_element_t* element,
     size_t size)
 {
-    BT_LOGD("%s, status: %d, size: %d", __func__, status, size);
+    BT_LOGD("%s, status: %d, size: %zu", __func__, status, size);
     gatt_display_service(element, size);
 }
 
