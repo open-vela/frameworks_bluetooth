@@ -38,9 +38,11 @@
 #include "advertising.h"
 #include "bt_le_scan.h"
 #include "sal_adapter_interface.h"
+#include "scan_manager.h"
+#endif
+#ifdef CONFIG_BLUETOOTH_GATT
 #include "sal_gatt_client_interface.h"
 #include "sal_gatt_server_interface.h"
-#include "scan_manager.h"
 #endif
 #include "utils/log.h"
 
