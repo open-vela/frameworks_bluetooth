@@ -151,7 +151,7 @@ static void bts_a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t
     int space;
 
     if (buffer == NULL || len <= 0) {
-        BT_LOGD("%s, status:%d", __func__, len);
+        BT_LOGD("%s, status:%zd", __func__, len);
         if (len < 0)
             a2dp_ipc_read_stop(a2dp_ipc, ch_id);
 
@@ -166,7 +166,7 @@ static void bts_a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t
 
     space = circbuf_space(&stream->stream_pool);
     if (len > space) {
-        BT_LOGE("%s, unexpected len:%d", __func__, len);
+        BT_LOGE("%s, unexpected len:%zd", __func__, len);
         goto out;
     }
 
@@ -339,7 +339,7 @@ static void bts_a2dp_source_start_audio_req(void)
 
 static void bts_a2dp_source_stop_audio_req(bool cleanup)
 {
-    BT_LOGD("%s, remaining:%d", __func__, circbuf_used(&a2dp_src_stream.stream_pool));
+    BT_LOGD("%s, remaining:%zu", __func__, circbuf_used(&a2dp_src_stream.stream_pool));
 
     if (cleanup)
         memset(&a2dp_src_stream.underflow, 0, sizeof(a2dp_source_underflow_t));

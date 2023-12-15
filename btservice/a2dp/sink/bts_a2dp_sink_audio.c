@@ -30,18 +30,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
+#include <nuttx/list.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <nuttx/list.h>
 
 #include "stack_adapter_a2dp_sink.h"
 #include "stack_adapter_service_base.h"
 
-#include "bts_service.h"
+#include "a2dp_ipc.h"
 #include "bts_a2dp_control.h"
 #include "bts_a2dp_sink.h"
 #include "bts_a2dp_sink_audio.h"
-#include "a2dp_ipc.h"
+#include "bts_service.h"
 #include "utils/utils.h"
 
 #define LOG_TAG "a2dp_snk_stream"
@@ -59,23 +59,23 @@ typedef enum {
 } stream_state_t;
 
 typedef struct {
-    uint8_t          codec_info[10];
-    uint8_t          packet_sending_cnt;
-    uint64_t         underflow_ts;
-    uint64_t         last_ts;
-    uint32_t         block_ticks;
-    bool             ready;
-    stream_state_t   state;
-    uv_mutex_t       queue_lock;
-    uv_timer_t*      media_alarm;
+    uint8_t codec_info[10];
+    uint8_t packet_sending_cnt;
+    uint64_t underflow_ts;
+    uint64_t last_ts;
+    uint32_t block_ticks;
+    bool ready;
+    stream_state_t state;
+    uv_mutex_t queue_lock;
+    uv_timer_t* media_alarm;
     struct list_node packet_queue;
-    const a2dp_sink_stream_interface_t *stream_interface;
+    const a2dp_sink_stream_interface_t* stream_interface;
 } a2dp_sink_stream_t;
 
 extern a2dp_ipc_t* a2dp_ipc;
-a2dp_sink_stream_t sink_stream = {0};
+a2dp_sink_stream_t sink_stream = { 0 };
 
-static const a2dp_sink_stream_interface_t *get_stream_interface(void)
+static const a2dp_sink_stream_interface_t* get_stream_interface(void)
 {
     a2dp_codec_config_t* config;
 
@@ -120,7 +120,7 @@ static void a2dp_sink_audio_handle_timer(char* arg)
 
     uint64_t now_us = get_os_timestamp_us();
     if (stream->last_ts && ((now_us - stream->last_ts) > 30000))
-        BT_LOGE("===a2dp cpu busy time:%lld, buff_cnt:%d===", now_us - stream->last_ts, list_length(&sink_stream.packet_queue));
+        BT_LOGE("===a2dp cpu busy time:%" PRId64 ", buff_cnt:%zu===", now_us - stream->last_ts, list_length(&sink_stream.packet_queue));
     stream->last_ts = now_us;
 
     uv_mutex_lock(&stream->queue_lock);
@@ -148,9 +148,9 @@ static void a2dp_sink_audio_handle_timer(char* arg)
         stream->block_ticks = 0;
         packet = (a2dp_sink_packet_t*)node;
         ret = a2dp_ipc_write(a2dp_ipc,
-                       A2DP_IPC_CH_ID_AV_SINK_AUDIO,
-                       packet->data, packet->length,
-                       a2dp_sink_write_done);
+            A2DP_IPC_CH_ID_AV_SINK_AUDIO,
+            packet->data, packet->length,
+            a2dp_sink_write_done);
         if (ret != 0) {
             BT_LOGE("%s, packet write failed", __func__);
             goto out;
@@ -166,7 +166,7 @@ out:
     uv_mutex_unlock(&stream->queue_lock);
 }
 
-void bts_a2dp_sink_packet_recieve(a2dp_sink_packet_t *packet)
+void bts_a2dp_sink_packet_recieve(a2dp_sink_packet_t* packet)
 {
     a2dp_sink_stream_t* stream = &sink_stream;
     struct list_node* queue = &stream->packet_queue;
@@ -190,23 +190,22 @@ void bts_a2dp_sink_packet_recieve(a2dp_sink_packet_t *packet)
     }
 
     list_add_tail(queue, &packet->node);
-    if (list_length(queue) >= A2DP_MAX_DELAY_PACKET_COUNT &&
-        !stream->media_alarm) {
+    if (list_length(queue) >= A2DP_MAX_DELAY_PACKET_COUNT && !stream->media_alarm) {
         BT_LOGD("%s start trans packet", __func__);
         stream->underflow_ts = 0;
         stream->last_ts = 0;
         stream->block_ticks = 0;
         sink_stream.media_alarm = start_timer(10,
-                                              A2DP_SINK_MEDIA_TICK_MS,
-                                              a2dp_sink_audio_handle_timer,
-                                              NULL);
+            A2DP_SINK_MEDIA_TICK_MS,
+            a2dp_sink_audio_handle_timer,
+            NULL);
         if (sink_stream.media_alarm == NULL)
             BT_LOGE("%s, media_alarm start error", __func__);
     }
     uv_mutex_unlock(&stream->queue_lock);
 }
 
-a2dp_sink_packet_t* bts_a2dp_sink_new_packet(uint32_t timestamp, uint16_t seq, uint8_t *data, uint16_t length)
+a2dp_sink_packet_t* bts_a2dp_sink_new_packet(uint32_t timestamp, uint16_t seq, uint8_t* data, uint16_t length)
 {
     (void)seq;
     (void)timestamp;
@@ -217,7 +216,7 @@ a2dp_sink_packet_t* bts_a2dp_sink_new_packet(uint32_t timestamp, uint16_t seq, u
         return NULL;
 }
 
-//TODO: check active peer
+// TODO: check active peer
 void bts_a2dp_sink_on_connection_changed(bool connected)
 {
     BT_LOGD("%s, %d", __func__, connected);
