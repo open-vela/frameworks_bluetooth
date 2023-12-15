@@ -34,8 +34,9 @@
 #ifndef __BT_LOG_H__
 #define __BT_LOG_H__
 
-#include <syslog.h>
+#include <debug.h>
 #include <stdarg.h>
+#include <syslog.h>
 
 #ifndef LOG_TAG
 #define LOG_TAG "BT"
@@ -45,16 +46,16 @@
 #define __S_LINE(x) _S_LINE(x)
 #define __S_LINE__ __S_LINE(__LINE__)
 
-#define LOG_ID_SNOOP        0
-#define LOG_ID_STACK        1
-#define LOG_ID_FRAMEWORK    2
+#define LOG_ID_SNOOP 0
+#define LOG_ID_STACK 1
+#define LOG_ID_FRAMEWORK 2
 
 enum bt_log_level_ {
-    BT_LOG_LEVEL_OFF     = 0x0,
-    BT_LOG_LEVEL_ERROR   = LOG_ERR,
+    BT_LOG_LEVEL_OFF = 0x0,
+    BT_LOG_LEVEL_ERROR = LOG_ERR,
     BT_LOG_LEVEL_WARNING = LOG_WARNING,
-    BT_LOG_LEVEL_INFO    = LOG_INFO,
-    BT_LOG_LEVEL_DEBUG   = LOG_DEBUG,
+    BT_LOG_LEVEL_INFO = LOG_INFO,
+    BT_LOG_LEVEL_DEBUG = LOG_DEBUG,
 };
 
 #ifndef CONFIG_BT_FRAMEWORK_LOG_LEVEL
@@ -69,39 +70,37 @@ extern bool utils_log_print_check(uint8_t level);
 
 #define DEFAULT_BT_LOG_LEVEL CONFIG_BT_FRAMEWORK_LOG_LEVEL
 
-#define BT_LOG(id, level, fmt, args...) syslog(level, "["__S_LINE__"]" "["LOG_TAG"]" ": " fmt "\n", ##args);
-#define BT_LOGE(fmt, ...) \
-    do { if (utils_log_print_check(BT_LOG_LEVEL_ERROR)) BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__);} while (0);
-#define BT_LOGW(fmt, ...) \
-    do { if (utils_log_print_check(BT_LOG_LEVEL_WARNING)) BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_WARNING, fmt, ##__VA_ARGS__);} while (0);
-#define BT_LOGI(fmt, ...) \
-    do { if (utils_log_print_check(BT_LOG_LEVEL_INFO)) BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_INFO, fmt, ##__VA_ARGS__);} while (0);
-#define BT_LOGD(fmt, ...) \
-    do { if (utils_log_print_check(BT_LOG_LEVEL_DEBUG)) BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__);} while (0);
+#define BT_LOG(id, level, fmt, args...) syslog(level, "["__S_LINE__   \
+                                                      "]"             \
+                                                      "[" LOG_TAG "]" \
+                                                      ": " fmt "\n",  \
+    ##args);
+#define BT_LOGE(fmt, ...)                                                     \
+    do {                                                                      \
+        if (utils_log_print_check(BT_LOG_LEVEL_ERROR))                        \
+            BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__); \
+    } while (0);
+#define BT_LOGW(fmt, ...)                                                       \
+    do {                                                                        \
+        if (utils_log_print_check(BT_LOG_LEVEL_WARNING))                        \
+            BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_WARNING, fmt, ##__VA_ARGS__); \
+    } while (0);
+#define BT_LOGI(fmt, ...)                                                    \
+    do {                                                                     \
+        if (utils_log_print_check(BT_LOG_LEVEL_INFO))                        \
+            BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_INFO, fmt, ##__VA_ARGS__); \
+    } while (0);
+#define BT_LOGD(fmt, ...)                                                     \
+    do {                                                                      \
+        if (utils_log_print_check(BT_LOG_LEVEL_DEBUG))                        \
+            BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__); \
+    } while (0);
 #endif
 
 #define BT_ADDR_LOGD(fmt, args...) syslog(6, LOG_TAG ": " fmt "\n", ##args)
 
-#define BT_HEXDUMP_MAX 1024 
-#define BT_HEXDUMP(array, size)  do { \
-        if( size < 1) { \
-            break; \
-        } \
-        if (size > BT_HEXDUMP_MAX) { \
-            BT_LOGE("error, size:%d over flow(%d)", size, BT_HEXDUMP_MAX); \
-            break; \
-        } \
-        uint8_t* bytes = (uint8_t*)array; \
-        char hexstring[BT_HEXDUMP_MAX] = ""; \
-        char hex[8] = "" ; \
-        for (int i = 0; i < size; i++) { \
-            sprintf(hex, "0X%02X ", bytes[i]); \
-            strcat(hexstring, hex); \
-            fflush(stdout); \
-        } \
-        syslog(6, "[D] " "[" LOG_TAG "]" ": %s" "\n",  hexstring); \
-    } while(0)
- 
+#define BT_HEXDUMP(array, size) lib_dumpbuffer("BT_HEXDUMP: ", array, (uint32_t)size)
+
 void utils_log_init(void);
 int utils_log_enable(int id);
 int utils_log_disable(int id);
