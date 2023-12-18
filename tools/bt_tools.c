@@ -1579,6 +1579,9 @@ int main(int argc, char **argv)
 
     adapter_callback = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs);
     adapter_callback2 = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs_2);
+    if (bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_ON)
+        bt_tool_init(g_bttool_ins);
+
     while (1) {
         printf("bttool> ");
         fflush(stdout);
@@ -1625,12 +1628,13 @@ int main(int argc, char **argv)
         }
     }
 
-#ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
     if (bt_adapter_get_state(g_bttool_ins) != BT_ADAPTER_STATE_OFF) {
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
         do_disable_wait(g_bttool_ins);
-    }
 #endif
-    bt_tool_uninit(g_bttool_ins);
+    } else {
+        bt_tool_uninit(g_bttool_ins);
+    }
     bt_adapter_unregister_callback(g_bttool_ins, adapter_callback2);
     bt_adapter_unregister_callback(g_bttool_ins, adapter_callback);
     bluetooth_delete_instance(g_bttool_ins);
