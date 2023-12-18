@@ -61,9 +61,11 @@ endif #CONFIG_BLUETOOTH_BLE_AUDIO
 	CSRCS += service/profiles/*.c
 	CSRCS += service/profiles/system/*.c
 ifeq ($(CONFIG_BLUETOOTH_A2DP),)
-  CSRCS := $(filter-out $(wildcard service/profiles/system/bt_player.c),$(wildcard $(CSRCS)))
-  CSRCS := $(filter-out $(wildcard service/profiles/system/media_system.c),$(wildcard $(CSRCS)))
+	CSRCS := $(filter-out $(wildcard service/profiles/system/bt_player.c),$(wildcard $(CSRCS)))
 endif #CONFIG_BLUETOOTH_A2DP
+ifeq ($(findstring y, $(CONFIG_BLUETOOTH_A2DP)_$(CONFIG_BLUETOOTH_HFP_AG)_$(CONFIG_BLUETOOTH_HFP_HF)), )
+	CSRCS := $(filter-out $(wildcard service/profiles/system/media_system.c),$(wildcard $(CSRCS)))
+endif #CONFIG_BLUETOOTH_A2DP/CONFIG_BLUETOOTH_HFP_AG/CONFIG_BLUETOOTH_HFP_HF
 	CSRCS += service/profiles/audio_interface/*.c
 ifeq ($(CONFIG_BLUETOOTH_GATT), y)
 	CSRCS += service/profiles/gatt/*.c
