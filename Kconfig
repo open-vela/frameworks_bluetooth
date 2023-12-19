@@ -208,7 +208,6 @@ config BLUETOOTH_PAN
 	bool "Personal area network profile support"
 	default n
 	depends on ALLOW_BSD_COMPONENTS
-	depends on NET_TUN
 	help
 		config NET_TUN_PKTSIZE should set 1518
 
