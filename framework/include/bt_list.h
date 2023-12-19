@@ -16,6 +16,10 @@
 #ifndef __BT_LIST_H__
 #define __BT_LIST_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -41,4 +45,9 @@ void bt_list_remove(bt_list_t *list, void *data);
 void bt_list_move(bt_list_t *src, bt_list_t *des, void *data);
 void bt_list_foreach(bt_list_t *list, bt_list_iter_cb cb, void *context);
 void *bt_list_find(bt_list_t *list, bt_list_find_cb cb, void *context);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* __BT_LIST_H__ */

@@ -15,7 +15,9 @@
  ***************************************************************************/
 #ifndef __BT_A2DP_SINK_H__
 #define __BT_A2DP_SINK_H__
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "bt_a2dp.h"
 
 #ifndef BTSYMBOLS
@@ -41,4 +43,7 @@ bt_status_t BTSYMBOLS(bt_a2dp_sink_connect)(bt_instance_t *ins, bt_address_t *ad
 bt_status_t BTSYMBOLS(bt_a2dp_sink_disconnect)(bt_instance_t *ins, bt_address_t *addr);
 bt_status_t BTSYMBOLS(bt_a2dp_sink_set_active_device)(bt_instance_t *ins, bt_address_t *addr);
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* __BT_A2DP_SINK_H__ */
