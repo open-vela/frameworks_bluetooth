@@ -38,7 +38,6 @@
 #include "utils/log.h"
 
 #define PAN_MAX_CONNECTIONS   1
-#define TAP_MAX_PKT_WRITE_LEN (CONFIG_NET_TUN_PKTSIZE - sizeof(eth_hdr_t))
 #define PAN_DEV_NAME          "bt-pan"
 
 #define PAN_CALLBACK_FOREACH(_list, _cback, ...) BT_CALLBACK_FOREACH(_list, pan_callbacks_t, _cback, ##__VA_ARGS__)
@@ -47,6 +46,7 @@ typedef struct {
     struct list_node conn_list;
     bool enable;
     int tun_fd;
+    int tun_packet_size;
     char tun_devname[16];
     int local_role;
     bt_address_t peer_addr;
@@ -96,7 +96,7 @@ typedef struct eth_hdr {
 } eth_hdr_t;
 
 static pan_global_t g_pan = { 0 };
-static uint8_t pan_read_buf[TAP_MAX_PKT_WRITE_LEN];
+static uint8_t* pan_read_buf = NULL;
 
 static pan_conn_t *pan_find_conn(bt_address_t *addr);
 static void pan_conn_close(pan_conn_t *conn);
@@ -213,7 +213,7 @@ static void pan_tap_poll_data(service_poll_t *poll, int revent, void *userdata)
     eth_hdr_t ethhdr;
 
     if (revent & POLL_READABLE) {
-        int ret = read(g_pan.tun_fd, pan_read_buf, TAP_MAX_PKT_WRITE_LEN);
+        int ret = read(g_pan.tun_fd, pan_read_buf, g_pan.tun_packet_size);
         if (ret > 0) {
             memcpy(&ethhdr, pan_read_buf, sizeof(eth_hdr_t));
             bt_sal_pan_write(&g_pan.peer_addr, ntohs(ethhdr.h_proto),
@@ -232,6 +232,32 @@ static void pan_tap_poll_data(service_poll_t *poll, int revent, void *userdata)
     BT_LOGE("%s poll disconnected", __func__);
     /* any poll error, need close all pan connection */
     pan_close_all_conn();
+}
+
+
+static int pan_get_tun_packet_size(const char* devname)
+{
+    int errcode, ret, sockfd;
+    struct ifreq ifr = { 0 };
+
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
+        BT_LOGE("ERROR: Can't open socket: %d\n", sockfd);
+        return -1;
+    }
+
+    strlcpy(ifr.ifr_name, devname, IFNAMSIZ);
+    ifr.ifr_ifindex = if_nametoindex(ifr.ifr_name);
+    ret = ioctl(sockfd, SIOCGIFMTU, &ifr);
+    if (ret < 0) {
+        errcode = errno;
+        BT_LOGE("ERROR: ioctl SIOCGIFMTU failed: %d\n", errcode);
+        close(sockfd);
+        return -1;
+    }
+
+    close(sockfd);
+    return ifr.ifr_mtu - sizeof(eth_hdr_t);
 }
 
 static pan_conn_t *pan_new_conn_open(bt_address_t *addr, uint8_t local, uint8_t remote)
@@ -254,6 +280,17 @@ static pan_conn_t *pan_new_conn_open(bt_address_t *addr, uint8_t local, uint8_t 
         ret = pan_tap_bridge_open(PAN_DEV_NAME);
         if (ret < 0)
             goto open_fail;
+
+        ret = pan_get_tun_packet_size(PAN_DEV_NAME);
+        if (ret < 0)
+            goto open_fail;
+
+        g_pan.tun_packet_size = ret;
+        pan_read_buf = malloc(g_pan.tun_packet_size);
+        if (pan_read_buf == NULL) {
+            BT_LOGE("%s packet malloc failed", __func__);
+            goto open_fail;
+        }
 
         g_pan.poll_handle = service_loop_poll_fd(g_pan.tun_fd,
                                                  POLL_DISCONNECT | POLL_READABLE,
@@ -287,6 +324,11 @@ static void pan_conn_close(pan_conn_t *conn)
         if (g_pan.poll_handle) {
             service_loop_remove_poll(g_pan.poll_handle);
             g_pan.poll_handle = NULL;
+        }
+
+        if (pan_read_buf) {
+            free(pan_read_buf);
+            pan_read_buf = NULL;
         }
 
         if (g_pan.tun_fd) {
@@ -412,7 +454,7 @@ void pan_on_data_received(bt_address_t *addr, uint16_t protocol,
     ethhdr.h_proto = htons(protocol);
 
     /* malloc packet with eth header */
-    packet = malloc(TAP_MAX_PKT_WRITE_LEN + sizeof(ethhdr));
+    packet = malloc(g_pan.tun_packet_size + sizeof(ethhdr));
     if (packet == NULL) {
         free(pan_msg);
         BT_LOGE("%s packet malloc failed", __func__);
@@ -423,7 +465,7 @@ void pan_on_data_received(bt_address_t *addr, uint16_t protocol,
     memcpy(packet, &ethhdr, sizeof(eth_hdr_t));
 
     /* copy protocol data to packet buffer */
-    if (length > TAP_MAX_PKT_WRITE_LEN) {
+    if (length > g_pan.tun_packet_size) {
         free(packet);
         free(pan_msg);
         BT_LOGE("send eth packet size:%d is exceeded limit!", length);
