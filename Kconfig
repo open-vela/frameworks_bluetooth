@@ -234,13 +234,6 @@ endchoice
 endif #BLUETOOTH_FRAMEWORK
 
 if BLUETOOTH_FRAMEWORK_SOCKET_IPC
-
-config BLUETOOTH_RPMSG_CPUNAME
-	string "Blutooth rpmsg cpu name"
-	default "cp"
-	help
-		Bluetooth rpmsg cpu name
-
 config BLUETOOTH_RPMSG_CPUNAME
 	string "Blutooth rpmsg cpu name"
 	default "cp"
