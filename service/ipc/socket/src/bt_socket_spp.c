@@ -157,17 +157,39 @@ void bt_socket_server_spp_process(service_poll_t *poll,
 }
 #endif
 
+#if !defined(CONFIG_BLUETOOTH_SERVER) && defined(CONFIG_BLUETOOTH_RPMSG_CPUNAME)
+static bool rpmsg_tty_mount_path(const char *src, char *dest, int len, const char *mount_cpu)
+{
+    char *path = strstr(src, "/dev/");
+
+    if (!path || path != src) {
+        return false;
+    }
+
+    if (snprintf(dest, len, "/dev/%s/%s", mount_cpu, src + 5) < 0)
+        return false;
+
+    return true;
+}
+#endif
+
 int bt_socket_client_spp_callback(service_poll_t *poll,
                                   int fd, bt_instance_t *ins, bt_message_packet_t *packet)
 {
     switch (packet->code) {
     case BT_SPP_PTY_OPEN_CB: {
+        char *name = packet->spp_cb._pty_open_cb.name;
+#if !defined(CONFIG_BLUETOOTH_SERVER) && defined(CONFIG_BLUETOOTH_RPMSG_CPUNAME)
+        char rename[64];
+        if (rpmsg_tty_mount_path(name, rename, 64, CONFIG_BLUETOOTH_RPMSG_CPUNAME))
+            name = rename;
+#endif
         CALLBACK_FOREACH(CBLIST, spp_callbacks_t,
                          pty_open_cb,
                          &packet->spp_cb._pty_open_cb.addr,
                          packet->spp_cb._pty_open_cb.scn,
                          packet->spp_cb._pty_open_cb.port,
-                         packet->spp_cb._pty_open_cb.name);
+                         name);
         break;
     }
     case BT_SPP_CONNECTION_STATE_CB: {
