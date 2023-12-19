@@ -333,6 +333,7 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
                           const char *name, const char *cpu, int port)
 {
     uv_poll_t *poll;
+    int retry = 3;
 
     ins->client_loop = malloc(sizeof(uv_loop_t));
     if (!ins->client_loop)
@@ -357,11 +358,21 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
     uv_cond_init(&ins->cond);
     uv_mutex_init(&ins->mutex);
 
-    ins->peer_fd = bt_socket_client_connect(family, name, cpu, port);
-    if (ins->peer_fd <= 0) {
-        bt_socket_client_deinit(ins);
-        return BT_STATUS_PARM_INVALID;
-    }
+    do {
+        ins->peer_fd = bt_socket_client_connect(family, name, cpu, port);
+        if (ins->peer_fd <= 0 && !retry) {
+            /* connect fail, go out */
+            bt_socket_client_deinit(ins);
+            return BT_STATUS_PARM_INVALID;
+        } else if (ins->peer_fd <= 0) {
+            /* connect fail, retry after sleep 100ms */
+            usleep(100000);
+            continue;
+        } else {
+            /* success, goto next step */
+            break;
+        }
+    } while (retry--);
 
     poll = thread_loop_poll_fd(ins->client_loop, ins->peer_fd, UV_READABLE,
                                 bt_socket_client_handle_event, ins);
