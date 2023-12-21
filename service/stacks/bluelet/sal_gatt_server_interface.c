@@ -33,20 +33,12 @@ typedef struct {
     uint16_t start_handle;
     uint16_t end_handle;
     int elements_size;
-    SERVICE_GATT_ELEMENT_S *elements;
+    SERVICE_GATT_ELEMENT_S elements[0];
 } sal_gatt_database_t;
 
 static pthread_mutex_t db_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static bt_list_t *g_gatt_db_list = NULL;
 static bt_list_t *g_peer_addr_list = NULL;
-
-static void gatt_db_free(void *data)
-{
-    sal_gatt_database_t *db_group = (sal_gatt_database_t *)data;
-    if (db_group->elements)
-        free(db_group->elements);
-    free(db_group);
-}
 
 static bool gatt_db_group_cmp(void *gatt_db, void *handle)
 {
@@ -127,11 +119,12 @@ static void gatts_elements_added_callback(SERVICE_GATT_STATUS status, SERVICE_GA
 static void gatts_elements_removed_callback(SERVICE_GATT_STATUS status, SERVICE_GATT_ELEMENT_S *elements, uint16_t size)
 {
     sal_gatt_database_t *db_group;
-    uint16_t element_id = elements->id;
+    uint16_t element_id;
 
     if (!g_gatt_db_list)
         return;
 
+    element_id = elements->id;
     pthread_mutex_lock(&db_lock);
     db_group = bt_list_find(g_gatt_db_list, gatt_db_group_cmp, &element_id);
     if (db_group != NULL) {
@@ -206,7 +199,7 @@ bt_status_t bt_sal_gatt_server_enable(void)
 {
     SAL_CHECK_RET(service_adapter_gatt_server_open(&gatts_callbacks), GATT_SUCCESS);
     pthread_mutex_lock(&db_lock);
-    g_gatt_db_list = bt_list_new(gatt_db_free);
+    g_gatt_db_list = bt_list_new(free);
     g_peer_addr_list = bt_list_new(free);
     pthread_mutex_unlock(&db_lock);
 
@@ -235,34 +228,29 @@ bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t *elements, uint16_t s
 
     pthread_mutex_lock(&db_lock);
     db_group = bt_list_find(g_gatt_db_list, gatt_db_group_cmp, &elements->handle);
-    if (db_group == NULL) {
-        db_group = (sal_gatt_database_t *)malloc(sizeof(sal_gatt_database_t));
-        if (db_group == NULL)
-            return BT_STATUS_NOMEM;
-
-        db_group->start_handle = 0;
-        db_group->end_handle = 0;
-        db_group->elements_size = 0;
-        db_group->elements = NULL;
-        bt_list_add_tail(g_gatt_db_list, db_group);
+    if (db_group != NULL) {
+        pthread_mutex_unlock(&db_lock);
+        return BT_STATUS_FAIL;
     }
-    pthread_mutex_unlock(&db_lock);
 
-    SERVICE_GATT_ELEMENT_S *sal_elements = (SERVICE_GATT_ELEMENT_S *)realloc(db_group->elements, sizeof(SERVICE_GATT_ELEMENT_S) * size);
-    if (sal_elements == NULL)
+    db_group = (sal_gatt_database_t *)malloc(sizeof(sal_gatt_database_t) + sizeof(SERVICE_GATT_ELEMENT_S) * size);
+    if (db_group == NULL) {
+        pthread_mutex_unlock(&db_lock);
         return BT_STATUS_NOMEM;
+    }
 
     db_group->start_handle = elements[0].handle;
     db_group->end_handle = elements[size - 1].handle;
     db_group->elements_size = size;
-    db_group->elements = sal_elements;
-    for (int i = 0; i < size; i++, sal_elements++) {
-        sal_elements->id = elements[i].handle;
-        sal_elements->type = elements[i].type;
-        sal_elements->properties = elements[i].properties;
-        sal_elements->permissions = elements[i].permissions;
-        memcpy(sal_elements->uuid, &elements[i].uuid.val, sizeof(sal_elements->uuid));
+    for (int i = 0; i < size; i++) {
+        db_group->elements[i].id = elements[i].handle;
+        db_group->elements[i].type = elements[i].type;
+        db_group->elements[i].properties = elements[i].properties;
+        db_group->elements[i].permissions = elements[i].permissions;
+        memcpy(db_group->elements[i].uuid, &elements[i].uuid.val, sizeof(BT_UUID_T));
     }
+    bt_list_add_tail(g_gatt_db_list, db_group);
+    pthread_mutex_unlock(&db_lock);
 
     SAL_CHECK_RET(service_adapter_gatt_server_add_elements(db_group->elements, size), GATT_SUCCESS);
 
