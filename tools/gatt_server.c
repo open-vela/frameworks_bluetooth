@@ -56,22 +56,26 @@ enum {
     GATT_SERVICE_CUSTOM = 3
 };
 
-#define GET_SERVICE_HANDLE(id, handle)           \
-    {                                            \
-        switch (id) {                            \
-        case GATT_SERVICE_DIS:                   \
-            handle = g_dis_handle;               \
-            break;                               \
-        case GATT_SERVICE_BAS:                   \
-            handle = g_bas_handle;               \
-            break;                               \
-        case GATT_SERVICE_CUSTOM:                \
-            handle = g_custom_handle;            \
-            break;                               \
-        default:                                 \
-            PRINT("invalid service id: %d", id); \
-            return CMD_INVALID_OPT;              \
-        }                                        \
+#define GET_SERVICE_HANDLE(id, handle)                   \
+    {                                                    \
+        switch (id) {                                    \
+        case GATT_SERVICE_DIS:                           \
+            handle = g_dis_handle;                       \
+            break;                                       \
+        case GATT_SERVICE_BAS:                           \
+            handle = g_bas_handle;                       \
+            break;                                       \
+        case GATT_SERVICE_CUSTOM:                        \
+            handle = g_custom_handle;                    \
+            break;                                       \
+        default:                                         \
+            PRINT("invalid service id: %d", id);         \
+            return CMD_INVALID_OPT;                      \
+        }                                                \
+        if (!handle) {                                   \
+            PRINT("service[%d] is not registered!", id); \
+            return CMD_ERROR;                            \
+        }                                                \
     }
 
 enum {
@@ -306,6 +310,11 @@ static int start_cmd(void *handle, int argc, char *argv[])
         return CMD_INVALID_OPT;
     }
 
+    if (!service_handle) {
+        PRINT("service[%d] is not registered!", service_id);
+        return CMD_ERROR;
+    }
+
     if (bt_gatts_add_attr_table(service_handle, service_db) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
@@ -338,6 +347,11 @@ static int stop_cmd(void *handle, int argc, char *argv[])
         return CMD_INVALID_OPT;
     }
 
+    if (!service_handle) {
+        PRINT("service[%d] is not registered!", service_id);
+        return CMD_ERROR;
+    }
+
     if (bt_gatts_remove_attr_table(service_handle, attr_handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
@@ -365,6 +379,11 @@ static int notify_bas_cmd(void *handle, int argc, char *argv[])
         return CMD_INVALID_OPT;
     }
 
+    if (!g_bas_handle) {
+        PRINT("battery service is not registered!");
+        return CMD_ERROR;
+    }
+
     battery_level = new_level;
     if (bt_gatts_set_attr_value(g_bas_handle, BAS_BATTERY_LEVEL_CHR_ID, (uint8_t *)&battery_level, sizeof(battery_level)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -390,6 +409,11 @@ static int notify_cus_cmd(void *handle, int argc, char *argv[])
         return CMD_INVALID_ADDR;
     }
 
+    if (!g_custom_handle) {
+        PRINT("custom service is not registered!");
+        return CMD_ERROR;
+    }
+
     if (bt_gatts_notify(g_custom_handle, &addr, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[1], strlen(argv[1])) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
@@ -409,6 +433,11 @@ static int indicate_cus_cmd(void *handle, int argc, char *argv[])
     if (!device) {
         PRINT_ADDR("device:%s is not connected", &addr);
         return CMD_INVALID_ADDR;
+    }
+
+    if (!g_custom_handle) {
+        PRINT("custom service is not registered!");
+        return CMD_ERROR;
     }
 
     if (bt_gatts_indicate(g_custom_handle, &addr, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[1], strlen(argv[1])) != BT_STATUS_SUCCESS)
