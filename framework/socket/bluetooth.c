@@ -27,33 +27,35 @@ bt_instance_t *bluetooth_create_instance(void)
 {
     bt_status_t status;
     bt_instance_t *ins;
-    uint32_t app_id;
 
     ins = zalloc(sizeof(bt_instance_t));
     if (ins == NULL) {
         return NULL;
     }
 
-    status = manager_create_instance((uint32_t)ins, BLUETOOTH_SYSTEM,
-                                     "local", getpid(), 0, &app_id);
-    if (status == BT_STATUS_SUCCESS) {
 #if defined(CONFIG_BLUETOOTH_SERVER)
-      status = bt_socket_client_init(ins, PF_LOCAL,
-          "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
+    status = bt_socket_client_init(ins, PF_LOCAL,
+        "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
 #elif defined(CONFIG_NET_RPMSG)
-      status = bt_socket_client_init(ins, AF_RPMSG,
-          "bluetooth", CONFIG_BLUETOOTH_RPMSG_CPUNAME, CONFIG_BLUETOOTH_SOCKET_PORT);
+    status = bt_socket_client_init(ins, AF_RPMSG,
+        "bluetooth", CONFIG_BLUETOOTH_RPMSG_CPUNAME, CONFIG_BLUETOOTH_SOCKET_PORT);
 #elif defined(CONFIG_NET_IPv4)
-      status = bt_socket_client_init(ins, AF_INET,
-          "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
+    status = bt_socket_client_init(ins, AF_INET,
+        "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
 #else
-      status = bt_socket_client_init(ins, PF_LOCAL,
-          "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
+    status = bt_socket_client_init(ins, PF_LOCAL,
+        "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
 #endif
-    }
 
     if (status != BT_STATUS_SUCCESS) {
-      manager_delete_instance(ins->app_id);
+        free(ins);
+        return NULL;
+    }
+
+    status = manager_create_instance((uint32_t)ins, BLUETOOTH_SYSTEM,
+                                     "local", getpid(), 0, &ins->app_id);
+    if (status != BT_STATUS_SUCCESS) {
+      bt_socket_client_deinit(ins);
       free(ins);
       ins = NULL;
     }
@@ -95,8 +97,8 @@ void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id)
 
 void bluetooth_delete_instance(bt_instance_t *ins)
 {
-    bt_socket_client_deinit(ins);
     manager_delete_instance(ins->app_id);
+    bt_socket_client_deinit(ins);
     free(ins);
 }
 
