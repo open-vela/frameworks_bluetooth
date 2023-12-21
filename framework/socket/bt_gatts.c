@@ -74,6 +74,7 @@ bt_status_t bt_gatts_register_service(bt_instance_t *ins, gatts_handle_t *phandl
     }
 
     gatts_remote->cookie = packet.gatts_r.handle;
+    gatts_remote->user_phandle = phandle;
     *phandle = gatts_remote;
     return BT_STATUS_SUCCESS;
 }
@@ -83,6 +84,7 @@ bt_status_t bt_gatts_unregister_service(gatts_handle_t srv_handle)
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    void **user_phandle = gatts_remote->user_phandle;
 
     packet.gatts_pl._bt_gatts_unregister.handle = gatts_remote->cookie;
     status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_UNREGISTER_SERVICE);
@@ -94,6 +96,7 @@ bt_status_t bt_gatts_unregister_service(gatts_handle_t srv_handle)
     }
 
     gatts_remote_destroy(gatts_remote);
+    *user_phandle = NULL;
     return BT_STATUS_SUCCESS;
 }
 
