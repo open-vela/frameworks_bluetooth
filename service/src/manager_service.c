@@ -165,7 +165,8 @@ void bluetooth_permission_check(uint32_t app_id)
 
 void manager_init(void)
 {
-    g_instance_id = index_allocator_create(10);
+    if (g_instance_id == NULL)
+        g_instance_id = index_allocator_create(10);
 #if defined(CONFIG_BLUETOOTH_OBELISK) && defined(__NuttX__)
     service_manager_init();
 #endif
