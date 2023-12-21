@@ -62,6 +62,7 @@ typedef struct {
     bt_instance_t *ins;
     gatts_callbacks_t *callbacks;
     void *cookie;
+    void **user_phandle;
     bt_list_t *db_list;
 } bt_gatts_remote_t;
 
