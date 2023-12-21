@@ -93,6 +93,7 @@ bt_status_t bt_gatts_unregister_service(gatts_handle_t srv_handle)
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    void **user_phandle = gatts_remote->user_phandle;
 
     CHECK_NULL_PTR(gatts_remote);
 
