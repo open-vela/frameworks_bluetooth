@@ -22,6 +22,8 @@
 #include <bt_player.h>
 #include <bt_utils.h>
 
+#include "utils/log.h"
+
 typedef struct bt_media_controller {
     void *mediasession;
     void *holder;
@@ -47,6 +49,8 @@ static void media_session_event_cb(void *cookie, int event, int ret,
                                    const char *extra)
 {
     bt_media_controller_t *controller = cookie;
+    int status;
+    int media_state;
 
     switch (event) {
     case MEDIA_EVENT_START:
@@ -63,6 +67,25 @@ static void media_session_event_cb(void *cookie, int event, int ret,
         break;
     case MEDIA_EVENT_NEXT_SONG:
         notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_FWD_SEEK);
+        break;
+    case MEDIA_EVENT_UPDATED:
+    case MEDIA_EVENT_CHANGED:
+        if (ret & MEDIA_METAFLAG_STATE) {
+            /* playback status changed */
+            status = media_session_get_state(controller->mediasession, &media_state);
+            if (status != 0) {
+                BT_LOGE("%s, faild to get media state", __func__);
+                return;
+            }
+
+            if (media_state > 0) { /* Active */
+                notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_PLAYING);
+            } else if (media_state == 0){ /* Inactive */
+                notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_PAUSED);
+            } else { /* Error */
+                BT_LOGE("%s, erroneous media state: %d", __func__, media_state);
+            }
+        }
         break;
     default:
         return;
