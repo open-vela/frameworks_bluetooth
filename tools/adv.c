@@ -72,7 +72,7 @@ static bt_command_t g_adv_tables[] = {
     { "dump",     dump_adv_cmd,     0, "dump adv current state"                                                                                    },
 };
 
-static uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x03, 0x02, 0x00, 0xFF }; /* flags: LE & BREDR, service class:0xFF00*/
+static uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x03, 0xFF, 0x8F, 0x03 }; /* flags: LE & BREDR, Manufacturer ID:0x038F */
 static uint8_t s_rsp_data[] = { 0x08, 0x09, 0x56, 0x65, 0x6C, 0x61, 0x2D, 0x42, 0x54 }; /* Complete Local Name:Vela-BT */
 
 static void usage(void)
@@ -114,9 +114,9 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
 
     params.adv_type = BT_LE_ADV_IND;
     bt_addr_set_empty(&params.peer_addr);
-    params.peer_addr_type = BT_LE_ADDR_TYPE_UNKNOWN;
+    params.peer_addr_type = BT_LE_ADDR_TYPE_PUBLIC;
     bt_addr_set_empty(&params.own_addr);
-    params.own_addr_type = BT_LE_ADDR_TYPE_UNKNOWN;
+    params.own_addr_type = BT_LE_ADDR_TYPE_PUBLIC;
     params.interval = 320;
     params.tx_power = 0;
     params.channel_map = BT_LE_ADV_CHANNEL_DEFAULT;
