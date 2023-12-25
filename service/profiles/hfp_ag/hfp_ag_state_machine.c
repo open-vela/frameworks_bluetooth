@@ -33,6 +33,8 @@
 #include "sal_hfp_ag_interface.h"
 #include "service_loop.h"
 
+#include "media_system.h"
+
 #include "bt_utils.h"
 #include "utils/log.h"
 
@@ -673,8 +675,8 @@ static void audio_on_enter(state_machine_t *sm)
     AG_DBG_ENTER(sm, &agsm->addr);
     /* TODO: get volume */
     /* TODO: set remote volume */
-    /* TODO: set sample rate */
-    /* TODO: set sco device avaliable */
+    bt_media_set_hfp_samplerate(agsm->codec == HFP_CODEC_MSBC ? 16000 : 8000);
+    bt_media_set_sco_available();
     ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_CONNECTED);
 }
 
