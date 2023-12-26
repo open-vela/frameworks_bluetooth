@@ -21,15 +21,32 @@
 #include "bt_addr.h"
 #include "bt_device.h"
 
+/**
+ * @brief A2DP audio state
+ */
 typedef enum {
     A2DP_AUDIO_STATE_REMOTE_SUSPEND = 0,
     A2DP_AUDIO_STATE_STOPPED,
     A2DP_AUDIO_STATE_STARTED,
 } a2dp_audio_state_t;
 
+/**
+ * @brief A2DP connection state changed callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer A2DP device.
+ * @param state - connection state.
+ */
 typedef void (*a2dp_connection_state_callback)(void *cookie, bt_address_t *addr,
                                                profile_connection_state_t state);
 
+/**
+ * @brief A2DP audio connection state changed callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer A2DP device.
+ * @param state - audio connection state.
+ */
 typedef void (*a2dp_audio_state_callback)(void *cookie, bt_address_t *addr,
                                           a2dp_audio_state_t state);
 
