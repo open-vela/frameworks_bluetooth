@@ -96,36 +96,11 @@ bt_status_t bt_media_set_sco_available(void)
     if (media_policy_set_devices_available(MEDIA_DEVICE_SCO) != 0)
         return BT_STATUS_FAIL;
 
-    /* set audio mode as phone call mode */
-    if (media_policy_set_audio_mode(MEDIA_AUDIO_MODE_PHONE) != 0)
-        return BT_STATUS_FAIL;
-
-    /* set SCO device in using state */
-    if (media_policy_set_devices_use(MEDIA_DEVICE_SCO) != 0)
-        return BT_STATUS_FAIL;
-
     return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_media_set_sco_unavailable(void)
 {
-    int res = 0;
-
-    /* check SCO device is in using state */
-    if (media_policy_is_devices_use(MEDIA_DEVICE_SCO, &res) != 0)
-        return BT_STATUS_FAIL;
-
-    if (res) {
-        /* if SCO in using, set SCO unuse */
-        if (media_policy_set_devices_unuse(MEDIA_DEVICE_SCO) != 0)
-            return BT_STATUS_FAIL;
-    }
-
-    /* switch audio mode to NORMAL mode */
-    if (media_policy_set_audio_mode(MEDIA_AUDIO_MODE_NORMAL) != 0)
-        return BT_STATUS_FAIL;
-
-    /* set SCO device unavailable */
     if (media_policy_set_devices_unavailable(MEDIA_DEVICE_SCO) != 0)
         return BT_STATUS_FAIL;
 
