@@ -106,8 +106,8 @@ uint8_t read_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'V', 'E', 'L', 'A', 
 
 uint16_t tx_char_ccc_changed(void *srv_handle, bt_address_t *addr, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
 {
-    PRINT_ADDR("gatts service TX char ccc changed, addr:%s, new value:", addr);
-    PRINT_HEXDUMP(value, length);
+    PRINT_ADDR("gatts service TX char ccc changed, addr:%s", addr);
+    lib_dumpbuffer("new value:", value, length);
     if (attr_handle == IOT_SERVICE_TX_CHR_CCC_ID)
         cccd_enable = value[0];
     return length;
@@ -123,8 +123,8 @@ uint16_t rx_char_on_read(void *srv_handle, bt_address_t *addr, uint16_t attr_han
 
 uint16_t rx_char_on_write(void *srv_handle, bt_address_t *addr, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
 {
-    PRINT_ADDR("gatts service RX char received write request, addr:%s, value:", addr);
-    PRINT_HEXDUMP(value, length);
+    PRINT_ADDR("gatts service RX char received write request, addr:%s", addr);
+    lib_dumpbuffer("write value:", value, length);
     return length;
 }
 

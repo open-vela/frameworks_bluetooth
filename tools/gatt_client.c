@@ -483,7 +483,7 @@ static void discover_callback(void *conn_handle, gatt_status_t status, bt_uuid_t
 static void read_complete_callback(void *conn_handle, gatt_status_t status, uint16_t attr_handle, uint8_t *value, uint16_t length)
 {
     PRINT("gattc connection read complete, handle 0x%" PRIx16 ", status:%d", attr_handle, status);
-    PRINT_HEXDUMP(value, length);
+    lib_dumpbuffer("read value:", value, length);
 }
 
 static void write_complete_callback(void *conn_handle, gatt_status_t status, uint16_t attr_handle)
@@ -509,7 +509,7 @@ static void notify_received_callback(void *conn_handle, uint16_t attr_handle,
                                      uint8_t *value, uint16_t length)
 {
     PRINT("gattc connection receive notify, handle 0x%" PRIx16, attr_handle);
-    PRINT_HEXDUMP(value, length);
+    lib_dumpbuffer("notify value:", value, length);
 }
 
 static void mtu_updated_callback(void *conn_handle, gatt_status_t status, uint32_t mtu)

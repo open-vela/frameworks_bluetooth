@@ -220,8 +220,8 @@ static void hidd_set_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt_typ
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     bt_addr_ba2str(addr, addr_str);
-    PRINT("%s, addr:%s, report type: %d, report data:", __func__, addr_str, rpt_type);
-    PRINT_HEXDUMP(rpt_data, rpt_size);
+    PRINT("%s, addr:%s, report type: %d", __func__, addr_str, rpt_type);
+    lib_dumpbuffer("report data:", rpt_data, rpt_size);
     bt_hid_device_report_error(cookie, addr, HID_STATUS_OK);
 }
 
@@ -231,8 +231,8 @@ static void hidd_receive_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     bt_addr_ba2str(addr, addr_str);
-    PRINT("%s, addr:%s, report type: %d, report data:", __func__, addr_str, rpt_type);
-    PRINT_HEXDUMP(rpt_data, rpt_size);
+    PRINT("%s, addr:%s, report type: %d", __func__, addr_str, rpt_type);
+    lib_dumpbuffer("report data:", rpt_data, rpt_size);
 }
 
 static void hidd_virtual_unplug_cb(void *cookie, bt_address_t *addr)
