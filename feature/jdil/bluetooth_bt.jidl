@@ -1,0 +1,105 @@
+module system.bluetooth.bt@1.0
+
+callback startDiscoverySuccess()
+callback startDiscoveryFail(string data, int code)
+callback startDiscoveryComplete()
+struct StartDiscoveryParams {
+    callback startDiscoverySuccess  success
+    callback startDiscoveryFail     fail
+    callback startDiscoveryComplete complete
+}
+void startDiscovery(StartDiscoveryParams params)
+
+callback stopDiscoverySuccess()
+callback stopDiscoveryFail(string data, int code)
+callback stopDiscoveryComplete()
+struct StopDiscoveryParams {
+    callback stopDiscoverySuccess  success
+    callback stopDiscoveryFail     fail
+    callback stopDiscoveryComplete complete
+}
+void stopDiscovery(StopDiscoveryParams params)
+
+
+struct DiscoveryResultCallbackData {
+    string  deviceId
+    string  name
+    uint cod
+    uint rssi
+}
+callback discoveryResultChange(DiscoveryResultCallbackData data)
+property discoveryResultChange discoveryresult
+
+
+callback connectProfilesSuccess()
+callback connectProfilesFail(string data, int code)
+callback connectProfilesComplete()
+struct ConnectProfilesParams {
+    string   deviceId
+    int[]    profiles
+    callback connectProfilesSuccess  success
+    callback connectProfilesFail     fail
+    callback connectProfilesComplete complete
+}
+void connectProfiles(ConnectProfilesParams params)
+
+callback disconnectProfilesSuccess()
+callback disconnectProfilesFail(string data, int code)
+callback disconnectProfilesComplete()
+struct DisconnectProfilesParams{
+    string   deviceId
+    int[]    profiles
+    callback disconnectProfilesSuccess  success
+    callback disconnectProfilesFail     fail
+    callback disconnectProfilesComplete complete
+}
+void disconnectProfiles(DisconnectProfilesParams params)
+
+callback disconnectSuccess()
+callback disconnectFail(string data, int code)
+callback disconnectComplete()
+struct DisconnectParams{
+    string   deviceId
+    callback disconnectSuccess  success
+    callback disconnectFail     fail
+    callback disconnectComplete complete
+}
+void disconnect(DisconnectParams params)
+
+boolean getConnectState(string deviceId)
+
+struct connectedDevice {
+    string deviceId
+    string name
+    int    cod
+}
+string[] getConnectedDevices()
+
+string[] getBondedDevices()
+
+struct onBondStateChangeData {
+    string deviceId
+    int    bondState
+}
+callback onBondStateChangeCallback(onBondStateChangeData data)
+property onBondStateChangeCallback onbondstatechange
+
+callback removeBondedSuccess()
+callback removeBondedFail(string data, int code)
+callback removeBondedComplete()
+struct RemoveBondedParams{
+    string   deviceId
+    callback removeBondedSuccess  success
+    callback removeBondedFail     fail
+    callback removeBondedComplete complete
+}
+void removeBondedDevice(RemoveBondedParams params)
+
+
+boolean setScanMode(int scanMode)
+
+int getScanMode()
+
+string getDeviceName(string deviceId)
+
+uint getDeviceClass(string deviceId)

@@ -15,6 +15,7 @@
 #
 
 include $(APPDIR)/Make.defs
+include $(APPDIR)/frameworks/base/feature/Make.defs
 
 ifeq ($(CONFIG_BLUETOOTH), y)
 
@@ -261,7 +262,8 @@ endif
 ifeq ($(CONFIG_ARCH_SIM),y)
 CFLAGS	 += -O0
 endif
-CFLAGS	 += -Wno-strict-prototypes #-fno-short-enums -Wl,-no-enum-size-warning #-Werror
+
+CFLAGS	  += -Wno-strict-prototypes #-fno-short-enums -Wl,-no-enum-size-warning #-Werror
 PRIORITY  = SCHED_PRIORITY_DEFAULT
 STACKSIZE = 8192
 MODULE    = $(CONFIG_BLUETOOTH)
@@ -288,9 +290,45 @@ MAINSRC := $(wildcard $(MAINSRC))
 
 NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
 
+ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK), y)
+ifeq ($(CONFIG_FEATURE_FRAMEWORK),y)
+ifeq ($(CONFIG_ARCH), arm)
+TARGETDIR := arm
+else ifeq ($(CONFIG_ARCH), arm64)
+TARGETDIR := aarch64
+else ifeq ($(CONFIG_ARCH), xtensa)
+TARGETDIR := xtensa
+else
+TARGETDIR := x86
+endif
+
+CXXFLAGS    += $(CFLAGS)
+
+CXXFLAGS    := $(filter-out -Wno-strict-prototypes, $(CXXFLAGS))
+CXXFLAGS    := $(filter-out -Wstrict-prototypes, $(CXXFLAGS))
+CXXFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/external/libffi/libffi/src/$(TARGETDIR)
+CXXFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/external/libffi
+CXXFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/feature/include
+
+CXXSRCS     += feature/src/system_bluetooth.cpp
+CXXSRCS     += feature/src/system_bluetooth_impl.cpp
+
+CXXSRCS     += feature/src/system_bluetooth_bt.cpp
+CXXSRCS     += feature/src/system_bluetooth_bt_impl.cpp
+
+ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
+CXXSRCS     += feature/src/system_bluetooth_bt_a2dpsink.cpp
+CXXSRCS     += feature/src/system_bluetooth_bt_a2dpsink_impl.cpp
+endif
+endif
+endif
+
 ifneq ($(NOEXPORTSRCS),)
 BIN := $(APPDIR)/staging/libbluetooth.a
 endif
 
+
+
+include $(APPDIR)/frameworks/quickapp/Module.mk
 include $(APPDIR)/Application.mk
 
