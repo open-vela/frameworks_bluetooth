@@ -229,7 +229,7 @@ endif
 # framework/service/stack/tools dependence
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/framework/include
 
-ifeq ($(CONFIG_OFONO), y)
+ifdef CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/dbus/dbus
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/glib/glib/glib
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/glib/glib
