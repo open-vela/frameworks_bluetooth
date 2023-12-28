@@ -1,0 +1,45 @@
+module system.bluetooth@1.0
+
+callback openAdapterSuccess()
+callback openAdapterFail(string data, int code)
+callback openAdapterComplete()
+struct OpenAdapterParams {
+    boolean operateAdapter = false
+    callback openAdapterSuccess success
+    callback openAdapterFail    fail
+    callback openAdapterComplete complete
+}
+void openAdapter(OpenAdapterParams params)
+
+callback closeAdapterSuccess()
+callback closeAdapterFail(string data, int code)
+callback closeAdapterComplete()
+struct CloseAdapterParams {
+    boolean operateAdapter = false
+    callback closeAdapterSuccess success
+    callback closeAdapterFail    fail
+    callback closeAdapterComplete complete
+}
+void closeAdapter(CloseAdapterParams params)
+
+struct GetAdapterSuccessResult {
+    boolean available
+    boolean discovering
+}
+callback getAdapterStateSuccess(GetAdapterSuccessResult data)
+callback getAdapterStateFail(string data, int code)
+callback getAdapterStateComplete()
+struct GetAdapterStateParams {
+    callback getAdapterStateSuccess success
+    callback getAdapterStateFail    fail
+    callback getAdapterStateComplete complete
+}
+void getAdapterState(GetAdapterStateParams params)
+
+
+struct adapterStateCallbackData {
+    boolean available
+    boolean discovering
+}
+callback adapterStateChange(adapterStateCallbackData data)
+property adapterStateChange onadapterstatechange
