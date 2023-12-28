@@ -1,0 +1,9 @@
+module system.bluetooth.bt.a2dpsink@1.0
+
+
+struct OnConnectStateChangeData {
+    string deviceId
+    int    connectState
+}
+callback onConnectStateChangeCallback(OnConnectStateChangeData data)
+property onConnectStateChangeCallback onconnectstatechange
