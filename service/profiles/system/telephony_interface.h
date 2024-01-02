@@ -127,7 +127,7 @@ typedef struct {
     call_disconnect_reason_callback_t call_disconnect_reason_cb;
 } tele_call_callbacks_t;
 
-#ifdef CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME
+#if defined(CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME) || defined(CONFIG_OFONO)
 tele_client_t *tele_client_connect(const char *name);
 void tele_client_disconnect(tele_client_t *tele);
 void tele_register_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs);

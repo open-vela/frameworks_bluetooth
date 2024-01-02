@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME
+#if defined(CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME) || defined(CONFIG_OFONO)
 
 #include <dbus/dbus.h>
 
