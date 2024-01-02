@@ -685,6 +685,7 @@ static void audio_on_exit(state_machine_t *sm)
     ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
     AG_DBG_EXIT(sm, &agsm->addr);
     /* set sco device unavaliable */
+    bt_media_set_sco_unavailable();
 }
 
 static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_data)
