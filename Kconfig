@@ -355,6 +355,11 @@ config BLUETOOTH_TOOLS
 	default n
 	select BLUETOOTH_FRAMEWORK
 
+config BLUETOOTH_FEATURE
+	bool "bluetooth feature api support"
+	default n
+	depends on FEATURE_FRAMEWORK
+
 config BLUETOOTH_LEAUDIO_CLIENT
 	bool "enable bluetooth leaudio client feature"
 	default n
