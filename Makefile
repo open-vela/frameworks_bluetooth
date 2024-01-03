@@ -15,7 +15,7 @@
 #
 
 include $(APPDIR)/Make.defs
-include $(APPDIR)/frameworks/base/feature/Make.defs
+
 
 ifeq ($(CONFIG_BLUETOOTH), y)
 
@@ -290,8 +290,8 @@ MAINSRC := $(wildcard $(MAINSRC))
 
 NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
 
-ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK), y)
-ifeq ($(CONFIG_FEATURE_FRAMEWORK),y)
+ifeq ($(CONFIG_BLUETOOTH_FEATURE),y)
+include $(APPDIR)/frameworks/base/feature/Make.defs
 ifeq ($(CONFIG_ARCH), arm)
 TARGETDIR := arm
 else ifeq ($(CONFIG_ARCH), arm64)
@@ -320,7 +320,7 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
 CXXSRCS     += feature/src/system_bluetooth_bt_a2dpsink.cpp
 CXXSRCS     += feature/src/system_bluetooth_bt_a2dpsink_impl.cpp
 endif
-endif
+include $(APPDIR)/frameworks/quickapp/Module.mk
 endif
 
 ifneq ($(NOEXPORTSRCS),)
@@ -329,6 +329,5 @@ endif
 
 
 
-include $(APPDIR)/frameworks/quickapp/Module.mk
 include $(APPDIR)/Application.mk
 
