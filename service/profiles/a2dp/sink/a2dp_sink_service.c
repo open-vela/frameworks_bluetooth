@@ -301,6 +301,7 @@ static void sink_shutdown(void *data)
     }
     list_delete(&g_a2dp_sink.list);
     bt_sal_a2dp_sink_cleanup();
+    g_a2dp_sink.active_peer = NULL;
     on_shutdown(PROFILE_A2DP_SINK, true);
     pthread_mutex_unlock(&g_a2dp_sink.mutex);
 }
