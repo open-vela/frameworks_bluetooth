@@ -163,7 +163,7 @@ bool bt_device_get_alias(bt_instance_t *ins, bt_address_t *addr, char *alias, ui
   bt_status_t status;
 
   memcpy(&packet.devs_pl._bt_device_get_alias.addr, addr, sizeof(*addr));
-  status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_CANCEL_BOND);
+  status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_GET_ALIAS);
   if (status != BT_STATUS_SUCCESS)
   {
     return status;
