@@ -2422,6 +2422,19 @@ bt_status_t adapter_set_pass_key(bt_address_t *addr, uint8_t transport, bool acc
         return bt_sal_le_smp_reply(addr, accept, PAIR_TYPE_PASSKEY_ENTRY, passkey);
 }
 
+bt_status_t adapter_le_set_remote_oob_data(bt_address_t *addr, bt_128key_t tk_val, bt_128key_t c_val, bt_128key_t r_val)
+{
+    adapter_lock();
+    bt_device_t *device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+    if (!device || device_get_bond_state(device) != BOND_STATE_BONDING) {
+        adapter_unlock();
+        return BT_STATUS_FAIL;
+    }
+
+    adapter_unlock();
+    return bt_sal_le_set_remote_oob_data(addr, tk_val, c_val, r_val);
+}
+
 uint16_t adapter_get_acl_handle(bt_address_t *addr)
 {
     adapter_lock();
