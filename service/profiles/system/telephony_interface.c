@@ -669,7 +669,7 @@ void ofono_property_changed(GDBusProxy *proxy, const char *name,
     }
 }
 
-tele_client_t *tele_client_connect(const char *name)
+tele_client_t *teleif_client_connect(const char *name)
 {
     GDBusClient *dbus_client;
 
@@ -699,7 +699,7 @@ tele_client_t *tele_client_connect(const char *name)
     return tele;
 }
 
-void tele_client_disconnect(tele_client_t *tele)
+void teleif_client_disconnect(tele_client_t *tele)
 {
     tele->is_ready = false;
     g_dbus_client_unref(tele->dbus_client);
@@ -707,24 +707,24 @@ void tele_client_disconnect(tele_client_t *tele)
     free(tele);
 }
 
-void tele_register_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs)
+void teleif_register_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs)
 {
     tele->cbs = cbs;
 }
 
-void tele_unregister_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs)
+void teleif_unregister_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs)
 {
     tele->cbs = NULL;
 }
 
-void tele_call_register_callbacks(tele_client_t *tele, tele_call_t *call,
-                                  tele_call_callbacks_t *cbs)
+void teleif_call_register_callbacks(tele_client_t *tele, tele_call_t *call,
+                                    tele_call_callbacks_t *cbs)
 {
     call->call_cbs = cbs;
 }
 
-void tele_call_unregister_callbacks(tele_client_t *tele, tele_call_t *call,
-                                    tele_call_callbacks_t *cbs)
+void teleif_call_unregister_callbacks(tele_client_t *tele, tele_call_t *call,
+                                      tele_call_callbacks_t *cbs)
 {
     call->call_cbs = NULL;
 }
@@ -737,7 +737,7 @@ static void property_set_destory(void *user_data)
 {
 }
 
-int tele_modem_set_radio_power(tele_client_t *tele, int slot, bool poweron)
+int teleif_modem_set_radio_power(tele_client_t *tele, int slot, bool poweron)
 {
     tele_modem_t *modem = get_modem(tele, slot);
     if (!modem)
@@ -753,7 +753,7 @@ int tele_modem_set_radio_power(tele_client_t *tele, int slot, bool poweron)
     return TELE_SUCCESS;
 }
 
-bool tele_modem_is_radio_on(tele_client_t *tele, int slot)
+bool teleif_modem_is_radio_on(tele_client_t *tele, int slot)
 {
     DBusMessageIter iter;
     int state;
@@ -770,7 +770,7 @@ bool tele_modem_is_radio_on(tele_client_t *tele, int slot)
     return state == RADIO_STATUS_ON;
 }
 
-bool tele_modem_get_radio_power(tele_client_t *tele, int slot)
+bool teleif_modem_get_radio_power(tele_client_t *tele, int slot)
 {
     DBusMessageIter iter;
     int power;
@@ -787,7 +787,7 @@ bool tele_modem_get_radio_power(tele_client_t *tele, int slot)
     return power;
 }
 
-int tele_get_all_calls(tele_client_t *tele, int slot, get_calls_callback_t cbs)
+int teleif_get_all_calls(tele_client_t *tele, int slot, get_calls_callback_t cbs)
 {
     tele_modem_t *modem = get_modem(tele, slot);
     bt_list_node_t *node;
@@ -854,8 +854,8 @@ static void dial_destory(void *user_data)
     free(user_data);
 }
 
-int tele_call_dial_number(tele_client_t *tele, int slot, char *number,
-                          dial_callback_t cb)
+int teleif_call_dial_number(tele_client_t *tele, int slot, char *number,
+                            dial_callback_t cb)
 {
     GDBusProxy *proxy = get_voice_callmanager(tele, slot);
     if (!proxy) {
@@ -880,7 +880,7 @@ int tele_call_dial_number(tele_client_t *tele, int slot, char *number,
     return TELE_SUCCESS;
 }
 
-int tele_call_answer_call(tele_client_t *tele, tele_call_t *call)
+int teleif_call_answer_call(tele_client_t *tele, tele_call_t *call)
 {
     if (!g_dbus_proxy_method_call(call->proxy, "Answer", NULL, NULL, NULL, NULL))
         return TELE_FAIL;
@@ -888,7 +888,7 @@ int tele_call_answer_call(tele_client_t *tele, tele_call_t *call)
     return TELE_SUCCESS;
 }
 
-int tele_call_reject_call(tele_client_t *tele, tele_call_t *call)
+int teleif_call_reject_call(tele_client_t *tele, tele_call_t *call)
 {
     if (!g_dbus_proxy_method_call(call->proxy, "Hangup", NULL, NULL, NULL, NULL))
         return TELE_FAIL;
@@ -896,7 +896,7 @@ int tele_call_reject_call(tele_client_t *tele, tele_call_t *call)
     return TELE_SUCCESS;
 }
 
-int tele_call_hangup_call(tele_client_t *tele, tele_call_t *call)
+int teleif_call_hangup_call(tele_client_t *tele, tele_call_t *call)
 {
     if (!g_dbus_proxy_method_call(call->proxy, "Hangup", NULL, NULL, NULL, NULL))
         return TELE_FAIL;
@@ -904,7 +904,7 @@ int tele_call_hangup_call(tele_client_t *tele, tele_call_t *call)
     return TELE_SUCCESS;
 }
 
-int tele_call_hangup_all_call(tele_client_t *tele, int slot)
+int teleif_call_hangup_all_call(tele_client_t *tele, int slot)
 {
     GDBusProxy *proxy = get_voice_callmanager(tele, slot);
     if (!proxy) {
@@ -918,7 +918,7 @@ int tele_call_hangup_all_call(tele_client_t *tele, int slot)
     return TELE_SUCCESS;
 }
 
-int tele_call_release_and_answer(tele_client_t *tele, int slot)
+int teleif_call_release_and_answer(tele_client_t *tele, int slot)
 {
     GDBusProxy *proxy = get_voice_callmanager(tele, slot);
     if (!proxy) {
@@ -932,7 +932,7 @@ int tele_call_release_and_answer(tele_client_t *tele, int slot)
     return TELE_SUCCESS;
 }
 
-int tele_call_hold_and_answer(tele_client_t *tele, int slot)
+int teleif_call_hold_and_answer(tele_client_t *tele, int slot)
 {
     GDBusProxy *proxy = get_voice_callmanager(tele, slot);
     if (!proxy) {
@@ -946,7 +946,7 @@ int tele_call_hold_and_answer(tele_client_t *tele, int slot)
     return TELE_SUCCESS;
 }
 
-int tele_call_hold_call(tele_client_t *tele, int slot)
+int teleif_call_hold_call(tele_client_t *tele, int slot)
 {
     GDBusProxy *proxy = get_voice_callmanager(tele, slot);
     if (!proxy) {
@@ -960,7 +960,7 @@ int tele_call_hold_call(tele_client_t *tele, int slot)
     return TELE_SUCCESS;
 }
 
-int tele_call_merge_call(tele_client_t *tele, int slot)
+int teleif_call_merge_call(tele_client_t *tele, int slot)
 {
     GDBusProxy *proxy;
 
@@ -983,7 +983,7 @@ static void dtmf_setup(DBusMessageIter *iter, void *user_data)
     dbus_message_iter_append_basic(iter, DBUS_TYPE_STRING, &tone);
 }
 
-int tele_call_send_dtmf(tele_client_t *tele, int slot, const char *tones)
+int teleif_call_send_dtmf(tele_client_t *tele, int slot, const char *tones)
 {
     GDBusProxy *proxy;
 
@@ -999,7 +999,7 @@ int tele_call_send_dtmf(tele_client_t *tele, int slot, const char *tones)
     return TELE_SUCCESS;
 }
 
-int tele_network_get_signal_strength(tele_client_t *tele, int slot, int *strength)
+int teleif_network_get_signal_strength(tele_client_t *tele, int slot, int *strength)
 {
     DBusMessageIter iter;
     GDBusProxy *proxy;
@@ -1020,7 +1020,7 @@ int tele_network_get_signal_strength(tele_client_t *tele, int slot, int *strengt
     return TELE_SUCCESS;
 }
 
-int tele_network_get_operator(tele_client_t *tele, int slot, char **operator_name, int *status)
+int teleif_network_get_operator(tele_client_t *tele, int slot, char **operator_name, int *status)
 {
     DBusMessageIter iter;
     GDBusProxy *proxy;
@@ -1048,7 +1048,7 @@ int tele_network_get_operator(tele_client_t *tele, int slot, char **operator_nam
     return TELE_SUCCESS;
 }
 
-bool tele_network_is_roaming(tele_client_t *tele, int slot)
+bool teleif_network_is_roaming(tele_client_t *tele, int slot)
 {
     DBusMessageIter iter;
     GDBusProxy *proxy;
