@@ -24,6 +24,7 @@
 #include "bt_addr.h"
 #include "bt_hfp_hf.h"
 #include "bt_list.h"
+#include "bt_vendor.h"
 #include "hfp_hf_service.h"
 #include "hfp_hf_state_machine.h"
 #include "sal_adapter_interface.h"
@@ -40,10 +41,13 @@ typedef struct _hf_state_machine {
     bt_address_t addr;
     uint16_t sco_conn_handle;
     service_timer_t *connect_timer;
+    service_timer_t *offload_timer;
     bool recognition_active;
+    bool offloading;
     uint8_t spk_volume;
     uint8_t mic_volume;
     uint8_t codec;
+    pending_state_t pending;
     struct list_node pending_actions;
     bt_list_t *current_calls;
     bt_list_t *update_calls;
@@ -61,6 +65,7 @@ typedef struct {
 #define HF_CONNECT_TIMEOUT      (10 * 1000)
 #define HF_WEBCHAT_VERDICT      (300 * 1000)
 #define HF_WEBCHAT_BLOCK_PERIOD (500 * 1000)
+#define HF_OFFLOAD_TIMEOUT      500
 
 #if HF_STM_DEBUG
 static void hf_stm_trans_debug(state_machine_t *sm, bt_address_t *addr, const char *action);
@@ -75,6 +80,8 @@ static const char *stack_event_to_string(hfp_hf_event_t event);
 #define HF_DBG_EXIT(__sm, __addr)
 #define HF_DBG_EVENT(__sm, __addr, __event)
 #endif
+
+extern bt_status_t hfp_hf_send_message(hfp_hf_msg_t *msg);
 
 static void disconnected_enter(state_machine_t *sm);
 static void disconnected_exit(state_machine_t *sm);
@@ -162,6 +169,11 @@ static const char *stack_event_to_string(hfp_hf_event_t event)
         CASE_RETURN_STR(HF_UPDATE_BATTERY_LEVEL)
         CASE_RETURN_STR(HF_SEND_DTMF)
         CASE_RETURN_STR(HF_TIMEOUT)
+        CASE_RETURN_STR(HF_OFFLOAD_START_REQ)
+        CASE_RETURN_STR(HF_OFFLOAD_STOP_REQ)
+        CASE_RETURN_STR(HF_OFFLOAD_START_EVT)
+        CASE_RETURN_STR(HF_OFFLOAD_STOP_EVT)
+        CASE_RETURN_STR(HF_OFFLOAD_TIMEOUT_EVT)
         CASE_RETURN_STR(HF_STACK_EVENT)
         CASE_RETURN_STR(HF_STACK_EVENT_AUDIO_REQ)
         CASE_RETURN_STR(HF_STACK_EVENT_CONNECTION_STATE_CHANGED)
@@ -183,6 +195,21 @@ static const char *stack_event_to_string(hfp_hf_event_t event)
     }
 }
 #endif
+
+static bool flag_isset(hf_state_machine_t *hfsm, pending_state_t flag)
+{
+    return (bool)(hfsm->pending & flag);
+}
+
+static void flag_set(hf_state_machine_t *hfsm, pending_state_t flag)
+{
+    hfsm->pending |= flag;
+}
+
+static void flag_clear(hf_state_machine_t *hfsm, pending_state_t flag)
+{
+    hfsm->pending &= ~flag;
+}
 
 static void add_pending_action(hf_state_machine_t *hfsm, uint32_t cmd_code)
 {
@@ -779,6 +806,30 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
     return true;
 }
 
+static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
+{
+    hf_state_machine_t *hfsm = (hf_state_machine_t *)context;
+    hfp_hf_msg_t *msg;
+    hfp_hf_event_t event;
+
+    BT_LOGD("%s, evt_code:0x%x, len:%d", __func__, hci_event->evt_code,
+            hci_event->length);
+    BT_DUMPBUFFER("vsc", (uint8_t *)hci_event->params, hci_event->length);
+
+    if (flag_isset(hfsm, PENDING_OFFLOAD_START)) {
+        event = HF_OFFLOAD_START_EVT;
+        flag_clear(hfsm, PENDING_OFFLOAD_START);
+    } else if (flag_isset(hfsm, PENDING_OFFLOAD_STOP)) {
+        event = HF_OFFLOAD_STOP_EVT;
+        flag_clear(hfsm, PENDING_OFFLOAD_STOP);
+    } else {
+        return;
+    }
+
+    msg = hfp_hf_msg_new_ext(event, &hfsm->addr, hci_event->params, hci_event->length);
+    hfp_hf_send_message(msg);
+}
+
 static void connected_enter(state_machine_t *sm)
 {
     hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
@@ -893,6 +944,23 @@ static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p
         }
         break;
     }
+    case HF_OFFLOAD_STOP_REQ: {
+        uint8_t ogf;
+        uint16_t ocf;
+        uint8_t len;
+        uint8_t *payload;
+
+        payload = data->data;
+        len = data->size - sizeof(ogf) - sizeof(ocf);
+        STREAM_TO_UINT8(ogf, payload)
+        STREAM_TO_UINT16(ocf, payload);
+        flag_set(hfsm, PENDING_OFFLOAD_STOP);
+
+        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, hfsm);
+    } break;
+    case HF_OFFLOAD_STOP_EVT: {
+        break;
+    }
     default:
         return default_process_event(sm, event, data);
     }
@@ -918,11 +986,26 @@ static bool check_sco_allowed(state_machine_t *sm)
     return true;
 }
 
+static void hfp_hf_offload_timeout_callback(service_timer_t *timer, void *data)
+{
+    hf_state_machine_t *hfsm = (hf_state_machine_t *)data;
+    hfp_hf_msg_t *msg;
+
+    msg = hfp_hf_msg_new(HF_OFFLOAD_TIMEOUT_EVT, &hfsm->addr);
+    hf_state_machine_dispatch(hfsm, msg);
+    hfp_hf_msg_destory(msg);
+}
+
 static void audio_on_enter(state_machine_t *sm)
 {
     hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
 
     HF_DBG_ENTER(sm, &hfsm->addr);
+
+    if (hfsm->offloading) {
+        return;
+    }
+
     if (check_sco_allowed(sm)) {/* would terminate audio connection when needed */
         /* TODO: get volume */
         /* TODO: set remote volume */
@@ -1023,6 +1106,56 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
         }
         break;
     }
+    case HF_OFFLOAD_START_REQ: {
+        uint8_t ogf;
+        uint16_t ocf;
+        uint8_t len;
+        uint8_t *payload;
+
+        payload = data->data;
+        len = data->size - sizeof(ogf) - sizeof(ocf);
+        STREAM_TO_UINT8(ogf, payload)
+        STREAM_TO_UINT16(ocf, payload);
+
+        flag_set(hfsm, PENDING_OFFLOAD_START);
+        hfsm->offload_timer = service_loop_timer(HF_OFFLOAD_TIMEOUT, 0, hfp_hf_offload_timeout_callback, hfsm);
+        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, hfsm);
+        break;
+    };
+    case HF_OFFLOAD_START_EVT: {
+        bt_hci_event_t *hci_event;
+        uint8_t result;
+
+        if (hfsm->offload_timer) {
+            service_loop_cancel_timer(hfsm->offload_timer);
+            hfsm->offload_timer = NULL;
+        }
+
+        hci_event = data->data;
+        result = hci_event->params[3]; // sizeof(struct hci_evt_cmd_complete_s)
+        if (result != BT_STATUS_SUCCESS) {
+            BT_LOGE("HF_OFFLOAD_START fail, status:0x%0x", result);
+            break;
+        }
+
+        if (check_sco_allowed(sm)) {
+            bt_media_set_hfp_samplerate(hfsm->codec == HFP_CODEC_MSBC ? 16000 : 8000);
+            bt_media_set_sco_available();
+        } else {
+            BT_LOGI("SCO is not allowed");
+            if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS)
+                BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
+        }
+        hf_service_notify_audio_state_changed(&hfsm->addr, HFP_AUDIO_STATE_CONNECTED);
+        break;
+    };
+    case HF_OFFLOAD_TIMEOUT_EVT: {
+        flag_clear(hfsm, PENDING_OFFLOAD_START);
+        hfsm->offload_timer = NULL;
+        bt_media_set_sco_unavailable();
+        hf_service_notify_audio_state_changed(&hfsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
+        break;
+    };
     default:
         return default_process_event(sm, event, data);
     }
@@ -1041,6 +1174,7 @@ hf_state_machine_t *hf_state_machine_new(bt_address_t *addr, void *context)
     memset(hfsm, 0, sizeof(hf_state_machine_t));
     hfsm->recognition_active = false;
     hfsm->service = context;
+    hfsm->codec = HFP_CODEC_CVSD;
     memcpy(&hfsm->addr, addr, sizeof(bt_address_t));
     hfsm->update_calls = bt_list_new(NULL);
     hfsm->current_calls = bt_list_new(hf_call_delete);
@@ -1079,4 +1213,24 @@ uint32_t hf_state_machine_get_state(hf_state_machine_t *hfsm)
 bt_list_t *hf_state_machine_get_calls(hf_state_machine_t *hfsm)
 {
     return hfsm->current_calls;
+}
+
+uint16_t hf_state_machine_get_sco_handle(hf_state_machine_t *hfsm)
+{
+    return hfsm->sco_conn_handle;
+}
+
+void hf_state_machine_set_sco_handle(hf_state_machine_t *hfsm, uint16_t sco_hdl)
+{
+    hfsm->sco_conn_handle = sco_hdl;
+}
+
+uint8_t hf_state_machine_get_codec(hf_state_machine_t *hfsm)
+{
+    return hfsm->codec;
+}
+
+void hf_state_machine_set_offloading(hf_state_machine_t *hfsm, bool offloading)
+{
+    hfsm->offloading = offloading;
 }

@@ -17,7 +17,14 @@
 #define __HFP_AG_STATE_MACHINE_H__
 
 #include "hfp_ag_event.h"
+#include "service_loop.h"
 #include "state_machine.h"
+
+typedef enum pending_state {
+    PENDING_NONE = 0x0,
+    PENDING_OFFLOAD_START = 0x02,
+    PENDING_OFFLOAD_STOP = 0x04,
+} pending_state_t;
 
 typedef struct _ag_state_machine ag_state_machine_t;
 
@@ -25,5 +32,9 @@ ag_state_machine_t *ag_state_machine_new(bt_address_t *addr, void *context);
 void ag_state_machine_destory(ag_state_machine_t *agsm);
 void ag_state_machine_dispatch(ag_state_machine_t *agsm, hfp_ag_msg_t *msg);
 uint32_t ag_state_machine_get_state(ag_state_machine_t *agsm);
+uint16_t ag_state_machine_get_sco_handle(ag_state_machine_t *agsm);
+void ag_state_machine_set_sco_handle(ag_state_machine_t *agsm, uint16_t sco_hdl);
+uint8_t ag_state_machine_get_codec(ag_state_machine_t *agsm);
+void ag_state_machine_set_offloading(ag_state_machine_t *agsm, bool offloading);
 
 #endif /* __HFP_AG_STATE_MACHINE_H__ */

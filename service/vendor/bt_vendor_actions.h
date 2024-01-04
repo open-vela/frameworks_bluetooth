@@ -47,8 +47,8 @@ static inline bool actions_a2dp_offload_start_builder(a2dp_offload_config_t *con
     return true;
 }
 
-static bool actions_a2dp_offload_stop_builder(a2dp_offload_config_t *config,
-                                              uint8_t *offload, size_t *size)
+static inline bool actions_a2dp_offload_stop_builder(a2dp_offload_config_t *config,
+                                                     uint8_t *offload, size_t *size)
 {
     uint8_t *param = offload;
 
@@ -57,6 +57,40 @@ static bool actions_a2dp_offload_stop_builder(a2dp_offload_config_t *config,
 
     UINT8_TO_STREAM(param, 0x03);
     UINT8_TO_STREAM(param, 0x03); // offload  stop
+
+    *size = param - offload;
+    return true;
+}
+
+static inline bool actions_hfp_offload_start_builder(hfp_offload_config_t *config,
+                                                     uint8_t *offload, size_t *size)
+{
+    uint8_t *param = offload;
+
+    UINT8_TO_STREAM(param, 0x3f); // fill ogf
+    UINT16_TO_STREAM(param, 0x0000); // fill ocf
+
+    UINT8_TO_STREAM(param, 0x02); // cmd
+    UINT8_TO_STREAM(param, 0x00); // offload  start
+    UINT16_TO_STREAM(param, config->sco_hdl); // sco handle
+    UINT8_TO_STREAM(param, config->sco_codec); // codec type
+
+    *size = param - offload;
+    return true;
+}
+
+static inline bool actions_hfp_offload_stop_builder(hfp_offload_config_t *config,
+                                                    uint8_t *offload, size_t *size)
+{
+    uint8_t *param = offload;
+
+    UINT8_TO_STREAM(param, 0x3f); // fill ogf
+    UINT16_TO_STREAM(param, 0x0000); // fill ocf
+
+    UINT8_TO_STREAM(param, 0x02); // cmd
+    UINT8_TO_STREAM(param, 0x01); // offload  stop
+    UINT16_TO_STREAM(param, config->sco_hdl); // sco handle
+    UINT8_TO_STREAM(param, config->sco_codec); // codec type
 
     *size = param - offload;
     return true;
