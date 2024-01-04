@@ -71,9 +71,9 @@ static void on_connection_state_changed(tele_client_t *tele, bool connected)
     is_connected = connected;
 
     if (connected) {
-        is_online = tele_modem_is_radio_on(tele, PRIMARY_SLOT);
+        is_online = teleif_modem_is_radio_on(tele, PRIMARY_SLOT);
         if (is_online)
-            tele_get_all_calls(tele, PRIMARY_SLOT, get_current_calls);
+            teleif_get_all_calls(tele, PRIMARY_SLOT, get_current_calls);
     }
 
     BT_LOGD("%s, connected:%d, is_online:%d", __func__, connected, is_online);
@@ -88,7 +88,7 @@ static void radio_state_changed(tele_client_t *tele, int radio_state)
 
     if (radio_state == RADIO_STATUS_ON) {
         is_online = true;
-        tele_get_all_calls(tele, PRIMARY_SLOT, get_current_calls);
+        teleif_get_all_calls(tele, PRIMARY_SLOT, get_current_calls);
     } else {
         /* TODO: disconnect hfp ag connection? */
     }
@@ -126,7 +126,7 @@ static void get_current_calls(tele_client_t *tele, tele_call_t **calls, uint8_t 
         if (!bt_list_find(g_current_calls, call_is_found, call)) {
             dump_call(call);
             bt_list_add_tail(g_current_calls, call);
-            tele_call_register_callbacks(tele, call, &tele_call_cbs);
+            teleif_call_register_callbacks(tele, call, &tele_call_cbs);
         }
     }
 
@@ -140,7 +140,7 @@ static void on_call_added(tele_client_t *tele, tele_call_t *call)
 
     dump_call(call);
     bt_list_add_tail(g_current_calls, call);
-    tele_call_register_callbacks(tele, call, &tele_call_cbs);
+    teleif_call_register_callbacks(tele, call, &tele_call_cbs);
     update_call_state(call->call_state);
 }
 
@@ -148,7 +148,7 @@ static void on_call_removed(tele_client_t *tele, tele_call_t *call)
 {
     BT_LOGD("%s", __func__);
     update_call_state(call->call_state);
-    tele_call_unregister_callbacks(tele, call, &tele_call_cbs);
+    teleif_call_unregister_callbacks(tele, call, &tele_call_cbs);
     bt_list_remove(g_current_calls, call);
 }
 
@@ -174,7 +174,7 @@ static void on_network_reg_state_changed(tele_client_t *tele, int status)
 
 static void on_signal_strength_changed(tele_client_t *tele, int strength)
 {
-    tele_modem_get_radio_power(tele, PRIMARY_SLOT);
+    teleif_modem_get_radio_power(tele, PRIMARY_SLOT);
     update_device_status();
 }
 
@@ -314,13 +314,13 @@ static void update_call_state(hfp_ag_call_state_t new_state)
 void tele_service_init(void)
 {
     g_current_calls = bt_list_new(NULL);
-    tele_context = tele_client_connect("HFP-AG");
+    tele_context = teleif_client_connect("HFP-AG");
     if (!tele_context) {
         BT_LOGD("tele client connect failed");
         return;
     }
 
-    tele_register_callbacks(tele_context, PRIMARY_SLOT, &tele_cbs);
+    teleif_register_callbacks(tele_context, PRIMARY_SLOT, &tele_cbs);
     BT_LOGD("%s end", __func__);
 }
 
@@ -328,8 +328,8 @@ void tele_service_cleanup(void)
 {
     if (!tele_context)
         return;
-    tele_unregister_callbacks(tele_context, PRIMARY_SLOT, &tele_cbs);
-    tele_client_disconnect(tele_context);
+    teleif_unregister_callbacks(tele_context, PRIMARY_SLOT, &tele_cbs);
+    teleif_client_disconnect(tele_context);
     bt_list_clear(g_current_calls);
 }
 
@@ -341,7 +341,7 @@ bt_status_t tele_service_dial_number(char *number)
     if (!number)
         return BT_STATUS_FAIL;
 
-    if (tele_call_dial_number(tele_context, PRIMARY_SLOT, number, dial_number_callback) != 0) {
+    if (teleif_call_dial_number(tele_context, PRIMARY_SLOT, number, dial_number_callback) != 0) {
         return BT_STATUS_FAIL;
     }
 
@@ -357,7 +357,7 @@ bt_status_t tele_service_answer_call(void)
     if (!call)
         return BT_STATUS_FAIL;
 
-    if (tele_call_answer_call(tele_context, call) != 0)
+    if (teleif_call_answer_call(tele_context, call) != 0)
         return BT_STATUS_FAIL;
 
     return BT_STATUS_SUCCESS;
@@ -372,7 +372,7 @@ bt_status_t tele_service_reject_call(void)
     if (!call)
         return BT_STATUS_FAIL;
 
-    if (tele_call_reject_call(tele_context, call) != 0)
+    if (teleif_call_reject_call(tele_context, call) != 0)
         return BT_STATUS_FAIL;
 
     return BT_STATUS_SUCCESS;
@@ -383,7 +383,7 @@ bt_status_t tele_service_hangup_call(void)
     if (!is_connected || !is_online)
         return BT_STATUS_NOT_ENABLED;
 
-    if (tele_call_hangup_all_call(tele_context, PRIMARY_SLOT) != 0)
+    if (teleif_call_hangup_all_call(tele_context, PRIMARY_SLOT) != 0)
         return BT_STATUS_FAIL;
 
     return BT_STATUS_SUCCESS;
@@ -400,17 +400,17 @@ bt_status_t tele_service_call_control(uint8_t chld)
         tele_call_t *held_call = get_call_by_state(CALL_STATUS_HELD);
 
         if (waiting_call != NULL) {
-            tele_call_hangup_call(tele_context, waiting_call);
+            teleif_call_hangup_call(tele_context, waiting_call);
         } else if (held_call != NULL) {
             /* hangup held call */
-            tele_call_hangup_call(tele_context, held_call);
+            teleif_call_hangup_call(tele_context, held_call);
         }
     } break;
     case HFP_HF_CALL_CONTROL_CHLD_1:
-        tele_call_release_and_answer(tele_context, PRIMARY_SLOT);
+        teleif_call_release_and_answer(tele_context, PRIMARY_SLOT);
         break;
     case HFP_HF_CALL_CONTROL_CHLD_2:
-        tele_call_hold_and_answer(tele_context, PRIMARY_SLOT);
+        teleif_call_hold_and_answer(tele_context, PRIMARY_SLOT);
         break;
     case HFP_HF_CALL_CONTROL_CHLD_3: {
         tele_call_t *active_call = get_call_by_state(CALL_STATUS_ACTIVE);
@@ -419,7 +419,7 @@ bt_status_t tele_service_call_control(uint8_t chld)
         if (!active_call || !held_call)
             return BT_STATUS_FAIL;
 
-        tele_call_merge_call(tele_context, PRIMARY_SLOT);
+        teleif_call_merge_call(tele_context, PRIMARY_SLOT);
     } break;
     case HFP_HF_CALL_CONTROL_CHLD_4:
     default:
@@ -472,7 +472,7 @@ char *tele_service_get_operator(void)
     if (!is_connected || !is_online)
         return "";
 
-    tele_network_get_operator(tele_context, PRIMARY_SLOT, &name, &status);
+    teleif_network_get_operator(tele_context, PRIMARY_SLOT, &name, &status);
 
     return name;
 }
@@ -493,9 +493,9 @@ bt_status_t tele_service_get_network_info(hfp_network_state_t *network,
         return BT_STATUS_NOT_ENABLED;
     }
 
-    tele_network_get_operator(tele_context, PRIMARY_SLOT, &name, &status);
-    tele_network_get_signal_strength(tele_context, PRIMARY_SLOT, &strength);
-    is_roaming = tele_network_is_roaming(tele_context, PRIMARY_SLOT);
+    teleif_network_get_operator(tele_context, PRIMARY_SLOT, &name, &status);
+    teleif_network_get_signal_strength(tele_context, PRIMARY_SLOT, &strength);
+    is_roaming = teleif_network_is_roaming(tele_context, PRIMARY_SLOT);
     if (status == OPERATOR_STATUS_AVAILABLE || status == OPERATOR_STATUS_CURRENT)
         *network = HFP_NETWORK_AVAILABLE;
     else
