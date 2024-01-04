@@ -557,8 +557,12 @@ static int set_iocap_cmd(void *handle, int argc, char **argv)
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int iocap = atoi(argv[0]);
-    if (iocap > BT_IO_CAPABILITY_KEYBOARDDISPLAY)
+    if (strlen(argv[0]) > 1){
+        return CMD_INVALID_PARAM;
+    }
+    
+    int iocap = *argv[0] - '0';
+    if (iocap < BT_IO_CAPABILITY_DISPLAYONLY || iocap > BT_IO_CAPABILITY_KEYBOARDDISPLAY)
         return CMD_INVALID_PARAM;
 
     if (bt_adapter_set_io_capability(handle, iocap) != BT_STATUS_SUCCESS)
@@ -749,8 +753,22 @@ static int pair_set_auto_cmd(void *handle, int argc, char **argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
+    if (strlen(argv[0]) > 1){
+        return CMD_INVALID_PARAM;
+    }
+    switch (*argv[0])
+    {
+    case '0':
+        g_auto_accept_pair = false;
+        break;
+    case '1':
+        g_auto_accept_pair = true;
+        break;
+    default:
+        return CMD_INVALID_PARAM;
+        break;
+    }
 
-    g_auto_accept_pair = atoi(argv[0]) > 0 ? true : false;
     PRINT("Auto accept pair:%s", g_auto_accept_pair ? "Enable" : "Disable");
 
     return CMD_OK;
