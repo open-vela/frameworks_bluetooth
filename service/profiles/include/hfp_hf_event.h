@@ -57,7 +57,12 @@ typedef enum {
     HF_STARTUP = 28,
     HF_SHUTDOWN = 29,
     HF_TIMEOUT = 30,
-    HF_STACK_EVENT = 32,
+    HF_OFFLOAD_START_REQ,
+    HF_OFFLOAD_STOP_REQ,
+    HF_OFFLOAD_START_EVT,
+    HF_OFFLOAD_STOP_EVT,
+    HF_OFFLOAD_TIMEOUT_EVT,
+    HF_STACK_EVENT,
     HF_STACK_EVENT_AUDIO_REQ,
     HF_STACK_EVENT_CONNECTION_STATE_CHANGED,
     HF_STACK_EVENT_AUDIO_STATE_CHANGED,
@@ -82,8 +87,10 @@ typedef struct
     uint32_t valueint2;
     uint32_t valueint3;
     uint32_t valueint4;
+    size_t size;
     char *string1;
     char *string2;
+    void *data;
 } hfp_hf_data_t;
 
 typedef struct
@@ -96,6 +103,8 @@ typedef struct
  * Public Functions
  ****************************************************************************/
 hfp_hf_msg_t *hfp_hf_msg_new(hfp_hf_event_t event, bt_address_t *addr);
+hfp_hf_msg_t *hfp_hf_msg_new_ext(hfp_hf_event_t event, bt_address_t *addr,
+                                 void *data, size_t size);
 void hfp_hf_msg_destory(hfp_hf_msg_t *msg);
 
 #endif /* __HFP_HF_EVENT_H__ */

@@ -21,16 +21,28 @@
 
 hfp_ag_msg_t *hfp_ag_msg_new(hfp_ag_event_t event, bt_address_t *addr)
 {
+    return hfp_ag_event_new_ext(event, addr, NULL, 0);
+}
+
+hfp_ag_msg_t *hfp_ag_event_new_ext(hfp_ag_event_t event, bt_address_t *addr,
+                                   void *data, size_t size)
+{
     hfp_ag_msg_t *msg;
 
-    msg = (hfp_ag_msg_t *)malloc(sizeof(hfp_ag_msg_t));
+    msg = (hfp_ag_msg_t *)zalloc(sizeof(hfp_ag_msg_t));
     if (msg == NULL)
         return NULL;
 
     msg->event = event;
-    memset(&msg->data, 0, sizeof(hfp_ag_data_t));
+
     if (addr != NULL)
         memcpy(&msg->data.addr, addr, sizeof(bt_address_t));
+
+    if (size > 0) {
+        msg->data.size = size;
+        msg->data.data = malloc(size);
+        memcpy(msg->data.data, data, size);
+    }
 
     return msg;
 }
@@ -39,5 +51,6 @@ void hfp_ag_msg_destory(hfp_ag_msg_t *msg)
 {
     free(msg->data.string1);
     free(msg->data.string2);
+    free(msg->data.data);
     free(msg);
 }

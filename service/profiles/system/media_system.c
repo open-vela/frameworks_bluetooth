@@ -117,3 +117,10 @@ bt_status_t bt_media_set_a2dp_offloading(bool enable)
 
     return BT_STATUS_SUCCESS;
 }
+
+bt_status_t bt_media_set_hfp_offloading(bool enable)
+{
+    // todo set hfp offload?
+
+    return BT_STATUS_SUCCESS;
+}

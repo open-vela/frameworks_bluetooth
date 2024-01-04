@@ -25,6 +25,7 @@
 
 #include "bt_hfp_hf.h"
 #include "bt_profile.h"
+#include "bt_vendor.h"
 #include "callbacks_list.h"
 #include "hfp_hf_service.h"
 #include "hfp_hf_state_machine.h"
@@ -54,6 +55,7 @@
 typedef struct
 {
     bool started;
+    bool offloading;
     uint8_t max_connections;
     bt_list_t *hf_devices;
     callbacks_list_t *callbacks;
@@ -69,8 +71,9 @@ typedef struct
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
+bt_status_t hfp_hf_send_message(hfp_hf_msg_t *msg);
+
 static hf_state_machine_t *get_state_machine(bt_address_t *addr);
-static bt_status_t hfp_hf_send_message(hfp_hf_msg_t *msg);
 
 /****************************************************************************
  * Private Data
@@ -126,6 +129,14 @@ static void hf_device_delete(hf_device_t *device)
     free(device);
 }
 
+static bool hfp_codec_get_offload(hf_state_machine_t *hfsm,
+                                  hfp_offload_config_t *offload)
+{
+    offload->sco_hdl = hf_state_machine_get_sco_handle(hfsm);
+    offload->sco_codec = hf_state_machine_get_codec(hfsm);
+    return true;
+}
+
 static hf_state_machine_t *get_state_machine(bt_address_t *addr)
 {
     hf_state_machine_t *hfsm;
@@ -144,6 +155,7 @@ static hf_state_machine_t *get_state_machine(bt_address_t *addr)
         return NULL;
     }
 
+    hf_state_machine_set_offloading(hfsm, g_hfp_service.offloading);
     device = hf_device_new(addr, hfsm);
     if (!device) {
         BT_LOGE("New device alloc failed");
@@ -229,6 +241,42 @@ static void hf_dispatch_msg_foreach(void *data, void *context)
     hf_state_machine_dispatch(device->hfsm, (hfp_hf_msg_t *)context);
 }
 
+static void hfp_hf_prepare_handle(hf_state_machine_t *hfsm,
+                                  hfp_hf_msg_t *event)
+{
+    switch (event->event) {
+    case HF_STACK_EVENT_AUDIO_STATE_CHANGED: {
+        hfp_offload_config_t offload = { 0 };
+        uint8_t param[sizeof(hfp_offload_config_t)];
+        size_t size;
+        bool ret;
+
+        if (event->data.valueint1 == HFP_AUDIO_STATE_CONNECTED) {
+            hf_state_machine_set_sco_handle(hfsm, event->data.valueint2);
+            hfp_codec_get_offload(hfsm, &offload);
+            ret = hfp_offload_start_builder(&offload, param, &size);
+            if (!ret) {
+                BT_LOGE("HFP HF codec_offload_start_builder failed");
+                break;
+            }
+
+            hfp_hf_send_message(hfp_hf_msg_new_ext(HF_OFFLOAD_START_REQ, &event->data.addr, param, size));
+        } else if (event->data.valueint1 == HFP_AUDIO_STATE_DISCONNECTED) {
+            hfp_codec_get_offload(hfsm, &offload);
+            ret = hfp_offload_stop_builder(&offload, param, &size);
+            if (!ret) {
+                BT_LOGE("HFP HF codec_offload_stop_builder failed");
+                break;
+            }
+
+            hfp_hf_send_message(hfp_hf_msg_new_ext(HF_OFFLOAD_STOP_REQ, &event->data.addr, param, size));
+        }
+    }
+    default:
+        break;
+    }
+}
+
 static void hfp_hf_process_message(void *data)
 {
     hfp_hf_msg_t *msg = (hfp_hf_msg_t *)data;
@@ -253,8 +301,13 @@ static void hfp_hf_process_message(void *data)
     default: {
         pthread_mutex_lock(&g_hfp_service.device_lock);
         hf_state_machine_t *hfsm = get_state_machine(&msg->data.addr);
-        if (hfsm)
-            hf_state_machine_dispatch(hfsm, msg);
+        if (!hfsm) {
+            pthread_mutex_unlock(&g_hfp_service.device_lock);
+            break;
+        }
+
+        hf_state_machine_dispatch(hfsm, msg);
+        hfp_hf_prepare_handle(hfsm, msg);
         pthread_mutex_unlock(&g_hfp_service.device_lock);
         break;
     }
@@ -263,7 +316,7 @@ static void hfp_hf_process_message(void *data)
     hfp_hf_msg_destory(msg);
 }
 
-static bt_status_t hfp_hf_send_message(hfp_hf_msg_t *msg)
+bt_status_t hfp_hf_send_message(hfp_hf_msg_t *msg)
 {
     assert(msg);
 
@@ -328,6 +381,18 @@ static bt_status_t hfp_hf_shutdown(profile_on_shutdown_t cb)
     msg->data.valueint1 = (uint32_t)cb;
 
     return hfp_hf_send_message(msg);
+}
+
+static void hfp_hf_process_msg(profile_msg_t *msg)
+{
+    switch (msg->event) {
+    case PROFILE_EVT_HFP_OFFLOADING:
+        g_hfp_service.offloading = msg->data.valuebool;
+        break;
+
+    default:
+        break;
+    }
 }
 
 static int hfp_hf_get_state(void)
@@ -906,7 +971,7 @@ static const profile_service_t hfp_hf_service = {
     .init = hfp_hf_init,
     .startup = hfp_hf_startup,
     .shutdown = hfp_hf_shutdown,
-    .process_msg = NULL,
+    .process_msg = hfp_hf_process_msg,
     .get_state = hfp_hf_get_state,
     .get_profile_interface = get_hf_profile_interface,
     .cleanup = hfp_hf_cleanup,

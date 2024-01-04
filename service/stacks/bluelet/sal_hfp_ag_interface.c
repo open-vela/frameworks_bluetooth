@@ -44,7 +44,7 @@ static void sco_connection_state_changed_callback(BD_ADDR remote_addr,
     bt_address_t addr;
 
     memcpy(addr.addr, remote_addr, 6);
-    hfp_ag_on_audio_state_changed(&addr, bluelet_hf_audio_state(state));
+    hfp_ag_on_audio_state_changed(&addr, bluelet_hf_audio_state(state), sco_connection_handle);
 }
 
 static void codec_changed_callback(BD_ADDR remote_addr, SERVICE_HFP_CONFIG_S *config)

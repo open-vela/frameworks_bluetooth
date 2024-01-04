@@ -51,6 +51,11 @@ typedef enum {
     AG_SHUTDOWN = 21,
     AG_CONNECT_TIMEOUT = 25,
     AG_AUDIO_TIMEOUT = 26,
+    AG_OFFLOAD_START_REQ,
+    AG_OFFLOAD_STOP_REQ,
+    AG_OFFLOAD_START_EVT,
+    AG_OFFLOAD_STOP_EVT,
+    AG_OFFLOAD_TIMEOUT_EVT,
     AG_STACK_EVENT = 32,
     AG_STACK_EVENT_AUDIO_REQ,
     AG_STACK_EVENT_CONNECTION_STATE_CHANGED,
@@ -79,8 +84,10 @@ typedef struct
     uint32_t valueint2;
     uint32_t valueint3;
     uint32_t valueint4;
+    size_t size;
     char *string1;
     char *string2;
+    void *data;
 } hfp_ag_data_t;
 
 typedef struct
@@ -93,6 +100,8 @@ typedef struct
  * Public Functions
  ****************************************************************************/
 hfp_ag_msg_t *hfp_ag_msg_new(hfp_ag_event_t event, bt_address_t *addr);
+hfp_ag_msg_t *hfp_ag_event_new_ext(hfp_ag_event_t event, bt_address_t *addr,
+                                   void *data, size_t size);
 void hfp_ag_msg_destory(hfp_ag_msg_t *msg);
 
 #endif /* __HFP_HF_EVENT_H__ */
