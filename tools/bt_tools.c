@@ -1181,6 +1181,7 @@ static void device_dump(void *handle, bt_address_t *addr, bt_transport_t transpo
     if (transport == BT_TRANSPORT_BREDR) {
         bt_device_get_name(handle, addr, name, 64);
         PRINT("\tName: %s", name);
+        memset(name, 0, 64);
         bt_device_get_alias(handle, addr, name, 64);
         PRINT("\tAlias: %s", name);
         PRINT("\tClass: 0x%08" PRIx32 "", bt_device_get_device_class(handle, addr));
