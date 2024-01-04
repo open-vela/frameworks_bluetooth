@@ -34,10 +34,24 @@ typedef struct {
     uint8_t codec_info[32]; /* Codec specific information */
 } a2dp_offload_config_t;
 
+typedef struct
+{
+    uint16_t sco_codec;
+    uint16_t sco_hdl; /* sco handle */
+    bool is_controller_codec; /* bt controller encode/decode */
+    bool is_nrec;
+} hfp_offload_config_t;
+
 bool a2dp_offload_start_builder(a2dp_offload_config_t *config,
                                 uint8_t *offload, size_t *size);
 
 bool a2dp_offload_stop_builder(a2dp_offload_config_t *config,
                                uint8_t *offload, size_t *size);
+
+bool hfp_offload_start_builder(hfp_offload_config_t *config,
+                               uint8_t *offload, size_t *size);
+
+bool hfp_offload_stop_builder(hfp_offload_config_t *config,
+                              uint8_t *offload, size_t *size);
 
 #endif /* _BT_CONTROLLER_VENDOR_H__ */

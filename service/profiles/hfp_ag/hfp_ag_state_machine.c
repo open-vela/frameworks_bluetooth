@@ -25,13 +25,13 @@
 #include "bt_device.h"
 #include "bt_hfp_ag.h"
 #include "bt_list.h"
+#include "bt_vendor.h"
 #include "hfp_ag_event.h"
 #include "hfp_ag_service.h"
 #include "hfp_ag_state_machine.h"
 #include "hfp_ag_tele_service.h"
 #include "sal_adapter_interface.h"
 #include "sal_hfp_ag_interface.h"
-#include "service_loop.h"
 
 #include "media_system.h"
 
@@ -43,15 +43,19 @@ typedef struct _ag_state_machine {
     bt_address_t addr;
     uint16_t sco_conn_handle;
     bool recognition_active;
+    bool offloading;
     void *service;
     uint8_t codec;
     uint8_t volume;
+    pending_state_t pending;
     service_timer_t *connect_timer;
     service_timer_t *audio_timer;
     service_timer_t *dial_out_timer;
+    service_timer_t *offload_timer;
 } ag_state_machine_t;
 
-#define AG_TIMEOUT   10000
+#define AG_TIMEOUT         10000
+#define AG_OFFLOAD_TIMEOUT 500
 #define AG_STM_DEBUG 1
 #if AG_STM_DEBUG
 static void ag_stm_trans_debug(state_machine_t *sm, bt_address_t *addr, const char *action);
@@ -66,7 +70,10 @@ static const char *stack_event_to_string(hfp_ag_event_t event);
 #define AG_DBG_EXIT(__sm, __addr)
 #define AG_DBG_EVENT(__sm, __addr, __event)
 #endif
+
 extern bt_status_t hfp_ag_send_event(bt_address_t *addr, hfp_ag_event_t evt);
+extern bt_status_t hfp_ag_send_message(hfp_ag_msg_t *msg);
+
 static void disconnected_enter(state_machine_t *sm);
 static void disconnected_exit(state_machine_t *sm);
 static void connecting_enter(state_machine_t *sm);
@@ -183,6 +190,11 @@ static const char *stack_event_to_string(hfp_ag_event_t event)
         CASE_RETURN_STR(AG_SHUTDOWN)
         CASE_RETURN_STR(AG_CONNECT_TIMEOUT)
         CASE_RETURN_STR(AG_AUDIO_TIMEOUT)
+        CASE_RETURN_STR(AG_OFFLOAD_START_REQ)
+        CASE_RETURN_STR(AG_OFFLOAD_STOP_REQ)
+        CASE_RETURN_STR(AG_OFFLOAD_START_EVT)
+        CASE_RETURN_STR(AG_OFFLOAD_STOP_EVT)
+        CASE_RETURN_STR(AG_OFFLOAD_TIMEOUT_EVT)
         CASE_RETURN_STR(AG_STACK_EVENT)
         CASE_RETURN_STR(AG_STACK_EVENT_AUDIO_REQ)
         CASE_RETURN_STR(AG_STACK_EVENT_CONNECTION_STATE_CHANGED)
@@ -208,6 +220,21 @@ static const char *stack_event_to_string(hfp_ag_event_t event)
     }
 }
 #endif
+
+static bool flag_isset(ag_state_machine_t *agsm, pending_state_t flag)
+{
+    return (bool)(agsm->pending & flag);
+}
+
+static void flag_set(ag_state_machine_t *agsm, pending_state_t flag)
+{
+    agsm->pending |= flag;
+}
+
+static void flag_clear(ag_state_machine_t *agsm, pending_state_t flag)
+{
+    agsm->pending &= ~flag;
+}
 
 static bool at_cmd_check_test(bt_address_t *addr, const char *atcmd)
 {
@@ -499,8 +526,7 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_d
                 bt_sal_hfp_ag_dial_response(&agsm->addr, HFP_ATCMD_RESULT_ERROR);
             else
                 agsm->dial_out_timer = service_loop_timer_no_repeating(5000, dial_out_timeout, NULL);
-        }
-        else {
+        } else {
             BT_LOGD("Redial last number, currently not supported");
             bt_sal_hfp_ag_dial_response(&agsm->addr, HFP_ATCMD_RESULT_ERROR);
         }
@@ -563,6 +589,30 @@ static void connected_exit(state_machine_t *sm)
     AG_DBG_EXIT(sm, &agsm->addr);
 }
 
+static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
+{
+    ag_state_machine_t *agsm = (ag_state_machine_t *)context;
+    hfp_ag_msg_t *msg;
+    hfp_ag_event_t event;
+
+    BT_LOGD("%s, evt_code:0x%x, len:%d", __func__, hci_event->evt_code,
+            hci_event->length);
+    BT_DUMPBUFFER("vsc", (uint8_t *)hci_event->params, hci_event->length);
+
+    if (flag_isset(agsm, PENDING_OFFLOAD_START)) {
+        event = AG_OFFLOAD_START_EVT;
+        flag_clear(agsm, PENDING_OFFLOAD_START);
+    } else if (flag_isset(agsm, PENDING_OFFLOAD_STOP)) {
+        event = AG_OFFLOAD_STOP_EVT;
+        flag_clear(agsm, PENDING_OFFLOAD_STOP);
+    } else {
+        return;
+    }
+
+    msg = hfp_ag_event_new_ext(event, &agsm->addr, hci_event->params, hci_event->length);
+    hfp_ag_send_message(msg);
+}
+
 static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
@@ -598,6 +648,7 @@ static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p
 
         switch (state) {
         case HFP_AUDIO_STATE_CONNECTED:
+            agsm->sco_conn_handle = data->valueint2;
             hsm_transition_to(sm, &audio_on_state);
             break;
         case HFP_AUDIO_STATE_DISCONNECTED:
@@ -606,6 +657,23 @@ static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p
             break;
         }
     } break;
+    case AG_OFFLOAD_STOP_REQ: {
+        uint8_t ogf;
+        uint16_t ocf;
+        uint8_t len;
+        uint8_t *payload;
+
+        payload = data->data;
+        len = data->size - sizeof(ogf) - sizeof(ocf);
+        STREAM_TO_UINT8(ogf, payload)
+        STREAM_TO_UINT16(ocf, payload);
+        flag_set(agsm, PENDING_OFFLOAD_STOP);
+
+        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, agsm);
+    } break;
+    case AG_OFFLOAD_STOP_EVT: {
+        break;
+    }
     default:
         default_process_event(sm, event, p_data);
         break;
@@ -669,10 +737,25 @@ static bool audio_connecting_process_event(state_machine_t *sm, uint32_t event, 
     return true;
 }
 
+static void hfp_ag_offload_timeout_callback(service_timer_t *timer, void *data)
+{
+    ag_state_machine_t *agsm = (ag_state_machine_t *)data;
+    hfp_ag_msg_t *msg;
+
+    msg = hfp_ag_msg_new(AG_OFFLOAD_TIMEOUT_EVT, &agsm->addr);
+    ag_state_machine_dispatch(agsm, msg);
+    hfp_ag_msg_destory(msg);
+}
+
 static void audio_on_enter(state_machine_t *sm)
 {
     ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
     AG_DBG_ENTER(sm, &agsm->addr);
+
+    if (agsm->offloading) {
+        return;
+    }
+
     /* TODO: get volume */
     /* TODO: set remote volume */
     bt_media_set_hfp_samplerate(agsm->codec == HFP_CODEC_MSBC ? 16000 : 8000);
@@ -731,6 +814,46 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
             BT_LOGW("Ignored audio connection state:%d", state);
             break;
         }
+    } break;
+    case AG_OFFLOAD_START_REQ: {
+        uint8_t ogf;
+        uint16_t ocf;
+        uint8_t len;
+        uint8_t *payload;
+
+        payload = data->data;
+        len = data->size - sizeof(ogf) - sizeof(ocf);
+        STREAM_TO_UINT8(ogf, payload)
+        STREAM_TO_UINT16(ocf, payload);
+
+        flag_set(agsm, PENDING_OFFLOAD_START);
+        agsm->offload_timer = service_loop_timer(AG_OFFLOAD_TIMEOUT, 0, hfp_ag_offload_timeout_callback, agsm);
+        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, agsm);
+    } break;
+    case AG_OFFLOAD_START_EVT: {
+        bt_hci_event_t *hci_event;
+        uint8_t status;
+
+        if (agsm->offload_timer) {
+            service_loop_cancel_timer(agsm->offload_timer);
+            agsm->offload_timer = NULL;
+        }
+
+        hci_event = data->data;
+        status = hci_event->params[3]; // sizeof(struct hci_evt_cmd_complete_s)
+        if (status != BT_STATUS_SUCCESS) {
+            BT_LOGE("AG_OFFLOAD_START fail, status:0x%0x", status);
+            break;
+        }
+
+        bt_media_set_hfp_samplerate(agsm->codec == HFP_CODEC_MSBC ? 16000 : 8000);
+        bt_media_set_sco_available();
+        ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_CONNECTED);
+    } break;
+    case AG_OFFLOAD_TIMEOUT_EVT: {
+        flag_clear(agsm, PENDING_OFFLOAD_START);
+        agsm->offload_timer = NULL;
+        bt_media_set_sco_unavailable();
     } break;
     default:
         default_process_event(sm, event, p_data);
@@ -799,6 +922,7 @@ ag_state_machine_t *ag_state_machine_new(bt_address_t *addr, void *context)
     agsm->connect_timer = NULL;
     agsm->audio_timer = NULL;
     agsm->dial_out_timer = NULL;
+    agsm->codec = HFP_CODEC_CVSD;
     memcpy(&agsm->addr, addr, sizeof(bt_address_t));
     hsm_ctor(&agsm->sm, (state_t *)&disconnected_state);
 
@@ -827,4 +951,24 @@ void ag_state_machine_dispatch(ag_state_machine_t *agsm, hfp_ag_msg_t *msg)
 uint32_t ag_state_machine_get_state(ag_state_machine_t *agsm)
 {
     return hsm_get_current_state_value(&agsm->sm);
+}
+
+uint16_t ag_state_machine_get_sco_handle(ag_state_machine_t *agsm)
+{
+    return agsm->sco_conn_handle;
+}
+
+void ag_state_machine_set_sco_handle(ag_state_machine_t *agsm, uint16_t sco_hdl)
+{
+    agsm->sco_conn_handle = sco_hdl;
+}
+
+uint8_t ag_state_machine_get_codec(ag_state_machine_t *agsm)
+{
+    return agsm->codec;
+}
+
+void ag_state_machine_set_offloading(ag_state_machine_t *agsm, bool offloading)
+{
+    agsm->offloading = offloading;
 }

@@ -39,3 +39,23 @@ bool a2dp_offload_stop_builder(a2dp_offload_config_t *config,
     return false;
 #endif
 }
+
+bool hfp_offload_start_builder(hfp_offload_config_t *config,
+                               uint8_t *offload, size_t *size)
+{
+#ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
+    return actions_hfp_offload_start_builder(config, offload, size);
+#else
+    return false;
+#endif
+}
+
+bool hfp_offload_stop_builder(hfp_offload_config_t *config,
+                              uint8_t *offload, size_t *size)
+{
+#ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
+    return actions_hfp_offload_stop_builder(config, offload, size);
+#else
+    return false;
+#endif
+}
