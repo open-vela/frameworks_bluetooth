@@ -68,7 +68,8 @@ static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE
 
 static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state, uint16_t sink_cid)
 {
-    a2dp_event_type_t event;
+    a2dp_event_t *event;
+    a2dp_event_type_t type;
 
     switch (state) {
     case A2DP_STREAM_UNKNOWN:
@@ -76,19 +77,22 @@ static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM
     case A2DP_STREAM_OPENED:
         return;
     case A2DP_STREAM_CLOSED:
-        event = STREAM_CLOSED_EVT;
+        type = STREAM_CLOSED_EVT;
         break;
     case A2DP_STREAM_SUSPENDED:
-        event = STREAM_SUSPENDED_EVT;
+        type = STREAM_SUSPENDED_EVT;
         break;
     case A2DP_STREAM_STREAMING:
-        event = STREAM_STARTED_EVT;
+        type = STREAM_STARTED_EVT;
         break;
     default:
         return;
     }
 
-    bt_sal_a2dp_source_event_callback(a2dp_event_new(event, (void *)remote_addr));
+    event = a2dp_event_new(type, (void *)remote_addr);
+    event->event_data.l2c_rcid = sink_cid;
+
+    bt_sal_a2dp_source_event_callback(event);
 }
 
 static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S *config)

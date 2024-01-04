@@ -334,8 +334,6 @@ static void link_policy_changed_callback(BD_ADDR remote_addr,
     adapter_on_link_policy_changed(&addr, link_policy);
 }
 
-static void bt_hci_event_callback(SERVICE_BT_HCI_EVENT_S *hci_event) { DEBUG_IMPL }
-
 static void transport_write_packet_callback(uint8_t *hci_packet, uint32_t length)
 {
     assert(hci_packet);
@@ -518,7 +516,7 @@ static const GAP_CALLBACKS_S sal_gap_callbacks = {
     .gap_link_mode_changed_cb = link_mode_changed_callback,
     /* done */
     .gap_link_policy_changed_cb = link_policy_changed_callback,
-    .gap_hci_event_cb = bt_hci_event_callback,
+    .gap_hci_event_cb = NULL,
     /* done */
     .gap_transport_write_packet_cb = transport_write_packet_callback,
     /* don't implement this callback */
@@ -1814,7 +1812,8 @@ bt_status_t bt_sal_le_enable_key_derivation(bool brkey_to_lekey,
 }
 
 /* HCI VSC command */
-bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t *buf)
+bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t *buf,
+                                    bt_hci_event_callback_t cb, void *context)
 {
     SERVICE_HCI_COMMAND_S *command = malloc(sizeof(SERVICE_HCI_COMMAND_S) + length);
 
@@ -1823,8 +1822,9 @@ bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, u
 
     command->ogf = ogf;
     command->ocf = ocf;
-    command->cb = bt_hci_event_callback;
+    command->cb = (gap_hci_event_callback)cb;
     command->length = length;
+    command->context = context;
     memcpy(command->params, buf, length);
     if (service_adapter_gap_send_hci_command(command) != SERVICE_BT_STATUS_SUCCESS) {
         free(command);

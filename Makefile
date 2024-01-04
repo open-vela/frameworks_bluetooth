@@ -40,6 +40,7 @@ endif
 endif
 
 CSRCS += service/src/manager_service.c
+CSRCS += service/vendor/bt_vendor.c
 CSRCS += service/common/*.c
 
 ifeq ($(CONFIG_BLUETOOTH_OBELISK), y)
@@ -245,6 +246,7 @@ CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/includ
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/system
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks/include
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/vendor
 
 ifeq ($(CONFIG_BLUETOOTH_OBELISK), y)
 ifneq ($(CONFIG_OBELISK_BREDR_BLUELET)$(CONFIG_OBELISK_LE_BLUELET),)

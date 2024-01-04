@@ -90,6 +90,13 @@ extern bool utils_log_print_check(uint8_t level);
         BT_LOGD(fmt, _addr_str, ##__VA_ARGS__);     \
     } while (0);
 
+
+#ifdef CONFIG_BLUETOOTH_DUMPBUFFER
+#define BT_DUMPBUFFER(m, a, n) lib_dumpbuffer(m, a, n)
+#else
+#define BT_DUMPBUFFER(m, a, n)
+#endif
+
 void utils_log_init(void);
 int utils_log_enable(int id);
 int utils_log_disable(int id);

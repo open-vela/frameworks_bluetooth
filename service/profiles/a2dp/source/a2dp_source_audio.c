@@ -71,6 +71,7 @@ typedef struct {
 } a2dp_source_underflow_t;
 
 typedef struct {
+    bool offloading;
     uint16_t mtu;
     stream_state_t stream_state;
     uint8_t codec_info[10];
@@ -84,7 +85,7 @@ typedef struct {
     const a2dp_source_stream_interface_t *stream_interface;
 } a2dp_source_stream_t;
 
-a2dp_source_stream_t a2dp_src_stream;
+static a2dp_source_stream_t a2dp_src_stream = { 0 };
 extern audio_transport_t *a2dp_transport;
 
 static void a2dp_source_read_congest(uint8_t ch_id);
@@ -358,33 +359,49 @@ bool a2dp_source_is_streaming(void)
     return a2dp_src_stream.media_alarm ? true : false;
 }
 
-void a2dp_source_on_connection_changed(bool connected)
+bool a2dp_source_on_connection_changed(bool connected)
 {
+    transport_conn_state_t state;
     BT_LOGD("%s, %d", __func__, connected);
-    if (connected) {
-        a2dp_control_update_audio_config(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, 1);
-    } else {
-        a2dp_control_update_audio_config(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, 0);
+
+    state = a2dp_control_get_state(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL);
+    if (state != IPC_CONNTECTED) {
+        return false;
+    }
+
+    a2dp_control_update_audio_config(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, connected ? 1 : 0);
+    if (a2dp_src_stream.offloading) {
+        return true;
+    }
+
+    if (!connected) {
         a2dp_source_stop_audio_req(true);
     }
+
+    return true;
 }
 
 void a2dp_source_on_started(bool started)
 {
     BT_LOGD("%s: %d", __func__, started);
 
-    if (started) {
-        a2dp_control_event(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_STARTED);
-        if (a2dp_src_stream.stream_state == STATE_OFF || a2dp_src_stream.stream_state == STATE_FLUSHING)
-            a2dp_source_start_audio_req();
-    } else {
-        a2dp_control_event(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, A2DP_CTRL_EVT_START_FAIL);
+    a2dp_control_event(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, started ? A2DP_CTRL_EVT_STARTED : A2DP_CTRL_EVT_START_FAIL);
+    if (a2dp_src_stream.offloading) {
+        return;
+    }
+
+    if (started && (a2dp_src_stream.stream_state == STATE_OFF || a2dp_src_stream.stream_state == STATE_FLUSHING)) {
+        a2dp_source_start_audio_req();
     }
 }
 
 void a2dp_source_on_stopped(void)
 {
     BT_LOGD("%s", __func__);
+
+    if (a2dp_src_stream.offloading) {
+        return;
+    }
 
     a2dp_source_stop_audio_req(false);
 }
@@ -393,6 +410,9 @@ void a2dp_source_on_suspended(void)
 {
     BT_LOGD("%s", __func__);
 
+    if (a2dp_src_stream.offloading) {
+        return;
+    }
     a2dp_source_stop_audio_req(false);
 }
 
@@ -401,6 +421,10 @@ void a2dp_source_setup_codec(bt_address_t *bd_addr)
     a2dp_source_stream_t *stream = &a2dp_src_stream;
     a2dp_codec_config_t *config;
     a2dp_peer_t *peer;
+
+    if (a2dp_src_stream.offloading) {
+        return;
+    }
 
     circbuf_reset(&stream->stream_pool);
     stream->stream_interface = get_stream_interface();
@@ -422,17 +446,24 @@ void a2dp_source_setup_codec(bt_address_t *bd_addr)
     a2dp_source_start_flush();
 }
 
-void a2dp_source_audio_init(void)
+void a2dp_source_audio_init(bool offloading)
 {
-    memset(&a2dp_src_stream, 0, sizeof(a2dp_src_stream));
-    a2dp_src_stream.stream_state = STATE_OFF;
-    circbuf_init(&a2dp_src_stream.stream_pool, NULL, 2048);
-    a2dp_control_init(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
+    if (!offloading) {
+        a2dp_src_stream.stream_state = STATE_OFF;
+        circbuf_init(&a2dp_src_stream.stream_pool, NULL, 2048);
+    }
+
+    a2dp_src_stream.offloading = offloading;
+    a2dp_control_init(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, offloading ? AUDIO_TRANS_CH_ID_AV_INVALID : AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
 }
 
 void a2dp_source_audio_cleanup(void)
 {
-    a2dp_source_close_audio();
-    circbuf_uninit(&a2dp_src_stream.stream_pool);
+    if (!a2dp_src_stream.offloading) {
+        a2dp_source_close_audio();
+        circbuf_uninit(&a2dp_src_stream.stream_pool);
+    }
+
+    memset(&a2dp_src_stream, 0, sizeof(a2dp_src_stream));
     a2dp_control_ch_close(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
 }

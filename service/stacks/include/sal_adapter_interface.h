@@ -86,7 +86,7 @@ bt_status_t bt_sal_set_afh_channel_classification(uint16_t central_frequency,
                                                   uint16_t band_width,
                                                   uint16_t number);
 /* service adapter layer for LE */
-//#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+// #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 bt_status_t bt_sal_le_init(void);
 void bt_sal_le_cleanup(void);
 bt_status_t bt_sal_le_enable(void);
@@ -148,7 +148,9 @@ bt_status_t bt_sal_le_set_appearance(uint16_t appearance);
 uint16_t bt_sal_le_get_appearance(void);
 bt_status_t bt_sal_le_enable_key_derivation(bool brkey_to_lekey,
                                             bool lekey_to_brkey);
-//#endif
-bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t *buf);
+
+bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t *buf,
+                                    bt_hci_event_callback_t cb, void *context);
 bt_status_t bt_sal_set_auto_sniff(bt_auto_sniff_params_t *params);
+
 #endif /* __SAL_ADAPTER_INTERFACE_H_ */

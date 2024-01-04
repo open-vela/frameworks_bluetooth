@@ -17,13 +17,17 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef CONFIG_KVDB
+#include <kvdb.h>
+#endif
 
 #include "adapter_internel.h"
 #include "bt_adapter.h"
 #include "btservice.h"
+#include "media_system.h"
 #include "sal_adapter_interface.h"
-#include "state_machine.h"
 #include "service_manager.h"
+#include "state_machine.h"
 
 #define LOG_TAG "adapter-stm"
 #include "bt_utils.h"
@@ -112,6 +116,7 @@ typedef struct adapter_state_machine {
     state_machine_t sm;
     bool ble_enabled;
     bool pending_turn_on;
+    bool a2dp_offloading;
 } adapter_state_machine_t;
 
 #define ADPATER_STM_DEBUG 1
@@ -161,6 +166,15 @@ static const char *event_to_string(uint16_t event)
 #define ADAPTER_DBG_EVENT(__sm, __event)
 #endif
 
+static bool a2dp_is_offloading(void)
+{
+#if defined(CONFIG_KVDB) && defined(__NuttX__)
+    return property_get_bool("persist.bluetooth.a2dp.offloading", false);
+#else
+    return false;
+#endif
+}
+
 static void off_enter(state_machine_t *sm)
 {
     adapter_state_machine_t *stm = (adapter_state_machine_t *)sm;
@@ -169,13 +183,25 @@ static void off_enter(state_machine_t *sm)
     stm->ble_enabled = false;
     stm->pending_turn_on = false;
     const state_t *prev = hsm_get_previous_state(sm);
-    if (prev)
+    if (prev) {
         adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_OFF);
+    } else {
+        stm->a2dp_offloading = a2dp_is_offloading();
+    }
 }
 
 static void off_exit(state_machine_t *sm)
 {
     ADAPTER_DBG_EXIT(sm);
+}
+
+static void adapter_notify_media_offloading(adapter_state_machine_t *stm)
+{
+    profile_msg_t msg;
+
+    msg.event = PROFILE_EVT_A2DP_OFFLOADING;
+    msg.data.valuebool = stm->a2dp_offloading;
+    service_manager_processmsg(&msg);
 }
 
 static bool off_process_event(state_machine_t *sm, uint32_t event, void *p_data)
@@ -185,6 +211,7 @@ static bool off_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 
     switch (event) {
     case SYS_TURN_ON:
+        adapter_notify_media_offloading(stm);
         if (!adapter_is_support_le()) {
             hsm_transition_to(sm, &turning_on_state);
             break;
@@ -315,10 +342,14 @@ static bool turning_on_process_event(state_machine_t *sm, uint32_t event, void *
 
 static void on_state_enter(state_machine_t *sm)
 {
+    adapter_state_machine_t *stm = (adapter_state_machine_t *)sm;
+
     ADAPTER_DBG_ENTER(sm);
     const state_t *prev = hsm_get_previous_state(sm);
     adapter_on_br_enabled();
     adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_ON);
+
+    bt_media_set_a2dp_offloading(stm->a2dp_offloading);
 }
 
 static void on_state_exit(state_machine_t *sm)

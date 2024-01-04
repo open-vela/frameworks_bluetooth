@@ -30,6 +30,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
+#ifdef CONFIG_KVDB
+#include <kvdb.h>
+#endif
+#include <debug.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -65,11 +69,14 @@
 #define A2DP_SUSPEND_TIMEOUT 5000
 #define A2DP_DELAY_START     100
 #define A2DP_DELAY_SUSPEND   200
+#define A2DP_OFFLOAD_TIMEOUT 500
 
 typedef enum pending_state {
     PENDING_NONE = 0x0,
     PENDING_START = 0X02,
     PENDING_STOP = 0x04,
+    PENDING_OFFLOAD_START = 0x08,
+    PENDING_OFFLOAD_STOP = 0x16,
 } pending_state_t;
 
 typedef struct _a2dp_state_machine {
@@ -83,12 +90,15 @@ typedef struct _a2dp_state_machine {
     service_timer_t *start_timer;
     service_timer_t *delay_start_timer;
     service_timer_t *delay_suspend_timer;
+    service_timer_t *offload_timer;
 } a2dp_state_machine_t;
 
 typedef struct {
     a2dp_state_machine_t *a2dp_sm;
     a2dp_event_t *a2dp_event;
 } a2dp_inter_event_t;
+
+extern void do_in_a2dp_service(a2dp_event_t *a2dp_event);
 
 static void idle_enter(state_machine_t *sm);
 static void idle_exit(state_machine_t *sm);
@@ -106,6 +116,10 @@ static bool opening_process_event(state_machine_t *sm, uint32_t event, void *p_d
 static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_data);
 static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_data);
 static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_data);
+
+static bool flag_isset(a2dp_state_machine_t *a2dp_sm, pending_state_t flag);
+static void flag_set(a2dp_state_machine_t *a2dp_sm, pending_state_t flag);
+static void flag_clear(a2dp_state_machine_t *a2dp_sm, pending_state_t flag);
 
 static const state_t idle_state = {
     .state_name = "Idle",
@@ -197,6 +211,11 @@ static char *stack_event_to_string(a2dp_event_type_t event)
         CASE_RETURN_STR(CONNECT_TIMEOUT)
         CASE_RETURN_STR(START_TIMEOUT)
         CASE_RETURN_STR(STREAM_SUSPEND_DELAY)
+        CASE_RETURN_STR(OFFLOAD_START_REQ)
+        CASE_RETURN_STR(OFFLOAD_STOP_REQ)
+        CASE_RETURN_STR(OFFLOAD_START_EVT)
+        CASE_RETURN_STR(OFFLOAD_STOP_EVT)
+        CASE_RETURN_STR(OFFLOAD_TIMEOUT)
     default:
         return "UNKNOWN_EVENT";
     }
@@ -256,6 +275,30 @@ static void a2dp_report_audio_config_state(a2dp_state_machine_t *stm, bt_address
     }
 }
 
+static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
+{
+    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)context;
+    a2dp_event_t *a2dp_event;
+    a2dp_event_type_t event;
+
+    BT_LOGD("%s, evt_code:0x%x, len:%d", __func__, hci_event->evt_code,
+            hci_event->length);
+    BT_DUMPBUFFER("vsc", (uint8_t *)hci_event->params, hci_event->length);
+
+    if (flag_isset(a2dp_sm, PENDING_OFFLOAD_START)) {
+        event = OFFLOAD_START_EVT;
+        flag_clear(a2dp_sm, PENDING_OFFLOAD_START);
+    } else if (flag_isset(a2dp_sm, PENDING_OFFLOAD_STOP)) {
+        event = OFFLOAD_STOP_EVT;
+        flag_clear(a2dp_sm, PENDING_OFFLOAD_STOP);
+    } else {
+        return;
+    }
+
+    a2dp_event = a2dp_event_new_ext(event, &a2dp_sm->addr, hci_event, hci_event->length);
+    do_in_a2dp_service(a2dp_event);
+}
+
 static void a2dp_connect_timeout_callback(service_timer_t *timer, void *data)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)data;
@@ -292,6 +335,16 @@ static void a2dp_delay_suspend_timeout_callback(service_timer_t *timer, void *da
     a2dp_event_t *a2dp_event;
 
     a2dp_event = a2dp_event_new(STREAM_SUSPEND_REQ, &a2dp_sm->addr);
+    a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
+    a2dp_event_destory(a2dp_event);
+}
+
+static void a2dp_offload_config_timeout_callback(service_timer_t *timer, void *data)
+{
+    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)data;
+    a2dp_event_t *a2dp_event;
+
+    a2dp_event = a2dp_event_new(OFFLOAD_TIMEOUT, &a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
 }
@@ -438,6 +491,7 @@ static void opened_enter(state_machine_t *sm)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
     const state_t *prev_state = hsm_get_previous_state(sm);
+    bool ret;
 
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
     if (prev_state == &idle_state || prev_state == &opening_state) {
@@ -448,7 +502,12 @@ static void opened_enter(state_machine_t *sm)
         if (a2dp_sm->peer_sep == SEP_SRC)
             bt_sal_avrcp_control_connect(&a2dp_sm->addr);
 #endif
-        a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
+
+        ret = a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
+        if (!ret) {
+            BT_LOGD("a2dp control not connected, then set a2dp available");
+            bt_media_set_a2dp_available();
+        }
         a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
                                      PROFILE_STATE_CONNECTED);
     }
@@ -590,6 +649,95 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         break;
     }
 
+    case OFFLOAD_START_REQ: {
+        a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
+        uint8_t ogf;
+        uint16_t ocf;
+        uint8_t len;
+        uint8_t *payload;
+
+        if (a2dp_sm->peer_sep == SEP_SNK) {
+            flag_clear(a2dp_sm, PENDING_START);
+            service_loop_cancel_timer(a2dp_sm->start_timer);
+            a2dp_sm->start_timer = NULL;
+            if (a2dp_sm->delay_start_timer)
+                service_loop_cancel_timer(a2dp_sm->delay_start_timer);
+            a2dp_sm->delay_start_timer = NULL;
+        }
+
+        payload = data->data;
+        len = data->size - sizeof(ogf) - sizeof(ocf);
+        STREAM_TO_UINT8(ogf, payload)
+        STREAM_TO_UINT16(ocf, payload);
+        flag_set(a2dp_sm, PENDING_OFFLOAD_START);
+        a2dp_sm->offload_timer = service_loop_timer(A2DP_OFFLOAD_TIMEOUT, 0, a2dp_offload_config_timeout_callback, a2dp_sm);
+
+        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
+                                a2dp_sm);
+        break;
+    }
+
+    case OFFLOAD_START_EVT: {
+        a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
+        bt_hci_event_t *hci_event;
+        uint8_t status;
+
+        if (a2dp_sm->peer_sep == SEP_SNK) {
+            flag_clear(a2dp_sm, PENDING_START);
+            service_loop_cancel_timer(a2dp_sm->start_timer);
+            a2dp_sm->start_timer = NULL;
+            if (a2dp_sm->delay_start_timer)
+                service_loop_cancel_timer(a2dp_sm->delay_start_timer);
+            a2dp_sm->delay_start_timer = NULL;
+        }
+
+        hci_event = data->data;
+        if (a2dp_sm->offload_timer) {
+            service_loop_cancel_timer(a2dp_sm->offload_timer);
+            a2dp_sm->offload_timer = NULL;
+        }
+
+        status = hci_event->params[3]; // sizeof(struct hci_evt_cmd_complete_s)
+        if (status != BT_STATUS_SUCCESS) {
+            BT_LOGE("A2DP_OFFLOAD_START fail, status:0x%0x", status);
+            a2dp_audio_on_started(a2dp_sm->peer_sep, false);
+            break;
+        }
+
+        a2dp_audio_on_started(a2dp_sm->peer_sep, true); // workaround always true for controller bug
+        hsm_transition_to(sm, &started_state);
+        break;
+    }
+
+    case OFFLOAD_TIMEOUT: {
+        flag_clear(a2dp_sm, PENDING_OFFLOAD_START);
+        a2dp_sm->offload_timer = NULL;
+        a2dp_audio_on_started(a2dp_sm->peer_sep, false);
+        break;
+    }
+
+    case OFFLOAD_STOP_REQ: {
+        a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
+        uint8_t ogf;
+        uint16_t ocf;
+        uint8_t len;
+        uint8_t *payload;
+
+        payload = data->data;
+        len = data->size - sizeof(ogf) - sizeof(ocf);
+        STREAM_TO_UINT8(ogf, payload)
+        STREAM_TO_UINT16(ocf, payload);
+        flag_set(a2dp_sm, PENDING_OFFLOAD_STOP);
+
+        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
+                                a2dp_sm);
+        break;
+    }
+
+    case OFFLOAD_STOP_EVT: {
+        break;
+    }
+
     default:
         break;
     }
@@ -722,6 +870,24 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         a2dp_report_audio_config_state(a2dp_sm, &a2dp_sm->addr);
         break;
 
+    case OFFLOAD_STOP_REQ: {
+        a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
+        uint8_t ogf;
+        uint16_t ocf;
+        uint8_t len;
+        uint8_t *payload;
+
+        payload = data->data;
+        len = data->size - sizeof(ogf) - sizeof(ocf);
+        STREAM_TO_UINT8(ogf, payload)
+        STREAM_TO_UINT16(ocf, payload);
+        flag_set(a2dp_sm, PENDING_OFFLOAD_STOP);
+
+        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
+                                a2dp_sm);
+
+        break;
+    }
     default:
         break;
     }

@@ -216,15 +216,24 @@ a2dp_sink_packet_t *a2dp_sink_new_packet(uint32_t timestamp, uint16_t seq, uint8
 }
 
 // TODO: check active peer
-void a2dp_sink_on_connection_changed(bool connected)
+bool a2dp_sink_on_connection_changed(bool connected)
 {
+    transport_conn_state_t state;
+
     BT_LOGD("%s, %d", __func__, connected);
+    state = a2dp_control_get_state(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL);
+    if (state != IPC_CONNTECTED) {
+        return false;
+    }
+
     if (connected) {
         a2dp_control_update_audio_config(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, 1);
     } else {
         a2dp_sink_on_stopped();
         a2dp_control_update_audio_config(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, 0);
     }
+
+    return true;
 }
 
 void a2dp_sink_on_started(bool started)

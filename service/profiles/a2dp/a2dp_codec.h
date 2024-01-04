@@ -35,6 +35,8 @@
 
 #include "a2dp_codec_aac.h"
 #include "a2dp_codec_sbc.h"
+#include "bt_vendor.h"
+
 #include <sys/types.h>
 
 typedef enum {
@@ -68,6 +70,8 @@ typedef struct {
     a2dp_codec_sample_rate_t sample_rate;
     a2dp_codec_bits_per_sample_t bits_per_sample;
     a2dp_codec_channel_mode_t channel_mode;
+    uint16_t acl_hdl;
+    uint16_t l2c_rcid;
     uint32_t bit_rate;
     uint32_t frame_size;
     uint32_t packet_size;
@@ -81,5 +85,6 @@ typedef struct {
 a2dp_codec_config_t *a2dp_codec_get_config(void);
 void a2dp_codec_set_config(uint8_t peer_sep, a2dp_codec_config_t *config);
 void a2dp_codec_update_config(uint8_t peer_sep, a2dp_codec_config_t *config, uint16_t mtu);
+bool a2dp_codec_get_offload_config(a2dp_offload_config_t *config);
 
 #endif

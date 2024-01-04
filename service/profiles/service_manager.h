@@ -31,6 +31,25 @@ typedef enum control_cmd {
     CONTROL_CMD_DUMP
 } control_cmd_t;
 
+typedef enum {
+    PROFILE_EVT_A2DP_OFFLOADING = 1,
+} profile_event_t;
+
+typedef struct
+{
+    bool valuebool;
+    uint32_t valueint1;
+    uint32_t valueint2;
+    size_t size;
+    void *data;
+} profile_data_t;
+
+typedef struct
+{
+    profile_event_t event;
+    profile_data_t data;
+} profile_msg_t;
+
 typedef void (*profile_on_startup_t)(enum profile_id id, bool ret);
 typedef void (*profile_on_shutdown_t)(enum profile_id id, bool ret);
 typedef struct profile_service {
@@ -42,7 +61,7 @@ typedef struct profile_service {
     bt_status_t (*init)(void);
     bt_status_t (*startup)(profile_on_startup_t cb);
     bt_status_t (*shutdown)(profile_on_shutdown_t cb);
-    void (*process_msg)(void *msg);
+    void (*process_msg)(profile_msg_t *msg);
     int (*get_state)(void);
     const void *(*get_profile_interface)(void);
     void (*cleanup)(void);
@@ -52,6 +71,7 @@ typedef struct profile_service {
 void register_service(const profile_service_t *service);
 int service_manager_init(void);
 int service_manager_startup(uint8_t transport);
+int service_manager_processmsg(profile_msg_t *msg);
 int service_manager_shutdown(uint8_t transport);
 const void *service_manager_get_profile(enum profile_id id);
 bt_status_t service_manager_control(enum profile_id id, control_cmd_t cmd);

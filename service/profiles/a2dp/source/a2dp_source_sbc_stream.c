@@ -34,7 +34,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "a2dp_codec_sbc.h"
+#include "a2dp_codec.h"
 #include "a2dp_source_audio.h"
 
 #include "service_loop.h"
@@ -262,7 +262,25 @@ static const a2dp_source_stream_interface_t a2dp_source_stream_sbc = {
     a2dp_source_sbc_interval_ms,
 };
 
-const a2dp_source_stream_interface_t* get_a2dp_source_sbc_stream_interface(void)
+const a2dp_source_stream_interface_t *get_a2dp_source_sbc_stream_interface(void)
 {
     return &a2dp_source_stream_sbc;
+}
+
+bool a2dp_source_sbc_get_offload_config(a2dp_codec_config_t *codec, a2dp_offload_config_t *offload)
+{
+    sbc_param_t *param = &codec->codec_param.sbc;
+
+    offload->codec_type = BTS_A2DP_TYPE_SBC;
+    offload->max_latency = a2dp_sbc_max_latency(param);
+    offload->sample_rate = a2dp_sbc_sample_frequency(param->s16SamplingFreq);
+    offload->bits_per_sample = a2dp_sbc_bits_per_sample(param);
+    offload->frame_sample = a2dp_sbc_frame_sample(param);
+    offload->ch_mode = a2dp_get_sbc_ch_mode(param);
+    offload->encoded_audio_bitrate = a2dp_sbc_encoded_audio_bitrate(param);
+    offload->mtu = sbc_stream.mtu;
+    offload->acl_hdl = codec->acl_hdl;
+    offload->l2c_rcid = codec->l2c_rcid;
+
+    return true;
 }

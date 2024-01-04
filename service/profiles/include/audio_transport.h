@@ -47,6 +47,11 @@ typedef enum {
     TRANSPORT_TX_DATA_READY_EVT = 0x0010
 } audio_transport_event_t;
 
+typedef enum {
+    IPC_DISCONNTECTED = -1,
+    IPC_CONNTECTED
+} transport_conn_state_t;
+
 typedef struct _audio_transport audio_transport_t;
 typedef void (*transport_event_cb_t)(uint8_t ch_id, audio_transport_event_t event);
 typedef void (*transport_alloc_cb_t)(uint8_t ch_id, uint8_t **buffer, size_t *len);
@@ -69,5 +74,7 @@ int audio_transport_read_start(audio_transport_t *transport,
                                transport_alloc_cb_t alloc_cb,
                                transport_read_cb_t read_cb);
 int audio_transport_read_stop(audio_transport_t *transport, uint8_t ch_id);
+transport_conn_state_t audio_transport_get_state(audio_transport_t *transport,
+                                                 uint8_t ch_id);
 
 #endif

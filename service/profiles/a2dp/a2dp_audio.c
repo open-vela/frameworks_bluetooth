@@ -30,8 +30,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#include "a2dp_device.h"
 #include "a2dp_control.h"
+#include "a2dp_device.h"
 #include "a2dp_sink_audio.h"
 #include "a2dp_source_audio.h"
 #include "bt_utils.h"
@@ -42,17 +42,19 @@
 
 static int g_audio_flag = 0;
 
-void a2dp_audio_on_connection_changed(uint8_t peer_sep, bool connected)
+bool a2dp_audio_on_connection_changed(uint8_t peer_sep, bool connected)
 {
     BT_LOGD("%s, %d", __func__, connected);
+
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     if (peer_sep == SEP_SNK)
-        a2dp_source_on_connection_changed(connected);
+        return a2dp_source_on_connection_changed(connected);
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     if (peer_sep == SEP_SRC)
-        a2dp_sink_on_connection_changed(connected);
+        return a2dp_sink_on_connection_changed(connected);
 #endif
+    return false;
 }
 
 void a2dp_audio_on_started(uint8_t peer_sep, bool started)
@@ -108,11 +110,11 @@ void a2dp_audio_setup_codec(uint8_t peer_sep, bt_address_t *bd_addr)
     }
 }
 
-void a2dp_audio_init(uint8_t svr_class)
+void a2dp_audio_init(uint8_t svr_class, bool offloading)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     if (svr_class == SVR_SOURCE) {
-        a2dp_source_audio_init();
+        a2dp_source_audio_init(offloading);
         g_audio_flag |= 1 << SVR_SOURCE;
     } else
 #endif

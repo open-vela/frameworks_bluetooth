@@ -19,6 +19,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+#ifdef CONFIG_KVDB
+#include <kvdb.h>
+#endif
 
 #include <nuttx/list.h>
 
@@ -26,6 +29,7 @@
 #include "bt_addr.h"
 #include "callbacks_list.h"
 #include "sal_a2dp_source_interface.h"
+#include "sal_adapter_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
 
@@ -47,6 +51,7 @@
 typedef struct {
     struct list_node list;
     bool enabled;
+    bool offloading;
     pthread_mutex_t mutex;
     callbacks_list_t *callbacks;
     a2dp_peer_t *active_peer;
@@ -54,14 +59,17 @@ typedef struct {
 
 static a2dp_source_global_t g_a2dp_source = { 0 };
 
+void do_in_a2dp_service(a2dp_event_t *a2dp_event);
+
 static void source_shutdown(void *data);
 static void source_startup(void *data);
 
-static void set_active_peer(bt_address_t *bd_addr)
+static void set_active_peer(bt_address_t *bd_addr, uint16_t acl_hdl)
 {
     a2dp_device_t *device = find_a2dp_device_by_addr(&g_a2dp_source.list, bd_addr);
 
     g_a2dp_source.active_peer = &device->peer;
+    device->peer.acl_hdl = acl_hdl;
 }
 
 static a2dp_peer_t *get_active_peer(void)
@@ -102,6 +110,89 @@ static void save_a2dp_codec_config(a2dp_peer_t *peer, a2dp_codec_config_t *confi
 
     memcpy(&peer->codec_config, config, sizeof(*config));
     a2dp_codec_set_config(SEP_SNK, &peer->codec_config);
+}
+
+static void a2dp_service_prepare_handle(a2dp_state_machine_t *sm,
+                                        a2dp_event_t *event)
+{
+    switch (event->event) {
+    case CONNECTED_EVT: {
+        set_active_peer(&event->event_data.bd_addr, bt_sal_get_acl_link_handle(&event->event_data.bd_addr));
+        break;
+    }
+
+    case STREAM_STARTED_EVT: {
+        a2dp_offload_config_t config = { 0 };
+        a2dp_codec_config_t *codec_config;
+        a2dp_device_t *device;
+        uint8_t param[sizeof(a2dp_offload_config_t)];
+        size_t size;
+        bool ret;
+
+        if (!g_a2dp_source.offloading) {
+            break;
+        }
+
+        device = find_a2dp_device_by_addr(&g_a2dp_source.list, &event->event_data.bd_addr);
+        if (!device) {
+            BT_LOGE("A2DP find_device_by_addr:%s failed", bt_addr_str(&device->bd_addr));
+            break;
+        }
+
+        codec_config = &device->peer.codec_config;
+        codec_config->l2c_rcid = event->event_data.l2c_rcid;
+        codec_config->acl_hdl = device->peer.acl_hdl;
+        save_a2dp_codec_config(&device->peer, codec_config);
+
+        ret = a2dp_codec_get_offload_config(&config);
+        if (!ret) {
+            BT_LOGE("A2DP codec_get_offload_config failed");
+            break;
+        }
+
+        ret = a2dp_offload_start_builder(&config, param, &size);
+        if (!ret) {
+            BT_LOGE("A2DP codec_offload_start_builder failed");
+            break;
+        }
+
+        event->event = OFFLOAD_START_REQ;
+        free(event->event_data.data);
+        event->event_data.data = malloc(size);
+        event->event_data.size = size;
+        memcpy(event->event_data.data, param, size);
+        break;
+    }
+
+    case STREAM_CLOSED_EVT:
+    case STREAM_SUSPENDED_EVT: {
+        a2dp_offload_config_t config = { 0 };
+        uint8_t param[sizeof(a2dp_offload_config_t)];
+        bool ret;
+        size_t size;
+
+        if (!g_a2dp_source.offloading) {
+            break;
+        }
+
+        ret = a2dp_codec_get_offload_config(&config);
+        if (!ret) {
+            BT_LOGE("A2DP codec_get_offload_config failed");
+            break;
+        }
+
+        ret = a2dp_offload_stop_builder(&config, param, &size);
+        if (!ret) {
+            BT_LOGE("A2DP codec_offload_stop_builder failed");
+            break;
+        }
+
+        do_in_a2dp_service(a2dp_event_new_ext(OFFLOAD_STOP_REQ, &event->event_data.bd_addr, param, size));
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 static void a2dp_service_handle_event(void *data)
@@ -164,9 +255,7 @@ static void a2dp_service_handle_event(void *data)
             break;
         }
 
-        if (event->event == CONNECTED_EVT)
-            set_active_peer(&event->event_data.bd_addr);
-
+        a2dp_service_prepare_handle(a2dp_sm, event);
         a2dp_state_machine_handle_event(a2dp_sm, event);
         pthread_mutex_unlock(&g_a2dp_source.mutex);
         break;
@@ -176,7 +265,7 @@ static void a2dp_service_handle_event(void *data)
     a2dp_event_destory(event);
 }
 
-static void do_in_a2dp_service(a2dp_event_t *a2dp_event)
+void do_in_a2dp_service(a2dp_event_t *a2dp_event)
 {
     if (a2dp_event == NULL)
         return;
@@ -331,7 +420,7 @@ static void source_startup(void *data)
         return;
     }
 
-    a2dp_audio_init(SVR_SOURCE);
+    a2dp_audio_init(SVR_SOURCE, g_a2dp_source.offloading);
     g_a2dp_source.enabled = true;
     on_startup(PROFILE_A2DP, true);
     pthread_mutex_unlock(&g_a2dp_source.mutex);
@@ -344,6 +433,7 @@ static bt_status_t a2dp_source_startup(profile_on_startup_t cb)
         pthread_mutex_unlock(&g_a2dp_source.mutex);
         return BT_STATUS_BUSY;
     }
+
     pthread_mutex_unlock(&g_a2dp_source.mutex);
 
     a2dp_event_t *evt = a2dp_event_new(A2DP_STARTUP, NULL);
@@ -388,6 +478,18 @@ static bt_status_t a2dp_source_shutdown(profile_on_shutdown_t cb)
     do_in_a2dp_service(evt);
 
     return BT_STATUS_SUCCESS;
+}
+
+static void a2dp_source_process_msg(profile_msg_t *msg)
+{
+    switch (msg->event) {
+    case PROFILE_EVT_A2DP_OFFLOADING:
+        g_a2dp_source.offloading = msg->data.valuebool;
+        break;
+
+    default:
+        break;
+    }
 }
 
 void a2dp_source_service_notify_connection_state_changed(
@@ -549,7 +651,7 @@ static const profile_service_t a2dp_source_service = {
     .init = a2dp_source_init,
     .startup = a2dp_source_startup,
     .shutdown = a2dp_source_shutdown,
-    .process_msg = NULL,
+    .process_msg = a2dp_source_process_msg,
     .get_state = a2dp_src_get_state,
     .get_profile_interface = get_a2dp_source_profile_interface,
     .cleanup = a2dp_source_cleanup,
