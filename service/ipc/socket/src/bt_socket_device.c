@@ -260,6 +260,19 @@ void bt_socket_server_device_process(service_poll_t *poll,
               packet->devs_pl._bt_device_set_pass_key.passkey);
         break;
       }
+    case BT_DEVICE_SET_LE_OOB_DATA:
+      {
+        packet->devs_r.status =
+          BTSYMBOLS(bt_device_set_le_oob_data)(ins,
+              &packet->devs_pl._bt_device_set_le_oob_data.addr,
+              packet->devs_pl._bt_device_set_le_oob_data.has_legacy_tk ?
+              packet->devs_pl._bt_device_set_le_oob_data.tk_val : NULL,
+              packet->devs_pl._bt_device_set_le_oob_data.has_secure_data ?
+              packet->devs_pl._bt_device_set_le_oob_data.c_val : NULL,
+              packet->devs_pl._bt_device_set_le_oob_data.has_secure_data ?
+              packet->devs_pl._bt_device_set_le_oob_data.r_val : NULL);
+        break;
+      }
     case BT_DEVICE_CONNECT:
       {
         packet->devs_r.status =
