@@ -149,6 +149,17 @@ int service_manager_startup(uint8_t transport)
     return 0;
 }
 
+int service_manager_processmsg(profile_msg_t *msg)
+{
+    for (int i = 0; i < PROFILE_MAX; i++) {
+        profile_service_t *profile = service_slots[i].service;
+        if (profile && profile->process_msg)
+            profile->process_msg(msg);
+    }
+
+    return 0;
+}
+
 int service_manager_shutdown(uint8_t transport)
 {
     if (check_is_all_shutdown(transport)) {

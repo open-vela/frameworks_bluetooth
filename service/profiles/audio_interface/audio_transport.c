@@ -43,11 +43,6 @@
 
 #include "audio_transport.h"
 
-typedef enum {
-    IPC_DISCONNTECTED = -1,
-    IPC_CONNTECTED
-} transport_conn_state_t;
-
 typedef struct {
     void *ipc_handle;
     uint8_t ch_id;
@@ -410,4 +405,13 @@ int audio_transport_read_stop(audio_transport_t *transport, uint8_t ch_id)
     }
 
     return 0;
+}
+
+transport_conn_state_t audio_transport_get_state(audio_transport_t *transport, uint8_t ch_id)
+{
+    if (!transport) {
+        return IPC_DISCONNTECTED;
+    }
+
+    return transport->ch[ch_id].state;
 }

@@ -33,12 +33,15 @@
 #ifndef __A2DP_CONTROL_H__
 #define __A2DP_CONTROL_H__
 
+#include "audio_transport.h"
+
 #define A2DP_CTRL_EVT_HEADER_LEN 1
 
 #define AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL  0
 #define AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO 1
 #define AUDIO_TRANS_CH_ID_AV_SINK_CTRL    2
 #define AUDIO_TRANS_CH_ID_AV_SINK_AUDIO   3
+#define AUDIO_TRANS_CH_ID_AV_INVALID      0xFF
 
 typedef enum {
     A2DP_CTRL_CMD_START,
@@ -58,4 +61,6 @@ extern void a2dp_control_ch_close(uint8_t ctrl_id, uint8_t data_id);
 extern void a2dp_control_cleanup(void);
 extern void a2dp_control_event(uint8_t ch_id, a2dp_ctrl_evt_t evt);
 extern void a2dp_control_update_audio_config(uint8_t ch_id, uint8_t isvalid);
+extern transport_conn_state_t a2dp_control_get_state(uint8_t ch_id);
+
 #endif

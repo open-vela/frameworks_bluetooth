@@ -24,4 +24,6 @@ bt_status_t bt_media_get_voice_call_volume(uint16_t *volume);
 bt_status_t bt_media_set_voice_call_volume(uint16_t volume);
 bt_status_t bt_media_set_sco_available(void);
 bt_status_t bt_media_set_sco_unavailable(void);
+bt_status_t bt_media_set_a2dp_offloading(bool enable);
+
 #endif /* __MEDIA_SYSTEM_H__ */

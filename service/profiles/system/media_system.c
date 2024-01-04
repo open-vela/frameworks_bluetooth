@@ -22,6 +22,8 @@
 #include "media_system.h"
 #include "utils/log.h"
 
+#define MEDIA_POLICY_APPLY 1
+
 bt_status_t bt_media_set_a2dp_available(void)
 {
     int is_available = 0;
@@ -84,7 +86,7 @@ bt_status_t bt_media_get_voice_call_volume(uint16_t *volume)
     return BT_STATUS_SUCCESS;
 }
 
-//media_policy_get_stream_volume
+// media_policy_get_stream_volume
 bt_status_t bt_media_set_voice_call_volume(uint16_t volume)
 {
     return BT_STATUS_SUCCESS;
@@ -103,6 +105,15 @@ bt_status_t bt_media_set_sco_unavailable(void)
 {
     if (media_policy_set_devices_unavailable(MEDIA_DEVICE_SCO) != 0)
         return BT_STATUS_FAIL;
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_media_set_a2dp_offloading(bool enable)
+{
+    if (media_policy_set_int(MEDIA_A2DP_OFFLOAD_MODE, enable, MEDIA_POLICY_APPLY) != 0) {
+        return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }

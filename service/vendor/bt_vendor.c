@@ -13,7 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef _BT_CONTROLLER_VENDOR_H__
-#define _BT_CONTROLLER_VENDOR_H__
 
-#endif /* _BT_CONTROLLER_VENDOR_H__ */
+#include "bt_vendor.h"
+
+#ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
+#include "bt_vendor_actions.h"
+#endif
+
+bool a2dp_offload_start_builder(a2dp_offload_config_t *config,
+                                uint8_t *offload, size_t *size)
+{
+#ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
+    return actions_a2dp_offload_start_builder(config, offload, size);
+#else
+    return false;
+#endif
+}
+
+bool a2dp_offload_stop_builder(a2dp_offload_config_t *config,
+                               uint8_t *offload, size_t *size)
+{
+#ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
+    return actions_a2dp_offload_stop_builder(config, offload, size);
+#else
+    return false;
+#endif
+}

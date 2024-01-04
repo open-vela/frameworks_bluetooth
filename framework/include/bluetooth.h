@@ -295,6 +295,12 @@ typedef struct {
     uint16_t sniff_timeout;      /* sniff timeout */
 } bt_auto_sniff_params_t;
 
+typedef struct {
+    uint8_t evt_code; /* HCI event code */
+    uint8_t length; /* length of the params */
+    char params[0]; /* parameters */
+} bt_hci_event_t;
+
 /* Possible 2.4G channel band width (MHz) */
 #define AFH_WIFI_BANDWIDTH_20             20
 #define AFH_WIFI_BANDWIDTH_22             22
@@ -312,6 +318,8 @@ enum {
 };
 
 typedef bool (*bt_allocator_t)(void **data, uint32_t size);
+
+typedef void (*bt_hci_event_callback_t)(bt_hci_event_t *hci_event, void *context);
 
 typedef struct bt_instance {
     uint32_t app_id;
