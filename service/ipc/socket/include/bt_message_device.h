@@ -39,6 +39,7 @@
   BT_DEVICE_SET_PAIRING_CONFIRMATION,
   BT_DEVICE_SET_PIN_CODE,
   BT_DEVICE_SET_PASS_KEY,
+  BT_DEVICE_SET_LE_OOB_DATA,
   BT_DEVICE_CONNECT,
   BT_DEVICE_DISCONNECT,
   BT_DEVICE_CONNECT_LE,
@@ -150,6 +151,15 @@ typedef union
     bool accept;
     uint32_t passkey;
   } _bt_device_set_pass_key;
+
+  struct {
+    bt_address_t addr;
+    bool has_legacy_tk;
+    bool has_secure_data;
+    bt_128key_t tk_val;
+    bt_128key_t c_val;
+    bt_128key_t r_val;
+  } _bt_device_set_le_oob_data;
 
   struct {
     bt_address_t addr;

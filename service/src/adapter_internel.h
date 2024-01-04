@@ -309,6 +309,7 @@ bt_status_t adapter_set_pairing_confirmation(bt_address_t *addr, uint8_t transpo
 bt_status_t adapter_set_pin_code(bt_address_t *addr, bool accept,
                                  char *pincode, int len);
 bt_status_t adapter_set_pass_key(bt_address_t *addr, uint8_t transport, bool accept, uint32_t passkey);
+bt_status_t adapter_le_set_remote_oob_data(bt_address_t *addr, bt_128key_t tk_val, bt_128key_t c_val, bt_128key_t r_val);
 uint16_t adapter_get_acl_handle(bt_address_t *addr);
 bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
                                                    uint16_t band_width,
