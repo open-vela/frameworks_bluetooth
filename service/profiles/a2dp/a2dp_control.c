@@ -325,8 +325,22 @@ void a2dp_control_init(uint8_t ctrl_id, uint8_t data_id)
         a2dp_transport = audio_transport_init(get_service_uv_loop());
     }
 
-    audio_transport_open(a2dp_transport, ctrl_id, audio_transport_path[ctrl_id], a2dp_ctrl_cb);
-    audio_transport_open(a2dp_transport, data_id, audio_transport_path[data_id], a2dp_data_cb);
+    if (ctrl_id != AUDIO_TRANS_CH_ID_AV_INVALID) {
+        audio_transport_open(a2dp_transport, ctrl_id, audio_transport_path[ctrl_id], a2dp_ctrl_cb);
+    }
+
+    if (data_id != AUDIO_TRANS_CH_ID_AV_INVALID) {
+        audio_transport_open(a2dp_transport, data_id, audio_transport_path[data_id], a2dp_data_cb);
+    }
+}
+
+transport_conn_state_t a2dp_control_get_state(uint8_t ch_id)
+{
+    if (a2dp_transport == NULL) {
+        return IPC_DISCONNTECTED;
+    }
+
+    return audio_transport_get_state(a2dp_transport, ch_id);
 }
 
 void a2dp_control_ch_close(uint8_t ctrl_id, uint8_t data_id)

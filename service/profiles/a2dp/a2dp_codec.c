@@ -36,6 +36,7 @@
 #include "a2dp_codec.h"
 #include "a2dp_device.h"
 #include "a2dp_source_audio.h"
+#include "bt_vendor.h"
 
 #define LOG_TAG "a2dp_codec"
 #include "utils/log.h"
@@ -88,4 +89,18 @@ void a2dp_codec_update_config(uint8_t peer_sep, a2dp_codec_config_t *config, uin
 a2dp_codec_config_t *a2dp_codec_get_config(void)
 {
     return &g_current_config;
+}
+
+bool a2dp_codec_get_offload_config(a2dp_offload_config_t *offload)
+{
+    a2dp_codec_config_t *codec = &g_current_config;
+
+    switch (codec->codec_type) {
+    case BTS_A2DP_TYPE_SBC:
+        return a2dp_source_sbc_get_offload_config(codec, offload);
+
+    case BTS_A2DP_TYPE_MPEG2_4_AAC:
+    default:
+        return false;
+    }
 }

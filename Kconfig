@@ -57,6 +57,10 @@ config BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY
 	int "bluetooth service loop thread priority"
 	default 100
 
+config BLUETOOTH_DUMPBUFFER
+	bool "Bluetooth dumpbuffer"
+	default n
+
 config BLUETOOTH_AUDIO_TRANS_RPSMG_SERVER
 	bool "Rpmsg audio transport server"
 	default n
@@ -354,6 +358,15 @@ config BLUETOOTH_TOOLS
 	bool "Enable bluetooth profile test tools"
 	default n
 	select BLUETOOTH_FRAMEWORK
+
+choice
+	prompt "select bt vendor"
+	default OBELISK_BT_VENDOR_BES
+	config OBELISK_BT_VENDOR_BES
+		bool "bluetooth vendor BES"
+	config OBELISK_BT_VENDOR_ACTIONS
+		bool "bluetooth vendor ACTIONS"
+endchoice
 
 config BLUETOOTH_LEAUDIO_CLIENT
 	bool "enable bluetooth leaudio client feature"

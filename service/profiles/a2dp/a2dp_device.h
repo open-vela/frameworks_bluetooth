@@ -54,6 +54,7 @@ typedef struct {
     uint8_t is_sink;
     a2dp_codec_config_t codec_config;
     uint16_t mtu;
+    uint16_t acl_hdl;
 } a2dp_peer_t;
 
 typedef struct {

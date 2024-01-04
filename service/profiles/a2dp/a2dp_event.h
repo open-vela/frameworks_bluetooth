@@ -61,6 +61,11 @@ typedef enum {
     CONNECT_TIMEOUT,
     START_TIMEOUT,
     STREAM_SUSPEND_DELAY,
+    OFFLOAD_START_REQ,
+    OFFLOAD_STOP_REQ,
+    OFFLOAD_START_EVT,
+    OFFLOAD_STOP_EVT,
+    OFFLOAD_TIMEOUT,
 } a2dp_event_type_t;
 
 typedef struct
@@ -68,6 +73,9 @@ typedef struct
     bt_address_t bd_addr;
     uint8_t peer_sep;
     uint16_t mtu;
+    uint16_t acl_hdl;
+    uint16_t l2c_rcid;
+    size_t size;
     void *data;
     void *cb;
     a2dp_sink_packet_t *packet;
@@ -80,6 +88,8 @@ typedef struct
 } a2dp_event_t;
 
 a2dp_event_t *a2dp_event_new(a2dp_event_type_t event, bt_address_t *bd_addr);
+a2dp_event_t *a2dp_event_new_ext(a2dp_event_type_t event, bt_address_t *bd_addr,
+                                 void *data, size_t size);
 void a2dp_event_destory(a2dp_event_t *a2dp_event);
 
 #endif

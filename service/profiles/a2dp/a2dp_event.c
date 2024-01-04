@@ -38,16 +38,28 @@
 a2dp_event_t *a2dp_event_new(a2dp_event_type_t event,
                              bt_address_t *bd_addr)
 {
+    return a2dp_event_new_ext(event, bd_addr, NULL, 0);
+}
+
+a2dp_event_t *a2dp_event_new_ext(a2dp_event_type_t event,
+                                 bt_address_t *bd_addr, void *data, size_t size)
+{
     a2dp_event_t *a2dp_event;
 
-    a2dp_event = (a2dp_event_t *)malloc(sizeof(a2dp_event_t));
+    a2dp_event = (a2dp_event_t *)zalloc(sizeof(a2dp_event_t));
     if (a2dp_event == NULL)
         return NULL;
 
     a2dp_event->event = event;
-    memset(&a2dp_event->event_data, 0, sizeof(a2dp_event->event_data));
+
     if (bd_addr != NULL)
         memcpy(&a2dp_event->event_data.bd_addr, bd_addr, sizeof(bt_address_t));
+
+    if (size > 0) {
+        a2dp_event->event_data.size = size;
+        a2dp_event->event_data.data = malloc(size);
+        memcpy(a2dp_event->event_data.data, data, size);
+    }
 
     return a2dp_event;
 }

@@ -252,3 +252,31 @@ void a2dp_codec_parse_sbc_param(sbc_param_t *param, uint8_t *codec_info)
             param->s16BitPool,
             param->u32BitRate);
 }
+
+uint16_t a2dp_sbc_frame_sample(sbc_param_t *param)
+{
+    return param->s16NumOfSubBands * param->s16NumOfBlocks;
+}
+
+uint16_t a2dp_sbc_max_latency(sbc_param_t *param)
+{
+    /* todo: */
+    return 0;
+}
+
+uint8_t a2dp_sbc_bits_per_sample(sbc_param_t *param)
+{
+    /* todo: */
+    return 0;
+}
+
+uint32_t a2dp_sbc_encoded_audio_bitrate(sbc_param_t *param)
+{
+    return a2dp_sbc_bit_rate(param);
+}
+
+uint8_t a2dp_get_sbc_ch_mode(sbc_param_t *param)
+{
+    /* todo: */
+    return 0;
+}

@@ -19,6 +19,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+#ifdef CONFIG_KVDB
+#include <kvdb.h>
+#endif
 
 #include <nuttx/list.h>
 
@@ -45,6 +48,7 @@
 typedef struct {
     struct list_node list;
     bool enabled;
+    bool offloading;
     pthread_mutex_t mutex;
     callbacks_list_t *callbacks;
     a2dp_peer_t *active_peer;
@@ -256,7 +260,7 @@ static void sink_startup(void *data)
         return;
     }
 
-    a2dp_audio_init(SVR_SINK);
+    a2dp_audio_init(SVR_SINK, g_a2dp_sink.offloading);
 
     g_a2dp_sink.enabled = true;
     on_startup(PROFILE_A2DP_SINK, true);
@@ -272,6 +276,7 @@ static bt_status_t a2dp_sink_startup(profile_on_startup_t cb)
     }
 
     pthread_mutex_unlock(&g_a2dp_sink.mutex);
+
     a2dp_event_t *evt = a2dp_event_new(A2DP_STARTUP, NULL);
     evt->event_data.cb = cb;
     do_in_a2dp_snk_service(evt);
@@ -315,6 +320,18 @@ static bt_status_t a2dp_sink_shutdown(profile_on_shutdown_t cb)
     do_in_a2dp_snk_service(evt);
 
     return BT_STATUS_SUCCESS;
+}
+
+static void a2dp_sink_process_msg(profile_msg_t *msg)
+{
+    switch (msg->event) {
+    case PROFILE_EVT_A2DP_OFFLOADING:
+        g_a2dp_sink.offloading = msg->data.valuebool;
+        break;
+
+    default:
+        break;
+    }
 }
 
 static void *a2dp_sink_register_callbacks(void *remote, const a2dp_sink_callbacks_t *callbacks)
@@ -454,7 +471,7 @@ static const profile_service_t a2dp_sink_service = {
     .init = a2dp_sink_init,
     .startup = a2dp_sink_startup,
     .shutdown = a2dp_sink_shutdown,
-    .process_msg = NULL,
+    .process_msg = a2dp_sink_process_msg,
     .get_state = a2dp_sink_get_state,
     .get_profile_interface = get_a2dp_sink_profile_interface,
     .cleanup = a2dp_sink_cleanup,
