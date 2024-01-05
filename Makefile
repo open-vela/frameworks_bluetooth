@@ -16,6 +16,8 @@
 
 include $(APPDIR)/Make.defs
 
+CXXEXT   := .cpp
+CXXFLAGS += -std=c++17
 
 ifeq ($(CONFIG_BLUETOOTH), y)
 
@@ -320,7 +322,6 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
 CXXSRCS     += feature/src/system_bluetooth_bt_a2dpsink.cpp
 CXXSRCS     += feature/src/system_bluetooth_bt_a2dpsink_impl.cpp
 endif
-include $(APPDIR)/frameworks/quickapp/Module.mk
 endif
 
 ifneq ($(NOEXPORTSRCS),)
