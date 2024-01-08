@@ -46,11 +46,9 @@ void utils_log_init(void)
 {
     // get framework log level config
 #if defined(CONFIG_KVDB) && defined(__NuttX__)
-    m_log_level = property_get_int32("persist.bluetooth.log.level", DEFAULT_BT_LOG_LEVEL);
-#else
-    m_log_level = BT_LOG_LEVEL_OFF;
+    //m_log_level = property_get_int32("persist.bluetooth.log.level", DEFAULT_BT_LOG_LEVEL);
 #endif
-
+    m_log_level = BT_LOG_LEVEL_DEBUG;
     m_framework_log_enable = 1;
     syslog(LOG_DEBUG, "Log Module: FRAMEWORK:%d\n", m_framework_log_enable);
 }

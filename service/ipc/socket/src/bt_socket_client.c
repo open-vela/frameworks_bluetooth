@@ -52,6 +52,9 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+#define CLIENT_MAX_RETRY 10
+#define CLIENT_MIN_RETRY_DELAY_MS 100
+#define CLIENT_DELAY_MS(retry) ((CLIENT_MAX_RETRY - retry) * CLIENT_MIN_RETRY_DELAY_MS)
 
 /****************************************************************************
  * Private Types
@@ -333,7 +336,7 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
                           const char *name, const char *cpu, int port)
 {
     uv_poll_t *poll;
-    int retry = 3;
+    int retry = CLIENT_MAX_RETRY;
 
     ins->client_loop = malloc(sizeof(uv_loop_t));
     if (!ins->client_loop)
@@ -357,7 +360,6 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
 
     uv_cond_init(&ins->cond);
     uv_mutex_init(&ins->mutex);
-
     do {
         ins->peer_fd = bt_socket_client_connect(family, name, cpu, port);
         if (ins->peer_fd <= 0 && !retry) {
@@ -366,7 +368,7 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
             return BT_STATUS_PARM_INVALID;
         } else if (ins->peer_fd <= 0) {
             /* connect fail, retry after sleep 100ms */
-            usleep(100000);
+            usleep(CLIENT_DELAY_MS(retry) * 1000);
             continue;
         } else {
             /* success, goto next step */
