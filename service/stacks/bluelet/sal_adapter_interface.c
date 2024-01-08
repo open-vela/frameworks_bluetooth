@@ -582,7 +582,7 @@ static void hci_poll_recv(service_poll_t *poll, int revent, void *userdata)
         bt_sal_hci_transport_recv();
 }
 
-static void hci_add_recv(void *data)
+static int hci_add_recv(void *data)
 {
     (void)data;
 
@@ -590,8 +590,10 @@ static void hci_add_recv(void *data)
     hci_handle = service_loop_poll_fd(hci_fd, POLL_READABLE, hci_poll_recv, NULL);
     if (!hci_handle) {
         BT_LOGD("hci fd:%d add poll failed", hci_fd);
-        assert(0);
+        return -1;
     }
+
+    return 0;
 }
 
 static void *stack_schedule_loop(void *data)
