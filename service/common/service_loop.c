@@ -34,7 +34,7 @@ typedef struct {
     struct list_node node;
     union {
         service_func_t func;
-        service_func_t init;
+        service_init_t init;
         service_func_t cleanup;
     };
     void *msg;
@@ -46,12 +46,15 @@ typedef struct {
     uv_sem_t signal;
 } signal_msg_t;
 
+static void set_stop(void *data);
+
 static void set_ready(void *data)
 {
     service_loop_t *loop = data;
     struct list_node *node;
     struct list_node *tmp;
     internel_msg_t *imsg;
+    int ret;
 
     loop->is_running = 1;
     uv_sem_init(&loop->exited, 0);
@@ -59,12 +62,19 @@ static void set_ready(void *data)
     list_for_every_safe(&loop->init_queue, node, tmp)
     {
         imsg = (internel_msg_t *)node;
-        imsg->init(NULL);
+        ret = imsg->init(NULL);
         list_delete(node);
         free(imsg);
+        if (ret != 0) {
+            BT_LOGE("%s init process fail: %d", __func__, ret);
+            set_stop(data);
+            return;
+        }
     }
 
-    uv_sem_post(&loop->ready);
+    if (uv_thread_self() == loop->thread)
+        uv_sem_post(&loop->ready);
+
     BT_LOGD("set_ready");
 }
 
@@ -252,6 +262,9 @@ void service_loop_exit(void)
     struct list_node *node;
     struct list_node *tmp;
 
+    if (loop == NULL)
+        return;
+
     if (loop->is_running) {
         do_in_service_loop(set_stop, loop);
         uv_sem_wait(&loop->exited);
@@ -395,7 +408,7 @@ service_work_t *service_loop_work(void *user_data, service_work_cb_t work_cb,
     return work;
 }
 
-void add_init_process(service_func_t func)
+void add_init_process(service_init_t func)
 {
     uv_loop_t *handle = get_service_uv_loop();
     service_loop_t *loop = handle->data;

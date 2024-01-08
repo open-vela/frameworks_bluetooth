@@ -1404,12 +1404,14 @@ void adapter_cleanup(void)
     if (adapter->adapter_state_adv > 0)
         orb_unadvertise(adapter->adapter_state_adv);
 #endif
-    adapter_lock();
-    bt_list_free(adapter->devices);
-    bt_callbacks_list_free(adapter->adapter_callbacks);
-    adapter_state_machine_destory(adapter->stm);
-    adapter_unlock();
-    pthread_mutex_destroy(&adapter->adapter_lock);
+    if (adapter->stm) {
+        adapter_lock();
+        bt_list_free(adapter->devices);
+        bt_callbacks_list_free(adapter->adapter_callbacks);
+        adapter_state_machine_destory(adapter->stm);
+        adapter_unlock();
+        pthread_mutex_destroy(&adapter->adapter_lock);
+    }
 }
 
 bt_adapter_state_t adapter_get_state(void)
