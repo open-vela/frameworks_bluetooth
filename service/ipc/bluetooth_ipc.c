@@ -60,7 +60,7 @@ static void ipc_pollin_process(service_poll_t *poll, int revent, void *userdata)
     Bluetooth_handlePolledCommands();
 }
 
-static void add_ipc_poll_setup(void *data)
+static int add_ipc_poll_setup(void *data)
 {
     binder_status_t stat;
     service_poll_t *poll;
@@ -69,13 +69,16 @@ static void add_ipc_poll_setup(void *data)
     stat = Bluetooth_setupPolling(&fd);
     if (stat != STATUS_OK || fd <= 0) {
         BT_LOGD("%s :%d", __func__, stat);
-        return;
+        return fd;
     }
 
     poll = service_loop_poll_fd(fd, POLL_READABLE, ipc_pollin_process, NULL);
     if (poll == NULL) {
         BT_LOGD("%s setup poll failed", __func__);
+        return -1;
     }
+
+    return 0;
 }
 
 bt_status_t bluetooth_ipc_add_services(void)
@@ -160,14 +163,15 @@ void bluetooth_ipc_join_service_loop(void)
 
 #else
 
-static void add_ipc_server_setup(void *data)
+static int add_ipc_server_setup(void *data)
 {
-    int ret;
-    ret = bt_socket_server_init("bluetooth", CONFIG_BLUETOOTH_SOCKET_PORT);
+    int ret = bt_socket_server_init("bluetooth", CONFIG_BLUETOOTH_SOCKET_PORT);
     if (ret < 0) {
         BT_LOGE("%s error: %d", __func__, ret);
-        assert(0);
+        return ret;
     }
+
+    return 0;
 }
 
 bt_status_t bluetooth_ipc_add_services(void)

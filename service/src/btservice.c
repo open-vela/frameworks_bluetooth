@@ -222,7 +222,8 @@ int bt_service_init(void)
     bt_profile_init();
     adapter_init();
     manager_init();
-    stack_manager_init();
+    if (stack_manager_init() != BT_STATUS_SUCCESS)
+        return -1;
 
     BT_LOGD("%s done", __func__);
     return 0;

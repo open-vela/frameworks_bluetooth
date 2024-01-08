@@ -29,10 +29,18 @@
 
 int main(int argc, char **argv)
 {
+    int ret;
+
     syslog(LOG_INFO, "bluetoothd main %d\n", __LINE__);
 
-    service_loop_init();
-    bt_service_init();
+    ret = service_loop_init();
+    if (ret != 0)
+        goto out;
+
+    ret = bt_service_init();
+    if (ret != 0)
+        goto out;
+
     bluetooth_ipc_add_services();
 
     /* add ipc fd to service loop or join main thread */
@@ -42,12 +50,16 @@ int main(int argc, char **argv)
     */
 #ifdef CONFIG_BLUETOOTH_IPC_JOIN_LOOP
     bluetooth_ipc_join_service_loop();
-    service_loop_run(false, "bt_service");
+    ret = service_loop_run(false, "bt_service");
 #else
-    service_loop_run(true, "bt_service");
+    ret = service_loop_run(true, "bt_service");
+    if (ret != 0)
+        goto out;
     bluetooth_ipc_join_thread_pool();
 #endif
-    service_loop_exit();
 
-    return 0;
+out:
+    bt_service_cleanup();
+    service_loop_exit();
+    return ret;
 }

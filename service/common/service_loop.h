@@ -34,6 +34,7 @@ typedef struct service_work service_work_t;
 typedef void (*service_poll_cb_t)(service_poll_t *poll, int revent, void *userdata);
 typedef void (*service_timer_cb_t)(service_timer_t *timer, void *userdata);
 typedef void (*service_func_t)(void *data);
+typedef int  (*service_init_t)(void *data);
 typedef void (*service_work_cb_t)(service_work_t *work, void *userdata);
 typedef void (*service_after_work_cb_t)(service_work_t *work, void *userdata);
 
@@ -83,7 +84,7 @@ service_work_t *service_loop_work(void *user_data, service_work_cb_t work_cb,
                                   service_after_work_cb_t after_work_cb);
 void do_in_service_loop(service_func_t func, void *data);
 void do_in_service_loop_sync(service_func_t func, void *data);
-void add_init_process(service_func_t func);
+void add_init_process(service_init_t func);
 
 uv_loop_t *get_service_uv_loop(void);
 
