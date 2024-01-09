@@ -30,6 +30,7 @@ bt_status_t bt_gattc_create_connect(bt_instance_t *ins, gattc_handle_t *phandle,
     bt_status_t status;
     bt_gattc_remote_t *gattc_remote;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
     gattc_remote = (bt_gattc_remote_t *)malloc(sizeof(bt_gattc_remote_t));
     if (!gattc_remote)
         return BT_STATUS_NOMEM;

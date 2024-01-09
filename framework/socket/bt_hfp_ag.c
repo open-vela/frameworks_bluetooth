@@ -30,6 +30,8 @@ void *bt_hfp_ag_register_callbacks(bt_instance_t *ins, const hfp_ag_callbacks_t 
     bt_status_t status;
     void *cookie;
 
+    BT_SOCKET_INS_VALID(ins, NULL);
+
     if (ins->hfp_ag_callbacks != NULL) {
         cookie = bt_remote_callbacks_register(ins->hfp_ag_callbacks, NULL, (void *)callbacks);
         return cookie;
@@ -57,6 +59,8 @@ bool bt_hfp_ag_unregister_callbacks(bt_instance_t *ins, void *cookie)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, false);
+
     if (!ins->hfp_ag_callbacks)
       return false;
 
@@ -79,6 +83,8 @@ bool bt_hfp_ag_is_connected(bt_instance_t *ins, bt_address_t *addr)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, false);
+
     memcpy(&packet.hfp_ag_pl._bt_hfp_ag_is_connected.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_IS_CONNECTED);
     if (status != BT_STATUS_SUCCESS)
@@ -91,6 +97,8 @@ bool bt_hfp_ag_is_audio_connected(bt_instance_t *ins, bt_address_t *addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, false);
 
     memcpy(&packet.hfp_ag_pl._bt_hfp_ag_is_audio_connected.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_IS_AUDIO_CONNECTED);
@@ -105,6 +113,7 @@ profile_connection_state_t bt_hfp_ag_get_connection_state(bt_instance_t *ins, bt
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, PROFILE_STATE_DISCONNECTED);
     memcpy(&packet.hfp_ag_pl._bt_hfp_ag_get_connection_state.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_GET_CONNECTION_STATE);
     if (status != BT_STATUS_SUCCESS)
@@ -117,6 +126,8 @@ bt_status_t bt_hfp_ag_connect(bt_instance_t *ins, bt_address_t *addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.hfp_ag_pl._bt_hfp_ag_connect.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_CONNECT);
@@ -131,6 +142,8 @@ bt_status_t bt_hfp_ag_disconnect(bt_instance_t *ins, bt_address_t *addr)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     memcpy(&packet.hfp_ag_pl._bt_hfp_ag_disconnect.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_DISCONNECT);
     if (status != BT_STATUS_SUCCESS)
@@ -143,6 +156,8 @@ bt_status_t bt_hfp_ag_connect_audio(bt_instance_t *ins, bt_address_t *addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.hfp_ag_pl._bt_hfp_ag_connect_audio.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_CONNECT_AUDIO);
@@ -157,6 +172,8 @@ bt_status_t bt_hfp_ag_disconnect_audio(bt_instance_t *ins, bt_address_t *addr)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     memcpy(&packet.hfp_ag_pl._bt_hfp_ag_disconnect_audio.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_DISCONNECT_AUDIO);
     if (status != BT_STATUS_SUCCESS)
@@ -169,6 +186,8 @@ bt_status_t bt_hfp_ag_start_voice_recognition(bt_instance_t *ins, bt_address_t *
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.hfp_ag_pl._bt_hfp_ag_start_voice_recognition.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_START_VOICE_RECOGNITION);
@@ -183,6 +202,8 @@ bt_status_t bt_hfp_ag_stop_voice_recognition(bt_instance_t *ins, bt_address_t *a
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     memcpy(&packet.hfp_ag_pl._bt_hfp_ag_stop_voice_recognition.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_STOP_VOICE_RECOGNITION);
     if (status != BT_STATUS_SUCCESS)
@@ -195,6 +216,8 @@ bt_status_t bt_hfp_ag_send_at_command(bt_instance_t *ins, bt_address_t *addr, co
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr, addr, sizeof(bt_address_t));
     strncpy(packet.hfp_ag_pl._bt_hfp_ag_send_at_cmd.cmd, at_command, HFP_AT_LEN_MAX);

@@ -64,6 +64,8 @@ void *bt_hid_device_register_callbacks(bt_instance_t *ins, const hid_device_call
     bt_status_t status;
     void *cookie;
 
+    BT_SOCKET_INS_VALID(ins, NULL);
+
     if (ins->hidd_callbacks != NULL) {
         return NULL;
     }
@@ -90,6 +92,8 @@ bool bt_hid_device_unregister_callbacks(bt_instance_t *ins, void *cookie)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, false);
+
     if (!ins->hidd_callbacks)
       return false;
 
@@ -108,6 +112,8 @@ bt_status_t bt_hid_device_register_app(bt_instance_t *ins, hid_device_sdp_settin
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     packet.hidd_pl._bt_hid_device_register_app.le_hid = le_hid;
     uint8_t *sdp_ptr = packet.hidd_pl._bt_hid_device_register_app.sdp;
@@ -141,6 +147,8 @@ bt_status_t bt_hid_device_unregister_app(bt_instance_t *ins)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_HID_DEVICE_UNREGISTER_APP);
     if (status != BT_STATUS_SUCCESS)
         return status;
@@ -152,6 +160,8 @@ bt_status_t bt_hid_device_connect(bt_instance_t *ins, bt_address_t *addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.hidd_pl._bt_hid_device_connect.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(ins, &packet, BT_HID_DEVICE_CONNECT);
@@ -166,6 +176,8 @@ bt_status_t bt_hid_device_disconnect(bt_instance_t *ins, bt_address_t *addr)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     memcpy(&packet.hidd_pl._bt_hid_device_disconnect.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(ins, &packet, BT_HID_DEVICE_DISCONNECT);
     if (status != BT_STATUS_SUCCESS)
@@ -178,6 +190,8 @@ bt_status_t bt_hid_device_send_report(bt_instance_t *ins, bt_address_t *addr, ui
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     if (rpt_size > sizeof(packet.hidd_pl._bt_hid_device_send_report.rpt_data))
         return BT_STATUS_PARM_INVALID;
@@ -198,6 +212,8 @@ bt_status_t bt_hid_device_response_report(bt_instance_t *ins, bt_address_t *addr
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     if (rpt_size > sizeof(packet.hidd_pl._bt_hid_device_response_report.rpt_data))
         return BT_STATUS_PARM_INVALID;
 
@@ -217,6 +233,8 @@ bt_status_t bt_hid_device_report_error(bt_instance_t *ins, bt_address_t *addr, h
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     memcpy(&packet.hidd_pl._bt_hid_device_report_error.addr, addr, sizeof(bt_address_t));
     packet.hidd_pl._bt_hid_device_report_error.error = error;
     status = bt_socket_client_sendrecv(ins, &packet, BT_HID_DEVICE_REPORT_ERROR);
@@ -230,6 +248,8 @@ bt_status_t bt_hid_device_virtual_unplug(bt_instance_t *ins, bt_address_t *addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.hidd_pl._bt_hid_device_virtual_unplug.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(ins, &packet, BT_HID_DEVICE_VIRTUAL_UNPLUG);

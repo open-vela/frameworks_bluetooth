@@ -107,6 +107,7 @@ bt_status_t bluetooth_start_service(bt_instance_t *ins, enum profile_id id)
     bt_status_t status;
     bt_message_packet_t packet;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
     packet.manager_pl._bluetooth_start_service.appid = ins->app_id;
     packet.manager_pl._bluetooth_start_service.id = id;
     status = bt_socket_client_sendrecv(ins, &packet, BT_MANAGER_START_SERVICE);
@@ -122,6 +123,7 @@ bt_status_t bluetooth_stop_service(bt_instance_t *ins, enum profile_id id)
     bt_status_t status;
     bt_message_packet_t packet;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
     packet.manager_pl._bluetooth_stop_service.appid = ins->app_id;
     packet.manager_pl._bluetooth_stop_service.id = id;
     status = bt_socket_client_sendrecv(ins, &packet, BT_MANAGER_STOP_SERVICE);
@@ -135,6 +137,8 @@ bt_status_t bluetooth_stop_service(bt_instance_t *ins, enum profile_id id)
 #include "uv.h"
 bool bluetooth_set_external_uv(bt_instance_t *ins, uv_loop_t *ext_loop)
 {
+    BT_SOCKET_INS_VALID(ins, false);
+
     ins->external_loop = ext_loop;
 
     return true;

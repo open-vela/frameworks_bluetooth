@@ -30,6 +30,8 @@ void *bt_spp_register_app(bt_instance_t *ins, const spp_callbacks_t *callbacks)
     bt_status_t status;
     void *handle;
 
+    BT_SOCKET_INS_VALID(ins, NULL);
+
     if (ins->spp_callbacks != NULL) {
         return NULL;
     }
@@ -56,6 +58,8 @@ bt_status_t bt_spp_unregister_app(bt_instance_t *ins, void *handle)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     if (!ins->spp_callbacks)
       return false;
 
@@ -76,8 +80,10 @@ bt_status_t bt_spp_server_start(bt_instance_t *ins, void *handle, uint16_t scn, 
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     packet.spp_pl._bt_spp_server_start.scn = scn;
-    memcpy(&packet.spp_pl._bt_spp_server_start.uuid, uuid, sizeof(*uuid)); 
+    memcpy(&packet.spp_pl._bt_spp_server_start.uuid, uuid, sizeof(*uuid));
     packet.spp_pl._bt_spp_server_start.max_connection = max_connection;
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_SPP_SERVER_START);
@@ -93,6 +99,8 @@ bt_status_t bt_spp_server_stop(bt_instance_t *ins, void *handle, uint16_t scn)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     packet.spp_pl._bt_spp_server_stop.scn = scn;
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_SPP_SERVER_STOP);
@@ -107,6 +115,8 @@ bt_status_t bt_spp_connect(bt_instance_t *ins, void *handle, bt_address_t *addr,
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.spp_pl._bt_spp_connect.addr, addr, sizeof(*addr));
     packet.spp_pl._bt_spp_connect.scn = scn;
@@ -126,6 +136,8 @@ bt_status_t bt_spp_disconnect(bt_instance_t *ins, void *handle, bt_address_t *ad
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.spp_pl._bt_spp_disconnect.addr, addr, sizeof(*addr));
     packet.spp_pl._bt_spp_disconnect.port = port;
