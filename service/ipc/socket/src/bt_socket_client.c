@@ -310,6 +310,8 @@ int bt_socket_client_sendrecv(bt_instance_t *ins, bt_message_packet_t *packet,
 {
     int ret;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     uv_mutex_lock(&ins->mutex);
 
     packet->code = code;

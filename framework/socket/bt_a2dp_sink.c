@@ -25,6 +25,8 @@ void *bt_a2dp_sink_register_callbacks(bt_instance_t *ins, const a2dp_sink_callba
   bt_status_t status;
   void *handle;
 
+  BT_SOCKET_INS_VALID(ins, NULL);
+
   if (ins->a2dp_sink_callbacks != NULL)
     {
       handle = bt_remote_callbacks_register(ins->a2dp_sink_callbacks, NULL, (void *)callbacks);
@@ -55,6 +57,7 @@ bool bt_a2dp_sink_unregister_callbacks(bt_instance_t *ins, void *cookie)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, false);
   if (!ins->a2dp_sink_callbacks)
     return false;
 
@@ -79,6 +82,7 @@ bool bt_a2dp_sink_is_connected(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, false);
   memcpy(&packet.a2dp_sink_pl._bt_a2dp_sink_is_connected.addr, addr, sizeof(bt_address_t));
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SINK_IS_CONNECTED);
@@ -95,6 +99,7 @@ bool bt_a2dp_sink_is_playing(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, false);
   memcpy(&packet.a2dp_sink_pl._bt_a2dp_sink_is_playing.addr, addr, sizeof(bt_address_t));
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SINK_IS_PLAYING);
@@ -111,6 +116,7 @@ profile_connection_state_t bt_a2dp_sink_get_connection_state(bt_instance_t *ins,
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, PROFILE_STATE_DISCONNECTED);
   memcpy(&packet.a2dp_sink_pl._bt_a2dp_sink_get_connection_state.addr, addr, sizeof(bt_address_t));
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SINK_GET_CONNECTION_STATE);
@@ -127,6 +133,7 @@ bt_status_t bt_a2dp_sink_connect(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.a2dp_sink_pl._bt_a2dp_sink_connect.addr, addr, sizeof(bt_address_t));
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SINK_CONNECT);
@@ -143,6 +150,7 @@ bt_status_t bt_a2dp_sink_disconnect(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.a2dp_sink_pl._bt_a2dp_sink_disconnect.addr, addr, sizeof(bt_address_t));
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SINK_DISCONNECT);
@@ -159,6 +167,7 @@ bt_status_t bt_a2dp_sink_set_active_device(bt_instance_t *ins, bt_address_t *add
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.a2dp_sink_pl._bt_a2dp_sink_set_active_device.addr, addr, sizeof(bt_address_t));
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SINK_SET_ACTIVE_DEVICE);

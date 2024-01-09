@@ -30,6 +30,8 @@ bt_scanner_t *bt_le_start_scan(bt_instance_t *ins, const scanner_callbacks_t *cb
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, NULL);
+
     bt_scan_remote_t *scan = malloc(sizeof(*scan));
     if (scan == NULL)
         return NULL;
@@ -53,6 +55,8 @@ bt_scanner_t *bt_le_start_scan_settings(bt_instance_t *ins,
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, NULL);
 
     bt_scan_remote_t *scan = malloc(sizeof(*scan));
     if (scan == NULL)
@@ -82,6 +86,8 @@ bt_scanner_t *bt_le_start_scan_with_filters(bt_instance_t *ins,
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, NULL);
+
     bt_scan_remote_t *scan = malloc(sizeof(*scan));
     if (scan == NULL)
         return NULL;
@@ -110,6 +116,8 @@ void bt_le_stop_scan(bt_instance_t *ins, bt_scanner_t *scanner)
 {
     bt_message_packet_t packet;
 
+    BT_SOCKET_INS_VALID(ins,);
+
     if (!scanner)
         return;
 
@@ -121,6 +129,8 @@ bool bt_le_scan_is_supported(bt_instance_t *ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, NULL);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_IS_SUPPORT);
     if (status != BT_STATUS_SUCCESS || !packet.scan_r.vbool) {

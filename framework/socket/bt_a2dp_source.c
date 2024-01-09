@@ -27,6 +27,7 @@ void *bt_a2dp_source_register_callbacks(bt_instance_t *ins, const a2dp_source_ca
   bt_status_t status;
   void *handle;
 
+  BT_SOCKET_INS_VALID(ins, NULL);
   if (ins->a2dp_source_callbacks != NULL)
     {
       handle = bt_remote_callbacks_register(ins->a2dp_source_callbacks, NULL, (void *)callbacks);
@@ -57,6 +58,7 @@ bool bt_a2dp_source_unregister_callbacks(bt_instance_t *ins, void *cookie)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, false);
   if (!ins->a2dp_source_callbacks)
       return false;
 
@@ -81,6 +83,7 @@ bool bt_a2dp_source_is_connected(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, false);
   memcpy(&packet.a2dp_source_pl._bt_a2dp_source_is_connected.addr, addr, sizeof(bt_address_t));
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SOURCE_IS_CONNECTED);
@@ -97,6 +100,7 @@ bool bt_a2dp_source_is_playing(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, false);
   memcpy(&packet.a2dp_source_pl._bt_a2dp_source_is_playing.addr, addr, sizeof(bt_address_t));
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SOURCE_IS_PLAYING);
@@ -113,6 +117,7 @@ profile_connection_state_t bt_a2dp_source_get_connection_state(bt_instance_t *in
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, PROFILE_STATE_DISCONNECTED);
   memcpy(&packet.a2dp_source_pl._bt_a2dp_source_get_connection_state.addr, addr, sizeof(bt_address_t));
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SOURCE_GET_CONNECTION_STATE);
@@ -129,6 +134,7 @@ bt_status_t bt_a2dp_source_connect(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.a2dp_source_pl._bt_a2dp_source_connect.addr, addr, sizeof(bt_address_t));
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SOURCE_CONNECT);
@@ -145,6 +151,7 @@ bt_status_t bt_a2dp_source_disconnect(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.a2dp_source_pl._bt_a2dp_source_disconnect.addr, addr, sizeof(bt_address_t));
 
   status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SOURCE_DISCONNECT);
@@ -156,15 +163,16 @@ bt_status_t bt_a2dp_source_disconnect(bt_instance_t *ins, bt_address_t *addr)
   return packet.a2dp_source_r.status;
 }
 
-bt_status_t bt_a2dp_source_set_silence_device(bt_address_t *addr, bool silence)
+bt_status_t bt_a2dp_source_set_silence_device(bt_instance_t *ins, bt_address_t *addr, bool silence)
 {
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.a2dp_source_pl._bt_a2dp_source_set_silence_device.addr, addr, sizeof(bt_address_t));
 
   // TODO: lack ins parameters
-  status = bt_socket_client_sendrecv(NULL, &packet, BT_A2DP_SOURCE_SET_SILENCE_DEVICE);
+  status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SOURCE_SET_SILENCE_DEVICE);
   if (status != BT_STATUS_SUCCESS)
     {
       return status;
@@ -173,15 +181,16 @@ bt_status_t bt_a2dp_source_set_silence_device(bt_address_t *addr, bool silence)
   return packet.a2dp_source_r.status;
 }
 
-bt_status_t bt_a2dp_source_set_active_device(bt_address_t *addr)
+bt_status_t bt_a2dp_source_set_active_device(bt_instance_t *ins, bt_address_t *addr)
 {
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.a2dp_source_pl._bt_a2dp_source_set_active_device.addr, addr, sizeof(bt_address_t));
 
   // TODO: lack ins parameters
-  status = bt_socket_client_sendrecv(NULL, &packet, BT_A2DP_SOURCE_SET_ACTIVE_DEVICE);
+  status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SOURCE_SET_ACTIVE_DEVICE);
   if (status != BT_STATUS_SUCCESS)
     {
       return status;

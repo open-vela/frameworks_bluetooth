@@ -37,6 +37,7 @@ bt_address_t *bt_device_get_identity_address(bt_instance_t *ins, bt_address_t *a
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, NULL);
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_IDENTITY_ADDRESS);
   if (status != BT_STATUS_SUCCESS)
   {
@@ -53,6 +54,7 @@ ble_addr_type_t bt_device_get_address_type(bt_instance_t *ins, bt_address_t *add
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_LE_ADDR_TYPE_UNKNOWN);
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_ADDRESS_TYPE);
   if (status != BT_STATUS_SUCCESS)
   {
@@ -67,6 +69,7 @@ bt_device_type_t bt_device_get_device_type(bt_instance_t *ins, bt_address_t *add
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_DEVICE_TYPE_UNKNOW);
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_DEVICE_TYPE);
   if (status != BT_STATUS_SUCCESS)
   {
@@ -81,6 +84,7 @@ bool bt_device_get_name(bt_instance_t *ins, bt_address_t *addr, char *name, uint
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, false);
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_NAME);
   if (status != BT_STATUS_SUCCESS)
   {
@@ -99,6 +103,7 @@ uint32_t bt_device_get_device_class(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, 0);
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_DEVICE_CLASS);
   if (status != BT_STATUS_SUCCESS)
   {
@@ -134,6 +139,7 @@ uint16_t bt_device_get_appearance(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, 0);
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_APPEARANCE);
   if (status != BT_STATUS_SUCCESS)
   {
@@ -148,6 +154,7 @@ int8_t bt_device_get_rssi(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, 0);
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_RSSI);
   if (status != BT_STATUS_SUCCESS)
   {
@@ -162,6 +169,7 @@ bool bt_device_get_alias(bt_instance_t *ins, bt_address_t *addr, char *alias, ui
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, false);
   memcpy(&packet.devs_pl._bt_device_get_alias.addr, addr, sizeof(*addr));
   status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_GET_ALIAS);
   if (status != BT_STATUS_SUCCESS)
@@ -179,6 +187,7 @@ bt_status_t bt_device_set_alias(bt_instance_t *ins, bt_address_t *addr, const ch
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.devs_pl._bt_device_set_alias.addr, addr, sizeof(*addr));
   strncpy(packet.devs_pl._bt_device_set_alias.alias, alias, sizeof(packet.devs_pl._bt_device_set_alias.alias));
   status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_SET_ALIAS);
@@ -195,6 +204,7 @@ bool bt_device_is_connected(bt_instance_t *ins, bt_address_t *addr, bt_transport
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, false);
   packet.devs_pl._bt_device_is_connected.transport = transport;
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_IS_CONNECTED);
   if (status != BT_STATUS_SUCCESS)
@@ -210,6 +220,7 @@ bool bt_device_is_encrypted(bt_instance_t *ins, bt_address_t *addr, bt_transport
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, false);
   packet.devs_pl._bt_device_is_encrypted.transport = transport;
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_IS_ENCRYPTED);
   if (status != BT_STATUS_SUCCESS)
@@ -225,6 +236,7 @@ bool bt_device_is_bond_initiate_local(bt_instance_t *ins, bt_address_t *addr, bt
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, false);
   packet.devs_pl._bt_device_is_bond_initiate_local.transport = transport;
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_IS_BOND_INITIATE_LOCAL);
   if (status != BT_STATUS_SUCCESS)
@@ -240,6 +252,7 @@ bond_state_t bt_device_get_bond_state(bt_instance_t *ins, bt_address_t *addr, bt
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BOND_STATE_NONE);
   packet.devs_pl._bt_device_get_bond_state.transport = transport;
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_BOND_STATE);
   if (status != BT_STATUS_SUCCESS)
@@ -255,6 +268,7 @@ bool bt_device_is_bonded(bt_instance_t *ins, bt_address_t *addr, bt_transport_t 
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, false);
   packet.devs_pl._bt_device_is_bonded.transport = transport;
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_IS_BONDED);
   if (status != BT_STATUS_SUCCESS)
@@ -270,6 +284,7 @@ bt_status_t bt_device_connect(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_CONNECT);
   if (status != BT_STATUS_SUCCESS)
   {
@@ -284,6 +299,7 @@ bt_status_t bt_device_disconnect(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_DISCONNECT);
   if (status != BT_STATUS_SUCCESS)
   {
@@ -294,23 +310,24 @@ bt_status_t bt_device_disconnect(bt_instance_t *ins, bt_address_t *addr)
 }
 
 bt_status_t bt_device_connect_le(bt_instance_t *ins,
-    bt_address_t *addr,
-    ble_addr_type_t type,
-    ble_connect_params_t *param)
+                                 bt_address_t *addr,
+                                 ble_addr_type_t type,
+                                 ble_connect_params_t *param)
 {
-    bt_message_packet_t packet;
-    bt_status_t status;
+  bt_message_packet_t packet;
+  bt_status_t status;
 
-    memcpy(&packet.devs_pl._bt_device_connect_le.addr, addr, sizeof(*addr));
-    packet.devs_pl._bt_device_connect_le.type = type;
-    memcpy(&packet.devs_pl._bt_device_connect_le.param, param, sizeof(*param));
-    status = bt_device_send(ins, addr, &packet, BT_DEVICE_CONNECT_LE);
-    if (status != BT_STATUS_SUCCESS)
-    {
-      return status;
-    }
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+  memcpy(&packet.devs_pl._bt_device_connect_le.addr, addr, sizeof(*addr));
+  packet.devs_pl._bt_device_connect_le.type = type;
+  memcpy(&packet.devs_pl._bt_device_connect_le.param, param, sizeof(*param));
+  status = bt_device_send(ins, addr, &packet, BT_DEVICE_CONNECT_LE);
+  if (status != BT_STATUS_SUCCESS)
+  {
+    return status;
+  }
 
-    return packet.devs_r.status;
+  return packet.devs_r.status;
 }
 
 bt_status_t bt_device_disconnect_le(bt_instance_t *ins, bt_address_t *addr)
@@ -318,6 +335,7 @@ bt_status_t bt_device_disconnect_le(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_DISCONNECT_LE);
   if (status != BT_STATUS_SUCCESS)
   {
@@ -332,6 +350,7 @@ bt_status_t bt_device_connect_request_reply(bt_instance_t *ins, bt_address_t *ad
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.devs_pl._bt_device_connect_request_reply.addr, addr, sizeof(*addr));
   packet.devs_pl._bt_device_connect_request_reply.accept = accept;
   status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_CONNECT_REQUEST_REPLY);
@@ -347,6 +366,7 @@ void bt_device_connect_all_profile(bt_instance_t *ins, bt_address_t *addr)
 {
   bt_message_packet_t packet;
 
+  BT_SOCKET_INS_VALID(ins,);
   bt_device_send(ins, addr, &packet, BT_DEVICE_CONNECT_ALL_PROFILE);
 }
 
@@ -354,6 +374,7 @@ void bt_device_disconnect_all_profile(bt_instance_t *ins, bt_address_t *addr)
 {
   bt_message_packet_t packet;
 
+  BT_SOCKET_INS_VALID(ins,);
   bt_device_send(ins, addr, &packet, BT_DEVICE_DISCONNECT_ALL_PROFILE);
 }
 
@@ -365,6 +386,7 @@ bt_status_t bt_device_set_le_phy(bt_instance_t *ins,
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.devs_pl._bt_device_set_le_phy.addr, addr, sizeof(*addr));
   packet.devs_pl._bt_device_set_le_phy.tx_phy = tx_phy;
   packet.devs_pl._bt_device_set_le_phy.rx_phy = rx_phy;
@@ -382,6 +404,7 @@ bt_status_t bt_device_create_bond(bt_instance_t *ins, bt_address_t *addr, bt_tra
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.devs_pl._bt_device_create_bond.addr, addr, sizeof(*addr));
   packet.devs_pl._bt_device_create_bond.transport = transport;
   status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_CREATE_BOND);
@@ -398,6 +421,7 @@ bt_status_t bt_device_remove_bond(bt_instance_t *ins, bt_address_t *addr, uint8_
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.devs_pl._bt_device_remove_bond.addr, addr, sizeof(*addr));
   packet.devs_pl._bt_device_remove_bond.transport = transport;
   status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_REMOVE_BOND);
@@ -414,6 +438,7 @@ bt_status_t bt_device_cancel_bond(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.devs_pl._bt_device_cancel_bond.addr, addr, sizeof(*addr));
   status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_CANCEL_BOND);
   if (status != BT_STATUS_SUCCESS)
@@ -429,6 +454,7 @@ bt_status_t bt_device_pair_request_reply(bt_instance_t *ins, bt_address_t *addr,
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.devs_pl._bt_device_pair_request_reply.addr, addr, sizeof(*addr));
   packet.devs_pl._bt_device_pair_request_reply.accept = accept;
   status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_PAIR_REQUEST_REPLY);
@@ -445,6 +471,7 @@ bt_status_t bt_device_set_pairing_confirmation(bt_instance_t *ins, bt_address_t 
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.devs_pl._bt_device_set_pairing_confirmation.addr, addr, sizeof(*addr));
   packet.devs_pl._bt_device_set_pairing_confirmation.transport = transport;
   packet.devs_pl._bt_device_set_pairing_confirmation.accept = accept;
@@ -463,6 +490,7 @@ bt_status_t bt_device_set_pin_code(bt_instance_t *ins, bt_address_t *addr, bool 
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   if (len > sizeof(packet.devs_pl._bt_device_set_pin_code.pincode))
     return BT_STATUS_PARM_INVALID;
 
@@ -483,6 +511,7 @@ bt_status_t bt_device_set_pass_key(bt_instance_t *ins, bt_address_t *addr, uint8
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
   memcpy(&packet.devs_pl._bt_device_set_pass_key.addr, addr, sizeof(*addr));
   packet.devs_pl._bt_device_set_pass_key.transport = transport;
   packet.devs_pl._bt_device_set_pass_key.accept = accept;
@@ -501,6 +530,7 @@ uint16_t bt_device_get_acl_handle(bt_instance_t *ins, bt_address_t *addr)
   bt_message_packet_t packet;
   bt_status_t status;
 
+  BT_SOCKET_INS_VALID(ins, 0xFFFF);
   status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_ACL_HANDLE);
   if (status != BT_STATUS_SUCCESS)
   {

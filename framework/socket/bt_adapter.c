@@ -27,6 +27,8 @@ void *bt_adapter_register_callback(bt_instance_t *ins, const adapter_callbacks_t
     bt_status_t status;
     void *handle;
 
+    BT_SOCKET_INS_VALID(ins, NULL);
+
     if (ins->adapter_callbacks) {
         handle = bt_remote_callbacks_register(ins->adapter_callbacks, NULL, (void *)adapter_cbs);
         return handle;
@@ -56,6 +58,8 @@ bool bt_adapter_unregister_callback(bt_instance_t *ins, void *cookie)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, false);
+
     if (!ins->adapter_callbacks)
         return false;
 
@@ -80,6 +84,8 @@ bt_status_t bt_adapter_enable(bt_instance_t *ins)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_ENABLE);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -92,6 +98,8 @@ bt_status_t bt_adapter_disable(bt_instance_t *ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_DISABLE);
     if (status != BT_STATUS_SUCCESS) {
@@ -106,6 +114,8 @@ bt_status_t bt_adapter_enable_le(bt_instance_t *ins)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_ENABLE_LE);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -118,6 +128,8 @@ bt_status_t bt_adapter_disable_le(bt_instance_t *ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_DISABLE_LE);
     if (status != BT_STATUS_SUCCESS) {
@@ -132,6 +144,8 @@ bt_adapter_state_t bt_adapter_get_state(bt_instance_t *ins)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_ADAPTER_STATE_OFF);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_STATE);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -144,6 +158,8 @@ bool bt_adapter_is_le_enabled(bt_instance_t *ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, false);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_IS_LE_ENABLED);
     if (status != BT_STATUS_SUCCESS) {
@@ -158,6 +174,8 @@ bt_device_type_t bt_adapter_get_type(bt_instance_t *ins)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_DEVICE_TYPE_UNKNOW);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_TYPE);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -171,6 +189,8 @@ bt_status_t bt_adapter_set_discovery_filter(bt_instance_t *ins)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_DISCOVERY_FILTER);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -183,6 +203,8 @@ bt_status_t bt_adapter_start_discovery(bt_instance_t *ins, uint32_t timeout)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     packet.adpt_pl._bt_adapter_start_discovery.v32 = timeout;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_START_DISCOVERY);
@@ -198,6 +220,8 @@ bt_status_t bt_adapter_cancel_discovery(bt_instance_t *ins)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_CANCEL_DISCOVERY);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -210,6 +234,8 @@ bool bt_adapter_is_discovering(bt_instance_t *ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, false);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_IS_DISCOVERING);
     if (status != BT_STATUS_SUCCESS) {
@@ -224,6 +250,8 @@ void bt_adapter_get_address(bt_instance_t *ins, bt_address_t *addr)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins,);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_ADDRESS);
     if (status != BT_STATUS_SUCCESS) {
         memset(addr, 0, sizeof(*addr));
@@ -236,6 +264,8 @@ bt_status_t bt_adapter_set_name(bt_instance_t *ins, const char *name)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     if (strlen(name) > sizeof(packet.adpt_pl._bt_adapter_set_name.name)) {
         return BT_STATUS_PARM_INVALID;
@@ -255,6 +285,8 @@ void bt_adapter_get_name(bt_instance_t *ins, char *name, int length)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins,);
+
     if (length < sizeof(packet.adpt_pl._bt_adapter_get_name.name)) {
         return;
     }
@@ -271,6 +303,8 @@ bt_status_t bt_adapter_get_uuids(bt_instance_t *ins, bt_uuid_t *uuids, uint16_t 
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_UUIDS);
     if (status != BT_STATUS_SUCCESS) {
@@ -290,6 +324,8 @@ bt_status_t bt_adapter_set_scan_mode(bt_instance_t *ins, bt_scan_mode_t mode, bo
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     packet.adpt_pl._bt_adapter_set_scan_mode.mode = mode;
     packet.adpt_pl._bt_adapter_set_scan_mode.bondable = bondable;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_SCAN_MODE);
@@ -305,6 +341,8 @@ bt_scan_mode_t bt_adapter_get_scan_mode(bt_instance_t *ins)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_BR_SCAN_MODE_NONE);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_SCAN_MODE);
     if (status != BT_STATUS_SUCCESS) {
         return BT_BR_SCAN_MODE_NONE;
@@ -317,6 +355,8 @@ bt_status_t bt_adapter_set_device_class(bt_instance_t *ins, uint32_t cod)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     packet.adpt_pl._bt_adapter_set_device_class.v32 = cod;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_DEVICE_CLASS);
@@ -332,6 +372,8 @@ uint32_t bt_adapter_get_device_class(bt_instance_t *ins)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, 0);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_DEVICE_CLASS);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -344,6 +386,8 @@ bt_status_t bt_adapter_set_io_capability(bt_instance_t *ins, bt_io_capability_t 
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     packet.adpt_pl._bt_adapter_set_io_capability.cap = cap;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_IO_CAPABILITY);
@@ -359,6 +403,8 @@ bt_io_capability_t bt_adapter_get_io_capability(bt_instance_t *ins)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_IO_CAPABILITY_UNKNOW);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_IO_CAPABILITY);
     if (status != BT_STATUS_SUCCESS) {
         return BT_IO_CAPABILITY_DISPLAYONLY;
@@ -372,6 +418,8 @@ bt_status_t bt_adapter_set_inquiry_scan_parameters(bt_instance_t *ins, bt_scan_t
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     packet.adpt_pl._bt_adapter_set_inquiry_scan_parameters.type = type;
     packet.adpt_pl._bt_adapter_set_inquiry_scan_parameters.interval = interval;
@@ -390,6 +438,8 @@ bt_status_t bt_adapter_set_page_scan_parameters(bt_instance_t *ins, bt_scan_type
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     packet.adpt_pl._bt_adapter_set_page_scan_parameters.type = type;
     packet.adpt_pl._bt_adapter_set_page_scan_parameters.interval = interval;
     packet.adpt_pl._bt_adapter_set_page_scan_parameters.window = window;
@@ -406,6 +456,8 @@ bt_status_t bt_adapter_set_le_io_capability(bt_instance_t *ins, uint32_t le_io_c
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     packet.adpt_pl._bt_adapter_set_le_io_capability.v32 = le_io_cap;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_LE_IO_CAPABILITY);
     if (status != BT_STATUS_SUCCESS) {
@@ -420,6 +472,8 @@ uint32_t bt_adapter_get_le_io_capability(bt_instance_t *ins)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, 0);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_LE_IO_CAPABILITY);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -432,6 +486,8 @@ bt_status_t bt_adapter_get_le_address(bt_instance_t *ins, bt_address_t *addr, bl
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_LE_ADDRESS);
     if (status != BT_STATUS_SUCCESS) {
@@ -451,6 +507,8 @@ bt_status_t bt_adapter_set_le_address(bt_instance_t *ins, bt_address_t *addr)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     memcpy(&packet.adpt_pl._bt_adapter_set_le_address.addr, addr, sizeof(*addr));
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_LE_ADDRESS);
     if (status != BT_STATUS_SUCCESS) {
@@ -464,6 +522,8 @@ bt_status_t bt_adapter_set_le_identity_address(bt_instance_t *ins, bt_address_t 
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.adpt_pl._bt_adapter_set_le_identity_address.addr, addr, sizeof(*addr));
     packet.adpt_pl._bt_adapter_set_le_identity_address.public = public;
@@ -480,6 +540,8 @@ bt_status_t bt_adapter_set_le_appearance(bt_instance_t *ins, uint16_t appearance
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     packet.adpt_pl._bt_adapter_set_le_appearance.v16 = appearance;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_LE_APPEARANCE);
     if (status != BT_STATUS_SUCCESS) {
@@ -493,6 +555,8 @@ uint16_t bt_adapter_get_le_appearance(bt_instance_t *ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, 0);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_LE_APPEARANCE);
     if (status != BT_STATUS_SUCCESS) {
@@ -509,6 +573,8 @@ bt_status_t bt_adapter_le_enable_key_derivation(bt_instance_t *ins,
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     packet.adpt_pl._bt_adapter_le_enable_key_derivation.brkey_to_lekey = brkey_to_lekey;
     packet.adpt_pl._bt_adapter_le_enable_key_derivation.lekey_to_brkey = lekey_to_brkey;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_LE_ENABLE_KEY_DERIVATION);
@@ -524,6 +590,8 @@ bt_status_t bt_adapter_le_add_whitelist(bt_instance_t *ins, bt_address_t *addr)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     memcpy(&packet.adpt_pl._bt_adapter_le_add_whitelist.addr, addr, sizeof(*addr));
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_LE_ADD_WHITELIST);
     if (status != BT_STATUS_SUCCESS) {
@@ -538,6 +606,8 @@ bt_status_t bt_adapter_le_remove_whitelist(bt_instance_t *ins, bt_address_t *add
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     memcpy(&packet.adpt_pl._bt_adapter_le_remove_whitelist.addr, addr, sizeof(*addr));
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_LE_REMOVE_WHITELIST);
     if (status != BT_STATUS_SUCCESS) {
@@ -551,6 +621,8 @@ bt_status_t bt_adapter_get_bonded_devices(bt_instance_t *ins, bt_transport_t tra
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     packet.adpt_pl._bt_adapter_get_bonded_devices.transport = transport;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_BONDED_DEVICES);
@@ -575,6 +647,8 @@ bt_status_t bt_adapter_get_connected_devices(bt_instance_t *ins, bt_transport_t 
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     packet.adpt_pl._bt_adapter_get_connected_devices.transport = transport;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_CONNECTED_DEVICES);
@@ -601,6 +675,8 @@ bt_status_t bt_adapter_set_afh_channel_classification(bt_instance_t *ins, uint16
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     packet.adpt_pl._bt_adapter_set_afh_channel_classification.central_frequency = central_frequency;
     packet.adpt_pl._bt_adapter_set_afh_channel_classification.band_width = band_width;
     packet.adpt_pl._bt_adapter_set_afh_channel_classification.number = number;
@@ -617,6 +693,7 @@ bt_status_t bt_adapter_set_auto_sniff(bt_instance_t *ins, bt_auto_sniff_params_t
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
     memcpy(&packet.adpt_pl._bt_adapter_set_auto_sniff.params, params, sizeof(*params));
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_AUTO_SNIFF);
     if (status != BT_STATUS_SUCCESS) {
@@ -630,6 +707,7 @@ void bt_adapter_disconnect_all_devices(bt_instance_t *ins)
 {
     bt_message_packet_t packet;
 
+    BT_SOCKET_INS_VALID(ins,);
     bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_DISCONNECT_ALL_DEVICES);
 }
 
@@ -637,6 +715,8 @@ bool bt_adapter_is_support_bredr(bt_instance_t *ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, false);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_IS_SUPPORT_BREDR);
     if (status != BT_STATUS_SUCCESS) {
@@ -651,6 +731,8 @@ bool bt_adapter_is_support_le(bt_instance_t *ins)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, false);
+
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_IS_SUPPORT_LE);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -663,6 +745,8 @@ bool bt_adapter_is_support_leaudio(bt_instance_t *ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, false);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_IS_SUPPORT_LEAUDIO);
     if (status != BT_STATUS_SUCCESS) {

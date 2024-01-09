@@ -19,19 +19,25 @@
 #include "bluetooth.h"
 #include "bt_message.h"
 
+#define BT_SOCKET_INS_VALID(ins, ret) \
+    do {                              \
+        if (ins == NULL)              \
+            return ret;               \
+    } while (0)
+
 /* Macros for number of items.
  * (aka. ARRAY_SIZE, ArraySize, Size of an Array)
  */
 
 #ifndef nitems
-#  define nitems(_a)    (sizeof(_a) / sizeof(0[(_a)]))
+#define nitems(_a) (sizeof(_a) / sizeof(0 [(_a)]))
 #endif /* nitems */
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define BLUETOOTH_SOCKADDR_NAME "bt:%s"
+#define BLUETOOTH_SOCKADDR_NAME  "bt:%s"
 #define BLUETOOTH_SERVER_MAXCONN 10
 
 /****************************************************************************
@@ -63,48 +69,48 @@ int bt_socket_server_send(bt_instance_t *ins, bt_message_packet_t *packet,
 
 /* Manager */
 void bt_socket_server_manager_process(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                      int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 
 int bt_socket_client_manager_callback(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                      int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 
 /* Adapter */
 
 void bt_socket_server_adapter_process(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                      int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 
 int bt_socket_client_adapter_callback(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                      int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 
 /* Device */
 
 void bt_socket_server_device_process(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                     int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 
 /*A2DP Source*/
 void bt_socket_server_a2dp_source_process(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                          int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 
 int bt_socket_client_a2dp_source_callback(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                          int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 /*A2DP Sink*/
 void bt_socket_server_a2dp_sink_process(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                        int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 
 int bt_socket_client_a2dp_sink_callback(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                        int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 /* HFP */
 void bt_socket_server_hfp_ag_process(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                     int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 
 int bt_socket_client_hfp_ag_callback(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                     int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 
 void bt_socket_server_hfp_hf_process(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                     int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 
 int bt_socket_client_hfp_hf_callback(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+                                     int fd, bt_instance_t *ins, bt_message_packet_t *packet);
 
 /* Advertiser */
 

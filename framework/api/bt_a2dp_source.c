@@ -78,14 +78,14 @@ bt_status_t BTSYMBOLS(bt_a2dp_source_disconnect)(bt_instance_t *ins, bt_address_
     return profile->disconnect(addr);
 }
 
-bt_status_t BTSYMBOLS(bt_a2dp_source_set_silence_device)(bt_address_t *addr, bool silence)
+bt_status_t BTSYMBOLS(bt_a2dp_source_set_silence_device)(bt_instance_t *ins, bt_address_t *addr, bool silence)
 {
     a2dp_source_interface_t *profile = get_profile_service();
 
     return profile->set_silence_device(addr, silence);
 }
 
-bt_status_t BTSYMBOLS(bt_a2dp_source_set_active_device)(bt_address_t *addr)
+bt_status_t BTSYMBOLS(bt_a2dp_source_set_active_device)(bt_instance_t *ins, bt_address_t *addr)
 {
     a2dp_source_interface_t *profile = get_profile_service();
 
