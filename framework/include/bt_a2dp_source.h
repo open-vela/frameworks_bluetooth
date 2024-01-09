@@ -114,7 +114,7 @@ bt_status_t BTSYMBOLS(bt_a2dp_source_disconnect)(bt_instance_t *ins, bt_address_
  * @param addr - address of peer A2DP sink device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_a2dp_source_set_silence_device)(bt_address_t *addr, bool silence);
+bt_status_t BTSYMBOLS(bt_a2dp_source_set_silence_device)(bt_instance_t *ins, bt_address_t *addr, bool silence);
 
 /**
  * @brief set a peer A2DP sink device as active device
@@ -123,6 +123,6 @@ bt_status_t BTSYMBOLS(bt_a2dp_source_set_silence_device)(bt_address_t *addr, boo
  * @param addr - address of peer A2DP sink device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_a2dp_source_set_active_device)(bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_a2dp_source_set_active_device)(bt_instance_t *ins, bt_address_t *addr);
 
 #endif /* __BT_A2DP_SOURCE_H__ */

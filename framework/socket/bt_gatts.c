@@ -58,6 +58,7 @@ bt_status_t bt_gatts_register_service(bt_instance_t *ins, gatts_handle_t *phandl
     bt_status_t status;
     bt_gatts_remote_t *gatts_remote;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
     gatts_remote = gatts_remote_new(ins, callbacks);
     if (!gatts_remote)
         return BT_STATUS_NOMEM;

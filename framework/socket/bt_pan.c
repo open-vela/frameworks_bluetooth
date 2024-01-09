@@ -30,6 +30,8 @@ void *bt_pan_register_callbacks(bt_instance_t *ins, const pan_callbacks_t *callb
     bt_status_t status;
     void *handle;
 
+    BT_SOCKET_INS_VALID(ins, NULL);
+
     if (ins->panu_callbacks != NULL) {
         handle = bt_remote_callbacks_register(ins->panu_callbacks, NULL, (void *)callbacks);
         return handle;
@@ -57,6 +59,8 @@ bool bt_pan_unregister_callbacks(bt_instance_t *ins, void *cookie)
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, false);
+
     if (!ins->panu_callbacks)
       return false;
 
@@ -80,6 +84,8 @@ bt_status_t bt_pan_connect(bt_instance_t *ins, bt_address_t *addr, uint8_t dst_r
     bt_message_packet_t packet;
     bt_status_t status;
 
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
     memcpy(&packet.pan_pl._bt_pan_connect.addr, addr, sizeof(*addr));
     packet.pan_pl._bt_pan_connect.dst_role = dst_role;
     packet.pan_pl._bt_pan_connect.src_role = src_role;
@@ -96,6 +102,8 @@ bt_status_t bt_pan_disconnect(bt_instance_t *ins, bt_address_t *addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.pan_pl._bt_pan_disconnect.addr, addr, sizeof(*addr));
 

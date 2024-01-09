@@ -37,6 +37,8 @@ bt_advertiser_t *bt_le_start_advertising(bt_instance_t *ins,
     bt_status_t status;
     bt_advertiser_remote_t *adv;
 
+    BT_SOCKET_INS_VALID(ins, NULL);
+
     adv = malloc(sizeof(*adv));
     if (adv == NULL)
         return NULL;
@@ -71,6 +73,8 @@ void bt_le_stop_advertising(bt_instance_t *ins, bt_advertiser_t *adver)
 {
     bt_message_packet_t packet;
 
+    BT_SOCKET_INS_VALID(ins,);
+
     if (!adver)
         return;
 
@@ -82,6 +86,8 @@ void bt_le_stop_advertising_id(bt_instance_t *ins, uint8_t adv_id)
 {
     bt_message_packet_t packet;
 
+    BT_SOCKET_INS_VALID(ins,);
+
     packet.adv_pl._bt_le_stop_advertising_id.id = adv_id;
     bt_socket_client_sendrecv(ins, &packet, BT_LE_STOP_ADVERTISING_ID);
 }
@@ -90,6 +96,8 @@ bool bt_le_advertising_is_supported(bt_instance_t *ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, false);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_LE_ADVERTISING_IS_SUPPORT);
     if (status != BT_STATUS_SUCCESS) {
