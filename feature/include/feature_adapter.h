@@ -22,17 +22,14 @@
 #ifndef FEATURE_BLUETOOTH_INS_MANAGE_H_
 #define FEATURE_BLUETOOTH_INS_MANAGE_H_
 
-#include <unordered_map>
 #include "bluetooth.h"
 #include "bt_adapter.h"
-#include "feature_exports.h"
+#include "feature_bluetooth.h"
 
-
-typedef std::unordered_map<void*, FtCallbackId> feature_callbacks_t;
 typedef struct {
-    feature_callbacks_t on_adapter_state_changed_cbs;
-    feature_callbacks_t on_discovery_result_cbs;
-    feature_callbacks_t on_bond_state_changed_cbs;
+    feature_callback_t on_adapter_state_changed_cb;
+    feature_callback_t on_discovery_result_cb;
+    feature_callback_t on_bond_state_changed_cb;
 } adapter_feature_callbacks_t;
 
 void bluetooth_init_ins();

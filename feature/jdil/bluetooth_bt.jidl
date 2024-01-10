@@ -28,7 +28,7 @@ struct DiscoveryResultCallbackData {
     uint rssi
 }
 callback discoveryResultChange(DiscoveryResultCallbackData data)
-property discoveryResultChange discoveryresult
+property discoveryResultChange ondiscoveryresult
 
 
 callback connectProfilesSuccess()
