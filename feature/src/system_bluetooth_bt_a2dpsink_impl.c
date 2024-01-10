@@ -18,7 +18,6 @@
  * limitations under the License.
  *
  */
-#include <string>
 #include "bt_a2dp_sink.h"
 #include "feature_a2dpsink.h"
 #include "system_bluetooth_bt_a2dpsink.h"
@@ -26,43 +25,41 @@
 #define file_tag "system_bluetooth_bt_a2dpsnk"
 
 static a2dp_sink_feature_callbacks_t g_feature_a2dp_sink_callbacks = {};
-static void* sink_cbks_cookie = nullptr;
+static void* sink_cbks_cookie = NULL;
 
-static char* StringToFtString(std::string str)
+static char* StringToFtString(const char* str)
 {
-    int len = str.length();
+    int len = strlen(str);
     char* ftStr = (char*)FeatureMalloc(len + 1, FT_CHAR);
-    strcpy(ftStr, str.c_str());
+    strcpy(ftStr, str);
     return ftStr;
 }
 
 static void a2dp_sink_connection_state_cb(void* cookie, bt_address_t* addr, profile_connection_state_t state)
 {
+    if (g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature == NULL)
+        return;
     system_bluetooth_bt_a2dpsink_OnConnectStateChangeData* data = system_bluetooth_bt_a2dpsinkMallocOnConnectStateChangeData();
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     bt_addr_ba2str(addr, addr_str);
-    data->_deviceId = StringToFtString(addr_str);
-    data->_connectState = state;
-    for (auto feature : g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cbs) {
-        if (!FeatureInvokeCallback(feature.first, feature.second, data)) {
-            FEATURE_LOG_ERROR("feature:%p, invoke discoveryresult callback failed!", feature.first);
-        }
+    data->deviceId = StringToFtString(addr_str);
+    data->connectState = state;
+    if (!FeatureCheckCallbackId(g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature, 
+            g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId)) {
+        return;
     }
-}
 
-static void a2dp_sink_audio_state_cb(void* cookie, bt_address_t* addr, a2dp_audio_state_t state)
-{
-}
+    if (!FeatureInvokeCallback(g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature, 
+            g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId, data)) {
+        FEATURE_LOG_ERROR("feature:%p, invoke discoveryresult callback failed!", 
+        g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature);
+    }
 
-static void a2dp_sink_audio_config_cb(void* cookie, bt_address_t* addr)
-{
 }
 
 static const a2dp_sink_callbacks_t a2dp_sink_cbs = {
     sizeof(a2dp_sink_cbs),
     a2dp_sink_connection_state_cb,
-    a2dp_sink_audio_state_cb,
-    a2dp_sink_audio_config_cb,
 };
 
 void system_bluetooth_bt_a2dpsink_onRegister(const char* feature_name)
@@ -79,11 +76,12 @@ void system_bluetooth_bt_a2dpsink_onRequired(FeatureRuntimeContext ctx, FeatureI
 }
 void system_bluetooth_bt_a2dpsink_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
-    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cbs.erase(handle);
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 void system_bluetooth_bt_a2dpsink_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
+    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature = NULL;
+    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId = -1;
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 void system_bluetooth_bt_a2dpsink_onUnregister(const char* feature_name)
@@ -91,22 +89,23 @@ void system_bluetooth_bt_a2dpsink_onUnregister(const char* feature_name)
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 
-FtCallbackId system_bluetooth_bt_a2dpsink_get_onconnectstatechange(void* feature, AppendData append_data)
+FtCallbackId system_bluetooth_bt_a2dpsink_get_onconnectstatechange(void* feature, union AppendData append_data)
 {
-    return g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cbs[feature];
+    return g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId;
 }
-void system_bluetooth_bt_a2dpsink_set_onconnectstatechange(void* feature, AppendData append_data, FtCallbackId onconnectstatechange)
+void system_bluetooth_bt_a2dpsink_set_onconnectstatechange(void* feature, union AppendData append_data, FtCallbackId onconnectstatechange)
 {
-    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cbs[feature] = onconnectstatechange;
+    FEATURE_LOG_INFO("set onadapterstatechange feature: %p, callbackId: %d\n", feature, onconnectstatechange);
+    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature = feature;
+    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId = onconnectstatechange;
 }
 
 void a2dp_sink_feature_init(void* handle)
 {
-    sink_cbks_cookie = bt_a2dp_sink_register_callbacks(reinterpret_cast<bt_instance_t*>(handle), &a2dp_sink_cbs);
-
+    sink_cbks_cookie = bt_a2dp_sink_register_callbacks((bt_instance_t*)handle, &a2dp_sink_cbs);
 }
 
 void a2dp_sink_feature_uninit(void* handle)
 {
-    bt_a2dp_sink_unregister_callbacks(reinterpret_cast<bt_instance_t*>(handle), sink_cbks_cookie);
+    bt_a2dp_sink_unregister_callbacks((bt_instance_t*)handle, sink_cbks_cookie);
 }
