@@ -18,17 +18,16 @@
  * limitations under the License.
  *
  */
-#include <string>
 #include "bluetooth.h"
 #include "bt_a2dp_sink.h"
-#include "feature_bluetooth_constant.h"
+#include "feature_bluetooth.h"
 #include "feature_adapter.h"
 #include "system_bluetooth_bt.h"
 
 
 #define file_tag "system_bluetooth_bt"
 // FeatureCallbacks to be implemented
-static bt_status_t bluetooth_connect_profiles(bt_addr* addr, feature_profile_t profile_id)
+static bt_status_t bluetooth_connect_profiles(bt_address_t* addr, feature_profile_t profile_id)
 {
     bt_status_t status = BT_STATUS_NOT_SUPPORTED;
     switch (profile_id) {
@@ -43,7 +42,7 @@ static bt_status_t bluetooth_connect_profiles(bt_addr* addr, feature_profile_t p
     return status;
 }
 
-static bt_status_t bluetooth_disconnect_profiles(bt_addr* addr, feature_profile_t profile_id)
+static bt_status_t bluetooth_disconnect_profiles(bt_address_t* addr, feature_profile_t profile_id)
 {
     bt_status_t status = BT_STATUS_NOT_SUPPORTED;
     switch (profile_id) {
@@ -58,11 +57,11 @@ static bt_status_t bluetooth_disconnect_profiles(bt_addr* addr, feature_profile_
     return status;
 }
 
-static char* StringToFtString(std::string str)
+static char* StringToFtString(const char* str)
 {
-    int len = str.length();
+    int len = strlen(str);
     char* ftStr = (char*)FeatureMalloc(len + 1, FT_CHAR);
-    strcpy(ftStr, str.c_str());
+    strcpy(ftStr, str);
     return ftStr;
 }
 
@@ -97,54 +96,54 @@ void system_bluetooth_bt_onUnregister(const char* feature_name)
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 
-void system_bluetooth_bt_wrap_startDiscovery(FeatureInstanceHandle feature, AppendData append_data, system_bluetooth_bt_StartDiscoveryParams* params)
+void system_bluetooth_bt_wrap_startDiscovery(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_StartDiscoveryParams* params)
 {
-    int timeout = 120;
+    int timeout = 8;
     bt_status_t status = bt_adapter_start_discovery(feature_bluetooth_get_instance(), timeout);
     if (status == BT_STATUS_SUCCESS) {
-        if (!FeatureInvokeCallback(feature, params->_success)) {
+        if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke start discovery success  failed!");
             return;
         }
     } else {
-        if (!FeatureInvokeCallback(feature, params->_fail, "start discovery failed!", status)) {
+        if (!FeatureInvokeCallback(feature, params->fail, "start discovery failed!", status)) {
             FEATURE_LOG_ERROR("invoke start discovery fail callback failed!");
             return;
         }
     }
-    if (!FeatureInvokeCallback(feature, params->_complete)) {
+    if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke start discovery complete callback failed!");
         return;
     }
 }
-void system_bluetooth_bt_wrap_stopDiscovery(FeatureInstanceHandle feature, AppendData append_data, system_bluetooth_bt_StopDiscoveryParams* params)
+void system_bluetooth_bt_wrap_stopDiscovery(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_StopDiscoveryParams* params)
 {
     bt_status_t status = bt_adapter_cancel_discovery(feature_bluetooth_get_instance());
     if (status == BT_STATUS_SUCCESS) {
-        if (!FeatureInvokeCallback(feature, params->_success)) {
+        if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke stop discovery success callback failed!");
             return;
         }
     } else {
-        if (!FeatureInvokeCallback(feature, params->_fail, "stop discovery failed!", status)) {
+        if (!FeatureInvokeCallback(feature, params->fail, "stop discovery failed!", status)) {
             FEATURE_LOG_ERROR("invoke stop discovery fail callback failed!");
             return;
         }
     }
-    if (!FeatureInvokeCallback(feature, params->_complete)) {
+    if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke stop discovery complete callback failed!");
         return;
     }
 }
 
-void system_bluetooth_bt_wrap_connectProfiles(FeatureInstanceHandle feature, AppendData append_data, system_bluetooth_bt_ConnectProfilesParams* params)
+void system_bluetooth_bt_wrap_connectProfiles(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_ConnectProfilesParams* params)
 {
-    int profiles_num = params->_profiles->_size;
-    int* profiles = reinterpret_cast<int*>(params->_profiles->_element);
+    int profiles_num = params->profiles->_size;
+    int* profiles = (int*)(params->profiles->_element);
     bt_address_t addr;
     int status = BT_STATUS_SUCCESS;
-    if (bt_addr_str2ba(params->_deviceId, &addr) < 0) {
-        if (!FeatureInvokeCallback(feature, params->_fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
+    if (bt_addr_str2ba(params->deviceId, &addr) < 0) {
+        if (!FeatureInvokeCallback(feature, params->fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
             FEATURE_LOG_ERROR("invoke connect profiles fail callback failed!");
             return;
         }
@@ -152,67 +151,67 @@ void system_bluetooth_bt_wrap_connectProfiles(FeatureInstanceHandle feature, App
     }
 
     for (int i = 0; i < profiles_num; ++i) {
-        status |= bluetooth_connect_profiles(&addr, static_cast<feature_profile_t>(profiles[i]));
+        status |= bluetooth_connect_profiles(&addr, (feature_profile_t)(profiles[i]));
     }
 
     if (status != BT_STATUS_SUCCESS) {
-        if (!FeatureInvokeCallback(feature, params->_fail, "connect all passing profiles failed!", status)) {
+        if (!FeatureInvokeCallback(feature, params->fail, "connect all passing profiles failed!", status)) {
             FEATURE_LOG_ERROR("invoke connect profiles fail callback failed!");
             return;
         }
     } else {
-        if (!FeatureInvokeCallback(feature, params->_success)) {
+        if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke connect profiles success callback failed!");
             return;
         }
     }
 COMPLETE_CALLBACK:
-    if (!FeatureInvokeCallback(feature, params->_complete)) {
+    if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke connect profiles complete callback failed!");
         return;
     }
 }
 
-void system_bluetooth_bt_wrap_disconnectProfiles(FeatureInstanceHandle feature, AppendData append_data, system_bluetooth_bt_DisconnectProfilesParams* params)
+void system_bluetooth_bt_wrap_disconnectProfiles(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_DisconnectProfilesParams* params)
 {
-    int profiles_num = params->_profiles->_size;
-    int* profiles = reinterpret_cast<int*>(params->_profiles->_element);
+    int profiles_num = params->profiles->_size;
+    int* profiles = (int*)params->profiles->_element;
     bt_address_t addr;
     int status = BT_STATUS_SUCCESS;
-    if (bt_addr_str2ba(params->_deviceId, &addr) < 0) {
-        if (!FeatureInvokeCallback(feature, params->_fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
+    if (bt_addr_str2ba(params->deviceId, &addr) < 0) {
+        if (!FeatureInvokeCallback(feature, params->fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
             FEATURE_LOG_ERROR("invoke disconnect profiles fail callback failed!");
             return;
         }
         goto COMPLETE_CALLBACK;
     }
     for (int i = 0; i < profiles_num; ++i) {
-        status |= bluetooth_disconnect_profiles(&addr, static_cast<feature_profile_t>(profiles[i]));
+        status |= bluetooth_disconnect_profiles(&addr, (feature_profile_t)profiles[i]);
     }
     if (status != BT_STATUS_SUCCESS) {
-        if (!FeatureInvokeCallback(feature, params->_fail, "disconnect all passing profiles failed!", status)) {
+        if (!FeatureInvokeCallback(feature, params->fail, "disconnect all passing profiles failed!", status)) {
             FEATURE_LOG_ERROR("invoke disconnect profiles fail callback failed!");
             return;
         }
     } else {
-        if (!FeatureInvokeCallback(feature, params->_success)) {
+        if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke disconnect profiles success callback failed!");
             return;
         }
     }
 COMPLETE_CALLBACK:
-    if (!FeatureInvokeCallback(feature, params->_complete)) {
+    if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke disconnect profiles complete callback failed!");
         return;
     }
 }
 
-void system_bluetooth_bt_wrap_disconnect(FeatureInstanceHandle feature, AppendData append_data, system_bluetooth_bt_DisconnectParams* params)
+void system_bluetooth_bt_wrap_disconnect(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_DisconnectParams* params)
 {
     bt_address_t addr;
     bt_status_t status;
-    if (bt_addr_str2ba(params->_deviceId, &addr) < 0) {
-        if (!FeatureInvokeCallback(feature, params->_fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
+    if (bt_addr_str2ba(params->deviceId, &addr) < 0) {
+        if (!FeatureInvokeCallback(feature, params->fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
             FEATURE_LOG_ERROR("invoke disconnect fail callback failed!");
             return;
         }
@@ -220,24 +219,24 @@ void system_bluetooth_bt_wrap_disconnect(FeatureInstanceHandle feature, AppendDa
     }
     status = bt_device_disconnect(feature_bluetooth_get_instance(), &addr);
     if (status != BT_STATUS_SUCCESS) {
-        if (!FeatureInvokeCallback(feature, params->_fail, "disconnect failed!", status)) {
+        if (!FeatureInvokeCallback(feature, params->fail, "disconnect failed!", status)) {
             FEATURE_LOG_ERROR("invoke disconnect fail callback failed!");
             return;
         }
     } else {
-        if (!FeatureInvokeCallback(feature, params->_success)) {
+        if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke disconnect success callback failed!");
             return;
         }
     }
 COMPLETE_CALLBACK:
-    if (!FeatureInvokeCallback(feature, params->_complete)) {
+    if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke disconnect complete callback failed!");
         return;
     }
 }
 
-FtBool system_bluetooth_bt_wrap_getConnectState(FeatureInstanceHandle feature, AppendData append_data, FtString deviceId)
+FtBool system_bluetooth_bt_wrap_getConnectState(FeatureInstanceHandle feature, union AppendData append_data, FtString deviceId)
 {
     FtBool connected = false;
     bt_address_t addr;
@@ -250,9 +249,9 @@ FtBool system_bluetooth_bt_wrap_getConnectState(FeatureInstanceHandle feature, A
     return connected;
 }
 
-FtArray* system_bluetooth_bt_wrap_getConnectedDevices(FeatureInstanceHandle feature, AppendData append_data)
+FtArray* system_bluetooth_bt_wrap_getConnectedDevices(FeatureInstanceHandle feature, union AppendData append_data)
 {
-    bt_address_t* addrs = nullptr;
+    bt_address_t* addrs = NULL;
     int num = 0;
     bt_adapter_get_connected_devices(feature_bluetooth_get_instance(), BT_TRANSPORT_BREDR, &addrs, &num, bt_feature_allocator);
     FtArray* devices = system_bluetooth_bt_malloc_string_array();
@@ -267,9 +266,9 @@ FtArray* system_bluetooth_bt_wrap_getConnectedDevices(FeatureInstanceHandle feat
     return devices;
 }
 
-FtArray* system_bluetooth_bt_wrap_getBondedDevices(FeatureInstanceHandle feature, AppendData append_data)
+FtArray* system_bluetooth_bt_wrap_getBondedDevices(FeatureInstanceHandle feature, union AppendData append_data)
 {
-    bt_address_t* addrs = nullptr;
+    bt_address_t* addrs = NULL;
     int num = 0;
     bt_adapter_get_bonded_devices(feature_bluetooth_get_instance(), BT_TRANSPORT_BREDR, &addrs, &num, bt_feature_allocator);
     FtArray* devices = system_bluetooth_bt_malloc_string_array();
@@ -284,12 +283,12 @@ FtArray* system_bluetooth_bt_wrap_getBondedDevices(FeatureInstanceHandle feature
     return devices;
 }
 
-void system_bluetooth_bt_wrap_removeBondedDevice(FeatureInstanceHandle feature, AppendData append_data, system_bluetooth_bt_RemoveBondedParams* params)
+void system_bluetooth_bt_wrap_removeBondedDevice(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_RemoveBondedParams* params)
 {
     bt_address_t addr;
     bt_status_t status;
-    if (bt_addr_str2ba(params->_deviceId, &addr) < 0) {
-        if (!FeatureInvokeCallback(feature, params->_fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
+    if (bt_addr_str2ba(params->deviceId, &addr) < 0) {
+        if (!FeatureInvokeCallback(feature, params->fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
             FEATURE_LOG_ERROR("invoke remove bonded fail callback failed!");
             return;
         }
@@ -297,38 +296,41 @@ void system_bluetooth_bt_wrap_removeBondedDevice(FeatureInstanceHandle feature, 
     }
     status = bt_device_remove_bond(feature_bluetooth_get_instance(), &addr, BT_TRANSPORT_BREDR);
     if (status != BT_STATUS_SUCCESS) {
-        if (!FeatureInvokeCallback(feature, params->_fail, "remove bonded failed!", status)) {
+        if (!FeatureInvokeCallback(feature, params->fail, "remove bonded failed!", status)) {
             FEATURE_LOG_ERROR("invoke remove bonded fail callback failed!");
             return;
         }
     } else {
-        if (!FeatureInvokeCallback(feature, params->_success)) {
+        if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke remove bonded success callback failed!");
             return;
         }
     }
 COMPLETE_CALLBACK:
-    if (!FeatureInvokeCallback(feature, params->_complete)) {
+    if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke remove bonded complete callback failed!");
         return;
     }
 }
 
-FtBool system_bluetooth_bt_wrap_setScanMode(FeatureInstanceHandle feature, AppendData append_data, FtInt scanMode)
+FtBool system_bluetooth_bt_wrap_setScanMode(FeatureInstanceHandle feature, union AppendData append_data, FtInt scanMode)
 {
-    if (bt_adapter_set_scan_mode(feature_bluetooth_get_instance(), static_cast<bt_scan_mode_t>(scanMode), 1) == BT_STATUS_SUCCESS) {
+    if (scanMode <0 || scanMode >2) {
+        return false;
+    }
+    if (bt_adapter_set_scan_mode(feature_bluetooth_get_instance(), (bt_scan_mode_t)scanMode, 1) == BT_STATUS_SUCCESS) {
         return true;
     } else {
         return false;
     }
 }
 
-FtInt system_bluetooth_bt_wrap_getScanMode(FeatureInstanceHandle feature, AppendData append_data)
+FtInt system_bluetooth_bt_wrap_getScanMode(FeatureInstanceHandle feature, union AppendData append_data)
 {
     return bt_adapter_get_scan_mode(feature_bluetooth_get_instance());
 }
 
-FtString system_bluetooth_bt_wrap_getDeviceName(FeatureInstanceHandle feature, AppendData append_data, FtString deviceId)
+FtString system_bluetooth_bt_wrap_getDeviceName(FeatureInstanceHandle feature, union AppendData append_data, FtString deviceId)
 {
     bt_address_t addr;
     char name[64] = { 0 };
@@ -339,7 +341,7 @@ FtString system_bluetooth_bt_wrap_getDeviceName(FeatureInstanceHandle feature, A
     return StringToFtString(name);
 }
 
-unsigned int system_bluetooth_bt_wrap_getDeviceClass(FeatureInstanceHandle feature, AppendData append_data, FtString deviceId)
+unsigned int system_bluetooth_bt_wrap_getDeviceClass(FeatureInstanceHandle feature, union AppendData append_data, FtString deviceId)
 {
     bt_address_t addr;
     if (bt_addr_str2ba(deviceId, &addr) < 0) {
@@ -349,26 +351,30 @@ unsigned int system_bluetooth_bt_wrap_getDeviceClass(FeatureInstanceHandle featu
     return bt_device_get_device_class(feature_bluetooth_get_instance(), &addr);
 }
 
-FtCallbackId system_bluetooth_bt_get_discoveryresult(void* feature, AppendData append_data)
+FtCallbackId system_bluetooth_bt_get_ondiscoveryresult(void* feature, union AppendData append_data)
 {
     adapter_feature_callbacks_t* adaptercallbacks = get_adapter_cbs();
-    return adaptercallbacks->on_discovery_result_cbs[feature];
+    return adaptercallbacks->on_discovery_result_cb.callbackId;
 }
 
-void system_bluetooth_bt_set_discoveryresult(void* feature, AppendData append_data, FtCallbackId discoveryresult)
+void system_bluetooth_bt_set_ondiscoveryresult(void* feature, union AppendData append_data, FtCallbackId ondiscoveryresult)
 {
+    FEATURE_LOG_ERROR("set discoveryresult feature: %p, callbackId: %d\n", feature, ondiscoveryresult);
     adapter_feature_callbacks_t* adaptercallbacks = get_adapter_cbs();
-    adaptercallbacks->on_discovery_result_cbs[feature] = discoveryresult;
+    adaptercallbacks->on_discovery_result_cb.feature = feature;
+    adaptercallbacks->on_discovery_result_cb.callbackId = ondiscoveryresult;
 }
 
-FtCallbackId system_bluetooth_bt_get_onbondstatechange(void* feature, AppendData append_data)
+FtCallbackId system_bluetooth_bt_get_onbondstatechange(void* feature, union AppendData append_data)
 {
     adapter_feature_callbacks_t* adaptercallbacks = get_adapter_cbs();
-    return adaptercallbacks->on_discovery_result_cbs[feature];
+    return adaptercallbacks->on_discovery_result_cb.callbackId;
 }
 
-void system_bluetooth_bt_set_onbondstatechange(void* feature, AppendData append_data, FtCallbackId onbondstatechange)
+void system_bluetooth_bt_set_onbondstatechange(void* feature, union AppendData append_data, FtCallbackId onbondstatechange)
 {
+    FEATURE_LOG_ERROR("set onbondstatechange feature: %p, callbackId: %d\n", feature, onbondstatechange);
     adapter_feature_callbacks_t* adaptercallbacks = get_adapter_cbs();
-    adaptercallbacks->on_bond_state_changed_cbs[feature] = onbondstatechange;
+    adaptercallbacks->on_bond_state_changed_cb.feature = feature;
+    adaptercallbacks->on_bond_state_changed_cb.callbackId = onbondstatechange;
 }

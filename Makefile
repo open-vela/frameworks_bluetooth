@@ -16,9 +16,6 @@
 
 include $(APPDIR)/Make.defs
 
-CXXEXT   := .cpp
-CXXFLAGS += -std=c++17
-
 ifeq ($(CONFIG_BLUETOOTH), y)
 
 CSRCS += framework/common/*.c
@@ -304,23 +301,19 @@ else
 TARGETDIR := x86
 endif
 
-CXXFLAGS    += $(CFLAGS)
+CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/external/libffi/libffi/src/$(TARGETDIR)
+CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/external/libffi
+CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/feature/include
 
-CXXFLAGS    := $(filter-out -Wno-strict-prototypes, $(CXXFLAGS))
-CXXFLAGS    := $(filter-out -Wstrict-prototypes, $(CXXFLAGS))
-CXXFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/external/libffi/libffi/src/$(TARGETDIR)
-CXXFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/external/libffi
-CXXFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/feature/include
+CSRCS     += feature/src/system_bluetooth.c
+CSRCS     += feature/src/system_bluetooth_impl.c
 
-CXXSRCS     += feature/src/system_bluetooth.cpp
-CXXSRCS     += feature/src/system_bluetooth_impl.cpp
-
-CXXSRCS     += feature/src/system_bluetooth_bt.cpp
-CXXSRCS     += feature/src/system_bluetooth_bt_impl.cpp
+CSRCS     += feature/src/system_bluetooth_bt.c
+CSRCS     += feature/src/system_bluetooth_bt_impl.c
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
-CXXSRCS     += feature/src/system_bluetooth_bt_a2dpsink.cpp
-CXXSRCS     += feature/src/system_bluetooth_bt_a2dpsink_impl.cpp
+CSRCS     += feature/src/system_bluetooth_bt_a2dpsink.c
+CSRCS     += feature/src/system_bluetooth_bt_a2dpsink_impl.c
 endif
 endif
 
