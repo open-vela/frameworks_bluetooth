@@ -1210,7 +1210,9 @@ void adapter_on_link_key_removed(bt_address_t *addr, bt_status_t status)
 
 void adapter_on_link_role_changed(bt_address_t *addr, bt_link_role_t role)
 {
-    BT_LOGD("%s", __func__);
+    /* callback on HCI Role Change event received,
+       only BT_LINK_ROLE_MASTER or BT_LINK_ROLE_SLAVE are possible */
+    BT_LOGD("%s, role=%s", __func__, role == BT_LINK_ROLE_MASTER ? "Master" : "Slave");
 }
 
 /* PM need implement */
@@ -1228,7 +1230,7 @@ void adapter_on_link_mode_changed(bt_address_t *addr, bt_link_mode_t mode, uint1
 
 void adapter_on_link_policy_changed(bt_address_t *addr, bt_link_policy_t policy)
 {
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, policy=%d", __func__, policy);
 }
 
 void adapter_on_le_addr_update(bt_address_t *addr, ble_addr_type_t type)
