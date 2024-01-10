@@ -65,14 +65,31 @@ typedef enum {
 } bond_state_t;
 
 /**
- * @brief
- * @note Not support
- * @param ins
- * @param addr
- * @return bt_address_t*
+ * @brief Get identity address of remote device
+ *
+ * @param ins - bluetooth client instance.
+ * @param bd_addr - remote device address.
+ * @param[out] id_addr - identity address.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_address_t *BTSYMBOLS(bt_device_get_identity_address)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_device_get_identity_address)(bt_instance_t *ins, bt_address_t *bd_addr, bt_address_t *id_addr);
+
+/**
+ * @brief Get identity address of remote device
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.
+ * @return ble_addr_type_t - address type, UNKNOWN on device not found.
+ */
 ble_addr_type_t BTSYMBOLS(bt_device_get_address_type)(bt_instance_t *ins, bt_address_t *addr);
+
+/**
+ * @brief Get remote device type
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.
+ * @return bt_device_type_t - device type, zero on device not found.
+ */
 bt_device_type_t BTSYMBOLS(bt_device_get_device_type)(bt_instance_t *ins, bt_address_t *addr);
 
 /**
@@ -258,7 +275,7 @@ bt_status_t BTSYMBOLS(bt_device_set_pairing_confirmation)(bt_instance_t *ins, bt
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_device_set_pin_code)(bt_instance_t *ins, bt_address_t *addr, bool accept,
-                                   char *pincode, int len);
+                                              char *pincode, int len);
 
 /**
  * @brief Set simple securty pair passkey or LE smp key
@@ -300,8 +317,8 @@ bt_status_t BTSYMBOLS(bt_device_disconnect)(bt_instance_t *ins, bt_address_t *ad
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_device_connect_le)(bt_instance_t *ins, bt_address_t *addr,
-                                 ble_addr_type_t type,
-                                 ble_connect_params_t *param);
+                                            ble_addr_type_t type,
+                                            ble_connect_params_t *param);
 
 /**
  * @brief Disconnect from LE connection
@@ -332,8 +349,8 @@ bt_status_t BTSYMBOLS(bt_device_connect_request_reply)(bt_instance_t *ins, bt_ad
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_device_set_le_phy)(bt_instance_t *ins, bt_address_t *addr,
-                                 ble_phy_type_t tx_phy,
-                                 ble_phy_type_t rx_phy);
+                                            ble_phy_type_t tx_phy,
+                                            ble_phy_type_t rx_phy);
 
 /**
  * @brief Connect to all profile.

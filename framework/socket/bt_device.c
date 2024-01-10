@@ -32,21 +32,24 @@ static int bt_device_send(bt_instance_t *ins, bt_address_t *addr,
   return bt_socket_client_sendrecv(ins, packet, code);
 }
 
-bt_address_t *bt_device_get_identity_address(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_device_get_identity_address(bt_instance_t *ins, bt_address_t *bd_addr, bt_address_t *id_addr)
 {
   bt_message_packet_t packet;
   bt_status_t status;
 
-  BT_SOCKET_INS_VALID(ins, NULL);
-  status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_IDENTITY_ADDRESS);
+  BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+  status = bt_device_send(ins, bd_addr, &packet, BT_DEVICE_GET_IDENTITY_ADDRESS);
   if (status != BT_STATUS_SUCCESS)
   {
-    return NULL;
+    return status;
   }
 
-  memcpy(addr, &packet.devs_r.addr, sizeof(*addr));
+  if (packet.devs_r.status == BT_STATUS_SUCCESS)
+  {
+    memcpy(id_addr, &packet.devs_pl._bt_device_addr.addr, sizeof(*id_addr));
+  }
 
-  return addr;
+  return packet.devs_r.status;
 }
 
 ble_addr_type_t bt_device_get_address_type(bt_instance_t *ins, bt_address_t *addr)
