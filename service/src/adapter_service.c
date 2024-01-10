@@ -280,6 +280,7 @@ static void le_bonded_device_loaded(void *data, uint16_t length, uint16_t items)
             bt_device_t *device = adapter_find_create_le_device(&remote->addr, remote->addr_type);
             device_set_bond_state(device, BOND_STATE_BONDED);
             device_set_smp_key(device, remote->smp_key);
+            device_set_identity_address(device, (bt_address_t *)remote->smp_key);
             bt_addr_ba2str(&remote->addr, addr_str);
             uint8_t *ltk = &remote->smp_key[12];
             BT_LOGD("LE BOND DEVICE[%d], Addr:[%s] Atype:[%d] LTK: [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
@@ -461,6 +462,7 @@ static void process_bond_state_change_evt(bt_address_t *addr, bond_state_t state
             //device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_LE);
         } else if (state == BOND_STATE_NONE) {
             device_delete_smp_key(device);
+            device_set_identity_address(device, NULL);
         }
     }
 
@@ -809,6 +811,7 @@ static void process_le_bonded_device_update_evt(remote_device_le_properties_t *p
         device_set_address_type(device, prop->addr_type);
         /* store smp key to mapped device struct */
         device_set_smp_key(device, prop->smp_key);
+        device_set_identity_address(device, (bt_address_t *)prop->smp_key);
 
         bt_addr_ba2str(&prop->addr, addr_str);
         uint8_t *ltk = &prop->smp_key[12];
@@ -1849,6 +1852,29 @@ bool adapter_is_support_leaudio(void)
     return true;
 #endif
     return false;
+}
+
+bt_status_t adapter_get_remote_identity_address(bt_address_t *bd_addr, bt_address_t *id_addr)
+{
+    bt_device_t *device;
+    bt_address_t *identity_addr;
+
+    adapter_lock();
+    device = adapter_find_device(bd_addr, BT_TRANSPORT_BLE);
+    if (device == NULL) {
+        adapter_unlock();
+        return BT_STATUS_DEVICE_NOT_FOUND;
+    }
+
+    identity_addr = device_get_identity_address(device);
+    if (bt_addr_is_empty(identity_addr)) {
+        adapter_unlock();
+        return BT_STATUS_NOT_FOUND;
+    }
+
+    memcpy(id_addr, identity_addr, sizeof(bt_address_t));
+    adapter_unlock();
+    return BT_STATUS_SUCCESS;
 }
 
 bt_device_type_t adapter_get_remote_device_type(bt_address_t *addr)

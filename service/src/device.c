@@ -126,7 +126,11 @@ bt_address_t *device_get_identity_address(bt_device_t *device)
 
 void device_set_identity_address(bt_device_t *device, bt_address_t *addr)
 {
-    memcpy(&device->remote.identity_addr, addr, sizeof(bt_address_t));
+    if (addr) {
+        memcpy(&device->remote.identity_addr, addr, sizeof(bt_address_t));
+    } else {
+        bt_addr_set_empty(&device->remote.identity_addr);
+    }
 }
 
 ble_addr_type_t device_get_address_type(bt_device_t *device)

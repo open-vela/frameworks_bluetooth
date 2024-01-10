@@ -72,7 +72,11 @@ void bt_socket_server_device_process(service_poll_t *poll,
   {
     case BT_DEVICE_GET_IDENTITY_ADDRESS:
       {
-        packet->devs_r.status = BT_STATUS_NOT_SUPPORTED;
+        bt_address_t id_addr;
+        packet->devs_r.status = BTSYMBOLS(bt_device_get_identity_address)(ins,
+              &packet->devs_pl._bt_device_addr.addr,
+              &id_addr);
+        memcpy(&packet->devs_pl._bt_device_addr.addr, &id_addr, sizeof(id_addr));
         break;
       }
     case BT_DEVICE_GET_ADDRESS_TYPE:

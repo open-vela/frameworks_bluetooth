@@ -20,12 +20,12 @@
 #include "bluetooth.h"
 #include "bt_addr.h"
 #include "bt_device.h"
-#include "device.h"
 #include "bt_internal.h"
+#include "device.h"
 
-bt_address_t *BTSYMBOLS(bt_device_get_identity_address)(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t BTSYMBOLS(bt_device_get_identity_address)(bt_instance_t *ins, bt_address_t *bd_addr, bt_address_t *id_addr)
 {
-    return NULL;
+    return adapter_get_remote_identity_address(bd_addr, id_addr);
 }
 
 ble_addr_type_t BTSYMBOLS(bt_device_get_address_type)(bt_instance_t *ins, bt_address_t *addr)
@@ -109,9 +109,9 @@ bt_status_t BTSYMBOLS(bt_device_disconnect)(bt_instance_t *ins, bt_address_t *ad
 }
 
 bt_status_t BTSYMBOLS(bt_device_connect_le)(bt_instance_t *ins,
-                                 bt_address_t *addr,
-                                 ble_addr_type_t type,
-                                 ble_connect_params_t *param)
+                                            bt_address_t *addr,
+                                            ble_addr_type_t type,
+                                            ble_connect_params_t *param)
 {
     return adapter_le_connect(addr, type, param);
 }
@@ -135,8 +135,8 @@ void BTSYMBOLS(bt_device_disconnect_all_profile)(bt_instance_t *ins, bt_address_
 }
 
 bt_status_t BTSYMBOLS(bt_device_set_le_phy)(bt_instance_t *ins, bt_address_t *addr,
-                                 ble_phy_type_t tx_phy,
-                                 ble_phy_type_t rx_phy)
+                                            ble_phy_type_t tx_phy,
+                                            ble_phy_type_t rx_phy)
 {
     return adapter_le_set_phy(addr, tx_phy, rx_phy);
 }
@@ -167,7 +167,7 @@ bt_status_t BTSYMBOLS(bt_device_set_pairing_confirmation)(bt_instance_t *ins, bt
 }
 
 bt_status_t BTSYMBOLS(bt_device_set_pin_code)(bt_instance_t *ins, bt_address_t *addr, bool accept,
-                                   char *pincode, int len)
+                                              char *pincode, int len)
 {
     return adapter_set_pin_code(addr, accept, pincode, len);
 }
