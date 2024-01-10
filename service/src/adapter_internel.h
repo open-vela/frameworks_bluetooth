@@ -273,6 +273,7 @@ void adapter_set_auto_accept_connection(bool enable);
 bool adapter_is_support_bredr(void);
 bool adapter_is_support_le(void);
 bool adapter_is_support_leaudio(void);
+bt_status_t adapter_get_remote_identity_address(bt_address_t *bd_addr, bt_address_t *id_addr);
 bt_device_type_t adapter_get_remote_device_type(bt_address_t *addr);
 bool adapter_get_remote_name(bt_address_t *addr, char *name);
 uint32_t adapter_get_remote_device_class(bt_address_t *addr);
@@ -310,8 +311,8 @@ bt_status_t adapter_set_pin_code(bt_address_t *addr, bool accept,
 bt_status_t adapter_set_pass_key(bt_address_t *addr, uint8_t transport, bool accept, uint32_t passkey);
 uint16_t adapter_get_acl_handle(bt_address_t *addr);
 bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
-                                                  uint16_t band_width,
-                                                  uint16_t number);
+                                                   uint16_t band_width,
+                                                   uint16_t number);
 bt_status_t adapter_set_auto_sniff(bt_auto_sniff_params_t *params);
 void *adapter_register_callback(void *remote, const adapter_callbacks_t *adapter_cbs);
 bool adapter_unregister_callback(void **remote, void *cookie);
