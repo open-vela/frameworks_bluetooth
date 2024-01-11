@@ -58,7 +58,7 @@ static bt_command_t g_adv_tables[] = {
                                  "\t  -a or --appearance, advertising appearance range 0000~FFFF \n"
                                  "\t  -P or --peer_addr, if directed advertising is performed, shall be valid\n"
                                  "\t  -T or --peer_addr_type, if directed advertising is performed, shall be valid\n"
-                                 "\t  -O or --own_addr, update advertising own random address, only own addr type is random valid\n"
+                                 "\t  -O or --own_addr, update own random address for this advertising, mandatory when own addr type is random\n"
                                  "\t  -R or --own_addr_type, address type(public/random/public_id/random_id/anonymous)\n"
                                  "\t  -p or --tx_power, advertising tx power range -20~10 dBm\n"
                                  "\t  -c or --channel, advertising channel map opt (37/38/39, 0 means default)\n"
@@ -258,7 +258,7 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
                 return CMD_INVALID_PARAM;
             }
 
-            memcpy(&params.peer_addr, &ownaddr, sizeof(bt_address_t));
+            memcpy(&params.own_addr, &ownaddr, sizeof(bt_address_t));
             PRINT("own address: %s", optarg);
         } break;
         case 'R': {
@@ -281,6 +281,11 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
             PRINT("%s, default opt:%c, arg:%s", __func__, opt, optarg);
             break;
         }
+    }
+
+    if (params.own_addr_type == BT_LE_ADDR_TYPE_RANDOM && bt_addr_is_empty(&params.own_addr)) {
+        PRINT("should set own address using \"-O\" option");
+        return CMD_INVALID_ADDR;
     }
 
     if (adv_mode == 1)

@@ -118,10 +118,10 @@ typedef struct {
 /* * BLE ADV Parameters */
 typedef struct {
     ble_adv_type_t adv_type;
-    bt_address_t peer_addr; /* For BLE_ADV_DIRECT_IND only */
-    ble_addr_type_t peer_addr_type; /* For BLE_ADV_DIRECT_IND only */
-    bt_address_t own_addr; /* Set if own_addr_type is BLE_ADDR_RANDOM. Ignored otherwise */
-    ble_addr_type_t own_addr_type; /* One of BLE_ADDR_PUBLIC, BLE_ADDR_RANDOM and BLE_ADDR_UNKNOWN */
+    bt_address_t peer_addr; /* For directed advertising only */
+    ble_addr_type_t peer_addr_type; /* For directed advertising only */
+    bt_address_t own_addr; /* Mandatory if own_addr_type is BT_LE_ADDR_TYPE_RANDOM. Ignored otherwise */
+    ble_addr_type_t own_addr_type; /* One of BT_LE_ADDR_TYPE_PUBLIC, BT_LE_ADDR_TYPE_RANDOM and BT_LE_ADDR_TYPE_UNKNOWN */
     uint32_t interval;
     int8_t tx_power; /* *Range:-20~10 */
     ble_adv_channel_t channel_map;
