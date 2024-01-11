@@ -624,7 +624,6 @@ static bt_status_t bluelet_stack_init(void)
         return BT_STATUS_FAIL;
 
     /* Register gap callbacks and initialize bluelet stack */
-    service_adapter_debug_init();
     service_adapter_gap_init();
     service_adapter_gap_register_gap_callback((GAP_CALLBACKS_S *)&sal_gap_callbacks);
 

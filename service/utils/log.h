@@ -52,7 +52,7 @@ enum bt_log_level_ {
 #define BT_LOGI(fmt, args...)
 #define BT_LOGD(fmt, args...)
 #else
-extern bool utils_log_print_check(uint8_t level);
+extern bool bt_log_print_check(uint8_t level);
 
 #define DEFAULT_BT_LOG_LEVEL CONFIG_OBELISK_LOG_LEVEL
 
@@ -63,22 +63,22 @@ extern bool utils_log_print_check(uint8_t level);
                                                ##args);
 #define BT_LOGE(fmt, ...)                                                     \
     do {                                                                      \
-        if (utils_log_print_check(BT_LOG_LEVEL_ERROR))                        \
+        if (bt_log_print_check(BT_LOG_LEVEL_ERROR))                        \
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__); \
     } while (0);
 #define BT_LOGW(fmt, ...)                                                       \
     do {                                                                        \
-        if (utils_log_print_check(BT_LOG_LEVEL_WARNING))                        \
+        if (bt_log_print_check(BT_LOG_LEVEL_WARNING))                        \
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_WARNING, fmt, ##__VA_ARGS__); \
     } while (0);
 #define BT_LOGI(fmt, ...)                                                    \
     do {                                                                     \
-        if (utils_log_print_check(BT_LOG_LEVEL_INFO))                        \
+        if (bt_log_print_check(BT_LOG_LEVEL_INFO))                        \
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_INFO, fmt, ##__VA_ARGS__); \
     } while (0);
 #define BT_LOGD(fmt, ...)                                                     \
     do {                                                                      \
-        if (utils_log_print_check(BT_LOG_LEVEL_DEBUG))                        \
+        if (bt_log_print_check(BT_LOG_LEVEL_DEBUG))                        \
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__); \
     } while (0);
 #endif
@@ -97,11 +97,7 @@ extern bool utils_log_print_check(uint8_t level);
 #define BT_DUMPBUFFER(m, a, n)
 #endif
 
-void utils_log_init(void);
-int utils_log_enable(int id);
-int utils_log_disable(int id);
-uint8_t utils_set_log_level(uint8_t level);
-uint8_t utils_get_log_level(void);
-int utils_set_log_mask_level(uint8_t id, uint8_t mask_bit, bool enable);
+void bt_log_server_init(void);
+void bt_log_server_cleanup(void);
 
 #endif

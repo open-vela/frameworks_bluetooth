@@ -159,6 +159,7 @@ endif #CONFIG_BLUETOOTH_OBELISK
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CSRCS += tools/utils.c
+	CSRCS += tools/log.c
 	CSRCS += tools/uv_thread_loop.c
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += tools/adv.c

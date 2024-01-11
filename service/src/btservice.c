@@ -86,6 +86,10 @@
 #define LOG_TAG "bt_service"
 #include "utils/log.h"
 
+#define MISC_PATH      "/data/misc"
+#define BT_FOLDER_PATH MISC_PATH "/" \
+                                 "bt"
+
 typedef struct {
     uint16_t profile_id;
     uint16_t event_id;
@@ -174,6 +178,25 @@ void bt_profile_init(void)
 #endif
 }
 
+static int create_bt_folder(void)
+{
+    int ret = 0;
+
+    if ((ret = access(MISC_PATH, 0)) && ret != 0) {
+        if ((ret = mkdir(MISC_PATH, 0777)) && ret != 0)
+            goto out;
+    }
+
+    if ((ret = access(BT_FOLDER_PATH, 0)) && ret != 0) {
+        if ((ret = mkdir(BT_FOLDER_PATH, 0777)) && ret != 0)
+            goto out;
+    }
+
+out:
+    syslog(LOG_ERR, "data/misc/bt folder create ret: %d", ret);
+    return ret;
+}
+
 void bt_service_event_dispatch(void *smsg)
 {
     free(smsg);
@@ -217,11 +240,15 @@ void send_to_state_machine(state_machine_t *sm, uint16_t event_id, void *data)
 
 int bt_service_init(void)
 {
-    utils_log_init();
+    if (create_bt_folder() != 0)
+        return -1;
+
+    bt_log_server_init();
     bt_storage_init();
     bt_profile_init();
     adapter_init();
     manager_init();
+
     if (stack_manager_init() != BT_STATUS_SUCCESS)
         return -1;
 
@@ -235,6 +262,7 @@ int bt_service_cleanup(void)
     manager_cleanup();
     adapter_cleanup();
     bt_storage_cleanup();
+    bt_log_server_cleanup();
 
     BT_LOGD("%s done", __func__);
     return 0;
