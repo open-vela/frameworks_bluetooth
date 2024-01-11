@@ -26,7 +26,6 @@
 #include "utils/log.h"
 #include "uv_ext.h"
 
-#define MISC_PATH               "/data/misc"
 #define BT_DB_FOLDER_PATH       "/data/misc/bt"
 #define BT_DB_FILE_NAME         "bt_storage.db"
 #define BT_DB_FILE_PATH         BT_DB_FOLDER_PATH "/" BT_DB_FILE_NAME
@@ -191,23 +190,9 @@ int bt_storage_init(void)
 {
     int ret;
 
-    if ((ret = access(MISC_PATH, 0)) && ret != 0) {
-        if ((ret = mkdir(MISC_PATH, 0777)) && ret != 0) {
-            BT_LOGD("misc folder create fail:%d", ret);
-            return ret;
-        }
-    }
-
-    if ((ret = access(BT_DB_FOLDER_PATH, 0)) && ret != 0) {
-        if ((ret = mkdir(BT_DB_FOLDER_PATH, 0777)) && ret != 0) {
-            BT_LOGD("storage folder create fail:%d", ret);
-            return ret;
-        }
-    }
-
     ret = uv_db_init(get_service_uv_loop(), &storage_handle, BT_DB_FILE_PATH);
     if (ret != 0)
-        BT_LOGD("%s fail, ret:%d", __func__, ret);
+        BT_LOGE("%s fail, ret:%d", __func__, ret);
 
     BT_LOGD("%s successed", __func__);
 
@@ -220,5 +205,6 @@ int bt_storage_cleanup(void)
     if (storage_handle)
         uv_db_close(storage_handle);
 
+    storage_handle = NULL;
     return 0;
 }

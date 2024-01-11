@@ -220,6 +220,7 @@ static bt_command_t g_cmd_tables[] = {
     { "vmicp",        vmicp_command_exec,     0, "vcp/micp client cmd, input \'vmicp\' show usage"          },
 #endif
     { "dump",         dump_cmd,               0, "dump adapter state"                                       },
+    { "log",          log_command,            0, "log control command"                                              },
     { "help",         usage_cmd,              0, "Usage for bttools"                                        },
     { "quit",         quit_cmd,               0, "Quit"                                                     },
     { "q",            quit_cmd,               0, "Quit"                                                     },
@@ -557,10 +558,10 @@ static int set_iocap_cmd(void *handle, int argc, char **argv)
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (strlen(argv[0]) > 1){
+    if (strlen(argv[0]) > 1) {
         return CMD_INVALID_PARAM;
     }
-    
+
     int iocap = *argv[0] - '0';
     if (iocap < BT_IO_CAPABILITY_DISPLAYONLY || iocap > BT_IO_CAPABILITY_KEYBOARDDISPLAY)
         return CMD_INVALID_PARAM;
@@ -753,11 +754,10 @@ static int pair_set_auto_cmd(void *handle, int argc, char **argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
-    if (strlen(argv[0]) > 1){
+    if (strlen(argv[0]) > 1) {
         return CMD_INVALID_PARAM;
     }
-    switch (*argv[0])
-    {
+    switch (*argv[0]) {
     case '0':
         g_auto_accept_pair = false;
         break;

@@ -21,9 +21,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+
 #include "stack_adapter_gap.h"
 #include <nuttx/wireless/bluetooth/bt_ioctl.h>
 
+#include "utils/btsnoop_log.h"
 #include "hci_h4.h"
 
 #define LOG_TAG "h4"
@@ -131,11 +133,14 @@ void bt_sal_hci_transport_recv(void)
     if (ret != data_len)
         return;
 
+    btsnoop_log_capture(1, data, 1 + hdr_len + data_len);
     service_adapter_gap_receive_hci_packet(data, 1 + hdr_len + data_len);
 }
 
 int bt_sal_hci_send_packet(uint8_t *buf, uint32_t len)
 {
+    btsnoop_log_capture(0, buf, len);
+
     return h4_send_data(buf, len);
 }
 

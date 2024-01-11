@@ -49,6 +49,24 @@ typedef enum {
     BT_LINKKEY_TYPE_AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256
 } bt_link_key_type_t;
 
+typedef enum {
+    BT_DBG_TYPE_HCI = 1,
+    BT_DBG_TYPE_HCI_RAW,
+    BT_DBG_TYPE_HCI_DUMP,
+    BT_DBG_TYPE_L2CAP,
+    BT_DBG_TYPE_SDP,
+    BT_DBG_TYPE_ATT,
+    BT_DBG_TYPE_SMP,
+    BT_DBG_TYPE_RFCOMM,
+    BT_DBG_TYPE_OBEX,
+    BT_DBG_TYPE_AVCTP,
+    BT_DBG_TYPE_AVDTP,
+    BT_DBG_TYPE_AVRCP,
+    BT_DBG_TYPE_A2DP,
+    BT_DBG_TYPE_HFP,
+    BT_DBG_TYPE_MAX
+} bt_debug_type_t;
+
 typedef struct {
     bt_address_t addr;
     ble_addr_type_t addr_type;

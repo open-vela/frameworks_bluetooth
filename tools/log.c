@@ -30,16 +30,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#include "utils/log.h"
-#include "bt_tools.h"
+
 #include <stdlib.h>
 #include <string.h>
 
-static struct option log_options[] = {
-    {"level", 1, NULL, 'l'},
-    { "help", 0, NULL, 'h'},
-    { 0,      0, 0,    0  }
-};
+#ifdef CONFIG_KVDB
+#include "kvdb.h"
+#endif
+
+#include "bt_tools.h"
 
 static int enable_cmd(void *handle, int argc, char *argv[]);
 static int disable_cmd(void *handle, int argc, char *argv[]);
@@ -48,23 +47,23 @@ static int unmask_cmd(void *handle, int argc, char *argv[]);
 static int level_cmd(void *handle, int argc, char *argv[]);
 
 static bt_command_t g_log_tables[] = {
-    {"enable",   enable_cmd,  0, "\"Enable Log <LogID> (SNOOP: 0, STACK: 1, FRAMEWORK: 2)\""     },
-    { "disable", disable_cmd, 0, "\"Disable Log <LogID>\""                                       },
+    {"enable",   enable_cmd,  0, "\"Enable param: (\"snoop\" or \"stack\")\""                    },
+    { "disable", disable_cmd, 0, "\"Disable param: (\"snoop\" or \"stack\")\""                   },
     { "mask",    mask_cmd,    0, "\"Enable Stack Profile & Protocol Log <bit>\"\n"
-                        "\t\t\tExample enable HCI and L2CAP: \"bttool> log mask 1 2\" \n"
-                        "\t\t\tProfile && Protocol Enum:\n"
-                        "\t\t\t  HCI:   1\n"
-                        "\t\t\t  L2CAP: 2\n"
-                        "\t\t\t  SDP:   3\n"
-                        "\t\t\t  RFCOMM:4\n"
-                        "\t\t\t  ATT:   5\n"
-                        "\t\t\t  OBEX:  7\n"
-                        "\t\t\t  AVCTP: 13\n"
-                        "\t\t\t  AVDTP: 14\n"
-                        "\t\t\t  AVRCP: 16\n"
-                        "\t\t\t  SMP:   18\n"
-                        "\t\t\t  HFP:   25\n"
-                        "\t\t\t  RAW PDU:29\n"                      },
+                           "\t\t\tExample enable HCI and L2CAP: \"bttool> log mask 1 4\" \n"
+                           "\t\t\tProfile && Protocol Enum:\n"
+                           "\t\t\t  HCI:   1\n"
+                           "\t\t\t  HCI RAW PDU:2\n"
+                           "\t\t\t  L2CAP: 4\n"
+                           "\t\t\t  SDP:   5\n"
+                           "\t\t\t  ATT:   6\n"
+                           "\t\t\t  SMP:   7\n"
+                           "\t\t\t  RFCOMM:8\n"
+                           "\t\t\t  OBEX:  9\n"
+                           "\t\t\t  AVCTP: 10\n"
+                           "\t\t\t  AVDTP: 11\n"
+                           "\t\t\t  AVRCP: 12\n"
+                           "\t\t\t  HFP:   14\n"                 },
     { "unmask",  unmask_cmd,  0, "\"Disable Stack Profile & Protocol Log <bit>\""                },
     { "level",   level_cmd,   0, "\"Set framework log level, (OFF:0,ERR:3,WARN:4,INFO:6,DBG:7)\""},
 };
@@ -72,111 +71,137 @@ static bt_command_t g_log_tables[] = {
 static void usage(void)
 {
     printf("Usage:\n");
-    printf("Options:\n"
-           "\t--level\\-l  \t\"Set framework log level, (OFF:0,ERR:3,WARN:4,INFO:6,DBG:7)\"\n"
-           "\t--help       \t\"Display help\"\n");
     printf("Commands:\n");
     for (int i = 0; i < ARRAY_SIZE(g_log_tables); i++) {
         printf("\t%-8s\t%s\n", g_log_tables[i].cmd, g_log_tables[i].help);
     }
 }
 
+static void property_change_commit(int bit)
+{
+#ifdef CONFIG_KVDB
+    property_set_int32("persist.bluetooth.log.changed", (1 << bit) & 0xFFFFFFFF);
+    property_commit();
+#endif
+}
+
+static int log_control(char *id, int enable)
+{
+#ifdef CONFIG_KVDB
+    if (strncmp(id, "stack", strlen("stack")) == 0) {
+        property_set_int32("persist.bluetooth.log.stack_enable", enable);
+        property_change_commit(1);
+    } else if (strncmp(id, "snoop", strlen("snoop")) == 0) {
+        property_set_int32("persist.bluetooth.log.snoop_enable", enable);
+        property_change_commit(3);
+    } else
+        return CMD_INVALID_PARAM;
+
+    return CMD_OK;
+#else
+    return CMD_ERROR;
+#endif
+}
+
 static int enable_cmd(void *handle, int argc, char *argv[])
 {
     if (argc < 1)
-        return -1;
+        return CMD_PARAM_NOT_ENOUGH;
 
-    int id = atoi(argv[0]);
-
-    return utils_log_enable((uint8_t)id);
+    return log_control(argv[0], 1);
 }
 
 static int disable_cmd(void *handle, int argc, char *argv[])
 {
     if (argc < 1)
-        return -1;
+        return CMD_PARAM_NOT_ENOUGH;
 
-    int id = atoi(argv[0]);
-
-    return utils_log_disable((uint8_t)id);
+    return log_control(argv[0], 0);
 }
 
 static int mask_cmd(void *handle, int argc, char *argv[])
 {
     if (argc < 1)
-        return -1;
-
+        return CMD_PARAM_NOT_ENOUGH;
+#ifdef CONFIG_KVDB
+    int mask = property_get_int32("persist.bluetooth.log.stack_mask", 0x0);
     for (int i = 0; i < argc; i++) {
-        if (argv[i] != NULL)
-            utils_set_log_mask_level(LOG_ID_STACK, atoi(argv[i]), true);
+        if (argv[i] != NULL) {
+            int bit = atoi(argv[i]);
+            if (bit < 0 || bit > 31)
+                return CMD_INVALID_PARAM;
+
+            mask |= 1 << bit;
+        }
     }
 
-    return 0;
+    property_set_int32("persist.bluetooth.log.stack_mask", mask);
+    property_change_commit(2);
+
+    return CMD_OK;
+#else
+    return CMD_ERROR;
+#endif
 }
 
 static int unmask_cmd(void *handle, int argc, char *argv[])
 {
     if (argc < 1)
-        return -1;
+        return CMD_PARAM_NOT_ENOUGH;
 
+#ifdef CONFIG_KVDB
+    int mask = property_get_int32("persist.bluetooth.log.stack_mask", 0x0);
     for (int i = 0; i < argc; i++) {
-        if (argv[i] != NULL)
-            utils_set_log_mask_level(LOG_ID_STACK, atoi(argv[i]), false);
+        if (argv[i] != NULL) {
+            int bit = atoi(argv[i]);
+            if (bit < 0 || bit > 31)
+                return CMD_INVALID_PARAM;
+
+            mask &= ~(1 << bit);
+        }
     }
 
-    return 0;
+    property_set_int32("persist.bluetooth.log.stack_mask", mask);
+    property_change_commit(2);
+
+    return CMD_OK;
+#else
+    return CMD_ERROR;
+#endif
 }
 
 static int level_cmd(void *handle, int argc, char *argv[])
 {
-    uint8_t level;
-
     if (argc < 1)
-        level = utils_get_log_level();
-    else {
-        level = utils_set_log_level((uint8_t)atoi(argv[0]));
-    }
-    printf("Current Log level :%d\n", level);
+        return CMD_PARAM_NOT_ENOUGH;
 
-    return 0;
+    int level = atoi(argv[0]);
+    if (level != 0 &&
+        level != LOG_ERR &&
+        level != LOG_WARNING &&
+        level != LOG_INFO &&
+        level != LOG_DEBUG)
+        return CMD_INVALID_PARAM;
+
+#ifdef CONFIG_KVDB
+    property_set_int32("persist.bluetooth.log.level", level);
+    property_change_commit(0);
+
+    return CMD_OK;
+#else
+    return CMD_ERROR;
+#endif
 }
 
 int log_command(void *handle, int argc, char *argv[])
 {
-    int opt, ret = -1;
+    int ret = CMD_USAGE_FAULT;
 
-    while ((opt = getopt_long(argc, argv, "l:h", log_options, NULL)) != -1) {
-        switch (opt) {
-        case 'l':
-            ret = 0;
-            if (optarg != NULL) {
-                int level = atoi(optarg);
-                utils_set_log_level((uint8_t)level);
-            } else
-                printf("Log level :%d\n", utils_get_log_level());
-            break;
-        case 'h':
-            ret = 0;
-            usage();
-            break;
-        default:
-            break;
-        }
-    }
+    if (argc > 0)
+        ret = execute_command_in_table(handle, g_log_tables, ARRAY_SIZE(g_log_tables), argc, argv);
 
-    if (argc > 1) {
-        for (int i = 0; i < ARRAY_SIZE(g_log_tables); i++) {
-            if (strcmp(g_log_tables[i].cmd, argv[1]) == 0) {
-                if (g_log_tables[i].func) {
-                    ret = g_log_tables[i].func(handle, argc - 2, &argv[2]);
-                }
-            }
-        }
-    }
-    if (ret < 0) {
-        printf("Erroneous command %s\n", argv[1]);
+    if (ret < 0)
         usage();
-    }
 
-    return 0;
+    return ret;
 }

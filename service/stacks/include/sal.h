@@ -16,7 +16,10 @@
 #ifndef __BT_SAL_H__
 #define __BT_SAL_H__
 
+#include "bluetooth_define.h"
 #include "utils/log.h"
+
+#define ARRAY_SIZE(x)        (sizeof(x) / sizeof((x)[0]))
 
 #define SAL_NOT_SUPPORT                                    \
     {                                                      \
@@ -43,5 +46,14 @@
     {                          \
         assert(cond);          \
     }
+
+void bt_sal_debug_init(void);
+void bt_sal_debug_cleanup(void);
+bt_status_t bt_sal_debug_enable(void);
+bt_status_t bt_sal_debug_disable(void);
+bt_status_t bt_sal_debug_set_log_level(uint32_t level);
+bool bt_sal_debug_is_type_support(bt_debug_type_t type);
+bt_status_t bt_sal_debug_set_log_enable(bt_debug_type_t type, bool enable);
+bt_status_t bt_sal_debug_update_log_mask(int mask);
 
 #endif /* __BT_SAL_H__ */
