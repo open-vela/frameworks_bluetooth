@@ -104,6 +104,7 @@ typedef struct {
 int execute_command_in_table(void *handle, bt_command_t *table, uint32_t table_size, int argc, char *argv[]);
 int execute_command_in_table_offset(void *handle, bt_command_t *table, uint32_t table_size, int argc, char *argv[], uint8_t offset);
 
+int log_command(void *handle, int argc, char *argv[]);
 int adv_command_exec(void *handle, int argc, char *argv[]);
 
 int scan_command_init(void *handle);
