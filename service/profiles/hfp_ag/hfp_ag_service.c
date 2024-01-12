@@ -242,7 +242,7 @@ static void ag_shutdown(profile_on_shutdown_t on_shutdown)
         return;
     }
 
-    // tele_service_cleanup();
+    tele_service_cleanup();
     pthread_mutex_lock(&g_ag_service.device_lock);
     g_ag_service.started = false;
     bt_list_free(g_ag_service.ag_devices);
