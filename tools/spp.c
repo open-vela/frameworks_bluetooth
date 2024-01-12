@@ -51,7 +51,7 @@ static int dump_cmd(void *handle, int argc, char *argv[]);
 static struct list_node device_list = LIST_INITIAL_VALUE(device_list);
 static uv_sem_t spp_sem;
 static void *spp_app_handle = NULL;
-static uv_loop_t spp_thread_loop = {0};
+static uv_loop_t spp_thread_loop = { 0 };
 
 static bt_command_t g_spp_tables[] = {
     {"start",       start_server_cmd, 0, "\"start spp server        param: <scn>(range in [1,28]) <uuid>\""},
@@ -240,7 +240,8 @@ static int start_server_cmd(void *handle, int argc, char *argv[])
         uuid = BT_UUID_SERVCLASS_SERIAL_PORT;
 
     bt_uuid16_create(&uuid16, uuid);
-    if (bt_spp_server_start(handle, spp_app_handle, scn, &uuid16, 1) != BT_STATUS_SUCCESS) {
+    if (bt_spp_server_start(handle, spp_app_handle, scn, &uuid16,
+                            CONFIG_BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS) != BT_STATUS_SUCCESS) {
         PRINT("server_start failed, scn:%d, uuid: 0x%04x\n", scn, uuid);
         return CMD_ERROR;
     }

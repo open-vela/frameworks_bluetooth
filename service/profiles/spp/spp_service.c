@@ -143,6 +143,7 @@ typedef struct {
  * Private Function Prototypes
  ****************************************************************************/
 static int do_spp_write(spp_pty_device_t *device, uint8_t *buffer, uint16_t length);
+static void spp_server_cleanup_devices(spp_server_t *server);
 
 /****************************************************************************
  * Private Data
@@ -242,22 +243,10 @@ static spp_server_t *alloc_new_server(uint16_t scn, bt_uuid_t *uuid, spp_handle_
 
 static void free_server_resource(spp_server_t *server)
 {
+    spp_server_cleanup_devices(server);
     scn_bit_free(server->scn);
     list_delete(&server->node);
     free(server);
-}
-
-static void spp_cleanup_all_server(void)
-{
-    spp_server_t *server;
-    struct list_node *node;
-    struct list_node *tmp;
-
-    list_for_every_safe(&g_spp_handle.servers, node, tmp)
-    {
-        server = (spp_server_t *)node;
-        free_server_resource(server);
-    }
 }
 
 static spp_server_t *find_server(uint16_t scn)
@@ -276,7 +265,9 @@ static spp_server_t *find_server(uint16_t scn)
     return NULL;
 }
 
-static spp_pty_device_t *alloc_new_device(bt_address_t *addr, int16_t scn, bt_uuid_t *uuid, bool accept, spp_handle_t *handle)
+static spp_pty_device_t *alloc_new_device(bt_address_t *addr, int16_t scn,
+                                          bt_uuid_t *uuid, bool accept,
+                                          spp_handle_t *handle)
 {
     spp_pty_device_t *device = malloc(sizeof(spp_pty_device_t));
 
@@ -403,7 +394,7 @@ static void spp_device_cleanup(spp_pty_device_t *device, bool notify)
     remove_pty_device(device);
 }
 
-static void spp_cleanup_all_device(void)
+static void spp_server_cleanup_devices(spp_server_t *server)
 {
     spp_pty_device_t *device;
     struct list_node *node;
@@ -412,29 +403,59 @@ static void spp_cleanup_all_device(void)
     list_for_every_safe(&g_spp_handle.devices, node, tmp)
     {
         device = (spp_pty_device_t *)node;
-        spp_device_cleanup(device, true);
+        if (device->server == server)
+            spp_device_cleanup(device, true);
     }
 }
 
-static void spp_cleanup_app(spp_handle_t *app)
+static void spp_app_cleanup_servers(spp_handle_t *app)
 {
-    spp_pty_device_t *device;
     spp_server_t *server;
     struct list_node *node;
     struct list_node *tmp;
 
+    list_for_every_safe(&g_spp_handle.servers, node, tmp)
+    {
+        server = (spp_server_t *)node;
+        if (server->app_handle == app)
+            free_server_resource(server);
+    }
+}
+
+static void spp_app_cleanup_devices(spp_handle_t *app)
+{
+    spp_pty_device_t *device;
+    struct list_node *node;
+    struct list_node *tmp;
+
+    // cleanup all device
     list_for_every_safe(&g_spp_handle.devices, node, tmp)
     {
         device = (spp_pty_device_t *)node;
         if (device->app_handle == app)
             spp_device_cleanup(device, true);
     }
+}
 
-    list_for_every_safe(&g_spp_handle.devices, node, tmp)
+static void spp_cleanup_app(spp_handle_t *app)
+{
+    /* cleanpup local server */
+    spp_app_cleanup_servers(app);
+
+    /* cleanpup all initiator device */
+    spp_app_cleanup_devices(app);
+}
+
+static void spp_cleanup_all_apps(void)
+{
+    struct list_node *node;
+    struct list_node *tmp;
+
+    // cleanup all device
+    list_for_every_safe(&g_spp_handle.apps, node, tmp)
     {
-        server = (spp_server_t *)node;
-        if (server->app_handle == app)
-            free_server_resource(server);
+        spp_cleanup_app((spp_handle_t *)node);
+        list_delete(&((spp_handle_t *)node)->node);
     }
 }
 
@@ -766,6 +787,7 @@ static bt_status_t spp_startup(profile_on_startup_t cb)
     g_spp_handle.idx = index_allocator_create(CONNECTIONS_MAX);
     list_initialize(&g_spp_handle.devices);
     list_initialize(&g_spp_handle.servers);
+    list_initialize(&g_spp_handle.apps);
     status = bt_sal_spp_init();
     if (status != BT_STATUS_SUCCESS) {
         pthread_mutex_unlock(&g_spp_handle.spp_lock);
@@ -792,8 +814,7 @@ static bt_status_t spp_shutdown(profile_on_shutdown_t cb)
 
     g_spp_handle.started = 0;
     index_allocator_delete(g_spp_handle.idx);
-    spp_cleanup_all_device();
-    spp_cleanup_all_server();
+    spp_cleanup_all_apps();
     list_delete(&g_spp_handle.devices);
     list_delete(&g_spp_handle.servers);
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
@@ -834,7 +855,7 @@ static void *spp_register_app(void *remote, const spp_callbacks_t *callbacks)
     hdl->remote = remote;
     hdl->cbs = callbacks;
     g_spp_handle.registered++;
-    /* TODO:append handle to app list */
+    list_add_tail(&g_spp_handle.apps, &hdl->node);
 
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
 
@@ -843,7 +864,9 @@ static void *spp_register_app(void *remote, const spp_callbacks_t *callbacks)
 
 static bt_status_t spp_unregister_app(void **remote, void *handle)
 {
-    if (!handle)
+    spp_handle_t *app = handle;
+
+    if (!app)
         return BT_STATUS_FAIL;
 
     pthread_mutex_lock(&g_spp_handle.spp_lock);
@@ -856,9 +879,10 @@ static bt_status_t spp_unregister_app(void **remote, void *handle)
 
     /* TODO: release all port bind on this handle */
     if (remote)
-        *remote = ((spp_handle_t *)handle)->remote;
-    spp_cleanup_app(handle);
-    free(handle);
+        *remote = app->remote;
+    spp_cleanup_app(app);
+    list_delete(&app->node);
+    free(app);
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
 
     return BT_STATUS_SUCCESS;
@@ -892,7 +916,7 @@ static bt_status_t spp_server_start(void *handle, uint16_t scn, bt_uuid_t *uuid,
 
     char uuid_str[40] = { 0 };
     bt_uuid_to_string(&uuid_128_dst, uuid_str, 40);
-    BT_LOGD("%s, scn:%d, uuid:%s", __func__, scn, uuid_str);
+    BT_LOGI("%s, scn:%d, uuid:%s", __func__, scn, uuid_str);
     bt_sal_spp_server_start(STACK_SVR_PORT(scn), &uuid_128_dst, MIN(max_connection, SERVER_CONNECTION_MAX));
 
 unlock_exit:
