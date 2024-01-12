@@ -201,7 +201,7 @@ config BLUETOOTH_SPP_MAX_CONNECTIONS
 
 config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
 	int "SPP server max connections"
-	default 1
+	default 8
 endif
 
 config BLUETOOTH_HID_DEVICE
