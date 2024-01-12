@@ -1651,9 +1651,9 @@ int main(int argc, char **argv)
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
         do_disable_wait(g_bttool_ins);
 #endif
-    } else {
-        bt_tool_uninit(g_bttool_ins);
     }
+
+    bt_tool_uninit(g_bttool_ins);
     bt_adapter_unregister_callback(g_bttool_ins, adapter_callback2);
     bt_adapter_unregister_callback(g_bttool_ins, adapter_callback);
     bluetooth_delete_instance(g_bttool_ins);
