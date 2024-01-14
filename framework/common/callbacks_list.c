@@ -75,10 +75,13 @@ bool bt_callbacks_unregister(callbacks_list_t *cbsl, remote_callback_t *rcbks)
 remote_callback_t *bt_remote_callbacks_register(callbacks_list_t *cbsl, void *remote, void *callbacks)
 {
     void *cbs;
-    pthread_mutex_lock(&cbsl->lock);
+    remote_callback_t *remote_cbk;
 
-    if (cbsl->registed == cbsl->max_reg)
+    pthread_mutex_lock(&cbsl->lock);
+    if (cbsl->registed == cbsl->max_reg) {
+        pthread_mutex_unlock(&cbsl->lock);
         return NULL;
+    }
 
     if (remote)
         cbs = bt_list_find(cbsl->list, remote_is_found, remote);
@@ -90,7 +93,7 @@ remote_callback_t *bt_remote_callbacks_register(callbacks_list_t *cbsl, void *re
         return NULL;
     }
 
-    remote_callback_t *remote_cbk = malloc(sizeof(*remote_cbk));
+    remote_cbk = malloc(sizeof(*remote_cbk));
     remote_cbk->remote = remote;
     remote_cbk->callbacks = callbacks;
 
