@@ -43,16 +43,6 @@ static char* StringToFtString(const char* str)
 
 static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
-    if (state == BT_ADAPTER_STATE_ON) {
-#ifdef CONFIG_BLUETOOTH_A2DP_SINK
-        a2dp_sink_feature_init(feature_bluetooth_get_instance());
-#endif
-    } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
-#ifdef CONFIG_BLUETOOTH_A2DP_SINK
-        a2dp_sink_feature_uninit(feature_bluetooth_get_instance());
-#endif
-    }
-
     if (g_feature_callbacks.on_adapter_state_changed_cb.feature == NULL)
         return;
     if (state != BT_ADAPTER_STATE_ON && state != BT_ADAPTER_STATE_OFF)
@@ -150,20 +140,14 @@ const static adapter_callbacks_t g_adapter_cbs = {
     .on_connect_request = on_connect_request_cb,
     .on_bond_state_changed = on_bond_state_changed_cb,
 };
-void clean_feature_adapter_callback(void* feature)
-{
-    g_feature_callbacks.on_adapter_state_changed_cb.feature = NULL;
-    g_feature_callbacks.on_adapter_state_changed_cb.callbackId = 0;
-    g_feature_callbacks.on_discovery_result_cb.feature = NULL;
-    g_feature_callbacks.on_discovery_result_cb.callbackId = 0;
-    g_feature_callbacks.on_bond_state_changed_cb.feature = NULL;
-    g_feature_callbacks.on_bond_state_changed_cb.callbackId = 0;
-}
 
 void bluetooth_init_ins()
 {
     g_feature_ins = bluetooth_create_instance();
     adapter_callback = bt_adapter_register_callback(g_feature_ins, &g_adapter_cbs);
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    a2dp_sink_feature_init(feature_bluetooth_get_instance());
+#endif
 }
 
 void bluetooth_uninit_ins()
@@ -171,6 +155,9 @@ void bluetooth_uninit_ins()
     bt_adapter_unregister_callback(feature_bluetooth_get_instance(), adapter_callback);
     bluetooth_delete_instance(g_feature_ins);
     g_feature_ins = NULL;
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    a2dp_sink_feature_uninit(feature_bluetooth_get_instance());
+#endif
 }
 
 bt_instance_t* feature_bluetooth_get_instance()
@@ -195,12 +182,12 @@ bool bt_feature_allocator(void** data, uint32_t size)
 // FeatureCallbacks to be implemented
 void system_bluetooth_onRegister(const char* feature_name)
 {
-    bluetooth_init_ins();
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onCreate(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
+    bluetooth_init_ins();
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 
@@ -211,18 +198,19 @@ void system_bluetooth_onRequired(FeatureRuntimeContext ctx, FeatureInstanceHandl
 
 void system_bluetooth_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
+    g_feature_callbacks.on_adapter_state_changed_cb.feature = NULL;
+    g_feature_callbacks.on_adapter_state_changed_cb.callbackId = -1;
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
-    clean_feature_adapter_callback(handle);
+    bluetooth_uninit_ins();
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onUnregister(const char* feature_name)
 {
-    bluetooth_uninit_ins();
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 

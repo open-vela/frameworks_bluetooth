@@ -76,12 +76,12 @@ void system_bluetooth_bt_a2dpsink_onRequired(FeatureRuntimeContext ctx, FeatureI
 }
 void system_bluetooth_bt_a2dpsink_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
+    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature = NULL;
+    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId = -1;
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 void system_bluetooth_bt_a2dpsink_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
-    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature = NULL;
-    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId = -1;
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 void system_bluetooth_bt_a2dpsink_onUnregister(const char* feature_name)
