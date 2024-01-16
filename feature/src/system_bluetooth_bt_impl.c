@@ -82,7 +82,11 @@ void system_bluetooth_bt_onRequired(FeatureRuntimeContext ctx, FeatureInstanceHa
 
 void system_bluetooth_bt_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
-    clean_feature_adapter_callback(handle);
+    adapter_feature_callbacks_t* callbacks =  get_adapter_cbs();
+    callbacks->on_bond_state_changed_cb.feature = NULL;
+    callbacks->on_bond_state_changed_cb.callbackId = -1;
+    callbacks->on_discovery_result_cb.feature = NULL;
+    callbacks->on_discovery_result_cb.callbackId = -1;
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 
