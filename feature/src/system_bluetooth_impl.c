@@ -43,46 +43,58 @@ static char* StringToFtString(const char* str)
 
 static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
-    if (g_feature_callbacks.on_adapter_state_changed_cb.feature == NULL)
+    FEATURE_LOG_INFO("adapter state change callback, state: %d", state);
+    adapter_feature_callbacks_t* adapter_callbacks = get_adapter_cbs();
+    if (adapter_callbacks->on_adapter_state_changed_cb.feature == NULL)
         return;
+    FEATURE_LOG_INFO("feature:%p, callbackId:%d",
+            adapter_callbacks->on_adapter_state_changed_cb.feature,
+            adapter_callbacks->on_adapter_state_changed_cb.callbackId);
+
     if (state != BT_ADAPTER_STATE_ON && state != BT_ADAPTER_STATE_OFF)
         return;
-
     system_bluetooth_adapterStateCallbackData* data = system_bluetoothMallocadapterStateCallbackData();
     data->available = state == BT_ADAPTER_STATE_ON;
     data->discovering = bt_adapter_is_discovering(feature_bluetooth_get_instance());
-    FEATURE_LOG_ERROR("feature:%p, callbackId:%d",
-        g_feature_callbacks.on_discovery_result_cb.feature,
-        g_feature_callbacks.on_discovery_result_cb.callbackId);
-    if (!FeatureInvokeCallback(g_feature_callbacks.on_adapter_state_changed_cb.feature,
-            g_feature_callbacks.on_adapter_state_changed_cb.callbackId, data)) {
+    if (!FeatureInvokeCallback(adapter_callbacks->on_adapter_state_changed_cb.feature,
+            adapter_callbacks->on_adapter_state_changed_cb.callbackId, data)) {
         FEATURE_LOG_ERROR("feature:%p, callbackId:%d, invoke on adapter state change callback failed!",
-            g_feature_callbacks.on_adapter_state_changed_cb.feature,
-            g_feature_callbacks.on_adapter_state_changed_cb.callbackId);
+            adapter_callbacks->on_adapter_state_changed_cb.feature,
+            adapter_callbacks->on_adapter_state_changed_cb.callbackId);
     }
 }
 
 static void on_discovery_state_changed_cb(void* cookie, bt_discovery_state_t state)
 {
-    if (g_feature_callbacks.on_adapter_state_changed_cb.feature == NULL)
+    FEATURE_LOG_INFO("discovery state change callback, state: %d", state);
+    adapter_feature_callbacks_t* adapter_callbacks = get_adapter_cbs();
+    if (adapter_callbacks->on_adapter_state_changed_cb.feature == NULL)
         return;
+    FEATURE_LOG_INFO("feature:%p, callbackId:%d",
+        adapter_callbacks->on_adapter_state_changed_cb.feature,
+        adapter_callbacks->on_adapter_state_changed_cb.callbackId);
 
     system_bluetooth_adapterStateCallbackData* data = system_bluetoothMallocadapterStateCallbackData();
     data->available = bt_adapter_get_state(feature_bluetooth_get_instance()) == BT_ADAPTER_STATE_ON;
     data->discovering = state == BT_DISCOVERY_STATE_STARTED;
 
-    if (!FeatureInvokeCallback(g_feature_callbacks.on_adapter_state_changed_cb.feature,
-            g_feature_callbacks.on_adapter_state_changed_cb.callbackId, data)) {
+    if (!FeatureInvokeCallback(adapter_callbacks->on_adapter_state_changed_cb.feature,
+            adapter_callbacks->on_adapter_state_changed_cb.callbackId, data)) {
         FEATURE_LOG_ERROR("feature:%p, callbackId:%d, invoke on adapter state change callback failed!",
-            g_feature_callbacks.on_adapter_state_changed_cb.feature,
-            g_feature_callbacks.on_adapter_state_changed_cb.callbackId);
+            adapter_callbacks->on_adapter_state_changed_cb.feature,
+            adapter_callbacks->on_adapter_state_changed_cb.callbackId);
     }
 }
 
 static void on_discovery_result_cb(void* cookie, bt_discovery_result_t* result)
 {
-    if (g_feature_callbacks.on_discovery_result_cb.feature == NULL)
+    FEATURE_LOG_INFO("discovery result callback");
+    adapter_feature_callbacks_t* adapter_callbacks = get_adapter_cbs();
+    if (adapter_callbacks->on_discovery_result_cb.feature == NULL)
         return;
+    FEATURE_LOG_INFO("feature:%p, callbackId:%d",
+        adapter_callbacks->on_discovery_result_cb.feature,
+        adapter_callbacks->on_discovery_result_cb.callbackId);
 
     system_bluetooth_bt_DiscoveryResultCallbackData* data = system_bluetooth_btMallocDiscoveryResultCallbackData();
     data->name = StringToFtString(result->name);
@@ -92,11 +104,11 @@ static void on_discovery_result_cb(void* cookie, bt_discovery_result_t* result)
     data->cod = result->cod;
     data->rssi = -result->rssi;
 
-    if (!FeatureInvokeCallback(g_feature_callbacks.on_discovery_result_cb.feature,
-            g_feature_callbacks.on_discovery_result_cb.callbackId, data)) {
+    if (!FeatureInvokeCallback(adapter_callbacks->on_discovery_result_cb.feature,
+            adapter_callbacks->on_discovery_result_cb.callbackId, data)) {
         FEATURE_LOG_ERROR("feature:%p, callbackId:%d, invoke discoveryresult callback failed!",
-            g_feature_callbacks.on_discovery_result_cb.feature,
-            g_feature_callbacks.on_discovery_result_cb.callbackId);
+            adapter_callbacks->on_discovery_result_cb.feature,
+            adapter_callbacks->on_discovery_result_cb.callbackId);
     }
 }
 
@@ -113,8 +125,13 @@ static void on_connect_request_cb(void* cookie, bt_address_t* addr)
 
 static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transport_t transport, bond_state_t state, bool is_ctkd)
 {
-    if (g_feature_callbacks.on_bond_state_changed_cb.feature == NULL)
+    FEATURE_LOG_INFO("bond state callback");
+    adapter_feature_callbacks_t* adapter_callbacks = get_adapter_cbs();
+    if (adapter_callbacks->on_bond_state_changed_cb.feature == NULL)
         return;
+    FEATURE_LOG_INFO("feature:%p, callbackId:%d",
+        adapter_callbacks->on_adapter_state_changed_cb.feature,
+        adapter_callbacks->on_adapter_state_changed_cb.callbackId);
 
     if (transport == BT_TRANSPORT_BREDR) {
         system_bluetooth_bt_onBondStateChangeData* data = system_bluetooth_btMalloconBondStateChangeData();
@@ -123,10 +140,10 @@ static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transp
         data->deviceId = StringToFtString(addr_str);
         data->bondState = state;
 
-        if (!FeatureInvokeCallback(g_feature_callbacks.on_bond_state_changed_cb.feature,
-                g_feature_callbacks.on_bond_state_changed_cb.callbackId, data)) {
+        if (!FeatureInvokeCallback(adapter_callbacks->on_bond_state_changed_cb.feature,
+                adapter_callbacks->on_bond_state_changed_cb.callbackId, data)) {
             FEATURE_LOG_ERROR("feature:%p, invoke bond state change callback failed!",
-            g_feature_callbacks.on_bond_state_changed_cb.feature);
+            adapter_callbacks->on_bond_state_changed_cb.feature);
         }
     }
 }
@@ -198,8 +215,9 @@ void system_bluetooth_onRequired(FeatureRuntimeContext ctx, FeatureInstanceHandl
 
 void system_bluetooth_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
-    g_feature_callbacks.on_adapter_state_changed_cb.feature = NULL;
-    g_feature_callbacks.on_adapter_state_changed_cb.callbackId = -1;
+    adapter_feature_callbacks_t* adapter_callbacks = get_adapter_cbs();
+    adapter_callbacks->on_adapter_state_changed_cb.feature = NULL;
+    adapter_callbacks->on_adapter_state_changed_cb.callbackId = -1;
     FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
 }
 
@@ -219,17 +237,17 @@ void system_bluetooth_wrap_openAdapter(FeatureInstanceHandle feature, union Appe
     bt_status_t status = bt_adapter_enable(feature_bluetooth_get_instance());
     if (status == BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->success)) {
-            FEATURE_LOG_ERROR("invoke success callback failed, feature is %p, params->success is %d!",feature, params->success);
+            FEATURE_LOG_ERROR("invoke success openAdapter callback failed, feature is %p, params->success is %d!",feature, params->success);
             return;
         }
     } else {
         if (!FeatureInvokeCallback(feature, params->fail, "enable fail!", status)) {
-            FEATURE_LOG_ERROR("invoke fail callback failed!");
+            FEATURE_LOG_ERROR("invoke fail openAdapter callback failed!");
             return;
         }
     }
     if (!FeatureInvokeCallback(feature, params->complete)) {
-        FEATURE_LOG_ERROR("invoke fail callback failed!");
+        FEATURE_LOG_ERROR("invoke complete openAdapter callback failed!");
         return;
     }
 }
@@ -239,17 +257,17 @@ void system_bluetooth_wrap_closeAdapter(FeatureInstanceHandle feature, union App
     bt_status_t status = bt_adapter_disable(feature_bluetooth_get_instance());
     if (status == BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->success)) {
-            FEATURE_LOG_ERROR("invoke success callback failed!");
+            FEATURE_LOG_ERROR("invoke success closeAdapter callback failed!");
             return;
         }
     } else {
         if (!FeatureInvokeCallback(feature, params->fail, "enable fail!", status)) {
-            FEATURE_LOG_ERROR("invoke fail callback failed!");
+            FEATURE_LOG_ERROR("invoke fail closeAdapter callback failed!");
             return;
         }
     }
     if (!FeatureInvokeCallback(feature, params->complete)) {
-        FEATURE_LOG_ERROR("invoke fail callback failed!");
+        FEATURE_LOG_ERROR("invoke complete closeAdapter callback failed!");
         return;
     }
 }
@@ -261,25 +279,25 @@ void system_bluetooth_wrap_getAdapterState(FeatureInstanceHandle feature, union 
     bool is_discovering = bt_adapter_is_discovering(ins);
     system_bluetooth_GetAdapterSuccessResult success_result = { state == BT_ADAPTER_STATE_ON, is_discovering };
     if (!FeatureInvokeCallback(feature, params->success, success_result)) {
-        FEATURE_LOG_ERROR("invoke success callback failed!");
+        FEATURE_LOG_ERROR("invoke success getAdapterState callback failed!");
         return;
     }
     if (!FeatureInvokeCallback(feature, params->complete)) {
-        FEATURE_LOG_ERROR("invoke fail callback failed!");
+        FEATURE_LOG_ERROR("invoke complete getAdapterState callback failed!");
         return;
     }
 }
 
 FtCallbackId system_bluetooth_get_onadapterstatechange(void* feature, union AppendData append_data)
 {
-    adapter_feature_callbacks_t* adaptercallbacks = get_adapter_cbs();
-    return adaptercallbacks->on_adapter_state_changed_cb.callbackId;
+    adapter_feature_callbacks_t* adapter_callbacks = get_adapter_cbs();
+    return adapter_callbacks->on_adapter_state_changed_cb.callbackId;
 }
 
 void system_bluetooth_set_onadapterstatechange(void* feature, union AppendData append_data, FtCallbackId onadapterstatechange)
 {
     FEATURE_LOG_INFO("set onadapterstatechange feature: %p, callbackId: %d\n", feature, onadapterstatechange);
-    adapter_feature_callbacks_t* adaptercallbacks = get_adapter_cbs();
-    adaptercallbacks->on_adapter_state_changed_cb.feature = feature;
-    adaptercallbacks->on_adapter_state_changed_cb.callbackId = onadapterstatechange;
+    adapter_feature_callbacks_t* adapter_callbacks = get_adapter_cbs();
+    adapter_callbacks->on_adapter_state_changed_cb.feature = feature;
+    adapter_callbacks->on_adapter_state_changed_cb.callbackId = onadapterstatechange;
 }
