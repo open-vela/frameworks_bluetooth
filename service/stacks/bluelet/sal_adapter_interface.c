@@ -100,8 +100,10 @@ static bt_status_t sal_status_translate(uint32_t status)
         return BT_STATUS_PARM_INVALID;
     case SERVICE_BT_STATUS_UNHANDLED:
         return BT_STATUS_ERROR_BUT_UNKNOWN;
-    default:
+    default: {
+        BT_LOGE("%s maybe hcierror code: %" PRIu32, __func__, status);
         return BT_STATUS_ERROR_BUT_UNKNOWN;
+    }
     }
 }
 
