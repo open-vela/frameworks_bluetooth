@@ -191,17 +191,15 @@ audio_transport_t *audio_transport_init(uv_loop_t *loop)
     if (!loop)
         return NULL;
 
-    transport = (audio_transport_t *)malloc(sizeof(audio_transport_t));
+    transport = (audio_transport_t *)zalloc(sizeof(audio_transport_t));
     if (!transport) {
         BT_LOGE("%s malloc failed", __func__);
         return NULL;
     }
 
     transport->loop = loop;
-    for (uint8_t i = 0; i < AUDIO_TRANS_CH_NUM; i++) {
+    for (uint8_t i = 0; i < AUDIO_TRANS_CH_NUM; i++)
         transport->ch[i].state = IPC_DISCONNTECTED;
-        transport->ch[i].event_cb = NULL;
-    }
 
     return transport;
 }
