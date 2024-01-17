@@ -1386,6 +1386,7 @@ static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
         bt_scan_mode_t mode = bt_adapter_get_scan_mode(g_bttool_ins);
         /* enable key derivation */
         bt_adapter_le_enable_key_derivation(g_bttool_ins, true, true);
+        bt_adapter_set_page_scan_parameters(g_bttool_ins, BT_BR_SCAN_TYPE_INTERLACED, 0x400, 0x24);
         PRINT("Adapter Name: %s, Cap: %d, Class: 0x%08" PRIX32 ", Mode:%d", name, cap, class, mode);
     } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
         /* code */
