@@ -34,6 +34,7 @@ typedef struct remote_device {
     char alias[BT_REM_NAME_MAX_LEN];
     bt_address_t addr;
     ble_addr_type_t addr_type;
+    bt_link_role_t local_role;
     uint32_t device_class;
     bt_transport_t transport;
     bt_device_type_t device_type;
@@ -52,6 +53,7 @@ typedef struct remote_device {
     bool local_initiate_bond;
     bt_128key_t link_key;
     bt_link_key_type_t link_key_type;
+    bt_link_policy_t link_policy;
     bt_address_t identity_addr;
     uint16_t appearance;
     uint8_t smp_data[80];
@@ -84,9 +86,11 @@ static bt_device_t *device_create(bt_address_t *addr, bt_transport_t transport, 
     device->remote.transport = transport;
     device->remote.addr_type = addr_type;
     device->remote.connection_state = CONNECTION_STATE_DISCONNECTED;
+    device->remote.local_role = BT_LINK_ROLE_UNKNOWN;
     device->remote.bond_state = BOND_STATE_NONE;
     device->remote.uuids.uuids = NULL;
     device->remote.uuids.uuid_cnt = 0;
+    device->remote.link_policy = BT_BR_LINK_POLICY_ENABLE_ROLE_SWITCH_AND_SNIFF;
     device->is_temporary = true;
 
     return device;
@@ -302,6 +306,16 @@ void device_set_acl_handle(bt_device_t *device, uint16_t handle)
     device->remote.acl_handle = handle;
 }
 
+bt_link_role_t device_get_local_role(bt_device_t *device)
+{
+    return device->remote.local_role;
+}
+
+void device_set_local_role(bt_device_t *device, bt_link_role_t role)
+{
+    device->remote.local_role = role;
+}
+
 void device_set_bond_initiate_local(bt_device_t *device, bool initiate_local)
 {
     device->remote.local_initiate_bond = initiate_local;
@@ -350,6 +364,16 @@ bt_link_key_type_t device_get_link_key_type(bt_device_t *device)
 void device_set_link_key_type(bt_device_t *device, bt_link_key_type_t type)
 {
     device->remote.link_key_type = type;
+}
+
+bt_link_policy_t device_get_link_policy(bt_device_t *device)
+{
+    return device->remote.link_policy;
+}
+
+void device_set_link_policy(bt_device_t *device, bt_link_policy_t policy)
+{
+    device->remote.link_policy = policy;
 }
 
 void device_set_le_phy(bt_device_t *device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)

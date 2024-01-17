@@ -36,7 +36,9 @@ enum {
     ENC_STATE_CHANGE_EVT,
     LINK_KEY_UPDATE_EVT,
     LINK_KEY_REMOVED_EVT,
+    LINK_ROLE_CHANGED_EVT,
     LINK_MODE_CHANGED_EVT,
+    LINK_POLICY_CHANGED_EVT,
     SDP_SEARCH_DONE_EVT,
     LE_ADDR_UPDATE_EVT,
     LE_PHY_UPDATE_EVT,
@@ -138,9 +140,15 @@ typedef struct {
             bt_status_t status;
         } link_key;
         struct {
+            bt_link_role_t role;
+        } link_role;
+        struct {
             bt_link_mode_t mode;
             uint16_t sniff_interval;
         } link_mode;
+        struct {
+            bt_link_policy_t policy;
+        } link_policy;
         struct {
             uint16_t uuid_size;
             bt_uuid_t *uuids;

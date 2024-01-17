@@ -79,6 +79,7 @@ bt_status_t bt_sal_get_connected_devices(remote_device_properties_t *properties,
 bt_status_t bt_sal_start_service_discovery(bt_address_t *addr, bt_uuid_t *uuid);
 bt_status_t bt_sal_stop_service_discovery(bt_address_t *addr);
 bt_status_t bt_sal_set_link_role(bt_address_t *addr, bt_link_role_t role);
+bt_status_t bt_sal_set_link_policy(bt_address_t *addr, bt_link_policy_t policy);
 bt_status_t bt_sal_set_link_mode(bt_address_t *addr,
                                  bt_link_mode_t mode,
                                  bt_sniff_params_t *param);

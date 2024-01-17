@@ -1250,6 +1250,18 @@ bt_status_t bt_sal_set_link_role(bt_address_t *addr, bt_link_role_t role)
 #endif
 }
 
+bt_status_t bt_sal_set_link_policy(bt_address_t *addr, bt_link_policy_t policy)
+{
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    SAL_CHECK_PARAM(addr);
+    SAL_CHECK_RET(service_adapter_gap_set_link_policy(addr->addr, policy), SERVICE_BT_STATUS_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
 bt_status_t bt_sal_set_link_mode(bt_address_t *addr,
                                  bt_link_mode_t mode,
                                  bt_sniff_params_t *param)

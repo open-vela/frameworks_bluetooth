@@ -1035,6 +1035,52 @@ static void handle_scan_mode_changed(void *data)
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_scan_mode_changed, scan_mode);
 }
 
+static void process_link_role_changed_evt(bt_address_t *addr, bt_link_role_t role)
+{
+    bt_device_t *device;
+    uint32_t cod;
+    bt_link_policy_t policy;
+    bool disable_policy = false;
+
+    /* callback on HCI Role Change event received,
+       only BT_LINK_ROLE_MASTER or BT_LINK_ROLE_SLAVE are possible */
+    BT_ADDR_LOG("Link role switched at %s, new local role: %s", addr,
+                role == BT_LINK_ROLE_MASTER ? "Master" : "Slave");
+
+    adapter_lock();
+    device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    if (device) {
+        device_set_local_role(device, role);
+        cod = device_get_device_class(device);
+        policy = device_get_link_policy(device);
+        if (IS_HEADSET(cod) && role == BT_LINK_ROLE_MASTER)
+            disable_policy = true;
+    }
+
+    adapter_unlock();
+    if (disable_policy) {
+        BT_ADDR_LOG("Disable role switch at %s", addr);
+        policy &= ~BT_BR_LINK_POLICY_ENABLE_ROLE_SWITCH;
+        bt_sal_set_link_policy(addr, policy);
+    }
+}
+
+static void process_link_policy_changed_evt(bt_address_t *addr, bt_link_policy_t policy)
+{
+    bt_device_t *device;
+
+    BT_ADDR_LOG("Link policy changed at %s, role switch: %s, sniff: %s", addr,
+                policy & BT_BR_LINK_POLICY_ENABLE_ROLE_SWITCH ? "enabled" : "disabled",
+                policy & BT_BR_LINK_POLICY_ENABLE_SNIFF ? "enabled" : "disabled");
+
+    adapter_lock();
+    device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    if (device)
+        device_set_link_policy(device, policy);
+
+    adapter_unlock();
+}
+
 static void handle_link_event(void *data)
 {
     adapter_remote_event_t *evt = (adapter_remote_event_t *)data;
@@ -1042,6 +1088,12 @@ static void handle_link_event(void *data)
     case LINK_MODE_CHANGED_EVT:
         CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_remote_link_mode_changed,
                          &evt->addr, evt->link_mode.mode, evt->link_mode.sniff_interval);
+        break;
+    case LINK_ROLE_CHANGED_EVT:
+        process_link_role_changed_evt(&evt->addr, evt->link_role.role);
+        break;
+    case LINK_POLICY_CHANGED_EVT:
+        process_link_policy_changed_evt(&evt->addr, evt->link_policy.policy);
         break;
     }
 }
@@ -1213,9 +1265,13 @@ void adapter_on_link_key_removed(bt_address_t *addr, bt_status_t status)
 
 void adapter_on_link_role_changed(bt_address_t *addr, bt_link_role_t role)
 {
-    /* callback on HCI Role Change event received,
-       only BT_LINK_ROLE_MASTER or BT_LINK_ROLE_SLAVE are possible */
-    BT_LOGD("%s, role=%s", __func__, role == BT_LINK_ROLE_MASTER ? "Master" : "Slave");
+    BT_LOGD("%s", __func__);
+    adapter_remote_event_t *evt = create_remote_event(addr, LINK_ROLE_CHANGED_EVT);
+    if (!evt)
+        return;
+
+    evt->link_role.role = role;
+    do_in_service_loop(handle_link_event, evt);
 }
 
 /* PM need implement */
@@ -1233,7 +1289,13 @@ void adapter_on_link_mode_changed(bt_address_t *addr, bt_link_mode_t mode, uint1
 
 void adapter_on_link_policy_changed(bt_address_t *addr, bt_link_policy_t policy)
 {
-    BT_LOGD("%s, policy=%d", __func__, policy);
+    BT_LOGD("%s", __func__);
+    adapter_remote_event_t *evt = create_remote_event(addr, LINK_POLICY_CHANGED_EVT);
+    if (!evt)
+        return;
+
+    evt->link_policy.policy = policy;
+    do_in_service_loop(handle_link_event, evt);
 }
 
 void adapter_on_le_addr_update(bt_address_t *addr, ble_addr_type_t type)
