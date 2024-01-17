@@ -87,7 +87,7 @@ extern bool bt_log_print_check(uint8_t level);
     do {                                           \
         char _addr_str[BT_ADDR_STR_LENGTH] = { 0 }; \
         bt_addr_ba2str(_addr, _addr_str);            \
-        BT_LOGD(fmt, _addr_str, ##__VA_ARGS__);     \
+        BT_LOGI(fmt, _addr_str, ##__VA_ARGS__);     \
     } while (0);
 
 
