@@ -520,7 +520,7 @@ static void process_link_key_update_evt(bt_address_t *addr, bt_128key_t link_key
     device_set_link_key_type(device, type);
     bt_addr_ba2str(addr, addr_str);
     uint8_t *lk = link_key;
-    BT_LOGD("DEVICE[%s] LinkKey: %02X | [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
+    BT_LOGI("DEVICE[%s] LinkKey: %02X | [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
             addr_str, type, lk[0], lk[1], lk[2], lk[3], lk[4], lk[5], lk[6],
             lk[7], lk[8], lk[9], lk[10], lk[11], lk[12], lk[13], lk[14], lk[15]);
     adapter_unlock();
