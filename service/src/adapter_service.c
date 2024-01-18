@@ -1435,7 +1435,7 @@ bool adapter_is_le_enabled(void)
 {
     bt_adapter_state_t state;
 
-    if (adapter_is_support_le())
+    if (!adapter_is_support_le())
         return false;
 
     state = adapter_get_state();
