@@ -50,6 +50,7 @@
 #include "a2dp_sink.h"
 #include "a2dp_source.h"
 #include "a2dp_state_machine.h"
+#include "adapter_internel.h"
 #include "bt_avrcp.h"
 #include "bt_utils.h"
 #include "media_system.h"
@@ -497,7 +498,7 @@ static void opened_enter(state_machine_t *sm)
     if (prev_state == &idle_state || prev_state == &opening_state) {
         /* if we are accept link as a2dp src, change the av link role to master */
         if (a2dp_sm->peer_sep == SEP_SNK)
-            bt_sal_set_link_role(&a2dp_sm->addr, BT_LINK_ROLE_MASTER);
+            adapter_switch_role(&a2dp_sm->addr, BT_LINK_ROLE_MASTER);
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
         if (a2dp_sm->peer_sep == SEP_SRC)
             bt_sal_avrcp_control_connect(&a2dp_sm->addr);
@@ -750,6 +751,9 @@ static void started_enter(state_machine_t *sm)
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
 
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
+    if (a2dp_sm->peer_sep == SEP_SNK)
+        adapter_switch_role(&a2dp_sm->addr, BT_LINK_ROLE_MASTER);
+
     a2dp_report_audio_state(a2dp_sm, &a2dp_sm->addr,
                             A2DP_AUDIO_STATE_STARTED);
 }
