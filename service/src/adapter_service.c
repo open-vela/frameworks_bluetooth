@@ -2512,6 +2512,30 @@ uint16_t adapter_get_acl_handle(bt_address_t *addr)
     return handle;
 }
 
+bt_status_t adapter_switch_role(bt_address_t *addr, bt_link_role_t role)
+{
+    bt_device_t *device;
+    bt_link_role_t prev_role = BT_LINK_ROLE_UNKNOWN;
+
+    if (role != BT_LINK_ROLE_MASTER && role != BT_LINK_ROLE_SLAVE)
+        return BT_STATUS_PARM_INVALID;
+
+    adapter_lock();
+    device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
+    if (!device) {
+        adapter_unlock();
+        return BT_STATUS_DEVICE_NOT_FOUND;
+    }
+
+    prev_role = device_get_local_role(device);
+    adapter_unlock();
+
+    if (prev_role != role)
+        return bt_sal_set_link_role(addr, role);
+
+    return BT_STATUS_SUCCESS;
+}
+
 bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
                                                    uint16_t band_width,
                                                    uint16_t number)
