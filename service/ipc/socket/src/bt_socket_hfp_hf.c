@@ -127,6 +127,18 @@ static void on_ring_indication_cb(void *cookie, bt_address_t *addr, bool inband_
     bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_RING_INDICATION);
 }
 
+static void on_vol_changed_cb(void *cookie, bt_address_t *addr, hfp_volume_type_t type, int volume)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t *ins = cookie;
+
+    memcpy(&packet.hfp_hf_cb._on_volume_changed_cb.addr, addr, sizeof(bt_address_t));
+    packet.hfp_hf_cb._on_volume_changed_cb.type = type;
+    packet.hfp_hf_cb._on_volume_changed_cb.volume = volume;
+
+    bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_VOLUME_CHANGED);
+}
+
 const static hfp_hf_callbacks_t g_hfp_hf_socket_cbs = {
     .connection_state_cb = on_connection_state_changed_cb,
     .audio_state_cb = on_audio_state_changed_cb,
@@ -134,6 +146,7 @@ const static hfp_hf_callbacks_t g_hfp_hf_socket_cbs = {
     .call_state_changed_cb = on_call_state_changed_cb,
     .cmd_complete_cb = on_at_cmd_complete_cb,
     .ring_indication_cb = on_ring_indication_cb,
+    .vol_changed_cb = on_vol_changed_cb,
 };
 
 static bool bt_socket_allocator(void **data, uint32_t size)
@@ -329,6 +342,13 @@ int bt_socket_client_hfp_hf_callback(service_poll_t *poll,
                          ring_indication_cb,
                          &packet->hfp_hf_cb._on_ring_indication_cb.addr,
                          packet->hfp_hf_cb._on_ring_indication_cb.inband_ring_tone);
+        break;
+    case BT_HFP_HF_ON_VOLUME_CHANGED:
+        CALLBACK_FOREACH(CBLIST, hfp_hf_callbacks_t,
+                         vol_changed_cb,
+                         &packet->hfp_hf_cb._on_volume_changed_cb.addr,
+                         packet->hfp_hf_cb._on_volume_changed_cb.type,
+                         packet->hfp_hf_cb._on_volume_changed_cb.volume);
         break;
     default:
         return BT_STATUS_PARM_INVALID;
