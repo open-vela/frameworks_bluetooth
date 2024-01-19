@@ -50,6 +50,7 @@
     BT_HFP_HF_ON_CALL_STATE_CHANGED,
     BT_HFP_HF_ON_AT_CMD_COMPLETE,
     BT_HFP_HF_ON_RING_INDICATION,
+    BT_HFP_HF_ON_VOLUME_CHANGED,
     BT_HFP_HF_CALLBACK_END,
 #endif
 
@@ -159,6 +160,12 @@
             bt_address_t addr;
             bool inband_ring_tone;
         } _on_ring_indication_cb;
+
+        struct {
+            bt_address_t addr;
+            hfp_volume_type_t type;
+            int volume;
+        } _on_volume_changed_cb;
     } bt_message_hfp_hf_callbacks_t;
 
 #ifdef __cplusplus
