@@ -641,13 +641,15 @@ void ag_service_notify_hf_battery_update(bt_address_t *addr, uint8_t value)
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, hf_battery_update_cb, addr, value);
 }
 
-void hfp_ag_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state)
+void hfp_ag_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state,
+                                        uint32_t remote_features)
 {
     hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STACK_EVENT_CONNECTION_STATE_CHANGED, addr);
     if (!msg)
         return;
 
     msg->data.valueint1 = state;
+    msg->data.valueint2 = remote_features;
     hfp_ag_send_message(msg);
 }
 
