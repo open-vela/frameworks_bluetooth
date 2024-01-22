@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "adapter_internel.h"
 #include "bluetooth.h"
 #include "bt_le_scan.h"
 #include "sal_adapter_interface.h"
@@ -309,6 +310,9 @@ void scan_on_result_data_update(ble_scan_result_t *result_info, char *adv_data)
 
 bt_scanner_t *scanner_start_scan(void *remote, const scanner_callbacks_t *cbs)
 {
+    if (!adapter_is_le_enabled())
+        return NULL;
+
     scanner_t *scanner = alloc_new_scanner(remote, cbs);
     if (!scanner)
         return NULL;
@@ -333,6 +337,9 @@ bt_scanner_t *scanner_start_scan_with_filters(void *remote,
                                         uint16_t filter_length,
                                         const scanner_callbacks_t *cbs)
 {
+    if (!adapter_is_le_enabled())
+        return NULL;
+
     scanner_t *scanner = alloc_new_scanner(remote, cbs);
     if (!scanner)
         return NULL;
@@ -367,6 +374,9 @@ bt_scanner_t *scanner_start_scan_settings(void *remote,
 
 void scanner_stop_scan(bt_scanner_t *scanner)
 {
+    if (!adapter_is_le_enabled())
+        return;
+
     scanner_ctrl_t *stop = malloc(sizeof(scanner_ctrl_t));
     if (stop == NULL)
         return;
