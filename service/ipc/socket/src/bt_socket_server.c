@@ -22,6 +22,8 @@
  * Included Files
  ****************************************************************************/
 
+#define LOG_TAG "bt_socket_server"
+
 #include <assert.h>
 #include <errno.h>
 #include <poll.h>
@@ -48,6 +50,8 @@
 #include "bt_socket.h"
 #include "callbacks_list.h"
 #include "service_loop.h"
+
+#include "utils/log.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -195,6 +199,7 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
                packet.code < BT_HID_DEVICE_MESSAGE_END) {
         bt_socket_server_hid_device_process(poll, fd, ins, &packet);
     } else {
+        BT_LOGE("%s, Unhandled message:%d", __func__, packet.code);
         assert(0);
         return BT_STATUS_PARM_INVALID;
     }
