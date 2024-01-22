@@ -30,6 +30,7 @@
 
 #include "bt_status.h"
 #include "lea_audio_common.h"
+#include "lea_codec.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -52,7 +53,7 @@ typedef struct {
 
 void lea_audio_source_set_callback(lea_source_callabcks_t *callback);
 
-bt_status_t lea_audio_source_init(void);
+bt_status_t lea_audio_source_init(bool offloading);
 
 bt_status_t lea_audio_source_start(void);
 
@@ -66,7 +67,7 @@ bt_status_t lea_audio_source_update_codec(lea_audio_config_t *codec, uint16_t sd
 
 bool lea_audio_source_is_started(void);
 
-int lea_audio_source_read(uint8_t *buf, uint16_t frame_len);
+bool lea_audio_source_ctrl_is_connected(void);
 
 void lea_audio_source_cleanup(void);
 

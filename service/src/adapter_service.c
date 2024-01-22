@@ -938,7 +938,7 @@ void adapter_on_le_enabled(bool enablebt)
     adapter_service_t *adapter = &g_adapter_service;
     int ret;
 
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, enablebt:%d", __func__, enablebt);
     /* get le address async */
     bt_sal_le_get_address();
     /* set le io capability ? */

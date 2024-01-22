@@ -30,6 +30,7 @@
 
 #include "bt_status.h"
 #include "lea_audio_common.h"
+#include "lea_codec.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -51,7 +52,7 @@ typedef struct {
 
 void lea_audio_sink_set_callback(lea_sink_callabcks_t *callback);
 
-bt_status_t lea_audio_sink_init(void);
+bt_status_t lea_audio_sink_init(bool offloading);
 
 lea_recv_iso_data_t *lea_audio_sink_packet_alloc(uint32_t timestamp,
                                                  uint16_t seq, uint8_t *data, uint16_t length);
@@ -73,6 +74,8 @@ bt_status_t lea_audio_sink_update_codec(lea_audio_config_t *codec, uint16_t sdu_
 void lea_audio_sink_packet_recv(lea_recv_iso_data_t *packet);
 
 bool lea_audio_sink_is_started(void);
+
+bool lea_audio_sink_ctrl_is_connected(void);
 
 void lea_audio_sink_cleanup(void);
 

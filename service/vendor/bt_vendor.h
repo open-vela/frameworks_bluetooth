@@ -16,31 +16,20 @@
 #ifndef _BT_CONTROLLER_VENDOR_H__
 #define _BT_CONTROLLER_VENDOR_H__
 
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef struct {
-    uint8_t bits_per_sample; /* bits per sample ex: 16/24/32 */
-    uint8_t ch_mode; /* None:0 Left:1 Right:2 */
-    uint16_t frame_sample; /* frame sample*/
-    uint16_t acl_hdl; /* connection handle */
-    uint16_t l2c_rcid; /* l2cap channel id */
-    uint16_t mtu; /* MTU size */
-    uint16_t max_latency; /* maximum latency */
-    uint32_t codec_type; /* codec types ex: SBC/AAC/LDAC/APTx */
-    uint32_t sample_rate; /* Sample rates ex: 44.1/48/88.2/96 Khz */
-    uint32_t encoded_audio_bitrate; /* encoder audio bitrates */
-    uint8_t codec_info[32]; /* Codec specific information */
-} a2dp_offload_config_t;
+#include "bt_vendor_common.h"
+#include "lea_audio_common.h"
 
-typedef struct
-{
-    uint16_t sco_codec;
-    uint16_t sco_hdl; /* sco handle */
-    bool is_controller_codec; /* bt controller encode/decode */
-    bool is_nrec;
-} hfp_offload_config_t;
+/****************************************************************************
+ * Public Fucntion
+ ****************************************************************************/
 
 bool a2dp_offload_start_builder(a2dp_offload_config_t *config,
                                 uint8_t *offload, size_t *size);
@@ -52,6 +41,12 @@ bool hfp_offload_start_builder(hfp_offload_config_t *config,
                                uint8_t *offload, size_t *size);
 
 bool hfp_offload_stop_builder(hfp_offload_config_t *config,
+                              uint8_t *offload, size_t *size);
+
+bool lea_offload_start_builder(lea_offload_config_t *config,
+                               uint8_t *offload, size_t *size);
+
+bool lea_offload_stop_builder(lea_offload_config_t *config,
                               uint8_t *offload, size_t *size);
 
 #endif /* _BT_CONTROLLER_VENDOR_H__ */

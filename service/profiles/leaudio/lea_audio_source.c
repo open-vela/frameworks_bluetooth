@@ -32,6 +32,7 @@
 #include "bt_utils.h"
 #include "lea_audio_sink.h"
 #include "lea_audio_source.h"
+#include "media_system.h"
 #include "service_loop.h"
 #include "utils/log.h"
 #include "uv.h"
@@ -52,7 +53,7 @@
 #define LEA_ASYNC_SEND_COUNT         14
 #define MAX_FRAME_NUM_PER_TICK       14
 #define STREAM_DELAY_MS              10
-#define STREAM_FLUSH_SIZE            (1024)
+#define STREAM_FLUSH_SIZE            1024
 
 typedef enum {
     AUDIO_CTRL_CMD_START,
@@ -70,17 +71,19 @@ typedef enum {
 typedef enum {
     STREAM_STATE_OFF,
     STREAM_STATE_RUNNING,
-    STREAM_STATE_FLUSHING
+    STREAM_STATE_FLUSHING,
+    STREAM_STATE_CONNECTING,
 } stream_state_t;
 
 typedef struct {
+    bool offloading;
     stream_state_t stream_state;
-    uint32_t interval_ms;
-    service_timer_t *send_timer;
-    uint32_t sequence_number;
-    uint32_t max_tx_length;
     uint8_t read_congest;
     uint16_t sdu_size;
+    uint32_t interval_ms;
+    uint32_t sequence_number;
+    uint32_t max_tx_length;
+    service_timer_t *send_timer;
     lea_audio_config_t audio_config;
     struct circbuf_s stream_pool;
 } lea_source_stream_t;
@@ -92,6 +95,12 @@ typedef struct {
 static lea_source_stream_t g_source_stream;
 static lea_source_callabcks_t *g_source_callbacks;
 static audio_transport_t *g_source_transport;
+
+/****************************************************************************
+ * Private Function Prototypes
+ ****************************************************************************/
+
+static bt_status_t lea_source_update_codec(lea_audio_config_t *audio_config, bool enable);
 
 /****************************************************************************
  * Private function
@@ -183,6 +192,13 @@ static void lea_audio_sink_recv(uint8_t ch_id, uint8_t *buffer, ssize_t len)
 
 out:
     free(buffer);
+}
+
+static int lea_audio_source_read(uint8_t *buf, uint16_t frame_len)
+{
+    lea_source_stream_t *stream = &g_source_stream;
+
+    return circbuf_read(&stream->stream_pool, buf, frame_len);
 }
 
 static void lea_audio_sink_handler(service_timer_t *timer, void *data)
@@ -310,7 +326,12 @@ static void lea_source_ctrl_cb(uint8_t ch_id, audio_transport_event_t event)
 
     switch (event) {
     case TRANSPORT_OPEN_EVT: {
+        lea_source_stream_t *stream = &g_source_stream;
+
         lea_source_ctrl_start();
+        if (stream->stream_state == STREAM_STATE_CONNECTING) {
+            lea_source_update_codec(&stream->audio_config, true);
+        }
         break;
     }
     case TRANSPORT_CLOSE_EVT: {
@@ -379,15 +400,17 @@ void lea_audio_source_set_callback(lea_source_callabcks_t *callback)
     g_source_callbacks = callback;
 }
 
-bt_status_t lea_audio_source_init(void)
+bt_status_t lea_audio_source_init(bool offloading)
 {
     lea_source_stream_t *stream = &g_source_stream;
 
+    BT_LOGD("%s, offloading:%d", __func__, offloading);
     if (g_source_transport) {
         BT_LOGD("%s, already inited", __func__);
         return BT_STATUS_SUCCESS;
     }
 
+    stream->offloading = offloading;
     stream->send_timer = NULL;
     stream->stream_state = STREAM_STATE_OFF;
     stream->interval_ms = 10; // todo get from lc3 config
@@ -402,6 +425,10 @@ bt_status_t lea_audio_source_init(void)
                               CONFIG_BLUETOOTH_LEA_SOURCE_CTRL_PATH, lea_source_ctrl_cb)) {
         BT_LOGE("fail, audio_transport_open source ctrl");
         return BT_STATUS_FAIL;
+    }
+
+    if (stream->offloading) {
+        return BT_STATUS_SUCCESS;
     }
 
     if (!audio_transport_open(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO,
@@ -419,19 +446,19 @@ bt_status_t lea_audio_source_start(void)
     lea_source_stream_t *stream = &g_source_stream;
 
     BT_LOGD("%s", __func__);
+    if (stream->stream_state == STREAM_STATE_RUNNING) {
+        BT_LOGD("%s. was running", __func__);
+        return BT_STATUS_SUCCESS;
+    }
+
+    stream->stream_state = STREAM_STATE_RUNNING;
+    if (stream->offloading) {
+        return BT_STATUS_SUCCESS;
+    }
 
     circbuf_reset(&stream->stream_pool);
     service_loop_cancel_timer(stream->send_timer);
-    stream->send_timer = NULL;
-
-    if (stream->stream_state == STREAM_STATE_RUNNING) {
-        BT_LOGD("%s. was running", __func__);
-        return BT_STATUS_FAIL;
-    }
-
     stream->send_timer = service_loop_timer(stream->interval_ms, stream->interval_ms, lea_audio_sink_handler, stream);
-    stream->stream_state = STREAM_STATE_RUNNING;
-
     return BT_STATUS_SUCCESS;
 }
 
@@ -450,11 +477,13 @@ bt_status_t lea_audio_source_stop(bool update_codec)
         lea_source_update_codec(&stream->audio_config, false);
     }
 
-    audio_transport_read_stop(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO);
-    service_loop_cancel_timer(stream->send_timer);
-    stream->send_timer = NULL;
-    stream->stream_state = STREAM_STATE_OFF;
+    if (!stream->offloading) {
+        audio_transport_read_stop(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO);
+        service_loop_cancel_timer(stream->send_timer);
+        stream->send_timer = NULL;
+    }
 
+    stream->stream_state = STREAM_STATE_OFF;
     lea_control_event(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, AUDIO_CTRL_EVT_STOPPED);
 
     return BT_STATUS_SUCCESS;
@@ -479,6 +508,13 @@ bt_status_t lea_audio_source_update_codec(lea_audio_config_t *audio_config, uint
 
     BT_LOGD("%s, codec_type:%d, sample_rate:%d, bits_per_sample:%d, channel_mode:%d, bit_rate:%d", __func__, audio_config->codec_type, audio_config->sample_rate, audio_config->bits_per_sample, audio_config->channel_mode, audio_config->bit_rate);
 
+    bt_media_set_lea_available();
+    if (!lea_audio_source_ctrl_is_connected()) {
+        stream->stream_state = STREAM_STATE_CONNECTING;
+        BT_LOGD("failed, %s ctrl transport was not connected", __func__);
+        return BT_STATUS_IPC_ERROR;
+    }
+
     return lea_source_update_codec(audio_config, true);
 }
 
@@ -489,11 +525,16 @@ bool lea_audio_source_is_started(void)
     return stream->stream_state != STREAM_STATE_OFF;
 }
 
-int lea_audio_source_read(uint8_t *buf, uint16_t frame_len)
+bool lea_audio_source_ctrl_is_connected(void)
 {
-    lea_source_stream_t *stream = &g_source_stream;
+    transport_conn_state_t state;
 
-    return circbuf_read(&stream->stream_pool, buf, frame_len);
+    state = audio_transport_get_state(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL);
+    if (state == IPC_CONNTECTED) {
+        return true;
+    }
+
+    return false;
 }
 
 void lea_audio_source_cleanup(void)
@@ -502,7 +543,12 @@ void lea_audio_source_cleanup(void)
 
     stream->stream_state = STREAM_STATE_OFF;
     audio_transport_close(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL);
-    audio_transport_close(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO);
     g_source_transport = NULL;
     g_source_callbacks = NULL;
+
+    if (stream->offloading) {
+        return;
+    }
+
+    audio_transport_close(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO);
 }

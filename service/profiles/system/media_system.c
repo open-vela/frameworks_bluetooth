@@ -124,3 +124,50 @@ bt_status_t bt_media_set_hfp_offloading(bool enable)
 
     return BT_STATUS_SUCCESS;
 }
+
+bt_status_t bt_media_set_lea_available(void)
+{
+    int is_available = 0;
+
+    /* check LEA device is available */
+    if (media_policy_is_devices_available(MEDIA_DEVICE_BLE, &is_available) != 0)
+        return BT_STATUS_FAIL;
+
+    if (is_available) {
+        BT_LOGI("lea device had set available !");
+        return BT_STATUS_SUCCESS;
+    }
+
+    /* set LEA device available */
+    if (media_policy_set_devices_available(MEDIA_DEVICE_BLE) != 0)
+        return BT_STATUS_FAIL;
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_media_set_lea_unavailable(void)
+{
+    int is_available = 0;
+
+    /* check LEA device is unavailable */
+    if (media_policy_is_devices_available(MEDIA_DEVICE_BLE, &is_available) != 0)
+        return BT_STATUS_FAIL;
+
+    if (!is_available) {
+        BT_LOGI("a2dp device had set unavailable !");
+        return BT_STATUS_SUCCESS;
+    }
+
+    /* set LEA device unavailable */
+    if (media_policy_set_devices_unavailable(MEDIA_DEVICE_BLE) != 0)
+        return BT_STATUS_FAIL;
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_media_set_lea_offloading(bool enable)
+{
+    // todo set le audio offload?
+
+    return BT_STATUS_FAIL;
+}

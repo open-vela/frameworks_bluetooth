@@ -343,6 +343,12 @@ typedef struct {
 
 typedef struct
 {
+    uint16_t stream_handle;
+    uint32_t channel_allocation;
+} lea_stream_info_t;
+
+typedef struct
+{
     uint16_t mask;
     uint16_t frequencies;
     uint8_t durations;
@@ -351,17 +357,6 @@ typedef struct
     uint16_t frame_octets_max;
     uint8_t max_frames;
 } lea_codec_cap_t;
-
-typedef struct {
-    uint8_t codec_type;
-    uint32_t sample_rate;
-    uint8_t bits_per_sample;
-    uint8_t channel_mode;
-    uint32_t bit_rate;
-    uint16_t sdu_size;
-    uint32_t frame_size;
-    uint32_t packet_size;
-} lea_audio_config_t;
 
 typedef struct
 {
@@ -427,16 +422,17 @@ typedef struct {
 } lea_csis_infos_t;
 
 typedef struct {
-    uint32_t stream_id;
-    uint16_t iso_handle;
-    uint16_t max_sdu;
-    uint8_t channal_num;
-    bt_address_t addr;
-    uint16_t sdu_size;
     bool is_source;
     bool started;
     uint8_t target_latency;
     uint8_t target_phy;
+    uint8_t channal_num;
+    uint16_t iso_handle;
+    uint16_t sdu_size;
+    uint16_t max_sdu;
+    uint32_t stream_id;
+    uint32_t group_id;
+    bt_address_t addr;
     lea_codec_config_t codec_cfg;
 } lea_audio_stream_t;
 

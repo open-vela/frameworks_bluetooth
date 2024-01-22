@@ -21,28 +21,38 @@
 lea_server_msg_t *lea_server_msg_new(lea_server_event_t event,
                                      bt_address_t *addr)
 {
-    return lea_server_msg_new_ext(event, addr, 0);
+    return lea_server_msg_new_ext(event, addr, NULL, 0);
 }
 
 lea_server_msg_t *lea_server_msg_new_ext(lea_server_event_t event,
-                                         bt_address_t *addr, uint32_t size)
+                                         bt_address_t *addr, void *data, size_t size)
 {
     lea_server_msg_t *msg;
 
-    msg = (lea_server_msg_t *)malloc(sizeof(lea_server_msg_t) + size);
+    msg = (lea_server_msg_t *)zalloc(sizeof(lea_server_msg_t));
     if (!msg)
         return NULL;
 
     msg->event = event;
-    memset(&msg->data, 0, sizeof(lea_server_data_t));
-    if (addr != NULL)
+    if (addr != NULL) {
         memcpy(&msg->data.addr, addr, sizeof(bt_address_t));
+    }
+
+    if (size > 0) {
+        msg->data.size = size;
+        msg->data.data = malloc(size);
+        memcpy(msg->data.data, data, size);
+    }
 
     return msg;
 }
 
 void lea_server_msg_destory(lea_server_msg_t *msg)
 {
-    // dataptr would free by caller at anytime
+    if (!msg) {
+        return;
+    }
+
+    free(msg->data.data);
     free(msg);
 }
