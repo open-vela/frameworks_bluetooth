@@ -22,6 +22,8 @@
  * Included Files
  ****************************************************************************/
 
+#define LOG_TAG "bt_socket_client"
+
 #include <assert.h>
 #include <errno.h>
 #include <poll.h>
@@ -48,6 +50,8 @@
 #include "bt_socket.h"
 #include "callbacks_list.h"
 #include "uv_thread_loop.h"
+
+#include "utils/log.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -98,6 +102,7 @@ static void bt_socket_client_msg_process(bt_client_msg_t *msg)
     } else if (packet->code > BT_HID_DEVICE_CALLBACK_START && packet->code < BT_HID_DEVICE_CALLBACK_END) {
         bt_socket_client_hid_device_callback(NULL, -1, msg->ins, packet);
     } else {
+        BT_LOGE("%s, Unhandled message:%d", __func__, packet->code);
     }
 
     free(msg);
