@@ -271,7 +271,10 @@ void system_bluetooth_wrap_getAdapterState(FeatureInstanceHandle feature, union 
     bt_instance_t* ins = feature_bluetooth_get_instance();
     bt_adapter_state_t state = bt_adapter_get_state(ins);
     bool is_discovering = bt_adapter_is_discovering(ins);
-    system_bluetooth_GetAdapterSuccessResult success_result = { state == BT_ADAPTER_STATE_ON, is_discovering };
+    system_bluetooth_GetAdapterSuccessResult* success_result = system_bluetoothMallocGetAdapterSuccessResult();
+    success_result->available = state == BT_ADAPTER_STATE_ON;
+    success_result->discovering = is_discovering;
+
     if (!FeatureInvokeCallback(feature, params->success, success_result)) {
         FEATURE_LOG_ERROR("invoke success getAdapterState callback failed!");
     }
