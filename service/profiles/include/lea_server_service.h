@@ -41,7 +41,7 @@ typedef struct lea_server_interface {
 
 lea_audio_stream_t *lea_server_add_stream(uint32_t stream_id, bt_address_t *remote_addr);
 lea_audio_stream_t *lea_server_find_stream(uint32_t stream_id);
-lea_audio_stream_t *lea_server_find_update_stream(lea_audio_stream_t *stream);
+lea_audio_stream_t *lea_server_update_stream(lea_audio_stream_t *stream);
 void lea_server_remove_stream(uint32_t stream_id);
 void lea_server_remove_streams(void);
 
@@ -60,6 +60,7 @@ void lea_server_on_stream_suspend(uint32_t stream_id);
 void lea_server_on_metedata_updated(uint32_t stream_id);
 void lea_server_on_stream_recv(uint32_t stream_id, uint32_t time_stamp,
                                uint16_t seq_number, uint8_t *sdu, uint16_t size);
+bt_status_t lea_server_streams_started(bt_address_t *addr);
 void lea_server_on_ascs_event(bt_address_t *addr, uint8_t id, uint8_t state, uint16_t type);
 
 void lea_server_on_csis_lock_state_changed(uint32_t csis_id, bt_address_t *addr, uint8_t lock);

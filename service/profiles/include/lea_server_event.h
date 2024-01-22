@@ -42,6 +42,11 @@ typedef enum {
     STARTUP = 10,
     SHUTDOWN = 11,
     TIMEOUT = 12,
+    OFFLOAD_START_REQ,
+    OFFLOAD_STOP_REQ,
+    OFFLOAD_START_EVT,
+    OFFLOAD_STOP_EVT,
+    OFFLOAD_TIMEOUT,
     STACK_EVENT_STACK_STATE,
     STACK_EVENT_CONNECTION_STATE,
     STACK_EVENT_METADATA_UPDATED,
@@ -75,10 +80,8 @@ typedef struct
     uint32_t valueint2;
     uint16_t valueint3;
     uint16_t valueint4;
-    union {
-        void *datapointer;
-        uint8_t dataarry[1];
-    };
+    size_t size;
+    void *data;
 } lea_server_data_t;
 
 typedef struct
@@ -94,7 +97,8 @@ typedef struct
 lea_server_msg_t *lea_server_msg_new(lea_server_event_t event,
                                      bt_address_t *addr);
 
-lea_server_msg_t *lea_server_msg_new_ext(lea_server_event_t event, bt_address_t *addr, uint32_t size);
+lea_server_msg_t *lea_server_msg_new_ext(lea_server_event_t event,
+                                         bt_address_t *addr, void *data, size_t size);
 
 void lea_server_msg_destory(lea_server_msg_t *msg);
 
