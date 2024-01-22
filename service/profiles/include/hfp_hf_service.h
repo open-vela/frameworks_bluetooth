@@ -47,7 +47,8 @@ typedef struct {
 /*
  * sal callback
  */
-void hfp_hf_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state);
+void hfp_hf_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state,
+                                        uint32_t remote_features);
 void hfp_hf_on_audio_connection_state_changed(bt_address_t *addr,
                                               hfp_audio_state_t state,
                                               uint16_t sco_connection_handle);
