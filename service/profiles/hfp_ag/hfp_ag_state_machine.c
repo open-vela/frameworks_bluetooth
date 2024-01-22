@@ -42,6 +42,7 @@ typedef struct _ag_state_machine {
     state_machine_t sm;
     bt_address_t addr;
     uint16_t sco_conn_handle;
+    uint32_t remote_features;
     bool recognition_active;
     bool offloading;
     void *service;
@@ -292,6 +293,12 @@ static void process_cind_request(ag_state_machine_t *agsm)
     bt_sal_hfp_ag_cind_response(&agsm->addr, &resp);
 }
 
+static void update_remote_features(ag_state_machine_t *agsm, uint32_t remote_features)
+{
+    BT_LOGD("%s, remote features:0x%" PRIu32, __func__, remote_features);
+    agsm->remote_features = remote_features;
+}
+
 static void disconnected_enter(state_machine_t *sm)
 {
     ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
@@ -326,6 +333,7 @@ static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void
         switch (state) {
         case PROFILE_STATE_CONNECTED:
             hsm_transition_to(sm, &connected_state);
+            update_remote_features(agsm, data->valueint2);
             break;
         case PROFILE_STATE_CONNECTING:
             hsm_transition_to(sm, &connecting_state);
@@ -378,6 +386,7 @@ static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *
         switch (state) {
         case PROFILE_STATE_CONNECTED:
             hsm_transition_to(sm, &connected_state);
+            update_remote_features(agsm, data->valueint2);
             break;
         case PROFILE_STATE_DISCONNECTED:
             hsm_transition_to(sm, &disconnected_state);

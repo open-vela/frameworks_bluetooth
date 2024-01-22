@@ -40,6 +40,7 @@ typedef struct _hf_state_machine {
     state_machine_t sm;
     bt_address_t addr;
     uint16_t sco_conn_handle;
+    uint32_t remote_features;
     service_timer_t *connect_timer;
     service_timer_t *offload_timer;
     bool recognition_active;
@@ -358,6 +359,12 @@ static void state_machine_reset_calls(hf_state_machine_t *hfsm)
     hfsm->recognition_active = false;
 }
 
+static void update_remote_features(hf_state_machine_t *hfsm, uint32_t remote_features)
+{
+    BT_LOGD("%s, remote features:0x%" PRIu32, __func__, remote_features);
+    hfsm->remote_features = remote_features;
+}
+
 static void disconnected_enter(state_machine_t *sm)
 {
     hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
@@ -399,6 +406,7 @@ static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void
         switch (state) {
         case PROFILE_STATE_CONNECTED:
             hsm_transition_to(sm, &connected_state);
+            update_remote_features(hfsm, data->valueint2);
             break;
         case PROFILE_STATE_CONNECTING:
             hsm_transition_to(sm, &connecting_state);
@@ -537,6 +545,7 @@ static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *
             break;
         case PROFILE_STATE_CONNECTED:
             hsm_transition_to(sm, &connected_state);
+            update_remote_features(hfsm, data->valueint2);
             break;
         case PROFILE_STATE_CONNECTING:
         case PROFILE_STATE_DISCONNECTING:
