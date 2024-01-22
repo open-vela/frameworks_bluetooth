@@ -27,6 +27,7 @@
 #include "lea_audio_source.h"
 #include "lea_client_service.h"
 #include "lea_client_state_machine.h"
+#include "lea_codec.h"
 #include "sal_adapter_interface.h"
 #include "sal_lea_client_interface.h"
 #include "sal_lea_common.h"
@@ -35,13 +36,28 @@
 #include "bt_utils.h"
 #include "utils/log.h"
 
+typedef enum pending_state {
+    PENDING_NONE = 0x0,
+    PENDING_START = 0X02,
+    PENDING_STOP = 0x04,
+    PENDING_OFFLOAD_START = 0x08,
+    PENDING_OFFLOAD_STOP = 0x10,
+} pending_state_t;
+
 typedef struct _lea_client_state_machine {
     state_machine_t sm;
-    bt_address_t addr;
+    bool offloading;
+    uint32_t group_id;
+    pending_state_t pending;
     void *service;
+    service_timer_t *offload_timer;
+    bt_address_t addr;
 } lea_client_state_machine_t;
 
-#define LEA_SERVER_STM_DEBUG 1
+#define LEA_SERVER_OFFLOAD_TIMEOUT 500
+#define LEA_SERVER_STM_DEBUG       1
+
+extern bt_status_t lea_client_send_message(lea_client_msg_t *msg);
 
 #if LEA_SERVER_STM_DEBUG
 static void lea_client_trans_debug(state_machine_t *sm, bt_address_t *addr,
@@ -80,6 +96,9 @@ static bool started_process_event(state_machine_t *sm, uint32_t event,
                                   void *p_data);
 static bool closing_process_event(state_machine_t *sm, uint32_t event,
                                   void *p_data);
+static bool flag_isset(lea_client_state_machine_t *leas_sm, pending_state_t flag);
+static void flag_set(lea_client_state_machine_t *leas_sm, pending_state_t flag);
+static void flag_clear(lea_client_state_machine_t *leas_sm, pending_state_t flag);
 
 static const state_t closed_state = {
     .state_name = "Closed",
@@ -142,6 +161,11 @@ static const char *stack_event_to_string(lea_client_event_t event)
         CASE_RETURN_STR(STARTUP)
         CASE_RETURN_STR(SHUTDOWN)
         CASE_RETURN_STR(TIMEOUT)
+        CASE_RETURN_STR(OFFLOAD_START_REQ)
+        CASE_RETURN_STR(OFFLOAD_STOP_REQ)
+        CASE_RETURN_STR(OFFLOAD_START_EVT)
+        CASE_RETURN_STR(OFFLOAD_STOP_EVT)
+        CASE_RETURN_STR(OFFLOAD_TIMEOUT)
         CASE_RETURN_STR(STACK_EVENT_STACK_STATE)
         CASE_RETURN_STR(STACK_EVENT_CONNECTION_STATE)
         CASE_RETURN_STR(STACK_EVENT_METADATA_UPDATED)
@@ -167,6 +191,65 @@ static const char *stack_event_to_string(lea_client_event_t event)
     }
 }
 #endif
+
+static bool flag_isset(lea_client_state_machine_t *leas_sm, pending_state_t flag)
+{
+    return (bool)(leas_sm->pending & flag);
+}
+
+static void flag_set(lea_client_state_machine_t *leas_sm, pending_state_t flag)
+{
+    leas_sm->pending |= flag;
+}
+
+static void flag_clear(lea_client_state_machine_t *leas_sm, pending_state_t flag)
+{
+    leas_sm->pending &= ~flag;
+}
+
+static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
+{
+    lea_client_state_machine_t *leas_sm = (lea_client_state_machine_t *)context;
+    lea_client_msg_t *msg;
+    lea_client_event_t event;
+
+    BT_LOGD("%s, evt_code:0x%x, len:%d", __func__, hci_event->evt_code,
+            hci_event->length);
+    BT_DUMPBUFFER("vsc", (uint8_t *)hci_event->params, hci_event->length);
+
+    if (flag_isset(leas_sm, PENDING_OFFLOAD_START)) {
+        event = OFFLOAD_START_EVT;
+        flag_clear(leas_sm, PENDING_OFFLOAD_START);
+    } else if (flag_isset(leas_sm, PENDING_OFFLOAD_STOP)) {
+        event = OFFLOAD_STOP_EVT;
+        flag_clear(leas_sm, PENDING_OFFLOAD_STOP);
+    } else {
+        return;
+    }
+
+    msg = lea_client_msg_new_ext(event, &leas_sm->addr, hci_event, sizeof(bt_hci_event_t) + hci_event->length);
+    if (!msg) {
+        BT_LOGE("error, hci event lea_client_msg_new_ext");
+        return;
+    }
+
+    lea_client_send_message(msg);
+}
+
+static void lea_offload_config_timeout_callback(service_timer_t *timer, void *data)
+{
+    lea_client_state_machine_t *leas_sm = (lea_client_state_machine_t *)data;
+    lea_client_msg_t *msg;
+
+    msg = lea_client_msg_new(OFFLOAD_TIMEOUT, &leas_sm->addr);
+    if (!msg) {
+        BT_LOGE("error, offload timeout lea_client_msg_new");
+        return;
+    }
+
+    lea_client_state_machine_dispatch(leas_sm, msg);
+    lea_client_msg_destory(msg);
+}
 
 static void closed_enter(state_machine_t *sm)
 {
@@ -195,10 +278,6 @@ static bool closed_process_event(state_machine_t *sm, uint32_t event,
     LEAS_DBG_EVENT(sm, &leas_sm->addr, event);
 
     switch (event) {
-    case STACK_EVENT_STACK_STATE: {
-        lea_client_notify_stack_state_changed(data->valueint1);
-        break;
-    }
     case CONNECT_DEVICE: {
         bt_status_t ret;
 
@@ -262,8 +341,9 @@ static bool opening_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case CONNECT_AUDIO: {
-        lea_client_ucc_add_streams(data->valueint1, &leas_sm->addr);
-        lea_client_ucc_config_codec(data->valueint1, &leas_sm->addr);
+        leas_sm->group_id = data->valueint1;
+        lea_client_ucc_add_streams(leas_sm->group_id, &leas_sm->addr);
+        lea_client_ucc_config_codec(leas_sm->group_id, &leas_sm->addr);
         hsm_transition_to(sm, &opened_state);
         break;
     }
@@ -364,74 +444,6 @@ static void started_exit(state_machine_t *sm)
     LEAS_DBG_EXIT(sm, &leas_sm->addr);
 }
 
-static uint8_t lea_client_get_channels(uint32_t allocation)
-{
-    uint8_t channels = 0;
-
-    while (allocation) {
-        if (allocation & 1) {
-            channels++;
-        }
-        allocation >>= 1;
-    }
-
-    return channels;
-}
-
-static uint8_t lea_client_channel_mode(uint32_t allocation)
-{
-    uint8_t channels;
-    uint8_t mode;
-
-    channels = lea_client_get_channels(allocation);
-
-    switch (channels) {
-    case 1:
-        mode = 0; // CHANNEL_MODE_MONO
-        break;
-    case 2:
-        mode = 1; // CHANNEL_MODE_STEREO
-        break;
-    default:
-        mode = 0; // CHANNEL_MODE_MONO
-        break;
-    }
-
-    return mode;
-}
-
-static uint32_t lea_client_get_bitrate(lea_codec_config_t *config)
-{
-    uint8_t channels;
-    uint8_t duration;
-
-    channels = lea_client_get_channels(config->allocation);
-    duration = config->duration == 0 ? 134 : 100; // 7.5 ms or 10 ms
-
-    return 8 * channels * config->octets * duration;
-}
-
-static lea_audio_config_t lea_client_covert_audio_codec(lea_codec_config_t *config)
-{
-    lea_audio_config_t audio_config;
-    uint32_t sample_rate_table[] = {
-        0, 8000, 11025, 16000, 22050, 24000,
-        32000, 44100, 48000, 88200, 96000,
-        176400, 192000, 384000
-    };
-
-    memset(&audio_config, 0, sizeof(lea_codec_config_t));
-    audio_config.codec_type = 11; // CODECT_TYPE_LC3
-    audio_config.sample_rate = sample_rate_table[config->frequency];
-    audio_config.bits_per_sample = 1; // CODEC_BITS_PER_SAMPLE_16
-    audio_config.channel_mode = lea_client_channel_mode(config->allocation);
-    audio_config.bit_rate = lea_client_get_bitrate(config);
-    audio_config.frame_size = audio_config.sample_rate * (config->duration == 0 ? 0.0075 : 0.01);
-    audio_config.packet_size = config->octets * lea_client_get_channels(config->allocation) * config->blocks;
-
-    return audio_config;
-}
-
 static void lea_client_stop_audio(uint32_t stream_id)
 {
     lea_audio_stream_t *stream;
@@ -448,6 +460,24 @@ static void lea_client_stop_audio(uint32_t stream_id)
     } else {
         lea_audio_sink_stop(true);
     }
+}
+
+static void lea_client_stop_offload_req(lea_client_state_machine_t *leas_sm, lea_client_data_t *data)
+{
+    uint8_t ogf;
+    uint16_t ocf;
+    uint8_t len;
+    uint8_t *payload;
+
+    BT_DUMPBUFFER("stop req vsc", (uint8_t *)data->data, data->size);
+    payload = data->data;
+    len = data->size - sizeof(ogf) - sizeof(ocf);
+    STREAM_TO_UINT8(ogf, payload)
+    STREAM_TO_UINT16(ocf, payload);
+    flag_set(leas_sm, PENDING_OFFLOAD_STOP);
+
+    bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
+                            leas_sm);
 }
 
 static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_data)
@@ -473,24 +503,74 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case STACK_EVENT_STREAM_STARTED: {
-        lea_audio_stream_t *remote_stream = (lea_audio_stream_t *)data->dataarry;
-        lea_audio_stream_t *audio_stream;
-        lea_audio_config_t audio_config;
+        lea_audio_stream_t *audio_stream = (lea_audio_stream_t *)data->data;
+        lea_audio_config_t *audio_config;
 
-        audio_stream = lea_client_find_update_stream(remote_stream);
-        if (!audio_stream) {
-            return false;
+        BT_LOGD("stream started, stream_id:0x%08x, is_source:%d", audio_stream->stream_id, audio_stream->is_source);
+        audio_config = lea_codec_get_config(audio_stream->is_source);
+        if (!audio_config) {
+            break;
         }
 
-        memcpy(&audio_stream->addr, &leas_sm->addr, sizeof(bt_address_t));
-        audio_stream->started = true;
-        audio_config = lea_client_covert_audio_codec(&audio_stream->codec_cfg);
         if (!audio_stream->is_source) {
-            lea_audio_source_update_codec(&audio_config, audio_stream->sdu_size);
+            lea_audio_source_update_codec(audio_config, audio_stream->sdu_size);
         } else {
-            lea_audio_sink_update_codec(&audio_config, audio_stream->sdu_size);
+            lea_audio_sink_update_codec(audio_config, audio_stream->sdu_size);
             lea_audio_sink_start();
         }
+        break;
+    }
+    case OFFLOAD_START_REQ: {
+        uint8_t ogf;
+        uint16_t ocf;
+        uint8_t len;
+        uint8_t *payload;
+
+        if (flag_isset(leas_sm, PENDING_OFFLOAD_START)) {
+            break;
+        }
+
+        BT_DUMPBUFFER("start req vsc", (uint8_t *)data->data, data->size);
+        payload = data->data;
+        len = data->size - sizeof(ogf) - sizeof(ocf);
+        STREAM_TO_UINT8(ogf, payload)
+        STREAM_TO_UINT16(ocf, payload);
+        flag_set(leas_sm, PENDING_OFFLOAD_START);
+        leas_sm->offload_timer = service_loop_timer(LEA_SERVER_OFFLOAD_TIMEOUT, 0, lea_offload_config_timeout_callback, leas_sm);
+
+        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
+                                leas_sm);
+        break;
+    }
+    case OFFLOAD_START_EVT: {
+        bt_hci_event_t *hci_event;
+        uint8_t status;
+
+        hci_event = data->data;
+        if (leas_sm->offload_timer) {
+            service_loop_cancel_timer(leas_sm->offload_timer);
+            leas_sm->offload_timer = NULL;
+        }
+
+        status = hci_event->params[3]; // sizeof(struct hci_evt_cmd_complete_s)
+        if (status != BT_STATUS_SUCCESS) {
+            BT_LOGE("LEA_SERVER_OFFLOAD_START fail, status:0x%0x", status);
+            break;
+        }
+
+        lea_client_ucc_started(leas_sm->group_id);
+        break;
+    }
+    case OFFLOAD_TIMEOUT: {
+        flag_clear(leas_sm, PENDING_OFFLOAD_START);
+        leas_sm->offload_timer = NULL;
+        break;
+    }
+    case OFFLOAD_STOP_REQ: {
+        lea_client_stop_offload_req(leas_sm, data);
+        break;
+    }
+    case OFFLOAD_STOP_EVT: {
         break;
     }
     case STACK_EVENT_STREAM_STOPPED: {
@@ -555,8 +635,9 @@ static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case CONNECT_AUDIO: {
-        lea_client_ucc_add_streams(data->valueint1, &leas_sm->addr);
-        lea_client_ucc_config_codec(data->valueint1, &leas_sm->addr);
+        leas_sm->group_id = data->valueint1;
+        lea_client_ucc_add_streams(leas_sm->group_id, &leas_sm->addr);
+        lea_client_ucc_config_codec(leas_sm->group_id, &leas_sm->addr);
         hsm_transition_to(sm, &opened_state);
         break;
     }
@@ -579,6 +660,18 @@ static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_d
     }
     case DISCONNECT_DEVICE: {
         bt_sal_lea_disconnect(&leas_sm->addr);
+        break;
+    }
+    case OFFLOAD_TIMEOUT: {
+        flag_clear(leas_sm, PENDING_OFFLOAD_START);
+        leas_sm->offload_timer = NULL;
+        break;
+    }
+    case OFFLOAD_STOP_REQ: {
+        lea_client_stop_offload_req(leas_sm, data);
+        break;
+    }
+    case OFFLOAD_STOP_EVT: {
         break;
     }
     default:
@@ -628,4 +721,9 @@ void lea_client_state_machine_dispatch(lea_client_state_machine_t *leasm,
 uint32_t lea_client_state_machine_get_state(lea_client_state_machine_t *leasm)
 {
     return hsm_get_current_state_value(&leasm->sm);
+}
+
+void lea_client_state_machine_set_offloading(lea_client_state_machine_t *leas_sm, bool offloading)
+{
+    leas_sm->offloading = offloading;
 }
