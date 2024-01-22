@@ -77,7 +77,7 @@ typedef enum pending_state {
     PENDING_START = 0X02,
     PENDING_STOP = 0x04,
     PENDING_OFFLOAD_START = 0x08,
-    PENDING_OFFLOAD_STOP = 0x16,
+    PENDING_OFFLOAD_STOP = 0x10,
 } pending_state_t;
 
 typedef struct _a2dp_state_machine {

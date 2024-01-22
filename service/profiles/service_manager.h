@@ -34,6 +34,7 @@ typedef enum control_cmd {
 typedef enum {
     PROFILE_EVT_A2DP_OFFLOADING = 1,
     PROFILE_EVT_HFP_OFFLOADING,
+    PROFILE_EVT_LEA_OFFLOADING,
 } profile_event_t;
 
 typedef struct

@@ -25,5 +25,6 @@ lea_client_state_machine_t *lea_client_state_machine_new(bt_address_t *addr, voi
 void lea_client_state_machine_destory(lea_client_state_machine_t *leas_sm);
 void lea_client_state_machine_dispatch(lea_client_state_machine_t *leas_sm, lea_client_msg_t *msg);
 uint32_t lea_client_state_machine_get_state(lea_client_state_machine_t *leas_sm);
+void lea_client_state_machine_set_offloading(lea_client_state_machine_t *leas_sm, bool offloading);
 
 #endif /* __LEA_CLIENT_STATE_MACHINE_H__ */

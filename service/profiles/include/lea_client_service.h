@@ -72,7 +72,7 @@ typedef struct lea_client_interface {
 
 lea_audio_stream_t *lea_client_add_stream(uint32_t stream_id, bt_address_t *remote_addr);
 lea_audio_stream_t *lea_client_find_stream(uint32_t stream_id);
-lea_audio_stream_t *lea_client_find_update_stream(lea_audio_stream_t *stream);
+lea_audio_stream_t *lea_client_update_stream(lea_audio_stream_t *stream);
 void lea_client_remove_stream(uint32_t stream_id);
 void lea_client_remove_streams(void);
 
@@ -97,6 +97,7 @@ bt_status_t lea_client_ucc_config_codec(uint32_t group_id, bt_address_t *addr);
 bt_status_t lea_client_ucc_config_qos(uint32_t group_id, bt_address_t *addr, uint32_t stream_id);
 bt_status_t lea_client_ucc_enable(uint32_t group_id, bt_address_t *addr, uint32_t stream_id);
 bt_status_t lea_client_ucc_disable(uint32_t group_id, bt_address_t *addr);
+bt_status_t lea_client_ucc_started(uint32_t group_id);
 
 void lea_client_on_stream_added(bt_address_t *addr, uint32_t stream_id);
 void lea_client_on_stream_removed(bt_address_t *addr, uint32_t stream_id);
