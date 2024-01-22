@@ -412,7 +412,10 @@ static void voicecall_manager_signal_process(tele_client_t *tele,
     const char *path;
     tele_call_t *call;
 
-    dbus_message_iter_init(message, &iter);
+    if (!dbus_message_iter_init(message, &iter)) {
+        BT_LOGE("%s, message has no arguments", __func__);
+        return;
+    }
 
     /* get call patch */
     dbus_message_iter_get_basic(&iter, &path);
@@ -455,7 +458,11 @@ static void voicecall_signal_process(tele_client_t *tele,
     void *basic;
     const char *path = dbus_message_get_path(message);
     GDBusProxy *proxy = g_dbus_proxy_new(tele->dbus_client, path, OFONO_VOICECALL_INTERFACE);
-    dbus_message_iter_init(message, &iter);
+    if (!dbus_message_iter_init(message, &iter)) {
+        BT_LOGE("%s, message has no arguments", __func__);
+        return;
+    }
+
     dbus_message_iter_get_basic(&iter, &basic);
     if (!strcmp(signal, "DisconnectReason")) {
         int reason = disconnect_reason_to_value((const char *)basic);
