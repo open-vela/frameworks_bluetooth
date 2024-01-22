@@ -19,6 +19,7 @@
 
 #include "bluetooth.h"
 
+#include "adapter_internel.h"
 #include "advertising.h"
 #include "index_allocator.h"
 #include "sal_adapter_interface.h"
@@ -309,6 +310,9 @@ bt_advertiser_t *start_advertising(void *remote,
                                    uint16_t scan_rsp_len,
                                    const advertiser_callback_t *cbs)
 {
+    if (!adapter_is_le_enabled())
+        return NULL;
+
     advertiser_t *adver = alloc_new_advertiser(remote, cbs);
     if (!adver)
         return NULL;
@@ -329,6 +333,9 @@ bt_advertiser_t *start_advertising(void *remote,
 
 void stop_advertising(bt_advertiser_t *adver)
 {
+    if (!adapter_is_le_enabled())
+        return;
+
     adv_event_t *stop = malloc(sizeof(adv_event_t));
     if (!stop)
         return;
@@ -339,6 +346,9 @@ void stop_advertising(bt_advertiser_t *adver)
 
 void stop_advertising_id(uint8_t adv_id)
 {
+    if (!adapter_is_le_enabled())
+        return;
+
     adv_event_t *stop = malloc(sizeof(adv_event_t));
     if (!stop)
         return;
