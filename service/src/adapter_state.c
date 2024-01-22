@@ -118,6 +118,7 @@ typedef struct adapter_state_machine {
     bool pending_turn_on;
     bool a2dp_offloading;
     bool hfp_offloading;
+    bool lea_offloading;
 } adapter_state_machine_t;
 
 #define ADPATER_STM_DEBUG 1
@@ -185,6 +186,15 @@ static bool hfp_is_offloading(void)
 #endif
 }
 
+static bool lea_is_offloading(void)
+{
+#if defined(CONFIG_KVDB) && defined(__NuttX__)
+    return property_get_bool("persist.bluetooth.lea.offloading", false);
+#else
+    return false;
+#endif
+}
+
 static void off_enter(state_machine_t *sm)
 {
     adapter_state_machine_t *stm = (adapter_state_machine_t *)sm;
@@ -198,6 +208,7 @@ static void off_enter(state_machine_t *sm)
     } else {
         stm->a2dp_offloading = a2dp_is_offloading();
         stm->hfp_offloading = hfp_is_offloading();
+        stm->lea_offloading = lea_is_offloading();
     }
 }
 
@@ -216,6 +227,10 @@ static void adapter_notify_media_offloading(adapter_state_machine_t *stm)
 
     msg.event = PROFILE_EVT_HFP_OFFLOADING;
     msg.data.valuebool = stm->hfp_offloading;
+    service_manager_processmsg(&msg);
+
+    msg.event = PROFILE_EVT_LEA_OFFLOADING;
+    msg.data.valuebool = stm->lea_offloading;
     service_manager_processmsg(&msg);
 }
 
@@ -366,6 +381,7 @@ static void on_state_enter(state_machine_t *sm)
 
     bt_media_set_a2dp_offloading(stm->a2dp_offloading);
     bt_media_set_hfp_offloading(stm->hfp_offloading);
+    bt_media_set_lea_offloading(stm->lea_offloading);
 }
 
 static void on_state_exit(state_machine_t *sm)
