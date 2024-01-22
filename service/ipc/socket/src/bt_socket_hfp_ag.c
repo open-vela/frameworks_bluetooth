@@ -63,7 +63,7 @@
 #if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
 static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr, profile_connection_state_t state)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_instance_t *ins = cookie;
 
     memcpy(&packet.hfp_ag_cb._on_connection_state_changed.addr, addr, sizeof(bt_address_t));
@@ -74,7 +74,7 @@ static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr, pro
 
 static void on_audio_state_changed_cb(void *cookie, bt_address_t *addr, hfp_audio_state_t state)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_instance_t *ins = cookie;
 
     memcpy(&packet.hfp_ag_cb._on_audio_state_changed.addr, addr, sizeof(bt_address_t));
@@ -85,7 +85,7 @@ static void on_audio_state_changed_cb(void *cookie, bt_address_t *addr, hfp_audi
 
 static void on_voice_recognition_command_cb(void *cookie, bt_address_t *addr, bool started)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_instance_t *ins = cookie;
 
     memcpy(&packet.hfp_ag_cb._on_voice_recognition_state_changed.addr, addr, sizeof(bt_address_t));
@@ -96,7 +96,7 @@ static void on_voice_recognition_command_cb(void *cookie, bt_address_t *addr, bo
 
 static void on_hf_battery_update_cb(void *cookie, bt_address_t *addr, uint8_t value)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_instance_t *ins = cookie;
 
     memcpy(&packet.hfp_ag_cb._on_battery_level_changed.addr, addr, sizeof(bt_address_t));
