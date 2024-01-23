@@ -47,6 +47,7 @@ typedef struct _hf_state_machine {
     bool offloading;
     uint8_t spk_volume;
     uint8_t mic_volume;
+    void *volume_listener;
     uint8_t codec;
     pending_state_t pending;
     struct list_node pending_actions;
@@ -61,6 +62,9 @@ typedef struct {
     struct list_node node;
     uint32_t cmd_code;
 } hf_at_cmd_t;
+
+#define MD2HFVOL(vol) ((vol) > 15 ? 15 : (vol))
+#define HF2MDVOL(vol) ((vol) > 15 ? 15 : (vol))
 
 #define HF_STM_DEBUG 1
 #define HF_CONNECT_TIMEOUT (10 * 1000)
@@ -372,8 +376,11 @@ static void disconnected_enter(state_machine_t *sm)
 
     HF_DBG_ENTER(sm, &hfsm->addr);
     hfsm->need_query = false;
-    if (hsm_get_previous_state(sm))
+    if (hsm_get_previous_state(sm)) {
+        bt_media_remove_listener(hfsm->volume_listener);
+        hfsm->volume_listener = NULL;
         hf_service_notify_connection_state_changed(&hfsm->addr, PROFILE_STATE_DISCONNECTED);
+    }
 
     /* reset cached info */
     state_machine_reset_calls(hfsm);
@@ -769,11 +776,19 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, hfp_hf_da
     }
     case HF_STACK_EVENT_VOLUME_CHANGED: {
         hfp_volume_type_t type = data->valueint1;
-        int vol = data->valueint2;
+        uint8_t hf_vol = data->valueint2;
         // set media volume, need call media interface
-        bt_media_set_voice_call_volume(vol);
-        BT_LOGD("Volume changed, %s:%d", type ? "Mic" : "Spk", vol);
-        hf_service_notify_volume_changed(&hfsm->addr, type, vol);
+        if (type == HFP_VOLUME_TYPE_SPK) {
+            hfsm->spk_volume = hf_vol;
+            status = bt_media_set_voice_call_volume(HF2MDVOL(hf_vol));
+            if (status != BT_STATUS_SUCCESS) {
+                BT_LOGE("Set media voice call volume failed");
+            }
+        } else if (type == HFP_VOLUME_TYPE_MIC) {
+            hfsm->mic_volume = hf_vol;
+        }
+        BT_LOGD("Volume changed, %s:%d", type == HFP_VOLUME_TYPE_MIC ? "Mic" : "Spk", hf_vol);
+        hf_service_notify_volume_changed(&hfsm->addr, type, hf_vol);
         break;
     }
     case HF_STACK_EVENT_CMD_RESPONSE: {
@@ -841,6 +856,21 @@ static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
     hfp_hf_send_message(msg);
 }
 
+static void hfp_hf_voice_volume_change_callback(void *cookie, int volume)
+{
+    hf_state_machine_t *hfsm = (hf_state_machine_t *)cookie;
+    hfp_hf_msg_t *msg;
+
+    msg = hfp_hf_msg_new(HF_SET_SPEAKER_VOLUME, &hfsm->addr);
+    if (!msg) {
+        BT_LOGE("New hf message alloc failed");
+        return;
+    }
+
+    msg->data.valueint1 = volume;
+    hfp_hf_send_message(msg);
+}
+
 static void connected_enter(state_machine_t *sm)
 {
     hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
@@ -850,8 +880,20 @@ static void connected_enter(state_machine_t *sm)
         bt_sal_hfp_hf_get_current_calls(&hfsm->addr);
         hfsm->need_query = false;
     }
-    if (hsm_get_previous_state(sm) != &audio_on_state)
+    if (hsm_get_previous_state(sm) != &audio_on_state) {
+        int media_vol;
+        if (bt_media_get_voice_call_volume(&media_vol) == BT_STATUS_SUCCESS) {
+            hfsm->spk_volume = MD2HFVOL(media_vol);
+            bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_SPK, hfsm->spk_volume);
+        } else {
+            BT_LOGE("Get voice call volume failed");
+        }
+        hfsm->volume_listener = bt_media_listen_voice_call_volume_change(hfp_hf_voice_volume_change_callback, hfsm);
+        if (!hfsm->volume_listener) {
+            BT_LOGE("Start to listen voice call volume failed");
+        }
         hf_service_notify_connection_state_changed(&hfsm->addr, PROFILE_STATE_CONNECTED);
+    }
 }
 
 static void connected_exit(state_machine_t *sm)
@@ -1074,18 +1116,21 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
         }
         break;
     case HF_SET_MIC_VOLUME: {
-        uint8_t vol = data->valueint1;
-        vol = vol > 15 ? 15 : vol;
-        BT_LOGD("Set Mic Volume :%d", vol);
-        bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_MIC, vol);
+        uint8_t hf_vol = MD2HFVOL(data->valueint1);
+        if (hf_vol != hfsm->mic_volume) {
+            hfsm->mic_volume = hf_vol;
+            BT_LOGD("Set Mic Volume :%d", hfsm->mic_volume);
+            bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_MIC, hfsm->mic_volume);
+        }
         break;
     }
     case HF_SET_SPEAKER_VOLUME: {
-        uint8_t vol = data->valueint1;
-        vol = vol > 15 ? 15 : vol;
-
-        BT_LOGD("Set Speaker Volume :%d", vol);
-        bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_SPK, vol);
+        uint8_t hf_vol = MD2HFVOL(data->valueint1);
+        if (hf_vol != hfsm->spk_volume) {
+            hfsm->spk_volume = hf_vol;
+            BT_LOGD("Set Speaker Volume :%d", hfsm->spk_volume);
+            bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_SPK, hfsm->spk_volume);
+        }
         break;
     }
     case HF_STACK_EVENT_CONNECTION_STATE_CHANGED: {
@@ -1204,6 +1249,8 @@ void hf_state_machine_destory(hf_state_machine_t *hfsm)
         service_loop_cancel_timer(hfsm->connect_timer);
     bt_list_free(hfsm->update_calls);
     bt_list_free(hfsm->current_calls);
+    bt_media_remove_listener(hfsm->volume_listener);
+    hfsm->volume_listener = NULL;
     hsm_dtor(&hfsm->sm);
     free((void *)hfsm);
 }
