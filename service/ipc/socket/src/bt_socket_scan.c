@@ -60,7 +60,7 @@
 static void on_scan_result_cb(bt_scanner_t *scanner, ble_scan_result_t *result)
 {
     bt_scan_remote_t *scan = scanner;
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = {0};
 
     packet.scan_cb._on_scan_result_cb.scanner = scan->remote;
     memcpy(&packet.scan_cb._on_scan_result_cb.result, result, sizeof(*result));
@@ -77,20 +77,21 @@ static void on_scan_result_cb(bt_scanner_t *scanner, ble_scan_result_t *result)
 static void on_scan_status_cb(bt_scanner_t *scanner, uint8_t status)
 {
     bt_scan_remote_t *scan = scanner;
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = {0};
 
     packet.scan_cb._on_scan_status_cb.scanner = scan->remote;
     packet.scan_cb._on_scan_status_cb.status = status;
-    if (status != 0)
-        free(scan);
 
     bt_socket_server_send(scan->ins, &packet, BT_LE_ON_SCAN_START_STATUS);
+
+    if (status != 0)
+        free(scan);
 }
 
 static void on_scan_stopped_cb(bt_scanner_t *scanner)
 {
     bt_scan_remote_t *scan = scanner;
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = {0};
 
     packet.scan_cb._on_scan_stopped_cb.scanner = scan->remote;
     bt_socket_server_send(scan->ins, &packet, BT_LE_ON_SCAN_STOPPED);
