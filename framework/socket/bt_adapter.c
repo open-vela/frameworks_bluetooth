@@ -271,7 +271,8 @@ bt_status_t bt_adapter_set_name(bt_instance_t *ins, const char *name)
         return BT_STATUS_PARM_INVALID;
     }
 
-    strncpy(packet.adpt_pl._bt_adapter_set_name.name, name, sizeof(packet.adpt_pl._bt_adapter_set_name.name));
+    memset(packet.adpt_pl._bt_adapter_set_name.name, 0, sizeof(packet.adpt_pl._bt_adapter_set_name.name));
+    strncpy(packet.adpt_pl._bt_adapter_set_name.name, name, sizeof(packet.adpt_pl._bt_adapter_set_name.name) - 1);
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_NAME);
     if (status != BT_STATUS_SUCCESS) {
         return status;
