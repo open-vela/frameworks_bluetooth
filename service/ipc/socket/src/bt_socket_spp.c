@@ -69,7 +69,7 @@ static void spp_pty_open_cb(void *handle, bt_address_t *addr, uint16_t scn, uint
     packet.spp_cb._pty_open_cb.scn = scn;
     packet.spp_cb._pty_open_cb.port = port;
     if (name && strlen(name))
-        memcpy(packet.spp_cb._pty_open_cb.name, name, strlen(name));
+        strncpy(packet.spp_cb._pty_open_cb.name, name, sizeof(packet.spp_cb._pty_open_cb.name) - 1);
 
     bt_socket_server_send(ins, &packet, BT_SPP_PTY_OPEN_CB);
 }
