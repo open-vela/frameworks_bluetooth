@@ -120,12 +120,10 @@ int btsnoop_create_new_file(void)
         snoop_fd = -1;
     }
 
-    if (access(CONFIG_BLUETOOTH_SNOOP_LOG_PATH, 0) != 0) {
-        if ((ret = mkdir(CONFIG_BLUETOOTH_SNOOP_LOG_PATH, 0777)) && ret != 0) {
-            syslog(LOG_ERR, "snoop folder create fail:%d", ret);
-            pthread_mutex_unlock(&snoop_lock);
-            return ret;
-        }
+    if (-1 == mkdir(CONFIG_BLUETOOTH_SNOOP_LOG_PATH, 0777) && errno != EEXIST) {
+        syslog(LOG_ERR, "snoop folder create fail:%d", errno);
+        pthread_mutex_unlock(&snoop_lock);
+        return -errno;
     }
 
     time_base = time(NULL);
