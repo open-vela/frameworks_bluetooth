@@ -190,6 +190,10 @@ void thread_loop_exit(uv_loop_t *loop)
 {
     struct list_node *node;
     struct list_node *tmp;
+
+    if (!loop)
+        return;
+
     loop_priv_t *priv = loop->data;
 
     if (priv->is_running) {

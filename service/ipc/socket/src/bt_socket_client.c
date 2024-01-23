@@ -295,7 +295,7 @@ static int bt_socket_client_connect(int family, const char *name,
     }
 
     fd = socket(family, SOCK_STREAM, 0);
-    if (fd <= 0)
+    if (fd < 0)
         return -errno;
 
     if (connect(fd, (struct sockaddr *)&u, addr_len) < 0) {
@@ -424,9 +424,6 @@ void bt_socket_client_deinit(bt_instance_t *ins)
     }
 
     uv_mutex_destroy(&ins->lock);
-
     thread_loop_exit(ins->client_loop);
-
-    if (ins->client_loop)
-        free(ins->client_loop);
+    free(ins->client_loop);
 }
