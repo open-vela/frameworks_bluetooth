@@ -279,6 +279,7 @@ static void bt_socket_server_callback(service_poll_t *poll,
         if (!remote_ins->poll) {
             free(remote_ins);
             close(fd);
+            return;
         }
         bt_list_add_tail(g_instances_list, remote_ins);
     }
