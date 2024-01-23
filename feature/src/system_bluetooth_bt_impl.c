@@ -67,17 +67,17 @@ static char* StringToFtString(const char* str)
 
 void system_bluetooth_bt_onRegister(const char* feature_name)
 {
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_onCreate(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_onRequired(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
@@ -87,7 +87,7 @@ void system_bluetooth_bt_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHa
     callbacks->on_bond_state_changed_cb.callbackId = -1;
     callbacks->on_discovery_result_cb.feature = NULL;
     callbacks->on_discovery_result_cb.callbackId = -1;
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
@@ -97,12 +97,12 @@ void system_bluetooth_bt_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle
     callbacks->on_bond_state_changed_cb.callbackId = 0;
     callbacks->on_discovery_result_cb.feature = NULL;
     callbacks->on_discovery_result_cb.callbackId = 0;
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_onUnregister(const char* feature_name)
 {
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_wrap_startDiscovery(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_StartDiscoveryParams* params)
@@ -368,7 +368,7 @@ FtCallbackId system_bluetooth_bt_get_ondiscoveryresult(void* feature, union Appe
 
 void system_bluetooth_bt_set_ondiscoveryresult(void* feature, union AppendData append_data, FtCallbackId ondiscoveryresult)
 {
-    FEATURE_LOG_ERROR("set discoveryresult feature: %p, callbackId: %d\n", feature, ondiscoveryresult);
+    FEATURE_LOG_INFO("set discoveryresult feature: %p, callbackId: %d", feature, ondiscoveryresult);
     adapter_feature_callbacks_t* adapter_callbacks = get_adapter_cbs();
     adapter_callbacks->on_discovery_result_cb.feature = feature;
     adapter_callbacks->on_discovery_result_cb.callbackId = ondiscoveryresult;
@@ -382,7 +382,7 @@ FtCallbackId system_bluetooth_bt_get_onbondstatechange(void* feature, union Appe
 
 void system_bluetooth_bt_set_onbondstatechange(void* feature, union AppendData append_data, FtCallbackId onbondstatechange)
 {
-    FEATURE_LOG_ERROR("set onbondstatechange feature: %p, callbackId: %d\n", feature, onbondstatechange);
+    FEATURE_LOG_INFO("set onbondstatechange feature: %p, callbackId: %d", feature, onbondstatechange);
     adapter_feature_callbacks_t* adapter_callbacks = get_adapter_cbs();
     adapter_callbacks->on_bond_state_changed_cb.feature = feature;
     adapter_callbacks->on_bond_state_changed_cb.callbackId = onbondstatechange;

@@ -199,18 +199,18 @@ bool bt_feature_allocator(void** data, uint32_t size)
 // FeatureCallbacks to be implemented
 void system_bluetooth_onRegister(const char* feature_name)
 {
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onCreate(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
     bluetooth_init_ins();
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onRequired(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
@@ -218,18 +218,18 @@ void system_bluetooth_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandl
     adapter_feature_callbacks_t* adapter_callbacks = get_adapter_cbs();
     adapter_callbacks->on_adapter_state_changed_cb.feature = NULL;
     adapter_callbacks->on_adapter_state_changed_cb.callbackId = -1;
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
     bluetooth_uninit_ins();
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onUnregister(const char* feature_name)
 {
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_wrap_openAdapter(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_OpenAdapterParams* params)
@@ -296,7 +296,7 @@ FtCallbackId system_bluetooth_get_onadapterstatechange(void* feature, union Appe
 
 void system_bluetooth_set_onadapterstatechange(void* feature, union AppendData append_data, FtCallbackId onadapterstatechange)
 {
-    FEATURE_LOG_INFO("set onadapterstatechange feature: %p, callbackId: %d\n", feature, onadapterstatechange);
+    FEATURE_LOG_INFO("set onadapterstatechange feature: %p, callbackId: %d", feature, onadapterstatechange);
     adapter_feature_callbacks_t* adapter_callbacks = get_adapter_cbs();
     adapter_callbacks->on_adapter_state_changed_cb.feature = feature;
     adapter_callbacks->on_adapter_state_changed_cb.callbackId = onadapterstatechange;
