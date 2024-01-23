@@ -153,24 +153,31 @@ void bt_socket_server_a2dp_source_process(service_poll_t *poll,
       }
     case BT_A2DP_SOURCE_REGISTER_CALLBACKS:
       {
-        if (ins->a2dp_source_cookie == NULL)
-        {
+        if (ins->a2dp_source_cookie == NULL) {
           a2dp_source_interface_t *profile = get_profile_service();
           ins->a2dp_source_cookie = profile->register_callbacks(ins, &g_a2dp_source_cbs);
-          if (ins->a2dp_source_cookie)
-          {
+          if (ins->a2dp_source_cookie) {
             packet->a2dp_source_r.status = BT_STATUS_SUCCESS;
+          } else {
+            packet->a2dp_source_r.status = BT_STATUS_FAIL;
           }
+        } else {
+          packet->a2dp_source_r.status = BT_STATUS_SUCCESS;
         }
         break;
       }
     case BT_A2DP_SOURCE_UNREGISTER_CALLBACKS:
       {
-        if (ins->a2dp_source_cookie)
-        {
+        if (ins->a2dp_source_cookie) {
           a2dp_source_interface_t *profile = get_profile_service();
-          profile->unregister_callbacks(NULL, ins->a2dp_source_cookie);
-          ins->a2dp_sink_cookie = NULL;
+          if (profile->unregister_callbacks(NULL, ins->a2dp_source_cookie)) {
+            packet->a2dp_source_r.status = BT_STATUS_SUCCESS;
+          } else {
+            packet->a2dp_source_r.status = BT_STATUS_FAIL;
+          }
+          ins->a2dp_source_cookie = NULL;
+        } else {
+          packet->a2dp_source_r.status = BT_STATUS_NOT_FOUND;
         }
         break;
       }

@@ -527,26 +527,29 @@ void bt_socket_server_adapter_process(service_poll_t *poll,
       }
     case BT_ADAPTER_REGISTER_CALLBACK:
       {
-        if (ins->adapter_cookie == NULL)
-        {
+        if (ins->adapter_cookie == NULL) {
           ins->adapter_cookie = adapter_register_callback(ins, (void *)&g_adapter_socket_cbs);
-          if (ins->adapter_cookie)
-          {
+          if (ins->adapter_cookie) {
             packet->adpt_r.status = BT_STATUS_SUCCESS;
+          } else {
+            packet->adpt_r.status = BT_STATUS_FAIL;
           }
+        } else {
+          packet->adpt_r.status = BT_STATUS_SUCCESS;
         }
         break;
       }
     case BT_ADAPTER_UNREGISTER_CALLBACK:
       {
-        if (ins->adapter_cookie)
-        {
+        if (ins->adapter_cookie) {
           if (adapter_unregister_callback((void **)&ins, ins->adapter_cookie)) {
             packet->adpt_r.status = BT_STATUS_SUCCESS;
           } else {
             packet->adpt_r.status = BT_STATUS_FAIL;
           }
           ins->adapter_cookie = NULL;
+        } else {
+          packet->adpt_r.status = BT_STATUS_NOT_FOUND;
         }
         break;
       }
