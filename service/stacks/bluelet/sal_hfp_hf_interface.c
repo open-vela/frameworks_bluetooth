@@ -301,7 +301,10 @@ bt_status_t bt_sal_hfp_hf_get_current_calls(bt_address_t *addr)
 bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t *addr, hfp_volume_type_t type, uint8_t volume)
 {
     SAL_CHECK_PARAM(addr);
-    SAL_CHECK_RET(service_adapter_hfp_set_volume(addr->addr, type, volume), SERVICE_BT_STATUS_SUCCESS);
+    SERVICE_HFP_VOLUME_TYPE vtype;
+
+    vtype = (type == HFP_VOLUME_TYPE_SPK) ? VOLUME_SPEAKER : VOLUME_MIC;
+    SAL_CHECK_RET(service_adapter_hfp_set_volume(addr->addr, vtype, volume), SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
