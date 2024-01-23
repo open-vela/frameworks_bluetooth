@@ -112,17 +112,14 @@ void system_bluetooth_bt_wrap_startDiscovery(FeatureInstanceHandle feature, unio
     if (status == BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke start discovery success  failed!");
-            return;
         }
     } else {
         if (!FeatureInvokeCallback(feature, params->fail, "start discovery failed!", status)) {
             FEATURE_LOG_ERROR("invoke start discovery fail callback failed!");
-            return;
         }
     }
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke start discovery complete callback failed!");
-        return;
     }
 }
 void system_bluetooth_bt_wrap_stopDiscovery(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_StopDiscoveryParams* params)
@@ -131,17 +128,14 @@ void system_bluetooth_bt_wrap_stopDiscovery(FeatureInstanceHandle feature, union
     if (status == BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke stop discovery success callback failed!");
-            return;
         }
     } else {
         if (!FeatureInvokeCallback(feature, params->fail, "stop discovery failed!", status)) {
             FEATURE_LOG_ERROR("invoke stop discovery fail callback failed!");
-            return;
         }
     }
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke stop discovery complete callback failed!");
-        return;
     }
 }
 
@@ -154,7 +148,6 @@ void system_bluetooth_bt_wrap_connectProfiles(FeatureInstanceHandle feature, uni
     if (bt_addr_str2ba(params->deviceId, &addr) < 0) {
         if (!FeatureInvokeCallback(feature, params->fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
             FEATURE_LOG_ERROR("invoke connect profiles fail callback failed!");
-            return;
         }
         goto COMPLETE_CALLBACK;
     }
@@ -166,18 +159,15 @@ void system_bluetooth_bt_wrap_connectProfiles(FeatureInstanceHandle feature, uni
     if (status != BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->fail, "connect all passing profiles failed!", status)) {
             FEATURE_LOG_ERROR("invoke connect profiles fail callback failed!");
-            return;
         }
     } else {
         if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke connect profiles success callback failed!");
-            return;
         }
     }
 COMPLETE_CALLBACK:
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke connect profiles complete callback failed!");
-        return;
     }
 }
 
@@ -190,7 +180,6 @@ void system_bluetooth_bt_wrap_disconnectProfiles(FeatureInstanceHandle feature, 
     if (bt_addr_str2ba(params->deviceId, &addr) < 0) {
         if (!FeatureInvokeCallback(feature, params->fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
             FEATURE_LOG_ERROR("invoke disconnect profiles fail callback failed!");
-            return;
         }
         goto COMPLETE_CALLBACK;
     }
@@ -200,18 +189,15 @@ void system_bluetooth_bt_wrap_disconnectProfiles(FeatureInstanceHandle feature, 
     if (status != BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->fail, "disconnect all passing profiles failed!", status)) {
             FEATURE_LOG_ERROR("invoke disconnect profiles fail callback failed!");
-            return;
         }
     } else {
         if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke disconnect profiles success callback failed!");
-            return;
         }
     }
 COMPLETE_CALLBACK:
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke disconnect profiles complete callback failed!");
-        return;
     }
 }
 
@@ -222,7 +208,6 @@ void system_bluetooth_bt_wrap_disconnect(FeatureInstanceHandle feature, union Ap
     if (bt_addr_str2ba(params->deviceId, &addr) < 0) {
         if (!FeatureInvokeCallback(feature, params->fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
             FEATURE_LOG_ERROR("invoke disconnect fail callback failed!");
-            return;
         }
         goto COMPLETE_CALLBACK;
     }
@@ -230,18 +215,15 @@ void system_bluetooth_bt_wrap_disconnect(FeatureInstanceHandle feature, union Ap
     if (status != BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->fail, "disconnect failed!", status)) {
             FEATURE_LOG_ERROR("invoke disconnect fail callback failed!");
-            return;
         }
     } else {
         if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke disconnect success callback failed!");
-            return;
         }
     }
 COMPLETE_CALLBACK:
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke disconnect complete callback failed!");
-        return;
     }
 }
 
@@ -299,7 +281,6 @@ void system_bluetooth_bt_wrap_removeBondedDevice(FeatureInstanceHandle feature, 
     if (bt_addr_str2ba(params->deviceId, &addr) < 0) {
         if (!FeatureInvokeCallback(feature, params->fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
             FEATURE_LOG_ERROR("invoke remove bonded fail callback failed!");
-            return;
         }
         goto COMPLETE_CALLBACK;
     }
@@ -307,18 +288,15 @@ void system_bluetooth_bt_wrap_removeBondedDevice(FeatureInstanceHandle feature, 
     if (status != BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->fail, "remove bonded failed!", status)) {
             FEATURE_LOG_ERROR("invoke remove bonded fail callback failed!");
-            return;
         }
     } else {
         if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke remove bonded success callback failed!");
-            return;
         }
     }
 COMPLETE_CALLBACK:
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke remove bonded complete callback failed!");
-        return;
     }
 }
 
