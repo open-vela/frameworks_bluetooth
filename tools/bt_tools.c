@@ -1594,6 +1594,7 @@ int main(int argc, char **argv)
     g_bttool_ins = bluetooth_create_instance();
     if (g_bttool_ins == NULL) {
         PRINT("create instance error\n");
+        free(buffer);
         return -1;
     }
 
