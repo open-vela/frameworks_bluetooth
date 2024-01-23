@@ -58,19 +58,21 @@
 static void on_advertising_start_cb(bt_advertiser_t *adv, uint8_t adv_id, uint8_t status)
 {
     bt_advertiser_remote_t *adver = adv;
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = {0};
 
     packet.adv_cb._on_advertising_start.adver = adver->remote;
     packet.adv_cb._on_advertising_start.adv_id = adv_id;
     packet.adv_cb._on_advertising_start.status = status;
 
     bt_socket_server_send(adver->ins, &packet, BT_LE_ON_ADVERTISER_START);
+    if (status != 0)
+        free(adver);
 }
 
 static void on_advertising_stopped_cb(bt_advertiser_t *adv, uint8_t adv_id)
 {
     bt_advertiser_remote_t *adver = adv;
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = {0};
 
     packet.adv_cb._on_advertising_stopped.adver = adver->remote;
     packet.adv_cb._on_advertising_stopped.adv_id = adv_id;
