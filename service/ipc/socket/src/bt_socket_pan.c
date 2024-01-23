@@ -68,7 +68,7 @@ static void pan_netif_state_cb(void *cookie, pan_netif_state_t state,
     packet.pan_cb._netif_state_cb.state = state;
     packet.pan_cb._netif_state_cb.local_role = local_role;
     if (ifname && strlen(ifname))
-        memcpy(packet.pan_cb._netif_state_cb.ifname, ifname, strlen(ifname));
+        strncpy(packet.pan_cb._netif_state_cb.ifname, ifname, sizeof(packet.pan_cb._netif_state_cb.ifname) - 1);
 
     bt_socket_server_send(ins, &packet, BT_PAN_NETIF_STATE_CB);
 }
@@ -77,7 +77,7 @@ static void pan_connection_state_cb(void *cookie, profile_connection_state_t sta
                                     bt_address_t *bd_addr, uint8_t local_role,
                                     uint8_t remote_role)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = {0};
     bt_instance_t *ins = cookie;
 
     packet.pan_cb._connection_state_cb.state = state;
