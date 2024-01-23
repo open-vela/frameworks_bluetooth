@@ -29,7 +29,8 @@ typedef enum {
     HFP_AG,
     HFP_HF,
     HID_DEVICE,
-    PAN_USE
+    PAN_USE,
+    MAX_FEATURE_ID
 } feature_profile_t;
 
 typedef struct {
