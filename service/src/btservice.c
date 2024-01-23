@@ -182,18 +182,18 @@ static int create_bt_folder(void)
 {
     int ret = 0;
 
-    if ((ret = access(MISC_PATH, 0)) && ret != 0) {
-        if ((ret = mkdir(MISC_PATH, 0777)) && ret != 0)
-            goto out;
+    if (mkdir(MISC_PATH, 0777) == -1 && errno != EEXIST) {
+        ret = -1;
+        goto out;
     }
 
-    if ((ret = access(BT_FOLDER_PATH, 0)) && ret != 0) {
-        if ((ret = mkdir(BT_FOLDER_PATH, 0777)) && ret != 0)
-            goto out;
+    if (mkdir(BT_FOLDER_PATH, 0777) == -1 && errno != EEXIST) {
+        ret = -1;
+        goto out;
     }
 
 out:
-    syslog(LOG_ERR, "data/misc/bt folder create ret: %d", ret);
+    syslog(LOG_INFO, "data/misc/bt folder create: %d\n", ret);
     return ret;
 }
 
