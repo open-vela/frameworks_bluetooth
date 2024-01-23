@@ -82,9 +82,6 @@ static uint8_t bt_log_set_level(uint8_t level, bool changed)
         level != BT_LOG_LEVEL_DEBUG)
         return g_logger.framework_level;
 
-    if (level > BT_LOG_LEVEL_DEBUG)
-        level = BT_LOG_LEVEL_DEBUG;
-
     g_logger.framework_level = level;
 
 #if defined(CONFIG_KVDB) && defined(__NuttX__)
