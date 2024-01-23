@@ -238,17 +238,14 @@ void system_bluetooth_wrap_openAdapter(FeatureInstanceHandle feature, union Appe
     if (status == BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke success openAdapter callback failed, feature is %p, params->success is %d!",feature, params->success);
-            return;
         }
     } else {
         if (!FeatureInvokeCallback(feature, params->fail, "enable fail!", status)) {
             FEATURE_LOG_ERROR("invoke fail openAdapter callback failed!");
-            return;
         }
     }
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke complete openAdapter callback failed!");
-        return;
     }
 }
 
@@ -258,17 +255,14 @@ void system_bluetooth_wrap_closeAdapter(FeatureInstanceHandle feature, union App
     if (status == BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke success closeAdapter callback failed!");
-            return;
         }
     } else {
         if (!FeatureInvokeCallback(feature, params->fail, "enable fail!", status)) {
             FEATURE_LOG_ERROR("invoke fail closeAdapter callback failed!");
-            return;
         }
     }
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke complete closeAdapter callback failed!");
-        return;
     }
 }
 
@@ -280,11 +274,9 @@ void system_bluetooth_wrap_getAdapterState(FeatureInstanceHandle feature, union 
     system_bluetooth_GetAdapterSuccessResult success_result = { state == BT_ADAPTER_STATE_ON, is_discovering };
     if (!FeatureInvokeCallback(feature, params->success, success_result)) {
         FEATURE_LOG_ERROR("invoke success getAdapterState callback failed!");
-        return;
     }
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke complete getAdapterState callback failed!");
-        return;
     }
 }
 
