@@ -146,24 +146,31 @@ void bt_socket_server_a2dp_sink_process(service_poll_t *poll,
       }
     case BT_A2DP_SINK_REGISTER_CALLBACKS:
       {
-        if (ins->a2dp_sink_cookie == NULL)
-        {
+        if (ins->a2dp_sink_cookie == NULL) {
           a2dp_sink_interface_t *profile = get_profile_service();
           ins->a2dp_sink_cookie = profile->register_callbacks(ins, &g_a2dp_sink_cbs);
-          if (ins->a2dp_sink_cookie)
-          {
+          if (ins->a2dp_sink_cookie) {
             packet->a2dp_sink_r.status = BT_STATUS_SUCCESS;
+          } else {
+            packet->a2dp_sink_r.status = BT_STATUS_FAIL;
           }
+        } else {
+          packet->a2dp_sink_r.status = BT_STATUS_SUCCESS;
         }
         break;
       }
     case BT_A2DP_SINK_UNREGISTER_CALLBACKS:
       {
-        if (ins->a2dp_sink_cookie)
-        {
+        if (ins->a2dp_sink_cookie) {
           a2dp_sink_interface_t *profile = get_profile_service();
-          profile->unregister_callbacks(NULL, ins->a2dp_sink_cookie);
+          if (profile->unregister_callbacks(NULL, ins->a2dp_sink_cookie)) {
+            packet->a2dp_sink_r.status = BT_STATUS_SUCCESS;
+          } else {
+            packet->a2dp_sink_r.status = BT_STATUS_FAIL;
+          }
           ins->a2dp_sink_cookie = NULL;
+        } else {
+          packet->a2dp_sink_r.status = BT_STATUS_NOT_FOUND;
         }
         break;
       }
