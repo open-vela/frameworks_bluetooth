@@ -70,7 +70,7 @@ static bool socket_allocator(void **data, uint32_t size)
 
 static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   packet.adpt_cb._on_adapter_state_changed.state = state;
@@ -79,7 +79,7 @@ static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
 
 static void on_discovery_state_changed_cb(void *cookie, bt_discovery_state_t state)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   packet.adpt_cb._on_discovery_state_changed.state = state;
@@ -88,7 +88,7 @@ static void on_discovery_state_changed_cb(void *cookie, bt_discovery_state_t sta
 
 static void on_discovery_result_cb(void *cookie, bt_discovery_result_t *result)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   memcpy(&packet.adpt_cb._on_discovery_result.result, result, sizeof(*result));
@@ -97,7 +97,7 @@ static void on_discovery_result_cb(void *cookie, bt_discovery_result_t *result)
 
 static void on_scan_mode_changed_cb(void *cookie, bt_scan_mode_t mode)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   packet.adpt_cb._on_scan_mode_changed.mode = mode;
@@ -106,17 +106,17 @@ static void on_scan_mode_changed_cb(void *cookie, bt_scan_mode_t mode)
 
 static void on_device_name_changed_cb(void *cookie, const char *device_name)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   strncpy(packet.adpt_cb._on_device_name_changed.device_name, device_name,
-      sizeof(packet.adpt_cb._on_device_name_changed.device_name));
+      sizeof(packet.adpt_cb._on_device_name_changed.device_name) - 1);
   bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_DEVICE_NAME_CHANGED);
 }
 
 static void on_pair_request_cb(void *cookie, bt_address_t *addr)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   memcpy(&packet.adpt_cb._on_pair_request.addr, addr, sizeof(bt_address_t));
@@ -126,7 +126,7 @@ static void on_pair_request_cb(void *cookie, bt_address_t *addr)
 static void on_pair_display_cb(void *cookie, bt_address_t *addr,
     bt_transport_t transport, bt_pair_type_t type, uint32_t passkey)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   memcpy(&packet.adpt_cb._on_pair_display.addr, addr, sizeof(bt_address_t));
@@ -139,7 +139,7 @@ static void on_pair_display_cb(void *cookie, bt_address_t *addr,
 
 static void on_connect_request_cb(void *cookie, bt_address_t *addr)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   memcpy(&packet.adpt_cb._on_connect_request.addr, addr, sizeof(bt_address_t));
@@ -150,7 +150,7 @@ static void on_connect_request_cb(void *cookie, bt_address_t *addr)
 static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr,
     bt_transport_t transport, connection_state_t state)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   memcpy(&packet.adpt_cb._on_connection_state_changed.addr, addr, sizeof(bt_address_t));
@@ -163,7 +163,7 @@ static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr,
 static void on_bond_state_changed_cb(void *cookie, bt_address_t *addr,
     bt_transport_t transport, bond_state_t state, bool is_ctkd)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   memcpy(&packet.adpt_cb._on_bond_state_changed.addr, addr, sizeof(bt_address_t));
@@ -176,31 +176,31 @@ static void on_bond_state_changed_cb(void *cookie, bt_address_t *addr,
 
 static void on_remote_name_changed_cb(void *cookie, bt_address_t *addr, const char *name)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   memcpy(&packet.adpt_cb._on_remote_name_changed.addr, addr, sizeof(bt_address_t));
   strncpy(packet.adpt_cb._on_remote_name_changed.name, name,
-      sizeof(packet.adpt_cb._on_remote_name_changed.name));
+      sizeof(packet.adpt_cb._on_remote_name_changed.name) - 1);
 
   bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_REMOTE_NAME_CHANGED);
 }
 
 static void on_remote_alias_changed_cb(void *cookie, bt_address_t *addr, const char *alias)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   memcpy(&packet.adpt_cb._on_remote_alias_changed.addr, addr, sizeof(bt_address_t));
   strncpy(packet.adpt_cb._on_remote_alias_changed.alias, alias,
-      sizeof(packet.adpt_cb._on_remote_alias_changed.alias));
+      sizeof(packet.adpt_cb._on_remote_alias_changed.alias) - 1);
 
   bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_REMOTE_ALIAS_CHANGED);
 }
 
 static void on_remote_cod_changed_cb(void *cookie, bt_address_t *addr, uint32_t cod)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   memcpy(&packet.adpt_cb._on_remote_cod_changed.addr, addr, sizeof(bt_address_t));
@@ -211,7 +211,7 @@ static void on_remote_cod_changed_cb(void *cookie, bt_address_t *addr, uint32_t 
 
 static void on_remote_uuids_changed_cb(void *cookie, bt_address_t *addr, bt_uuid_t *uuids, uint16_t size)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   memcpy(&packet.adpt_cb._on_remote_uuids_changed.addr, addr, sizeof(bt_address_t));
@@ -223,7 +223,7 @@ static void on_remote_uuids_changed_cb(void *cookie, bt_address_t *addr, bt_uuid
 
 static void on_remote_link_mode_changed_cb(void *cookie, bt_address_t *addr, bt_link_mode_t mode, uint16_t sniff_interval)
 {
-  bt_message_packet_t packet;
+  bt_message_packet_t packet = {0};
   bt_instance_t *ins = cookie;
 
   memcpy(&packet.adpt_cb._on_remote_link_mode_changed.addr, addr, sizeof(bt_address_t));
