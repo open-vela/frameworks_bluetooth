@@ -64,29 +64,29 @@ static const a2dp_sink_callbacks_t a2dp_sink_cbs = {
 
 void system_bluetooth_bt_a2dpsink_onRegister(const char* feature_name)
 {
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 void system_bluetooth_bt_a2dpsink_onCreate(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 void system_bluetooth_bt_a2dpsink_onRequired(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 void system_bluetooth_bt_a2dpsink_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
     g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature = NULL;
     g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId = -1;
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 void system_bluetooth_bt_a2dpsink_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 void system_bluetooth_bt_a2dpsink_onUnregister(const char* feature_name)
 {
-    FEATURE_LOG_INFO("%s::%s()\n", file_tag, __FUNCTION__);
+    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 FtCallbackId system_bluetooth_bt_a2dpsink_get_onconnectstatechange(void* feature, union AppendData append_data)
@@ -95,7 +95,7 @@ FtCallbackId system_bluetooth_bt_a2dpsink_get_onconnectstatechange(void* feature
 }
 void system_bluetooth_bt_a2dpsink_set_onconnectstatechange(void* feature, union AppendData append_data, FtCallbackId onconnectstatechange)
 {
-    FEATURE_LOG_INFO("set onadapterstatechange feature: %p, callbackId: %d\n", feature, onconnectstatechange);
+    FEATURE_LOG_INFO("set onadapterstatechange feature: %p, callbackId: %d", feature, onconnectstatechange);
     g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature = feature;
     g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId = onconnectstatechange;
 }

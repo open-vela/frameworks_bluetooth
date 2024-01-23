@@ -99,7 +99,7 @@ static const FeatureDescription system_bluetooth_bt_a2dpsink_desc = {
 
 QAPPFEATURE_INIT(system_bluetooth_bt_a2dpsink)
 {
-    FEATURE_LOG_ERROR("a2dp sink res =========================================================()\n");
+    FEATURE_LOG_ERROR("a2dp sink res");
     return FeatureRegisterFeature(handle, &system_bluetooth_bt_a2dpsink_desc);
 }
 /* clang-format on */
