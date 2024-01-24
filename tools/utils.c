@@ -55,3 +55,12 @@ bool bttool_allocator(void **data, uint32_t size)
 
     return true;
 }
+
+uint32_t get_timestamp_ms(void)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_BOOTTIME, &ts);
+
+    return (uint32_t)((ts.tv_sec * 1000L) + (ts.tv_nsec / 1000000));
+}
