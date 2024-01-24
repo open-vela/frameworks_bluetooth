@@ -169,12 +169,12 @@ void bluetooth_init_ins()
 
 void bluetooth_uninit_ins()
 {
-    bt_adapter_unregister_callback(feature_bluetooth_get_instance(), adapter_callback);
-    bluetooth_delete_instance(g_feature_ins);
-    g_feature_ins = NULL;
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     a2dp_sink_feature_uninit(feature_bluetooth_get_instance());
 #endif
+    bt_adapter_unregister_callback(feature_bluetooth_get_instance(), adapter_callback);
+    bluetooth_delete_instance(g_feature_ins);
+    g_feature_ins = NULL;
 }
 
 bt_instance_t* feature_bluetooth_get_instance()
