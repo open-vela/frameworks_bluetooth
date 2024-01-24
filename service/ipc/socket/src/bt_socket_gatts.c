@@ -67,7 +67,7 @@
 
 static void on_connected_cb(gatts_handle_t srv_handle, bt_address_t *addr)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_connected.addr, addr, sizeof(bt_address_t));
@@ -75,7 +75,7 @@ static void on_connected_cb(gatts_handle_t srv_handle, bt_address_t *addr)
 }
 static void on_disconnected_cb(gatts_handle_t srv_handle, bt_address_t *addr)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_disconnected.addr, addr, sizeof(bt_address_t));
@@ -83,7 +83,7 @@ static void on_disconnected_cb(gatts_handle_t srv_handle, bt_address_t *addr)
 }
 static void on_attr_table_added_cb(gatts_handle_t srv_handle, gatt_status_t status, uint16_t attr_handle)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     packet.gatts_cb._on_attr_table_added.status = status;
@@ -92,7 +92,7 @@ static void on_attr_table_added_cb(gatts_handle_t srv_handle, gatt_status_t stat
 }
 static void on_attr_table_removed_cb(gatts_handle_t srv_handle, gatt_status_t status, uint16_t attr_handle)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     packet.gatts_cb._on_attr_table_removed.status = status;
@@ -101,7 +101,7 @@ static void on_attr_table_removed_cb(gatts_handle_t srv_handle, gatt_status_t st
 }
 static void on_notify_complete_cb(gatts_handle_t srv_handle, bt_address_t *addr, gatt_status_t status, uint16_t attr_handle)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_nofity_complete.addr, addr, sizeof(bt_address_t));
@@ -111,7 +111,7 @@ static void on_notify_complete_cb(gatts_handle_t srv_handle, bt_address_t *addr,
 }
 static void on_mtu_changed_cb(gatts_handle_t srv_handle, bt_address_t *addr, uint32_t mtu)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_mtu_changed.addr, addr, sizeof(bt_address_t));
@@ -120,7 +120,7 @@ static void on_mtu_changed_cb(gatts_handle_t srv_handle, bt_address_t *addr, uin
 }
 static void on_phy_read_cb(gatts_handle_t srv_handle, bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_phy_updated.addr, addr, sizeof(bt_address_t));
@@ -130,7 +130,7 @@ static void on_phy_read_cb(gatts_handle_t srv_handle, bt_address_t *addr, ble_ph
 }
 static void on_phy_updated_cb(gatts_handle_t srv_handle, bt_address_t *addr, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_phy_updated.addr, addr, sizeof(bt_address_t));
@@ -141,7 +141,7 @@ static void on_phy_updated_cb(gatts_handle_t srv_handle, bt_address_t *addr, gat
 }
 static uint16_t on_read_request_cb(gatts_handle_t srv_handle, bt_address_t *addr, uint16_t attr_handle, uint32_t req_handle)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_read_request.addr, addr, sizeof(bt_address_t));
@@ -152,7 +152,7 @@ static uint16_t on_read_request_cb(gatts_handle_t srv_handle, bt_address_t *addr
 }
 static uint16_t on_write_request_cb(gatts_handle_t srv_handle, bt_address_t *addr, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
 
     if (length > sizeof(packet.gatts_cb._on_write_request.value)) {
@@ -172,7 +172,7 @@ static uint16_t on_write_request_cb(gatts_handle_t srv_handle, bt_address_t *add
 static void on_conn_param_changed_cb(gatts_handle_t srv_handle, bt_address_t *addr, uint16_t connection_interval,
                                      uint16_t peripheral_latency, uint16_t supervision_timeout)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_conn_param_changed.addr, addr, sizeof(bt_address_t));
