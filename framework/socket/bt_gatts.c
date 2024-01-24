@@ -160,17 +160,17 @@ bt_status_t bt_gatts_add_attr_table(gatts_handle_t srv_handle, gatt_srv_db_t *sr
     if (data_length > sizeof(packet.gatts_pl._bt_gatts_add_attr_table.data))
         return BT_STATUS_PARM_INVALID;
 
-    memcpy(packet.gatts_pl._bt_gatts_add_attr_table.attr_db, attr_inst, data_length);
+    memcpy(packet.gatts_pl._bt_gatts_add_attr_table.data, attr_inst, data_length);
     raw_data += data_length;
     for (int i = 0; i < srv_db->attr_num; i++, attr_inst++) {
         if (attr_inst->rsp_type == ATTR_AUTO_RSP && attr_inst->attr_length) {
+            data_length += attr_inst->attr_length;
+            if (data_length > sizeof(packet.gatts_pl._bt_gatts_add_attr_table.data))
+                return BT_STATUS_PARM_INVALID;
+
             memcpy(raw_data, attr_inst->attr_value, attr_inst->attr_length);
             raw_data += attr_inst->attr_length;
-            data_length += attr_inst->attr_length;
         }
-
-        if (data_length > sizeof(packet.gatts_pl._bt_gatts_add_attr_table.data))
-            return BT_STATUS_PARM_INVALID;
     }
 
     packet.gatts_pl._bt_gatts_add_attr_table.handle = gatts_remote->cookie;
