@@ -264,6 +264,12 @@ config BLUETOOTH_SERVER
 	help
 		Enable bluetooth server
 
+config CONFIG_BLUETOOTH_DEFAULT_COD
+	hex "default class of device"
+	default 0x00280704
+	help
+		Set default class of device
+
 if BLUETOOTH_SERVER
 config BLUETOOTH_SERVER_NAME
 	string "Blutooth server name"

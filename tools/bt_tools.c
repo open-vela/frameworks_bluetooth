@@ -712,7 +712,8 @@ static int set_local_name_cmd(void *handle, int argc, char **argv)
 
 static int get_local_cod_cmd(void *handle, int argc, char **argv)
 {
-    PRINT("Local class of device: 0x%08" PRIx32 "", bt_adapter_get_device_class(handle));
+    uint32_t cod = bt_adapter_get_device_class(handle);
+    PRINT("Local class of device: 0x%08" PRIx32 ", is HEADSET: %s", cod, IS_HEADSET(cod) ? "true" : "false");
     return CMD_OK;
 }
 
@@ -1410,7 +1411,8 @@ static void on_discovery_state_changed_cb(void *cookie, bt_discovery_state_t sta
 
 static void on_discovery_result_cb(void *cookie, bt_discovery_result_t *result)
 {
-    PRINT_ADDR("Inquiring: device [%s], name: %s, cod: %08" PRIx32 ", rssi: %d", &result->addr, result->name, result->cod, result->rssi);
+    PRINT_ADDR("Inquiring: device [%s], name: %s, cod: %08" PRIx32 ", is HEADSET: %s, rssi: %d",
+               &result->addr, result->name, result->cod, IS_HEADSET(result->cod) ? "true" : "false", result->rssi);
 }
 
 static void on_scan_mode_changed_cb(void *cookie, bt_scan_mode_t mode)
