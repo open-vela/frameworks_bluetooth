@@ -199,7 +199,7 @@ COMPLETE_CALLBACK:
 void system_bluetooth_bt_wrap_disconnect(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_DisconnectParams* params)
 {
     bt_address_t addr;
-    bt_status_t status;
+    bt_status_t status = BT_STATUS_SUCCESS;
     if (bt_addr_str2ba(params->deviceId, &addr) < 0) {
         if (!FeatureInvokeCallback(feature, params->fail, "invalid addr!", BT_STATUS_PARM_INVALID)) {
             FEATURE_LOG_ERROR("invoke disconnect fail callback failed!");
