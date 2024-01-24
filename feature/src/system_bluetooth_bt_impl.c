@@ -20,23 +20,54 @@
  */
 #include "bluetooth.h"
 #include "bt_a2dp_sink.h"
+#include "bt_a2dp_source.h"
+#include "bt_pan.h"
+#include "bt_hfp_hf.h"
+#include "bt_hfp_ag.h"
+#include "bt_hid_device.h"
 #include "feature_bluetooth.h"
 #include "feature_adapter.h"
 #include "system_bluetooth_bt.h"
 
 
 #define file_tag "system_bluetooth_bt"
-// FeatureCallbacks to be implemented
+
 static bt_status_t bluetooth_connect_profiles(bt_address_t* addr, feature_profile_t profile_id)
 {
-    bt_status_t status = BT_STATUS_NOT_SUPPORTED;
+    bt_status_t status = BT_STATUS_SUCCESS;
     switch (profile_id) {
     case A2DP_SINK:
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
         status = bt_a2dp_sink_connect(feature_bluetooth_get_instance(), addr);
 #endif
         break;
+    case A2DP_SOURCE:
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+        status = bt_a2dp_source_connect(feature_bluetooth_get_instance(), addr);
+#endif
+        break;
+    case HFP_AG:
+#ifdef CONFIG_BLUETOOTH_HFP_AG
+        status = bt_hfp_ag_connect(feature_bluetooth_get_instance(), addr);
+#endif
+        break;
+    case HFP_HF:
+#ifdef CONFIG_BLUETOOTH_HFP_HF
+        status = bt_hfp_hf_connect(feature_bluetooth_get_instance(), addr);
+#endif
+        break;
+    case HID_DEVICE:
+#ifdef CONFIG_BLUETOOTH_HID_DEVICE
+        status = bt_hid_device_connect(feature_bluetooth_get_instance(), addr);
+#endif
+        break;
+    case PAN_USE:
+#ifdef CONFIG_BLUETOOTH_PAN
+        status = bt_pan_connect(feature_bluetooth_get_instance(), addr);
+#endif
+        break;
     default:
+        status = BT_STATUS_NOT_SUPPORTED;
         break;
     }
     return status;
@@ -44,14 +75,40 @@ static bt_status_t bluetooth_connect_profiles(bt_address_t* addr, feature_profil
 
 static bt_status_t bluetooth_disconnect_profiles(bt_address_t* addr, feature_profile_t profile_id)
 {
-    bt_status_t status = BT_STATUS_NOT_SUPPORTED;
+    bt_status_t status = BT_STATUS_SUCCESS;
     switch (profile_id) {
     case A2DP_SINK:
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
         status = bt_a2dp_sink_disconnect(feature_bluetooth_get_instance(), addr);
 #endif
         break;
+    case A2DP_SOURCE:
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+        status = bt_a2dp_source_disconnect(feature_bluetooth_get_instance(), addr);
+#endif
+        break;
+    case HFP_AG:
+#ifdef CONFIG_BLUETOOTH_HFP_AG
+        status = bt_hfp_ag_disconnect(feature_bluetooth_get_instance(), addr);
+#endif
+        break;
+    case HFP_HF:
+#ifdef CONFIG_BLUETOOTH_HFP_HF
+        status = bt_hfp_hf_disconnect(feature_bluetooth_get_instance(), addr);
+#endif
+        break;
+    case HID_DEVICE:
+#ifdef CONFIG_BLUETOOTH_HID_DEVICE
+        status = bt_hid_device_disconnect(feature_bluetooth_get_instance(), addr);
+#endif
+        break;
+    case PAN_USE:
+#ifdef CONFIG_BLUETOOTH_PAN
+        status = bt_pan_disconnect(feature_bluetooth_get_instance(), addr);
+#endif
+        break;
     default:
+        status = BT_STATUS_NOT_SUPPORTED;
         break;
     }
     return status;
