@@ -54,6 +54,7 @@ callbacks_list_t *bt_callbacks_list_new(uint8_t max)
     if (pthread_mutex_init(&cbsl->lock, &attr) < 0) {
         bt_list_free(cbsl->list);
         free(cbsl);
+        return NULL;
     }
 
     cbsl->max_reg = max;
