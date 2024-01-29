@@ -93,6 +93,7 @@ void bt_socket_server_device_process(service_poll_t *poll,
       }
     case BT_DEVICE_GET_NAME:
       {
+        memset(packet->devs_pl._bt_device_get_name.name, 0, sizeof(packet->devs_pl._bt_device_get_name.name));
         packet->devs_r.bbool =
           BTSYMBOLS(bt_device_get_name)(ins,
               &packet->devs_pl._bt_device_get_name.addr,
@@ -145,6 +146,7 @@ void bt_socket_server_device_process(service_poll_t *poll,
       }
     case BT_DEVICE_GET_ALIAS:
       {
+        memset(packet->devs_pl._bt_device_get_alias.alias, 0, sizeof(packet->devs_pl._bt_device_get_alias.alias));
         packet->devs_r.bbool =
           BTSYMBOLS(bt_device_get_alias)(ins,
               &packet->devs_pl._bt_device_get_alias.addr,
