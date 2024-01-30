@@ -105,6 +105,6 @@ typedef struct
 hfp_hf_msg_t *hfp_hf_msg_new(hfp_hf_event_t event, bt_address_t *addr);
 hfp_hf_msg_t *hfp_hf_msg_new_ext(hfp_hf_event_t event, bt_address_t *addr,
                                  void *data, size_t size);
-void hfp_hf_msg_destory(hfp_hf_msg_t *msg);
+void hfp_hf_msg_destroy(hfp_hf_msg_t *msg);
 
 #endif /* __HFP_HF_EVENT_H__ */
