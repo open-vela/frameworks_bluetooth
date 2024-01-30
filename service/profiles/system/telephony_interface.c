@@ -37,6 +37,9 @@
 #define OFONO_VOICECALL_INTERFACE            OFONO_SERVICE ".VoiceCall"
 #define OFONO_NETWORK_REGISTRATION_INTERFACE OFONO_SERVICE ".NetworkRegistration"
 #define OFONO_NETWORK_OPERATOR_INTERFACE     OFONO_SERVICE ".NetworkOperator"
+#define OFONO_CALL_BARRING_INTERFACE         OFONO_SERVICE ".CallBarring"
+#define OFONO_CALL_FORWARDING_INTERFACE      OFONO_SERVICE ".CallForwarding"
+#define OFONO_CALL_SETTINGS_INTERFACE        OFONO_SERVICE ".CallSettings"
 
 typedef struct tele_client_ {
     DBusConnection *dbus_sys;
@@ -59,6 +62,22 @@ typedef struct tele_modem_ {
 
 typedef bool (*property_parser_func_t)(void *user_data, char *key,
                                        DBusMessageIter *val, uint8_t flag);
+
+static int object_filter(GDBusProxy* proxy)
+{
+    const char* interface = g_dbus_proxy_get_interface(proxy);
+    if (interface == NULL)
+        return false;
+
+    // ss related interface skip get properties
+    if ((strcmp(interface, OFONO_CALL_BARRING_INTERFACE) == 0)
+        || (strcmp(interface, OFONO_CALL_FORWARDING_INTERFACE) == 0)
+        || (strcmp(interface, OFONO_CALL_SETTINGS_INTERFACE) == 0)) {
+        return true;
+    }
+
+    return false;
+}
 
 static bool property_parser(DBusMessageIter *iter, property_parser_func_t func,
                             void *user_data, uint8_t flag)
@@ -698,7 +717,7 @@ tele_client_t *teleif_client_connect(const char *name)
     g_dbus_client_set_disconnect_watch(dbus_client, ofono_disconnect_handler, tele);
     g_dbus_client_set_proxy_handlers(dbus_client, ofono_interface_proxy_added,
                                      ofono_interface_proxy_removed,
-                                     NULL,
+                                     object_filter,
                                      ofono_property_changed, tele);
     g_dbus_client_set_signal_watch(dbus_client, ofono_interface_signal_callback, tele);
     g_dbus_client_set_ready_watch(dbus_client, ofono_client_ready_cb, tele);
