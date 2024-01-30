@@ -48,6 +48,10 @@ hfp_hf_msg_t *hfp_hf_msg_new_ext(hfp_hf_event_t event, bt_address_t *addr,
 
 void hfp_hf_msg_destory(hfp_hf_msg_t *msg)
 {
+    if (!msg) {
+        return;
+    }
+
     free(msg->data.string1);
     free(msg->data.string2);
     free(msg->data.data);
