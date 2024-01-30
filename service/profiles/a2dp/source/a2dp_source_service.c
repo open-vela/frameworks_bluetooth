@@ -68,6 +68,11 @@ static void set_active_peer(bt_address_t *bd_addr, uint16_t acl_hdl)
 {
     a2dp_device_t *device = find_a2dp_device_by_addr(&g_a2dp_source.list, bd_addr);
 
+    if (!device) {
+        BT_LOGE("No A2DP device found with the provided address:%s", bt_addr_str(bd_addr));
+        return;
+    }
+
     g_a2dp_source.active_peer = &device->peer;
     device->peer.acl_hdl = acl_hdl;
 }
@@ -135,7 +140,7 @@ static void a2dp_service_prepare_handle(a2dp_state_machine_t *sm,
 
         device = find_a2dp_device_by_addr(&g_a2dp_source.list, &event->event_data.bd_addr);
         if (!device) {
-            BT_LOGE("A2DP find_device_by_addr:%s failed", bt_addr_str(&device->bd_addr));
+            BT_LOGE("A2DP find_device_by_addr:%s failed", bt_addr_str(&event->event_data.bd_addr));
             break;
         }
 
