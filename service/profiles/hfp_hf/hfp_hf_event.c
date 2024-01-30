@@ -46,7 +46,7 @@ hfp_hf_msg_t *hfp_hf_msg_new_ext(hfp_hf_event_t event, bt_address_t *addr,
     return msg;
 }
 
-void hfp_hf_msg_destory(hfp_hf_msg_t *msg)
+void hfp_hf_msg_destroy(hfp_hf_msg_t *msg)
 {
     if (!msg) {
         return;

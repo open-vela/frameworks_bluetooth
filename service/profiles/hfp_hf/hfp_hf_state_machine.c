@@ -994,7 +994,7 @@ static void hfp_hf_offload_timeout_callback(service_timer_t *timer, void *data)
 
     msg = hfp_hf_msg_new(HF_OFFLOAD_TIMEOUT_EVT, &hfsm->addr);
     hf_state_machine_dispatch(hfsm, msg);
-    hfp_hf_msg_destory(msg);
+    hfp_hf_msg_destroy(msg);
 }
 
 static void audio_on_enter(state_machine_t *sm)
