@@ -296,7 +296,7 @@ static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
         return;
     }
 
-    a2dp_event = a2dp_event_new_ext(event, &a2dp_sm->addr, hci_event, hci_event->length);
+    a2dp_event = a2dp_event_new_ext(event, &a2dp_sm->addr, hci_event, sizeof(bt_hci_event_t) + hci_event->length);
     do_in_a2dp_service(a2dp_event);
 }
 
