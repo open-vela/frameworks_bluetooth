@@ -124,7 +124,7 @@ static void hf_device_delete(hf_device_t *device)
         return;
 
     hf_state_machine_dispatch(device->hfsm, msg);
-    hfp_hf_msg_destory(msg);
+    hfp_hf_msg_destroy(msg);
     hf_state_machine_destory(device->hfsm);
     free(device);
 }
@@ -313,7 +313,7 @@ static void hfp_hf_process_message(void *data)
     }
     }
 
-    hfp_hf_msg_destory(msg);
+    hfp_hf_msg_destroy(msg);
 }
 
 bt_status_t hfp_hf_send_message(hfp_hf_msg_t *msg)
