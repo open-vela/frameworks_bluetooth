@@ -508,6 +508,10 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
+    int32_t test_time = atoi(argv[1]);
+    if (test_time <= 0)
+        return CMD_INVALID_OPT;
+
     if (!g_custom_handle) {
         PRINT("please register and start custom service at first !");
         return CMD_ERROR;
@@ -531,8 +535,7 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
         return CMD_ERROR;
     }
 
-    uint32_t test_time = atoi(argv[1]);
-    uint32_t run_time = 0;
+    int32_t run_time = 0;
     uint32_t notify_count = 0;
     uint32_t bit_rate = 0;
     struct timespec start_ts;
@@ -540,7 +543,7 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
     clock_gettime(CLOCK_BOOTTIME, &start_ts);
     throughtput_cursor = 0;
 
-    PRINT("gatts notify throughput test start, mtu = %" PRIu32 ", time = %" PRIu32 "s.", notify_length, test_time);
+    PRINT("gatts notify throughput test start, mtu = %" PRIu32 ", time = %" PRId32 "s.", notify_length, test_time);
     while (1) {
         struct timespec current_ts;
         clock_gettime(CLOCK_BOOTTIME, &current_ts);
@@ -548,7 +551,7 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
         if (run_time < (current_ts.tv_sec - start_ts.tv_sec)) {
             run_time = (current_ts.tv_sec - start_ts.tv_sec);
             bit_rate = notify_length * notify_count / run_time;
-            PRINT("gatts notify Bit rate = %" PRIu32 " Byte/s, = %" PRIu32 " bit/s, time = %" PRIu32 "s.", bit_rate, bit_rate << 3, run_time);
+            PRINT("gatts notify Bit rate = %" PRIu32 " Byte/s, = %" PRIu32 " bit/s, time = %" PRId32 "s.", bit_rate, bit_rate << 3, run_time);
         }
 
         device = find_gatts_device(&addr);
@@ -573,7 +576,7 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
     free(payload);
 
     bit_rate = notify_length * notify_count / run_time;
-    PRINT("gatts notify throughput test finish, Bit rate = %" PRIu32 " Byte/s, = %" PRIu32 " bit/s, time = %" PRIu32 "s.",
+    PRINT("gatts notify throughput test finish, Bit rate = %" PRIu32 " Byte/s, = %" PRIu32 " bit/s, time = %" PRId32 "s.",
           bit_rate, bit_rate << 3, run_time);
 
     return CMD_OK;
