@@ -340,6 +340,14 @@ void system_bluetooth_bt_wrap_removeBondedDevice(FeatureInstanceHandle feature, 
         }
         goto COMPLETE_CALLBACK;
     }
+
+    if (!bt_device_is_bonded(feature_bluetooth_get_instance(), &addr, BT_TRANSPORT_BREDR)) {
+        if (!FeatureInvokeCallback(feature, params->success)) {
+            FEATURE_LOG_ERROR("invoke remove bonded success callback failed!");
+        }
+        goto COMPLETE_CALLBACK;
+    }
+
     status = bt_device_remove_bond(feature_bluetooth_get_instance(), &addr, BT_TRANSPORT_BREDR);
     if (status != BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->fail, "remove bonded failed!", status)) {
