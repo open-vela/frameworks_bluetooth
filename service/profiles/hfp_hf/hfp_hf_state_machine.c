@@ -836,7 +836,7 @@ static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
         return;
     }
 
-    msg = hfp_hf_msg_new_ext(event, &hfsm->addr, hci_event->params, hci_event->length);
+    msg = hfp_hf_msg_new_ext(event, &hfsm->addr, hci_event, sizeof(bt_hci_event_t) + hci_event->length);
     hfp_hf_send_message(msg);
 }
 

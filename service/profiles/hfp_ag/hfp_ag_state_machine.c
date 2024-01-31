@@ -618,7 +618,7 @@ static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
         return;
     }
 
-    msg = hfp_ag_event_new_ext(event, &agsm->addr, hci_event->params, hci_event->length);
+    msg = hfp_ag_event_new_ext(event, &agsm->addr, hci_event, sizeof(bt_hci_event_t) + hci_event->length);
     hfp_ag_send_message(msg);
 }
 
