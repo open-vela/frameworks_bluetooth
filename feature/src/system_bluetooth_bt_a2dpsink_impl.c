@@ -21,19 +21,12 @@
 #include "bt_a2dp_sink.h"
 #include "feature_a2dpsink.h"
 #include "system_bluetooth_bt_a2dpsink.h"
+#include "feature_bluetooth.h"
 
 #define file_tag "system_bluetooth_bt_a2dpsnk"
 
 static a2dp_sink_feature_callbacks_t g_feature_a2dp_sink_callbacks = {};
 static void* sink_cbks_cookie = NULL;
-
-static char* StringToFtString(const char* str)
-{
-    int len = strlen(str);
-    char* ftStr = (char*)FeatureMalloc(len + 1, FT_CHAR);
-    strcpy(ftStr, str);
-    return ftStr;
-}
 
 static void a2dp_sink_connection_state_cb(void* cookie, bt_address_t* addr, profile_connection_state_t state)
 {
@@ -44,17 +37,18 @@ static void a2dp_sink_connection_state_cb(void* cookie, bt_address_t* addr, prof
     bt_addr_ba2str(addr, addr_str);
     data->deviceId = StringToFtString(addr_str);
     data->connectState = state;
-    if (!FeatureCheckCallbackId(g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature, 
+    if (!FeatureCheckCallbackId(g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature,
             g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId)) {
         return;
     }
 
-    if (!FeatureInvokeCallback(g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature, 
-            g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId, data)) {
-        FEATURE_LOG_ERROR("feature:%p, invoke discoveryresult callback failed!", 
-        g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature);
-    }
-
+    callback_info_t* callback_info = (callback_info_t*)malloc(sizeof(callback_info_t));
+    memset(callback_info, 0, sizeof(callback_info_t));
+    callback_info->callback_id = A2DPSINK_ON_CONNECT_STATE_CHANGE;
+    callback_info->feature_callback_id = g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId;
+    callback_info->feature = g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature;
+    callback_info->data = data;
+    FeaturePost(g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature, feature_bluetooth_deal_callback, callback_info);
 }
 
 static const a2dp_sink_callbacks_t a2dp_sink_cbs = {
