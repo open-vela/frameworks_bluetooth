@@ -33,13 +33,14 @@ bt_status_t bt_sal_avrcp_control_send_pass_through_cmd(bt_address_t *bd_addr,
                                                        avrcp_key_state_t key_state);
 bt_status_t bt_sal_avrcp_control_get_playback_state(bt_address_t *bd_addr);
 bt_status_t bt_sal_avrcp_control_volume_changed_notify(bt_address_t *bd_addr, uint8_t volume);
-
-bt_status_t bt_sal_avrcp_control_connect(bt_address_t *bd_addr);
-bt_status_t bt_sal_avrcp_control_disconnect(bt_address_t *bd_addr);
 bt_status_t bt_sal_avrcp_control_get_capabilities(bt_address_t *bd_addr, uint8_t cap_id);
 bt_status_t bt_sal_avrcp_control_register_notification(bt_address_t *bd_addr,
                                                        avrcp_notification_event_t event,
                                                        uint32_t interval);
 void bt_sal_avrcp_control_event_callback(avrcp_msg_t *msg);
+#endif
+#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARGET)
+bt_status_t bt_sal_avrcp_control_connect(bt_address_t *bd_addr);
+bt_status_t bt_sal_avrcp_control_disconnect(bt_address_t *bd_addr);
 #endif
 #endif /* __SAL_AVRCP_CONTROL_INTERFACE_H__ */
