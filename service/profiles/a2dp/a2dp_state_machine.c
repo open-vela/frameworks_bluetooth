@@ -499,11 +499,9 @@ static void opened_enter(state_machine_t *sm)
         /* if we are accept link as a2dp src, change the av link role to master */
         if (a2dp_sm->peer_sep == SEP_SNK)
             adapter_switch_role(&a2dp_sm->addr, BT_LINK_ROLE_MASTER);
-#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
-        if (a2dp_sm->peer_sep == SEP_SRC)
-            bt_sal_avrcp_control_connect(&a2dp_sm->addr);
+#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARGET)
+        bt_sal_avrcp_control_connect(&a2dp_sm->addr);
 #endif
-
         ret = a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
         if (!ret) {
             BT_LOGD("a2dp control not connected, then set a2dp available");
@@ -542,7 +540,7 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("A2dp disconnect failed");
         }
-#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARTGET)
         status = bt_sal_avrcp_control_disconnect(&a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Avrc disconnect failed");
@@ -780,7 +778,7 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect failed");
         }
-#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARTGET)
         status = bt_sal_avrcp_control_disconnect(&a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Avrc disconnect failed");
