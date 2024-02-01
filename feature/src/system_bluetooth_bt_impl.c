@@ -114,14 +114,6 @@ static bt_status_t bluetooth_disconnect_profiles(bt_address_t* addr, feature_pro
     return status;
 }
 
-static char* StringToFtString(const char* str)
-{
-    int len = strlen(str);
-    char* ftStr = (char*)FeatureMalloc(len + 1, FT_CHAR);
-    strcpy(ftStr, str);
-    return ftStr;
-}
-
 void system_bluetooth_bt_onRegister(const char* feature_name)
 {
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);

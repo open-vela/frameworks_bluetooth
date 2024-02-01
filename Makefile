@@ -307,7 +307,7 @@ CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/feature/include
 
 CSRCS     += feature/src/system_bluetooth.c
 CSRCS     += feature/src/system_bluetooth_impl.c
-
+CSRCS     += feature/src/feature_bluetooth_util.c
 CSRCS     += feature/src/system_bluetooth_bt.c
 CSRCS     += feature/src/system_bluetooth_bt_impl.c
 
