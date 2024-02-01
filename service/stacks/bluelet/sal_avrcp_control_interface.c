@@ -221,7 +221,7 @@ bt_status_t bt_sal_avrcp_control_volume_changed_notify(bt_address_t *bd_addr, ui
 
 bt_status_t bt_sal_avrcp_control_connect(bt_address_t *bd_addr)
 {
-#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARGET)
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     SAL_CHECK_RET(service_adapter_avrcp_connect((void *)bd_addr),
                   SERVICE_BT_STATUS_SUCCESS);
 
@@ -233,7 +233,7 @@ bt_status_t bt_sal_avrcp_control_connect(bt_address_t *bd_addr)
 
 bt_status_t bt_sal_avrcp_control_disconnect(bt_address_t *bd_addr)
 {
-#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARGET)
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     SAL_CHECK_RET(service_adapter_avrcp_disconnect((void *)bd_addr),
                   SERVICE_BT_STATUS_SUCCESS);
 
