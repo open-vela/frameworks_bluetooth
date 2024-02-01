@@ -33,8 +33,25 @@ typedef enum {
     MAX_FEATURE_ID,
 } feature_profile_t;
 
+typedef enum {
+    ON_ADAPTER_STATE_CHANGE,
+    ON_DISCOVERY_RESULT,
+    ON_BOND_STATE_CHANGE,
+    A2DPSINK_ON_CONNECT_STATE_CHANGE,
+} bluetooth_feature_callback_id_t;
+
 typedef struct {
     void* feature;
     FtCallbackId callbackId;
 } feature_callback_t;
+
+typedef struct callback_info{
+    bluetooth_feature_callback_id_t callback_id;
+    FtCallbackId feature_callback_id;
+    void* feature;
+    void* data;
+} callback_info_t;
+
+void feature_bluetooth_deal_callback(int status, void* data);
+char* StringToFtString(const char* str);
 #endif // FEATURE_BLUETOOTH_CONSTANT_H_
