@@ -162,6 +162,15 @@ void bt_socket_server_hid_device_process(service_poll_t *poll,
 
 int bt_socket_client_hid_device_callback(service_poll_t *poll,
                                          int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+
+/* L2CAP */
+
+void bt_socket_server_l2cap_process(service_poll_t *poll,
+                                    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+
+int bt_socket_client_l2cap_callback(service_poll_t *poll,
+                                    int fd, bt_instance_t *ins, bt_message_packet_t *packet);
+
 #ifdef __cplusplus
 }
 #endif

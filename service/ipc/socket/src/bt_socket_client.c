@@ -101,6 +101,8 @@ static void bt_socket_client_msg_process(bt_client_msg_t *msg)
         bt_socket_client_pan_callback(NULL, -1, msg->ins, packet);
     } else if (packet->code > BT_HID_DEVICE_CALLBACK_START && packet->code < BT_HID_DEVICE_CALLBACK_END) {
         bt_socket_client_hid_device_callback(NULL, -1, msg->ins, packet);
+    } else if (packet->code > BT_L2CAP_CALLBACK_START && packet->code < BT_L2CAP_CALLBACK_END) {
+        bt_socket_client_l2cap_callback(NULL, -1, msg->ins, packet);
     } else {
         BT_LOGE("%s, Unhandled message:%d", __func__, packet->code);
     }

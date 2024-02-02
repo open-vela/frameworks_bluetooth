@@ -44,6 +44,9 @@
 #include "sal_gatt_client_interface.h"
 #include "sal_gatt_server_interface.h"
 #endif
+#ifdef CONFIG_BLUETOOTH_L2CAP
+#include "l2cap_service.h"
+#endif
 #include "utils/log.h"
 
 #define BTSTACK_THREAD_STACK_SIZE 8192
@@ -446,8 +449,56 @@ static void ble_phy_update_callback(BD_ADDR remote_addr, SERVICE_BLE_PHY_TYPE tx
 static void ble_irk_callback(BT_COMMON_KEY irk, BD_ADDR ble_addr,
                              SERVICE_BLE_ADDR_TYPE ble_addr_type) { DEBUG_IMPL }
 
-static void ble_packet_received_callback(BD_ADDR remote_addr, uint16_t private_cid,
-                                         uint8_t *packet, uint16_t packet_size) { DEBUG_IMPL }
+void l2cap_connected_callback(BD_ADDR remote_addr, SERVICE_L2CAP_CONN_S *conn)
+{
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    bt_address_t addr;
+    l2cap_channel_param_t chan_param = { 0 };
+
+    memcpy(addr.addr, remote_addr, sizeof(addr.addr));
+    chan_param.cid = conn->cid;
+    chan_param.psm = conn->psm;
+    chan_param.transport = BT_TRANSPORT_BLE;
+    chan_param.incoming.mtu = conn->incoming.mtu;
+    chan_param.incoming.le_mps = conn->incoming.le_mps;
+    chan_param.incoming.init_credits = conn->incoming.credits;
+    chan_param.outgoing.mtu = conn->outgoing.mtu;
+    chan_param.outgoing.le_mps = conn->outgoing.le_mps;
+    chan_param.outgoing.init_credits = conn->outgoing.credits;
+    l2cap_on_channel_connected(&addr, &chan_param);
+#endif
+}
+
+void l2cap_disconnected_callback(BD_ADDR remote_addr, uint16_t cid, uint16_t reason)
+{
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    bt_address_t addr;
+
+    memcpy(addr.addr, remote_addr, sizeof(addr.addr));
+    l2cap_on_channel_disconnected(&addr, cid, reason);
+#endif
+}
+
+void l2cap_packet_received_callback(BD_ADDR remote_addr, uint16_t cid, uint8_t *packet_data, uint16_t packet_size)
+{
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    bt_address_t addr;
+
+    memcpy(addr.addr, remote_addr, sizeof(addr.addr));
+    l2cap_on_packet_received(&addr, cid, packet_data, packet_size);
+#endif
+}
+
+void l2cap_packet_sent_callback(BD_ADDR remote_addr, uint16_t cid)
+{
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    bt_address_t addr;
+
+    memcpy(addr.addr, remote_addr, sizeof(addr.addr));
+    l2cap_on_packet_sent(&addr, cid);
+#endif
+}
+
 static void ssp_local_oob_data_callback(BT_COMMON_KEY c_192_val, BT_COMMON_KEY r_192_val,
                                         BT_COMMON_KEY c_256_val, BT_COMMON_KEY r_256_val) { DEBUG_IMPL }
 static void ble_local_oob_data_callback(BD_ADDR remote_addr, BT_COMMON_KEY c_val,
@@ -545,7 +596,10 @@ static const GAP_CALLBACKS_S sal_gap_callbacks = {
     .gap_ble_address_cb = ble_address_callback,
     .gap_ble_phy_update_cb = ble_phy_update_callback,
     .gap_ble_irk_cb = ble_irk_callback,
-    .gap_ble_packet_received_cb = ble_packet_received_callback,
+    .gap_ble_l2cap_connected_cb = l2cap_connected_callback,
+    .gap_l2cap_disconnected_cb = l2cap_disconnected_callback,
+    .gap_l2cap_packet_sent_cb = l2cap_packet_sent_callback,
+    .gap_l2cap_packet_received_cb = l2cap_packet_received_callback,
     /* don't implement this callback */
     .gap_local_name_set_cb = NULL,
     .gap_ssp_local_oob_data_cb = ssp_local_oob_data_callback,
@@ -1755,34 +1809,6 @@ bt_status_t bt_sal_le_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gap_ble_set_phy(addr->addr, tx_phy, rx_phy),
-                  SERVICE_BT_STATUS_SUCCESS);
-
-    return BT_STATUS_SUCCESS;
-#else
-    return BT_STATUS_NOT_SUPPORTED;
-#endif
-}
-
-bt_status_t bt_sal_le_add_private_channel(uint16_t private_cid)
-{
-#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    SAL_CHECK_RET(service_adapter_gap_ble_add_private_channel(private_cid),
-                  SERVICE_BT_STATUS_SUCCESS);
-
-    return BT_STATUS_SUCCESS;
-#else
-    return BT_STATUS_NOT_SUPPORTED;
-#endif
-}
-
-bt_status_t bt_sal_le_send_packet(bt_address_t *addr,
-                                  uint16_t private_cid,
-                                  uint8_t *packet,
-                                  uint16_t packet_size)
-{
-#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    SAL_CHECK_PARAM(addr);
-    SAL_CHECK_RET(service_adapter_gap_ble_send_packet(addr->addr, private_cid, packet, packet_size),
                   SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;

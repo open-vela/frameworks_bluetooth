@@ -140,11 +140,6 @@ bt_status_t bt_sal_le_remove_white_list(bt_address_t *addr);
 bt_status_t bt_sal_le_add_resolving_list(bt_address_t *addr);
 bt_status_t bt_sal_le_remove_resolving_list(bt_address_t *addr);
 bt_status_t bt_sal_le_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
-bt_status_t bt_sal_le_add_private_channel(uint16_t private_cid);
-bt_status_t bt_sal_le_send_packet(bt_address_t *addr,
-                                  uint16_t private_cid,
-                                  uint8_t *packet,
-                                  uint16_t packet_size);
 bt_status_t bt_sal_le_set_appearance(uint16_t appearance);
 uint16_t bt_sal_le_get_appearance(void);
 bt_status_t bt_sal_le_enable_key_derivation(bool brkey_to_lekey,

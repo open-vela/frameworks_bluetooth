@@ -199,6 +199,11 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
     } else if (packet.code > BT_HID_DEVICE_MESSAGE_START &&
                packet.code < BT_HID_DEVICE_MESSAGE_END) {
         bt_socket_server_hid_device_process(poll, fd, ins, &packet);
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    } else if (packet.code > BT_L2CAP_MESSAGE_START &&
+               packet.code < BT_L2CAP_MESSAGE_END) {
+        bt_socket_server_l2cap_process(poll, fd, ins, &packet);
+#endif
     } else {
         BT_LOGE("%s, Unhandled message:%d", __func__, packet.code);
         assert(0);

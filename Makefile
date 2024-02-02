@@ -54,6 +54,9 @@ endif #CONFIG_BLUETOOTH_BLE_ADV
 ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
 	CSRCS += service/src/scan_manager.c
 endif #CONFIG_BLUETOOTH_BLE_SCAN
+ifeq ($(CONFIG_BLUETOOTH_L2CAP), y)
+	CSRCS += service/src/l2cap_service.c
+endif #CONFIG_BLUETOOTH_L2CAP
 	CSRCS += service/stacks/*.c
 	CSRCS += service/stacks/bluelet/*.c
 ifeq ($(CONFIG_BLUETOOTH_BLE_AUDIO),)

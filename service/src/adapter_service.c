@@ -30,6 +30,9 @@
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
 #include "advertising.h"
 #endif
+#ifdef CONFIG_BLUETOOTH_L2CAP
+#include "l2cap_service.h"
+#endif
 #include "advertising.h"
 #include "bluetooth.h"
 #include "bluetooth_define.h"
@@ -967,6 +970,11 @@ void adapter_on_le_enabled(bool enablebt)
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_manager_init();
 #endif
+    /* enable L2CAP service */
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    if (!enablebt)
+        l2cap_service_init();
+#endif
     /* startup gatt service */
     if (enablebt)
         send_to_state_machine((state_machine_t *)adapter->stm, SYS_TURN_ON, NULL);
@@ -980,6 +988,9 @@ void adapter_on_le_disabled(void)
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_manager_cleanup();
+#endif
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    l2cap_service_cleanup();
 #endif
     /* wait save info done*/
 }
@@ -1001,6 +1012,11 @@ void adapter_on_br_enabled(void)
     bt_sal_set_local_device_class(props->class_of_device);
     /* set default inquiry scan parameter */
     /*  */
+    /* enable L2CAP service */
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    l2cap_service_init();
+#endif
+
     bt_addr_ba2str(&props->addr, addrstr);
     BT_LOGI("Adapter Info:\n"
             "\tName:%s\n"

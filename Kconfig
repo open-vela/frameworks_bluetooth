@@ -219,6 +219,19 @@ config BLUETOOTH_PAN
 	help
 		config NET_TUN_PKTSIZE should set 1518
 
+config BLUETOOTH_L2CAP
+	bool "L2CAP dynamic channel support"
+	default n
+
+if BLUETOOTH_L2CAP
+config BLUETOOTH_L2CAP_OUTGOING_MTU
+	int "Outgoing MTU"
+	default 2048
+	help
+		config L2CAP Outgoing MTU
+
+endif #BLUETOOTH_L2CAP
+
 config BLUETOOTH_MAX_REGISTER_NUM
 	int "Max register callback nums"
 	default 4
