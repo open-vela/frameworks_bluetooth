@@ -711,9 +711,15 @@ static bool audio_connecting_process_event(state_machine_t *sm, uint32_t event, 
 
     switch (event) {
     case AG_DISCONNECT:
+        /* Temporary solution: disconnect SLC directly. TODO: defer disconnect message */
+        if (bt_sal_hfp_ag_disconnect(&agsm->addr) != BT_STATUS_SUCCESS) {
+            ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
+        }
+        hsm_transition_to(sm, &disconnecting_state);
+        break;
     case AG_DISCONNECT_AUDIO:
         /* TODO: handle */
-        BT_LOGD("defer DISCONNECT/DISCONNECT_AUDIO message");
+        BT_LOGD("defer DISCONNECT_AUDIO message");
         break;
     case AG_STACK_EVENT_AUDIO_REQ:
         BT_LOGD("already in audio connecting state");
@@ -788,8 +794,11 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
 
     switch (event) {
     case AG_DISCONNECT:
-        /* TODO: disconnect audio first */
-        BT_LOGD("defer DISCONNECT message");
+        /* Temporary solution: disconnect SLC directly. TODO: disconnect audio first */
+        if (bt_sal_hfp_ag_disconnect(&agsm->addr) != BT_STATUS_SUCCESS) {
+            ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
+        }
+        hsm_transition_to(sm, &disconnecting_state);
         break;
     case AG_DISCONNECT_AUDIO:
         if (bt_sal_hfp_ag_disconnect_audio(&agsm->addr) != BT_STATUS_SUCCESS) {
@@ -892,7 +901,9 @@ static bool audio_disconnecting_process_event(state_machine_t *sm, uint32_t even
 
     switch (event) {
     case AG_DISCONNECT:
-        /* TODO: handle */
+        /* TODO: defer disconnect message */
+        bt_sal_hfp_ag_disconnect(&agsm->addr);
+        hsm_transition_to(sm, &disconnecting_state);
         break;
     case AG_STACK_EVENT_CONNECTION_STATE_CHANGED:
         default_connection_event_process(sm, p_data);
