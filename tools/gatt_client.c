@@ -388,6 +388,11 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
     }
     free(payload);
 
+    if (run_time <= 0) {
+        PRINT("gattc write throughput test failed due to an unexpected interruption!");
+        return CMD_ERROR;
+    }
+
     bit_rate = write_length * write_count / run_time;
     PRINT("gattc write throughput test finish, Bit rate = %" PRIu32 " Byte/s, = %" PRIu32 " bit/s, time = %" PRId32 "s.",
           bit_rate, bit_rate << 3, run_time);
