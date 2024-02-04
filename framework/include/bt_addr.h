@@ -23,7 +23,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 
-#define BT_ADDR_LENGTH     6 /*define the address length*/
+#define BT_ADDR_LENGTH 6 /*define the address length*/
 #define BT_ADDR_STR_LENGTH 18
 
 typedef struct bt_addr {

@@ -36,13 +36,13 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-#define LEA_BIT(_b)                  (1 << (_b))
-#define MAX_PROVIDER_NAME_LENGTH     16
-#define MAX_URI_SCHEMES_LENGTH       16
+#define LEA_BIT(_b) (1 << (_b))
+#define MAX_PROVIDER_NAME_LENGTH 16
+#define MAX_URI_SCHEMES_LENGTH 16
 #define MAX_INCOMING_CALL_URI_LENGTH 16
-#define MAX_CALL_URI_LENGTH          16
-#define MAX_UCI_LENGTH               8
-#define MAX_FRIENDLY_NAME_LENGTH     8
+#define MAX_CALL_URI_LENGTH 16
+#define MAX_UCI_LENGTH 8
+#define MAX_FRIENDLY_NAME_LENGTH 8
 
 #ifndef CONFIG_BLUETOOTH_LEAUDIO_CLIENT_ASE_MAX_NUMBER
 #define CONFIG_BLUETOOTH_LEAUDIO_CLIENT_ASE_MAX_NUMBER 2

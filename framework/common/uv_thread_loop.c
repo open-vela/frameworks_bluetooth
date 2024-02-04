@@ -25,7 +25,6 @@
 #include <syslog.h>
 #include <nuttx/list.h>
 
-
 #include "uv_thread_loop.h"
 
 #define LOG_TAG "thread_loop"

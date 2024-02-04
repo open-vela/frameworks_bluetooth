@@ -138,13 +138,13 @@ bt_io_capability_t BTSYMBOLS(bt_adapter_get_io_capability)(bt_instance_t *ins)
 }
 
 bt_status_t BTSYMBOLS(bt_adapter_set_inquiry_scan_parameters)(bt_instance_t *ins, bt_scan_type_t type,
-                                                uint16_t interval, uint16_t window)
+                                                              uint16_t interval, uint16_t window)
 {
     return adapter_set_inquiry_scan_parameters(type, interval, window);
 }
 
 bt_status_t BTSYMBOLS(bt_adapter_set_page_scan_parameters)(bt_instance_t *ins, bt_scan_type_t type,
-                                                uint16_t interval, uint16_t window)
+                                                           uint16_t interval, uint16_t window)
 {
     return adapter_set_page_scan_parameters(type, interval, window);
 }
@@ -185,8 +185,8 @@ uint16_t BTSYMBOLS(bt_adapter_get_le_appearance)(bt_instance_t *ins)
 }
 
 bt_status_t BTSYMBOLS(bt_adapter_le_enable_key_derivation)(bt_instance_t *ins,
-                                                bool brkey_to_lekey,
-                                                bool lekey_to_brkey)
+                                                           bool brkey_to_lekey,
+                                                           bool lekey_to_brkey)
 {
     return adapter_le_enable_key_derivation(brkey_to_lekey, lekey_to_brkey);
 }
@@ -212,7 +212,7 @@ bt_status_t BTSYMBOLS(bt_adapter_get_connected_devices)(bt_instance_t *ins, bt_t
 }
 
 bt_status_t BTSYMBOLS(bt_adapter_set_afh_channel_classification)(bt_instance_t *ins, uint16_t central_frequency,
-                                                  uint16_t band_width, uint16_t number)
+                                                                 uint16_t band_width, uint16_t number)
 {
     return adapter_set_afh_channel_classification(central_frequency, band_width, number);
 }

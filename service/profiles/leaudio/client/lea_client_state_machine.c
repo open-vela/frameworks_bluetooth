@@ -55,7 +55,7 @@ typedef struct _lea_client_state_machine {
 } lea_client_state_machine_t;
 
 #define LEA_SERVER_OFFLOAD_TIMEOUT 500
-#define LEA_SERVER_STM_DEBUG       1
+#define LEA_SERVER_STM_DEBUG 1
 
 extern bt_status_t lea_client_send_message(lea_client_msg_t *msg);
 
@@ -66,8 +66,8 @@ static void lea_client_event_debug(state_machine_t *sm, bt_address_t *addr,
                                    uint32_t event);
 static const char *stack_event_to_string(lea_client_event_t event);
 
-#define LEAS_DBG_ENTER(__sm, __addr)          lea_client_trans_debug(__sm, __addr, "Enter")
-#define LEAS_DBG_EXIT(__sm, __addr)           lea_client_trans_debug(__sm, __addr, "Exit ")
+#define LEAS_DBG_ENTER(__sm, __addr) lea_client_trans_debug(__sm, __addr, "Enter")
+#define LEAS_DBG_EXIT(__sm, __addr) lea_client_trans_debug(__sm, __addr, "Exit ")
 #define LEAS_DBG_EVENT(__sm, __addr, __event) lea_client_event_debug(__sm, __addr, __event);
 #else
 #define LEAS_DBG_ENTER(__sm, __addr)

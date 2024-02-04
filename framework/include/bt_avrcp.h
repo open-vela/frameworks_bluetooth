@@ -99,8 +99,8 @@ typedef enum {
 } avrcp_play_status_t;
 
 enum {
-AVRCP_CAPABILITY_ID_COMPANY_ID = 2,
-AVRCP_CAPABILITY_ID_EVENTS_SUPPORTED,
+    AVRCP_CAPABILITY_ID_COMPANY_ID = 2,
+    AVRCP_CAPABILITY_ID_EVENTS_SUPPORTED,
 };
 
 typedef enum {

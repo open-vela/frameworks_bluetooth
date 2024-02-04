@@ -22,7 +22,7 @@
 #include "bt_device.h"
 
 #ifndef BTSYMBOLS
-# define BTSYMBOLS(s) s
+#define BTSYMBOLS(s) s
 #endif
 
 /**
@@ -51,7 +51,7 @@ typedef enum {
 
 /**
  * @brief Pan connection state change callback.
- * 
+ *
  * @param cookie - callbacks cookie, the return value of bt_pan_register_callbacks.
  * @param state - pan connection state
  * @param bd_addr - address of peer device.
@@ -64,7 +64,7 @@ typedef void (*pan_connection_state_callback)(void *cookie, profile_connection_s
 
 /**
  * @brief Pan net interface (down/up)state change callback.
- * 
+ *
  * @param cookie  - callbacks cookie, the return value of bt_pan_register_callbacks.
  * @param state - net interface state.
  * @param local_role - local device pan role

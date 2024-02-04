@@ -21,7 +21,7 @@ extern "C" {
 #include "bt_a2dp.h"
 
 #ifndef BTSYMBOLS
-# define BTSYMBOLS(s) s
+#define BTSYMBOLS(s) s
 #endif
 
 /**

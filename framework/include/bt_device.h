@@ -26,7 +26,7 @@ extern "C" {
 #include <stdint.h>
 
 #ifndef BTSYMBOLS
-# define BTSYMBOLS(s) s
+#define BTSYMBOLS(s) s
 #endif
 
 /**

@@ -34,7 +34,7 @@ typedef struct service_work service_work_t;
 typedef void (*service_poll_cb_t)(service_poll_t *poll, int revent, void *userdata);
 typedef void (*service_timer_cb_t)(service_timer_t *timer, void *userdata);
 typedef void (*service_func_t)(void *data);
-typedef int  (*service_init_t)(void *data);
+typedef int (*service_init_t)(void *data);
 typedef void (*service_work_cb_t)(service_work_t *work, void *userdata);
 typedef void (*service_after_work_cb_t)(service_work_t *work, void *userdata);
 

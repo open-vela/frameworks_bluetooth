@@ -106,8 +106,8 @@ static bool scanner_is_registered(scanner_t *scanner)
 }
 
 static uint8_t *findsubblock(uint8_t *sub_block, uint16_t sub_block_len,
-                                      uint8_t *sch_block,
-                                      uint16_t sch_block_len)
+                             uint8_t *sch_block,
+                             uint16_t sch_block_len)
 {
     uint16_t i, j;
 
@@ -332,10 +332,10 @@ bt_scanner_t *scanner_start_scan(void *remote, const scanner_callbacks_t *cbs)
 }
 
 bt_scanner_t *scanner_start_scan_with_filters(void *remote,
-                                        ble_scan_settings_t *settings,
-                                        uint8_t *filter_data,
-                                        uint16_t filter_length,
-                                        const scanner_callbacks_t *cbs)
+                                              ble_scan_settings_t *settings,
+                                              uint8_t *filter_data,
+                                              uint16_t filter_length,
+                                              const scanner_callbacks_t *cbs)
 {
     if (!adapter_is_le_enabled())
         return NULL;

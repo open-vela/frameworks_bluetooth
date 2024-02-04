@@ -22,30 +22,30 @@
 #include <stdint.h>
 
 /* * HFP HF supported features - bit mask */
-#define HFP_BRSF_HF_NREC                 0x00000001 /* * 0, EC and/or NR function */
-#define HFP_BRSF_HF_3WAYCALL             0x00000002 /* * 1, Call waiting and 3-way calling */
-#define HFP_BRSF_HF_CLIP                 0x00000004 /* * 2, CLI presentation capability */
-#define HFP_BRSF_HF_BVRA                 0x00000008 /* * 3, Voice recognition activation */
-#define HFP_BRSF_HF_RMTVOLCTRL           0x00000010 /* * 4, Remote volume control */
-#define HFP_BRSF_HF_ENHANCED_CALLSTATUS  0x00000020 /* * 5, Enhanced call status */
+#define HFP_BRSF_HF_NREC 0x00000001 /* * 0, EC and/or NR function */
+#define HFP_BRSF_HF_3WAYCALL 0x00000002 /* * 1, Call waiting and 3-way calling */
+#define HFP_BRSF_HF_CLIP 0x00000004 /* * 2, CLI presentation capability */
+#define HFP_BRSF_HF_BVRA 0x00000008 /* * 3, Voice recognition activation */
+#define HFP_BRSF_HF_RMTVOLCTRL 0x00000010 /* * 4, Remote volume control */
+#define HFP_BRSF_HF_ENHANCED_CALLSTATUS 0x00000020 /* * 5, Enhanced call status */
 #define HFP_BRSF_HF_ENHANCED_CALLCONTROL 0x00000040 /* * 6, Enhanced call control */
-#define HFP_BRSF_HF_CODEC_NEGOTIATION    0x00000080 /* * 7, Codec negotiation */
-#define HFP_BRSF_HF_HFINDICATORS         0x00000100 /* * 8, HF Indicators */
-#define HFP_BRSF_HF_ESCO_S4T2_SETTING    0x00000200 /* * 9, eSCO S4 (and T2) settings supported */
+#define HFP_BRSF_HF_CODEC_NEGOTIATION 0x00000080 /* * 7, Codec negotiation */
+#define HFP_BRSF_HF_HFINDICATORS 0x00000100 /* * 8, HF Indicators */
+#define HFP_BRSF_HF_ESCO_S4T2_SETTING 0x00000200 /* * 9, eSCO S4 (and T2) settings supported */
 
 /* * HFP AG supported features - bit mask */
-#define HFP_BRSF_AG_3WAYCALL             0x00000001 /* * 0, Three-way calling */
-#define HFP_BRSF_AG_NREC                 0x00000002 /* * 1, EC and/or NR function */
-#define HFP_BRSF_AG_BVRA                 0x00000004 /* * 2, Voice recognition function */
-#define HFP_BRSF_AG_INBANDRING           0x00000008 /* * 3, In-band ring tone capability */
-#define HFP_BRSF_AG_BINP                 0x00000010 /* * 4, Attach a number to a voice tag */
-#define HFP_BRSF_AG_REJECT_CALL          0x00000020 /* * 5, Ability to reject a call */
-#define HFP_BRSF_AG_ENHANCED_CALLSTATUS  0x00000040 /* * 6, Enhanced call status */
+#define HFP_BRSF_AG_3WAYCALL 0x00000001 /* * 0, Three-way calling */
+#define HFP_BRSF_AG_NREC 0x00000002 /* * 1, EC and/or NR function */
+#define HFP_BRSF_AG_BVRA 0x00000004 /* * 2, Voice recognition function */
+#define HFP_BRSF_AG_INBANDRING 0x00000008 /* * 3, In-band ring tone capability */
+#define HFP_BRSF_AG_BINP 0x00000010 /* * 4, Attach a number to a voice tag */
+#define HFP_BRSF_AG_REJECT_CALL 0x00000020 /* * 5, Ability to reject a call */
+#define HFP_BRSF_AG_ENHANCED_CALLSTATUS 0x00000040 /* * 6, Enhanced call status */
 #define HFP_BRSF_AG_ENHANCED_CALLCONTROL 0x00000080 /* * 7, Enhanced call control */
 #define HFP_BRSF_AG_EXTENDED_ERRORRESULT 0x00000100 /* * 8, Extended Error Result Codes */
-#define HFP_BRSF_AG_CODEC_NEGOTIATION    0x00000200 /* * 9, Codec negotiation */
-#define HFP_BRSF_AG_HFINDICATORS         0x00000400 /* * 10, HF Indicators */
-#define HFP_BRSF_AG_eSCO_S4T2_SETTING    0x00000800 /* * 11, eSCO S4 (and T2) settings supported */
+#define HFP_BRSF_AG_CODEC_NEGOTIATION 0x00000200 /* * 9, Codec negotiation */
+#define HFP_BRSF_AG_HFINDICATORS 0x00000400 /* * 10, HF Indicators */
+#define HFP_BRSF_AG_eSCO_S4T2_SETTING 0x00000800 /* * 11, eSCO S4 (and T2) settings supported */
 
 typedef enum {
     HFP_IN_BAND_RINGTONE_NOT_PROVIDED = 0,

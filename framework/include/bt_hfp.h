@@ -34,7 +34,6 @@ extern "C" {
 #define HFP_AT_LEN_MAX 512
 #define HFP_CALL_LIST_MAX 8
 
-
 typedef enum {
     HFP_AUDIO_STATE_DISCONNECTED,
     HFP_AUDIO_STATE_CONNECTING,

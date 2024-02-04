@@ -34,14 +34,14 @@
 #define __A2DP_CODEC_AAC_H__
 
 // [Octet 0] Object Type
-#define A2DP_AAC_OBJECT_TYPE_MPEG2_LC       0x80 /* MPEG-2 Low Complexity */
-#define A2DP_AAC_OBJECT_TYPE_MPEG4_LC       0x40 /* MPEG-4 Low Complexity */
-#define A2DP_AAC_OBJECT_TYPE_MPEG4_LTP      0x20 /* MPEG-4 Long Term Prediction */
+#define A2DP_AAC_OBJECT_TYPE_MPEG2_LC 0x80 /* MPEG-2 Low Complexity */
+#define A2DP_AAC_OBJECT_TYPE_MPEG4_LC 0x40 /* MPEG-4 Low Complexity */
+#define A2DP_AAC_OBJECT_TYPE_MPEG4_LTP 0x20 /* MPEG-4 Long Term Prediction */
 #define A2DP_AAC_OBJECT_TYPE_MPEG4_SCALABLE 0x10
 
 // [Octet 1] Sampling Frequency - 8000 to 44100
 #define A2DP_AAC_SAMPLING_FREQ_MASK0 0xFF
-#define A2DP_AAC_SAMPLING_FREQ_8000  0x80
+#define A2DP_AAC_SAMPLING_FREQ_8000 0x80
 #define A2DP_AAC_SAMPLING_FREQ_11025 0x40
 #define A2DP_AAC_SAMPLING_FREQ_12000 0x20
 #define A2DP_AAC_SAMPLING_FREQ_16000 0x10
@@ -57,13 +57,13 @@
 #define A2DP_AAC_SAMPLING_FREQ_88200 (0x20 << 8)
 #define A2DP_AAC_SAMPLING_FREQ_96000 (0x10 << 8)
 // [Octet 2], [Bits 2-3] Channel Mode
-#define A2DP_AAC_CHANNEL_MODE_MASK   0x0C
-#define A2DP_AAC_CHANNEL_MODE_MONO   0x08
+#define A2DP_AAC_CHANNEL_MODE_MASK 0x0C
+#define A2DP_AAC_CHANNEL_MODE_MONO 0x08
 #define A2DP_AAC_CHANNEL_MODE_STEREO 0x04
 // [Octet 2], [Bits 0-1] RFA
 // [Octet 3], [Bit 7] Variable Bit Rate Supported
-#define A2DP_AAC_VARIABLE_BIT_RATE_MASK     0x80
-#define A2DP_AAC_VARIABLE_BIT_RATE_ENABLED  0x80
+#define A2DP_AAC_VARIABLE_BIT_RATE_MASK 0x80
+#define A2DP_AAC_VARIABLE_BIT_RATE_ENABLED 0x80
 #define A2DP_AAC_VARIABLE_BIT_RATE_DISABLED 0x00
 // [Octet 3], [Bits 0-6] Bit Rate - Bits 16-22 in the 23-bit UiMsbf
 #define A2DP_AAC_BIT_RATE_MASK0 (0x7F << 16)

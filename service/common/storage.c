@@ -26,15 +26,15 @@
 #include "utils/log.h"
 #include "uv_ext.h"
 
-#define BT_DB_FOLDER_PATH       "/data/misc/bt"
-#define BT_DB_FILE_NAME         "bt_storage.db"
-#define BT_DB_FILE_PATH         BT_DB_FOLDER_PATH "/" BT_DB_FILE_NAME
+#define BT_DB_FOLDER_PATH "/data/misc/bt"
+#define BT_DB_FILE_NAME "bt_storage.db"
+#define BT_DB_FILE_PATH BT_DB_FOLDER_PATH "/" BT_DB_FILE_NAME
 #define REMOTE_DEVICE_FILE_NAME "device.db"
 
-#define BT_KEY_ADAPTER_INFO     "AdapterInfo"
-#define BT_KEY_BTBOND           "BtBonded"
-#define BT_KEY_BLEBOND          "BleBonded"
-#define BT_KEY_BLEWHITELIST     "WhiteList"
+#define BT_KEY_ADAPTER_INFO "AdapterInfo"
+#define BT_KEY_BTBOND "BtBonded"
+#define BT_KEY_BLEBOND "BleBonded"
+#define BT_KEY_BLEWHITELIST "WhiteList"
 #define BT_KEY_BLERESOLVINGLIST "ResolvingList"
 
 typedef struct {
@@ -155,12 +155,12 @@ int bt_storage_save_bonded_device(remote_device_properties_t *remote, uint16_t s
 
 int bt_storage_save_whitelist(remote_device_le_properties_t *remote, uint16_t size)
 {
-   return bt_storage_save_remote_device(BT_KEY_BLEWHITELIST, remote, sizeof(*remote), size);
+    return bt_storage_save_remote_device(BT_KEY_BLEWHITELIST, remote, sizeof(*remote), size);
 }
 
 int bt_storage_save_le_bonded_device(remote_device_le_properties_t *remote, uint16_t size)
 {
-   return bt_storage_save_remote_device(BT_KEY_BLEBOND, remote, sizeof(*remote), size);
+    return bt_storage_save_remote_device(BT_KEY_BLEBOND, remote, sizeof(*remote), size);
 }
 
 int bt_storage_load_bonded_device(load_storage_callback_t cb)

@@ -58,7 +58,7 @@ typedef void (*transport_alloc_cb_t)(uint8_t ch_id, uint8_t **buffer, size_t *le
 typedef void (*transport_read_cb_t)(uint8_t ch_id, uint8_t *buffer, ssize_t len);
 typedef void (*transport_write_cb_t)(uint8_t ch_id, uint8_t *buffer);
 
-#define AUDIO_TRANS_CH_NUM    4
+#define AUDIO_TRANS_CH_NUM 4
 #define AUDIO_TRANS_CH_ID_ALL 5 /* used to address all the ch id at once */
 
 const char *audio_transport_dump_event(uint8_t event);

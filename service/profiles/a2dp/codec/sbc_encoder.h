@@ -39,10 +39,10 @@
 
 #define SBC_MAX_NUM_OF_SUBBANDS 8
 #define SBC_MAX_NUM_OF_CHANNELS 2
-#define SBC_MAX_NUM_OF_BLOCKS   16
+#define SBC_MAX_NUM_OF_BLOCKS 16
 
 #define SBC_LOUDNESS 0
-#define SBC_SNR      1
+#define SBC_SNR 1
 
 #define SUB_BANDS_8 8
 #define SUB_BANDS_4 4
@@ -52,9 +52,9 @@
 #define SBC_SF_44100 2
 #define SBC_SF_48000 3
 
-#define SBC_MONO         0
-#define SBC_DUAL         1
-#define SBC_STEREO       2
+#define SBC_MONO 0
+#define SBC_DUAL 1
+#define SBC_STEREO 2
 #define SBC_JOINT_STEREO 3
 
 #define SBC_BLOCK_0 4

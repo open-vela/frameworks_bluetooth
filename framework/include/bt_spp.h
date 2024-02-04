@@ -27,7 +27,7 @@ extern "C" {
 #include "bt_device.h"
 
 #ifndef BTSYMBOLS
-# define BTSYMBOLS(s) s
+#define BTSYMBOLS(s) s
 #endif
 
 /**

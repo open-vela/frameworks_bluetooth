@@ -35,16 +35,16 @@ bt_instance_t *bluetooth_create_instance(void)
 
 #if defined(CONFIG_BLUETOOTH_SERVER)
     status = bt_socket_client_init(ins, PF_LOCAL,
-        "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
+                                   "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
 #elif defined(CONFIG_NET_RPMSG)
     status = bt_socket_client_init(ins, AF_RPMSG,
-        "bluetooth", CONFIG_BLUETOOTH_RPMSG_CPUNAME, CONFIG_BLUETOOTH_SOCKET_PORT);
+                                   "bluetooth", CONFIG_BLUETOOTH_RPMSG_CPUNAME, CONFIG_BLUETOOTH_SOCKET_PORT);
 #elif defined(CONFIG_NET_IPv4)
     status = bt_socket_client_init(ins, AF_INET,
-        "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
+                                   "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
 #else
     status = bt_socket_client_init(ins, PF_LOCAL,
-        "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
+                                   "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
 #endif
 
     if (status != BT_STATUS_SUCCESS) {
@@ -55,9 +55,9 @@ bt_instance_t *bluetooth_create_instance(void)
     status = manager_create_instance((uint32_t)ins, BLUETOOTH_SYSTEM,
                                      "local", getpid(), 0, &ins->app_id);
     if (status != BT_STATUS_SUCCESS) {
-      bt_socket_client_deinit(ins);
-      free(ins);
-      ins = NULL;
+        bt_socket_client_deinit(ins);
+        free(ins);
+        ins = NULL;
     }
 #if 0
     packet.manager_pl._bluetooth_create_instance.pid = getpid();

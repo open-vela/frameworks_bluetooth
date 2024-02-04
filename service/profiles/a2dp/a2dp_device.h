@@ -42,12 +42,12 @@
 #include "a2dp_state_machine.h"
 #include "bt_a2dp.h"
 
-#define SEP_SRC     0 /* Source SEP */
-#define SEP_SNK     1 /* Sink SEP */
+#define SEP_SRC 0 /* Source SEP */
+#define SEP_SNK 1 /* Sink SEP */
 #define SEP_INVALID 3 /* Invalid SEP */
 
 #define SVR_SOURCE 0
-#define SVR_SINK   1
+#define SVR_SINK 1
 
 typedef struct {
     bt_address_t *bd_addr;

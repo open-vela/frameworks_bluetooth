@@ -50,8 +50,8 @@
 #include "service_loop.h"
 
 #define MAX_FRAME_NUM_PER_TICK 14
-#define STREAM_DELAY_MS        10
-#define STREAM_FLUSH_SIZE      (1024)
+#define STREAM_DELAY_MS 10
+#define STREAM_FLUSH_SIZE (1024)
 
 typedef enum {
     STATE_OFF,

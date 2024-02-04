@@ -37,7 +37,7 @@
 #include "bluetooth_define.h"
 #include "bt_vendor.h"
 
-#define AVDT_MEDIA_OFFSET   23
+#define AVDT_MEDIA_OFFSET 23
 #define MAX_2MBPS_AVDTP_MTU 663 // 2DH5 MTU=679, -12 for AVDTP, -4 for L2CAP
 #define MAX_3MBPS_AVDTP_MTU 1005 // 3DH5 MTU=1021, -12 for AVDTP, -4 for L2CAP
 

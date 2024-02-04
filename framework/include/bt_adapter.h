@@ -24,7 +24,7 @@ extern "C" {
 #include "bt_device.h"
 
 #ifndef BTSYMBOLS
-# define BTSYMBOLS(s) s
+#define BTSYMBOLS(s) s
 #endif
 
 /**
@@ -379,12 +379,11 @@ bt_status_t BTSYMBOLS(bt_adapter_set_io_capability)(bt_instance_t *ins, bt_io_ca
  */
 bt_io_capability_t BTSYMBOLS(bt_adapter_get_io_capability)(bt_instance_t *ins);
 
-
 bt_status_t BTSYMBOLS(bt_adapter_set_inquiry_scan_parameters)(bt_instance_t *ins, bt_scan_type_t type,
-                                                            uint16_t interval, uint16_t window);
+                                                              uint16_t interval, uint16_t window);
 
 bt_status_t BTSYMBOLS(bt_adapter_set_page_scan_parameters)(bt_instance_t *ins, bt_scan_type_t type,
-                                                        uint16_t interval, uint16_t window);
+                                                           uint16_t interval, uint16_t window);
 /**
  * @brief Get adapter bonded devices list
  *
@@ -541,15 +540,15 @@ uint16_t BTSYMBOLS(bt_adapter_get_le_appearance)(bt_instance_t *ins);
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_le_enable_key_derivation)(bt_instance_t *ins,
-                                                bool brkey_to_lekey,
-                                                bool lekey_to_brkey);
+                                                           bool brkey_to_lekey,
+                                                           bool lekey_to_brkey);
 
 bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist)(bt_instance_t *ins, bt_address_t *addr);
 
 bt_status_t BTSYMBOLS(bt_adapter_le_remove_whitelist)(bt_instance_t *ins, bt_address_t *addr);
 
 bt_status_t BTSYMBOLS(bt_adapter_set_afh_channel_classification)(bt_instance_t *ins, uint16_t central_frequency,
-                                                  uint16_t band_width, uint16_t number);
+                                                                 uint16_t band_width, uint16_t number);
 
 bt_status_t BTSYMBOLS(bt_adapter_set_auto_sniff)(bt_instance_t *ins, bt_auto_sniff_params_t *params);
 #ifdef __cplusplus

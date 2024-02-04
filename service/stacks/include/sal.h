@@ -19,7 +19,7 @@
 #include "bluetooth_define.h"
 #include "utils/log.h"
 
-#define ARRAY_SIZE(x)        (sizeof(x) / sizeof((x)[0]))
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 #define SAL_NOT_SUPPORT                                    \
     {                                                      \

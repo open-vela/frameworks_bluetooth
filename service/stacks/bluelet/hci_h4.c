@@ -21,7 +21,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-
 #include "stack_adapter_gap.h"
 #include <nuttx/wireless/bluetooth/bt_ioctl.h>
 
