@@ -1243,8 +1243,10 @@ static bt_status_t lea_ccp_startup(profile_on_startup_t cb)
 
 fail:
     bt_list_free(service->lea_calls);
+    service->lea_calls = NULL;
     free((void *)service->info);
     bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
     pthread_mutex_destroy(&service->ccp_lock);
     return status;
 }

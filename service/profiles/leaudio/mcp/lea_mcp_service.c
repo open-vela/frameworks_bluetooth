@@ -1198,6 +1198,7 @@ static bt_status_t lea_mcp_startup(profile_on_startup_t cb)
     return BT_STATUS_SUCCESS;
 fail:
     bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
     pthread_mutex_destroy(&service->device_lock);
     return status;
 }

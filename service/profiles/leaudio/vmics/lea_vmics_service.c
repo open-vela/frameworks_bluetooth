@@ -253,6 +253,7 @@ static bt_status_t lea_vmics_startup(profile_on_startup_t cb)
 
 fail:
     bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
     pthread_mutex_destroy(&service->vmics_lock);
     return status;
 }

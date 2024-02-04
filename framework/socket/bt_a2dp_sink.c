@@ -37,12 +37,14 @@ void *bt_a2dp_sink_register_callbacks(bt_instance_t *ins, const a2dp_sink_callba
     handle = bt_remote_callbacks_register(ins->a2dp_sink_callbacks, NULL, (void *)callbacks);
     if (handle == NULL) {
         bt_callbacks_list_free(ins->a2dp_sink_callbacks);
+        ins->a2dp_sink_callbacks = NULL;
         return handle;
     }
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SINK_REGISTER_CALLBACKS);
     if (status != BT_STATUS_SUCCESS || packet.a2dp_sink_r.status != BT_STATUS_SUCCESS) {
         bt_callbacks_list_free(ins->a2dp_sink_callbacks);
+        ins->a2dp_sink_callbacks = NULL;
         return NULL;
     }
 

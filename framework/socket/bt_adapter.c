@@ -41,12 +41,14 @@ void *bt_adapter_register_callback(bt_instance_t *ins, const adapter_callbacks_t
     handle = bt_remote_callbacks_register(ins->adapter_callbacks, NULL, (void *)adapter_cbs);
     if (handle == NULL) {
         bt_callbacks_list_free(ins->adapter_callbacks);
+        ins->adapter_callbacks = NULL;
         return handle;
     }
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_REGISTER_CALLBACK);
     if (status != BT_STATUS_SUCCESS || packet.adpt_r.status != BT_STATUS_SUCCESS) {
         bt_callbacks_list_free(ins->adapter_callbacks);
+        ins->adapter_callbacks = NULL;
         return NULL;
     }
 

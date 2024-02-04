@@ -42,12 +42,14 @@ void *bt_hfp_ag_register_callbacks(bt_instance_t *ins, const hfp_ag_callbacks_t 
     cookie = bt_remote_callbacks_register(ins->hfp_ag_callbacks, NULL, (void *)callbacks);
     if (cookie == NULL) {
         bt_callbacks_list_free(ins->hfp_ag_callbacks);
+        ins->hfp_ag_callbacks = NULL;
         return NULL;
     }
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_REGISTER_CALLBACK);
     if (status != BT_STATUS_SUCCESS || packet.hfp_ag_r.status != BT_STATUS_SUCCESS) {
         bt_callbacks_list_free(ins->hfp_ag_callbacks);
+        ins->hfp_ag_callbacks = NULL;
         return NULL;
     }
 

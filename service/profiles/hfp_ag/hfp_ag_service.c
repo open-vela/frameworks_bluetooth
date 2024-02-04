@@ -230,7 +230,9 @@ static void ag_startup(profile_on_startup_t on_startup)
 
 fail:
     bt_list_free(service->ag_devices);
+    service->ag_devices = NULL;
     bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
     pthread_mutex_destroy(&service->device_lock);
     on_startup(PROFILE_HFP_AG, false);
 }

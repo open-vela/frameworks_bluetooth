@@ -210,7 +210,9 @@ static void hf_startup(profile_on_startup_t on_startup)
     return;
 fail:
     bt_list_free(service->hf_devices);
+    service->hf_devices = NULL;
     bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
     pthread_mutex_destroy(&service->device_lock);
     on_startup(PROFILE_HFP_HF, false);
 }
