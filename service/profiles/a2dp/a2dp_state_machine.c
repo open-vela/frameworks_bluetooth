@@ -66,10 +66,10 @@
 #else
 #define A2DP_CONNECT_TIMEOUT (CONFIG_BLUETOOTH_A2DP_CONNECT_TIMEOUT * 1000)
 #endif
-#define A2DP_START_TIMEOUT   5000
+#define A2DP_START_TIMEOUT 5000
 #define A2DP_SUSPEND_TIMEOUT 5000
-#define A2DP_DELAY_START     100
-#define A2DP_DELAY_SUSPEND   200
+#define A2DP_DELAY_START 100
+#define A2DP_DELAY_SUSPEND 200
 #define A2DP_OFFLOAD_TIMEOUT 500
 
 typedef enum pending_state {
@@ -174,7 +174,7 @@ static char *stack_event_to_string(a2dp_event_type_t event);
     } while (0);
 
 #define A2DP_DBG_ENTER(__sm, __addr) A2DP_TRANS_DBG(__sm, __addr, "Enter")
-#define A2DP_DBG_EXIT(__sm, __addr)  A2DP_TRANS_DBG(__sm, __addr, "Exit ")
+#define A2DP_DBG_EXIT(__sm, __addr) A2DP_TRANS_DBG(__sm, __addr, "Exit ")
 #define A2DP_DBG_EVENT(__sm, __addr, __event)                                                      \
     do {                                                                                           \
         char __addr_str[BT_ADDR_STR_LENGTH] = { 0 };                                               \

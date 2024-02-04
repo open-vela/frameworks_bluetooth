@@ -4,30 +4,6 @@ BasedOnStyle:  WebKit
 AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
 AlignArrayOfStructures: Left
-AlignConsecutiveAssignments:
-  Enabled:         false
-  AcrossEmptyLines: false
-  AcrossComments:  false
-  AlignCompound:   false
-  PadOperators:    false
-AlignConsecutiveBitFields:
-  Enabled:         false
-  AcrossEmptyLines: false
-  AcrossComments:  false
-  AlignCompound:   false
-  PadOperators:    false
-AlignConsecutiveDeclarations:
-  Enabled:         false
-  AcrossEmptyLines: false
-  AcrossComments:  false
-  AlignCompound:   false
-  PadOperators:    false
-AlignConsecutiveMacros:
-  Enabled:         true
-  AcrossEmptyLines: false
-  AcrossComments:  false
-  AlignCompound:   false
-  PadOperators:    false
 AlignEscapedNewlines: Left
 AlignOperands:   Align
 AlignTrailingComments: false
@@ -68,7 +44,6 @@ BraceWrapping:
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
 BreakBeforeBinaryOperators: None
-BreakBeforeConceptDeclarations: Always
 BreakBeforeBraces: WebKit
 BreakBeforeInheritanceComma: false
 BreakInheritanceList: BeforeColon
@@ -79,7 +54,6 @@ BreakAfterJavaFieldAnnotations: false
 BreakStringLiterals: true
 ColumnLimit:     0
 CommentPragmas:  '^ IWYU pragma:'
-QualifierAlignment: Leave
 CompactNamespaces: false
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
@@ -90,7 +64,6 @@ DisableFormat:   false
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: LogicalBlock
 ExperimentalAutoDetectBinPacking: false
-PackConstructorInitializers: BinPack
 BasedOnStyle:    ''
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 AllowAllConstructorInitializersOnNextLine: true
@@ -123,10 +96,8 @@ IndentCaseBlocks: false
 IndentGotoLabels: true
 IndentPPDirectives: None
 IndentExternBlock: AfterExternBlock
-IndentRequiresClause: true
 IndentWidth:     4
 IndentWrappedFunctionNames: false
-InsertBraces:    false
 InsertTrailingCommas: None
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
@@ -145,7 +116,6 @@ PenaltyBreakAssignment: 2
 PenaltyBreakBeforeFirstCallParameter: 19
 PenaltyBreakComment: 300
 PenaltyBreakFirstLessLess: 120
-PenaltyBreakOpenParenthesis: 0
 PenaltyBreakString: 1000
 PenaltyBreakTemplateDeclaration: 10
 PenaltyExcessCharacter: 1000000
@@ -155,9 +125,6 @@ PointerAlignment: Right
 PPIndentWidth:   -1
 ReferenceAlignment: Pointer
 ReflowComments:  true
-RemoveBracesLLVM: false
-RequiresClausePosition: OwnLine
-SeparateDefinitionBlocks: Leave
 ShortNamespaceLines: 1
 SortIncludes:    CaseSensitive
 SortJavaStaticImport: Before
@@ -171,16 +138,6 @@ SpaceBeforeCpp11BracedList: true
 SpaceBeforeCtorInitializerColon: true
 SpaceBeforeInheritanceColon: true
 SpaceBeforeParens: ControlStatements
-SpaceBeforeParensOptions:
-  AfterControlStatements: true
-  AfterForeachMacros: true
-  AfterFunctionDefinitionName: false
-  AfterFunctionDeclarationName: false
-  AfterIfMacros:   true
-  AfterOverloadedOperator: false
-  AfterRequiresInClause: false
-  AfterRequiresInExpression: false
-  BeforeNonEmptyParentheses: false
 SpaceAroundPointerQualifiers: Default
 SpaceBeforeRangeBasedForLoopColon: true
 SpaceInEmptyBlock: true
