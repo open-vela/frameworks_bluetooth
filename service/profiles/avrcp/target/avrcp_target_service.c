@@ -433,6 +433,7 @@ static void target_startup(profile_on_startup_t startup)
 
     if (bt_sal_avrcp_target_init() != BT_STATUS_SUCCESS) {
         bt_list_free(g_avrc_target.devices);
+        g_avrc_target.devices = NULL;
         startup(PROFILE_AVRCP_TG, false);
         pthread_mutex_unlock(&g_avrc_target.mutex);
         return;

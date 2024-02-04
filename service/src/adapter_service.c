@@ -1474,7 +1474,9 @@ void adapter_cleanup(void)
     if (adapter->stm) {
         adapter_lock();
         bt_list_free(adapter->devices);
+        adapter->devices = NULL;
         bt_callbacks_list_free(adapter->adapter_callbacks);
+        adapter->adapter_callbacks = NULL;
         adapter_state_machine_destory(adapter->stm);
         adapter_unlock();
         pthread_mutex_destroy(&adapter->adapter_lock);

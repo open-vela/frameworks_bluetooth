@@ -1135,8 +1135,11 @@ static void lea_client_cleanup(void)
     pthread_mutex_lock(&service->group_lock);
     bt_list_free(service->leac_groups);
     bt_list_free(service->leac_streams);
+    service->leac_groups = NULL;
+    service->leac_streams = NULL;
     index_allocator_delete(service->index_allocator);
     bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
     pthread_mutex_destroy(&service->group_lock);
     pthread_mutex_destroy(&service->stream_lock);
     pthread_mutex_unlock(&service->group_lock);
