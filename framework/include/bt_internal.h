@@ -23,13 +23,13 @@ extern "C" {
 #endif
 
 #ifdef BTSYMBOLS
-# undef BTSYMBOLS
+#undef BTSYMBOLS
 #endif
 
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
-# define BTSYMBOLS(s) server_##s
+#define BTSYMBOLS(s) server_##s
 #else
-# define BTSYMBOLS(s) s
+#define BTSYMBOLS(s) s
 #endif
 
 #ifdef __cplusplus

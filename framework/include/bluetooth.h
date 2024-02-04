@@ -34,7 +34,7 @@ extern "C" {
 #include "uv_thread_loop.h"
 
 #ifndef BTSYMBOLS
-# define BTSYMBOLS(s) s
+#define BTSYMBOLS(s) s
 #endif
 
 typedef enum {
@@ -138,121 +138,121 @@ typedef enum {
 
 typedef uint8_t bt_128key_t[16];
 
-#define COD_SERVICE_BITS(c)      (c & 0xFFE000) /* The major service classes field */
+#define COD_SERVICE_BITS(c) (c & 0xFFE000) /* The major service classes field */
 #define COD_DEVICE_MAJOR_BITS(c) (c & 0x001F00) /* The major device classes field */
 #define COD_DEVICE_CLASS_BITS(c) (c & 0x001FFC) /* The device classes field, including major and minor */
 
-#define COD_SERVICE_LDM         0x002000 /* Limited Discoverable Mode */
-#define COD_SERVICE_POSITION    0x010000 /* Positioning (Location identification) */
-#define COD_SERVICE_NETWORK     0x020000 /* Networking (LAN, Ad hoc, ...) */
-#define COD_SERVICE_RENDERING   0x040000 /* Rending (Printing, Speaker, ...) */
-#define COD_SERVICE_CAPTURING   0x080000 /* Capturing (Scanner, Microphone, ...) */
-#define COD_SERVICE_OBJECT      0x100000 /* Object Transfer (v-Inbox, v-Folder, ...) */
-#define COD_SERVICE_AUDIO       0x200000 /* Audio (Speaker, Microphone, Headset service, ...) */
-#define COD_SERVICE_TELEPHONY   0x400000 /* Telephony (Cordless telephony, Modem, Headset service, ...) */
+#define COD_SERVICE_LDM 0x002000 /* Limited Discoverable Mode */
+#define COD_SERVICE_POSITION 0x010000 /* Positioning (Location identification) */
+#define COD_SERVICE_NETWORK 0x020000 /* Networking (LAN, Ad hoc, ...) */
+#define COD_SERVICE_RENDERING 0x040000 /* Rending (Printing, Speaker, ...) */
+#define COD_SERVICE_CAPTURING 0x080000 /* Capturing (Scanner, Microphone, ...) */
+#define COD_SERVICE_OBJECT 0x100000 /* Object Transfer (v-Inbox, v-Folder, ...) */
+#define COD_SERVICE_AUDIO 0x200000 /* Audio (Speaker, Microphone, Headset service, ...) */
+#define COD_SERVICE_TELEPHONY 0x400000 /* Telephony (Cordless telephony, Modem, Headset service, ...) */
 #define COD_SERVICE_INFORMATION 0x800000 /* Information (WEB-server, WAP-server, ...) */
 
 /* * Major Device Classes bit mask */
 #define COD_DEVICE_MISCELLANEOUS 0x000000 /* Major Device Class - Miscellaneous */
-#define COD_DEVICE_COMPUTER      0x000100 /* Major Device Class - Computer (desktop, notebook, PDA, organizers, ...) */
-#define COD_DEVICE_PHONE         0x000200 /* Major Device Class - Phone (cellular, cordless, payphone, modem, ...) */
-#define COD_DEVICE_LAP           0x000300 /* Major Device Class - LAN/Network Access Point */
-#define COD_DEVICE_AV            0x000400 /* Major Device Class - Audio/Video (headset, speaker, stereo, video display, vcr...) */
-#define COD_DEVICE_PERIPHERAL    0x000500 /* Major Device Class - Peripheral (mouse, joystick, keyboards, ...) */
-#define COD_DEVICE_IMAGING       0x000600 /* Major Device Class - Imaging (printing, scanner, camera, display, ...) */
-#define COD_DEVICE_WEARABLE      0x000700 /* Major Device Class - Wearable */
-#define COD_DEVICE_TOY           0x000800 /* Major Device Class - Toy */
-#define COD_DEVICE_HEALTH        0x000900 /* Major Device Class - Health */
-#define COD_DEVICE_UNCLASSIFIED  0x001F00 /* Major Device Class - Uncategorized, specific device code not specified */
+#define COD_DEVICE_COMPUTER 0x000100 /* Major Device Class - Computer (desktop, notebook, PDA, organizers, ...) */
+#define COD_DEVICE_PHONE 0x000200 /* Major Device Class - Phone (cellular, cordless, payphone, modem, ...) */
+#define COD_DEVICE_LAP 0x000300 /* Major Device Class - LAN/Network Access Point */
+#define COD_DEVICE_AV 0x000400 /* Major Device Class - Audio/Video (headset, speaker, stereo, video display, vcr...) */
+#define COD_DEVICE_PERIPHERAL 0x000500 /* Major Device Class - Peripheral (mouse, joystick, keyboards, ...) */
+#define COD_DEVICE_IMAGING 0x000600 /* Major Device Class - Imaging (printing, scanner, camera, display, ...) */
+#define COD_DEVICE_WEARABLE 0x000700 /* Major Device Class - Wearable */
+#define COD_DEVICE_TOY 0x000800 /* Major Device Class - Toy */
+#define COD_DEVICE_HEALTH 0x000900 /* Major Device Class - Health */
+#define COD_DEVICE_UNCLASSIFIED 0x001F00 /* Major Device Class - Uncategorized, specific device code not specified */
 
 /* * Minor Device Class - Computer major class */
 #define COD_COMPUTER_UNCLASSIFIED (COD_DEVICE_COMPUTER | 0x000000)
-#define COD_COMPUTER_DESKTOP      (COD_DEVICE_COMPUTER | 0x000004)
-#define COD_COMPUTER_SERVER       (COD_DEVICE_COMPUTER | 0x000008)
-#define COD_COMPUTER_LAPTOP       (COD_DEVICE_COMPUTER | 0x00000C)
-#define COD_COMPUTER_HANDHELD     (COD_DEVICE_COMPUTER | 0x000010)
-#define COD_COMPUTER_PALMSIZED    (COD_DEVICE_COMPUTER | 0x000014)
-#define COD_COMPUTER_WEARABLE     (COD_DEVICE_COMPUTER | 0x000018)
+#define COD_COMPUTER_DESKTOP (COD_DEVICE_COMPUTER | 0x000004)
+#define COD_COMPUTER_SERVER (COD_DEVICE_COMPUTER | 0x000008)
+#define COD_COMPUTER_LAPTOP (COD_DEVICE_COMPUTER | 0x00000C)
+#define COD_COMPUTER_HANDHELD (COD_DEVICE_COMPUTER | 0x000010)
+#define COD_COMPUTER_PALMSIZED (COD_DEVICE_COMPUTER | 0x000014)
+#define COD_COMPUTER_WEARABLE (COD_DEVICE_COMPUTER | 0x000018)
 
 /* * Minor Device Class - Phone major class */
-#define COD_PHONE_UNCLASSIFIED     (COD_DEVICE_PHONE | 0x000000)
-#define COD_PHONE_CELLULAR         (COD_DEVICE_PHONE | 0x000004)
-#define COD_PHONE_CORDLESS         (COD_DEVICE_PHONE | 0x000008)
-#define COD_PHONE_SMARTPHONE       (COD_DEVICE_PHONE | 0x00000C)
-#define COD_PHONE_WIREDMODEM       (COD_DEVICE_PHONE | 0x000010)
+#define COD_PHONE_UNCLASSIFIED (COD_DEVICE_PHONE | 0x000000)
+#define COD_PHONE_CELLULAR (COD_DEVICE_PHONE | 0x000004)
+#define COD_PHONE_CORDLESS (COD_DEVICE_PHONE | 0x000008)
+#define COD_PHONE_SMARTPHONE (COD_DEVICE_PHONE | 0x00000C)
+#define COD_PHONE_WIREDMODEM (COD_DEVICE_PHONE | 0x000010)
 #define COD_PHONE_COMMONISDNACCESS (COD_DEVICE_PHONE | 0x000014)
-#define COD_PHONE_SIMCARDREADER    (COD_DEVICE_PHONE | 0x000018)
+#define COD_PHONE_SIMCARDREADER (COD_DEVICE_PHONE | 0x000018)
 
 /* * Minor Device Class - LAN/Network access point major class */
 #define COD_LAP_FULLY_AVAILABLE (COD_DEVICE_LAP | 0x000000)
-#define COD_LAP_17_UTILIZED     (COD_DEVICE_LAP | 0x000020)
-#define COD_LAP_33_UTILIZED     (COD_DEVICE_LAP | 0x000040)
-#define COD_LAP_50_UTILIZED     (COD_DEVICE_LAP | 0x000060)
-#define COD_LAP_67_UTILIZED     (COD_DEVICE_LAP | 0x000080)
-#define COD_LAP_83_UTILIZED     (COD_DEVICE_LAP | 0x0000A0)
-#define COD_LAP_99_UTILIZED     (COD_DEVICE_LAP | 0x0000C0)
-#define COD_LAP_UNAVAILABLE     (COD_DEVICE_LAP | 0x0000E0)
+#define COD_LAP_17_UTILIZED (COD_DEVICE_LAP | 0x000020)
+#define COD_LAP_33_UTILIZED (COD_DEVICE_LAP | 0x000040)
+#define COD_LAP_50_UTILIZED (COD_DEVICE_LAP | 0x000060)
+#define COD_LAP_67_UTILIZED (COD_DEVICE_LAP | 0x000080)
+#define COD_LAP_83_UTILIZED (COD_DEVICE_LAP | 0x0000A0)
+#define COD_LAP_99_UTILIZED (COD_DEVICE_LAP | 0x0000C0)
+#define COD_LAP_UNAVAILABLE (COD_DEVICE_LAP | 0x0000E0)
 
 /* * Minor Device Class - Audio/Video major class */
-#define COD_AV_UNCLASSIFIED        (COD_DEVICE_AV | 0x000000)
-#define COD_AV_HEADSET             (COD_DEVICE_AV | 0x000004)
-#define COD_AV_HANDSFREE           (COD_DEVICE_AV | 0x000008)
-#define COD_AV_HEADANDHAND         (COD_DEVICE_AV | 0x00000C)
-#define COD_AV_MICROPHONE          (COD_DEVICE_AV | 0x000010)
-#define COD_AV_LOUD_SPEAKER        (COD_DEVICE_AV | 0x000014)
-#define COD_AV_HEADPHONES          (COD_DEVICE_AV | 0x000018)
-#define COD_AV_PORTABLE_AUDIO      (COD_DEVICE_AV | 0x00001C)
-#define COD_AV_CAR_AUDIO           (COD_DEVICE_AV | 0x000020)
-#define COD_AV_SETTOPBOX           (COD_DEVICE_AV | 0x000024)
-#define COD_AV_HIFI_AUDIO          (COD_DEVICE_AV | 0x000028)
-#define COD_AV_VCR                 (COD_DEVICE_AV | 0x00002C)
-#define COD_AV_VIDEO_CAMERA        (COD_DEVICE_AV | 0x000030)
-#define COD_AV_CAMCORDER           (COD_DEVICE_AV | 0x000034)
-#define COD_AV_VIDEO_MONITOR       (COD_DEVICE_AV | 0x000038)
+#define COD_AV_UNCLASSIFIED (COD_DEVICE_AV | 0x000000)
+#define COD_AV_HEADSET (COD_DEVICE_AV | 0x000004)
+#define COD_AV_HANDSFREE (COD_DEVICE_AV | 0x000008)
+#define COD_AV_HEADANDHAND (COD_DEVICE_AV | 0x00000C)
+#define COD_AV_MICROPHONE (COD_DEVICE_AV | 0x000010)
+#define COD_AV_LOUD_SPEAKER (COD_DEVICE_AV | 0x000014)
+#define COD_AV_HEADPHONES (COD_DEVICE_AV | 0x000018)
+#define COD_AV_PORTABLE_AUDIO (COD_DEVICE_AV | 0x00001C)
+#define COD_AV_CAR_AUDIO (COD_DEVICE_AV | 0x000020)
+#define COD_AV_SETTOPBOX (COD_DEVICE_AV | 0x000024)
+#define COD_AV_HIFI_AUDIO (COD_DEVICE_AV | 0x000028)
+#define COD_AV_VCR (COD_DEVICE_AV | 0x00002C)
+#define COD_AV_VIDEO_CAMERA (COD_DEVICE_AV | 0x000030)
+#define COD_AV_CAMCORDER (COD_DEVICE_AV | 0x000034)
+#define COD_AV_VIDEO_MONITOR (COD_DEVICE_AV | 0x000038)
 #define COD_AV_DISPLAY_AND_SPEAKER (COD_DEVICE_AV | 0x00003C)
-#define COD_AV_VIDEO_CONFERENCING  (COD_DEVICE_AV | 0x000040)
-#define COD_AV_GAME_OR_TOY         (COD_DEVICE_AV | 0x000048)
+#define COD_AV_VIDEO_CONFERENCING (COD_DEVICE_AV | 0x000040)
+#define COD_AV_GAME_OR_TOY (COD_DEVICE_AV | 0x000048)
 
 /* * Minor Device Class - Peripheral major class */
-#define COD_PERIPHERAL_UNCLASSIFIED  (COD_DEVICE_PERIPHERAL | 0x000000)
-#define COD_PERIPHERAL_JOYSTICK      (COD_DEVICE_PERIPHERAL | 0x000004)
-#define COD_PERIPHERAL_GAMEPAD       (COD_DEVICE_PERIPHERAL | 0x000008)
-#define COD_PERIPHERAL_REMCONTROL    (COD_DEVICE_PERIPHERAL | 0x00000C)
-#define COD_PERIPHERAL_SENSE         (COD_DEVICE_PERIPHERAL | 0x000010)
-#define COD_PERIPHERAL_TABLET        (COD_DEVICE_PERIPHERAL | 0x000014)
+#define COD_PERIPHERAL_UNCLASSIFIED (COD_DEVICE_PERIPHERAL | 0x000000)
+#define COD_PERIPHERAL_JOYSTICK (COD_DEVICE_PERIPHERAL | 0x000004)
+#define COD_PERIPHERAL_GAMEPAD (COD_DEVICE_PERIPHERAL | 0x000008)
+#define COD_PERIPHERAL_REMCONTROL (COD_DEVICE_PERIPHERAL | 0x00000C)
+#define COD_PERIPHERAL_SENSE (COD_DEVICE_PERIPHERAL | 0x000010)
+#define COD_PERIPHERAL_TABLET (COD_DEVICE_PERIPHERAL | 0x000014)
 #define COD_PERIPHERAL_SIMCARDREADER (COD_DEVICE_PERIPHERAL | 0x000018)
-#define COD_PERIPHERAL_KEYBOARD      (COD_DEVICE_PERIPHERAL | 0x000040)
-#define COD_PERIPHERAL_POINT         (COD_DEVICE_PERIPHERAL | 0x000080)
-#define COD_PERIPHERAL_KEYORPOINT    (COD_DEVICE_PERIPHERAL | 0x0000C0)
+#define COD_PERIPHERAL_KEYBOARD (COD_DEVICE_PERIPHERAL | 0x000040)
+#define COD_PERIPHERAL_POINT (COD_DEVICE_PERIPHERAL | 0x000080)
+#define COD_PERIPHERAL_KEYORPOINT (COD_DEVICE_PERIPHERAL | 0x0000C0)
 
 /* * Minor Device Class - Imaging major class */
 #define COD_IMAGING_DISPLAY (COD_DEVICE_IMAGING | 0x000010)
-#define COD_IMAGING_CAMERA  (COD_DEVICE_IMAGING | 0x000020)
+#define COD_IMAGING_CAMERA (COD_DEVICE_IMAGING | 0x000020)
 #define COD_IMAGING_SCANNER (COD_DEVICE_IMAGING | 0x000040)
 #define COD_IMAGING_PRINTER (COD_DEVICE_IMAGING | 0x000080)
 
 /* * Minor Device Class - Wearable major class */
-#define COD_WERABLE_WATCH   (COD_DEVICE_WEARABLE | 0x000004)
-#define COD_WERABLE_PAGER   (COD_DEVICE_WEARABLE | 0x000008)
-#define COD_WERABLE_JACKET  (COD_DEVICE_WEARABLE | 0x00000C)
-#define COD_WERABLE_HELMET  (COD_DEVICE_WEARABLE | 0x000010)
+#define COD_WERABLE_WATCH (COD_DEVICE_WEARABLE | 0x000004)
+#define COD_WERABLE_PAGER (COD_DEVICE_WEARABLE | 0x000008)
+#define COD_WERABLE_JACKET (COD_DEVICE_WEARABLE | 0x00000C)
+#define COD_WERABLE_HELMET (COD_DEVICE_WEARABLE | 0x000010)
 #define COD_WERABLE_GLASSES (COD_DEVICE_WEARABLE | 0x000014)
 
 /* * Minor Device Class - Toy major class */
-#define COD_TOY_ROBOT     (COD_DEVICE_TOY | 0x000004)
-#define COD_TOY_VEHICLE   (COD_DEVICE_TOY | 0x000008)
-#define COD_TOY_DOLL      (COD_DEVICE_TOY | 0x00000C)
+#define COD_TOY_ROBOT (COD_DEVICE_TOY | 0x000004)
+#define COD_TOY_VEHICLE (COD_DEVICE_TOY | 0x000008)
+#define COD_TOY_DOLL (COD_DEVICE_TOY | 0x00000C)
 #define COD_TOY_CONROLLER (COD_DEVICE_TOY | 0x000010)
-#define COD_TOY_GAME      (COD_DEVICE_TOY | 0x000014)
+#define COD_TOY_GAME (COD_DEVICE_TOY | 0x000014)
 
 /* * Minor Device Class - Health major class */
-#define COD_HEALTH_BLOOD_PRESURE  (COD_DEVICE_HEALTH | 0x000004)
-#define COD_HEALTH_THERMOMETER    (COD_DEVICE_HEALTH | 0x000008)
+#define COD_HEALTH_BLOOD_PRESURE (COD_DEVICE_HEALTH | 0x000004)
+#define COD_HEALTH_THERMOMETER (COD_DEVICE_HEALTH | 0x000008)
 #define COD_HEALTH_WEIGHING_SCALE (COD_DEVICE_HEALTH | 0x00000C)
-#define COD_HEALTH_GLUCOSE_METER  (COD_DEVICE_HEALTH | 0x000010)
+#define COD_HEALTH_GLUCOSE_METER (COD_DEVICE_HEALTH | 0x000010)
 #define COD_HEALTH_PULSE_OXIMETER (COD_DEVICE_HEALTH | 0x000014)
-#define COD_HEALTH_RATE_MONITOR   (COD_DEVICE_HEALTH | 0x000018)
-#define COD_HEALTH_DATA_DISPLAY   (COD_DEVICE_HEALTH | 0x00001C)
+#define COD_HEALTH_RATE_MONITOR (COD_DEVICE_HEALTH | 0x000018)
+#define COD_HEALTH_DATA_DISPLAY (COD_DEVICE_HEALTH | 0x00001C)
 
 /* * Headset Device Class */
 #define IS_HEADSET(cod) ((COD_SERVICE_BITS(cod) & COD_SERVICE_AUDIO) && COD_DEVICE_MAJOR_BITS(cod) == COD_DEVICE_AV)
@@ -287,12 +287,12 @@ typedef struct {
 } ble_connect_params_t;
 
 typedef struct {
-    bool enable;               /* enable sniff mode */
-    uint8_t idle_time;           /* Idle time in seconds before entering sniff mode */
+    bool enable; /* enable sniff mode */
+    uint8_t idle_time; /* Idle time in seconds before entering sniff mode */
     uint16_t sniff_max_interval; /* sniff maximum interval */
     uint16_t sniff_min_interval; /* sniff minimum interval */
-    uint16_t sniff_attempt;      /* sniff attempt */
-    uint16_t sniff_timeout;      /* sniff timeout */
+    uint16_t sniff_attempt; /* sniff attempt */
+    uint16_t sniff_timeout; /* sniff timeout */
 } bt_auto_sniff_params_t;
 
 typedef struct {
@@ -302,12 +302,12 @@ typedef struct {
 } bt_hci_event_t;
 
 /* Possible 2.4G channel band width (MHz) */
-#define AFH_WIFI_BANDWIDTH_20             20
-#define AFH_WIFI_BANDWIDTH_22             22
-#define AFH_WIFI_BANDWIDTH_40             40
+#define AFH_WIFI_BANDWIDTH_20 20
+#define AFH_WIFI_BANDWIDTH_22 22
+#define AFH_WIFI_BANDWIDTH_40 40
 
 /* Possible 2.4G none Bluetooth radio channel central frequency (MHz) */
-#define AFH_WIFI_CENTRAL_FREQUENCY_CH1  2412
+#define AFH_WIFI_CENTRAL_FREQUENCY_CH1 2412
 #define AFH_WIFI_CENTRAL_FREQUENCY_STEP 5
 #define AFH_WIFI_CHANNEL_TO_FREQ(ch) \
     (AFH_WIFI_CENTRAL_FREQUENCY_CH1 + ((ch - 1) * AFH_WIFI_CENTRAL_FREQUENCY_STEP))
@@ -342,7 +342,7 @@ typedef struct bt_instance {
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
     void *poll;
     uv_mutex_t mutex;
-    uv_cond_t  cond;
+    uv_cond_t cond;
     int peer_fd;
     uv_loop_t *client_loop;
     uv_loop_t *external_loop;

@@ -62,7 +62,7 @@ bool bt_hfp_hf_unregister_callbacks(bt_instance_t *ins, void *cookie)
     BT_SOCKET_INS_VALID(ins, false);
 
     if (!ins->hfp_hf_callbacks)
-      return false;
+        return false;
 
     bt_remote_callbacks_unregister(ins->hfp_hf_callbacks, NULL, cookie);
     if (bt_callbacks_list_count(ins->hfp_hf_callbacks) > 0) {
@@ -220,8 +220,8 @@ bt_status_t bt_hfp_hf_dial(bt_instance_t *ins, bt_address_t *addr, const char *n
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
-   if (strlen(number) > HFP_PHONENUM_DIGITS_MAX)
-      return BT_STATUS_PARM_INVALID;
+    if (strlen(number) > HFP_PHONENUM_DIGITS_MAX)
+        return BT_STATUS_PARM_INVALID;
 
     memcpy(&packet.hfp_hf_pl._bt_hfp_hf_dial.addr, addr, sizeof(bt_address_t));
     strncpy(packet.hfp_hf_pl._bt_hfp_hf_dial.number, number, HFP_PHONENUM_DIGITS_MAX);
@@ -374,7 +374,7 @@ bt_status_t bt_hfp_hf_send_at_cmd(bt_instance_t *ins, bt_address_t *addr, const 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     if (strlen(cmd) > HFP_AT_LEN_MAX)
-      return BT_STATUS_PARM_INVALID;
+        return BT_STATUS_PARM_INVALID;
 
     memcpy(&packet.hfp_hf_pl._bt_hfp_hf_send_at_cmd.addr, addr, sizeof(bt_address_t));
     strncpy(packet.hfp_hf_pl._bt_hfp_hf_send_at_cmd.cmd, cmd, HFP_AT_LEN_MAX);

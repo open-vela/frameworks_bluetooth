@@ -49,31 +49,31 @@
 #define A2DP_SBC_MAX_PCM_ITER_NUM_PER_TICK 3
 
 typedef struct {
-    uint64_t            last_frame_us;
-    float               counter;
-    uint32_t            bytes_per_tick;
-}a2dp_sbc_feeding_state_t;
+    uint64_t last_frame_us;
+    float counter;
+    uint32_t bytes_per_tick;
+} a2dp_sbc_feeding_state_t;
 
 typedef struct {
-    uint32_t             total_tx_frames;
-    uint64_t             session_start_us;
-}a2dp_sbc_session_state_t;
+    uint32_t total_tx_frames;
+    uint64_t session_start_us;
+} a2dp_sbc_session_state_t;
 
 typedef struct {
-    sbc_param_t*        param;
+    sbc_param_t *param;
     frame_send_callback send_callback;
     frame_read_callback read_callback;
-    uint16_t            mtu;
-    uint16_t            frames_len;
-    uint16_t            max_tx_length;
-    uint32_t            media_timestamp;
+    uint16_t mtu;
+    uint16_t frames_len;
+    uint16_t max_tx_length;
+    uint32_t media_timestamp;
     a2dp_sbc_feeding_state_t feeding_state;
     a2dp_sbc_session_state_t state;
 } a2dp_stream_sbc_t;
 
 a2dp_stream_sbc_t sbc_stream;
 
-int a2dp_source_sbc_update_config(uint32_t mtu, sbc_param_t* param, uint8_t* codec_info)
+int a2dp_source_sbc_update_config(uint32_t mtu, sbc_param_t *param, uint8_t *codec_info)
 {
     a2dp_codec_parse_sbc_param(param, codec_info);
 
@@ -91,11 +91,11 @@ static uint8_t calculate_max_frames_per_packet(void)
     return (sbc_stream.mtu - 1) / frame_len;
 }
 
-static void a2dp_sbc_get_num_frame_iteration(uint8_t* num_of_iterations, uint8_t* num_of_frames,
+static void a2dp_sbc_get_num_frame_iteration(uint8_t *num_of_iterations, uint8_t *num_of_frames,
                                              uint64_t now_timestamp_us)
 {
-    a2dp_stream_sbc_t* stream = &sbc_stream;
-    sbc_param_t* param = stream->param;
+    a2dp_stream_sbc_t *stream = &sbc_stream;
+    sbc_param_t *param = stream->param;
     uint32_t us_this_tick, frames_per_tick;
     uint32_t pcm_bytes_per_frame;
     uint32_t projected_nof = 0;
@@ -148,12 +148,12 @@ static int a2dp_sbc_frame_header_check(uint8_t *frame)
 
 static void a2dp_sbc_send_frames(uint16_t header_reserve, uint8_t frames)
 {
-    sbc_param_t* param = sbc_stream.param;
+    sbc_param_t *param = sbc_stream.param;
     uint16_t max_frames_len;
     uint16_t bytes_read = 0;
     uint8_t read_frames = 0;
-    uint8_t* frame_buffer;
-    uint8_t* buffer;
+    uint8_t *frame_buffer;
+    uint8_t *buffer;
     /*
      * Timestamp of the media packet header represent the TS of the
      * first SBC frame, i.e the timestamp before including this frame.
@@ -168,8 +168,8 @@ static void a2dp_sbc_send_frames(uint16_t header_reserve, uint8_t frames)
     }
 
     frame_buffer = buffer;
-    frame_buffer += header_reserve; //reserved for packet
-    frame_buffer += 1; //actual number of frames
+    frame_buffer += header_reserve; // reserved for packet
+    frame_buffer += 1; // actual number of frames
     do {
         int ret = sbc_stream.read_callback(frame_buffer, sbc_stream.frames_len);
         if (ret > 0) {
@@ -206,7 +206,7 @@ static void a2dp_source_sbc_send_frames(uint16_t header_reserve, uint64_t timest
     uint8_t num_of_iterations;
 
     a2dp_sbc_get_num_frame_iteration(&num_of_iterations, &num_of_frames,
-        timestamp);
+                                     timestamp);
     if (num_of_frames == 0)
         return;
 
@@ -215,9 +215,9 @@ static void a2dp_source_sbc_send_frames(uint16_t header_reserve, uint64_t timest
     }
 }
 
-static void a2dp_source_sbc_stream_init(void* param, uint32_t mtu,
-                                 frame_send_callback send_cb,
-                                 frame_read_callback read_cb)
+static void a2dp_source_sbc_stream_init(void *param, uint32_t mtu,
+                                        frame_send_callback send_cb,
+                                        frame_read_callback read_cb)
 {
     sbc_stream.param = (sbc_param_t *)param;
     sbc_stream.mtu = mtu;
@@ -242,11 +242,11 @@ static void a2dp_source_sbc_stream_reset(void)
     sbc_stream.feeding_state.last_frame_us = 0;
     sbc_stream.feeding_state.counter = 0;
     sbc_stream.feeding_state.bytes_per_tick =
-                                (sample_rate *
-                                A2DP_SBC_BIT_PER_SAMPLE / 8 *
-                                param->s16NumOfChannels *
-                                A2DP_SBC_ENCODER_INTERVAL_MS) /
-                                1000;
+        (sample_rate *
+         A2DP_SBC_BIT_PER_SAMPLE / 8 *
+         param->s16NumOfChannels *
+         A2DP_SBC_ENCODER_INTERVAL_MS) /
+        1000;
 }
 
 static int a2dp_source_sbc_interval_ms(void)

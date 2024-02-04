@@ -41,7 +41,7 @@ typedef struct {
 #define BT_CALLBACK_FOREACH(_cbsl, _type, _cback, args...)                                     \
     do {                                                                                       \
         if (_cbsl == NULL)                                                                     \
-            break;                                                                            \
+            break;                                                                             \
         bt_list_node_t *_node;                                                                 \
         bt_list_t *_list = _cbsl->list;                                                        \
         pthread_mutex_lock(&_cbsl->lock);                                                      \

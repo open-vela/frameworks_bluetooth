@@ -78,10 +78,10 @@ bt_scanner_t *bt_le_start_scan_settings(bt_instance_t *ins,
 }
 
 bt_scanner_t *bt_le_start_scan_with_filters(bt_instance_t *ins,
-                                        ble_scan_settings_t *settings,
-                                        uint8_t *filter_data,
-                                        uint16_t filter_length,
-                                        const scanner_callbacks_t *cbs)
+                                            ble_scan_settings_t *settings,
+                                            uint8_t *filter_data,
+                                            uint16_t filter_length,
+                                            const scanner_callbacks_t *cbs)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -116,7 +116,7 @@ void bt_le_stop_scan(bt_instance_t *ins, bt_scanner_t *scanner)
 {
     bt_message_packet_t packet;
 
-    BT_SOCKET_INS_VALID(ins,);
+    BT_SOCKET_INS_VALID(ins, );
 
     if (!scanner)
         return;

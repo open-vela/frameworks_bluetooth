@@ -61,7 +61,7 @@ bt_status_t bt_spp_unregister_app(bt_instance_t *ins, void *handle)
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     if (!ins->spp_callbacks)
-      return false;
+        return false;
 
     bt_remote_callbacks_unregister(ins->spp_callbacks, NULL, handle);
     bt_callbacks_list_free(ins->spp_callbacks);

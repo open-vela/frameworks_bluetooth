@@ -62,19 +62,19 @@ typedef struct {
     uint32_t cmd_code;
 } hf_at_cmd_t;
 
-#define HF_STM_DEBUG            1
-#define HF_CONNECT_TIMEOUT      (10 * 1000)
-#define HF_WEBCHAT_VERDICT      (300 * 1000)
+#define HF_STM_DEBUG 1
+#define HF_CONNECT_TIMEOUT (10 * 1000)
+#define HF_WEBCHAT_VERDICT (300 * 1000)
 #define HF_WEBCHAT_BLOCK_PERIOD (500 * 1000)
-#define HF_OFFLOAD_TIMEOUT      500
+#define HF_OFFLOAD_TIMEOUT 500
 
 #if HF_STM_DEBUG
 static void hf_stm_trans_debug(state_machine_t *sm, bt_address_t *addr, const char *action);
 static void hf_stm_event_debug(state_machine_t *sm, bt_address_t *addr, uint32_t event);
 static const char *stack_event_to_string(hfp_hf_event_t event);
 
-#define HF_DBG_ENTER(__sm, __addr)          hf_stm_trans_debug(__sm, __addr, "Enter")
-#define HF_DBG_EXIT(__sm, __addr)           hf_stm_trans_debug(__sm, __addr, "Exit ")
+#define HF_DBG_ENTER(__sm, __addr) hf_stm_trans_debug(__sm, __addr, "Enter")
+#define HF_DBG_EXIT(__sm, __addr) hf_stm_trans_debug(__sm, __addr, "Exit ")
 #define HF_DBG_EVENT(__sm, __addr, __event) hf_stm_event_debug(__sm, __addr, __event);
 #else
 #define HF_DBG_ENTER(__sm, __addr)
@@ -353,7 +353,8 @@ static void state_machine_reset_calls(hf_state_machine_t *hfsm)
 {
     bt_list_clear(hfsm->current_calls);
     bt_list_clear(hfsm->update_calls);
-    while(first_pending_action(hfsm)); /* discard pending actions */
+    while (first_pending_action(hfsm))
+        ; /* discard pending actions */
     if (hfsm->connect_timer)
         service_loop_cancel_timer(hfsm->connect_timer);
     hfsm->recognition_active = false;
@@ -1016,7 +1017,7 @@ static void audio_on_enter(state_machine_t *sm)
         return;
     }
 
-    if (check_sco_allowed(sm)) {/* would terminate audio connection when needed */
+    if (check_sco_allowed(sm)) { /* would terminate audio connection when needed */
         /* TODO: get volume */
         /* TODO: set remote volume */
         /* TODO: set samplerate */

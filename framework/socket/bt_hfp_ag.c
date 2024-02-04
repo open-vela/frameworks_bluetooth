@@ -62,7 +62,7 @@ bool bt_hfp_ag_unregister_callbacks(bt_instance_t *ins, void *cookie)
     BT_SOCKET_INS_VALID(ins, false);
 
     if (!ins->hfp_ag_callbacks)
-      return false;
+        return false;
 
     bt_remote_callbacks_unregister(ins->hfp_ag_callbacks, NULL, cookie);
     if (bt_callbacks_list_count(ins->hfp_ag_callbacks) > 0) {
