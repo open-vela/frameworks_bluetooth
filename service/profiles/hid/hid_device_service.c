@@ -202,8 +202,10 @@ static bt_status_t hid_device_init(void)
     return BT_STATUS_SUCCESS;
 
 fail:
-    if (g_hidd_handle.callbacks)
+    if (g_hidd_handle.callbacks) {
         bt_callbacks_list_free(g_hidd_handle.callbacks);
+        g_hidd_handle.callbacks = NULL;
+    }
 
     return status;
 }

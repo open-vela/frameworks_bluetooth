@@ -41,12 +41,14 @@ void *bt_spp_register_app(bt_instance_t *ins, const spp_callbacks_t *callbacks)
     handle = bt_remote_callbacks_register(ins->spp_callbacks, NULL, (void *)callbacks);
     if (handle == NULL) {
         bt_callbacks_list_free(ins->spp_callbacks);
+        ins->spp_callbacks = NULL;
         return NULL;
     }
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_SPP_REGISTER_APP);
     if (status != BT_STATUS_SUCCESS || !packet.spp_r.handle) {
         bt_callbacks_list_free(ins->spp_callbacks);
+        ins->spp_callbacks = NULL;
         return NULL;
     }
 
