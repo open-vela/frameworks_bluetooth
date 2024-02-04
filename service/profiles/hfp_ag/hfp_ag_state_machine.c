@@ -55,7 +55,7 @@ typedef struct _ag_state_machine {
     service_timer_t *offload_timer;
 } ag_state_machine_t;
 
-#define AG_TIMEOUT         10000
+#define AG_TIMEOUT 10000
 #define AG_OFFLOAD_TIMEOUT 500
 #define AG_STM_DEBUG 1
 #if AG_STM_DEBUG
@@ -63,8 +63,8 @@ static void ag_stm_trans_debug(state_machine_t *sm, bt_address_t *addr, const ch
 static void ag_stm_event_debug(state_machine_t *sm, bt_address_t *addr, uint32_t event);
 static const char *stack_event_to_string(hfp_ag_event_t event);
 
-#define AG_DBG_ENTER(__sm, __addr)          ag_stm_trans_debug(__sm, __addr, "Enter")
-#define AG_DBG_EXIT(__sm, __addr)           ag_stm_trans_debug(__sm, __addr, "Exit ")
+#define AG_DBG_ENTER(__sm, __addr) ag_stm_trans_debug(__sm, __addr, "Enter")
+#define AG_DBG_EXIT(__sm, __addr) ag_stm_trans_debug(__sm, __addr, "Exit ")
 #define AG_DBG_EVENT(__sm, __addr, __event) ag_stm_event_debug(__sm, __addr, __event);
 #else
 #define AG_DBG_ENTER(__sm, __addr)

@@ -451,7 +451,7 @@ static void process_bond_state_change_evt(bt_address_t *addr, bond_state_t state
             device_set_device_type(device, remote.device_type);
             /* update bonded device info */
             adapter_update_bonded_device();
-            //device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_BREDR);
+            // device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_BREDR);
             if (device_is_connected(device))
                 bt_sal_start_service_discovery(addr, NULL);
         }
@@ -459,7 +459,7 @@ static void process_bond_state_change_evt(bt_address_t *addr, bond_state_t state
         device = adapter_find_create_le_device(addr, BT_LE_ADDR_TYPE_PUBLIC);
         if (state == BOND_STATE_BONDED) {
             device_set_device_type(device, BT_DEVICE_TYPE_BLE);
-            //device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_LE);
+            // device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_LE);
         } else if (state == BOND_STATE_NONE) {
             device_delete_smp_key(device);
             device_set_identity_address(device, NULL);

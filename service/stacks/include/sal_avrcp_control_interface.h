@@ -18,9 +18,10 @@
 
 #include <stdint.h>
 
+#include "avrcp_control_service.h"
 #include "bt_addr.h"
 #include "bt_status.h"
-#include "avrcp_control_service.h"
+
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
 
 #include "avrcp_msg.h"
@@ -28,7 +29,8 @@
 bt_status_t bt_sal_avrcp_control_init(void);
 void bt_sal_avrcp_control_cleanup(void);
 bt_status_t bt_sal_avrcp_control_send_pass_through_cmd(bt_address_t *bd_addr,
-    avrcp_passthr_cmd_t key_code, avrcp_key_state_t key_state);
+                                                       avrcp_passthr_cmd_t key_code,
+                                                       avrcp_key_state_t key_state);
 bt_status_t bt_sal_avrcp_control_get_playback_state(bt_address_t *bd_addr);
 bt_status_t bt_sal_avrcp_control_volume_changed_notify(bt_address_t *bd_addr, uint8_t volume);
 
