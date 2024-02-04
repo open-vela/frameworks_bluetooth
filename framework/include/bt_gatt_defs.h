@@ -48,21 +48,21 @@ typedef enum {
 } gatt_attr_rsp_t;
 
 /* Attribute permissions */
-#define GATT_PERM_READ             0x01
-#define GATT_PERM_WRITE            0x02
+#define GATT_PERM_READ 0x01
+#define GATT_PERM_WRITE 0x02
 #define GATT_PERM_ENCRYPT_REQUIRED 0x04
-#define GATT_PERM_AUTHEN_REQUIRED  0x08
-#define GATT_PERM_MITM_REQUIRED    0x10
+#define GATT_PERM_AUTHEN_REQUIRED 0x08
+#define GATT_PERM_MITM_REQUIRED 0x10
 
 /* Characteristic Properties */
-#define GATT_PROP_BROADCAST          0x01
-#define GATT_PROP_READ               0x02
-#define GATT_PROP_WRITE_NR           0x04
-#define GATT_PROP_WRITE              0x08
-#define GATT_PROP_NOTIFY             0x10
-#define GATT_PROP_INDICATE           0x20
-#define GATT_PROP_SIGNED_WRITE       0x40
-#define GATT_PROP_EXTENDED_PROPS     0x80
+#define GATT_PROP_BROADCAST 0x01
+#define GATT_PROP_READ 0x02
+#define GATT_PROP_WRITE_NR 0x04
+#define GATT_PROP_WRITE 0x08
+#define GATT_PROP_NOTIFY 0x10
+#define GATT_PROP_INDICATE 0x20
+#define GATT_PROP_SIGNED_WRITE 0x40
+#define GATT_PROP_EXTENDED_PROPS 0x80
 #define GATT_PROP_EXPOSED_OVER_BREDR 0x1000 /* Applies to Primary/Secondary Service type only */
 
 /* GATT Attribute Helper Macros */

@@ -25,12 +25,12 @@
 #include "utils/log.h"
 
 bt_advertiser_t *BTSYMBOLS(bt_le_start_advertising)(bt_instance_t *ins,
-                                         ble_adv_params_t *params,
-                                         uint8_t *adv_data,
-                                         uint16_t adv_len,
-                                         uint8_t *scan_rsp_data,
-                                         uint16_t scan_rsp_len,
-                                         advertiser_callback_t *cbs)
+                                                    ble_adv_params_t *params,
+                                                    uint8_t *adv_data,
+                                                    uint16_t adv_len,
+                                                    uint8_t *scan_rsp_data,
+                                                    uint16_t scan_rsp_len,
+                                                    advertiser_callback_t *cbs)
 {
     return start_advertising(NULL, params, adv_data, adv_len,
                              scan_rsp_data, scan_rsp_len, cbs);

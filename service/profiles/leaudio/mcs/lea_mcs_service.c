@@ -40,8 +40,8 @@
  ****************************************************************************/
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_MCS
 
-#define MCS_GROUPS_MAX      2
-#define MCS_TRACKS_MAX      2
+#define MCS_GROUPS_MAX 2
+#define MCS_TRACKS_MAX 2
 #define MCS_PLAYER_INACTIVE -2
 
 #define CHECK_ENABLED()                   \

@@ -27,7 +27,7 @@ bt_status_t bt_sal_avrcp_target_init(void);
 void bt_sal_avrcp_target_cleanup(void);
 
 bt_status_t bt_sal_avrcp_target_get_play_status_rsp(bt_address_t *addr,
-    avrcp_play_status_t status, uint32_t song_len, uint32_t song_pos);
+                                                    avrcp_play_status_t status, uint32_t song_len, uint32_t song_pos);
 bt_status_t bt_sal_avrcp_target_play_status_notify(bt_address_t *addr, avrcp_play_status_t status);
 bt_status_t bt_sal_avrcp_target_set_absolute_volume(bt_address_t *addr, uint8_t volume);
 

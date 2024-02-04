@@ -46,7 +46,7 @@
     }
 
 #define VMICS_CALLBACK_FOREACH(_list, _cback, ...) BT_CALLBACK_FOREACH(_list, lea_vmics_callbacks_t, _cback, ##__VA_ARGS__)
-#define LEA_VMICS_MEDIA_SESSION_NAME               "Music"
+#define LEA_VMICS_MEDIA_SESSION_NAME "Music"
 
 typedef struct
 {

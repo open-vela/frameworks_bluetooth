@@ -86,7 +86,7 @@
 #define LOG_TAG "bt_service"
 #include "utils/log.h"
 
-#define MISC_PATH      "/data/misc"
+#define MISC_PATH "/data/misc"
 #define BT_FOLDER_PATH MISC_PATH "/" \
                                  "bt"
 

@@ -21,8 +21,8 @@
 #include "gatts_service.h"
 #include <stdint.h>
 
-#define GATT_ELEMENT_GROUP_MASK           0xFF00
-#define GATT_ELEMENT_GROUP_MAX            0xFF00
+#define GATT_ELEMENT_GROUP_MASK 0xFF00
+#define GATT_ELEMENT_GROUP_MAX 0xFF00
 #define GATT_ELEMENT_GROUP_ID(element_id) (element_id & GATT_ELEMENT_GROUP_MASK)
 
 bt_status_t bt_sal_gatt_server_enable(void);

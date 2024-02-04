@@ -29,7 +29,7 @@ extern "C" {
 #include <stddef.h>
 
 #ifndef BTSYMBOLS
-# define BTSYMBOLS(s) s
+#define BTSYMBOLS(s) s
 #endif
 
 typedef void *gattc_handle_t;

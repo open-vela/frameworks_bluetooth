@@ -95,7 +95,7 @@ bool bt_hid_device_unregister_callbacks(bt_instance_t *ins, void *cookie)
     BT_SOCKET_INS_VALID(ins, false);
 
     if (!ins->hidd_callbacks)
-      return false;
+        return false;
 
     bt_remote_callbacks_unregister(ins->hidd_callbacks, NULL, cookie);
     bt_callbacks_list_free(ins->hidd_callbacks);

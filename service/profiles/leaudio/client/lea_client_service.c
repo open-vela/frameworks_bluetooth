@@ -54,7 +54,7 @@
 
 #define LEAC_CALLBACK_FOREACH(_list, _cback, ...) BT_CALLBACK_FOREACH(_list, lea_client_callbacks_t, _cback, ##__VA_ARGS__)
 
-#define LEA_CLIENT_SRIK_SIZE        16
+#define LEA_CLIENT_SRIK_SIZE 16
 #define LEA_CLIENT_GROUP_ID_DEFAULT 0
 
 /****************************************************************************

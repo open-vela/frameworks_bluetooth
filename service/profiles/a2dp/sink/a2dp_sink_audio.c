@@ -45,10 +45,10 @@
 #define LOG_TAG "a2dp_snk_stream"
 #include "utils/log.h"
 
-#define A2DP_SINK_MEDIA_TICK_MS       20
-#define A2DP_MAX_DELAY_PACKET_COUNT   5
+#define A2DP_SINK_MEDIA_TICK_MS 20
+#define A2DP_MAX_DELAY_PACKET_COUNT 5
 #define A2DP_MAX_ENQUEUE_PACKET_COUNT 14
-#define A2DP_ASYNC_SEND_COUNT         14
+#define A2DP_ASYNC_SEND_COUNT 14
 
 typedef enum {
     STATE_OFF,

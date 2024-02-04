@@ -73,7 +73,7 @@ void bt_le_stop_advertising(bt_instance_t *ins, bt_advertiser_t *adver)
 {
     bt_message_packet_t packet;
 
-    BT_SOCKET_INS_VALID(ins,);
+    BT_SOCKET_INS_VALID(ins, );
 
     if (!adver)
         return;
@@ -86,7 +86,7 @@ void bt_le_stop_advertising_id(bt_instance_t *ins, uint8_t adv_id)
 {
     bt_message_packet_t packet;
 
-    BT_SOCKET_INS_VALID(ins,);
+    BT_SOCKET_INS_VALID(ins, );
 
     packet.adv_pl._bt_le_stop_advertising_id.id = adv_id;
     bt_socket_client_sendrecv(ins, &packet, BT_LE_STOP_ADVERTISING_ID);

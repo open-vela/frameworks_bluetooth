@@ -40,11 +40,11 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define CTRL_EVT_HEADER_LEN          1
-#define LEA_SINK_MEDIA_TICK_MS       10
-#define LEA_MAX_DELAY_PACKET_COUNT   5
+#define CTRL_EVT_HEADER_LEN 1
+#define LEA_SINK_MEDIA_TICK_MS 10
+#define LEA_MAX_DELAY_PACKET_COUNT 5
 #define LEA_MAX_ENQUEUE_PACKET_COUNT 14
-#define LEA_ASYNC_SEND_COUNT         14
+#define LEA_ASYNC_SEND_COUNT 14
 
 /****************************************************************************
  * Private Types

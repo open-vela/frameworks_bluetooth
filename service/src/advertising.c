@@ -369,7 +369,6 @@ bool advertising_is_supported(void)
 /** release remote related resources when client detaches */
 void advertising_on_remote_detached(void *remote)
 {
-
 }
 
 void adv_manager_init(void)

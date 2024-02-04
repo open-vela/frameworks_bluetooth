@@ -250,7 +250,7 @@ void bt_adapter_get_address(bt_instance_t *ins, bt_address_t *addr)
     bt_message_packet_t packet;
     bt_status_t status;
 
-    BT_SOCKET_INS_VALID(ins,);
+    BT_SOCKET_INS_VALID(ins, );
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_ADDRESS);
     if (status != BT_STATUS_SUCCESS) {
@@ -286,7 +286,7 @@ void bt_adapter_get_name(bt_instance_t *ins, char *name, int length)
     bt_message_packet_t packet;
     bt_status_t status;
 
-    BT_SOCKET_INS_VALID(ins,);
+    BT_SOCKET_INS_VALID(ins, );
 
     if (length < sizeof(packet.adpt_pl._bt_adapter_get_name.name)) {
         return;
@@ -671,7 +671,7 @@ bt_status_t bt_adapter_get_connected_devices(bt_instance_t *ins, bt_transport_t 
 }
 
 bt_status_t bt_adapter_set_afh_channel_classification(bt_instance_t *ins, uint16_t central_frequency,
-                                                  uint16_t band_width, uint16_t number)
+                                                      uint16_t band_width, uint16_t number)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -708,7 +708,7 @@ void bt_adapter_disconnect_all_devices(bt_instance_t *ins)
 {
     bt_message_packet_t packet;
 
-    BT_SOCKET_INS_VALID(ins,);
+    BT_SOCKET_INS_VALID(ins, );
     bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_DISCONNECT_ALL_DEVICES);
 }
 
