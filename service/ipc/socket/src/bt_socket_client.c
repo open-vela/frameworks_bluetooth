@@ -113,7 +113,6 @@ static void bt_socket_client_async_close(uv_handle_t *handle)
     free(handle);
 }
 
-
 static void bt_socket_client_async_cb(uv_async_t *handle)
 {
     bt_instance_t *ins = handle->data;
@@ -137,7 +136,7 @@ static bt_status_t bt_socket_client_async_to_external(bt_instance_t *ins, bt_cli
     if (!ins->external_async) {
         ins->external_async = malloc(sizeof(uv_async_t));
         int ret = uv_async_init(ins->external_loop, ins->external_async, bt_socket_client_async_cb);
-        if (ret != 0){
+        if (ret != 0) {
             uv_mutex_unlock(&ins->lock);
             return BT_STATUS_BUSY;
         }
@@ -240,7 +239,7 @@ static int bt_socket_client_receive(uv_poll_t *poll, int fd, void *userdata)
     return BT_STATUS_SUCCESS;
 }
 
-static void bt_socket_client_handle_event(uv_poll_t* poll, int status, int events)
+static void bt_socket_client_handle_event(uv_poll_t *poll, int status, int events)
 {
     uv_os_fd_t fd;
     int ret;
@@ -269,8 +268,8 @@ static int bt_socket_client_connect(int family, const char *name,
 #ifdef CONFIG_NET_RPMSG
         struct sockaddr_rpmsg rpmsg_addr;
 #endif
-    } u;
-    socklen_t addr_len;
+    } u = { 0 };
+    socklen_t addr_len = 0;
     int fd;
 
     if (family == PF_LOCAL) {
@@ -292,6 +291,9 @@ static int bt_socket_client_connect(int family, const char *name,
             strcpy(u.rpmsg_addr.rp_cpu, cpu);
         addr_len = sizeof(struct sockaddr_rpmsg);
 #endif
+    }
+    if (!addr_len) {
+        return -errno;
     }
 
     fd = socket(family, SOCK_STREAM, 0);
@@ -384,7 +386,7 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
     } while (retry--);
 
     poll = thread_loop_poll_fd(ins->client_loop, ins->peer_fd, UV_READABLE,
-                                bt_socket_client_handle_event, ins);
+                               bt_socket_client_handle_event, ins);
     if (poll == NULL) {
         bt_socket_client_deinit(ins);
         return BT_STATUS_PARM_INVALID;
@@ -415,7 +417,8 @@ void bt_socket_client_deinit(bt_instance_t *ins)
         struct list_node *node;
         struct list_node *tmp;
         uv_mutex_lock(&ins->lock);
-        list_for_every_safe(&ins->msg_queue, node, tmp) {
+        list_for_every_safe(&ins->msg_queue, node, tmp)
+        {
             list_delete(node);
             free(node);
         }
