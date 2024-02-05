@@ -690,16 +690,7 @@ static void lea_client_do_shutdown(void)
 
     pthread_mutex_lock(&service->group_lock);
     service->started = false;
-    bt_list_free(service->leac_groups);
-    bt_list_free(service->leac_streams);
-    service->leac_groups = NULL;
-    service->leac_streams = NULL;
     pthread_mutex_unlock(&service->group_lock);
-
-    pthread_mutex_destroy(&service->group_lock);
-    index_allocator_delete(service->index_allocator);
-    bt_callbacks_list_free(service->callbacks);
-    service->callbacks = NULL;
 
     lea_audio_sink_cleanup();
     lea_audio_source_cleanup();
@@ -740,7 +731,7 @@ static bool lea_client_message_prehandle(lea_client_state_machine_t *leas_sm,
 
         pthread_mutex_lock(&service->group_lock);
         ret = check_group_completed_by_state(group->group_id, LEA_ASCS_OP_STREAMING);
-        pthread_mutex_lock(&service->group_lock);
+        pthread_mutex_unlock(&service->group_lock);
         if (!ret) {
             BT_LOGD("%s, addr:%s group streamming not completed", __func__, bt_addr_str(&event->data.addr));
             return false;
@@ -1134,15 +1125,22 @@ static void lea_client_cleanup(void)
 
     pthread_mutex_lock(&service->group_lock);
     bt_list_free(service->leac_groups);
-    bt_list_free(service->leac_streams);
     service->leac_groups = NULL;
+    pthread_mutex_unlock(&service->group_lock);
+
+    pthread_mutex_lock(&service->stream_lock);
+    bt_list_free(service->leac_streams);
     service->leac_streams = NULL;
-    index_allocator_delete(service->index_allocator);
+    pthread_mutex_unlock(&service->stream_lock);
+
     bt_callbacks_list_free(service->callbacks);
     service->callbacks = NULL;
-    pthread_mutex_destroy(&service->group_lock);
+
+    index_allocator_delete(service->index_allocator);
+    service->index_allocator = NULL;
+
     pthread_mutex_destroy(&service->stream_lock);
-    pthread_mutex_unlock(&service->group_lock);
+    pthread_mutex_destroy(&service->group_lock);
 }
 
 static void client_startup(void *data)
