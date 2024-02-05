@@ -45,6 +45,22 @@ static void notify_media_event(bt_media_controller_t *controller,
         controller->cb(controller, controller->holder, event, value);
 }
 
+static bt_media_status_t media_state_to_playback_status(int media_state)
+{
+    bt_media_status_t playback_status;
+
+    if (media_state > 0) { /* Active */
+        playback_status = BT_MEDIA_PLAY_STATUS_PLAYING;
+    } else if (media_state == 0) { /* Inactive */
+        playback_status = BT_MEDIA_PLAY_STATUS_PAUSED;
+    } else { /* Error */
+        playback_status = BT_MEDIA_PLAY_STATUS_ERROR;
+    }
+    BT_LOGD("%s, media_state:%d, playback_status:%d ", __func__, media_state, playback_status);
+
+    return playback_status;
+}
+
 static void media_session_event_cb(void *cookie, int event, int ret,
                                    const char *extra)
 {
@@ -78,13 +94,8 @@ static void media_session_event_cb(void *cookie, int event, int ret,
                 return;
             }
 
-            if (media_state > 0) { /* Active */
-                notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_PLAYING);
-            } else if (media_state == 0){ /* Inactive */
-                notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED, BT_MEDIA_PLAY_STATUS_PAUSED);
-            } else { /* Error */
-                BT_LOGE("%s, erroneous media state: %d", __func__, media_state);
-            }
+            notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED,
+                               media_state_to_playback_status(media_state));
         }
         break;
     default:
@@ -231,7 +242,7 @@ bt_status_t bt_media_player_get_playback_status(bt_media_controller_t *controlle
         return BT_STATUS_NOT_SUPPORTED;
     }
 
-    // media state to bt playback status
+    *status = media_state_to_playback_status(state);
     return BT_STATUS_SUCCESS;
 }
 
