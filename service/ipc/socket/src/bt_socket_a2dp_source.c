@@ -45,7 +45,7 @@
  ****************************************************************************/
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
-  BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
+    BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
 #define CBLIST (ins->a2dp_source_callbacks)
 
 /****************************************************************************
@@ -56,7 +56,6 @@
  * Private Functions
  ****************************************************************************/
 
-
 #if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
 static a2dp_source_interface_t *get_profile_service(void)
 {
@@ -65,39 +64,38 @@ static a2dp_source_interface_t *get_profile_service(void)
 
 static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr, profile_connection_state_t state)
 {
-  bt_message_packet_t packet;
-  bt_instance_t *ins = cookie;
+    bt_message_packet_t packet;
+    bt_instance_t *ins = cookie;
 
-  memcpy(&packet.a2dp_source_cb._connection_state_changed.addr, addr, sizeof(bt_address_t));
-  packet.a2dp_source_cb._connection_state_changed.state = state;
-  bt_socket_server_send(ins, &packet, BT_A2DP_SOURCE_CONNECTION_STATE_CHANGE);
+    memcpy(&packet.a2dp_source_cb._connection_state_changed.addr, addr, sizeof(bt_address_t));
+    packet.a2dp_source_cb._connection_state_changed.state = state;
+    bt_socket_server_send(ins, &packet, BT_A2DP_SOURCE_CONNECTION_STATE_CHANGE);
 }
 
 static void on_audio_state_changed_cb(void *cookie, bt_address_t *addr, a2dp_audio_state_t state)
 {
-  bt_message_packet_t packet;
-  bt_instance_t *ins = cookie;
+    bt_message_packet_t packet;
+    bt_instance_t *ins = cookie;
 
-  memcpy(&packet.a2dp_source_cb._audio_state_changed.addr, addr, sizeof(bt_address_t));
-  packet.a2dp_source_cb._audio_state_changed.state = state;
-  bt_socket_server_send(ins, &packet, BT_A2DP_SOURCE_AUDIO_STATE_CHANGE);
+    memcpy(&packet.a2dp_source_cb._audio_state_changed.addr, addr, sizeof(bt_address_t));
+    packet.a2dp_source_cb._audio_state_changed.state = state;
+    bt_socket_server_send(ins, &packet, BT_A2DP_SOURCE_AUDIO_STATE_CHANGE);
 }
 
 static void on_audio_config_changed_cb(void *cookie, bt_address_t *addr)
 {
-  bt_message_packet_t packet;
-  bt_instance_t *ins = cookie;
+    bt_message_packet_t packet;
+    bt_instance_t *ins = cookie;
 
-  memcpy(&packet.a2dp_source_cb._audio_config_state_changed.addr, addr, sizeof(bt_address_t));
-  bt_socket_server_send(ins, &packet, BT_A2DP_SOURCE_CONFIG_CHANGE);
+    memcpy(&packet.a2dp_source_cb._audio_config_state_changed.addr, addr, sizeof(bt_address_t));
+    bt_socket_server_send(ins, &packet, BT_A2DP_SOURCE_CONFIG_CHANGE);
 }
 
-const static a2dp_source_callbacks_t g_a2dp_source_cbs =
-{
-    .size                     =   sizeof(a2dp_source_callbacks_t),
-    .connection_state_cb      =   on_connection_state_changed_cb,
-    .audio_state_cb           =   on_audio_state_changed_cb,
-    .audio_source_config_cb   =   on_audio_config_changed_cb,
+const static a2dp_source_callbacks_t g_a2dp_source_cbs = {
+    .size = sizeof(a2dp_source_callbacks_t),
+    .connection_state_cb = on_connection_state_changed_cb,
+    .audio_state_cb = on_audio_state_changed_cb,
+    .audio_source_config_cb = on_audio_config_changed_cb,
 };
 
 /****************************************************************************
@@ -105,91 +103,81 @@ const static a2dp_source_callbacks_t g_a2dp_source_cbs =
  ****************************************************************************/
 
 void bt_socket_server_a2dp_source_process(service_poll_t *poll,
-    int fd, bt_instance_t *ins, bt_message_packet_t *packet)
+                                          int fd, bt_instance_t *ins, bt_message_packet_t *packet)
 {
-  switch (packet->code)
-  {
-    case BT_A2DP_SOURCE_IS_CONNECTED:
-      {
+    switch (packet->code) {
+    case BT_A2DP_SOURCE_IS_CONNECTED: {
         packet->a2dp_source_r.bbool = BTSYMBOLS(bt_a2dp_source_is_connected)(ins,
-        &packet->a2dp_source_pl._bt_a2dp_source_is_connected.addr);
+                                                                             &packet->a2dp_source_pl._bt_a2dp_source_is_connected.addr);
         break;
-      }
-    case BT_A2DP_SOURCE_IS_PLAYING:
-      {
+    }
+    case BT_A2DP_SOURCE_IS_PLAYING: {
         packet->a2dp_source_r.bbool = BTSYMBOLS(bt_a2dp_source_is_playing)(ins,
-        &packet->a2dp_source_pl._bt_a2dp_source_is_playing.addr);
+                                                                           &packet->a2dp_source_pl._bt_a2dp_source_is_playing.addr);
         break;
-      }
-    case BT_A2DP_SOURCE_GET_CONNECTION_STATE:
-      {
+    }
+    case BT_A2DP_SOURCE_GET_CONNECTION_STATE: {
         packet->a2dp_source_r.state = BTSYMBOLS(bt_a2dp_source_get_connection_state)(ins,
-        &packet->a2dp_source_pl._bt_a2dp_source_get_connection_state.addr);
+                                                                                     &packet->a2dp_source_pl._bt_a2dp_source_get_connection_state.addr);
         break;
-      }
-    case BT_A2DP_SOURCE_CONNECT:
-      {
+    }
+    case BT_A2DP_SOURCE_CONNECT: {
         packet->a2dp_source_r.status = BTSYMBOLS(bt_a2dp_source_connect)(ins,
-        &packet->a2dp_source_pl._bt_a2dp_source_connect.addr);
+                                                                         &packet->a2dp_source_pl._bt_a2dp_source_connect.addr);
         break;
-      }
-    case BT_A2DP_SOURCE_DISCONNECT:
-      {
+    }
+    case BT_A2DP_SOURCE_DISCONNECT: {
         packet->a2dp_source_r.status = BTSYMBOLS(bt_a2dp_source_disconnect)(ins,
-        &packet->a2dp_source_pl._bt_a2dp_source_disconnect.addr);
+                                                                            &packet->a2dp_source_pl._bt_a2dp_source_disconnect.addr);
         break;
-      }
-    case BT_A2DP_SOURCE_SET_ACTIVE_DEVICE:
-      {
+    }
+    case BT_A2DP_SOURCE_SET_ACTIVE_DEVICE: {
         packet->a2dp_source_r.status = BTSYMBOLS(bt_a2dp_source_set_active_device)(ins,
-            &packet->a2dp_source_pl._bt_a2dp_source_set_active_device.addr);
+                                                                                   &packet->a2dp_source_pl._bt_a2dp_source_set_active_device.addr);
         break;
-      }
-    case BT_A2DP_SOURCE_SET_SILENCE_DEVICE:
-      {
+    }
+    case BT_A2DP_SOURCE_SET_SILENCE_DEVICE: {
         packet->a2dp_source_r.status = BTSYMBOLS(bt_a2dp_source_set_active_device)(ins,
-            &packet->a2dp_source_pl._bt_a2dp_source_set_silence_device.addr);
+                                                                                   &packet->a2dp_source_pl._bt_a2dp_source_set_silence_device.addr);
         break;
-      }
-    case BT_A2DP_SOURCE_REGISTER_CALLBACKS:
-      {
+    }
+    case BT_A2DP_SOURCE_REGISTER_CALLBACKS: {
         if (ins->a2dp_source_cookie == NULL) {
-          a2dp_source_interface_t *profile = get_profile_service();
-          ins->a2dp_source_cookie = profile->register_callbacks(ins, &g_a2dp_source_cbs);
-          if (ins->a2dp_source_cookie) {
-            packet->a2dp_source_r.status = BT_STATUS_SUCCESS;
-          } else {
-            packet->a2dp_source_r.status = BT_STATUS_FAIL;
-          }
+            a2dp_source_interface_t *profile = get_profile_service();
+            ins->a2dp_source_cookie = profile->register_callbacks(ins, &g_a2dp_source_cbs);
+            if (ins->a2dp_source_cookie) {
+                packet->a2dp_source_r.status = BT_STATUS_SUCCESS;
+            } else {
+                packet->a2dp_source_r.status = BT_STATUS_FAIL;
+            }
         } else {
-          packet->a2dp_source_r.status = BT_STATUS_SUCCESS;
+            packet->a2dp_source_r.status = BT_STATUS_SUCCESS;
         }
         break;
-      }
-    case BT_A2DP_SOURCE_UNREGISTER_CALLBACKS:
-      {
+    }
+    case BT_A2DP_SOURCE_UNREGISTER_CALLBACKS: {
         if (ins->a2dp_source_cookie) {
-          a2dp_source_interface_t *profile = get_profile_service();
-          if (profile->unregister_callbacks(NULL, ins->a2dp_source_cookie)) {
-            packet->a2dp_source_r.status = BT_STATUS_SUCCESS;
-          } else {
-            packet->a2dp_source_r.status = BT_STATUS_FAIL;
-          }
-          ins->a2dp_source_cookie = NULL;
+            a2dp_source_interface_t *profile = get_profile_service();
+            if (profile->unregister_callbacks(NULL, ins->a2dp_source_cookie)) {
+                packet->a2dp_source_r.status = BT_STATUS_SUCCESS;
+            } else {
+                packet->a2dp_source_r.status = BT_STATUS_FAIL;
+            }
+            ins->a2dp_source_cookie = NULL;
         } else {
-          packet->a2dp_source_r.status = BT_STATUS_NOT_FOUND;
+            packet->a2dp_source_r.status = BT_STATUS_NOT_FOUND;
         }
         break;
-      }
+    }
     default:
-      break;
-  }
+        break;
+    }
 }
 
 #endif
 
 int bt_socket_client_a2dp_source_callback(service_poll_t *poll,
-                                      int fd, bt_instance_t *ins, bt_message_packet_t *packet)
+                                          int fd, bt_instance_t *ins, bt_message_packet_t *packet)
 {
     switch (packet->code) {
     case BT_A2DP_SOURCE_CONNECTION_STATE_CHANGE: {
