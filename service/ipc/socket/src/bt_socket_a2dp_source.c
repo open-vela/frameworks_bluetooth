@@ -64,7 +64,7 @@ static a2dp_source_interface_t *get_profile_service(void)
 
 static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr, profile_connection_state_t state)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_instance_t *ins = cookie;
 
     memcpy(&packet.a2dp_source_cb._connection_state_changed.addr, addr, sizeof(bt_address_t));
@@ -74,7 +74,7 @@ static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr, pro
 
 static void on_audio_state_changed_cb(void *cookie, bt_address_t *addr, a2dp_audio_state_t state)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_instance_t *ins = cookie;
 
     memcpy(&packet.a2dp_source_cb._audio_state_changed.addr, addr, sizeof(bt_address_t));
@@ -84,7 +84,7 @@ static void on_audio_state_changed_cb(void *cookie, bt_address_t *addr, a2dp_aud
 
 static void on_audio_config_changed_cb(void *cookie, bt_address_t *addr)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_instance_t *ins = cookie;
 
     memcpy(&packet.a2dp_source_cb._audio_config_state_changed.addr, addr, sizeof(bt_address_t));
