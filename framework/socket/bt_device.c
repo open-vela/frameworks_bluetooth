@@ -162,7 +162,7 @@ int8_t bt_device_get_rssi(bt_instance_t *ins, bt_address_t *addr)
 
 bool bt_device_get_alias(bt_instance_t *ins, bt_address_t *addr, char *alias, uint32_t length)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_status_t status;
 
     BT_SOCKET_INS_VALID(ins, false);
@@ -172,19 +172,21 @@ bool bt_device_get_alias(bt_instance_t *ins, bt_address_t *addr, char *alias, ui
         return status;
     }
 
-    strncpy(alias, packet.devs_pl._bt_device_get_alias.alias, strlen(packet.devs_pl._bt_device_get_alias.alias));
+    strncpy(alias, packet.devs_pl._bt_device_get_alias.alias,
+            MIN(length, sizeof(packet.devs_pl._bt_device_get_alias.alias) - 1));
 
     return packet.devs_r.status;
 }
 
 bt_status_t bt_device_set_alias(bt_instance_t *ins, bt_address_t *addr, const char *alias)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_status_t status;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
     memcpy(&packet.devs_pl._bt_device_set_alias.addr, addr, sizeof(*addr));
-    strncpy(packet.devs_pl._bt_device_set_alias.alias, alias, sizeof(packet.devs_pl._bt_device_set_alias.alias));
+    strncpy(packet.devs_pl._bt_device_set_alias.alias, alias,
+            sizeof(packet.devs_pl._bt_device_set_alias.alias) - 1);
     status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_SET_ALIAS);
     if (status != BT_STATUS_SUCCESS) {
         return status;
