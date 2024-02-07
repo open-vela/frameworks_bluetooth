@@ -1136,7 +1136,11 @@ void adapter_on_remote_name_recieved(bt_address_t *addr, const char *name)
 
     evt->evt_id = REMOTE_NAME_RECIEVED_EVT;
     memcpy(&evt->remote_name.addr, addr, sizeof(bt_address_t));
-    strncpy((char *)evt->remote_name.name, name, BT_REM_NAME_MAX_LEN);
+    if (name) {
+        strncpy((char *)evt->remote_name.name, name, BT_REM_NAME_MAX_LEN);
+    } else {
+        evt->remote_name.name[0] = '\0';
+    }
 
     do_in_service_loop(handle_discovery_event, evt);
 }
