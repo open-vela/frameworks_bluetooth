@@ -63,7 +63,7 @@ typedef struct {
         bt_discovery_result_t result;
         struct {
             bt_address_t addr;
-            uint8_t name[64];
+            uint8_t name[BT_REM_NAME_MAX_LEN + 1];
         } remote_name;
     };
 } adapter_discovery_evt_t;
@@ -116,14 +116,14 @@ typedef struct {
         struct {
             uint32_t cod;
             bool min_16_digit;
-            char name[64];
+            char name[BT_REM_NAME_MAX_LEN + 1];
         } pin_req;
         struct {
             uint32_t cod;
             bt_pair_type_t ssp_type;
             uint32_t pass_key;
             uint8_t link_type;
-            char name[64];
+            char name[BT_REM_NAME_MAX_LEN + 1];
         } ssp_req;
         struct {
             bond_state_t state;
