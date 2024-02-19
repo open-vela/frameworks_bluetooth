@@ -44,6 +44,7 @@ struct _debug_type_map {
     { BT_DBG_TYPE_HFP,      SERVICE_DEBUG_HFP     },
 };
 
+#ifdef CONFIG_BLUELET_DEBUG
 static SERVICE_DEBUG_COMPONENT get_component_value(bt_debug_type_t type)
 {
     for (int i = 0; i < ARRAY_SIZE(g_dbg_type_map); i++) {
@@ -53,6 +54,7 @@ static SERVICE_DEBUG_COMPONENT get_component_value(bt_debug_type_t type)
 
     return 0;
 }
+#endif
 
 static uint32_t support_types(void)
 {
