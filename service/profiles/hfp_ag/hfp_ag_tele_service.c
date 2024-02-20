@@ -147,7 +147,11 @@ static void on_call_added(tele_client_t *tele, tele_call_t *call)
 static void on_call_removed(tele_client_t *tele, tele_call_t *call)
 {
     BT_LOGD("%s", __func__);
-    update_call_state(call->call_state);
+    if (call->call_state != HFP_AG_CALL_STATE_IDLE &&
+        call->call_state != HFP_AG_CALL_STATE_DISCONNECTED) {
+        /* An active, setup, or held call is terminated */
+        update_call_state(call->call_state);
+    }
     teleif_call_unregister_callbacks(tele, call, &tele_call_cbs);
     bt_list_remove(g_current_calls, call);
 }
