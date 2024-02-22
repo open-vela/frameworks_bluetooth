@@ -711,7 +711,7 @@ void bt_adapter_disconnect_all_devices(bt_instance_t *ins)
     bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, );
-    bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_DISCONNECT_ALL_DEVICES);
+    (void)bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_DISCONNECT_ALL_DEVICES);
 }
 
 bool bt_adapter_is_support_bredr(bt_instance_t *ins)
