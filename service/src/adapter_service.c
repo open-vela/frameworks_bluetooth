@@ -1096,6 +1096,8 @@ static void handle_link_event(void *data)
         process_link_policy_changed_evt(&evt->addr, evt->link_policy.policy);
         break;
     }
+
+    free(data);
 }
 
 void adapter_on_scan_mode_changed(bt_scan_mode_t mode)
