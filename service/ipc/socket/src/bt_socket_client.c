@@ -347,7 +347,7 @@ int bt_socket_client_init(bt_instance_t *ins, int family,
     uv_poll_t *poll;
     int retry = CLIENT_MAX_RETRY;
 
-    ins->client_loop = malloc(sizeof(uv_loop_t));
+    ins->client_loop = zalloc(sizeof(uv_loop_t));
     if (!ins->client_loop)
         return BT_STATUS_NOMEM;
 
