@@ -116,7 +116,7 @@ bt_status_t bt_media_set_sco_unavailable(void)
 
 bt_status_t bt_media_set_a2dp_offloading(bool enable)
 {
-    if (media_policy_set_int(MEDIA_A2DP_OFFLOAD_MODE, enable, MEDIA_POLICY_APPLY) != 0) {
+    if (media_policy_set_int(MEDIA_POLICY_A2DP_OFFLOAD_MODE, enable, MEDIA_POLICY_APPLY) != 0) {
         return BT_STATUS_FAIL;
     }
 
