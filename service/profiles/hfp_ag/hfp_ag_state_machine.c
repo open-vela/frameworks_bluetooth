@@ -47,13 +47,18 @@ typedef struct _ag_state_machine {
     bool offloading;
     void *service;
     uint8_t codec;
-    uint8_t volume;
+    uint8_t spk_volume;
+    uint8_t mic_volume;
+    void *volume_listener;
     pending_state_t pending;
     service_timer_t *connect_timer;
     service_timer_t *audio_timer;
     service_timer_t *dial_out_timer;
     service_timer_t *offload_timer;
 } ag_state_machine_t;
+
+#define MD2AGVOL(vol) ((vol) > 15 ? 15 : (vol))
+#define AG2MDVOL(vol) ((vol) > 15 ? 15 : (vol))
 
 #define AG_TIMEOUT 10000
 #define AG_OFFLOAD_TIMEOUT 500
@@ -303,8 +308,11 @@ static void disconnected_enter(state_machine_t *sm)
 {
     ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
     AG_DBG_ENTER(sm, &agsm->addr);
-    if (hsm_get_previous_state(sm))
+    if (hsm_get_previous_state(sm)) {
+        bt_media_remove_listener(agsm->volume_listener);
+        agsm->volume_listener = NULL;
         ag_service_notify_connection_state_changed(&agsm->addr, PROFILE_STATE_DISCONNECTED);
+    }
 }
 
 static void disconnected_exit(state_machine_t *sm)
@@ -494,10 +502,20 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_d
     case AG_STACK_EVENT_CODEC_CHANGED:
         agsm->codec = data->valueint1 == HFP_CODEC_MSBC ? HFP_CODEC_MSBC : HFP_CODEC_CVSD;
         break;
-    case AG_STACK_EVENT_VOLUME_CHANGED:
+    case AG_STACK_EVENT_VOLUME_CHANGED: {
+        hfp_volume_type_t type = data->valueint1;
+        uint8_t ag_vol = data->valueint2;
         /* set system volume */
-        agsm->volume = data->valueint1;
+        if (type == HFP_VOLUME_TYPE_SPK) {
+            agsm->spk_volume = ag_vol;
+            if (bt_media_set_voice_call_volume(AG2MDVOL(ag_vol)) != BT_STATUS_SUCCESS) {
+                BT_LOGE("Set media voice call volume failed");
+            }
+        } else if (type == HFP_VOLUME_TYPE_MIC) {
+            agsm->mic_volume = ag_vol;
+        }
         break;
+    }
     case AG_STACK_EVENT_AT_CIND_REQUEST:
         process_cind_request(agsm);
         break;
@@ -580,16 +598,36 @@ static void default_connection_event_process(state_machine_t *sm, hfp_ag_data_t 
     }
 }
 
+static void hfp_ag_voice_volume_change_callback(void *cookie, int volume)
+{
+    ag_state_machine_t *agsm = (ag_state_machine_t *)cookie;
+    hfp_ag_msg_t *msg;
+
+    msg = hfp_ag_msg_new(AG_SET_VOLUME, &agsm->addr);
+    if (!msg) {
+        BT_LOGE("New ag message alloc failed");
+        return;
+    }
+
+    msg->data.valueint1 = volume;
+    hfp_ag_send_message(msg);
+}
+
 static void connected_enter(state_machine_t *sm)
 {
     ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
     AG_DBG_ENTER(sm, &agsm->addr);
     uint8_t previous_state = hsm_get_state_value(hsm_get_previous_state(sm));
 
-    if (previous_state < HFP_AG_STATE_CONNECTED)
+    if (previous_state < HFP_AG_STATE_CONNECTED) {
+        agsm->volume_listener = bt_media_listen_voice_call_volume_change(hfp_ag_voice_volume_change_callback, agsm);
+        if (!agsm->volume_listener) {
+            BT_LOGE("Start to listen voice call volume failed");
+        }
         ag_service_notify_connection_state_changed(&agsm->addr, PROFILE_STATE_CONNECTED);
-    else
+    } else {
         ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
+    }
 }
 
 static void connected_exit(state_machine_t *sm)
@@ -813,9 +851,12 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
         /* TODO: should support VOICE_RECOGNITION_STOP */
         break;
     case AG_SET_VOLUME: {
-        uint8_t vol = data->valueint1 > 15 ? 15 : data->valueint1;
+        uint8_t ag_vol = MD2AGVOL(data->valueint1);
         /* android don't support set Mic volume */
-        bt_sal_hfp_ag_set_volume(&agsm->addr, HFP_VOLUME_TYPE_SPK, vol);
+        if (ag_vol != agsm->spk_volume) {
+            agsm->spk_volume = ag_vol;
+            bt_sal_hfp_ag_set_volume(&agsm->addr, HFP_VOLUME_TYPE_SPK, agsm->spk_volume);
+        }
     } break;
     case AG_STACK_EVENT_CONNECTION_STATE_CHANGED:
         default_connection_event_process(sm, p_data);
@@ -956,6 +997,8 @@ void ag_state_machine_destory(ag_state_machine_t *agsm)
 
     if (agsm->connect_timer)
         service_loop_cancel_timer(agsm->connect_timer);
+    bt_media_remove_listener(agsm->volume_listener);
+    agsm->volume_listener = NULL;
     hsm_dtor(&agsm->sm);
     free((void *)agsm);
 }
