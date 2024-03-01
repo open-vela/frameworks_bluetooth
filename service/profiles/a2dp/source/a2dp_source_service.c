@@ -465,6 +465,7 @@ static void source_shutdown(void *data)
     }
     list_delete(&g_a2dp_source.list);
     bt_sal_a2dp_source_cleanup();
+    g_a2dp_source.active_peer = NULL;
     on_shutdown(PROFILE_A2DP, true);
     pthread_mutex_unlock(&g_a2dp_source.mutex);
 }
