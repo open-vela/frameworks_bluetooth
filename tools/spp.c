@@ -41,25 +41,50 @@ typedef struct {
     char *name;
 } spp_cmd_t;
 
+typedef struct {
+    void *handle;
+    uint8_t port;
+    enum {
+        TRANS_IDLE = 0,
+        TRANS_WRITING,
+        TRANS_SENDING,
+        TRANS_RECVING,
+    } state;
+    uint8_t *bulk_buf;
+    int32_t bulk_count;
+    uint32_t bulk_length;
+    uint32_t trans_total_size;
+    uint32_t received_size;
+    uint64_t start_timestamp;
+    uint64_t end_timestamp;
+} transmit_context_t;
+
 static int start_server_cmd(void *handle, int argc, char *argv[]);
 static int stop_server_cmd(void *handle, int argc, char *argv[]);
 static int connect_cmd(void *handle, int argc, char *argv[]);
 static int disconnect_cmd(void *handle, int argc, char *argv[]);
 static int write_cmd(void *handle, int argc, char *argv[]);
+static int speed_test_cmd(void *handle, int argc, char *argv[]);
 static int dump_cmd(void *handle, int argc, char *argv[]);
 
+static const char *TRANS_START = "START:";
+static const char *TRANS_START_ACK = "START_ACK";
+static const char *TRANS_EOF = "EOF";
+
 static struct list_node device_list = LIST_INITIAL_VALUE(device_list);
-static uv_sem_t spp_sem;
+static sem_t spp_send_sem;
 static void *spp_app_handle = NULL;
-static uv_loop_t spp_thread_loop = {0};
+static uv_loop_t spp_thread_loop = { 0 };
+static transmit_context_t trans_ctx = { 0 };
 
 static bt_command_t g_spp_tables[] = {
-    {"start",       start_server_cmd, 0, "\"start spp server        param: <scn>(range in [1,28]) <uuid>\""},
-    { "stop",       stop_server_cmd,  0, "\"stop  spp server        param: <scn>(range in [1,28])\""       },
-    { "connect",    connect_cmd,      0, "\"connect spp device      param: <address> <port> <uuid>\""      },
-    { "disconnect", disconnect_cmd,   0, "\"disconnect peer device  param: <address> <port>\""             },
-    { "write",      write_cmd,        0, "\"write data to peer      param: <port> <data>\""                },
-    { "dump",       dump_cmd,         0, "\"dump spp current state\""                                      },
+    {"start",       start_server_cmd, 0, "\"start spp server        param: <scn>(range in [1,28]) <uuid>\""                                       },
+    { "stop",       stop_server_cmd,  0, "\"stop  spp server        param: <scn>(range in [1,28])\""                                              },
+    { "connect",    connect_cmd,      0, "\"connect spp device      param: <address> <port> <uuid>\""                                             },
+    { "disconnect", disconnect_cmd,   0, "\"disconnect peer device  param: <address> <port>\""                                                    },
+    { "write",      write_cmd,        0, "\"write data to peer      param: <port> <data>\""                                                       },
+    { "speed",      speed_test_cmd,   0, "\"performance test        param: <port> <iteration>\" note:iteration * 990 shoule less than free memory"},
+    { "dump",       dump_cmd,         0, "\"dump spp current state\""                                                                             },
 };
 
 static void usage(void)
@@ -110,15 +135,108 @@ static spp_device_t *find_pty_by_handle(void *handle)
     return NULL;
 }
 
-static int spp_sem_post(uv_sem_t *sem)
+static void bulk_trans_complete(euv_pty_t *handle, uint8_t *buf, int status)
 {
-    uv_sem_post(sem);
-    return 0;
+    transmit_context_t *ctx = &trans_ctx;
+
+    ctx->bulk_count--;
+    if (ctx->bulk_count)
+        euv_pty_write(handle, buf, ctx->bulk_length, bulk_trans_complete);
+    else
+        free(buf);
+}
+
+static void spp_trans_reset(void)
+{
+    memset(&trans_ctx, 0, sizeof(trans_ctx));
+}
+
+static void show_result(uint64_t start, uint64_t end, uint32_t bytes)
+{
+    float use = (float)(end - start) / 1000;
+    float spd = (float)(bytes / 1024) / use;
+
+    PRINT("transmit done, total: %" PRIu32 " bytes, use: %f seconds, speed: %f KB/s", bytes, use, spd);
+}
+
+static void speed_test_start(void *cmd)
+{
+    spp_cmd_t *msg = cmd;
+    spp_device_t *device;
+    transmit_context_t *ctx = &trans_ctx;
+    static uint8_t start[100];
+    uint16_t port = msg->port;
+    uint16_t times = msg->len;
+
+    free(msg);
+
+    device = find_pty_by_port(port);
+    if (!device)
+        return;
+
+    if (ctx->state != TRANS_IDLE) {
+        PRINT("spp is testing");
+        return;
+    }
+    ctx->handle = device->pty;
+    ctx->state = TRANS_SENDING;
+    ctx->bulk_length = 990;
+    ctx->bulk_count = times;
+    ctx->trans_total_size = ctx->bulk_length * ctx->bulk_count;
+
+    memset(start, 0, sizeof(start));
+    sprintf((char *)start, "START:%" PRIu32 ";", ctx->trans_total_size);
+    euv_pty_write(device->pty, start, strlen((const char *)start), NULL);
+    PRINT("transmit start, waiting for %" PRIu32 " bytes transmit done", ctx->trans_total_size);
 }
 
 static void spp_data_received(euv_pty_t *handle, const uint8_t *buf, ssize_t size)
 {
-    lib_dumpbuffer("spp read", buf, size);
+    transmit_context_t *ctx = &trans_ctx;
+
+    if (ctx->state != TRANS_IDLE && handle != ctx->handle) {
+        PRINT("spp is testing ,ignore it");
+        return;
+    }
+
+    switch (ctx->state) {
+    case TRANS_IDLE:
+        if (strncmp((const char *)buf, TRANS_START, strlen(TRANS_START)) == 0) {
+            spp_trans_reset();
+            ctx->handle = handle;
+            ctx->state = TRANS_RECVING;
+            sscanf((const char *)buf, "START:%" PRIu32 ";", &ctx->trans_total_size);
+            PRINT("receive start, waiting for %" PRIu32 " bytes transmit done", ctx->trans_total_size);
+            euv_pty_write(handle, (uint8_t *)TRANS_START_ACK, strlen(TRANS_START_ACK), NULL);
+            ctx->start_timestamp = get_timestamp_msec();
+        } else
+            lib_dumpbuffer("spp read", buf, size);
+        break;
+    case TRANS_SENDING:
+        if (strncmp((const char *)buf, TRANS_EOF, strlen(TRANS_EOF)) == 0) {
+            ctx->end_timestamp = get_timestamp_msec();
+            show_result(ctx->start_timestamp, ctx->end_timestamp, ctx->trans_total_size);
+            spp_trans_reset();
+        } else if (strncmp((const char *)buf, TRANS_START_ACK, strlen(TRANS_START_ACK)) == 0) {
+            sem_post(&spp_send_sem);
+            ctx->bulk_buf = malloc(ctx->bulk_length);
+            memset(ctx->bulk_buf, 0xA5, ctx->bulk_length);
+            ctx->start_timestamp = get_timestamp_msec();
+            euv_pty_write(handle, ctx->bulk_buf, ctx->bulk_length, bulk_trans_complete);
+        }
+        break;
+    case TRANS_RECVING:
+        ctx->received_size += size;
+        if (ctx->received_size >= ctx->trans_total_size) {
+            ctx->end_timestamp = get_timestamp_msec();
+            show_result(ctx->start_timestamp, ctx->end_timestamp, ctx->trans_total_size);
+            euv_pty_write(handle, (uint8_t *)TRANS_EOF, 4, NULL);
+            spp_trans_reset();
+        }
+        break;
+    default:
+        break;
+    }
 }
 
 static void pty_read_cb(euv_pty_t *handle, const uint8_t *buf, ssize_t size)
@@ -240,7 +358,8 @@ static int start_server_cmd(void *handle, int argc, char *argv[])
         uuid = BT_UUID_SERVCLASS_SERIAL_PORT;
 
     bt_uuid16_create(&uuid16, uuid);
-    if (bt_spp_server_start(handle, spp_app_handle, scn, &uuid16, 1) != BT_STATUS_SUCCESS) {
+    if (bt_spp_server_start(handle, spp_app_handle, scn, &uuid16,
+                            CONFIG_BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS) != BT_STATUS_SUCCESS) {
         PRINT("server_start failed, scn:%d, uuid: 0x%04x\n", scn, uuid);
         return CMD_ERROR;
     }
@@ -328,7 +447,6 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
 
 static void write_complete(euv_pty_t *handle, uint8_t *buf, int status)
 {
-    spp_sem_post(&spp_sem);
     free(buf);
 }
 
@@ -338,13 +456,20 @@ static void spp_write(void *data)
     spp_cmd_t *msg = data;
 
     device = find_pty_by_port(msg->port);
-    if (!device) {
-        free(msg->buf);
-        free(msg);
-        return;
+    if (!device )
+        goto error;
+
+    if (trans_ctx.handle == device->pty) {
+        PRINT("spp is testing");
+        goto error;
     }
 
     euv_pty_write(device->pty, msg->buf, msg->len, write_complete);
+    free(msg);
+    return;
+
+error:
+    free(msg->buf);
     free(msg);
 }
 
@@ -365,12 +490,43 @@ static int write_cmd(void *handle, int argc, char *argv[])
         return CMD_ERROR;
     }
 
-    uv_sem_wait(&spp_sem);
     msg->port = port;
     msg->buf = buf;
     msg->len = strlen(argv[1]);
 
     do_in_thread_loop(&spp_thread_loop, spp_write, msg);
+    return CMD_OK;
+}
+
+static int speed_test_cmd(void *handle, int argc, char *argv[])
+{
+    int port, times;
+
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    port = atoi(argv[0]);
+    times = atoi(argv[1]);
+    if (port < 0 || times < 0)
+        return CMD_INVALID_PARAM;
+
+    spp_cmd_t *msg = malloc(sizeof(spp_cmd_t));
+    if (!msg)
+        return CMD_ERROR;
+
+    msg->port = port;
+    msg->len = times;
+    do_in_thread_loop(&spp_thread_loop, speed_test_start, msg);
+    /* wait start ack */
+    struct timespec ts;
+
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += 2;
+    if (sem_timedwait(&spp_send_sem, &ts) < 0) {
+        spp_trans_reset();
+        return CMD_ERROR;
+    }
+
     return CMD_OK;
 }
 
@@ -387,7 +543,7 @@ static spp_callbacks_t spp_cbs = {
 
 int spp_command_init(void *handle)
 {
-    uv_sem_init(&spp_sem, 10);
+    sem_init(&spp_send_sem, 0, 0);
     thread_loop_init(&spp_thread_loop);
     thread_loop_run(&spp_thread_loop, true, "spp_client");
     spp_app_handle = bt_spp_register_app(handle, &spp_cbs);
@@ -398,7 +554,7 @@ int spp_command_init(void *handle)
 void spp_command_uninit(void *handle)
 {
     bt_spp_unregister_app(handle, spp_app_handle);
-    uv_sem_destroy(&spp_sem);
+    sem_destroy(&spp_send_sem);
     thread_loop_exit(&spp_thread_loop);
     memset(&spp_thread_loop, 0, sizeof(spp_thread_loop));
 }

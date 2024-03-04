@@ -113,7 +113,6 @@ static void bt_socket_client_async_close(uv_handle_t *handle)
     free(handle);
 }
 
-
 static void bt_socket_client_async_cb(uv_async_t *handle)
 {
     bt_instance_t *ins = handle->data;
@@ -327,6 +326,7 @@ int bt_socket_client_sendrecv(bt_instance_t *ins, bt_message_packet_t *packet,
     ins->cpacket = packet;
 
     ret = send(ins->peer_fd, packet, sizeof(*packet), 0);
+
     if (ret <= 0) {
         uv_mutex_unlock(&ins->mutex);
         return BT_STATUS_FAIL;

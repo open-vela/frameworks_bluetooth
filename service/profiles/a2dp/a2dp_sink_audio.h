@@ -1,7 +1,6 @@
 /****************************************************************************
  *
  *   Copyright (C) 2023 Xiaomi InC. All rights reserved.
- *   Copyright (C) 2023 Xiaomi InC. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,7 +34,6 @@
 #define __A2DP_SINK_AUDIO_H__
 
 #include "bluetooth_define.h"
-#include "bluetooth_define.h"
 #include <nuttx/list.h>
 
 typedef struct {
@@ -44,7 +42,6 @@ typedef struct {
     uint16_t seq;
     uint16_t length;
     uint8_t data[0];
-} a2dp_sink_packet_t;
 } a2dp_sink_packet_t;
 
 typedef struct {
@@ -66,5 +63,6 @@ void a2dp_sink_audio_init(void);
 void a2dp_sink_audio_cleanup(void);
 
 extern const a2dp_sink_stream_interface_t *get_a2dp_sink_sbc_stream_interface(void);
+extern const a2dp_sink_stream_interface_t *get_a2dp_sink_aac_stream_interface(void);
 
 #endif

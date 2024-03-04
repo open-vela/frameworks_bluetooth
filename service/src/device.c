@@ -30,8 +30,8 @@
 #include "utils/log.h"
 
 typedef struct remote_device {
-    char name[BT_REM_NAME_MAX_LEN];
-    char alias[BT_REM_NAME_MAX_LEN];
+    char name[BT_REM_NAME_MAX_LEN + 1];
+    char alias[BT_REM_NAME_MAX_LEN + 1];
     bt_address_t addr;
     ble_addr_type_t addr_type;
     bt_link_role_t local_role;
@@ -392,8 +392,8 @@ void device_get_property(bt_device_t *device, remote_device_properties_t *prop)
 {
     memcpy(&prop->addr, &device->remote.addr, sizeof(bt_address_t));
     prop->addr_type = device->remote.addr_type;
-    strncpy(prop->name, device->remote.name, BT_REM_NAME_MAX_LEN);
-    strncpy(prop->alias, device->remote.alias, BT_REM_NAME_MAX_LEN);
+    strlcpy(prop->name, device->remote.name, BT_REM_NAME_MAX_LEN);
+    strlcpy(prop->alias, device->remote.alias, BT_REM_NAME_MAX_LEN);
     prop->class_of_device = device->remote.device_class;
     memcpy(prop->link_key, device->remote.link_key, 16);
     prop->link_key_type = device->remote.link_key_type;

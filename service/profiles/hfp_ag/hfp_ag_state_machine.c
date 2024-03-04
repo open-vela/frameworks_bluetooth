@@ -35,8 +35,6 @@
 
 #include "media_system.h"
 
-#include "media_system.h"
-
 #include "bt_utils.h"
 #include "utils/log.h"
 
