@@ -70,7 +70,9 @@ static int object_filter(GDBusProxy *proxy)
         return false;
 
     // ss related interface skip get properties
-    if ((strcmp(interface, OFONO_CALL_BARRING_INTERFACE) == 0) || (strcmp(interface, OFONO_CALL_FORWARDING_INTERFACE) == 0) || (strcmp(interface, OFONO_CALL_SETTINGS_INTERFACE) == 0)) {
+    if ((strcmp(interface, OFONO_CALL_BARRING_INTERFACE) == 0) ||
+        (strcmp(interface, OFONO_CALL_FORWARDING_INTERFACE) == 0) ||
+        (strcmp(interface, OFONO_CALL_SETTINGS_INTERFACE) == 0)) {
         return true;
     }
 
@@ -446,6 +448,11 @@ static void voicecall_manager_signal_process(tele_client_t *tele,
     }
 
     tele_modem_t *modem = modem_find_by_path(tele, path);
+    if (!modem) {
+        BT_LOGE("%s, failed to find modem, path:%s", __func__, path);
+        return;
+    }
+
     call = find_voicecall(modem, proxy);
 
     if (!strcmp(signal, "CallAdded")) {
@@ -484,7 +491,17 @@ static void voicecall_signal_process(tele_client_t *tele,
     if (!strcmp(signal, "DisconnectReason")) {
         int reason = disconnect_reason_to_value((const char *)basic);
         tele_modem_t *modem = modem_find_by_path(tele, path);
+        if (!modem) {
+            BT_LOGE("%s, failed to find modem, path:%s", __func__, path);
+            return;
+        }
+
         tele_call_t *call = find_voicecall(modem, proxy);
+        if (!call) {
+            BT_LOGE("%s, failed to find call", __func__);
+            return;
+        }
+
         tele_call_callbacks_t *cbs = call->call_cbs;
         if (cbs)
             cbs->call_disconnect_reason_cb(tele, call, reason);
