@@ -414,17 +414,6 @@ static int if_gattc_get_state(void)
     return 1;
 }
 
-static void if_gattc_cleanup(void)
-{
-    g_gattc_manager.started = false;
-    pthread_mutex_destroy(&g_gattc_manager.device_lock);
-}
-
-static int if_gattc_get_state(void)
-{
-    return 1;
-}
-
 static int if_gattc_dump(void)
 {
     bt_list_node_t *cnode;

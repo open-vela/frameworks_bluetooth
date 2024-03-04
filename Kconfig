@@ -57,6 +57,10 @@ config BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY
 	int "bluetooth service loop thread priority"
 	default 100
 
+config BLUETOOTH_DUMPBUFFER
+	bool "Bluetooth dumpbuffer"
+	default n
+
 config BLUETOOTH_AUDIO_TRANS_RPSMG_SERVER
 	bool "Rpmsg audio transport server"
 	default n
@@ -197,7 +201,7 @@ config BLUETOOTH_SPP_MAX_CONNECTIONS
 
 config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
 	int "SPP server max connections"
-	default 1
+	default 8
 endif
 
 config BLUETOOTH_HID_DEVICE
@@ -259,6 +263,12 @@ config BLUETOOTH_SERVER
 	default n
 	help
 		Enable bluetooth server
+
+config CONFIG_BLUETOOTH_DEFAULT_COD
+	hex "default class of device"
+	default 0x00280704
+	help
+		Set default class of device
 
 if BLUETOOTH_SERVER
 config BLUETOOTH_SERVER_NAME
@@ -354,6 +364,15 @@ config BLUETOOTH_TOOLS
 	bool "Enable bluetooth profile test tools"
 	default n
 	select BLUETOOTH_FRAMEWORK
+
+choice
+	prompt "select bt vendor"
+	default OBELISK_BT_VENDOR_BES
+	config OBELISK_BT_VENDOR_BES
+		bool "bluetooth vendor BES"
+	config OBELISK_BT_VENDOR_ACTIONS
+		bool "bluetooth vendor ACTIONS"
+endchoice
 
 config BLUETOOTH_FEATURE
 	bool "bluetooth feature api support"

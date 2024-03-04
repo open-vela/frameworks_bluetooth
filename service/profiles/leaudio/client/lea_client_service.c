@@ -1345,7 +1345,6 @@ static bt_status_t get_ases_streams_id_form_context(uint32_t group_id, uint8_t *
 static bt_status_t get_ases_streams_id_from_addr(uint32_t group_id, bt_address_t *addr, uint8_t *num, uint32_t *stream_ids)
 {
     lea_client_device_t *device;
-    lea_client_group_t *group;
     int index;
 
     device = find_device_by_groupid_addr(group_id, addr);

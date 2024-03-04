@@ -21,14 +21,6 @@
 #include "bt_uuid.h"
 // #define BLE_MAX_ADV_NUM 8
 
-#ifdef CONFIG_DEV_NAME_MAX_LEN
-#define BT_DEV_NAME_MAX_LEN (CONFIG_DEV_NAME_MAX_LEN)
-#else
-#define BT_DEV_NAME_MAX_LEN (64)
-#endif
-#define BT_LOC_NAME_MAX_LEN BT_DEV_NAME_MAX_LEN
-#define BT_REM_NAME_MAX_LEN BT_DEV_NAME_MAX_LEN
-
 #define SMP_KEYS_MAX_SIZE 80
 #define BT_COMMON_KEY_LENGTH 16
 

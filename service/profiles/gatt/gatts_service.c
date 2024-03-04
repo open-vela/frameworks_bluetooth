@@ -458,17 +458,6 @@ static int if_gatts_get_state(void)
     return 1;
 }
 
-static void if_gatts_cleanup(void)
-{
-    g_gatts_manager.started = false;
-    pthread_mutex_destroy(&g_gatts_manager.device_lock);
-}
-
-static int if_gatts_get_state(void)
-{
-    return 1;
-}
-
 static int if_gatts_dump(void)
 {
     bt_list_node_t *snode;

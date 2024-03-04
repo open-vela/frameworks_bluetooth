@@ -229,7 +229,6 @@ static void handle_avrcp_connection_state(avrcp_msg_t *msg)
         }
         bt_sal_avrcp_control_get_capabilities(addr, AVRCP_CAPABILITY_ID_EVENTS_SUPPORTED);
         device->player = bt_media_player_create(device, &g_player_cb);
-        assert(device->player);
     } break;
     case PROFILE_STATE_DISCONNECTING:
         break;
@@ -315,7 +314,6 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t *msg)
     case NOTIFICATION_EVT_PALY_STATUS_CHANGED: {
         bt_media_status_t status = msg->data.notify_rsp.value;
         BT_LOGD("playback status changed: %s, get status now...", bt_media_status_str(status));
-        assert(device->player);
         bt_media_player_set_status(device->player, status);
         bt_sal_avrcp_control_get_playback_state(addr);
         break;

@@ -56,7 +56,7 @@ bool bttool_allocator(void **data, uint32_t size)
     return true;
 }
 
-uint32_t get_timestamp_ms(void)
+uint32_t get_timestamp_msec(void)
 {
     struct timespec ts;
 

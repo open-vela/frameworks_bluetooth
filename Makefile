@@ -40,6 +40,7 @@ endif
 endif
 
 CSRCS += service/src/manager_service.c
+CSRCS += service/vendor/bt_vendor.c
 CSRCS += service/common/*.c
 
 ifeq ($(CONFIG_BLUETOOTH_OBELISK), y)
@@ -63,7 +64,7 @@ endif #CONFIG_BLUETOOTH_BLE_AUDIO
 ifeq ($(CONFIG_BLUETOOTH_A2DP),)
 	CSRCS := $(filter-out $(wildcard service/profiles/system/bt_player.c),$(wildcard $(CSRCS)))
 endif #CONFIG_BLUETOOTH_A2DP
-ifeq ($(findstring y, $(CONFIG_BLUETOOTH_A2DP)_$(CONFIG_BLUETOOTH_HFP_AG)_$(CONFIG_BLUETOOTH_HFP_HF)), )
+ifeq ($(findstring y, $(CONFIG_BLUETOOTH_A2DP)_$(CONFIG_BLUETOOTH_HFP_AG)_$(CONFIG_BLUETOOTH_HFP_HF)_$(CONFIG_BLUETOOTH_BLE_AUDIO)), )
 	CSRCS := $(filter-out $(wildcard service/profiles/system/media_system.c),$(wildcard $(CSRCS)))
 endif #CONFIG_BLUETOOTH_A2DP/CONFIG_BLUETOOTH_HFP_AG/CONFIG_BLUETOOTH_HFP_HF
 	CSRCS += service/profiles/audio_interface/*.c
@@ -119,6 +120,7 @@ endif #CONFIG_BLUETOOTH_PAN
 ifneq ($(findstring y, $(CONFIG_BLUETOOTH_LEAUDIO_CLIENT)_$(CONFIG_BLUETOOTH_LEAUDIO_SERVER)), )
 	CSRCS += service/profiles/leaudio/audio_ipc/*.c
 	CSRCS += service/profiles/leaudio/*.c
+	CSRCS += service/profiles/leaudio/codec/*.c
 endif #CONFIG_BLUETOOTH_LEAUDIO_CLIENT/CONFIG_BLUETOOTH_LEAUDIO_SERVER
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_SERVER), y)
@@ -158,6 +160,7 @@ endif #CONFIG_BLUETOOTH_OBELISK
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CSRCS += tools/utils.c
+	CSRCS += tools/log.c
 	CSRCS += tools/uv_thread_loop.c
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += tools/adv.c
@@ -245,6 +248,7 @@ CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/includ
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/system
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks/include
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/vendor
 
 ifeq ($(CONFIG_BLUETOOTH_OBELISK), y)
 ifneq ($(CONFIG_OBELISK_BREDR_BLUELET)$(CONFIG_OBELISK_LE_BLUELET),)
@@ -261,8 +265,7 @@ endif
 ifeq ($(CONFIG_ARCH_SIM),y)
 CFLAGS	 += -O0
 endif
-
-CFLAGS	  += -Wno-strict-prototypes #-fno-short-enums -Wl,-no-enum-size-warning #-Werror
+CFLAGS	 += -Wno-strict-prototypes #-fno-short-enums -Wl,-no-enum-size-warning #-Werror
 PRIORITY  = SCHED_PRIORITY_DEFAULT
 STACKSIZE = 8192
 MODULE    = $(CONFIG_BLUETOOTH)
@@ -320,8 +323,6 @@ endif
 ifneq ($(NOEXPORTSRCS),)
 BIN := $(APPDIR)/staging/libbluetooth.a
 endif
-
-
 
 include $(APPDIR)/Application.mk
 

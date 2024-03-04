@@ -83,35 +83,6 @@
 #include "avrcp_control_service.h"
 #endif
 
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
-#include "lea_client_service.h"
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCS
-#include "lea_mcs_service.h"
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
-#include "lea_tbs_service.h"
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
-#include "lea_vmicp_service.h"
-#endif
-
-#ifdef CONFIG_BLUETOOTH_A2DP_SINK
-#include "a2dp_sink_service.h"
-#endif
-
-#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-#include "a2dp_source_service.h"
-#endif
-
-#ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
-#include "avrcp_target_service.h"
-#endif
-
-#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
-#include "avrcp_control_service.h"
-#endif
-
 #define LOG_TAG "bt_service"
 #include "utils/log.h"
 
@@ -188,22 +159,6 @@ void bt_profile_init(void)
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
     register_lea_vmics_service();
-#endif
-
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
-    register_lea_client_service();
-#endif
-
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCS
-    register_lea_mcs_service();
-#endif
-
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
-    register_lea_tbs_service();
-#endif
-
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
-    register_lea_vmicp_service();
 #endif
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT

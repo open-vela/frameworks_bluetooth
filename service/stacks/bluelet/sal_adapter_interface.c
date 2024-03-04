@@ -44,10 +44,6 @@
 #include "sal_gatt_client_interface.h"
 #include "sal_gatt_server_interface.h"
 #endif
-#ifdef CONFIG_BLUETOOTH_GATT
-#include "sal_gatt_client_interface.h"
-#include "sal_gatt_server_interface.h"
-#endif
 #include "utils/log.h"
 
 #define BTSTACK_THREAD_STACK_SIZE 8192
@@ -156,7 +152,7 @@ static void device_found_callback(SERVICE_REMOTE_DEVICE_S *device)
     result.rssi = device->rssi;
 
     /* EIR name */
-    strncpy(result.name, device->bt_name, BT_REM_NAME_MAX_LEN);
+    strlcpy(result.name, device->bt_name, BT_REM_NAME_MAX_LEN);
     /* EIR uuids */
     // TODO
     adapter_on_device_found(&result);
@@ -1099,6 +1095,7 @@ bt_status_t bt_sal_ssp_get_local_oob_data(void)
 #endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void bluelet_set_remote_property(remote_device_properties_t *prop,
                                         SERVICE_REMOTE_DEVICE_S *remote)
 {
@@ -1107,7 +1104,7 @@ static void bluelet_set_remote_property(remote_device_properties_t *prop,
     /* only LE device address use */
     prop->addr_type = remote->addr_type;
     /* name */
-    strncpy(prop->name, remote->bt_name, BT_REM_NAME_MAX_LEN);
+    strlcpy(prop->name, remote->bt_name, BT_REM_NAME_MAX_LEN);
     /* uuid */
     // TODO: add uuid support
     /* link key */
@@ -1118,6 +1115,7 @@ static void bluelet_set_remote_property(remote_device_properties_t *prop,
     /* device type */
     prop->device_type = remote->device_type;
 }
+#endif
 
 bt_status_t bt_sal_get_remote_device_info(bt_address_t *addr, remote_device_properties_t *prop)
 {
@@ -1143,7 +1141,7 @@ bt_status_t bt_sal_set_bonded_devices(remote_device_properties_t *prop)
     SERVICE_REMOTE_DEVICE_S remote;
 
     memcpy(remote.bd_addr, prop->addr.addr, 6);
-    strncpy(remote.bt_name, prop->name, BT_DEVICE_NAME_MAX_LEN);
+    strlcpy(remote.bt_name, prop->name, BT_DEVICE_NAME_MAX_LEN);
     memcpy(remote.link_key, prop->link_key, 16);
     remote.link_key_type = prop->link_key_type;
     remote.cod = prop->class_of_device;

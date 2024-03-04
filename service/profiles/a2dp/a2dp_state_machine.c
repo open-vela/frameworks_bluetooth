@@ -99,7 +99,9 @@ typedef struct {
     a2dp_event_t *a2dp_event;
 } a2dp_inter_event_t;
 
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
 extern void do_in_a2dp_service(a2dp_event_t *a2dp_event);
+#endif
 
 static void idle_enter(state_machine_t *sm);
 static void idle_exit(state_machine_t *sm);
@@ -278,6 +280,7 @@ static void a2dp_report_audio_config_state(a2dp_state_machine_t *stm, bt_address
 
 static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
 {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)context;
     a2dp_event_t *a2dp_event;
     a2dp_event_type_t event;
@@ -298,6 +301,7 @@ static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
 
     a2dp_event = a2dp_event_new_ext(event, &a2dp_sm->addr, hci_event, sizeof(bt_hci_event_t) + hci_event->length);
     do_in_a2dp_service(a2dp_event);
+#endif
 }
 
 static void a2dp_connect_timeout_callback(service_timer_t *timer, void *data)

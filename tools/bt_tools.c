@@ -220,6 +220,7 @@ static bt_command_t g_cmd_tables[] = {
     { "vmicp",        vmicp_command_exec,     0, "vcp/micp client cmd, input \'vmicp\' show usage"          },
 #endif
     { "dump",         dump_cmd,               0, "dump adapter state"                                       },
+    { "log",          log_command,            0, "log control command"                                              },
     { "help",         usage_cmd,              0, "Usage for bttools"                                        },
     { "quit",         quit_cmd,               0, "Quit"                                                     },
     { "q",            quit_cmd,               0, "Quit"                                                     },
@@ -557,10 +558,10 @@ static int set_iocap_cmd(void *handle, int argc, char **argv)
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (strlen(argv[0]) > 1){
+    if (strlen(argv[0]) > 1) {
         return CMD_INVALID_PARAM;
     }
-    
+
     int iocap = *argv[0] - '0';
     if (iocap < BT_IO_CAPABILITY_DISPLAYONLY || iocap > BT_IO_CAPABILITY_KEYBOARDDISPLAY)
         return CMD_INVALID_PARAM;
@@ -711,7 +712,8 @@ static int set_local_name_cmd(void *handle, int argc, char **argv)
 
 static int get_local_cod_cmd(void *handle, int argc, char **argv)
 {
-    PRINT("Local class of device: 0x%08" PRIx32 "", bt_adapter_get_device_class(handle));
+    uint32_t cod = bt_adapter_get_device_class(handle);
+    PRINT("Local class of device: 0x%08" PRIx32 ", is HEADSET: %s", cod, IS_HEADSET(cod) ? "true" : "false");
     return CMD_OK;
 }
 
@@ -753,11 +755,10 @@ static int pair_set_auto_cmd(void *handle, int argc, char **argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
-    if (strlen(argv[0]) > 1){
+    if (strlen(argv[0]) > 1) {
         return CMD_INVALID_PARAM;
     }
-    switch (*argv[0])
-    {
+    switch (*argv[0]) {
     case '0':
         g_auto_accept_pair = false;
         break;
@@ -1410,7 +1411,8 @@ static void on_discovery_state_changed_cb(void *cookie, bt_discovery_state_t sta
 
 static void on_discovery_result_cb(void *cookie, bt_discovery_result_t *result)
 {
-    PRINT_ADDR("Inquiring: device [%s], name: %s, cod: %08" PRIx32 ", rssi: %d", &result->addr, result->name, result->cod, result->rssi);
+    PRINT_ADDR("Inquiring: device [%s], name: %s, cod: %08" PRIx32 ", is HEADSET: %s, rssi: %d",
+               &result->addr, result->name, result->cod, IS_HEADSET(result->cod) ? "true" : "false", result->rssi);
 }
 
 static void on_scan_mode_changed_cb(void *cookie, bt_scan_mode_t mode)
@@ -1594,6 +1596,7 @@ int main(int argc, char **argv)
     g_bttool_ins = bluetooth_create_instance();
     if (g_bttool_ins == NULL) {
         PRINT("create instance error\n");
+        free(buffer);
         return -1;
     }
 
@@ -1652,9 +1655,9 @@ int main(int argc, char **argv)
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
         do_disable_wait(g_bttool_ins);
 #endif
-    } else {
-        bt_tool_uninit(g_bttool_ins);
     }
+
+    bt_tool_uninit(g_bttool_ins);
     bt_adapter_unregister_callback(g_bttool_ins, adapter_callback2);
     bt_adapter_unregister_callback(g_bttool_ins, adapter_callback);
     bluetooth_delete_instance(g_bttool_ins);
