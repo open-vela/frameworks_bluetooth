@@ -35,10 +35,12 @@ index_allocator_t *index_allocator_create(int max)
     return allocator;
 }
 
-void index_allocator_delete(index_allocator_t *allocator)
+void index_allocator_delete(index_allocator_t **allocator)
 {
-    if (allocator)
-        free(allocator);
+    if (*allocator)
+        free(*allocator);
+
+    *allocator = NULL;
 }
 
 int index_alloc(index_allocator_t *allocator)

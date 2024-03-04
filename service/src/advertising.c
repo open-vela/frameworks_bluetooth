@@ -284,7 +284,7 @@ static void advertisers_cleanup(void *data)
     }
 
     list_delete(&adv_manager.advertiser_list);
-    index_allocator_delete(adv_manager.adv_allocator);
+    index_allocator_delete(&adv_manager.adv_allocator);
     adv_manager.started = false;
 }
 

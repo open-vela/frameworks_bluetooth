@@ -1136,8 +1136,7 @@ static void lea_client_cleanup(void)
     bt_callbacks_list_free(service->callbacks);
     service->callbacks = NULL;
 
-    index_allocator_delete(service->index_allocator);
-    service->index_allocator = NULL;
+    index_allocator_delete(&service->index_allocator);
 
     pthread_mutex_destroy(&service->stream_lock);
     pthread_mutex_destroy(&service->group_lock);

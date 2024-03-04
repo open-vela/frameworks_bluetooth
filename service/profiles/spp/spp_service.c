@@ -71,7 +71,7 @@
 struct spp_service_global {
     uint8_t started;
     uint8_t registered;
-    index_allocator_t *idx;
+    index_allocator_t *allocator;
     uint32_t server_channel_map;
     struct list_node devices;
     struct list_node servers;
@@ -276,7 +276,7 @@ static spp_pty_device_t *alloc_new_device(bt_address_t *addr, int16_t scn,
 
     memset(device, 0, sizeof(spp_pty_device_t));
     device->scn = scn;
-    device->conn_id = index_alloc(g_spp_handle.idx);
+    device->conn_id = index_alloc(g_spp_handle.allocator);
     if (device->conn_id < 0) {
         free(device);
         return NULL;
@@ -339,7 +339,7 @@ static spp_pty_device_t *find_pty_device_by_handle(euv_pty_t *handle)
 static void remove_pty_device(spp_pty_device_t *device)
 {
     BT_LOGI("spp device remove, conn_id: %d", device->conn_id);
-    index_free(g_spp_handle.idx, device->conn_id);
+    index_free(g_spp_handle.allocator, device->conn_id);
     list_delete(&device->node);
     free(device);
 }
@@ -784,7 +784,7 @@ static bt_status_t spp_startup(profile_on_startup_t cb)
     }
 
     g_spp_handle.server_channel_map = 0;
-    g_spp_handle.idx = index_allocator_create(CONNECTIONS_MAX);
+    g_spp_handle.allocator = index_allocator_create(CONNECTIONS_MAX);
     list_initialize(&g_spp_handle.devices);
     list_initialize(&g_spp_handle.servers);
     list_initialize(&g_spp_handle.apps);
@@ -813,8 +813,8 @@ static bt_status_t spp_shutdown(profile_on_shutdown_t cb)
     }
 
     g_spp_handle.started = 0;
-    index_allocator_delete(g_spp_handle.idx);
     spp_cleanup_all_apps();
+    index_allocator_delete(&g_spp_handle.allocator);
     list_delete(&g_spp_handle.devices);
     list_delete(&g_spp_handle.servers);
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
