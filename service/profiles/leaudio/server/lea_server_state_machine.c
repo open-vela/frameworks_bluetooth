@@ -581,7 +581,6 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         if (!audio_config) {
             break;
         }
-        audio_stream->started = true;
 
         if (audio_stream->is_source) {
             lea_audio_source_update_codec(audio_config, audio_stream->sdu_size);

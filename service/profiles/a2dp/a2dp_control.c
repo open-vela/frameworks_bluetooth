@@ -349,12 +349,6 @@ void a2dp_control_ch_close(uint8_t ctrl_id, uint8_t data_id)
     audio_transport_close(a2dp_transport, data_id);
 }
 
-void a2dp_control_ch_close(uint8_t ctrl_id, uint8_t data_id)
-{
-    audio_transport_close(a2dp_transport, ctrl_id);
-    audio_transport_close(a2dp_transport, data_id);
-}
-
 void a2dp_control_cleanup(void)
 {
     /* don't close ipc when bt stack disable*/

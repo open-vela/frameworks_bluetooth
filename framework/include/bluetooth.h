@@ -257,9 +257,14 @@ typedef uint8_t bt_128key_t[16];
 /* * Headset Device Class */
 #define IS_HEADSET(cod) ((COD_SERVICE_BITS(cod) & COD_SERVICE_AUDIO) && COD_DEVICE_MAJOR_BITS(cod) == COD_DEVICE_AV)
 
+#define BT_DEV_NAME_MAX_LEN (63)
+
+#define BT_LOC_NAME_MAX_LEN BT_DEV_NAME_MAX_LEN
+#define BT_REM_NAME_MAX_LEN BT_DEV_NAME_MAX_LEN
+
 typedef struct {
     bt_address_t addr;
-    char name[64 + 1];
+    char name[BT_REM_NAME_MAX_LEN + 1];
     uint32_t cod;
     int8_t rssi;
 } bt_discovery_result_t;

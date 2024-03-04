@@ -64,25 +64,6 @@
         PRINT(fmt, addr_str, ##__VA_ARGS__);       \
     } while (0);
 
-#define PRINT_HEXDUMP_MAX 1024
-#define PRINT_HEXDUMP(array, size)                                                \
-    do {                                                                          \
-        if (size < 1) {                                                           \
-            break;                                                                \
-        }                                                                         \
-        if (size > PRINT_HEXDUMP_MAX) {                                           \
-            PRINT("print error, size:%d over flow(%d)", size, PRINT_HEXDUMP_MAX); \
-            break;                                                                \
-        }                                                                         \
-        uint8_t *bytes = (uint8_t *)array;                                        \
-        char hexstring[PRINT_HEXDUMP_MAX] = "";                                   \
-        char hex[8] = "";                                                         \
-        for (int i = 0; i < size; i++) {                                          \
-            snprintf(hex, 8, "0x%02X ", bytes[i]);                                \
-            strcat(hexstring, hex);                                               \
-        }                                                                         \
-        PRINT("%s", hexstring);                                                   \
-    } while (0)
 #ifndef CONFIG_NSH_LINELEN
 #define CONFIG_NSH_LINELEN 80
 #endif
@@ -104,6 +85,7 @@ typedef struct {
 int execute_command_in_table(void *handle, bt_command_t *table, uint32_t table_size, int argc, char *argv[]);
 int execute_command_in_table_offset(void *handle, bt_command_t *table, uint32_t table_size, int argc, char *argv[], uint8_t offset);
 
+int log_command(void *handle, int argc, char *argv[]);
 int adv_command_exec(void *handle, int argc, char *argv[]);
 
 int scan_command_init(void *handle);

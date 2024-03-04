@@ -63,7 +63,7 @@
 #define CBLIST (g_adapter_service.adapter_callbacks)
 
 typedef struct adapter_properties {
-    char name[BT_LOC_NAME_MAX_LEN];
+    char name[BT_LOC_NAME_MAX_LEN + 1];
     bt_address_t addr;
     uint32_t class_of_device;
     uint32_t io_capability;
@@ -73,7 +73,7 @@ typedef struct adapter_properties {
 } adapter_properties_t;
 
 typedef struct le_adapter_properties {
-    char name[BT_LOC_NAME_MAX_LEN];
+    char name[BT_LOC_NAME_MAX_LEN + 1];
     bt_address_t addr;
     uint8_t addr_type;
     uint32_t le_io_capability;
@@ -187,7 +187,7 @@ static adapter_remote_event_t *create_remote_event(bt_address_t *addr, uint8_t e
 
 static void adapter_properties_copy(adapter_properties_t *prop, adapter_storage_t *storage)
 {
-    strncpy(prop->name, storage->name, BT_LOC_NAME_MAX_LEN);
+    strlcpy(prop->name, storage->name, BT_LOC_NAME_MAX_LEN);
     prop->class_of_device = storage->class_of_device;
     prop->io_capability = storage->io_capability;
     prop->scan_mode = storage->scan_mode;
@@ -352,7 +352,7 @@ static void adapter_save_properties(void)
     adapter_properties_t *prop = &g_adapter_service.properties;
     adapter_storage_t storage;
 
-    strncpy(storage.name, prop->name, BT_LOC_NAME_MAX_LEN);
+    strlcpy(storage.name, prop->name, BT_LOC_NAME_MAX_LEN);
     storage.class_of_device = prop->class_of_device;
     storage.io_capability = prop->io_capability;
     storage.scan_mode = prop->scan_mode;
@@ -1096,6 +1096,8 @@ static void handle_link_event(void *data)
         process_link_policy_changed_evt(&evt->addr, evt->link_policy.policy);
         break;
     }
+
+    free(data);
 }
 
 void adapter_on_scan_mode_changed(bt_scan_mode_t mode)
@@ -1628,7 +1630,7 @@ void adapter_get_name(char *name)
     adapter_service_t *adapter = &g_adapter_service;
 
     adapter_lock();
-    strncpy(name, adapter->properties.name, BT_LOC_NAME_MAX_LEN);
+    strlcpy(name, adapter->properties.name, BT_LOC_NAME_MAX_LEN);
     adapter_unlock();
 }
 
