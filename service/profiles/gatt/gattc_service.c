@@ -373,7 +373,7 @@ static bt_status_t if_gattc_startup(profile_on_startup_t cb)
     return BT_STATUS_SUCCESS;
 
 fail:
-    index_allocator_delete(manager->allocator);
+    index_allocator_delete(&manager->allocator);
     bt_list_free(manager->connections);
     manager->connections = NULL;
     pthread_mutex_unlock(&manager->device_lock);
@@ -394,7 +394,7 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
     pthread_mutex_lock(&manager->device_lock);
     bt_list_free(manager->connections);
     manager->connections = NULL;
-    index_allocator_delete(manager->allocator);
+    index_allocator_delete(&manager->allocator);
     manager->started = false;
     cb(PROFILE_GATTC, true);
     pthread_mutex_unlock(&manager->device_lock);

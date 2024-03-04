@@ -183,8 +183,8 @@ void manager_cleanup(void)
         instance_release((bt_instance_impl_t *)node);
     }
 
-    index_allocator_delete(g_instance_id);
-    g_instance_id = NULL;
+    index_allocator_delete(&g_instance_id);
+
 #if defined(CONFIG_BLUETOOTH_OBELISK) && defined(__NuttX__)
     service_manager_cleanup();
 #endif
