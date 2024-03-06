@@ -116,18 +116,16 @@ bt_status_t bt_media_set_sco_unavailable(void)
 
 bt_status_t bt_media_set_a2dp_offloading(bool enable)
 {
-    if (media_policy_set_int(MEDIA_POLICY_A2DP_OFFLOAD_MODE, enable, MEDIA_POLICY_APPLY) != 0) {
-        return BT_STATUS_FAIL;
-    }
+    // todo set a2dp offload async
 
-    return BT_STATUS_SUCCESS;
+    return BT_STATUS_NOT_SUPPORTED;
 }
 
 bt_status_t bt_media_set_hfp_offloading(bool enable)
 {
     // todo set hfp offload?
 
-    return BT_STATUS_SUCCESS;
+    return BT_STATUS_NOT_SUPPORTED;
 }
 
 bt_status_t bt_media_set_lea_available(void)
@@ -174,5 +172,5 @@ bt_status_t bt_media_set_lea_offloading(bool enable)
 {
     // todo set le audio offload?
 
-    return BT_STATUS_FAIL;
+    return BT_STATUS_NOT_SUPPORTED;
 }
