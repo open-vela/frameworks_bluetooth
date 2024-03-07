@@ -191,29 +191,31 @@ int service_loop_init(void)
         return -1;
 
     loop = calloc(1, sizeof(service_loop_t));
-    if (loop == NULL)
-        return -1;
-
-    loop->handle = uvloop;
-    if (!loop->handle) {
-        BT_LOGE("%s get default loop fail", __func__);
-        free(loop);
-        return -1;
+    if (loop == NULL) {
+        ret = -ENOMEM;
+        goto fail;
     }
 
+    loop->handle = uvloop;
     loop->handle->data = loop;
     loop->is_running = 0;
     ret = uv_mutex_init(&loop->msg_lock);
     if (ret != 0) {
         BT_LOGE("%s mutex error: %d", __func__, ret);
-        free(loop);
-        return ret;
+        goto fail;
     }
 
     list_initialize(&loop->msg_queue);
     list_initialize(&loop->init_queue);
 
     return 0;
+
+fail:
+    if (uvloop)
+        uv_loop_close(uvloop);
+
+    free(loop);
+    return ret;
 }
 
 int service_loop_run(bool start_thread, char *name)
@@ -262,16 +264,27 @@ void service_loop_exit(void)
     struct list_node *node;
     struct list_node *tmp;
 
-    if (loop == NULL)
+    if (loop == NULL) {
+        uv_loop_close(handle);
         return;
+    }
 
     if (loop->is_running) {
         do_in_service_loop(set_stop, loop);
         uv_sem_wait(&loop->exited);
         uv_sem_destroy(&loop->exited);
+    } else {
+        uv_run(handle, UV_RUN_ONCE);
+        uv_loop_close(handle);
     }
 
     uv_mutex_lock(&loop->msg_lock);
+    list_for_every_safe(&loop->init_queue, node, tmp)
+    {
+        list_delete(node);
+        free(node);
+    }
+
     list_for_every_safe(&loop->msg_queue, node, tmp)
     {
         list_delete(node);
