@@ -128,7 +128,8 @@ bool bt_uuid_create_common(bt_uuid_t *uuid, const uint8_t *data, uint8_t type)
 
 int bt_uuid_compare(const bt_uuid_t *uuid1, const bt_uuid_t *uuid2)
 {
-    bt_uuid_t u1, u2;
+    bt_uuid_t u1 = { 0 };
+    bt_uuid_t u2 = { 0 };
 
     bt_uuid_to_uuid128(uuid1, &u1);
     bt_uuid_to_uuid128(uuid2, &u2);
