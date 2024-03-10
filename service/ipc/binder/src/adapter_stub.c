@@ -167,7 +167,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
     case IBTADAPTER_GET_NAME: {
         char name[BT_LOC_NAME_MAX_LEN + 1];
 
-        adapter_get_name(name);
+        adapter_get_name(name, BT_LOC_NAME_MAX_LEN + 1);
         stat = AParcel_writeString(out, name, strlen(name));
         break;
     }

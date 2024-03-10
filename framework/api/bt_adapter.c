@@ -99,7 +99,7 @@ bt_status_t BTSYMBOLS(bt_adapter_set_name)(bt_instance_t *ins, const char *name)
 
 void BTSYMBOLS(bt_adapter_get_name)(bt_instance_t *ins, char *name, int length)
 {
-    return adapter_get_name(name);
+    return adapter_get_name(name, length);
 }
 
 bt_status_t BTSYMBOLS(bt_adapter_get_uuids)(bt_instance_t *ins, bt_uuid_t *uuids, uint16_t *size)

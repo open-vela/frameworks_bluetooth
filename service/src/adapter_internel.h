@@ -253,7 +253,7 @@ bt_status_t adapter_cancel_discovery(void);
 bool adapter_is_discovering(void);
 void adapter_get_address(bt_address_t *addr);
 bt_status_t adapter_set_name(const char *name);
-void adapter_get_name(char *name);
+void adapter_get_name(char *name, int size);
 bt_status_t adapter_get_uuids(bt_uuid_t *uuids, uint16_t *size);
 bt_status_t adapter_set_scan_mode(bt_scan_mode_t mode, bool bondable);
 bt_scan_mode_t adapter_get_scan_mode(void);

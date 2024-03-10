@@ -168,9 +168,9 @@ bool device_set_name(bt_device_t *device, const char *name)
         return false;
     }
 
-    strncpy((char *)device->remote.name, name, BT_REM_NAME_MAX_LEN);
+    strlcpy((char *)device->remote.name, name, sizeof(device->remote.name));
     if (!strncmp(device->remote.alias, "", BT_REM_NAME_MAX_LEN))
-        strncpy((char *)device->remote.alias, name, BT_REM_NAME_MAX_LEN);
+        strlcpy((char *)device->remote.alias, name, sizeof(device->remote.alias));
 
     return true;
 }
@@ -272,7 +272,7 @@ bool device_set_alias(bt_device_t *device, const char *alias)
     if (!strncmp(device->remote.alias, alias, BT_REM_NAME_MAX_LEN))
         return false;
 
-    strncpy((char *)device->remote.alias, alias, BT_REM_NAME_MAX_LEN);
+    strlcpy((char *)device->remote.alias, alias, sizeof(device->remote.alias));
     return true;
 }
 
