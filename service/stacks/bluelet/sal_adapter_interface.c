@@ -1862,6 +1862,17 @@ bt_status_t bt_sal_set_auto_sniff(bt_auto_sniff_params_t *params)
 #endif
 }
 
+bt_status_t bt_sal_set_auto_sniff_mode(bt_address_t *addr, bool enable)
+{
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    SAL_CHECK_RET(service_adapter_gap_set_auto_sniff_mode(addr->addr, enable), SERVICE_BT_STATUS_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
 #if 0
 /* Test */
 bt_status_t bt_sal_enter_bluetooth_test_mode(test_mode mode)
