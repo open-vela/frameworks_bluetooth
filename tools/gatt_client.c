@@ -404,19 +404,18 @@ static void connect_callback(void *conn_handle, bt_address_t *addr)
 {
     gattc_device_t *device = find_gattc_device(conn_handle);
 
-    if (device) {
-        memcpy(&device->remote_address, addr, sizeof(bt_address_t));
-        device->conn_state = CONNECTION_STATE_CONNECTED;
-    }
+    assert(device);
+    memcpy(&device->remote_address, addr, sizeof(bt_address_t));
+    device->conn_state = CONNECTION_STATE_CONNECTED;
     PRINT_ADDR("gattc_connect_callback, addr:%s", addr);
 }
 
 static void disconnect_callback(void *conn_handle, bt_address_t *addr)
 {
     gattc_device_t *device = find_gattc_device(conn_handle);
-    if (device) {
-        device->conn_state = CONNECTION_STATE_DISCONNECTED;
-    }
+
+    assert(device);
+    device->conn_state = CONNECTION_STATE_DISCONNECTED;
     PRINT_ADDR("gattc_disconnect_callback, addr:%s", addr);
 }
 
@@ -524,7 +523,9 @@ static void notify_received_callback(void *conn_handle, uint16_t attr_handle,
 static void mtu_updated_callback(void *conn_handle, gatt_status_t status, uint32_t mtu)
 {
     gattc_device_t *device = find_gattc_device(conn_handle);
-    if (device && status == GATT_STATUS_SUCCESS) {
+
+    assert(device);
+    if (status == GATT_STATUS_SUCCESS) {
         device->gatt_mtu = mtu;
     }
     PRINT("gattc_mtu_updated_callback, status:%d, mtu:%" PRIu32, status, mtu);
