@@ -187,7 +187,7 @@ static adapter_remote_event_t *create_remote_event(bt_address_t *addr, uint8_t e
 
 static void adapter_properties_copy(adapter_properties_t *prop, adapter_storage_t *storage)
 {
-    strlcpy(prop->name, storage->name, BT_LOC_NAME_MAX_LEN);
+    strlcpy(prop->name, storage->name, sizeof(prop->name));
     prop->class_of_device = storage->class_of_device;
     prop->io_capability = storage->io_capability;
     prop->scan_mode = storage->scan_mode;
@@ -1625,12 +1625,12 @@ error:
     return status;
 }
 
-void adapter_get_name(char *name)
+void adapter_get_name(char *name, int size)
 {
     adapter_service_t *adapter = &g_adapter_service;
 
     adapter_lock();
-    strlcpy(name, adapter->properties.name, BT_LOC_NAME_MAX_LEN);
+    strlcpy(name, adapter->properties.name, size);
     adapter_unlock();
 }
 

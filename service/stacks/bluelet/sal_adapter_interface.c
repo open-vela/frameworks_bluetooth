@@ -1141,7 +1141,7 @@ bt_status_t bt_sal_set_bonded_devices(remote_device_properties_t *prop)
     SERVICE_REMOTE_DEVICE_S remote;
 
     memcpy(remote.bd_addr, prop->addr.addr, 6);
-    strlcpy(remote.bt_name, prop->name, BT_DEVICE_NAME_MAX_LEN);
+    strlcpy(remote.bt_name, prop->name, sizeof(remote.bt_name));
     memcpy(remote.link_key, prop->link_key, 16);
     remote.link_key_type = prop->link_key_type;
     remote.cod = prop->class_of_device;
