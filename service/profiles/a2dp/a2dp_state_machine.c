@@ -354,6 +354,23 @@ static void a2dp_offload_config_timeout_callback(service_timer_t *timer, void *d
     a2dp_event_destory(a2dp_event);
 }
 
+static bt_status_t a2dp_offload_send_stop_cmd(a2dp_state_machine_t *a2dp_sm,
+                                              a2dp_event_data_t *data)
+{
+    uint8_t ogf;
+    uint16_t ocf;
+    uint8_t len;
+    uint8_t *payload;
+
+    payload = data->data;
+    len = data->size - sizeof(ogf) - sizeof(ocf);
+    STREAM_TO_UINT8(ogf, payload)
+    STREAM_TO_UINT16(ocf, payload);
+    flag_set(a2dp_sm, PENDING_OFFLOAD_STOP);
+
+    return bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, a2dp_sm);
+}
+
 static bool flag_isset(a2dp_state_machine_t *a2dp_sm, pending_state_t flag)
 {
     return (bool)(a2dp_sm->pending & flag);
@@ -428,6 +445,11 @@ static bool idle_process_event(state_machine_t *sm, uint32_t event, void *p_data
         }
         break;
 #endif
+
+    case OFFLOAD_STOP_REQ:
+        a2dp_offload_send_stop_cmd(a2dp_sm, data);
+        break;
+
     default:
         break;
     }
@@ -485,6 +507,11 @@ static bool opening_process_event(state_machine_t *sm, uint32_t event, void *p_d
         a2dp_sm->connect_timer = NULL;
         hsm_transition_to(sm, &idle_state);
         break;
+
+    case OFFLOAD_STOP_REQ:
+        a2dp_offload_send_stop_cmd(a2dp_sm, data);
+        break;
+
     default:
         break;
     }
@@ -531,6 +558,7 @@ static void opened_exit(state_machine_t *sm)
 static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
+    a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
 
     A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
@@ -653,7 +681,6 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
     }
 
     case OFFLOAD_START_REQ: {
-        a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
         uint8_t ogf;
         uint16_t ocf;
         uint8_t len;
@@ -681,7 +708,6 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
     }
 
     case OFFLOAD_START_EVT: {
-        a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
         bt_hci_event_t *hci_event;
         uint8_t status;
 
@@ -719,23 +745,9 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         break;
     }
 
-    case OFFLOAD_STOP_REQ: {
-        a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
-        uint8_t ogf;
-        uint16_t ocf;
-        uint8_t len;
-        uint8_t *payload;
-
-        payload = data->data;
-        len = data->size - sizeof(ogf) - sizeof(ocf);
-        STREAM_TO_UINT8(ogf, payload)
-        STREAM_TO_UINT16(ocf, payload);
-        flag_set(a2dp_sm, PENDING_OFFLOAD_STOP);
-
-        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
-                                a2dp_sm);
+    case OFFLOAD_STOP_REQ:
+        a2dp_offload_send_stop_cmd(a2dp_sm, data);
         break;
-    }
 
     case OFFLOAD_STOP_EVT: {
         break;
@@ -770,6 +782,7 @@ static void started_exit(state_machine_t *sm)
 static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
+    a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
 
     A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
@@ -819,12 +832,11 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-    case DATA_IND_EVT: {
-        a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
+    case DATA_IND_EVT:
         a2dp_sink_packet_recieve(data->packet);
         break;
-    }
 #endif
+
     case STREAM_SUSPEND_REQ: {
         bt_status_t status;
 
@@ -876,24 +888,10 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         a2dp_report_audio_config_state(a2dp_sm, &a2dp_sm->addr);
         break;
 
-    case OFFLOAD_STOP_REQ: {
-        a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
-        uint8_t ogf;
-        uint16_t ocf;
-        uint8_t len;
-        uint8_t *payload;
-
-        payload = data->data;
-        len = data->size - sizeof(ogf) - sizeof(ocf);
-        STREAM_TO_UINT8(ogf, payload)
-        STREAM_TO_UINT16(ocf, payload);
-        flag_set(a2dp_sm, PENDING_OFFLOAD_STOP);
-
-        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
-                                a2dp_sm);
-
+    case OFFLOAD_STOP_REQ:
+        a2dp_offload_send_stop_cmd(a2dp_sm, data);
         break;
-    }
+
     default:
         break;
     }
@@ -921,6 +919,7 @@ static void closing_exit(state_machine_t *sm)
 static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
+    a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
 
     A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
@@ -932,6 +931,10 @@ static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_d
 
     case DISCONNECTED_EVT:
         hsm_transition_to(sm, &idle_state);
+        break;
+
+    case OFFLOAD_STOP_REQ:
+        a2dp_offload_send_stop_cmd(a2dp_sm, data);
         break;
 
     default:
