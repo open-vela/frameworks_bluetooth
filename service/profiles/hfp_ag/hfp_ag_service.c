@@ -86,7 +86,7 @@ static ag_service_t g_ag_service = {
     .callbacks = NULL,
 };
 
-static uint32_t ag_support_features = HFP_BRSF_AG_HFINDICATORS | HFP_BRSF_AG_ENHANCED_CALLSTATUS | HFP_BRSF_AG_3WAYCALL | HFP_BRSF_AG_ENHANCED_CALLCONTROL | HFP_BRSF_AG_REJECT_CALL | HFP_BRSF_AG_EXTENDED_ERRORRESULT | HFP_BRSF_AG_CODEC_NEGOTIATION | HFP_BRSF_AG_eSCO_S4T2_SETTING;
+static uint32_t ag_support_features = HFP_BRSF_AG_NREC | HFP_BRSF_AG_HFINDICATORS | HFP_BRSF_AG_ENHANCED_CALLSTATUS | HFP_BRSF_AG_3WAYCALL | HFP_BRSF_AG_ENHANCED_CALLCONTROL | HFP_BRSF_AG_REJECT_CALL | HFP_BRSF_AG_EXTENDED_ERRORRESULT | HFP_BRSF_AG_CODEC_NEGOTIATION | HFP_BRSF_AG_eSCO_S4T2_SETTING;
 
 /****************************************************************************
  * Private Functions
@@ -807,6 +807,16 @@ void hfp_ag_on_received_manufacture_request(bt_address_t* addr)
 void hfp_ag_on_received_model_id_request(bt_address_t* addr)
 {
     bt_sal_hfp_ag_model_id_response(addr, "2109119BC", strlen("2109119BC"));
+}
+
+void hfp_ag_on_received_nrec_request(bt_address_t* addr, uint8_t nrec)
+{
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_NREC_REQ, addr);
+    if (!msg)
+        return;
+
+    msg->data.valueint1 = nrec;
+    hfp_ag_send_message(msg);
 }
 
 static const profile_service_t hfp_ag_service = {
