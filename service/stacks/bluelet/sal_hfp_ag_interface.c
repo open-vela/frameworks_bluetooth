@@ -193,6 +193,14 @@ void received_model_request_callback(BD_ADDR remote_addr)
     hfp_ag_on_received_model_id_request(&addr);
 }
 
+void received_nrec_request_callback(BD_ADDR remote_addr, uint8_t nrec)
+{
+    bt_address_t addr;
+
+    memcpy(addr.addr, remote_addr, sizeof(addr.addr));
+    hfp_ag_on_received_nrec_request(&addr, nrec);
+}
+
 static HFP_AG_CALLBACKS_S ag_callbacks = {
     .size = sizeof(ag_callbacks),
     .hfp_ag_connection_state_changed_cb = connection_state_changed_callback,
@@ -214,6 +222,7 @@ static HFP_AG_CALLBACKS_S ag_callbacks = {
     .hfp_ag_received_dtmf_cmd_cb = received_dtmf_cmd_callback,
     .hfp_ag_received_manufacture_request_cb = received_manufacture_request_callback,
     .hfp_ag_received_model_request_cb = received_model_request_callback,
+    .hfp_ag_received_nrec_request_cb = received_nrec_request_callback,
     /* bind callback */
     /* biev callback */
 };

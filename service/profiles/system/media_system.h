@@ -39,5 +39,6 @@ bt_status_t bt_media_set_hfp_offloading(bool enable);
 bt_status_t bt_media_set_lea_offloading(bool enable);
 bt_status_t bt_media_set_lea_available(void);
 bt_status_t bt_media_set_lea_unavailable(void);
+bt_status_t bt_media_set_anc_enable(bool enable);
 
 #endif /* __MEDIA_SYSTEM_H__ */
