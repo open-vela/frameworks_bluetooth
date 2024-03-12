@@ -324,3 +324,11 @@ bt_status_t bt_media_set_lea_offloading(bool enable)
 
     return BT_STATUS_NOT_SUPPORTED;
 }
+
+bt_status_t bt_media_set_anc_enable(bool enable)
+{
+    if (media_policy_set_int(MEDIA_POLICY_ANC_OFFLOAD_MODE, (int)enable, MEDIA_POLICY_APPLY) != 0)
+        return BT_STATUS_FAIL;
+
+    return BT_STATUS_SUCCESS;
+}

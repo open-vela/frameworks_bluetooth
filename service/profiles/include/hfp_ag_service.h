@@ -67,6 +67,7 @@ void hfp_ag_on_call_control(bt_address_t* addr, hfp_call_control_t control);
 void hfp_ag_on_received_dtmf(bt_address_t* addr, char tone);
 void hfp_ag_on_received_manufacture_request(bt_address_t* addr);
 void hfp_ag_on_received_model_id_request(bt_address_t* addr);
+void hfp_ag_on_received_nrec_request(bt_address_t* addr, uint8_t nrec);
 
 /*
  *  statemachine callbacks

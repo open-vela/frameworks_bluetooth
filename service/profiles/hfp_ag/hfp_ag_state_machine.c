@@ -221,6 +221,7 @@ static const char* stack_event_to_string(hfp_ag_event_t event)
         CASE_RETURN_STR(AG_STACK_EVENT_CALL_CONTROL)
         CASE_RETURN_STR(AG_STACK_EVENT_AT_COMMAND)
         CASE_RETURN_STR(AG_STACK_EVENT_SEND_DTMF)
+        CASE_RETURN_STR(AG_STACK_EVENT_NREC_REQ)
     default:
         snprintf(ag_evt, 32, "UNKNOWN_AG_EVENT:%d", event);
         return (const char*)ag_evt;
@@ -312,6 +313,7 @@ static void disconnected_enter(state_machine_t* sm)
     if (hsm_get_previous_state(sm)) {
         bt_media_remove_listener(agsm->volume_listener);
         agsm->volume_listener = NULL;
+        bt_media_set_anc_enable(true);
         ag_service_notify_connection_state_changed(&agsm->addr, PROFILE_STATE_DISCONNECTED);
     }
 }
@@ -628,6 +630,11 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
     } break;
     case AG_STACK_EVENT_SEND_DTMF:
         /* system call interface */
+        break;
+    case AG_STACK_EVENT_NREC_REQ:
+        /* disable local ANC */
+        if (data->valueint1 == 0)
+            bt_media_set_anc_enable(false);
         break;
     default:
         BT_LOGW("Unexpected event:%" PRIu32 "", event);
