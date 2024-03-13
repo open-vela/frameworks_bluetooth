@@ -87,7 +87,8 @@ static hf_service_t g_hfp_service = {
 static uint32_t hf_support_features = HFP_BRSF_HF_HFINDICATORS | HFP_BRSF_HF_RMTVOLCTRL |
                                       HFP_BRSF_HF_ENHANCED_CALLSTATUS | HFP_BRSF_HF_CLIP |
                                       HFP_BRSF_HF_3WAYCALL | HFP_BRSF_HF_ENHANCED_CALLCONTROL |
-                                      HFP_BRSF_HF_BVRA | HFP_BRSF_HF_CODEC_NEGOTIATION;
+                                      HFP_BRSF_HF_BVRA | HFP_BRSF_HF_CODEC_NEGOTIATION |
+                                      HFP_BRSF_HF_ESCO_S4T2_SETTING;
 
 /****************************************************************************
  * Private Functions
