@@ -47,6 +47,9 @@ typedef enum {
     ATTR_RSP_BY_APP,
 } gatt_attr_rsp_t;
 
+/* MAX GATT MTU size */
+#define GATT_MAX_MTU_SIZE 517
+
 /* Attribute permissions */
 #define GATT_PERM_READ 0x01
 #define GATT_PERM_WRITE 0x02
