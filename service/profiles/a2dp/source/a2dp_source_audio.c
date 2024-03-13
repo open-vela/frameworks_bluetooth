@@ -33,7 +33,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <nuttx/mm/circbuf.h>
+#include <nuttx/circbuf.h>
 
 #include "sal_a2dp_source_interface.h"
 
