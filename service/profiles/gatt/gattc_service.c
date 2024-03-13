@@ -672,6 +672,10 @@ static bt_status_t if_gattc_exchange_mtu(void *conn_handle, uint32_t mtu)
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
+    if (mtu > GATT_MAX_MTU_SIZE) {
+        mtu = GATT_MAX_MTU_SIZE;
+    }
+
     return bt_sal_gatt_client_send_mtu_req(&connection->remote_addr, mtu);
 }
 
