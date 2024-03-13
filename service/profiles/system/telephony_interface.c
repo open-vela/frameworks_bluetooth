@@ -710,6 +710,16 @@ void ofono_property_changed(GDBusProxy *proxy, const char *name,
     }
 }
 
+/*
+ * Disconnect handler for private dbus connections.
+ * This is necessary when calling dbus_connection_close(), otherwise
+ * the corresponding thread will be removed.
+ */
+static void system_bus_disconnected(DBusConnection *conn, void *user_data)
+{
+    BT_LOGD("System bus has disconnected");
+}
+
 tele_client_t *teleif_client_connect(const char *name)
 {
     GDBusClient *dbus_client;
@@ -720,11 +730,14 @@ tele_client_t *teleif_client_connect(const char *name)
 
     tele->is_ready = false;
     tele->modems = bt_list_new(NULL);
-    tele->dbus_sys = g_dbus_setup_bus(DBUS_BUS_SYSTEM, NULL, NULL);
+    tele->dbus_sys = g_dbus_setup_private(DBUS_BUS_SYSTEM, NULL, NULL);
     if (!tele->dbus_sys) {
         BT_LOGE("Can't get on system bus");
         return NULL;
     }
+
+    /* Set disconnect handler to avoid the thread being killed after dbus_connection_close() */
+    g_dbus_set_disconnect_function(tele->dbus_sys, system_bus_disconnected, NULL, NULL);
 
     dbus_client = g_dbus_client_new(tele->dbus_sys, OFONO_SERVICE, OFONO_MANAGER_PATH);
     tele->dbus_client = dbus_client;
@@ -744,6 +757,7 @@ void teleif_client_disconnect(tele_client_t *tele)
 {
     tele->is_ready = false;
     g_dbus_client_unref(tele->dbus_client);
+    dbus_connection_close(tele->dbus_sys);
     dbus_connection_unref(tele->dbus_sys);
     free(tele);
 }
