@@ -129,7 +129,7 @@ BT_GATT_SERVER_MESSAGE_START,
             bt_address_t addr;
             uint32_t req_handle;
             uint16_t length;
-            uint8_t value[512];
+            uint8_t value[GATT_MAX_MTU_SIZE - 1];
         } _bt_gatts_response;
 
         struct {
@@ -137,7 +137,7 @@ BT_GATT_SERVER_MESSAGE_START,
             bt_address_t addr;
             uint16_t attr_handle;
             uint16_t length;
-            uint8_t value[512];
+            uint8_t value[GATT_MAX_MTU_SIZE - 3];
         } _bt_gatts_notify;
 
         struct {
@@ -195,7 +195,7 @@ BT_GATT_SERVER_MESSAGE_START,
             uint16_t attr_handle;
             uint16_t offset;
             uint16_t length;
-            uint8_t value[512];
+            uint8_t value[GATT_MAX_MTU_SIZE - 3];
         } _on_write_request;
 
         struct {

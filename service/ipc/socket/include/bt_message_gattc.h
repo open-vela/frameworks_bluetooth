@@ -123,7 +123,7 @@ BT_GATT_CLIENT_MESSAGE_START,
             gattc_handle_t handle;
             uint16_t attr_handle;
             uint16_t length;
-            uint8_t value[512];
+            uint8_t value[GATT_MAX_MTU_SIZE - 3];
         } _bt_gattc_write;
 
         struct {
@@ -192,7 +192,7 @@ BT_GATT_CLIENT_MESSAGE_START,
             gatt_status_t status;
             uint16_t attr_handle;
             uint16_t length;
-            uint8_t value[512];
+            uint8_t value[GATT_MAX_MTU_SIZE - 1];
         } _on_read;
 
         struct {
@@ -212,7 +212,7 @@ BT_GATT_CLIENT_MESSAGE_START,
             void *remote;
             uint16_t attr_handle;
             uint16_t length;
-            uint8_t value[512];
+            uint8_t value[GATT_MAX_MTU_SIZE - 3];
         } _on_notified;
 
         struct {
