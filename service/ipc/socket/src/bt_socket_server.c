@@ -300,8 +300,6 @@ static int bt_socket_server_listen(int family, const char *name, int port)
     int ret;
     int fd;
 
-    g_instances_list = bt_list_new(NULL);
-
     fd = socket(family, SOCK_STREAM | SOCK_NONBLOCK, 0);
     if (fd < 0)
         return -errno;
