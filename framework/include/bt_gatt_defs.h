@@ -68,6 +68,10 @@ typedef enum {
 #define GATT_PROP_EXTENDED_PROPS 0x80
 #define GATT_PROP_EXPOSED_OVER_BREDR 0x1000 /* Applies to Primary/Secondary Service type only */
 
+/* Client Characteristic Configuration Values */
+#define GATT_CCC_NOTIFY 0x0001
+#define GATT_CCC_INDICATE 0x0002
+
 /* GATT Attribute Helper Macros */
 #define GATT_H_ATTRIBUTE(_uuid, _type, _prop, _perm, _rsp, _read, _write, _value, _length, _handle) \
     {                                                                                               \
