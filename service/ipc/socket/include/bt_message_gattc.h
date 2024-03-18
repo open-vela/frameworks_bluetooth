@@ -129,6 +129,7 @@ BT_GATT_CLIENT_MESSAGE_START,
         struct {
             gattc_handle_t handle;
             uint16_t attr_handle;
+            uint16_t ccc_value;
         } _bt_gattc_subscribe;
 
         struct {

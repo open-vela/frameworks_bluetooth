@@ -200,19 +200,22 @@ bt_status_t bt_sal_gatt_client_write_element(bt_address_t *addr, uint16_t elemen
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_client_register_notifications(bt_address_t *addr, uint16_t element_id, bool enable, gatt_change_type_t change_type)
+bt_status_t bt_sal_gatt_client_register_notifications(bt_address_t *addr, uint16_t element_id, uint16_t properties, bool enable)
 {
     SAL_CHECK_PARAM(addr);
 
     SERVICE_GATT_ELEMENT_S char_element = {
         .id = element_id,
         .type = CHARACTERISTIC,
+        .properties = 0,
         .permissions = enable,
     };
-    if (change_type == GATT_CHANGE_TYPE_NOTIFY)
-        char_element.properties = GATT_PROPERTY_NOTIFY;
-    else
-        char_element.properties = GATT_PROPERTY_INDICATE;
+    if (properties & GATT_PROP_NOTIFY) {
+        char_element.properties |= GATT_PROPERTY_NOTIFY;
+    }
+    if (properties & GATT_PROP_INDICATE) {
+        char_element.properties |= GATT_PROPERTY_INDICATE;
+    }
 
     SAL_CHECK_RET(service_adapter_gatt_client_register_notifications(addr->addr, &char_element, enable), GATT_SUCCESS);
 

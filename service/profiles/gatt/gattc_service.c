@@ -650,24 +650,55 @@ static bt_status_t if_gattc_write_without_response(void *conn_handle, uint16_t a
                                             value, length, GATT_WRITE_TYPE_NO_RSP);
 }
 
-static bt_status_t if_gattc_subscribe(void *conn_handle, uint16_t attr_handle)
+static bt_status_t if_gattc_subscribe(void *conn_handle, uint16_t attr_handle, uint16_t ccc_value)
 {
     gattc_connection_t *connection = conn_handle;
+    gatt_element_t *element;
+    uint16_t properties;
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    return bt_sal_gatt_client_register_notifications(&connection->remote_addr, attr_handle, true, GATT_CHANGE_TYPE_NOTIFY);
+    element = find_gattc_element_by_handle(connection, attr_handle);
+    if (!element) {
+        return BT_STATUS_NOT_FOUND;
+    }
+
+    if (ccc_value & GATT_CCC_NOTIFY) {
+        if (!(element->properties & GATT_PROP_NOTIFY)) {
+            return BT_STATUS_NOT_SUPPORTED;
+        }
+        properties = GATT_PROP_NOTIFY;
+    } else if (ccc_value & GATT_CCC_INDICATE) {
+        if (!(element->properties & GATT_PROP_INDICATE)) {
+            return BT_STATUS_NOT_SUPPORTED;
+        }
+        properties = GATT_PROP_INDICATE;
+    } else {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    return bt_sal_gatt_client_register_notifications(&connection->remote_addr, attr_handle, properties, true);
 }
 
 static bt_status_t if_gattc_unsubscribe(void *conn_handle, uint16_t attr_handle)
 {
     gattc_connection_t *connection = conn_handle;
+    gatt_element_t *element;
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    return bt_sal_gatt_client_register_notifications(&connection->remote_addr, attr_handle, false, GATT_CHANGE_TYPE_NOTIFY);
+    element = find_gattc_element_by_handle(connection, attr_handle);
+    if (!element) {
+        return BT_STATUS_NOT_FOUND;
+    }
+
+    if (!(element->properties & (GATT_PROP_NOTIFY | GATT_PROP_INDICATE))) {
+        return BT_STATUS_NOT_SUPPORTED;
+    }
+
+    return bt_sal_gatt_client_register_notifications(&connection->remote_addr, attr_handle, element->properties, false);
 }
 
 static bt_status_t if_gattc_exchange_mtu(void *conn_handle, uint32_t mtu)

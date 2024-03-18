@@ -237,7 +237,7 @@ bt_status_t bt_gattc_write_without_response(gattc_handle_t conn_handle, uint16_t
     return packet.gattc_r.status;
 }
 
-bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t attr_handle)
+bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t attr_handle, uint16_t ccc_value)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -247,6 +247,7 @@ bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t attr_handle)
 
     packet.gattc_pl._bt_gattc_subscribe.handle = gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_subscribe.attr_handle = attr_handle;
+    packet.gattc_pl._bt_gattc_subscribe.ccc_value = ccc_value;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_SUBSCRIBE);
     if (status != BT_STATUS_SUCCESS)
         return status;
