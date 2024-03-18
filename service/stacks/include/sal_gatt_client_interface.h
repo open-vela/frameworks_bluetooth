@@ -27,7 +27,7 @@ bt_status_t bt_sal_gatt_client_discover_all_services(bt_address_t *addr);
 bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_address_t *addr, bt_uuid_t *uuid);
 bt_status_t bt_sal_gatt_client_read_element(bt_address_t *addr, uint16_t element_id);
 bt_status_t bt_sal_gatt_client_write_element(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length, gatt_write_type_t write_type);
-bt_status_t bt_sal_gatt_client_register_notifications(bt_address_t *addr, uint16_t element_id, bool enable, gatt_change_type_t change_type);
+bt_status_t bt_sal_gatt_client_register_notifications(bt_address_t *addr, uint16_t element_id, uint16_t properties, bool enable);
 bt_status_t bt_sal_gatt_client_send_mtu_req(bt_address_t *addr, uint32_t mtu);
 bt_status_t bt_sal_gatt_client_update_connection_parameter(bt_address_t *addr, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
                                                            uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length);

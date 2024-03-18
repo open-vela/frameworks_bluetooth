@@ -296,7 +296,8 @@ void bt_socket_server_gattc_process(service_poll_t *poll, int fd,
     case BT_GATT_CLIENT_SUBSCRIBE:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_subscribe)(
             packet->gattc_pl._bt_gattc_subscribe.handle,
-            packet->gattc_pl._bt_gattc_subscribe.attr_handle);
+            packet->gattc_pl._bt_gattc_subscribe.attr_handle,
+            packet->gattc_pl._bt_gattc_subscribe.ccc_value);
         break;
     case BT_GATT_CLIENT_UNSUBSCRIBE:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_unsubscribe)(
