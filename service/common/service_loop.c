@@ -211,9 +211,7 @@ int service_loop_init(void)
     return 0;
 
 fail:
-    if (uvloop)
-        uv_loop_close(uvloop);
-
+    uv_loop_close(uvloop);
     free(loop);
     return ret;
 }
