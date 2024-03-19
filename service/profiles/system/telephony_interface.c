@@ -242,15 +242,15 @@ static int tele_call_get_call_info(tele_client_t *tele, tele_call_t *call)
     DBusMessageIter iter;
     GDBusProxy *proxy = call->proxy;
     void *p_basic = NULL;
+    dbus_bool_t ret;
 
     if (g_dbus_proxy_get_property(proxy, "Multiparty", &iter)) {
-        dbus_message_iter_get_basic(&iter, &call->is_multiparty);
+        dbus_message_iter_get_basic(&iter, &ret);
+        call->is_multiparty = ret;
     }
     if (g_dbus_proxy_get_property(proxy, "RemoteMultiparty", &iter)) {
-        dbus_message_iter_get_basic(&iter, &call->is_remote_multiparty);
-    }
-    if (g_dbus_proxy_get_property(proxy, "RemoteMultiparty", &iter)) {
-        dbus_message_iter_get_basic(&iter, &call->is_remote_multiparty);
+        dbus_message_iter_get_basic(&iter, &ret);
+        call->is_remote_multiparty = ret;
     }
     if (g_dbus_proxy_get_property(proxy, "State", &iter)) {
         dbus_message_iter_get_basic(&iter, &p_basic);
@@ -275,10 +275,12 @@ static int tele_call_get_call_info(tele_client_t *tele, tele_call_t *call)
         snprintf(call->name, TELE_MAX_CALLER_NAME_LENGTH, "%s", (char *)p_basic);
     }
     if (g_dbus_proxy_get_property(proxy, "RemoteHeld", &iter)) {
-        dbus_message_iter_get_basic(&iter, &call->is_remote_held);
+        dbus_message_iter_get_basic(&iter, &ret);
+        call->is_remote_held = ret;
     }
     if (g_dbus_proxy_get_property(proxy, "Emergency", &iter)) {
-        dbus_message_iter_get_basic(&iter, &call->is_emergency);
+        dbus_message_iter_get_basic(&iter, &ret);
+        call->is_emergency = ret;
     }
 
     return TELE_SUCCESS;
