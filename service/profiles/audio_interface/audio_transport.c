@@ -46,6 +46,7 @@
 typedef struct {
     void *ipc_handle;
     uint8_t ch_id;
+    uint8_t closing;
     uv_pipe_t *svr_pipe;
     uv_pipe_t *cli_pipe;
     transport_conn_state_t state;
@@ -68,6 +69,7 @@ typedef struct {
 
 typedef struct _audio_transport {
     uv_loop_t *loop;
+    uint8_t closing;
     transport_channel_t ch[AUDIO_TRANS_CH_NUM];
 } audio_transport_t;
 
@@ -84,22 +86,62 @@ const char *audio_transport_dump_event(uint8_t event)
     }
 }
 
-static void transport_chnl_close_cb(uv_handle_t *handle)
+static void transport_connection_close_cb(uv_handle_t *handle)
 {
+    transport_channel_t *ch = handle->data;
+
+    if (ch->state == IPC_CONNTECTED) {
+        ch->state = IPC_DISCONNTECTED;
+        if (ch->event_cb)
+            ch->event_cb(ch->ch_id, TRANSPORT_CLOSE_EVT);
+    }
+
     free(handle);
 }
 
 static void audio_transport_connection_close(transport_channel_t *ch)
 {
-    if (ch->state == IPC_CONNTECTED && ch->cli_pipe) {
-        ch->state = IPC_DISCONNTECTED;
-        free(ch->cli_pipe->data);
-        ch->cli_pipe->data = NULL;
-        uv_close((uv_handle_t *)ch->cli_pipe, transport_chnl_close_cb);
+    if (ch->cli_pipe) {
+        /* check client is reading before disconnect */
+        if (ch->state == IPC_CONNTECTED && ch->cli_pipe->data)
+            audio_transport_read_stop(ch->ipc_handle, ch->ch_id);
+
+        ch->cli_pipe->data = ch;
+        uv_close((uv_handle_t *)ch->cli_pipe, transport_connection_close_cb);
         ch->cli_pipe = NULL;
-        /* TODO: notify after handle closed? */
-        if (ch->event_cb)
-            ch->event_cb(ch->ch_id, TRANSPORT_CLOSE_EVT);
+    }
+}
+
+static void transport_chnl_close_cb(uv_handle_t *handle)
+{
+    transport_channel_t *ch = handle->data;
+    audio_transport_t *transport = NULL;
+
+    free(handle);
+
+    if (ch && ch->ipc_handle) {
+        transport = ch->ipc_handle;
+        if (!transport->closing)
+            return;
+
+        for (int i = 0; i < AUDIO_TRANS_CH_NUM; i++) {
+            ch = &transport->ch[i];
+            if (ch->closing)
+                return;
+        }
+
+        free(transport);
+    }
+}
+
+static void audio_transport_channel_close(transport_channel_t *ch)
+{
+    audio_transport_connection_close(ch);
+
+    if (ch->svr_pipe) {
+        ch->closing = 1;
+        uv_close((uv_handle_t *)ch->svr_pipe, transport_chnl_close_cb);
+        ch->svr_pipe = NULL;
     }
 }
 
@@ -124,7 +166,7 @@ static void transport_chnl_listen_cb(uv_stream_t *stream, int status)
     ret = uv_accept(stream, (uv_stream_t *)ch->cli_pipe);
     if (ret != 0) {
         BT_LOGE("accept error %s", uv_strerror(ret));
-        uv_close((uv_handle_t *)ch->cli_pipe, transport_chnl_close_cb);
+        audio_transport_connection_close(ch);
         return;
     }
 
@@ -219,6 +261,7 @@ bool audio_transport_open(audio_transport_t *transport, uint8_t ch_id,
     if (ch->state == IPC_CONNTECTED)
         return true;
 
+    ch->cli_pipe = NULL;
     ch->svr_pipe = malloc(sizeof(uv_pipe_t));
     ret = uv_pipe_init(transport->loop, ch->svr_pipe, 0);
     if (ret != 0) {
@@ -257,7 +300,7 @@ bool audio_transport_open(audio_transport_t *transport, uint8_t ch_id,
 
     return true;
 error:
-    uv_close((uv_handle_t *)ch->svr_pipe, transport_chnl_close_cb);
+    audio_transport_channel_close(ch);
     return false;
 }
 
@@ -270,25 +313,19 @@ void audio_transport_close(audio_transport_t *transport, uint8_t ch_id)
 
     if (ch_id != AUDIO_TRANS_CH_ID_ALL) {
         ch = &transport->ch[ch_id];
-        if (ch->state != IPC_DISCONNTECTED)
-            audio_transport_connection_close(ch);
-
-        if (ch->svr_pipe) {
-            uv_close((uv_handle_t *)ch->svr_pipe, transport_chnl_close_cb);
-            ch->svr_pipe = NULL;
-        }
-
+        audio_transport_channel_close(ch);
         return;
     }
 
     for (int i = 0; i < AUDIO_TRANS_CH_NUM; i++) {
         ch = &transport->ch[i];
-        if (ch->state == IPC_CONNTECTED) {
-            audio_transport_connection_close(ch);
-            uv_close((uv_handle_t *)ch->svr_pipe, transport_chnl_close_cb);
-        }
+        audio_transport_channel_close(ch);
+        if (ch->closing)
+            transport->closing = 1;
     }
-    free(transport);
+
+    if (!transport->closing)
+        free(transport);
 }
 
 int audio_transport_write(audio_transport_t *transport, uint8_t ch_id,
