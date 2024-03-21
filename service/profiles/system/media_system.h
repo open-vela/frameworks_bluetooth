@@ -19,6 +19,9 @@
 
 typedef void (*bt_media_voice_volume_change_callback_t)(void* context, int volume);
 
+int bt_media_get_music_volume_range();
+int bt_media_volume_avrcp_to_media(uint8_t volume);
+uint8_t bt_media_volume_media_to_avrcp(int volume);
 void bt_media_remove_listener(void* handle);
 bt_status_t bt_media_set_a2dp_available(void);
 bt_status_t bt_media_set_a2dp_unavailable(void);
@@ -26,6 +29,9 @@ bt_status_t bt_media_set_hfp_samplerate(uint16_t samplerate);
 void* bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_callback_t cb, void* context);
 bt_status_t bt_media_get_voice_call_volume(int* volume);
 bt_status_t bt_media_set_voice_call_volume(int volume);
+void* bt_media_listen_music_volume_change(bt_media_voice_volume_change_callback_t cb, void* context);
+bt_status_t bt_media_get_music_volume(int* volume);
+bt_status_t bt_media_set_music_volume(int volume);
 bt_status_t bt_media_set_sco_available(void);
 bt_status_t bt_media_set_sco_unavailable(void);
 bt_status_t bt_media_set_a2dp_offloading(bool enable);

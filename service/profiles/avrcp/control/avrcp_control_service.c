@@ -26,7 +26,9 @@
 #include "bt_list.h"
 #include "bt_player.h"
 #include "callbacks_list.h"
+#include "media_system.h"
 #include "sal_avrcp_control_interface.h"
+#include "sal_avrcp_target_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
 #include "utils/log.h"
@@ -40,13 +42,16 @@ typedef struct {
     bt_list_t* devices;
     pthread_mutex_t mutex;
     callbacks_list_t* callbacks;
+    void* volume_listener;
 } avrcp_controller_service_t;
 
 typedef struct {
     bt_address_t addr;
     bool initiator;
     bt_media_player_t* player;
+    uv_mutex_t lock;
     profile_connection_state_t state;
+    int set_abs_vol_cnt;
 } avrcp_ct_device_t;
 
 static void controller_startup(profile_on_startup_t startup);
@@ -92,10 +97,13 @@ static avrcp_ct_device_t* ct_device_create(bt_address_t* addr, bool initiator)
     if (!device)
         return NULL;
 
+    uv_mutex_init(&device->lock);
+
     memcpy(&device->addr, addr, sizeof(bt_address_t));
     device->initiator = initiator;
     device->player = NULL;
     device->state = PROFILE_STATE_DISCONNECTED;
+    device->set_abs_vol_cnt = 0;
 
     bt_list_add_tail(g_avrc_controller.devices, device);
 
@@ -120,6 +128,7 @@ static void ct_device_destory(void* data)
     if (device->state != PROFILE_STATE_DISCONNECTED)
         AVRCP_CT_CALLBACK_FOREACH(g_avrc_controller.callbacks, connection_state_cb, &device->addr, PROFILE_STATE_DISCONNECTED);
 
+    uv_mutex_destroy(&device->lock);
     free(device);
 }
 
@@ -193,6 +202,68 @@ static void avrcp_ct_on_prev(bt_media_player_t* player, void* context)
     send_pass_through_cmd(device, PASSTHROUGH_CMD_ID_BACKWARD);
 }
 
+#ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
+static void bt_avrcp_absolute_volume_changed_notification(void* context, int volume)
+{
+    uint8_t avrcp_volume;
+    bt_status_t status;
+    avrcp_ct_device_t* device = (avrcp_ct_device_t*)context;
+
+    uv_mutex_lock(&device->lock);
+    if (device->set_abs_vol_cnt) {
+        device->set_abs_vol_cnt--;
+        uv_mutex_unlock(&device->lock);
+        return;
+    }
+
+    uv_mutex_unlock(&device->lock);
+
+    avrcp_volume = bt_media_volume_media_to_avrcp(volume);
+    status = bt_sal_avrcp_control_volume_changed_notify(&device->addr, avrcp_volume);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGW("notified absolute volume failed, status: %d, volume: %d.", status, volume);
+    }
+}
+
+static void handle_avrcp_register_absolute_volume_notification(bt_address_t* addr)
+{
+    int media_volume;
+    avrcp_ct_device_t* device = NULL;
+
+    device = ct_device_find(addr);
+    if (!device) {
+        return;
+    }
+
+    if (bt_media_get_music_volume(&media_volume)) {
+        BT_LOGE("get media volume failed.");
+        media_volume = 0;
+    }
+
+    bt_sal_avrcp_control_volume_changed_notify(addr, bt_media_volume_media_to_avrcp(media_volume));
+
+    if (g_avrc_controller.volume_listener == NULL) {
+        g_avrc_controller.volume_listener = bt_media_listen_music_volume_change(bt_avrcp_absolute_volume_changed_notification, (void*)device);
+    }
+}
+
+static void handle_avrcp_register_notification_request(avrcp_msg_t* msg)
+{
+    bt_address_t* addr = &msg->addr;
+    avrcp_notification_event_t event = msg->data.notify_req.event;
+
+    BT_LOGD("register notification event: %d", event);
+
+    switch (event) {
+    case NOTIFICATION_EVT_VOLUME_CHANGED:
+        handle_avrcp_register_absolute_volume_notification(addr);
+        break;
+    default:
+        break;
+    }
+}
+#endif
+
 static void handle_avrcp_connection_state(avrcp_msg_t* msg)
 {
     avrcp_ct_device_t* device = NULL;
@@ -218,6 +289,10 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
         /* destory device and release resource if device is existed*/
         if (device)
             ct_device_remove(device);
+        if (g_avrc_controller.volume_listener != NULL) {
+            bt_media_remove_listener(g_avrc_controller.volume_listener);
+            g_avrc_controller.volume_listener = NULL;
+        }
         break;
     case PROFILE_STATE_CONNECTING:
         if (!device) {
@@ -336,6 +411,42 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t* msg)
     }
 }
 
+#ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
+static void handle_avrcp_set_absolute_volume(avrcp_msg_t* msg)
+{
+    bt_status_t status;
+    int media_volume, curr_volume;
+    avrcp_ct_device_t* device = NULL;
+    bt_address_t* addr = &msg->addr;
+
+    device = ct_device_find(addr);
+    if (!device) {
+        return;
+    }
+
+    media_volume = bt_media_volume_avrcp_to_media(msg->data.absvol.volume);
+    uv_mutex_lock(&device->lock);
+
+    if (bt_media_get_music_volume(&curr_volume)) {
+        BT_LOGE("get music volume fail");
+        curr_volume = media_volume;
+    }
+
+    if (media_volume != curr_volume) {
+        device->set_abs_vol_cnt++;
+    }
+
+    uv_mutex_unlock(&device->lock);
+    if ((status = bt_media_set_music_volume(media_volume)) != BT_STATUS_SUCCESS) {
+        uv_mutex_lock(&device->lock);
+        device->set_abs_vol_cnt--;
+        uv_mutex_unlock(&device->lock);
+    }
+
+    BT_LOGD("set absolute volume rsp: status: %d, volume: %d", status, media_volume);
+}
+#endif
+
 static void avrcp_control_service_handle_callback(void* data)
 {
     avrcp_msg_t* msg = data;
@@ -353,6 +464,14 @@ static void avrcp_control_service_handle_callback(void* data)
     case AVRC_PASSTHROUHT_CMD_RSP:
         handle_avrcp_passthrough_cmd_response(msg);
         break;
+#ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
+    case AVRC_SET_ABSOLUTE_VOLUME:
+        handle_avrcp_set_absolute_volume(msg);
+        break;
+    case AVRC_REGISTER_NOTIFICATION_REQ:
+        handle_avrcp_register_notification_request(msg);
+        break;
+#endif
     case AVRC_REGISTER_NOTIFICATION_RSP:
         handle_avrcp_register_notification_response(msg);
         break;
@@ -416,6 +535,22 @@ static void controller_startup(profile_on_startup_t startup)
         startup(PROFILE_AVRCP_CT, false);
         return;
     }
+
+#ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
+    if (bt_sal_avrcp_target_init() != BT_STATUS_SUCCESS) {
+        BT_LOGW("AVRCP TG init fail.");
+        pthread_mutex_unlock(&g_avrc_controller.mutex);
+        startup(PROFILE_AVRCP_CT, false);
+        return;
+    }
+
+    if (bt_media_get_music_volume_range()) {
+        BT_LOGW("get media volume range fail");
+        pthread_mutex_unlock(&g_avrc_controller.mutex);
+        startup(PROFILE_AVRCP_CT, false);
+        return;
+    }
+#endif
 
     g_avrc_controller.enable = true;
     pthread_mutex_unlock(&g_avrc_controller.mutex);
