@@ -723,7 +723,7 @@ static int set_local_cod_cmd(void *handle, int argc, char **argv)
 
     uint32_t cod = strtol(argv[0], NULL, 16);
 
-    if (cod < 0 || cod > 0xFFFFFF || cod & 0x3)
+    if (cod > 0xFFFFFF || cod & 0x3)
         return CMD_INVALID_PARAM;
 
     if (bt_adapter_set_device_class(handle, cod) != BT_STATUS_SUCCESS)
