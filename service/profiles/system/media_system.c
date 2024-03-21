@@ -14,22 +14,75 @@
  * limitations under the License.
  ***************************************************************************/
 #define LOG_TAG "bt_media"
+#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 #include "bt_status.h"
 #include <media_api.h>
 
+#ifdef CONFIG_MICO_MEDIA_MAIN_PLAYER
+#include "audio_manager_c.h"
+#endif /* CONFIG_MICO_MEDIA_MAIN_PLAYER */
 #include "media_system.h"
 #include "utils/log.h"
 
 #define MEDIA_POLICY_APPLY 1
+
+#define AVRCP_MAX_ABSOLUTE_VOLUME 0x7F
+#define AVRCP_MIN_ABSOLUTE_VOLUME 0x00
+#define UI_MAX_VOLUME 100
+
+static int media_max_volume;
+static int media_min_volume;
 
 typedef struct bt_media_listener {
     void* policy_handle;
     void* policy_cb;
     void* context;
 } bt_media_listener_t;
+
+#ifdef CONFIG_MICO_MEDIA_MAIN_PLAYER
+static int media_volume_to_ui_volume(int volume)
+{
+    return (volume * UI_MAX_VOLUME) / media_max_volume;
+}
+#endif /* CONFIG_MICO_MEDIA_MAIN_PLAYER */
+
+int bt_media_get_music_volume_range()
+{
+    return media_policy_get_range(MEDIA_SCENARIO_MUSIC MEDIA_POLICY_VOLUME, &media_min_volume, &media_max_volume);
+}
+
+int bt_media_volume_avrcp_to_media(uint8_t volume)
+{
+    if (volume < AVRCP_MIN_ABSOLUTE_VOLUME) {
+        return media_min_volume;
+    }
+
+    if (volume > AVRCP_MAX_ABSOLUTE_VOLUME) {
+        return media_max_volume;
+    }
+
+    int media_volume = (volume * media_max_volume + (AVRCP_MAX_ABSOLUTE_VOLUME >> 1)) / AVRCP_MAX_ABSOLUTE_VOLUME;
+
+    return media_volume;
+}
+
+uint8_t bt_media_volume_media_to_avrcp(int volume)
+{
+    if (volume < media_min_volume) {
+        return AVRCP_MIN_ABSOLUTE_VOLUME;
+    }
+
+    if (volume > media_max_volume) {
+        return AVRCP_MAX_ABSOLUTE_VOLUME;
+    }
+
+    int avrcp_volume = (volume * AVRCP_MAX_ABSOLUTE_VOLUME + (media_max_volume >> 1)) / media_max_volume;
+
+    return avrcp_volume;
+}
 
 void bt_media_remove_listener(void* handle)
 {
@@ -136,6 +189,62 @@ bt_status_t bt_media_set_voice_call_volume(int volume)
         return BT_STATUS_FAIL;
 
     return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_media_set_music_volume(int volume)
+{
+    bt_status_t status;
+
+    status = media_policy_set_stream_volume(MEDIA_STREAM_MUSIC, volume);
+
+    if (status) {
+        BT_LOGE("set music stream volume fail: %d, status: %d", volume, status);
+        return status;
+    }
+
+#ifdef CONFIG_MICO_MEDIA_MAIN_PLAYER
+    void* mAm = am_get_audio_manager("UIVOLUME");
+
+    if (mAm == 0) {
+        BT_LOGE("am_get_audio_manager err");
+        return BT_STATUS_NO_RESOURCES;
+    }
+
+    status = am_set_volume(mAm, AM_STREAM_TYPE_MEDIA, media_volume_to_ui_volume(volume));
+
+    if (status != 0) {
+        BT_LOGE("am_set_volume err, status: %d", status);
+    }
+
+    if ((status = am_audio_manager_release(mAm)) != 0) {
+        BT_LOGE("am_audio_manager_release err, status: %d", status);
+    }
+#endif /* CONFIG_MICO_MEDIA_MAIN_PLAYER */
+
+    return status;
+}
+
+bt_status_t bt_media_get_music_volume(int* volume)
+{
+    if (media_policy_get_stream_volume(MEDIA_STREAM_MUSIC, volume) != 0)
+        return BT_STATUS_FAIL;
+
+    return BT_STATUS_SUCCESS;
+}
+
+void* bt_media_listen_music_volume_change(bt_media_voice_volume_change_callback_t cb, void* context)
+{
+    bt_media_listener_t* listener;
+
+    listener = malloc(sizeof(bt_media_listener_t));
+    if (!listener)
+        return NULL;
+
+    listener->context = context;
+    listener->policy_cb = cb;
+    listener->policy_handle = media_policy_subscribe(MEDIA_SCENARIO_MUSIC MEDIA_POLICY_VOLUME, bt_media_policy_volume_change_callback, listener);
+
+    return listener;
 }
 
 bt_status_t bt_media_set_sco_available(void)
