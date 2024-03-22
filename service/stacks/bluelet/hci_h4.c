@@ -39,6 +39,8 @@ enum {
 };
 
 static int g_tlfd = -1;
+static uint8_t g_hci_rxbuf[2048];
+static uint16_t g_hci_rxlen = 0;
 
 static int h4_recv_data(uint8_t *buf, int count)
 {
@@ -82,6 +84,7 @@ static int h4_send_data(uint8_t *buf, int count)
 
 int bt_sal_hci_transport_init(void)
 {
+    g_hci_rxlen = 0;
     g_tlfd = open(CONFIG_OBELISK_HCI_UART_NAME, O_RDWR | O_BINARY | O_CLOEXEC);
     BT_LOGI("%s: g_tlfd = %d", __func__, g_tlfd);
 
@@ -90,10 +93,8 @@ int bt_sal_hci_transport_init(void)
 
 void bt_sal_hci_transport_recv(void)
 {
-    uint8_t data[2048];
-    int data_len;
-    int hdr_len;
     int ret;
+    uint16_t pkt_len = 0;
     union hci_header {
         struct bt_hci_cmd_hdr_s cmd;
         struct bt_hci_acl_hdr_s acl;
@@ -101,39 +102,45 @@ void bt_sal_hci_transport_recv(void)
         struct bt_hci_iso_hdr_s iso;
     } * hdr;
 
-    ret = h4_recv_data(data, 1);
-    if (ret != 1)
+    ret = read(g_tlfd, &g_hci_rxbuf[g_hci_rxlen], sizeof(g_hci_rxbuf) - g_hci_rxlen);
+    if (ret < 0)
         return;
 
-    if (data[0] == HCI_DATATYPE_EVENT)
-        hdr_len = sizeof(struct bt_hci_evt_hdr_s);
-    else if (data[0] == HCI_DATATYPE_ACL)
-        hdr_len = sizeof(struct bt_hci_acl_hdr_s);
-    else if (data[0] == HCI_DATATYPE_ISO_DATA)
-        hdr_len = sizeof(struct bt_hci_iso_hdr_s);
-    else
-        return;
+    g_hci_rxlen += ret;
 
-    ret = h4_recv_data(data + 1, hdr_len);
-    if (ret != hdr_len)
-        return;
+    while (g_hci_rxlen) {
+        hdr = (union hci_header *)&g_hci_rxbuf[1];
+        switch (g_hci_rxbuf[0]) {
+        case HCI_DATATYPE_EVENT: {
+            if (g_hci_rxlen < 1 + sizeof(struct bt_hci_evt_hdr_s))
+                return;
 
-    hdr = (union hci_header *)(data + 1);
-    if (data[0] == HCI_DATATYPE_EVENT)
-        data_len = hdr->evt.len;
-    else if (data[0] == HCI_DATATYPE_ACL)
-        data_len = hdr->acl.len;
-    else if (data[0] == HCI_DATATYPE_ISO_DATA)
-        data_len = hdr->iso.len;
-    else
-        return;
+            pkt_len = 1 + sizeof(struct bt_hci_evt_hdr_s) + hdr->evt.len;
+        } break;
+        case HCI_DATATYPE_ACL: {
+            if (g_hci_rxlen < 1 + sizeof(struct bt_hci_acl_hdr_s))
+                return;
 
-    ret = h4_recv_data(data + 1 + hdr_len, data_len);
-    if (ret != data_len)
-        return;
+            pkt_len = 1 + sizeof(struct bt_hci_acl_hdr_s) + hdr->acl.len;
+        } break;
+        case HCI_DATATYPE_ISO_DATA: {
+            if (g_hci_rxlen < 1 + sizeof(struct bt_hci_iso_hdr_s))
+                return;
 
-    btsnoop_log_capture(1, data, 1 + hdr_len + data_len);
-    service_adapter_gap_receive_hci_packet(data, 1 + hdr_len + data_len);
+            pkt_len = 1 + sizeof(struct bt_hci_iso_hdr_s) + hdr->iso.len;
+        } break;
+        default:
+            return;
+        }
+
+        if (g_hci_rxlen < pkt_len)
+            return;
+
+        btsnoop_log_capture(1, g_hci_rxbuf, pkt_len);
+        service_adapter_gap_receive_hci_packet(g_hci_rxbuf, pkt_len);
+        g_hci_rxlen -= pkt_len;
+        memmove(g_hci_rxbuf, g_hci_rxbuf + pkt_len, g_hci_rxlen);
+    }
 }
 
 int bt_sal_hci_send_packet(uint8_t *buf, uint32_t len)
@@ -146,5 +153,6 @@ int bt_sal_hci_send_packet(uint8_t *buf, uint32_t len)
 void bt_sal_hci_transport_cleanup(void)
 {
     close(g_tlfd);
+    g_hci_rxlen = 0;
     g_tlfd = -1;
 }
