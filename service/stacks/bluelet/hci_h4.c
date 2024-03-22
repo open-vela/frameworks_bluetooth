@@ -42,26 +42,6 @@ static int g_tlfd = -1;
 static uint8_t g_hci_rxbuf[2048];
 static uint16_t g_hci_rxlen = 0;
 
-static int h4_recv_data(uint8_t *buf, int count)
-{
-    int ret, nread = 0;
-
-    while (count != nread) {
-        ret = read(g_tlfd, buf + nread, count - nread);
-        if (ret < 0) {
-            if (ret == -EAGAIN) {
-                usleep(1000);
-                continue;
-            } else
-                return ret;
-        }
-
-        nread += ret;
-    }
-
-    return nread;
-}
-
 static int h4_send_data(uint8_t *buf, int count)
 {
     int ret, nwritten = 0;
