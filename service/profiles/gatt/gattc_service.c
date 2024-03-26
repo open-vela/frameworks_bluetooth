@@ -386,12 +386,14 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
 {
     gattc_manager_t *manager = &g_gattc_manager;
 
+    pthread_mutex_lock(&manager->device_lock);
+
     if (!manager->started) {
+        pthread_mutex_unlock(&manager->device_lock);
         cb(PROFILE_GATTC, true);
         return BT_STATUS_SUCCESS;
     }
 
-    pthread_mutex_lock(&manager->device_lock);
     bt_list_free(manager->connections);
     manager->connections = NULL;
     index_allocator_delete(&manager->allocator);
