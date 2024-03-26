@@ -428,12 +428,14 @@ static bt_status_t if_gatts_shutdown(profile_on_shutdown_t cb)
 {
     gatts_manager_t *manager = &g_gatts_manager;
 
+    pthread_mutex_lock(&manager->device_lock);
+
     if (!manager->started) {
+        pthread_mutex_unlock(&manager->device_lock);
         cb(PROFILE_GATTS, true);
         return BT_STATUS_SUCCESS;
     }
 
-    pthread_mutex_lock(&manager->device_lock);
     bt_list_free(manager->services);
     manager->services = NULL;
     bt_list_free(manager->pend_ops);
