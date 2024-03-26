@@ -231,14 +231,17 @@ static void gattc_pendops_delete(gattc_op_t *operation)
 static void gattc_process_message(void *data)
 {
     gattc_msg_t *msg = (gattc_msg_t *)data;
+    gattc_connection_t *connection;
 
     pthread_mutex_lock(&g_gattc_manager.device_lock);
-    if (!g_gattc_manager.started)
+    if (!g_gattc_manager.started) {
         goto end;
+    }
 
-    gattc_connection_t *connection = find_gattc_connection_by_addr(&msg->addr);
-    if (!connection)
+    connection = find_gattc_connection_by_addr(&msg->addr);
+    if (!connection) {
         goto end;
+    }
 
     switch (msg->event) {
     case GATTC_EVENT_CONNECT_CHANGE: {
