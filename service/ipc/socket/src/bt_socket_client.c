@@ -288,7 +288,7 @@ static int bt_socket_client_connect(int family, const char *name,
         snprintf(u.rpmsg_addr.rp_name, RPMSG_SOCKET_NAME_SIZE,
                  BLUETOOTH_SOCKADDR_NAME, name);
         if (cpu != NULL)
-            strcpy(u.rpmsg_addr.rp_cpu, cpu);
+            strlcpy(u.rpmsg_addr.rp_cpu, cpu, sizeof(u.rpmsg_addr.rp_cpu));
         addr_len = sizeof(struct sockaddr_rpmsg);
 #endif
     }
