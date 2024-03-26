@@ -37,7 +37,7 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define BLUETOOTH_SOCKADDR_NAME  "bt:%s"
+#define BLUETOOTH_SOCKADDR_NAME "bt:%s"
 #define BLUETOOTH_SERVER_MAXCONN 10
 
 /****************************************************************************

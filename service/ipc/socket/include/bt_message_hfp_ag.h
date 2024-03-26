@@ -15,7 +15,7 @@
  ***************************************************************************/
 
 #ifdef __BT_MESSAGE_CODE__
-    BT_HFP_AG_MESSAGE_START,
+BT_HFP_AG_MESSAGE_START,
     BT_HFP_AG_REGISTER_CALLBACK,
     BT_HFP_AG_UNREGISTER_CALLBACK,
     BT_HFP_AG_IS_CONNECTED,

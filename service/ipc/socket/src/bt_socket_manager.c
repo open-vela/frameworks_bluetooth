@@ -94,7 +94,7 @@ void bt_socket_server_manager_process(service_poll_t *poll,
     case BT_MANAGER_STOP_SERVICE: {
         packet->manager_r.status =
             manager_stop_service(packet->manager_pl._bluetooth_stop_service.appid,
-                                  packet->manager_pl._bluetooth_stop_service.id);
+                                 packet->manager_pl._bluetooth_stop_service.id);
         break;
     }
     default:

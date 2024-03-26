@@ -15,7 +15,7 @@
  ***************************************************************************/
 
 #ifdef __BT_MESSAGE_CODE__
-    BT_GATT_SERVER_MESSAGE_START,
+BT_GATT_SERVER_MESSAGE_START,
     BT_GATT_SERVER_REGISTER_SERVICE,
     BT_GATT_SERVER_UNREGISTER_SERVICE,
     BT_GATT_SERVER_CONNECT,
@@ -58,170 +58,170 @@
 
 #include "bt_gatts.h"
 
-typedef struct {
-    bt_instance_t *ins;
-    gatts_callbacks_t *callbacks;
-    void *cookie;
-    void **user_phandle;
-    bt_list_t *db_list;
-} bt_gatts_remote_t;
+    typedef struct {
+        bt_instance_t *ins;
+        gatts_callbacks_t *callbacks;
+        void *cookie;
+        void **user_phandle;
+        bt_list_t *db_list;
+    } bt_gatts_remote_t;
 
-typedef struct {
-    bt_status_t status;
-    union {
-        gatts_handle_t handle;
+    typedef struct {
+        bt_status_t status;
+        union {
+            gatts_handle_t handle;
+            struct {
+                uint16_t length;
+                uint8_t value[32];
+            };
+        };
+    } bt_gatts_result_t;
+
+    typedef union {
         struct {
+            void *cookie;
+        } _bt_gatts_register;
+
+        struct {
+            gatts_handle_t handle;
+        } _bt_gatts_unregister;
+
+        struct {
+            gatts_handle_t handle;
+            bt_address_t addr;
+            ble_addr_type_t addr_type;
+        } _bt_gatts_connect;
+
+        struct {
+            gatts_handle_t handle;
+            bt_address_t addr;
+        } _bt_gatts_disconnect;
+
+        struct {
+            gatts_handle_t handle;
+            int32_t attr_num;
+            union {
+                uint8_t data[512];
+                gatt_attr_db_t attr_db[0];
+            };
+        } _bt_gatts_add_attr_table;
+
+        struct {
+            gatts_handle_t handle;
+            uint16_t attr_handle;
+        } _bt_gatts_remove_attr_table;
+
+        struct {
+            gatts_handle_t handle;
+            uint16_t attr_handle;
             uint16_t length;
             uint8_t value[32];
-        };
-    };
-} bt_gatts_result_t;
+        } _bt_gatts_set_attr_value;
 
-typedef union {
-    struct {
-        void *cookie;
-    } _bt_gatts_register;
+        struct {
+            gatts_handle_t handle;
+            uint16_t attr_handle;
+            uint16_t length;
+        } _bt_gatts_get_attr_value;
 
-    struct {
-        gatts_handle_t handle;
-    } _bt_gatts_unregister;
+        struct {
+            gatts_handle_t handle;
+            bt_address_t addr;
+            uint32_t req_handle;
+            uint16_t length;
+            uint8_t value[512];
+        } _bt_gatts_response;
 
-    struct {
-        gatts_handle_t handle;
-        bt_address_t addr;
-        ble_addr_type_t addr_type;
-    } _bt_gatts_connect;
+        struct {
+            gatts_handle_t handle;
+            bt_address_t addr;
+            uint16_t attr_handle;
+            uint16_t length;
+            uint8_t value[512];
+        } _bt_gatts_notify;
 
-    struct {
-        gatts_handle_t handle;
-        bt_address_t addr;
-    } _bt_gatts_disconnect;
+        struct {
+            gatts_handle_t handle;
+            bt_address_t addr;
+            ble_phy_type_t tx_phy;
+            ble_phy_type_t rx_phy;
+        } _bt_gatts_phy;
 
-    struct {
-        gatts_handle_t handle;
-        int32_t attr_num;
-        union {
-            uint8_t data[512];
-            gatt_attr_db_t attr_db[0];
-        };
-    } _bt_gatts_add_attr_table;
+    } bt_message_gatts_t;
 
-    struct {
-        gatts_handle_t handle;
-        uint16_t attr_handle;
-    } _bt_gatts_remove_attr_table;
+    typedef union {
+        struct {
+            void *remote;
+        } _on_callback;
 
-    struct {
-        gatts_handle_t handle;
-        uint16_t attr_handle;
-        uint16_t length;
-        uint8_t value[32];
-    } _bt_gatts_set_attr_value;
+        struct {
+            void *remote;
+            bt_address_t addr;
+        } _on_connected;
 
-    struct {
-        gatts_handle_t handle;
-        uint16_t attr_handle;
-        uint16_t length;
-    } _bt_gatts_get_attr_value;
+        struct {
+            void *remote;
+            bt_address_t addr;
+        } _on_disconnected;
 
-    struct {
-        gatts_handle_t handle;
-        bt_address_t addr;
-        uint32_t req_handle;
-        uint16_t length;
-        uint8_t value[512];
-    } _bt_gatts_response;
+        struct {
+            void *remote;
+            gatt_status_t status;
+            uint16_t attr_handle;
+        } _on_attr_table_added;
 
-    struct {
-        gatts_handle_t handle;
-        bt_address_t addr;
-        uint16_t attr_handle;
-        uint16_t length;
-        uint8_t value[512];
-    } _bt_gatts_notify;
+        struct {
+            void *remote;
+            gatt_status_t status;
+            uint16_t attr_handle;
+        } _on_attr_table_removed;
 
-    struct {
-        gatts_handle_t handle;
-        bt_address_t addr;
-        ble_phy_type_t tx_phy;
-        ble_phy_type_t rx_phy;
-    } _bt_gatts_phy;
+        struct {
+            void *remote;
+            bt_address_t addr;
+            uint32_t mtu;
+        } _on_mtu_changed;
 
-} bt_message_gatts_t;
+        struct {
+            void *remote;
+            bt_address_t addr;
+            uint16_t attr_handle;
+            uint32_t req_handle;
+        } _on_read_request;
 
-typedef union {
-    struct {
-        void *remote;
-    } _on_callback;
+        struct {
+            void *remote;
+            bt_address_t addr;
+            uint16_t attr_handle;
+            uint16_t offset;
+            uint16_t length;
+            uint8_t value[512];
+        } _on_write_request;
 
-    struct {
-        void *remote;
-        bt_address_t addr;
-    } _on_connected;
+        struct {
+            void *remote;
+            bt_address_t addr;
+            gatt_status_t status;
+            uint16_t attr_handle;
+        } _on_nofity_complete;
 
-    struct {
-        void *remote;
-        bt_address_t addr;
-    } _on_disconnected;
+        struct {
+            void *remote;
+            bt_address_t addr;
+            gatt_status_t status;
+            ble_phy_type_t tx_phy;
+            ble_phy_type_t rx_phy;
+        } _on_phy_updated;
 
-    struct {
-        void *remote;
-        gatt_status_t status;
-        uint16_t attr_handle;
-    } _on_attr_table_added;
+        struct {
+            void *remote;
+            bt_address_t addr;
+            uint16_t interval;
+            uint16_t latency;
+            uint16_t timeout;
+        } _on_conn_param_changed;
 
-    struct {
-        void *remote;
-        gatt_status_t status;
-        uint16_t attr_handle;
-    } _on_attr_table_removed;
-
-    struct {
-        void *remote;
-        bt_address_t addr;
-        uint32_t mtu;
-    } _on_mtu_changed;
-
-    struct {
-        void *remote;
-        bt_address_t addr;
-        uint16_t attr_handle;
-        uint32_t req_handle;
-    } _on_read_request;
-
-    struct {
-        void *remote;
-        bt_address_t addr;
-        uint16_t attr_handle;
-        uint16_t offset;
-        uint16_t length;
-        uint8_t value[512];
-    } _on_write_request;
-
-    struct {
-        void *remote;
-        bt_address_t addr;
-        gatt_status_t status;
-        uint16_t attr_handle;
-    } _on_nofity_complete;
-
-    struct {
-        void *remote;
-        bt_address_t addr;
-        gatt_status_t status;
-        ble_phy_type_t tx_phy;
-        ble_phy_type_t rx_phy;
-    } _on_phy_updated;
-
-    struct {
-        void *remote;
-        bt_address_t addr;
-        uint16_t interval;
-        uint16_t latency;
-        uint16_t timeout;
-    } _on_conn_param_changed;
-
-} bt_message_gatts_callbacks_t;
+    } bt_message_gatts_callbacks_t;
 
 #ifdef __cplusplus
 }

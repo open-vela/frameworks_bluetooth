@@ -148,7 +148,7 @@ static binder_status_t IBtSpp_Class_onTransact(AIBinder *binder, transaction_cod
         stat = AParcel_readUuid(in, &uuid);
         if (stat != STATUS_OK)
             return stat;
-        
+
         status = profile->connect((void *)handle, &addr, (int16_t)scn, &uuid, &port);
         stat = AParcel_writeUint32(reply, (uint32_t)port);
         if (stat != STATUS_OK)
@@ -174,7 +174,7 @@ static binder_status_t IBtSpp_Class_onTransact(AIBinder *binder, transaction_cod
         stat = AParcel_readUint32(in, &port);
         if (stat != STATUS_OK)
             return stat;
-        
+
         status = profile->disconnect((void *)handle, &addr, (uint16_t)port);
         stat = AParcel_writeUint32(reply, status);
         break;

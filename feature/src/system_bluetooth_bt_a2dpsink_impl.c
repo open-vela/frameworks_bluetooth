@@ -26,23 +26,23 @@
 #define file_tag "system_bluetooth_bt_a2dpsnk"
 
 static a2dp_sink_feature_callbacks_t g_feature_a2dp_sink_callbacks = {};
-static void* sink_cbks_cookie = NULL;
+static void *sink_cbks_cookie = NULL;
 
-static void a2dp_sink_connection_state_cb(void* cookie, bt_address_t* addr, profile_connection_state_t state)
+static void a2dp_sink_connection_state_cb(void *cookie, bt_address_t *addr, profile_connection_state_t state)
 {
     if (g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature == NULL)
         return;
-    system_bluetooth_bt_a2dpsink_OnConnectStateChangeData* data = system_bluetooth_bt_a2dpsinkMallocOnConnectStateChangeData();
+    system_bluetooth_bt_a2dpsink_OnConnectStateChangeData *data = system_bluetooth_bt_a2dpsinkMallocOnConnectStateChangeData();
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     bt_addr_ba2str(addr, addr_str);
     data->deviceId = StringToFtString(addr_str);
     data->connectState = state;
     if (!FeatureCheckCallbackId(g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature,
-            g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId)) {
+                                g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId)) {
         return;
     }
 
-    callback_info_t* callback_info = (callback_info_t*)malloc(sizeof(callback_info_t));
+    callback_info_t *callback_info = (callback_info_t *)malloc(sizeof(callback_info_t));
     memset(callback_info, 0, sizeof(callback_info_t));
     callback_info->callback_id = A2DPSINK_ON_CONNECT_STATE_CHANGE;
     callback_info->feature_callback_id = g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId;
@@ -56,7 +56,7 @@ static const a2dp_sink_callbacks_t a2dp_sink_cbs = {
     a2dp_sink_connection_state_cb,
 };
 
-void system_bluetooth_bt_a2dpsink_onRegister(const char* feature_name)
+void system_bluetooth_bt_a2dpsink_onRegister(const char *feature_name)
 {
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
@@ -78,28 +78,28 @@ void system_bluetooth_bt_a2dpsink_onDestroy(FeatureRuntimeContext ctx, FeaturePr
 {
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
-void system_bluetooth_bt_a2dpsink_onUnregister(const char* feature_name)
+void system_bluetooth_bt_a2dpsink_onUnregister(const char *feature_name)
 {
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
-FtCallbackId system_bluetooth_bt_a2dpsink_get_onconnectstatechange(void* feature, union AppendData append_data)
+FtCallbackId system_bluetooth_bt_a2dpsink_get_onconnectstatechange(void *feature, union AppendData append_data)
 {
     return g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId;
 }
-void system_bluetooth_bt_a2dpsink_set_onconnectstatechange(void* feature, union AppendData append_data, FtCallbackId onconnectstatechange)
+void system_bluetooth_bt_a2dpsink_set_onconnectstatechange(void *feature, union AppendData append_data, FtCallbackId onconnectstatechange)
 {
     FEATURE_LOG_INFO("set onadapterstatechange feature: %p, callbackId: %d", feature, onconnectstatechange);
     g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature = feature;
     g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId = onconnectstatechange;
 }
 
-void a2dp_sink_feature_init(void* handle)
+void a2dp_sink_feature_init(void *handle)
 {
-    sink_cbks_cookie = bt_a2dp_sink_register_callbacks((bt_instance_t*)handle, &a2dp_sink_cbs);
+    sink_cbks_cookie = bt_a2dp_sink_register_callbacks((bt_instance_t *)handle, &a2dp_sink_cbs);
 }
 
-void a2dp_sink_feature_uninit(void* handle)
+void a2dp_sink_feature_uninit(void *handle)
 {
-    bt_a2dp_sink_unregister_callbacks((bt_instance_t*)handle, sink_cbks_cookie);
+    bt_a2dp_sink_unregister_callbacks((bt_instance_t *)handle, sink_cbks_cookie);
 }

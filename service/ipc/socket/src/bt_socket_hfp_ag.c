@@ -127,10 +127,10 @@ void bt_socket_server_hfp_ag_process(service_poll_t *poll, int fd,
             profile = (hfp_ag_interface_t *)service_manager_get_profile(PROFILE_HFP_AG);
             if (profile) {
                 ins->hfp_ag_cookie = profile->register_callbacks((void *)ins, (void *)&g_hfp_ag_socket_cbs);
-            if (ins->hfp_ag_cookie)
-                packet->hfp_ag_r.status = BT_STATUS_SUCCESS;
-            else
-                packet->hfp_ag_r.status = BT_STATUS_NO_RESOURCES;
+                if (ins->hfp_ag_cookie)
+                    packet->hfp_ag_r.status = BT_STATUS_SUCCESS;
+                else
+                    packet->hfp_ag_r.status = BT_STATUS_NO_RESOURCES;
             } else {
                 packet->hfp_ag_r.status = BT_STATUS_SERVICE_NOT_FOUND;
             }
@@ -151,45 +151,45 @@ void bt_socket_server_hfp_ag_process(service_poll_t *poll, int fd,
         break;
     case BT_HFP_AG_IS_CONNECTED:
         packet->hfp_ag_r.value_bool = BTSYMBOLS(bt_hfp_ag_is_connected)(ins,
-                                                &packet->hfp_ag_pl._bt_hfp_ag_is_connected.addr);
+                                                                        &packet->hfp_ag_pl._bt_hfp_ag_is_connected.addr);
         break;
 
     case BT_HFP_AG_IS_AUDIO_CONNECTED:
         packet->hfp_ag_r.value_bool = BTSYMBOLS(bt_hfp_ag_is_audio_connected)(ins,
-                                                &packet->hfp_ag_pl._bt_hfp_ag_is_audio_connected.addr);
+                                                                              &packet->hfp_ag_pl._bt_hfp_ag_is_audio_connected.addr);
         break;
     case BT_HFP_AG_GET_CONNECTION_STATE:
         packet->hfp_ag_r.profile_conn_state = BTSYMBOLS(bt_hfp_ag_get_connection_state)(ins,
-                                                &packet->hfp_ag_pl._bt_hfp_ag_get_connection_state.addr);
+                                                                                        &packet->hfp_ag_pl._bt_hfp_ag_get_connection_state.addr);
         break;
     case BT_HFP_AG_CONNECT:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_connect)(ins,
-                                                &packet->hfp_ag_pl._bt_hfp_ag_connect.addr);
+                                                               &packet->hfp_ag_pl._bt_hfp_ag_connect.addr);
         break;
     case BT_HFP_AG_DISCONNECT:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_disconnect)(ins,
-                                                &packet->hfp_ag_pl._bt_hfp_ag_disconnect.addr);
+                                                                  &packet->hfp_ag_pl._bt_hfp_ag_disconnect.addr);
         break;
     case BT_HFP_AG_CONNECT_AUDIO:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_connect_audio)(ins,
-                                                &packet->hfp_ag_pl._bt_hfp_ag_connect_audio.addr);
+                                                                     &packet->hfp_ag_pl._bt_hfp_ag_connect_audio.addr);
         break;
     case BT_HFP_AG_DISCONNECT_AUDIO:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_disconnect_audio)(ins,
-                                                &packet->hfp_ag_pl._bt_hfp_ag_disconnect_audio.addr);
+                                                                        &packet->hfp_ag_pl._bt_hfp_ag_disconnect_audio.addr);
         break;
     case BT_HFP_AG_START_VOICE_RECOGNITION:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_start_voice_recognition)(ins,
-                                                &packet->hfp_ag_pl._bt_hfp_ag_start_voice_recognition.addr);
+                                                                               &packet->hfp_ag_pl._bt_hfp_ag_start_voice_recognition.addr);
         break;
     case BT_HFP_AG_STOP_VOICE_RECOGNITION:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_stop_voice_recognition)(ins,
-                                                &packet->hfp_ag_pl._bt_hfp_ag_stop_voice_recognition.addr);
+                                                                              &packet->hfp_ag_pl._bt_hfp_ag_stop_voice_recognition.addr);
         break;
     case BT_HFP_AG_SEND_AT_COMMAND:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_send_at_command)(ins,
-                                                &packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr,
-                                                packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.cmd);
+                                                                       &packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr,
+                                                                       packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.cmd);
         break;
     default:
         break;

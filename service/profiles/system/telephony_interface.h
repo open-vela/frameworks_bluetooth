@@ -21,7 +21,7 @@
 #include <stdint.h>
 
 #define TELE_MAX_PHONE_NUMBER_LENGTH 80
-#define TELE_MAX_CALLER_NAME_LENGTH  80
+#define TELE_MAX_CALLER_NAME_LENGTH 80
 
 enum {
     TELE_SUCCESS = 0,
@@ -155,14 +155,17 @@ int teleif_network_get_signal_strength(tele_client_t *tele, int slot, int *stren
 int teleif_network_get_operator(tele_client_t *tele, int slot, char **operator_name, int *status);
 bool teleif_network_is_roaming(tele_client_t *tele, int slot);
 #else
-static inline tele_client_t *teleif_client_connect(const char *name) { return NULL; }
-static inline void teleif_client_disconnect(tele_client_t *tele) {}
-static inline void teleif_register_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs) {}
-static inline void teleif_unregister_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs) {}
+static inline tele_client_t *teleif_client_connect(const char *name)
+{
+    return NULL;
+}
+static inline void teleif_client_disconnect(tele_client_t *tele) { }
+static inline void teleif_register_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs) { }
+static inline void teleif_unregister_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs) { }
 static inline void teleif_call_register_callbacks(tele_client_t *tele, tele_call_t *call,
-                                                  tele_call_callbacks_t *cbs) {}
+                                                  tele_call_callbacks_t *cbs) { }
 static inline void teleif_call_unregister_callbacks(tele_client_t *tele, tele_call_t *call,
-                                                    tele_call_callbacks_t *cbs) {}
+                                                    tele_call_callbacks_t *cbs) { }
 static inline int teleif_modem_set_radio_power(tele_client_t *tele, int slot, bool poweron) { return TELE_FAIL; }
 static inline bool teleif_modem_is_radio_on(tele_client_t *tele, int slot) { return false; }
 static inline bool teleif_modem_get_radio_power(tele_client_t *tele, int slot) { return false; }

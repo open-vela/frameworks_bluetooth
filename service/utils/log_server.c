@@ -36,11 +36,11 @@ enum {
     SNOOP_LOG_EN_CHANGED,
 };
 
-#define PERSIST_BT_LOG_CHANGED         "persist.bluetooth.log.changed"
+#define PERSIST_BT_LOG_CHANGED "persist.bluetooth.log.changed"
 #define PERSIST_BT_FRAMEWORK_LOG_LEVEL "persist.bluetooth.log.level"
-#define PERSIST_BT_STACK_LOG_EN        "persist.bluetooth.log.stack_enable"
-#define PERSIST_BT_STACK_LOG_MASK      "persist.bluetooth.log.stack_mask"
-#define PERSIST_BT_SNOOP_LOG_EN        "persist.bluetooth.log.snoop_enable"
+#define PERSIST_BT_STACK_LOG_EN "persist.bluetooth.log.stack_enable"
+#define PERSIST_BT_STACK_LOG_MASK "persist.bluetooth.log.stack_mask"
+#define PERSIST_BT_SNOOP_LOG_EN "persist.bluetooth.log.snoop_enable"
 // #define PERSIST_BT_SNOOP_LOG_CID_MASK "persist.bluetooth.log.snoop_cid_mask"
 // #define PERSIST_BT_SNOOP_LOG_PKT_MASK "persist.bluetooth.log.snoop_pkt_mask"
 

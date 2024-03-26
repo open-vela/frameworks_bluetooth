@@ -18,21 +18,22 @@
 #include "feature_bluetooth.h"
 #include "feature_log.h"
 
-void feature_bluetooth_deal_callback(int status, void* data){
-    callback_info_t* info = (callback_info_t*)data;
+void feature_bluetooth_deal_callback(int status, void *data)
+{
+    callback_info_t *info = (callback_info_t *)data;
     FEATURE_LOG_INFO("callback type:%d, feature:%p, callback id: %d", info->callback_id, info->feature, info->feature_callback_id);
     if (!FeatureInvokeCallback(info->feature,
-            info->feature_callback_id, info->data)) {
+                               info->feature_callback_id, info->data)) {
         FEATURE_LOG_ERROR("callback type:%d, feature:%p, callback id: %d, invoke discoveryresult callback failed!",
-        info->callback_id, info->feature, info->feature_callback_id);
+                          info->callback_id, info->feature, info->feature_callback_id);
     }
     free(data);
 }
 
-char* StringToFtString(const char* str)
+char *StringToFtString(const char *str)
 {
     int len = strlen(str);
-    char* ftStr = (char*)FeatureMalloc(len + 1, FT_CHAR);
+    char *ftStr = (char *)FeatureMalloc(len + 1, FT_CHAR);
     strcpy(ftStr, str);
     return ftStr;
 }
