@@ -348,6 +348,7 @@ typedef struct bt_instance {
     void *poll;
     uv_mutex_t mutex;
     uv_cond_t cond;
+    bool message_processed;
     int peer_fd;
     uv_loop_t *client_loop;
     uv_loop_t *external_loop;
