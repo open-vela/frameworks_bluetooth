@@ -138,7 +138,7 @@ int bt_uuid_compare(const bt_uuid_t *uuid1, const bt_uuid_t *uuid2)
 
 int bt_uuid_to_string(const bt_uuid_t *uuid, char *str, uint32_t len)
 {
-    bt_uuid_t uuid128 = {0};
+    bt_uuid_t uuid128 = { 0 };
     uint32_t tmp1, tmp5;
     uint16_t tmp0, tmp2, tmp3, tmp4;
     const uint8_t *p;

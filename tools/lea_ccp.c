@@ -42,9 +42,9 @@ static int ccp_call_control_by_index(void *handle, int argc, char *argv[]);
 static int ccp_originate_call(void *handle, int argc, char *argv[]);
 static int ccp_join_calls(void *handle, int argc, char *argv[]);
 
-#define ccp_CALL_CONTROL   "call control by index                   param: <addr><opcode>"
+#define ccp_CALL_CONTROL "call control by index                   param: <addr><opcode>"
 #define ccp_ORIGINATE_CALL "originate                               param: <addr><uri>"
-#define ccp_JOIN_CALL      "join                                    param: <addr><number><call_index1><call_index2>"
+#define ccp_JOIN_CALL "join                                    param: <addr><number><call_index1><call_index2>"
 
 static bt_command_t g_lea_ccp_tables[] = {
     {"readprovidername",    ccp_read_bearer_provider_name,                   0, "read bearer provider name               param: <addr>"},

@@ -15,86 +15,85 @@
  ***************************************************************************/
 
 #ifdef __BT_MESSAGE_CODE__
-  BT_SPP_MESSAGE_START,
-  BT_SPP_REGISTER_APP,
-  BT_SPP_UNREGISTER_APP,
-  BT_SPP_SERVER_START,
-  BT_SPP_SERVER_STOP,
-  BT_SPP_CONNECT,
-  BT_SPP_DISCONNECT,
-  BT_SPP_MESSAGE_END,
+BT_SPP_MESSAGE_START,
+    BT_SPP_REGISTER_APP,
+    BT_SPP_UNREGISTER_APP,
+    BT_SPP_SERVER_START,
+    BT_SPP_SERVER_STOP,
+    BT_SPP_CONNECT,
+    BT_SPP_DISCONNECT,
+    BT_SPP_MESSAGE_END,
 #endif
 
 #ifdef __BT_CALLBACK_CODE__
-  BT_SPP_CALLBACK_START,
-  BT_SPP_PTY_OPEN_CB,
-  BT_SPP_CONNECTION_STATE_CB,
-  BT_SPP_CALLBACK_END,
+    BT_SPP_CALLBACK_START,
+    BT_SPP_PTY_OPEN_CB,
+    BT_SPP_CONNECTION_STATE_CB,
+    BT_SPP_CALLBACK_END,
 #endif
 
 #ifndef _BT_MESSAGE_SPP_H__
 #define _BT_MESSAGE_SPP_H__
 
 #ifdef __cplusplus
-extern "C" {
+    extern "C"
+{
 #endif
 
 #include "bluetooth.h"
 
-typedef union
-{
-  bt_status_t        status;
-  uint32_t           handle;
-} bt_spp_result_t;
+    typedef union {
+        bt_status_t status;
+        uint32_t handle;
+    } bt_spp_result_t;
 
-typedef union
-{
-  struct {
-    uint32_t handle;
-    uint16_t scn;
-    bt_uuid_t uuid;
-    uint8_t max_connection;
-  } _bt_spp_server_start;
+    typedef union {
+        struct {
+            uint32_t handle;
+            uint16_t scn;
+            bt_uuid_t uuid;
+            uint8_t max_connection;
+        } _bt_spp_server_start;
 
-  struct {
-    uint32_t handle;
-    uint16_t scn;
-  } _bt_spp_server_stop;
+        struct {
+            uint32_t handle;
+            uint16_t scn;
+        } _bt_spp_server_stop;
 
-  struct {
-    uint32_t handle;
-    bt_address_t addr;
-    int16_t scn;
-    bt_uuid_t uuid;
-    uint16_t port;
-  } _bt_spp_connect;
+        struct {
+            uint32_t handle;
+            bt_address_t addr;
+            int16_t scn;
+            bt_uuid_t uuid;
+            uint16_t port;
+        } _bt_spp_connect;
 
-  struct {
-    uint32_t handle;
-    bt_address_t addr;
-    uint16_t port;
-  } _bt_spp_disconnect;
+        struct {
+            uint32_t handle;
+            bt_address_t addr;
+            uint16_t port;
+        } _bt_spp_disconnect;
 
-} bt_message_spp_t;
+    } bt_message_spp_t;
 
-typedef struct
-{
-  struct {
-    uint32_t handle;
-    bt_address_t addr;
-    uint16_t scn;
-    uint16_t port;
-    char name[64];
-  } _pty_open_cb;
+    typedef struct
+    {
+        struct {
+            uint32_t handle;
+            bt_address_t addr;
+            uint16_t scn;
+            uint16_t port;
+            char name[64];
+        } _pty_open_cb;
 
-  struct {
-    uint32_t handle;
-    bt_address_t addr;
-    uint16_t scn;
-    uint16_t port;
-    profile_connection_state_t state;
-  } _connection_state_cb;
-} bt_message_spp_callbacks_t;
+        struct {
+            uint32_t handle;
+            bt_address_t addr;
+            uint16_t scn;
+            uint16_t port;
+            profile_connection_state_t state;
+        } _connection_state_cb;
+    } bt_message_spp_callbacks_t;
 
 #ifdef __cplusplus
 }

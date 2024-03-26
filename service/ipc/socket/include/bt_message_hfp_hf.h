@@ -15,7 +15,7 @@
  ***************************************************************************/
 
 #ifdef __BT_MESSAGE_CODE__
-    BT_HFP_HF_MESSAGE_START,
+BT_HFP_HF_MESSAGE_START,
     BT_HFP_HF_REGISTER_CALLBACK,
     BT_HFP_HF_UNREGISTER_CALLBACK,
     BT_HFP_HF_IS_CONNECTED,
@@ -109,8 +109,8 @@
         } _bt_hfp_hf_control_call;
 
         struct {
-            bt_address_t addr;                           /* @param[in]  */
-            int num;                                     /* @param[out] */
+            bt_address_t addr; /* @param[in]  */
+            int num; /* @param[out] */
             hfp_current_call_t calls[HFP_CALL_LIST_MAX]; /* @param[out] */
         } _bt_hfp_hf_query_current_calls;
 

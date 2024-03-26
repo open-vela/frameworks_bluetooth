@@ -63,8 +63,8 @@ static bt_list_t *g_instances_list = NULL;
 
 typedef struct
 {
-    struct list_node    node;
-    int                 offset;
+    struct list_node node;
+    int offset;
     bt_message_packet_t packet;
 } bt_packet_cache_t;
 
@@ -109,7 +109,8 @@ static int bt_socket_server_trysend(bt_instance_t *ins)
     int size;
     int ret;
 
-    list_for_every_safe(&ins->msg_queue, node, tmp) {
+    list_for_every_safe(&ins->msg_queue, node, tmp)
+    {
         reset = true;
         cache = (bt_packet_cache_t *)node;
         size = sizeof(cache->packet) - cache->offset;
@@ -162,10 +163,10 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
                packet.code < BT_DEVICE_MESSAGE_END) {
         bt_socket_server_device_process(poll, fd, ins, &packet);
     } else if (packet.code > BT_A2DP_SOURCE_MESSAGE_START &&
-               packet.code < BT_A2DP_SOURCE_MESSAGE_END){
+               packet.code < BT_A2DP_SOURCE_MESSAGE_END) {
         bt_socket_server_a2dp_source_process(poll, fd, ins, &packet);
-    } else if(packet.code > BT_A2DP_SINK_MESSAGE_START &&
-               packet.code < BT_A2DP_SINK_MESSAGE_END){
+    } else if (packet.code > BT_A2DP_SINK_MESSAGE_START &&
+               packet.code < BT_A2DP_SINK_MESSAGE_END) {
         bt_socket_server_a2dp_sink_process(poll, fd, ins, &packet);
     } else if (packet.code > BT_HFP_AG_MESSAGE_START &&
                packet.code < BT_HFP_AG_MESSAGE_END) {
@@ -215,7 +216,8 @@ static void bt_socket_server_ins_release(bt_instance_t *ins)
     if (ins->poll)
         service_loop_remove_poll(ins->poll);
 
-    list_for_every_safe(&ins->msg_queue, node, tmp) {
+    list_for_every_safe(&ins->msg_queue, node, tmp)
+    {
         list_delete(node);
         free(node);
     }
@@ -275,7 +277,7 @@ static void bt_socket_server_callback(service_poll_t *poll,
         list_initialize(&remote_ins->msg_queue);
         remote_ins->peer_fd = fd;
         remote_ins->poll = service_loop_poll_fd(fd, POLL_READABLE,
-                                 bt_socket_server_handle_event, remote_ins);
+                                                bt_socket_server_handle_event, remote_ins);
         if (!remote_ins->poll) {
             free(remote_ins);
             close(fd);

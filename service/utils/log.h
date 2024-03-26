@@ -28,12 +28,12 @@
 #define LOG_TAG "BT"
 #endif
 
-#define _S_LINE(x)  #x
+#define _S_LINE(x) #x
 #define __S_LINE(x) _S_LINE(x)
-#define __S_LINE__  __S_LINE(__LINE__)
+#define __S_LINE__ __S_LINE(__LINE__)
 
-#define LOG_ID_SNOOP     0
-#define LOG_ID_STACK     1
+#define LOG_ID_SNOOP 0
+#define LOG_ID_STACK 1
 #define LOG_ID_FRAMEWORK 2
 
 enum bt_log_level_ {
@@ -63,33 +63,32 @@ extern bool bt_log_print_check(uint8_t level);
                                                ##args);
 #define BT_LOGE(fmt, ...)                                                     \
     do {                                                                      \
-        if (bt_log_print_check(BT_LOG_LEVEL_ERROR))                        \
+        if (bt_log_print_check(BT_LOG_LEVEL_ERROR))                           \
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__); \
     } while (0);
 #define BT_LOGW(fmt, ...)                                                       \
     do {                                                                        \
-        if (bt_log_print_check(BT_LOG_LEVEL_WARNING))                        \
+        if (bt_log_print_check(BT_LOG_LEVEL_WARNING))                           \
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_WARNING, fmt, ##__VA_ARGS__); \
     } while (0);
 #define BT_LOGI(fmt, ...)                                                    \
     do {                                                                     \
-        if (bt_log_print_check(BT_LOG_LEVEL_INFO))                        \
+        if (bt_log_print_check(BT_LOG_LEVEL_INFO))                           \
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_INFO, fmt, ##__VA_ARGS__); \
     } while (0);
 #define BT_LOGD(fmt, ...)                                                     \
     do {                                                                      \
-        if (bt_log_print_check(BT_LOG_LEVEL_DEBUG))                        \
+        if (bt_log_print_check(BT_LOG_LEVEL_DEBUG))                           \
             BT_LOG(LOG_ID_FRAMEWORK, BT_LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__); \
     } while (0);
 #endif
 
 #define BT_ADDR_LOG(fmt, _addr, ...)                \
-    do {                                           \
+    do {                                            \
         char _addr_str[BT_ADDR_STR_LENGTH] = { 0 }; \
-        bt_addr_ba2str(_addr, _addr_str);            \
+        bt_addr_ba2str(_addr, _addr_str);           \
         BT_LOGI(fmt, _addr_str, ##__VA_ARGS__);     \
     } while (0);
-
 
 #ifdef CONFIG_BLUETOOTH_DUMPBUFFER
 #define BT_DUMPBUFFER(m, a, n) lib_dumpbuffer(m, a, n)

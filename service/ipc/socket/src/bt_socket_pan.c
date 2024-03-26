@@ -77,7 +77,7 @@ static void pan_connection_state_cb(void *cookie, profile_connection_state_t sta
                                     bt_address_t *bd_addr, uint8_t local_role,
                                     uint8_t remote_role)
 {
-    bt_message_packet_t packet = {0};
+    bt_message_packet_t packet = { 0 };
     bt_instance_t *ins = cookie;
 
     packet.pan_cb._connection_state_cb.state = state;
