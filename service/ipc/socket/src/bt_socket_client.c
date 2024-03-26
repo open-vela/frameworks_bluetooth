@@ -210,6 +210,7 @@ static int bt_socket_client_receive(uv_poll_t *poll, int fd, void *userdata)
 
         memcpy(ins->cpacket, packet, sizeof(*packet));
         uv_mutex_lock(&ins->mutex);
+        ins->message_processed = true;
         uv_cond_signal(&ins->cond);
         uv_mutex_unlock(&ins->mutex);
         return BT_STATUS_SUCCESS;
@@ -332,7 +333,9 @@ int bt_socket_client_sendrecv(bt_instance_t *ins, bt_message_packet_t *packet,
         return BT_STATUS_FAIL;
     }
 
-    uv_cond_wait(&ins->cond, &ins->mutex);
+    ins->message_processed = false;
+    while (!ins->message_processed)
+        uv_cond_wait(&ins->cond, &ins->mutex);
 
     ins->cpacket = NULL;
 
