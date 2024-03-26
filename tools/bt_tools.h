@@ -33,15 +33,15 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-#define ARRAY_SIZE(x)        (sizeof(x) / sizeof((x)[0]))
-#define CMD_OK               (0)
-#define CMD_INVALID_PARAM    (-1)
-#define CMD_INVALID_OPT      (-4)
-#define CMD_INVALID_ADDR     (-5)
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#define CMD_OK (0)
+#define CMD_INVALID_PARAM (-1)
+#define CMD_INVALID_OPT (-4)
+#define CMD_INVALID_ADDR (-5)
 #define CMD_PARAM_NOT_ENOUGH (-6)
-#define CMD_UNKNOWN          (-7)
-#define CMD_USAGE_FAULT      (-8)
-#define CMD_ERROR            (-9)
+#define CMD_UNKNOWN (-7)
+#define CMD_USAGE_FAULT (-8)
+#define CMD_ERROR (-9)
 
 #define BTTOOL_PRINT_USE_SYSLOG 0
 
@@ -69,7 +69,7 @@
 #endif
 
 #ifndef __NuttX__
-#define lib_dumpbuffer(a,b,c)
+#define lib_dumpbuffer(a, b, c)
 #endif
 
 /****************************************************************************

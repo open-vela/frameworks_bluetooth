@@ -158,7 +158,7 @@ static void parse_and_copy_sdp(char *sdp_data, hid_device_sdp_settings_t *sdp_se
     memcpy(&sdp_setting->hids_info, sdp_data, sizeof(hid_info_t));
     sdp_data += sizeof(hid_info_t);
 
-    sdp_setting->hids_info.dsc_list = (uint8_t*)sdp_data;
+    sdp_setting->hids_info.dsc_list = (uint8_t *)sdp_data;
 }
 
 /****************************************************************************
@@ -196,42 +196,42 @@ void bt_socket_server_hid_device_process(service_poll_t *poll, int fd,
     case BT_HID_DEVICE_REGISTER_APP:
         parse_and_copy_sdp((char *)packet->hidd_pl._bt_hid_device_register_app.sdp, &temp_sdp_setting);
         packet->hidd_r.status = BTSYMBOLS(bt_hid_device_register_app)(ins,
-                                          &temp_sdp_setting,
-                                          packet->hidd_pl._bt_hid_device_register_app.le_hid);
+                                                                      &temp_sdp_setting,
+                                                                      packet->hidd_pl._bt_hid_device_register_app.le_hid);
         break;
     case BT_HID_DEVICE_UNREGISTER_APP:
         packet->hidd_r.status = BTSYMBOLS(bt_hid_device_unregister_app)(ins);
         break;
     case BT_HID_DEVICE_CONNECT:
         packet->hidd_r.status = BTSYMBOLS(bt_hid_device_connect)(ins,
-                                          &packet->hidd_pl._bt_hid_device_connect.addr);
+                                                                 &packet->hidd_pl._bt_hid_device_connect.addr);
         break;
     case BT_HID_DEVICE_DISCONNECT:
         packet->hidd_r.status = BTSYMBOLS(bt_hid_device_disconnect)(ins,
-                                          &packet->hidd_pl._bt_hid_device_disconnect.addr);
+                                                                    &packet->hidd_pl._bt_hid_device_disconnect.addr);
         break;
     case BT_HID_DEVICE_SEND_REPORT:
         packet->hidd_r.status = BTSYMBOLS(bt_hid_device_send_report)(ins,
-                                          &packet->hidd_pl._bt_hid_device_send_report.addr,
-                                          packet->hidd_pl._bt_hid_device_send_report.rpt_id,
-                                          packet->hidd_pl._bt_hid_device_send_report.rpt_data,
-                                          packet->hidd_pl._bt_hid_device_send_report.rpt_size);
+                                                                     &packet->hidd_pl._bt_hid_device_send_report.addr,
+                                                                     packet->hidd_pl._bt_hid_device_send_report.rpt_id,
+                                                                     packet->hidd_pl._bt_hid_device_send_report.rpt_data,
+                                                                     packet->hidd_pl._bt_hid_device_send_report.rpt_size);
         break;
     case BT_HID_DEVICE_RESPONSE_REPORT:
         packet->hidd_r.status = BTSYMBOLS(bt_hid_device_response_report)(ins,
-                                          &packet->hidd_pl._bt_hid_device_response_report.addr,
-                                          packet->hidd_pl._bt_hid_device_response_report.rpt_type,
-                                          packet->hidd_pl._bt_hid_device_response_report.rpt_data,
-                                          packet->hidd_pl._bt_hid_device_response_report.rpt_size);
+                                                                         &packet->hidd_pl._bt_hid_device_response_report.addr,
+                                                                         packet->hidd_pl._bt_hid_device_response_report.rpt_type,
+                                                                         packet->hidd_pl._bt_hid_device_response_report.rpt_data,
+                                                                         packet->hidd_pl._bt_hid_device_response_report.rpt_size);
         break;
     case BT_HID_DEVICE_REPORT_ERROR:
         packet->hidd_r.status = BTSYMBOLS(bt_hid_device_report_error)(ins,
-                                          &packet->hidd_pl._bt_hid_device_report_error.addr,
-                                          packet->hidd_pl._bt_hid_device_report_error.error);
+                                                                      &packet->hidd_pl._bt_hid_device_report_error.addr,
+                                                                      packet->hidd_pl._bt_hid_device_report_error.error);
         break;
     case BT_HID_DEVICE_VIRTUAL_UNPLUG:
         packet->hidd_r.status = BTSYMBOLS(bt_hid_device_virtual_unplug)(ins,
-                                          &packet->hidd_pl._bt_hid_device_virtual_unplug.addr);
+                                                                        &packet->hidd_pl._bt_hid_device_virtual_unplug.addr);
         break;
     default:
         break;

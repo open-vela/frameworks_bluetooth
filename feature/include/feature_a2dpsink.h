@@ -29,6 +29,6 @@ typedef struct {
     feature_callback_t a2dp_sink_connection_state_cb;
 } a2dp_sink_feature_callbacks_t;
 
-void a2dp_sink_feature_init(void* handle);
-void a2dp_sink_feature_uninit(void* handle);
+void a2dp_sink_feature_init(void *handle);
+void a2dp_sink_feature_uninit(void *handle);
 #endif // FEATURE_A2DPSNK_H_

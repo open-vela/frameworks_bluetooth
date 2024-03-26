@@ -29,7 +29,6 @@
 #include "pan_stub.h"
 #include "utils/log.h"
 
-
 void *BpBtPan_registerCallback(BpBtPan *bpBinder, AIBinder *cbksBinder)
 {
     binder_status_t stat = STATUS_OK;

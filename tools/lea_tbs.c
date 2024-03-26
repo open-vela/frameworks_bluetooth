@@ -39,7 +39,7 @@ static int tbs_notify_termination_reason(void *handle, int argc, char *argv[]);
 static int tbs_call_control_response(void *handle, int argc, char *argv[]);
 
 #define TBS_SET_BEARER "set bearer param: <ref><name><uci><uri_schemes><tech><strength><interval><status_flags><optional_op>"
-#define TBS_ADD_CALL   "add a call param: <index><state><flags><call_uri><incoming_target_uri><friendly_name>"
+#define TBS_ADD_CALL "add a call param: <index><state><flags><call_uri><incoming_target_uri><friendly_name>"
 
 static bt_command_t g_lea_tbs_tables[] = {
     {"add",             tbs_add,                                     0, "add TBS instance                         param: <NULL>"                       },

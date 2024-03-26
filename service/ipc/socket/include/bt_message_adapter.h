@@ -15,250 +15,248 @@
  ***************************************************************************/
 
 #ifdef __BT_MESSAGE_CODE__
-  BT_ADAPTER_MESSAGE_START,
-  BT_ADAPTER_ENABLE,
-  BT_ADAPTER_DISABLE,
-  BT_ADAPTER_ENABLE_LE,
-  BT_ADAPTER_DISABLE_LE,
-  BT_ADAPTER_GET_STATE,
-  BT_ADAPTER_GET_TYPE,
-  BT_ADAPTER_SET_DISCOVERY_FILTER,
-  BT_ADAPTER_START_DISCOVERY,
-  BT_ADAPTER_CANCEL_DISCOVERY,
-  BT_ADAPTER_IS_DISCOVERING,
-  BT_ADAPTER_GET_ADDRESS,
-  BT_ADAPTER_SET_NAME,
-  BT_ADAPTER_GET_NAME,
-  BT_ADAPTER_GET_UUIDS,
-  BT_ADAPTER_SET_SCAN_MODE,
-  BT_ADAPTER_GET_SCAN_MODE,
-  BT_ADAPTER_SET_DEVICE_CLASS,
-  BT_ADAPTER_GET_DEVICE_CLASS,
-  BT_ADAPTER_SET_IO_CAPABILITY,
-  BT_ADAPTER_GET_IO_CAPABILITY,
-  BT_ADAPTER_SET_INQUIRY_SCAN_PARAMETERS,
-  BT_ADAPTER_SET_PAGE_SCAN_PARAMETERS,
-  BT_ADAPTER_GET_BONDED_DEVICES,
-  BT_ADAPTER_GET_CONNECTED_DEVICES,
-  BT_ADAPTER_DISCONNECT_ALL_DEVICES,
-  BT_ADAPTER_IS_SUPPORT_BREDR,
-  BT_ADAPTER_REGISTER_CALLBACK,
-  BT_ADAPTER_UNREGISTER_CALLBACK,
-  BT_ADAPTER_IS_LE_ENABLED,
-  BT_ADAPTER_IS_SUPPORT_LE,
-  BT_ADAPTER_IS_SUPPORT_LEAUDIO,
-  BT_ADAPTER_GET_LE_ADDRESS,
-  BT_ADAPTER_SET_LE_ADDRESS,
-  BT_ADAPTER_SET_LE_IDENTITY_ADDRESS,
-  BT_ADAPTER_SET_LE_IO_CAPABILITY,
-  BT_ADAPTER_GET_LE_IO_CAPABILITY,
-  BT_ADAPTER_SET_LE_APPEARANCE,
-  BT_ADAPTER_GET_LE_APPEARANCE,
-  BT_ADAPTER_LE_ENABLE_KEY_DERIVATION,
-  BT_ADAPTER_LE_ADD_WHITELIST,
-  BT_ADAPTER_LE_REMOVE_WHITELIST,
-  BT_ADAPTER_SET_AFH_CHANNEL_CLASSFICATION,
-  BT_ADAPTER_SET_AUTO_SNIFF,
-  BT_ADAPTER_MESSAGE_END,
+BT_ADAPTER_MESSAGE_START,
+    BT_ADAPTER_ENABLE,
+    BT_ADAPTER_DISABLE,
+    BT_ADAPTER_ENABLE_LE,
+    BT_ADAPTER_DISABLE_LE,
+    BT_ADAPTER_GET_STATE,
+    BT_ADAPTER_GET_TYPE,
+    BT_ADAPTER_SET_DISCOVERY_FILTER,
+    BT_ADAPTER_START_DISCOVERY,
+    BT_ADAPTER_CANCEL_DISCOVERY,
+    BT_ADAPTER_IS_DISCOVERING,
+    BT_ADAPTER_GET_ADDRESS,
+    BT_ADAPTER_SET_NAME,
+    BT_ADAPTER_GET_NAME,
+    BT_ADAPTER_GET_UUIDS,
+    BT_ADAPTER_SET_SCAN_MODE,
+    BT_ADAPTER_GET_SCAN_MODE,
+    BT_ADAPTER_SET_DEVICE_CLASS,
+    BT_ADAPTER_GET_DEVICE_CLASS,
+    BT_ADAPTER_SET_IO_CAPABILITY,
+    BT_ADAPTER_GET_IO_CAPABILITY,
+    BT_ADAPTER_SET_INQUIRY_SCAN_PARAMETERS,
+    BT_ADAPTER_SET_PAGE_SCAN_PARAMETERS,
+    BT_ADAPTER_GET_BONDED_DEVICES,
+    BT_ADAPTER_GET_CONNECTED_DEVICES,
+    BT_ADAPTER_DISCONNECT_ALL_DEVICES,
+    BT_ADAPTER_IS_SUPPORT_BREDR,
+    BT_ADAPTER_REGISTER_CALLBACK,
+    BT_ADAPTER_UNREGISTER_CALLBACK,
+    BT_ADAPTER_IS_LE_ENABLED,
+    BT_ADAPTER_IS_SUPPORT_LE,
+    BT_ADAPTER_IS_SUPPORT_LEAUDIO,
+    BT_ADAPTER_GET_LE_ADDRESS,
+    BT_ADAPTER_SET_LE_ADDRESS,
+    BT_ADAPTER_SET_LE_IDENTITY_ADDRESS,
+    BT_ADAPTER_SET_LE_IO_CAPABILITY,
+    BT_ADAPTER_GET_LE_IO_CAPABILITY,
+    BT_ADAPTER_SET_LE_APPEARANCE,
+    BT_ADAPTER_GET_LE_APPEARANCE,
+    BT_ADAPTER_LE_ENABLE_KEY_DERIVATION,
+    BT_ADAPTER_LE_ADD_WHITELIST,
+    BT_ADAPTER_LE_REMOVE_WHITELIST,
+    BT_ADAPTER_SET_AFH_CHANNEL_CLASSFICATION,
+    BT_ADAPTER_SET_AUTO_SNIFF,
+    BT_ADAPTER_MESSAGE_END,
 #endif
 
 #ifdef __BT_CALLBACK_CODE__
-  BT_ADAPTER_CALLBACK_START,
-  BT_ADAPTER_ON_ADAPTER_STATE_CHANGED,
-  BT_ADAPTER_ON_DISCOVERY_STATE_CHANGED,
-  BT_ADAPTER_ON_DISCOVERY_RESULT,
-  BT_ADAPTER_ON_SCAN_MODE_CHANGED,
-  BT_ADAPTER_ON_DEVICE_NAME_CHANGED,
-  BT_ADAPTER_ON_PAIR_REQUEST,
-  BT_ADAPTER_ON_PAIR_DISPLAY,
-  BT_ADAPTER_ON_CONNECT_REQUEST,
-  BT_ADAPTER_ON_CONNECTION_STATE_CHANGED,
-  BT_ADAPTER_ON_BOND_STATE_CHANGED,
-  BT_ADAPTER_ON_REMOTE_NAME_CHANGED,
-  BT_ADAPTER_ON_REMOTE_ALIAS_CHANGED,
-  BT_ADAPTER_ON_REMOTE_COD_CHANGED,
-  BT_ADAPTER_ON_REMOTE_UUIDS_CHANGED,
-  BT_ADAPTER_ON_REMOTE_LINK_MODE_CHANGED,
-  BT_ADAPTER_CALLBACK_END,
+    BT_ADAPTER_CALLBACK_START,
+    BT_ADAPTER_ON_ADAPTER_STATE_CHANGED,
+    BT_ADAPTER_ON_DISCOVERY_STATE_CHANGED,
+    BT_ADAPTER_ON_DISCOVERY_RESULT,
+    BT_ADAPTER_ON_SCAN_MODE_CHANGED,
+    BT_ADAPTER_ON_DEVICE_NAME_CHANGED,
+    BT_ADAPTER_ON_PAIR_REQUEST,
+    BT_ADAPTER_ON_PAIR_DISPLAY,
+    BT_ADAPTER_ON_CONNECT_REQUEST,
+    BT_ADAPTER_ON_CONNECTION_STATE_CHANGED,
+    BT_ADAPTER_ON_BOND_STATE_CHANGED,
+    BT_ADAPTER_ON_REMOTE_NAME_CHANGED,
+    BT_ADAPTER_ON_REMOTE_ALIAS_CHANGED,
+    BT_ADAPTER_ON_REMOTE_COD_CHANGED,
+    BT_ADAPTER_ON_REMOTE_UUIDS_CHANGED,
+    BT_ADAPTER_ON_REMOTE_LINK_MODE_CHANGED,
+    BT_ADAPTER_CALLBACK_END,
 #endif
 
 #ifndef _BT_MESSAGE_ADAPTER_H__
 #define _BT_MESSAGE_ADAPTER_H__
 
 #ifdef __cplusplus
-extern "C" {
+    extern "C"
+{
 #endif
 
 #include "bt_adapter.h"
 
-typedef union
-{
-  bt_status_t        status;
-  bt_adapter_state_t state;
-  bt_device_type_t   dtype;
-  bool               bbool;
-  bt_scan_mode_t     mode;
-  uint32_t           v32;
-  uint16_t           v16;
-  bt_io_capability_t ioc;
-} bt_adapter_result_t;
+    typedef union {
+        bt_status_t status;
+        bt_adapter_state_t state;
+        bt_device_type_t dtype;
+        bool bbool;
+        bt_scan_mode_t mode;
+        uint32_t v32;
+        uint16_t v16;
+        bt_io_capability_t ioc;
+    } bt_adapter_result_t;
 
-typedef union
-{
-  struct {
-    bt_address_t addr;
-  } _bt_adapter_get_address,
-    _bt_adapter_set_le_address,
-    _bt_adapter_le_add_whitelist,
-    _bt_adapter_le_remove_whitelist;
+    typedef union {
+        struct {
+            bt_address_t addr;
+        } _bt_adapter_get_address,
+            _bt_adapter_set_le_address,
+            _bt_adapter_le_add_whitelist,
+            _bt_adapter_le_remove_whitelist;
 
-  struct {
-    char name[64];
-  } _bt_adapter_set_name,
-    _bt_adapter_get_name;
+        struct {
+            char name[64];
+        } _bt_adapter_set_name,
+            _bt_adapter_get_name;
 
-  struct {
-    uint32_t v32;
-  } _bt_adapter_start_discovery,
-    _bt_adapter_set_device_class,
-    _bt_adapter_set_le_io_capability;
+        struct {
+            uint32_t v32;
+        } _bt_adapter_start_discovery,
+            _bt_adapter_set_device_class,
+            _bt_adapter_set_le_io_capability;
 
-  struct {
-    uint16_t size;
-    bt_uuid_t uuids[16];
-  } _bt_adapter_get_uuids;
+        struct {
+            uint16_t size;
+            bt_uuid_t uuids[16];
+        } _bt_adapter_get_uuids;
 
-  struct {
-    bt_scan_mode_t mode;
-    bool bondable;
-  } _bt_adapter_set_scan_mode;
+        struct {
+            bt_scan_mode_t mode;
+            bool bondable;
+        } _bt_adapter_set_scan_mode;
 
-  struct {
-    bt_io_capability_t cap;
-  } _bt_adapter_set_io_capability;
+        struct {
+            bt_io_capability_t cap;
+        } _bt_adapter_set_io_capability;
 
-  struct {
-    bt_address_t addr;
-    ble_addr_type_t type;
-  } _bt_adapter_get_le_address;
+        struct {
+            bt_address_t addr;
+            ble_addr_type_t type;
+        } _bt_adapter_get_le_address;
 
-  struct {
-    bt_address_t addr;
-    bool public;
-  } _bt_adapter_set_le_identity_address;
+        struct {
+            bt_address_t addr;
+            bool public;
+        } _bt_adapter_set_le_identity_address;
 
-  struct {
-    uint16_t v16;
-  } _bt_adapter_set_le_appearance;
+        struct {
+            uint16_t v16;
+        } _bt_adapter_set_le_appearance;
 
-  struct {
-    bt_transport_t transport;
-    int num;
-    bt_address_t addr[32];
-  } _bt_adapter_get_bonded_devices,
-    _bt_adapter_get_connected_devices;
+        struct {
+            bt_transport_t transport;
+            int num;
+            bt_address_t addr[32];
+        } _bt_adapter_get_bonded_devices,
+            _bt_adapter_get_connected_devices;
 
-  struct {
-    bool brkey_to_lekey;
-    bool lekey_to_brkey;
-  } _bt_adapter_le_enable_key_derivation;
+        struct {
+            bool brkey_to_lekey;
+            bool lekey_to_brkey;
+        } _bt_adapter_le_enable_key_derivation;
 
-  struct {
-    bt_scan_type_t type;
-    uint16_t interval;
-    uint16_t window;
-  } _bt_adapter_set_inquiry_scan_parameters,
-    _bt_adapter_set_page_scan_parameters;
+        struct {
+            bt_scan_type_t type;
+            uint16_t interval;
+            uint16_t window;
+        } _bt_adapter_set_inquiry_scan_parameters,
+            _bt_adapter_set_page_scan_parameters;
 
-  struct {
-    uint16_t central_frequency;
-    uint16_t band_width;
-    uint16_t number;
-  } _bt_adapter_set_afh_channel_classification;
+        struct {
+            uint16_t central_frequency;
+            uint16_t band_width;
+            uint16_t number;
+        } _bt_adapter_set_afh_channel_classification;
 
-  struct {
-    bt_auto_sniff_params_t params;
-  } _bt_adapter_set_auto_sniff;
-} bt_message_adapter_t;
+        struct {
+            bt_auto_sniff_params_t params;
+        } _bt_adapter_set_auto_sniff;
+    } bt_message_adapter_t;
 
-typedef union
-{
-  struct {
-    bt_adapter_state_t state;
-  } _on_adapter_state_changed;
+    typedef union {
+        struct {
+            bt_adapter_state_t state;
+        } _on_adapter_state_changed;
 
-  struct {
-    bt_discovery_state_t state;
-  } _on_discovery_state_changed;
+        struct {
+            bt_discovery_state_t state;
+        } _on_discovery_state_changed;
 
-  struct {
-    bt_discovery_result_t result;
-  } _on_discovery_result;
+        struct {
+            bt_discovery_result_t result;
+        } _on_discovery_result;
 
-  struct {
-    bt_scan_mode_t mode;
-  } _on_scan_mode_changed;
+        struct {
+            bt_scan_mode_t mode;
+        } _on_scan_mode_changed;
 
-  struct {
-    char device_name[64];
-  } _on_device_name_changed;
+        struct {
+            char device_name[64];
+        } _on_device_name_changed;
 
-  struct {
-    bt_address_t addr;
-  } _on_pair_request;
+        struct {
+            bt_address_t addr;
+        } _on_pair_request;
 
-  struct {
-    bt_address_t addr;
-    bt_transport_t transport;
-    bt_pair_type_t type;
-    uint32_t passkey;
-  } _on_pair_display;
+        struct {
+            bt_address_t addr;
+            bt_transport_t transport;
+            bt_pair_type_t type;
+            uint32_t passkey;
+        } _on_pair_display;
 
-  struct {
-    bt_address_t addr;
-  } _on_connect_request;
+        struct {
+            bt_address_t addr;
+        } _on_connect_request;
 
-  struct {
-    bt_address_t addr;
-    bt_transport_t transport;
-    connection_state_t state;
-  } _on_connection_state_changed;
+        struct {
+            bt_address_t addr;
+            bt_transport_t transport;
+            connection_state_t state;
+        } _on_connection_state_changed;
 
-  struct {
-    bt_address_t addr;
-    bt_transport_t transport;
-    bond_state_t state;
-    bool is_ctkd;
-  } _on_bond_state_changed;
+        struct {
+            bt_address_t addr;
+            bt_transport_t transport;
+            bond_state_t state;
+            bool is_ctkd;
+        } _on_bond_state_changed;
 
-  struct {
-    bt_address_t addr;
-    char name[64];
-  } _on_remote_name_changed;
+        struct {
+            bt_address_t addr;
+            char name[64];
+        } _on_remote_name_changed;
 
-  struct {
-    bt_address_t addr;
-    char alias[64];
-  } _on_remote_alias_changed;
+        struct {
+            bt_address_t addr;
+            char alias[64];
+        } _on_remote_alias_changed;
 
-  struct {
-    bt_address_t addr;
-    uint32_t cod;
-  } _on_remote_cod_changed;
+        struct {
+            bt_address_t addr;
+            uint32_t cod;
+        } _on_remote_cod_changed;
 
-  struct {
-    bt_address_t addr;
-    bt_uuid_t uuids;
-    uint16_t size;
-  } _on_remote_uuids_changed;
+        struct {
+            bt_address_t addr;
+            bt_uuid_t uuids;
+            uint16_t size;
+        } _on_remote_uuids_changed;
 
-  struct {
-    bt_address_t addr;
-    bt_link_mode_t mode;
-    uint16_t sniff_interval;
-  } _on_remote_link_mode_changed;
+        struct {
+            bt_address_t addr;
+            bt_link_mode_t mode;
+            uint16_t sniff_interval;
+        } _on_remote_link_mode_changed;
 
-} bt_message_adapter_callbacks_t;
+    } bt_message_adapter_callbacks_t;
 
 #ifdef __cplusplus
 }

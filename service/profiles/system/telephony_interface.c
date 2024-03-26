@@ -29,17 +29,17 @@
 #include "telephony_interface.h"
 #include "utils/log.h"
 
-#define OFONO_SERVICE                        "org.ofono"
-#define OFONO_MANAGER_PATH                   "/"
-#define OFONO_MANAGER_INTERFACE              OFONO_SERVICE ".Manager"
-#define OFONO_MODEM_INTERFACE                OFONO_SERVICE ".Modem"
-#define OFONO_VOICECALL_MANAGER_INTERFACE    OFONO_SERVICE ".VoiceCallManager"
-#define OFONO_VOICECALL_INTERFACE            OFONO_SERVICE ".VoiceCall"
+#define OFONO_SERVICE "org.ofono"
+#define OFONO_MANAGER_PATH "/"
+#define OFONO_MANAGER_INTERFACE OFONO_SERVICE ".Manager"
+#define OFONO_MODEM_INTERFACE OFONO_SERVICE ".Modem"
+#define OFONO_VOICECALL_MANAGER_INTERFACE OFONO_SERVICE ".VoiceCallManager"
+#define OFONO_VOICECALL_INTERFACE OFONO_SERVICE ".VoiceCall"
 #define OFONO_NETWORK_REGISTRATION_INTERFACE OFONO_SERVICE ".NetworkRegistration"
-#define OFONO_NETWORK_OPERATOR_INTERFACE     OFONO_SERVICE ".NetworkOperator"
-#define OFONO_CALL_BARRING_INTERFACE         OFONO_SERVICE ".CallBarring"
-#define OFONO_CALL_FORWARDING_INTERFACE      OFONO_SERVICE ".CallForwarding"
-#define OFONO_CALL_SETTINGS_INTERFACE        OFONO_SERVICE ".CallSettings"
+#define OFONO_NETWORK_OPERATOR_INTERFACE OFONO_SERVICE ".NetworkOperator"
+#define OFONO_CALL_BARRING_INTERFACE OFONO_SERVICE ".CallBarring"
+#define OFONO_CALL_FORWARDING_INTERFACE OFONO_SERVICE ".CallForwarding"
+#define OFONO_CALL_SETTINGS_INTERFACE OFONO_SERVICE ".CallSettings"
 
 typedef struct tele_client_ {
     DBusConnection *dbus_sys;
@@ -63,16 +63,14 @@ typedef struct tele_modem_ {
 typedef bool (*property_parser_func_t)(void *user_data, char *key,
                                        DBusMessageIter *val, uint8_t flag);
 
-static int object_filter(GDBusProxy* proxy)
+static int object_filter(GDBusProxy *proxy)
 {
-    const char* interface = g_dbus_proxy_get_interface(proxy);
+    const char *interface = g_dbus_proxy_get_interface(proxy);
     if (interface == NULL)
         return false;
 
     // ss related interface skip get properties
-    if ((strcmp(interface, OFONO_CALL_BARRING_INTERFACE) == 0)
-        || (strcmp(interface, OFONO_CALL_FORWARDING_INTERFACE) == 0)
-        || (strcmp(interface, OFONO_CALL_SETTINGS_INTERFACE) == 0)) {
+    if ((strcmp(interface, OFONO_CALL_BARRING_INTERFACE) == 0) || (strcmp(interface, OFONO_CALL_FORWARDING_INTERFACE) == 0) || (strcmp(interface, OFONO_CALL_SETTINGS_INTERFACE) == 0)) {
         return true;
     }
 

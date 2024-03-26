@@ -15,7 +15,7 @@
  ***************************************************************************/
 
 #ifdef __BT_MESSAGE_CODE__
-    BT_HID_DEVICE_MESSAGE_START,
+BT_HID_DEVICE_MESSAGE_START,
     BT_HID_DEVICE_REGISTER_CALLBACK,
     BT_HID_DEVICE_UNREGISTER_CALLBACK,
     BT_HID_DEVICE_REGISTER_APP,
@@ -52,87 +52,87 @@
 
 #define MAX_BT_HID_DEVICE_REGISTER_APP_SDP 512
 
-typedef union {
-    bt_status_t status;
-    bool value_bool;
-} bt_hid_device_result_t;
+    typedef union {
+        bt_status_t status;
+        bool value_bool;
+    } bt_hid_device_result_t;
 
-typedef union {
-    struct {
-        bool le_hid;
-        uint8_t sdp[MAX_BT_HID_DEVICE_REGISTER_APP_SDP];
-    } _bt_hid_device_register_app;
+    typedef union {
+        struct {
+            bool le_hid;
+            uint8_t sdp[MAX_BT_HID_DEVICE_REGISTER_APP_SDP];
+        } _bt_hid_device_register_app;
 
-    struct {
-        bt_address_t addr;
-    } _bt_hid_device_connect;
+        struct {
+            bt_address_t addr;
+        } _bt_hid_device_connect;
 
-    struct {
-        bt_address_t addr;
-    } _bt_hid_device_disconnect;
+        struct {
+            bt_address_t addr;
+        } _bt_hid_device_disconnect;
 
-    struct {
-        bt_address_t addr;
-        uint8_t rpt_id;
-        int rpt_size;
-        uint8_t rpt_data[256];
-    } _bt_hid_device_send_report;
+        struct {
+            bt_address_t addr;
+            uint8_t rpt_id;
+            int rpt_size;
+            uint8_t rpt_data[256];
+        } _bt_hid_device_send_report;
 
-    struct {
-        bt_address_t addr;
-        uint8_t rpt_type;
-        int rpt_size;
-        uint8_t rpt_data[256];
-    } _bt_hid_device_response_report;
+        struct {
+            bt_address_t addr;
+            uint8_t rpt_type;
+            int rpt_size;
+            uint8_t rpt_data[256];
+        } _bt_hid_device_response_report;
 
-    struct {
-        bt_address_t addr;
-        hid_status_error_t error;
-    } _bt_hid_device_report_error;
+        struct {
+            bt_address_t addr;
+            hid_status_error_t error;
+        } _bt_hid_device_report_error;
 
-    struct {
-        bt_address_t addr;
-    } _bt_hid_device_virtual_unplug;
+        struct {
+            bt_address_t addr;
+        } _bt_hid_device_virtual_unplug;
 
-} bt_message_hid_device_t;
+    } bt_message_hid_device_t;
 
-typedef union {
-    struct {
-        hid_app_state_t state;
-    } _app_state;
+    typedef union {
+        struct {
+            hid_app_state_t state;
+        } _app_state;
 
-    struct {
-        bt_address_t addr;
-        bool le_hid;
-        profile_connection_state_t state;
-    } _connection_state;
+        struct {
+            bt_address_t addr;
+            bool le_hid;
+            profile_connection_state_t state;
+        } _connection_state;
 
-    struct {
-        bt_address_t addr;
-        uint8_t rpt_type;
-        uint8_t rpt_id;
-        uint16_t buffer_size;
-    } _on_get_report;
+        struct {
+            bt_address_t addr;
+            uint8_t rpt_type;
+            uint8_t rpt_id;
+            uint16_t buffer_size;
+        } _on_get_report;
 
-    struct {
-        bt_address_t addr;
-        uint8_t rpt_type;
-        uint16_t rpt_size;
-        uint8_t rpt_data[256];
-    } _on_set_report;
+        struct {
+            bt_address_t addr;
+            uint8_t rpt_type;
+            uint16_t rpt_size;
+            uint8_t rpt_data[256];
+        } _on_set_report;
 
-    struct {
-        bt_address_t addr;
-        uint8_t rpt_type;
-        uint16_t rpt_size;
-        uint8_t rpt_data[256];
-    } _on_receive_report;
+        struct {
+            bt_address_t addr;
+            uint8_t rpt_type;
+            uint16_t rpt_size;
+            uint8_t rpt_data[256];
+        } _on_receive_report;
 
-    struct {
-        bt_address_t addr;
-    } _on_virtual_unplug;
+        struct {
+            bt_address_t addr;
+        } _on_virtual_unplug;
 
-} bt_message_hid_device_callbacks_t;
+    } bt_message_hid_device_callbacks_t;
 
 #ifdef __cplusplus
 }

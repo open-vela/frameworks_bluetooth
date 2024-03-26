@@ -22,9 +22,9 @@
 #include <stdint.h>
 
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
-#  define bluetooth_ipc_add_services()
-#  define bluetooth_ipc_join_thread_pool()
-#  define bluetooth_ipc_join_service_loop()
+#define bluetooth_ipc_add_services()
+#define bluetooth_ipc_join_thread_pool()
+#define bluetooth_ipc_join_service_loop()
 #else
 bt_status_t bluetooth_ipc_add_services(void);
 void bluetooth_ipc_join_thread_pool(void);

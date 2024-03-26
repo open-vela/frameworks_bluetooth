@@ -15,65 +15,64 @@
  ***************************************************************************/
 
 #ifdef __BT_MESSAGE_CODE__
-  BT_MANAGER_MESSAGE_START,
-  BT_MANAGER_CREATE_INSTANCE,
-  BT_MANAGER_DELETE_INSTANCE,
-  BT_MANAGER_GET_INSTANCE,
-  BT_MANAGER_START_SERVICE,
-  BT_MANAGER_STOP_SERVICE,
-  BT_MANAGER_MESSAGE_END,
+BT_MANAGER_MESSAGE_START,
+    BT_MANAGER_CREATE_INSTANCE,
+    BT_MANAGER_DELETE_INSTANCE,
+    BT_MANAGER_GET_INSTANCE,
+    BT_MANAGER_START_SERVICE,
+    BT_MANAGER_STOP_SERVICE,
+    BT_MANAGER_MESSAGE_END,
 #endif
 
 #ifdef __BT_CALLBACK_CODE__
-  BT_MANAGER_CALLBACK_START,
-  BT_MANAGER_CALLBACK_END,
+    BT_MANAGER_CALLBACK_START,
+    BT_MANAGER_CALLBACK_END,
 #endif
 
 #ifndef _BT_MESSAGE_MANAGER_H__
 #define _BT_MESSAGE_MANAGER_H__
 
 #ifdef __cplusplus
-extern "C" {
+    extern "C"
+{
 #endif
 
 #include "bluetooth.h"
 
-typedef union
-{
-  bt_status_t        status;
-  uint32_t           v32;
-} bt_manager_result_t;
+    typedef union {
+        bt_status_t status;
+        uint32_t v32;
+    } bt_manager_result_t;
 
-typedef union
-{
-  struct {
-    pid_t pid;
-    uint32_t handle;
-    uint32_t type;
-    char cpu_name[64];
-  } _bluetooth_create_instance;
+    typedef union {
+        struct {
+            pid_t pid;
+            uint32_t handle;
+            uint32_t type;
+            char cpu_name[64];
+        } _bluetooth_create_instance;
 
-  struct {
-    pid_t pid;
-    char cpu_name[64];
-  } _bluetooth_get_instance;
+        struct {
+            pid_t pid;
+            char cpu_name[64];
+        } _bluetooth_get_instance;
 
-  struct {
-    uint32_t v32;
-  } _bluetooth_delete_instance;
+        struct {
+            uint32_t v32;
+        } _bluetooth_delete_instance;
 
-  struct {
-    uint32_t appid;
-    enum profile_id id;
-  } _bluetooth_start_service,
-    _bluetooth_stop_service;
+        struct {
+            uint32_t appid;
+            enum profile_id id;
+        } _bluetooth_start_service,
+            _bluetooth_stop_service;
 
-} bt_message_manager_t;
+    } bt_message_manager_t;
 
-typedef struct
-{
+    typedef struct
+    {
 
-} bt_message_manager_callbacks_t;
+    } bt_message_manager_callbacks_t;
 
 #ifdef __cplusplus
 }

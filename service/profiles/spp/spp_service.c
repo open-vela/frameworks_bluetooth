@@ -45,13 +45,13 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-#define REGISTER_MAX          5
-#define CONNECTIONS_MAX       CONFIG_BLUETOOTH_SPP_MAX_CONNECTIONS
+#define REGISTER_MAX 5
+#define CONNECTIONS_MAX CONFIG_BLUETOOTH_SPP_MAX_CONNECTIONS
 #define SERVER_CONNECTION_MAX CONFIG_BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
-#define INVALID_FD            -1
-#define DEFAULT_PACKET_SIZE   (255)
-#define SENDING_BUFS_QUOTA    13
-#define CACHE_SEND_TIMEOUT    15
+#define INVALID_FD -1
+#define DEFAULT_PACKET_SIZE (255)
+#define SENDING_BUFS_QUOTA 13
+#define CACHE_SEND_TIMEOUT 15
 #ifdef CONFIG_BLUETOOTH_SPP_DUMPBUFFER
 #define spp_dumpbuffer(m, a, n) lib_dumpbuffer(m, a, n)
 #else
@@ -61,7 +61,7 @@
 #define STACK_SVR_PORT(scn) (((scn << 1) & 0x3E) + 1)
 #define STACK_CONN_PORT(scn, conn_id, accept) \
     ((conn_id << 6) + (accept ? STACK_SVR_PORT(scn) : ((scn << 1) & 0x3E)))
-#define SERVICE_SCN(port)          ((port & 0x3E) >> 1)
+#define SERVICE_SCN(port) ((port & 0x3E) >> 1)
 #define SERVICE_CONN_ID(conn_port) (conn_port >> 6)
 
 /****************************************************************************

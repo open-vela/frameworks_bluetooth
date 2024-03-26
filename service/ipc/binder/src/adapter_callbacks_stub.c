@@ -70,7 +70,7 @@ static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder *binder, tr
         break;
     }
     case ICBKS_DISCOVERY_RESULT: {
-        bt_discovery_result_t remote = {0};
+        bt_discovery_result_t remote = { 0 };
         char *remoteName = NULL;
 
         stat = AParcel_readAddress(in, &remote.addr);

@@ -61,17 +61,17 @@ static int send_dtmf_cmd(void *handle, int argc, char *argv[]);
 #define HANGUP_CALL_USAGE "Terminate a call                     params: <address>\n" \
                           "\t\t\thangup an active/dialing/alerting voice call if any exist, otherwise then releases all held calls."
 
-#define HOLD_CALL_USAGE   "Control multi call                   params: <address> <control>\n"   \
-                          "\t\t\t" CHLD_0_DESC "\n"                                              \
-                          "\t\t\t" CHLD_1_DESC "\n"                                              \
-                          "\t\t\t" CHLD_2_DESC "\n"                                              \
-                          "\t\t\t" CHLD_3_DESC "\n"
+#define HOLD_CALL_USAGE "Control multi call                   params: <address> <control>\n" \
+                        "\t\t\t" CHLD_0_DESC "\n"                                            \
+                        "\t\t\t" CHLD_1_DESC "\n"                                            \
+                        "\t\t\t" CHLD_2_DESC "\n"                                            \
+                        "\t\t\t" CHLD_3_DESC "\n"
 
-#define SEND_DTMF_USAGE   "Send DTMF code                       params: <address> <dtmf>\n"           \
-                          "\t\t\t<dtmf>: one of \"0, 1, 2, 3, 4, 5, 6, 7, 8, 9, *, #, A, B, C, D\"\n" \
+#define SEND_DTMF_USAGE "Send DTMF code                       params: <address> <dtmf>\n" \
+                        "\t\t\t<dtmf>: one of \"0, 1, 2, 3, 4, 5, 6, 7, 8, 9, *, #, A, B, C, D\"\n"
 
 static bt_command_t g_hfp_tables[] = {
-    { "connect",         connect_cmd,                  0, "Establish hfp SLC connection         params: <address>"          },
+    {"connect",          connect_cmd,                  0, "Establish hfp SLC connection         params: <address>"          },
     { "disconnect",      disconnect_cmd,               0, "Disconnect hfp SLC connection        params: <address>"          },
     { "connectaudio",    connect_audio_cmd,            0, "Establish hfp SCO connection         params: <address>"          },
     { "disconnectaudio", disconnect_audio_cmd,         0, "Disconnect hfp SCO connection        params: <address>"          },

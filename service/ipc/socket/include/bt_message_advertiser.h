@@ -15,80 +15,78 @@
  ***************************************************************************/
 
 #ifdef __BT_MESSAGE_CODE__
-  BT_ADVERTISER_MESSAGE_START,
-  BT_LE_START_ADVERTISING,
-  BT_LE_STOP_ADVERTISING,
-  BT_LE_STOP_ADVERTISING_ID,
-  BT_LE_ADVERTISING_IS_SUPPORT,
-  BT_ADVERTISER_MESSAGE_END,
+BT_ADVERTISER_MESSAGE_START,
+    BT_LE_START_ADVERTISING,
+    BT_LE_STOP_ADVERTISING,
+    BT_LE_STOP_ADVERTISING_ID,
+    BT_LE_ADVERTISING_IS_SUPPORT,
+    BT_ADVERTISER_MESSAGE_END,
 #endif
 
 #ifdef __BT_CALLBACK_CODE__
-  BT_ADVERTISER_CALLBACK_START,
-  BT_LE_ON_ADVERTISER_START,
-  BT_LE_ON_ADVERTISER_STOPPED,
-  BT_ADVERTISER_CALLBACK_END,
+    BT_ADVERTISER_CALLBACK_START,
+    BT_LE_ON_ADVERTISER_START,
+    BT_LE_ON_ADVERTISER_STOPPED,
+    BT_ADVERTISER_CALLBACK_END,
 #endif
 
 #ifndef _BT_MESSAGE_ADVERTISER_H__
 #define _BT_MESSAGE_ADVERTISER_H__
 
 #ifdef __cplusplus
-extern "C" {
+    extern "C"
+{
 #endif
 
 #include "bluetooth.h"
 #include "bt_le_advertiser.h"
 
+    typedef union {
+        bt_status_t status;
+        uint32_t remote;
+        bool vbool;
+    } bt_advertiser_result_t;
 
-typedef union
-{
-  bt_status_t        status;
-  uint32_t           remote;
-  bool               vbool;
-} bt_advertiser_result_t;
+    typedef struct
+    {
+        bt_instance_t *ins;
+        advertiser_callback_t *callback;
+        uint32_t remote;
+    } bt_advertiser_remote_t;
 
-typedef struct
-{
-  bt_instance_t *ins;
-  advertiser_callback_t *callback;
-  uint32_t remote;
-} bt_advertiser_remote_t;
+    typedef union {
+        struct {
+            uint32_t adver;
+            ble_adv_params_t params;
+            uint8_t adv_data[256];
+            uint16_t adv_len;
+            uint8_t scan_rsp_data[256];
+            uint16_t scan_rsp_len;
+        } _bt_le_start_advertising;
 
-typedef union
-{
-  struct {
-    uint32_t adver;
-    ble_adv_params_t params;
-    uint8_t adv_data[256];
-    uint16_t adv_len;
-    uint8_t scan_rsp_data[256];
-    uint16_t scan_rsp_len;
-  } _bt_le_start_advertising;
+        struct {
+            uint32_t adver;
+        } _bt_le_stop_advertising;
 
-  struct {
-    uint32_t adver;
-  } _bt_le_stop_advertising;
+        struct {
+            uint8_t id;
+        } _bt_le_stop_advertising_id;
 
-  struct {
-    uint8_t id;
-  } _bt_le_stop_advertising_id;
+    } bt_message_advertiser_t;
 
-} bt_message_advertiser_t;
+    typedef struct
+    {
+        struct {
+            uint32_t adver;
+            uint8_t adv_id;
+            uint8_t status;
+        } _on_advertising_start;
 
-typedef struct
-{
-  struct {
-    uint32_t adver;
-    uint8_t adv_id;
-    uint8_t status;
-  } _on_advertising_start;
-
-  struct {
-    uint32_t adver;
-    uint8_t adv_id;
-  } _on_advertising_stopped;
-} bt_message_advertiser_callbacks_t;
+        struct {
+            uint32_t adver;
+            uint8_t adv_id;
+        } _on_advertising_stopped;
+    } bt_message_advertiser_callbacks_t;
 
 #ifdef __cplusplus
 }

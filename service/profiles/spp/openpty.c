@@ -25,13 +25,13 @@
 
 static void disable_echo(int fd)
 {
-  struct termios echo;
+    struct termios echo;
 
-  tcgetattr(fd, &echo);
+    tcgetattr(fd, &echo);
 
-  echo.c_lflag &= ~ECHO;
+    echo.c_lflag &= ~ECHO;
 
-  tcsetattr(fd, TCSANOW, &echo);
+    tcsetattr(fd, TCSANOW, &echo);
 }
 
 int open_pty(int *master, char *name)

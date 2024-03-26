@@ -456,7 +456,7 @@ static void spp_write(void *data)
     spp_cmd_t *msg = data;
 
     device = find_pty_by_port(msg->port);
-    if (!device )
+    if (!device)
         goto error;
 
     if (trans_ctx.handle == device->pty) {

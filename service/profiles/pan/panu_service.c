@@ -37,8 +37,8 @@
 
 #include "utils/log.h"
 
-#define PAN_MAX_CONNECTIONS   1
-#define PAN_DEV_NAME          "bt-pan"
+#define PAN_MAX_CONNECTIONS 1
+#define PAN_DEV_NAME "bt-pan"
 
 #define PAN_CALLBACK_FOREACH(_list, _cback, ...) BT_CALLBACK_FOREACH(_list, pan_callbacks_t, _cback, ##__VA_ARGS__)
 
@@ -96,7 +96,7 @@ typedef struct eth_hdr {
 } eth_hdr_t;
 
 static pan_global_t g_pan = { 0 };
-static uint8_t* pan_read_buf = NULL;
+static uint8_t *pan_read_buf = NULL;
 
 static pan_conn_t *pan_find_conn(bt_address_t *addr);
 static void pan_conn_close(pan_conn_t *conn);
@@ -234,8 +234,7 @@ static void pan_tap_poll_data(service_poll_t *poll, int revent, void *userdata)
     pan_close_all_conn();
 }
 
-
-static int pan_get_tun_packet_size(const char* devname)
+static int pan_get_tun_packet_size(const char *devname)
 {
     int errcode, ret, sockfd;
     struct ifreq ifr = { 0 };

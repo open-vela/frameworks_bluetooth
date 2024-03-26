@@ -32,7 +32,7 @@ static int stop_voice_recognition_cmd(void *handle, int argc, char *argv[]);
 static int send_at_cmd_cmd(void *handle, int argc, char *argv[]);
 
 static bt_command_t g_hfp_ag_tables[] = {
-    { "connect",         connect_cmd,                 0, "\"establish hfp SLC connection     , params: <address>\""        },
+    {"connect",          connect_cmd,                 0, "\"establish hfp SLC connection     , params: <address>\""        },
     { "disconnect",      disconnect_cmd,              0, "\"disconnect hfp SLC connection    , params: <address>\""        },
     { "connectaudio",    connect_audio_cmd,           0, "\"establish hfp SCO connection     , params: <address>\""        },
     { "disconnectaudio", disconnect_audio_cmd,        0, "\"disconnect hfp SCO connection    , params: <address>\""        },

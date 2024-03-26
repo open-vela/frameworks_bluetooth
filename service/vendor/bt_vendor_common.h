@@ -31,7 +31,7 @@
  ****************************************************************************/
 
 #define CONFIG_LEA_STREAM_MAX_NUM 4
-#define CONFIG_LEA_CODEC_MAX_NUM  2
+#define CONFIG_LEA_CODEC_MAX_NUM 2
 
 /****************************************************************************
  * Private Types

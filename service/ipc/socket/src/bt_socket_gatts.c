@@ -219,7 +219,7 @@ void bt_socket_server_gatts_process(service_poll_t *poll, int fd,
     case BT_GATT_SERVER_UNREGISTER_SERVICE: {
         bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(packet->gatts_pl._bt_gatts_unregister.handle);
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_unregister_service)(
-                                           packet->gatts_pl._bt_gatts_unregister.handle);
+            packet->gatts_pl._bt_gatts_unregister.handle);
 
         if (packet->gatts_r.status == BT_STATUS_SUCCESS)
             free(gatts_remote);
@@ -227,14 +227,14 @@ void bt_socket_server_gatts_process(service_poll_t *poll, int fd,
     }
     case BT_GATT_SERVER_CONNECT:
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_connect)(
-                                           packet->gatts_pl._bt_gatts_connect.handle,
-                                           &packet->gatts_pl._bt_gatts_connect.addr,
-                                           packet->gatts_pl._bt_gatts_connect.addr_type);
+            packet->gatts_pl._bt_gatts_connect.handle,
+            &packet->gatts_pl._bt_gatts_connect.addr,
+            packet->gatts_pl._bt_gatts_connect.addr_type);
         break;
     case BT_GATT_SERVER_DISCONNECT:
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_disconnect)(
-                                           packet->gatts_pl._bt_gatts_disconnect.handle,
-                                           &packet->gatts_pl._bt_gatts_disconnect.addr);
+            packet->gatts_pl._bt_gatts_disconnect.handle,
+            &packet->gatts_pl._bt_gatts_disconnect.addr);
         break;
     case BT_GATT_SERVER_ADD_ATTR_TABLE: {
         uint8_t *raw_data = packet->gatts_pl._bt_gatts_add_attr_table.data;
@@ -256,65 +256,65 @@ void bt_socket_server_gatts_process(service_poll_t *poll, int fd,
         }
 
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_add_attr_table)(
-                                           packet->gatts_pl._bt_gatts_add_attr_table.handle,
-                                           &srv_db);
+            packet->gatts_pl._bt_gatts_add_attr_table.handle,
+            &srv_db);
         break;
     }
     case BT_GATT_SERVER_REMOVE_ATTR_TABLE:
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_remove_attr_table)(
-                                           packet->gatts_pl._bt_gatts_remove_attr_table.handle,
-                                           packet->gatts_pl._bt_gatts_remove_attr_table.attr_handle);
+            packet->gatts_pl._bt_gatts_remove_attr_table.handle,
+            packet->gatts_pl._bt_gatts_remove_attr_table.attr_handle);
         break;
     case BT_GATT_SERVER_SET_ATTR_VALUE:
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_set_attr_value)(
-                                           packet->gatts_pl._bt_gatts_set_attr_value.handle,
-                                           packet->gatts_pl._bt_gatts_set_attr_value.attr_handle,
-                                           packet->gatts_pl._bt_gatts_set_attr_value.value,
-                                           packet->gatts_pl._bt_gatts_set_attr_value.length);
+            packet->gatts_pl._bt_gatts_set_attr_value.handle,
+            packet->gatts_pl._bt_gatts_set_attr_value.attr_handle,
+            packet->gatts_pl._bt_gatts_set_attr_value.value,
+            packet->gatts_pl._bt_gatts_set_attr_value.length);
         break;
     case BT_GATT_SERVER_GET_ATTR_VALUE:
         packet->gatts_r.length = packet->gatts_pl._bt_gatts_get_attr_value.length;
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_get_attr_value)(
-                                           packet->gatts_pl._bt_gatts_get_attr_value.handle,
-                                           packet->gatts_pl._bt_gatts_get_attr_value.attr_handle,
-                                           packet->gatts_r.value,
-                                           &packet->gatts_r.length);
+            packet->gatts_pl._bt_gatts_get_attr_value.handle,
+            packet->gatts_pl._bt_gatts_get_attr_value.attr_handle,
+            packet->gatts_r.value,
+            &packet->gatts_r.length);
         break;
     case BT_GATT_SERVER_RESPONSE:
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_response)(
-                                           packet->gatts_pl._bt_gatts_response.handle,
-                                           &packet->gatts_pl._bt_gatts_response.addr,
-                                           packet->gatts_pl._bt_gatts_response.req_handle,
-                                           packet->gatts_pl._bt_gatts_response.value,
-                                           packet->gatts_pl._bt_gatts_response.length);
+            packet->gatts_pl._bt_gatts_response.handle,
+            &packet->gatts_pl._bt_gatts_response.addr,
+            packet->gatts_pl._bt_gatts_response.req_handle,
+            packet->gatts_pl._bt_gatts_response.value,
+            packet->gatts_pl._bt_gatts_response.length);
         break;
     case BT_GATT_SERVER_NOTIFY:
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_notify)(
-                                           packet->gatts_pl._bt_gatts_notify.handle,
-                                           &packet->gatts_pl._bt_gatts_notify.addr,
-                                           packet->gatts_pl._bt_gatts_notify.attr_handle,
-                                           packet->gatts_pl._bt_gatts_notify.value,
-                                           packet->gatts_pl._bt_gatts_notify.length);
+            packet->gatts_pl._bt_gatts_notify.handle,
+            &packet->gatts_pl._bt_gatts_notify.addr,
+            packet->gatts_pl._bt_gatts_notify.attr_handle,
+            packet->gatts_pl._bt_gatts_notify.value,
+            packet->gatts_pl._bt_gatts_notify.length);
         break;
     case BT_GATT_SERVER_INDICATE:
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_indicate)(
-                                           packet->gatts_pl._bt_gatts_notify.handle,
-                                           &packet->gatts_pl._bt_gatts_notify.addr,
-                                           packet->gatts_pl._bt_gatts_notify.attr_handle,
-                                           packet->gatts_pl._bt_gatts_notify.value,
-                                           packet->gatts_pl._bt_gatts_notify.length);
+            packet->gatts_pl._bt_gatts_notify.handle,
+            &packet->gatts_pl._bt_gatts_notify.addr,
+            packet->gatts_pl._bt_gatts_notify.attr_handle,
+            packet->gatts_pl._bt_gatts_notify.value,
+            packet->gatts_pl._bt_gatts_notify.length);
         break;
     case BT_GATT_SERVER_READ_PHY:
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_read_phy)(
-                                           packet->gatts_pl._bt_gatts_phy.handle,
-                                           &packet->gatts_pl._bt_gatts_phy.addr);
+            packet->gatts_pl._bt_gatts_phy.handle,
+            &packet->gatts_pl._bt_gatts_phy.addr);
         break;
     case BT_GATT_SERVER_UPDATE_PHY:
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_update_phy)(
-                                           packet->gatts_pl._bt_gatts_phy.handle,
-                                           &packet->gatts_pl._bt_gatts_phy.addr,
-                                           packet->gatts_pl._bt_gatts_phy.tx_phy,
-                                           packet->gatts_pl._bt_gatts_phy.rx_phy);
+            packet->gatts_pl._bt_gatts_phy.handle,
+            &packet->gatts_pl._bt_gatts_phy.addr,
+            packet->gatts_pl._bt_gatts_phy.tx_phy,
+            packet->gatts_pl._bt_gatts_phy.rx_phy);
         break;
     default:
         break;

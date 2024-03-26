@@ -28,7 +28,6 @@
 #include "hfp_ag_stub.h"
 #include "utils/log.h"
 
-
 void *BpBtHfpAg_registerCallback(BpBtHfpAg *bpBinder, AIBinder *cbksBinder)
 {
     binder_status_t stat = STATUS_OK;

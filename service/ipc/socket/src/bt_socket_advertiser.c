@@ -58,7 +58,7 @@
 static void on_advertising_start_cb(bt_advertiser_t *adv, uint8_t adv_id, uint8_t status)
 {
     bt_advertiser_remote_t *adver = adv;
-    bt_message_packet_t packet = {0};
+    bt_message_packet_t packet = { 0 };
 
     packet.adv_cb._on_advertising_start.adver = adver->remote;
     packet.adv_cb._on_advertising_start.adv_id = adv_id;
@@ -72,7 +72,7 @@ static void on_advertising_start_cb(bt_advertiser_t *adv, uint8_t adv_id, uint8_
 static void on_advertising_stopped_cb(bt_advertiser_t *adv, uint8_t adv_id)
 {
     bt_advertiser_remote_t *adver = adv;
-    bt_message_packet_t packet = {0};
+    bt_message_packet_t packet = { 0 };
 
     packet.adv_cb._on_advertising_stopped.adver = adver->remote;
     packet.adv_cb._on_advertising_stopped.adv_id = adv_id;
@@ -101,12 +101,12 @@ void bt_socket_server_advertiser_process(service_poll_t *poll,
         adver->remote = packet->adv_pl._bt_le_start_advertising.adver;
         packet->adv_r.remote =
             (uint32_t)start_advertising((void *)adver,
-                              &packet->adv_pl._bt_le_start_advertising.params,
-                              packet->adv_pl._bt_le_start_advertising.adv_data,
-                              packet->adv_pl._bt_le_start_advertising.adv_len,
-                              packet->adv_pl._bt_le_start_advertising.scan_rsp_data,
-                              packet->adv_pl._bt_le_start_advertising.scan_rsp_len,
-                              &g_advertiser_socket_cb);
+                                        &packet->adv_pl._bt_le_start_advertising.params,
+                                        packet->adv_pl._bt_le_start_advertising.adv_data,
+                                        packet->adv_pl._bt_le_start_advertising.adv_len,
+                                        packet->adv_pl._bt_le_start_advertising.scan_rsp_data,
+                                        packet->adv_pl._bt_le_start_advertising.scan_rsp_len,
+                                        &g_advertiser_socket_cb);
         break;
     }
     case BT_LE_STOP_ADVERTISING: {

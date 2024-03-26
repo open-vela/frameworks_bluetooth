@@ -15,7 +15,7 @@
  ***************************************************************************/
 
 #ifdef __BT_MESSAGE_CODE__
-    BT_GATT_CLIENT_MESSAGE_START,
+BT_GATT_CLIENT_MESSAGE_START,
     BT_GATT_CLIENT_CREATE_CONNECT,
     BT_GATT_CLIENT_DELETE_CONNECT,
     BT_GATT_CLIENT_CONNECT,
@@ -63,180 +63,180 @@
 
 #include "bt_gattc.h"
 
-typedef struct {
-    bt_instance_t *ins;
-    gattc_callbacks_t *callbacks;
-    void *cookie;
-    void **user_phandle;
-} bt_gattc_remote_t;
-
-typedef struct {
-    bt_status_t status;
-    union {
-        gattc_handle_t handle;
-        gatt_attr_desc_t attr_desc;
-    };
-} bt_gattc_result_t;
-
-typedef union {
-    struct {
+    typedef struct {
+        bt_instance_t *ins;
+        gattc_callbacks_t *callbacks;
         void *cookie;
-    } _bt_gattc_create;
+        void **user_phandle;
+    } bt_gattc_remote_t;
 
-    struct {
-        gattc_handle_t handle;
-    } _bt_gattc_delete;
-
-    struct {
-        gattc_handle_t handle;
-        bt_address_t addr;
-        ble_addr_type_t addr_type;
-    } _bt_gattc_connect;
-
-    struct {
-        gattc_handle_t handle;
-    } _bt_gattc_disconnect;
-
-    struct {
-        gattc_handle_t handle;
-        bt_uuid_t filter_uuid;
-    } _bt_gattc_discover_service;
-
-    struct {
-        gattc_handle_t handle;
-        uint16_t attr_handle;
-    } _bt_gattc_get_attr_by_handle;
-
-    struct {
-        gattc_handle_t handle;
-        uint16_t start_handle;
-        uint16_t end_handle;
-        bt_uuid_t attr_uuid;
-    } _bt_gattc_get_attr_by_uuid;
-
-    struct {
-        gattc_handle_t handle;
-        uint16_t attr_handle;
-    } _bt_gattc_read;
-
-    struct {
-        gattc_handle_t handle;
-        uint16_t attr_handle;
-        uint16_t length;
-        uint8_t value[512];
-    } _bt_gattc_write;
-
-    struct {
-        gattc_handle_t handle;
-        uint16_t attr_handle;
-    } _bt_gattc_subscribe;
-
-    struct {
-        gattc_handle_t handle;
-        uint32_t mtu;
-    } _bt_gattc_exchange_mtu;
-
-    struct {
-        gattc_handle_t handle;
-        uint32_t min_interval;
-        uint32_t max_interval;
-        uint32_t latency;
-        uint32_t timeout;
-        uint32_t min_connection_event_length;
-        uint32_t max_connection_event_length;
-    } _bt_gattc_update_connection_param;
-
-    struct {
-        gattc_handle_t handle;
-        ble_phy_type_t tx_phy;
-        ble_phy_type_t rx_phy;
-    } _bt_gattc_phy;
-
-    struct {
-        gattc_handle_t handle;
-    } _bt_gattc_rssi;
-
-} bt_message_gattc_t;
-
-typedef union {
-    struct {
-        void *remote;
-    } _on_callback;
-
-    struct {
-        void *remote;
-        bt_address_t addr;
-    } _on_connected;
-
-    struct {
-        void *remote;
-        bt_address_t addr;
-    } _on_disconnected;
-
-    struct {
-        void *remote;
-        gatt_status_t status;
-        uint16_t start_handle;
-        uint16_t end_handle;
-        bt_uuid_t uuid;
-    } _on_discovered;
-
-    struct {
-        void *remote;
-        gatt_status_t status;
-        uint32_t mtu;
-    } _on_mtu_updated;
-
-    struct {
-        void *remote;
-        gatt_status_t status;
-        uint16_t attr_handle;
-        uint16_t length;
-        uint8_t value[512];
-    } _on_read;
-
-    struct {
-        void *remote;
-        gatt_status_t status;
-        uint16_t attr_handle;
-    } _on_written;
-
-    struct {
-        void *remote;
-        gatt_status_t status;
-        uint16_t attr_handle;
-        bool enable;
-    } _on_subscribed;
-
-    struct {
-        void *remote;
-        uint16_t attr_handle;
-        uint16_t length;
-        uint8_t value[512];
-    } _on_notified;
-
-    struct {
-        void *remote;
-        gatt_status_t status;
-        ble_phy_type_t tx_phy;
-        ble_phy_type_t rx_phy;
-    } _on_phy_updated;
-
-    struct {
-        void *remote;
-        gatt_status_t status;
-        int32_t rssi;
-    } _on_rssi_read;
-
-    struct {
-        void *remote;
+    typedef struct {
         bt_status_t status;
-        uint16_t interval;
-        uint16_t latency;
-        uint16_t timeout;
-    } _on_conn_param_updated;
+        union {
+            gattc_handle_t handle;
+            gatt_attr_desc_t attr_desc;
+        };
+    } bt_gattc_result_t;
 
-} bt_message_gattc_callbacks_t;
+    typedef union {
+        struct {
+            void *cookie;
+        } _bt_gattc_create;
+
+        struct {
+            gattc_handle_t handle;
+        } _bt_gattc_delete;
+
+        struct {
+            gattc_handle_t handle;
+            bt_address_t addr;
+            ble_addr_type_t addr_type;
+        } _bt_gattc_connect;
+
+        struct {
+            gattc_handle_t handle;
+        } _bt_gattc_disconnect;
+
+        struct {
+            gattc_handle_t handle;
+            bt_uuid_t filter_uuid;
+        } _bt_gattc_discover_service;
+
+        struct {
+            gattc_handle_t handle;
+            uint16_t attr_handle;
+        } _bt_gattc_get_attr_by_handle;
+
+        struct {
+            gattc_handle_t handle;
+            uint16_t start_handle;
+            uint16_t end_handle;
+            bt_uuid_t attr_uuid;
+        } _bt_gattc_get_attr_by_uuid;
+
+        struct {
+            gattc_handle_t handle;
+            uint16_t attr_handle;
+        } _bt_gattc_read;
+
+        struct {
+            gattc_handle_t handle;
+            uint16_t attr_handle;
+            uint16_t length;
+            uint8_t value[512];
+        } _bt_gattc_write;
+
+        struct {
+            gattc_handle_t handle;
+            uint16_t attr_handle;
+        } _bt_gattc_subscribe;
+
+        struct {
+            gattc_handle_t handle;
+            uint32_t mtu;
+        } _bt_gattc_exchange_mtu;
+
+        struct {
+            gattc_handle_t handle;
+            uint32_t min_interval;
+            uint32_t max_interval;
+            uint32_t latency;
+            uint32_t timeout;
+            uint32_t min_connection_event_length;
+            uint32_t max_connection_event_length;
+        } _bt_gattc_update_connection_param;
+
+        struct {
+            gattc_handle_t handle;
+            ble_phy_type_t tx_phy;
+            ble_phy_type_t rx_phy;
+        } _bt_gattc_phy;
+
+        struct {
+            gattc_handle_t handle;
+        } _bt_gattc_rssi;
+
+    } bt_message_gattc_t;
+
+    typedef union {
+        struct {
+            void *remote;
+        } _on_callback;
+
+        struct {
+            void *remote;
+            bt_address_t addr;
+        } _on_connected;
+
+        struct {
+            void *remote;
+            bt_address_t addr;
+        } _on_disconnected;
+
+        struct {
+            void *remote;
+            gatt_status_t status;
+            uint16_t start_handle;
+            uint16_t end_handle;
+            bt_uuid_t uuid;
+        } _on_discovered;
+
+        struct {
+            void *remote;
+            gatt_status_t status;
+            uint32_t mtu;
+        } _on_mtu_updated;
+
+        struct {
+            void *remote;
+            gatt_status_t status;
+            uint16_t attr_handle;
+            uint16_t length;
+            uint8_t value[512];
+        } _on_read;
+
+        struct {
+            void *remote;
+            gatt_status_t status;
+            uint16_t attr_handle;
+        } _on_written;
+
+        struct {
+            void *remote;
+            gatt_status_t status;
+            uint16_t attr_handle;
+            bool enable;
+        } _on_subscribed;
+
+        struct {
+            void *remote;
+            uint16_t attr_handle;
+            uint16_t length;
+            uint8_t value[512];
+        } _on_notified;
+
+        struct {
+            void *remote;
+            gatt_status_t status;
+            ble_phy_type_t tx_phy;
+            ble_phy_type_t rx_phy;
+        } _on_phy_updated;
+
+        struct {
+            void *remote;
+            gatt_status_t status;
+            int32_t rssi;
+        } _on_rssi_read;
+
+        struct {
+            void *remote;
+            bt_status_t status;
+            uint16_t interval;
+            uint16_t latency;
+            uint16_t timeout;
+        } _on_conn_param_updated;
+
+    } bt_message_gattc_callbacks_t;
 
 #ifdef __cplusplus
 }
