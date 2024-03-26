@@ -145,7 +145,14 @@ int thread_loop_init(uv_loop_t *loop)
     }
 
     list_initialize(&priv->msg_queue);
-    uv_loop_init(loop);
+    ret = uv_loop_init(loop);
+    if (ret != 0) {
+        list_delete(&priv->msg_queue);
+        uv_mutex_destroy(&priv->msg_lock);
+        free(priv);
+        return ret;
+    }
+
     loop->data = priv;
 
     return 0;
@@ -190,7 +197,7 @@ void thread_loop_exit(uv_loop_t *loop)
     struct list_node *node;
     struct list_node *tmp;
 
-    if (!loop)
+    if (!loop || !loop->data)
         return;
 
     loop_priv_t *priv = loop->data;
@@ -199,6 +206,9 @@ void thread_loop_exit(uv_loop_t *loop)
         do_in_thread_loop(loop, set_stop, (void *)loop);
         uv_sem_wait(&priv->exited);
         uv_sem_destroy(&priv->exited);
+    } else {
+        uv_run(loop, UV_RUN_ONCE);
+        uv_loop_close(loop);
     }
 
     uv_mutex_lock(&priv->msg_lock);
