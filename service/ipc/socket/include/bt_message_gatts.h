@@ -100,10 +100,7 @@ BT_GATT_SERVER_MESSAGE_START,
         struct {
             gatts_handle_t handle;
             int32_t attr_num;
-            union {
-                uint8_t data[512];
-                gatt_attr_db_t attr_db[0];
-            };
+            gatt_attr_db_t attr_db[CONFIG_BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM];
         } _bt_gatts_add_attr_table;
 
         struct {

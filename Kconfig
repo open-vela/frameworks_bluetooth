@@ -117,6 +117,10 @@ if BLUETOOTH_GATT
 config BLUETOOTH_GATTC_MAX_CONNECTIONS
 	int "GATT client max connections"
 	default 8
+
+config BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
+	int "GATT server max number of attributes contained in a table"
+	default 16
 endif
 
 config BLUETOOTH_AVRCP_TARGET

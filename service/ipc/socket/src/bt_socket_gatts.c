@@ -237,7 +237,7 @@ void bt_socket_server_gatts_process(service_poll_t *poll, int fd,
             &packet->gatts_pl._bt_gatts_disconnect.addr);
         break;
     case BT_GATT_SERVER_ADD_ATTR_TABLE: {
-        uint8_t *raw_data = packet->gatts_pl._bt_gatts_add_attr_table.data;
+        uint8_t *raw_data = (uint8_t *)packet->gatts_pl._bt_gatts_add_attr_table.attr_db;
         gatt_srv_db_t srv_db = {
             .attr_num = packet->gatts_pl._bt_gatts_add_attr_table.attr_num,
             .attr_db = packet->gatts_pl._bt_gatts_add_attr_table.attr_db,
