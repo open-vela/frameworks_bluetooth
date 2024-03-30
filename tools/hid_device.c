@@ -289,17 +289,22 @@ static int register_cmd(void *handle, int argc, char *argv[])
         break;
     }
 
+    hidd_setting.hids_info.dsc_list = malloc(desc_len + 3);
+    if (!hidd_setting.hids_info.dsc_list) {
+        return CMD_ERROR;
+    }
+
     hidd_setting.hids_info.vendor_id = 0x038F;
     hidd_setting.hids_info.product_id = 0x1234;
     hidd_setting.hids_info.version = 0x100;
     hidd_setting.hids_info.dsc_list_length = (uint16_t)(desc_len + 3); /* 3 bytes for Descriptor Type and Length */
-    hidd_setting.hids_info.dsc_list = malloc(desc_len + 3);
     hidd_setting.hids_info.dsc_list[0] = HID_SDP_DESCRIPTOR_REPORT;
     hidd_setting.hids_info.dsc_list[1] = (uint8_t)(desc_len & 0xFF);
     hidd_setting.hids_info.dsc_list[2] = (uint8_t)(desc_len >> 8);
     memcpy(hidd_setting.hids_info.dsc_list + 3, desc_list, desc_len);
 
     bt_status_t ret = bt_hid_device_register_app(handle, &hidd_setting, transport == BT_TRANSPORT_BLE);
+    free(hidd_setting.hids_info.dsc_list);
     if (ret != BT_STATUS_SUCCESS) {
         if (ret == BT_STATUS_NO_RESOURCES) {
             PRINT("HID app has registed, please unregister then try again");
@@ -307,7 +312,6 @@ static int register_cmd(void *handle, int argc, char *argv[])
         return CMD_ERROR;
     }
 
-    free(hidd_setting.hids_info.dsc_list);
     PRINT("HID device register app, type:%s", argv[0]);
 
     return CMD_OK;
@@ -425,8 +429,11 @@ static int send_report_cmd(void *handle, int argc, char *argv[])
     memset(report_data, 0, sizeof(report_data));
     hex2str(buffer, report_data, report_length);
 
-    if (bt_hid_device_send_report(handle, &addr, report_id, report_data, report_length) != BT_STATUS_SUCCESS)
+    bt_status_t ret = bt_hid_device_send_report(handle, &addr, report_id, report_data, report_length);
+    free(buffer);
+    if (ret != BT_STATUS_SUCCESS) {
         return CMD_ERROR;
+    }
 
     return CMD_OK;
 }
