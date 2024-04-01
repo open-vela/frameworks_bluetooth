@@ -277,12 +277,25 @@ static int hid_device_get_state(void)
 
 static int hid_device_dump(void)
 {
+    hid_app_state_t app_state;
+    profile_connection_state_t conn_state;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
+    pthread_mutex_lock(&g_hidd_handle.hid_lock);
+    if (!g_hidd_handle.started) {
+        pthread_mutex_unlock(&g_hidd_handle.hid_lock);
+        BT_LOGI("HID device is stopped!");
+        return 0;
+    }
+
+    app_state = g_hidd_handle.app_state;
+    conn_state = g_hidd_handle.conn_state;
     bt_addr_ba2str(&g_hidd_handle.peer_addr, addr_str);
+    pthread_mutex_unlock(&g_hidd_handle.hid_lock);
+
     BT_LOGI("HID Device[0]:");
-    BT_LOGI("\tApp state:%s", (g_hidd_handle.app_state == HID_APP_STATE_REGISTERED) ? "registered" : "not registed");
-    BT_LOGI("\tConnection state:%d, peer:%s", g_hidd_handle.conn_state, addr_str);
+    BT_LOGI("\tApp state:%s", (app_state == HID_APP_STATE_REGISTERED) ? "registered" : "not registed");
+    BT_LOGI("\tConnection state:%d, peer:%s", conn_state, addr_str);
 
     return 0;
 }
