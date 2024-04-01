@@ -329,8 +329,7 @@ bool a2dp_source_stream_ready(void)
         return false;
 
     state = a2dp_state_machine_get_state(a2dp_sm);
-    if (state == A2DP_STATE_OPENED ||
-        (state == A2DP_STATE_STARTED && a2dp_state_machine_is_pending_stop(a2dp_sm)))
+    if (state == A2DP_STATE_OPENED || state == A2DP_STATE_STARTED)
         return true;
 
     return false;
