@@ -81,6 +81,15 @@ typedef void (*hfp_ag_vr_cmd_callback)(void *cookie, bt_address_t *addr, bool st
 typedef void (*hfp_ag_battery_update_callback)(void *cookie, bt_address_t *addr, uint8_t value);
 
 /**
+ * @brief HFP AT command received callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ * @param at_command - AT command.
+ */
+typedef void (*hfp_ag_at_cmd_received_callback)(void *cookie, bt_address_t *addr, const char *at_command);
+
+/**
  * @brief HFP AG callback structure
  *
  */
@@ -91,6 +100,7 @@ typedef struct
     hfp_ag_audio_state_callback audio_state_cb;
     hfp_ag_vr_cmd_callback vr_cmd_cb;
     hfp_ag_battery_update_callback hf_battery_update_cb;
+    hfp_ag_at_cmd_received_callback at_cmd_cb;
 } hfp_ag_callbacks_t;
 
 /**
