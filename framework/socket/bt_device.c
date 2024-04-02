@@ -353,7 +353,7 @@ void bt_device_connect_all_profile(bt_instance_t *ins, bt_address_t *addr)
     bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, );
-    bt_device_send(ins, addr, &packet, BT_DEVICE_CONNECT_ALL_PROFILE);
+    (void)bt_device_send(ins, addr, &packet, BT_DEVICE_CONNECT_ALL_PROFILE);
 }
 
 void bt_device_disconnect_all_profile(bt_instance_t *ins, bt_address_t *addr)
@@ -361,7 +361,7 @@ void bt_device_disconnect_all_profile(bt_instance_t *ins, bt_address_t *addr)
     bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, );
-    bt_device_send(ins, addr, &packet, BT_DEVICE_DISCONNECT_ALL_PROFILE);
+    (void)bt_device_send(ins, addr, &packet, BT_DEVICE_DISCONNECT_ALL_PROFILE);
 }
 
 bt_status_t bt_device_set_le_phy(bt_instance_t *ins,
