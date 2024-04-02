@@ -75,10 +75,21 @@ static bool tg_device_cmp(void *device, void *addr)
 
 static avrcp_tg_device_t *tg_device_find(bt_address_t *addr)
 {
-    if (!g_avrc_target.devices || !addr)
+    avrcp_tg_device_t *device;
+
+    if (!addr)
         return NULL;
 
-    return bt_list_find(g_avrc_target.devices, tg_device_cmp, addr);
+    pthread_mutex_lock(&g_avrc_target.mutex);
+    if (!g_avrc_target.devices) {
+        pthread_mutex_unlock(&g_avrc_target.mutex);
+        return NULL;
+    }
+
+    device = bt_list_find(g_avrc_target.devices, tg_device_cmp, addr);
+    pthread_mutex_unlock(&g_avrc_target.mutex);
+
+    return device;
 }
 
 static avrcp_tg_device_t *tg_device_create(bt_address_t *addr, bool initiator)
@@ -100,7 +111,9 @@ static avrcp_tg_device_t *tg_device_create(bt_address_t *addr, bool initiator)
     device->pos_update = NULL;
     device->state = PROFILE_STATE_DISCONNECTED;
 
+    pthread_mutex_lock(&g_avrc_target.mutex);
     bt_list_add_tail(g_avrc_target.devices, device);
+    pthread_mutex_unlock(&g_avrc_target.mutex);
 
     bt_addr_ba2str(addr, _addr_str);
     BT_LOGD("%s [%s] success", __func__, _addr_str);
@@ -129,12 +142,19 @@ static void tg_device_destory(void *data)
 
 static void tg_device_remove(avrcp_tg_device_t *device)
 {
+    pthread_mutex_lock(&g_avrc_target.mutex);
     bt_list_remove(g_avrc_target.devices, device);
+    pthread_mutex_unlock(&g_avrc_target.mutex);
 }
 static avrcp_tg_device_t *get_active_device(void)
 {
+    bt_list_node_t *node;
+
     /* get a2dp active device */
-    bt_list_node_t *node = bt_list_head(g_avrc_target.devices);
+    pthread_mutex_lock(&g_avrc_target.mutex);
+    node = bt_list_head(g_avrc_target.devices);
+    pthread_mutex_unlock(&g_avrc_target.mutex);
+
     if (node == NULL)
         return NULL;
 
