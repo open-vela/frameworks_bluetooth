@@ -105,11 +105,25 @@ static void on_hf_battery_update_cb(void *cookie, bt_address_t *addr, uint8_t va
     bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_BATTERY_LEVEL_CHANGED);
 }
 
+static void on_at_cmd_received_cb(void *cookie, bt_address_t *addr, const char *at_command)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t *ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_at_cmd_received.addr, addr, sizeof(bt_address_t));
+    if (at_command != NULL)
+        strlcpy(packet.hfp_ag_cb._on_at_cmd_received.cmd, at_command,
+                sizeof(packet.hfp_ag_cb._on_at_cmd_received.cmd));
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_AT_COMMAND_RECEIVED);
+}
+
 const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
     .connection_state_cb = on_connection_state_changed_cb,
     .audio_state_cb = on_audio_state_changed_cb,
     .vr_cmd_cb = on_voice_recognition_command_cb,
     .hf_battery_update_cb = on_hf_battery_update_cb,
+    .at_cmd_cb = on_at_cmd_received_cb,
 };
 
 /****************************************************************************
@@ -224,6 +238,12 @@ int bt_socket_client_hfp_ag_callback(service_poll_t *poll,
                          hf_battery_update_cb,
                          &packet->hfp_ag_cb._on_battery_level_changed.addr,
                          packet->hfp_ag_cb._on_battery_level_changed.value);
+        break;
+    case BT_HFP_AG_ON_AT_COMMAND_RECEIVED:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+                         at_cmd_cb,
+                         &packet->hfp_ag_cb._on_at_cmd_received.addr,
+                         packet->hfp_ag_cb._on_at_cmd_received.cmd);
         break;
     default:
         return BT_STATUS_PARM_INVALID;

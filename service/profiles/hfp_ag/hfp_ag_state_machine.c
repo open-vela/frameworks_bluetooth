@@ -566,10 +566,15 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_d
         /* system call interface */
         tele_service_call_control(chld);
     } break;
-    case AG_STACK_EVENT_AT_COMMAND:
-        at_cmd_check_test(&agsm->addr, data->string1);
-        /* TODO: need notify AT command? */
-        break;
+    case AG_STACK_EVENT_AT_COMMAND: {
+        const char *at_cmd = data->string1;
+
+        if (at_cmd_check_test(&agsm->addr, at_cmd)) {
+            /* nothing to do */
+        } else {
+            ag_service_notify_cmd_received(&agsm->addr, at_cmd);
+        }
+    } break;
     case AG_STACK_EVENT_SEND_DTMF:
         /* system call interface */
         break;

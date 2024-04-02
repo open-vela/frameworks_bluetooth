@@ -37,6 +37,7 @@ BT_HFP_AG_MESSAGE_START,
     BT_HFP_AG_ON_AUDIO_STATE_CHANGED,
     BT_HFP_AG_ON_VOICE_RECOGNITION_STATE_CHANGED,
     BT_HFP_AG_ON_BATTERY_LEVEL_CHANGED,
+    BT_HFP_AG_ON_AT_COMMAND_RECEIVED,
     BT_HFP_AG_CALLBACK_END,
 #endif
 
@@ -95,6 +96,11 @@ BT_HFP_AG_MESSAGE_START,
             bt_address_t addr;
             uint8_t value;
         } _on_battery_level_changed;
+
+        struct {
+            bt_address_t addr;
+            char cmd[HFP_AT_LEN_MAX + 1];
+        } _on_at_cmd_received;
     } bt_message_hfp_ag_callbacks_t;
 
 #ifdef __cplusplus
