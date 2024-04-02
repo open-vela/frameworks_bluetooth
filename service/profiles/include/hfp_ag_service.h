@@ -75,6 +75,7 @@ void ag_service_notify_connection_state_changed(bt_address_t *addr, profile_conn
 void ag_service_notify_audio_state_changed(bt_address_t *addr, hfp_audio_state_t state);
 void ag_service_notify_vr_state_changed(bt_address_t *addr, bool started);
 void ag_service_notify_hf_battery_update(bt_address_t *addr, uint8_t value);
+void ag_service_notify_cmd_received(bt_address_t *addr, const char *at_cmd);
 
 /*
  * telephony

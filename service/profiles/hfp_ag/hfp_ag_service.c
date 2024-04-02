@@ -643,6 +643,12 @@ void ag_service_notify_hf_battery_update(bt_address_t *addr, uint8_t value)
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, hf_battery_update_cb, addr, value);
 }
 
+void ag_service_notify_cmd_received(bt_address_t *addr, const char *at_cmd)
+{
+    BT_LOGD("%s", __func__);
+    AG_CALLBACK_FOREACH(g_ag_service.callbacks, at_cmd_cb, addr, at_cmd);
+}
+
 void hfp_ag_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state,
                                         uint32_t remote_features)
 {
