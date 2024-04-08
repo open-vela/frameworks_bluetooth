@@ -19,88 +19,54 @@
  *
  */
 #include "bt_a2dp_sink.h"
-#include "feature_a2dpsink.h"
 #include "system_bluetooth_bt_a2dpsink.h"
 #include "feature_bluetooth.h"
 
 #define file_tag "system_bluetooth_bt_a2dpsnk"
 
-static void a2dp_sink_connection_state_cb(void *cookie, bt_address_t *addr, profile_connection_state_t state)
-{
-    if (g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature == NULL)
-        return;
-    system_bluetooth_bt_a2dpsink_OnConnectStateChangeData *data = system_bluetooth_bt_a2dpsinkMallocOnConnectStateChangeData();
-    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-    bt_addr_ba2str(addr, addr_str);
-    data->deviceId = StringToFtString(addr_str);
-    data->connectState = state;
-    if (!FeatureCheckCallbackId(g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature,
-                                g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId)) {
-        return;
-    }
-
-    callback_info_t *callback_info = (callback_info_t *)malloc(sizeof(callback_info_t));
-    memset(callback_info, 0, sizeof(callback_info_t));
-    callback_info->callback_id = A2DPSINK_ON_CONNECT_STATE_CHANGE;
-    callback_info->feature_callback_id = g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId;
-    callback_info->feature = g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature;
-    callback_info->data = data;
-    FeaturePost(g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature, feature_bluetooth_deal_callback, callback_info);
-}
-
-static const a2dp_sink_callbacks_t a2dp_sink_cbs = {
-    sizeof(a2dp_sink_cbs),
-    a2dp_sink_connection_state_cb,
-};
-
 void system_bluetooth_bt_a2dpsink_onRegister(const char *feature_name)
 {
-    feature_bluetooth_create_bt_ins();
+    feature_bluetooth_init_bt_ins();
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
+
 void system_bluetooth_bt_a2dpsink_onCreate(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
     feature_bluetooth_set_bt_ins(handle);
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
+
 void system_bluetooth_bt_a2dpsink_onRequired(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
+    feature_bluetooth_add_feature_callback(handle, A2DPSINK_FEATURE);
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
+
 void system_bluetooth_bt_a2dpsink_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
-    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature = NULL;
-    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId = -1;
+    feature_bluetooth_free_feature_callback(handle, A2DPSINK_FEATURE);
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
+
 void system_bluetooth_bt_a2dpsink_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
     feature_bluetooth_clean_bt_ins(handle);
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
+
 void system_bluetooth_bt_a2dpsink_onUnregister(const char *feature_name)
 {
-    feature_bluetooth_destroy_bt_ins();
+    feature_bluetooth_uninit_bt_ins();
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
 FtCallbackId system_bluetooth_bt_a2dpsink_get_onconnectstatechange(void *feature, union AppendData append_data)
 {
-    return g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId;
+    return feature_bluetooth_get_feature_callback(feature, A2DPSINK_ON_CONNECT_STATE_CHANGE);
 }
+
 void system_bluetooth_bt_a2dpsink_set_onconnectstatechange(void *feature, union AppendData append_data, FtCallbackId onconnectstatechange)
 {
-    FEATURE_LOG_INFO("set onadapterstatechange feature: %p, callbackId: %d", feature, onconnectstatechange);
-    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature = feature;
-    g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.callbackId = onconnectstatechange;
-}
-
-void a2dp_sink_feature_init(void *handle)
-{
-    sink_cbks_cookie = bt_a2dp_sink_register_callbacks((bt_instance_t *)handle, &a2dp_sink_cbs);
-}
-
-void a2dp_sink_feature_uninit(void *handle)
-{
-    bt_a2dp_sink_unregister_callbacks((bt_instance_t *)handle, sink_cbks_cookie);
+    FEATURE_LOG_INFO("set on a2dpsink set on connect state change callback: %p, callbackId: %d", feature, onconnectstatechange);
+    feature_bluetooth_set_feature_callback(feature, onconnectstatechange, A2DPSINK_ON_CONNECT_STATE_CHANGE);
 }
