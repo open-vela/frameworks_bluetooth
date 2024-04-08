@@ -22,6 +22,8 @@
 #ifndef FEATURE_BLUETOOTH_CONSTANT_H_
 #define FEATURE_BLUETOOTH_CONSTANT_H_
 #include "feature_exports.h"
+#include "bluetooth.h"
+#include "bt_list.h"
 
 typedef enum {
     A2DP_SINK,
@@ -31,32 +33,67 @@ typedef enum {
     HID_DEVICE,
     PAN_USE,
     MAX_FEATURE_ID,
-} feature_profile_t;
+} feature_bluetooth_profile_t;
 
 typedef enum {
     ON_ADAPTER_STATE_CHANGE,
     ON_DISCOVERY_RESULT,
     ON_BOND_STATE_CHANGE,
     A2DPSINK_ON_CONNECT_STATE_CHANGE,
-} bluetooth_feature_callback_id_t;
+} feature_bluetooth_callback_t;
+
+typedef enum {
+    BLUETOOTH_FEATURE,
+    BLUETOOTH_BT_FEATURE,
+    A2DPSINK_FEATURE,
+} feature_bluetooth_type_t;
 
 typedef struct {
-    void *feature;
-    FtCallbackId callbackId;
-} feature_callback_t;
+    FeatureInstanceHandle *feature_ins;
+    FtCallbackId on_adapter_state_changed_cb_id;
+} feature_bluetooth_bluetooth_callbacks_t;
 
-typedef struct callback_info {
-    bluetooth_feature_callback_id_t callback_id;
+typedef struct {
+    FeatureInstanceHandle *feature_ins;
+    FtCallbackId on_discovery_result_cb_id;
+    FtCallbackId on_bond_state_changed_cb_id;
+} feature_bluetooth_bluetooth_bt_callbacks_t;
+
+typedef struct {
+    FeatureInstanceHandle *feature_ins;
+    FtCallbackId a2dp_sink_connection_state_cb_id;
+} feature_bluetooth_a2dp_sink_callbacks_t;
+
+typedef struct {
+    feature_bluetooth_callback_t callback_id;
     FtCallbackId feature_callback_id;
     void *feature;
     void *data;
 } callback_info_t;
 
+typedef struct {
+    bt_list_t *callbacks;
+    uv_mutex_t mutex;
+} feature_bluetooth_callbacks_t;
+
+typedef struct {
+    feature_bluetooth_callbacks_t feature_bluetooth_callbacks;
+    feature_bluetooth_callbacks_t feature_bluetooth_bt_callbacks;
+    feature_bluetooth_callbacks_t feature_a2dp_sink_callbacks;
+} feature_bluetooth_features_callbacks_t;
+
 void feature_bluetooth_deal_callback(int status, void *data);
 char *StringToFtString(const char *str);
-void feature_bluetooth_create_bt_ins();
-void feature_bluetooth_destroy_bt_ins();
+void feature_bluetooth_init_bt_ins();
+void feature_bluetooth_uninit_bt_ins();
 void feature_bluetooth_set_bt_ins(FeatureProtoHandle protoHandle);
 void feature_bluetooth_clean_bt_ins(FeatureProtoHandle protoHandle);
 bt_instance_t *feature_bluetooth_get_bt_ins(FeatureInstanceHandle feature);
+
+void feature_bluetooth_add_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_type_t feature_type);
+void feature_bluetooth_free_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_type_t feature_type);
+void feature_bluetooth_set_feature_callback(FeatureInstanceHandle handle, FtCallbackId callback_id, feature_bluetooth_callback_t callback_type);
+FtCallbackId feature_bluetooth_get_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_callback_t callback_type);
+void feature_bluetooth_callback_init(bt_instance_t *bt_ins);
+void feature_bluetooth_callback_uninit(bt_instance_t *bt_ins);
 #endif // FEATURE_BLUETOOTH_CONSTANT_H_

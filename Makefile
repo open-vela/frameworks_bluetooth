@@ -316,6 +316,7 @@ CSRCS     += feature/src/system_bluetooth_impl.c
 CSRCS     += feature/src/feature_bluetooth_util.c
 CSRCS     += feature/src/system_bluetooth_bt.c
 CSRCS     += feature/src/system_bluetooth_bt_impl.c
+CSRCS     += feature/src/feature_bluetooth_callback.c
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
 CSRCS     += feature/src/system_bluetooth_bt_a2dpsink.c

@@ -357,6 +357,7 @@ typedef struct bt_instance {
     void *packet;
     void *cpacket;
     struct list_node msg_queue;
+    void *context;
     uv_mutex_t lock;
 
     callbacks_list_t *adapter_callbacks;

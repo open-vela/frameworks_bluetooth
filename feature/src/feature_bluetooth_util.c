@@ -38,17 +38,20 @@ char *StringToFtString(const char *str)
     return ftStr;
 }
 
-void feature_bluetooth_create_bt_ins()
+void feature_bluetooth_init_bt_ins()
 {
-    bluetooth_create_instance();
+    bt_instance_t *bluetooth_ins = bluetooth_create_instance();
+    if (bluetooth_ins != NULL)
+        feature_bluetooth_callback_init(bluetooth_ins);
 }
 
-void feature_bluetooth_destroy_bt_ins()
+void feature_bluetooth_uninit_bt_ins()
 {
     bt_instance_t *bluetooth_ins;
 
     bluetooth_ins = bluetooth_find_instance(getpid());
     if (bluetooth_ins != NULL) {
+        feature_bluetooth_callback_uninit(bluetooth_ins);
         bluetooth_delete_instance(bluetooth_ins);
     }
 }
