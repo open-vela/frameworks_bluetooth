@@ -37,3 +37,35 @@ char *StringToFtString(const char *str)
     strcpy(ftStr, str);
     return ftStr;
 }
+
+void feature_bluetooth_create_bt_ins()
+{
+    bluetooth_create_instance();
+}
+
+void feature_bluetooth_destroy_bt_ins()
+{
+    bt_instance_t *bluetooth_ins;
+
+    bluetooth_ins = bluetooth_find_instance(getpid());
+    if (bluetooth_ins != NULL) {
+        bluetooth_delete_instance(bluetooth_ins);
+    }
+}
+
+void feature_bluetooth_set_bt_ins(FeatureProtoHandle protoHandle)
+{
+    bt_instance_t *bluetooth_ins = bluetooth_get_instance();
+    FeatureSetProtoData(protoHandle, bluetooth_ins);
+}
+
+void feature_bluetooth_clean_bt_ins(FeatureProtoHandle protoHandle)
+{
+    FeatureSetProtoData(protoHandle, NULL);
+}
+
+bt_instance_t *feature_bluetooth_get_bt_ins(FeatureInstanceHandle feature)
+{
+    FeatureProtoHandle protoHandle = FeatureGetProtoHandle(feature);
+    return FeatureGetProtoData(protoHandle);
+}

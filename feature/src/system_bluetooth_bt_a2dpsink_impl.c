@@ -25,9 +25,6 @@
 
 #define file_tag "system_bluetooth_bt_a2dpsnk"
 
-static a2dp_sink_feature_callbacks_t g_feature_a2dp_sink_callbacks = {};
-static void *sink_cbks_cookie = NULL;
-
 static void a2dp_sink_connection_state_cb(void *cookie, bt_address_t *addr, profile_connection_state_t state)
 {
     if (g_feature_a2dp_sink_callbacks.a2dp_sink_connection_state_cb.feature == NULL)
@@ -58,10 +55,12 @@ static const a2dp_sink_callbacks_t a2dp_sink_cbs = {
 
 void system_bluetooth_bt_a2dpsink_onRegister(const char *feature_name)
 {
+    feature_bluetooth_create_bt_ins();
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 void system_bluetooth_bt_a2dpsink_onCreate(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
+    feature_bluetooth_set_bt_ins(handle);
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 void system_bluetooth_bt_a2dpsink_onRequired(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
@@ -76,10 +75,12 @@ void system_bluetooth_bt_a2dpsink_onDetached(FeatureRuntimeContext ctx, FeatureI
 }
 void system_bluetooth_bt_a2dpsink_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
+    feature_bluetooth_clean_bt_ins(handle);
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 void system_bluetooth_bt_a2dpsink_onUnregister(const char *feature_name)
 {
+    feature_bluetooth_destroy_bt_ins();
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 

@@ -32,9 +32,6 @@ typedef struct {
     feature_callback_t on_bond_state_changed_cb;
 } adapter_feature_callbacks_t;
 
-void bluetooth_init_ins();
-void bluetooth_uninit_ins();
-bt_instance_t *feature_bluetooth_get_instance();
 adapter_feature_callbacks_t *get_adapter_cbs();
 bool bt_feature_allocator(void **data, uint32_t size);
 #endif // FEATURE_BLUETOOTH_INS_MANAGE_H_
