@@ -54,4 +54,9 @@ typedef struct callback_info {
 
 void feature_bluetooth_deal_callback(int status, void *data);
 char *StringToFtString(const char *str);
+void feature_bluetooth_create_bt_ins();
+void feature_bluetooth_destroy_bt_ins();
+void feature_bluetooth_set_bt_ins(FeatureProtoHandle protoHandle);
+void feature_bluetooth_clean_bt_ins(FeatureProtoHandle protoHandle);
+bt_instance_t *feature_bluetooth_get_bt_ins(FeatureInstanceHandle feature);
 #endif // FEATURE_BLUETOOTH_CONSTANT_H_
