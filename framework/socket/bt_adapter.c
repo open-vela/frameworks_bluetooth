@@ -38,7 +38,12 @@ void *bt_adapter_register_callback(bt_instance_t *ins, const adapter_callbacks_t
     if (ins->adapter_callbacks == NULL)
         return NULL;
 
+#ifdef CONFIG_BLUETOOTH_FEATURE
+    handle = bt_remote_callbacks_register(ins->adapter_callbacks, ins, (void *)adapter_cbs);
+#else
     handle = bt_remote_callbacks_register(ins->adapter_callbacks, NULL, (void *)adapter_cbs);
+#endif
+
     if (handle == NULL) {
         bt_callbacks_list_free(ins->adapter_callbacks);
         ins->adapter_callbacks = NULL;
