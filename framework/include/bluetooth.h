@@ -389,11 +389,18 @@ typedef struct bt_instance {
 bt_instance_t *BTSYMBOLS(bluetooth_create_instance)(void);
 
 /**
- * @brief Get bluetooth client instance
+ * @brief Get bluetooth client instance, If it does not exist, an instance is created
  *
- * @return bt_instance_t* - ins if exist, NULL, if not exist.
+ * @return bt_instance_t* - ins if exist or create success, NULL, if create fail.
  */
 bt_instance_t *BTSYMBOLS(bluetooth_get_instance)(void);
+
+/**
+ * @brief Find bluetooth client instance
+ *
+ * @return bt_instance_t* - ins if exist, NULL otherwise.
+ */
+bt_instance_t *BTSYMBOLS(bluetooth_find_instance)(pid_t pid);
 
 /**
  * @brief Get profile proxy
