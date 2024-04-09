@@ -80,14 +80,24 @@ bt_instance_t *bluetooth_create_instance(void)
 
 bt_instance_t *bluetooth_get_instance(void)
 {
+    bt_instance_t *bluetooth_ins = bluetooth_find_instance(getpid());
+
+    if (bluetooth_ins == NULL)
+        return bluetooth_create_instance();
+    else
+        return bluetooth_ins;
+}
+
+bt_instance_t *bluetooth_find_instance(pid_t pid)
+{
     bt_status_t status;
     uint32_t handle;
 
-    status = manager_get_instance("local", getpid(), &handle);
-    if (status == BT_STATUS_SUCCESS)
-        return (bt_instance_t *)handle;
-    else
-        return bluetooth_create_instance();
+    status = manager_get_instance("local", pid, &handle);
+    if (status != BT_STATUS_SUCCESS) {
+        return NULL;
+    }
+    return (bt_instance_t *)handle;
 }
 
 void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id)
