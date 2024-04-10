@@ -27,13 +27,17 @@
 #include "bt_list.h"
 #include "bt_player.h"
 #include "callbacks_list.h"
+#include "sal_avrcp_control_interface.h"
 #include "sal_avrcp_target_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
+#include "time.h"
 
 #include "avrcp_target_service.h"
 
 #include "utils/log.h"
+
+#define AVCTP_RETRY_MAX 1
 
 #define AVRCP_TG_CALLBACK_FOREACH(_list, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, avrcp_target_callbacks_t, _cback, ##__VA_ARGS__)
@@ -55,10 +59,12 @@ typedef struct {
     bool initiator;
     bt_address_t addr;
     bool absvol_support;
+    uint8_t retry_cnt;
     uint32_t interval;
     uint16_t registered_events;
     bt_media_status_t play_status;
     service_timer_t *pos_update;
+    service_timer_t *retry_timer;
     profile_connection_state_t state;
     bt_media_controller_t *controller;
 } avrcp_tg_device_t;
@@ -108,7 +114,9 @@ static avrcp_tg_device_t *tg_device_create(bt_address_t *addr, bool initiator)
     device->initiator = initiator;
     device->play_status = BT_MEDIA_PLAY_STATUS_STOPPED;
     device->interval = 0;
+    device->retry_cnt = 0;
     device->pos_update = NULL;
+    device->retry_timer = NULL;
     device->state = PROFILE_STATE_DISCONNECTED;
 
     pthread_mutex_lock(&g_avrc_target.mutex);
@@ -132,6 +140,9 @@ static void tg_device_destory(void *data)
 
     if (device->pos_update)
         service_loop_cancel_timer(device->pos_update);
+
+    if (device->retry_timer)
+        service_loop_cancel_timer(device->retry_timer);
 
     if (device->state != PROFILE_STATE_DISCONNECTED) {
         // disconnected first
@@ -190,36 +201,73 @@ static void media_player_notify_cb(bt_media_controller_t *controller, void *cont
     }
 }
 
+static void tg_retry_callback(service_timer_t *timer, void *data)
+{
+    char _addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    avrcp_tg_device_t *device = (avrcp_tg_device_t *)data;
+
+    if (!device)
+        return;
+
+    bt_addr_ba2str(&device->addr, _addr_str);
+    BT_LOGD("%s: device=[%s], state=%d, retry_cnt=%d", __func__, _addr_str, device->state, device->retry_cnt);
+    if (device->state == PROFILE_STATE_DISCONNECTED)
+        bt_sal_avrcp_control_connect(&device->addr);
+
+    device->retry_timer = NULL;
+}
+
 static void handle_avrcp_connection_state(avrcp_msg_t *msg)
 {
     avrcp_tg_device_t *device = NULL;
     bt_address_t *addr = &msg->addr;
-    profile_connection_state_t state = msg->data.conn_state;
+    profile_connection_state_t state = msg->data.conn_state.conn_state;
+    profile_connection_reason_t reason = msg->data.conn_state.reason;
+    uint32_t random_timeout;
+
     BT_LOGD("avrc tg connnection --> device:[%s], state: %d", bt_addr_str(addr), state);
 
     device = tg_device_find(addr);
-    /* set device state */
-    if (device)
-        device->state = state;
 
     switch (state) {
     case PROFILE_STATE_DISCONNECTED:
+        assert(device);
+        if ((device->state == PROFILE_STATE_CONNECTING) && (reason == PROFILE_CONNECT_RETRY) &&
+            (device->retry_cnt < AVCTP_RETRY_MAX)) {
+            /* failed to establish an AVRCP connection, retry for up to AVCTP_RETRY_MAX times */
+            if (device->retry_timer == NULL) {
+                /* AVRCP requires a random waiting time between 100ms and 1 seconds.
+                   To compensate for transmission delays, the random delay is set to no more than 900ms */
+                srand(time(NULL)); /* set random seed */
+                random_timeout = 100 + (rand() % 800);
+                BT_LOGD("retry AVRCP connection with device:[%s], delay=%" PRIu32 "ms",
+                        bt_addr_str(addr), random_timeout);
+                device->retry_timer = service_loop_timer(random_timeout, 0, tg_retry_callback, device);
+                device->retry_cnt++;
+            }
+            break;
+        }
+        if (device->retry_timer) {
+            service_loop_cancel_timer(device->retry_timer);
+            device->retry_timer = NULL;
+        }
+        device->retry_cnt = 0;
+
         /* destory device and release resource if device is existed*/
-        if (device)
-            tg_device_remove(device);
+        tg_device_remove(device);
+        device = NULL;
+
         break;
     case PROFILE_STATE_CONNECTING:
         if (!device) {
             /* target as acceptor */
             device = tg_device_create(addr, false);
-            device->state = state;
         }
         break;
-    case PROFILE_STATE_CONNECTED: {
+    case PROFILE_STATE_CONNECTED:
         if (!device) {
             /* target as acceptor */
             device = tg_device_create(addr, false);
-            device->state = state;
         }
 
         if (!g_avrc_target.controller) {
@@ -228,12 +276,18 @@ static void handle_avrcp_connection_state(avrcp_msg_t *msg)
         }
 
         device->controller = g_avrc_target.controller;
-    } break;
+        device->retry_cnt = 0;
+        break;
     case PROFILE_STATE_DISCONNECTING:
+        assert(device);
         break;
     default:
         assert(0);
     }
+
+    /* set device state */
+    if (device)
+        device->state = state;
 
     AVRCP_TG_CALLBACK_FOREACH(g_avrc_target.callbacks, connection_state_cb, addr, state);
 }
