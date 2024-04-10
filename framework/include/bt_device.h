@@ -41,6 +41,17 @@ typedef enum {
 } profile_connection_state_t;
 
 /**
+ * @brief Profile connection reason
+ *
+ */
+typedef enum {
+    PROFILE_CONNECT_SUCCESS = 0x0000,
+    PROFILE_CONNECT_RETRY = 0x0001,
+
+    PROFILE_CONNECT_UNSPECIFIED = 0xFFFF,
+} profile_connection_reason_t;
+
+/**
  * @brief ACL connection state
  *
  */

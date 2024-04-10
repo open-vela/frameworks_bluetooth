@@ -31,7 +31,8 @@
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
 
 static void ctrl_connection_state_changed_cb(BD_ADDR addr,
-                                             SERVICE_PROFILE_CONNECTION_STATE state);
+                                             SERVICE_PROFILE_CONNECTION_STATE state,
+                                             SERVICE_PROFILE_CONNECTION_REASON reason);
 static void panel_rsp_cb(BD_ADDR addr,
                          SERVICE_AVRCP_RESPONSE response,
                          SERVICE_AVRCP_PANEL_OPERATION op, SERVICE_AVRCP_PANEL_STATE state);
@@ -55,7 +56,8 @@ static AVRCP_CALLBACKS_S avrcp_ctrl_cbks = {
 };
 
 static void ctrl_connection_state_changed_cb(BD_ADDR addr,
-                                             SERVICE_PROFILE_CONNECTION_STATE state)
+                                             SERVICE_PROFILE_CONNECTION_STATE state,
+                                             SERVICE_PROFILE_CONNECTION_REASON reason)
 {
     avrcp_msg_t *msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, (void *)addr);
 
@@ -64,18 +66,20 @@ static void ctrl_connection_state_changed_cb(BD_ADDR addr,
 
     switch (state) {
     case SERVICE_PROFILE_CONNECTING:
-        msg->data.conn_state = PROFILE_STATE_CONNECTING;
+        msg->data.conn_state.conn_state = PROFILE_STATE_CONNECTING;
         break;
     case SERVICE_PROFILE_CONNECTED:
-        msg->data.conn_state = PROFILE_STATE_CONNECTED;
+        msg->data.conn_state.conn_state = PROFILE_STATE_CONNECTED;
         break;
     case SERVICE_PROFILE_DISCONNECTING:
-        msg->data.conn_state = PROFILE_STATE_DISCONNECTING;
+        msg->data.conn_state.conn_state = PROFILE_STATE_DISCONNECTING;
         break;
     default:
-        msg->data.conn_state = PROFILE_STATE_DISCONNECTED;
+        msg->data.conn_state.conn_state = PROFILE_STATE_DISCONNECTED;
         break;
     }
+
+    msg->data.conn_state.reason = bluelet_profile_connection_reason(reason);
 
     bt_sal_avrcp_control_event_callback(msg);
 }
