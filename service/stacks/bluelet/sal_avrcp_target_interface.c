@@ -30,7 +30,8 @@
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
 
 static void target_connection_state_changed_cb(BD_ADDR addr,
-                                               SERVICE_PROFILE_CONNECTION_STATE state);
+                                               SERVICE_PROFILE_CONNECTION_STATE state,
+                                               SERVICE_PROFILE_CONNECTION_REASON reason);
 static void register_notification_request_cb(BD_ADDR addr,
                                              SERVICE_AVRCP_NOTIFICATION_EVENT event, uint32_t interval);
 static void get_play_status_request_cb(BD_ADDR addr);
@@ -50,7 +51,8 @@ static AVRCP_TARGET_CALLBACKS_S avrcp_target_cbks = {
 };
 
 static void target_connection_state_changed_cb(BD_ADDR addr,
-                                               SERVICE_PROFILE_CONNECTION_STATE state)
+                                               SERVICE_PROFILE_CONNECTION_STATE state,
+                                               SERVICE_PROFILE_CONNECTION_REASON reason)
 {
     avrcp_msg_t *msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, (void *)addr);
 
@@ -59,18 +61,20 @@ static void target_connection_state_changed_cb(BD_ADDR addr,
 
     switch (state) {
     case SERVICE_PROFILE_CONNECTING:
-        msg->data.conn_state = PROFILE_STATE_CONNECTING;
+        msg->data.conn_state.conn_state = PROFILE_STATE_CONNECTING;
         break;
     case SERVICE_PROFILE_CONNECTED:
-        msg->data.conn_state = PROFILE_STATE_CONNECTED;
+        msg->data.conn_state.conn_state = PROFILE_STATE_CONNECTED;
         break;
     case SERVICE_PROFILE_DISCONNECTING:
-        msg->data.conn_state = PROFILE_STATE_DISCONNECTING;
+        msg->data.conn_state.conn_state = PROFILE_STATE_DISCONNECTING;
         break;
     default:
-        msg->data.conn_state = PROFILE_STATE_DISCONNECTED;
+        msg->data.conn_state.conn_state = PROFILE_STATE_DISCONNECTED;
         break;
     }
+
+    msg->data.conn_state.reason = bluelet_profile_connection_reason(reason);
 
     bt_sal_avrcp_target_event_callback(msg);
 }

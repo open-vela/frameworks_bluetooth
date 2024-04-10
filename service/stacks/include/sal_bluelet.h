@@ -40,6 +40,21 @@ static inline profile_connection_state_t bluelet_profile_connection_state(SERVIC
     }
 }
 
+static inline profile_connection_reason_t bluelet_profile_connection_reason(SERVICE_PROFILE_CONNECTION_REASON reason)
+{
+    switch (reason) {
+    case SERVICE_PROFILE_CONNECT_SUCCESS:
+        return PROFILE_CONNECT_SUCCESS;
+    case SERVICE_PROFILE_CONNECT_RETRY:
+        return PROFILE_CONNECT_RETRY;
+    case SERVICE_PROFILE_CONNECT_UNSPECIFIED:
+        return PROFILE_CONNECT_UNSPECIFIED;
+    default:
+        BT_LOGE("Unknow connection reason: 0x%x", reason);
+        return PROFILE_CONNECT_UNSPECIFIED;
+    }
+}
+
 #if defined(CONFIG_BLUETOOTH_HFP_AG) || defined(CONFIG_BLUETOOTH_HFP_HF)
 static inline hfp_audio_state_t bluelet_hf_audio_state(SERVICE_HFP_SCO_STATE state)
 {

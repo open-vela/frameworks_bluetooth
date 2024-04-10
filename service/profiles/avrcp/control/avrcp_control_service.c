@@ -202,7 +202,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t *msg)
 {
     avrcp_ct_device_t *device = NULL;
     bt_address_t *addr = &msg->addr;
-    profile_connection_state_t state = msg->data.conn_state;
+    profile_connection_state_t state = msg->data.conn_state.conn_state;
     BT_LOGD("avrc ct connnection --> device:[%s], state: %d", bt_addr_str(addr), state);
 
     device = ct_device_find(addr);

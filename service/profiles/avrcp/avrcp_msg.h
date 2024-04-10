@@ -61,6 +61,11 @@ typedef enum {
 } rc_msg_id_t;
 
 typedef struct {
+    profile_connection_state_t conn_state;
+    profile_connection_reason_t reason;
+} rc_profile_connection_state_t;
+
+typedef struct {
     avrcp_passthr_cmd_t cmd;
     avrcp_key_state_t state;
     uint8_t rsp;
@@ -102,7 +107,7 @@ typedef struct {
     rc_msg_id_t id;
     uint8_t role;
     union {
-        profile_connection_state_t conn_state;
+        rc_profile_connection_state_t conn_state;
         rc_passthr_cmd_t passthr_cmd;
         rc_register_notification_t notify_req;
         rc_passthr_rsp_t passthr_rsp;
