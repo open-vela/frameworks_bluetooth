@@ -52,4 +52,5 @@ bt_status_t bt_sal_hfp_ag_manufacture_id_response(bt_address_t *addr,
                                                   const char *manufacturer_id,
                                                   uint16_t length);
 bt_status_t bt_sal_hfp_ag_model_id_response(bt_address_t *addr, const char *model_id, uint16_t length);
+bt_status_t bt_sal_hfp_ag_error_response(bt_address_t *addr, hfp_atcmd_result_t result);
 #endif /* __SAL_HFP_AG_INTERFACE_H__ */

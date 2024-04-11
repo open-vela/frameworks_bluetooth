@@ -449,4 +449,12 @@ bt_status_t bt_sal_hfp_ag_model_id_response(bt_address_t *addr, const char *mode
                   SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 }
+
+bt_status_t bt_sal_hfp_ag_error_response(bt_address_t *addr, hfp_atcmd_result_t result)
+{
+    SAL_CHECK_PARAM(addr);
+
+    SAL_CHECK_RET(service_adapter_hfp_ag_send_error_response(addr->addr, result), SERVICE_BT_STATUS_SUCCESS);
+    return BT_STATUS_SUCCESS;
+}
 #endif

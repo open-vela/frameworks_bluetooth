@@ -118,4 +118,9 @@ typedef struct ag_interface {
  */
 void register_hfp_ag_service(void);
 
+/*
+ * get local supported features
+ */
+uint32_t hfp_ag_get_local_features(void);
+
 #endif /* __HFP_AG_SERVICE_H__ */
