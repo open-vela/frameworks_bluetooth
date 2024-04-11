@@ -187,6 +187,10 @@ static uint8_t get_current_connnection_cnt(void)
     return cnt;
 }
 
+/*
+ * [31:16] Proprietary features for internal use.
+ * [15:0] BRSF features to be send to HF.
+ */
 static uint32_t get_ag_features(void)
 {
 #if defined(CONFIG_KVDB) && defined(__NuttX__)
@@ -219,7 +223,7 @@ static void ag_startup(profile_on_startup_t on_startup)
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&service->device_lock, &attr);
 
-    status = bt_sal_hfp_ag_init(get_ag_features(), service->max_connections);
+    status = bt_sal_hfp_ag_init((get_ag_features() & 0xFFFF), service->max_connections);
     if (status != BT_STATUS_SUCCESS)
         goto fail;
 
@@ -821,4 +825,9 @@ static const profile_service_t hfp_ag_service = {
 void register_hfp_ag_service(void)
 {
     register_service(&hfp_ag_service);
+}
+
+uint32_t hfp_ag_get_local_features(void)
+{
+    return ag_support_features;
 }

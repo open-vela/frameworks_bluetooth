@@ -570,9 +570,11 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_d
         const char *at_cmd = data->string1;
 
         if (at_cmd_check_test(&agsm->addr, at_cmd)) {
-            /* nothing to do */
-        } else {
+            break;
+        } else if (hfp_ag_get_local_features() & HFP_FEAT_AG_UNKNOWN_AT_CMD) {
             ag_service_notify_cmd_received(&agsm->addr, at_cmd);
+        } else {
+            bt_sal_hfp_ag_error_response(&agsm->addr, HFP_ATCMD_RESULT_CMEERR_OPERATION_NOTSUPPORTED);
         }
     } break;
     case AG_STACK_EVENT_SEND_DTMF:
