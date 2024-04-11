@@ -47,6 +47,9 @@
 #define HFP_BRSF_AG_HFINDICATORS 0x00000400 /* * 10, HF Indicators */
 #define HFP_BRSF_AG_eSCO_S4T2_SETTING 0x00000800 /* * 11, eSCO S4 (and T2) settings supported */
 
+/* * HFP AG proprietary features[31:16] - bit mask */
+#define HFP_FEAT_AG_UNKNOWN_AT_CMD 0x00020000 /* Pass unknown AT commands to app */
+
 typedef enum {
     HFP_IN_BAND_RINGTONE_NOT_PROVIDED = 0,
     HFP_IN_BAND_RINGTONE_PROVIDED,
