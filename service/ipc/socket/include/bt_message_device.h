@@ -39,7 +39,9 @@ BT_DEVICE_MESSAGE_START,
     BT_DEVICE_SET_PAIRING_CONFIRMATION,
     BT_DEVICE_SET_PIN_CODE,
     BT_DEVICE_SET_PASS_KEY,
-    BT_DEVICE_SET_LE_OOB_DATA,
+    BT_DEVICE_SET_LE_LEGACY_TK,
+    BT_DEVICE_SET_LE_SC_REMOTE_OOB_DATA,
+    BT_DEVICE_GET_LE_SC_LOCAL_OOB_DATA,
     BT_DEVICE_CONNECT,
     BT_DEVICE_DISCONNECT,
     BT_DEVICE_CONNECT_LE,
@@ -90,6 +92,7 @@ BT_DEVICE_MESSAGE_START,
             _bt_device_disconnect,
             _bt_device_disconnect_le,
             _bt_device_addr,
+            _bt_device_get_le_sc_local_oob_data,
             _bt_device_get_acl_handle;
 
         struct {
@@ -153,12 +156,14 @@ BT_DEVICE_MESSAGE_START,
 
         struct {
             bt_address_t addr;
-            bool has_legacy_tk;
-            bool has_secure_data;
             bt_128key_t tk_val;
+        } _bt_device_set_le_legacy_tk;
+
+        struct {
+            bt_address_t addr;
             bt_128key_t c_val;
             bt_128key_t r_val;
-        } _bt_device_set_le_oob_data;
+        } _bt_device_set_le_sc_remote_oob_data;
 
         struct {
             bt_address_t addr;

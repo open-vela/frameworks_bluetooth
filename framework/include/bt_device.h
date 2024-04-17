@@ -301,16 +301,34 @@ bt_status_t BTSYMBOLS(bt_device_set_pin_code)(bt_instance_t* ins, bt_address_t* 
 bt_status_t BTSYMBOLS(bt_device_set_pass_key)(bt_instance_t* ins, bt_address_t* addr, uint8_t transport, bool accept, uint32_t passkey);
 
 /**
- * @brief Set remote OOB data for LE pairing
+ * @brief Set OOB temporary key for LE legacy pairing
  *
  * @param ins - bluetooth client instance.
  * @param addr - remote device address.
- * @param tk_val - Legacy pairing OOB TK value. NULL if not available.
- * @param c_val - LE Secure Connection Confirmation value. NULL if not available.
- * @param r_val - LE Secure Connection Random value. NULL if not available.
+ * @param tk_val - Legacy pairing OOB TK value.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_device_set_le_oob_data)(bt_instance_t* ins, bt_address_t* addr, bt_128key_t tk_val, bt_128key_t c_val, bt_128key_t r_val);
+bt_status_t BTSYMBOLS(bt_device_set_le_legacy_tk)(bt_instance_t* ins, bt_address_t* addr, bt_128key_t tk_val);
+
+/**
+ * @brief Set remote OOB data for LE secure connection pairing
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.
+ * @param c_val - LE secure connection confirmation value.
+ * @param r_val - LE secure connection random value.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_device_set_le_sc_remote_oob_data)(bt_instance_t* ins, bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val);
+
+/**
+ * @brief Get local OOB data for LE secure connection pairing
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_device_get_le_sc_local_oob_data)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Connect to peer device

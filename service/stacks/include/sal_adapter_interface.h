@@ -130,10 +130,8 @@ bt_status_t bt_sal_le_smp_reply(bt_address_t* addr,
     bool accept,
     bt_pair_type_t type,
     uint32_t passkey);
-bt_status_t bt_sal_le_set_remote_oob_data(bt_address_t* addr,
-    bt_128key_t tk_val,
-    bt_128key_t c_val,
-    bt_128key_t r_val);
+bt_status_t bt_sal_le_set_legacy_tk(bt_address_t* addr, bt_128key_t tk_val);
+bt_status_t bt_sal_le_set_remote_oob_data(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val);
 bt_status_t bt_sal_le_get_local_oob_data(bt_address_t* addr);
 bt_status_t bt_sal_le_add_white_list(bt_address_t* addr);
 bt_status_t bt_sal_le_remove_white_list(bt_address_t* addr);

@@ -503,30 +503,48 @@ bt_status_t bt_device_set_pass_key(bt_instance_t* ins, bt_address_t* addr, uint8
     return packet.devs_r.status;
 }
 
-bt_status_t bt_device_set_le_oob_data(bt_instance_t* ins, bt_address_t* addr, bt_128key_t tk_val, bt_128key_t c_val, bt_128key_t r_val)
+bt_status_t BTSYMBOLS(bt_device_set_le_legacy_tk)(bt_instance_t* ins, bt_address_t* addr, bt_128key_t tk_val)
 {
     bt_message_packet_t packet;
     bt_status_t status;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
-    memcpy(&packet.devs_pl._bt_device_set_le_oob_data.addr, addr, sizeof(*addr));
-
-    if (tk_val != NULL) {
-        packet.devs_pl._bt_device_set_le_oob_data.has_legacy_tk = true;
-        memcpy(packet.devs_pl._bt_device_set_le_oob_data.tk_val, tk_val, sizeof(bt_128key_t));
-    } else {
-        packet.devs_pl._bt_device_set_le_oob_data.has_legacy_tk = false;
+    memcpy(&packet.devs_pl._bt_device_set_le_legacy_tk.addr, addr, sizeof(packet.devs_pl._bt_device_set_le_legacy_tk.addr));
+    memcpy(packet.devs_pl._bt_device_set_le_legacy_tk.tk_val, tk_val, sizeof(packet.devs_pl._bt_device_set_le_legacy_tk.tk_val));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_SET_LE_LEGACY_TK);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
     }
 
-    if (c_val != NULL && r_val != NULL) {
-        packet.devs_pl._bt_device_set_le_oob_data.has_secure_data = true;
-        memcpy(packet.devs_pl._bt_device_set_le_oob_data.c_val, c_val, sizeof(bt_128key_t));
-        memcpy(packet.devs_pl._bt_device_set_le_oob_data.r_val, r_val, sizeof(bt_128key_t));
-    } else {
-        packet.devs_pl._bt_device_set_le_oob_data.has_secure_data = false;
+    return packet.devs_r.status;
+}
+
+bt_status_t bt_device_set_le_sc_remote_oob_data(bt_instance_t* ins, bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+    memcpy(&packet.devs_pl._bt_device_set_le_sc_remote_oob_data.addr, addr, sizeof(packet.devs_pl._bt_device_set_le_sc_remote_oob_data.addr));
+    memcpy(packet.devs_pl._bt_device_set_le_sc_remote_oob_data.c_val, c_val, sizeof(packet.devs_pl._bt_device_set_le_sc_remote_oob_data.c_val));
+    memcpy(packet.devs_pl._bt_device_set_le_sc_remote_oob_data.r_val, r_val, sizeof(packet.devs_pl._bt_device_set_le_sc_remote_oob_data.r_val));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_SET_LE_SC_REMOTE_OOB_DATA);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
     }
 
-    status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_SET_LE_OOB_DATA);
+    return packet.devs_r.status;
+}
+
+bt_status_t bt_device_get_le_sc_local_oob_data(bt_instance_t* ins, bt_address_t* addr)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+    memcpy(&packet.devs_pl._bt_device_get_le_sc_local_oob_data.addr, addr, sizeof(packet.devs_pl._bt_device_get_le_sc_local_oob_data.addr));
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_GET_LE_SC_LOCAL_OOB_DATA);
     if (status != BT_STATUS_SUCCESS) {
         return status;
     }
