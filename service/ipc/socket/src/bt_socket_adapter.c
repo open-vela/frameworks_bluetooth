@@ -175,6 +175,18 @@ static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr,
     bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_BOND_STATE_CHANGED);
 }
 
+static void on_le_sc_local_oob_data_got_cb(void* cookie, bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.adpt_cb._on_le_sc_local_oob_data_got.addr, addr, sizeof(bt_address_t));
+    memcpy(packet.adpt_cb._on_le_sc_local_oob_data_got.c_val, c_val, sizeof(bt_128key_t));
+    memcpy(packet.adpt_cb._on_le_sc_local_oob_data_got.r_val, r_val, sizeof(bt_128key_t));
+
+    bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_LE_SC_LOCAL_OOB_DATA_GOT);
+}
+
 static void on_remote_name_changed_cb(void* cookie, bt_address_t* addr, const char* name)
 {
     bt_message_packet_t packet = { 0 };
@@ -245,6 +257,7 @@ const static adapter_callbacks_t g_adapter_socket_cbs = {
     .on_connect_request = on_connect_request_cb,
     .on_connection_state_changed = on_connection_state_changed_cb,
     .on_bond_state_changed = on_bond_state_changed_cb,
+    .on_le_sc_local_oob_data_got = on_le_sc_local_oob_data_got_cb,
     .on_remote_name_changed = on_remote_name_changed_cb,
     .on_remote_alias_changed = on_remote_alias_changed_cb,
     .on_remote_cod_changed = on_remote_cod_changed_cb,
@@ -588,6 +601,14 @@ int bt_socket_client_adapter_callback(service_poll_t* poll,
             packet->adpt_cb._on_bond_state_changed.transport,
             packet->adpt_cb._on_bond_state_changed.state,
             packet->adpt_cb._on_bond_state_changed.is_ctkd);
+        break;
+    }
+    case BT_ADAPTER_ON_LE_SC_LOCAL_OOB_DATA_GOT: {
+        CALLBACK_FOREACH(CBLIST, adapter_callbacks_t,
+            on_le_sc_local_oob_data_got,
+            &packet->adpt_cb._on_le_sc_local_oob_data_got.addr,
+            packet->adpt_cb._on_le_sc_local_oob_data_got.c_val,
+            packet->adpt_cb._on_le_sc_local_oob_data_got.r_val);
         break;
     }
     case BT_ADAPTER_ON_REMOTE_NAME_CHANGED: {

@@ -130,6 +130,16 @@ typedef void (*on_connection_state_changed_callback)(void* cookie, bt_address_t*
 typedef void (*on_bond_state_changed_callback)(void* cookie, bt_address_t* addr, bt_transport_t transport, bond_state_t state, bool is_ctkd);
 
 /**
+ * @brief Got local OOB data for LE secure connection pairing callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - remote addr.
+ * @param c_val - LE secure connection confirmation value.
+ * @param r_val - LE secure connection random value.
+ */
+typedef void (*on_le_sc_local_oob_data_got_callback)(void* cookie, bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val);
+
+/**
  * @brief Remote device name changed callback
  *
  * @param cookie - callback cookie.
@@ -190,6 +200,7 @@ typedef struct {
     on_connect_request_callback on_connect_request;
     on_connection_state_changed_callback on_connection_state_changed;
     on_bond_state_changed_callback on_bond_state_changed;
+    on_le_sc_local_oob_data_got_callback on_le_sc_local_oob_data_got;
     on_remote_name_changed_callback on_remote_name_changed;
     on_remote_alias_changed_callback on_remote_alias_changed;
     on_remote_cod_changed_callback on_remote_cod_changed;
