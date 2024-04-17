@@ -142,13 +142,15 @@ int btsnoop_create_new_file(void)
         info->tm_sec);
     snprintf(file_name, sizeof(file_name), CONFIG_BLUETOOTH_SNOOP_LOG_PATH "/snoop_%s_%" PRIu32 ".log", ts_str, ms_base);
 
-    snoop_fd = open(file_name, O_RDWR | O_CREAT | O_TRUNC,
+    ret = open(file_name, O_RDWR | O_CREAT | O_TRUNC,
         S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-    if (snoop_fd < 0) {
+    if (ret < 0) {
+        snoop_fd = -1;
         pthread_mutex_unlock(&snoop_lock);
-        return snoop_fd;
+        return ret;
     }
 
+    snoop_fd = ret;
     memcpy(hdr.id, "btsnoop", 8);
     hdr.version = byteswap_ulong(1);
     hdr.type = byteswap_ulong(1002);
