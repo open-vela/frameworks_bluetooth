@@ -828,6 +828,21 @@ static void process_le_bonded_device_update_evt(remote_device_le_properties_t* p
     adapter_unlock();
 }
 
+static void process_le_sc_local_oob_data_got_evt(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
+{
+    adapter_lock();
+
+    bt_device_t* device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+    if (device == NULL) {
+        adapter_unlock();
+        return;
+    }
+
+    adapter_unlock();
+
+    CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_le_sc_local_oob_data_got, addr, c_val, r_val);
+}
+
 static void handle_ble_event(void* data)
 {
     adapter_ble_evt_t* evt = (adapter_ble_evt_t*)data;
@@ -848,6 +863,11 @@ static void handle_ble_event(void* data)
     case LE_BONDED_DEVICE_UPDATE_EVT:
         process_le_bonded_device_update_evt(evt->bonded_devices.props,
             evt->bonded_devices.bonded_devices_cnt);
+        break;
+    case LE_SC_LOCAL_OOB_DATA_GOT_EVT:
+        process_le_sc_local_oob_data_got_evt(&evt->oob_data.addr,
+            evt->oob_data.c_val,
+            evt->oob_data.r_val);
         break;
     default:
         break;
@@ -1372,6 +1392,18 @@ void adapter_on_le_bonded_device_update(remote_device_le_properties_t* props, ui
     evt->bonded_devices.props = malloc(prop_size);
     evt->bonded_devices.bonded_devices_cnt = bonded_devices_cnt;
     memcpy(evt->bonded_devices.props, props, prop_size);
+
+    do_in_service_loop(handle_ble_event, evt);
+}
+
+void adapter_on_le_local_oob_data_got(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
+{
+    adapter_ble_evt_t* evt = malloc(sizeof(adapter_ble_evt_t));
+
+    evt->evt_id = LE_SC_LOCAL_OOB_DATA_GOT_EVT;
+    memcpy(&evt->oob_data.addr, addr, sizeof(evt->oob_data.addr));
+    memcpy(evt->oob_data.c_val, c_val, sizeof(evt->oob_data.c_val));
+    memcpy(evt->oob_data.r_val, r_val, sizeof(evt->oob_data.r_val));
 
     do_in_service_loop(handle_ble_event, evt);
 }
@@ -2500,17 +2532,43 @@ bt_status_t adapter_set_pass_key(bt_address_t* addr, uint8_t transport, bool acc
         return bt_sal_le_smp_reply(addr, accept, PAIR_TYPE_PASSKEY_ENTRY, passkey);
 }
 
-bt_status_t adapter_le_set_remote_oob_data(bt_address_t* addr, bt_128key_t tk_val, bt_128key_t c_val, bt_128key_t r_val)
+bt_status_t adapter_le_set_legacy_tk(bt_address_t* addr, bt_128key_t tk_val)
 {
     adapter_lock();
     bt_device_t* device = adapter_find_device(addr, BT_TRANSPORT_BLE);
-    if (!device || device_get_bond_state(device) != BOND_STATE_BONDING) {
+    if (!device) {
         adapter_unlock();
-        return BT_STATUS_FAIL;
+        return BT_STATUS_DEVICE_NOT_FOUND;
     }
 
     adapter_unlock();
-    return bt_sal_le_set_remote_oob_data(addr, tk_val, c_val, r_val);
+    return bt_sal_le_set_legacy_tk(addr, tk_val);
+}
+
+bt_status_t adapter_le_set_remote_oob_data(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
+{
+    adapter_lock();
+    bt_device_t* device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+    if (!device) {
+        adapter_unlock();
+        return BT_STATUS_DEVICE_NOT_FOUND;
+    }
+
+    adapter_unlock();
+    return bt_sal_le_set_remote_oob_data(addr, c_val, r_val);
+}
+
+bt_status_t adapter_le_get_local_oob_data(bt_address_t* addr)
+{
+    adapter_lock();
+    bt_device_t* device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+    if (!device) {
+        adapter_unlock();
+        return BT_STATUS_DEVICE_NOT_FOUND;
+    }
+
+    adapter_unlock();
+    return bt_sal_le_get_local_oob_data(addr);
 }
 
 uint16_t adapter_get_acl_handle(bt_address_t* addr)

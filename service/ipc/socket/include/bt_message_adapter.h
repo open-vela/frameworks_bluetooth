@@ -74,6 +74,7 @@ BT_ADAPTER_MESSAGE_START,
     BT_ADAPTER_ON_CONNECT_REQUEST,
     BT_ADAPTER_ON_CONNECTION_STATE_CHANGED,
     BT_ADAPTER_ON_BOND_STATE_CHANGED,
+    BT_ADAPTER_ON_LE_SC_LOCAL_OOB_DATA_GOT,
     BT_ADAPTER_ON_REMOTE_NAME_CHANGED,
     BT_ADAPTER_ON_REMOTE_ALIAS_CHANGED,
     BT_ADAPTER_ON_REMOTE_COD_CHANGED,
@@ -228,6 +229,12 @@ BT_ADAPTER_MESSAGE_START,
             bond_state_t state;
             bool is_ctkd;
         } _on_bond_state_changed;
+
+        struct {
+            bt_address_t addr;
+            bt_128key_t c_val;
+            bt_128key_t r_val;
+        } _on_le_sc_local_oob_data_got;
 
         struct {
             bt_address_t addr;

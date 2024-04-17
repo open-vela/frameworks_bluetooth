@@ -59,6 +59,9 @@ static int pair_reply_cmd(void* handle, int argc, char** argv);
 static int pair_set_pincode_cmd(void* handle, int argc, char** argv);
 static int pair_set_passkey_cmd(void* handle, int argc, char** argv);
 static int pair_set_confirm_cmd(void* handle, int argc, char** argv);
+static int pair_set_tk_cmd(void* handle, int argc, char** argv);
+static int pair_set_oob_cmd(void* handle, int argc, char** argv);
+static int pair_get_oob_cmd(void* handle, int argc, char** argv);
 static int connect_cmd(void* handle, int argc, char** argv);
 static int disconnect_cmd(void* handle, int argc, char** argv);
 static int le_connect_cmd(void* handle, int argc, char** argv);
@@ -266,6 +269,9 @@ static bt_command_t g_pair_cmd_tables[] = {
     { "pin", pair_set_pincode_cmd, 0, "input pin code, params: <addr><accept?>(0 :reject, 1: accept)<pincode>" },
     { "passkey", pair_set_passkey_cmd, 0, PAIR_PASSKEY_USAGE },
     { "confirm", pair_set_confirm_cmd, 0, PAIR_CONFIRM_USAGE },
+    { "set_tk", pair_set_tk_cmd, 0, "set oob temporary key for le legacy pairing: <addr><tk_val>" },
+    { "set_oob", pair_set_oob_cmd, 0, "set remote oob data for le sc pairing: <addr><c_val><r_val>" },
+    { "get_oob", pair_get_oob_cmd, 0, "get local oob data for le sc pairing: <addr>" },
     { "help", NULL, 0, "show pair help info" },
     //{ "", , "set " },
 };
@@ -892,6 +898,108 @@ static int pair_set_confirm_cmd(void* handle, int argc, char** argv)
     return CMD_OK;
 }
 
+static void str2hex(char* src_str, uint8_t* dest_buf, uint8_t hex_number)
+{
+    uint8_t i;
+    uint8_t lb, hb;
+
+    for (i = 0; i < hex_number; i++) {
+        lb = src_str[(i << 1) + 1];
+        hb = src_str[i << 1];
+        if (hb >= '0' && hb <= '9') {
+            dest_buf[i] = hb - '0';
+        } else if (hb >= 'A' && hb < 'G') {
+            dest_buf[i] = hb - 'A' + 10;
+        } else if (hb >= 'a' && hb < 'g') {
+            dest_buf[i] = hb - 'a' + 10;
+        } else {
+            dest_buf[i] = 0;
+        }
+
+        dest_buf[i] <<= 4;
+        if (lb >= '0' && lb <= '9') {
+            dest_buf[i] += lb - '0';
+        } else if (lb >= 'A' && lb < 'G') {
+            dest_buf[i] += lb - 'A' + 10;
+        } else if (lb >= 'a' && lb < 'g') {
+            dest_buf[i] += lb - 'a' + 10;
+        }
+    }
+}
+
+static int pair_set_tk_cmd(void* handle, int argc, char** argv)
+{
+    bt_128key_t tk_val;
+
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (strlen(argv[1]) < (sizeof(bt_128key_t) * 2)) {
+        PRINT("length of temporary key is insufficient");
+        return CMD_INVALID_PARAM;
+    }
+
+    str2hex(argv[1], tk_val, sizeof(bt_128key_t));
+
+    if (bt_device_set_le_legacy_tk(handle, &addr, tk_val) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("Set oob temporary key for le legacy pairing with [%s]", argv[0]);
+    return CMD_OK;
+}
+
+static int pair_set_oob_cmd(void* handle, int argc, char** argv)
+{
+    bt_128key_t c_val;
+    bt_128key_t r_val;
+
+    if (argc < 3)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (strlen(argv[1]) < (sizeof(bt_128key_t) * 2)) {
+        PRINT("length of confirmation value is insufficient");
+        return CMD_INVALID_PARAM;
+    }
+
+    if (strlen(argv[2]) < (sizeof(bt_128key_t) * 2)) {
+        PRINT("length of random value is insufficient");
+        return CMD_INVALID_PARAM;
+    }
+
+    str2hex(argv[1], c_val, sizeof(bt_128key_t));
+    str2hex(argv[2], r_val, sizeof(bt_128key_t));
+
+    if (bt_device_set_le_sc_remote_oob_data(handle, &addr, c_val, r_val) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("Set remote oob data for le secure connection pairing with [%s]", argv[0]);
+    return CMD_OK;
+}
+
+static int pair_get_oob_cmd(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (bt_device_get_le_sc_local_oob_data(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("Get local oob data for le secure connection pairing with [%s]", argv[0]);
+    return CMD_OK;
+}
+
 static int connect_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
@@ -1480,6 +1588,23 @@ static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transp
     PRINT_ADDR("Device [%s][%s] bond state: %s, is_ctkd: %d", addr, LINK_TYPE(transport), bond_state_to_string(state), is_ctkd);
 }
 
+static void on_le_sc_local_oob_data_got_cb(void* cookie, bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
+{
+    PRINT_ADDR("Generate local oob data for le secure connection pairing with [%s]:", addr);
+
+    printf("\tConfirmation value: ");
+    for (int i = 0; i < sizeof(bt_128key_t); i++) {
+        printf("%02x", c_val[i]);
+    }
+    printf("\n");
+
+    printf("\tRandom value: ");
+    for (int i = 0; i < sizeof(bt_128key_t); i++) {
+        printf("%02x", r_val[i]);
+    }
+    printf("\n");
+}
+
 static void on_remote_name_changed_cb(void* cookie, bt_address_t* addr, const char* name)
 {
     PRINT_ADDR("Device [%s] name changed: %s", addr, name);
@@ -1526,6 +1651,7 @@ const static adapter_callbacks_t g_adapter_cbs = {
     .on_connect_request = on_connect_request_cb,
     .on_connection_state_changed = on_connection_state_changed_cb,
     .on_bond_state_changed = on_bond_state_changed_cb,
+    .on_le_sc_local_oob_data_got = on_le_sc_local_oob_data_got_cb,
     .on_remote_name_changed = on_remote_name_changed_cb,
     .on_remote_alias_changed = on_remote_alias_changed_cb,
     .on_remote_cod_changed = on_remote_cod_changed_cb,

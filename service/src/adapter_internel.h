@@ -45,6 +45,7 @@ enum {
     LE_IRK_UPDATE_EVT,
     LE_WHITELIST_UPDATE_EVT,
     LE_BONDED_DEVICE_UPDATE_EVT,
+    LE_SC_LOCAL_OOB_DATA_GOT_EVT,
 };
 
 typedef struct {
@@ -101,6 +102,11 @@ typedef struct {
             remote_device_le_properties_t* props;
             uint16_t bonded_devices_cnt;
         } bonded_devices;
+        struct {
+            bt_address_t addr;
+            bt_128key_t c_val;
+            bt_128key_t r_val;
+        } oob_data;
     };
 } adapter_ble_evt_t;
 
@@ -237,6 +243,7 @@ void adapter_on_le_phy_update(bt_address_t* addr, ble_phy_type_t tx_phy,
     ble_phy_type_t rx_phy, bt_status_t status);
 void adapter_on_whitelist_update(bt_address_t* addr, bool is_added, bt_status_t status);
 void adapter_on_le_bonded_device_update(remote_device_le_properties_t* props, uint16_t bonded_devices_cnt);
+void adapter_on_le_local_oob_data_got(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val);
 
 /* adapter framework invoke functions */
 void adapter_init(void);
@@ -317,7 +324,9 @@ bt_status_t adapter_set_pairing_confirmation(bt_address_t* addr, uint8_t transpo
 bt_status_t adapter_set_pin_code(bt_address_t* addr, bool accept,
     char* pincode, int len);
 bt_status_t adapter_set_pass_key(bt_address_t* addr, uint8_t transport, bool accept, uint32_t passkey);
-bt_status_t adapter_le_set_remote_oob_data(bt_address_t* addr, bt_128key_t tk_val, bt_128key_t c_val, bt_128key_t r_val);
+bt_status_t adapter_le_set_legacy_tk(bt_address_t* addr, bt_128key_t tk_val);
+bt_status_t adapter_le_set_remote_oob_data(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val);
+bt_status_t adapter_le_get_local_oob_data(bt_address_t* addr);
 uint16_t adapter_get_acl_handle(bt_address_t* addr);
 bt_status_t adapter_switch_role(bt_address_t* addr, bt_link_role_t role);
 bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,

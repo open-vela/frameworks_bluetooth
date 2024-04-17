@@ -501,8 +501,13 @@ void l2cap_packet_sent_callback(BD_ADDR remote_addr, uint16_t cid)
 
 static void ssp_local_oob_data_callback(BT_COMMON_KEY c_192_val, BT_COMMON_KEY r_192_val,
     BT_COMMON_KEY c_256_val, BT_COMMON_KEY r_256_val) { DEBUG_IMPL }
-static void ble_local_oob_data_callback(BD_ADDR remote_addr, BT_COMMON_KEY c_val,
-    BT_COMMON_KEY r_val) { DEBUG_IMPL }
+static void ble_local_oob_data_callback(BD_ADDR remote_addr, BT_COMMON_KEY c_val, BT_COMMON_KEY r_val)
+{
+    bt_address_t addr;
+
+    memcpy(addr.addr, remote_addr, sizeof(addr.addr));
+    adapter_on_le_local_oob_data_got(&addr, c_val, r_val);
+}
 
 static void ble_scan_started_callback(void)
 {
@@ -1727,14 +1732,24 @@ bt_status_t bt_sal_le_smp_reply(bt_address_t* addr,
 #endif
 }
 
-bt_status_t bt_sal_le_set_remote_oob_data(bt_address_t* addr,
-    bt_128key_t tk_val,
-    bt_128key_t c_val,
-    bt_128key_t r_val)
+bt_status_t bt_sal_le_set_legacy_tk(bt_address_t* addr, bt_128key_t tk_val)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
-    SAL_CHECK_RET(service_adapter_gap_ble_set_remote_oob_data(addr->addr, tk_val, c_val, r_val),
+    SAL_CHECK_RET(service_adapter_gap_ble_set_remote_oob_data(addr->addr, tk_val, NULL, NULL),
+        SERVICE_BT_STATUS_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
+bt_status_t bt_sal_le_set_remote_oob_data(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
+{
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+    SAL_CHECK_PARAM(addr);
+    SAL_CHECK_RET(service_adapter_gap_ble_set_remote_oob_data(addr->addr, NULL, c_val, r_val),
         SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;

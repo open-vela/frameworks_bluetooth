@@ -177,9 +177,19 @@ bt_status_t BTSYMBOLS(bt_device_set_pass_key)(bt_instance_t* ins, bt_address_t* 
     return adapter_set_pass_key(addr, transport, accept, passkey);
 }
 
-bt_status_t BTSYMBOLS(bt_device_set_le_oob_data)(bt_instance_t* ins, bt_address_t* addr, bt_128key_t tk_val, bt_128key_t c_val, bt_128key_t r_val)
+bt_status_t BTSYMBOLS(bt_device_set_le_legacy_tk)(bt_instance_t* ins, bt_address_t* addr, bt_128key_t tk_val)
 {
-    return adapter_le_set_remote_oob_data(addr, tk_val, c_val, r_val);
+    return adapter_le_set_legacy_tk(addr, tk_val);
+}
+
+bt_status_t BTSYMBOLS(bt_device_set_le_sc_remote_oob_data)(bt_instance_t* ins, bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
+{
+    return adapter_le_set_remote_oob_data(addr, c_val, r_val);
+}
+
+bt_status_t BTSYMBOLS(bt_device_get_le_sc_local_oob_data)(bt_instance_t* ins, bt_address_t* addr)
+{
+    return adapter_le_get_local_oob_data(addr);
 }
 
 uint16_t BTSYMBOLS(bt_device_get_acl_handle)(bt_instance_t* ins, bt_address_t* addr)

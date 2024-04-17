@@ -218,12 +218,22 @@ void bt_socket_server_device_process(service_poll_t* poll,
             packet->devs_pl._bt_device_set_pass_key.passkey);
         break;
     }
-    case BT_DEVICE_SET_LE_OOB_DATA: {
-        packet->devs_r.status = BTSYMBOLS(bt_device_set_le_oob_data)(ins,
-            &packet->devs_pl._bt_device_set_le_oob_data.addr,
-            packet->devs_pl._bt_device_set_le_oob_data.has_legacy_tk ? packet->devs_pl._bt_device_set_le_oob_data.tk_val : NULL,
-            packet->devs_pl._bt_device_set_le_oob_data.has_secure_data ? packet->devs_pl._bt_device_set_le_oob_data.c_val : NULL,
-            packet->devs_pl._bt_device_set_le_oob_data.has_secure_data ? packet->devs_pl._bt_device_set_le_oob_data.r_val : NULL);
+    case BT_DEVICE_SET_LE_LEGACY_TK: {
+        packet->devs_r.status = BTSYMBOLS(bt_device_set_le_legacy_tk)(ins,
+            &packet->devs_pl._bt_device_set_le_legacy_tk.addr,
+            packet->devs_pl._bt_device_set_le_legacy_tk.tk_val);
+        break;
+    }
+    case BT_DEVICE_SET_LE_SC_REMOTE_OOB_DATA: {
+        packet->devs_r.status = BTSYMBOLS(bt_device_set_le_sc_remote_oob_data)(ins,
+            &packet->devs_pl._bt_device_set_le_sc_remote_oob_data.addr,
+            packet->devs_pl._bt_device_set_le_sc_remote_oob_data.c_val,
+            packet->devs_pl._bt_device_set_le_sc_remote_oob_data.r_val);
+        break;
+    }
+    case BT_DEVICE_GET_LE_SC_LOCAL_OOB_DATA: {
+        packet->devs_r.status = BTSYMBOLS(bt_device_get_le_sc_local_oob_data)(ins,
+            &packet->devs_pl._bt_device_get_le_sc_local_oob_data.addr);
         break;
     }
     case BT_DEVICE_CONNECT: {
