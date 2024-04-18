@@ -848,20 +848,27 @@ int teleif_get_all_calls(tele_client_t *tele, int slot, get_calls_callback_t cbs
 {
     tele_modem_t *modem = get_modem(tele, slot);
     bt_list_node_t *node;
-    bt_list_t *list = modem->voicecalls;
+    bt_list_t *list;
+    int call_nums;
+    tele_call_t **calls;
+    int ind;
 
-    int call_nums = bt_list_length(modem->voicecalls);
+    if (!modem) {
+        return TELE_FAIL;
+    }
+
+    list = modem->voicecalls;
+    call_nums = bt_list_length(modem->voicecalls);
     if (!call_nums) {
         cbs(tele, NULL, 0);
         return TELE_SUCCESS;
     }
 
-    tele_call_t **calls = malloc(sizeof(tele_call_t *) * call_nums);
+    calls = malloc(sizeof(tele_call_t *) * call_nums);
     if (!calls)
         return TELE_ERR_NOMEM;
 
-    int ind = 0;
-    for (node = bt_list_head(list); node != NULL;
+    for (ind = 0, node = bt_list_head(list); node != NULL;
          node = bt_list_next(list, node)) {
         tele_call_t *call = bt_list_node(node);
         calls[ind] = call;
