@@ -232,7 +232,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t *msg)
     switch (state) {
     case PROFILE_STATE_DISCONNECTED:
         assert(device);
-        if ((device->state == PROFILE_STATE_CONNECTING) && (reason == PROFILE_CONNECT_RETRY) &&
+        if ((device->state == PROFILE_STATE_CONNECTING) && (reason == PROFILE_REASON_COLLISION) &&
             (device->retry_cnt < AVCTP_RETRY_MAX)) {
             /* failed to establish an AVRCP connection, retry for up to AVCTP_RETRY_MAX times */
             if (device->retry_timer == NULL) {

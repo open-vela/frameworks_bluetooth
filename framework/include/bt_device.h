@@ -45,10 +45,10 @@ typedef enum {
  *
  */
 typedef enum {
-    PROFILE_CONNECT_SUCCESS = 0x0000,
-    PROFILE_CONNECT_RETRY = 0x0001,
+    PROFILE_REASON_SUCCESS = 0x0000,
+    PROFILE_REASON_COLLISION = 0x0001,
 
-    PROFILE_CONNECT_UNSPECIFIED = 0xFFFF,
+    PROFILE_REASON_UNSPECIFIED = 0xFFFF,
 } profile_connection_reason_t;
 
 /**
