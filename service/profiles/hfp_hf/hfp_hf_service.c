@@ -797,14 +797,15 @@ void hf_service_notify_volume_changed(bt_address_t *addr, hfp_volume_type_t type
 }
 
 void hfp_hf_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state,
-                                        uint32_t remote_features)
+                                        profile_connection_reason_t reason, uint32_t remote_features)
 {
     hfp_hf_msg_t *msg = hfp_hf_msg_new(HF_STACK_EVENT_CONNECTION_STATE_CHANGED, addr);
     if (!msg)
         return;
 
     msg->data.valueint1 = state;
-    msg->data.valueint2 = remote_features;
+    msg->data.valueint2 = reason;
+    msg->data.valueint3 = remote_features;
     hfp_hf_send_message(msg);
 }
 

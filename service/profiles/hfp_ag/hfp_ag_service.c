@@ -654,14 +654,15 @@ void ag_service_notify_cmd_received(bt_address_t *addr, const char *at_cmd)
 }
 
 void hfp_ag_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state,
-                                        uint32_t remote_features)
+                                        profile_connection_reason_t reason, uint32_t remote_features)
 {
     hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STACK_EVENT_CONNECTION_STATE_CHANGED, addr);
     if (!msg)
         return;
 
     msg->data.valueint1 = state;
-    msg->data.valueint2 = remote_features;
+    msg->data.valueint2 = reason;
+    msg->data.valueint3 = remote_features;
     hfp_ag_send_message(msg);
 }
 

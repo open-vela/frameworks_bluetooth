@@ -36,6 +36,8 @@
 #include "bt_utils.h"
 #include "utils/log.h"
 
+#define HFP_HF_RETRY_MAX 1
+
 typedef struct _hf_state_machine {
     state_machine_t sm;
     bt_address_t addr;
@@ -43,12 +45,14 @@ typedef struct _hf_state_machine {
     uint32_t remote_features;
     service_timer_t *connect_timer;
     service_timer_t *offload_timer;
+    service_timer_t *retry_timer;
     bool recognition_active;
     bool offloading;
     uint8_t spk_volume;
     uint8_t mic_volume;
     void *volume_listener;
     uint8_t codec;
+    uint8_t retry_cnt;
     pending_state_t pending;
     struct list_node pending_actions;
     bt_list_t *current_calls;
@@ -414,7 +418,7 @@ static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void
         switch (state) {
         case PROFILE_STATE_CONNECTED:
             hsm_transition_to(sm, &connected_state);
-            update_remote_features(hfsm, data->valueint2);
+            update_remote_features(hfsm, data->valueint3);
             break;
         case PROFILE_STATE_CONNECTING:
             hsm_transition_to(sm, &connecting_state);
@@ -538,22 +542,60 @@ static void update_call_status(state_machine_t *sm, uint32_t event, uint32_t sta
     }
 }
 
+static void hf_retry_callback(service_timer_t *timer, void *data)
+{
+    char _addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    state_machine_t *sm = (state_machine_t *)data;
+    hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
+    hfp_hf_state_t state;
+
+    assert(hfsm);
+
+    bt_addr_ba2str(&hfsm->addr, _addr_str);
+    state = hf_state_machine_get_state(hfsm);
+    BT_LOGD("%s: device=[%s], state=%d, retry_cnt=%d", __func__, _addr_str, state, hfsm->retry_cnt);
+    if (state == HFP_HF_STATE_DISCONNECTED) {
+        if (bt_sal_hfp_hf_connect(&hfsm->addr) == BT_STATUS_SUCCESS) {
+            hsm_transition_to(sm, &connecting_state);
+        } else {
+            BT_LOGI("failed to connect %s", _addr_str);
+        }
+    }
+
+    hfsm->retry_timer = NULL;
+}
+
 static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     hf_state_machine_t *hfsm = (hf_state_machine_t *)sm;
     hfp_hf_data_t *data = (hfp_hf_data_t *)p_data;
+    uint32_t random_timeout;
 
     HF_DBG_EVENT(sm, &hfsm->addr, event);
     switch (event) {
     case HF_STACK_EVENT_CONNECTION_STATE_CHANGED: {
         profile_connection_state_t state = data->valueint1;
+        profile_connection_reason_t reason = data->valueint2;
+
         switch (state) {
         case PROFILE_STATE_DISCONNECTED:
+            if (reason == PROFILE_REASON_COLLISION && hfsm->retry_cnt < HFP_HF_RETRY_MAX) {
+                /* failed to establish HFP connection, retry for up to HFP_HF_RETRY_MAX times */
+                if (hfsm->retry_timer == NULL) {
+                    srand(time(NULL)); /* set random seed */
+                    random_timeout = 100 + (rand() % 800);
+                    BT_LOGD("retry HFP connection with device:[%s], delay=%" PRIu32 "ms",
+                            bt_addr_str(&hfsm->addr), random_timeout);
+                    hfsm->retry_timer = service_loop_timer(random_timeout, 0, hf_retry_callback, sm);
+                    hfsm->retry_cnt++;
+                }
+                break;
+            }
             hsm_transition_to(sm, &disconnected_state);
             break;
         case PROFILE_STATE_CONNECTED:
             hsm_transition_to(sm, &connected_state);
-            update_remote_features(hfsm, data->valueint2);
+            update_remote_features(hfsm, data->valueint3);
             break;
         case PROFILE_STATE_CONNECTING:
         case PROFILE_STATE_DISCONNECTING:
@@ -889,6 +931,7 @@ static void connected_enter(state_machine_t *sm)
             BT_LOGE("Get voice call volume failed");
         }
         hfsm->volume_listener = bt_media_listen_voice_call_volume_change(hfp_hf_voice_volume_change_callback, hfsm);
+        hfsm->retry_cnt = 0;
         if (!hfsm->volume_listener) {
             BT_LOGE("Start to listen voice call volume failed");
         }
@@ -1247,6 +1290,10 @@ void hf_state_machine_destory(hf_state_machine_t *hfsm)
 
     if (hfsm->connect_timer)
         service_loop_cancel_timer(hfsm->connect_timer);
+
+    if (hfsm->retry_timer)
+        service_loop_cancel_timer(hfsm->retry_timer);
+
     bt_list_free(hfsm->update_calls);
     bt_list_free(hfsm->current_calls);
     bt_media_remove_listener(hfsm->volume_listener);
