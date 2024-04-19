@@ -38,6 +38,8 @@
 #include "bt_utils.h"
 #include "utils/log.h"
 
+#define HFP_AG_RETRY_MAX 1
+
 typedef struct _ag_state_machine {
     state_machine_t sm;
     bt_address_t addr;
@@ -49,12 +51,14 @@ typedef struct _ag_state_machine {
     uint8_t codec;
     uint8_t spk_volume;
     uint8_t mic_volume;
+    uint8_t retry_cnt;
     void *volume_listener;
     pending_state_t pending;
     service_timer_t *connect_timer;
     service_timer_t *audio_timer;
     service_timer_t *dial_out_timer;
     service_timer_t *offload_timer;
+    service_timer_t *retry_timer;
 } ag_state_machine_t;
 
 #define MD2AGVOL(vol) ((vol) > 15 ? 15 : (vol))
@@ -341,7 +345,7 @@ static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void
         switch (state) {
         case PROFILE_STATE_CONNECTED:
             hsm_transition_to(sm, &connected_state);
-            update_remote_features(agsm, data->valueint2);
+            update_remote_features(agsm, data->valueint3);
             break;
         case PROFILE_STATE_CONNECTING:
             hsm_transition_to(sm, &connecting_state);
@@ -375,10 +379,35 @@ static void connecting_exit(state_machine_t *sm)
     agsm->connect_timer = NULL;
 }
 
+static void ag_retry_callback(service_timer_t *timer, void *data)
+{
+    char _addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    state_machine_t *sm = (state_machine_t *)data;
+    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    hfp_ag_state_t state;
+
+    assert(agsm);
+
+    bt_addr_ba2str(&agsm->addr, _addr_str);
+    state = ag_state_machine_get_state(agsm);
+    BT_LOGD("%s: device=[%s], state=%d, retry_cnt=%d", __func__, _addr_str, state, agsm->retry_cnt);
+    if (state == HFP_AG_STATE_DISCONNECTED) {
+        if (bt_sal_hfp_ag_connect(&agsm->addr) == BT_STATUS_SUCCESS) {
+            hsm_transition_to(sm, &connecting_state);
+        } else {
+            BT_LOGI("failed to connect %s", _addr_str);
+        }
+    }
+
+    agsm->retry_timer = NULL;
+}
+
 static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *p_data)
 {
     ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
     hfp_ag_data_t *data = (hfp_ag_data_t *)p_data;
+    uint32_t random_timeout;
+
     AG_DBG_EVENT(sm, &agsm->addr, event);
 
     switch (event) {
@@ -391,12 +420,26 @@ static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *
         break;
     case AG_STACK_EVENT_CONNECTION_STATE_CHANGED: {
         profile_connection_state_t state = data->valueint1;
+        profile_connection_reason_t reason = data->valueint2;
+
         switch (state) {
         case PROFILE_STATE_CONNECTED:
             hsm_transition_to(sm, &connected_state);
-            update_remote_features(agsm, data->valueint2);
+            update_remote_features(agsm, data->valueint3);
             break;
         case PROFILE_STATE_DISCONNECTED:
+            if (reason == PROFILE_REASON_COLLISION && agsm->retry_cnt < HFP_AG_RETRY_MAX) {
+                /* failed to establish HFP connection, retry for up to HFP_AG_RETRY_MAX times */
+                if (agsm->retry_timer == NULL) {
+                    srand(time(NULL)); /* set random seed */
+                    random_timeout = 100 + (rand() % 800);
+                    BT_LOGD("retry HFP connection with device:[%s], delay=%" PRIu32 "ms",
+                            bt_addr_str(&agsm->addr), random_timeout);
+                    agsm->retry_timer = service_loop_timer(random_timeout, 0, ag_retry_callback, sm);
+                    agsm->retry_cnt++;
+                }
+                break;
+            }
             hsm_transition_to(sm, &disconnected_state);
             break;
         case PROFILE_STATE_CONNECTING:
@@ -628,6 +671,7 @@ static void connected_enter(state_machine_t *sm)
 
     if (previous_state < HFP_AG_STATE_CONNECTED) {
         agsm->volume_listener = bt_media_listen_voice_call_volume_change(hfp_ag_voice_volume_change_callback, agsm);
+        agsm->retry_cnt = 0;
         if (!agsm->volume_listener) {
             BT_LOGE("Start to listen voice call volume failed");
         }
@@ -1004,6 +1048,10 @@ void ag_state_machine_destory(ag_state_machine_t *agsm)
 
     if (agsm->connect_timer)
         service_loop_cancel_timer(agsm->connect_timer);
+
+    if (agsm->retry_timer)
+        service_loop_cancel_timer(agsm->retry_timer);
+
     bt_media_remove_listener(agsm->volume_listener);
     agsm->volume_listener = NULL;
     hsm_dtor(&agsm->sm);

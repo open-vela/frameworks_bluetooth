@@ -30,13 +30,14 @@
 #ifdef CONFIG_BLUETOOTH_HFP_AG
 static void connection_state_changed_callback(BD_ADDR remote_addr,
                                               SERVICE_PROFILE_CONNECTION_STATE state,
+                                              SERVICE_PROFILE_CONNECTION_REASON reason,
                                               uint32_t remote_features)
 {
     bt_address_t addr;
 
     memcpy(addr.addr, remote_addr, 6);
     hfp_ag_on_connection_state_changed(&addr, bluelet_profile_connection_state(state),
-                                       remote_features);
+                                       bluelet_profile_connection_reason(reason), remote_features);
 }
 
 static void sco_connection_state_changed_callback(BD_ADDR remote_addr,
