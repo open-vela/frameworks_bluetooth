@@ -119,9 +119,10 @@ static void thread_schedule_loop(void *data)
     uv_run(loop, UV_RUN_DEFAULT);
     priv->is_running = 0;
     uv_loop_close(loop);
-    uv_sem_post(&priv->exited);
 
     syslog(LOG_DEBUG, "%s %s quit", priv->name, __func__);
+
+    uv_sem_post(&priv->exited);
 }
 
 static void handle_close_cb(uv_handle_t *handle)

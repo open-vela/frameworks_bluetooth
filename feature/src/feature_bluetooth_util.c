@@ -40,7 +40,7 @@ char *StringToFtString(const char *str)
 
 void feature_bluetooth_init_bt_ins()
 {
-    bt_instance_t *bluetooth_ins = bluetooth_create_instance();
+    bt_instance_t *bluetooth_ins = bluetooth_get_instance();
     if (bluetooth_ins != NULL)
         feature_bluetooth_callback_init(bluetooth_ins);
 }
