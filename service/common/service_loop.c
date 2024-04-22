@@ -129,9 +129,9 @@ static void service_schedule_loop(void* data)
     uv_run(loop->handle, UV_RUN_DEFAULT);
     loop->is_running = 0;
     uv_loop_close(loop->handle);
-    uv_sem_post(&loop->exited);
 
     BT_LOGD("%s %s quit", loop->name, __func__);
+    uv_sem_post(&loop->exited);
 }
 
 static void service_timer_cb(uv_timer_t* handle)
