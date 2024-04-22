@@ -204,7 +204,7 @@ static void property_monitor_cb(service_poll_t *poll,
 
     if (revent & POLL_READABLE) {
         int changed = 0;
-        char key[64];
+        char key[PROP_NAME_MAX];
         int new;
 
         property_monitor_read(g_logger.monitor_fd, key, (char *)&changed);
