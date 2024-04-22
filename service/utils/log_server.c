@@ -194,15 +194,13 @@ static void bt_log_module_disable(int id, bool changed)
 static void property_monitor_cb(service_poll_t *poll,
                                 int revent, void *userdata)
 {
-    if (revent & POLL_DISCONNECT) {
+    if (revent & POLL_ERROR || revent & POLL_DISCONNECT) {
         service_loop_remove_poll(g_logger.poll);
         g_logger.poll = NULL;
         if (g_logger.monitor_fd)
             property_monitor_close(g_logger.monitor_fd);
         g_logger.monitor_fd = -1;
-    }
-
-    if (revent & POLL_READABLE) {
+    } else if (revent & POLL_READABLE) {
         int changed = 0;
         char key[PROP_NAME_MAX];
         int new;
