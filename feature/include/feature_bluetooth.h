@@ -72,14 +72,10 @@ typedef struct {
 } callback_info_t;
 
 typedef struct {
-    bt_list_t *callbacks;
     uv_mutex_t mutex;
-} feature_bluetooth_callbacks_t;
-
-typedef struct {
-    feature_bluetooth_callbacks_t feature_bluetooth_callbacks;
-    feature_bluetooth_callbacks_t feature_bluetooth_bt_callbacks;
-    feature_bluetooth_callbacks_t feature_a2dp_sink_callbacks;
+    bt_list_t *feature_bluetooth_callbacks;
+    bt_list_t *feature_bluetooth_bt_callbacks;
+    bt_list_t *feature_a2dp_sink_callbacks;
 } feature_bluetooth_features_callbacks_t;
 
 void feature_bluetooth_deal_callback(int status, void *data);
