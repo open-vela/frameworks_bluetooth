@@ -107,6 +107,10 @@ void bt_socket_server_advertiser_process(service_poll_t *poll,
                                         packet->adv_pl._bt_le_start_advertising.scan_rsp_data,
                                         packet->adv_pl._bt_le_start_advertising.scan_rsp_len,
                                         &g_advertiser_socket_cb);
+
+        if (!packet->adv_r.remote)
+            free(adver);
+
         break;
     }
     case BT_LE_STOP_ADVERTISING: {
