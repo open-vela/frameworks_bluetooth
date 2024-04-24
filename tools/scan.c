@@ -96,7 +96,7 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
         return CMD_ERROR;
 
     optind = 0;
-    while ((opt = getopt_long(argc, argv, "t:p:m:l:f", scan_options,
+    while ((opt = getopt_long(argc, argv, "t:p:m:l:f:", scan_options,
                 NULL))
         != -1) {
         switch (opt) {
@@ -144,10 +144,11 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
             settings.legacy = legacy;
         } break;
         case 'f': {
+            PRINT("filtered name: %s ", optarg);
             filter = advertiser_data_new();
 
             /* set adv complete name */
-            advertiser_data_set_name(filter, "Vela_test");
+            advertiser_data_set_name(filter, optarg);
 
             /* build scan response data */
             filter_data = advertiser_data_build(filter, &filter_len);
