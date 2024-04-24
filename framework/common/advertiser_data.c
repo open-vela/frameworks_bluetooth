@@ -88,7 +88,7 @@ uint8_t* advertiser_data_build(advertiser_data_t* ad, uint16_t* len)
 void advertiser_data_set_name(advertiser_data_t* ad, const char* name)
 {
     uint8_t name_len = strlen(name);
-    adv_data_t* data = malloc(sizeof(adv_data_t) + name_len);
+    adv_data_t* data = zalloc(sizeof(adv_data_t) + name_len + 1);
 
     if (name_len > BT_LE_AD_NAME_LEN) {
         name_len = BT_LE_AD_NAME_LEN;
