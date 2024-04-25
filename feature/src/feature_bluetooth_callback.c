@@ -298,18 +298,6 @@ static void on_discovery_result_cb(void *cookie, bt_discovery_result_t *result)
     }
 }
 
-static void on_pair_request_cb(void *cookie, bt_address_t *addr)
-{
-    bt_instance_t *bt_ins = (bt_instance_t *)cookie;
-    bt_device_pair_request_reply(bt_ins, addr, true);
-}
-
-static void on_connect_request_cb(void *cookie, bt_address_t *addr)
-{
-    bt_instance_t *bt_ins = (bt_instance_t *)cookie;
-    bt_device_connect_request_reply(bt_ins, addr, true);
-}
-
 static void on_bond_state_changed_cb(void *cookie, bt_address_t *addr, bt_transport_t transport, bond_state_t state, bool is_ctkd)
 {
     bt_instance_t *bt_ins = (bt_instance_t *)cookie;
@@ -385,8 +373,6 @@ const static adapter_callbacks_t g_adapter_cbs = {
     .on_adapter_state_changed = on_adapter_state_changed_cb,
     .on_discovery_state_changed = on_discovery_state_changed_cb,
     .on_discovery_result = on_discovery_result_cb,
-    .on_pair_request = on_pair_request_cb,
-    .on_connect_request = on_connect_request_cb,
     .on_bond_state_changed = on_bond_state_changed_cb,
 };
 
