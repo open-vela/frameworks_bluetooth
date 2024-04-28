@@ -38,22 +38,49 @@ char* StringToFtString(const char* str)
     return ftStr;
 }
 
-void feature_bluetooth_init_bt_ins()
+void feature_bluetooth_init_bt_ins(feature_bluetooth_feature_type_t feature)
 {
     bt_instance_t* bluetooth_ins = bluetooth_get_instance();
-    if (bluetooth_ins != NULL)
+
+    if (bluetooth_ins == NULL) {
+        FEATURE_LOG_ERROR("Failed to get Bluetooth instance.");
+        return;
+    }
+
+    if (bluetooth_ins->context == NULL) {
         feature_bluetooth_callback_init(bluetooth_ins);
+    }
+
+    ((feature_bluetooth_features_info_t*)bluetooth_ins->context)->created_features |= (1UL << feature);
 }
 
-void feature_bluetooth_uninit_bt_ins()
+void feature_bluetooth_uninit_bt_ins(feature_bluetooth_feature_type_t feature)
 {
     bt_instance_t* bluetooth_ins;
+    feature_bluetooth_features_info_t* features_info;
 
     bluetooth_ins = bluetooth_find_instance(getpid());
-    if (bluetooth_ins != NULL) {
-        feature_bluetooth_callback_uninit(bluetooth_ins);
-        bluetooth_delete_instance(bluetooth_ins);
+
+    if (bluetooth_ins == NULL) {
+        FEATURE_LOG_ERROR("Bluetooth instance not found.");
+        return;
     }
+
+    features_info = (feature_bluetooth_features_info_t*)bluetooth_ins->context;
+
+    if (!features_info) {
+        FEATURE_LOG_ERROR("Feature context not found.");
+        return;
+    }
+
+    features_info->created_features &= ~(1UL << feature);
+
+    if (features_info->created_features) {
+        return;
+    }
+
+    feature_bluetooth_callback_uninit(bluetooth_ins);
+    bluetooth_delete_instance(bluetooth_ins);
 }
 
 void feature_bluetooth_set_bt_ins(FeatureProtoHandle protoHandle)
