@@ -418,6 +418,9 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         bt_sal_hfp_ag_disconnect(&agsm->addr);
         hsm_transition_to(sm, &disconnected_state);
         break;
+    case AG_SEND_AT_COMMAND:
+        bt_sal_hfp_ag_send_at_cmd(&agsm->addr, data->string1, strlen(data->string1));
+        break;
     case AG_STACK_EVENT_CONNECTION_STATE_CHANGED: {
         profile_connection_state_t state = data->valueint1;
         profile_connection_reason_t reason = data->valueint2;
@@ -453,6 +456,13 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         break;
     case AG_STACK_EVENT_AT_CIND_REQUEST:
         process_cind_request(agsm);
+        break;
+    case AG_STACK_EVENT_AT_COMMAND:
+        if (hfp_ag_get_local_features() & HFP_FEAT_AG_UNKNOWN_AT_CMD) {
+            ag_service_notify_cmd_received(&agsm->addr, data->string1);
+        } else {
+            bt_sal_hfp_ag_error_response(&agsm->addr, HFP_ATCMD_RESULT_CMEERR_OPERATION_NOTSUPPORTED);
+        }
         break;
     default:
         BT_LOGW("Unexpected event:%" PRId32 "", event);
