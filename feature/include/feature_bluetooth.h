@@ -43,10 +43,10 @@ typedef enum {
 } feature_bluetooth_callback_t;
 
 typedef enum {
-    BLUETOOTH_FEATURE,
-    BLUETOOTH_BT_FEATURE,
-    A2DPSINK_FEATURE,
-} feature_bluetooth_type_t;
+    FEATURE_BLUETOOTH,
+    FEATURE_BLUETOOTH_BT,
+    FEATURE_BLUETOOTH_A2DPSINK,
+} feature_bluetooth_feature_type_t;
 
 typedef struct {
     FeatureInstanceHandle* feature_ins;
@@ -76,18 +76,19 @@ typedef struct {
     bt_list_t* feature_bluetooth_callbacks;
     bt_list_t* feature_bluetooth_bt_callbacks;
     bt_list_t* feature_a2dp_sink_callbacks;
-} feature_bluetooth_features_callbacks_t;
+    uint32_t created_features;
+} feature_bluetooth_features_info_t;
 
 void feature_bluetooth_deal_callback(int status, void* data);
 char* StringToFtString(const char* str);
-void feature_bluetooth_init_bt_ins();
-void feature_bluetooth_uninit_bt_ins();
+void feature_bluetooth_init_bt_ins(feature_bluetooth_feature_type_t feature);
+void feature_bluetooth_uninit_bt_ins(feature_bluetooth_feature_type_t feature);
 void feature_bluetooth_set_bt_ins(FeatureProtoHandle protoHandle);
 void feature_bluetooth_clean_bt_ins(FeatureProtoHandle protoHandle);
 bt_instance_t* feature_bluetooth_get_bt_ins(FeatureInstanceHandle feature);
 
-void feature_bluetooth_add_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_type_t feature_type);
-void feature_bluetooth_free_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_type_t feature_type);
+void feature_bluetooth_add_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_feature_type_t feature_type);
+void feature_bluetooth_free_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_feature_type_t feature_type);
 void feature_bluetooth_set_feature_callback(FeatureInstanceHandle handle, FtCallbackId callback_id, feature_bluetooth_callback_t callback_type);
 FtCallbackId feature_bluetooth_get_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_callback_t callback_type);
 void feature_bluetooth_callback_init(bt_instance_t* bt_ins);
