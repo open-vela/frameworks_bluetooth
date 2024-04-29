@@ -65,6 +65,9 @@ typedef struct _hf_state_machine {
 typedef struct {
     struct list_node node;
     uint32_t cmd_code;
+    union {
+        uint8_t number[HFP_PHONENUM_DIGITS_MAX];
+    } param;
 } hf_at_cmd_t;
 
 #define MD2HFVOL(vol) ((vol) > 15 ? 15 : (vol))
@@ -220,26 +223,40 @@ static void flag_clear(hf_state_machine_t* hfsm, pending_state_t flag)
     hfsm->pending &= ~flag;
 }
 
-static void add_pending_action(hf_state_machine_t* hfsm, uint32_t cmd_code)
+static void pending_action_create(hf_state_machine_t* hfsm, uint32_t cmd_code, void* param)
 {
-    hf_at_cmd_t* cmd = malloc(sizeof(hf_at_cmd_t));
+    hf_at_cmd_t* cmd = NULL;
+
+    cmd = zalloc(sizeof(hf_at_cmd_t));
 
     cmd->cmd_code = cmd_code;
+    switch (cmd_code) {
+    case HFP_ATCMD_CODE_ATD:
+    case HFP_ATCMD_CODE_BLDN:
+        if (param) {
+            memcpy(cmd->param.number, param, sizeof(cmd->param.number) - 1);
+        }
+        break;
+    default:
+        break;
+    }
+
     list_add_tail(&hfsm->pending_actions, &cmd->node);
 }
 
-static uint32_t first_pending_action(hf_state_machine_t* hfsm)
+static hf_at_cmd_t* pending_action_get(hf_state_machine_t* hfsm)
 {
     struct list_node* node;
 
     node = list_remove_head(&hfsm->pending_actions);
-    if (node) {
-        uint32_t code = ((hf_at_cmd_t*)node)->cmd_code;
-        free(node);
-        return code;
-    }
 
-    return 0;
+    return (hf_at_cmd_t*)node;
+}
+
+static void pending_action_destroy(hf_at_cmd_t* cmd)
+{
+    if (cmd)
+        free(cmd);
 }
 
 static void set_current_call_name(hf_state_machine_t* hfsm, char* number, char* name)
@@ -359,10 +376,12 @@ static void query_current_calls_final(hf_state_machine_t* hfsm)
 
 static void state_machine_reset_calls(hf_state_machine_t* hfsm)
 {
+    hf_at_cmd_t* node;
+
     bt_list_clear(hfsm->current_calls);
     bt_list_clear(hfsm->update_calls);
-    while (first_pending_action(hfsm))
-        ; /* discard pending actions */
+    while ((node = pending_action_get(hfsm)) != NULL)
+        pending_action_destroy(node); /* discard pending actions */
     if (hfsm->connect_timer)
         service_loop_cancel_timer(hfsm->connect_timer);
     hfsm->recognition_active = false;
@@ -723,6 +742,22 @@ static void hold_call(hf_state_machine_t* hfsm)
         BT_LOGE("No call to hold");
 }
 
+static void handle_dailing_fail(state_machine_t* sm, uint8_t* number)
+{
+    hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
+    hfp_current_call_t call = { 0 };
+    BT_LOGD("%s, %s", __func__, bt_addr_str(&hfsm->addr));
+
+    call.dir = HFP_CALL_DIRECTION_OUTGOING;
+    call.state = HFP_HF_CALL_STATE_DISCONNECTED;
+    if (number) {
+        BT_LOGD("number: %s", number);
+        memcpy(call.number, number, sizeof(call.number));
+    }
+
+    hf_service_notify_call_state_changed(&hfsm->addr, &call);
+}
+
 static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_data_t* data)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
@@ -836,18 +871,30 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
     case HF_STACK_EVENT_CMD_RESULT: {
         uint32_t cmd_code = data->valueint1;
         uint32_t cmd_result = data->valueint2;
-        uint32_t pending;
+        hf_at_cmd_t* pending_cmd;
 
-        pending = first_pending_action(hfsm);
-        if (pending == cmd_code) {
+        pending_cmd = pending_action_get(hfsm);
+        if (!pending_cmd)
+            break;
+
+        if (pending_cmd->cmd_code == cmd_code) {
             switch (cmd_code) {
             case HFP_ATCMD_CODE_ATD:
                 if (cmd_result != HFP_ATCMD_RESULT_OK) {
-                    BT_LOGE("Dial memory failed:%" PRIu32, cmd_result);
+                    BT_LOGE("ATD failed:%" PRIu32, cmd_result);
+                    handle_dailing_fail(sm, pending_cmd->param.number);
+                }
+                break;
+            case HFP_ATCMD_CODE_BLDN:
+                if (cmd_result != HFP_ATCMD_RESULT_OK) {
+                    BT_LOGE("AT+BLDN failed:%" PRIu32, cmd_result);
+                    handle_dailing_fail(sm, NULL);
                 }
                 break;
             }
         }
+
+        pending_action_destroy(pending_cmd);
         break;
     }
     case HF_STACK_EVENT_RING_INDICATION: {
@@ -981,7 +1028,10 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         status = bt_sal_hfp_hf_dial_number(&hfsm->addr, data->string1);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Dial number: %s failed", data->string1);
+            handle_dailing_fail(sm, (uint8_t*)data->string1);
+            break;
         }
+        pending_action_create(hfsm, HFP_ATCMD_CODE_ATD, data->string1);
         break;
     case HF_DIAL_MEMORY: {
         int memory = data->valueint1;
@@ -989,17 +1039,19 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         status = bt_sal_hfp_hf_dial_memory(&hfsm->addr, memory);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Dial memory: %d failed", memory);
+            break;
         }
-        add_pending_action(hfsm, HFP_ATCMD_CODE_ATD);
         break;
     }
-    case HF_DIAL_LAST: {
+    case HF_DIAL_LAST:
         status = bt_sal_hfp_hf_dial_number(&hfsm->addr, NULL);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Dial Last failed");
+            handle_dailing_fail(sm, NULL);
+            break;
         }
+        pending_action_create(hfsm, HFP_ATCMD_CODE_BLDN, NULL);
         break;
-    }
     case HF_STACK_EVENT_AUDIO_REQ:
         status = bt_sal_reply_sco_link_request(&hfsm->addr, true);
         if (status != BT_STATUS_SUCCESS) {
