@@ -97,8 +97,9 @@ typedef struct {
 } hfp_codec_config_t;
 
 typedef enum {
-    HFP_ATCMD_CODE_ATA = 0x1,
-    HFP_ATCMD_CODE_ATD,
+    HFP_ATCMD_CODE_ATA = 0x01,
+    HFP_ATCMD_CODE_ATD = 0x02,
+    HFP_ATCMD_CODE_BLDN = 0x1A,
     HFP_ATCMD_CODE_UNKNOWN = 0xFFFF,
 } hfp_atcmd_code_t;
 
