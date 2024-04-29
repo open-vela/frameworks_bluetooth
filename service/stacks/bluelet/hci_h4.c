@@ -49,7 +49,7 @@ static int h4_send_data(uint8_t *buf, int count)
     while (nwritten != count) {
         ret = write(g_tlfd, buf + nwritten, count - nwritten);
         if (ret < 0) {
-            if (ret == -EAGAIN) {
+            if (errno == EAGAIN) {
                 usleep(1000);
                 continue;
             } else
