@@ -274,9 +274,14 @@ static void hfp_ag_prepare_handle(ag_state_machine_t *agsm,
     switch (event->event) {
     case AG_STACK_EVENT_AUDIO_STATE_CHANGED: {
         hfp_offload_config_t offload = { 0 };
+        ag_service_t *service = &g_ag_service;
         uint8_t param[sizeof(hfp_offload_config_t)];
         size_t size;
         bool ret;
+
+        if (!service->offloading) {
+            break;
+        }
 
         if (event->data.valueint1 == HFP_AUDIO_STATE_CONNECTED) {
             ag_state_machine_set_sco_handle(agsm, event->data.valueint2);
