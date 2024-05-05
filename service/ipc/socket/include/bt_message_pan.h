@@ -42,7 +42,8 @@ BT_PAN_MESSAGE_START,
 #include "bt_pan.h"
 
     typedef union {
-        bt_status_t status;
+        uint8_t status; /* bt_status_t */
+        uint8_t pad[3];
         uint32_t v32;
     } bt_pan_result_t;
 
@@ -62,14 +63,14 @@ BT_PAN_MESSAGE_START,
     typedef struct
     {
         struct {
-            pan_netif_state_t state;
-            int local_role;
             char ifname[64];
+            uint8_t state; /* pan_netif_state_t */
+            uint8_t local_role;
         } _netif_state_cb;
 
         struct {
-            profile_connection_state_t state;
             bt_address_t bd_addr;
+            uint8_t state; /* profile_connection_state_t */
             uint8_t local_role;
             uint8_t remote_role;
         } _connection_state_cb;

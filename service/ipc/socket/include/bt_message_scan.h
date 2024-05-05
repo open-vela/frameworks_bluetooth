@@ -44,9 +44,10 @@ BT_SCAN_MESSAGE_START,
 #include "bt_le_scan.h"
 
     typedef union {
-        bt_status_t status;
+        uint8_t status; /* bt_status_t */
+        uint8_t vbool; /* boolean */
+        uint8_t pad[2];
         uint32_t remote;
-        bool vbool;
     } bt_scan_result_t;
 
     typedef struct {
@@ -76,18 +77,18 @@ BT_SCAN_MESSAGE_START,
     typedef struct
     {
         struct {
-            uint32_t scanner;
+            uint64_t scanner; /* bt_scan_remote_t* */
             ble_scan_result_t result;
             uint8_t adv_data[256];
         } _on_scan_result_cb;
 
         struct {
-            uint32_t scanner;
+            uint64_t scanner; /* bt_scan_remote_t* */
             uint32_t status;
         } _on_scan_status_cb;
 
         struct {
-            uint32_t scanner;
+            uint64_t scanner; /* bt_scan_remote_t* */
         } _on_scan_stopped_cb;
     } bt_message_scan_callbacks_t;
 

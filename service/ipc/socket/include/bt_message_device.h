@@ -64,17 +64,22 @@ BT_DEVICE_MESSAGE_START,
 #include "bt_device.h"
 
     typedef union {
-        bt_status_t status;
-        bt_adapter_state_t state;
-        bt_device_type_t dtype;
-        bool bbool;
-        bt_scan_mode_t mode;
-        uint32_t v32;
-        uint16_t v16;
+        uint8_t status; /* bt_status_t */
+        uint8_t state; /* bt_adapter_state_t */
+        uint8_t dtype; /* bt_device_type_t */
+        uint8_t bbool; /* boolean */
+
+        uint8_t mode; /* bt_scan_mode_t */
         uint8_t v8;
-        bt_io_capability_t ioc;
-        ble_addr_type_t atype;
-        bond_state_t bstate;
+        uint16_t v16;
+
+        uint32_t v32;
+
+        uint8_t ioc; /* bt_io_capability_t */
+        uint8_t atype; /* ble_addr_type_t */
+        uint8_t bstate; /* bond_state_t */
+        uint8_t pad[1];
+
         bt_address_t addr;
     } bt_device_result_t;
 
@@ -96,31 +101,31 @@ BT_DEVICE_MESSAGE_START,
             _bt_device_get_acl_handle;
 
         struct {
-            bt_address_t addr;
             char name[64];
             uint32_t length;
+            bt_address_t addr;
         } _bt_device_get_name;
 
         struct {
-            bt_address_t addr;
             bt_uuid_t uuids[16];
+            bt_address_t addr;
             uint16_t size;
         } _bt_device_get_uuids;
 
         struct {
-            bt_address_t addr;
             char alias[64];
             uint32_t length;
+            bt_address_t addr;
         } _bt_device_get_alias;
 
         struct {
-            bt_address_t addr;
             char alias[64];
+            bt_address_t addr;
         } _bt_device_set_alias;
 
         struct {
             bt_address_t addr;
-            bt_transport_t transport;
+            uint8_t transport; /* bt_transport_t */
         } _bt_device_create_bond,
             _bt_device_remove_bond,
             _bt_device_is_connected,
@@ -131,55 +136,56 @@ BT_DEVICE_MESSAGE_START,
 
         struct {
             bt_address_t addr;
-            bool accept;
+            uint8_t accept; /* boolean */
         } _bt_device_pair_request_reply;
 
         struct {
             bt_address_t addr;
             uint8_t transport;
-            bool accept;
+            uint8_t accept; /* boolean */
         } _bt_device_set_pairing_confirmation;
 
         struct {
-            bt_address_t addr;
-            bool accept;
-            char pincode[64];
             int len;
+            uint8_t pincode[64];
+            bt_address_t addr;
+            uint8_t accept; /* boolean */
         } _bt_device_set_pin_code;
 
         struct {
             bt_address_t addr;
             uint8_t transport;
-            bool accept;
+            uint8_t accept; /* boolean */
             uint32_t passkey;
         } _bt_device_set_pass_key;
 
         struct {
-            bt_address_t addr;
             bt_128key_t tk_val;
+            bt_address_t addr;
         } _bt_device_set_le_legacy_tk;
 
         struct {
-            bt_address_t addr;
             bt_128key_t c_val;
             bt_128key_t r_val;
+            bt_address_t addr;
         } _bt_device_set_le_sc_remote_oob_data;
 
         struct {
             bt_address_t addr;
-            ble_addr_type_t type;
+            uint8_t type; /* ble_addr_type_t */
+            uint8_t pad[1];
             ble_connect_params_t param;
         } _bt_device_connect_le;
 
         struct {
             bt_address_t addr;
-            bool accept;
+            uint8_t accept; /* boolean */
         } _bt_device_connect_request_reply;
 
         struct {
             bt_address_t addr;
-            ble_phy_type_t tx_phy;
-            ble_phy_type_t rx_phy;
+            uint8_t tx_phy; /* ble_phy_type_t */
+            uint8_t rx_phy; /* ble_phy_type_t */
         } _bt_device_set_le_phy;
 
     } bt_message_device_t;

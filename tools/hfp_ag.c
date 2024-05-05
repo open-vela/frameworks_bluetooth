@@ -196,6 +196,7 @@ static const hfp_ag_callbacks_t hfp_ag_cbs = {
     ag_audio_state_callback,
     ag_vr_cmd_callback,
     ag_battery_update_callback,
+    NULL,
 };
 
 int hfp_ag_commond_init(void* handle)

@@ -136,7 +136,7 @@ int bt_socket_client_advertiser_callback(service_poll_t* poll,
 {
     switch (packet->code) {
     case BT_LE_ON_ADVERTISER_START: {
-        bt_advertiser_remote_t* adver = (bt_advertiser_remote_t*)packet->adv_cb._on_advertising_start.adver;
+        bt_advertiser_remote_t* adver = INT2PTR(bt_advertiser_remote_t*) packet->adv_cb._on_advertising_start.adver;
 
         adver->callback->on_advertising_start(adver,
             packet->adv_cb._on_advertising_start.adv_id,
@@ -144,7 +144,7 @@ int bt_socket_client_advertiser_callback(service_poll_t* poll,
         break;
     }
     case BT_LE_ON_ADVERTISER_STOPPED: {
-        bt_advertiser_remote_t* adver = (bt_advertiser_remote_t*)packet->adv_cb._on_advertising_stopped.adver;
+        bt_advertiser_remote_t* adver = INT2PTR(bt_advertiser_remote_t*) packet->adv_cb._on_advertising_stopped.adver;
 
         adver->callback->on_advertising_stopped(adver,
             packet->adv_cb._on_advertising_stopped.adv_id);

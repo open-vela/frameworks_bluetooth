@@ -56,10 +56,11 @@ typedef enum {
  * @brief HFP call info structure
  */
 typedef struct {
-    int index;
-    hfp_call_direction_t dir;
-    hfp_hf_call_state_t state;
-    hfp_call_mpty_type_t mpty;
+    uint32_t index;
+    uint8_t dir; /* hfp_call_direction_t */
+    uint8_t state; /* hfp_hf_call_state_t */
+    uint8_t mpty; /* hfp_call_mpty_type_t */
+    uint8_t pad[1];
     char number[HFP_PHONENUM_DIGITS_MAX];
     char name[HFP_NAME_DIGITS_MAX];
 } hfp_current_call_t;

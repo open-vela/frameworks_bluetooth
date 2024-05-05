@@ -283,9 +283,10 @@ typedef uint8_t bt_128key_t[16];
 
 typedef struct {
     bt_address_t addr;
-    char name[BT_REM_NAME_MAX_LEN + 1];
-    uint32_t cod;
     int8_t rssi;
+    int8_t pad[1];
+    uint32_t cod;
+    char name[BT_REM_NAME_MAX_LEN + 1];
 } bt_discovery_result_t;
 
 /* * HCI Set Event Filter Command param */
@@ -297,9 +298,10 @@ typedef struct {
 
 // BLE connect parameter
 typedef struct {
-    ble_connect_filter_policy_t filter_policy;
-    bool use_default_params; /* If TRUE, the following parameters are ignored. */
-    ble_phy_type_t init_phy;
+    uint8_t filter_policy; /* ble_connect_filter_policy_t */
+    uint8_t use_default_params; /* boolean, If TRUE, the following parameters are ignored. */
+    uint8_t init_phy; /* ble_phy_type_t */
+    uint8_t pad[1];
     uint16_t scan_interval;
     uint16_t scan_window;
     uint16_t connection_interval_min;
@@ -311,7 +313,7 @@ typedef struct {
 } ble_connect_params_t;
 
 typedef struct {
-    bool enable; /* enable sniff mode */
+    uint8_t enable; /* enable sniff mode, boolean */
     uint8_t idle_time; /* Idle time in seconds before entering sniff mode */
     uint16_t sniff_max_interval; /* sniff maximum interval */
     uint16_t sniff_min_interval; /* sniff minimum interval */
