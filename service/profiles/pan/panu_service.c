@@ -16,25 +16,22 @@
 #define LOG_TAG "panu"
 
 #include <fcntl.h>
+#include <net/if.h>
+#include <nuttx/net/ethernet.h>
+#include <nuttx/net/netdev.h>
+#include <nuttx/net/tun.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "netutils/netlib.h"
-#include <net/if.h>
-
-#include <nuttx/list.h>
-#include <nuttx/net/ethernet.h>
-#include <nuttx/net/netdev.h>
-#include <nuttx/net/tun.h>
-
 #include "adapter_internel.h"
 #include "bt_addr.h"
+#include "bt_list.h"
 #include "callbacks_list.h"
+#include "netutils/netlib.h"
 #include "sal_pan_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
-
 #include "utils/log.h"
 
 #define PAN_MAX_CONNECTIONS 1

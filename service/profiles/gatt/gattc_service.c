@@ -14,13 +14,14 @@
  * limitations under the License.
  ***************************************************************************/
 #define LOG_TAG "gattc"
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-#include <nuttx/config.h>
 #include <stdint.h>
 #include <sys/types.h>
 
+#include "bt_config.h"
 #include "bt_list.h"
 #include "bt_profile.h"
 #include "gattc_event.h"

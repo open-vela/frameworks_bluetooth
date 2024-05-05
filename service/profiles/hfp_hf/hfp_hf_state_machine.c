@@ -15,7 +15,6 @@
  ***************************************************************************/
 #define LOG_TAG "hf_stm"
 
-#include <nuttx/list.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,16 +23,14 @@
 #include "bt_addr.h"
 #include "bt_hfp_hf.h"
 #include "bt_list.h"
+#include "bt_utils.h"
 #include "bt_vendor.h"
 #include "hfp_hf_service.h"
 #include "hfp_hf_state_machine.h"
+#include "media_system.h"
 #include "sal_adapter_interface.h"
 #include "sal_hfp_hf_interface.h"
 #include "service_loop.h"
-
-#include "media_system.h"
-
-#include "bt_utils.h"
 #include "utils/log.h"
 
 #define HFP_HF_RETRY_MAX 1

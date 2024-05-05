@@ -30,7 +30,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#include <nuttx/list.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -38,6 +37,7 @@
 #include "a2dp_sink.h"
 #include "a2dp_sink_audio.h"
 #include "audio_transport.h"
+#include "bt_list.h"
 #include "bt_utils.h"
 
 #include "service_loop.h"

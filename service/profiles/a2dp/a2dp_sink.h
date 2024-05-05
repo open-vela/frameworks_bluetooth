@@ -37,8 +37,7 @@
  ****************************************************************************/
 #include <pthread.h>
 
-#include <nuttx/list.h>
-
+#include "bt_list.h"
 #include "callbacks_list.h"
 
 #include "a2dp_codec.h"

@@ -15,15 +15,14 @@
  ***************************************************************************/
 #define LOG_TAG "adv"
 
-#include <nuttx/list.h>
 #include <stdlib.h>
 
 #include "adapter_proxy.h"
 #include "adapter_stub.h"
 #include "advertiser_callbacks_stub.h"
-
 #include "bluetooth.h"
 #include "bt_le_advertiser.h"
+#include "bt_list.h"
 #include "utils/log.h"
 
 bt_advertiser_t* bt_le_start_advertising(bt_instance_t* ins,

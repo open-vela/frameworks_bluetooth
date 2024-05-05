@@ -34,7 +34,7 @@
 #define __A2DP_SINK_AUDIO_H__
 
 #include "bluetooth_define.h"
-#include <nuttx/list.h>
+#include "bt_list.h"
 
 typedef struct {
     struct list_node node;

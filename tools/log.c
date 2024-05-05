@@ -30,7 +30,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -38,6 +37,7 @@
 #include "kvdb.h"
 #endif
 
+#include "bt_debug.h"
 #include "bt_tools.h"
 
 static int enable_cmd(void* handle, int argc, char* argv[]);

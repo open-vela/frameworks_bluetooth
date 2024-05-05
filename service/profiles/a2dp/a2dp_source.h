@@ -37,7 +37,7 @@
  ****************************************************************************/
 #include "a2dp_device.h"
 #include "bt_a2dp_source.h"
-#include <nuttx/list.h>
+#include "bt_list.h"
 
 void a2dp_source_stream_start(void);
 void a2dp_source_stream_stop(void);
