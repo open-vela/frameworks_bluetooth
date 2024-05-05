@@ -244,7 +244,7 @@ static void pty_read_cb(euv_pty_t* handle, const uint8_t* buf, ssize_t size)
     if (size > 0)
         spp_data_received(handle, buf, size);
     else if (size < 0) {
-        PRINT("%s read failed, status:%d", __func__, size);
+        PRINT("%s read failed, status:%d", __func__, (int)size);
         euv_pty_read_stop(handle);
         spp_device_t* device = find_pty_by_handle(handle);
         if (device == NULL)

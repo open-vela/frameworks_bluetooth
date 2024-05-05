@@ -43,15 +43,16 @@ BT_SPP_MESSAGE_START,
 #include "bluetooth.h"
 
     typedef union {
-        bt_status_t status;
+        uint8_t status; /* bt_status_t */
+        uint8_t pad[3];
         uint32_t handle;
     } bt_spp_result_t;
 
     typedef union {
         struct {
             uint32_t handle;
-            uint16_t scn;
             bt_uuid_t uuid;
+            uint16_t scn;
             uint8_t max_connection;
         } _bt_spp_server_start;
 
@@ -82,8 +83,8 @@ BT_SPP_MESSAGE_START,
             uint32_t handle;
             bt_address_t addr;
             uint16_t scn;
-            uint16_t port;
             char name[64];
+            uint16_t port;
         } _pty_open_cb;
 
         struct {
@@ -91,7 +92,7 @@ BT_SPP_MESSAGE_START,
             bt_address_t addr;
             uint16_t scn;
             uint16_t port;
-            profile_connection_state_t state;
+            uint8_t state; /* profile_connection_state_t */
         } _connection_state_cb;
     } bt_message_spp_callbacks_t;
 

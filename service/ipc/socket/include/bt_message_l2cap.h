@@ -42,8 +42,8 @@ BT_L2CAP_MESSAGE_START,
 #include "bt_l2cap.h"
 
     typedef union {
-        bt_status_t status;
-        bool value_bool;
+        uint8_t status; /* bt_status_t */
+        uint8_t value_bool; /* boolean */
     } bt_l2cap_result_t;
 
     typedef union {
@@ -67,7 +67,8 @@ BT_L2CAP_MESSAGE_START,
 
         struct {
             bt_address_t addr;
-            bt_transport_t transport;
+            uint8_t transport; /* bt_transport_t */
+            uint8_t pad[1];
             uint16_t cid;
             uint16_t psm;
             uint16_t incoming_mtu;

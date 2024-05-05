@@ -72,11 +72,12 @@ typedef enum {
  */
 typedef struct {
     bt_address_t addr;
-    bt_device_type_t dev_type;
+    uint8_t dev_type; /* bt_device_type_t */
     int8_t rssi;
-    ble_addr_type_t addr_type;
-    ble_adv_type_t adv_type;
+    uint8_t addr_type; /* ble_addr_type_t */
+    uint8_t adv_type; /* ble_adv_type_t */
     uint8_t length;
+    uint8_t pad[1];
     char adv_data[1];
 } ble_scan_result_t;
 
@@ -93,10 +94,10 @@ typedef struct {
  *
  */
 typedef struct {
-    int scan_mode;
-    bool legacy;
-    ble_scan_type_t scan_type;
-    ble_phy_type_t scan_phy;
+    uint8_t scan_mode;
+    uint8_t legacy;
+    uint8_t scan_type; /* ble_scan_type_t */
+    uint8_t scan_phy; /* ble_phy_type_t */
     ble_scan_filter_policy_t policy;
 } ble_scan_settings_t;
 

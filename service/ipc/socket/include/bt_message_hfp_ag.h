@@ -52,9 +52,9 @@ BT_HFP_AG_MESSAGE_START,
 #include "bt_hfp_ag.h"
 
     typedef union {
-        bt_status_t status;
-        profile_connection_state_t profile_conn_state;
-        bool value_bool;
+        uint8_t status; /* bt_status_t */
+        uint8_t profile_conn_state; /* profile_connection_state_t */
+        uint8_t value_bool; /* boolean */
     } bt_hfp_ag_result_t;
 
     typedef union {
@@ -72,6 +72,7 @@ BT_HFP_AG_MESSAGE_START,
 
         struct {
             bt_address_t addr;
+            uint8_t pad[2];
             char cmd[HFP_AT_LEN_MAX + 1];
         } _bt_hfp_ag_send_at_cmd;
     } bt_message_hfp_ag_t;
@@ -79,17 +80,17 @@ BT_HFP_AG_MESSAGE_START,
     typedef union {
         struct {
             bt_address_t addr;
-            profile_connection_state_t state;
+            uint8_t state; /* profile_connection_state_t */
         } _on_connection_state_changed;
 
         struct {
             bt_address_t addr;
-            hfp_audio_state_t state;
+            uint8_t state; /* hfp_audio_state_t */
         } _on_audio_state_changed;
 
         struct {
             bt_address_t addr;
-            bool started;
+            uint8_t started; /* boolean */
         } _on_voice_recognition_state_changed;
 
         struct {
@@ -99,6 +100,7 @@ BT_HFP_AG_MESSAGE_START,
 
         struct {
             bt_address_t addr;
+            uint8_t pad[2];
             char cmd[HFP_AT_LEN_MAX + 1];
         } _on_at_cmd_received;
     } bt_message_hfp_ag_callbacks_t;

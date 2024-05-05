@@ -65,9 +65,9 @@ BT_HFP_HF_MESSAGE_START,
 #include "bt_hfp_hf.h"
 
     typedef union {
-        bt_status_t status;
-        profile_connection_state_t profile_conn_state;
-        bool value_bool;
+        uint8_t status; /* bt_status_t */
+        uint8_t profile_conn_state; /* profile_connection_state_t */
+        uint8_t value_bool; /* boolean */
     } bt_hfp_hf_result_t;
 
     typedef union {
@@ -93,24 +93,25 @@ BT_HFP_HF_MESSAGE_START,
         } _bt_hfp_hf_dial;
 
         struct {
-            bt_address_t addr;
             uint32_t memory;
+            bt_address_t addr;
         } _bt_hfp_hf_dial_memory;
 
         struct {
             bt_address_t addr;
-            hfp_call_accept_t flag;
+            uint8_t flag; /* hfp_call_accept_t */
         } _bt_hfp_hf_accept_call;
 
         struct {
             bt_address_t addr;
-            hfp_call_control_t chld;
+            uint8_t chld; /* hfp_call_control_t */
             uint8_t index;
         } _bt_hfp_hf_control_call;
 
         struct {
             bt_address_t addr; /* @param[in]  */
-            int num; /* @param[out] */
+            uint8_t pad[2];
+            uint32_t num; /* @param[out] */
             hfp_current_call_t calls[HFP_CALL_LIST_MAX]; /* @param[out] */
         } _bt_hfp_hf_query_current_calls;
 
@@ -126,24 +127,24 @@ BT_HFP_HF_MESSAGE_START,
 
         struct {
             bt_address_t addr;
-            char dtmf;
+            uint8_t dtmf;
         } _bt_hfp_hf_send_dtmf;
     } bt_message_hfp_hf_t;
 
     typedef union {
         struct {
             bt_address_t addr;
-            profile_connection_state_t state;
+            uint8_t state; /* profile_connection_state_t */
         } _on_connection_state_changed;
 
         struct {
             bt_address_t addr;
-            hfp_audio_state_t state;
+            uint8_t state; /* hfp_audio_state_t */
         } _on_audio_state_changed;
 
         struct {
             bt_address_t addr;
-            bool started;
+            uint8_t started; /* boolean */
         } _on_voice_recognition_state_changed;
 
         struct {
@@ -158,13 +159,13 @@ BT_HFP_HF_MESSAGE_START,
 
         struct {
             bt_address_t addr;
-            bool inband_ring_tone;
+            uint8_t inband_ring_tone; /* boolean */
         } _on_ring_indication_cb;
 
         struct {
             bt_address_t addr;
-            hfp_volume_type_t type;
-            int volume;
+            uint8_t type; /* hfp_volume_type_t */
+            uint32_t volume;
         } _on_volume_changed_cb;
     } bt_message_hfp_hf_callbacks_t;
 

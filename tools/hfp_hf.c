@@ -354,7 +354,7 @@ static int query_current_calls_cmd(void* handle, int argc, char* argv[])
         hfp_current_call_t* call = calls;
         for (int i = 0; i < num; i++) {
             PRINT("\tidx[%d], dir:%d, state:%d, number:%s, name:%s",
-                call->index, call->dir, call->state, call->number, call->name);
+                (int)call->index, call->dir, call->state, call->number, call->name);
             call++;
         }
     }
@@ -449,7 +449,7 @@ static void hf_vr_cmd_callback(void* context, bt_address_t* addr, bool started)
 static void hf_call_state_change_callback(void* context, bt_address_t* addr, hfp_current_call_t* call)
 {
     PRINT_ADDR("hf_call_state_change_callback, addr:%s, idx[%d], dir:%d, state:%d, number:%s, name:%s",
-        addr, call->index, call->dir, call->state, call->number, call->name);
+        addr, (int)call->index, call->dir, call->state, call->number, call->name);
 }
 
 static void hf_cmd_complete_callback(void* context, bt_address_t* addr, const char* resp)

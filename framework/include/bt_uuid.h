@@ -23,12 +23,16 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef enum {
+    BT_UUID16_TYPE = 2,
+    BT_UUID32_TYPE = 4,
+    BT_UUID128_TYPE = 16,
+} uuid_type_t;
+
 typedef struct {
-    enum {
-        BT_UUID16_TYPE = 2,
-        BT_UUID32_TYPE = 4,
-        BT_UUID128_TYPE = 16,
-    } type;
+    uint8_t type; /* uuid_type_t */
+    uint8_t pad[3];
+
     union {
         uint16_t u16;
         uint32_t u32;

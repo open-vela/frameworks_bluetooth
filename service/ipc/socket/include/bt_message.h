@@ -84,9 +84,10 @@ typedef enum {
 #undef __BT_MESSAGE_CODE__
 } bt_message_type_t;
 
+#pragma pack(4)
 typedef struct
 {
-    bt_message_type_t code;
+    uint32_t code; /* bt_message_type_t */
     union {
         bt_manager_result_t manager_r;
         bt_adapter_result_t adpt_r;
@@ -103,23 +104,27 @@ typedef struct
         bt_pan_result_t pan_r;
         bt_hid_device_result_t hidd_r;
         bt_l2cap_result_t l2cap_r;
+        char pad1[128]; // This is just a WAR!!! Shall be removed soon!!! 2024.5.20
     };
     union {
         bt_message_manager_t manager_pl;
 
-        bt_message_a2dp_sink_t a2dp_sink_pl;
-        bt_message_a2dp_sink_callbacks_t a2dp_sink_cb;
-        bt_message_a2dp_source_t a2dp_source_pl;
-        bt_message_a2dp_source_callbacks_t a2dp_source_cb;
         bt_message_adapter_t adpt_pl;
         bt_message_adapter_callbacks_t adpt_cb;
 
+        bt_message_device_t devs_pl;
+
+        bt_message_a2dp_sink_t a2dp_sink_pl;
+        bt_message_a2dp_sink_callbacks_t a2dp_sink_cb;
+
+        bt_message_a2dp_source_t a2dp_source_pl;
+        bt_message_a2dp_source_callbacks_t a2dp_source_cb;
+
         bt_message_hfp_ag_t hfp_ag_pl;
         bt_message_hfp_ag_callbacks_t hfp_ag_cb;
+
         bt_message_hfp_hf_t hfp_hf_pl;
         bt_message_hfp_hf_callbacks_t hfp_hf_cb;
-
-        bt_message_device_t devs_pl;
 
         bt_message_advertiser_t adv_pl;
         bt_message_advertiser_callbacks_t adv_cb;
@@ -144,8 +149,11 @@ typedef struct
 
         bt_message_l2cap_t l2cap_pl;
         bt_message_l2cap_callbacks_t l2cap_cb;
+
+        char pad2[1280]; // This is just a WAR!!! Shall be removed soon!!! 2024.5.20
     };
 } bt_message_packet_t;
+#pragma pack()
 
 #ifdef __cplusplus
 }

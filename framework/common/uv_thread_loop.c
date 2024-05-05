@@ -55,7 +55,11 @@ typedef struct {
     uv_sem_t signal;
 } signal_msg_t;
 
+#if defined(ANDROID)
+#define LOOP_THREAD_STACK_SIZE 40960
+#else
 #define LOOP_THREAD_STACK_SIZE 4096
+#endif
 
 static void set_ready(void* data)
 {

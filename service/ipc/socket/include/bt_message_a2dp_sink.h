@@ -46,9 +46,9 @@ BT_A2DP_SINK_MESSAGE_START,
 #include "bt_a2dp_sink.h"
 
     typedef union {
-        bool bbool;
-        profile_connection_state_t state;
-        bt_status_t status;
+        uint8_t bbool; /* boolean */
+        uint8_t state; /* profile_connection_state_t */
+        uint8_t status; /* bt_status_t */
     } bt_a2dp_sink_result_t;
 
     typedef union {
@@ -65,11 +65,11 @@ BT_A2DP_SINK_MESSAGE_START,
     typedef union {
         struct {
             bt_address_t addr;
-            profile_connection_state_t state;
+            uint8_t state; /* profile_connection_state_t */
         } _connection_state_changed;
         struct {
             bt_address_t addr;
-            a2dp_audio_state_t state;
+            uint8_t state; /* a2dp_audio_state_t */
         } _audio_state_changed;
         struct {
             bt_address_t addr;
