@@ -53,14 +53,14 @@ BT_HID_DEVICE_MESSAGE_START,
 #define MAX_BT_HID_DEVICE_REGISTER_APP_SDP 512
 
     typedef union {
-        bt_status_t status;
-        bool value_bool;
+        uint8_t status; /* bt_status_t */
+        uint8_t value_bool; /* boolean */
     } bt_hid_device_result_t;
 
     typedef union {
         struct {
-            bool le_hid;
             uint8_t sdp[MAX_BT_HID_DEVICE_REGISTER_APP_SDP];
+            uint8_t le_hid; /* boolean */
         } _bt_hid_device_register_app;
 
         struct {
@@ -74,20 +74,22 @@ BT_HID_DEVICE_MESSAGE_START,
         struct {
             bt_address_t addr;
             uint8_t rpt_id;
-            int rpt_size;
+            uint8_t pad[1];
+            uint32_t rpt_size;
             uint8_t rpt_data[256];
         } _bt_hid_device_send_report;
 
         struct {
             bt_address_t addr;
             uint8_t rpt_type;
-            int rpt_size;
+            uint8_t padp[1];
+            uint32_t rpt_size;
             uint8_t rpt_data[256];
         } _bt_hid_device_response_report;
 
         struct {
             bt_address_t addr;
-            hid_status_error_t error;
+            uint8_t error; /* hid_status_error_t */
         } _bt_hid_device_report_error;
 
         struct {
@@ -98,13 +100,13 @@ BT_HID_DEVICE_MESSAGE_START,
 
     typedef union {
         struct {
-            hid_app_state_t state;
+            uint8_t state; /* hid_app_state_t */
         } _app_state;
 
         struct {
             bt_address_t addr;
-            bool le_hid;
-            profile_connection_state_t state;
+            uint8_t le_hid; /* boolean */
+            uint8_t state; /* profile_connection_state_t */
         } _connection_state;
 
         struct {
@@ -117,6 +119,7 @@ BT_HID_DEVICE_MESSAGE_START,
         struct {
             bt_address_t addr;
             uint8_t rpt_type;
+            uint8_t pad[1];
             uint16_t rpt_size;
             uint8_t rpt_data[256];
         } _on_set_report;
@@ -124,6 +127,7 @@ BT_HID_DEVICE_MESSAGE_START,
         struct {
             bt_address_t addr;
             uint8_t rpt_type;
+            uint8_t pad[1];
             uint16_t rpt_size;
             uint8_t rpt_data[256];
         } _on_receive_report;

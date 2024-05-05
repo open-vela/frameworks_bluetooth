@@ -69,7 +69,7 @@ static void on_connected_cb(gattc_handle_t conn_handle, bt_address_t* addr)
 {
     bt_message_packet_t packet = { 0 };
     bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(conn_handle);
-    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_callback.remote = PTR2INT(uint64_t) gattc_remote->cookie;
     memcpy(&packet.gattc_cb._on_connected.addr, addr, sizeof(bt_address_t));
     bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_CONNECTED);
 }
@@ -77,7 +77,7 @@ static void on_disconnected_cb(gattc_handle_t conn_handle, bt_address_t* addr)
 {
     bt_message_packet_t packet = { 0 };
     bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(conn_handle);
-    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_callback.remote = PTR2INT(uint64_t) gattc_remote->cookie;
     memcpy(&packet.gattc_cb._on_disconnected.addr, addr, sizeof(bt_address_t));
     bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_DISCONNECTED);
 }
@@ -86,7 +86,7 @@ static void on_discovered_cb(gattc_handle_t conn_handle, gatt_status_t status, b
 {
     bt_message_packet_t packet = { 0 };
     bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(conn_handle);
-    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_callback.remote = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_cb._on_discovered.status = status;
     packet.gattc_cb._on_discovered.start_handle = start_handle;
     packet.gattc_cb._on_discovered.end_handle = end_handle;
@@ -107,7 +107,7 @@ static void on_read_cb(gattc_handle_t conn_handle, gatt_status_t status, uint16_
         length = sizeof(packet.gattc_cb._on_read.value);
     }
 
-    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_callback.remote = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_cb._on_read.status = status;
     packet.gattc_cb._on_read.attr_handle = attr_handle;
     packet.gattc_cb._on_read.length = length;
@@ -118,7 +118,7 @@ static void on_written_cb(gattc_handle_t conn_handle, gatt_status_t status, uint
 {
     bt_message_packet_t packet = { 0 };
     bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(conn_handle);
-    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_callback.remote = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_cb._on_written.status = status;
     packet.gattc_cb._on_written.attr_handle = attr_handle;
     bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_WRITTEN);
@@ -127,7 +127,7 @@ static void on_subscribed_cb(gattc_handle_t conn_handle, gatt_status_t status, u
 {
     bt_message_packet_t packet = { 0 };
     bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(conn_handle);
-    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_callback.remote = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_cb._on_subscribed.status = status;
     packet.gattc_cb._on_subscribed.attr_handle = attr_handle;
     packet.gattc_cb._on_subscribed.enable = enable;
@@ -143,7 +143,7 @@ static void on_notified_cb(gattc_handle_t conn_handle, uint16_t attr_handle, uin
         length = sizeof(packet.gattc_cb._on_notified.value);
     }
 
-    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_callback.remote = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_cb._on_notified.attr_handle = attr_handle;
     packet.gattc_cb._on_notified.length = length;
     memcpy(packet.gattc_cb._on_notified.value, value, length);
@@ -153,7 +153,7 @@ static void on_mtu_updated_cb(gattc_handle_t conn_handle, gatt_status_t status, 
 {
     bt_message_packet_t packet = { 0 };
     bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(conn_handle);
-    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_callback.remote = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_cb._on_mtu_updated.status = status;
     packet.gattc_cb._on_mtu_updated.mtu = mtu;
     bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_MTU_UPDATED);
@@ -162,7 +162,7 @@ static void on_phy_read_cb(gattc_handle_t conn_handle, ble_phy_type_t tx_phy, bl
 {
     bt_message_packet_t packet = { 0 };
     bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(conn_handle);
-    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_callback.remote = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_cb._on_phy_updated.tx_phy = tx_phy;
     packet.gattc_cb._on_phy_updated.rx_phy = rx_phy;
     bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_PHY_READ);
@@ -171,7 +171,7 @@ static void on_phy_updated_cb(gattc_handle_t conn_handle, gatt_status_t status, 
 {
     bt_message_packet_t packet = { 0 };
     bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(conn_handle);
-    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_callback.remote = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_cb._on_phy_updated.status = status;
     packet.gattc_cb._on_phy_updated.tx_phy = tx_phy;
     packet.gattc_cb._on_phy_updated.rx_phy = rx_phy;
@@ -181,7 +181,7 @@ static void on_rssi_read_cb(gattc_handle_t conn_handle, gatt_status_t status, in
 {
     bt_message_packet_t packet = { 0 };
     bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(conn_handle);
-    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_callback.remote = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_cb._on_rssi_read.status = status;
     packet.gattc_cb._on_rssi_read.rssi = rssi;
     bt_socket_server_send(gattc_remote->ins, &packet, BT_GATT_CLIENT_ON_RSSI_READ);
@@ -191,7 +191,7 @@ static void on_conn_param_updated_cb(gattc_handle_t conn_handle, bt_status_t sta
 {
     bt_message_packet_t packet = { 0 };
     bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(conn_handle);
-    packet.gattc_cb._on_callback.remote = gattc_remote->cookie;
+    packet.gattc_cb._on_callback.remote = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_cb._on_conn_param_updated.status = status;
     packet.gattc_cb._on_conn_param_updated.interval = connection_interval;
     packet.gattc_cb._on_conn_param_updated.latency = peripheral_latency;
@@ -228,18 +228,18 @@ void bt_socket_server_gattc_process(service_poll_t* poll, int fd,
         }
 
         gattc_remote->ins = ins;
-        gattc_remote->cookie = packet->gattc_pl._bt_gattc_create.cookie;
+        gattc_remote->cookie = INT2PTR(void*) packet->gattc_pl._bt_gattc_create.cookie;
         packet->gattc_r.status = profile->create_connect(gattc_remote,
-            &packet->gattc_r.handle,
+            INT2PTR(void**) & packet->gattc_r.handle,
             (gattc_callbacks_t*)&g_gattc_socket_cbs);
         if (packet->gattc_r.status != BT_STATUS_SUCCESS)
             free(gattc_remote);
         break;
     }
     case BT_GATT_CLIENT_DELETE_CONNECT: {
-        bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(packet->gattc_pl._bt_gattc_delete.handle);
+        bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(INT2PTR(void*) packet->gattc_pl._bt_gattc_delete.handle);
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_delete_connect)(
-            packet->gattc_pl._bt_gattc_delete.handle);
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_delete.handle);
 
         if (packet->gattc_r.status == BT_STATUS_SUCCESS)
             free(gattc_remote);
@@ -247,28 +247,28 @@ void bt_socket_server_gattc_process(service_poll_t* poll, int fd,
     }
     case BT_GATT_CLIENT_CONNECT:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_connect)(
-            packet->gattc_pl._bt_gattc_connect.handle,
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_connect.handle,
             &packet->gattc_pl._bt_gattc_connect.addr,
             packet->gattc_pl._bt_gattc_connect.addr_type);
         break;
     case BT_GATT_CLIENT_DISCONNECT:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_disconnect)(
-            packet->gattc_pl._bt_gattc_disconnect.handle);
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_disconnect.handle);
         break;
     case BT_GATT_CLIENT_DISCOVER_SERVICE:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_discover_service)(
-            packet->gattc_pl._bt_gattc_discover_service.handle,
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_discover_service.handle,
             &packet->gattc_pl._bt_gattc_discover_service.filter_uuid);
         break;
     case BT_GATT_CLIENT_GET_ATTRIBUTE_BY_HANDLE:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_get_attribute_by_handle)(
-            packet->gattc_pl._bt_gattc_get_attr_by_handle.handle,
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_get_attr_by_handle.handle,
             packet->gattc_pl._bt_gattc_get_attr_by_handle.attr_handle,
             &packet->gattc_r.attr_desc);
         break;
     case BT_GATT_CLIENT_GET_ATTRIBUTE_BY_UUID:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_get_attribute_by_uuid)(
-            packet->gattc_pl._bt_gattc_get_attr_by_uuid.handle,
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_get_attr_by_uuid.handle,
             packet->gattc_pl._bt_gattc_get_attr_by_uuid.start_handle,
             packet->gattc_pl._bt_gattc_get_attr_by_uuid.end_handle,
             &packet->gattc_pl._bt_gattc_get_attr_by_uuid.attr_uuid,
@@ -276,42 +276,42 @@ void bt_socket_server_gattc_process(service_poll_t* poll, int fd,
         break;
     case BT_GATT_CLIENT_READ:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_read)(
-            packet->gattc_pl._bt_gattc_read.handle,
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_read.handle,
             packet->gattc_pl._bt_gattc_read.attr_handle);
         break;
     case BT_GATT_CLIENT_WRITE:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_write)(
-            packet->gattc_pl._bt_gattc_write.handle,
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_write.handle,
             packet->gattc_pl._bt_gattc_write.attr_handle,
             packet->gattc_pl._bt_gattc_write.value,
             packet->gattc_pl._bt_gattc_write.length);
         break;
     case BT_GATT_CLIENT_WRITE_NR:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_write_without_response)(
-            packet->gattc_pl._bt_gattc_write.handle,
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_write.handle,
             packet->gattc_pl._bt_gattc_write.attr_handle,
             packet->gattc_pl._bt_gattc_write.value,
             packet->gattc_pl._bt_gattc_write.length);
         break;
     case BT_GATT_CLIENT_SUBSCRIBE:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_subscribe)(
-            packet->gattc_pl._bt_gattc_subscribe.handle,
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_subscribe.handle,
             packet->gattc_pl._bt_gattc_subscribe.attr_handle,
             packet->gattc_pl._bt_gattc_subscribe.ccc_value);
         break;
     case BT_GATT_CLIENT_UNSUBSCRIBE:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_unsubscribe)(
-            packet->gattc_pl._bt_gattc_subscribe.handle,
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_subscribe.handle,
             packet->gattc_pl._bt_gattc_subscribe.attr_handle);
         break;
     case BT_GATT_CLIENT_EXCHANGE_MTU:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_exchange_mtu)(
-            packet->gattc_pl._bt_gattc_exchange_mtu.handle,
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_exchange_mtu.handle,
             packet->gattc_pl._bt_gattc_exchange_mtu.mtu);
         break;
     case BT_GATT_CLIENT_UPDATE_CONNECTION_PARAM:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_update_connection_parameter)(
-            packet->gattc_pl._bt_gattc_update_connection_param.handle,
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_update_connection_param.handle,
             packet->gattc_pl._bt_gattc_update_connection_param.min_interval,
             packet->gattc_pl._bt_gattc_update_connection_param.max_interval,
             packet->gattc_pl._bt_gattc_update_connection_param.latency,
@@ -321,17 +321,17 @@ void bt_socket_server_gattc_process(service_poll_t* poll, int fd,
         break;
     case BT_GATT_CLIENT_READ_PHY:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_read_phy)(
-            packet->gattc_pl._bt_gattc_phy.handle);
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_phy.handle);
         break;
     case BT_GATT_CLIENT_UPDATE_PHY:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_update_phy)(
-            packet->gattc_pl._bt_gattc_phy.handle,
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_phy.handle,
             packet->gattc_pl._bt_gattc_phy.tx_phy,
             packet->gattc_pl._bt_gattc_phy.rx_phy);
         break;
     case BT_GATT_CLIENT_READ_RSSI:
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_read_rssi)(
-            packet->gattc_pl._bt_gattc_rssi.handle);
+            INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_rssi.handle);
         break;
     default:
         break;
@@ -342,7 +342,7 @@ void bt_socket_server_gattc_process(service_poll_t* poll, int fd,
 int bt_socket_client_gattc_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
-    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)packet->gattc_cb._on_callback.remote;
+    bt_gattc_remote_t* gattc_remote = INT2PTR(bt_gattc_remote_t*) packet->gattc_cb._on_callback.remote;
     switch (packet->code) {
     case BT_GATT_CLIENT_ON_CONNECTED:
         CALLBACK_REMOTE(gattc_remote, gattc_callbacks_t,

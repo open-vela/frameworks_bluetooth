@@ -94,14 +94,16 @@ BT_ADAPTER_MESSAGE_START,
 #include "bt_adapter.h"
 
     typedef union {
-        bt_status_t status;
-        bt_adapter_state_t state;
-        bt_device_type_t dtype;
-        bool bbool;
-        bt_scan_mode_t mode;
-        uint32_t v32;
+        uint8_t status; /* bt_status_t */
+        uint8_t state; /* bt_adapter_state_t */
+        uint8_t dtype; /* bt_device_type_t */
+        uint8_t bbool; /* boolean */
+
+        uint8_t mode; /* bt_scan_mode_t */
+        uint8_t ioc; /* bt_io_capability_t */
         uint16_t v16;
-        bt_io_capability_t ioc;
+
+        uint32_t v32;
     } bt_adapter_result_t;
 
     typedef union {
@@ -125,26 +127,27 @@ BT_ADAPTER_MESSAGE_START,
 
         struct {
             uint16_t size;
+            uint8_t pad[2];
             bt_uuid_t uuids[16];
         } _bt_adapter_get_uuids;
 
         struct {
-            bt_scan_mode_t mode;
-            bool bondable;
+            uint8_t mode; /* bt_scan_mode_t */
+            uint8_t bondable; /* boolean */
         } _bt_adapter_set_scan_mode;
 
         struct {
-            bt_io_capability_t cap;
+            uint8_t cap; /* bt_io_capability_t */
         } _bt_adapter_set_io_capability;
 
         struct {
             bt_address_t addr;
-            ble_addr_type_t type;
+            uint8_t type; /* ble_addr_type_t */
         } _bt_adapter_get_le_address;
 
         struct {
             bt_address_t addr;
-            bool public;
+            uint8_t pub; /* boolean */
         } _bt_adapter_set_le_identity_address;
 
         struct {
@@ -152,19 +155,20 @@ BT_ADAPTER_MESSAGE_START,
         } _bt_adapter_set_le_appearance;
 
         struct {
-            bt_transport_t transport;
-            int num;
+            uint32_t num; /* int */
             bt_address_t addr[32];
+            uint8_t transport; /* bt_transport_t */
         } _bt_adapter_get_bonded_devices,
             _bt_adapter_get_connected_devices;
 
         struct {
-            bool brkey_to_lekey;
-            bool lekey_to_brkey;
+            uint8_t brkey_to_lekey; /* boolean */
+            uint8_t lekey_to_brkey; /* boolean */
         } _bt_adapter_le_enable_key_derivation;
 
         struct {
-            bt_scan_type_t type;
+            uint8_t type; /* bt_scan_type_t */
+            uint8_t pad[3];
             uint16_t interval;
             uint16_t window;
         } _bt_adapter_set_inquiry_scan_parameters,
@@ -183,11 +187,11 @@ BT_ADAPTER_MESSAGE_START,
 
     typedef union {
         struct {
-            bt_adapter_state_t state;
+            uint8_t state; /* bt_adapter_state_t */
         } _on_adapter_state_changed;
 
         struct {
-            bt_discovery_state_t state;
+            uint8_t state; /* bt_discovery_state_t */
         } _on_discovery_state_changed;
 
         struct {
@@ -195,7 +199,7 @@ BT_ADAPTER_MESSAGE_START,
         } _on_discovery_result;
 
         struct {
-            bt_scan_mode_t mode;
+            uint8_t mode; /* bt_scan_mode_t */
         } _on_scan_mode_changed;
 
         struct {
@@ -208,8 +212,8 @@ BT_ADAPTER_MESSAGE_START,
 
         struct {
             bt_address_t addr;
-            bt_transport_t transport;
-            bt_pair_type_t type;
+            uint8_t transport; /* bt_transport_t */
+            uint8_t type; /* bt_pair_type_t */
             uint32_t passkey;
         } _on_pair_display;
 
@@ -219,15 +223,15 @@ BT_ADAPTER_MESSAGE_START,
 
         struct {
             bt_address_t addr;
-            bt_transport_t transport;
-            connection_state_t state;
+            uint8_t transport; /* bt_transport_t */
+            uint8_t state; /* connection_state_t */
         } _on_connection_state_changed;
 
         struct {
             bt_address_t addr;
-            bt_transport_t transport;
-            bond_state_t state;
-            bool is_ctkd;
+            uint8_t transport; /* bt_transport_t */
+            uint8_t state; /* bond_state_t */
+            uint8_t is_ctkd; /* boolean */
         } _on_bond_state_changed;
 
         struct {
@@ -237,30 +241,30 @@ BT_ADAPTER_MESSAGE_START,
         } _on_le_sc_local_oob_data_got;
 
         struct {
-            bt_address_t addr;
             char name[64];
+            bt_address_t addr;
         } _on_remote_name_changed;
 
         struct {
-            bt_address_t addr;
             char alias[64];
+            bt_address_t addr;
         } _on_remote_alias_changed;
 
         struct {
-            bt_address_t addr;
             uint32_t cod;
+            bt_address_t addr;
         } _on_remote_cod_changed;
 
         struct {
             bt_address_t addr;
-            bt_uuid_t uuids;
             uint16_t size;
+            bt_uuid_t uuids;
         } _on_remote_uuids_changed;
 
         struct {
             bt_address_t addr;
-            bt_link_mode_t mode;
             uint16_t sniff_interval;
+            uint8_t mode; /* bt_link_mode_t */
         } _on_remote_link_mode_changed;
 
     } bt_message_adapter_callbacks_t;

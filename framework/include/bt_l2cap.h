@@ -44,8 +44,8 @@ typedef enum {
 } l2cap_channel_mode_t;
 
 typedef struct {
-    bt_transport_t transport;
-    l2cap_channel_mode_t mode; /* basic or enhanced retransmission mode */
+    uint8_t transport; /* bt_transport_t */
+    uint8_t mode; /* l2cap_channel_mode_t, basic or enhanced retransmission mode */
     uint16_t psm; /* Dynamic Service PSM */
     uint16_t mtu; /* Maximum Transmission Unit */
     uint16_t le_mps; /* Maximum PDU payload Size for LE */

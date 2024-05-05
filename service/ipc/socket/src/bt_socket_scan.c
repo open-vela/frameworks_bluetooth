@@ -171,7 +171,7 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
 {
     switch (packet->code) {
     case BT_LE_ON_SCAN_RESULT: {
-        bt_scan_remote_t* scan = (bt_scan_remote_t*)packet->scan_cb._on_scan_result_cb.scanner;
+        bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_cb._on_scan_result_cb.scanner;
         ble_scan_result_t* result = &packet->scan_cb._on_scan_result_cb.result;
         ble_scan_result_t* tmp = malloc(sizeof(ble_scan_result_t) + result->length);
         memcpy(tmp, result, sizeof(ble_scan_result_t));
@@ -181,7 +181,7 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
         break;
     }
     case BT_LE_ON_SCAN_START_STATUS: {
-        bt_scan_remote_t* scan = (bt_scan_remote_t*)packet->scan_cb._on_scan_status_cb.scanner;
+        bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_cb._on_scan_status_cb.scanner;
 
         scan->callback->on_scan_start_status(scan, packet->scan_cb._on_scan_status_cb.status);
         if (packet->scan_cb._on_scan_status_cb.status != 0)
@@ -189,7 +189,7 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
         break;
     }
     case BT_LE_ON_SCAN_STOPPED: {
-        bt_scan_remote_t* scan = (bt_scan_remote_t*)packet->scan_cb._on_scan_stopped_cb.scanner;
+        bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_cb._on_scan_stopped_cb.scanner;
 
         scan->callback->on_scan_stopped(scan);
         free(scan);

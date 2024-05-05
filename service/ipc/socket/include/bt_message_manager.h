@@ -40,7 +40,8 @@ BT_MANAGER_MESSAGE_START,
 #include "bluetooth.h"
 
     typedef union {
-        bt_status_t status;
+        uint8_t status; /* bt_status_t */
+        uint8_t pad[3];
         uint32_t v32;
     } bt_manager_result_t;
 
@@ -62,8 +63,9 @@ BT_MANAGER_MESSAGE_START,
         } _bluetooth_delete_instance;
 
         struct {
+            uint8_t id; /* enum profile_id */
+            uint8_t pad[3];
             uint32_t appid;
-            enum profile_id id;
         } _bluetooth_start_service,
             _bluetooth_stop_service;
 

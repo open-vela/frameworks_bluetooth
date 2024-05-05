@@ -18,6 +18,7 @@
 #include <stdint.h>
 
 #include "bt_gattc.h"
+#include "bt_internal.h"
 #include "bt_profile.h"
 #include "bt_socket.h"
 #include "gattc_service.h"
@@ -46,7 +47,7 @@ bt_status_t bt_gattc_create_connect(bt_instance_t* ins, gattc_handle_t* phandle,
     gattc_remote->ins = ins;
     gattc_remote->callbacks = callbacks;
 
-    packet.gattc_pl._bt_gattc_create.cookie = gattc_remote;
+    packet.gattc_pl._bt_gattc_create.cookie = PTR2INT(uint64_t) gattc_remote;
     status = bt_socket_client_sendrecv(ins, &packet, BT_GATT_CLIENT_CREATE_CONNECT);
     if (status != BT_STATUS_SUCCESS) {
         free(gattc_remote);
@@ -57,7 +58,7 @@ bt_status_t bt_gattc_create_connect(bt_instance_t* ins, gattc_handle_t* phandle,
         return packet.gattc_r.status;
     }
 
-    gattc_remote->cookie = packet.gattc_r.handle;
+    gattc_remote->cookie = INT2PTR(void*) packet.gattc_r.handle;
     gattc_remote->user_phandle = phandle;
     *phandle = gattc_remote;
     return BT_STATUS_SUCCESS;
@@ -72,7 +73,7 @@ bt_status_t bt_gattc_delete_connect(gattc_handle_t conn_handle)
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_delete.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_delete.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_DELETE_CONNECT);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -94,7 +95,7 @@ bt_status_t bt_gattc_connect(gattc_handle_t conn_handle, bt_address_t* addr, ble
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_connect.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_connect.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_connect.addr_type = addr_type;
     memcpy(&packet.gattc_pl._bt_gattc_connect.addr, addr, sizeof(bt_address_t));
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_CONNECT);
@@ -112,7 +113,7 @@ bt_status_t bt_gattc_disconnect(gattc_handle_t conn_handle)
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_disconnect.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_disconnect.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_DISCONNECT);
     if (status != BT_STATUS_SUCCESS)
         return status;
@@ -128,7 +129,7 @@ bt_status_t bt_gattc_discover_service(gattc_handle_t conn_handle, bt_uuid_t* fil
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_discover_service.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_discover_service.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     if (filter_uuid == NULL)
         packet.gattc_pl._bt_gattc_discover_service.filter_uuid.type = 0;
     else
@@ -148,7 +149,7 @@ bt_status_t bt_gattc_get_attribute_by_handle(gattc_handle_t conn_handle, uint16_
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_get_attr_by_handle.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_get_attr_by_handle.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_get_attr_by_handle.attr_handle = attr_handle;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_GET_ATTRIBUTE_BY_HANDLE);
     if (status != BT_STATUS_SUCCESS)
@@ -166,7 +167,7 @@ bt_status_t bt_gattc_get_attribute_by_uuid(gattc_handle_t conn_handle, uint16_t 
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_get_attr_by_uuid.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_get_attr_by_uuid.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_get_attr_by_uuid.start_handle = start_handle;
     packet.gattc_pl._bt_gattc_get_attr_by_uuid.end_handle = end_handle;
     memcpy(&packet.gattc_pl._bt_gattc_get_attr_by_uuid.attr_uuid, attr_uuid, sizeof(bt_uuid_t));
@@ -186,7 +187,7 @@ bt_status_t bt_gattc_read(gattc_handle_t conn_handle, uint16_t attr_handle)
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_read.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_read.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_read.attr_handle = attr_handle;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_READ);
     if (status != BT_STATUS_SUCCESS)
@@ -205,7 +206,7 @@ bt_status_t bt_gattc_write(gattc_handle_t conn_handle, uint16_t attr_handle, uin
     if (length > sizeof(packet.gattc_pl._bt_gattc_write.value))
         return BT_STATUS_PARM_INVALID;
 
-    packet.gattc_pl._bt_gattc_write.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_write.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_write.attr_handle = attr_handle;
     packet.gattc_pl._bt_gattc_write.length = length;
     memcpy(packet.gattc_pl._bt_gattc_write.value, value, length);
@@ -226,7 +227,7 @@ bt_status_t bt_gattc_write_without_response(gattc_handle_t conn_handle, uint16_t
     if (length > sizeof(packet.gattc_pl._bt_gattc_write.value))
         return BT_STATUS_PARM_INVALID;
 
-    packet.gattc_pl._bt_gattc_write.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_write.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_write.attr_handle = attr_handle;
     packet.gattc_pl._bt_gattc_write.length = length;
     memcpy(packet.gattc_pl._bt_gattc_write.value, value, length);
@@ -245,7 +246,7 @@ bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t attr_handle,
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_subscribe.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_subscribe.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_subscribe.attr_handle = attr_handle;
     packet.gattc_pl._bt_gattc_subscribe.ccc_value = ccc_value;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_SUBSCRIBE);
@@ -263,7 +264,7 @@ bt_status_t bt_gattc_unsubscribe(gattc_handle_t conn_handle, uint16_t attr_handl
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_subscribe.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_subscribe.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_subscribe.attr_handle = attr_handle;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_UNSUBSCRIBE);
     if (status != BT_STATUS_SUCCESS)
@@ -280,7 +281,7 @@ bt_status_t bt_gattc_exchange_mtu(gattc_handle_t conn_handle, uint32_t mtu)
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_exchange_mtu.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_exchange_mtu.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_exchange_mtu.mtu = mtu;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_EXCHANGE_MTU);
     if (status != BT_STATUS_SUCCESS)
@@ -298,7 +299,7 @@ bt_status_t bt_gattc_update_connection_parameter(gattc_handle_t conn_handle, uin
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_update_connection_param.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_update_connection_param.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_update_connection_param.min_interval = min_interval;
     packet.gattc_pl._bt_gattc_update_connection_param.max_interval = max_interval;
     packet.gattc_pl._bt_gattc_update_connection_param.latency = latency;
@@ -320,7 +321,7 @@ bt_status_t bt_gattc_read_phy(gattc_handle_t conn_handle)
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_phy.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_phy.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_READ_PHY);
     if (status != BT_STATUS_SUCCESS)
         return status;
@@ -336,7 +337,7 @@ bt_status_t bt_gattc_update_phy(gattc_handle_t conn_handle, ble_phy_type_t tx_ph
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_phy.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_phy.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     packet.gattc_pl._bt_gattc_phy.tx_phy = tx_phy;
     packet.gattc_pl._bt_gattc_phy.rx_phy = rx_phy;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_UPDATE_PHY);
@@ -354,7 +355,7 @@ bt_status_t bt_gattc_read_rssi(gattc_handle_t conn_handle)
 
     CHECK_NULL_PTR(gattc_remote);
 
-    packet.gattc_pl._bt_gattc_rssi.handle = gattc_remote->cookie;
+    packet.gattc_pl._bt_gattc_rssi.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_READ_RSSI);
     if (status != BT_STATUS_SUCCESS)
         return status;

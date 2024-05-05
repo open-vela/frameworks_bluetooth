@@ -35,9 +35,10 @@ extern "C" {
 typedef void* gattc_handle_t;
 
 typedef struct {
+    uint8_t type; /* gatt_attr_type_t */
+    uint8_t pad[1];
     uint16_t handle;
     bt_uuid_t uuid;
-    gatt_attr_type_t type;
     uint32_t properties;
 
 } gatt_attr_desc_t;

@@ -206,7 +206,7 @@ void bt_socket_server_device_process(service_poll_t* poll,
         packet->devs_r.status = BTSYMBOLS(bt_device_set_pin_code)(ins,
             &packet->devs_pl._bt_device_set_pin_code.addr,
             packet->devs_pl._bt_device_set_pin_code.accept,
-            packet->devs_pl._bt_device_set_pin_code.pincode,
+            (char*)packet->devs_pl._bt_device_set_pin_code.pincode,
             packet->devs_pl._bt_device_set_pin_code.len);
         break;
     }

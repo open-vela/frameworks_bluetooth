@@ -389,7 +389,7 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_get_bonded_devices)(ins,
             packet->adpt_pl._bt_adapter_get_bonded_devices.transport,
             &addr,
-            &packet->adpt_pl._bt_adapter_get_bonded_devices.num, socket_allocator);
+            (int*)&packet->adpt_pl._bt_adapter_get_bonded_devices.num, socket_allocator);
 
         if (packet->adpt_pl._bt_adapter_get_bonded_devices.num > 0) {
             if (packet->adpt_pl._bt_adapter_get_bonded_devices.num > nitems(packet->adpt_pl._bt_adapter_get_bonded_devices.addr)) {
@@ -407,7 +407,7 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_get_connected_devices)(ins,
             packet->adpt_pl._bt_adapter_get_connected_devices.transport,
             &addr,
-            &packet->adpt_pl._bt_adapter_get_connected_devices.num, socket_allocator);
+            (int*)&packet->adpt_pl._bt_adapter_get_connected_devices.num, socket_allocator);
         if (packet->adpt_pl._bt_adapter_get_connected_devices.num > 0) {
             if (packet->adpt_pl._bt_adapter_get_connected_devices.num > nitems(packet->adpt_pl._bt_adapter_get_connected_devices.addr)) {
                 packet->adpt_pl._bt_adapter_get_connected_devices.num = nitems(packet->adpt_pl._bt_adapter_get_connected_devices.addr);
@@ -450,7 +450,7 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
     case BT_ADAPTER_GET_LE_ADDRESS: {
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_get_le_address)(ins,
             &packet->adpt_pl._bt_adapter_get_le_address.addr,
-            &packet->adpt_pl._bt_adapter_get_le_address.type);
+            INT2PTR(ble_addr_type_t*) & packet->adpt_pl._bt_adapter_get_le_address.type);
         break;
     }
     case BT_ADAPTER_SET_LE_ADDRESS: {
@@ -461,7 +461,7 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
     case BT_ADAPTER_SET_LE_IDENTITY_ADDRESS: {
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_set_le_identity_address)(ins,
             &packet->adpt_pl._bt_adapter_set_le_address.addr,
-            packet->adpt_pl._bt_adapter_set_le_identity_address.public);
+            packet->adpt_pl._bt_adapter_set_le_identity_address.pub);
         break;
     }
     case BT_ADAPTER_SET_LE_IO_CAPABILITY: {

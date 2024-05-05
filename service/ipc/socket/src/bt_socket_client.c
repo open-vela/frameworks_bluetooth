@@ -43,6 +43,7 @@
 
 #include "bluetooth.h"
 #include "bt_adapter.h"
+#include "bt_config.h"
 #include "bt_debug.h"
 #include "bt_message.h"
 #include "bt_socket.h"
@@ -121,7 +122,7 @@ static void bt_socket_client_msg_process(bt_client_msg_t* msg)
         bt_socket_client_l2cap_callback(NULL, -1, msg->ins, packet);
 #endif
     } else {
-        BT_LOGE("%s, Unhandled message:%d", __func__, packet->code);
+        BT_LOGE("%s, Unhandled message: %d", __func__, (int)packet->code);
     }
 
     free(msg);
@@ -299,7 +300,11 @@ static int bt_socket_client_connect(int family, const char* name,
         addr_len = sizeof(struct sockaddr_un);
     } else if (family == AF_INET) {
         u.inet_addr.sin_family = AF_INET;
+#if defined(ANDROID)
+        u.inet_addr.sin_addr.s_addr = htonl(CONFIG_INADDR_LOOPBACK);
+#else
         u.inet_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+#endif
         u.inet_addr.sin_port = htons(port);
         addr_len = sizeof(struct sockaddr_in);
     } else {

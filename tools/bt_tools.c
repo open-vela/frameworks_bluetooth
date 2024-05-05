@@ -20,9 +20,6 @@
 #include <string.h>
 #if defined(__NuttX__)
 #include <system/readline.h>
-#elif !defined(ANDROID)
-#include <readline/history.h>
-#include <readline/readline.h>
 #endif
 
 #include "bluetooth.h"
@@ -1694,7 +1691,12 @@ int main(int argc, char** argv)
     char* _argv[32];
     char* buffer = NULL;
     char* saveptr;
-    int ret, len;
+    int ret;
+    size_t len;
+
+#ifndef __NuttX__
+    size_t size;
+#endif
 
     while ((opt = getopt_long(argc, argv, "h-v-d", main_options, NULL)) != -1) {
         switch (opt) {
@@ -1730,22 +1732,6 @@ int main(int argc, char** argv)
     if (bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_ON)
         bt_tool_init(g_bttool_ins);
 
-#if defined(ANDROID) // Start of ANDROID
-    int i = 0;
-    PRINT("argc = %d\n", argc);
-    for (i = 0; i < argc; i++)
-        PRINT("argv[%d]=%s\n", i, argv[i]);
-
-    if (argc > 1)
-        ret = execute_command(g_bttool_ins, argc - 1, &argv[1]);
-    else
-        ret = CMD_OK;
-    if (ret != CMD_OK) {
-        PRINT("cmd execute error: [%s]", cmd_err_str(ret));
-    }
-    getchar();
-#else // !ANDROID, __NuttX__
-
     while (1) {
         printf("bttool> ");
         fflush(stdout);
@@ -1754,9 +1740,9 @@ int main(int argc, char** argv)
 #ifdef __NuttX__
         len = readline_stream(buffer, CONFIG_NSH_LINELEN, stdin, stdout);
 #else
-        free(buffer);
-        buffer = readline(NULL);
-        len = strnlen(buffer, CONFIG_NSH_LINELEN);
+        len = getline(&buffer, &size, stdin);
+        if (-1 == len)
+            continue;
 #endif
         buffer[len] = '\0';
         if (len < 0)
@@ -1797,7 +1783,6 @@ int main(int argc, char** argv)
         do_disable_wait(g_bttool_ins);
 #endif
     }
-#endif // End of !ANDROID, __NuttX__
 
     bt_tool_uninit(g_bttool_ins);
     bt_adapter_unregister_callback(g_bttool_ins, adapter_callback2);

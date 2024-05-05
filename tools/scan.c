@@ -90,7 +90,7 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
     uint8_t* filter_data = NULL;
     uint16_t filter_len = 0;
     advertiser_data_t* filter;
-    ble_scan_settings_t settings = { BT_SCAN_MODE_LOW_POWER, 0, BT_LE_SCAN_TYPE_PASSIVE, BT_LE_1M_PHY };
+    ble_scan_settings_t settings = { BT_SCAN_MODE_LOW_POWER, 0, BT_LE_SCAN_TYPE_PASSIVE, BT_LE_1M_PHY, { 0 } };
 
     if (g_scanner)
         return CMD_ERROR;

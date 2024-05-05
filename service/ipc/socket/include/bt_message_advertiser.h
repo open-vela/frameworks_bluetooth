@@ -42,9 +42,10 @@ BT_ADVERTISER_MESSAGE_START,
 #include "bt_le_advertiser.h"
 
     typedef union {
-        bt_status_t status;
+        uint8_t status; /* bt_status_t */
+        uint8_t vbool; /* boolean */
+        uint8_t pad[2];
         uint32_t remote;
-        bool vbool;
     } bt_advertiser_result_t;
 
     typedef struct
@@ -58,10 +59,10 @@ BT_ADVERTISER_MESSAGE_START,
         struct {
             uint32_t adver;
             ble_adv_params_t params;
-            uint8_t adv_data[256];
             uint16_t adv_len;
-            uint8_t scan_rsp_data[256];
             uint16_t scan_rsp_len;
+            uint8_t adv_data[256];
+            uint8_t scan_rsp_data[256];
         } _bt_le_start_advertising;
 
         struct {
@@ -77,13 +78,13 @@ BT_ADVERTISER_MESSAGE_START,
     typedef struct
     {
         struct {
-            uint32_t adver;
+            uint64_t adver;
             uint8_t adv_id;
             uint8_t status;
         } _on_advertising_start;
 
         struct {
-            uint32_t adver;
+            uint64_t adver;
             uint8_t adv_id;
         } _on_advertising_stopped;
     } bt_message_advertiser_callbacks_t;
