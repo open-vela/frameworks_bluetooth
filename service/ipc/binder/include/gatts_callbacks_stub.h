@@ -17,10 +17,11 @@
 #ifndef __BT_GATTS_CALLBACKS_STUB_H__
 #define __BT_GATTS_CALLBACKS_STUB_H__
 
-#include <nuttx/list.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <uchar.h>
+
+#include "bt_list.h"
 
 #ifdef __cplusplus
 extern "C" {

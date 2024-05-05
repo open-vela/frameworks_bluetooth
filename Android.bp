@@ -1,0 +1,83 @@
+cc_library {
+    name : "libbt-framework-client",
+
+    srcs : [
+        "framework/common/*.c",
+        "framework/socket/*.c",
+        "service/common/index_allocator.c",
+        "service/ipc/socket/src/bt_socket_client.c",
+        "service/ipc/socket/src/bt_socket_adapter.c",
+        "service/src/manager_service.c",
+    ],
+
+    include_dirs : [
+        "vendor/vela/apps/system/libuv/libuv/include",
+        "vendor/vela/apps/system/libuv/libuv/src",
+    ],
+
+    local_include_dirs : [
+        "framework/include",
+        "service",
+        "service/common",
+        "service/ipc",
+        "service/ipc/socket/include",
+        "service/profiles",
+        "service/profiles/include",
+        "service/src",
+    ],
+
+    static_libs : [
+        "libuv",
+    ],
+
+    cflags : [
+        //"-DANDROID",
+        "-Werror",
+        "-Wno-unused-parameter",
+        "-Wno-unused-function",
+        "-Wno-unused-variable",
+        "-Wno-typedef-redefinition",
+    ],
+
+    apex_available : [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+        //"com.android.bluetooth.updatable",
+    ],
+}
+
+cc_binary {
+    name : "bttool",
+
+    srcs : [
+        "tools/bt_tools.c",
+        //"tools/adv.c",
+        //"tools/scan.c",
+        "tools/log.c",
+        "tools/utils.c",
+    ],
+
+    include_dirs : [
+        "vendor/vela/apps/system/libuv/libuv/include",
+        "vendor/vela/apps/system/libuv/libuv/src",
+    ],
+
+    local_include_dirs : [
+        "framework/include",
+        "service",
+        "service/utils",
+    ],
+
+    static_libs : [
+        "libuv",
+        "libbt-framework-client",
+    ],
+
+    cflags : [
+        //"-DANDROID",
+        "-Werror",
+        "-Wno-unused-parameter",
+        "-Wno-unused-function",
+        "-Wno-unused-variable",
+    ],
+}

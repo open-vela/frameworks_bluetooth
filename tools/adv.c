@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-
 #include <getopt.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "advertiser_data.h"
+#include "bluetooth.h"
 #include "bt_le_advertiser.h"
 #include "bt_tools.h"
 
@@ -375,7 +375,7 @@ static int stop_adv_cmd(void* handle, int argc, char* argv[])
                 return CMD_INVALID_PARAM;
             }
             PRINT("Stop adv handle:0x%08" PRIx32 "", advhandle);
-            bt_le_stop_advertising(handle, (bt_advertiser_t*)advhandle);
+            bt_le_stop_advertising(handle, INT2PTR(bt_advertiser_t*) advhandle);
             return CMD_OK;
         } break;
         default:

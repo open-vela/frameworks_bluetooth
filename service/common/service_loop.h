@@ -16,9 +16,9 @@
 #ifndef _BT_SERVICE_LOOP_H__
 #define _BT_SERVICE_LOOP_H__
 
-#include <nuttx/list.h>
 #include <stdint.h>
 
+#include "bt_list.h"
 #include "uv.h"
 
 enum service_poll_event {

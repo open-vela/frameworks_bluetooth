@@ -21,12 +21,11 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-
-#include <nuttx/list.h>
-
 #include <uv.h>
 
 #include "bt_addr.h"
+#include "bt_config.h"
+#include "bt_list.h"
 #include "bt_profile.h"
 #include "bt_status.h"
 #include "bt_uuid.h"
@@ -36,6 +35,26 @@ extern "C" {
 #ifndef BTSYMBOLS
 #define BTSYMBOLS(s) s
 #endif
+
+#if defined(CONFIG_CPU_BIT64) // CONFIG_CPU_BIT64
+#define PTR uint64_t
+#define PRTx PRIx64
+#if !defined(INT2PTR)
+#define INT2PTR(pt) (pt)(uint64_t) // For example, INT2PTR(pt)(int): (int)=>uint64_t=>(pt)/pointer type
+#endif
+#if !defined(PTR2INT)
+#define PTR2INT(it) (it)(uint64_t) // For example, PTR2INT(it)(pointer): (pointer)=>uint64_t=>(it)/int type
+#endif
+#else // CONFIG_CPU_BIT32 and others
+#define PTR uint32_t
+#define PRTx PRIx32
+#if !defined(INT2PTR)
+#define INT2PTR(pt) (pt)(uint32_t) // For example, INT2PTR(pt)(int): (int)=>uint32_t=>(pt)/pointer type
+#endif
+#if !defined(PTR2INT)
+#define PTR2INT(it) (it)(uint32_t) // For example, PTR2INT(it)(pointer): (pointer)=>uint32_t=>(it)/int type
+#endif
+#endif // End of else
 
 typedef enum {
     BT_IO_CAPABILITY_DISPLAYONLY = 0,

@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#include <nuttx/list.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "bt_list.h"
 #include "bt_spp.h"
 #include "bt_tools.h"
 #include "bt_uuid.h"

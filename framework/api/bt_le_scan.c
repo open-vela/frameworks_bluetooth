@@ -15,14 +15,13 @@
  ***************************************************************************/
 #define LOG_TAG "adv"
 
-#include <nuttx/list.h>
 #include <stdlib.h>
 
 #include "bluetooth.h"
 #include "bt_internal.h"
 #include "bt_le_scan.h"
+#include "bt_list.h"
 #include "scan_manager.h"
-
 #include "utils/log.h"
 
 bt_scanner_t* BTSYMBOLS(bt_le_start_scan)(bt_instance_t* ins, const scanner_callbacks_t* cbs)
