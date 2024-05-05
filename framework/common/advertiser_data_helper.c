@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-
-#include <debug.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "advertiser_data.h"
+#include "bt_debug.h"
 
 typedef struct {
     uint8_t ad_type;

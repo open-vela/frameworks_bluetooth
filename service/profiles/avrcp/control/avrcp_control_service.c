@@ -20,19 +20,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <nuttx/list.h>
-
 #include "adapter_internel.h"
+#include "avrcp_control_service.h"
 #include "bt_addr.h"
+#include "bt_list.h"
 #include "bt_player.h"
 #include "callbacks_list.h"
+#include "sal_avrcp_control_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
-
-#include "avrcp_control_service.h"
-
-#include "sal_avrcp_control_interface.h"
-
 #include "utils/log.h"
 
 #define AVRCP_CT_CALLBACK_FOREACH(_list, _cback, ...) \

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#include <nuttx/list.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -27,6 +26,7 @@
 #endif
 
 #include "adapter_internel.h"
+#include "bt_list.h"
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
 #include "advertising.h"
 #endif

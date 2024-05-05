@@ -15,7 +15,6 @@
  ***************************************************************************/
 #define LOG_TAG "ag_stm"
 
-#include <nuttx/list.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,17 +24,15 @@
 #include "bt_device.h"
 #include "bt_hfp_ag.h"
 #include "bt_list.h"
+#include "bt_utils.h"
 #include "bt_vendor.h"
 #include "hfp_ag_event.h"
 #include "hfp_ag_service.h"
 #include "hfp_ag_state_machine.h"
 #include "hfp_ag_tele_service.h"
+#include "media_system.h"
 #include "sal_adapter_interface.h"
 #include "sal_hfp_ag_interface.h"
-
-#include "media_system.h"
-
-#include "bt_utils.h"
 #include "utils/log.h"
 
 #define HFP_AG_RETRY_MAX 1

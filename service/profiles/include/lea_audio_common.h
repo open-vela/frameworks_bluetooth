@@ -25,13 +25,12 @@
 #ifndef __LEA_AUDIO_COMMON_H__
 #define __LEA_AUDIO_COMMON_H__
 
-#include "bt_device.h"
-
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <nuttx/list.h>
+#include "bt_device.h"
+#include "bt_list.h"
 
 /****************************************************************************
  * Pre-processor Definitions

@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#include <nuttx/list.h>
+#define LOG_TAG "device"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -25,8 +26,8 @@
 #include "bluetooth_define.h"
 #include "bt_addr.h"
 #include "bt_device.h"
+#include "bt_list.h"
 #include "device.h"
-#define LOG_TAG "device"
 #include "utils/log.h"
 
 typedef struct remote_device {

@@ -14,12 +14,12 @@
  * limitations under the License.
  ***************************************************************************/
 #include <getopt.h>
-#include <nuttx/config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "bluetooth.h"
+#include "bt_config.h"
 #include "bt_device.h"
 #include "bt_gattc.h"
 #include "bt_tools.h"

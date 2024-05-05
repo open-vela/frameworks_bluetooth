@@ -35,12 +35,11 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-#include <nuttx/list.h>
-
 #include "a2dp_codec.h"
 #include "a2dp_event.h"
 #include "a2dp_state_machine.h"
 #include "bt_a2dp.h"
+#include "bt_list.h"
 
 #define SEP_SRC 0 /* Source SEP */
 #define SEP_SNK 1 /* Sink SEP */

@@ -18,16 +18,19 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#define LOG_TAG "[bttool]"
+
 #include <getopt.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __NuttX__
-#include <debug.h>
-#endif
 
+#include "bt_debug.h"
 #include "utils.h"
 
 /****************************************************************************
@@ -44,8 +47,6 @@
 #define CMD_ERROR (-9)
 
 #define BTTOOL_PRINT_USE_SYSLOG 0
-
-#define LOG_TAG "[bttool]"
 
 #if BTTOOL_PRINT_USE_SYSLOG
 /* use syslog */
@@ -66,10 +67,6 @@
 
 #ifndef CONFIG_NSH_LINELEN
 #define CONFIG_NSH_LINELEN 80
-#endif
-
-#ifndef __NuttX__
-#define lib_dumpbuffer(a, b, c)
 #endif
 
 /****************************************************************************

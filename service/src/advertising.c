@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#include <nuttx/list.h>
+#define LOG_TAG "adver"
+
 #include <stdlib.h>
 #include <string.h>
 
-#include "bluetooth.h"
-
 #include "adapter_internel.h"
 #include "advertising.h"
+#include "bluetooth.h"
+#include "bt_list.h"
 #include "index_allocator.h"
 #include "sal_adapter_interface.h"
 #include "service_loop.h"
-
-#define LOG_TAG "adver"
 #include "utils/log.h"
 
 #ifndef CONFIG_OBELISK_LE_ADVERTISER_MAX_NUM

@@ -13,21 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-
 #ifndef __NuttX__
 #define _GNU_SOURCE
 #endif
+
+#define LOG_TAG "thread_loop"
+
 #include <assert.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
-
-#include <nuttx/list.h>
+#include <string.h>
 #include <syslog.h>
+#include <unistd.h>
 
+#include "bt_list.h"
 #include "uv_thread_loop.h"
-
-#define LOG_TAG "thread_loop"
 
 typedef struct thread_loop {
     char name[64];
@@ -170,7 +171,7 @@ int thread_loop_run(uv_loop_t* loop, bool start_thread, const char* name)
             return ret;
         }
 
-        uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE, LOOP_THREAD_STACK_SIZE };
+        uv_thread_options_t options = { UV_THREAD_HAS_STACK_SIZE, LOOP_THREAD_STACK_SIZE, 0 };
         ret = uv_thread_create_ex(&priv->thread, &options, thread_schedule_loop, (void*)loop);
         if (ret != 0) {
             syslog(LOG_ERR, "loop thread create :%d", ret);

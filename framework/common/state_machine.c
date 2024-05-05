@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#include "state_machine.h"
 #include <stdint.h>
+
+#include "state_machine.h"
 
 void hsm_ctor(state_machine_t* sm, const state_t* initial_state)
 {
@@ -78,12 +79,12 @@ const char* hsm_get_state_name(const state_t* state)
     return state->state_name;
 }
 
-const uint16_t hsm_get_state_value(const state_t* state)
+uint16_t hsm_get_state_value(const state_t* state)
 {
     return state->state_value;
 }
 
-const uint16_t hsm_get_current_state_value(state_machine_t* sm)
+uint16_t hsm_get_current_state_value(state_machine_t* sm)
 {
     return sm->current_state->state_value;
 }

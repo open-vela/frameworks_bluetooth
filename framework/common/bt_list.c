@@ -14,7 +14,6 @@
  * limitations under the License.
  ***************************************************************************/
 #include <assert.h>
-#include <nuttx/list.h>
 #include <stdint.h>
 #include <stdlib.h>
 

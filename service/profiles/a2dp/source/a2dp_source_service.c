@@ -23,20 +23,16 @@
 #include <kvdb.h>
 #endif
 
-#include <nuttx/list.h>
-
+#include "a2dp_source_service.h"
 #include "adapter_internel.h"
+#include "bt_a2dp_source.h"
 #include "bt_addr.h"
+#include "bt_list.h"
 #include "callbacks_list.h"
 #include "sal_a2dp_source_interface.h"
 #include "sal_adapter_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
-
-#include "a2dp_source_service.h"
-
-#include "bt_a2dp_source.h"
-
 #include "utils/log.h"
 
 #ifndef CONFIG_BLUETOOTH_A2DP_MAX_CONNECTIONS

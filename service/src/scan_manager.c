@@ -15,7 +15,6 @@
  ***************************************************************************/
 #define LOG_TAG "scanner"
 
-#include <nuttx/list.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +22,7 @@
 #include "adapter_internel.h"
 #include "bluetooth.h"
 #include "bt_le_scan.h"
+#include "bt_list.h"
 #include "sal_adapter_interface.h"
 #include "scan_manager.h"
 #include "service_loop.h"

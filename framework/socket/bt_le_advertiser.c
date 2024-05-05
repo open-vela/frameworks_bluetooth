@@ -15,14 +15,13 @@
  ***************************************************************************/
 #define LOG_TAG "adv"
 
-#include <nuttx/list.h>
 #include <stdlib.h>
 
 #include "advertising.h"
 #include "bluetooth.h"
 #include "bt_le_advertiser.h"
+#include "bt_list.h"
 #include "bt_socket.h"
-
 #include "utils/log.h"
 
 bt_advertiser_t* bt_le_start_advertising(bt_instance_t* ins,
@@ -46,7 +45,8 @@ bt_advertiser_t* bt_le_start_advertising(bt_instance_t* ins,
     adv->callback = cbs;
     packet.adv_pl._bt_le_start_advertising.adver = (uint32_t)adv;
     memcpy(&packet.adv_pl._bt_le_start_advertising.params, params, sizeof(*params));
-    if ((adv_len && (adv_len > sizeof(packet.adv_pl._bt_le_start_advertising.adv_data))) || (scan_rsp_len && (scan_rsp_len > sizeof(packet.adv_pl._bt_le_start_advertising.scan_rsp_data)))) {
+    if ((adv_len && (adv_len > sizeof(packet.adv_pl._bt_le_start_advertising.adv_data)))
+        || (scan_rsp_len && (scan_rsp_len > sizeof(packet.adv_pl._bt_le_start_advertising.scan_rsp_data)))) {
         free(adv);
         return NULL;
     }

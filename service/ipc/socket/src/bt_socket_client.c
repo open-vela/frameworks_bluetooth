@@ -21,7 +21,6 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-
 #define LOG_TAG "bt_socket_client"
 
 #include <assert.h>
@@ -29,10 +28,10 @@
 #include <poll.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <syslog.h>
 #include <unistd.h>
 
-#include <sys/socket.h>
 #ifndef __NuttX__
 #include <linux/un.h>
 #else
@@ -42,16 +41,14 @@
 #include <netpacket/rpmsg.h>
 #endif
 
-//#include "adapter_internel.h"
 #include "bluetooth.h"
 #include "bt_adapter.h"
-//#include "bt_internal.h"
+#include "bt_debug.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
-#include "uv_thread_loop.h"
-
 #include "utils/log.h"
+#include "uv_thread_loop.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -79,30 +76,50 @@ static void bt_socket_client_msg_process(bt_client_msg_t* msg)
 
     if (packet->code > BT_ADAPTER_CALLBACK_START && packet->code < BT_ADAPTER_CALLBACK_END) {
         bt_socket_client_adapter_callback(NULL, -1, msg->ins, packet);
+#ifdef CONFIG_BLUETOOTH_HFP_AG
     } else if (packet->code > BT_HFP_AG_CALLBACK_START && packet->code < BT_HFP_AG_CALLBACK_END) {
         bt_socket_client_hfp_ag_callback(NULL, -1, msg->ins, &msg->packet);
+#endif
+#ifdef CONFIG_BLUETOOTH_HFP_HF
     } else if (packet->code > BT_HFP_HF_CALLBACK_START && packet->code < BT_HFP_HF_CALLBACK_END) {
         bt_socket_client_hfp_hf_callback(NULL, -1, msg->ins, &msg->packet);
+#endif
+#ifdef CONFIG_BLUETOOTH_A2DP
     } else if (msg->packet.code > BT_A2DP_SINK_CALLBACK_START && msg->packet.code < BT_A2DP_SINK_CALLBACK_END) {
         bt_socket_client_a2dp_sink_callback(NULL, -1, msg->ins, &msg->packet);
     } else if (msg->packet.code > BT_A2DP_SOURCE_CALLBACK_START && msg->packet.code < BT_A2DP_SOURCE_CALLBACK_END) {
         bt_socket_client_a2dp_source_callback(NULL, -1, msg->ins, &msg->packet);
+#endif
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
     } else if (packet->code > BT_ADVERTISER_CALLBACK_START && packet->code < BT_ADVERTISER_CALLBACK_END) {
         bt_socket_client_advertiser_callback(NULL, -1, msg->ins, packet);
+#endif
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
     } else if (packet->code > BT_SCAN_CALLBACK_START && packet->code < BT_SCAN_CALLBACK_END) {
         bt_socket_client_scan_callback(NULL, -1, msg->ins, packet);
+#endif
+#ifdef CONFIG_BLUETOOTH_GATT
     } else if (packet->code > BT_GATT_CLIENT_CALLBACK_START && packet->code < BT_GATT_CLIENT_CALLBACK_END) {
         bt_socket_client_gattc_callback(NULL, -1, msg->ins, packet);
     } else if (packet->code > BT_GATT_SERVER_CALLBACK_START && packet->code < BT_GATT_SERVER_CALLBACK_END) {
         bt_socket_client_gatts_callback(NULL, -1, msg->ins, packet);
+#endif
+#ifdef CONFIG_BLUETOOTH_SPP
     } else if (packet->code > BT_SPP_CALLBACK_START && packet->code < BT_SPP_CALLBACK_END) {
         bt_socket_client_spp_callback(NULL, -1, msg->ins, packet);
+#endif
+#ifdef CONFIG_BLUETOOTH_PAN
     } else if (packet->code > BT_PAN_CALLBACK_START && packet->code < BT_PAN_CALLBACK_END) {
         bt_socket_client_pan_callback(NULL, -1, msg->ins, packet);
+#endif
+#ifdef CONFIG_BLUETOOTH_HID_DEVICE
     } else if (packet->code > BT_HID_DEVICE_CALLBACK_START && packet->code < BT_HID_DEVICE_CALLBACK_END) {
         bt_socket_client_hid_device_callback(NULL, -1, msg->ins, packet);
+#endif
+#ifdef CONFIG_BLUETOOTH_L2CAP
     } else if (packet->code > BT_L2CAP_CALLBACK_START && packet->code < BT_L2CAP_CALLBACK_END) {
         bt_socket_client_l2cap_callback(NULL, -1, msg->ins, packet);
+#endif
     } else {
         BT_LOGE("%s, Unhandled message:%d", __func__, packet->code);
     }

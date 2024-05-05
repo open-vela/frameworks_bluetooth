@@ -14,13 +14,13 @@
  * limitations under the License.
  ***************************************************************************/
 
-#include <nuttx/list.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "bt_list.h"
 #include "bt_status.h"
 #include "index_allocator.h"
 #include "manager_service.h"

@@ -13,22 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-
-#include <nuttx/list.h>
 #ifndef __NuttX__
 #define _GNU_SOURCE
 #endif
+
+#define LOG_TAG "service_loop"
+
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "bt_list.h"
 #include "service_loop.h"
-
-#define LOG_TAG "service_loop"
 #include "utils/log.h"
-
-#if 1
-// #ifdef CONFIG_OBELISK_LIBUV_LOOP
 
 typedef struct {
     struct list_node node;
@@ -466,7 +463,3 @@ uv_loop_t* get_service_uv_loop(void)
 {
     return uv_default_loop();
 }
-
-#else
-
-#endif

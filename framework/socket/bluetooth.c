@@ -17,10 +17,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "manager_service.h"
-
 #include "bluetooth.h"
+#include "bt_debug.h"
 #include "bt_socket.h"
+#include "manager_service.h"
 #include "service_loop.h"
 
 bt_instance_t* bluetooth_create_instance(void)
@@ -78,16 +78,6 @@ bt_instance_t* bluetooth_create_instance(void)
     return ins;
 }
 
-bt_instance_t* bluetooth_get_instance(void)
-{
-    bt_instance_t* bluetooth_ins = bluetooth_find_instance(getpid());
-
-    if (bluetooth_ins == NULL)
-        return bluetooth_create_instance();
-    else
-        return bluetooth_ins;
-}
-
 bt_instance_t* bluetooth_find_instance(pid_t pid)
 {
     bt_status_t status;
@@ -97,7 +87,17 @@ bt_instance_t* bluetooth_find_instance(pid_t pid)
     if (status != BT_STATUS_SUCCESS) {
         return NULL;
     }
-    return (bt_instance_t*)handle;
+    return INT2PTR(bt_instance_t*) handle;
+}
+
+bt_instance_t* bluetooth_get_instance(void)
+{
+    bt_instance_t* bluetooth_ins = bluetooth_find_instance(getpid());
+
+    if (bluetooth_ins == NULL)
+        return bluetooth_create_instance();
+    else
+        return bluetooth_ins;
 }
 
 void* bluetooth_get_proxy(bt_instance_t* ins, enum profile_id id)

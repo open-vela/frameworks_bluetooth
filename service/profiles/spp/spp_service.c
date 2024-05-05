@@ -17,30 +17,25 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-// stdlib
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
-// nuttx
-#include <debug.h>
-#include <nuttx/list.h>
-// libuv
-#include "uv.h"
 
 #include "bt_addr.h"
+#include "bt_debug.h"
 #include "bt_device.h"
 #include "bt_profile.h"
 #include "bt_uuid.h"
-
+#include "euv_pty.h"
+#include "index_allocator.h"
+#include "list.h"
+#include "openpty.h"
 #include "sal_spp_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
 #include "spp_service.h"
-
-#include "euv_pty.h"
-#include "index_allocator.h"
-#include "openpty.h"
 #include "utils/log.h"
+#include "uv.h"
 
 /****************************************************************************
  * Pre-processor Definitions

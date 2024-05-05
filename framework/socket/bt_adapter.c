@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -155,7 +154,7 @@ bt_adapter_state_t bt_adapter_get_state(bt_instance_t* ins)
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_STATE);
     if (status != BT_STATUS_SUCCESS) {
-        return status;
+        return BT_ADAPTER_STATE_OFF;
     }
 
     return packet.adpt_r.state;
@@ -185,7 +184,7 @@ bt_device_type_t bt_adapter_get_type(bt_instance_t* ins)
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_GET_TYPE);
     if (status != BT_STATUS_SUCCESS) {
-        return status;
+        return BT_DEVICE_TYPE_UNKNOW;
     }
 
     return packet.adpt_r.dtype;

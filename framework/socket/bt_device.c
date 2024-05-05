@@ -15,6 +15,7 @@
  ***************************************************************************/
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "adapter_internel.h"
 #include "bluetooth.h"
@@ -58,7 +59,7 @@ ble_addr_type_t bt_device_get_address_type(bt_instance_t* ins, bt_address_t* add
     BT_SOCKET_INS_VALID(ins, BT_LE_ADDR_TYPE_UNKNOWN);
     status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_ADDRESS_TYPE);
     if (status != BT_STATUS_SUCCESS) {
-        return status;
+        return BT_LE_ADDR_TYPE_UNKNOWN;
     }
 
     return packet.devs_r.atype;
@@ -72,7 +73,7 @@ bt_device_type_t bt_device_get_device_type(bt_instance_t* ins, bt_address_t* add
     BT_SOCKET_INS_VALID(ins, BT_DEVICE_TYPE_UNKNOW);
     status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_DEVICE_TYPE);
     if (status != BT_STATUS_SUCCESS) {
-        return status;
+        return BT_DEVICE_TYPE_UNKNOW;
     }
 
     return packet.devs_r.dtype;
@@ -169,7 +170,7 @@ bool bt_device_get_alias(bt_instance_t* ins, bt_address_t* addr, char* alias, ui
     memcpy(&packet.devs_pl._bt_device_get_alias.addr, addr, sizeof(*addr));
     status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_GET_ALIAS);
     if (status != BT_STATUS_SUCCESS) {
-        return status;
+        return false;
     }
 
     strlcpy(alias, packet.devs_pl._bt_device_get_alias.alias,

@@ -47,9 +47,9 @@ void hsm_transition_to(state_machine_t* sm, const state_t* state);
 const state_t* hsm_get_current_state(state_machine_t* sm);
 const state_t* hsm_get_previous_state(state_machine_t* sm);
 const char* hsm_get_state_name(const state_t* state);
-const uint16_t hsm_get_state_value(const state_t* state);
+uint16_t hsm_get_state_value(const state_t* state);
 const char* hsm_get_current_state_name(state_machine_t* sm);
-const uint16_t hsm_get_current_state_value(state_machine_t* sm);
+uint16_t hsm_get_current_state_value(state_machine_t* sm);
 bool hsm_dispatch_event(state_machine_t* sm, uint32_t event, void* p_data);
 
 #ifdef __cplusplus

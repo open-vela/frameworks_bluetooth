@@ -20,9 +20,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <nuttx/list.h>
-
 #include "adapter_internel.h"
+#include "avrcp_target_service.h"
 #include "bt_addr.h"
 #include "bt_list.h"
 #include "bt_player.h"
@@ -32,9 +31,6 @@
 #include "service_loop.h"
 #include "service_manager.h"
 #include "time.h"
-
-#include "avrcp_target_service.h"
-
 #include "utils/log.h"
 
 #define AVCTP_RETRY_MAX 1
