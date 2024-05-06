@@ -279,7 +279,6 @@ static void handle_avrcp_connection_state(avrcp_msg_t *msg)
         device->retry_cnt = 0;
         break;
     case PROFILE_STATE_DISCONNECTING:
-        assert(device);
         break;
     default:
         assert(0);
