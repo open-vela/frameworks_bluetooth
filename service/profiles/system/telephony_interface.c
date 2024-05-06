@@ -40,6 +40,7 @@
 #define OFONO_CALL_BARRING_INTERFACE OFONO_SERVICE ".CallBarring"
 #define OFONO_CALL_FORWARDING_INTERFACE OFONO_SERVICE ".CallForwarding"
 #define OFONO_CALL_SETTINGS_INTERFACE OFONO_SERVICE ".CallSettings"
+#define OFONO_MESSAGE_MANAGER_INTERFACE OFONO_SERVICE ".MessageManager"
 
 typedef struct tele_client_ {
     DBusConnection *dbus_sys;
@@ -72,7 +73,8 @@ static int object_filter(GDBusProxy *proxy)
     // ss related interface skip get properties
     if ((strcmp(interface, OFONO_CALL_BARRING_INTERFACE) == 0) ||
         (strcmp(interface, OFONO_CALL_FORWARDING_INTERFACE) == 0) ||
-        (strcmp(interface, OFONO_CALL_SETTINGS_INTERFACE) == 0)) {
+        (strcmp(interface, OFONO_CALL_SETTINGS_INTERFACE) == 0) ||
+        (strcmp(interface, OFONO_MESSAGE_MANAGER_INTERFACE) == 0)) {
         return true;
     }
 
