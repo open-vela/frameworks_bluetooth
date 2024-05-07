@@ -98,7 +98,7 @@ typedef struct {
         struct
         {
             /* data */
-            remote_device_le_properties_t *props;
+            remote_device_le_properties_t* props;
             uint16_t bonded_devices_cnt;
         } bonded_devices;
     };
@@ -151,7 +151,7 @@ typedef struct {
         } link_policy;
         struct {
             uint16_t uuid_size;
-            bt_uuid_t *uuids;
+            bt_uuid_t* uuids;
         } sdp;
     };
 } adapter_remote_event_t;
@@ -198,9 +198,9 @@ enum adapter_event {
 };
 
 /* adapter state machine API functions*/
-adapter_state_machine_t *adapter_state_machine_new(void *context);
-void adapter_state_machine_destory(adapter_state_machine_t *stm);
-bt_status_t adapter_send_event(uint16_t event_id, void *data);
+adapter_state_machine_t* adapter_state_machine_new(void* context);
+void adapter_state_machine_destory(adapter_state_machine_t* stm);
+bt_status_t adapter_send_event(uint16_t event_id, void* data);
 bt_status_t adapter_on_profile_services_startup(uint8_t transport, bool ret);
 bt_status_t adapter_on_profile_services_shutdown(uint8_t transport, bool ret);
 /* adapter notification */
@@ -212,31 +212,31 @@ void adapter_on_br_disabled(void);
 
 /* adapter sal callback invoke functions */
 void adapter_on_adapter_state_changed(uint8_t stack_state);
-void adapter_on_device_found(bt_discovery_result_t *result);
+void adapter_on_device_found(bt_discovery_result_t* result);
 void adapter_on_scan_mode_changed(bt_scan_mode_t mode);
 void adapter_on_discovery_state_changed(bt_discovery_state_t state);
-void adapter_on_remote_name_recieved(bt_address_t *addr, const char *name);
-void adapter_on_connect_request(bt_address_t *addr);
-void adapter_on_connection_state_changed(acl_state_param_t *param);
-void adapter_on_pairing_request(bt_address_t *addr, bool local_initiate, bool is_bondable);
-void adapter_on_ssp_request(bt_address_t *addr, uint8_t transport,
-                            uint32_t cod, bt_pair_type_t ssp_type,
-                            uint32_t pass_key, const char *name);
-void adapter_on_pin_request(bt_address_t *addr, uint32_t cod,
-                            bool min_16_digit, const char *name);
-void adapter_on_bond_state_changed(bt_address_t *addr, bond_state_t state, uint8_t link_type, bool is_ctkd);
-void adapter_on_service_search_done(bt_address_t *addr, bt_uuid_t *uuids, uint16_t size);
-void adapter_on_encryption_state_changed(bt_address_t *addr, bool encrypted, uint8_t link_type);
-void adapter_on_link_key_update(bt_address_t *addr, bt_128key_t link_key, bt_link_key_type_t type);
-void adapter_on_link_key_removed(bt_address_t *addr, bt_status_t status);
-void adapter_on_link_role_changed(bt_address_t *addr, bt_link_role_t role);
-void adapter_on_link_mode_changed(bt_address_t *addr, bt_link_mode_t mode, uint16_t sniff_interval);
-void adapter_on_link_policy_changed(bt_address_t *addr, bt_link_policy_t policy);
-void adapter_on_le_addr_update(bt_address_t *addr, ble_addr_type_t type);
-void adapter_on_le_phy_update(bt_address_t *addr, ble_phy_type_t tx_phy,
-                              ble_phy_type_t rx_phy, bt_status_t status);
-void adapter_on_whitelist_update(bt_address_t *addr, bool is_added, bt_status_t status);
-void adapter_on_le_bonded_device_update(remote_device_le_properties_t *props, uint16_t bonded_devices_cnt);
+void adapter_on_remote_name_recieved(bt_address_t* addr, const char* name);
+void adapter_on_connect_request(bt_address_t* addr);
+void adapter_on_connection_state_changed(acl_state_param_t* param);
+void adapter_on_pairing_request(bt_address_t* addr, bool local_initiate, bool is_bondable);
+void adapter_on_ssp_request(bt_address_t* addr, uint8_t transport,
+    uint32_t cod, bt_pair_type_t ssp_type,
+    uint32_t pass_key, const char* name);
+void adapter_on_pin_request(bt_address_t* addr, uint32_t cod,
+    bool min_16_digit, const char* name);
+void adapter_on_bond_state_changed(bt_address_t* addr, bond_state_t state, uint8_t link_type, bool is_ctkd);
+void adapter_on_service_search_done(bt_address_t* addr, bt_uuid_t* uuids, uint16_t size);
+void adapter_on_encryption_state_changed(bt_address_t* addr, bool encrypted, uint8_t link_type);
+void adapter_on_link_key_update(bt_address_t* addr, bt_128key_t link_key, bt_link_key_type_t type);
+void adapter_on_link_key_removed(bt_address_t* addr, bt_status_t status);
+void adapter_on_link_role_changed(bt_address_t* addr, bt_link_role_t role);
+void adapter_on_link_mode_changed(bt_address_t* addr, bt_link_mode_t mode, uint16_t sniff_interval);
+void adapter_on_link_policy_changed(bt_address_t* addr, bt_link_policy_t policy);
+void adapter_on_le_addr_update(bt_address_t* addr, ble_addr_type_t type);
+void adapter_on_le_phy_update(bt_address_t* addr, ble_phy_type_t tx_phy,
+    ble_phy_type_t rx_phy, bt_status_t status);
+void adapter_on_whitelist_update(bt_address_t* addr, bool is_added, bt_status_t status);
+void adapter_on_le_bonded_device_update(remote_device_le_properties_t* props, uint16_t bonded_devices_cnt);
 
 /* adapter framework invoke functions */
 void adapter_init(void);
@@ -251,10 +251,10 @@ bt_status_t adapter_set_discovery_filter(void);
 bt_status_t adapter_start_discovery(uint32_t timeout);
 bt_status_t adapter_cancel_discovery(void);
 bool adapter_is_discovering(void);
-void adapter_get_address(bt_address_t *addr);
-bt_status_t adapter_set_name(const char *name);
-void adapter_get_name(char *name, int size);
-bt_status_t adapter_get_uuids(bt_uuid_t *uuids, uint16_t *size);
+void adapter_get_address(bt_address_t* addr);
+bt_status_t adapter_set_name(const char* name);
+void adapter_get_name(char* name, int size);
+bt_status_t adapter_get_uuids(bt_uuid_t* uuids, uint16_t* size);
 bt_status_t adapter_set_scan_mode(bt_scan_mode_t mode, bool bondable);
 bt_scan_mode_t adapter_get_scan_mode(void);
 bt_status_t adapter_set_device_class(uint32_t cod);
@@ -263,72 +263,72 @@ bt_status_t adapter_set_io_capability(bt_io_capability_t cap);
 
 bt_io_capability_t adapter_get_io_capability(void);
 bt_status_t adapter_set_inquiry_scan_parameters(bt_scan_type_t type,
-                                                uint16_t interval,
-                                                uint16_t window);
+    uint16_t interval,
+    uint16_t window);
 bt_status_t adapter_set_page_scan_parameters(bt_scan_type_t type,
-                                             uint16_t interval,
-                                             uint16_t window);
+    uint16_t interval,
+    uint16_t window);
 bt_status_t adapter_set_le_io_capability(uint32_t le_io_cap);
 uint32_t adapter_get_le_io_capability(void);
-bt_status_t adapter_get_le_address(bt_address_t *addr, ble_addr_type_t *type);
-bt_status_t adapter_set_le_address(bt_address_t *addr);
-bt_status_t adapter_set_le_identity_address(bt_address_t *addr, bool public);
+bt_status_t adapter_get_le_address(bt_address_t* addr, ble_addr_type_t* type);
+bt_status_t adapter_set_le_address(bt_address_t* addr);
+bt_status_t adapter_set_le_identity_address(bt_address_t* addr, bool public);
 bt_status_t adapter_set_le_appearance(uint16_t appearance);
 uint16_t adapter_get_le_appearance(void);
-bt_status_t adapter_get_bonded_devices(bt_transport_t transport, bt_address_t **addr, int *size, bt_allocator_t allocator);
-bt_status_t adapter_get_connected_devices(bt_transport_t transport, bt_address_t **addr, int *size, bt_allocator_t allocator);
+bt_status_t adapter_get_bonded_devices(bt_transport_t transport, bt_address_t** addr, int* size, bt_allocator_t allocator);
+bt_status_t adapter_get_connected_devices(bt_transport_t transport, bt_address_t** addr, int* size, bt_allocator_t allocator);
 void adapter_set_auto_accept_connection(bool enable);
 bool adapter_is_support_bredr(void);
 bool adapter_is_support_le(void);
 bool adapter_is_support_leaudio(void);
-bt_status_t adapter_get_remote_identity_address(bt_address_t *bd_addr, bt_address_t *id_addr);
-bt_device_type_t adapter_get_remote_device_type(bt_address_t *addr);
-bool adapter_get_remote_name(bt_address_t *addr, char *name);
-uint32_t adapter_get_remote_device_class(bt_address_t *addr);
-bt_status_t adapter_get_remote_uuids(bt_address_t *addr, bt_uuid_t **uuids, uint16_t *size, bt_allocator_t allocator);
-uint16_t adapter_get_remote_appearance(bt_address_t *addr);
-int8_t adapter_get_remote_rssi(bt_address_t *addr);
-bool adapter_get_remote_alias(bt_address_t *addr, char *alias);
-bt_status_t adapter_set_remote_alias(bt_address_t *addr, const char *alias);
-bool adapter_is_remote_connected(bt_address_t *addr, bt_transport_t transport);
-bool adapter_is_remote_encrypted(bt_address_t *addr, bt_transport_t transport);
-bool adapter_is_bond_initiate_local(bt_address_t *addr, bt_transport_t transport);
-bond_state_t adapter_get_remote_bond_state(bt_address_t *addr, bt_transport_t transport);
-bool adapter_is_remote_bonded(bt_address_t *addr, bt_transport_t transport);
-bt_status_t adapter_connect(bt_address_t *addr);
-bt_status_t adapter_disconnect(bt_address_t *addr);
-bt_status_t adapter_le_connect(bt_address_t *addr,
-                               ble_addr_type_t type,
-                               ble_connect_params_t *param);
-bt_status_t adapter_le_disconnect(bt_address_t *addr);
-bt_status_t adapter_connect_request_reply(bt_address_t *addr, bool accept);
-bt_status_t adapter_le_set_phy(bt_address_t *addr,
-                               ble_phy_type_t tx_phy,
-                               ble_phy_type_t rx_phy);
+bt_status_t adapter_get_remote_identity_address(bt_address_t* bd_addr, bt_address_t* id_addr);
+bt_device_type_t adapter_get_remote_device_type(bt_address_t* addr);
+bool adapter_get_remote_name(bt_address_t* addr, char* name);
+uint32_t adapter_get_remote_device_class(bt_address_t* addr);
+bt_status_t adapter_get_remote_uuids(bt_address_t* addr, bt_uuid_t** uuids, uint16_t* size, bt_allocator_t allocator);
+uint16_t adapter_get_remote_appearance(bt_address_t* addr);
+int8_t adapter_get_remote_rssi(bt_address_t* addr);
+bool adapter_get_remote_alias(bt_address_t* addr, char* alias);
+bt_status_t adapter_set_remote_alias(bt_address_t* addr, const char* alias);
+bool adapter_is_remote_connected(bt_address_t* addr, bt_transport_t transport);
+bool adapter_is_remote_encrypted(bt_address_t* addr, bt_transport_t transport);
+bool adapter_is_bond_initiate_local(bt_address_t* addr, bt_transport_t transport);
+bond_state_t adapter_get_remote_bond_state(bt_address_t* addr, bt_transport_t transport);
+bool adapter_is_remote_bonded(bt_address_t* addr, bt_transport_t transport);
+bt_status_t adapter_connect(bt_address_t* addr);
+bt_status_t adapter_disconnect(bt_address_t* addr);
+bt_status_t adapter_le_connect(bt_address_t* addr,
+    ble_addr_type_t type,
+    ble_connect_params_t* param);
+bt_status_t adapter_le_disconnect(bt_address_t* addr);
+bt_status_t adapter_connect_request_reply(bt_address_t* addr, bool accept);
+bt_status_t adapter_le_set_phy(bt_address_t* addr,
+    ble_phy_type_t tx_phy,
+    ble_phy_type_t rx_phy);
 bt_status_t adapter_le_enable_key_derivation(bool brkey_to_lekey,
-                                             bool lekey_to_brkey);
-bt_status_t adapter_le_add_whitelist(bt_address_t *addr);
-bt_status_t adapter_le_remove_whitelist(bt_address_t *addr);
-bt_status_t adapter_create_bond(bt_address_t *addr, bt_transport_t transport);
-bt_status_t adapter_remove_bond(bt_address_t *addr, uint8_t transport);
-bt_status_t adapter_cancel_bond(bt_address_t *addr);
-bt_status_t adapter_pair_request_reply(bt_address_t *addr, bool accept);
-bt_status_t adapter_set_pairing_confirmation(bt_address_t *addr, uint8_t transport, bool accept);
-bt_status_t adapter_set_pin_code(bt_address_t *addr, bool accept,
-                                 char *pincode, int len);
-bt_status_t adapter_set_pass_key(bt_address_t *addr, uint8_t transport, bool accept, uint32_t passkey);
-bt_status_t adapter_le_set_remote_oob_data(bt_address_t *addr, bt_128key_t tk_val, bt_128key_t c_val, bt_128key_t r_val);
-uint16_t adapter_get_acl_handle(bt_address_t *addr);
-bt_status_t adapter_switch_role(bt_address_t *addr, bt_link_role_t role);
+    bool lekey_to_brkey);
+bt_status_t adapter_le_add_whitelist(bt_address_t* addr);
+bt_status_t adapter_le_remove_whitelist(bt_address_t* addr);
+bt_status_t adapter_create_bond(bt_address_t* addr, bt_transport_t transport);
+bt_status_t adapter_remove_bond(bt_address_t* addr, uint8_t transport);
+bt_status_t adapter_cancel_bond(bt_address_t* addr);
+bt_status_t adapter_pair_request_reply(bt_address_t* addr, bool accept);
+bt_status_t adapter_set_pairing_confirmation(bt_address_t* addr, uint8_t transport, bool accept);
+bt_status_t adapter_set_pin_code(bt_address_t* addr, bool accept,
+    char* pincode, int len);
+bt_status_t adapter_set_pass_key(bt_address_t* addr, uint8_t transport, bool accept, uint32_t passkey);
+bt_status_t adapter_le_set_remote_oob_data(bt_address_t* addr, bt_128key_t tk_val, bt_128key_t c_val, bt_128key_t r_val);
+uint16_t adapter_get_acl_handle(bt_address_t* addr);
+bt_status_t adapter_switch_role(bt_address_t* addr, bt_link_role_t role);
 bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
-                                                   uint16_t band_width,
-                                                   uint16_t number);
-bt_status_t adapter_set_auto_sniff(bt_auto_sniff_params_t *params);
-void *adapter_register_callback(void *remote, const adapter_callbacks_t *adapter_cbs);
-bool adapter_unregister_callback(void **remote, void *cookie);
+    uint16_t band_width,
+    uint16_t number);
+bt_status_t adapter_set_auto_sniff(bt_auto_sniff_params_t* params);
+void* adapter_register_callback(void* remote, const adapter_callbacks_t* adapter_cbs);
+bool adapter_unregister_callback(void** remote, void* cookie);
 
 void adapter_dump(void);
-void adapter_dump_device(bt_address_t *addr);
+void adapter_dump_device(bt_address_t* addr);
 // void adapter_dump_profile(enum profile_id id);
 void adapter_dump_all_device(void);
 

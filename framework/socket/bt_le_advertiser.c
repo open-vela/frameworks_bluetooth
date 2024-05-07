@@ -25,17 +25,17 @@
 
 #include "utils/log.h"
 
-bt_advertiser_t *bt_le_start_advertising(bt_instance_t *ins,
-                                         ble_adv_params_t *params,
-                                         uint8_t *adv_data,
-                                         uint16_t adv_len,
-                                         uint8_t *scan_rsp_data,
-                                         uint16_t scan_rsp_len,
-                                         advertiser_callback_t *cbs)
+bt_advertiser_t* bt_le_start_advertising(bt_instance_t* ins,
+    ble_adv_params_t* params,
+    uint8_t* adv_data,
+    uint16_t adv_len,
+    uint8_t* scan_rsp_data,
+    uint16_t scan_rsp_len,
+    advertiser_callback_t* cbs)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_advertiser_remote_t *adv;
+    bt_advertiser_remote_t* adv;
 
     BT_SOCKET_INS_VALID(ins, NULL);
 
@@ -46,8 +46,7 @@ bt_advertiser_t *bt_le_start_advertising(bt_instance_t *ins,
     adv->callback = cbs;
     packet.adv_pl._bt_le_start_advertising.adver = (uint32_t)adv;
     memcpy(&packet.adv_pl._bt_le_start_advertising.params, params, sizeof(*params));
-    if ((adv_len && (adv_len > sizeof(packet.adv_pl._bt_le_start_advertising.adv_data))) ||
-        (scan_rsp_len && (scan_rsp_len > sizeof(packet.adv_pl._bt_le_start_advertising.scan_rsp_data)))) {
+    if ((adv_len && (adv_len > sizeof(packet.adv_pl._bt_le_start_advertising.adv_data))) || (scan_rsp_len && (scan_rsp_len > sizeof(packet.adv_pl._bt_le_start_advertising.scan_rsp_data)))) {
         free(adv);
         return NULL;
     }
@@ -69,7 +68,7 @@ bt_advertiser_t *bt_le_start_advertising(bt_instance_t *ins,
     return adv;
 }
 
-void bt_le_stop_advertising(bt_instance_t *ins, bt_advertiser_t *adver)
+void bt_le_stop_advertising(bt_instance_t* ins, bt_advertiser_t* adver)
 {
     bt_message_packet_t packet;
 
@@ -78,11 +77,11 @@ void bt_le_stop_advertising(bt_instance_t *ins, bt_advertiser_t *adver)
     if (!adver)
         return;
 
-    packet.adv_pl._bt_le_stop_advertising.adver = (uint32_t)((bt_advertiser_remote_t *)adver)->remote;
+    packet.adv_pl._bt_le_stop_advertising.adver = (uint32_t)((bt_advertiser_remote_t*)adver)->remote;
     bt_socket_client_sendrecv(ins, &packet, BT_LE_STOP_ADVERTISING);
 }
 
-void bt_le_stop_advertising_id(bt_instance_t *ins, uint8_t adv_id)
+void bt_le_stop_advertising_id(bt_instance_t* ins, uint8_t adv_id)
 {
     bt_message_packet_t packet;
 
@@ -92,7 +91,7 @@ void bt_le_stop_advertising_id(bt_instance_t *ins, uint8_t adv_id)
     bt_socket_client_sendrecv(ins, &packet, BT_LE_STOP_ADVERTISING_ID);
 }
 
-bool bt_le_advertising_is_supported(bt_instance_t *ins)
+bool bt_le_advertising_is_supported(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;

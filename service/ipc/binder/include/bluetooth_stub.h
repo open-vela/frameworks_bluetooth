@@ -29,14 +29,14 @@ extern "C" {
 // #include <android/binder_auto_utils.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    void *usr_data;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    void* usr_data;
 } IBtManager;
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
+    AIBinder_Class* clazz;
+    AIBinder* binder;
 } BpBtManager;
 
 typedef enum {
@@ -49,11 +49,11 @@ typedef enum {
 
 #define MANAGER_BINDER_INSTANCE "Vela.Bluetooth.Manager"
 
-binder_status_t BtManager_addService(IBtManager *manager, const char *instance);
-AIBinder *BtManager_getService(BpBtManager **bpManager, const char *instance);
+binder_status_t BtManager_addService(IBtManager* manager, const char* instance);
+AIBinder* BtManager_getService(BpBtManager** bpManager, const char* instance);
 void Bluetooth_joinThreadPool(void);
 void Bluetooth_startThreadPool(void);
-binder_status_t Bluetooth_setupPolling(int *fd);
+binder_status_t Bluetooth_setupPolling(int* fd);
 binder_status_t Bluetooth_handlePolledCommands(void);
 #ifdef __cplusplus
 }

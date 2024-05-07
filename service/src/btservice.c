@@ -93,13 +93,13 @@
 typedef struct {
     uint16_t profile_id;
     uint16_t event_id;
-    void *data;
+    void* data;
 } service_msg_t;
 
 typedef struct {
-    state_machine_t *sm;
+    state_machine_t* sm;
     uint16_t event_id;
-    void *data;
+    void* data;
 } state_maechine_msg_t;
 
 void bt_profile_init(void)
@@ -197,22 +197,22 @@ out:
     return ret;
 }
 
-void bt_service_event_dispatch(void *smsg)
+void bt_service_event_dispatch(void* smsg)
 {
     free(smsg);
 }
 
-void bt_service_state_machine_event_dispatch(void *smsg)
+void bt_service_state_machine_event_dispatch(void* smsg)
 {
-    state_maechine_msg_t *stm_msg = smsg;
+    state_maechine_msg_t* stm_msg = smsg;
 
     hsm_dispatch_event(stm_msg->sm, stm_msg->event_id, stm_msg->data);
     free(smsg);
 }
 
-void send_to_profile_service(uint16_t profile_id, uint16_t event_id, void *data)
+void send_to_profile_service(uint16_t profile_id, uint16_t event_id, void* data)
 {
-    service_msg_t *svc_msg = malloc(sizeof(service_msg_t));
+    service_msg_t* svc_msg = malloc(sizeof(service_msg_t));
     if (!svc_msg) {
         BT_LOGE("error, svc_msg malloc failed");
         return;
@@ -224,9 +224,9 @@ void send_to_profile_service(uint16_t profile_id, uint16_t event_id, void *data)
     do_in_service_loop(bt_service_event_dispatch, svc_msg);
 }
 
-void send_to_state_machine(state_machine_t *sm, uint16_t event_id, void *data)
+void send_to_state_machine(state_machine_t* sm, uint16_t event_id, void* data)
 {
-    state_maechine_msg_t *stm_msg = malloc(sizeof(state_maechine_msg_t));
+    state_maechine_msg_t* stm_msg = malloc(sizeof(state_maechine_msg_t));
     if (!stm_msg) {
         BT_LOGE("error, stm_msg malloc failed");
         return;

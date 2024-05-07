@@ -74,7 +74,7 @@ typedef struct {
     uint8_t valueuint8;
     int8_t valueint8;
     bool valuebool;
-    void *ref;
+    void* ref;
     lea_object_id obj_id;
     uint8_t dataarry[1];
 } mcs_event_data_t;
@@ -87,8 +87,8 @@ typedef struct {
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-mcs_event_t *mcs_event_new(mcs_event_type_t event, uint32_t mcs_id);
-mcs_event_t *mcs_event_new_ext(mcs_event_type_t event, uint32_t mcs_id, size_t size);
-void mcs_event_destory(mcs_event_t *mcs_event);
+mcs_event_t* mcs_event_new(mcs_event_type_t event, uint32_t mcs_id);
+mcs_event_t* mcs_event_new_ext(mcs_event_type_t event, uint32_t mcs_id, size_t size);
+void mcs_event_destory(mcs_event_t* mcs_event);
 
 #endif /* __LEA_MCS_EVENT_H__ */

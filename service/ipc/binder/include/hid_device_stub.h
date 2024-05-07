@@ -28,14 +28,14 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    void *usr_data;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    void* usr_data;
 } IBtHidd;
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
+    AIBinder_Class* clazz;
+    AIBinder* binder;
 } BpBtHidd;
 
 typedef enum {
@@ -53,8 +53,8 @@ typedef enum {
 
 #define HID_DEVICE_BINDER_INSTANCE "Vela.Bluetooth.Hid.Device"
 
-binder_status_t BtHidd_addService(IBtHidd *hidd, const char *instance);
-AIBinder *BtHidd_getService(BpBtHidd **bpHidd, const char *instance);
+binder_status_t BtHidd_addService(IBtHidd* hidd, const char* instance);
+AIBinder* BtHidd_getService(BpBtHidd** bpHidd, const char* instance);
 
 #ifdef __cplusplus
 }

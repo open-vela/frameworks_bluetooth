@@ -50,9 +50,9 @@ typedef struct {
     uint32_t features;
     uint32_t capabilities;
     pthread_mutex_t mutex;
-    bt_list_t *devices;
-    bt_media_controller_t *controller;
-    callbacks_list_t *callbacks;
+    bt_list_t* devices;
+    bt_media_controller_t* controller;
+    callbacks_list_t* callbacks;
 } avrcp_target_servie_t;
 
 typedef struct {
@@ -63,10 +63,10 @@ typedef struct {
     uint32_t interval;
     uint16_t registered_events;
     bt_media_status_t play_status;
-    service_timer_t *pos_update;
-    service_timer_t *retry_timer;
+    service_timer_t* pos_update;
+    service_timer_t* retry_timer;
     profile_connection_state_t state;
-    bt_media_controller_t *controller;
+    bt_media_controller_t* controller;
 } avrcp_tg_device_t;
 
 static avrcp_target_servie_t g_avrc_target = { 0 };
@@ -74,14 +74,14 @@ static avrcp_target_servie_t g_avrc_target = { 0 };
 static void target_startup(profile_on_startup_t startup);
 static void target_shutdown(profile_on_shutdown_t shutdown);
 
-static bool tg_device_cmp(void *device, void *addr)
+static bool tg_device_cmp(void* device, void* addr)
 {
-    return bt_addr_compare(&((avrcp_tg_device_t *)device)->addr, addr) == 0;
+    return bt_addr_compare(&((avrcp_tg_device_t*)device)->addr, addr) == 0;
 }
 
-static avrcp_tg_device_t *tg_device_find(bt_address_t *addr)
+static avrcp_tg_device_t* tg_device_find(bt_address_t* addr)
 {
-    avrcp_tg_device_t *device;
+    avrcp_tg_device_t* device;
 
     if (!addr)
         return NULL;
@@ -98,9 +98,9 @@ static avrcp_tg_device_t *tg_device_find(bt_address_t *addr)
     return device;
 }
 
-static avrcp_tg_device_t *tg_device_create(bt_address_t *addr, bool initiator)
+static avrcp_tg_device_t* tg_device_create(bt_address_t* addr, bool initiator)
 {
-    avrcp_tg_device_t *device;
+    avrcp_tg_device_t* device;
     char _addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     if (!addr)
@@ -129,9 +129,9 @@ static avrcp_tg_device_t *tg_device_create(bt_address_t *addr, bool initiator)
     return device;
 }
 
-static void tg_device_destory(void *data)
+static void tg_device_destory(void* data)
 {
-    avrcp_tg_device_t *device = data;
+    avrcp_tg_device_t* device = data;
     char _addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     assert(device);
 
@@ -151,15 +151,15 @@ static void tg_device_destory(void *data)
     free(device);
 }
 
-static void tg_device_remove(avrcp_tg_device_t *device)
+static void tg_device_remove(avrcp_tg_device_t* device)
 {
     pthread_mutex_lock(&g_avrc_target.mutex);
     bt_list_remove(g_avrc_target.devices, device);
     pthread_mutex_unlock(&g_avrc_target.mutex);
 }
-static avrcp_tg_device_t *get_active_device(void)
+static avrcp_tg_device_t* get_active_device(void)
 {
-    bt_list_node_t *node;
+    bt_list_node_t* node;
 
     /* get a2dp active device */
     pthread_mutex_lock(&g_avrc_target.mutex);
@@ -172,11 +172,11 @@ static avrcp_tg_device_t *get_active_device(void)
     return bt_list_node(node);
 }
 
-static void media_player_notify_cb(bt_media_controller_t *controller, void *context,
-                                   bt_media_event_t event, uint32_t value)
+static void media_player_notify_cb(bt_media_controller_t* controller, void* context,
+    bt_media_event_t event, uint32_t value)
 {
     char _addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-    avrcp_tg_device_t *device = get_active_device();
+    avrcp_tg_device_t* device = get_active_device();
     if (!device)
         return;
 
@@ -201,10 +201,10 @@ static void media_player_notify_cb(bt_media_controller_t *controller, void *cont
     }
 }
 
-static void tg_retry_callback(service_timer_t *timer, void *data)
+static void tg_retry_callback(service_timer_t* timer, void* data)
 {
     char _addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-    avrcp_tg_device_t *device = (avrcp_tg_device_t *)data;
+    avrcp_tg_device_t* device = (avrcp_tg_device_t*)data;
 
     if (!device)
         return;
@@ -217,10 +217,10 @@ static void tg_retry_callback(service_timer_t *timer, void *data)
     device->retry_timer = NULL;
 }
 
-static void handle_avrcp_connection_state(avrcp_msg_t *msg)
+static void handle_avrcp_connection_state(avrcp_msg_t* msg)
 {
-    avrcp_tg_device_t *device = NULL;
-    bt_address_t *addr = &msg->addr;
+    avrcp_tg_device_t* device = NULL;
+    bt_address_t* addr = &msg->addr;
     profile_connection_state_t state = msg->data.conn_state.conn_state;
     profile_connection_reason_t reason = msg->data.conn_state.reason;
     uint32_t random_timeout;
@@ -232,8 +232,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t *msg)
     switch (state) {
     case PROFILE_STATE_DISCONNECTED:
         assert(device);
-        if ((device->state == PROFILE_STATE_CONNECTING) && (reason == PROFILE_REASON_COLLISION) &&
-            (device->retry_cnt < AVCTP_RETRY_MAX)) {
+        if ((device->state == PROFILE_STATE_CONNECTING) && (reason == PROFILE_REASON_COLLISION) && (device->retry_cnt < AVCTP_RETRY_MAX)) {
             /* failed to establish an AVRCP connection, retry for up to AVCTP_RETRY_MAX times */
             if (device->retry_timer == NULL) {
                 /* AVRCP requires a random waiting time between 100ms and 1 seconds.
@@ -241,7 +240,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t *msg)
                 srand(time(NULL)); /* set random seed */
                 random_timeout = 100 + (rand() % 800);
                 BT_LOGD("retry AVRCP connection with device:[%s], delay=%" PRIu32 "ms",
-                        bt_addr_str(addr), random_timeout);
+                    bt_addr_str(addr), random_timeout);
                 device->retry_timer = service_loop_timer(random_timeout, 0, tg_retry_callback, device);
                 device->retry_cnt++;
             }
@@ -291,11 +290,11 @@ static void handle_avrcp_connection_state(avrcp_msg_t *msg)
     AVRCP_TG_CALLBACK_FOREACH(g_avrc_target.callbacks, connection_state_cb, addr, state);
 }
 
-static void handle_avrcp_passthrough_cmd(bt_address_t *addr,
-                                         avrcp_passthr_cmd_t op,
-                                         avrcp_key_state_t state)
+static void handle_avrcp_passthrough_cmd(bt_address_t* addr,
+    avrcp_passthr_cmd_t op,
+    avrcp_key_state_t state)
 {
-    avrcp_tg_device_t *device = NULL;
+    avrcp_tg_device_t* device = NULL;
     bt_status_t status = BT_STATUS_NOT_SUPPORTED;
 
     device = tg_device_find(addr);
@@ -333,11 +332,11 @@ static void handle_avrcp_passthrough_cmd(bt_address_t *addr,
     }
 }
 
-static void handle_avrcp_play_status_request(avrcp_msg_t *msg)
+static void handle_avrcp_play_status_request(avrcp_msg_t* msg)
 {
-    bt_address_t *addr = &msg->addr;
-    avrcp_tg_device_t *device = NULL;
-    bt_media_controller_t *controller = NULL;
+    bt_address_t* addr = &msg->addr;
+    avrcp_tg_device_t* device = NULL;
+    bt_media_controller_t* controller = NULL;
     bt_media_status_t playback;
     uint32_t durations = POS_NOT_SUPPORT;
     uint32_t position = POS_NOT_SUPPORT;
@@ -360,11 +359,11 @@ static void handle_avrcp_play_status_request(avrcp_msg_t *msg)
     bt_sal_avrcp_target_get_play_status_rsp(addr, playback, durations, position);
 }
 
-static void handle_avrcp_register_notification(avrcp_msg_t *msg)
+static void handle_avrcp_register_notification(avrcp_msg_t* msg)
 {
-    bt_address_t *addr = &msg->addr;
-    avrcp_tg_device_t *device = NULL;
-    bt_media_controller_t *controller = NULL;
+    bt_address_t* addr = &msg->addr;
+    avrcp_tg_device_t* device = NULL;
+    bt_media_controller_t* controller = NULL;
     avrcp_notification_event_t event = msg->data.notify_req.event;
 
     device = tg_device_find(addr);
@@ -419,9 +418,9 @@ static void handle_avrcp_register_notification(avrcp_msg_t *msg)
     }
 }
 
-static void avrcp_target_service_handle_callback(void *data)
+static void avrcp_target_service_handle_callback(void* data)
 {
-    avrcp_msg_t *msg = data;
+    avrcp_msg_t* msg = data;
 
     BT_LOGD("%s, %d", __func__, msg->id);
     switch (msg->id) {
@@ -445,9 +444,9 @@ static void avrcp_target_service_handle_callback(void *data)
     avrcp_msg_destory(msg);
 }
 
-static void avrcp_target_service_handle_event(void *data)
+static void avrcp_target_service_handle_event(void* data)
 {
-    avrcp_msg_t *msg = (avrcp_msg_t *)data;
+    avrcp_msg_t* msg = (avrcp_msg_t*)data;
 
     switch (msg->id) {
     case AVRC_STARTUP:
@@ -463,7 +462,7 @@ static void avrcp_target_service_handle_event(void *data)
     avrcp_msg_destory(msg);
 }
 
-static void do_in_avrcp_service(avrcp_msg_t *msg)
+static void do_in_avrcp_service(avrcp_msg_t* msg)
 {
     if (msg == NULL)
         return;
@@ -546,7 +545,7 @@ static bt_status_t avrcp_target_startup(profile_on_startup_t cb)
     }
     pthread_mutex_unlock(&g_avrc_target.mutex);
 
-    avrcp_msg_t *msg = avrcp_msg_new(AVRC_STARTUP, NULL);
+    avrcp_msg_t* msg = avrcp_msg_new(AVRC_STARTUP, NULL);
     msg->data.context = cb;
     do_in_avrcp_service(msg);
 
@@ -562,19 +561,19 @@ static bt_status_t avrcp_target_shutdown(profile_on_shutdown_t cb)
     }
     pthread_mutex_unlock(&g_avrc_target.mutex);
 
-    avrcp_msg_t *msg = avrcp_msg_new(AVRC_SHUTDOWN, NULL);
+    avrcp_msg_t* msg = avrcp_msg_new(AVRC_SHUTDOWN, NULL);
     msg->data.context = cb;
     do_in_avrcp_service(msg);
 
     return BT_STATUS_SUCCESS;
 }
 
-static void *avrcp_target_register_callbacks(void *remote, const avrcp_target_callbacks_t *callbacks)
+static void* avrcp_target_register_callbacks(void* remote, const avrcp_target_callbacks_t* callbacks)
 {
-    return bt_remote_callbacks_register(g_avrc_target.callbacks, remote, (void *)callbacks);
+    return bt_remote_callbacks_register(g_avrc_target.callbacks, remote, (void*)callbacks);
 }
 
-static bool avrcp_target_unregister_callbacks(void **remote, void *cookie)
+static bool avrcp_target_unregister_callbacks(void** remote, void* cookie)
 {
     return bt_remote_callbacks_unregister(g_avrc_target.callbacks, remote, cookie);
 }
@@ -585,9 +584,9 @@ static const avrcp_target_interface_t avrcp_targetInterface = {
     .unregister_callbacks = avrcp_target_unregister_callbacks,
 };
 
-static const void *get_avrcp_target_profile_interface(void)
+static const void* get_avrcp_target_profile_interface(void)
 {
-    return (void *)&avrcp_targetInterface;
+    return (void*)&avrcp_targetInterface;
 }
 
 static int avrcp_target_dump(void)
@@ -605,7 +604,7 @@ static const profile_service_t avrcp_target_service = {
     .name = PROFILE_AVRCP_TG_NAME,
     .id = PROFILE_AVRCP_TG,
     .transport = BT_TRANSPORT_BREDR,
-    .uuid = {BT_UUID128_TYPE, { 0 }},
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = avrcp_target_init,
     .startup = avrcp_target_startup,
     .shutdown = avrcp_target_shutdown,
@@ -616,7 +615,7 @@ static const profile_service_t avrcp_target_service = {
     .dump = avrcp_target_dump,
 };
 
-void bt_sal_avrcp_target_event_callback(avrcp_msg_t *msg)
+void bt_sal_avrcp_target_event_callback(avrcp_msg_t* msg)
 {
     if (msg == NULL)
         return;

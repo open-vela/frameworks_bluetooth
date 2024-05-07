@@ -18,8 +18,8 @@
 
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
 #include "btservice.h"
-#include "service_loop.h"
 #include "manager_service.h"
+#include "service_loop.h"
 #endif
 #include "bluetooth.h"
 #include "bt_internal.h"
@@ -28,7 +28,7 @@
 /*
 
 */
-bt_instance_t *BTSYMBOLS(bluetooth_create_instance)(void)
+bt_instance_t* BTSYMBOLS(bluetooth_create_instance)(void)
 {
     uint32_t app_id;
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
@@ -36,7 +36,7 @@ bt_instance_t *BTSYMBOLS(bluetooth_create_instance)(void)
     bt_service_init();
     service_loop_run(true, "bt_service");
 #endif
-    bt_instance_t *ins = zalloc(sizeof(bt_instance_t));
+    bt_instance_t* ins = zalloc(sizeof(bt_instance_t));
     if (!ins) {
         return NULL;
     }
@@ -52,19 +52,19 @@ bt_instance_t *BTSYMBOLS(bluetooth_create_instance)(void)
     return ins;
 }
 
-bt_instance_t *BTSYMBOLS(bluetooth_get_instance)(void)
+bt_instance_t* BTSYMBOLS(bluetooth_get_instance)(void)
 {
     bt_status_t status;
     uint32_t handle;
 
     status = manager_get_instance("local", getpid(), &handle);
     if (status == BT_STATUS_SUCCESS && handle)
-        return (bt_instance_t *)handle;
+        return (bt_instance_t*)handle;
     else
         return BTSYMBOLS(bluetooth_create_instance)();
 }
 
-void *BTSYMBOLS(bluetooth_get_proxy)(bt_instance_t *ins, enum profile_id id)
+void* BTSYMBOLS(bluetooth_get_proxy)(bt_instance_t* ins, enum profile_id id)
 {
     switch (id) {
     case PROFILE_HFP_HF:
@@ -82,7 +82,7 @@ void *BTSYMBOLS(bluetooth_get_proxy)(bt_instance_t *ins, enum profile_id id)
     return NULL;
 }
 
-void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t *ins)
+void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t* ins)
 {
     manager_delete_instance(ins->app_id);
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
@@ -92,18 +92,18 @@ void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t *ins)
     free(ins);
 }
 
-bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t *ins, enum profile_id id)
+bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t* ins, enum profile_id id)
 {
     return manager_start_service(ins->app_id, id);
 }
 
-bt_status_t BTSYMBOLS(bluetooth_stop_service)(bt_instance_t *ins, enum profile_id id)
+bt_status_t BTSYMBOLS(bluetooth_stop_service)(bt_instance_t* ins, enum profile_id id)
 {
     return manager_stop_service(ins->app_id, id);
 }
 
 #include "uv.h"
-bool BTSYMBOLS(bluetooth_set_external_uv)(bt_instance_t *ins, uv_loop_t *ext_loop)
+bool BTSYMBOLS(bluetooth_set_external_uv)(bt_instance_t* ins, uv_loop_t* ext_loop)
 {
     return false;
 }

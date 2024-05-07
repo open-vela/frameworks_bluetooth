@@ -24,22 +24,22 @@
 #include "bt_tools.h"
 
 // vcs server interface
-static int vcs_volume_set(void *handle, int argc, char **argv);
-static int vcs_mute_set(void *handle, int argc, char **argv);
-static int vcs_vol_flags_set(void *handle, int argc, char **argv);
+static int vcs_volume_set(void* handle, int argc, char** argv);
+static int vcs_mute_set(void* handle, int argc, char** argv);
+static int vcs_vol_flags_set(void* handle, int argc, char** argv);
 
 // mics server interface
-static int mics_mute_set(void *handle, int argc, char **argv);
+static int mics_mute_set(void* handle, int argc, char** argv);
 
 static bt_command_t g_lea_vmics_tables[] = {
-  // vcs server interface
-    {"vcsvolume",    vcs_volume_set,    0, "\"leaudio server set volume param: volume(0~255)\""                       },
-    { "vcsmute",     vcs_mute_set,      0, "\"leaudio server set mute state param: mute(0:unmute,1:mute)\""           },
-    { "vcsvolflags", vcs_vol_flags_set, 0, "\"leaudio server set volume stater param: flags(0~1)\""                   },
-    { "micsmute",    mics_mute_set,     0, "\"leaudio server set mute state param: mute(0:unmute,1:mute, 2:disable)\""},
+    // vcs server interface
+    { "vcsvolume", vcs_volume_set, 0, "\"leaudio server set volume param: volume(0~255)\"" },
+    { "vcsmute", vcs_mute_set, 0, "\"leaudio server set mute state param: mute(0:unmute,1:mute)\"" },
+    { "vcsvolflags", vcs_vol_flags_set, 0, "\"leaudio server set volume stater param: flags(0~1)\"" },
+    { "micsmute", mics_mute_set, 0, "\"leaudio server set mute state param: mute(0:unmute,1:mute, 2:disable)\"" },
 };
 
-static void *vmics_callbacks = NULL;
+static void* vmics_callbacks = NULL;
 
 static void usage(void)
 {
@@ -50,7 +50,7 @@ static void usage(void)
     }
 }
 
-static int vcs_volume_set(void *handle, int argc, char **argv)
+static int vcs_volume_set(void* handle, int argc, char** argv)
 {
     if (argc < 1) {
         return CMD_PARAM_NOT_ENOUGH;
@@ -63,7 +63,7 @@ static int vcs_volume_set(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int vcs_mute_set(void *handle, int argc, char **argv)
+static int vcs_mute_set(void* handle, int argc, char** argv)
 {
     if (argc < 1) {
         return CMD_PARAM_NOT_ENOUGH;
@@ -76,7 +76,7 @@ static int vcs_mute_set(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int vcs_vol_flags_set(void *handle, int argc, char **argv)
+static int vcs_vol_flags_set(void* handle, int argc, char** argv)
 {
     if (argc < 1) {
         return CMD_PARAM_NOT_ENOUGH;
@@ -89,7 +89,7 @@ static int vcs_vol_flags_set(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int mics_mute_set(void *handle, int argc, char **argv)
+static int mics_mute_set(void* handle, int argc, char** argv)
 {
     if (argc < 1) {
         return CMD_PARAM_NOT_ENOUGH;
@@ -102,7 +102,7 @@ static int mics_mute_set(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static void vmics_test_callback(void *context, int unused)
+static void vmics_test_callback(void* context, int unused)
 {
     PRINT("vmics_test_callback unused:%d", unused);
 }
@@ -112,18 +112,18 @@ static const lea_vmics_callbacks_t lea_vmics_cbs = {
     vmics_test_callback,
 };
 
-int lea_vmics_command_init(void *handle)
+int lea_vmics_command_init(void* handle)
 {
     vmics_callbacks = bt_lea_vmics_register_callbacks(handle, &lea_vmics_cbs);
     return CMD_OK;
 }
 
-void lea_vmics_command_uninit(void *handle)
+void lea_vmics_command_uninit(void* handle)
 {
     bt_lea_vmics_unregister_callbacks(handle, vmics_callbacks);
 }
 
-int vmics_command_exec(void *handle, int argc, char *argv[])
+int vmics_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

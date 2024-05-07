@@ -29,10 +29,10 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    const hid_device_callbacks_t *callbacks;
-    void *cookie;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    const hid_device_callbacks_t* callbacks;
+    void* cookie;
 } IBtHiddCallbacks;
 
 typedef enum {
@@ -44,10 +44,10 @@ typedef enum {
     ICBKS_VIRTUAL_UNPLUG
 } IBtHiddCallbacks_Call;
 
-AIBinder *BtHiddCallbacks_getBinder(IBtHiddCallbacks *adapter);
-binder_status_t BtHiddCallbacks_associateClass(AIBinder *binder);
-IBtHiddCallbacks *BtHiddCallbacks_new(const hid_device_callbacks_t *callbacks);
-void BtHiddCallbacks_delete(IBtHiddCallbacks *cbks);
+AIBinder* BtHiddCallbacks_getBinder(IBtHiddCallbacks* adapter);
+binder_status_t BtHiddCallbacks_associateClass(AIBinder* binder);
+IBtHiddCallbacks* BtHiddCallbacks_new(const hid_device_callbacks_t* callbacks);
+void BtHiddCallbacks_delete(IBtHiddCallbacks* cbks);
 
 #ifdef __cplusplus
 }

@@ -28,7 +28,7 @@
 #include "parcel.h"
 #include "utils/log.h"
 
-void *BpBtAdapter_registerCallback(BpBtAdapter *bpBinder, AIBinder *cbksBinder)
+void* BpBtAdapter_registerCallback(BpBtAdapter* bpBinder, AIBinder* cbksBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -37,7 +37,7 @@ void *BpBtAdapter_registerCallback(BpBtAdapter *bpBinder, AIBinder *cbksBinder)
     if (!bpBinder || !bpBinder->binder)
         return NULL;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -55,10 +55,10 @@ void *BpBtAdapter_registerCallback(BpBtAdapter *bpBinder, AIBinder *cbksBinder)
     if (stat != STATUS_OK)
         return NULL;
 
-    return (void *)cookie;
+    return (void*)cookie;
 }
 
-bool BpBtAdapter_unRegisterCallback(BpBtAdapter *bpBinder, void *cookie)
+bool BpBtAdapter_unRegisterCallback(BpBtAdapter* bpBinder, void* cookie)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -67,7 +67,7 @@ bool BpBtAdapter_unRegisterCallback(BpBtAdapter *bpBinder, void *cookie)
     if (!bpBinder || !bpBinder->binder)
         return false;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -88,11 +88,11 @@ bool BpBtAdapter_unRegisterCallback(BpBtAdapter *bpBinder, void *cookie)
     return ret;
 }
 
-bt_status_t BpBtAdapter_enable(BpBtAdapter *bpBinder)
+bt_status_t BpBtAdapter_enable(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -110,11 +110,11 @@ bt_status_t BpBtAdapter_enable(BpBtAdapter *bpBinder)
     return status;
 }
 
-bt_status_t BpBtAdapter_disable(BpBtAdapter *bpBinder)
+bt_status_t BpBtAdapter_disable(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -132,11 +132,11 @@ bt_status_t BpBtAdapter_disable(BpBtAdapter *bpBinder)
     return status;
 }
 
-bt_status_t BpBtAdapter_enableLe(BpBtAdapter *bpBinder)
+bt_status_t BpBtAdapter_enableLe(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -154,11 +154,11 @@ bt_status_t BpBtAdapter_enableLe(BpBtAdapter *bpBinder)
     return status;
 }
 
-bt_status_t BpBtAdapter_disableLe(BpBtAdapter *bpBinder)
+bt_status_t BpBtAdapter_disableLe(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -176,11 +176,11 @@ bt_status_t BpBtAdapter_disableLe(BpBtAdapter *bpBinder)
     return status;
 }
 
-bt_adapter_state_t BpBtAdapter_getState(BpBtAdapter *bpBinder)
+bt_adapter_state_t BpBtAdapter_getState(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     bt_adapter_state_t state;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -198,11 +198,11 @@ bt_adapter_state_t BpBtAdapter_getState(BpBtAdapter *bpBinder)
     return state;
 }
 
-bool BpBtAdapter_isLeEnabled(BpBtAdapter *bpBinder)
+bool BpBtAdapter_isLeEnabled(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     bool ret;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -220,11 +220,11 @@ bool BpBtAdapter_isLeEnabled(BpBtAdapter *bpBinder)
     return ret;
 }
 
-bt_device_type_t BpBtAdapter_getType(BpBtAdapter *bpBinder)
+bt_device_type_t BpBtAdapter_getType(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     bt_device_type_t type;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -242,11 +242,11 @@ bt_device_type_t BpBtAdapter_getType(BpBtAdapter *bpBinder)
     return type;
 }
 
-bt_status_t BpBtAdapter_setDiscoveryFilter(BpBtAdapter *bpBinder)
+bt_status_t BpBtAdapter_setDiscoveryFilter(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -264,11 +264,11 @@ bt_status_t BpBtAdapter_setDiscoveryFilter(BpBtAdapter *bpBinder)
     return status;
 }
 
-bt_status_t BpBtAdapter_startDiscovery(BpBtAdapter *bpBinder, uint32_t timeout)
+bt_status_t BpBtAdapter_startDiscovery(BpBtAdapter* bpBinder, uint32_t timeout)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -290,11 +290,11 @@ bt_status_t BpBtAdapter_startDiscovery(BpBtAdapter *bpBinder, uint32_t timeout)
     return status;
 }
 
-bt_status_t BpBtAdapter_cancelDiscovery(BpBtAdapter *bpBinder)
+bt_status_t BpBtAdapter_cancelDiscovery(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -312,11 +312,11 @@ bt_status_t BpBtAdapter_cancelDiscovery(BpBtAdapter *bpBinder)
     return status;
 }
 
-bool BpBtAdapter_isDiscovering(BpBtAdapter *bpBinder)
+bool BpBtAdapter_isDiscovering(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     bool ret;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -334,11 +334,11 @@ bool BpBtAdapter_isDiscovering(BpBtAdapter *bpBinder)
     return ret;
 }
 
-bt_status_t BpBtAdapter_getAddress(BpBtAdapter *bpBinder, bt_address_t *addr)
+bt_status_t BpBtAdapter_getAddress(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -355,11 +355,11 @@ bt_status_t BpBtAdapter_getAddress(BpBtAdapter *bpBinder, bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t BpBtAdapter_setName(BpBtAdapter *bpBinder, const char *name)
+bt_status_t BpBtAdapter_setName(BpBtAdapter* bpBinder, const char* name)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -381,12 +381,12 @@ bt_status_t BpBtAdapter_setName(BpBtAdapter *bpBinder, const char *name)
     return status;
 }
 
-bt_status_t BpBtAdapter_getName(BpBtAdapter *bpBinder, char *name, int length)
+bt_status_t BpBtAdapter_getName(BpBtAdapter* bpBinder, char* name, int length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
-    char *btName = NULL;
+    AIBinder* binder = bpBinder->binder;
+    char* btName = NULL;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -406,16 +406,16 @@ bt_status_t BpBtAdapter_getName(BpBtAdapter *bpBinder, char *name, int length)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t BpBtAdapter_getUuids(BpBtAdapter *bpBinder, bt_uuid_t *uuids, uint16_t *size)
+bt_status_t BpBtAdapter_getUuids(BpBtAdapter* bpBinder, bt_uuid_t* uuids, uint16_t* size)
 {
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t BpBtAdapter_setScanMode(BpBtAdapter *bpBinder, bt_scan_mode_t mode, bool bondable)
+bt_status_t BpBtAdapter_setScanMode(BpBtAdapter* bpBinder, bt_scan_mode_t mode, bool bondable)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -441,11 +441,11 @@ bt_status_t BpBtAdapter_setScanMode(BpBtAdapter *bpBinder, bt_scan_mode_t mode, 
     return status;
 }
 
-bt_scan_mode_t BpBtAdapter_getScanMode(BpBtAdapter *bpBinder)
+bt_scan_mode_t BpBtAdapter_getScanMode(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t mode;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -463,11 +463,11 @@ bt_scan_mode_t BpBtAdapter_getScanMode(BpBtAdapter *bpBinder)
     return mode;
 }
 
-bt_status_t BpBtAdapter_setDeviceClass(BpBtAdapter *bpBinder, uint32_t cod)
+bt_status_t BpBtAdapter_setDeviceClass(BpBtAdapter* bpBinder, uint32_t cod)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -489,11 +489,11 @@ bt_status_t BpBtAdapter_setDeviceClass(BpBtAdapter *bpBinder, uint32_t cod)
     return status;
 }
 
-uint32_t BpBtAdapter_getDeviceClass(BpBtAdapter *bpBinder)
+uint32_t BpBtAdapter_getDeviceClass(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t cod;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -511,11 +511,11 @@ uint32_t BpBtAdapter_getDeviceClass(BpBtAdapter *bpBinder)
     return cod;
 }
 
-bt_status_t BpBtAdapter_setIOCapability(BpBtAdapter *bpBinder, bt_io_capability_t cap)
+bt_status_t BpBtAdapter_setIOCapability(BpBtAdapter* bpBinder, bt_io_capability_t cap)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -537,11 +537,11 @@ bt_status_t BpBtAdapter_setIOCapability(BpBtAdapter *bpBinder, bt_io_capability_
     return status;
 }
 
-bt_io_capability_t BpBtAdapter_getIOCapability(BpBtAdapter *bpBinder)
+bt_io_capability_t BpBtAdapter_getIOCapability(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t io;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -559,11 +559,11 @@ bt_io_capability_t BpBtAdapter_getIOCapability(BpBtAdapter *bpBinder)
     return io;
 }
 
-bt_status_t BpBtAdapter_SetLeIOCapability(BpBtAdapter *bpBinder, uint32_t le_io_cap)
+bt_status_t BpBtAdapter_SetLeIOCapability(BpBtAdapter* bpBinder, uint32_t le_io_cap)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -585,11 +585,11 @@ bt_status_t BpBtAdapter_SetLeIOCapability(BpBtAdapter *bpBinder, uint32_t le_io_
     return status;
 }
 
-uint32_t BpBtAdapter_getLeIOCapability(BpBtAdapter *bpBinder)
+uint32_t BpBtAdapter_getLeIOCapability(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t le_io;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -607,11 +607,11 @@ uint32_t BpBtAdapter_getLeIOCapability(BpBtAdapter *bpBinder)
     return le_io;
 }
 
-bt_status_t BpBtAdapter_getLeAddress(BpBtAdapter *bpBinder, bt_address_t *addr, ble_addr_type_t *type)
+bt_status_t BpBtAdapter_getLeAddress(BpBtAdapter* bpBinder, bt_address_t* addr, ble_addr_type_t* type)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -632,11 +632,11 @@ bt_status_t BpBtAdapter_getLeAddress(BpBtAdapter *bpBinder, bt_address_t *addr, 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t BpBtAdapter_setLeAddress(BpBtAdapter *bpBinder, bt_address_t *addr)
+bt_status_t BpBtAdapter_setLeAddress(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -658,11 +658,11 @@ bt_status_t BpBtAdapter_setLeAddress(BpBtAdapter *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtAdapter_setLeIdentityAddress(BpBtAdapter *bpBinder, bt_address_t *addr, bool public)
+bt_status_t BpBtAdapter_setLeIdentityAddress(BpBtAdapter* bpBinder, bt_address_t* addr, bool public)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -688,11 +688,11 @@ bt_status_t BpBtAdapter_setLeIdentityAddress(BpBtAdapter *bpBinder, bt_address_t
     return status;
 }
 
-bt_status_t BpBtAdapter_setLeAppearance(BpBtAdapter *bpBinder, uint16_t appearance)
+bt_status_t BpBtAdapter_setLeAppearance(BpBtAdapter* bpBinder, uint16_t appearance)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -714,11 +714,11 @@ bt_status_t BpBtAdapter_setLeAppearance(BpBtAdapter *bpBinder, uint16_t appearan
     return status;
 }
 
-uint16_t BpBtAdapter_getLeAppearance(BpBtAdapter *bpBinder)
+uint16_t BpBtAdapter_getLeAppearance(BpBtAdapter* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t appearance;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -736,11 +736,11 @@ uint16_t BpBtAdapter_getLeAppearance(BpBtAdapter *bpBinder)
     return appearance;
 }
 
-bt_status_t BpBtAdapter_getBondedDevices(BpBtAdapter *bpBinder, bt_address_t **addr, int *num, bt_allocator_t allocator)
+bt_status_t BpBtAdapter_getBondedDevices(BpBtAdapter* bpBinder, bt_address_t** addr, int* num, bt_allocator_t allocator)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -762,11 +762,11 @@ bt_status_t BpBtAdapter_getBondedDevices(BpBtAdapter *bpBinder, bt_address_t **a
     return status;
 }
 
-bt_status_t BpBtAdapter_getConnectedDevices(BpBtAdapter *bpBinder, bt_address_t **addr, int *num, bt_allocator_t allocator)
+bt_status_t BpBtAdapter_getConnectedDevices(BpBtAdapter* bpBinder, bt_address_t** addr, int* num, bt_allocator_t allocator)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -788,32 +788,32 @@ bt_status_t BpBtAdapter_getConnectedDevices(BpBtAdapter *bpBinder, bt_address_t 
     return status;
 }
 
-void BpBtAdapter_disconnectAllDevices(BpBtAdapter *bpBinder)
+void BpBtAdapter_disconnectAllDevices(BpBtAdapter* bpBinder)
 {
 }
 
-bool BpBtAdapter_isSupportBredr(BpBtAdapter *bpBinder)
-{
-    return false;
-}
-
-bool BpBtAdapter_isSupportLe(BpBtAdapter *bpBinder)
+bool BpBtAdapter_isSupportBredr(BpBtAdapter* bpBinder)
 {
     return false;
 }
 
-bool BpBtAdapter_isSupportLeaudio(BpBtAdapter *bpBinder)
+bool BpBtAdapter_isSupportLe(BpBtAdapter* bpBinder)
 {
     return false;
 }
 
-bt_status_t BpBtAdapter_leEnableKeyDerivation(BpBtAdapter *bpBinder,
-                                              bool brkey_to_lekey,
-                                              bool lekey_to_brkey)
+bool BpBtAdapter_isSupportLeaudio(BpBtAdapter* bpBinder)
+{
+    return false;
+}
+
+bt_status_t BpBtAdapter_leEnableKeyDerivation(BpBtAdapter* bpBinder,
+    bool brkey_to_lekey,
+    bool lekey_to_brkey)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -839,17 +839,17 @@ bt_status_t BpBtAdapter_leEnableKeyDerivation(BpBtAdapter *bpBinder,
     return status;
 }
 
-bt_advertiser_t *BpBtAdapter_startAdvertising(BpBtAdapter *bpBinder,
-                                              ble_adv_params_t *params,
-                                              uint8_t *adv_data,
-                                              uint16_t adv_len,
-                                              uint8_t *scan_rsp_data,
-                                              uint16_t scan_rsp_len,
-                                              AIBinder *cbksBinder)
+bt_advertiser_t* BpBtAdapter_startAdvertising(BpBtAdapter* bpBinder,
+    ble_adv_params_t* params,
+    uint8_t* adv_data,
+    uint16_t adv_len,
+    uint8_t* scan_rsp_data,
+    uint16_t scan_rsp_len,
+    AIBinder* cbksBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t adver;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -864,7 +864,7 @@ bt_advertiser_t *BpBtAdapter_startAdvertising(BpBtAdapter *bpBinder,
     if (stat != STATUS_OK)
         return NULL;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)adv_data, adv_len);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)adv_data, adv_len);
     if (stat != STATUS_OK)
         return NULL;
 
@@ -872,7 +872,7 @@ bt_advertiser_t *BpBtAdapter_startAdvertising(BpBtAdapter *bpBinder,
     if (stat != STATUS_OK)
         return NULL;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)scan_rsp_data, scan_rsp_len);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)scan_rsp_data, scan_rsp_len);
     if (stat != STATUS_OK)
         return NULL;
 
@@ -888,14 +888,14 @@ bt_advertiser_t *BpBtAdapter_startAdvertising(BpBtAdapter *bpBinder,
     if (stat != STATUS_OK)
         return NULL;
 
-    return (bt_advertiser_t *)adver;
+    return (bt_advertiser_t*)adver;
 }
 
-bt_status_t BpBtAdapter_stopAdvertising(BpBtAdapter *bpBinder, bt_advertiser_t *adver)
+bt_status_t BpBtAdapter_stopAdvertising(BpBtAdapter* bpBinder, bt_advertiser_t* adver)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -912,11 +912,11 @@ bt_status_t BpBtAdapter_stopAdvertising(BpBtAdapter *bpBinder, bt_advertiser_t *
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t BpBtAdapter_stopAdvertisingId(BpBtAdapter *bpBinder, uint8_t adver_id)
+bt_status_t BpBtAdapter_stopAdvertisingId(BpBtAdapter* bpBinder, uint8_t adver_id)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -933,11 +933,11 @@ bt_status_t BpBtAdapter_stopAdvertisingId(BpBtAdapter *bpBinder, uint8_t adver_i
     return BT_STATUS_SUCCESS;
 }
 
-bt_scanner_t *BpBtAdapter_startScan(BpBtAdapter *bpBinder, AIBinder *cbksBinder)
+bt_scanner_t* BpBtAdapter_startScan(BpBtAdapter* bpBinder, AIBinder* cbksBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t scanner;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -956,16 +956,16 @@ bt_scanner_t *BpBtAdapter_startScan(BpBtAdapter *bpBinder, AIBinder *cbksBinder)
     if (stat != STATUS_OK)
         return NULL;
 
-    return (bt_scanner_t *)scanner;
+    return (bt_scanner_t*)scanner;
 }
 
-bt_scanner_t *BpBtAdapter_startScanSettings(BpBtAdapter *bpBinder,
-                                            ble_scan_settings_t *settings,
-                                            AIBinder *cbksBinder)
+bt_scanner_t* BpBtAdapter_startScanSettings(BpBtAdapter* bpBinder,
+    ble_scan_settings_t* settings,
+    AIBinder* cbksBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t scanner;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -996,14 +996,14 @@ bt_scanner_t *BpBtAdapter_startScanSettings(BpBtAdapter *bpBinder,
     if (stat != STATUS_OK)
         return NULL;
 
-    return (bt_scanner_t *)scanner;
+    return (bt_scanner_t*)scanner;
 }
 
-bt_status_t BpBtAdapter_stopScan(BpBtAdapter *bpBinder, bt_scanner_t *scanner)
+bt_status_t BpBtAdapter_stopScan(BpBtAdapter* bpBinder, bt_scanner_t* scanner)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -1020,11 +1020,11 @@ bt_status_t BpBtAdapter_stopScan(BpBtAdapter *bpBinder, bt_scanner_t *scanner)
     return BT_STATUS_SUCCESS;
 }
 
-bt_device_type_t BpBtAdapter_getRemoteDeviceType(BpBtAdapter *bpBinder, bt_address_t *addr)
+bt_device_type_t BpBtAdapter_getRemoteDeviceType(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     bt_device_type_t device_type;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1046,12 +1046,12 @@ bt_device_type_t BpBtAdapter_getRemoteDeviceType(BpBtAdapter *bpBinder, bt_addre
     return device_type;
 }
 
-bool BpBtAdapter_getRemoteName(BpBtAdapter *bpBinder, bt_address_t *addr, char *name, uint32_t length)
+bool BpBtAdapter_getRemoteName(BpBtAdapter* bpBinder, bt_address_t* addr, char* name, uint32_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
-    char *remoteName = NULL;
+    AIBinder* binder = bpBinder->binder;
+    char* remoteName = NULL;
     bool ret;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1080,11 +1080,11 @@ bool BpBtAdapter_getRemoteName(BpBtAdapter *bpBinder, bt_address_t *addr, char *
     return ret;
 }
 
-uint32_t BpBtAdapter_getRemoteDeviceClass(BpBtAdapter *bpBinder, bt_address_t *addr)
+uint32_t BpBtAdapter_getRemoteDeviceClass(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t cod;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1106,13 +1106,13 @@ uint32_t BpBtAdapter_getRemoteDeviceClass(BpBtAdapter *bpBinder, bt_address_t *a
     return cod;
 }
 
-bt_status_t BpBtAdapter_getRemoteUuids(BpBtAdapter *bpBinder, bt_address_t *addr, bt_uuid_t **uuids, uint16_t *size, bt_allocator_t allocator)
+bt_status_t BpBtAdapter_getRemoteUuids(BpBtAdapter* bpBinder, bt_address_t* addr, bt_uuid_t** uuids, uint16_t* size, bt_allocator_t allocator)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
-    bt_uuid_t *uuidArray = NULL;
+    bt_uuid_t* uuidArray = NULL;
     int uuidSize = 0;
     int length;
 
@@ -1128,14 +1128,14 @@ bt_status_t BpBtAdapter_getRemoteUuids(BpBtAdapter *bpBinder, bt_address_t *addr
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_readUuidArray(parcelOut, (bt_uuid_t *)&uuidArray, &uuidSize);
+    stat = AParcel_readUuidArray(parcelOut, (bt_uuid_t*)&uuidArray, &uuidSize);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
     *size = (uint16_t)uuidSize;
     if (uuidSize) {
         length = sizeof(bt_uuid_t) * uuidSize;
-        if (!allocator((void **)uuids, length)) {
+        if (!allocator((void**)uuids, length)) {
             free(uuidArray);
             return BT_STATUS_NOMEM;
         }
@@ -1151,11 +1151,11 @@ bt_status_t BpBtAdapter_getRemoteUuids(BpBtAdapter *bpBinder, bt_address_t *addr
     return status;
 }
 
-uint16_t BpBtAdapter_getRemoteAppearance(BpBtAdapter *bpBinder, bt_address_t *addr)
+uint16_t BpBtAdapter_getRemoteAppearance(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t appearance;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1177,11 +1177,11 @@ uint16_t BpBtAdapter_getRemoteAppearance(BpBtAdapter *bpBinder, bt_address_t *ad
     return (uint16_t)appearance;
 }
 
-int8_t BpBtAdapter_getRemoteRssi(BpBtAdapter *bpBinder, bt_address_t *addr)
+int8_t BpBtAdapter_getRemoteRssi(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     int8_t rssi;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1200,12 +1200,12 @@ int8_t BpBtAdapter_getRemoteRssi(BpBtAdapter *bpBinder, bt_address_t *addr)
     return rssi;
 }
 
-bool BpBtAdapter_getRemoteAlias(BpBtAdapter *bpBinder, bt_address_t *addr, char *alias, uint32_t length)
+bool BpBtAdapter_getRemoteAlias(BpBtAdapter* bpBinder, bt_address_t* addr, char* alias, uint32_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
-    char *Alias = NULL;
+    AIBinder* binder = bpBinder->binder;
+    char* Alias = NULL;
     bool ret;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1234,11 +1234,11 @@ bool BpBtAdapter_getRemoteAlias(BpBtAdapter *bpBinder, bt_address_t *addr, char 
     return ret;
 }
 
-bt_status_t BpBtAdapter_setRemoteAlias(BpBtAdapter *bpBinder, bt_address_t *addr, const char *alias)
+bt_status_t BpBtAdapter_setRemoteAlias(BpBtAdapter* bpBinder, bt_address_t* addr, const char* alias)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1264,11 +1264,11 @@ bt_status_t BpBtAdapter_setRemoteAlias(BpBtAdapter *bpBinder, bt_address_t *addr
     return status;
 }
 
-bool BpBtAdapter_isRemoteConnected(BpBtAdapter *bpBinder, bt_address_t *addr)
+bool BpBtAdapter_isRemoteConnected(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     bool ret;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1290,11 +1290,11 @@ bool BpBtAdapter_isRemoteConnected(BpBtAdapter *bpBinder, bt_address_t *addr)
     return ret;
 }
 
-bool BpBtAdapter_isRemoteEncrypted(BpBtAdapter *bpBinder, bt_address_t *addr)
+bool BpBtAdapter_isRemoteEncrypted(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     bool ret;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1316,11 +1316,11 @@ bool BpBtAdapter_isRemoteEncrypted(BpBtAdapter *bpBinder, bt_address_t *addr)
     return ret;
 }
 
-bool BpBtAdapter_isBondInitiateLocal(BpBtAdapter *bpBinder, bt_address_t *addr)
+bool BpBtAdapter_isBondInitiateLocal(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     bool ret;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1342,11 +1342,11 @@ bool BpBtAdapter_isBondInitiateLocal(BpBtAdapter *bpBinder, bt_address_t *addr)
     return ret;
 }
 
-bond_state_t BpBtAdapter_getRemoteBondState(BpBtAdapter *bpBinder, bt_address_t *addr)
+bond_state_t BpBtAdapter_getRemoteBondState(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     bond_state_t state;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1368,11 +1368,11 @@ bond_state_t BpBtAdapter_getRemoteBondState(BpBtAdapter *bpBinder, bt_address_t 
     return state;
 }
 
-bool BpBtAdapter_isRemoteBonded(BpBtAdapter *bpBinder, bt_address_t *addr)
+bool BpBtAdapter_isRemoteBonded(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     bool ret;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1394,11 +1394,11 @@ bool BpBtAdapter_isRemoteBonded(BpBtAdapter *bpBinder, bt_address_t *addr)
     return ret;
 }
 
-bt_status_t BpBtAdapter_connect(BpBtAdapter *bpBinder, bt_address_t *addr)
+bt_status_t BpBtAdapter_connect(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1420,11 +1420,11 @@ bt_status_t BpBtAdapter_connect(BpBtAdapter *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtAdapter_disconnect(BpBtAdapter *bpBinder, bt_address_t *addr)
+bt_status_t BpBtAdapter_disconnect(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1446,14 +1446,14 @@ bt_status_t BpBtAdapter_disconnect(BpBtAdapter *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtAdapter_leConnect(BpBtAdapter *bpBinder, bt_address_t *addr,
-                                  ble_addr_type_t type,
-                                  ble_connect_params_t *param)
+bt_status_t BpBtAdapter_leConnect(BpBtAdapter* bpBinder, bt_address_t* addr,
+    ble_addr_type_t type,
+    ble_connect_params_t* param)
 {
 
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1483,11 +1483,11 @@ bt_status_t BpBtAdapter_leConnect(BpBtAdapter *bpBinder, bt_address_t *addr,
     return status;
 }
 
-bt_status_t BpBtAdapter_leDisconnect(BpBtAdapter *bpBinder, bt_address_t *addr)
+bt_status_t BpBtAdapter_leDisconnect(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1509,13 +1509,13 @@ bt_status_t BpBtAdapter_leDisconnect(BpBtAdapter *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtAdapter_leSetPhy(BpBtAdapter *bpBinder, bt_address_t *addr,
-                                 ble_phy_type_t tx_phy,
-                                 ble_phy_type_t rx_phy)
+bt_status_t BpBtAdapter_leSetPhy(BpBtAdapter* bpBinder, bt_address_t* addr,
+    ble_phy_type_t tx_phy,
+    ble_phy_type_t rx_phy)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1545,11 +1545,11 @@ bt_status_t BpBtAdapter_leSetPhy(BpBtAdapter *bpBinder, bt_address_t *addr,
     return status;
 }
 
-bt_status_t BpBtAdapter_createBond(BpBtAdapter *bpBinder, bt_address_t *addr, bt_transport_t transport)
+bt_status_t BpBtAdapter_createBond(BpBtAdapter* bpBinder, bt_address_t* addr, bt_transport_t transport)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1575,11 +1575,11 @@ bt_status_t BpBtAdapter_createBond(BpBtAdapter *bpBinder, bt_address_t *addr, bt
     return status;
 }
 
-bt_status_t BpBtAdapter_removeBond(BpBtAdapter *bpBinder, bt_address_t *addr, bt_transport_t transport)
+bt_status_t BpBtAdapter_removeBond(BpBtAdapter* bpBinder, bt_address_t* addr, bt_transport_t transport)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1605,11 +1605,11 @@ bt_status_t BpBtAdapter_removeBond(BpBtAdapter *bpBinder, bt_address_t *addr, bt
     return status;
 }
 
-bt_status_t BpBtAdapter_cancelBond(BpBtAdapter *bpBinder, bt_address_t *addr)
+bt_status_t BpBtAdapter_cancelBond(BpBtAdapter* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1631,11 +1631,11 @@ bt_status_t BpBtAdapter_cancelBond(BpBtAdapter *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtAdapter_pairRequestReply(BpBtAdapter *bpBinder, bt_address_t *addr, bool accept)
+bt_status_t BpBtAdapter_pairRequestReply(BpBtAdapter* bpBinder, bt_address_t* addr, bool accept)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1661,11 +1661,11 @@ bt_status_t BpBtAdapter_pairRequestReply(BpBtAdapter *bpBinder, bt_address_t *ad
     return status;
 }
 
-bt_status_t BpBtAdapter_setPairingConfirmation(BpBtAdapter *bpBinder, bt_address_t *addr, bt_transport_t transport, bool accept)
+bt_status_t BpBtAdapter_setPairingConfirmation(BpBtAdapter* bpBinder, bt_address_t* addr, bt_transport_t transport, bool accept)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1695,12 +1695,12 @@ bt_status_t BpBtAdapter_setPairingConfirmation(BpBtAdapter *bpBinder, bt_address
     return status;
 }
 
-bt_status_t BpBtAdapter_setPinCode(BpBtAdapter *bpBinder, bt_address_t *addr, bool accept,
-                                   char *pincode, int len)
+bt_status_t BpBtAdapter_setPinCode(BpBtAdapter* bpBinder, bt_address_t* addr, bool accept,
+    char* pincode, int len)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -1734,11 +1734,11 @@ bt_status_t BpBtAdapter_setPinCode(BpBtAdapter *bpBinder, bt_address_t *addr, bo
     return status;
 }
 
-bt_status_t BpBtAdapter_setPassKey(BpBtAdapter *bpBinder, bt_address_t *addr, bt_transport_t transport, bool accept, uint32_t passkey)
+bt_status_t BpBtAdapter_setPassKey(BpBtAdapter* bpBinder, bt_address_t* addr, bt_transport_t transport, bool accept, uint32_t passkey)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);

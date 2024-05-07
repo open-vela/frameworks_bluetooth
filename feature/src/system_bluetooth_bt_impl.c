@@ -19,19 +19,19 @@
  *
  */
 #include "bluetooth.h"
-#include "bt_adapter.h"
 #include "bt_a2dp_sink.h"
 #include "bt_a2dp_source.h"
-#include "bt_pan.h"
-#include "bt_hfp_hf.h"
+#include "bt_adapter.h"
 #include "bt_hfp_ag.h"
+#include "bt_hfp_hf.h"
 #include "bt_hid_device.h"
+#include "bt_pan.h"
 #include "feature_bluetooth.h"
 #include "system_bluetooth_bt.h"
 
 #define file_tag "system_bluetooth_bt"
 
-static bool bt_feature_allocator(void **data, uint32_t size)
+static bool bt_feature_allocator(void** data, uint32_t size)
 {
     *data = malloc(size);
     if (!(*data))
@@ -40,10 +40,10 @@ static bool bt_feature_allocator(void **data, uint32_t size)
     return true;
 }
 
-static bt_status_t bluetooth_connect_profiles(FeatureInstanceHandle feature, bt_address_t *addr, feature_bluetooth_profile_t profile_id)
+static bt_status_t bluetooth_connect_profiles(FeatureInstanceHandle feature, bt_address_t* addr, feature_bluetooth_profile_t profile_id)
 {
     bt_status_t status = BT_STATUS_SUCCESS;
-    bt_instance_t *bt_ins = feature_bluetooth_get_bt_ins(feature);
+    bt_instance_t* bt_ins = feature_bluetooth_get_bt_ins(feature);
     if (!bt_ins) {
         return BT_STATUS_FAIL;
     }
@@ -86,10 +86,10 @@ static bt_status_t bluetooth_connect_profiles(FeatureInstanceHandle feature, bt_
     return status;
 }
 
-static bt_status_t bluetooth_disconnect_profiles(FeatureInstanceHandle feature, bt_address_t *addr, feature_bluetooth_profile_t profile_id)
+static bt_status_t bluetooth_disconnect_profiles(FeatureInstanceHandle feature, bt_address_t* addr, feature_bluetooth_profile_t profile_id)
 {
     bt_status_t status = BT_STATUS_SUCCESS;
-    bt_instance_t *bt_ins = feature_bluetooth_get_bt_ins(feature);
+    bt_instance_t* bt_ins = feature_bluetooth_get_bt_ins(feature);
     if (!bt_ins) {
         return BT_STATUS_FAIL;
     }
@@ -132,7 +132,7 @@ static bt_status_t bluetooth_disconnect_profiles(FeatureInstanceHandle feature, 
     return status;
 }
 
-void system_bluetooth_bt_onRegister(const char *feature_name)
+void system_bluetooth_bt_onRegister(const char* feature_name)
 {
     feature_bluetooth_init_bt_ins();
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
@@ -162,13 +162,13 @@ void system_bluetooth_bt_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
-void system_bluetooth_bt_onUnregister(const char *feature_name)
+void system_bluetooth_bt_onUnregister(const char* feature_name)
 {
     feature_bluetooth_uninit_bt_ins();
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
-void system_bluetooth_bt_wrap_startDiscovery(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_StartDiscoveryParams *params)
+void system_bluetooth_bt_wrap_startDiscovery(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_StartDiscoveryParams* params)
 {
     int timeout = 8;
     bt_status_t status = bt_adapter_start_discovery(feature_bluetooth_get_bt_ins(feature), timeout);
@@ -185,7 +185,7 @@ void system_bluetooth_bt_wrap_startDiscovery(FeatureInstanceHandle feature, unio
         FEATURE_LOG_ERROR("invoke start discovery complete callback failed!");
     }
 }
-void system_bluetooth_bt_wrap_stopDiscovery(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_StopDiscoveryParams *params)
+void system_bluetooth_bt_wrap_stopDiscovery(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_StopDiscoveryParams* params)
 {
     bt_status_t status = bt_adapter_cancel_discovery(feature_bluetooth_get_bt_ins(feature));
     if (status == BT_STATUS_SUCCESS) {
@@ -202,10 +202,10 @@ void system_bluetooth_bt_wrap_stopDiscovery(FeatureInstanceHandle feature, union
     }
 }
 
-void system_bluetooth_bt_wrap_connectProfiles(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_ConnectProfilesParams *params)
+void system_bluetooth_bt_wrap_connectProfiles(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_ConnectProfilesParams* params)
 {
     int profiles_num = params->profiles->_size;
-    int *profiles = (int *)(params->profiles->_element);
+    int* profiles = (int*)(params->profiles->_element);
     bt_address_t addr;
     int status = BT_STATUS_SUCCESS;
     if (bt_addr_str2ba(params->deviceId, &addr) < 0) {
@@ -234,10 +234,10 @@ COMPLETE_CALLBACK:
     }
 }
 
-void system_bluetooth_bt_wrap_disconnectProfiles(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_DisconnectProfilesParams *params)
+void system_bluetooth_bt_wrap_disconnectProfiles(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_DisconnectProfilesParams* params)
 {
     int profiles_num = params->profiles->_size;
-    int *profiles = (int *)params->profiles->_element;
+    int* profiles = (int*)params->profiles->_element;
     bt_address_t addr;
     int status = BT_STATUS_SUCCESS;
     if (bt_addr_str2ba(params->deviceId, &addr) < 0) {
@@ -264,7 +264,7 @@ COMPLETE_CALLBACK:
     }
 }
 
-void system_bluetooth_bt_wrap_disconnect(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_DisconnectParams *params)
+void system_bluetooth_bt_wrap_disconnect(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_DisconnectParams* params)
 {
     bt_address_t addr;
     bt_status_t status = BT_STATUS_SUCCESS;
@@ -307,41 +307,41 @@ FtBool system_bluetooth_bt_wrap_getConnectState(FeatureInstanceHandle feature, u
     return connected;
 }
 
-FtArray *system_bluetooth_bt_wrap_getConnectedDevices(FeatureInstanceHandle feature, union AppendData append_data)
+FtArray* system_bluetooth_bt_wrap_getConnectedDevices(FeatureInstanceHandle feature, union AppendData append_data)
 {
-    bt_address_t *addrs = NULL;
+    bt_address_t* addrs = NULL;
     int num = 0;
     bt_adapter_get_connected_devices(feature_bluetooth_get_bt_ins(feature), BT_TRANSPORT_BREDR, &addrs, &num, bt_feature_allocator);
-    FtArray *devices = system_bluetooth_bt_malloc_string_array();
+    FtArray* devices = system_bluetooth_bt_malloc_string_array();
     devices->_size = num;
     devices->_element = FeatureMalloc(devices->_size, FT_STRING);
     for (int i = 0; i < devices->_size; ++i) {
         char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
         bt_addr_ba2str(addrs + i, addr_str);
-        ((char **)devices->_element)[i] = StringToFtString(addr_str);
+        ((char**)devices->_element)[i] = StringToFtString(addr_str);
     }
     free(addrs);
     return devices;
 }
 
-FtArray *system_bluetooth_bt_wrap_getBondedDevices(FeatureInstanceHandle feature, union AppendData append_data)
+FtArray* system_bluetooth_bt_wrap_getBondedDevices(FeatureInstanceHandle feature, union AppendData append_data)
 {
-    bt_address_t *addrs = NULL;
+    bt_address_t* addrs = NULL;
     int num = 0;
     bt_adapter_get_bonded_devices(feature_bluetooth_get_bt_ins(feature), BT_TRANSPORT_BREDR, &addrs, &num, bt_feature_allocator);
-    FtArray *devices = system_bluetooth_bt_malloc_string_array();
+    FtArray* devices = system_bluetooth_bt_malloc_string_array();
     devices->_size = num;
     devices->_element = FeatureMalloc(devices->_size, FT_STRING);
     for (int i = 0; i < devices->_size; ++i) {
         char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
         bt_addr_ba2str(addrs + i, addr_str);
-        ((char **)devices->_element)[i] = StringToFtString(addr_str);
+        ((char**)devices->_element)[i] = StringToFtString(addr_str);
     }
     free(addrs);
     return devices;
 }
 
-void system_bluetooth_bt_wrap_removeBondedDevice(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_RemoveBondedParams *params)
+void system_bluetooth_bt_wrap_removeBondedDevice(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_RemoveBondedParams* params)
 {
     bt_address_t addr;
     bt_status_t status;
@@ -414,23 +414,23 @@ unsigned int system_bluetooth_bt_wrap_getDeviceClass(FeatureInstanceHandle featu
     return bt_device_get_device_class(feature_bluetooth_get_bt_ins(feature), &addr);
 }
 
-FtCallbackId system_bluetooth_bt_get_ondiscoveryresult(void *feature, union AppendData append_data)
+FtCallbackId system_bluetooth_bt_get_ondiscoveryresult(void* feature, union AppendData append_data)
 {
     return feature_bluetooth_get_feature_callback(feature, ON_DISCOVERY_RESULT);
 }
 
-void system_bluetooth_bt_set_ondiscoveryresult(void *feature, union AppendData append_data, FtCallbackId ondiscoveryresult)
+void system_bluetooth_bt_set_ondiscoveryresult(void* feature, union AppendData append_data, FtCallbackId ondiscoveryresult)
 {
     FEATURE_LOG_INFO("set ondiscoveryresult feature: %p, callbackId: %d", feature, ondiscoveryresult);
     feature_bluetooth_set_feature_callback(feature, ondiscoveryresult, ON_DISCOVERY_RESULT);
 }
 
-FtCallbackId system_bluetooth_bt_get_onbondstatechange(void *feature, union AppendData append_data)
+FtCallbackId system_bluetooth_bt_get_onbondstatechange(void* feature, union AppendData append_data)
 {
     return feature_bluetooth_get_feature_callback(feature, ON_BOND_STATE_CHANGE);
 }
 
-void system_bluetooth_bt_set_onbondstatechange(void *feature, union AppendData append_data, FtCallbackId onbondstatechange)
+void system_bluetooth_bt_set_onbondstatechange(void* feature, union AppendData append_data, FtCallbackId onbondstatechange)
 {
     FEATURE_LOG_INFO("set onbondstatechange feature: %p, callbackId: %d", feature, onbondstatechange);
     feature_bluetooth_set_feature_callback(feature, onbondstatechange, ON_BOND_STATE_CHANGE);

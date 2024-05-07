@@ -58,9 +58,9 @@ typedef enum {
  * @param local_role - local device pan role, reference type pan_role_t.
  * @param remote_role - remote device pan role, reference type pan_role_t.
  */
-typedef void (*pan_connection_state_callback)(void *cookie, profile_connection_state_t state,
-                                              bt_address_t *bd_addr, uint8_t local_role,
-                                              uint8_t remote_role);
+typedef void (*pan_connection_state_callback)(void* cookie, profile_connection_state_t state,
+    bt_address_t* bd_addr, uint8_t local_role,
+    uint8_t remote_role);
 
 /**
  * @brief Pan net interface (down/up)state change callback.
@@ -70,8 +70,8 @@ typedef void (*pan_connection_state_callback)(void *cookie, profile_connection_s
  * @param local_role - local device pan role
  * @param ifname - net interface name, default "bt-pan".
  */
-typedef void (*pan_netif_state_callback)(void *cookie, pan_netif_state_t state,
-                                         int local_role, const char *ifname);
+typedef void (*pan_netif_state_callback)(void* cookie, pan_netif_state_t state,
+    int local_role, const char* ifname);
 
 /**
  * @brief PAN event callbacks structure
@@ -90,7 +90,7 @@ typedef struct {
  * @param callbacks - pan callback functions.
  * @return void* - callback cookie, NULL on failure.
  */
-void *BTSYMBOLS(bt_pan_register_callbacks)(bt_instance_t *ins, const pan_callbacks_t *callbacks);
+void* BTSYMBOLS(bt_pan_register_callbacks)(bt_instance_t* ins, const pan_callbacks_t* callbacks);
 
 /**
  * @brief Unregister pan callback function
@@ -100,7 +100,7 @@ void *BTSYMBOLS(bt_pan_register_callbacks)(bt_instance_t *ins, const pan_callbac
  * @return true - on callback unregister success
  * @return false - on callback cookie not found
  */
-bool BTSYMBOLS(bt_pan_unregister_callbacks)(bt_instance_t *ins, void *cookie);
+bool BTSYMBOLS(bt_pan_unregister_callbacks)(bt_instance_t* ins, void* cookie);
 
 /**
  * @brief  Connect to pan device
@@ -111,7 +111,7 @@ bool BTSYMBOLS(bt_pan_unregister_callbacks)(bt_instance_t *ins, void *cookie);
  * @param src_role - src pan role, reference type pan_role_t.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_pan_connect)(bt_instance_t *ins, bt_address_t *addr, uint8_t dst_role, uint8_t src_role);
+bt_status_t BTSYMBOLS(bt_pan_connect)(bt_instance_t* ins, bt_address_t* addr, uint8_t dst_role, uint8_t src_role);
 
 /**
  * @brief Disconnect from pan connection
@@ -120,6 +120,6 @@ bt_status_t BTSYMBOLS(bt_pan_connect)(bt_instance_t *ins, bt_address_t *addr, ui
  * @param addr - address of peer device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_pan_disconnect)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_pan_disconnect)(bt_instance_t* ins, bt_address_t* addr);
 
 #endif /* __BT_PAN_H__ */

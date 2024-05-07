@@ -117,7 +117,7 @@ static uint8_t get_channal_mode(uint32_t allocation)
     return LEA_CHANNEL_MODE_MONO;
 }
 
-static uint32_t get_bit_rate(lea_codec_config_t *config)
+static uint32_t get_bit_rate(lea_codec_config_t* config)
 {
     uint8_t channels;
     uint8_t duration;
@@ -164,7 +164,7 @@ static uint32_t get_sample_rate(uint8_t index)
     return 0;
 }
 
-static uint32_t get_frame_size(lea_codec_config_t *config)
+static uint32_t get_frame_size(lea_codec_config_t* config)
 {
     uint32_t sample_rate;
     float scale;
@@ -186,7 +186,7 @@ static uint32_t get_frame_size(lea_codec_config_t *config)
     return sample_rate * scale;
 }
 
-static uint32_t get_packet_size(lea_codec_config_t *config)
+static uint32_t get_packet_size(lea_codec_config_t* config)
 {
     uint8_t count;
 
@@ -207,11 +207,11 @@ static int get_codec_type(void)
     return -1;
 }
 
-static void lea_codec_lc3_update_config(lea_audio_stream_t *audio_stream)
+static void lea_codec_lc3_update_config(lea_audio_stream_t* audio_stream)
 {
-    lea_audio_config_t *audio_config;
-    lea_codec_config_t *codec_cfg;
-    lea_stream_info_t *streams_info;
+    lea_audio_config_t* audio_config;
+    lea_codec_config_t* codec_cfg;
+    lea_stream_info_t* streams_info;
 
     if (audio_stream->is_source) {
         audio_config = &g_codec_config[LEA_CODEC_SOURCE];
@@ -235,9 +235,9 @@ static void lea_codec_lc3_update_config(lea_audio_stream_t *audio_stream)
     audio_config->stream_num++;
 }
 
-static bool lea_codec_lc3_get_offload_config(lea_offload_config_t *offload)
+static bool lea_codec_lc3_get_offload_config(lea_offload_config_t* offload)
 {
-    lea_audio_config_t *audio_config;
+    lea_audio_config_t* audio_config;
     int index;
 
     for (index = 0; index < LEA_CODEC_MAX; index++) {
@@ -252,9 +252,9 @@ static bool lea_codec_lc3_get_offload_config(lea_offload_config_t *offload)
     return true;
 }
 
-lea_audio_config_t *lea_codec_get_config(bool is_source)
+lea_audio_config_t* lea_codec_get_config(bool is_source)
 {
-    lea_audio_config_t *audio_config;
+    lea_audio_config_t* audio_config;
 
     if (is_source) {
         audio_config = &g_codec_config[LEA_CODEC_SOURCE];
@@ -265,7 +265,7 @@ lea_audio_config_t *lea_codec_get_config(bool is_source)
     return audio_config;
 }
 
-void lea_codec_set_config(lea_audio_stream_t *audio_stream)
+void lea_codec_set_config(lea_audio_stream_t* audio_stream)
 {
     switch (audio_stream->codec_cfg.codec_id.codec_id) {
     // todo: codec id
@@ -278,7 +278,7 @@ void lea_codec_set_config(lea_audio_stream_t *audio_stream)
 
 void lea_codec_unset_config(bool is_source)
 {
-    lea_audio_config_t *audio_config;
+    lea_audio_config_t* audio_config;
 
     if (is_source) {
         audio_config = &g_codec_config[LEA_CODEC_SOURCE];
@@ -289,7 +289,7 @@ void lea_codec_unset_config(bool is_source)
     memset(audio_config, 0, sizeof(lea_audio_config_t));
 }
 
-bool lea_codec_get_offload_config(lea_offload_config_t *offload)
+bool lea_codec_get_offload_config(lea_offload_config_t* offload)
 {
     uint8_t codec_type;
 

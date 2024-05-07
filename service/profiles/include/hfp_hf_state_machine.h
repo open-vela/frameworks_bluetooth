@@ -28,15 +28,15 @@ typedef enum pending_state {
 
 typedef struct _hf_state_machine hf_state_machine_t;
 
-hf_state_machine_t *hf_state_machine_new(bt_address_t *addr, void *context);
-void hf_state_machine_destory(hf_state_machine_t *hfsm);
-void hf_state_machine_dispatch(hf_state_machine_t *hfsm, hfp_hf_msg_t *msg);
-uint32_t hf_state_machine_get_state(hf_state_machine_t *hfsm);
-bt_list_t *hf_state_machine_get_calls(hf_state_machine_t *hfsm);
-uint16_t hf_state_machine_get_sco_handle(hf_state_machine_t *hfsm);
-void hf_state_machine_set_sco_handle(hf_state_machine_t *hfsm, uint16_t sco_hdl);
-uint8_t hf_state_machine_get_codec(hf_state_machine_t *hfsm);
-void hf_state_machine_set_offloading(hf_state_machine_t *hfsm, bool offloading);
+hf_state_machine_t* hf_state_machine_new(bt_address_t* addr, void* context);
+void hf_state_machine_destory(hf_state_machine_t* hfsm);
+void hf_state_machine_dispatch(hf_state_machine_t* hfsm, hfp_hf_msg_t* msg);
+uint32_t hf_state_machine_get_state(hf_state_machine_t* hfsm);
+bt_list_t* hf_state_machine_get_calls(hf_state_machine_t* hfsm);
+uint16_t hf_state_machine_get_sco_handle(hf_state_machine_t* hfsm);
+void hf_state_machine_set_sco_handle(hf_state_machine_t* hfsm, uint16_t sco_hdl);
+uint8_t hf_state_machine_get_codec(hf_state_machine_t* hfsm);
+void hf_state_machine_set_offloading(hf_state_machine_t* hfsm, bool offloading);
 // hf_client_connection_state_t hf_client_get_conn_state(hf_state_machine_t* sm);
 
 #endif /* __HFP_HF_STATE_MACHINE_H__ */

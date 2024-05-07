@@ -39,11 +39,11 @@
 
 bt_status_t bt_sal_a2dp_sink_init(uint8_t max_connection);
 void bt_sal_a2dp_sink_cleanup(void);
-bt_status_t bt_sal_a2dp_sink_connect(bt_address_t *addr);
-bt_status_t bt_sal_a2dp_sink_disconnect(bt_address_t *addr);
-bt_status_t bt_sal_a2dp_sink_set_active_device(bt_address_t *addr);
-bt_status_t bt_sal_a2dp_sink_start_stream(bt_address_t *addr);
+bt_status_t bt_sal_a2dp_sink_connect(bt_address_t* addr);
+bt_status_t bt_sal_a2dp_sink_disconnect(bt_address_t* addr);
+bt_status_t bt_sal_a2dp_sink_set_active_device(bt_address_t* addr);
+bt_status_t bt_sal_a2dp_sink_start_stream(bt_address_t* addr);
 
-void bt_sal_a2dp_sink_event_callback(a2dp_event_t *event);
+void bt_sal_a2dp_sink_event_callback(a2dp_event_t* event);
 
 #endif /* __SAL_A2DP_SINK_INTERFACE_H__ */

@@ -23,25 +23,25 @@
 #include "bt_hfp_hf.h"
 #include "bt_tools.h"
 
-static int connect_cmd(void *handle, int argc, char *argv[]);
-static int disconnect_cmd(void *handle, int argc, char *argv[]);
-static int get_hfp_connection_state_cmd(void *handle, int argc, char *argv[]);
-static int connect_audio_cmd(void *handle, int argc, char *argv[]);
-static int disconnect_audio_cmd(void *handle, int argc, char *argv[]);
-static int start_voice_recognition_cmd(void *handle, int argc, char *argv[]);
-static int stop_voice_recognition_cmd(void *handle, int argc, char *argv[]);
-static int dial_cmd(void *handle, int argc, char *argv[]);
-static int dial_memory_cmd(void *handle, int argc, char *argv[]);
-static int redial_cmd(void *handle, int argc, char *argv[]);
-static int accept_call_cmd(void *handle, int argc, char *argv[]);
-static int reject_call_cmd(void *handle, int argc, char *argv[]);
-static int hold_call_cmd(void *handle, int argc, char *argv[]);
-static int terminate_call_cmd(void *handle, int argc, char *argv[]);
-static int control_call_cmd(void *handle, int argc, char *argv[]);
-static int query_current_calls_cmd(void *handle, int argc, char *argv[]);
-static int send_at_cmd_cmd(void *handle, int argc, char *argv[]);
-static int update_battery_level_cmd(void *handle, int argc, char *argv[]);
-static int send_dtmf_cmd(void *handle, int argc, char *argv[]);
+static int connect_cmd(void* handle, int argc, char* argv[]);
+static int disconnect_cmd(void* handle, int argc, char* argv[]);
+static int get_hfp_connection_state_cmd(void* handle, int argc, char* argv[]);
+static int connect_audio_cmd(void* handle, int argc, char* argv[]);
+static int disconnect_audio_cmd(void* handle, int argc, char* argv[]);
+static int start_voice_recognition_cmd(void* handle, int argc, char* argv[]);
+static int stop_voice_recognition_cmd(void* handle, int argc, char* argv[]);
+static int dial_cmd(void* handle, int argc, char* argv[]);
+static int dial_memory_cmd(void* handle, int argc, char* argv[]);
+static int redial_cmd(void* handle, int argc, char* argv[]);
+static int accept_call_cmd(void* handle, int argc, char* argv[]);
+static int reject_call_cmd(void* handle, int argc, char* argv[]);
+static int hold_call_cmd(void* handle, int argc, char* argv[]);
+static int terminate_call_cmd(void* handle, int argc, char* argv[]);
+static int control_call_cmd(void* handle, int argc, char* argv[]);
+static int query_current_calls_cmd(void* handle, int argc, char* argv[]);
+static int send_at_cmd_cmd(void* handle, int argc, char* argv[]);
+static int update_battery_level_cmd(void* handle, int argc, char* argv[]);
+static int send_dtmf_cmd(void* handle, int argc, char* argv[]);
 
 #define CHLD_0_DESC "0: Releases all held calls or sets User Determined User Busy (UDUB) for a waiting call"
 #define CHLD_1_DESC "1: Releases all active calls (if any exist) and accepts the other (held or waiting) call"
@@ -71,28 +71,28 @@ static int send_dtmf_cmd(void *handle, int argc, char *argv[]);
                         "\t\t\t<dtmf>: one of \"0, 1, 2, 3, 4, 5, 6, 7, 8, 9, *, #, A, B, C, D\"\n"
 
 static bt_command_t g_hfp_tables[] = {
-    {"connect",          connect_cmd,                  0, "Establish hfp SLC connection         params: <address>"          },
-    { "disconnect",      disconnect_cmd,               0, "Disconnect hfp SLC connection        params: <address>"          },
-    { "connectaudio",    connect_audio_cmd,            0, "Establish hfp SCO connection         params: <address>"          },
-    { "disconnectaudio", disconnect_audio_cmd,         0, "Disconnect hfp SCO connection        params: <address>"          },
-    { "startvr",         start_voice_recognition_cmd,  0, "Start voice recognition              params: <address>"          },
-    { "stopvr",          stop_voice_recognition_cmd,   0, "Stop voice recognition               params: <address>"          },
-    { "dial",            dial_cmd,                     0, "Dial phone number                    params: <address> <number>" },
-    { "dialm",           dial_memory_cmd,              0, "Place a call using memory dialing    params: <address> <memory>" },
-    { "redial",          redial_cmd,                   0, "Redial the last number               params: <address>"          },
-    { "accept",          accept_call_cmd,              0, ACCEPT_CALL_USAGE                                                 },
-    { "reject",          reject_call_cmd,              0, REJECT_CALL_USAGE                                                 },
-    { "hold",            hold_call_cmd,                0, "Hold an Three-way calling            params: <address>"          },
-    { "term",            terminate_call_cmd,           0, HANGUP_CALL_USAGE                                                 },
-    { "control",         control_call_cmd,             0, HOLD_CALL_USAGE                                                   },
-    { "query",           query_current_calls_cmd,      0, "Query current calls                  params: <address>"          },
-    { "sendat",          send_at_cmd_cmd,              0, "Send customize AT command to peer    params: <address> <atcmd>"  },
-    { "battery",         update_battery_level_cmd,     0, "Update battery level within [0, 100] params: <address> <level>\""},
-    { "dtmf",            send_dtmf_cmd,                0, SEND_DTMF_USAGE                                                   },
-    { "state",           get_hfp_connection_state_cmd, 0, "get hfp profile state"                                           },
+    { "connect", connect_cmd, 0, "Establish hfp SLC connection         params: <address>" },
+    { "disconnect", disconnect_cmd, 0, "Disconnect hfp SLC connection        params: <address>" },
+    { "connectaudio", connect_audio_cmd, 0, "Establish hfp SCO connection         params: <address>" },
+    { "disconnectaudio", disconnect_audio_cmd, 0, "Disconnect hfp SCO connection        params: <address>" },
+    { "startvr", start_voice_recognition_cmd, 0, "Start voice recognition              params: <address>" },
+    { "stopvr", stop_voice_recognition_cmd, 0, "Stop voice recognition               params: <address>" },
+    { "dial", dial_cmd, 0, "Dial phone number                    params: <address> <number>" },
+    { "dialm", dial_memory_cmd, 0, "Place a call using memory dialing    params: <address> <memory>" },
+    { "redial", redial_cmd, 0, "Redial the last number               params: <address>" },
+    { "accept", accept_call_cmd, 0, ACCEPT_CALL_USAGE },
+    { "reject", reject_call_cmd, 0, REJECT_CALL_USAGE },
+    { "hold", hold_call_cmd, 0, "Hold an Three-way calling            params: <address>" },
+    { "term", terminate_call_cmd, 0, HANGUP_CALL_USAGE },
+    { "control", control_call_cmd, 0, HOLD_CALL_USAGE },
+    { "query", query_current_calls_cmd, 0, "Query current calls                  params: <address>" },
+    { "sendat", send_at_cmd_cmd, 0, "Send customize AT command to peer    params: <address> <atcmd>" },
+    { "battery", update_battery_level_cmd, 0, "Update battery level within [0, 100] params: <address> <level>\"" },
+    { "dtmf", send_dtmf_cmd, 0, SEND_DTMF_USAGE },
+    { "state", get_hfp_connection_state_cmd, 0, "get hfp profile state" },
 };
 
-static void *hf_callbacks = NULL;
+static void* hf_callbacks = NULL;
 static void usage(void)
 {
     printf("Usage:\n");
@@ -103,7 +103,7 @@ static void usage(void)
     }
 }
 
-static int connect_cmd(void *handle, int argc, char *argv[])
+static int connect_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -118,7 +118,7 @@ static int connect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_cmd(void *handle, int argc, char *argv[])
+static int disconnect_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     if (argc < 1)
@@ -133,7 +133,7 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int get_hfp_connection_state_cmd(void *handle, int argc, char *argv[])
+static int get_hfp_connection_state_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -146,7 +146,7 @@ static int get_hfp_connection_state_cmd(void *handle, int argc, char *argv[])
     return state;
 }
 
-static int connect_audio_cmd(void *handle, int argc, char *argv[])
+static int connect_audio_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -161,7 +161,7 @@ static int connect_audio_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_audio_cmd(void *handle, int argc, char *argv[])
+static int disconnect_audio_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -176,7 +176,7 @@ static int disconnect_audio_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int start_voice_recognition_cmd(void *handle, int argc, char *argv[])
+static int start_voice_recognition_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -191,7 +191,7 @@ static int start_voice_recognition_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int stop_voice_recognition_cmd(void *handle, int argc, char *argv[])
+static int stop_voice_recognition_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -206,7 +206,7 @@ static int stop_voice_recognition_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int dial_cmd(void *handle, int argc, char *argv[])
+static int dial_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -221,7 +221,7 @@ static int dial_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int dial_memory_cmd(void *handle, int argc, char *argv[])
+static int dial_memory_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -236,7 +236,7 @@ static int dial_memory_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int redial_cmd(void *handle, int argc, char *argv[])
+static int redial_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -251,7 +251,7 @@ static int redial_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int accept_call_cmd(void *handle, int argc, char *argv[])
+static int accept_call_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -270,7 +270,7 @@ static int accept_call_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int reject_call_cmd(void *handle, int argc, char *argv[])
+static int reject_call_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -285,7 +285,7 @@ static int reject_call_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int hold_call_cmd(void *handle, int argc, char *argv[])
+static int hold_call_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -300,7 +300,7 @@ static int hold_call_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int terminate_call_cmd(void *handle, int argc, char *argv[])
+static int terminate_call_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -315,7 +315,7 @@ static int terminate_call_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int control_call_cmd(void *handle, int argc, char *argv[])
+static int control_call_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -334,13 +334,13 @@ static int control_call_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int query_current_calls_cmd(void *handle, int argc, char *argv[])
+static int query_current_calls_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
     bt_address_t addr;
-    hfp_current_call_t *calls = NULL;
+    hfp_current_call_t* calls = NULL;
     int num = 0;
 
     if (bt_addr_str2ba(argv[0], &addr) < 0)
@@ -351,10 +351,10 @@ static int query_current_calls_cmd(void *handle, int argc, char *argv[])
 
     PRINT("Calls:[%d]", num);
     if (num) {
-        hfp_current_call_t *call = calls;
+        hfp_current_call_t* call = calls;
         for (int i = 0; i < num; i++) {
             PRINT("\tidx[%d], dir:%d, state:%d, number:%s, name:%s",
-                  call->index, call->dir, call->state, call->number, call->name);
+                call->index, call->dir, call->state, call->number, call->name);
             call++;
         }
     }
@@ -363,7 +363,7 @@ static int query_current_calls_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int send_at_cmd_cmd(void *handle, int argc, char *argv[])
+static int send_at_cmd_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -389,7 +389,7 @@ static int send_at_cmd_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int update_battery_level_cmd(void *handle, int argc, char *argv[])
+static int update_battery_level_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -408,7 +408,7 @@ static int update_battery_level_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int send_dtmf_cmd(void *handle, int argc, char *argv[])
+static int send_dtmf_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -422,9 +422,7 @@ static int send_dtmf_cmd(void *handle, int argc, char *argv[])
         return CMD_INVALID_PARAM;
 
     char dtmf = argv[1][0];
-    if (((dtmf < '0') || (dtmf > '9')) &&
-        ((dtmf < 'A') || (dtmf > 'D')) &&
-        (dtmf != '*') && (dtmf != '#'))
+    if (((dtmf < '0') || (dtmf > '9')) && ((dtmf < 'A') || (dtmf > 'D')) && (dtmf != '*') && (dtmf != '#'))
         return CMD_INVALID_PARAM;
 
     if (bt_hfp_hf_send_dtmf(handle, &addr, dtmf) != BT_STATUS_SUCCESS)
@@ -433,38 +431,38 @@ static int send_dtmf_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void hf_connection_state_callback(void *context, bt_address_t *addr, profile_connection_state_t state)
+static void hf_connection_state_callback(void* context, bt_address_t* addr, profile_connection_state_t state)
 {
     PRINT_ADDR("hf_connection_state_callback, addr:%s, state:%d", addr, state);
 }
 
-static void hf_audio_state_callback(void *context, bt_address_t *addr, hfp_audio_state_t state)
+static void hf_audio_state_callback(void* context, bt_address_t* addr, hfp_audio_state_t state)
 {
     PRINT_ADDR("hf_audio_state_callback, addr:%s, state:%d", addr, state);
 }
 
-static void hf_vr_cmd_callback(void *context, bt_address_t *addr, bool started)
+static void hf_vr_cmd_callback(void* context, bt_address_t* addr, bool started)
 {
     PRINT_ADDR("hf_vr_cmd_callback, addr:%s, started:%d", addr, started);
 }
 
-static void hf_call_state_change_callback(void *context, bt_address_t *addr, hfp_current_call_t *call)
+static void hf_call_state_change_callback(void* context, bt_address_t* addr, hfp_current_call_t* call)
 {
     PRINT_ADDR("hf_call_state_change_callback, addr:%s, idx[%d], dir:%d, state:%d, number:%s, name:%s",
-               addr, call->index, call->dir, call->state, call->number, call->name);
+        addr, call->index, call->dir, call->state, call->number, call->name);
 }
 
-static void hf_cmd_complete_callback(void *context, bt_address_t *addr, const char *resp)
+static void hf_cmd_complete_callback(void* context, bt_address_t* addr, const char* resp)
 {
     PRINT_ADDR("hf_cmd_complete_callback, addr:%s, AT cmd resp:%s", addr, resp);
 }
 
-static void hf_ring_indication_callback(void *context, bt_address_t *addr, bool inband_ring_tone)
+static void hf_ring_indication_callback(void* context, bt_address_t* addr, bool inband_ring_tone)
 {
     PRINT_ADDR("hf_ring_indication_callback, addr:%s, inband-ring:%d", addr, inband_ring_tone);
 }
 
-static void hf_vol_changed_callback(void *context, bt_address_t *addr, hfp_volume_type_t type, int volume)
+static void hf_vol_changed_callback(void* context, bt_address_t* addr, hfp_volume_type_t type, int volume)
 {
     PRINT_ADDR("hf_vol_changed_callback, addr:%s, type:%s, vol:%d", addr, type ? "Microphone" : "Speaker", volume);
 }
@@ -480,21 +478,21 @@ static const hfp_hf_callbacks_t hfp_hf_cbs = {
     hf_vol_changed_callback,
 };
 
-int hfp_hf_commond_init(void *handle)
+int hfp_hf_commond_init(void* handle)
 {
     hf_callbacks = bt_hfp_hf_register_callbacks(handle, &hfp_hf_cbs);
 
     return 0;
 }
 
-int hfp_hf_commond_uninit(void *handle)
+int hfp_hf_commond_uninit(void* handle)
 {
     bt_hfp_hf_unregister_callbacks(handle, hf_callbacks);
 
     return 0;
 }
 
-int hfp_hf_command_exec(void *handle, int argc, char *argv[])
+int hfp_hf_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

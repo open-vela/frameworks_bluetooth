@@ -21,10 +21,10 @@
 
 #include <android/binder_manager.h>
 
+#include "binder_utils.h"
 #include "pan_callbacks_stub.h"
 #include "pan_proxy.h"
 #include "pan_stub.h"
-#include "binder_utils.h"
 #include "parcel.h"
 
 #include "bluetooth.h"
@@ -32,21 +32,21 @@
 
 #define BT_PAN_CALLBACK_DESC "BluetoothPanCallback"
 
-static const AIBinder_Class *kIBtPanCallbacks_Class = NULL;
+static const AIBinder_Class* kIBtPanCallbacks_Class = NULL;
 
-static void *IBtPanCallbacks_Class_onCreate(void *arg)
+static void* IBtPanCallbacks_Class_onCreate(void* arg)
 {
     return arg;
 }
 
-static void IBtPanCallbacks_Class_onDestroy(void *userData)
+static void IBtPanCallbacks_Class_onDestroy(void* userData)
 {
 }
 
-static binder_status_t IBtPanCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
+static binder_status_t IBtPanCallbacks_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
-    IBtPanCallbacks *cbks = AIBinder_getUserData(binder);
+    IBtPanCallbacks* cbks = AIBinder_getUserData(binder);
 
     switch (code) {
     case ICBKS_PAN_CONNECTION_STATE: {
@@ -75,7 +75,7 @@ static binder_status_t IBtPanCallbacks_Class_onTransact(AIBinder *binder, transa
     }
     case ICBKS_NETIF_STATE: {
         uint32_t state;
-        char *ifName = NULL;
+        char* ifName = NULL;
         uint32_t localRole;
 
         stat = AParcel_readUint32(in, &state);
@@ -101,16 +101,16 @@ static binder_status_t IBtPanCallbacks_Class_onTransact(AIBinder *binder, transa
     return stat;
 }
 
-AIBinder *BtPanCallbacks_getBinder(IBtPanCallbacks *cbks)
+AIBinder* BtPanCallbacks_getBinder(IBtPanCallbacks* cbks)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (cbks->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(cbks->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(cbks->clazz, (void *)cbks);
+        binder = AIBinder_new(cbks->clazz, (void*)cbks);
         if (cbks->WeakBinder != NULL) {
             AIBinder_Weak_delete(cbks->WeakBinder);
         }
@@ -121,25 +121,24 @@ AIBinder *BtPanCallbacks_getBinder(IBtPanCallbacks *cbks)
     return binder;
 }
 
-binder_status_t BtPanCallbacks_associateClass(AIBinder *binder)
+binder_status_t BtPanCallbacks_associateClass(AIBinder* binder)
 {
     if (!kIBtPanCallbacks_Class) {
-        kIBtPanCallbacks_Class =
-            AIBinder_Class_define(BT_PAN_CALLBACK_DESC, IBtPanCallbacks_Class_onCreate,
-                                  IBtPanCallbacks_Class_onDestroy, IBtPanCallbacks_Class_onTransact);
+        kIBtPanCallbacks_Class = AIBinder_Class_define(BT_PAN_CALLBACK_DESC, IBtPanCallbacks_Class_onCreate,
+            IBtPanCallbacks_Class_onDestroy, IBtPanCallbacks_Class_onTransact);
     }
 
     return AIBinder_associateClass(binder, kIBtPanCallbacks_Class);
 }
 
-IBtPanCallbacks *BtPanCallbacks_new(const pan_callbacks_t *callbacks)
+IBtPanCallbacks* BtPanCallbacks_new(const pan_callbacks_t* callbacks)
 {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
-    IBtPanCallbacks *cbks = malloc(sizeof(IBtPanCallbacks));
+    AIBinder_Class* clazz;
+    AIBinder* binder;
+    IBtPanCallbacks* cbks = malloc(sizeof(IBtPanCallbacks));
 
     clazz = AIBinder_Class_define(BT_PAN_CALLBACK_DESC, IBtPanCallbacks_Class_onCreate,
-                                  IBtPanCallbacks_Class_onDestroy, IBtPanCallbacks_Class_onTransact);
+        IBtPanCallbacks_Class_onDestroy, IBtPanCallbacks_Class_onTransact);
 
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
@@ -151,7 +150,7 @@ IBtPanCallbacks *BtPanCallbacks_new(const pan_callbacks_t *callbacks)
     return cbks;
 }
 
-void BtPanCallbacks_delete(IBtPanCallbacks *cbks)
+void BtPanCallbacks_delete(IBtPanCallbacks* cbks)
 {
     assert(cbks);
 

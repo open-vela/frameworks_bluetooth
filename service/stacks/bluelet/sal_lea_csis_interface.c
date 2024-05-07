@@ -42,7 +42,7 @@ const LEA_CSIS_CALLBACK_S adpt_lea_csip_server_callbacks = {
  ****************************************************************************/
 
 static void adpt_lea_csis_member_lock_cbk(uint32_t csis_id, BD_ADDR remote_addr,
-                                          uint8_t lock)
+    uint8_t lock)
 {
     bt_address_t addr;
 
@@ -54,9 +54,9 @@ static void adpt_lea_csis_member_lock_cbk(uint32_t csis_id, BD_ADDR remote_addr,
  * Public function
  ****************************************************************************/
 
-bool adpt_req_csis_info_callback(SERVICE_LEA_CSIS_S *info)
+bool adpt_req_csis_info_callback(SERVICE_LEA_CSIS_S* info)
 {
-    return lea_server_on_csis_info_request((lea_csis_infos_t *)info);
+    return lea_server_on_csis_info_request((lea_csis_infos_t*)info);
 }
 
 #endif /* __SAL_LEA_CSIS_INTERFACE_H__ */

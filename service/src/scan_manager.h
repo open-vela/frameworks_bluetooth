@@ -22,7 +22,7 @@
 typedef struct {
     bt_address_t addr; // remote device addr
     uint8_t length; // length of the adv_data_mask
-    uint8_t *adv_data_mask; // only reported to service layer if adv_data contains adv_data_mask
+    uint8_t* adv_data_mask; // only reported to service layer if adv_data contains adv_data_mask
     // TODO: add new filter type in future
 } ble_scan_filter_t;
 
@@ -32,20 +32,20 @@ enum scan_state {
 };
 
 void scan_on_state_changed(uint8_t state);
-void scan_on_result_data_update(ble_scan_result_t *result_info, char *adv_data);
-bt_scanner_t *scanner_start_scan(void *remote, const scanner_callbacks_t *cbs);
-bt_scanner_t *scanner_start_scan_settings(void *remote,
-                                          ble_scan_settings_t *settings,
-                                          const scanner_callbacks_t *cbs);
-bt_scanner_t *scanner_start_scan_with_filters(void *remote,
-                                              ble_scan_settings_t *settings,
-                                              uint8_t *filter_data,
-                                              uint16_t filter_length,
-                                              const scanner_callbacks_t *cbs);
-void scanner_stop_scan(bt_scanner_t *scanner);
+void scan_on_result_data_update(ble_scan_result_t* result_info, char* adv_data);
+bt_scanner_t* scanner_start_scan(void* remote, const scanner_callbacks_t* cbs);
+bt_scanner_t* scanner_start_scan_settings(void* remote,
+    ble_scan_settings_t* settings,
+    const scanner_callbacks_t* cbs);
+bt_scanner_t* scanner_start_scan_with_filters(void* remote,
+    ble_scan_settings_t* settings,
+    uint8_t* filter_data,
+    uint16_t filter_length,
+    const scanner_callbacks_t* cbs);
+void scanner_stop_scan(bt_scanner_t* scanner);
 bool scan_is_supported(void);
 void scan_manager_init(void);
 void scan_manager_cleanup(void);
-void scanner_dump(bt_scanner_t *scanner);
+void scanner_dump(bt_scanner_t* scanner);
 
 #endif /* __BT_SCAN_MANAGER_H__ */

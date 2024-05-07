@@ -28,14 +28,14 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    void *usr_data;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    void* usr_data;
 } IBtSpp;
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
+    AIBinder_Class* clazz;
+    AIBinder* binder;
 } BpBtSpp;
 
 typedef enum {
@@ -49,8 +49,8 @@ typedef enum {
 
 #define SPP_BINDER_INSTANCE "Vela.Bluetooth.Spp"
 
-binder_status_t BtSpp_addService(IBtSpp *spp, const char *instance);
-AIBinder *BtSpp_getService(BpBtSpp **bpSpp, const char *instance);
+binder_status_t BtSpp_addService(IBtSpp* spp, const char* instance);
+AIBinder* BtSpp_getService(BpBtSpp** bpSpp, const char* instance);
 
 #ifdef __cplusplus
 }

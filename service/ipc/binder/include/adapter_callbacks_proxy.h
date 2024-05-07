@@ -27,7 +27,7 @@ extern "C" {
 
 #include <android/binder_manager.h>
 // #include <android/binder_auto_utils.h>
-const adapter_callbacks_t *BpBtAdapterCallbacks_getStatic(void);
+const adapter_callbacks_t* BpBtAdapterCallbacks_getStatic(void);
 
 #ifdef __cplusplus
 }

@@ -59,23 +59,23 @@ typedef struct
     bool started;
     bool offloading;
     uint8_t max_connections;
-    bt_list_t *ag_devices;
-    callbacks_list_t *callbacks;
+    bt_list_t* ag_devices;
+    callbacks_list_t* callbacks;
     pthread_mutex_t device_lock;
 } ag_service_t;
 
 typedef struct
 {
     bt_address_t addr;
-    ag_state_machine_t *agsm;
+    ag_state_machine_t* agsm;
 } ag_device_t;
 
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
-bt_status_t hfp_ag_send_message(hfp_ag_msg_t *msg);
+bt_status_t hfp_ag_send_message(hfp_ag_msg_t* msg);
 
-static void hfp_ag_process_message(void *data);
+static void hfp_ag_process_message(void* data);
 
 /****************************************************************************
  * Private Data
@@ -86,27 +86,24 @@ static ag_service_t g_ag_service = {
     .callbacks = NULL,
 };
 
-static uint32_t ag_support_features = HFP_BRSF_AG_HFINDICATORS | HFP_BRSF_AG_ENHANCED_CALLSTATUS |
-                                      HFP_BRSF_AG_3WAYCALL | HFP_BRSF_AG_ENHANCED_CALLCONTROL |
-                                      HFP_BRSF_AG_REJECT_CALL | HFP_BRSF_AG_EXTENDED_ERRORRESULT |
-                                      HFP_BRSF_AG_CODEC_NEGOTIATION | HFP_BRSF_AG_eSCO_S4T2_SETTING;
+static uint32_t ag_support_features = HFP_BRSF_AG_HFINDICATORS | HFP_BRSF_AG_ENHANCED_CALLSTATUS | HFP_BRSF_AG_3WAYCALL | HFP_BRSF_AG_ENHANCED_CALLCONTROL | HFP_BRSF_AG_REJECT_CALL | HFP_BRSF_AG_EXTENDED_ERRORRESULT | HFP_BRSF_AG_CODEC_NEGOTIATION | HFP_BRSF_AG_eSCO_S4T2_SETTING;
 
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
-static bool ag_device_cmp(void *device, void *addr)
+static bool ag_device_cmp(void* device, void* addr)
 {
-    return bt_addr_compare(&((ag_device_t *)device)->addr, addr) == 0;
+    return bt_addr_compare(&((ag_device_t*)device)->addr, addr) == 0;
 }
 
-static ag_device_t *find_ag_device_by_addr(bt_address_t *addr)
+static ag_device_t* find_ag_device_by_addr(bt_address_t* addr)
 {
     return bt_list_find(g_ag_service.ag_devices, ag_device_cmp, addr);
 }
 
-static ag_device_t *ag_device_new(bt_address_t *addr, ag_state_machine_t *agsm)
+static ag_device_t* ag_device_new(bt_address_t* addr, ag_state_machine_t* agsm)
 {
-    ag_device_t *device = malloc(sizeof(ag_device_t));
+    ag_device_t* device = malloc(sizeof(ag_device_t));
     if (!device)
         return NULL;
 
@@ -116,12 +113,12 @@ static ag_device_t *ag_device_new(bt_address_t *addr, ag_state_machine_t *agsm)
     return device;
 }
 
-static void ag_device_delete(ag_device_t *device)
+static void ag_device_delete(ag_device_t* device)
 {
     if (!device)
         return;
 
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_DISCONNECT, &device->addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_DISCONNECT, &device->addr);
     if (msg == NULL)
         return;
 
@@ -131,18 +128,18 @@ static void ag_device_delete(ag_device_t *device)
     free(device);
 }
 
-static bool hfp_codec_get_offload(ag_state_machine_t *agsm,
-                                  hfp_offload_config_t *offload)
+static bool hfp_codec_get_offload(ag_state_machine_t* agsm,
+    hfp_offload_config_t* offload)
 {
     offload->sco_hdl = ag_state_machine_get_sco_handle(agsm);
     offload->sco_codec = ag_state_machine_get_codec(agsm);
     return true;
 }
 
-static ag_state_machine_t *get_state_machine(bt_address_t *addr)
+static ag_state_machine_t* get_state_machine(bt_address_t* addr)
 {
-    ag_state_machine_t *agsm;
-    ag_device_t *device;
+    ag_state_machine_t* agsm;
+    ag_device_t* device;
 
     if (!g_ag_service.started)
         return NULL;
@@ -151,7 +148,7 @@ static ag_state_machine_t *get_state_machine(bt_address_t *addr)
     if (device)
         return device->agsm;
 
-    agsm = ag_state_machine_new(addr, (void *)&g_ag_service);
+    agsm = ag_state_machine_new(addr, (void*)&g_ag_service);
     if (!agsm) {
         BT_LOGE("Create state machine failed");
         return NULL;
@@ -172,13 +169,13 @@ static ag_state_machine_t *get_state_machine(bt_address_t *addr)
 
 static uint8_t get_current_connnection_cnt(void)
 {
-    bt_list_t *list = g_ag_service.ag_devices;
-    bt_list_node_t *node;
+    bt_list_t* list = g_ag_service.ag_devices;
+    bt_list_node_t* node;
     uint8_t cnt = 0;
 
     pthread_mutex_lock(&g_ag_service.device_lock);
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
-        ag_device_t *device = bt_list_node(node);
+        ag_device_t* device = bt_list_node(node);
         if (ag_state_machine_get_state(device->agsm) >= HFP_AG_STATE_CONNECTED || ag_state_machine_get_state(device->agsm) == HFP_AG_STATE_CONNECTING)
             cnt++;
     }
@@ -204,7 +201,7 @@ static void ag_startup(profile_on_startup_t on_startup)
 {
     bt_status_t status;
     pthread_mutexattr_t attr;
-    ag_service_t *service = &g_ag_service;
+    ag_service_t* service = &g_ag_service;
 
     if (service->started) {
         on_startup(PROFILE_HFP_AG, true);
@@ -261,20 +258,20 @@ static void ag_shutdown(profile_on_shutdown_t on_shutdown)
     on_shutdown(PROFILE_HFP_AG, true);
 }
 
-static void ag_dispatch_msg_foreach(void *data, void *context)
+static void ag_dispatch_msg_foreach(void* data, void* context)
 {
-    ag_device_t *device = (ag_device_t *)data;
+    ag_device_t* device = (ag_device_t*)data;
 
-    ag_state_machine_dispatch(device->agsm, (hfp_ag_msg_t *)context);
+    ag_state_machine_dispatch(device->agsm, (hfp_ag_msg_t*)context);
 }
 
-static void hfp_ag_prepare_handle(ag_state_machine_t *agsm,
-                                  hfp_ag_msg_t *event)
+static void hfp_ag_prepare_handle(ag_state_machine_t* agsm,
+    hfp_ag_msg_t* event)
 {
     switch (event->event) {
     case AG_STACK_EVENT_AUDIO_STATE_CHANGED: {
         hfp_offload_config_t offload = { 0 };
-        ag_service_t *service = &g_ag_service;
+        ag_service_t* service = &g_ag_service;
         uint8_t param[sizeof(hfp_offload_config_t)];
         size_t size;
         bool ret;
@@ -309,9 +306,9 @@ static void hfp_ag_prepare_handle(ag_state_machine_t *agsm,
     }
 }
 
-static void hfp_ag_process_message(void *data)
+static void hfp_ag_process_message(void* data)
 {
-    hfp_ag_msg_t *msg = (hfp_ag_msg_t *)data;
+    hfp_ag_msg_t* msg = (hfp_ag_msg_t*)data;
 
     if (!g_ag_service.started && msg->event != AG_STARTUP)
         return;
@@ -334,7 +331,7 @@ static void hfp_ag_process_message(void *data)
         break;
     default: {
         pthread_mutex_lock(&g_ag_service.device_lock);
-        ag_state_machine_t *agsm = get_state_machine(&msg->data.addr);
+        ag_state_machine_t* agsm = get_state_machine(&msg->data.addr);
         if (!agsm) {
             pthread_mutex_unlock(&g_ag_service.device_lock);
             break;
@@ -350,7 +347,7 @@ static void hfp_ag_process_message(void *data)
     hfp_ag_msg_destory(msg);
 }
 
-bt_status_t hfp_ag_send_message(hfp_ag_msg_t *msg)
+bt_status_t hfp_ag_send_message(hfp_ag_msg_t* msg)
 {
     assert(msg);
 
@@ -359,9 +356,9 @@ bt_status_t hfp_ag_send_message(hfp_ag_msg_t *msg)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t hfp_ag_send_event(bt_address_t *addr, hfp_ag_event_t evt)
+bt_status_t hfp_ag_send_event(bt_address_t* addr, hfp_ag_event_t evt)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(evt, addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(evt, addr);
 
     if (!msg)
         return BT_STATUS_NOMEM;
@@ -376,7 +373,7 @@ static bt_status_t hfp_ag_init(void)
 
 static bt_status_t hfp_ag_startup(profile_on_startup_t cb)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STARTUP, NULL);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STARTUP, NULL);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -387,7 +384,7 @@ static bt_status_t hfp_ag_startup(profile_on_startup_t cb)
 
 static bt_status_t hfp_ag_shutdown(profile_on_shutdown_t cb)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_SHUTDOWN, NULL);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_SHUTDOWN, NULL);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -396,7 +393,7 @@ static bt_status_t hfp_ag_shutdown(profile_on_shutdown_t cb)
     return hfp_ag_send_message(msg);
 }
 
-static void hfp_ag_process_msg(profile_msg_t *msg)
+static void hfp_ag_process_msg(profile_msg_t* msg)
 {
     switch (msg->event) {
     case PROFILE_EVT_HFP_OFFLOADING:
@@ -417,15 +414,15 @@ static void hfp_ag_cleanup(void)
 {
 }
 
-static void *hfp_ag_register_callbacks(void *remote, const hfp_ag_callbacks_t *callbacks)
+static void* hfp_ag_register_callbacks(void* remote, const hfp_ag_callbacks_t* callbacks)
 {
     if (!g_ag_service.started)
         return NULL;
 
-    return bt_remote_callbacks_register(g_ag_service.callbacks, remote, (void *)callbacks);
+    return bt_remote_callbacks_register(g_ag_service.callbacks, remote, (void*)callbacks);
 }
 
-static bool hfp_ag_unregister_callbacks(void **remote, void *cookie)
+static bool hfp_ag_unregister_callbacks(void** remote, void* cookie)
 {
     if (!g_ag_service.started)
         return false;
@@ -433,10 +430,10 @@ static bool hfp_ag_unregister_callbacks(void **remote, void *cookie)
     return bt_remote_callbacks_unregister(g_ag_service.callbacks, remote, cookie);
 }
 
-static bool hfp_ag_is_connected(bt_address_t *addr)
+static bool hfp_ag_is_connected(bt_address_t* addr)
 {
     pthread_mutex_lock(&g_ag_service.device_lock);
-    ag_device_t *device = find_ag_device_by_addr(addr);
+    ag_device_t* device = find_ag_device_by_addr(addr);
 
     if (!device) {
         pthread_mutex_unlock(&g_ag_service.device_lock);
@@ -449,10 +446,10 @@ static bool hfp_ag_is_connected(bt_address_t *addr)
     return connected;
 }
 
-static bool hfp_ag_is_audio_connected(bt_address_t *addr)
+static bool hfp_ag_is_audio_connected(bt_address_t* addr)
 {
     pthread_mutex_lock(&g_ag_service.device_lock);
-    ag_device_t *device = find_ag_device_by_addr(addr);
+    ag_device_t* device = find_ag_device_by_addr(addr);
 
     if (!device) {
         pthread_mutex_unlock(&g_ag_service.device_lock);
@@ -465,9 +462,9 @@ static bool hfp_ag_is_audio_connected(bt_address_t *addr)
     return connected;
 }
 
-static profile_connection_state_t hfp_ag_get_connection_state(bt_address_t *addr)
+static profile_connection_state_t hfp_ag_get_connection_state(bt_address_t* addr)
 {
-    ag_device_t *device = find_ag_device_by_addr(addr);
+    ag_device_t* device = find_ag_device_by_addr(addr);
     profile_connection_state_t conn_state;
     uint32_t state;
 
@@ -489,7 +486,7 @@ static profile_connection_state_t hfp_ag_get_connection_state(bt_address_t *addr
     return conn_state;
 }
 
-static bt_status_t hfp_ag_connect(bt_address_t *addr)
+static bt_status_t hfp_ag_connect(bt_address_t* addr)
 {
     CHECK_ENABLED();
     if (get_current_connnection_cnt() >= g_ag_service.max_connections)
@@ -498,7 +495,7 @@ static bt_status_t hfp_ag_connect(bt_address_t *addr)
     return hfp_ag_send_event(addr, AG_CONNECT);
 }
 
-static bt_status_t hfp_ag_disconnect(bt_address_t *addr)
+static bt_status_t hfp_ag_disconnect(bt_address_t* addr)
 {
     CHECK_ENABLED();
     profile_connection_state_t state = hfp_ag_get_connection_state(addr);
@@ -508,7 +505,7 @@ static bt_status_t hfp_ag_disconnect(bt_address_t *addr)
     return hfp_ag_send_event(addr, AG_DISCONNECT);
 }
 
-static bt_status_t hfp_ag_connect_audio(bt_address_t *addr)
+static bt_status_t hfp_ag_connect_audio(bt_address_t* addr)
 {
     CHECK_ENABLED();
     if (!hfp_ag_is_connected(addr) || hfp_ag_is_audio_connected(addr))
@@ -517,7 +514,7 @@ static bt_status_t hfp_ag_connect_audio(bt_address_t *addr)
     return hfp_ag_send_event(addr, AG_CONNECT_AUDIO);
 }
 
-static bt_status_t hfp_ag_disconnect_audio(bt_address_t *addr)
+static bt_status_t hfp_ag_disconnect_audio(bt_address_t* addr)
 {
     CHECK_ENABLED();
     if (!hfp_ag_is_audio_connected(addr))
@@ -526,7 +523,7 @@ static bt_status_t hfp_ag_disconnect_audio(bt_address_t *addr)
     return hfp_ag_send_event(addr, AG_DISCONNECT_AUDIO);
 }
 
-static bt_status_t hfp_ag_start_voice_recognition(bt_address_t *addr)
+static bt_status_t hfp_ag_start_voice_recognition(bt_address_t* addr)
 {
     CHECK_ENABLED();
     if (!hfp_ag_is_connected(addr))
@@ -535,7 +532,7 @@ static bt_status_t hfp_ag_start_voice_recognition(bt_address_t *addr)
     return hfp_ag_send_event(addr, AG_VOICE_RECOGNITION_START);
 }
 
-static bt_status_t hfp_ag_stop_voice_recognition(bt_address_t *addr)
+static bt_status_t hfp_ag_stop_voice_recognition(bt_address_t* addr)
 {
     CHECK_ENABLED();
     if (!hfp_ag_is_connected(addr))
@@ -545,11 +542,11 @@ static bt_status_t hfp_ag_stop_voice_recognition(bt_address_t *addr)
 }
 
 bt_status_t hfp_ag_phone_state_change(uint8_t num_active, uint8_t num_held,
-                                      hfp_ag_call_state_t call_state,
-                                      hfp_call_addrtype_t type, const char *number,
-                                      const char *name)
+    hfp_ag_call_state_t call_state,
+    hfp_call_addrtype_t type, const char* number,
+    const char* name)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_PHONE_STATE_CHANGE, NULL);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_PHONE_STATE_CHANGE, NULL);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -564,10 +561,10 @@ bt_status_t hfp_ag_phone_state_change(uint8_t num_active, uint8_t num_held,
 }
 
 bt_status_t hfp_ag_device_status_changed(hfp_network_state_t network,
-                                         hfp_roaming_state_t roam,
-                                         uint8_t signal, uint8_t battery)
+    hfp_roaming_state_t roam,
+    uint8_t signal, uint8_t battery)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_DEVICE_STATUS_CHANGED, NULL);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_DEVICE_STATUS_CHANGED, NULL);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -581,7 +578,7 @@ bt_status_t hfp_ag_device_status_changed(hfp_network_state_t network,
 
 bt_status_t hfp_ag_dial_result(uint8_t result)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_DIALING_RESULT, NULL);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_DIALING_RESULT, NULL);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -590,9 +587,9 @@ bt_status_t hfp_ag_dial_result(uint8_t result)
     return hfp_ag_send_message(msg);
 }
 
-bt_status_t hfp_ag_send_at_command(bt_address_t *addr, const char *at_command)
+bt_status_t hfp_ag_send_at_command(bt_address_t* addr, const char* at_command)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_SEND_AT_COMMAND, addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_SEND_AT_COMMAND, addr);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -620,7 +617,7 @@ static const hfp_ag_interface_t agInterface = {
     .send_at_command = hfp_ag_send_at_command,
 };
 
-static const void *get_ag_profile_interface(void)
+static const void* get_ag_profile_interface(void)
 {
     return &agInterface;
 }
@@ -628,40 +625,40 @@ static const void *get_ag_profile_interface(void)
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-void ag_service_notify_connection_state_changed(bt_address_t *addr, profile_connection_state_t state)
+void ag_service_notify_connection_state_changed(bt_address_t* addr, profile_connection_state_t state)
 {
     BT_LOGD("%s", __FUNCTION__);
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, connection_state_cb, addr, state);
 }
 
-void ag_service_notify_audio_state_changed(bt_address_t *addr, hfp_audio_state_t state)
+void ag_service_notify_audio_state_changed(bt_address_t* addr, hfp_audio_state_t state)
 {
     BT_LOGD("%s", __FUNCTION__);
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, audio_state_cb, addr, state);
 }
 
-void ag_service_notify_vr_state_changed(bt_address_t *addr, bool started)
+void ag_service_notify_vr_state_changed(bt_address_t* addr, bool started)
 {
     BT_LOGD("%s", __FUNCTION__);
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, vr_cmd_cb, addr, started);
 }
 
-void ag_service_notify_hf_battery_update(bt_address_t *addr, uint8_t value)
+void ag_service_notify_hf_battery_update(bt_address_t* addr, uint8_t value)
 {
     BT_LOGD("%s", __FUNCTION__);
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, hf_battery_update_cb, addr, value);
 }
 
-void ag_service_notify_cmd_received(bt_address_t *addr, const char *at_cmd)
+void ag_service_notify_cmd_received(bt_address_t* addr, const char* at_cmd)
 {
     BT_LOGD("%s", __func__);
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, at_cmd_cb, addr, at_cmd);
 }
 
-void hfp_ag_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state,
-                                        profile_connection_reason_t reason, uint32_t remote_features)
+void hfp_ag_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,
+    profile_connection_reason_t reason, uint32_t remote_features)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STACK_EVENT_CONNECTION_STATE_CHANGED, addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_CONNECTION_STATE_CHANGED, addr);
     if (!msg)
         return;
 
@@ -671,9 +668,9 @@ void hfp_ag_on_connection_state_changed(bt_address_t *addr, profile_connection_s
     hfp_ag_send_message(msg);
 }
 
-void hfp_ag_on_audio_state_changed(bt_address_t *addr, hfp_audio_state_t state, uint16_t sco_connection_handle)
+void hfp_ag_on_audio_state_changed(bt_address_t* addr, hfp_audio_state_t state, uint16_t sco_connection_handle)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STACK_EVENT_AUDIO_STATE_CHANGED, addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_AUDIO_STATE_CHANGED, addr);
     if (!msg)
         return;
 
@@ -682,9 +679,9 @@ void hfp_ag_on_audio_state_changed(bt_address_t *addr, hfp_audio_state_t state, 
     hfp_ag_send_message(msg);
 }
 
-void hfp_ag_on_codec_changed(bt_address_t *addr, hfp_codec_config_t *config)
+void hfp_ag_on_codec_changed(bt_address_t* addr, hfp_codec_config_t* config)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STACK_EVENT_CODEC_CHANGED, addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_CODEC_CHANGED, addr);
     if (!msg)
         return;
 
@@ -692,9 +689,9 @@ void hfp_ag_on_codec_changed(bt_address_t *addr, hfp_codec_config_t *config)
     hfp_ag_send_message(msg);
 }
 
-void hfp_ag_on_volume_changed(bt_address_t *addr, hfp_volume_type_t type, uint8_t volume)
+void hfp_ag_on_volume_changed(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STACK_EVENT_VOLUME_CHANGED, addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_VOLUME_CHANGED, addr);
     if (!msg)
         return;
 
@@ -703,24 +700,24 @@ void hfp_ag_on_volume_changed(bt_address_t *addr, hfp_volume_type_t type, uint8_
     hfp_ag_send_message(msg);
 }
 
-void hfp_ag_on_received_cind_request(bt_address_t *addr)
+void hfp_ag_on_received_cind_request(bt_address_t* addr)
 {
     hfp_ag_send_event(addr, AG_STACK_EVENT_AT_CIND_REQUEST);
 }
 
-void hfp_ag_on_received_clcc_request(bt_address_t *addr)
+void hfp_ag_on_received_clcc_request(bt_address_t* addr)
 {
     hfp_ag_send_event(addr, AG_STACK_EVENT_AT_CLCC_REQUEST);
 }
 
-void hfp_ag_on_received_cops_request(bt_address_t *addr)
+void hfp_ag_on_received_cops_request(bt_address_t* addr)
 {
     hfp_ag_send_event(addr, AG_STACK_EVENT_AT_COPS_REQUEST);
 }
 
-void hfp_ag_on_voice_recognition_state_changed(bt_address_t *addr, bool started)
+void hfp_ag_on_voice_recognition_state_changed(bt_address_t* addr, bool started)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STACK_EVENT_VR_STATE_CHANGED, addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_VR_STATE_CHANGED, addr);
     if (!msg)
         return;
 
@@ -728,9 +725,9 @@ void hfp_ag_on_voice_recognition_state_changed(bt_address_t *addr, bool started)
     hfp_ag_send_message(msg);
 }
 
-void hfp_ag_on_remote_battery_level_update(bt_address_t *addr, uint8_t value)
+void hfp_ag_on_remote_battery_level_update(bt_address_t* addr, uint8_t value)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STACK_EVENT_BATTERY_UPDATE, addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_BATTERY_UPDATE, addr);
     if (!msg)
         return;
 
@@ -738,24 +735,24 @@ void hfp_ag_on_remote_battery_level_update(bt_address_t *addr, uint8_t value)
     hfp_ag_send_message(msg);
 }
 
-void hfp_ag_on_answer_call(bt_address_t *addr)
+void hfp_ag_on_answer_call(bt_address_t* addr)
 {
     hfp_ag_send_event(addr, AG_STACK_EVENT_ANSWER_CALL);
 }
 
-void hfp_ag_on_reject_call(bt_address_t *addr)
+void hfp_ag_on_reject_call(bt_address_t* addr)
 {
     hfp_ag_send_event(addr, AG_STACK_EVENT_REJECT_CALL);
 }
 
-void hfp_ag_on_hangup_call(bt_address_t *addr)
+void hfp_ag_on_hangup_call(bt_address_t* addr)
 {
     hfp_ag_send_event(addr, AG_STACK_EVENT_HANGUP_CALL);
 }
 
-void hfp_ag_on_received_at_cmd(bt_address_t *addr, char *at_string, uint16_t at_length)
+void hfp_ag_on_received_at_cmd(bt_address_t* addr, char* at_string, uint16_t at_length)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STACK_EVENT_AT_COMMAND, addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_AT_COMMAND, addr);
     if (!msg)
         return;
 
@@ -763,14 +760,14 @@ void hfp_ag_on_received_at_cmd(bt_address_t *addr, char *at_string, uint16_t at_
     hfp_ag_send_message(msg);
 }
 
-void hfp_ag_on_audio_connect_request(bt_address_t *addr)
+void hfp_ag_on_audio_connect_request(bt_address_t* addr)
 {
     hfp_ag_send_event(addr, AG_STACK_EVENT_AUDIO_REQ);
 }
 
-void hfp_ag_on_dial_number(bt_address_t *addr, char *number, uint32_t length)
+void hfp_ag_on_dial_number(bt_address_t* addr, char* number, uint32_t length)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STACK_EVENT_DIAL_NUMBER, addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_DIAL_NUMBER, addr);
     if (!msg)
         return;
 
@@ -778,9 +775,9 @@ void hfp_ag_on_dial_number(bt_address_t *addr, char *number, uint32_t length)
     hfp_ag_send_message(msg);
 }
 
-void hfp_ag_on_dial_memory(bt_address_t *addr, uint32_t location)
+void hfp_ag_on_dial_memory(bt_address_t* addr, uint32_t location)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STACK_EVENT_DIAL_MEMORY, addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_DIAL_MEMORY, addr);
     if (!msg)
         return;
 
@@ -788,9 +785,9 @@ void hfp_ag_on_dial_memory(bt_address_t *addr, uint32_t location)
     hfp_ag_send_message(msg);
 }
 
-void hfp_ag_on_call_control(bt_address_t *addr, hfp_call_control_t control)
+void hfp_ag_on_call_control(bt_address_t* addr, hfp_call_control_t control)
 {
-    hfp_ag_msg_t *msg = hfp_ag_msg_new(AG_STACK_EVENT_CALL_CONTROL, addr);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_STACK_EVENT_CALL_CONTROL, addr);
     if (!msg)
         return;
 
@@ -798,16 +795,16 @@ void hfp_ag_on_call_control(bt_address_t *addr, hfp_call_control_t control)
     hfp_ag_send_message(msg);
 }
 
-void hfp_ag_on_received_dtmf(bt_address_t *addr, char tone)
+void hfp_ag_on_received_dtmf(bt_address_t* addr, char tone)
 {
 }
 
-void hfp_ag_on_received_manufacture_request(bt_address_t *addr)
+void hfp_ag_on_received_manufacture_request(bt_address_t* addr)
 {
     bt_sal_hfp_ag_manufacture_id_response(addr, "xiaomi", strlen("xiaomi"));
 }
 
-void hfp_ag_on_received_model_id_request(bt_address_t *addr)
+void hfp_ag_on_received_model_id_request(bt_address_t* addr)
 {
     bt_sal_hfp_ag_model_id_response(addr, "2109119BC", strlen("2109119BC"));
 }
@@ -817,7 +814,7 @@ static const profile_service_t hfp_ag_service = {
     .name = PROFILE_HFP_AG_NAME,
     .id = PROFILE_HFP_AG,
     .transport = BT_TRANSPORT_BREDR,
-    .uuid = {BT_UUID128_TYPE, { 0 }},
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = hfp_ag_init,
     .startup = hfp_ag_startup,
     .shutdown = hfp_ag_shutdown,

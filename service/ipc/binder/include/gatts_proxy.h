@@ -30,18 +30,18 @@
 extern "C" {
 #endif
 
-BpBtGattServer *BpBtGattServer_new(const char *instance);
-void BpBtGattServer_delete(BpBtGattServer *bpBinder);
-void *BpBtGattServer_registerService(BpBtGattServer *bpBinder, AIBinder *cbksBinder);
-bt_status_t BpBtGattServer_unregisterService(BpBtGattServer *bpBinder, void *handle);
-bt_status_t BpBtGattServer_connect(BpBtGattServer *bpBinder, void *handle, bt_address_t *addr, ble_addr_type_t addr_type);
-bt_status_t BpBtGattServer_disconnect(BpBtGattServer *bpBinder, void *handle);
-bt_status_t BpBtGattServer_createServiceTable(BpBtGattServer *bpBinder, void *handle, gatt_srv_db_t *srv_db);
-bt_status_t BpBtGattServer_start(BpBtGattServer *bpBinder, void *handle);
-bt_status_t BpBtGattServer_stop(BpBtGattServer *bpBinder, void *handle);
-bt_status_t BpBtGattServer_response(BpBtGattServer *bpBinder, void *handle, uint32_t req_handle, uint8_t *value, uint16_t length);
-bt_status_t BpBtGattServer_notify(BpBtGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
-bt_status_t BpBtGattServer_indicate(BpBtGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length);
+BpBtGattServer* BpBtGattServer_new(const char* instance);
+void BpBtGattServer_delete(BpBtGattServer* bpBinder);
+void* BpBtGattServer_registerService(BpBtGattServer* bpBinder, AIBinder* cbksBinder);
+bt_status_t BpBtGattServer_unregisterService(BpBtGattServer* bpBinder, void* handle);
+bt_status_t BpBtGattServer_connect(BpBtGattServer* bpBinder, void* handle, bt_address_t* addr, ble_addr_type_t addr_type);
+bt_status_t BpBtGattServer_disconnect(BpBtGattServer* bpBinder, void* handle);
+bt_status_t BpBtGattServer_createServiceTable(BpBtGattServer* bpBinder, void* handle, gatt_srv_db_t* srv_db);
+bt_status_t BpBtGattServer_start(BpBtGattServer* bpBinder, void* handle);
+bt_status_t BpBtGattServer_stop(BpBtGattServer* bpBinder, void* handle);
+bt_status_t BpBtGattServer_response(BpBtGattServer* bpBinder, void* handle, uint32_t req_handle, uint8_t* value, uint16_t length);
+bt_status_t BpBtGattServer_notify(BpBtGattServer* bpBinder, void* handle, uint16_t attr_handle, uint8_t* value, uint16_t length);
+bt_status_t BpBtGattServer_indicate(BpBtGattServer* bpBinder, void* handle, uint16_t attr_handle, uint8_t* value, uint16_t length);
 #ifdef __cplusplus
 }
 #endif

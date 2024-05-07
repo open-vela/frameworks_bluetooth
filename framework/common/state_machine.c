@@ -16,7 +16,7 @@
 #include "state_machine.h"
 #include <stdint.h>
 
-void hsm_ctor(state_machine_t *sm, const state_t *initial_state)
+void hsm_ctor(state_machine_t* sm, const state_t* initial_state)
 {
     if (sm == NULL)
         return;
@@ -27,22 +27,22 @@ void hsm_ctor(state_machine_t *sm, const state_t *initial_state)
     hsm_transition_to(sm, sm->initial_state);
 }
 
-void hsm_dtor(state_machine_t *sm)
+void hsm_dtor(state_machine_t* sm)
 {
     (void)sm;
 }
 
-void hsm_transition_to(state_machine_t *sm, const state_t *state)
+void hsm_transition_to(state_machine_t* sm, const state_t* state)
 {
     if (sm->current_state != NULL) {
         sm->current_state->exit(sm);
         sm->previous_state = sm->current_state;
     }
-    sm->current_state = (state_t *)state;
+    sm->current_state = (state_t*)state;
     sm->current_state->enter(sm);
 }
 
-const state_t *hsm_get_current_state(state_machine_t *sm)
+const state_t* hsm_get_current_state(state_machine_t* sm)
 {
     if (!sm) {
         return NULL;
@@ -51,7 +51,7 @@ const state_t *hsm_get_current_state(state_machine_t *sm)
     return sm->current_state;
 }
 
-const state_t *hsm_get_previous_state(state_machine_t *sm)
+const state_t* hsm_get_previous_state(state_machine_t* sm)
 {
     if (!sm) {
         return NULL;
@@ -60,7 +60,7 @@ const state_t *hsm_get_previous_state(state_machine_t *sm)
     return sm->previous_state;
 }
 
-const char *hsm_get_current_state_name(state_machine_t *sm)
+const char* hsm_get_current_state_name(state_machine_t* sm)
 {
     if (!sm) {
         return NULL;
@@ -69,7 +69,7 @@ const char *hsm_get_current_state_name(state_machine_t *sm)
     return sm->current_state->state_name;
 }
 
-const char *hsm_get_state_name(const state_t *state)
+const char* hsm_get_state_name(const state_t* state)
 {
     if (!state) {
         return NULL;
@@ -78,17 +78,17 @@ const char *hsm_get_state_name(const state_t *state)
     return state->state_name;
 }
 
-const uint16_t hsm_get_state_value(const state_t *state)
+const uint16_t hsm_get_state_value(const state_t* state)
 {
     return state->state_value;
 }
 
-const uint16_t hsm_get_current_state_value(state_machine_t *sm)
+const uint16_t hsm_get_current_state_value(state_machine_t* sm)
 {
     return sm->current_state->state_value;
 }
 
-bool hsm_dispatch_event(state_machine_t *sm, uint32_t event, void *p_data)
+bool hsm_dispatch_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     if (sm->current_state == NULL) {
         return false;

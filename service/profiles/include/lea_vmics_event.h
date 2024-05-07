@@ -46,8 +46,8 @@ typedef struct {
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-lea_vmics_msg_t *lea_vmics_msg_new(lea_vmics_event_t event);
+lea_vmics_msg_t* lea_vmics_msg_new(lea_vmics_event_t event);
 
-void lea_vmics_msg_destory(lea_vmics_msg_t *msg);
+void lea_vmics_msg_destory(lea_vmics_msg_t* msg);
 
 #endif /* __LEA_VMICS_EVENT_H__ */

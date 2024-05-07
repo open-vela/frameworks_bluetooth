@@ -23,7 +23,7 @@
 int btsnoop_create_new_file(void);
 void btsnoop_close_file(void);
 bt_status_t btsnoop_log_open(void);
-void btsnoop_log_capture(uint8_t is_recieve, uint8_t *hci_pkt, uint32_t hci_pkt_size);
+void btsnoop_log_capture(uint8_t is_recieve, uint8_t* hci_pkt, uint32_t hci_pkt_size);
 void btsnoop_log_close(void);
 
 #endif //__BT_SNOOP_LOG_H__

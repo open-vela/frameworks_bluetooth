@@ -33,28 +33,28 @@
 #include "bt_utils.h"
 #include "utils/log.h"
 
-static void off_enter(state_machine_t *sm);
-static void off_exit(state_machine_t *sm);
-static void ble_turning_on_enter(state_machine_t *sm);
-static void ble_turning_on_exit(state_machine_t *sm);
-static void ble_on_enter(state_machine_t *sm);
-static void ble_on_exit(state_machine_t *sm);
-static void turning_on_enter(state_machine_t *sm);
-static void turning_on_exit(state_machine_t *sm);
-static void on_state_enter(state_machine_t *sm);
-static void on_state_exit(state_machine_t *sm);
-static void turning_off_enter(state_machine_t *sm);
-static void turning_off_exit(state_machine_t *sm);
-static void ble_turning_off_enter(state_machine_t *sm);
-static void ble_turning_off_exit(state_machine_t *sm);
+static void off_enter(state_machine_t* sm);
+static void off_exit(state_machine_t* sm);
+static void ble_turning_on_enter(state_machine_t* sm);
+static void ble_turning_on_exit(state_machine_t* sm);
+static void ble_on_enter(state_machine_t* sm);
+static void ble_on_exit(state_machine_t* sm);
+static void turning_on_enter(state_machine_t* sm);
+static void turning_on_exit(state_machine_t* sm);
+static void on_state_enter(state_machine_t* sm);
+static void on_state_exit(state_machine_t* sm);
+static void turning_off_enter(state_machine_t* sm);
+static void turning_off_exit(state_machine_t* sm);
+static void ble_turning_off_enter(state_machine_t* sm);
+static void ble_turning_off_exit(state_machine_t* sm);
 
-static bool off_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool ble_turning_on_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool ble_on_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool turning_on_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool on_state_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool turning_off_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool ble_turning_off_process_event(state_machine_t *sm, uint32_t event, void *p_data);
+static bool off_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool ble_turning_on_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool ble_on_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool turning_on_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool on_state_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool turning_off_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool ble_turning_off_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 
 static const state_t off_state = {
     .state_name = "Off",
@@ -124,7 +124,7 @@ typedef struct adapter_state_machine {
 #define ADPATER_STM_DEBUG 1
 #if ADPATER_STM_DEBUG
 
-static const char *event_to_string(uint16_t event)
+static const char* event_to_string(uint16_t event)
 {
     switch (event) {
         CASE_RETURN_STR(SYS_TURN_ON)
@@ -152,10 +152,10 @@ static const char *event_to_string(uint16_t event)
     }
 }
 
-#define ADAPTER_DBG_ENTER(__sm)                               \
-    BT_LOGD("Enter, PrevState=%s ---> NewState=%s",           \
-            hsm_get_state_name(hsm_get_previous_state(__sm)), \
-            hsm_get_current_state_name(__sm))
+#define ADAPTER_DBG_ENTER(__sm)                           \
+    BT_LOGD("Enter, PrevState=%s ---> NewState=%s",       \
+        hsm_get_state_name(hsm_get_previous_state(__sm)), \
+        hsm_get_current_state_name(__sm))
 
 #define ADAPTER_DBG_EXIT(__sm) \
     BT_LOGD("Exit, State=%s", hsm_get_current_state_name(__sm))
@@ -195,14 +195,14 @@ static bool lea_is_offloading(void)
 #endif
 }
 
-static void off_enter(state_machine_t *sm)
+static void off_enter(state_machine_t* sm)
 {
-    adapter_state_machine_t *stm = (adapter_state_machine_t *)sm;
+    adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
     ADAPTER_DBG_ENTER(sm);
 
     stm->ble_enabled = false;
     stm->pending_turn_on = false;
-    const state_t *prev = hsm_get_previous_state(sm);
+    const state_t* prev = hsm_get_previous_state(sm);
     if (prev) {
         adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_OFF);
     } else {
@@ -212,12 +212,12 @@ static void off_enter(state_machine_t *sm)
     }
 }
 
-static void off_exit(state_machine_t *sm)
+static void off_exit(state_machine_t* sm)
 {
     ADAPTER_DBG_EXIT(sm);
 }
 
-static void adapter_notify_media_offloading(adapter_state_machine_t *stm)
+static void adapter_notify_media_offloading(adapter_state_machine_t* stm)
 {
     profile_msg_t msg;
 
@@ -234,9 +234,9 @@ static void adapter_notify_media_offloading(adapter_state_machine_t *stm)
     service_manager_processmsg(&msg);
 }
 
-static bool off_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool off_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    adapter_state_machine_t *stm = (adapter_state_machine_t *)sm;
+    adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
     ADAPTER_DBG_EVENT(sm, event);
 
     switch (event) {
@@ -258,7 +258,7 @@ static bool off_process_event(state_machine_t *sm, uint32_t event, void *p_data)
     return true;
 }
 
-static void ble_turning_on_enter(state_machine_t *sm)
+static void ble_turning_on_enter(state_machine_t* sm)
 {
     ADAPTER_DBG_ENTER(sm);
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
@@ -270,12 +270,12 @@ static void ble_turning_on_enter(state_machine_t *sm)
 #endif
 }
 
-static void ble_turning_on_exit(state_machine_t *sm)
+static void ble_turning_on_exit(state_machine_t* sm)
 {
     ADAPTER_DBG_EXIT(sm);
 }
 
-static bool ble_turning_on_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool ble_turning_on_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     ADAPTER_DBG_EVENT(sm, event);
 
@@ -297,24 +297,24 @@ static bool ble_turning_on_process_event(state_machine_t *sm, uint32_t event, vo
     return true;
 }
 
-static void ble_on_enter(state_machine_t *sm)
+static void ble_on_enter(state_machine_t* sm)
 {
-    adapter_state_machine_t *stm = (adapter_state_machine_t *)sm;
+    adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
     ADAPTER_DBG_ENTER(sm);
 
-    const state_t *prev = hsm_get_previous_state(sm);
+    const state_t* prev = hsm_get_previous_state(sm);
     adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_BLE_ON);
     stm->ble_enabled = true;
     adapter_on_le_enabled(stm->pending_turn_on);
     stm->pending_turn_on = false;
 }
 
-static void ble_on_exit(state_machine_t *sm)
+static void ble_on_exit(state_machine_t* sm)
 {
     ADAPTER_DBG_EXIT(sm);
 }
 
-static bool ble_on_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool ble_on_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     ADAPTER_DBG_EVENT(sm, event);
 
@@ -333,22 +333,22 @@ static bool ble_on_process_event(state_machine_t *sm, uint32_t event, void *p_da
     return true;
 }
 
-static void turning_on_enter(state_machine_t *sm)
+static void turning_on_enter(state_machine_t* sm)
 {
     ADAPTER_DBG_ENTER(sm);
     bt_status_t status = bt_sal_enable();
     if (status == BT_STATUS_SUCCESS) {
-        const state_t *prev = hsm_get_previous_state(sm);
+        const state_t* prev = hsm_get_previous_state(sm);
         adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_TURNING_ON);
     }
 }
 
-static void turning_on_exit(state_machine_t *sm)
+static void turning_on_exit(state_machine_t* sm)
 {
     ADAPTER_DBG_EXIT(sm);
 }
 
-static bool turning_on_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool turning_on_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     ADAPTER_DBG_EVENT(sm, event);
 
@@ -370,28 +370,27 @@ static bool turning_on_process_event(state_machine_t *sm, uint32_t event, void *
     return true;
 }
 
-static void on_state_enter(state_machine_t *sm)
+static void on_state_enter(state_machine_t* sm)
 {
     ADAPTER_DBG_ENTER(sm);
-    const state_t *prev = hsm_get_previous_state(sm);
+    const state_t* prev = hsm_get_previous_state(sm);
     adapter_on_br_enabled();
     adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_ON);
 
-#if defined(CONFIG_BLUETOOTH_A2DP) || defined(CONFIG_OBELISK_LE_AUDIO_SUPPORT) || \
-    defined(CONFIG_BLUETOOTH_HFP_HF) || defined(CONFIG_BLUETOOTH_HFP_AG)
-    adapter_state_machine_t *stm = (adapter_state_machine_t *)sm;
+#if defined(CONFIG_BLUETOOTH_A2DP) || defined(CONFIG_OBELISK_LE_AUDIO_SUPPORT) || defined(CONFIG_BLUETOOTH_HFP_HF) || defined(CONFIG_BLUETOOTH_HFP_AG)
+    adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
     bt_media_set_a2dp_offloading(stm->a2dp_offloading);
     bt_media_set_hfp_offloading(stm->hfp_offloading);
     bt_media_set_lea_offloading(stm->lea_offloading);
 #endif
 }
 
-static void on_state_exit(state_machine_t *sm)
+static void on_state_exit(state_machine_t* sm)
 {
     ADAPTER_DBG_EXIT(sm);
 }
 
-static bool on_state_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool on_state_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     ADAPTER_DBG_EVENT(sm, event);
 
@@ -406,7 +405,7 @@ static bool on_state_process_event(state_machine_t *sm, uint32_t event, void *p_
     return true;
 }
 
-static void turning_off_enter(state_machine_t *sm)
+static void turning_off_enter(state_machine_t* sm)
 {
     ADAPTER_DBG_ENTER(sm);
     /* profile service shotdown */
@@ -414,13 +413,13 @@ static void turning_off_enter(state_machine_t *sm)
     adapter_notify_state_change(BT_ADAPTER_STATE_ON, BT_ADAPTER_STATE_TURNING_OFF);
 }
 
-static void turning_off_exit(state_machine_t *sm)
+static void turning_off_exit(state_machine_t* sm)
 {
     ADAPTER_DBG_EXIT(sm);
     adapter_on_br_disabled();
 }
 
-static bool turning_off_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool turning_off_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     ADAPTER_DBG_EVENT(sm, event);
 
@@ -445,30 +444,30 @@ static bool turning_off_process_event(state_machine_t *sm, uint32_t event, void 
     return true;
 }
 
-static void ble_turning_off_enter(state_machine_t *sm)
+static void ble_turning_off_enter(state_machine_t* sm)
 {
     ADAPTER_DBG_ENTER(sm);
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     /* LE profile service shotdown */
     service_manager_shutdown(BT_TRANSPORT_BLE);
-    const state_t *prev = hsm_get_previous_state(sm);
+    const state_t* prev = hsm_get_previous_state(sm);
     adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_BLE_TURNING_OFF);
 #else
 
 #endif
 }
 
-static void ble_turning_off_exit(state_machine_t *sm)
+static void ble_turning_off_exit(state_machine_t* sm)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    adapter_state_machine_t *stm = (adapter_state_machine_t *)sm;
+    adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
     ADAPTER_DBG_EXIT(sm);
     stm->ble_enabled = false;
     adapter_on_le_disabled();
 #endif
 }
 
-static bool ble_turning_off_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool ble_turning_off_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     ADAPTER_DBG_EVENT(sm, event);
 
@@ -489,9 +488,9 @@ static bool ble_turning_off_process_event(state_machine_t *sm, uint32_t event, v
     return true;
 }
 
-adapter_state_machine_t *adapter_state_machine_new(void *context)
+adapter_state_machine_t* adapter_state_machine_new(void* context)
 {
-    adapter_state_machine_t *stm = malloc(sizeof(adapter_state_machine_t));
+    adapter_state_machine_t* stm = malloc(sizeof(adapter_state_machine_t));
     if (!stm)
         return NULL;
 
@@ -501,11 +500,11 @@ adapter_state_machine_t *adapter_state_machine_new(void *context)
     return stm;
 }
 
-void adapter_state_machine_destory(adapter_state_machine_t *stm)
+void adapter_state_machine_destory(adapter_state_machine_t* stm)
 {
     if (!stm)
         return;
 
     hsm_dtor(&stm->sm);
-    free((void *)stm);
+    free((void*)stm);
 }

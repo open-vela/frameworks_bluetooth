@@ -18,16 +18,16 @@
 
 #include "lea_tbs_event.h"
 
-lea_tbs_msg_t *lea_tbs_msg_new(lea_tbs_event_t event, uint32_t tbs_id)
+lea_tbs_msg_t* lea_tbs_msg_new(lea_tbs_event_t event, uint32_t tbs_id)
 {
     return lea_tbs_msg_new_ext(event, tbs_id, 0);
 }
 
-lea_tbs_msg_t *lea_tbs_msg_new_ext(lea_tbs_event_t event, uint32_t tbs_id, size_t size)
+lea_tbs_msg_t* lea_tbs_msg_new_ext(lea_tbs_event_t event, uint32_t tbs_id, size_t size)
 {
-    lea_tbs_msg_t *tbs_event;
+    lea_tbs_msg_t* tbs_event;
 
-    tbs_event = (lea_tbs_msg_t *)malloc(sizeof(lea_tbs_msg_t) + size);
+    tbs_event = (lea_tbs_msg_t*)malloc(sizeof(lea_tbs_msg_t) + size);
     if (tbs_event == NULL)
         return NULL;
 
@@ -38,7 +38,7 @@ lea_tbs_msg_t *lea_tbs_msg_new_ext(lea_tbs_event_t event, uint32_t tbs_id, size_
     return tbs_event;
 }
 
-void lea_tbs_msg_destory(lea_tbs_msg_t *tbs_msg)
+void lea_tbs_msg_destory(lea_tbs_msg_t* tbs_msg)
 {
     free(tbs_msg);
 }

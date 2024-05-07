@@ -95,7 +95,7 @@ typedef void bt_advertiser_t;
  * @param status - advertiser start status, BT_ADV_STATUS_SUCCESS on success.
  *
  */
-typedef void (*on_advertising_start_cb_t)(bt_advertiser_t *adv, uint8_t adv_id, uint8_t status);
+typedef void (*on_advertising_start_cb_t)(bt_advertiser_t* adv, uint8_t adv_id, uint8_t status);
 
 /**
  * @brief Advertising stopped notification
@@ -103,7 +103,7 @@ typedef void (*on_advertising_start_cb_t)(bt_advertiser_t *adv, uint8_t adv_id, 
  * @param adv - advertiser handle
  * @param adv_id - advertiser ID.
  */
-typedef void (*on_advertising_stopped_cb_t)(bt_advertiser_t *adv, uint8_t adv_id);
+typedef void (*on_advertising_stopped_cb_t)(bt_advertiser_t* adv, uint8_t adv_id);
 
 /**
  * @brief Advertising callback functions structure
@@ -141,13 +141,13 @@ typedef struct {
  * @param cbs - advertiser callback functions.
  * @return bt_advertiser_t* - advertiser handle.
  */
-bt_advertiser_t *BTSYMBOLS(bt_le_start_advertising)(bt_instance_t *ins,
-                                                    ble_adv_params_t *params,
-                                                    uint8_t *adv_data,
-                                                    uint16_t adv_len,
-                                                    uint8_t *scan_rsp_data,
-                                                    uint16_t scan_rsp_len,
-                                                    advertiser_callback_t *cbs);
+bt_advertiser_t* BTSYMBOLS(bt_le_start_advertising)(bt_instance_t* ins,
+    ble_adv_params_t* params,
+    uint8_t* adv_data,
+    uint16_t adv_len,
+    uint8_t* scan_rsp_data,
+    uint16_t scan_rsp_len,
+    advertiser_callback_t* cbs);
 
 /**
  * @brief Stop LE advertising by advertiser handle
@@ -155,7 +155,7 @@ bt_advertiser_t *BTSYMBOLS(bt_le_start_advertising)(bt_instance_t *ins,
  * @param ins - bluetooth client instance.
  * @param adver - advertiser handle.
  */
-void BTSYMBOLS(bt_le_stop_advertising)(bt_instance_t *ins, bt_advertiser_t *adver);
+void BTSYMBOLS(bt_le_stop_advertising)(bt_instance_t* ins, bt_advertiser_t* adver);
 
 /**
  * @brief Stop LE advertising by adver id
@@ -163,7 +163,7 @@ void BTSYMBOLS(bt_le_stop_advertising)(bt_instance_t *ins, bt_advertiser_t *adve
  * @param ins - bluetooth client instance.
  * @param adv_id - advertiser ID.
  */
-void BTSYMBOLS(bt_le_stop_advertising_id)(bt_instance_t *ins, uint8_t adv_id);
+void BTSYMBOLS(bt_le_stop_advertising_id)(bt_instance_t* ins, uint8_t adv_id);
 
 /**
  * @brief Check is advertising supported
@@ -172,7 +172,7 @@ void BTSYMBOLS(bt_le_stop_advertising_id)(bt_instance_t *ins, uint8_t adv_id);
  * @return true - support.
  * @return false - not support.
  */
-bool BTSYMBOLS(bt_le_advertising_is_supported)(bt_instance_t *ins);
+bool BTSYMBOLS(bt_le_advertising_is_supported)(bt_instance_t* ins);
 
 #ifdef __cplusplus
 }

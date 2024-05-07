@@ -20,6 +20,6 @@
 
 #include <android/binder_manager.h>
 
-bool AParcelUtils_btCommonAllocator(void **data, uint32_t size);
-bool AParcelUtils_stringAllocator(void *stringData, int32_t length, char **buffer);
-bool AParcelUtils_byteArrayAllocator(void *arrayData, int32_t length, int8_t **outBuffer);
+bool AParcelUtils_btCommonAllocator(void** data, uint32_t size);
+bool AParcelUtils_stringAllocator(void* stringData, int32_t length, char** buffer);
+bool AParcelUtils_byteArrayAllocator(void* arrayData, int32_t length, int8_t** outBuffer);

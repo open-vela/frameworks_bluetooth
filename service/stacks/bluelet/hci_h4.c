@@ -24,8 +24,8 @@
 #include "stack_adapter_gap.h"
 #include <nuttx/wireless/bluetooth/bt_ioctl.h>
 
-#include "utils/btsnoop_log.h"
 #include "hci_h4.h"
+#include "utils/btsnoop_log.h"
 
 #define LOG_TAG "h4"
 #include "utils/log.h"
@@ -42,7 +42,7 @@ static int g_tlfd = -1;
 static uint8_t g_hci_rxbuf[2048];
 static uint16_t g_hci_rxlen = 0;
 
-static int h4_send_data(uint8_t *buf, int count)
+static int h4_send_data(uint8_t* buf, int count)
 {
     int ret, nwritten = 0;
 
@@ -89,7 +89,7 @@ void bt_sal_hci_transport_recv(void)
     g_hci_rxlen += ret;
 
     while (g_hci_rxlen) {
-        hdr = (union hci_header *)&g_hci_rxbuf[1];
+        hdr = (union hci_header*)&g_hci_rxbuf[1];
         switch (g_hci_rxbuf[0]) {
         case HCI_DATATYPE_EVENT: {
             if (g_hci_rxlen < 1 + sizeof(struct bt_hci_evt_hdr_s))
@@ -123,7 +123,7 @@ void bt_sal_hci_transport_recv(void)
     }
 }
 
-int bt_sal_hci_send_packet(uint8_t *buf, uint32_t len)
+int bt_sal_hci_send_packet(uint8_t* buf, uint32_t len)
 {
     btsnoop_log_capture(0, buf, len);
 

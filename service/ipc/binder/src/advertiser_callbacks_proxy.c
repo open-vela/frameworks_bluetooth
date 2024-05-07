@@ -26,11 +26,11 @@
 
 #include "utils/log.h"
 
-static void BpBtAdvertiserCallbacks_onAdvertisingStart(bt_advertiser_t *adv, uint8_t adv_id, uint8_t status)
+static void BpBtAdvertiserCallbacks_onAdvertisingStart(bt_advertiser_t* adv, uint8_t adv_id, uint8_t status)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = adv;
+    AIBinder* binder = adv;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -51,11 +51,11 @@ static void BpBtAdvertiserCallbacks_onAdvertisingStart(bt_advertiser_t *adv, uin
     }
 }
 
-static void BpBtAdvertiserCallbacks_onAdvertisingStopped(bt_advertiser_t *adv, uint8_t adv_id)
+static void BpBtAdvertiserCallbacks_onAdvertisingStopped(bt_advertiser_t* adv, uint8_t adv_id)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = adv;
+    AIBinder* binder = adv;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -79,7 +79,7 @@ static const advertiser_callback_t static_advertiser_cbks = {
     BpBtAdvertiserCallbacks_onAdvertisingStopped,
 };
 
-const advertiser_callback_t *BpBtAdvertiserCallbacks_getStatic(void)
+const advertiser_callback_t* BpBtAdvertiserCallbacks_getStatic(void)
 {
     return &static_advertiser_cbks;
 }

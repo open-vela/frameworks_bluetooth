@@ -27,7 +27,7 @@
 #include "parcel.h"
 #include "utils/log.h"
 
-void *BpBtGattClient_createConnect(BpBtGattClient *bpBinder, AIBinder *cbksBinder)
+void* BpBtGattClient_createConnect(BpBtGattClient* bpBinder, AIBinder* cbksBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -36,7 +36,7 @@ void *BpBtGattClient_createConnect(BpBtGattClient *bpBinder, AIBinder *cbksBinde
     if (!bpBinder || !bpBinder->binder)
         return NULL;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -54,10 +54,10 @@ void *BpBtGattClient_createConnect(BpBtGattClient *bpBinder, AIBinder *cbksBinde
     if (stat != STATUS_OK)
         return NULL;
 
-    return (void *)handle;
+    return (void*)handle;
 }
 
-bt_status_t BpBtGattClient_deleteConnect(BpBtGattClient *bpBinder, void *handle)
+bt_status_t BpBtGattClient_deleteConnect(BpBtGattClient* bpBinder, void* handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -66,7 +66,7 @@ bt_status_t BpBtGattClient_deleteConnect(BpBtGattClient *bpBinder, void *handle)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -87,7 +87,7 @@ bt_status_t BpBtGattClient_deleteConnect(BpBtGattClient *bpBinder, void *handle)
     return status;
 }
 
-bt_status_t BpBtGattClient_connect(BpBtGattClient *bpBinder, void *handle, bt_address_t *addr, ble_addr_type_t addr_type)
+bt_status_t BpBtGattClient_connect(BpBtGattClient* bpBinder, void* handle, bt_address_t* addr, ble_addr_type_t addr_type)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -96,7 +96,7 @@ bt_status_t BpBtGattClient_connect(BpBtGattClient *bpBinder, void *handle, bt_ad
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -125,7 +125,7 @@ bt_status_t BpBtGattClient_connect(BpBtGattClient *bpBinder, void *handle, bt_ad
     return status;
 }
 
-bt_status_t BpBtGattClient_disconnect(BpBtGattClient *bpBinder, void *handle)
+bt_status_t BpBtGattClient_disconnect(BpBtGattClient* bpBinder, void* handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -134,7 +134,7 @@ bt_status_t BpBtGattClient_disconnect(BpBtGattClient *bpBinder, void *handle)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -155,7 +155,7 @@ bt_status_t BpBtGattClient_disconnect(BpBtGattClient *bpBinder, void *handle)
     return status;
 }
 
-bt_status_t BpBtGattClient_discoverService(BpBtGattClient *bpBinder, void *handle, bt_uuid_t *filter_uuid)
+bt_status_t BpBtGattClient_discoverService(BpBtGattClient* bpBinder, void* handle, bt_uuid_t* filter_uuid)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -164,7 +164,7 @@ bt_status_t BpBtGattClient_discoverService(BpBtGattClient *bpBinder, void *handl
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -189,7 +189,7 @@ bt_status_t BpBtGattClient_discoverService(BpBtGattClient *bpBinder, void *handl
     return state;
 }
 
-bt_status_t BpBtGattClient_getAttributeByHandle(BpBtGattClient *bpBinder, void *handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc)
+bt_status_t BpBtGattClient_getAttributeByHandle(BpBtGattClient* bpBinder, void* handle, uint16_t attr_handle, gatt_attr_desc_t* attr_desc)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -202,7 +202,7 @@ bt_status_t BpBtGattClient_getAttributeByHandle(BpBtGattClient *bpBinder, void *
     if (!attr_desc)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -244,7 +244,7 @@ bt_status_t BpBtGattClient_getAttributeByHandle(BpBtGattClient *bpBinder, void *
     return status;
 }
 
-bt_status_t BpBtGattClient_getAttributeByUUID(BpBtGattClient *bpBinder, void *handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc)
+bt_status_t BpBtGattClient_getAttributeByUUID(BpBtGattClient* bpBinder, void* handle, bt_uuid_t* attr_uuid, gatt_attr_desc_t* attr_desc)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -257,7 +257,7 @@ bt_status_t BpBtGattClient_getAttributeByUUID(BpBtGattClient *bpBinder, void *ha
     if (!attr_desc)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -299,7 +299,7 @@ bt_status_t BpBtGattClient_getAttributeByUUID(BpBtGattClient *bpBinder, void *ha
     return status;
 }
 
-bt_status_t BpBtGattClient_read(BpBtGattClient *bpBinder, void *handle, uint16_t attr_handle)
+bt_status_t BpBtGattClient_read(BpBtGattClient* bpBinder, void* handle, uint16_t attr_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -308,7 +308,7 @@ bt_status_t BpBtGattClient_read(BpBtGattClient *bpBinder, void *handle, uint16_t
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -333,7 +333,7 @@ bt_status_t BpBtGattClient_read(BpBtGattClient *bpBinder, void *handle, uint16_t
     return status;
 }
 
-bt_status_t BpBtGattClient_write(BpBtGattClient *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t BpBtGattClient_write(BpBtGattClient* bpBinder, void* handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -342,7 +342,7 @@ bt_status_t BpBtGattClient_write(BpBtGattClient *bpBinder, void *handle, uint16_
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -360,7 +360,7 @@ bt_status_t BpBtGattClient_write(BpBtGattClient *bpBinder, void *handle, uint16_
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)value, length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
@@ -375,7 +375,7 @@ bt_status_t BpBtGattClient_write(BpBtGattClient *bpBinder, void *handle, uint16_
     return status;
 }
 
-bt_status_t BpBtGattClient_writeWithoutResponse(BpBtGattClient *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t BpBtGattClient_writeWithoutResponse(BpBtGattClient* bpBinder, void* handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -384,7 +384,7 @@ bt_status_t BpBtGattClient_writeWithoutResponse(BpBtGattClient *bpBinder, void *
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -402,7 +402,7 @@ bt_status_t BpBtGattClient_writeWithoutResponse(BpBtGattClient *bpBinder, void *
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)value, length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
@@ -417,7 +417,7 @@ bt_status_t BpBtGattClient_writeWithoutResponse(BpBtGattClient *bpBinder, void *
     return status;
 }
 
-bt_status_t BpBtGattClient_subscribe(BpBtGattClient *bpBinder, void *handle, uint16_t value_handle, uint16_t cccd_handle)
+bt_status_t BpBtGattClient_subscribe(BpBtGattClient* bpBinder, void* handle, uint16_t value_handle, uint16_t cccd_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -426,7 +426,7 @@ bt_status_t BpBtGattClient_subscribe(BpBtGattClient *bpBinder, void *handle, uin
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -455,7 +455,7 @@ bt_status_t BpBtGattClient_subscribe(BpBtGattClient *bpBinder, void *handle, uin
     return status;
 }
 
-bt_status_t BpBtGattClient_unsubscribe(BpBtGattClient *bpBinder, void *handle, uint16_t value_handle, uint16_t cccd_handle)
+bt_status_t BpBtGattClient_unsubscribe(BpBtGattClient* bpBinder, void* handle, uint16_t value_handle, uint16_t cccd_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -464,7 +464,7 @@ bt_status_t BpBtGattClient_unsubscribe(BpBtGattClient *bpBinder, void *handle, u
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -493,7 +493,7 @@ bt_status_t BpBtGattClient_unsubscribe(BpBtGattClient *bpBinder, void *handle, u
     return status;
 }
 
-bt_status_t BpBtGattClient_exchangeMtu(BpBtGattClient *bpBinder, void *handle, uint32_t mtu)
+bt_status_t BpBtGattClient_exchangeMtu(BpBtGattClient* bpBinder, void* handle, uint32_t mtu)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -502,7 +502,7 @@ bt_status_t BpBtGattClient_exchangeMtu(BpBtGattClient *bpBinder, void *handle, u
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -527,8 +527,8 @@ bt_status_t BpBtGattClient_exchangeMtu(BpBtGattClient *bpBinder, void *handle, u
     return status;
 }
 
-bt_status_t BpBtGattClient_updateConnectionParameter(BpBtGattClient *bpBinder, void *handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
-                                                     uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length)
+bt_status_t BpBtGattClient_updateConnectionParameter(BpBtGattClient* bpBinder, void* handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
+    uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -537,7 +537,7 @@ bt_status_t BpBtGattClient_updateConnectionParameter(BpBtGattClient *bpBinder, v
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)

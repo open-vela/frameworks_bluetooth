@@ -28,7 +28,7 @@ extern "C" {
 
 typedef uint8_t lea_mcp_object_id[OBJ_ID_SIZE];
 
-typedef void (*lea_mcp_test_callback)(void *cookie, bt_address_t *addr, uint8_t event);
+typedef void (*lea_mcp_test_callback)(void* cookie, bt_address_t* addr, uint8_t event);
 
 typedef struct
 {
@@ -36,13 +36,13 @@ typedef struct
     lea_mcp_test_callback test_cb;
 } lea_mcp_callbacks_t;
 
-void *bt_lea_mcp_register_callbacks(bt_instance_t *ins, const lea_mcp_callbacks_t *callbacks);
-bool bt_lea_mcp_unregister_callbacks(bt_instance_t *ins, void *cookie);
-bt_status_t bt_lea_mcp_read_info(bt_instance_t *ins, bt_address_t *addr, uint8_t opcode);
-bt_status_t bt_lea_mcp_media_control_request(bt_instance_t *ins, bt_address_t *addr,
-                                             uint32_t opcode, int32_t n);
-bt_status_t bt_lea_mcp_search_control_request(bt_instance_t *ins, bt_address_t *addr, uint8_t number,
-                                              uint32_t type, uint8_t *parameter);
+void* bt_lea_mcp_register_callbacks(bt_instance_t* ins, const lea_mcp_callbacks_t* callbacks);
+bool bt_lea_mcp_unregister_callbacks(bt_instance_t* ins, void* cookie);
+bt_status_t bt_lea_mcp_read_info(bt_instance_t* ins, bt_address_t* addr, uint8_t opcode);
+bt_status_t bt_lea_mcp_media_control_request(bt_instance_t* ins, bt_address_t* addr,
+    uint32_t opcode, int32_t n);
+bt_status_t bt_lea_mcp_search_control_request(bt_instance_t* ins, bt_address_t* addr, uint8_t number,
+    uint32_t type, uint8_t* parameter);
 
 #ifdef __cplusplus
 }

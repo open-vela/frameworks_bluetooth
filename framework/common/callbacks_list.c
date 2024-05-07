@@ -21,24 +21,24 @@
 
 #include "callbacks_list.h"
 
-static bool callback_is_found(void *data, void *context)
+static bool callback_is_found(void* data, void* context)
 {
-    remote_callback_t *rcbk = data;
+    remote_callback_t* rcbk = data;
 
     return rcbk->callbacks == context;
 }
 
-static bool remote_is_found(void *data, void *context)
+static bool remote_is_found(void* data, void* context)
 {
-    remote_callback_t *rcbk = data;
+    remote_callback_t* rcbk = data;
 
     return rcbk->remote == context;
 }
 
-callbacks_list_t *bt_callbacks_list_new(uint8_t max)
+callbacks_list_t* bt_callbacks_list_new(uint8_t max)
 {
     pthread_mutexattr_t attr;
-    callbacks_list_t *cbsl = malloc(sizeof(callbacks_list_t));
+    callbacks_list_t* cbsl = malloc(sizeof(callbacks_list_t));
 
     if (!cbsl)
         return NULL;
@@ -63,20 +63,20 @@ callbacks_list_t *bt_callbacks_list_new(uint8_t max)
     return cbsl;
 }
 
-remote_callback_t *bt_callbacks_register(callbacks_list_t *cbsl, void *callbacks)
+remote_callback_t* bt_callbacks_register(callbacks_list_t* cbsl, void* callbacks)
 {
     return bt_remote_callbacks_register(cbsl, NULL, callbacks);
 }
 
-bool bt_callbacks_unregister(callbacks_list_t *cbsl, remote_callback_t *rcbks)
+bool bt_callbacks_unregister(callbacks_list_t* cbsl, remote_callback_t* rcbks)
 {
     return bt_remote_callbacks_unregister(cbsl, NULL, rcbks);
 }
 
-remote_callback_t *bt_remote_callbacks_register(callbacks_list_t *cbsl, void *remote, void *callbacks)
+remote_callback_t* bt_remote_callbacks_register(callbacks_list_t* cbsl, void* remote, void* callbacks)
 {
-    void *cbs;
-    remote_callback_t *remote_cbk;
+    void* cbs;
+    remote_callback_t* remote_cbk;
 
     pthread_mutex_lock(&cbsl->lock);
     if (cbsl->registed == cbsl->max_reg) {
@@ -105,15 +105,15 @@ remote_callback_t *bt_remote_callbacks_register(callbacks_list_t *cbsl, void *re
     return remote_cbk;
 }
 
-bool bt_remote_callbacks_unregister(callbacks_list_t *cbsl, void **remote, remote_callback_t *rcbks)
+bool bt_remote_callbacks_unregister(callbacks_list_t* cbsl, void** remote, remote_callback_t* rcbks)
 {
-    bt_list_node_t *node;
-    bt_list_t *list = cbsl->list;
+    bt_list_node_t* node;
+    bt_list_t* list = cbsl->list;
 
     pthread_mutex_lock(&cbsl->lock);
     for (node = bt_list_head(list); node != NULL;
          node = bt_list_next(list, node)) {
-        remote_callback_t *cbs = (remote_callback_t *)bt_list_node(node);
+        remote_callback_t* cbs = (remote_callback_t*)bt_list_node(node);
         if (rcbks == cbs) {
             cbsl->registed--;
             if (remote)
@@ -128,11 +128,11 @@ bool bt_remote_callbacks_unregister(callbacks_list_t *cbsl, void **remote, remot
     return false;
 }
 
-void bt_callbacks_foreach(callbacks_list_t *cbsl, void *context)
+void bt_callbacks_foreach(callbacks_list_t* cbsl, void* context)
 {
 }
 
-void bt_callbacks_list_free(callbacks_list_t *cbsl)
+void bt_callbacks_list_free(callbacks_list_t* cbsl)
 {
     pthread_mutex_lock(&cbsl->lock);
     bt_list_free(cbsl->list);
@@ -141,7 +141,7 @@ void bt_callbacks_list_free(callbacks_list_t *cbsl)
     free(cbsl);
 }
 
-uint8_t bt_callbacks_list_count(callbacks_list_t *cbsl)
+uint8_t bt_callbacks_list_count(callbacks_list_t* cbsl)
 {
     uint8_t registed;
 

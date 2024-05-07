@@ -28,11 +28,11 @@
 
 #include "utils/log.h"
 
-static void BpBtHfpAgCallbacks_connectionStateCallback(void *cookie, bt_address_t *addr, profile_connection_state_t state)
+static void BpBtHfpAgCallbacks_connectionStateCallback(void* cookie, bt_address_t* addr, profile_connection_state_t state)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -53,11 +53,11 @@ static void BpBtHfpAgCallbacks_connectionStateCallback(void *cookie, bt_address_
     }
 }
 
-static void BpBtHfpAgCallbacks_audioStateCallback(void *cookie, bt_address_t *addr, hfp_audio_state_t state)
+static void BpBtHfpAgCallbacks_audioStateCallback(void* cookie, bt_address_t* addr, hfp_audio_state_t state)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -78,11 +78,11 @@ static void BpBtHfpAgCallbacks_audioStateCallback(void *cookie, bt_address_t *ad
     }
 }
 
-static void BpBtHfpAgCallbacks_vrCmdCallback(void *cookie, bt_address_t *addr, bool started)
+static void BpBtHfpAgCallbacks_vrCmdCallback(void* cookie, bt_address_t* addr, bool started)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -103,11 +103,11 @@ static void BpBtHfpAgCallbacks_vrCmdCallback(void *cookie, bt_address_t *addr, b
     }
 }
 
-static void BpBtHfpAgCallbacks_batteryUpdateCallback(void *cookie, bt_address_t *addr, uint8_t value)
+static void BpBtHfpAgCallbacks_batteryUpdateCallback(void* cookie, bt_address_t* addr, uint8_t value)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -136,7 +136,7 @@ static const hfp_ag_callbacks_t static_hfp_ag_cbks = {
     BpBtHfpAgCallbacks_batteryUpdateCallback
 };
 
-const hfp_ag_callbacks_t *BpBtHfpAgCallbacks_getStatic(void)
+const hfp_ag_callbacks_t* BpBtHfpAgCallbacks_getStatic(void)
 {
     return &static_hfp_ag_cbks;
 }

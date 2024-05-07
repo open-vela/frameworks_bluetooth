@@ -23,12 +23,12 @@
 bt_status_t bt_sal_lea_mcs_add(uint32_t mcs_id);
 bt_status_t bt_sal_lea_mcs_remove(uint32_t mcs_id);
 bt_status_t bt_sal_lea_mcs_set_media_player_info(uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcs_add_object(uint32_t mcs_id, uint8_t type, uint8_t *name, void *obj_ref);
+bt_status_t bt_sal_lea_mcs_add_object(uint32_t mcs_id, uint8_t type, uint8_t* name, void* obj_ref);
 bt_status_t bt_sal_lea_mcs_playing_order_changed(uint32_t mcs_id, uint8_t order);
 bt_status_t bt_sal_lea_mcs_media_state_changed(uint32_t mcs_id, SERVICE_LEA_MCS_MEDIA_STATE state);
 bt_status_t bt_sal_lea_mcs_playback_speed_changed(uint32_t mcs_id, int8_t speed);
 bt_status_t bt_sal_lea_mcs_seeking_speed_changed(uint32_t mcs_id, int8_t speed);
-bt_status_t bt_sal_lea_mcs_track_title_changed(uint32_t mcs_id, uint8_t *title);
+bt_status_t bt_sal_lea_mcs_track_title_changed(uint32_t mcs_id, uint8_t* title);
 bt_status_t bt_sal_lea_mcs_track_duration_changed(uint32_t mcs_id, int32_t duration);
 bt_status_t bt_sal_lea_mcs_track_position_changed(uint32_t mcs_id, int32_t position);
 bt_status_t bt_sal_lea_mcs_current_track_changed(uint32_t mcs_id, LEA_OBJ_ID track_id);

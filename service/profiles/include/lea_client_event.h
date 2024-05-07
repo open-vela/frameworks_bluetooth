@@ -79,8 +79,8 @@ typedef struct
     uint16_t valueint3;
     uint16_t valueint4;
     size_t size;
-    void *data;
-    void *cb;
+    void* data;
+    void* cb;
 } lea_client_data_t;
 
 typedef struct
@@ -122,16 +122,16 @@ typedef struct {
  * Public Functions
  ****************************************************************************/
 
-lea_client_msg_t *lea_client_msg_new(lea_client_event_t event,
-                                     bt_address_t *addr);
+lea_client_msg_t* lea_client_msg_new(lea_client_event_t event,
+    bt_address_t* addr);
 
-lea_client_msg_t *lea_client_msg_new_ext(lea_client_event_t event, bt_address_t *addr,
-                                         void *data, uint32_t size);
+lea_client_msg_t* lea_client_msg_new_ext(lea_client_event_t event, bt_address_t* addr,
+    void* data, uint32_t size);
 
-void lea_client_msg_destory(lea_client_msg_t *msg);
+void lea_client_msg_destory(lea_client_msg_t* msg);
 
-lea_csip_msg_t *lea_csip_msg_new(lea_csip_event_t event, bt_address_t *remote_addr);
-lea_csip_msg_t *lea_csip_msg_new_ext(lea_csip_event_t event, bt_address_t *remote_addr, size_t size);
-void lea_csip_msg_destory(lea_csip_msg_t *ccp_msg);
+lea_csip_msg_t* lea_csip_msg_new(lea_csip_event_t event, bt_address_t* remote_addr);
+lea_csip_msg_t* lea_csip_msg_new_ext(lea_csip_event_t event, bt_address_t* remote_addr, size_t size);
+void lea_csip_msg_destory(lea_csip_msg_t* ccp_msg);
 
 #endif /* __LEA_CLIENT_EVENT_H__ */

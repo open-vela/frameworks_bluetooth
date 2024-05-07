@@ -32,7 +32,7 @@
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
 
 // leaudio vcs callbacks from barrot stack
-static void adpt_lea_vcs_set_volume_state_callback(SERVICE_LEA_VCS_VOLUME_STATE_S *vol_state);
+static void adpt_lea_vcs_set_volume_state_callback(SERVICE_LEA_VCS_VOLUME_STATE_S* vol_state);
 static void adpt_lea_vcs_set_volume_flags_callback(uint8_t vol_flags);
 static void adpt_lea_mics_set_mute_callback(uint8_t mute);
 
@@ -49,7 +49,7 @@ const LEA_MICS_CALLBACK_S adpt_lea_mics_server_callbacks = {
  * Private function
  ****************************************************************************/
 
-static void adpt_lea_vcs_set_volume_state_callback(SERVICE_LEA_VCS_VOLUME_STATE_S *vol_state)
+static void adpt_lea_vcs_set_volume_state_callback(SERVICE_LEA_VCS_VOLUME_STATE_S* vol_state)
 {
     BT_LOGD("%s volume:%d, mute:%d", __func__, vol_state->volume, vol_state->mute);
     service_lea_vcs_volume_state_s volume_state;
@@ -74,7 +74,7 @@ static void adpt_lea_mics_set_mute_callback(uint8_t mute)
  * Public function
  ****************************************************************************/
 
-bool adpt_req_vcs_info_callback(SERVICE_LEA_VCS_INFO_S *info)
+bool adpt_req_vcs_info_callback(SERVICE_LEA_VCS_INFO_S* info)
 {
     info->step_size = CONFIG_BLUETOOTH_LEAUDIO_VCS_VOLUME_STEP;
     info->volume = CONFIG_BLUETOOTH_LEAUDIO_VCS_VOLUME_INITIAL;
@@ -89,7 +89,7 @@ bool adpt_req_vcs_info_callback(SERVICE_LEA_VCS_INFO_S *info)
     return true;
 }
 
-bool adpt_req_mics_info_callback(SERVICE_LEA_MICS_INFO_S *info)
+bool adpt_req_mics_info_callback(SERVICE_LEA_MICS_INFO_S* info)
 {
     info->mute = CONFIG_BLUETOOTH_LEAUDIO_VCS_UNMUTED;
     info->aics_number = CONFIG_BLUETOOTH_LEAUDIO_MICS_NUMBER;

@@ -18,11 +18,11 @@
 
 #include "gatts_event.h"
 
-gatts_msg_t *gatts_msg_new(gatts_event_t event, uint16_t playload_length)
+gatts_msg_t* gatts_msg_new(gatts_event_t event, uint16_t playload_length)
 {
-    gatts_msg_t *msg;
+    gatts_msg_t* msg;
 
-    msg = (gatts_msg_t *)malloc(sizeof(gatts_msg_t) + playload_length);
+    msg = (gatts_msg_t*)malloc(sizeof(gatts_msg_t) + playload_length);
     if (msg == NULL)
         return NULL;
 
@@ -31,16 +31,16 @@ gatts_msg_t *gatts_msg_new(gatts_event_t event, uint16_t playload_length)
     return msg;
 }
 
-void gatts_msg_destory(gatts_msg_t *msg)
+void gatts_msg_destory(gatts_msg_t* msg)
 {
     free(msg);
 }
 
-gatts_op_t *gatts_op_new(gatts_request_t request)
+gatts_op_t* gatts_op_new(gatts_request_t request)
 {
-    gatts_op_t *operation;
+    gatts_op_t* operation;
 
-    operation = (gatts_op_t *)malloc(sizeof(gatts_op_t));
+    operation = (gatts_op_t*)malloc(sizeof(gatts_op_t));
     if (operation == NULL)
         return NULL;
 
@@ -49,7 +49,7 @@ gatts_op_t *gatts_op_new(gatts_request_t request)
     return operation;
 }
 
-void gatts_op_destory(gatts_op_t *operation)
+void gatts_op_destory(gatts_op_t* operation)
 {
     free(operation);
 }

@@ -50,7 +50,7 @@
 #define SVR_SINK 1
 
 typedef struct {
-    bt_address_t *bd_addr;
+    bt_address_t* bd_addr;
     uint8_t is_sink;
     a2dp_codec_config_t codec_config;
     uint16_t mtu;
@@ -59,14 +59,14 @@ typedef struct {
 
 typedef struct {
     struct list_node node;
-    a2dp_state_machine_t *a2dp_sm;
+    a2dp_state_machine_t* a2dp_sm;
     bt_address_t bd_addr;
     a2dp_peer_t peer;
     uint8_t peer_sep;
 } a2dp_device_t;
 
-a2dp_device_t *find_a2dp_device_by_addr(struct list_node *list, bt_address_t *bd_addr);
-a2dp_device_t *a2dp_device_new(void *ctx, uint8_t peer_sep, bt_address_t *bd_addr);
-void a2dp_device_delete(a2dp_device_t *device);
+a2dp_device_t* find_a2dp_device_by_addr(struct list_node* list, bt_address_t* bd_addr);
+a2dp_device_t* a2dp_device_new(void* ctx, uint8_t peer_sep, bt_address_t* bd_addr);
+void a2dp_device_delete(a2dp_device_t* device);
 
 #endif

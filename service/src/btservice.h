@@ -20,5 +20,5 @@
 
 int bt_service_init(void);
 int bt_service_cleanup(void);
-void send_to_state_machine(state_machine_t *sm, uint16_t event_id, void *data);
+void send_to_state_machine(state_machine_t* sm, uint16_t event_id, void* data);
 #endif /* _BT_SERVICE_H__ */

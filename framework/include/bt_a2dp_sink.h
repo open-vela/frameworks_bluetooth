@@ -30,7 +30,7 @@ extern "C" {
  * @param cookie - callback cookie.
  * @param addr - address of peer A2DP source device.
  */
-typedef void (*a2dp_audio_sink_config_callback)(void *cookie, bt_address_t *addr);
+typedef void (*a2dp_audio_sink_config_callback)(void* cookie, bt_address_t* addr);
 
 /**
  * @brief A2DP sink callback structure
@@ -51,7 +51,7 @@ typedef struct {
  * @param id - A2DP sink callback functions.
  * @return void* - callbacks cookie.
  */
-void *BTSYMBOLS(bt_a2dp_sink_register_callbacks)(bt_instance_t *ins, const a2dp_sink_callbacks_t *callbacks);
+void* BTSYMBOLS(bt_a2dp_sink_register_callbacks)(bt_instance_t* ins, const a2dp_sink_callbacks_t* callbacks);
 
 /**
  * @brief Unregister callback functions to a2dp sink service
@@ -61,7 +61,7 @@ void *BTSYMBOLS(bt_a2dp_sink_register_callbacks)(bt_instance_t *ins, const a2dp_
  * @return true - on callback unregister success
  * @return false - on callback cookie not found
  */
-bool BTSYMBOLS(bt_a2dp_sink_unregister_callbacks)(bt_instance_t *ins, void *cookie);
+bool BTSYMBOLS(bt_a2dp_sink_unregister_callbacks)(bt_instance_t* ins, void* cookie);
 
 /**
  * @brief Check A2DP sink is connected
@@ -71,7 +71,7 @@ bool BTSYMBOLS(bt_a2dp_sink_unregister_callbacks)(bt_instance_t *ins, void *cook
  * @return true - connected.
  * @return false - not connected.
  */
-bool BTSYMBOLS(bt_a2dp_sink_is_connected)(bt_instance_t *ins, bt_address_t *addr);
+bool BTSYMBOLS(bt_a2dp_sink_is_connected)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Check A2DP sink is playing
@@ -81,7 +81,7 @@ bool BTSYMBOLS(bt_a2dp_sink_is_connected)(bt_instance_t *ins, bt_address_t *addr
  * @return true - playing.
  * @return false - not playing.
  */
-bool BTSYMBOLS(bt_a2dp_sink_is_playing)(bt_instance_t *ins, bt_address_t *addr);
+bool BTSYMBOLS(bt_a2dp_sink_is_playing)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief get A2DP sink connection state
@@ -90,7 +90,7 @@ bool BTSYMBOLS(bt_a2dp_sink_is_playing)(bt_instance_t *ins, bt_address_t *addr);
  * @param addr - address of peer A2DP source device.
  * @return profile_connection_state_t - connection state.
  */
-profile_connection_state_t BTSYMBOLS(bt_a2dp_sink_get_connection_state)(bt_instance_t *ins, bt_address_t *addr);
+profile_connection_state_t BTSYMBOLS(bt_a2dp_sink_get_connection_state)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Establish connection with peer A2DP device
@@ -99,7 +99,7 @@ profile_connection_state_t BTSYMBOLS(bt_a2dp_sink_get_connection_state)(bt_insta
  * @param addr - address of peer A2DP source device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_a2dp_sink_connect)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_a2dp_sink_connect)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Disconnect from peer A2DP device
@@ -108,7 +108,7 @@ bt_status_t BTSYMBOLS(bt_a2dp_sink_connect)(bt_instance_t *ins, bt_address_t *ad
  * @param addr - address of peer A2DP source device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_a2dp_sink_disconnect)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_a2dp_sink_disconnect)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief set a peer A2DP source device as active device
@@ -117,7 +117,7 @@ bt_status_t BTSYMBOLS(bt_a2dp_sink_disconnect)(bt_instance_t *ins, bt_address_t 
  * @param addr - address of peer A2DP source device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_a2dp_sink_set_active_device)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_a2dp_sink_set_active_device)(bt_instance_t* ins, bt_address_t* addr);
 
 #ifdef __cplusplus
 }

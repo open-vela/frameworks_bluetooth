@@ -29,10 +29,10 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    const adapter_callbacks_t *callbacks;
-    void *cookie;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    const adapter_callbacks_t* callbacks;
+    void* cookie;
 } IBtAdapterCallbacks;
 
 #if 0
@@ -58,10 +58,10 @@ typedef enum {
     ICBKS_REMOTE_UUIDS_CHANGED,
 } IBtAdapterCallbacks_Call;
 
-AIBinder *BtAdapterCallbacks_getBinder(IBtAdapterCallbacks *adapter);
-binder_status_t BtAdapterCallbacks_associateClass(AIBinder *binder);
-IBtAdapterCallbacks *BtAdapterCallbacks_new(const adapter_callbacks_t *callbacks);
-void BtAdapterCallbacks_delete(IBtAdapterCallbacks *cbks);
+AIBinder* BtAdapterCallbacks_getBinder(IBtAdapterCallbacks* adapter);
+binder_status_t BtAdapterCallbacks_associateClass(AIBinder* binder);
+IBtAdapterCallbacks* BtAdapterCallbacks_new(const adapter_callbacks_t* callbacks);
+void BtAdapterCallbacks_delete(IBtAdapterCallbacks* cbks);
 
 #ifdef __cplusplus
 }

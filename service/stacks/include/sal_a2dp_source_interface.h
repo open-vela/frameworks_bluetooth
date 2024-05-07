@@ -46,16 +46,16 @@
 
 bt_status_t bt_sal_a2dp_source_init(uint8_t max_connection);
 void bt_sal_a2dp_source_cleanup(void);
-bt_status_t bt_sal_a2dp_source_connect(bt_address_t *addr);
-bt_status_t bt_sal_a2dp_source_disconnect(bt_address_t *addr);
-bt_status_t bt_sal_a2dp_source_set_silence_device(bt_address_t *addr, bool silence);
-bt_status_t bt_sal_a2dp_source_set_active_device(bt_address_t *addr);
+bt_status_t bt_sal_a2dp_source_connect(bt_address_t* addr);
+bt_status_t bt_sal_a2dp_source_disconnect(bt_address_t* addr);
+bt_status_t bt_sal_a2dp_source_set_silence_device(bt_address_t* addr, bool silence);
+bt_status_t bt_sal_a2dp_source_set_active_device(bt_address_t* addr);
 
-bt_status_t bt_sal_a2dp_source_start_stream(bt_address_t *remote_addr);
-bt_status_t bt_sal_a2dp_source_suspend_stream(bt_address_t *remote_addr);
-bt_status_t bt_sal_a2dp_source_send_data(bt_address_t *remote_addr,
-                                         uint8_t *buf, uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp, uint32_t seq);
+bt_status_t bt_sal_a2dp_source_start_stream(bt_address_t* remote_addr);
+bt_status_t bt_sal_a2dp_source_suspend_stream(bt_address_t* remote_addr);
+bt_status_t bt_sal_a2dp_source_send_data(bt_address_t* remote_addr,
+    uint8_t* buf, uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp, uint32_t seq);
 
-void bt_sal_a2dp_source_event_callback(a2dp_event_t *event);
+void bt_sal_a2dp_source_event_callback(a2dp_event_t* event);
 
 #endif /* __SAL_A2DP_SOURCE_INTERFACE_H__ */

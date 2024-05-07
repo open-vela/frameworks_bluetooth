@@ -71,7 +71,7 @@
 struct spp_service_global {
     uint8_t started;
     uint8_t registered;
-    index_allocator_t *allocator;
+    index_allocator_t* allocator;
     uint32_t server_channel_map;
     struct list_node devices;
     struct list_node servers;
@@ -81,28 +81,28 @@ struct spp_service_global {
 
 typedef struct spp_handle {
     struct list_node node;
-    bt_instance_t *ins;
-    void *remote;
-    const spp_callbacks_t *cbs;
+    bt_instance_t* ins;
+    void* remote;
+    const spp_callbacks_t* cbs;
 } spp_handle_t;
 
 typedef struct {
     uint16_t length;
-    uint8_t *buffer_head;
+    uint8_t* buffer_head;
 } cache_buf_t;
 
 typedef struct {
     struct list_node node;
     uint16_t scn;
     bt_uuid_t uuid;
-    spp_handle_t *app_handle;
+    spp_handle_t* app_handle;
 } spp_server_t;
 
 typedef struct {
     struct list_node node;
-    spp_server_t *server;
-    euv_pty_t *handle;
-    service_timer_t *timer;
+    spp_server_t* server;
+    euv_pty_t* handle;
+    service_timer_t* timer;
     cache_buf_t cache_buf;
     bool accept;
     bt_address_t addr;
@@ -117,7 +117,7 @@ typedef struct {
     uint8_t remaining_quota;
     uint32_t rx_bytes;
     uint32_t tx_bytes;
-    spp_handle_t *app_handle;
+    spp_handle_t* app_handle;
     /* connection state */
     profile_connection_state_t state;
 } spp_pty_device_t;
@@ -133,7 +133,7 @@ typedef struct {
     uint16_t port;
     uint16_t length;
     uint16_t sent_length;
-    uint8_t *buffer;
+    uint8_t* buffer;
     bt_address_t addr;
     /* connection state */
     profile_connection_state_t state;
@@ -142,8 +142,8 @@ typedef struct {
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
-static int do_spp_write(spp_pty_device_t *device, uint8_t *buffer, uint16_t length);
-static void spp_server_cleanup_devices(spp_server_t *server);
+static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t length);
+static void spp_server_cleanup_devices(spp_server_t* server);
 
 /****************************************************************************
  * Private Data
@@ -168,30 +168,30 @@ static const char* spp_event_to_string(uint8_t event)
 }
 #endif
 
-static void spp_notify_connection_state(spp_pty_device_t *device, profile_connection_state_t state)
+static void spp_notify_connection_state(spp_pty_device_t* device, profile_connection_state_t state)
 {
     assert(device);
     if (!device->app_handle)
         return;
 
-    void *handle = device->app_handle->remote ? device->app_handle->remote : device->app_handle;
+    void* handle = device->app_handle->remote ? device->app_handle->remote : device->app_handle;
 
     if (device->app_handle->cbs && device->app_handle->cbs->connection_state_cb)
         device->app_handle->cbs->connection_state_cb(handle, &device->addr,
-                                                     device->scn, device->conn_id, state);
+            device->scn, device->conn_id, state);
 }
 
-static void spp_notify_pty_opened(spp_pty_device_t *device)
+static void spp_notify_pty_opened(spp_pty_device_t* device)
 {
     assert(device);
     if (!device->app_handle)
         return;
 
-    void *handle = device->app_handle->remote ? device->app_handle->remote : device->app_handle;
+    void* handle = device->app_handle->remote ? device->app_handle->remote : device->app_handle;
 
     if (device->app_handle->cbs && device->app_handle->cbs->pty_open_cb)
         device->app_handle->cbs->pty_open_cb(handle, &device->addr, device->scn,
-                                             device->conn_id, device->pty_name);
+            device->conn_id, device->pty_name);
 }
 
 static int scn_bit_check(uint16_t scn)
@@ -224,12 +224,12 @@ static int scn_bit_free(uint16_t scn)
     return 0;
 }
 
-static spp_server_t *alloc_new_server(uint16_t scn, bt_uuid_t *uuid, spp_handle_t *handle)
+static spp_server_t* alloc_new_server(uint16_t scn, bt_uuid_t* uuid, spp_handle_t* handle)
 {
     if (scn_bit_alloc(scn) != 0)
         return NULL;
 
-    spp_server_t *server = malloc(sizeof(spp_server_t));
+    spp_server_t* server = malloc(sizeof(spp_server_t));
     if (!server)
         return NULL;
 
@@ -241,7 +241,7 @@ static spp_server_t *alloc_new_server(uint16_t scn, bt_uuid_t *uuid, spp_handle_
     return server;
 }
 
-static void free_server_resource(spp_server_t *server)
+static void free_server_resource(spp_server_t* server)
 {
     spp_server_cleanup_devices(server);
     scn_bit_free(server->scn);
@@ -249,14 +249,14 @@ static void free_server_resource(spp_server_t *server)
     free(server);
 }
 
-static spp_server_t *find_server(uint16_t scn)
+static spp_server_t* find_server(uint16_t scn)
 {
-    spp_server_t *server;
-    struct list_node *node;
+    spp_server_t* server;
+    struct list_node* node;
 
     list_for_every(&g_spp_handle.servers, node)
     {
-        server = (spp_server_t *)node;
+        server = (spp_server_t*)node;
         if (server->scn == scn)
             return server;
     }
@@ -265,11 +265,11 @@ static spp_server_t *find_server(uint16_t scn)
     return NULL;
 }
 
-static spp_pty_device_t *alloc_new_device(bt_address_t *addr, int16_t scn,
-                                          bt_uuid_t *uuid, bool accept,
-                                          spp_handle_t *handle)
+static spp_pty_device_t* alloc_new_device(bt_address_t* addr, int16_t scn,
+    bt_uuid_t* uuid, bool accept,
+    spp_handle_t* handle)
 {
-    spp_pty_device_t *device = malloc(sizeof(spp_pty_device_t));
+    spp_pty_device_t* device = malloc(sizeof(spp_pty_device_t));
 
     if (device == NULL)
         return NULL;
@@ -298,17 +298,17 @@ static spp_pty_device_t *alloc_new_device(bt_address_t *addr, int16_t scn,
     return device;
 }
 
-static spp_pty_device_t *find_pty_device(uint16_t conn_id)
+static spp_pty_device_t* find_pty_device(uint16_t conn_id)
 {
-    spp_pty_device_t *device;
-    struct list_node *node;
+    spp_pty_device_t* device;
+    struct list_node* node;
 
     if (!g_spp_handle.started)
         return NULL;
 
     list_for_every(&g_spp_handle.devices, node)
     {
-        device = (spp_pty_device_t *)node;
+        device = (spp_pty_device_t*)node;
         if (conn_id == device->conn_id)
             return device;
     }
@@ -317,17 +317,17 @@ static spp_pty_device_t *find_pty_device(uint16_t conn_id)
     return NULL;
 }
 
-static spp_pty_device_t *find_pty_device_by_handle(euv_pty_t *handle)
+static spp_pty_device_t* find_pty_device_by_handle(euv_pty_t* handle)
 {
-    spp_pty_device_t *device;
-    struct list_node *node;
+    spp_pty_device_t* device;
+    struct list_node* node;
 
     if (!g_spp_handle.started)
         return NULL;
 
     list_for_every(&g_spp_handle.devices, node)
     {
-        device = (spp_pty_device_t *)node;
+        device = (spp_pty_device_t*)node;
         if (device->handle == handle)
             return device;
     }
@@ -336,7 +336,7 @@ static spp_pty_device_t *find_pty_device_by_handle(euv_pty_t *handle)
     return NULL;
 }
 
-static void remove_pty_device(spp_pty_device_t *device)
+static void remove_pty_device(spp_pty_device_t* device)
 {
     BT_LOGI("spp device remove, conn_id: %d", device->conn_id);
     index_free(g_spp_handle.allocator, device->conn_id);
@@ -344,7 +344,7 @@ static void remove_pty_device(spp_pty_device_t *device)
     free(device);
 }
 
-static spp_pty_device_t *spp_pty_device_open(spp_pty_device_t *device)
+static spp_pty_device_t* spp_pty_device_open(spp_pty_device_t* device)
 {
     int ret;
 
@@ -366,7 +366,7 @@ error:
     return NULL;
 }
 
-static void spp_pty_device_close(spp_pty_device_t *device)
+static void spp_pty_device_close(spp_pty_device_t* device)
 {
     if (device->timer != NULL) {
         service_loop_cancel_timer(device->timer);
@@ -385,7 +385,7 @@ static void spp_pty_device_close(spp_pty_device_t *device)
     device->app_handle = NULL;
 }
 
-static void spp_device_cleanup(spp_pty_device_t *device, bool notify)
+static void spp_device_cleanup(spp_pty_device_t* device, bool notify)
 {
     if (notify)
         spp_notify_connection_state(device, PROFILE_STATE_DISCONNECTED);
@@ -394,50 +394,50 @@ static void spp_device_cleanup(spp_pty_device_t *device, bool notify)
     remove_pty_device(device);
 }
 
-static void spp_server_cleanup_devices(spp_server_t *server)
+static void spp_server_cleanup_devices(spp_server_t* server)
 {
-    spp_pty_device_t *device;
-    struct list_node *node;
-    struct list_node *tmp;
+    spp_pty_device_t* device;
+    struct list_node* node;
+    struct list_node* tmp;
 
     list_for_every_safe(&g_spp_handle.devices, node, tmp)
     {
-        device = (spp_pty_device_t *)node;
+        device = (spp_pty_device_t*)node;
         if (device->server == server)
             spp_device_cleanup(device, true);
     }
 }
 
-static void spp_app_cleanup_servers(spp_handle_t *app)
+static void spp_app_cleanup_servers(spp_handle_t* app)
 {
-    spp_server_t *server;
-    struct list_node *node;
-    struct list_node *tmp;
+    spp_server_t* server;
+    struct list_node* node;
+    struct list_node* tmp;
 
     list_for_every_safe(&g_spp_handle.servers, node, tmp)
     {
-        server = (spp_server_t *)node;
+        server = (spp_server_t*)node;
         if (server->app_handle == app)
             free_server_resource(server);
     }
 }
 
-static void spp_app_cleanup_devices(spp_handle_t *app)
+static void spp_app_cleanup_devices(spp_handle_t* app)
 {
-    spp_pty_device_t *device;
-    struct list_node *node;
-    struct list_node *tmp;
+    spp_pty_device_t* device;
+    struct list_node* node;
+    struct list_node* tmp;
 
     // cleanup all device
     list_for_every_safe(&g_spp_handle.devices, node, tmp)
     {
-        device = (spp_pty_device_t *)node;
+        device = (spp_pty_device_t*)node;
         if (device->app_handle == app)
             spp_device_cleanup(device, true);
     }
 }
 
-static void spp_cleanup_app(spp_handle_t *app)
+static void spp_cleanup_app(spp_handle_t* app)
 {
     /* cleanpup local server */
     spp_app_cleanup_servers(app);
@@ -448,20 +448,20 @@ static void spp_cleanup_app(spp_handle_t *app)
 
 static void spp_cleanup_all_apps(void)
 {
-    struct list_node *node;
-    struct list_node *tmp;
+    struct list_node* node;
+    struct list_node* tmp;
 
     // cleanup all device
     list_for_every_safe(&g_spp_handle.apps, node, tmp)
     {
-        spp_cleanup_app((spp_handle_t *)node);
-        list_delete(&((spp_handle_t *)node)->node);
+        spp_cleanup_app((spp_handle_t*)node);
+        list_delete(&((spp_handle_t*)node)->node);
     }
 }
 
-static void euv_alloc_buffer(euv_pty_t *handle, uint8_t **buf, size_t *len)
+static void euv_alloc_buffer(euv_pty_t* handle, uint8_t** buf, size_t* len)
 {
-    spp_pty_device_t *device;
+    spp_pty_device_t* device;
 
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     device = find_pty_device_by_handle(handle);
@@ -482,9 +482,9 @@ unlock:
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
 }
 
-static void euv_read_complete(euv_pty_t *handle, const uint8_t *buf, ssize_t size)
+static void euv_read_complete(euv_pty_t* handle, const uint8_t* buf, ssize_t size)
 {
-    spp_pty_device_t *device;
+    spp_pty_device_t* device;
 
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     device = find_pty_device_by_handle(handle);
@@ -493,7 +493,7 @@ static void euv_read_complete(euv_pty_t *handle, const uint8_t *buf, ssize_t siz
 
     if (size <= 0) {
         if (buf && (device->cache_buf.length == 0))
-            free((void *)buf);
+            free((void*)buf);
 
         if (size < 0)
             spp_pty_device_close(device);
@@ -502,15 +502,15 @@ static void euv_read_complete(euv_pty_t *handle, const uint8_t *buf, ssize_t siz
     }
 
     spp_dumpbuffer("master read:", buf, size);
-    do_spp_write(device, (uint8_t *)buf, size);
+    do_spp_write(device, (uint8_t*)buf, size);
 
 unlock:
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
 }
 
-static void euv_write_complete(euv_pty_t *handle, uint8_t *buf, int status)
+static void euv_write_complete(euv_pty_t* handle, uint8_t* buf, int status)
 {
-    spp_pty_device_t *device;
+    spp_pty_device_t* device;
 
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     device = find_pty_device_by_handle(handle);
@@ -525,12 +525,12 @@ unlock:
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
 }
 
-static void spp_cache_timeout(service_timer_t *timer, void *data)
+static void spp_cache_timeout(service_timer_t* timer, void* data)
 {
-    spp_pty_device_t *device;
+    spp_pty_device_t* device;
 
     pthread_mutex_lock(&g_spp_handle.spp_lock);
-    device = find_pty_device_by_handle((euv_pty_t *)data);
+    device = find_pty_device_by_handle((euv_pty_t*)data);
     if (!device)
         goto unlock;
 
@@ -542,31 +542,31 @@ unlock:
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
 }
 
-static void spp_cache_fragement(spp_pty_device_t *device, uint8_t *buffer, uint16_t length)
+static void spp_cache_fragement(spp_pty_device_t* device, uint8_t* buffer, uint16_t length)
 {
     device->cache_buf.buffer_head = buffer;
     device->cache_buf.length = length;
     /* cache timer */
     device->timer = service_loop_timer_no_repeating(CACHE_SEND_TIMEOUT,
-                                                    spp_cache_timeout,
-                                                    device->handle);
+        spp_cache_timeout,
+        device->handle);
     device->next_to_read = device->mfs - length;
 }
 
-static void spp_cache_stop(spp_pty_device_t *device)
+static void spp_cache_stop(spp_pty_device_t* device)
 {
     service_loop_cancel_timer(device->timer);
     device->timer = NULL;
     device->next_to_read = device->mfs;
 }
 
-static int do_spp_write(spp_pty_device_t *device, uint8_t *buffer, uint16_t length)
+static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t length)
 {
     bt_status_t status;
     uint16_t remaining;
     uint16_t cache_size;
     uint16_t size;
-    uint8_t *tmpbuf;
+    uint8_t* tmpbuf;
 
     if (!device)
         return -EINVAL;
@@ -611,10 +611,10 @@ static int do_spp_write(spp_pty_device_t *device, uint8_t *buffer, uint16_t leng
     return length;
 }
 
-static void spp_on_connection_state_chaneged(bt_address_t *addr, uint16_t port,
-                                             profile_connection_state_t state)
+static void spp_on_connection_state_chaneged(bt_address_t* addr, uint16_t port,
+    profile_connection_state_t state)
 {
-    spp_pty_device_t *device;
+    spp_pty_device_t* device;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     device = find_pty_device(SERVICE_CONN_ID(port));
@@ -630,7 +630,7 @@ static void spp_on_connection_state_chaneged(bt_address_t *addr, uint16_t port,
 
     bt_addr_ba2str(&device->addr, addr_str);
     BT_LOGD("%s, addr: %s, scn: %d, port: %d, state: %d",
-            __func__, addr_str, device->scn, device->conn_id, state);
+        __func__, addr_str, device->scn, device->conn_id, state);
     device->state = state;
     spp_notify_connection_state(device, state);
 
@@ -647,10 +647,10 @@ static void spp_on_connection_state_chaneged(bt_address_t *addr, uint16_t port,
         spp_device_cleanup(device, false);
 }
 
-static void spp_on_incoming_data_received(bt_address_t *addr, uint16_t port,
-                                          uint8_t *buffer, uint16_t length)
+static void spp_on_incoming_data_received(bt_address_t* addr, uint16_t port,
+    uint8_t* buffer, uint16_t length)
 {
-    spp_pty_device_t *device;
+    spp_pty_device_t* device;
     int ret;
 
     device = find_pty_device(SERVICE_CONN_ID(port));
@@ -666,9 +666,9 @@ static void spp_on_incoming_data_received(bt_address_t *addr, uint16_t port,
     }
 }
 
-static void spp_on_outgoing_complete(uint16_t port, uint8_t *buffer, uint16_t length)
+static void spp_on_outgoing_complete(uint16_t port, uint8_t* buffer, uint16_t length)
 {
-    spp_pty_device_t *device;
+    spp_pty_device_t* device;
 
     free(buffer);
     device = find_pty_device(SERVICE_CONN_ID(port));
@@ -681,10 +681,10 @@ static void spp_on_outgoing_complete(uint16_t port, uint8_t *buffer, uint16_t le
     device->remaining_quota++;
 }
 
-static void spp_on_connect_request_received(bt_address_t *addr, uint16_t port)
+static void spp_on_connect_request_received(bt_address_t* addr, uint16_t port)
 {
-    spp_server_t *server;
-    spp_pty_device_t *device;
+    spp_server_t* server;
+    spp_pty_device_t* device;
 
     server = find_server(SERVICE_SCN(port));
     if (!server)
@@ -706,7 +706,7 @@ static void spp_on_connect_request_received(bt_address_t *addr, uint16_t port)
 static void spp_on_connection_update_mfs(uint16_t port, uint16_t mfs)
 {
     int ret;
-    spp_pty_device_t *device;
+    spp_pty_device_t* device;
 
     device = find_pty_device(SERVICE_CONN_ID(port));
     if (!device)
@@ -721,7 +721,7 @@ static void spp_on_connection_update_mfs(uint16_t port, uint16_t mfs)
     }
 }
 
-static void spp_service_event_process(void *data)
+static void spp_service_event_process(void* data)
 {
     if (!data)
         return;
@@ -732,7 +732,7 @@ static void spp_service_event_process(void *data)
         return;
     }
 
-    spp_msg_t *msg = data;
+    spp_msg_t* msg = data;
     switch (msg->event) {
     case STATE_CHANEG:
         spp_on_connection_state_chaneged(&msg->addr, msg->port, msg->state);
@@ -830,9 +830,9 @@ static int spp_get_state(void)
     return 1;
 }
 
-static void *spp_register_app(void *remote, const spp_callbacks_t *callbacks)
+static void* spp_register_app(void* remote, const spp_callbacks_t* callbacks)
 {
-    spp_handle_t *hdl = NULL;
+    spp_handle_t* hdl = NULL;
 
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (!g_spp_handle.started) {
@@ -862,9 +862,9 @@ static void *spp_register_app(void *remote, const spp_callbacks_t *callbacks)
     return hdl;
 }
 
-static bt_status_t spp_unregister_app(void **remote, void *handle)
+static bt_status_t spp_unregister_app(void** remote, void* handle)
 {
-    spp_handle_t *app = handle;
+    spp_handle_t* app = handle;
 
     if (!app)
         return BT_STATUS_FAIL;
@@ -888,10 +888,10 @@ static bt_status_t spp_unregister_app(void **remote, void *handle)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t spp_server_start(void *handle, uint16_t scn, bt_uuid_t *uuid, uint8_t max_connection)
+static bt_status_t spp_server_start(void* handle, uint16_t scn, bt_uuid_t* uuid, uint8_t max_connection)
 {
     bt_uuid_t uuid_128_dst;
-    spp_server_t *server;
+    spp_server_t* server;
     bt_status_t ret = BT_STATUS_SUCCESS;
 
     /* TODO: check handle are valid */
@@ -924,9 +924,9 @@ unlock_exit:
     return ret;
 }
 
-static bt_status_t spp_server_stop(void *handle, uint16_t scn)
+static bt_status_t spp_server_stop(void* handle, uint16_t scn)
 {
-    spp_server_t *server;
+    spp_server_t* server;
     bt_status_t ret = BT_STATUS_SUCCESS;
 
     /* TODO: check handle are valid */
@@ -953,10 +953,10 @@ unlock_exit:
     return ret;
 }
 
-static bt_status_t spp_connect(void *handle, bt_address_t *addr, int16_t scn, bt_uuid_t *uuid, uint16_t *port)
+static bt_status_t spp_connect(void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port)
 {
     bt_status_t status = BT_STATUS_SUCCESS;
-    spp_pty_device_t *device;
+    spp_pty_device_t* device;
     bt_uuid_t uuid_128_dst;
 
     /* TODO: check handle are valid */
@@ -971,7 +971,7 @@ static bt_status_t spp_connect(void *handle, bt_address_t *addr, int16_t scn, bt
 
     bt_uuid_to_uuid128(uuid, &uuid_128_dst);
     device = alloc_new_device(addr, scn == UNKNOWN_SERVER_CHANNEL_NUM ? 0 : scn,
-                              uuid, false, handle);
+        uuid, false, handle);
     if (!device) {
         status = BT_STATUS_NO_RESOURCES;
         goto unlock_exit;
@@ -994,9 +994,9 @@ unlock_exit:
     return status;
 }
 
-static bt_status_t spp_disconnect(void *handle, bt_address_t *addr, uint16_t port)
+static bt_status_t spp_disconnect(void* handle, bt_address_t* addr, uint16_t port)
 {
-    spp_pty_device_t *device;
+    spp_pty_device_t* device;
     bt_status_t ret = BT_STATUS_SUCCESS;
 
     /* TODO: check handle are valid */
@@ -1030,9 +1030,9 @@ static void spp_cleanup(void)
 
 static int spp_dump(void)
 {
-    spp_pty_device_t *device;
-    spp_server_t *server = NULL;
-    struct list_node *node;
+    spp_pty_device_t* device;
+    spp_server_t* server = NULL;
+    struct list_node* node;
     int i = 0;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     char uuid_str[40] = { 0 };
@@ -1044,7 +1044,7 @@ static int spp_dump(void)
     list_for_every(&g_spp_handle.servers, node)
     {
         i++;
-        server = (spp_server_t *)node;
+        server = (spp_server_t*)node;
         bt_uuid_to_string(&server->uuid, uuid_str, 40);
         printf("\tServer[%d]: Scn:%d, UUID:%s" PRIx16 "\n", i, server->scn, uuid_str);
     }
@@ -1055,15 +1055,15 @@ static int spp_dump(void)
     list_for_every(&g_spp_handle.devices, node)
     {
         i++;
-        device = (spp_pty_device_t *)node;
+        device = (spp_pty_device_t*)node;
         bt_addr_ba2str(&device->addr, addr_str);
         if (server)
             bt_uuid_to_string(&server->uuid, uuid_str, 40);
         printf("\tDevice[%d]: ID:%d, Addr:%s, State:%d, Scn:%d, UUID:%s" PRIx16
                ", MFS:%d, Pty:[%d,%s], Rx:%" PRIu32 ", Tx:%" PRIu32 "\n",
-               i, device->conn_id, addr_str, device->state,
-               device->scn, uuid_str, device->mfs, device->mfd,
-               device->pty_name, device->rx_bytes, device->tx_bytes);
+            i, device->conn_id, addr_str, device->state,
+            device->scn, uuid_str, device->mfs, device->mfd,
+            device->pty_name, device->rx_bytes, device->tx_bytes);
     }
 
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
@@ -1083,19 +1083,19 @@ static spp_interface_t sppInterface = {
     .disconnect = spp_disconnect,
 };
 
-static const void *get_spp_profile_interface(void)
+static const void* get_spp_profile_interface(void)
 {
-    return (void *)&sppInterface;
+    return (void*)&sppInterface;
 }
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-void spp_on_connection_state_changed(bt_address_t *addr, uint16_t conn_port,
-                                     profile_connection_state_t state)
+void spp_on_connection_state_changed(bt_address_t* addr, uint16_t conn_port,
+    profile_connection_state_t state)
 {
-    spp_msg_t *msg = malloc(sizeof(spp_msg_t));
+    spp_msg_t* msg = malloc(sizeof(spp_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -1109,10 +1109,10 @@ void spp_on_connection_state_changed(bt_address_t *addr, uint16_t conn_port,
     do_in_service_loop(spp_service_event_process, msg);
 }
 
-void spp_on_data_sent(uint16_t conn_port, uint8_t *buffer, uint16_t length,
-                      uint16_t sent_length)
+void spp_on_data_sent(uint16_t conn_port, uint8_t* buffer, uint16_t length,
+    uint16_t sent_length)
 {
-    spp_msg_t *msg = malloc(sizeof(spp_msg_t));
+    spp_msg_t* msg = malloc(sizeof(spp_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -1127,10 +1127,10 @@ void spp_on_data_sent(uint16_t conn_port, uint8_t *buffer, uint16_t length,
     do_in_service_loop(spp_service_event_process, msg);
 }
 
-void spp_on_data_received(bt_address_t *addr, uint16_t conn_port,
-                          uint8_t *buffer, uint16_t length)
+void spp_on_data_received(bt_address_t* addr, uint16_t conn_port,
+    uint8_t* buffer, uint16_t length)
 {
-    spp_msg_t *msg = malloc(sizeof(spp_msg_t));
+    spp_msg_t* msg = malloc(sizeof(spp_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -1145,9 +1145,9 @@ void spp_on_data_received(bt_address_t *addr, uint16_t conn_port,
     do_in_service_loop(spp_service_event_process, msg);
 }
 
-void spp_on_server_recieve_connect_request(bt_address_t *addr, uint16_t scn)
+void spp_on_server_recieve_connect_request(bt_address_t* addr, uint16_t scn)
 {
-    spp_msg_t *msg = malloc(sizeof(spp_msg_t));
+    spp_msg_t* msg = malloc(sizeof(spp_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -1162,7 +1162,7 @@ void spp_on_server_recieve_connect_request(bt_address_t *addr, uint16_t scn)
 
 void spp_on_connection_mfs_update(uint16_t conn_port, uint16_t mfs)
 {
-    spp_msg_t *msg = malloc(sizeof(spp_msg_t));
+    spp_msg_t* msg = malloc(sizeof(spp_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -1180,7 +1180,7 @@ static const profile_service_t spp_service = {
     .name = PROFILE_SPP_NAME,
     .id = PROFILE_SPP,
     .transport = BT_TRANSPORT_BREDR,
-    .uuid = {BT_UUID128_TYPE, { 0 }},
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = spp_init,
     .startup = spp_startup,
     .shutdown = spp_shutdown,

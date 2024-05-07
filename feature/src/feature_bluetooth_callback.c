@@ -14,40 +14,40 @@
  * limitations under the License.
  *
  */
+#include "bt_a2dp_sink.h"
+#include "bt_adapter.h"
+#include "bt_list.h"
+#include "feature_bluetooth.h"
 #include "feature_exports.h"
 #include "feature_log.h"
 #include "system_bluetooth.h"
 #include "system_bluetooth_bt.h"
 #include "system_bluetooth_bt_a2dpsink.h"
-#include "feature_bluetooth.h"
-#include "bt_a2dp_sink.h"
-#include "bt_adapter.h"
-#include "bt_list.h"
 #include "uv.h"
 
-#define add_feature_callback(feature_callbacks, new_callbacks_type, handle)                          \
-    {                                                                                                \
-        new_callbacks_type *new_callback = (new_callbacks_type *)malloc(sizeof(new_callbacks_type)); \
-        memset(new_callback, -1, sizeof(new_callbacks_type));                                        \
-        new_callback->feature_ins = handle;                                                          \
-        bt_list_add_tail(feature_callbacks, new_callback);                                           \
+#define add_feature_callback(feature_callbacks, new_callbacks_type, handle)                         \
+    {                                                                                               \
+        new_callbacks_type* new_callback = (new_callbacks_type*)malloc(sizeof(new_callbacks_type)); \
+        memset(new_callback, -1, sizeof(new_callbacks_type));                                       \
+        new_callback->feature_ins = handle;                                                         \
+        bt_list_add_tail(feature_callbacks, new_callback);                                          \
     }
 
 #define set_feature_callback(feature_callbacks, callbacks_type, find_func, handle, callback_id, callback_type) \
     {                                                                                                          \
-        callbacks_type *callbacks = (callbacks_type *)bt_list_find(feature_callbacks, find_func, handle);      \
+        callbacks_type* callbacks = (callbacks_type*)bt_list_find(feature_callbacks, find_func, handle);       \
         callbacks->callback_type = callback_id;                                                                \
     };
 
 #define get_feature_callback(feature_callbacks, callbacks_type, find_func, handle, callback_id, callback_type) \
     {                                                                                                          \
-        callbacks_type *callbacks = (callbacks_type *)bt_list_find(feature_callbacks, find_func, handle);      \
+        callbacks_type* callbacks = (callbacks_type*)bt_list_find(feature_callbacks, find_func, handle);       \
         callback_id = callbacks->callback_type;                                                                \
     };
 
-static bool get_callback_bluetooth(void *data, void *feature_ins)
+static bool get_callback_bluetooth(void* data, void* feature_ins)
 {
-    feature_bluetooth_bluetooth_callbacks_t *callbacks = (feature_bluetooth_bluetooth_callbacks_t *)data;
+    feature_bluetooth_bluetooth_callbacks_t* callbacks = (feature_bluetooth_bluetooth_callbacks_t*)data;
     if (!callbacks) {
         return false;
     }
@@ -55,9 +55,9 @@ static bool get_callback_bluetooth(void *data, void *feature_ins)
     return callbacks->feature_ins == feature_ins;
 }
 
-static bool get_callback_bluetooth_bt(void *data, void *feature_ins)
+static bool get_callback_bluetooth_bt(void* data, void* feature_ins)
 {
-    feature_bluetooth_bluetooth_bt_callbacks_t *callbacks = (feature_bluetooth_bluetooth_bt_callbacks_t *)data;
+    feature_bluetooth_bluetooth_bt_callbacks_t* callbacks = (feature_bluetooth_bluetooth_bt_callbacks_t*)data;
     if (!callbacks) {
         return false;
     }
@@ -65,9 +65,9 @@ static bool get_callback_bluetooth_bt(void *data, void *feature_ins)
     return callbacks->feature_ins == feature_ins;
 }
 
-static bool get_callback_a2dp_sink(void *data, void *feature_ins)
+static bool get_callback_a2dp_sink(void* data, void* feature_ins)
 {
-    feature_bluetooth_a2dp_sink_callbacks_t *callbacks = (feature_bluetooth_a2dp_sink_callbacks_t *)data;
+    feature_bluetooth_a2dp_sink_callbacks_t* callbacks = (feature_bluetooth_a2dp_sink_callbacks_t*)data;
     if (!callbacks) {
         return false;
     }
@@ -75,9 +75,9 @@ static bool get_callback_a2dp_sink(void *data, void *feature_ins)
     return callbacks->feature_ins == feature_ins;
 }
 
-static void free_feature_callback(bt_list_t *callbacks, FeatureInstanceHandle handle, bt_list_find_cb find_func)
+static void free_feature_callback(bt_list_t* callbacks, FeatureInstanceHandle handle, bt_list_find_cb find_func)
 {
-    void *data;
+    void* data;
 
     if (!callbacks) {
         return;
@@ -89,19 +89,19 @@ static void free_feature_callback(bt_list_t *callbacks, FeatureInstanceHandle ha
     }
 }
 
-static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
+static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
-    bt_instance_t *bt_ins = (bt_instance_t *)cookie;
-    feature_bluetooth_features_callbacks_t *features_callbacks;
-    bt_list_t *callbacks;
-    bt_list_node_t *node;
+    bt_instance_t* bt_ins = (bt_instance_t*)cookie;
+    feature_bluetooth_features_callbacks_t* features_callbacks;
+    bt_list_t* callbacks;
+    bt_list_node_t* node;
 
     FEATURE_LOG_INFO("adapter state change callback, state: %d", state);
     if (!bt_ins) {
         return;
     }
 
-    features_callbacks = (feature_bluetooth_features_callbacks_t *)bt_ins->context;
+    features_callbacks = (feature_bluetooth_features_callbacks_t*)bt_ins->context;
     if (!features_callbacks) {
         return;
     }
@@ -120,11 +120,11 @@ static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
     }
 
     while (node) {
-        feature_bluetooth_bluetooth_callbacks_t *feature_callback;
-        system_bluetooth_adapterStateCallbackData *data;
-        callback_info_t *callback_info;
+        feature_bluetooth_bluetooth_callbacks_t* feature_callback;
+        system_bluetooth_adapterStateCallbackData* data;
+        callback_info_t* callback_info;
 
-        feature_callback = (feature_bluetooth_bluetooth_callbacks_t *)bt_list_node(node);
+        feature_callback = (feature_bluetooth_bluetooth_callbacks_t*)bt_list_node(node);
         if (!feature_callback) {
             break;
         }
@@ -146,7 +146,7 @@ static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
         data->available = state == BT_ADAPTER_STATE_ON;
         data->discovering = bt_adapter_is_discovering(bt_ins);
 
-        callback_info = (callback_info_t *)calloc(1, sizeof(callback_info_t));
+        callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
         if (!callback_info) {
             break;
         }
@@ -161,19 +161,19 @@ static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
     uv_mutex_unlock(&features_callbacks->mutex);
 }
 
-static void on_discovery_state_changed_cb(void *cookie, bt_discovery_state_t state)
+static void on_discovery_state_changed_cb(void* cookie, bt_discovery_state_t state)
 {
-    bt_instance_t *bt_ins = (bt_instance_t *)cookie;
-    feature_bluetooth_features_callbacks_t *features_callbacks;
-    bt_list_t *callbacks;
-    bt_list_node_t *node;
+    bt_instance_t* bt_ins = (bt_instance_t*)cookie;
+    feature_bluetooth_features_callbacks_t* features_callbacks;
+    bt_list_t* callbacks;
+    bt_list_node_t* node;
 
     FEATURE_LOG_INFO("discovery state change callback, state: %d", state);
     if (!bt_ins) {
         return;
     }
 
-    features_callbacks = (feature_bluetooth_features_callbacks_t *)bt_ins->context;
+    features_callbacks = (feature_bluetooth_features_callbacks_t*)bt_ins->context;
     if (!features_callbacks) {
         return;
     }
@@ -192,11 +192,11 @@ static void on_discovery_state_changed_cb(void *cookie, bt_discovery_state_t sta
     }
 
     while (node) {
-        feature_bluetooth_bluetooth_callbacks_t *feature_callback;
-        callback_info_t *callback_info;
-        system_bluetooth_adapterStateCallbackData *data;
+        feature_bluetooth_bluetooth_callbacks_t* feature_callback;
+        callback_info_t* callback_info;
+        system_bluetooth_adapterStateCallbackData* data;
 
-        feature_callback = (feature_bluetooth_bluetooth_callbacks_t *)bt_list_node(node);
+        feature_callback = (feature_bluetooth_bluetooth_callbacks_t*)bt_list_node(node);
         if (!feature_callback) {
             break;
         }
@@ -214,7 +214,7 @@ static void on_discovery_state_changed_cb(void *cookie, bt_discovery_state_t sta
         data->available = bt_adapter_get_state(bt_ins) == BT_ADAPTER_STATE_ON;
         data->discovering = state == BT_DISCOVERY_STATE_STARTED;
 
-        callback_info = (callback_info_t *)calloc(1, sizeof(callback_info_t));
+        callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
         if (!callback_info) {
             break;
         }
@@ -229,19 +229,19 @@ static void on_discovery_state_changed_cb(void *cookie, bt_discovery_state_t sta
     uv_mutex_unlock(&features_callbacks->mutex);
 }
 
-static void on_discovery_result_cb(void *cookie, bt_discovery_result_t *result)
+static void on_discovery_result_cb(void* cookie, bt_discovery_result_t* result)
 {
-    bt_instance_t *bt_ins = (bt_instance_t *)cookie;
-    feature_bluetooth_features_callbacks_t *features_callbacks;
-    bt_list_t *callbacks;
-    bt_list_node_t *node;
+    bt_instance_t* bt_ins = (bt_instance_t*)cookie;
+    feature_bluetooth_features_callbacks_t* features_callbacks;
+    bt_list_t* callbacks;
+    bt_list_node_t* node;
 
     FEATURE_LOG_INFO("discovery result callback");
     if (!bt_ins) {
         return;
     }
 
-    features_callbacks = (feature_bluetooth_features_callbacks_t *)bt_ins->context;
+    features_callbacks = (feature_bluetooth_features_callbacks_t*)bt_ins->context;
     if (!features_callbacks) {
         return;
     }
@@ -260,12 +260,12 @@ static void on_discovery_result_cb(void *cookie, bt_discovery_result_t *result)
     }
 
     while (node) {
-        feature_bluetooth_bluetooth_bt_callbacks_t *feature_callback;
-        system_bluetooth_bt_DiscoveryResultCallbackData *data;
-        callback_info_t *callback_info;
+        feature_bluetooth_bluetooth_bt_callbacks_t* feature_callback;
+        system_bluetooth_bt_DiscoveryResultCallbackData* data;
+        callback_info_t* callback_info;
         char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
-        feature_callback = (feature_bluetooth_bluetooth_bt_callbacks_t *)bt_list_node(node);
+        feature_callback = (feature_bluetooth_bluetooth_bt_callbacks_t*)bt_list_node(node);
         if (!feature_callback) {
             break;
         }
@@ -286,7 +286,7 @@ static void on_discovery_result_cb(void *cookie, bt_discovery_result_t *result)
         data->cod = result->cod;
         data->rssi = -result->rssi;
 
-        callback_info = (callback_info_t *)calloc(1, sizeof(callback_info_t));
+        callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
         if (!callback_info) {
             break;
         }
@@ -301,12 +301,12 @@ static void on_discovery_result_cb(void *cookie, bt_discovery_result_t *result)
     uv_mutex_unlock(&features_callbacks->mutex);
 }
 
-static void on_bond_state_changed_cb(void *cookie, bt_address_t *addr, bt_transport_t transport, bond_state_t state, bool is_ctkd)
+static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transport_t transport, bond_state_t state, bool is_ctkd)
 {
-    bt_instance_t *bt_ins = (bt_instance_t *)cookie;
-    feature_bluetooth_features_callbacks_t *features_callbacks;
-    bt_list_t *callbacks;
-    bt_list_node_t *node;
+    bt_instance_t* bt_ins = (bt_instance_t*)cookie;
+    feature_bluetooth_features_callbacks_t* features_callbacks;
+    bt_list_t* callbacks;
+    bt_list_node_t* node;
 
     FEATURE_LOG_INFO("bond state callback");
     if (transport != BT_TRANSPORT_BREDR) {
@@ -317,7 +317,7 @@ static void on_bond_state_changed_cb(void *cookie, bt_address_t *addr, bt_transp
         return;
     }
 
-    features_callbacks = (feature_bluetooth_features_callbacks_t *)bt_ins->context;
+    features_callbacks = (feature_bluetooth_features_callbacks_t*)bt_ins->context;
     if (!features_callbacks) {
         return;
     }
@@ -336,12 +336,12 @@ static void on_bond_state_changed_cb(void *cookie, bt_address_t *addr, bt_transp
     }
 
     while (node) {
-        feature_bluetooth_bluetooth_bt_callbacks_t *feature_callback;
-        system_bluetooth_bt_onBondStateChangeData *data;
-        callback_info_t *callback_info;
+        feature_bluetooth_bluetooth_bt_callbacks_t* feature_callback;
+        system_bluetooth_bt_onBondStateChangeData* data;
+        callback_info_t* callback_info;
         char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
-        feature_callback = (feature_bluetooth_bluetooth_bt_callbacks_t *)bt_list_node(node);
+        feature_callback = (feature_bluetooth_bluetooth_bt_callbacks_t*)bt_list_node(node);
         if (!feature_callback) {
             break;
         }
@@ -360,7 +360,7 @@ static void on_bond_state_changed_cb(void *cookie, bt_address_t *addr, bt_transp
         data->deviceId = StringToFtString(addr_str);
         data->bondState = state;
 
-        callback_info = (callback_info_t *)calloc(1, sizeof(callback_info_t));
+        callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
         if (!callback_info) {
             break;
         }
@@ -383,19 +383,19 @@ const static adapter_callbacks_t g_adapter_cbs = {
     .on_bond_state_changed = on_bond_state_changed_cb,
 };
 
-static void a2dp_sink_connection_state_cb(void *cookie, bt_address_t *addr, profile_connection_state_t state)
+static void a2dp_sink_connection_state_cb(void* cookie, bt_address_t* addr, profile_connection_state_t state)
 {
-    bt_instance_t *bt_ins = (bt_instance_t *)cookie;
-    feature_bluetooth_features_callbacks_t *features_callbacks;
-    bt_list_t *callbacks;
-    bt_list_node_t *node;
+    bt_instance_t* bt_ins = (bt_instance_t*)cookie;
+    feature_bluetooth_features_callbacks_t* features_callbacks;
+    bt_list_t* callbacks;
+    bt_list_node_t* node;
 
     FEATURE_LOG_INFO("a2dp sink connection state cb");
     if (!bt_ins) {
         return;
     }
 
-    features_callbacks = (feature_bluetooth_features_callbacks_t *)bt_ins->context;
+    features_callbacks = (feature_bluetooth_features_callbacks_t*)bt_ins->context;
     if (!features_callbacks) {
         return;
     }
@@ -414,12 +414,12 @@ static void a2dp_sink_connection_state_cb(void *cookie, bt_address_t *addr, prof
     }
 
     while (node) {
-        feature_bluetooth_a2dp_sink_callbacks_t *feature_callback;
-        system_bluetooth_bt_a2dpsink_OnConnectStateChangeData *data;
+        feature_bluetooth_a2dp_sink_callbacks_t* feature_callback;
+        system_bluetooth_bt_a2dpsink_OnConnectStateChangeData* data;
         char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        callback_info_t *callback_info;
+        callback_info_t* callback_info;
 
-        feature_callback = (feature_bluetooth_a2dp_sink_callbacks_t *)bt_list_node(node);
+        feature_callback = (feature_bluetooth_a2dp_sink_callbacks_t*)bt_list_node(node);
         if (!feature_callback) {
             break;
         }
@@ -438,7 +438,7 @@ static void a2dp_sink_connection_state_cb(void *cookie, bt_address_t *addr, prof
         data->deviceId = StringToFtString(addr_str);
         data->connectState = state;
 
-        callback_info = (callback_info_t *)calloc(1, sizeof(callback_info_t));
+        callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
         if (!callback_info) {
             break;
         }
@@ -460,15 +460,15 @@ static const a2dp_sink_callbacks_t a2dp_sink_cbs = {
 
 void feature_bluetooth_add_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_type_t feature_type)
 {
-    bt_instance_t *bt_ins;
-    feature_bluetooth_features_callbacks_t *features_callbacks;
+    bt_instance_t* bt_ins;
+    feature_bluetooth_features_callbacks_t* features_callbacks;
 
     bt_ins = feature_bluetooth_get_bt_ins(handle);
     if (!bt_ins) {
         return;
     }
 
-    features_callbacks = (feature_bluetooth_features_callbacks_t *)bt_ins->context;
+    features_callbacks = (feature_bluetooth_features_callbacks_t*)bt_ins->context;
     if (!features_callbacks) {
         return;
     }
@@ -494,15 +494,15 @@ void feature_bluetooth_add_feature_callback(FeatureInstanceHandle handle, featur
 
 void feature_bluetooth_free_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_type_t feature_type)
 {
-    bt_instance_t *bt_ins;
-    feature_bluetooth_features_callbacks_t *features_callbacks;
+    bt_instance_t* bt_ins;
+    feature_bluetooth_features_callbacks_t* features_callbacks;
 
     bt_ins = feature_bluetooth_get_bt_ins(handle);
     if (!bt_ins) {
         return;
     }
 
-    features_callbacks = (feature_bluetooth_features_callbacks_t *)bt_ins->context;
+    features_callbacks = (feature_bluetooth_features_callbacks_t*)bt_ins->context;
     if (!features_callbacks) {
         return;
     }
@@ -527,15 +527,15 @@ void feature_bluetooth_free_feature_callback(FeatureInstanceHandle handle, featu
 
 void feature_bluetooth_set_feature_callback(FeatureInstanceHandle handle, FtCallbackId callback_id, feature_bluetooth_callback_t callback_type)
 {
-    bt_instance_t *bt_ins;
-    feature_bluetooth_features_callbacks_t *features_callbacks;
+    bt_instance_t* bt_ins;
+    feature_bluetooth_features_callbacks_t* features_callbacks;
 
     bt_ins = feature_bluetooth_get_bt_ins(handle);
     if (!bt_ins) {
         return;
     }
 
-    features_callbacks = (feature_bluetooth_features_callbacks_t *)bt_ins->context;
+    features_callbacks = (feature_bluetooth_features_callbacks_t*)bt_ins->context;
     if (!features_callbacks) {
         return;
     }
@@ -563,8 +563,8 @@ void feature_bluetooth_set_feature_callback(FeatureInstanceHandle handle, FtCall
 
 FtCallbackId feature_bluetooth_get_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_callback_t callback_type)
 {
-    bt_instance_t *bt_ins;
-    feature_bluetooth_features_callbacks_t *features_callbacks;
+    bt_instance_t* bt_ins;
+    feature_bluetooth_features_callbacks_t* features_callbacks;
     FtCallbackId callback_id = -1;
 
     bt_ins = feature_bluetooth_get_bt_ins(handle);
@@ -572,7 +572,7 @@ FtCallbackId feature_bluetooth_get_feature_callback(FeatureInstanceHandle handle
         return callback_id;
     }
 
-    features_callbacks = (feature_bluetooth_features_callbacks_t *)bt_ins->context;
+    features_callbacks = (feature_bluetooth_features_callbacks_t*)bt_ins->context;
     if (!features_callbacks) {
         return callback_id;
     }
@@ -600,15 +600,15 @@ FtCallbackId feature_bluetooth_get_feature_callback(FeatureInstanceHandle handle
     return callback_id;
 }
 
-void feature_bluetooth_callback_init(bt_instance_t *bt_ins)
+void feature_bluetooth_callback_init(bt_instance_t* bt_ins)
 {
-    feature_bluetooth_features_callbacks_t *features_callbacks;
+    feature_bluetooth_features_callbacks_t* features_callbacks;
 
     if (!bt_ins) {
         return;
     }
 
-    features_callbacks = (feature_bluetooth_features_callbacks_t *)malloc(sizeof(feature_bluetooth_features_callbacks_t));
+    features_callbacks = (feature_bluetooth_features_callbacks_t*)malloc(sizeof(feature_bluetooth_features_callbacks_t));
     if (!features_callbacks) {
         return;
     }
@@ -628,9 +628,9 @@ void feature_bluetooth_callback_init(bt_instance_t *bt_ins)
     bt_ins->context = features_callbacks;
 }
 
-void feature_bluetooth_callback_uninit(bt_instance_t *bt_ins)
+void feature_bluetooth_callback_uninit(bt_instance_t* bt_ins)
 {
-    feature_bluetooth_features_callbacks_t *features_callbacks;
+    feature_bluetooth_features_callbacks_t* features_callbacks;
 
     if (!bt_ins) {
         return;

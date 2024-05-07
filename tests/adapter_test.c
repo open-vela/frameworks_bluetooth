@@ -21,29 +21,29 @@
 #include "bt_adapter.h"
 #include "utils.h"
 
-static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
+static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
     printf("Context:%p, Adapter state changed: %d\n", cookie, state);
 }
 
-static void on_discovery_state_changed_cb(void *cookie, bt_discovery_state_t state)
+static void on_discovery_state_changed_cb(void* cookie, bt_discovery_state_t state)
 {
     printf("Discovery state: %s\n", state == BT_DISCOVERY_STATE_STARTED ? "Started" : "Stopped");
 }
 
-static void on_discovery_result_cb(void *cookie, bt_discovery_result_t *result)
+static void on_discovery_result_cb(void* cookie, bt_discovery_result_t* result)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     bt_addr_ba2str(&result->addr, addr_str);
     printf("Inquiring: device [%s], name: %s, cod: %08" PRIx32 ", rssi: %d\n", addr_str, result->name, result->cod, result->rssi);
 }
 
-static void on_scan_mode_changed_cb(void *cookie, bt_scan_mode_t mode)
+static void on_scan_mode_changed_cb(void* cookie, bt_scan_mode_t mode)
 {
     printf("Adapter new scan mode: %d\n", mode);
 }
 
-static void on_device_name_changed_cb(void *cookie, const char *device_name)
+static void on_device_name_changed_cb(void* cookie, const char* device_name)
 {
     printf("Adapter update device name: %s\n", device_name);
 }
@@ -64,10 +64,10 @@ const static adapter_callbacks_t g_adapter_cbs = {
     .on_remote_uuids_changed = NULL,
 };
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    bt_instance_t *ins = NULL;
-    static void *adapter_callback = NULL;
+    bt_instance_t* ins = NULL;
+    static void* adapter_callback = NULL;
 
     ins = bluetooth_create_instance();
     if (ins == NULL) {

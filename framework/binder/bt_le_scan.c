@@ -27,20 +27,20 @@
 
 #include "utils/log.h"
 
-bt_scanner_t *bt_le_start_scan(bt_instance_t *ins, const scanner_callbacks_t *cbs)
+bt_scanner_t* bt_le_start_scan(bt_instance_t* ins, const scanner_callbacks_t* cbs)
 {
     return bt_le_start_scan_settings(ins, NULL, cbs);
 }
 
-bt_scanner_t *bt_le_start_scan_settings(bt_instance_t *ins,
-                                        ble_scan_settings_t *settings,
-                                        const scanner_callbacks_t *cbs)
+bt_scanner_t* bt_le_start_scan_settings(bt_instance_t* ins,
+    ble_scan_settings_t* settings,
+    const scanner_callbacks_t* cbs)
 {
-    BpBtAdapter *bpAdapter = ins->adapter_proxy;
-    void *rmt_scanner = NULL;
+    BpBtAdapter* bpAdapter = ins->adapter_proxy;
+    void* rmt_scanner = NULL;
 
-    IBtScannerCallbacks *cbks = BtScannerCallbacks_new(cbs);
-    AIBinder *binder = BtScannerCallbacks_getBinder(cbks);
+    IBtScannerCallbacks* cbks = BtScannerCallbacks_new(cbs);
+    AIBinder* binder = BtScannerCallbacks_getBinder(cbks);
     if (!binder) {
         BtScannerCallbacks_delete(cbks);
         return NULL;
@@ -58,18 +58,18 @@ bt_scanner_t *bt_le_start_scan_settings(bt_instance_t *ins,
     }
 
     cbks->cookie = rmt_scanner;
-    return (bt_scanner_t *)cbks;
+    return (bt_scanner_t*)cbks;
 }
 
-void bt_le_stop_scan(bt_instance_t *ins, bt_scanner_t *scanner)
+void bt_le_stop_scan(bt_instance_t* ins, bt_scanner_t* scanner)
 {
-    BpBtAdapter *bpAdapter = ins->adapter_proxy;
-    IBtScannerCallbacks *cbks = scanner;
+    BpBtAdapter* bpAdapter = ins->adapter_proxy;
+    IBtScannerCallbacks* cbks = scanner;
 
     BpBtAdapter_stopScan(bpAdapter, cbks->cookie);
 }
 
-bool bt_le_scan_is_supported(bt_instance_t *ins)
+bool bt_le_scan_is_supported(bt_instance_t* ins)
 {
     return false;
 }

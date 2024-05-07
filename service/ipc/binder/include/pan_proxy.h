@@ -17,22 +17,22 @@
 #ifndef __BT_PAN_PROXY_H__
 #define __BT_PAN_PROXY_H__
 
+#include "pan_stub.h"
+#include <android/binder_manager.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <uchar.h>
-#include "pan_stub.h"
-#include <android/binder_manager.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-BpBtPan *BpBtPan_new(const char *instance);
-void BpBtPan_delete(BpBtPan *bpPan);
-void *BpBtPan_registerCallback(BpBtPan *bpBinder, AIBinder *cbksBinder);
-bool BpBtPan_unRegisterCallback(BpBtPan *bpBinder, void *cookie);
-bt_status_t BpBtPan_connect(BpBtPan *bpBinder, bt_address_t *addr, uint8_t dst_role, uint8_t src_role);
-bt_status_t BpBtPan_disconnect(BpBtPan *bpBinder, bt_address_t *addr);
+BpBtPan* BpBtPan_new(const char* instance);
+void BpBtPan_delete(BpBtPan* bpPan);
+void* BpBtPan_registerCallback(BpBtPan* bpBinder, AIBinder* cbksBinder);
+bool BpBtPan_unRegisterCallback(BpBtPan* bpBinder, void* cookie);
+bt_status_t BpBtPan_connect(BpBtPan* bpBinder, bt_address_t* addr, uint8_t dst_role, uint8_t src_role);
+bt_status_t BpBtPan_disconnect(BpBtPan* bpBinder, bt_address_t* addr);
 
 #ifdef __cplusplus
 }

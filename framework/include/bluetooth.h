@@ -322,63 +322,63 @@ enum {
     BLUETOOTH_USER,
 };
 
-typedef bool (*bt_allocator_t)(void **data, uint32_t size);
+typedef bool (*bt_allocator_t)(void** data, uint32_t size);
 
-typedef void (*bt_hci_event_callback_t)(bt_hci_event_t *hci_event, void *context);
+typedef void (*bt_hci_event_callback_t)(bt_hci_event_t* hci_event, void* context);
 
 typedef struct bt_instance {
     uint32_t app_id;
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_BINDER_IPC
-    void *manager_proxy;
-    void *adapter_proxy;
-    void *a2dp_proxy;
-    void *a2dp_sink_proxy;
-    void *hfp_hf_proxy;
-    void *hfp_ag_proxy;
-    void *gatt_proxy;
-    void *spp_proxy;
-    void *pan_proxy;
-    void *hidd_proxy;
-    void *gattc_proxy;
-    void *gatts_proxy;
-    void *lea_server_proxy;
+    void* manager_proxy;
+    void* adapter_proxy;
+    void* a2dp_proxy;
+    void* a2dp_sink_proxy;
+    void* hfp_hf_proxy;
+    void* hfp_ag_proxy;
+    void* gatt_proxy;
+    void* spp_proxy;
+    void* pan_proxy;
+    void* hidd_proxy;
+    void* gattc_proxy;
+    void* gatts_proxy;
+    void* lea_server_proxy;
 #endif
 
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
-    void *poll;
+    void* poll;
     uv_mutex_t mutex;
     uv_cond_t cond;
     bool message_processed;
     int peer_fd;
-    uv_loop_t *client_loop;
-    uv_loop_t *external_loop;
-    uv_async_t *external_async;
+    uv_loop_t* client_loop;
+    uv_loop_t* external_loop;
+    uv_async_t* external_async;
     int offset;
-    void *packet;
-    void *cpacket;
+    void* packet;
+    void* cpacket;
     struct list_node msg_queue;
-    void *context;
+    void* context;
     uv_mutex_t lock;
 
-    callbacks_list_t *adapter_callbacks;
-    callbacks_list_t *a2dp_sink_callbacks;
-    callbacks_list_t *a2dp_source_callbacks;
-    void *adapter_cookie;
-    void *a2dp_sink_cookie;
-    void *a2dp_source_cookie;
+    callbacks_list_t* adapter_callbacks;
+    callbacks_list_t* a2dp_sink_callbacks;
+    callbacks_list_t* a2dp_source_callbacks;
+    void* adapter_cookie;
+    void* a2dp_sink_cookie;
+    void* a2dp_source_cookie;
 
-    callbacks_list_t *hfp_ag_callbacks;
-    callbacks_list_t *hfp_hf_callbacks;
-    callbacks_list_t *panu_callbacks;
-    callbacks_list_t *spp_callbacks;
-    callbacks_list_t *hidd_callbacks;
-    callbacks_list_t *l2cap_callbacks;
-    void *hfp_ag_cookie;
-    void *hfp_hf_cookie;
-    void *panu_cookie;
-    void *spp_cookie;
-    void *hidd_cookie;
-    void *l2cap_cookie;
+    callbacks_list_t* hfp_ag_callbacks;
+    callbacks_list_t* hfp_hf_callbacks;
+    callbacks_list_t* panu_callbacks;
+    callbacks_list_t* spp_callbacks;
+    callbacks_list_t* hidd_callbacks;
+    callbacks_list_t* l2cap_callbacks;
+    void* hfp_ag_cookie;
+    void* hfp_hf_cookie;
+    void* panu_cookie;
+    void* spp_cookie;
+    void* hidd_cookie;
+    void* l2cap_cookie;
 #endif
 } bt_instance_t;
 
@@ -387,21 +387,21 @@ typedef struct bt_instance {
  *
  * @return bt_instance_t* - ins on success, NULL on failure.
  */
-bt_instance_t *BTSYMBOLS(bluetooth_create_instance)(void);
+bt_instance_t* BTSYMBOLS(bluetooth_create_instance)(void);
 
 /**
  * @brief Get bluetooth client instance, If it does not exist, an instance is created
  *
  * @return bt_instance_t* - ins if exist or create success, NULL, if create fail.
  */
-bt_instance_t *BTSYMBOLS(bluetooth_get_instance)(void);
+bt_instance_t* BTSYMBOLS(bluetooth_get_instance)(void);
 
 /**
  * @brief Find bluetooth client instance
  *
  * @return bt_instance_t* - ins if exist, NULL otherwise.
  */
-bt_instance_t *BTSYMBOLS(bluetooth_find_instance)(pid_t pid);
+bt_instance_t* BTSYMBOLS(bluetooth_find_instance)(pid_t pid);
 
 /**
  * @brief Get profile proxy
@@ -410,14 +410,14 @@ bt_instance_t *BTSYMBOLS(bluetooth_find_instance)(pid_t pid);
  * @param id - profile ID.
  * @return void* - profile proxy.
  */
-void *BTSYMBOLS(bluetooth_get_proxy)(bt_instance_t *ins, enum profile_id id);
+void* BTSYMBOLS(bluetooth_get_proxy)(bt_instance_t* ins, enum profile_id id);
 
 /**
  * @brief Delete client instance
  *
  * @param ins - bluetooth client instance.
  */
-void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t *ins);
+void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t* ins);
 
 /**
  * @brief Start profile service
@@ -426,7 +426,7 @@ void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t *ins);
  * @param id - profile ID.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t *ins, enum profile_id id);
+bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t* ins, enum profile_id id);
 
 /**
  * @brief Stop profile service
@@ -435,9 +435,9 @@ bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t *ins, enum profile_
  * @param id -profile ID.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bluetooth_stop_service)(bt_instance_t *ins, enum profile_id id);
+bt_status_t BTSYMBOLS(bluetooth_stop_service)(bt_instance_t* ins, enum profile_id id);
 
-bool BTSYMBOLS(bluetooth_set_external_uv)(bt_instance_t *ins, uv_loop_t *ext_loop);
+bool BTSYMBOLS(bluetooth_set_external_uv)(bt_instance_t* ins, uv_loop_t* ext_loop);
 
 #ifdef __cplusplus
 }

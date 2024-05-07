@@ -56,7 +56,7 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-static bt_list_t *g_instances_list = NULL;
+static bt_list_t* g_instances_list = NULL;
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -71,22 +71,22 @@ typedef struct
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
-static bool ins_compare(void *data, void *context)
+static bool ins_compare(void* data, void* context)
 {
     return data == context;
 }
 
-static bool bt_socket_server_is_ins_detached(bt_instance_t *ins)
+static bool bt_socket_server_is_ins_detached(bt_instance_t* ins)
 {
     return (bt_list_find(g_instances_list, ins_compare, ins) == NULL);
 }
 
-static int bt_socket_server_send_internal(bt_instance_t *ins,
-                                          void *packet, int size, int offset)
+static int bt_socket_server_send_internal(bt_instance_t* ins,
+    void* packet, int size, int offset)
 {
     int ret;
 
-    ret = send(ins->peer_fd, (char *)packet + offset, size, 0);
+    ret = send(ins->peer_fd, (char*)packet + offset, size, 0);
     if (ret == 0) {
         return -1;
     } else if (ret < 0) {
@@ -100,11 +100,11 @@ static int bt_socket_server_send_internal(bt_instance_t *ins,
     return ret;
 }
 
-static int bt_socket_server_trysend(bt_instance_t *ins)
+static int bt_socket_server_trysend(bt_instance_t* ins)
 {
-    bt_packet_cache_t *cache;
-    struct list_node *node;
-    struct list_node *tmp;
+    bt_packet_cache_t* cache;
+    struct list_node* node;
+    struct list_node* tmp;
     bool reset = false;
     int size;
     int ret;
@@ -112,10 +112,10 @@ static int bt_socket_server_trysend(bt_instance_t *ins)
     list_for_every_safe(&ins->msg_queue, node, tmp)
     {
         reset = true;
-        cache = (bt_packet_cache_t *)node;
+        cache = (bt_packet_cache_t*)node;
         size = sizeof(cache->packet) - cache->offset;
         ret = bt_socket_server_send_internal(ins, &cache->packet,
-                                             size, cache->offset);
+            size, cache->offset);
         if (ret < 0) {
             service_loop_remove_poll(ins->poll);
             ins->poll = NULL;
@@ -143,9 +143,9 @@ static int bt_socket_server_trysend(bt_instance_t *ins)
     return 0;
 }
 
-static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata)
+static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata)
 {
-    bt_instance_t *ins = userdata;
+    bt_instance_t* ins = userdata;
     bt_message_packet_t packet;
     int ret;
 
@@ -153,55 +153,40 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
     if (ret <= 0)
         return ret;
 
-    if (packet.code > BT_MANAGER_MESSAGE_START &&
-        packet.code < BT_MANAGER_MESSAGE_END) {
+    if (packet.code > BT_MANAGER_MESSAGE_START && packet.code < BT_MANAGER_MESSAGE_END) {
         bt_socket_server_manager_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_ADAPTER_MESSAGE_START &&
-               packet.code < BT_ADAPTER_MESSAGE_END) {
+    } else if (packet.code > BT_ADAPTER_MESSAGE_START && packet.code < BT_ADAPTER_MESSAGE_END) {
         bt_socket_server_adapter_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_DEVICE_MESSAGE_START &&
-               packet.code < BT_DEVICE_MESSAGE_END) {
+    } else if (packet.code > BT_DEVICE_MESSAGE_START && packet.code < BT_DEVICE_MESSAGE_END) {
         bt_socket_server_device_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_A2DP_SOURCE_MESSAGE_START &&
-               packet.code < BT_A2DP_SOURCE_MESSAGE_END) {
+    } else if (packet.code > BT_A2DP_SOURCE_MESSAGE_START && packet.code < BT_A2DP_SOURCE_MESSAGE_END) {
         bt_socket_server_a2dp_source_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_A2DP_SINK_MESSAGE_START &&
-               packet.code < BT_A2DP_SINK_MESSAGE_END) {
+    } else if (packet.code > BT_A2DP_SINK_MESSAGE_START && packet.code < BT_A2DP_SINK_MESSAGE_END) {
         bt_socket_server_a2dp_sink_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_HFP_AG_MESSAGE_START &&
-               packet.code < BT_HFP_AG_MESSAGE_END) {
+    } else if (packet.code > BT_HFP_AG_MESSAGE_START && packet.code < BT_HFP_AG_MESSAGE_END) {
         bt_socket_server_hfp_ag_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_HFP_HF_MESSAGE_START &&
-               packet.code < BT_HFP_HF_MESSAGE_END) {
+    } else if (packet.code > BT_HFP_HF_MESSAGE_START && packet.code < BT_HFP_HF_MESSAGE_END) {
         bt_socket_server_hfp_hf_process(poll, fd, ins, &packet);
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
-    } else if (packet.code > BT_ADVERTISER_MESSAGE_START &&
-               packet.code < BT_ADVERTISER_MESSAGE_END) {
+    } else if (packet.code > BT_ADVERTISER_MESSAGE_START && packet.code < BT_ADVERTISER_MESSAGE_END) {
         bt_socket_server_advertiser_process(poll, fd, ins, &packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-    } else if (packet.code > BT_SCAN_MESSAGE_START &&
-               packet.code < BT_SCAN_MESSAGE_END) {
+    } else if (packet.code > BT_SCAN_MESSAGE_START && packet.code < BT_SCAN_MESSAGE_END) {
         bt_socket_server_scan_process(poll, fd, ins, &packet);
 #endif
-    } else if (packet.code > BT_GATT_CLIENT_MESSAGE_START &&
-               packet.code < BT_GATT_CLIENT_MESSAGE_END) {
+    } else if (packet.code > BT_GATT_CLIENT_MESSAGE_START && packet.code < BT_GATT_CLIENT_MESSAGE_END) {
         bt_socket_server_gattc_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_GATT_SERVER_MESSAGE_START &&
-               packet.code < BT_GATT_SERVER_MESSAGE_END) {
+    } else if (packet.code > BT_GATT_SERVER_MESSAGE_START && packet.code < BT_GATT_SERVER_MESSAGE_END) {
         bt_socket_server_gatts_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_SPP_MESSAGE_START &&
-               packet.code < BT_SPP_MESSAGE_END) {
+    } else if (packet.code > BT_SPP_MESSAGE_START && packet.code < BT_SPP_MESSAGE_END) {
         bt_socket_server_spp_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_PAN_MESSAGE_START &&
-               packet.code < BT_PAN_MESSAGE_END) {
+    } else if (packet.code > BT_PAN_MESSAGE_START && packet.code < BT_PAN_MESSAGE_END) {
         bt_socket_server_pan_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_HID_DEVICE_MESSAGE_START &&
-               packet.code < BT_HID_DEVICE_MESSAGE_END) {
+    } else if (packet.code > BT_HID_DEVICE_MESSAGE_START && packet.code < BT_HID_DEVICE_MESSAGE_END) {
         bt_socket_server_hid_device_process(poll, fd, ins, &packet);
 #ifdef CONFIG_BLUETOOTH_L2CAP
-    } else if (packet.code > BT_L2CAP_MESSAGE_START &&
-               packet.code < BT_L2CAP_MESSAGE_END) {
+    } else if (packet.code > BT_L2CAP_MESSAGE_START && packet.code < BT_L2CAP_MESSAGE_END) {
         bt_socket_server_l2cap_process(poll, fd, ins, &packet);
 #endif
     } else {
@@ -213,10 +198,10 @@ static int bt_socket_server_receive(service_poll_t *poll, int fd, void *userdata
     return bt_socket_server_send(ins, &packet, packet.code);
 }
 
-static void bt_socket_server_ins_release(bt_instance_t *ins)
+static void bt_socket_server_ins_release(bt_instance_t* ins)
 {
-    struct list_node *node;
-    struct list_node *tmp;
+    struct list_node* node;
+    struct list_node* tmp;
 
     if (ins->poll)
         service_loop_remove_poll(ins->poll);
@@ -234,14 +219,14 @@ static void bt_socket_server_ins_release(bt_instance_t *ins)
     free(ins);
 }
 
-static void bt_socket_server_handle_event(service_poll_t *poll,
-                                          int revent, void *userdata)
+static void bt_socket_server_handle_event(service_poll_t* poll,
+    int revent, void* userdata)
 {
     uv_os_fd_t fd;
     int ret;
-    bt_instance_t *ins = userdata;
+    bt_instance_t* ins = userdata;
 
-    ret = uv_fileno((uv_handle_t *)&poll->handle, &fd);
+    ret = uv_fileno((uv_handle_t*)&poll->handle, &fd);
     if (ret) {
         bt_socket_server_ins_release(ins);
         return;
@@ -258,14 +243,14 @@ static void bt_socket_server_handle_event(service_poll_t *poll,
     }
 }
 
-static void bt_socket_server_callback(service_poll_t *poll,
-                                      int revent, void *userdata)
+static void bt_socket_server_callback(service_poll_t* poll,
+    int revent, void* userdata)
 {
-    bt_instance_t *remote_ins;
+    bt_instance_t* remote_ins;
     uv_os_fd_t fd;
     int ret;
 
-    ret = uv_fileno((uv_handle_t *)&poll->handle, &fd);
+    ret = uv_fileno((uv_handle_t*)&poll->handle, &fd);
     if (ret) {
         service_loop_remove_poll(poll);
         return;
@@ -282,7 +267,7 @@ static void bt_socket_server_callback(service_poll_t *poll,
         list_initialize(&remote_ins->msg_queue);
         remote_ins->peer_fd = fd;
         remote_ins->poll = service_loop_poll_fd(fd, POLL_READABLE,
-                                                bt_socket_server_handle_event, remote_ins);
+            bt_socket_server_handle_event, remote_ins);
         if (!remote_ins->poll) {
             free(remote_ins);
             close(fd);
@@ -292,7 +277,7 @@ static void bt_socket_server_callback(service_poll_t *poll,
     }
 }
 
-static int bt_socket_server_listen(int family, const char *name, int port)
+static int bt_socket_server_listen(int family, const char* name, int port)
 {
     union {
         struct sockaddr_in inet_addr;
@@ -312,7 +297,7 @@ static int bt_socket_server_listen(int family, const char *name, int port)
     if (family == PF_LOCAL) {
         u.local_addr.sun_family = AF_LOCAL;
         snprintf(u.local_addr.sun_path, UNIX_PATH_MAX,
-                 BLUETOOTH_SOCKADDR_NAME, name);
+            BLUETOOTH_SOCKADDR_NAME, name);
         addr_len = sizeof(struct sockaddr_un);
     } else if (family == AF_INET) {
         u.inet_addr.sin_family = AF_INET;
@@ -323,13 +308,13 @@ static int bt_socket_server_listen(int family, const char *name, int port)
 #ifdef CONFIG_NET_RPMSG
         u.rpmsg_addr.rp_family = AF_RPMSG;
         snprintf(u.rpmsg_addr.rp_name, RPMSG_SOCKET_NAME_SIZE,
-                 BLUETOOTH_SOCKADDR_NAME, name);
+            BLUETOOTH_SOCKADDR_NAME, name);
         strcpy(u.rpmsg_addr.rp_cpu, "");
         addr_len = sizeof(struct sockaddr_rpmsg);
 #endif
     }
 
-    ret = bind(fd, (struct sockaddr *)&u, addr_len);
+    ret = bind(fd, (struct sockaddr*)&u, addr_len);
     if (ret >= 0)
         ret = listen(fd, BLUETOOTH_SERVER_MAXCONN);
 
@@ -343,10 +328,10 @@ static int bt_socket_server_listen(int family, const char *name, int port)
  * Public Functions
  ****************************************************************************/
 
-int bt_socket_server_send(bt_instance_t *ins, bt_message_packet_t *packet,
-                          bt_message_type_t code)
+int bt_socket_server_send(bt_instance_t* ins, bt_message_packet_t* packet,
+    bt_message_type_t code)
 {
-    bt_packet_cache_t *cache;
+    bt_packet_cache_t* cache;
     int ret;
 
     if (bt_socket_server_is_ins_detached(ins))
@@ -381,16 +366,16 @@ int bt_socket_server_send(bt_instance_t *ins, bt_message_packet_t *packet,
     return 0;
 }
 
-int bt_socket_server_init(const char *name, int port)
+int bt_socket_server_init(const char* name, int port)
 {
-    service_poll_t *lpoll = NULL;
+    service_poll_t* lpoll = NULL;
     int local;
 #ifdef CONFIG_NET_IPv4
-    service_poll_t *ipoll = NULL;
+    service_poll_t* ipoll = NULL;
     int inet = -1;
 #endif
 #ifdef CONFIG_NET_RPMSG
-    service_poll_t *rpoll = NULL;
+    service_poll_t* rpoll = NULL;
     int rpmsg = -1;
 #endif
 
@@ -398,7 +383,7 @@ int bt_socket_server_init(const char *name, int port)
     local = bt_socket_server_listen(PF_LOCAL, name, port);
     if (local > 0) {
         lpoll = service_loop_poll_fd(local, POLL_READABLE,
-                                     bt_socket_server_callback, NULL);
+            bt_socket_server_callback, NULL);
     }
 
     if (local <= 0 || lpoll == NULL)
@@ -408,7 +393,7 @@ int bt_socket_server_init(const char *name, int port)
     inet = bt_socket_server_listen(AF_INET, name, port);
     if (inet > 0) {
         ipoll = service_loop_poll_fd(inet, POLL_READABLE,
-                                     bt_socket_server_callback, NULL);
+            bt_socket_server_callback, NULL);
     }
 
     if (inet <= 0 || ipoll == NULL)
@@ -418,7 +403,7 @@ int bt_socket_server_init(const char *name, int port)
     rpmsg = bt_socket_server_listen(AF_RPMSG, name, port);
     if (rpmsg > 0) {
         rpoll = service_loop_poll_fd(rpmsg, POLL_READABLE,
-                                     bt_socket_server_callback, NULL);
+            bt_socket_server_callback, NULL);
     }
     if (rpmsg <= 0 || rpoll == NULL)
         goto fail;

@@ -33,28 +33,28 @@
 
 #define BT_HFP_AG_DESC "BluetoothHfpAg"
 
-static void *IBtHfpAg_Class_onCreate(void *arg)
+static void* IBtHfpAg_Class_onCreate(void* arg)
 {
     return arg;
 }
 
-static void IBtHfpAg_Class_onDestroy(void *userData)
+static void IBtHfpAg_Class_onDestroy(void* userData)
 {
 }
 
-static binder_status_t IBtHfpAg_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *reply)
+static binder_status_t IBtHfpAg_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* reply)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
     bt_address_t addr;
     uint32_t status;
 
-    hfp_ag_interface_t *profile = (hfp_ag_interface_t *)service_manager_get_profile(PROFILE_HFP_AG);
+    hfp_ag_interface_t* profile = (hfp_ag_interface_t*)service_manager_get_profile(PROFILE_HFP_AG);
     if (!profile)
         return stat;
 
     switch (code) {
     case IHFP_AG_REGISTER_CALLBACK: {
-        AIBinder *remote;
+        AIBinder* remote;
 
         stat = AParcel_readStrongBinder(in, &remote);
         if (stat != STATUS_OK)
@@ -65,19 +65,19 @@ static binder_status_t IBtHfpAg_Class_onTransact(AIBinder *binder, transaction_c
             return STATUS_FAILED_TRANSACTION;
         }
 
-        void *cookie = profile->register_callbacks(remote, BpBtHfpAgCallbacks_getStatic());
+        void* cookie = profile->register_callbacks(remote, BpBtHfpAgCallbacks_getStatic());
         stat = AParcel_writeUint32(reply, (uint32_t)cookie);
         break;
     }
     case IHFP_AG_UNREGISTER_CALLBACK: {
-        AIBinder *remote = NULL;
+        AIBinder* remote = NULL;
         uint32_t cookie;
 
         stat = AParcel_readUint32(in, &cookie);
         if (stat != STATUS_OK)
             return stat;
 
-        bool ret = profile->unregister_callbacks((void **)&remote, (void *)cookie);
+        bool ret = profile->unregister_callbacks((void**)&remote, (void*)cookie);
         if (ret && remote)
             AIBinder_decStrong(remote);
 
@@ -175,25 +175,25 @@ static binder_status_t IBtHfpAg_Class_onTransact(AIBinder *binder, transaction_c
     return stat;
 }
 
-static const AIBinder_Class *BtHfpAg_getClass(void)
+static const AIBinder_Class* BtHfpAg_getClass(void)
 {
 
-    AIBinder_Class *clazz = AIBinder_Class_define(BT_HFP_AG_DESC, IBtHfpAg_Class_onCreate,
-                                                  IBtHfpAg_Class_onDestroy, IBtHfpAg_Class_onTransact);
+    AIBinder_Class* clazz = AIBinder_Class_define(BT_HFP_AG_DESC, IBtHfpAg_Class_onCreate,
+        IBtHfpAg_Class_onDestroy, IBtHfpAg_Class_onTransact);
 
     return clazz;
 }
 
-static AIBinder *BtHfpAg_getBinder(IBtHfpAg *hfpAg)
+static AIBinder* BtHfpAg_getBinder(IBtHfpAg* hfpAg)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (hfpAg->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(hfpAg->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(hfpAg->clazz, (void *)hfpAg);
+        binder = AIBinder_new(hfpAg->clazz, (void*)hfpAg);
         if (hfpAg->WeakBinder != NULL) {
             AIBinder_Weak_delete(hfpAg->WeakBinder);
         }
@@ -204,10 +204,10 @@ static AIBinder *BtHfpAg_getBinder(IBtHfpAg *hfpAg)
     return binder;
 }
 
-binder_status_t BtHfpAg_addService(IBtHfpAg *hfpAg, const char *instance)
+binder_status_t BtHfpAg_addService(IBtHfpAg* hfpAg, const char* instance)
 {
-    hfpAg->clazz = (AIBinder_Class *)BtHfpAg_getClass();
-    AIBinder *binder = BtHfpAg_getBinder(hfpAg);
+    hfpAg->clazz = (AIBinder_Class*)BtHfpAg_getClass();
+    AIBinder* binder = BtHfpAg_getBinder(hfpAg);
     hfpAg->usr_data = NULL;
 
     binder_status_t status = AServiceManager_addService(binder, instance);
@@ -216,13 +216,13 @@ binder_status_t BtHfpAg_addService(IBtHfpAg *hfpAg, const char *instance)
     return status;
 }
 
-BpBtHfpAg *BpBtHfpAg_new(const char *instance)
+BpBtHfpAg* BpBtHfpAg_new(const char* instance)
 {
-    AIBinder *binder = NULL;
-    AIBinder_Class *clazz;
-    BpBtHfpAg *bpBinder = NULL;
+    AIBinder* binder = NULL;
+    AIBinder_Class* clazz;
+    BpBtHfpAg* bpBinder = NULL;
 
-    clazz = (AIBinder_Class *)BtHfpAg_getClass();
+    clazz = (AIBinder_Class*)BtHfpAg_getClass();
     binder = AServiceManager_getService(instance);
     if (!binder)
         return NULL;
@@ -249,15 +249,15 @@ bail:
     return NULL;
 }
 
-void BpBtHfpAg_delete(BpBtHfpAg *bpHfpAg)
+void BpBtHfpAg_delete(BpBtHfpAg* bpHfpAg)
 {
     AIBinder_decStrong(bpHfpAg->binder);
     free(bpHfpAg);
 }
 
-AIBinder *BtHfpAg_getService(BpBtHfpAg **bpHfpAg, const char *instance)
+AIBinder* BtHfpAg_getService(BpBtHfpAg** bpHfpAg, const char* instance)
 {
-    BpBtHfpAg *bpBinder = *bpHfpAg;
+    BpBtHfpAg* bpBinder = *bpHfpAg;
 
     if (bpBinder && bpBinder->binder)
         return bpBinder->binder;

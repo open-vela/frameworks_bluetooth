@@ -28,7 +28,7 @@ extern "C" {
 
 #include <android/binder_manager.h>
 
-const spp_callbacks_t *BpBtSppCallbacks_getStatic(void);
+const spp_callbacks_t* BpBtSppCallbacks_getStatic(void);
 
 #ifdef __cplusplus
 }

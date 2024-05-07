@@ -30,16 +30,16 @@
             return BT_STATUS_PARM_INVALID; \
     } while (0)
 
-bt_status_t bt_gattc_create_connect(bt_instance_t *ins, gattc_handle_t *phandle, gattc_callbacks_t *callbacks)
+bt_status_t bt_gattc_create_connect(bt_instance_t* ins, gattc_handle_t* phandle, gattc_callbacks_t* callbacks)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote;
+    bt_gattc_remote_t* gattc_remote;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
     CHECK_NULL_PTR(phandle);
 
-    gattc_remote = (bt_gattc_remote_t *)malloc(sizeof(bt_gattc_remote_t));
+    gattc_remote = (bt_gattc_remote_t*)malloc(sizeof(bt_gattc_remote_t));
     if (!gattc_remote)
         return BT_STATUS_NOMEM;
 
@@ -67,8 +67,8 @@ bt_status_t bt_gattc_delete_connect(gattc_handle_t conn_handle)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
-    void **user_phandle = gattc_remote->user_phandle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
+    void** user_phandle = gattc_remote->user_phandle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -86,11 +86,11 @@ bt_status_t bt_gattc_delete_connect(gattc_handle_t conn_handle)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_gattc_connect(gattc_handle_t conn_handle, bt_address_t *addr, ble_addr_type_t addr_type)
+bt_status_t bt_gattc_connect(gattc_handle_t conn_handle, bt_address_t* addr, ble_addr_type_t addr_type)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -108,7 +108,7 @@ bt_status_t bt_gattc_disconnect(gattc_handle_t conn_handle)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -120,11 +120,11 @@ bt_status_t bt_gattc_disconnect(gattc_handle_t conn_handle)
     return packet.gattc_r.status;
 }
 
-bt_status_t bt_gattc_discover_service(gattc_handle_t conn_handle, bt_uuid_t *filter_uuid)
+bt_status_t bt_gattc_discover_service(gattc_handle_t conn_handle, bt_uuid_t* filter_uuid)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -140,11 +140,11 @@ bt_status_t bt_gattc_discover_service(gattc_handle_t conn_handle, bt_uuid_t *fil
     return packet.gattc_r.status;
 }
 
-bt_status_t bt_gattc_get_attribute_by_handle(gattc_handle_t conn_handle, uint16_t attr_handle, gatt_attr_desc_t *attr_desc)
+bt_status_t bt_gattc_get_attribute_by_handle(gattc_handle_t conn_handle, uint16_t attr_handle, gatt_attr_desc_t* attr_desc)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -158,11 +158,11 @@ bt_status_t bt_gattc_get_attribute_by_handle(gattc_handle_t conn_handle, uint16_
     return packet.gattc_r.status;
 }
 
-bt_status_t bt_gattc_get_attribute_by_uuid(gattc_handle_t conn_handle, uint16_t start_handle, uint16_t end_handle, bt_uuid_t *attr_uuid, gatt_attr_desc_t *attr_desc)
+bt_status_t bt_gattc_get_attribute_by_uuid(gattc_handle_t conn_handle, uint16_t start_handle, uint16_t end_handle, bt_uuid_t* attr_uuid, gatt_attr_desc_t* attr_desc)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -182,7 +182,7 @@ bt_status_t bt_gattc_read(gattc_handle_t conn_handle, uint16_t attr_handle)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -195,11 +195,11 @@ bt_status_t bt_gattc_read(gattc_handle_t conn_handle, uint16_t attr_handle)
     return packet.gattc_r.status;
 }
 
-bt_status_t bt_gattc_write(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t bt_gattc_write(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
     if (length > sizeof(packet.gattc_pl._bt_gattc_write.value))
@@ -216,11 +216,11 @@ bt_status_t bt_gattc_write(gattc_handle_t conn_handle, uint16_t attr_handle, uin
     return packet.gattc_r.status;
 }
 
-bt_status_t bt_gattc_write_without_response(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t bt_gattc_write_without_response(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
     if (length > sizeof(packet.gattc_pl._bt_gattc_write.value))
@@ -241,7 +241,7 @@ bt_status_t bt_gattc_subscribe(gattc_handle_t conn_handle, uint16_t attr_handle,
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -259,7 +259,7 @@ bt_status_t bt_gattc_unsubscribe(gattc_handle_t conn_handle, uint16_t attr_handl
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -276,7 +276,7 @@ bt_status_t bt_gattc_exchange_mtu(gattc_handle_t conn_handle, uint32_t mtu)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -290,11 +290,11 @@ bt_status_t bt_gattc_exchange_mtu(gattc_handle_t conn_handle, uint32_t mtu)
 }
 
 bt_status_t bt_gattc_update_connection_parameter(gattc_handle_t conn_handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
-                                                 uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length)
+    uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -316,7 +316,7 @@ bt_status_t bt_gattc_read_phy(gattc_handle_t conn_handle)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -332,7 +332,7 @@ bt_status_t bt_gattc_update_phy(gattc_handle_t conn_handle, ble_phy_type_t tx_ph
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 
@@ -350,7 +350,7 @@ bt_status_t bt_gattc_read_rssi(gattc_handle_t conn_handle)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gattc_remote_t *gattc_remote = (bt_gattc_remote_t *)conn_handle;
+    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
 
     CHECK_NULL_PTR(gattc_remote);
 

@@ -55,7 +55,7 @@
 typedef struct
 {
     bool started;
-    callbacks_list_t *callbacks;
+    callbacks_list_t* callbacks;
     pthread_mutex_t device_lock;
 } mcs_service_t;
 
@@ -65,11 +65,11 @@ static mcs_service_t g_mcs_service = {
 };
 
 static uint32_t lea_mcs_id = ADPT_LEA_GMCS_ID;
-static char *MCS_TRACK_TITLE = "MiFire";
-static char *MCS_OBJECT_GROUP0 = "Group0";
-static char *MCS_OBJECT_TRACK0 = "Track0";
-static char *MCS_OBJECT_TRACK1 = "Track1";
-static void *control_session = NULL;
+static char* MCS_TRACK_TITLE = "MiFire";
+static char* MCS_OBJECT_GROUP0 = "Group0";
+static char* MCS_OBJECT_TRACK0 = "Track0";
+static char* MCS_OBJECT_TRACK1 = "Track1";
+static void* control_session = NULL;
 static bool isRemoteControl = false;
 static int mcs_cur_group_oid = MCS_GROUPS_MAX;
 static int mcs_cur_track_oid = MCS_TRACKS_MAX;
@@ -82,12 +82,12 @@ static lea_object_id mcs_track_oids[MCS_TRACKS_MAX];
 static bt_status_t lea_mcs_add();
 static bt_status_t lea_mcs_remove();
 static bt_status_t lea_mcs_set_media_player_info();
-static bt_status_t lea_mcs_add_object(uint32_t mcs_id, uint8_t type, uint8_t *name, void *obj_ref);
+static bt_status_t lea_mcs_add_object(uint32_t mcs_id, uint8_t type, uint8_t* name, void* obj_ref);
 static bt_status_t lea_mcs_playing_order_changed(uint8_t order);
 static bt_status_t lea_mcs_media_state_changed(lea_adpt_mcs_media_state_t state);
 static bt_status_t lea_mcs_playback_speed_changed(int8_t speed);
 static bt_status_t lea_mcs_seeking_speed_changed(int8_t speed);
-static bt_status_t lea_mcs_track_title_changed(uint8_t *title);
+static bt_status_t lea_mcs_track_title_changed(uint8_t* title);
 static bt_status_t lea_mcs_track_duration_changed(int32_t duration);
 static bt_status_t lea_mcs_track_position_changed(int32_t position);
 static bt_status_t lea_mcs_current_track_changed(lea_object_id track_id);
@@ -95,12 +95,12 @@ static bt_status_t lea_mcs_next_track_changed(lea_object_id track_id);
 static bt_status_t lea_mcs_current_group_changed(lea_object_id group_id);
 static bt_status_t lea_mcs_parent_group_changed(lea_object_id group_id);
 static bt_status_t lea_mcs_media_control_response(lea_adpt_mcs_media_control_result_t result);
-static void *lea_mcs_set_callbacks(void *handle, lea_mcs_callbacks_t *callbacks);
-static bool lea_mcs_reset_callbacks(void **handle, void *cookie);
+static void* lea_mcs_set_callbacks(void* handle, lea_mcs_callbacks_t* callbacks);
+static bool lea_mcs_reset_callbacks(void** handle, void* cookie);
 
-static void lea_mcs_process_message(void *data)
+static void lea_mcs_process_message(void* data)
 {
-    mcs_event_t *msg = (mcs_event_t *)data;
+    mcs_event_t* msg = (mcs_event_t*)data;
     BT_LOGD("%s, msg->event:%d ", __func__, msg->event);
     switch (msg->event) {
     case MCS_STATE: {
@@ -109,11 +109,11 @@ static void lea_mcs_process_message(void *data)
     }
     case MCS_PLAYER_SET: {
         lea_mcs_add_object(msg->event_data.mcs_id, ADPT_LEA_MCS_OBJECT_GROUP,
-                           (uint8_t *)MCS_OBJECT_GROUP0, (void *)(ADPT_LEA_MCS_OBJECT_GROUP << 16));
+            (uint8_t*)MCS_OBJECT_GROUP0, (void*)(ADPT_LEA_MCS_OBJECT_GROUP << 16));
         lea_mcs_add_object(msg->event_data.mcs_id, ADPT_LEA_MCS_OBJECT_TRACK,
-                           (uint8_t *)MCS_OBJECT_TRACK0, (void *)0);
+            (uint8_t*)MCS_OBJECT_TRACK0, (void*)0);
         lea_mcs_add_object(msg->event_data.mcs_id, ADPT_LEA_MCS_OBJECT_TRACK,
-                           (uint8_t *)MCS_OBJECT_TRACK1, (void *)1);
+            (uint8_t*)MCS_OBJECT_TRACK1, (void*)1);
         break;
     }
     case MCS_OBJECT_ADDAD:
@@ -225,8 +225,7 @@ static void lea_mcs_process_message(void *data)
     }
     case MCS_CONTROL_POINT_MOVE: {
         uint32_t position, duration;
-        if (media_session_get_position(control_session, &position) < 0 ||
-            media_session_get_duration(control_session, &duration) < 0) {
+        if (media_session_get_position(control_session, &position) < 0 || media_session_get_duration(control_session, &duration) < 0) {
             lea_mcs_media_control_response(ADPT_LEA_MCS_MEDIA_CONTROL_CANT_BE_COMPLETED);
             break;
         }
@@ -289,7 +288,7 @@ static void lea_mcs_process_message(void *data)
     mcs_event_destory(msg);
 }
 
-static bt_status_t lea_mcs_send_msg(mcs_event_t *msg)
+static bt_status_t lea_mcs_send_msg(mcs_event_t* msg)
 {
     assert(msg);
 
@@ -304,7 +303,7 @@ static bt_status_t lea_mcs_send_msg(mcs_event_t *msg)
 void lea_on_mcs_state(uint32_t mcs_id, uint8_t ccid, bool added)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_STATE, mcs_id);
     if (!event) {
@@ -318,10 +317,10 @@ void lea_on_mcs_state(uint32_t mcs_id, uint8_t ccid, bool added)
     lea_mcs_send_msg(event);
 }
 
-void lea_on_mcs_player_info_set_result(uint32_t mcs_id, void *player_ref, bool result)
+void lea_on_mcs_player_info_set_result(uint32_t mcs_id, void* player_ref, bool result)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_PLAYER_SET, mcs_id);
     if (!event) {
@@ -335,10 +334,10 @@ void lea_on_mcs_player_info_set_result(uint32_t mcs_id, void *player_ref, bool r
     lea_mcs_send_msg(event);
 }
 
-void lea_on_mcs_object_added_result(uint32_t mcs_id, void *obj_ref, lea_object_id obj_id)
+void lea_on_mcs_object_added_result(uint32_t mcs_id, void* obj_ref, lea_object_id obj_id)
 {
     BT_LOGD("%s, [MCS][obj_id:%02x%02x%02x%02x%02x%02x]", __func__, obj_id[5], obj_id[4],
-            obj_id[3], obj_id[2], obj_id[1], obj_id[0]);
+        obj_id[3], obj_id[2], obj_id[1], obj_id[0]);
 
     int idx = (uint32_t)obj_ref & 0xFF;
     int type = (uint32_t)obj_ref >> 16;
@@ -363,7 +362,7 @@ void lea_on_mcs_object_added_result(uint32_t mcs_id, void *obj_ref, lea_object_i
 void lea_on_mcs_set_position_result(uint32_t mcs_id, int32_t position)
 {
     BT_LOGD("%s, position:%d ", __func__, position);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_SET_POSITION, mcs_id);
     if (!event) {
@@ -379,7 +378,7 @@ void lea_on_mcs_set_position_result(uint32_t mcs_id, int32_t position)
 void lea_on_mcs_set_playback_speed_result(uint32_t mcs_id, int8_t speed)
 {
     BT_LOGD("%s, speed:%d ", __func__, speed);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_SET_PLAYBACK_SPEED, mcs_id);
     if (!event) {
@@ -394,7 +393,7 @@ void lea_on_mcs_set_playback_speed_result(uint32_t mcs_id, int8_t speed)
 void lea_on_mcs_set_current_track_result(uint32_t mcs_id, lea_object_id track_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_SET_CURRENT_TRACK, mcs_id);
     if (!event) {
@@ -411,7 +410,7 @@ void lea_on_mcs_set_current_track_result(uint32_t mcs_id, lea_object_id track_id
 void lea_on_mcs_set_next_track_result(uint32_t mcs_id, lea_object_id track_id)
 {
     BT_LOGD("%s", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_SET_NEXT_TRACK, mcs_id);
     if (!event) {
@@ -428,7 +427,7 @@ void lea_on_mcs_set_next_track_result(uint32_t mcs_id, lea_object_id track_id)
 void lea_on_mcs_set_current_group_result(uint32_t mcs_id, lea_object_id group_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_SET_CURRENT_GROUP, mcs_id);
     if (!event) {
@@ -445,7 +444,7 @@ void lea_on_mcs_set_current_group_result(uint32_t mcs_id, lea_object_id group_id
 void lea_on_mcs_set_playing_order_result(uint32_t mcs_id, uint8_t order)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_SET_PLAYING_ORDER, mcs_id);
     if (!event) {
@@ -461,7 +460,7 @@ void lea_on_mcs_set_playing_order_result(uint32_t mcs_id, uint8_t order)
 void lea_on_mcs_play_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_PLAY, mcs_id);
     if (!event) {
@@ -475,7 +474,7 @@ void lea_on_mcs_play_result(uint32_t mcs_id)
 void lea_on_mcs_pause_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_PAUSE, mcs_id);
     if (!event) {
@@ -489,7 +488,7 @@ void lea_on_mcs_pause_result(uint32_t mcs_id)
 void lea_on_mcs_fast_rewind_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_FAST_REWIND, mcs_id);
     if (!event) {
@@ -503,7 +502,7 @@ void lea_on_mcs_fast_rewind_result(uint32_t mcs_id)
 void lea_on_mcs_fast_forward_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_FAST_FORWARD, mcs_id);
     if (!event) {
@@ -517,7 +516,7 @@ void lea_on_mcs_fast_forward_result(uint32_t mcs_id)
 void lea_on_mcs_stop_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_STOP, mcs_id);
     if (!event) {
@@ -531,7 +530,7 @@ void lea_on_mcs_stop_result(uint32_t mcs_id)
 void lea_on_mcs_move_result(uint32_t mcs_id, int32_t offset)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_MOVE, mcs_id);
     if (!event) {
@@ -547,7 +546,7 @@ void lea_on_mcs_move_result(uint32_t mcs_id, int32_t offset)
 void lea_on_mcs_previous_segment_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_PREVIOUS_SEGMENT, mcs_id);
     if (!event) {
@@ -561,7 +560,7 @@ void lea_on_mcs_previous_segment_result(uint32_t mcs_id)
 void lea_on_mcs_next_segment_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_NEXT_SEGMENT, mcs_id);
     if (!event) {
@@ -575,7 +574,7 @@ void lea_on_mcs_next_segment_result(uint32_t mcs_id)
 void lea_on_mcs_first_segment_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_FIRST_SEGMENT, mcs_id);
     if (!event) {
@@ -589,7 +588,7 @@ void lea_on_mcs_first_segment_result(uint32_t mcs_id)
 void lea_on_mcs_last_segment_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_LAST_SEGMENT, mcs_id);
     if (!event) {
@@ -603,7 +602,7 @@ void lea_on_mcs_last_segment_result(uint32_t mcs_id)
 void lea_on_mcs_goto_segment_result(uint32_t mcs_id, int32_t n_segment)
 {
     BT_LOGD("%s, segment num:%d ", __func__, n_segment);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_GOTO_SEGMENT, mcs_id);
     if (!event) {
@@ -618,7 +617,7 @@ void lea_on_mcs_goto_segment_result(uint32_t mcs_id, int32_t n_segment)
 void lea_on_mcs_previous_track_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_PREVIOUS_TRACK, mcs_id);
     if (!event) {
@@ -632,7 +631,7 @@ void lea_on_mcs_previous_track_result(uint32_t mcs_id)
 void lea_on_mcs_next_track_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_NEXT_TRACK, mcs_id);
     if (!event) {
@@ -646,7 +645,7 @@ void lea_on_mcs_next_track_result(uint32_t mcs_id)
 void lea_on_mcs_first_track_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_FIRST_TRACK, mcs_id);
     if (!event) {
@@ -660,7 +659,7 @@ void lea_on_mcs_first_track_result(uint32_t mcs_id)
 void lea_on_mcs_last_track_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_LAST_TRACK, mcs_id);
     if (!event) {
@@ -674,7 +673,7 @@ void lea_on_mcs_last_track_result(uint32_t mcs_id)
 void lea_on_mcs_goto_track_result(uint32_t mcs_id, int32_t n_track)
 {
     BT_LOGD("%s, track num:%d", __func__, n_track);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_GOTO_TRACK, mcs_id);
     if (!event) {
@@ -690,7 +689,7 @@ void lea_on_mcs_goto_track_result(uint32_t mcs_id, int32_t n_track)
 void lea_on_mcs_previous_group_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_PREVIOUS_GROUP, mcs_id);
     if (!event) {
@@ -704,7 +703,7 @@ void lea_on_mcs_previous_group_result(uint32_t mcs_id)
 void lea_on_mcs_next_group_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_NEXT_GROUP, mcs_id);
     if (!event) {
@@ -718,7 +717,7 @@ void lea_on_mcs_next_group_result(uint32_t mcs_id)
 void lea_on_mcs_first_group_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_FIRST_GROUP, mcs_id);
     if (!event) {
@@ -732,7 +731,7 @@ void lea_on_mcs_first_group_result(uint32_t mcs_id)
 void lea_on_mcs_last_group_result(uint32_t mcs_id)
 {
     BT_LOGD("%s ", __func__);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_LAST_GROUP, mcs_id);
     if (!event) {
@@ -746,7 +745,7 @@ void lea_on_mcs_last_group_result(uint32_t mcs_id)
 void lea_on_mcs_goto_group_result(uint32_t mcs_id, int32_t n_group)
 {
     BT_LOGD("%s, group num:%d ", __func__, n_group);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_CONTROL_POINT_GOTO_GROUP, mcs_id);
     if (!event) {
@@ -759,10 +758,10 @@ void lea_on_mcs_goto_group_result(uint32_t mcs_id, int32_t n_group)
     lea_mcs_send_msg(event);
 }
 
-void lea_on_mcs_search_track_name_result(uint32_t mcs_id, size_t size, char *name, bool last_condition)
+void lea_on_mcs_search_track_name_result(uint32_t mcs_id, size_t size, char* name, bool last_condition)
 {
     BT_LOGD("%s, last_condition:%d ", __func__, last_condition);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new_ext(MCS_SEARCH_TRACK_NAME, mcs_id, size);
     if (!event) {
@@ -772,15 +771,15 @@ void lea_on_mcs_search_track_name_result(uint32_t mcs_id, size_t size, char *nam
 
     event->event_data.valueuint16 = size;
     event->event_data.valuebool = last_condition;
-    strcpy((char *)event->event_data.dataarry, name);
+    strcpy((char*)event->event_data.dataarry, name);
 
     lea_mcs_send_msg(event);
 }
 
-void lea_on_mcs_search_artist_name_result(uint32_t mcs_id, size_t size, char *name, bool last_condition)
+void lea_on_mcs_search_artist_name_result(uint32_t mcs_id, size_t size, char* name, bool last_condition)
 {
     BT_LOGD("%s, last_condition:%d ", __func__, last_condition);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new_ext(MCS_SEARCH_ARTIST_NAME, mcs_id, size);
     if (!event) {
@@ -790,15 +789,15 @@ void lea_on_mcs_search_artist_name_result(uint32_t mcs_id, size_t size, char *na
 
     event->event_data.valueuint16 = size;
     event->event_data.valuebool = last_condition;
-    strcpy((char *)event->event_data.dataarry, name);
+    strcpy((char*)event->event_data.dataarry, name);
 
     lea_mcs_send_msg(event);
 }
 
-void lea_on_mcs_search_album_name_result(uint32_t mcs_id, size_t size, char *name, bool last_condition)
+void lea_on_mcs_search_album_name_result(uint32_t mcs_id, size_t size, char* name, bool last_condition)
 {
     BT_LOGD("%s, last_condition:%d ", __func__, last_condition);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new_ext(MCS_SEARCH_ALBUM_NAME, mcs_id, size);
     if (!event) {
@@ -808,15 +807,15 @@ void lea_on_mcs_search_album_name_result(uint32_t mcs_id, size_t size, char *nam
 
     event->event_data.valueuint16 = size;
     event->event_data.valuebool = last_condition;
-    strcpy((char *)event->event_data.dataarry, name);
+    strcpy((char*)event->event_data.dataarry, name);
 
     lea_mcs_send_msg(event);
 }
 
-void lea_on_mcs_search_group_name_result(uint32_t mcs_id, size_t size, char *name, bool last_condition)
+void lea_on_mcs_search_group_name_result(uint32_t mcs_id, size_t size, char* name, bool last_condition)
 {
     BT_LOGD("%s, last_condition:%d ", __func__, last_condition);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new_ext(MCS_SEARCH_GROUP_NAME, mcs_id, size);
     if (!event) {
@@ -826,15 +825,15 @@ void lea_on_mcs_search_group_name_result(uint32_t mcs_id, size_t size, char *nam
 
     event->event_data.valueuint16 = size;
     event->event_data.valuebool = last_condition;
-    strcpy((char *)event->event_data.dataarry, name);
+    strcpy((char*)event->event_data.dataarry, name);
 
     lea_mcs_send_msg(event);
 }
 
-void lea_on_mcs_search_earliest_year_result(uint32_t mcs_id, size_t size, char *year, bool last_condition)
+void lea_on_mcs_search_earliest_year_result(uint32_t mcs_id, size_t size, char* year, bool last_condition)
 {
     BT_LOGD("%s, last_condition:%d ", __func__, last_condition);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new_ext(MCS_SEARCH_EARLIEST_YEAR, mcs_id, size);
     if (!event) {
@@ -844,15 +843,15 @@ void lea_on_mcs_search_earliest_year_result(uint32_t mcs_id, size_t size, char *
 
     event->event_data.valueuint16 = size;
     event->event_data.valuebool = last_condition;
-    strcpy((char *)event->event_data.dataarry, year);
+    strcpy((char*)event->event_data.dataarry, year);
 
     lea_mcs_send_msg(event);
 }
 
-void lea_on_mcs_search_latest_year_result(uint32_t mcs_id, size_t size, char *year, bool last_condition)
+void lea_on_mcs_search_latest_year_result(uint32_t mcs_id, size_t size, char* year, bool last_condition)
 {
     BT_LOGD("%s, last_condition:%d ", __func__, last_condition);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new_ext(MCS_SEARCH_LATEST_YEAR, mcs_id, size);
     if (!event) {
@@ -862,15 +861,15 @@ void lea_on_mcs_search_latest_year_result(uint32_t mcs_id, size_t size, char *ye
 
     event->event_data.valueuint16 = size;
     event->event_data.valuebool = last_condition;
-    strcpy((char *)event->event_data.dataarry, year);
+    strcpy((char*)event->event_data.dataarry, year);
 
     lea_mcs_send_msg(event);
 }
 
-void lea_on_mcs_search_genre_result(uint32_t mcs_id, size_t size, char *name, bool last_condition)
+void lea_on_mcs_search_genre_result(uint32_t mcs_id, size_t size, char* name, bool last_condition)
 {
     BT_LOGD("%s, last_condition:%d ", __func__, last_condition);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new_ext(MCS_SEARCH_GENRE, mcs_id, size);
     if (!event) {
@@ -880,7 +879,7 @@ void lea_on_mcs_search_genre_result(uint32_t mcs_id, size_t size, char *name, bo
 
     event->event_data.valueuint16 = size;
     event->event_data.valuebool = last_condition;
-    strcpy((char *)event->event_data.dataarry, name);
+    strcpy((char*)event->event_data.dataarry, name);
 
     lea_mcs_send_msg(event);
 }
@@ -888,7 +887,7 @@ void lea_on_mcs_search_genre_result(uint32_t mcs_id, size_t size, char *name, bo
 void lea_on_mcs_search_tracks_result(uint32_t mcs_id, bool last_condition)
 {
     BT_LOGD("%s, last_condition:%d ", __func__, last_condition);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_SEARCH_TRACKS, mcs_id);
 
@@ -900,7 +899,7 @@ void lea_on_mcs_search_tracks_result(uint32_t mcs_id, bool last_condition)
 void lea_on_mcs_search_groups_result(uint32_t mcs_id, bool last_condition)
 {
     BT_LOGD("%s, last_condition:%d ", __func__, last_condition);
-    mcs_event_t *event;
+    mcs_event_t* event;
 
     event = mcs_event_new(MCS_SEARCH_GROUPS, mcs_id);
     if (!event) {
@@ -973,7 +972,7 @@ void playing_state_command_handler(int event)
             lea_mcs_media_control_response(ADPT_LEA_MCS_MEDIA_CONTROL_SUCCESS);
             isRemoteControl = false;
         }
-        lea_mcs_track_title_changed((uint8_t *)MCS_TRACK_TITLE);
+        lea_mcs_track_title_changed((uint8_t*)MCS_TRACK_TITLE);
         lea_mcs_current_track_changed(mcs_track_oids[mcs_cur_track_oid]);
         lea_mcs_next_track_changed(mcs_track_oids[mcs_next_track_oid]);
         break;
@@ -1025,7 +1024,7 @@ void paused_state_command_handler(int event)
             lea_mcs_media_control_response(ADPT_LEA_MCS_MEDIA_CONTROL_SUCCESS);
             isRemoteControl = false;
         }
-        lea_mcs_track_title_changed((uint8_t *)MCS_TRACK_TITLE);
+        lea_mcs_track_title_changed((uint8_t*)MCS_TRACK_TITLE);
         lea_mcs_current_track_changed(mcs_track_oids[mcs_cur_track_oid]);
         lea_mcs_next_track_changed(mcs_track_oids[mcs_next_track_oid]);
         break;
@@ -1086,7 +1085,7 @@ void seeking_state_command_handler(int event)
             isRemoteControl = false;
         }
         lea_mcs_media_state_changed(current_state);
-        lea_mcs_track_title_changed((uint8_t *)MCS_TRACK_TITLE);
+        lea_mcs_track_title_changed((uint8_t*)MCS_TRACK_TITLE);
         lea_mcs_current_track_changed(mcs_track_oids[mcs_cur_track_oid]);
         lea_mcs_next_track_changed(mcs_track_oids[mcs_next_track_oid]);
         break;
@@ -1121,8 +1120,8 @@ static lea_adpt_mcs_media_state_t playerState2McsState(int playerState)
     return McsState;
 }
 
-static void mcs_session_event_callback(void *cookie, int event,
-                                       int ret, const char *data)
+static void mcs_session_event_callback(void* cookie, int event,
+    int ret, const char* data)
 {
     uint32_t position, duration;
 
@@ -1243,7 +1242,7 @@ static bt_status_t lea_mcs_set_media_player_info()
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t lea_mcs_add_object(uint32_t mcs_id, uint8_t type, uint8_t *name, void *obj_ref)
+static bt_status_t lea_mcs_add_object(uint32_t mcs_id, uint8_t type, uint8_t* name, void* obj_ref)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -1328,7 +1327,7 @@ static bt_status_t lea_mcs_seeking_speed_changed(int8_t speed)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t lea_mcs_track_title_changed(uint8_t *title)
+static bt_status_t lea_mcs_track_title_changed(uint8_t* title)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -1463,15 +1462,15 @@ static bt_status_t lea_mcs_media_control_response(lea_adpt_mcs_media_control_res
     return BT_STATUS_SUCCESS;
 }
 
-static void *lea_mcs_set_callbacks(void *handle, lea_mcs_callbacks_t *callbacks)
+static void* lea_mcs_set_callbacks(void* handle, lea_mcs_callbacks_t* callbacks)
 {
     if (!g_mcs_service.started)
         return NULL;
 
-    return bt_remote_callbacks_register(g_mcs_service.callbacks, handle, (void *)callbacks);
+    return bt_remote_callbacks_register(g_mcs_service.callbacks, handle, (void*)callbacks);
 }
 
-static bool lea_mcs_reset_callbacks(void **handle, void *cookie)
+static bool lea_mcs_reset_callbacks(void** handle, void* cookie)
 {
     if (!g_mcs_service.started)
         return false;
@@ -1504,7 +1503,7 @@ static const lea_mcs_interface_t leMcsInterface = {
 /****************************************************************************
  * Public function
  ****************************************************************************/
-static const void *get_lea_mcs_profile_interface(void)
+static const void* get_lea_mcs_profile_interface(void)
 {
     return &leMcsInterface;
 }
@@ -1520,7 +1519,7 @@ static bt_status_t lea_mcs_startup(profile_on_startup_t cb)
     BT_LOGD("%s", __func__);
     bt_status_t status;
     pthread_mutexattr_t attr;
-    mcs_service_t *service = &g_mcs_service;
+    mcs_service_t* service = &g_mcs_service;
     if (service->started)
         return BT_STATUS_SUCCESS;
 
@@ -1580,7 +1579,7 @@ static const profile_service_t lea_mcs_service = {
     .name = PROFILE_MCS_NAME,
     .id = PROFILE_LEAUDIO_MCS,
     .transport = BT_TRANSPORT_BLE,
-    .uuid = {BT_UUID128_TYPE, { 0 }},
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = lea_mcs_init,
     .startup = lea_mcs_startup,
     .shutdown = lea_mcs_shutdown,

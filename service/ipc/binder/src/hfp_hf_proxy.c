@@ -28,7 +28,7 @@
 #include "parcel.h"
 #include "utils/log.h"
 
-void *BpBtHfpHf_registerCallback(BpBtHfpHf *bpBinder, AIBinder *cbksBinder)
+void* BpBtHfpHf_registerCallback(BpBtHfpHf* bpBinder, AIBinder* cbksBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -37,7 +37,7 @@ void *BpBtHfpHf_registerCallback(BpBtHfpHf *bpBinder, AIBinder *cbksBinder)
     if (!bpBinder || !bpBinder->binder)
         return NULL;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -55,10 +55,10 @@ void *BpBtHfpHf_registerCallback(BpBtHfpHf *bpBinder, AIBinder *cbksBinder)
     if (stat != STATUS_OK)
         return NULL;
 
-    return (void *)cookie;
+    return (void*)cookie;
 }
 
-bool BpBtHfpHf_unRegisterCallback(BpBtHfpHf *bpBinder, void *cookie)
+bool BpBtHfpHf_unRegisterCallback(BpBtHfpHf* bpBinder, void* cookie)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -67,7 +67,7 @@ bool BpBtHfpHf_unRegisterCallback(BpBtHfpHf *bpBinder, void *cookie)
     if (!bpBinder || !bpBinder->binder)
         return false;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -88,7 +88,7 @@ bool BpBtHfpHf_unRegisterCallback(BpBtHfpHf *bpBinder, void *cookie)
     return ret;
 }
 
-bool BpBtHfpHf_isConnected(BpBtHfpHf *bpBinder, bt_address_t *addr)
+bool BpBtHfpHf_isConnected(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -97,7 +97,7 @@ bool BpBtHfpHf_isConnected(BpBtHfpHf *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return false;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -118,7 +118,7 @@ bool BpBtHfpHf_isConnected(BpBtHfpHf *bpBinder, bt_address_t *addr)
     return ret;
 }
 
-bool BpBtHfpHf_isAudioConnected(BpBtHfpHf *bpBinder, bt_address_t *addr)
+bool BpBtHfpHf_isAudioConnected(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -127,7 +127,7 @@ bool BpBtHfpHf_isAudioConnected(BpBtHfpHf *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return false;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -148,7 +148,7 @@ bool BpBtHfpHf_isAudioConnected(BpBtHfpHf *bpBinder, bt_address_t *addr)
     return ret;
 }
 
-profile_connection_state_t BpBtHfpHf_getConnectionState(BpBtHfpHf *bpBinder, bt_address_t *addr)
+profile_connection_state_t BpBtHfpHf_getConnectionState(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -157,7 +157,7 @@ profile_connection_state_t BpBtHfpHf_getConnectionState(BpBtHfpHf *bpBinder, bt_
     if (!bpBinder || !bpBinder->binder)
         return PROFILE_STATE_DISCONNECTED;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -178,7 +178,7 @@ profile_connection_state_t BpBtHfpHf_getConnectionState(BpBtHfpHf *bpBinder, bt_
     return state;
 }
 
-bt_status_t BpBtHfpHf_connect(BpBtHfpHf *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHfpHf_connect(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -187,7 +187,7 @@ bt_status_t BpBtHfpHf_connect(BpBtHfpHf *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -208,7 +208,7 @@ bt_status_t BpBtHfpHf_connect(BpBtHfpHf *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtHfpHf_disconnect(BpBtHfpHf *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHfpHf_disconnect(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -217,7 +217,7 @@ bt_status_t BpBtHfpHf_disconnect(BpBtHfpHf *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -238,7 +238,7 @@ bt_status_t BpBtHfpHf_disconnect(BpBtHfpHf *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtHfpHf_connectAudio(BpBtHfpHf *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHfpHf_connectAudio(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -247,7 +247,7 @@ bt_status_t BpBtHfpHf_connectAudio(BpBtHfpHf *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -268,7 +268,7 @@ bt_status_t BpBtHfpHf_connectAudio(BpBtHfpHf *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtHfpHf_disconnectAudio(BpBtHfpHf *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHfpHf_disconnectAudio(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -277,7 +277,7 @@ bt_status_t BpBtHfpHf_disconnectAudio(BpBtHfpHf *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -298,7 +298,7 @@ bt_status_t BpBtHfpHf_disconnectAudio(BpBtHfpHf *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtHfpHf_startVoiceRecognition(BpBtHfpHf *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHfpHf_startVoiceRecognition(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -307,7 +307,7 @@ bt_status_t BpBtHfpHf_startVoiceRecognition(BpBtHfpHf *bpBinder, bt_address_t *a
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -328,7 +328,7 @@ bt_status_t BpBtHfpHf_startVoiceRecognition(BpBtHfpHf *bpBinder, bt_address_t *a
     return status;
 }
 
-bt_status_t BpBtHfpHf_stopVoiceRecognition(BpBtHfpHf *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHfpHf_stopVoiceRecognition(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -337,7 +337,7 @@ bt_status_t BpBtHfpHf_stopVoiceRecognition(BpBtHfpHf *bpBinder, bt_address_t *ad
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -358,7 +358,7 @@ bt_status_t BpBtHfpHf_stopVoiceRecognition(BpBtHfpHf *bpBinder, bt_address_t *ad
     return status;
 }
 
-bt_status_t BpBtHfpHf_dial(BpBtHfpHf *bpBinder, bt_address_t *addr, const char *number)
+bt_status_t BpBtHfpHf_dial(BpBtHfpHf* bpBinder, bt_address_t* addr, const char* number)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -367,7 +367,7 @@ bt_status_t BpBtHfpHf_dial(BpBtHfpHf *bpBinder, bt_address_t *addr, const char *
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -392,7 +392,7 @@ bt_status_t BpBtHfpHf_dial(BpBtHfpHf *bpBinder, bt_address_t *addr, const char *
     return status;
 }
 
-bt_status_t BpBtHfpHf_dialMemory(BpBtHfpHf *bpBinder, bt_address_t *addr, uint32_t memory)
+bt_status_t BpBtHfpHf_dialMemory(BpBtHfpHf* bpBinder, bt_address_t* addr, uint32_t memory)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -401,7 +401,7 @@ bt_status_t BpBtHfpHf_dialMemory(BpBtHfpHf *bpBinder, bt_address_t *addr, uint32
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -426,7 +426,7 @@ bt_status_t BpBtHfpHf_dialMemory(BpBtHfpHf *bpBinder, bt_address_t *addr, uint32
     return status;
 }
 
-bt_status_t BpBtHfpHf_redial(BpBtHfpHf *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHfpHf_redial(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -435,7 +435,7 @@ bt_status_t BpBtHfpHf_redial(BpBtHfpHf *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -456,7 +456,7 @@ bt_status_t BpBtHfpHf_redial(BpBtHfpHf *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtHfpHf_acceptCall(BpBtHfpHf *bpBinder, bt_address_t *addr, hfp_call_accept_t flag)
+bt_status_t BpBtHfpHf_acceptCall(BpBtHfpHf* bpBinder, bt_address_t* addr, hfp_call_accept_t flag)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -465,7 +465,7 @@ bt_status_t BpBtHfpHf_acceptCall(BpBtHfpHf *bpBinder, bt_address_t *addr, hfp_ca
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -490,7 +490,7 @@ bt_status_t BpBtHfpHf_acceptCall(BpBtHfpHf *bpBinder, bt_address_t *addr, hfp_ca
     return status;
 }
 
-bt_status_t BpBtHfpHf_rejectCall(BpBtHfpHf *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHfpHf_rejectCall(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -499,7 +499,7 @@ bt_status_t BpBtHfpHf_rejectCall(BpBtHfpHf *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -520,7 +520,7 @@ bt_status_t BpBtHfpHf_rejectCall(BpBtHfpHf *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtHfpHf_holdCall(BpBtHfpHf *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHfpHf_holdCall(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -529,7 +529,7 @@ bt_status_t BpBtHfpHf_holdCall(BpBtHfpHf *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -550,7 +550,7 @@ bt_status_t BpBtHfpHf_holdCall(BpBtHfpHf *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtHfpHf_terminateCall(BpBtHfpHf *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHfpHf_terminateCall(BpBtHfpHf* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -559,7 +559,7 @@ bt_status_t BpBtHfpHf_terminateCall(BpBtHfpHf *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -580,7 +580,7 @@ bt_status_t BpBtHfpHf_terminateCall(BpBtHfpHf *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtHfpHf_controlCall(BpBtHfpHf *bpBinder, bt_address_t *addr, hfp_call_control_t chld, uint8_t index)
+bt_status_t BpBtHfpHf_controlCall(BpBtHfpHf* bpBinder, bt_address_t* addr, hfp_call_control_t chld, uint8_t index)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -589,7 +589,7 @@ bt_status_t BpBtHfpHf_controlCall(BpBtHfpHf *bpBinder, bt_address_t *addr, hfp_c
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -618,7 +618,7 @@ bt_status_t BpBtHfpHf_controlCall(BpBtHfpHf *bpBinder, bt_address_t *addr, hfp_c
     return status;
 }
 
-bt_status_t BpBtHfpHf_queryCurrentCalls(BpBtHfpHf *bpBinder, bt_address_t *addr, hfp_current_call_t **calls, int *num, bt_allocator_t allocator)
+bt_status_t BpBtHfpHf_queryCurrentCalls(BpBtHfpHf* bpBinder, bt_address_t* addr, hfp_current_call_t** calls, int* num, bt_allocator_t allocator)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -627,7 +627,7 @@ bt_status_t BpBtHfpHf_queryCurrentCalls(BpBtHfpHf *bpBinder, bt_address_t *addr,
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -652,7 +652,7 @@ bt_status_t BpBtHfpHf_queryCurrentCalls(BpBtHfpHf *bpBinder, bt_address_t *addr,
     return status;
 }
 
-bt_status_t BpBtHfpHf_sendAtCmd(BpBtHfpHf *bpBinder, bt_address_t *addr, const char *cmd)
+bt_status_t BpBtHfpHf_sendAtCmd(BpBtHfpHf* bpBinder, bt_address_t* addr, const char* cmd)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -661,7 +661,7 @@ bt_status_t BpBtHfpHf_sendAtCmd(BpBtHfpHf *bpBinder, bt_address_t *addr, const c
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)

@@ -30,25 +30,25 @@
 
 #define BT_SCANNER_CALLBACK_DESC "BluetoothScannerCallback"
 
-static const AIBinder_Class *kIBtScannerCallbacks_Class = NULL;
+static const AIBinder_Class* kIBtScannerCallbacks_Class = NULL;
 
-static void *IBtScannerCallbacks_Class_onCreate(void *arg)
+static void* IBtScannerCallbacks_Class_onCreate(void* arg)
 {
     return arg;
 }
 
-static void IBtScannerCallbacks_Class_onDestroy(void *userData)
+static void IBtScannerCallbacks_Class_onDestroy(void* userData)
 {
 }
 
-static binder_status_t IBtScannerCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
+static binder_status_t IBtScannerCallbacks_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
-    IBtScannerCallbacks *cbks = AIBinder_getUserData(binder);
+    IBtScannerCallbacks* cbks = AIBinder_getUserData(binder);
 
     switch (code) {
     case ICBKS_ON_SCAN_RESULT: {
-        ble_scan_result_t *result = NULL;
+        ble_scan_result_t* result = NULL;
 
         stat = AParcel_readBleScanResult(in, &result);
         if (stat != STATUS_OK)
@@ -81,16 +81,16 @@ static binder_status_t IBtScannerCallbacks_Class_onTransact(AIBinder *binder, tr
     return stat;
 }
 
-AIBinder *BtScannerCallbacks_getBinder(IBtScannerCallbacks *cbks)
+AIBinder* BtScannerCallbacks_getBinder(IBtScannerCallbacks* cbks)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (cbks->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(cbks->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(cbks->clazz, (void *)cbks);
+        binder = AIBinder_new(cbks->clazz, (void*)cbks);
         if (cbks->WeakBinder != NULL) {
             AIBinder_Weak_delete(cbks->WeakBinder);
         }
@@ -101,25 +101,24 @@ AIBinder *BtScannerCallbacks_getBinder(IBtScannerCallbacks *cbks)
     return binder;
 }
 
-binder_status_t BtScannerCallbacks_associateClass(AIBinder *binder)
+binder_status_t BtScannerCallbacks_associateClass(AIBinder* binder)
 {
     if (!kIBtScannerCallbacks_Class) {
-        kIBtScannerCallbacks_Class =
-            AIBinder_Class_define(BT_SCANNER_CALLBACK_DESC, IBtScannerCallbacks_Class_onCreate,
-                                  IBtScannerCallbacks_Class_onDestroy, IBtScannerCallbacks_Class_onTransact);
+        kIBtScannerCallbacks_Class = AIBinder_Class_define(BT_SCANNER_CALLBACK_DESC, IBtScannerCallbacks_Class_onCreate,
+            IBtScannerCallbacks_Class_onDestroy, IBtScannerCallbacks_Class_onTransact);
     }
 
     return AIBinder_associateClass(binder, kIBtScannerCallbacks_Class);
 }
 
-IBtScannerCallbacks *BtScannerCallbacks_new(const scanner_callbacks_t *callbacks)
+IBtScannerCallbacks* BtScannerCallbacks_new(const scanner_callbacks_t* callbacks)
 {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
-    IBtScannerCallbacks *cbks = malloc(sizeof(IBtScannerCallbacks));
+    AIBinder_Class* clazz;
+    AIBinder* binder;
+    IBtScannerCallbacks* cbks = malloc(sizeof(IBtScannerCallbacks));
 
     clazz = AIBinder_Class_define(BT_SCANNER_CALLBACK_DESC, IBtScannerCallbacks_Class_onCreate,
-                                  IBtScannerCallbacks_Class_onDestroy, IBtScannerCallbacks_Class_onTransact);
+        IBtScannerCallbacks_Class_onDestroy, IBtScannerCallbacks_Class_onTransact);
 
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
@@ -131,7 +130,7 @@ IBtScannerCallbacks *BtScannerCallbacks_new(const scanner_callbacks_t *callbacks
     return cbks;
 }
 
-void BtScannerCallbacks_delete(IBtScannerCallbacks *cbks)
+void BtScannerCallbacks_delete(IBtScannerCallbacks* cbks)
 {
     assert(cbks);
 

@@ -33,6 +33,6 @@
 #ifndef __OPEN_PTY_H__
 #define __OPEN_PTY_H__
 
-int open_pty(int *master, char *name);
+int open_pty(int* master, char* name);
 
 #endif

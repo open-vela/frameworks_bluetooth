@@ -55,15 +55,15 @@ static IBtGattClient binderGattc = { 0 };
 static IBtGattServer binderGatts = { 0 };
 #endif
 
-static void ipc_pollin_process(service_poll_t *poll, int revent, void *userdata)
+static void ipc_pollin_process(service_poll_t* poll, int revent, void* userdata)
 {
     Bluetooth_handlePolledCommands();
 }
 
-static int add_ipc_poll_setup(void *data)
+static int add_ipc_poll_setup(void* data)
 {
     binder_status_t stat;
-    service_poll_t *poll;
+    service_poll_t* poll;
     int fd = -1;
 
     stat = Bluetooth_setupPolling(&fd);
@@ -163,7 +163,7 @@ void bluetooth_ipc_join_service_loop(void)
 
 #else
 
-static int add_ipc_server_setup(void *data)
+static int add_ipc_server_setup(void* data)
 {
     int ret = bt_socket_server_init("bluetooth", CONFIG_BLUETOOTH_SOCKET_PORT);
     if (ret < 0) {
