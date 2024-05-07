@@ -74,6 +74,7 @@ typedef struct {
 #define HF_CONNECT_TIMEOUT (10 * 1000)
 #define HF_WEBCHAT_VERDICT (300 * 1000)
 #define HF_WEBCHAT_BLOCK_PERIOD (500 * 1000)
+#define HF_WEBCHAT_WAIVER_PERIOD (10 * 1000 * 1000)
 #define HF_OFFLOAD_TIMEOUT 500
 
 #if HF_STM_DEBUG
@@ -492,6 +493,31 @@ static int64_t calc_us_diff(uint64_t prev_us, uint64_t next_us)
     return -1;
 }
 
+static bool check_sco_allowed(state_machine_t* sm)
+{
+#ifdef CONFIG_HFP_HF_WEBCHAT_BLOCKER
+    hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
+    uint64_t current_timestamp_us = get_os_timestamp_us();
+    int64_t us_diff;
+
+    /* Verdict 1: allow SCO request if the recent call is initiated by HF */
+    us_diff = calc_us_diff(hfsm->call_status.dialing_timestamp_us, current_timestamp_us);
+    if ((us_diff >= 0) && (us_diff < HF_WEBCHAT_WAIVER_PERIOD)) {
+        return true;
+    }
+
+    /* Verdict 2: reject SCO request if the recent call is speculated to be a web chat */
+    us_diff = calc_us_diff(hfsm->call_status.webchat_flag_timestamp_us, current_timestamp_us);
+    if ((us_diff >= 0) && (us_diff < HF_WEBCHAT_BLOCK_PERIOD)) {
+        hfsm->call_status.webchat_flag_timestamp_us = current_timestamp_us;
+        return false;
+    }
+
+    return true;
+#endif
+    return true;
+}
+
 static void channel_type_verdict(state_machine_t* sm, uint32_t event, uint32_t status,
     uint64_t current_timestamp_us)
 {
@@ -505,7 +531,7 @@ static void channel_type_verdict(state_machine_t* sm, uint32_t event, uint32_t s
             if ((us_diff >= 0) && (us_diff < HF_WEBCHAT_VERDICT)) {
                 BT_LOGD("%s: this might be a video chat from WeChat", __func__);
                 hfsm->call_status.webchat_flag_timestamp_us = current_timestamp_us;
-                if (hf_state_machine_get_state(hfsm) == HFP_HF_STATE_AUDIO_CONNECTED) {
+                if (hf_state_machine_get_state(hfsm) == HFP_HF_STATE_AUDIO_CONNECTED && !check_sco_allowed(sm)) {
                     if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS)
                         BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
                 }
@@ -521,6 +547,14 @@ static void channel_type_verdict(state_machine_t* sm, uint32_t event, uint32_t s
     }
 }
 #endif
+
+static void update_dialing_time(state_machine_t* sm, uint64_t current_timestamp_us)
+{
+    hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
+
+    BT_LOGD("%s: timestamp = %lld", __func__, current_timestamp_us);
+    hfsm->call_status.dialing_timestamp_us = current_timestamp_us;
+}
 
 static void update_call_status(state_machine_t* sm, uint32_t event, uint32_t status)
 {
@@ -987,6 +1021,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
     hfp_hf_data_t* data = (hfp_hf_data_t*)p_data;
+    uint64_t current_timestamp_us = get_os_timestamp_us();
     bt_status_t status;
 
     HF_DBG_EVENT(sm, &hfsm->addr, event);
@@ -1027,6 +1062,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
             handle_dailing_fail(sm, (uint8_t*)data->string1);
             break;
         }
+        update_dialing_time(sm, current_timestamp_us);
         pending_action_create(hfsm, HFP_ATCMD_CODE_ATD, data->string1);
         break;
     case HF_DIAL_MEMORY: {
@@ -1035,8 +1071,11 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         status = bt_sal_hfp_hf_dial_memory(&hfsm->addr, memory);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Dial memory: %d failed", memory);
+            handle_dailing_fail(sm, NULL);
             break;
         }
+        update_dialing_time(sm, current_timestamp_us);
+        pending_action_create(hfsm, HFP_ATCMD_CODE_ATD, NULL);
         break;
     }
     case HF_DIAL_LAST:
@@ -1046,6 +1085,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
             handle_dailing_fail(sm, NULL);
             break;
         }
+        update_dialing_time(sm, current_timestamp_us);
         pending_action_create(hfsm, HFP_ATCMD_CODE_BLDN, NULL);
         break;
     case HF_STACK_EVENT_AUDIO_REQ:
@@ -1102,25 +1142,6 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     default:
         return default_process_event(sm, event, data);
     }
-    return true;
-}
-
-static bool check_sco_allowed(state_machine_t* sm)
-{
-#ifdef CONFIG_HFP_HF_WEBCHAT_BLOCKER
-    hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
-    uint64_t current_timestamp_us = get_os_timestamp_us();
-    int64_t us_diff;
-
-    /** Verdict 1: reject SCO request if the recent call is speculated to be a web chat */
-    us_diff = calc_us_diff(hfsm->call_status.webchat_flag_timestamp_us, current_timestamp_us);
-    if ((us_diff >= 0) && (us_diff < HF_WEBCHAT_BLOCK_PERIOD)) {
-        hfsm->call_status.webchat_flag_timestamp_us = current_timestamp_us;
-        return false;
-    }
-
-    return true;
-#endif
     return true;
 }
 
