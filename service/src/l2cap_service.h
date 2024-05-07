@@ -34,15 +34,15 @@ typedef struct {
     l2cap_endpoint_param_t outgoing;
 } l2cap_channel_param_t;
 
-void l2cap_on_channel_connected(bt_address_t *addr, l2cap_channel_param_t *param);
-void l2cap_on_channel_disconnected(bt_address_t *addr, uint16_t cid, uint32_t reason);
-void l2cap_on_packet_received(bt_address_t *addr, uint16_t cid, uint8_t *packet_data, uint16_t packet_size);
-void l2cap_on_packet_sent(bt_address_t *addr, uint16_t cid);
+void l2cap_on_channel_connected(bt_address_t* addr, l2cap_channel_param_t* param);
+void l2cap_on_channel_disconnected(bt_address_t* addr, uint16_t cid, uint32_t reason);
+void l2cap_on_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_data, uint16_t packet_size);
+void l2cap_on_packet_sent(bt_address_t* addr, uint16_t cid);
 
-void *l2cap_register_callbacks(void *remote, const l2cap_callbacks_t *callbacks);
-bool l2cap_unregister_callbacks(void **remote, void *cookie);
-bt_status_t l2cap_listen_channel(l2cap_config_option_t *option);
-bt_status_t l2cap_connect_channel(bt_address_t *addr, l2cap_config_option_t *option);
+void* l2cap_register_callbacks(void* remote, const l2cap_callbacks_t* callbacks);
+bool l2cap_unregister_callbacks(void** remote, void* cookie);
+bt_status_t l2cap_listen_channel(l2cap_config_option_t* option);
+bt_status_t l2cap_connect_channel(bt_address_t* addr, l2cap_config_option_t* option);
 bt_status_t l2cap_disconnect_channel(uint16_t cid);
 
 bt_status_t l2cap_service_init(void);

@@ -30,18 +30,18 @@
 #include "utils/log.h"
 
 #define BT_MANAGER_DESC "BluetoothManager"
-static const AIBinder_Class *kIBtManager_Class = NULL;
+static const AIBinder_Class* kIBtManager_Class = NULL;
 
-static void *IBtManager_Class_onCreate(void *arg)
+static void* IBtManager_Class_onCreate(void* arg)
 {
     return arg;
 }
 
-static void IBtManager_Class_onDestroy(void *userData)
+static void IBtManager_Class_onDestroy(void* userData)
 {
 }
 
-static binder_status_t IBtManager_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *reply)
+static binder_status_t IBtManager_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* reply)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
 
@@ -49,7 +49,7 @@ static binder_status_t IBtManager_Class_onTransact(AIBinder *binder, transaction
     case IBLUETOOTH_CREATE_INSTANCE: {
         uid_t uid = AIBinder_getCallingUid();
         pid_t pid = AIBinder_getCallingPid();
-        char *hostName = NULL;
+        char* hostName = NULL;
         uint32_t handle, type, appId = 0xFF;
 
         stat = AParcel_readUint32(in, &handle);
@@ -61,7 +61,7 @@ static binder_status_t IBtManager_Class_onTransact(AIBinder *binder, transaction
             return stat;
 
         stat = AParcel_readString(in, &hostName,
-                                  AParcelUtils_stringAllocator);
+            AParcelUtils_stringAllocator);
         if (stat != STATUS_OK)
             return stat;
 
@@ -94,11 +94,11 @@ static binder_status_t IBtManager_Class_onTransact(AIBinder *binder, transaction
     case IBLUETOOTH_GET_INSTANCE: {
         uid_t uid = AIBinder_getCallingUid();
         pid_t pid = AIBinder_getCallingPid();
-        char *hostName = NULL;
+        char* hostName = NULL;
         uint32_t handle;
 
         stat = AParcel_readString(in, &hostName,
-                                  AParcelUtils_stringAllocator);
+            AParcelUtils_stringAllocator);
         if (stat != STATUS_OK)
             return stat;
 
@@ -159,26 +159,26 @@ static binder_status_t IBtManager_Class_onTransact(AIBinder *binder, transaction
     return stat;
 }
 
-static const AIBinder_Class *BtManager_getClass(void)
+static const AIBinder_Class* BtManager_getClass(void)
 {
     if (!kIBtManager_Class) {
         kIBtManager_Class = AIBinder_Class_define(BT_MANAGER_DESC, IBtManager_Class_onCreate,
-                                                  IBtManager_Class_onDestroy, IBtManager_Class_onTransact);
+            IBtManager_Class_onDestroy, IBtManager_Class_onTransact);
     }
 
     return kIBtManager_Class;
 }
 
-static AIBinder *BtManager_getBinder(IBtManager *manager)
+static AIBinder* BtManager_getBinder(IBtManager* manager)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (manager->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(manager->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(manager->clazz, (void *)manager);
+        binder = AIBinder_new(manager->clazz, (void*)manager);
         if (manager->WeakBinder != NULL) {
             AIBinder_Weak_delete(manager->WeakBinder);
         }
@@ -189,10 +189,10 @@ static AIBinder *BtManager_getBinder(IBtManager *manager)
     return binder;
 }
 
-binder_status_t BtManager_addService(IBtManager *manager, const char *instance)
+binder_status_t BtManager_addService(IBtManager* manager, const char* instance)
 {
-    manager->clazz = (AIBinder_Class *)BtManager_getClass();
-    AIBinder *binder = BtManager_getBinder(manager);
+    manager->clazz = (AIBinder_Class*)BtManager_getClass();
+    AIBinder* binder = BtManager_getBinder(manager);
     manager->usr_data = NULL;
 
     binder_status_t status = AServiceManager_addService(binder, instance);
@@ -201,13 +201,13 @@ binder_status_t BtManager_addService(IBtManager *manager, const char *instance)
     return status;
 }
 
-BpBtManager *BpBtManager_new(const char *instance)
+BpBtManager* BpBtManager_new(const char* instance)
 {
-    AIBinder *binder = NULL;
-    AIBinder_Class *clazz;
-    BpBtManager *bpBinder = NULL;
+    AIBinder* binder = NULL;
+    AIBinder_Class* clazz;
+    BpBtManager* bpBinder = NULL;
 
-    clazz = (AIBinder_Class *)BtManager_getClass();
+    clazz = (AIBinder_Class*)BtManager_getClass();
     binder = AServiceManager_getService(instance);
     if (!binder)
         return NULL;
@@ -234,15 +234,15 @@ bail:
     return NULL;
 }
 
-void BpBtManager_delete(BpBtManager *bpManager)
+void BpBtManager_delete(BpBtManager* bpManager)
 {
     AIBinder_decStrong(bpManager->binder);
     free(bpManager);
 }
 
-AIBinder *BtManager_getService(BpBtManager **bpManager, const char *instance)
+AIBinder* BtManager_getService(BpBtManager** bpManager, const char* instance)
 {
-    BpBtManager *bpBinder = *bpManager;
+    BpBtManager* bpBinder = *bpManager;
 
     if (bpBinder && bpBinder->binder)
         return bpBinder->binder;
@@ -268,7 +268,7 @@ void Bluetooth_startThreadPool(void)
     ABinderProcess_startThreadPool();
 }
 
-binder_status_t Bluetooth_setupPolling(int *fd)
+binder_status_t Bluetooth_setupPolling(int* fd)
 {
     return ABinderProcess_setupPolling(fd);
 }

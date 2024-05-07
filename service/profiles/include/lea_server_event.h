@@ -81,7 +81,7 @@ typedef struct
     uint16_t valueint3;
     uint16_t valueint4;
     size_t size;
-    void *data;
+    void* data;
 } lea_server_data_t;
 
 typedef struct
@@ -94,12 +94,12 @@ typedef struct
  * Public Functions
  ****************************************************************************/
 
-lea_server_msg_t *lea_server_msg_new(lea_server_event_t event,
-                                     bt_address_t *addr);
+lea_server_msg_t* lea_server_msg_new(lea_server_event_t event,
+    bt_address_t* addr);
 
-lea_server_msg_t *lea_server_msg_new_ext(lea_server_event_t event,
-                                         bt_address_t *addr, void *data, size_t size);
+lea_server_msg_t* lea_server_msg_new_ext(lea_server_event_t event,
+    bt_address_t* addr, void* data, size_t size);
 
-void lea_server_msg_destory(lea_server_msg_t *msg);
+void lea_server_msg_destory(lea_server_msg_t* msg);
 
 #endif /* __LEA_SERVER_EVENT_H__ */

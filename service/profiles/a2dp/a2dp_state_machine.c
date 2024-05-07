@@ -82,47 +82,47 @@ typedef enum pending_state {
 
 typedef struct _a2dp_state_machine {
     state_machine_t sm;
-    void *service;
+    void* service;
     bt_address_t addr;
     pending_state_t pending;
     bool audio_ready;
     uint8_t peer_sep;
-    service_timer_t *connect_timer;
-    service_timer_t *start_timer;
-    service_timer_t *delay_start_timer;
-    service_timer_t *delay_suspend_timer;
-    service_timer_t *offload_timer;
+    service_timer_t* connect_timer;
+    service_timer_t* start_timer;
+    service_timer_t* delay_start_timer;
+    service_timer_t* delay_suspend_timer;
+    service_timer_t* offload_timer;
 } a2dp_state_machine_t;
 
 typedef struct {
-    a2dp_state_machine_t *a2dp_sm;
-    a2dp_event_t *a2dp_event;
+    a2dp_state_machine_t* a2dp_sm;
+    a2dp_event_t* a2dp_event;
 } a2dp_inter_event_t;
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-extern void do_in_a2dp_service(a2dp_event_t *a2dp_event);
+extern void do_in_a2dp_service(a2dp_event_t* a2dp_event);
 #endif
 
-static void idle_enter(state_machine_t *sm);
-static void idle_exit(state_machine_t *sm);
-static void opening_enter(state_machine_t *sm);
-static void opening_exit(state_machine_t *sm);
-static void opened_enter(state_machine_t *sm);
-static void opened_exit(state_machine_t *sm);
-static void started_enter(state_machine_t *sm);
-static void started_exit(state_machine_t *sm);
-static void closing_enter(state_machine_t *sm);
-static void closing_exit(state_machine_t *sm);
+static void idle_enter(state_machine_t* sm);
+static void idle_exit(state_machine_t* sm);
+static void opening_enter(state_machine_t* sm);
+static void opening_exit(state_machine_t* sm);
+static void opened_enter(state_machine_t* sm);
+static void opened_exit(state_machine_t* sm);
+static void started_enter(state_machine_t* sm);
+static void started_exit(state_machine_t* sm);
+static void closing_enter(state_machine_t* sm);
+static void closing_exit(state_machine_t* sm);
 
-static bool idle_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool opening_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_data);
+static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 
-static bool flag_isset(a2dp_state_machine_t *a2dp_sm, pending_state_t flag);
-static void flag_set(a2dp_state_machine_t *a2dp_sm, pending_state_t flag);
-static void flag_clear(a2dp_state_machine_t *a2dp_sm, pending_state_t flag);
+static bool flag_isset(a2dp_state_machine_t* a2dp_sm, pending_state_t flag);
+static void flag_set(a2dp_state_machine_t* a2dp_sm, pending_state_t flag);
+static void flag_clear(a2dp_state_machine_t* a2dp_sm, pending_state_t flag);
 
 static const state_t idle_state = {
     .state_name = "Idle",
@@ -166,7 +166,7 @@ static const state_t closing_state = {
 
 #define A2DP_STM_DEBUG 1
 #if A2DP_STM_DEBUG
-static char *stack_event_to_string(a2dp_event_type_t event);
+static char* stack_event_to_string(a2dp_event_type_t event);
 
 #define A2DP_TRANS_DBG(_sm, _addr, _action)                                                     \
     do {                                                                                        \
@@ -183,7 +183,7 @@ static char *stack_event_to_string(a2dp_event_type_t event);
         bt_addr_ba2str(__addr, __addr_str);                                                        \
         if (__event != DATA_IND_EVT)                                                               \
             BT_LOGD("ProcessEvent, State=%s, Peer=[%s], Event=%s", hsm_get_current_state_name(sm), \
-                    __addr_str, stack_event_to_string(event));                                     \
+                __addr_str, stack_event_to_string(event));                                         \
     } while (0);
 #else
 #define A2DP_DBG_ENTER(__sm, __addr)
@@ -192,7 +192,7 @@ static char *stack_event_to_string(a2dp_event_type_t event);
 #endif
 
 #if A2DP_STM_DEBUG
-static char *stack_event_to_string(a2dp_event_type_t event)
+static char* stack_event_to_string(a2dp_event_type_t event)
 {
     switch (event) {
         CASE_RETURN_STR(CONNECT_REQ)
@@ -225,7 +225,7 @@ static char *stack_event_to_string(a2dp_event_type_t event)
 }
 #endif
 
-static void a2dp_report_connection_state(a2dp_state_machine_t *stm, bt_address_t *addr, profile_connection_state_t state)
+static void a2dp_report_connection_state(a2dp_state_machine_t* stm, bt_address_t* addr, profile_connection_state_t state)
 {
     BT_LOGD("%s, addr:%s, state: %d", __func__, bt_addr_str(addr), state);
 
@@ -245,7 +245,7 @@ static void a2dp_report_connection_state(a2dp_state_machine_t *stm, bt_address_t
     }
 }
 
-static void a2dp_report_audio_state(a2dp_state_machine_t *stm, bt_address_t *addr, a2dp_audio_state_t state)
+static void a2dp_report_audio_state(a2dp_state_machine_t* stm, bt_address_t* addr, a2dp_audio_state_t state)
 {
     BT_LOGD("%s, addr:%s, state: %d", __func__, bt_addr_str(addr), state);
 
@@ -261,7 +261,7 @@ static void a2dp_report_audio_state(a2dp_state_machine_t *stm, bt_address_t *add
     }
 }
 
-static void a2dp_report_audio_config_state(a2dp_state_machine_t *stm, bt_address_t *addr)
+static void a2dp_report_audio_config_state(a2dp_state_machine_t* stm, bt_address_t* addr)
 {
     BT_LOGD("%s, addr:%s", __func__, bt_addr_str(addr));
 
@@ -278,16 +278,16 @@ static void a2dp_report_audio_config_state(a2dp_state_machine_t *stm, bt_address
     }
 }
 
-static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
+static void bt_hci_event_callback(bt_hci_event_t* hci_event, void* context)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)context;
-    a2dp_event_t *a2dp_event;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)context;
+    a2dp_event_t* a2dp_event;
     a2dp_event_type_t event;
 
     BT_LOGD("%s, evt_code:0x%x, len:%d", __func__, hci_event->evt_code,
-            hci_event->length);
-    BT_DUMPBUFFER("vsc", (uint8_t *)hci_event->params, hci_event->length);
+        hci_event->length);
+    BT_DUMPBUFFER("vsc", (uint8_t*)hci_event->params, hci_event->length);
 
     if (flag_isset(a2dp_sm, PENDING_OFFLOAD_START)) {
         event = OFFLOAD_START_EVT;
@@ -304,63 +304,63 @@ static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
 #endif
 }
 
-static void a2dp_connect_timeout_callback(service_timer_t *timer, void *data)
+static void a2dp_connect_timeout_callback(service_timer_t* timer, void* data)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)data;
-    a2dp_event_t *a2dp_event;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
+    a2dp_event_t* a2dp_event;
 
     a2dp_event = a2dp_event_new(CONNECT_TIMEOUT, &a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
 }
 
-static void a2dp_start_timeout_callback(service_timer_t *timer, void *data)
+static void a2dp_start_timeout_callback(service_timer_t* timer, void* data)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)data;
-    a2dp_event_t *a2dp_event;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
+    a2dp_event_t* a2dp_event;
 
     a2dp_event = a2dp_event_new(START_TIMEOUT, &a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
 }
 
-static void a2dp_delay_start_timeout_callback(service_timer_t *timer, void *data)
+static void a2dp_delay_start_timeout_callback(service_timer_t* timer, void* data)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)data;
-    a2dp_event_t *a2dp_event;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
+    a2dp_event_t* a2dp_event;
 
     a2dp_event = a2dp_event_new(DELAY_STREAM_START_REQ, &a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
 }
 
-static void a2dp_delay_suspend_timeout_callback(service_timer_t *timer, void *data)
+static void a2dp_delay_suspend_timeout_callback(service_timer_t* timer, void* data)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)data;
-    a2dp_event_t *a2dp_event;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
+    a2dp_event_t* a2dp_event;
 
     a2dp_event = a2dp_event_new(STREAM_SUSPEND_REQ, &a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
 }
 
-static void a2dp_offload_config_timeout_callback(service_timer_t *timer, void *data)
+static void a2dp_offload_config_timeout_callback(service_timer_t* timer, void* data)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)data;
-    a2dp_event_t *a2dp_event;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
+    a2dp_event_t* a2dp_event;
 
     a2dp_event = a2dp_event_new(OFFLOAD_TIMEOUT, &a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
 }
 
-static bt_status_t a2dp_offload_send_stop_cmd(a2dp_state_machine_t *a2dp_sm,
-                                              a2dp_event_data_t *data)
+static bt_status_t a2dp_offload_send_stop_cmd(a2dp_state_machine_t* a2dp_sm,
+    a2dp_event_data_t* data)
 {
     uint8_t ogf;
     uint16_t ocf;
     uint8_t len;
-    uint8_t *payload;
+    uint8_t* payload;
 
     payload = data->data;
     len = data->size - sizeof(ogf) - sizeof(ocf);
@@ -371,46 +371,46 @@ static bt_status_t a2dp_offload_send_stop_cmd(a2dp_state_machine_t *a2dp_sm,
     return bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, a2dp_sm);
 }
 
-static bool flag_isset(a2dp_state_machine_t *a2dp_sm, pending_state_t flag)
+static bool flag_isset(a2dp_state_machine_t* a2dp_sm, pending_state_t flag)
 {
     return (bool)(a2dp_sm->pending & flag);
 }
 
-static void flag_set(a2dp_state_machine_t *a2dp_sm, pending_state_t flag)
+static void flag_set(a2dp_state_machine_t* a2dp_sm, pending_state_t flag)
 {
     a2dp_sm->pending |= flag;
 }
 
-static void flag_clear(a2dp_state_machine_t *a2dp_sm, pending_state_t flag)
+static void flag_clear(a2dp_state_machine_t* a2dp_sm, pending_state_t flag)
 {
     a2dp_sm->pending &= ~flag;
 }
 
-static void idle_enter(state_machine_t *sm)
+static void idle_enter(state_machine_t* sm)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
-    const state_t *prev_state = hsm_get_previous_state(sm);
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
+    const state_t* prev_state = hsm_get_previous_state(sm);
 
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
 
     a2dp_sm->audio_ready = false;
     if (prev_state != NULL) {
         a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
-                                     PROFILE_STATE_DISCONNECTED);
+            PROFILE_STATE_DISCONNECTED);
     }
 }
 
-static void idle_exit(state_machine_t *sm)
+static void idle_exit(state_machine_t* sm)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
 
     A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
 }
 
-static bool idle_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
-    a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
+    a2dp_event_data_t* data = (a2dp_event_data_t*)p_data;
 
     A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
@@ -422,7 +422,7 @@ static bool idle_process_event(state_machine_t *sm, uint32_t event, void *p_data
             status = bt_sal_a2dp_sink_connect(&data->bd_addr);
         if (status != BT_STATUS_SUCCESS) {
             a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
-                                         PROFILE_STATE_DISCONNECTED);
+                PROFILE_STATE_DISCONNECTED);
             break;
         }
         hsm_transition_to(sm, &opening_state);
@@ -440,7 +440,7 @@ static bool idle_process_event(state_machine_t *sm, uint32_t event, void *p_data
             status = bt_sal_a2dp_source_connect(&data->bd_addr);
             if (status != BT_STATUS_SUCCESS) {
                 a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
-                                             PROFILE_STATE_DISCONNECTED);
+                    PROFILE_STATE_DISCONNECTED);
             }
         }
         break;
@@ -458,26 +458,26 @@ static bool idle_process_event(state_machine_t *sm, uint32_t event, void *p_data
     return true;
 }
 
-static void opening_enter(state_machine_t *sm)
+static void opening_enter(state_machine_t* sm)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
 
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
     a2dp_sm->connect_timer = service_loop_timer(A2DP_CONNECT_TIMEOUT, 0, a2dp_connect_timeout_callback, a2dp_sm);
     a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr, PROFILE_STATE_CONNECTING);
 }
 
-static void opening_exit(state_machine_t *sm)
+static void opening_exit(state_machine_t* sm)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
 
     A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
 }
 
-static bool opening_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
-    a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
+    a2dp_event_data_t* data = (a2dp_event_data_t*)p_data;
     bt_status_t status;
 
     A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
@@ -521,10 +521,10 @@ static bool opening_process_event(state_machine_t *sm, uint32_t event, void *p_d
     return true;
 }
 
-static void opened_enter(state_machine_t *sm)
+static void opened_enter(state_machine_t* sm)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
-    const state_t *prev_state = hsm_get_previous_state(sm);
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
+    const state_t* prev_state = hsm_get_previous_state(sm);
     bool ret;
 
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
@@ -541,7 +541,7 @@ static void opened_enter(state_machine_t *sm)
             bt_media_set_a2dp_available();
         }
         a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
-                                     PROFILE_STATE_CONNECTED);
+            PROFILE_STATE_CONNECTED);
     }
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     else if (prev_state == &started_state) {
@@ -550,17 +550,17 @@ static void opened_enter(state_machine_t *sm)
 #endif
 }
 
-static void opened_exit(state_machine_t *sm)
+static void opened_exit(state_machine_t* sm)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
 
     A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
 }
 
-static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
-    a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
+    a2dp_event_data_t* data = (a2dp_event_data_t*)p_data;
 
     A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
@@ -664,7 +664,7 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         }
         flag_clear(a2dp_sm, PENDING_STOP);
         a2dp_report_audio_state(a2dp_sm, &a2dp_sm->addr,
-                                A2DP_AUDIO_STATE_STOPPED);
+            A2DP_AUDIO_STATE_STOPPED);
         a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
 
@@ -686,7 +686,7 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         uint8_t ogf;
         uint16_t ocf;
         uint8_t len;
-        uint8_t *payload;
+        uint8_t* payload;
 
         if (a2dp_sm->peer_sep == SEP_SNK) {
             flag_clear(a2dp_sm, PENDING_START);
@@ -705,12 +705,12 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         a2dp_sm->offload_timer = service_loop_timer(A2DP_OFFLOAD_TIMEOUT, 0, a2dp_offload_config_timeout_callback, a2dp_sm);
 
         bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
-                                a2dp_sm);
+            a2dp_sm);
         break;
     }
 
     case OFFLOAD_START_EVT: {
-        bt_hci_event_t *hci_event;
+        bt_hci_event_t* hci_event;
         uint8_t status;
 
         if (a2dp_sm->peer_sep == SEP_SNK) {
@@ -764,29 +764,29 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
     return true;
 }
 
-static void started_enter(state_machine_t *sm)
+static void started_enter(state_machine_t* sm)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
 
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
     if (a2dp_sm->peer_sep == SEP_SNK)
         adapter_switch_role(&a2dp_sm->addr, BT_LINK_ROLE_MASTER);
 
     a2dp_report_audio_state(a2dp_sm, &a2dp_sm->addr,
-                            A2DP_AUDIO_STATE_STARTED);
+        A2DP_AUDIO_STATE_STARTED);
 }
 
-static void started_exit(state_machine_t *sm)
+static void started_exit(state_machine_t* sm)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
 
     A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
 }
 
-static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
-    a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
+    a2dp_event_data_t* data = (a2dp_event_data_t*)p_data;
 
     A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
@@ -876,7 +876,7 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         a2dp_sm->pending = PENDING_NONE;
         a2dp_audio_on_suspended(a2dp_sm->peer_sep);
         a2dp_report_audio_state(a2dp_sm, &a2dp_sm->addr,
-                                A2DP_AUDIO_STATE_STOPPED);
+            A2DP_AUDIO_STATE_STOPPED);
         hsm_transition_to(sm, &opened_state);
         break;
 
@@ -884,7 +884,7 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         a2dp_sm->pending = PENDING_NONE;
         a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         a2dp_report_audio_state(a2dp_sm, &a2dp_sm->addr,
-                                A2DP_AUDIO_STATE_STOPPED);
+            A2DP_AUDIO_STATE_STOPPED);
         hsm_transition_to(sm, &opened_state);
         break;
 
@@ -904,27 +904,27 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
     return true;
 }
 
-static void closing_enter(state_machine_t *sm)
+static void closing_enter(state_machine_t* sm)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
 
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
     a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
     a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
-                                 PROFILE_STATE_DISCONNECTING);
+        PROFILE_STATE_DISCONNECTING);
 }
 
-static void closing_exit(state_machine_t *sm)
+static void closing_exit(state_machine_t* sm)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
 
     A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
 }
 
-static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    a2dp_state_machine_t *a2dp_sm = (a2dp_state_machine_t *)sm;
-    a2dp_event_data_t *data = (a2dp_event_data_t *)p_data;
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
+    a2dp_event_data_t* data = (a2dp_event_data_t*)p_data;
 
     A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
@@ -950,7 +950,7 @@ static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_d
     return true;
 }
 
-static void a2dp_state_machine_event_dispatch(a2dp_state_machine_t *a2dp_sm, a2dp_event_t *a2dp_event)
+static void a2dp_state_machine_event_dispatch(a2dp_state_machine_t* a2dp_sm, a2dp_event_t* a2dp_event)
 {
     if (!a2dp_event || !a2dp_sm)
         return;
@@ -958,41 +958,41 @@ static void a2dp_state_machine_event_dispatch(a2dp_state_machine_t *a2dp_sm, a2d
     hsm_dispatch_event(&a2dp_sm->sm, a2dp_event->event, &a2dp_event->event_data);
 }
 
-a2dp_state_machine_t *a2dp_state_machine_new(void *context, uint8_t peer_sep, bt_address_t *bd_addr)
+a2dp_state_machine_t* a2dp_state_machine_new(void* context, uint8_t peer_sep, bt_address_t* bd_addr)
 {
-    a2dp_state_machine_t *a2dp_sm;
+    a2dp_state_machine_t* a2dp_sm;
 
-    a2dp_sm = (a2dp_state_machine_t *)malloc(sizeof(a2dp_state_machine_t));
+    a2dp_sm = (a2dp_state_machine_t*)malloc(sizeof(a2dp_state_machine_t));
     if (!a2dp_sm)
         return NULL;
 
     memset(a2dp_sm, 0, sizeof(a2dp_state_machine_t));
     a2dp_sm->service = context;
     a2dp_sm->peer_sep = peer_sep;
-    hsm_ctor(&a2dp_sm->sm, (state_t *)&idle_state);
+    hsm_ctor(&a2dp_sm->sm, (state_t*)&idle_state);
     memcpy(&a2dp_sm->addr, bd_addr, sizeof(bt_address_t));
 
     return a2dp_sm;
 }
 
-void a2dp_state_machine_destory(a2dp_state_machine_t *a2dp_sm)
+void a2dp_state_machine_destory(a2dp_state_machine_t* a2dp_sm)
 {
     if (!a2dp_sm)
         return;
 
     hsm_dtor(&a2dp_sm->sm);
-    free((void *)a2dp_sm);
+    free((void*)a2dp_sm);
 }
 
-void a2dp_state_machine_handle_event(a2dp_state_machine_t *sm,
-                                     a2dp_event_t *a2dp_event)
+void a2dp_state_machine_handle_event(a2dp_state_machine_t* sm,
+    a2dp_event_t* a2dp_event)
 {
     a2dp_state_machine_event_dispatch(sm, a2dp_event);
 }
 
-a2dp_state_t a2dp_state_machine_get_state(a2dp_state_machine_t *sm)
+a2dp_state_t a2dp_state_machine_get_state(a2dp_state_machine_t* sm)
 {
-    const state_t *cur_state = hsm_get_current_state(&sm->sm);
+    const state_t* cur_state = hsm_get_current_state(&sm->sm);
 
     if (!cur_state)
         return A2DP_STATE_IDLE;
@@ -1000,7 +1000,7 @@ a2dp_state_t a2dp_state_machine_get_state(a2dp_state_machine_t *sm)
     return cur_state->state_value;
 }
 
-profile_connection_state_t a2dp_state_machine_get_connection_state(a2dp_state_machine_t *sm)
+profile_connection_state_t a2dp_state_machine_get_connection_state(a2dp_state_machine_t* sm)
 {
     a2dp_state_t state = a2dp_state_machine_get_state(sm);
 
@@ -1019,12 +1019,12 @@ profile_connection_state_t a2dp_state_machine_get_connection_state(a2dp_state_ma
     return PROFILE_STATE_DISCONNECTED;
 }
 
-const char *a2dp_state_machine_current_state(a2dp_state_machine_t *sm)
+const char* a2dp_state_machine_current_state(a2dp_state_machine_t* sm)
 {
     return hsm_get_current_state_name(&sm->sm);
 }
 
-bool a2dp_state_machine_is_pending_stop(a2dp_state_machine_t *sm)
+bool a2dp_state_machine_is_pending_stop(a2dp_state_machine_t* sm)
 {
     if (flag_isset(sm, PENDING_STOP) || sm->delay_suspend_timer)
         return true;

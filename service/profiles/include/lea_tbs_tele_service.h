@@ -23,12 +23,12 @@
 #include "stddef.h"
 
 void lea_tbs_tele_service_init(void);
-lea_tbs_call_state_t *lea_tbs_find_call_by_index(uint8_t call_index);
-lea_tbs_call_state_t *lea_tbs_find_call_by_state(uint8_t call_state);
-bt_status_t tele_service_accept_call(char *call_id);
-bt_status_t tele_service_terminate_call(char *call_id);
+lea_tbs_call_state_t* lea_tbs_find_call_by_index(uint8_t call_index);
+lea_tbs_call_state_t* lea_tbs_find_call_by_state(uint8_t call_state);
+bt_status_t tele_service_accept_call(char* call_id);
+bt_status_t tele_service_terminate_call(char* call_id);
 bt_status_t tele_service_hold_call();
 bt_status_t tele_service_unhold_call();
-bt_status_t tele_service_originate_call(char *uri);
+bt_status_t tele_service_originate_call(char* uri);
 
 #endif /* __LEA_TBS_TELE_SERVICE_H__ */

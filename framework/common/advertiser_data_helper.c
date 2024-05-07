@@ -14,70 +14,70 @@
  * limitations under the License.
  ***************************************************************************/
 
+#include <debug.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <debug.h>
 
 #include "advertiser_data.h"
 
 typedef struct {
     uint8_t ad_type;
-    const char *desc;
+    const char* desc;
 } ad_type_desc_t;
 
 static const ad_type_desc_t ad_type_map[] = {
-    {BT_AD_FLAGS,                      "Flags"                                           },
-    { BT_AD_UUID16_SOME,               "Incomplete List of 16­bit Service Class UUIDs"  },
-    { BT_AD_UUID16_ALL,                "Complete List of 16­bit Service Class UUIDs"    },
-    { BT_AD_UUID32_SOME,               "Incomplete List of 32­bit Service Class UUIDs"  },
-    { BT_AD_UUID32_ALL,                "Complete List of 32­bit Service Class UUIDs"    },
-    { BT_AD_UUID128_SOME,              "Incomplete List of 128­bit Service Class UUIDs" },
-    { BT_AD_UUID128_ALL,               "Complete List of 128­bit Service Class UUIDs"   },
-    { BT_AD_NAME_SHORT,                "Shortened Local Name"                            },
-    { BT_AD_NAME_COMPLETE,             "Complete Local Name"                             },
-    { BT_AD_TX_POWER,                  "Tx Power Level"                                  },
-    { BT_AD_CLASS_OF_DEV,              "Class of Device"                                 },
-    { BT_AD_SSP_HASH,                  "Simple Pairing Hash C­192"                      },
-    { BT_AD_SSP_RANDOMIZER,            "Simple Pairing Randomizer R­192"                },
-    { BT_AD_SMP_TK,                    "Security Manager TK Value"                       },
-    { BT_AD_SMP_OOB_FLAGS,             "Security Manager Out of Band Flags"              },
-    { BT_AD_PERIPHERAL_CONN_INTERVAL,  "Peripheral Connection Interval Range"            },
-    { BT_AD_SOLICIT16,                 "List of 16­bit Service Solicitation UUIDs"      },
-    { BT_AD_SOLICIT128,                "List of 128­bit Service Solicitation UUIDs"     },
-    { BT_AD_SERVICE_DATA16,            "Service Data ­ 16­bit UUID"                    },
-    { BT_AD_PUBLIC_ADDRESS,            "Public Target Address"                           },
-    { BT_AD_RANDOM_ADDRESS,            "Random Target Address"                           },
-    { BT_AD_GAP_APPEARANCE,            "Appearance"                                      },
-    { BT_AD_ADVERTISING_INTERVAL,      "Advertising Interval"                            },
-    { BT_AD_LE_DEVICE_ADDRESS,         "LE Bluetooth Device Address"                     },
-    { BT_AD_LE_ROLE,                   "LE Role"                                         },
-    { BT_AD_SSP_HASH_P256,             "Simple Pairing Hash C­256"                      },
-    { BT_AD_SSP_RANDOMIZER_P256,       "Simple Pairing Randomizer R­256"                },
-    { BT_AD_SOLICIT32,                 "List of 32­bit Service Solicitation UUIDs"      },
-    { BT_AD_SERVICE_DATA32,            "Service Data ­ 32­bit UUID"                    },
-    { BT_AD_SERVICE_DATA128,           "Service Data ­ 128­bit UUID"                   },
-    { BT_AD_LE_SC_CONFIRM_VALUE,       "LE Secure Connections Confirmation Value"        },
-    { BT_AD_LE_SC_RANDOM_VALUE,        "LE Secure Connections Random Value"              },
-    { BT_AD_URI,                       "URI"                                             },
-    { BT_AD_INDOOR_POSITIONING,        "Indoor Positioning"                              },
-    { BT_AD_TRANSPORT_DISCOVERY,       "Transport Discovery Data"                        },
-    { BT_AD_LE_SUPPORTED_FEATURES,     "LE Supported Features"                           },
-    { BT_AD_CHANNEL_MAP_UPDATE_IND,    "Channel Map Update Indication"                   },
-    { BT_AD_MESH_PROV,                 "PB­ADV"                                         },
-    { BT_AD_MESH_DATA,                 "Mesh Message"                                    },
-    { BT_AD_MESH_BEACON,               "Mesh Beacon"                                     },
-    { BT_AD_BIG_INFO,                  "BIGInfo"                                         },
-    { BT_AD_BROADCAST_CODE,            "Broadcast_Code"                                  },
-    { BT_AD_RESOLVABLE_SET_IDENTIFIER, "Resolvable Set Identifier"                       },
-    { BT_AD_ADV_INTERVAL_LONG,         "Advertising Interval ­ long"                    },
-    { BT_AD_BROADCAST_NAME,            "Broadcast_Name"                                  },
-    { BT_AD_ENCRYPTED_ADV_DATA,        "Encrypted Advertising Data"                      },
-    { BT_AD_PERIODIC_ADV_RSP_TIMING,   "Periodic Advertising Response Timing Information"},
-    { BT_AD_3D_INFO_DATA,              "3D Information Data"                             },
-    { BT_AD_MANUFACTURER_DATA,         "Manufacturer Specific Data"                      },
+    { BT_AD_FLAGS, "Flags" },
+    { BT_AD_UUID16_SOME, "Incomplete List of 16­bit Service Class UUIDs" },
+    { BT_AD_UUID16_ALL, "Complete List of 16­bit Service Class UUIDs" },
+    { BT_AD_UUID32_SOME, "Incomplete List of 32­bit Service Class UUIDs" },
+    { BT_AD_UUID32_ALL, "Complete List of 32­bit Service Class UUIDs" },
+    { BT_AD_UUID128_SOME, "Incomplete List of 128­bit Service Class UUIDs" },
+    { BT_AD_UUID128_ALL, "Complete List of 128­bit Service Class UUIDs" },
+    { BT_AD_NAME_SHORT, "Shortened Local Name" },
+    { BT_AD_NAME_COMPLETE, "Complete Local Name" },
+    { BT_AD_TX_POWER, "Tx Power Level" },
+    { BT_AD_CLASS_OF_DEV, "Class of Device" },
+    { BT_AD_SSP_HASH, "Simple Pairing Hash C­192" },
+    { BT_AD_SSP_RANDOMIZER, "Simple Pairing Randomizer R­192" },
+    { BT_AD_SMP_TK, "Security Manager TK Value" },
+    { BT_AD_SMP_OOB_FLAGS, "Security Manager Out of Band Flags" },
+    { BT_AD_PERIPHERAL_CONN_INTERVAL, "Peripheral Connection Interval Range" },
+    { BT_AD_SOLICIT16, "List of 16­bit Service Solicitation UUIDs" },
+    { BT_AD_SOLICIT128, "List of 128­bit Service Solicitation UUIDs" },
+    { BT_AD_SERVICE_DATA16, "Service Data ­ 16­bit UUID" },
+    { BT_AD_PUBLIC_ADDRESS, "Public Target Address" },
+    { BT_AD_RANDOM_ADDRESS, "Random Target Address" },
+    { BT_AD_GAP_APPEARANCE, "Appearance" },
+    { BT_AD_ADVERTISING_INTERVAL, "Advertising Interval" },
+    { BT_AD_LE_DEVICE_ADDRESS, "LE Bluetooth Device Address" },
+    { BT_AD_LE_ROLE, "LE Role" },
+    { BT_AD_SSP_HASH_P256, "Simple Pairing Hash C­256" },
+    { BT_AD_SSP_RANDOMIZER_P256, "Simple Pairing Randomizer R­256" },
+    { BT_AD_SOLICIT32, "List of 32­bit Service Solicitation UUIDs" },
+    { BT_AD_SERVICE_DATA32, "Service Data ­ 32­bit UUID" },
+    { BT_AD_SERVICE_DATA128, "Service Data ­ 128­bit UUID" },
+    { BT_AD_LE_SC_CONFIRM_VALUE, "LE Secure Connections Confirmation Value" },
+    { BT_AD_LE_SC_RANDOM_VALUE, "LE Secure Connections Random Value" },
+    { BT_AD_URI, "URI" },
+    { BT_AD_INDOOR_POSITIONING, "Indoor Positioning" },
+    { BT_AD_TRANSPORT_DISCOVERY, "Transport Discovery Data" },
+    { BT_AD_LE_SUPPORTED_FEATURES, "LE Supported Features" },
+    { BT_AD_CHANNEL_MAP_UPDATE_IND, "Channel Map Update Indication" },
+    { BT_AD_MESH_PROV, "PB­ADV" },
+    { BT_AD_MESH_DATA, "Mesh Message" },
+    { BT_AD_MESH_BEACON, "Mesh Beacon" },
+    { BT_AD_BIG_INFO, "BIGInfo" },
+    { BT_AD_BROADCAST_CODE, "Broadcast_Code" },
+    { BT_AD_RESOLVABLE_SET_IDENTIFIER, "Resolvable Set Identifier" },
+    { BT_AD_ADV_INTERVAL_LONG, "Advertising Interval ­ long" },
+    { BT_AD_BROADCAST_NAME, "Broadcast_Name" },
+    { BT_AD_ENCRYPTED_ADV_DATA, "Encrypted Advertising Data" },
+    { BT_AD_PERIODIC_ADV_RSP_TIMING, "Periodic Advertising Response Timing Information" },
+    { BT_AD_3D_INFO_DATA, "3D Information Data" },
+    { BT_AD_MANUFACTURER_DATA, "Manufacturer Specific Data" },
 };
 
-static const char *show_ad_type_desc(uint8_t type)
+static const char* show_ad_type_desc(uint8_t type)
 {
     for (int i = 0; i < sizeof(ad_type_map) / sizeof(ad_type_map[0]); i++) {
         if (ad_type_map[i].ad_type == type)
@@ -87,7 +87,7 @@ static const char *show_ad_type_desc(uint8_t type)
     return "Unknown";
 }
 
-static void advertiser_data_info(adv_data_t *ad)
+static void advertiser_data_info(adv_data_t* ad)
 {
     if (ad->len < 1) {
         return;
@@ -201,12 +201,12 @@ static void advertiser_data_info(adv_data_t *ad)
     }
 }
 
-bool advertiser_data_dump(uint8_t *data, uint16_t len, ad_dump_cb_t dump)
+bool advertiser_data_dump(uint8_t* data, uint16_t len, ad_dump_cb_t dump)
 {
     uint16_t offset = 0;
 
     while (offset < len) {
-        adv_data_t *ad = (adv_data_t *)&data[offset];
+        adv_data_t* ad = (adv_data_t*)&data[offset];
 
         advertiser_data_info(ad);
         offset += ad->len + 1;

@@ -25,24 +25,24 @@
 
 typedef struct {
     struct list_node node;
-    euv_pty_t *pty;
+    euv_pty_t* pty;
     int fd;
     int port;
 } spp_device_t;
 
 typedef struct {
-    void *handle;
+    void* handle;
     bt_address_t addr;
     uint16_t port;
     uint16_t scn;
-    uint8_t *buf;
+    uint8_t* buf;
     uint16_t len;
     uint32_t state;
-    char *name;
+    char* name;
 } spp_cmd_t;
 
 typedef struct {
-    void *handle;
+    void* handle;
     uint8_t port;
     enum {
         TRANS_IDLE = 0,
@@ -50,7 +50,7 @@ typedef struct {
         TRANS_SENDING,
         TRANS_RECVING,
     } state;
-    uint8_t *bulk_buf;
+    uint8_t* bulk_buf;
     int32_t bulk_count;
     uint32_t bulk_length;
     uint32_t trans_total_size;
@@ -59,32 +59,32 @@ typedef struct {
     uint64_t end_timestamp;
 } transmit_context_t;
 
-static int start_server_cmd(void *handle, int argc, char *argv[]);
-static int stop_server_cmd(void *handle, int argc, char *argv[]);
-static int connect_cmd(void *handle, int argc, char *argv[]);
-static int disconnect_cmd(void *handle, int argc, char *argv[]);
-static int write_cmd(void *handle, int argc, char *argv[]);
-static int speed_test_cmd(void *handle, int argc, char *argv[]);
-static int dump_cmd(void *handle, int argc, char *argv[]);
+static int start_server_cmd(void* handle, int argc, char* argv[]);
+static int stop_server_cmd(void* handle, int argc, char* argv[]);
+static int connect_cmd(void* handle, int argc, char* argv[]);
+static int disconnect_cmd(void* handle, int argc, char* argv[]);
+static int write_cmd(void* handle, int argc, char* argv[]);
+static int speed_test_cmd(void* handle, int argc, char* argv[]);
+static int dump_cmd(void* handle, int argc, char* argv[]);
 
-static const char *TRANS_START = "START:";
-static const char *TRANS_START_ACK = "START_ACK";
-static const char *TRANS_EOF = "EOF";
+static const char* TRANS_START = "START:";
+static const char* TRANS_START_ACK = "START_ACK";
+static const char* TRANS_EOF = "EOF";
 
 static struct list_node device_list = LIST_INITIAL_VALUE(device_list);
 static sem_t spp_send_sem;
-static void *spp_app_handle = NULL;
+static void* spp_app_handle = NULL;
 static uv_loop_t spp_thread_loop = { 0 };
 static transmit_context_t trans_ctx = { 0 };
 
 static bt_command_t g_spp_tables[] = {
-    {"start",       start_server_cmd, 0, "\"start spp server        param: <scn>(range in [1,28]) <uuid>\""                                       },
-    { "stop",       stop_server_cmd,  0, "\"stop  spp server        param: <scn>(range in [1,28])\""                                              },
-    { "connect",    connect_cmd,      0, "\"connect spp device      param: <address> <port> <uuid>\""                                             },
-    { "disconnect", disconnect_cmd,   0, "\"disconnect peer device  param: <address> <port>\""                                                    },
-    { "write",      write_cmd,        0, "\"write data to peer      param: <port> <data>\""                                                       },
-    { "speed",      speed_test_cmd,   0, "\"performance test        param: <port> <iteration>\" note:iteration * 990 shoule less than free memory"},
-    { "dump",       dump_cmd,         0, "\"dump spp current state\""                                                                             },
+    { "start", start_server_cmd, 0, "\"start spp server        param: <scn>(range in [1,28]) <uuid>\"" },
+    { "stop", stop_server_cmd, 0, "\"stop  spp server        param: <scn>(range in [1,28])\"" },
+    { "connect", connect_cmd, 0, "\"connect spp device      param: <address> <port> <uuid>\"" },
+    { "disconnect", disconnect_cmd, 0, "\"disconnect peer device  param: <address> <port>\"" },
+    { "write", write_cmd, 0, "\"write data to peer      param: <port> <data>\"" },
+    { "speed", speed_test_cmd, 0, "\"performance test        param: <port> <iteration>\" note:iteration * 990 shoule less than free memory" },
+    { "dump", dump_cmd, 0, "\"dump spp current state\"" },
 };
 
 static void usage(void)
@@ -99,15 +99,15 @@ static void usage(void)
     }
 }
 
-static spp_device_t *find_pty_by_port(int port)
+static spp_device_t* find_pty_by_port(int port)
 {
-    struct list_node *list = &device_list;
-    struct list_node *node;
-    spp_device_t *device;
+    struct list_node* list = &device_list;
+    struct list_node* node;
+    spp_device_t* device;
 
     list_for_every(list, node)
     {
-        device = (spp_device_t *)node;
+        device = (spp_device_t*)node;
         if (device->port == port) {
             return device;
         }
@@ -117,15 +117,15 @@ static spp_device_t *find_pty_by_port(int port)
     return NULL;
 }
 
-static spp_device_t *find_pty_by_handle(void *handle)
+static spp_device_t* find_pty_by_handle(void* handle)
 {
-    struct list_node *list = &device_list;
-    struct list_node *node;
-    spp_device_t *device;
+    struct list_node* list = &device_list;
+    struct list_node* node;
+    spp_device_t* device;
 
     list_for_every(list, node)
     {
-        device = (spp_device_t *)node;
+        device = (spp_device_t*)node;
         if (device->pty == handle) {
             return device;
         }
@@ -135,9 +135,9 @@ static spp_device_t *find_pty_by_handle(void *handle)
     return NULL;
 }
 
-static void bulk_trans_complete(euv_pty_t *handle, uint8_t *buf, int status)
+static void bulk_trans_complete(euv_pty_t* handle, uint8_t* buf, int status)
 {
-    transmit_context_t *ctx = &trans_ctx;
+    transmit_context_t* ctx = &trans_ctx;
 
     ctx->bulk_count--;
     if (ctx->bulk_count)
@@ -159,11 +159,11 @@ static void show_result(uint64_t start, uint64_t end, uint32_t bytes)
     PRINT("transmit done, total: %" PRIu32 " bytes, use: %f seconds, speed: %f KB/s", bytes, use, spd);
 }
 
-static void speed_test_start(void *cmd)
+static void speed_test_start(void* cmd)
 {
-    spp_cmd_t *msg = cmd;
-    spp_device_t *device;
-    transmit_context_t *ctx = &trans_ctx;
+    spp_cmd_t* msg = cmd;
+    spp_device_t* device;
+    transmit_context_t* ctx = &trans_ctx;
     static uint8_t start[100];
     uint16_t port = msg->port;
     uint16_t times = msg->len;
@@ -185,14 +185,14 @@ static void speed_test_start(void *cmd)
     ctx->trans_total_size = ctx->bulk_length * ctx->bulk_count;
 
     memset(start, 0, sizeof(start));
-    sprintf((char *)start, "START:%" PRIu32 ";", ctx->trans_total_size);
-    euv_pty_write(device->pty, start, strlen((const char *)start), NULL);
+    sprintf((char*)start, "START:%" PRIu32 ";", ctx->trans_total_size);
+    euv_pty_write(device->pty, start, strlen((const char*)start), NULL);
     PRINT("transmit start, waiting for %" PRIu32 " bytes transmit done", ctx->trans_total_size);
 }
 
-static void spp_data_received(euv_pty_t *handle, const uint8_t *buf, ssize_t size)
+static void spp_data_received(euv_pty_t* handle, const uint8_t* buf, ssize_t size)
 {
-    transmit_context_t *ctx = &trans_ctx;
+    transmit_context_t* ctx = &trans_ctx;
 
     if (ctx->state != TRANS_IDLE && handle != ctx->handle) {
         PRINT("spp is testing ,ignore it");
@@ -201,23 +201,23 @@ static void spp_data_received(euv_pty_t *handle, const uint8_t *buf, ssize_t siz
 
     switch (ctx->state) {
     case TRANS_IDLE:
-        if (strncmp((const char *)buf, TRANS_START, strlen(TRANS_START)) == 0) {
+        if (strncmp((const char*)buf, TRANS_START, strlen(TRANS_START)) == 0) {
             spp_trans_reset();
             ctx->handle = handle;
             ctx->state = TRANS_RECVING;
-            sscanf((const char *)buf, "START:%" PRIu32 ";", &ctx->trans_total_size);
+            sscanf((const char*)buf, "START:%" PRIu32 ";", &ctx->trans_total_size);
             PRINT("receive start, waiting for %" PRIu32 " bytes transmit done", ctx->trans_total_size);
-            euv_pty_write(handle, (uint8_t *)TRANS_START_ACK, strlen(TRANS_START_ACK), NULL);
+            euv_pty_write(handle, (uint8_t*)TRANS_START_ACK, strlen(TRANS_START_ACK), NULL);
             ctx->start_timestamp = get_timestamp_msec();
         } else
             lib_dumpbuffer("spp read", buf, size);
         break;
     case TRANS_SENDING:
-        if (strncmp((const char *)buf, TRANS_EOF, strlen(TRANS_EOF)) == 0) {
+        if (strncmp((const char*)buf, TRANS_EOF, strlen(TRANS_EOF)) == 0) {
             ctx->end_timestamp = get_timestamp_msec();
             show_result(ctx->start_timestamp, ctx->end_timestamp, ctx->trans_total_size);
             spp_trans_reset();
-        } else if (strncmp((const char *)buf, TRANS_START_ACK, strlen(TRANS_START_ACK)) == 0) {
+        } else if (strncmp((const char*)buf, TRANS_START_ACK, strlen(TRANS_START_ACK)) == 0) {
             sem_post(&spp_send_sem);
             ctx->bulk_buf = malloc(ctx->bulk_length);
             memset(ctx->bulk_buf, 0xA5, ctx->bulk_length);
@@ -230,7 +230,7 @@ static void spp_data_received(euv_pty_t *handle, const uint8_t *buf, ssize_t siz
         if (ctx->received_size >= ctx->trans_total_size) {
             ctx->end_timestamp = get_timestamp_msec();
             show_result(ctx->start_timestamp, ctx->end_timestamp, ctx->trans_total_size);
-            euv_pty_write(handle, (uint8_t *)TRANS_EOF, 4, NULL);
+            euv_pty_write(handle, (uint8_t*)TRANS_EOF, 4, NULL);
             spp_trans_reset();
         }
         break;
@@ -239,14 +239,14 @@ static void spp_data_received(euv_pty_t *handle, const uint8_t *buf, ssize_t siz
     }
 }
 
-static void pty_read_cb(euv_pty_t *handle, const uint8_t *buf, ssize_t size)
+static void pty_read_cb(euv_pty_t* handle, const uint8_t* buf, ssize_t size)
 {
     if (size > 0)
         spp_data_received(handle, buf, size);
     else if (size < 0) {
         PRINT("%s read failed, status:%d", __func__, size);
         euv_pty_read_stop(handle);
-        spp_device_t *device = find_pty_by_handle(handle);
+        spp_device_t* device = find_pty_by_handle(handle);
         if (device == NULL)
             return;
 
@@ -259,7 +259,7 @@ static void pty_read_cb(euv_pty_t *handle, const uint8_t *buf, ssize_t size)
 
 static void check_resource_release(uint16_t port)
 {
-    spp_device_t *device;
+    spp_device_t* device;
 
     device = find_pty_by_port(port);
     if (device == NULL)
@@ -271,9 +271,9 @@ static void check_resource_release(uint16_t port)
     free(device);
 }
 
-static void connection_state_process(void *data)
+static void connection_state_process(void* data)
 {
-    spp_cmd_t *msg = data;
+    spp_cmd_t* msg = data;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     bt_addr_ba2str(&msg->addr, addr_str);
@@ -285,10 +285,10 @@ static void connection_state_process(void *data)
     free(msg);
 }
 
-static void connection_state_callback(void *handle, bt_address_t *addr, uint16_t scn,
-                                      uint16_t port, profile_connection_state_t state)
+static void connection_state_callback(void* handle, bt_address_t* addr, uint16_t scn,
+    uint16_t port, profile_connection_state_t state)
 {
-    spp_cmd_t *msg = malloc(sizeof(spp_cmd_t));
+    spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
     if (!msg)
         return;
 
@@ -298,12 +298,12 @@ static void connection_state_callback(void *handle, bt_address_t *addr, uint16_t
     msg->port = port;
     msg->state = state;
 
-    do_in_thread_loop(&spp_thread_loop, connection_state_process, (void *)msg);
+    do_in_thread_loop(&spp_thread_loop, connection_state_process, (void*)msg);
 }
 
-static void pty_open_process(void *data)
+static void pty_open_process(void* data)
 {
-    spp_cmd_t *msg = data;
+    spp_cmd_t* msg = data;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     int fd = open(msg->name, O_RDWR | O_NOCTTY | O_CLOEXEC);
@@ -313,7 +313,7 @@ static void pty_open_process(void *data)
     bt_addr_ba2str(&msg->addr, addr_str);
 
     PRINT("%s addr:%s, scn:%d, port: %d, name:%s, slave fd:%d", __func__, addr_str, msg->scn, msg->port, msg->name, fd);
-    spp_device_t *device = malloc(sizeof(spp_device_t));
+    spp_device_t* device = malloc(sizeof(spp_device_t));
     device->fd = fd;
     device->port = msg->port;
     free(msg);
@@ -328,9 +328,9 @@ static void pty_open_process(void *data)
     euv_pty_read_start(device->pty, 2048, pty_read_cb);
 }
 
-static void pty_open_callback(void *handle, bt_address_t *addr, uint16_t scn, uint16_t port, char *name)
+static void pty_open_callback(void* handle, bt_address_t* addr, uint16_t scn, uint16_t port, char* name)
 {
-    spp_cmd_t *msg = malloc(sizeof(spp_cmd_t));
+    spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
     if (!msg)
         return;
 
@@ -340,10 +340,10 @@ static void pty_open_callback(void *handle, bt_address_t *addr, uint16_t scn, ui
     msg->port = port;
     msg->name = strdup(name);
 
-    do_in_thread_loop(&spp_thread_loop, pty_open_process, (void *)msg);
+    do_in_thread_loop(&spp_thread_loop, pty_open_process, (void*)msg);
 }
 
-static int start_server_cmd(void *handle, int argc, char *argv[])
+static int start_server_cmd(void* handle, int argc, char* argv[])
 {
     uint16_t uuid;
     bt_uuid_t uuid16;
@@ -359,7 +359,8 @@ static int start_server_cmd(void *handle, int argc, char *argv[])
 
     bt_uuid16_create(&uuid16, uuid);
     if (bt_spp_server_start(handle, spp_app_handle, scn, &uuid16,
-                            CONFIG_BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS) != BT_STATUS_SUCCESS) {
+            CONFIG_BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS)
+        != BT_STATUS_SUCCESS) {
         PRINT("server_start failed, scn:%d, uuid: 0x%04x\n", scn, uuid);
         return CMD_ERROR;
     }
@@ -367,7 +368,7 @@ static int start_server_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int stop_server_cmd(void *handle, int argc, char *argv[])
+static int stop_server_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -378,7 +379,7 @@ static int stop_server_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int connect_cmd(void *handle, int argc, char *argv[])
+static int connect_cmd(void* handle, int argc, char* argv[])
 {
     int16_t scn;
     uint16_t uuid;
@@ -409,10 +410,10 @@ static int connect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void spp_disconnect(void *data)
+static void spp_disconnect(void* data)
 {
-    spp_device_t *device;
-    spp_cmd_t *msg = data;
+    spp_device_t* device;
+    spp_cmd_t* msg = data;
     bt_address_t addr;
 
     device = find_pty_by_port(msg->port);
@@ -427,12 +428,12 @@ static void spp_disconnect(void *data)
     free(data);
 }
 
-static int disconnect_cmd(void *handle, int argc, char *argv[])
+static int disconnect_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    spp_cmd_t *msg = malloc(sizeof(spp_cmd_t));
+    spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
     if (!msg)
         return CMD_ERROR;
 
@@ -445,15 +446,15 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void write_complete(euv_pty_t *handle, uint8_t *buf, int status)
+static void write_complete(euv_pty_t* handle, uint8_t* buf, int status)
 {
     free(buf);
 }
 
-static void spp_write(void *data)
+static void spp_write(void* data)
 {
-    spp_device_t *device;
-    spp_cmd_t *msg = data;
+    spp_device_t* device;
+    spp_cmd_t* msg = data;
 
     device = find_pty_by_port(msg->port);
     if (!device)
@@ -473,18 +474,18 @@ error:
     free(msg);
 }
 
-static int write_cmd(void *handle, int argc, char *argv[])
+static int write_cmd(void* handle, int argc, char* argv[])
 {
     uint16_t port;
-    uint8_t *buf;
+    uint8_t* buf;
 
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
     port = atoi(argv[0]);
-    buf = (uint8_t *)strdup(argv[1]);
+    buf = (uint8_t*)strdup(argv[1]);
 
-    spp_cmd_t *msg = malloc(sizeof(spp_cmd_t));
+    spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
     if (!msg) {
         free(buf);
         return CMD_ERROR;
@@ -498,7 +499,7 @@ static int write_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int speed_test_cmd(void *handle, int argc, char *argv[])
+static int speed_test_cmd(void* handle, int argc, char* argv[])
 {
     int port, times;
 
@@ -510,7 +511,7 @@ static int speed_test_cmd(void *handle, int argc, char *argv[])
     if (port < 0 || times < 0)
         return CMD_INVALID_PARAM;
 
-    spp_cmd_t *msg = malloc(sizeof(spp_cmd_t));
+    spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
     if (!msg)
         return CMD_ERROR;
 
@@ -530,7 +531,7 @@ static int speed_test_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int dump_cmd(void *handle, int argc, char *argv[])
+static int dump_cmd(void* handle, int argc, char* argv[])
 {
     return CMD_OK;
 }
@@ -541,7 +542,7 @@ static spp_callbacks_t spp_cbs = {
     connection_state_callback,
 };
 
-int spp_command_init(void *handle)
+int spp_command_init(void* handle)
 {
     sem_init(&spp_send_sem, 0, 0);
     thread_loop_init(&spp_thread_loop);
@@ -551,7 +552,7 @@ int spp_command_init(void *handle)
     return 0;
 }
 
-void spp_command_uninit(void *handle)
+void spp_command_uninit(void* handle)
 {
     bt_spp_unregister_app(handle, spp_app_handle);
     sem_destroy(&spp_send_sem);
@@ -559,7 +560,7 @@ void spp_command_uninit(void *handle)
     memset(&spp_thread_loop, 0, sizeof(spp_thread_loop));
 }
 
-int spp_command_exec(void *handle, int argc, char *argv[])
+int spp_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

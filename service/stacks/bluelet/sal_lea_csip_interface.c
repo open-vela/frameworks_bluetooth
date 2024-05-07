@@ -181,7 +181,7 @@ static void adpt_lea_csip_ordered_access_result_callback(LEA_CSIP_SIRK sirk, SER
  * Public function
  ****************************************************************************/
 
-bt_status_t bt_sal_lea_csip_read_sirk(bt_address_t *addr)
+bt_status_t bt_sal_lea_csip_read_sirk(bt_address_t* addr)
 {
     BD_ADDR bd_addr;
 
@@ -191,7 +191,7 @@ bt_status_t bt_sal_lea_csip_read_sirk(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_lea_csip_read_cs_size(bt_address_t *addr)
+bt_status_t bt_sal_lea_csip_read_cs_size(bt_address_t* addr)
 {
     BD_ADDR bd_addr;
 
@@ -201,7 +201,7 @@ bt_status_t bt_sal_lea_csip_read_cs_size(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_lea_csip_read_member_lock(bt_address_t *addr)
+bt_status_t bt_sal_lea_csip_read_member_lock(bt_address_t* addr)
 {
     BD_ADDR bd_addr;
 
@@ -211,7 +211,7 @@ bt_status_t bt_sal_lea_csip_read_member_lock(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_lea_csip_read_member_rank(bt_address_t *addr)
+bt_status_t bt_sal_lea_csip_read_member_rank(bt_address_t* addr)
 {
     BD_ADDR bd_addr;
 
@@ -221,35 +221,35 @@ bt_status_t bt_sal_lea_csip_read_member_rank(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_lea_csip_coordinated_set_discovery_member_start(uint8_t *sirk)
+bt_status_t bt_sal_lea_csip_coordinated_set_discovery_member_start(uint8_t* sirk)
 {
     SAL_CHECK_RET(stack_adapter_lea_csic_set_member_discovery(sirk), SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_lea_csip_coordinated_set_discovery_member_stop(uint8_t *sirk)
+bt_status_t bt_sal_lea_csip_coordinated_set_discovery_member_stop(uint8_t* sirk)
 {
     SAL_CHECK_RET(stack_adapter_lea_csic_set_member_discovery_cancel(sirk), SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_lea_csip_coordinated_set_lock_request(uint8_t *sirk)
+bt_status_t bt_sal_lea_csip_coordinated_set_lock_request(uint8_t* sirk)
 {
     SAL_CHECK_RET(stack_adapter_lea_csic_lock_request(sirk), SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_lea_csip_coordinated_set_lock_release(uint8_t *sirk)
+bt_status_t bt_sal_lea_csip_coordinated_set_lock_release(uint8_t* sirk)
 {
     SAL_CHECK_RET(stack_adapter_lea_csic_lock_release(sirk), SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_lea_csip_coordinated_set_ordered_access(uint8_t *sirk)
+bt_status_t bt_sal_lea_csip_coordinated_set_ordered_access(uint8_t* sirk)
 {
     SAL_CHECK_RET(stack_adapter_lea_csic_ordered_access(sirk), SERVICE_BT_STATUS_SUCCESS);
 

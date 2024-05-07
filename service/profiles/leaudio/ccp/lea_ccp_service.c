@@ -51,9 +51,9 @@ typedef struct
 {
     bool started;
     bts_tbs_info_s tbs_info;
-    bt_list_t *lea_calls;
-    bearer_tele_info_t *info;
-    callbacks_list_t *callbacks;
+    bt_list_t* lea_calls;
+    bearer_tele_info_t* info;
+    callbacks_list_t* callbacks;
     pthread_mutex_t ccp_lock;
 } lea_ccp_service_t;
 
@@ -67,19 +67,19 @@ static lea_ccp_service_t g_ccp_service = {
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-static bool lea_ccp_call_cmp_index(void *ccp_call, void *call_index)
+static bool lea_ccp_call_cmp_index(void* ccp_call, void* call_index)
 {
-    return ((lea_tbs_call_state_t *)ccp_call)->index == *((uint8_t *)call_index);
+    return ((lea_tbs_call_state_t*)ccp_call)->index == *((uint8_t*)call_index);
 }
 
-static bool lea_ccp_call_cmp_state(void *ccp_call, void *call_state)
+static bool lea_ccp_call_cmp_state(void* ccp_call, void* call_state)
 {
-    return ((lea_tbs_call_state_t *)ccp_call)->state == *((uint8_t *)call_state);
+    return ((lea_tbs_call_state_t*)ccp_call)->state == *((uint8_t*)call_state);
 }
 
-lea_tbs_call_state_t *lea_ccp_find_call_by_index(uint8_t call_index)
+lea_tbs_call_state_t* lea_ccp_find_call_by_index(uint8_t call_index)
 {
-    lea_tbs_call_state_t *ccp_call;
+    lea_tbs_call_state_t* ccp_call;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     ccp_call = bt_list_find(g_ccp_service.lea_calls, lea_ccp_call_cmp_index, &call_index);
@@ -88,9 +88,9 @@ lea_tbs_call_state_t *lea_ccp_find_call_by_index(uint8_t call_index)
     return ccp_call;
 }
 
-lea_tbs_call_state_t *lea_ccp_find_call_by_state(uint8_t call_state)
+lea_tbs_call_state_t* lea_ccp_find_call_by_state(uint8_t call_state)
 {
-    lea_tbs_call_state_t *ccp_call;
+    lea_tbs_call_state_t* ccp_call;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     ccp_call = bt_list_find(g_ccp_service.lea_calls, lea_ccp_call_cmp_state, &call_state);
@@ -99,9 +99,9 @@ lea_tbs_call_state_t *lea_ccp_find_call_by_state(uint8_t call_state)
     return ccp_call;
 }
 
-static bool lea_ccp_find_call_index(uint8_t opcode, uint8_t *index)
+static bool lea_ccp_find_call_index(uint8_t opcode, uint8_t* index)
 {
-    lea_tbs_call_state_t *call_states;
+    lea_tbs_call_state_t* call_states;
     bool valied = false;
 
     switch (opcode) {
@@ -150,9 +150,9 @@ static bool lea_ccp_find_call_index(uint8_t opcode, uint8_t *index)
     return valied;
 }
 
-lea_tbs_call_state_t *lea_ccp_add_call(lea_tbs_call_state_t *call)
+lea_tbs_call_state_t* lea_ccp_add_call(lea_tbs_call_state_t* call)
 {
-    lea_tbs_call_state_t *ccp_call;
+    lea_tbs_call_state_t* ccp_call;
 
     ccp_call = malloc(sizeof(lea_tbs_call_state_t));
     if (!ccp_call) {
@@ -168,7 +168,7 @@ lea_tbs_call_state_t *lea_ccp_add_call(lea_tbs_call_state_t *call)
     return ccp_call;
 }
 
-static void lea_ccp_call_delete(lea_tbs_call_state_t *ccp_call)
+static void lea_ccp_call_delete(lea_tbs_call_state_t* ccp_call)
 {
     if (!ccp_call)
         return;
@@ -179,88 +179,88 @@ static void lea_ccp_call_delete(lea_tbs_call_state_t *ccp_call)
  * Private Functions
  ****************************************************************************/
 
-static void lea_ccp_process_debug(lea_ccp_msg_t *msg)
+static void lea_ccp_process_debug(lea_ccp_msg_t* msg)
 {
     switch (msg->event) {
     case STACK_EVENT_READ_PROVIDER_NAME: {
         BT_LOGD("%s, event:%d, tbs_id:%d, provider_name:%s", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.dataarry);
+            msg->event, msg->event_data.tbs_id, msg->event_data.dataarry);
         break;
     }
     case STACK_EVENT_READ_UCI: {
         BT_LOGD("%s, event:%d, tbs_id:%d, uci:%s", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.dataarry);
+            msg->event, msg->event_data.tbs_id, msg->event_data.dataarry);
         break;
     }
     case STACK_EVENT_READ_TECHNOLOGY: {
         BT_LOGD("%s, event:%d, tbs_id:%d, technology:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0);
         break;
     }
     case STACK_EVENT_READ_URI_SCHEMES_SUPPORT_LIST: {
         BT_LOGD("%s, event:%d, tbs_id:%d, uri_schemes:%s", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.dataarry);
+            msg->event, msg->event_data.tbs_id, msg->event_data.dataarry);
         break;
     }
     case STACK_EVENT_READ_SIGNAL_STRENGTH: {
         BT_LOGD("%s, event:%d, tbs_id:%d, strength:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0);
         break;
     }
     case STACK_EVENT_READ_SIGNAL_STRENGTH_REPORT_INTERVAL: {
         BT_LOGD("%s, event:%d, tbs_id:%d, interval:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0);
         break;
     }
     case STACK_EVENT_READ_CONTENT_CONTROL_ID: {
         BT_LOGD("%s, event:%d, tbs_id:%d, ccid:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0);
         break;
     }
     case STACK_EVENT_READ_STATUS_FLAGS: {
         BT_LOGD("%s, event:%d, tbs_id:%d, status_flags:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint16);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint16);
         break;
     }
     case STACK_EVENT_READ_CALL_CONTROL_OPTIONAL_OPCODES: {
         BT_LOGD("%s, event:%d, tbs_id:%d, option_opcode:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint16);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint16);
         break;
     }
     case STACK_EVENT_READ_INCOMING_CALL: {
         BT_LOGD("%s, event:%d, tbs_id:%d, uri:%s", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.dataarry);
+            msg->event, msg->event_data.tbs_id, msg->event_data.dataarry);
         break;
     }
     case STACK_EVENT_READ_INCOMING_CALL_TARGET_BEARER_URI: {
         BT_LOGD("%s, event:%d, tbs_id:%d, uri:%s", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.dataarry);
+            msg->event, msg->event_data.tbs_id, msg->event_data.dataarry);
         break;
     }
     case STACK_EVENT_READ_CALL_STATE: {
-        lea_tbs_call_state_t *call_states;
-        call_states = (lea_tbs_call_state_t *)msg->event_data.dataarry;
+        lea_tbs_call_state_t* call_states;
+        call_states = (lea_tbs_call_state_t*)msg->event_data.dataarry;
         BT_LOGD("%s, event:%d, tbs_id:%d, number:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint32);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint32);
         for (int i = 0; i < msg->event_data.valueint32; i++) {
             BT_LOGD("index:%d, state:%d, flags:%d",
-                    (call_states + i)->index,
-                    (call_states + i)->state,
-                    (call_states + i)->flags);
+                (call_states + i)->index,
+                (call_states + i)->state,
+                (call_states + i)->flags);
         }
         break;
     }
 
     case STACK_EVENT_READ_BEARER_LIST_CURRENT_CALL: {
-        lea_tbs_call_list_item_t *calls;
-        calls = (lea_tbs_call_list_item_t *)msg->event_data.dataarry;
-        void *p = calls;
+        lea_tbs_call_list_item_t* calls;
+        calls = (lea_tbs_call_list_item_t*)msg->event_data.dataarry;
+        void* p = calls;
         BT_LOGD("%s, event:%d, tbs_id:%d, number:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint32);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint32);
         for (int i = 0; i < msg->event_data.valueint32; i++) {
             BT_LOGD("index:%d, state:%d, flags:%d, uri:%s",
-                    calls->index, calls->state,
-                    calls->flags, calls->call_uri);
+                calls->index, calls->state,
+                calls->flags, calls->call_uri);
             p += sizeof(lea_tbs_call_list_item_t) + strlen(calls->call_uri) + 1;
             calls = p;
         }
@@ -269,31 +269,31 @@ static void lea_ccp_process_debug(lea_ccp_msg_t *msg)
 
     case STACK_EVENT_READ_CALL_FRIENDLY_NAME: {
         BT_LOGD("%s, event:%d, tbs_id:%d, call_index:%d, name:%s", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0,
-                msg->event_data.dataarry);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0,
+            msg->event_data.dataarry);
         break;
     }
 
     case STACK_EVENT_TERMINATION_REASON: {
         BT_LOGD("%s, event:%d, tbs_id:%d, call_index:%d, reason:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0,
-                msg->event_data.valueint8_1);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0,
+            msg->event_data.valueint8_1);
         break;
     }
 
     case STACK_EVENT_CALL_CONTROL_RESULT: {
         BT_LOGD("%s, event:%d, tbs_id:%d, opcode:%d, call_index:%d, result:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0,
-                msg->event_data.valueint8_1, msg->event_data.valueint8_2);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8_0,
+            msg->event_data.valueint8_1, msg->event_data.valueint8_2);
         break;
     }
     }
 }
 
-static void lea_ccp_process_message(void *data)
+static void lea_ccp_process_message(void* data)
 {
-    lea_ccp_service_t *service = &g_ccp_service;
-    lea_ccp_msg_t *msg = (lea_ccp_msg_t *)data;
+    lea_ccp_service_t* service = &g_ccp_service;
+    lea_ccp_msg_t* msg = (lea_ccp_msg_t*)data;
 
     lea_ccp_process_debug(msg);
 
@@ -301,7 +301,7 @@ static void lea_ccp_process_message(void *data)
     case STACK_EVENT_READ_PROVIDER_NAME: {
         pthread_mutex_lock(&g_ccp_service.ccp_lock);
         service->info->tbs_id = msg->event_data.tbs_id;
-        strcpy(service->info->provider_name, (char *)msg->event_data.dataarry);
+        strcpy(service->info->provider_name, (char*)msg->event_data.dataarry);
         pthread_mutex_unlock(&g_ccp_service.ccp_lock);
 
         CCP_CALLBACK_FOREACH(g_ccp_service.callbacks, test_cb, &msg->remote_addr);
@@ -311,7 +311,7 @@ static void lea_ccp_process_message(void *data)
     case STACK_EVENT_READ_UCI: {
         pthread_mutex_lock(&g_ccp_service.ccp_lock);
         service->info->tbs_id = msg->event_data.tbs_id;
-        strcpy(service->info->uci, (char *)msg->event_data.dataarry);
+        strcpy(service->info->uci, (char*)msg->event_data.dataarry);
         pthread_mutex_unlock(&g_ccp_service.ccp_lock);
 
         CCP_CALLBACK_FOREACH(g_ccp_service.callbacks, test_cb, &msg->remote_addr);
@@ -331,7 +331,7 @@ static void lea_ccp_process_message(void *data)
     case STACK_EVENT_READ_URI_SCHEMES_SUPPORT_LIST: {
         pthread_mutex_lock(&g_ccp_service.ccp_lock);
         service->info->tbs_id = msg->event_data.tbs_id;
-        strcpy(service->info->uri_schemes, (char *)msg->event_data.dataarry);
+        strcpy(service->info->uri_schemes, (char*)msg->event_data.dataarry);
         pthread_mutex_unlock(&g_ccp_service.ccp_lock);
 
         CCP_CALLBACK_FOREACH(g_ccp_service.callbacks, test_cb, &msg->remote_addr);
@@ -392,7 +392,7 @@ static void lea_ccp_process_message(void *data)
         pthread_mutex_lock(&g_ccp_service.ccp_lock);
         service->info->tbs_id = msg->event_data.tbs_id;
         service->info->call_index = msg->event_data.valueint8_0;
-        strcpy(service->info->uri, (char *)msg->event_data.dataarry);
+        strcpy(service->info->uri, (char*)msg->event_data.dataarry);
         pthread_mutex_unlock(&g_ccp_service.ccp_lock);
 
         CCP_CALLBACK_FOREACH(g_ccp_service.callbacks, test_cb, &msg->remote_addr);
@@ -403,7 +403,7 @@ static void lea_ccp_process_message(void *data)
         pthread_mutex_lock(&g_ccp_service.ccp_lock);
         service->info->tbs_id = msg->event_data.tbs_id;
         service->info->call_index = msg->event_data.valueint8_0;
-        strcpy(service->info->uri, (char *)msg->event_data.dataarry);
+        strcpy(service->info->uri, (char*)msg->event_data.dataarry);
         pthread_mutex_unlock(&g_ccp_service.ccp_lock);
 
         CCP_CALLBACK_FOREACH(g_ccp_service.callbacks, test_cb, &msg->remote_addr);
@@ -411,9 +411,9 @@ static void lea_ccp_process_message(void *data)
     }
 
     case STACK_EVENT_READ_CALL_STATE: {
-        lea_tbs_call_state_t *call_states;
-        lea_tbs_call_state_t *ccp_call;
-        call_states = (lea_tbs_call_state_t *)msg->event_data.dataarry;
+        lea_tbs_call_state_t* call_states;
+        lea_tbs_call_state_t* ccp_call;
+        call_states = (lea_tbs_call_state_t*)msg->event_data.dataarry;
 
         pthread_mutex_lock(&g_ccp_service.ccp_lock);
         service->info->tbs_id = msg->event_data.tbs_id;
@@ -444,7 +444,7 @@ static void lea_ccp_process_message(void *data)
         pthread_mutex_lock(&g_ccp_service.ccp_lock);
         service->info->tbs_id = msg->event_data.tbs_id;
         service->info->call_index = msg->event_data.valueint8_0;
-        strcpy(service->info->friendly_name, (char *)msg->event_data.dataarry);
+        strcpy(service->info->friendly_name, (char*)msg->event_data.dataarry);
         pthread_mutex_unlock(&g_ccp_service.ccp_lock);
 
         CCP_CALLBACK_FOREACH(g_ccp_service.callbacks, test_cb, &msg->remote_addr);
@@ -480,7 +480,7 @@ static void lea_ccp_process_message(void *data)
     lea_ccp_msg_destory(msg);
 }
 
-static bt_status_t lea_ccp_send_msg(lea_ccp_msg_t *msg)
+static bt_status_t lea_ccp_send_msg(lea_ccp_msg_t* msg)
 {
     assert(msg);
 
@@ -492,10 +492,10 @@ static bt_status_t lea_ccp_send_msg(lea_ccp_msg_t *msg)
 /****************************************************************************
  * sal callbacks
  ****************************************************************************/
-void lea_ccp_on_bearer_provider_name(bt_address_t *addr, uint32_t tbs_id, size_t size,
-                                     const char *name)
+void lea_ccp_on_bearer_provider_name(bt_address_t* addr, uint32_t tbs_id, size_t size,
+    const char* name)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new_ext(STACK_EVENT_READ_PROVIDER_NAME, addr, tbs_id, size);
     if (!msg) {
@@ -503,14 +503,14 @@ void lea_ccp_on_bearer_provider_name(bt_address_t *addr, uint32_t tbs_id, size_t
         return;
     }
 
-    strcpy((char *)msg->event_data.dataarry, name);
+    strcpy((char*)msg->event_data.dataarry, name);
 
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_bearer_uci(bt_address_t *addr, uint32_t tbs_id, size_t size, const char *uci)
+void lea_ccp_on_bearer_uci(bt_address_t* addr, uint32_t tbs_id, size_t size, const char* uci)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new_ext(STACK_EVENT_READ_UCI, addr, tbs_id, size);
     if (!msg) {
@@ -518,14 +518,14 @@ void lea_ccp_on_bearer_uci(bt_address_t *addr, uint32_t tbs_id, size_t size, con
         return;
     }
 
-    strcpy((char *)msg->event_data.dataarry, uci);
+    strcpy((char*)msg->event_data.dataarry, uci);
 
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_bearer_technology(bt_address_t *addr, uint32_t tbs_id, uint8_t technology)
+void lea_ccp_on_bearer_technology(bt_address_t* addr, uint32_t tbs_id, uint8_t technology)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new(STACK_EVENT_READ_TECHNOLOGY, addr, tbs_id);
     if (!msg) {
@@ -538,10 +538,10 @@ void lea_ccp_on_bearer_technology(bt_address_t *addr, uint32_t tbs_id, uint8_t t
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_bearer_uri_schemes_supported_list(bt_address_t *addr, uint32_t tbs_id, size_t size,
-                                                  const char *uri_schemes)
+void lea_ccp_on_bearer_uri_schemes_supported_list(bt_address_t* addr, uint32_t tbs_id, size_t size,
+    const char* uri_schemes)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new_ext(STACK_EVENT_READ_URI_SCHEMES_SUPPORT_LIST, addr, tbs_id, size);
     if (!msg) {
@@ -549,14 +549,14 @@ void lea_ccp_on_bearer_uri_schemes_supported_list(bt_address_t *addr, uint32_t t
         return;
     }
 
-    strcpy((char *)msg->event_data.dataarry, uri_schemes);
+    strcpy((char*)msg->event_data.dataarry, uri_schemes);
 
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_bearer_signal_strength(bt_address_t *addr, uint32_t tbs_id, uint8_t strength)
+void lea_ccp_on_bearer_signal_strength(bt_address_t* addr, uint32_t tbs_id, uint8_t strength)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new(STACK_EVENT_READ_SIGNAL_STRENGTH, addr, tbs_id);
     if (!msg) {
@@ -569,10 +569,10 @@ void lea_ccp_on_bearer_signal_strength(bt_address_t *addr, uint32_t tbs_id, uint
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_bearer_signal_strength_report_interval(bt_address_t *addr, uint32_t tbs_id,
-                                                       uint8_t interval)
+void lea_ccp_on_bearer_signal_strength_report_interval(bt_address_t* addr, uint32_t tbs_id,
+    uint8_t interval)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new(STACK_EVENT_READ_SIGNAL_STRENGTH_REPORT_INTERVAL, addr, tbs_id);
     if (!msg) {
@@ -585,9 +585,9 @@ void lea_ccp_on_bearer_signal_strength_report_interval(bt_address_t *addr, uint3
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_content_control_id(bt_address_t *addr, uint32_t tbs_id, uint8_t ccid)
+void lea_ccp_on_content_control_id(bt_address_t* addr, uint32_t tbs_id, uint8_t ccid)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new(STACK_EVENT_READ_CONTENT_CONTROL_ID, addr, tbs_id);
     if (!msg) {
@@ -600,9 +600,9 @@ void lea_ccp_on_content_control_id(bt_address_t *addr, uint32_t tbs_id, uint8_t 
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_status_flags(bt_address_t *addr, uint32_t tbs_id, uint16_t status_flags)
+void lea_ccp_on_status_flags(bt_address_t* addr, uint32_t tbs_id, uint16_t status_flags)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new(STACK_EVENT_READ_STATUS_FLAGS, addr, tbs_id);
     if (!msg) {
@@ -615,10 +615,10 @@ void lea_ccp_on_status_flags(bt_address_t *addr, uint32_t tbs_id, uint16_t statu
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_call_control_optional_opcodes(bt_address_t *addr, uint32_t tbs_id,
-                                              uint16_t opcodes)
+void lea_ccp_on_call_control_optional_opcodes(bt_address_t* addr, uint32_t tbs_id,
+    uint16_t opcodes)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new(STACK_EVENT_READ_CALL_CONTROL_OPTIONAL_OPCODES, addr, tbs_id);
     if (!msg) {
@@ -631,10 +631,10 @@ void lea_ccp_on_call_control_optional_opcodes(bt_address_t *addr, uint32_t tbs_i
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_incoming_call(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, size_t size,
-                              const char *uri)
+void lea_ccp_on_incoming_call(bt_address_t* addr, uint32_t tbs_id, uint8_t call_index, size_t size,
+    const char* uri)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new_ext(STACK_EVENT_READ_INCOMING_CALL, addr, tbs_id, size);
     if (!msg) {
@@ -643,15 +643,15 @@ void lea_ccp_on_incoming_call(bt_address_t *addr, uint32_t tbs_id, uint8_t call_
     }
 
     msg->event_data.valueint8_0 = call_index;
-    strcpy((char *)msg->event_data.dataarry, uri);
+    strcpy((char*)msg->event_data.dataarry, uri);
 
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_incoming_call_target_bearer_uri(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index,
-                                                size_t size, const char *uri)
+void lea_ccp_on_incoming_call_target_bearer_uri(bt_address_t* addr, uint32_t tbs_id, uint8_t call_index,
+    size_t size, const char* uri)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new_ext(STACK_EVENT_READ_INCOMING_CALL_TARGET_BEARER_URI, addr, tbs_id, size);
     if (!msg) {
@@ -660,15 +660,15 @@ void lea_ccp_on_incoming_call_target_bearer_uri(bt_address_t *addr, uint32_t tbs
     }
 
     msg->event_data.valueint8_0 = call_index;
-    strcpy((char *)msg->event_data.dataarry, uri);
+    strcpy((char*)msg->event_data.dataarry, uri);
 
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_call_state(bt_address_t *addr, uint32_t tbs_id, uint32_t number,
-                           lea_tbs_call_state_t *states_s)
+void lea_ccp_on_call_state(bt_address_t* addr, uint32_t tbs_id, uint32_t number,
+    lea_tbs_call_state_t* states_s)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     if (number < 1) {
         BT_LOGW("%s ,the number of call state is zero!", __func__);
@@ -676,7 +676,7 @@ void lea_ccp_on_call_state(bt_address_t *addr, uint32_t tbs_id, uint32_t number,
     }
 
     msg = lea_ccp_msg_new_ext(STACK_EVENT_READ_CALL_STATE, addr, tbs_id,
-                              sizeof(lea_tbs_call_state_t) * number);
+        sizeof(lea_tbs_call_state_t) * number);
     if (!msg) {
         BT_LOGE("%s, Failed to create msg", __func__);
         return;
@@ -688,10 +688,10 @@ void lea_ccp_on_call_state(bt_address_t *addr, uint32_t tbs_id, uint32_t number,
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_bearer_list_current_calls(bt_address_t *addr, uint32_t tbs_id, uint32_t number, size_t size,
-                                          lea_tbs_call_list_item_t *calls)
+void lea_ccp_on_bearer_list_current_calls(bt_address_t* addr, uint32_t tbs_id, uint32_t number, size_t size,
+    lea_tbs_call_list_item_t* calls)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     if (number < 1) {
         BT_LOGW("%s ,the number of bearer list current call is zero!", __func__);
@@ -710,10 +710,10 @@ void lea_ccp_on_bearer_list_current_calls(bt_address_t *addr, uint32_t tbs_id, u
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_call_friendly_name(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index, size_t size,
-                                   const char *name)
+void lea_ccp_on_call_friendly_name(bt_address_t* addr, uint32_t tbs_id, uint8_t call_index, size_t size,
+    const char* name)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new_ext(STACK_EVENT_READ_CALL_FRIENDLY_NAME, addr, tbs_id, size);
     if (!msg) {
@@ -722,15 +722,15 @@ void lea_ccp_on_call_friendly_name(bt_address_t *addr, uint32_t tbs_id, uint8_t 
     }
 
     msg->event_data.valueint8_0 = call_index;
-    strcpy((char *)msg->event_data.dataarry, name);
+    strcpy((char*)msg->event_data.dataarry, name);
 
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_termination_reason(bt_address_t *addr, uint32_t tbs_id, uint8_t call_index,
-                                   lea_adpt_termination_reason_t reason)
+void lea_ccp_on_termination_reason(bt_address_t* addr, uint32_t tbs_id, uint8_t call_index,
+    lea_adpt_termination_reason_t reason)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new(STACK_EVENT_TERMINATION_REASON, addr, tbs_id);
     if (!msg) {
@@ -744,10 +744,10 @@ void lea_ccp_on_termination_reason(bt_address_t *addr, uint32_t tbs_id, uint8_t 
     lea_ccp_send_msg(msg);
 }
 
-void lea_ccp_on_call_control_result(bt_address_t *addr, uint32_t tbs_id, uint8_t opcode,
-                                    uint8_t call_index, lea_adpt_call_control_result_t result)
+void lea_ccp_on_call_control_result(bt_address_t* addr, uint32_t tbs_id, uint8_t opcode,
+    uint8_t call_index, lea_adpt_call_control_result_t result)
 {
-    lea_ccp_msg_t *msg;
+    lea_ccp_msg_t* msg;
 
     msg = lea_ccp_msg_new(STACK_EVENT_CALL_CONTROL_RESULT, addr, tbs_id);
     if (!msg) {
@@ -765,11 +765,11 @@ void lea_ccp_on_call_control_result(bt_address_t *addr, uint32_t tbs_id, uint8_t
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-static bt_status_t bts_lea_ccp_read_bearer_provider_name(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_bearer_provider_name(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -788,11 +788,11 @@ static bt_status_t bts_lea_ccp_read_bearer_provider_name(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_bearer_uci(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_bearer_uci(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -811,11 +811,11 @@ static bt_status_t bts_lea_ccp_read_bearer_uci(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_bearer_technology(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_bearer_technology(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -834,11 +834,11 @@ static bt_status_t bts_lea_ccp_read_bearer_technology(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_bearer_uri_schemes_supported_list(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_bearer_uri_schemes_supported_list(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -857,11 +857,11 @@ static bt_status_t bts_lea_ccp_read_bearer_uri_schemes_supported_list(bt_address
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_bearer_signal_strength(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_bearer_signal_strength(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -880,11 +880,11 @@ static bt_status_t bts_lea_ccp_read_bearer_signal_strength(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_bearer_signal_strength_report_interval(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_bearer_signal_strength_report_interval(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -903,11 +903,11 @@ static bt_status_t bts_lea_ccp_read_bearer_signal_strength_report_interval(bt_ad
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_content_control_id(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_content_control_id(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -926,11 +926,11 @@ static bt_status_t bts_lea_ccp_read_content_control_id(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_status_flags(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_status_flags(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -949,11 +949,11 @@ static bt_status_t bts_lea_ccp_read_status_flags(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_call_control_optional_opcodes(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_call_control_optional_opcodes(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -972,11 +972,11 @@ static bt_status_t bts_lea_ccp_read_call_control_optional_opcodes(bt_address_t *
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_incoming_call(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_incoming_call(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -995,11 +995,11 @@ static bt_status_t bts_lea_ccp_read_incoming_call(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_incoming_call_target_bearer_uri(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_incoming_call_target_bearer_uri(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -1018,11 +1018,11 @@ static bt_status_t bts_lea_ccp_read_incoming_call_target_bearer_uri(bt_address_t
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_call_state(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_call_state(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -1041,11 +1041,11 @@ static bt_status_t bts_lea_ccp_read_call_state(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_bearer_list_current_calls(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_bearer_list_current_calls(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -1064,11 +1064,11 @@ static bt_status_t bts_lea_ccp_read_bearer_list_current_calls(bt_address_t *addr
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_read_call_friendly_name(bt_address_t *addr)
+static bt_status_t bts_lea_ccp_read_call_friendly_name(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -1087,11 +1087,11 @@ static bt_status_t bts_lea_ccp_read_call_friendly_name(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_call_control_by_index(bt_address_t *addr, uint8_t opcode)
+static bt_status_t bts_lea_ccp_call_control_by_index(bt_address_t* addr, uint8_t opcode)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
     uint8_t call_index;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
@@ -1114,11 +1114,11 @@ static bt_status_t bts_lea_ccp_call_control_by_index(bt_address_t *addr, uint8_t
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_originate_call(bt_address_t *addr, uint8_t *uri)
+static bt_status_t bts_lea_ccp_originate_call(bt_address_t* addr, uint8_t* uri)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -1137,12 +1137,12 @@ static bt_status_t bts_lea_ccp_originate_call(bt_address_t *addr, uint8_t *uri)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_lea_ccp_join_calls(bt_address_t *addr, uint8_t number,
-                                          uint8_t *call_indexes)
+static bt_status_t bts_lea_ccp_join_calls(bt_address_t* addr, uint8_t number,
+    uint8_t* call_indexes)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     pthread_mutex_lock(&g_ccp_service.ccp_lock);
     if (!service->tbs_info.num) {
@@ -1161,15 +1161,15 @@ static bt_status_t bts_lea_ccp_join_calls(bt_address_t *addr, uint8_t number,
     return BT_STATUS_SUCCESS;
 }
 
-static void *bts_ccp_register_callbacks(void *handle, lea_ccp_callbacks_t *callbacks)
+static void* bts_ccp_register_callbacks(void* handle, lea_ccp_callbacks_t* callbacks)
 {
     if (!g_ccp_service.started)
         return NULL;
 
-    return bt_remote_callbacks_register(g_ccp_service.callbacks, handle, (void *)callbacks);
+    return bt_remote_callbacks_register(g_ccp_service.callbacks, handle, (void*)callbacks);
 }
 
-static bool bts_ccp_unregister_callbacks(void **handle, void *cookie)
+static bool bts_ccp_unregister_callbacks(void** handle, void* cookie)
 {
     if (!g_ccp_service.started)
         return false;
@@ -1203,7 +1203,7 @@ static const lea_ccp_interface_t leaCcpInterface = {
 /****************************************************************************
  * Public function
  ****************************************************************************/
-static const void *get_lea_ccp_profile_interface(void)
+static const void* get_lea_ccp_profile_interface(void)
 {
     return &leaCcpInterface;
 }
@@ -1211,7 +1211,7 @@ static const void *get_lea_ccp_profile_interface(void)
 static bt_status_t lea_ccp_init(void)
 {
     BT_LOGD("%s", __func__);
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
     service->tbs_info.num = 0;
     return BT_STATUS_SUCCESS;
 }
@@ -1220,14 +1220,14 @@ static bt_status_t lea_ccp_startup(profile_on_startup_t cb)
 {
     bt_status_t status;
     pthread_mutexattr_t attr;
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
 
     BT_LOGD("%s", __func__);
     if (service->started)
         return BT_STATUS_SUCCESS;
 
     service->lea_calls = bt_list_new((bt_list_free_cb_t)lea_ccp_call_delete);
-    service->info = (bearer_tele_info_t *)malloc(sizeof(bearer_tele_info_t));
+    service->info = (bearer_tele_info_t*)malloc(sizeof(bearer_tele_info_t));
     service->callbacks = bt_callbacks_list_new(2);
     if (!service->callbacks) {
         status = BT_STATUS_NOMEM;
@@ -1244,7 +1244,7 @@ static bt_status_t lea_ccp_startup(profile_on_startup_t cb)
 fail:
     bt_list_free(service->lea_calls);
     service->lea_calls = NULL;
-    free((void *)service->info);
+    free((void*)service->info);
     bt_callbacks_list_free(service->callbacks);
     service->callbacks = NULL;
     pthread_mutex_destroy(&service->ccp_lock);
@@ -1262,7 +1262,7 @@ static bt_status_t lea_ccp_shutdown(profile_on_shutdown_t cb)
 
     bt_list_free(g_ccp_service.lea_calls);
     g_ccp_service.lea_calls = NULL;
-    free((void *)g_ccp_service.info);
+    free((void*)g_ccp_service.info);
     g_ccp_service.info = NULL;
     bt_callbacks_list_free(g_ccp_service.callbacks);
     g_ccp_service.callbacks = NULL;
@@ -1288,7 +1288,7 @@ static const profile_service_t lea_ccp_service = {
     .name = PROFILE_CCP_NAME,
     .id = PROFILE_LEAUDIO_CCP,
     .transport = BT_TRANSPORT_BLE,
-    .uuid = {BT_UUID128_TYPE, { 0 }},
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = lea_ccp_init,
     .startup = lea_ccp_startup,
     .shutdown = lea_ccp_shutdown,
@@ -1306,7 +1306,7 @@ void register_lea_ccp_service(void)
 
 void adpt_tbs_sid_changed(uint32_t sid)
 {
-    lea_ccp_service_t *service = &g_ccp_service;
+    lea_ccp_service_t* service = &g_ccp_service;
     BT_LOGD("%s, sid:%d", __func__, sid);
     service->tbs_info.num = CONFIG_BLUETOOTH_LEAUDIO_SERVER_CALL_CONTROL_NUMBER;
     service->tbs_info.sid = sid;

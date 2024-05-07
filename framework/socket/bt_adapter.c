@@ -21,16 +21,16 @@
 #include "bt_adapter.h"
 #include "bt_socket.h"
 
-void *bt_adapter_register_callback(bt_instance_t *ins, const adapter_callbacks_t *adapter_cbs)
+void* bt_adapter_register_callback(bt_instance_t* ins, const adapter_callbacks_t* adapter_cbs)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    void *handle;
+    void* handle;
 
     BT_SOCKET_INS_VALID(ins, NULL);
 
     if (ins->adapter_callbacks) {
-        handle = bt_remote_callbacks_register(ins->adapter_callbacks, NULL, (void *)adapter_cbs);
+        handle = bt_remote_callbacks_register(ins->adapter_callbacks, NULL, (void*)adapter_cbs);
         return handle;
     }
 
@@ -39,9 +39,9 @@ void *bt_adapter_register_callback(bt_instance_t *ins, const adapter_callbacks_t
         return NULL;
 
 #ifdef CONFIG_BLUETOOTH_FEATURE
-    handle = bt_remote_callbacks_register(ins->adapter_callbacks, ins, (void *)adapter_cbs);
+    handle = bt_remote_callbacks_register(ins->adapter_callbacks, ins, (void*)adapter_cbs);
 #else
-    handle = bt_remote_callbacks_register(ins->adapter_callbacks, NULL, (void *)adapter_cbs);
+    handle = bt_remote_callbacks_register(ins->adapter_callbacks, NULL, (void*)adapter_cbs);
 #endif
 
     if (handle == NULL) {
@@ -60,7 +60,7 @@ void *bt_adapter_register_callback(bt_instance_t *ins, const adapter_callbacks_t
     return handle;
 }
 
-bool bt_adapter_unregister_callback(bt_instance_t *ins, void *cookie)
+bool bt_adapter_unregister_callback(bt_instance_t* ins, void* cookie)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -86,7 +86,7 @@ bool bt_adapter_unregister_callback(bt_instance_t *ins, void *cookie)
     return true;
 }
 
-bt_status_t bt_adapter_enable(bt_instance_t *ins)
+bt_status_t bt_adapter_enable(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -101,7 +101,7 @@ bt_status_t bt_adapter_enable(bt_instance_t *ins)
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_disable(bt_instance_t *ins)
+bt_status_t bt_adapter_disable(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -116,7 +116,7 @@ bt_status_t bt_adapter_disable(bt_instance_t *ins)
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_enable_le(bt_instance_t *ins)
+bt_status_t bt_adapter_enable_le(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -131,7 +131,7 @@ bt_status_t bt_adapter_enable_le(bt_instance_t *ins)
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_disable_le(bt_instance_t *ins)
+bt_status_t bt_adapter_disable_le(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -146,7 +146,7 @@ bt_status_t bt_adapter_disable_le(bt_instance_t *ins)
     return packet.adpt_r.status;
 }
 
-bt_adapter_state_t bt_adapter_get_state(bt_instance_t *ins)
+bt_adapter_state_t bt_adapter_get_state(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -161,7 +161,7 @@ bt_adapter_state_t bt_adapter_get_state(bt_instance_t *ins)
     return packet.adpt_r.state;
 }
 
-bool bt_adapter_is_le_enabled(bt_instance_t *ins)
+bool bt_adapter_is_le_enabled(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -176,7 +176,7 @@ bool bt_adapter_is_le_enabled(bt_instance_t *ins)
     return packet.adpt_r.bbool;
 }
 
-bt_device_type_t bt_adapter_get_type(bt_instance_t *ins)
+bt_device_type_t bt_adapter_get_type(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -191,7 +191,7 @@ bt_device_type_t bt_adapter_get_type(bt_instance_t *ins)
     return packet.adpt_r.dtype;
 }
 
-bt_status_t bt_adapter_set_discovery_filter(bt_instance_t *ins)
+bt_status_t bt_adapter_set_discovery_filter(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -206,7 +206,7 @@ bt_status_t bt_adapter_set_discovery_filter(bt_instance_t *ins)
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_start_discovery(bt_instance_t *ins, uint32_t timeout)
+bt_status_t bt_adapter_start_discovery(bt_instance_t* ins, uint32_t timeout)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -222,7 +222,7 @@ bt_status_t bt_adapter_start_discovery(bt_instance_t *ins, uint32_t timeout)
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_cancel_discovery(bt_instance_t *ins)
+bt_status_t bt_adapter_cancel_discovery(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -237,7 +237,7 @@ bt_status_t bt_adapter_cancel_discovery(bt_instance_t *ins)
     return packet.adpt_r.status;
 }
 
-bool bt_adapter_is_discovering(bt_instance_t *ins)
+bool bt_adapter_is_discovering(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -252,7 +252,7 @@ bool bt_adapter_is_discovering(bt_instance_t *ins)
     return packet.adpt_r.bbool;
 }
 
-void bt_adapter_get_address(bt_instance_t *ins, bt_address_t *addr)
+void bt_adapter_get_address(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -267,7 +267,7 @@ void bt_adapter_get_address(bt_instance_t *ins, bt_address_t *addr)
     memcpy(addr, &packet.adpt_pl._bt_adapter_get_address.addr, sizeof(*addr));
 }
 
-bt_status_t bt_adapter_set_name(bt_instance_t *ins, const char *name)
+bt_status_t bt_adapter_set_name(bt_instance_t* ins, const char* name)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -288,7 +288,7 @@ bt_status_t bt_adapter_set_name(bt_instance_t *ins, const char *name)
     return packet.adpt_r.status;
 }
 
-void bt_adapter_get_name(bt_instance_t *ins, char *name, int length)
+void bt_adapter_get_name(bt_instance_t* ins, char* name, int length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -307,7 +307,7 @@ void bt_adapter_get_name(bt_instance_t *ins, char *name, int length)
     strncpy(name, packet.adpt_pl._bt_adapter_get_name.name, 64);
 }
 
-bt_status_t bt_adapter_get_uuids(bt_instance_t *ins, bt_uuid_t *uuids, uint16_t *size)
+bt_status_t bt_adapter_get_uuids(bt_instance_t* ins, bt_uuid_t* uuids, uint16_t* size)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -327,7 +327,7 @@ bt_status_t bt_adapter_get_uuids(bt_instance_t *ins, bt_uuid_t *uuids, uint16_t 
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_set_scan_mode(bt_instance_t *ins, bt_scan_mode_t mode, bool bondable)
+bt_status_t bt_adapter_set_scan_mode(bt_instance_t* ins, bt_scan_mode_t mode, bool bondable)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -344,7 +344,7 @@ bt_status_t bt_adapter_set_scan_mode(bt_instance_t *ins, bt_scan_mode_t mode, bo
     return packet.adpt_r.status;
 }
 
-bt_scan_mode_t bt_adapter_get_scan_mode(bt_instance_t *ins)
+bt_scan_mode_t bt_adapter_get_scan_mode(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -359,7 +359,7 @@ bt_scan_mode_t bt_adapter_get_scan_mode(bt_instance_t *ins)
     return packet.adpt_r.mode;
 }
 
-bt_status_t bt_adapter_set_device_class(bt_instance_t *ins, uint32_t cod)
+bt_status_t bt_adapter_set_device_class(bt_instance_t* ins, uint32_t cod)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -375,7 +375,7 @@ bt_status_t bt_adapter_set_device_class(bt_instance_t *ins, uint32_t cod)
     return packet.adpt_r.status;
 }
 
-uint32_t bt_adapter_get_device_class(bt_instance_t *ins)
+uint32_t bt_adapter_get_device_class(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -390,7 +390,7 @@ uint32_t bt_adapter_get_device_class(bt_instance_t *ins)
     return packet.adpt_r.v32;
 }
 
-bt_status_t bt_adapter_set_io_capability(bt_instance_t *ins, bt_io_capability_t cap)
+bt_status_t bt_adapter_set_io_capability(bt_instance_t* ins, bt_io_capability_t cap)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -406,7 +406,7 @@ bt_status_t bt_adapter_set_io_capability(bt_instance_t *ins, bt_io_capability_t 
     return packet.adpt_r.status;
 }
 
-bt_io_capability_t bt_adapter_get_io_capability(bt_instance_t *ins)
+bt_io_capability_t bt_adapter_get_io_capability(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -421,8 +421,8 @@ bt_io_capability_t bt_adapter_get_io_capability(bt_instance_t *ins)
     return packet.adpt_r.ioc;
 }
 
-bt_status_t bt_adapter_set_inquiry_scan_parameters(bt_instance_t *ins, bt_scan_type_t type,
-                                                   uint16_t interval, uint16_t window)
+bt_status_t bt_adapter_set_inquiry_scan_parameters(bt_instance_t* ins, bt_scan_type_t type,
+    uint16_t interval, uint16_t window)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -440,8 +440,8 @@ bt_status_t bt_adapter_set_inquiry_scan_parameters(bt_instance_t *ins, bt_scan_t
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_set_page_scan_parameters(bt_instance_t *ins, bt_scan_type_t type,
-                                                uint16_t interval, uint16_t window)
+bt_status_t bt_adapter_set_page_scan_parameters(bt_instance_t* ins, bt_scan_type_t type,
+    uint16_t interval, uint16_t window)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -459,7 +459,7 @@ bt_status_t bt_adapter_set_page_scan_parameters(bt_instance_t *ins, bt_scan_type
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_set_le_io_capability(bt_instance_t *ins, uint32_t le_io_cap)
+bt_status_t bt_adapter_set_le_io_capability(bt_instance_t* ins, uint32_t le_io_cap)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -475,7 +475,7 @@ bt_status_t bt_adapter_set_le_io_capability(bt_instance_t *ins, uint32_t le_io_c
     return packet.adpt_r.status;
 }
 
-uint32_t bt_adapter_get_le_io_capability(bt_instance_t *ins)
+uint32_t bt_adapter_get_le_io_capability(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -490,7 +490,7 @@ uint32_t bt_adapter_get_le_io_capability(bt_instance_t *ins)
     return packet.adpt_r.v32;
 }
 
-bt_status_t bt_adapter_get_le_address(bt_instance_t *ins, bt_address_t *addr, ble_addr_type_t *type)
+bt_status_t bt_adapter_get_le_address(bt_instance_t* ins, bt_address_t* addr, ble_addr_type_t* type)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -510,7 +510,7 @@ bt_status_t bt_adapter_get_le_address(bt_instance_t *ins, bt_address_t *addr, bl
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_set_le_address(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_adapter_set_le_address(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -526,7 +526,7 @@ bt_status_t bt_adapter_set_le_address(bt_instance_t *ins, bt_address_t *addr)
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_set_le_identity_address(bt_instance_t *ins, bt_address_t *addr, bool public)
+bt_status_t bt_adapter_set_le_identity_address(bt_instance_t* ins, bt_address_t* addr, bool public)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -543,7 +543,7 @@ bt_status_t bt_adapter_set_le_identity_address(bt_instance_t *ins, bt_address_t 
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_set_le_appearance(bt_instance_t *ins, uint16_t appearance)
+bt_status_t bt_adapter_set_le_appearance(bt_instance_t* ins, uint16_t appearance)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -559,7 +559,7 @@ bt_status_t bt_adapter_set_le_appearance(bt_instance_t *ins, uint16_t appearance
     return packet.adpt_r.status;
 }
 
-uint16_t bt_adapter_get_le_appearance(bt_instance_t *ins)
+uint16_t bt_adapter_get_le_appearance(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -574,9 +574,9 @@ uint16_t bt_adapter_get_le_appearance(bt_instance_t *ins)
     return packet.adpt_r.v16;
 }
 
-bt_status_t bt_adapter_le_enable_key_derivation(bt_instance_t *ins,
-                                                bool brkey_to_lekey,
-                                                bool lekey_to_brkey)
+bt_status_t bt_adapter_le_enable_key_derivation(bt_instance_t* ins,
+    bool brkey_to_lekey,
+    bool lekey_to_brkey)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -593,7 +593,7 @@ bt_status_t bt_adapter_le_enable_key_derivation(bt_instance_t *ins,
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_le_add_whitelist(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_adapter_le_add_whitelist(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -609,7 +609,7 @@ bt_status_t bt_adapter_le_add_whitelist(bt_instance_t *ins, bt_address_t *addr)
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_le_remove_whitelist(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_adapter_le_remove_whitelist(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -625,7 +625,7 @@ bt_status_t bt_adapter_le_remove_whitelist(bt_instance_t *ins, bt_address_t *add
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_get_bonded_devices(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator)
+bt_status_t bt_adapter_get_bonded_devices(bt_instance_t* ins, bt_transport_t transport, bt_address_t** addr, int* num, bt_allocator_t allocator)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -641,17 +641,17 @@ bt_status_t bt_adapter_get_bonded_devices(bt_instance_t *ins, bt_transport_t tra
     *num = packet.adpt_pl._bt_adapter_get_bonded_devices.num;
 
     if (*num > 0) {
-        allocator((void **)addr, sizeof(bt_address_t) * *num);
+        allocator((void**)addr, sizeof(bt_address_t) * *num);
         if (*addr == NULL)
             return BT_STATUS_NOMEM;
         memcpy(*addr, packet.adpt_pl._bt_adapter_get_bonded_devices.addr,
-               sizeof(bt_address_t) * *num);
+            sizeof(bt_address_t) * *num);
     }
 
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_get_connected_devices(bt_instance_t *ins, bt_transport_t transport, bt_address_t **addr, int *num, bt_allocator_t allocator)
+bt_status_t bt_adapter_get_connected_devices(bt_instance_t* ins, bt_transport_t transport, bt_address_t** addr, int* num, bt_allocator_t allocator)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -667,18 +667,18 @@ bt_status_t bt_adapter_get_connected_devices(bt_instance_t *ins, bt_transport_t 
     *num = packet.adpt_pl._bt_adapter_get_connected_devices.num;
 
     if (*num > 0) {
-        allocator((void **)addr, sizeof(bt_address_t) * *num);
+        allocator((void**)addr, sizeof(bt_address_t) * *num);
         if (*addr == NULL)
             return BT_STATUS_NOMEM;
         memcpy(*addr, packet.adpt_pl._bt_adapter_get_connected_devices.addr,
-               sizeof(bt_address_t) * *num);
+            sizeof(bt_address_t) * *num);
     }
 
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_set_afh_channel_classification(bt_instance_t *ins, uint16_t central_frequency,
-                                                      uint16_t band_width, uint16_t number)
+bt_status_t bt_adapter_set_afh_channel_classification(bt_instance_t* ins, uint16_t central_frequency,
+    uint16_t band_width, uint16_t number)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -696,7 +696,7 @@ bt_status_t bt_adapter_set_afh_channel_classification(bt_instance_t *ins, uint16
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_set_auto_sniff(bt_instance_t *ins, bt_auto_sniff_params_t *params)
+bt_status_t bt_adapter_set_auto_sniff(bt_instance_t* ins, bt_auto_sniff_params_t* params)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -711,7 +711,7 @@ bt_status_t bt_adapter_set_auto_sniff(bt_instance_t *ins, bt_auto_sniff_params_t
     return packet.adpt_r.status;
 }
 
-void bt_adapter_disconnect_all_devices(bt_instance_t *ins)
+void bt_adapter_disconnect_all_devices(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
 
@@ -719,7 +719,7 @@ void bt_adapter_disconnect_all_devices(bt_instance_t *ins)
     (void)bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_DISCONNECT_ALL_DEVICES);
 }
 
-bool bt_adapter_is_support_bredr(bt_instance_t *ins)
+bool bt_adapter_is_support_bredr(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -734,7 +734,7 @@ bool bt_adapter_is_support_bredr(bt_instance_t *ins)
     return packet.adpt_r.bbool;
 }
 
-bool bt_adapter_is_support_le(bt_instance_t *ins)
+bool bt_adapter_is_support_le(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -749,7 +749,7 @@ bool bt_adapter_is_support_le(bt_instance_t *ins)
     return packet.adpt_r.bbool;
 }
 
-bool bt_adapter_is_support_leaudio(bt_instance_t *ins)
+bool bt_adapter_is_support_leaudio(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;

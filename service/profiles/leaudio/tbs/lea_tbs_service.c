@@ -55,7 +55,7 @@ static uint32_t lea_tbs_id = ADPT_LEA_GTBS_ID;
 typedef struct
 {
     bool started;
-    callbacks_list_t *callbacks;
+    callbacks_list_t* callbacks;
     pthread_mutex_t tbs_lock;
 } lea_tbs_service_t;
 
@@ -73,60 +73,60 @@ bt_status_t lea_tbs_call_control_response(uint8_t call_index, lea_adpt_call_cont
  * Private Functions
  ****************************************************************************/
 
-static void lea_tbs_process_debug(lea_tbs_msg_t *msg)
+static void lea_tbs_process_debug(lea_tbs_msg_t* msg)
 {
     switch (msg->event) {
     case STACK_EVENT_TBS_STATE_CHANGED: {
         BT_LOGD("%s, event:%d, tbs_id:%d, ccid:%d, added:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8,
-                msg->event_data.valuebool);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8,
+            msg->event_data.valuebool);
         break;
     }
     case STACK_EVENT_BEARER_SET_CHANED: {
         BT_LOGD("%s, event:%d, tbs_id:%d, result:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valuebool);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valuebool);
         break;
     }
     case STACK_EVENT_CALL_ADDED: {
         BT_LOGD("%s, event:%d, tbs_id:%d, call_index:%d, result:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8,
-                msg->event_data.valuebool);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8,
+            msg->event_data.valuebool);
         break;
     }
     case STACK_EVENT_CALL_REMOVED: {
         BT_LOGD("%s, event:%d, tbs_id:%d, call_index:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8);
         break;
     }
     case STACK_EVENT_ACCEPT_CALL: {
         BT_LOGD("%s, event:%d, tbs_id:%d, call_index:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8);
         break;
     }
     case STACK_EVENT_TERMINATE_CALL: {
         BT_LOGD("%s, event:%d, tbs_id:%d, call_index:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8);
         break;
     }
     case STACK_EVENT_LOCAL_HOLD_CALL: {
         BT_LOGD("%s, event:%d, tbs_id:%d, call_index:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint8);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint8);
         break;
     }
     case STACK_EVENT_LOCAL_RETRIEVE_CALL: {
         BT_LOGD("%s, event:%d, tbs_id:%d, call_index:%d", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint16);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint16);
         break;
     }
     case STACK_EVENT_ORIGINATE_CALL: {
         BT_LOGD("%s, event:%d, tbs_id:%d, uri:%s", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.dataarry);
+            msg->event, msg->event_data.tbs_id, msg->event_data.dataarry);
         break;
     }
     case STACK_EVENT_JOIN_CALL: {
         BT_LOGD("%s, event:%d, tbs_id:%d, index_number:%d, index_list:%s", __func__,
-                msg->event, msg->event_data.tbs_id, msg->event_data.valueint32,
-                msg->event_data.dataarry);
+            msg->event, msg->event_data.tbs_id, msg->event_data.valueint32,
+            msg->event_data.dataarry);
         break;
     }
     default: {
@@ -136,17 +136,17 @@ static void lea_tbs_process_debug(lea_tbs_msg_t *msg)
     }
 }
 
-static void lea_tbs_process_message(void *data)
+static void lea_tbs_process_message(void* data)
 {
-    lea_tbs_msg_t *msg = (lea_tbs_msg_t *)data;
-    lea_tbs_call_state_t *call;
+    lea_tbs_msg_t* msg = (lea_tbs_msg_t*)data;
+    lea_tbs_call_state_t* call;
 
     lea_tbs_process_debug(msg);
 
     switch (msg->event) {
     case STACK_EVENT_TBS_STATE_CHANGED: {
         TBS_CALLBACK_FOREACH(g_tbs_service.callbacks, tbs_test_cb, msg->event_data.valueint8,
-                             msg->event_data.valuebool);
+            msg->event_data.valuebool);
         break;
     }
     case STACK_EVENT_BEARER_SET_CHANED: {
@@ -155,12 +155,12 @@ static void lea_tbs_process_message(void *data)
     }
     case STACK_EVENT_CALL_ADDED: {
         TBS_CALLBACK_FOREACH(g_tbs_service.callbacks, tbs_test_cb, msg->event_data.valueint8,
-                             msg->event_data.valuebool);
+            msg->event_data.valuebool);
         break;
     }
     case STACK_EVENT_CALL_REMOVED: {
         TBS_CALLBACK_FOREACH(g_tbs_service.callbacks, tbs_test_cb, msg->event_data.valueint8,
-                             msg->event_data.valuebool);
+            msg->event_data.valuebool);
         break;
     }
     case STACK_EVENT_ACCEPT_CALL: {
@@ -225,7 +225,7 @@ static void lea_tbs_process_message(void *data)
         break;
     }
     case STACK_EVENT_ORIGINATE_CALL: {
-        tele_service_originate_call((char *)msg->event_data.dataarry);
+        tele_service_originate_call((char*)msg->event_data.dataarry);
 
         call = lea_tbs_find_call_by_state(ADPT_LEA_TBS_CALL_STATE_ALERTING);
         if (!call) {
@@ -249,7 +249,7 @@ static void lea_tbs_process_message(void *data)
     lea_tbs_msg_destory(msg);
 }
 
-static bt_status_t lea_tbs_send_msg(lea_tbs_msg_t *msg)
+static bt_status_t lea_tbs_send_msg(lea_tbs_msg_t* msg)
 {
     assert(msg);
 
@@ -263,7 +263,7 @@ static bt_status_t lea_tbs_send_msg(lea_tbs_msg_t *msg)
  ****************************************************************************/
 void lea_tbs_on_state_changed(uint32_t tbs_id, uint8_t ccid, bool added)
 {
-    lea_tbs_msg_t *msg;
+    lea_tbs_msg_t* msg;
 
     msg = lea_tbs_msg_new(STACK_EVENT_TBS_STATE_CHANGED, tbs_id);
     if (!msg) {
@@ -277,9 +277,9 @@ void lea_tbs_on_state_changed(uint32_t tbs_id, uint8_t ccid, bool added)
     lea_tbs_send_msg(msg);
 }
 
-void lea_tbs_on_bearer_info_set(uint32_t tbs_id, char *bearer_ref, bool result)
+void lea_tbs_on_bearer_info_set(uint32_t tbs_id, char* bearer_ref, bool result)
 {
-    lea_tbs_msg_t *msg;
+    lea_tbs_msg_t* msg;
 
     msg = lea_tbs_msg_new(STACK_EVENT_BEARER_SET_CHANED, tbs_id);
     if (!msg) {
@@ -288,14 +288,14 @@ void lea_tbs_on_bearer_info_set(uint32_t tbs_id, char *bearer_ref, bool result)
     }
 
     msg->event_data.valuebool = result;
-    strcpy((char *)msg->event_data.dataarry, bearer_ref);
+    strcpy((char*)msg->event_data.dataarry, bearer_ref);
 
     lea_tbs_send_msg(msg);
 }
 
 void lea_tbs_on_call_added(uint32_t tbs_id, uint8_t call_index, bool result)
 {
-    lea_tbs_msg_t *msg;
+    lea_tbs_msg_t* msg;
 
     msg = lea_tbs_msg_new(STACK_EVENT_CALL_ADDED, tbs_id);
     if (!msg) {
@@ -311,7 +311,7 @@ void lea_tbs_on_call_added(uint32_t tbs_id, uint8_t call_index, bool result)
 
 void lea_tbs_on_call_removed(uint32_t tbs_id, uint8_t call_index)
 {
-    lea_tbs_msg_t *msg;
+    lea_tbs_msg_t* msg;
 
     msg = lea_tbs_msg_new(STACK_EVENT_CALL_REMOVED, tbs_id);
     if (!msg) {
@@ -326,7 +326,7 @@ void lea_tbs_on_call_removed(uint32_t tbs_id, uint8_t call_index)
 
 void lea_tbs_on_accept_call(uint32_t tbs_id, uint8_t call_index)
 {
-    lea_tbs_msg_t *msg;
+    lea_tbs_msg_t* msg;
 
     msg = lea_tbs_msg_new(STACK_EVENT_ACCEPT_CALL, tbs_id);
     if (!msg) {
@@ -341,7 +341,7 @@ void lea_tbs_on_accept_call(uint32_t tbs_id, uint8_t call_index)
 
 void lea_tbs_on_terminate_call(uint32_t tbs_id, uint8_t call_index)
 {
-    lea_tbs_msg_t *msg;
+    lea_tbs_msg_t* msg;
 
     msg = lea_tbs_msg_new(STACK_EVENT_TERMINATE_CALL, tbs_id);
     if (!msg) {
@@ -356,7 +356,7 @@ void lea_tbs_on_terminate_call(uint32_t tbs_id, uint8_t call_index)
 
 void lea_tbs_on_local_hold_call(uint32_t tbs_id, uint8_t call_index)
 {
-    lea_tbs_msg_t *msg;
+    lea_tbs_msg_t* msg;
 
     msg = lea_tbs_msg_new(STACK_EVENT_LOCAL_HOLD_CALL, tbs_id);
     if (!msg) {
@@ -371,7 +371,7 @@ void lea_tbs_on_local_hold_call(uint32_t tbs_id, uint8_t call_index)
 
 void lea_tbs_on_local_retrieve_call(uint32_t tbs_id, uint8_t call_index)
 {
-    lea_tbs_msg_t *msg;
+    lea_tbs_msg_t* msg;
 
     msg = lea_tbs_msg_new(STACK_EVENT_LOCAL_RETRIEVE_CALL, tbs_id);
     if (!msg) {
@@ -384,9 +384,9 @@ void lea_tbs_on_local_retrieve_call(uint32_t tbs_id, uint8_t call_index)
     lea_tbs_send_msg(msg);
 }
 
-void lea_tbs_on_originate_call(uint32_t tbs_id, size_t size, char *uri)
+void lea_tbs_on_originate_call(uint32_t tbs_id, size_t size, char* uri)
 {
-    lea_tbs_msg_t *msg;
+    lea_tbs_msg_t* msg;
 
     if (size < 1) {
         BT_LOGW("%s ,the length of uri is zero!", __func__);
@@ -399,14 +399,14 @@ void lea_tbs_on_originate_call(uint32_t tbs_id, size_t size, char *uri)
         return;
     }
 
-    strcpy((char *)msg->event_data.dataarry, uri);
+    strcpy((char*)msg->event_data.dataarry, uri);
 
     lea_tbs_send_msg(msg);
 }
 
-void lea_tbs_on_join_call(uint32_t tbs_id, uint8_t index_number, size_t size, char *index_list)
+void lea_tbs_on_join_call(uint32_t tbs_id, uint8_t index_number, size_t size, char* index_list)
 {
-    lea_tbs_msg_t *msg;
+    lea_tbs_msg_t* msg;
 
     if (index_number < 1) {
         BT_LOGW("%s ,the number of index is zero!", __func__);
@@ -420,7 +420,7 @@ void lea_tbs_on_join_call(uint32_t tbs_id, uint8_t index_number, size_t size, ch
     }
 
     msg->event_data.valueint8 = index_number;
-    strcpy((char *)msg->event_data.dataarry, index_list);
+    strcpy((char*)msg->event_data.dataarry, index_list);
 
     lea_tbs_send_msg(msg);
 }
@@ -462,13 +462,13 @@ bt_status_t lea_tbs_remove()
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t lea_tbs_set_telephone_bearer_info(lea_tbs_telephone_bearer_t *bearer)
+bt_status_t lea_tbs_set_telephone_bearer_info(lea_tbs_telephone_bearer_t* bearer)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    SERVICE_LEA_TELEPHONE_BEARER_S *tele_bearer;
+    SERVICE_LEA_TELEPHONE_BEARER_S* tele_bearer;
 
-    tele_bearer = (SERVICE_LEA_TELEPHONE_BEARER_S *)malloc(sizeof(SERVICE_LEA_TELEPHONE_BEARER_S));
+    tele_bearer = (SERVICE_LEA_TELEPHONE_BEARER_S*)malloc(sizeof(SERVICE_LEA_TELEPHONE_BEARER_S));
     tele_bearer->tbs_id = lea_tbs_id;
     tele_bearer->bearer_ref = bearer->bearer_ref;
     tele_bearer->provider_name = bearer->provider_name;
@@ -492,13 +492,13 @@ bt_status_t lea_tbs_set_telephone_bearer_info(lea_tbs_telephone_bearer_t *bearer
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t lea_tbs_add_call(lea_tbs_calls_t *call_s)
+bt_status_t lea_tbs_add_call(lea_tbs_calls_t* call_s)
 {
     CHECK_ENABLED();
     bt_status_t ret;
-    SERVICE_LEA_TBS_CALL_S *bts_call_s;
+    SERVICE_LEA_TBS_CALL_S* bts_call_s;
 
-    bts_call_s = (SERVICE_LEA_TBS_CALL_S *)malloc(sizeof(SERVICE_LEA_TBS_CALL_S));
+    bts_call_s = (SERVICE_LEA_TBS_CALL_S*)malloc(sizeof(SERVICE_LEA_TBS_CALL_S));
     bts_call_s->tbs_id = lea_tbs_id;
     bts_call_s->index = call_s->index;
     bts_call_s->state = call_s->state;
@@ -536,7 +536,7 @@ bt_status_t lea_tbs_remove_call(uint8_t call_index)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t lea_tbs_provider_name_changed(uint8_t *name)
+bt_status_t lea_tbs_provider_name_changed(uint8_t* name)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -570,7 +570,7 @@ bt_status_t lea_tbs_bearer_technology_changed(lea_adpt_bearer_technology_t techn
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t lea_tbs_uri_schemes_supported_list_changed(uint8_t *uri_schemes)
+bt_status_t lea_tbs_uri_schemes_supported_list_changed(uint8_t* uri_schemes)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -639,14 +639,14 @@ bt_status_t lea_tbs_status_flags_changed(uint8_t status_flags)
 }
 
 bt_status_t lea_tbs_call_state_changed(uint8_t number,
-                                       lea_tbs_call_state_t *state_s)
+    lea_tbs_call_state_t* state_s)
 {
     CHECK_ENABLED();
     bt_status_t ret;
 
     pthread_mutex_lock(&g_tbs_service.tbs_lock);
     ret = bt_sal_lea_tbs_call_state_changed(lea_tbs_id, number,
-                                            (SERVICE_LEA_TBS_CALL_STATE_S *)state_s);
+        (SERVICE_LEA_TBS_CALL_STATE_S*)state_s);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s fail, err:%d ", __func__, ret);
         pthread_mutex_unlock(&g_tbs_service.tbs_lock);
@@ -658,7 +658,7 @@ bt_status_t lea_tbs_call_state_changed(uint8_t number,
 }
 
 bt_status_t lea_tbs_notify_termination_reason(uint8_t call_index,
-                                              lea_adpt_termination_reason_t reason)
+    lea_adpt_termination_reason_t reason)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -676,7 +676,7 @@ bt_status_t lea_tbs_notify_termination_reason(uint8_t call_index,
 }
 
 bt_status_t lea_tbs_call_control_response(uint8_t call_index,
-                                          lea_adpt_call_control_result_t result)
+    lea_adpt_call_control_result_t result)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -693,15 +693,15 @@ bt_status_t lea_tbs_call_control_response(uint8_t call_index,
     return BT_STATUS_SUCCESS;
 }
 
-static void *lea_tbs_register_callbacks(void *handle, lea_tbs_callbacks_t *callbacks)
+static void* lea_tbs_register_callbacks(void* handle, lea_tbs_callbacks_t* callbacks)
 {
     if (!g_tbs_service.started)
         return NULL;
 
-    return bt_remote_callbacks_register(g_tbs_service.callbacks, handle, (void *)callbacks);
+    return bt_remote_callbacks_register(g_tbs_service.callbacks, handle, (void*)callbacks);
 }
 
-static bool lea_tbs_unregister_callbacks(void **handle, void *cookie)
+static bool lea_tbs_unregister_callbacks(void** handle, void* cookie)
 {
     if (!g_tbs_service.started)
         return false;
@@ -732,7 +732,7 @@ static const lea_tbs_interface_t leaTbsInterface = {
 /****************************************************************************
  * Public function
  ****************************************************************************/
-static const void *get_lea_tbs_profile_interface(void)
+static const void* get_lea_tbs_profile_interface(void)
 {
     return &leaTbsInterface;
 }
@@ -748,7 +748,7 @@ static bt_status_t lea_tbs_startup(profile_on_startup_t cb)
     BT_LOGD("%s", __func__);
     bt_status_t status;
     pthread_mutexattr_t attr;
-    lea_tbs_service_t *service = &g_tbs_service;
+    lea_tbs_service_t* service = &g_tbs_service;
     if (service->started)
         return BT_STATUS_SUCCESS;
 
@@ -808,7 +808,7 @@ static const profile_service_t lea_tbs_service = {
     .name = PROFILE_TBS_NAME,
     .id = PROFILE_LEAUDIO_TBS,
     .transport = BT_TRANSPORT_BLE,
-    .uuid = {BT_UUID128_TYPE, { 0 }},
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = lea_tbs_init,
     .startup = lea_tbs_startup,
     .shutdown = lea_tbs_shutdown,

@@ -24,22 +24,22 @@
 #include "service_manager.h"
 #include "utils/log.h"
 
-void *bt_hfp_ag_register_callbacks(bt_instance_t *ins, const hfp_ag_callbacks_t *callbacks)
+void* bt_hfp_ag_register_callbacks(bt_instance_t* ins, const hfp_ag_callbacks_t* callbacks)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    void *cookie;
+    void* cookie;
 
     BT_SOCKET_INS_VALID(ins, NULL);
 
     if (ins->hfp_ag_callbacks != NULL) {
-        cookie = bt_remote_callbacks_register(ins->hfp_ag_callbacks, NULL, (void *)callbacks);
+        cookie = bt_remote_callbacks_register(ins->hfp_ag_callbacks, NULL, (void*)callbacks);
         return cookie;
     }
 
     ins->hfp_ag_callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
 
-    cookie = bt_remote_callbacks_register(ins->hfp_ag_callbacks, NULL, (void *)callbacks);
+    cookie = bt_remote_callbacks_register(ins->hfp_ag_callbacks, NULL, (void*)callbacks);
     if (cookie == NULL) {
         bt_callbacks_list_free(ins->hfp_ag_callbacks);
         ins->hfp_ag_callbacks = NULL;
@@ -56,7 +56,7 @@ void *bt_hfp_ag_register_callbacks(bt_instance_t *ins, const hfp_ag_callbacks_t 
     return cookie;
 }
 
-bool bt_hfp_ag_unregister_callbacks(bt_instance_t *ins, void *cookie)
+bool bt_hfp_ag_unregister_callbacks(bt_instance_t* ins, void* cookie)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -80,7 +80,7 @@ bool bt_hfp_ag_unregister_callbacks(bt_instance_t *ins, void *cookie)
     return true;
 }
 
-bool bt_hfp_ag_is_connected(bt_instance_t *ins, bt_address_t *addr)
+bool bt_hfp_ag_is_connected(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -95,7 +95,7 @@ bool bt_hfp_ag_is_connected(bt_instance_t *ins, bt_address_t *addr)
     return packet.hfp_ag_r.value_bool;
 }
 
-bool bt_hfp_ag_is_audio_connected(bt_instance_t *ins, bt_address_t *addr)
+bool bt_hfp_ag_is_audio_connected(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -110,7 +110,7 @@ bool bt_hfp_ag_is_audio_connected(bt_instance_t *ins, bt_address_t *addr)
     return packet.hfp_ag_r.value_bool;
 }
 
-profile_connection_state_t bt_hfp_ag_get_connection_state(bt_instance_t *ins, bt_address_t *addr)
+profile_connection_state_t bt_hfp_ag_get_connection_state(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -124,7 +124,7 @@ profile_connection_state_t bt_hfp_ag_get_connection_state(bt_instance_t *ins, bt
     return packet.hfp_ag_r.profile_conn_state;
 }
 
-bt_status_t bt_hfp_ag_connect(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_hfp_ag_connect(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -139,7 +139,7 @@ bt_status_t bt_hfp_ag_connect(bt_instance_t *ins, bt_address_t *addr)
     return packet.hfp_ag_r.status;
 }
 
-bt_status_t bt_hfp_ag_disconnect(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_hfp_ag_disconnect(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -154,7 +154,7 @@ bt_status_t bt_hfp_ag_disconnect(bt_instance_t *ins, bt_address_t *addr)
     return packet.hfp_ag_r.status;
 }
 
-bt_status_t bt_hfp_ag_connect_audio(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_hfp_ag_connect_audio(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -169,7 +169,7 @@ bt_status_t bt_hfp_ag_connect_audio(bt_instance_t *ins, bt_address_t *addr)
     return packet.hfp_ag_r.status;
 }
 
-bt_status_t bt_hfp_ag_disconnect_audio(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_hfp_ag_disconnect_audio(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -184,7 +184,7 @@ bt_status_t bt_hfp_ag_disconnect_audio(bt_instance_t *ins, bt_address_t *addr)
     return packet.hfp_ag_r.status;
 }
 
-bt_status_t bt_hfp_ag_start_voice_recognition(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_hfp_ag_start_voice_recognition(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -199,7 +199,7 @@ bt_status_t bt_hfp_ag_start_voice_recognition(bt_instance_t *ins, bt_address_t *
     return packet.hfp_ag_r.status;
 }
 
-bt_status_t bt_hfp_ag_stop_voice_recognition(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_hfp_ag_stop_voice_recognition(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -214,7 +214,7 @@ bt_status_t bt_hfp_ag_stop_voice_recognition(bt_instance_t *ins, bt_address_t *a
     return packet.hfp_ag_r.status;
 }
 
-bt_status_t bt_hfp_ag_send_at_command(bt_instance_t *ins, bt_address_t *addr, const char *at_command)
+bt_status_t bt_hfp_ag_send_at_command(bt_instance_t* ins, bt_address_t* addr, const char* at_command)
 {
     bt_message_packet_t packet;
     bt_status_t status;

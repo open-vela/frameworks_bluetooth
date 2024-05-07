@@ -29,7 +29,7 @@
 #include "parcel.h"
 #include "utils/log.h"
 
-void *BpBtHidd_registerCallback(BpBtHidd *bpBinder, AIBinder *cbksBinder)
+void* BpBtHidd_registerCallback(BpBtHidd* bpBinder, AIBinder* cbksBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -38,7 +38,7 @@ void *BpBtHidd_registerCallback(BpBtHidd *bpBinder, AIBinder *cbksBinder)
     if (!bpBinder || !bpBinder->binder)
         return NULL;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -56,10 +56,10 @@ void *BpBtHidd_registerCallback(BpBtHidd *bpBinder, AIBinder *cbksBinder)
     if (stat != STATUS_OK)
         return NULL;
 
-    return (void *)cookie;
+    return (void*)cookie;
 }
 
-bool BpBtHidd_unRegisterCallback(BpBtHidd *bpBinder, void *cookie)
+bool BpBtHidd_unRegisterCallback(BpBtHidd* bpBinder, void* cookie)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -68,7 +68,7 @@ bool BpBtHidd_unRegisterCallback(BpBtHidd *bpBinder, void *cookie)
     if (!bpBinder || !bpBinder->binder)
         return false;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -89,7 +89,7 @@ bool BpBtHidd_unRegisterCallback(BpBtHidd *bpBinder, void *cookie)
     return ret;
 }
 
-bt_status_t BpBtHidd_registerApp(BpBtHidd *bpBinder, hid_device_sdp_settings_t *sdp, bool le_hid)
+bt_status_t BpBtHidd_registerApp(BpBtHidd* bpBinder, hid_device_sdp_settings_t* sdp, bool le_hid)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -101,7 +101,7 @@ bt_status_t BpBtHidd_registerApp(BpBtHidd *bpBinder, hid_device_sdp_settings_t *
     if (!sdp)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -159,7 +159,7 @@ bt_status_t BpBtHidd_registerApp(BpBtHidd *bpBinder, hid_device_sdp_settings_t *
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)sdp->hids_info.dsc_list, sdp->hids_info.dsc_list_length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)sdp->hids_info.dsc_list, sdp->hids_info.dsc_list_length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
@@ -178,7 +178,7 @@ bt_status_t BpBtHidd_registerApp(BpBtHidd *bpBinder, hid_device_sdp_settings_t *
     return status;
 }
 
-bt_status_t BpBtHidd_unregisterApp(BpBtHidd *bpBinder)
+bt_status_t BpBtHidd_unregisterApp(BpBtHidd* bpBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -187,7 +187,7 @@ bt_status_t BpBtHidd_unregisterApp(BpBtHidd *bpBinder)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -204,7 +204,7 @@ bt_status_t BpBtHidd_unregisterApp(BpBtHidd *bpBinder)
     return status;
 }
 
-bt_status_t BpBtHidd_connect(BpBtHidd *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHidd_connect(BpBtHidd* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -213,7 +213,7 @@ bt_status_t BpBtHidd_connect(BpBtHidd *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -234,7 +234,7 @@ bt_status_t BpBtHidd_connect(BpBtHidd *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtHidd_disconnect(BpBtHidd *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHidd_disconnect(BpBtHidd* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -243,7 +243,7 @@ bt_status_t BpBtHidd_disconnect(BpBtHidd *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -264,7 +264,7 @@ bt_status_t BpBtHidd_disconnect(BpBtHidd *bpBinder, bt_address_t *addr)
     return status;
 }
 
-bt_status_t BpBtHidd_sendReport(BpBtHidd *bpBinder, bt_address_t *addr, uint8_t rpt_id, uint8_t *rpt_data, int rpt_size)
+bt_status_t BpBtHidd_sendReport(BpBtHidd* bpBinder, bt_address_t* addr, uint8_t rpt_id, uint8_t* rpt_data, int rpt_size)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -273,7 +273,7 @@ bt_status_t BpBtHidd_sendReport(BpBtHidd *bpBinder, bt_address_t *addr, uint8_t 
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -287,7 +287,7 @@ bt_status_t BpBtHidd_sendReport(BpBtHidd *bpBinder, bt_address_t *addr, uint8_t 
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)rpt_data, rpt_size);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)rpt_data, rpt_size);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
@@ -306,7 +306,7 @@ bt_status_t BpBtHidd_sendReport(BpBtHidd *bpBinder, bt_address_t *addr, uint8_t 
     return status;
 }
 
-bt_status_t BpBtHidd_responseReport(BpBtHidd *bpBinder, bt_address_t *addr, uint8_t rpt_type, uint8_t *rpt_data, int rpt_size)
+bt_status_t BpBtHidd_responseReport(BpBtHidd* bpBinder, bt_address_t* addr, uint8_t rpt_type, uint8_t* rpt_data, int rpt_size)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -315,7 +315,7 @@ bt_status_t BpBtHidd_responseReport(BpBtHidd *bpBinder, bt_address_t *addr, uint
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -329,7 +329,7 @@ bt_status_t BpBtHidd_responseReport(BpBtHidd *bpBinder, bt_address_t *addr, uint
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)rpt_data, rpt_size);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)rpt_data, rpt_size);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
@@ -348,7 +348,7 @@ bt_status_t BpBtHidd_responseReport(BpBtHidd *bpBinder, bt_address_t *addr, uint
     return status;
 }
 
-bt_status_t BpBtHidd_reportError(BpBtHidd *bpBinder, bt_address_t *addr, hid_status_error_t error)
+bt_status_t BpBtHidd_reportError(BpBtHidd* bpBinder, bt_address_t* addr, hid_status_error_t error)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -357,7 +357,7 @@ bt_status_t BpBtHidd_reportError(BpBtHidd *bpBinder, bt_address_t *addr, hid_sta
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -382,7 +382,7 @@ bt_status_t BpBtHidd_reportError(BpBtHidd *bpBinder, bt_address_t *addr, hid_sta
     return status;
 }
 
-bt_status_t BpBtHidd_virtualUnplug(BpBtHidd *bpBinder, bt_address_t *addr)
+bt_status_t BpBtHidd_virtualUnplug(BpBtHidd* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -391,7 +391,7 @@ bt_status_t BpBtHidd_virtualUnplug(BpBtHidd *bpBinder, bt_address_t *addr)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)

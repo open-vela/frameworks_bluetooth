@@ -76,9 +76,9 @@ typedef struct
     uint16_t acl_hdl;
     uint16_t l2c_rcid;
     size_t size;
-    void *data;
-    void *cb;
-    a2dp_sink_packet_t *packet;
+    void* data;
+    void* cb;
+    a2dp_sink_packet_t* packet;
 } a2dp_event_data_t;
 
 typedef struct
@@ -87,9 +87,9 @@ typedef struct
     a2dp_event_data_t event_data;
 } a2dp_event_t;
 
-a2dp_event_t *a2dp_event_new(a2dp_event_type_t event, bt_address_t *bd_addr);
-a2dp_event_t *a2dp_event_new_ext(a2dp_event_type_t event, bt_address_t *bd_addr,
-                                 void *data, size_t size);
-void a2dp_event_destory(a2dp_event_t *a2dp_event);
+a2dp_event_t* a2dp_event_new(a2dp_event_type_t event, bt_address_t* bd_addr);
+a2dp_event_t* a2dp_event_new_ext(a2dp_event_type_t event, bt_address_t* bd_addr,
+    void* data, size_t size);
+void a2dp_event_destory(a2dp_event_t* a2dp_event);
 
 #endif

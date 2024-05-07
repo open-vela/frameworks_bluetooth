@@ -19,16 +19,16 @@
 #include "bt_addr.h"
 #include "lea_mcp_event.h"
 
-mcp_event_t *mcp_event_new(mcp_event_type_t event, bt_address_t *remote_addr, uint32_t mcs_id)
+mcp_event_t* mcp_event_new(mcp_event_type_t event, bt_address_t* remote_addr, uint32_t mcs_id)
 {
     return mcp_event_new_ext(event, remote_addr, mcs_id, 0);
 }
 
-mcp_event_t *mcp_event_new_ext(mcp_event_type_t event, bt_address_t *remote_addr, uint32_t mcs_id, size_t size)
+mcp_event_t* mcp_event_new_ext(mcp_event_type_t event, bt_address_t* remote_addr, uint32_t mcs_id, size_t size)
 {
-    mcp_event_t *mcp_event;
+    mcp_event_t* mcp_event;
 
-    mcp_event = (mcp_event_t *)malloc(sizeof(mcp_event_t) + size);
+    mcp_event = (mcp_event_t*)malloc(sizeof(mcp_event_t) + size);
     if (mcp_event == NULL)
         return NULL;
 
@@ -41,7 +41,7 @@ mcp_event_t *mcp_event_new_ext(mcp_event_type_t event, bt_address_t *remote_addr
     return mcp_event;
 }
 
-void mcp_event_destory(mcp_event_t *mcp_event)
+void mcp_event_destory(mcp_event_t* mcp_event)
 {
     free(mcp_event);
 }

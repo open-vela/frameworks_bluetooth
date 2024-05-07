@@ -19,18 +19,18 @@
 #include "bt_addr.h"
 #include "lea_ccp_event.h"
 
-lea_ccp_msg_t *lea_ccp_msg_new(lea_ccp_event_t event, bt_address_t *remote_addr,
-                               uint32_t tbs_id)
+lea_ccp_msg_t* lea_ccp_msg_new(lea_ccp_event_t event, bt_address_t* remote_addr,
+    uint32_t tbs_id)
 {
     return lea_ccp_msg_new_ext(event, remote_addr, tbs_id, 0);
 }
 
-lea_ccp_msg_t *lea_ccp_msg_new_ext(lea_ccp_event_t event, bt_address_t *remote_addr,
-                                   uint32_t tbs_id, size_t size)
+lea_ccp_msg_t* lea_ccp_msg_new_ext(lea_ccp_event_t event, bt_address_t* remote_addr,
+    uint32_t tbs_id, size_t size)
 {
-    lea_ccp_msg_t *ccp_msg;
+    lea_ccp_msg_t* ccp_msg;
 
-    ccp_msg = (lea_ccp_msg_t *)malloc(sizeof(lea_ccp_msg_t) + size);
+    ccp_msg = (lea_ccp_msg_t*)malloc(sizeof(lea_ccp_msg_t) + size);
     if (ccp_msg == NULL)
         return NULL;
 
@@ -43,7 +43,7 @@ lea_ccp_msg_t *lea_ccp_msg_new_ext(lea_ccp_event_t event, bt_address_t *remote_a
     return ccp_msg;
 }
 
-void lea_ccp_msg_destory(lea_ccp_msg_t *ccp_msg)
+void lea_ccp_msg_destory(lea_ccp_msg_t* ccp_msg)
 {
     free(ccp_msg);
 }

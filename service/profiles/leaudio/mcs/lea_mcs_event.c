@@ -18,16 +18,16 @@
 
 #include "lea_mcs_event.h"
 
-mcs_event_t *mcs_event_new(mcs_event_type_t event, uint32_t mcs_id)
+mcs_event_t* mcs_event_new(mcs_event_type_t event, uint32_t mcs_id)
 {
     return mcs_event_new_ext(event, mcs_id, 0);
 }
 
-mcs_event_t *mcs_event_new_ext(mcs_event_type_t event, uint32_t mcs_id, size_t size)
+mcs_event_t* mcs_event_new_ext(mcs_event_type_t event, uint32_t mcs_id, size_t size)
 {
-    mcs_event_t *mcs_event;
+    mcs_event_t* mcs_event;
 
-    mcs_event = (mcs_event_t *)malloc(sizeof(mcs_event_t) + size);
+    mcs_event = (mcs_event_t*)malloc(sizeof(mcs_event_t) + size);
     if (mcs_event == NULL)
         return NULL;
 
@@ -37,7 +37,7 @@ mcs_event_t *mcs_event_new_ext(mcs_event_type_t event, uint32_t mcs_id, size_t s
     return mcs_event;
 }
 
-void mcs_event_destory(mcs_event_t *mcs_event)
+void mcs_event_destory(mcs_event_t* mcs_event)
 {
     free(mcs_event);
 }

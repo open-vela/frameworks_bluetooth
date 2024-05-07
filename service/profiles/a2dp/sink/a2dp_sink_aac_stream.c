@@ -37,9 +37,9 @@
 #define LOG_TAG "sink_aac"
 #include "utils/log.h"
 
-static a2dp_sink_packet_t *sink_aac_repackage(uint8_t *data, uint16_t length)
+static a2dp_sink_packet_t* sink_aac_repackage(uint8_t* data, uint16_t length)
 {
-    a2dp_sink_packet_t *packet = NULL;
+    a2dp_sink_packet_t* packet = NULL;
     uint8_t LOAS_HDRSIZE = 3;
 
     /* pack aac loas header */
@@ -55,7 +55,7 @@ static a2dp_sink_packet_t *sink_aac_repackage(uint8_t *data, uint16_t length)
     return packet;
 }
 
-static void sink_aac_packet_send_done(a2dp_sink_packet_t *packet)
+static void sink_aac_packet_send_done(a2dp_sink_packet_t* packet)
 {
     free(packet);
 }
@@ -65,7 +65,7 @@ static const a2dp_sink_stream_interface_t a2dp_sink_stream_aac = {
     sink_aac_packet_send_done,
 };
 
-const a2dp_sink_stream_interface_t *get_a2dp_sink_aac_stream_interface(void)
+const a2dp_sink_stream_interface_t* get_a2dp_sink_aac_stream_interface(void)
 {
     return &a2dp_sink_stream_aac;
 }

@@ -88,9 +88,9 @@ typedef struct
     uint32_t valueint3;
     uint32_t valueint4;
     size_t size;
-    char *string1;
-    char *string2;
-    void *data;
+    char* string1;
+    char* string2;
+    void* data;
 } hfp_hf_data_t;
 
 typedef struct
@@ -102,9 +102,9 @@ typedef struct
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-hfp_hf_msg_t *hfp_hf_msg_new(hfp_hf_event_t event, bt_address_t *addr);
-hfp_hf_msg_t *hfp_hf_msg_new_ext(hfp_hf_event_t event, bt_address_t *addr,
-                                 void *data, size_t size);
-void hfp_hf_msg_destroy(hfp_hf_msg_t *msg);
+hfp_hf_msg_t* hfp_hf_msg_new(hfp_hf_event_t event, bt_address_t* addr);
+hfp_hf_msg_t* hfp_hf_msg_new_ext(hfp_hf_event_t event, bt_address_t* addr,
+    void* data, size_t size);
+void hfp_hf_msg_destroy(hfp_hf_msg_t* msg);
 
 #endif /* __HFP_HF_EVENT_H__ */

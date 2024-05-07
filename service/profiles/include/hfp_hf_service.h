@@ -47,66 +47,66 @@ typedef struct {
 /*
  * sal callback
  */
-void hfp_hf_on_connection_state_changed(bt_address_t *addr, profile_connection_state_t state,
-                                        profile_connection_reason_t reason, uint32_t remote_features);
-void hfp_hf_on_audio_connection_state_changed(bt_address_t *addr,
-                                              hfp_audio_state_t state,
-                                              uint16_t sco_connection_handle);
-void hfp_hf_on_codec_changed(bt_address_t *addr, hfp_codec_config_t *config);
-void hfp_hf_on_call_setup_state_changed(bt_address_t *addr, hfp_callsetup_t setup);
-void hfp_hf_on_call_active_state_changed(bt_address_t *addr, hfp_call_t state);
-void hfp_hf_on_call_held_state_changed(bt_address_t *addr, hfp_callheld_t state);
-void hfp_hf_on_volume_changed(bt_address_t *addr, hfp_volume_type_t type, uint8_t volume);
-void hfp_hf_on_ring_active_state_changed(bt_address_t *addr, bool active, hfp_in_band_ring_state_t inband_ring);
-void hfp_hf_on_voice_recognition_state_changed(bt_address_t *addr, bool started);
-void hfp_hf_on_received_at_cmd_resp(bt_address_t *addr, char *response, uint16_t response_length);
-void hfp_hf_on_received_sco_connection_req(bt_address_t *addr);
-void hfp_hf_on_clip(bt_address_t *addr, const char *number, const char *name);
-void hfp_hf_on_current_call_response(bt_address_t *addr, uint32_t idx,
-                                     hfp_call_direction_t dir,
-                                     hfp_hf_call_state_t status,
-                                     hfp_call_mpty_type_t mpty,
-                                     const char *number, uint32_t type);
-void hfp_hf_on_at_command_result_response(bt_address_t *addr, uint32_t at_cmd_code, uint32_t result);
+void hfp_hf_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,
+    profile_connection_reason_t reason, uint32_t remote_features);
+void hfp_hf_on_audio_connection_state_changed(bt_address_t* addr,
+    hfp_audio_state_t state,
+    uint16_t sco_connection_handle);
+void hfp_hf_on_codec_changed(bt_address_t* addr, hfp_codec_config_t* config);
+void hfp_hf_on_call_setup_state_changed(bt_address_t* addr, hfp_callsetup_t setup);
+void hfp_hf_on_call_active_state_changed(bt_address_t* addr, hfp_call_t state);
+void hfp_hf_on_call_held_state_changed(bt_address_t* addr, hfp_callheld_t state);
+void hfp_hf_on_volume_changed(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
+void hfp_hf_on_ring_active_state_changed(bt_address_t* addr, bool active, hfp_in_band_ring_state_t inband_ring);
+void hfp_hf_on_voice_recognition_state_changed(bt_address_t* addr, bool started);
+void hfp_hf_on_received_at_cmd_resp(bt_address_t* addr, char* response, uint16_t response_length);
+void hfp_hf_on_received_sco_connection_req(bt_address_t* addr);
+void hfp_hf_on_clip(bt_address_t* addr, const char* number, const char* name);
+void hfp_hf_on_current_call_response(bt_address_t* addr, uint32_t idx,
+    hfp_call_direction_t dir,
+    hfp_hf_call_state_t status,
+    hfp_call_mpty_type_t mpty,
+    const char* number, uint32_t type);
+void hfp_hf_on_at_command_result_response(bt_address_t* addr, uint32_t at_cmd_code, uint32_t result);
 
 /*
  *  statemachine callbacks
  */
 
-void hf_service_notify_connection_state_changed(bt_address_t *addr, profile_connection_state_t state);
-void hf_service_notify_audio_state_changed(bt_address_t *addr, hfp_audio_state_t state);
-void hf_service_notify_vr_state_changed(bt_address_t *addr, bool started);
-void hf_service_notify_call_state_changed(bt_address_t *addr, hfp_current_call_t *call);
-void hf_service_notify_cmd_complete(bt_address_t *addr, const char *resp);
-void hf_service_notify_ring_indication(bt_address_t *addr, bool inband_ring_tone);
-void hf_service_notify_volume_changed(bt_address_t *addr, hfp_volume_type_t type, int volume);
-bt_status_t hfp_hf_send_event(bt_address_t *addr, hfp_hf_event_t evt);
+void hf_service_notify_connection_state_changed(bt_address_t* addr, profile_connection_state_t state);
+void hf_service_notify_audio_state_changed(bt_address_t* addr, hfp_audio_state_t state);
+void hf_service_notify_vr_state_changed(bt_address_t* addr, bool started);
+void hf_service_notify_call_state_changed(bt_address_t* addr, hfp_current_call_t* call);
+void hf_service_notify_cmd_complete(bt_address_t* addr, const char* resp);
+void hf_service_notify_ring_indication(bt_address_t* addr, bool inband_ring_tone);
+void hf_service_notify_volume_changed(bt_address_t* addr, hfp_volume_type_t type, int volume);
+bt_status_t hfp_hf_send_event(bt_address_t* addr, hfp_hf_event_t evt);
 
 typedef struct hf_interface {
     size_t size;
-    void *(*register_callbacks)(void *remote, const hfp_hf_callbacks_t *callbacks);
-    bool (*unregister_callbacks)(void **remote, void *cookie);
-    bool (*is_connected)(bt_address_t *addr);
-    bool (*is_audio_connected)(bt_address_t *addr);
-    profile_connection_state_t (*get_connection_state)(bt_address_t *addr);
-    bt_status_t (*connect)(bt_address_t *addr);
-    bt_status_t (*disconnect)(bt_address_t *addr);
-    bt_status_t (*connect_audio)(bt_address_t *addr);
-    bt_status_t (*disconnect_audio)(bt_address_t *addr);
-    bt_status_t (*start_voice_recognition)(bt_address_t *addr);
-    bt_status_t (*stop_voice_recognition)(bt_address_t *addr);
-    bt_status_t (*dial)(bt_address_t *addr, const char *number);
-    bt_status_t (*dial_memory)(bt_address_t *addr, uint32_t memory);
-    bt_status_t (*redial)(bt_address_t *addr);
-    bt_status_t (*accept_call)(bt_address_t *addr, hfp_call_accept_t flag);
-    bt_status_t (*reject_call)(bt_address_t *addr);
-    bt_status_t (*hold_call)(bt_address_t *addr);
-    bt_status_t (*terminate_call)(bt_address_t *addr);
-    bt_status_t (*control_call)(bt_address_t *addr, hfp_call_control_t chld, uint8_t index);
-    bt_status_t (*query_current_calls)(bt_address_t *addr, hfp_current_call_t **calls, int *num, bt_allocator_t allocator);
-    bt_status_t (*send_at_cmd)(bt_address_t *addr, const char *cmd);
-    bt_status_t (*update_battery_level)(bt_address_t *addr, uint8_t level);
-    bt_status_t (*send_dtmf)(bt_address_t *addr, char dtmf);
+    void* (*register_callbacks)(void* remote, const hfp_hf_callbacks_t* callbacks);
+    bool (*unregister_callbacks)(void** remote, void* cookie);
+    bool (*is_connected)(bt_address_t* addr);
+    bool (*is_audio_connected)(bt_address_t* addr);
+    profile_connection_state_t (*get_connection_state)(bt_address_t* addr);
+    bt_status_t (*connect)(bt_address_t* addr);
+    bt_status_t (*disconnect)(bt_address_t* addr);
+    bt_status_t (*connect_audio)(bt_address_t* addr);
+    bt_status_t (*disconnect_audio)(bt_address_t* addr);
+    bt_status_t (*start_voice_recognition)(bt_address_t* addr);
+    bt_status_t (*stop_voice_recognition)(bt_address_t* addr);
+    bt_status_t (*dial)(bt_address_t* addr, const char* number);
+    bt_status_t (*dial_memory)(bt_address_t* addr, uint32_t memory);
+    bt_status_t (*redial)(bt_address_t* addr);
+    bt_status_t (*accept_call)(bt_address_t* addr, hfp_call_accept_t flag);
+    bt_status_t (*reject_call)(bt_address_t* addr);
+    bt_status_t (*hold_call)(bt_address_t* addr);
+    bt_status_t (*terminate_call)(bt_address_t* addr);
+    bt_status_t (*control_call)(bt_address_t* addr, hfp_call_control_t chld, uint8_t index);
+    bt_status_t (*query_current_calls)(bt_address_t* addr, hfp_current_call_t** calls, int* num, bt_allocator_t allocator);
+    bt_status_t (*send_at_cmd)(bt_address_t* addr, const char* cmd);
+    bt_status_t (*update_battery_level)(bt_address_t* addr, uint8_t level);
+    bt_status_t (*send_dtmf)(bt_address_t* addr, char dtmf);
 } hfp_hf_interface_t;
 
 /*

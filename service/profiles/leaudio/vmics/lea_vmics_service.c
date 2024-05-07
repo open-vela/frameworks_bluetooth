@@ -51,9 +51,9 @@
 typedef struct
 {
     bool started;
-    callbacks_list_t *callbacks;
+    callbacks_list_t* callbacks;
     pthread_mutex_t vmics_lock;
-    void *volume_session;
+    void* volume_session;
 } vmics_service_t;
 
 static vmics_service_t g_vmics_service = {
@@ -66,13 +66,13 @@ static vmics_service_t g_vmics_service = {
 /****************************************************************************
  * messange handle
  ****************************************************************************/
-static void lea_vmics_process_message(void *data)
+static void lea_vmics_process_message(void* data)
 {
-    lea_vmics_msg_t *msg = (lea_vmics_msg_t *)data;
+    lea_vmics_msg_t* msg = (lea_vmics_msg_t*)data;
     switch (msg->event) {
     case STACK_EVENT_VCS_VOLUME_STATE: {
         lea_vcs_vol_state_request(g_vmics_service.volume_session,
-                                  msg->data.vol_state.volume, msg->data.vol_state.mute);
+            msg->data.vol_state.volume, msg->data.vol_state.mute);
         VMICS_CALLBACK_FOREACH(g_vmics_service.callbacks, test_cb, 0);
         break;
     }
@@ -94,7 +94,7 @@ static void lea_vmics_process_message(void *data)
     lea_vmics_msg_destory(msg);
 }
 
-static bt_status_t lea_vmics_send_msg(lea_vmics_msg_t *msg)
+static bt_status_t lea_vmics_send_msg(lea_vmics_msg_t* msg)
 {
     assert(msg);
     do_in_service_loop(lea_vmics_process_message, msg);
@@ -104,9 +104,9 @@ static bt_status_t lea_vmics_send_msg(lea_vmics_msg_t *msg)
 /****************************************************************************
  * sal callbacks
  ****************************************************************************/
-void lea_vmics_on_vcs_volume_state_changed(service_lea_vcs_volume_state_s *vol_state)
+void lea_vmics_on_vcs_volume_state_changed(service_lea_vcs_volume_state_s* vol_state)
 {
-    lea_vmics_msg_t *msg = lea_vmics_msg_new(STACK_EVENT_VCS_VOLUME_STATE);
+    lea_vmics_msg_t* msg = lea_vmics_msg_new(STACK_EVENT_VCS_VOLUME_STATE);
     msg->data.vol_state.volume = vol_state->volume;
     msg->data.vol_state.mute = vol_state->mute;
     lea_vmics_send_msg(msg);
@@ -114,19 +114,19 @@ void lea_vmics_on_vcs_volume_state_changed(service_lea_vcs_volume_state_s *vol_s
 
 void lea_vmics_on_vcs_volume_flags_changed(uint8_t flags)
 {
-    lea_vmics_msg_t *msg = lea_vmics_msg_new(STACK_EVENT_VCS_VOLUME_FLAGS);
+    lea_vmics_msg_t* msg = lea_vmics_msg_new(STACK_EVENT_VCS_VOLUME_FLAGS);
     msg->data.vol_flags = flags;
     lea_vmics_send_msg(msg);
 }
 
 void lea_vmics_on_mics_mute_state_changed(uint8_t mute)
 {
-    lea_vmics_msg_t *msg = lea_vmics_msg_new(STACK_EVENT_MICS_MUTE_STATE);
+    lea_vmics_msg_t* msg = lea_vmics_msg_new(STACK_EVENT_MICS_MUTE_STATE);
     msg->data.mic_mute_state = mute;
     lea_vmics_send_msg(msg);
 }
 
-static bt_status_t lea_vmics_vol_notify(void *handle, int vol)
+static bt_status_t lea_vmics_vol_notify(void* handle, int vol)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -141,7 +141,7 @@ static bt_status_t lea_vmics_vol_notify(void *handle, int vol)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t lea_vmics_mute_notify(void *handle, int mute)
+static bt_status_t lea_vmics_mute_notify(void* handle, int mute)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -156,7 +156,7 @@ static bt_status_t lea_vmics_mute_notify(void *handle, int mute)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t lea_vmics_vol_flags_notify(void *handle, int flags)
+static bt_status_t lea_vmics_vol_flags_notify(void* handle, int flags)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -171,7 +171,7 @@ static bt_status_t lea_vmics_vol_flags_notify(void *handle, int flags)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t lea_vmics_mic_mute_notify(void *handle, int mute)
+static bt_status_t lea_vmics_mic_mute_notify(void* handle, int mute)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -186,15 +186,15 @@ static bt_status_t lea_vmics_mic_mute_notify(void *handle, int mute)
     return BT_STATUS_SUCCESS;
 }
 
-static void *lea_vmics_register_callbacks(void *handle, lea_vmics_callbacks_t *callbacks)
+static void* lea_vmics_register_callbacks(void* handle, lea_vmics_callbacks_t* callbacks)
 {
     if (!g_vmics_service.started)
         return NULL;
 
-    return bt_remote_callbacks_register(g_vmics_service.callbacks, handle, (void *)callbacks);
+    return bt_remote_callbacks_register(g_vmics_service.callbacks, handle, (void*)callbacks);
 }
 
-static bool lea_vmics_unregister_callbacks(void **handle, void *cookie)
+static bool lea_vmics_unregister_callbacks(void** handle, void* cookie)
 {
     if (!g_vmics_service.started)
         return false;
@@ -212,7 +212,7 @@ static const lea_vmics_interface_t leaVmicsInterface = {
     .unregister_callbacks = lea_vmics_unregister_callbacks,
 };
 
-static const void *get_lea_vmics_profile_interface(void)
+static const void* get_lea_vmics_profile_interface(void)
 {
     return &leaVmicsInterface;
 }
@@ -230,7 +230,7 @@ static bt_status_t lea_vmics_startup(profile_on_startup_t cb)
 {
     bt_status_t status;
     pthread_mutexattr_t attr;
-    vmics_service_t *service = &g_vmics_service;
+    vmics_service_t* service = &g_vmics_service;
 
     BT_LOGD("%s", __func__);
     if (service->started)
@@ -290,7 +290,7 @@ static const profile_service_t lea_vmics_service = {
     .name = PROFILE_VMICS_NAME,
     .id = PROFILE_LEAUDIO_VMICS,
     .transport = BT_TRANSPORT_BLE,
-    .uuid = {BT_UUID128_TYPE, { 0 }},
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = lea_vmics_init,
     .startup = lea_vmics_startup,
     .shutdown = lea_vmics_shutdown,

@@ -23,41 +23,41 @@
 #include "bt_lea_mcs.h"
 #include "bt_tools.h"
 
-static int le_mcs_add(void *handle, int argc, char *argv[]);
-static int le_mcs_remove(void *handle, int argc, char *argv[]);
-static int mcs_media_state_changed(void *handle, int argc, char *argv[]);
-static int mcs_set_media_player_info(void *handle, int argc, char *argv[]);
-static int mcs_media_control_response(void *handle, int argc, char *argv[]);
-static int mcs_playing_order_changed(void *handle, int argc, char *argv[]);
-static int mcs_playback_speed_changed(void *handle, int argc, char *argv[]);
-static int mcs_seeking_speed_changed(void *handle, int argc, char *argv[]);
-static int mcs_track_title_changed(void *handle, int argc, char *argv[]);
-static int mcs_track_duration_changed(void *handle, int argc, char *argv[]);
-static int mcs_track_position_changed(void *handle, int argc, char *argv[]);
-static int mcs_current_track_changed(void *handle, int argc, char *argv[]);
-static int mcs_next_track_changed(void *handle, int argc, char *argv[]);
-static int mcs_current_group_changed(void *handle, int argc, char *argv[]);
-static int mcs_parent_group_changed(void *handle, int argc, char *argv[]);
+static int le_mcs_add(void* handle, int argc, char* argv[]);
+static int le_mcs_remove(void* handle, int argc, char* argv[]);
+static int mcs_media_state_changed(void* handle, int argc, char* argv[]);
+static int mcs_set_media_player_info(void* handle, int argc, char* argv[]);
+static int mcs_media_control_response(void* handle, int argc, char* argv[]);
+static int mcs_playing_order_changed(void* handle, int argc, char* argv[]);
+static int mcs_playback_speed_changed(void* handle, int argc, char* argv[]);
+static int mcs_seeking_speed_changed(void* handle, int argc, char* argv[]);
+static int mcs_track_title_changed(void* handle, int argc, char* argv[]);
+static int mcs_track_duration_changed(void* handle, int argc, char* argv[]);
+static int mcs_track_position_changed(void* handle, int argc, char* argv[]);
+static int mcs_current_track_changed(void* handle, int argc, char* argv[]);
+static int mcs_next_track_changed(void* handle, int argc, char* argv[]);
+static int mcs_current_group_changed(void* handle, int argc, char* argv[]);
+static int mcs_parent_group_changed(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_lea_mcs_tables[] = {
-    {"add",                   le_mcs_add,                 0, "MCS instance add                             param: <NULL>"                  },
-    { "remove",               le_mcs_remove,              0, "MCS instance remove                          param: <NULL>"                  },
-    { "mediastatechanged",    mcs_media_state_changed,    0, "MCS notify media state                       param: <state>"                 },
-    { "setmediaplayer",       mcs_set_media_player_info,  0, "set media player info                        param: <NULL>"                  },
-    { "mediacontrolrsp",      mcs_media_control_response, 0, "notify media control point process result    param: <result>"                },
-    { "playingorderchanged",  mcs_playing_order_changed,  0, "MCS notify playing order changed             param: <order>"                 },
-    { "playbackspeedchanged", mcs_playback_speed_changed, 0, "MCS notify playback speed changed            param: <speed>"                 },
-    { "seekingspeedchanged",  mcs_seeking_speed_changed,  0, "MCS notify seeking speed changed             param: <speed>"                 },
-    { "tracktitlechanged",    mcs_track_title_changed,    0, "MCS notify track title changed               param: <title>"                 },
-    { "trackdurationchanged", mcs_track_duration_changed, 0, "MCS notify track duration changed            param: <duration>"              },
-    { "trackpositionchanged", mcs_track_position_changed, 0, "MCS notify track position changed            param: <position>"              },
-    { "currenttrackchanged",  mcs_current_track_changed,  0, "MCS notify current track changed             param: <track_id[6] six octets>"},
-    { "nexttrackchanged",     mcs_next_track_changed,     0, "MCS notify next track changed                param: <track_id[6] six octets>"},
-    { "currentgroupchanged",  mcs_current_group_changed,  0, "MCS notify current group changed             param: <group_id[6] six octets>"},
-    { "parentgroupchanged",   mcs_parent_group_changed,   0, "MCS notify parent group changed              param: <group_id[6] six octets>"},
+    { "add", le_mcs_add, 0, "MCS instance add                             param: <NULL>" },
+    { "remove", le_mcs_remove, 0, "MCS instance remove                          param: <NULL>" },
+    { "mediastatechanged", mcs_media_state_changed, 0, "MCS notify media state                       param: <state>" },
+    { "setmediaplayer", mcs_set_media_player_info, 0, "set media player info                        param: <NULL>" },
+    { "mediacontrolrsp", mcs_media_control_response, 0, "notify media control point process result    param: <result>" },
+    { "playingorderchanged", mcs_playing_order_changed, 0, "MCS notify playing order changed             param: <order>" },
+    { "playbackspeedchanged", mcs_playback_speed_changed, 0, "MCS notify playback speed changed            param: <speed>" },
+    { "seekingspeedchanged", mcs_seeking_speed_changed, 0, "MCS notify seeking speed changed             param: <speed>" },
+    { "tracktitlechanged", mcs_track_title_changed, 0, "MCS notify track title changed               param: <title>" },
+    { "trackdurationchanged", mcs_track_duration_changed, 0, "MCS notify track duration changed            param: <duration>" },
+    { "trackpositionchanged", mcs_track_position_changed, 0, "MCS notify track position changed            param: <position>" },
+    { "currenttrackchanged", mcs_current_track_changed, 0, "MCS notify current track changed             param: <track_id[6] six octets>" },
+    { "nexttrackchanged", mcs_next_track_changed, 0, "MCS notify next track changed                param: <track_id[6] six octets>" },
+    { "currentgroupchanged", mcs_current_group_changed, 0, "MCS notify current group changed             param: <group_id[6] six octets>" },
+    { "parentgroupchanged", mcs_parent_group_changed, 0, "MCS notify parent group changed              param: <group_id[6] six octets>" },
 };
 
-static void *mcs_callbacks = NULL;
+static void* mcs_callbacks = NULL;
 static void usage(void)
 {
     printf("Usage:\n");
@@ -69,7 +69,7 @@ static void usage(void)
 }
 
 /* interface */
-static int le_mcs_add(void *handle, int argc, char *argv[])
+static int le_mcs_add(void* handle, int argc, char* argv[])
 {
     if (bt_lea_mcs_service_add(handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -77,7 +77,7 @@ static int le_mcs_add(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int le_mcs_remove(void *handle, int argc, char *argv[])
+static int le_mcs_remove(void* handle, int argc, char* argv[])
 {
     if (bt_lea_mcs_service_remove(handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -85,7 +85,7 @@ static int le_mcs_remove(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_media_state_changed(void *handle, int argc, char *argv[])
+static int mcs_media_state_changed(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -98,7 +98,7 @@ static int mcs_media_state_changed(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_set_media_player_info(void *handle, int argc, char *argv[])
+static int mcs_set_media_player_info(void* handle, int argc, char* argv[])
 {
     if (bt_lea_mcs_set_media_player_info(handle) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -106,7 +106,7 @@ static int mcs_set_media_player_info(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_media_control_response(void *handle, int argc, char *argv[])
+static int mcs_media_control_response(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -119,7 +119,7 @@ static int mcs_media_control_response(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_playing_order_changed(void *handle, int argc, char *argv[])
+static int mcs_playing_order_changed(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -132,7 +132,7 @@ static int mcs_playing_order_changed(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_playback_speed_changed(void *handle, int argc, char *argv[])
+static int mcs_playback_speed_changed(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -145,7 +145,7 @@ static int mcs_playback_speed_changed(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_seeking_speed_changed(void *handle, int argc, char *argv[])
+static int mcs_seeking_speed_changed(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -158,12 +158,12 @@ static int mcs_seeking_speed_changed(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_track_title_changed(void *handle, int argc, char *argv[])
+static int mcs_track_title_changed(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t *title = (uint8_t *)strdup(argv[0]);
+    uint8_t* title = (uint8_t*)strdup(argv[0]);
 
     if (bt_lea_mcs_track_title_changed(handle, title) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -171,7 +171,7 @@ static int mcs_track_title_changed(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_track_duration_changed(void *handle, int argc, char *argv[])
+static int mcs_track_duration_changed(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -184,7 +184,7 @@ static int mcs_track_duration_changed(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_track_position_changed(void *handle, int argc, char *argv[])
+static int mcs_track_position_changed(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -197,7 +197,7 @@ static int mcs_track_position_changed(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_current_track_changed(void *handle, int argc, char *argv[])
+static int mcs_current_track_changed(void* handle, int argc, char* argv[])
 {
     if (argc != 6)
         return CMD_PARAM_NOT_ENOUGH;
@@ -213,7 +213,7 @@ static int mcs_current_track_changed(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_next_track_changed(void *handle, int argc, char *argv[])
+static int mcs_next_track_changed(void* handle, int argc, char* argv[])
 {
     if (argc != 6)
         return CMD_PARAM_NOT_ENOUGH;
@@ -229,7 +229,7 @@ static int mcs_next_track_changed(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_current_group_changed(void *handle, int argc, char *argv[])
+static int mcs_current_group_changed(void* handle, int argc, char* argv[])
 {
     if (argc != 6)
         return CMD_PARAM_NOT_ENOUGH;
@@ -245,7 +245,7 @@ static int mcs_current_group_changed(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int mcs_parent_group_changed(void *handle, int argc, char *argv[])
+static int mcs_parent_group_changed(void* handle, int argc, char* argv[])
 {
     if (argc != 6)
         return CMD_PARAM_NOT_ENOUGH;
@@ -261,7 +261,7 @@ static int mcs_parent_group_changed(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void lea_mcs_test_callback(void *cookie, uint8_t event)
+static void lea_mcs_test_callback(void* cookie, uint8_t event)
 {
     printf("lea_mcs_test_callback");
 }
@@ -271,14 +271,14 @@ static const lea_mcs_callbacks_t lea_mcs_cbs = {
     lea_mcs_test_callback,
 };
 
-int lea_mcs_commond_init(void *handle)
+int lea_mcs_commond_init(void* handle)
 {
     mcs_callbacks = bt_lea_mcs_register_callbacks(handle, &lea_mcs_cbs);
 
     return CMD_OK;
 }
 
-void lea_mcs_commond_uninit(void *handle)
+void lea_mcs_commond_uninit(void* handle)
 {
     bt_status_t ret;
 
@@ -289,7 +289,7 @@ void lea_mcs_commond_uninit(void *handle)
     }
 }
 
-int lea_mcs_command_exec(void *handle, int argc, char *argv[])
+int lea_mcs_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

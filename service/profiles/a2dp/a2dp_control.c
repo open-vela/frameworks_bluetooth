@@ -46,16 +46,16 @@
 #define LOG_TAG "a2dp_control"
 #include "utils/log.h"
 
-audio_transport_t *a2dp_transport = NULL;
+audio_transport_t* a2dp_transport = NULL;
 
-static const char *audio_transport_path[] = {
+static const char* audio_transport_path[] = {
     CONFIG_BLUETOOTH_A2DP_SOURCE_CTRL_PATH,
     CONFIG_BLUETOOTH_A2DP_SOURCE_DATA_PATH,
     CONFIG_BLUETOOTH_A2DP_SINK_CTRL_PATH,
     CONFIG_BLUETOOTH_A2DP_SINK_DATA_PATH
 };
 
-const char *audio_a2dp_hw_dump_ctrl_cmd(a2dp_ctrl_cmd_t cmd)
+const char* audio_a2dp_hw_dump_ctrl_cmd(a2dp_ctrl_cmd_t cmd)
 {
     switch (cmd) {
         CASE_RETURN_STR(A2DP_CTRL_CMD_START)
@@ -67,10 +67,10 @@ const char *audio_a2dp_hw_dump_ctrl_cmd(a2dp_ctrl_cmd_t cmd)
     return "UNKNOWN A2DP_CTRL_CMD";
 }
 
-static void a2dp_ctrl_event_with_data(uint8_t ch_id, a2dp_ctrl_evt_t event, uint8_t *data, uint8_t data_len)
+static void a2dp_ctrl_event_with_data(uint8_t ch_id, a2dp_ctrl_evt_t event, uint8_t* data, uint8_t data_len)
 {
     uint8_t stream[128];
-    uint8_t *p = stream;
+    uint8_t* p = stream;
 
     /* set event code */
     UINT8_TO_STREAM(p, event);
@@ -94,8 +94,8 @@ void a2dp_control_update_audio_config(uint8_t ch_id, uint8_t isvalid)
 {
     uint8_t buffer[64];
     uint8_t len;
-    uint8_t *p = buffer;
-    a2dp_codec_config_t *codec_config = a2dp_codec_get_config();
+    uint8_t* p = buffer;
+    a2dp_codec_config_t* codec_config = a2dp_codec_get_config();
 
     if (!isvalid) {
         len = 1;
@@ -205,7 +205,7 @@ static void a2dp_control_on_config_done(uint8_t ch_id)
 static void a2dp_recv_ctrl_data(uint8_t ch_id, a2dp_ctrl_cmd_t cmd)
 {
     BT_LOGD("%s: a2dp-ctrl-cmd : %s", __func__,
-            audio_a2dp_hw_dump_ctrl_cmd(cmd));
+        audio_a2dp_hw_dump_ctrl_cmd(cmd));
     // check length
     switch (cmd) {
     case A2DP_CTRL_CMD_START:
@@ -226,19 +226,19 @@ static void a2dp_recv_ctrl_data(uint8_t ch_id, a2dp_ctrl_cmd_t cmd)
     }
 
     BT_LOGD("%s: a2dp-ctrl-cmd : %s DONE", __func__,
-            audio_a2dp_hw_dump_ctrl_cmd(cmd));
+        audio_a2dp_hw_dump_ctrl_cmd(cmd));
 }
 
-static void a2dp_ctrl_buffer_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
+static void a2dp_ctrl_buffer_alloc(uint8_t ch_id, uint8_t** buffer, size_t* len)
 {
     *len = 128;
     *buffer = malloc(*len);
 }
 
-static void a2dp_ctrl_data_received(uint8_t ch_id, uint8_t *buffer, ssize_t len)
+static void a2dp_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len)
 {
     a2dp_ctrl_cmd_t cmd;
-    uint8_t *pbuf = buffer;
+    uint8_t* pbuf = buffer;
 
     if (len <= 0) {
         free(buffer);
@@ -291,7 +291,7 @@ static void a2dp_ctrl_cb(uint8_t ch_id, audio_transport_event_t event)
 
     default:
         BT_LOGD("%s: ### A2DP-CTRL-CHANNEL EVENT %d NOT HANDLED ###",
-                __func__, event);
+            __func__, event);
         break;
     }
 }
@@ -314,7 +314,7 @@ static void a2dp_data_cb(uint8_t ch_id, audio_transport_event_t event)
 
     default:
         BT_LOGD("%s: ### A2DP-DATA EVENT %d NOT HANDLED ###", __func__,
-                event);
+            event);
         break;
     }
 }

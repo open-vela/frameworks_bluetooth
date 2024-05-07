@@ -59,10 +59,10 @@
 #include "l2cap_service.h"
 #include "service_manager.h"
 
-static void on_connected_cb(void *cookie, l2cap_connect_params_t *param)
+static void on_connected_cb(void* cookie, l2cap_connect_params_t* param)
 {
     bt_message_packet_t packet = { 0 };
-    bt_instance_t *ins = cookie;
+    bt_instance_t* ins = cookie;
     memcpy(&packet.l2cap_cb._connected_cb.addr, &param->addr, sizeof(packet.l2cap_cb._connected_cb.addr));
     packet.l2cap_cb._connected_cb.transport = param->transport;
     packet.l2cap_cb._connected_cb.cid = param->cid;
@@ -74,10 +74,10 @@ static void on_connected_cb(void *cookie, l2cap_connect_params_t *param)
     bt_socket_server_send(ins, &packet, BT_L2CAP_CONNECTED_CB);
 }
 
-static void on_disconnected_cb(void *cookie, bt_address_t *addr, uint16_t cid, uint32_t reason)
+static void on_disconnected_cb(void* cookie, bt_address_t* addr, uint16_t cid, uint32_t reason)
 {
     bt_message_packet_t packet = { 0 };
-    bt_instance_t *ins = cookie;
+    bt_instance_t* ins = cookie;
     memcpy(&packet.l2cap_cb._disconnected_cb.addr, addr, sizeof(packet.l2cap_cb._disconnected_cb.addr));
     packet.l2cap_cb._disconnected_cb.cid = cid;
     packet.l2cap_cb._disconnected_cb.reason = reason;
@@ -92,13 +92,13 @@ const static l2cap_callbacks_t g_l2cap_socket_cbs = {
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-void bt_socket_server_l2cap_process(service_poll_t *poll, int fd,
-                                    bt_instance_t *ins, bt_message_packet_t *packet)
+void bt_socket_server_l2cap_process(service_poll_t* poll, int fd,
+    bt_instance_t* ins, bt_message_packet_t* packet)
 {
     switch (packet->code) {
     case BT_L2CAP_REGISTER_CALLBACKS:
         if (ins->l2cap_cookie == NULL) {
-            ins->l2cap_cookie = l2cap_register_callbacks((void *)ins, (void *)&g_l2cap_socket_cbs);
+            ins->l2cap_cookie = l2cap_register_callbacks((void*)ins, (void*)&g_l2cap_socket_cbs);
             if (ins->l2cap_cookie)
                 packet->l2cap_r.status = BT_STATUS_SUCCESS;
             else
@@ -109,7 +109,7 @@ void bt_socket_server_l2cap_process(service_poll_t *poll, int fd,
         break;
     case BT_L2CAP_UNREGISTER_CALLBACKS:
         if (ins->l2cap_cookie) {
-            l2cap_unregister_callbacks((void **)&ins, ins->l2cap_cookie);
+            l2cap_unregister_callbacks((void**)&ins, ins->l2cap_cookie);
             ins->l2cap_cookie = NULL;
             packet->l2cap_r.status = BT_STATUS_SUCCESS;
         } else {
@@ -118,16 +118,16 @@ void bt_socket_server_l2cap_process(service_poll_t *poll, int fd,
         break;
     case BT_L2CAP_LISTEN:
         packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_listen)(ins,
-                                                            &packet->l2cap_pl._bt_l2cap_listen.option);
+            &packet->l2cap_pl._bt_l2cap_listen.option);
         break;
     case BT_L2CAP_CONNECT:
         packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_connect)(ins,
-                                                             &packet->l2cap_pl._bt_l2cap_connect.addr,
-                                                             &packet->l2cap_pl._bt_l2cap_connect.option);
+            &packet->l2cap_pl._bt_l2cap_connect.addr,
+            &packet->l2cap_pl._bt_l2cap_connect.option);
         break;
     case BT_L2CAP_DISCONNECT:
         packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_disconnect)(ins,
-                                                                packet->l2cap_pl._bt_l2cap_disconnect.cid);
+            packet->l2cap_pl._bt_l2cap_disconnect.cid);
         break;
     default:
         break;
@@ -136,9 +136,9 @@ void bt_socket_server_l2cap_process(service_poll_t *poll, int fd,
 #endif
 
 #if !defined(CONFIG_BLUETOOTH_SERVER) && defined(CONFIG_BLUETOOTH_RPMSG_CPUNAME)
-static bool rpmsg_tty_mount_path(const char *src, char *dest, int len, const char *mount_cpu)
+static bool rpmsg_tty_mount_path(const char* src, char* dest, int len, const char* mount_cpu)
 {
-    char *path = strstr(src, "/dev/");
+    char* path = strstr(src, "/dev/");
 
     if (!path || path != src) {
         return false;
@@ -151,8 +151,8 @@ static bool rpmsg_tty_mount_path(const char *src, char *dest, int len, const cha
 }
 #endif
 
-int bt_socket_client_l2cap_callback(service_poll_t *poll, int fd,
-                                    bt_instance_t *ins, bt_message_packet_t *packet)
+int bt_socket_client_l2cap_callback(service_poll_t* poll, int fd,
+    bt_instance_t* ins, bt_message_packet_t* packet)
 {
     switch (packet->code) {
     case BT_L2CAP_CONNECTED_CB: {
@@ -171,16 +171,16 @@ int bt_socket_client_l2cap_callback(service_poll_t *poll, int fd,
             conn_parm.pty_name = rename;
 #endif
         CALLBACK_FOREACH(CBLIST, l2cap_callbacks_t,
-                         on_connected,
-                         &conn_parm);
+            on_connected,
+            &conn_parm);
         break;
     }
     case BT_L2CAP_DISCONNECTED_CB:
         CALLBACK_FOREACH(CBLIST, l2cap_callbacks_t,
-                         on_disconnected,
-                         &packet->l2cap_cb._disconnected_cb.addr,
-                         packet->l2cap_cb._disconnected_cb.cid,
-                         packet->l2cap_cb._disconnected_cb.reason);
+            on_disconnected,
+            &packet->l2cap_cb._disconnected_cb.addr,
+            packet->l2cap_cb._disconnected_cb.cid,
+            packet->l2cap_cb._disconnected_cb.reason);
         break;
     default:
         return BT_STATUS_PARM_INVALID;

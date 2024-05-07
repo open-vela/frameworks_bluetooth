@@ -25,28 +25,28 @@
 #include "bt_tools.h"
 
 // vcs client interface
-static int vcc_vol_state_get(void *handle, int argc, char **argv);
-static int vcc_vol_flags_get(void *handle, int argc, char **argv);
-static int vcc_vol_change(void *handle, int argc, char **argv);
-static int vcc_vol_unmute_change(void *handle, int argc, char **argv);
-static int vcc_abs_vol_set(void *handle, int argc, char **argv);
-static int vcc_mute_state_set(void *handle, int argc, char **argv);
+static int vcc_vol_state_get(void* handle, int argc, char** argv);
+static int vcc_vol_flags_get(void* handle, int argc, char** argv);
+static int vcc_vol_change(void* handle, int argc, char** argv);
+static int vcc_vol_unmute_change(void* handle, int argc, char** argv);
+static int vcc_abs_vol_set(void* handle, int argc, char** argv);
+static int vcc_mute_state_set(void* handle, int argc, char** argv);
 // mics client interface
-static int micc_mute_state_get(void *handle, int argc, char **argv);
-static int micc_mute_state_set(void *handle, int argc, char **argv);
+static int micc_mute_state_get(void* handle, int argc, char** argv);
+static int micc_mute_state_set(void* handle, int argc, char** argv);
 
 static bt_command_t g_lea_vmicp_tables[] = {
-    {"volget",           vcc_vol_state_get,     0, "get volume state                param: <addr>"                          },
-    { "flagsget",        vcc_vol_flags_get,     0, "get volume flags                param: <addr>"                          },
-    { "volchange",       vcc_vol_change,        0, "up or down volume               param1: <addr> param2: up(1)/down(0) "  },
-    { "volunmutechange", vcc_vol_unmute_change, 0, "up or down volume and unmute    param: <addr> param2: up(1)/down(0) "   },
-    { "absvolset",       vcc_abs_vol_set,       0, "set absolute volume             param1: <addr> param2:volume(0~255)"    },
-    { "volmuteset",      vcc_mute_state_set,    0, "set volume mute                 param1: <addr> param2:mute(1)/unmute(0)"},
-    { "micmuteget",      micc_mute_state_get,   0, "get mic mute state              param: <addr>"                          },
-    { "micmuteset",      micc_mute_state_set,   0, "set mic mute state              param1: <addr> param2:mute(1)/unmute(0)"},
+    { "volget", vcc_vol_state_get, 0, "get volume state                param: <addr>" },
+    { "flagsget", vcc_vol_flags_get, 0, "get volume flags                param: <addr>" },
+    { "volchange", vcc_vol_change, 0, "up or down volume               param1: <addr> param2: up(1)/down(0) " },
+    { "volunmutechange", vcc_vol_unmute_change, 0, "up or down volume and unmute    param: <addr> param2: up(1)/down(0) " },
+    { "absvolset", vcc_abs_vol_set, 0, "set absolute volume             param1: <addr> param2:volume(0~255)" },
+    { "volmuteset", vcc_mute_state_set, 0, "set volume mute                 param1: <addr> param2:mute(1)/unmute(0)" },
+    { "micmuteget", micc_mute_state_get, 0, "get mic mute state              param: <addr>" },
+    { "micmuteset", micc_mute_state_set, 0, "set mic mute state              param1: <addr> param2:mute(1)/unmute(0)" },
 };
 
-static void *vmicp_callbacks = NULL;
+static void* vmicp_callbacks = NULL;
 
 static void usage(void)
 {
@@ -59,7 +59,7 @@ static void usage(void)
 }
 
 /* interface */
-static int vcc_vol_state_get(void *handle, int argc, char **argv)
+static int vcc_vol_state_get(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -74,7 +74,7 @@ static int vcc_vol_state_get(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int vcc_vol_flags_get(void *handle, int argc, char **argv)
+static int vcc_vol_flags_get(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -89,7 +89,7 @@ static int vcc_vol_flags_get(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int vcc_vol_change(void *handle, int argc, char **argv)
+static int vcc_vol_change(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -106,7 +106,7 @@ static int vcc_vol_change(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int vcc_vol_unmute_change(void *handle, int argc, char **argv)
+static int vcc_vol_unmute_change(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -123,7 +123,7 @@ static int vcc_vol_unmute_change(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int vcc_abs_vol_set(void *handle, int argc, char **argv)
+static int vcc_abs_vol_set(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -140,7 +140,7 @@ static int vcc_abs_vol_set(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int vcc_mute_state_set(void *handle, int argc, char **argv)
+static int vcc_mute_state_set(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -157,7 +157,7 @@ static int vcc_mute_state_set(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int micc_mute_state_get(void *handle, int argc, char **argv)
+static int micc_mute_state_get(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -172,7 +172,7 @@ static int micc_mute_state_get(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int micc_mute_state_set(void *handle, int argc, char **argv)
+static int micc_mute_state_set(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -189,19 +189,19 @@ static int micc_mute_state_set(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static void vmicp_volume_state_callback(void *context, bt_address_t *addr, int volume, int mute)
+static void vmicp_volume_state_callback(void* context, bt_address_t* addr, int volume, int mute)
 {
     PRINT_ADDR("vmicp_volume_state_callback, addr:%s", addr);
     PRINT("vmicp_volume_state_callback volume:%d, mute:%d", volume, mute);
 }
 
-static void vmicp_volume_flags_callback(void *context, bt_address_t *addr, int flags)
+static void vmicp_volume_flags_callback(void* context, bt_address_t* addr, int flags)
 {
     PRINT_ADDR("vmicp_volume_flags_callback, addr:%s", addr);
     PRINT("vmicp_volume_flags_callback flags:%d", flags);
 }
 
-static void vmicp_mic_state_callback(void *context, bt_address_t *addr, int mute)
+static void vmicp_mic_state_callback(void* context, bt_address_t* addr, int mute)
 {
     PRINT_ADDR("vmicp_mic_state_callback, addr:%s", addr);
     PRINT("vmicp_mic_state_callback mic:%d", mute);
@@ -214,19 +214,19 @@ static const lea_vmicp_callbacks_t lea_vmicp_cbs = {
     vmicp_mic_state_callback,
 };
 
-int lea_vmicp_command_init(void *handle)
+int lea_vmicp_command_init(void* handle)
 {
     vmicp_callbacks = bt_lea_vmicp_register_callbacks(handle, &lea_vmicp_cbs);
 
     return CMD_OK;
 }
 
-void lea_vmicp_command_uninit(void *handle)
+void lea_vmicp_command_uninit(void* handle)
 {
     bt_lea_vmicp_unregister_callbacks(handle, vmicp_callbacks);
 }
 
-int vmicp_command_exec(void *handle, int argc, char *argv[])
+int vmicp_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

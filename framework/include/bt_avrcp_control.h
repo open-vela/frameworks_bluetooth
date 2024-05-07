@@ -23,7 +23,7 @@ typedef struct {
     avrcp_connection_state_callback connection_state_cb;
 } avrcp_control_callbacks_t;
 
-void *bt_avrcp_control_register_callbacks(bt_instance_t *ins, const avrcp_control_callbacks_t *callbacks);
-bool bt_avrcp_control_unregister_callbacks(bt_instance_t *ins, void *cookie);
+void* bt_avrcp_control_register_callbacks(bt_instance_t* ins, const avrcp_control_callbacks_t* callbacks);
+bool bt_avrcp_control_unregister_callbacks(bt_instance_t* ins, void* cookie);
 
 #endif /* __BT_AVRCP_CONTROL_H__ */

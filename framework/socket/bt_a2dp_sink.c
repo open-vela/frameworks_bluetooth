@@ -19,25 +19,25 @@
 #include "bt_a2dp_sink.h"
 #include "bt_socket.h"
 
-void *bt_a2dp_sink_register_callbacks(bt_instance_t *ins, const a2dp_sink_callbacks_t *callbacks)
+void* bt_a2dp_sink_register_callbacks(bt_instance_t* ins, const a2dp_sink_callbacks_t* callbacks)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    void *handle;
+    void* handle;
 
     BT_SOCKET_INS_VALID(ins, NULL);
 
     if (ins->a2dp_sink_callbacks != NULL) {
-        handle = bt_remote_callbacks_register(ins->a2dp_sink_callbacks, NULL, (void *)callbacks);
+        handle = bt_remote_callbacks_register(ins->a2dp_sink_callbacks, NULL, (void*)callbacks);
         return handle;
     }
 
     ins->a2dp_sink_callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
 
 #ifdef CONFIG_BLUETOOTH_FEATURE
-    handle = bt_remote_callbacks_register(ins->a2dp_sink_callbacks, ins, (void *)callbacks);
+    handle = bt_remote_callbacks_register(ins->a2dp_sink_callbacks, ins, (void*)callbacks);
 #else
-    handle = bt_remote_callbacks_register(ins->a2dp_sink_callbacks, NULL, (void *)callbacks);
+    handle = bt_remote_callbacks_register(ins->a2dp_sink_callbacks, NULL, (void*)callbacks);
 #endif
 
     if (handle == NULL) {
@@ -56,7 +56,7 @@ void *bt_a2dp_sink_register_callbacks(bt_instance_t *ins, const a2dp_sink_callba
     return handle;
 }
 
-bool bt_a2dp_sink_unregister_callbacks(bt_instance_t *ins, void *cookie)
+bool bt_a2dp_sink_unregister_callbacks(bt_instance_t* ins, void* cookie)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -80,7 +80,7 @@ bool bt_a2dp_sink_unregister_callbacks(bt_instance_t *ins, void *cookie)
     return true;
 }
 
-bool bt_a2dp_sink_is_connected(bt_instance_t *ins, bt_address_t *addr)
+bool bt_a2dp_sink_is_connected(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -96,7 +96,7 @@ bool bt_a2dp_sink_is_connected(bt_instance_t *ins, bt_address_t *addr)
     return packet.a2dp_sink_r.bbool;
 }
 
-bool bt_a2dp_sink_is_playing(bt_instance_t *ins, bt_address_t *addr)
+bool bt_a2dp_sink_is_playing(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -112,7 +112,7 @@ bool bt_a2dp_sink_is_playing(bt_instance_t *ins, bt_address_t *addr)
     return packet.a2dp_sink_r.bbool;
 }
 
-profile_connection_state_t bt_a2dp_sink_get_connection_state(bt_instance_t *ins, bt_address_t *addr)
+profile_connection_state_t bt_a2dp_sink_get_connection_state(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -128,7 +128,7 @@ profile_connection_state_t bt_a2dp_sink_get_connection_state(bt_instance_t *ins,
     return packet.a2dp_sink_r.state;
 }
 
-bt_status_t bt_a2dp_sink_connect(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_a2dp_sink_connect(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -144,7 +144,7 @@ bt_status_t bt_a2dp_sink_connect(bt_instance_t *ins, bt_address_t *addr)
     return packet.a2dp_sink_r.status;
 }
 
-bt_status_t bt_a2dp_sink_disconnect(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_a2dp_sink_disconnect(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -160,7 +160,7 @@ bt_status_t bt_a2dp_sink_disconnect(bt_instance_t *ins, bt_address_t *addr)
     return packet.a2dp_sink_r.status;
 }
 
-bt_status_t bt_a2dp_sink_set_active_device(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_a2dp_sink_set_active_device(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;

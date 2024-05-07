@@ -19,15 +19,13 @@
 
 bool phy_is_vaild(uint8_t phy)
 {
-    if (phy != BT_LE_1M_PHY &&
-        phy != BT_LE_2M_PHY &&
-        phy != BT_LE_CODED_PHY)
+    if (phy != BT_LE_1M_PHY && phy != BT_LE_2M_PHY && phy != BT_LE_CODED_PHY)
         return false;
 
     return true;
 }
 
-int le_addr_type(const char *str, ble_addr_type_t *type)
+int le_addr_type(const char* str, ble_addr_type_t* type)
 {
     *type = BT_LE_ADDR_TYPE_UNKNOWN;
 
@@ -47,7 +45,7 @@ int le_addr_type(const char *str, ble_addr_type_t *type)
     return CMD_OK;
 }
 
-bool bttool_allocator(void **data, uint32_t size)
+bool bttool_allocator(void** data, uint32_t size)
 {
     *data = malloc(size);
     if (!(*data))

@@ -37,24 +37,24 @@ typedef struct {
 } sal_gatt_database_t;
 
 static pthread_mutex_t db_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-static bt_list_t *g_gatt_db_list = NULL;
-static bt_list_t *g_peer_addr_list = NULL;
+static bt_list_t* g_gatt_db_list = NULL;
+static bt_list_t* g_peer_addr_list = NULL;
 
-static bool gatt_db_group_cmp(void *gatt_db, void *handle)
+static bool gatt_db_group_cmp(void* gatt_db, void* handle)
 {
-    uint16_t f_handle = *(uint16_t *)handle;
-    sal_gatt_database_t *f_gatt_db = (sal_gatt_database_t *)gatt_db;
+    uint16_t f_handle = *(uint16_t*)handle;
+    sal_gatt_database_t* f_gatt_db = (sal_gatt_database_t*)gatt_db;
     return (f_handle >= f_gatt_db->start_handle && f_handle <= f_gatt_db->end_handle);
 }
 
-static SERVICE_GATT_ELEMENT_S *gatt_db_find_element_by_handle(bt_list_t *db_list, uint16_t handle)
+static SERVICE_GATT_ELEMENT_S* gatt_db_find_element_by_handle(bt_list_t* db_list, uint16_t handle)
 {
-    sal_gatt_database_t *db_group = bt_list_find(db_list, gatt_db_group_cmp, &handle);
+    sal_gatt_database_t* db_group = bt_list_find(db_list, gatt_db_group_cmp, &handle);
     if (db_group == NULL) {
         return NULL;
     }
 
-    SERVICE_GATT_ELEMENT_S *sal_element = db_group->elements;
+    SERVICE_GATT_ELEMENT_S* sal_element = db_group->elements;
     for (int i = 0; i < db_group->elements_size; i++, sal_element++) {
         if (sal_element->id == handle)
             return sal_element;
@@ -62,14 +62,14 @@ static SERVICE_GATT_ELEMENT_S *gatt_db_find_element_by_handle(bt_list_t *db_list
     return NULL;
 }
 
-static bool peer_addr_cmp(void *peer, void *addr)
+static bool peer_addr_cmp(void* peer, void* addr)
 {
     return memcmp(peer, addr, BT_ADDR_LENGTH) == 0;
 }
 
-static bt_address_t *gatts_add_peer_addr(bt_list_t *addr_list, BD_ADDR remote_addr)
+static bt_address_t* gatts_add_peer_addr(bt_list_t* addr_list, BD_ADDR remote_addr)
 {
-    bt_address_t *addr = bt_list_find(addr_list, peer_addr_cmp, remote_addr);
+    bt_address_t* addr = bt_list_find(addr_list, peer_addr_cmp, remote_addr);
     if (addr)
         return addr;
 
@@ -82,9 +82,9 @@ static bt_address_t *gatts_add_peer_addr(bt_list_t *addr_list, BD_ADDR remote_ad
     return addr;
 }
 
-static void gatts_remove_peer_addr(bt_list_t *addr_list, BD_ADDR remote_addr)
+static void gatts_remove_peer_addr(bt_list_t* addr_list, BD_ADDR remote_addr)
 {
-    bt_address_t *addr = bt_list_find(addr_list, peer_addr_cmp, remote_addr);
+    bt_address_t* addr = bt_list_find(addr_list, peer_addr_cmp, remote_addr);
     if (addr)
         bt_list_remove(addr_list, addr);
 }
@@ -101,9 +101,9 @@ static void gatts_connection_state_changed_callback(BD_ADDR remote_addr, SERVICE
     if_gatts_on_connection_state_changed(&addr, bluelet_profile_connection_state(state));
 }
 
-static void gatts_elements_added_callback(SERVICE_GATT_STATUS status, SERVICE_GATT_ELEMENT_S *elements, uint16_t size)
+static void gatts_elements_added_callback(SERVICE_GATT_STATUS status, SERVICE_GATT_ELEMENT_S* elements, uint16_t size)
 {
-    sal_gatt_database_t *db_group;
+    sal_gatt_database_t* db_group;
 
     if (!g_gatt_db_list)
         return;
@@ -116,9 +116,9 @@ static void gatts_elements_added_callback(SERVICE_GATT_STATUS status, SERVICE_GA
     }
 }
 
-static void gatts_elements_removed_callback(SERVICE_GATT_STATUS status, SERVICE_GATT_ELEMENT_S *elements, uint16_t size)
+static void gatts_elements_removed_callback(SERVICE_GATT_STATUS status, SERVICE_GATT_ELEMENT_S* elements, uint16_t size)
 {
-    sal_gatt_database_t *db_group;
+    sal_gatt_database_t* db_group;
     uint16_t element_id;
 
     if (!g_gatt_db_list)
@@ -151,15 +151,15 @@ static void gatts_phy_update_callback(BD_ADDR remote_addr, SERVICE_BLE_PHY_TYPE 
     if_gatts_on_phy_updated(&addr, tx_phy, rx_phy, bluelet_gatt_status(status));
 }
 
-static void gatts_received_element_read_request_callback(BD_ADDR remote_addr, uint32_t request_id, SERVICE_GATT_ELEMENT_S *element)
+static void gatts_received_element_read_request_callback(BD_ADDR remote_addr, uint32_t request_id, SERVICE_GATT_ELEMENT_S* element)
 {
     bt_address_t addr;
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
     if_gatts_on_received_element_read_request(&addr, request_id, element->id);
 }
 
-static void gatts_received_element_write_request_callback(BD_ADDR remote_addr, uint32_t request_id, SERVICE_GATT_ELEMENT_S *element,
-                                                          uint8_t *value, uint16_t offset, uint16_t length)
+static void gatts_received_element_write_request_callback(BD_ADDR remote_addr, uint32_t request_id, SERVICE_GATT_ELEMENT_S* element,
+    uint8_t* value, uint16_t offset, uint16_t length)
 {
     bt_address_t addr;
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
@@ -175,7 +175,7 @@ static void gatts_mtu_changed_callback(BD_ADDR remote_addr, uint32_t mtu)
     }
 }
 
-static void gatts_notification_sent_callback(BD_ADDR remote_addr, SERVICE_GATT_ELEMENT_S *element, SERVICE_GATT_STATUS status)
+static void gatts_notification_sent_callback(BD_ADDR remote_addr, SERVICE_GATT_ELEMENT_S* element, SERVICE_GATT_STATUS status)
 {
     bt_address_t addr;
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
@@ -219,9 +219,9 @@ bt_status_t bt_sal_gatt_server_disable(void)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t *elements, uint16_t size)
+bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t* elements, uint16_t size)
 {
-    sal_gatt_database_t *db_group;
+    sal_gatt_database_t* db_group;
 
     SAL_CHECK_PARAM(elements);
     SAL_CHECK_PARAM(size);
@@ -233,7 +233,7 @@ bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t *elements, uint16_t s
         return BT_STATUS_FAIL;
     }
 
-    db_group = (sal_gatt_database_t *)malloc(sizeof(sal_gatt_database_t) + sizeof(SERVICE_GATT_ELEMENT_S) * size);
+    db_group = (sal_gatt_database_t*)malloc(sizeof(sal_gatt_database_t) + sizeof(SERVICE_GATT_ELEMENT_S) * size);
     if (db_group == NULL) {
         pthread_mutex_unlock(&db_lock);
         return BT_STATUS_NOMEM;
@@ -257,9 +257,9 @@ bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t *elements, uint16_t s
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_remove_elements(gatt_element_t *elements, uint16_t size)
+bt_status_t bt_sal_gatt_server_remove_elements(gatt_element_t* elements, uint16_t size)
 {
-    sal_gatt_database_t *db_group;
+    sal_gatt_database_t* db_group;
 
     SAL_CHECK_PARAM(elements);
     SAL_CHECK_PARAM(size);
@@ -270,7 +270,7 @@ bt_status_t bt_sal_gatt_server_remove_elements(gatt_element_t *elements, uint16_
     if (db_group == NULL)
         return BT_STATUS_NO_RESOURCES;
 
-    uint32_t *remove_ids = (uint32_t *)malloc(sizeof(uint32_t) * size);
+    uint32_t* remove_ids = (uint32_t*)malloc(sizeof(uint32_t) * size);
     if (remove_ids == NULL)
         return BT_STATUS_NOMEM;
 
@@ -286,7 +286,7 @@ bt_status_t bt_sal_gatt_server_remove_elements(gatt_element_t *elements, uint16_
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_connect(bt_address_t *addr, ble_addr_type_t addr_type)
+bt_status_t bt_sal_gatt_server_connect(bt_address_t* addr, ble_addr_type_t addr_type)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gatt_server_connect_v1(addr->addr, addr_type), GATT_SUCCESS);
@@ -294,7 +294,7 @@ bt_status_t bt_sal_gatt_server_connect(bt_address_t *addr, ble_addr_type_t addr_
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_cancel_connection(bt_address_t *addr)
+bt_status_t bt_sal_gatt_server_cancel_connection(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gatt_server_cancel_connection(addr->addr), GATT_SUCCESS);
@@ -302,11 +302,11 @@ bt_status_t bt_sal_gatt_server_cancel_connection(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_send_response(bt_address_t *addr, uint32_t request_id, uint8_t *value, uint16_t length)
+bt_status_t bt_sal_gatt_server_send_response(bt_address_t* addr, uint32_t request_id, uint8_t* value, uint16_t length)
 {
     SAL_CHECK_PARAM(addr);
 
-    SERVICE_GATT_RESPONSE_S *sal_response = (SERVICE_GATT_RESPONSE_S *)malloc(sizeof(SERVICE_GATT_RESPONSE_S) + length);
+    SERVICE_GATT_RESPONSE_S* sal_response = (SERVICE_GATT_RESPONSE_S*)malloc(sizeof(SERVICE_GATT_RESPONSE_S) + length);
     if (sal_response == NULL)
         return BT_STATUS_NOMEM;
 
@@ -324,9 +324,9 @@ bt_status_t bt_sal_gatt_server_send_response(bt_address_t *addr, uint32_t reques
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_send_notification(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length)
+bt_status_t bt_sal_gatt_server_send_notification(bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length)
 {
-    SERVICE_GATT_ELEMENT_S *sal_element;
+    SERVICE_GATT_ELEMENT_S* sal_element;
 
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_PARAM(value);
@@ -342,9 +342,9 @@ bt_status_t bt_sal_gatt_server_send_notification(bt_address_t *addr, uint16_t el
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_send_indication(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length)
+bt_status_t bt_sal_gatt_server_send_indication(bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length)
 {
-    SERVICE_GATT_ELEMENT_S *sal_element;
+    SERVICE_GATT_ELEMENT_S* sal_element;
 
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_PARAM(value);
@@ -360,7 +360,7 @@ bt_status_t bt_sal_gatt_server_send_indication(bt_address_t *addr, uint16_t elem
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_read_phy(bt_address_t *addr)
+bt_status_t bt_sal_gatt_server_read_phy(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gatt_server_read_phy(addr->addr), GATT_SUCCESS);
@@ -368,7 +368,7 @@ bt_status_t bt_sal_gatt_server_read_phy(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+bt_status_t bt_sal_gatt_server_set_phy(bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gatt_server_set_phy(addr->addr, tx_phy, rx_phy), GATT_SUCCESS);
@@ -376,8 +376,8 @@ bt_status_t bt_sal_gatt_server_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy
     return BT_STATUS_SUCCESS;
 }
 
-void bt_sal_gatt_server_connection_changed_callback(bt_address_t *addr, uint16_t connection_interval, uint16_t peripheral_latency,
-                                                    uint16_t supervision_timeout)
+void bt_sal_gatt_server_connection_changed_callback(bt_address_t* addr, uint16_t connection_interval, uint16_t peripheral_latency,
+    uint16_t supervision_timeout)
 {
     if (bt_list_find(g_peer_addr_list, peer_addr_cmp, addr->addr)) {
         if_gatts_on_connection_parameter_changed(addr, connection_interval, peripheral_latency, supervision_timeout);

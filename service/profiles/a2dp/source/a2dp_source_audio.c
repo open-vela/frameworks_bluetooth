@@ -76,23 +76,23 @@ typedef struct {
     stream_state_t stream_state;
     uint8_t codec_info[10];
     uint32_t interval_ms;
-    service_timer_t *media_alarm;
+    service_timer_t* media_alarm;
     uint32_t sequence_number;
     uint32_t max_tx_length;
     struct circbuf_s stream_pool;
     uint8_t read_congest;
     a2dp_source_underflow_t underflow;
-    const a2dp_source_stream_interface_t *stream_interface;
+    const a2dp_source_stream_interface_t* stream_interface;
 } a2dp_source_stream_t;
 
 static a2dp_source_stream_t a2dp_src_stream = { 0 };
-extern audio_transport_t *a2dp_transport;
+extern audio_transport_t* a2dp_transport;
 
 static void a2dp_source_read_congest(uint8_t ch_id);
 
-static const a2dp_source_stream_interface_t *get_stream_interface(void)
+static const a2dp_source_stream_interface_t* get_stream_interface(void)
 {
-    a2dp_codec_config_t *config;
+    a2dp_codec_config_t* config;
 
     config = a2dp_codec_get_config();
     if (config->codec_type == BTS_A2DP_TYPE_SBC)
@@ -106,15 +106,15 @@ static const a2dp_source_stream_interface_t *get_stream_interface(void)
     return NULL;
 }
 
-static void a2dp_audio_data_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
+static void a2dp_audio_data_alloc(uint8_t ch_id, uint8_t** buffer, size_t* len)
 {
-    a2dp_source_stream_t *stream = &a2dp_src_stream;
+    a2dp_source_stream_t* stream = &a2dp_src_stream;
     int space, next_to_read;
-    uint8_t *alloc_buffer;
+    uint8_t* alloc_buffer;
 
     if (stream->stream_state == STATE_FLUSHING) {
         *len = STREAM_FLUSH_SIZE;
-        *buffer = (uint8_t *)malloc(STREAM_FLUSH_SIZE);
+        *buffer = (uint8_t*)malloc(STREAM_FLUSH_SIZE);
         return;
     }
 
@@ -128,7 +128,7 @@ static void a2dp_audio_data_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
 
     next_to_read = space > stream->max_tx_length ? stream->max_tx_length : space;
 
-    alloc_buffer = (void *)malloc(next_to_read);
+    alloc_buffer = (void*)malloc(next_to_read);
     if (!alloc_buffer) {
         *buffer = NULL;
         audio_transport_read_stop(a2dp_transport, ch_id);
@@ -139,9 +139,9 @@ static void a2dp_audio_data_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
     *len = next_to_read;
 }
 
-static void a2dp_audio_data_received(uint8_t ch_id, uint8_t *buffer, ssize_t len)
+static void a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len)
 {
-    a2dp_source_stream_t *stream = &a2dp_src_stream;
+    a2dp_source_stream_t* stream = &a2dp_src_stream;
     int space;
 
     if (buffer == NULL)
@@ -175,14 +175,14 @@ out:
     free(buffer);
 }
 
-static void a2dp_audio_data_flush(uint8_t ch_id, uint8_t *buffer, ssize_t len)
+static void a2dp_audio_data_flush(uint8_t ch_id, uint8_t* buffer, ssize_t len)
 {
     free(buffer);
 }
 
 static void a2dp_source_start_read(void)
 {
-    a2dp_source_stream_t *stream = &a2dp_src_stream;
+    a2dp_source_stream_t* stream = &a2dp_src_stream;
 
     if (stream->stream_state != STATE_OFF && stream->read_congest != 1)
         return;
@@ -192,9 +192,9 @@ static void a2dp_source_start_read(void)
 
     stream->read_congest = 0;
     audio_transport_read_start(a2dp_transport,
-                               AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO,
-                               a2dp_audio_data_alloc,
-                               a2dp_audio_data_received);
+        AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO,
+        a2dp_audio_data_alloc,
+        a2dp_audio_data_received);
 }
 
 static void a2dp_source_read_congest(uint8_t ch_id)
@@ -203,7 +203,7 @@ static void a2dp_source_read_congest(uint8_t ch_id)
     audio_transport_read_stop(a2dp_transport, ch_id);
 }
 
-static void a2dp_source_send_callback(uint8_t *buf, uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp)
+static void a2dp_source_send_callback(uint8_t* buf, uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp)
 {
     if (buf == NULL) {
         BT_LOGE("%s, buffer is null", __func__);
@@ -211,12 +211,12 @@ static void a2dp_source_send_callback(uint8_t *buf, uint16_t nbytes, uint8_t nb_
     }
 
     bt_sal_a2dp_source_send_data(a2dp_source_active_peer()->bd_addr,
-                                 buf, nbytes, nb_frames, timestamp, a2dp_src_stream.sequence_number++);
+        buf, nbytes, nb_frames, timestamp, a2dp_src_stream.sequence_number++);
 }
 
-static int a2dp_source_read_callback(uint8_t *buf, uint16_t frame_len)
+static int a2dp_source_read_callback(uint8_t* buf, uint16_t frame_len)
 {
-    a2dp_source_stream_t *stream = &a2dp_src_stream;
+    a2dp_source_stream_t* stream = &a2dp_src_stream;
     uint16_t remaining_size;
 
     remaining_size = circbuf_used(&stream->stream_pool);
@@ -229,9 +229,9 @@ static int a2dp_source_read_callback(uint8_t *buf, uint16_t frame_len)
     return frame_len;
 }
 
-static void a2dp_source_audio_handle_timer(service_timer_t *timer, void *arg)
+static void a2dp_source_audio_handle_timer(service_timer_t* timer, void* arg)
 {
-    a2dp_source_stream_t *stream = &a2dp_src_stream;
+    a2dp_source_stream_t* stream = &a2dp_src_stream;
 
     if (a2dp_src_stream.stream_state != STATE_RUNNING)
         return;
@@ -265,9 +265,9 @@ static void a2dp_source_start_flush(void)
     if (a2dp_src_stream.stream_state == STATE_OFF) {
         a2dp_src_stream.stream_state = STATE_FLUSHING;
         audio_transport_read_start(a2dp_transport,
-                                   AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO,
-                                   a2dp_audio_data_alloc,
-                                   a2dp_audio_data_flush);
+            AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO,
+            a2dp_audio_data_alloc,
+            a2dp_audio_data_flush);
     }
 }
 
@@ -277,16 +277,16 @@ static void a2dp_source_stop_flush(void)
     audio_transport_read_stop(a2dp_transport, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
 }
 
-static void a2dp_source_start_delay(service_timer_t *timer, void *arg)
+static void a2dp_source_start_delay(service_timer_t* timer, void* arg)
 {
-    a2dp_source_stream_t *stream = &a2dp_src_stream;
+    a2dp_source_stream_t* stream = &a2dp_src_stream;
 
     service_loop_cancel_timer(stream->media_alarm);
     stream->media_alarm = NULL;
     stream->media_alarm = service_loop_timer(stream->interval_ms,
-                                             stream->interval_ms,
-                                             a2dp_source_audio_handle_timer,
-                                             NULL);
+        stream->interval_ms,
+        a2dp_source_audio_handle_timer,
+        NULL);
     if (stream->stream_interface)
         stream->stream_interface->reset();
 }
@@ -295,8 +295,8 @@ static void a2dp_source_start_audio_req(void)
 {
     BT_LOGD("%s", __func__);
 
-    a2dp_source_stream_t *stream = &a2dp_src_stream;
-    a2dp_peer_t *peer = a2dp_source_active_peer();
+    a2dp_source_stream_t* stream = &a2dp_src_stream;
+    a2dp_peer_t* peer = a2dp_source_active_peer();
 
     if (!stream->stream_interface) {
         BT_LOGE("stream interface is NULL");
@@ -319,9 +319,9 @@ static void a2dp_source_start_audio_req(void)
     stream->underflow.state = UNDERFLOW_STATE_NONE;
     /* delay start, wait stream pool filling */
     stream->media_alarm = service_loop_timer(STREAM_DELAY_MS,
-                                             0,
-                                             a2dp_source_start_delay,
-                                             NULL);
+        0,
+        a2dp_source_start_delay,
+        NULL);
     stream->stream_state = STATE_RUNNING;
 }
 
@@ -332,8 +332,7 @@ static void a2dp_source_stop_audio_req(bool cleanup)
     if (cleanup)
         memset(&a2dp_src_stream.underflow, 0, sizeof(a2dp_source_underflow_t));
 
-    if (a2dp_src_stream.stream_state != STATE_RUNNING ||
-        a2dp_src_stream.underflow.state == UNDERFLOW_STATE_PAUSED)
+    if (a2dp_src_stream.stream_state != STATE_RUNNING || a2dp_src_stream.underflow.state == UNDERFLOW_STATE_PAUSED)
         return;
 
     if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
@@ -416,11 +415,11 @@ void a2dp_source_on_suspended(void)
     a2dp_source_stop_audio_req(false);
 }
 
-void a2dp_source_setup_codec(bt_address_t *bd_addr)
+void a2dp_source_setup_codec(bt_address_t* bd_addr)
 {
-    a2dp_source_stream_t *stream = &a2dp_src_stream;
-    a2dp_codec_config_t *config;
-    a2dp_peer_t *peer;
+    a2dp_source_stream_t* stream = &a2dp_src_stream;
+    a2dp_codec_config_t* config;
+    a2dp_peer_t* peer;
 
     if (a2dp_src_stream.offloading) {
         return;
@@ -441,8 +440,8 @@ void a2dp_source_setup_codec(bt_address_t *bd_addr)
     }
 
     stream->stream_interface->init(&config->codec_param.sbc, peer->mtu,
-                                   a2dp_source_send_callback,
-                                   a2dp_source_read_callback);
+        a2dp_source_send_callback,
+        a2dp_source_read_callback);
     a2dp_source_start_flush();
 }
 

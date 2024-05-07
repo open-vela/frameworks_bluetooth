@@ -24,6 +24,6 @@
 #include "bt_addr.h"
 #include "bt_status.h"
 
-bool adpt_req_csis_info_callback(SERVICE_LEA_CSIS_S *info);
+bool adpt_req_csis_info_callback(SERVICE_LEA_CSIS_S* info);
 
 #endif /* __SAL_LEA_CSIP_INTERFACE_H__ */

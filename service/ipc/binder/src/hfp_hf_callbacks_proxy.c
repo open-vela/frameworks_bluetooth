@@ -28,11 +28,11 @@
 
 #include "utils/log.h"
 
-static void BpBtHfpHfCallbacks_connectionStateCallback(void *cookie, bt_address_t *addr, profile_connection_state_t state)
+static void BpBtHfpHfCallbacks_connectionStateCallback(void* cookie, bt_address_t* addr, profile_connection_state_t state)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -53,11 +53,11 @@ static void BpBtHfpHfCallbacks_connectionStateCallback(void *cookie, bt_address_
     }
 }
 
-static void BpBtHfpHfCallbacks_audioStateCallback(void *cookie, bt_address_t *addr, hfp_audio_state_t state)
+static void BpBtHfpHfCallbacks_audioStateCallback(void* cookie, bt_address_t* addr, hfp_audio_state_t state)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -78,11 +78,11 @@ static void BpBtHfpHfCallbacks_audioStateCallback(void *cookie, bt_address_t *ad
     }
 }
 
-static void BpBtHfpHfCallbacks_vrCmdCallback(void *cookie, bt_address_t *addr, bool started)
+static void BpBtHfpHfCallbacks_vrCmdCallback(void* cookie, bt_address_t* addr, bool started)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -103,11 +103,11 @@ static void BpBtHfpHfCallbacks_vrCmdCallback(void *cookie, bt_address_t *addr, b
     }
 }
 
-static void BpBtHfpHfCallbacks_callStateChangeCallback(void *cookie, bt_address_t *addr, hfp_current_call_t *call)
+static void BpBtHfpHfCallbacks_callStateChangeCallback(void* cookie, bt_address_t* addr, hfp_current_call_t* call)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -129,11 +129,11 @@ static void BpBtHfpHfCallbacks_callStateChangeCallback(void *cookie, bt_address_
     }
 }
 
-static void BpBtHfpHfCallbacks_cmdCompleteCallback(void *cookie, bt_address_t *addr, const char *resp)
+static void BpBtHfpHfCallbacks_cmdCompleteCallback(void* cookie, bt_address_t* addr, const char* resp)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -154,11 +154,11 @@ static void BpBtHfpHfCallbacks_cmdCompleteCallback(void *cookie, bt_address_t *a
     }
 }
 
-static void BpBtHfpHfCallbacks_ringIndicationCallback(void *cookie, bt_address_t *addr, bool inband_ring_tone)
+static void BpBtHfpHfCallbacks_ringIndicationCallback(void* cookie, bt_address_t* addr, bool inband_ring_tone)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -291,7 +291,7 @@ static const hfp_hf_callbacks_t static_hfp_hf_cbks = {
     BpBtHfpHfCallbacks_ringIndicationCallback,
 };
 
-const hfp_hf_callbacks_t *BpBtHfpHfCallbacks_getStatic(void)
+const hfp_hf_callbacks_t* BpBtHfpHfCallbacks_getStatic(void)
 {
     return &static_hfp_hf_cbks;
 }

@@ -19,17 +19,17 @@
 #include "bt_addr.h"
 #include "hfp_hf_event.h"
 
-hfp_hf_msg_t *hfp_hf_msg_new(hfp_hf_event_t event, bt_address_t *addr)
+hfp_hf_msg_t* hfp_hf_msg_new(hfp_hf_event_t event, bt_address_t* addr)
 {
     return hfp_hf_msg_new_ext(event, addr, NULL, 0);
 }
 
-hfp_hf_msg_t *hfp_hf_msg_new_ext(hfp_hf_event_t event, bt_address_t *addr,
-                                 void *data, size_t size)
+hfp_hf_msg_t* hfp_hf_msg_new_ext(hfp_hf_event_t event, bt_address_t* addr,
+    void* data, size_t size)
 {
-    hfp_hf_msg_t *msg;
+    hfp_hf_msg_t* msg;
 
-    msg = (hfp_hf_msg_t *)zalloc(sizeof(hfp_hf_msg_t));
+    msg = (hfp_hf_msg_t*)zalloc(sizeof(hfp_hf_msg_t));
     if (msg == NULL)
         return NULL;
 
@@ -46,7 +46,7 @@ hfp_hf_msg_t *hfp_hf_msg_new_ext(hfp_hf_event_t event, bt_address_t *addr,
     return msg;
 }
 
-void hfp_hf_msg_destroy(hfp_hf_msg_t *msg)
+void hfp_hf_msg_destroy(hfp_hf_msg_t* msg)
 {
     if (!msg) {
         return;

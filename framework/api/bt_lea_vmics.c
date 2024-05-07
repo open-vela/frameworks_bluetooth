@@ -21,45 +21,45 @@
 #include "lea_vmics_service.h"
 #include "service_manager.h"
 
-static lea_vmics_interface_t *get_profile_service(void)
+static lea_vmics_interface_t* get_profile_service(void)
 {
-    return (lea_vmics_interface_t *)service_manager_get_profile(PROFILE_LEAUDIO_VMICS);
+    return (lea_vmics_interface_t*)service_manager_get_profile(PROFILE_LEAUDIO_VMICS);
 }
 
-void *bt_lea_vmics_register_callbacks(bt_instance_t *ins, const lea_vmics_callbacks_t *callbacks)
+void* bt_lea_vmics_register_callbacks(bt_instance_t* ins, const lea_vmics_callbacks_t* callbacks)
 {
-    lea_vmics_interface_t *profile = get_profile_service();
+    lea_vmics_interface_t* profile = get_profile_service();
 
-    return profile->register_callbacks(NULL, (lea_vmics_callbacks_t *)callbacks);
+    return profile->register_callbacks(NULL, (lea_vmics_callbacks_t*)callbacks);
 }
 
-bool bt_lea_vmics_unregister_callbacks(bt_instance_t *ins, void *cookie)
+bool bt_lea_vmics_unregister_callbacks(bt_instance_t* ins, void* cookie)
 {
-    lea_vmics_interface_t *profile = get_profile_service();
+    lea_vmics_interface_t* profile = get_profile_service();
 
     return profile->unregister_callbacks(NULL, cookie);
 }
 
-bt_status_t bt_lea_vcs_volume_set(bt_instance_t *ins, int vol)
+bt_status_t bt_lea_vcs_volume_set(bt_instance_t* ins, int vol)
 {
-    lea_vmics_interface_t *profile = get_profile_service();
+    lea_vmics_interface_t* profile = get_profile_service();
     return profile->vcs_volume_notify(ins, vol);
 }
 
-bt_status_t bt_lea_vcs_mute_set(bt_instance_t *ins, int mute)
+bt_status_t bt_lea_vcs_mute_set(bt_instance_t* ins, int mute)
 {
-    lea_vmics_interface_t *profile = get_profile_service();
+    lea_vmics_interface_t* profile = get_profile_service();
     return profile->vcs_mute_notify(ins, mute);
 }
 
-bt_status_t bt_lea_vcs_volume_flags_set(bt_instance_t *ins, int flags)
+bt_status_t bt_lea_vcs_volume_flags_set(bt_instance_t* ins, int flags)
 {
-    lea_vmics_interface_t *profile = get_profile_service();
+    lea_vmics_interface_t* profile = get_profile_service();
     return profile->vcs_volume_flags_notify(ins, flags);
 }
 
-bt_status_t bt_lea_mics_mute_set(bt_instance_t *ins, int mute)
+bt_status_t bt_lea_mics_mute_set(bt_instance_t* ins, int mute)
 {
-    lea_vmics_interface_t *profile = get_profile_service();
+    lea_vmics_interface_t* profile = get_profile_service();
     return profile->mics_mute_notify(ins, mute);
 }

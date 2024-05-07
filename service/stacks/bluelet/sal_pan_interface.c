@@ -28,25 +28,25 @@
 #include "sal_pan_interface.h"
 
 void connection_state_change_cb(BD_ADDR remote_addr, SERVICE_PAN_ROLE_TYPE remote_role,
-                                SERVICE_PAN_ROLE_TYPE local_role,
-                                SERVICE_PROFILE_CONNECTION_STATE state)
+    SERVICE_PAN_ROLE_TYPE local_role,
+    SERVICE_PROFILE_CONNECTION_STATE state)
 {
     bt_address_t addr;
 
     memcpy(addr.addr, remote_addr, 6);
     pan_on_connection_state_changed(&addr, remote_role, local_role,
-                                    bluelet_profile_connection_state(state));
+        bluelet_profile_connection_state(state));
 }
 
 void data_received_cb(BD_ADDR remote_addr, uint16_t protocol,
-                      uint8_t *dst_addr, uint8_t *src_addr,
-                      uint8_t *data, uint16_t length)
+    uint8_t* dst_addr, uint8_t* src_addr,
+    uint8_t* data, uint16_t length)
 {
     bt_address_t addr;
 
     memcpy(addr.addr, remote_addr, 6);
     pan_on_data_received(&addr, protocol, dst_addr,
-                         src_addr, data, length);
+        src_addr, data, length);
 }
 
 static PAN_CALLBACKS_S pan_cbks = {
@@ -62,7 +62,7 @@ static PAN_CALLBACKS_S pan_cbks = {
 bt_status_t bt_sal_pan_init(pan_role_t role, uint8_t max_connection)
 {
     SAL_CHECK_RET(service_adapter_pan_init(max_connection, role, &pan_cbks),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
@@ -72,38 +72,38 @@ void bt_sal_pan_cleanup(void)
     service_adapter_pan_cleanup();
 }
 
-bt_status_t bt_sal_pan_connect(bt_address_t *addr,
-                               pan_role_t dst_role,
-                               pan_role_t src_role)
+bt_status_t bt_sal_pan_connect(bt_address_t* addr,
+    pan_role_t dst_role,
+    pan_role_t src_role)
 {
     SAL_CHECK_PARAM(addr);
 
     SAL_CHECK_RET(service_adapter_pan_connect(addr->addr, dst_role, src_role),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_pan_disconnect(bt_address_t *addr)
+bt_status_t bt_sal_pan_disconnect(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
 
     SAL_CHECK_RET(service_adapter_pan_disconnect(addr->addr),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_pan_write(bt_address_t *addr, uint16_t protocol,
-                             uint8_t *dst_addr, uint8_t *src_addr,
-                             uint8_t *buffer, uint16_t length)
+bt_status_t bt_sal_pan_write(bt_address_t* addr, uint16_t protocol,
+    uint8_t* dst_addr, uint8_t* src_addr,
+    uint8_t* buffer, uint16_t length)
 {
     SAL_CHECK_PARAM(addr);
 
     SAL_CHECK_RET(service_adapter_pan_write(addr->addr, protocol,
-                                            dst_addr, src_addr,
-                                            buffer, length),
-                  SERVICE_BT_STATUS_SUCCESS);
+                      dst_addr, src_addr,
+                      buffer, length),
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }

@@ -48,7 +48,7 @@ static SERVICE_L2CAP_MODE_TYPE bluelet_l2cap_mode(l2cap_channel_mode_t mode)
     }
 }
 
-bt_status_t bt_sal_l2cap_listen_channel(l2cap_config_option_t *option)
+bt_status_t bt_sal_l2cap_listen_channel(l2cap_config_option_t* option)
 {
     SAL_CHECK_PARAM(option);
 
@@ -63,7 +63,7 @@ bt_status_t bt_sal_l2cap_listen_channel(l2cap_config_option_t *option)
         };
 
         SAL_CHECK_RET(service_adapter_gap_ble_listen_l2cap_channel(&le_l2cap_config_opt),
-                      SERVICE_BT_STATUS_SUCCESS);
+            SERVICE_BT_STATUS_SUCCESS);
 #else
         return BT_STATUS_NOT_SUPPORTED;
 #endif
@@ -76,7 +76,7 @@ bt_status_t bt_sal_l2cap_listen_channel(l2cap_config_option_t *option)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_l2cap_connect_channel(bt_address_t *addr, l2cap_config_option_t *option)
+bt_status_t bt_sal_l2cap_connect_channel(bt_address_t* addr, l2cap_config_option_t* option)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_PARAM(option);
@@ -92,7 +92,7 @@ bt_status_t bt_sal_l2cap_connect_channel(bt_address_t *addr, l2cap_config_option
         };
 
         SAL_CHECK_RET(service_adapter_gap_ble_connect_l2cap_channel(addr->addr, &le_l2cap_config_opt),
-                      SERVICE_BT_STATUS_SUCCESS);
+            SERVICE_BT_STATUS_SUCCESS);
 #else
         return BT_STATUS_NOT_SUPPORTED;
 #endif
@@ -112,10 +112,10 @@ bt_status_t bt_sal_l2cap_disconnect_channel(uint16_t cid)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_l2cap_send_packet(uint16_t cid, uint8_t *packet_data, uint16_t packet_size)
+bt_status_t bt_sal_l2cap_send_packet(uint16_t cid, uint8_t* packet_data, uint16_t packet_size)
 {
     SAL_CHECK_RET(service_adapter_gap_send_l2cap_packet(cid, packet_data, packet_size),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }

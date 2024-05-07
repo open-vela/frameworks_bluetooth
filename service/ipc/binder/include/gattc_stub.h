@@ -28,14 +28,14 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    void *usr_data;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    void* usr_data;
 } IBtGattClient;
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
+    AIBinder_Class* clazz;
+    AIBinder* binder;
 } BpBtGattClient;
 
 typedef enum {
@@ -57,8 +57,8 @@ typedef enum {
 
 #define GATT_CLIENT_BINDER_INSTANCE "Vela.Bluetooth.Gatt.Client"
 
-binder_status_t BtGattClient_addService(IBtGattClient *iGattc, const char *instance);
-AIBinder *BtGattClient_getService(BpBtGattClient **bpGattc, const char *instance);
+binder_status_t BtGattClient_addService(IBtGattClient* iGattc, const char* instance);
+AIBinder* BtGattClient_getService(BpBtGattClient** bpGattc, const char* instance);
 
 #ifdef __cplusplus
 }

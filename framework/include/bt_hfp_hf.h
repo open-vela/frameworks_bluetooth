@@ -71,7 +71,7 @@ typedef struct {
  * @param addr - address of peer AG device.
  * @param state - connection state.
  */
-typedef void (*hfp_hf_connection_state_callback)(void *cookie, bt_address_t *addr, profile_connection_state_t state);
+typedef void (*hfp_hf_connection_state_callback)(void* cookie, bt_address_t* addr, profile_connection_state_t state);
 
 /**
  * @brief HFP HF audio connection state changed callback
@@ -80,7 +80,7 @@ typedef void (*hfp_hf_connection_state_callback)(void *cookie, bt_address_t *add
  * @param addr - address of peer AG device.
  * @param state - hfp audio state.
  */
-typedef void (*hfp_hf_audio_state_callback)(void *cookie, bt_address_t *addr, hfp_audio_state_t state);
+typedef void (*hfp_hf_audio_state_callback)(void* cookie, bt_address_t* addr, hfp_audio_state_t state);
 
 /**
  * @brief Voice recognition state changed callback
@@ -89,7 +89,7 @@ typedef void (*hfp_hf_audio_state_callback)(void *cookie, bt_address_t *addr, hf
  * @param addr - address of peer AG device.
  * @param started - is voice recognition started, true:started, false:stopped.
  */
-typedef void (*hfp_hf_vr_cmd_callback)(void *cookie, bt_address_t *addr, bool started);
+typedef void (*hfp_hf_vr_cmd_callback)(void* cookie, bt_address_t* addr, bool started);
 
 /**
  * @brief Call state chanaged callback
@@ -98,7 +98,7 @@ typedef void (*hfp_hf_vr_cmd_callback)(void *cookie, bt_address_t *addr, bool st
  * @param addr - address of peer AG device.
  * @param call - call infomation.
  */
-typedef void (*hfp_hf_call_state_change_callback)(void *cookie, bt_address_t *addr, hfp_current_call_t *call);
+typedef void (*hfp_hf_call_state_change_callback)(void* cookie, bt_address_t* addr, hfp_current_call_t* call);
 
 /**
  * @brief At command callback
@@ -107,7 +107,7 @@ typedef void (*hfp_hf_call_state_change_callback)(void *cookie, bt_address_t *ad
  * @param addr - address of peer AG device.
  * @param resp - at command response string.
  */
-typedef void (*hfp_hf_cmd_complete_callback)(void *cookie, bt_address_t *addr, const char *resp);
+typedef void (*hfp_hf_cmd_complete_callback)(void* cookie, bt_address_t* addr, const char* resp);
 
 /**
  * @brief Ring indication callback
@@ -116,7 +116,7 @@ typedef void (*hfp_hf_cmd_complete_callback)(void *cookie, bt_address_t *addr, c
  * @param addr - address of peer AG device.
  * @param inband_ring_tone - true:in-band.
  */
-typedef void (*hfp_hf_ring_indication_callback)(void *cookie, bt_address_t *addr, bool inband_ring_tone);
+typedef void (*hfp_hf_ring_indication_callback)(void* cookie, bt_address_t* addr, bool inband_ring_tone);
 
 /**
  * @brief Network roaming state changed callback
@@ -125,7 +125,7 @@ typedef void (*hfp_hf_ring_indication_callback)(void *cookie, bt_address_t *addr
  * @param addr - address of peer AG device.
  * @param status - roaming state, 0:not roaming, 1:roaming.
  */
-typedef void (*hfp_hf_roaming_changed_callback)(void *cookie, bt_address_t *addr, int status);
+typedef void (*hfp_hf_roaming_changed_callback)(void* cookie, bt_address_t* addr, int status);
 
 /**
  * @brief Network registration state changed callback
@@ -134,7 +134,7 @@ typedef void (*hfp_hf_roaming_changed_callback)(void *cookie, bt_address_t *addr
  * @param addr - address of peer AG device.
  * @param status - roaming state, 0:not available, 1:available.
  */
-typedef void (*hfp_hf_network_state_changed_callback)(void *cookie, bt_address_t *addr, int status);
+typedef void (*hfp_hf_network_state_changed_callback)(void* cookie, bt_address_t* addr, int status);
 
 /**
  * @brief Network registration signale strength changed callback
@@ -143,7 +143,7 @@ typedef void (*hfp_hf_network_state_changed_callback)(void *cookie, bt_address_t
  * @param addr - address of peer AG device.
  * @param signal - signale strength, range 0-5.
  */
-typedef void (*hfp_hf_signal_strength_changed_callback)(void *cookie, bt_address_t *addr, int signal);
+typedef void (*hfp_hf_signal_strength_changed_callback)(void* cookie, bt_address_t* addr, int signal);
 
 /**
  * @brief Network operator name changed callback
@@ -152,7 +152,7 @@ typedef void (*hfp_hf_signal_strength_changed_callback)(void *cookie, bt_address
  * @param addr - address of peer AG device.
  * @param name - network operator name.
  */
-typedef void (*hfp_hf_operator_changed_callback)(void *cookie, bt_address_t *addr, char *name);
+typedef void (*hfp_hf_operator_changed_callback)(void* cookie, bt_address_t* addr, char* name);
 
 /**
  * @brief HFP HF volume control callback
@@ -162,7 +162,7 @@ typedef void (*hfp_hf_operator_changed_callback)(void *cookie, bt_address_t *add
  * @param type - the type of volume, 0:gain of speaker, 1:gain of microphone.
  * @param volume - the gain level, range 0-15.
  */
-typedef void (*hfp_hf_volume_changed_callback)(void *cookie, bt_address_t *addr, hfp_volume_type_t type, int volume);
+typedef void (*hfp_hf_volume_changed_callback)(void* cookie, bt_address_t* addr, hfp_volume_type_t type, int volume);
 
 /**
  * @brief HFP HF callback structure
@@ -187,7 +187,7 @@ typedef struct
  * @param callbacks - HFP HF callback functions.
  * @return void* - callback cookie.
  */
-void *BTSYMBOLS(bt_hfp_hf_register_callbacks)(bt_instance_t *ins, const hfp_hf_callbacks_t *callbacks);
+void* BTSYMBOLS(bt_hfp_hf_register_callbacks)(bt_instance_t* ins, const hfp_hf_callbacks_t* callbacks);
 
 /**
  * @brief Unregister HFP AG callback functions
@@ -197,7 +197,7 @@ void *BTSYMBOLS(bt_hfp_hf_register_callbacks)(bt_instance_t *ins, const hfp_hf_c
  * @return true - on unregister success.
  * @return false - on callback cookie not found.
  */
-bool BTSYMBOLS(bt_hfp_hf_unregister_callbacks)(bt_instance_t *ins, void *cookie);
+bool BTSYMBOLS(bt_hfp_hf_unregister_callbacks)(bt_instance_t* ins, void* cookie);
 
 /**
  * @brief Check HFP HF is connected
@@ -207,7 +207,7 @@ bool BTSYMBOLS(bt_hfp_hf_unregister_callbacks)(bt_instance_t *ins, void *cookie)
  * @return true - connected.
  * @return false - not connected.
  */
-bool BTSYMBOLS(bt_hfp_hf_is_connected)(bt_instance_t *ins, bt_address_t *addr);
+bool BTSYMBOLS(bt_hfp_hf_is_connected)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Check HFP HF audio connection is connected
@@ -217,7 +217,7 @@ bool BTSYMBOLS(bt_hfp_hf_is_connected)(bt_instance_t *ins, bt_address_t *addr);
  * @return true - connected.
  * @return false - not connected.
  */
-bool BTSYMBOLS(bt_hfp_hf_is_audio_connected)(bt_instance_t *ins, bt_address_t *addr);
+bool BTSYMBOLS(bt_hfp_hf_is_audio_connected)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Get HFP HF connection state
@@ -226,7 +226,7 @@ bool BTSYMBOLS(bt_hfp_hf_is_audio_connected)(bt_instance_t *ins, bt_address_t *a
  * @param addr - address of peer AG device.
  * @return profile_connection_state_t - connection state.
  */
-profile_connection_state_t BTSYMBOLS(bt_hfp_hf_get_connection_state)(bt_instance_t *ins, bt_address_t *addr);
+profile_connection_state_t BTSYMBOLS(bt_hfp_hf_get_connection_state)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Establish SLC with peer AG device
@@ -235,7 +235,7 @@ profile_connection_state_t BTSYMBOLS(bt_hfp_hf_get_connection_state)(bt_instance
  * @param addr - address of peer AG device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_connect)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hfp_hf_connect)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Disconnect from HFP SLC
@@ -244,7 +244,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_connect)(bt_instance_t *ins, bt_address_t *addr)
  * @param addr - address of peer AG device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_disconnect)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hfp_hf_disconnect)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Establish audio connection with peer AG device
@@ -253,7 +253,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_disconnect)(bt_instance_t *ins, bt_address_t *ad
  * @param addr - address of peer AG device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_connect_audio)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hfp_hf_connect_audio)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Disconnect audio connection
@@ -262,7 +262,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_connect_audio)(bt_instance_t *ins, bt_address_t 
  * @param addr - address of peer AG device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_disconnect_audio)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hfp_hf_disconnect_audio)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Start voice recognition
@@ -271,7 +271,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_disconnect_audio)(bt_instance_t *ins, bt_address
  * @param addr - address of peer AG device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_start_voice_recognition)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hfp_hf_start_voice_recognition)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Stop voice recognition
@@ -280,7 +280,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_start_voice_recognition)(bt_instance_t *ins, bt_
  * @param addr - address of peer AG device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_stop_voice_recognition)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hfp_hf_stop_voice_recognition)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Dial number
@@ -290,7 +290,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_stop_voice_recognition)(bt_instance_t *ins, bt_a
  * @param number - phone number.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_dial)(bt_instance_t *ins, bt_address_t *addr, const char *number);
+bt_status_t BTSYMBOLS(bt_hfp_hf_dial)(bt_instance_t* ins, bt_address_t* addr, const char* number);
 
 /**
  * @brief Dial memory
@@ -300,7 +300,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_dial)(bt_instance_t *ins, bt_address_t *addr, co
  * @param memory - memory location.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_dial_memory)(bt_instance_t *ins, bt_address_t *addr, uint32_t memory);
+bt_status_t BTSYMBOLS(bt_hfp_hf_dial_memory)(bt_instance_t* ins, bt_address_t* addr, uint32_t memory);
 
 /**
  * @brief Dial last number
@@ -309,7 +309,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_dial_memory)(bt_instance_t *ins, bt_address_t *a
  * @param addr - address of peer AG device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_redial)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hfp_hf_redial)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Accept an voice call
@@ -322,7 +322,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_redial)(bt_instance_t *ins, bt_address_t *addr);
  * 2: Releases all active calls (if any exist) and accepts the other (held or waiting) call.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_accept_call)(bt_instance_t *ins, bt_address_t *addr, hfp_call_accept_t flag);
+bt_status_t BTSYMBOLS(bt_hfp_hf_accept_call)(bt_instance_t* ins, bt_address_t* addr, hfp_call_accept_t flag);
 
 /**
  * @brief Reject voice call
@@ -331,7 +331,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_accept_call)(bt_instance_t *ins, bt_address_t *a
  * @param addr - address of peer AG device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_reject_call)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hfp_hf_reject_call)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Hold voice call
@@ -341,7 +341,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_reject_call)(bt_instance_t *ins, bt_address_t *a
  * @param addr - address of peer AG device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_hold_call)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hfp_hf_hold_call)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Terminate voice call
@@ -351,7 +351,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_hold_call)(bt_instance_t *ins, bt_address_t *add
  * @param addr - address of peer AG device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_terminate_call)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hfp_hf_terminate_call)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Enhanced call control
@@ -368,7 +368,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_terminate_call)(bt_instance_t *ins, bt_address_t
  * @param index - call index, it does not work.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_control_call)(bt_instance_t *ins, bt_address_t *addr, hfp_call_control_t chld, uint8_t index);
+bt_status_t BTSYMBOLS(bt_hfp_hf_control_call)(bt_instance_t* ins, bt_address_t* addr, hfp_call_control_t chld, uint8_t index);
 
 /**
  * @brief Query current calls
@@ -380,7 +380,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_control_call)(bt_instance_t *ins, bt_address_t *
  * @param allocator - array allocator.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_query_current_calls)(bt_instance_t *ins, bt_address_t *addr, hfp_current_call_t **calls, int *num, bt_allocator_t allocator);
+bt_status_t BTSYMBOLS(bt_hfp_hf_query_current_calls)(bt_instance_t* ins, bt_address_t* addr, hfp_current_call_t** calls, int* num, bt_allocator_t allocator);
 
 /**
  * @brief Send AT command
@@ -390,7 +390,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_query_current_calls)(bt_instance_t *ins, bt_addr
  * @param cmd - AT command.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_send_at_cmd)(bt_instance_t *ins, bt_address_t *addr, const char *cmd);
+bt_status_t BTSYMBOLS(bt_hfp_hf_send_at_cmd)(bt_instance_t* ins, bt_address_t* addr, const char* cmd);
 
 /**
  * @brief Update battery level
@@ -400,7 +400,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_send_at_cmd)(bt_instance_t *ins, bt_address_t *a
  * @param level - the battery level, valid from 0 to 100.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_update_battery_level)(bt_instance_t *ins, bt_address_t *addr, uint8_t level);
+bt_status_t BTSYMBOLS(bt_hfp_hf_update_battery_level)(bt_instance_t* ins, bt_address_t* addr, uint8_t level);
 
 /**
  * @brief Send Dual Tone Multi-Frequency (DTMF) code
@@ -410,7 +410,7 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_update_battery_level)(bt_instance_t *ins, bt_add
  * @param dtmf - the DTMF code, one of ['0'-'9', 'A'-'D', '*', '#'].
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hfp_hf_send_dtmf)(bt_instance_t *ins, bt_address_t *addr, char dtmf);
+bt_status_t BTSYMBOLS(bt_hfp_hf_send_dtmf)(bt_instance_t* ins, bt_address_t* addr, char dtmf);
 
 #ifdef __cplusplus
 }

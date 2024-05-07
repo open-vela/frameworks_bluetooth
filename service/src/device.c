@@ -42,7 +42,7 @@ typedef struct remote_device {
     uint32_t sco_handle;
     int8_t rssi;
     struct {
-        bt_uuid_t *uuids;
+        bt_uuid_t* uuids;
         uint16_t uuid_cnt;
     } uuids;
     uint8_t battery_level;
@@ -70,17 +70,17 @@ typedef struct bt_device {
     uint8_t create_type;
 } bt_device_t;
 
-static bt_device_t *device_create(bt_address_t *addr, bt_transport_t transport, ble_addr_type_t addr_type)
+static bt_device_t* device_create(bt_address_t* addr, bt_transport_t transport, ble_addr_type_t addr_type)
 {
-    bt_device_t *device = zalloc(sizeof(bt_device_t));
+    bt_device_t* device = zalloc(sizeof(bt_device_t));
 
     if (!device)
         return NULL;
 
     memset(device, 0, sizeof(bt_device_t));
 
-    strcpy((char *)device->remote.name, "");
-    strcpy((char *)device->remote.alias, "");
+    strcpy((char*)device->remote.name, "");
+    strcpy((char*)device->remote.alias, "");
     memcpy(&device->remote.addr, addr, sizeof(bt_address_t));
     bt_addr_set_empty(&device->remote.identity_addr);
     device->remote.transport = transport;
@@ -96,39 +96,39 @@ static bt_device_t *device_create(bt_address_t *addr, bt_transport_t transport, 
     return device;
 }
 
-bt_device_t *br_device_create(bt_address_t *addr)
+bt_device_t* br_device_create(bt_address_t* addr)
 {
     return device_create(addr, BT_TRANSPORT_BREDR, BT_LE_ADDR_TYPE_UNKNOWN);
 }
 
-bt_device_t *le_device_create(bt_address_t *addr, ble_addr_type_t addr_type)
+bt_device_t* le_device_create(bt_address_t* addr, ble_addr_type_t addr_type)
 {
     return device_create(addr, BT_TRANSPORT_BLE, addr_type);
 }
 
-void device_delete(bt_device_t *device)
+void device_delete(bt_device_t* device)
 {
     if (device->remote.uuids.uuids)
         free(device->remote.uuids.uuids);
     free(device);
 }
 
-bt_transport_t device_get_transport(bt_device_t *device)
+bt_transport_t device_get_transport(bt_device_t* device)
 {
     return device->remote.transport;
 }
 
-bt_address_t *device_get_address(bt_device_t *device)
+bt_address_t* device_get_address(bt_device_t* device)
 {
     return &device->remote.addr;
 }
 
-bt_address_t *device_get_identity_address(bt_device_t *device)
+bt_address_t* device_get_identity_address(bt_device_t* device)
 {
     return &device->remote.identity_addr;
 }
 
-void device_set_identity_address(bt_device_t *device, bt_address_t *addr)
+void device_set_identity_address(bt_device_t* device, bt_address_t* addr)
 {
     if (addr) {
         memcpy(&device->remote.identity_addr, addr, sizeof(bt_address_t));
@@ -137,50 +137,50 @@ void device_set_identity_address(bt_device_t *device, bt_address_t *addr)
     }
 }
 
-ble_addr_type_t device_get_address_type(bt_device_t *device)
+ble_addr_type_t device_get_address_type(bt_device_t* device)
 {
     return device->remote.addr_type;
 }
 
-void device_set_address_type(bt_device_t *device, ble_addr_type_t type)
+void device_set_address_type(bt_device_t* device, ble_addr_type_t type)
 {
     device->remote.addr_type = type;
 }
 
-void device_set_device_type(bt_device_t *device, bt_device_type_t type)
+void device_set_device_type(bt_device_t* device, bt_device_type_t type)
 {
     device->remote.device_type = type;
 }
 
-bt_device_type_t device_get_device_type(bt_device_t *device)
+bt_device_type_t device_get_device_type(bt_device_t* device)
 {
     return device->remote.device_type;
 }
 
-const char *device_get_name(bt_device_t *device)
+const char* device_get_name(bt_device_t* device)
 {
-    return (const char *)device->remote.name;
+    return (const char*)device->remote.name;
 }
 
-bool device_set_name(bt_device_t *device, const char *name)
+bool device_set_name(bt_device_t* device, const char* name)
 {
     if (!strncmp(device->remote.name, name, BT_REM_NAME_MAX_LEN)) {
         return false;
     }
 
-    strlcpy((char *)device->remote.name, name, sizeof(device->remote.name));
+    strlcpy((char*)device->remote.name, name, sizeof(device->remote.name));
     if (!strncmp(device->remote.alias, "", BT_REM_NAME_MAX_LEN))
-        strlcpy((char *)device->remote.alias, name, sizeof(device->remote.alias));
+        strlcpy((char*)device->remote.alias, name, sizeof(device->remote.alias));
 
     return true;
 }
 
-uint32_t device_get_device_class(bt_device_t *device)
+uint32_t device_get_device_class(bt_device_t* device)
 {
     return device->remote.device_class;
 }
 
-bool device_set_device_class(bt_device_t *device, uint32_t cod)
+bool device_set_device_class(bt_device_t* device, uint32_t cod)
 {
     if (device->remote.device_class == cod) {
         return false;
@@ -190,12 +190,12 @@ bool device_set_device_class(bt_device_t *device, uint32_t cod)
     return true;
 }
 
-uint16_t device_get_uuids_size(bt_device_t *device)
+uint16_t device_get_uuids_size(bt_device_t* device)
 {
     return device->remote.uuids.uuid_cnt;
 }
 
-uint16_t device_get_uuids(bt_device_t *device, bt_uuid_t *uuids, uint16_t size)
+uint16_t device_get_uuids(bt_device_t* device, bt_uuid_t* uuids, uint16_t size)
 {
     if (!device->remote.uuids.uuid_cnt)
         return 0;
@@ -206,7 +206,7 @@ uint16_t device_get_uuids(bt_device_t *device, bt_uuid_t *uuids, uint16_t size)
     return min;
 }
 
-bool device_set_uuids(bt_device_t *device, bt_uuid_t *uuids, uint16_t size)
+bool device_set_uuids(bt_device_t* device, bt_uuid_t* uuids, uint16_t size)
 {
     bool update = true;
 
@@ -215,10 +215,10 @@ bool device_set_uuids(bt_device_t *device, bt_uuid_t *uuids, uint16_t size)
 
     /* check uuid list is equal */
     if (device->remote.uuids.uuid_cnt == size) {
-        bt_uuid_t *uuid1 = uuids;
+        bt_uuid_t* uuid1 = uuids;
         for (int i = 0; i < size; i++) {
             update = true;
-            bt_uuid_t *uuid2 = device->remote.uuids.uuids;
+            bt_uuid_t* uuid2 = device->remote.uuids.uuids;
             for (int j = 0; j < device->remote.uuids.uuid_cnt; j++) {
                 if (!bt_uuid_compare(uuid1, uuid2)) {
                     update = false;
@@ -242,153 +242,153 @@ copy:
     return true;
 }
 
-uint16_t device_get_appearance(bt_device_t *device)
+uint16_t device_get_appearance(bt_device_t* device)
 {
     return device->remote.appearance;
 }
 
-void device_set_appearance(bt_device_t *device, uint16_t appearance)
+void device_set_appearance(bt_device_t* device, uint16_t appearance)
 {
     device->remote.appearance = appearance;
 }
 
-int8_t device_get_rssi(bt_device_t *device)
+int8_t device_get_rssi(bt_device_t* device)
 {
     return device->remote.rssi;
 }
 
-void device_set_rssi(bt_device_t *device, int8_t rssi)
+void device_set_rssi(bt_device_t* device, int8_t rssi)
 {
     device->remote.rssi = rssi;
 }
 
-const char *device_get_alias(bt_device_t *device)
+const char* device_get_alias(bt_device_t* device)
 {
-    return (const char *)device->remote.alias;
+    return (const char*)device->remote.alias;
 }
 
-bool device_set_alias(bt_device_t *device, const char *alias)
+bool device_set_alias(bt_device_t* device, const char* alias)
 {
     if (!strncmp(device->remote.alias, alias, BT_REM_NAME_MAX_LEN))
         return false;
 
-    strlcpy((char *)device->remote.alias, alias, sizeof(device->remote.alias));
+    strlcpy((char*)device->remote.alias, alias, sizeof(device->remote.alias));
     return true;
 }
 
-connection_state_t device_get_connection_state(bt_device_t *device)
+connection_state_t device_get_connection_state(bt_device_t* device)
 {
     return device->remote.connection_state;
 }
 
-void device_set_connection_state(bt_device_t *device, connection_state_t state)
+void device_set_connection_state(bt_device_t* device, connection_state_t state)
 {
     device->remote.connection_state = state;
 }
 
-bool device_is_connected(bt_device_t *device)
+bool device_is_connected(bt_device_t* device)
 {
     return device->remote.connection_state >= CONNECTION_STATE_CONNECTED;
 }
 
-bool device_is_encrypted(bt_device_t *device)
+bool device_is_encrypted(bt_device_t* device)
 {
     return device->remote.connection_state > CONNECTION_STATE_CONNECTED;
 }
 
-uint16_t device_get_acl_handle(bt_device_t *device)
+uint16_t device_get_acl_handle(bt_device_t* device)
 {
     return device->remote.acl_handle;
 }
 
-void device_set_acl_handle(bt_device_t *device, uint16_t handle)
+void device_set_acl_handle(bt_device_t* device, uint16_t handle)
 {
     device->remote.acl_handle = handle;
 }
 
-bt_link_role_t device_get_local_role(bt_device_t *device)
+bt_link_role_t device_get_local_role(bt_device_t* device)
 {
     return device->remote.local_role;
 }
 
-void device_set_local_role(bt_device_t *device, bt_link_role_t role)
+void device_set_local_role(bt_device_t* device, bt_link_role_t role)
 {
     device->remote.local_role = role;
 }
 
-void device_set_bond_initiate_local(bt_device_t *device, bool initiate_local)
+void device_set_bond_initiate_local(bt_device_t* device, bool initiate_local)
 {
     device->remote.local_initiate_bond = initiate_local;
 }
 
-bool device_is_bond_initiate_local(bt_device_t *device)
+bool device_is_bond_initiate_local(bt_device_t* device)
 {
     return device->remote.local_initiate_bond;
 }
 
-bond_state_t device_get_bond_state(bt_device_t *device)
+bond_state_t device_get_bond_state(bt_device_t* device)
 {
     return device->remote.bond_state;
 }
 
-void device_set_bond_state(bt_device_t *device, bond_state_t state)
+void device_set_bond_state(bt_device_t* device, bond_state_t state)
 {
     device->remote.bond_state = state;
 }
 
-bool device_is_bonded(bt_device_t *device)
+bool device_is_bonded(bt_device_t* device)
 {
     return device->remote.bond_state == BOND_STATE_BONDED;
 }
 
-uint8_t *device_get_link_key(bt_device_t *device)
+uint8_t* device_get_link_key(bt_device_t* device)
 {
     return device->remote.link_key;
 }
 
-void device_set_link_key(bt_device_t *device, bt_128key_t link_key)
+void device_set_link_key(bt_device_t* device, bt_128key_t link_key)
 {
     memcpy(device->remote.link_key, link_key, sizeof(bt_128key_t));
 }
 
-void device_delete_link_key(bt_device_t *device)
+void device_delete_link_key(bt_device_t* device)
 {
     memset(device->remote.link_key, 0, sizeof(bt_128key_t));
 }
 
-bt_link_key_type_t device_get_link_key_type(bt_device_t *device)
+bt_link_key_type_t device_get_link_key_type(bt_device_t* device)
 {
     return device->remote.link_key_type;
 }
 
-void device_set_link_key_type(bt_device_t *device, bt_link_key_type_t type)
+void device_set_link_key_type(bt_device_t* device, bt_link_key_type_t type)
 {
     device->remote.link_key_type = type;
 }
 
-bt_link_policy_t device_get_link_policy(bt_device_t *device)
+bt_link_policy_t device_get_link_policy(bt_device_t* device)
 {
     return device->remote.link_policy;
 }
 
-void device_set_link_policy(bt_device_t *device, bt_link_policy_t policy)
+void device_set_link_policy(bt_device_t* device, bt_link_policy_t policy)
 {
     device->remote.link_policy = policy;
 }
 
-void device_set_le_phy(bt_device_t *device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+void device_set_le_phy(bt_device_t* device, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     device->remote.tx_phy = tx_phy;
     device->remote.rx_phy = rx_phy;
 }
 
-void device_get_le_phy(bt_device_t *device, ble_phy_type_t *tx_phy, ble_phy_type_t *rx_phy)
+void device_get_le_phy(bt_device_t* device, ble_phy_type_t* tx_phy, ble_phy_type_t* rx_phy)
 {
     *tx_phy = device->remote.tx_phy;
     *rx_phy = device->remote.rx_phy;
 }
 
-void device_get_property(bt_device_t *device, remote_device_properties_t *prop)
+void device_get_property(bt_device_t* device, remote_device_properties_t* prop)
 {
     memcpy(&prop->addr, &device->remote.addr, sizeof(bt_address_t));
     prop->addr_type = device->remote.addr_type;
@@ -400,7 +400,7 @@ void device_get_property(bt_device_t *device, remote_device_properties_t *prop)
     prop->device_type = device->remote.device_type;
 }
 
-void device_get_le_property(bt_device_t *device, remote_device_le_properties_t *prop)
+void device_get_le_property(bt_device_t* device, remote_device_le_properties_t* prop)
 {
     memcpy(&prop->addr, &device->remote.addr, sizeof(bt_address_t));
     prop->addr_type = device->remote.addr_type;
@@ -408,49 +408,49 @@ void device_get_le_property(bt_device_t *device, remote_device_le_properties_t *
     prop->device_type = device->remote.device_type;
 }
 
-void device_set_flags(bt_device_t *device, uint32_t flags)
+void device_set_flags(bt_device_t* device, uint32_t flags)
 {
     device->flags |= flags;
 }
 
-void device_clear_flag(bt_device_t *device, uint32_t flag)
+void device_clear_flag(bt_device_t* device, uint32_t flag)
 {
     device->flags &= ~flag;
 }
 
-bool device_check_flag(bt_device_t *device, uint32_t flag)
+bool device_check_flag(bt_device_t* device, uint32_t flag)
 {
     return device->flags & flag;
 }
 
-uint8_t *device_get_smp_key(bt_device_t *device)
+uint8_t* device_get_smp_key(bt_device_t* device)
 {
     return device->remote.smp_data;
 }
 
-void device_set_smp_key(bt_device_t *device, uint8_t *smp_key)
+void device_set_smp_key(bt_device_t* device, uint8_t* smp_key)
 {
     device_set_flags(device, DFLAG_LE_KEY_SET);
     memcpy(device->remote.smp_data, smp_key, sizeof(device->remote.smp_data));
 }
 
-void device_delete_smp_key(bt_device_t *device)
+void device_delete_smp_key(bt_device_t* device)
 {
     device_clear_flag(device, DFLAG_LE_KEY_SET);
     memset(device->remote.smp_data, 0, sizeof(device->remote.smp_data));
 }
 
-static int linkkey_dump(bt_device_t *device, char *str)
+static int linkkey_dump(bt_device_t* device, char* str)
 {
-    uint8_t *lk = device->remote.link_key;
+    uint8_t* lk = device->remote.link_key;
     uint8_t type = device->remote.link_key_type;
 
     return sprintf(str, "%02x | %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
-                   type, lk[0], lk[1], lk[2], lk[3], lk[4], lk[5], lk[6], lk[7], lk[8], lk[9], lk[10],
-                   lk[11], lk[12], lk[13], lk[14], lk[15]);
+        type, lk[0], lk[1], lk[2], lk[3], lk[4], lk[5], lk[6], lk[7], lk[8], lk[9], lk[10],
+        lk[11], lk[12], lk[13], lk[14], lk[15]);
 }
 
-void device_dump(bt_device_t *device)
+void device_dump(bt_device_t* device)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     char link_key_str[40] = { 0 };
@@ -471,7 +471,7 @@ void device_dump(bt_device_t *device)
     printf("\tLinkkey: %s\n", link_key_str);
     if (device->remote.uuids.uuid_cnt) {
         printf("\tUUIDs:\n");
-        bt_uuid_t *uuid = device->remote.uuids.uuids;
+        bt_uuid_t* uuid = device->remote.uuids.uuids;
         for (int i = 0; i < device->remote.uuids.uuid_cnt; i++) {
             bt_uuid_to_string(uuid, uuid_str, 40);
             printf("\t\tuuid[%-2d]: %s\n", i, uuid_str);

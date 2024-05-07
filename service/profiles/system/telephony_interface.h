@@ -76,9 +76,9 @@ typedef struct tele_client_ tele_client_t;
 
 typedef struct tele_call_ {
     /* call context */
-    tele_client_t *client;
-    void *proxy;
-    void *call_cbs;
+    tele_client_t* client;
+    void* proxy;
+    void* call_cbs;
     /* call info */
     uint8_t call_state;
     char line_identification[TELE_MAX_PHONE_NUMBER_LENGTH];
@@ -93,23 +93,23 @@ typedef struct tele_call_ {
 } tele_call_t;
 
 /* manager */
-typedef void (*connection_state_callback_t)(tele_client_t *tele, bool connected);
-typedef void (*radio_state_change_callback_t)(tele_client_t *tele, int radio_state);
-typedef void (*call_added_callback_t)(tele_client_t *tele, tele_call_t *call);
-typedef void (*call_removed_callback_t)(tele_client_t *tele, tele_call_t *call);
-typedef void (*network_operator_status_changed_callback_t)(tele_client_t *tele, int status);
-typedef void (*network_operator_name_changed_callback_t)(tele_client_t *tele, const char *name);
-typedef void (*network_reg_state_changed_callback_t)(tele_client_t *tele, int status);
-typedef void (*signal_strength_changed_callback_t)(tele_client_t *tele, int strength);
+typedef void (*connection_state_callback_t)(tele_client_t* tele, bool connected);
+typedef void (*radio_state_change_callback_t)(tele_client_t* tele, int radio_state);
+typedef void (*call_added_callback_t)(tele_client_t* tele, tele_call_t* call);
+typedef void (*call_removed_callback_t)(tele_client_t* tele, tele_call_t* call);
+typedef void (*network_operator_status_changed_callback_t)(tele_client_t* tele, int status);
+typedef void (*network_operator_name_changed_callback_t)(tele_client_t* tele, const char* name);
+typedef void (*network_reg_state_changed_callback_t)(tele_client_t* tele, int status);
+typedef void (*signal_strength_changed_callback_t)(tele_client_t* tele, int strength);
 /* dial */
-typedef void (*dial_callback_t)(tele_client_t *tele, bool succeeded);
+typedef void (*dial_callback_t)(tele_client_t* tele, bool succeeded);
 
 /* current calls callback */
-typedef void (*get_calls_callback_t)(tele_client_t *tele, tele_call_t **call, uint8_t nums);
+typedef void (*get_calls_callback_t)(tele_client_t* tele, tele_call_t** call, uint8_t nums);
 
 /* call */
-typedef void (*call_state_changed_callback_t)(tele_client_t *tele, tele_call_t *call, int state);
-typedef void (*call_disconnect_reason_callback_t)(tele_client_t *tele, tele_call_t *call, int reason);
+typedef void (*call_state_changed_callback_t)(tele_client_t* tele, tele_call_t* call, int state);
+typedef void (*call_disconnect_reason_callback_t)(tele_client_t* tele, tele_call_t* call, int reason);
 
 typedef struct {
     connection_state_callback_t connection_state_cb;
@@ -128,62 +128,62 @@ typedef struct {
 } tele_call_callbacks_t;
 
 #if defined(CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME) || defined(CONFIG_OFONO)
-tele_client_t *teleif_client_connect(const char *name);
-void teleif_client_disconnect(tele_client_t *tele);
-void teleif_register_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs);
-void teleif_unregister_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs);
-void teleif_call_register_callbacks(tele_client_t *tele, tele_call_t *call,
-                                    tele_call_callbacks_t *cbs);
-void teleif_call_unregister_callbacks(tele_client_t *tele, tele_call_t *call,
-                                      tele_call_callbacks_t *cbs);
-int teleif_modem_set_radio_power(tele_client_t *tele, int slot, bool poweron);
-bool teleif_modem_is_radio_on(tele_client_t *tele, int slot);
-bool teleif_modem_get_radio_power(tele_client_t *tele, int slot);
-int teleif_get_all_calls(tele_client_t *tele, int slot, get_calls_callback_t cbs);
-int teleif_call_dial_number(tele_client_t *tele, int slot, char *number,
-                            dial_callback_t cb);
-int teleif_call_answer_call(tele_client_t *tele, tele_call_t *call);
-int teleif_call_reject_call(tele_client_t *tele, tele_call_t *call);
-int teleif_call_hangup_call(tele_client_t *tele, tele_call_t *call);
-int teleif_call_hangup_all_call(tele_client_t *tele, int slot);
-int teleif_call_release_and_answer(tele_client_t *tele, int slot);
-int teleif_call_hold_and_answer(tele_client_t *tele, int slot);
-int teleif_call_hold_call(tele_client_t *tele, int slot);
-int teleif_call_merge_call(tele_client_t *tele, int slot);
-int teleif_call_send_dtmf(tele_client_t *tele, int slot, const char *tones);
-int teleif_network_get_signal_strength(tele_client_t *tele, int slot, int *strength);
-int teleif_network_get_operator(tele_client_t *tele, int slot, char **operator_name, int *status);
-bool teleif_network_is_roaming(tele_client_t *tele, int slot);
+tele_client_t* teleif_client_connect(const char* name);
+void teleif_client_disconnect(tele_client_t* tele);
+void teleif_register_callbacks(tele_client_t* tele, int slot, tele_callbacks_t* cbs);
+void teleif_unregister_callbacks(tele_client_t* tele, int slot, tele_callbacks_t* cbs);
+void teleif_call_register_callbacks(tele_client_t* tele, tele_call_t* call,
+    tele_call_callbacks_t* cbs);
+void teleif_call_unregister_callbacks(tele_client_t* tele, tele_call_t* call,
+    tele_call_callbacks_t* cbs);
+int teleif_modem_set_radio_power(tele_client_t* tele, int slot, bool poweron);
+bool teleif_modem_is_radio_on(tele_client_t* tele, int slot);
+bool teleif_modem_get_radio_power(tele_client_t* tele, int slot);
+int teleif_get_all_calls(tele_client_t* tele, int slot, get_calls_callback_t cbs);
+int teleif_call_dial_number(tele_client_t* tele, int slot, char* number,
+    dial_callback_t cb);
+int teleif_call_answer_call(tele_client_t* tele, tele_call_t* call);
+int teleif_call_reject_call(tele_client_t* tele, tele_call_t* call);
+int teleif_call_hangup_call(tele_client_t* tele, tele_call_t* call);
+int teleif_call_hangup_all_call(tele_client_t* tele, int slot);
+int teleif_call_release_and_answer(tele_client_t* tele, int slot);
+int teleif_call_hold_and_answer(tele_client_t* tele, int slot);
+int teleif_call_hold_call(tele_client_t* tele, int slot);
+int teleif_call_merge_call(tele_client_t* tele, int slot);
+int teleif_call_send_dtmf(tele_client_t* tele, int slot, const char* tones);
+int teleif_network_get_signal_strength(tele_client_t* tele, int slot, int* strength);
+int teleif_network_get_operator(tele_client_t* tele, int slot, char** operator_name, int* status);
+bool teleif_network_is_roaming(tele_client_t* tele, int slot);
 #else
-static inline tele_client_t *teleif_client_connect(const char *name)
+static inline tele_client_t* teleif_client_connect(const char* name)
 {
     return NULL;
 }
-static inline void teleif_client_disconnect(tele_client_t *tele) { }
-static inline void teleif_register_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs) { }
-static inline void teleif_unregister_callbacks(tele_client_t *tele, int slot, tele_callbacks_t *cbs) { }
-static inline void teleif_call_register_callbacks(tele_client_t *tele, tele_call_t *call,
-                                                  tele_call_callbacks_t *cbs) { }
-static inline void teleif_call_unregister_callbacks(tele_client_t *tele, tele_call_t *call,
-                                                    tele_call_callbacks_t *cbs) { }
-static inline int teleif_modem_set_radio_power(tele_client_t *tele, int slot, bool poweron) { return TELE_FAIL; }
-static inline bool teleif_modem_is_radio_on(tele_client_t *tele, int slot) { return false; }
-static inline bool teleif_modem_get_radio_power(tele_client_t *tele, int slot) { return false; }
-static inline int teleif_get_all_calls(tele_client_t *tele, int slot, get_calls_callback_t cbs) { return TELE_FAIL; }
-static inline int teleif_call_dial_number(tele_client_t *tele, int slot, char *number,
-                                          dial_callback_t cb) { return TELE_FAIL; }
-static inline int teleif_call_answer_call(tele_client_t *tele, tele_call_t *call) { return TELE_FAIL; }
-static inline int teleif_call_reject_call(tele_client_t *tele, tele_call_t *call) { return TELE_FAIL; }
-static inline int teleif_call_hangup_call(tele_client_t *tele, tele_call_t *call) { return TELE_FAIL; }
-static inline int teleif_call_hangup_all_call(tele_client_t *tele, int slot) { return TELE_FAIL; }
-static inline int teleif_call_release_and_answer(tele_client_t *tele, int slot) { return TELE_FAIL; }
-static inline int teleif_call_hold_and_answer(tele_client_t *tele, int slot) { return TELE_FAIL; }
-static inline int teleif_call_hold_call(tele_client_t *tele, int slot) { return TELE_FAIL; }
-static inline int teleif_call_merge_call(tele_client_t *tele, int slot) { return TELE_FAIL; }
-static inline int teleif_call_send_dtmf(tele_client_t *tele, int slot, const char *tones) { return TELE_FAIL; }
-static inline int teleif_network_get_signal_strength(tele_client_t *tele, int slot, int *strength) { return TELE_FAIL; }
-static inline int teleif_network_get_operator(tele_client_t *tele, int slot, char **operator_name, int *status) { return TELE_FAIL; }
-static inline bool teleif_network_is_roaming(tele_client_t *tele, int slot) { return false; }
+static inline void teleif_client_disconnect(tele_client_t* tele) { }
+static inline void teleif_register_callbacks(tele_client_t* tele, int slot, tele_callbacks_t* cbs) { }
+static inline void teleif_unregister_callbacks(tele_client_t* tele, int slot, tele_callbacks_t* cbs) { }
+static inline void teleif_call_register_callbacks(tele_client_t* tele, tele_call_t* call,
+    tele_call_callbacks_t* cbs) { }
+static inline void teleif_call_unregister_callbacks(tele_client_t* tele, tele_call_t* call,
+    tele_call_callbacks_t* cbs) { }
+static inline int teleif_modem_set_radio_power(tele_client_t* tele, int slot, bool poweron) { return TELE_FAIL; }
+static inline bool teleif_modem_is_radio_on(tele_client_t* tele, int slot) { return false; }
+static inline bool teleif_modem_get_radio_power(tele_client_t* tele, int slot) { return false; }
+static inline int teleif_get_all_calls(tele_client_t* tele, int slot, get_calls_callback_t cbs) { return TELE_FAIL; }
+static inline int teleif_call_dial_number(tele_client_t* tele, int slot, char* number,
+    dial_callback_t cb) { return TELE_FAIL; }
+static inline int teleif_call_answer_call(tele_client_t* tele, tele_call_t* call) { return TELE_FAIL; }
+static inline int teleif_call_reject_call(tele_client_t* tele, tele_call_t* call) { return TELE_FAIL; }
+static inline int teleif_call_hangup_call(tele_client_t* tele, tele_call_t* call) { return TELE_FAIL; }
+static inline int teleif_call_hangup_all_call(tele_client_t* tele, int slot) { return TELE_FAIL; }
+static inline int teleif_call_release_and_answer(tele_client_t* tele, int slot) { return TELE_FAIL; }
+static inline int teleif_call_hold_and_answer(tele_client_t* tele, int slot) { return TELE_FAIL; }
+static inline int teleif_call_hold_call(tele_client_t* tele, int slot) { return TELE_FAIL; }
+static inline int teleif_call_merge_call(tele_client_t* tele, int slot) { return TELE_FAIL; }
+static inline int teleif_call_send_dtmf(tele_client_t* tele, int slot, const char* tones) { return TELE_FAIL; }
+static inline int teleif_network_get_signal_strength(tele_client_t* tele, int slot, int* strength) { return TELE_FAIL; }
+static inline int teleif_network_get_operator(tele_client_t* tele, int slot, char** operator_name, int* status) { return TELE_FAIL; }
+static inline bool teleif_network_is_roaming(tele_client_t* tele, int slot) { return false; }
 #endif
 
 #endif /* __BT_TETEPHONY_INTERFACE_H__ */

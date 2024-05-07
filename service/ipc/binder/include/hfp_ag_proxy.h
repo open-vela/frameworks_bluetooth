@@ -29,19 +29,19 @@
 extern "C" {
 #endif
 
-BpBtHfpAg *BpBtHfpAg_new(const char *instance);
-void BpBtHfpAg_delete(BpBtHfpAg *bpPan);
-void *BpBtHfpAg_registerCallback(BpBtHfpAg *bpBinder, AIBinder *cbksBinder);
-bool BpBtHfpAg_unRegisterCallback(BpBtHfpAg *bpBinder, void *cookie);
-bool BpBtHfpAg_isConnected(BpBtHfpAg *bpBinder, bt_address_t *addr);
-bool BpBtHfpAg_isAudioConnected(BpBtHfpAg *bpBinder, bt_address_t *addr);
-profile_connection_state_t BpBtHfpAg_getConnectionState(BpBtHfpAg *bpBinder, bt_address_t *addr);
-bt_status_t BpBtHfpAg_connect(BpBtHfpAg *bpBinder, bt_address_t *addr);
-bt_status_t BpBtHfpAg_disconnect(BpBtHfpAg *bpBinder, bt_address_t *addr);
-bt_status_t BpBtHfpAg_connectAudio(BpBtHfpAg *bpBinder, bt_address_t *addr);
-bt_status_t BpBtHfpAg_disconnectAudio(BpBtHfpAg *bpBinder, bt_address_t *addr);
-bt_status_t BpBtHfpAg_startVoiceRecognition(BpBtHfpAg *bpBinder, bt_address_t *addr);
-bt_status_t BpBtHfpAg_stopVoiceRecognition(BpBtHfpAg *bpBinder, bt_address_t *addr);
+BpBtHfpAg* BpBtHfpAg_new(const char* instance);
+void BpBtHfpAg_delete(BpBtHfpAg* bpPan);
+void* BpBtHfpAg_registerCallback(BpBtHfpAg* bpBinder, AIBinder* cbksBinder);
+bool BpBtHfpAg_unRegisterCallback(BpBtHfpAg* bpBinder, void* cookie);
+bool BpBtHfpAg_isConnected(BpBtHfpAg* bpBinder, bt_address_t* addr);
+bool BpBtHfpAg_isAudioConnected(BpBtHfpAg* bpBinder, bt_address_t* addr);
+profile_connection_state_t BpBtHfpAg_getConnectionState(BpBtHfpAg* bpBinder, bt_address_t* addr);
+bt_status_t BpBtHfpAg_connect(BpBtHfpAg* bpBinder, bt_address_t* addr);
+bt_status_t BpBtHfpAg_disconnect(BpBtHfpAg* bpBinder, bt_address_t* addr);
+bt_status_t BpBtHfpAg_connectAudio(BpBtHfpAg* bpBinder, bt_address_t* addr);
+bt_status_t BpBtHfpAg_disconnectAudio(BpBtHfpAg* bpBinder, bt_address_t* addr);
+bt_status_t BpBtHfpAg_startVoiceRecognition(BpBtHfpAg* bpBinder, bt_address_t* addr);
+bt_status_t BpBtHfpAg_stopVoiceRecognition(BpBtHfpAg* bpBinder, bt_address_t* addr);
 #ifdef __cplusplus
 }
 #endif

@@ -22,16 +22,16 @@
 
 bt_status_t bt_sal_lea_tbs_add(uint32_t tbs_id);
 bt_status_t bt_sal_lea_tbs_remove(uint32_t tbs_id);
-bt_status_t bt_sal_lea_tbs_set_telephone_bearer_info(SERVICE_LEA_TELEPHONE_BEARER_S *bearer);
-bt_status_t bt_sal_lea_tbs_add_call(SERVICE_LEA_TBS_CALL_S *call_s);
+bt_status_t bt_sal_lea_tbs_set_telephone_bearer_info(SERVICE_LEA_TELEPHONE_BEARER_S* bearer);
+bt_status_t bt_sal_lea_tbs_add_call(SERVICE_LEA_TBS_CALL_S* call_s);
 bt_status_t bt_sal_lea_tbs_remove_call(uint32_t tbs_id, uint8_t call_index);
-bt_status_t bt_sal_lea_tbs_provider_name_changed(uint32_t tbs_id, uint8_t *name);
+bt_status_t bt_sal_lea_tbs_provider_name_changed(uint32_t tbs_id, uint8_t* name);
 bt_status_t bt_sal_lea_tbs_bearer_technology_changed(uint32_t tbs_id, lea_adpt_bearer_technology_t technology);
-bt_status_t bt_sal_lea_tbs_uri_schemes_supported_list_changed(uint32_t tbs_id, uint8_t *uri_schemes);
+bt_status_t bt_sal_lea_tbs_uri_schemes_supported_list_changed(uint32_t tbs_id, uint8_t* uri_schemes);
 bt_status_t bt_sal_lea_tbs_rssi_value_changed(uint32_t tbs_id, uint8_t strength);
 bt_status_t bt_sal_lea_tbs_rssi_interval_changed(uint32_t tbs_id, uint8_t interval);
 bt_status_t bt_sal_lea_tbs_status_flags_changed(uint32_t tbs_id, uint8_t status_flags);
-bt_status_t bt_sal_lea_tbs_call_state_changed(uint32_t tbs_id, uint8_t number, SERVICE_LEA_TBS_CALL_STATE_S *state_s);
+bt_status_t bt_sal_lea_tbs_call_state_changed(uint32_t tbs_id, uint8_t number, SERVICE_LEA_TBS_CALL_STATE_S* state_s);
 bt_status_t bt_sal_lea_tbs_notify_termination_reason(uint32_t tbs_id, uint8_t call_index, lea_adpt_termination_reason_t reason);
 bt_status_t bt_sal_lea_tbs_call_control_response(uint32_t tbs_id, uint8_t call_index, lea_adpt_call_control_result_t result);
 

@@ -20,8 +20,8 @@
 #include "bt_vendor_actions.h"
 #endif
 
-bool a2dp_offload_start_builder(a2dp_offload_config_t *config,
-                                uint8_t *offload, size_t *size)
+bool a2dp_offload_start_builder(a2dp_offload_config_t* config,
+    uint8_t* offload, size_t* size)
 {
 #ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
     return actions_a2dp_offload_start_builder(config, offload, size);
@@ -30,8 +30,8 @@ bool a2dp_offload_start_builder(a2dp_offload_config_t *config,
 #endif
 }
 
-bool a2dp_offload_stop_builder(a2dp_offload_config_t *config,
-                               uint8_t *offload, size_t *size)
+bool a2dp_offload_stop_builder(a2dp_offload_config_t* config,
+    uint8_t* offload, size_t* size)
 {
 #ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
     return actions_a2dp_offload_stop_builder(config, offload, size);
@@ -40,8 +40,8 @@ bool a2dp_offload_stop_builder(a2dp_offload_config_t *config,
 #endif
 }
 
-bool hfp_offload_start_builder(hfp_offload_config_t *config,
-                               uint8_t *offload, size_t *size)
+bool hfp_offload_start_builder(hfp_offload_config_t* config,
+    uint8_t* offload, size_t* size)
 {
 #ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
     return actions_hfp_offload_start_builder(config, offload, size);
@@ -50,8 +50,8 @@ bool hfp_offload_start_builder(hfp_offload_config_t *config,
 #endif
 }
 
-bool hfp_offload_stop_builder(hfp_offload_config_t *config,
-                              uint8_t *offload, size_t *size)
+bool hfp_offload_stop_builder(hfp_offload_config_t* config,
+    uint8_t* offload, size_t* size)
 {
 #ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
     return actions_hfp_offload_stop_builder(config, offload, size);
@@ -60,8 +60,8 @@ bool hfp_offload_stop_builder(hfp_offload_config_t *config,
 #endif
 }
 
-bool lea_offload_start_builder(lea_offload_config_t *config,
-                               uint8_t *offload, size_t *size)
+bool lea_offload_start_builder(lea_offload_config_t* config,
+    uint8_t* offload, size_t* size)
 {
 #ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
     return actions_lea_offload_start_builder(config, offload, size);
@@ -70,8 +70,8 @@ bool lea_offload_start_builder(lea_offload_config_t *config,
 #endif
 }
 
-bool lea_offload_stop_builder(lea_offload_config_t *config,
-                              uint8_t *offload, size_t *size)
+bool lea_offload_stop_builder(lea_offload_config_t* config,
+    uint8_t* offload, size_t* size)
 {
 #ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
     return actions_lea_offload_stop_builder(config, offload, size);

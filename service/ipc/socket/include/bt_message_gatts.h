@@ -59,11 +59,11 @@ BT_GATT_SERVER_MESSAGE_START,
 #include "bt_gatts.h"
 
     typedef struct {
-        bt_instance_t *ins;
-        gatts_callbacks_t *callbacks;
-        void *cookie;
-        void **user_phandle;
-        bt_list_t *db_list;
+        bt_instance_t* ins;
+        gatts_callbacks_t* callbacks;
+        void* cookie;
+        void** user_phandle;
+        bt_list_t* db_list;
     } bt_gatts_remote_t;
 
     typedef struct {
@@ -79,7 +79,7 @@ BT_GATT_SERVER_MESSAGE_START,
 
     typedef union {
         struct {
-            void *cookie;
+            void* cookie;
         } _bt_gatts_register;
 
         struct {
@@ -148,46 +148,46 @@ BT_GATT_SERVER_MESSAGE_START,
 
     typedef union {
         struct {
-            void *remote;
+            void* remote;
         } _on_callback;
 
         struct {
-            void *remote;
+            void* remote;
             bt_address_t addr;
         } _on_connected;
 
         struct {
-            void *remote;
+            void* remote;
             bt_address_t addr;
         } _on_disconnected;
 
         struct {
-            void *remote;
+            void* remote;
             gatt_status_t status;
             uint16_t attr_handle;
         } _on_attr_table_added;
 
         struct {
-            void *remote;
+            void* remote;
             gatt_status_t status;
             uint16_t attr_handle;
         } _on_attr_table_removed;
 
         struct {
-            void *remote;
+            void* remote;
             bt_address_t addr;
             uint32_t mtu;
         } _on_mtu_changed;
 
         struct {
-            void *remote;
+            void* remote;
             bt_address_t addr;
             uint16_t attr_handle;
             uint32_t req_handle;
         } _on_read_request;
 
         struct {
-            void *remote;
+            void* remote;
             bt_address_t addr;
             uint16_t attr_handle;
             uint16_t offset;
@@ -196,14 +196,14 @@ BT_GATT_SERVER_MESSAGE_START,
         } _on_write_request;
 
         struct {
-            void *remote;
+            void* remote;
             bt_address_t addr;
             gatt_status_t status;
             uint16_t attr_handle;
         } _on_nofity_complete;
 
         struct {
-            void *remote;
+            void* remote;
             bt_address_t addr;
             gatt_status_t status;
             ble_phy_type_t tx_phy;
@@ -211,7 +211,7 @@ BT_GATT_SERVER_MESSAGE_START,
         } _on_phy_updated;
 
         struct {
-            void *remote;
+            void* remote;
             bt_address_t addr;
             uint16_t interval;
             uint16_t latency;

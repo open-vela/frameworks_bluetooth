@@ -19,12 +19,12 @@
 
 #include "index_allocator.h"
 
-index_allocator_t *index_allocator_create(int max)
+index_allocator_t* index_allocator_create(int max)
 {
     uint8_t num_index = (max / 32) + 1;
     int size = sizeof(index_allocator_t) + num_index * 4;
 
-    index_allocator_t *allocator = malloc(size);
+    index_allocator_t* allocator = malloc(size);
     if (!allocator)
         return NULL;
 
@@ -35,7 +35,7 @@ index_allocator_t *index_allocator_create(int max)
     return allocator;
 }
 
-void index_allocator_delete(index_allocator_t **allocator)
+void index_allocator_delete(index_allocator_t** allocator)
 {
     if (*allocator)
         free(*allocator);
@@ -43,7 +43,7 @@ void index_allocator_delete(index_allocator_t **allocator)
     *allocator = NULL;
 }
 
-int index_alloc(index_allocator_t *allocator)
+int index_alloc(index_allocator_t* allocator)
 {
     uint8_t start = allocator->id_next;
     uint8_t minor;
@@ -71,7 +71,7 @@ int index_alloc(index_allocator_t *allocator)
     return -1;
 }
 
-void index_free(index_allocator_t *allocator, uint16_t id)
+void index_free(index_allocator_t* allocator, uint16_t id)
 {
     int index;
     int bitno;

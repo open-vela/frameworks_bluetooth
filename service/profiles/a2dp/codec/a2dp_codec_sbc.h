@@ -77,14 +77,14 @@
 #define A2DP_SBC_HDR_L_MSK 0x20
 #define A2DP_SBC_HDR_NUM_MSK 0x0F
 
-void a2dp_codec_parse_sbc_param(sbc_param_t *param, uint8_t *codec_info);
+void a2dp_codec_parse_sbc_param(sbc_param_t* param, uint8_t* codec_info);
 uint16_t a2dp_sbc_sample_frequency(uint16_t sample_frequency);
-uint32_t a2dp_sbc_frame_length(sbc_param_t *param);
-uint32_t a2dp_sbc_bit_rate(sbc_param_t *param);
-uint16_t a2dp_sbc_max_latency(sbc_param_t *param);
-uint8_t a2dp_sbc_bits_per_sample(sbc_param_t *param);
-uint32_t a2dp_sbc_encoded_audio_bitrate(sbc_param_t *param);
-uint16_t a2dp_sbc_frame_sample(sbc_param_t *param);
-uint8_t a2dp_get_sbc_ch_mode(sbc_param_t *param);
+uint32_t a2dp_sbc_frame_length(sbc_param_t* param);
+uint32_t a2dp_sbc_bit_rate(sbc_param_t* param);
+uint16_t a2dp_sbc_max_latency(sbc_param_t* param);
+uint8_t a2dp_sbc_bits_per_sample(sbc_param_t* param);
+uint32_t a2dp_sbc_encoded_audio_bitrate(sbc_param_t* param);
+uint16_t a2dp_sbc_frame_sample(sbc_param_t* param);
+uint8_t a2dp_get_sbc_ch_mode(sbc_param_t* param);
 
 #endif

@@ -52,7 +52,7 @@ typedef struct {
     uint8_t max_bitpool; /* Maximum bitpool */
 } a2dp_sbc_info_t;
 
-static int a2dp_parse_sbc_info(a2dp_sbc_info_t *info, uint8_t *codec_info)
+static int a2dp_parse_sbc_info(a2dp_sbc_info_t* info, uint8_t* codec_info)
 {
     if (info == NULL || codec_info == NULL) {
         return -1;
@@ -71,7 +71,7 @@ static int a2dp_parse_sbc_info(a2dp_sbc_info_t *info, uint8_t *codec_info)
     return 0;
 }
 
-static int a2dp_get_sbc_allocation_method(a2dp_sbc_info_t *info)
+static int a2dp_get_sbc_allocation_method(a2dp_sbc_info_t* info)
 {
     switch (info->alloc_method) {
     case A2DP_SBC_ALLOC_MD_S:
@@ -85,7 +85,7 @@ static int a2dp_get_sbc_allocation_method(a2dp_sbc_info_t *info)
     return -1;
 }
 
-static int a2dp_get_sbc_blocks(a2dp_sbc_info_t *info)
+static int a2dp_get_sbc_blocks(a2dp_sbc_info_t* info)
 {
     switch (info->block_len) {
     case A2DP_SBC_BLOCKS_4:
@@ -103,7 +103,7 @@ static int a2dp_get_sbc_blocks(a2dp_sbc_info_t *info)
     return -1;
 }
 
-static int a2dp_get_sbc_subbands(a2dp_sbc_info_t *info)
+static int a2dp_get_sbc_subbands(a2dp_sbc_info_t* info)
 {
     switch (info->num_subbands) {
     case A2DP_SBC_SUBBAND_4:
@@ -117,7 +117,7 @@ static int a2dp_get_sbc_subbands(a2dp_sbc_info_t *info)
     return -1;
 }
 
-static int a2dp_get_sbc_samp_frequency(a2dp_sbc_info_t *info)
+static int a2dp_get_sbc_samp_frequency(a2dp_sbc_info_t* info)
 {
     switch (info->samp_freq) {
     case A2DP_SBC_SAMP_FREQ_16:
@@ -135,7 +135,7 @@ static int a2dp_get_sbc_samp_frequency(a2dp_sbc_info_t *info)
     return -1;
 }
 
-static int a2dp_get_sbc_channel_mode(a2dp_sbc_info_t *info)
+static int a2dp_get_sbc_channel_mode(a2dp_sbc_info_t* info)
 {
     switch (info->ch_mode) {
     case A2DP_SBC_CH_MD_MONO:
@@ -153,12 +153,12 @@ static int a2dp_get_sbc_channel_mode(a2dp_sbc_info_t *info)
     return -1;
 }
 
-static int a2dp_get_sbc_channel_count(a2dp_sbc_info_t *info)
+static int a2dp_get_sbc_channel_count(a2dp_sbc_info_t* info)
 {
     return SBC_MAX_NUM_OF_CHANNELS;
 }
 
-uint32_t a2dp_sbc_frame_length(sbc_param_t *param)
+uint32_t a2dp_sbc_frame_length(sbc_param_t* param)
 {
     uint32_t frame_len;
 
@@ -172,18 +172,7 @@ uint32_t a2dp_sbc_frame_length(sbc_param_t *param)
         return 0;
     }
 
-    frame_len = 4 +
-                (4 *
-                 param->s16NumOfSubBands *
-                 param->s16NumOfChannels) /
-                    8 +
-                ((param->s16NumOfBlocks *
-                      param->s16BitPool *
-                      (1 + (param->s16ChannelMode == SBC_DUAL)) +
-                  (param->s16ChannelMode == SBC_JOINT_STEREO) *
-                      param->s16NumOfSubBands) +
-                 7) /
-                    8;
+    frame_len = 4 + (4 * param->s16NumOfSubBands * param->s16NumOfChannels) / 8 + ((param->s16NumOfBlocks * param->s16BitPool * (1 + (param->s16ChannelMode == SBC_DUAL)) + (param->s16ChannelMode == SBC_JOINT_STEREO) * param->s16NumOfSubBands) + 7) / 8;
 
     return frame_len;
 }
@@ -204,7 +193,7 @@ uint16_t a2dp_sbc_sample_frequency(uint16_t sample_frequency)
     return sampling_freq;
 }
 
-uint32_t a2dp_sbc_bit_rate(sbc_param_t *param)
+uint32_t a2dp_sbc_bit_rate(sbc_param_t* param)
 {
     uint16_t samp_freq;
     uint32_t bit_rate;
@@ -218,7 +207,7 @@ uint32_t a2dp_sbc_bit_rate(sbc_param_t *param)
     return bit_rate;
 }
 
-void a2dp_codec_parse_sbc_param(sbc_param_t *param, uint8_t *codec_info)
+void a2dp_codec_parse_sbc_param(sbc_param_t* param, uint8_t* codec_info)
 {
     a2dp_sbc_info_t si;
 
@@ -243,39 +232,39 @@ void a2dp_codec_parse_sbc_param(sbc_param_t *param, uint8_t *codec_info)
                 s16AllocationMethod:%d,\n \
                 s16BitPool:%d,\n \
                 u32BitRate:%" PRIu32,
-            __func__, param->s16SamplingFreq,
-            param->s16ChannelMode,
-            param->s16NumOfSubBands,
-            param->s16NumOfChannels,
-            param->s16NumOfBlocks,
-            param->s16AllocationMethod,
-            param->s16BitPool,
-            param->u32BitRate);
+        __func__, param->s16SamplingFreq,
+        param->s16ChannelMode,
+        param->s16NumOfSubBands,
+        param->s16NumOfChannels,
+        param->s16NumOfBlocks,
+        param->s16AllocationMethod,
+        param->s16BitPool,
+        param->u32BitRate);
 }
 
-uint16_t a2dp_sbc_frame_sample(sbc_param_t *param)
+uint16_t a2dp_sbc_frame_sample(sbc_param_t* param)
 {
     return param->s16NumOfSubBands * param->s16NumOfBlocks;
 }
 
-uint16_t a2dp_sbc_max_latency(sbc_param_t *param)
+uint16_t a2dp_sbc_max_latency(sbc_param_t* param)
 {
     /* todo: */
     return 0;
 }
 
-uint8_t a2dp_sbc_bits_per_sample(sbc_param_t *param)
+uint8_t a2dp_sbc_bits_per_sample(sbc_param_t* param)
 {
     /* todo: */
     return 0;
 }
 
-uint32_t a2dp_sbc_encoded_audio_bitrate(sbc_param_t *param)
+uint32_t a2dp_sbc_encoded_audio_bitrate(sbc_param_t* param)
 {
     return a2dp_sbc_bit_rate(param);
 }
 
-uint8_t a2dp_get_sbc_ch_mode(sbc_param_t *param)
+uint8_t a2dp_get_sbc_ch_mode(sbc_param_t* param)
 {
     /* todo: */
     return 0;

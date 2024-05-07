@@ -80,7 +80,7 @@ typedef struct {
             attribute_written_cb_t write_cb;
 
             uint16_t attr_length; /** attr data length */
-            void *attr_data; /** attr data array */
+            void* attr_data; /** attr data array */
         };
 
         /* gatt client content */

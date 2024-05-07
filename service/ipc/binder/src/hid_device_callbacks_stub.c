@@ -32,21 +32,21 @@
 
 #define BT_HID_DEVICE_CALLBACK_DESC "BluetoothHidDeviceCallback"
 
-static const AIBinder_Class *kIBtHiddCallbacks_Class = NULL;
+static const AIBinder_Class* kIBtHiddCallbacks_Class = NULL;
 
-static void *IBtHiddCallbacks_Class_onCreate(void *arg)
+static void* IBtHiddCallbacks_Class_onCreate(void* arg)
 {
     return arg;
 }
 
-static void IBtHiddCallbacks_Class_onDestroy(void *userData)
+static void IBtHiddCallbacks_Class_onDestroy(void* userData)
 {
 }
 
-static binder_status_t IBtHiddCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
+static binder_status_t IBtHiddCallbacks_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
-    IBtHiddCallbacks *cbks = AIBinder_getUserData(binder);
+    IBtHiddCallbacks* cbks = AIBinder_getUserData(binder);
 
     switch (code) {
     case ICBKS_HIDD_APP_STATE: {
@@ -105,7 +105,7 @@ static binder_status_t IBtHiddCallbacks_Class_onTransact(AIBinder *binder, trans
     case ICBKS_SET_REPORT: {
         bt_address_t addr;
         uint32_t rpt_type, rpt_size;
-        uint8_t *rpt_data;
+        uint8_t* rpt_data;
 
         stat = AParcel_readAddress(in, &addr);
         if (stat != STATUS_OK)
@@ -119,7 +119,7 @@ static binder_status_t IBtHiddCallbacks_Class_onTransact(AIBinder *binder, trans
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&rpt_data, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readByteArray(in, (void*)&rpt_data, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             return stat;
 
@@ -130,7 +130,7 @@ static binder_status_t IBtHiddCallbacks_Class_onTransact(AIBinder *binder, trans
     case ICBKS_RECEIVE_REPORT: {
         bt_address_t addr;
         uint32_t rpt_type, rpt_size;
-        uint8_t *rpt_data;
+        uint8_t* rpt_data;
 
         stat = AParcel_readAddress(in, &addr);
         if (stat != STATUS_OK)
@@ -144,7 +144,7 @@ static binder_status_t IBtHiddCallbacks_Class_onTransact(AIBinder *binder, trans
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&rpt_data, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readByteArray(in, (void*)&rpt_data, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             return stat;
 
@@ -169,16 +169,16 @@ static binder_status_t IBtHiddCallbacks_Class_onTransact(AIBinder *binder, trans
     return stat;
 }
 
-AIBinder *BtHiddCallbacks_getBinder(IBtHiddCallbacks *cbks)
+AIBinder* BtHiddCallbacks_getBinder(IBtHiddCallbacks* cbks)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (cbks->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(cbks->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(cbks->clazz, (void *)cbks);
+        binder = AIBinder_new(cbks->clazz, (void*)cbks);
         if (cbks->WeakBinder != NULL) {
             AIBinder_Weak_delete(cbks->WeakBinder);
         }
@@ -189,25 +189,24 @@ AIBinder *BtHiddCallbacks_getBinder(IBtHiddCallbacks *cbks)
     return binder;
 }
 
-binder_status_t BtHiddCallbacks_associateClass(AIBinder *binder)
+binder_status_t BtHiddCallbacks_associateClass(AIBinder* binder)
 {
     if (!kIBtHiddCallbacks_Class) {
-        kIBtHiddCallbacks_Class =
-            AIBinder_Class_define(BT_HID_DEVICE_CALLBACK_DESC, IBtHiddCallbacks_Class_onCreate,
-                                  IBtHiddCallbacks_Class_onDestroy, IBtHiddCallbacks_Class_onTransact);
+        kIBtHiddCallbacks_Class = AIBinder_Class_define(BT_HID_DEVICE_CALLBACK_DESC, IBtHiddCallbacks_Class_onCreate,
+            IBtHiddCallbacks_Class_onDestroy, IBtHiddCallbacks_Class_onTransact);
     }
 
     return AIBinder_associateClass(binder, kIBtHiddCallbacks_Class);
 }
 
-IBtHiddCallbacks *BtHiddCallbacks_new(const hid_device_callbacks_t *callbacks)
+IBtHiddCallbacks* BtHiddCallbacks_new(const hid_device_callbacks_t* callbacks)
 {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
-    IBtHiddCallbacks *cbks = malloc(sizeof(IBtHiddCallbacks));
+    AIBinder_Class* clazz;
+    AIBinder* binder;
+    IBtHiddCallbacks* cbks = malloc(sizeof(IBtHiddCallbacks));
 
     clazz = AIBinder_Class_define(BT_HID_DEVICE_CALLBACK_DESC, IBtHiddCallbacks_Class_onCreate,
-                                  IBtHiddCallbacks_Class_onDestroy, IBtHiddCallbacks_Class_onTransact);
+        IBtHiddCallbacks_Class_onDestroy, IBtHiddCallbacks_Class_onTransact);
 
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
@@ -219,7 +218,7 @@ IBtHiddCallbacks *BtHiddCallbacks_new(const hid_device_callbacks_t *callbacks)
     return cbks;
 }
 
-void BtHiddCallbacks_delete(IBtHiddCallbacks *cbks)
+void BtHiddCallbacks_delete(IBtHiddCallbacks* cbks)
 {
     assert(cbks);
 

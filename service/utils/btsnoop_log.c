@@ -26,8 +26,8 @@
 #include <syslog.h>
 #include <time.h>
 
-#include "btsnoop_log.h"
 #include "bt_time.h"
+#include "btsnoop_log.h"
 
 #ifndef CONFIG_BLUETOOTH_SNOOP_LOG
 #define CONFIG_BLUETOOTH_SNOOP_LOG 1
@@ -64,14 +64,11 @@ static uint32_t get_current_time_ms(void)
 
 static unsigned long byteswap_ulong(unsigned long val)
 {
-    unsigned char *byte_val = (unsigned char *)&val;
-    return ((unsigned long)byte_val[3] +
-            ((unsigned long)byte_val[2] << 8) +
-            ((unsigned long)byte_val[1] << 16) +
-            ((unsigned long)byte_val[0] << 24));
+    unsigned char* byte_val = (unsigned char*)&val;
+    return ((unsigned long)byte_val[3] + ((unsigned long)byte_val[2] << 8) + ((unsigned long)byte_val[1] << 16) + ((unsigned long)byte_val[0] << 24));
 }
 
-static void btsnoop_write_log(uint8_t is_recieve, uint8_t *p, uint32_t len)
+static void btsnoop_write_log(uint8_t is_recieve, uint8_t* p, uint32_t len)
 {
     struct btsnoop_pkt_hdr pkt;
     uint32_t ms;
@@ -84,8 +81,8 @@ static void btsnoop_write_log(uint8_t is_recieve, uint8_t *p, uint32_t len)
     const uint64_t sec = (uint32_t)(time_base + ms / 1000 + 8 * 3600);
     const uint64_t usec = (uint32_t)((ms % 1000) * 1000);
     uint64_t nts = (sec - (int64_t)946684800) * (int64_t)1000000 + usec;
-    uint32_t *d = (uint32_t *)&pkt.ts;
-    uint32_t *s = (uint32_t *)&nts;
+    uint32_t* d = (uint32_t*)&pkt.ts;
+    uint32_t* s = (uint32_t*)&nts;
 
     pkt.size = byteswap_ulong(len);
     pkt.len = pkt.size;
@@ -109,7 +106,7 @@ int btsnoop_create_new_file(void)
 {
     struct btsnoop_file_hdr hdr;
     time_t rawtime;
-    struct tm *info;
+    struct tm* info;
     char ts_str[80];
     char file_name[128];
     int ret;
@@ -137,16 +134,16 @@ int btsnoop_create_new_file(void)
     }
 
     snprintf(ts_str, sizeof(ts_str), "%d%02d%02d_%02d%02d%02d",
-             info->tm_year + 1900,
-             info->tm_mon + 1,
-             info->tm_mday,
-             info->tm_hour,
-             info->tm_min,
-             info->tm_sec);
+        info->tm_year + 1900,
+        info->tm_mon + 1,
+        info->tm_mday,
+        info->tm_hour,
+        info->tm_min,
+        info->tm_sec);
     snprintf(file_name, sizeof(file_name), CONFIG_BLUETOOTH_SNOOP_LOG_PATH "/snoop_%s_%" PRIu32 ".log", ts_str, ms_base);
 
     snoop_fd = open(file_name, O_RDWR | O_CREAT | O_TRUNC,
-                    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+        S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
     if (snoop_fd < 0) {
         pthread_mutex_unlock(&snoop_lock);
         return snoop_fd;
@@ -189,7 +186,7 @@ bt_status_t btsnoop_log_open(void)
 #endif
 }
 
-void btsnoop_log_capture(uint8_t is_recieve, uint8_t *hci_pkt, uint32_t hci_pkt_size)
+void btsnoop_log_capture(uint8_t is_recieve, uint8_t* hci_pkt, uint32_t hci_pkt_size)
 {
 #if CONFIG_BLUETOOTH_SNOOP_LOG
     pthread_mutex_lock(&snoop_lock);

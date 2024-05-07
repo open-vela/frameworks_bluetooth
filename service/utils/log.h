@@ -17,12 +17,12 @@
 #ifndef __BT_LOG_H__
 #define __BT_LOG_H__
 
-#include <stdarg.h>
-#include <syslog.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include <assert.h>
 #include <inttypes.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <syslog.h>
 
 #ifndef LOG_TAG
 #define LOG_TAG "BT"
@@ -60,7 +60,7 @@ extern bool bt_log_print_check(uint8_t level);
                                                       "]"             \
                                                       "[" LOG_TAG "]" \
                                                       ": " fmt "\n",  \
-                                               ##args);
+    ##args);
 #define BT_LOGE(fmt, ...)                                                     \
     do {                                                                      \
         if (bt_log_print_check(BT_LOG_LEVEL_ERROR))                           \

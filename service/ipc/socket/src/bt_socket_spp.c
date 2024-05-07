@@ -33,11 +33,12 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include "bluetooth.h"
-#include "bt_spp.h"
 #include "bt_internal.h"
+
+#include "bluetooth.h"
 #include "bt_message.h"
 #include "bt_socket.h"
+#include "bt_spp.h"
 #include "callbacks_list.h"
 #include "manager_service.h"
 #include "service_loop.h"
@@ -57,13 +58,13 @@
  * Private Functions
  ****************************************************************************/
 #if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
-#include "spp_service.h"
 #include "service_manager.h"
+#include "spp_service.h"
 
-static void spp_pty_open_cb(void *handle, bt_address_t *addr, uint16_t scn, uint16_t port, char *name)
+static void spp_pty_open_cb(void* handle, bt_address_t* addr, uint16_t scn, uint16_t port, char* name)
 {
     bt_message_packet_t packet = { 0 };
-    bt_instance_t *ins = handle;
+    bt_instance_t* ins = handle;
 
     memcpy(&packet.spp_cb._pty_open_cb.addr, addr, sizeof(*addr));
     packet.spp_cb._pty_open_cb.scn = scn;
@@ -74,12 +75,12 @@ static void spp_pty_open_cb(void *handle, bt_address_t *addr, uint16_t scn, uint
     bt_socket_server_send(ins, &packet, BT_SPP_PTY_OPEN_CB);
 }
 
-static void spp_connection_state_cb(void *handle, bt_address_t *addr,
-                                    uint16_t scn, uint16_t port,
-                                    profile_connection_state_t state)
+static void spp_connection_state_cb(void* handle, bt_address_t* addr,
+    uint16_t scn, uint16_t port,
+    profile_connection_state_t state)
 {
     bt_message_packet_t packet = { 0 };
-    bt_instance_t *ins = handle;
+    bt_instance_t* ins = handle;
 
     memcpy(&packet.spp_cb._connection_state_cb.addr, addr, sizeof(*addr));
     packet.spp_cb._connection_state_cb.scn = scn;
@@ -98,10 +99,10 @@ static spp_callbacks_t g_spp_socket_cb = {
  * Public Functions
  ****************************************************************************/
 
-void bt_socket_server_spp_process(service_poll_t *poll,
-                                  int fd, bt_instance_t *ins, bt_message_packet_t *packet)
+void bt_socket_server_spp_process(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
-    spp_interface_t *profile = (spp_interface_t *)service_manager_get_profile(PROFILE_SPP);
+    spp_interface_t* profile = (spp_interface_t*)service_manager_get_profile(PROFILE_SPP);
 
     switch (packet->code) {
     case BT_SPP_REGISTER_APP: {
@@ -115,40 +116,36 @@ void bt_socket_server_spp_process(service_poll_t *poll,
     }
     case BT_SPP_UNREGISTER_APP: {
         if (ins->spp_cookie) {
-            void *handle = NULL;
+            void* handle = NULL;
             packet->spp_r.status = profile->unregister_app(&handle, ins->spp_cookie);
             ins->spp_cookie = NULL;
         }
         break;
     }
     case BT_SPP_SERVER_START: {
-        packet->spp_r.status =
-            profile->server_start(ins->spp_cookie,
-                                  packet->spp_pl._bt_spp_server_start.scn,
-                                  &packet->spp_pl._bt_spp_server_start.uuid,
-                                  packet->spp_pl._bt_spp_server_start.max_connection);
+        packet->spp_r.status = profile->server_start(ins->spp_cookie,
+            packet->spp_pl._bt_spp_server_start.scn,
+            &packet->spp_pl._bt_spp_server_start.uuid,
+            packet->spp_pl._bt_spp_server_start.max_connection);
         break;
     }
     case BT_SPP_SERVER_STOP: {
-        packet->spp_r.status =
-            profile->server_stop(ins->spp_cookie,
-                                 packet->spp_pl._bt_spp_server_stop.scn);
+        packet->spp_r.status = profile->server_stop(ins->spp_cookie,
+            packet->spp_pl._bt_spp_server_stop.scn);
         break;
     }
     case BT_SPP_CONNECT: {
-        packet->spp_r.status =
-            profile->connect(ins->spp_cookie,
-                             &packet->spp_pl._bt_spp_connect.addr,
-                             packet->spp_pl._bt_spp_connect.scn,
-                             &packet->spp_pl._bt_spp_connect.uuid,
-                             &packet->spp_pl._bt_spp_connect.port);
+        packet->spp_r.status = profile->connect(ins->spp_cookie,
+            &packet->spp_pl._bt_spp_connect.addr,
+            packet->spp_pl._bt_spp_connect.scn,
+            &packet->spp_pl._bt_spp_connect.uuid,
+            &packet->spp_pl._bt_spp_connect.port);
         break;
     }
     case BT_SPP_DISCONNECT: {
-        packet->spp_r.status =
-            profile->disconnect(ins->spp_cookie,
-                                &packet->spp_pl._bt_spp_disconnect.addr,
-                                packet->spp_pl._bt_spp_disconnect.port);
+        packet->spp_r.status = profile->disconnect(ins->spp_cookie,
+            &packet->spp_pl._bt_spp_disconnect.addr,
+            packet->spp_pl._bt_spp_disconnect.port);
         break;
     }
     default:
@@ -158,9 +155,9 @@ void bt_socket_server_spp_process(service_poll_t *poll,
 #endif
 
 #if !defined(CONFIG_BLUETOOTH_SERVER) && defined(CONFIG_BLUETOOTH_RPMSG_CPUNAME)
-static bool rpmsg_tty_mount_path(const char *src, char *dest, int len, const char *mount_cpu)
+static bool rpmsg_tty_mount_path(const char* src, char* dest, int len, const char* mount_cpu)
 {
-    char *path = strstr(src, "/dev/");
+    char* path = strstr(src, "/dev/");
 
     if (!path || path != src) {
         return false;
@@ -173,32 +170,32 @@ static bool rpmsg_tty_mount_path(const char *src, char *dest, int len, const cha
 }
 #endif
 
-int bt_socket_client_spp_callback(service_poll_t *poll,
-                                  int fd, bt_instance_t *ins, bt_message_packet_t *packet)
+int bt_socket_client_spp_callback(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
     switch (packet->code) {
     case BT_SPP_PTY_OPEN_CB: {
-        char *name = packet->spp_cb._pty_open_cb.name;
+        char* name = packet->spp_cb._pty_open_cb.name;
 #if !defined(CONFIG_BLUETOOTH_SERVER) && defined(CONFIG_BLUETOOTH_RPMSG_CPUNAME)
         char rename[64];
         if (rpmsg_tty_mount_path(name, rename, 64, CONFIG_BLUETOOTH_RPMSG_CPUNAME))
             name = rename;
 #endif
         CALLBACK_FOREACH(CBLIST, spp_callbacks_t,
-                         pty_open_cb,
-                         &packet->spp_cb._pty_open_cb.addr,
-                         packet->spp_cb._pty_open_cb.scn,
-                         packet->spp_cb._pty_open_cb.port,
-                         name);
+            pty_open_cb,
+            &packet->spp_cb._pty_open_cb.addr,
+            packet->spp_cb._pty_open_cb.scn,
+            packet->spp_cb._pty_open_cb.port,
+            name);
         break;
     }
     case BT_SPP_CONNECTION_STATE_CB: {
         CALLBACK_FOREACH(CBLIST, spp_callbacks_t,
-                         connection_state_cb,
-                         &packet->spp_cb._connection_state_cb.addr,
-                         packet->spp_cb._connection_state_cb.scn,
-                         packet->spp_cb._connection_state_cb.port,
-                         packet->spp_cb._connection_state_cb.state);
+            connection_state_cb,
+            &packet->spp_cb._connection_state_cb.addr,
+            packet->spp_cb._connection_state_cb.scn,
+            packet->spp_cb._connection_state_cb.port,
+            packet->spp_cb._connection_state_cb.state);
         break;
     }
 

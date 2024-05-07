@@ -30,11 +30,11 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    const gattc_callbacks_t *callbacks;
-    void *proxy;
-    void *cookie;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    const gattc_callbacks_t* callbacks;
+    void* proxy;
+    void* cookie;
 } IBtGattClientCallbacks;
 
 typedef enum {
@@ -47,10 +47,10 @@ typedef enum {
     ICBKS_GATT_CLIENT_NOTIFIED
 } IBtGattClientCallbacks_Call;
 
-AIBinder *BtGattClientCallbacks_getBinder(IBtGattClientCallbacks *adapter);
-binder_status_t BtGattClientCallbacks_associateClass(AIBinder *binder);
-IBtGattClientCallbacks *BtGattClientCallbacks_new(const gattc_callbacks_t *callbacks);
-void BtGattClientCallbacks_delete(IBtGattClientCallbacks *cbks);
+AIBinder* BtGattClientCallbacks_getBinder(IBtGattClientCallbacks* adapter);
+binder_status_t BtGattClientCallbacks_associateClass(AIBinder* binder);
+IBtGattClientCallbacks* BtGattClientCallbacks_new(const gattc_callbacks_t* callbacks);
+void BtGattClientCallbacks_delete(IBtGattClientCallbacks* cbks);
 
 #ifdef __cplusplus
 }

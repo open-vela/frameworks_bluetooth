@@ -28,22 +28,22 @@ typedef struct {
      * @brief Register the a2dp_sink event callback
      * @param[in] callbacks  a2dp_sink event callback function.
      */
-    void *(*register_callbacks)(void *remote, const avrcp_control_callbacks_t *callbacks);
+    void* (*register_callbacks)(void* remote, const avrcp_control_callbacks_t* callbacks);
 
     /**
      * @brief Unregister the a2dp_sink event callback
      */
-    bool (*unregister_callbacks)(void **remote, void *cookie);
+    bool (*unregister_callbacks)(void** remote, void* cookie);
 
     /** send pass through command to target */
-    bt_status_t (*send_pass_through_cmd)(bt_address_t *bd_addr,
-                                         avrcp_passthr_cmd_t key_code, avrcp_key_state_t key_state);
+    bt_status_t (*send_pass_through_cmd)(bt_address_t* bd_addr,
+        avrcp_passthr_cmd_t key_code, avrcp_key_state_t key_state);
 
     /** get the playback state */
-    bt_status_t (*get_playback_state)(bt_address_t *bd_addr);
+    bt_status_t (*get_playback_state)(bt_address_t* bd_addr);
 
     /** notify volume changed */
-    bt_status_t (*volume_changed_notify)(bt_address_t *bd_addr, uint8_t volume);
+    bt_status_t (*volume_changed_notify)(bt_address_t* bd_addr, uint8_t volume);
 
 } avrcp_control_interface_t;
 

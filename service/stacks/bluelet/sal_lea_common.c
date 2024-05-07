@@ -44,14 +44,14 @@
 #include "sal_lea_vmics_interface.h"
 
 static void adpt_stack_state_callback(bool enabled);
-static void adpt_storage_callback(void *data, uint32_t size);
+static void adpt_storage_callback(void* data, uint32_t size);
 static void adpt_connection_state_callback(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state, bool initiator);
-static void adpt_remote_services_callback(BD_ADDR remote_addr, uint8_t number, SERVICE_LEA_PRIMARY_SERVICE_S *services);
+static void adpt_remote_services_callback(BD_ADDR remote_addr, uint8_t number, SERVICE_LEA_PRIMARY_SERVICE_S* services);
 
 static void adpt_stream_state_callback(BD_ADDR remote_addr, uint32_t stream_id, bool added);
-static void adpt_stream_start_callback(SERVICE_LEA_AUDIO_STREAM_S *lea_stream);
+static void adpt_stream_start_callback(SERVICE_LEA_AUDIO_STREAM_S* lea_stream);
 static void adpt_stream_stop_callback(uint32_t stream_id);
-static void adpt_stream_recv_callback(uint32_t stream_id, SERVICE_LEA_RECV_ISO_DATA_S *iso_data);
+static void adpt_stream_recv_callback(uint32_t stream_id, SERVICE_LEA_RECV_ISO_DATA_S* iso_data);
 
 bool bt_sal_lea_is_source_stream(uint32_t stream_id);
 
@@ -170,7 +170,7 @@ static void adpt_stack_state_callback(bool enabled)
 #endif
 }
 
-static void adpt_storage_callback(void *data, uint32_t size)
+static void adpt_storage_callback(void* data, uint32_t size)
 {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
     lea_client_on_storage_changed(data, size);
@@ -197,7 +197,7 @@ static void adpt_connection_state_callback(BD_ADDR remote_addr, SERVICE_PROFILE_
     }
 }
 
-static void adpt_remote_services_callback(BD_ADDR remote_addr, uint8_t number, SERVICE_LEA_PRIMARY_SERVICE_S *services)
+static void adpt_remote_services_callback(BD_ADDR remote_addr, uint8_t number, SERVICE_LEA_PRIMARY_SERVICE_S* services)
 {
     bt_address_t addr;
 
@@ -206,8 +206,8 @@ static void adpt_remote_services_callback(BD_ADDR remote_addr, uint8_t number, S
     BT_LOGD("%s, services num:%d", __func__, number);
 
     if (number) {
-        SERVICE_LEA_PRIMARY_SERVICE_S *current = services;
-        SERVICE_LEA_PRIMARY_SERVICE_S *end = current + number;
+        SERVICE_LEA_PRIMARY_SERVICE_S* current = services;
+        SERVICE_LEA_PRIMARY_SERVICE_S* end = current + number;
         while (current < end) {
             BT_LOGD("%s, sid:[%04d], type:[%04x]", __func__, current->sid, current->type);
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_MCP
@@ -228,14 +228,14 @@ static void adpt_remote_services_callback(BD_ADDR remote_addr, uint8_t number, S
 static void adpt_stream_state_callback(BD_ADDR remote_addr, uint32_t stream_id, bool added)
 {
     bt_address_t addr;
-    SERVICE_LEA_ISO_STREAM_ID_S *sid_s = (SERVICE_LEA_ISO_STREAM_ID_S *)&stream_id;
+    SERVICE_LEA_ISO_STREAM_ID_S* sid_s = (SERVICE_LEA_ISO_STREAM_ID_S*)&stream_id;
 
     memcpy(addr.addr, remote_addr, sizeof(BD_ADDR));
 
     BT_LOGD("%s, Addr:%s, Stream ID:0x%08x, %s, GID:%d, SID:%d, ASE_ID:%d", __func__, bt_addr_str(&addr), stream_id, added ? "Added" : "Removed", sid_s->gid, sid_s->sid, sid_s->ase_id);
     BT_LOGD("%s, %s, %s", sid_s->features & LEA_IGIS_FEATURE_BROADCAST ? "BIS" : "CIS",
-            sid_s->features & LEA_IGIS_FEATURE_INITIATOR ? "Initor" : "Acceptor",
-            sid_s->features & LEA_IGIS_FEATURE_SOURCE ? "Source" : "Sink");
+        sid_s->features & LEA_IGIS_FEATURE_INITIATOR ? "Initor" : "Acceptor",
+        sid_s->features & LEA_IGIS_FEATURE_SOURCE ? "Source" : "Sink");
 
     if (sid_s->features & LEA_IGIS_FEATURE_INITIATOR) {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
@@ -260,13 +260,13 @@ static uint8_t lea_client_get_channel(uint32_t allocation)
     return ch;
 }
 
-static void adpt_stream_start_callback(SERVICE_LEA_AUDIO_STREAM_S *lea_stream)
+static void adpt_stream_start_callback(SERVICE_LEA_AUDIO_STREAM_S* lea_stream)
 {
     lea_audio_stream_t audio_stream;
-    SERVICE_LEA_ISO_STREAM_ID_S *sid_s;
+    SERVICE_LEA_ISO_STREAM_ID_S* sid_s;
     uint32_t stream_id;
 
-    sid_s = (SERVICE_LEA_ISO_STREAM_ID_S *)&lea_stream->stream_id;
+    sid_s = (SERVICE_LEA_ISO_STREAM_ID_S*)&lea_stream->stream_id;
     stream_id = lea_stream->stream_id;
 
     memset(&audio_stream, 0, sizeof(lea_audio_stream_t));
@@ -279,7 +279,7 @@ static void adpt_stream_start_callback(SERVICE_LEA_AUDIO_STREAM_S *lea_stream)
     audio_stream.sdu_size = audio_stream.channal_num * audio_stream.codec_cfg.blocks * audio_stream.codec_cfg.octets;
 
     BT_LOGD("%s, stream_id:0x%08x, is_source:%d, channal_num:%d, sdu_size:%d", __func__, stream_id,
-            audio_stream.is_source, audio_stream.channal_num, audio_stream.sdu_size);
+        audio_stream.is_source, audio_stream.channal_num, audio_stream.sdu_size);
 
     if (sid_s->features & LEA_IGIS_FEATURE_INITIATOR) {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
@@ -294,7 +294,7 @@ static void adpt_stream_start_callback(SERVICE_LEA_AUDIO_STREAM_S *lea_stream)
 
 static void adpt_stream_stop_callback(uint32_t stream_id)
 {
-    SERVICE_LEA_ISO_STREAM_ID_S *sid_s = (SERVICE_LEA_ISO_STREAM_ID_S *)&stream_id;
+    SERVICE_LEA_ISO_STREAM_ID_S* sid_s = (SERVICE_LEA_ISO_STREAM_ID_S*)&stream_id;
 
     if (sid_s->features & LEA_IGIS_FEATURE_INITIATOR) {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
@@ -307,9 +307,9 @@ static void adpt_stream_stop_callback(uint32_t stream_id)
     }
 }
 
-static void adpt_stream_recv_callback(uint32_t stream_id, SERVICE_LEA_RECV_ISO_DATA_S *iso_data)
+static void adpt_stream_recv_callback(uint32_t stream_id, SERVICE_LEA_RECV_ISO_DATA_S* iso_data)
 {
-    SERVICE_LEA_ISO_STREAM_ID_S *sid_s = (SERVICE_LEA_ISO_STREAM_ID_S *)&stream_id;
+    SERVICE_LEA_ISO_STREAM_ID_S* sid_s = (SERVICE_LEA_ISO_STREAM_ID_S*)&stream_id;
 
     if (sid_s->features & LEA_IGIS_FEATURE_INITIATOR) {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
@@ -349,13 +349,13 @@ bt_status_t bt_sal_lea_init()
     g_lea_inited = true;
 
     SAL_CHECK_RET(stack_adapter_lea_init(roles, num, &lea_callbacks),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_lea_alloc_stream_id(uint32_t group_id, uint8_t cis_id, uint8_t ase_id, bool is_source,
-                                       uint32_t *stream_id)
+    uint32_t* stream_id)
 {
     *stream_id = stack_adapter_lea_get_iso_stream_id(group_id, cis_id, ase_id, is_source);
     return BT_STATUS_SUCCESS;
@@ -366,7 +366,7 @@ bt_status_t bt_sal_lea_free_stream_id(uint32_t stream_id)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_lea_disconnect(bt_address_t *addr)
+bt_status_t bt_sal_lea_disconnect(bt_address_t* addr)
 {
     BD_ADDR bd_addr;
 
@@ -378,18 +378,18 @@ bt_status_t bt_sal_lea_disconnect(bt_address_t *addr)
 
 bool bt_sal_lea_is_source_stream(uint32_t stream_id)
 {
-    SERVICE_LEA_ISO_STREAM_ID_S *sid = (SERVICE_LEA_ISO_STREAM_ID_S *)&stream_id;
+    SERVICE_LEA_ISO_STREAM_ID_S* sid = (SERVICE_LEA_ISO_STREAM_ID_S*)&stream_id;
     return sid->features & LEA_IGIS_FEATURE_SOURCE;
 }
 
-lea_send_iso_data_t *bt_sal_lea_alloc_send_buffer(uint16_t length, uint16_t handle)
+lea_send_iso_data_t* bt_sal_lea_alloc_send_buffer(uint16_t length, uint16_t handle)
 {
-    return (lea_send_iso_data_t *)stack_adapter_lea_get_iso_data_sent_buffer(length, handle);
+    return (lea_send_iso_data_t*)stack_adapter_lea_get_iso_data_sent_buffer(length, handle);
 }
 
-bt_status_t bt_sal_lea_send_iso_data(lea_send_iso_data_t *packet)
+bt_status_t bt_sal_lea_send_iso_data(lea_send_iso_data_t* packet)
 {
-    SAL_CHECK_RET(stack_adapter_lea_send_iso_data((SERVICE_LEA_SENT_ISO_DATA_S *)packet), SERVICE_BT_STATUS_SUCCESS);
+    SAL_CHECK_RET(stack_adapter_lea_send_iso_data((SERVICE_LEA_SENT_ISO_DATA_S*)packet), SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }

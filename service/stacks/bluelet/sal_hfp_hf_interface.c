@@ -37,20 +37,20 @@ static uint32_t hf_at_command_code_map(uint32_t atcc)
     }
 }
 static void connection_state_changed_callback(BD_ADDR remote_addr,
-                                              SERVICE_PROFILE_CONNECTION_STATE state,
-                                              SERVICE_PROFILE_CONNECTION_REASON reason,
-                                              uint32_t remote_features)
+    SERVICE_PROFILE_CONNECTION_STATE state,
+    SERVICE_PROFILE_CONNECTION_REASON reason,
+    uint32_t remote_features)
 {
     bt_address_t addr = { 0 };
 
     memcpy(addr.addr, remote_addr, 6);
     hfp_hf_on_connection_state_changed(&addr, bluelet_profile_connection_state(state),
-                                       bluelet_profile_connection_reason(reason), remote_features);
+        bluelet_profile_connection_reason(reason), remote_features);
 }
 
 static void sco_connection_state_changed_callback(BD_ADDR remote_addr,
-                                                  SERVICE_HFP_SCO_STATE state,
-                                                  uint16_t sco_connection_handle)
+    SERVICE_HFP_SCO_STATE state,
+    uint16_t sco_connection_handle)
 {
     bt_address_t addr = { 0 };
 
@@ -58,7 +58,7 @@ static void sco_connection_state_changed_callback(BD_ADDR remote_addr,
     hfp_hf_on_audio_connection_state_changed(&addr, bluelet_hf_audio_state(state), sco_connection_handle);
 }
 
-static void codec_changed_callback(BD_ADDR remote_addr, SERVICE_HFP_CONFIG_S *config)
+static void codec_changed_callback(BD_ADDR remote_addr, SERVICE_HFP_CONFIG_S* config)
 {
     bt_address_t addr = { 0 };
     hfp_codec_config_t codec = { .codec = config->codec };
@@ -68,7 +68,7 @@ static void codec_changed_callback(BD_ADDR remote_addr, SERVICE_HFP_CONFIG_S *co
 }
 
 static void call_setup_state_changed_callback(BD_ADDR remote_addr,
-                                              SERVICE_HFP_CALL_SETUP_STATE state)
+    SERVICE_HFP_CALL_SETUP_STATE state)
 {
     bt_address_t addr = { 0 };
 
@@ -77,7 +77,7 @@ static void call_setup_state_changed_callback(BD_ADDR remote_addr,
 }
 
 static void call_active_state_changed_callback(BD_ADDR remote_addr,
-                                               SERVICE_HFP_CALL_ACTIVE_STATE state)
+    SERVICE_HFP_CALL_ACTIVE_STATE state)
 {
     bt_address_t addr = { 0 };
     hfp_call_t call;
@@ -88,7 +88,7 @@ static void call_active_state_changed_callback(BD_ADDR remote_addr,
 }
 
 static void call_held_state_changed_callback(BD_ADDR remote_addr,
-                                             SERVICE_HFP_CALL_HELD_STATE state)
+    SERVICE_HFP_CALL_HELD_STATE state)
 {
     bt_address_t addr = { 0 };
     hfp_callheld_t held;
@@ -99,17 +99,17 @@ static void call_held_state_changed_callback(BD_ADDR remote_addr,
 }
 
 static void volume_changed_callback(BD_ADDR remote_addr, SERVICE_HFP_VOLUME_TYPE type,
-                                    uint8_t volume)
+    uint8_t volume)
 {
     bt_address_t addr = { 0 };
 
     memcpy(addr.addr, remote_addr, 6);
     hfp_hf_on_volume_changed(&addr, (type == VOLUME_MIC) ? HFP_VOLUME_TYPE_MIC : HFP_VOLUME_TYPE_SPK,
-                             volume);
+        volume);
 }
 
 static void ring_active_state_changed_callback(BD_ADDR remote_addr, bool active,
-                                               bool inband_ring)
+    bool inband_ring)
 {
     bt_address_t addr = { 0 };
 
@@ -125,8 +125,8 @@ static void voice_recognition_enabled_changed_callback(BD_ADDR remote_addr, bool
     hfp_hf_on_voice_recognition_state_changed(&addr, enabled);
 }
 
-static void received_at_cmd_resp_callback(BD_ADDR remote_addr, char *response,
-                                          uint16_t response_length)
+static void received_at_cmd_resp_callback(BD_ADDR remote_addr, char* response,
+    uint16_t response_length)
 {
     bt_address_t addr = { 0 };
 
@@ -142,7 +142,7 @@ static void received_sco_connection_req_callback(BD_ADDR remote_addr)
     hfp_hf_on_received_sco_connection_req(&addr);
 }
 
-static void clip_callback(BD_ADDR remote_addr, const char *number, const char *name)
+static void clip_callback(BD_ADDR remote_addr, const char* number, const char* name)
 {
     bt_address_t addr = { 0 };
 
@@ -151,9 +151,9 @@ static void clip_callback(BD_ADDR remote_addr, const char *number, const char *n
 }
 
 static void current_call_callback(BD_ADDR remote_addr, uint32_t idx,
-                                  SERVICE_HFP_CURRENT_CALL_DIR dir,
-                                  SERVICE_HFP_CURRENT_CALL_STATUS status, SERVICE_HFP_CURRENT_CALL_MODE mode,
-                                  SERVICE_HFP_CURRENT_CALL_MPTY mpty, const char *number, uint32_t type)
+    SERVICE_HFP_CURRENT_CALL_DIR dir,
+    SERVICE_HFP_CURRENT_CALL_STATUS status, SERVICE_HFP_CURRENT_CALL_MODE mode,
+    SERVICE_HFP_CURRENT_CALL_MPTY mpty, const char* number, uint32_t type)
 {
     bt_address_t addr = { 0 };
 
@@ -190,8 +190,8 @@ static const HFP_CALLBACKS_S hf_callbacks = {
 bt_status_t bt_sal_hfp_hf_init(uint32_t hf_features, uint8_t max_connection)
 {
     SAL_CHECK_RET(service_adapter_hfp_init(hf_features, max_connection,
-                                           (HFP_CALLBACKS_S *)&hf_callbacks),
-                  SERVICE_BT_STATUS_SUCCESS);
+                      (HFP_CALLBACKS_S*)&hf_callbacks),
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
@@ -201,7 +201,7 @@ void bt_sal_hfp_hf_cleanup(void)
     service_adapter_hfp_cleanup();
 }
 
-bt_status_t bt_sal_hfp_hf_connect(bt_address_t *addr)
+bt_status_t bt_sal_hfp_hf_connect(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_connect(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -209,7 +209,7 @@ bt_status_t bt_sal_hfp_hf_connect(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_disconnect(bt_address_t *addr)
+bt_status_t bt_sal_hfp_hf_disconnect(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_disconnect(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -217,7 +217,7 @@ bt_status_t bt_sal_hfp_hf_disconnect(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_connect_audio(bt_address_t *addr)
+bt_status_t bt_sal_hfp_hf_connect_audio(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_create_sco(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -225,7 +225,7 @@ bt_status_t bt_sal_hfp_hf_connect_audio(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_disconnect_audio(bt_address_t *addr)
+bt_status_t bt_sal_hfp_hf_disconnect_audio(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_disconnect_sco(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -233,7 +233,7 @@ bt_status_t bt_sal_hfp_hf_disconnect_audio(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_answer_call(bt_address_t *addr)
+bt_status_t bt_sal_hfp_hf_answer_call(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_answer_call(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -241,7 +241,7 @@ bt_status_t bt_sal_hfp_hf_answer_call(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_reject_call(bt_address_t *addr)
+bt_status_t bt_sal_hfp_hf_reject_call(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_reject_call(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -249,7 +249,7 @@ bt_status_t bt_sal_hfp_hf_reject_call(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_hold_call(bt_address_t *addr)
+bt_status_t bt_sal_hfp_hf_hold_call(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_hold_call(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -257,7 +257,7 @@ bt_status_t bt_sal_hfp_hf_hold_call(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_hangup_call(bt_address_t *addr)
+bt_status_t bt_sal_hfp_hf_hangup_call(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_hangup_call(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -265,7 +265,7 @@ bt_status_t bt_sal_hfp_hf_hangup_call(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_dial_number(bt_address_t *addr, const char *number)
+bt_status_t bt_sal_hfp_hf_dial_number(bt_address_t* addr, const char* number)
 {
     SAL_CHECK_PARAM(addr);
 
@@ -275,7 +275,7 @@ bt_status_t bt_sal_hfp_hf_dial_number(bt_address_t *addr, const char *number)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_dial_memory(bt_address_t *addr, uint32_t memory)
+bt_status_t bt_sal_hfp_hf_dial_memory(bt_address_t* addr, uint32_t memory)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_dial_memory(addr->addr, memory), SERVICE_BT_STATUS_SUCCESS);
@@ -283,7 +283,7 @@ bt_status_t bt_sal_hfp_hf_dial_memory(bt_address_t *addr, uint32_t memory)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_call_control(bt_address_t *addr, hfp_call_control_t chld, uint32_t index)
+bt_status_t bt_sal_hfp_hf_call_control(bt_address_t* addr, hfp_call_control_t chld, uint32_t index)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_call_control(addr->addr, chld, index), SERVICE_BT_STATUS_SUCCESS);
@@ -291,7 +291,7 @@ bt_status_t bt_sal_hfp_hf_call_control(bt_address_t *addr, hfp_call_control_t ch
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_get_current_calls(bt_address_t *addr)
+bt_status_t bt_sal_hfp_hf_get_current_calls(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_get_current_calls(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -299,7 +299,7 @@ bt_status_t bt_sal_hfp_hf_get_current_calls(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t *addr, hfp_volume_type_t type, uint8_t volume)
+bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
 {
     SAL_CHECK_PARAM(addr);
     SERVICE_HFP_VOLUME_TYPE vtype;
@@ -310,7 +310,7 @@ bt_status_t bt_sal_hfp_hf_set_volume(bt_address_t *addr, hfp_volume_type_t type,
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_start_voice_recognition(bt_address_t *addr)
+bt_status_t bt_sal_hfp_hf_start_voice_recognition(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_enable_voice_recognition(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -318,7 +318,7 @@ bt_status_t bt_sal_hfp_hf_start_voice_recognition(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_stop_voice_recognition(bt_address_t *addr)
+bt_status_t bt_sal_hfp_hf_stop_voice_recognition(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_disable_voice_recognition(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -326,7 +326,7 @@ bt_status_t bt_sal_hfp_hf_stop_voice_recognition(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_send_battery_level(bt_address_t *addr, uint8_t value)
+bt_status_t bt_sal_hfp_hf_send_battery_level(bt_address_t* addr, uint8_t value)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_send_battery_value(addr->addr, value), SERVICE_BT_STATUS_SUCCESS);
@@ -334,24 +334,24 @@ bt_status_t bt_sal_hfp_hf_send_battery_level(bt_address_t *addr, uint8_t value)
     return BT_STATUS_SUCCESS;
 }
 
-static void at_cmd_resp_callback(BD_ADDR remote_addr, char *response, uint16_t response_length)
+static void at_cmd_resp_callback(BD_ADDR remote_addr, char* response, uint16_t response_length)
 {
     received_at_cmd_resp_callback(remote_addr, response, response_length);
 }
 
-bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t *addr, const char *cmd, uint16_t len)
+bt_status_t bt_sal_hfp_hf_send_at_cmd(bt_address_t* addr, const char* cmd, uint16_t len)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_PARAM(cmd);
-    SERVICE_HFP_AT_CMD_S at_cmd = { (char *)cmd, len };
+    SERVICE_HFP_AT_CMD_S at_cmd = { (char*)cmd, len };
 
     SAL_CHECK_RET(service_adapter_hfp_send_at_cmd(addr->addr, &at_cmd, at_cmd_resp_callback),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hfp_hf_send_dtmf(bt_address_t *addr, char dtmf)
+bt_status_t bt_sal_hfp_hf_send_dtmf(bt_address_t* addr, char dtmf)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_hfp_tx_dtmf(addr->addr, dtmf), SERVICE_BT_STATUS_SUCCESS);

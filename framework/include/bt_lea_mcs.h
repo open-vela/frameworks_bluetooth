@@ -53,7 +53,7 @@ typedef enum {
 
 typedef struct {
     uint16_t length; /**< Length of the string, not including the ending 0. */
-    char *string; /**< UTF-8 string, terminated by 0. Its life cycle shall not be shorter than its container. It may be recycled when its container is recycled. */
+    char* string; /**< UTF-8 string, terminated by 0. Its life cycle shall not be shorter than its container. It may be recycled when its container is recycled. */
 } lea_utf8_str_t;
 
 /** @brief Date time structure. */
@@ -69,8 +69,8 @@ typedef struct {
 /** @brief Media Object information. */
 typedef struct {
     uint32_t mcs_id; /**< ID of the MCS instance the media player attached to. */
-    void *obj_ref; /**< Application specified object identity. */
-    uint8_t *name; /**< Initial Object Name, e.g. group name or track title. Zero terminated UTF-8 string. */
+    void* obj_ref; /**< Application specified object identity. */
+    uint8_t* name; /**< Initial Object Name, e.g. group name or track title. Zero terminated UTF-8 string. */
     uint32_t size; /**< Size of the object */
     uint8_t type; /**< Type of the object, one of #SERVICE_LEA_MCS_OBJECT_TYPE. */
     lea_date_time_t
@@ -79,7 +79,7 @@ typedef struct {
         last_modified; /**< The date and time when the object content is last modified. Set to all 0s if unknown. */
 } lea_media_object_t;
 
-typedef void (*lea_mcs_server_state_callback)(void *cookie, uint8_t event);
+typedef void (*lea_mcs_server_state_callback)(void* cookie, uint8_t event);
 
 typedef struct
 {
@@ -87,23 +87,23 @@ typedef struct
     lea_mcs_server_state_callback mcs_state_cb;
 } lea_mcs_callbacks_t;
 
-void *bt_lea_mcs_register_callbacks(bt_instance_t *ins, const lea_mcs_callbacks_t *callbacks);
-bool bt_lea_mcs_unregister_callbacks(bt_instance_t *ins, void *cookie);
-bt_status_t bt_lea_mcs_service_add(bt_instance_t *ins);
-bt_status_t bt_lea_mcs_service_remove(bt_instance_t *ins);
-bt_status_t bt_lea_mcs_playing_order_changed(bt_instance_t *ins, uint8_t order);
-bt_status_t bt_lea_mcs_media_state_changed(bt_instance_t *ins, uint8_t state);
-bt_status_t bt_lea_mcs_playback_speed_changed(bt_instance_t *ins, int8_t speed);
-bt_status_t bt_lea_mcs_seeking_speed_changed(bt_instance_t *ins, int8_t speed);
-bt_status_t bt_lea_mcs_track_title_changed(void *handl, uint8_t *title);
-bt_status_t bt_lea_mcs_track_duration_changed(bt_instance_t *ins, int32_t duration);
-bt_status_t bt_lea_mcs_track_position_changed(bt_instance_t *ins, int32_t position);
-bt_status_t bt_lea_mcs_current_track_change(bt_instance_t *ins, lea_object_id track_id);
-bt_status_t bt_lea_mcs_next_track_changed(bt_instance_t *ins, lea_object_id track_id);
-bt_status_t bt_lea_mcs_current_group_changed(bt_instance_t *ins, lea_object_id group_id);
-bt_status_t bt_lea_mcs_parent_group_changed(bt_instance_t *ins, lea_object_id group_id);
-bt_status_t bt_lea_mcs_set_media_player_info(bt_instance_t *ins);
-bt_status_t bt_lea_mcs_media_control_point_response(bt_instance_t *ins, lea_adpt_mcs_media_control_result_t result);
+void* bt_lea_mcs_register_callbacks(bt_instance_t* ins, const lea_mcs_callbacks_t* callbacks);
+bool bt_lea_mcs_unregister_callbacks(bt_instance_t* ins, void* cookie);
+bt_status_t bt_lea_mcs_service_add(bt_instance_t* ins);
+bt_status_t bt_lea_mcs_service_remove(bt_instance_t* ins);
+bt_status_t bt_lea_mcs_playing_order_changed(bt_instance_t* ins, uint8_t order);
+bt_status_t bt_lea_mcs_media_state_changed(bt_instance_t* ins, uint8_t state);
+bt_status_t bt_lea_mcs_playback_speed_changed(bt_instance_t* ins, int8_t speed);
+bt_status_t bt_lea_mcs_seeking_speed_changed(bt_instance_t* ins, int8_t speed);
+bt_status_t bt_lea_mcs_track_title_changed(void* handl, uint8_t* title);
+bt_status_t bt_lea_mcs_track_duration_changed(bt_instance_t* ins, int32_t duration);
+bt_status_t bt_lea_mcs_track_position_changed(bt_instance_t* ins, int32_t position);
+bt_status_t bt_lea_mcs_current_track_change(bt_instance_t* ins, lea_object_id track_id);
+bt_status_t bt_lea_mcs_next_track_changed(bt_instance_t* ins, lea_object_id track_id);
+bt_status_t bt_lea_mcs_current_group_changed(bt_instance_t* ins, lea_object_id group_id);
+bt_status_t bt_lea_mcs_parent_group_changed(bt_instance_t* ins, lea_object_id group_id);
+bt_status_t bt_lea_mcs_set_media_player_info(bt_instance_t* ins);
+bt_status_t bt_lea_mcs_media_control_point_response(bt_instance_t* ins, lea_adpt_mcs_media_control_result_t result);
 
 #ifdef __cplusplus
 }

@@ -20,6 +20,6 @@
 #include "bluetooth.h"
 
 bool phy_is_vaild(uint8_t phy);
-int le_addr_type(const char *str, ble_addr_type_t *type);
-bool bttool_allocator(void **data, uint32_t size);
+int le_addr_type(const char* str, ble_addr_type_t* type);
+bool bttool_allocator(void** data, uint32_t size);
 uint32_t get_timestamp_msec(void);

@@ -21,14 +21,14 @@
 #include "bt_addr.h"
 #include "bt_status.h"
 
-bt_status_t bt_sal_lea_csip_read_sirk(bt_address_t *addr);
-bt_status_t bt_sal_lea_csip_read_cs_size(bt_address_t *addr);
-bt_status_t bt_sal_lea_csip_read_member_lock(bt_address_t *addr);
-bt_status_t bt_sal_lea_csip_read_member_rank(bt_address_t *addr);
-bt_status_t bt_sal_lea_csip_coordinated_set_discovery_member_start(uint8_t *sirk);
-bt_status_t bt_sal_lea_csip_coordinated_set_discovery_member_stop(uint8_t *sirk);
-bt_status_t bt_sal_lea_csip_coordinated_set_lock_request(uint8_t *sirk);
-bt_status_t bt_sal_lea_csip_coordinated_set_lock_release(uint8_t *sirk);
-bt_status_t bt_sal_lea_csip_coordinated_set_ordered_access(uint8_t *sirk);
+bt_status_t bt_sal_lea_csip_read_sirk(bt_address_t* addr);
+bt_status_t bt_sal_lea_csip_read_cs_size(bt_address_t* addr);
+bt_status_t bt_sal_lea_csip_read_member_lock(bt_address_t* addr);
+bt_status_t bt_sal_lea_csip_read_member_rank(bt_address_t* addr);
+bt_status_t bt_sal_lea_csip_coordinated_set_discovery_member_start(uint8_t* sirk);
+bt_status_t bt_sal_lea_csip_coordinated_set_discovery_member_stop(uint8_t* sirk);
+bt_status_t bt_sal_lea_csip_coordinated_set_lock_request(uint8_t* sirk);
+bt_status_t bt_sal_lea_csip_coordinated_set_lock_release(uint8_t* sirk);
+bt_status_t bt_sal_lea_csip_coordinated_set_ordered_access(uint8_t* sirk);
 
 #endif /* __SAL_LEA_CSIP_INTERFACE_H__ */

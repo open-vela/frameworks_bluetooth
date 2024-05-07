@@ -29,12 +29,12 @@ typedef struct {
      * @brief Register the a2dp_sink event callback
      * @param[in] callbacks  a2dp_sink event callback function.
      */
-    void *(*register_callbacks)(void *remote, const avrcp_target_callbacks_t *callbacks);
+    void* (*register_callbacks)(void* remote, const avrcp_target_callbacks_t* callbacks);
 
     /**
      * @brief Unregister the a2dp_sink event callback
      */
-    bool (*unregister_callbacks)(void **remote, void *cookie);
+    bool (*unregister_callbacks)(void** remote, void* cookie);
 
     /**
      * @brief Response get playback status request
@@ -44,9 +44,9 @@ typedef struct {
      * @param[in] song_pos  position of song which is playing
      * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
      */
-    bt_status_t (*get_play_status_rsp)(bt_address_t *addr,
-                                       avrcp_play_status_t status,
-                                       uint32_t song_len, uint32_t song_pos);
+    bt_status_t (*get_play_status_rsp)(bt_address_t* addr,
+        avrcp_play_status_t status,
+        uint32_t song_len, uint32_t song_pos);
 
     /**
      * @brief notify playback status if peer had register playback notification
@@ -54,7 +54,7 @@ typedef struct {
      * @param[in] status    current playback status.
      * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
      */
-    bt_status_t (*play_status_notify)(bt_address_t *addr, avrcp_play_status_t status);
+    bt_status_t (*play_status_notify)(bt_address_t* addr, avrcp_play_status_t status);
 
     /**
      * @brief set absolute volume
@@ -62,7 +62,7 @@ typedef struct {
      * @param[in] volume    volume of mediaplayer, range in <0-0x7F>.
      * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
      */
-    bt_status_t (*set_absolute_volume)(bt_address_t *addr, uint8_t volume);
+    bt_status_t (*set_absolute_volume)(bt_address_t* addr, uint8_t volume);
 
 } avrcp_target_interface_t;
 

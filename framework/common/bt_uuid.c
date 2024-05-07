@@ -13,28 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
 
 #include "bt_utils.h"
 #include "bt_uuid.h"
 
 static const bt_uuid_t bt_uuid128_base = {
     .type = BT_UUID128_TYPE,
-    .val.u128 = {0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
-                 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+    .val.u128 = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
+        0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 };
 
 #define BASE_UUID16_OFFSET 12
 #define BASE_UUID32_OFFSET 12
 
-static void bt_uuid16_to_uuid128(const bt_uuid_t *uuid16, bt_uuid_t *uuid128)
+static void bt_uuid16_to_uuid128(const bt_uuid_t* uuid16, bt_uuid_t* uuid128)
 {
     uint8_t uuid[2];
-    uint8_t *p = uuid;
+    uint8_t* p = uuid;
 
     *uuid128 = bt_uuid128_base;
     UINT16_TO_STREAM(p, uuid16->val.u16);
@@ -42,17 +42,17 @@ static void bt_uuid16_to_uuid128(const bt_uuid_t *uuid16, bt_uuid_t *uuid128)
     memcpy(&uuid128->val.u128[BASE_UUID16_OFFSET], uuid, sizeof(uuid));
 }
 
-static void bt_uuid32_to_uuid128(const bt_uuid_t *uuid32, bt_uuid_t *uuid128)
+static void bt_uuid32_to_uuid128(const bt_uuid_t* uuid32, bt_uuid_t* uuid128)
 {
     uint8_t uuid[4];
-    uint8_t *p = uuid;
+    uint8_t* p = uuid;
 
     *uuid128 = bt_uuid128_base;
     UINT32_TO_STREAM(p, uuid32->val.u32);
     memcpy(&uuid128->val.u128[BASE_UUID32_OFFSET], uuid, sizeof(uuid));
 }
 
-void bt_uuid_to_uuid128(const bt_uuid_t *src, bt_uuid_t *uuid128)
+void bt_uuid_to_uuid128(const bt_uuid_t* src, bt_uuid_t* uuid128)
 {
     switch (src->type) {
     case BT_UUID128_TYPE:
@@ -69,12 +69,12 @@ void bt_uuid_to_uuid128(const bt_uuid_t *src, bt_uuid_t *uuid128)
     }
 }
 
-static int bt_uuid128_cmp(const bt_uuid_t *u1, const bt_uuid_t *u2)
+static int bt_uuid128_cmp(const bt_uuid_t* u1, const bt_uuid_t* u2)
 {
     return memcmp(&u1->val.u128, &u2->val.u128, 16);
 }
 
-int bt_uuid16_create(bt_uuid_t *uuid16, uint16_t value)
+int bt_uuid16_create(bt_uuid_t* uuid16, uint16_t value)
 {
     memset(uuid16, 0, sizeof(bt_uuid_t));
     uuid16->type = BT_UUID16_TYPE;
@@ -83,7 +83,7 @@ int bt_uuid16_create(bt_uuid_t *uuid16, uint16_t value)
     return 0;
 }
 
-int bt_uuid32_create(bt_uuid_t *uuid32, uint32_t value)
+int bt_uuid32_create(bt_uuid_t* uuid32, uint32_t value)
 {
     memset(uuid32, 0, sizeof(bt_uuid_t));
     uuid32->type = BT_UUID32_TYPE;
@@ -92,7 +92,7 @@ int bt_uuid32_create(bt_uuid_t *uuid32, uint32_t value)
     return 0;
 }
 
-int bt_uuid128_create(bt_uuid_t *uuid128, const uint8_t *value)
+int bt_uuid128_create(bt_uuid_t* uuid128, const uint8_t* value)
 {
     memset(uuid128, 0, sizeof(bt_uuid_t));
     uuid128->type = BT_UUID128_TYPE;
@@ -101,7 +101,7 @@ int bt_uuid128_create(bt_uuid_t *uuid128, const uint8_t *value)
     return 0;
 }
 
-bool bt_uuid_create_common(bt_uuid_t *uuid, const uint8_t *data, uint8_t type)
+bool bt_uuid_create_common(bt_uuid_t* uuid, const uint8_t* data, uint8_t type)
 {
     switch (type) {
     case BT_UUID128_TYPE:
@@ -126,7 +126,7 @@ bool bt_uuid_create_common(bt_uuid_t *uuid, const uint8_t *data, uint8_t type)
     return true;
 }
 
-int bt_uuid_compare(const bt_uuid_t *uuid1, const bt_uuid_t *uuid2)
+int bt_uuid_compare(const bt_uuid_t* uuid1, const bt_uuid_t* uuid2)
 {
     bt_uuid_t u1 = { 0 };
     bt_uuid_t u2 = { 0 };
@@ -137,15 +137,15 @@ int bt_uuid_compare(const bt_uuid_t *uuid1, const bt_uuid_t *uuid2)
     return bt_uuid128_cmp(&u1, &u2);
 }
 
-int bt_uuid_to_string(const bt_uuid_t *uuid, char *str, uint32_t len)
+int bt_uuid_to_string(const bt_uuid_t* uuid, char* str, uint32_t len)
 {
     bt_uuid_t uuid128 = { 0 };
     uint32_t tmp1, tmp5;
     uint16_t tmp0, tmp2, tmp3, tmp4;
-    const uint8_t *p;
+    const uint8_t* p;
 
     bt_uuid_to_uuid128(uuid, &uuid128);
-    p = (uint8_t *)&uuid128.val.u128;
+    p = (uint8_t*)&uuid128.val.u128;
 
     STREAM_TO_UINT16(tmp0, p);
     STREAM_TO_UINT32(tmp1, p);

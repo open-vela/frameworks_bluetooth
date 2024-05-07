@@ -30,16 +30,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
+#define LOG_TAG "aac_src_stream"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "a2dp_codec_aac.h"
 #include "a2dp_source_audio.h"
-
 #include "service_loop.h"
-
 #include "utils.h"
-#define LOG_TAG "aac_src_stream"
 #include "utils/log.h"
 
 #define A2DP_AAC_BIT_PER_SAMPLE 16
@@ -63,7 +62,7 @@ typedef struct {
     uint8_t header_length;
 } loas_header_t;
 typedef struct {
-    aac_encoder_param_t *param;
+    aac_encoder_param_t* param;
     frame_send_callback send_callback;
     frame_read_callback read_callback;
     uint16_t mtu;
@@ -78,7 +77,7 @@ typedef struct {
 static a2dp_stream_aac_t aac_stream;
 static uint32_t a2dp_aac_encoder_interval_ms = A2DP_AAC_ENCODER_INTERVAL_MS;
 
-int a2dp_source_aac_update_config(uint32_t mtu, aac_encoder_param_t *param, uint8_t *codec_info)
+int a2dp_source_aac_update_config(uint32_t mtu, aac_encoder_param_t* param, uint8_t* codec_info)
 {
     uint16_t mtu_size;
 
@@ -93,19 +92,17 @@ int a2dp_source_aac_update_config(uint32_t mtu, aac_encoder_param_t *param, uint
     return 0;
 }
 
-static void a2dp_aac_get_num_frame_iteration(uint8_t *num_of_iterations, uint8_t *num_of_frames,
-                                             uint64_t now_timestamp_us)
+static void a2dp_aac_get_num_frame_iteration(uint8_t* num_of_iterations, uint8_t* num_of_frames,
+    uint64_t now_timestamp_us)
 {
-    a2dp_stream_aac_t *stream = &aac_stream;
-    aac_encoder_param_t *params = stream->param;
+    a2dp_stream_aac_t* stream = &aac_stream;
+    aac_encoder_param_t* params = stream->param;
     uint32_t pcm_bytes_per_frame;
     uint32_t projected_nof = 0;
     uint32_t us_this_tick;
     float ticks;
 
-    pcm_bytes_per_frame = stream->frame_len *
-                          params->u16NumOfChannels *
-                          A2DP_AAC_BIT_PER_SAMPLE / 8;
+    pcm_bytes_per_frame = stream->frame_len * params->u16NumOfChannels * A2DP_AAC_BIT_PER_SAMPLE / 8;
     us_this_tick = a2dp_aac_encoder_interval_ms * 1000;
     if (stream->feeding_state.last_frame_us != 0)
         us_this_tick = now_timestamp_us - stream->feeding_state.last_frame_us;
@@ -125,7 +122,7 @@ static void a2dp_aac_get_num_frame_iteration(uint8_t *num_of_iterations, uint8_t
 
 static void a2dp_aac_send_frames(uint16_t header_reserve, uint8_t frames)
 {
-    loas_header_t *loas = &aac_stream.loas; //= "\x56\xe0\x00";
+    loas_header_t* loas = &aac_stream.loas; //= "\x56\xe0\x00";
     uint16_t len = 0;
     int ret;
 
@@ -144,7 +141,7 @@ static void a2dp_aac_send_frames(uint16_t header_reserve, uint8_t frames)
             len = (uint16_t)((loas->header[1] & 0x1F) << 8) + (uint16_t)loas->header[2];
         else
             continue;
-        uint8_t *buffer = malloc(header_reserve + len);
+        uint8_t* buffer = malloc(header_reserve + len);
         if (buffer == NULL)
             return;
 
@@ -152,10 +149,7 @@ static void a2dp_aac_send_frames(uint16_t header_reserve, uint8_t frames)
         ret = aac_stream.read_callback(buffer + header_reserve, len);
         if (ret == 0) {
             free(buffer);
-            aac_stream.feeding_state.counter += aac_stream.frame_len *
-                                                aac_stream.param->u16NumOfChannels *
-                                                A2DP_AAC_BIT_PER_SAMPLE / 8 *
-                                                frames;
+            aac_stream.feeding_state.counter += aac_stream.frame_len * aac_stream.param->u16NumOfChannels * A2DP_AAC_BIT_PER_SAMPLE / 8 * frames;
             BT_LOGW("%s, underflow :%d, %f", __func__, frames, aac_stream.feeding_state.counter);
             return;
         }
@@ -174,7 +168,7 @@ static void a2dp_source_aac_send_frames(uint16_t header_reserve, uint64_t timest
     uint8_t num_of_iterations;
 
     a2dp_aac_get_num_frame_iteration(&num_of_iterations, &num_of_frames,
-                                     timestamp);
+        timestamp);
     if (num_of_frames == 0)
         return;
 
@@ -183,13 +177,13 @@ static void a2dp_source_aac_send_frames(uint16_t header_reserve, uint64_t timest
     }
 }
 
-static void a2dp_source_aac_stream_init(void *param, uint32_t mtu,
-                                        frame_send_callback send_cb,
-                                        frame_read_callback read_cb)
+static void a2dp_source_aac_stream_init(void* param, uint32_t mtu,
+    frame_send_callback send_cb,
+    frame_read_callback read_cb)
 {
-    a2dp_stream_aac_t *stream = &aac_stream;
+    a2dp_stream_aac_t* stream = &aac_stream;
 
-    stream->param = (aac_encoder_param_t *)param;
+    stream->param = (aac_encoder_param_t*)param;
     stream->mtu = mtu;
     stream->send_callback = send_cb;
     stream->read_callback = read_cb;
@@ -206,8 +200,8 @@ static void a2dp_source_aac_stream_init(void *param, uint32_t mtu,
 
 static void a2dp_source_aac_stream_reset(void)
 {
-    a2dp_stream_aac_t *stream = &aac_stream;
-    aac_encoder_param_t *param = stream->param;
+    a2dp_stream_aac_t* stream = &aac_stream;
+    aac_encoder_param_t* param = stream->param;
 
     stream->state.total_tx_frames = 0;
     stream->state.session_start_us = get_os_timestamp_us();
@@ -219,12 +213,7 @@ static void a2dp_source_aac_stream_reset(void)
     stream->loas.header_length = 0;
     stream->feeding_state.counter = 0;
     stream->feeding_state.last_frame_us = 0;
-    stream->feeding_state.bytes_per_tick =
-        (param->u32SampleRate *
-         A2DP_AAC_BIT_PER_SAMPLE / 8 *
-         param->u16NumOfChannels *
-         a2dp_aac_encoder_interval_ms) /
-        1000;
+    stream->feeding_state.bytes_per_tick = (param->u32SampleRate * A2DP_AAC_BIT_PER_SAMPLE / 8 * param->u16NumOfChannels * a2dp_aac_encoder_interval_ms) / 1000;
 }
 
 int a2dp_source_aac_interval_ms(void)
@@ -240,7 +229,7 @@ static const a2dp_source_stream_interface_t a2dp_source_stream_aac = {
     a2dp_source_aac_interval_ms,
 };
 
-const a2dp_source_stream_interface_t *get_a2dp_source_aac_stream_interface(void)
+const a2dp_source_stream_interface_t* get_a2dp_source_aac_stream_interface(void)
 {
     return &a2dp_source_stream_aac;
 }

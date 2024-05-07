@@ -28,7 +28,7 @@
 
 #ifdef CONFIG_BLUETOOTH_SPP
 static void connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_SPP_PORT conn_port,
-                                        SERVICE_PROFILE_CONNECTION_STATE state)
+    SERVICE_PROFILE_CONNECTION_STATE state)
 {
     bt_address_t addr;
 
@@ -36,14 +36,14 @@ static void connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_SPP_PORT co
     spp_on_connection_state_changed(&addr, conn_port, bluelet_profile_connection_state(state));
 }
 
-static void data_sent_cb(SERVICE_SPP_PORT conn_port, uint8_t *buffer, uint16_t length,
-                         uint16_t sent_length)
+static void data_sent_cb(SERVICE_SPP_PORT conn_port, uint8_t* buffer, uint16_t length,
+    uint16_t sent_length)
 {
     spp_on_data_sent(conn_port, buffer, length, sent_length);
 }
 
 static void data_received_cb(BD_ADDR remote_addr, SERVICE_SPP_PORT conn_port,
-                             uint8_t *buffer, uint16_t length)
+    uint8_t* buffer, uint16_t length)
 {
     bt_address_t addr;
 
@@ -57,7 +57,7 @@ static void connection_mfs_cb(SERVICE_SPP_PORT conn_port, uint16_t mfs)
 }
 
 static void server_connection_req_received_cb(BD_ADDR remote_addr,
-                                              SERVICE_SPP_PORT svr_port)
+    SERVICE_SPP_PORT svr_port)
 {
     bt_address_t addr;
 
@@ -86,13 +86,13 @@ void bt_sal_spp_cleanup(void)
     service_adapter_spp_cleanup();
 }
 
-bt_status_t bt_sal_spp_server_start(uint16_t svr_port, bt_uuid_t *uuid128, uint8_t max_conn_cnt)
+bt_status_t bt_sal_spp_server_start(uint16_t svr_port, bt_uuid_t* uuid128, uint8_t max_conn_cnt)
 {
     if (svr_port < 3 || svr_port > 57 || !(svr_port & 0x01) || max_conn_cnt > 31)
         return BT_STATUS_PARM_INVALID;
 
     SAL_CHECK_RET(service_adapter_spp_server_open(svr_port, uuid128 ? uuid128->val.u128 : NULL, max_conn_cnt),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
@@ -107,12 +107,12 @@ bt_status_t bt_sal_spp_server_stop(uint16_t svr_port)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_spp_connect(bt_address_t *addr, uint16_t conn_port, bt_uuid_t *uuid128)
+bt_status_t bt_sal_spp_connect(bt_address_t* addr, uint16_t conn_port, bt_uuid_t* uuid128)
 {
     SAL_CHECK_PARAM(addr);
 
     SAL_CHECK_RET(service_adapter_spp_client_open(addr->addr, conn_port, uuid128 ? uuid128->val.u128 : NULL),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 }
@@ -126,7 +126,7 @@ bt_status_t bt_sal_spp_disconnect(uint16_t conn_port)
 
 // SERVICE_BT_STATUS service_adapter_spp_disconnect_by_remote_addr(BD_ADDR remote_addr);
 
-bt_status_t bt_sal_spp_write(uint16_t conn_port, uint8_t *buffer, uint16_t length)
+bt_status_t bt_sal_spp_write(uint16_t conn_port, uint8_t* buffer, uint16_t length)
 {
     SAL_CHECK_PARAM(buffer);
 
@@ -142,7 +142,7 @@ bt_status_t bt_sal_spp_add_credits(uint16_t conn_port, uint8_t credits)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_spp_data_received_response(uint16_t conn_port, uint8_t *buffer)
+bt_status_t bt_sal_spp_data_received_response(uint16_t conn_port, uint8_t* buffer)
 {
     SAL_CHECK_PARAM(buffer);
 
@@ -151,7 +151,7 @@ bt_status_t bt_sal_spp_data_received_response(uint16_t conn_port, uint8_t *buffe
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_spp_connect_request_reply(bt_address_t *addr, uint16_t conn_port, bool accept)
+bt_status_t bt_sal_spp_connect_request_reply(bt_address_t* addr, uint16_t conn_port, bool accept)
 {
     SAL_CHECK_PARAM(addr);
 

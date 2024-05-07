@@ -33,26 +33,26 @@
 
 #define BT_HID_DEVICE_DESC "BluetoothHidDevice"
 
-static void *IBtHidd_Class_onCreate(void *arg)
+static void* IBtHidd_Class_onCreate(void* arg)
 {
     return arg;
 }
 
-static void IBtHidd_Class_onDestroy(void *userData)
+static void IBtHidd_Class_onDestroy(void* userData)
 {
 }
 
-static binder_status_t IBtHidd_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *reply)
+static binder_status_t IBtHidd_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* reply)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
 
-    hid_device_interface_t *profile = (hid_device_interface_t *)service_manager_get_profile(PROFILE_HID_DEV);
+    hid_device_interface_t* profile = (hid_device_interface_t*)service_manager_get_profile(PROFILE_HID_DEV);
     if (!profile)
         return stat;
 
     switch (code) {
     case IHIDD_REGISTER_CALLBACK: {
-        AIBinder *remote;
+        AIBinder* remote;
 
         stat = AParcel_readStrongBinder(in, &remote);
         if (stat != STATUS_OK)
@@ -63,19 +63,19 @@ static binder_status_t IBtHidd_Class_onTransact(AIBinder *binder, transaction_co
             return STATUS_FAILED_TRANSACTION;
         }
 
-        void *cookie = profile->register_callbacks(remote, BpBtHiddCallbacks_getStatic());
+        void* cookie = profile->register_callbacks(remote, BpBtHiddCallbacks_getStatic());
         stat = AParcel_writeUint32(reply, (uint32_t)cookie);
         break;
     }
     case IHIDD_UNREGISTER_CALLBACK: {
-        AIBinder *remote = NULL;
+        AIBinder* remote = NULL;
         uint32_t cookie;
 
         stat = AParcel_readUint32(in, &cookie);
         if (stat != STATUS_OK)
             return stat;
 
-        bool ret = profile->unregister_callbacks((void **)&remote, (void *)cookie);
+        bool ret = profile->unregister_callbacks((void**)&remote, (void*)cookie);
         if (ret && remote)
             AIBinder_decStrong(remote);
 
@@ -150,7 +150,7 @@ static binder_status_t IBtHidd_Class_onTransact(AIBinder *binder, transaction_co
             goto register_out;
         sdp.hids_info.dsc_list_length = (uint16_t)u32Val;
 
-        stat = AParcel_readByteArray(in, (void *)&sdp.hids_info.dsc_list, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readByteArray(in, (void*)&sdp.hids_info.dsc_list, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             goto register_out;
 
@@ -163,13 +163,13 @@ static binder_status_t IBtHidd_Class_onTransact(AIBinder *binder, transaction_co
 
     register_out:
         if (sdp.name)
-            free((void *)sdp.name);
+            free((void*)sdp.name);
         if (sdp.description)
-            free((void *)sdp.description);
+            free((void*)sdp.description);
         if (sdp.provider)
-            free((void *)sdp.provider);
+            free((void*)sdp.provider);
         if (sdp.hids_info.dsc_list)
-            free((void *)sdp.hids_info.dsc_list);
+            free((void*)sdp.hids_info.dsc_list);
         break;
     }
     case IHIDD_UNREGISTER_APP: {
@@ -207,7 +207,7 @@ static binder_status_t IBtHidd_Class_onTransact(AIBinder *binder, transaction_co
         uint32_t status, rpt_id;
         bt_address_t addr;
         int32_t rpt_size;
-        uint8_t *rpt_data;
+        uint8_t* rpt_data;
 
         stat = AParcel_readAddress(in, &addr);
         if (stat != STATUS_OK)
@@ -217,7 +217,7 @@ static binder_status_t IBtHidd_Class_onTransact(AIBinder *binder, transaction_co
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&rpt_data, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readByteArray(in, (void*)&rpt_data, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             return stat;
 
@@ -236,7 +236,7 @@ static binder_status_t IBtHidd_Class_onTransact(AIBinder *binder, transaction_co
         uint32_t status, rpt_type;
         bt_address_t addr;
         int32_t rpt_size;
-        uint8_t *rpt_data;
+        uint8_t* rpt_data;
 
         stat = AParcel_readAddress(in, &addr);
         if (stat != STATUS_OK)
@@ -246,7 +246,7 @@ static binder_status_t IBtHidd_Class_onTransact(AIBinder *binder, transaction_co
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&rpt_data, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readByteArray(in, (void*)&rpt_data, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             return stat;
 
@@ -297,25 +297,25 @@ static binder_status_t IBtHidd_Class_onTransact(AIBinder *binder, transaction_co
     return stat;
 }
 
-static const AIBinder_Class *BtHidd_getClass(void)
+static const AIBinder_Class* BtHidd_getClass(void)
 {
 
-    AIBinder_Class *clazz = AIBinder_Class_define(BT_HID_DEVICE_DESC, IBtHidd_Class_onCreate,
-                                                  IBtHidd_Class_onDestroy, IBtHidd_Class_onTransact);
+    AIBinder_Class* clazz = AIBinder_Class_define(BT_HID_DEVICE_DESC, IBtHidd_Class_onCreate,
+        IBtHidd_Class_onDestroy, IBtHidd_Class_onTransact);
 
     return clazz;
 }
 
-static AIBinder *BtHidd_getBinder(IBtHidd *hidd)
+static AIBinder* BtHidd_getBinder(IBtHidd* hidd)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (hidd->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(hidd->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(hidd->clazz, (void *)hidd);
+        binder = AIBinder_new(hidd->clazz, (void*)hidd);
         if (hidd->WeakBinder != NULL) {
             AIBinder_Weak_delete(hidd->WeakBinder);
         }
@@ -326,10 +326,10 @@ static AIBinder *BtHidd_getBinder(IBtHidd *hidd)
     return binder;
 }
 
-binder_status_t BtHidd_addService(IBtHidd *hidd, const char *instance)
+binder_status_t BtHidd_addService(IBtHidd* hidd, const char* instance)
 {
-    hidd->clazz = (AIBinder_Class *)BtHidd_getClass();
-    AIBinder *binder = BtHidd_getBinder(hidd);
+    hidd->clazz = (AIBinder_Class*)BtHidd_getClass();
+    AIBinder* binder = BtHidd_getBinder(hidd);
     hidd->usr_data = NULL;
 
     binder_status_t status = AServiceManager_addService(binder, instance);
@@ -338,13 +338,13 @@ binder_status_t BtHidd_addService(IBtHidd *hidd, const char *instance)
     return status;
 }
 
-BpBtHidd *BpBtHidd_new(const char *instance)
+BpBtHidd* BpBtHidd_new(const char* instance)
 {
-    AIBinder *binder = NULL;
-    AIBinder_Class *clazz;
-    BpBtHidd *bpBinder = NULL;
+    AIBinder* binder = NULL;
+    AIBinder_Class* clazz;
+    BpBtHidd* bpBinder = NULL;
 
-    clazz = (AIBinder_Class *)BtHidd_getClass();
+    clazz = (AIBinder_Class*)BtHidd_getClass();
     binder = AServiceManager_getService(instance);
     if (!binder)
         return NULL;
@@ -371,15 +371,15 @@ bail:
     return NULL;
 }
 
-void BpBtHidd_delete(BpBtHidd *bpHidd)
+void BpBtHidd_delete(BpBtHidd* bpHidd)
 {
     AIBinder_decStrong(bpHidd->binder);
     free(bpHidd);
 }
 
-AIBinder *BtHidd_getService(BpBtHidd **bpHidd, const char *instance)
+AIBinder* BtHidd_getService(BpBtHidd** bpHidd, const char* instance)
 {
-    BpBtHidd *bpBinder = *bpHidd;
+    BpBtHidd* bpBinder = *bpHidd;
 
     if (bpBinder && bpBinder->binder)
         return bpBinder->binder;

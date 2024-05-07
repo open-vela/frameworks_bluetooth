@@ -20,33 +20,33 @@
 
 #include "advertising.h"
 #include "bluetooth.h"
-#include "bt_le_advertiser.h"
 #include "bt_internal.h"
+#include "bt_le_advertiser.h"
 #include "utils/log.h"
 
-bt_advertiser_t *BTSYMBOLS(bt_le_start_advertising)(bt_instance_t *ins,
-                                                    ble_adv_params_t *params,
-                                                    uint8_t *adv_data,
-                                                    uint16_t adv_len,
-                                                    uint8_t *scan_rsp_data,
-                                                    uint16_t scan_rsp_len,
-                                                    advertiser_callback_t *cbs)
+bt_advertiser_t* BTSYMBOLS(bt_le_start_advertising)(bt_instance_t* ins,
+    ble_adv_params_t* params,
+    uint8_t* adv_data,
+    uint16_t adv_len,
+    uint8_t* scan_rsp_data,
+    uint16_t scan_rsp_len,
+    advertiser_callback_t* cbs)
 {
     return start_advertising(NULL, params, adv_data, adv_len,
-                             scan_rsp_data, scan_rsp_len, cbs);
+        scan_rsp_data, scan_rsp_len, cbs);
 }
 
-void BTSYMBOLS(bt_le_stop_advertising)(bt_instance_t *ins, bt_advertiser_t *adver)
+void BTSYMBOLS(bt_le_stop_advertising)(bt_instance_t* ins, bt_advertiser_t* adver)
 {
     stop_advertising(adver);
 }
 
-void BTSYMBOLS(bt_le_stop_advertising_id)(bt_instance_t *ins, uint8_t adv_id)
+void BTSYMBOLS(bt_le_stop_advertising_id)(bt_instance_t* ins, uint8_t adv_id)
 {
     stop_advertising_id(adv_id);
 }
 
-bool BTSYMBOLS(bt_le_advertising_is_supported)(bt_instance_t *ins)
+bool BTSYMBOLS(bt_le_advertising_is_supported)(bt_instance_t* ins)
 {
     return advertising_is_supported();
 }

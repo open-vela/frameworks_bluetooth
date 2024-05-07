@@ -26,11 +26,11 @@ typedef enum {
     LEA_SERVER_STATE_ENABLED = 1,
 } lea_server_stack_state_t;
 
-typedef void (*lea_server_stack_state_callback)(void *cookie,
-                                                lea_server_stack_state_t enabled);
+typedef void (*lea_server_stack_state_callback)(void* cookie,
+    lea_server_stack_state_t enabled);
 
-typedef void (*lea_server_connection_state_callback)(void *cookie,
-                                                     profile_connection_state_t state, bt_address_t *bd_addr);
+typedef void (*lea_server_connection_state_callback)(void* cookie,
+    profile_connection_state_t state, bt_address_t* bd_addr);
 
 typedef struct {
     size_t size;
@@ -38,21 +38,21 @@ typedef struct {
     lea_server_connection_state_callback server_connection_state_cb;
 } lea_server_callbacks_t;
 
-void *bt_lea_server_register_callbacks(bt_instance_t *ins,
-                                       const lea_server_callbacks_t *callbacks);
+void* bt_lea_server_register_callbacks(bt_instance_t* ins,
+    const lea_server_callbacks_t* callbacks);
 
-bool bt_lea_server_unregister_callbacks(bt_instance_t *ins, void *cookie);
+bool bt_lea_server_unregister_callbacks(bt_instance_t* ins, void* cookie);
 
-bt_status_t bt_lea_server_start_announce(bt_instance_t *ins, uint8_t adv_id,
-                                         uint8_t announce_type, uint8_t *adv_data, uint16_t adv_size,
-                                         uint8_t *md_data, uint16_t md_size);
+bt_status_t bt_lea_server_start_announce(bt_instance_t* ins, uint8_t adv_id,
+    uint8_t announce_type, uint8_t* adv_data, uint16_t adv_size,
+    uint8_t* md_data, uint16_t md_size);
 
-bt_status_t bt_lea_server_stop_announce(bt_instance_t *ins, uint8_t adv_id);
+bt_status_t bt_lea_server_stop_announce(bt_instance_t* ins, uint8_t adv_id);
 
-bt_status_t bt_lea_server_disconnect(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_server_disconnect(bt_instance_t* ins, bt_address_t* addr);
 
-profile_connection_state_t bt_lea_server_get_connection_state(bt_instance_t *ins, bt_address_t *addr);
+profile_connection_state_t bt_lea_server_get_connection_state(bt_instance_t* ins, bt_address_t* addr);
 
-bt_status_t bt_lea_server_disconnect_audio(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_server_disconnect_audio(bt_instance_t* ins, bt_address_t* addr);
 
 #endif

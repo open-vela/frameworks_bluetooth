@@ -28,14 +28,14 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    void *usr_data;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    void* usr_data;
 } IBtHfpHf;
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
+    AIBinder_Class* clazz;
+    AIBinder* binder;
 } BpBtHfpHf;
 
 typedef enum {
@@ -64,8 +64,8 @@ typedef enum {
 
 #define HFP_HF_BINDER_INSTANCE "Vela.Bluetooth.Hfp.HF"
 
-binder_status_t BtHfpHf_addService(IBtHfpHf *HfpHf, const char *instance);
-AIBinder *BtHfpHf_getService(BpBtHfpHf **bpHfpHf, const char *instance);
+binder_status_t BtHfpHf_addService(IBtHfpHf* HfpHf, const char* instance);
+AIBinder* BtHfpHf_getService(BpBtHfpHf** bpHfpHf, const char* instance);
 
 #ifdef __cplusplus
 }

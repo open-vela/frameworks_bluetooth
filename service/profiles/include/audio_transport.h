@@ -54,27 +54,27 @@ typedef enum {
 
 typedef struct _audio_transport audio_transport_t;
 typedef void (*transport_event_cb_t)(uint8_t ch_id, audio_transport_event_t event);
-typedef void (*transport_alloc_cb_t)(uint8_t ch_id, uint8_t **buffer, size_t *len);
-typedef void (*transport_read_cb_t)(uint8_t ch_id, uint8_t *buffer, ssize_t len);
-typedef void (*transport_write_cb_t)(uint8_t ch_id, uint8_t *buffer);
+typedef void (*transport_alloc_cb_t)(uint8_t ch_id, uint8_t** buffer, size_t* len);
+typedef void (*transport_read_cb_t)(uint8_t ch_id, uint8_t* buffer, ssize_t len);
+typedef void (*transport_write_cb_t)(uint8_t ch_id, uint8_t* buffer);
 
 #define AUDIO_TRANS_CH_NUM 4
 #define AUDIO_TRANS_CH_ID_ALL 5 /* used to address all the ch id at once */
 
-const char *audio_transport_dump_event(uint8_t event);
-audio_transport_t *audio_transport_init(uv_loop_t *loop);
-bool audio_transport_open(audio_transport_t *transport, uint8_t ch_id,
-                          const char *path, transport_event_cb_t cb);
-void audio_transport_close(audio_transport_t *transport, uint8_t ch_id);
-int audio_transport_write(audio_transport_t *transport, uint8_t ch_id,
-                          const uint8_t *data, uint16_t len,
-                          transport_write_cb_t cb);
-int audio_transport_read_start(audio_transport_t *transport,
-                               uint8_t ch_id,
-                               transport_alloc_cb_t alloc_cb,
-                               transport_read_cb_t read_cb);
-int audio_transport_read_stop(audio_transport_t *transport, uint8_t ch_id);
-transport_conn_state_t audio_transport_get_state(audio_transport_t *transport,
-                                                 uint8_t ch_id);
+const char* audio_transport_dump_event(uint8_t event);
+audio_transport_t* audio_transport_init(uv_loop_t* loop);
+bool audio_transport_open(audio_transport_t* transport, uint8_t ch_id,
+    const char* path, transport_event_cb_t cb);
+void audio_transport_close(audio_transport_t* transport, uint8_t ch_id);
+int audio_transport_write(audio_transport_t* transport, uint8_t ch_id,
+    const uint8_t* data, uint16_t len,
+    transport_write_cb_t cb);
+int audio_transport_read_start(audio_transport_t* transport,
+    uint8_t ch_id,
+    transport_alloc_cb_t alloc_cb,
+    transport_read_cb_t read_cb);
+int audio_transport_read_stop(audio_transport_t* transport, uint8_t ch_id);
+transport_conn_state_t audio_transport_get_state(audio_transport_t* transport,
+    uint8_t ch_id);
 
 #endif

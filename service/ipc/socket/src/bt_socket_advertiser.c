@@ -33,12 +33,13 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include "bluetooth.h"
 #include "bt_internal.h"
+
+#include "advertising.h"
+#include "bluetooth.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
-#include "advertising.h"
 #include "manager_service.h"
 #include "service_loop.h"
 
@@ -55,9 +56,9 @@
  ****************************************************************************/
 #if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__) && defined(CONFIG_BLUETOOTH_BLE_ADV)
 
-static void on_advertising_start_cb(bt_advertiser_t *adv, uint8_t adv_id, uint8_t status)
+static void on_advertising_start_cb(bt_advertiser_t* adv, uint8_t adv_id, uint8_t status)
 {
-    bt_advertiser_remote_t *adver = adv;
+    bt_advertiser_remote_t* adver = adv;
     bt_message_packet_t packet = { 0 };
 
     packet.adv_cb._on_advertising_start.adver = adver->remote;
@@ -69,9 +70,9 @@ static void on_advertising_start_cb(bt_advertiser_t *adv, uint8_t adv_id, uint8_
         free(adver);
 }
 
-static void on_advertising_stopped_cb(bt_advertiser_t *adv, uint8_t adv_id)
+static void on_advertising_stopped_cb(bt_advertiser_t* adv, uint8_t adv_id)
 {
-    bt_advertiser_remote_t *adver = adv;
+    bt_advertiser_remote_t* adver = adv;
     bt_message_packet_t packet = { 0 };
 
     packet.adv_cb._on_advertising_stopped.adver = adver->remote;
@@ -91,22 +92,21 @@ static advertiser_callback_t g_advertiser_socket_cb = {
  * Public Functions
  ****************************************************************************/
 
-void bt_socket_server_advertiser_process(service_poll_t *poll,
-                                         int fd, bt_instance_t *ins, bt_message_packet_t *packet)
+void bt_socket_server_advertiser_process(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
     switch (packet->code) {
     case BT_LE_START_ADVERTISING: {
-        bt_advertiser_remote_t *adver = malloc(sizeof(*adver));
+        bt_advertiser_remote_t* adver = malloc(sizeof(*adver));
         adver->ins = ins;
         adver->remote = packet->adv_pl._bt_le_start_advertising.adver;
-        packet->adv_r.remote =
-            (uint32_t)start_advertising((void *)adver,
-                                        &packet->adv_pl._bt_le_start_advertising.params,
-                                        packet->adv_pl._bt_le_start_advertising.adv_data,
-                                        packet->adv_pl._bt_le_start_advertising.adv_len,
-                                        packet->adv_pl._bt_le_start_advertising.scan_rsp_data,
-                                        packet->adv_pl._bt_le_start_advertising.scan_rsp_len,
-                                        &g_advertiser_socket_cb);
+        packet->adv_r.remote = (uint32_t)start_advertising((void*)adver,
+            &packet->adv_pl._bt_le_start_advertising.params,
+            packet->adv_pl._bt_le_start_advertising.adv_data,
+            packet->adv_pl._bt_le_start_advertising.adv_len,
+            packet->adv_pl._bt_le_start_advertising.scan_rsp_data,
+            packet->adv_pl._bt_le_start_advertising.scan_rsp_len,
+            &g_advertiser_socket_cb);
 
         if (!packet->adv_r.remote)
             free(adver);
@@ -114,7 +114,7 @@ void bt_socket_server_advertiser_process(service_poll_t *poll,
         break;
     }
     case BT_LE_STOP_ADVERTISING: {
-        stop_advertising((bt_advertiser_t *)packet->adv_pl._bt_le_stop_advertising.adver);
+        stop_advertising((bt_advertiser_t*)packet->adv_pl._bt_le_stop_advertising.adver);
         break;
     }
     case BT_LE_STOP_ADVERTISING_ID: {
@@ -131,25 +131,23 @@ void bt_socket_server_advertiser_process(service_poll_t *poll,
 }
 #endif
 
-int bt_socket_client_advertiser_callback(service_poll_t *poll,
-                                         int fd, bt_instance_t *ins, bt_message_packet_t *packet)
+int bt_socket_client_advertiser_callback(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
     switch (packet->code) {
     case BT_LE_ON_ADVERTISER_START: {
-        bt_advertiser_remote_t *adver =
-            (bt_advertiser_remote_t *)packet->adv_cb._on_advertising_start.adver;
+        bt_advertiser_remote_t* adver = (bt_advertiser_remote_t*)packet->adv_cb._on_advertising_start.adver;
 
         adver->callback->on_advertising_start(adver,
-                                              packet->adv_cb._on_advertising_start.adv_id,
-                                              packet->adv_cb._on_advertising_start.status);
+            packet->adv_cb._on_advertising_start.adv_id,
+            packet->adv_cb._on_advertising_start.status);
         break;
     }
     case BT_LE_ON_ADVERTISER_STOPPED: {
-        bt_advertiser_remote_t *adver =
-            (bt_advertiser_remote_t *)packet->adv_cb._on_advertising_stopped.adver;
+        bt_advertiser_remote_t* adver = (bt_advertiser_remote_t*)packet->adv_cb._on_advertising_stopped.adver;
 
         adver->callback->on_advertising_stopped(adver,
-                                                packet->adv_cb._on_advertising_stopped.adv_id);
+            packet->adv_cb._on_advertising_stopped.adv_id);
         free(adver);
         break;
     }

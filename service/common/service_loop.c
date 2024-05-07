@@ -37,23 +37,23 @@ typedef struct {
         service_init_t init;
         service_func_t cleanup;
     };
-    void *msg;
+    void* msg;
 } internel_msg_t;
 
 typedef struct {
     service_func_t func;
-    void *data;
+    void* data;
     uv_sem_t signal;
 } signal_msg_t;
 
-static void set_stop(void *data);
+static void set_stop(void* data);
 
-static void set_ready(void *data)
+static void set_ready(void* data)
 {
-    service_loop_t *loop = data;
-    struct list_node *node;
-    struct list_node *tmp;
-    internel_msg_t *imsg;
+    service_loop_t* loop = data;
+    struct list_node* node;
+    struct list_node* tmp;
+    internel_msg_t* imsg;
     int ret;
 
     loop->is_running = 1;
@@ -61,7 +61,7 @@ static void set_ready(void *data)
 
     list_for_every_safe(&loop->init_queue, node, tmp)
     {
-        imsg = (internel_msg_t *)node;
+        imsg = (internel_msg_t*)node;
         ret = imsg->init(NULL);
         list_delete(node);
         free(imsg);
@@ -78,33 +78,33 @@ static void set_ready(void *data)
     BT_LOGD("set_ready");
 }
 
-static void set_stop(void *data)
+static void set_stop(void* data)
 {
-    service_loop_t *loop = data;
+    service_loop_t* loop = data;
 
     loop->is_running = 0;
-    uv_close((uv_handle_t *)&loop->async, NULL);
+    uv_close((uv_handle_t*)&loop->async, NULL);
     uv_stop(loop->handle);
     BT_LOGD("set_stopped");
 }
 
-static void service_sync_callback(void *data)
+static void service_sync_callback(void* data)
 {
-    signal_msg_t *msg = (signal_msg_t *)data;
+    signal_msg_t* msg = (signal_msg_t*)data;
 
     msg->func(msg->data);
     uv_sem_post(&msg->signal);
 }
 
-static void service_message_callback(uv_async_t *handle)
+static void service_message_callback(uv_async_t* handle)
 {
-    uv_loop_t *uvloop = handle->loop;
-    service_loop_t *loop = uvloop->data;
-    internel_msg_t *imsg;
+    uv_loop_t* uvloop = handle->loop;
+    service_loop_t* loop = uvloop->data;
+    internel_msg_t* imsg;
 
     for (;;) {
         uv_mutex_lock(&loop->msg_lock);
-        imsg = (internel_msg_t *)list_remove_head(&loop->msg_queue);
+        imsg = (internel_msg_t*)list_remove_head(&loop->msg_queue);
         uv_mutex_unlock(&loop->msg_lock);
         if (!imsg)
             return;
@@ -114,9 +114,9 @@ static void service_message_callback(uv_async_t *handle)
     }
 }
 
-static void service_schedule_loop(void *data)
+static void service_schedule_loop(void* data)
 {
-    service_loop_t *loop = data;
+    service_loop_t* loop = data;
 
     int ret = uv_async_init(loop->handle, &loop->async, service_message_callback);
     if (ret != 0) {
@@ -134,9 +134,9 @@ static void service_schedule_loop(void *data)
     BT_LOGD("%s %s quit", loop->name, __func__);
 }
 
-static void service_timer_cb(uv_timer_t *handle)
+static void service_timer_cb(uv_timer_t* handle)
 {
-    service_timer_t *timer = (service_timer_t *)handle;
+    service_timer_t* timer = (service_timer_t*)handle;
 
     if (timer->callback)
         timer->callback(timer, timer->userdata);
@@ -156,9 +156,9 @@ static int uv_events(int events)
     return pevents;
 }
 
-static void service_poll_cb(uv_poll_t *handle, int status, int events)
+static void service_poll_cb(uv_poll_t* handle, int status, int events)
 {
-    service_poll_t *poll = (service_poll_t *)handle;
+    service_poll_t* poll = (service_poll_t*)handle;
     int revents = 0;
 
     if (poll->callback) {
@@ -174,7 +174,7 @@ static void service_poll_cb(uv_poll_t *handle, int status, int events)
     }
 }
 
-static void handle_close_cb(uv_handle_t *handle)
+static void handle_close_cb(uv_handle_t* handle)
 {
     if (handle->data)
         free(handle->data);
@@ -182,8 +182,8 @@ static void handle_close_cb(uv_handle_t *handle)
 
 int service_loop_init(void)
 {
-    uv_loop_t *uvloop;
-    service_loop_t *loop;
+    uv_loop_t* uvloop;
+    service_loop_t* loop;
     int ret;
 
     uvloop = get_service_uv_loop();
@@ -216,10 +216,10 @@ fail:
     return ret;
 }
 
-int service_loop_run(bool start_thread, char *name)
+int service_loop_run(bool start_thread, char* name)
 {
-    uv_loop_t *handle = get_service_uv_loop();
-    service_loop_t *loop = handle->data;
+    uv_loop_t* handle = get_service_uv_loop();
+    service_loop_t* loop = handle->data;
 
     if (start_thread) {
         int ret = uv_sem_init(&loop->ready, 0);
@@ -257,10 +257,10 @@ int service_loop_run(bool start_thread, char *name)
 
 void service_loop_exit(void)
 {
-    uv_loop_t *handle = get_service_uv_loop();
-    service_loop_t *loop = handle->data;
-    struct list_node *node;
-    struct list_node *tmp;
+    uv_loop_t* handle = get_service_uv_loop();
+    service_loop_t* loop = handle->data;
+    struct list_node* node;
+    struct list_node* tmp;
 
     if (loop == NULL) {
         uv_loop_close(handle);
@@ -294,15 +294,15 @@ void service_loop_exit(void)
     free(loop);
 }
 
-service_poll_t *service_loop_poll_fd(int fd, int pevents, service_poll_cb_t cb, void *userdata)
+service_poll_t* service_loop_poll_fd(int fd, int pevents, service_poll_cb_t cb, void* userdata)
 {
-    uv_loop_t *handle = get_service_uv_loop();
-    service_loop_t *loop = handle->data;
+    uv_loop_t* handle = get_service_uv_loop();
+    service_loop_t* loop = handle->data;
 
     assert(fd);
     assert(cb);
 
-    service_poll_t *poll = (service_poll_t *)malloc(sizeof(service_poll_t));
+    service_poll_t* poll = (service_poll_t*)malloc(sizeof(service_poll_t));
     if (!poll)
         return NULL;
 
@@ -325,7 +325,7 @@ error:
     return NULL;
 }
 
-int service_loop_reset_poll(service_poll_t *poll, int pevents)
+int service_loop_reset_poll(service_poll_t* poll, int pevents)
 {
     assert(poll);
 
@@ -334,24 +334,24 @@ int service_loop_reset_poll(service_poll_t *poll, int pevents)
     return uv_poll_start(&poll->handle, uv_events(pevents), service_poll_cb);
 }
 
-void service_loop_remove_poll(service_poll_t *poll)
+void service_loop_remove_poll(service_poll_t* poll)
 {
     if (!poll)
         return;
 
     uv_poll_stop(&poll->handle);
-    uv_close((uv_handle_t *)&poll->handle, handle_close_cb);
+    uv_close((uv_handle_t*)&poll->handle, handle_close_cb);
 }
 
-service_timer_t *service_loop_timer(uint64_t timeout, uint64_t repeat, service_timer_cb_t cb, void *userdata)
+service_timer_t* service_loop_timer(uint64_t timeout, uint64_t repeat, service_timer_cb_t cb, void* userdata)
 {
-    uv_loop_t *handle = get_service_uv_loop();
-    service_loop_t *loop = handle->data;
+    uv_loop_t* handle = get_service_uv_loop();
+    service_loop_t* loop = handle->data;
 
     if (!cb)
         return NULL;
 
-    service_timer_t *timer = malloc(sizeof(service_timer_t));
+    service_timer_t* timer = malloc(sizeof(service_timer_t));
     if (!timer)
         return NULL;
 
@@ -364,31 +364,31 @@ service_timer_t *service_loop_timer(uint64_t timeout, uint64_t repeat, service_t
     return timer;
 }
 
-service_timer_t *service_loop_timer_no_repeating(uint64_t timeout, service_timer_cb_t cb, void *userdata)
+service_timer_t* service_loop_timer_no_repeating(uint64_t timeout, service_timer_cb_t cb, void* userdata)
 {
     return service_loop_timer(timeout, 0, cb, userdata);
 }
 
-void service_loop_cancel_timer(service_timer_t *timer)
+void service_loop_cancel_timer(service_timer_t* timer)
 {
     if (!timer)
         return;
 
     uv_timer_stop(&timer->handle);
-    uv_close((uv_handle_t *)&timer->handle, handle_close_cb);
+    uv_close((uv_handle_t*)&timer->handle, handle_close_cb);
 }
 
-static void service_work_cb(uv_work_t *req)
+static void service_work_cb(uv_work_t* req)
 {
-    service_work_t *work = req->data;
+    service_work_t* work = req->data;
     assert(work);
 
     work->work_cb(work, work->userdata);
 }
 
-static void service_after_work_cb(uv_work_t *req, int status)
+static void service_after_work_cb(uv_work_t* req, int status)
 {
-    service_work_t *work = req->data;
+    service_work_t* work = req->data;
     assert(status == 0);
     assert(work);
 
@@ -397,12 +397,12 @@ static void service_after_work_cb(uv_work_t *req, int status)
     free(work);
 }
 
-service_work_t *service_loop_work(void *user_data, service_work_cb_t work_cb,
-                                  service_after_work_cb_t after_work_cb)
+service_work_t* service_loop_work(void* user_data, service_work_cb_t work_cb,
+    service_after_work_cb_t after_work_cb)
 {
-    uv_loop_t *handle = get_service_uv_loop();
+    uv_loop_t* handle = get_service_uv_loop();
 
-    service_work_t *work = zalloc(sizeof(*work));
+    service_work_t* work = zalloc(sizeof(*work));
     if (work == NULL)
         return work;
 
@@ -421,10 +421,10 @@ service_work_t *service_loop_work(void *user_data, service_work_cb_t work_cb,
 
 void add_init_process(service_init_t func)
 {
-    uv_loop_t *handle = get_service_uv_loop();
-    service_loop_t *loop = handle->data;
+    uv_loop_t* handle = get_service_uv_loop();
+    service_loop_t* loop = handle->data;
 
-    internel_msg_t *msg = (internel_msg_t *)malloc(sizeof(internel_msg_t));
+    internel_msg_t* msg = (internel_msg_t*)malloc(sizeof(internel_msg_t));
 
     msg->init = func;
     uv_mutex_lock(&loop->msg_lock);
@@ -432,12 +432,12 @@ void add_init_process(service_init_t func)
     uv_mutex_unlock(&loop->msg_lock);
 }
 
-void do_in_service_loop(service_func_t func, void *data)
+void do_in_service_loop(service_func_t func, void* data)
 {
-    uv_loop_t *handle = get_service_uv_loop();
-    service_loop_t *loop = handle->data;
+    uv_loop_t* handle = get_service_uv_loop();
+    service_loop_t* loop = handle->data;
 
-    internel_msg_t *msg = (internel_msg_t *)malloc(sizeof(internel_msg_t));
+    internel_msg_t* msg = (internel_msg_t*)malloc(sizeof(internel_msg_t));
     assert(msg);
 
     msg->func = func;
@@ -450,7 +450,7 @@ void do_in_service_loop(service_func_t func, void *data)
     uv_async_send(&loop->async);
 }
 
-void do_in_service_loop_sync(service_func_t func, void *data)
+void do_in_service_loop_sync(service_func_t func, void* data)
 {
     signal_msg_t msg;
 
@@ -462,7 +462,7 @@ void do_in_service_loop_sync(service_func_t func, void *data)
     uv_sem_destroy(&msg.signal);
 }
 
-uv_loop_t *get_service_uv_loop(void)
+uv_loop_t* get_service_uv_loop(void)
 {
     return uv_default_loop();
 }
