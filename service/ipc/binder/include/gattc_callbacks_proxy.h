@@ -28,7 +28,7 @@ extern "C" {
 
 #include <android/binder_manager.h>
 
-const gattc_callbacks_t *BpBtGattClientCallbacks_getStatic(void);
+const gattc_callbacks_t* BpBtGattClientCallbacks_getStatic(void);
 
 #ifdef __cplusplus
 }

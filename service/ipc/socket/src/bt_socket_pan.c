@@ -33,8 +33,9 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include "bluetooth.h"
 #include "bt_internal.h"
+
+#include "bluetooth.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
@@ -59,11 +60,11 @@
 #include "pan_service.h"
 #include "service_manager.h"
 
-static void pan_netif_state_cb(void *cookie, pan_netif_state_t state,
-                               int local_role, const char *ifname)
+static void pan_netif_state_cb(void* cookie, pan_netif_state_t state,
+    int local_role, const char* ifname)
 {
     bt_message_packet_t packet = { 0 };
-    bt_instance_t *ins = cookie;
+    bt_instance_t* ins = cookie;
 
     packet.pan_cb._netif_state_cb.state = state;
     packet.pan_cb._netif_state_cb.local_role = local_role;
@@ -73,12 +74,12 @@ static void pan_netif_state_cb(void *cookie, pan_netif_state_t state,
     bt_socket_server_send(ins, &packet, BT_PAN_NETIF_STATE_CB);
 }
 
-static void pan_connection_state_cb(void *cookie, profile_connection_state_t state,
-                                    bt_address_t *bd_addr, uint8_t local_role,
-                                    uint8_t remote_role)
+static void pan_connection_state_cb(void* cookie, profile_connection_state_t state,
+    bt_address_t* bd_addr, uint8_t local_role,
+    uint8_t remote_role)
 {
     bt_message_packet_t packet = { 0 };
-    bt_instance_t *ins = cookie;
+    bt_instance_t* ins = cookie;
 
     packet.pan_cb._connection_state_cb.state = state;
     memcpy(&packet.pan_cb._connection_state_cb.bd_addr, bd_addr, sizeof(*bd_addr));
@@ -97,13 +98,13 @@ static pan_callbacks_t g_pan_socket_cbs = {
  * Public Functions
  ****************************************************************************/
 
-void bt_socket_server_pan_process(service_poll_t *poll, int fd, bt_instance_t *ins, bt_message_packet_t *packet)
+void bt_socket_server_pan_process(service_poll_t* poll, int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
     switch (packet->code) {
     case BT_PAN_REGISTER_CALLBACKS: {
         if (ins->panu_cookie == NULL) {
-            pan_interface_t *pan = (pan_interface_t *)service_manager_get_profile(PROFILE_PANU);
-            ins->panu_cookie = pan->register_callbacks(ins, (void *)&g_pan_socket_cbs);
+            pan_interface_t* pan = (pan_interface_t*)service_manager_get_profile(PROFILE_PANU);
+            ins->panu_cookie = pan->register_callbacks(ins, (void*)&g_pan_socket_cbs);
             if (ins->panu_cookie) {
                 packet->pan_r.status = BT_STATUS_SUCCESS;
             }
@@ -112,22 +113,20 @@ void bt_socket_server_pan_process(service_poll_t *poll, int fd, bt_instance_t *i
     }
     case BT_PAN_UNREGISTER_CALLBACKS: {
         if (ins->panu_cookie) {
-            pan_interface_t *pan = (pan_interface_t *)service_manager_get_profile(PROFILE_PANU);
-            pan->unregister_callbacks((void **)&ins, ins->panu_cookie);
+            pan_interface_t* pan = (pan_interface_t*)service_manager_get_profile(PROFILE_PANU);
+            pan->unregister_callbacks((void**)&ins, ins->panu_cookie);
             ins->panu_cookie = NULL;
         }
         break;
     }
     case BT_PAN_CONNECT: {
-        packet->pan_r.status =
-            BTSYMBOLS(bt_pan_connect)(ins, &packet->pan_pl._bt_pan_connect.addr,
-                                      packet->pan_pl._bt_pan_connect.dst_role,
-                                      packet->pan_pl._bt_pan_connect.src_role);
+        packet->pan_r.status = BTSYMBOLS(bt_pan_connect)(ins, &packet->pan_pl._bt_pan_connect.addr,
+            packet->pan_pl._bt_pan_connect.dst_role,
+            packet->pan_pl._bt_pan_connect.src_role);
         break;
     }
     case BT_PAN_DISCONNECT: {
-        packet->pan_r.status =
-            BTSYMBOLS(bt_pan_disconnect)(ins, &packet->pan_pl._bt_pan_connect.addr);
+        packet->pan_r.status = BTSYMBOLS(bt_pan_disconnect)(ins, &packet->pan_pl._bt_pan_connect.addr);
         break;
     }
     default:
@@ -136,28 +135,28 @@ void bt_socket_server_pan_process(service_poll_t *poll, int fd, bt_instance_t *i
 }
 #endif
 
-int bt_socket_client_pan_callback(service_poll_t *poll,
-                                  int fd, bt_instance_t *ins, bt_message_packet_t *packet)
+int bt_socket_client_pan_callback(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
     switch (packet->code) {
     case BT_PAN_NETIF_STATE_CB: {
         {
             CALLBACK_FOREACH(CBLIST, pan_callbacks_t,
-                             netif_state_cb,
-                             packet->pan_cb._netif_state_cb.state,
-                             packet->pan_cb._netif_state_cb.local_role,
-                             packet->pan_cb._netif_state_cb.ifname);
+                netif_state_cb,
+                packet->pan_cb._netif_state_cb.state,
+                packet->pan_cb._netif_state_cb.local_role,
+                packet->pan_cb._netif_state_cb.ifname);
             break;
         }
         break;
     }
     case BT_PAN_CONNECTION_STATE_CB: {
         CALLBACK_FOREACH(CBLIST, pan_callbacks_t,
-                         connection_state_cb,
-                         packet->pan_cb._connection_state_cb.state,
-                         &packet->pan_cb._connection_state_cb.bd_addr,
-                         packet->pan_cb._connection_state_cb.local_role,
-                         packet->pan_cb._connection_state_cb.remote_role);
+            connection_state_cb,
+            packet->pan_cb._connection_state_cb.state,
+            &packet->pan_cb._connection_state_cb.bd_addr,
+            packet->pan_cb._connection_state_cb.local_role,
+            packet->pan_cb._connection_state_cb.remote_role);
         break;
     }
     default:

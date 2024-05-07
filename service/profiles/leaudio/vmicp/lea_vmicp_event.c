@@ -19,11 +19,11 @@
 
 #include "lea_vmicp_event.h"
 
-lea_vmicp_msg_t *lea_vmicp_msg_new(lea_vmicp_event_t event, bt_address_t *remote_addr)
+lea_vmicp_msg_t* lea_vmicp_msg_new(lea_vmicp_event_t event, bt_address_t* remote_addr)
 {
-    lea_vmicp_msg_t *msg;
+    lea_vmicp_msg_t* msg;
 
-    msg = (lea_vmicp_msg_t *)malloc(sizeof(lea_vmicp_msg_t));
+    msg = (lea_vmicp_msg_t*)malloc(sizeof(lea_vmicp_msg_t));
     if (!msg)
         return NULL;
 
@@ -34,7 +34,7 @@ lea_vmicp_msg_t *lea_vmicp_msg_new(lea_vmicp_event_t event, bt_address_t *remote
     return msg;
 }
 
-void lea_vmicp_msg_destory(lea_vmicp_msg_t *msg)
+void lea_vmicp_msg_destory(lea_vmicp_msg_t* msg)
 {
     free(msg);
 }

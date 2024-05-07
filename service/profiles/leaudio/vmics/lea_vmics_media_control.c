@@ -22,8 +22,8 @@
 #include <string.h>
 
 #include "lea_vmics_media_control.h"
-#include "media_session.h"
 #include "media_api.h"
+#include "media_session.h"
 #include "utils.h"
 #include "utils/log.h"
 
@@ -58,7 +58,7 @@ uint8_t mediavol_convert2_btvol(uint8_t vol)
 }
 
 // server interface
-void lea_vcs_vol_state_request(void *volume_session, uint8_t volume, uint8_t mute)
+void lea_vcs_vol_state_request(void* volume_session, uint8_t volume, uint8_t mute)
 {
     BT_LOGD("%s, volume:%d, mute:%d", __func__, volume, mute);
     uint8_t vol = btvol_convert2_mediavol(volume);
@@ -80,7 +80,7 @@ void lea_mics_mic_mute_request(uint8_t mute)
     }
 }
 
-uint8_t lea_vcs_get_volume(void *volume_session)
+uint8_t lea_vcs_get_volume(void* volume_session)
 {
     int volume = 0;
     media_session_get_volume(volume_session, &volume);

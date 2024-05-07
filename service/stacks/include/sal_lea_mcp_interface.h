@@ -63,27 +63,27 @@ typedef enum {
     MCP_SEARCH_ONLY_GROUPS, /**< Search only groups, no additional parameter */
 } LEA_MCP_SEARCH_CONTROL_ITEM_TYPE;
 
-bt_status_t bt_sal_lea_mcp_read_media_player_name(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_media_player_icon_object_id(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_media_player_icon_url(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_playback_speed(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_seeking_speed(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_playing_order(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_playing_orders_supported(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_media_control_opcodes_supported(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_track_title(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_track_duration(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_track_position(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_media_state(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_media_control_request(bt_address_t *addr, uint32_t mcs_id,
-                                                 LEA_MCP_MEDIA_CONTROL_OPCODE opcode, int32_t n);
-bt_status_t bt_sal_lea_mcp_search_control_request(bt_address_t *addr, uint32_t mcs_id,
-                                                  uint8_t number, LEA_MCP_SEARCH_CONTROL_ITEM_TYPE type, uint8_t *parameter);
-bt_status_t bt_sal_lea_mcp_read_current_track_object_id(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_next_track_object_id(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_parent_group_object_id(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_current_group_object_id(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_search_results_object_id(bt_address_t *addr, uint32_t mcs_id);
-bt_status_t bt_sal_lea_mcp_read_content_control_id(bt_address_t *addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_media_player_name(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_media_player_icon_object_id(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_media_player_icon_url(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_playback_speed(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_seeking_speed(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_playing_order(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_playing_orders_supported(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_media_control_opcodes_supported(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_track_title(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_track_duration(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_track_position(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_media_state(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_media_control_request(bt_address_t* addr, uint32_t mcs_id,
+    LEA_MCP_MEDIA_CONTROL_OPCODE opcode, int32_t n);
+bt_status_t bt_sal_lea_mcp_search_control_request(bt_address_t* addr, uint32_t mcs_id,
+    uint8_t number, LEA_MCP_SEARCH_CONTROL_ITEM_TYPE type, uint8_t* parameter);
+bt_status_t bt_sal_lea_mcp_read_current_track_object_id(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_next_track_object_id(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_parent_group_object_id(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_current_group_object_id(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_search_results_object_id(bt_address_t* addr, uint32_t mcs_id);
+bt_status_t bt_sal_lea_mcp_read_content_control_id(bt_address_t* addr, uint32_t mcs_id);
 
 #endif /* __SAL_LEA_MCP_INTERFACE_H__ */

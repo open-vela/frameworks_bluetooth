@@ -30,11 +30,11 @@
 
 #include "utils/log.h"
 
-static void BpBtGattClientCallbacks_onConnected(void *handle, bt_address_t *addr)
+static void BpBtGattClientCallbacks_onConnected(void* handle, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gattc_get_remote(handle);
+    AIBinder* binder = if_gattc_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -51,11 +51,11 @@ static void BpBtGattClientCallbacks_onConnected(void *handle, bt_address_t *addr
     }
 }
 
-static void BpBtGattClientCallbacks_onDisconnected(void *handle, bt_address_t *addr)
+static void BpBtGattClientCallbacks_onDisconnected(void* handle, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gattc_get_remote(handle);
+    AIBinder* binder = if_gattc_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -72,11 +72,11 @@ static void BpBtGattClientCallbacks_onDisconnected(void *handle, bt_address_t *a
     }
 }
 
-static void BpBtGattClientCallbacks_onDiscovered(void *handle, gatt_status_t status, bt_uuid_t *uuid, uint16_t start_handle, uint16_t end_handle)
+static void BpBtGattClientCallbacks_onDiscovered(void* handle, gatt_status_t status, bt_uuid_t* uuid, uint16_t start_handle, uint16_t end_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gattc_get_remote(handle);
+    AIBinder* binder = if_gattc_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -105,11 +105,11 @@ static void BpBtGattClientCallbacks_onDiscovered(void *handle, gatt_status_t sta
     }
 }
 
-static void BpBtGattClientCallbacks_onMtuExchange(void *handle, gatt_status_t status, uint32_t mtu)
+static void BpBtGattClientCallbacks_onMtuExchange(void* handle, gatt_status_t status, uint32_t mtu)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gattc_get_remote(handle);
+    AIBinder* binder = if_gattc_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -130,11 +130,11 @@ static void BpBtGattClientCallbacks_onMtuExchange(void *handle, gatt_status_t st
     }
 }
 
-static void BpBtGattClientCallbacks_onRead(void *handle, gatt_status_t status, uint16_t attr_handle, uint8_t *value, uint16_t length)
+static void BpBtGattClientCallbacks_onRead(void* handle, gatt_status_t status, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gattc_get_remote(handle);
+    AIBinder* binder = if_gattc_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -152,7 +152,7 @@ static void BpBtGattClientCallbacks_onRead(void *handle, gatt_status_t status, u
     if (stat != STATUS_OK)
         return;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)value, length);
     if (stat != STATUS_OK)
         return;
 
@@ -163,11 +163,11 @@ static void BpBtGattClientCallbacks_onRead(void *handle, gatt_status_t status, u
     }
 }
 
-static void BpBtGattClientCallbacks_onWritten(void *handle, gatt_status_t status, uint16_t attr_handle)
+static void BpBtGattClientCallbacks_onWritten(void* handle, gatt_status_t status, uint16_t attr_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gattc_get_remote(handle);
+    AIBinder* binder = if_gattc_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -188,11 +188,11 @@ static void BpBtGattClientCallbacks_onWritten(void *handle, gatt_status_t status
     }
 }
 
-static void BpBtGattClientCallbacks_onNotified(void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+static void BpBtGattClientCallbacks_onNotified(void* handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gattc_get_remote(handle);
+    AIBinder* binder = if_gattc_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -206,7 +206,7 @@ static void BpBtGattClientCallbacks_onNotified(void *handle, uint16_t attr_handl
     if (stat != STATUS_OK)
         return;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)value, length);
     if (stat != STATUS_OK)
         return;
 
@@ -228,7 +228,7 @@ static const gattc_callbacks_t static_gattc_cbks = {
     BpBtGattClientCallbacks_onMtuExchange,
 };
 
-const gattc_callbacks_t *BpBtGattClientCallbacks_getStatic(void)
+const gattc_callbacks_t* BpBtGattClientCallbacks_getStatic(void)
 {
     return &static_gattc_cbks;
 }

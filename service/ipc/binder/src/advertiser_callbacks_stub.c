@@ -30,21 +30,21 @@
 
 #define BT_ADVERTISER_CALLBACK_DESC "BluetoothADvertiserCallback"
 
-static const AIBinder_Class *kIBtAdvertiserCallbacks_Class = NULL;
+static const AIBinder_Class* kIBtAdvertiserCallbacks_Class = NULL;
 
-static void *IBtAdvertiserCallbacks_Class_onCreate(void *arg)
+static void* IBtAdvertiserCallbacks_Class_onCreate(void* arg)
 {
     return arg;
 }
 
-static void IBtAdvertiserCallbacks_Class_onDestroy(void *userData)
+static void IBtAdvertiserCallbacks_Class_onDestroy(void* userData)
 {
 }
 
-static binder_status_t IBtAdvertiserCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
+static binder_status_t IBtAdvertiserCallbacks_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
-    IBtAdvertiserCallbacks *cbks = AIBinder_getUserData(binder);
+    IBtAdvertiserCallbacks* cbks = AIBinder_getUserData(binder);
 
     switch (code) {
     case ICBKS_ON_ADVERTISING_START: {
@@ -79,16 +79,16 @@ static binder_status_t IBtAdvertiserCallbacks_Class_onTransact(AIBinder *binder,
     return stat;
 }
 
-AIBinder *BtAdvertiserCallbacks_getBinder(IBtAdvertiserCallbacks *cbks)
+AIBinder* BtAdvertiserCallbacks_getBinder(IBtAdvertiserCallbacks* cbks)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (cbks->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(cbks->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(cbks->clazz, (void *)cbks);
+        binder = AIBinder_new(cbks->clazz, (void*)cbks);
         if (cbks->WeakBinder != NULL) {
             AIBinder_Weak_delete(cbks->WeakBinder);
         }
@@ -99,25 +99,24 @@ AIBinder *BtAdvertiserCallbacks_getBinder(IBtAdvertiserCallbacks *cbks)
     return binder;
 }
 
-binder_status_t BtAdvertiserCallbacks_associateClass(AIBinder *binder)
+binder_status_t BtAdvertiserCallbacks_associateClass(AIBinder* binder)
 {
     if (!kIBtAdvertiserCallbacks_Class) {
-        kIBtAdvertiserCallbacks_Class =
-            AIBinder_Class_define(BT_ADVERTISER_CALLBACK_DESC, IBtAdvertiserCallbacks_Class_onCreate,
-                                  IBtAdvertiserCallbacks_Class_onDestroy, IBtAdvertiserCallbacks_Class_onTransact);
+        kIBtAdvertiserCallbacks_Class = AIBinder_Class_define(BT_ADVERTISER_CALLBACK_DESC, IBtAdvertiserCallbacks_Class_onCreate,
+            IBtAdvertiserCallbacks_Class_onDestroy, IBtAdvertiserCallbacks_Class_onTransact);
     }
 
     return AIBinder_associateClass(binder, kIBtAdvertiserCallbacks_Class);
 }
 
-IBtAdvertiserCallbacks *BtAdvertiserCallbacks_new(const advertiser_callback_t *callbacks)
+IBtAdvertiserCallbacks* BtAdvertiserCallbacks_new(const advertiser_callback_t* callbacks)
 {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
-    IBtAdvertiserCallbacks *cbks = malloc(sizeof(IBtAdvertiserCallbacks));
+    AIBinder_Class* clazz;
+    AIBinder* binder;
+    IBtAdvertiserCallbacks* cbks = malloc(sizeof(IBtAdvertiserCallbacks));
 
     clazz = AIBinder_Class_define(BT_ADVERTISER_CALLBACK_DESC, IBtAdvertiserCallbacks_Class_onCreate,
-                                  IBtAdvertiserCallbacks_Class_onDestroy, IBtAdvertiserCallbacks_Class_onTransact);
+        IBtAdvertiserCallbacks_Class_onDestroy, IBtAdvertiserCallbacks_Class_onTransact);
 
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
@@ -129,7 +128,7 @@ IBtAdvertiserCallbacks *BtAdvertiserCallbacks_new(const advertiser_callback_t *c
     return cbks;
 }
 
-void BtAdvertiserCallbacks_delete(IBtAdvertiserCallbacks *cbks)
+void BtAdvertiserCallbacks_delete(IBtAdvertiserCallbacks* cbks)
 {
     assert(cbks);
 

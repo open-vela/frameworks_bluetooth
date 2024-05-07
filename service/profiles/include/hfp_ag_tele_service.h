@@ -20,16 +20,16 @@
 
 void tele_service_init(void);
 void tele_service_cleanup(void);
-bt_status_t tele_service_dial_number(char *number);
+bt_status_t tele_service_dial_number(char* number);
 bt_status_t tele_service_answer_call(void);
 bt_status_t tele_service_reject_call(void);
 bt_status_t tele_service_hangup_call(void);
 bt_status_t tele_service_call_control(uint8_t chld);
-void tele_service_get_phone_state(uint8_t *num_active, uint8_t *num_held,
-                                  uint8_t *call_state);
-void tele_service_query_current_call(bt_address_t *addr);
-char *tele_service_get_operator(void);
-bt_status_t tele_service_get_network_info(hfp_network_state_t *network,
-                                          hfp_roaming_state_t *roam,
-                                          uint8_t *signal);
+void tele_service_get_phone_state(uint8_t* num_active, uint8_t* num_held,
+    uint8_t* call_state);
+void tele_service_query_current_call(bt_address_t* addr);
+char* tele_service_get_operator(void);
+bt_status_t tele_service_get_network_info(hfp_network_state_t* network,
+    hfp_roaming_state_t* roam,
+    uint8_t* signal);
 #endif /* __BT_TELE_SERVICE_H__ */

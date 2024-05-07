@@ -23,21 +23,21 @@
 #include "bt_lea_server.h"
 #include "bt_tools.h"
 
-static int start_announce_cmd(void *handle, int argc, char *argv[]);
-static int stop_announce_cmd(void *handle, int argc, char *argv[]);
-static int disconnect_device(void *handle, int argc, char *argv[]);
-static int get_connection_state(void *handle, int argc, char *argv[]);
-static int disconnect_audio(void *handle, int argc, char *argv[]);
+static int start_announce_cmd(void* handle, int argc, char* argv[]);
+static int stop_announce_cmd(void* handle, int argc, char* argv[]);
+static int disconnect_device(void* handle, int argc, char* argv[]);
+static int get_connection_state(void* handle, int argc, char* argv[]);
+static int disconnect_audio(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_lea_server_tables[] = {
-    {"startance",        start_announce_cmd,   0, "\"start lea announce, params: <adv_id> <announce_type>\""},
-    { "stopance",        stop_announce_cmd,    0, "\"stop lea announce, params: <adv_id>\""                 },
-    { "disconnect",      disconnect_device,    0, "\"disconnect lea connection, params: <address>\""        },
-    { "constate",        get_connection_state, 0, "\"get lea connection state, params: <address>\""         },
-    { "disconnectaudio", disconnect_audio,     0, "\"disconnect lea audio, params: <address>\""             },
+    { "startance", start_announce_cmd, 0, "\"start lea announce, params: <adv_id> <announce_type>\"" },
+    { "stopance", stop_announce_cmd, 0, "\"stop lea announce, params: <adv_id>\"" },
+    { "disconnect", disconnect_device, 0, "\"disconnect lea connection, params: <address>\"" },
+    { "constate", get_connection_state, 0, "\"get lea connection state, params: <address>\"" },
+    { "disconnectaudio", disconnect_audio, 0, "\"disconnect lea audio, params: <address>\"" },
 };
 
-static void *lea_server_callbacks = NULL;
+static void* lea_server_callbacks = NULL;
 
 static void usage(void)
 {
@@ -49,14 +49,14 @@ static void usage(void)
     }
 }
 
-static int start_announce_cmd(void *handle, int argc, char *argv[])
+static int start_announce_cmd(void* handle, int argc, char* argv[])
 {
     uint16_t adv_size;
     uint16_t md_size;
     uint8_t adv_id;
     uint8_t announce_type;
     uint8_t adv_data[] = { 0x02, 0x01, 0x06, 0x09, 0x09, 0x42, 0x52, 0x54, 0x2D,
-                           0x49, 0x44, 0x4D, 0x30, 0x03, 0x02, 0x00, 0xFF };
+        0x49, 0x44, 0x4D, 0x30, 0x03, 0x02, 0x00, 0xFF };
     uint8_t md_data[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
 
     if (argc < 2)
@@ -73,7 +73,7 @@ static int start_announce_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int stop_announce_cmd(void *handle, int argc, char *argv[])
+static int stop_announce_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -84,7 +84,7 @@ static int stop_announce_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_device(void *handle, int argc, char *argv[])
+static int disconnect_device(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     if (argc < 1)
@@ -99,7 +99,7 @@ static int disconnect_device(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_audio(void *handle, int argc, char *argv[])
+static int disconnect_audio(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     if (argc < 1)
@@ -114,7 +114,7 @@ static int disconnect_audio(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int get_connection_state(void *handle, int argc, char *argv[])
+static int get_connection_state(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     profile_connection_state_t state;
@@ -132,14 +132,14 @@ static int get_connection_state(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void server_stack_state_callback(void *cookie,
-                                        lea_server_stack_state_t enabled)
+static void server_stack_state_callback(void* cookie,
+    lea_server_stack_state_t enabled)
 {
     PRINT("server_stack_state_callback enable:%d", enabled);
 }
 
-static void server_connection_state_callback(void *cookie,
-                                             profile_connection_state_t state, bt_address_t *bd_addr)
+static void server_connection_state_callback(void* cookie,
+    profile_connection_state_t state, bt_address_t* bd_addr)
 {
     PRINT_ADDR("lea_connection_state_callback, addr:%s, state:%d", bd_addr, state);
 }
@@ -150,7 +150,7 @@ static const lea_server_callbacks_t lea_server_cbs = {
     server_connection_state_callback,
 };
 
-int leas_command_init(void *handle)
+int leas_command_init(void* handle)
 {
     bt_status_t ret;
 
@@ -164,7 +164,7 @@ int leas_command_init(void *handle)
     return 0;
 }
 
-void leas_command_uninit(void *handle)
+void leas_command_uninit(void* handle)
 {
     bt_status_t ret;
 
@@ -175,7 +175,7 @@ void leas_command_uninit(void *handle)
     }
 }
 
-int leas_command_exec(void *handle, int argc, char *argv[])
+int leas_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

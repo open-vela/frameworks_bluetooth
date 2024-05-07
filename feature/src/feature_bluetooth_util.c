@@ -18,36 +18,36 @@
 #include "feature_bluetooth.h"
 #include "feature_log.h"
 
-void feature_bluetooth_deal_callback(int status, void *data)
+void feature_bluetooth_deal_callback(int status, void* data)
 {
-    callback_info_t *info = (callback_info_t *)data;
+    callback_info_t* info = (callback_info_t*)data;
     FEATURE_LOG_INFO("callback type:%d, feature:%p, callback id: %d", info->callback_id, info->feature, info->feature_callback_id);
     if (!FeatureInvokeCallback(info->feature,
-                               info->feature_callback_id, info->data)) {
+            info->feature_callback_id, info->data)) {
         FEATURE_LOG_ERROR("callback type:%d, feature:%p, callback id: %d, invoke discoveryresult callback failed!",
-                          info->callback_id, info->feature, info->feature_callback_id);
+            info->callback_id, info->feature, info->feature_callback_id);
     }
     free(data);
 }
 
-char *StringToFtString(const char *str)
+char* StringToFtString(const char* str)
 {
     int len = strlen(str);
-    char *ftStr = (char *)FeatureMalloc(len + 1, FT_CHAR);
+    char* ftStr = (char*)FeatureMalloc(len + 1, FT_CHAR);
     strcpy(ftStr, str);
     return ftStr;
 }
 
 void feature_bluetooth_init_bt_ins()
 {
-    bt_instance_t *bluetooth_ins = bluetooth_get_instance();
+    bt_instance_t* bluetooth_ins = bluetooth_get_instance();
     if (bluetooth_ins != NULL)
         feature_bluetooth_callback_init(bluetooth_ins);
 }
 
 void feature_bluetooth_uninit_bt_ins()
 {
-    bt_instance_t *bluetooth_ins;
+    bt_instance_t* bluetooth_ins;
 
     bluetooth_ins = bluetooth_find_instance(getpid());
     if (bluetooth_ins != NULL) {
@@ -58,7 +58,7 @@ void feature_bluetooth_uninit_bt_ins()
 
 void feature_bluetooth_set_bt_ins(FeatureProtoHandle protoHandle)
 {
-    bt_instance_t *bluetooth_ins = bluetooth_get_instance();
+    bt_instance_t* bluetooth_ins = bluetooth_get_instance();
     FeatureSetProtoData(protoHandle, bluetooth_ins);
 }
 
@@ -67,7 +67,7 @@ void feature_bluetooth_clean_bt_ins(FeatureProtoHandle protoHandle)
     FeatureSetProtoData(protoHandle, NULL);
 }
 
-bt_instance_t *feature_bluetooth_get_bt_ins(FeatureInstanceHandle feature)
+bt_instance_t* feature_bluetooth_get_bt_ins(FeatureInstanceHandle feature)
 {
     FeatureProtoHandle protoHandle = FeatureGetProtoHandle(feature);
     return FeatureGetProtoData(protoHandle);

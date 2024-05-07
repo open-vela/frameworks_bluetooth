@@ -89,25 +89,25 @@ typedef struct adv_data {
 } adv_data_t;
 
 typedef struct advertiser_data_ advertiser_data_t;
-typedef void (*ad_dump_cb_t)(const char *str);
+typedef void (*ad_dump_cb_t)(const char* str);
 
-bool advertiser_data_dump(uint8_t *data, uint16_t len, ad_dump_cb_t dump);
+bool advertiser_data_dump(uint8_t* data, uint16_t len, ad_dump_cb_t dump);
 
-advertiser_data_t *advertiser_data_new(void);
-void advertiser_data_free(advertiser_data_t *ad);
-uint8_t *advertiser_data_build(advertiser_data_t *ad, uint16_t *len);
-void advertiser_data_set_name(advertiser_data_t *ad, const char *name);
-void advertiser_data_set_flags(advertiser_data_t *ad, uint8_t flags);
-void advertiser_data_set_appearance(advertiser_data_t *ad, uint16_t appearance);
-void advertiser_data_add_data(advertiser_data_t *ad, uint8_t type, uint8_t *data, uint8_t len);
-void advertiser_data_remove_data(advertiser_data_t *ad, uint8_t type, uint8_t *data, uint8_t len);
-void advertiser_data_add_manufacture_data(advertiser_data_t *ad,
-                                          uint16_t manufacture_id,
-                                          uint8_t *data, uint8_t length);
-bool advertiser_data_add_service_uuid(advertiser_data_t *ad, const bt_uuid_t *uuid);
-bool advertiser_data_add_service_data(advertiser_data_t *ad,
-                                      const bt_uuid_t *uuid,
-                                      uint8_t *data, uint8_t len);
+advertiser_data_t* advertiser_data_new(void);
+void advertiser_data_free(advertiser_data_t* ad);
+uint8_t* advertiser_data_build(advertiser_data_t* ad, uint16_t* len);
+void advertiser_data_set_name(advertiser_data_t* ad, const char* name);
+void advertiser_data_set_flags(advertiser_data_t* ad, uint8_t flags);
+void advertiser_data_set_appearance(advertiser_data_t* ad, uint16_t appearance);
+void advertiser_data_add_data(advertiser_data_t* ad, uint8_t type, uint8_t* data, uint8_t len);
+void advertiser_data_remove_data(advertiser_data_t* ad, uint8_t type, uint8_t* data, uint8_t len);
+void advertiser_data_add_manufacture_data(advertiser_data_t* ad,
+    uint16_t manufacture_id,
+    uint8_t* data, uint8_t length);
+bool advertiser_data_add_service_uuid(advertiser_data_t* ad, const bt_uuid_t* uuid);
+bool advertiser_data_add_service_data(advertiser_data_t* ad,
+    const bt_uuid_t* uuid,
+    uint8_t* data, uint8_t len);
 
 #ifdef __cplusplus
 }

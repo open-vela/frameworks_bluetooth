@@ -22,27 +22,27 @@
 #include "l2cap_service.h"
 #include "utils/log.h"
 
-void *BTSYMBOLS(bt_l2cap_register_callbacks)(bt_instance_t *ins, const l2cap_callbacks_t *callbacks)
+void* BTSYMBOLS(bt_l2cap_register_callbacks)(bt_instance_t* ins, const l2cap_callbacks_t* callbacks)
 {
     return l2cap_register_callbacks(NULL, callbacks);
 }
 
-bool BTSYMBOLS(bt_l2cap_unregister_callbacks)(bt_instance_t *ins, void *cookie)
+bool BTSYMBOLS(bt_l2cap_unregister_callbacks)(bt_instance_t* ins, void* cookie)
 {
     return l2cap_unregister_callbacks(NULL, cookie);
 }
 
-bt_status_t BTSYMBOLS(bt_l2cap_listen)(bt_instance_t *ins, l2cap_config_option_t *option)
+bt_status_t BTSYMBOLS(bt_l2cap_listen)(bt_instance_t* ins, l2cap_config_option_t* option)
 {
     return l2cap_listen_channel(option);
 }
 
-bt_status_t BTSYMBOLS(bt_l2cap_connect)(bt_instance_t *ins, bt_address_t *addr, l2cap_config_option_t *option)
+bt_status_t BTSYMBOLS(bt_l2cap_connect)(bt_instance_t* ins, bt_address_t* addr, l2cap_config_option_t* option)
 {
     return l2cap_connect_channel(addr, option);
 }
 
-bt_status_t BTSYMBOLS(bt_l2cap_disconnect)(bt_instance_t *ins, uint16_t cid)
+bt_status_t BTSYMBOLS(bt_l2cap_disconnect)(bt_instance_t* ins, uint16_t cid)
 {
     return l2cap_disconnect_channel(cid);
 }

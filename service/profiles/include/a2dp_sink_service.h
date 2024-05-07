@@ -28,12 +28,12 @@ typedef struct {
      * @brief Register the a2dp_sink event callback
      * @param[in] callbacks  a2dp_sink event callback function.
      */
-    void *(*register_callbacks)(void *remote, const a2dp_sink_callbacks_t *callbacks);
+    void* (*register_callbacks)(void* remote, const a2dp_sink_callbacks_t* callbacks);
 
     /**
      * @brief Unregister the a2dp_sink event callback
      */
-    bool (*unregister_callbacks)(void **remote, void *cookie);
+    bool (*unregister_callbacks)(void** remote, void* cookie);
 
     /**
      * @brief Check a2dp sink connection is connected
@@ -41,7 +41,7 @@ typedef struct {
      * @return true - connected.
      * @return false - not connected.
      */
-    bool (*is_connected)(bt_address_t *addr);
+    bool (*is_connected)(bt_address_t* addr);
 
     /**
      * @brief Check a2dp sink audio stream is started
@@ -49,28 +49,28 @@ typedef struct {
      * @return true - playing.
      * @return false - stopped or suspend.
      */
-    bool (*is_playing)(bt_address_t *addr);
+    bool (*is_playing)(bt_address_t* addr);
 
     /**
      * @brief Get a2dp sink connection state
      * @param addr - address of peer device.
      * @return profile_connection_state_t - connection state.
      */
-    profile_connection_state_t (*get_connection_state)(bt_address_t *addr);
+    profile_connection_state_t (*get_connection_state)(bt_address_t* addr);
 
     /**
      * @brief Connect to the headset
      * @param[in] addr      address of peer device.
      * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
      */
-    bt_status_t (*connect)(bt_address_t *addr);
+    bt_status_t (*connect)(bt_address_t* addr);
 
     /**
      * @brief Dis-connect from headset
      * @param[in] addr      address of peer device.
      * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
      */
-    bt_status_t (*disconnect)(bt_address_t *addr);
+    bt_status_t (*disconnect)(bt_address_t* addr);
 
     /**
      * @brief Sets the connected device as active
@@ -78,7 +78,7 @@ typedef struct {
      * @param[in] addr      address of peer device.
      * @return BT_RESULT_SUCCESS on success; a negated errno value on failure.
      */
-    bt_status_t (*set_active_device)(bt_address_t *addr);
+    bt_status_t (*set_active_device)(bt_address_t* addr);
 
 } a2dp_sink_interface_t;
 

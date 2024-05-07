@@ -82,9 +82,9 @@ typedef struct {
     } codec_param;
 } a2dp_codec_config_t;
 
-a2dp_codec_config_t *a2dp_codec_get_config(void);
-void a2dp_codec_set_config(uint8_t peer_sep, a2dp_codec_config_t *config);
-void a2dp_codec_update_config(uint8_t peer_sep, a2dp_codec_config_t *config, uint16_t mtu);
-bool a2dp_codec_get_offload_config(a2dp_offload_config_t *config);
+a2dp_codec_config_t* a2dp_codec_get_config(void);
+void a2dp_codec_set_config(uint8_t peer_sep, a2dp_codec_config_t* config);
+void a2dp_codec_update_config(uint8_t peer_sep, a2dp_codec_config_t* config, uint16_t mtu);
+bool a2dp_codec_get_offload_config(a2dp_offload_config_t* config);
 
 #endif

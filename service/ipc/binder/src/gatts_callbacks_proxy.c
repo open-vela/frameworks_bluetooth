@@ -30,11 +30,11 @@
 
 #include "utils/log.h"
 
-static void BpBtGattServerCallbacks_onConnected(void *handle, bt_address_t *addr)
+static void BpBtGattServerCallbacks_onConnected(void* handle, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gatts_get_remote(handle);
+    AIBinder* binder = if_gatts_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -51,11 +51,11 @@ static void BpBtGattServerCallbacks_onConnected(void *handle, bt_address_t *addr
     }
 }
 
-static void BpBtGattServerCallbacks_onDisconnected(void *handle, bt_address_t *addr)
+static void BpBtGattServerCallbacks_onDisconnected(void* handle, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gatts_get_remote(handle);
+    AIBinder* binder = if_gatts_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -72,11 +72,11 @@ static void BpBtGattServerCallbacks_onDisconnected(void *handle, bt_address_t *a
     }
 }
 
-static void BpBtGattServerCallbacks_onStarted(void *handle, gatt_status_t status)
+static void BpBtGattServerCallbacks_onStarted(void* handle, gatt_status_t status)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gatts_get_remote(handle);
+    AIBinder* binder = if_gatts_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -93,11 +93,11 @@ static void BpBtGattServerCallbacks_onStarted(void *handle, gatt_status_t status
     }
 }
 
-static void BpBtGattServerCallbacks_onStopped(void *handle, gatt_status_t status)
+static void BpBtGattServerCallbacks_onStopped(void* handle, gatt_status_t status)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gatts_get_remote(handle);
+    AIBinder* binder = if_gatts_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -114,11 +114,11 @@ static void BpBtGattServerCallbacks_onStopped(void *handle, gatt_status_t status
     }
 }
 
-static void BpBtGattServerCallbacks_onMtuChanged(void *handle, bt_address_t *addr, uint32_t mtu)
+static void BpBtGattServerCallbacks_onMtuChanged(void* handle, bt_address_t* addr, uint32_t mtu)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gatts_get_remote(handle);
+    AIBinder* binder = if_gatts_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -139,11 +139,11 @@ static void BpBtGattServerCallbacks_onMtuChanged(void *handle, bt_address_t *add
     }
 }
 
-static void BpBtGattServerCallbacks_onNotifyComplete(void *handle, gatt_status_t status, uint16_t attr_handle)
+static void BpBtGattServerCallbacks_onNotifyComplete(void* handle, gatt_status_t status, uint16_t attr_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gatts_get_remote(handle);
+    AIBinder* binder = if_gatts_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -174,16 +174,16 @@ static const gatts_callbacks_t static_gatts_cbks = {
     BpBtGattServerCallbacks_onMtuChanged,
 };
 
-const gatts_callbacks_t *BpBtGattServerCallbacks_getStatic(void)
+const gatts_callbacks_t* BpBtGattServerCallbacks_getStatic(void)
 {
     return &static_gatts_cbks;
 }
 
-uint16_t BpBtGattServerCallbacks_onRead(void *handle, uint16_t attr_handle, uint32_t req_handle)
+uint16_t BpBtGattServerCallbacks_onRead(void* handle, uint16_t attr_handle, uint32_t req_handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gatts_get_remote(handle);
+    AIBinder* binder = if_gatts_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -205,11 +205,11 @@ uint16_t BpBtGattServerCallbacks_onRead(void *handle, uint16_t attr_handle, uint
     return 0;
 }
 
-uint16_t BpBtGattServerCallbacks_onWrite(void *handle, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
+uint16_t BpBtGattServerCallbacks_onWrite(void* handle, uint16_t attr_handle, const uint8_t* value, uint16_t length, uint16_t offset)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = if_gatts_get_remote(handle);
+    AIBinder* binder = if_gatts_get_remote(handle);
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -219,7 +219,7 @@ uint16_t BpBtGattServerCallbacks_onWrite(void *handle, uint16_t attr_handle, con
     if (stat != STATUS_OK)
         return 0;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)value, length);
     if (stat != STATUS_OK)
         return 0;
 

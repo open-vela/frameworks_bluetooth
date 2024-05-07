@@ -20,17 +20,17 @@
 #include "bt_pan.h"
 #include "bt_tools.h"
 
-static int connect_cmd(void *handle, int argc, char *argv[]);
-static int disconnect_cmd(void *handle, int argc, char *argv[]);
-static int dump_cmd(void *handle, int argc, char *argv[]);
+static int connect_cmd(void* handle, int argc, char* argv[]);
+static int disconnect_cmd(void* handle, int argc, char* argv[]);
+static int dump_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_pan_tables[] = {
-    {"connect",     connect_cmd,    0, "\"connect PAN     param: <address> <dstrole> <srcrole> \""},
-    { "disconnect", disconnect_cmd, 0, "\"disconnect PAN  param: <address>\""                     },
-    { "dump",       dump_cmd,       0, "\"dump PAN current state\""                               },
+    { "connect", connect_cmd, 0, "\"connect PAN     param: <address> <dstrole> <srcrole> \"" },
+    { "disconnect", disconnect_cmd, 0, "\"disconnect PAN  param: <address>\"" },
+    { "dump", dump_cmd, 0, "\"dump PAN current state\"" },
 };
 
-static void *pan_callbacks = NULL;
+static void* pan_callbacks = NULL;
 
 static void usage(void)
 {
@@ -42,24 +42,24 @@ static void usage(void)
     }
 }
 
-static void pan_connection_state_cb(void *cookie, profile_connection_state_t state,
-                                    bt_address_t *addr, uint8_t local_role,
-                                    uint8_t remote_role)
+static void pan_connection_state_cb(void* cookie, profile_connection_state_t state,
+    bt_address_t* addr, uint8_t local_role,
+    uint8_t remote_role)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     bt_addr_ba2str(addr, addr_str);
     PRINT("%s, addr:%s, state:%d, local_role:%d, remote_role:%d", __func__,
-          addr_str, state, local_role, remote_role);
+        addr_str, state, local_role, remote_role);
 }
 
-static void pan_netif_state_cb(void *cookie, pan_netif_state_t state,
-                               int local_role, const char *ifname)
+static void pan_netif_state_cb(void* cookie, pan_netif_state_t state,
+    int local_role, const char* ifname)
 {
     PRINT("%s ifname:%s, state:%d, local_role:%d", __func__, ifname, state, local_role);
 }
 
-static int connect_cmd(void *handle, int argc, char *argv[])
+static int connect_cmd(void* handle, int argc, char* argv[])
 {
     uint32_t src_role, dst_role;
     bt_address_t addr;
@@ -80,7 +80,7 @@ static int connect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_cmd(void *handle, int argc, char *argv[])
+static int disconnect_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
 
@@ -96,7 +96,7 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int dump_cmd(void *handle, int argc, char *argv[])
+static int dump_cmd(void* handle, int argc, char* argv[])
 {
     return CMD_OK;
 }
@@ -107,19 +107,19 @@ static const pan_callbacks_t pan_test_cbs = {
     pan_connection_state_cb,
 };
 
-int pan_command_init(void *handle)
+int pan_command_init(void* handle)
 {
     pan_callbacks = bt_pan_register_callbacks(handle, &pan_test_cbs);
 
     return 0;
 }
 
-void pan_command_uninit(void *handle)
+void pan_command_uninit(void* handle)
 {
     bt_pan_unregister_callbacks(handle, pan_callbacks);
 }
 
-int pan_command_exec(void *handle, int argc, char *argv[])
+int pan_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

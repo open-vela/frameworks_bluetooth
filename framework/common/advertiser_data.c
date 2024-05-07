@@ -19,26 +19,26 @@
 #include <string.h>
 
 #include "bt_addr.h"
-#include "bt_utils.h"
 #include "bt_list.h"
+#include "bt_utils.h"
 
 #include "advertiser_data.h"
 
 typedef struct advertiser_data_ {
-    bt_list_t *data;
-    uint8_t *buffer;
+    bt_list_t* data;
+    uint8_t* buffer;
 } advertiser_data_t;
 
-static void advertiser_data_calc_len(void *data, void *context)
+static void advertiser_data_calc_len(void* data, void* context)
 {
-    adv_data_t *adata = data;
+    adv_data_t* adata = data;
 
-    *(uint16_t *)context += adata->len + 1;
+    *(uint16_t*)context += adata->len + 1;
 }
 
-advertiser_data_t *advertiser_data_new(void)
+advertiser_data_t* advertiser_data_new(void)
 {
-    advertiser_data_t *ad = malloc(sizeof(advertiser_data_t));
+    advertiser_data_t* ad = malloc(sizeof(advertiser_data_t));
     if (!ad)
         return NULL;
 
@@ -48,7 +48,7 @@ advertiser_data_t *advertiser_data_new(void)
     return ad;
 }
 
-void advertiser_data_free(advertiser_data_t *ad)
+void advertiser_data_free(advertiser_data_t* ad)
 {
     if (ad->buffer)
         free(ad->buffer);
@@ -57,11 +57,11 @@ void advertiser_data_free(advertiser_data_t *ad)
     free(ad);
 }
 
-uint8_t *advertiser_data_build(advertiser_data_t *ad, uint16_t *len)
+uint8_t* advertiser_data_build(advertiser_data_t* ad, uint16_t* len)
 {
     uint16_t total_len = 0;
-    bt_list_node_t *node;
-    uint8_t *p;
+    bt_list_node_t* node;
+    uint8_t* p;
 
     if (ad->buffer)
         free(ad->buffer);
@@ -77,7 +77,7 @@ uint8_t *advertiser_data_build(advertiser_data_t *ad, uint16_t *len)
 
     for (node = bt_list_head(ad->data); node != NULL;
          node = bt_list_next(ad->data, node)) {
-        adv_data_t *adata = bt_list_node(node);
+        adv_data_t* adata = bt_list_node(node);
         memcpy(p, adata, adata->len + 1);
         p += adata->len + 1;
     }
@@ -85,10 +85,10 @@ uint8_t *advertiser_data_build(advertiser_data_t *ad, uint16_t *len)
     return ad->buffer;
 }
 
-void advertiser_data_set_name(advertiser_data_t *ad, const char *name)
+void advertiser_data_set_name(advertiser_data_t* ad, const char* name)
 {
     uint8_t name_len = strlen(name);
-    adv_data_t *data = malloc(sizeof(adv_data_t) + name_len);
+    adv_data_t* data = malloc(sizeof(adv_data_t) + name_len);
 
     if (name_len > BT_LE_AD_NAME_LEN) {
         name_len = BT_LE_AD_NAME_LEN;
@@ -102,9 +102,9 @@ void advertiser_data_set_name(advertiser_data_t *ad, const char *name)
     bt_list_add_tail(ad->data, data);
 }
 
-void advertiser_data_set_flags(advertiser_data_t *ad, uint8_t flags)
+void advertiser_data_set_flags(advertiser_data_t* ad, uint8_t flags)
 {
-    adv_data_t *data = malloc(sizeof(adv_data_t) + 1);
+    adv_data_t* data = malloc(sizeof(adv_data_t) + 1);
 
     data->len = 2;
     data->type = BT_AD_FLAGS;
@@ -113,10 +113,10 @@ void advertiser_data_set_flags(advertiser_data_t *ad, uint8_t flags)
     bt_list_add_tail(ad->data, data);
 }
 
-void advertiser_data_set_appearance(advertiser_data_t *ad, uint16_t appearance)
+void advertiser_data_set_appearance(advertiser_data_t* ad, uint16_t appearance)
 {
-    adv_data_t *data = malloc(sizeof(adv_data_t) + 2);
-    uint8_t *p = data->data;
+    adv_data_t* data = malloc(sizeof(adv_data_t) + 2);
+    uint8_t* p = data->data;
 
     data->len = 3;
     data->type = BT_AD_GAP_APPEARANCE;
@@ -125,9 +125,9 @@ void advertiser_data_set_appearance(advertiser_data_t *ad, uint16_t appearance)
     bt_list_add_tail(ad->data, data);
 }
 
-void advertiser_data_add_data(advertiser_data_t *ad, uint8_t type, uint8_t *data, uint8_t len)
+void advertiser_data_add_data(advertiser_data_t* ad, uint8_t type, uint8_t* data, uint8_t len)
 {
-    adv_data_t *adata = malloc(sizeof(adv_data_t) + len);
+    adv_data_t* adata = malloc(sizeof(adv_data_t) + len);
 
     adata->type = type;
     adata->len = len;
@@ -136,16 +136,16 @@ void advertiser_data_add_data(advertiser_data_t *ad, uint8_t type, uint8_t *data
     bt_list_add_tail(ad->data, adata);
 }
 
-void advertiser_data_remove_data(advertiser_data_t *ad, uint8_t type, uint8_t *data, uint8_t len)
+void advertiser_data_remove_data(advertiser_data_t* ad, uint8_t type, uint8_t* data, uint8_t len)
 {
 }
 
-void advertiser_data_add_manufacture_data(advertiser_data_t *ad,
-                                          uint16_t manufacture_id,
-                                          uint8_t *data, uint8_t length)
+void advertiser_data_add_manufacture_data(advertiser_data_t* ad,
+    uint16_t manufacture_id,
+    uint8_t* data, uint8_t length)
 {
-    adv_data_t *mdata = malloc(sizeof(adv_data_t) + 2 + length);
-    uint8_t *p = mdata->data;
+    adv_data_t* mdata = malloc(sizeof(adv_data_t) + 2 + length);
+    uint8_t* p = mdata->data;
 
     mdata->len = length + 2 + 1;
     mdata->type = BT_AD_MANUFACTURER_DATA;
@@ -155,10 +155,10 @@ void advertiser_data_add_manufacture_data(advertiser_data_t *ad,
     bt_list_add_tail(ad->data, mdata);
 }
 
-bool advertiser_data_add_service_uuid(advertiser_data_t *ad, const bt_uuid_t *uuid)
+bool advertiser_data_add_service_uuid(advertiser_data_t* ad, const bt_uuid_t* uuid)
 {
-    adv_data_t *data;
-    uint8_t *p;
+    adv_data_t* data;
+    uint8_t* p;
 
     switch (uuid->type) {
     case BT_UUID16_TYPE:
@@ -189,12 +189,12 @@ bool advertiser_data_add_service_uuid(advertiser_data_t *ad, const bt_uuid_t *uu
     return true;
 }
 
-bool advertiser_data_add_service_data(advertiser_data_t *ad,
-                                      const bt_uuid_t *uuid,
-                                      uint8_t *data, uint8_t len)
+bool advertiser_data_add_service_data(advertiser_data_t* ad,
+    const bt_uuid_t* uuid,
+    uint8_t* data, uint8_t len)
 {
-    adv_data_t *sdata;
-    uint8_t *p;
+    adv_data_t* sdata;
+    uint8_t* p;
 
     switch (uuid->type) {
     case BT_UUID16_TYPE:

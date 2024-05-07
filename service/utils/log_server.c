@@ -54,12 +54,12 @@ struct bt_logger {
     int snoop_pkt_mask;
 
     int monitor_fd;
-    service_poll_t *poll;
+    service_poll_t* poll;
 };
 
 static struct bt_logger g_logger = { 0, 0, BT_LOG_LEVEL_OFF, 0, 0, 0, -1 };
 
-static const char *log_id_str(uint8_t id)
+static const char* log_id_str(uint8_t id)
 {
     switch (id) {
     case LOG_ID_SNOOP:
@@ -75,11 +75,7 @@ static const char *log_id_str(uint8_t id)
 
 static uint8_t bt_log_set_level(uint8_t level, bool changed)
 {
-    if (level != BT_LOG_LEVEL_OFF &&
-        level != BT_LOG_LEVEL_ERROR &&
-        level != BT_LOG_LEVEL_WARNING &&
-        level != BT_LOG_LEVEL_INFO &&
-        level != BT_LOG_LEVEL_DEBUG)
+    if (level != BT_LOG_LEVEL_OFF && level != BT_LOG_LEVEL_ERROR && level != BT_LOG_LEVEL_WARNING && level != BT_LOG_LEVEL_INFO && level != BT_LOG_LEVEL_DEBUG)
         return g_logger.framework_level;
 
     g_logger.framework_level = level;
@@ -113,7 +109,7 @@ static int stack_log_setup(void)
 
 static void bt_log_module_enable(int id, bool changed)
 {
-    const char *property = NULL;
+    const char* property = NULL;
     syslog(LOG_DEBUG, "%s, id %d\n", __func__, id);
     switch (id) {
     case LOG_ID_SNOOP: {
@@ -155,7 +151,7 @@ static void bt_log_module_enable(int id, bool changed)
 
 static void bt_log_module_disable(int id, bool changed)
 {
-    const char *property = NULL;
+    const char* property = NULL;
     syslog(LOG_DEBUG, "%s id %d\n", __func__, id);
     switch (id) {
     case LOG_ID_SNOOP: {
@@ -191,8 +187,8 @@ static void bt_log_module_disable(int id, bool changed)
     syslog(LOG_INFO, "%s disabled\n", log_id_str(id));
 }
 
-static void property_monitor_cb(service_poll_t *poll,
-                                int revent, void *userdata)
+static void property_monitor_cb(service_poll_t* poll,
+    int revent, void* userdata)
 {
     if (revent & POLL_ERROR || revent & POLL_DISCONNECT) {
         service_loop_remove_poll(g_logger.poll);
@@ -205,7 +201,7 @@ static void property_monitor_cb(service_poll_t *poll,
         char key[PROP_NAME_MAX];
         int new;
 
-        property_monitor_read(g_logger.monitor_fd, key, (char *)&changed);
+        property_monitor_read(g_logger.monitor_fd, key, (char*)&changed);
         if (changed & (1 << FRAMEWORK_LOG_LEVEL_CHANGED)) {
             new = property_get_int32(PERSIST_BT_FRAMEWORK_LOG_LEVEL, 0);
             if (new != g_logger.framework_level)
@@ -275,7 +271,7 @@ void bt_log_server_init(void)
         syslog(LOG_ERR, "%s\n", "propert monitor poll error");
 
     syslog(1, "Framework log level: %d, Stack:%d, mask:%08x, Snoop: %d\n", g_logger.framework_level,
-           g_logger.stack_enable, g_logger.stack_mask, g_logger.snoop_enable);
+        g_logger.stack_enable, g_logger.stack_mask, g_logger.snoop_enable);
 #else
 #endif
 }
@@ -302,8 +298,7 @@ void bt_log_server_cleanup(void)
 
 bool bt_log_print_check(uint8_t level)
 {
-    if (g_logger.framework_level < level ||
-        g_logger.framework_level == BT_LOG_LEVEL_OFF)
+    if (g_logger.framework_level < level || g_logger.framework_level == BT_LOG_LEVEL_OFF)
         return false;
 
     return true;

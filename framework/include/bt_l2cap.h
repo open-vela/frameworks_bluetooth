@@ -59,7 +59,7 @@ typedef struct {
     uint16_t psm; /* Dynamic Service PSM */
     uint16_t incoming_mtu; /* Incoming transmit MTU. */
     uint16_t outgoing_mtu; /* outgoing transmit MTU */
-    const char *pty_name; /* pty device name, like "/dev/pts/0" */
+    const char* pty_name; /* pty device name, like "/dev/pts/0" */
 } l2cap_connect_params_t;
 
 /**
@@ -68,7 +68,7 @@ typedef struct {
  * @param cookie - callbacks cookie, the return value of bt_l2cap_register_callbacks.
  * @param param - L2CAP connection params.
  */
-typedef void (*l2cap_connected_callback_t)(void *cookie, l2cap_connect_params_t *param);
+typedef void (*l2cap_connected_callback_t)(void* cookie, l2cap_connect_params_t* param);
 
 /**
  * @brief L2CAP disconnected event callback
@@ -78,7 +78,7 @@ typedef void (*l2cap_connected_callback_t)(void *cookie, l2cap_connect_params_t 
  * @param cid - channel id.
  * @param reason - disconnect reason.
  */
-typedef void (*l2cap_disconnected_callback_t)(void *cookie, bt_address_t *addr, uint16_t cid, uint32_t reason);
+typedef void (*l2cap_disconnected_callback_t)(void* cookie, bt_address_t* addr, uint16_t cid, uint32_t reason);
 
 /**
  * @brief L2CAP event callback structure
@@ -97,7 +97,7 @@ typedef struct {
  * @param callbacks - L2CAP callback functions.
  * @return void* - callbacks cookie, NULL on failure.
  */
-void *BTSYMBOLS(bt_l2cap_register_callbacks)(bt_instance_t *ins, const l2cap_callbacks_t *callbacks);
+void* BTSYMBOLS(bt_l2cap_register_callbacks)(bt_instance_t* ins, const l2cap_callbacks_t* callbacks);
 
 /**
  * @brief Unregister L2CAP callback functions.
@@ -107,7 +107,7 @@ void *BTSYMBOLS(bt_l2cap_register_callbacks)(bt_instance_t *ins, const l2cap_cal
  * @return true - on callback unregister success
  * @return false - on callback cookie not found
  */
-bool BTSYMBOLS(bt_l2cap_unregister_callbacks)(bt_instance_t *ins, void *cookie);
+bool BTSYMBOLS(bt_l2cap_unregister_callbacks)(bt_instance_t* ins, void* cookie);
 
 /**
  * @brief Listen for a L2CAP connection request
@@ -115,7 +115,7 @@ bool BTSYMBOLS(bt_l2cap_unregister_callbacks)(bt_instance_t *ins, void *cookie);
  * @param option - L2CAP config option.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_l2cap_listen)(bt_instance_t *ins, l2cap_config_option_t *option);
+bt_status_t BTSYMBOLS(bt_l2cap_listen)(bt_instance_t* ins, l2cap_config_option_t* option);
 
 /**
  * @brief Request L2CAP connection to remote device
@@ -124,7 +124,7 @@ bt_status_t BTSYMBOLS(bt_l2cap_listen)(bt_instance_t *ins, l2cap_config_option_t
  * @param option - L2CAP config option.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_l2cap_connect)(bt_instance_t *ins, bt_address_t *addr, l2cap_config_option_t *option);
+bt_status_t BTSYMBOLS(bt_l2cap_connect)(bt_instance_t* ins, bt_address_t* addr, l2cap_config_option_t* option);
 
 /**
  * @brief Reqeust to disconnect a L2CAP channel
@@ -132,7 +132,7 @@ bt_status_t BTSYMBOLS(bt_l2cap_connect)(bt_instance_t *ins, bt_address_t *addr, 
  * @param cid - channel id.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_l2cap_disconnect)(bt_instance_t *ins, uint16_t cid);
+bt_status_t BTSYMBOLS(bt_l2cap_disconnect)(bt_instance_t* ins, uint16_t cid);
 
 #ifdef __cplusplus
 }

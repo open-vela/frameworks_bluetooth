@@ -20,31 +20,31 @@
 #include "bt_hid_device.h"
 #include "bt_tools.h"
 
-static int register_cmd(void *handle, int argc, char *argv[]);
-static int unregister_cmd(void *handle, int argc, char *argv[]);
-static int connect_cmd(void *handle, int argc, char *argv[]);
-static int disconnect_cmd(void *handle, int argc, char *argv[]);
-static int send_report_cmd(void *handle, int argc, char *argv[]);
-static int send_keyboard_cmd(void *handle, int argc, char *argv[]);
-static int send_mouse_cmd(void *handle, int argc, char *argv[]);
-static int send_consumer_cmd(void *handle, int argc, char *argv[]);
-static int unplug_cmd(void *handle, int argc, char *argv[]);
-static int dump_cmd(void *handle, int argc, char *argv[]);
+static int register_cmd(void* handle, int argc, char* argv[]);
+static int unregister_cmd(void* handle, int argc, char* argv[]);
+static int connect_cmd(void* handle, int argc, char* argv[]);
+static int disconnect_cmd(void* handle, int argc, char* argv[]);
+static int send_report_cmd(void* handle, int argc, char* argv[]);
+static int send_keyboard_cmd(void* handle, int argc, char* argv[]);
+static int send_mouse_cmd(void* handle, int argc, char* argv[]);
+static int send_consumer_cmd(void* handle, int argc, char* argv[]);
+static int unplug_cmd(void* handle, int argc, char* argv[]);
+static int dump_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_hidd_tables[] = {
-    {"register",       register_cmd,      0, "\"register HID app: <type>(1:KEYBOARD, 2:MOUSE, 3:KBMS_COMBO) <transport>(0:BLE, 1:BREDR)\""},
-    { "unregister",    unregister_cmd,    0, "\"unregister HID app \""                                                                    },
-    { "connect",       connect_cmd,       0, "\"connect HID host param: <address> \""                                                     },
-    { "disconnect",    disconnect_cmd,    0, "\"disconnect HID host param: <address>\""                                                   },
-    { "send_report",   send_report_cmd,   0, "\"send report param: <address> <report id> <report data> \""                                },
-    { "send_keyboard", send_keyboard_cmd, 0, "\"send keyboard report: <address> <modifier key> <normal key>\""                            },
-    { "send_mouse",    send_mouse_cmd,    0, "\"send mouse report: <address> <X axises>(-127~128) <Y axises>(-127~128)\""                 },
-    { "send_consumer", send_consumer_cmd, 0, "\"send consumer report: <address> <consumer key>\""                                         },
-    { "unplug",        unplug_cmd,        0, "\"virtual unplug param: <address> \""                                                       },
-    { "dump",          dump_cmd,          0, "\"dump HID device current state\""                                                          },
+    { "register", register_cmd, 0, "\"register HID app: <type>(1:KEYBOARD, 2:MOUSE, 3:KBMS_COMBO) <transport>(0:BLE, 1:BREDR)\"" },
+    { "unregister", unregister_cmd, 0, "\"unregister HID app \"" },
+    { "connect", connect_cmd, 0, "\"connect HID host param: <address> \"" },
+    { "disconnect", disconnect_cmd, 0, "\"disconnect HID host param: <address>\"" },
+    { "send_report", send_report_cmd, 0, "\"send report param: <address> <report id> <report data> \"" },
+    { "send_keyboard", send_keyboard_cmd, 0, "\"send keyboard report: <address> <modifier key> <normal key>\"" },
+    { "send_mouse", send_mouse_cmd, 0, "\"send mouse report: <address> <X axises>(-127~128) <Y axises>(-127~128)\"" },
+    { "send_consumer", send_consumer_cmd, 0, "\"send consumer report: <address> <consumer key>\"" },
+    { "unplug", unplug_cmd, 0, "\"virtual unplug param: <address> \"" },
+    { "dump", dump_cmd, 0, "\"dump HID device current state\"" },
 };
 
-static void *hidd_callbacks = NULL;
+static void* hidd_callbacks = NULL;
 
 const static uint8_t s_hid_KB_report_desc[] = {
     0x05, 0x01, /* Usage Page (Generic Desktop), */
@@ -185,13 +185,13 @@ static void usage(void)
     }
 }
 
-static void hidd_app_state_cb(void *cookie, hid_app_state_t state)
+static void hidd_app_state_cb(void* cookie, hid_app_state_t state)
 {
     PRINT("%s, state: %s", __func__, (state == HID_APP_STATE_REGISTERED) ? "registered" : "not registed");
 }
 
-static void hidd_connection_state_cb(void *cookie, bt_address_t *addr, bool le_hid,
-                                     profile_connection_state_t state)
+static void hidd_connection_state_cb(void* cookie, bt_address_t* addr, bool le_hid,
+    profile_connection_state_t state)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
@@ -199,8 +199,8 @@ static void hidd_connection_state_cb(void *cookie, bt_address_t *addr, bool le_h
     PRINT("%s, addr:%s, transport: %s, state:%d", __func__, addr_str, le_hid ? "le" : "br", state);
 }
 
-static void hidd_get_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt_type,
-                               uint8_t rpt_id, uint16_t buffer_size)
+static void hidd_get_report_cb(void* cookie, bt_address_t* addr, uint8_t rpt_type,
+    uint8_t rpt_id, uint16_t buffer_size)
 {
     uint8_t rpt_data[] = { 0x00, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
@@ -214,8 +214,8 @@ static void hidd_get_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt_typ
     bt_hid_device_response_report(cookie, addr, rpt_type, rpt_data, sizeof(rpt_data));
 }
 
-static void hidd_set_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt_type,
-                               uint16_t rpt_size, uint8_t *rpt_data)
+static void hidd_set_report_cb(void* cookie, bt_address_t* addr, uint8_t rpt_type,
+    uint16_t rpt_size, uint8_t* rpt_data)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
@@ -225,8 +225,8 @@ static void hidd_set_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt_typ
     bt_hid_device_report_error(cookie, addr, HID_STATUS_OK);
 }
 
-static void hidd_receive_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt_type,
-                                   uint16_t rpt_size, uint8_t *rpt_data)
+static void hidd_receive_report_cb(void* cookie, bt_address_t* addr, uint8_t rpt_type,
+    uint16_t rpt_size, uint8_t* rpt_data)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
@@ -235,7 +235,7 @@ static void hidd_receive_report_cb(void *cookie, bt_address_t *addr, uint8_t rpt
     lib_dumpbuffer("report data:", rpt_data, rpt_size);
 }
 
-static void hidd_virtual_unplug_cb(void *cookie, bt_address_t *addr)
+static void hidd_virtual_unplug_cb(void* cookie, bt_address_t* addr)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
@@ -249,10 +249,10 @@ enum {
     APP_HID_DEVICE_KBMS_COMBO = 3
 };
 
-static int register_cmd(void *handle, int argc, char *argv[])
+static int register_cmd(void* handle, int argc, char* argv[])
 {
     hid_device_sdp_settings_t hidd_setting;
-    const uint8_t *desc_list;
+    const uint8_t* desc_list;
     uint16_t desc_len;
     int app_type;
     int transport;
@@ -317,7 +317,7 @@ static int register_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int unregister_cmd(void *handle, int argc, char *argv[])
+static int unregister_cmd(void* handle, int argc, char* argv[])
 {
     bt_status_t ret = bt_hid_device_unregister_app(handle);
     if (ret != BT_STATUS_SUCCESS) {
@@ -332,7 +332,7 @@ static int unregister_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int connect_cmd(void *handle, int argc, char *argv[])
+static int connect_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
 
@@ -350,7 +350,7 @@ static int connect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_cmd(void *handle, int argc, char *argv[])
+static int disconnect_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
 
@@ -368,7 +368,7 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void hex2str(char *src_str, uint8_t *dest_buf, uint8_t hex_number)
+static void hex2str(char* src_str, uint8_t* dest_buf, uint8_t hex_number)
 {
     uint8_t i;
     uint8_t lb, hb;
@@ -397,13 +397,13 @@ static void hex2str(char *src_str, uint8_t *dest_buf, uint8_t hex_number)
     }
 }
 
-static int send_report_cmd(void *handle, int argc, char *argv[])
+static int send_report_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     uint8_t report_id;
     uint8_t report_data[8];
     int report_length;
-    char *buffer;
+    char* buffer;
     int size;
 
     if (argc < 3)
@@ -415,7 +415,7 @@ static int send_report_cmd(void *handle, int argc, char *argv[])
 
     report_id = atoi(argv[1]);
     size = strlen(argv[2]) + 1;
-    buffer = (char *)malloc(size);
+    buffer = (char*)malloc(size);
     if (!buffer)
         return CMD_ERROR;
 
@@ -438,7 +438,7 @@ static int send_report_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int send_keyboard_cmd(void *handle, int argc, char *argv[])
+static int send_keyboard_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     uint8_t rpt_data[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
@@ -464,7 +464,7 @@ static int send_keyboard_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int send_mouse_cmd(void *handle, int argc, char *argv[])
+static int send_mouse_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     int8_t rpt_data[4] = { 0x00, 0x00, 0x00, 0x00 };
@@ -480,17 +480,17 @@ static int send_mouse_cmd(void *handle, int argc, char *argv[])
     rpt_data[2] = atoi(argv[2]);
 
     PRINT("X axises: %d, Y axises: %d", rpt_data[0], rpt_data[2]);
-    if (bt_hid_device_send_report(handle, &addr, 0, (uint8_t *)rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
+    if (bt_hid_device_send_report(handle, &addr, 0, (uint8_t*)rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     memset(rpt_data, 0, sizeof(rpt_data));
-    if (bt_hid_device_send_report(handle, &addr, 0, (uint8_t *)rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
+    if (bt_hid_device_send_report(handle, &addr, 0, (uint8_t*)rpt_data, sizeof(rpt_data)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
 }
 
-static int send_consumer_cmd(void *handle, int argc, char *argv[])
+static int send_consumer_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     uint8_t rpt_data[2] = { 0x01, 0x00 };
@@ -515,7 +515,7 @@ static int send_consumer_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int unplug_cmd(void *handle, int argc, char *argv[])
+static int unplug_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
 
@@ -533,7 +533,7 @@ static int unplug_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int dump_cmd(void *handle, int argc, char *argv[])
+static int dump_cmd(void* handle, int argc, char* argv[])
 {
     return CMD_OK;
 }
@@ -548,19 +548,19 @@ static const hid_device_callbacks_t hidd_test_cbs = {
     hidd_virtual_unplug_cb,
 };
 
-int hidd_command_init(void *handle)
+int hidd_command_init(void* handle)
 {
     hidd_callbacks = bt_hid_device_register_callbacks(handle, &hidd_test_cbs);
 
     return 0;
 }
 
-void hidd_command_uninit(void *handle)
+void hidd_command_uninit(void* handle)
 {
     bt_hid_device_unregister_callbacks(handle, hidd_callbacks);
 }
 
-int hidd_command_exec(void *handle, int argc, char *argv[])
+int hidd_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

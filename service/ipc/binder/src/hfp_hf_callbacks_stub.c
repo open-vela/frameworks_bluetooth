@@ -32,21 +32,21 @@
 
 #define BT_HFP_HF_CALLBACK_DESC "BluetoothHfpHfCallback"
 
-static const AIBinder_Class *kIBtHfpHfCallbacks_Class = NULL;
+static const AIBinder_Class* kIBtHfpHfCallbacks_Class = NULL;
 
-static void *IBtHfpHfCallbacks_Class_onCreate(void *arg)
+static void* IBtHfpHfCallbacks_Class_onCreate(void* arg)
 {
     return arg;
 }
 
-static void IBtHfpHfCallbacks_Class_onDestroy(void *userData)
+static void IBtHfpHfCallbacks_Class_onDestroy(void* userData)
 {
 }
 
-static binder_status_t IBtHfpHfCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
+static binder_status_t IBtHfpHfCallbacks_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
-    IBtHfpHfCallbacks *cbks = AIBinder_getUserData(binder);
+    IBtHfpHfCallbacks* cbks = AIBinder_getUserData(binder);
     bt_address_t addr;
 
     switch (code) {
@@ -107,7 +107,7 @@ static binder_status_t IBtHfpHfCallbacks_Class_onTransact(AIBinder *binder, tran
         break;
     }
     case ICBKS_HFP_HF_CMD_COMPLETE: {
-        char *resp = NULL;
+        char* resp = NULL;
 
         stat = AParcel_readAddress(in, &addr);
         if (stat != STATUS_OK)
@@ -153,16 +153,16 @@ static binder_status_t IBtHfpHfCallbacks_Class_onTransact(AIBinder *binder, tran
     return stat;
 }
 
-AIBinder *BtHfpHfCallbacks_getBinder(IBtHfpHfCallbacks *cbks)
+AIBinder* BtHfpHfCallbacks_getBinder(IBtHfpHfCallbacks* cbks)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (cbks->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(cbks->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(cbks->clazz, (void *)cbks);
+        binder = AIBinder_new(cbks->clazz, (void*)cbks);
         if (cbks->WeakBinder != NULL) {
             AIBinder_Weak_delete(cbks->WeakBinder);
         }
@@ -173,29 +173,28 @@ AIBinder *BtHfpHfCallbacks_getBinder(IBtHfpHfCallbacks *cbks)
     return binder;
 }
 
-binder_status_t BtHfpHfCallbacks_associateClass(AIBinder *binder)
+binder_status_t BtHfpHfCallbacks_associateClass(AIBinder* binder)
 {
     if (!kIBtHfpHfCallbacks_Class) {
-        kIBtHfpHfCallbacks_Class =
-            AIBinder_Class_define(BT_HFP_HF_CALLBACK_DESC,
-                                  IBtHfpHfCallbacks_Class_onCreate,
-                                  IBtHfpHfCallbacks_Class_onDestroy,
-                                  IBtHfpHfCallbacks_Class_onTransact);
+        kIBtHfpHfCallbacks_Class = AIBinder_Class_define(BT_HFP_HF_CALLBACK_DESC,
+            IBtHfpHfCallbacks_Class_onCreate,
+            IBtHfpHfCallbacks_Class_onDestroy,
+            IBtHfpHfCallbacks_Class_onTransact);
     }
 
     return AIBinder_associateClass(binder, kIBtHfpHfCallbacks_Class);
 }
 
-IBtHfpHfCallbacks *BtHfpHfCallbacks_new(const hfp_hf_callbacks_t *callbacks)
+IBtHfpHfCallbacks* BtHfpHfCallbacks_new(const hfp_hf_callbacks_t* callbacks)
 {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
-    IBtHfpHfCallbacks *cbks = malloc(sizeof(IBtHfpHfCallbacks));
+    AIBinder_Class* clazz;
+    AIBinder* binder;
+    IBtHfpHfCallbacks* cbks = malloc(sizeof(IBtHfpHfCallbacks));
 
     clazz = AIBinder_Class_define(BT_HFP_HF_CALLBACK_DESC,
-                                  IBtHfpHfCallbacks_Class_onCreate,
-                                  IBtHfpHfCallbacks_Class_onDestroy,
-                                  IBtHfpHfCallbacks_Class_onTransact);
+        IBtHfpHfCallbacks_Class_onCreate,
+        IBtHfpHfCallbacks_Class_onDestroy,
+        IBtHfpHfCallbacks_Class_onTransact);
 
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
@@ -207,7 +206,7 @@ IBtHfpHfCallbacks *BtHfpHfCallbacks_new(const hfp_hf_callbacks_t *callbacks)
     return cbks;
 }
 
-void BtHfpHfCallbacks_delete(IBtHfpHfCallbacks *cbks)
+void BtHfpHfCallbacks_delete(IBtHfpHfCallbacks* cbks)
 {
     assert(cbks);
 

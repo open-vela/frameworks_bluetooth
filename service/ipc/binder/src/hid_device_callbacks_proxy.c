@@ -28,11 +28,11 @@
 
 #include "utils/log.h"
 
-static void BpBtHiddCallbacks_appStateCallback(void *cookie, hid_app_state_t state)
+static void BpBtHiddCallbacks_appStateCallback(void* cookie, hid_app_state_t state)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -49,12 +49,12 @@ static void BpBtHiddCallbacks_appStateCallback(void *cookie, hid_app_state_t sta
     }
 }
 
-static void BpBtHiddCallbacks_connectionStateCallback(void *cookie, bt_address_t *bdAddr, bool le_hid,
-                                                      profile_connection_state_t state)
+static void BpBtHiddCallbacks_connectionStateCallback(void* cookie, bt_address_t* bdAddr, bool le_hid,
+    profile_connection_state_t state)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -79,12 +79,12 @@ static void BpBtHiddCallbacks_connectionStateCallback(void *cookie, bt_address_t
     }
 }
 
-static void BpBtHiddCallbacks_getReportCallback(void *cookie, bt_address_t *bdAddr, uint8_t rpt_type,
-                                                uint8_t rpt_id, uint16_t buffer_size)
+static void BpBtHiddCallbacks_getReportCallback(void* cookie, bt_address_t* bdAddr, uint8_t rpt_type,
+    uint8_t rpt_id, uint16_t buffer_size)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -113,12 +113,12 @@ static void BpBtHiddCallbacks_getReportCallback(void *cookie, bt_address_t *bdAd
     }
 }
 
-static void BpBtHiddCallbacks_setReportCallback(void *cookie, bt_address_t *bdAddr, uint8_t rpt_type,
-                                                uint16_t rpt_size, uint8_t *rpt_data)
+static void BpBtHiddCallbacks_setReportCallback(void* cookie, bt_address_t* bdAddr, uint8_t rpt_type,
+    uint16_t rpt_size, uint8_t* rpt_data)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -136,7 +136,7 @@ static void BpBtHiddCallbacks_setReportCallback(void *cookie, bt_address_t *bdAd
     if (stat != STATUS_OK)
         return;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)rpt_data, rpt_size);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)rpt_data, rpt_size);
     if (stat != STATUS_OK)
         return;
 
@@ -147,12 +147,12 @@ static void BpBtHiddCallbacks_setReportCallback(void *cookie, bt_address_t *bdAd
     }
 }
 
-static void BpBtHiddCallbacks_receiveReportCallback(void *cookie, bt_address_t *bdAddr, uint8_t rpt_type,
-                                                    uint16_t rpt_size, uint8_t *rpt_data)
+static void BpBtHiddCallbacks_receiveReportCallback(void* cookie, bt_address_t* bdAddr, uint8_t rpt_type,
+    uint16_t rpt_size, uint8_t* rpt_data)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -170,7 +170,7 @@ static void BpBtHiddCallbacks_receiveReportCallback(void *cookie, bt_address_t *
     if (stat != STATUS_OK)
         return;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)rpt_data, rpt_size);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)rpt_data, rpt_size);
     if (stat != STATUS_OK)
         return;
 
@@ -181,11 +181,11 @@ static void BpBtHiddCallbacks_receiveReportCallback(void *cookie, bt_address_t *
     }
 }
 
-static void BpBtHiddCallbacks_virtualUnplugCallback(void *cookie, bt_address_t *bdAddr)
+static void BpBtHiddCallbacks_virtualUnplugCallback(void* cookie, bt_address_t* bdAddr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -212,7 +212,7 @@ static const hid_device_callbacks_t static_hidd_cbks = {
     BpBtHiddCallbacks_virtualUnplugCallback,
 };
 
-const hid_device_callbacks_t *BpBtHiddCallbacks_getStatic(void)
+const hid_device_callbacks_t* BpBtHiddCallbacks_getStatic(void)
 {
     return &static_hidd_cbks;
 }

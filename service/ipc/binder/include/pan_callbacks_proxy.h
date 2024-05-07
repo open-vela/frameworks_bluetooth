@@ -28,7 +28,7 @@ extern "C" {
 
 #include <android/binder_manager.h>
 
-const pan_callbacks_t *BpBtPanCallbacks_getStatic(void);
+const pan_callbacks_t* BpBtPanCallbacks_getStatic(void);
 
 #ifdef __cplusplus
 }

@@ -29,14 +29,14 @@ extern "C" {
 // #include <android/binder_auto_utils.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    void *usr_data;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    void* usr_data;
 } IBtAdapter;
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
+    AIBinder_Class* clazz;
+    AIBinder* binder;
 } BpBtAdapter;
 
 #define ADAPTER_BINDER_INSTANCE "Vela.Bluetooth.Adapter"
@@ -113,7 +113,7 @@ typedef enum {
     IREMOTE_SET_LE_PHY,
 } IBtAdapter_Call;
 
-binder_status_t BtAdapter_addService(IBtAdapter *adapter, const char *instance);
+binder_status_t BtAdapter_addService(IBtAdapter* adapter, const char* instance);
 #ifdef __cplusplus
 }
 #endif

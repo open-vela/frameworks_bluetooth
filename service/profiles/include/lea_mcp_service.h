@@ -53,38 +53,38 @@ typedef enum {
 /*
  * sal callback
  */
-void lea_mcp_on_media_player_name(bt_address_t *addr, uint32_t mcs_id, size_t size, char *name);
-void lea_mcp_on_media_player_icon_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
-void lea_mcp_on_media_player_icon_url(bt_address_t *addr, uint32_t mcs_id, size_t size, char *url);
-void lea_mcp_on_playback_speed(bt_address_t *addr, uint32_t mcs_id, int8_t speed);
-void lea_mcp_on_seeking_speed(bt_address_t *addr, uint32_t mcs_id, int8_t speed);
-void lea_mcp_on_playing_order(bt_address_t *addr, uint32_t mcs_id, int8_t order);
-void lea_mcp_on_playing_orders_supported(bt_address_t *addr, uint32_t mcs_id, uint16_t orders);
-void lea_mcp_on_media_control_opcodes_supported(bt_address_t *addr, uint32_t mcs_id, uint32_t opcodes);
-void lea_mcp_on_track_changed(bt_address_t *addr, uint32_t mcs_id);
-void lea_mcp_on_track_title(bt_address_t *addr, uint32_t mcs_id, size_t size, char *title);
-void lea_mcp_on_track_duration(bt_address_t *addr, uint32_t mcs_id, int32_t duration);
-void lea_mcp_on_track_position(bt_address_t *addr, uint32_t mcs_id, int32_t position);
-void lea_mcp_on_media_state(bt_address_t *addr, uint32_t mcs_id, uint8_t state);
-void lea_mcp_on_media_control_result(bt_address_t *addr, uint32_t mcs_id, uint8_t opcode, uint8_t result);
-void lea_mcp_on_search_control_result(bt_address_t *addr, uint32_t mcs_id, uint8_t result);
-void lea_mcp_on_current_track_segments_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
-void lea_mcp_on_current_track_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
-void lea_mcp_on_next_track_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
-void lea_mcp_on_parent_group_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
-void lea_mcp_on_current_group_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
-void lea_mcp_on_search_results_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
-void lea_mcp_on_content_control_id(bt_address_t *addr, uint32_t mcs_id, uint8_t ccid);
+void lea_mcp_on_media_player_name(bt_address_t* addr, uint32_t mcs_id, size_t size, char* name);
+void lea_mcp_on_media_player_icon_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
+void lea_mcp_on_media_player_icon_url(bt_address_t* addr, uint32_t mcs_id, size_t size, char* url);
+void lea_mcp_on_playback_speed(bt_address_t* addr, uint32_t mcs_id, int8_t speed);
+void lea_mcp_on_seeking_speed(bt_address_t* addr, uint32_t mcs_id, int8_t speed);
+void lea_mcp_on_playing_order(bt_address_t* addr, uint32_t mcs_id, int8_t order);
+void lea_mcp_on_playing_orders_supported(bt_address_t* addr, uint32_t mcs_id, uint16_t orders);
+void lea_mcp_on_media_control_opcodes_supported(bt_address_t* addr, uint32_t mcs_id, uint32_t opcodes);
+void lea_mcp_on_track_changed(bt_address_t* addr, uint32_t mcs_id);
+void lea_mcp_on_track_title(bt_address_t* addr, uint32_t mcs_id, size_t size, char* title);
+void lea_mcp_on_track_duration(bt_address_t* addr, uint32_t mcs_id, int32_t duration);
+void lea_mcp_on_track_position(bt_address_t* addr, uint32_t mcs_id, int32_t position);
+void lea_mcp_on_media_state(bt_address_t* addr, uint32_t mcs_id, uint8_t state);
+void lea_mcp_on_media_control_result(bt_address_t* addr, uint32_t mcs_id, uint8_t opcode, uint8_t result);
+void lea_mcp_on_search_control_result(bt_address_t* addr, uint32_t mcs_id, uint8_t result);
+void lea_mcp_on_current_track_segments_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
+void lea_mcp_on_current_track_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
+void lea_mcp_on_next_track_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
+void lea_mcp_on_parent_group_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
+void lea_mcp_on_current_group_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
+void lea_mcp_on_search_results_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id);
+void lea_mcp_on_content_control_id(bt_address_t* addr, uint32_t mcs_id, uint8_t ccid);
 
 typedef struct {
     size_t size;
-    bt_status_t (*read_remote_mcs_info)(bt_address_t *addr, uint8_t opcode);
-    bt_status_t (*media_control_request)(bt_address_t *addr,
-                                         LEA_MCP_MEDIA_CONTROL_OPCODE opcode, int32_t n);
-    bt_status_t (*search_control_request)(bt_address_t *addr,
-                                          uint8_t number, LEA_MCP_SEARCH_CONTROL_ITEM_TYPE type, uint8_t *parameter);
-    void *(*set_callbacks)(void *handle, lea_mcp_callbacks_t *callbacks);
-    bool (*reset_callbacks)(void **handle, void *cookie);
+    bt_status_t (*read_remote_mcs_info)(bt_address_t* addr, uint8_t opcode);
+    bt_status_t (*media_control_request)(bt_address_t* addr,
+        LEA_MCP_MEDIA_CONTROL_OPCODE opcode, int32_t n);
+    bt_status_t (*search_control_request)(bt_address_t* addr,
+        uint8_t number, LEA_MCP_SEARCH_CONTROL_ITEM_TYPE type, uint8_t* parameter);
+    void* (*set_callbacks)(void* handle, lea_mcp_callbacks_t* callbacks);
+    bool (*reset_callbacks)(void** handle, void* cookie);
 } lea_mcp_interface_t;
 
 /*

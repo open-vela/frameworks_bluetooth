@@ -40,16 +40,16 @@
 
 #include "bt_tools.h"
 
-static int enable_cmd(void *handle, int argc, char *argv[]);
-static int disable_cmd(void *handle, int argc, char *argv[]);
-static int mask_cmd(void *handle, int argc, char *argv[]);
-static int unmask_cmd(void *handle, int argc, char *argv[]);
-static int level_cmd(void *handle, int argc, char *argv[]);
+static int enable_cmd(void* handle, int argc, char* argv[]);
+static int disable_cmd(void* handle, int argc, char* argv[]);
+static int mask_cmd(void* handle, int argc, char* argv[]);
+static int unmask_cmd(void* handle, int argc, char* argv[]);
+static int level_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_log_tables[] = {
-    {"enable",   enable_cmd,  0, "\"Enable param: (\"snoop\" or \"stack\")\""                    },
-    { "disable", disable_cmd, 0, "\"Disable param: (\"snoop\" or \"stack\")\""                   },
-    { "mask",    mask_cmd,    0, "\"Enable Stack Profile & Protocol Log <bit>\"\n"
+    { "enable", enable_cmd, 0, "\"Enable param: (\"snoop\" or \"stack\")\"" },
+    { "disable", disable_cmd, 0, "\"Disable param: (\"snoop\" or \"stack\")\"" },
+    { "mask", mask_cmd, 0, "\"Enable Stack Profile & Protocol Log <bit>\"\n"
                            "\t\t\tExample enable HCI and L2CAP: \"bttool> log mask 1 4\" \n"
                            "\t\t\tProfile && Protocol Enum:\n"
                            "\t\t\t  HCI:   1\n"
@@ -63,9 +63,9 @@ static bt_command_t g_log_tables[] = {
                            "\t\t\t  AVCTP: 10\n"
                            "\t\t\t  AVDTP: 11\n"
                            "\t\t\t  AVRCP: 12\n"
-                           "\t\t\t  HFP:   14\n"                 },
-    { "unmask",  unmask_cmd,  0, "\"Disable Stack Profile & Protocol Log <bit>\""                },
-    { "level",   level_cmd,   0, "\"Set framework log level, (OFF:0,ERR:3,WARN:4,INFO:6,DBG:7)\""},
+                           "\t\t\t  HFP:   14\n" },
+    { "unmask", unmask_cmd, 0, "\"Disable Stack Profile & Protocol Log <bit>\"" },
+    { "level", level_cmd, 0, "\"Set framework log level, (OFF:0,ERR:3,WARN:4,INFO:6,DBG:7)\"" },
 };
 
 static void usage(void)
@@ -85,7 +85,7 @@ static void property_change_commit(int bit)
 #endif
 }
 
-static int log_control(char *id, int enable)
+static int log_control(char* id, int enable)
 {
 #ifdef CONFIG_KVDB
     if (strncmp(id, "stack", strlen("stack")) == 0) {
@@ -103,7 +103,7 @@ static int log_control(char *id, int enable)
 #endif
 }
 
-static int enable_cmd(void *handle, int argc, char *argv[])
+static int enable_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -111,7 +111,7 @@ static int enable_cmd(void *handle, int argc, char *argv[])
     return log_control(argv[0], 1);
 }
 
-static int disable_cmd(void *handle, int argc, char *argv[])
+static int disable_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -119,7 +119,7 @@ static int disable_cmd(void *handle, int argc, char *argv[])
     return log_control(argv[0], 0);
 }
 
-static int mask_cmd(void *handle, int argc, char *argv[])
+static int mask_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -144,7 +144,7 @@ static int mask_cmd(void *handle, int argc, char *argv[])
 #endif
 }
 
-static int unmask_cmd(void *handle, int argc, char *argv[])
+static int unmask_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -170,17 +170,13 @@ static int unmask_cmd(void *handle, int argc, char *argv[])
 #endif
 }
 
-static int level_cmd(void *handle, int argc, char *argv[])
+static int level_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
     int level = atoi(argv[0]);
-    if (level != 0 &&
-        level != LOG_ERR &&
-        level != LOG_WARNING &&
-        level != LOG_INFO &&
-        level != LOG_DEBUG)
+    if (level != 0 && level != LOG_ERR && level != LOG_WARNING && level != LOG_INFO && level != LOG_DEBUG)
         return CMD_INVALID_PARAM;
 
 #ifdef CONFIG_KVDB
@@ -193,7 +189,7 @@ static int level_cmd(void *handle, int argc, char *argv[])
 #endif
 }
 
-int log_command(void *handle, int argc, char *argv[])
+int log_command(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

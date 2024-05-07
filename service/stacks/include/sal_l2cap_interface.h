@@ -16,14 +16,14 @@
 #ifndef __SAL_L2CAP_INTERFACE_H_
 #define __SAL_L2CAP_INTERFACE_H_
 
-#include <stdint.h>
 #include "bt_addr.h"
 #include "bt_status.h"
 #include "l2cap_service.h"
+#include <stdint.h>
 
-bt_status_t bt_sal_l2cap_listen_channel(l2cap_config_option_t *option);
-bt_status_t bt_sal_l2cap_connect_channel(bt_address_t *addr, l2cap_config_option_t *option);
+bt_status_t bt_sal_l2cap_listen_channel(l2cap_config_option_t* option);
+bt_status_t bt_sal_l2cap_connect_channel(bt_address_t* addr, l2cap_config_option_t* option);
 bt_status_t bt_sal_l2cap_disconnect_channel(uint16_t cid);
-bt_status_t bt_sal_l2cap_send_packet(uint16_t cid, uint8_t *packet_data, uint16_t packet_size);
+bt_status_t bt_sal_l2cap_send_packet(uint16_t cid, uint8_t* packet_data, uint16_t packet_size);
 
 #endif /* __SAL_L2CAP_INTERFACE_H_ */

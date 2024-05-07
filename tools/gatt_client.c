@@ -33,21 +33,21 @@ typedef struct {
     uint16_t gatt_mtu;
 } gattc_device_t;
 
-static int create_cmd(void *handle, int argc, char *argv[]);
-static int delete_cmd(void *handle, int argc, char *argv[]);
-static int connect_cmd(void *handle, int argc, char *argv[]);
-static int disconnect_cmd(void *handle, int argc, char *argv[]);
-static int discover_services_cmd(void *handle, int argc, char *argv[]);
-static int read_request_cmd(void *handle, int argc, char *argv[]);
-static int write_request_cmd(void *handle, int argc, char *argv[]);
-static int enable_cccd_cmd(void *handle, int argc, char *argv[]);
-static int disable_cccd_cmd(void *handle, int argc, char *argv[]);
-static int exchange_mtu_cmd(void *handle, int argc, char *argv[]);
-static int update_conn_cmd(void *handle, int argc, char *argv[]);
-static int read_phy_cmd(void *handle, int argc, char *argv[]);
-static int update_phy_cmd(void *handle, int argc, char *argv[]);
-static int read_rssi_cmd(void *handle, int argc, char *argv[]);
-static int throughput_cmd(void *handle, int argc, char *argv[]);
+static int create_cmd(void* handle, int argc, char* argv[]);
+static int delete_cmd(void* handle, int argc, char* argv[]);
+static int connect_cmd(void* handle, int argc, char* argv[]);
+static int disconnect_cmd(void* handle, int argc, char* argv[]);
+static int discover_services_cmd(void* handle, int argc, char* argv[]);
+static int read_request_cmd(void* handle, int argc, char* argv[]);
+static int write_request_cmd(void* handle, int argc, char* argv[]);
+static int enable_cccd_cmd(void* handle, int argc, char* argv[]);
+static int disable_cccd_cmd(void* handle, int argc, char* argv[]);
+static int exchange_mtu_cmd(void* handle, int argc, char* argv[]);
+static int update_conn_cmd(void* handle, int argc, char* argv[]);
+static int read_phy_cmd(void* handle, int argc, char* argv[]);
+static int update_phy_cmd(void* handle, int argc, char* argv[]);
+static int read_rssi_cmd(void* handle, int argc, char* argv[]);
+static int throughput_cmd(void* handle, int argc, char* argv[]);
 
 #define GATTC_CONNECTION_MAX (CONFIG_BLUETOOTH_GATTC_MAX_CONNECTIONS)
 static gattc_device_t g_gattc_devies[GATTC_CONNECTION_MAX];
@@ -66,23 +66,23 @@ static volatile uint32_t throughtput_cursor = 0;
     }
 
 static bt_command_t g_gattc_tables[] = {
-    {"create",         create_cmd,            0, "\"create gatt client :\""                                                                                                                          },
-    { "delete",        delete_cmd,            0, "\"delete gatt client :<conn id>\""                                                                                                                 },
-    { "connect",       connect_cmd,           0, "\"connect remote device :<conn id><address>\""                                                                                                     },
-    { "disconnect",    disconnect_cmd,        0, "\"disconnect remote device :<conn id>\""                                                                                                           },
-    { "discover",      discover_services_cmd, 0, "\"discover all services :<conn id>\""                                                                                                              },
-    { "read_request",  read_request_cmd,      0, "\"read request :<conn id><char id>\""                                                                                                              },
-    { "write_request", write_request_cmd,     0, "\"write request :<conn id><char id><type>(str or hex)<playload>\n"
+    { "create", create_cmd, 0, "\"create gatt client :\"" },
+    { "delete", delete_cmd, 0, "\"delete gatt client :<conn id>\"" },
+    { "connect", connect_cmd, 0, "\"connect remote device :<conn id><address>\"" },
+    { "disconnect", disconnect_cmd, 0, "\"disconnect remote device :<conn id>\"" },
+    { "discover", discover_services_cmd, 0, "\"discover all services :<conn id>\"" },
+    { "read_request", read_request_cmd, 0, "\"read request :<conn id><char id>\"" },
+    { "write_request", write_request_cmd, 0, "\"write request :<conn id><char id><type>(str or hex)<playload>\n"
                                              "\t\t\t  e.g., write_request 0 0001 str HelloWorld!\n"
-                                             "\t\t\t  e.g., write_request 0 0001 hex 00 01 02 03\""                                                  },
-    { "enable_cccd",   enable_cccd_cmd,       0, "\"enable cccd(1: NOTIFY, 2: INDICATE) :<conn id><char id><ccc value>\""                                                                            },
-    { "disable_cccd",  disable_cccd_cmd,      0, "\"disable cccd :<conn id><char id>\""                                                                                                              },
-    { "exchange_mtu",  exchange_mtu_cmd,      0, "\"exchange mtu :<conn id><mtu>\""                                                                                                                  },
-    { "update_conn",   update_conn_cmd,       0, "\"update connection parameter :<conn id><min_interval><max_interval><latency><timeout><min_connection_event_length><max_connection_event_length>\""},
-    { "read_phy",      read_phy_cmd,          0, "\"read phy :<conn id>\""                                                                                                                           },
-    { "update_phy",    update_phy_cmd,        0, "\"update phy(0: 1M, 1: 2M, 3: LE_Coded) :<conn id><tx><rx>\""                                                                                      },
-    { "read_rssi",     read_rssi_cmd,         0, "\"read remote rssi :<conn id>\""                                                                                                                   },
-    { "throughput",    throughput_cmd,        0, "\"throughput test :<conn id><char id><seconds>\""                                                                                                  },
+                                             "\t\t\t  e.g., write_request 0 0001 hex 00 01 02 03\"" },
+    { "enable_cccd", enable_cccd_cmd, 0, "\"enable cccd(1: NOTIFY, 2: INDICATE) :<conn id><char id><ccc value>\"" },
+    { "disable_cccd", disable_cccd_cmd, 0, "\"disable cccd :<conn id><char id>\"" },
+    { "exchange_mtu", exchange_mtu_cmd, 0, "\"exchange mtu :<conn id><mtu>\"" },
+    { "update_conn", update_conn_cmd, 0, "\"update connection parameter :<conn id><min_interval><max_interval><latency><timeout><min_connection_event_length><max_connection_event_length>\"" },
+    { "read_phy", read_phy_cmd, 0, "\"read phy :<conn id>\"" },
+    { "update_phy", update_phy_cmd, 0, "\"update phy(0: 1M, 1: 2M, 3: LE_Coded) :<conn id><tx><rx>\"" },
+    { "read_rssi", read_rssi_cmd, 0, "\"read remote rssi :<conn id>\"" },
+    { "throughput", throughput_cmd, 0, "\"throughput test :<conn id><char id><seconds>\"" },
 };
 
 static void usage(void)
@@ -95,7 +95,7 @@ static void usage(void)
     }
 }
 
-static gattc_device_t *find_gattc_device(void *handle)
+static gattc_device_t* find_gattc_device(void* handle)
 {
     for (int i = 0; i < GATTC_CONNECTION_MAX; i++) {
         if (g_gattc_devies[i].handle == handle)
@@ -104,7 +104,7 @@ static gattc_device_t *find_gattc_device(void *handle)
     return NULL;
 }
 
-static int connect_cmd(void *handle, int argc, char *argv[])
+static int connect_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -122,7 +122,7 @@ static int connect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_cmd(void *handle, int argc, char *argv[])
+static int disconnect_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -136,7 +136,7 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int discover_services_cmd(void *handle, int argc, char *argv[])
+static int discover_services_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -150,7 +150,7 @@ static int discover_services_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int read_request_cmd(void *handle, int argc, char *argv[])
+static int read_request_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -166,21 +166,22 @@ static int read_request_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int write_request_cmd(void *handle, int argc, char *argv[])
+static int write_request_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
 
     int conn_id = atoi(argv[0]);
     int len, i;
-    uint8_t *value = NULL;
+    uint8_t* value = NULL;
     CHECK_CONNCTION_ID(conn_id);
 
     uint16_t attr_handle = strtol(argv[1], NULL, 16);
 
     if (!strcmp(argv[2], "str")) {
         if (bt_gattc_write_without_response(g_gattc_devies[conn_id].handle, attr_handle,
-                                            (uint8_t *)argv[3], strlen(argv[3])) != BT_STATUS_SUCCESS)
+                (uint8_t*)argv[3], strlen(argv[3]))
+            != BT_STATUS_SUCCESS)
             return CMD_ERROR;
     } else if (!strcmp(argv[2], "hex")) {
         len = argc - 3;
@@ -208,7 +209,7 @@ error:
     return CMD_ERROR;
 }
 
-static int enable_cccd_cmd(void *handle, int argc, char *argv[])
+static int enable_cccd_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
@@ -225,7 +226,7 @@ static int enable_cccd_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disable_cccd_cmd(void *handle, int argc, char *argv[])
+static int disable_cccd_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -241,7 +242,7 @@ static int disable_cccd_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int exchange_mtu_cmd(void *handle, int argc, char *argv[])
+static int exchange_mtu_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -257,7 +258,7 @@ static int exchange_mtu_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int update_conn_cmd(void *handle, int argc, char *argv[])
+static int update_conn_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 7)
         return CMD_PARAM_NOT_ENOUGH;
@@ -273,13 +274,14 @@ static int update_conn_cmd(void *handle, int argc, char *argv[])
     uint32_t max_connection_event_length = atoi(argv[6]);
 
     if (bt_gattc_update_connection_parameter(g_gattc_devies[conn_id].handle, min_interval, max_interval, latency,
-                                             timeout, min_connection_event_length, max_connection_event_length) != BT_STATUS_SUCCESS)
+            timeout, min_connection_event_length, max_connection_event_length)
+        != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
 }
 
-static int read_phy_cmd(void *handle, int argc, char *argv[])
+static int read_phy_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -293,7 +295,7 @@ static int read_phy_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int update_phy_cmd(void *handle, int argc, char *argv[])
+static int update_phy_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
@@ -310,7 +312,7 @@ static int update_phy_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int read_rssi_cmd(void *handle, int argc, char *argv[])
+static int read_rssi_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -324,7 +326,7 @@ static int read_rssi_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int throughput_cmd(void *handle, int argc, char *argv[])
+static int throughput_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
@@ -344,7 +346,7 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
     uint16_t attr_handle = strtol(argv[1], NULL, 16);
 
     uint32_t write_length = g_gattc_devies[conn_id].gatt_mtu;
-    uint8_t *payload = (uint8_t *)malloc(sizeof(uint8_t) * write_length);
+    uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * write_length);
     if (!payload) {
         PRINT("write payload malloc failed");
         return CMD_ERROR;
@@ -396,14 +398,14 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
 
     bit_rate = write_length * write_count / run_time;
     PRINT("gattc write throughput test finish, Bit rate = %" PRIu32 " Byte/s, = %" PRIu32 " bit/s, time = %" PRId32 "s.",
-          bit_rate, bit_rate << 3, run_time);
+        bit_rate, bit_rate << 3, run_time);
 
     return CMD_OK;
 }
 
-static void connect_callback(void *conn_handle, bt_address_t *addr)
+static void connect_callback(void* conn_handle, bt_address_t* addr)
 {
-    gattc_device_t *device = find_gattc_device(conn_handle);
+    gattc_device_t* device = find_gattc_device(conn_handle);
 
     assert(device);
     memcpy(&device->remote_address, addr, sizeof(bt_address_t));
@@ -411,16 +413,16 @@ static void connect_callback(void *conn_handle, bt_address_t *addr)
     PRINT_ADDR("gattc_connect_callback, addr:%s", addr);
 }
 
-static void disconnect_callback(void *conn_handle, bt_address_t *addr)
+static void disconnect_callback(void* conn_handle, bt_address_t* addr)
 {
-    gattc_device_t *device = find_gattc_device(conn_handle);
+    gattc_device_t* device = find_gattc_device(conn_handle);
 
     assert(device);
     device->conn_state = CONNECTION_STATE_DISCONNECTED;
     PRINT_ADDR("gattc_disconnect_callback, addr:%s", addr);
 }
 
-static void discover_callback(void *conn_handle, gatt_status_t status, bt_uuid_t *uuid, uint16_t start_handle, uint16_t end_handle)
+static void discover_callback(void* conn_handle, gatt_status_t status, bt_uuid_t* uuid, uint16_t start_handle, uint16_t end_handle)
 {
     gatt_attr_desc_t attr_desc;
 
@@ -479,23 +481,23 @@ static void discover_callback(void *conn_handle, gatt_status_t status, bt_uuid_t
         }
         printf("]");
 
-        uint8_t *b_uuid = attr_desc.uuid.val.u128;
+        uint8_t* b_uuid = attr_desc.uuid.val.u128;
         printf("[0x%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x]\r\n",
-               b_uuid[15], b_uuid[14], b_uuid[13], b_uuid[12],
-               b_uuid[11], b_uuid[10], b_uuid[9], b_uuid[8],
-               b_uuid[7], b_uuid[6], b_uuid[5], b_uuid[4],
-               b_uuid[3], b_uuid[2], b_uuid[1], b_uuid[0]);
+            b_uuid[15], b_uuid[14], b_uuid[13], b_uuid[12],
+            b_uuid[11], b_uuid[10], b_uuid[9], b_uuid[8],
+            b_uuid[7], b_uuid[6], b_uuid[5], b_uuid[4],
+            b_uuid[3], b_uuid[2], b_uuid[1], b_uuid[0]);
     }
     printf(">");
 }
 
-static void read_complete_callback(void *conn_handle, gatt_status_t status, uint16_t attr_handle, uint8_t *value, uint16_t length)
+static void read_complete_callback(void* conn_handle, gatt_status_t status, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     PRINT("gattc connection read complete, handle 0x%" PRIx16 ", status:%d", attr_handle, status);
     lib_dumpbuffer("read value:", value, length);
 }
 
-static void write_complete_callback(void *conn_handle, gatt_status_t status, uint16_t attr_handle)
+static void write_complete_callback(void* conn_handle, gatt_status_t status, uint16_t attr_handle)
 {
     if (status != GATT_STATUS_SUCCESS) {
         PRINT("gattc connection write failed, handle 0x%" PRIx16 ", status:%d", attr_handle, status);
@@ -509,21 +511,21 @@ static void write_complete_callback(void *conn_handle, gatt_status_t status, uin
     }
 }
 
-static void subscribe_complete_callback(void *conn_handle, gatt_status_t status, uint16_t attr_handle, bool enable)
+static void subscribe_complete_callback(void* conn_handle, gatt_status_t status, uint16_t attr_handle, bool enable)
 {
     PRINT("gattc connection subscribe complete, handle 0x%" PRIx16 ", status:%d, enable:%d", attr_handle, status, enable);
 }
 
-static void notify_received_callback(void *conn_handle, uint16_t attr_handle,
-                                     uint8_t *value, uint16_t length)
+static void notify_received_callback(void* conn_handle, uint16_t attr_handle,
+    uint8_t* value, uint16_t length)
 {
     PRINT("gattc connection receive notify, handle 0x%" PRIx16, attr_handle);
     lib_dumpbuffer("notify value:", value, length);
 }
 
-static void mtu_updated_callback(void *conn_handle, gatt_status_t status, uint32_t mtu)
+static void mtu_updated_callback(void* conn_handle, gatt_status_t status, uint32_t mtu)
 {
-    gattc_device_t *device = find_gattc_device(conn_handle);
+    gattc_device_t* device = find_gattc_device(conn_handle);
 
     assert(device);
     if (status == GATT_STATUS_SUCCESS) {
@@ -532,26 +534,26 @@ static void mtu_updated_callback(void *conn_handle, gatt_status_t status, uint32
     PRINT("gattc_mtu_updated_callback, status:%d, mtu:%" PRIu32, status, mtu);
 }
 
-static void phy_read_callback(void *conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+static void phy_read_callback(void* conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     PRINT("gattc read phy complete, tx:%d, rx:%d", tx_phy, rx_phy);
 }
 
-static void phy_updated_callback(void *conn_handle, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+static void phy_updated_callback(void* conn_handle, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     PRINT("gattc_phy_updated_callback, status:%d, tx:%d, rx:%d", status, tx_phy, rx_phy);
 }
 
-static void rssi_read_callback(void *conn_handle, gatt_status_t status, int32_t rssi)
+static void rssi_read_callback(void* conn_handle, gatt_status_t status, int32_t rssi)
 {
     PRINT("gattc read rssi complete, status:%d, rssi:%" PRIi32, status, rssi);
 }
 
-static void conn_param_updated_callback(void *conn_handle, bt_status_t status, uint16_t connection_interval,
-                                        uint16_t peripheral_latency, uint16_t supervision_timeout)
+static void conn_param_updated_callback(void* conn_handle, bt_status_t status, uint16_t connection_interval,
+    uint16_t peripheral_latency, uint16_t supervision_timeout)
 {
     PRINT("gattc connection paramter updated, status:%d, interval:%" PRIu16 ", latency:%" PRIu16 ", timeout:%" PRIu16,
-          status, connection_interval, peripheral_latency, supervision_timeout);
+        status, connection_interval, peripheral_latency, supervision_timeout);
 }
 
 static gattc_callbacks_t gattc_cbs = {
@@ -570,7 +572,7 @@ static gattc_callbacks_t gattc_cbs = {
     conn_param_updated_callback,
 };
 
-static int create_cmd(void *handle, int argc, char *argv[])
+static int create_cmd(void* handle, int argc, char* argv[])
 {
     int conn_id;
 
@@ -591,7 +593,7 @@ static int create_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int delete_cmd(void *handle, int argc, char *argv[])
+static int delete_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -606,18 +608,18 @@ static int delete_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-int gattc_command_init(void *handle)
+int gattc_command_init(void* handle)
 {
     memset(g_gattc_devies, 0, sizeof(g_gattc_devies));
     return 0;
 }
 
-int gattc_command_uninit(void *handle)
+int gattc_command_uninit(void* handle)
 {
     return 0;
 }
 
-int gattc_command_exec(void *handle, int argc, char *argv[])
+int gattc_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

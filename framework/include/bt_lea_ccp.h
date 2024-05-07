@@ -32,7 +32,7 @@ extern "C" {
  * @param cookie - callback cookie.
  * @param addr - address of peer LE Audio device.
  */
-typedef void (*lea_ccp_test_callback)(void *cookie, bt_address_t *addr);
+typedef void (*lea_ccp_test_callback)(void* cookie, bt_address_t* addr);
 
 typedef struct
 {
@@ -47,7 +47,7 @@ typedef struct
  * @param callbacks - LE Audio ccp callback functions.
  * @return void* - callback cookie.
  */
-void *bt_lea_ccp_register_callbacks(bt_instance_t *ins, const lea_ccp_callbacks_t *callbacks);
+void* bt_lea_ccp_register_callbacks(bt_instance_t* ins, const lea_ccp_callbacks_t* callbacks);
 
 /**
  * @brief Unregister LE Audio ccp callback functions
@@ -57,7 +57,7 @@ void *bt_lea_ccp_register_callbacks(bt_instance_t *ins, const lea_ccp_callbacks_
  * @return true - on unregister success.
  * @return false - on callback cookie not found.
  */
-bool bt_lea_ccp_unregister_callbacks(bt_instance_t *ins, void *cookie);
+bool bt_lea_ccp_unregister_callbacks(bt_instance_t* ins, void* cookie);
 
 /**
  * @brief Read bearer provider name of a remote TBS. Value is returned by
@@ -66,7 +66,7 @@ bool bt_lea_ccp_unregister_callbacks(bt_instance_t *ins, void *cookie);
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_bearer_provider_name(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_bearer_provider_name(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read bearer uci of a remote TBS. Value is returned by
@@ -75,7 +75,7 @@ bt_status_t bt_lea_ccp_read_bearer_provider_name(bt_instance_t *ins, bt_address_
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_bearer_uci(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_bearer_uci(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read bearer technology of a remote TBS. Value is returned by
@@ -84,7 +84,7 @@ bt_status_t bt_lea_ccp_read_bearer_uci(bt_instance_t *ins, bt_address_t *addr);
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_bearer_technology(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_bearer_technology(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read bearer uri schemes supported list of a remote TBS. Value is returned by
@@ -93,7 +93,7 @@ bt_status_t bt_lea_ccp_read_bearer_technology(bt_instance_t *ins, bt_address_t *
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_bearer_uri_schemes_supported_list(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_bearer_uri_schemes_supported_list(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read bearer signal strength of a remote TBS. Value is returned by
@@ -102,7 +102,7 @@ bt_status_t bt_lea_ccp_read_bearer_uri_schemes_supported_list(bt_instance_t *ins
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_bearer_signal_strength(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_bearer_signal_strength(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read bearer signal strength report interval of a remote TBS. Value is returned by
@@ -111,7 +111,7 @@ bt_status_t bt_lea_ccp_read_bearer_signal_strength(bt_instance_t *ins, bt_addres
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_bearer_signal_strength_report_interval(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_bearer_signal_strength_report_interval(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read content control id of a remote TBS. Value is returned by
@@ -120,7 +120,7 @@ bt_status_t bt_lea_ccp_read_bearer_signal_strength_report_interval(bt_instance_t
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_content_control_id(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_content_control_id(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read status flags of a remote TBS. Value is returned by
@@ -129,7 +129,7 @@ bt_status_t bt_lea_ccp_read_content_control_id(bt_instance_t *ins, bt_address_t 
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_status_flags(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_status_flags(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read call control optional opcodes of a remote TBS. Value is returned by
@@ -138,7 +138,7 @@ bt_status_t bt_lea_ccp_read_status_flags(bt_instance_t *ins, bt_address_t *addr)
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_call_control_optional_opcodes(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_call_control_optional_opcodes(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read incoming call of a remote TBS. Value is returned by
@@ -147,7 +147,7 @@ bt_status_t bt_lea_ccp_read_call_control_optional_opcodes(bt_instance_t *ins, bt
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_incoming_call(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_incoming_call(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read incoming call target bearer uri of a remote TBS. Value is returned by
@@ -156,7 +156,7 @@ bt_status_t bt_lea_ccp_read_incoming_call(bt_instance_t *ins, bt_address_t *addr
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_incoming_call_target_bearer_uri(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_incoming_call_target_bearer_uri(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read call state of a remote TBS. Value is returned by
@@ -165,7 +165,7 @@ bt_status_t bt_lea_ccp_read_incoming_call_target_bearer_uri(bt_instance_t *ins, 
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_call_state(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_call_state(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read bearer list current calls of a remote TBS. Value is returned by
@@ -174,7 +174,7 @@ bt_status_t bt_lea_ccp_read_call_state(bt_instance_t *ins, bt_address_t *addr);
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_bearer_list_current_calls(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_bearer_list_current_calls(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read call friendly name of a remote TBS. Value is returned by
@@ -183,7 +183,7 @@ bt_status_t bt_lea_ccp_read_bearer_list_current_calls(bt_instance_t *ins, bt_add
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_read_call_friendly_name(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_ccp_read_call_friendly_name(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Write an opcode with call index to the call control point of a remote
@@ -192,7 +192,7 @@ bt_status_t bt_lea_ccp_read_call_friendly_name(bt_instance_t *ins, bt_address_t 
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_call_control_by_index(bt_instance_t *ins, bt_address_t *addr, uint8_t opcode);
+bt_status_t bt_lea_ccp_call_control_by_index(bt_instance_t* ins, bt_address_t* addr, uint8_t opcode);
 
 /**
  * @brief Write Originate opcode to the call control point of a remote TBS.
@@ -201,7 +201,7 @@ bt_status_t bt_lea_ccp_call_control_by_index(bt_instance_t *ins, bt_address_t *a
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_originate_call(bt_instance_t *ins, bt_address_t *addr, uint8_t *uri);
+bt_status_t bt_lea_ccp_originate_call(bt_instance_t* ins, bt_address_t* addr, uint8_t* uri);
 
 /**
  * @brief Write Join opcode to the call control point of a remote TBS.
@@ -210,7 +210,7 @@ bt_status_t bt_lea_ccp_originate_call(bt_instance_t *ins, bt_address_t *addr, ui
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_ccp_join_calls(bt_instance_t *ins, bt_address_t *addr, uint8_t number, uint8_t *call_indexes);
+bt_status_t bt_lea_ccp_join_calls(bt_instance_t* ins, bt_address_t* addr, uint8_t number, uint8_t* call_indexes);
 
 #ifdef __cplusplus
 }

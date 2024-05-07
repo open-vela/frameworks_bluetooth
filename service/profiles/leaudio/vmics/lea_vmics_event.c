@@ -19,11 +19,11 @@
 
 #include "lea_vmics_event.h"
 
-lea_vmics_msg_t *lea_vmics_msg_new(lea_vmics_event_t event)
+lea_vmics_msg_t* lea_vmics_msg_new(lea_vmics_event_t event)
 {
-    lea_vmics_msg_t *msg;
+    lea_vmics_msg_t* msg;
 
-    msg = (lea_vmics_msg_t *)malloc(sizeof(lea_vmics_msg_t));
+    msg = (lea_vmics_msg_t*)malloc(sizeof(lea_vmics_msg_t));
     if (!msg)
         return NULL;
 
@@ -32,7 +32,7 @@ lea_vmics_msg_t *lea_vmics_msg_new(lea_vmics_event_t event)
     return msg;
 }
 
-void lea_vmics_msg_destory(lea_vmics_msg_t *msg)
+void lea_vmics_msg_destory(lea_vmics_msg_t* msg)
 {
     free(msg);
 }

@@ -23,39 +23,39 @@
 #include "bt_lea_client.h"
 #include "bt_tools.h"
 
-static int connect_device(void *handle, int argc, char *argv[]);
-static int connect_audio(void *handle, int argc, char *argv[]);
-static int disconnect_device(void *handle, int argc, char *argv[]);
-static int disconnect_audio(void *handle, int argc, char *argv[]);
-static int get_connection_state(void *handle, int argc, char *argv[]);
-static int get_group_id(void *handle, int argc, char *argv[]);
-static int discovery_member_start(void *handle, int argc, char *argv[]);
-static int discovery_member_stop(void *handle, int argc, char *argv[]);
-static int group_add_member(void *handle, int argc, char *argv[]);
-static int group_remove_member(void *handle, int argc, char *argv[]);
-static int group_connect_audio(void *handle, int argc, char *argv[]);
-static int group_disconnect_audio(void *handle, int argc, char *argv[]);
-static int group_lock(void *handle, int argc, char *argv[]);
-static int group_unlock(void *handle, int argc, char *argv[]);
+static int connect_device(void* handle, int argc, char* argv[]);
+static int connect_audio(void* handle, int argc, char* argv[]);
+static int disconnect_device(void* handle, int argc, char* argv[]);
+static int disconnect_audio(void* handle, int argc, char* argv[]);
+static int get_connection_state(void* handle, int argc, char* argv[]);
+static int get_group_id(void* handle, int argc, char* argv[]);
+static int discovery_member_start(void* handle, int argc, char* argv[]);
+static int discovery_member_stop(void* handle, int argc, char* argv[]);
+static int group_add_member(void* handle, int argc, char* argv[]);
+static int group_remove_member(void* handle, int argc, char* argv[]);
+static int group_connect_audio(void* handle, int argc, char* argv[]);
+static int group_disconnect_audio(void* handle, int argc, char* argv[]);
+static int group_lock(void* handle, int argc, char* argv[]);
+static int group_unlock(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_lea_client_tables[] = {
-    {"connect",               connect_device,         0, "\"connect device, params: <address>\""                 },
-    { "connectaudio",         connect_audio,          0, "\"connect audio, params: <address> <context>\""        },
-    { "disconnect",           disconnect_device,      0, "\"disconnect device, params: <address>\""              },
-    { "disconnectaudio",      disconnect_audio,       0, "\"disconnect audio, params: <address>\""               },
-    { "constate",             get_connection_state,   0, "\"get lea connection state, params: <address>\""       },
-    { "groupid",              get_group_id,           0, "\"get group id, params: <address>\""                   },
-    { "discoverystart",       discovery_member_start, 0, "\"discovery member start, params: <group id>\""        },
-    { "discoverystop",        discovery_member_stop,  0, "\"discovery member stop, params: <group id>\""         },
-    { "addmember",            group_add_member,       0, "\"group add member, params: <group id>  <address>\""   },
-    { "removemember",         group_remove_member,    0, "\"group remove member, params: <group id>  <address>\""},
-    { "groupconnectaudio",    group_connect_audio,    0, "\"group connect audio, params: <group id> <conetxt>\"" },
-    { "groupdisconnectaudio", group_disconnect_audio, 0, "\"group disconnect audio, params: <group id>\""        },
-    { "grouplock",            group_lock,             0, "\"group lock, params: <group id>\""                    },
-    { "groupunlock",          group_unlock,           0, "\"group unlock, params: <group id>\""                  },
+    { "connect", connect_device, 0, "\"connect device, params: <address>\"" },
+    { "connectaudio", connect_audio, 0, "\"connect audio, params: <address> <context>\"" },
+    { "disconnect", disconnect_device, 0, "\"disconnect device, params: <address>\"" },
+    { "disconnectaudio", disconnect_audio, 0, "\"disconnect audio, params: <address>\"" },
+    { "constate", get_connection_state, 0, "\"get lea connection state, params: <address>\"" },
+    { "groupid", get_group_id, 0, "\"get group id, params: <address>\"" },
+    { "discoverystart", discovery_member_start, 0, "\"discovery member start, params: <group id>\"" },
+    { "discoverystop", discovery_member_stop, 0, "\"discovery member stop, params: <group id>\"" },
+    { "addmember", group_add_member, 0, "\"group add member, params: <group id>  <address>\"" },
+    { "removemember", group_remove_member, 0, "\"group remove member, params: <group id>  <address>\"" },
+    { "groupconnectaudio", group_connect_audio, 0, "\"group connect audio, params: <group id> <conetxt>\"" },
+    { "groupdisconnectaudio", group_disconnect_audio, 0, "\"group disconnect audio, params: <group id>\"" },
+    { "grouplock", group_lock, 0, "\"group lock, params: <group id>\"" },
+    { "groupunlock", group_unlock, 0, "\"group unlock, params: <group id>\"" },
 };
 
-static void *lea_client_callbacks = NULL;
+static void* lea_client_callbacks = NULL;
 
 static void usage(void)
 {
@@ -67,7 +67,7 @@ static void usage(void)
     }
 }
 
-static int connect_device(void *handle, int argc, char *argv[])
+static int connect_device(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     if (argc < 1)
@@ -82,7 +82,7 @@ static int connect_device(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int connect_audio(void *handle, int argc, char *argv[])
+static int connect_audio(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     if (argc < 2)
@@ -97,7 +97,7 @@ static int connect_audio(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_device(void *handle, int argc, char *argv[])
+static int disconnect_device(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     if (argc < 1)
@@ -112,7 +112,7 @@ static int disconnect_device(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_audio(void *handle, int argc, char *argv[])
+static int disconnect_audio(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     if (argc < 1)
@@ -127,7 +127,7 @@ static int disconnect_audio(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int get_connection_state(void *handle, int argc, char *argv[])
+static int get_connection_state(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     profile_connection_state_t state;
@@ -145,7 +145,7 @@ static int get_connection_state(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int get_group_id(void *handle, int argc, char *argv[])
+static int get_group_id(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     uint32_t group_id;
@@ -164,7 +164,7 @@ static int get_group_id(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int discovery_member_start(void *handle, int argc, char *argv[])
+static int discovery_member_start(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -175,7 +175,7 @@ static int discovery_member_start(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int discovery_member_stop(void *handle, int argc, char *argv[])
+static int discovery_member_stop(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -186,7 +186,7 @@ static int discovery_member_stop(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int group_add_member(void *handle, int argc, char *argv[])
+static int group_add_member(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
 
@@ -202,7 +202,7 @@ static int group_add_member(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int group_remove_member(void *handle, int argc, char *argv[])
+static int group_remove_member(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
 
@@ -218,7 +218,7 @@ static int group_remove_member(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int group_connect_audio(void *handle, int argc, char *argv[])
+static int group_connect_audio(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -229,7 +229,7 @@ static int group_connect_audio(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int group_disconnect_audio(void *handle, int argc, char *argv[])
+static int group_disconnect_audio(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -240,7 +240,7 @@ static int group_disconnect_audio(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int group_lock(void *handle, int argc, char *argv[])
+static int group_lock(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -251,7 +251,7 @@ static int group_lock(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int group_unlock(void *handle, int argc, char *argv[])
+static int group_unlock(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -262,53 +262,53 @@ static int group_unlock(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void client_stack_state_callback(void *cookie, lea_client_stack_state_t enabled)
+static void client_stack_state_callback(void* cookie, lea_client_stack_state_t enabled)
 {
     PRINT("client_stack_state_callback enable:%d", enabled);
 }
 
-static void client_connection_state_callback(void *cookie,
-                                             profile_connection_state_t state, bt_address_t *bd_addr)
+static void client_connection_state_callback(void* cookie,
+    profile_connection_state_t state, bt_address_t* bd_addr)
 {
     PRINT_ADDR("lea_connection_state_callback, addr:%s, state:%d", bd_addr, state);
 }
 
-void audio_state_callback(void *cookie, lea_audio_state_t state, bt_address_t *bd_addr)
+void audio_state_callback(void* cookie, lea_audio_state_t state, bt_address_t* bd_addr)
 {
     PRINT_ADDR("audio_state_callback, addr:%s, state:%d", bd_addr, state);
 }
 
-void group_member_discovered_callback(void *cookie, uint32_t group_id, bt_address_t *bd_addr)
+void group_member_discovered_callback(void* cookie, uint32_t group_id, bt_address_t* bd_addr)
 {
     PRINT_ADDR("member_discovered_callback, addr:%s, group_id:%u", bd_addr, group_id);
 }
 
-void group_member_added_callback(void *cookie, uint32_t group_id, bt_address_t *bd_addr)
+void group_member_added_callback(void* cookie, uint32_t group_id, bt_address_t* bd_addr)
 {
     PRINT_ADDR("member_added_callback, addr:%s, group_id:%u", bd_addr, group_id);
 }
 
-void group_member_removed_callback(void *cookie, uint32_t group_id, bt_address_t *bd_addr)
+void group_member_removed_callback(void* cookie, uint32_t group_id, bt_address_t* bd_addr)
 {
     PRINT_ADDR("member_removed_callback, addr:%s, group_id:%u", bd_addr, group_id);
 }
 
-void group_discovery_start_callback(void *cookie, uint32_t group_id)
+void group_discovery_start_callback(void* cookie, uint32_t group_id)
 {
     PRINT("discovery_start_callback, group_id:%u", group_id);
 }
 
-void group_discovery_stop_callback(void *cookie, uint32_t group_id)
+void group_discovery_stop_callback(void* cookie, uint32_t group_id)
 {
     PRINT("discovery_stop_callback, group_id:%u", group_id);
 }
 
-void group_lock_callback(void *cookie, uint32_t group_id, lea_csip_lock_status result)
+void group_lock_callback(void* cookie, uint32_t group_id, lea_csip_lock_status result)
 {
     PRINT("group_lock_callback, group_id:%u, result:%d", group_id, result);
 }
 
-void group_unlock_callback(void *cookie, uint32_t group_id, lea_csip_lock_status result)
+void group_unlock_callback(void* cookie, uint32_t group_id, lea_csip_lock_status result)
 {
     PRINT("group_unlock_callback, group_id:%u, result:%d", group_id, result);
 }
@@ -327,7 +327,7 @@ static const lea_client_callbacks_t lea_client_cbs = {
     .client_group_unlock_cb = group_unlock_callback,
 };
 
-int leac_command_init(void *handle)
+int leac_command_init(void* handle)
 {
     bt_status_t ret;
 
@@ -341,7 +341,7 @@ int leac_command_init(void *handle)
     return 0;
 }
 
-void leac_command_uninit(void *handle)
+void leac_command_uninit(void* handle)
 {
     bt_status_t ret;
 
@@ -352,7 +352,7 @@ void leac_command_uninit(void *handle)
     }
 }
 
-int leac_command_exec(void *handle, int argc, char *argv[])
+int leac_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

@@ -20,7 +20,7 @@
 
 int bt_sal_hci_transport_init(void);
 void bt_sal_hci_transport_recv(void);
-int bt_sal_hci_send_packet(uint8_t *buf, uint32_t len);
+int bt_sal_hci_send_packet(uint8_t* buf, uint32_t len);
 void bt_sal_hci_transport_cleanup(void);
 
 #endif /* __BT_HCI_H4_H_ */

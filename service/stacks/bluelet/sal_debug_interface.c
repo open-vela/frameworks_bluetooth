@@ -28,20 +28,20 @@ struct _debug_type_map {
     bt_debug_type_t service_type;
     SERVICE_DEBUG_COMPONENT stack_type;
 } g_dbg_type_map[] = {
-    {BT_DBG_TYPE_HCI,       SERVICE_DEBUG_HCI     },
-    { BT_DBG_TYPE_HCI_RAW,  SERVICE_DEBUG_RAW_PDU },
-    { BT_DBG_TYPE_HCI_DUMP, SERVICE_DEBUG_HCI_DUMP},
-    { BT_DBG_TYPE_L2CAP,    SERVICE_DEBUG_L2CAP   },
-    { BT_DBG_TYPE_SDP,      SERVICE_DEBUG_SDP     },
-    { BT_DBG_TYPE_ATT,      SERVICE_DEBUG_ATT     },
-    { BT_DBG_TYPE_SMP,      SERVICE_DEBUG_SMP     },
-    { BT_DBG_TYPE_RFCOMM,   SERVICE_DEBUG_RFCOMM  },
-    { BT_DBG_TYPE_OBEX,     SERVICE_DEBUG_OBEX    },
-    { BT_DBG_TYPE_AVCTP,    SERVICE_DEBUG_AVCTP   },
-    { BT_DBG_TYPE_AVDTP,    SERVICE_DEBUG_AVDTP   },
-    { BT_DBG_TYPE_AVRCP,    SERVICE_DEBUG_AVRCP   },
-    { BT_DBG_TYPE_A2DP,     0                     },
-    { BT_DBG_TYPE_HFP,      SERVICE_DEBUG_HFP     },
+    { BT_DBG_TYPE_HCI, SERVICE_DEBUG_HCI },
+    { BT_DBG_TYPE_HCI_RAW, SERVICE_DEBUG_RAW_PDU },
+    { BT_DBG_TYPE_HCI_DUMP, SERVICE_DEBUG_HCI_DUMP },
+    { BT_DBG_TYPE_L2CAP, SERVICE_DEBUG_L2CAP },
+    { BT_DBG_TYPE_SDP, SERVICE_DEBUG_SDP },
+    { BT_DBG_TYPE_ATT, SERVICE_DEBUG_ATT },
+    { BT_DBG_TYPE_SMP, SERVICE_DEBUG_SMP },
+    { BT_DBG_TYPE_RFCOMM, SERVICE_DEBUG_RFCOMM },
+    { BT_DBG_TYPE_OBEX, SERVICE_DEBUG_OBEX },
+    { BT_DBG_TYPE_AVCTP, SERVICE_DEBUG_AVCTP },
+    { BT_DBG_TYPE_AVDTP, SERVICE_DEBUG_AVDTP },
+    { BT_DBG_TYPE_AVRCP, SERVICE_DEBUG_AVRCP },
+    { BT_DBG_TYPE_A2DP, 0 },
+    { BT_DBG_TYPE_HFP, SERVICE_DEBUG_HFP },
 };
 
 #ifdef CONFIG_BLUELET_DEBUG
@@ -63,40 +63,40 @@ static uint32_t support_types(void)
 #ifdef CONFIG_BLUELET_DEBUG
     mask = mask
 #if CONFIG_BLUELET_DBG_HCI
-           | (1 << BT_DBG_TYPE_HCI)
+        | (1 << BT_DBG_TYPE_HCI)
 #endif
 #ifdef CONFIG_BLUELET_DBG_HCIRAW
-           | (1 << BT_DBG_TYPE_HCI_RAW)
+        | (1 << BT_DBG_TYPE_HCI_RAW)
 #endif
 #ifdef CONFIG_BLUELET_DBG_L2CAP
-           | (1 << BT_DBG_TYPE_HCI_RAW)
+        | (1 << BT_DBG_TYPE_HCI_RAW)
 #endif
 #ifdef CONFIG_BLUELET_DBG_SDP
-           | (1 << BT_DBG_TYPE_HCI_RAW)
+        | (1 << BT_DBG_TYPE_HCI_RAW)
 #endif
 #ifdef CONFIG_BLUELET_DBG_ATT
-           | (1 << BT_DBG_TYPE_HCI_RAW)
+        | (1 << BT_DBG_TYPE_HCI_RAW)
 #endif
 #ifdef CONFIG_BLUELET_DBG_SMP
-           | (1 << BT_DBG_TYPE_HCI_RAW)
+        | (1 << BT_DBG_TYPE_HCI_RAW)
 #endif
 #ifdef CONFIG_BLUELET_DBG_RFCOMM
-           | (1 << BT_DBG_TYPE_HCI_RAW)
+        | (1 << BT_DBG_TYPE_HCI_RAW)
 #endif
 #ifdef CONFIG_BLUELET_DBG_OBEX
-           | (1 << BT_DBG_TYPE_HCI_RAW)
+        | (1 << BT_DBG_TYPE_HCI_RAW)
 #endif
 #ifdef CONFIG_BLUELET_DBG_AVCTP
-           | (1 << BT_DBG_TYPE_HCI_RAW)
+        | (1 << BT_DBG_TYPE_HCI_RAW)
 #endif
 #ifdef CONFIG_BLUELET_DBG_AVDTP
-           | (1 << BT_DBG_TYPE_HCI_RAW)
+        | (1 << BT_DBG_TYPE_HCI_RAW)
 #endif
 #ifdef CONFIG_BLUELET_DBG_AVRCP
-           | (1 << BT_DBG_TYPE_HCI_RAW)
+        | (1 << BT_DBG_TYPE_HCI_RAW)
 #endif
 #ifdef CONFIG_BLUELET_DBG_HFP
-           | (1 << BT_DBG_TYPE_HCI_RAW)
+        | (1 << BT_DBG_TYPE_HCI_RAW)
 #endif
         ;
 #endif

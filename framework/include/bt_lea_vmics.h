@@ -25,7 +25,7 @@
  *
  * @param cookie - callback cookie.
  */
-typedef void (*lea_vmics_test_callback)(void *cookie, int unused);
+typedef void (*lea_vmics_test_callback)(void* cookie, int unused);
 
 typedef struct
 {
@@ -40,7 +40,7 @@ typedef struct
  * @param callbacks - LE Audio vmics callback functions.
  * @return void* - callback cookie.
  */
-void *bt_lea_vmics_register_callbacks(bt_instance_t *ins, const lea_vmics_callbacks_t *callbacks);
+void* bt_lea_vmics_register_callbacks(bt_instance_t* ins, const lea_vmics_callbacks_t* callbacks);
 
 /**
  * @brief Unregister LE Audio vmics callback functions
@@ -50,7 +50,7 @@ void *bt_lea_vmics_register_callbacks(bt_instance_t *ins, const lea_vmics_callba
  * @return true - on unregister success.
  * @return false - on callback cookie not found.
  */
-bool bt_lea_vmics_unregister_callbacks(bt_instance_t *ins, void *cookie);
+bool bt_lea_vmics_unregister_callbacks(bt_instance_t* ins, void* cookie);
 
 /**
  * @brief Set Volume. Users use this function to tell the client the current value.
@@ -58,7 +58,7 @@ bool bt_lea_vmics_unregister_callbacks(bt_instance_t *ins, void *cookie);
  * @param vol - Current Volume.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_vcs_volume_set(bt_instance_t *ins, int vol);
+bt_status_t bt_lea_vcs_volume_set(bt_instance_t* ins, int vol);
 
 /**
  * @brief Set Mute state. Users use this function to tell the client the current Mute state.
@@ -66,7 +66,7 @@ bt_status_t bt_lea_vcs_volume_set(bt_instance_t *ins, int vol);
  * @param mute - Current Mute state(0:unmute, 1:mute).
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_vcs_mute_set(bt_instance_t *ins, int mute);
+bt_status_t bt_lea_vcs_mute_set(bt_instance_t* ins, int mute);
 
 /**
  * @brief Set Volume flag. Users use this function to tell the client the current Volume flag.
@@ -75,7 +75,7 @@ bt_status_t bt_lea_vcs_mute_set(bt_instance_t *ins, int mute);
  * @param flags - Current Volume flag(0:reset, 1:setted).
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_vcs_volume_flags_set(bt_instance_t *ins, int flags);
+bt_status_t bt_lea_vcs_volume_flags_set(bt_instance_t* ins, int flags);
 
 /**
  * @brief Set Mic state. Users use this function to tell the client the current Mic state.
@@ -83,6 +83,6 @@ bt_status_t bt_lea_vcs_volume_flags_set(bt_instance_t *ins, int flags);
  * @param mute - Current Mic state(0:unmute, 1:mute, 2:disable).
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_mics_mute_set(bt_instance_t *ins, int mute);
+bt_status_t bt_lea_mics_mute_set(bt_instance_t* ins, int mute);
 
 #endif

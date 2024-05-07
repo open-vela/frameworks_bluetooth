@@ -18,18 +18,18 @@
 
 #include "lea_server_event.h"
 
-lea_server_msg_t *lea_server_msg_new(lea_server_event_t event,
-                                     bt_address_t *addr)
+lea_server_msg_t* lea_server_msg_new(lea_server_event_t event,
+    bt_address_t* addr)
 {
     return lea_server_msg_new_ext(event, addr, NULL, 0);
 }
 
-lea_server_msg_t *lea_server_msg_new_ext(lea_server_event_t event,
-                                         bt_address_t *addr, void *data, size_t size)
+lea_server_msg_t* lea_server_msg_new_ext(lea_server_event_t event,
+    bt_address_t* addr, void* data, size_t size)
 {
-    lea_server_msg_t *msg;
+    lea_server_msg_t* msg;
 
-    msg = (lea_server_msg_t *)zalloc(sizeof(lea_server_msg_t));
+    msg = (lea_server_msg_t*)zalloc(sizeof(lea_server_msg_t));
     if (!msg)
         return NULL;
 
@@ -47,7 +47,7 @@ lea_server_msg_t *lea_server_msg_new_ext(lea_server_event_t event,
     return msg;
 }
 
-void lea_server_msg_destory(lea_server_msg_t *msg)
+void lea_server_msg_destory(lea_server_msg_t* msg)
 {
     if (!msg) {
         return;

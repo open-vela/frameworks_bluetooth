@@ -31,95 +31,95 @@
 #include "utils.h"
 
 static void usage(void);
-static int usage_cmd(void *handle, int argc, char **argv);
-static int enable_cmd(void *handle, int argc, char **argv);
-static int disable_cmd(void *handle, int argc, char **argv);
-static int discovery_cmd(void *handle, int argc, char **argv);
-static int get_state_cmd(void *handle, int argc, char **argv);
-static int set_adapter_cmd(void *handle, int argc, char **argv);
-static int get_adapter_cmd(void *handle, int argc, char **argv);
-static int set_scanmode_cmd(void *handle, int argc, char **argv);
-static int get_scanmode_cmd(void *handle, int argc, char **argv);
-static int set_iocap_cmd(void *handle, int argc, char **argv);
-static int get_iocap_cmd(void *handle, int argc, char **argv);
-static int get_local_addr_cmd(void *handle, int argc, char **argv);
-static int get_appearance_cmd(void *handle, int argc, char **argv);
-static int set_appearance_cmd(void *handle, int argc, char **argv);
-static int set_le_addr_cmd(void *handle, int argc, char **argv);
-static int get_le_addr_cmd(void *handle, int argc, char **argv);
-static int set_identity_addr_cmd(void *handle, int argc, char **argv);
-static int set_scan_parameters_cmd(void *handle, int argc, char **argv);
-static int get_local_name_cmd(void *handle, int argc, char **argv);
-static int set_local_name_cmd(void *handle, int argc, char **argv);
-static int get_local_cod_cmd(void *handle, int argc, char **argv);
-static int set_local_cod_cmd(void *handle, int argc, char **argv);
-static int pair_cmd(void *handle, int argc, char **argv);
-static int pair_set_auto_cmd(void *handle, int argc, char **argv);
-static int pair_reply_cmd(void *handle, int argc, char **argv);
-static int pair_set_pincode_cmd(void *handle, int argc, char **argv);
-static int pair_set_passkey_cmd(void *handle, int argc, char **argv);
-static int pair_set_confirm_cmd(void *handle, int argc, char **argv);
-static int connect_cmd(void *handle, int argc, char **argv);
-static int disconnect_cmd(void *handle, int argc, char **argv);
-static int le_connect_cmd(void *handle, int argc, char **argv);
-static int le_disconnect_cmd(void *handle, int argc, char **argv);
-static int create_bond_cmd(void *handle, int argc, char **argv);
-static int cancel_bond_cmd(void *handle, int argc, char **argv);
-static int remove_bond_cmd(void *handle, int argc, char **argv);
-static int device_show_cmd(void *handle, int argc, char **argv);
-static int device_set_alias_cmd(void *handle, int argc, char **argv);
-static int get_bonded_devices_cmd(void *handle, int argc, char **argv);
-static int get_connected_devices_cmd(void *handle, int argc, char **argv);
-static int search_cmd(void *handle, int argc, char **argv);
-static int start_service_cmd(void *handle, int argc, char **argv);
-static int stop_service_cmd(void *handle, int argc, char **argv);
-static int set_phy_cmd(void *handle, int argc, char **argv);
-static int dump_cmd(void *handle, int argc, char **argv);
-static int quit_cmd(void *handle, int argc, char **argv);
+static int usage_cmd(void* handle, int argc, char** argv);
+static int enable_cmd(void* handle, int argc, char** argv);
+static int disable_cmd(void* handle, int argc, char** argv);
+static int discovery_cmd(void* handle, int argc, char** argv);
+static int get_state_cmd(void* handle, int argc, char** argv);
+static int set_adapter_cmd(void* handle, int argc, char** argv);
+static int get_adapter_cmd(void* handle, int argc, char** argv);
+static int set_scanmode_cmd(void* handle, int argc, char** argv);
+static int get_scanmode_cmd(void* handle, int argc, char** argv);
+static int set_iocap_cmd(void* handle, int argc, char** argv);
+static int get_iocap_cmd(void* handle, int argc, char** argv);
+static int get_local_addr_cmd(void* handle, int argc, char** argv);
+static int get_appearance_cmd(void* handle, int argc, char** argv);
+static int set_appearance_cmd(void* handle, int argc, char** argv);
+static int set_le_addr_cmd(void* handle, int argc, char** argv);
+static int get_le_addr_cmd(void* handle, int argc, char** argv);
+static int set_identity_addr_cmd(void* handle, int argc, char** argv);
+static int set_scan_parameters_cmd(void* handle, int argc, char** argv);
+static int get_local_name_cmd(void* handle, int argc, char** argv);
+static int set_local_name_cmd(void* handle, int argc, char** argv);
+static int get_local_cod_cmd(void* handle, int argc, char** argv);
+static int set_local_cod_cmd(void* handle, int argc, char** argv);
+static int pair_cmd(void* handle, int argc, char** argv);
+static int pair_set_auto_cmd(void* handle, int argc, char** argv);
+static int pair_reply_cmd(void* handle, int argc, char** argv);
+static int pair_set_pincode_cmd(void* handle, int argc, char** argv);
+static int pair_set_passkey_cmd(void* handle, int argc, char** argv);
+static int pair_set_confirm_cmd(void* handle, int argc, char** argv);
+static int connect_cmd(void* handle, int argc, char** argv);
+static int disconnect_cmd(void* handle, int argc, char** argv);
+static int le_connect_cmd(void* handle, int argc, char** argv);
+static int le_disconnect_cmd(void* handle, int argc, char** argv);
+static int create_bond_cmd(void* handle, int argc, char** argv);
+static int cancel_bond_cmd(void* handle, int argc, char** argv);
+static int remove_bond_cmd(void* handle, int argc, char** argv);
+static int device_show_cmd(void* handle, int argc, char** argv);
+static int device_set_alias_cmd(void* handle, int argc, char** argv);
+static int get_bonded_devices_cmd(void* handle, int argc, char** argv);
+static int get_connected_devices_cmd(void* handle, int argc, char** argv);
+static int search_cmd(void* handle, int argc, char** argv);
+static int start_service_cmd(void* handle, int argc, char** argv);
+static int stop_service_cmd(void* handle, int argc, char** argv);
+static int set_phy_cmd(void* handle, int argc, char** argv);
+static int dump_cmd(void* handle, int argc, char** argv);
+static int quit_cmd(void* handle, int argc, char** argv);
 
-static bt_instance_t *g_bttool_ins = NULL;
-static void *adapter_callback = NULL;
-static void *adapter_callback2 = NULL;
+static bt_instance_t* g_bttool_ins = NULL;
+static void* adapter_callback = NULL;
+static void* adapter_callback2 = NULL;
 static pthread_mutex_t bt_lock;
 static pthread_cond_t disable_cond;
 static bool g_cmd_had_inited = false;
 
 static struct {
     int cmd_err_code;
-    const char *cmd_err_code_desc;
+    const char* cmd_err_code_desc;
 } cmd_err_map[] = {
-    {CMD_OK,                "OK"                  },
-    { CMD_INVALID_PARAM,    "Invalid Parameter"   },
-    { CMD_INVALID_OPT,      "Invalid Option"      },
-    { CMD_INVALID_ADDR,     "Invalid Address"     },
-    { CMD_PARAM_NOT_ENOUGH, "Parameter Not Enough"},
-    { CMD_UNKNOWN,          "Unknown Command"     },
-    { CMD_USAGE_FAULT,      "Command Usage Fault" },
-    { CMD_ERROR,            "API Return Error"    },
+    { CMD_OK, "OK" },
+    { CMD_INVALID_PARAM, "Invalid Parameter" },
+    { CMD_INVALID_OPT, "Invalid Option" },
+    { CMD_INVALID_ADDR, "Invalid Address" },
+    { CMD_PARAM_NOT_ENOUGH, "Parameter Not Enough" },
+    { CMD_UNKNOWN, "Unknown Command" },
+    { CMD_USAGE_FAULT, "Command Usage Fault" },
+    { CMD_ERROR, "API Return Error" },
 };
 
 static struct option main_options[] = {
-    {"help",     0, 0, 'h'},
-    { "version", 0, 0, 'v'},
-    { 0,         0, 0, 0  }
+    { "help", 0, 0, 'h' },
+    { "version", 0, 0, 'v' },
+    { 0, 0, 0, 0 }
 };
 
 static struct option le_conn_options[] = {
-    {"addr",               required_argument, 0, 'a'},
-    { "type",              required_argument, 0, 't'},
-    { "defaults",          no_argument,       0, 'd'},
-    { "filter",            required_argument, 0, 'f'},
-    { "phy",               required_argument, 0, 'p'},
-    { "latency",           required_argument, 0, 'l'},
-    { "conn_interval_min", required_argument, 0, 0  },
-    { "conn_interval_max", required_argument, 0, 0  },
-    { "timeout",           required_argument, 0, 'T'},
-    { "scan_interval",     required_argument, 0, 0  },
-    { "scan_window",       required_argument, 0, 0  },
-    { "min_ce_length",     required_argument, 0, 0  },
-    { "max_ce_length",     required_argument, 0, 0  },
-    { "help",              no_argument,       0, 'h'},
-    { 0,                   0,                 0, 0  }
+    { "addr", required_argument, 0, 'a' },
+    { "type", required_argument, 0, 't' },
+    { "defaults", no_argument, 0, 'd' },
+    { "filter", required_argument, 0, 'f' },
+    { "phy", required_argument, 0, 'p' },
+    { "latency", required_argument, 0, 'l' },
+    { "conn_interval_min", required_argument, 0, 0 },
+    { "conn_interval_max", required_argument, 0, 0 },
+    { "timeout", required_argument, 0, 'T' },
+    { "scan_interval", required_argument, 0, 0 },
+    { "scan_window", required_argument, 0, 0 },
+    { "min_ce_length", required_argument, 0, 0 },
+    { "max_ce_length", required_argument, 0, 0 },
+    { "help", no_argument, 0, 'h' },
+    { 0, 0, 0, 0 }
 };
 
 #define LE_CONN_USAGE "\n"                                                                                                      \
@@ -144,86 +144,86 @@ static struct option le_conn_options[] = {
 #define SET_LE_PHY_USAGE "set le tx and rx phy, params: <addr><txphy><rxphy>(0:1M, 1:2M, 2:CODED)"
 
 static bt_command_t g_cmd_tables[] = {
-    {"enable",        enable_cmd,             0, "enable stack"                                             },
-    { "disable",      disable_cmd,            0, "disable stack"                                            },
-    { "state",        get_state_cmd,          0, "get adapter state"                                        },
-    { "inquiry",      discovery_cmd,          0, INQUIRY_USAGE                                              },
-    { "set",          set_adapter_cmd,        0, "set adapter information, input \'set help\' show usage"   },
-    { "get",          get_adapter_cmd,        0, "get adapter information, input \'get help\' show usage"   },
-    { "pair",         pair_cmd,               0, "reply pair request, input \'pair help\' show usage"       },
-    { "connect",      connect_cmd,            0, "connect classic peer device, params: <addr>"              },
-    { "disconnect",   disconnect_cmd,         0, "disconnect peer device, params: <addr>"                   },
-    { "leconnect",    le_connect_cmd,         1, "connect le peer device, input \'leconnect -h\' show usage"},
-    { "ledisconnect", le_disconnect_cmd,      0, "disconnect le peer device, params: <addr>"                },
-    { "createbond",   create_bond_cmd,        0, "create bond, params: <addr> <transport>(0:BLE, 1:BREDR)"  },
-    { "cancelbond",   cancel_bond_cmd,        0, "cancel bond, params: <addr>"                              },
-    { "removebond",   remove_bond_cmd,        0, "remove bond, params: <addr> <transport>(0:BLE, 1:BREDR)"  },
-    { "setalias",     device_set_alias_cmd,   0, "set device alias, params: <addr>"                         },
-    { "device",       device_show_cmd,        0, "show device information, params: <addr>"                  },
-    { "search",       search_cmd,             0, "service serach <addr>, Not implemented"                   },
-    { "start",        start_service_cmd,      0, "start profile service, Not implemented"                   },
-    { "stop",         stop_service_cmd,       0, "stop profile service,  Not implemented"                   },
-    { "setphy",       set_phy_cmd,            0, SET_LE_PHY_USAGE                                           },
+    { "enable", enable_cmd, 0, "enable stack" },
+    { "disable", disable_cmd, 0, "disable stack" },
+    { "state", get_state_cmd, 0, "get adapter state" },
+    { "inquiry", discovery_cmd, 0, INQUIRY_USAGE },
+    { "set", set_adapter_cmd, 0, "set adapter information, input \'set help\' show usage" },
+    { "get", get_adapter_cmd, 0, "get adapter information, input \'get help\' show usage" },
+    { "pair", pair_cmd, 0, "reply pair request, input \'pair help\' show usage" },
+    { "connect", connect_cmd, 0, "connect classic peer device, params: <addr>" },
+    { "disconnect", disconnect_cmd, 0, "disconnect peer device, params: <addr>" },
+    { "leconnect", le_connect_cmd, 1, "connect le peer device, input \'leconnect -h\' show usage" },
+    { "ledisconnect", le_disconnect_cmd, 0, "disconnect le peer device, params: <addr>" },
+    { "createbond", create_bond_cmd, 0, "create bond, params: <addr> <transport>(0:BLE, 1:BREDR)" },
+    { "cancelbond", cancel_bond_cmd, 0, "cancel bond, params: <addr>" },
+    { "removebond", remove_bond_cmd, 0, "remove bond, params: <addr> <transport>(0:BLE, 1:BREDR)" },
+    { "setalias", device_set_alias_cmd, 0, "set device alias, params: <addr>" },
+    { "device", device_show_cmd, 0, "show device information, params: <addr>" },
+    { "search", search_cmd, 0, "service serach <addr>, Not implemented" },
+    { "start", start_service_cmd, 0, "start profile service, Not implemented" },
+    { "stop", stop_service_cmd, 0, "stop profile service,  Not implemented" },
+    { "setphy", set_phy_cmd, 0, SET_LE_PHY_USAGE },
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
-    { "adv",          adv_command_exec,       0, "advertising cmd,   input \'adv\' show usage"              },
+    { "adv", adv_command_exec, 0, "advertising cmd,   input \'adv\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-    { "scan",         scan_command_exec,      0, "scan cmd,          input \'scan\' show usage"             },
+    { "scan", scan_command_exec, 0, "scan cmd,          input \'scan\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-    { "a2dpsnk",      a2dp_sink_command_exec, 0, "a2dp sink cmd,    input \'a2dpsnk\' show usage"           },
+    { "a2dpsnk", a2dp_sink_command_exec, 0, "a2dp sink cmd,    input \'a2dpsnk\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    { "a2dpsrc",      a2dp_src_command_exec,  0, "a2dp source cmd,    input \'a2dpsrc\' show usage"         },
+    { "a2dpsrc", a2dp_src_command_exec, 0, "a2dp source cmd,    input \'a2dpsrc\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
-    { "hf",           hfp_hf_command_exec,    0, "hands-free cmd,    input \'hf\' show usage"               },
+    { "hf", hfp_hf_command_exec, 0, "hands-free cmd,    input \'hf\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_AG
-    { "ag",           hfp_ag_command_exec,    0, "audio-gateway cmd, input \'ag\' show usage"               },
+    { "ag", hfp_ag_command_exec, 0, "audio-gateway cmd, input \'ag\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
-    { "spp",          spp_command_exec,       0, "serial port cmd,   input \'spp\' show usage"              },
+    { "spp", spp_command_exec, 0, "serial port cmd,   input \'spp\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
-    { "hidd",         hidd_command_exec,      0, "hid device cmd,    input \'hidd\' show usage"             },
+    { "hidd", hidd_command_exec, 0, "hid device cmd,    input \'hidd\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
-    { "pan",          pan_command_exec,       0, "pan cmd,           input \'pan\' show usage"              },
+    { "pan", pan_command_exec, 0, "pan cmd,           input \'pan\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_GATT
-    { "gattc",        gattc_command_exec,     0, "gatt client cmd    input \'gattc\' show usage"            },
-    { "gatts",        gatts_command_exec,     0, "gatt server cmd    input \'gatts\' show usage"            },
+    { "gattc", gattc_command_exec, 0, "gatt client cmd    input \'gattc\' show usage" },
+    { "gatts", gatts_command_exec, 0, "gatt server cmd    input \'gatts\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
-    { "leas",         leas_command_exec,      0, "lea server cmd, input \'leas\' show usage"                },
+    { "leas", leas_command_exec, 0, "lea server cmd, input \'leas\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_MCP
-    { "mcp",          lea_mcp_command_exec,   0, "leaudio mcp cmd,  input \'mcp\' show usage"               },
+    { "mcp", lea_mcp_command_exec, 0, "leaudio mcp cmd,  input \'mcp\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CCP
-    { "ccp",          lea_ccp_command_exec,   0, "lea ccp cmd, input \'ccp\' show usage"                    },
+    { "ccp", lea_ccp_command_exec, 0, "lea ccp cmd, input \'ccp\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
-    { "vmics",        vmics_command_exec,     0, "vcp/micp server cmd, input \'vmics\' show usage"          },
+    { "vmics", vmics_command_exec, 0, "vcp/micp server cmd, input \'vmics\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
-    { "leac",         leac_command_exec,      0, "lea client cmd, input \'leac\' show usage"                },
+    { "leac", leac_command_exec, 0, "lea client cmd, input \'leac\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_MCS
-    { "mcs",          lea_mcs_command_exec,   0, "leaudio mcp cmd,  input \'mcs\' show usage"               },
+    { "mcs", lea_mcs_command_exec, 0, "leaudio mcp cmd,  input \'mcs\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
-    { "tbs",          lea_tbs_command_exec,   0, "lea tbs cmd, input \'tbs\' show usage"                    },
+    { "tbs", lea_tbs_command_exec, 0, "lea tbs cmd, input \'tbs\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
-    { "vmicp",        vmicp_command_exec,     0, "vcp/micp client cmd, input \'vmicp\' show usage"          },
+    { "vmicp", vmicp_command_exec, 0, "vcp/micp client cmd, input \'vmicp\' show usage" },
 #endif
-    { "dump",         dump_cmd,               0, "dump adapter state"                                       },
-    { "log",          log_command,            0, "log control command"                                      },
-    { "help",         usage_cmd,              0, "Usage for bttools"                                        },
-    { "quit",         quit_cmd,               0, "Quit"                                                     },
-    { "q",            quit_cmd,               0, "Quit"                                                     },
+    { "dump", dump_cmd, 0, "dump adapter state" },
+    { "log", log_command, 0, "log control command" },
+    { "help", usage_cmd, 0, "Usage for bttools" },
+    { "quit", quit_cmd, 0, "Quit" },
+    { "q", quit_cmd, 0, "Quit" },
 };
 
 #define SET_IOCAP_USAGE "params: <io capability> (0:displayonly, 1:yes&no, 2:keyboardonly, 3:no-in/no-out 4:keyboard&display)"
@@ -231,46 +231,46 @@ static bt_command_t g_cmd_tables[] = {
 #define SET_SCANPARAMS_USAGE "set scan parameters, params: <mode>(0: INQUIRY, 1: PAGE), <type>(0: standard, 1: interlaced), <interval>(range in 18-4096), <window>(range in 17-4096)"
 
 static bt_command_t g_set_cmd_tables[] = {
-    {"scanmode",    set_scanmode_cmd,        0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)"},
-    { "iocap",      set_iocap_cmd,           0, SET_IOCAP_USAGE                                                         },
-    { "name",       set_local_name_cmd,      0, "params: <local name>, example \"vela-bt\""                             },
-    { "class",      set_local_cod_cmd,       0, SET_CLASS_USAGE                                                         },
-    { "appearance", set_appearance_cmd,      0, "set le adapter appearance, params: <appearance>"                       },
-    { "leaddr",     set_le_addr_cmd,         0, "set ble adapter addr, params: <leaddr>"                                },
-    { "id",         set_identity_addr_cmd,   0, "set ble identity addr, params: <identity addr> <addr type>"            },
-    { "scanparams", set_scan_parameters_cmd, 0, SET_SCANPARAMS_USAGE                                                    },
-    { "help",       NULL,                    0, "show set help info"                                                    },
- //{ "", , "set " },
+    { "scanmode", set_scanmode_cmd, 0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)" },
+    { "iocap", set_iocap_cmd, 0, SET_IOCAP_USAGE },
+    { "name", set_local_name_cmd, 0, "params: <local name>, example \"vela-bt\"" },
+    { "class", set_local_cod_cmd, 0, SET_CLASS_USAGE },
+    { "appearance", set_appearance_cmd, 0, "set le adapter appearance, params: <appearance>" },
+    { "leaddr", set_le_addr_cmd, 0, "set ble adapter addr, params: <leaddr>" },
+    { "id", set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>" },
+    { "scanparams", set_scan_parameters_cmd, 0, SET_SCANPARAMS_USAGE },
+    { "help", NULL, 0, "show set help info" },
+    //{ "", , "set " },
 };
 
 static bt_command_t g_get_cmd_tables[] = {
-    {"scanmode",    get_scanmode_cmd,          0, "get adapter scan mode"                                   },
-    { "iocap",      get_iocap_cmd,             0, "get adapter io capability"                               },
-    { "addr",       get_local_addr_cmd,        0, "get adapter local addr"                                  },
-    { "leaddr",     get_le_addr_cmd,           0, "get ble adapter addr"                                    },
-    { "name",       get_local_name_cmd,        0, "get adapter local name"                                  },
-    { "appearance", get_appearance_cmd,        0, "get le adapter appearance"                               },
-    { "class",      get_local_cod_cmd,         0, "get adapter local class of device"                       },
-    { "bonded",     get_bonded_devices_cmd,    0, "get bonded devices, params:<transport>(0:BLE, 1:BREDR)"  },
-    { "connected",  get_connected_devices_cmd, 0, "get connected devices params:<transport>(0:BLE, 1:BREDR)"},
-    { "help",       NULL,                      0, "show get help info"                                      },
- //{ "", , "get " },
+    { "scanmode", get_scanmode_cmd, 0, "get adapter scan mode" },
+    { "iocap", get_iocap_cmd, 0, "get adapter io capability" },
+    { "addr", get_local_addr_cmd, 0, "get adapter local addr" },
+    { "leaddr", get_le_addr_cmd, 0, "get ble adapter addr" },
+    { "name", get_local_name_cmd, 0, "get adapter local name" },
+    { "appearance", get_appearance_cmd, 0, "get le adapter appearance" },
+    { "class", get_local_cod_cmd, 0, "get adapter local class of device" },
+    { "bonded", get_bonded_devices_cmd, 0, "get bonded devices, params:<transport>(0:BLE, 1:BREDR)" },
+    { "connected", get_connected_devices_cmd, 0, "get connected devices params:<transport>(0:BLE, 1:BREDR)" },
+    { "help", NULL, 0, "show get help info" },
+    //{ "", , "get " },
 };
 
 #define PAIR_PASSKEY_USAGE "input ssp passkey, params: <addr> <transport>(0:BLE, 1:BREDR)<reply>(0 :reject, 1: accept)<passkey>"
 #define PAIR_CONFIRM_USAGE "set ssp confirmation, params: <addr> <transport> (0:BLE, 1:BREDR)<conform>(0 :reject, 1: accept)"
 
 static bt_command_t g_pair_cmd_tables[] = {
-    {"auto",     pair_set_auto_cmd,    0, "enable pair auto reply, params: <enable>(0:disable, 1:enable)"         },
-    { "reply",   pair_reply_cmd,       0, "reply the pair request, params: <addr><accept?>(0 :reject, 1: accept)" },
-    { "pin",     pair_set_pincode_cmd, 0, "input pin code, params: <addr><accept?>(0 :reject, 1: accept)<pincode>"},
-    { "passkey", pair_set_passkey_cmd, 0, PAIR_PASSKEY_USAGE                                                      },
-    { "confirm", pair_set_confirm_cmd, 0, PAIR_CONFIRM_USAGE                                                      },
-    { "help",    NULL,                 0, "show pair help info"                                                   },
- //{ "", , "set " },
+    { "auto", pair_set_auto_cmd, 0, "enable pair auto reply, params: <enable>(0:disable, 1:enable)" },
+    { "reply", pair_reply_cmd, 0, "reply the pair request, params: <addr><accept?>(0 :reject, 1: accept)" },
+    { "pin", pair_set_pincode_cmd, 0, "input pin code, params: <addr><accept?>(0 :reject, 1: accept)<pincode>" },
+    { "passkey", pair_set_passkey_cmd, 0, PAIR_PASSKEY_USAGE },
+    { "confirm", pair_set_confirm_cmd, 0, PAIR_CONFIRM_USAGE },
+    { "help", NULL, 0, "show pair help info" },
+    //{ "", , "set " },
 };
 
-static void bt_tool_init(void *handle)
+static void bt_tool_init(void* handle)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_command_init(handle);
@@ -327,7 +327,7 @@ static void bt_tool_init(void *handle)
     g_cmd_had_inited = true;
 }
 
-static void bt_tool_uninit(void *handle)
+static void bt_tool_uninit(void* handle)
 {
     if (!g_cmd_had_inited)
         return;
@@ -384,7 +384,7 @@ static void bt_tool_uninit(void *handle)
     g_cmd_had_inited = false;
 }
 
-static const char *cmd_err_str(int err_code)
+static const char* cmd_err_str(int err_code)
 {
     for (int i = 0; i < ARRAY_SIZE(cmd_err_map); i++) {
         if (cmd_err_map[i].cmd_err_code == err_code)
@@ -395,7 +395,7 @@ static const char *cmd_err_str(int err_code)
 }
 
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_LOCAL
-static void do_disable_wait(void *handle)
+static void do_disable_wait(void* handle)
 {
     pthread_mutex_lock(&bt_lock);
     bt_adapter_disable(handle);
@@ -403,7 +403,7 @@ static void do_disable_wait(void *handle)
     pthread_mutex_unlock(&bt_lock);
 }
 
-static void disable_done_signal(void *handle)
+static void disable_done_signal(void* handle)
 {
     pthread_mutex_lock(&bt_lock);
     pthread_cond_signal(&disable_cond);
@@ -411,25 +411,25 @@ static void disable_done_signal(void *handle)
 }
 #endif
 
-static int enable_cmd(void *handle, int argc, char **argv)
+static int enable_cmd(void* handle, int argc, char** argv)
 {
     bt_adapter_enable(handle);
     return CMD_OK;
 }
 
-static int disable_cmd(void *handle, int argc, char **argv)
+static int disable_cmd(void* handle, int argc, char** argv)
 {
     bt_adapter_disable(handle);
     return CMD_OK;
 }
 
-static int get_state_cmd(void *handle, int argc, char **argv)
+static int get_state_cmd(void* handle, int argc, char** argv)
 {
     PRINT("Adapter State: %d", bt_adapter_get_state(handle));
     return CMD_OK;
 }
 
-static int discovery_cmd(void *handle, int argc, char **argv)
+static int discovery_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -502,7 +502,7 @@ static void pair_usage(void)
            "\tpair help\n");
 }
 
-static int set_adapter_cmd(void *handle, int argc, char **argv)
+static int set_adapter_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1) {
         set_usage();
@@ -516,7 +516,7 @@ static int set_adapter_cmd(void *handle, int argc, char **argv)
     return ret;
 }
 
-static int get_adapter_cmd(void *handle, int argc, char **argv)
+static int get_adapter_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1) {
         get_usage();
@@ -530,7 +530,7 @@ static int get_adapter_cmd(void *handle, int argc, char **argv)
     return ret;
 }
 
-static int set_scanmode_cmd(void *handle, int argc, char **argv)
+static int set_scanmode_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -546,13 +546,13 @@ static int set_scanmode_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int get_scanmode_cmd(void *handle, int argc, char **argv)
+static int get_scanmode_cmd(void* handle, int argc, char** argv)
 {
     PRINT("Scan Mode:%d", bt_adapter_get_scan_mode(handle));
     return CMD_OK;
 }
 
-static int set_iocap_cmd(void *handle, int argc, char **argv)
+static int set_iocap_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -572,13 +572,13 @@ static int set_iocap_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int get_iocap_cmd(void *handle, int argc, char **argv)
+static int get_iocap_cmd(void* handle, int argc, char** argv)
 {
     PRINT("IO Capability:%d", bt_adapter_get_io_capability(handle));
     return CMD_OK;
 }
 
-static int get_local_addr_cmd(void *handle, int argc, char **argv)
+static int get_local_addr_cmd(void* handle, int argc, char** argv)
 {
     bt_address_t addr;
 
@@ -587,7 +587,7 @@ static int get_local_addr_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int get_appearance_cmd(void *handle, int argc, char **argv)
+static int get_appearance_cmd(void* handle, int argc, char** argv)
 {
     uint16_t appearance;
 
@@ -596,7 +596,7 @@ static int get_appearance_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int set_appearance_cmd(void *handle, int argc, char **argv)
+static int set_appearance_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -608,7 +608,7 @@ static int set_appearance_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int set_le_addr_cmd(void *handle, int argc, char **argv)
+static int set_le_addr_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -622,7 +622,7 @@ static int set_le_addr_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int get_le_addr_cmd(void *handle, int argc, char **argv)
+static int get_le_addr_cmd(void* handle, int argc, char** argv)
 {
     bt_address_t addr;
     ble_addr_type_t type;
@@ -633,7 +633,7 @@ static int get_le_addr_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int set_identity_addr_cmd(void *handle, int argc, char **argv)
+static int set_identity_addr_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -652,7 +652,7 @@ static int set_identity_addr_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int set_scan_parameters_cmd(void *handle, int argc, char **argv)
+static int set_scan_parameters_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
@@ -681,7 +681,7 @@ static int set_scan_parameters_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int get_local_name_cmd(void *handle, int argc, char **argv)
+static int get_local_name_cmd(void* handle, int argc, char** argv)
 {
     char name[64 + 1];
 
@@ -691,12 +691,12 @@ static int get_local_name_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int set_local_name_cmd(void *handle, int argc, char **argv)
+static int set_local_name_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    char *name = argv[0];
+    char* name = argv[0];
     if (strlen(name) > 63) {
         PRINT("name length to long");
         return CMD_INVALID_PARAM;
@@ -709,14 +709,14 @@ static int set_local_name_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int get_local_cod_cmd(void *handle, int argc, char **argv)
+static int get_local_cod_cmd(void* handle, int argc, char** argv)
 {
     uint32_t cod = bt_adapter_get_device_class(handle);
     PRINT("Local class of device: 0x%08" PRIx32 ", is HEADSET: %s", cod, IS_HEADSET(cod) ? "true" : "false");
     return CMD_OK;
 }
 
-static int set_local_cod_cmd(void *handle, int argc, char **argv)
+static int set_local_cod_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -733,7 +733,7 @@ static int set_local_cod_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int pair_cmd(void *handle, int argc, char **argv)
+static int pair_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1) {
         pair_usage();
@@ -750,7 +750,7 @@ static int pair_cmd(void *handle, int argc, char **argv)
 static bool g_auto_accept_pair = true;
 static bond_state_t g_bond_state = BOND_STATE_NONE;
 
-static int pair_set_auto_cmd(void *handle, int argc, char **argv)
+static int pair_set_auto_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -774,7 +774,7 @@ static int pair_set_auto_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int pair_reply_cmd(void *handle, int argc, char **argv)
+static int pair_reply_cmd(void* handle, int argc, char** argv)
 {
     bt_address_t addr;
 
@@ -796,10 +796,10 @@ static int pair_reply_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int pair_set_pincode_cmd(void *handle, int argc, char **argv)
+static int pair_set_pincode_cmd(void* handle, int argc, char** argv)
 {
     bt_address_t addr;
-    char *pincode = NULL;
+    char* pincode = NULL;
     uint8_t pincode_len = 0;
 
     if (argc < 2)
@@ -827,7 +827,7 @@ static int pair_set_pincode_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int pair_set_passkey_cmd(void *handle, int argc, char **argv)
+static int pair_set_passkey_cmd(void* handle, int argc, char** argv)
 {
     bt_address_t addr;
     int passkey = 0;
@@ -867,7 +867,7 @@ static int pair_set_passkey_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int pair_set_confirm_cmd(void *handle, int argc, char **argv)
+static int pair_set_confirm_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
@@ -892,7 +892,7 @@ static int pair_set_confirm_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int connect_cmd(void *handle, int argc, char **argv)
+static int connect_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -908,7 +908,7 @@ static int connect_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int disconnect_cmd(void *handle, int argc, char **argv)
+static int disconnect_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -924,7 +924,7 @@ static int disconnect_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int le_connect_cmd(void *handle, int argc, char **argv)
+static int le_connect_cmd(void* handle, int argc, char** argv)
 {
     int opt, index = 0;
     bt_address_t addr;
@@ -946,7 +946,8 @@ static int le_connect_cmd(void *handle, int argc, char **argv)
     bt_addr_set_empty(&addr);
     optind = 1;
     while ((opt = getopt_long(argc, argv, "a:t:f:p:l:T:dh", le_conn_options,
-                              &index)) != -1) {
+                &index))
+        != -1) {
         switch (opt) {
         case 'a': {
             if (bt_addr_str2ba(optarg, &addr) < 0) {
@@ -964,8 +965,7 @@ static int le_connect_cmd(void *handle, int argc, char **argv)
         } break;
         case 'f': {
             int32_t filter = atoi(optarg);
-            if (filter != BT_LE_CONNECT_FILTER_POLICY_ADDR &&
-                filter != BT_LE_CONNECT_FILTER_POLICY_WHITE_LIST) {
+            if (filter != BT_LE_CONNECT_FILTER_POLICY_ADDR && filter != BT_LE_CONNECT_FILTER_POLICY_WHITE_LIST) {
                 PRINT("Invalid filter:%s", optarg);
                 return CMD_INVALID_PARAM;
             }
@@ -1000,7 +1000,7 @@ static int le_connect_cmd(void *handle, int argc, char **argv)
             PRINT("%s", LE_CONN_USAGE);
         } break;
         case 0: {
-            const char *curopt = le_conn_options[index].name;
+            const char* curopt = le_conn_options[index].name;
             int32_t val = atoi(optarg);
 
             if (strncmp(curopt, "conn_interval_min", strlen("conn_interval_min")) == 0) {
@@ -1057,7 +1057,7 @@ static int le_connect_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int le_disconnect_cmd(void *handle, int argc, char **argv)
+static int le_disconnect_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -1073,7 +1073,7 @@ static int le_disconnect_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int create_bond_cmd(void *handle, int argc, char **argv)
+static int create_bond_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -1094,7 +1094,7 @@ static int create_bond_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int cancel_bond_cmd(void *handle, int argc, char **argv)
+static int cancel_bond_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -1111,7 +1111,7 @@ static int cancel_bond_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int remove_bond_cmd(void *handle, int argc, char **argv)
+static int remove_bond_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -1132,7 +1132,7 @@ static int remove_bond_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int set_phy_cmd(void *handle, int argc, char **argv)
+static int set_phy_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
@@ -1154,7 +1154,7 @@ static int set_phy_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static const char *bond_state_to_string(bond_state_t state)
+static const char* bond_state_to_string(bond_state_t state)
 {
     switch (state) {
     case BOND_STATE_NONE:
@@ -1168,11 +1168,11 @@ static const char *bond_state_to_string(bond_state_t state)
     }
 }
 
-static void device_dump(void *handle, bt_address_t *addr, bt_transport_t transport)
+static void device_dump(void* handle, bt_address_t* addr, bt_transport_t transport)
 {
     char uuid_str[40] = { 0 };
     char name[64] = { 0 };
-    bt_uuid_t *uuids = NULL;
+    bt_uuid_t* uuids = NULL;
     uint16_t uuid_cnt = 0;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
@@ -1211,7 +1211,7 @@ static void device_dump(void *handle, bt_address_t *addr, bt_transport_t transpo
     }
 }
 
-static int device_show_cmd(void *handle, int argc, char **argv)
+static int device_show_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -1226,7 +1226,7 @@ static int device_show_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int device_set_alias_cmd(void *handle, int argc, char **argv)
+static int device_set_alias_cmd(void* handle, int argc, char** argv)
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -1245,9 +1245,9 @@ static int device_set_alias_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int get_bonded_devices_cmd(void *handle, int argc, char **argv)
+static int get_bonded_devices_cmd(void* handle, int argc, char** argv)
 {
-    bt_address_t *addrs = NULL;
+    bt_address_t* addrs = NULL;
     int num = 0;
 
     if (argc < 1)
@@ -1267,9 +1267,9 @@ static int get_bonded_devices_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int get_connected_devices_cmd(void *handle, int argc, char **argv)
+static int get_connected_devices_cmd(void* handle, int argc, char** argv)
 {
-    bt_address_t *addrs = NULL;
+    bt_address_t* addrs = NULL;
     int num = 0;
 
     if (argc < 1)
@@ -1289,28 +1289,28 @@ static int get_connected_devices_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int search_cmd(void *handle, int argc, char **argv)
+static int search_cmd(void* handle, int argc, char** argv)
 {
     PRINT("%s", __func__);
     return CMD_OK;
 }
 
-static int start_service_cmd(void *handle, int argc, char **argv)
+static int start_service_cmd(void* handle, int argc, char** argv)
 {
     return CMD_OK;
 }
 
-static int stop_service_cmd(void *handle, int argc, char **argv)
+static int stop_service_cmd(void* handle, int argc, char** argv)
 {
     return CMD_OK;
 }
 
-static int dump_cmd(void *handle, int argc, char **argv)
+static int dump_cmd(void* handle, int argc, char** argv)
 {
     return CMD_OK;
 }
 
-static int usage_cmd(void *handle, int argc, char **argv)
+static int usage_cmd(void* handle, int argc, char** argv)
 {
     if (argc == 2 && !strcmp(argv[1], "me!!!"))
         return -2;
@@ -1320,7 +1320,7 @@ static int usage_cmd(void *handle, int argc, char **argv)
     return CMD_OK;
 }
 
-static int quit_cmd(void *handle, int argc, char **argv)
+static int quit_cmd(void* handle, int argc, char** argv)
 {
     return -2;
 }
@@ -1345,7 +1345,7 @@ static void show_version(void)
     printf("Version :1.0.1");
 }
 
-static int execute_command(void *handle, int argc, char *argv[])
+static int execute_command(void* handle, int argc, char* argv[])
 {
     int ret;
 
@@ -1369,7 +1369,7 @@ static int execute_command(void *handle, int argc, char *argv[])
     return CMD_UNKNOWN;
 }
 
-static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
+static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
     PRINT("Context:%p, Adapter state changed: %d", cookie, state);
     if (state == BT_ADAPTER_STATE_ON) {
@@ -1398,33 +1398,33 @@ static void on_adapter_state_changed_cb(void *cookie, bt_adapter_state_t state)
     }
 }
 
-static void on_adapter_state_changed_cb_2(void *cookie, bt_adapter_state_t state)
+static void on_adapter_state_changed_cb_2(void* cookie, bt_adapter_state_t state)
 {
     PRINT("Context2:%p, Adapter state changed: %d", cookie, state);
 }
 
-static void on_discovery_state_changed_cb(void *cookie, bt_discovery_state_t state)
+static void on_discovery_state_changed_cb(void* cookie, bt_discovery_state_t state)
 {
     PRINT("Discovery state: %s", state == BT_DISCOVERY_STATE_STARTED ? "Started" : "Stopped");
 }
 
-static void on_discovery_result_cb(void *cookie, bt_discovery_result_t *result)
+static void on_discovery_result_cb(void* cookie, bt_discovery_result_t* result)
 {
     PRINT_ADDR("Inquiring: device [%s], name: %s, cod: %08" PRIx32 ", is HEADSET: %s, rssi: %d",
-               &result->addr, result->name, result->cod, IS_HEADSET(result->cod) ? "true" : "false", result->rssi);
+        &result->addr, result->name, result->cod, IS_HEADSET(result->cod) ? "true" : "false", result->rssi);
 }
 
-static void on_scan_mode_changed_cb(void *cookie, bt_scan_mode_t mode)
+static void on_scan_mode_changed_cb(void* cookie, bt_scan_mode_t mode)
 {
     PRINT("Adapter new scan mode: %d", mode);
 }
 
-static void on_device_name_changed_cb(void *cookie, const char *device_name)
+static void on_device_name_changed_cb(void* cookie, const char* device_name)
 {
     PRINT("Adapter update device name: %s", device_name);
 }
 
-static void on_pair_request_cb(void *cookie, bt_address_t *addr)
+static void on_pair_request_cb(void* cookie, bt_address_t* addr)
 {
     if (g_auto_accept_pair)
         bt_device_pair_request_reply(g_bttool_ins, addr, true);
@@ -1434,7 +1434,7 @@ static void on_pair_request_cb(void *cookie, bt_address_t *addr)
 
 #define LINK_TYPE(trans_) (trans_ == BT_TRANSPORT_BREDR ? "BREDR" : "LE")
 
-static void on_pair_display_cb(void *cookie, bt_address_t *addr, bt_transport_t transport, bt_pair_type_t type, uint32_t passkey)
+static void on_pair_display_cb(void* cookie, bt_address_t* addr, bt_transport_t transport, bt_pair_type_t type, uint32_t passkey)
 {
     char buff[128] = { 0 };
     char buff1[64] = { 0 };
@@ -1463,39 +1463,39 @@ static void on_pair_display_cb(void *cookie, bt_address_t *addr, bt_transport_t 
     PRINT("%s", buff);
 }
 
-static void on_connect_request_cb(void *cookie, bt_address_t *addr)
+static void on_connect_request_cb(void* cookie, bt_address_t* addr)
 {
     bt_device_connect_request_reply(g_bttool_ins, addr, true);
     PRINT_ADDR("Incoming connect request from [%s], auto accepted", addr);
 }
 
-static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr, bt_transport_t transport, connection_state_t state)
+static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr, bt_transport_t transport, connection_state_t state)
 {
     PRINT_ADDR("Device [%s][%s] connection state: %d", addr, LINK_TYPE(transport), state);
 }
 
-static void on_bond_state_changed_cb(void *cookie, bt_address_t *addr, bt_transport_t transport, bond_state_t state, bool is_ctkd)
+static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transport_t transport, bond_state_t state, bool is_ctkd)
 {
     g_bond_state = state;
     PRINT_ADDR("Device [%s][%s] bond state: %s, is_ctkd: %d", addr, LINK_TYPE(transport), bond_state_to_string(state), is_ctkd);
 }
 
-static void on_remote_name_changed_cb(void *cookie, bt_address_t *addr, const char *name)
+static void on_remote_name_changed_cb(void* cookie, bt_address_t* addr, const char* name)
 {
     PRINT_ADDR("Device [%s] name changed: %s", addr, name);
 }
 
-static void on_remote_alias_changed_cb(void *cookie, bt_address_t *addr, const char *alias)
+static void on_remote_alias_changed_cb(void* cookie, bt_address_t* addr, const char* alias)
 {
     PRINT_ADDR("Device [%s] alias changed: %s", addr, alias);
 }
 
-static void on_remote_cod_changed_cb(void *cookie, bt_address_t *addr, uint32_t cod)
+static void on_remote_cod_changed_cb(void* cookie, bt_address_t* addr, uint32_t cod)
 {
     PRINT_ADDR("Device [%s] class changed: 0x%08" PRIx32 "", addr, cod);
 }
 
-static void on_remote_uuids_changed_cb(void *cookie, bt_address_t *addr, bt_uuid_t *uuids, uint16_t size)
+static void on_remote_uuids_changed_cb(void* cookie, bt_address_t* addr, bt_uuid_t* uuids, uint16_t size)
 {
     char uuid_str[40] = { 0 };
 
@@ -1510,7 +1510,7 @@ static void on_remote_uuids_changed_cb(void *cookie, bt_address_t *addr, bt_uuid
     }
 }
 
-static void on_remote_link_mode_changed_cb(void *cookie, bt_address_t *addr, bt_link_mode_t mode, uint16_t sniff_interval)
+static void on_remote_link_mode_changed_cb(void* cookie, bt_address_t* addr, bt_link_mode_t mode, uint16_t sniff_interval)
 {
     PRINT("%s mode:%d, interval:%" PRIu16, __func__, mode, sniff_interval);
 }
@@ -1537,10 +1537,10 @@ const static adapter_callbacks_t g_adapter_cbs_2 = {
     .on_adapter_state_changed = on_adapter_state_changed_cb_2,
 };
 
-int execute_command_in_table_offset(void *handle, bt_command_t *table, uint32_t table_size, int argc, char *argv[], uint8_t offset)
+int execute_command_in_table_offset(void* handle, bt_command_t* table, uint32_t table_size, int argc, char* argv[], uint8_t offset)
 {
     int ret;
-    bt_command_t *cmd = table;
+    bt_command_t* cmd = table;
 
     for (int i = 0; i < table_size; i++) {
         if (strlen(cmd->cmd) == strlen(argv[0]) && strncmp(cmd->cmd, argv[0], strlen(argv[0])) == 0) {
@@ -1556,18 +1556,18 @@ int execute_command_in_table_offset(void *handle, bt_command_t *table, uint32_t 
     return CMD_UNKNOWN;
 }
 
-int execute_command_in_table(void *handle, bt_command_t *table, uint32_t table_size, int argc, char *argv[])
+int execute_command_in_table(void* handle, bt_command_t* table, uint32_t table_size, int argc, char* argv[])
 {
     return execute_command_in_table_offset(handle, table, table_size, argc, argv, 1);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     int opt;
     int _argc = 0;
-    char *_argv[32];
-    char *buffer = NULL;
-    char *saveptr;
+    char* _argv[32];
+    char* buffer = NULL;
+    char* saveptr;
     int ret, len;
 
     while ((opt = getopt_long(argc, argv, "h-v-d", main_options, NULL)) != -1) {
@@ -1631,7 +1631,7 @@ int main(int argc, char **argv)
             buffer[len - 1] = '\0';
 
         saveptr = NULL;
-        char *tmpstr = buffer;
+        char* tmpstr = buffer;
 
         while ((tmpstr = strtok_r(tmpstr, " ", &saveptr)) != NULL) {
             _argv[_argc] = tmpstr;

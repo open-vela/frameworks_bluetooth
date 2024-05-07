@@ -24,12 +24,12 @@
 
 bt_status_t bt_sal_pan_init(pan_role_t role, uint8_t max_connection);
 void bt_sal_pan_cleanup(void);
-bt_status_t bt_sal_pan_connect(bt_address_t *addr,
-                               pan_role_t dst_role,
-                               pan_role_t src_role);
-bt_status_t bt_sal_pan_disconnect(bt_address_t *addr);
-bt_status_t bt_sal_pan_write(bt_address_t *addr, uint16_t protocol,
-                             uint8_t *dst_addr, uint8_t *src_addr,
-                             uint8_t *buffer, uint16_t length);
+bt_status_t bt_sal_pan_connect(bt_address_t* addr,
+    pan_role_t dst_role,
+    pan_role_t src_role);
+bt_status_t bt_sal_pan_disconnect(bt_address_t* addr);
+bt_status_t bt_sal_pan_write(bt_address_t* addr, uint16_t protocol,
+    uint8_t* dst_addr, uint8_t* src_addr,
+    uint8_t* buffer, uint16_t length);
 
 #endif /* __SAL_PAN_INTERFACE_H__ */

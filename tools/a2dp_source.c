@@ -23,17 +23,17 @@
 #include "bt_adapter.h"
 #include "bt_tools.h"
 
-static int connect_cmd(void *handle, int argc, char *argv[]);
-static int disconnect_cmd(void *handle, int argc, char *argv[]);
-static int get_state_cmd(void *handle, int argc, char *argv[]);
+static int connect_cmd(void* handle, int argc, char* argv[]);
+static int disconnect_cmd(void* handle, int argc, char* argv[]);
+static int get_state_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_a2dp_tables[] = {
-    {"connect",     connect_cmd,    0, "\"establish a2dp signal and stream connection, params: <address>\"" },
-    { "disconnect", disconnect_cmd, 0, "\"disconnect a2dp signal and stream connection, params: <address>\""},
-    { "state",      get_state_cmd,  0, "\"get a2dp connection or audio state , params: <address>\""         },
+    { "connect", connect_cmd, 0, "\"establish a2dp signal and stream connection, params: <address>\"" },
+    { "disconnect", disconnect_cmd, 0, "\"disconnect a2dp signal and stream connection, params: <address>\"" },
+    { "state", get_state_cmd, 0, "\"get a2dp connection or audio state , params: <address>\"" },
 };
 
-static void *src_cbks_cookie = NULL;
+static void* src_cbks_cookie = NULL;
 
 static void usage(void)
 {
@@ -45,7 +45,7 @@ static void usage(void)
     }
 }
 
-static int connect_cmd(void *handle, int argc, char *argv[])
+static int connect_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -60,7 +60,7 @@ static int connect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_cmd(void *handle, int argc, char *argv[])
+static int disconnect_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     if (argc < 1)
@@ -75,7 +75,7 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int get_state_cmd(void *handle, int argc, char *argv[])
+static int get_state_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -90,17 +90,17 @@ static int get_state_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void a2dp_src_connection_state_cb(void *cookie, bt_address_t *addr, profile_connection_state_t state)
+static void a2dp_src_connection_state_cb(void* cookie, bt_address_t* addr, profile_connection_state_t state)
 {
     PRINT_ADDR("a2dp_src_connection_state_cb, addr:%s, state:%d", addr, state);
 }
 
-static void a2dp_src_audio_state_cb(void *cookie, bt_address_t *addr, a2dp_audio_state_t state)
+static void a2dp_src_audio_state_cb(void* cookie, bt_address_t* addr, a2dp_audio_state_t state)
 {
     PRINT_ADDR("a2dp_src_audio_state_cb, addr:%s, state:%d", addr, state);
 }
 
-static void a2dp_src_audio_source_config_cb(void *cookie, bt_address_t *addr)
+static void a2dp_src_audio_source_config_cb(void* cookie, bt_address_t* addr)
 {
     PRINT_ADDR("a2dp_src_audio_source_config_cb, addr:%s", addr);
 }
@@ -112,21 +112,21 @@ static const a2dp_source_callbacks_t a2dp_src_cbs = {
     a2dp_src_audio_source_config_cb,
 };
 
-int a2dp_src_commond_init(void *handle)
+int a2dp_src_commond_init(void* handle)
 {
     src_cbks_cookie = bt_a2dp_source_register_callbacks(handle, &a2dp_src_cbs);
 
     return 0;
 }
 
-int a2dp_src_commond_uninit(void *handle)
+int a2dp_src_commond_uninit(void* handle)
 {
     bt_a2dp_source_unregister_callbacks(handle, src_cbks_cookie);
 
     return 0;
 }
 
-int a2dp_src_command_exec(void *handle, int argc, char *argv[])
+int a2dp_src_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

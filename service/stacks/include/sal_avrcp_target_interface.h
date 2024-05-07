@@ -18,23 +18,23 @@
 
 #include <stdint.h>
 
+#include "avrcp_target_service.h"
 #include "bt_addr.h"
 #include "bt_status.h"
-#include "avrcp_target_service.h"
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
 #include "avrcp_msg.h"
 bt_status_t bt_sal_avrcp_target_init(void);
 void bt_sal_avrcp_target_cleanup(void);
 
-bt_status_t bt_sal_avrcp_target_get_play_status_rsp(bt_address_t *addr,
-                                                    avrcp_play_status_t status, uint32_t song_len, uint32_t song_pos);
-bt_status_t bt_sal_avrcp_target_play_status_notify(bt_address_t *addr, avrcp_play_status_t status);
-bt_status_t bt_sal_avrcp_target_set_absolute_volume(bt_address_t *addr, uint8_t volume);
+bt_status_t bt_sal_avrcp_target_get_play_status_rsp(bt_address_t* addr,
+    avrcp_play_status_t status, uint32_t song_len, uint32_t song_pos);
+bt_status_t bt_sal_avrcp_target_play_status_notify(bt_address_t* addr, avrcp_play_status_t status);
+bt_status_t bt_sal_avrcp_target_set_absolute_volume(bt_address_t* addr, uint8_t volume);
 
-bt_status_t bt_sal_avrcp_target_notify_track_changed(bt_address_t *addr, bool selected);
-bt_status_t bt_sal_avrcp_target_notify_play_position_changed(bt_address_t *addr, uint32_t position);
-bt_status_t bt_sal_avrcp_target_register_volume_changed(bt_address_t *addr);
+bt_status_t bt_sal_avrcp_target_notify_track_changed(bt_address_t* addr, bool selected);
+bt_status_t bt_sal_avrcp_target_notify_play_position_changed(bt_address_t* addr, uint32_t position);
+bt_status_t bt_sal_avrcp_target_register_volume_changed(bt_address_t* addr);
 
-void bt_sal_avrcp_target_event_callback(avrcp_msg_t *msg);
+void bt_sal_avrcp_target_event_callback(avrcp_msg_t* msg);
 #endif
 #endif /* __SAL_AVRCP_TARGET_INTERFACE_H__ */

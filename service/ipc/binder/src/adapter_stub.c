@@ -39,16 +39,16 @@
 
 #define BT_ADAPTER_DESC "BluetoothAdapter"
 
-static void *IBtAdapter_Class_onCreate(void *arg)
+static void* IBtAdapter_Class_onCreate(void* arg)
 {
     return arg;
 }
 
-static void IBtAdapter_Class_onDestroy(void *userData)
+static void IBtAdapter_Class_onDestroy(void* userData)
 {
 }
 
-static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
+static binder_status_t IBtAdapter_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
     bt_status_t status;
@@ -56,7 +56,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
 
     switch (code) {
     case IBTADAPTER_REGISTER_CALLBACK: {
-        AIBinder *remote;
+        AIBinder* remote;
 
         stat = AParcel_readStrongBinder(in, &remote);
         if (stat != STATUS_OK)
@@ -67,19 +67,19 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
             return STATUS_FAILED_TRANSACTION;
         }
 
-        void *cookie = adapter_register_callback(remote, BpBtAdapterCallbacks_getStatic());
+        void* cookie = adapter_register_callback(remote, BpBtAdapterCallbacks_getStatic());
         stat = AParcel_writeUint32(out, (uint32_t)cookie);
         break;
     }
     case IBTADAPTER_UNREGISTER_CALLBACK: {
-        AIBinder *remote = NULL;
+        AIBinder* remote = NULL;
         uint32_t cookie;
 
         stat = AParcel_readUint32(in, &cookie);
         if (stat != STATUS_OK)
             return stat;
 
-        bool ret = adapter_unregister_callback((void **)&remote, (void *)cookie);
+        bool ret = adapter_unregister_callback((void**)&remote, (void*)cookie);
         if (ret && remote)
             AIBinder_decStrong(remote);
 
@@ -153,7 +153,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         break;
     }
     case IBTADAPTER_SET_NAME: {
-        char *name;
+        char* name;
 
         stat = AParcel_readString(in, &name, AParcelUtils_stringAllocator);
         if (stat != STATUS_OK)
@@ -299,7 +299,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         stat = AParcel_writeUint32(out, appearance);
     }
     case IBTADAPTER_GET_BONDED_DEVICES: {
-        bt_address_t *addrs = NULL;
+        bt_address_t* addrs = NULL;
         int size = 0;
 
         status = adapter_get_bonded_devices(&addrs, &size, AParcelUtils_btCommonAllocator, BT_TRANSPORT_BREDR);
@@ -313,7 +313,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         break;
     }
     case IBTADAPTER_GET_CONNECTED_DEVICES: {
-        bt_address_t *addrs = NULL;
+        bt_address_t* addrs = NULL;
         int size = 0;
 
         status = adapter_get_connected_devices(&addrs, &size, AParcelUtils_btCommonAllocator, BT_TRANSPORT_BREDR);
@@ -344,7 +344,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
     }
     case IBTADAPTER_START_ADVERTISING: {
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
-        AIBinder *remote;
+        AIBinder* remote;
         ble_adv_params_t param;
         uint8_t *adv, *scan_rsp;
         uint32_t adv_len, scan_rsp_len;
@@ -362,7 +362,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&adv, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readByteArray(in, (void*)&adv, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             return stat;
 
@@ -370,7 +370,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&scan_rsp, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readByteArray(in, (void*)&scan_rsp, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             return stat;
 
@@ -378,7 +378,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         if (stat != STATUS_OK)
             return stat;
 
-        void *cookie = start_advertising(remote, &param, adv, adv_len, scan_rsp, scan_rsp_len, BpBtAdvertiserCallbacks_getStatic());
+        void* cookie = start_advertising(remote, &param, adv, adv_len, scan_rsp, scan_rsp_len, BpBtAdvertiserCallbacks_getStatic());
         free(adv);
         free(scan_rsp);
         stat = AParcel_writeUint32(out, (uint32_t)cookie);
@@ -393,7 +393,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         if (stat != STATUS_OK)
             return stat;
 
-        stop_advertising((bt_advertiser_t *)adver);
+        stop_advertising((bt_advertiser_t*)adver);
 #endif
         break;
     }
@@ -411,7 +411,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
     }
     case IBTADAPTER_START_SCAN: {
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-        AIBinder *remote;
+        AIBinder* remote;
 
         stat = AParcel_readStrongBinder(in, &remote);
         if (stat != STATUS_OK)
@@ -422,14 +422,14 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
             return STATUS_FAILED_TRANSACTION;
         }
 
-        void *cookie = scanner_start_scan(remote, BpBtScannerCallbacks_getStatic());
+        void* cookie = scanner_start_scan(remote, BpBtScannerCallbacks_getStatic());
         stat = AParcel_writeUint32(out, (uint32_t)cookie);
 #endif
         break;
     }
     case IBTADAPTER_START_SCAN_SETTINGS: {
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-        AIBinder *remote;
+        AIBinder* remote;
         ble_scan_settings_t settings;
 
         stat = AParcel_readStrongBinder(in, &remote);
@@ -453,7 +453,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         if (stat != STATUS_OK)
             return stat;
 
-        void *cookie = scanner_start_scan_settings(remote, &settings, BpBtScannerCallbacks_getStatic());
+        void* cookie = scanner_start_scan_settings(remote, &settings, BpBtScannerCallbacks_getStatic());
         stat = AParcel_writeUint32(out, (uint32_t)cookie);
 #endif
         break;
@@ -466,7 +466,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         if (stat != STATUS_OK)
             return stat;
 
-        scanner_stop_scan((bt_scanner_t *)scanner);
+        scanner_stop_scan((bt_scanner_t*)scanner);
 #endif
         break;
     }
@@ -510,7 +510,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         break;
     }
     case IREMOTE_GET_UUIDS: {
-        bt_uuid_t *uuids = NULL;
+        bt_uuid_t* uuids = NULL;
         uint16_t uuidSize = 0;
 
         stat = AParcel_readAddress(in, &addr);
@@ -567,7 +567,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
         break;
     }
     case IREMOTE_SET_ALIAS: {
-        char *alias = NULL;
+        char* alias = NULL;
 
         stat = AParcel_readAddress(in, &addr);
         if (stat != STATUS_OK)
@@ -705,7 +705,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
     }
     case IREMOTE_SET_PIN_CODE: {
         bool accept;
-        char *pincode = NULL;
+        char* pincode = NULL;
         uint32_t len;
 
         stat = AParcel_readAddress(in, &addr);
@@ -828,16 +828,16 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder *binder, transaction
     return stat;
 }
 
-static AIBinder *BtAdapter_getBinder(IBtAdapter *adapter)
+static AIBinder* BtAdapter_getBinder(IBtAdapter* adapter)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (adapter->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(adapter->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(adapter->clazz, (void *)adapter);
+        binder = AIBinder_new(adapter->clazz, (void*)adapter);
         if (adapter->WeakBinder != NULL) {
             AIBinder_Weak_delete(adapter->WeakBinder);
         }
@@ -848,16 +848,16 @@ static AIBinder *BtAdapter_getBinder(IBtAdapter *adapter)
     return binder;
 }
 
-AIBinder_Class *BtAdapter_Class_define(void)
+AIBinder_Class* BtAdapter_Class_define(void)
 {
     return AIBinder_Class_define(BT_ADAPTER_DESC, IBtAdapter_Class_onCreate,
-                                 IBtAdapter_Class_onDestroy, IBtAdapter_Class_onTransact);
+        IBtAdapter_Class_onDestroy, IBtAdapter_Class_onTransact);
 }
 
-binder_status_t BtAdapter_addService(IBtAdapter *adapter, const char *instance)
+binder_status_t BtAdapter_addService(IBtAdapter* adapter, const char* instance)
 {
     adapter->clazz = BtAdapter_Class_define();
-    AIBinder *binder = BtAdapter_getBinder(adapter);
+    AIBinder* binder = BtAdapter_getBinder(adapter);
     adapter->usr_data = NULL;
 
     binder_status_t status = AServiceManager_addService(binder, instance);
@@ -866,11 +866,11 @@ binder_status_t BtAdapter_addService(IBtAdapter *adapter, const char *instance)
     return status;
 }
 
-BpBtAdapter *BpBtAdapter_new(const char *instance)
+BpBtAdapter* BpBtAdapter_new(const char* instance)
 {
-    AIBinder *binder = NULL;
-    AIBinder_Class *clazz;
-    BpBtAdapter *bpBinder = NULL;
+    AIBinder* binder = NULL;
+    AIBinder_Class* clazz;
+    BpBtAdapter* bpBinder = NULL;
 
     clazz = BtAdapter_Class_define();
     binder = AServiceManager_getService(instance);
@@ -899,15 +899,15 @@ bail:
     return NULL;
 }
 
-void BpBtAdapter_delete(BpBtAdapter *bpAdapter)
+void BpBtAdapter_delete(BpBtAdapter* bpAdapter)
 {
     AIBinder_decStrong(bpAdapter->binder);
     free(bpAdapter);
 }
 
-AIBinder *BtAdapter_getService(BpBtAdapter **bpAdapter, const char *instance)
+AIBinder* BtAdapter_getService(BpBtAdapter** bpAdapter, const char* instance)
 {
-    BpBtAdapter *bpBinder = *bpAdapter;
+    BpBtAdapter* bpBinder = *bpAdapter;
 
     if (bpBinder && bpBinder->binder)
         return bpBinder->binder;

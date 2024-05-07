@@ -24,13 +24,13 @@
 
 bt_status_t bt_sal_spp_init(void);
 void bt_sal_spp_cleanup(void);
-bt_status_t bt_sal_spp_server_start(uint16_t svr_port, bt_uuid_t *uuid128, uint8_t max_conn_cnt);
+bt_status_t bt_sal_spp_server_start(uint16_t svr_port, bt_uuid_t* uuid128, uint8_t max_conn_cnt);
 bt_status_t bt_sal_spp_server_stop(uint16_t svr_port);
-bt_status_t bt_sal_spp_connect(bt_address_t *addr, uint16_t conn_port, bt_uuid_t *uuid128);
+bt_status_t bt_sal_spp_connect(bt_address_t* addr, uint16_t conn_port, bt_uuid_t* uuid128);
 bt_status_t bt_sal_spp_disconnect(uint16_t conn_port);
-bt_status_t bt_sal_spp_write(uint16_t conn_port, uint8_t *buffer, uint16_t length);
+bt_status_t bt_sal_spp_write(uint16_t conn_port, uint8_t* buffer, uint16_t length);
 bt_status_t bt_sal_spp_add_credits(uint16_t conn_port, uint8_t credits);
-bt_status_t bt_sal_spp_data_received_response(uint16_t conn_port, uint8_t *buffer);
-bt_status_t bt_sal_spp_connect_request_reply(bt_address_t *addr, uint16_t conn_port, bool accept);
+bt_status_t bt_sal_spp_data_received_response(uint16_t conn_port, uint8_t* buffer);
+bt_status_t bt_sal_spp_connect_request_reply(bt_address_t* addr, uint16_t conn_port, bool accept);
 
 #endif /* __SAL_SPP_INTERFACE_H__ */

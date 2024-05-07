@@ -27,7 +27,7 @@
 #include "parcel.h"
 #include "utils/log.h"
 
-void *BpBtGattServer_registerService(BpBtGattServer *bpBinder, AIBinder *cbksBinder)
+void* BpBtGattServer_registerService(BpBtGattServer* bpBinder, AIBinder* cbksBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -36,7 +36,7 @@ void *BpBtGattServer_registerService(BpBtGattServer *bpBinder, AIBinder *cbksBin
     if (!bpBinder || !bpBinder->binder)
         return NULL;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -54,10 +54,10 @@ void *BpBtGattServer_registerService(BpBtGattServer *bpBinder, AIBinder *cbksBin
     if (stat != STATUS_OK)
         return NULL;
 
-    return (void *)handle;
+    return (void*)handle;
 }
 
-bt_status_t BpBtGattServer_unregisterService(BpBtGattServer *bpBinder, void *handle)
+bt_status_t BpBtGattServer_unregisterService(BpBtGattServer* bpBinder, void* handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -66,7 +66,7 @@ bt_status_t BpBtGattServer_unregisterService(BpBtGattServer *bpBinder, void *han
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -87,7 +87,7 @@ bt_status_t BpBtGattServer_unregisterService(BpBtGattServer *bpBinder, void *han
     return status;
 }
 
-bt_status_t BpBtGattServer_connect(BpBtGattServer *bpBinder, void *handle, bt_address_t *addr, ble_addr_type_t addr_type)
+bt_status_t BpBtGattServer_connect(BpBtGattServer* bpBinder, void* handle, bt_address_t* addr, ble_addr_type_t addr_type)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -96,7 +96,7 @@ bt_status_t BpBtGattServer_connect(BpBtGattServer *bpBinder, void *handle, bt_ad
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -125,7 +125,7 @@ bt_status_t BpBtGattServer_connect(BpBtGattServer *bpBinder, void *handle, bt_ad
     return status;
 }
 
-bt_status_t BpBtGattServer_disconnect(BpBtGattServer *bpBinder, void *handle)
+bt_status_t BpBtGattServer_disconnect(BpBtGattServer* bpBinder, void* handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -134,7 +134,7 @@ bt_status_t BpBtGattServer_disconnect(BpBtGattServer *bpBinder, void *handle)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -155,7 +155,7 @@ bt_status_t BpBtGattServer_disconnect(BpBtGattServer *bpBinder, void *handle)
     return status;
 }
 
-bt_status_t BpBtGattServer_createServiceTable(BpBtGattServer *bpBinder, void *handle, gatt_srv_db_t *srv_db)
+bt_status_t BpBtGattServer_createServiceTable(BpBtGattServer* bpBinder, void* handle, gatt_srv_db_t* srv_db)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -167,7 +167,7 @@ bt_status_t BpBtGattServer_createServiceTable(BpBtGattServer *bpBinder, void *ha
     if (!srv_db)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -192,7 +192,7 @@ bt_status_t BpBtGattServer_createServiceTable(BpBtGattServer *bpBinder, void *ha
     return state;
 }
 
-bt_status_t BpBtGattServer_start(BpBtGattServer *bpBinder, void *handle)
+bt_status_t BpBtGattServer_start(BpBtGattServer* bpBinder, void* handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -201,7 +201,7 @@ bt_status_t BpBtGattServer_start(BpBtGattServer *bpBinder, void *handle)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -222,7 +222,7 @@ bt_status_t BpBtGattServer_start(BpBtGattServer *bpBinder, void *handle)
     return status;
 }
 
-bt_status_t BpBtGattServer_stop(BpBtGattServer *bpBinder, void *handle)
+bt_status_t BpBtGattServer_stop(BpBtGattServer* bpBinder, void* handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -231,7 +231,7 @@ bt_status_t BpBtGattServer_stop(BpBtGattServer *bpBinder, void *handle)
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -252,7 +252,7 @@ bt_status_t BpBtGattServer_stop(BpBtGattServer *bpBinder, void *handle)
     return status;
 }
 
-bt_status_t BpBtGattServer_response(BpBtGattServer *bpBinder, void *handle, uint32_t req_handle, uint8_t *value, uint16_t length)
+bt_status_t BpBtGattServer_response(BpBtGattServer* bpBinder, void* handle, uint32_t req_handle, uint8_t* value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -261,7 +261,7 @@ bt_status_t BpBtGattServer_response(BpBtGattServer *bpBinder, void *handle, uint
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -279,7 +279,7 @@ bt_status_t BpBtGattServer_response(BpBtGattServer *bpBinder, void *handle, uint
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)value, length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
@@ -294,7 +294,7 @@ bt_status_t BpBtGattServer_response(BpBtGattServer *bpBinder, void *handle, uint
     return status;
 }
 
-bt_status_t BpBtGattServer_notify(BpBtGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t BpBtGattServer_notify(BpBtGattServer* bpBinder, void* handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -303,7 +303,7 @@ bt_status_t BpBtGattServer_notify(BpBtGattServer *bpBinder, void *handle, uint16
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -321,7 +321,7 @@ bt_status_t BpBtGattServer_notify(BpBtGattServer *bpBinder, void *handle, uint16
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)value, length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
@@ -336,7 +336,7 @@ bt_status_t BpBtGattServer_notify(BpBtGattServer *bpBinder, void *handle, uint16
     return status;
 }
 
-bt_status_t BpBtGattServer_indicate(BpBtGattServer *bpBinder, void *handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t BpBtGattServer_indicate(BpBtGattServer* bpBinder, void* handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -345,7 +345,7 @@ bt_status_t BpBtGattServer_indicate(BpBtGattServer *bpBinder, void *handle, uint
     if (!bpBinder || !bpBinder->binder)
         return BT_STATUS_PARM_INVALID;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -363,7 +363,7 @@ bt_status_t BpBtGattServer_indicate(BpBtGattServer *bpBinder, void *handle, uint
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeByteArray(parcelIn, (const int8_t *)value, length);
+    stat = AParcel_writeByteArray(parcelIn, (const int8_t*)value, length);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 

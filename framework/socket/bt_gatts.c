@@ -30,9 +30,9 @@
             return BT_STATUS_PARM_INVALID; \
     } while (0)
 
-static bt_gatts_remote_t *gatts_remote_new(bt_instance_t *ins, gatts_callbacks_t *callbacks)
+static bt_gatts_remote_t* gatts_remote_new(bt_instance_t* ins, gatts_callbacks_t* callbacks)
 {
-    bt_gatts_remote_t *remote = malloc(sizeof(bt_gatts_remote_t));
+    bt_gatts_remote_t* remote = malloc(sizeof(bt_gatts_remote_t));
     if (!remote)
         return NULL;
 
@@ -49,7 +49,7 @@ static bt_gatts_remote_t *gatts_remote_new(bt_instance_t *ins, gatts_callbacks_t
     return remote;
 }
 
-static void gatts_remote_destroy(bt_gatts_remote_t *remote)
+static void gatts_remote_destroy(bt_gatts_remote_t* remote)
 {
     if (!remote)
         return;
@@ -58,11 +58,11 @@ static void gatts_remote_destroy(bt_gatts_remote_t *remote)
     free(remote);
 }
 
-bt_status_t bt_gatts_register_service(bt_instance_t *ins, gatts_handle_t *phandle, gatts_callbacks_t *callbacks)
+bt_status_t bt_gatts_register_service(bt_instance_t* ins, gatts_handle_t* phandle, gatts_callbacks_t* callbacks)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote;
+    bt_gatts_remote_t* gatts_remote;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
     CHECK_NULL_PTR(phandle);
@@ -92,11 +92,11 @@ bt_status_t bt_gatts_unregister_service(gatts_handle_t srv_handle)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
 
     CHECK_NULL_PTR(gatts_remote);
 
-    void **user_phandle = gatts_remote->user_phandle;
+    void** user_phandle = gatts_remote->user_phandle;
 
     packet.gatts_pl._bt_gatts_unregister.handle = gatts_remote->cookie;
     status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_UNREGISTER_SERVICE);
@@ -112,11 +112,11 @@ bt_status_t bt_gatts_unregister_service(gatts_handle_t srv_handle)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_gatts_connect(gatts_handle_t srv_handle, bt_address_t *addr, ble_addr_type_t addr_type)
+bt_status_t bt_gatts_connect(gatts_handle_t srv_handle, bt_address_t* addr, ble_addr_type_t addr_type)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
 
     CHECK_NULL_PTR(gatts_remote);
 
@@ -130,11 +130,11 @@ bt_status_t bt_gatts_connect(gatts_handle_t srv_handle, bt_address_t *addr, ble_
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_disconnect(gatts_handle_t srv_handle, bt_address_t *addr)
+bt_status_t bt_gatts_disconnect(gatts_handle_t srv_handle, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
 
     CHECK_NULL_PTR(gatts_remote);
 
@@ -147,14 +147,14 @@ bt_status_t bt_gatts_disconnect(gatts_handle_t srv_handle, bt_address_t *addr)
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_add_attr_table(gatts_handle_t srv_handle, gatt_srv_db_t *srv_db)
+bt_status_t bt_gatts_add_attr_table(gatts_handle_t srv_handle, gatt_srv_db_t* srv_db)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
-    uint8_t *raw_data = (uint8_t *)packet.gatts_pl._bt_gatts_add_attr_table.attr_db;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
+    uint8_t* raw_data = (uint8_t*)packet.gatts_pl._bt_gatts_add_attr_table.attr_db;
     uint32_t data_length = sizeof(gatt_attr_db_t) * srv_db->attr_num;
-    gatt_attr_db_t *attr_inst = srv_db->attr_db;
+    gatt_attr_db_t* attr_inst = srv_db->attr_db;
 
     CHECK_NULL_PTR(gatts_remote);
     if (data_length > sizeof(packet.gatts_pl._bt_gatts_add_attr_table.attr_db))
@@ -190,7 +190,7 @@ bt_status_t bt_gatts_remove_attr_table(gatts_handle_t srv_handle, uint16_t attr_
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
 
     CHECK_NULL_PTR(gatts_remote);
 
@@ -201,10 +201,10 @@ bt_status_t bt_gatts_remove_attr_table(gatts_handle_t srv_handle, uint16_t attr_
         return status;
 
     if (packet.gatts_r.status == BT_STATUS_SUCCESS) {
-        bt_list_node_t *node;
-        bt_list_t *list = gatts_remote->db_list;
+        bt_list_node_t* node;
+        bt_list_t* list = gatts_remote->db_list;
         for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
-            gatt_srv_db_t *srv_db = (gatt_srv_db_t *)bt_list_node(node);
+            gatt_srv_db_t* srv_db = (gatt_srv_db_t*)bt_list_node(node);
             if (srv_db->attr_db->handle == attr_handle) {
                 bt_list_remove(gatts_remote->db_list, srv_db);
                 break;
@@ -215,11 +215,11 @@ bt_status_t bt_gatts_remove_attr_table(gatts_handle_t srv_handle, uint16_t attr_
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_set_attr_value(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t bt_gatts_set_attr_value(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
 
     CHECK_NULL_PTR(gatts_remote);
     if (length > sizeof(packet.gatts_pl._bt_gatts_set_attr_value.value))
@@ -236,11 +236,11 @@ bt_status_t bt_gatts_set_attr_value(gatts_handle_t srv_handle, uint16_t attr_han
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_get_attr_value(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t *value, uint16_t *length)
+bt_status_t bt_gatts_get_attr_value(gatts_handle_t srv_handle, uint16_t attr_handle, uint8_t* value, uint16_t* length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
 
     CHECK_NULL_PTR(gatts_remote);
 
@@ -259,11 +259,11 @@ bt_status_t bt_gatts_get_attr_value(gatts_handle_t srv_handle, uint16_t attr_han
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_response(gatts_handle_t srv_handle, bt_address_t *addr, uint32_t req_handle, uint8_t *value, uint16_t length)
+bt_status_t bt_gatts_response(gatts_handle_t srv_handle, bt_address_t* addr, uint32_t req_handle, uint8_t* value, uint16_t length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
 
     CHECK_NULL_PTR(gatts_remote);
 
@@ -282,11 +282,11 @@ bt_status_t bt_gatts_response(gatts_handle_t srv_handle, bt_address_t *addr, uin
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_notify(gatts_handle_t srv_handle, bt_address_t *addr, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t bt_gatts_notify(gatts_handle_t srv_handle, bt_address_t* addr, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
 
     CHECK_NULL_PTR(gatts_remote);
     if (length > sizeof(packet.gatts_pl._bt_gatts_notify.value))
@@ -304,11 +304,11 @@ bt_status_t bt_gatts_notify(gatts_handle_t srv_handle, bt_address_t *addr, uint1
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_indicate(gatts_handle_t srv_handle, bt_address_t *addr, uint16_t attr_handle, uint8_t *value, uint16_t length)
+bt_status_t bt_gatts_indicate(gatts_handle_t srv_handle, bt_address_t* addr, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
 
     CHECK_NULL_PTR(gatts_remote);
     if (length > sizeof(packet.gatts_pl._bt_gatts_notify.value))
@@ -326,11 +326,11 @@ bt_status_t bt_gatts_indicate(gatts_handle_t srv_handle, bt_address_t *addr, uin
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_read_phy(gatts_handle_t srv_handle, bt_address_t *addr)
+bt_status_t bt_gatts_read_phy(gatts_handle_t srv_handle, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
 
     CHECK_NULL_PTR(gatts_remote);
 
@@ -343,11 +343,11 @@ bt_status_t bt_gatts_read_phy(gatts_handle_t srv_handle, bt_address_t *addr)
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_update_phy(gatts_handle_t srv_handle, bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+bt_status_t bt_gatts_update_phy(gatts_handle_t srv_handle, bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)srv_handle;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
 
     CHECK_NULL_PTR(gatts_remote);
 

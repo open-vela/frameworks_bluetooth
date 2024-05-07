@@ -137,7 +137,7 @@ static void stack_state_changed_callback(SERVICE_BT_STACK_STATE stack_state)
     adapter_on_adapter_state_changed(state);
 }
 
-static void received_remote_name_callback(BD_ADDR bd_addr, char *bt_name, uint8_t length)
+static void received_remote_name_callback(BD_ADDR bd_addr, char* bt_name, uint8_t length)
 {
     bt_address_t addr;
 
@@ -145,7 +145,7 @@ static void received_remote_name_callback(BD_ADDR bd_addr, char *bt_name, uint8_
     adapter_on_remote_name_recieved(&addr, bt_name);
 }
 
-static void device_found_callback(SERVICE_REMOTE_DEVICE_S *device)
+static void device_found_callback(SERVICE_REMOTE_DEVICE_S* device)
 {
     bt_discovery_result_t result;
 
@@ -174,7 +174,7 @@ static void link_connect_request_callback(BD_ADDR remote_addr)
     adapter_on_connect_request(&addr);
 }
 
-static void acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S *acl_state_param)
+static void acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S* acl_state_param)
 {
     acl_state_param_t param;
 
@@ -198,7 +198,7 @@ static void acl_state_changed_callback(SERVICE_ACL_STATE_PARAM_S *acl_state_para
 }
 
 static void pairing_request_callback(BD_ADDR remote_addr, bool local_initiate,
-                                     bool is_bondable)
+    bool is_bondable)
 {
     bt_address_t addr;
 
@@ -206,17 +206,17 @@ static void pairing_request_callback(BD_ADDR remote_addr, bool local_initiate,
     adapter_on_pairing_request(&addr, local_initiate, is_bondable);
 }
 
-static void pin_request_callback(SERVICE_PIN_REQUEST_DATA_S *request_data)
+static void pin_request_callback(SERVICE_PIN_REQUEST_DATA_S* request_data)
 {
     bt_address_t addr;
 
     memcpy(addr.addr, request_data->remote_addr, 6);
     adapter_on_pin_request(&addr, request_data->cod,
-                           request_data->min_16_digit,
-                           (const char *)request_data->bt_name);
+        request_data->min_16_digit,
+        (const char*)request_data->bt_name);
 }
 
-static void pair_authentication_request(SERVICE_SSP_REQUEST_DATA_S *request_data, uint8_t transport)
+static void pair_authentication_request(SERVICE_SSP_REQUEST_DATA_S* request_data, uint8_t transport)
 {
     bt_address_t addr;
     bt_pair_type_t type;
@@ -241,11 +241,11 @@ static void pair_authentication_request(SERVICE_SSP_REQUEST_DATA_S *request_data
     }
 
     adapter_on_ssp_request(&addr, transport, request_data->cod,
-                           type, request_data->pass_key,
-                           (const char *)request_data->bt_name);
+        type, request_data->pass_key,
+        (const char*)request_data->bt_name);
 }
 
-static void ssp_request_callback(SERVICE_SSP_REQUEST_DATA_S *request_data)
+static void ssp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_data)
 {
     pair_authentication_request(request_data, BT_TRANSPORT_BREDR);
 }
@@ -277,7 +277,7 @@ static void bond_state_changed_callback(BD_ADDR remote_addr, SERVICE_BT_BOND_STA
     adapter_on_bond_state_changed(&addr, bond_state, link_type, is_ctkd);
 }
 
-static void ble_scan_result_callback(SERVICE_SCAN_RESULT_DATA_S *scan_result_data)
+static void ble_scan_result_callback(SERVICE_SCAN_RESULT_DATA_S* scan_result_data)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     ble_scan_result_t result;
@@ -321,7 +321,7 @@ static void scan_mode_changed_callback(SERVICE_BT_SCAN_MODE scan_mode)
 }
 
 static void link_mode_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_MODE link_mode,
-                                       uint16_t sniff_interval)
+    uint16_t sniff_interval)
 {
     bt_address_t addr;
 
@@ -330,7 +330,7 @@ static void link_mode_changed_callback(BD_ADDR remote_addr, SERVICE_BT_LINK_MODE
 }
 
 static void link_policy_changed_callback(BD_ADDR remote_addr,
-                                         SERVICE_BT_LINK_POLICY link_policy)
+    SERVICE_BT_LINK_POLICY link_policy)
 {
     bt_address_t addr;
 
@@ -338,14 +338,14 @@ static void link_policy_changed_callback(BD_ADDR remote_addr,
     adapter_on_link_policy_changed(&addr, link_policy);
 }
 
-static void transport_write_packet_callback(uint8_t *hci_packet, uint32_t length)
+static void transport_write_packet_callback(uint8_t* hci_packet, uint32_t length)
 {
     assert(hci_packet);
 
     bt_sal_hci_send_packet(hci_packet, length);
 }
 
-static void update_br_link_key_callback(SERVICE_REMOTE_DEVICE_S *bonded_device)
+static void update_br_link_key_callback(SERVICE_REMOTE_DEVICE_S* bonded_device)
 {
     bt_address_t addr;
 
@@ -361,12 +361,12 @@ static void delete_br_link_key_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS r
     adapter_on_link_key_removed(&addr, sal_status_translate(reason));
 }
 
-static void service_discovered_callback(BD_ADDR remote_addr, SERVICE_BR_SERVICE_S *services,
-                                        uint16_t size)
+static void service_discovered_callback(BD_ADDR remote_addr, SERVICE_BR_SERVICE_S* services,
+    uint16_t size)
 {
     bt_uuid_t uuids[size];
     bt_address_t addr;
-    SERVICE_BR_SERVICE_S *sinfo;
+    SERVICE_BR_SERVICE_S* sinfo;
 
     memcpy(addr.addr, remote_addr, 6);
     sinfo = services;
@@ -384,20 +384,20 @@ static void link_encryption_state_callback(BD_ADDR remote_addr, bool br_link, bo
     BT_LOGD("%s isBRLink: %d, encrypted: %d", __func__, br_link, encryption_on);
     memcpy(addr.addr, remote_addr, 6);
     adapter_on_encryption_state_changed(&addr, encryption_on,
-                                        br_link ? BT_TRANSPORT_BREDR : BT_TRANSPORT_BLE);
+        br_link ? BT_TRANSPORT_BREDR : BT_TRANSPORT_BLE);
 }
 
-static void smp_request_callback(SERVICE_SSP_REQUEST_DATA_S *request_data)
+static void smp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_data)
 {
     pair_authentication_request(request_data, BT_TRANSPORT_BLE);
 }
 
-static void update_ble_bonded_devices_callback(SERVICE_BLE_KEYS_S *bonded_device_list,
-                                               uint8_t count_in)
+static void update_ble_bonded_devices_callback(SERVICE_BLE_KEYS_S* bonded_device_list,
+    uint8_t count_in)
 {
-    remote_device_le_properties_t *props = malloc(sizeof(remote_device_le_properties_t) * count_in);
+    remote_device_le_properties_t* props = malloc(sizeof(remote_device_le_properties_t) * count_in);
 
-    remote_device_le_properties_t *prop = props;
+    remote_device_le_properties_t* prop = props;
     for (int i = 0; i < count_in; i++) {
         memcpy(prop->addr.addr, bonded_device_list->bd_addr, sizeof(prop->addr.addr));
         prop->addr_type = bonded_device_list->addr_type;
@@ -427,7 +427,7 @@ static void ble_remove_white_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATU
 }
 static void ble_add_resolving_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status) { DEBUG_IMPL }
 static void ble_remove_resolving_list_callback(BD_ADDR remote_addr,
-                                               SERVICE_BT_STATUS status) { DEBUG_IMPL }
+    SERVICE_BT_STATUS status) { DEBUG_IMPL }
 
 static void ble_address_callback(BD_ADDR ble_addr, SERVICE_BLE_ADDR_TYPE ble_addr_type)
 {
@@ -438,7 +438,7 @@ static void ble_address_callback(BD_ADDR ble_addr, SERVICE_BLE_ADDR_TYPE ble_add
 }
 
 static void ble_phy_update_callback(BD_ADDR remote_addr, SERVICE_BLE_PHY_TYPE tx_phy,
-                                    SERVICE_BLE_PHY_TYPE rx_phy, SERVICE_BT_STATUS status)
+    SERVICE_BLE_PHY_TYPE rx_phy, SERVICE_BT_STATUS status)
 {
     bt_address_t addr;
 
@@ -447,9 +447,9 @@ static void ble_phy_update_callback(BD_ADDR remote_addr, SERVICE_BLE_PHY_TYPE tx
 }
 
 static void ble_irk_callback(BT_COMMON_KEY irk, BD_ADDR ble_addr,
-                             SERVICE_BLE_ADDR_TYPE ble_addr_type) { DEBUG_IMPL }
+    SERVICE_BLE_ADDR_TYPE ble_addr_type) { DEBUG_IMPL }
 
-void l2cap_connected_callback(BD_ADDR remote_addr, SERVICE_L2CAP_CONN_S *conn)
+void l2cap_connected_callback(BD_ADDR remote_addr, SERVICE_L2CAP_CONN_S* conn)
 {
 #ifdef CONFIG_BLUETOOTH_L2CAP
     bt_address_t addr;
@@ -479,7 +479,7 @@ void l2cap_disconnected_callback(BD_ADDR remote_addr, uint16_t cid, uint16_t rea
 #endif
 }
 
-void l2cap_packet_received_callback(BD_ADDR remote_addr, uint16_t cid, uint8_t *packet_data, uint16_t packet_size)
+void l2cap_packet_received_callback(BD_ADDR remote_addr, uint16_t cid, uint8_t* packet_data, uint16_t packet_size)
 {
 #ifdef CONFIG_BLUETOOTH_L2CAP
     bt_address_t addr;
@@ -500,9 +500,9 @@ void l2cap_packet_sent_callback(BD_ADDR remote_addr, uint16_t cid)
 }
 
 static void ssp_local_oob_data_callback(BT_COMMON_KEY c_192_val, BT_COMMON_KEY r_192_val,
-                                        BT_COMMON_KEY c_256_val, BT_COMMON_KEY r_256_val) { DEBUG_IMPL }
+    BT_COMMON_KEY c_256_val, BT_COMMON_KEY r_256_val) { DEBUG_IMPL }
 static void ble_local_oob_data_callback(BD_ADDR remote_addr, BT_COMMON_KEY c_val,
-                                        BT_COMMON_KEY r_val) { DEBUG_IMPL }
+    BT_COMMON_KEY r_val) { DEBUG_IMPL }
 
 static void ble_scan_started_callback(void)
 {
@@ -519,15 +519,15 @@ static void ble_scan_stopped_callback(void)
 }
 
 static void ble_connection_updated_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status,
-                                            uint16_t connection_interval, uint16_t peripheral_latency,
-                                            uint16_t supervision_timeout)
+    uint16_t connection_interval, uint16_t peripheral_latency,
+    uint16_t supervision_timeout)
 {
 #ifdef CONFIG_BLUETOOTH_GATT
     bt_address_t addr;
 
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
     bt_sal_gatt_client_connection_updated_callback(&addr, connection_interval, peripheral_latency, supervision_timeout,
-                                                   sal_status_translate(status));
+        sal_status_translate(status));
     if (status == SERVICE_BT_STATUS_SUCCESS) {
         bt_sal_gatt_server_connection_changed_callback(&addr, connection_interval, peripheral_latency, supervision_timeout);
     }
@@ -613,10 +613,10 @@ static const GAP_CALLBACKS_S sal_gap_callbacks = {
 
 static bool stack_initialized = false;
 static int hci_fd = -1;
-static service_poll_t *hci_handle;
+static service_poll_t* hci_handle;
 
 /* classics bluetooth*/
-static void hci_remove_recv(void *data)
+static void hci_remove_recv(void* data)
 {
     (void)data;
 
@@ -625,7 +625,7 @@ static void hci_remove_recv(void *data)
     hci_handle = NULL;
 }
 
-static void hci_poll_recv(service_poll_t *poll, int revent, void *userdata)
+static void hci_poll_recv(service_poll_t* poll, int revent, void* userdata)
 {
     (void)poll;
     (void)userdata;
@@ -637,7 +637,7 @@ static void hci_poll_recv(service_poll_t *poll, int revent, void *userdata)
         bt_sal_hci_transport_recv();
 }
 
-static int hci_add_recv(void *data)
+static int hci_add_recv(void* data)
 {
     (void)data;
 
@@ -651,12 +651,12 @@ static int hci_add_recv(void *data)
     return 0;
 }
 
-static void *stack_schedule_loop(void *data)
+static void* stack_schedule_loop(void* data)
 {
     extern int ScheduleLoop(void);
     assert(data);
 
-    uv_sem_post((uv_sem_t *)data);
+    uv_sem_post((uv_sem_t*)data);
     ScheduleLoop();
     BT_LOGD("%s quit", __func__);
 
@@ -680,7 +680,7 @@ static bt_status_t bluelet_stack_init(void)
 
     /* Register gap callbacks and initialize bluelet stack */
     service_adapter_gap_init();
-    service_adapter_gap_register_gap_callback((GAP_CALLBACKS_S *)&sal_gap_callbacks);
+    service_adapter_gap_register_gap_callback((GAP_CALLBACKS_S*)&sal_gap_callbacks);
 
     uv_sem_init(&startup, 0);
     pthread_attr_init(&pattr);
@@ -770,7 +770,7 @@ bt_status_t bt_sal_disable(void)
 #endif
 }
 
-bt_status_t bt_sal_set_local_name(char *name)
+bt_status_t bt_sal_set_local_name(char* name)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(name);
@@ -782,7 +782,7 @@ bt_status_t bt_sal_set_local_name(char *name)
 #endif
 }
 
-bt_status_t bt_sal_get_local_address(bt_address_t *addr)
+bt_status_t bt_sal_get_local_address(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -798,7 +798,7 @@ bt_status_t bt_sal_set_local_io_capability(bt_io_capability_t cap)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_RET(service_adapter_gap_set_local_io_capability((SERVICE_BT_IO_CAPABILITY)cap),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -806,16 +806,16 @@ bt_status_t bt_sal_set_local_io_capability(bt_io_capability_t cap)
 #endif
 }
 
-const char *bt_sal_get_local_name(void)
+const char* bt_sal_get_local_name(void)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     static char adapter_local_name[BT_LOC_NAME_MAX_LEN + 1];
-    char *pname = adapter_local_name;
+    char* pname = adapter_local_name;
 
     memset(pname, 0, BT_LOC_NAME_MAX_LEN + 1);
     service_adapter_gap_get_local_name(&pname, BT_LOC_NAME_MAX_LEN);
 
-    return (const char *)pname;
+    return (const char*)pname;
 #else
     return NULL;
 #endif
@@ -856,7 +856,7 @@ bt_status_t bt_sal_set_scan_mode(bt_scan_mode_t scan_mode, bool bondable)
 #endif
 }
 
-bt_status_t bt_sal_set_discovery_filter(bt_discovery_filter_t *filter)
+bt_status_t bt_sal_set_discovery_filter(bt_discovery_filter_t* filter)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_ASSERT_PARAM(filter != NULL);
@@ -914,12 +914,12 @@ bt_status_t bt_sal_stop_discovery(void)
 }
 
 bt_status_t bt_sal_set_page_scan_parameters(bt_scan_type_t type,
-                                            uint16_t interval,
-                                            uint16_t window)
+    uint16_t interval,
+    uint16_t window)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_RET(service_adapter_gap_set_page_scan_parameters((SERVICE_BT_SCAN_TYPE)type, interval, window),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -928,12 +928,12 @@ bt_status_t bt_sal_set_page_scan_parameters(bt_scan_type_t type,
 }
 
 bt_status_t bt_sal_set_inquiry_scan_parameters(bt_scan_type_t type,
-                                               uint16_t interval,
-                                               uint16_t window)
+    uint16_t interval,
+    uint16_t window)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_RET(service_adapter_gap_set_inquiry_scan_parameters((SERVICE_BT_SCAN_TYPE)type, interval, window),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -942,7 +942,7 @@ bt_status_t bt_sal_set_inquiry_scan_parameters(bt_scan_type_t type,
 }
 
 /* Remote device */
-bt_status_t bt_sal_get_remote_name(bt_address_t *addr)
+bt_status_t bt_sal_get_remote_name(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -955,14 +955,14 @@ bt_status_t bt_sal_get_remote_name(bt_address_t *addr)
 }
 
 /* useless, remove ? */
-int bt_sal_get_remote_services(bt_address_t *addr, bt_uuid_t *uuids, uint8_t count_in)
+int bt_sal_get_remote_services(bt_address_t* addr, bt_uuid_t* uuids, uint8_t count_in)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_PARAM(uuids);
     BT_UUID_T service_list[count_in];
     SAL_CHECK_RET(service_adapter_gap_get_remote_services(addr->addr, service_list, count_in),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -970,7 +970,7 @@ int bt_sal_get_remote_services(bt_address_t *addr, bt_uuid_t *uuids, uint8_t cou
 #endif
 }
 
-bt_status_t bt_sal_reply_sco_link_request(bt_address_t *addr, bool accept)
+bt_status_t bt_sal_reply_sco_link_request(bt_address_t* addr, bool accept)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -987,7 +987,7 @@ bt_status_t bt_sal_reply_sco_link_request(bt_address_t *addr, bool accept)
 #endif
 }
 
-bt_status_t bt_sal_reply_link_request(bt_address_t *addr, bool accept)
+bt_status_t bt_sal_reply_link_request(bt_address_t* addr, bool accept)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1005,7 +1005,7 @@ bt_status_t bt_sal_reply_link_request(bt_address_t *addr, bool accept)
 #endif
 }
 
-bt_status_t bt_sal_reply_pair_request(bt_address_t *addr, uint8_t reason)
+bt_status_t bt_sal_reply_pair_request(bt_address_t* addr, uint8_t reason)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1017,10 +1017,10 @@ bt_status_t bt_sal_reply_pair_request(bt_address_t *addr, uint8_t reason)
 #endif
 }
 
-bt_status_t bt_sal_ssp_reply(bt_address_t *addr,
-                             bool accept,
-                             bt_pair_type_t type,
-                             uint32_t passkey)
+bt_status_t bt_sal_ssp_reply(bt_address_t* addr,
+    bool accept,
+    bt_pair_type_t type,
+    uint32_t passkey)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1038,10 +1038,10 @@ bt_status_t bt_sal_ssp_reply(bt_address_t *addr,
 #endif
 }
 
-bt_status_t bt_sal_pin_reply(bt_address_t *addr,
-                             bool accept,
-                             char *pincode,
-                             int len)
+bt_status_t bt_sal_pin_reply(bt_address_t* addr,
+    bool accept,
+    char* pincode,
+    int len)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1053,7 +1053,7 @@ bt_status_t bt_sal_pin_reply(bt_address_t *addr,
 #endif
 }
 
-uint16_t bt_sal_get_acl_link_handle(bt_address_t *addr)
+uint16_t bt_sal_get_acl_link_handle(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1063,7 +1063,7 @@ uint16_t bt_sal_get_acl_link_handle(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_connect(bt_address_t *addr)
+bt_status_t bt_sal_connect(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1075,7 +1075,7 @@ bt_status_t bt_sal_connect(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_disconnect(bt_address_t *addr)
+bt_status_t bt_sal_disconnect(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1087,7 +1087,7 @@ bt_status_t bt_sal_disconnect(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_create_bond(bt_address_t *addr)
+bt_status_t bt_sal_create_bond(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1099,7 +1099,7 @@ bt_status_t bt_sal_create_bond(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_cancel_bond(bt_address_t *addr)
+bt_status_t bt_sal_cancel_bond(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1111,7 +1111,7 @@ bt_status_t bt_sal_cancel_bond(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_remove_bond(bt_address_t *addr)
+bt_status_t bt_sal_remove_bond(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1123,14 +1123,14 @@ bt_status_t bt_sal_remove_bond(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_ssp_set_remote_oob_data(bt_address_t *addr,
-                                           bt_128key_t c_192_val, bt_128key_t r_192_val,
-                                           bt_128key_t c_256_val, bt_128key_t r_256_val)
+bt_status_t bt_sal_ssp_set_remote_oob_data(bt_address_t* addr,
+    bt_128key_t c_192_val, bt_128key_t r_192_val,
+    bt_128key_t c_256_val, bt_128key_t r_256_val)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gap_ssp_set_remote_oob_data(addr->addr, c_192_val, r_192_val, c_256_val, r_256_val),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1150,8 +1150,8 @@ bt_status_t bt_sal_ssp_get_local_oob_data(void)
 }
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-static void bluelet_set_remote_property(remote_device_properties_t *prop,
-                                        SERVICE_REMOTE_DEVICE_S *remote)
+static void bluelet_set_remote_property(remote_device_properties_t* prop,
+    SERVICE_REMOTE_DEVICE_S* remote)
 {
     /* address */
     memcpy(prop->addr.addr, remote->bd_addr, 6);
@@ -1171,7 +1171,7 @@ static void bluelet_set_remote_property(remote_device_properties_t *prop,
 }
 #endif
 
-bt_status_t bt_sal_get_remote_device_info(bt_address_t *addr, remote_device_properties_t *prop)
+bt_status_t bt_sal_get_remote_device_info(bt_address_t* addr, remote_device_properties_t* prop)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1179,7 +1179,7 @@ bt_status_t bt_sal_get_remote_device_info(bt_address_t *addr, remote_device_prop
     SERVICE_REMOTE_DEVICE_S remote;
 
     SAL_CHECK_RET(service_adapter_gap_get_remote_device_info(addr->addr, &remote),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
     bluelet_set_remote_property(prop, &remote);
 
     return BT_STATUS_SUCCESS;
@@ -1188,7 +1188,7 @@ bt_status_t bt_sal_get_remote_device_info(bt_address_t *addr, remote_device_prop
 #endif
 }
 
-bt_status_t bt_sal_set_bonded_devices(remote_device_properties_t *prop)
+bt_status_t bt_sal_set_bonded_devices(remote_device_properties_t* prop)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(prop);
@@ -1208,13 +1208,13 @@ bt_status_t bt_sal_set_bonded_devices(remote_device_properties_t *prop)
 #endif
 }
 
-bt_status_t bt_sal_le_set_bonded_devices(remote_device_le_properties_t *props, uint16_t prop_cnt)
+bt_status_t bt_sal_le_set_bonded_devices(remote_device_le_properties_t* props, uint16_t prop_cnt)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(props);
-    SERVICE_BLE_KEYS_S *devices = malloc(sizeof(SERVICE_BLE_KEYS_S) * prop_cnt);
+    SERVICE_BLE_KEYS_S* devices = malloc(sizeof(SERVICE_BLE_KEYS_S) * prop_cnt);
 
-    SERVICE_BLE_KEYS_S *remote = devices;
+    SERVICE_BLE_KEYS_S* remote = devices;
     for (int i = 0; i < prop_cnt; i++) {
         memcpy(remote->smp_keys, props->smp_key, sizeof(remote->smp_keys));
         props++;
@@ -1231,12 +1231,12 @@ bt_status_t bt_sal_le_set_bonded_devices(remote_device_le_properties_t *props, u
 }
 
 /* useless */
-bt_status_t bt_sal_get_bonded_devices(remote_device_properties_t *props, int *cnt)
+bt_status_t bt_sal_get_bonded_devices(remote_device_properties_t* props, int* cnt)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(props);
     SAL_CHECK_PARAM(cnt);
-    remote_device_properties_t **prop = (remote_device_properties_t **)props;
+    remote_device_properties_t** prop = (remote_device_properties_t**)props;
     SERVICE_REMOTE_DEVICE_S remotes[*cnt];
 
     *cnt = service_adapter_gap_get_bonded_devices(remotes, *cnt);
@@ -1250,12 +1250,12 @@ bt_status_t bt_sal_get_bonded_devices(remote_device_properties_t *props, int *cn
 }
 
 /* useless */
-bt_status_t bt_sal_get_connected_devices(remote_device_properties_t *props, int *cnt)
+bt_status_t bt_sal_get_connected_devices(remote_device_properties_t* props, int* cnt)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(props);
     SAL_CHECK_PARAM(cnt);
-    remote_device_properties_t **prop = (remote_device_properties_t **)props;
+    remote_device_properties_t** prop = (remote_device_properties_t**)props;
     SERVICE_REMOTE_DEVICE_S remotes[*cnt];
 
     *cnt = service_adapter_gap_get_connected_devices(remotes, *cnt);
@@ -1268,12 +1268,12 @@ bt_status_t bt_sal_get_connected_devices(remote_device_properties_t *props, int 
 #endif
 }
 
-bt_status_t bt_sal_start_service_discovery(bt_address_t *addr, bt_uuid_t *uuid)
+bt_status_t bt_sal_start_service_discovery(bt_address_t* addr, bt_uuid_t* uuid)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gap_start_service_discovery(addr->addr, uuid ? uuid->val.u128 : NULL),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1281,7 +1281,7 @@ bt_status_t bt_sal_start_service_discovery(bt_address_t *addr, bt_uuid_t *uuid)
 #endif
 }
 
-bt_status_t bt_sal_stop_service_discovery(bt_address_t *addr)
+bt_status_t bt_sal_stop_service_discovery(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1293,7 +1293,7 @@ bt_status_t bt_sal_stop_service_discovery(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_set_link_role(bt_address_t *addr, bt_link_role_t role)
+bt_status_t bt_sal_set_link_role(bt_address_t* addr, bt_link_role_t role)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1305,7 +1305,7 @@ bt_status_t bt_sal_set_link_role(bt_address_t *addr, bt_link_role_t role)
 #endif
 }
 
-bt_status_t bt_sal_set_link_policy(bt_address_t *addr, bt_link_policy_t policy)
+bt_status_t bt_sal_set_link_policy(bt_address_t* addr, bt_link_policy_t policy)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1317,9 +1317,9 @@ bt_status_t bt_sal_set_link_policy(bt_address_t *addr, bt_link_policy_t policy)
 #endif
 }
 
-bt_status_t bt_sal_set_link_mode(bt_address_t *addr,
-                                 bt_link_mode_t mode,
-                                 bt_sniff_params_t *param)
+bt_status_t bt_sal_set_link_mode(bt_address_t* addr,
+    bt_link_mode_t mode,
+    bt_sniff_params_t* param)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1338,14 +1338,14 @@ bt_status_t bt_sal_set_link_mode(bt_address_t *addr,
 }
 
 bt_status_t bt_sal_set_afh_channel_classification(uint16_t central_frequency,
-                                                  uint16_t band_width,
-                                                  uint16_t number)
+    uint16_t band_width,
+    uint16_t number)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SERVICE_RADIO_CHANNEL_INFO_S channel_info = { central_frequency, band_width };
 
     SAL_CHECK_RET(service_adapter_set_afh_channel_classification(&channel_info, number),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1417,7 +1417,7 @@ bt_status_t bt_sal_le_set_io_capability(bt_io_capability_t cap)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_RET(service_adapter_gap_set_local_io_capability((SERVICE_BT_IO_CAPABILITY)cap),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1426,7 +1426,7 @@ bt_status_t bt_sal_le_set_io_capability(bt_io_capability_t cap)
 }
 
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-bt_status_t bt_sal_le_set_scan_parameters(ble_scan_params_t *params)
+bt_status_t bt_sal_le_set_scan_parameters(ble_scan_params_t* params)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(params);
@@ -1445,11 +1445,11 @@ bt_status_t bt_sal_le_set_scan_parameters(ble_scan_params_t *params)
 }
 
 /* maybe implement it in scan service */
-bt_status_t bt_sal_le_set_scan_filters(ble_scan_filter_t *filter)
+bt_status_t bt_sal_le_set_scan_filters(ble_scan_filter_t* filter)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(filter);
-    SERVICE_BLE_SCAN_FILTER_S *scan_filter = malloc(sizeof(SERVICE_BLE_SCAN_FILTER_S) + filter->length);
+    SERVICE_BLE_SCAN_FILTER_S* scan_filter = malloc(sizeof(SERVICE_BLE_SCAN_FILTER_S) + filter->length);
 
     if (scan_filter == NULL)
         return BT_STATUS_NOMEM;
@@ -1494,11 +1494,11 @@ bt_status_t bt_sal_le_stop_scan(void)
 
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
 bt_status_t bt_sal_le_start_adv(uint8_t adv_id,
-                                ble_adv_params_t *params,
-                                uint8_t *adv_data,
-                                uint16_t adv_len,
-                                uint8_t *scan_rsp_data,
-                                uint16_t scan_rsp_len)
+    ble_adv_params_t* params,
+    uint8_t* adv_data,
+    uint16_t adv_len,
+    uint8_t* scan_rsp_data,
+    uint16_t scan_rsp_len)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(params);
@@ -1514,9 +1514,9 @@ bt_status_t bt_sal_le_start_adv(uint8_t adv_id,
     sap.params.tx_power = params->tx_power;
     sap.params.channel_map = params->channel_map;
     sap.params.filter_policy = params->filter_policy;
-    sap.adv_data = (char *)adv_data;
+    sap.adv_data = (char*)adv_data;
     sap.adv_length = adv_len;
-    sap.scan_rsp_data = (char *)scan_rsp_data;
+    sap.scan_rsp_data = (char*)scan_rsp_data;
     sap.scan_rsp_length = scan_rsp_len;
     sap.duration = params->duration;
 
@@ -1564,7 +1564,7 @@ int bt_sal_get_le_resolvinglist_devices(void)
     return BT_STATUS_NOT_SUPPORTED;
 }
 
-bt_status_t bt_sal_le_set_static_identity(bt_address_t *addr)
+bt_status_t bt_sal_le_set_static_identity(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_RET(service_adapter_gap_ble_set_static_identity(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -1575,7 +1575,7 @@ bt_status_t bt_sal_le_set_static_identity(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_le_set_public_identity(bt_address_t *addr)
+bt_status_t bt_sal_le_set_public_identity(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_RET(service_adapter_gap_ble_set_public_identity(addr->addr), SERVICE_BT_STATUS_SUCCESS);
@@ -1586,13 +1586,13 @@ bt_status_t bt_sal_le_set_public_identity(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_le_set_remote_irk(bt_address_t *addr, ble_addr_type_t type, bt_128key_t irk)
+bt_status_t bt_sal_le_set_remote_irk(bt_address_t* addr, ble_addr_type_t type, bt_128key_t irk)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_PARAM(irk);
     SAL_CHECK_RET(service_adapter_gap_ble_set_remote_irk(addr->addr, type, irk),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1611,7 +1611,7 @@ bt_status_t bt_sal_le_get_current_irk(void)
 #endif
 }
 
-bt_status_t bt_sal_le_set_address(bt_address_t *addr)
+bt_status_t bt_sal_le_set_address(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1634,9 +1634,9 @@ bt_status_t bt_sal_le_get_address(void)
 #endif
 }
 
-bt_status_t bt_sal_le_connect(bt_address_t *addr,
-                              ble_addr_type_t type,
-                              ble_connect_params_t *params)
+bt_status_t bt_sal_le_connect(bt_address_t* addr,
+    ble_addr_type_t type,
+    ble_connect_params_t* params)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(params);
@@ -1664,7 +1664,7 @@ bt_status_t bt_sal_le_connect(bt_address_t *addr,
 #endif
 }
 
-bt_status_t bt_sal_le_disconnect(bt_address_t *addr)
+bt_status_t bt_sal_le_disconnect(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1676,7 +1676,7 @@ bt_status_t bt_sal_le_disconnect(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_le_create_bond(bt_address_t *addr, ble_addr_type_t type)
+bt_status_t bt_sal_le_create_bond(bt_address_t* addr, ble_addr_type_t type)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1694,7 +1694,7 @@ bt_status_t bt_sal_le_create_bond(bt_address_t *addr, ble_addr_type_t type)
 #endif
 }
 
-bt_status_t bt_sal_le_remove_bond(bt_address_t *addr)
+bt_status_t bt_sal_le_remove_bond(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1706,10 +1706,10 @@ bt_status_t bt_sal_le_remove_bond(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_le_smp_reply(bt_address_t *addr,
-                                bool accept,
-                                bt_pair_type_t type,
-                                uint32_t passkey)
+bt_status_t bt_sal_le_smp_reply(bt_address_t* addr,
+    bool accept,
+    bt_pair_type_t type,
+    uint32_t passkey)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1727,15 +1727,15 @@ bt_status_t bt_sal_le_smp_reply(bt_address_t *addr,
 #endif
 }
 
-bt_status_t bt_sal_le_set_remote_oob_data(bt_address_t *addr,
-                                          bt_128key_t tk_val,
-                                          bt_128key_t c_val,
-                                          bt_128key_t r_val)
+bt_status_t bt_sal_le_set_remote_oob_data(bt_address_t* addr,
+    bt_128key_t tk_val,
+    bt_128key_t c_val,
+    bt_128key_t r_val)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gap_ble_set_remote_oob_data(addr->addr, tk_val, c_val, r_val),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1743,7 +1743,7 @@ bt_status_t bt_sal_le_set_remote_oob_data(bt_address_t *addr,
 #endif
 }
 
-bt_status_t bt_sal_le_get_local_oob_data(bt_address_t *addr)
+bt_status_t bt_sal_le_get_local_oob_data(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1755,7 +1755,7 @@ bt_status_t bt_sal_le_get_local_oob_data(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_le_add_white_list(bt_address_t *addr)
+bt_status_t bt_sal_le_add_white_list(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1767,7 +1767,7 @@ bt_status_t bt_sal_le_add_white_list(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_le_remove_white_list(bt_address_t *addr)
+bt_status_t bt_sal_le_remove_white_list(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1779,7 +1779,7 @@ bt_status_t bt_sal_le_remove_white_list(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_le_add_resolving_list(bt_address_t *addr)
+bt_status_t bt_sal_le_add_resolving_list(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
@@ -1791,12 +1791,12 @@ bt_status_t bt_sal_le_add_resolving_list(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_le_remove_resolving_list(bt_address_t *addr)
+bt_status_t bt_sal_le_remove_resolving_list(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gap_ble_remove_resolving_list(addr->addr),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1804,12 +1804,12 @@ bt_status_t bt_sal_le_remove_resolving_list(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_le_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+bt_status_t bt_sal_le_set_phy(bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gap_ble_set_phy(addr->addr, tx_phy, rx_phy),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1841,11 +1841,11 @@ uint16_t bt_sal_le_get_appearance(void)
 }
 
 bt_status_t bt_sal_le_enable_key_derivation(bool brkey_to_lekey,
-                                            bool lekey_to_brkey)
+    bool lekey_to_brkey)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_RET(service_adapter_gap_ble_enable_key_derivation(brkey_to_lekey, lekey_to_brkey),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1854,10 +1854,10 @@ bt_status_t bt_sal_le_enable_key_derivation(bool brkey_to_lekey,
 }
 
 /* HCI VSC command */
-bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t *buf,
-                                    bt_hci_event_callback_t cb, void *context)
+bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t* buf,
+    bt_hci_event_callback_t cb, void* context)
 {
-    SERVICE_HCI_COMMAND_S *command = malloc(sizeof(SERVICE_HCI_COMMAND_S) + length);
+    SERVICE_HCI_COMMAND_S* command = malloc(sizeof(SERVICE_HCI_COMMAND_S) + length);
 
     if (command == NULL)
         return BT_STATUS_NOMEM;
@@ -1877,10 +1877,10 @@ bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, u
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_set_auto_sniff(bt_auto_sniff_params_t *params)
+bt_status_t bt_sal_set_auto_sniff(bt_auto_sniff_params_t* params)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    SAL_CHECK_RET(service_adapter_gap_set_auto_sniff((SERVICE_AUTOSNIFF_PARAMS_S *)params), SERVICE_BT_STATUS_SUCCESS);
+    SAL_CHECK_RET(service_adapter_gap_set_auto_sniff((SERVICE_AUTOSNIFF_PARAMS_S*)params), SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1888,7 +1888,7 @@ bt_status_t bt_sal_set_auto_sniff(bt_auto_sniff_params_t *params)
 #endif
 }
 
-bt_status_t bt_sal_set_auto_sniff_mode(bt_address_t *addr, bool enable)
+bt_status_t bt_sal_set_auto_sniff_mode(bt_address_t* addr, bool enable)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     SAL_CHECK_RET(service_adapter_gap_set_auto_sniff_mode(addr->addr, enable), SERVICE_BT_STATUS_SUCCESS);

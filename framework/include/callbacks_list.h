@@ -27,14 +27,14 @@
 #include "bt_list.h"
 
 typedef struct callback {
-    void *remote;
-    void *callbacks;
+    void* remote;
+    void* callbacks;
 } remote_callback_t;
 
 typedef struct {
     uint8_t max_reg;
     uint8_t registed;
-    bt_list_t *list;
+    bt_list_t* list;
     pthread_mutex_t lock;
 } callbacks_list_t;
 
@@ -42,26 +42,26 @@ typedef struct {
     do {                                                                                       \
         if (_cbsl == NULL)                                                                     \
             break;                                                                             \
-        bt_list_node_t *_node;                                                                 \
-        bt_list_t *_list = _cbsl->list;                                                        \
+        bt_list_node_t* _node;                                                                 \
+        bt_list_t* _list = _cbsl->list;                                                        \
         pthread_mutex_lock(&_cbsl->lock);                                                      \
         for (_node = bt_list_head(_list); _node != NULL; _node = bt_list_next(_list, _node)) { \
-            remote_callback_t *_rcbk = (remote_callback_t *)bt_list_node(_node);               \
-            _type *_cbs = (_type *)_rcbk->callbacks;                                           \
-            void *_remote = _rcbk->remote ? _rcbk->remote : _rcbk;                             \
+            remote_callback_t* _rcbk = (remote_callback_t*)bt_list_node(_node);                \
+            _type* _cbs = (_type*)_rcbk->callbacks;                                            \
+            void* _remote = _rcbk->remote ? _rcbk->remote : _rcbk;                             \
             if (_cbs && _cbs->_cback)                                                          \
                 _cbs->_cback(_remote, args);                                                   \
         }                                                                                      \
         pthread_mutex_unlock(&_cbsl->lock);                                                    \
     } while (0)
 
-callbacks_list_t *bt_callbacks_list_new(uint8_t max);
-remote_callback_t *bt_callbacks_register(callbacks_list_t *cbsl, void *callbacks);
-bool bt_callbacks_unregister(callbacks_list_t *cbsl, remote_callback_t *rcbks);
-remote_callback_t *bt_remote_callbacks_register(callbacks_list_t *cbsl, void *remote, void *callbacks);
-bool bt_remote_callbacks_unregister(callbacks_list_t *cbsl, void **remote, remote_callback_t *rcbks);
-void bt_callbacks_foreach(callbacks_list_t *cbsl, void *context);
-void bt_callbacks_list_free(callbacks_list_t *cbsl);
-uint8_t bt_callbacks_list_count(callbacks_list_t *cbsl);
+callbacks_list_t* bt_callbacks_list_new(uint8_t max);
+remote_callback_t* bt_callbacks_register(callbacks_list_t* cbsl, void* callbacks);
+bool bt_callbacks_unregister(callbacks_list_t* cbsl, remote_callback_t* rcbks);
+remote_callback_t* bt_remote_callbacks_register(callbacks_list_t* cbsl, void* remote, void* callbacks);
+bool bt_remote_callbacks_unregister(callbacks_list_t* cbsl, void** remote, remote_callback_t* rcbks);
+void bt_callbacks_foreach(callbacks_list_t* cbsl, void* context);
+void bt_callbacks_list_free(callbacks_list_t* cbsl);
+uint8_t bt_callbacks_list_count(callbacks_list_t* cbsl);
 
 #endif

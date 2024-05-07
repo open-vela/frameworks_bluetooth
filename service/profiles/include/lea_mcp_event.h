@@ -69,8 +69,8 @@ typedef struct {
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-mcp_event_t *mcp_event_new(mcp_event_type_t event, bt_address_t *remote_addr, uint32_t mcs_id);
-mcp_event_t *mcp_event_new_ext(mcp_event_type_t event, bt_address_t *remote_addr, uint32_t mcs_id, size_t size);
-void mcp_event_destory(mcp_event_t *mcp_event);
+mcp_event_t* mcp_event_new(mcp_event_type_t event, bt_address_t* remote_addr, uint32_t mcs_id);
+mcp_event_t* mcp_event_new_ext(mcp_event_type_t event, bt_address_t* remote_addr, uint32_t mcs_id, size_t size);
+void mcp_event_destory(mcp_event_t* mcp_event);
 
 #endif /* __LEA_MCP_EVENT_H__ */

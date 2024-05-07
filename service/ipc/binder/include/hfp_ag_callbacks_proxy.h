@@ -28,7 +28,7 @@ extern "C" {
 
 #include <android/binder_manager.h>
 
-const hfp_ag_callbacks_t *BpBtHfpAgCallbacks_getStatic(void);
+const hfp_ag_callbacks_t* BpBtHfpAgCallbacks_getStatic(void);
 
 #ifdef __cplusplus
 }

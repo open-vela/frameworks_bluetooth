@@ -33,7 +33,7 @@ static void app_state_cb(SERVICE_BTHD_APP_STATE state)
 }
 
 static void connection_state_changed_cb(BD_ADDR remote_addr, bool le_hid,
-                                        SERVICE_PROFILE_CONNECTION_STATE state)
+    SERVICE_PROFILE_CONNECTION_STATE state)
 {
     bt_address_t addr;
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
@@ -41,7 +41,7 @@ static void connection_state_changed_cb(BD_ADDR remote_addr, bool le_hid,
 }
 
 static void get_report_cb(BD_ADDR remote_addr, uint8_t rpt_type,
-                          uint8_t rpt_id, uint16_t buffer_size)
+    uint8_t rpt_id, uint16_t buffer_size)
 {
     bt_address_t addr;
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
@@ -49,7 +49,7 @@ static void get_report_cb(BD_ADDR remote_addr, uint8_t rpt_type,
 }
 
 static void set_report_cb(BD_ADDR remote_addr, uint8_t rpt_type,
-                          uint16_t rpt_size, uint8_t *rpt_data)
+    uint16_t rpt_size, uint8_t* rpt_data)
 {
     bt_address_t addr;
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
@@ -62,7 +62,7 @@ static void set_protocol_cb(BD_ADDR remote_addr, uint8_t protocol)
 }
 
 static void intr_data_cb(BD_ADDR remote_addr, uint8_t rpt_type,
-                         uint16_t rpt_size, uint8_t *rpt_data)
+    uint16_t rpt_size, uint8_t* rpt_data)
 {
     bt_address_t addr;
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
@@ -99,7 +99,7 @@ void bt_sal_hid_device_cleanup(void)
     service_adapter_hid_device_cleanup();
 }
 
-bt_status_t bt_sal_hid_device_register_app(hid_device_sdp_settings_t *sdp, bool le_hid)
+bt_status_t bt_sal_hid_device_register_app(hid_device_sdp_settings_t* sdp, bool le_hid)
 {
     SERVICE_HID_SERVICE_INFO_S hid_svc_info;
 
@@ -133,7 +133,7 @@ bt_status_t bt_sal_hid_device_unregister_app(void)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hid_device_connect(bt_address_t *addr)
+bt_status_t bt_sal_hid_device_connect(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
 
@@ -142,7 +142,7 @@ bt_status_t bt_sal_hid_device_connect(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hid_device_disconnect(bt_address_t *addr)
+bt_status_t bt_sal_hid_device_disconnect(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
 
@@ -151,7 +151,7 @@ bt_status_t bt_sal_hid_device_disconnect(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hid_device_get_report_response(bt_address_t *addr, uint8_t rpt_type, uint8_t *rpt_data, int rpt_size)
+bt_status_t bt_sal_hid_device_get_report_response(bt_address_t* addr, uint8_t rpt_type, uint8_t* rpt_data, int rpt_size)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_PARAM(rpt_data);
@@ -161,7 +161,7 @@ bt_status_t bt_sal_hid_device_get_report_response(bt_address_t *addr, uint8_t rp
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hid_device_report_error(bt_address_t *addr, hid_status_error_t error)
+bt_status_t bt_sal_hid_device_report_error(bt_address_t* addr, hid_status_error_t error)
 {
     SAL_CHECK_PARAM(addr);
 
@@ -170,7 +170,7 @@ bt_status_t bt_sal_hid_device_report_error(bt_address_t *addr, hid_status_error_
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hid_device_send_report(bt_address_t *addr, uint8_t rpt_id, uint8_t *rpt_data, int rpt_size)
+bt_status_t bt_sal_hid_device_send_report(bt_address_t* addr, uint8_t rpt_id, uint8_t* rpt_data, int rpt_size)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_PARAM(rpt_data);
@@ -180,7 +180,7 @@ bt_status_t bt_sal_hid_device_send_report(bt_address_t *addr, uint8_t rpt_id, ui
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_hid_device_virtual_unplug(bt_address_t *addr)
+bt_status_t bt_sal_hid_device_virtual_unplug(bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
 

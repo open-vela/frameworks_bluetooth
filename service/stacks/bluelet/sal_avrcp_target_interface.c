@@ -30,14 +30,14 @@
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
 
 static void target_connection_state_changed_cb(BD_ADDR addr,
-                                               SERVICE_PROFILE_CONNECTION_STATE state,
-                                               SERVICE_PROFILE_CONNECTION_REASON reason);
+    SERVICE_PROFILE_CONNECTION_STATE state,
+    SERVICE_PROFILE_CONNECTION_REASON reason);
 static void register_notification_request_cb(BD_ADDR addr,
-                                             SERVICE_AVRCP_NOTIFICATION_EVENT event, uint32_t interval);
+    SERVICE_AVRCP_NOTIFICATION_EVENT event, uint32_t interval);
 static void get_play_status_request_cb(BD_ADDR addr);
 static void panel_operation_cb(BD_ADDR addr,
-                               SERVICE_AVRCP_PANEL_OPERATION op,
-                               SERVICE_AVRCP_PANEL_STATE state);
+    SERVICE_AVRCP_PANEL_OPERATION op,
+    SERVICE_AVRCP_PANEL_STATE state);
 static void absolute_volume_cb(BD_ADDR addr, uint8_t volume);
 
 static AVRCP_TARGET_CALLBACKS_S avrcp_target_cbks = {
@@ -51,10 +51,10 @@ static AVRCP_TARGET_CALLBACKS_S avrcp_target_cbks = {
 };
 
 static void target_connection_state_changed_cb(BD_ADDR addr,
-                                               SERVICE_PROFILE_CONNECTION_STATE state,
-                                               SERVICE_PROFILE_CONNECTION_REASON reason)
+    SERVICE_PROFILE_CONNECTION_STATE state,
+    SERVICE_PROFILE_CONNECTION_REASON reason)
 {
-    avrcp_msg_t *msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, (void *)addr);
+    avrcp_msg_t* msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, (void*)addr);
 
     if (msg == NULL)
         return;
@@ -80,16 +80,16 @@ static void target_connection_state_changed_cb(BD_ADDR addr,
 }
 
 static void register_notification_request_cb(BD_ADDR addr,
-                                             SERVICE_AVRCP_NOTIFICATION_EVENT event, uint32_t interval)
+    SERVICE_AVRCP_NOTIFICATION_EVENT event, uint32_t interval)
 {
-    avrcp_msg_t *msg;
+    avrcp_msg_t* msg;
 
     if (event == AVRCP_NOTIFICATION_VOLUME_CHANGED) {
-        msg = avrcp_msg_new(AVRC_REGISTER_NOTIFICATION_ABSVOL_REQ, (void *)addr);
+        msg = avrcp_msg_new(AVRC_REGISTER_NOTIFICATION_ABSVOL_REQ, (void*)addr);
         if (msg == NULL)
             return;
     } else {
-        msg = avrcp_msg_new(AVRC_REGISTER_NOTIFICATION_REQ, (void *)addr);
+        msg = avrcp_msg_new(AVRC_REGISTER_NOTIFICATION_REQ, (void*)addr);
         if (msg == NULL)
             return;
 
@@ -102,7 +102,7 @@ static void register_notification_request_cb(BD_ADDR addr,
 
 static void get_play_status_request_cb(BD_ADDR addr)
 {
-    avrcp_msg_t *msg = avrcp_msg_new(AVRC_GET_PLAY_STATUS_REQ, (void *)addr);
+    avrcp_msg_t* msg = avrcp_msg_new(AVRC_GET_PLAY_STATUS_REQ, (void*)addr);
 
     if (msg == NULL)
         return;
@@ -111,10 +111,10 @@ static void get_play_status_request_cb(BD_ADDR addr)
 }
 
 static void panel_operation_cb(BD_ADDR addr,
-                               SERVICE_AVRCP_PANEL_OPERATION op,
-                               SERVICE_AVRCP_PANEL_STATE state)
+    SERVICE_AVRCP_PANEL_OPERATION op,
+    SERVICE_AVRCP_PANEL_STATE state)
 {
-    avrcp_msg_t *msg = avrcp_msg_new(AVRC_PASSTHROUHT_CMD, (void *)addr);
+    avrcp_msg_t* msg = avrcp_msg_new(AVRC_PASSTHROUHT_CMD, (void*)addr);
 
     if (msg == NULL)
         return;
@@ -127,7 +127,7 @@ static void panel_operation_cb(BD_ADDR addr,
 
 static void absolute_volume_cb(BD_ADDR addr, uint8_t volume)
 {
-    avrcp_msg_t *msg = avrcp_msg_new(AVRC_SET_ABSOLUTE_VOLUME, (void *)addr);
+    avrcp_msg_t* msg = avrcp_msg_new(AVRC_SET_ABSOLUTE_VOLUME, (void*)addr);
 
     if (msg == NULL)
         return;
@@ -141,7 +141,7 @@ bt_status_t bt_sal_avrcp_target_init(void)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     SAL_CHECK_RET(service_adapter_avrcp_target_init(&avrcp_target_cbks),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -156,73 +156,73 @@ void bt_sal_avrcp_target_cleanup(void)
 #endif
 }
 
-bt_status_t bt_sal_avrcp_target_get_play_status_rsp(bt_address_t *addr,
-                                                    avrcp_play_status_t status, uint32_t song_len, uint32_t song_pos)
+bt_status_t bt_sal_avrcp_target_get_play_status_rsp(bt_address_t* addr,
+    avrcp_play_status_t status, uint32_t song_len, uint32_t song_pos)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     SAL_CHECK_RET(service_adapter_avrcp_target_get_play_status_response(
-                      (void *)addr, status, song_len, song_pos),
-                  SERVICE_BT_STATUS_SUCCESS);
+                      (void*)addr, status, song_len, song_pos),
+        SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
 }
 
-bt_status_t bt_sal_avrcp_target_play_status_notify(bt_address_t *addr, avrcp_play_status_t status)
+bt_status_t bt_sal_avrcp_target_play_status_notify(bt_address_t* addr, avrcp_play_status_t status)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     SAL_CHECK_RET(service_adapter_avrcp_target_notify_play_status_changed(
-                      (void *)addr, status),
-                  SERVICE_BT_STATUS_SUCCESS);
+                      (void*)addr, status),
+        SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
 }
 
-bt_status_t bt_sal_avrcp_target_set_absolute_volume(bt_address_t *addr, uint8_t volume)
+bt_status_t bt_sal_avrcp_target_set_absolute_volume(bt_address_t* addr, uint8_t volume)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     SAL_CHECK_RET(service_adapter_avrcp_set_absolute_volume(
-                      (void *)addr, volume),
-                  SERVICE_BT_STATUS_SUCCESS);
+                      (void*)addr, volume),
+        SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
 }
 
-bt_status_t bt_sal_avrcp_target_notify_track_changed(bt_address_t *addr, bool selected)
+bt_status_t bt_sal_avrcp_target_notify_track_changed(bt_address_t* addr, bool selected)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     SAL_CHECK_RET(service_adapter_avrcp_target_notify_track_changed(
-                      (void *)addr, selected),
-                  SERVICE_BT_STATUS_SUCCESS);
+                      (void*)addr, selected),
+        SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
 }
 
-bt_status_t bt_sal_avrcp_target_notify_play_position_changed(bt_address_t *addr, uint32_t position)
+bt_status_t bt_sal_avrcp_target_notify_play_position_changed(bt_address_t* addr, uint32_t position)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     SAL_CHECK_RET(service_adapter_avrcp_target_notify_play_position_changed(
-                      (void *)addr, position),
-                  SERVICE_BT_STATUS_SUCCESS);
+                      (void*)addr, position),
+        SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
 }
 
-bt_status_t bt_sal_avrcp_target_register_volume_changed(bt_address_t *addr)
+bt_status_t bt_sal_avrcp_target_register_volume_changed(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     SAL_CHECK_RET(service_adapter_avrcp_register_notification(
-                      (void *)addr, AVRCP_NOTIFICATION_VOLUME_CHANGED, 0),
-                  SERVICE_BT_STATUS_SUCCESS);
+                      (void*)addr, AVRCP_NOTIFICATION_VOLUME_CHANGED, 0),
+        SERVICE_BT_STATUS_SUCCESS);
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;

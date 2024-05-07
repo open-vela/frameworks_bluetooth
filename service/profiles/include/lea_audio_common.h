@@ -63,10 +63,10 @@
  ****************************************************************************/
 
 enum { /* UUIDs */
-       GATT_UUID_MEDIA_CONTROL = 0x1848,
-       GATT_UUID_GENERIC_MEDIA_CONTROL = 0x1849,
-       GATT_UUID_TELEPHONE_BEARER = 0x184B,
-       GATT_UUID_GENERIC_TELEPHONE_BEARER = 0x184C,
+    GATT_UUID_MEDIA_CONTROL = 0x1848,
+    GATT_UUID_GENERIC_MEDIA_CONTROL = 0x1849,
+    GATT_UUID_TELEPHONE_BEARER = 0x184B,
+    GATT_UUID_GENERIC_TELEPHONE_BEARER = 0x184C,
 };
 
 typedef enum {
@@ -322,7 +322,7 @@ typedef struct {
 typedef struct {
     uint16_t contexts;
     uint8_t set_number;
-    uint8_t *set_10_ids;
+    uint8_t* set_10_ids;
 } lea_lc3_prefer_config;
 
 typedef struct {
@@ -380,7 +380,7 @@ typedef struct {
     lea_codec_id_t codec_id;
     lea_codec_cap_t codec_pac;
     uint8_t md_number;
-    lea_metadata_t *md_value;
+    lea_metadata_t* md_value;
 } lea_pac_info_t;
 
 typedef struct
@@ -391,7 +391,7 @@ typedef struct
 
 typedef struct {
     uint8_t pac_number;
-    lea_pac_info_t *pac_list;
+    lea_pac_info_t* pac_list;
     uint32_t sink_location;
     uint32_t source_location;
     lea_audio_context_t supported_ctx;
@@ -418,7 +418,7 @@ typedef struct {
 typedef struct {
     uint8_t csis_number;
     uint8_t rfu;
-    lea_csis_info_t *csis_info;
+    lea_csis_info_t* csis_info;
 } lea_csis_infos_t;
 
 typedef struct {
@@ -437,11 +437,11 @@ typedef struct {
 } lea_audio_stream_t;
 
 typedef struct {
-    void *reserved_data;
+    void* reserved_data;
     uint16_t iso_handle;
     uint8_t reserved_handle;
     uint16_t sdu_length;
-    uint8_t *sdu;
+    uint8_t* sdu;
 } lea_send_iso_data_t;
 
 typedef struct {
@@ -454,7 +454,7 @@ typedef struct {
 
 /* LE Audio TBS struct */
 typedef struct {
-    void *bearer_ref; /**< Application specified bearer identity. */
+    void* bearer_ref; /**< Application specified bearer identity. */
     uint8_t provider_name[MAX_PROVIDER_NAME_LENGTH]; /**< Initial Bearer Provider Name. Zero terminated UTF-8 string. */
     uint8_t uci[MAX_UCI_LENGTH]; /**< Bearer UCI. Zero terminated UTF-8 string. */
     uint8_t uri_schemes[MAX_URI_SCHEMES_LENGTH]; /**< Initial list of Bearer URI schemes supported. Zero terminated UTF-8 string. */
@@ -493,6 +493,6 @@ typedef void (*lea_audio_resume_callback)(void);
 
 typedef void (*lea_audio_meatadata_updated_callback)(void);
 
-typedef void (*lea_audio_send_callback)(uint8_t *buffer, uint16_t length);
+typedef void (*lea_audio_send_callback)(uint8_t* buffer, uint16_t length);
 
 #endif

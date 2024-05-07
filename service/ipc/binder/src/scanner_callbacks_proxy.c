@@ -26,11 +26,11 @@
 
 #include "utils/log.h"
 
-static void BpBtScannerCallbacks_onScanResult(bt_scanner_t *scanner, ble_scan_result_t *result)
+static void BpBtScannerCallbacks_onScanResult(bt_scanner_t* scanner, ble_scan_result_t* result)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = scanner;
+    AIBinder* binder = scanner;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -47,11 +47,11 @@ static void BpBtScannerCallbacks_onScanResult(bt_scanner_t *scanner, ble_scan_re
     }
 }
 
-static void BpBtScannerCallbacks_onScanStatus(bt_scanner_t *scanner, uint8_t status)
+static void BpBtScannerCallbacks_onScanStatus(bt_scanner_t* scanner, uint8_t status)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = scanner;
+    AIBinder* binder = scanner;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -68,11 +68,11 @@ static void BpBtScannerCallbacks_onScanStatus(bt_scanner_t *scanner, uint8_t sta
     }
 }
 
-static void BpBtScannerCallbacks_onScanStopped(bt_scanner_t *scanner)
+static void BpBtScannerCallbacks_onScanStopped(bt_scanner_t* scanner)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = scanner;
+    AIBinder* binder = scanner;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -93,7 +93,7 @@ static const scanner_callbacks_t static_scanner_cbks = {
     BpBtScannerCallbacks_onScanStopped
 };
 
-const scanner_callbacks_t *BpBtScannerCallbacks_getStatic(void)
+const scanner_callbacks_t* BpBtScannerCallbacks_getStatic(void)
 {
     return &static_scanner_cbks;
 }

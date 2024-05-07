@@ -61,7 +61,7 @@ typedef struct {
     uint16_t ssr_max_latency;
     uint16_t ssr_min_timeout;
     uint16_t dsc_list_length; /* Length of desc_list */
-    uint8_t *dsc_list; /* List of descriptors. Each descriptor is constructed as: Type(1 Byte), Length(2 Bytes, Little Endian), Values(Length Bytes) */
+    uint8_t* dsc_list; /* List of descriptors. Each descriptor is constructed as: Type(1 Byte), Length(2 Bytes, Little Endian), Values(Length Bytes) */
 } hid_info_t;
 
 /**
@@ -69,9 +69,9 @@ typedef struct {
  *
  */
 typedef struct {
-    const char *name;
-    const char *description;
-    const char *provider;
+    const char* name;
+    const char* description;
+    const char* provider;
     hid_info_t hids_info;
 } hid_device_sdp_settings_t;
 
@@ -122,7 +122,7 @@ typedef enum {
  * @param cookie - callback cookie.
  * @param state - hid app state
  */
-typedef void (*hidd_app_state_callback)(void *cookie, hid_app_state_t state);
+typedef void (*hidd_app_state_callback)(void* cookie, hid_app_state_t state);
 
 /**
  * @brief hid device connection state callback
@@ -132,8 +132,8 @@ typedef void (*hidd_app_state_callback)(void *cookie, hid_app_state_t state);
  * @param le_hid - TRUE is le link. FALSE is BREDR link
  * @param state - hid connection state
  */
-typedef void (*hidd_connection_state_callback)(void *cookie, bt_address_t *addr, bool le_hid,
-                                               profile_connection_state_t state);
+typedef void (*hidd_connection_state_callback)(void* cookie, bt_address_t* addr, bool le_hid,
+    profile_connection_state_t state);
 
 /**
  * @brief callback for get the specified report from app
@@ -144,8 +144,8 @@ typedef void (*hidd_connection_state_callback)(void *cookie, bt_address_t *addr,
  * @param rpt_id - report id
  * @param buffer_size - max size to return
  */
-typedef void (*hidd_get_report_callback)(void *cookie, bt_address_t *addr, uint8_t rpt_type,
-                                         uint8_t rpt_id, uint16_t buffer_size);
+typedef void (*hidd_get_report_callback)(void* cookie, bt_address_t* addr, uint8_t rpt_type,
+    uint8_t rpt_id, uint16_t buffer_size);
 
 /**
  * @brief callback for set the specified report from app
@@ -156,8 +156,8 @@ typedef void (*hidd_get_report_callback)(void *cookie, bt_address_t *addr, uint8
  * @param rpt_size - size of the report data
  * @param rpt_data - report data
  */
-typedef void (*hidd_set_report_callback)(void *cookie, bt_address_t *addr, uint8_t rpt_type,
-                                         uint16_t rpt_size, uint8_t *rpt_data);
+typedef void (*hidd_set_report_callback)(void* cookie, bt_address_t* addr, uint8_t rpt_type,
+    uint16_t rpt_size, uint8_t* rpt_data);
 
 /**
  * @brief callback for receiving reports from host
@@ -168,8 +168,8 @@ typedef void (*hidd_set_report_callback)(void *cookie, bt_address_t *addr, uint8
  * @param rpt_size - size of the report data
  * @param rpt_data - report data
  */
-typedef void (*hidd_receive_report_callback)(void *cookie, bt_address_t *addr, uint8_t rpt_type,
-                                             uint16_t rpt_size, uint8_t *rpt_data);
+typedef void (*hidd_receive_report_callback)(void* cookie, bt_address_t* addr, uint8_t rpt_type,
+    uint16_t rpt_size, uint8_t* rpt_data);
 
 /**
  * @brief hid device virtual cable unplug callback
@@ -177,7 +177,7 @@ typedef void (*hidd_receive_report_callback)(void *cookie, bt_address_t *addr, u
  * @param cookie - callback cookie.
  * @param addr - address of peer device.
  */
-typedef void (*hidd_virtual_unplug_callback)(void *cookie, bt_address_t *addr);
+typedef void (*hidd_virtual_unplug_callback)(void* cookie, bt_address_t* addr);
 
 /**
  * @brief hid device event callbacks structure
@@ -200,7 +200,7 @@ typedef struct {
  * @param callbacks - hid device callback functions.
  * @return void* - callback cookie, NULL on failure.
  */
-void *BTSYMBOLS(bt_hid_device_register_callbacks)(bt_instance_t *ins, const hid_device_callbacks_t *callbacks);
+void* BTSYMBOLS(bt_hid_device_register_callbacks)(bt_instance_t* ins, const hid_device_callbacks_t* callbacks);
 
 /**
  * @brief Unregister hid device callback function
@@ -210,7 +210,7 @@ void *BTSYMBOLS(bt_hid_device_register_callbacks)(bt_instance_t *ins, const hid_
  * @return true - on callback unregister success
  * @return false - on callback cookie not found
  */
-bool BTSYMBOLS(bt_hid_device_unregister_callbacks)(bt_instance_t *ins, void *cookie);
+bool BTSYMBOLS(bt_hid_device_unregister_callbacks)(bt_instance_t* ins, void* cookie);
 
 /**
  * @brief Register hid app
@@ -219,7 +219,7 @@ bool BTSYMBOLS(bt_hid_device_unregister_callbacks)(bt_instance_t *ins, void *coo
  * @param sdp_setting - hid device sdp setting.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hid_device_register_app)(bt_instance_t *ins, hid_device_sdp_settings_t *sdp_setting, bool le_hid);
+bt_status_t BTSYMBOLS(bt_hid_device_register_app)(bt_instance_t* ins, hid_device_sdp_settings_t* sdp_setting, bool le_hid);
 
 /**
  * @brief Unregister hid app
@@ -227,7 +227,7 @@ bt_status_t BTSYMBOLS(bt_hid_device_register_app)(bt_instance_t *ins, hid_device
  * @param ins - bluetooth client instance.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hid_device_unregister_app)(bt_instance_t *ins);
+bt_status_t BTSYMBOLS(bt_hid_device_unregister_app)(bt_instance_t* ins);
 
 /**
  * @brief Connect to hid host
@@ -236,7 +236,7 @@ bt_status_t BTSYMBOLS(bt_hid_device_unregister_app)(bt_instance_t *ins);
  * @param addr - address of peer device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hid_device_connect)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hid_device_connect)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Disconnect to hid host
@@ -245,7 +245,7 @@ bt_status_t BTSYMBOLS(bt_hid_device_connect)(bt_instance_t *ins, bt_address_t *a
  * @param addr - address of peer device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hid_device_disconnect)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hid_device_disconnect)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Send report to hid host
@@ -257,7 +257,7 @@ bt_status_t BTSYMBOLS(bt_hid_device_disconnect)(bt_instance_t *ins, bt_address_t
  * @param rpt_size - size of the report data.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hid_device_send_report)(bt_instance_t *ins, bt_address_t *addr, uint8_t rpt_id, uint8_t *rpt_data, int rpt_size);
+bt_status_t BTSYMBOLS(bt_hid_device_send_report)(bt_instance_t* ins, bt_address_t* addr, uint8_t rpt_id, uint8_t* rpt_data, int rpt_size);
 
 /**
  * @brief Response report to the Host using GET_REPORT command
@@ -269,7 +269,7 @@ bt_status_t BTSYMBOLS(bt_hid_device_send_report)(bt_instance_t *ins, bt_address_
  * @param rpt_size - size of the report data.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hid_device_response_report)(bt_instance_t *ins, bt_address_t *addr, uint8_t rpt_type, uint8_t *rpt_data, int rpt_size);
+bt_status_t BTSYMBOLS(bt_hid_device_response_report)(bt_instance_t* ins, bt_address_t* addr, uint8_t rpt_type, uint8_t* rpt_data, int rpt_size);
 
 /**
  * @brief Notifies status to the Host using SET_REPORT command
@@ -279,7 +279,7 @@ bt_status_t BTSYMBOLS(bt_hid_device_response_report)(bt_instance_t *ins, bt_addr
  * @param error - error code.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hid_device_report_error)(bt_instance_t *ins, bt_address_t *addr, hid_status_error_t error);
+bt_status_t BTSYMBOLS(bt_hid_device_report_error)(bt_instance_t* ins, bt_address_t* addr, hid_status_error_t error);
 
 /**
  * @brief Virtual unplug the current hid host
@@ -288,7 +288,7 @@ bt_status_t BTSYMBOLS(bt_hid_device_report_error)(bt_instance_t *ins, bt_address
  * @param addr - address of peer device.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_hid_device_virtual_unplug)(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t BTSYMBOLS(bt_hid_device_virtual_unplug)(bt_instance_t* ins, bt_address_t* addr);
 
 #ifdef __cplusplus
 }

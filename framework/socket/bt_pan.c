@@ -24,22 +24,22 @@
 #include "service_manager.h"
 #include "utils/log.h"
 
-void *bt_pan_register_callbacks(bt_instance_t *ins, const pan_callbacks_t *callbacks)
+void* bt_pan_register_callbacks(bt_instance_t* ins, const pan_callbacks_t* callbacks)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    void *handle;
+    void* handle;
 
     BT_SOCKET_INS_VALID(ins, NULL);
 
     if (ins->panu_callbacks != NULL) {
-        handle = bt_remote_callbacks_register(ins->panu_callbacks, NULL, (void *)callbacks);
+        handle = bt_remote_callbacks_register(ins->panu_callbacks, NULL, (void*)callbacks);
         return handle;
     }
 
     ins->panu_callbacks = bt_callbacks_list_new(1);
 
-    handle = bt_remote_callbacks_register(ins->panu_callbacks, NULL, (void *)callbacks);
+    handle = bt_remote_callbacks_register(ins->panu_callbacks, NULL, (void*)callbacks);
     if (handle == NULL) {
         bt_callbacks_list_free(ins->panu_callbacks);
         ins->panu_callbacks = NULL;
@@ -56,7 +56,7 @@ void *bt_pan_register_callbacks(bt_instance_t *ins, const pan_callbacks_t *callb
     return handle;
 }
 
-bool bt_pan_unregister_callbacks(bt_instance_t *ins, void *cookie)
+bool bt_pan_unregister_callbacks(bt_instance_t* ins, void* cookie)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -81,7 +81,7 @@ bool bt_pan_unregister_callbacks(bt_instance_t *ins, void *cookie)
     return true;
 }
 
-bt_status_t bt_pan_connect(bt_instance_t *ins, bt_address_t *addr, uint8_t dst_role, uint8_t src_role)
+bt_status_t bt_pan_connect(bt_instance_t* ins, bt_address_t* addr, uint8_t dst_role, uint8_t src_role)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -100,7 +100,7 @@ bt_status_t bt_pan_connect(bt_instance_t *ins, bt_address_t *addr, uint8_t dst_r
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_pan_disconnect(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_pan_disconnect(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;

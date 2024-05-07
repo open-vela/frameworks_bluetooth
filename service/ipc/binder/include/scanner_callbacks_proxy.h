@@ -28,7 +28,7 @@ extern "C" {
 
 #include <android/binder_manager.h>
 
-const scanner_callbacks_t *BpBtScannerCallbacks_getStatic(void);
+const scanner_callbacks_t* BpBtScannerCallbacks_getStatic(void);
 
 #ifdef __cplusplus
 }

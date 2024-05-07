@@ -20,13 +20,13 @@
 #include "stack_adapter_lea_vmicp.h"
 #include <stdint.h>
 
-bt_status_t bt_sal_vmicp_read_volume_state(bt_address_t *addr);
-bt_status_t bt_sal_vmicp_read_volume_flags(bt_address_t *addr);
-bt_status_t bt_sal_vmicp_change_volume(bt_address_t *addr, int dir);
-bt_status_t bt_sal_vmicp_change_unmute_volume(bt_address_t *addr, int dir);
-bt_status_t bt_sal_vmicp_set_absolute_volume(bt_address_t *addr, int vol);
-bt_status_t bt_sal_vmicp_set_mute(bt_address_t *addr, int mute);
-bt_status_t bt_sal_vmicp_read_mic_state(bt_address_t *addr);
-bt_status_t bt_sal_vmicp_set_mic_state(bt_address_t *addr, int mute);
+bt_status_t bt_sal_vmicp_read_volume_state(bt_address_t* addr);
+bt_status_t bt_sal_vmicp_read_volume_flags(bt_address_t* addr);
+bt_status_t bt_sal_vmicp_change_volume(bt_address_t* addr, int dir);
+bt_status_t bt_sal_vmicp_change_unmute_volume(bt_address_t* addr, int dir);
+bt_status_t bt_sal_vmicp_set_absolute_volume(bt_address_t* addr, int vol);
+bt_status_t bt_sal_vmicp_set_mute(bt_address_t* addr, int mute);
+bt_status_t bt_sal_vmicp_read_mic_state(bt_address_t* addr);
+bt_status_t bt_sal_vmicp_set_mic_state(bt_address_t* addr, int mute);
 
 #endif /* __SAL_LEA_VMICP_INTERFACE_H__ */

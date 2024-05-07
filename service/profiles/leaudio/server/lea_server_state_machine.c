@@ -47,19 +47,19 @@ typedef struct _lea_server_state_machine {
     bool offloading;
     pending_state_t pending;
     bt_address_t addr;
-    void *service;
-    service_timer_t *offload_timer;
+    void* service;
+    service_timer_t* offload_timer;
 } lea_server_state_machine_t;
 
 #define LEA_SERVER_OFFLOAD_TIMEOUT 500
 #define LEA_SERVER_STM_DEBUG 1
 
 #if LEA_SERVER_STM_DEBUG
-static void lea_server_trans_debug(state_machine_t *sm, bt_address_t *addr,
-                                   const char *action);
-static void lea_server_event_debug(state_machine_t *sm, bt_address_t *addr,
-                                   uint32_t event);
-static const char *stack_event_to_string(lea_server_event_t event);
+static void lea_server_trans_debug(state_machine_t* sm, bt_address_t* addr,
+    const char* action);
+static void lea_server_event_debug(state_machine_t* sm, bt_address_t* addr,
+    uint32_t event);
+static const char* stack_event_to_string(lea_server_event_t event);
 
 #define LEAS_DBG_ENTER(__sm, __addr) lea_server_trans_debug(__sm, __addr, "Enter")
 #define LEAS_DBG_EXIT(__sm, __addr) lea_server_trans_debug(__sm, __addr, "Exit ")
@@ -70,33 +70,33 @@ static const char *stack_event_to_string(lea_server_event_t event);
 #define LEAS_DBG_EVENT(__sm, __addr, __event)
 #endif
 
-extern bt_status_t lea_server_send_message(lea_server_msg_t *msg);
+extern bt_status_t lea_server_send_message(lea_server_msg_t* msg);
 
-static void closed_enter(state_machine_t *sm);
-static void closed_exit(state_machine_t *sm);
-static void opening_enter(state_machine_t *sm);
-static void opening_exit(state_machine_t *sm);
-static void opened_enter(state_machine_t *sm);
-static void opened_exit(state_machine_t *sm);
-static void started_enter(state_machine_t *sm);
-static void started_exit(state_machine_t *sm);
-static void closing_enter(state_machine_t *sm);
-static void closing_exit(state_machine_t *sm);
+static void closed_enter(state_machine_t* sm);
+static void closed_exit(state_machine_t* sm);
+static void opening_enter(state_machine_t* sm);
+static void opening_exit(state_machine_t* sm);
+static void opened_enter(state_machine_t* sm);
+static void opened_exit(state_machine_t* sm);
+static void started_enter(state_machine_t* sm);
+static void started_exit(state_machine_t* sm);
+static void closing_enter(state_machine_t* sm);
+static void closing_exit(state_machine_t* sm);
 
-static bool closed_process_event(state_machine_t *sm, uint32_t event,
-                                 void *p_data);
-static bool opening_process_event(state_machine_t *sm, uint32_t event,
-                                  void *p_data);
-static bool opened_process_event(state_machine_t *sm, uint32_t event,
-                                 void *p_data);
-static bool started_process_event(state_machine_t *sm, uint32_t event,
-                                  void *p_data);
-static bool closing_process_event(state_machine_t *sm, uint32_t event,
-                                  void *p_data);
+static bool closed_process_event(state_machine_t* sm, uint32_t event,
+    void* p_data);
+static bool opening_process_event(state_machine_t* sm, uint32_t event,
+    void* p_data);
+static bool opened_process_event(state_machine_t* sm, uint32_t event,
+    void* p_data);
+static bool started_process_event(state_machine_t* sm, uint32_t event,
+    void* p_data);
+static bool closing_process_event(state_machine_t* sm, uint32_t event,
+    void* p_data);
 
-static bool flag_isset(lea_server_state_machine_t *leas_sm, pending_state_t flag);
-static void flag_set(lea_server_state_machine_t *leas_sm, pending_state_t flag);
-static void flag_clear(lea_server_state_machine_t *leas_sm, pending_state_t flag);
+static bool flag_isset(lea_server_state_machine_t* leas_sm, pending_state_t flag);
+static void flag_set(lea_server_state_machine_t* leas_sm, pending_state_t flag);
+static void flag_clear(lea_server_state_machine_t* leas_sm, pending_state_t flag);
 
 static const state_t closed_state = {
     .state_name = "Closed",
@@ -134,22 +134,22 @@ static const state_t closing_state = {
 };
 
 #if LEA_SERVER_STM_DEBUG
-static void lea_server_trans_debug(state_machine_t *sm, bt_address_t *addr, const char *action)
+static void lea_server_trans_debug(state_machine_t* sm, bt_address_t* addr, const char* action)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("%s State=%s, Peer=[%s]", action, hsm_get_current_state_name(sm), addr_str);
 }
 
-static void lea_server_event_debug(state_machine_t *sm, bt_address_t *addr, uint32_t event)
+static void lea_server_event_debug(state_machine_t* sm, bt_address_t* addr, uint32_t event)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("ProcessEvent, State=%s, Peer=[%s], Event=%s", hsm_get_current_state_name(sm),
-            addr_str, stack_event_to_string(event));
+        addr_str, stack_event_to_string(event));
 }
 
-static const char *stack_event_to_string(lea_server_event_t event)
+static const char* stack_event_to_string(lea_server_event_t event)
 {
     switch (event) {
         CASE_RETURN_STR(DISCONNECT)
@@ -192,30 +192,30 @@ static const char *stack_event_to_string(lea_server_event_t event)
 }
 #endif
 
-static bool flag_isset(lea_server_state_machine_t *leas_sm, pending_state_t flag)
+static bool flag_isset(lea_server_state_machine_t* leas_sm, pending_state_t flag)
 {
     return (bool)(leas_sm->pending & flag);
 }
 
-static void flag_set(lea_server_state_machine_t *leas_sm, pending_state_t flag)
+static void flag_set(lea_server_state_machine_t* leas_sm, pending_state_t flag)
 {
     leas_sm->pending |= flag;
 }
 
-static void flag_clear(lea_server_state_machine_t *leas_sm, pending_state_t flag)
+static void flag_clear(lea_server_state_machine_t* leas_sm, pending_state_t flag)
 {
     leas_sm->pending &= ~flag;
 }
 
-static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
+static void bt_hci_event_callback(bt_hci_event_t* hci_event, void* context)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)context;
-    lea_server_msg_t *msg;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)context;
+    lea_server_msg_t* msg;
     lea_server_event_t event;
 
     BT_LOGD("%s, evt_code:0x%x, len:%d", __func__, hci_event->evt_code,
-            hci_event->length);
-    BT_DUMPBUFFER("vsc", (uint8_t *)hci_event->params, hci_event->length);
+        hci_event->length);
+    BT_DUMPBUFFER("vsc", (uint8_t*)hci_event->params, hci_event->length);
 
     if (flag_isset(leas_sm, PENDING_OFFLOAD_START)) {
         event = OFFLOAD_START_EVT;
@@ -236,10 +236,10 @@ static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
     lea_server_send_message(msg);
 }
 
-static void lea_offload_config_timeout_callback(service_timer_t *timer, void *data)
+static void lea_offload_config_timeout_callback(service_timer_t* timer, void* data)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)data;
-    lea_server_msg_t *msg;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)data;
+    lea_server_msg_t* msg;
 
     msg = lea_server_msg_new(OFFLOAD_TIMEOUT, &leas_sm->addr);
     if (!msg) {
@@ -251,29 +251,29 @@ static void lea_offload_config_timeout_callback(service_timer_t *timer, void *da
     lea_server_msg_destory(msg);
 }
 
-static void closed_enter(state_machine_t *sm)
+static void closed_enter(state_machine_t* sm)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
 
     LEAS_DBG_ENTER(sm, &leas_sm->addr);
     if (hsm_get_previous_state(sm)) {
         lea_server_notify_connection_state_changed(&leas_sm->addr,
-                                                   PROFILE_STATE_DISCONNECTED);
+            PROFILE_STATE_DISCONNECTED);
     }
 }
 
-static void closed_exit(state_machine_t *sm)
+static void closed_exit(state_machine_t* sm)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
 
     LEAS_DBG_EXIT(sm, &leas_sm->addr);
 }
 
-static bool closed_process_event(state_machine_t *sm, uint32_t event,
-                                 void *p_data)
+static bool closed_process_event(state_machine_t* sm, uint32_t event,
+    void* p_data)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
-    lea_server_data_t *data = (lea_server_data_t *)p_data;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
+    lea_server_data_t* data = (lea_server_data_t*)p_data;
 
     LEAS_DBG_EVENT(sm, &leas_sm->addr, event);
 
@@ -301,24 +301,24 @@ static bool closed_process_event(state_machine_t *sm, uint32_t event,
     return true;
 }
 
-static void opening_enter(state_machine_t *sm)
+static void opening_enter(state_machine_t* sm)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
 
     LEAS_DBG_ENTER(sm, &leas_sm->addr);
 }
 
-static void opening_exit(state_machine_t *sm)
+static void opening_exit(state_machine_t* sm)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
 
     LEAS_DBG_EXIT(sm, &leas_sm->addr);
 }
 
-static bool opening_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
-    lea_server_data_t *data = (lea_server_data_t *)p_data;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
+    lea_server_data_t* data = (lea_server_data_t*)p_data;
 
     LEAS_DBG_EVENT(sm, &leas_sm->addr, event);
 
@@ -363,23 +363,23 @@ static bool opening_process_event(state_machine_t *sm, uint32_t event, void *p_d
     return true;
 }
 
-static void opened_enter(state_machine_t *sm)
+static void opened_enter(state_machine_t* sm)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
 
     LEAS_DBG_ENTER(sm, &leas_sm->addr);
 }
 
-static void opened_exit(state_machine_t *sm)
+static void opened_exit(state_machine_t* sm)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
 
     LEAS_DBG_EXIT(sm, &leas_sm->addr);
 }
 
 static void lea_server_stop_audio(uint32_t stream_id)
 {
-    lea_audio_stream_t *stream;
+    lea_audio_stream_t* stream;
 
     stream = lea_server_find_stream(stream_id);
     if (!stream) {
@@ -395,14 +395,14 @@ static void lea_server_stop_audio(uint32_t stream_id)
     }
 }
 
-static void lea_server_stop_offload_req(lea_server_state_machine_t *leas_sm, lea_server_data_t *data)
+static void lea_server_stop_offload_req(lea_server_state_machine_t* leas_sm, lea_server_data_t* data)
 {
     uint8_t ogf;
     uint16_t ocf;
     uint8_t len;
-    uint8_t *payload;
+    uint8_t* payload;
 
-    BT_DUMPBUFFER("stop req vsc", (uint8_t *)data->data, data->size);
+    BT_DUMPBUFFER("stop req vsc", (uint8_t*)data->data, data->size);
     payload = data->data;
     len = data->size - sizeof(ogf) - sizeof(ocf);
     STREAM_TO_UINT8(ogf, payload)
@@ -410,13 +410,13 @@ static void lea_server_stop_offload_req(lea_server_state_machine_t *leas_sm, lea
     flag_set(leas_sm, PENDING_OFFLOAD_STOP);
 
     bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
-                            leas_sm);
+        leas_sm);
 }
 
-static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
-    lea_server_data_t *data = (lea_server_data_t *)p_data;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
+    lea_server_data_t* data = (lea_server_data_t*)p_data;
 
     LEAS_DBG_EVENT(sm, &leas_sm->addr, event);
 
@@ -449,9 +449,9 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         uint8_t ogf;
         uint16_t ocf;
         uint8_t len;
-        uint8_t *payload;
+        uint8_t* payload;
 
-        BT_DUMPBUFFER("start req vsc", (uint8_t *)data->data, data->size);
+        BT_DUMPBUFFER("start req vsc", (uint8_t*)data->data, data->size);
         payload = data->data;
         len = data->size - sizeof(ogf) - sizeof(ocf);
         STREAM_TO_UINT8(ogf, payload)
@@ -460,11 +460,11 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
         leas_sm->offload_timer = service_loop_timer(LEA_SERVER_OFFLOAD_TIMEOUT, 0, lea_offload_config_timeout_callback, leas_sm);
 
         bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
-                                leas_sm);
+            leas_sm);
         break;
     }
     case OFFLOAD_START_EVT: {
-        bt_hci_event_t *hci_event;
+        bt_hci_event_t* hci_event;
         uint8_t status;
 
         hci_event = data->data;
@@ -521,9 +521,9 @@ static bool opened_process_event(state_machine_t *sm, uint32_t event, void *p_da
     return true;
 }
 
-static void started_enter(state_machine_t *sm)
+static void started_enter(state_machine_t* sm)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
 
     LEAS_DBG_ENTER(sm, &leas_sm->addr);
     if (leas_sm->offloading) {
@@ -531,17 +531,17 @@ static void started_enter(state_machine_t *sm)
     }
 }
 
-static void started_exit(state_machine_t *sm)
+static void started_exit(state_machine_t* sm)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
 
     LEAS_DBG_EXIT(sm, &leas_sm->addr);
 }
 
-static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
-    lea_server_data_t *data = (lea_server_data_t *)p_data;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
+    lea_server_data_t* data = (lea_server_data_t*)p_data;
 
     LEAS_DBG_EVENT(sm, &leas_sm->addr, event);
 
@@ -574,8 +574,8 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     }
     case STACK_EVENT_STREAM_STARTED: {
-        lea_audio_stream_t *audio_stream = (lea_audio_stream_t *)data->data;
-        lea_audio_config_t *audio_config;
+        lea_audio_stream_t* audio_stream = (lea_audio_stream_t*)data->data;
+        lea_audio_config_t* audio_config;
 
         audio_config = lea_codec_get_config(audio_stream->is_source);
         if (!audio_config) {
@@ -625,24 +625,24 @@ static bool started_process_event(state_machine_t *sm, uint32_t event, void *p_d
     return true;
 }
 
-static void closing_enter(state_machine_t *sm)
+static void closing_enter(state_machine_t* sm)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
 
     LEAS_DBG_ENTER(sm, &leas_sm->addr);
 }
 
-static void closing_exit(state_machine_t *sm)
+static void closing_exit(state_machine_t* sm)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
 
     LEAS_DBG_EXIT(sm, &leas_sm->addr);
 }
 
-static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    lea_server_state_machine_t *leas_sm = (lea_server_state_machine_t *)sm;
-    lea_server_data_t *data = (lea_server_data_t *)p_data;
+    lea_server_state_machine_t* leas_sm = (lea_server_state_machine_t*)sm;
+    lea_server_data_t* data = (lea_server_data_t*)p_data;
 
     LEAS_DBG_EVENT(sm, &leas_sm->addr, event);
 
@@ -693,12 +693,12 @@ static bool closing_process_event(state_machine_t *sm, uint32_t event, void *p_d
     return true;
 }
 
-lea_server_state_machine_t *lea_server_state_machine_new(bt_address_t *addr,
-                                                         void *context)
+lea_server_state_machine_t* lea_server_state_machine_new(bt_address_t* addr,
+    void* context)
 {
-    lea_server_state_machine_t *leasm;
+    lea_server_state_machine_t* leasm;
 
-    leasm = (lea_server_state_machine_t *)malloc(
+    leasm = (lea_server_state_machine_t*)malloc(
         sizeof(lea_server_state_machine_t));
     if (!leasm)
         return NULL;
@@ -707,22 +707,22 @@ lea_server_state_machine_t *lea_server_state_machine_new(bt_address_t *addr,
     leasm->service = context;
     memcpy(&leasm->addr, addr, sizeof(bt_address_t));
 
-    hsm_ctor(&leasm->sm, (state_t *)&closed_state);
+    hsm_ctor(&leasm->sm, (state_t*)&closed_state);
 
     return leasm;
 }
 
-void lea_server_state_machine_destory(lea_server_state_machine_t *leasm)
+void lea_server_state_machine_destory(lea_server_state_machine_t* leasm)
 {
     if (!leasm)
         return;
 
     hsm_dtor(&leasm->sm);
-    free((void *)leasm);
+    free((void*)leasm);
 }
 
-void lea_server_state_machine_dispatch(lea_server_state_machine_t *leasm,
-                                       lea_server_msg_t *msg)
+void lea_server_state_machine_dispatch(lea_server_state_machine_t* leasm,
+    lea_server_msg_t* msg)
 {
     if (!leasm || !msg)
         return;
@@ -730,12 +730,12 @@ void lea_server_state_machine_dispatch(lea_server_state_machine_t *leasm,
     hsm_dispatch_event(&leasm->sm, msg->event, &msg->data);
 }
 
-uint32_t lea_server_state_machine_get_state(lea_server_state_machine_t *leasm)
+uint32_t lea_server_state_machine_get_state(lea_server_state_machine_t* leasm)
 {
     return hsm_get_current_state_value(&leasm->sm);
 }
 
-void lea_server_state_machine_set_offloading(lea_server_state_machine_t *leasm, bool offloading)
+void lea_server_state_machine_set_offloading(lea_server_state_machine_t* leasm, bool offloading)
 {
     leasm->offloading = offloading;
 }

@@ -23,25 +23,25 @@
 #include "bt_hfp_ag.h"
 #include "bt_tools.h"
 
-static int connect_cmd(void *handle, int argc, char *argv[]);
-static int disconnect_cmd(void *handle, int argc, char *argv[]);
-static int connect_audio_cmd(void *handle, int argc, char *argv[]);
-static int disconnect_audio_cmd(void *handle, int argc, char *argv[]);
-static int start_voice_recognition_cmd(void *handle, int argc, char *argv[]);
-static int stop_voice_recognition_cmd(void *handle, int argc, char *argv[]);
-static int send_at_cmd_cmd(void *handle, int argc, char *argv[]);
+static int connect_cmd(void* handle, int argc, char* argv[]);
+static int disconnect_cmd(void* handle, int argc, char* argv[]);
+static int connect_audio_cmd(void* handle, int argc, char* argv[]);
+static int disconnect_audio_cmd(void* handle, int argc, char* argv[]);
+static int start_voice_recognition_cmd(void* handle, int argc, char* argv[]);
+static int stop_voice_recognition_cmd(void* handle, int argc, char* argv[]);
+static int send_at_cmd_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_hfp_ag_tables[] = {
-    {"connect",          connect_cmd,                 0, "\"establish hfp SLC connection     , params: <address>\""        },
-    { "disconnect",      disconnect_cmd,              0, "\"disconnect hfp SLC connection    , params: <address>\""        },
-    { "connectaudio",    connect_audio_cmd,           0, "\"establish hfp SCO connection     , params: <address>\""        },
-    { "disconnectaudio", disconnect_audio_cmd,        0, "\"disconnect hfp SCO connection    , params: <address>\""        },
-    { "startvr",         start_voice_recognition_cmd, 0, "\"start voice recognition          , params: <address>\""        },
-    { "stopvr",          stop_voice_recognition_cmd,  0, "\"stop voice recognition           , params: <address>\""        },
-    { "sendat",          send_at_cmd_cmd,             0, "\"Send customize AT command to peer, params: <address> <atcmd>\""},
+    { "connect", connect_cmd, 0, "\"establish hfp SLC connection     , params: <address>\"" },
+    { "disconnect", disconnect_cmd, 0, "\"disconnect hfp SLC connection    , params: <address>\"" },
+    { "connectaudio", connect_audio_cmd, 0, "\"establish hfp SCO connection     , params: <address>\"" },
+    { "disconnectaudio", disconnect_audio_cmd, 0, "\"disconnect hfp SCO connection    , params: <address>\"" },
+    { "startvr", start_voice_recognition_cmd, 0, "\"start voice recognition          , params: <address>\"" },
+    { "stopvr", stop_voice_recognition_cmd, 0, "\"stop voice recognition           , params: <address>\"" },
+    { "sendat", send_at_cmd_cmd, 0, "\"Send customize AT command to peer, params: <address> <atcmd>\"" },
 };
 
-static void *ag_callbacks = NULL;
+static void* ag_callbacks = NULL;
 
 static void usage(void)
 {
@@ -53,7 +53,7 @@ static void usage(void)
     }
 }
 
-static int connect_cmd(void *handle, int argc, char *argv[])
+static int connect_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -68,7 +68,7 @@ static int connect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_cmd(void *handle, int argc, char *argv[])
+static int disconnect_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     if (argc < 1)
@@ -83,7 +83,7 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int connect_audio_cmd(void *handle, int argc, char *argv[])
+static int connect_audio_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -98,7 +98,7 @@ static int connect_audio_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_audio_cmd(void *handle, int argc, char *argv[])
+static int disconnect_audio_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -113,7 +113,7 @@ static int disconnect_audio_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int start_voice_recognition_cmd(void *handle, int argc, char *argv[])
+static int start_voice_recognition_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -128,7 +128,7 @@ static int start_voice_recognition_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int stop_voice_recognition_cmd(void *handle, int argc, char *argv[])
+static int stop_voice_recognition_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -143,7 +143,7 @@ static int stop_voice_recognition_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int send_at_cmd_cmd(void *handle, int argc, char *argv[])
+static int send_at_cmd_cmd(void* handle, int argc, char* argv[])
 {
     bt_address_t addr;
     int len = 0;
@@ -170,22 +170,22 @@ static int send_at_cmd_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void ag_connection_state_callback(void *context, bt_address_t *addr, profile_connection_state_t state)
+static void ag_connection_state_callback(void* context, bt_address_t* addr, profile_connection_state_t state)
 {
     PRINT_ADDR("ag_connection_state_callback, addr:%s, state:%d", addr, state);
 }
 
-static void ag_audio_state_callback(void *context, bt_address_t *addr, hfp_audio_state_t state)
+static void ag_audio_state_callback(void* context, bt_address_t* addr, hfp_audio_state_t state)
 {
     PRINT_ADDR("ag_audio_state_callback, addr:%s, state:%d", addr, state);
 }
 
-static void ag_vr_cmd_callback(void *context, bt_address_t *addr, bool started)
+static void ag_vr_cmd_callback(void* context, bt_address_t* addr, bool started)
 {
     PRINT_ADDR("ag_vr_cmd_callback, addr:%s, started:%d", addr, started);
 }
 
-static void ag_battery_update_callback(void *context, bt_address_t *addr, uint8_t value)
+static void ag_battery_update_callback(void* context, bt_address_t* addr, uint8_t value)
 {
     PRINT_ADDR("ag_battery_update_callback, addr:%s, battery:%d", addr, value);
 }
@@ -198,21 +198,21 @@ static const hfp_ag_callbacks_t hfp_ag_cbs = {
     ag_battery_update_callback,
 };
 
-int hfp_ag_commond_init(void *handle)
+int hfp_ag_commond_init(void* handle)
 {
     ag_callbacks = bt_hfp_ag_register_callbacks(handle, &hfp_ag_cbs);
 
     return 0;
 }
 
-int hfp_ag_commond_uninit(void *handle)
+int hfp_ag_commond_uninit(void* handle)
 {
     bt_hfp_ag_unregister_callbacks(handle, ag_callbacks);
 
     return 0;
 }
 
-int hfp_ag_command_exec(void *handle, int argc, char *argv[])
+int hfp_ag_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

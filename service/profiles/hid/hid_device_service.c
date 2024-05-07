@@ -50,7 +50,7 @@ typedef struct {
     bt_address_t peer_addr;
     profile_connection_state_t conn_state;
     pthread_mutex_t hid_lock;
-    callbacks_list_t *callbacks;
+    callbacks_list_t* callbacks;
 } hid_device_handle_t;
 
 typedef struct {
@@ -133,9 +133,9 @@ static hid_device_handle_t g_hidd_handle = { .started = false };
  * Private Functions
  ****************************************************************************/
 
-static void hid_device_event_process(void *data)
+static void hid_device_event_process(void* data)
 {
-    hidd_msg_t *msg = (hidd_msg_t *)data;
+    hidd_msg_t* msg = (hidd_msg_t*)data;
     if (!msg)
         return;
 
@@ -300,17 +300,17 @@ static int hid_device_dump(void)
     return 0;
 }
 
-static void *hid_device_register_callbacks(void *remote, const hid_device_callbacks_t *callbacks)
+static void* hid_device_register_callbacks(void* remote, const hid_device_callbacks_t* callbacks)
 {
-    return bt_remote_callbacks_register(g_hidd_handle.callbacks, remote, (void *)callbacks);
+    return bt_remote_callbacks_register(g_hidd_handle.callbacks, remote, (void*)callbacks);
 }
 
-static bool hid_device_unregister_callbacks(void **remote, void *cookie)
+static bool hid_device_unregister_callbacks(void** remote, void* cookie)
 {
     return bt_remote_callbacks_unregister(g_hidd_handle.callbacks, remote, cookie);
 }
 
-static bt_status_t hid_device_register_app(hid_device_sdp_settings_t *sdp, bool le_hid)
+static bt_status_t hid_device_register_app(hid_device_sdp_settings_t* sdp, bool le_hid)
 {
     bt_status_t status;
 
@@ -358,7 +358,7 @@ exit:
     return status;
 }
 
-static bt_status_t hid_device_connect(bt_address_t *addr)
+static bt_status_t hid_device_connect(bt_address_t* addr)
 {
     bt_status_t status;
 
@@ -381,7 +381,7 @@ exit:
     return status;
 }
 
-static bt_status_t hid_device_disconnect(bt_address_t *addr)
+static bt_status_t hid_device_disconnect(bt_address_t* addr)
 {
     bt_status_t status;
 
@@ -404,7 +404,7 @@ exit:
     return status;
 }
 
-static bt_status_t hid_device_send_report(bt_address_t *addr, uint8_t rpt_id, uint8_t *rpt_data, int rpt_size)
+static bt_status_t hid_device_send_report(bt_address_t* addr, uint8_t rpt_id, uint8_t* rpt_data, int rpt_size)
 {
     bt_status_t status;
 
@@ -427,7 +427,7 @@ exit:
     return status;
 }
 
-static bt_status_t hid_device_response_report(bt_address_t *addr, uint8_t rpt_type, uint8_t *rpt_data, int rpt_size)
+static bt_status_t hid_device_response_report(bt_address_t* addr, uint8_t rpt_type, uint8_t* rpt_data, int rpt_size)
 {
     bt_status_t status;
 
@@ -450,7 +450,7 @@ exit:
     return status;
 }
 
-static bt_status_t hid_device_report_error(bt_address_t *addr, hid_status_error_t error)
+static bt_status_t hid_device_report_error(bt_address_t* addr, hid_status_error_t error)
 {
     bt_status_t status;
 
@@ -473,7 +473,7 @@ exit:
     return status;
 }
 
-static bt_status_t hid_device_virtual_unplug(bt_address_t *addr)
+static bt_status_t hid_device_virtual_unplug(bt_address_t* addr)
 {
     bt_status_t status;
 
@@ -510,9 +510,9 @@ static hid_device_interface_t deviceInterface = {
     .virtual_unplug = hid_device_virtual_unplug,
 };
 
-static const void *get_device_profile_interface(void)
+static const void* get_device_profile_interface(void)
 {
-    return (void *)&deviceInterface;
+    return (void*)&deviceInterface;
 }
 
 /****************************************************************************
@@ -521,7 +521,7 @@ static const void *get_device_profile_interface(void)
 
 void hid_device_on_app_state_changed(hid_app_state_t state)
 {
-    hidd_msg_t *msg = malloc(sizeof(hidd_msg_t));
+    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -533,9 +533,9 @@ void hid_device_on_app_state_changed(hid_app_state_t state)
     do_in_service_loop(hid_device_event_process, msg);
 }
 
-void hid_device_on_connection_state_changed(bt_address_t *addr, bool le_hid, profile_connection_state_t state)
+void hid_device_on_connection_state_changed(bt_address_t* addr, bool le_hid, profile_connection_state_t state)
 {
-    hidd_msg_t *msg = malloc(sizeof(hidd_msg_t));
+    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -549,9 +549,9 @@ void hid_device_on_connection_state_changed(bt_address_t *addr, bool le_hid, pro
     do_in_service_loop(hid_device_event_process, msg);
 }
 
-void hid_device_on_get_report(bt_address_t *addr, uint8_t rpt_type, uint8_t rpt_id, uint16_t buffer_size)
+void hid_device_on_get_report(bt_address_t* addr, uint8_t rpt_type, uint8_t rpt_id, uint16_t buffer_size)
 {
-    hidd_msg_t *msg = malloc(sizeof(hidd_msg_t));
+    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -566,9 +566,9 @@ void hid_device_on_get_report(bt_address_t *addr, uint8_t rpt_type, uint8_t rpt_
     do_in_service_loop(hid_device_event_process, msg);
 }
 
-void hid_device_on_set_report(bt_address_t *addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t *rpt_data)
+void hid_device_on_set_report(bt_address_t* addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data)
 {
-    hidd_msg_t *msg = malloc(sizeof(hidd_msg_t) + rpt_size);
+    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t) + rpt_size);
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -583,9 +583,9 @@ void hid_device_on_set_report(bt_address_t *addr, uint8_t rpt_type, uint16_t rpt
     do_in_service_loop(hid_device_event_process, msg);
 }
 
-void hid_device_on_receive_report(bt_address_t *addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t *rpt_data)
+void hid_device_on_receive_report(bt_address_t* addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data)
 {
-    hidd_msg_t *msg = malloc(sizeof(hidd_msg_t) + rpt_size);
+    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t) + rpt_size);
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -600,9 +600,9 @@ void hid_device_on_receive_report(bt_address_t *addr, uint8_t rpt_type, uint16_t
     do_in_service_loop(hid_device_event_process, msg);
 }
 
-void hid_device_on_virtual_cable_unplug(bt_address_t *addr)
+void hid_device_on_virtual_cable_unplug(bt_address_t* addr)
 {
-    hidd_msg_t *msg = malloc(sizeof(hidd_msg_t));
+    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -619,7 +619,7 @@ static const profile_service_t hid_device_service = {
     .name = PROFILE_HID_DEV_NAME,
     .id = PROFILE_HID_DEV,
     .transport = BT_TRANSPORT_BREDR,
-    .uuid = {BT_UUID128_TYPE, { 0 }},
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = hid_device_init,
     .startup = hid_device_startup,
     .shutdown = hid_device_shutdown,

@@ -47,18 +47,18 @@ typedef struct _ag_state_machine {
     uint32_t remote_features;
     bool recognition_active;
     bool offloading;
-    void *service;
+    void* service;
     uint8_t codec;
     uint8_t spk_volume;
     uint8_t mic_volume;
     uint8_t retry_cnt;
-    void *volume_listener;
+    void* volume_listener;
     pending_state_t pending;
-    service_timer_t *connect_timer;
-    service_timer_t *audio_timer;
-    service_timer_t *dial_out_timer;
-    service_timer_t *offload_timer;
-    service_timer_t *retry_timer;
+    service_timer_t* connect_timer;
+    service_timer_t* audio_timer;
+    service_timer_t* dial_out_timer;
+    service_timer_t* offload_timer;
+    service_timer_t* retry_timer;
 } ag_state_machine_t;
 
 #define MD2AGVOL(vol) ((vol) > 15 ? 15 : (vol))
@@ -68,9 +68,9 @@ typedef struct _ag_state_machine {
 #define AG_OFFLOAD_TIMEOUT 500
 #define AG_STM_DEBUG 1
 #if AG_STM_DEBUG
-static void ag_stm_trans_debug(state_machine_t *sm, bt_address_t *addr, const char *action);
-static void ag_stm_event_debug(state_machine_t *sm, bt_address_t *addr, uint32_t event);
-static const char *stack_event_to_string(hfp_ag_event_t event);
+static void ag_stm_trans_debug(state_machine_t* sm, bt_address_t* addr, const char* action);
+static void ag_stm_event_debug(state_machine_t* sm, bt_address_t* addr, uint32_t event);
+static const char* stack_event_to_string(hfp_ag_event_t event);
 
 #define AG_DBG_ENTER(__sm, __addr) ag_stm_trans_debug(__sm, __addr, "Enter")
 #define AG_DBG_EXIT(__sm, __addr) ag_stm_trans_debug(__sm, __addr, "Exit ")
@@ -81,31 +81,31 @@ static const char *stack_event_to_string(hfp_ag_event_t event);
 #define AG_DBG_EVENT(__sm, __addr, __event)
 #endif
 
-extern bt_status_t hfp_ag_send_event(bt_address_t *addr, hfp_ag_event_t evt);
-extern bt_status_t hfp_ag_send_message(hfp_ag_msg_t *msg);
+extern bt_status_t hfp_ag_send_event(bt_address_t* addr, hfp_ag_event_t evt);
+extern bt_status_t hfp_ag_send_message(hfp_ag_msg_t* msg);
 
-static void disconnected_enter(state_machine_t *sm);
-static void disconnected_exit(state_machine_t *sm);
-static void connecting_enter(state_machine_t *sm);
-static void connecting_exit(state_machine_t *sm);
-static void disconnecting_enter(state_machine_t *sm);
-static void disconnecting_exit(state_machine_t *sm);
-static void connected_enter(state_machine_t *sm);
-static void connected_exit(state_machine_t *sm);
-static void audio_connecting_enter(state_machine_t *sm);
-static void audio_connecting_exit(state_machine_t *sm);
-static void audio_on_enter(state_machine_t *sm);
-static void audio_on_exit(state_machine_t *sm);
-static void audio_disconnecting_enter(state_machine_t *sm);
-static void audio_disconnecting_exit(state_machine_t *sm);
+static void disconnected_enter(state_machine_t* sm);
+static void disconnected_exit(state_machine_t* sm);
+static void connecting_enter(state_machine_t* sm);
+static void connecting_exit(state_machine_t* sm);
+static void disconnecting_enter(state_machine_t* sm);
+static void disconnecting_exit(state_machine_t* sm);
+static void connected_enter(state_machine_t* sm);
+static void connected_exit(state_machine_t* sm);
+static void audio_connecting_enter(state_machine_t* sm);
+static void audio_connecting_exit(state_machine_t* sm);
+static void audio_on_enter(state_machine_t* sm);
+static void audio_on_exit(state_machine_t* sm);
+static void audio_disconnecting_enter(state_machine_t* sm);
+static void audio_disconnecting_exit(state_machine_t* sm);
 
-static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool disconnecting_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool audio_connecting_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_data);
-static bool audio_disconnecting_process_event(state_machine_t *sm, uint32_t event, void *p_data);
+static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool disconnecting_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool audio_connecting_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bool audio_disconnecting_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 
 static const state_t disconnected_state = {
     .state_name = "Disconnected",
@@ -164,22 +164,22 @@ static const state_t audio_disconnecting_state = {
 };
 
 #if AG_STM_DEBUG
-static void ag_stm_trans_debug(state_machine_t *sm, bt_address_t *addr, const char *action)
+static void ag_stm_trans_debug(state_machine_t* sm, bt_address_t* addr, const char* action)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("%s State=%s, Peer=[%s]", action, hsm_get_current_state_name(sm), addr_str);
 }
 
-static void ag_stm_event_debug(state_machine_t *sm, bt_address_t *addr, uint32_t event)
+static void ag_stm_event_debug(state_machine_t* sm, bt_address_t* addr, uint32_t event)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("ProcessEvent, State=%s, Peer=[%s], Event=%s", hsm_get_current_state_name(sm),
-            addr_str, stack_event_to_string(event));
+        addr_str, stack_event_to_string(event));
 }
 
-static const char *stack_event_to_string(hfp_ag_event_t event)
+static const char* stack_event_to_string(hfp_ag_event_t event)
 {
     static char ag_evt[32] = { 0 };
 
@@ -226,27 +226,27 @@ static const char *stack_event_to_string(hfp_ag_event_t event)
         CASE_RETURN_STR(AG_STACK_EVENT_SEND_DTMF)
     default:
         snprintf(ag_evt, 32, "UNKNOWN_AG_EVENT:%d", event);
-        return (const char *)ag_evt;
+        return (const char*)ag_evt;
     }
 }
 #endif
 
-static bool flag_isset(ag_state_machine_t *agsm, pending_state_t flag)
+static bool flag_isset(ag_state_machine_t* agsm, pending_state_t flag)
 {
     return (bool)(agsm->pending & flag);
 }
 
-static void flag_set(ag_state_machine_t *agsm, pending_state_t flag)
+static void flag_set(ag_state_machine_t* agsm, pending_state_t flag)
 {
     agsm->pending |= flag;
 }
 
-static void flag_clear(ag_state_machine_t *agsm, pending_state_t flag)
+static void flag_clear(ag_state_machine_t* agsm, pending_state_t flag)
 {
     agsm->pending &= ~flag;
 }
 
-static bool at_cmd_check_test(bt_address_t *addr, const char *atcmd)
+static bool at_cmd_check_test(bt_address_t* addr, const char* atcmd)
 {
     if (!strcmp(atcmd, "AT+TEST\r\n")) {
         bt_sal_hfp_ag_send_at_cmd(addr, "\r\n+TEST:0\r\n", strlen("\r\n+TEST:0\r\n"));
@@ -256,14 +256,14 @@ static bool at_cmd_check_test(bt_address_t *addr, const char *atcmd)
     return false;
 }
 
-static void connect_timeout(service_timer_t *timer, void *data)
+static void connect_timeout(service_timer_t* timer, void* data)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)data;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)data;
 
     hfp_ag_send_event(&agsm->addr, AG_CONNECT_TIMEOUT);
 }
 
-static void dial_out_timeout(service_timer_t *timer, void *data)
+static void dial_out_timeout(service_timer_t* timer, void* data)
 {
     // ag_state_machine_t* agsm = (ag_state_machine_t*)data;
 
@@ -284,7 +284,7 @@ static uint8_t callstate_to_callsetup(hfp_ag_call_state_t call_state)
     }
 }
 
-static void process_cind_request(ag_state_machine_t *agsm)
+static void process_cind_request(ag_state_machine_t* agsm)
 {
     uint8_t num_active, num_held, call_state;
     hfp_ag_cind_resopnse_t resp;
@@ -302,15 +302,15 @@ static void process_cind_request(ag_state_machine_t *agsm)
     bt_sal_hfp_ag_cind_response(&agsm->addr, &resp);
 }
 
-static void update_remote_features(ag_state_machine_t *agsm, uint32_t remote_features)
+static void update_remote_features(ag_state_machine_t* agsm, uint32_t remote_features)
 {
     BT_LOGD("%s, remote features:0x%" PRIu32, __func__, remote_features);
     agsm->remote_features = remote_features;
 }
 
-static void disconnected_enter(state_machine_t *sm)
+static void disconnected_enter(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, &agsm->addr);
     if (hsm_get_previous_state(sm)) {
         bt_media_remove_listener(agsm->volume_listener);
@@ -319,16 +319,16 @@ static void disconnected_enter(state_machine_t *sm)
     }
 }
 
-static void disconnected_exit(state_machine_t *sm)
+static void disconnected_exit(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_EXIT(sm, &agsm->addr);
 }
 
-static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
-    hfp_ag_data_t *data = (hfp_ag_data_t *)p_data;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    hfp_ag_data_t* data = (hfp_ag_data_t*)p_data;
     AG_DBG_EVENT(sm, &agsm->addr, event);
 
     switch (event) {
@@ -363,27 +363,27 @@ static bool disconnected_process_event(state_machine_t *sm, uint32_t event, void
     return true;
 }
 
-static void connecting_enter(state_machine_t *sm)
+static void connecting_enter(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, &agsm->addr);
     agsm->connect_timer = service_loop_timer_no_repeating(AG_TIMEOUT, connect_timeout, agsm);
     ag_service_notify_connection_state_changed(&agsm->addr, PROFILE_STATE_CONNECTING);
 }
 
-static void connecting_exit(state_machine_t *sm)
+static void connecting_exit(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_EXIT(sm, &agsm->addr);
     service_loop_cancel_timer(agsm->connect_timer);
     agsm->connect_timer = NULL;
 }
 
-static void ag_retry_callback(service_timer_t *timer, void *data)
+static void ag_retry_callback(service_timer_t* timer, void* data)
 {
     char _addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-    state_machine_t *sm = (state_machine_t *)data;
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    state_machine_t* sm = (state_machine_t*)data;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     hfp_ag_state_t state;
 
     assert(agsm);
@@ -402,10 +402,10 @@ static void ag_retry_callback(service_timer_t *timer, void *data)
     agsm->retry_timer = NULL;
 }
 
-static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
-    hfp_ag_data_t *data = (hfp_ag_data_t *)p_data;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    hfp_ag_data_t* data = (hfp_ag_data_t*)p_data;
     uint32_t random_timeout;
 
     AG_DBG_EVENT(sm, &agsm->addr, event);
@@ -434,7 +434,7 @@ static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *
                     srand(time(NULL)); /* set random seed */
                     random_timeout = 100 + (rand() % 800);
                     BT_LOGD("retry HFP connection with device:[%s], delay=%" PRIu32 "ms",
-                            bt_addr_str(&agsm->addr), random_timeout);
+                        bt_addr_str(&agsm->addr), random_timeout);
                     agsm->retry_timer = service_loop_timer(random_timeout, 0, ag_retry_callback, sm);
                     agsm->retry_cnt++;
                 }
@@ -461,23 +461,23 @@ static bool connecting_process_event(state_machine_t *sm, uint32_t event, void *
     return true;
 }
 
-static void disconnecting_enter(state_machine_t *sm)
+static void disconnecting_enter(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, &agsm->addr);
     ag_service_notify_connection_state_changed(&agsm->addr, PROFILE_STATE_DISCONNECTING);
 }
 
-static void disconnecting_exit(state_machine_t *sm)
+static void disconnecting_exit(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_EXIT(sm, &agsm->addr);
 }
 
-static bool disconnecting_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool disconnecting_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
-    hfp_ag_data_t *data = (hfp_ag_data_t *)p_data;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    hfp_ag_data_t* data = (hfp_ag_data_t*)p_data;
     AG_DBG_EVENT(sm, &agsm->addr, event);
     switch (event) {
     case AG_STACK_EVENT_CONNECTION_STATE_CHANGED: {
@@ -498,10 +498,10 @@ static bool disconnecting_process_event(state_machine_t *sm, uint32_t event, voi
     return true;
 }
 
-static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
-    hfp_ag_data_t *data = (hfp_ag_data_t *)p_data;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    hfp_ag_data_t* data = (hfp_ag_data_t*)p_data;
 
     BT_LOGD("%s, event:%" PRIu32 "", __func__, event);
     switch (event) {
@@ -517,13 +517,13 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     case AG_PHONE_STATE_CHANGE:
         bt_sal_hfp_ag_phone_state_change(&agsm->addr, data->valueint1,
-                                         data->valueint2, data->valueint3,
-                                         data->valueint4, data->string1, data->string2);
+            data->valueint2, data->valueint3,
+            data->valueint4, data->string1, data->string2);
         break;
     case AG_DEVICE_STATUS_CHANGED:
         bt_sal_hfp_ag_notify_device_status_changed(&agsm->addr, data->valueint1,
-                                                   data->valueint2, data->valueint3,
-                                                   data->valueint4);
+            data->valueint2, data->valueint3,
+            data->valueint4);
         break;
     case AG_SET_INBAND_RING_ENABLE:
         bt_sal_hfp_ag_set_inband_ring_enable(&agsm->addr, true);
@@ -568,7 +568,7 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_d
         break;
     case AG_STACK_EVENT_AT_COPS_REQUEST: {
         /* system call interface */
-        char *operation_name = NULL;
+        char* operation_name = NULL;
         operation_name = tele_service_get_operator();
         BT_LOGD("Operation name:%s", operation_name);
         bt_sal_hfp_ag_cops_response(&agsm->addr, operation_name, operation_name ? strlen(operation_name) : 0);
@@ -610,7 +610,7 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_d
         tele_service_call_control(chld);
     } break;
     case AG_STACK_EVENT_AT_COMMAND: {
-        const char *at_cmd = data->string1;
+        const char* at_cmd = data->string1;
 
         if (at_cmd_check_test(&agsm->addr, at_cmd)) {
             break;
@@ -630,7 +630,7 @@ static bool default_process_event(state_machine_t *sm, uint32_t event, void *p_d
     return true;
 }
 
-static void default_connection_event_process(state_machine_t *sm, hfp_ag_data_t *data)
+static void default_connection_event_process(state_machine_t* sm, hfp_ag_data_t* data)
 {
     profile_connection_state_t state = data->valueint1;
 
@@ -648,10 +648,10 @@ static void default_connection_event_process(state_machine_t *sm, hfp_ag_data_t 
     }
 }
 
-static void hfp_ag_voice_volume_change_callback(void *cookie, int volume)
+static void hfp_ag_voice_volume_change_callback(void* cookie, int volume)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)cookie;
-    hfp_ag_msg_t *msg;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)cookie;
+    hfp_ag_msg_t* msg;
 
     msg = hfp_ag_msg_new(AG_SET_VOLUME, &agsm->addr);
     if (!msg) {
@@ -663,9 +663,9 @@ static void hfp_ag_voice_volume_change_callback(void *cookie, int volume)
     hfp_ag_send_message(msg);
 }
 
-static void connected_enter(state_machine_t *sm)
+static void connected_enter(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, &agsm->addr);
     uint8_t previous_state = hsm_get_state_value(hsm_get_previous_state(sm));
 
@@ -681,21 +681,21 @@ static void connected_enter(state_machine_t *sm)
     }
 }
 
-static void connected_exit(state_machine_t *sm)
+static void connected_exit(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_EXIT(sm, &agsm->addr);
 }
 
-static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
+static void bt_hci_event_callback(bt_hci_event_t* hci_event, void* context)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)context;
-    hfp_ag_msg_t *msg;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)context;
+    hfp_ag_msg_t* msg;
     hfp_ag_event_t event;
 
     BT_LOGD("%s, evt_code:0x%x, len:%d", __func__, hci_event->evt_code,
-            hci_event->length);
-    BT_DUMPBUFFER("vsc", (uint8_t *)hci_event->params, hci_event->length);
+        hci_event->length);
+    BT_DUMPBUFFER("vsc", (uint8_t*)hci_event->params, hci_event->length);
 
     if (flag_isset(agsm, PENDING_OFFLOAD_START)) {
         event = AG_OFFLOAD_START_EVT;
@@ -711,10 +711,10 @@ static void bt_hci_event_callback(bt_hci_event_t *hci_event, void *context)
     hfp_ag_send_message(msg);
 }
 
-static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
-    hfp_ag_data_t *data = (hfp_ag_data_t *)p_data;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    hfp_ag_data_t* data = (hfp_ag_data_t*)p_data;
     AG_DBG_EVENT(sm, &agsm->addr, event);
 
     switch (event) {
@@ -759,7 +759,7 @@ static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p
         uint8_t ogf;
         uint16_t ocf;
         uint8_t len;
-        uint8_t *payload;
+        uint8_t* payload;
 
         payload = data->data;
         len = data->size - sizeof(ogf) - sizeof(ocf);
@@ -779,23 +779,23 @@ static bool connected_process_event(state_machine_t *sm, uint32_t event, void *p
     return true;
 }
 
-static void audio_connecting_enter(state_machine_t *sm)
+static void audio_connecting_enter(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, &agsm->addr);
     ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_CONNECTING);
 }
 
-static void audio_connecting_exit(state_machine_t *sm)
+static void audio_connecting_exit(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_EXIT(sm, &agsm->addr);
 }
 
-static bool audio_connecting_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool audio_connecting_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
-    hfp_ag_data_t *data = (hfp_ag_data_t *)p_data;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    hfp_ag_data_t* data = (hfp_ag_data_t*)p_data;
     AG_DBG_EVENT(sm, &agsm->addr, event);
 
     switch (event) {
@@ -841,19 +841,19 @@ static bool audio_connecting_process_event(state_machine_t *sm, uint32_t event, 
     return true;
 }
 
-static void hfp_ag_offload_timeout_callback(service_timer_t *timer, void *data)
+static void hfp_ag_offload_timeout_callback(service_timer_t* timer, void* data)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)data;
-    hfp_ag_msg_t *msg;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)data;
+    hfp_ag_msg_t* msg;
 
     msg = hfp_ag_msg_new(AG_OFFLOAD_TIMEOUT_EVT, &agsm->addr);
     ag_state_machine_dispatch(agsm, msg);
     hfp_ag_msg_destory(msg);
 }
 
-static void audio_on_enter(state_machine_t *sm)
+static void audio_on_enter(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, &agsm->addr);
 
     if (agsm->offloading) {
@@ -867,18 +867,18 @@ static void audio_on_enter(state_machine_t *sm)
     ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_CONNECTED);
 }
 
-static void audio_on_exit(state_machine_t *sm)
+static void audio_on_exit(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_EXIT(sm, &agsm->addr);
     /* set sco device unavaliable */
     bt_media_set_sco_unavailable();
 }
 
-static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
-    hfp_ag_data_t *data = (hfp_ag_data_t *)p_data;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    hfp_ag_data_t* data = (hfp_ag_data_t*)p_data;
     AG_DBG_EVENT(sm, &agsm->addr, event);
 
     switch (event) {
@@ -929,7 +929,7 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
         uint8_t ogf;
         uint16_t ocf;
         uint8_t len;
-        uint8_t *payload;
+        uint8_t* payload;
 
         payload = data->data;
         len = data->size - sizeof(ogf) - sizeof(ocf);
@@ -941,7 +941,7 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
         bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, agsm);
     } break;
     case AG_OFFLOAD_START_EVT: {
-        bt_hci_event_t *hci_event;
+        bt_hci_event_t* hci_event;
         uint8_t status;
 
         if (agsm->offload_timer) {
@@ -972,23 +972,23 @@ static bool audio_on_process_event(state_machine_t *sm, uint32_t event, void *p_
     return true;
 }
 
-static void audio_disconnecting_enter(state_machine_t *sm)
+static void audio_disconnecting_enter(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, &agsm->addr);
     ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTING);
 }
 
-static void audio_disconnecting_exit(state_machine_t *sm)
+static void audio_disconnecting_exit(state_machine_t* sm)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_EXIT(sm, &agsm->addr);
 }
 
-static bool audio_disconnecting_process_event(state_machine_t *sm, uint32_t event, void *p_data)
+static bool audio_disconnecting_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
-    ag_state_machine_t *agsm = (ag_state_machine_t *)sm;
-    hfp_ag_data_t *data = (hfp_ag_data_t *)p_data;
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    hfp_ag_data_t* data = (hfp_ag_data_t*)p_data;
     AG_DBG_EVENT(sm, &agsm->addr, event);
 
     switch (event) {
@@ -1020,11 +1020,11 @@ static bool audio_disconnecting_process_event(state_machine_t *sm, uint32_t even
     return true;
 }
 
-ag_state_machine_t *ag_state_machine_new(bt_address_t *addr, void *context)
+ag_state_machine_t* ag_state_machine_new(bt_address_t* addr, void* context)
 {
-    ag_state_machine_t *agsm;
+    ag_state_machine_t* agsm;
 
-    agsm = (ag_state_machine_t *)malloc(sizeof(ag_state_machine_t));
+    agsm = (ag_state_machine_t*)malloc(sizeof(ag_state_machine_t));
     if (!agsm)
         return NULL;
 
@@ -1036,12 +1036,12 @@ ag_state_machine_t *ag_state_machine_new(bt_address_t *addr, void *context)
     agsm->dial_out_timer = NULL;
     agsm->codec = HFP_CODEC_CVSD;
     memcpy(&agsm->addr, addr, sizeof(bt_address_t));
-    hsm_ctor(&agsm->sm, (state_t *)&disconnected_state);
+    hsm_ctor(&agsm->sm, (state_t*)&disconnected_state);
 
     return agsm;
 }
 
-void ag_state_machine_destory(ag_state_machine_t *agsm)
+void ag_state_machine_destory(ag_state_machine_t* agsm)
 {
     if (!agsm)
         return;
@@ -1055,10 +1055,10 @@ void ag_state_machine_destory(ag_state_machine_t *agsm)
     bt_media_remove_listener(agsm->volume_listener);
     agsm->volume_listener = NULL;
     hsm_dtor(&agsm->sm);
-    free((void *)agsm);
+    free((void*)agsm);
 }
 
-void ag_state_machine_dispatch(ag_state_machine_t *agsm, hfp_ag_msg_t *msg)
+void ag_state_machine_dispatch(ag_state_machine_t* agsm, hfp_ag_msg_t* msg)
 {
     if (!agsm || !msg)
         return;
@@ -1066,27 +1066,27 @@ void ag_state_machine_dispatch(ag_state_machine_t *agsm, hfp_ag_msg_t *msg)
     hsm_dispatch_event(&agsm->sm, msg->event, &msg->data);
 }
 
-uint32_t ag_state_machine_get_state(ag_state_machine_t *agsm)
+uint32_t ag_state_machine_get_state(ag_state_machine_t* agsm)
 {
     return hsm_get_current_state_value(&agsm->sm);
 }
 
-uint16_t ag_state_machine_get_sco_handle(ag_state_machine_t *agsm)
+uint16_t ag_state_machine_get_sco_handle(ag_state_machine_t* agsm)
 {
     return agsm->sco_conn_handle;
 }
 
-void ag_state_machine_set_sco_handle(ag_state_machine_t *agsm, uint16_t sco_hdl)
+void ag_state_machine_set_sco_handle(ag_state_machine_t* agsm, uint16_t sco_hdl)
 {
     agsm->sco_conn_handle = sco_hdl;
 }
 
-uint8_t ag_state_machine_get_codec(ag_state_machine_t *agsm)
+uint8_t ag_state_machine_get_codec(ag_state_machine_t* agsm)
 {
     return agsm->codec;
 }
 
-void ag_state_machine_set_offloading(ag_state_machine_t *agsm, bool offloading)
+void ag_state_machine_set_offloading(ag_state_machine_t* agsm, bool offloading)
 {
     agsm->offloading = offloading;
 }

@@ -19,17 +19,17 @@
 #include "bt_addr.h"
 #include "hfp_ag_event.h"
 
-hfp_ag_msg_t *hfp_ag_msg_new(hfp_ag_event_t event, bt_address_t *addr)
+hfp_ag_msg_t* hfp_ag_msg_new(hfp_ag_event_t event, bt_address_t* addr)
 {
     return hfp_ag_event_new_ext(event, addr, NULL, 0);
 }
 
-hfp_ag_msg_t *hfp_ag_event_new_ext(hfp_ag_event_t event, bt_address_t *addr,
-                                   void *data, size_t size)
+hfp_ag_msg_t* hfp_ag_event_new_ext(hfp_ag_event_t event, bt_address_t* addr,
+    void* data, size_t size)
 {
-    hfp_ag_msg_t *msg;
+    hfp_ag_msg_t* msg;
 
-    msg = (hfp_ag_msg_t *)zalloc(sizeof(hfp_ag_msg_t));
+    msg = (hfp_ag_msg_t*)zalloc(sizeof(hfp_ag_msg_t));
     if (msg == NULL)
         return NULL;
 
@@ -47,7 +47,7 @@ hfp_ag_msg_t *hfp_ag_event_new_ext(hfp_ag_event_t event, bt_address_t *addr,
     return msg;
 }
 
-void hfp_ag_msg_destory(hfp_ag_msg_t *msg)
+void hfp_ag_msg_destory(hfp_ag_msg_t* msg)
 {
     free(msg->data.string1);
     free(msg->data.string2);

@@ -23,11 +23,11 @@
  ****************************************************************************/
 
 // server interface
-void lea_vcs_vol_state_request(void *volume_session, uint8_t volume, uint8_t mute);
+void lea_vcs_vol_state_request(void* volume_session, uint8_t volume, uint8_t mute);
 void lea_vcs_vol_flags_request(uint8_t flags);
 void lea_mics_mic_mute_request(uint8_t mute);
 
-uint8_t lea_vcs_get_volume(void *volume_session);
+uint8_t lea_vcs_get_volume(void* volume_session);
 uint8_t lea_vcs_get_mute(void);
 
 #endif /* __LEA_VMICS_MEDIA_CONTROL_H__ */

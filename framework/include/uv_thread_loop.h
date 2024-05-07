@@ -20,18 +20,18 @@
 
 #include "uv.h"
 
-typedef void (*thread_func_t)(void *data);
+typedef void (*thread_func_t)(void* data);
 
-int thread_loop_init(uv_loop_t *loop);
-int thread_loop_run(uv_loop_t *loop, bool start_thread, const char *name);
-void thread_loop_exit(uv_loop_t *loop);
-uv_poll_t *thread_loop_poll_fd(uv_loop_t *loop, int fd, int pevents, uv_poll_cb cb, void *userdata);
-int thread_loop_reset_poll(uv_poll_t *poll, int pevents, uv_poll_cb cb);
-void thread_loop_remove_poll(uv_poll_t *poll);
-uv_timer_t *thread_loop_timer(uv_loop_t *loop, uint64_t timeout, uint64_t repeat, uv_timer_cb cb, void *userdata);
-uv_timer_t *thread_loop_timer_no_repeating(uv_loop_t *loop, uint64_t timeout, uv_timer_cb cb, void *userdata);
-void thread_loop_cancel_timer(uv_timer_t *timer);
-void do_in_thread_loop(uv_loop_t *loop, thread_func_t func, void *data);
-void do_in_thread_loop_sync(uv_loop_t *loop, thread_func_t func, void *data);
+int thread_loop_init(uv_loop_t* loop);
+int thread_loop_run(uv_loop_t* loop, bool start_thread, const char* name);
+void thread_loop_exit(uv_loop_t* loop);
+uv_poll_t* thread_loop_poll_fd(uv_loop_t* loop, int fd, int pevents, uv_poll_cb cb, void* userdata);
+int thread_loop_reset_poll(uv_poll_t* poll, int pevents, uv_poll_cb cb);
+void thread_loop_remove_poll(uv_poll_t* poll);
+uv_timer_t* thread_loop_timer(uv_loop_t* loop, uint64_t timeout, uint64_t repeat, uv_timer_cb cb, void* userdata);
+uv_timer_t* thread_loop_timer_no_repeating(uv_loop_t* loop, uint64_t timeout, uv_timer_cb cb, void* userdata);
+void thread_loop_cancel_timer(uv_timer_t* timer);
+void do_in_thread_loop(uv_loop_t* loop, thread_func_t func, void* data);
+void do_in_thread_loop_sync(uv_loop_t* loop, thread_func_t func, void* data);
 
 #endif /* _UV_THREAD_LOOP_H__ */

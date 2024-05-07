@@ -19,15 +19,15 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "bt_status.h"
 #include "bt_profile.h"
+#include "bt_status.h"
 
 void manager_init(void);
 void manager_cleanup(void);
 bt_status_t manager_create_instance(uint32_t handle, uint32_t type,
-                                    const char *name, pid_t pid, uid_t uid,
-                                    uint32_t *app_id);
-bt_status_t manager_get_instance(const char *name, pid_t pid, uint32_t *handle);
+    const char* name, pid_t pid, uid_t uid,
+    uint32_t* app_id);
+bt_status_t manager_get_instance(const char* name, pid_t pid, uint32_t* handle);
 bt_status_t manager_delete_instance(uint32_t app_id);
 bt_status_t manager_start_service(uint32_t app_id, enum profile_id profile);
 bt_status_t manager_stop_service(uint32_t app_id, enum profile_id profile);

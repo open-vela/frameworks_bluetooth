@@ -50,14 +50,14 @@ typedef struct {
  * Public Fucntion
  ****************************************************************************/
 
-void lea_audio_sink_set_callback(lea_sink_callabcks_t *callback);
+void lea_audio_sink_set_callback(lea_sink_callabcks_t* callback);
 
 bt_status_t lea_audio_sink_init(bool offloading);
 
-lea_recv_iso_data_t *lea_audio_sink_packet_alloc(uint32_t timestamp,
-                                                 uint16_t seq, uint8_t *data, uint16_t length);
+lea_recv_iso_data_t* lea_audio_sink_packet_alloc(uint32_t timestamp,
+    uint16_t seq, uint8_t* data, uint16_t length);
 
-void lea_audio_sink_packet_free(lea_recv_iso_data_t *packet);
+void lea_audio_sink_packet_free(lea_recv_iso_data_t* packet);
 
 bt_status_t lea_audio_sink_start(void);
 
@@ -69,9 +69,9 @@ bt_status_t lea_audio_sink_resume(void);
 
 bt_status_t lea_audio_sink_mute(bool mute);
 
-bt_status_t lea_audio_sink_update_codec(lea_audio_config_t *codec, uint16_t sdu_size);
+bt_status_t lea_audio_sink_update_codec(lea_audio_config_t* codec, uint16_t sdu_size);
 
-void lea_audio_sink_packet_recv(lea_recv_iso_data_t *packet);
+void lea_audio_sink_packet_recv(lea_recv_iso_data_t* packet);
 
 bool lea_audio_sink_is_started(void);
 

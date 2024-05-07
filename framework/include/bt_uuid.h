@@ -20,8 +20,8 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct {
     enum {
@@ -43,13 +43,13 @@ typedef struct {
 #define BT_UUID_DECLARE_128(value...) \
     ((bt_uuid_t) { .type = BT_UUID128_TYPE, .val.u128 = { value } })
 
-void bt_uuid_to_uuid128(const bt_uuid_t *src, bt_uuid_t *uuid128);
-int bt_uuid_compare(const bt_uuid_t *uuid1, const bt_uuid_t *uuid2);
-int bt_uuid16_create(bt_uuid_t *uuid16, uint16_t value);
-int bt_uuid32_create(bt_uuid_t *uuid32, uint32_t value);
-int bt_uuid128_create(bt_uuid_t *uuid128, const uint8_t *value);
-bool bt_uuid_create_common(bt_uuid_t *uuid, const uint8_t *data, uint8_t type);
-int bt_uuid_to_string(const bt_uuid_t *uuid, char *str, uint32_t len);
+void bt_uuid_to_uuid128(const bt_uuid_t* src, bt_uuid_t* uuid128);
+int bt_uuid_compare(const bt_uuid_t* uuid1, const bt_uuid_t* uuid2);
+int bt_uuid16_create(bt_uuid_t* uuid16, uint16_t value);
+int bt_uuid32_create(bt_uuid_t* uuid32, uint32_t value);
+int bt_uuid128_create(bt_uuid_t* uuid128, const uint8_t* value);
+bool bt_uuid_create_common(bt_uuid_t* uuid, const uint8_t* data, uint8_t type);
+int bt_uuid_to_string(const bt_uuid_t* uuid, char* str, uint32_t len);
 
 #ifdef __cplusplus
 }

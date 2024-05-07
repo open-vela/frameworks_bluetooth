@@ -152,14 +152,14 @@ typedef struct
          * @brief GATTS_REQ_ADD_ATTR_TABLE
          */
         struct gatts_start_req_param {
-            void *srv_handle;
+            void* srv_handle;
         } add;
 
         /**
          * @brief GATTS_REQ_REMOVE_ATTR_TABLE
          */
         struct gatts_stop_req_param {
-            void *srv_handle;
+            void* srv_handle;
             uint16_t attr_handle;
         } remove;
 
@@ -175,14 +175,14 @@ typedef struct
          * @brief GATTS_REQ_DISCONNECT
          */
         struct gatts_disconnect_req_param {
-            void *srv_handle;
+            void* srv_handle;
         } disconnect;
 
         /**
          * @brief GATTS_REQ_NOTIFY
          */
         struct gatts_notify_req_param {
-            void *srv_handle;
+            void* srv_handle;
             uint16_t attr_handle;
         } notify;
 
@@ -190,7 +190,7 @@ typedef struct
          * @brief GATTS_REQ_PHY
          */
         struct gatts_phy_req_param {
-            void *srv_handle;
+            void* srv_handle;
             ble_phy_type_t tx_phy;
             ble_phy_type_t rx_phy;
         } phy;
@@ -202,9 +202,9 @@ typedef struct
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-gatts_msg_t *gatts_msg_new(gatts_event_t event, uint16_t playload_length);
-void gatts_msg_destory(gatts_msg_t *msg);
-gatts_op_t *gatts_op_new(gatts_request_t request);
-void gatts_op_destory(gatts_op_t *operation);
+gatts_msg_t* gatts_msg_new(gatts_event_t event, uint16_t playload_length);
+void gatts_msg_destory(gatts_msg_t* msg);
+gatts_op_t* gatts_op_new(gatts_request_t request);
+void gatts_op_destory(gatts_op_t* operation);
 
 #endif /* __GATTS_EVENT_H__ */

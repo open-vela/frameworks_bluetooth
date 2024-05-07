@@ -17,30 +17,30 @@
 #include <unistd.h>
 
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_BINDER_IPC
-#include "adapter_stub.h"
 #include "adapter_proxy.h"
+#include "adapter_stub.h"
 #include "bluetooth_proxy.h"
-#include "pan_proxy.h"
-#include "spp_proxy.h"
-#include "hid_device_proxy.h"
-#include "hfp_hf_proxy.h"
-#include "hfp_ag_proxy.h"
 #include "gattc_proxy.h"
 #include "gatts_proxy.h"
+#include "hfp_ag_proxy.h"
+#include "hfp_hf_proxy.h"
+#include "hid_device_proxy.h"
+#include "pan_proxy.h"
+#include "spp_proxy.h"
 #endif
 #include "bluetooth.h"
 
-bt_instance_t *bluetooth_create_instance(void)
+bt_instance_t* bluetooth_create_instance(void)
 {
-    AIBinder *binder;
+    AIBinder* binder;
     char name[64] = { 0 };
 
-    bt_instance_t *ins = zalloc(sizeof(bt_instance_t));
+    bt_instance_t* ins = zalloc(sizeof(bt_instance_t));
     if (!ins) {
         return NULL;
     }
 
-    binder = BtManager_getService((BpBtManager **)&ins->manager_proxy, MANAGER_BINDER_INSTANCE);
+    binder = BtManager_getService((BpBtManager**)&ins->manager_proxy, MANAGER_BINDER_INSTANCE);
     if (!binder)
         goto bail;
 
@@ -49,7 +49,7 @@ bt_instance_t *bluetooth_create_instance(void)
     if (status != BT_STATUS_SUCCESS)
         goto bail;
 
-    BtAdapter_getService((BpBtAdapter **)&ins->adapter_proxy, ADAPTER_BINDER_INSTANCE);
+    BtAdapter_getService((BpBtAdapter**)&ins->adapter_proxy, ADAPTER_BINDER_INSTANCE);
     Bluetooth_startThreadPool();
 
     return ins;
@@ -59,12 +59,12 @@ bail:
     return NULL;
 }
 
-bt_instance_t *bluetooth_get_instance(void)
+bt_instance_t* bluetooth_get_instance(void)
 {
     uint32_t handle;
     char name[64] = { 0 };
-    AIBinder *binder;
-    BpBtManager *proxy = NULL;
+    AIBinder* binder;
+    BpBtManager* proxy = NULL;
 
     /* find instance from bluetooth manager by hostname,
         if not found, create new instance for this hostname
@@ -78,12 +78,12 @@ bt_instance_t *bluetooth_get_instance(void)
     bt_status_t status = BpBtManager_getInstance(binder, name, &handle);
     BpBtManager_delete(proxy);
     if (status == BT_STATUS_SUCCESS && handle)
-        return (bt_instance_t *)handle;
+        return (bt_instance_t*)handle;
     else
         return bluetooth_create_instance();
 }
 
-void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id)
+void* bluetooth_get_proxy(bt_instance_t* ins, enum profile_id id)
 {
     switch (id) {
     case PROFILE_HFP_HF:
@@ -134,7 +134,7 @@ void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id)
     return NULL;
 }
 
-void bluetooth_delete_instance(bt_instance_t *ins)
+void bluetooth_delete_instance(bt_instance_t* ins)
 {
     if (ins->hfp_hf_proxy)
         BpBtHfpHf_delete(ins->hfp_hf_proxy);
@@ -160,18 +160,18 @@ void bluetooth_delete_instance(bt_instance_t *ins)
     free(ins);
 }
 
-bt_status_t bluetooth_start_service(bt_instance_t *ins, enum profile_id id)
+bt_status_t bluetooth_start_service(bt_instance_t* ins, enum profile_id id)
 {
     return BpBtManager_startService(ins->manager_proxy, ins->app_id, id);
 }
 
-bt_status_t bluetooth_stop_service(bt_instance_t *ins, enum profile_id id)
+bt_status_t bluetooth_stop_service(bt_instance_t* ins, enum profile_id id)
 {
     return BpBtManager_stopService(ins->manager_proxy, ins->app_id, id);
 }
 
 #include "uv.h"
-bool bluetooth_set_external_uv(bt_instance_t *ins, uv_loop_t *ext_loop)
+bool bluetooth_set_external_uv(bt_instance_t* ins, uv_loop_t* ext_loop)
 {
     return false;
 }

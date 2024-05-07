@@ -29,10 +29,10 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    const hfp_ag_callbacks_t *callbacks;
-    void *cookie;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    const hfp_ag_callbacks_t* callbacks;
+    void* cookie;
 } IBtHfpAgCallbacks;
 
 typedef enum {
@@ -42,10 +42,10 @@ typedef enum {
     ICBKS_HFP_AG_BATTERY_UPDATE
 } IBtHfpAgCallbacks_Call;
 
-AIBinder *BtHfpAgCallbacks_getBinder(IBtHfpAgCallbacks *adapter);
-binder_status_t BtHfpAgCallbacks_associateClass(AIBinder *binder);
-IBtHfpAgCallbacks *BtHfpAgCallbacks_new(const hfp_ag_callbacks_t *callbacks);
-void BtHfpAgCallbacks_delete(IBtHfpAgCallbacks *cbks);
+AIBinder* BtHfpAgCallbacks_getBinder(IBtHfpAgCallbacks* adapter);
+binder_status_t BtHfpAgCallbacks_associateClass(AIBinder* binder);
+IBtHfpAgCallbacks* BtHfpAgCallbacks_new(const hfp_ag_callbacks_t* callbacks);
+void BtHfpAgCallbacks_delete(IBtHfpAgCallbacks* cbks);
 
 #ifdef __cplusplus
 }

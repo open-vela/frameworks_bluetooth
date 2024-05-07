@@ -30,18 +30,18 @@ typedef struct {
     uint16_t gatt_mtu;
 } gatts_device_t;
 
-static int register_cmd(void *handle, int argc, char *argv[]);
-static int unregister_cmd(void *handle, int argc, char *argv[]);
-static int start_cmd(void *handle, int argc, char *argv[]);
-static int stop_cmd(void *handle, int argc, char *argv[]);
-static int connect_cmd(void *handle, int argc, char *argv[]);
-static int disconnect_cmd(void *handle, int argc, char *argv[]);
-static int notify_bas_cmd(void *handle, int argc, char *argv[]);
-static int notify_cus_cmd(void *handle, int argc, char *argv[]);
-static int indicate_cus_cmd(void *handle, int argc, char *argv[]);
-static int read_phy_cmd(void *handle, int argc, char *argv[]);
-static int update_phy_cmd(void *handle, int argc, char *argv[]);
-static int throughput_cmd(void *handle, int argc, char *argv[]);
+static int register_cmd(void* handle, int argc, char* argv[]);
+static int unregister_cmd(void* handle, int argc, char* argv[]);
+static int start_cmd(void* handle, int argc, char* argv[]);
+static int stop_cmd(void* handle, int argc, char* argv[]);
+static int connect_cmd(void* handle, int argc, char* argv[]);
+static int disconnect_cmd(void* handle, int argc, char* argv[]);
+static int notify_bas_cmd(void* handle, int argc, char* argv[]);
+static int notify_cus_cmd(void* handle, int argc, char* argv[]);
+static int indicate_cus_cmd(void* handle, int argc, char* argv[]);
+static int read_phy_cmd(void* handle, int argc, char* argv[]);
+static int update_phy_cmd(void* handle, int argc, char* argv[]);
+static int throughput_cmd(void* handle, int argc, char* argv[]);
 
 static gatts_handle_t g_dis_handle = NULL;
 static gatts_handle_t g_bas_handle = NULL;
@@ -104,7 +104,7 @@ enum {
 
 uint8_t read_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'V', 'E', 'L', 'A', '!' };
 
-uint16_t tx_char_ccc_changed(void *srv_handle, bt_address_t *addr, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
+uint16_t tx_char_ccc_changed(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, const uint8_t* value, uint16_t length, uint16_t offset)
 {
     PRINT_ADDR("gatts service TX char ccc changed, addr:%s", addr);
     lib_dumpbuffer("new value:", value, length);
@@ -113,7 +113,7 @@ uint16_t tx_char_ccc_changed(void *srv_handle, bt_address_t *addr, uint16_t attr
     return length;
 }
 
-uint16_t rx_char_on_read(void *srv_handle, bt_address_t *addr, uint16_t attr_handle, uint32_t req_handle)
+uint16_t rx_char_on_read(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, uint32_t req_handle)
 {
     PRINT_ADDR("gatts service RX char received read request, addr:%s", addr);
     bt_status_t ret = bt_gatts_response(srv_handle, addr, req_handle, read_char_value, sizeof(read_char_value));
@@ -121,7 +121,7 @@ uint16_t rx_char_on_read(void *srv_handle, bt_address_t *addr, uint16_t attr_han
     return 0;
 }
 
-uint16_t rx_char_on_write(void *srv_handle, bt_address_t *addr, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
+uint16_t rx_char_on_write(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, const uint8_t* value, uint16_t length, uint16_t offset)
 {
     PRINT_ADDR("gatts service RX char received write request, addr:%s", addr);
     lib_dumpbuffer("write value:", value, length);
@@ -139,9 +139,9 @@ const uint8_t pnp_id[7] = {
 
 static gatt_attr_db_t s_dis_attr_db[] = {
     GATT_H_PRIMARY_SERVICE(BT_UUID_DECLARE_16(0x180A), DIS_SERVICE_ID),
-    GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0x2A24), GATT_PROP_READ, GATT_PERM_READ, (uint8_t *)model_number_str, sizeof(model_number_str), DIS_MODEL_NUMBER_CHR_ID),
-    GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0x2A29), GATT_PROP_READ, GATT_PERM_READ, (uint8_t *)manufacturer_name_str, sizeof(manufacturer_name_str), DIS_MANUFACTURER_NAME_CHR_ID),
-    GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0x2A50), GATT_PROP_READ, GATT_PERM_READ, (uint8_t *)pnp_id, sizeof(pnp_id), DIS_PNP_CHR_ID),
+    GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0x2A24), GATT_PROP_READ, GATT_PERM_READ, (uint8_t*)model_number_str, sizeof(model_number_str), DIS_MODEL_NUMBER_CHR_ID),
+    GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0x2A29), GATT_PROP_READ, GATT_PERM_READ, (uint8_t*)manufacturer_name_str, sizeof(manufacturer_name_str), DIS_MANUFACTURER_NAME_CHR_ID),
+    GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0x2A50), GATT_PROP_READ, GATT_PERM_READ, (uint8_t*)pnp_id, sizeof(pnp_id), DIS_PNP_CHR_ID),
 };
 
 static gatt_srv_db_t s_dis_service_db = {
@@ -181,18 +181,18 @@ static gatt_srv_db_t s_iot_service_db = {
 };
 
 static bt_command_t g_gatts_tables[] = {
-    {"register",         register_cmd,     0, "\"register gatt service(DIS = 1, BAS = 2, CUSTOM = 3) :<id>\""   },
-    { "unregister",      unregister_cmd,   0, "\"unregister gatt service :<id>\""                               },
-    { "start",           start_cmd,        0, "\"start gatt service :<id>\""                                    },
-    { "stop",            stop_cmd,         0, "\"stop gatt service :<id>\""                                     },
-    { "connect",         connect_cmd,      0, "\"connect remote device :<id><address>\""                        },
-    { "disconnect",      disconnect_cmd,   0, "\"disconnect remote device :<id><address>\""                     },
-    { "notify_battery",  notify_bas_cmd,   0, "\"send battery notification :<address><level>(0-100)\""          },
-    { "notify_custom",   notify_cus_cmd,   0, "\"send custom notification :<address><playload>\""               },
-    { "indicate_custom", indicate_cus_cmd, 0, "\"send custom indication   :<address><playload>\""               },
-    { "read_phy",        read_phy_cmd,     0, "\"read phy :<id><address>\""                                     },
-    { "update_phy",      update_phy_cmd,   0, "\"update phy(0: 1M, 1: 2M, 3: LE_Coded) :<id><address><tx><rx>\""},
-    { "throughput",      throughput_cmd,   0, "\"throughput test :<address><seconds>\""                         },
+    { "register", register_cmd, 0, "\"register gatt service(DIS = 1, BAS = 2, CUSTOM = 3) :<id>\"" },
+    { "unregister", unregister_cmd, 0, "\"unregister gatt service :<id>\"" },
+    { "start", start_cmd, 0, "\"start gatt service :<id>\"" },
+    { "stop", stop_cmd, 0, "\"stop gatt service :<id>\"" },
+    { "connect", connect_cmd, 0, "\"connect remote device :<id><address>\"" },
+    { "disconnect", disconnect_cmd, 0, "\"disconnect remote device :<id><address>\"" },
+    { "notify_battery", notify_bas_cmd, 0, "\"send battery notification :<address><level>(0-100)\"" },
+    { "notify_custom", notify_cus_cmd, 0, "\"send custom notification :<address><playload>\"" },
+    { "indicate_custom", indicate_cus_cmd, 0, "\"send custom indication   :<address><playload>\"" },
+    { "read_phy", read_phy_cmd, 0, "\"read phy :<id><address>\"" },
+    { "update_phy", update_phy_cmd, 0, "\"update phy(0: 1M, 1: 2M, 3: LE_Coded) :<id><address><tx><rx>\"" },
+    { "throughput", throughput_cmd, 0, "\"throughput test :<address><seconds>\"" },
 };
 
 static void usage(void)
@@ -205,12 +205,12 @@ static void usage(void)
     }
 }
 
-static gatts_device_t *find_gatts_device(bt_address_t *addr)
+static gatts_device_t* find_gatts_device(bt_address_t* addr)
 {
-    struct list_node *node;
+    struct list_node* node;
     list_for_every(&gatts_device_list, node)
     {
-        gatts_device_t *device = (gatts_device_t *)node;
+        gatts_device_t* device = (gatts_device_t*)node;
         if (!bt_addr_compare(&device->remote_address, addr)) {
             return device;
         }
@@ -218,9 +218,9 @@ static gatts_device_t *find_gatts_device(bt_address_t *addr)
     return NULL;
 }
 
-static gatts_device_t *add_gatts_device(bt_address_t *addr)
+static gatts_device_t* add_gatts_device(bt_address_t* addr)
 {
-    gatts_device_t *device = (gatts_device_t *)malloc(sizeof(gatts_device_t));
+    gatts_device_t* device = (gatts_device_t*)malloc(sizeof(gatts_device_t));
     if (!device) {
         PRINT("malloc device failed!");
         return NULL;
@@ -232,7 +232,7 @@ static gatts_device_t *add_gatts_device(bt_address_t *addr)
     return device;
 }
 
-static void remove_gatts_device(gatts_device_t *device)
+static void remove_gatts_device(gatts_device_t* device)
 {
     if (device) {
         list_delete(&device->node);
@@ -240,7 +240,7 @@ static void remove_gatts_device(gatts_device_t *device)
     }
 }
 
-static int connect_cmd(void *handle, int argc, char *argv[])
+static int connect_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -259,7 +259,7 @@ static int connect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int disconnect_cmd(void *handle, int argc, char *argv[])
+static int disconnect_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -272,7 +272,7 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
-    gatts_device_t *device = find_gatts_device(&addr);
+    gatts_device_t* device = find_gatts_device(&addr);
     if (!device) {
         PRINT_ADDR("device:%s is not connected", &addr);
         return CMD_INVALID_ADDR;
@@ -284,13 +284,13 @@ static int disconnect_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int start_cmd(void *handle, int argc, char *argv[])
+static int start_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
     gatts_handle_t service_handle;
-    gatt_srv_db_t *service_db;
+    gatt_srv_db_t* service_db;
     int service_id = atoi(argv[0]);
     switch (service_id) {
     case GATT_SERVICE_DIS:
@@ -321,7 +321,7 @@ static int start_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int stop_cmd(void *handle, int argc, char *argv[])
+static int stop_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -358,7 +358,7 @@ static int stop_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int notify_bas_cmd(void *handle, int argc, char *argv[])
+static int notify_bas_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -367,7 +367,7 @@ static int notify_bas_cmd(void *handle, int argc, char *argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    gatts_device_t *device = find_gatts_device(&addr);
+    gatts_device_t* device = find_gatts_device(&addr);
     if (!device) {
         PRINT_ADDR("device:%s is not connected", &addr);
         return CMD_INVALID_ADDR;
@@ -385,16 +385,16 @@ static int notify_bas_cmd(void *handle, int argc, char *argv[])
     }
 
     battery_level = new_level;
-    if (bt_gatts_set_attr_value(g_bas_handle, BAS_BATTERY_LEVEL_CHR_ID, (uint8_t *)&battery_level, sizeof(battery_level)) != BT_STATUS_SUCCESS)
+    if (bt_gatts_set_attr_value(g_bas_handle, BAS_BATTERY_LEVEL_CHR_ID, (uint8_t*)&battery_level, sizeof(battery_level)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
-    if (bt_gatts_notify(g_bas_handle, &addr, BAS_BATTERY_LEVEL_CHR_ID, (uint8_t *)&battery_level, sizeof(battery_level)) != BT_STATUS_SUCCESS)
+    if (bt_gatts_notify(g_bas_handle, &addr, BAS_BATTERY_LEVEL_CHR_ID, (uint8_t*)&battery_level, sizeof(battery_level)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
 }
 
-static int notify_cus_cmd(void *handle, int argc, char *argv[])
+static int notify_cus_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -403,7 +403,7 @@ static int notify_cus_cmd(void *handle, int argc, char *argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    gatts_device_t *device = find_gatts_device(&addr);
+    gatts_device_t* device = find_gatts_device(&addr);
     if (!device) {
         PRINT_ADDR("device:%s is not connected", &addr);
         return CMD_INVALID_ADDR;
@@ -414,13 +414,13 @@ static int notify_cus_cmd(void *handle, int argc, char *argv[])
         return CMD_ERROR;
     }
 
-    if (bt_gatts_notify(g_custom_handle, &addr, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[1], strlen(argv[1])) != BT_STATUS_SUCCESS)
+    if (bt_gatts_notify(g_custom_handle, &addr, IOT_SERVICE_TX_CHR_ID, (uint8_t*)argv[1], strlen(argv[1])) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
 }
 
-static int indicate_cus_cmd(void *handle, int argc, char *argv[])
+static int indicate_cus_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -429,7 +429,7 @@ static int indicate_cus_cmd(void *handle, int argc, char *argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    gatts_device_t *device = find_gatts_device(&addr);
+    gatts_device_t* device = find_gatts_device(&addr);
     if (!device) {
         PRINT_ADDR("device:%s is not connected", &addr);
         return CMD_INVALID_ADDR;
@@ -440,13 +440,13 @@ static int indicate_cus_cmd(void *handle, int argc, char *argv[])
         return CMD_ERROR;
     }
 
-    if (bt_gatts_indicate(g_custom_handle, &addr, IOT_SERVICE_TX_CHR_ID, (uint8_t *)argv[1], strlen(argv[1])) != BT_STATUS_SUCCESS)
+    if (bt_gatts_indicate(g_custom_handle, &addr, IOT_SERVICE_TX_CHR_ID, (uint8_t*)argv[1], strlen(argv[1])) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
 }
 
-static int read_phy_cmd(void *handle, int argc, char *argv[])
+static int read_phy_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -459,7 +459,7 @@ static int read_phy_cmd(void *handle, int argc, char *argv[])
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
-    gatts_device_t *device = find_gatts_device(&addr);
+    gatts_device_t* device = find_gatts_device(&addr);
     if (!device) {
         PRINT_ADDR("device:%s is not connected", &addr);
         return CMD_INVALID_ADDR;
@@ -471,7 +471,7 @@ static int read_phy_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int update_phy_cmd(void *handle, int argc, char *argv[])
+static int update_phy_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
@@ -487,7 +487,7 @@ static int update_phy_cmd(void *handle, int argc, char *argv[])
     int service_id = atoi(argv[0]);
     GET_SERVICE_HANDLE(service_id, service_handle)
 
-    gatts_device_t *device = find_gatts_device(&addr);
+    gatts_device_t* device = find_gatts_device(&addr);
     if (!device) {
         PRINT_ADDR("device:%s is not connected", &addr);
         return CMD_INVALID_ADDR;
@@ -499,7 +499,7 @@ static int update_phy_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int throughput_cmd(void *handle, int argc, char *argv[])
+static int throughput_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -517,7 +517,7 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
         return CMD_ERROR;
     }
 
-    gatts_device_t *device = find_gatts_device(&addr);
+    gatts_device_t* device = find_gatts_device(&addr);
     if (!device) {
         PRINT_ADDR("device:%s is not connected", &addr);
         return CMD_INVALID_ADDR;
@@ -529,7 +529,7 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
     }
 
     uint32_t notify_length = device->gatt_mtu;
-    uint8_t *payload = (uint8_t *)malloc(sizeof(uint8_t) * notify_length);
+    uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * notify_length);
     if (!payload) {
         PRINT("notify payload malloc failed");
         return CMD_ERROR;
@@ -582,35 +582,35 @@ static int throughput_cmd(void *handle, int argc, char *argv[])
 
     bit_rate = notify_length * notify_count / run_time;
     PRINT("gatts notify throughput test finish, Bit rate = %" PRIu32 " Byte/s, = %" PRIu32 " bit/s, time = %" PRId32 "s.",
-          bit_rate, bit_rate << 3, run_time);
+        bit_rate, bit_rate << 3, run_time);
 
     return CMD_OK;
 }
 
-static void connect_callback(void *srv_handle, bt_address_t *addr)
+static void connect_callback(void* srv_handle, bt_address_t* addr)
 {
     PRINT_ADDR("gatts_connect_callback, addr:%s", addr);
     add_gatts_device(addr);
 }
 
-static void disconnect_callback(void *srv_handle, bt_address_t *addr)
+static void disconnect_callback(void* srv_handle, bt_address_t* addr)
 {
-    gatts_device_t *device = find_gatts_device(addr);
+    gatts_device_t* device = find_gatts_device(addr);
     remove_gatts_device(device);
     PRINT_ADDR("gatts_disconnect_callback, addr:%s", addr);
 }
 
-static void attr_table_added_callback(void *srv_handle, gatt_status_t status, uint16_t attr_handle)
+static void attr_table_added_callback(void* srv_handle, gatt_status_t status, uint16_t attr_handle)
 {
     PRINT("gatts add attribute table complete, handle 0x%" PRIx16 ", status:%d", attr_handle, status);
 }
 
-static void attr_table_removed_callback(void *srv_handle, gatt_status_t status, uint16_t attr_handle)
+static void attr_table_removed_callback(void* srv_handle, gatt_status_t status, uint16_t attr_handle)
 {
     PRINT("gatts remove attribute table complete, handle 0x%" PRIx16 ", status:%d", attr_handle, status);
 }
 
-static void notify_complete_callback(void *srv_handle, bt_address_t *addr, gatt_status_t status, uint16_t attr_handle)
+static void notify_complete_callback(void* srv_handle, bt_address_t* addr, gatt_status_t status, uint16_t attr_handle)
 {
     if (status != GATT_STATUS_SUCCESS) {
         PRINT_ADDR("gatts service notify failed, addr:%s, handle 0x%" PRIx16 ", status:%d", addr, attr_handle, status);
@@ -624,30 +624,30 @@ static void notify_complete_callback(void *srv_handle, bt_address_t *addr, gatt_
     }
 }
 
-static void mtu_changed_callback(void *srv_handle, bt_address_t *addr, uint32_t mtu)
+static void mtu_changed_callback(void* srv_handle, bt_address_t* addr, uint32_t mtu)
 {
-    gatts_device_t *device = find_gatts_device(addr);
+    gatts_device_t* device = find_gatts_device(addr);
     if (device) {
         device->gatt_mtu = mtu;
     }
     PRINT_ADDR("gatts_mtu_changed_callback, addr:%s, mtu:%" PRIu32, addr, mtu);
 }
 
-static void phy_read_callback(void *srv_handle, bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+static void phy_read_callback(void* srv_handle, bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     PRINT_ADDR("gatts read phy complete, addr:%s, tx:%d, rx:%d", addr, tx_phy, rx_phy);
 }
 
-static void phy_updated_callback(void *srv_handle, bt_address_t *addr, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+static void phy_updated_callback(void* srv_handle, bt_address_t* addr, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     PRINT_ADDR("gatts phy updated, addr:%s, status:%d, tx:%d, rx:%d", addr, status, tx_phy, rx_phy);
 }
 
-static void conn_param_changed_callback(void *srv_handle, bt_address_t *addr, uint16_t connection_interval,
-                                        uint16_t peripheral_latency, uint16_t supervision_timeout)
+static void conn_param_changed_callback(void* srv_handle, bt_address_t* addr, uint16_t connection_interval,
+    uint16_t peripheral_latency, uint16_t supervision_timeout)
 {
     PRINT_ADDR("gatts_conn_param_changed_callback, addr:%s, interval:%" PRIu16 ", latency:%" PRIu16 ", timeout:%" PRIu16,
-               addr, connection_interval, peripheral_latency, supervision_timeout);
+        addr, connection_interval, peripheral_latency, supervision_timeout);
 }
 
 static gatts_callbacks_t gatts_cbs = {
@@ -663,7 +663,7 @@ static gatts_callbacks_t gatts_cbs = {
     conn_param_changed_callback,
 };
 
-static int register_cmd(void *handle, int argc, char *argv[])
+static int register_cmd(void* handle, int argc, char* argv[])
 {
     int ret = 0;
 
@@ -706,7 +706,7 @@ static int register_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int unregister_cmd(void *handle, int argc, char *argv[])
+static int unregister_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -722,17 +722,17 @@ static int unregister_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-int gatts_command_init(void *handle)
+int gatts_command_init(void* handle)
 {
     return 0;
 }
 
-int gatts_command_uninit(void *handle)
+int gatts_command_uninit(void* handle)
 {
     return 0;
 }
 
-int gatts_command_exec(void *handle, int argc, char *argv[])
+int gatts_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

@@ -19,9 +19,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "adapter_internel.h"
 #include "bt_profile.h"
 #include "service_manager.h"
-#include "adapter_internel.h"
 
 #define LOG_TAG "service_manager"
 #include "utils/log.h"
@@ -34,7 +34,7 @@ enum profile_service_state {
 };
 
 struct service_state_map {
-    profile_service_t *service;
+    profile_service_t* service;
     uint8_t state;
 };
 
@@ -44,10 +44,8 @@ static struct service_state_map service_slots[PROFILE_MAX] = { 0 };
 static bool check_is_all_startup(uint8_t transport)
 {
     for (int i = 0; i < PROFILE_MAX; i++) {
-        profile_service_t *profile = service_slots[i].service;
-        if (profile && profile->transport == transport &&
-            profile->auto_start && service_slots[i].state != TURN_ON &&
-            profile->get_state && profile->get_state()) {
+        profile_service_t* profile = service_slots[i].service;
+        if (profile && profile->transport == transport && profile->auto_start && service_slots[i].state != TURN_ON && profile->get_state && profile->get_state()) {
             return false;
         }
     }
@@ -58,10 +56,8 @@ static bool check_is_all_startup(uint8_t transport)
 static bool check_is_all_shutdown(uint8_t transport)
 {
     for (int i = 0; i < PROFILE_MAX; i++) {
-        profile_service_t *profile = service_slots[i].service;
-        if (profile && profile->transport == transport &&
-            service_slots[i].state != TURN_OFF &&
-            profile->get_state && profile->get_state()) {
+        profile_service_t* profile = service_slots[i].service;
+        if (profile && profile->transport == transport && service_slots[i].state != TURN_OFF && profile->get_state && profile->get_state()) {
             return false;
         }
     }
@@ -73,7 +69,7 @@ static void service_on_startup(enum profile_id id, bool ret)
 {
     assert(service_slots[id].service);
 
-    profile_service_t *profile = service_slots[id].service;
+    profile_service_t* profile = service_slots[id].service;
     BT_LOGD("%s {%s} start ret:%d", __func__, profile->name, ret);
 
     if (ret)
@@ -93,7 +89,7 @@ static void service_on_shutdown(enum profile_id id, bool ret)
 {
     assert(service_slots[id].service);
 
-    profile_service_t *profile = service_slots[id].service;
+    profile_service_t* profile = service_slots[id].service;
     BT_LOGD("%s {%s} shutdown ret:%d", __func__, profile->name, ret);
 
     if (ret)
@@ -109,10 +105,10 @@ static void service_on_shutdown(enum profile_id id, bool ret)
     }
 }
 
-void register_service(const profile_service_t *service)
+void register_service(const profile_service_t* service)
 {
     if (!service_slots[service->id].service) {
-        service_slots[service->id].service = (profile_service_t *)service;
+        service_slots[service->id].service = (profile_service_t*)service;
         service_slots[service->id].state = TURN_OFF;
         BT_LOGD("%s service register success", service->name);
     } else
@@ -122,7 +118,7 @@ void register_service(const profile_service_t *service)
 int service_manager_init(void)
 {
     for (int i = 0; i < PROFILE_MAX; i++) {
-        profile_service_t *profile = service_slots[i].service;
+        profile_service_t* profile = service_slots[i].service;
         if (profile && profile->init)
             profile->init();
     }
@@ -137,9 +133,8 @@ int service_manager_startup(uint8_t transport)
         adapter_on_profile_services_startup(transport, true);
     } else {
         for (int i = 0; i < PROFILE_MAX; i++) {
-            profile_service_t *profile = service_slots[i].service;
-            if (profile && profile->startup && profile->auto_start &&
-                profile->transport == transport) {
+            profile_service_t* profile = service_slots[i].service;
+            if (profile && profile->startup && profile->auto_start && profile->transport == transport) {
                 service_slots[i].state = TURNING_ON;
                 profile->startup(service_on_startup);
             }
@@ -149,10 +144,10 @@ int service_manager_startup(uint8_t transport)
     return 0;
 }
 
-int service_manager_processmsg(profile_msg_t *msg)
+int service_manager_processmsg(profile_msg_t* msg)
 {
     for (int i = 0; i < PROFILE_MAX; i++) {
-        profile_service_t *profile = service_slots[i].service;
+        profile_service_t* profile = service_slots[i].service;
         if (profile && profile->process_msg)
             profile->process_msg(msg);
     }
@@ -167,7 +162,7 @@ int service_manager_shutdown(uint8_t transport)
         adapter_on_profile_services_shutdown(transport, true);
     } else {
         for (int i = 0; i < PROFILE_MAX; i++) {
-            profile_service_t *profile = service_slots[i].service;
+            profile_service_t* profile = service_slots[i].service;
             if (profile && profile->shutdown && profile->transport == transport)
                 profile->shutdown(service_on_shutdown);
         }
@@ -176,10 +171,10 @@ int service_manager_shutdown(uint8_t transport)
     return 0;
 }
 
-const void *service_manager_get_profile(enum profile_id id)
+const void* service_manager_get_profile(enum profile_id id)
 {
     assert(id < PROFILE_MAX);
-    profile_service_t *profile = service_slots[id].service;
+    profile_service_t* profile = service_slots[id].service;
     if (!profile || !profile->get_profile_interface) {
         BT_LOGE("%s profile-id:%d is not found, profile:%p\n", __func__, id, profile);
         assert(0);
@@ -190,7 +185,7 @@ const void *service_manager_get_profile(enum profile_id id)
 
 bt_status_t service_manager_control(enum profile_id id, control_cmd_t cmd)
 {
-    profile_service_t *profile = service_slots[id].service;
+    profile_service_t* profile = service_slots[id].service;
 
     switch (cmd) {
     case CONTROL_CMD_START:
@@ -221,7 +216,7 @@ bt_status_t service_manager_control(enum profile_id id, control_cmd_t cmd)
 int service_manager_cleanup(void)
 {
     for (int i = 0; i < PROFILE_MAX; i++) {
-        profile_service_t *profile = service_slots[i].service;
+        profile_service_t* profile = service_slots[i].service;
         if (!profile)
             continue;
 

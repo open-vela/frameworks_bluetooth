@@ -64,10 +64,10 @@ BT_GATT_CLIENT_MESSAGE_START,
 #include "bt_gattc.h"
 
     typedef struct {
-        bt_instance_t *ins;
-        gattc_callbacks_t *callbacks;
-        void *cookie;
-        void **user_phandle;
+        bt_instance_t* ins;
+        gattc_callbacks_t* callbacks;
+        void* cookie;
+        void** user_phandle;
     } bt_gattc_remote_t;
 
     typedef struct {
@@ -80,7 +80,7 @@ BT_GATT_CLIENT_MESSAGE_START,
 
     typedef union {
         struct {
-            void *cookie;
+            void* cookie;
         } _bt_gattc_create;
 
         struct {
@@ -161,21 +161,21 @@ BT_GATT_CLIENT_MESSAGE_START,
 
     typedef union {
         struct {
-            void *remote;
+            void* remote;
         } _on_callback;
 
         struct {
-            void *remote;
+            void* remote;
             bt_address_t addr;
         } _on_connected;
 
         struct {
-            void *remote;
+            void* remote;
             bt_address_t addr;
         } _on_disconnected;
 
         struct {
-            void *remote;
+            void* remote;
             gatt_status_t status;
             uint16_t start_handle;
             uint16_t end_handle;
@@ -183,13 +183,13 @@ BT_GATT_CLIENT_MESSAGE_START,
         } _on_discovered;
 
         struct {
-            void *remote;
+            void* remote;
             gatt_status_t status;
             uint32_t mtu;
         } _on_mtu_updated;
 
         struct {
-            void *remote;
+            void* remote;
             gatt_status_t status;
             uint16_t attr_handle;
             uint16_t length;
@@ -197,40 +197,40 @@ BT_GATT_CLIENT_MESSAGE_START,
         } _on_read;
 
         struct {
-            void *remote;
+            void* remote;
             gatt_status_t status;
             uint16_t attr_handle;
         } _on_written;
 
         struct {
-            void *remote;
+            void* remote;
             gatt_status_t status;
             uint16_t attr_handle;
             bool enable;
         } _on_subscribed;
 
         struct {
-            void *remote;
+            void* remote;
             uint16_t attr_handle;
             uint16_t length;
             uint8_t value[GATT_MAX_MTU_SIZE - 3];
         } _on_notified;
 
         struct {
-            void *remote;
+            void* remote;
             gatt_status_t status;
             ble_phy_type_t tx_phy;
             ble_phy_type_t rx_phy;
         } _on_phy_updated;
 
         struct {
-            void *remote;
+            void* remote;
             gatt_status_t status;
             int32_t rssi;
         } _on_rssi_read;
 
         struct {
-            void *remote;
+            void* remote;
             bt_status_t status;
             uint16_t interval;
             uint16_t latency;

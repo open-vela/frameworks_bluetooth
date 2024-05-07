@@ -29,10 +29,10 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    const scanner_callbacks_t *callbacks;
-    void *cookie;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    const scanner_callbacks_t* callbacks;
+    void* cookie;
 } IBtScannerCallbacks;
 
 typedef enum {
@@ -41,10 +41,10 @@ typedef enum {
     ICBKS_ON_SCAN_STOPPED,
 } IBtScannerCallbacks_Call;
 
-AIBinder *BtScannerCallbacks_getBinder(IBtScannerCallbacks *adver);
-binder_status_t BtScannerCallbacks_associateClass(AIBinder *binder);
-IBtScannerCallbacks *BtScannerCallbacks_new(const scanner_callbacks_t *callbacks);
-void BtScannerCallbacks_delete(IBtScannerCallbacks *cbks);
+AIBinder* BtScannerCallbacks_getBinder(IBtScannerCallbacks* adver);
+binder_status_t BtScannerCallbacks_associateClass(AIBinder* binder);
+IBtScannerCallbacks* BtScannerCallbacks_new(const scanner_callbacks_t* callbacks);
+void BtScannerCallbacks_delete(IBtScannerCallbacks* cbks);
 
 #ifdef __cplusplus
 }

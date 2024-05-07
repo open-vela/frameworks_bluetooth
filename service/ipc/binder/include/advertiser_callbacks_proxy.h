@@ -28,7 +28,7 @@ extern "C" {
 
 #include <android/binder_manager.h>
 
-const advertiser_callback_t *BpBtAdvertiserCallbacks_getStatic(void);
+const advertiser_callback_t* BpBtAdvertiserCallbacks_getStatic(void);
 
 #ifdef __cplusplus
 }

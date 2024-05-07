@@ -32,23 +32,23 @@
 
 #define BT_GATT_SERVER_CALLBACK_DESC "BluetoothGattServerCallback"
 
-static const AIBinder_Class *kIBtGattServerCallbacks_Class = NULL;
+static const AIBinder_Class* kIBtGattServerCallbacks_Class = NULL;
 
-static void *IBtGattServerCallbacks_Class_onCreate(void *arg)
+static void* IBtGattServerCallbacks_Class_onCreate(void* arg)
 {
     BT_LOGD("%s", __func__);
     return arg;
 }
 
-static void IBtGattServerCallbacks_Class_onDestroy(void *userData)
+static void IBtGattServerCallbacks_Class_onDestroy(void* userData)
 {
     BT_LOGD("%s", __func__);
 }
 
-static binder_status_t IBtGattServerCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
+static binder_status_t IBtGattServerCallbacks_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
-    IBtGattServerCallbacks *cbks = AIBinder_getUserData(binder);
+    IBtGattServerCallbacks* cbks = AIBinder_getUserData(binder);
     bt_address_t addr;
 
     switch (code) {
@@ -129,7 +129,7 @@ static binder_status_t IBtGattServerCallbacks_Class_onTransact(AIBinder *binder,
     }
     case ICBKS_GATT_SERVER_WRITE: {
         uint32_t attr_handle;
-        uint8_t *value;
+        uint8_t* value;
         uint32_t length;
         uint32_t offset;
 
@@ -137,7 +137,7 @@ static binder_status_t IBtGattServerCallbacks_Class_onTransact(AIBinder *binder,
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&value, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readByteArray(in, (void*)&value, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             return stat;
 
@@ -185,16 +185,16 @@ static binder_status_t IBtGattServerCallbacks_Class_onTransact(AIBinder *binder,
     return stat;
 }
 
-AIBinder *BtGattServerCallbacks_getBinder(IBtGattServerCallbacks *cbks)
+AIBinder* BtGattServerCallbacks_getBinder(IBtGattServerCallbacks* cbks)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (cbks->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(cbks->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(cbks->clazz, (void *)cbks);
+        binder = AIBinder_new(cbks->clazz, (void*)cbks);
         if (cbks->WeakBinder != NULL) {
             AIBinder_Weak_delete(cbks->WeakBinder);
         }
@@ -205,25 +205,24 @@ AIBinder *BtGattServerCallbacks_getBinder(IBtGattServerCallbacks *cbks)
     return binder;
 }
 
-binder_status_t BtGattServerCallbacks_associateClass(AIBinder *binder)
+binder_status_t BtGattServerCallbacks_associateClass(AIBinder* binder)
 {
     if (!kIBtGattServerCallbacks_Class) {
-        kIBtGattServerCallbacks_Class =
-            AIBinder_Class_define(BT_GATT_SERVER_CALLBACK_DESC, IBtGattServerCallbacks_Class_onCreate,
-                                  IBtGattServerCallbacks_Class_onDestroy, IBtGattServerCallbacks_Class_onTransact);
+        kIBtGattServerCallbacks_Class = AIBinder_Class_define(BT_GATT_SERVER_CALLBACK_DESC, IBtGattServerCallbacks_Class_onCreate,
+            IBtGattServerCallbacks_Class_onDestroy, IBtGattServerCallbacks_Class_onTransact);
     }
 
     return AIBinder_associateClass(binder, kIBtGattServerCallbacks_Class);
 }
 
-IBtGattServerCallbacks *BtGattServerCallbacks_new(const gatts_callbacks_t *callbacks)
+IBtGattServerCallbacks* BtGattServerCallbacks_new(const gatts_callbacks_t* callbacks)
 {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
-    IBtGattServerCallbacks *cbks = malloc(sizeof(IBtGattServerCallbacks));
+    AIBinder_Class* clazz;
+    AIBinder* binder;
+    IBtGattServerCallbacks* cbks = malloc(sizeof(IBtGattServerCallbacks));
 
     clazz = AIBinder_Class_define(BT_GATT_SERVER_CALLBACK_DESC, IBtGattServerCallbacks_Class_onCreate,
-                                  IBtGattServerCallbacks_Class_onDestroy, IBtGattServerCallbacks_Class_onTransact);
+        IBtGattServerCallbacks_Class_onDestroy, IBtGattServerCallbacks_Class_onTransact);
 
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
@@ -235,7 +234,7 @@ IBtGattServerCallbacks *BtGattServerCallbacks_new(const gatts_callbacks_t *callb
     return cbks;
 }
 
-void BtGattServerCallbacks_delete(IBtGattServerCallbacks *cbks)
+void BtGattServerCallbacks_delete(IBtGattServerCallbacks* cbks)
 {
     assert(cbks);
 

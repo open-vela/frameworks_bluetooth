@@ -38,35 +38,35 @@ typedef struct bt_media_controller bt_media_controller_t;
 typedef struct bt_media_player bt_media_player_t;
 
 typedef struct {
-    void (*on_prepare)(bt_media_player_t *player, void *context);
-    void (*on_play)(bt_media_player_t *player, void *context);
-    void (*on_pause)(bt_media_player_t *player, void *context);
-    void (*on_stop)(bt_media_player_t *player, void *context);
-    void (*on_next_song)(bt_media_player_t *player, void *context);
-    void (*on_prev_song)(bt_media_player_t *player, void *context);
+    void (*on_prepare)(bt_media_player_t* player, void* context);
+    void (*on_play)(bt_media_player_t* player, void* context);
+    void (*on_pause)(bt_media_player_t* player, void* context);
+    void (*on_stop)(bt_media_player_t* player, void* context);
+    void (*on_next_song)(bt_media_player_t* player, void* context);
+    void (*on_prev_song)(bt_media_player_t* player, void* context);
 } bt_media_player_callback_t;
 
-typedef void (*bt_media_notify_callback_t)(bt_media_controller_t *controller, void *context,
-                                           bt_media_event_t event, uint32_t value);
+typedef void (*bt_media_notify_callback_t)(bt_media_controller_t* controller, void* context,
+    bt_media_event_t event, uint32_t value);
 
-char *bt_media_evt_str(bt_media_event_t evt);
-char *bt_media_status_str(uint8_t status);
-bt_media_controller_t *bt_media_controller_create(void *context, bt_media_notify_callback_t cb);
-void bt_media_controller_set_context(bt_media_controller_t *controller, void *context);
-void bt_media_controller_destory(bt_media_controller_t *controller);
-bt_status_t bt_media_player_play(bt_media_controller_t *controller);
-bt_status_t bt_media_player_pause(bt_media_controller_t *controller);
-bt_status_t bt_media_player_stop(bt_media_controller_t *controller);
-bt_status_t bt_media_player_next(bt_media_controller_t *controller);
-bt_status_t bt_media_player_prev(bt_media_controller_t *controller);
-bt_status_t bt_media_player_get_playback_status(bt_media_controller_t *controller,
-                                                bt_media_status_t *status);
-bt_status_t bt_media_player_get_position(bt_media_controller_t *controller, uint32_t *positions);
-bt_status_t bt_media_player_get_durations(bt_media_controller_t *controller, uint32_t *durations);
+char* bt_media_evt_str(bt_media_event_t evt);
+char* bt_media_status_str(uint8_t status);
+bt_media_controller_t* bt_media_controller_create(void* context, bt_media_notify_callback_t cb);
+void bt_media_controller_set_context(bt_media_controller_t* controller, void* context);
+void bt_media_controller_destory(bt_media_controller_t* controller);
+bt_status_t bt_media_player_play(bt_media_controller_t* controller);
+bt_status_t bt_media_player_pause(bt_media_controller_t* controller);
+bt_status_t bt_media_player_stop(bt_media_controller_t* controller);
+bt_status_t bt_media_player_next(bt_media_controller_t* controller);
+bt_status_t bt_media_player_prev(bt_media_controller_t* controller);
+bt_status_t bt_media_player_get_playback_status(bt_media_controller_t* controller,
+    bt_media_status_t* status);
+bt_status_t bt_media_player_get_position(bt_media_controller_t* controller, uint32_t* positions);
+bt_status_t bt_media_player_get_durations(bt_media_controller_t* controller, uint32_t* durations);
 
-bt_media_player_t *bt_media_player_create(void *context, bt_media_player_callback_t *cb);
-void bt_media_player_destory(bt_media_player_t *player);
-bt_status_t bt_media_player_set_status(bt_media_player_t *player, bt_media_status_t status);
-bt_status_t bt_media_player_set_duration(bt_media_player_t *player, uint32_t duration);
-bt_status_t bt_media_player_set_position(bt_media_player_t *player, uint32_t position);
+bt_media_player_t* bt_media_player_create(void* context, bt_media_player_callback_t* cb);
+void bt_media_player_destory(bt_media_player_t* player);
+bt_status_t bt_media_player_set_status(bt_media_player_t* player, bt_media_status_t status);
+bt_status_t bt_media_player_set_duration(bt_media_player_t* player, uint32_t duration);
+bt_status_t bt_media_player_set_position(bt_media_player_t* player, uint32_t position);
 #endif /* __BT_PLAYER_H__ */

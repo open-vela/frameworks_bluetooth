@@ -37,8 +37,8 @@ typedef enum {
  * @param addr - address of peer A2DP device.
  * @param state - connection state.
  */
-typedef void (*a2dp_connection_state_callback)(void *cookie, bt_address_t *addr,
-                                               profile_connection_state_t state);
+typedef void (*a2dp_connection_state_callback)(void* cookie, bt_address_t* addr,
+    profile_connection_state_t state);
 
 /**
  * @brief A2DP audio connection state changed callback
@@ -47,7 +47,7 @@ typedef void (*a2dp_connection_state_callback)(void *cookie, bt_address_t *addr,
  * @param addr - address of peer A2DP device.
  * @param state - audio connection state.
  */
-typedef void (*a2dp_audio_state_callback)(void *cookie, bt_address_t *addr,
-                                          a2dp_audio_state_t state);
+typedef void (*a2dp_audio_state_callback)(void* cookie, bt_address_t* addr,
+    a2dp_audio_state_t state);
 
 #endif /* __BT_A2DP_H__ */

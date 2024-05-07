@@ -83,7 +83,7 @@ typedef struct {
     uint32_t interval_ms;
     uint32_t sequence_number;
     uint32_t max_tx_length;
-    service_timer_t *send_timer;
+    service_timer_t* send_timer;
     lea_audio_config_t audio_config;
     struct circbuf_s stream_pool;
 } lea_source_stream_t;
@@ -93,23 +93,23 @@ typedef struct {
  ****************************************************************************/
 
 static lea_source_stream_t g_source_stream;
-static lea_source_callabcks_t *g_source_callbacks;
-static audio_transport_t *g_source_transport;
+static lea_source_callabcks_t* g_source_callbacks;
+static audio_transport_t* g_source_transport;
 
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
 
-static bt_status_t lea_source_update_codec(lea_audio_config_t *audio_config, bool enable);
+static bt_status_t lea_source_update_codec(lea_audio_config_t* audio_config, bool enable);
 
 /****************************************************************************
  * Private function
  ****************************************************************************/
 
-static void lea_ctrl_event_with_data(uint8_t ch_id, audio_ctrl_evt_t event, uint8_t *data, uint8_t data_len)
+static void lea_ctrl_event_with_data(uint8_t ch_id, audio_ctrl_evt_t event, uint8_t* data, uint8_t data_len)
 {
     uint8_t stream[128];
-    uint8_t *p = stream;
+    uint8_t* p = stream;
 
     BT_LOGD("%s, event:%d", __func__, event);
 
@@ -129,15 +129,15 @@ static void lea_control_event(uint8_t ch_id, audio_ctrl_evt_t evt)
     lea_ctrl_event_with_data(ch_id, evt, NULL, 0);
 }
 
-static void lea_audio_sink_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
+static void lea_audio_sink_alloc(uint8_t ch_id, uint8_t** buffer, size_t* len)
 {
-    lea_source_stream_t *stream = &g_source_stream;
+    lea_source_stream_t* stream = &g_source_stream;
     int space, next_to_read;
-    uint8_t *alloc_buffer;
+    uint8_t* alloc_buffer;
 
     if (stream->stream_state == STREAM_STATE_FLUSHING) {
         *len = STREAM_FLUSH_SIZE;
-        *buffer = (uint8_t *)malloc(STREAM_FLUSH_SIZE);
+        *buffer = (uint8_t*)malloc(STREAM_FLUSH_SIZE);
         return;
     }
 
@@ -150,7 +150,7 @@ static void lea_audio_sink_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
     }
 
     next_to_read = space > stream->sdu_size ? stream->sdu_size : space;
-    alloc_buffer = (void *)malloc(next_to_read);
+    alloc_buffer = (void*)malloc(next_to_read);
 
     if (!alloc_buffer) {
         *buffer = NULL;
@@ -162,9 +162,9 @@ static void lea_audio_sink_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
     *len = next_to_read;
 }
 
-static void lea_audio_sink_recv(uint8_t ch_id, uint8_t *buffer, ssize_t len)
+static void lea_audio_sink_recv(uint8_t ch_id, uint8_t* buffer, ssize_t len)
 {
-    lea_source_stream_t *stream = &g_source_stream;
+    lea_source_stream_t* stream = &g_source_stream;
     int space;
 
     if (buffer == NULL)
@@ -194,16 +194,16 @@ out:
     free(buffer);
 }
 
-static int lea_audio_source_read(uint8_t *buf, uint16_t frame_len)
+static int lea_audio_source_read(uint8_t* buf, uint16_t frame_len)
 {
-    lea_source_stream_t *stream = &g_source_stream;
+    lea_source_stream_t* stream = &g_source_stream;
 
     return circbuf_read(&stream->stream_pool, buf, frame_len);
 }
 
-static void lea_audio_sink_handler(service_timer_t *timer, void *data)
+static void lea_audio_sink_handler(service_timer_t* timer, void* data)
 {
-    lea_source_stream_t *stream = (lea_source_stream_t *)data;
+    lea_source_stream_t* stream = (lea_source_stream_t*)data;
     uint8_t buf[512];
     int size;
 
@@ -230,13 +230,13 @@ static void lea_audio_sink_handler(service_timer_t *timer, void *data)
     }
 }
 
-static void lea_ctrl_buffer_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
+static void lea_ctrl_buffer_alloc(uint8_t ch_id, uint8_t** buffer, size_t* len)
 {
     *len = 128;
     *buffer = malloc(*len);
 }
 
-static const char *audio_event_to_string(audio_ctrl_cmd_t event)
+static const char* audio_event_to_string(audio_ctrl_cmd_t event)
 {
     switch (event) {
         CASE_RETURN_STR(AUDIO_CTRL_CMD_START)
@@ -282,10 +282,10 @@ static void lea_recv_ctrl_data(uint8_t ch_id, audio_ctrl_cmd_t cmd)
     }
 }
 
-static void lea_ctrl_data_received(uint8_t ch_id, uint8_t *buffer, ssize_t len)
+static void lea_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len)
 {
     audio_ctrl_cmd_t cmd;
-    uint8_t *pbuf = buffer;
+    uint8_t* pbuf = buffer;
 
     if (len <= 0) {
         free(buffer);
@@ -326,7 +326,7 @@ static void lea_source_ctrl_cb(uint8_t ch_id, audio_transport_event_t event)
 
     switch (event) {
     case TRANSPORT_OPEN_EVT: {
-        lea_source_stream_t *stream = &g_source_stream;
+        lea_source_stream_t* stream = &g_source_stream;
 
         lea_source_ctrl_start();
         if (stream->stream_state == STREAM_STATE_CONNECTING) {
@@ -363,11 +363,11 @@ static void lea_source_data_cb(uint8_t ch_id, audio_transport_event_t event)
     }
 }
 
-static bt_status_t lea_source_update_codec(lea_audio_config_t *audio_config, bool enable)
+static bt_status_t lea_source_update_codec(lea_audio_config_t* audio_config, bool enable)
 {
     uint8_t buffer[64];
     uint8_t len;
-    uint8_t *p = buffer;
+    uint8_t* p = buffer;
 
     len = 21;
     /* set valid code */
@@ -395,14 +395,14 @@ static bt_status_t lea_source_update_codec(lea_audio_config_t *audio_config, boo
  * Public function
  ****************************************************************************/
 
-void lea_audio_source_set_callback(lea_source_callabcks_t *callback)
+void lea_audio_source_set_callback(lea_source_callabcks_t* callback)
 {
     g_source_callbacks = callback;
 }
 
 bt_status_t lea_audio_source_init(bool offloading)
 {
-    lea_source_stream_t *stream = &g_source_stream;
+    lea_source_stream_t* stream = &g_source_stream;
 
     BT_LOGD("%s, offloading:%d", __func__, offloading);
     if (g_source_transport) {
@@ -422,7 +422,7 @@ bt_status_t lea_audio_source_init(bool offloading)
     }
 
     if (!audio_transport_open(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL,
-                              CONFIG_BLUETOOTH_LEA_SOURCE_CTRL_PATH, lea_source_ctrl_cb)) {
+            CONFIG_BLUETOOTH_LEA_SOURCE_CTRL_PATH, lea_source_ctrl_cb)) {
         BT_LOGE("fail, audio_transport_open source ctrl");
         return BT_STATUS_FAIL;
     }
@@ -432,7 +432,7 @@ bt_status_t lea_audio_source_init(bool offloading)
     }
 
     if (!audio_transport_open(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO,
-                              CONFIG_BLUETOOTH_LEA_SOURCE_DATA_PATH, lea_source_data_cb)) {
+            CONFIG_BLUETOOTH_LEA_SOURCE_DATA_PATH, lea_source_data_cb)) {
         BT_LOGE("fail, audio_transport_open source audio");
         return BT_STATUS_FAIL;
     }
@@ -443,7 +443,7 @@ bt_status_t lea_audio_source_init(bool offloading)
 
 bt_status_t lea_audio_source_start(void)
 {
-    lea_source_stream_t *stream = &g_source_stream;
+    lea_source_stream_t* stream = &g_source_stream;
 
     BT_LOGD("%s", __func__);
     if (stream->stream_state == STREAM_STATE_RUNNING) {
@@ -464,7 +464,7 @@ bt_status_t lea_audio_source_start(void)
 
 bt_status_t lea_audio_source_stop(bool update_codec)
 {
-    lea_source_stream_t *stream = &g_source_stream;
+    lea_source_stream_t* stream = &g_source_stream;
 
     BT_LOGD("%s,update_codec:%d", __func__, update_codec);
 
@@ -499,9 +499,9 @@ bt_status_t lea_audio_source_resume(void)
     return lea_audio_source_start();
 }
 
-bt_status_t lea_audio_source_update_codec(lea_audio_config_t *audio_config, uint16_t sdu_size)
+bt_status_t lea_audio_source_update_codec(lea_audio_config_t* audio_config, uint16_t sdu_size)
 {
-    lea_source_stream_t *stream = &g_source_stream;
+    lea_source_stream_t* stream = &g_source_stream;
 
     memcpy(&stream->audio_config, audio_config, sizeof(lea_audio_config_t));
     stream->sdu_size = sdu_size;
@@ -520,7 +520,7 @@ bt_status_t lea_audio_source_update_codec(lea_audio_config_t *audio_config, uint
 
 bool lea_audio_source_is_started(void)
 {
-    lea_source_stream_t *stream = &g_source_stream;
+    lea_source_stream_t* stream = &g_source_stream;
 
     return stream->stream_state != STREAM_STATE_OFF;
 }
@@ -539,7 +539,7 @@ bool lea_audio_source_ctrl_is_connected(void)
 
 void lea_audio_source_cleanup(void)
 {
-    lea_source_stream_t *stream = &g_source_stream;
+    lea_source_stream_t* stream = &g_source_stream;
 
     stream->stream_state = STREAM_STATE_OFF;
     audio_transport_close(g_source_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL);

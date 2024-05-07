@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdio.h>
 
 #include "manager_service.h"
 
 #include "bluetooth.h"
-#include "service_loop.h"
 #include "bt_socket.h"
+#include "service_loop.h"
 
-bt_instance_t *bluetooth_create_instance(void)
+bt_instance_t* bluetooth_create_instance(void)
 {
     bt_status_t status;
-    bt_instance_t *ins;
+    bt_instance_t* ins;
 
     ins = zalloc(sizeof(bt_instance_t));
     if (ins == NULL) {
@@ -35,16 +35,16 @@ bt_instance_t *bluetooth_create_instance(void)
 
 #if defined(CONFIG_BLUETOOTH_SERVER)
     status = bt_socket_client_init(ins, PF_LOCAL,
-                                   "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
+        "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
 #elif defined(CONFIG_NET_RPMSG)
     status = bt_socket_client_init(ins, AF_RPMSG,
-                                   "bluetooth", CONFIG_BLUETOOTH_RPMSG_CPUNAME, CONFIG_BLUETOOTH_SOCKET_PORT);
+        "bluetooth", CONFIG_BLUETOOTH_RPMSG_CPUNAME, CONFIG_BLUETOOTH_SOCKET_PORT);
 #elif defined(CONFIG_NET_IPv4)
     status = bt_socket_client_init(ins, AF_INET,
-                                   "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
+        "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
 #else
     status = bt_socket_client_init(ins, PF_LOCAL,
-                                   "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
+        "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT);
 #endif
 
     if (status != BT_STATUS_SUCCESS) {
@@ -53,7 +53,7 @@ bt_instance_t *bluetooth_create_instance(void)
     }
 
     status = manager_create_instance((uint32_t)ins, BLUETOOTH_SYSTEM,
-                                     "local", getpid(), 0, &ins->app_id);
+        "local", getpid(), 0, &ins->app_id);
     if (status != BT_STATUS_SUCCESS) {
         bt_socket_client_deinit(ins);
         free(ins);
@@ -78,9 +78,9 @@ bt_instance_t *bluetooth_create_instance(void)
     return ins;
 }
 
-bt_instance_t *bluetooth_get_instance(void)
+bt_instance_t* bluetooth_get_instance(void)
 {
-    bt_instance_t *bluetooth_ins = bluetooth_find_instance(getpid());
+    bt_instance_t* bluetooth_ins = bluetooth_find_instance(getpid());
 
     if (bluetooth_ins == NULL)
         return bluetooth_create_instance();
@@ -88,7 +88,7 @@ bt_instance_t *bluetooth_get_instance(void)
         return bluetooth_ins;
 }
 
-bt_instance_t *bluetooth_find_instance(pid_t pid)
+bt_instance_t* bluetooth_find_instance(pid_t pid)
 {
     bt_status_t status;
     uint32_t handle;
@@ -97,22 +97,22 @@ bt_instance_t *bluetooth_find_instance(pid_t pid)
     if (status != BT_STATUS_SUCCESS) {
         return NULL;
     }
-    return (bt_instance_t *)handle;
+    return (bt_instance_t*)handle;
 }
 
-void *bluetooth_get_proxy(bt_instance_t *ins, enum profile_id id)
+void* bluetooth_get_proxy(bt_instance_t* ins, enum profile_id id)
 {
     return NULL;
 }
 
-void bluetooth_delete_instance(bt_instance_t *ins)
+void bluetooth_delete_instance(bt_instance_t* ins)
 {
     manager_delete_instance(ins->app_id);
     bt_socket_client_deinit(ins);
     free(ins);
 }
 
-bt_status_t bluetooth_start_service(bt_instance_t *ins, enum profile_id id)
+bt_status_t bluetooth_start_service(bt_instance_t* ins, enum profile_id id)
 {
     bt_status_t status;
     bt_message_packet_t packet;
@@ -128,7 +128,7 @@ bt_status_t bluetooth_start_service(bt_instance_t *ins, enum profile_id id)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bluetooth_stop_service(bt_instance_t *ins, enum profile_id id)
+bt_status_t bluetooth_stop_service(bt_instance_t* ins, enum profile_id id)
 {
     bt_status_t status;
     bt_message_packet_t packet;
@@ -145,7 +145,7 @@ bt_status_t bluetooth_stop_service(bt_instance_t *ins, enum profile_id id)
 }
 
 #include "uv.h"
-bool bluetooth_set_external_uv(bt_instance_t *ins, uv_loop_t *ext_loop)
+bool bluetooth_set_external_uv(bt_instance_t* ins, uv_loop_t* ext_loop)
 {
     BT_SOCKET_INS_VALID(ins, false);
 

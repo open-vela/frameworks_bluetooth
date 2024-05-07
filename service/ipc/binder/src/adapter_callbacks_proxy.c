@@ -29,11 +29,11 @@
 
 #include "utils/log.h"
 
-static void BpBtAdapterCallbacks_onAdapterStateChanged(void *context, bt_adapter_state_t state)
+static void BpBtAdapterCallbacks_onAdapterStateChanged(void* context, bt_adapter_state_t state)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -50,11 +50,11 @@ static void BpBtAdapterCallbacks_onAdapterStateChanged(void *context, bt_adapter
     }
 }
 
-static void BpBtAdapterCallbacks_onDiscoveryStateChanged(void *context, bt_discovery_state_t state)
+static void BpBtAdapterCallbacks_onDiscoveryStateChanged(void* context, bt_discovery_state_t state)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -71,11 +71,11 @@ static void BpBtAdapterCallbacks_onDiscoveryStateChanged(void *context, bt_disco
     }
 }
 
-static void BpBtAdapterCallbacks_onDiscoveryResult(void *context, bt_discovery_result_t *remote)
+static void BpBtAdapterCallbacks_onDiscoveryResult(void* context, bt_discovery_result_t* remote)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -105,11 +105,11 @@ static void BpBtAdapterCallbacks_onDiscoveryResult(void *context, bt_discovery_r
     }
 }
 
-static void BpBtAdapterCallbacks_onScanModeChanged(void *context, bt_scan_mode_t mode)
+static void BpBtAdapterCallbacks_onScanModeChanged(void* context, bt_scan_mode_t mode)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -126,11 +126,11 @@ static void BpBtAdapterCallbacks_onScanModeChanged(void *context, bt_scan_mode_t
     }
 }
 
-static void BpBtAdapterCallbacks_onDeviceNameChanged(void *context, const char *device_name)
+static void BpBtAdapterCallbacks_onDeviceNameChanged(void* context, const char* device_name)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -147,11 +147,11 @@ static void BpBtAdapterCallbacks_onDeviceNameChanged(void *context, const char *
     }
 }
 
-static void BpBtAdapterCallbacks_onPairRequest(void *context, bt_address_t *addr)
+static void BpBtAdapterCallbacks_onPairRequest(void* context, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -168,11 +168,11 @@ static void BpBtAdapterCallbacks_onPairRequest(void *context, bt_address_t *addr
     }
 }
 
-static void BpBtAdapterCallbacks_onPairDisplay(void *context, bt_address_t *addr, bt_transport_t transport, bt_pair_type_t type, uint32_t pass_key)
+static void BpBtAdapterCallbacks_onPairDisplay(void* context, bt_address_t* addr, bt_transport_t transport, bt_pair_type_t type, uint32_t pass_key)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -201,11 +201,11 @@ static void BpBtAdapterCallbacks_onPairDisplay(void *context, bt_address_t *addr
     }
 }
 
-static void BpBtAdapterCallbacks_onConnectionStateChanged(void *context, bt_address_t *addr, bt_transport_t transport, connection_state_t state)
+static void BpBtAdapterCallbacks_onConnectionStateChanged(void* context, bt_address_t* addr, bt_transport_t transport, connection_state_t state)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -230,11 +230,11 @@ static void BpBtAdapterCallbacks_onConnectionStateChanged(void *context, bt_addr
     }
 }
 
-static void BpBtAdapterCallbacks_onBondStateChanged(void *context, bt_address_t *addr, bt_transport_t transport, bond_state_t state)
+static void BpBtAdapterCallbacks_onBondStateChanged(void* context, bt_address_t* addr, bt_transport_t transport, bond_state_t state)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -259,11 +259,11 @@ static void BpBtAdapterCallbacks_onBondStateChanged(void *context, bt_address_t 
     }
 }
 
-static void BpBtAdapterCallbacks_onRemoteNameChanged(void *context, bt_address_t *addr, const char *name)
+static void BpBtAdapterCallbacks_onRemoteNameChanged(void* context, bt_address_t* addr, const char* name)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -284,11 +284,11 @@ static void BpBtAdapterCallbacks_onRemoteNameChanged(void *context, bt_address_t
     }
 }
 
-static void BpBtAdapterCallbacks_onRemoteAliasChanged(void *context, bt_address_t *addr, const char *alias)
+static void BpBtAdapterCallbacks_onRemoteAliasChanged(void* context, bt_address_t* addr, const char* alias)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -308,11 +308,11 @@ static void BpBtAdapterCallbacks_onRemoteAliasChanged(void *context, bt_address_
     }
 }
 
-static void BpBtAdapterCallbacks_onRemoteCodChanged(void *context, bt_address_t *addr, uint32_t cod)
+static void BpBtAdapterCallbacks_onRemoteCodChanged(void* context, bt_address_t* addr, uint32_t cod)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -333,11 +333,11 @@ static void BpBtAdapterCallbacks_onRemoteCodChanged(void *context, bt_address_t 
     }
 }
 
-static void BpBtAdapterCallbacks_onRemoteUuidsChanged(void *context, bt_address_t *addr, bt_uuid_t *uuids, uint16_t size)
+static void BpBtAdapterCallbacks_onRemoteUuidsChanged(void* context, bt_address_t* addr, bt_uuid_t* uuids, uint16_t size)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = context;
+    AIBinder* binder = context;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -374,7 +374,7 @@ static const adapter_callbacks_t static_adapter_cbks = {
     BpBtAdapterCallbacks_onRemoteUuidsChanged,
 };
 
-const adapter_callbacks_t *BpBtAdapterCallbacks_getStatic(void)
+const adapter_callbacks_t* BpBtAdapterCallbacks_getStatic(void)
 {
     return &static_adapter_cbks;
 }

@@ -28,13 +28,13 @@
 
 #include "utils/log.h"
 
-static void BpBtSppCallbacks_connectionStateCallback(void *handle, bt_address_t *addr,
-                                                     uint16_t scn, uint16_t port,
-                                                     profile_connection_state_t state)
+static void BpBtSppCallbacks_connectionStateCallback(void* handle, bt_address_t* addr,
+    uint16_t scn, uint16_t port,
+    profile_connection_state_t state)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = handle;
+    AIBinder* binder = handle;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -63,11 +63,11 @@ static void BpBtSppCallbacks_connectionStateCallback(void *handle, bt_address_t 
     }
 }
 
-static void BpBtSppCallbacks_ptyOpenCallback(void *handle, bt_address_t *addr, uint16_t scn, uint16_t port, char *name)
+static void BpBtSppCallbacks_ptyOpenCallback(void* handle, bt_address_t* addr, uint16_t scn, uint16_t port, char* name)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = handle;
+    AIBinder* binder = handle;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -102,7 +102,7 @@ static const spp_callbacks_t static_spp_cbks = {
     BpBtSppCallbacks_connectionStateCallback,
 };
 
-const spp_callbacks_t *BpBtSppCallbacks_getStatic(void)
+const spp_callbacks_t* BpBtSppCallbacks_getStatic(void)
 {
     return &static_spp_cbks;
 }

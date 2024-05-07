@@ -27,20 +27,20 @@
 
 #define PRIMARY_SLOT CONFIG_BLUETOOTH_HFP_AG_PRIMARY_SLOT
 
-static void on_connection_state_changed(tele_client_t *tele, bool connected);
-static void radio_state_changed(tele_client_t *tele, int radio_state);
-static void on_call_added(tele_client_t *tele, tele_call_t *call);
-static void on_call_removed(tele_client_t *tele, tele_call_t *call);
-static void on_call_state_changed(tele_client_t *tele, tele_call_t *call,
-                                  int state);
-static void call_disconnect_reason(tele_client_t *tele, tele_call_t *call, int reason);
-static void on_operator_status_changed(tele_client_t *tele, int status);
-static void on_network_reg_state_changed(tele_client_t *tele, int status);
-static void on_signal_strength_changed(tele_client_t *tele, int strength);
-static void radio_state_changed(tele_client_t *tele, int radio_state);
+static void on_connection_state_changed(tele_client_t* tele, bool connected);
+static void radio_state_changed(tele_client_t* tele, int radio_state);
+static void on_call_added(tele_client_t* tele, tele_call_t* call);
+static void on_call_removed(tele_client_t* tele, tele_call_t* call);
+static void on_call_state_changed(tele_client_t* tele, tele_call_t* call,
+    int state);
+static void call_disconnect_reason(tele_client_t* tele, tele_call_t* call, int reason);
+static void on_operator_status_changed(tele_client_t* tele, int status);
+static void on_network_reg_state_changed(tele_client_t* tele, int status);
+static void on_signal_strength_changed(tele_client_t* tele, int strength);
+static void radio_state_changed(tele_client_t* tele, int radio_state);
 
 static void update_call_state(hfp_ag_call_state_t new_state);
-static void get_current_calls(tele_client_t *tele, tele_call_t **calls, uint8_t nums);
+static void get_current_calls(tele_client_t* tele, tele_call_t** calls, uint8_t nums);
 
 static tele_callbacks_t tele_cbs = {
     .connection_state_cb = on_connection_state_changed,
@@ -58,15 +58,15 @@ tele_call_callbacks_t tele_call_cbs = {
     .call_disconnect_reason_cb = call_disconnect_reason,
 };
 
-static tele_client_t *tele_context = NULL;
-static bt_list_t *g_current_calls = NULL;
+static tele_client_t* tele_context = NULL;
+static bt_list_t* g_current_calls = NULL;
 static uint8_t g_num_active = 0;
 static uint8_t g_num_held = 0;
 static uint8_t g_call_state = CALL_STATUS_DISCONNECTED;
 static bool is_online = false;
 static bool is_connected = false;
 
-static void on_connection_state_changed(tele_client_t *tele, bool connected)
+static void on_connection_state_changed(tele_client_t* tele, bool connected)
 {
     is_connected = connected;
 
@@ -79,7 +79,7 @@ static void on_connection_state_changed(tele_client_t *tele, bool connected)
     BT_LOGD("%s, connected:%d, is_online:%d", __func__, connected, is_online);
 }
 
-static void radio_state_changed(tele_client_t *tele, int radio_state)
+static void radio_state_changed(tele_client_t* tele, int radio_state)
 {
     BT_LOGD("%s, radio_state:%d", __func__, radio_state);
 
@@ -94,7 +94,7 @@ static void radio_state_changed(tele_client_t *tele, int radio_state)
     }
 }
 
-static void dump_call(tele_call_t *call)
+static void dump_call(tele_call_t* call)
 {
     BT_LOGD("Call:\n"
             "\tState:%d\n"
@@ -104,19 +104,19 @@ static void dump_call(tele_call_t *call)
             "\tName:%s\n"
             "\tRemoteHeld:%d, Emergency:%d\n"
             "\tMultiparty:%d, RemoteMultiparty:%d",
-            call->call_state, call->start_time, call->line_identification,
-            call->incoming_line, call->name, call->is_remote_held, call->is_emergency,
-            call->is_multiparty, call->is_remote_multiparty);
+        call->call_state, call->start_time, call->line_identification,
+        call->incoming_line, call->name, call->is_remote_held, call->is_emergency,
+        call->is_multiparty, call->is_remote_multiparty);
 }
 
-static bool call_is_found(void *data, void *context)
+static bool call_is_found(void* data, void* context)
 {
     return data == context;
 }
 
-static void get_current_calls(tele_client_t *tele, tele_call_t **calls, uint8_t nums)
+static void get_current_calls(tele_client_t* tele, tele_call_t** calls, uint8_t nums)
 {
-    tele_call_t *call;
+    tele_call_t* call;
 
     if (!calls || !nums)
         return;
@@ -133,7 +133,7 @@ static void get_current_calls(tele_client_t *tele, tele_call_t **calls, uint8_t 
     update_call_state(call->call_state);
 }
 
-static void on_call_added(tele_client_t *tele, tele_call_t *call)
+static void on_call_added(tele_client_t* tele, tele_call_t* call)
 {
     if (bt_list_find(g_current_calls, call_is_found, call))
         return;
@@ -144,11 +144,10 @@ static void on_call_added(tele_client_t *tele, tele_call_t *call)
     update_call_state(call->call_state);
 }
 
-static void on_call_removed(tele_client_t *tele, tele_call_t *call)
+static void on_call_removed(tele_client_t* tele, tele_call_t* call)
 {
     BT_LOGD("%s", __func__);
-    if (call->call_state != HFP_AG_CALL_STATE_IDLE &&
-        call->call_state != HFP_AG_CALL_STATE_DISCONNECTED) {
+    if (call->call_state != HFP_AG_CALL_STATE_IDLE && call->call_state != HFP_AG_CALL_STATE_DISCONNECTED) {
         /* An active, setup, or held call is terminated */
         update_call_state(call->call_state);
     }
@@ -166,35 +165,35 @@ static void update_device_status(void)
     hfp_ag_device_status_changed(network_state, roam_state, signal, 5);
 }
 
-static void on_operator_status_changed(tele_client_t *tele, int status)
+static void on_operator_status_changed(tele_client_t* tele, int status)
 {
     update_device_status();
 }
 
-static void on_network_reg_state_changed(tele_client_t *tele, int status)
+static void on_network_reg_state_changed(tele_client_t* tele, int status)
 {
     update_device_status();
 }
 
-static void on_signal_strength_changed(tele_client_t *tele, int strength)
+static void on_signal_strength_changed(tele_client_t* tele, int strength)
 {
     teleif_modem_get_radio_power(tele, PRIMARY_SLOT);
     update_device_status();
 }
 
-static void on_call_state_changed(tele_client_t *tele, tele_call_t *call,
-                                  int state)
+static void on_call_state_changed(tele_client_t* tele, tele_call_t* call,
+    int state)
 {
     BT_LOGD("%s, callstate:%d", __func__, state);
     update_call_state(state);
 }
 
-static void call_disconnect_reason(tele_client_t *tele, tele_call_t *call, int reason)
+static void call_disconnect_reason(tele_client_t* tele, tele_call_t* call, int reason)
 {
     BT_LOGD("%s disconnect_reason:%d", __func__, reason);
 }
 
-static void dial_number_callback(tele_client_t *tele, bool succeeded)
+static void dial_number_callback(tele_client_t* tele, bool succeeded)
 {
     uint8_t result = succeeded ? HFP_ATCMD_RESULT_OK : HFP_ATCMD_RESULT_ERROR;
 
@@ -202,11 +201,11 @@ static void dial_number_callback(tele_client_t *tele, bool succeeded)
     hfp_ag_dial_result(result);
 }
 
-static tele_call_t *get_call_by_state(uint8_t call_state)
+static tele_call_t* get_call_by_state(uint8_t call_state)
 {
-    bt_list_t *list = g_current_calls;
-    bt_list_node_t *node;
-    tele_call_t *call;
+    bt_list_t* list = g_current_calls;
+    bt_list_node_t* node;
+    tele_call_t* call;
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         call = bt_list_node(node);
@@ -219,9 +218,9 @@ static tele_call_t *get_call_by_state(uint8_t call_state)
 
 static int get_nums_of_call_state(uint8_t call_state)
 {
-    bt_list_t *list = g_current_calls;
-    bt_list_node_t *node;
-    tele_call_t *call;
+    bt_list_t* list = g_current_calls;
+    bt_list_node_t* node;
+    tele_call_t* call;
     int nums = 0;
 
     for (node = bt_list_head(list); node != NULL;
@@ -236,15 +235,14 @@ static int get_nums_of_call_state(uint8_t call_state)
 
 static bool all_call_disconnected(void)
 {
-    bt_list_node_t *node;
-    bt_list_t *list = g_current_calls;
-    tele_call_t *call;
+    bt_list_node_t* node;
+    bt_list_t* list = g_current_calls;
+    tele_call_t* call;
 
     for (node = bt_list_head(list); node != NULL;
          node = bt_list_next(list, node)) {
         call = bt_list_node(node);
-        if (call->call_state != HFP_AG_CALL_STATE_IDLE &&
-            call->call_state != HFP_AG_CALL_STATE_DISCONNECTED)
+        if (call->call_state != HFP_AG_CALL_STATE_IDLE && call->call_state != HFP_AG_CALL_STATE_DISCONNECTED)
             return false;
     }
 
@@ -252,25 +250,25 @@ static bool all_call_disconnected(void)
 }
 
 static void phone_state_change(uint8_t num_active, uint8_t num_held,
-                               hfp_ag_call_state_t call_state,
-                               hfp_call_addrtype_t type, const char *number,
-                               const char *name)
+    hfp_ag_call_state_t call_state,
+    hfp_call_addrtype_t type, const char* number,
+    const char* name)
 {
     g_num_active = num_active;
     g_num_held = num_held;
     g_call_state = call_state;
     BT_LOGD("%s,active:%d, held:%d, state: %d, number:%s", __func__, num_active,
-            num_held, call_state, number);
+        num_held, call_state, number);
     hfp_ag_phone_state_change(num_active, num_held, call_state, type, number,
-                              NULL);
+        NULL);
 }
 
 static void update_call_state(hfp_ag_call_state_t new_state)
 {
     uint8_t active_call_nums = get_nums_of_call_state(HFP_AG_CALL_STATE_ACTIVE);
     uint8_t held_call_nums = get_nums_of_call_state(HFP_AG_CALL_STATE_HELD);
-    char *number = "";
-    tele_call_t *call;
+    char* number = "";
+    tele_call_t* call;
 
     BT_LOGD("%s,state: %d", __func__, new_state);
     call = get_call_by_state(new_state);
@@ -297,14 +295,12 @@ static void update_call_state(hfp_ag_call_state_t new_state)
         break;
     }
 
-    if (new_state == HFP_AG_CALL_STATE_ALERTING &&
-        g_call_state != HFP_AG_CALL_STATE_DIALING) {
+    if (new_state == HFP_AG_CALL_STATE_ALERTING && g_call_state != HFP_AG_CALL_STATE_DIALING) {
         phone_state_change(active_call_nums, held_call_nums,
-                           HFP_AG_CALL_STATE_DIALING,
-                           HFP_CALL_ADDRTYPE_UNKNOWN,
-                           number, NULL);
-    } else if (new_state == HFP_AG_CALL_STATE_IDLE ||
-               new_state == HFP_AG_CALL_STATE_DISCONNECTED) {
+            HFP_AG_CALL_STATE_DIALING,
+            HFP_CALL_ADDRTYPE_UNKNOWN,
+            number, NULL);
+    } else if (new_state == HFP_AG_CALL_STATE_IDLE || new_state == HFP_AG_CALL_STATE_DISCONNECTED) {
         new_state = HFP_AG_CALL_STATE_DISCONNECTED;
         /* if all disconnected, send disconnected notification */
         if (!all_call_disconnected() && new_state == g_call_state)
@@ -312,7 +308,7 @@ static void update_call_state(hfp_ag_call_state_t new_state)
     }
 
     phone_state_change(active_call_nums, held_call_nums, new_state,
-                       HFP_CALL_ADDRTYPE_UNKNOWN, number, NULL);
+        HFP_CALL_ADDRTYPE_UNKNOWN, number, NULL);
 }
 
 void tele_service_init(void)
@@ -337,7 +333,7 @@ void tele_service_cleanup(void)
     bt_list_clear(g_current_calls);
 }
 
-bt_status_t tele_service_dial_number(char *number)
+bt_status_t tele_service_dial_number(char* number)
 {
     if (!is_connected || !is_online)
         return BT_STATUS_NOT_ENABLED;
@@ -357,7 +353,7 @@ bt_status_t tele_service_answer_call(void)
     if (!is_connected || !is_online)
         return BT_STATUS_NOT_ENABLED;
 
-    tele_call_t *call = get_call_by_state(CALL_STATUS_INCOMING);
+    tele_call_t* call = get_call_by_state(CALL_STATUS_INCOMING);
     if (!call)
         return BT_STATUS_FAIL;
 
@@ -372,7 +368,7 @@ bt_status_t tele_service_reject_call(void)
     if (!is_connected || !is_online)
         return BT_STATUS_NOT_ENABLED;
 
-    tele_call_t *call = get_call_by_state(CALL_STATUS_INCOMING);
+    tele_call_t* call = get_call_by_state(CALL_STATUS_INCOMING);
     if (!call)
         return BT_STATUS_FAIL;
 
@@ -400,8 +396,8 @@ bt_status_t tele_service_call_control(uint8_t chld)
 
     switch (chld) {
     case HFP_HF_CALL_CONTROL_CHLD_0: {
-        tele_call_t *waiting_call = get_call_by_state(CALL_STATUS_WAITING);
-        tele_call_t *held_call = get_call_by_state(CALL_STATUS_HELD);
+        tele_call_t* waiting_call = get_call_by_state(CALL_STATUS_WAITING);
+        tele_call_t* held_call = get_call_by_state(CALL_STATUS_HELD);
 
         if (waiting_call != NULL) {
             teleif_call_hangup_call(tele_context, waiting_call);
@@ -417,8 +413,8 @@ bt_status_t tele_service_call_control(uint8_t chld)
         teleif_call_hold_and_answer(tele_context, PRIMARY_SLOT);
         break;
     case HFP_HF_CALL_CONTROL_CHLD_3: {
-        tele_call_t *active_call = get_call_by_state(CALL_STATUS_ACTIVE);
-        tele_call_t *held_call = get_call_by_state(CALL_STATUS_HELD);
+        tele_call_t* active_call = get_call_by_state(CALL_STATUS_ACTIVE);
+        tele_call_t* held_call = get_call_by_state(CALL_STATUS_HELD);
 
         if (!active_call || !held_call)
             return BT_STATUS_FAIL;
@@ -432,19 +428,19 @@ bt_status_t tele_service_call_control(uint8_t chld)
     return BT_STATUS_SUCCESS;
 }
 
-void tele_service_get_phone_state(uint8_t *num_active, uint8_t *num_held,
-                                  uint8_t *call_state)
+void tele_service_get_phone_state(uint8_t* num_active, uint8_t* num_held,
+    uint8_t* call_state)
 {
     *num_active = g_num_active;
     *num_held = g_num_held;
     *call_state = g_call_state;
 }
 
-void tele_service_query_current_call(bt_address_t *addr)
+void tele_service_query_current_call(bt_address_t* addr)
 {
-    bt_list_node_t *node;
-    bt_list_t *list = g_current_calls;
-    tele_call_t *call;
+    bt_list_node_t* node;
+    bt_list_t* list = g_current_calls;
+    tele_call_t* call;
     int index = 0;
 
     if (!is_connected || !is_online) {
@@ -459,18 +455,18 @@ void tele_service_query_current_call(bt_address_t *addr)
         call = bt_list_node(node);
         /* Send "+CLCC" result code. */
         bt_sal_hfp_ag_clcc_response(addr, index, call->is_incoming,
-                                    call->call_state, HFP_CALL_MODE_VOICE,
-                                    call->is_multiparty, HFP_CALL_ADDRTYPE_UNKNOWN,
-                                    call->line_identification);
+            call->call_state, HFP_CALL_MODE_VOICE,
+            call->is_multiparty, HFP_CALL_ADDRTYPE_UNKNOWN,
+            call->line_identification);
     }
 
     /* Send "OK\r\n" */
     bt_sal_hfp_ag_clcc_response(addr, 0, 0, 0, 0, 0, 0, NULL);
 }
 
-char *tele_service_get_operator(void)
+char* tele_service_get_operator(void)
 {
-    char *name = NULL;
+    char* name = NULL;
     int status;
 
     if (!is_connected || !is_online)
@@ -481,11 +477,11 @@ char *tele_service_get_operator(void)
     return name;
 }
 
-bt_status_t tele_service_get_network_info(hfp_network_state_t *network,
-                                          hfp_roaming_state_t *roam,
-                                          uint8_t *signal)
+bt_status_t tele_service_get_network_info(hfp_network_state_t* network,
+    hfp_roaming_state_t* roam,
+    uint8_t* signal)
 {
-    char *name;
+    char* name;
     int status;
     int strength = -1;
     bool is_roaming = false;

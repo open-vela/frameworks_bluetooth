@@ -24,24 +24,24 @@
 
 typedef struct hid_device_interface {
     size_t size;
-    void *(*register_callbacks)(void *remote, const hid_device_callbacks_t *callbacks);
-    bool (*unregister_callbacks)(void **remote, void *cookie);
-    bt_status_t (*register_app)(hid_device_sdp_settings_t *sdp, bool le_hid);
+    void* (*register_callbacks)(void* remote, const hid_device_callbacks_t* callbacks);
+    bool (*unregister_callbacks)(void** remote, void* cookie);
+    bt_status_t (*register_app)(hid_device_sdp_settings_t* sdp, bool le_hid);
     bt_status_t (*unregister_app)(void);
-    bt_status_t (*connect)(bt_address_t *addr);
-    bt_status_t (*disconnect)(bt_address_t *addr);
-    bt_status_t (*send_report)(bt_address_t *addr, uint8_t rpt_id, uint8_t *rpt_data, int rpt_size);
-    bt_status_t (*response_report)(bt_address_t *addr, uint8_t rpt_type, uint8_t *rpt_data, int rpt_size);
-    bt_status_t (*report_error)(bt_address_t *addr, hid_status_error_t error);
-    bt_status_t (*virtual_unplug)(bt_address_t *addr);
+    bt_status_t (*connect)(bt_address_t* addr);
+    bt_status_t (*disconnect)(bt_address_t* addr);
+    bt_status_t (*send_report)(bt_address_t* addr, uint8_t rpt_id, uint8_t* rpt_data, int rpt_size);
+    bt_status_t (*response_report)(bt_address_t* addr, uint8_t rpt_type, uint8_t* rpt_data, int rpt_size);
+    bt_status_t (*report_error)(bt_address_t* addr, hid_status_error_t error);
+    bt_status_t (*virtual_unplug)(bt_address_t* addr);
 } hid_device_interface_t;
 
 void hid_device_on_app_state_changed(hid_app_state_t state);
-void hid_device_on_connection_state_changed(bt_address_t *addr, bool le_hid, profile_connection_state_t state);
-void hid_device_on_get_report(bt_address_t *addr, uint8_t rpt_type, uint8_t rpt_id, uint16_t buffer_size);
-void hid_device_on_set_report(bt_address_t *addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t *rpt_data);
-void hid_device_on_receive_report(bt_address_t *addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t *rpt_data);
-void hid_device_on_virtual_cable_unplug(bt_address_t *addr);
+void hid_device_on_connection_state_changed(bt_address_t* addr, bool le_hid, profile_connection_state_t state);
+void hid_device_on_get_report(bt_address_t* addr, uint8_t rpt_type, uint8_t rpt_id, uint16_t buffer_size);
+void hid_device_on_set_report(bt_address_t* addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data);
+void hid_device_on_receive_report(bt_address_t* addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data);
+void hid_device_on_virtual_cable_unplug(bt_address_t* addr);
 
 /*
  * register profile to service manager

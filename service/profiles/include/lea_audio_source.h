@@ -51,7 +51,7 @@ typedef struct {
  * Public Fucntion
  ****************************************************************************/
 
-void lea_audio_source_set_callback(lea_source_callabcks_t *callback);
+void lea_audio_source_set_callback(lea_source_callabcks_t* callback);
 
 bt_status_t lea_audio_source_init(bool offloading);
 
@@ -63,7 +63,7 @@ bt_status_t lea_audio_source_suspend(void);
 
 bt_status_t lea_audio_source_resume(void);
 
-bt_status_t lea_audio_source_update_codec(lea_audio_config_t *codec, uint16_t sdu_size);
+bt_status_t lea_audio_source_update_codec(lea_audio_config_t* codec, uint16_t sdu_size);
 
 bool lea_audio_source_is_started(void);
 

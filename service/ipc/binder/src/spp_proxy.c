@@ -29,7 +29,7 @@
 #include "spp_stub.h"
 #include "utils/log.h"
 
-void *BpBtSpp_registerApp(BpBtSpp *bpBinder, AIBinder *cbksBinder)
+void* BpBtSpp_registerApp(BpBtSpp* bpBinder, AIBinder* cbksBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -38,7 +38,7 @@ void *BpBtSpp_registerApp(BpBtSpp *bpBinder, AIBinder *cbksBinder)
     if (!bpBinder || !bpBinder->binder)
         return NULL;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -56,10 +56,10 @@ void *BpBtSpp_registerApp(BpBtSpp *bpBinder, AIBinder *cbksBinder)
     if (stat != STATUS_OK)
         return NULL;
 
-    return (void *)handle;
+    return (void*)handle;
 }
 
-bt_status_t BpBtSpp_unRegisterApp(BpBtSpp *bpBinder, void *handle)
+bt_status_t BpBtSpp_unRegisterApp(BpBtSpp* bpBinder, void* handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -68,7 +68,7 @@ bt_status_t BpBtSpp_unRegisterApp(BpBtSpp *bpBinder, void *handle)
     if (!bpBinder || !bpBinder->binder)
         return false;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -89,7 +89,7 @@ bt_status_t BpBtSpp_unRegisterApp(BpBtSpp *bpBinder, void *handle)
     return status;
 }
 
-bt_status_t BpBtSpp_serverStart(BpBtSpp *bpBinder, void *handle, uint16_t scn, bt_uuid_t *uuid, uint8_t maxConnection)
+bt_status_t BpBtSpp_serverStart(BpBtSpp* bpBinder, void* handle, uint16_t scn, bt_uuid_t* uuid, uint8_t maxConnection)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -98,7 +98,7 @@ bt_status_t BpBtSpp_serverStart(BpBtSpp *bpBinder, void *handle, uint16_t scn, b
     if (!bpBinder || !bpBinder->binder)
         return false;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -131,7 +131,7 @@ bt_status_t BpBtSpp_serverStart(BpBtSpp *bpBinder, void *handle, uint16_t scn, b
     return status;
 }
 
-bt_status_t BpBtSpp_serverStop(BpBtSpp *bpBinder, void *handle, uint16_t scn)
+bt_status_t BpBtSpp_serverStop(BpBtSpp* bpBinder, void* handle, uint16_t scn)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -140,7 +140,7 @@ bt_status_t BpBtSpp_serverStop(BpBtSpp *bpBinder, void *handle, uint16_t scn)
     if (!bpBinder || !bpBinder->binder)
         return false;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -165,7 +165,7 @@ bt_status_t BpBtSpp_serverStop(BpBtSpp *bpBinder, void *handle, uint16_t scn)
     return status;
 }
 
-bt_status_t BpBtSpp_connect(BpBtSpp *bpBinder, void *handle, bt_address_t *addr, int16_t scn, bt_uuid_t *uuid, uint16_t *port)
+bt_status_t BpBtSpp_connect(BpBtSpp* bpBinder, void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -175,7 +175,7 @@ bt_status_t BpBtSpp_connect(BpBtSpp *bpBinder, void *handle, bt_address_t *addr,
     if (!bpBinder || !bpBinder->binder)
         return false;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -213,7 +213,7 @@ bt_status_t BpBtSpp_connect(BpBtSpp *bpBinder, void *handle, bt_address_t *addr,
     return status;
 }
 
-bt_status_t BpBtSpp_disconnect(BpBtSpp *bpBinder, void *handle, bt_address_t *addr, uint16_t port)
+bt_status_t BpBtSpp_disconnect(BpBtSpp* bpBinder, void* handle, bt_address_t* addr, uint16_t port)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -222,7 +222,7 @@ bt_status_t BpBtSpp_disconnect(BpBtSpp *bpBinder, void *handle, bt_address_t *ad
     if (!bpBinder || !bpBinder->binder)
         return false;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)

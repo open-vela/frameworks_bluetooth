@@ -58,9 +58,9 @@ typedef struct {
     lea_stream_info_t streams_info[CONFIG_LEA_STREAM_MAX_NUM];
 } lea_audio_config_t;
 
-lea_audio_config_t *lea_codec_get_config(bool is_source);
-void lea_codec_set_config(lea_audio_stream_t *audio_stream);
+lea_audio_config_t* lea_codec_get_config(bool is_source);
+void lea_codec_set_config(lea_audio_stream_t* audio_stream);
 void lea_codec_unset_config(bool is_source);
-bool lea_codec_get_offload_config(lea_offload_config_t *offload);
+bool lea_codec_get_offload_config(lea_offload_config_t* offload);
 
 #endif

@@ -26,14 +26,14 @@ enum advertising_state {
 };
 
 void advertising_on_state_changed(uint8_t adv_id, uint8_t state);
-bt_advertiser_t *start_advertising(void *remote,
-                                   ble_adv_params_t *params,
-                                   uint8_t *adv_data,
-                                   uint16_t adv_len,
-                                   uint8_t *scan_rsp_data,
-                                   uint16_t scan_rsp_len,
-                                   const advertiser_callback_t *cbs);
-void stop_advertising(bt_advertiser_t *adver);
+bt_advertiser_t* start_advertising(void* remote,
+    ble_adv_params_t* params,
+    uint8_t* adv_data,
+    uint16_t adv_len,
+    uint8_t* scan_rsp_data,
+    uint16_t scan_rsp_len,
+    const advertiser_callback_t* cbs);
+void stop_advertising(bt_advertiser_t* adver);
 void stop_advertising_id(uint8_t adv_id);
 bool advertising_is_supported(void);
 void adv_manager_init(void);

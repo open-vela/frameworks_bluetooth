@@ -96,7 +96,7 @@ void a2dp_audio_on_suspended(uint8_t peer_sep)
 #endif
 }
 
-void a2dp_audio_setup_codec(uint8_t peer_sep, bt_address_t *bd_addr)
+void a2dp_audio_setup_codec(uint8_t peer_sep, bt_address_t* bd_addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     if (peer_sep == SEP_SNK)

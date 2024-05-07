@@ -34,7 +34,7 @@ static void disable_echo(int fd)
     tcsetattr(fd, TCSANOW, &echo);
 }
 
-int open_pty(int *master, char *name)
+int open_pty(int* master, char* name)
 {
     char buf[64];
     int ret;

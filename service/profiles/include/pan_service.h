@@ -29,12 +29,12 @@ typedef struct {
      * @brief Register the pan event callback
      * @param[in] callbacks  pan event callback function.
      */
-    void *(*register_callbacks)(void *remote, const pan_callbacks_t *callbacks);
+    void* (*register_callbacks)(void* remote, const pan_callbacks_t* callbacks);
 
     /**
      * @brief Unregister the pan event callback
      */
-    bool (*unregister_callbacks)(void **remote, void *cookie);
+    bool (*unregister_callbacks)(void** remote, void* cookie);
 
     /**
      * @brief Connect to the NAP server
@@ -45,7 +45,7 @@ typedef struct {
      * @note Only support PANU connect to NAP server, so dst_role must be 1, src_role must be 2.
      * @return BT_STATUS_SUCCESS on success; a negated errno value on failure.
      */
-    bt_status_t (*connect)(bt_address_t *addr, uint8_t dst_role, uint8_t src_role);
+    bt_status_t (*connect)(bt_address_t* addr, uint8_t dst_role, uint8_t src_role);
 
     /**
      * @brief Dis-connect from NAP server
@@ -53,14 +53,14 @@ typedef struct {
      * @param[in] addr      address of peer device.
      * @return BT_STATUS_SUCCESS on success; a negated errno value on failure.
      */
-    bt_status_t (*disconnect)(bt_address_t *addr);
+    bt_status_t (*disconnect)(bt_address_t* addr);
 } pan_interface_t;
 
-void pan_on_connection_state_changed(bt_address_t *addr, pan_role_t remote_role,
-                                     pan_role_t local_role, profile_connection_state_t state);
-void pan_on_data_received(bt_address_t *addr, uint16_t protocol,
-                          uint8_t *dst_addr, uint8_t *src_addr,
-                          uint8_t *data, uint16_t length);
+void pan_on_connection_state_changed(bt_address_t* addr, pan_role_t remote_role,
+    pan_role_t local_role, profile_connection_state_t state);
+void pan_on_data_received(bt_address_t* addr, uint16_t protocol,
+    uint8_t* dst_addr, uint8_t* src_addr,
+    uint8_t* data, uint16_t length);
 
 /*
  * register profile to service manager

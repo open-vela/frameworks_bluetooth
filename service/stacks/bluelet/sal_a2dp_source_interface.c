@@ -29,7 +29,7 @@
 
 static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state);
 static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state, uint16_t sink_cid);
-static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S *config);
+static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S* config);
 static void adp_stream_channel_mtu_cb(BD_ADDR remote_addr, uint16_t stream_chnl_mtu);
 #ifdef CONFIG_BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
 static void adp_peer_partial_reconnect_cb(BD_ADDR remote_addr);
@@ -63,12 +63,12 @@ static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE
         return;
     }
 
-    bt_sal_a2dp_source_event_callback(a2dp_event_new(event, (void *)remote_addr));
+    bt_sal_a2dp_source_event_callback(a2dp_event_new(event, (void*)remote_addr));
 }
 
 static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state, uint16_t sink_cid)
 {
-    a2dp_event_t *event;
+    a2dp_event_t* event;
     a2dp_event_type_t type;
 
     switch (state) {
@@ -89,15 +89,15 @@ static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM
         return;
     }
 
-    event = a2dp_event_new(type, (void *)remote_addr);
+    event = a2dp_event_new(type, (void*)remote_addr);
     event->event_data.l2c_rcid = sink_cid;
 
     bt_sal_a2dp_source_event_callback(event);
 }
 
-static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S *config)
+static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_CONFIG_S* config)
 {
-    a2dp_event_t *event;
+    a2dp_event_t* event;
     a2dp_codec_config_t codec_config = { 0 };
 
     codec_config.codec_type = config->codec;
@@ -106,7 +106,7 @@ static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREA
     codec_config.bits_per_sample = config->bit_width;
     codec_config.packet_size = 1024;
     memcpy(codec_config.specific_info, config->codec_info, config->codec_info_len);
-    event = a2dp_event_new(CODEC_CONFIG_EVT, (void *)remote_addr);
+    event = a2dp_event_new(CODEC_CONFIG_EVT, (void*)remote_addr);
     event->event_data.data = malloc(sizeof(codec_config));
     memcpy(event->event_data.data, &codec_config, sizeof(codec_config));
 
@@ -115,9 +115,9 @@ static void adp_stream_config_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREA
 
 static void adp_stream_channel_mtu_cb(BD_ADDR remote_addr, uint16_t stream_chnl_mtu)
 {
-    a2dp_event_t *event;
+    a2dp_event_t* event;
 
-    event = a2dp_event_new(STREAM_MTU_CONFIG_EVT, (void *)remote_addr);
+    event = a2dp_event_new(STREAM_MTU_CONFIG_EVT, (void*)remote_addr);
     event->event_data.mtu = stream_chnl_mtu;
 
     bt_sal_a2dp_source_event_callback(event);
@@ -126,9 +126,9 @@ static void adp_stream_channel_mtu_cb(BD_ADDR remote_addr, uint16_t stream_chnl_
 #ifdef CONFIG_BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
 static void adp_peer_partial_reconnect_cb(BD_ADDR remote_addr)
 {
-    a2dp_event_t *event;
+    a2dp_event_t* event;
 
-    event = a2dp_event_new(PEER_PARTIAL_RECONN_EVT, (void *)remote_addr);
+    event = a2dp_event_new(PEER_PARTIAL_RECONN_EVT, (void*)remote_addr);
 
     bt_sal_a2dp_source_event_callback(event);
 }
@@ -139,7 +139,7 @@ bt_status_t bt_sal_a2dp_source_init(uint8_t max_connection)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     SAL_CHECK_RET(service_adapter_a2dp_source_init(max_connection, &a2dp_source_cbks),
-                  SERVICE_BT_STATUS_SUCCESS);
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -154,11 +154,11 @@ void bt_sal_a2dp_source_cleanup(void)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_source_connect(bt_address_t *addr)
+bt_status_t bt_sal_a2dp_source_connect(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    SAL_CHECK_RET(service_adapter_a2dp_source_connect((void *)addr, A2DP_PREFERRED_CODEC),
-                  SERVICE_BT_STATUS_SUCCESS);
+    SAL_CHECK_RET(service_adapter_a2dp_source_connect((void*)addr, A2DP_PREFERRED_CODEC),
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -166,11 +166,11 @@ bt_status_t bt_sal_a2dp_source_connect(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_source_disconnect(bt_address_t *addr)
+bt_status_t bt_sal_a2dp_source_disconnect(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    SAL_CHECK_RET(service_adapter_a2dp_source_disconnect((void *)addr),
-                  SERVICE_BT_STATUS_SUCCESS);
+    SAL_CHECK_RET(service_adapter_a2dp_source_disconnect((void*)addr),
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -178,16 +178,7 @@ bt_status_t bt_sal_a2dp_source_disconnect(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_source_set_silence_device(bt_address_t *addr, bool silence)
-{
-#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    return BT_STATUS_SUCCESS;
-#else
-    return BT_STATUS_NOT_SUPPORTED;
-#endif
-}
-
-bt_status_t bt_sal_a2dp_source_set_active_device(bt_address_t *addr)
+bt_status_t bt_sal_a2dp_source_set_silence_device(bt_address_t* addr, bool silence)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     return BT_STATUS_SUCCESS;
@@ -196,11 +187,20 @@ bt_status_t bt_sal_a2dp_source_set_active_device(bt_address_t *addr)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_source_start_stream(bt_address_t *remote_addr)
+bt_status_t bt_sal_a2dp_source_set_active_device(bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    SAL_CHECK_RET(service_adapter_a2dp_source_start_stream((void *)remote_addr),
-                  SERVICE_BT_STATUS_SUCCESS);
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
+bt_status_t bt_sal_a2dp_source_start_stream(bt_address_t* remote_addr)
+{
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+    SAL_CHECK_RET(service_adapter_a2dp_source_start_stream((void*)remote_addr),
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -208,11 +208,11 @@ bt_status_t bt_sal_a2dp_source_start_stream(bt_address_t *remote_addr)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_source_suspend_stream(bt_address_t *remote_addr)
+bt_status_t bt_sal_a2dp_source_suspend_stream(bt_address_t* remote_addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    SAL_CHECK_RET(service_adapter_a2dp_source_suspend_stream((void *)remote_addr),
-                  SERVICE_BT_STATUS_SUCCESS);
+    SAL_CHECK_RET(service_adapter_a2dp_source_suspend_stream((void*)remote_addr),
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -220,18 +220,18 @@ bt_status_t bt_sal_a2dp_source_suspend_stream(bt_address_t *remote_addr)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_source_send_data(bt_address_t *remote_addr, uint8_t *buf,
-                                         uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp, uint32_t seq)
+bt_status_t bt_sal_a2dp_source_send_data(bt_address_t* remote_addr, uint8_t* buf,
+    uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp, uint32_t seq)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    SERVICE_A2DP_SOURCE_PACKET_S *packet;
+    SERVICE_A2DP_SOURCE_PACKET_S* packet;
 
     if (buf == NULL) {
         BT_LOGE("%s, buffer is null", __func__);
         return BT_STATUS_PARM_INVALID;
     }
 
-    packet = (SERVICE_A2DP_SOURCE_PACKET_S *)buf;
+    packet = (SERVICE_A2DP_SOURCE_PACKET_S*)buf;
     packet->data_length = nbytes;
     packet->header.version = 2;
     packet->header.padding = 0;
@@ -242,8 +242,8 @@ bt_status_t bt_sal_a2dp_source_send_data(bt_address_t *remote_addr, uint8_t *buf
     packet->header.ssrc = 1;
     packet->header.timestamp = timestamp;
 
-    SAL_CHECK_RET(service_adapter_a2dp_source_send_data((void *)remote_addr, packet),
-                  SERVICE_BT_STATUS_SUCCESS);
+    SAL_CHECK_RET(service_adapter_a2dp_source_send_data((void*)remote_addr, packet),
+        SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;
 #else

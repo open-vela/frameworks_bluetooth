@@ -33,42 +33,42 @@
 #endif
 
 typedef struct {
-    uint8_t *adv_data;
+    uint8_t* adv_data;
     uint16_t adv_len;
-    uint8_t *scan_rsp_data;
+    uint8_t* scan_rsp_data;
     uint16_t scan_rsp_len;
     ble_adv_params_t params;
 } advertising_info_t;
 
 typedef struct advertiser {
     struct list_node adver_node;
-    void *remote;
+    void* remote;
     uint8_t adv_id;
     advertiser_callback_t callbacks;
-    service_timer_t *adv_start;
+    service_timer_t* adv_start;
 } advertiser_t;
 
 typedef struct {
     bool started;
-    index_allocator_t *adv_allocator;
+    index_allocator_t* adv_allocator;
     struct list_node advertiser_list;
 } adv_manager_t;
 
 typedef struct {
-    advertiser_t *adver;
+    advertiser_t* adver;
     uint8_t adv_id;
-    advertising_info_t *adv_info;
+    advertising_info_t* adv_info;
     uint8_t state;
 } adv_event_t;
 
 static adv_manager_t adv_manager;
 
-static void *get_adver(advertiser_t *adver)
+static void* get_adver(advertiser_t* adver)
 {
     return adver->remote ? adver->remote : adver;
 }
 
-static void advertiser_info_free(advertising_info_t *adv_info)
+static void advertiser_info_free(advertising_info_t* adv_info)
 {
     if (adv_info) {
         if (adv_info->adv_data)
@@ -79,13 +79,13 @@ static void advertiser_info_free(advertising_info_t *adv_info)
     }
 }
 
-static advertising_info_t *advertiser_info_copy(ble_adv_params_t *params,
-                                                uint8_t *adv_data,
-                                                uint16_t adv_len,
-                                                uint8_t *scan_rsp_data,
-                                                uint16_t scan_rsp_len)
+static advertising_info_t* advertiser_info_copy(ble_adv_params_t* params,
+    uint8_t* adv_data,
+    uint16_t adv_len,
+    uint8_t* scan_rsp_data,
+    uint16_t scan_rsp_len)
 {
-    advertising_info_t *adv_info = calloc(1, sizeof(advertising_info_t));
+    advertising_info_t* adv_info = calloc(1, sizeof(advertising_info_t));
     if (!adv_info)
         goto fail;
 
@@ -112,9 +112,9 @@ fail:
     return NULL;
 }
 
-static advertiser_t *alloc_new_advertiser(void *remote, const advertiser_callback_t *cbs)
+static advertiser_t* alloc_new_advertiser(void* remote, const advertiser_callback_t* cbs)
 {
-    advertiser_t *adver = malloc(sizeof(advertiser_t));
+    advertiser_t* adver = malloc(sizeof(advertiser_t));
     if (!adver)
         return NULL;
 
@@ -126,33 +126,33 @@ static advertiser_t *alloc_new_advertiser(void *remote, const advertiser_callbac
     return adver;
 }
 
-static void delete_advertiser(advertiser_t *adver)
+static void delete_advertiser(advertiser_t* adver)
 {
     if (adver->adv_id)
         index_free(adv_manager.adv_allocator, adver->adv_id - 1);
     free(adver);
 }
 
-static bool is_advertiser_exist(advertiser_t *adver)
+static bool is_advertiser_exist(advertiser_t* adver)
 {
-    struct list_node *node;
+    struct list_node* node;
 
     list_for_every(&adv_manager.advertiser_list, node)
     {
-        if ((advertiser_t *)node == adver)
+        if ((advertiser_t*)node == adver)
             return true;
     }
 
     return false;
 }
 
-static advertiser_t *get_advertiser_if_exist(uint8_t adv_id)
+static advertiser_t* get_advertiser_if_exist(uint8_t adv_id)
 {
-    struct list_node *node;
+    struct list_node* node;
 
     list_for_every(&adv_manager.advertiser_list, node)
     {
-        advertiser_t *adver = (advertiser_t *)node;
+        advertiser_t* adver = (advertiser_t*)node;
         if (adver->adv_id == adv_id)
             return adver;
     }
@@ -160,9 +160,9 @@ static advertiser_t *get_advertiser_if_exist(uint8_t adv_id)
     return NULL;
 }
 
-static void start_advertising_timeout(service_timer_t *timer, void *userdata)
+static void start_advertising_timeout(service_timer_t* timer, void* userdata)
 {
-    advertiser_t *adver = (advertiser_t *)userdata;
+    advertiser_t* adver = (advertiser_t*)userdata;
 
     if (!is_advertiser_exist(adver)) {
         BT_LOGE("%s, timer expeared, adver not found", __func__);
@@ -175,12 +175,12 @@ static void start_advertising_timeout(service_timer_t *timer, void *userdata)
     delete_advertiser(adver);
 }
 
-static void advertiser_start_event(void *data)
+static void advertiser_start_event(void* data)
 {
     assert(data);
-    adv_event_t *start = (adv_event_t *)data;
-    advertiser_t *adver = start->adver;
-    advertising_info_t *adv_info = start->adv_info;
+    adv_event_t* start = (adv_event_t*)data;
+    advertiser_t* adver = start->adver;
+    advertising_info_t* adv_info = start->adv_info;
     int adv_id;
 
     free(start);
@@ -195,8 +195,9 @@ static void advertiser_start_event(void *data)
 
     adver->adv_id = adv_id + 1;
     if (bt_sal_le_start_adv(adver->adv_id, &adv_info->params, adv_info->adv_data,
-                            adv_info->adv_len, adv_info->scan_rsp_data,
-                            adv_info->scan_rsp_len) != BT_STATUS_SUCCESS) {
+            adv_info->adv_len, adv_info->scan_rsp_data,
+            adv_info->scan_rsp_len)
+        != BT_STATUS_SUCCESS) {
         adver->callbacks.on_advertising_start(get_adver(adver), 0, BT_ADV_STATUS_STACK_ERR);
         goto fail;
     }
@@ -211,7 +212,7 @@ fail:
     advertiser_info_free(adv_info);
 }
 
-static void advertiser_stop(advertiser_t *adver)
+static void advertiser_stop(advertiser_t* adver)
 {
     bt_sal_le_stop_adv(adver->adv_id);
     list_delete(&adver->adver_node);
@@ -220,11 +221,11 @@ static void advertiser_stop(advertiser_t *adver)
     delete_advertiser(adver);
 }
 
-static void advertiser_stop_event(void *data)
+static void advertiser_stop_event(void* data)
 {
     assert(data);
-    adv_event_t *stop = (adv_event_t *)data;
-    advertiser_t *adver = stop->adver;
+    adv_event_t* stop = (adv_event_t*)data;
+    advertiser_t* adver = stop->adver;
     uint8_t adv_id = stop->adv_id;
 
     free(stop);
@@ -247,10 +248,10 @@ static void advertiser_stop_event(void *data)
     advertiser_stop(adver);
 }
 
-static void advertiser_notify_state(void *data)
+static void advertiser_notify_state(void* data)
 {
-    adv_event_t *advstate = (adv_event_t *)data;
-    advertiser_t *adver;
+    adv_event_t* advstate = (adv_event_t*)data;
+    advertiser_t* adver;
 
     if (!adv_manager.started)
         return;
@@ -269,17 +270,17 @@ static void advertiser_notify_state(void *data)
     free(advstate);
 }
 
-static void advertisers_cleanup(void *data)
+static void advertisers_cleanup(void* data)
 {
-    struct list_node *node;
-    struct list_node *tmp;
+    struct list_node* node;
+    struct list_node* tmp;
 
     if (!adv_manager.started)
         return;
 
     list_for_every_safe(&adv_manager.advertiser_list, node, tmp)
     {
-        advertiser_t *adver = (advertiser_t *)node;
+        advertiser_t* adver = (advertiser_t*)node;
         advertiser_stop(adver);
     }
 
@@ -290,7 +291,7 @@ static void advertisers_cleanup(void *data)
 
 void advertising_on_state_changed(uint8_t adv_id, uint8_t state)
 {
-    adv_event_t *advstate = malloc(sizeof(adv_event_t));
+    adv_event_t* advstate = malloc(sizeof(adv_event_t));
 
     if (!advstate) {
         BT_LOGE("adv_id: %d state malloc failed", adv_id);
@@ -302,22 +303,22 @@ void advertising_on_state_changed(uint8_t adv_id, uint8_t state)
     do_in_service_loop(advertiser_notify_state, advstate);
 }
 
-bt_advertiser_t *start_advertising(void *remote,
-                                   ble_adv_params_t *params,
-                                   uint8_t *adv_data,
-                                   uint16_t adv_len,
-                                   uint8_t *scan_rsp_data,
-                                   uint16_t scan_rsp_len,
-                                   const advertiser_callback_t *cbs)
+bt_advertiser_t* start_advertising(void* remote,
+    ble_adv_params_t* params,
+    uint8_t* adv_data,
+    uint16_t adv_len,
+    uint8_t* scan_rsp_data,
+    uint16_t scan_rsp_len,
+    const advertiser_callback_t* cbs)
 {
     if (!adapter_is_le_enabled())
         return NULL;
 
-    advertiser_t *adver = alloc_new_advertiser(remote, cbs);
+    advertiser_t* adver = alloc_new_advertiser(remote, cbs);
     if (!adver)
         return NULL;
 
-    adv_event_t *start = malloc(sizeof(adv_event_t));
+    adv_event_t* start = malloc(sizeof(adv_event_t));
     if (!start) {
         delete_advertiser(adver);
         return NULL;
@@ -325,22 +326,22 @@ bt_advertiser_t *start_advertising(void *remote,
 
     start->adver = adver;
     start->adv_info = advertiser_info_copy(params, adv_data, adv_len,
-                                           scan_rsp_data, scan_rsp_len);
+        scan_rsp_data, scan_rsp_len);
     do_in_service_loop(advertiser_start_event, start);
 
-    return (bt_advertiser_t *)adver;
+    return (bt_advertiser_t*)adver;
 }
 
-void stop_advertising(bt_advertiser_t *adver)
+void stop_advertising(bt_advertiser_t* adver)
 {
     if (!adapter_is_le_enabled())
         return;
 
-    adv_event_t *stop = malloc(sizeof(adv_event_t));
+    adv_event_t* stop = malloc(sizeof(adv_event_t));
     if (!stop)
         return;
 
-    stop->adver = (advertiser_t *)adver;
+    stop->adver = (advertiser_t*)adver;
     do_in_service_loop(advertiser_stop_event, stop);
 }
 
@@ -349,7 +350,7 @@ void stop_advertising_id(uint8_t adv_id)
     if (!adapter_is_le_enabled())
         return;
 
-    adv_event_t *stop = malloc(sizeof(adv_event_t));
+    adv_event_t* stop = malloc(sizeof(adv_event_t));
     if (!stop)
         return;
 
@@ -367,7 +368,7 @@ bool advertising_is_supported(void)
 }
 
 /** release remote related resources when client detaches */
-void advertising_on_remote_detached(void *remote)
+void advertising_on_remote_detached(void* remote)
 {
 }
 

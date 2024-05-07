@@ -60,9 +60,9 @@ typedef enum {
  * @param port - unique port of connection.
  * @param state - spp connection state
  */
-typedef void (*spp_connection_state_callback)(void *handle, bt_address_t *addr,
-                                              uint16_t scn, uint16_t port,
-                                              profile_connection_state_t state);
+typedef void (*spp_connection_state_callback)(void* handle, bt_address_t* addr,
+    uint16_t scn, uint16_t port,
+    profile_connection_state_t state);
 
 /**
  * @brief Spp pty opened notification
@@ -73,7 +73,7 @@ typedef void (*spp_connection_state_callback)(void *handle, bt_address_t *addr,
  * @param port - unique port of connection.
  * @param name - pty slave device name, like "/dev/pts/0"
  */
-typedef void (*spp_pty_open_callback)(void *handle, bt_address_t *addr, uint16_t scn, uint16_t port, char *name);
+typedef void (*spp_pty_open_callback)(void* handle, bt_address_t* addr, uint16_t scn, uint16_t port, char* name);
 
 /**
  * @brief SPP event callbacks structure
@@ -92,7 +92,7 @@ typedef struct {
  * @param callbacks - spp callback functions.
  * @return void* - spp app handle, NULL on failure.
  */
-void *BTSYMBOLS(bt_spp_register_app)(bt_instance_t *ins, const spp_callbacks_t *callbacks);
+void* BTSYMBOLS(bt_spp_register_app)(bt_instance_t* ins, const spp_callbacks_t* callbacks);
 
 /**
  * @brief Unregister spp app
@@ -101,7 +101,7 @@ void *BTSYMBOLS(bt_spp_register_app)(bt_instance_t *ins, const spp_callbacks_t *
  * @param handle - spp app handle.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_spp_unregister_app)(bt_instance_t *ins, void *handle);
+bt_status_t BTSYMBOLS(bt_spp_unregister_app)(bt_instance_t* ins, void* handle);
 
 /**
  * @brief Start spp server
@@ -113,7 +113,7 @@ bt_status_t BTSYMBOLS(bt_spp_unregister_app)(bt_instance_t *ins, void *handle);
  * @param max_connection - maximum of client connections.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_spp_server_start)(bt_instance_t *ins, void *handle, uint16_t scn, bt_uuid_t *uuid, uint8_t max_connection);
+bt_status_t BTSYMBOLS(bt_spp_server_start)(bt_instance_t* ins, void* handle, uint16_t scn, bt_uuid_t* uuid, uint8_t max_connection);
 
 /**
  * @brief Stop spp server
@@ -123,7 +123,7 @@ bt_status_t BTSYMBOLS(bt_spp_server_start)(bt_instance_t *ins, void *handle, uin
  * @param scn - server channel number, range in <1-28>.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_spp_server_stop)(bt_instance_t *ins, void *handle, uint16_t scn);
+bt_status_t BTSYMBOLS(bt_spp_server_stop)(bt_instance_t* ins, void* handle, uint16_t scn);
 
 /**
  * @brief Connect to spp server
@@ -137,7 +137,7 @@ bt_status_t BTSYMBOLS(bt_spp_server_stop)(bt_instance_t *ins, void *handle, uint
  * @param[out] port - point to unique port of connection.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_spp_connect)(bt_instance_t *ins, void *handle, bt_address_t *addr, int16_t scn, bt_uuid_t *uuid, uint16_t *port);
+bt_status_t BTSYMBOLS(bt_spp_connect)(bt_instance_t* ins, void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port);
 
 /**
  * @brief Disconnect to spp server
@@ -148,7 +148,7 @@ bt_status_t BTSYMBOLS(bt_spp_connect)(bt_instance_t *ins, void *handle, bt_addre
  * @param port unique port of connection.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_spp_disconnect)(bt_instance_t *ins, void *handle, bt_address_t *addr, uint16_t port);
+bt_status_t BTSYMBOLS(bt_spp_disconnect)(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t port);
 
 #ifdef __cplusplus
 }

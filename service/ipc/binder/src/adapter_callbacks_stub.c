@@ -32,21 +32,21 @@
 #include "utils/log.h"
 
 #define BT_ADAPTER_CALLBACK_DESC "BluetoothAdapterCallback"
-static const AIBinder_Class *kIBtAdapterCallbacks_Class = NULL;
+static const AIBinder_Class* kIBtAdapterCallbacks_Class = NULL;
 
-static void *IBtAdapterCallbacks_Class_onCreate(void *arg)
+static void* IBtAdapterCallbacks_Class_onCreate(void* arg)
 {
     return arg;
 }
 
-static void IBtAdapterCallbacks_Class_onDestroy(void *userData)
+static void IBtAdapterCallbacks_Class_onDestroy(void* userData)
 {
 }
 
-static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
+static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
-    IBtAdapterCallbacks *cbks = AIBinder_getUserData(binder);
+    IBtAdapterCallbacks* cbks = AIBinder_getUserData(binder);
 
     switch (code) {
     case ICBKS_ADAPTER_STATE_CHANGED: {
@@ -71,7 +71,7 @@ static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder *binder, tr
     }
     case ICBKS_DISCOVERY_RESULT: {
         bt_discovery_result_t remote = { 0 };
-        char *remoteName = NULL;
+        char* remoteName = NULL;
 
         stat = AParcel_readAddress(in, &remote.addr);
         if (stat != STATUS_OK)
@@ -107,7 +107,7 @@ static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder *binder, tr
         break;
     }
     case ICBKS_DEVICE_NAME_CHANGED: {
-        char *deviceName = NULL;
+        char* deviceName = NULL;
 
         stat = AParcel_readString(in, &deviceName, AParcelUtils_stringAllocator);
         if (stat != STATUS_OK)
@@ -194,7 +194,7 @@ static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder *binder, tr
     }
     case ICBKS_REMOTE_NAME_CHANGED: {
         bt_address_t addr;
-        char *remoteName = NULL;
+        char* remoteName = NULL;
 
         stat = AParcel_readAddress(in, &addr);
         if (stat != STATUS_OK)
@@ -210,7 +210,7 @@ static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder *binder, tr
     }
     case ICBKS_REMOTE_ALIAS_CHANGED: {
         bt_address_t addr;
-        char *alias = NULL;
+        char* alias = NULL;
 
         stat = AParcel_readAddress(in, &addr);
         if (stat != STATUS_OK)
@@ -241,14 +241,14 @@ static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder *binder, tr
     }
     case ICBKS_REMOTE_UUIDS_CHANGED: {
         bt_address_t addr;
-        bt_uuid_t *uuids = NULL;
+        bt_uuid_t* uuids = NULL;
         int32_t uuidSize = 0;
 
         stat = AParcel_readAddress(in, &addr);
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readUuidArray(in, (bt_uuid_t *)&uuids, &uuidSize);
+        stat = AParcel_readUuidArray(in, (bt_uuid_t*)&uuids, &uuidSize);
         if (stat != STATUS_OK)
             return stat;
 
@@ -263,16 +263,16 @@ static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder *binder, tr
     return stat;
 }
 
-AIBinder *BtAdapterCallbacks_getBinder(IBtAdapterCallbacks *cbks)
+AIBinder* BtAdapterCallbacks_getBinder(IBtAdapterCallbacks* cbks)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (cbks->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(cbks->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(cbks->clazz, (void *)cbks);
+        binder = AIBinder_new(cbks->clazz, (void*)cbks);
         if (cbks->WeakBinder != NULL) {
             AIBinder_Weak_delete(cbks->WeakBinder);
         }
@@ -283,25 +283,24 @@ AIBinder *BtAdapterCallbacks_getBinder(IBtAdapterCallbacks *cbks)
     return binder;
 }
 
-binder_status_t BtAdapterCallbacks_associateClass(AIBinder *binder)
+binder_status_t BtAdapterCallbacks_associateClass(AIBinder* binder)
 {
     if (!kIBtAdapterCallbacks_Class) {
-        kIBtAdapterCallbacks_Class =
-            AIBinder_Class_define(BT_ADAPTER_CALLBACK_DESC, IBtAdapterCallbacks_Class_onCreate,
-                                  IBtAdapterCallbacks_Class_onDestroy, IBtAdapterCallbacks_Class_onTransact);
+        kIBtAdapterCallbacks_Class = AIBinder_Class_define(BT_ADAPTER_CALLBACK_DESC, IBtAdapterCallbacks_Class_onCreate,
+            IBtAdapterCallbacks_Class_onDestroy, IBtAdapterCallbacks_Class_onTransact);
     }
 
     return AIBinder_associateClass(binder, kIBtAdapterCallbacks_Class);
 }
 
-IBtAdapterCallbacks *BtAdapterCallbacks_new(const adapter_callbacks_t *callbacks)
+IBtAdapterCallbacks* BtAdapterCallbacks_new(const adapter_callbacks_t* callbacks)
 {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
-    IBtAdapterCallbacks *cbks = malloc(sizeof(IBtAdapterCallbacks));
+    AIBinder_Class* clazz;
+    AIBinder* binder;
+    IBtAdapterCallbacks* cbks = malloc(sizeof(IBtAdapterCallbacks));
 
     clazz = AIBinder_Class_define(BT_ADAPTER_CALLBACK_DESC, IBtAdapterCallbacks_Class_onCreate,
-                                  IBtAdapterCallbacks_Class_onDestroy, IBtAdapterCallbacks_Class_onTransact);
+        IBtAdapterCallbacks_Class_onDestroy, IBtAdapterCallbacks_Class_onTransact);
 
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
@@ -313,7 +312,7 @@ IBtAdapterCallbacks *BtAdapterCallbacks_new(const adapter_callbacks_t *callbacks
     return cbks;
 }
 
-void BtAdapterCallbacks_delete(IBtAdapterCallbacks *cbks)
+void BtAdapterCallbacks_delete(IBtAdapterCallbacks* cbks)
 {
     assert(cbks);
 

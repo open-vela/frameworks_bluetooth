@@ -25,21 +25,21 @@
 #include "utils/log.h"
 
 typedef struct bt_media_controller {
-    void *mediasession;
-    void *holder;
+    void* mediasession;
+    void* holder;
     bt_media_notify_callback_t cb;
 } bt_media_controller_t;
 
 typedef struct bt_media_player {
-    void *mediasession;
-    void *context;
+    void* mediasession;
+    void* context;
     bt_media_status_t play_status;
-    bt_media_player_callback_t *cb;
+    bt_media_player_callback_t* cb;
 } bt_media_player_t;
 
-static void notify_media_event(bt_media_controller_t *controller,
-                               bt_media_event_t event,
-                               uint32_t value)
+static void notify_media_event(bt_media_controller_t* controller,
+    bt_media_event_t event,
+    uint32_t value)
 {
     if (controller->cb)
         controller->cb(controller, controller->holder, event, value);
@@ -61,10 +61,10 @@ static bt_media_status_t media_state_to_playback_status(int media_state)
     return playback_status;
 }
 
-static void media_session_event_cb(void *cookie, int event, int ret,
-                                   const char *extra)
+static void media_session_event_cb(void* cookie, int event, int ret,
+    const char* extra)
 {
-    bt_media_controller_t *controller = cookie;
+    bt_media_controller_t* controller = cookie;
     int status;
     int media_state;
 
@@ -95,7 +95,7 @@ static void media_session_event_cb(void *cookie, int event, int ret,
             }
 
             notify_media_event(controller, BT_MEDIA_EVT_PLAYSTATUS_CHANGED,
-                               media_state_to_playback_status(media_state));
+                media_state_to_playback_status(media_state));
         }
         break;
     default:
@@ -103,7 +103,7 @@ static void media_session_event_cb(void *cookie, int event, int ret,
     }
 }
 
-char *bt_media_evt_str(bt_media_event_t evt)
+char* bt_media_evt_str(bt_media_event_t evt)
 {
     switch (evt) {
         CASE_RETURN_STR(BT_MEDIA_EVT_PREPARED);
@@ -115,7 +115,7 @@ char *bt_media_evt_str(bt_media_event_t evt)
     }
 }
 
-char *bt_media_status_str(uint8_t status)
+char* bt_media_status_str(uint8_t status)
 {
     switch (status) {
     case BT_MEDIA_PLAY_STATUS_STOPPED:
@@ -133,9 +133,9 @@ char *bt_media_status_str(uint8_t status)
     }
 }
 
-bt_media_controller_t *bt_media_controller_create(void *context, bt_media_notify_callback_t cb)
+bt_media_controller_t* bt_media_controller_create(void* context, bt_media_notify_callback_t cb)
 {
-    bt_media_controller_t *controller = malloc(sizeof(*controller));
+    bt_media_controller_t* controller = malloc(sizeof(*controller));
     int ret = 0;
 
     if (controller == NULL)
@@ -148,7 +148,7 @@ bt_media_controller_t *bt_media_controller_create(void *context, bt_media_notify
     }
 
     ret = media_session_set_event_callback(controller->mediasession,
-                                           controller, media_session_event_cb);
+        controller, media_session_event_cb);
     if (ret != 0) {
         media_session_close(controller->mediasession);
         free(controller);
@@ -160,12 +160,12 @@ bt_media_controller_t *bt_media_controller_create(void *context, bt_media_notify
     return controller;
 }
 
-void bt_media_controller_set_context(bt_media_controller_t *controller, void *context)
+void bt_media_controller_set_context(bt_media_controller_t* controller, void* context)
 {
     controller->holder = context;
 }
 
-void bt_media_controller_destory(bt_media_controller_t *controller)
+void bt_media_controller_destory(bt_media_controller_t* controller)
 {
     if (!controller)
         return;
@@ -174,7 +174,7 @@ void bt_media_controller_destory(bt_media_controller_t *controller)
     free(controller);
 }
 
-bt_status_t bt_media_player_play(bt_media_controller_t *controller)
+bt_status_t bt_media_player_play(bt_media_controller_t* controller)
 {
     if (!controller)
         return BT_STATUS_PARM_INVALID;
@@ -185,7 +185,7 @@ bt_status_t bt_media_player_play(bt_media_controller_t *controller)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_media_player_pause(bt_media_controller_t *controller)
+bt_status_t bt_media_player_pause(bt_media_controller_t* controller)
 {
     if (!controller)
         return BT_STATUS_PARM_INVALID;
@@ -196,7 +196,7 @@ bt_status_t bt_media_player_pause(bt_media_controller_t *controller)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_media_player_stop(bt_media_controller_t *controller)
+bt_status_t bt_media_player_stop(bt_media_controller_t* controller)
 {
     if (!controller)
         return BT_STATUS_PARM_INVALID;
@@ -207,7 +207,7 @@ bt_status_t bt_media_player_stop(bt_media_controller_t *controller)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_media_player_next(bt_media_controller_t *controller)
+bt_status_t bt_media_player_next(bt_media_controller_t* controller)
 {
     if (!controller)
         return BT_STATUS_PARM_INVALID;
@@ -218,7 +218,7 @@ bt_status_t bt_media_player_next(bt_media_controller_t *controller)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_media_player_prev(bt_media_controller_t *controller)
+bt_status_t bt_media_player_prev(bt_media_controller_t* controller)
 {
     if (!controller)
         return BT_STATUS_PARM_INVALID;
@@ -229,8 +229,8 @@ bt_status_t bt_media_player_prev(bt_media_controller_t *controller)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_media_player_get_playback_status(bt_media_controller_t *controller,
-                                                bt_media_status_t *status)
+bt_status_t bt_media_player_get_playback_status(bt_media_controller_t* controller,
+    bt_media_status_t* status)
 {
     int state = 0;
 
@@ -246,12 +246,12 @@ bt_status_t bt_media_player_get_playback_status(bt_media_controller_t *controlle
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_media_player_get_position(bt_media_controller_t *controller, uint32_t *positions)
+bt_status_t bt_media_player_get_position(bt_media_controller_t* controller, uint32_t* positions)
 {
     if (!controller || !positions)
         return BT_STATUS_PARM_INVALID;
 
-    if (media_session_get_position(controller->mediasession, (unsigned int *)positions) != 0) {
+    if (media_session_get_position(controller->mediasession, (unsigned int*)positions) != 0) {
         *positions = 0xFFFFFFFF;
         return BT_STATUS_NOT_SUPPORTED;
     }
@@ -259,12 +259,12 @@ bt_status_t bt_media_player_get_position(bt_media_controller_t *controller, uint
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_media_player_get_durations(bt_media_controller_t *controller, uint32_t *durations)
+bt_status_t bt_media_player_get_durations(bt_media_controller_t* controller, uint32_t* durations)
 {
     if (!controller || !durations)
         return BT_STATUS_PARM_INVALID;
 
-    if (media_session_get_duration(controller->mediasession, (unsigned int *)durations) != 0) {
+    if (media_session_get_duration(controller->mediasession, (unsigned int*)durations) != 0) {
         *durations = 0xFFFFFFFF;
         return BT_STATUS_NOT_SUPPORTED;
     }
@@ -272,10 +272,10 @@ bt_status_t bt_media_player_get_durations(bt_media_controller_t *controller, uin
     return BT_STATUS_SUCCESS;
 }
 
-static void media_control_event_cb(void *cookie, int event,
-                                   int ret, const char *extra)
+static void media_control_event_cb(void* cookie, int event,
+    int ret, const char* extra)
 {
-    bt_media_player_t *player = cookie;
+    bt_media_player_t* player = cookie;
 
     switch (event) {
     case MEDIA_EVENT_START:
@@ -298,12 +298,12 @@ static void media_control_event_cb(void *cookie, int event,
     }
 }
 
-bt_media_player_t *bt_media_player_create(void *context, bt_media_player_callback_t *cb)
+bt_media_player_t* bt_media_player_create(void* context, bt_media_player_callback_t* cb)
 {
     if (context == NULL || cb == NULL)
         return NULL;
 
-    bt_media_player_t *player = malloc(sizeof(*player));
+    bt_media_player_t* player = malloc(sizeof(*player));
     if (!player)
         return NULL;
 
@@ -319,7 +319,7 @@ bt_media_player_t *bt_media_player_create(void *context, bt_media_player_callbac
     return player;
 }
 
-void bt_media_player_destory(bt_media_player_t *player)
+void bt_media_player_destory(bt_media_player_t* player)
 {
     if (!player)
         return;
@@ -332,7 +332,7 @@ void bt_media_player_destory(bt_media_player_t *player)
     free(player);
 }
 
-bt_status_t bt_media_player_set_status(bt_media_player_t *player, bt_media_status_t status)
+bt_status_t bt_media_player_set_status(bt_media_player_t* player, bt_media_status_t status)
 {
     int event;
 
@@ -365,12 +365,12 @@ bt_status_t bt_media_player_set_status(bt_media_player_t *player, bt_media_statu
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_media_player_set_duration(bt_media_player_t *player, uint32_t duration)
+bt_status_t bt_media_player_set_duration(bt_media_player_t* player, uint32_t duration)
 {
     return BT_STATUS_NOT_SUPPORTED;
 }
 
-bt_status_t bt_media_player_set_position(bt_media_player_t *player, uint32_t position)
+bt_status_t bt_media_player_set_position(bt_media_player_t* player, uint32_t position)
 {
     return BT_STATUS_NOT_SUPPORTED;
 }

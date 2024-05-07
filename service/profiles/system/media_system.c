@@ -26,14 +26,14 @@
 #define MEDIA_POLICY_APPLY 1
 
 typedef struct bt_media_listener {
-    void *policy_handle;
-    void *policy_cb;
-    void *context;
+    void* policy_handle;
+    void* policy_cb;
+    void* context;
 } bt_media_listener_t;
 
-void bt_media_remove_listener(void *handle)
+void bt_media_remove_listener(void* handle)
 {
-    bt_media_listener_t *listener = (bt_media_listener_t *)handle;
+    bt_media_listener_t* listener = (bt_media_listener_t*)handle;
     if (!listener)
         return;
 
@@ -97,16 +97,16 @@ bt_status_t bt_media_set_hfp_samplerate(uint16_t samplerate)
     return BT_STATUS_SUCCESS;
 }
 
-static void bt_media_policy_volume_change_callback(void *cookie, int number, const char *literal)
+static void bt_media_policy_volume_change_callback(void* cookie, int number, const char* literal)
 {
-    bt_media_listener_t *listener = cookie;
+    bt_media_listener_t* listener = cookie;
     if (listener && listener->policy_cb)
         ((bt_media_voice_volume_change_callback_t)(listener->policy_cb))(listener->context, number);
 }
 
-void *bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_callback_t cb, void *context)
+void* bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_callback_t cb, void* context)
 {
-    bt_media_listener_t *listener = malloc(sizeof(bt_media_listener_t));
+    bt_media_listener_t* listener = malloc(sizeof(bt_media_listener_t));
     if (!listener)
         return NULL;
 
@@ -122,7 +122,7 @@ void *bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_call
     return listener;
 }
 
-bt_status_t bt_media_get_voice_call_volume(int *volume)
+bt_status_t bt_media_get_voice_call_volume(int* volume)
 {
     if (media_policy_get_stream_volume(MEDIA_SCENARIO_INCALL, volume) != 0)
         return BT_STATUS_FAIL;

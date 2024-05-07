@@ -31,22 +31,22 @@
  * Public Fucntion
  ****************************************************************************/
 
-bool a2dp_offload_start_builder(a2dp_offload_config_t *config,
-                                uint8_t *offload, size_t *size);
+bool a2dp_offload_start_builder(a2dp_offload_config_t* config,
+    uint8_t* offload, size_t* size);
 
-bool a2dp_offload_stop_builder(a2dp_offload_config_t *config,
-                               uint8_t *offload, size_t *size);
+bool a2dp_offload_stop_builder(a2dp_offload_config_t* config,
+    uint8_t* offload, size_t* size);
 
-bool hfp_offload_start_builder(hfp_offload_config_t *config,
-                               uint8_t *offload, size_t *size);
+bool hfp_offload_start_builder(hfp_offload_config_t* config,
+    uint8_t* offload, size_t* size);
 
-bool hfp_offload_stop_builder(hfp_offload_config_t *config,
-                              uint8_t *offload, size_t *size);
+bool hfp_offload_stop_builder(hfp_offload_config_t* config,
+    uint8_t* offload, size_t* size);
 
-bool lea_offload_start_builder(lea_offload_config_t *config,
-                               uint8_t *offload, size_t *size);
+bool lea_offload_start_builder(lea_offload_config_t* config,
+    uint8_t* offload, size_t* size);
 
-bool lea_offload_stop_builder(lea_offload_config_t *config,
-                              uint8_t *offload, size_t *size);
+bool lea_offload_stop_builder(lea_offload_config_t* config,
+    uint8_t* offload, size_t* size);
 
 #endif /* _BT_CONTROLLER_VENDOR_H__ */

@@ -33,30 +33,30 @@
 
 #define BT_GATT_SERVER_DESC "BluetoothGattServer"
 
-static void *IBtGattServer_Class_onCreate(void *arg)
+static void* IBtGattServer_Class_onCreate(void* arg)
 {
     BT_LOGD("%s", __func__);
     return arg;
 }
 
-static void IBtGattServer_Class_onDestroy(void *userData)
+static void IBtGattServer_Class_onDestroy(void* userData)
 {
     BT_LOGD("%s", __func__);
 }
 
-static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *reply)
+static binder_status_t IBtGattServer_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* reply)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
     uint32_t handle;
     uint32_t status;
 
-    gatts_interface_t *profile = (gatts_interface_t *)service_manager_get_profile(PROFILE_GATTS);
+    gatts_interface_t* profile = (gatts_interface_t*)service_manager_get_profile(PROFILE_GATTS);
     if (!profile)
         return stat;
 
     switch (code) {
     case IGATT_SERVER_REGISTER_SERVICE: {
-        AIBinder *remote;
+        AIBinder* remote;
 
         stat = AParcel_readStrongBinder(in, &remote);
         if (stat != STATUS_OK)
@@ -67,7 +67,7 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
             return STATUS_FAILED_TRANSACTION;
         }
 
-        if (profile->register_service((void *)remote, (void **)&handle, (gatts_callbacks_t *)BpBtGattServerCallbacks_getStatic()) != BT_STATUS_SUCCESS) {
+        if (profile->register_service((void*)remote, (void**)&handle, (gatts_callbacks_t*)BpBtGattServerCallbacks_getStatic()) != BT_STATUS_SUCCESS) {
             AIBinder_decStrong(remote);
             stat = AParcel_writeUint32(reply, (uint32_t)NULL);
         } else {
@@ -76,14 +76,14 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
         break;
     }
     case IGATT_SERVER_UNREGISTER_SERVICE: {
-        AIBinder *remote = NULL;
+        AIBinder* remote = NULL;
 
         stat = AParcel_readUint32(in, &handle);
         if (stat != STATUS_OK)
             return stat;
 
-        remote = if_gatts_get_remote((void *)handle);
-        status = profile->unregister_service((void *)handle);
+        remote = if_gatts_get_remote((void*)handle);
+        status = profile->unregister_service((void*)handle);
         if (status == BT_STATUS_SUCCESS)
             AIBinder_decStrong(remote);
 
@@ -106,7 +106,7 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->connect((void *)handle, &addr, addr_type);
+        status = profile->connect((void*)handle, &addr, addr_type);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -115,7 +115,7 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->disconnect((void *)handle);
+        status = profile->disconnect((void*)handle);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -130,7 +130,7 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
         if (stat != STATUS_OK) // cleanup srv_db.attr_db ?
             return stat;
 
-        gatt_attr_db_t *attr_inst = srv_db.attr_db;
+        gatt_attr_db_t* attr_inst = srv_db.attr_db;
         for (int i = 0; i < srv_db.attr_num; i++, attr_inst++) {
             if (attr_inst->read_cb)
                 attr_inst->read_cb = BpBtGattServerCallbacks_onRead;
@@ -138,7 +138,7 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
                 attr_inst->write_cb = BpBtGattServerCallbacks_onWrite;
         }
 
-        status = profile->create_service_table((void *)handle, &srv_db);
+        status = profile->create_service_table((void*)handle, &srv_db);
         stat = AParcel_writeUint32(reply, status);
         attr_inst = srv_db.attr_db;
         for (int i = 0; i < srv_db.attr_num; i++, attr_inst++) {
@@ -153,7 +153,7 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->start((void *)handle);
+        status = profile->start((void*)handle);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -162,13 +162,13 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->stop((void *)handle);
+        status = profile->stop((void*)handle);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
     case IGATT_SERVER_RESPONSE: {
         uint32_t req_handle;
-        uint8_t *value;
+        uint8_t* value;
         uint32_t length;
 
         stat = AParcel_readUint32(in, &handle);
@@ -183,18 +183,18 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&value, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readByteArray(in, (void*)&value, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->response((void *)handle, req_handle, value, (uint16_t)length);
+        status = profile->response((void*)handle, req_handle, value, (uint16_t)length);
         free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
     case IGATT_SERVER_NOTIFY: {
         uint32_t attr_handle;
-        uint8_t *value;
+        uint8_t* value;
         uint32_t length;
 
         stat = AParcel_readUint32(in, &handle);
@@ -209,18 +209,18 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&value, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readByteArray(in, (void*)&value, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->notify((void *)handle, (uint16_t)attr_handle, value, (uint16_t)length);
+        status = profile->notify((void*)handle, (uint16_t)attr_handle, value, (uint16_t)length);
         free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
     case IGATT_SERVER_INDICATE: {
         uint32_t attr_handle;
-        uint8_t *value;
+        uint8_t* value;
         uint32_t length;
 
         stat = AParcel_readUint32(in, &handle);
@@ -235,11 +235,11 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
         if (stat != STATUS_OK)
             return stat;
 
-        stat = AParcel_readByteArray(in, (void *)&value, AParcelUtils_byteArrayAllocator);
+        stat = AParcel_readByteArray(in, (void*)&value, AParcelUtils_byteArrayAllocator);
         if (stat != STATUS_OK)
             return stat;
 
-        status = profile->indicate((void *)handle, (uint16_t)attr_handle, value, (uint16_t)length);
+        status = profile->indicate((void*)handle, (uint16_t)attr_handle, value, (uint16_t)length);
         free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
@@ -251,25 +251,25 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder *binder, transact
     return stat;
 }
 
-static const AIBinder_Class *BtGattServer_getClass(void)
+static const AIBinder_Class* BtGattServer_getClass(void)
 {
 
-    AIBinder_Class *clazz = AIBinder_Class_define(BT_GATT_SERVER_DESC, IBtGattServer_Class_onCreate,
-                                                  IBtGattServer_Class_onDestroy, IBtGattServer_Class_onTransact);
+    AIBinder_Class* clazz = AIBinder_Class_define(BT_GATT_SERVER_DESC, IBtGattServer_Class_onCreate,
+        IBtGattServer_Class_onDestroy, IBtGattServer_Class_onTransact);
 
     return clazz;
 }
 
-static AIBinder *BtGattServer_getBinder(IBtGattServer *iGatts)
+static AIBinder* BtGattServer_getBinder(IBtGattServer* iGatts)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (iGatts->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(iGatts->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(iGatts->clazz, (void *)iGatts);
+        binder = AIBinder_new(iGatts->clazz, (void*)iGatts);
         if (iGatts->WeakBinder != NULL) {
             AIBinder_Weak_delete(iGatts->WeakBinder);
         }
@@ -280,10 +280,10 @@ static AIBinder *BtGattServer_getBinder(IBtGattServer *iGatts)
     return binder;
 }
 
-binder_status_t BtGattServer_addService(IBtGattServer *iGatts, const char *instance)
+binder_status_t BtGattServer_addService(IBtGattServer* iGatts, const char* instance)
 {
-    iGatts->clazz = (AIBinder_Class *)BtGattServer_getClass();
-    AIBinder *binder = BtGattServer_getBinder(iGatts);
+    iGatts->clazz = (AIBinder_Class*)BtGattServer_getClass();
+    AIBinder* binder = BtGattServer_getBinder(iGatts);
     iGatts->usr_data = NULL;
 
     binder_status_t status = AServiceManager_addService(binder, instance);
@@ -292,13 +292,13 @@ binder_status_t BtGattServer_addService(IBtGattServer *iGatts, const char *insta
     return status;
 }
 
-BpBtGattServer *BpBtGattServer_new(const char *instance)
+BpBtGattServer* BpBtGattServer_new(const char* instance)
 {
-    AIBinder *binder = NULL;
-    AIBinder_Class *clazz;
-    BpBtGattServer *bpBinder = NULL;
+    AIBinder* binder = NULL;
+    AIBinder_Class* clazz;
+    BpBtGattServer* bpBinder = NULL;
 
-    clazz = (AIBinder_Class *)BtGattServer_getClass();
+    clazz = (AIBinder_Class*)BtGattServer_getClass();
     binder = AServiceManager_getService(instance);
     if (!binder)
         return NULL;
@@ -325,15 +325,15 @@ bail:
     return NULL;
 }
 
-void BpBtGattServer_delete(BpBtGattServer *bpBinder)
+void BpBtGattServer_delete(BpBtGattServer* bpBinder)
 {
     AIBinder_decStrong(bpBinder->binder);
     free(bpBinder);
 }
 
-AIBinder *BtGattServer_getService(BpBtGattServer **bpGatts, const char *instance)
+AIBinder* BtGattServer_getService(BpBtGattServer** bpGatts, const char* instance)
 {
-    BpBtGattServer *bpBinder = *bpGatts;
+    BpBtGattServer* bpBinder = *bpGatts;
 
     if (bpBinder && bpBinder->binder)
         return bpBinder->binder;

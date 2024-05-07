@@ -35,18 +35,18 @@
 
 #include "a2dp_event.h"
 
-a2dp_event_t *a2dp_event_new(a2dp_event_type_t event,
-                             bt_address_t *bd_addr)
+a2dp_event_t* a2dp_event_new(a2dp_event_type_t event,
+    bt_address_t* bd_addr)
 {
     return a2dp_event_new_ext(event, bd_addr, NULL, 0);
 }
 
-a2dp_event_t *a2dp_event_new_ext(a2dp_event_type_t event,
-                                 bt_address_t *bd_addr, void *data, size_t size)
+a2dp_event_t* a2dp_event_new_ext(a2dp_event_type_t event,
+    bt_address_t* bd_addr, void* data, size_t size)
 {
-    a2dp_event_t *a2dp_event;
+    a2dp_event_t* a2dp_event;
 
-    a2dp_event = (a2dp_event_t *)zalloc(sizeof(a2dp_event_t));
+    a2dp_event = (a2dp_event_t*)zalloc(sizeof(a2dp_event_t));
     if (a2dp_event == NULL)
         return NULL;
 
@@ -64,7 +64,7 @@ a2dp_event_t *a2dp_event_new_ext(a2dp_event_type_t event,
     return a2dp_event;
 }
 
-void a2dp_event_destory(a2dp_event_t *a2dp_event)
+void a2dp_event_destory(a2dp_event_t* a2dp_event)
 {
     free(a2dp_event->event_data.data);
     free(a2dp_event);

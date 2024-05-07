@@ -21,10 +21,10 @@
 
 typedef struct _lea_server_state_machine lea_server_state_machine_t;
 
-lea_server_state_machine_t *lea_server_state_machine_new(bt_address_t *addr, void *context);
-void lea_server_state_machine_destory(lea_server_state_machine_t *leas_sm);
-void lea_server_state_machine_dispatch(lea_server_state_machine_t *leas_sm, lea_server_msg_t *msg);
-uint32_t lea_server_state_machine_get_state(lea_server_state_machine_t *leas_sm);
-void lea_server_state_machine_set_offloading(lea_server_state_machine_t *leas_sm, bool offloading);
+lea_server_state_machine_t* lea_server_state_machine_new(bt_address_t* addr, void* context);
+void lea_server_state_machine_destory(lea_server_state_machine_t* leas_sm);
+void lea_server_state_machine_dispatch(lea_server_state_machine_t* leas_sm, lea_server_msg_t* msg);
+uint32_t lea_server_state_machine_get_state(lea_server_state_machine_t* leas_sm);
+void lea_server_state_machine_set_offloading(lea_server_state_machine_t* leas_sm, bool offloading);
 
 #endif /* __LEA_SERVER_STATE_MACHINE_H__ */

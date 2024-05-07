@@ -28,7 +28,7 @@ extern "C" {
 
 #include <android/binder_manager.h>
 
-const hid_device_callbacks_t *BpBtHiddCallbacks_getStatic(void);
+const hid_device_callbacks_t* BpBtHiddCallbacks_getStatic(void);
 
 #ifdef __cplusplus
 }

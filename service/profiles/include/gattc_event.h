@@ -73,7 +73,7 @@ typedef struct
          * @brief GATTC_EVENT_DISCOVER_RESULT
          */
         struct gattc_discover_result_evt_param {
-            gatt_element_t *elements;
+            gatt_element_t* elements;
             uint16_t size;
         } discover_res;
 
@@ -178,14 +178,14 @@ typedef struct
          * @brief GATTC_REQ_DISCONNECT
          */
         struct gattc_disconnect_req_param {
-            void *conn_handle;
+            void* conn_handle;
         } disconnect;
 
         /**
          * @brief GATTC_REQ_DISCOVER
          */
         struct gattc_discover_req_param {
-            void *conn_handle;
+            void* conn_handle;
             gatt_discover_type_t type;
         } discover;
 
@@ -193,7 +193,7 @@ typedef struct
          * @brief GATTC_REQ_READ
          */
         struct gattc_read_req_param {
-            void *conn_handle;
+            void* conn_handle;
             uint16_t attr_handle;
         } read;
 
@@ -201,7 +201,7 @@ typedef struct
          * @brief GATTC_REQ_WRITE
          */
         struct gattc_write_req_param {
-            void *conn_handle;
+            void* conn_handle;
             uint16_t attr_handle;
             gatt_write_type_t type;
         } write;
@@ -210,7 +210,7 @@ typedef struct
          * @brief GATTC_REQ_EXCHANGE_MTU
          */
         struct gattc_exchange_mtu_req_param {
-            void *conn_handle;
+            void* conn_handle;
             uint32_t mtu;
         } exchange_mtu;
 
@@ -218,7 +218,7 @@ typedef struct
          * @brief GATTC_REQ_PHY
          */
         struct gattc_phy_req_param {
-            void *conn_handle;
+            void* conn_handle;
             ble_phy_type_t tx_phy;
             ble_phy_type_t rx_phy;
         } phy;
@@ -227,7 +227,7 @@ typedef struct
          * @brief GATTC_REQ_READ_RSSI
          */
         struct gattc_read_rssi_req_param {
-            void *conn_handle;
+            void* conn_handle;
         } read_rssi;
 
     } param;
@@ -237,9 +237,9 @@ typedef struct
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-gattc_msg_t *gattc_msg_new(gattc_event_t event, bt_address_t *addr, uint16_t playload_length);
-void gattc_msg_destory(gattc_msg_t *msg);
-gattc_op_t *gattc_op_new(gattc_request_t request);
-void gattc_op_destory(gattc_op_t *operation);
+gattc_msg_t* gattc_msg_new(gattc_event_t event, bt_address_t* addr, uint16_t playload_length);
+void gattc_msg_destory(gattc_msg_t* msg);
+gattc_op_t* gattc_op_new(gattc_request_t request);
+void gattc_op_destory(gattc_op_t* operation);
 
 #endif /* __GATTC_EVENT_H__ */

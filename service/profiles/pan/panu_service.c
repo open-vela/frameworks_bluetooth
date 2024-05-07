@@ -50,9 +50,9 @@ typedef struct {
     char tun_devname[16];
     int local_role;
     bt_address_t peer_addr;
-    service_poll_t *poll_handle;
+    service_poll_t* poll_handle;
     pthread_mutex_t pan_lock;
-    callbacks_list_t *callbacks;
+    callbacks_list_t* callbacks;
 } pan_global_t;
 
 typedef struct {
@@ -73,7 +73,7 @@ typedef struct {
 
 typedef struct {
     uint16_t protocol;
-    uint8_t *packet;
+    uint8_t* packet;
     uint16_t length;
 } pan_data_evt_t;
 
@@ -96,19 +96,19 @@ typedef struct eth_hdr {
 } eth_hdr_t;
 
 static pan_global_t g_pan = { 0 };
-static uint8_t *pan_read_buf = NULL;
+static uint8_t* pan_read_buf = NULL;
 
-static pan_conn_t *pan_find_conn(bt_address_t *addr);
-static void pan_conn_close(pan_conn_t *conn);
+static pan_conn_t* pan_find_conn(bt_address_t* addr);
+static void pan_conn_close(pan_conn_t* conn);
 
 static uint8_t pan_conns(void)
 {
     return list_length(&g_pan.conn_list);
 }
 
-static pan_conn_t *pan_new_conn(bt_address_t *addr)
+static pan_conn_t* pan_new_conn(bt_address_t* addr)
 {
-    pan_conn_t *conn;
+    pan_conn_t* conn;
 
     if (pan_conns() == PAN_MAX_CONNECTIONS) {
         BT_LOGD("%s, PAN_MAX_CONNECTIONS", __func__);
@@ -125,20 +125,20 @@ static pan_conn_t *pan_new_conn(bt_address_t *addr)
     return conn;
 }
 
-static void pan_free_conn(pan_conn_t *conn)
+static void pan_free_conn(pan_conn_t* conn)
 {
     list_delete(&conn->node);
     free(conn);
 }
 
-static pan_conn_t *pan_find_conn(bt_address_t *addr)
+static pan_conn_t* pan_find_conn(bt_address_t* addr)
 {
-    pan_conn_t *conn;
-    struct list_node *node;
+    pan_conn_t* conn;
+    struct list_node* node;
 
     list_for_every(&g_pan.conn_list, node)
     {
-        conn = (pan_conn_t *)node;
+        conn = (pan_conn_t*)node;
         if (!memcmp(addr, &conn->addr, sizeof(bt_address_t)))
             return conn;
     }
@@ -148,18 +148,18 @@ static pan_conn_t *pan_find_conn(bt_address_t *addr)
 
 static void pan_close_all_conn(void)
 {
-    pan_conn_t *conn;
-    struct list_node *node;
-    struct list_node *tmp;
+    pan_conn_t* conn;
+    struct list_node* node;
+    struct list_node* tmp;
 
     list_for_every_safe(&g_pan.conn_list, node, tmp)
     {
-        conn = (pan_conn_t *)node;
+        conn = (pan_conn_t*)node;
         pan_conn_close(conn);
     }
 }
 
-static int pan_tap_bridge_open(const char *devname)
+static int pan_tap_bridge_open(const char* devname)
 {
     struct ifreq ifr;
     bt_address_t local_addr, ethaddr;
@@ -208,7 +208,7 @@ static void pan_tap_bridge_close(void)
     }
 }
 
-static void pan_tap_poll_data(service_poll_t *poll, int revent, void *userdata)
+static void pan_tap_poll_data(service_poll_t* poll, int revent, void* userdata)
 {
     eth_hdr_t ethhdr;
 
@@ -217,9 +217,9 @@ static void pan_tap_poll_data(service_poll_t *poll, int revent, void *userdata)
         if (ret > 0) {
             memcpy(&ethhdr, pan_read_buf, sizeof(eth_hdr_t));
             bt_sal_pan_write(&g_pan.peer_addr, ntohs(ethhdr.h_proto),
-                             ethhdr.h_dest, ethhdr.h_src,
-                             pan_read_buf + sizeof(eth_hdr_t),
-                             ret - sizeof(eth_hdr_t));
+                ethhdr.h_dest, ethhdr.h_src,
+                pan_read_buf + sizeof(eth_hdr_t),
+                ret - sizeof(eth_hdr_t));
         }
         return;
     }
@@ -234,7 +234,7 @@ static void pan_tap_poll_data(service_poll_t *poll, int revent, void *userdata)
     pan_close_all_conn();
 }
 
-static int pan_get_tun_packet_size(const char *devname)
+static int pan_get_tun_packet_size(const char* devname)
 {
     int errcode, ret, sockfd;
     struct ifreq ifr = { 0 };
@@ -259,9 +259,9 @@ static int pan_get_tun_packet_size(const char *devname)
     return ifr.ifr_mtu - sizeof(eth_hdr_t);
 }
 
-static pan_conn_t *pan_new_conn_open(bt_address_t *addr, uint8_t local, uint8_t remote)
+static pan_conn_t* pan_new_conn_open(bt_address_t* addr, uint8_t local, uint8_t remote)
 {
-    pan_conn_t *conn;
+    pan_conn_t* conn;
     int ret;
 
     memcpy(&g_pan.peer_addr, addr, sizeof(bt_address_t));
@@ -292,8 +292,8 @@ static pan_conn_t *pan_new_conn_open(bt_address_t *addr, uint8_t local, uint8_t 
         }
 
         g_pan.poll_handle = service_loop_poll_fd(g_pan.tun_fd,
-                                                 POLL_DISCONNECT | POLL_READABLE,
-                                                 pan_tap_poll_data, NULL);
+            POLL_DISCONNECT | POLL_READABLE,
+            pan_tap_poll_data, NULL);
         if (!g_pan.poll_handle)
             goto open_fail;
 
@@ -310,7 +310,7 @@ open_fail:
     return NULL;
 }
 
-static void pan_conn_close(pan_conn_t *conn)
+static void pan_conn_close(pan_conn_t* conn)
 {
     if (conn == NULL)
         return;
@@ -337,15 +337,15 @@ static void pan_conn_close(pan_conn_t *conn)
     }
 }
 
-static void on_pan_connection_state_changed(bt_address_t *addr, pan_conn_evt_t *evt)
+static void on_pan_connection_state_changed(bt_address_t* addr, pan_conn_evt_t* evt)
 {
-    pan_conn_t *conn;
+    pan_conn_t* conn;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("%s, addr: %s, remote_role: %d, local_role: %d, state: %d",
-            __func__, addr_str, evt->remote_role,
-            evt->local_role, evt->state);
+        __func__, addr_str, evt->remote_role,
+        evt->local_role, evt->state);
 
     switch (evt->state) {
     case PROFILE_STATE_DISCONNECTED: {
@@ -365,8 +365,8 @@ static void on_pan_connection_state_changed(bt_address_t *addr, pan_conn_evt_t *
     PAN_CALLBACK_FOREACH(g_pan.callbacks, connection_state_cb, evt->state, addr, evt->local_role, evt->remote_role);
 }
 
-static int on_pan_data_incoming(bt_address_t *addr, uint16_t protocol,
-                                uint8_t *packet, uint16_t length)
+static int on_pan_data_incoming(bt_address_t* addr, uint16_t protocol,
+    uint8_t* packet, uint16_t length)
 {
     if (g_pan.tun_fd > 0) {
         /* Send data to network interface */
@@ -381,9 +381,9 @@ static int on_pan_data_incoming(bt_address_t *addr, uint16_t protocol,
     return -1;
 }
 
-static void pan_service_event_process(void *data)
+static void pan_service_event_process(void* data)
 {
-    pan_msg_t *msg = data;
+    pan_msg_t* msg = data;
 
     pthread_mutex_lock(&g_pan.pan_lock);
     if (!g_pan.enable) {
@@ -396,9 +396,9 @@ static void pan_service_event_process(void *data)
         on_pan_connection_state_changed(&msg->addr, &msg->conn_evt);
         break;
     case DATA_IND_EVT: {
-        pan_data_evt_t *evt = &msg->data_evt;
+        pan_data_evt_t* evt = &msg->data_evt;
         on_pan_data_incoming(&msg->addr, evt->protocol,
-                             evt->packet, evt->length);
+            evt->packet, evt->length);
         free(evt->packet);
         break;
     }
@@ -410,10 +410,10 @@ static void pan_service_event_process(void *data)
     free(data);
 }
 
-void pan_on_connection_state_changed(bt_address_t *addr, pan_role_t remote_role,
-                                     pan_role_t local_role, profile_connection_state_t state)
+void pan_on_connection_state_changed(bt_address_t* addr, pan_role_t remote_role,
+    pan_role_t local_role, profile_connection_state_t state)
 {
-    pan_msg_t *pan_msg = (pan_msg_t *)malloc(sizeof(pan_msg_t));
+    pan_msg_t* pan_msg = (pan_msg_t*)malloc(sizeof(pan_msg_t));
     if (pan_msg == NULL) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -428,15 +428,15 @@ void pan_on_connection_state_changed(bt_address_t *addr, pan_role_t remote_role,
     do_in_service_loop(pan_service_event_process, pan_msg);
 }
 
-void pan_on_data_received(bt_address_t *addr, uint16_t protocol,
-                          uint8_t *dst_addr, uint8_t *src_addr,
-                          uint8_t *data, uint16_t length)
+void pan_on_data_received(bt_address_t* addr, uint16_t protocol,
+    uint8_t* dst_addr, uint8_t* src_addr,
+    uint8_t* data, uint16_t length)
 {
-    pan_msg_t *pan_msg;
+    pan_msg_t* pan_msg;
     eth_hdr_t ethhdr;
-    uint8_t *packet;
+    uint8_t* packet;
 
-    pan_msg = (pan_msg_t *)malloc(sizeof(pan_msg_t));
+    pan_msg = (pan_msg_t*)malloc(sizeof(pan_msg_t));
     if (pan_msg == NULL) {
         BT_LOGE("%s msg malloc failed", __func__);
         return;
@@ -550,19 +550,19 @@ static int pan_get_state(void)
     return 1;
 }
 
-static void *pan_register_callbacks(void *remote, const pan_callbacks_t *callbacks)
+static void* pan_register_callbacks(void* remote, const pan_callbacks_t* callbacks)
 {
-    return bt_remote_callbacks_register(g_pan.callbacks, remote, (void *)callbacks);
+    return bt_remote_callbacks_register(g_pan.callbacks, remote, (void*)callbacks);
 }
 
-static bool pan_unregister_callbacks(void **remote, void *cookie)
+static bool pan_unregister_callbacks(void** remote, void* cookie)
 {
     return bt_remote_callbacks_unregister(g_pan.callbacks, remote, cookie);
 }
 
-static bt_status_t pan_connect(bt_address_t *addr, uint8_t dst_role, uint8_t src_role)
+static bt_status_t pan_connect(bt_address_t* addr, uint8_t dst_role, uint8_t src_role)
 {
-    pan_conn_t *conn;
+    pan_conn_t* conn;
     bt_status_t status;
 
     pthread_mutex_lock(&g_pan.pan_lock);
@@ -590,9 +590,9 @@ exit:
     return status;
 }
 
-static bt_status_t pan_disconnect(bt_address_t *addr)
+static bt_status_t pan_disconnect(bt_address_t* addr)
 {
-    pan_conn_t *conn;
+    pan_conn_t* conn;
     bt_status_t status;
 
     pthread_mutex_lock(&g_pan.pan_lock);
@@ -626,9 +626,9 @@ static const pan_interface_t panInterface = {
     .disconnect = pan_disconnect,
 };
 
-static const void *get_pan_profile_interface(void)
+static const void* get_pan_profile_interface(void)
 {
-    return (void *)&panInterface;
+    return (void*)&panInterface;
 }
 
 static int pan_dump(void)
@@ -643,7 +643,7 @@ static const profile_service_t pan_service = {
     .name = PROFILE_PANU_NAME,
     .id = PROFILE_PANU,
     .transport = BT_TRANSPORT_BREDR,
-    .uuid = {BT_UUID128_TYPE, { 0 }},
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = pan_init,
     .startup = pan_startup,
     .shutdown = pan_shutdown,

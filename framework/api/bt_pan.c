@@ -17,42 +17,42 @@
 
 #include <stdint.h>
 
+#include "bt_internal.h"
 #include "bt_pan.h"
 #include "bt_profile.h"
 #include "pan_service.h"
-#include "bt_internal.h"
 #include "service_manager.h"
 #include "utils/log.h"
 
-static pan_interface_t *get_profile_service(void)
+static pan_interface_t* get_profile_service(void)
 {
-    return (pan_interface_t *)service_manager_get_profile(PROFILE_PANU);
+    return (pan_interface_t*)service_manager_get_profile(PROFILE_PANU);
 }
 
-void *BTSYMBOLS(bt_pan_register_callbacks)(bt_instance_t *ins, const pan_callbacks_t *callbacks)
+void* BTSYMBOLS(bt_pan_register_callbacks)(bt_instance_t* ins, const pan_callbacks_t* callbacks)
 {
-    pan_interface_t *profile = get_profile_service();
+    pan_interface_t* profile = get_profile_service();
 
     return profile->register_callbacks(NULL, callbacks);
 }
 
-bool BTSYMBOLS(bt_pan_unregister_callbacks)(bt_instance_t *ins, void *cookie)
+bool BTSYMBOLS(bt_pan_unregister_callbacks)(bt_instance_t* ins, void* cookie)
 {
-    pan_interface_t *profile = get_profile_service();
+    pan_interface_t* profile = get_profile_service();
 
     return profile->unregister_callbacks(NULL, cookie);
 }
 
-bt_status_t BTSYMBOLS(bt_pan_connect)(bt_instance_t *ins, bt_address_t *addr, uint8_t dst_role, uint8_t src_role)
+bt_status_t BTSYMBOLS(bt_pan_connect)(bt_instance_t* ins, bt_address_t* addr, uint8_t dst_role, uint8_t src_role)
 {
-    pan_interface_t *profile = get_profile_service();
+    pan_interface_t* profile = get_profile_service();
 
     return profile->connect(addr, dst_role, src_role);
 }
 
-bt_status_t BTSYMBOLS(bt_pan_disconnect)(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t BTSYMBOLS(bt_pan_disconnect)(bt_instance_t* ins, bt_address_t* addr)
 {
-    pan_interface_t *profile = get_profile_service();
+    pan_interface_t* profile = get_profile_service();
 
     return profile->disconnect(addr);
 }

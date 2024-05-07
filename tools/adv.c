@@ -22,35 +22,35 @@
 #include "bt_le_advertiser.h"
 #include "bt_tools.h"
 
-static int start_adv_cmd(void *handle, int argc, char *argv[]);
-static int stop_adv_cmd(void *handle, int argc, char *argv[]);
-static int set_adv_data_cmd(void *handle, int argc, char *argv[]);
-static int dump_adv_cmd(void *handle, int argc, char *argv[]);
+static int start_adv_cmd(void* handle, int argc, char* argv[]);
+static int stop_adv_cmd(void* handle, int argc, char* argv[]);
+static int set_adv_data_cmd(void* handle, int argc, char* argv[]);
+static int dump_adv_cmd(void* handle, int argc, char* argv[]);
 
 static struct option adv_options[] = {
-    {"adv_type",        required_argument, 0, 't'},
-    { "mode",           required_argument, 0, 'm'},
-    { "interval",       required_argument, 0, 'i'},
-    { "peer_addr",      required_argument, 0, 'P'},
-    { "peer_addr_type", required_argument, 0, 'T'},
-    { "own_addr",       required_argument, 0, 'O'},
-    { "own_addr_type",  required_argument, 0, 'R'},
-    { "tx_power",       required_argument, 0, 'p'},
-    { "channel",        required_argument, 0, 'c'},
-    { "filter",         required_argument, 0, 'f'},
-    { "duration",       required_argument, 0, 'd'},
-    { "default",        no_argument,       0, 'D'},
-    { 0,                0,                 0, 0  }
+    { "adv_type", required_argument, 0, 't' },
+    { "mode", required_argument, 0, 'm' },
+    { "interval", required_argument, 0, 'i' },
+    { "peer_addr", required_argument, 0, 'P' },
+    { "peer_addr_type", required_argument, 0, 'T' },
+    { "own_addr", required_argument, 0, 'O' },
+    { "own_addr_type", required_argument, 0, 'R' },
+    { "tx_power", required_argument, 0, 'p' },
+    { "channel", required_argument, 0, 'c' },
+    { "filter", required_argument, 0, 'f' },
+    { "duration", required_argument, 0, 'd' },
+    { "default", no_argument, 0, 'D' },
+    { 0, 0, 0, 0 }
 };
 
 static struct option adv_stop_options[] = {
-    {"advid",   required_argument, 0, 'i'},
-    { "handle", required_argument, 0, 'h'},
-    { 0,        0,                 0, 0  }
+    { "advid", required_argument, 0, 'i' },
+    { "handle", required_argument, 0, 'h' },
+    { 0, 0, 0, 0 }
 };
 
 static bt_command_t g_adv_tables[] = {
-    {"start",     start_adv_cmd,    1, "start advertising\n"
+    { "start", start_adv_cmd, 1, "start advertising\n"
                                  "\t  -t or --adv_type, advertising type opt(adv_ind/direct_ind/nonconn_ind/scan_ind)\n"
                                  "\t  -m or --mode,     advertising mode opt(legacy/ext/auto, default auto)\n"
                                  "\t  -i or --interval, advertising intervel range 0x20~0x4000\n"
@@ -64,12 +64,12 @@ static bt_command_t g_adv_tables[] = {
                                  "\t  -c or --channel, advertising channel map opt (37/38/39, 0 means default)\n"
                                  "\t  -f or --filter, advertising white list filter policy(none/scan/conn/all)\n"
                                  "\t  -d or --duration, advertising duration, only extended adv valid, range 0x0~0xFFFF\n"
-                                 "\t  -D or --default, use default advertising data and scan response data\n"},
-    { "stop",     stop_adv_cmd,     1, "stop  advertising  \n"
+                                 "\t  -D or --default, use default advertising data and scan response data\n" },
+    { "stop", stop_adv_cmd, 1, "stop  advertising  \n"
                                "\t  -i or --advid, advertising ID, advertising_start_cb notify \n"
-                               "\t  -h or --handle, advertising handle, bt_le_start_advertising return \n"   },
-    { "set_data", set_adv_data_cmd, 1, "set advertising data, not implemented"                                                                     },
-    { "dump",     dump_adv_cmd,     0, "dump adv current state"                                                                                    },
+                               "\t  -h or --handle, advertising handle, bt_le_start_advertising return \n" },
+    { "set_data", set_adv_data_cmd, 1, "set advertising data, not implemented" },
+    { "dump", dump_adv_cmd, 0, "dump adv current state" },
 };
 
 static uint8_t s_adv_data[] = { 0x02, 0x01, 0x08, 0x03, 0xFF, 0x8F, 0x03 }; /* flags: LE & BREDR, Manufacturer ID:0x038F */
@@ -84,12 +84,12 @@ static void usage(void)
     }
 }
 
-static void on_advertising_start_cb(bt_advertiser_t *adv, uint8_t adv_id, uint8_t status)
+static void on_advertising_start_cb(bt_advertiser_t* adv, uint8_t adv_id, uint8_t status)
 {
     PRINT("%s, handle:%p, adv_id:%d, status:%d", __func__, adv, adv_id, status);
 }
 
-static void on_advertising_stopped_cb(bt_advertiser_t *adv, uint8_t adv_id)
+static void on_advertising_stopped_cb(bt_advertiser_t* adv, uint8_t adv_id)
 {
     PRINT("%s, handle:%p, adv_id:%d", __func__, adv, adv_id);
 }
@@ -100,15 +100,15 @@ static advertiser_callback_t adv_callback = {
     on_advertising_stopped_cb
 };
 
-static int start_adv_cmd(void *handle, int argc, char *argv[])
+static int start_adv_cmd(void* handle, int argc, char* argv[])
 {
     uint8_t adv_mode = 0;
     ble_adv_params_t params = { 0 };
     advertiser_data_t *adv = NULL, *scan_rsp = NULL;
     uint8_t *p_adv_data = NULL, *p_scan_rsp_data = NULL;
     uint16_t adv_len, scan_rsp_len;
-    bt_advertiser_t *adv_handle;
-    char *name = "VELA_BT";
+    bt_advertiser_t* adv_handle;
+    char* name = "VELA_BT";
     uint16_t appearance = 0;
     int opt;
 
@@ -125,7 +125,8 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
 
     optind = 0;
     while ((opt = getopt_long(argc, argv, "+t:m:i:n:a:p:c:f:d:P:T:O:R:D", adv_options,
-                              NULL)) != -1) {
+                NULL))
+        != -1) {
         switch (opt) {
         case 't':
             if (strncasecmp(optarg, "adv_ind", strlen("adv_ind")) == 0)
@@ -192,7 +193,7 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
             if (channel != 0 && channel != 37 && channel != 38 && channel != 39) {
                 PRINT("error channel selected:%s, please choose \
                        one from 37,38,30, 0 means default",
-                      optarg);
+                    optarg);
                 return CMD_INVALID_PARAM;
             }
 
@@ -332,9 +333,9 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
         advertiser_data_dump(p_scan_rsp_data, scan_rsp_len, NULL);
 
     adv_handle = bt_le_start_advertising(handle, &params,
-                                         p_adv_data, adv_len,
-                                         p_scan_rsp_data, scan_rsp_len,
-                                         &adv_callback);
+        p_adv_data, adv_len,
+        p_scan_rsp_data, scan_rsp_len,
+        &adv_callback);
 
     PRINT("Advertising handle:%p", adv_handle);
     /* free advertiser data */
@@ -348,13 +349,14 @@ static int start_adv_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int stop_adv_cmd(void *handle, int argc, char *argv[])
+static int stop_adv_cmd(void* handle, int argc, char* argv[])
 {
     int opt;
 
     optind = 0;
     while ((opt = getopt_long(argc, argv, "i:h:", adv_stop_options,
-                              NULL)) != -1) {
+                NULL))
+        != -1) {
         switch (opt) {
         case 'i': {
             int id = atoi(optarg);
@@ -373,7 +375,7 @@ static int stop_adv_cmd(void *handle, int argc, char *argv[])
                 return CMD_INVALID_PARAM;
             }
             PRINT("Stop adv handle:0x%08" PRIx32 "", advhandle);
-            bt_le_stop_advertising(handle, (bt_advertiser_t *)advhandle);
+            bt_le_stop_advertising(handle, (bt_advertiser_t*)advhandle);
             return CMD_OK;
         } break;
         default:
@@ -384,26 +386,26 @@ static int stop_adv_cmd(void *handle, int argc, char *argv[])
     return CMD_INVALID_OPT;
 }
 
-static int set_adv_data_cmd(void *handle, int argc, char *argv[])
+static int set_adv_data_cmd(void* handle, int argc, char* argv[])
 {
     return CMD_OK;
 }
 
-static int dump_adv_cmd(void *handle, int argc, char *argv[])
+static int dump_adv_cmd(void* handle, int argc, char* argv[])
 {
     return CMD_OK;
 }
 
-int adv_command_init(void *handle)
+int adv_command_init(void* handle)
 {
     return 0;
 }
 
-void adv_command_uninit(void *handle)
+void adv_command_uninit(void* handle)
 {
 }
 
-int adv_command_exec(void *handle, int argc, char *argv[])
+int adv_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

@@ -21,20 +21,20 @@
 #include "gattc_service.h"
 #include <stdint.h>
 
-bt_status_t bt_sal_gatt_client_connect(bt_address_t *addr, ble_addr_type_t addr_type);
-bt_status_t bt_sal_gatt_client_disconnect(bt_address_t *addr);
-bt_status_t bt_sal_gatt_client_discover_all_services(bt_address_t *addr);
-bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_address_t *addr, bt_uuid_t *uuid);
-bt_status_t bt_sal_gatt_client_read_element(bt_address_t *addr, uint16_t element_id);
-bt_status_t bt_sal_gatt_client_write_element(bt_address_t *addr, uint16_t element_id, uint8_t *value, uint16_t length, gatt_write_type_t write_type);
-bt_status_t bt_sal_gatt_client_register_notifications(bt_address_t *addr, uint16_t element_id, uint16_t properties, bool enable);
-bt_status_t bt_sal_gatt_client_send_mtu_req(bt_address_t *addr, uint32_t mtu);
-bt_status_t bt_sal_gatt_client_update_connection_parameter(bt_address_t *addr, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
-                                                           uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length);
-bt_status_t bt_sal_gatt_client_read_remote_rssi(bt_address_t *addr);
-bt_status_t bt_sal_gatt_client_read_phy(bt_address_t *addr);
-bt_status_t bt_sal_gatt_client_set_phy(bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
-void bt_sal_gatt_client_connection_updated_callback(bt_address_t *addr, uint16_t connection_interval, uint16_t peripheral_latency,
-                                                    uint16_t supervision_timeout, bt_status_t status);
+bt_status_t bt_sal_gatt_client_connect(bt_address_t* addr, ble_addr_type_t addr_type);
+bt_status_t bt_sal_gatt_client_disconnect(bt_address_t* addr);
+bt_status_t bt_sal_gatt_client_discover_all_services(bt_address_t* addr);
+bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_address_t* addr, bt_uuid_t* uuid);
+bt_status_t bt_sal_gatt_client_read_element(bt_address_t* addr, uint16_t element_id);
+bt_status_t bt_sal_gatt_client_write_element(bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length, gatt_write_type_t write_type);
+bt_status_t bt_sal_gatt_client_register_notifications(bt_address_t* addr, uint16_t element_id, uint16_t properties, bool enable);
+bt_status_t bt_sal_gatt_client_send_mtu_req(bt_address_t* addr, uint32_t mtu);
+bt_status_t bt_sal_gatt_client_update_connection_parameter(bt_address_t* addr, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
+    uint32_t timeout, uint32_t min_connection_event_length, uint32_t max_connection_event_length);
+bt_status_t bt_sal_gatt_client_read_remote_rssi(bt_address_t* addr);
+bt_status_t bt_sal_gatt_client_read_phy(bt_address_t* addr);
+bt_status_t bt_sal_gatt_client_set_phy(bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
+void bt_sal_gatt_client_connection_updated_callback(bt_address_t* addr, uint16_t connection_interval, uint16_t peripheral_latency,
+    uint16_t supervision_timeout, bt_status_t status);
 
 #endif /* __SAL_GATT_CLIENT_INTERFACE_H__ */

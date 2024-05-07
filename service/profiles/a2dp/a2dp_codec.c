@@ -43,7 +43,7 @@
 
 a2dp_codec_config_t g_current_config;
 
-static void a2dp_codec_config_set(uint8_t peer_sep, a2dp_codec_config_t *config, uint16_t mtu)
+static void a2dp_codec_config_set(uint8_t peer_sep, a2dp_codec_config_t* config, uint16_t mtu)
 {
     if (config->codec_type == BTS_A2DP_TYPE_SBC) {
         if (peer_sep == SEP_SNK) {
@@ -76,24 +76,24 @@ static void a2dp_codec_config_set(uint8_t peer_sep, a2dp_codec_config_t *config,
     memcpy(&g_current_config, config, sizeof(g_current_config));
 }
 
-void a2dp_codec_set_config(uint8_t peer_sep, a2dp_codec_config_t *config)
+void a2dp_codec_set_config(uint8_t peer_sep, a2dp_codec_config_t* config)
 {
     a2dp_codec_config_set(peer_sep, config, 0);
 }
 
-void a2dp_codec_update_config(uint8_t peer_sep, a2dp_codec_config_t *config, uint16_t mtu)
+void a2dp_codec_update_config(uint8_t peer_sep, a2dp_codec_config_t* config, uint16_t mtu)
 {
     a2dp_codec_config_set(peer_sep, config, mtu);
 }
 
-a2dp_codec_config_t *a2dp_codec_get_config(void)
+a2dp_codec_config_t* a2dp_codec_get_config(void)
 {
     return &g_current_config;
 }
 
-bool a2dp_codec_get_offload_config(a2dp_offload_config_t *offload)
+bool a2dp_codec_get_offload_config(a2dp_offload_config_t* offload)
 {
-    a2dp_codec_config_t *codec = &g_current_config;
+    a2dp_codec_config_t* codec = &g_current_config;
 
     switch (codec->codec_type) {
     case BTS_A2DP_TYPE_SBC:

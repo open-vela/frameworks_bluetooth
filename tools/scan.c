@@ -22,30 +22,30 @@
 #include "bt_le_scan.h"
 #include "bt_tools.h"
 
-static int start_scan_cmd(void *handle, int argc, char *argv[]);
-static int stop_scan_cmd(void *handle, int argc, char *argv[]);
-static int dump_scan_cmd(void *handle, int argc, char *argv[]);
+static int start_scan_cmd(void* handle, int argc, char* argv[]);
+static int stop_scan_cmd(void* handle, int argc, char* argv[]);
+static int dump_scan_cmd(void* handle, int argc, char* argv[]);
 
-static bt_scanner_t *g_scanner = NULL;
+static bt_scanner_t* g_scanner = NULL;
 
 static struct option scan_options[] = {
-    {"type",    required_argument, 0, 't'},
-    { "phy",    required_argument, 0, 'p'},
-    { "mode",   required_argument, 0, 'm'},
-    { "legacy", required_argument, 0, 'l'},
-    { "filter", required_argument, 0, 'f'},
-    { 0,        0,                 0, 0  }
+    { "type", required_argument, 0, 't' },
+    { "phy", required_argument, 0, 'p' },
+    { "mode", required_argument, 0, 'm' },
+    { "legacy", required_argument, 0, 'l' },
+    { "filter", required_argument, 0, 'f' },
+    { 0, 0, 0, 0 }
 };
 
 static bt_command_t g_scanner_tables[] = {
-    {"start", start_scan_cmd, 0, "start scan\n"
+    { "start", start_scan_cmd, 0, "start scan\n"
                                   "\t  -t or --type, le scan type (0: passive, 1: active)\n"
                                   "\t  -p or --phy, le scan phy (1M/2M/Coded)\n"
                                   "\t  -m or --mode, scan mode (0:low power mode, 1:balance mode, 2:low latency mode)\n"
                                   "\t  -l or --legacy, is legacy scan (1: true, 0: false)\n"
-                                  "\t  -f or --filter, filter advertiser complete name\n"},
-    { "stop", stop_scan_cmd,  0, "stop scan"                                                                             },
-    { "dump", dump_scan_cmd,  0, "dump scan state"                                                                       },
+                                  "\t  -f or --filter, filter advertiser complete name\n" },
+    { "stop", stop_scan_cmd, 0, "stop scan" },
+    { "dump", dump_scan_cmd, 0, "dump scan state" },
 };
 
 static void usage(void)
@@ -57,22 +57,22 @@ static void usage(void)
     }
 }
 
-static void on_scan_result_cb(bt_scanner_t *scanner, ble_scan_result_t *result)
+static void on_scan_result_cb(bt_scanner_t* scanner, ble_scan_result_t* result)
 {
     PRINT_ADDR("ScanResult ------[%s]------", &result->addr);
     PRINT("AddrType:%d", result->addr_type);
     PRINT("Rssi:%d", result->rssi);
     PRINT("Type:%d", result->adv_type);
-    advertiser_data_dump((uint8_t *)result->adv_data, result->length, NULL);
+    advertiser_data_dump((uint8_t*)result->adv_data, result->length, NULL);
     PRINT("\n");
 }
 
-static void on_scan_start_status_cb(bt_scanner_t *scanner, uint8_t status)
+static void on_scan_start_status_cb(bt_scanner_t* scanner, uint8_t status)
 {
     PRINT("%s, scanner:%p, status:%d", __func__, scanner, status);
 }
 
-static void on_scan_stopped_cb(bt_scanner_t *scanner)
+static void on_scan_stopped_cb(bt_scanner_t* scanner)
 {
     PRINT("%s, scanner:%p", __func__, scanner);
 }
@@ -84,12 +84,12 @@ static const scanner_callbacks_t scanner_callbacks = {
     on_scan_stopped_cb
 };
 
-static int start_scan_cmd(void *handle, int argc, char *argv[])
+static int start_scan_cmd(void* handle, int argc, char* argv[])
 {
     int opt;
-    uint8_t *filter_data = NULL;
+    uint8_t* filter_data = NULL;
     uint16_t filter_len = 0;
-    advertiser_data_t *filter;
+    advertiser_data_t* filter;
     ble_scan_settings_t settings = { BT_SCAN_MODE_LOW_POWER, 0, BT_LE_SCAN_TYPE_PASSIVE, BT_LE_1M_PHY };
 
     if (g_scanner)
@@ -97,7 +97,8 @@ static int start_scan_cmd(void *handle, int argc, char *argv[])
 
     optind = 0;
     while ((opt = getopt_long(argc, argv, "t:p:m:l:f", scan_options,
-                              NULL)) != -1) {
+                NULL))
+        != -1) {
         switch (opt) {
         case 't': {
             int type = atoi(optarg);
@@ -169,7 +170,7 @@ static int start_scan_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int stop_scan_cmd(void *handle, int argc, char *argv[])
+static int stop_scan_cmd(void* handle, int argc, char* argv[])
 {
     if (!g_scanner)
         return CMD_ERROR;
@@ -179,30 +180,30 @@ static int stop_scan_cmd(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int dump_scan_cmd(void *handle, int argc, char *argv[])
+static int dump_scan_cmd(void* handle, int argc, char* argv[])
 {
     return CMD_OK;
 }
 
-int scan_command_init(void *handle)
+int scan_command_init(void* handle)
 {
     g_scanner = NULL;
     return 0;
 }
 
-void scan_command_uninit(void *handle)
+void scan_command_uninit(void* handle)
 {
     g_scanner = NULL;
 }
 
-int scan_command_exec(void *handle, int argc, char *argv[])
+int scan_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
         ret = execute_command_in_table_offset(handle, g_scanner_tables,
-                                              ARRAY_SIZE(g_scanner_tables),
-                                              argc, argv, 0);
+            ARRAY_SIZE(g_scanner_tables),
+            argc, argv, 0);
 
     if (ret < 0)
         usage();

@@ -33,6 +33,8 @@
 #ifndef __A2DP_CODEC_AAC_H__
 #define __A2DP_CODEC_AAC_H__
 
+#include <stdint.h>
+
 // [Octet 0] Object Type
 #define A2DP_AAC_OBJECT_TYPE_MPEG2_LC 0x80 /* MPEG-2 Low Complexity */
 #define A2DP_AAC_OBJECT_TYPE_MPEG4_LC 0x40 /* MPEG-4 Low Complexity */
@@ -79,5 +81,5 @@ typedef struct {
     uint32_t u32BitRate;
 } aac_encoder_param_t;
 
-int a2dp_codec_parse_aac_param(aac_encoder_param_t *param, uint8_t *codec_info, uint16_t tx_mtu_size);
+int a2dp_codec_parse_aac_param(aac_encoder_param_t* param, uint8_t* codec_info, uint16_t tx_mtu_size);
 #endif

@@ -51,28 +51,25 @@ typedef struct {
     uint32_t bit_rate;
 } a2dp_aac_info_t;
 
-static int a2dp_parse_aac_info(a2dp_aac_info_t *info, uint8_t *codec_info)
+static int a2dp_parse_aac_info(a2dp_aac_info_t* info, uint8_t* codec_info)
 {
     if (info == NULL || codec_info == NULL)
         return -1;
 
     info->object_type = *codec_info++;
-    info->sample_rate = (*codec_info & A2DP_AAC_SAMPLING_FREQ_MASK0) |
-                        (*(codec_info + 1) << 8 & A2DP_AAC_SAMPLING_FREQ_MASK1);
+    info->sample_rate = (*codec_info & A2DP_AAC_SAMPLING_FREQ_MASK0) | (*(codec_info + 1) << 8 & A2DP_AAC_SAMPLING_FREQ_MASK1);
     codec_info++;
     info->channel_mode = *codec_info & A2DP_AAC_CHANNEL_MODE_MASK;
     info->variable_bit_rate = *codec_info & A2DP_AAC_VARIABLE_BIT_RATE_MASK;
     codec_info++;
-    info->bit_rate = (*codec_info << 16 & A2DP_AAC_BIT_RATE_MASK0) |
-                     (*(codec_info + 1) << 8 & A2DP_AAC_BIT_RATE_MASK1) |
-                     (*(codec_info + 2) & A2DP_AAC_BIT_RATE_MASK2);
+    info->bit_rate = (*codec_info << 16 & A2DP_AAC_BIT_RATE_MASK0) | (*(codec_info + 1) << 8 & A2DP_AAC_BIT_RATE_MASK1) | (*(codec_info + 2) & A2DP_AAC_BIT_RATE_MASK2);
     if (info->object_type == 0 || info->sample_rate == 0 || info->channel_mode == 0)
         return -1;
 
     return 0;
 }
 
-static int a2dp_get_aac_samplerate(a2dp_aac_info_t *info)
+static int a2dp_get_aac_samplerate(a2dp_aac_info_t* info)
 {
 
     if (info == NULL)
@@ -108,7 +105,7 @@ static int a2dp_get_aac_samplerate(a2dp_aac_info_t *info)
     return -1;
 }
 
-static int a2dp_get_aac_number_of_channels(a2dp_aac_info_t *info)
+static int a2dp_get_aac_number_of_channels(a2dp_aac_info_t* info)
 {
     if (info == NULL)
         return -1;
@@ -121,7 +118,7 @@ static int a2dp_get_aac_number_of_channels(a2dp_aac_info_t *info)
     return -1;
 }
 
-int a2dp_codec_parse_aac_param(aac_encoder_param_t *param, uint8_t *codec_info, uint16_t tx_mtu_size)
+int a2dp_codec_parse_aac_param(aac_encoder_param_t* param, uint8_t* codec_info, uint16_t tx_mtu_size)
 {
     a2dp_aac_info_t info;
     uint32_t bitrate;
@@ -144,7 +141,7 @@ int a2dp_codec_parse_aac_param(aac_encoder_param_t *param, uint8_t *codec_info, 
         param->u32BitRate = info.bit_rate;
 
     BT_LOGD("MaxTxSize:%" PRIu16 ", BitRate peer: %" PRIu32 ", adjust:%" PRIu32,
-            tx_mtu_size, info.bit_rate, param->u32BitRate);
+        tx_mtu_size, info.bit_rate, param->u32BitRate);
     BT_LOGD("%s:\n \
                 u16ObjectType:0x%02x,\n \
                 u16VariableBitRate:0x%02x, \n \
@@ -152,12 +149,12 @@ int a2dp_codec_parse_aac_param(aac_encoder_param_t *param, uint8_t *codec_info, 
                 u16NumOfChannels:%d,\n \
                 u32SampleRate:%" PRIu32 ",\n \
                 u32BitRate:%" PRIu32,
-            __func__, param->u16ObjectType,
-            param->u16VariableBitRate,
-            param->u16ChannelMode,
-            param->u16NumOfChannels,
-            param->u32SampleRate,
-            param->u32BitRate);
+        __func__, param->u16ObjectType,
+        param->u16VariableBitRate,
+        param->u16ChannelMode,
+        param->u16NumOfChannels,
+        param->u32SampleRate,
+        param->u32BitRate);
 
     return 0;
 }

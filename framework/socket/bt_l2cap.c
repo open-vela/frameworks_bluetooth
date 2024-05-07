@@ -22,11 +22,11 @@
 #include "l2cap_service.h"
 #include "utils/log.h"
 
-void *bt_l2cap_register_callbacks(bt_instance_t *ins, const l2cap_callbacks_t *callbacks)
+void* bt_l2cap_register_callbacks(bt_instance_t* ins, const l2cap_callbacks_t* callbacks)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    void *cookie;
+    void* cookie;
 
     BT_SOCKET_INS_VALID(ins, NULL);
 
@@ -39,7 +39,7 @@ void *bt_l2cap_register_callbacks(bt_instance_t *ins, const l2cap_callbacks_t *c
         return NULL;
     }
 
-    cookie = bt_remote_callbacks_register(ins->l2cap_callbacks, NULL, (void *)callbacks);
+    cookie = bt_remote_callbacks_register(ins->l2cap_callbacks, NULL, (void*)callbacks);
     if (cookie == NULL) {
         bt_callbacks_list_free(ins->l2cap_callbacks);
         ins->l2cap_callbacks = NULL;
@@ -56,7 +56,7 @@ void *bt_l2cap_register_callbacks(bt_instance_t *ins, const l2cap_callbacks_t *c
     return cookie;
 }
 
-bool bt_l2cap_unregister_callbacks(bt_instance_t *ins, void *cookie)
+bool bt_l2cap_unregister_callbacks(bt_instance_t* ins, void* cookie)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -79,7 +79,7 @@ bool bt_l2cap_unregister_callbacks(bt_instance_t *ins, void *cookie)
     return true;
 }
 
-bt_status_t bt_l2cap_listen(bt_instance_t *ins, l2cap_config_option_t *option)
+bt_status_t bt_l2cap_listen(bt_instance_t* ins, l2cap_config_option_t* option)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -94,7 +94,7 @@ bt_status_t bt_l2cap_listen(bt_instance_t *ins, l2cap_config_option_t *option)
     return packet.l2cap_r.status;
 }
 
-bt_status_t bt_l2cap_connect(bt_instance_t *ins, bt_address_t *addr, l2cap_config_option_t *option)
+bt_status_t bt_l2cap_connect(bt_instance_t* ins, bt_address_t* addr, l2cap_config_option_t* option)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -110,7 +110,7 @@ bt_status_t bt_l2cap_connect(bt_instance_t *ins, bt_address_t *addr, l2cap_confi
     return packet.l2cap_r.status;
 }
 
-bt_status_t bt_l2cap_disconnect(bt_instance_t *ins, uint16_t cid)
+bt_status_t bt_l2cap_disconnect(bt_instance_t* ins, uint16_t cid)
 {
     bt_message_packet_t packet;
     bt_status_t status;

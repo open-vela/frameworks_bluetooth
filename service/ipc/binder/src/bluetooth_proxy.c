@@ -28,9 +28,9 @@
 #include "bluetooth_stub.h"
 #include "utils/log.h"
 
-bt_status_t BpBtManager_createInstance(AIBinder *binder, uint32_t handle,
-                                       uint32_t type, const char *hostName,
-                                       uint32_t *appId)
+bt_status_t BpBtManager_createInstance(AIBinder* binder, uint32_t handle,
+    uint32_t type, const char* hostName,
+    uint32_t* appId)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -67,7 +67,7 @@ bt_status_t BpBtManager_createInstance(AIBinder *binder, uint32_t handle,
     return status;
 }
 
-bt_status_t BpBtManager_getInstance(AIBinder *binder, const char *name, uint32_t *handle)
+bt_status_t BpBtManager_getInstance(AIBinder* binder, const char* name, uint32_t* handle)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -96,11 +96,11 @@ bt_status_t BpBtManager_getInstance(AIBinder *binder, const char *name, uint32_t
     return status;
 }
 
-bt_status_t BpBtManager_deleteInstance(BpBtManager *bpManager, uint32_t appId)
+bt_status_t BpBtManager_deleteInstance(BpBtManager* bpManager, uint32_t appId)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpManager->binder;
+    AIBinder* binder = bpManager->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -122,11 +122,11 @@ bt_status_t BpBtManager_deleteInstance(BpBtManager *bpManager, uint32_t appId)
     return status;
 }
 
-bt_status_t BpBtManager_startService(BpBtManager *bpManager, uint32_t appId, uint32_t profileId)
+bt_status_t BpBtManager_startService(BpBtManager* bpManager, uint32_t appId, uint32_t profileId)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpManager->binder;
+    AIBinder* binder = bpManager->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -152,11 +152,11 @@ bt_status_t BpBtManager_startService(BpBtManager *bpManager, uint32_t appId, uin
     return status;
 }
 
-bt_status_t BpBtManager_stopService(BpBtManager *bpManager, uint32_t appId, uint32_t profileId)
+bt_status_t BpBtManager_stopService(BpBtManager* bpManager, uint32_t appId, uint32_t profileId)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpManager->binder;
+    AIBinder* binder = bpManager->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);

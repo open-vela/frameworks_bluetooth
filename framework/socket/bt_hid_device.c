@@ -24,7 +24,7 @@
 #include "service_manager.h"
 #include "utils/log.h"
 
-static bt_status_t safety_assemble_sdp_array(uint8_t **sdp_ptr, size_t *remaining_space, const char *src)
+static bt_status_t safety_assemble_sdp_array(uint8_t** sdp_ptr, size_t* remaining_space, const char* src)
 {
     uint32_t src_len = strlen(src);
     if (src_len + 1 > *remaining_space) {
@@ -39,7 +39,7 @@ static bt_status_t safety_assemble_sdp_array(uint8_t **sdp_ptr, size_t *remainin
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t safety_assemble_hid_info(uint8_t **sdp_ptr, size_t *remaining_space, const hid_info_t *hid_info)
+static bt_status_t safety_assemble_hid_info(uint8_t** sdp_ptr, size_t* remaining_space, const hid_info_t* hid_info)
 {
     if (sizeof(hid_info_t) > *remaining_space) {
         return BT_STATUS_NO_RESOURCES;
@@ -58,11 +58,11 @@ static bt_status_t safety_assemble_hid_info(uint8_t **sdp_ptr, size_t *remaining
     return BT_STATUS_SUCCESS;
 }
 
-void *bt_hid_device_register_callbacks(bt_instance_t *ins, const hid_device_callbacks_t *callbacks)
+void* bt_hid_device_register_callbacks(bt_instance_t* ins, const hid_device_callbacks_t* callbacks)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    void *cookie;
+    void* cookie;
 
     BT_SOCKET_INS_VALID(ins, NULL);
 
@@ -72,7 +72,7 @@ void *bt_hid_device_register_callbacks(bt_instance_t *ins, const hid_device_call
 
     ins->hidd_callbacks = bt_callbacks_list_new(1);
 
-    cookie = bt_remote_callbacks_register(ins->hidd_callbacks, NULL, (void *)callbacks);
+    cookie = bt_remote_callbacks_register(ins->hidd_callbacks, NULL, (void*)callbacks);
     if (cookie == NULL) {
         bt_callbacks_list_free(ins->hidd_callbacks);
         ins->hidd_callbacks = NULL;
@@ -89,7 +89,7 @@ void *bt_hid_device_register_callbacks(bt_instance_t *ins, const hid_device_call
     return cookie;
 }
 
-bool bt_hid_device_unregister_callbacks(bt_instance_t *ins, void *cookie)
+bool bt_hid_device_unregister_callbacks(bt_instance_t* ins, void* cookie)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -110,7 +110,7 @@ bool bt_hid_device_unregister_callbacks(bt_instance_t *ins, void *cookie)
     return true;
 }
 
-bt_status_t bt_hid_device_register_app(bt_instance_t *ins, hid_device_sdp_settings_t *sdp, bool le_hid)
+bt_status_t bt_hid_device_register_app(bt_instance_t* ins, hid_device_sdp_settings_t* sdp, bool le_hid)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -118,7 +118,7 @@ bt_status_t bt_hid_device_register_app(bt_instance_t *ins, hid_device_sdp_settin
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     packet.hidd_pl._bt_hid_device_register_app.le_hid = le_hid;
-    uint8_t *sdp_ptr = packet.hidd_pl._bt_hid_device_register_app.sdp;
+    uint8_t* sdp_ptr = packet.hidd_pl._bt_hid_device_register_app.sdp;
     size_t remaining_space = sizeof(packet.hidd_pl._bt_hid_device_register_app.sdp);
 
     if (BT_STATUS_SUCCESS != safety_assemble_sdp_array(&sdp_ptr, &remaining_space, sdp->name)) {
@@ -144,7 +144,7 @@ bt_status_t bt_hid_device_register_app(bt_instance_t *ins, hid_device_sdp_settin
     return packet.hidd_r.status;
 }
 
-bt_status_t bt_hid_device_unregister_app(bt_instance_t *ins)
+bt_status_t bt_hid_device_unregister_app(bt_instance_t* ins)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -158,7 +158,7 @@ bt_status_t bt_hid_device_unregister_app(bt_instance_t *ins)
     return packet.hidd_r.status;
 }
 
-bt_status_t bt_hid_device_connect(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_hid_device_connect(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -173,7 +173,7 @@ bt_status_t bt_hid_device_connect(bt_instance_t *ins, bt_address_t *addr)
     return packet.hidd_r.status;
 }
 
-bt_status_t bt_hid_device_disconnect(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_hid_device_disconnect(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -188,7 +188,7 @@ bt_status_t bt_hid_device_disconnect(bt_instance_t *ins, bt_address_t *addr)
     return packet.hidd_r.status;
 }
 
-bt_status_t bt_hid_device_send_report(bt_instance_t *ins, bt_address_t *addr, uint8_t rpt_id, uint8_t *rpt_data, int rpt_size)
+bt_status_t bt_hid_device_send_report(bt_instance_t* ins, bt_address_t* addr, uint8_t rpt_id, uint8_t* rpt_data, int rpt_size)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -209,7 +209,7 @@ bt_status_t bt_hid_device_send_report(bt_instance_t *ins, bt_address_t *addr, ui
     return packet.hidd_r.status;
 }
 
-bt_status_t bt_hid_device_response_report(bt_instance_t *ins, bt_address_t *addr, uint8_t rpt_type, uint8_t *rpt_data, int rpt_size)
+bt_status_t bt_hid_device_response_report(bt_instance_t* ins, bt_address_t* addr, uint8_t rpt_type, uint8_t* rpt_data, int rpt_size)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -230,7 +230,7 @@ bt_status_t bt_hid_device_response_report(bt_instance_t *ins, bt_address_t *addr
     return packet.hidd_r.status;
 }
 
-bt_status_t bt_hid_device_report_error(bt_instance_t *ins, bt_address_t *addr, hid_status_error_t error)
+bt_status_t bt_hid_device_report_error(bt_instance_t* ins, bt_address_t* addr, hid_status_error_t error)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -246,7 +246,7 @@ bt_status_t bt_hid_device_report_error(bt_instance_t *ins, bt_address_t *addr, h
     return packet.hidd_r.status;
 }
 
-bt_status_t bt_hid_device_virtual_unplug(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_hid_device_virtual_unplug(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
     bt_status_t status;

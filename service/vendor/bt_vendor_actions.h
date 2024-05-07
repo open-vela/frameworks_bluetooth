@@ -29,24 +29,13 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define CONFIG_LEAS_CALL_SINK_SUPPORTED_SAMPLE_FREQUENCY (ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_8000 | \
-                                                          ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_16000)
+#define CONFIG_LEAS_CALL_SINK_SUPPORTED_SAMPLE_FREQUENCY (ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_8000 | ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_16000)
 
-#define CONFIG_LEAS_CALL_SOURCE_SUPPORTED_SAMPLE_FREQUENCY (ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_8000 | \
-                                                            ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_16000)
+#define CONFIG_LEAS_CALL_SOURCE_SUPPORTED_SAMPLE_FREQUENCY (ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_8000 | ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_16000)
 
-#define CONFIG_LEAS_MEDIA_SINK_SUPPORTED_SAMPLE_FREQUENCY (ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_16000 | \
-                                                           ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_32000 | \
-                                                           ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_48000)
+#define CONFIG_LEAS_MEDIA_SINK_SUPPORTED_SAMPLE_FREQUENCY (ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_16000 | ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_32000 | ADPT_LEA_SUPPORTED_SAMPLE_FREQUENCY_48000)
 
-#define CONFIG_LEAS_CALL_SINK_METADATA_PREFER_CONTEX (ADPT_LEA_CONTEXT_TYPE_CONVERSATIONAL |   \
-                                                      ADPT_LEA_CONTEXT_TYPE_INSTRUCTIONAL |    \
-                                                      ADPT_LEA_CONTEXT_TYPE_VOICE_ASSISTANTS | \
-                                                      ADPT_LEA_CONTEXT_TYPE_SOUND_EFFECTS |    \
-                                                      ADPT_LEA_CONTEXT_TYPE_NOTIFICATIONS |    \
-                                                      ADPT_LEA_CONTEXT_TYPE_RINGTONE |         \
-                                                      ADPT_LEA_CONTEXT_TYPE_ALERTS |           \
-                                                      ADPT_LEA_CONTEXT_TYPE_EMERGENCY_ALARM)
+#define CONFIG_LEAS_CALL_SINK_METADATA_PREFER_CONTEX (ADPT_LEA_CONTEXT_TYPE_CONVERSATIONAL | ADPT_LEA_CONTEXT_TYPE_INSTRUCTIONAL | ADPT_LEA_CONTEXT_TYPE_VOICE_ASSISTANTS | ADPT_LEA_CONTEXT_TYPE_SOUND_EFFECTS | ADPT_LEA_CONTEXT_TYPE_NOTIFICATIONS | ADPT_LEA_CONTEXT_TYPE_RINGTONE | ADPT_LEA_CONTEXT_TYPE_ALERTS | ADPT_LEA_CONTEXT_TYPE_EMERGENCY_ALARM)
 
 #define CONFIG_LEAS_CALL_SOURCE_METADATA_PREFER_CONTEX (ADPT_LEA_CONTEXT_TYPE_CONVERSATIONAL | ADPT_LEA_CONTEXT_TYPE_VOICE_ASSISTANTS | ADPT_LEA_CONTEXT_TYPE_LIVE)
 
@@ -63,10 +52,10 @@ enum {
     LEA_CODEC_SOURCE,
 };
 
-static inline bool actions_a2dp_offload_start_builder(a2dp_offload_config_t *config,
-                                                      uint8_t *offload, size_t *size)
+static inline bool actions_a2dp_offload_start_builder(a2dp_offload_config_t* config,
+    uint8_t* offload, size_t* size)
 {
-    uint8_t *param = offload;
+    uint8_t* param = offload;
 
     UINT8_TO_STREAM(param, 0x3f); // fill ogf
     UINT16_TO_STREAM(param, 0x0000); // fill ocf
@@ -89,10 +78,10 @@ static inline bool actions_a2dp_offload_start_builder(a2dp_offload_config_t *con
     return true;
 }
 
-static inline bool actions_a2dp_offload_stop_builder(a2dp_offload_config_t *config,
-                                                     uint8_t *offload, size_t *size)
+static inline bool actions_a2dp_offload_stop_builder(a2dp_offload_config_t* config,
+    uint8_t* offload, size_t* size)
 {
-    uint8_t *param = offload;
+    uint8_t* param = offload;
 
     UINT8_TO_STREAM(param, 0x3f); // fill ogf
     UINT16_TO_STREAM(param, 0x0000); // fill ocf
@@ -104,10 +93,10 @@ static inline bool actions_a2dp_offload_stop_builder(a2dp_offload_config_t *conf
     return true;
 }
 
-static inline bool actions_hfp_offload_start_builder(hfp_offload_config_t *config,
-                                                     uint8_t *offload, size_t *size)
+static inline bool actions_hfp_offload_start_builder(hfp_offload_config_t* config,
+    uint8_t* offload, size_t* size)
 {
-    uint8_t *param = offload;
+    uint8_t* param = offload;
 
     UINT8_TO_STREAM(param, 0x3f); // fill ogf
     UINT16_TO_STREAM(param, 0x0000); // fill ocf
@@ -121,10 +110,10 @@ static inline bool actions_hfp_offload_start_builder(hfp_offload_config_t *confi
     return true;
 }
 
-static inline bool actions_hfp_offload_stop_builder(hfp_offload_config_t *config,
-                                                    uint8_t *offload, size_t *size)
+static inline bool actions_hfp_offload_stop_builder(hfp_offload_config_t* config,
+    uint8_t* offload, size_t* size)
 {
-    uint8_t *param = offload;
+    uint8_t* param = offload;
 
     UINT8_TO_STREAM(param, 0x3f); // fill ogf
     UINT16_TO_STREAM(param, 0x0000); // fill ocf
@@ -138,10 +127,10 @@ static inline bool actions_hfp_offload_stop_builder(hfp_offload_config_t *config
     return true;
 }
 
-static inline bool actions_lea_offload_start_builder(lea_offload_config_t *config,
-                                                     uint8_t *offload, size_t *size)
+static inline bool actions_lea_offload_start_builder(lea_offload_config_t* config,
+    uint8_t* offload, size_t* size)
 {
-    uint8_t *param = offload;
+    uint8_t* param = offload;
     int stream_num;
     int index;
 
@@ -193,10 +182,10 @@ static inline bool actions_lea_offload_start_builder(lea_offload_config_t *confi
     return true;
 }
 
-static inline bool actions_lea_offload_stop_builder(lea_offload_config_t *config,
-                                                    uint8_t *offload, size_t *size)
+static inline bool actions_lea_offload_stop_builder(lea_offload_config_t* config,
+    uint8_t* offload, size_t* size)
 {
-    uint8_t *param = offload;
+    uint8_t* param = offload;
     int stream_num;
     int index;
 

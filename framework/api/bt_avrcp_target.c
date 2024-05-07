@@ -23,21 +23,21 @@
 #include "service_manager.h"
 #include "utils/log.h"
 
-static avrcp_target_interface_t *get_profile_service(void)
+static avrcp_target_interface_t* get_profile_service(void)
 {
-    return (avrcp_target_interface_t *)service_manager_get_profile(PROFILE_AVRCP_TG);
+    return (avrcp_target_interface_t*)service_manager_get_profile(PROFILE_AVRCP_TG);
 }
 
-void *bt_avrcp_target_register_callbacks(bt_instance_t *ins, const avrcp_target_callbacks_t *callbacks)
+void* bt_avrcp_target_register_callbacks(bt_instance_t* ins, const avrcp_target_callbacks_t* callbacks)
 {
-    avrcp_target_interface_t *profile = get_profile_service();
+    avrcp_target_interface_t* profile = get_profile_service();
 
     return profile->register_callbacks(NULL, callbacks);
 }
 
-bool bt_avrcp_target_unregister_callbacks(bt_instance_t *ins, void *cookie)
+bool bt_avrcp_target_unregister_callbacks(bt_instance_t* ins, void* cookie)
 {
-    avrcp_target_interface_t *profile = get_profile_service();
+    avrcp_target_interface_t* profile = get_profile_service();
 
     return profile->unregister_callbacks(NULL, cookie);
 }

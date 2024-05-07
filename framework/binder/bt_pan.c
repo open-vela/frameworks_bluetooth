@@ -17,28 +17,28 @@
 
 #include <stdint.h>
 
+#include "bluetooth.h"
 #include "bt_pan.h"
 #include "bt_profile.h"
-#include "bluetooth.h"
 
 #include "pan_callbacks_stub.h"
-#include "pan_stub.h"
 #include "pan_proxy.h"
+#include "pan_stub.h"
 
 #include "utils/log.h"
 
-void *bt_pan_register_callbacks(bt_instance_t *ins, const pan_callbacks_t *callbacks)
+void* bt_pan_register_callbacks(bt_instance_t* ins, const pan_callbacks_t* callbacks)
 {
-    BpBtPan *pan = (BpBtPan *)bluetooth_get_proxy(ins, PROFILE_PANU);
+    BpBtPan* pan = (BpBtPan*)bluetooth_get_proxy(ins, PROFILE_PANU);
 
-    IBtPanCallbacks *cbks = BtPanCallbacks_new(callbacks);
-    AIBinder *binder = BtPanCallbacks_getBinder(cbks);
+    IBtPanCallbacks* cbks = BtPanCallbacks_new(callbacks);
+    AIBinder* binder = BtPanCallbacks_getBinder(cbks);
     if (!binder) {
         BtPanCallbacks_delete(cbks);
         return NULL;
     }
 
-    void *remote_cbks = BpBtPan_registerCallback(pan, binder);
+    void* remote_cbks = BpBtPan_registerCallback(pan, binder);
     if (!remote_cbks) {
         BtPanCallbacks_delete(cbks);
         return NULL;
@@ -48,10 +48,10 @@ void *bt_pan_register_callbacks(bt_instance_t *ins, const pan_callbacks_t *callb
     return cbks;
 }
 
-bool bt_pan_unregister_callbacks(bt_instance_t *ins, void *cookie)
+bool bt_pan_unregister_callbacks(bt_instance_t* ins, void* cookie)
 {
-    IBtPanCallbacks *cbks = cookie;
-    BpBtPan *pan = (BpBtPan *)bluetooth_get_proxy(ins, PROFILE_PANU);
+    IBtPanCallbacks* cbks = cookie;
+    BpBtPan* pan = (BpBtPan*)bluetooth_get_proxy(ins, PROFILE_PANU);
 
     bool ret = BpBtPan_unRegisterCallback(pan, cbks->cookie);
     if (ret)
@@ -60,16 +60,16 @@ bool bt_pan_unregister_callbacks(bt_instance_t *ins, void *cookie)
     return ret;
 }
 
-bt_status_t bt_pan_connect(bt_instance_t *ins, bt_address_t *addr, uint8_t dst_role, uint8_t src_role)
+bt_status_t bt_pan_connect(bt_instance_t* ins, bt_address_t* addr, uint8_t dst_role, uint8_t src_role)
 {
-    BpBtPan *pan = (BpBtPan *)bluetooth_get_proxy(ins, PROFILE_PANU);
+    BpBtPan* pan = (BpBtPan*)bluetooth_get_proxy(ins, PROFILE_PANU);
 
     return BpBtPan_connect(pan, addr, dst_role, src_role);
 }
 
-bt_status_t bt_pan_disconnect(bt_instance_t *ins, bt_address_t *addr)
+bt_status_t bt_pan_disconnect(bt_instance_t* ins, bt_address_t* addr)
 {
-    BpBtPan *pan = (BpBtPan *)bluetooth_get_proxy(ins, PROFILE_PANU);
+    BpBtPan* pan = (BpBtPan*)bluetooth_get_proxy(ins, PROFILE_PANU);
 
     return BpBtPan_disconnect(pan, addr);
 }

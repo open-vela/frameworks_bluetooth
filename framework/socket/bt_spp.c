@@ -18,17 +18,17 @@
 #include <stdint.h>
 
 #include "bt_profile.h"
-#include "bt_spp.h"
 #include "bt_socket.h"
+#include "bt_spp.h"
 #include "service_manager.h"
 #include "spp_service.h"
 #include "utils/log.h"
 
-void *bt_spp_register_app(bt_instance_t *ins, const spp_callbacks_t *callbacks)
+void* bt_spp_register_app(bt_instance_t* ins, const spp_callbacks_t* callbacks)
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    void *handle;
+    void* handle;
 
     BT_SOCKET_INS_VALID(ins, NULL);
 
@@ -38,7 +38,7 @@ void *bt_spp_register_app(bt_instance_t *ins, const spp_callbacks_t *callbacks)
 
     ins->spp_callbacks = bt_callbacks_list_new(1);
 
-    handle = bt_remote_callbacks_register(ins->spp_callbacks, NULL, (void *)callbacks);
+    handle = bt_remote_callbacks_register(ins->spp_callbacks, NULL, (void*)callbacks);
     if (handle == NULL) {
         bt_callbacks_list_free(ins->spp_callbacks);
         ins->spp_callbacks = NULL;
@@ -55,7 +55,7 @@ void *bt_spp_register_app(bt_instance_t *ins, const spp_callbacks_t *callbacks)
     return handle;
 }
 
-bt_status_t bt_spp_unregister_app(bt_instance_t *ins, void *handle)
+bt_status_t bt_spp_unregister_app(bt_instance_t* ins, void* handle)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -77,7 +77,7 @@ bt_status_t bt_spp_unregister_app(bt_instance_t *ins, void *handle)
     return true;
 }
 
-bt_status_t bt_spp_server_start(bt_instance_t *ins, void *handle, uint16_t scn, bt_uuid_t *uuid, uint8_t max_connection)
+bt_status_t bt_spp_server_start(bt_instance_t* ins, void* handle, uint16_t scn, bt_uuid_t* uuid, uint8_t max_connection)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -96,7 +96,7 @@ bt_status_t bt_spp_server_start(bt_instance_t *ins, void *handle, uint16_t scn, 
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_spp_server_stop(bt_instance_t *ins, void *handle, uint16_t scn)
+bt_status_t bt_spp_server_stop(bt_instance_t* ins, void* handle, uint16_t scn)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -113,7 +113,7 @@ bt_status_t bt_spp_server_stop(bt_instance_t *ins, void *handle, uint16_t scn)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_spp_connect(bt_instance_t *ins, void *handle, bt_address_t *addr, int16_t scn, bt_uuid_t *uuid, uint16_t *port)
+bt_status_t bt_spp_connect(bt_instance_t* ins, void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -134,7 +134,7 @@ bt_status_t bt_spp_connect(bt_instance_t *ins, void *handle, bt_address_t *addr,
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_spp_disconnect(bt_instance_t *ins, void *handle, bt_address_t *addr, uint16_t port)
+bt_status_t bt_spp_disconnect(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t port)
 {
     bt_message_packet_t packet;
     bt_status_t status;

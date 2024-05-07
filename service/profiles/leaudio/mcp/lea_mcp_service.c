@@ -53,9 +53,9 @@ typedef struct
 {
     bool started;
     bts_mcs_info_s mcs_info;
-    callbacks_list_t *callbacks;
+    callbacks_list_t* callbacks;
     pthread_mutex_t device_lock;
-    void *media_session_handle;
+    void* media_session_handle;
 } mcp_service_t;
 
 static mcp_service_t g_mcp_service = {
@@ -64,9 +64,9 @@ static mcp_service_t g_mcp_service = {
     .media_session_handle = NULL,
 };
 
-static void lea_mcp_process_message(void *data)
+static void lea_mcp_process_message(void* data)
 {
-    mcp_event_t *msg = (mcp_event_t *)data;
+    mcp_event_t* msg = (mcp_event_t*)data;
 
     switch (msg->event) {
     case MCP_MEDIA_PLAYER_NAME_CHANGED: {
@@ -164,7 +164,7 @@ static void lea_mcp_process_message(void *data)
     mcp_event_destory(msg);
 }
 
-static bt_status_t lea_mcp_send_msg(mcp_event_t *msg)
+static bt_status_t lea_mcp_send_msg(mcp_event_t* msg)
 {
     assert(msg);
 
@@ -176,23 +176,23 @@ static bt_status_t lea_mcp_send_msg(mcp_event_t *msg)
 /****************************************************************************
  * sal callbacks
  ****************************************************************************/
-void lea_mcp_on_media_player_name(bt_address_t *addr, uint32_t mcs_id, size_t size, char *name)
+void lea_mcp_on_media_player_name(bt_address_t* addr, uint32_t mcs_id, size_t size, char* name)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new_ext(MCP_MEDIA_PLAYER_NAME_CHANGED, addr, mcs_id, size);
     if (!event) {
         BT_LOGE("%s, Failed to create msg", __func__);
         return;
     }
-    strcpy((char *)event->event_data.string1, name);
+    strcpy((char*)event->event_data.string1, name);
 
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_media_player_icon_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
+void lea_mcp_on_media_player_icon_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_MEDIA_PLAYER_ICON_OBJ_ID, addr, mcs_id);
     if (!event) {
@@ -206,23 +206,23 @@ void lea_mcp_on_media_player_icon_object_id(bt_address_t *addr, uint32_t mcs_id,
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_media_player_icon_url(bt_address_t *addr, uint32_t mcs_id, size_t size, char *url)
+void lea_mcp_on_media_player_icon_url(bt_address_t* addr, uint32_t mcs_id, size_t size, char* url)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new_ext(MCP_MEDIA_PLAYER_ICON_URL, addr, mcs_id, size);
     if (!event) {
         BT_LOGE("%s, Failed to create msg", __func__);
         return;
     }
-    strcpy((char *)event->event_data.string1, url);
+    strcpy((char*)event->event_data.string1, url);
 
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_playback_speed(bt_address_t *addr, uint32_t mcs_id, int8_t speed)
+void lea_mcp_on_playback_speed(bt_address_t* addr, uint32_t mcs_id, int8_t speed)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_READ_PLAYBACK_SPEED, addr, mcs_id);
     if (!event) {
@@ -234,9 +234,9 @@ void lea_mcp_on_playback_speed(bt_address_t *addr, uint32_t mcs_id, int8_t speed
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_seeking_speed(bt_address_t *addr, uint32_t mcs_id, int8_t speed)
+void lea_mcp_on_seeking_speed(bt_address_t* addr, uint32_t mcs_id, int8_t speed)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_READ_SEEKING_SPEED, addr, mcs_id);
     if (!event) {
@@ -248,9 +248,9 @@ void lea_mcp_on_seeking_speed(bt_address_t *addr, uint32_t mcs_id, int8_t speed)
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_playing_order(bt_address_t *addr, uint32_t mcs_id, int8_t order)
+void lea_mcp_on_playing_order(bt_address_t* addr, uint32_t mcs_id, int8_t order)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_READ_PLAYING_ORDER, addr, mcs_id);
     if (!event) {
@@ -262,9 +262,9 @@ void lea_mcp_on_playing_order(bt_address_t *addr, uint32_t mcs_id, int8_t order)
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_playing_orders_supported(bt_address_t *addr, uint32_t mcs_id, uint16_t orders)
+void lea_mcp_on_playing_orders_supported(bt_address_t* addr, uint32_t mcs_id, uint16_t orders)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_READ_PLAYING_ORDER_SUPPORTED, addr, mcs_id);
     if (!event) {
@@ -276,9 +276,9 @@ void lea_mcp_on_playing_orders_supported(bt_address_t *addr, uint32_t mcs_id, ui
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_media_control_opcodes_supported(bt_address_t *addr, uint32_t mcs_id, uint32_t opcodes)
+void lea_mcp_on_media_control_opcodes_supported(bt_address_t* addr, uint32_t mcs_id, uint32_t opcodes)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_READ_MEDIA_CONTROL_OPCODES_SUPPORTED, addr, mcs_id);
     if (!event) {
@@ -290,9 +290,9 @@ void lea_mcp_on_media_control_opcodes_supported(bt_address_t *addr, uint32_t mcs
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_track_changed(bt_address_t *addr, uint32_t mcs_id)
+void lea_mcp_on_track_changed(bt_address_t* addr, uint32_t mcs_id)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_TRACK_CHANGED, addr, mcs_id);
     if (!event) {
@@ -303,23 +303,23 @@ void lea_mcp_on_track_changed(bt_address_t *addr, uint32_t mcs_id)
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_track_title(bt_address_t *addr, uint32_t mcs_id, size_t size, char *title)
+void lea_mcp_on_track_title(bt_address_t* addr, uint32_t mcs_id, size_t size, char* title)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new_ext(MCP_READ_TRACK_TITLE, addr, mcs_id, size);
     if (!event) {
         BT_LOGE("%s, Failed to create msg", __func__);
         return;
     }
-    strcpy((char *)event->event_data.string1, title);
+    strcpy((char*)event->event_data.string1, title);
 
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_track_duration(bt_address_t *addr, uint32_t mcs_id, int32_t duration)
+void lea_mcp_on_track_duration(bt_address_t* addr, uint32_t mcs_id, int32_t duration)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_READ_TRACK_DURATION, addr, mcs_id);
     if (!event) {
@@ -331,9 +331,9 @@ void lea_mcp_on_track_duration(bt_address_t *addr, uint32_t mcs_id, int32_t dura
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_track_position(bt_address_t *addr, uint32_t mcs_id, int32_t position)
+void lea_mcp_on_track_position(bt_address_t* addr, uint32_t mcs_id, int32_t position)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_READ_TRACK_POSITION, addr, mcs_id);
     if (!event) {
@@ -345,9 +345,9 @@ void lea_mcp_on_track_position(bt_address_t *addr, uint32_t mcs_id, int32_t posi
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_media_state(bt_address_t *addr, uint32_t mcs_id, uint8_t state)
+void lea_mcp_on_media_state(bt_address_t* addr, uint32_t mcs_id, uint8_t state)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
     BT_LOGD("%s, media state:%d ", __func__, state);
 
     event = mcp_event_new(MCP_READ_MEDIA_STATE, addr, mcs_id);
@@ -360,9 +360,9 @@ void lea_mcp_on_media_state(bt_address_t *addr, uint32_t mcs_id, uint8_t state)
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_media_control_result(bt_address_t *addr, uint32_t mcs_id, uint8_t opcode, uint8_t result)
+void lea_mcp_on_media_control_result(bt_address_t* addr, uint32_t mcs_id, uint8_t opcode, uint8_t result)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
     BT_LOGD("%s, opcode:%d ,result:%d", __func__, opcode, result);
 
     event = mcp_event_new(MCP_MEDIA_CONTROL_REQ, addr, mcs_id);
@@ -387,9 +387,9 @@ void lea_mcp_on_media_control_result(bt_address_t *addr, uint32_t mcs_id, uint8_
     }
 }
 
-void lea_mcp_on_search_control_result(bt_address_t *addr, uint32_t mcs_id, uint8_t result)
+void lea_mcp_on_search_control_result(bt_address_t* addr, uint32_t mcs_id, uint8_t result)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_SEARCH_CONTROL_RESULT_REQ, addr, mcs_id);
     if (!event) {
@@ -401,9 +401,9 @@ void lea_mcp_on_search_control_result(bt_address_t *addr, uint32_t mcs_id, uint8
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_current_track_segments_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
+void lea_mcp_on_current_track_segments_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_CURRENT_TRACK_SEGMENTS_OBJ_ID, addr, mcs_id);
     if (!event) {
@@ -417,9 +417,9 @@ void lea_mcp_on_current_track_segments_object_id(bt_address_t *addr, uint32_t mc
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_current_track_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
+void lea_mcp_on_current_track_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_CURRENT_TRACK_OBJ_ID, addr, mcs_id);
     if (!event) {
@@ -429,16 +429,16 @@ void lea_mcp_on_current_track_object_id(bt_address_t *addr, uint32_t mcs_id, lea
 
     if (obj_id != NULL) {
         BT_LOGD("obj_id: %02x %02x %02x %02x %02x %02x", obj_id[0],
-                obj_id[1], obj_id[2], obj_id[3], obj_id[4], obj_id[5]);
+            obj_id[1], obj_id[2], obj_id[3], obj_id[4], obj_id[5]);
         memcpy(&event->event_data.obj_id, obj_id, sizeof(lea_mcp_object_id));
     }
 
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_next_track_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
+void lea_mcp_on_next_track_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_NEXT_TRACK_OBJ_ID, addr, mcs_id);
     if (!event) {
@@ -452,9 +452,9 @@ void lea_mcp_on_next_track_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mc
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_parent_group_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
+void lea_mcp_on_parent_group_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_PARENT_GROUP_OBJ_ID, addr, mcs_id);
     if (!event) {
@@ -468,9 +468,9 @@ void lea_mcp_on_parent_group_object_id(bt_address_t *addr, uint32_t mcs_id, lea_
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_current_group_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
+void lea_mcp_on_current_group_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_CURRENT_GROUP_OBJ_ID, addr, mcs_id);
     if (!event) {
@@ -484,9 +484,9 @@ void lea_mcp_on_current_group_object_id(bt_address_t *addr, uint32_t mcs_id, lea
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_search_results_object_id(bt_address_t *addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
+void lea_mcp_on_search_results_object_id(bt_address_t* addr, uint32_t mcs_id, lea_mcp_object_id obj_id)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_SEARCH_RESULTS_OBJ_ID, addr, mcs_id);
     if (!event) {
@@ -500,9 +500,9 @@ void lea_mcp_on_search_results_object_id(bt_address_t *addr, uint32_t mcs_id, le
     lea_mcp_send_msg(event);
 }
 
-void lea_mcp_on_content_control_id(bt_address_t *addr, uint32_t mcs_id, uint8_t ccid)
+void lea_mcp_on_content_control_id(bt_address_t* addr, uint32_t mcs_id, uint8_t ccid)
 {
-    mcp_event_t *event;
+    mcp_event_t* event;
 
     event = mcp_event_new(MCP_READ_CCID, addr, mcs_id);
     if (!event) {
@@ -517,7 +517,7 @@ void lea_mcp_on_content_control_id(bt_address_t *addr, uint32_t mcs_id, uint8_t 
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-static bt_status_t bts_mcp_read_media_player_name(bt_address_t *addr)
+static bt_status_t bts_mcp_read_media_player_name(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -540,7 +540,7 @@ static bt_status_t bts_mcp_read_media_player_name(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_media_player_icon_object_id(bt_address_t *addr)
+static bt_status_t bts_mcp_read_media_player_icon_object_id(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -563,7 +563,7 @@ static bt_status_t bts_mcp_read_media_player_icon_object_id(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_media_player_icon_url(bt_address_t *addr)
+static bt_status_t bts_mcp_read_media_player_icon_url(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -586,7 +586,7 @@ static bt_status_t bts_mcp_read_media_player_icon_url(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_playback_speed(bt_address_t *addr)
+static bt_status_t bts_mcp_read_playback_speed(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -609,7 +609,7 @@ static bt_status_t bts_mcp_read_playback_speed(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_seeking_speed(bt_address_t *addr)
+static bt_status_t bts_mcp_read_seeking_speed(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -632,7 +632,7 @@ static bt_status_t bts_mcp_read_seeking_speed(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_playing_order(bt_address_t *addr)
+static bt_status_t bts_mcp_read_playing_order(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -655,7 +655,7 @@ static bt_status_t bts_mcp_read_playing_order(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_playing_orders_supported(bt_address_t *addr)
+static bt_status_t bts_mcp_read_playing_orders_supported(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -678,7 +678,7 @@ static bt_status_t bts_mcp_read_playing_orders_supported(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_media_control_opcodes_supported(bt_address_t *addr)
+static bt_status_t bts_mcp_read_media_control_opcodes_supported(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -701,7 +701,7 @@ static bt_status_t bts_mcp_read_media_control_opcodes_supported(bt_address_t *ad
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_track_title(bt_address_t *addr)
+static bt_status_t bts_mcp_read_track_title(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -724,7 +724,7 @@ static bt_status_t bts_mcp_read_track_title(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_track_duration(bt_address_t *addr)
+static bt_status_t bts_mcp_read_track_duration(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -747,7 +747,7 @@ static bt_status_t bts_mcp_read_track_duration(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_track_position(bt_address_t *addr)
+static bt_status_t bts_mcp_read_track_position(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -770,7 +770,7 @@ static bt_status_t bts_mcp_read_track_position(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_media_state(bt_address_t *addr)
+static bt_status_t bts_mcp_read_media_state(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -793,7 +793,7 @@ static bt_status_t bts_mcp_read_media_state(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_current_track_object_id(bt_address_t *addr)
+static bt_status_t bts_mcp_read_current_track_object_id(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -816,7 +816,7 @@ static bt_status_t bts_mcp_read_current_track_object_id(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_next_track_object_id(bt_address_t *addr)
+static bt_status_t bts_mcp_read_next_track_object_id(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -839,7 +839,7 @@ static bt_status_t bts_mcp_read_next_track_object_id(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_parent_group_object_id(bt_address_t *addr)
+static bt_status_t bts_mcp_read_parent_group_object_id(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -862,7 +862,7 @@ static bt_status_t bts_mcp_read_parent_group_object_id(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_current_group_object_id(bt_address_t *addr)
+static bt_status_t bts_mcp_read_current_group_object_id(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -885,7 +885,7 @@ static bt_status_t bts_mcp_read_current_group_object_id(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_search_results_object_id(bt_address_t *addr)
+static bt_status_t bts_mcp_read_search_results_object_id(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -908,7 +908,7 @@ static bt_status_t bts_mcp_read_search_results_object_id(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_content_control_id(bt_address_t *addr)
+static bt_status_t bts_mcp_read_content_control_id(bt_address_t* addr)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -931,7 +931,7 @@ static bt_status_t bts_mcp_read_content_control_id(bt_address_t *addr)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_read_remote_mcs_info(bt_address_t *addr, uint8_t opcode)
+static bt_status_t bts_mcp_read_remote_mcs_info(bt_address_t* addr, uint8_t opcode)
 {
     CHECK_ENABLED();
     bt_status_t status;
@@ -1032,8 +1032,8 @@ static bt_status_t bts_mcp_read_remote_mcs_info(bt_address_t *addr, uint8_t opco
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_media_control_request(bt_address_t *addr,
-                                                 LEA_MCP_MEDIA_CONTROL_OPCODE opcode, int32_t n)
+static bt_status_t bts_mcp_media_control_request(bt_address_t* addr,
+    LEA_MCP_MEDIA_CONTROL_OPCODE opcode, int32_t n)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -1057,8 +1057,8 @@ static bt_status_t bts_mcp_media_control_request(bt_address_t *addr,
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t bts_mcp_search_control_request(bt_address_t *addr,
-                                                  uint8_t number, LEA_MCP_SEARCH_CONTROL_ITEM_TYPE type, uint8_t *parameter)
+static bt_status_t bts_mcp_search_control_request(bt_address_t* addr,
+    uint8_t number, LEA_MCP_SEARCH_CONTROL_ITEM_TYPE type, uint8_t* parameter)
 {
     CHECK_ENABLED();
     bt_status_t ret;
@@ -1081,15 +1081,15 @@ static bt_status_t bts_mcp_search_control_request(bt_address_t *addr,
     return BT_STATUS_SUCCESS;
 }
 
-static void *bts_mcp_set_callbacks(void *handle, lea_mcp_callbacks_t *callbacks)
+static void* bts_mcp_set_callbacks(void* handle, lea_mcp_callbacks_t* callbacks)
 {
     if (!g_mcp_service.started)
         return NULL;
 
-    return bt_remote_callbacks_register(g_mcp_service.callbacks, handle, (void *)callbacks);
+    return bt_remote_callbacks_register(g_mcp_service.callbacks, handle, (void*)callbacks);
 }
 
-static bool bts_mcp_reset_callbacks(void **handle, void *cookie)
+static bool bts_mcp_reset_callbacks(void** handle, void* cookie)
 {
     if (!g_mcp_service.started)
         return false;
@@ -1109,12 +1109,12 @@ static const lea_mcp_interface_t leMcpInterface = {
 /****************************************************************************
  * Public function
  ****************************************************************************/
-static const void *get_lea_mcp_profile_interface(void)
+static const void* get_lea_mcp_profile_interface(void)
 {
     return &leMcpInterface;
 }
 
-static bool mcp_allocator(void **data, uint32_t size)
+static bool mcp_allocator(void** data, uint32_t size)
 {
     *data = malloc(size);
     if (!(*data))
@@ -1123,12 +1123,12 @@ static bool mcp_allocator(void **data, uint32_t size)
     return true;
 }
 
-static void lea_mcs_media_seesion_event_callback(void *cookie, int event, int ret, const char *data)
+static void lea_mcs_media_seesion_event_callback(void* cookie, int event, int ret, const char* data)
 {
     BT_LOGD("%s, event:%d ", __func__, event);
 
     bt_status_t rt;
-    bt_address_t *addrs = NULL;
+    bt_address_t* addrs = NULL;
     int num = 0;
 
     rt = adapter_get_connected_devices(BT_TRANSPORT_BLE, &addrs, &num, mcp_allocator);
@@ -1176,7 +1176,7 @@ static bt_status_t lea_mcp_startup(profile_on_startup_t cb)
     BT_LOGD("%s", __func__);
     bt_status_t status;
     pthread_mutexattr_t attr;
-    mcp_service_t *service = &g_mcp_service;
+    mcp_service_t* service = &g_mcp_service;
     if (service->started)
         return BT_STATUS_SUCCESS;
     pthread_mutexattr_init(&attr);
@@ -1190,7 +1190,7 @@ static bt_status_t lea_mcp_startup(profile_on_startup_t cb)
     }
     service->started = true;
     service->media_session_handle = media_session_register(service,
-                                                           lea_mcs_media_seesion_event_callback);
+        lea_mcs_media_seesion_event_callback);
     if (!service->media_session_handle) {
         BT_LOGE("%s media session open failed.", __func__);
         return BT_STATUS_FAIL;
@@ -1234,7 +1234,7 @@ static const profile_service_t lea_mcp_service = {
     .name = PROFILE_MCP_NAME,
     .id = PROFILE_LEAUDIO_MCP,
     .transport = BT_TRANSPORT_BLE,
-    .uuid = {BT_UUID128_TYPE, { 0 }},
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = lea_mcp_init,
     .startup = lea_mcp_startup,
     .shutdown = lea_mcp_shutdown,

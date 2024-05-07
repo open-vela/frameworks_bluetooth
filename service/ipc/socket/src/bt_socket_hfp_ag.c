@@ -61,10 +61,10 @@
  ****************************************************************************/
 
 #if defined(CONFIG_BLUETOOTH_SERVER) && defined(__NuttX__)
-static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr, profile_connection_state_t state)
+static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr, profile_connection_state_t state)
 {
     bt_message_packet_t packet = { 0 };
-    bt_instance_t *ins = cookie;
+    bt_instance_t* ins = cookie;
 
     memcpy(&packet.hfp_ag_cb._on_connection_state_changed.addr, addr, sizeof(bt_address_t));
     packet.hfp_ag_cb._on_connection_state_changed.state = state;
@@ -72,10 +72,10 @@ static void on_connection_state_changed_cb(void *cookie, bt_address_t *addr, pro
     bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_CONNECTION_STATE_CHANGED);
 }
 
-static void on_audio_state_changed_cb(void *cookie, bt_address_t *addr, hfp_audio_state_t state)
+static void on_audio_state_changed_cb(void* cookie, bt_address_t* addr, hfp_audio_state_t state)
 {
     bt_message_packet_t packet = { 0 };
-    bt_instance_t *ins = cookie;
+    bt_instance_t* ins = cookie;
 
     memcpy(&packet.hfp_ag_cb._on_audio_state_changed.addr, addr, sizeof(bt_address_t));
     packet.hfp_ag_cb._on_audio_state_changed.state = state;
@@ -83,10 +83,10 @@ static void on_audio_state_changed_cb(void *cookie, bt_address_t *addr, hfp_audi
     bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_AUDIO_STATE_CHANGED);
 }
 
-static void on_voice_recognition_command_cb(void *cookie, bt_address_t *addr, bool started)
+static void on_voice_recognition_command_cb(void* cookie, bt_address_t* addr, bool started)
 {
     bt_message_packet_t packet = { 0 };
-    bt_instance_t *ins = cookie;
+    bt_instance_t* ins = cookie;
 
     memcpy(&packet.hfp_ag_cb._on_voice_recognition_state_changed.addr, addr, sizeof(bt_address_t));
     packet.hfp_ag_cb._on_voice_recognition_state_changed.started = started;
@@ -94,10 +94,10 @@ static void on_voice_recognition_command_cb(void *cookie, bt_address_t *addr, bo
     bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_VOICE_RECOGNITION_STATE_CHANGED);
 }
 
-static void on_hf_battery_update_cb(void *cookie, bt_address_t *addr, uint8_t value)
+static void on_hf_battery_update_cb(void* cookie, bt_address_t* addr, uint8_t value)
 {
     bt_message_packet_t packet = { 0 };
-    bt_instance_t *ins = cookie;
+    bt_instance_t* ins = cookie;
 
     memcpy(&packet.hfp_ag_cb._on_battery_level_changed.addr, addr, sizeof(bt_address_t));
     packet.hfp_ag_cb._on_battery_level_changed.value = value;
@@ -105,15 +105,15 @@ static void on_hf_battery_update_cb(void *cookie, bt_address_t *addr, uint8_t va
     bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_BATTERY_LEVEL_CHANGED);
 }
 
-static void on_at_cmd_received_cb(void *cookie, bt_address_t *addr, const char *at_command)
+static void on_at_cmd_received_cb(void* cookie, bt_address_t* addr, const char* at_command)
 {
     bt_message_packet_t packet = { 0 };
-    bt_instance_t *ins = cookie;
+    bt_instance_t* ins = cookie;
 
     memcpy(&packet.hfp_ag_cb._on_at_cmd_received.addr, addr, sizeof(bt_address_t));
     if (at_command != NULL)
         strlcpy(packet.hfp_ag_cb._on_at_cmd_received.cmd, at_command,
-                sizeof(packet.hfp_ag_cb._on_at_cmd_received.cmd));
+            sizeof(packet.hfp_ag_cb._on_at_cmd_received.cmd));
 
     bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_AT_COMMAND_RECEIVED);
 }
@@ -130,17 +130,17 @@ const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
  * Public Functions
  ****************************************************************************/
 
-void bt_socket_server_hfp_ag_process(service_poll_t *poll, int fd,
-                                     bt_instance_t *ins, bt_message_packet_t *packet)
+void bt_socket_server_hfp_ag_process(service_poll_t* poll, int fd,
+    bt_instance_t* ins, bt_message_packet_t* packet)
 {
-    hfp_ag_interface_t *profile;
+    hfp_ag_interface_t* profile;
 
     switch (packet->code) {
     case BT_HFP_AG_REGISTER_CALLBACK:
         if (ins->hfp_ag_cookie == NULL) {
-            profile = (hfp_ag_interface_t *)service_manager_get_profile(PROFILE_HFP_AG);
+            profile = (hfp_ag_interface_t*)service_manager_get_profile(PROFILE_HFP_AG);
             if (profile) {
-                ins->hfp_ag_cookie = profile->register_callbacks((void *)ins, (void *)&g_hfp_ag_socket_cbs);
+                ins->hfp_ag_cookie = profile->register_callbacks((void*)ins, (void*)&g_hfp_ag_socket_cbs);
                 if (ins->hfp_ag_cookie)
                     packet->hfp_ag_r.status = BT_STATUS_SUCCESS;
                 else
@@ -154,9 +154,9 @@ void bt_socket_server_hfp_ag_process(service_poll_t *poll, int fd,
         break;
     case BT_HFP_AG_UNREGISTER_CALLBACK:
         if (ins->hfp_ag_cookie) {
-            profile = (hfp_ag_interface_t *)service_manager_get_profile(PROFILE_HFP_AG);
+            profile = (hfp_ag_interface_t*)service_manager_get_profile(PROFILE_HFP_AG);
             if (profile)
-                profile->unregister_callbacks((void **)&ins, ins->hfp_ag_cookie);
+                profile->unregister_callbacks((void**)&ins, ins->hfp_ag_cookie);
             ins->hfp_ag_cookie = NULL;
             packet->hfp_ag_r.status = BT_STATUS_SUCCESS;
         } else {
@@ -165,45 +165,45 @@ void bt_socket_server_hfp_ag_process(service_poll_t *poll, int fd,
         break;
     case BT_HFP_AG_IS_CONNECTED:
         packet->hfp_ag_r.value_bool = BTSYMBOLS(bt_hfp_ag_is_connected)(ins,
-                                                                        &packet->hfp_ag_pl._bt_hfp_ag_is_connected.addr);
+            &packet->hfp_ag_pl._bt_hfp_ag_is_connected.addr);
         break;
 
     case BT_HFP_AG_IS_AUDIO_CONNECTED:
         packet->hfp_ag_r.value_bool = BTSYMBOLS(bt_hfp_ag_is_audio_connected)(ins,
-                                                                              &packet->hfp_ag_pl._bt_hfp_ag_is_audio_connected.addr);
+            &packet->hfp_ag_pl._bt_hfp_ag_is_audio_connected.addr);
         break;
     case BT_HFP_AG_GET_CONNECTION_STATE:
         packet->hfp_ag_r.profile_conn_state = BTSYMBOLS(bt_hfp_ag_get_connection_state)(ins,
-                                                                                        &packet->hfp_ag_pl._bt_hfp_ag_get_connection_state.addr);
+            &packet->hfp_ag_pl._bt_hfp_ag_get_connection_state.addr);
         break;
     case BT_HFP_AG_CONNECT:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_connect)(ins,
-                                                               &packet->hfp_ag_pl._bt_hfp_ag_connect.addr);
+            &packet->hfp_ag_pl._bt_hfp_ag_connect.addr);
         break;
     case BT_HFP_AG_DISCONNECT:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_disconnect)(ins,
-                                                                  &packet->hfp_ag_pl._bt_hfp_ag_disconnect.addr);
+            &packet->hfp_ag_pl._bt_hfp_ag_disconnect.addr);
         break;
     case BT_HFP_AG_CONNECT_AUDIO:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_connect_audio)(ins,
-                                                                     &packet->hfp_ag_pl._bt_hfp_ag_connect_audio.addr);
+            &packet->hfp_ag_pl._bt_hfp_ag_connect_audio.addr);
         break;
     case BT_HFP_AG_DISCONNECT_AUDIO:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_disconnect_audio)(ins,
-                                                                        &packet->hfp_ag_pl._bt_hfp_ag_disconnect_audio.addr);
+            &packet->hfp_ag_pl._bt_hfp_ag_disconnect_audio.addr);
         break;
     case BT_HFP_AG_START_VOICE_RECOGNITION:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_start_voice_recognition)(ins,
-                                                                               &packet->hfp_ag_pl._bt_hfp_ag_start_voice_recognition.addr);
+            &packet->hfp_ag_pl._bt_hfp_ag_start_voice_recognition.addr);
         break;
     case BT_HFP_AG_STOP_VOICE_RECOGNITION:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_stop_voice_recognition)(ins,
-                                                                              &packet->hfp_ag_pl._bt_hfp_ag_stop_voice_recognition.addr);
+            &packet->hfp_ag_pl._bt_hfp_ag_stop_voice_recognition.addr);
         break;
     case BT_HFP_AG_SEND_AT_COMMAND:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_send_at_command)(ins,
-                                                                       &packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr,
-                                                                       packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.cmd);
+            &packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr,
+            packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.cmd);
         break;
     default:
         break;
@@ -211,39 +211,39 @@ void bt_socket_server_hfp_ag_process(service_poll_t *poll, int fd,
 }
 #endif
 
-int bt_socket_client_hfp_ag_callback(service_poll_t *poll,
-                                     int fd, bt_instance_t *ins, bt_message_packet_t *packet)
+int bt_socket_client_hfp_ag_callback(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
     switch (packet->code) {
     case BT_HFP_AG_ON_CONNECTION_STATE_CHANGED:
         CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
-                         connection_state_cb,
-                         &packet->hfp_ag_cb._on_connection_state_changed.addr,
-                         packet->hfp_ag_cb._on_connection_state_changed.state);
+            connection_state_cb,
+            &packet->hfp_ag_cb._on_connection_state_changed.addr,
+            packet->hfp_ag_cb._on_connection_state_changed.state);
         break;
     case BT_HFP_AG_ON_AUDIO_STATE_CHANGED:
         CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
-                         audio_state_cb,
-                         &packet->hfp_ag_cb._on_audio_state_changed.addr,
-                         packet->hfp_ag_cb._on_audio_state_changed.state);
+            audio_state_cb,
+            &packet->hfp_ag_cb._on_audio_state_changed.addr,
+            packet->hfp_ag_cb._on_audio_state_changed.state);
         break;
     case BT_HFP_AG_ON_VOICE_RECOGNITION_STATE_CHANGED:
         CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
-                         vr_cmd_cb,
-                         &packet->hfp_ag_cb._on_voice_recognition_state_changed.addr,
-                         packet->hfp_ag_cb._on_voice_recognition_state_changed.started);
+            vr_cmd_cb,
+            &packet->hfp_ag_cb._on_voice_recognition_state_changed.addr,
+            packet->hfp_ag_cb._on_voice_recognition_state_changed.started);
         break;
     case BT_HFP_AG_ON_BATTERY_LEVEL_CHANGED:
         CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
-                         hf_battery_update_cb,
-                         &packet->hfp_ag_cb._on_battery_level_changed.addr,
-                         packet->hfp_ag_cb._on_battery_level_changed.value);
+            hf_battery_update_cb,
+            &packet->hfp_ag_cb._on_battery_level_changed.addr,
+            packet->hfp_ag_cb._on_battery_level_changed.value);
         break;
     case BT_HFP_AG_ON_AT_COMMAND_RECEIVED:
         CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
-                         at_cmd_cb,
-                         &packet->hfp_ag_cb._on_at_cmd_received.addr,
-                         packet->hfp_ag_cb._on_at_cmd_received.cmd);
+            at_cmd_cb,
+            &packet->hfp_ag_cb._on_at_cmd_received.addr,
+            packet->hfp_ag_cb._on_at_cmd_received.cmd);
         break;
     default:
         return BT_STATUS_PARM_INVALID;

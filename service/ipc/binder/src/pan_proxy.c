@@ -24,12 +24,12 @@
 #include "bluetooth.h"
 #include "bt_adapter.h"
 
-#include "parcel.h"
 #include "pan_proxy.h"
 #include "pan_stub.h"
+#include "parcel.h"
 #include "utils/log.h"
 
-void *BpBtPan_registerCallback(BpBtPan *bpBinder, AIBinder *cbksBinder)
+void* BpBtPan_registerCallback(BpBtPan* bpBinder, AIBinder* cbksBinder)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -38,7 +38,7 @@ void *BpBtPan_registerCallback(BpBtPan *bpBinder, AIBinder *cbksBinder)
     if (!bpBinder || !bpBinder->binder)
         return NULL;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -56,10 +56,10 @@ void *BpBtPan_registerCallback(BpBtPan *bpBinder, AIBinder *cbksBinder)
     if (stat != STATUS_OK)
         return NULL;
 
-    return (void *)cookie;
+    return (void*)cookie;
 }
 
-bool BpBtPan_unRegisterCallback(BpBtPan *bpBinder, void *cookie)
+bool BpBtPan_unRegisterCallback(BpBtPan* bpBinder, void* cookie)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -68,7 +68,7 @@ bool BpBtPan_unRegisterCallback(BpBtPan *bpBinder, void *cookie)
     if (!bpBinder || !bpBinder->binder)
         return false;
 
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -89,11 +89,11 @@ bool BpBtPan_unRegisterCallback(BpBtPan *bpBinder, void *cookie)
     return ret;
 }
 
-bt_status_t BpBtPan_connect(BpBtPan *bpBinder, bt_address_t *addr, uint8_t dstRole, uint8_t srcRole)
+bt_status_t BpBtPan_connect(BpBtPan* bpBinder, bt_address_t* addr, uint8_t dstRole, uint8_t srcRole)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
@@ -123,11 +123,11 @@ bt_status_t BpBtPan_connect(BpBtPan *bpBinder, bt_address_t *addr, uint8_t dstRo
     return status;
 }
 
-bt_status_t BpBtPan_disconnect(BpBtPan *bpBinder, bt_address_t *addr)
+bt_status_t BpBtPan_disconnect(BpBtPan* bpBinder, bt_address_t* addr)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = bpBinder->binder;
+    AIBinder* binder = bpBinder->binder;
     uint32_t status;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);

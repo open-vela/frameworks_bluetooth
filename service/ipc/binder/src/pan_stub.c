@@ -20,39 +20,39 @@
 
 #include <android/binder_manager.h>
 
-#include "pan_service.h"
 #include "bluetooth.h"
+#include "pan_service.h"
 #include "service_manager.h"
 
-#include "parcel.h"
-#include "pan_callbacks_stub.h"
 #include "pan_callbacks_proxy.h"
+#include "pan_callbacks_stub.h"
 #include "pan_proxy.h"
 #include "pan_stub.h"
+#include "parcel.h"
 #include "utils/log.h"
 
 #define BT_PAN_DESC "BluetoothPan"
 
-static void *IBtPan_Class_onCreate(void *arg)
+static void* IBtPan_Class_onCreate(void* arg)
 {
     return arg;
 }
 
-static void IBtPan_Class_onDestroy(void *userData)
+static void IBtPan_Class_onDestroy(void* userData)
 {
 }
 
-static binder_status_t IBtPan_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *reply)
+static binder_status_t IBtPan_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* reply)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
 
-    pan_interface_t *profile = (pan_interface_t *)service_manager_get_profile(PROFILE_PANU);
+    pan_interface_t* profile = (pan_interface_t*)service_manager_get_profile(PROFILE_PANU);
     if (!profile)
         return stat;
 
     switch (code) {
     case IPAN_REGISTER_CALLBACK: {
-        AIBinder *remote;
+        AIBinder* remote;
 
         stat = AParcel_readStrongBinder(in, &remote);
         if (stat != STATUS_OK)
@@ -63,19 +63,19 @@ static binder_status_t IBtPan_Class_onTransact(AIBinder *binder, transaction_cod
             return STATUS_FAILED_TRANSACTION;
         }
 
-        void *cookie = profile->register_callbacks(remote, BpBtPanCallbacks_getStatic());
+        void* cookie = profile->register_callbacks(remote, BpBtPanCallbacks_getStatic());
         stat = AParcel_writeUint32(reply, (uint32_t)cookie);
         break;
     }
     case IPAN_UNREGISTER_CALLBACK: {
-        AIBinder *remote = NULL;
+        AIBinder* remote = NULL;
         uint32_t cookie;
 
         stat = AParcel_readUint32(in, &cookie);
         if (stat != STATUS_OK)
             return stat;
 
-        bool ret = profile->unregister_callbacks((void **)&remote, (void *)cookie);
+        bool ret = profile->unregister_callbacks((void**)&remote, (void*)cookie);
         if (ret && remote)
             AIBinder_decStrong(remote);
 
@@ -122,25 +122,25 @@ static binder_status_t IBtPan_Class_onTransact(AIBinder *binder, transaction_cod
     return stat;
 }
 
-static const AIBinder_Class *BtPan_getClass(void)
+static const AIBinder_Class* BtPan_getClass(void)
 {
 
-    AIBinder_Class *clazz = AIBinder_Class_define(BT_PAN_DESC, IBtPan_Class_onCreate,
-                                                  IBtPan_Class_onDestroy, IBtPan_Class_onTransact);
+    AIBinder_Class* clazz = AIBinder_Class_define(BT_PAN_DESC, IBtPan_Class_onCreate,
+        IBtPan_Class_onDestroy, IBtPan_Class_onTransact);
 
     return clazz;
 }
 
-static AIBinder *BtPan_getBinder(IBtPan *pan)
+static AIBinder* BtPan_getBinder(IBtPan* pan)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (pan->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(pan->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(pan->clazz, (void *)pan);
+        binder = AIBinder_new(pan->clazz, (void*)pan);
         if (pan->WeakBinder != NULL) {
             AIBinder_Weak_delete(pan->WeakBinder);
         }
@@ -151,10 +151,10 @@ static AIBinder *BtPan_getBinder(IBtPan *pan)
     return binder;
 }
 
-binder_status_t BtPan_addService(IBtPan *pan, const char *instance)
+binder_status_t BtPan_addService(IBtPan* pan, const char* instance)
 {
-    pan->clazz = (AIBinder_Class *)BtPan_getClass();
-    AIBinder *binder = BtPan_getBinder(pan);
+    pan->clazz = (AIBinder_Class*)BtPan_getClass();
+    AIBinder* binder = BtPan_getBinder(pan);
     pan->usr_data = NULL;
 
     binder_status_t status = AServiceManager_addService(binder, instance);
@@ -163,13 +163,13 @@ binder_status_t BtPan_addService(IBtPan *pan, const char *instance)
     return status;
 }
 
-BpBtPan *BpBtPan_new(const char *instance)
+BpBtPan* BpBtPan_new(const char* instance)
 {
-    AIBinder *binder = NULL;
-    AIBinder_Class *clazz;
-    BpBtPan *bpBinder = NULL;
+    AIBinder* binder = NULL;
+    AIBinder_Class* clazz;
+    BpBtPan* bpBinder = NULL;
 
-    clazz = (AIBinder_Class *)BtPan_getClass();
+    clazz = (AIBinder_Class*)BtPan_getClass();
     binder = AServiceManager_getService(instance);
     if (!binder)
         return NULL;
@@ -196,15 +196,15 @@ bail:
     return NULL;
 }
 
-void BpBtPan_delete(BpBtPan *bpPan)
+void BpBtPan_delete(BpBtPan* bpPan)
 {
     AIBinder_decStrong(bpPan->binder);
     free(bpPan);
 }
 
-AIBinder *BtPan_getService(BpBtPan **bpPan, const char *instance)
+AIBinder* BtPan_getService(BpBtPan** bpPan, const char* instance)
 {
-    BpBtPan *bpBinder = *bpPan;
+    BpBtPan* bpBinder = *bpPan;
 
     if (bpBinder && bpBinder->binder)
         return bpBinder->binder;

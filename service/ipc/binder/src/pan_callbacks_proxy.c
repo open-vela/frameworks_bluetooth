@@ -20,21 +20,21 @@
 
 #include <android/binder_manager.h>
 
+#include "bluetooth.h"
 #include "pan_callbacks_stub.h"
 #include "pan_proxy.h"
 #include "pan_stub.h"
-#include "bluetooth.h"
 #include "parcel.h"
 
 #include "utils/log.h"
 
-static void BpBtPanCallbacks_connectionStateCallback(void *cookie, profile_connection_state_t state,
-                                                     bt_address_t *bdAddr, uint8_t localRole,
-                                                     uint8_t remotRole)
+static void BpBtPanCallbacks_connectionStateCallback(void* cookie, profile_connection_state_t state,
+    bt_address_t* bdAddr, uint8_t localRole,
+    uint8_t remotRole)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -63,12 +63,12 @@ static void BpBtPanCallbacks_connectionStateCallback(void *cookie, profile_conne
     }
 }
 
-static void BpBtPanCallbacks_netIfStateCallback(void *cookie, pan_netif_state_t state,
-                                                int localRole, const char *ifName)
+static void BpBtPanCallbacks_netIfStateCallback(void* cookie, pan_netif_state_t state,
+    int localRole, const char* ifName)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
-    AIBinder *binder = cookie;
+    AIBinder* binder = cookie;
 
     stat = AIBinder_prepareTransaction(binder, &parcelIn);
     if (stat != STATUS_OK)
@@ -99,7 +99,7 @@ static const pan_callbacks_t static_pan_cbks = {
     BpBtPanCallbacks_connectionStateCallback,
 };
 
-const pan_callbacks_t *BpBtPanCallbacks_getStatic(void)
+const pan_callbacks_t* BpBtPanCallbacks_getStatic(void)
 {
     return &static_pan_cbks;
 }

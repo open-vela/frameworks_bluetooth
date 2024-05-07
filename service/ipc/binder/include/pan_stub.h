@@ -28,14 +28,14 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    void *usr_data;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    void* usr_data;
 } IBtPan;
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
+    AIBinder_Class* clazz;
+    AIBinder* binder;
 } BpBtPan;
 
 typedef enum {
@@ -47,8 +47,8 @@ typedef enum {
 
 #define PAN_BINDER_INSTANCE "Vela.Bluetooth.Pan"
 
-binder_status_t BtPan_addService(IBtPan *pan, const char *instance);
-AIBinder *BtPan_getService(BpBtPan **bpPan, const char *instance);
+binder_status_t BtPan_addService(IBtPan* pan, const char* instance);
+AIBinder* BtPan_getService(BpBtPan** bpPan, const char* instance);
 
 #ifdef __cplusplus
 }

@@ -66,14 +66,14 @@ typedef struct {
     l2cap_endpoint_param_t incoming;
     l2cap_endpoint_param_t outgoing;
     uint16_t tx_mtu;
-    euv_pty_t *pty;
+    euv_pty_t* pty;
     int mfd;
     char pty_name[64];
 } l2cap_channel_t;
 
 typedef struct {
-    callbacks_list_t *callbacks;
-    bt_list_t *channel_list;
+    callbacks_list_t* callbacks;
+    bt_list_t* channel_list;
     pthread_mutex_t l2cap_lock;
 
 } l2cap_manager_t;
@@ -111,7 +111,7 @@ typedef struct {
             bt_address_t addr;
             uint16_t cid;
             uint16_t size;
-            uint8_t *data;
+            uint8_t* data;
         } packet_received;
 
         /**
@@ -138,13 +138,13 @@ static l2cap_manager_t g_l2cap_manager;
  * Private Functions
  ****************************************************************************/
 
-static l2cap_channel_t *find_l2cap_channel_by_cid(uint16_t cid)
+static l2cap_channel_t* find_l2cap_channel_by_cid(uint16_t cid)
 {
-    bt_list_node_t *node;
-    bt_list_t *list = g_l2cap_manager.channel_list;
+    bt_list_node_t* node;
+    bt_list_t* list = g_l2cap_manager.channel_list;
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
-        l2cap_channel_t *channel = (l2cap_channel_t *)bt_list_node(node);
+        l2cap_channel_t* channel = (l2cap_channel_t*)bt_list_node(node);
         if (channel->cid == cid) {
             return channel;
         }
@@ -153,13 +153,13 @@ static l2cap_channel_t *find_l2cap_channel_by_cid(uint16_t cid)
     return NULL;
 }
 
-static l2cap_channel_t *find_l2cap_channel_by_handle(euv_pty_t *handle)
+static l2cap_channel_t* find_l2cap_channel_by_handle(euv_pty_t* handle)
 {
-    bt_list_node_t *node;
-    bt_list_t *list = g_l2cap_manager.channel_list;
+    bt_list_node_t* node;
+    bt_list_t* list = g_l2cap_manager.channel_list;
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
-        l2cap_channel_t *channel = (l2cap_channel_t *)bt_list_node(node);
+        l2cap_channel_t* channel = (l2cap_channel_t*)bt_list_node(node);
         if (channel->pty == handle) {
             return channel;
         }
@@ -168,7 +168,7 @@ static l2cap_channel_t *find_l2cap_channel_by_handle(euv_pty_t *handle)
     return NULL;
 }
 
-static int l2cap_channel_pty_open(l2cap_channel_t *channel)
+static int l2cap_channel_pty_open(l2cap_channel_t* channel)
 {
     int ret;
 
@@ -191,7 +191,7 @@ error:
     return ret;
 }
 
-static int l2cap_channel_pty_close(l2cap_channel_t *channel)
+static int l2cap_channel_pty_close(l2cap_channel_t* channel)
 {
     if (channel->pty) {
         euv_pty_close(channel->pty);
@@ -202,9 +202,9 @@ static int l2cap_channel_pty_close(l2cap_channel_t *channel)
     return 0;
 }
 
-static void euv_read_complete(euv_pty_t *handle, const uint8_t *buf, ssize_t size)
+static void euv_read_complete(euv_pty_t* handle, const uint8_t* buf, ssize_t size)
 {
-    l2cap_channel_t *channel;
+    l2cap_channel_t* channel;
 
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
     channel = find_l2cap_channel_by_handle(handle);
@@ -216,19 +216,19 @@ static void euv_read_complete(euv_pty_t *handle, const uint8_t *buf, ssize_t siz
         goto exit;
     }
 
-    bt_sal_l2cap_send_packet(channel->cid, (uint8_t *)buf, size);
+    bt_sal_l2cap_send_packet(channel->cid, (uint8_t*)buf, size);
 exit:
     pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
 }
 
-static void euv_write_complete(euv_pty_t *handle, uint8_t *buf, int status)
+static void euv_write_complete(euv_pty_t* handle, uint8_t* buf, int status)
 {
     free(buf);
 }
 
-static void handle_channel_conneted(bt_address_t *addr, l2cap_channel_param_t *param)
+static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* param)
 {
-    l2cap_channel_t *channel;
+    l2cap_channel_t* channel;
     l2cap_connect_params_t conn_param;
 
     channel = find_l2cap_channel_by_cid(param->cid);
@@ -275,9 +275,9 @@ static void handle_channel_conneted(bt_address_t *addr, l2cap_channel_param_t *p
     L2CAP_CBACK_FOREACH(g_l2cap_manager.callbacks, on_connected, &conn_param);
 }
 
-static void handle_channel_disconneted(bt_address_t *addr, uint16_t cid, uint32_t reason)
+static void handle_channel_disconneted(bt_address_t* addr, uint16_t cid, uint32_t reason)
 {
-    l2cap_channel_t *channel;
+    l2cap_channel_t* channel;
 
     channel = find_l2cap_channel_by_cid(cid);
     if (channel) {
@@ -287,9 +287,9 @@ static void handle_channel_disconneted(bt_address_t *addr, uint16_t cid, uint32_
     L2CAP_CBACK_FOREACH(g_l2cap_manager.callbacks, on_disconnected, addr, cid, reason);
 }
 
-static void handle_packet_received(bt_address_t *addr, uint16_t cid, uint8_t *packet_data, uint16_t packet_size)
+static void handle_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_data, uint16_t packet_size)
 {
-    l2cap_channel_t *channel;
+    l2cap_channel_t* channel;
 
     channel = find_l2cap_channel_by_cid(cid);
     if (channel && channel->pty) {
@@ -301,9 +301,9 @@ static void handle_packet_received(bt_address_t *addr, uint16_t cid, uint8_t *pa
     }
 }
 
-static void handle_packet_sent(bt_address_t *addr, uint16_t cid)
+static void handle_packet_sent(bt_address_t* addr, uint16_t cid)
 {
-    l2cap_channel_t *channel;
+    l2cap_channel_t* channel;
 
     channel = find_l2cap_channel_by_cid(cid);
     if (channel && channel->pty) {
@@ -315,9 +315,9 @@ static void handle_packet_sent(bt_address_t *addr, uint16_t cid)
     }
 }
 
-static void handle_l2cap_event(void *data)
+static void handle_l2cap_event(void* data)
 {
-    l2cap_msg_t *msg = (l2cap_msg_t *)data;
+    l2cap_msg_t* msg = (l2cap_msg_t*)data;
     if (!msg) {
         return;
     }
@@ -330,18 +330,18 @@ static void handle_l2cap_event(void *data)
         break;
     case CHANNEL_DISCONNECTED_EVT:
         handle_channel_disconneted(&msg->channel_disconnected.addr,
-                                   msg->channel_disconnected.cid,
-                                   msg->channel_disconnected.reason);
+            msg->channel_disconnected.cid,
+            msg->channel_disconnected.reason);
         break;
     case PACKET_RECEVIED_EVT:
         handle_packet_received(&msg->packet_received.addr,
-                               msg->packet_received.cid,
-                               msg->packet_received.data,
-                               msg->packet_received.size);
+            msg->packet_received.cid,
+            msg->packet_received.data,
+            msg->packet_received.size);
         break;
     case PACKET_SENT_EVT:
         handle_packet_sent(&msg->packet_sent.addr,
-                           msg->packet_sent.cid);
+            msg->packet_sent.cid);
         break;
     default:
         break;
@@ -355,9 +355,9 @@ static void handle_l2cap_event(void *data)
  * Public Functions
  ****************************************************************************/
 
-void l2cap_on_channel_connected(bt_address_t *addr, l2cap_channel_param_t *param)
+void l2cap_on_channel_connected(bt_address_t* addr, l2cap_channel_param_t* param)
 {
-    l2cap_msg_t *msg = malloc(sizeof(l2cap_msg_t));
+    l2cap_msg_t* msg = malloc(sizeof(l2cap_msg_t));
     if (!msg) {
         return;
     }
@@ -368,9 +368,9 @@ void l2cap_on_channel_connected(bt_address_t *addr, l2cap_channel_param_t *param
     do_in_service_loop(handle_l2cap_event, msg);
 }
 
-void l2cap_on_channel_disconnected(bt_address_t *addr, uint16_t cid, uint32_t reason)
+void l2cap_on_channel_disconnected(bt_address_t* addr, uint16_t cid, uint32_t reason)
 {
-    l2cap_msg_t *msg = malloc(sizeof(l2cap_msg_t));
+    l2cap_msg_t* msg = malloc(sizeof(l2cap_msg_t));
     if (!msg) {
         return;
     }
@@ -382,9 +382,9 @@ void l2cap_on_channel_disconnected(bt_address_t *addr, uint16_t cid, uint32_t re
     do_in_service_loop(handle_l2cap_event, msg);
 }
 
-void l2cap_on_packet_received(bt_address_t *addr, uint16_t cid, uint8_t *packet_data, uint16_t packet_size)
+void l2cap_on_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_data, uint16_t packet_size)
 {
-    l2cap_msg_t *msg = malloc(sizeof(l2cap_msg_t));
+    l2cap_msg_t* msg = malloc(sizeof(l2cap_msg_t));
     if (!msg) {
         return;
     }
@@ -403,9 +403,9 @@ void l2cap_on_packet_received(bt_address_t *addr, uint16_t cid, uint8_t *packet_
     do_in_service_loop(handle_l2cap_event, msg);
 }
 
-void l2cap_on_packet_sent(bt_address_t *addr, uint16_t cid)
+void l2cap_on_packet_sent(bt_address_t* addr, uint16_t cid)
 {
-    l2cap_msg_t *msg = malloc(sizeof(l2cap_msg_t));
+    l2cap_msg_t* msg = malloc(sizeof(l2cap_msg_t));
     if (!msg) {
         return;
     }
@@ -416,17 +416,17 @@ void l2cap_on_packet_sent(bt_address_t *addr, uint16_t cid)
     do_in_service_loop(handle_l2cap_event, msg);
 }
 
-void *l2cap_register_callbacks(void *remote, const l2cap_callbacks_t *callbacks)
+void* l2cap_register_callbacks(void* remote, const l2cap_callbacks_t* callbacks)
 {
-    return bt_remote_callbacks_register(g_l2cap_manager.callbacks, remote, (void *)callbacks);
+    return bt_remote_callbacks_register(g_l2cap_manager.callbacks, remote, (void*)callbacks);
 }
 
-bool l2cap_unregister_callbacks(void **remote, void *cookie)
+bool l2cap_unregister_callbacks(void** remote, void* cookie)
 {
-    return bt_remote_callbacks_unregister(g_l2cap_manager.callbacks, remote, (remote_callback_t *)cookie);
+    return bt_remote_callbacks_unregister(g_l2cap_manager.callbacks, remote, (remote_callback_t*)cookie);
 }
 
-bt_status_t l2cap_listen_channel(l2cap_config_option_t *option)
+bt_status_t l2cap_listen_channel(l2cap_config_option_t* option)
 {
     if (!option) {
         return BT_STATUS_PARM_INVALID;
@@ -437,7 +437,7 @@ bt_status_t l2cap_listen_channel(l2cap_config_option_t *option)
     return bt_sal_l2cap_listen_channel(option);
 }
 
-bt_status_t l2cap_connect_channel(bt_address_t *addr, l2cap_config_option_t *option)
+bt_status_t l2cap_connect_channel(bt_address_t* addr, l2cap_config_option_t* option)
 {
     if ((!addr) || (!option)) {
         return BT_STATUS_PARM_INVALID;

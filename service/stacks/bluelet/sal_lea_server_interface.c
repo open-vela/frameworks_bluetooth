@@ -38,7 +38,7 @@
 
 static void adpt_lea_pacs_set_sink_locations_cbk(uint32_t locations);
 static void adpt_lea_pacs_set_source_locations_cbk(uint32_t locations);
-static void adpt_lea_ascs_ase_cbk(BD_ADDR remote_addr, SERVICE_LEA_ASE_VALUE_S *ase);
+static void adpt_lea_ascs_ase_cbk(BD_ADDR remote_addr, SERVICE_LEA_ASE_VALUE_S* ase);
 
 const LEA_UCS_CALLBACK_S adpt_lea_uc_server_callbacks = {
     .lea_pacs_set_sink_locations_cb = adpt_lea_pacs_set_sink_locations_cbk,
@@ -60,32 +60,32 @@ static void adpt_lea_pacs_set_source_locations_cbk(uint32_t locations)
     BT_LOGD("[Local][PACS][SourceAudioLocation 0x%08x]", locations);
 }
 
-static void adpt_lea_ascs_ase_cbk(BD_ADDR remote_addr, SERVICE_LEA_ASE_VALUE_S *ase)
+static void adpt_lea_ascs_ase_cbk(BD_ADDR remote_addr, SERVICE_LEA_ASE_VALUE_S* ase)
 {
     bt_address_t addr;
 
     memcpy(addr.addr, remote_addr, 6);
-    char *state[] = { "Idle", "Codec_Config", "QoS_Config", "Enabling", "Streaming", "Disabling", "Releasing" };
+    char* state[] = { "Idle", "Codec_Config", "QoS_Config", "Enabling", "Streaming", "Disabling", "Releasing" };
 
     BT_LOGD("%s, remote_addr:%s, ASE_ID:%d, State:%s, Type:%x", __func__, bt_addr_str(&addr), ase->ase_id,
-            state[ase->ase_state], ase->ase_type);
+        state[ase->ase_state], ase->ase_type);
 
     switch (ase->ase_state) {
     case ADPT_LEA_ASE_STATE_CODEC_CONFIG: {
-        SERVICE_LEA_ASE_CODEC_CFG_PARAM_S *cc = ase->parameters.cc;
+        SERVICE_LEA_ASE_CODEC_CFG_PARAM_S* cc = ase->parameters.cc;
         BT_LOGD("Codec, codec_id:%u, frequency:%u, duration:%u, allocation:%o, octets:%u, blocks:%u",
-                cc->codec_cfg.codec_id.codec_id, cc->codec_cfg.frequency, cc->codec_cfg.duration,
-                cc->codec_cfg.allocation, cc->codec_cfg.octets, cc->codec_cfg.blocks);
+            cc->codec_cfg.codec_id.codec_id, cc->codec_cfg.frequency, cc->codec_cfg.duration,
+            cc->codec_cfg.allocation, cc->codec_cfg.octets, cc->codec_cfg.blocks);
         break;
     }
     case ADPT_LEA_ASE_STATE_QOS_CONFIG: {
-        SERVICE_LEA_ASE_QOS_CFG_PARAM_S *qc = ase->parameters.qc;
+        SERVICE_LEA_ASE_QOS_CFG_PARAM_S* qc = ase->parameters.qc;
         BT_LOGD("Qos, sdu_interval:%u, max_sdu:%u, rtn:%u, max_latency:%u, delay:%u",
-                qc->sdu_interval, qc->max_sdu, qc->rtn, qc->max_latency, qc->delay);
+            qc->sdu_interval, qc->max_sdu, qc->rtn, qc->max_latency, qc->delay);
         break;
     }
     case ADPT_LEA_ASE_STATE_ENABLING: {
-        SERVICE_LEA_ASE_ENABLING_PARAM_S *ec = ase->parameters.ec;
+        SERVICE_LEA_ASE_ENABLING_PARAM_S* ec = ase->parameters.ec;
         BT_LOGD("Enabling, stream_id:0x%08x, metadata_number:%u", ec->stream_id, ec->metadata_number);
         break;
     }
@@ -100,22 +100,22 @@ static void adpt_lea_ascs_ase_cbk(BD_ADDR remote_addr, SERVICE_LEA_ASE_VALUE_S *
  * Public function
  ****************************************************************************/
 
-bool adpt_req_pacs_info_callback(SERVICE_LEA_PACS_INFO_S *info)
+bool adpt_req_pacs_info_callback(SERVICE_LEA_PACS_INFO_S* info)
 {
-    return lea_server_on_pacs_info_request((lea_pacs_info_t *)info);
+    return lea_server_on_pacs_info_request((lea_pacs_info_t*)info);
 }
 
-bool adpt_req_ascs_info_callback(SERVICE_LEA_ASCS_INFO_S *info)
+bool adpt_req_ascs_info_callback(SERVICE_LEA_ASCS_INFO_S* info)
 {
-    return lea_server_on_ascs_info_request((lea_ascs_info_t *)info);
+    return lea_server_on_ascs_info_request((lea_ascs_info_t*)info);
 }
 
-bool adpt_req_bass_info_callback(SERVICE_LEA_BASS_INFO_S *info)
+bool adpt_req_bass_info_callback(SERVICE_LEA_BASS_INFO_S* info)
 {
-    return lea_server_on_bass_info_request((lea_bass_info_t *)info);
+    return lea_server_on_bass_info_request((lea_bass_info_t*)info);
 }
 
-void adpt_server_stream_state_callback(bt_address_t *addr, uint32_t stream_id, bool added)
+void adpt_server_stream_state_callback(bt_address_t* addr, uint32_t stream_id, bool added)
 {
     if (added) {
         lea_server_on_stream_added(addr, stream_id);
@@ -124,7 +124,7 @@ void adpt_server_stream_state_callback(bt_address_t *addr, uint32_t stream_id, b
     }
 }
 
-void adpt_server_stream_start_callback(lea_audio_stream_t *lea_stream)
+void adpt_server_stream_start_callback(lea_audio_stream_t* lea_stream)
 {
     lea_server_on_stream_started(lea_stream);
 }
@@ -134,15 +134,15 @@ void adpt_server_stream_stop_callback(uint32_t stream_id)
     lea_server_on_stream_stopped(stream_id);
 }
 
-void adpt_server_stream_recv_callback(uint32_t stream_id, SERVICE_LEA_RECV_ISO_DATA_S *iso_data)
+void adpt_server_stream_recv_callback(uint32_t stream_id, SERVICE_LEA_RECV_ISO_DATA_S* iso_data)
 {
     lea_server_on_stream_recv(stream_id, iso_data->time_stamp, iso_data->sequenc_number,
-                              iso_data->sdu, iso_data->sdu_length);
+        iso_data->sdu, iso_data->sdu_length);
     stack_adapter_lea_mem_free(iso_data);
 }
 
 bt_status_t bt_sal_lea_server_start_announce(uint8_t adv_id, uint8_t type,
-                                             uint8_t *adv_data, uint8_t adv_size, uint8_t *md_data, uint8_t md_size)
+    uint8_t* adv_data, uint8_t adv_size, uint8_t* md_data, uint8_t md_size)
 {
     SERVICE_SCAN_ADV_PARAMS_S adv_param;
     SERVICE_LEA_EXT_AD_S ext_ad;
@@ -180,7 +180,7 @@ bt_status_t bt_sal_lea_server_stop_announce(uint8_t adv_id)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_lea_server_request_disable(bt_address_t *addr, uint8_t ase_id)
+bt_status_t bt_sal_lea_server_request_disable(bt_address_t* addr, uint8_t ase_id)
 {
     BD_ADDR bd_addr;
 

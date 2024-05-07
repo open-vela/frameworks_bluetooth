@@ -52,8 +52,8 @@ typedef struct {
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-lea_tbs_msg_t *lea_tbs_msg_new(lea_tbs_event_t event, uint32_t tbs_id);
-lea_tbs_msg_t *lea_tbs_msg_new_ext(lea_tbs_event_t event, uint32_t tbs_id, size_t size);
-void lea_tbs_msg_destory(lea_tbs_msg_t *tbs_msg);
+lea_tbs_msg_t* lea_tbs_msg_new(lea_tbs_event_t event, uint32_t tbs_id);
+lea_tbs_msg_t* lea_tbs_msg_new_ext(lea_tbs_event_t event, uint32_t tbs_id, size_t size);
+void lea_tbs_msg_destory(lea_tbs_msg_t* tbs_msg);
 
 #endif /* __LEA_TBS_EVENT_H__ */

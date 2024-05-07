@@ -34,39 +34,39 @@
 
 typedef struct scanner {
     struct list_node scanning_node;
-    void *remote;
+    void* remote;
     uint8_t scanner_id;
     bool is_scanning;
     ble_scan_filter_policy_t policy;
-    uint8_t *filter_data;
+    uint8_t* filter_data;
     uint16_t filter_length;
-    const scanner_callbacks_t *callbacks;
+    const scanner_callbacks_t* callbacks;
 } scanner_t;
 
 typedef struct {
-    scanner_t *scanner;
+    scanner_t* scanner;
     bool use_setting;
     ble_scan_settings_t settings;
 } scanner_ctrl_t;
 
 typedef struct scanner_manager {
-    scanner_t *scanner_list[CONFIG_OBELISK_LE_SCANNER_MAX_NUM];
+    scanner_t* scanner_list[CONFIG_OBELISK_LE_SCANNER_MAX_NUM];
     struct list_node scanning_list;
     uint8_t scanner_cnt;
     bool is_scanning;
 } scanner_manager_t;
 
 static scanner_manager_t scanner_manager;
-static void stop_scan(void *data);
+static void stop_scan(void* data);
 
-static bt_scanner_t *get_remote(scanner_t *scanner)
+static bt_scanner_t* get_remote(scanner_t* scanner)
 {
     return scanner->remote ? scanner->remote : scanner;
 }
 
-static scanner_t *alloc_new_scanner(void *remote, const scanner_callbacks_t *cbs)
+static scanner_t* alloc_new_scanner(void* remote, const scanner_callbacks_t* cbs)
 {
-    scanner_t *app = malloc(sizeof(scanner_t));
+    scanner_t* app = malloc(sizeof(scanner_t));
 
     if (!app)
         return NULL;
@@ -78,7 +78,7 @@ static scanner_t *alloc_new_scanner(void *remote, const scanner_callbacks_t *cbs
     return app;
 }
 
-static void delete_scanner(scanner_t *scanner)
+static void delete_scanner(scanner_t* scanner)
 {
     if (scanner->is_scanning)
         list_delete(&scanner->scanning_node);
@@ -87,7 +87,7 @@ static void delete_scanner(scanner_t *scanner)
     free(scanner);
 }
 
-static bool scanner_compare(scanner_t *src, scanner_t *dest)
+static bool scanner_compare(scanner_t* src, scanner_t* dest)
 {
     if (dest->remote)
         return src->remote == dest->remote;
@@ -95,7 +95,7 @@ static bool scanner_compare(scanner_t *src, scanner_t *dest)
         return src->callbacks == dest->callbacks;
 }
 
-static bool scanner_is_registered(scanner_t *scanner)
+static bool scanner_is_registered(scanner_t* scanner)
 {
     for (int i = 0; i < CONFIG_OBELISK_LE_SCANNER_MAX_NUM; i++) {
         if (scanner_manager.scanner_list[i] == scanner)
@@ -105,9 +105,9 @@ static bool scanner_is_registered(scanner_t *scanner)
     return false;
 }
 
-static uint8_t *findsubblock(uint8_t *sub_block, uint16_t sub_block_len,
-                             uint8_t *sch_block,
-                             uint16_t sch_block_len)
+static uint8_t* findsubblock(uint8_t* sub_block, uint16_t sub_block_len,
+    uint8_t* sch_block,
+    uint16_t sch_block_len)
 {
     uint16_t i, j;
 
@@ -128,17 +128,18 @@ static uint8_t *findsubblock(uint8_t *sub_block, uint16_t sub_block_len,
     return NULL;
 }
 
-static void notify_scanners_scan_result(void *data)
+static void notify_scanners_scan_result(void* data)
 {
-    struct list_node *node;
-    ble_scan_result_t *result = (ble_scan_result_t *)data;
+    struct list_node* node;
+    ble_scan_result_t* result = (ble_scan_result_t*)data;
 
     list_for_every(&scanner_manager.scanning_list, node)
     {
-        scanner_t *scanner = (scanner_t *)node;
+        scanner_t* scanner = (scanner_t*)node;
         if (scanner->filter_data && scanner->filter_length) {
             if (findsubblock(scanner->filter_data, scanner->filter_length,
-                             (uint8_t *)result->adv_data, result->length) == NULL) {
+                    (uint8_t*)result->adv_data, result->length)
+                == NULL) {
                 continue;
             }
         }
@@ -148,7 +149,7 @@ static void notify_scanners_scan_result(void *data)
     free(data);
 }
 
-static uint32_t register_scanner(scanner_t *scanner)
+static uint32_t register_scanner(scanner_t* scanner)
 {
     int i;
 
@@ -161,8 +162,7 @@ static uint32_t register_scanner(scanner_t *scanner)
     }
 
     for (i = 0; i < CONFIG_OBELISK_LE_SCANNER_MAX_NUM; i++) {
-        if (scanner_manager.scanner_list[i] != NULL &&
-            scanner_compare(scanner_manager.scanner_list[i], scanner)) {
+        if (scanner_manager.scanner_list[i] != NULL && scanner_compare(scanner_manager.scanner_list[i], scanner)) {
             delete_scanner(scanner);
             return BT_SCAN_STATUS_SCANNER_EXISTED;
         }
@@ -180,10 +180,10 @@ static uint32_t register_scanner(scanner_t *scanner)
     return BT_SCAN_STATUS_START_FAIL;
 }
 
-static void unregister_scanner(void *data)
+static void unregister_scanner(void* data)
 {
-    scanner_ctrl_t *stop = data;
-    scanner_t *scanner = stop->scanner;
+    scanner_ctrl_t* stop = data;
+    scanner_t* scanner = stop->scanner;
 
     free(data);
     if (!scanner)
@@ -192,17 +192,17 @@ static void unregister_scanner(void *data)
     if (!scanner_is_registered(scanner))
         return;
 
-    stop_scan((void *)scanner);
+    stop_scan((void*)scanner);
     scanner->callbacks->on_scan_stopped(get_remote(scanner));
     scanner_manager.scanner_list[scanner->scanner_id] = NULL;
     scanner_manager.scanner_cnt--;
     delete_scanner(scanner);
 }
 
-static void cleanup_scanner(void *data)
+static void cleanup_scanner(void* data)
 {
     for (int i = 0; i < CONFIG_OBELISK_LE_SCANNER_MAX_NUM; i++) {
-        scanner_t *scanner = scanner_manager.scanner_list[i];
+        scanner_t* scanner = scanner_manager.scanner_list[i];
         if (scanner)
             unregister_scanner(scanner);
     }
@@ -210,7 +210,7 @@ static void cleanup_scanner(void *data)
     list_delete(&scanner_manager.scanning_list);
 }
 
-static int setup_scan_parameter(ble_scan_settings_t *settings, ble_scan_params_t *param)
+static int setup_scan_parameter(ble_scan_settings_t* settings, ble_scan_params_t* param)
 {
     if (!settings || !param)
         return BT_SCAN_STATUS_START_FAIL;
@@ -238,10 +238,10 @@ static int setup_scan_parameter(ble_scan_settings_t *settings, ble_scan_params_t
     return BT_SCAN_STATUS_SUCCESS;
 }
 
-static void start_scan(void *data)
+static void start_scan(void* data)
 {
-    scanner_ctrl_t *start = data;
-    scanner_t *scanner = start->scanner;
+    scanner_ctrl_t* start = data;
+    scanner_t* scanner = start->scanner;
     ble_scan_params_t params = { 100, 100, BT_LE_SCAN_TYPE_PASSIVE, BT_LE_1M_PHY };
 
     uint32_t status = register_scanner(scanner);
@@ -271,9 +271,9 @@ ret:
     free(start);
 }
 
-static void stop_scan(void *data)
+static void stop_scan(void* data)
 {
-    scanner_t *scanner = (scanner_t *)data;
+    scanner_t* scanner = (scanner_t*)data;
 
     if (!scanner_is_registered(scanner))
         return;
@@ -294,9 +294,9 @@ void scan_on_state_changed(uint8_t state)
     BT_LOGD("%s, state:%d", __func__, state);
 }
 
-void scan_on_result_data_update(ble_scan_result_t *result_info, char *adv_data)
+void scan_on_result_data_update(ble_scan_result_t* result_info, char* adv_data)
 {
-    ble_scan_result_t *result = malloc(sizeof(ble_scan_result_t) + result_info->length);
+    ble_scan_result_t* result = malloc(sizeof(ble_scan_result_t) + result_info->length);
 
     if (!result)
         return;
@@ -308,16 +308,16 @@ void scan_on_result_data_update(ble_scan_result_t *result_info, char *adv_data)
     do_in_service_loop(notify_scanners_scan_result, result);
 }
 
-bt_scanner_t *scanner_start_scan(void *remote, const scanner_callbacks_t *cbs)
+bt_scanner_t* scanner_start_scan(void* remote, const scanner_callbacks_t* cbs)
 {
     if (!adapter_is_le_enabled())
         return NULL;
 
-    scanner_t *scanner = alloc_new_scanner(remote, cbs);
+    scanner_t* scanner = alloc_new_scanner(remote, cbs);
     if (!scanner)
         return NULL;
 
-    scanner_ctrl_t *start = malloc(sizeof(scanner_ctrl_t));
+    scanner_ctrl_t* start = malloc(sizeof(scanner_ctrl_t));
     if (start == NULL) {
         free(scanner);
         return NULL;
@@ -326,25 +326,25 @@ bt_scanner_t *scanner_start_scan(void *remote, const scanner_callbacks_t *cbs)
     start->scanner = scanner;
     start->use_setting = false;
 
-    do_in_service_loop(start_scan, (void *)start);
+    do_in_service_loop(start_scan, (void*)start);
 
-    return (bt_scanner_t *)scanner;
+    return (bt_scanner_t*)scanner;
 }
 
-bt_scanner_t *scanner_start_scan_with_filters(void *remote,
-                                              ble_scan_settings_t *settings,
-                                              uint8_t *filter_data,
-                                              uint16_t filter_length,
-                                              const scanner_callbacks_t *cbs)
+bt_scanner_t* scanner_start_scan_with_filters(void* remote,
+    ble_scan_settings_t* settings,
+    uint8_t* filter_data,
+    uint16_t filter_length,
+    const scanner_callbacks_t* cbs)
 {
     if (!adapter_is_le_enabled())
         return NULL;
 
-    scanner_t *scanner = alloc_new_scanner(remote, cbs);
+    scanner_t* scanner = alloc_new_scanner(remote, cbs);
     if (!scanner)
         return NULL;
 
-    scanner_ctrl_t *start = malloc(sizeof(scanner_ctrl_t));
+    scanner_ctrl_t* start = malloc(sizeof(scanner_ctrl_t));
     if (start == NULL) {
         free(scanner);
         return NULL;
@@ -360,29 +360,29 @@ bt_scanner_t *scanner_start_scan_with_filters(void *remote,
     start->use_setting = true;
     memcpy(&start->settings, settings, sizeof(*settings));
 
-    do_in_service_loop(start_scan, (void *)start);
+    do_in_service_loop(start_scan, (void*)start);
 
-    return (bt_scanner_t *)scanner;
+    return (bt_scanner_t*)scanner;
 }
 
-bt_scanner_t *scanner_start_scan_settings(void *remote,
-                                          ble_scan_settings_t *settings,
-                                          const scanner_callbacks_t *cbs)
+bt_scanner_t* scanner_start_scan_settings(void* remote,
+    ble_scan_settings_t* settings,
+    const scanner_callbacks_t* cbs)
 {
     return scanner_start_scan_with_filters(remote, settings, NULL, 0, cbs);
 }
 
-void scanner_stop_scan(bt_scanner_t *scanner)
+void scanner_stop_scan(bt_scanner_t* scanner)
 {
     if (!adapter_is_le_enabled())
         return;
 
-    scanner_ctrl_t *stop = malloc(sizeof(scanner_ctrl_t));
+    scanner_ctrl_t* stop = malloc(sizeof(scanner_ctrl_t));
     if (stop == NULL)
         return;
 
-    stop->scanner = (scanner_t *)scanner;
-    do_in_service_loop(unregister_scanner, (void *)stop);
+    stop->scanner = (scanner_t*)scanner;
+    do_in_service_loop(unregister_scanner, (void*)stop);
 }
 
 bool scan_is_supported(void)
@@ -404,6 +404,6 @@ void scan_manager_cleanup(void)
     do_in_service_loop(cleanup_scanner, NULL);
 }
 
-void scanner_dump(bt_scanner_t *scanner)
+void scanner_dump(bt_scanner_t* scanner)
 {
 }

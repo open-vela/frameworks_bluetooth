@@ -17,14 +17,14 @@
 #ifndef __MEDIA_SYSTEM_H__
 #define __MEDIA_SYSTEM_H__
 
-typedef void (*bt_media_voice_volume_change_callback_t)(void *context, int volume);
+typedef void (*bt_media_voice_volume_change_callback_t)(void* context, int volume);
 
-void bt_media_remove_listener(void *handle);
+void bt_media_remove_listener(void* handle);
 bt_status_t bt_media_set_a2dp_available(void);
 bt_status_t bt_media_set_a2dp_unavailable(void);
 bt_status_t bt_media_set_hfp_samplerate(uint16_t samplerate);
-void *bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_callback_t cb, void *context);
-bt_status_t bt_media_get_voice_call_volume(int *volume);
+void* bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_callback_t cb, void* context);
+bt_status_t bt_media_get_voice_call_volume(int* volume);
 bt_status_t bt_media_set_voice_call_volume(int volume);
 bt_status_t bt_media_set_sco_available(void);
 bt_status_t bt_media_set_sco_unavailable(void);

@@ -32,27 +32,27 @@
 
 #define BT_SPP_CALLBACK_DESC "BluetoothSppCallback"
 
-static const AIBinder_Class *kIBtSppCallbacks_Class = NULL;
+static const AIBinder_Class* kIBtSppCallbacks_Class = NULL;
 
-static void *IBtSppCallbacks_Class_onCreate(void *arg)
+static void* IBtSppCallbacks_Class_onCreate(void* arg)
 {
     return arg;
 }
 
-static void IBtSppCallbacks_Class_onDestroy(void *userData)
+static void IBtSppCallbacks_Class_onDestroy(void* userData)
 {
 }
 
-static binder_status_t IBtSppCallbacks_Class_onTransact(AIBinder *binder, transaction_code_t code, const AParcel *in, AParcel *out)
+static binder_status_t IBtSppCallbacks_Class_onTransact(AIBinder* binder, transaction_code_t code, const AParcel* in, AParcel* out)
 {
     binder_status_t stat = STATUS_FAILED_TRANSACTION;
-    IBtSppCallbacks *cbks = AIBinder_getUserData(binder);
+    IBtSppCallbacks* cbks = AIBinder_getUserData(binder);
     bt_address_t addr;
     uint32_t scn, port;
 
     switch (code) {
     case ICBKS_PTY_OPEN: {
-        char *name = NULL;
+        char* name = NULL;
 
         stat = AParcel_readAddress(in, &addr);
         if (stat != STATUS_OK)
@@ -105,16 +105,16 @@ static binder_status_t IBtSppCallbacks_Class_onTransact(AIBinder *binder, transa
     return stat;
 }
 
-AIBinder *BtSppCallbacks_getBinder(IBtSppCallbacks *cbks)
+AIBinder* BtSppCallbacks_getBinder(IBtSppCallbacks* cbks)
 {
-    AIBinder *binder = NULL;
+    AIBinder* binder = NULL;
 
     if (cbks->WeakBinder != NULL) {
         binder = AIBinder_Weak_promote(cbks->WeakBinder);
     }
 
     if (binder == NULL) {
-        binder = AIBinder_new(cbks->clazz, (void *)cbks);
+        binder = AIBinder_new(cbks->clazz, (void*)cbks);
         if (cbks->WeakBinder != NULL) {
             AIBinder_Weak_delete(cbks->WeakBinder);
         }
@@ -125,25 +125,24 @@ AIBinder *BtSppCallbacks_getBinder(IBtSppCallbacks *cbks)
     return binder;
 }
 
-binder_status_t BtSppCallbacks_associateClass(AIBinder *binder)
+binder_status_t BtSppCallbacks_associateClass(AIBinder* binder)
 {
     if (!kIBtSppCallbacks_Class) {
-        kIBtSppCallbacks_Class =
-            AIBinder_Class_define(BT_SPP_CALLBACK_DESC, IBtSppCallbacks_Class_onCreate,
-                                  IBtSppCallbacks_Class_onDestroy, IBtSppCallbacks_Class_onTransact);
+        kIBtSppCallbacks_Class = AIBinder_Class_define(BT_SPP_CALLBACK_DESC, IBtSppCallbacks_Class_onCreate,
+            IBtSppCallbacks_Class_onDestroy, IBtSppCallbacks_Class_onTransact);
     }
 
     return AIBinder_associateClass(binder, kIBtSppCallbacks_Class);
 }
 
-IBtSppCallbacks *BtSppCallbacks_new(const spp_callbacks_t *callbacks)
+IBtSppCallbacks* BtSppCallbacks_new(const spp_callbacks_t* callbacks)
 {
-    AIBinder_Class *clazz;
-    AIBinder *binder;
-    IBtSppCallbacks *cbks = malloc(sizeof(IBtSppCallbacks));
+    AIBinder_Class* clazz;
+    AIBinder* binder;
+    IBtSppCallbacks* cbks = malloc(sizeof(IBtSppCallbacks));
 
     clazz = AIBinder_Class_define(BT_SPP_CALLBACK_DESC, IBtSppCallbacks_Class_onCreate,
-                                  IBtSppCallbacks_Class_onDestroy, IBtSppCallbacks_Class_onTransact);
+        IBtSppCallbacks_Class_onDestroy, IBtSppCallbacks_Class_onTransact);
 
     cbks->clazz = clazz;
     cbks->WeakBinder = NULL;
@@ -155,7 +154,7 @@ IBtSppCallbacks *BtSppCallbacks_new(const spp_callbacks_t *callbacks)
     return cbks;
 }
 
-void BtSppCallbacks_delete(IBtSppCallbacks *cbks)
+void BtSppCallbacks_delete(IBtSppCallbacks* cbks)
 {
     assert(cbks);
 

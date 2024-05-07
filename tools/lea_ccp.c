@@ -24,49 +24,49 @@
 #include "bt_tools.h"
 
 /// lea_interface_t
-static int ccp_read_bearer_provider_name(void *handle, int argc, char *argv[]);
-static int ccp_read_bearer_uci(void *handle, int argc, char *argv[]);
-static int ccp_read_bearer_technology(void *handle, int argc, char *argv[]);
-static int ccp_read_bearer_uri_schemes_supported_list(void *handle, int argc, char *argv[]);
-static int ccp_read_bearer_signal_strength(void *handle, int argc, char *argv[]);
-static int ccp_read_bearer_signal_strength_report_interval(void *handle, int argc, char *argv[]);
-static int ccp_read_content_control_id(void *handle, int argc, char *argv[]);
-static int ccp_read_status_flags(void *handle, int argc, char *argv[]);
-static int ccp_read_call_control_optional_opcodes(void *handle, int argc, char *argv[]);
-static int ccp_read_incoming_call(void *handle, int argc, char *argv[]);
-static int ccp_read_incoming_call_target_bearer_uri(void *handle, int argc, char *argv[]);
-static int ccp_read_call_state(void *handle, int argc, char *argv[]);
-static int ccp_read_bearer_list_current_calls(void *handle, int argc, char *argv[]);
-static int ccp_read_call_friendly_name(void *handle, int argc, char *argv[]);
-static int ccp_call_control_by_index(void *handle, int argc, char *argv[]);
-static int ccp_originate_call(void *handle, int argc, char *argv[]);
-static int ccp_join_calls(void *handle, int argc, char *argv[]);
+static int ccp_read_bearer_provider_name(void* handle, int argc, char* argv[]);
+static int ccp_read_bearer_uci(void* handle, int argc, char* argv[]);
+static int ccp_read_bearer_technology(void* handle, int argc, char* argv[]);
+static int ccp_read_bearer_uri_schemes_supported_list(void* handle, int argc, char* argv[]);
+static int ccp_read_bearer_signal_strength(void* handle, int argc, char* argv[]);
+static int ccp_read_bearer_signal_strength_report_interval(void* handle, int argc, char* argv[]);
+static int ccp_read_content_control_id(void* handle, int argc, char* argv[]);
+static int ccp_read_status_flags(void* handle, int argc, char* argv[]);
+static int ccp_read_call_control_optional_opcodes(void* handle, int argc, char* argv[]);
+static int ccp_read_incoming_call(void* handle, int argc, char* argv[]);
+static int ccp_read_incoming_call_target_bearer_uri(void* handle, int argc, char* argv[]);
+static int ccp_read_call_state(void* handle, int argc, char* argv[]);
+static int ccp_read_bearer_list_current_calls(void* handle, int argc, char* argv[]);
+static int ccp_read_call_friendly_name(void* handle, int argc, char* argv[]);
+static int ccp_call_control_by_index(void* handle, int argc, char* argv[]);
+static int ccp_originate_call(void* handle, int argc, char* argv[]);
+static int ccp_join_calls(void* handle, int argc, char* argv[]);
 
 #define ccp_CALL_CONTROL "call control by index                   param: <addr><opcode>"
 #define ccp_ORIGINATE_CALL "originate                               param: <addr><uri>"
 #define ccp_JOIN_CALL "join                                    param: <addr><number><call_index1><call_index2>"
 
 static bt_command_t g_lea_ccp_tables[] = {
-    {"readprovidername",    ccp_read_bearer_provider_name,                   0, "read bearer provider name               param: <addr>"},
-    { "readuci",            ccp_read_bearer_uci,                             0, "read bearer uci                         param: <addr>"},
-    { "readtech",           ccp_read_bearer_technology,                      0, "read bearer technology                  param: <addr>"},
-    { "readurischemeslist", ccp_read_bearer_uri_schemes_supported_list,      0, "read bearer uri schemes supported list  param: <addr>"},
-    { "readstrength",       ccp_read_bearer_signal_strength,                 0, "read bearer signal strength             param: <addr>"},
-    { "readinterval",       ccp_read_bearer_signal_strength_report_interval, 0, "read ss report interval                 param: <addr>"},
-    { "readccid",           ccp_read_content_control_id,                     0, "read ccid                               param: <addr>"},
-    { "readstatusflags",    ccp_read_status_flags,                           0, "read status flags                       param: <addr>"},
-    { "readopcode",         ccp_read_call_control_optional_opcodes,          0, "read call control optional opcode       param: <addr>"},
-    { "readincoming",       ccp_read_incoming_call,                          0, "read incoming call                      param: <addr>"},
-    { "readtargeturi",      ccp_read_incoming_call_target_bearer_uri,        0, "read incoming call target bearer uri    param: <addr>"},
-    { "readcallstate",      ccp_read_call_state,                             0, "read call state                         param: <addr>"},
-    { "readlistcall",       ccp_read_bearer_list_current_calls,              0, "read bearer list current call           param: <addr>"},
-    { "readfriendlyname",   ccp_read_call_friendly_name,                     0, "read call friendly name                 param: <addr>"},
-    { "callcontrol",        ccp_call_control_by_index,                       0, ccp_CALL_CONTROL                                       },
-    { "originate",          ccp_originate_call,                              0, ccp_ORIGINATE_CALL                                     },
-    { "join",               ccp_join_calls,                                  0, ccp_JOIN_CALL                                          },
+    { "readprovidername", ccp_read_bearer_provider_name, 0, "read bearer provider name               param: <addr>" },
+    { "readuci", ccp_read_bearer_uci, 0, "read bearer uci                         param: <addr>" },
+    { "readtech", ccp_read_bearer_technology, 0, "read bearer technology                  param: <addr>" },
+    { "readurischemeslist", ccp_read_bearer_uri_schemes_supported_list, 0, "read bearer uri schemes supported list  param: <addr>" },
+    { "readstrength", ccp_read_bearer_signal_strength, 0, "read bearer signal strength             param: <addr>" },
+    { "readinterval", ccp_read_bearer_signal_strength_report_interval, 0, "read ss report interval                 param: <addr>" },
+    { "readccid", ccp_read_content_control_id, 0, "read ccid                               param: <addr>" },
+    { "readstatusflags", ccp_read_status_flags, 0, "read status flags                       param: <addr>" },
+    { "readopcode", ccp_read_call_control_optional_opcodes, 0, "read call control optional opcode       param: <addr>" },
+    { "readincoming", ccp_read_incoming_call, 0, "read incoming call                      param: <addr>" },
+    { "readtargeturi", ccp_read_incoming_call_target_bearer_uri, 0, "read incoming call target bearer uri    param: <addr>" },
+    { "readcallstate", ccp_read_call_state, 0, "read call state                         param: <addr>" },
+    { "readlistcall", ccp_read_bearer_list_current_calls, 0, "read bearer list current call           param: <addr>" },
+    { "readfriendlyname", ccp_read_call_friendly_name, 0, "read call friendly name                 param: <addr>" },
+    { "callcontrol", ccp_call_control_by_index, 0, ccp_CALL_CONTROL },
+    { "originate", ccp_originate_call, 0, ccp_ORIGINATE_CALL },
+    { "join", ccp_join_calls, 0, ccp_JOIN_CALL },
 };
 
-static void *ccp_callbacks = NULL;
+static void* ccp_callbacks = NULL;
 
 static void usage(void)
 {
@@ -79,7 +79,7 @@ static void usage(void)
 }
 
 /* interface */
-static int ccp_read_bearer_provider_name(void *handle, int argc, char *argv[])
+static int ccp_read_bearer_provider_name(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -94,7 +94,7 @@ static int ccp_read_bearer_provider_name(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int ccp_read_bearer_uci(void *handle, int argc, char *argv[])
+static int ccp_read_bearer_uci(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -109,7 +109,7 @@ static int ccp_read_bearer_uci(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int ccp_read_bearer_technology(void *handle, int argc, char *argv[])
+static int ccp_read_bearer_technology(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -124,7 +124,7 @@ static int ccp_read_bearer_technology(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int ccp_read_bearer_uri_schemes_supported_list(void *handle, int argc, char *argv[])
+static int ccp_read_bearer_uri_schemes_supported_list(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -139,7 +139,7 @@ static int ccp_read_bearer_uri_schemes_supported_list(void *handle, int argc, ch
     return CMD_OK;
 }
 
-static int ccp_read_bearer_signal_strength(void *handle, int argc, char *argv[])
+static int ccp_read_bearer_signal_strength(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -154,7 +154,7 @@ static int ccp_read_bearer_signal_strength(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int ccp_read_bearer_signal_strength_report_interval(void *handle, int argc, char *argv[])
+static int ccp_read_bearer_signal_strength_report_interval(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -169,7 +169,7 @@ static int ccp_read_bearer_signal_strength_report_interval(void *handle, int arg
     return CMD_OK;
 }
 
-static int ccp_read_content_control_id(void *handle, int argc, char *argv[])
+static int ccp_read_content_control_id(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -184,7 +184,7 @@ static int ccp_read_content_control_id(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int ccp_read_status_flags(void *handle, int argc, char *argv[])
+static int ccp_read_status_flags(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -199,7 +199,7 @@ static int ccp_read_status_flags(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int ccp_read_call_control_optional_opcodes(void *handle, int argc, char *argv[])
+static int ccp_read_call_control_optional_opcodes(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -214,7 +214,7 @@ static int ccp_read_call_control_optional_opcodes(void *handle, int argc, char *
     return CMD_OK;
 }
 
-static int ccp_read_incoming_call(void *handle, int argc, char *argv[])
+static int ccp_read_incoming_call(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -229,7 +229,7 @@ static int ccp_read_incoming_call(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int ccp_read_incoming_call_target_bearer_uri(void *handle, int argc, char *argv[])
+static int ccp_read_incoming_call_target_bearer_uri(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -244,7 +244,7 @@ static int ccp_read_incoming_call_target_bearer_uri(void *handle, int argc, char
     return CMD_OK;
 }
 
-static int ccp_read_call_state(void *handle, int argc, char *argv[])
+static int ccp_read_call_state(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -259,7 +259,7 @@ static int ccp_read_call_state(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int ccp_read_bearer_list_current_calls(void *handle, int argc, char *argv[])
+static int ccp_read_bearer_list_current_calls(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -274,7 +274,7 @@ static int ccp_read_bearer_list_current_calls(void *handle, int argc, char *argv
     return CMD_OK;
 }
 
-static int ccp_read_call_friendly_name(void *handle, int argc, char *argv[])
+static int ccp_read_call_friendly_name(void* handle, int argc, char* argv[])
 {
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
@@ -290,7 +290,7 @@ static int ccp_read_call_friendly_name(void *handle, int argc, char *argv[])
 }
 
 /*write opcode */
-static int ccp_call_control_by_index(void *handle, int argc, char *argv[])
+static int ccp_call_control_by_index(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
@@ -309,18 +309,18 @@ static int ccp_call_control_by_index(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int ccp_originate_call(void *handle, int argc, char *argv[])
+static int ccp_originate_call(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
     bt_address_t addr;
-    uint8_t *uri;
+    uint8_t* uri;
 
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    uri = (uint8_t *)argv[1];
+    uri = (uint8_t*)argv[1];
 
     if (bt_lea_ccp_originate_call(handle, &addr, uri) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -328,7 +328,7 @@ static int ccp_originate_call(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static int ccp_join_calls(void *handle, int argc, char *argv[])
+static int ccp_join_calls(void* handle, int argc, char* argv[])
 {
     if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
@@ -336,7 +336,7 @@ static int ccp_join_calls(void *handle, int argc, char *argv[])
     bt_address_t addr;
     uint8_t number;
     uint8_t list_of_call_indexex[5];
-    uint8_t *call_indexes;
+    uint8_t* call_indexes;
 
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
@@ -352,7 +352,7 @@ static int ccp_join_calls(void *handle, int argc, char *argv[])
     return CMD_OK;
 }
 
-static void ccp_test_callback(void *context, bt_address_t *addr)
+static void ccp_test_callback(void* context, bt_address_t* addr)
 {
     PRINT_ADDR("ccp_test_callback, addr:%s", addr);
 }
@@ -362,14 +362,14 @@ static const lea_ccp_callbacks_t lea_ccp_cbs = {
     ccp_test_callback,
 };
 
-int lea_ccp_command_init(void *handle)
+int lea_ccp_command_init(void* handle)
 {
     ccp_callbacks = bt_lea_ccp_register_callbacks(handle, &lea_ccp_cbs);
 
     return CMD_OK;
 }
 
-void lea_ccp_command_uninit(void *handle)
+void lea_ccp_command_uninit(void* handle)
 {
     bt_status_t ret;
 
@@ -381,7 +381,7 @@ void lea_ccp_command_uninit(void *handle)
     }
 }
 
-int lea_ccp_command_exec(void *handle, int argc, char *argv[])
+int lea_ccp_command_exec(void* handle, int argc, char* argv[])
 {
     int ret = CMD_USAGE_FAULT;
 

@@ -29,10 +29,10 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    const advertiser_callback_t *callbacks;
-    void *cookie;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    const advertiser_callback_t* callbacks;
+    void* cookie;
 } IBtAdvertiserCallbacks;
 
 typedef enum {
@@ -40,10 +40,10 @@ typedef enum {
     ICBKS_ON_ADVERTISING_STOPPED,
 } IBtAdvertiserCallbacks_Call;
 
-AIBinder *BtAdvertiserCallbacks_getBinder(IBtAdvertiserCallbacks *adver);
-binder_status_t BtAdvertiserCallbacks_associateClass(AIBinder *binder);
-IBtAdvertiserCallbacks *BtAdvertiserCallbacks_new(const advertiser_callback_t *callbacks);
-void BtAdvertiserCallbacks_delete(IBtAdvertiserCallbacks *cbks);
+AIBinder* BtAdvertiserCallbacks_getBinder(IBtAdvertiserCallbacks* adver);
+binder_status_t BtAdvertiserCallbacks_associateClass(AIBinder* binder);
+IBtAdvertiserCallbacks* BtAdvertiserCallbacks_new(const advertiser_callback_t* callbacks);
+void BtAdvertiserCallbacks_delete(IBtAdvertiserCallbacks* cbks);
 
 #ifdef __cplusplus
 }

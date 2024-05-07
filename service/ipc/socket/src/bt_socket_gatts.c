@@ -48,7 +48,7 @@
  ****************************************************************************/
 #define CALLBACK_REMOTE(_remote, _type, _cback, ...) \
     do {                                             \
-        _type *_cbs = (_type *)_remote->callbacks;   \
+        _type* _cbs = (_type*)_remote->callbacks;    \
         if (_cbs && _cbs->_cback) {                  \
             _cbs->_cback(_remote, ##__VA_ARGS__);    \
         }                                            \
@@ -65,18 +65,18 @@
 #include "gatts_service.h"
 #include "service_manager.h"
 
-static void on_connected_cb(gatts_handle_t srv_handle, bt_address_t *addr)
+static void on_connected_cb(gatts_handle_t srv_handle, bt_address_t* addr)
 {
     bt_message_packet_t packet = { 0 };
-    bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
+    bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_connected.addr, addr, sizeof(bt_address_t));
     bt_socket_server_send(gatts_remote->ins, &packet, BT_GATT_SERVER_ON_CONNECTED);
 }
-static void on_disconnected_cb(gatts_handle_t srv_handle, bt_address_t *addr)
+static void on_disconnected_cb(gatts_handle_t srv_handle, bt_address_t* addr)
 {
     bt_message_packet_t packet = { 0 };
-    bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
+    bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_disconnected.addr, addr, sizeof(bt_address_t));
     bt_socket_server_send(gatts_remote->ins, &packet, BT_GATT_SERVER_ON_DISCONNECTED);
@@ -84,7 +84,7 @@ static void on_disconnected_cb(gatts_handle_t srv_handle, bt_address_t *addr)
 static void on_attr_table_added_cb(gatts_handle_t srv_handle, gatt_status_t status, uint16_t attr_handle)
 {
     bt_message_packet_t packet = { 0 };
-    bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
+    bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     packet.gatts_cb._on_attr_table_added.status = status;
     packet.gatts_cb._on_attr_table_added.attr_handle = attr_handle;
@@ -93,45 +93,45 @@ static void on_attr_table_added_cb(gatts_handle_t srv_handle, gatt_status_t stat
 static void on_attr_table_removed_cb(gatts_handle_t srv_handle, gatt_status_t status, uint16_t attr_handle)
 {
     bt_message_packet_t packet = { 0 };
-    bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
+    bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     packet.gatts_cb._on_attr_table_removed.status = status;
     packet.gatts_cb._on_attr_table_removed.attr_handle = attr_handle;
     bt_socket_server_send(gatts_remote->ins, &packet, BT_GATT_SERVER_ON_ATTR_TABLE_REMOVED);
 }
-static void on_notify_complete_cb(gatts_handle_t srv_handle, bt_address_t *addr, gatt_status_t status, uint16_t attr_handle)
+static void on_notify_complete_cb(gatts_handle_t srv_handle, bt_address_t* addr, gatt_status_t status, uint16_t attr_handle)
 {
     bt_message_packet_t packet = { 0 };
-    bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
+    bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_nofity_complete.addr, addr, sizeof(bt_address_t));
     packet.gatts_cb._on_nofity_complete.status = status;
     packet.gatts_cb._on_nofity_complete.attr_handle = attr_handle;
     bt_socket_server_send(gatts_remote->ins, &packet, BT_GATT_SERVER_NOTIFY_COMPLETE);
 }
-static void on_mtu_changed_cb(gatts_handle_t srv_handle, bt_address_t *addr, uint32_t mtu)
+static void on_mtu_changed_cb(gatts_handle_t srv_handle, bt_address_t* addr, uint32_t mtu)
 {
     bt_message_packet_t packet = { 0 };
-    bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
+    bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_mtu_changed.addr, addr, sizeof(bt_address_t));
     packet.gatts_cb._on_mtu_changed.mtu = mtu;
     bt_socket_server_send(gatts_remote->ins, &packet, BT_GATT_SERVER_ON_MTU_CHANGED);
 }
-static void on_phy_read_cb(gatts_handle_t srv_handle, bt_address_t *addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+static void on_phy_read_cb(gatts_handle_t srv_handle, bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     bt_message_packet_t packet = { 0 };
-    bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
+    bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_phy_updated.addr, addr, sizeof(bt_address_t));
     packet.gatts_cb._on_phy_updated.tx_phy = tx_phy;
     packet.gatts_cb._on_phy_updated.rx_phy = rx_phy;
     bt_socket_server_send(gatts_remote->ins, &packet, BT_GATT_SERVER_ON_PHY_READ);
 }
-static void on_phy_updated_cb(gatts_handle_t srv_handle, bt_address_t *addr, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+static void on_phy_updated_cb(gatts_handle_t srv_handle, bt_address_t* addr, gatt_status_t status, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     bt_message_packet_t packet = { 0 };
-    bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
+    bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_phy_updated.addr, addr, sizeof(bt_address_t));
     packet.gatts_cb._on_phy_updated.status = status;
@@ -139,10 +139,10 @@ static void on_phy_updated_cb(gatts_handle_t srv_handle, bt_address_t *addr, gat
     packet.gatts_cb._on_phy_updated.rx_phy = rx_phy;
     bt_socket_server_send(gatts_remote->ins, &packet, BT_GATT_SERVER_ON_PHY_UPDATED);
 }
-static uint16_t on_read_request_cb(gatts_handle_t srv_handle, bt_address_t *addr, uint16_t attr_handle, uint32_t req_handle)
+static uint16_t on_read_request_cb(gatts_handle_t srv_handle, bt_address_t* addr, uint16_t attr_handle, uint32_t req_handle)
 {
     bt_message_packet_t packet = { 0 };
-    bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
+    bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_read_request.addr, addr, sizeof(bt_address_t));
     packet.gatts_cb._on_read_request.attr_handle = attr_handle;
@@ -150,10 +150,10 @@ static uint16_t on_read_request_cb(gatts_handle_t srv_handle, bt_address_t *addr
     bt_socket_server_send(gatts_remote->ins, &packet, BT_GATT_SERVER_ON_READ_REQUEST);
     return 0;
 }
-static uint16_t on_write_request_cb(gatts_handle_t srv_handle, bt_address_t *addr, uint16_t attr_handle, const uint8_t *value, uint16_t length, uint16_t offset)
+static uint16_t on_write_request_cb(gatts_handle_t srv_handle, bt_address_t* addr, uint16_t attr_handle, const uint8_t* value, uint16_t length, uint16_t offset)
 {
     bt_message_packet_t packet = { 0 };
-    bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
+    bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(srv_handle);
 
     if (length > sizeof(packet.gatts_cb._on_write_request.value)) {
         BT_LOGW("exceeds gatts maximum attr value size :%d", length);
@@ -169,11 +169,11 @@ static uint16_t on_write_request_cb(gatts_handle_t srv_handle, bt_address_t *add
     bt_socket_server_send(gatts_remote->ins, &packet, BT_GATT_SERVER_ON_WRITE_REQUEST);
     return length;
 }
-static void on_conn_param_changed_cb(gatts_handle_t srv_handle, bt_address_t *addr, uint16_t connection_interval,
-                                     uint16_t peripheral_latency, uint16_t supervision_timeout)
+static void on_conn_param_changed_cb(gatts_handle_t srv_handle, bt_address_t* addr, uint16_t connection_interval,
+    uint16_t peripheral_latency, uint16_t supervision_timeout)
 {
     bt_message_packet_t packet = { 0 };
-    bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(srv_handle);
+    bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(srv_handle);
     packet.gatts_cb._on_callback.remote = gatts_remote->cookie;
     memcpy(&packet.gatts_cb._on_conn_param_changed.addr, addr, sizeof(bt_address_t));
     packet.gatts_cb._on_conn_param_changed.interval = connection_interval;
@@ -195,13 +195,13 @@ const static gatts_callbacks_t g_gatts_socket_cbs = {
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-void bt_socket_server_gatts_process(service_poll_t *poll, int fd,
-                                    bt_instance_t *ins, bt_message_packet_t *packet)
+void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
+    bt_instance_t* ins, bt_message_packet_t* packet)
 {
     switch (packet->code) {
     case BT_GATT_SERVER_REGISTER_SERVICE: {
-        gatts_interface_t *profile = (gatts_interface_t *)service_manager_get_profile(PROFILE_GATTS);
-        bt_gatts_remote_t *gatts_remote = malloc(sizeof(bt_gatts_remote_t));
+        gatts_interface_t* profile = (gatts_interface_t*)service_manager_get_profile(PROFILE_GATTS);
+        bt_gatts_remote_t* gatts_remote = malloc(sizeof(bt_gatts_remote_t));
         if (!gatts_remote) {
             packet->gatts_r.status = BT_STATUS_NO_RESOURCES;
             break;
@@ -210,14 +210,14 @@ void bt_socket_server_gatts_process(service_poll_t *poll, int fd,
         gatts_remote->ins = ins;
         gatts_remote->cookie = packet->gatts_pl._bt_gatts_register.cookie;
         packet->gatts_r.status = profile->register_service(gatts_remote,
-                                                           &packet->gatts_r.handle,
-                                                           (gatts_callbacks_t *)&g_gatts_socket_cbs);
+            &packet->gatts_r.handle,
+            (gatts_callbacks_t*)&g_gatts_socket_cbs);
         if (packet->gatts_r.status != BT_STATUS_SUCCESS)
             free(gatts_remote);
         break;
     }
     case BT_GATT_SERVER_UNREGISTER_SERVICE: {
-        bt_gatts_remote_t *gatts_remote = if_gatts_get_remote(packet->gatts_pl._bt_gatts_unregister.handle);
+        bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(packet->gatts_pl._bt_gatts_unregister.handle);
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_unregister_service)(
             packet->gatts_pl._bt_gatts_unregister.handle);
 
@@ -237,12 +237,12 @@ void bt_socket_server_gatts_process(service_poll_t *poll, int fd,
             &packet->gatts_pl._bt_gatts_disconnect.addr);
         break;
     case BT_GATT_SERVER_ADD_ATTR_TABLE: {
-        uint8_t *raw_data = (uint8_t *)packet->gatts_pl._bt_gatts_add_attr_table.attr_db;
+        uint8_t* raw_data = (uint8_t*)packet->gatts_pl._bt_gatts_add_attr_table.attr_db;
         gatt_srv_db_t srv_db = {
             .attr_num = packet->gatts_pl._bt_gatts_add_attr_table.attr_num,
             .attr_db = packet->gatts_pl._bt_gatts_add_attr_table.attr_db,
         };
-        gatt_attr_db_t *attr_inst = srv_db.attr_db;
+        gatt_attr_db_t* attr_inst = srv_db.attr_db;
         raw_data += sizeof(gatt_attr_db_t) * srv_db.attr_num;
         for (int i = 0; i < srv_db.attr_num; i++, attr_inst++) {
             if (attr_inst->read_cb)
@@ -322,82 +322,81 @@ void bt_socket_server_gatts_process(service_poll_t *poll, int fd,
 }
 #endif
 
-int bt_socket_client_gatts_callback(service_poll_t *poll,
-                                    int fd, bt_instance_t *ins, bt_message_packet_t *packet)
+int bt_socket_client_gatts_callback(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
-    bt_gatts_remote_t *gatts_remote = (bt_gatts_remote_t *)packet->gatts_cb._on_callback.remote;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)packet->gatts_cb._on_callback.remote;
     switch (packet->code) {
     case BT_GATT_SERVER_ON_CONNECTED:
         CALLBACK_REMOTE(gatts_remote, gatts_callbacks_t,
-                        on_connected,
-                        &packet->gatts_cb._on_connected.addr);
+            on_connected,
+            &packet->gatts_cb._on_connected.addr);
         break;
     case BT_GATT_SERVER_ON_DISCONNECTED:
         CALLBACK_REMOTE(gatts_remote, gatts_callbacks_t,
-                        on_disconnected,
-                        &packet->gatts_cb._on_disconnected.addr);
+            on_disconnected,
+            &packet->gatts_cb._on_disconnected.addr);
         break;
     case BT_GATT_SERVER_ON_ATTR_TABLE_ADDED:
         CALLBACK_REMOTE(gatts_remote, gatts_callbacks_t,
-                        on_attr_table_added,
-                        packet->gatts_cb._on_attr_table_added.status,
-                        packet->gatts_cb._on_attr_table_added.attr_handle);
+            on_attr_table_added,
+            packet->gatts_cb._on_attr_table_added.status,
+            packet->gatts_cb._on_attr_table_added.attr_handle);
         break;
     case BT_GATT_SERVER_ON_ATTR_TABLE_REMOVED:
         CALLBACK_REMOTE(gatts_remote, gatts_callbacks_t,
-                        on_attr_table_removed,
-                        packet->gatts_cb._on_attr_table_removed.status,
-                        packet->gatts_cb._on_attr_table_removed.attr_handle);
+            on_attr_table_removed,
+            packet->gatts_cb._on_attr_table_removed.status,
+            packet->gatts_cb._on_attr_table_removed.attr_handle);
         break;
     case BT_GATT_SERVER_ON_MTU_CHANGED:
         CALLBACK_REMOTE(gatts_remote, gatts_callbacks_t,
-                        on_mtu_changed,
-                        &packet->gatts_cb._on_mtu_changed.addr,
-                        packet->gatts_cb._on_mtu_changed.mtu);
+            on_mtu_changed,
+            &packet->gatts_cb._on_mtu_changed.addr,
+            packet->gatts_cb._on_mtu_changed.mtu);
         break;
     case BT_GATT_SERVER_NOTIFY_COMPLETE:
         CALLBACK_REMOTE(gatts_remote, gatts_callbacks_t,
-                        on_notify_complete,
-                        &packet->gatts_cb._on_nofity_complete.addr,
-                        packet->gatts_cb._on_nofity_complete.status,
-                        packet->gatts_cb._on_nofity_complete.attr_handle);
+            on_notify_complete,
+            &packet->gatts_cb._on_nofity_complete.addr,
+            packet->gatts_cb._on_nofity_complete.status,
+            packet->gatts_cb._on_nofity_complete.attr_handle);
         break;
     case BT_GATT_SERVER_ON_PHY_READ:
         CALLBACK_REMOTE(gatts_remote, gatts_callbacks_t,
-                        on_phy_read,
-                        &packet->gatts_cb._on_phy_updated.addr,
-                        packet->gatts_cb._on_phy_updated.tx_phy,
-                        packet->gatts_cb._on_phy_updated.rx_phy);
+            on_phy_read,
+            &packet->gatts_cb._on_phy_updated.addr,
+            packet->gatts_cb._on_phy_updated.tx_phy,
+            packet->gatts_cb._on_phy_updated.rx_phy);
         break;
     case BT_GATT_SERVER_ON_PHY_UPDATED:
         CALLBACK_REMOTE(gatts_remote, gatts_callbacks_t,
-                        on_phy_updated,
-                        &packet->gatts_cb._on_phy_updated.addr,
-                        packet->gatts_cb._on_phy_updated.status,
-                        packet->gatts_cb._on_phy_updated.tx_phy,
-                        packet->gatts_cb._on_phy_updated.rx_phy);
+            on_phy_updated,
+            &packet->gatts_cb._on_phy_updated.addr,
+            packet->gatts_cb._on_phy_updated.status,
+            packet->gatts_cb._on_phy_updated.tx_phy,
+            packet->gatts_cb._on_phy_updated.rx_phy);
         break;
     case BT_GATT_SERVER_ON_CONN_PARAM_CHANGED:
         CALLBACK_REMOTE(gatts_remote, gatts_callbacks_t,
-                        on_conn_param_changed,
-                        &packet->gatts_cb._on_conn_param_changed.addr,
-                        packet->gatts_cb._on_conn_param_changed.interval,
-                        packet->gatts_cb._on_conn_param_changed.latency,
-                        packet->gatts_cb._on_conn_param_changed.timeout);
+            on_conn_param_changed,
+            &packet->gatts_cb._on_conn_param_changed.addr,
+            packet->gatts_cb._on_conn_param_changed.interval,
+            packet->gatts_cb._on_conn_param_changed.latency,
+            packet->gatts_cb._on_conn_param_changed.timeout);
         break;
     case BT_GATT_SERVER_ON_READ_REQUEST: {
-        bt_list_node_t *node;
-        bt_list_t *list = gatts_remote->db_list;
+        bt_list_node_t* node;
+        bt_list_t* list = gatts_remote->db_list;
         for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
-            gatt_srv_db_t *srv_db = (gatt_srv_db_t *)bt_list_node(node);
-            gatt_attr_db_t *attr_db = srv_db->attr_db;
+            gatt_srv_db_t* srv_db = (gatt_srv_db_t*)bt_list_node(node);
+            gatt_attr_db_t* attr_db = srv_db->attr_db;
             for (int i = 0; i < srv_db->attr_num; i++, attr_db++) {
-                if (attr_db->handle == packet->gatts_cb._on_read_request.attr_handle &&
-                    attr_db->read_cb) {
+                if (attr_db->handle == packet->gatts_cb._on_read_request.attr_handle && attr_db->read_cb) {
                     attr_db->read_cb(gatts_remote,
-                                     &packet->gatts_cb._on_read_request.addr,
-                                     packet->gatts_cb._on_read_request.attr_handle,
-                                     packet->gatts_cb._on_read_request.req_handle);
+                        &packet->gatts_cb._on_read_request.addr,
+                        packet->gatts_cb._on_read_request.attr_handle,
+                        packet->gatts_cb._on_read_request.req_handle);
                     return BT_STATUS_SUCCESS;
                 }
             }
@@ -405,20 +404,19 @@ int bt_socket_client_gatts_callback(service_poll_t *poll,
         break;
     }
     case BT_GATT_SERVER_ON_WRITE_REQUEST: {
-        bt_list_node_t *node;
-        bt_list_t *list = gatts_remote->db_list;
+        bt_list_node_t* node;
+        bt_list_t* list = gatts_remote->db_list;
         for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
-            gatt_srv_db_t *srv_db = (gatt_srv_db_t *)bt_list_node(node);
-            gatt_attr_db_t *attr_db = srv_db->attr_db;
+            gatt_srv_db_t* srv_db = (gatt_srv_db_t*)bt_list_node(node);
+            gatt_attr_db_t* attr_db = srv_db->attr_db;
             for (int i = 0; i < srv_db->attr_num; i++, attr_db++) {
-                if (attr_db->handle == packet->gatts_cb._on_write_request.attr_handle &&
-                    attr_db->write_cb) {
+                if (attr_db->handle == packet->gatts_cb._on_write_request.attr_handle && attr_db->write_cb) {
                     attr_db->write_cb(gatts_remote,
-                                      &packet->gatts_cb._on_write_request.addr,
-                                      packet->gatts_cb._on_write_request.attr_handle,
-                                      packet->gatts_cb._on_write_request.value,
-                                      packet->gatts_cb._on_write_request.length,
-                                      packet->gatts_cb._on_write_request.offset);
+                        &packet->gatts_cb._on_write_request.addr,
+                        packet->gatts_cb._on_write_request.attr_handle,
+                        packet->gatts_cb._on_write_request.value,
+                        packet->gatts_cb._on_write_request.length,
+                        packet->gatts_cb._on_write_request.offset);
                     return BT_STATUS_SUCCESS;
                 }
             }

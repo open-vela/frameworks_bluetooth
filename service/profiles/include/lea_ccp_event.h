@@ -61,8 +61,8 @@ typedef struct {
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-lea_ccp_msg_t *lea_ccp_msg_new(lea_ccp_event_t event, bt_address_t *remote_addr, uint32_t tbs_id);
-lea_ccp_msg_t *lea_ccp_msg_new_ext(lea_ccp_event_t event, bt_address_t *remote_addr, uint32_t tbs_id, size_t size);
-void lea_ccp_msg_destory(lea_ccp_msg_t *ccp_msg);
+lea_ccp_msg_t* lea_ccp_msg_new(lea_ccp_event_t event, bt_address_t* remote_addr, uint32_t tbs_id);
+lea_ccp_msg_t* lea_ccp_msg_new_ext(lea_ccp_event_t event, bt_address_t* remote_addr, uint32_t tbs_id, size_t size);
+void lea_ccp_msg_destory(lea_ccp_msg_t* ccp_msg);
 
 #endif /* __LEA_CCP_EVENT_H__ */

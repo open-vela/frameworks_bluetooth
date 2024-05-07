@@ -25,9 +25,9 @@
  *
  * @param cookie - callback cookie.
  */
-typedef void (*lea_vmicp_volume_state_callback)(void *cookie, bt_address_t *addr, int volume, int mute);
-typedef void (*lea_vmicp_volume_flags_callback)(void *cookie, bt_address_t *addr, int flags);
-typedef void (*lea_vmicp_mic_state_callback)(void *cookie, bt_address_t *addr, int mute);
+typedef void (*lea_vmicp_volume_state_callback)(void* cookie, bt_address_t* addr, int volume, int mute);
+typedef void (*lea_vmicp_volume_flags_callback)(void* cookie, bt_address_t* addr, int flags);
+typedef void (*lea_vmicp_mic_state_callback)(void* cookie, bt_address_t* addr, int mute);
 
 typedef struct
 {
@@ -44,7 +44,7 @@ typedef struct
  * @param callbacks - LE Audio vmicp callback functions.
  * @return void* - callback cookie.
  */
-void *bt_lea_vmicp_register_callbacks(bt_instance_t *ins, const lea_vmicp_callbacks_t *callbacks);
+void* bt_lea_vmicp_register_callbacks(bt_instance_t* ins, const lea_vmicp_callbacks_t* callbacks);
 
 /**
  * @brief Unregister LE Audio vmicp callback functions
@@ -54,7 +54,7 @@ void *bt_lea_vmicp_register_callbacks(bt_instance_t *ins, const lea_vmicp_callba
  * @return true - on unregister success.
  * @return false - on callback cookie not found.
  */
-bool bt_lea_vmicp_unregister_callbacks(bt_instance_t *ins, void *cookie);
+bool bt_lea_vmicp_unregister_callbacks(bt_instance_t* ins, void* cookie);
 
 /**
  * @brief Read volume state. Value is returned by
@@ -63,7 +63,7 @@ bool bt_lea_vmicp_unregister_callbacks(bt_instance_t *ins, void *cookie);
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_vmicp_get_volume_state(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_vmicp_get_volume_state(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Read volume flags. Value is returned by
@@ -72,7 +72,7 @@ bt_status_t bt_lea_vmicp_get_volume_state(bt_instance_t *ins, bt_address_t *addr
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_vmicp_get_volume_flags(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_vmicp_get_volume_flags(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Change volume. Value is returned by
@@ -82,7 +82,7 @@ bt_status_t bt_lea_vmicp_get_volume_flags(bt_instance_t *ins, bt_address_t *addr
  * @param dir - up or down the volume
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_vmicp_change_volume(bt_instance_t *ins, bt_address_t *addr, int dir);
+bt_status_t bt_lea_vmicp_change_volume(bt_instance_t* ins, bt_address_t* addr, int dir);
 
 /**
  * @brief Chnage and unmute volume. Value is returned by
@@ -92,7 +92,7 @@ bt_status_t bt_lea_vmicp_change_volume(bt_instance_t *ins, bt_address_t *addr, i
  * @param dir - up or down the volume
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_vmicp_change_unmute_volume(bt_instance_t *ins, bt_address_t *addr, int dir);
+bt_status_t bt_lea_vmicp_change_unmute_volume(bt_instance_t* ins, bt_address_t* addr, int dir);
 
 /**
  * @brief Set absolute volume. Value is returned by
@@ -102,7 +102,7 @@ bt_status_t bt_lea_vmicp_change_unmute_volume(bt_instance_t *ins, bt_address_t *
  * @param vol - value of volume
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_vmicp_set_volume(bt_instance_t *ins, bt_address_t *addr, int vol);
+bt_status_t bt_lea_vmicp_set_volume(bt_instance_t* ins, bt_address_t* addr, int vol);
 
 /**
  * @brief Set volume mute. Value is returned by
@@ -112,7 +112,7 @@ bt_status_t bt_lea_vmicp_set_volume(bt_instance_t *ins, bt_address_t *addr, int 
  * @param mute - mute or unmute
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_vmicp_set_volume_mute(bt_instance_t *ins, bt_address_t *addr, int mute);
+bt_status_t bt_lea_vmicp_set_volume_mute(bt_instance_t* ins, bt_address_t* addr, int mute);
 
 /**
  * @brief Read mic state. Value is returned by
@@ -121,7 +121,7 @@ bt_status_t bt_lea_vmicp_set_volume_mute(bt_instance_t *ins, bt_address_t *addr,
  * @param addr - Address of the remote server.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_vmicp_get_mic_state(bt_instance_t *ins, bt_address_t *addr);
+bt_status_t bt_lea_vmicp_get_mic_state(bt_instance_t* ins, bt_address_t* addr);
 
 /**
  * @brief Set Mic mute. Value is returned by
@@ -131,6 +131,6 @@ bt_status_t bt_lea_vmicp_get_mic_state(bt_instance_t *ins, bt_address_t *addr);
  * @param mute - mute or unmute
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t bt_lea_vmicp_set_mic_mute(bt_instance_t *ins, bt_address_t *addr, int mute);
+bt_status_t bt_lea_vmicp_set_mic_mute(bt_instance_t* ins, bt_address_t* addr, int mute);
 
 #endif

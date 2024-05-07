@@ -29,10 +29,10 @@ extern "C" {
 #include <android/binder_manager.h>
 
 typedef struct {
-    AIBinder_Class *clazz;
-    AIBinder_Weak *WeakBinder;
-    const hfp_hf_callbacks_t *callbacks;
-    void *cookie;
+    AIBinder_Class* clazz;
+    AIBinder_Weak* WeakBinder;
+    const hfp_hf_callbacks_t* callbacks;
+    void* cookie;
 } IBtHfpHfCallbacks;
 
 typedef enum {
@@ -48,10 +48,10 @@ typedef enum {
     ICBKS_HFP_HF_OPERATOR_CHANGED,
 } IBtHfpHfCallbacks_Call;
 
-AIBinder *BtHfpHfCallbacks_getBinder(IBtHfpHfCallbacks *adapter);
-binder_status_t BtHfpHfCallbacks_associateClass(AIBinder *binder);
-IBtHfpHfCallbacks *BtHfpHfCallbacks_new(const hfp_hf_callbacks_t *callbacks);
-void BtHfpHfCallbacks_delete(IBtHfpHfCallbacks *cbks);
+AIBinder* BtHfpHfCallbacks_getBinder(IBtHfpHfCallbacks* adapter);
+binder_status_t BtHfpHfCallbacks_associateClass(AIBinder* binder);
+IBtHfpHfCallbacks* BtHfpHfCallbacks_new(const hfp_hf_callbacks_t* callbacks);
+void BtHfpHfCallbacks_delete(IBtHfpHfCallbacks* cbks);
 
 #ifdef __cplusplus
 }

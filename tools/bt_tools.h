@@ -19,11 +19,11 @@
  * Included Files
  ****************************************************************************/
 #include <getopt.h>
+#include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <inttypes.h>
 #ifdef __NuttX__
 #include <debug.h>
 #endif
@@ -76,88 +76,88 @@
  * Public Types
  ****************************************************************************/
 typedef struct {
-    char *cmd; /* command */
-    int (*func)(void *handle, int argc, char **argv); /* command func */
+    char* cmd; /* command */
+    int (*func)(void* handle, int argc, char** argv); /* command func */
     int opt; /* use option parameters */
-    char *help; /* usage  */
+    char* help; /* usage  */
 } bt_command_t;
 
-int execute_command_in_table(void *handle, bt_command_t *table, uint32_t table_size, int argc, char *argv[]);
-int execute_command_in_table_offset(void *handle, bt_command_t *table, uint32_t table_size, int argc, char *argv[], uint8_t offset);
+int execute_command_in_table(void* handle, bt_command_t* table, uint32_t table_size, int argc, char* argv[]);
+int execute_command_in_table_offset(void* handle, bt_command_t* table, uint32_t table_size, int argc, char* argv[], uint8_t offset);
 
-int log_command(void *handle, int argc, char *argv[]);
-int adv_command_exec(void *handle, int argc, char *argv[]);
+int log_command(void* handle, int argc, char* argv[]);
+int adv_command_exec(void* handle, int argc, char* argv[]);
 
-int scan_command_init(void *handle);
-void scan_command_uninit(void *handle);
-int scan_command_exec(void *handle, int argc, char *argv[]);
+int scan_command_init(void* handle);
+void scan_command_uninit(void* handle);
+int scan_command_exec(void* handle, int argc, char* argv[]);
 
-int a2dp_sink_commond_init(void *handle);
-int a2dp_sink_commond_uninit(void *handle);
-int a2dp_sink_command_exec(void *handle, int argc, char *argv[]);
+int a2dp_sink_commond_init(void* handle);
+int a2dp_sink_commond_uninit(void* handle);
+int a2dp_sink_command_exec(void* handle, int argc, char* argv[]);
 
-int a2dp_src_commond_init(void *handle);
-int a2dp_src_commond_uninit(void *handle);
-int a2dp_src_command_exec(void *handle, int argc, char *argv[]);
+int a2dp_src_commond_init(void* handle);
+int a2dp_src_commond_uninit(void* handle);
+int a2dp_src_command_exec(void* handle, int argc, char* argv[]);
 
-int hfp_hf_commond_init(void *handle);
-int hfp_hf_commond_uninit(void *handle);
-int hfp_hf_command_exec(void *handle, int argc, char *argv[]);
+int hfp_hf_commond_init(void* handle);
+int hfp_hf_commond_uninit(void* handle);
+int hfp_hf_command_exec(void* handle, int argc, char* argv[]);
 
-int hfp_ag_commond_init(void *handle);
-int hfp_ag_commond_uninit(void *handle);
-int hfp_ag_command_exec(void *handle, int argc, char *argv[]);
+int hfp_ag_commond_init(void* handle);
+int hfp_ag_commond_uninit(void* handle);
+int hfp_ag_command_exec(void* handle, int argc, char* argv[]);
 
-int spp_command_init(void *handle);
-void spp_command_uninit(void *handle);
-int spp_command_exec(void *handle, int argc, char *argv[]);
+int spp_command_init(void* handle);
+void spp_command_uninit(void* handle);
+int spp_command_exec(void* handle, int argc, char* argv[]);
 
-int hidd_command_init(void *handle);
-void hidd_command_uninit(void *handle);
-int hidd_command_exec(void *handle, int argc, char *argv[]);
+int hidd_command_init(void* handle);
+void hidd_command_uninit(void* handle);
+int hidd_command_exec(void* handle, int argc, char* argv[]);
 
-int pan_command_init(void *handle);
-void pan_command_uninit(void *handle);
-int pan_command_exec(void *handle, int argc, char *argv[]);
+int pan_command_init(void* handle);
+void pan_command_uninit(void* handle);
+int pan_command_exec(void* handle, int argc, char* argv[]);
 
-int gattc_command_init(void *handle);
-int gattc_command_uninit(void *handle);
-int gattc_command_exec(void *handle, int argc, char *argv[]);
+int gattc_command_init(void* handle);
+int gattc_command_uninit(void* handle);
+int gattc_command_exec(void* handle, int argc, char* argv[]);
 
-int gatts_command_init(void *handle);
-int gatts_command_uninit(void *handle);
-int gatts_command_exec(void *handle, int argc, char *argv[]);
+int gatts_command_init(void* handle);
+int gatts_command_uninit(void* handle);
+int gatts_command_exec(void* handle, int argc, char* argv[]);
 
-int leas_command_init(void *handle);
-void leas_command_uninit(void *handle);
-int leas_command_exec(void *handle, int argc, char *argv[]);
+int leas_command_init(void* handle);
+void leas_command_uninit(void* handle);
+int leas_command_exec(void* handle, int argc, char* argv[]);
 
-int lea_mcp_commond_init(void *handle);
-void lea_mcp_commond_uninit(void *handle);
-int lea_mcp_command_exec(void *handle, int argc, char *argv[]);
+int lea_mcp_commond_init(void* handle);
+void lea_mcp_commond_uninit(void* handle);
+int lea_mcp_command_exec(void* handle, int argc, char* argv[]);
 
-int lea_ccp_command_init(void *handle);
-void lea_ccp_command_uninit(void *handle);
-int lea_ccp_command_exec(void *handle, int argc, char *argv[]);
+int lea_ccp_command_init(void* handle);
+void lea_ccp_command_uninit(void* handle);
+int lea_ccp_command_exec(void* handle, int argc, char* argv[]);
 
-int lea_vmics_command_init(void *handle);
-void lea_vmics_command_uninit(void *handle);
-int vmics_command_exec(void *handle, int argc, char *argv[]);
+int lea_vmics_command_init(void* handle);
+void lea_vmics_command_uninit(void* handle);
+int vmics_command_exec(void* handle, int argc, char* argv[]);
 
-int leac_command_init(void *handle);
-void leac_command_uninit(void *handle);
-int leac_command_exec(void *handle, int argc, char *argv[]);
+int leac_command_init(void* handle);
+void leac_command_uninit(void* handle);
+int leac_command_exec(void* handle, int argc, char* argv[]);
 
-int lea_mcs_commond_init(void *handle);
-void lea_mcs_commond_uninit(void *handle);
-int lea_mcs_command_exec(void *handle, int argc, char *argv[]);
+int lea_mcs_commond_init(void* handle);
+void lea_mcs_commond_uninit(void* handle);
+int lea_mcs_command_exec(void* handle, int argc, char* argv[]);
 
-int lea_tbs_command_init(void *handle);
-void lea_tbs_command_uninit(void *handle);
-int lea_tbs_command_exec(void *handle, int argc, char *argv[]);
+int lea_tbs_command_init(void* handle);
+void lea_tbs_command_uninit(void* handle);
+int lea_tbs_command_exec(void* handle, int argc, char* argv[]);
 
-int lea_vmicp_command_init(void *handle);
-void lea_vmicp_command_uninit(void *handle);
-int vmicp_command_exec(void *handle, int argc, char *argv[]);
+int lea_vmicp_command_init(void* handle);
+void lea_vmicp_command_uninit(void* handle);
+int vmicp_command_exec(void* handle, int argc, char* argv[]);
 
 #endif /* __BT_TOOLS_H__ */

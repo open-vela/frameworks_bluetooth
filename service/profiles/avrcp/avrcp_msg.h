@@ -115,13 +115,13 @@ typedef struct {
         rc_capabilities_t cap;
         rc_notification_rsp_t notify_rsp;
         rc_absvol_t absvol;
-        void *context;
+        void* context;
     } data;
 } avrcp_msg_t;
 
-typedef void (*avrcp_msg_callback_t)(avrcp_msg_t *msg);
+typedef void (*avrcp_msg_callback_t)(avrcp_msg_t* msg);
 
-avrcp_msg_t *avrcp_msg_new(rc_msg_id_t msg, bt_address_t *bd_addr);
-void avrcp_msg_destory(avrcp_msg_t *avrcp_msg);
+avrcp_msg_t* avrcp_msg_new(rc_msg_id_t msg, bt_address_t* bd_addr);
+void avrcp_msg_destory(avrcp_msg_t* avrcp_msg);
 
 #endif

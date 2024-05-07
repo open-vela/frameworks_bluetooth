@@ -77,7 +77,7 @@ typedef struct {
     uint32_t block_ticks;
     stream_state_t state;
     uv_mutex_t queue_lock;
-    service_timer_t *recv_timer;
+    service_timer_t* recv_timer;
     struct list_node packet_queue;
     lea_audio_config_t audio_config;
 } lea_sink_stream_t;
@@ -87,23 +87,23 @@ typedef struct {
  ****************************************************************************/
 
 static lea_sink_stream_t g_sink_stream;
-static lea_sink_callabcks_t *g_sink_callbacks;
-static audio_transport_t *g_sink_transport;
+static lea_sink_callabcks_t* g_sink_callbacks;
+static audio_transport_t* g_sink_transport;
 
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
 
-static bt_status_t lea_sink_update_codec(lea_audio_config_t *audio_config, bool enable);
+static bt_status_t lea_sink_update_codec(lea_audio_config_t* audio_config, bool enable);
 
 /****************************************************************************
  * Private function
  ****************************************************************************/
 
-static void lea_ctrl_event_with_data(uint8_t ch_id, audio_ctrl_evt_t event, uint8_t *data, uint8_t data_len)
+static void lea_ctrl_event_with_data(uint8_t ch_id, audio_ctrl_evt_t event, uint8_t* data, uint8_t data_len)
 {
     uint8_t stream[128];
-    uint8_t *p = stream;
+    uint8_t* p = stream;
 
     BT_LOGD("%s, event:%d", __func__, event);
 
@@ -122,7 +122,7 @@ static void lea_control_event(uint8_t ch_id, audio_ctrl_evt_t evt)
     lea_ctrl_event_with_data(ch_id, evt, NULL, 0);
 }
 
-static const char *audio_event_to_string(audio_ctrl_cmd_t event)
+static const char* audio_event_to_string(audio_ctrl_cmd_t event)
 {
     switch (event) {
         CASE_RETURN_STR(AUDIO_CTRL_CMD_START)
@@ -166,7 +166,7 @@ static void lea_sink_recv_ctrl_data(audio_ctrl_cmd_t cmd)
     }
 }
 
-static void lea_sink_ctrl_buffer_alloc(uint8_t ch_id, uint8_t **buffer, size_t *len)
+static void lea_sink_ctrl_buffer_alloc(uint8_t ch_id, uint8_t** buffer, size_t* len)
 {
     if (ch_id != CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL) {
         BT_LOGE("fail, ch_id:%d", ch_id);
@@ -177,10 +177,10 @@ static void lea_sink_ctrl_buffer_alloc(uint8_t ch_id, uint8_t **buffer, size_t *
     *buffer = malloc(*len);
 }
 
-static void lea_sink_ctrl_data_received(uint8_t ch_id, uint8_t *buffer, ssize_t len)
+static void lea_sink_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len)
 {
     audio_ctrl_cmd_t cmd;
-    uint8_t *pbuf = buffer;
+    uint8_t* pbuf = buffer;
 
     if (ch_id != CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL) {
         BT_LOGE("fail, ch_id:%d", ch_id);
@@ -222,7 +222,7 @@ static void lea_sink_ctrl_cb(uint8_t ch_id, audio_transport_event_t event)
 
     switch (event) {
     case TRANSPORT_OPEN_EVT: {
-        lea_sink_stream_t *stream = &g_sink_stream;
+        lea_sink_stream_t* stream = &g_sink_stream;
 
         lea_sink_ctrl_start();
         if (stream->state == STREAM_STATE_RUNNING) {
@@ -259,9 +259,9 @@ static void lea_sink_data_cb(uint8_t ch_id, audio_transport_event_t event)
     }
 }
 
-static void lea_sink_write_done(uint8_t ch_id, uint8_t *buffer)
+static void lea_sink_write_done(uint8_t ch_id, uint8_t* buffer)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
+    lea_sink_stream_t* stream = &g_sink_stream;
 
     if (ch_id != CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO) {
         BT_LOGE("%s, error ch_id:%d", __func__, ch_id);
@@ -273,11 +273,11 @@ static void lea_sink_write_done(uint8_t ch_id, uint8_t *buffer)
     }
 }
 
-static void lea_sink_audio_handle_timer(service_timer_t *timer, void *data)
+static void lea_sink_audio_handle_timer(service_timer_t* timer, void* data)
 {
-    lea_sink_stream_t *stream = (lea_sink_stream_t *)data;
-    struct list_node *queue = &stream->packet_queue;
-    lea_recv_iso_data_t *packet = NULL;
+    lea_sink_stream_t* stream = (lea_sink_stream_t*)data;
+    struct list_node* queue = &stream->packet_queue;
+    lea_recv_iso_data_t* packet = NULL;
     struct list_node *node, *tmp;
     int ret;
 
@@ -307,9 +307,9 @@ static void lea_sink_audio_handle_timer(service_timer_t *timer, void *data)
         }
 
         stream->block_ticks = 0;
-        packet = (lea_recv_iso_data_t *)node;
+        packet = (lea_recv_iso_data_t*)node;
         ret = audio_transport_write(g_sink_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO,
-                                    packet->sdu, packet->length, lea_sink_write_done);
+            packet->sdu, packet->length, lea_sink_write_done);
         if (ret != 0) {
             BT_LOGE("%s, packet write failed", __func__);
             goto out;
@@ -326,7 +326,7 @@ out:
 
 static void lea_sink_flush_packet_queue(void)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
+    lea_sink_stream_t* stream = &g_sink_stream;
     struct list_node *node, *tmp;
 
     list_for_every_safe(&stream->packet_queue, node, tmp)
@@ -336,11 +336,11 @@ static void lea_sink_flush_packet_queue(void)
     }
 }
 
-static bt_status_t lea_sink_update_codec(lea_audio_config_t *audio_config, bool enable)
+static bt_status_t lea_sink_update_codec(lea_audio_config_t* audio_config, bool enable)
 {
     uint8_t buffer[64];
     uint8_t len;
-    uint8_t *p = buffer;
+    uint8_t* p = buffer;
 
     len = 21;
     /* set valid code */
@@ -368,14 +368,14 @@ static bt_status_t lea_sink_update_codec(lea_audio_config_t *audio_config, bool 
  * Public function
  ****************************************************************************/
 
-void lea_audio_sink_set_callback(lea_sink_callabcks_t *callback)
+void lea_audio_sink_set_callback(lea_sink_callabcks_t* callback)
 {
     g_sink_callbacks = callback;
 }
 
 bt_status_t lea_audio_sink_init(bool offloading)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
+    lea_sink_stream_t* stream = &g_sink_stream;
 
     BT_LOGD("%s, offloading:%d", __func__, offloading);
     if (g_sink_transport) {
@@ -394,7 +394,7 @@ bt_status_t lea_audio_sink_init(bool offloading)
     }
 
     if (!audio_transport_open(g_sink_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL,
-                              CONFIG_BLUETOOTH_LEA_SINK_CTRL_PATH, lea_sink_ctrl_cb)) {
+            CONFIG_BLUETOOTH_LEA_SINK_CTRL_PATH, lea_sink_ctrl_cb)) {
         BT_LOGE("fail, audio_transport_open sink ctrl");
         return BT_STATUS_FAIL;
     }
@@ -406,7 +406,7 @@ bt_status_t lea_audio_sink_init(bool offloading)
     uv_mutex_init(&stream->queue_lock);
     list_initialize(&stream->packet_queue);
     if (!audio_transport_open(g_sink_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO,
-                              CONFIG_BLUETOOTH_LEA_SINK_DATA_PATH, lea_sink_data_cb)) {
+            CONFIG_BLUETOOTH_LEA_SINK_DATA_PATH, lea_sink_data_cb)) {
         BT_LOGE("fail, audio_transport_open sink audio");
         return BT_STATUS_FAIL;
     }
@@ -414,9 +414,9 @@ bt_status_t lea_audio_sink_init(bool offloading)
     return BT_STATUS_SUCCESS;
 }
 
-lea_recv_iso_data_t *lea_audio_sink_packet_alloc(uint32_t timestamp, uint16_t seq, uint8_t *data, uint16_t length)
+lea_recv_iso_data_t* lea_audio_sink_packet_alloc(uint32_t timestamp, uint16_t seq, uint8_t* data, uint16_t length)
 {
-    lea_recv_iso_data_t *packet;
+    lea_recv_iso_data_t* packet;
 
     (void)seq;
     (void)timestamp;
@@ -435,14 +435,14 @@ lea_recv_iso_data_t *lea_audio_sink_packet_alloc(uint32_t timestamp, uint16_t se
     return packet;
 }
 
-void lea_audio_sink_packet_free(lea_recv_iso_data_t *packet)
+void lea_audio_sink_packet_free(lea_recv_iso_data_t* packet)
 {
     free(packet);
 }
 
 bt_status_t lea_audio_sink_start(void)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
+    lea_sink_stream_t* stream = &g_sink_stream;
 
     stream->ready = true;
     if (stream->state == STREAM_STATE_RUNNING) {
@@ -461,7 +461,7 @@ bt_status_t lea_audio_sink_start(void)
 
 bt_status_t lea_audio_sink_stop(bool update_codec)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
+    lea_sink_stream_t* stream = &g_sink_stream;
 
     BT_LOGD("%s, update_codec:%d", __func__, update_codec);
     stream->ready = false;
@@ -488,7 +488,7 @@ bt_status_t lea_audio_sink_stop(bool update_codec)
 
 bt_status_t lea_audio_sink_suspend(void)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
+    lea_sink_stream_t* stream = &g_sink_stream;
 
     if (!stream->ready) {
         BT_LOGE("fail, %s stream not ready", __func__);
@@ -500,7 +500,7 @@ bt_status_t lea_audio_sink_suspend(void)
 
 bt_status_t lea_audio_sink_resume(void)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
+    lea_sink_stream_t* stream = &g_sink_stream;
 
     if (!stream->ready) {
         BT_LOGE("fail, %s stream not ready", __func__);
@@ -512,7 +512,7 @@ bt_status_t lea_audio_sink_resume(void)
 
 bt_status_t lea_audio_sink_mute(bool mute)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
+    lea_sink_stream_t* stream = &g_sink_stream;
 
     if (!stream->ready) {
         BT_LOGE("fail, %s stream not ready", __func__);
@@ -526,9 +526,9 @@ bt_status_t lea_audio_sink_mute(bool mute)
     }
 }
 
-bt_status_t lea_audio_sink_update_codec(lea_audio_config_t *audio_config, uint16_t sdu_size)
+bt_status_t lea_audio_sink_update_codec(lea_audio_config_t* audio_config, uint16_t sdu_size)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
+    lea_sink_stream_t* stream = &g_sink_stream;
 
     BT_LOGD("%s, codec_type:%d, sample_rate:%d, bits_per_sample:%d, channel_mode:%d, bit_rate:%d", __func__, audio_config->codec_type, audio_config->sample_rate, audio_config->bits_per_sample, audio_config->channel_mode, audio_config->bit_rate);
 
@@ -544,10 +544,10 @@ bt_status_t lea_audio_sink_update_codec(lea_audio_config_t *audio_config, uint16
     return lea_sink_update_codec(audio_config, true);
 }
 
-void lea_audio_sink_packet_recv(lea_recv_iso_data_t *packet)
+void lea_audio_sink_packet_recv(lea_recv_iso_data_t* packet)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
-    struct list_node *queue = &stream->packet_queue;
+    lea_sink_stream_t* stream = &g_sink_stream;
+    struct list_node* queue = &stream->packet_queue;
 
     if (packet == NULL) {
         return;
@@ -561,7 +561,7 @@ void lea_audio_sink_packet_recv(lea_recv_iso_data_t *packet)
     uv_mutex_lock(&stream->queue_lock);
     if (list_length(queue) == LEA_MAX_ENQUEUE_PACKET_COUNT) {
         BT_LOGD("%s queue is full, drop head packet", __func__);
-        struct list_node *pkt = list_remove_head(queue);
+        struct list_node* pkt = list_remove_head(queue);
         free(pkt);
         list_add_tail(queue, &packet->node);
         uv_mutex_unlock(&stream->queue_lock);
@@ -580,7 +580,7 @@ void lea_audio_sink_packet_recv(lea_recv_iso_data_t *packet)
 
 bool lea_audio_sink_is_started(void)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
+    lea_sink_stream_t* stream = &g_sink_stream;
 
     return stream->ready;
 }
@@ -599,7 +599,7 @@ bool lea_audio_sink_ctrl_is_connected(void)
 
 void lea_audio_sink_cleanup(void)
 {
-    lea_sink_stream_t *stream = &g_sink_stream;
+    lea_sink_stream_t* stream = &g_sink_stream;
 
     stream->ready = false;
 

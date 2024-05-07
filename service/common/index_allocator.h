@@ -24,9 +24,9 @@ typedef struct {
     uint32_t id_map[0];
 } index_allocator_t;
 
-index_allocator_t *index_allocator_create(int max);
-void index_allocator_delete(index_allocator_t **allocator);
-int index_alloc(index_allocator_t *allocator);
-void index_free(index_allocator_t *allocator, uint16_t id);
+index_allocator_t* index_allocator_create(int max);
+void index_allocator_delete(index_allocator_t** allocator);
+int index_alloc(index_allocator_t* allocator);
+void index_free(index_allocator_t* allocator, uint16_t id);
 
 #endif /* __INDEX_ALLOCATOR_H__ */
