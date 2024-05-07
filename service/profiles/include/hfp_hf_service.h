@@ -39,6 +39,7 @@ typedef struct {
     uint64_t callsetup_timestamp_us;
     hfp_callheld_t callheld_status;
     uint64_t callheld_timestamp_us;
+    uint64_t dialing_timestamp_us;
 #ifdef CONFIG_HFP_HF_WEBCHAT_BLOCKER
     uint64_t webchat_flag_timestamp_us;
 #endif
