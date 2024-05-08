@@ -441,7 +441,6 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
                     agsm->retry_timer = service_loop_timer(random_timeout, 0, ag_retry_callback, sm);
                     agsm->retry_cnt++;
                 }
-                break;
             }
             hsm_transition_to(sm, &disconnected_state);
             break;

@@ -605,7 +605,6 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
                     hfsm->retry_timer = service_loop_timer(random_timeout, 0, hf_retry_callback, sm);
                     hfsm->retry_cnt++;
                 }
-                break;
             }
             hsm_transition_to(sm, &disconnected_state);
             break;
