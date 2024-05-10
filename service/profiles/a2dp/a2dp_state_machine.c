@@ -980,6 +980,9 @@ void a2dp_state_machine_destory(a2dp_state_machine_t* a2dp_sm)
     if (!a2dp_sm)
         return;
 
+    if (a2dp_state_machine_get_state(a2dp_sm) != A2DP_STATE_IDLE)
+        a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr, PROFILE_STATE_DISCONNECTED);
+
     hsm_dtor(&a2dp_sm->sm);
     free((void*)a2dp_sm);
 }
