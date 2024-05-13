@@ -25,6 +25,7 @@
 #include "bt_list.h"
 #include "bt_utils.h"
 #include "bt_vendor.h"
+#include "hci_parser.h"
 #include "hfp_hf_service.h"
 #include "hfp_hf_state_machine.h"
 #include "media_system.h"
@@ -1286,7 +1287,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
     };
     case HF_OFFLOAD_START_EVT: {
         bt_hci_event_t* hci_event;
-        uint8_t result;
+        hci_error_t result;
 
         if (hfsm->offload_timer) {
             service_loop_cancel_timer(hfsm->offload_timer);
@@ -1294,8 +1295,8 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         }
 
         hci_event = data->data;
-        result = hci_event->params[3]; // sizeof(struct hci_evt_cmd_complete_s)
-        if (result != BT_STATUS_SUCCESS) {
+        result = hci_get_result(hci_event);
+        if (result != HCI_SUCCESS) {
             BT_LOGE("HF_OFFLOAD_START fail, status:0x%0x", result);
             break;
         }

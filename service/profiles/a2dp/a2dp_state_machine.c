@@ -53,6 +53,7 @@
 #include "adapter_internel.h"
 #include "bt_avrcp.h"
 #include "bt_utils.h"
+#include "hci_parser.h"
 #include "media_system.h"
 #include "state_machine.h"
 
@@ -711,7 +712,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
 
     case OFFLOAD_START_EVT: {
         bt_hci_event_t* hci_event;
-        uint8_t status;
+        hci_error_t status;
 
         if (a2dp_sm->peer_sep == SEP_SNK) {
             flag_clear(a2dp_sm, PENDING_START);
@@ -728,8 +729,8 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
             a2dp_sm->offload_timer = NULL;
         }
 
-        status = hci_event->params[3]; // sizeof(struct hci_evt_cmd_complete_s)
-        if (status != BT_STATUS_SUCCESS) {
+        status = hci_get_result(hci_event);
+        if (status != HCI_SUCCESS) {
             BT_LOGE("A2DP_OFFLOAD_START fail, status:0x%0x", status);
             a2dp_audio_on_started(a2dp_sm->peer_sep, false);
             break;

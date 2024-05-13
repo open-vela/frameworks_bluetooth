@@ -26,6 +26,7 @@
 #include "bt_list.h"
 #include "bt_utils.h"
 #include "bt_vendor.h"
+#include "hci_parser.h"
 #include "hfp_ag_event.h"
 #include "hfp_ag_service.h"
 #include "hfp_ag_state_machine.h"
@@ -955,7 +956,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
     } break;
     case AG_OFFLOAD_START_EVT: {
         bt_hci_event_t* hci_event;
-        uint8_t status;
+        hci_error_t status;
 
         if (agsm->offload_timer) {
             service_loop_cancel_timer(agsm->offload_timer);
@@ -963,8 +964,8 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         }
 
         hci_event = data->data;
-        status = hci_event->params[3]; // sizeof(struct hci_evt_cmd_complete_s)
-        if (status != BT_STATUS_SUCCESS) {
+        status = hci_get_result(hci_event);
+        if (status != HCI_SUCCESS) {
             BT_LOGE("AG_OFFLOAD_START fail, status:0x%0x", status);
             break;
         }
