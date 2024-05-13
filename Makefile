@@ -48,6 +48,7 @@ ifeq ($(CONFIG_BLUETOOTH_OBELISK), y)
 	CSRCS += service/src/adapter_state.c
 	CSRCS += service/src/btservice.c
 	CSRCS += service/src/device.c
+	CSRCS += service/src/hci_parser.c
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += service/src/advertising.c
 endif #CONFIG_BLUETOOTH_BLE_ADV
