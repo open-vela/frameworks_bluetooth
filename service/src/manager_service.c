@@ -50,7 +50,7 @@ static bt_instance_impl_t* manager_find_instance(const char* name, pid_t pid)
     list_for_every(&g_instances, node)
     {
         bt_instance_impl_t* ins = (bt_instance_impl_t*)node;
-        uint8_t name_len = strlen(name);
+        size_t name_len = strlen(name);
         name_len = name_len > BT_INST_HOST_NAME_LEN ? BT_INST_HOST_NAME_LEN : name_len;
         if (strncmp((char*)ins->host_name, name, name_len) == 0 && ins->pid == pid)
             return ins;
