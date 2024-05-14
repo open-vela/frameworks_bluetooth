@@ -59,7 +59,6 @@ typedef struct
     uint8_t max_connections;
     bt_list_t* hf_devices;
     callbacks_list_t* callbacks;
-    pthread_mutex_t device_lock;
 } hf_service_t;
 
 typedef struct
@@ -177,7 +176,6 @@ static uint32_t get_hf_features(void)
 static void hf_startup(profile_on_startup_t on_startup)
 {
     bt_status_t status;
-    pthread_mutexattr_t attr;
     hf_service_t* service = &g_hfp_service;
 
     if (service->started) {
@@ -193,10 +191,6 @@ static void hf_startup(profile_on_startup_t on_startup)
         goto fail;
     }
 
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&service->device_lock, &attr);
-
     status = bt_sal_hfp_hf_init(get_hf_features(), CONFIG_HFP_HF_MAX_CONNECTIONS);
     if (status != BT_STATUS_SUCCESS)
         goto fail;
@@ -210,25 +204,23 @@ fail:
     service->hf_devices = NULL;
     bt_callbacks_list_free(service->callbacks);
     service->callbacks = NULL;
-    pthread_mutex_destroy(&service->device_lock);
     on_startup(PROFILE_HFP_HF, false);
 }
 
 static void hf_shutdown(profile_on_shutdown_t on_shutdown)
 {
-    if (!g_hfp_service.started) {
+    hf_service_t* service = &g_hfp_service;
+
+    if (!service->started) {
         on_shutdown(PROFILE_HFP_HF, true);
         return;
     }
 
-    pthread_mutex_lock(&g_hfp_service.device_lock);
-    g_hfp_service.started = false;
-    bt_list_free(g_hfp_service.hf_devices);
-    g_hfp_service.hf_devices = NULL;
-    pthread_mutex_unlock(&g_hfp_service.device_lock);
-    pthread_mutex_destroy(&g_hfp_service.device_lock);
-    bt_callbacks_list_free(g_hfp_service.callbacks);
-    g_hfp_service.callbacks = NULL;
+    service->started = false;
+    bt_list_free(service->hf_devices);
+    service->hf_devices = NULL;
+    bt_callbacks_list_free(service->callbacks);
+    service->callbacks = NULL;
     bt_sal_hfp_hf_cleanup();
     on_shutdown(PROFILE_HFP_HF, true);
 }
@@ -298,21 +290,16 @@ static void hfp_hf_process_message(void* data)
     case HF_UPDATE_BATTERY_LEVEL:
     case HF_SET_MIC_VOLUME:
     case HF_SET_SPEAKER_VOLUME:
-        pthread_mutex_lock(&g_hfp_service.device_lock);
         bt_list_foreach(g_hfp_service.hf_devices, hf_dispatch_msg_foreach, msg);
-        pthread_mutex_unlock(&g_hfp_service.device_lock);
         break;
     default: {
-        pthread_mutex_lock(&g_hfp_service.device_lock);
         hf_state_machine_t* hfsm = get_state_machine(&msg->data.addr);
         if (!hfsm) {
-            pthread_mutex_unlock(&g_hfp_service.device_lock);
             break;
         }
 
         hf_state_machine_dispatch(hfsm, msg);
         hfp_hf_prepare_handle(hfsm, msg);
-        pthread_mutex_unlock(&g_hfp_service.device_lock);
         break;
     }
     }
@@ -345,13 +332,11 @@ static uint8_t get_current_connnection_cnt(void)
     bt_list_node_t* node;
     uint8_t cnt = 0;
 
-    pthread_mutex_lock(&g_hfp_service.device_lock);
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         hf_device_t* device = bt_list_node(node);
         if (hf_state_machine_get_state(device->hfsm) >= HFP_HF_STATE_CONNECTED || hf_state_machine_get_state(device->hfsm) == HFP_HF_STATE_CONNECTING)
             cnt++;
     }
-    pthread_mutex_unlock(&g_hfp_service.device_lock);
 
     return cnt;
 }
@@ -422,32 +407,26 @@ static bool hfp_hf_unregister_callbacks(void** remote, void* cookie)
 
 static bool hfp_hf_is_connected(bt_address_t* addr)
 {
-    pthread_mutex_lock(&g_hfp_service.device_lock);
     hf_device_t* device = find_hf_device_by_addr(addr);
 
     if (!device) {
-        pthread_mutex_unlock(&g_hfp_service.device_lock);
         return false;
     }
 
     bool connected = hf_state_machine_get_state(device->hfsm) >= HFP_HF_STATE_CONNECTED;
-    pthread_mutex_unlock(&g_hfp_service.device_lock);
 
     return connected;
 }
 
 static bool hfp_hf_is_audio_connected(bt_address_t* addr)
 {
-    pthread_mutex_lock(&g_hfp_service.device_lock);
     hf_device_t* device = find_hf_device_by_addr(addr);
 
     if (!device) {
-        pthread_mutex_unlock(&g_hfp_service.device_lock);
         return false;
     }
 
     bool connected = hf_state_machine_get_state(device->hfsm) == HFP_HF_STATE_AUDIO_CONNECTED;
-    pthread_mutex_unlock(&g_hfp_service.device_lock);
 
     return connected;
 }
@@ -461,7 +440,6 @@ static profile_connection_state_t hfp_hf_get_connection_state(bt_address_t* addr
     if (!device)
         return PROFILE_STATE_DISCONNECTED;
 
-    pthread_mutex_lock(&g_hfp_service.device_lock);
     state = hf_state_machine_get_state(device->hfsm);
     if (state == HFP_HF_STATE_DISCONNECTED)
         conn_state = PROFILE_STATE_DISCONNECTED;
@@ -471,7 +449,6 @@ static profile_connection_state_t hfp_hf_get_connection_state(bt_address_t* addr
         conn_state = PROFILE_STATE_DISCONNECTING;
     else
         conn_state = PROFILE_STATE_CONNECTED;
-    pthread_mutex_unlock(&g_hfp_service.device_lock);
 
     return conn_state;
 }
@@ -530,22 +507,6 @@ static bt_status_t hfp_hf_stop_voice_recognition(bt_address_t* addr)
 
     return hfp_hf_send_event(addr, HF_VOICE_RECOGNITION_STOP);
 }
-
-#if 0
-static bt_status_t hfp_hf_volume_control(hfp_volume_type_t type, int volume)
-{
-    CHECK_ENABLED();
-
-    hfp_hf_event_t event = (type == HFP_VOLUME_TYPE_MIC) ? \
-                            SET_MIC_VOLUME : SET_SPEAKER_VOLUME;
-    hfp_hf_msg_t *msg = hfp_hf_msg_new(event, NULL);
-    if (!msg)
-        return BT_STATUS_NOMEM;
-
-    msg->data.valueint1 = volume;
-    return hfp_hf_send_message(msg);
-}
-#endif
 
 static bt_status_t hfp_hf_dial(bt_address_t* addr, const char* number)
 {
@@ -647,18 +608,15 @@ static bt_status_t hfp_hf_query_current_calls(bt_address_t* addr, hfp_current_ca
     if (!hfp_hf_is_connected(addr))
         return BT_STATUS_FAIL;
 
-    pthread_mutex_lock(&g_hfp_service.device_lock);
     hf_state_machine_t* hfsm = get_state_machine(addr);
     /* get call list from statemachine */
     bt_list_t* call_list = hf_state_machine_get_calls(hfsm);
     *num = bt_list_length(call_list);
     if (!(*num)) {
-        pthread_mutex_unlock(&g_hfp_service.device_lock);
         return BT_STATUS_SUCCESS;
     }
 
     if (!allocator((void**)calls, sizeof(hfp_current_call_t) * (*num))) {
-        pthread_mutex_unlock(&g_hfp_service.device_lock);
         return BT_STATUS_NOMEM;
     }
 
@@ -670,7 +628,6 @@ static bt_status_t hfp_hf_query_current_calls(bt_address_t* addr, hfp_current_ca
         p++;
     }
 
-    pthread_mutex_unlock(&g_hfp_service.device_lock);
     return BT_STATUS_SUCCESS;
     // return hfp_hf_send_event(addr, QUERY_CURRENT_CALLS);
 }
