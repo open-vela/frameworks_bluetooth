@@ -743,6 +743,8 @@ tele_client_t* teleif_client_connect(const char* name)
     tele->dbus_sys = g_dbus_setup_private(DBUS_BUS_SYSTEM, NULL, NULL);
     if (!tele->dbus_sys) {
         BT_LOGE("Can't get on system bus");
+        bt_list_free(tele->modems);
+        free(tele);
         return NULL;
     }
 
@@ -766,6 +768,7 @@ tele_client_t* teleif_client_connect(const char* name)
 void teleif_client_disconnect(tele_client_t* tele)
 {
     tele->is_ready = false;
+    bt_list_free(tele->modems);
     g_dbus_client_unref(tele->dbus_client);
     dbus_connection_close(tele->dbus_sys);
     dbus_connection_unref(tele->dbus_sys);
