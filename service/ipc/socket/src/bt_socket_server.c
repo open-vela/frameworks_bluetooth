@@ -285,7 +285,7 @@ static int bt_socket_server_listen(int family, const char* name, int port)
 #ifdef CONFIG_NET_RPMSG
         struct sockaddr_rpmsg rpmsg_addr;
 #endif
-    } u;
+    } u = { 0 };
     int addr_len;
     int ret;
     int fd;
@@ -304,22 +304,27 @@ static int bt_socket_server_listen(int family, const char* name, int port)
         u.inet_addr.sin_addr.s_addr = htonl(INADDR_ANY);
         u.inet_addr.sin_port = htons(port);
         addr_len = sizeof(struct sockaddr_in);
-    } else {
 #ifdef CONFIG_NET_RPMSG
+    } else if (family == AF_RPMSG) {
         u.rpmsg_addr.rp_family = AF_RPMSG;
         snprintf(u.rpmsg_addr.rp_name, RPMSG_SOCKET_NAME_SIZE,
             BLUETOOTH_SOCKADDR_NAME, name);
         strcpy(u.rpmsg_addr.rp_cpu, "");
         addr_len = sizeof(struct sockaddr_rpmsg);
 #endif
+    } else {
+        close(fd);
+        return -EPFNOSUPPORT;
     }
 
     ret = bind(fd, (struct sockaddr*)&u, addr_len);
     if (ret >= 0)
         ret = listen(fd, BLUETOOTH_SERVER_MAXCONN);
 
-    if (ret < 0)
+    if (ret < 0) {
         close(fd);
+        return -errno;
+    }
 
     return fd;
 }
