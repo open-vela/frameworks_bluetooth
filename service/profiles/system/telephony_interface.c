@@ -676,7 +676,17 @@ void ofono_property_changed(GDBusProxy* proxy, const char* name,
         /* todo: */
     } else if (!strcmp(interface, OFONO_VOICECALL_INTERFACE)) {
         tele_modem_t* modem = modem_find_by_path(tele, path);
+        if (!modem) {
+            BT_LOGE("%s, failed to find modem, path:%s", __func__, path);
+            return;
+        }
+
         tele_call_t* call = find_voicecall(modem, proxy);
+        if (!call) {
+            BT_LOGE("%s, failed to find call", __func__);
+            return;
+        }
+
         tele_call_get_call_info(tele, call);
         tele_call_callbacks_t* cbs = call->call_cbs;
         if (cbs && cbs->call_state_changed_cb)
