@@ -17,6 +17,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include <assert.h>
 #include <stdlib.h>
 
 #include "callbacks_list.h"
@@ -78,6 +79,8 @@ remote_callback_t* bt_remote_callbacks_register(callbacks_list_t* cbsl, void* re
     void* cbs;
     remote_callback_t* remote_cbk;
 
+    assert(cbsl);
+
     pthread_mutex_lock(&cbsl->lock);
     if (cbsl->registed == cbsl->max_reg) {
         pthread_mutex_unlock(&cbsl->lock);
@@ -108,8 +111,11 @@ remote_callback_t* bt_remote_callbacks_register(callbacks_list_t* cbsl, void* re
 bool bt_remote_callbacks_unregister(callbacks_list_t* cbsl, void** remote, remote_callback_t* rcbks)
 {
     bt_list_node_t* node;
-    bt_list_t* list = cbsl->list;
+    bt_list_t* list;
 
+    assert(cbsl);
+
+    list = cbsl->list;
     pthread_mutex_lock(&cbsl->lock);
     for (node = bt_list_head(list); node != NULL;
          node = bt_list_next(list, node)) {
@@ -134,6 +140,9 @@ void bt_callbacks_foreach(callbacks_list_t* cbsl, void* context)
 
 void bt_callbacks_list_free(callbacks_list_t* cbsl)
 {
+    if (!cbsl)
+        return;
+
     pthread_mutex_lock(&cbsl->lock);
     bt_list_free(cbsl->list);
     pthread_mutex_unlock(&cbsl->lock);
@@ -144,6 +153,8 @@ void bt_callbacks_list_free(callbacks_list_t* cbsl)
 uint8_t bt_callbacks_list_count(callbacks_list_t* cbsl)
 {
     uint8_t registed;
+
+    assert(cbsl);
 
     pthread_mutex_lock(&cbsl->lock);
     registed = cbsl->registed;
