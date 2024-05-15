@@ -117,9 +117,8 @@ static void ct_device_destory(void* data)
     if (device->player)
         bt_media_player_destory(device->player);
 
-    if (device->state != PROFILE_STATE_DISCONNECTED) {
-        // disconnected first
-    }
+    if (device->state != PROFILE_STATE_DISCONNECTED)
+        AVRCP_CT_CALLBACK_FOREACH(g_avrc_controller.callbacks, connection_state_cb, &device->addr, PROFILE_STATE_DISCONNECTED);
 
     free(device);
 }
@@ -199,6 +198,10 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
     avrcp_ct_device_t* device = NULL;
     bt_address_t* addr = &msg->addr;
     profile_connection_state_t state = msg->data.conn_state.conn_state;
+
+    if (!g_avrc_controller.enable)
+        return;
+
     BT_LOGD("avrc ct connnection --> device:[%s], state: %d", bt_addr_str(addr), state);
 
     device = ct_device_find(addr);
@@ -227,6 +230,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
         device->player = bt_media_player_create(device, &g_player_cb);
     } break;
     case PROFILE_STATE_DISCONNECTING:
+        assert(device);
         break;
     default:
         assert(0);
@@ -390,36 +394,36 @@ static void controller_startup(profile_on_startup_t startup)
 {
     pthread_mutex_lock(&g_avrc_controller.mutex);
     if (g_avrc_controller.enable) {
-        startup(PROFILE_AVRCP_CT, true);
         pthread_mutex_unlock(&g_avrc_controller.mutex);
+        startup(PROFILE_AVRCP_CT, true);
         return;
     }
 
     g_avrc_controller.devices = bt_list_new(ct_device_destory);
     if (!g_avrc_controller.devices) {
-        startup(PROFILE_AVRCP_CT, false);
         pthread_mutex_unlock(&g_avrc_controller.mutex);
+        startup(PROFILE_AVRCP_CT, false);
         return;
     }
 
     if (bt_sal_avrcp_control_init() != BT_STATUS_SUCCESS) {
         list_delete(&g_avrc_controller.list);
-        startup(PROFILE_AVRCP_CT, false);
         pthread_mutex_unlock(&g_avrc_controller.mutex);
+        startup(PROFILE_AVRCP_CT, false);
         return;
     }
 
     g_avrc_controller.enable = true;
-    startup(PROFILE_AVRCP_CT, true);
     pthread_mutex_unlock(&g_avrc_controller.mutex);
+    startup(PROFILE_AVRCP_CT, true);
 }
 
 static void controller_shutdown(profile_on_shutdown_t shutdown)
 {
     pthread_mutex_lock(&g_avrc_controller.mutex);
     if (!g_avrc_controller.enable) {
-        shutdown(PROFILE_AVRCP_CT, true);
         pthread_mutex_unlock(&g_avrc_controller.mutex);
+        shutdown(PROFILE_AVRCP_CT, true);
         return;
     }
 
@@ -427,8 +431,8 @@ static void controller_shutdown(profile_on_shutdown_t shutdown)
     bt_list_free(g_avrc_controller.devices);
     g_avrc_controller.devices = NULL;
     bt_sal_avrcp_control_cleanup();
-    shutdown(PROFILE_AVRCP_CT, true);
     pthread_mutex_unlock(&g_avrc_controller.mutex);
+    shutdown(PROFILE_AVRCP_CT, true);
 }
 
 static bt_status_t avrcp_control_startup(profile_on_startup_t cb)

@@ -140,9 +140,8 @@ static void tg_device_destory(void* data)
     if (device->retry_timer)
         service_loop_cancel_timer(device->retry_timer);
 
-    if (device->state != PROFILE_STATE_DISCONNECTED) {
-        // disconnected first
-    }
+    if (device->state != PROFILE_STATE_DISCONNECTED)
+        AVRCP_TG_CALLBACK_FOREACH(g_avrc_target.callbacks, connection_state_cb, &device->addr, PROFILE_STATE_DISCONNECTED);
 
     free(device);
 }
@@ -221,6 +220,9 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
     profile_connection_reason_t reason = msg->data.conn_state.reason;
     uint32_t random_timeout;
 
+    if (!g_avrc_target.enable)
+        return;
+
     BT_LOGD("avrc tg connnection --> device:[%s], state: %d", bt_addr_str(addr), state);
 
     device = tg_device_find(addr);
@@ -274,6 +276,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
         device->retry_cnt = 0;
         break;
     case PROFILE_STATE_DISCONNECTING:
+        assert(device);
         break;
     default:
         assert(0);
@@ -494,23 +497,23 @@ static void target_startup(profile_on_startup_t startup)
 
     g_avrc_target.devices = bt_list_new(tg_device_destory);
     if (!g_avrc_target.devices) {
-        startup(PROFILE_AVRCP_TG, false);
         pthread_mutex_unlock(&g_avrc_target.mutex);
+        startup(PROFILE_AVRCP_TG, false);
         return;
     }
 
     if (bt_sal_avrcp_target_init() != BT_STATUS_SUCCESS) {
         bt_list_free(g_avrc_target.devices);
         g_avrc_target.devices = NULL;
-        startup(PROFILE_AVRCP_TG, false);
         pthread_mutex_unlock(&g_avrc_target.mutex);
+        startup(PROFILE_AVRCP_TG, false);
         return;
     }
 
-    g_avrc_target.enable = true;
     g_avrc_target.controller = NULL;
-    startup(PROFILE_AVRCP_TG, true);
+    g_avrc_target.enable = true;
     pthread_mutex_unlock(&g_avrc_target.mutex);
+    startup(PROFILE_AVRCP_TG, true);
 }
 
 static void target_shutdown(profile_on_shutdown_t shutdown)
@@ -522,14 +525,14 @@ static void target_shutdown(profile_on_shutdown_t shutdown)
         return;
     }
 
-    bt_list_free(g_avrc_target.devices);
-    g_avrc_target.devices = NULL;
-    bt_sal_avrcp_target_cleanup();
     g_avrc_target.enable = false;
     bt_media_controller_destory(g_avrc_target.controller);
     g_avrc_target.controller = NULL;
-    shutdown(PROFILE_AVRCP_TG, true);
+    bt_list_free(g_avrc_target.devices);
+    g_avrc_target.devices = NULL;
+    bt_sal_avrcp_target_cleanup();
     pthread_mutex_unlock(&g_avrc_target.mutex);
+    shutdown(PROFILE_AVRCP_TG, true);
 }
 
 static bt_status_t avrcp_target_startup(profile_on_startup_t cb)
