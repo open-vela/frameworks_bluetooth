@@ -79,6 +79,10 @@ void system_bluetooth_wrap_openAdapter(FeatureInstanceHandle feature, union Appe
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke complete openAdapter callback failed!");
     }
+
+    FeatureRemoveCallback(feature, params->success);
+    FeatureRemoveCallback(feature, params->fail);
+    FeatureRemoveCallback(feature, params->complete);
 }
 
 void system_bluetooth_wrap_closeAdapter(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_CloseAdapterParams* params)
@@ -96,6 +100,10 @@ void system_bluetooth_wrap_closeAdapter(FeatureInstanceHandle feature, union App
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke complete closeAdapter callback failed!");
     }
+
+    FeatureRemoveCallback(feature, params->success);
+    FeatureRemoveCallback(feature, params->fail);
+    FeatureRemoveCallback(feature, params->complete);
 }
 
 void system_bluetooth_wrap_getAdapterState(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_GetAdapterStateParams* params)
@@ -113,6 +121,10 @@ void system_bluetooth_wrap_getAdapterState(FeatureInstanceHandle feature, union 
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke complete getAdapterState callback failed!");
     }
+
+    FeatureRemoveCallback(feature, params->success);
+    FeatureRemoveCallback(feature, params->fail);
+    FeatureRemoveCallback(feature, params->complete);
 }
 
 FtCallbackId system_bluetooth_get_onadapterstatechange(void* feature, union AppendData append_data)

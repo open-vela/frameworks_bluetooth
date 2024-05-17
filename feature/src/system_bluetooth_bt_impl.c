@@ -184,6 +184,10 @@ void system_bluetooth_bt_wrap_startDiscovery(FeatureInstanceHandle feature, unio
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke start discovery complete callback failed!");
     }
+
+    FeatureRemoveCallback(feature, params->success);
+    FeatureRemoveCallback(feature, params->fail);
+    FeatureRemoveCallback(feature, params->complete);
 }
 void system_bluetooth_bt_wrap_stopDiscovery(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_StopDiscoveryParams* params)
 {
@@ -200,6 +204,10 @@ void system_bluetooth_bt_wrap_stopDiscovery(FeatureInstanceHandle feature, union
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke stop discovery complete callback failed!");
     }
+
+    FeatureRemoveCallback(feature, params->success);
+    FeatureRemoveCallback(feature, params->fail);
+    FeatureRemoveCallback(feature, params->complete);
 }
 
 void system_bluetooth_bt_wrap_connectProfiles(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_ConnectProfilesParams* params)
@@ -232,6 +240,10 @@ COMPLETE_CALLBACK:
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke connect profiles complete callback failed!");
     }
+
+    FeatureRemoveCallback(feature, params->success);
+    FeatureRemoveCallback(feature, params->fail);
+    FeatureRemoveCallback(feature, params->complete);
 }
 
 void system_bluetooth_bt_wrap_disconnectProfiles(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_DisconnectProfilesParams* params)
@@ -262,6 +274,10 @@ COMPLETE_CALLBACK:
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke disconnect profiles complete callback failed!");
     }
+
+    FeatureRemoveCallback(feature, params->success);
+    FeatureRemoveCallback(feature, params->fail);
+    FeatureRemoveCallback(feature, params->complete);
 }
 
 void system_bluetooth_bt_wrap_disconnect(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_DisconnectParams* params)
@@ -292,6 +308,10 @@ COMPLETE_CALLBACK:
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke disconnect complete callback failed!");
     }
+
+    FeatureRemoveCallback(feature, params->success);
+    FeatureRemoveCallback(feature, params->fail);
+    FeatureRemoveCallback(feature, params->complete);
 }
 
 FtBool system_bluetooth_bt_wrap_getConnectState(FeatureInstanceHandle feature, union AppendData append_data, FtString deviceId)
@@ -373,6 +393,10 @@ COMPLETE_CALLBACK:
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke remove bonded complete callback failed!");
     }
+
+    FeatureRemoveCallback(feature, params->success);
+    FeatureRemoveCallback(feature, params->fail);
+    FeatureRemoveCallback(feature, params->complete);
 }
 
 FtBool system_bluetooth_bt_wrap_setScanMode(FeatureInstanceHandle feature, union AppendData append_data, FtInt scanMode)
