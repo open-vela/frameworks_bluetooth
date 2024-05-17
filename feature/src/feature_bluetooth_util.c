@@ -27,6 +27,7 @@ void feature_bluetooth_deal_callback(int status, void* data)
         FEATURE_LOG_ERROR("callback type:%d, feature:%p, callback id: %d, invoke discoveryresult callback failed!",
             info->callback_id, info->feature, info->feature_callback_id);
     }
+
     free(data);
 }
 
