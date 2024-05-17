@@ -25,9 +25,18 @@
 #include "system_bluetooth_bt_a2dpsink.h"
 #include "uv.h"
 
+#define REMOVE_CALLBACK(feature_callback, callback_type)                                           \
+    {                                                                                              \
+        if (feature_callback->callback_type != -1) {                                               \
+            FeatureRemoveCallback(feature_callback->feature_ins, feature_callback->callback_type); \
+        }                                                                                          \
+        feature_callback->callback_type = -1;                                                      \
+    }
+
 #define add_feature_callback(feature_callbacks, new_callbacks_type, handle)                         \
     {                                                                                               \
         new_callbacks_type* new_callback = (new_callbacks_type*)malloc(sizeof(new_callbacks_type)); \
+        /* The hexadecimal representation of -1 is 0xFF */                                          \
         memset(new_callback, -1, sizeof(new_callbacks_type));                                       \
         new_callback->feature_ins = handle;                                                         \
         bt_list_add_tail(feature_callbacks, new_callback);                                          \
@@ -36,6 +45,7 @@
 #define set_feature_callback(feature_callbacks, callbacks_type, find_func, handle, callback_id, callback_type) \
     {                                                                                                          \
         callbacks_type* callbacks = (callbacks_type*)bt_list_find(feature_callbacks, find_func, handle);       \
+        REMOVE_CALLBACK(callbacks, callback_type)                                                              \
         callbacks->callback_type = callback_id;                                                                \
     };
 
@@ -87,6 +97,43 @@ static void free_feature_callback(bt_list_t* callbacks, FeatureInstanceHandle ha
     if (data) {
         bt_list_remove(callbacks, data);
     }
+}
+
+static void free_feature_bluetooth_node(void* node)
+{
+    feature_bluetooth_bluetooth_callbacks_t* feature_callback = (feature_bluetooth_bluetooth_callbacks_t*)node;
+
+    if (!feature_callback) {
+        return;
+    }
+
+    REMOVE_CALLBACK(feature_callback, on_adapter_state_changed_cb_id);
+    free(feature_callback);
+}
+
+static void free_feature_bluetooth_bt_node(void* node)
+{
+    feature_bluetooth_bluetooth_bt_callbacks_t* feature_callback = (feature_bluetooth_bluetooth_bt_callbacks_t*)node;
+
+    if (!feature_callback) {
+        return;
+    }
+
+    REMOVE_CALLBACK(feature_callback, on_bond_state_changed_cb_id);
+    REMOVE_CALLBACK(feature_callback, on_discovery_result_cb_id);
+    free(feature_callback);
+}
+
+static void free_feature_bluetooth_a2dp_sink_node(void* node)
+{
+    feature_bluetooth_a2dp_sink_callbacks_t* feature_callback = (feature_bluetooth_a2dp_sink_callbacks_t*)node;
+
+    if (!feature_callback) {
+        return;
+    }
+
+    REMOVE_CALLBACK(feature_callback, a2dp_sink_connection_state_cb_id);
+    free(feature_callback);
 }
 
 static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
@@ -621,13 +668,13 @@ void feature_bluetooth_callback_init(bt_instance_t* bt_ins)
 
     uv_mutex_init(&features_callbacks->mutex);
 
-    features_callbacks->feature_bluetooth_callbacks = bt_list_new(free);
-    features_callbacks->feature_bluetooth_bt_callbacks = bt_list_new(free);
+    features_callbacks->feature_bluetooth_callbacks = bt_list_new(free_feature_bluetooth_node);
+    features_callbacks->feature_bluetooth_bt_callbacks = bt_list_new(free_feature_bluetooth_bt_node);
 
     bt_ins->adapter_cookie = bt_adapter_register_callback(bt_ins, &g_adapter_cbs);
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-    features_callbacks->feature_a2dp_sink_callbacks = bt_list_new(free);
+    features_callbacks->feature_a2dp_sink_callbacks = bt_list_new(free_feature_bluetooth_a2dp_sink_node);
     bt_ins->a2dp_sink_cookie = bt_a2dp_sink_register_callbacks(bt_ins, &a2dp_sink_cbs);
 #endif
 
