@@ -199,8 +199,12 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
     bt_address_t* addr = &msg->addr;
     profile_connection_state_t state = msg->data.conn_state.conn_state;
 
-    if (!g_avrc_controller.enable)
+    pthread_mutex_lock(&g_avrc_controller.mutex);
+    if (!g_avrc_controller.enable) {
+        pthread_mutex_unlock(&g_avrc_controller.mutex);
         return;
+    }
+    pthread_mutex_unlock(&g_avrc_controller.mutex);
 
     BT_LOGD("avrc ct connnection --> device:[%s], state: %d", bt_addr_str(addr), state);
 

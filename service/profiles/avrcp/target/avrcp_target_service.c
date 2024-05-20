@@ -220,8 +220,12 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
     profile_connection_reason_t reason = msg->data.conn_state.reason;
     uint32_t random_timeout;
 
-    if (!g_avrc_target.enable)
+    pthread_mutex_lock(&g_avrc_target.mutex);
+    if (!g_avrc_target.enable) {
+        pthread_mutex_unlock(&g_avrc_target.mutex);
         return;
+    }
+    pthread_mutex_unlock(&g_avrc_target.mutex);
 
     BT_LOGD("avrc tg connnection --> device:[%s], state: %d", bt_addr_str(addr), state);
 
