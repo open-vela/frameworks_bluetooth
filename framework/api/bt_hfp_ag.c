@@ -91,6 +91,20 @@ bt_status_t BTSYMBOLS(bt_hfp_ag_disconnect_audio)(bt_instance_t* ins, bt_address
     return profile->disconnect_audio(addr);
 }
 
+bt_status_t BTSYMBOLS(bt_hfp_ag_start_virtual_call)(bt_instance_t* ins, bt_address_t* addr)
+{
+    hfp_ag_interface_t* profile = get_profile_service();
+
+    return profile->start_virtual_call(addr);
+}
+
+bt_status_t BTSYMBOLS(bt_hfp_ag_stop_virtual_call)(bt_instance_t* ins, bt_address_t* addr)
+{
+    hfp_ag_interface_t* profile = get_profile_service();
+
+    return profile->stop_virtual_call(addr);
+}
+
 bt_status_t BTSYMBOLS(bt_hfp_ag_start_voice_recognition)(bt_instance_t* ins, bt_address_t* addr)
 {
     hfp_ag_interface_t* profile = get_profile_service();

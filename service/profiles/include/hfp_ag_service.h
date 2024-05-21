@@ -101,6 +101,8 @@ typedef struct ag_interface {
     bt_status_t (*disconnect)(bt_address_t* addr);
     bt_status_t (*connect_audio)(bt_address_t* addr);
     bt_status_t (*disconnect_audio)(bt_address_t* addr);
+    bt_status_t (*start_virtual_call)(bt_address_t* addr);
+    bt_status_t (*stop_virtual_call)(bt_address_t* addr);
     bt_status_t (*start_voice_recognition)(bt_address_t* addr);
     bt_status_t (*stop_voice_recognition)(bt_address_t* addr);
     bt_status_t (*phone_state_change)(uint8_t num_active, uint8_t num_held,
