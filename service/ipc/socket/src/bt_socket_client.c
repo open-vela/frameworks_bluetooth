@@ -426,6 +426,19 @@ int bt_socket_client_init(bt_instance_t* ins, int family,
     return BT_STATUS_SUCCESS;
 }
 
+static void bt_socket_sync_close(void* data)
+{
+    bt_instance_t* ins = data;
+
+    if (ins->poll)
+        thread_loop_remove_poll((uv_poll_t*)ins->poll);
+    ins->poll = NULL;
+
+    if (ins->peer_fd > 0)
+        close(ins->peer_fd);
+    ins->peer_fd = -1;
+}
+
 void bt_socket_client_deinit(bt_instance_t* ins)
 {
     uv_cond_destroy(&ins->cond);
@@ -434,11 +447,10 @@ void bt_socket_client_deinit(bt_instance_t* ins)
     if (ins->packet)
         free(ins->packet);
 
-    if (ins->poll)
-        thread_loop_remove_poll((uv_poll_t*)ins->poll);
-
-    if (ins->peer_fd > 0)
-        close(ins->peer_fd);
+    if (!ins->poll)
+        bt_socket_sync_close(ins);
+    else
+        do_in_thread_loop_sync(ins->client_loop, bt_socket_sync_close, ins);
 
     if (ins->external_loop && ins->external_async) {
         struct list_node* node;
