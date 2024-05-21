@@ -28,6 +28,10 @@ void feature_bluetooth_deal_callback(int status, void* data)
             info->callback_id, info->feature, info->feature_callback_id);
     }
 
+    if (info->data) {
+        FeatureFreeValue(info->data);
+    }
+
     free(data);
 }
 

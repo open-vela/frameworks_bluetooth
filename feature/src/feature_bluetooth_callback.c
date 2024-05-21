@@ -190,13 +190,14 @@ static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
             continue;
         }
 
-        data->available = state == BT_ADAPTER_STATE_ON;
-        data->discovering = bt_adapter_is_discovering(bt_ins);
-
         callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
         if (!callback_info) {
+            FeatureFreeValue(data);
             break;
         }
+
+        data->available = state == BT_ADAPTER_STATE_ON;
+        data->discovering = bt_adapter_is_discovering(bt_ins);
 
         callback_info->callback_id = ON_ADAPTER_STATE_CHANGE;
         callback_info->feature_callback_id = feature_callback->on_adapter_state_changed_cb_id;
@@ -259,13 +260,14 @@ static void on_discovery_state_changed_cb(void* cookie, bt_discovery_state_t sta
             continue;
         }
 
-        data->available = bt_adapter_get_state(bt_ins) == BT_ADAPTER_STATE_ON;
-        data->discovering = state == BT_DISCOVERY_STATE_STARTED;
-
         callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
         if (!callback_info) {
+            FeatureFreeValue(data);
             break;
         }
+
+        data->available = bt_adapter_get_state(bt_ins) == BT_ADAPTER_STATE_ON;
+        data->discovering = state == BT_DISCOVERY_STATE_STARTED;
 
         callback_info->callback_id = ON_ADAPTER_STATE_CHANGE;
         callback_info->feature_callback_id = feature_callback->on_adapter_state_changed_cb_id;
@@ -329,16 +331,17 @@ static void on_discovery_result_cb(void* cookie, bt_discovery_result_t* result)
             continue;
         }
 
+        callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
+        if (!callback_info) {
+            FeatureFreeValue(data);
+            break;
+        }
+
         data->name = StringToFtString(result->name);
         bt_addr_ba2str(&result->addr, addr_str);
         data->deviceId = StringToFtString(addr_str);
         data->cod = result->cod;
         data->rssi = -result->rssi;
-
-        callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
-        if (!callback_info) {
-            break;
-        }
 
         callback_info->callback_id = ON_DISCOVERY_RESULT;
         callback_info->feature_callback_id = feature_callback->on_discovery_result_cb_id;
@@ -406,14 +409,15 @@ static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transp
             continue;
         }
 
+        callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
+        if (!callback_info) {
+            FeatureFreeValue(data);
+            break;
+        }
+
         bt_addr_ba2str(addr, addr_str);
         data->deviceId = StringToFtString(addr_str);
         data->bondState = state;
-
-        callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
-        if (!callback_info) {
-            break;
-        }
 
         callback_info->callback_id = ON_BOND_STATE_CHANGE;
         callback_info->feature_callback_id = feature_callback->on_bond_state_changed_cb_id;
@@ -485,13 +489,14 @@ static void a2dp_sink_connection_state_cb(void* cookie, bt_address_t* addr, prof
             continue;
         }
 
-        data->deviceId = StringToFtString(addr_str);
-        data->connectState = state;
-
         callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
         if (!callback_info) {
+            FeatureFreeValue(data);
             break;
         }
+
+        data->deviceId = StringToFtString(addr_str);
+        data->connectState = state;
 
         callback_info->callback_id = A2DPSINK_ON_CONNECT_STATE_CHANGE;
         callback_info->feature_callback_id = feature_callback->a2dp_sink_connection_state_cb_id;
