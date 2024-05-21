@@ -118,6 +118,9 @@ void system_bluetooth_wrap_getAdapterState(FeatureInstanceHandle feature, union 
     if (!FeatureInvokeCallback(feature, params->success, success_result)) {
         FEATURE_LOG_ERROR("invoke success getAdapterState callback failed!");
     }
+
+    FeatureFreeValue(success_result);
+
     if (!FeatureInvokeCallback(feature, params->complete)) {
         FEATURE_LOG_ERROR("invoke complete getAdapterState callback failed!");
     }
