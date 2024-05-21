@@ -188,6 +188,24 @@ bt_status_t BTSYMBOLS(bt_hfp_ag_connect_audio)(bt_instance_t* ins, bt_address_t*
 bt_status_t BTSYMBOLS(bt_hfp_ag_disconnect_audio)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
+ * @brief Start SCO using virtual voice call
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_ag_start_virtual_call)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
+ * @brief Stop SCO using virtual voice call
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_ag_stop_virtual_call)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
  * @brief Start voice recognition
  *
  * @param ins - bluetooth client instance.

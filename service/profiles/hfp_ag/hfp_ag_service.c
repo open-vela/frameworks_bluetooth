@@ -523,6 +523,24 @@ static bt_status_t hfp_ag_disconnect_audio(bt_address_t* addr)
     return hfp_ag_send_event(addr, AG_DISCONNECT_AUDIO);
 }
 
+static bt_status_t hfp_ag_start_virtual_call(bt_address_t* addr)
+{
+    CHECK_ENABLED();
+    if (!hfp_ag_is_connected(addr) || hfp_ag_is_audio_connected(addr))
+        return BT_STATUS_FAIL;
+
+    return hfp_ag_send_event(addr, AG_START_VIRTUAL_CALL);
+}
+
+static bt_status_t hfp_ag_stop_virtual_call(bt_address_t* addr)
+{
+    CHECK_ENABLED();
+    if (!hfp_ag_is_audio_connected(addr))
+        return BT_STATUS_FAIL;
+
+    return hfp_ag_send_event(addr, AG_STOP_VIRTUAL_CALL);
+}
+
 static bt_status_t hfp_ag_start_voice_recognition(bt_address_t* addr)
 {
     CHECK_ENABLED();
@@ -609,6 +627,8 @@ static const hfp_ag_interface_t agInterface = {
     .disconnect = hfp_ag_disconnect,
     .connect_audio = hfp_ag_connect_audio,
     .disconnect_audio = hfp_ag_disconnect_audio,
+    .start_virtual_call = hfp_ag_start_virtual_call,
+    .stop_virtual_call = hfp_ag_stop_virtual_call,
     .start_voice_recognition = hfp_ag_start_voice_recognition,
     .stop_voice_recognition = hfp_ag_stop_voice_recognition,
     .phone_state_change = hfp_ag_phone_state_change,
