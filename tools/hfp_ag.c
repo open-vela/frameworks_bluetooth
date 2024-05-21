@@ -27,6 +27,8 @@ static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int connect_audio_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_audio_cmd(void* handle, int argc, char* argv[]);
+static int start_virtual_call_cmd(void* handle, int argc, char* argv[]);
+static int stop_virtual_call_cmd(void* handle, int argc, char* argv[]);
 static int start_voice_recognition_cmd(void* handle, int argc, char* argv[]);
 static int stop_voice_recognition_cmd(void* handle, int argc, char* argv[]);
 static int send_at_cmd_cmd(void* handle, int argc, char* argv[]);
@@ -36,6 +38,8 @@ static bt_command_t g_hfp_ag_tables[] = {
     { "disconnect", disconnect_cmd, 0, "\"disconnect hfp SLC connection    , params: <address>\"" },
     { "connectaudio", connect_audio_cmd, 0, "\"establish hfp SCO connection     , params: <address>\"" },
     { "disconnectaudio", disconnect_audio_cmd, 0, "\"disconnect hfp SCO connection    , params: <address>\"" },
+    { "startvc", start_virtual_call_cmd, 0, "\"establish SCO using virtual call , params: <address>\"" },
+    { "stopvc", stop_virtual_call_cmd, 0, "\"disconnect SCO using virtual call, params: <address>\"" },
     { "startvr", start_voice_recognition_cmd, 0, "\"start voice recognition          , params: <address>\"" },
     { "stopvr", stop_voice_recognition_cmd, 0, "\"stop voice recognition           , params: <address>\"" },
     { "sendat", send_at_cmd_cmd, 0, "\"Send customize AT command to peer, params: <address> <atcmd>\"" },
@@ -108,6 +112,36 @@ static int disconnect_audio_cmd(void* handle, int argc, char* argv[])
         return CMD_INVALID_ADDR;
 
     if (bt_hfp_ag_disconnect_audio(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int start_virtual_call_cmd(void* handle, int argc, char* argv[])
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (bt_hfp_ag_start_virtual_call(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int stop_virtual_call_cmd(void* handle, int argc, char* argv[])
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (bt_hfp_ag_stop_virtual_call(handle, &addr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;

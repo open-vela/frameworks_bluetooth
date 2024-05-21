@@ -192,6 +192,14 @@ void bt_socket_server_hfp_ag_process(service_poll_t* poll, int fd,
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_disconnect_audio)(ins,
             &packet->hfp_ag_pl._bt_hfp_ag_disconnect_audio.addr);
         break;
+    case BT_HFP_AG_START_VIRTUAL_CALL:
+        packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_start_virtual_call)(ins,
+            &packet->hfp_ag_pl._bt_hfp_ag_start_virtual_call.addr);
+        break;
+    case BT_HFP_AG_STOP_VIRTUAL_CALL:
+        packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_stop_virtual_call)(ins,
+            &packet->hfp_ag_pl._bt_hfp_ag_stop_virtual_call.addr);
+        break;
     case BT_HFP_AG_START_VOICE_RECOGNITION:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_start_voice_recognition)(ins,
             &packet->hfp_ag_pl._bt_hfp_ag_start_voice_recognition.addr);

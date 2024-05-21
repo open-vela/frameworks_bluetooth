@@ -45,6 +45,7 @@ typedef struct _ag_state_machine {
     uint16_t sco_conn_handle;
     uint32_t remote_features;
     bool recognition_active;
+    bool virtual_call_started;
     bool offloading;
     void* service;
     uint8_t codec;
@@ -188,6 +189,8 @@ static const char* stack_event_to_string(hfp_ag_event_t event)
         CASE_RETURN_STR(AG_DISCONNECT)
         CASE_RETURN_STR(AG_CONNECT_AUDIO)
         CASE_RETURN_STR(AG_DISCONNECT_AUDIO)
+        CASE_RETURN_STR(AG_START_VIRTUAL_CALL)
+        CASE_RETURN_STR(AG_STOP_VIRTUAL_CALL)
         CASE_RETURN_STR(AG_VOICE_RECOGNITION_START)
         CASE_RETURN_STR(AG_VOICE_RECOGNITION_STOP)
         CASE_RETURN_STR(AG_PHONE_STATE_CHANGE)
@@ -688,6 +691,24 @@ static void hfp_ag_voice_volume_change_callback(void* cookie, int volume)
     hfp_ag_send_message(msg);
 }
 
+static void set_virtual_call_started(state_machine_t* sm, bool started)
+{
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    if (agsm->virtual_call_started == started)
+        return;
+
+    agsm->virtual_call_started = started;
+
+    if (started) {
+        bt_sal_hfp_ag_phone_state_change(&agsm->addr, 0, 0, HFP_AG_CALL_STATE_DIALING, HFP_CALL_ADDRTYPE_UNKNOWN, "", "");
+        bt_sal_hfp_ag_phone_state_change(&agsm->addr, 0, 0, HFP_AG_CALL_STATE_ALERTING, HFP_CALL_ADDRTYPE_UNKNOWN, "", "");
+        bt_sal_hfp_ag_phone_state_change(&agsm->addr, 1, 0, HFP_AG_CALL_STATE_ACTIVE, HFP_CALL_ADDRTYPE_UNKNOWN, "", "");
+    } else {
+        bt_sal_hfp_ag_phone_state_change(&agsm->addr, 0, 0, HFP_AG_CALL_STATE_DISCONNECTED, HFP_CALL_ADDRTYPE_UNKNOWN, "", "");
+        bt_sal_hfp_ag_phone_state_change(&agsm->addr, 0, 0, HFP_AG_CALL_STATE_IDLE, HFP_CALL_ADDRTYPE_UNKNOWN, "", "");
+    }
+}
+
 static void connected_enter(state_machine_t* sm)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
@@ -704,6 +725,7 @@ static void connected_enter(state_machine_t* sm)
         }
         ag_service_notify_connection_state_changed(&agsm->addr, PROFILE_STATE_CONNECTED);
     } else {
+        set_virtual_call_started(sm, false);
         ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
     }
 }
@@ -758,6 +780,26 @@ static bt_status_t ag_offload_send_stop_cmd(ag_state_machine_t* ag_sm, hfp_ag_da
     return bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, ag_sm);
 }
 
+static bool is_virtual_call_allowed(state_machine_t* sm)
+{
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    uint32_t state;
+    uint8_t num_active, num_held, call_state;
+
+    state = ag_state_machine_get_state(agsm);
+    if (state != HFP_AG_STATE_CONNECTED)
+        return false;
+
+    if (agsm->virtual_call_started)
+        return false;
+
+    tele_service_get_phone_state(&num_active, &num_held, &call_state);
+    if (num_active || num_held || call_state != HFP_AG_CALL_STATE_IDLE)
+        return false;
+
+    return true;
+}
+
 static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
@@ -773,6 +815,21 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         break;
     case AG_CONNECT_AUDIO:
         if (bt_sal_hfp_ag_connect_audio(&agsm->addr) != BT_STATUS_SUCCESS) {
+            ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
+            return false;
+        }
+        hsm_transition_to(sm, &audio_connecting_state);
+        break;
+    case AG_START_VIRTUAL_CALL:
+        if (!is_virtual_call_allowed(sm)) {
+            ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
+            return false;
+        }
+
+        set_virtual_call_started(sm, true);
+
+        if (bt_sal_hfp_ag_connect_audio(&agsm->addr) != BT_STATUS_SUCCESS) {
+            set_virtual_call_started(sm, false);
             ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
             return false;
         }
@@ -844,6 +901,10 @@ static bool audio_connecting_process_event(state_machine_t* sm, uint32_t event, 
     case AG_DISCONNECT_AUDIO:
         /* TODO: handle */
         BT_LOGD("defer DISCONNECT_AUDIO message");
+        break;
+    case AG_STOP_VIRTUAL_CALL:
+        /* TODO: handle */
+        BT_LOGD("defer STOP_VITRUAL_CALL message");
         break;
     case AG_STACK_EVENT_AUDIO_REQ:
         BT_LOGD("already in audio connecting state");
@@ -934,6 +995,21 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         hsm_transition_to(sm, &disconnecting_state);
         break;
     case AG_DISCONNECT_AUDIO:
+        if (bt_sal_hfp_ag_disconnect_audio(&agsm->addr) != BT_STATUS_SUCCESS) {
+            ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
+            hsm_transition_to(sm, &connected_state);
+            return false;
+        }
+        hsm_transition_to(sm, &audio_disconnecting_state);
+        break;
+    case AG_STOP_VIRTUAL_CALL:
+        if (!agsm->virtual_call_started) {
+            BT_LOGW("Virtual call not started");
+            return false;
+        }
+
+        set_virtual_call_started(sm, false);
+
         if (bt_sal_hfp_ag_disconnect_audio(&agsm->addr) != BT_STATUS_SUCCESS) {
             ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
             hsm_transition_to(sm, &connected_state);
@@ -1084,6 +1160,7 @@ ag_state_machine_t* ag_state_machine_new(bt_address_t* addr, void* context)
 
     memset(agsm, 0, sizeof(ag_state_machine_t));
     agsm->recognition_active = false;
+    agsm->virtual_call_started = false;
     agsm->service = context;
     agsm->connect_timer = NULL;
     agsm->audio_timer = NULL;
