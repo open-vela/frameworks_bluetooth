@@ -104,7 +104,6 @@ typedef struct
         bt_pan_result_t pan_r;
         bt_hid_device_result_t hidd_r;
         bt_l2cap_result_t l2cap_r;
-        char pad1[128]; // This is just a WAR!!! Shall be removed soon!!! 2024.5.20
     };
     union {
         bt_message_manager_t manager_pl;
@@ -149,8 +148,6 @@ typedef struct
 
         bt_message_l2cap_t l2cap_pl;
         bt_message_l2cap_callbacks_t l2cap_cb;
-
-        char pad2[1280]; // This is just a WAR!!! Shall be removed soon!!! 2024.5.20
     };
 } bt_message_packet_t;
 #pragma pack()
