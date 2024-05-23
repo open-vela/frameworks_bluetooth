@@ -81,11 +81,12 @@ bt_device_type_t bt_device_get_device_type(bt_instance_t* ins, bt_address_t* add
 
 bool bt_device_get_name(bt_instance_t* ins, bt_address_t* addr, char* name, uint32_t length)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_status_t status;
 
     BT_SOCKET_INS_VALID(ins, false);
-    status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_NAME);
+    memcpy(&packet.devs_pl._bt_device_get_name.addr, addr, sizeof(*addr));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_GET_NAME);
     if (status != BT_STATUS_SUCCESS) {
         return status;
     }
@@ -113,11 +114,13 @@ uint32_t bt_device_get_device_class(bt_instance_t* ins, bt_address_t* addr)
 
 bt_status_t bt_device_get_uuids(bt_instance_t* ins, bt_address_t* addr, bt_uuid_t** uuids, uint16_t* size, bt_allocator_t allocator)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_status_t status;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
-    status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_UUIDS);
+
+    memcpy(&packet.devs_pl._bt_device_get_uuids.addr, addr, sizeof(*addr));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_GET_UUIDS);
     if (status != BT_STATUS_SUCCESS)
         return status;
 
