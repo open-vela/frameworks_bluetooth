@@ -492,6 +492,7 @@ static int64_t calc_us_diff(uint64_t prev_us, uint64_t next_us)
 
     return -1;
 }
+#endif
 
 static bool check_sco_allowed(state_machine_t* sm)
 {
@@ -512,12 +513,11 @@ static bool check_sco_allowed(state_machine_t* sm)
         hfsm->call_status.webchat_flag_timestamp_us = current_timestamp_us;
         return false;
     }
-
-    return true;
 #endif
     return true;
 }
 
+#ifdef CONFIG_HFP_HF_WEBCHAT_BLOCKER
 static void channel_type_verdict(state_machine_t* sm, uint32_t event, uint32_t status,
     uint64_t current_timestamp_us)
 {
