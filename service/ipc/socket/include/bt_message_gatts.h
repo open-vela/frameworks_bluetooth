@@ -101,7 +101,15 @@ BT_GATT_SERVER_MESSAGE_START,
         struct {
             uint64_t handle; /* gatts_handle_t */
             int32_t attr_num;
-            gatt_attr_db_t attr_db[CONFIG_BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM];
+            struct {
+                bt_uuid_t uuid;
+                uint16_t handle;
+                uint8_t type; /* gatt_attr_type_t */
+                uint8_t rsp_type; /* gatt_attr_rsp_t */
+                uint32_t properties;
+                uint32_t permissions;
+                uint32_t attr_length;
+            } attr_db[CONFIG_BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM];
         } _bt_gatts_add_attr_table;
 
         struct {

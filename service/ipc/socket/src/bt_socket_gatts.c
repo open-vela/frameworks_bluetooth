@@ -238,18 +238,32 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
         break;
     case BT_GATT_SERVER_ADD_ATTR_TABLE: {
         uint8_t* raw_data = (uint8_t*)packet->gatts_pl._bt_gatts_add_attr_table.attr_db;
-        gatt_srv_db_t srv_db = {
-            .attr_num = packet->gatts_pl._bt_gatts_add_attr_table.attr_num,
-            .attr_db = packet->gatts_pl._bt_gatts_add_attr_table.attr_db,
-        };
-        gatt_attr_db_t* attr_inst = srv_db.attr_db;
-        raw_data += sizeof(gatt_attr_db_t) * srv_db.attr_num;
+        gatt_srv_db_t srv_db;
+        gatt_attr_db_t* attr_inst;
+
+        srv_db.attr_num = packet->gatts_pl._bt_gatts_add_attr_table.attr_num;
+        srv_db.attr_db = zalloc(sizeof(gatt_attr_db_t) * packet->gatts_pl._bt_gatts_add_attr_table.attr_num);
+        if (!srv_db.attr_db) {
+            packet->gatts_r.status = BT_STATUS_NO_RESOURCES;
+            break;
+        }
+
+        attr_inst = srv_db.attr_db;
+        raw_data += sizeof(packet->gatts_pl._bt_gatts_add_attr_table.attr_db[0]) * srv_db.attr_num;
         for (int i = 0; i < srv_db.attr_num; i++, attr_inst++) {
-            if (attr_inst->read_cb)
+            memcpy(&attr_inst->uuid, &packet->gatts_pl._bt_gatts_add_attr_table.attr_db[i].uuid,
+                sizeof(attr_inst->uuid));
+            attr_inst->handle = packet->gatts_pl._bt_gatts_add_attr_table.attr_db[i].handle;
+            attr_inst->type = packet->gatts_pl._bt_gatts_add_attr_table.attr_db[i].type;
+            attr_inst->rsp_type = packet->gatts_pl._bt_gatts_add_attr_table.attr_db[i].rsp_type;
+            attr_inst->properties = packet->gatts_pl._bt_gatts_add_attr_table.attr_db[i].properties;
+            attr_inst->permissions = packet->gatts_pl._bt_gatts_add_attr_table.attr_db[i].permissions;
+            attr_inst->attr_length = packet->gatts_pl._bt_gatts_add_attr_table.attr_db[i].attr_length;
+
+            if (attr_inst->rsp_type == ATTR_RSP_BY_APP) {
                 attr_inst->read_cb = on_read_request_cb;
-            if (attr_inst->write_cb)
                 attr_inst->write_cb = on_write_request_cb;
-            if (attr_inst->attr_length && attr_inst->attr_value) {
+            } else if (attr_inst->attr_length) {
                 attr_inst->attr_value = raw_data;
                 raw_data += attr_inst->attr_length;
             }
@@ -258,6 +272,8 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_add_attr_table)(
             INT2PTR(gatts_handle_t) packet->gatts_pl._bt_gatts_add_attr_table.handle,
             &srv_db);
+        free(srv_db.attr_db);
+
         break;
     }
     case BT_GATT_SERVER_REMOVE_ATTR_TABLE:

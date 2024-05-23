@@ -154,16 +154,24 @@ bt_status_t bt_gatts_add_attr_table(gatts_handle_t srv_handle, gatt_srv_db_t* sr
     bt_status_t status;
     bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
     uint8_t* raw_data = (uint8_t*)packet.gatts_pl._bt_gatts_add_attr_table.attr_db;
-    uint32_t data_length = sizeof(gatt_attr_db_t) * srv_db->attr_num;
+    uint32_t data_length = sizeof(packet.gatts_pl._bt_gatts_add_attr_table.attr_db[0]) * srv_db->attr_num;
     gatt_attr_db_t* attr_inst = srv_db->attr_db;
 
     CHECK_NULL_PTR(gatts_remote);
     if (data_length > sizeof(packet.gatts_pl._bt_gatts_add_attr_table.attr_db))
         return BT_STATUS_PARM_INVALID;
 
-    memcpy(packet.gatts_pl._bt_gatts_add_attr_table.attr_db, attr_inst, data_length);
     raw_data += data_length;
     for (int i = 0; i < srv_db->attr_num; i++, attr_inst++) {
+        memcpy(&packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].uuid, &attr_inst->uuid,
+            sizeof(packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].uuid));
+        packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].handle = attr_inst->handle;
+        packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].type = attr_inst->type;
+        packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].rsp_type = attr_inst->rsp_type;
+        packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].properties = attr_inst->properties;
+        packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].permissions = attr_inst->permissions;
+        packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].attr_length = attr_inst->attr_length;
+
         if (attr_inst->rsp_type == ATTR_AUTO_RSP && attr_inst->attr_length) {
             data_length += attr_inst->attr_length;
             if (data_length > sizeof(packet.gatts_pl._bt_gatts_add_attr_table.attr_db))
