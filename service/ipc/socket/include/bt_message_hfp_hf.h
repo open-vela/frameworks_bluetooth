@@ -39,6 +39,7 @@ BT_HFP_HF_MESSAGE_START,
     BT_HFP_HF_QUERY_CURRENT_CALLS,
     BT_HFP_HF_SEND_AT_CMD,
     BT_HFP_HF_UPDATE_BATTERY_LEVEL,
+    BT_HFP_HF_VOLUME_CONTROL,
     BT_HFP_HF_SEND_DTMF,
     BT_HFP_HF_MESSAGE_END,
 #endif
@@ -95,6 +96,7 @@ BT_HFP_HF_MESSAGE_START,
 
         struct {
             bt_address_t addr;
+            uint8_t pad[2];
             char number[HFP_PHONENUM_DIGITS_MAX + 1];
         } _bt_hfp_hf_dial;
 
@@ -123,6 +125,7 @@ BT_HFP_HF_MESSAGE_START,
 
         struct {
             bt_address_t addr;
+            uint8_t pad[2];
             char cmd[HFP_AT_LEN_MAX + 1];
         } _bt_hfp_hf_send_at_cmd;
 
@@ -130,6 +133,12 @@ BT_HFP_HF_MESSAGE_START,
             bt_address_t addr;
             uint8_t level;
         } _bt_hfp_hf_update_battery_level;
+
+        struct {
+            bt_address_t addr;
+            uint8_t type; /* hfp_volume_type_t */
+            uint8_t volume;
+        } _bt_hfp_hf_volume_control;
 
         struct {
             bt_address_t addr;
@@ -160,6 +169,7 @@ BT_HFP_HF_MESSAGE_START,
 
         struct {
             bt_address_t addr;
+            uint8_t pad[2];
             char resp[HFP_AT_LEN_MAX + 1];
         } _on_at_cmd_complete_cb;
 
@@ -171,7 +181,7 @@ BT_HFP_HF_MESSAGE_START,
         struct {
             bt_address_t addr;
             uint8_t type; /* hfp_volume_type_t */
-            uint32_t volume;
+            uint8_t volume;
         } _on_volume_changed_cb;
     } bt_message_hfp_hf_callbacks_t;
 

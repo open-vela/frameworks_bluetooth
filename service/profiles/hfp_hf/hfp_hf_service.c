@@ -288,8 +288,7 @@ static void hfp_hf_process_message(void* data)
         hf_shutdown(INT2PTR(profile_on_shutdown_t) msg->data.valueint1);
         break;
     case HF_UPDATE_BATTERY_LEVEL:
-    case HF_SET_MIC_VOLUME:
-    case HF_SET_SPEAKER_VOLUME:
+    case HF_SET_VOLUME:
         bt_list_foreach(g_hfp_service.hf_devices, hf_dispatch_msg_foreach, msg);
         break;
     default: {
@@ -683,6 +682,19 @@ static bt_status_t hfp_hf_update_battery_level(bt_address_t* addr, uint8_t level
     return hfp_hf_send_message(msg);
 }
 
+static bt_status_t hfp_hf_volume_control(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
+{
+    CHECK_ENABLED();
+
+    hfp_hf_msg_t* msg = hfp_hf_msg_new(HF_SET_VOLUME, addr);
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    msg->data.valueint1 = type;
+    msg->data.valueint2 = volume;
+    return hfp_hf_send_message(msg);
+}
+
 static bt_status_t hfp_hf_send_dtmf(bt_address_t* addr, char dtmf)
 {
     CHECK_ENABLED();
@@ -720,6 +732,7 @@ static const hfp_hf_interface_t HfInterface = {
     .query_current_calls = hfp_hf_query_current_calls,
     .send_at_cmd = hfp_hf_send_at_cmd,
     .update_battery_level = hfp_hf_update_battery_level,
+    .volume_control = hfp_hf_volume_control,
     .send_dtmf = hfp_hf_send_dtmf,
 };
 
@@ -774,10 +787,10 @@ void hf_service_notify_ring_indication(bt_address_t* addr, bool inband_ring_tone
     HF_CALLBACK_FOREACH(g_hfp_service.callbacks, ring_indication_cb, addr, inband_ring_tone);
 }
 
-void hf_service_notify_volume_changed(bt_address_t* addr, hfp_volume_type_t type, int volume)
+void hf_service_notify_volume_changed(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
 {
     BT_LOGD("%s", __func__);
-    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, vol_changed_cb, addr, type, volume);
+    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, volume_changed_cb, addr, type, volume);
 }
 
 void hfp_hf_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,
