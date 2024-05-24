@@ -244,6 +244,70 @@ bt_status_t bt_hfp_ag_stop_voice_recognition(bt_instance_t* ins, bt_address_t* a
     return packet.hfp_ag_r.status;
 }
 
+bt_status_t bt_hfp_ag_phone_state_change(bt_instance_t* ins, bt_address_t* addr,
+    uint8_t num_active, uint8_t num_held,
+    hfp_ag_call_state_t call_state, hfp_call_addrtype_t type,
+    const char* number, const char* name)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_phone_state_change.addr, addr, sizeof(bt_address_t));
+    packet.hfp_ag_pl._bt_hfp_ag_phone_state_change.num_active = num_active;
+    packet.hfp_ag_pl._bt_hfp_ag_phone_state_change.num_held = num_held;
+    packet.hfp_ag_pl._bt_hfp_ag_phone_state_change.call_state = call_state;
+    packet.hfp_ag_pl._bt_hfp_ag_phone_state_change.type = type;
+    if (number)
+        strlcpy(packet.hfp_ag_pl._bt_hfp_ag_phone_state_change.number, number, sizeof(packet.hfp_ag_pl._bt_hfp_ag_phone_state_change.number));
+    if (name)
+        strlcpy(packet.hfp_ag_pl._bt_hfp_ag_phone_state_change.name, name, sizeof(packet.hfp_ag_pl._bt_hfp_ag_phone_state_change.name));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_PHONE_STATE_CHANGE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
+}
+
+bt_status_t bt_hfp_ag_notify_device_status(bt_instance_t* ins, bt_address_t* addr,
+    hfp_network_state_t network, hfp_roaming_state_t roam,
+    uint8_t signal, uint8_t battery)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_notify_device_status.addr, addr, sizeof(bt_address_t));
+    packet.hfp_ag_pl._bt_hfp_ag_notify_device_status.network = network;
+    packet.hfp_ag_pl._bt_hfp_ag_notify_device_status.roam = roam;
+    packet.hfp_ag_pl._bt_hfp_ag_notify_device_status.signal = signal;
+    packet.hfp_ag_pl._bt_hfp_ag_notify_device_status.battery = battery;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_NOTIFY_DEVICE_STATUS);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
+}
+
+bt_status_t bt_hfp_ag_volume_control(bt_instance_t* ins, bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_volume_control.addr, addr, sizeof(bt_address_t));
+    packet.hfp_ag_pl._bt_hfp_ag_volume_control.type = type;
+    packet.hfp_ag_pl._bt_hfp_ag_volume_control.volume = volume;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_VOLUME_CONTROL);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
+}
+
 bt_status_t bt_hfp_ag_send_at_command(bt_instance_t* ins, bt_address_t* addr, const char* at_command)
 {
     bt_message_packet_t packet;

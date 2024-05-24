@@ -78,16 +78,6 @@ typedef enum {
     HFP_CODEC_CVSD
 } hfp_codec_type_t;
 
-typedef enum {
-    HFP_NETWORK_NOT_AVAILABLE = 0,
-    HFP_NETWORK_AVAILABLE,
-} hfp_network_state_t;
-
-typedef enum {
-    HFP_ROAM_STATE_NO_ROAMING = 0,
-    HFP_ROAM_STATE_ROAMING,
-} hfp_roaming_state_t;
-
 typedef struct {
     uint32_t sample_rate;
     uint8_t codec;

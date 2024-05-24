@@ -76,18 +76,21 @@ void ag_service_notify_connection_state_changed(bt_address_t* addr, profile_conn
 void ag_service_notify_audio_state_changed(bt_address_t* addr, hfp_audio_state_t state);
 void ag_service_notify_vr_state_changed(bt_address_t* addr, bool started);
 void ag_service_notify_hf_battery_update(bt_address_t* addr, uint8_t value);
+void ag_service_notify_volume_changed(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
+void ag_service_notify_call_answered(bt_address_t* addr);
+void ag_service_notify_call_rejected(bt_address_t* addr);
+void ag_service_notify_call_hangup(bt_address_t* addr);
+void ag_service_notify_call_dial(bt_address_t* addr, const char* number);
 void ag_service_notify_cmd_received(bt_address_t* addr, const char* at_cmd);
 
 /*
  * telephony
  */
-bt_status_t hfp_ag_phone_state_change(uint8_t num_active, uint8_t num_held,
-    hfp_ag_call_state_t call_state,
-    hfp_call_addrtype_t type, const char* number,
-    const char* name);
-bt_status_t hfp_ag_device_status_changed(hfp_network_state_t network,
-    hfp_roaming_state_t roam,
-    uint8_t signal, uint8_t battery);
+bt_status_t hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_active, uint8_t num_held,
+    hfp_ag_call_state_t call_state, hfp_call_addrtype_t type,
+    const char* number, const char* name);
+bt_status_t hfp_ag_device_status_changed(bt_address_t* addr, hfp_network_state_t network,
+    hfp_roaming_state_t roam, uint8_t signal, uint8_t battery);
 bt_status_t hfp_ag_dial_result(uint8_t result);
 
 typedef struct ag_interface {
@@ -105,13 +108,12 @@ typedef struct ag_interface {
     bt_status_t (*stop_virtual_call)(bt_address_t* addr);
     bt_status_t (*start_voice_recognition)(bt_address_t* addr);
     bt_status_t (*stop_voice_recognition)(bt_address_t* addr);
-    bt_status_t (*phone_state_change)(uint8_t num_active, uint8_t num_held,
-        hfp_ag_call_state_t call_state,
-        hfp_call_addrtype_t type, const char* number,
-        const char* name);
-    bt_status_t (*device_status_changed)(hfp_network_state_t network,
-        hfp_roaming_state_t roam,
-        uint8_t signal, uint8_t battery);
+    bt_status_t (*phone_state_change)(bt_address_t* addr, uint8_t num_active, uint8_t num_held,
+        hfp_ag_call_state_t call_state, hfp_call_addrtype_t type,
+        const char* number, const char* name);
+    bt_status_t (*device_status_changed)(bt_address_t* addr, hfp_network_state_t network,
+        hfp_roaming_state_t roam, uint8_t signal, uint8_t battery);
+    bt_status_t (*volume_control)(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
     bt_status_t (*dial_response)(uint8_t result);
     bt_status_t (*send_at_command)(bt_address_t* addr, const char* at_command);
 } hfp_ag_interface_t;

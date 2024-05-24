@@ -559,12 +559,11 @@ static bt_status_t hfp_ag_stop_voice_recognition(bt_address_t* addr)
     return hfp_ag_send_event(addr, AG_VOICE_RECOGNITION_STOP);
 }
 
-bt_status_t hfp_ag_phone_state_change(uint8_t num_active, uint8_t num_held,
-    hfp_ag_call_state_t call_state,
-    hfp_call_addrtype_t type, const char* number,
-    const char* name)
+bt_status_t hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_active, uint8_t num_held,
+    hfp_ag_call_state_t call_state, hfp_call_addrtype_t type,
+    const char* number, const char* name)
 {
-    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_PHONE_STATE_CHANGE, NULL);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_PHONE_STATE_CHANGE, addr);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -578,11 +577,10 @@ bt_status_t hfp_ag_phone_state_change(uint8_t num_active, uint8_t num_held,
     return hfp_ag_send_message(msg);
 }
 
-bt_status_t hfp_ag_device_status_changed(hfp_network_state_t network,
-    hfp_roaming_state_t roam,
-    uint8_t signal, uint8_t battery)
+bt_status_t hfp_ag_device_status_changed(bt_address_t* addr, hfp_network_state_t network,
+    hfp_roaming_state_t roam, uint8_t signal, uint8_t battery)
 {
-    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_DEVICE_STATUS_CHANGED, NULL);
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_DEVICE_STATUS_CHANGED, addr);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -590,6 +588,18 @@ bt_status_t hfp_ag_device_status_changed(hfp_network_state_t network,
     msg->data.valueint2 = roam;
     msg->data.valueint3 = signal;
     msg->data.valueint4 = battery;
+
+    return hfp_ag_send_message(msg);
+}
+
+bt_status_t hfp_ag_volume_control(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
+{
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_SET_VOLUME, addr);
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    msg->data.valueint1 = type;
+    msg->data.valueint2 = volume;
 
     return hfp_ag_send_message(msg);
 }
@@ -633,6 +643,7 @@ static const hfp_ag_interface_t agInterface = {
     .stop_voice_recognition = hfp_ag_stop_voice_recognition,
     .phone_state_change = hfp_ag_phone_state_change,
     .device_status_changed = hfp_ag_device_status_changed,
+    .volume_control = hfp_ag_volume_control,
     .dial_response = hfp_ag_dial_result,
     .send_at_command = hfp_ag_send_at_command,
 };
@@ -667,6 +678,36 @@ void ag_service_notify_hf_battery_update(bt_address_t* addr, uint8_t value)
 {
     BT_LOGD("%s", __FUNCTION__);
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, hf_battery_update_cb, addr, value);
+}
+
+void ag_service_notify_volume_changed(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
+{
+    BT_LOGD("%s", __func__);
+    AG_CALLBACK_FOREACH(g_ag_service.callbacks, volume_control_cb, addr, type, volume);
+}
+
+void ag_service_notify_call_answered(bt_address_t* addr)
+{
+    BT_LOGD("%s", __func__);
+    AG_CALLBACK_FOREACH(g_ag_service.callbacks, answer_call_cb, addr);
+}
+
+void ag_service_notify_call_rejected(bt_address_t* addr)
+{
+    BT_LOGD("%s", __func__);
+    AG_CALLBACK_FOREACH(g_ag_service.callbacks, reject_call_cb, addr);
+}
+
+void ag_service_notify_call_hangup(bt_address_t* addr)
+{
+    BT_LOGD("%s", __func__);
+    AG_CALLBACK_FOREACH(g_ag_service.callbacks, hangup_call_cb, addr);
+}
+
+void ag_service_notify_call_dial(bt_address_t* addr, const char* number)
+{
+    BT_LOGD("%s", __func__);
+    AG_CALLBACK_FOREACH(g_ag_service.callbacks, dial_call_cb, addr, number);
 }
 
 void ag_service_notify_cmd_received(bt_address_t* addr, const char* at_cmd)

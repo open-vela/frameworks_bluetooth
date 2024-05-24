@@ -81,6 +81,49 @@ typedef void (*hfp_ag_vr_cmd_callback)(void* cookie, bt_address_t* addr, bool st
 typedef void (*hfp_ag_battery_update_callback)(void* cookie, bt_address_t* addr, uint8_t value);
 
 /**
+ * @brief HFP AG volume control callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ * @param type - the type of volume, 0:gain of speaker, 1:gain of microphone.
+ * @param volume - the gain level, range 0-15.
+ */
+typedef void (*hfp_ag_volume_control_callback)(void* cookie, bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
+
+/**
+ * @brief HFP AG received answer incoming call
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ */
+typedef void (*hfp_ag_answer_call_callback)(void* cookie, bt_address_t* addr);
+
+/**
+ * @brief HFP AG received reject incoming call
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ */
+typedef void (*hfp_ag_reject_call_callback)(void* cookie, bt_address_t* addr);
+
+/**
+ * @brief HFP AG received hangup call
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ */
+typedef void (*hfp_ag_hangup_call_callback)(void* cookie, bt_address_t* addr);
+
+/**
+ * @brief HFP AG received dial an outgoing call
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ * @param number - dialed number, if number is NULL, redial.
+ */
+typedef void (*hfp_ag_dial_call_callback)(void* cookie, bt_address_t* addr, const char* number);
+
+/**
  * @brief HFP AT command received callback
  *
  * @param cookie - callback cookie.
@@ -100,6 +143,11 @@ typedef struct
     hfp_ag_audio_state_callback audio_state_cb;
     hfp_ag_vr_cmd_callback vr_cmd_cb;
     hfp_ag_battery_update_callback hf_battery_update_cb;
+    hfp_ag_volume_control_callback volume_control_cb;
+    hfp_ag_answer_call_callback answer_call_cb;
+    hfp_ag_reject_call_callback reject_call_cb;
+    hfp_ag_hangup_call_callback hangup_call_cb;
+    hfp_ag_dial_call_callback dial_call_cb;
     hfp_ag_at_cmd_received_callback at_cmd_cb;
 } hfp_ag_callbacks_t;
 
@@ -222,6 +270,49 @@ bt_status_t BTSYMBOLS(bt_hfp_ag_start_voice_recognition)(bt_instance_t* ins, bt_
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_hfp_ag_stop_voice_recognition)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
+ * @brief Send phone state change
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @param num_active - active call count
+ * @param num_held - held call count
+ * @param call_state - call state
+ * @param number - call number
+ * @param name - call name
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_ag_phone_state_change)(bt_instance_t* ins, bt_address_t* addr,
+    uint8_t num_active, uint8_t num_held,
+    hfp_ag_call_state_t call_state, hfp_call_addrtype_t type,
+    const char* number, const char* name);
+
+/**
+ * @brief Notify device status
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @param network - network service state
+ * @param roam - roam state
+ * @param signal - signal strength
+ * @param battery - battery level
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_ag_notify_device_status)(bt_instance_t* ins, bt_address_t* addr,
+    hfp_network_state_t network, hfp_roaming_state_t roam,
+    uint8_t signal, uint8_t battery);
+
+/**
+ * @brief Send volume control
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @param type - the type of volume, 0:gain of speaker, 1:gain of microphone.
+ * @param volume - the gain level, range 0-15.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_ag_volume_control)(bt_instance_t* ins, bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
 
 /**
  * @brief Send AT Command
