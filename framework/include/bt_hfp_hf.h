@@ -163,7 +163,7 @@ typedef void (*hfp_hf_operator_changed_callback)(void* cookie, bt_address_t* add
  * @param type - the type of volume, 0:gain of speaker, 1:gain of microphone.
  * @param volume - the gain level, range 0-15.
  */
-typedef void (*hfp_hf_volume_changed_callback)(void* cookie, bt_address_t* addr, hfp_volume_type_t type, int volume);
+typedef void (*hfp_hf_volume_changed_callback)(void* cookie, bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
 
 /**
  * @brief HFP HF callback structure
@@ -178,7 +178,7 @@ typedef struct
     hfp_hf_call_state_change_callback call_state_changed_cb;
     hfp_hf_cmd_complete_callback cmd_complete_cb;
     hfp_hf_ring_indication_callback ring_indication_cb;
-    hfp_hf_volume_changed_callback vol_changed_cb;
+    hfp_hf_volume_changed_callback volume_changed_cb;
 } hfp_hf_callbacks_t;
 
 /**
@@ -412,6 +412,17 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_send_at_cmd)(bt_instance_t* ins, bt_address_t* a
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_hfp_hf_update_battery_level)(bt_instance_t* ins, bt_address_t* addr, uint8_t level);
+
+/**
+ * @brief Send volume control
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer AG device.
+ * @param type - the type of volume, 0:gain of speaker, 1:gain of microphone.
+ * @param volume - the gain level, range 0-15.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_hf_volume_control)(bt_instance_t* ins, bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
 
 /**
  * @brief Send Dual Tone Multi-Frequency (DTMF) code

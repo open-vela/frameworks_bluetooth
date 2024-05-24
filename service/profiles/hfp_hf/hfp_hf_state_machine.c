@@ -166,8 +166,7 @@ static const char* stack_event_to_string(hfp_hf_event_t event)
         CASE_RETURN_STR(HF_DISCONNECT_AUDIO)
         CASE_RETURN_STR(HF_VOICE_RECOGNITION_START)
         CASE_RETURN_STR(HF_VOICE_RECOGNITION_STOP)
-        CASE_RETURN_STR(HF_SET_MIC_VOLUME)
-        CASE_RETURN_STR(HF_SET_SPEAKER_VOLUME)
+        CASE_RETURN_STR(HF_SET_VOLUME)
         CASE_RETURN_STR(HF_DIAL_NUMBER)
         CASE_RETURN_STR(HF_DIAL_MEMORY)
         CASE_RETURN_STR(HF_DIAL_LAST)
@@ -1033,13 +1032,14 @@ static void hfp_hf_voice_volume_change_callback(void* cookie, int volume)
     hf_state_machine_t* hfsm = (hf_state_machine_t*)cookie;
     hfp_hf_msg_t* msg;
 
-    msg = hfp_hf_msg_new(HF_SET_SPEAKER_VOLUME, &hfsm->addr);
+    msg = hfp_hf_msg_new(HF_SET_VOLUME, &hfsm->addr);
     if (!msg) {
         BT_LOGE("New hf message alloc failed");
         return;
     }
 
-    msg->data.valueint1 = volume;
+    msg->data.valueint1 = HFP_VOLUME_TYPE_SPK;
+    msg->data.valueint2 = volume;
     hfp_hf_send_message(msg);
 }
 
@@ -1271,21 +1271,27 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
             }
         }
         break;
-    case HF_SET_MIC_VOLUME: {
-        uint8_t hf_vol = bt_media_volume_media_to_hfp(data->valueint1);
-        if (hf_vol != hfsm->mic_volume) {
+    case HF_SET_VOLUME: {
+        hfp_volume_type_t type;
+        uint8_t hf_vol;
+        type = data->valueint1;
+        hf_vol = bt_media_volume_media_to_hfp(data->valueint2);
+        if ((type == HFP_VOLUME_TYPE_MIC) && (hf_vol != hfsm->mic_volume)) {
+            status = bt_sal_hfp_hf_set_volume(&hfsm->addr, type, hf_vol);
+            if (status != BT_STATUS_SUCCESS) {
+                BT_LOGE("Could not set mic volume");
+                break;
+            }
             hfsm->mic_volume = hf_vol;
-            BT_LOGD("Set Mic Volume :%d", hfsm->mic_volume);
-            bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_MIC, hfsm->mic_volume);
-        }
-        break;
-    }
-    case HF_SET_SPEAKER_VOLUME: {
-        uint8_t hf_vol = bt_media_volume_media_to_hfp(data->valueint1);
-        if (hf_vol != hfsm->spk_volume) {
+            BT_LOGD("Set Mic Volume :%" PRIu8, hfsm->mic_volume);
+        } else if ((type == HFP_VOLUME_TYPE_SPK) && (hf_vol != hfsm->spk_volume)) {
+            status = bt_sal_hfp_hf_set_volume(&hfsm->addr, type, hf_vol);
+            if (status != BT_STATUS_SUCCESS) {
+                BT_LOGE("Could not set speaker volume");
+                break;
+            }
             hfsm->spk_volume = hf_vol;
-            BT_LOGD("Set Speaker Volume :%d", hfsm->spk_volume);
-            bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_SPK, hfsm->spk_volume);
+            BT_LOGD("Set Speaker Volume :%" PRIu8, hfsm->spk_volume);
         }
         break;
     }

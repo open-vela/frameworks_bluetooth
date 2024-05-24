@@ -187,6 +187,12 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_update_battery_level)(bt_instance_t* ins, bt_add
     return profile->update_battery_level(addr, level);
 }
 
+bt_status_t BTSYMBOLS(bt_hfp_hf_volume_control)(bt_instance_t* ins, bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
+{
+    hfp_hf_interface_t* profile = get_profile_service();
+    return profile->volume_control(addr, type, volume);
+}
+
 bt_status_t BTSYMBOLS(bt_hfp_hf_send_dtmf)(bt_instance_t* ins, bt_address_t* addr, char dtmf)
 {
     hfp_hf_interface_t* profile = get_profile_service();

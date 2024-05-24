@@ -80,7 +80,7 @@ void hf_service_notify_vr_state_changed(bt_address_t* addr, bool started);
 void hf_service_notify_call_state_changed(bt_address_t* addr, hfp_current_call_t* call);
 void hf_service_notify_cmd_complete(bt_address_t* addr, const char* resp);
 void hf_service_notify_ring_indication(bt_address_t* addr, bool inband_ring_tone);
-void hf_service_notify_volume_changed(bt_address_t* addr, hfp_volume_type_t type, int volume);
+void hf_service_notify_volume_changed(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
 bt_status_t hfp_hf_send_event(bt_address_t* addr, hfp_hf_event_t evt);
 
 typedef struct hf_interface {
@@ -108,6 +108,7 @@ typedef struct hf_interface {
     bt_status_t (*query_current_calls)(bt_address_t* addr, hfp_current_call_t** calls, int* num, bt_allocator_t allocator);
     bt_status_t (*send_at_cmd)(bt_address_t* addr, const char* cmd);
     bt_status_t (*update_battery_level)(bt_address_t* addr, uint8_t level);
+    bt_status_t (*volume_control)(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
     bt_status_t (*send_dtmf)(bt_address_t* addr, char dtmf);
 } hfp_hf_interface_t;
 
