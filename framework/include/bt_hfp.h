@@ -88,6 +88,16 @@ typedef enum {
     HFP_CALL_ADDRTYPE_NATIONAL = 0xA1,
 } hfp_call_addrtype_t;
 
+typedef enum {
+    HFP_NETWORK_NOT_AVAILABLE = 0,
+    HFP_NETWORK_AVAILABLE,
+} hfp_network_state_t;
+
+typedef enum {
+    HFP_ROAM_STATE_NO_ROAMING = 0,
+    HFP_ROAM_STATE_ROAMING,
+} hfp_roaming_state_t;
+
 #ifdef __cplusplus
 }
 #endif

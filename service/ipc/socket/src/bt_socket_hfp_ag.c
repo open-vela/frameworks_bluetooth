@@ -105,6 +105,61 @@ static void on_hf_battery_update_cb(void* cookie, bt_address_t* addr, uint8_t va
     bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_BATTERY_LEVEL_CHANGED);
 }
 
+static void on_volume_control_cb(void* cookie, bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_volume_control.addr, addr, sizeof(bt_address_t));
+    packet.hfp_ag_cb._on_volume_control.type = type;
+    packet.hfp_ag_cb._on_volume_control.volume = volume;
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_VOLUME_CONTROL);
+}
+
+static void on_answer_call_cb(void* cookie, bt_address_t* addr)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_answer_call.addr, addr, sizeof(bt_address_t));
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_ANSWER_CALL);
+}
+
+static void on_reject_call_cb(void* cookie, bt_address_t* addr)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_reject_call.addr, addr, sizeof(bt_address_t));
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_REJECT_CALL);
+}
+
+static void on_hangup_call_cb(void* cookie, bt_address_t* addr)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_hangup_call.addr, addr, sizeof(bt_address_t));
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_HANGUP_CALL);
+}
+
+static void on_dial_call_cb(void* cookie, bt_address_t* addr, const char* number)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_dial_call.addr, addr, sizeof(bt_address_t));
+    if (number != NULL)
+        strlcpy(packet.hfp_ag_cb._on_dial_call.number, number,
+            sizeof(packet.hfp_ag_cb._on_dial_call.number));
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_DIAL_CALL);
+}
+
 static void on_at_cmd_received_cb(void* cookie, bt_address_t* addr, const char* at_command)
 {
     bt_message_packet_t packet = { 0 };
@@ -123,6 +178,11 @@ const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
     .audio_state_cb = on_audio_state_changed_cb,
     .vr_cmd_cb = on_voice_recognition_command_cb,
     .hf_battery_update_cb = on_hf_battery_update_cb,
+    .volume_control_cb = on_volume_control_cb,
+    .answer_call_cb = on_answer_call_cb,
+    .reject_call_cb = on_reject_call_cb,
+    .hangup_call_cb = on_hangup_call_cb,
+    .dial_call_cb = on_dial_call_cb,
     .at_cmd_cb = on_at_cmd_received_cb,
 };
 
@@ -208,6 +268,30 @@ void bt_socket_server_hfp_ag_process(service_poll_t* poll, int fd,
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_stop_voice_recognition)(ins,
             &packet->hfp_ag_pl._bt_hfp_ag_stop_voice_recognition.addr);
         break;
+    case BT_HFP_AG_PHONE_STATE_CHANGE:
+        packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_phone_state_change)(ins,
+            &packet->hfp_ag_pl._bt_hfp_ag_phone_state_change.addr,
+            packet->hfp_ag_pl._bt_hfp_ag_phone_state_change.num_active,
+            packet->hfp_ag_pl._bt_hfp_ag_phone_state_change.num_held,
+            packet->hfp_ag_pl._bt_hfp_ag_phone_state_change.call_state,
+            packet->hfp_ag_pl._bt_hfp_ag_phone_state_change.type,
+            packet->hfp_ag_pl._bt_hfp_ag_phone_state_change.number[0] ? packet->hfp_ag_pl._bt_hfp_ag_phone_state_change.number : NULL,
+            packet->hfp_ag_pl._bt_hfp_ag_phone_state_change.name[0] ? packet->hfp_ag_pl._bt_hfp_ag_phone_state_change.name : NULL);
+        break;
+    case BT_HFP_AG_NOTIFY_DEVICE_STATUS:
+        packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_notify_device_status)(ins,
+            &packet->hfp_ag_pl._bt_hfp_ag_notify_device_status.addr,
+            packet->hfp_ag_pl._bt_hfp_ag_notify_device_status.network,
+            packet->hfp_ag_pl._bt_hfp_ag_notify_device_status.roam,
+            packet->hfp_ag_pl._bt_hfp_ag_notify_device_status.signal,
+            packet->hfp_ag_pl._bt_hfp_ag_notify_device_status.battery);
+        break;
+    case BT_HFP_AG_VOLUME_CONTROL:
+        packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_volume_control)(ins,
+            &packet->hfp_ag_pl._bt_hfp_ag_volume_control.addr,
+            packet->hfp_ag_pl._bt_hfp_ag_volume_control.type,
+            packet->hfp_ag_pl._bt_hfp_ag_volume_control.volume);
+        break;
     case BT_HFP_AG_SEND_AT_COMMAND:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_send_at_command)(ins,
             &packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr,
@@ -246,6 +330,34 @@ int bt_socket_client_hfp_ag_callback(service_poll_t* poll,
             hf_battery_update_cb,
             &packet->hfp_ag_cb._on_battery_level_changed.addr,
             packet->hfp_ag_cb._on_battery_level_changed.value);
+        break;
+    case BT_HFP_AG_ON_VOLUME_CONTROL:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+            volume_control_cb,
+            &packet->hfp_ag_cb._on_volume_control.addr,
+            packet->hfp_ag_cb._on_volume_control.type,
+            packet->hfp_ag_cb._on_volume_control.volume);
+        break;
+    case BT_HFP_AG_ON_ANSWER_CALL:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+            answer_call_cb,
+            &packet->hfp_ag_cb._on_answer_call.addr);
+        break;
+    case BT_HFP_AG_ON_REJECT_CALL:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+            reject_call_cb,
+            &packet->hfp_ag_cb._on_reject_call.addr);
+        break;
+    case BT_HFP_AG_ON_HANGUP_CALL:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+            hangup_call_cb,
+            &packet->hfp_ag_cb._on_hangup_call.addr);
+        break;
+    case BT_HFP_AG_ON_DIAL_CALL:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+            dial_call_cb,
+            &packet->hfp_ag_cb._on_dial_call.addr,
+            packet->hfp_ag_cb._on_dial_call.number[0] ? packet->hfp_ag_cb._on_dial_call.number : NULL);
         break;
     case BT_HFP_AG_ON_AT_COMMAND_RECEIVED:
         CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,

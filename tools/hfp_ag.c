@@ -224,13 +224,48 @@ static void ag_battery_update_callback(void* context, bt_address_t* addr, uint8_
     PRINT_ADDR("ag_battery_update_callback, addr:%s, battery:%d", addr, value);
 }
 
+static void ag_volume_control_callback(void* context, bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
+{
+    PRINT_ADDR("ag_volume_control_callback, addr:%s, type:%d, volume:%d", addr, type, volume);
+}
+
+static void ag_answer_call_callback(void* context, bt_address_t* addr)
+{
+    PRINT_ADDR("ag_answer_call_callback, addr:%s", addr);
+}
+
+static void ag_reject_call_callback(void* context, bt_address_t* addr)
+{
+    PRINT_ADDR("ag_reject_call_callback, addr:%s", addr);
+}
+
+static void ag_hangup_call_callback(void* context, bt_address_t* addr)
+{
+    PRINT_ADDR("ag_hangup_call_callback, addr:%s", addr);
+}
+
+static void ag_dial_call_callback(void* context, bt_address_t* addr, const char* number)
+{
+    PRINT_ADDR("ag_dial_call_callback, addr:%s, number:%s", addr, number ? number : "redial");
+}
+
+static void ag_at_cmd_callback(void* context, bt_address_t* addr, const char* at_command)
+{
+    PRINT_ADDR("ag_at_cmd_callback, addr:%s, at_command:%s", addr, at_command);
+}
+
 static const hfp_ag_callbacks_t hfp_ag_cbs = {
     sizeof(hfp_ag_cbs),
     ag_connection_state_callback,
     ag_audio_state_callback,
     ag_vr_cmd_callback,
     ag_battery_update_callback,
-    NULL,
+    ag_volume_control_callback,
+    ag_answer_call_callback,
+    ag_reject_call_callback,
+    ag_hangup_call_callback,
+    ag_dial_call_callback,
+    ag_at_cmd_callback,
 };
 
 int hfp_ag_commond_init(void* handle)
