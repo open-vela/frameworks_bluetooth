@@ -159,6 +159,7 @@ static void transport_chnl_listen_cb(uv_stream_t* stream, int status)
     ret = uv_pipe_init(stream->loop, ch->cli_pipe, 0);
     if (ret != 0) {
         free(ch->cli_pipe);
+        ch->cli_pipe = NULL;
         BT_LOGE("client pipe init error %s", uv_strerror(ret));
         return;
     }
@@ -266,6 +267,7 @@ bool audio_transport_open(audio_transport_t* transport, uint8_t ch_id,
     ret = uv_pipe_init(transport->loop, ch->svr_pipe, 0);
     if (ret != 0) {
         free(ch->svr_pipe);
+        ch->svr_pipe = NULL;
         BT_LOGE("server pipe init error %s", uv_strerror(ret));
         return false;
     }
