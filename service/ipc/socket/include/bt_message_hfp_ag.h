@@ -29,6 +29,9 @@ BT_HFP_AG_MESSAGE_START,
     BT_HFP_AG_STOP_VIRTUAL_CALL,
     BT_HFP_AG_START_VOICE_RECOGNITION,
     BT_HFP_AG_STOP_VOICE_RECOGNITION,
+    BT_HFP_AG_PHONE_STATE_CHANGE,
+    BT_HFP_AG_NOTIFY_DEVICE_STATUS,
+    BT_HFP_AG_VOLUME_CONTROL,
     BT_HFP_AG_SEND_AT_COMMAND,
     BT_HFP_AG_MESSAGE_END,
 #endif
@@ -39,6 +42,11 @@ BT_HFP_AG_MESSAGE_START,
     BT_HFP_AG_ON_AUDIO_STATE_CHANGED,
     BT_HFP_AG_ON_VOICE_RECOGNITION_STATE_CHANGED,
     BT_HFP_AG_ON_BATTERY_LEVEL_CHANGED,
+    BT_HFP_AG_ON_VOLUME_CONTROL,
+    BT_HFP_AG_ON_ANSWER_CALL,
+    BT_HFP_AG_ON_REJECT_CALL,
+    BT_HFP_AG_ON_HANGUP_CALL,
+    BT_HFP_AG_ON_DIAL_CALL,
     BT_HFP_AG_ON_AT_COMMAND_RECEIVED,
     BT_HFP_AG_CALLBACK_END,
 #endif
@@ -76,12 +84,44 @@ BT_HFP_AG_MESSAGE_START,
 
         struct {
             bt_address_t addr;
+            uint8_t num_active;
+            uint8_t num_held;
+            uint8_t call_state; /* hfp_ag_call_state_t */
+            uint8_t type; /* hfp_call_addrtype_t */
+            uint8_t pad0[2];
+            char number[HFP_PHONENUM_DIGITS_MAX + 1];
+            uint8_t pad1[(HFP_PHONENUM_DIGITS_MAX + 1 + 3) / 4 * 4 - (HFP_PHONENUM_DIGITS_MAX + 1)];
+            char name[HFP_NAME_DIGITS_MAX + 1];
+        } _bt_hfp_ag_phone_state_change;
+
+        struct {
+            bt_address_t addr;
+            uint8_t network; /* hfp_network_state_t */
+            uint8_t roam; /* hfp_roaming_state_t */
+            uint8_t signal;
+            uint8_t battery;
+        } _bt_hfp_ag_notify_device_status;
+
+        struct {
+            bt_address_t addr;
+            uint8_t type; /* hfp_volume_type_t */
+            uint8_t volume;
+        } _bt_hfp_ag_volume_control;
+
+        struct {
+            bt_address_t addr;
             uint8_t pad[2];
             char cmd[HFP_AT_LEN_MAX + 1];
         } _bt_hfp_ag_send_at_cmd;
     } bt_message_hfp_ag_t;
 
     typedef union {
+        struct {
+            bt_address_t addr;
+        } _on_answer_call,
+            _on_reject_call,
+            _on_hangup_call;
+
         struct {
             bt_address_t addr;
             uint8_t state; /* profile_connection_state_t */
@@ -101,6 +141,18 @@ BT_HFP_AG_MESSAGE_START,
             bt_address_t addr;
             uint8_t value;
         } _on_battery_level_changed;
+
+        struct {
+            bt_address_t addr;
+            uint8_t type; /* hfp_volume_type_t */
+            uint8_t volume;
+        } _on_volume_control;
+
+        struct {
+            bt_address_t addr;
+            uint8_t pad[2];
+            char number[HFP_PHONENUM_DIGITS_MAX + 1];
+        } _on_dial_call;
 
         struct {
             bt_address_t addr;

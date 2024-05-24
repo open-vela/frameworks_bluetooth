@@ -580,6 +580,8 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         } else if (type == HFP_VOLUME_TYPE_MIC) {
             agsm->mic_volume = ag_vol;
         }
+        BT_LOGD("Volume changed, %s:%" PRIu8, type == HFP_VOLUME_TYPE_MIC ? "Mic" : "Spk", ag_vol);
+        ag_service_notify_volume_changed(&agsm->addr, type, ag_vol);
         break;
     }
     case AG_STACK_EVENT_AT_CIND_REQUEST:
@@ -602,14 +604,17 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case AG_STACK_EVENT_ANSWER_CALL:
         /* system call interface */
         tele_service_answer_call();
+        ag_service_notify_call_answered(&agsm->addr);
         break;
     case AG_STACK_EVENT_REJECT_CALL:
         /* system call interface */
         tele_service_reject_call();
+        ag_service_notify_call_rejected(&agsm->addr);
         break;
     case AG_STACK_EVENT_HANGUP_CALL:
         /* system call interface */
         tele_service_hangup_call();
+        ag_service_notify_call_hangup(&agsm->addr);
         break;
     case AG_STACK_EVENT_DIAL_NUMBER: {
         if (data->string1) {
@@ -623,6 +628,7 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
             BT_LOGD("Redial last number, currently not supported");
             bt_sal_hfp_ag_dial_response(&agsm->addr, HFP_ATCMD_RESULT_ERROR);
         }
+        ag_service_notify_call_dial(&agsm->addr, data->string1 ? data->string1 : NULL);
     } break;
     case AG_STACK_EVENT_DIAL_MEMORY:
         /* system call interface */
@@ -687,7 +693,8 @@ static void hfp_ag_voice_volume_change_callback(void* cookie, int volume)
         return;
     }
 
-    msg->data.valueint1 = volume;
+    msg->data.valueint1 = HFP_VOLUME_TYPE_SPK;
+    msg->data.valueint2 = volume;
     hfp_ag_send_message(msg);
 }
 
@@ -984,6 +991,8 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     hfp_ag_data_t* data = (hfp_ag_data_t*)p_data;
+    uint8_t status;
+
     AG_DBG_EVENT(sm, &agsm->addr, event);
 
     switch (event) {
@@ -1022,11 +1031,22 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         /* TODO: should support VOICE_RECOGNITION_STOP */
         break;
     case AG_SET_VOLUME: {
-        uint8_t ag_vol = MD2AGVOL(data->valueint1);
-        /* android don't support set Mic volume */
-        if (ag_vol != agsm->spk_volume) {
+        hfp_volume_type_t type = data->valueint1;
+        uint8_t ag_vol = MD2AGVOL(data->valueint2);
+        if ((type == HFP_VOLUME_TYPE_SPK) && (ag_vol != agsm->spk_volume)) {
+            status = bt_sal_hfp_ag_set_volume(&agsm->addr, type, ag_vol);
+            if (status != BT_STATUS_SUCCESS) {
+                BT_LOGE("Could not set speaker volume");
+                break;
+            }
             agsm->spk_volume = ag_vol;
-            bt_sal_hfp_ag_set_volume(&agsm->addr, HFP_VOLUME_TYPE_SPK, agsm->spk_volume);
+        } else if ((type == HFP_VOLUME_TYPE_MIC) && (ag_vol != agsm->mic_volume)) {
+            status = bt_sal_hfp_ag_set_volume(&agsm->addr, type, ag_vol);
+            if (status != BT_STATUS_SUCCESS) {
+                BT_LOGE("Could not set mic volume");
+                break;
+            }
+            agsm->mic_volume = ag_vol;
         }
     } break;
     case AG_STACK_EVENT_CONNECTION_STATE_CHANGED:
@@ -1062,7 +1082,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
     } break;
     case AG_OFFLOAD_START_EVT: {
         bt_hci_event_t* hci_event;
-        hci_error_t status;
+        hci_error_t result;
 
         if (agsm->offload_timer) {
             service_loop_cancel_timer(agsm->offload_timer);
@@ -1070,9 +1090,9 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         }
 
         hci_event = data->data;
-        status = hci_get_result(hci_event);
-        if (status != HCI_SUCCESS) {
-            BT_LOGE("AG_OFFLOAD_START fail, status:0x%0x", status);
+        result = hci_get_result(hci_event);
+        if (result != HCI_SUCCESS) {
+            BT_LOGE("AG_OFFLOAD_START fail, status:0x%0x", result);
             break;
         }
 

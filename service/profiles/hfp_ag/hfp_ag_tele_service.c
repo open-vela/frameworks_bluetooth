@@ -162,7 +162,7 @@ static void update_device_status(void)
     hfp_roaming_state_t roam_state;
 
     tele_service_get_network_info(&network_state, &roam_state, &signal);
-    hfp_ag_device_status_changed(network_state, roam_state, signal, 5);
+    hfp_ag_device_status_changed(NULL, network_state, roam_state, signal, 5);
 }
 
 static void on_operator_status_changed(tele_client_t* tele, int status)
@@ -259,8 +259,7 @@ static void phone_state_change(uint8_t num_active, uint8_t num_held,
     g_call_state = call_state;
     BT_LOGD("%s,active:%d, held:%d, state: %d, number:%s", __func__, num_active,
         num_held, call_state, number);
-    hfp_ag_phone_state_change(num_active, num_held, call_state, type, number,
-        NULL);
+    hfp_ag_phone_state_change(NULL, num_active, num_held, call_state, type, number, NULL);
 }
 
 static void update_call_state(hfp_ag_call_state_t new_state)
