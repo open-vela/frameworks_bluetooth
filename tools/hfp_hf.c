@@ -497,7 +497,7 @@ static void hf_ring_indication_callback(void* context, bt_address_t* addr, bool 
     PRINT_ADDR("hf_ring_indication_callback, addr:%s, inband-ring:%d", addr, inband_ring_tone);
 }
 
-static void hf_vol_changed_callback(void* context, bt_address_t* addr, hfp_volume_type_t type, int volume)
+static void hf_vol_changed_callback(void* context, bt_address_t* addr, hfp_volume_type_t type, uint8_t volume)
 {
     PRINT_ADDR("hf_vol_changed_callback, addr:%s, type:%s, vol:%d", addr, type ? "Microphone" : "Speaker", volume);
 }
