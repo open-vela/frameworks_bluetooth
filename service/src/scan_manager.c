@@ -180,12 +180,8 @@ static uint32_t register_scanner(scanner_t* scanner)
     return BT_SCAN_STATUS_START_FAIL;
 }
 
-static void unregister_scanner(void* data)
+static void unregister_scanner(scanner_t* scanner)
 {
-    scanner_ctrl_t* stop = data;
-    scanner_t* scanner = stop->scanner;
-
-    free(data);
     if (!scanner)
         return;
 
@@ -197,6 +193,15 @@ static void unregister_scanner(void* data)
     scanner_manager.scanner_list[scanner->scanner_id] = NULL;
     scanner_manager.scanner_cnt--;
     delete_scanner(scanner);
+}
+
+static void stop_scanner(void* data)
+{
+    scanner_ctrl_t* stop = data;
+    scanner_t* scanner = stop->scanner;
+
+    unregister_scanner(scanner);
+    free(data);
 }
 
 static void cleanup_scanner(void* data)
@@ -382,7 +387,7 @@ void scanner_stop_scan(bt_scanner_t* scanner)
         return;
 
     stop->scanner = (scanner_t*)scanner;
-    do_in_service_loop(unregister_scanner, (void*)stop);
+    do_in_service_loop(stop_scanner, (void*)stop);
 }
 
 bool scan_is_supported(void)
