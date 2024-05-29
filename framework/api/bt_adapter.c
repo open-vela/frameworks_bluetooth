@@ -217,11 +217,6 @@ bt_status_t BTSYMBOLS(bt_adapter_set_afh_channel_classification)(bt_instance_t* 
     return adapter_set_afh_channel_classification(central_frequency, band_width, number);
 }
 
-bt_status_t BTSYMBOLS(bt_adapter_set_auto_sniff)(bt_instance_t* ins, bt_auto_sniff_params_t* params)
-{
-    return adapter_set_auto_sniff(params);
-}
-
 void BTSYMBOLS(bt_adapter_disconnect_all_devices)(bt_instance_t* ins)
 {
 }

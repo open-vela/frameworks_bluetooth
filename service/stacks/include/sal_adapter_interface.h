@@ -80,9 +80,6 @@ bt_status_t bt_sal_start_service_discovery(bt_address_t* addr, bt_uuid_t* uuid);
 bt_status_t bt_sal_stop_service_discovery(bt_address_t* addr);
 bt_status_t bt_sal_set_link_role(bt_address_t* addr, bt_link_role_t role);
 bt_status_t bt_sal_set_link_policy(bt_address_t* addr, bt_link_policy_t policy);
-bt_status_t bt_sal_set_link_mode(bt_address_t* addr,
-    bt_link_mode_t mode,
-    bt_sniff_params_t* param);
 bt_status_t bt_sal_set_afh_channel_classification(uint16_t central_frequency,
     uint16_t band_width,
     uint16_t number);
@@ -145,7 +142,4 @@ bt_status_t bt_sal_le_enable_key_derivation(bool brkey_to_lekey,
 
 bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t* buf,
     bt_hci_event_callback_t cb, void* context);
-bt_status_t bt_sal_set_auto_sniff(bt_auto_sniff_params_t* params);
-bt_status_t bt_sal_set_auto_sniff_mode(bt_address_t* addr, bool enable);
-
 #endif /* __SAL_ADAPTER_INTERFACE_H_ */

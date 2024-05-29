@@ -448,7 +448,6 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
 #endif
 
     case OFFLOAD_STOP_REQ:
-        bt_sal_set_auto_sniff_mode(&a2dp_sm->addr, true);
         a2dp_offload_send_stop_cmd(a2dp_sm, data);
         break;
 
@@ -511,7 +510,6 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case OFFLOAD_STOP_REQ:
-        bt_sal_set_auto_sniff_mode(&a2dp_sm->addr, true);
         a2dp_offload_send_stop_cmd(a2dp_sm, data);
         break;
 
@@ -736,7 +734,6 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
             break;
         }
 
-        bt_sal_set_auto_sniff_mode(&a2dp_sm->addr, false);
         a2dp_audio_on_started(a2dp_sm->peer_sep, true); // workaround always true for controller bug
         hsm_transition_to(sm, &started_state);
         break;
@@ -750,7 +747,6 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     }
 
     case OFFLOAD_STOP_REQ:
-        bt_sal_set_auto_sniff_mode(&a2dp_sm->addr, true);
         a2dp_offload_send_stop_cmd(a2dp_sm, data);
         break;
 
@@ -894,7 +890,6 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case OFFLOAD_STOP_REQ:
-        bt_sal_set_auto_sniff_mode(&a2dp_sm->addr, true);
         a2dp_offload_send_stop_cmd(a2dp_sm, data);
         break;
 
@@ -940,7 +935,6 @@ static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case OFFLOAD_STOP_REQ:
-        bt_sal_set_auto_sniff_mode(&a2dp_sm->addr, true);
         a2dp_offload_send_stop_cmd(a2dp_sm, data);
         break;
 

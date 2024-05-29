@@ -332,7 +332,6 @@ bt_status_t adapter_switch_role(bt_address_t* addr, bt_link_role_t role);
 bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
     uint16_t band_width,
     uint16_t number);
-bt_status_t adapter_set_auto_sniff(bt_auto_sniff_params_t* params);
 void* adapter_register_callback(void* remote, const adapter_callbacks_t* adapter_cbs);
 bool adapter_unregister_callback(void** remote, void* cookie);
 
