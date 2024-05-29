@@ -58,7 +58,6 @@ BT_ADAPTER_MESSAGE_START,
     BT_ADAPTER_LE_ADD_WHITELIST,
     BT_ADAPTER_LE_REMOVE_WHITELIST,
     BT_ADAPTER_SET_AFH_CHANNEL_CLASSFICATION,
-    BT_ADAPTER_SET_AUTO_SNIFF,
     BT_ADAPTER_MESSAGE_END,
 #endif
 
@@ -79,7 +78,6 @@ BT_ADAPTER_MESSAGE_START,
     BT_ADAPTER_ON_REMOTE_ALIAS_CHANGED,
     BT_ADAPTER_ON_REMOTE_COD_CHANGED,
     BT_ADAPTER_ON_REMOTE_UUIDS_CHANGED,
-    BT_ADAPTER_ON_REMOTE_LINK_MODE_CHANGED,
     BT_ADAPTER_CALLBACK_END,
 #endif
 
@@ -179,10 +177,6 @@ BT_ADAPTER_MESSAGE_START,
             uint16_t band_width;
             uint16_t number;
         } _bt_adapter_set_afh_channel_classification;
-
-        struct {
-            bt_auto_sniff_params_t params;
-        } _bt_adapter_set_auto_sniff;
     } bt_message_adapter_t;
 
     typedef union {
@@ -260,13 +254,6 @@ BT_ADAPTER_MESSAGE_START,
             uint16_t size;
             bt_uuid_t uuids;
         } _on_remote_uuids_changed;
-
-        struct {
-            bt_address_t addr;
-            uint16_t sniff_interval;
-            uint8_t mode; /* bt_link_mode_t */
-        } _on_remote_link_mode_changed;
-
     } bt_message_adapter_callbacks_t;
 
 #ifdef __cplusplus

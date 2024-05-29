@@ -1120,8 +1120,6 @@ static void handle_link_event(void* data)
     adapter_remote_event_t* evt = (adapter_remote_event_t*)data;
     switch (evt->evt_id) {
     case LINK_MODE_CHANGED_EVT:
-        CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_remote_link_mode_changed,
-            &evt->addr, evt->link_mode.mode, evt->link_mode.sniff_interval);
         break;
     case LINK_ROLE_CHANGED_EVT:
         process_link_role_changed_evt(&evt->addr, evt->link_role.role);
@@ -2615,11 +2613,6 @@ bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
     uint16_t number)
 {
     return bt_sal_set_afh_channel_classification(central_frequency, band_width, number);
-}
-
-bt_status_t adapter_set_auto_sniff(bt_auto_sniff_params_t* params)
-{
-    return bt_sal_set_auto_sniff(params);
 }
 
 void adapter_get_support_profiles(void) { }

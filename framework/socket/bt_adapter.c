@@ -697,17 +697,7 @@ bt_status_t bt_adapter_set_afh_channel_classification(bt_instance_t* ins, uint16
 
 bt_status_t bt_adapter_set_auto_sniff(bt_instance_t* ins, bt_auto_sniff_params_t* params)
 {
-    bt_message_packet_t packet;
-    bt_status_t status;
-
-    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
-    memcpy(&packet.adpt_pl._bt_adapter_set_auto_sniff.params, params, sizeof(*params));
-    status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_AUTO_SNIFF);
-    if (status != BT_STATUS_SUCCESS) {
-        return status;
-    }
-
-    return packet.adpt_r.status;
+    return BT_STATUS_NOT_SUPPORTED;
 }
 
 void bt_adapter_disconnect_all_devices(bt_instance_t* ins)

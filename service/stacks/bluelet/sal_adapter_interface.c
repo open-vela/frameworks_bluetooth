@@ -1322,26 +1322,6 @@ bt_status_t bt_sal_set_link_policy(bt_address_t* addr, bt_link_policy_t policy)
 #endif
 }
 
-bt_status_t bt_sal_set_link_mode(bt_address_t* addr,
-    bt_link_mode_t mode,
-    bt_sniff_params_t* param)
-{
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    SAL_CHECK_PARAM(addr);
-    SAL_CHECK_PARAM(param);
-    SERVICE_BT_SNIFF_PARAM_S set_param;
-
-    set_param.sniff_interval = param->sniff_interval;
-    set_param.sniff_attempt = param->sniff_attempt;
-    set_param.sniff_timeout = param->sniff_timeout;
-    SAL_CHECK_RET(service_adapter_gap_set_link_mode(addr->addr, mode, &set_param), SERVICE_BT_STATUS_SUCCESS);
-
-    return BT_STATUS_SUCCESS;
-#else
-    return BT_STATUS_NOT_SUPPORTED;
-#endif
-}
-
 bt_status_t bt_sal_set_afh_channel_classification(uint16_t central_frequency,
     uint16_t band_width,
     uint16_t number)
@@ -1359,9 +1339,6 @@ bt_status_t bt_sal_set_afh_channel_classification(uint16_t central_frequency,
 }
 
 /* BLE */
-
-//#if defined(CONFIG_BLUETOOTH_BLE_SUPPORT) && defined(CONFIG_OBELISK_LE_BLUELET)
-// #ifdef CONFIG_OBELISK_LE_BLUELET
 
 bt_status_t bt_sal_le_init(void)
 {
@@ -1891,33 +1868,3 @@ bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, u
 
     return BT_STATUS_SUCCESS;
 }
-
-bt_status_t bt_sal_set_auto_sniff(bt_auto_sniff_params_t* params)
-{
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    SAL_CHECK_RET(service_adapter_gap_set_auto_sniff((SERVICE_AUTOSNIFF_PARAMS_S*)params), SERVICE_BT_STATUS_SUCCESS);
-
-    return BT_STATUS_SUCCESS;
-#else
-    return BT_STATUS_NOT_SUPPORTED;
-#endif
-}
-
-bt_status_t bt_sal_set_auto_sniff_mode(bt_address_t* addr, bool enable)
-{
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    SAL_CHECK_RET(service_adapter_gap_set_auto_sniff_mode(addr->addr, enable), SERVICE_BT_STATUS_SUCCESS);
-
-    return BT_STATUS_SUCCESS;
-#else
-    return BT_STATUS_NOT_SUPPORTED;
-#endif
-}
-
-#if 0
-/* Test */
-bt_status_t bt_sal_enter_bluetooth_test_mode(test_mode mode)
-{
-    SERVICE_BT_STATUS ret = service_adapter_gap_enter_bluetooth_test_mode((SERVICE_BT_TEST_MODE)mode);
-}
-#endif

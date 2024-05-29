@@ -90,10 +90,4 @@ typedef struct {
     uint32_t bondable;
 } adapter_storage_t;
 
-typedef struct {
-    uint16_t sniff_interval;
-    uint16_t sniff_attempt;
-    uint16_t sniff_timeout;
-} bt_sniff_params_t;
-
 #endif /* __BLUETOOTH_DEFINE_H_ */

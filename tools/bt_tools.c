@@ -1632,11 +1632,6 @@ static void on_remote_uuids_changed_cb(void* cookie, bt_address_t* addr, bt_uuid
     }
 }
 
-static void on_remote_link_mode_changed_cb(void* cookie, bt_address_t* addr, bt_link_mode_t mode, uint16_t sniff_interval)
-{
-    PRINT("%s mode:%d, interval:%" PRIu16, __func__, mode, sniff_interval);
-}
-
 const static adapter_callbacks_t g_adapter_cbs = {
     .on_adapter_state_changed = on_adapter_state_changed_cb,
     .on_discovery_state_changed = on_discovery_state_changed_cb,
@@ -1653,7 +1648,6 @@ const static adapter_callbacks_t g_adapter_cbs = {
     .on_remote_alias_changed = on_remote_alias_changed_cb,
     .on_remote_cod_changed = on_remote_cod_changed_cb,
     .on_remote_uuids_changed = on_remote_uuids_changed_cb,
-    .on_remote_link_mode_changed = on_remote_link_mode_changed_cb,
 };
 
 const static adapter_callbacks_t g_adapter_cbs_2 = {
