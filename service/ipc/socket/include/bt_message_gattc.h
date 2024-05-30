@@ -72,7 +72,7 @@ BT_GATT_CLIENT_MESSAGE_START,
 
     typedef struct {
         uint8_t status; /* bt_status_t */
-        uint8_t padp[3];
+        uint8_t pad[3];
         union {
             uint64_t handle; /* gattc_handle_t */
             gatt_attr_desc_t attr_desc;
