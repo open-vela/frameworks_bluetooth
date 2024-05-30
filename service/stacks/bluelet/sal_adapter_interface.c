@@ -164,7 +164,7 @@ static void device_found_callback(SERVICE_REMOTE_DEVICE_S* device)
 
 static void discovery_state_changed_callback(SERVICE_BT_DISCOVERY_STATE state)
 {
-    adapter_on_discovery_state_changed(state == BT_DISCOVERY_STARTED ? BT_DISCOVERY_STATE_STARTED : BT_DISCOVERY_STATE_STOPPED);
+    adapter_on_discovery_state_changed(state == SAL_BT_DISCOVERY_STARTED ? BT_DISCOVERY_STATE_STARTED : BT_DISCOVERY_STATE_STOPPED);
 }
 
 static void link_connect_request_callback(BD_ADDR remote_addr)
