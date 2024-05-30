@@ -229,10 +229,7 @@ static int bt_socket_client_receive(uv_poll_t* poll, int fd, void* userdata)
             return BT_STATUS_SUCCESS;
 
         memcpy(ins->cpacket, packet, sizeof(*packet));
-        uv_mutex_lock(&ins->mutex);
-        ins->message_processed = true;
-        uv_cond_signal(&ins->cond);
-        uv_mutex_unlock(&ins->mutex);
+        uv_sem_post(&ins->message_processed);
         return BT_STATUS_SUCCESS;
     } else if (packet->code > BT_CALLBACK_START && packet->code < BT_CALLBACK_END) {
         bt_client_msg_t* msg = malloc(sizeof(*msg));
@@ -357,9 +354,7 @@ int bt_socket_client_sendrecv(bt_instance_t* ins, bt_message_packet_t* packet,
         return BT_STATUS_FAIL;
     }
 
-    ins->message_processed = false;
-    while (!ins->message_processed)
-        uv_cond_wait(&ins->cond, &ins->mutex);
+    uv_sem_wait(&ins->message_processed);
 
     ins->cpacket = NULL;
 
@@ -394,7 +389,7 @@ int bt_socket_client_init(bt_instance_t* ins, int family,
     list_initialize(&ins->msg_queue);
     uv_mutex_init(&ins->lock);
 
-    uv_cond_init(&ins->cond);
+    uv_sem_init(&ins->message_processed, 0);
     uv_mutex_init(&ins->mutex);
     do {
         ins->peer_fd = bt_socket_client_connect(family, name, cpu, port);
@@ -441,7 +436,7 @@ static void bt_socket_sync_close(void* data)
 
 void bt_socket_client_deinit(bt_instance_t* ins)
 {
-    uv_cond_destroy(&ins->cond);
+    uv_sem_destroy(&ins->message_processed);
     uv_mutex_destroy(&ins->mutex);
 
     if (ins->packet)

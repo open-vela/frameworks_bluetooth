@@ -368,8 +368,7 @@ typedef struct bt_instance {
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
     void* poll;
     uv_mutex_t mutex;
-    uv_cond_t cond;
-    bool message_processed;
+    uv_sem_t message_processed;
     int peer_fd;
     uv_loop_t* client_loop;
     uv_loop_t* external_loop;
