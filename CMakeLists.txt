@@ -56,8 +56,7 @@ if(CONFIG_BLUETOOTH)
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/socket/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
 
-      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/ipc/socket/include)
-      list(APPEND INCDIR ${APPEND_FILES})
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc/socket/include)
 
     else()
       # Other IPC source files
@@ -106,8 +105,7 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${APPEND_FILES})
 
     if(NOT CONFIG_BLUETOOTH_A2DP)
-      list(REMOVE_ITEM CSRCS
-           ${BLUETOOTH_DIR}/service/profiles/system/bt_player.c)
+      list(REMOVE_ITEM CSRCS ${BLUETOOTH_DIR}/service/profiles/system/bt_player.c)
     endif()
 
     if(NOT
@@ -119,8 +117,7 @@ if(CONFIG_BLUETOOTH)
            ${BLUETOOTH_DIR}/service/profiles/system/media_system.c)
     endif()
 
-    file(GLOB APPEND_FILES
-         ${BLUETOOTH_DIR}/service/profiles/audio_interface/*.c)
+    file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/audio_interface/*.c)
     list(APPEND CSRCS ${APPEND_FILES})
 
     if(CONFIG_BLUETOOTH_GATT)
@@ -135,11 +132,9 @@ if(CONFIG_BLUETOOTH)
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/a2dp/codec/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
 
-      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/a2dp)
-      list(APPEND INCDIR ${APPEND_FILES})
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/profiles/a2dp)
 
-      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/a2dp/codec)
-      list(APPEND INCDIR ${APPEND_FILES})
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/profiles/a2dp/codec)
     endif()
 
     if(CONFIG_BLUETOOTH_A2DP_SOURCE)
@@ -156,8 +151,7 @@ if(CONFIG_BLUETOOTH)
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/avrcp/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
 
-      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/avrcp)
-      list(APPEND INCDIR ${APPEND_FILES})
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/profiles/avrcp)
     endif()
 
     if(CONFIG_BLUETOOTH_AVRCP_TARGET)
@@ -166,8 +160,7 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_BLUETOOTH_AVRCP_CONTROL)
-      file(GLOB APPEND_FILES
-           ${BLUETOOTH_DIR}/service/profiles/avrcp/control/*.c)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/avrcp/control/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 
@@ -197,21 +190,18 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_BLUETOOTH_LEAUDIO_CLIENT OR CONFIG_BLUETOOTH_LEAUDIO_SERVER)
-      file(GLOB APPEND_FILES
-           ${BLUETOOTH_DIR}/service/profiles/leaudio/audio_ipc/*.c)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/leaudio/audio_ipc/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
 
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/leaudio/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
 
-      file(GLOB APPEND_FILES
-           ${BLUETOOTH_DIR}/service/profiles/leaudio/codec/*.c)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/leaudio/codec/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 
     if(CONFIG_BLUETOOTH_LEAUDIO_SERVER)
-      file(GLOB APPEND_FILES
-           ${BLUETOOTH_DIR}/service/profiles/leaudio/server/*.c)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/leaudio/server/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 
@@ -226,14 +216,12 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_BLUETOOTH_LEAUDIO_VMICS)
-      file(GLOB APPEND_FILES
-           ${BLUETOOTH_DIR}/service/profiles/leaudio/vmics/*.c)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/leaudio/vmics/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 
     if(CONFIG_BLUETOOTH_LEAUDIO_CLIENT)
-      file(GLOB APPEND_FILES
-           ${BLUETOOTH_DIR}/service/profiles/leaudio/client/*.c)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/leaudio/client/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 
@@ -248,8 +236,7 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_BLUETOOTH_LEAUDIO_VMICP)
-      file(GLOB APPEND_FILES
-           ${BLUETOOTH_DIR}/service/profiles/leaudio/vmicp/*.c)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/leaudio/vmicp/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 
@@ -335,72 +322,50 @@ if(CONFIG_BLUETOOTH)
     endif()
   endif()
 
-  file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/include)
-  list(APPEND INCDIR ${APPEND_FILES})
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/framework/include)
 
   if(CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME OR CONFIG_OFONO)
-    file(GLOB APPEND_FILES ${NUTTX_APPS_DIR}/external/dbus/dbus)
-    list(APPEND INCDIR ${APPEND_FILES})
+    list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/dbus/dbus)
 
-    file(GLOB APPEND_FILES ${NUTTX_APPS_DIR}/external/glib/glib/glib)
-    list(APPEND INCDIR ${APPEND_FILES})
+    list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/glib/glib/glib)
 
-    file(GLOB APPEND_FILES ${NUTTX_APPS_DIR}/external/glib/glib)
-    list(APPEND INCDIR ${APPEND_FILES})
+    list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/glib/glib)
 
-    file(GLOB APPEND_FILES ${NUTTX_APPS_DIR}/external/glib)
-    list(APPEND INCDIR ${APPEND_FILES})
+    list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/glib)
 
-    file(GLOB APPEND_FILES ${NUTTX_APPS_DIR}/frameworks/utils/gdbus)
-    list(APPEND INCDIR ${APPEND_FILES})
+    list(APPEND INCDIR ${NUTTX_APPS_DIR}/frameworks/utils/gdbus)
   endif()
 
-  file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service)
-  list(APPEND INCDIR ${APPEND_FILES})
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/service)
 
-  file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/src)
-  list(APPEND INCDIR ${APPEND_FILES})
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/service/src)
 
-  file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/common)
-  list(APPEND INCDIR ${APPEND_FILES})
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/service/common)
 
-  file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles)
-  list(APPEND INCDIR ${APPEND_FILES})
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/service/profiles)
 
-  file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/include)
-  list(APPEND INCDIR ${APPEND_FILES})
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/service/profiles/include)
 
-  file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/system)
-  list(APPEND INCDIR ${APPEND_FILES})
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/service/profiles/system)
 
-  file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks)
-  list(APPEND INCDIR ${APPEND_FILES})
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks)
 
-  file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/include)
-  list(APPEND INCDIR ${APPEND_FILES})
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/include)
 
-  file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/vendor)
-  list(APPEND INCDIR ${APPEND_FILES})
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/service/vendor)
 
   if(CONFIG_BLUETOOTH_OBELISK)
     if(CONFIG_OBELISK_BREDR_BLUELET OR CONFIG_OBELISK_LE_BLUELET)
-      file(
-        GLOB APPEND_FILES
-        ${NUTTX_APPS_DIR}/external/bluelet/bluelet/src/samples/stack_adapter/inc
-      )
-      list(APPEND INCDIR ${APPEND_FILES})
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/bluelet/bluelet/src/samples/stack_adapter/inc)
 
-      file(GLOB APPEND_FILES ${NUTTX_APPS_DIR}/vendor/xiaomi/vela/bluelet/inc)
-      list(APPEND INCDIR ${APPEND_FILES})
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/vendor/xiaomi/vela/bluelet/inc)
     endif()
 
-    file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/ipc)
-    list(APPEND INCDIR ${APPEND_FILES})
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc)
   endif()
 
   if(CONFIG_BLUETOOTH_TOOLS)
-    file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/tools)
-    list(APPEND INCDIR ${APPEND_FILES})
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/tools)
   endif()
 
   if(CONFIG_ARCH_SIM)
@@ -411,30 +376,21 @@ if(CONFIG_BLUETOOTH)
 
   if(CONFIG_BLUETOOTH_FEATURE)
     if(CONFIG_ARCH STREQUAL "arm")
-      file(GLOB APPEND_FILES ${NUTTX_APPS_DIR}/external/libffi/libffi/src/arm)
-      list(APPEND INCDIR ${APPEND_FILES})
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/libffi/libffi/src/arm)
 
     elseif(CONFIG_ARCH STREQUAL "arm64")
-      file(GLOB APPEND_FILES
-           ${NUTTX_APPS_DIR}/external/libffi/libffi/src/aarch64)
-      list(APPEND INCDIR ${APPEND_FILES})
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/libffi/libffi/src/aarch64)
 
     elseif(CONFIG_ARCH STREQUAL "xtensa")
-      file(GLOB APPEND_FILES
-           ${NUTTX_APPS_DIR}/external/libffi/libffi/src/xtensa)
-      list(APPEND INCDIR ${APPEND_FILES})
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/libffi/libffi/src/xtensa)
 
     else()
-      file(GLOB APPEND_FILES ${NUTTX_APPS_DIR}/external/libffi/libffi/src/x86)
-      list(APPEND INCDIR ${APPEND_FILES})
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/libffi/libffi/src/x86)
     endif()
 
-    file(GLOB APPEND_FILES ${NUTTX_APPS_DIR}/external/libffi)
-    list(APPEND INCDIR ${APPEND_FILES})
+    list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/libffi)
 
-    file(GLOB APPEND_FILES
-         ${NUTTX_APPS_DIR}/frameworks/bluetooth/feature/include)
-    list(APPEND INCDIR ${APPEND_FILES})
+    list(APPEND INCDIR ${NUTTX_APPS_DIR}/frameworks/bluetooth/feature/include)
 
     list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth.c)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_impl.c)
@@ -444,10 +400,8 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/feature_bluetooth_callback.c)
 
     if(CONFIG_BLUETOOTH_A2DP_SINK)
-      list(APPEND CSRCS
-           ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_a2dpsink.c)
-      list(APPEND CSRCS
-           ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_a2dpsink_impl.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_a2dpsink.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_a2dpsink_impl.c)
     endif()
   endif()
 
@@ -483,7 +437,7 @@ if(CONFIG_BLUETOOTH)
       STACKSIZE
       8192
       PRIORITY
-      SCHED_PRIORITY_DEFAULT
+      ${SCHED_PRIORITY_DEFAULT}
       COMPILE_FLAGS
       ${CFLAGS}
       DEPENDS
@@ -499,7 +453,7 @@ if(CONFIG_BLUETOOTH)
       STACKSIZE
       8192
       PRIORITY
-      SCHED_PRIORITY_DEFAULT
+      ${SCHED_PRIORITY_DEFAULT}
       COMPILE_FLAGS
       ${CFLAGS}
       DEPENDS
