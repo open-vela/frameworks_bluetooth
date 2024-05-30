@@ -226,10 +226,15 @@ static void on_remote_uuids_changed_cb(void* cookie, bt_address_t* addr, bt_uuid
 {
     bt_message_packet_t packet = { 0 };
     bt_instance_t* ins = cookie;
+    uint16_t max_uuid_num;
+    uint16_t uuid_num;
+
+    max_uuid_num = sizeof(packet.adpt_cb._on_remote_uuids_changed.uuids) / sizeof(bt_uuid_t);
+    uuid_num = size < max_uuid_num ? size : max_uuid_num;
 
     memcpy(&packet.adpt_cb._on_remote_uuids_changed.addr, addr, sizeof(bt_address_t));
-    memcpy(&packet.adpt_cb._on_remote_uuids_changed.uuids, uuids, sizeof(bt_uuid_t));
-    packet.adpt_cb._on_remote_uuids_changed.size = size;
+    memcpy(packet.adpt_cb._on_remote_uuids_changed.uuids, uuids, sizeof(bt_uuid_t) * uuid_num);
+    packet.adpt_cb._on_remote_uuids_changed.size = uuid_num;
 
     bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_REMOTE_UUIDS_CHANGED);
 }
@@ -618,7 +623,7 @@ int bt_socket_client_adapter_callback(service_poll_t* poll,
         CALLBACK_FOREACH(CBLIST, adapter_callbacks_t,
             on_remote_uuids_changed,
             &packet->adpt_cb._on_remote_uuids_changed.addr,
-            &packet->adpt_cb._on_remote_uuids_changed.uuids,
+            packet->adpt_cb._on_remote_uuids_changed.uuids,
             packet->adpt_cb._on_remote_uuids_changed.size);
         break;
     }

@@ -1,5 +1,6 @@
 cc_library {
     name : "libbt-framework-client",
+    min_sdk_version: "33",
 
     srcs : [
         "framework/common/*.c",
@@ -40,6 +41,10 @@ cc_library {
         "libuv",
     ],
 
+    shared_libs : [
+        "liblog",
+    ],
+
     cflags : [
         //"-DANDROID",
         "-Werror",
@@ -51,8 +56,7 @@ cc_library {
 
     apex_available : [
         "//apex_available:platform",
-        "//apex_available:anyapex",
-        //"com.android.bluetooth.updatable",
+        "com.android.btservices",
     ],
 }
 
@@ -89,6 +93,10 @@ cc_binary {
     static_libs : [
         "libuv",
         "libbt-framework-client",
+    ],
+
+    shared_libs : [
+        "liblog",
     ],
 
     cflags : [

@@ -65,11 +65,23 @@ typedef enum {
     BT_IO_CAPABILITY_UNKNOW = 0xFF
 } bt_io_capability_t;
 
+#if !defined(BTIF_WITH_VELA)
+/*
+ * hardware/libhardware/include/hardware/bluetooth.h
+ * This definition was copied from Android 13.
+ * DON NOT MODIFY IT !!!
+ */
 typedef enum {
-    BT_BR_SCAN_MODE_NONE,
-    BT_BR_SCAN_MODE_CONNECTABLE,
-    BT_BR_SCAN_MODE_CONNECTABLE_DISCOVERABLE
+    BT_SCAN_MODE_NONE,
+    BT_SCAN_MODE_CONNECTABLE,
+    BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE
 } bt_scan_mode_t;
+#endif
+
+// Rename the definition
+#define BT_BR_SCAN_MODE_NONE BT_SCAN_MODE_NONE
+#define BT_BR_SCAN_MODE_CONNECTABLE BT_SCAN_MODE_CONNECTABLE
+#define BT_BR_SCAN_MODE_CONNECTABLE_DISCOVERABLE BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE
 
 typedef enum {
     BT_BR_SCAN_TYPE_STANDARD,
@@ -77,10 +89,22 @@ typedef enum {
     BT_BR_SCAN_TYPE_UNKNOWN = 0xFF
 } bt_scan_type_t;
 
+#if !defined(BTIF_WITH_VELA)
+/*
+ * hardware/libhardware/include/hardware/bluetooth.h
+ * This definition was copied from Android 13.
+ * DON NOT MODIFY IT !!!
+ */
 typedef enum {
-    BT_DISCOVERY_STATE_STOPPED,
-    BT_DISCOVERY_STATE_STARTED
+    BT_DISCOVERY_STOPPED,
+    BT_DISCOVERY_STARTED
 } bt_discovery_state_t;
+#endif
+
+// Rename the definition
+#define BT_DISCOVERY_STATE_STOPPED BT_DISCOVERY_STOPPED
+#define BT_DISCOVERY_STATE_STARTED BT_DISCOVERY_STARTED
+
 typedef enum {
     BT_BR_FILTER_CLEAR_ALL,
     BT_BR_FILTER_INQUIRY_RESULT,
@@ -127,12 +151,26 @@ typedef enum {
     BT_TRANSPORT_BREDR
 } bt_transport_t;
 
+#if !defined(BTIF_WITH_VELA)
+/*
+ * hardware/libhardware/include/hardware/bluetooth.h
+ * This definition was copied from Android 13.
+ * DON NOT MODIFY IT !!!
+ */
 typedef enum {
-    BT_DEVICE_TYPE_BREDR = 1,
-    BT_DEVICE_TYPE_BLE,
-    BT_DEVICE_TYPE_DUAL,
-    BT_DEVICE_TYPE_UNKNOW = 0xFF
+    BT_DEVICE_DEVTYPE_BREDR = 0x1,
+    BT_DEVICE_DEVTYPE_BLE,
+    BT_DEVICE_DEVTYPE_DUAL
 } bt_device_type_t;
+#endif
+
+// Rename the definition
+#define BT_DEVICE_TYPE_BREDR BT_DEVICE_DEVTYPE_BREDR
+#define BT_DEVICE_TYPE_BLE BT_DEVICE_DEVTYPE_BLE
+#define BT_DEVICE_TYPE_DUAL BT_DEVICE_DEVTYPE_DUAL
+
+// Add new definition
+#define BT_DEVICE_TYPE_UNKNOW 0xFF
 
 typedef enum {
     BT_LE_ADDR_TYPE_PUBLIC,
@@ -276,10 +314,16 @@ typedef uint8_t bt_128key_t[16];
 /* * Headset Device Class */
 #define IS_HEADSET(cod) ((COD_SERVICE_BITS(cod) & COD_SERVICE_AUDIO) && COD_DEVICE_MAJOR_BITS(cod) == COD_DEVICE_AV)
 
-#define BT_DEV_NAME_MAX_LEN (63)
-
+#ifdef CONFIG_DEV_NAME_MAX_LEN
+#define BT_DEV_NAME_MAX_LEN (CONFIG_DEV_NAME_MAX_LEN)
+#else
+#define BT_DEV_NAME_MAX_LEN (64)
+#endif
 #define BT_LOC_NAME_MAX_LEN BT_DEV_NAME_MAX_LEN
 #define BT_REM_NAME_MAX_LEN BT_DEV_NAME_MAX_LEN
+
+#define BT_UUID_MAX_NUM (32)
+#define BT_UUID_128_LEN (16)
 
 typedef struct {
     bt_address_t addr;

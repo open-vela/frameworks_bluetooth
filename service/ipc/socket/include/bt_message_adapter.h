@@ -252,7 +252,7 @@ BT_ADAPTER_MESSAGE_START,
         struct {
             bt_address_t addr;
             uint16_t size;
-            bt_uuid_t uuids;
+            bt_uuid_t uuids[BT_UUID_MAX_NUM];
         } _on_remote_uuids_changed;
     } bt_message_adapter_callbacks_t;
 
