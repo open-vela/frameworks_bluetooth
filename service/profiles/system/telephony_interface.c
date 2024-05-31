@@ -64,18 +64,40 @@ typedef struct tele_modem_ {
 typedef bool (*property_parser_func_t)(void* user_data, char* key,
     DBusMessageIter* val, uint8_t flag);
 
-static int object_filter(GDBusProxy* proxy)
+static bool tele_support_interface(const char* interface)
 {
-    const char* interface = g_dbus_proxy_get_interface(proxy);
-    if (interface == NULL)
-        return false;
-
-    // ss related interface skip get properties
-    if ((strcmp(interface, OFONO_CALL_BARRING_INTERFACE) == 0) || (strcmp(interface, OFONO_CALL_FORWARDING_INTERFACE) == 0) || (strcmp(interface, OFONO_CALL_SETTINGS_INTERFACE) == 0) || (strcmp(interface, OFONO_MESSAGE_MANAGER_INTERFACE) == 0)) {
+    if ((strcmp(interface, OFONO_VOICECALL_INTERFACE) == 0)
+        || (strcmp(interface, OFONO_VOICECALL_MANAGER_INTERFACE) == 0)
+        || (strcmp(interface, OFONO_NETWORK_REGISTRATION_INTERFACE) == 0)
+        || (strcmp(interface, OFONO_NETWORK_OPERATOR_INTERFACE) == 0)
+        || (strcmp(interface, OFONO_MODEM_INTERFACE) == 0)) {
         return true;
     }
 
     return false;
+}
+
+static gboolean proxy_filter(GDBusClient* client, const char* path,
+    const char* interface)
+{
+    /* only support interface isn't filter out and will create proxy */
+    return tele_support_interface(interface) ? FALSE : TRUE;
+}
+
+static gboolean object_filter(GDBusProxy* proxy)
+{
+    const char* interface = g_dbus_proxy_get_interface(proxy);
+    if (interface == NULL)
+        return TRUE;
+
+    /* only follow interface will get interface's properties.
+     * if support interface no need get prop, modify here.
+     */
+    if (tele_support_interface(interface))
+        return FALSE;
+
+    BT_LOGE("not get proper for unsupport interface:%s", interface);
+    return TRUE;
 }
 
 static bool property_parser(DBusMessageIter* iter, property_parser_func_t func,
@@ -753,6 +775,7 @@ tele_client_t* teleif_client_connect(const char* name)
 
     dbus_client = g_dbus_client_new(tele->dbus_sys, OFONO_SERVICE, OFONO_MANAGER_PATH);
     tele->dbus_client = dbus_client;
+    g_dbus_client_set_proxy_filter(dbus_client, proxy_filter, tele);
     g_dbus_client_set_connect_watch(dbus_client, ofono_connect_handler, tele);
     g_dbus_client_set_disconnect_watch(dbus_client, ofono_disconnect_handler, tele);
     g_dbus_client_set_proxy_handlers(dbus_client, ofono_interface_proxy_added,
