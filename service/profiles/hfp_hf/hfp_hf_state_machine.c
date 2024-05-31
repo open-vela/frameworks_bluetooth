@@ -615,18 +615,21 @@ static void update_call_status(state_machine_t* sm, uint32_t event, uint32_t sta
         hfsm->call_status.call_timestamp_us = current_timestamp_us;
         BT_LOGD("%s: call:%d, timestamp = %" PRIu64, __func__, hfsm->call_status.call_status,
             hfsm->call_status.call_timestamp_us);
+        hf_service_notify_call(&hfsm->addr, status);
         break;
     case HF_STACK_EVENT_CALLSETUP:
         hfsm->call_status.callsetup_status = (hfp_callsetup_t)status;
         hfsm->call_status.callsetup_timestamp_us = current_timestamp_us;
         BT_LOGD("%s: callsetup:%d, timestamp = %" PRIu64, __func__, hfsm->call_status.callsetup_status,
             hfsm->call_status.callsetup_timestamp_us);
+        hf_service_notify_callsetup(&hfsm->addr, status);
         break;
     case HF_STACK_EVENT_CALLHELD:
         hfsm->call_status.callheld_status = (hfp_callheld_t)status;
         hfsm->call_status.callheld_timestamp_us = current_timestamp_us;
         BT_LOGD("%s: callheld:%d, timestamp = %" PRIu64, __func__, hfsm->call_status.callheld_status,
             hfsm->call_status.callsetup_timestamp_us);
+        hf_service_notify_callheld(&hfsm->addr, status);
         break;
     default:
         break;

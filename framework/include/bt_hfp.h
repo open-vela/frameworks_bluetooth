@@ -42,6 +42,23 @@ typedef enum {
 } hfp_audio_state_t;
 
 typedef enum {
+    HFP_CALL_NO_CALLS_IN_PROGRESS = 0,
+    HFP_CALL_CALLS_IN_PROGRESS
+} hfp_call_t;
+
+typedef enum {
+    HFP_CALLSETUP_NONE = 0,
+    HFP_CALLSETUP_INCOMING,
+    HFP_CALLSETUP_OUTGOING,
+    HFP_CALLSETUP_ALERTING
+} hfp_callsetup_t;
+
+typedef enum {
+    HFP_CALLHELD_NONE = 0,
+    HFP_CALLHELD_HELD,
+} hfp_callheld_t;
+
+typedef enum {
     HFP_HF_VR_STATE_STOPPED = 0,
     HFP_HF_VR_STATE_STARTED
 } hfp_hf_vr_state_t;
