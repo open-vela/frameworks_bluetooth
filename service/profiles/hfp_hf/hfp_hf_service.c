@@ -793,6 +793,24 @@ void hf_service_notify_volume_changed(bt_address_t* addr, hfp_volume_type_t type
     HF_CALLBACK_FOREACH(g_hfp_service.callbacks, volume_changed_cb, addr, type, volume);
 }
 
+void hf_service_notify_call(bt_address_t* addr, hfp_call_t call)
+{
+    BT_LOGD("%s", __func__);
+    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, call_cb, addr, call);
+}
+
+void hf_service_notify_callsetup(bt_address_t* addr, hfp_callsetup_t callsetup)
+{
+    BT_LOGD("%s", __func__);
+    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, callsetup_cb, addr, callsetup);
+}
+
+void hf_service_notify_callheld(bt_address_t* addr, hfp_callheld_t callheld)
+{
+    BT_LOGD("%s", __func__);
+    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, callheld_cb, addr, callheld);
+}
+
 void hfp_hf_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,
     profile_connection_reason_t reason, uint32_t remote_features)
 {

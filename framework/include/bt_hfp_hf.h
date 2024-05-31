@@ -166,6 +166,33 @@ typedef void (*hfp_hf_operator_changed_callback)(void* cookie, bt_address_t* add
 typedef void (*hfp_hf_volume_changed_callback)(void* cookie, bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
 
 /**
+ * @brief HFP HF call indicator callback.
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer AG device.
+ * @param call - the call indicator.
+ */
+typedef void (*hfp_hf_call_callback)(void* cookie, bt_address_t* addr, hfp_call_t call);
+
+/**
+ * @brief HFP HF callsetup indicator callback.
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer AG device.
+ * @param callsetup - the callsetup indicator.
+ */
+typedef void (*hfp_hf_callsetup_callback)(void* cookie, bt_address_t* addr, hfp_callsetup_t callsetup);
+
+/**
+ * @brief HFP HF callheld indicator callback.
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer AG device.
+ * @param callheld - the callheld indicator.
+ */
+typedef void (*hfp_hf_callheld_callback)(void* cookie, bt_address_t* addr, hfp_callheld_t callheld);
+
+/**
  * @brief HFP HF callback structure
  *
  */
@@ -179,6 +206,9 @@ typedef struct
     hfp_hf_cmd_complete_callback cmd_complete_cb;
     hfp_hf_ring_indication_callback ring_indication_cb;
     hfp_hf_volume_changed_callback volume_changed_cb;
+    hfp_hf_call_callback call_cb;
+    hfp_hf_callsetup_callback callsetup_cb;
+    hfp_hf_callheld_callback callheld_cb;
 } hfp_hf_callbacks_t;
 
 /**
