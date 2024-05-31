@@ -569,6 +569,10 @@ static void controller_shutdown(profile_on_shutdown_t shutdown)
     g_avrc_controller.enable = false;
     bt_list_free(g_avrc_controller.devices);
     g_avrc_controller.devices = NULL;
+    if (g_avrc_controller.volume_listener != NULL) {
+        bt_media_remove_listener(g_avrc_controller.volume_listener);
+        g_avrc_controller.volume_listener = NULL;
+    }
     bt_sal_avrcp_control_cleanup();
     pthread_mutex_unlock(&g_avrc_controller.mutex);
     shutdown(PROFILE_AVRCP_CT, true);
