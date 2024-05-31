@@ -16,6 +16,9 @@
 #ifndef __BT_A2DP_SOURCE_H__
 #define __BT_A2DP_SOURCE_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "bt_a2dp.h"
 
 #ifndef BTSYMBOLS
@@ -125,4 +128,7 @@ bt_status_t BTSYMBOLS(bt_a2dp_source_set_silence_device)(bt_instance_t* ins, bt_
  */
 bt_status_t BTSYMBOLS(bt_a2dp_source_set_active_device)(bt_instance_t* ins, bt_address_t* addr);
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* __BT_A2DP_SOURCE_H__ */
