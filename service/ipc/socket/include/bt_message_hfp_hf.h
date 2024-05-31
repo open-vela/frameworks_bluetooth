@@ -53,6 +53,9 @@ BT_HFP_HF_MESSAGE_START,
     BT_HFP_HF_ON_AT_CMD_COMPLETE,
     BT_HFP_HF_ON_RING_INDICATION,
     BT_HFP_HF_ON_VOLUME_CHANGED,
+    BT_HFP_HF_ON_CALL_IND_RECEIVED,
+    BT_HFP_HF_ON_CALLSETUP_IND_RECEIVED,
+    BT_HFP_HF_ON_CALLHELD_IND_RECEIVED,
     BT_HFP_HF_CALLBACK_END,
 #endif
 
@@ -183,6 +186,13 @@ BT_HFP_HF_MESSAGE_START,
             uint8_t type; /* hfp_volume_type_t */
             uint8_t volume;
         } _on_volume_changed_cb;
+
+        struct {
+            bt_address_t addr;
+            uint16_t value;
+        } _on_call_cb,
+            _on_callsetup_cb,
+            _on_callheld_cb;
     } bt_message_hfp_hf_callbacks_t;
 
 #ifdef __cplusplus

@@ -140,6 +140,39 @@ static void on_volume_changed_cb(void* cookie, bt_address_t* addr, hfp_volume_ty
     bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_VOLUME_CHANGED);
 }
 
+static void on_call_cb(void* cookie, bt_address_t* addr, hfp_call_t call)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_hf_cb._on_call_cb.addr, addr, sizeof(bt_address_t));
+    packet.hfp_hf_cb._on_call_cb.value = call;
+
+    bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_CALL_IND_RECEIVED);
+}
+
+static void on_callsetup_cb(void* cookie, bt_address_t* addr, hfp_callsetup_t callsetup)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_hf_cb._on_callsetup_cb.addr, addr, sizeof(bt_address_t));
+    packet.hfp_hf_cb._on_callsetup_cb.value = callsetup;
+
+    bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_CALLSETUP_IND_RECEIVED);
+}
+
+static void on_callheld_cb(void* cookie, bt_address_t* addr, hfp_callheld_t callheld)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_hf_cb._on_callheld_cb.addr, addr, sizeof(bt_address_t));
+    packet.hfp_hf_cb._on_callheld_cb.value = callheld;
+
+    bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_CALLHELD_IND_RECEIVED);
+}
+
 const static hfp_hf_callbacks_t g_hfp_hf_socket_cbs = {
     .connection_state_cb = on_connection_state_changed_cb,
     .audio_state_cb = on_audio_state_changed_cb,
@@ -148,6 +181,9 @@ const static hfp_hf_callbacks_t g_hfp_hf_socket_cbs = {
     .cmd_complete_cb = on_at_cmd_complete_cb,
     .ring_indication_cb = on_ring_indication_cb,
     .volume_changed_cb = on_volume_changed_cb,
+    .call_cb = on_call_cb,
+    .callsetup_cb = on_callsetup_cb,
+    .callheld_cb = on_callheld_cb,
 };
 
 static bool bt_socket_allocator(void** data, uint32_t size)
@@ -354,6 +390,24 @@ int bt_socket_client_hfp_hf_callback(service_poll_t* poll,
             &packet->hfp_hf_cb._on_volume_changed_cb.addr,
             packet->hfp_hf_cb._on_volume_changed_cb.type,
             packet->hfp_hf_cb._on_volume_changed_cb.volume);
+        break;
+    case BT_HFP_HF_ON_CALL_IND_RECEIVED:
+        CALLBACK_FOREACH(CBLIST, hfp_hf_callbacks_t,
+            call_cb,
+            &packet->hfp_hf_cb._on_call_cb.addr,
+            packet->hfp_hf_cb._on_call_cb.value);
+        break;
+    case BT_HFP_HF_ON_CALLSETUP_IND_RECEIVED:
+        CALLBACK_FOREACH(CBLIST, hfp_hf_callbacks_t,
+            callsetup_cb,
+            &packet->hfp_hf_cb._on_callsetup_cb.addr,
+            packet->hfp_hf_cb._on_callsetup_cb.value);
+        break;
+    case BT_HFP_HF_ON_CALLHELD_IND_RECEIVED:
+        CALLBACK_FOREACH(CBLIST, hfp_hf_callbacks_t,
+            callheld_cb,
+            &packet->hfp_hf_cb._on_callheld_cb.addr,
+            packet->hfp_hf_cb._on_callheld_cb.value);
         break;
     default:
         return BT_STATUS_PARM_INVALID;
