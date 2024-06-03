@@ -332,7 +332,7 @@ static void a2dp_source_stop_audio_req(bool cleanup)
     if (cleanup)
         memset(&a2dp_src_stream.underflow, 0, sizeof(a2dp_source_underflow_t));
 
-    if (a2dp_src_stream.stream_state != STATE_RUNNING || a2dp_src_stream.underflow.state == UNDERFLOW_STATE_PAUSED)
+    if (a2dp_src_stream.stream_state != STATE_RUNNING)
         return;
 
     if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
