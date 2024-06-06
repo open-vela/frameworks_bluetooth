@@ -388,6 +388,9 @@ if(CONFIG_BLUETOOTH)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/libffi/libffi/src/x86)
     endif()
 
+    set(FEATURE_TOP ${NUTTX_APPS_DIR}/frameworks/base/feature)
+    list(APPEND INCDIR ${FEATURE_TOP}/include)
+
     list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/libffi)
 
     list(APPEND INCDIR ${NUTTX_APPS_DIR}/frameworks/bluetooth/feature/include)
@@ -458,6 +461,30 @@ if(CONFIG_BLUETOOTH)
       ${CFLAGS}
       DEPENDS
       libbluetooth)
+  endif()
+
+  if(CONFIG_BLUETOOTH_FEATURE)
+    include(nuttx_add_jidl)
+    set(PY_SCRIPT ${FEATURE_TOP}/tools/jidl/jsongensource.py)
+    set(BINARY_EXT_MODULES_DIR ${CMAKE_BINARY_DIR}/feature/modules/)
+    set(JIDL_PATHS ${BLUETOOTH_DIR}/feature/jdil/bluetooth.jidl
+        ${BLUETOOTH_DIR}/feature/jdil/bluetooth_bt.jidl)
+
+    if(CONFIG_BLUETOOTH_A2DP_SINK)
+      list(APPEND JIDL_PATHS ${BLUETOOTH_DIR}/feature/jdil/bluetooth_a2dpsink.jidl)
+    endif()
+
+    nuttx_add_jidl(
+        TARGET
+        libbluetooth
+        JIDL_SCRIPT
+        ${PY_SCRIPT}
+        JIDL_OUT_DIR
+        ${BINARY_EXT_MODULES_DIR}
+        JIDLS
+        ${JIDL_PATHS}
+        OUT_SRC_EXT
+        c)
   endif()
 
   # Add Dependson
