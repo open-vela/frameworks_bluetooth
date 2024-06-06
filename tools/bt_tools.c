@@ -1038,12 +1038,12 @@ static int le_connect_cmd(void* handle, int argc, char** argv)
         .use_default_params = false,
         .filter_policy = BT_LE_CONNECT_FILTER_POLICY_ADDR,
         .init_phy = BT_LE_1M_PHY,
-        .scan_interval = 20,
-        .scan_window = 20,
-        .connection_interval_min = 100,
-        .connection_interval_max = 100,
+        .scan_interval = 20, /* 12.5 ms */
+        .scan_window = 20, /* 12.5 ms */
+        .connection_interval_min = 24, /* 30 ms */
+        .connection_interval_max = 24, /* 30 ms */
         .connection_latency = 0,
-        .supervision_timeout = 10,
+        .supervision_timeout = 18, /* 180 ms */
         .min_ce_length = 0,
         .max_ce_length = 0,
     };
