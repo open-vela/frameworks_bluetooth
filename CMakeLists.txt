@@ -491,7 +491,9 @@ if(CONFIG_BLUETOOTH)
   nuttx_add_dependencies(TARGET libbluetooth DEPENDS libuv)
 
   # Export Headers
-  set_property(TARGET nuttx APPEND PROPERTY NUTTX_INCLUDE_DIRECTORIES  ${BLUETOOTH_DIR}/include)
+  set_property(TARGET nuttx APPEND PROPERTY NUTTX_INCLUDE_DIRECTORIES
+      ${BLUETOOTH_DIR}/include
+      ${BLUETOOTH_DIR}/framework/include)
 
   # Library Configuration
   target_compile_options(libbluetooth PRIVATE ${CFLAGS})
