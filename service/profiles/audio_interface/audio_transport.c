@@ -94,6 +94,21 @@ static void transport_connection_close_cb(uv_handle_t* handle)
         ch->state = IPC_DISCONNTECTED;
         if (ch->event_cb)
             ch->event_cb(ch->ch_id, TRANSPORT_CLOSE_EVT);
+
+        if (!ch->closing && ch->ipc_handle) {
+            audio_transport_t* transport = ch->ipc_handle;
+            if (!transport->closing)
+                return;
+
+            for (int i = 0; i < AUDIO_TRANS_CH_NUM; i++) {
+                ch = &transport->ch[i];
+                if (ch->closing || ch->state != IPC_DISCONNTECTED)
+                    return;
+            }
+
+            BT_LOGI("%s transport freed:0x%p", __func__, transport);
+            free(transport);
+        }
     }
 
     free(handle);
@@ -118,18 +133,19 @@ static void transport_chnl_close_cb(uv_handle_t* handle)
     audio_transport_t* transport = NULL;
 
     free(handle);
-
-    if (ch && ch->ipc_handle) {
+    ch->closing = 0;
+    if (ch && ch->ipc_handle && ch->state == IPC_DISCONNTECTED) {
         transport = ch->ipc_handle;
         if (!transport->closing)
             return;
 
         for (int i = 0; i < AUDIO_TRANS_CH_NUM; i++) {
             ch = &transport->ch[i];
-            if (ch->closing)
+            if (ch->closing || ch->state != IPC_DISCONNTECTED)
                 return;
         }
 
+        BT_LOGI("%s transport freed:0x%p", __func__, transport);
         free(transport);
     }
 }
@@ -272,6 +288,7 @@ bool audio_transport_open(audio_transport_t* transport, uint8_t ch_id,
         return false;
     }
 
+    ch->svr_pipe->data = ch;
     ret = uv_fs_unlink(transport->loop, &fs, path, NULL);
     if (ret != 0 && ret != UV_ENOENT) {
         BT_LOGE("unlink error: %s", uv_strerror(ret));
@@ -296,7 +313,6 @@ bool audio_transport_open(audio_transport_t* transport, uint8_t ch_id,
     ch->ch_id = ch_id;
     ch->event_cb = cb;
     ch->ipc_handle = (void*)transport;
-    ch->svr_pipe->data = ch;
 
     BT_LOGD("%s path{%d}[%s] success", __func__, ch_id, path);
 
@@ -322,7 +338,7 @@ void audio_transport_close(audio_transport_t* transport, uint8_t ch_id)
     for (int i = 0; i < AUDIO_TRANS_CH_NUM; i++) {
         ch = &transport->ch[i];
         audio_transport_channel_close(ch);
-        if (ch->closing)
+        if (ch->closing || ch->state != IPC_DISCONNTECTED)
             transport->closing = 1;
     }
 
