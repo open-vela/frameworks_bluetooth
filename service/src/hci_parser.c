@@ -30,12 +30,12 @@ hci_error_t hci_get_result(bt_hci_event_t* event)
 
     switch (event->evt_code) {
     case HCI_EV_COMMAND_COMPLETE:
-        cmd_complete_ev = (bt_hci_event_command_complete_t*)event;
+        cmd_complete_ev = (bt_hci_event_command_complete_t*)(event->params);
         result = cmd_complete_ev->return_param[0];
         break;
 
     case HCI_EV_COMMAND_STATUS:
-        cmd_status_ev = (bt_hci_event_command_status_t*)event;
+        cmd_status_ev = (bt_hci_event_command_status_t*)(event->params);
         result = cmd_status_ev->status;
 
         /* A success in Command Status event indicates a command is pending rather than success. */

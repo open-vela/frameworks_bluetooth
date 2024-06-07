@@ -27,7 +27,7 @@ typedef enum {
 typedef struct {
     uint8_t num_packets;
     uint16_t opcode;
-    uint8_t* return_param;
+    uint8_t return_param[0]; /* variable length */
 } bt_hci_event_command_complete_t;
 
 typedef struct {
