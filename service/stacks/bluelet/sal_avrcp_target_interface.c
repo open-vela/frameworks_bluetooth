@@ -144,10 +144,14 @@ static void register_notification_request_cb(BD_ADDR addr,
     if (event == AVRCP_NOTIFICATION_VOLUME_CHANGED) {
 #ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
         bt_sal_avrcp_control_event_callback(msg);
-#endif /* CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME */
+#else /* CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME */
+        avrcp_msg_destory(msg);
+#endif
     } else {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
         bt_sal_avrcp_target_event_callback(msg);
+#else
+        avrcp_msg_destory(msg);
 #endif /* CONFIG_BLUETOOTH_AVRCP_TARGET */
     }
 }
