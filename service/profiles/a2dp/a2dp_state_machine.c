@@ -55,6 +55,7 @@
 #include "bt_utils.h"
 #include "hci_parser.h"
 #include "media_system.h"
+#include "power_manager.h"
 #include "state_machine.h"
 
 #include "service_loop.h"
@@ -396,6 +397,7 @@ static void idle_enter(state_machine_t* sm)
 
     a2dp_sm->audio_ready = false;
     if (prev_state != NULL) {
+        bt_pm_conn_close(PROFILE_A2DP, &a2dp_sm->addr);
         a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
             PROFILE_STATE_DISCONNECTED);
     }
@@ -534,6 +536,8 @@ static void opened_enter(state_machine_t* sm)
             BT_LOGD("a2dp control not connected, then set a2dp available");
             bt_media_set_a2dp_available();
         }
+
+        bt_pm_conn_open(PROFILE_A2DP, &a2dp_sm->addr);
         a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
             PROFILE_STATE_CONNECTED);
     }
@@ -764,6 +768,7 @@ static void started_enter(state_machine_t* sm)
     if (a2dp_sm->peer_sep == SEP_SNK)
         adapter_switch_role(&a2dp_sm->addr, BT_LINK_ROLE_MASTER);
 
+    bt_pm_busy(PROFILE_A2DP, &a2dp_sm->addr);
     a2dp_report_audio_state(a2dp_sm, &a2dp_sm->addr,
         A2DP_AUDIO_STATE_STARTED);
 }
@@ -773,6 +778,7 @@ static void started_exit(state_machine_t* sm)
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
 
     A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
+    bt_pm_idle(PROFILE_A2DP, &a2dp_sm->addr);
 }
 
 static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_data)
@@ -970,8 +976,10 @@ void a2dp_state_machine_destory(a2dp_state_machine_t* a2dp_sm)
     if (!a2dp_sm)
         return;
 
-    if (a2dp_state_machine_get_state(a2dp_sm) != A2DP_STATE_IDLE)
+    if (a2dp_state_machine_get_state(a2dp_sm) != A2DP_STATE_IDLE) {
+        bt_pm_conn_close(PROFILE_A2DP, &a2dp_sm->addr);
         a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr, PROFILE_STATE_DISCONNECTED);
+    }
 
     hsm_dtor(&a2dp_sm->sm);
     free((void*)a2dp_sm);
