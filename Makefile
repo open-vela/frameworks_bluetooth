@@ -40,6 +40,7 @@ endif
 endif
 
 CSRCS += service/src/manager_service.c
+CSRCS += service/src/power_manager.c
 CSRCS += service/vendor/bt_vendor.c
 CSRCS += service/common/*.c
 
