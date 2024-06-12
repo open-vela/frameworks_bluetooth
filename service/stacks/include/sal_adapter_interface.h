@@ -26,6 +26,7 @@
 #include "scan_manager.h"
 #endif
 #include "bluetooth_define.h"
+#include "power_manager.h"
 
 /* service adapter layer for BREDR */
 bt_status_t bt_sal_init(void);
@@ -142,4 +143,5 @@ bt_status_t bt_sal_le_enable_key_derivation(bool brkey_to_lekey,
 
 bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t* buf,
     bt_hci_event_callback_t cb, void* context);
+bt_status_t bt_sal_set_power_mode(bt_address_t* addr, bt_pm_mode_t* mode);
 #endif /* __SAL_ADAPTER_INTERFACE_H_ */

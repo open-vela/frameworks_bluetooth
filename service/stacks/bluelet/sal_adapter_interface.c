@@ -29,15 +29,16 @@
 
 #include "hci_h4.h"
 #include "sal.h"
+#include "sal_adapter_interface.h"
 #include "service_loop.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_gap.h"
 #include "stack_adapter_gatt.h"
+#include "stack_adapter_service_base.h"
 
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 #include "advertising.h"
 #include "bt_le_scan.h"
-#include "sal_adapter_interface.h"
 #include "scan_manager.h"
 #endif
 #ifdef CONFIG_BLUETOOTH_GATT
@@ -1867,4 +1868,25 @@ bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, u
     free(command);
 
     return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_sal_set_power_mode(bt_address_t* addr, bt_pm_mode_t* mode)
+{
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    SAL_CHECK_PARAM(addr);
+    SERVICE_BT_LINK_MODE link_mode = mode->mode;
+    SERVICE_BT_SNIFF_PARAM_S param = {
+        .max = mode->max,
+        .min = mode->min,
+        .attempt = mode->attempt,
+        .timeout = mode->timeout,
+    };
+
+    SAL_CHECK_RET(service_adapter_gap_set_link_mode(addr->addr, link_mode, &param),
+        SERVICE_BT_STATUS_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
