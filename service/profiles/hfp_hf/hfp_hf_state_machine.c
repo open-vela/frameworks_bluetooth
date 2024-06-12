@@ -29,6 +29,7 @@
 #include "hfp_hf_service.h"
 #include "hfp_hf_state_machine.h"
 #include "media_system.h"
+#include "power_manager.h"
 #include "sal_adapter_interface.h"
 #include "sal_hfp_hf_interface.h"
 #include "service_loop.h"
@@ -399,6 +400,7 @@ static void disconnected_enter(state_machine_t* sm)
     HF_DBG_ENTER(sm, &hfsm->addr);
     hfsm->need_query = false;
     if (hsm_get_previous_state(sm)) {
+        bt_pm_conn_close(PROFILE_HFP_HF, &hfsm->addr);
         bt_media_remove_listener(hfsm->volume_listener);
         hfsm->volume_listener = NULL;
         hf_service_notify_connection_state_changed(&hfsm->addr, PROFILE_STATE_DISCONNECTED);
@@ -473,6 +475,9 @@ static void connecting_enter(state_machine_t* sm)
     // start connecting timeout timer
     hfsm->connect_timer = service_loop_timer_no_repeating(HF_CONNECT_TIMEOUT, connect_timeout, hfsm);
     hf_service_notify_connection_state_changed(&hfsm->addr, PROFILE_STATE_CONNECTING);
+
+    bt_pm_busy(PROFILE_HFP_HF, &hfsm->addr);
+    bt_pm_idle(PROFILE_HFP_HF, &hfsm->addr);
 }
 
 static void connecting_exit(state_machine_t* sm)
@@ -990,6 +995,9 @@ static void connected_enter(state_machine_t* sm)
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
 
     HF_DBG_ENTER(sm, &hfsm->addr);
+
+    bt_pm_conn_open(PROFILE_HFP_HF, &hfsm->addr);
+
     if (hfsm->need_query) {
         bt_sal_hfp_hf_get_current_calls(&hfsm->addr);
         hfsm->need_query = false;
@@ -1162,6 +1170,8 @@ static void audio_on_enter(state_machine_t* sm)
 
     HF_DBG_ENTER(sm, &hfsm->addr);
 
+    bt_pm_sco_open(PROFILE_HFP_HF, &hfsm->addr);
+
     if (hfsm->offloading) {
         return;
     }
@@ -1187,6 +1197,9 @@ static void audio_on_exit(state_machine_t* sm)
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
 
     HF_DBG_EXIT(sm, &hfsm->addr);
+
+    bt_pm_sco_close(PROFILE_HFP_HF, &hfsm->addr);
+
     /* TODO: set sco unavailable */
     bt_media_set_sco_unavailable();
     /* TODO: abandon audio focus */
