@@ -29,6 +29,7 @@
 #include "bt_list.h"
 #include "callbacks_list.h"
 #include "netutils/netlib.h"
+#include "power_manager.h"
 #include "sal_pan_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
@@ -152,6 +153,7 @@ static void pan_close_all_conn(void)
     list_for_every_safe(&g_pan.conn_list, node, tmp)
     {
         conn = (pan_conn_t*)node;
+        bt_pm_conn_close(PROFILE_PANU, &conn->addr);
         pan_conn_close(conn);
     }
 }
@@ -213,10 +215,12 @@ static void pan_tap_poll_data(service_poll_t* poll, int revent, void* userdata)
         int ret = read(g_pan.tun_fd, pan_read_buf, g_pan.tun_packet_size);
         if (ret > 0) {
             memcpy(&ethhdr, pan_read_buf, sizeof(eth_hdr_t));
+            bt_pm_busy(PROFILE_PANU, &msg->addr);
             bt_sal_pan_write(&g_pan.peer_addr, ntohs(ethhdr.h_proto),
                 ethhdr.h_dest, ethhdr.h_src,
                 pan_read_buf + sizeof(eth_hdr_t),
                 ret - sizeof(eth_hdr_t));
+            bt_pm_idle(PROFILE_PANU, &msg->addr);
         }
         return;
     }
@@ -348,9 +352,11 @@ static void on_pan_connection_state_changed(bt_address_t* addr, pan_conn_evt_t* 
     case PROFILE_STATE_DISCONNECTED: {
         conn = pan_find_conn(addr);
         pan_conn_close(conn);
+        bt_pm_conn_close(PROFILE_PANU, addr);
         break;
     }
     case PROFILE_STATE_CONNECTED:
+        bt_pm_conn_open(PROFILE_PANU, addr);
         conn = pan_new_conn_open(addr, evt->local_role, evt->remote_role);
         break;
     case PROFILE_STATE_CONNECTING:
@@ -394,8 +400,11 @@ static void pan_service_event_process(void* data)
         break;
     case DATA_IND_EVT: {
         pan_data_evt_t* evt = &msg->data_evt;
+
+        bt_pm_busy(PROFILE_PANU, &msg->addr);
         on_pan_data_incoming(&msg->addr, evt->protocol,
             evt->packet, evt->length);
+        bt_pm_idle(PROFILE_PANU, &msg->addr);
         free(evt->packet);
         break;
     }
