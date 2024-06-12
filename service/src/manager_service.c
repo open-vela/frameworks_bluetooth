@@ -24,6 +24,7 @@
 #include "bt_status.h"
 #include "index_allocator.h"
 #include "manager_service.h"
+#include "power_manager.h"
 #include "service_manager.h"
 #include "utils/log.h"
 
@@ -169,6 +170,7 @@ void manager_init(void)
         g_instance_id = index_allocator_create(10);
 #if defined(CONFIG_BLUETOOTH_OBELISK) && defined(__NuttX__)
     service_manager_init();
+    bt_pm_init();
 #endif
 }
 
@@ -187,5 +189,6 @@ void manager_cleanup(void)
 
 #if defined(CONFIG_BLUETOOTH_OBELISK) && defined(__NuttX__)
     service_manager_cleanup();
+    bt_pm_cleanup();
 #endif
 }
