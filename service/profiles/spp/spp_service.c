@@ -30,6 +30,7 @@
 #include "index_allocator.h"
 #include "list.h"
 #include "openpty.h"
+#include "power_manager.h"
 #include "sal_spp_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
@@ -427,8 +428,10 @@ static void spp_app_cleanup_devices(spp_handle_t* app)
     list_for_every_safe(&g_spp_handle.devices, node, tmp)
     {
         device = (spp_pty_device_t*)node;
-        if (device->app_handle == app)
+        if (device->app_handle == app) {
+            bt_pm_conn_close(PROFILE_SPP, &device->addr);
             spp_device_cleanup(device, true);
+        }
     }
 }
 
@@ -586,9 +589,11 @@ static int do_spp_write(spp_pty_device_t* device, uint8_t* buffer, uint16_t leng
             tmpbuf = buffer;
         }
 
+        bt_pm_busy(PROFILE_SPP, &device->addr);
         status = bt_sal_spp_write(device->conn_port, tmpbuf, size);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("%s write to stack failed", __func__);
+            bt_pm_idle(PROFILE_SPP, &device->addr);
             free(tmpbuf);
             return length - remaining;
         }
@@ -638,8 +643,11 @@ static void spp_on_connection_state_chaneged(bt_address_t* addr, uint16_t port,
         }
 
         spp_notify_pty_opened(device);
-    } else if (state == PROFILE_STATE_DISCONNECTED)
+        bt_pm_conn_open(PROFILE_SPP, &device->addr);
+    } else if (state == PROFILE_STATE_DISCONNECTED) {
+        bt_pm_conn_close(PROFILE_SPP, &device->addr);
         spp_device_cleanup(device, false);
+    }
 }
 
 static void spp_on_incoming_data_received(bt_address_t* addr, uint16_t port,
@@ -734,9 +742,12 @@ static void spp_service_event_process(void* data)
         break;
     case DATA_SENT:
         spp_on_outgoing_complete(msg->port, msg->buffer, msg->length);
+        bt_pm_idle(PROFILE_SPP, &msg->addr);
         break;
     case DATA_RECEIVED:
+        bt_pm_busy(PROFILE_SPP, &msg->addr);
         spp_on_incoming_data_received(&msg->addr, msg->port, msg->buffer, msg->length);
+        bt_pm_idle(PROFILE_SPP, &msg->addr);
         break;
     case CONN_REQ_RECEIVED:
         spp_on_connect_request_received(&msg->addr, msg->port);
@@ -1107,7 +1118,16 @@ void spp_on_connection_state_changed(bt_address_t* addr, uint16_t conn_port,
 void spp_on_data_sent(uint16_t conn_port, uint8_t* buffer, uint16_t length,
     uint16_t sent_length)
 {
-    spp_msg_t* msg = malloc(sizeof(spp_msg_t));
+    spp_pty_device_t* device;
+    spp_msg_t* msg;
+
+    device = find_pty_device(SERVICE_CONN_ID(conn_port));
+    if (!device) {
+        BT_LOGE("%s port:%d not exist", __func__, conn_port);
+        return;
+    }
+
+    msg = malloc(sizeof(spp_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -1118,6 +1138,7 @@ void spp_on_data_sent(uint16_t conn_port, uint8_t* buffer, uint16_t length,
     msg->length = length;
     msg->sent_length = sent_length;
     msg->buffer = buffer;
+    memcpy(&msg->addr, &device->addr, sizeof(bt_address_t));
 
     do_in_service_loop(spp_service_event_process, msg);
 }
