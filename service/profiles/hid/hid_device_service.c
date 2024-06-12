@@ -24,6 +24,7 @@
 
 #include "bt_profile.h"
 #include "callbacks_list.h"
+#include "power_manager.h"
 #include "sal_hid_device_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
@@ -133,6 +134,27 @@ static hid_device_handle_t g_hidd_handle = { .started = false };
  * Private Functions
  ****************************************************************************/
 
+static void hid_device_handle_connection_event(bt_address_t* addr, profile_connection_state_t state)
+{
+    hid_device_handle_t* handle = &g_hidd_handle;
+
+    handle->conn_state = state;
+    switch (state) {
+    case PROFILE_STATE_CONNECTING:
+        memcpy(&handle->peer_addr, addr, sizeof(bt_address_t));
+        break;
+    case PROFILE_STATE_CONNECTED:
+        bt_pm_conn_open(PROFILE_HID_DEV, addr);
+        break;
+    case PROFILE_STATE_DISCONNECTED:
+        bt_pm_conn_close(PROFILE_HID_DEV, addr);
+        bt_addr_set_empty(&handle->peer_addr);
+        break;
+    default:
+        break;
+    }
+}
+
 static void hid_device_event_process(void* data)
 {
     hidd_msg_t* msg = (hidd_msg_t*)data;
@@ -151,15 +173,11 @@ static void hid_device_event_process(void* data)
             g_hidd_handle.app_state = HID_APP_STATE_NOT_REGISTERED;
         HIDD_CALLBACK_FOREACH(g_hidd_handle.callbacks, app_state_cb, msg->app_register.state);
         break;
-    case CONNECT_CHANGE_EVT:
+    case CONNECT_CHANGE_EVT: {
         BT_ADDR_LOG("HID-DEVICE-CONNECTION-STATE-EVENT from:%s, state:%d", &msg->connect_change.addr, msg->connect_change.state);
-        g_hidd_handle.conn_state = msg->connect_change.state;
-        if (msg->connect_change.state == PROFILE_STATE_CONNECTING)
-            memcpy(&g_hidd_handle.peer_addr, &msg->connect_change.addr, sizeof(bt_address_t));
-        else if (msg->connect_change.state == PROFILE_STATE_DISCONNECTED)
-            bt_addr_set_empty(&g_hidd_handle.peer_addr);
+        hid_device_handle_connection_event(&msg->connect_change.addr, msg->connect_change.state);
         HIDD_CALLBACK_FOREACH(g_hidd_handle.callbacks, connection_state_cb, &msg->connect_change.addr, msg->connect_change.le_hid, msg->connect_change.state);
-        break;
+    } break;
     case GET_REPORT_EVT:
         HIDD_CALLBACK_FOREACH(g_hidd_handle.callbacks, get_report_cb, &msg->get_report.addr, msg->get_report.rpt_type, msg->get_report.rpt_id, msg->get_report.buffer_size);
         break;
@@ -249,8 +267,11 @@ static bt_status_t hid_device_shutdown(profile_on_shutdown_t cb)
         return BT_STATUS_NOT_ENABLED;
     }
 
-    if (g_hidd_handle.conn_state == PROFILE_STATE_CONNECTED || g_hidd_handle.conn_state == PROFILE_STATE_CONNECTING)
+    if (g_hidd_handle.conn_state == PROFILE_STATE_CONNECTED || g_hidd_handle.conn_state == PROFILE_STATE_CONNECTING) {
         bt_sal_hid_device_disconnect(&g_hidd_handle.peer_addr);
+        bt_pm_conn_close(PROFILE_HID_DEV, &g_hidd_handle.peer_addr);
+    }
+
     g_hidd_handle.started = false;
     g_hidd_handle.app_state = HID_APP_STATE_NOT_REGISTERED;
     g_hidd_handle.conn_state = PROFILE_STATE_DISCONNECTED;
@@ -420,7 +441,9 @@ static bt_status_t hid_device_send_report(bt_address_t* addr, uint8_t rpt_id, ui
         goto exit;
     }
 
+    bt_pm_busy(PROFILE_HID_DEV, addr);
     status = bt_sal_hid_device_send_report(addr, rpt_id, rpt_data, rpt_size);
+    bt_pm_idle(PROFILE_HID_DEV, addr);
 
 exit:
     pthread_mutex_unlock(&g_hidd_handle.hid_lock);
@@ -443,7 +466,9 @@ static bt_status_t hid_device_response_report(bt_address_t* addr, uint8_t rpt_ty
         goto exit;
     }
 
+    bt_pm_busy(PROFILE_HID_DEV, addr);
     status = bt_sal_hid_device_get_report_response(addr, rpt_type, rpt_data, rpt_size);
+    bt_pm_idle(PROFILE_HID_DEV, addr);
 
 exit:
     pthread_mutex_unlock(&g_hidd_handle.hid_lock);
@@ -466,7 +491,9 @@ static bt_status_t hid_device_report_error(bt_address_t* addr, hid_status_error_
         goto exit;
     }
 
+    bt_pm_busy(PROFILE_HID_DEV, addr);
     status = bt_sal_hid_device_report_error(addr, error);
+    bt_pm_idle(PROFILE_HID_DEV, addr);
 
 exit:
     pthread_mutex_unlock(&g_hidd_handle.hid_lock);
@@ -489,7 +516,9 @@ static bt_status_t hid_device_virtual_unplug(bt_address_t* addr)
         goto exit;
     }
 
+    bt_pm_busy(PROFILE_HID_DEV, addr);
     status = bt_sal_hid_device_virtual_unplug(addr);
+    bt_pm_idle(PROFILE_HID_DEV, addr);
 
 exit:
     pthread_mutex_unlock(&g_hidd_handle.hid_lock);
