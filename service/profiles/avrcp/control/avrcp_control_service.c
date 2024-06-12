@@ -27,6 +27,7 @@
 #include "bt_player.h"
 #include "callbacks_list.h"
 #include "media_system.h"
+#include "power_manager.h"
 #include "sal_avrcp_control_interface.h"
 #include "sal_avrcp_target_interface.h"
 #include "service_loop.h"
@@ -128,6 +129,7 @@ static void ct_device_destory(void* data)
     if (device->state != PROFILE_STATE_DISCONNECTED)
         AVRCP_CT_CALLBACK_FOREACH(g_avrc_controller.callbacks, connection_state_cb, &device->addr, PROFILE_STATE_DISCONNECTED);
 
+    bt_pm_conn_close(PROFILE_AVRCP_CT, &device->addr);
     uv_mutex_destroy(&device->lock);
     free(device);
 }
@@ -287,8 +289,10 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
     switch (state) {
     case PROFILE_STATE_DISCONNECTED:
         /* destory device and release resource if device is existed*/
-        if (device)
+        if (device) {
+            bt_pm_conn_close(PROFILE_AVRCP_CT, &device->addr);
             ct_device_remove(device);
+        }
         if (g_avrc_controller.volume_listener != NULL) {
             bt_media_remove_listener(g_avrc_controller.volume_listener);
             g_avrc_controller.volume_listener = NULL;
@@ -305,6 +309,8 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
             device = ct_device_create(addr, false);
             device->state = state;
         }
+
+        bt_pm_conn_open(PROFILE_AVRCP_CT, &device->addr);
         bt_sal_avrcp_control_get_capabilities(addr, AVRCP_CAPABILITY_ID_EVENTS_SUPPORTED);
         device->player = bt_media_player_create(device, &g_player_cb);
     } break;

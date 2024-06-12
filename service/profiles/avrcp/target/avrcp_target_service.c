@@ -26,6 +26,7 @@
 #include "bt_list.h"
 #include "bt_player.h"
 #include "callbacks_list.h"
+#include "power_manager.h"
 #include "sal_avrcp_control_interface.h"
 #include "sal_avrcp_target_interface.h"
 #include "service_loop.h"
@@ -143,6 +144,7 @@ static void tg_device_destory(void* data)
     if (device->state != PROFILE_STATE_DISCONNECTED)
         AVRCP_TG_CALLBACK_FOREACH(g_avrc_target.callbacks, connection_state_cb, &device->addr, PROFILE_STATE_DISCONNECTED);
 
+    bt_pm_conn_close(PROFILE_AVRCP_TG, &device->addr);
     free(device);
 }
 
@@ -253,6 +255,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
             device->retry_timer = NULL;
         }
         device->retry_cnt = 0;
+        bt_pm_conn_close(PROFILE_AVRCP_TG, &device->addr);
 
         /* destory device and release resource if device is existed*/
         tg_device_remove(device);
@@ -271,6 +274,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
             device = tg_device_create(addr, false);
         }
 
+        bt_pm_conn_open(PROFILE_AVRCP_TG, &device->addr);
         if (!g_avrc_target.controller) {
             g_avrc_target.controller = bt_media_controller_create(device, media_player_notify_cb);
             assert(g_avrc_target.controller);
