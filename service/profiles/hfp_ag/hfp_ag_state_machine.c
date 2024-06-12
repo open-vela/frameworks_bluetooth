@@ -32,6 +32,7 @@
 #include "hfp_ag_state_machine.h"
 #include "hfp_ag_tele_service.h"
 #include "media_system.h"
+#include "power_manager.h"
 #include "sal_adapter_interface.h"
 #include "sal_hfp_ag_interface.h"
 #include "utils/log.h"
@@ -316,6 +317,7 @@ static void disconnected_enter(state_machine_t* sm)
         bt_media_remove_listener(agsm->volume_listener);
         agsm->volume_listener = NULL;
         bt_media_set_anc_enable(true);
+        bt_pm_conn_close(PROFILE_HFP_AG, &agsm->addr);
         ag_service_notify_connection_state_changed(&agsm->addr, PROFILE_STATE_DISCONNECTED);
     }
 }
@@ -370,6 +372,9 @@ static void connecting_enter(state_machine_t* sm)
     AG_DBG_ENTER(sm, &agsm->addr);
     agsm->connect_timer = service_loop_timer_no_repeating(AG_TIMEOUT, connect_timeout, agsm);
     ag_service_notify_connection_state_changed(&agsm->addr, PROFILE_STATE_CONNECTING);
+
+    bt_pm_busy(PROFILE_HFP_AG, &agsm->addr);
+    bt_pm_idle(PROFILE_HFP_AG, &agsm->addr);
 }
 
 static void connecting_exit(state_machine_t* sm)
@@ -689,6 +694,8 @@ static void connected_enter(state_machine_t* sm)
     AG_DBG_ENTER(sm, &agsm->addr);
     uint8_t previous_state = hsm_get_state_value(hsm_get_previous_state(sm));
 
+    bt_pm_conn_open(PROFILE_HFP_AG, &agsm->addr);
+
     if (previous_state < HFP_AG_STATE_CONNECTED) {
         agsm->volume_listener = bt_media_listen_voice_call_volume_change(hfp_ag_voice_volume_change_callback, agsm);
         agsm->retry_cnt = 0;
@@ -889,6 +896,8 @@ static void audio_on_enter(state_machine_t* sm)
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, &agsm->addr);
 
+    bt_pm_sco_open(PROFILE_HFP_AG, &agsm->addr);
+
     if (agsm->offloading) {
         return;
     }
@@ -904,6 +913,8 @@ static void audio_on_exit(state_machine_t* sm)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_EXIT(sm, &agsm->addr);
+
+    bt_pm_sco_close(PROFILE_HFP_AG, &agsm->addr);
     /* set sco device unavaliable */
     bt_media_set_sco_unavailable();
 }
