@@ -180,6 +180,14 @@ typedef struct {
     bt_pm_hanlde_callback_t pm_callback;
 } bt_pm_manager_t;
 
+typedef struct {
+    struct list_node srv_node;
+
+    bt_address_t peer_addr;
+    uint8_t mode;
+    uint16_t interval;
+} bt_pm_device_t;
+
 static const bt_pm_mode_t g_pm_mode[] = {
     /* sniff modes: max interval, min interval, attempt, timeout */
     { BT_PM_SNIFF_MAX, BT_PM_SNIFF_MIN, BT_PM_SNIFF_ATTEMPT, BT_PM_SNIFF_TIMEOUT, BT_PM_HCI_MODE_SNIFF }, /* for BT_PM_SNIFF */
@@ -322,8 +330,51 @@ static void pm_conn_service_remove(bt_pm_service_t* service)
     }
 }
 
+static bt_pm_device_t* pm_conn_device_find(bt_address_t* peer_addr)
+{
+    bt_pm_manager_t* manager = &g_pm_manager;
+    struct list_node* node;
+    struct list_node* tmp;
+    bt_pm_device_t* device;
+
+    list_for_every_safe(&manager->pm_devices, node, tmp)
+    {
+        device = (bt_pm_device_t*)node;
+
+        if (!bt_addr_compare(&device->peer_addr, peer_addr)) {
+            return device;
+        }
+    }
+
+    return NULL;
+}
+
+static bt_pm_device_t* pm_conn_device_add(bt_address_t* peer_addr)
+{
+    bt_pm_manager_t* manager = &g_pm_manager;
+    bt_pm_device_t* device;
+
+    device = calloc(1, sizeof(bt_pm_device_t));
+    if (!device) {
+        return NULL;
+    }
+
+    memcpy(&device->peer_addr, peer_addr, sizeof(bt_address_t));
+    list_add_tail(&manager->pm_devices, &device->srv_node);
+    return device;
+}
+
+static void pm_conn_device_remove(bt_pm_device_t* device)
+{
+    if (device) {
+        list_delete(&device->srv_node);
+        free(device);
+    }
+}
+
 static bt_status_t pm_request_sniff(bt_address_t* peer_addr, bt_pm_mode_index_t index)
 {
+    bt_pm_device_t* device;
     bt_pm_mode_t mode;
     bt_status_t ret;
 
@@ -332,7 +383,16 @@ static bt_status_t pm_request_sniff(bt_address_t* peer_addr, bt_pm_mode_index_t 
         return BT_STATUS_PARM_INVALID;
     }
 
+    device = pm_conn_device_find(peer_addr);
+    if (!device) {
+        BT_LOGE("%s, fail to find device:%s", __func__, bt_addr_str(peer_addr));
+        return BT_STATUS_FAIL;
+    }
+
     memcpy(&mode, &g_pm_mode[index], sizeof(bt_pm_mode_t));
+    if (device->mode == BT_LINK_MODE_SNIFF && device->interval <= mode.max && device->interval >= mode.min) {
+        return BT_STATUS_SUCCESS;
+    }
 
     BT_LOGD("%s, peer_addr:%s, max:%d, min:%d, attempt:%d, timeout:%d", __func__, bt_addr_str(peer_addr), mode.max, mode.min, mode.attempt, mode.timeout);
     ret = bt_sal_set_power_mode(peer_addr, &mode);
@@ -346,10 +406,21 @@ static bt_status_t pm_request_sniff(bt_address_t* peer_addr, bt_pm_mode_index_t 
 
 static bt_status_t pm_request_active(bt_address_t* peer_addr)
 {
+    bt_pm_device_t* device;
     bt_status_t ret;
     bt_pm_mode_t mode = {
         .mode = BT_PM_ACTIVE,
     };
+
+    device = pm_conn_device_find(peer_addr);
+    if (!device) {
+        BT_LOGE("%s, fail to fail to find device:%s", __func__, bt_addr_str(peer_addr));
+        return BT_STATUS_FAIL;
+    }
+
+    if (device->mode == BT_LINK_MODE_ACTIVE) {
+        return BT_STATUS_SUCCESS;
+    }
 
     BT_LOGD("%s, peer_addr:%s", __func__, bt_addr_str(peer_addr));
     ret = bt_sal_set_power_mode(peer_addr, &mode);
@@ -703,7 +774,17 @@ void bt_pm_cleanup(void)
 
 void bt_pm_remote_link_mode_changed(bt_address_t* addr, uint8_t mode, uint16_t sniff_interval)
 {
+    bt_pm_device_t* device;
+
     BT_LOGD("%s, addr:%s, mode:%d, sniff_interval:%" PRId16, __func__, bt_addr_str(addr), mode, sniff_interval);
+    device = pm_conn_device_find(addr);
+    if (!device) {
+        BT_LOGE("%s, fail to find device:%s", __func__, bt_addr_str(addr));
+        return;
+    }
+
+    device->interval = sniff_interval;
+    device->mode = mode;
 
     switch (mode) {
     case BT_LINK_MODE_ACTIVE: {
@@ -716,4 +797,27 @@ void bt_pm_remote_link_mode_changed(bt_address_t* addr, uint8_t mode, uint16_t s
     default:
         break;
     }
+}
+
+void bt_pm_remote_device_connected(bt_address_t* addr)
+{
+    bt_pm_device_t* device;
+
+    device = pm_conn_device_add(addr);
+    if (!device) {
+        BT_LOGE("%s, fail to add device:%s", __func__, bt_addr_str(addr));
+        return;
+    }
+}
+
+void bt_pm_remote_device_disconnected(bt_address_t* addr)
+{
+    bt_pm_device_t* device;
+
+    device = pm_conn_device_find(addr);
+    if (!device) {
+        BT_LOGE("%s, fail to find device:%s", __func__, bt_addr_str(addr));
+        return;
+    }
+    pm_conn_device_remove(device);
 }
