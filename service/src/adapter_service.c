@@ -642,6 +642,20 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
         //     adapter_le_add_whitelist(addr);
     }
     adapter_unlock();
+
+    if (acl_params->link_type == BT_TRANSPORT_BREDR) {
+        switch (acl_params->connection_state) {
+        case CONNECTION_STATE_CONNECTED:
+            bt_pm_remote_device_connected(addr);
+            break;
+        case CONNECTION_STATE_DISCONNECTED:
+            bt_pm_remote_device_disconnected(addr);
+            break;
+        default:
+            break;
+        }
+    }
+
     /* send connection changed notification */
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_connection_state_changed, addr,
         acl_params->link_type, acl_params->connection_state);
