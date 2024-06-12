@@ -65,6 +65,7 @@ if(CONFIG_BLUETOOTH)
   endif()
 
   list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/manager_service.c)
+  list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/power_manager.c)
   list(APPEND CSRCS ${BLUETOOTH_DIR}/service/vendor/bt_vendor.c)
   file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/common/*.c)
   list(APPEND CSRCS ${APPEND_FILES})

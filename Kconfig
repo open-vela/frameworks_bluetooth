@@ -113,6 +113,10 @@ config BLUETOOTH_LEA_SOURCE_DATA_PATH
 	string "Bluetooth LE Audio Transport Source Data Path"
 	default "lea_source_data"
 
+config BLUETOOTH_PM_MAX_TIMER_NUMBER
+       int "Bluetooth PM maximum number of timers"
+       default 16
+
 if BLUETOOTH_GATT
 config BLUETOOTH_GATTC_MAX_CONNECTIONS
 	int "GATT client max connections"

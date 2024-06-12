@@ -18,6 +18,8 @@
 
 #include <stdint.h>
 
+#include "bt_addr.h"
+
 typedef struct {
     uint16_t max;
     uint16_t min;
@@ -25,5 +27,19 @@ typedef struct {
     uint16_t timeout;
     uint8_t mode;
 } bt_pm_mode_t;
+
+void bt_pm_conn_open(uint8_t profile_id, bt_address_t* peer_addr);
+void bt_pm_conn_close(uint8_t profile_id, bt_address_t* peer_addr);
+void bt_pm_app_open(uint8_t profile_id, bt_address_t* peer_addr);
+void bt_pm_app_close(uint8_t profile_id, bt_address_t* peer_addr);
+void bt_pm_sco_open(uint8_t profile_id, bt_address_t* peer_addr);
+void bt_pm_sco_close(uint8_t profile_id, bt_address_t* peer_addr);
+void bt_pm_idle(uint8_t profile_id, bt_address_t* peer_addr);
+void bt_pm_busy(uint8_t profile_id, bt_address_t* peer_addr);
+
+void bt_pm_init(void);
+void bt_pm_cleanup(void);
+
+void bt_pm_remote_link_mode_changed(bt_address_t* addr, uint8_t mode, uint16_t sniff_interval);
 
 #endif /* __BT_POWER_MANAGER_H__ */

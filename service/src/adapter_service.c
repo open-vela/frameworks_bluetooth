@@ -1120,6 +1120,7 @@ static void handle_link_event(void* data)
     adapter_remote_event_t* evt = (adapter_remote_event_t*)data;
     switch (evt->evt_id) {
     case LINK_MODE_CHANGED_EVT:
+        bt_pm_remote_link_mode_changed(&evt->addr, evt->link_mode.mode, evt->link_mode.sniff_interval);
         break;
     case LINK_ROLE_CHANGED_EVT:
         process_link_role_changed_evt(&evt->addr, evt->link_role.role);
