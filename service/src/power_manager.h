@@ -41,5 +41,7 @@ void bt_pm_init(void);
 void bt_pm_cleanup(void);
 
 void bt_pm_remote_link_mode_changed(bt_address_t* addr, uint8_t mode, uint16_t sniff_interval);
+void bt_pm_remote_device_connected(bt_address_t* addr);
+void bt_pm_remote_device_disconnected(bt_address_t* addr);
 
 #endif /* __BT_POWER_MANAGER_H__ */
