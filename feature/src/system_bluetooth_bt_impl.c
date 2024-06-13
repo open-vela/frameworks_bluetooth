@@ -334,7 +334,7 @@ FtArray* system_bluetooth_bt_wrap_getConnectedDevices(FeatureInstanceHandle feat
     bt_adapter_get_connected_devices(feature_bluetooth_get_bt_ins(feature), BT_TRANSPORT_BREDR, &addrs, &num, bt_feature_allocator);
     FtArray* devices = system_bluetooth_bt_malloc_string_array();
     devices->_size = num;
-    devices->_element = FeatureMalloc(devices->_size, FT_STRING);
+    devices->_element = malloc(devices->_size * sizeof(char*));
     for (int i = 0; i < devices->_size; ++i) {
         char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
         bt_addr_ba2str(addrs + i, addr_str);
@@ -351,7 +351,7 @@ FtArray* system_bluetooth_bt_wrap_getBondedDevices(FeatureInstanceHandle feature
     bt_adapter_get_bonded_devices(feature_bluetooth_get_bt_ins(feature), BT_TRANSPORT_BREDR, &addrs, &num, bt_feature_allocator);
     FtArray* devices = system_bluetooth_bt_malloc_string_array();
     devices->_size = num;
-    devices->_element = FeatureMalloc(devices->_size, FT_STRING);
+    devices->_element = malloc(devices->_size * sizeof(char*));
     for (int i = 0; i < devices->_size; ++i) {
         char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
         bt_addr_ba2str(addrs + i, addr_str);
