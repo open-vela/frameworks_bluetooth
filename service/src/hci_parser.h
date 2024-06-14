@@ -24,13 +24,13 @@ typedef enum {
     HCI_EV_COMMAND_STATUS = 0x0F,
 } hci_event_code_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint8_t num_packets;
     uint16_t opcode;
     uint8_t return_param[0]; /* variable length */
 } bt_hci_event_command_complete_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint8_t status;
     uint8_t num_packets;
     uint16_t opcode;
