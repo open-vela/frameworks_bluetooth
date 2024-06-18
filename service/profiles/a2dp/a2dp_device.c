@@ -91,6 +91,11 @@ void a2dp_device_delete(a2dp_device_t* device)
     a2dp_event = a2dp_event_new(DISCONNECT_REQ, NULL);
     a2dp_state_machine_handle_event(device->a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
+
+    a2dp_event = a2dp_event_new(DISCONNECTED_EVT, NULL);
+    a2dp_state_machine_handle_event(device->a2dp_sm, a2dp_event);
+    a2dp_event_destory(a2dp_event);
+
     a2dp_state_machine_destory(device->a2dp_sm);
     list_delete(&device->node);
     free((void*)device);
