@@ -104,6 +104,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
 static bool audio_connecting_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 static bool audio_disconnecting_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static bt_status_t ag_offload_send_stop_cmd(ag_state_machine_t* ag_sm, hfp_ag_data_t* data);
 
 static const state_t disconnected_state = {
     .state_name = "Disconnected",
@@ -500,6 +501,11 @@ static bool disconnecting_process_event(state_machine_t* sm, uint32_t event, voi
             break;
         }
     } break;
+    case AG_OFFLOAD_STOP_REQ: {
+        ag_offload_send_stop_cmd(agsm, data);
+    } break;
+    case AG_OFFLOAD_STOP_EVT: {
+    } break;
     default:
         BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
@@ -725,6 +731,26 @@ static void bt_hci_event_callback(bt_hci_event_t* hci_event, void* context)
     hfp_ag_send_message(msg);
 }
 
+static bt_status_t ag_offload_send_stop_cmd(ag_state_machine_t* ag_sm, hfp_ag_data_t* data)
+{
+    uint8_t ogf;
+    uint16_t ocf;
+    uint8_t len;
+    uint8_t* payload;
+
+    if (!ag_sm || !data) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    payload = data->data;
+    len = data->size - sizeof(ogf) - sizeof(ocf);
+    STREAM_TO_UINT8(ogf, payload)
+    STREAM_TO_UINT16(ocf, payload);
+    flag_set(ag_sm, PENDING_OFFLOAD_STOP);
+
+    return bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, ag_sm);
+}
+
 static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
@@ -770,22 +796,10 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         }
     } break;
     case AG_OFFLOAD_STOP_REQ: {
-        uint8_t ogf;
-        uint16_t ocf;
-        uint8_t len;
-        uint8_t* payload;
-
-        payload = data->data;
-        len = data->size - sizeof(ogf) - sizeof(ocf);
-        STREAM_TO_UINT8(ogf, payload)
-        STREAM_TO_UINT16(ocf, payload);
-        flag_set(agsm, PENDING_OFFLOAD_STOP);
-
-        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, agsm);
+        ag_offload_send_stop_cmd(agsm, data);
     } break;
     case AG_OFFLOAD_STOP_EVT: {
-        break;
-    }
+    } break;
     default:
         default_process_event(sm, event, p_data);
         break;
@@ -847,6 +861,11 @@ static bool audio_connecting_process_event(state_machine_t* sm, uint32_t event, 
             BT_LOGW("Ignored audio connection state:%d", state);
             break;
         }
+    } break;
+    case AG_OFFLOAD_STOP_REQ: {
+        ag_offload_send_stop_cmd(agsm, data);
+    } break;
+    case AG_OFFLOAD_STOP_EVT: {
     } break;
     default:
         default_process_event(sm, event, p_data);
@@ -979,6 +998,11 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         agsm->offload_timer = NULL;
         bt_media_set_sco_unavailable();
     } break;
+    case AG_OFFLOAD_STOP_REQ: {
+        ag_offload_send_stop_cmd(agsm, data);
+    } break;
+    case AG_OFFLOAD_STOP_EVT: {
+    } break;
     default:
         default_process_event(sm, event, p_data);
         break;
@@ -1026,6 +1050,11 @@ static bool audio_disconnecting_process_event(state_machine_t* sm, uint32_t even
             BT_LOGW("Ignored audio connection state:%d", state);
             break;
         }
+    } break;
+    case AG_OFFLOAD_STOP_REQ: {
+        ag_offload_send_stop_cmd(agsm, data);
+    } break;
+    case AG_OFFLOAD_STOP_EVT: {
     } break;
     default:
         default_process_event(sm, event, p_data);
