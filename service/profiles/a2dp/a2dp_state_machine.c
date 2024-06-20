@@ -470,7 +470,8 @@ static void opening_enter(state_machine_t* sm)
 static void opening_exit(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-
+    service_loop_cancel_timer(a2dp_sm->connect_timer);
+    a2dp_sm->connect_timer = NULL;
     A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
 }
 
@@ -495,17 +496,11 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
     }
 
     case CONNECTED_EVT:
-        if (a2dp_sm->connect_timer) {
-            service_loop_cancel_timer(a2dp_sm->connect_timer);
-            a2dp_sm->connect_timer = NULL;
-        }
         hsm_transition_to(sm, &opened_state);
         break;
 
     case DISCONNECTED_EVT:
     case CONNECT_TIMEOUT:
-        service_loop_cancel_timer(a2dp_sm->connect_timer);
-        a2dp_sm->connect_timer = NULL;
         hsm_transition_to(sm, &idle_state);
         break;
 
