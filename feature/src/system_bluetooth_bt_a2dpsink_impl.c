@@ -31,8 +31,7 @@ void system_bluetooth_bt_a2dpsink_onRegister(const char* feature_name)
 
 void system_bluetooth_bt_a2dpsink_onCreate(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
-    feature_bluetooth_init_bt_ins(FEATURE_BLUETOOTH_A2DPSINK);
-    feature_bluetooth_set_bt_ins(handle);
+    feature_bluetooth_init_bt_ins(FEATURE_BLUETOOTH_A2DPSINK, handle);
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
@@ -50,8 +49,7 @@ void system_bluetooth_bt_a2dpsink_onDetached(FeatureRuntimeContext ctx, FeatureI
 
 void system_bluetooth_bt_a2dpsink_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
-    feature_bluetooth_clean_bt_ins(handle);
-    feature_bluetooth_uninit_bt_ins(FEATURE_BLUETOOTH_A2DPSINK);
+    feature_bluetooth_uninit_bt_ins(FEATURE_BLUETOOTH_A2DPSINK, handle);
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
