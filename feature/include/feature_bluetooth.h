@@ -81,10 +81,8 @@ typedef struct {
 
 void feature_bluetooth_deal_callback(int status, void* data);
 char* StringToFtString(const char* str);
-void feature_bluetooth_init_bt_ins(feature_bluetooth_feature_type_t feature);
-void feature_bluetooth_uninit_bt_ins(feature_bluetooth_feature_type_t feature);
-void feature_bluetooth_set_bt_ins(FeatureProtoHandle protoHandle);
-void feature_bluetooth_clean_bt_ins(FeatureProtoHandle protoHandle);
+void feature_bluetooth_init_bt_ins(feature_bluetooth_feature_type_t feature, FeatureProtoHandle handle);
+void feature_bluetooth_uninit_bt_ins(feature_bluetooth_feature_type_t feature, FeatureProtoHandle handle);
 bt_instance_t* feature_bluetooth_get_bt_ins(FeatureInstanceHandle feature);
 
 void feature_bluetooth_add_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_feature_type_t feature_type);
