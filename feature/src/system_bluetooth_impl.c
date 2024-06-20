@@ -35,8 +35,7 @@ void system_bluetooth_onRegister(const char* feature_name)
 
 void system_bluetooth_onCreate(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
-    feature_bluetooth_init_bt_ins(FEATURE_BLUETOOTH);
-    feature_bluetooth_set_bt_ins(handle);
+    feature_bluetooth_init_bt_ins(FEATURE_BLUETOOTH, handle);
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
@@ -54,8 +53,7 @@ void system_bluetooth_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandl
 
 void system_bluetooth_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
-    feature_bluetooth_clean_bt_ins(handle);
-    feature_bluetooth_uninit_bt_ins(FEATURE_BLUETOOTH);
+    feature_bluetooth_uninit_bt_ins(FEATURE_BLUETOOTH, handle);
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 

@@ -17,6 +17,9 @@
 
 #include "feature_bluetooth.h"
 #include "feature_log.h"
+#include <kvdb.h>
+
+#define KVDB_USE_FEATURE "persist.using_bluetooth_feature"
 
 void feature_bluetooth_deal_callback(int status, void* data)
 {
@@ -43,9 +46,27 @@ char* StringToFtString(const char* str)
     return ftStr;
 }
 
-void feature_bluetooth_init_bt_ins(feature_bluetooth_feature_type_t feature)
+static bool feature_bluetooth_using_feature()
 {
-    bt_instance_t* bluetooth_ins = bluetooth_get_instance();
+    static int using_bluetoothd_feature = -1;
+
+    if (using_bluetoothd_feature == -1) {
+        using_bluetoothd_feature = property_get_bool(KVDB_USE_FEATURE, 1);
+    }
+
+    return using_bluetoothd_feature;
+}
+
+void feature_bluetooth_init_bt_ins(feature_bluetooth_feature_type_t feature, FeatureProtoHandle handle)
+{
+    bt_instance_t* bluetooth_ins;
+
+    if (!feature_bluetooth_using_feature()) {
+        FeatureSetProtoData(handle, NULL);
+        return;
+    }
+
+    bluetooth_ins = bluetooth_get_instance();
 
     if (bluetooth_ins == NULL) {
         FEATURE_LOG_ERROR("Failed to get Bluetooth instance.");
@@ -57,12 +78,20 @@ void feature_bluetooth_init_bt_ins(feature_bluetooth_feature_type_t feature)
     }
 
     ((feature_bluetooth_features_info_t*)bluetooth_ins->context)->created_features |= (1UL << feature);
+
+    FeatureSetProtoData(handle, bluetooth_ins);
 }
 
-void feature_bluetooth_uninit_bt_ins(feature_bluetooth_feature_type_t feature)
+void feature_bluetooth_uninit_bt_ins(feature_bluetooth_feature_type_t feature, FeatureProtoHandle handle)
 {
     bt_instance_t* bluetooth_ins;
     feature_bluetooth_features_info_t* features_info;
+
+    if (!feature_bluetooth_using_feature()) {
+        return;
+    }
+
+    FeatureSetProtoData(handle, NULL);
 
     bluetooth_ins = bluetooth_find_instance(getpid());
 
@@ -92,11 +121,6 @@ void feature_bluetooth_set_bt_ins(FeatureProtoHandle protoHandle)
 {
     bt_instance_t* bluetooth_ins = bluetooth_get_instance();
     FeatureSetProtoData(protoHandle, bluetooth_ins);
-}
-
-void feature_bluetooth_clean_bt_ins(FeatureProtoHandle protoHandle)
-{
-    FeatureSetProtoData(protoHandle, NULL);
 }
 
 bt_instance_t* feature_bluetooth_get_bt_ins(FeatureInstanceHandle feature)
