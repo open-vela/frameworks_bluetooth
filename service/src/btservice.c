@@ -40,9 +40,6 @@
 #ifdef CONFIG_BLUETOOTH_PAN
 #include "pan_service.h"
 #endif
-#ifdef CONFIG_BLUETOOTH_PBAP_PCE
-#include "pbap_pce_service.h"
-#endif
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
 #include "lea_server_service.h"
@@ -141,10 +138,6 @@ void bt_profile_init(void)
 
 #ifdef CONFIG_BLUETOOTH_PAN
     register_pan_service();
-#endif
-
-#ifdef CONFIG_BLUETOOTH_PBAP_PCE
-    register_pce_service();
 #endif
 
 #ifdef CONFIG_BLUETOOTH_GATT

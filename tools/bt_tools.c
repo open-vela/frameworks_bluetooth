@@ -191,9 +191,6 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_PAN
     { "pan", pan_command_exec, 0, "pan cmd,           input \'pan\' show usage" },
 #endif
-#ifdef CONFIG_BLUETOOTH_PBAP_PCE
-    { "pce", pce_command_exec, 0, "pbap client cmd,   input \'pce\' show usage" },
-#endif
 #ifdef CONFIG_BLUETOOTH_GATT
     { "gattc", gattc_command_exec, 0, "gatt client cmd    input \'gattc\' show usage" },
     { "gatts", gatts_command_exec, 0, "gatt server cmd    input \'gatts\' show usage" },
@@ -302,9 +299,6 @@ static void bt_tool_init(void* handle)
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_command_init(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_PBAP_PCE
-    pce_command_init(handle);
-#endif
 #ifdef CONFIG_BLUETOOTH_GATT
     gattc_command_init(handle);
     gatts_command_init(handle);
@@ -364,9 +358,6 @@ static void bt_tool_uninit(void* handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_command_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_PBAP_PCE
-    pce_command_uninit(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_GATT
     gattc_command_uninit(handle);
