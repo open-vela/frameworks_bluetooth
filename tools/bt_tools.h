@@ -117,10 +117,6 @@ int pan_command_init(void* handle);
 void pan_command_uninit(void* handle);
 int pan_command_exec(void* handle, int argc, char* argv[]);
 
-int pce_command_init(void* handle);
-void pce_command_uninit(void* handle);
-int pce_command_exec(void* handle, int argc, char* argv[]);
-
 int gattc_command_init(void* handle);
 int gattc_command_uninit(void* handle);
 int gattc_command_exec(void* handle, int argc, char* argv[]);

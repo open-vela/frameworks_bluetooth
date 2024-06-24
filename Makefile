@@ -124,10 +124,6 @@ ifeq ($(CONFIG_BLUETOOTH_PAN), y)
 	CSRCS += service/profiles/pan/*.c
 endif #CONFIG_BLUETOOTH_PAN
 
-ifeq ($(CONFIG_BLUETOOTH_PBAP_PCE), y)
-	CSRCS += service/profiles/pbap/pce/*.c
-endif
-
 ifneq ($(findstring y, $(CONFIG_BLUETOOTH_LEAUDIO_CLIENT)_$(CONFIG_BLUETOOTH_LEAUDIO_SERVER)), )
 	CSRCS += service/profiles/leaudio/audio_ipc/*.c
 	CSRCS += service/profiles/leaudio/*.c
@@ -205,9 +201,6 @@ ifeq ($(CONFIG_BLUETOOTH_HID_DEVICE), y)
 endif
 ifeq ($(CONFIG_BLUETOOTH_PAN), y)
 	CSRCS += tools/panu.c
-endif
-ifeq ($(CONFIG_BLUETOOTH_PBAP_PCE), y)
-	CSRCS += tools/pbap_pce.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_SERVER), y)
