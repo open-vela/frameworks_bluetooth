@@ -375,7 +375,7 @@ int bt_socket_server_init(const char* name, int port)
 {
     service_poll_t* lpoll = NULL;
     int local;
-#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_BLUETOOTH_NET_IPv4
     service_poll_t* ipoll = NULL;
     int inet = -1;
 #endif
@@ -394,7 +394,7 @@ int bt_socket_server_init(const char* name, int port)
     if (local <= 0 || lpoll == NULL)
         goto fail;
 
-#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_BLUETOOTH_NET_IPv4
     inet = bt_socket_server_listen(AF_INET, name, port);
     if (inet > 0) {
         ipoll = service_loop_poll_fd(inet, POLL_READABLE,
@@ -424,7 +424,7 @@ fail:
     if (local > 0)
         close(local);
 
-#ifdef CONFIG_NET_IPv4
+#ifdef CONFIG_BLUETOOTH_NET_IPv4
     if (ipoll != NULL)
         service_loop_remove_poll(ipoll);
     if (inet > 0)
