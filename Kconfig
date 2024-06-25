@@ -304,6 +304,14 @@ config BLUETOOTH_IPC_JOIN_LOOP
 	default n
 	help
 		Bluetooth ipc join service loop
+
+config BLUETOOTH_NET_IPv4
+	bool "Let Bluetooth server listen message from network"
+	default n
+	depends on NET_IPv4
+	help
+		Bluetooth server listen message
+
 endif #BLUETOOTH_SERVER
 
 config OBELISK_LOG_LEVEL
