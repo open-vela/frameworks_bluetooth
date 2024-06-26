@@ -143,7 +143,7 @@ static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
     bt_list_t* callbacks;
     bt_list_node_t* node;
 
-    FEATURE_LOG_INFO("adapter state change callback, state: %d", state);
+    FEATURE_LOG_DEBUG("adapter state change callback, state: %d", state);
     if (!bt_ins) {
         return;
     }
@@ -176,7 +176,7 @@ static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
             break;
         }
 
-        FEATURE_LOG_INFO("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->on_adapter_state_changed_cb_id);
+        FEATURE_LOG_DEBUG("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->on_adapter_state_changed_cb_id);
         if (!FeatureCheckCallbackId(feature_callback->feature_ins, feature_callback->on_adapter_state_changed_cb_id)) {
             break;
         }
@@ -216,7 +216,7 @@ static void on_discovery_state_changed_cb(void* cookie, bt_discovery_state_t sta
     bt_list_t* callbacks;
     bt_list_node_t* node;
 
-    FEATURE_LOG_INFO("discovery state change callback, state: %d", state);
+    FEATURE_LOG_DEBUG("discovery state change callback, state: %d", state);
     if (!bt_ins) {
         return;
     }
@@ -250,7 +250,7 @@ static void on_discovery_state_changed_cb(void* cookie, bt_discovery_state_t sta
             break;
         }
 
-        FEATURE_LOG_INFO("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->on_adapter_state_changed_cb_id);
+        FEATURE_LOG_DEBUG("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->on_adapter_state_changed_cb_id);
         if (!FeatureCheckCallbackId(feature_callback->feature_ins, feature_callback->on_adapter_state_changed_cb_id)) {
             break;
         }
@@ -286,7 +286,7 @@ static void on_discovery_result_cb(void* cookie, bt_discovery_result_t* result)
     bt_list_t* callbacks;
     bt_list_node_t* node;
 
-    FEATURE_LOG_INFO("discovery result callback");
+    FEATURE_LOG_DEBUG("discovery result callback");
     if (!bt_ins) {
         return;
     }
@@ -321,7 +321,7 @@ static void on_discovery_result_cb(void* cookie, bt_discovery_result_t* result)
             break;
         }
 
-        FEATURE_LOG_INFO("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->on_discovery_result_cb_id);
+        FEATURE_LOG_DEBUG("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->on_discovery_result_cb_id);
         if (!FeatureCheckCallbackId(feature_callback->feature_ins, feature_callback->on_discovery_result_cb_id)) {
             break;
         }
@@ -360,7 +360,7 @@ static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transp
     bt_list_t* callbacks;
     bt_list_node_t* node;
 
-    FEATURE_LOG_INFO("bond state callback");
+    FEATURE_LOG_DEBUG("bond state callback");
     if (transport != BT_TRANSPORT_BREDR) {
         return;
     }
@@ -399,7 +399,7 @@ static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transp
             break;
         }
 
-        FEATURE_LOG_INFO("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->on_bond_state_changed_cb_id);
+        FEATURE_LOG_DEBUG("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->on_bond_state_changed_cb_id);
         if (!FeatureCheckCallbackId(feature_callback->feature_ins, feature_callback->on_bond_state_changed_cb_id)) {
             break;
         }
@@ -444,7 +444,7 @@ static void a2dp_sink_connection_state_cb(void* cookie, bt_address_t* addr, prof
     bt_list_t* callbacks;
     bt_list_node_t* node;
 
-    FEATURE_LOG_INFO("a2dp sink connection state cb");
+    FEATURE_LOG_DEBUG("a2dp sink connection state cb");
     if (!bt_ins) {
         return;
     }
@@ -478,7 +478,7 @@ static void a2dp_sink_connection_state_cb(void* cookie, bt_address_t* addr, prof
             break;
         }
 
-        FEATURE_LOG_INFO("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->a2dp_sink_connection_state_cb_id);
+        FEATURE_LOG_DEBUG("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->a2dp_sink_connection_state_cb_id);
         if (!FeatureCheckCallbackId(feature_callback->feature_ins, feature_callback->a2dp_sink_connection_state_cb_id)) {
             break;
         }

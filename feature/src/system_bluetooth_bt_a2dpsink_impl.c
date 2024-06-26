@@ -26,36 +26,36 @@
 
 void system_bluetooth_bt_a2dpsink_onRegister(const char* feature_name)
 {
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_a2dpsink_onCreate(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
     feature_bluetooth_init_bt_ins(FEATURE_BLUETOOTH_A2DPSINK, handle);
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_a2dpsink_onRequired(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
     feature_bluetooth_add_feature_callback(handle, FEATURE_BLUETOOTH_A2DPSINK);
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_a2dpsink_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
     feature_bluetooth_free_feature_callback(handle, FEATURE_BLUETOOTH_A2DPSINK);
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_a2dpsink_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
     feature_bluetooth_uninit_bt_ins(FEATURE_BLUETOOTH_A2DPSINK, handle);
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_a2dpsink_onUnregister(const char* feature_name)
 {
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 FtCallbackId system_bluetooth_bt_a2dpsink_get_onconnectstatechange(void* feature, union AppendData append_data)
@@ -65,6 +65,6 @@ FtCallbackId system_bluetooth_bt_a2dpsink_get_onconnectstatechange(void* feature
 
 void system_bluetooth_bt_a2dpsink_set_onconnectstatechange(void* feature, union AppendData append_data, FtCallbackId onconnectstatechange)
 {
-    FEATURE_LOG_INFO("set on a2dpsink set on connect state change callback: %p, callbackId: %d", feature, onconnectstatechange);
+    FEATURE_LOG_DEBUG("set on a2dpsink set on connect state change callback: %p, callbackId: %d", feature, onconnectstatechange);
     feature_bluetooth_set_feature_callback(feature, onconnectstatechange, A2DPSINK_ON_CONNECT_STATE_CHANGE);
 }
