@@ -30,36 +30,36 @@
 
 void system_bluetooth_onRegister(const char* feature_name)
 {
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onCreate(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
     feature_bluetooth_init_bt_ins(FEATURE_BLUETOOTH, handle);
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onRequired(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
     feature_bluetooth_add_feature_callback(handle, FEATURE_BLUETOOTH);
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
     feature_bluetooth_free_feature_callback(handle, FEATURE_BLUETOOTH);
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
     feature_bluetooth_uninit_bt_ins(FEATURE_BLUETOOTH, handle);
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_onUnregister(const char* feature_name)
 {
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_wrap_openAdapter(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_OpenAdapterParams* params)
@@ -135,6 +135,6 @@ FtCallbackId system_bluetooth_get_onadapterstatechange(void* feature, union Appe
 
 void system_bluetooth_set_onadapterstatechange(void* feature, union AppendData append_data, FtCallbackId onadapterstatechange)
 {
-    FEATURE_LOG_INFO("set onadapterstatechange feature: %p, callbackId: %d", feature, onadapterstatechange);
+    FEATURE_LOG_DEBUG("set onadapterstatechange feature: %p, callbackId: %d", feature, onadapterstatechange);
     feature_bluetooth_set_feature_callback(feature, onadapterstatechange, ON_ADAPTER_STATE_CHANGE);
 }

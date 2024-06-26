@@ -134,36 +134,36 @@ static bt_status_t bluetooth_disconnect_profiles(FeatureInstanceHandle feature, 
 
 void system_bluetooth_bt_onRegister(const char* feature_name)
 {
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_onCreate(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
     feature_bluetooth_init_bt_ins(FEATURE_BLUETOOTH_BT, handle);
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_onRequired(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
     feature_bluetooth_add_feature_callback(handle, FEATURE_BLUETOOTH_BT);
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_onDetached(FeatureRuntimeContext ctx, FeatureInstanceHandle handle)
 {
     feature_bluetooth_free_feature_callback(handle, FEATURE_BLUETOOTH_BT);
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
     feature_bluetooth_uninit_bt_ins(FEATURE_BLUETOOTH_BT, handle);
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_onUnregister(const char* feature_name)
 {
-    FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
+    FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
 void system_bluetooth_bt_wrap_startDiscovery(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_bt_StartDiscoveryParams* params)
@@ -399,7 +399,7 @@ COMPLETE_CALLBACK:
 
 FtBool system_bluetooth_bt_wrap_setScanMode(FeatureInstanceHandle feature, union AppendData append_data, FtInt scanMode)
 {
-    FEATURE_LOG_INFO("set scanmode: %d!", scanMode);
+    FEATURE_LOG_DEBUG("set scanmode: %d!", scanMode);
     if (scanMode < 0 || scanMode > 2) {
         return false;
     }
@@ -443,7 +443,7 @@ FtCallbackId system_bluetooth_bt_get_ondiscoveryresult(void* feature, union Appe
 
 void system_bluetooth_bt_set_ondiscoveryresult(void* feature, union AppendData append_data, FtCallbackId ondiscoveryresult)
 {
-    FEATURE_LOG_INFO("set ondiscoveryresult feature: %p, callbackId: %d", feature, ondiscoveryresult);
+    FEATURE_LOG_DEBUG("set ondiscoveryresult feature: %p, callbackId: %d", feature, ondiscoveryresult);
     feature_bluetooth_set_feature_callback(feature, ondiscoveryresult, ON_DISCOVERY_RESULT);
 }
 
@@ -454,6 +454,6 @@ FtCallbackId system_bluetooth_bt_get_onbondstatechange(void* feature, union Appe
 
 void system_bluetooth_bt_set_onbondstatechange(void* feature, union AppendData append_data, FtCallbackId onbondstatechange)
 {
-    FEATURE_LOG_INFO("set onbondstatechange feature: %p, callbackId: %d", feature, onbondstatechange);
+    FEATURE_LOG_DEBUG("set onbondstatechange feature: %p, callbackId: %d", feature, onbondstatechange);
     feature_bluetooth_set_feature_callback(feature, onbondstatechange, ON_BOND_STATE_CHANGE);
 }
