@@ -69,9 +69,6 @@ typedef struct {
     } param;
 } hf_at_cmd_t;
 
-#define MD2HFVOL(vol) ((vol) > 15 ? 15 : (vol))
-#define HF2MDVOL(vol) ((vol) > 15 ? 15 : (vol))
-
 #define HF_STM_DEBUG 1
 #define HF_CONNECT_TIMEOUT (10 * 1000)
 #define HF_WEBCHAT_VERDICT (300 * 1000)
@@ -919,7 +916,7 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
         // set media volume, need call media interface
         if (type == HFP_VOLUME_TYPE_SPK) {
             hfsm->spk_volume = hf_vol;
-            status = bt_media_set_voice_call_volume(HF2MDVOL(hf_vol));
+            status = bt_media_set_voice_call_volume(bt_media_volume_hfp_to_media(hf_vol));
             if (status != BT_STATUS_SUCCESS) {
                 BT_LOGE("Set media voice call volume failed");
             }
@@ -1044,7 +1041,7 @@ static void connected_enter(state_machine_t* sm)
     if (hsm_get_previous_state(sm) != &audio_on_state) {
         int media_vol;
         if (bt_media_get_voice_call_volume(&media_vol) == BT_STATUS_SUCCESS) {
-            hfsm->spk_volume = MD2HFVOL(media_vol);
+            hfsm->spk_volume = bt_media_volume_media_to_hfp(media_vol);
             bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_SPK, hfsm->spk_volume);
         } else {
             BT_LOGE("Get voice call volume failed");
@@ -1258,7 +1255,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         }
         break;
     case HF_SET_MIC_VOLUME: {
-        uint8_t hf_vol = MD2HFVOL(data->valueint1);
+        uint8_t hf_vol = bt_media_volume_media_to_hfp(data->valueint1);
         if (hf_vol != hfsm->mic_volume) {
             hfsm->mic_volume = hf_vol;
             BT_LOGD("Set Mic Volume :%d", hfsm->mic_volume);
@@ -1267,7 +1264,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         break;
     }
     case HF_SET_SPEAKER_VOLUME: {
-        uint8_t hf_vol = MD2HFVOL(data->valueint1);
+        uint8_t hf_vol = bt_media_volume_media_to_hfp(data->valueint1);
         if (hf_vol != hfsm->spk_volume) {
             hfsm->spk_volume = hf_vol;
             BT_LOGD("Set Speaker Volume :%d", hfsm->spk_volume);
