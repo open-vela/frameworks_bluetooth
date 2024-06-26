@@ -31,10 +31,14 @@
 
 #define AVRCP_MAX_ABSOLUTE_VOLUME 0x7F
 #define AVRCP_MIN_ABSOLUTE_VOLUME 0x00
+#define MAX_HFP_SCO_VOICE_CALL_VOLUME 15
+#define MIN_HFP_SCO_VOICE_CALL_VOLUME 1
 #define UI_MAX_VOLUME 100
 
 static int media_max_volume;
 static int media_min_volume;
+static int g_vc_max_volume = 15; // TODO: read via media_policy_get_range()
+static int g_vc_min_volume = 1; // TODO: read via media_policy_get_range()
 
 typedef struct bt_media_listener {
     void* policy_handle;
@@ -82,6 +86,47 @@ uint8_t bt_media_volume_media_to_avrcp(int volume)
     int avrcp_volume = (volume * AVRCP_MAX_ABSOLUTE_VOLUME + (media_max_volume >> 1)) / media_max_volume;
 
     return avrcp_volume;
+}
+
+int bt_media_volume_hfp_to_media(uint8_t hfp_volume)
+{
+    int media_range, hfp_range, media_offset, media_volume;
+
+    if (hfp_volume <= MIN_HFP_SCO_VOICE_CALL_VOLUME) {
+        return g_vc_min_volume;
+    }
+
+    if (hfp_volume >= MAX_HFP_SCO_VOICE_CALL_VOLUME) {
+        return g_vc_max_volume;
+    }
+
+    media_range = g_vc_max_volume - g_vc_min_volume;
+    hfp_range = MAX_HFP_SCO_VOICE_CALL_VOLUME - MIN_HFP_SCO_VOICE_CALL_VOLUME;
+    media_offset = (media_range * (hfp_volume - MIN_HFP_SCO_VOICE_CALL_VOLUME)) / hfp_range;
+    media_volume = g_vc_min_volume + media_offset;
+
+    return media_volume;
+}
+
+uint8_t bt_media_volume_media_to_hfp(int media_volume)
+{
+    int media_range, hfp_range, hfp_offset;
+    uint8_t hfp_volume;
+
+    if (media_volume <= g_vc_min_volume) {
+        return MIN_HFP_SCO_VOICE_CALL_VOLUME;
+    }
+
+    if (media_volume >= g_vc_max_volume) {
+        return MAX_HFP_SCO_VOICE_CALL_VOLUME;
+    }
+
+    media_range = (g_vc_max_volume > g_vc_min_volume) ? (g_vc_max_volume - g_vc_min_volume) : 1;
+    hfp_range = MAX_HFP_SCO_VOICE_CALL_VOLUME - MIN_HFP_SCO_VOICE_CALL_VOLUME;
+    hfp_offset = (hfp_range * (media_volume - g_vc_min_volume)) / media_range;
+    hfp_volume = MIN_HFP_SCO_VOICE_CALL_VOLUME + hfp_offset;
+
+    return hfp_volume;
 }
 
 void bt_media_remove_listener(void* handle)

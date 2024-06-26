@@ -22,6 +22,8 @@ typedef void (*bt_media_voice_volume_change_callback_t)(void* context, int volum
 int bt_media_get_music_volume_range();
 int bt_media_volume_avrcp_to_media(uint8_t volume);
 uint8_t bt_media_volume_media_to_avrcp(int volume);
+int bt_media_volume_hfp_to_media(uint8_t hfp_volume);
+uint8_t bt_media_volume_media_to_hfp(int media_volume);
 void bt_media_remove_listener(void* handle);
 bt_status_t bt_media_set_a2dp_available(void);
 bt_status_t bt_media_set_a2dp_unavailable(void);
