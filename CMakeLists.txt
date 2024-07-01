@@ -376,24 +376,8 @@ if(CONFIG_BLUETOOTH)
   list(APPEND CFLAGS -Wno-strict-prototypes)
 
   if(CONFIG_BLUETOOTH_FEATURE)
-    if(CONFIG_ARCH STREQUAL "arm")
-      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/libffi/libffi/src/arm)
-
-    elseif(CONFIG_ARCH STREQUAL "arm64")
-      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/libffi/libffi/src/aarch64)
-
-    elseif(CONFIG_ARCH STREQUAL "xtensa")
-      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/libffi/libffi/src/xtensa)
-
-    else()
-      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/libffi/libffi/src/x86)
-    endif()
-
     set(FEATURE_TOP ${NUTTX_APPS_DIR}/frameworks/base/feature)
     list(APPEND INCDIR ${FEATURE_TOP}/include)
-
-    list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/libffi)
-
     list(APPEND INCDIR ${NUTTX_APPS_DIR}/frameworks/bluetooth/feature/include)
 
     list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth.c)

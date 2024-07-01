@@ -302,18 +302,6 @@ NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
 
 ifeq ($(CONFIG_BLUETOOTH_FEATURE),y)
 include $(APPDIR)/frameworks/base/feature/Make.defs
-ifeq ($(CONFIG_ARCH), arm)
-TARGETDIR := arm
-else ifeq ($(CONFIG_ARCH), arm64)
-TARGETDIR := aarch64
-else ifeq ($(CONFIG_ARCH), xtensa)
-TARGETDIR := xtensa
-else
-TARGETDIR := x86
-endif
-
-CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/external/libffi/libffi/src/$(TARGETDIR)
-CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/external/libffi
 CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/feature/include
 
 CSRCS     += feature/src/system_bluetooth.c
