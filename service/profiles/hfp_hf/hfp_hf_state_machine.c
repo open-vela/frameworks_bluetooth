@@ -109,6 +109,8 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
 static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 
+static void bt_hci_event_callback(bt_hci_event_t* hci_event, void* context);
+
 static const state_t disconnected_state = {
     .state_name = "Disconnected",
     .state_value = HFP_HF_STATE_DISCONNECTED,
@@ -393,6 +395,22 @@ static void update_remote_features(hf_state_machine_t* hfsm, uint32_t remote_fea
     hfsm->remote_features = remote_features;
 }
 
+static bt_status_t hf_offload_send_stop_cmd(hf_state_machine_t* hf_sm, hfp_hf_data_t* data)
+{
+    uint8_t ogf;
+    uint16_t ocf;
+    uint8_t len;
+    uint8_t* payload;
+
+    payload = data->data;
+    len = data->size - sizeof(ogf) - sizeof(ocf);
+    STREAM_TO_UINT8(ogf, payload)
+    STREAM_TO_UINT16(ocf, payload);
+    flag_set(hf_sm, PENDING_OFFLOAD_STOP);
+
+    return bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, hf_sm);
+}
+
 static void disconnected_enter(state_machine_t* sm)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
@@ -450,6 +468,13 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
         default:
             break;
         }
+        break;
+    }
+    case HF_OFFLOAD_STOP_REQ: {
+        hf_offload_send_stop_cmd(hfsm, data);
+        break;
+    }
+    case HF_OFFLOAD_STOP_EVT: {
         break;
     }
     default:
@@ -676,6 +701,13 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         bt_sal_hfp_hf_disconnect(&hfsm->addr);
         hsm_transition_to(sm, &disconnected_state);
         break;
+    case HF_OFFLOAD_STOP_REQ: {
+        hf_offload_send_stop_cmd(hfsm, data);
+        break;
+    }
+    case HF_OFFLOAD_STOP_EVT: {
+        break;
+    }
     default:
         break;
     }
@@ -943,6 +975,13 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
     case HF_STACK_EVENT_CODEC_CHANGED:
         hfsm->codec = data->valueint1 == HFP_CODEC_MSBC ? HFP_CODEC_MSBC : HFP_CODEC_CVSD;
         break;
+    case HF_OFFLOAD_STOP_REQ: {
+        hf_offload_send_stop_cmd(hfsm, data);
+        break;
+    }
+    case HF_OFFLOAD_STOP_EVT: {
+        break;
+    }
     default:
         BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
@@ -1129,23 +1168,6 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         default:
             break;
         }
-        break;
-    }
-    case HF_OFFLOAD_STOP_REQ: {
-        uint8_t ogf;
-        uint16_t ocf;
-        uint8_t len;
-        uint8_t* payload;
-
-        payload = data->data;
-        len = data->size - sizeof(ogf) - sizeof(ocf);
-        STREAM_TO_UINT8(ogf, payload)
-        STREAM_TO_UINT16(ocf, payload);
-        flag_set(hfsm, PENDING_OFFLOAD_STOP);
-
-        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, hfsm);
-    } break;
-    case HF_OFFLOAD_STOP_EVT: {
         break;
     }
     default:
