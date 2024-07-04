@@ -14,6 +14,7 @@
  * limitations under the License.
  ***************************************************************************/
 #define LOG_TAG "bt_media"
+#include <assert.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -30,13 +31,11 @@
 #define MEDIA_POLICY_APPLY 1
 
 #define AVRCP_MAX_ABSOLUTE_VOLUME 0x7F
-#define AVRCP_MIN_ABSOLUTE_VOLUME 0x00
 #define MAX_HFP_SCO_VOICE_CALL_VOLUME 15
 #define MIN_HFP_SCO_VOICE_CALL_VOLUME 1
 #define UI_MAX_VOLUME 100
 
-static int media_max_volume;
-static int media_min_volume;
+static int g_media_max_volume;
 static int g_vc_max_volume = 15; // TODO: read via media_policy_get_range()
 static int g_vc_min_volume = 1; // TODO: read via media_policy_get_range()
 
@@ -49,41 +48,43 @@ typedef struct bt_media_listener {
 #ifdef CONFIG_MICO_MEDIA_MAIN_PLAYER
 static int media_volume_to_ui_volume(int volume)
 {
-    return (volume * UI_MAX_VOLUME) / media_max_volume;
+    return (volume * UI_MAX_VOLUME) / g_media_max_volume;
 }
 #endif /* CONFIG_MICO_MEDIA_MAIN_PLAYER */
 
 int bt_media_get_music_volume_range()
 {
-    return media_policy_get_range(MEDIA_SCENARIO_MUSIC MEDIA_POLICY_VOLUME, &media_min_volume, &media_max_volume);
+    int media_min_volume = 0; /* min volume of AVRCP must be 0. */
+    int status;
+
+    status = media_policy_get_range(MEDIA_SCENARIO_MUSIC MEDIA_POLICY_VOLUME, &media_min_volume, &g_media_max_volume);
+
+    assert(!media_min_volume);
+    return status;
 }
 
 int bt_media_volume_avrcp_to_media(uint8_t volume)
 {
-    if (volume < AVRCP_MIN_ABSOLUTE_VOLUME) {
-        return media_min_volume;
+    if (volume >= AVRCP_MAX_ABSOLUTE_VOLUME) {
+        return g_media_max_volume;
     }
 
-    if (volume > AVRCP_MAX_ABSOLUTE_VOLUME) {
-        return media_max_volume;
-    }
-
-    int media_volume = (volume * media_max_volume + (AVRCP_MAX_ABSOLUTE_VOLUME >> 1)) / AVRCP_MAX_ABSOLUTE_VOLUME;
+    int media_volume = (volume * g_media_max_volume + (AVRCP_MAX_ABSOLUTE_VOLUME >> 1)) / AVRCP_MAX_ABSOLUTE_VOLUME;
 
     return media_volume;
 }
 
 uint8_t bt_media_volume_media_to_avrcp(int volume)
 {
-    if (volume < media_min_volume) {
-        return AVRCP_MIN_ABSOLUTE_VOLUME;
+    if (volume <= 0) {
+        return 0;
     }
 
-    if (volume > media_max_volume) {
+    if (volume >= g_media_max_volume) {
         return AVRCP_MAX_ABSOLUTE_VOLUME;
     }
 
-    int avrcp_volume = (volume * AVRCP_MAX_ABSOLUTE_VOLUME + (media_max_volume >> 1)) / media_max_volume;
+    int avrcp_volume = (volume * AVRCP_MAX_ABSOLUTE_VOLUME + (g_media_max_volume >> 1)) / g_media_max_volume;
 
     return avrcp_volume;
 }
