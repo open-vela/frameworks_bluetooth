@@ -80,7 +80,7 @@ void bt_socket_server_manager_process(service_poll_t* poll,
     case BT_MANAGER_GET_INSTANCE: {
         packet->manager_r.status = manager_get_instance(packet->manager_pl._bluetooth_get_instance.cpu_name,
             packet->manager_pl._bluetooth_get_instance.pid,
-            &packet->manager_r.v32);
+            &packet->manager_r.v64);
         break;
     }
     case BT_MANAGER_START_SERVICE: {

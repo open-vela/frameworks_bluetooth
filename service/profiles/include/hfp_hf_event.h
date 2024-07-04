@@ -83,7 +83,7 @@ typedef enum {
 typedef struct
 {
     bt_address_t addr;
-    uint32_t valueint1;
+    uint64_t valueint1;
     uint32_t valueint2;
     uint32_t valueint3;
     uint32_t valueint4;

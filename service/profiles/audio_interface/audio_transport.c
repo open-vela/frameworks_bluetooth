@@ -217,7 +217,7 @@ static void transport_chnl_read_cb(uv_stream_t* stream, ssize_t nread,
 
     if (nread < 0) {
         need_close = 1;
-        BT_LOGE("%s nread:%d", __func__, nread);
+        BT_LOGE("%s nread:%" PRIuPTR, __func__, nread);
     }
 
     if (rreq->read_cb)

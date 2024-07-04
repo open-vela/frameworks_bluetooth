@@ -597,7 +597,7 @@ static void update_dialing_time(state_machine_t* sm, uint64_t current_timestamp_
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
 
-    BT_LOGD("%s: timestamp = %lld", __func__, current_timestamp_us);
+    BT_LOGD("%s: timestamp = %" PRIu64, __func__, current_timestamp_us);
     hfsm->call_status.dialing_timestamp_us = current_timestamp_us;
 }
 
@@ -614,19 +614,19 @@ static void update_call_status(state_machine_t* sm, uint32_t event, uint32_t sta
     case HF_STACK_EVENT_CALL:
         hfsm->call_status.call_status = (hfp_call_t)status;
         hfsm->call_status.call_timestamp_us = current_timestamp_us;
-        BT_LOGD("%s: call:%d, timestamp = %lld", __func__, hfsm->call_status.call_status,
+        BT_LOGD("%s: call:%d, timestamp = %" PRIu64, __func__, hfsm->call_status.call_status,
             hfsm->call_status.call_timestamp_us);
         break;
     case HF_STACK_EVENT_CALLSETUP:
         hfsm->call_status.callsetup_status = (hfp_callsetup_t)status;
         hfsm->call_status.callsetup_timestamp_us = current_timestamp_us;
-        BT_LOGD("%s: callsetup:%d, timestamp = %lld", __func__, hfsm->call_status.callsetup_status,
+        BT_LOGD("%s: callsetup:%d, timestamp = %" PRIu64, __func__, hfsm->call_status.callsetup_status,
             hfsm->call_status.callsetup_timestamp_us);
         break;
     case HF_STACK_EVENT_CALLHELD:
         hfsm->call_status.callheld_status = (hfp_callheld_t)status;
         hfsm->call_status.callheld_timestamp_us = current_timestamp_us;
-        BT_LOGD("%s: callheld:%d, timestamp = %lld", __func__, hfsm->call_status.callheld_status,
+        BT_LOGD("%s: callheld:%d, timestamp = %" PRIu64, __func__, hfsm->call_status.callheld_status,
             hfsm->call_status.callsetup_timestamp_us);
         break;
     default:

@@ -41,7 +41,7 @@ bt_instance_t* BTSYMBOLS(bluetooth_create_instance)(void)
         return NULL;
     }
 
-    bt_status_t status = manager_create_instance((uint32_t)ins, BLUETOOTH_SYSTEM, "local", getpid(), 0, &app_id);
+    bt_status_t status = manager_create_instance(PTR2INT(uint64_t) ins, BLUETOOTH_SYSTEM, "local", getpid(), 0, &app_id);
     if (status != BT_STATUS_SUCCESS) {
         free(ins);
         return NULL;
@@ -55,11 +55,11 @@ bt_instance_t* BTSYMBOLS(bluetooth_create_instance)(void)
 bt_instance_t* BTSYMBOLS(bluetooth_get_instance)(void)
 {
     bt_status_t status;
-    uint32_t handle;
+    uint64_t handle;
 
     status = manager_get_instance("local", getpid(), &handle);
     if (status == BT_STATUS_SUCCESS && handle)
-        return (bt_instance_t*)handle;
+        return INT2PTR(bt_instance_t*) handle;
     else
         return BTSYMBOLS(bluetooth_create_instance)();
 }

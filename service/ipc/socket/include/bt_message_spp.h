@@ -45,7 +45,7 @@ BT_SPP_MESSAGE_START,
     typedef union {
         uint8_t status; /* bt_status_t */
         uint8_t pad[3];
-        uint32_t handle;
+        uint64_t handle;
     } bt_spp_result_t;
 
     typedef union {
