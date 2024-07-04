@@ -43,6 +43,7 @@ BT_MANAGER_MESSAGE_START,
         uint8_t status; /* bt_status_t */
         uint8_t pad[3];
         uint32_t v32;
+        uint64_t v64;
     } bt_manager_result_t;
 
     typedef union {

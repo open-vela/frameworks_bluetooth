@@ -45,7 +45,7 @@ BT_ADVERTISER_MESSAGE_START,
         uint8_t status; /* bt_status_t */
         uint8_t vbool; /* boolean */
         uint8_t pad[2];
-        uint32_t remote;
+        uint64_t remote;
     } bt_advertiser_result_t;
 
     typedef struct
@@ -57,7 +57,7 @@ BT_ADVERTISER_MESSAGE_START,
 
     typedef union {
         struct {
-            uint32_t adver;
+            uint64_t adver;
             ble_adv_params_t params;
             uint16_t adv_len;
             uint16_t scan_rsp_len;
@@ -66,7 +66,7 @@ BT_ADVERTISER_MESSAGE_START,
         } _bt_le_start_advertising;
 
         struct {
-            uint32_t adver;
+            uint64_t adver;
         } _bt_le_stop_advertising;
 
         struct {

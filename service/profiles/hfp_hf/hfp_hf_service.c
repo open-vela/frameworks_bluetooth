@@ -282,10 +282,10 @@ static void hfp_hf_process_message(void* data)
 
     switch (msg->event) {
     case HF_STARTUP:
-        hf_startup((profile_on_startup_t)msg->data.valueint1);
+        hf_startup(INT2PTR(profile_on_startup_t) msg->data.valueint1);
         break;
     case HF_SHUTDOWN:
-        hf_shutdown((profile_on_shutdown_t)msg->data.valueint1);
+        hf_shutdown(INT2PTR(profile_on_shutdown_t) msg->data.valueint1);
         break;
     case HF_UPDATE_BATTERY_LEVEL:
     case HF_SET_MIC_VOLUME:
@@ -356,7 +356,7 @@ static bt_status_t hfp_hf_startup(profile_on_startup_t cb)
     if (!msg)
         return BT_STATUS_NOMEM;
 
-    msg->data.valueint1 = (uint32_t)cb;
+    msg->data.valueint1 = PTR2INT(uint64_t) cb;
 
     return hfp_hf_send_message(msg);
 }
@@ -367,7 +367,7 @@ static bt_status_t hfp_hf_shutdown(profile_on_shutdown_t cb)
     if (!msg)
         return BT_STATUS_NOMEM;
 
-    msg->data.valueint1 = (uint32_t)cb;
+    msg->data.valueint1 = PTR2INT(uint64_t) cb;
 
     return hfp_hf_send_message(msg);
 }

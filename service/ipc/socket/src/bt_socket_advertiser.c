@@ -100,7 +100,7 @@ void bt_socket_server_advertiser_process(service_poll_t* poll,
         bt_advertiser_remote_t* adver = malloc(sizeof(*adver));
         adver->ins = ins;
         adver->remote = packet->adv_pl._bt_le_start_advertising.adver;
-        packet->adv_r.remote = (uint32_t)start_advertising((void*)adver,
+        packet->adv_r.remote = PTR2INT(uint64_t) start_advertising((void*)adver,
             &packet->adv_pl._bt_le_start_advertising.params,
             packet->adv_pl._bt_le_start_advertising.adv_data,
             packet->adv_pl._bt_le_start_advertising.adv_len,
@@ -114,7 +114,7 @@ void bt_socket_server_advertiser_process(service_poll_t* poll,
         break;
     }
     case BT_LE_STOP_ADVERTISING: {
-        stop_advertising((bt_advertiser_t*)packet->adv_pl._bt_le_stop_advertising.adver);
+        stop_advertising(INT2PTR(bt_advertiser_t*) packet->adv_pl._bt_le_stop_advertising.adver);
         break;
     }
     case BT_LE_STOP_ADVERTISING_ID: {
