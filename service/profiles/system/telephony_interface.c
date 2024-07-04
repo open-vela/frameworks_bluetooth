@@ -24,11 +24,11 @@
 
 #include <dbus/dbus.h>
 
+#include "bluetooth.h"
 #include "bt_list.h"
 #include "gdbus.h"
 #include "telephony_interface.h"
 #include "utils/log.h"
-
 #define OFONO_SERVICE "org.ofono"
 #define OFONO_MANAGER_PATH "/"
 #define OFONO_MANAGER_INTERFACE OFONO_SERVICE ".Manager"
@@ -418,9 +418,9 @@ static bool voicecall_property_parser(void* user_data, char* key,
     /* get call property value from valueiter */
     dbus_message_iter_get_basic(val, &p_basic);
     if (!strcmp(key, "Multiparty"))
-        call->is_multiparty = (uint32_t)p_basic;
+        call->is_multiparty = PTR2INT(uint64_t) p_basic;
     else if (!strcmp(key, "RemoteMultiparty"))
-        call->is_remote_multiparty = (uint32_t)p_basic;
+        call->is_remote_multiparty = PTR2INT(uint64_t) p_basic;
     else if (!strcmp(key, "State")) {
         call->call_state = call_string_to_state((char*)p_basic);
     } else if (!strcmp(key, "StartTime"))
@@ -434,9 +434,9 @@ static bool voicecall_property_parser(void* user_data, char* key,
     else if (!strcmp(key, "Name"))
         snprintf(call->name, TELE_MAX_CALLER_NAME_LENGTH, "%s", (char*)p_basic);
     else if (!strcmp(key, "RemoteHeld"))
-        call->is_remote_held = (uint32_t)p_basic;
+        call->is_remote_held = PTR2INT(uint64_t) p_basic;
     else if (!strcmp(key, "Emergency"))
-        call->is_emergency = (uint32_t)p_basic;
+        call->is_emergency = PTR2INT(uint64_t) p_basic;
     else {
         BT_LOGE("%s, unknown property key:%s", __func__, key);
         return false;

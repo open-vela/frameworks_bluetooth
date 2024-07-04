@@ -43,7 +43,7 @@ bt_advertiser_t* bt_le_start_advertising(bt_instance_t* ins,
         return NULL;
 
     adv->callback = cbs;
-    packet.adv_pl._bt_le_start_advertising.adver = (uint32_t)adv;
+    packet.adv_pl._bt_le_start_advertising.adver = PTR2INT(uint64_t) adv;
     memcpy(&packet.adv_pl._bt_le_start_advertising.params, params, sizeof(*params));
     if ((adv_len && (adv_len > sizeof(packet.adv_pl._bt_le_start_advertising.adv_data)))
         || (scan_rsp_len && (scan_rsp_len > sizeof(packet.adv_pl._bt_le_start_advertising.scan_rsp_data)))) {

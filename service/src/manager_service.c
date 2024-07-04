@@ -34,7 +34,7 @@ typedef struct bt_instance {
     pid_t pid;
     uid_t uid;
     uint32_t app_id;
-    uint32_t handle;
+    uint64_t handle;
     uint8_t ins_type;
     uint8_t host_name[BT_INST_HOST_NAME_LEN + 1];
     uint32_t remote;
@@ -81,7 +81,7 @@ static void instance_release(bt_instance_impl_t* ins)
     free(ins);
 }
 
-bt_status_t manager_create_instance(uint32_t handle, uint32_t type,
+bt_status_t manager_create_instance(uint64_t handle, uint32_t type,
     const char* name, pid_t pid, uid_t uid,
     uint32_t* app_id)
 {
@@ -114,7 +114,7 @@ bt_status_t manager_create_instance(uint32_t handle, uint32_t type,
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t manager_get_instance(const char* name, pid_t pid, uint32_t* handle)
+bt_status_t manager_get_instance(const char* name, pid_t pid, uint64_t* handle)
 {
     bt_instance_impl_t* ins = manager_find_instance(name, pid);
     if (ins == NULL) {

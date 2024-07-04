@@ -119,7 +119,7 @@ void bt_socket_server_scan_process(service_poll_t* poll,
 
         scan->ins = ins;
         scan->remote = packet->scan_pl._bt_le_start_scan.remote;
-        packet->scan_r.remote = (uint32_t)scanner_start_scan(scan, &g_scanner_socket_cb);
+        packet->scan_r.remote = PTR2INT(uint64_t) scanner_start_scan(scan, &g_scanner_socket_cb);
         if (!packet->scan_r.remote)
             free(scan);
         break;
@@ -129,7 +129,7 @@ void bt_socket_server_scan_process(service_poll_t* poll,
 
         scan->ins = ins;
         scan->remote = packet->scan_pl._bt_le_start_scan_settings.remote;
-        packet->scan_r.remote = (uint32_t)scanner_start_scan_settings(scan,
+        packet->scan_r.remote = PTR2INT(uint64_t) scanner_start_scan_settings(scan,
             &packet->scan_pl._bt_le_start_scan_settings.settings, &g_scanner_socket_cb);
         if (!packet->scan_r.remote) {
             free(scan);
@@ -141,7 +141,7 @@ void bt_socket_server_scan_process(service_poll_t* poll,
 
         scan->ins = ins;
         scan->remote = packet->scan_pl._bt_le_start_scan_with_filters.remote;
-        packet->scan_r.remote = (uint32_t)scanner_start_scan_with_filters(scan,
+        packet->scan_r.remote = PTR2INT(uint64_t) scanner_start_scan_with_filters(scan,
             &packet->scan_pl._bt_le_start_scan_with_filters.settings,
             packet->scan_pl._bt_le_start_scan_with_filters.filter_data,
             packet->scan_pl._bt_le_start_scan_with_filters.filter_length,
@@ -152,7 +152,7 @@ void bt_socket_server_scan_process(service_poll_t* poll,
         break;
     }
     case BT_LE_SCAN_STOP: {
-        scanner_stop_scan((bt_scanner_t*)packet->scan_pl._bt_le_stop_scan.remote);
+        scanner_stop_scan(INT2PTR(bt_scanner_t*) packet->scan_pl._bt_le_stop_scan.remote);
         break;
     }
     case BT_LE_SCAN_IS_SUPPORT: {

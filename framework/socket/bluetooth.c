@@ -52,7 +52,7 @@ bt_instance_t* bluetooth_create_instance(void)
         return NULL;
     }
 
-    status = manager_create_instance((uint32_t)ins, BLUETOOTH_SYSTEM,
+    status = manager_create_instance(PTR2INT(uint64_t) ins, BLUETOOTH_SYSTEM,
         "local", getpid(), 0, &ins->app_id);
     if (status != BT_STATUS_SUCCESS) {
         bt_socket_client_deinit(ins);
@@ -81,7 +81,7 @@ bt_instance_t* bluetooth_create_instance(void)
 bt_instance_t* bluetooth_find_instance(pid_t pid)
 {
     bt_status_t status;
-    uint32_t handle;
+    uint64_t handle;
 
     status = manager_get_instance("local", pid, &handle);
     if (status != BT_STATUS_SUCCESS) {
