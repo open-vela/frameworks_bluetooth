@@ -92,6 +92,7 @@ typedef struct hf_interface {
     profile_connection_state_t (*get_connection_state)(bt_address_t* addr);
     bt_status_t (*connect)(bt_address_t* addr);
     bt_status_t (*disconnect)(bt_address_t* addr);
+    bt_status_t (*set_connection_policy)(bt_address_t* addr, connection_policy_t policy);
     bt_status_t (*connect_audio)(bt_address_t* addr);
     bt_status_t (*disconnect_audio)(bt_address_t* addr);
     bt_status_t (*start_voice_recognition)(bt_address_t* addr);

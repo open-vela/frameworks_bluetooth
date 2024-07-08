@@ -248,6 +248,16 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_connect)(bt_instance_t* ins, bt_address_t* addr)
 bt_status_t BTSYMBOLS(bt_hfp_hf_disconnect)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
+ * @brief Set HF Connection policy
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer AG device.
+ * @param policy - connection policy.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_hf_set_connection_policy)(bt_instance_t* ins, bt_address_t* addr, connection_policy_t policy);
+
+/**
  * @brief Establish audio connection with peer AG device
  *
  * @param ins - bluetooth client instance.

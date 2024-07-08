@@ -76,6 +76,16 @@ typedef enum {
 } bond_state_t;
 
 /**
+ * @brief bluetooth connection policy
+ *
+ */
+typedef enum {
+    CONNECTION_POLICY_ALLOWED,
+    CONNECTION_POLICY_FORBIDDEN,
+    CONNECTION_POLICY_UNKNOWN,
+} connection_policy_t;
+
+/**
  * @brief Get identity address of remote device
  *
  * @param ins - bluetooth client instance.

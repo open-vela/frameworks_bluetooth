@@ -472,6 +472,31 @@ static bt_status_t hfp_hf_disconnect(bt_address_t* addr)
     return hfp_hf_send_event(addr, HF_DISCONNECT);
 }
 
+static bt_status_t hfp_hf_set_connection_policy(bt_address_t* addr, connection_policy_t policy)
+{
+    hf_state_machine_t* hfsm;
+    char _addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+
+    CHECK_ENABLED();
+
+    hfsm = get_state_machine(addr);
+    if (!hfsm) {
+        bt_addr_ba2str(addr, _addr_str);
+        BT_LOGE("Set policy fail, Device:%s not exist", _addr_str)
+        return BT_STATUS_FAIL;
+    }
+
+    hf_state_machine_set_policy(hfsm, policy);
+
+    if (policy == CONNECTION_POLICY_ALLOWED) {
+        hfp_hf_connect(addr);
+    } else if (policy == CONNECTION_POLICY_FORBIDDEN) {
+        hfp_hf_disconnect(addr);
+    }
+
+    return BT_STATUS_SUCCESS;
+}
+
 static bt_status_t hfp_hf_connect_audio(bt_address_t* addr)
 {
     CHECK_ENABLED();
@@ -679,6 +704,7 @@ static const hfp_hf_interface_t HfInterface = {
     .get_connection_state = hfp_hf_get_connection_state,
     .connect = hfp_hf_connect,
     .disconnect = hfp_hf_disconnect,
+    .set_connection_policy = hfp_hf_set_connection_policy,
     .connect_audio = hfp_hf_connect_audio,
     .disconnect_audio = hfp_hf_disconnect_audio,
     .start_voice_recognition = hfp_hf_start_voice_recognition,

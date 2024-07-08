@@ -25,6 +25,7 @@
 
 static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
+static int set_policy_cmd(void* handle, int argc, char* argv[]);
 static int get_hfp_connection_state_cmd(void* handle, int argc, char* argv[]);
 static int connect_audio_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_audio_cmd(void* handle, int argc, char* argv[]);
@@ -70,9 +71,15 @@ static int send_dtmf_cmd(void* handle, int argc, char* argv[]);
 #define SEND_DTMF_USAGE "Send DTMF code                       params: <address> <dtmf>\n" \
                         "\t\t\t<dtmf>: one of \"0, 1, 2, 3, 4, 5, 6, 7, 8, 9, *, #, A, B, C, D\"\n"
 
+#define SET_POLICY_USAGE "Set HF connection policy            params: <address> <policy>\n" \
+                         "\t\t\t0: CONNECTION_POLICY_ALLOWED \n"                            \
+                         "\t\t\t1: CONNECTION_POLICY_FORBIDDEN \n"                          \
+                         "\t\t\t2: CONNECTION_POLICY_UNKNOWN \n"
+
 static bt_command_t g_hfp_tables[] = {
     { "connect", connect_cmd, 0, "Establish hfp SLC connection         params: <address>" },
     { "disconnect", disconnect_cmd, 0, "Disconnect hfp SLC connection        params: <address>" },
+    { "policy", set_policy_cmd, 0, SET_POLICY_USAGE },
     { "connectaudio", connect_audio_cmd, 0, "Establish hfp SCO connection         params: <address>" },
     { "disconnectaudio", disconnect_audio_cmd, 0, "Disconnect hfp SCO connection        params: <address>" },
     { "startvr", start_voice_recognition_cmd, 0, "Start voice recognition              params: <address>" },
@@ -128,6 +135,34 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
         return CMD_INVALID_ADDR;
 
     if (bt_hfp_hf_disconnect(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int set_policy_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address_t addr;
+    connection_policy_t policy;
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    switch (atoi(argv[1])) {
+    case CONNECTION_POLICY_ALLOWED:
+        policy = CONNECTION_POLICY_ALLOWED;
+        break;
+    case CONNECTION_POLICY_FORBIDDEN:
+        policy = CONNECTION_POLICY_FORBIDDEN;
+        break;
+    default:
+        policy = CONNECTION_POLICY_UNKNOWN;
+        break;
+    };
+
+    if (bt_hfp_hf_set_connection_policy(handle, &addr, policy) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;

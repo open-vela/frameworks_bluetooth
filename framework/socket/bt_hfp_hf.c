@@ -155,6 +155,22 @@ bt_status_t bt_hfp_hf_disconnect(bt_instance_t* ins, bt_address_t* addr)
     return packet.hfp_hf_r.status;
 }
 
+bt_status_t bt_hfp_hf_set_connection_policy(bt_instance_t* ins, bt_address_t* addr, connection_policy_t policy)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.hfp_hf_pl._bt_hfp_hf_set_connection_policy.addr, addr, sizeof(bt_address_t));
+    packet.hfp_hf_pl._bt_hfp_hf_set_connection_policy.policy = (uint8_t)policy;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_HF_SET_CONNECTION_POLICY);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_hf_r.status;
+}
+
 bt_status_t bt_hfp_hf_connect_audio(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;
