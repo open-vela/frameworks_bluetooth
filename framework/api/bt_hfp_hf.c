@@ -77,6 +77,13 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_disconnect)(bt_instance_t* ins, bt_address_t* ad
     return profile->disconnect(addr);
 }
 
+bt_status_t BTSYMBOLS(bt_hfp_hf_set_connection_policy)(bt_instance_t* ins, bt_address_t* addr, connection_policy_t policy)
+{
+    hfp_hf_interface_t* profile = get_profile_service();
+
+    return profile->set_connection_policy(addr, policy);
+}
+
 bt_status_t BTSYMBOLS(bt_hfp_hf_connect_audio)(bt_instance_t* ins, bt_address_t* addr)
 {
     hfp_hf_interface_t* profile = get_profile_service();

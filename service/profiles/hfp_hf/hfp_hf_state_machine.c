@@ -47,6 +47,7 @@ typedef struct _hf_state_machine {
     service_timer_t* retry_timer;
     bool recognition_active;
     bool offloading;
+    connection_policy_t connection_policy;
     uint8_t spk_volume;
     uint8_t mic_volume;
     void* volume_listener;
@@ -408,6 +409,11 @@ static bt_status_t hf_offload_send_stop_cmd(hf_state_machine_t* hf_sm, hfp_hf_da
     return bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, hf_sm);
 }
 
+static bool check_hfp_allowed(hf_state_machine_t* hfsm)
+{
+    return hfsm->connection_policy != CONNECTION_POLICY_FORBIDDEN;
+}
+
 static void disconnected_enter(state_machine_t* sm)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
@@ -440,6 +446,11 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
     HF_DBG_EVENT(sm, &hfsm->addr, event);
     switch (event) {
     case HF_CONNECT:
+        if (!check_hfp_allowed(hfsm)) {
+            BT_ADDR_LOG("HF Connect disallowd for %s", &hfsm->addr);
+            break;
+        }
+
         if (bt_sal_hfp_hf_connect(&hfsm->addr) != BT_STATUS_SUCCESS) {
             BT_ADDR_LOG("Connect failed for %s", &hfsm->addr);
             hf_service_notify_connection_state_changed(&hfsm->addr, PROFILE_STATE_DISCONNECTED);
@@ -456,6 +467,12 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
             update_remote_features(hfsm, data->valueint3);
             break;
         case PROFILE_STATE_CONNECTING:
+            if (!check_hfp_allowed(hfsm)) {
+                BT_ADDR_LOG("HF Connect disallowd for %s", &hfsm->addr);
+                bt_sal_hfp_hf_disconnect(&hfsm->addr);
+                break;
+            }
+
             hsm_transition_to(sm, &connecting_state);
             break;
         case PROFILE_STATE_DISCONNECTED:
@@ -1368,6 +1385,7 @@ hf_state_machine_t* hf_state_machine_new(bt_address_t* addr, void* context)
 
     memset(hfsm, 0, sizeof(hf_state_machine_t));
     hfsm->recognition_active = false;
+    hfsm->connection_policy = CONNECTION_POLICY_UNKNOWN;
     hfsm->service = context;
     hfsm->codec = HFP_CODEC_CVSD;
     memcpy(&hfsm->addr, addr, sizeof(bt_address_t));
@@ -1434,4 +1452,9 @@ uint8_t hf_state_machine_get_codec(hf_state_machine_t* hfsm)
 void hf_state_machine_set_offloading(hf_state_machine_t* hfsm, bool offloading)
 {
     hfsm->offloading = offloading;
+}
+
+void hf_state_machine_set_policy(hf_state_machine_t* hfsm, connection_policy_t policy)
+{
+    hfsm->connection_policy = policy;
 }

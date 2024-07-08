@@ -216,6 +216,10 @@ void bt_socket_server_hfp_hf_process(service_poll_t* poll, int fd,
         packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_disconnect)(ins,
             &packet->hfp_hf_pl._bt_hfp_hf_disconnect.addr);
         break;
+    case BT_HFP_HF_SET_CONNECTION_POLICY:
+        packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_set_connection_policy)(ins,
+            &packet->hfp_hf_pl._bt_hfp_hf_set_connection_policy.addr, packet->hfp_hf_pl._bt_hfp_hf_set_connection_policy.policy);
+        break;
     case BT_HFP_HF_CONNECT_AUDIO:
         packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_connect_audio)(ins,
             &packet->hfp_hf_pl._bt_hfp_hf_connect_audio.addr);
