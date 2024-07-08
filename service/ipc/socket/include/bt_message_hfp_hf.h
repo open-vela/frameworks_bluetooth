@@ -22,6 +22,7 @@ BT_HFP_HF_MESSAGE_START,
     BT_HFP_HF_IS_AUDIO_CONNECTED,
     BT_HFP_HF_GET_CONNECTION_STATE,
     BT_HFP_HF_CONNECT,
+    BT_HFP_HF_SET_CONNECTION_POLICY,
     BT_HFP_HF_DISCONNECT,
     BT_HFP_HF_CONNECT_AUDIO,
     BT_HFP_HF_DISCONNECT_AUDIO,
@@ -86,6 +87,11 @@ BT_HFP_HF_MESSAGE_START,
             _bt_hfp_hf_reject_call,
             _bt_hfp_hf_hold_call,
             _bt_hfp_hf_terminate_call;
+
+        struct {
+            bt_address_t addr;
+            uint8_t policy;
+        } _bt_hfp_hf_set_connection_policy;
 
         struct {
             bt_address_t addr;
