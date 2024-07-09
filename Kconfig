@@ -81,6 +81,10 @@ config BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO
 	int "Bluetooth Audio Transport Sink Audio Channel ID"
 	default 3
 
+config BLUETOOTH_AUDIO_TRANS_ID_HFP_CTRL
+	int "Bluetooth Audio Transport SCO Ctrl Channel ID"
+	default 4
+
 config BLUETOOTH_A2DP_SINK_CTRL_PATH
 	string "Bluetooth A2DP Audio Transport Sink Ctrl Path"
 	default "a2dp_sink_ctrl"
@@ -113,9 +117,13 @@ config BLUETOOTH_LEA_SOURCE_DATA_PATH
 	string "Bluetooth LE Audio Transport Source Data Path"
 	default "lea_source_data"
 
+config BLUETOOTH_SCO_CTRL_PATH
+	string "Bluetooth SCO Transport Ctrl Path"
+	default "sco_ctrl"
+
 config BLUETOOTH_PM_MAX_TIMER_NUMBER
-       int "Bluetooth PM maximum number of timers"
-       default 16
+	int "Bluetooth PM maximum number of timers"
+	default 16
 
 if BLUETOOTH_GATT
 config BLUETOOTH_GATTC_MAX_CONNECTIONS

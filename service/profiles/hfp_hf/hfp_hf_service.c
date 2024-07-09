@@ -23,6 +23,7 @@
 #include <kvdb.h>
 #endif
 
+#include "audio_control.h"
 #include "bt_hfp_hf.h"
 #include "bt_profile.h"
 #include "bt_vendor.h"
@@ -71,7 +72,6 @@ typedef struct
  * Private Function Prototypes
  ****************************************************************************/
 bt_status_t hfp_hf_send_message(hfp_hf_msg_t* msg);
-
 static hf_state_machine_t* get_state_machine(bt_address_t* addr);
 
 /****************************************************************************
@@ -96,6 +96,21 @@ static bool hf_device_cmp(void* device, void* addr)
 static hf_device_t* find_hf_device_by_addr(bt_address_t* addr)
 {
     return bt_list_find(g_hfp_service.hf_devices, hf_device_cmp, addr);
+}
+
+static hf_device_t* find_hf_device_by_state(hfp_hf_state_t state)
+{
+    bt_list_t* list = g_hfp_service.hf_devices;
+    bt_list_node_t* node;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        hf_device_t* device = bt_list_node(node);
+        if (hf_state_machine_get_state(device->hfsm) == state) {
+            return device;
+        }
+    }
+
+    return NULL;
 }
 
 static hf_device_t* hf_device_new(bt_address_t* addr, hf_state_machine_t* hfsm)
@@ -123,14 +138,6 @@ static void hf_device_delete(hf_device_t* device)
     hfp_hf_msg_destroy(msg);
     hf_state_machine_destory(device->hfsm);
     free(device);
-}
-
-static bool hfp_codec_get_offload(hf_state_machine_t* hfsm,
-    hfp_offload_config_t* offload)
-{
-    offload->sco_hdl = hf_state_machine_get_sco_handle(hfsm);
-    offload->sco_codec = hf_state_machine_get_codec(hfsm);
-    return true;
 }
 
 static hf_state_machine_t* get_state_machine(bt_address_t* addr)
@@ -232,47 +239,6 @@ static void hf_dispatch_msg_foreach(void* data, void* context)
     hf_state_machine_dispatch(device->hfsm, (hfp_hf_msg_t*)context);
 }
 
-static void hfp_hf_prepare_handle(hf_state_machine_t* hfsm,
-    hfp_hf_msg_t* event)
-{
-    switch (event->event) {
-    case HF_STACK_EVENT_AUDIO_STATE_CHANGED: {
-        hfp_offload_config_t offload = { 0 };
-        hf_service_t* service = &g_hfp_service;
-        uint8_t param[sizeof(hfp_offload_config_t)];
-        size_t size;
-        bool ret;
-
-        if (!service->offloading) {
-            break;
-        }
-
-        if (event->data.valueint1 == HFP_AUDIO_STATE_CONNECTED) {
-            hf_state_machine_set_sco_handle(hfsm, event->data.valueint2);
-            hfp_codec_get_offload(hfsm, &offload);
-            ret = hfp_offload_start_builder(&offload, param, &size);
-            if (!ret) {
-                BT_LOGE("HFP HF codec_offload_start_builder failed");
-                break;
-            }
-
-            hfp_hf_send_message(hfp_hf_msg_new_ext(HF_OFFLOAD_START_REQ, &event->data.addr, param, size));
-        } else if (event->data.valueint1 == HFP_AUDIO_STATE_DISCONNECTED) {
-            hfp_codec_get_offload(hfsm, &offload);
-            ret = hfp_offload_stop_builder(&offload, param, &size);
-            if (!ret) {
-                BT_LOGE("HFP HF codec_offload_stop_builder failed");
-                break;
-            }
-
-            hfp_hf_send_message(hfp_hf_msg_new_ext(HF_OFFLOAD_STOP_REQ, &event->data.addr, param, size));
-        }
-    }
-    default:
-        break;
-    }
-}
-
 static void hfp_hf_process_message(void* data)
 {
     hfp_hf_msg_t* msg = (hfp_hf_msg_t*)data;
@@ -297,8 +263,14 @@ static void hfp_hf_process_message(void* data)
             break;
         }
 
+        if (msg->event == HF_STACK_EVENT_AUDIO_STATE_CHANGED
+            && msg->data.valueint1 == HFP_AUDIO_STATE_CONNECTED) {
+            /* Make this device active. TODO: set active device by App. */
+            bt_list_move_to_head(g_hfp_service.hf_devices,
+                find_hf_device_by_addr(&msg->data.addr));
+        }
+
         hf_state_machine_dispatch(hfsm, msg);
-        hfp_hf_prepare_handle(hfsm, msg);
         break;
     }
     }
@@ -340,13 +312,74 @@ static uint8_t get_current_connnection_cnt(void)
     return cnt;
 }
 
+bool hfp_hf_on_sco_start(void)
+{
+    hf_device_t* device;
+
+    if (!g_hfp_service.offloading) {
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STARTED);
+        return false;
+    }
+
+    device = find_hf_device_by_state(HFP_HF_STATE_AUDIO_CONNECTED);
+    if (!device) {
+        BT_LOGE("%s: sco not found", __func__);
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+        return false;
+    }
+
+    if (hfp_hf_send_event(&device->addr, HF_OFFLOAD_START_REQ) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s: failed to send msg", __func__);
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+        return true;
+    }
+
+    /* AUDIO_CTRL_EVT_STARTED would be generated at HF_OFFLOAD_START_EVT */
+    return true;
+}
+
+bool hfp_hf_on_sco_stop(void)
+{
+    hf_device_t* device;
+
+    if (!g_hfp_service.offloading) {
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        return false;
+    }
+
+    device = find_hf_device_by_state(HFP_HF_STATE_AUDIO_CONNECTED);
+    if (!device) {
+        BT_LOGE("%s: sco not found", __func__);
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        return false;
+    }
+
+    if (hfp_hf_send_event(&device->addr, HF_OFFLOAD_STOP_REQ) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s: failed to send msg", __func__);
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        return true;
+    }
+
+    /* AUDIO_CTRL_EVT_STARTED would be generated at HF_OFFLOAD_STOP_EVT */
+    return true;
+}
+
 static bt_status_t hfp_hf_init(void)
 {
-    return BT_STATUS_SUCCESS;
+    bt_status_t ret;
+
+    ret = audio_ctrl_init(PROFILE_HFP_HF);
+    if (ret != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s: failed to start audio control channel", __func__);
+        return ret;
+    }
+
+    return ret;
 }
 
 static void hfp_hf_cleanup(void)
 {
+    audio_ctrl_cleanup(PROFILE_HFP_HF);
 }
 
 static bt_status_t hfp_hf_startup(profile_on_startup_t cb)
