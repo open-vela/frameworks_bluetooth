@@ -19,6 +19,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include "audio_transport.h"
 #include "bt_device.h"
 #include "bt_hfp_hf.h"
 #include "hfp_define.h"
@@ -84,7 +85,14 @@ void hf_service_notify_volume_changed(bt_address_t* addr, hfp_volume_type_t type
 void hf_service_notify_call(bt_address_t* addr, hfp_call_t call);
 void hf_service_notify_callsetup(bt_address_t* addr, hfp_callsetup_t callsetup);
 void hf_service_notify_callheld(bt_address_t* addr, hfp_callheld_t callheld);
+
+/*
+ * service api
+ */
+
 bt_status_t hfp_hf_send_event(bt_address_t* addr, hfp_hf_event_t evt);
+bool hfp_hf_on_sco_start(void);
+bool hfp_hf_on_sco_stop(void);
 
 typedef struct hf_interface {
     size_t size;

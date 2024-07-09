@@ -56,19 +56,6 @@
 #define STREAM_FLUSH_SIZE 1024
 
 typedef enum {
-    AUDIO_CTRL_CMD_START,
-    AUDIO_CTRL_CMD_STOP,
-    AUDIO_CTRL_CMD_CONFIG_DONE
-} audio_ctrl_cmd_t;
-
-typedef enum {
-    AUDIO_CTRL_EVT_STARTED,
-    AUDIO_CTRL_EVT_START_FAIL,
-    AUDIO_CTRL_EVT_STOPPED,
-    AUDIO_CTRL_EVT_UPDATE_CONFIG
-} audio_ctrl_evt_t;
-
-typedef enum {
     STREAM_STATE_OFF,
     STREAM_STATE_RUNNING,
     STREAM_STATE_FLUSHING,

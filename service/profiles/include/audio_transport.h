@@ -48,6 +48,19 @@ typedef enum {
 } audio_transport_event_t;
 
 typedef enum {
+    AUDIO_CTRL_CMD_START,
+    AUDIO_CTRL_CMD_STOP,
+    AUDIO_CTRL_CMD_CONFIG_DONE
+} audio_ctrl_cmd_t;
+
+typedef enum {
+    AUDIO_CTRL_EVT_STARTED,
+    AUDIO_CTRL_EVT_START_FAIL,
+    AUDIO_CTRL_EVT_STOPPED,
+    AUDIO_CTRL_EVT_UPDATE_CONFIG
+} audio_ctrl_evt_t;
+
+typedef enum {
     IPC_DISCONNTECTED = -1,
     IPC_CONNTECTED
 } transport_conn_state_t;
@@ -58,8 +71,8 @@ typedef void (*transport_alloc_cb_t)(uint8_t ch_id, uint8_t** buffer, size_t* le
 typedef void (*transport_read_cb_t)(uint8_t ch_id, uint8_t* buffer, ssize_t len);
 typedef void (*transport_write_cb_t)(uint8_t ch_id, uint8_t* buffer);
 
-#define AUDIO_TRANS_CH_NUM 4
-#define AUDIO_TRANS_CH_ID_ALL 5 /* used to address all the ch id at once */
+#define AUDIO_TRANS_CH_NUM 5
+#define AUDIO_TRANS_CH_ID_ALL 6 /* used to address all the ch id at once */
 
 const char* audio_transport_dump_event(uint8_t event);
 audio_transport_t* audio_transport_init(uv_loop_t* loop);
