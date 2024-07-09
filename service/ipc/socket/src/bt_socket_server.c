@@ -262,6 +262,7 @@ static void bt_socket_server_callback(service_poll_t* poll,
 
     if (revent & POLL_ERROR || revent & POLL_DISCONNECT) {
         service_loop_remove_poll(poll);
+        close(fd);
     } else if (revent & POLL_READABLE) {
         remote_ins = zalloc(sizeof(bt_instance_t));
         list_initialize(&remote_ins->msg_queue);
@@ -386,31 +387,32 @@ int bt_socket_server_init(const char* name, int port)
 
     g_instances_list = bt_list_new(NULL);
     local = bt_socket_server_listen(PF_LOCAL, name, port);
-    if (local > 0) {
-        lpoll = service_loop_poll_fd(local, POLL_READABLE,
-            bt_socket_server_callback, NULL);
-    }
+    if (local <= 0)
+        goto fail;
 
-    if (local <= 0 || lpoll == NULL)
+    lpoll = service_loop_poll_fd(local, POLL_READABLE,
+        bt_socket_server_callback, NULL);
+    if (lpoll == NULL)
         goto fail;
 
 #ifdef CONFIG_BLUETOOTH_NET_IPv4
     inet = bt_socket_server_listen(AF_INET, name, port);
-    if (inet > 0) {
-        ipoll = service_loop_poll_fd(inet, POLL_READABLE,
-            bt_socket_server_callback, NULL);
-    }
+    if (inet <= 0)
+        goto fail;
 
-    if (inet <= 0 || ipoll == NULL)
+    ipoll = service_loop_poll_fd(inet, POLL_READABLE,
+        bt_socket_server_callback, NULL);
+    if (ipoll == NULL)
         goto fail;
 #endif
 #ifdef CONFIG_NET_RPMSG
     rpmsg = bt_socket_server_listen(AF_RPMSG, name, port);
-    if (rpmsg > 0) {
-        rpoll = service_loop_poll_fd(rpmsg, POLL_READABLE,
-            bt_socket_server_callback, NULL);
-    }
-    if (rpmsg <= 0 || rpoll == NULL)
+    if (rpmsg <= 0)
+        goto fail;
+
+    rpoll = service_loop_poll_fd(rpmsg, POLL_READABLE,
+        bt_socket_server_callback, NULL);
+    if (rpoll == NULL)
         goto fail;
 #endif
 
@@ -432,8 +434,7 @@ fail:
 #endif
 
 #ifdef CONFIG_NET_RPMSG
-    if (rpoll != NULL)
-        service_loop_remove_poll(rpoll);
+    /* rpoll must be NULL at this position */
     if (rpmsg > 0)
         close(rpmsg);
 #endif
