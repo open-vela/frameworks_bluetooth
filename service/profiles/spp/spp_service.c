@@ -265,19 +265,20 @@ static spp_pty_device_t* alloc_new_device(bt_address_t* addr, int16_t scn,
     bt_uuid_t* uuid, bool accept,
     spp_handle_t* handle)
 {
-    spp_pty_device_t* device = malloc(sizeof(spp_pty_device_t));
+    int conn_id;
+    spp_pty_device_t* device;
 
+    conn_id = index_alloc(g_spp_handle.allocator);
+    if (conn_id < 0)
+        return NULL;
+
+    device = malloc(sizeof(spp_pty_device_t));
     if (device == NULL)
         return NULL;
 
     memset(device, 0, sizeof(spp_pty_device_t));
+    device->conn_id = conn_id;
     device->scn = scn;
-    device->conn_id = index_alloc(g_spp_handle.allocator);
-    if (device->conn_id < 0) {
-        free(device);
-        return NULL;
-    }
-
     device->app_handle = handle;
     device->conn_port = STACK_CONN_PORT(scn, device->conn_id, accept);
     device->accept = accept;
