@@ -309,7 +309,7 @@ void a2dp_source_stream_stop(void)
     if (!peer)
         return;
 
-    do_in_a2dp_service(a2dp_event_new(STREAM_SUSPEND_DELAY, peer->bd_addr));
+    do_in_a2dp_service(a2dp_event_new(STREAM_SUSPEND_REQ, peer->bd_addr));
 }
 
 bool a2dp_source_stream_ready(void)
