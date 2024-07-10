@@ -71,7 +71,6 @@
 #define A2DP_START_TIMEOUT 5000
 #define A2DP_SUSPEND_TIMEOUT 5000
 #define A2DP_DELAY_START 100
-#define A2DP_DELAY_SUSPEND 200
 #define A2DP_OFFLOAD_TIMEOUT 500
 
 typedef enum pending_state {
@@ -215,7 +214,6 @@ static char* stack_event_to_string(a2dp_event_type_t event)
         CASE_RETURN_STR(DATA_IND_EVT)
         CASE_RETURN_STR(CONNECT_TIMEOUT)
         CASE_RETURN_STR(START_TIMEOUT)
-        CASE_RETURN_STR(STREAM_SUSPEND_DELAY)
         CASE_RETURN_STR(OFFLOAD_START_REQ)
         CASE_RETURN_STR(OFFLOAD_STOP_REQ)
         CASE_RETURN_STR(OFFLOAD_START_EVT)
@@ -332,16 +330,6 @@ static void a2dp_delay_start_timeout_callback(service_timer_t* timer, void* data
     a2dp_event_t* a2dp_event;
 
     a2dp_event = a2dp_event_new(DELAY_STREAM_START_REQ, &a2dp_sm->addr);
-    a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
-    a2dp_event_destory(a2dp_event);
-}
-
-static void a2dp_delay_suspend_timeout_callback(service_timer_t* timer, void* data)
-{
-    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
-    a2dp_event_t* a2dp_event;
-
-    a2dp_event = a2dp_event_new(STREAM_SUSPEND_REQ, &a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
 }
@@ -806,11 +794,6 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         hsm_transition_to(sm, &closing_state);
         break;
     }
-
-    case STREAM_SUSPEND_DELAY:
-        if (!a2dp_sm->delay_suspend_timer)
-            a2dp_sm->delay_suspend_timer = service_loop_timer(A2DP_DELAY_SUSPEND, 0, a2dp_delay_suspend_timeout_callback, a2dp_sm);
-        break;
 
     case STREAM_START_REQ:
         if (a2dp_sm->delay_suspend_timer) {
