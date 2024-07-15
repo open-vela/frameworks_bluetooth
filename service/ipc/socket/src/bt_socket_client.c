@@ -456,8 +456,8 @@ void bt_socket_client_deinit(bt_instance_t* ins)
             list_delete(node);
             free(node);
         }
-        uv_close((uv_handle_t*)ins->external_async, bt_socket_client_async_close);
         uv_mutex_unlock(&ins->lock);
+        uv_close((uv_handle_t*)ins->external_async, bt_socket_client_async_close);
     }
 
     uv_mutex_destroy(&ins->lock);
