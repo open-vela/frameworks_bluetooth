@@ -72,6 +72,7 @@
 #define A2DP_SUSPEND_TIMEOUT 5000
 #define A2DP_DELAY_START 100
 #define A2DP_OFFLOAD_TIMEOUT 500
+#define AVRCP_TG_START_TIMEOUT 2000
 
 typedef enum pending_state {
     PENDING_NONE = 0x0,
@@ -90,6 +91,7 @@ typedef struct _a2dp_state_machine {
     uint8_t peer_sep;
     service_timer_t* connect_timer;
     service_timer_t* start_timer;
+    service_timer_t* avrcp_timer;
     service_timer_t* delay_start_timer;
     service_timer_t* delay_suspend_timer;
     service_timer_t* offload_timer;
@@ -388,6 +390,10 @@ static void idle_enter(state_machine_t* sm)
         bt_pm_conn_close(PROFILE_A2DP, &a2dp_sm->addr);
         a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
             PROFILE_STATE_DISCONNECTED);
+        if (a2dp_sm->avrcp_timer) {
+            service_loop_cancel_timer(a2dp_sm->avrcp_timer);
+            a2dp_sm->avrcp_timer = NULL;
+        }
     }
 }
 
@@ -505,6 +511,17 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
     return true;
 }
 
+#ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
+static void avrcp_start_timeout_callback(service_timer_t* timer, void* data)
+{
+    a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
+    a2dp_sm->avrcp_timer = NULL;
+    if (a2dp_state_machine_get_connection_state(a2dp_sm) == PROFILE_STATE_CONNECTED) {
+        bt_sal_avrcp_control_connect(&a2dp_sm->addr); /* nothing happens if AVRCP already connected */
+    }
+}
+#endif
+
 static void opened_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
@@ -516,8 +533,17 @@ static void opened_enter(state_machine_t* sm)
         /* if we are accept link as a2dp src, change the av link role to master */
         if (a2dp_sm->peer_sep == SEP_SNK)
             adapter_switch_role(&a2dp_sm->addr, BT_LINK_ROLE_MASTER);
-#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARGET)
-        bt_sal_avrcp_control_connect(&a2dp_sm->addr);
+#ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
+        if (a2dp_sm->peer_sep == SEP_SNK) {
+            /* local is source, wait the remote device to initiate a connection */
+            a2dp_sm->avrcp_timer = service_loop_timer(AVRCP_TG_START_TIMEOUT, 0, avrcp_start_timeout_callback, a2dp_sm);
+        }
+#endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+        if (a2dp_sm->peer_sep == SEP_SRC) {
+            /* local is sink, try AVRCP connection as CT */
+            bt_sal_avrcp_control_connect(&a2dp_sm->addr);
+        }
 #endif
         ret = a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
         if (!ret) {
