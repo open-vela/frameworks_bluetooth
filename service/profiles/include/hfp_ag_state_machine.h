@@ -24,6 +24,7 @@ typedef enum pending_state {
     PENDING_NONE = 0x0,
     PENDING_OFFLOAD_START = 0x02,
     PENDING_OFFLOAD_STOP = 0x04,
+    PENDING_DISCONNECT = 0x08,
 } pending_state_t;
 
 typedef struct _ag_state_machine ag_state_machine_t;
