@@ -321,6 +321,7 @@ static void disconnected_enter(state_machine_t* sm)
         agsm->volume_listener = NULL;
         bt_media_set_anc_enable(true);
         bt_pm_conn_close(PROFILE_HFP_AG, &agsm->addr);
+        flag_clear(agsm, PENDING_DISCONNECT);
         ag_service_notify_connection_state_changed(&agsm->addr, PROFILE_STATE_DISCONNECTED);
     }
 }
@@ -718,6 +719,7 @@ static void set_virtual_call_started(state_machine_t* sm, bool started)
 
 static void connected_enter(state_machine_t* sm)
 {
+    hfp_ag_msg_t* msg;
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     AG_DBG_ENTER(sm, &agsm->addr);
     uint8_t previous_state = hsm_get_state_value(hsm_get_previous_state(sm));
@@ -734,6 +736,15 @@ static void connected_enter(state_machine_t* sm)
     } else {
         set_virtual_call_started(sm, false);
         ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
+    }
+    if (flag_isset(agsm, PENDING_DISCONNECT)) {
+        msg = hfp_ag_msg_new(AG_DISCONNECT, &agsm->addr);
+        if (msg) {
+            ag_state_machine_dispatch(agsm, msg);
+            hfp_ag_msg_destory(msg);
+        } else {
+            BT_LOGE("message alloc failed");
+        }
     }
 }
 
@@ -997,7 +1008,12 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
 
     switch (event) {
     case AG_DISCONNECT:
-        /* Temporary solution: disconnect SLC directly. TODO: disconnect audio first */
+        if (bt_sal_hfp_ag_disconnect_audio(&agsm->addr) == BT_STATUS_SUCCESS) {
+            flag_set(agsm, PENDING_DISCONNECT);
+            hsm_transition_to(sm, &audio_disconnecting_state);
+            BT_LOGD("Wait for SCO disconnetion first");
+            return false;
+        }
         if (bt_sal_hfp_ag_disconnect(&agsm->addr) != BT_STATUS_SUCCESS) {
             ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
         }
