@@ -441,7 +441,6 @@ static bt_status_t if_gatts_shutdown(profile_on_shutdown_t cb)
     bt_list_free(manager->pend_ops);
     manager->pend_ops = NULL;
     manager->started = false;
-    cb(PROFILE_GATTS, true);
     pthread_mutex_unlock(&manager->device_lock);
     bt_sal_gatt_server_disable();
     cb(PROFILE_GATTS, true);
@@ -728,7 +727,9 @@ static bt_status_t if_gatts_read_phy(void* srv_handle, bt_address_t* addr)
     if (status == BT_STATUS_SUCCESS && service->callbacks->on_phy_read) {
         gatts_op_t* op = gatts_op_new(GATTS_REQ_READ_PHY);
         op->param.phy.srv_handle = srv_handle;
+        pthread_mutex_lock(&g_gatts_manager.device_lock);
         bt_list_add_tail(service->manager->pend_ops, op);
+        pthread_mutex_unlock(&g_gatts_manager.device_lock);
     }
     return status;
 }
@@ -747,7 +748,9 @@ static bt_status_t if_gatts_update_phy(void* srv_handle, bt_address_t* addr, ble
         op->param.phy.srv_handle = srv_handle;
         op->param.phy.tx_phy = tx_phy;
         op->param.phy.rx_phy = rx_phy;
+        pthread_mutex_lock(&g_gatts_manager.device_lock);
         bt_list_add_tail(service->manager->pend_ops, op);
+        pthread_mutex_unlock(&g_gatts_manager.device_lock);
     }
     return status;
 }
