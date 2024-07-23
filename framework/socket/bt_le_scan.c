@@ -121,7 +121,7 @@ void bt_le_stop_scan(bt_instance_t* ins, bt_scanner_t* scanner)
         return;
 
     packet.scan_pl._bt_le_stop_scan.remote = ((bt_scan_remote_t*)scanner)->remote;
-    bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_STOP);
+    (void)bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_STOP);
 }
 
 bool bt_le_scan_is_supported(bt_instance_t* ins)
