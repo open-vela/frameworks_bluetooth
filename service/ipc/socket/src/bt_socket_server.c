@@ -263,19 +263,20 @@ static void bt_socket_server_callback(service_poll_t* poll,
     if (revent & POLL_ERROR || revent & POLL_DISCONNECT) {
         service_loop_remove_poll(poll);
         close(fd);
-    } else if (revent & POLL_READABLE) {
-        remote_ins = zalloc(sizeof(bt_instance_t));
-        list_initialize(&remote_ins->msg_queue);
-        remote_ins->peer_fd = fd;
-        remote_ins->poll = service_loop_poll_fd(fd, POLL_READABLE,
-            bt_socket_server_handle_event, remote_ins);
-        if (!remote_ins->poll) {
-            free(remote_ins);
-            close(fd);
-            return;
-        }
-        bt_list_add_tail(g_instances_list, remote_ins);
+        return;
     }
+
+    remote_ins = zalloc(sizeof(bt_instance_t));
+    list_initialize(&remote_ins->msg_queue);
+    remote_ins->peer_fd = fd;
+    remote_ins->poll = service_loop_poll_fd(fd, POLL_READABLE,
+        bt_socket_server_handle_event, remote_ins);
+    if (!remote_ins->poll) {
+        free(remote_ins);
+        close(fd);
+        return;
+    }
+    bt_list_add_tail(g_instances_list, remote_ins);
 }
 
 static int bt_socket_server_listen(int family, const char* name, int port)
