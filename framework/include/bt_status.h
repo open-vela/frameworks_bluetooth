@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#if !defined(BTIF_WITH_VELA)
+#ifndef ANDROID_LIBBLUETOOTH
 /*
  * hardware/libhardware/include/hardware/bluetooth.h
  * This definition was copied from Android 13.

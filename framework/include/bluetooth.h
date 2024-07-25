@@ -65,7 +65,7 @@ typedef enum {
     BT_IO_CAPABILITY_UNKNOW = 0xFF
 } bt_io_capability_t;
 
-#if !defined(BTIF_WITH_VELA)
+#ifndef ANDROID_LIBBLUETOOTH
 /*
  * hardware/libhardware/include/hardware/bluetooth.h
  * This definition was copied from Android 13.
@@ -89,7 +89,7 @@ typedef enum {
     BT_BR_SCAN_TYPE_UNKNOWN = 0xFF
 } bt_scan_type_t;
 
-#if !defined(BTIF_WITH_VELA)
+#ifndef ANDROID_LIBBLUETOOTH
 /*
  * hardware/libhardware/include/hardware/bluetooth.h
  * This definition was copied from Android 13.
@@ -151,7 +151,7 @@ typedef enum {
     BT_TRANSPORT_BREDR
 } bt_transport_t;
 
-#if !defined(BTIF_WITH_VELA)
+#ifndef ANDROID_LIBBLUETOOTH
 /*
  * hardware/libhardware/include/hardware/bluetooth.h
  * This definition was copied from Android 13.
