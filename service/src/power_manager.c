@@ -175,6 +175,7 @@ typedef void (*bt_pm_hanlde_callback_t)(bt_pm_state_t state, uint8_t profile_id,
 typedef struct {
     struct list_node pm_services;
     struct list_node pm_devices;
+    bool inited;
 
     bt_pm_timer_t pm_timer[CONFIG_BLUETOOTH_PM_MAX_TIMER_NUMBER];
     bt_pm_hanlde_callback_t pm_callback;
@@ -754,6 +755,11 @@ void bt_pm_init(void)
 {
     bt_pm_manager_t* manager = &g_pm_manager;
 
+    if (manager->inited) {
+        return;
+    }
+
+    manager->inited = true;
     bt_pm_register(bt_pm_hanlde_callback);
     list_initialize(&manager->pm_services);
     list_initialize(&manager->pm_devices);
@@ -763,6 +769,11 @@ void bt_pm_cleanup(void)
 {
     bt_pm_manager_t* manager = &g_pm_manager;
 
+    if (!manager->inited) {
+        return;
+    }
+
+    manager->inited = false;
     bt_pm_unregister();
     list_delete(&manager->pm_services);
     list_delete(&manager->pm_devices);
