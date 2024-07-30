@@ -107,6 +107,8 @@ void* bluetooth_get_proxy(bt_instance_t* ins, enum profile_id id)
 
 void bluetooth_delete_instance(bt_instance_t* ins)
 {
+    BT_SOCKET_INS_VALID(ins, );
+
     manager_delete_instance(ins->app_id);
     bt_socket_client_deinit(ins);
     free(ins);
