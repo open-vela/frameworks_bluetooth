@@ -184,16 +184,18 @@ static int create_bt_folder(void)
 
     if (mkdir(MISC_PATH, 0777) == -1 && errno != EEXIST) {
         ret = -1;
+        syslog(LOG_ERR, MISC_PATH " folder create fail, errno: %d\n", errno);
         goto out;
     }
 
     if (mkdir(BT_FOLDER_PATH, 0777) == -1 && errno != EEXIST) {
         ret = -1;
+        syslog(LOG_ERR, BT_FOLDER_PATH " folder create fail, errno: %d\n", errno);
         goto out;
     }
 
 out:
-    syslog(LOG_INFO, "data/misc/bt folder create: %d\n", ret);
+    syslog(LOG_INFO, BT_FOLDER_PATH " folder create: %d\n", ret);
     return ret;
 }
 
