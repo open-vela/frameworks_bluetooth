@@ -45,7 +45,15 @@ static bool check_is_all_startup(uint8_t transport)
 {
     for (int i = 0; i < PROFILE_MAX; i++) {
         profile_service_t* profile = service_slots[i].service;
-        if (profile && profile->transport == transport && profile->auto_start && service_slots[i].state != TURN_ON && profile->get_state && profile->get_state()) {
+        int state;
+
+        if (!profile) {
+            // check unregistered profile service
+            continue;
+        }
+
+        state = profile->get_state ? profile->get_state() : 1;
+        if ((profile->transport == transport) && profile->auto_start && (service_slots[i].state != TURN_ON) && state) {
             return false;
         }
     }
@@ -57,7 +65,15 @@ static bool check_is_all_shutdown(uint8_t transport)
 {
     for (int i = 0; i < PROFILE_MAX; i++) {
         profile_service_t* profile = service_slots[i].service;
-        if (profile && profile->transport == transport && service_slots[i].state != TURN_OFF && profile->get_state && profile->get_state()) {
+        int state;
+
+        if (!profile) {
+            // check unregistered profile service
+            continue;
+        }
+
+        state = profile->get_state ? profile->get_state() : 1;
+        if ((profile->transport == transport) && (service_slots[i].state != TURN_OFF) && state) {
             return false;
         }
     }
