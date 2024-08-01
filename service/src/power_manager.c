@@ -497,8 +497,6 @@ static bool pm_start_timer(bt_address_t* peer_addr, uint32_t timeout, uint8_t pr
         timer = &manager->pm_timer[i];
 
         if (!timer->active) {
-            BT_LOGD("%s, addr:%s, timeout_ms:%" PRId32 ", pm_action:%d", __func__, bt_addr_str(peer_addr), timeout, pm_action);
-
             timer->active = true;
             timer->pm_action = pm_action;
             timer->profile_id = profile_id;
@@ -518,7 +516,6 @@ static void pm_stop_timer(bt_address_t* peer_addr)
     bt_pm_timer_t* timer;
     int i;
 
-    BT_LOGD("%s, addr:%s", __func__, bt_addr_str(peer_addr));
     for (i = 0; i < CONFIG_BLUETOOTH_PM_MAX_TIMER_NUMBER; i++) {
         timer = &manager->pm_timer[i];
         if (timer->active && !bt_addr_compare(&timer->peer_addr, peer_addr)) {
@@ -633,7 +630,6 @@ static void bt_pm_hanlde_callback(bt_pm_state_t state, uint8_t profile_id, bt_ad
 {
     bt_pm_service_t* service;
 
-    BT_LOGD("%s, addr:%s, profile_id:%d, state:%d", __func__, bt_addr_str(peer_addr), profile_id, state);
     service = pm_conn_service_find(profile_id, peer_addr);
     if (!service) {
         service = pm_conn_service_add(profile_id, state, peer_addr);
