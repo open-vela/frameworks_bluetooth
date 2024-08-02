@@ -266,8 +266,8 @@ static void hfp_hf_process_message(void* data)
         if (msg->event == HF_STACK_EVENT_AUDIO_STATE_CHANGED
             && msg->data.valueint1 == HFP_AUDIO_STATE_CONNECTED) {
             /* Make this device active. TODO: set active device by App. */
-            bt_list_move_to_head(g_hfp_service.hf_devices,
-                find_hf_device_by_addr(&msg->data.addr));
+            bt_list_move(g_hfp_service.hf_devices, g_hfp_service.hf_devices,
+                find_hf_device_by_addr(&msg->data.addr), true);
         }
 
         hf_state_machine_dispatch(hfsm, msg);
