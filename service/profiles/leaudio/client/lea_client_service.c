@@ -589,7 +589,7 @@ static void group_move_member(lea_client_group_t* src, lea_client_group_t* des, 
         return;
     }
 
-    bt_list_move(src->devices, des->devices, device);
+    bt_list_move(src->devices, des->devices, device, false);
 }
 
 static bool check_group_completed_by_op(uint32_t group_id, lea_client_ascs_op_t op)
