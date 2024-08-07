@@ -61,6 +61,7 @@ typedef struct {
     uint16_t ssr_max_latency;
     uint16_t ssr_min_timeout;
     uint16_t dsc_list_length; /* Length of desc_list */
+    uint8_t pad[4];
     uint8_t* dsc_list; /* List of descriptors. Each descriptor is constructed as: Type(1 Byte), Length(2 Bytes, Little Endian), Values(Length Bytes) */
 } hid_info_t;
 

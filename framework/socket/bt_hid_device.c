@@ -41,16 +41,16 @@ static bt_status_t safety_assemble_sdp_array(uint8_t** sdp_ptr, size_t* remainin
 
 static bt_status_t safety_assemble_hid_info(uint8_t** sdp_ptr, size_t* remaining_space, const hid_info_t* hid_info)
 {
-    if (sizeof(hid_info_t) > *remaining_space) {
-        return BT_STATUS_NO_RESOURCES;
-    }
-    memcpy(*sdp_ptr, hid_info, sizeof(hid_info_t));
-    *sdp_ptr += sizeof(hid_info_t);
-    *remaining_space -= sizeof(hid_info_t);
+    uint32_t info_len = offsetof(hid_info_t, dsc_list);
 
-    if (hid_info->dsc_list_length > *remaining_space) {
+    if (info_len + hid_info->dsc_list_length > *remaining_space) {
         return BT_STATUS_NO_RESOURCES;
     }
+
+    memcpy(*sdp_ptr, hid_info, info_len);
+    *sdp_ptr += info_len;
+    *remaining_space -= info_len;
+
     memcpy(*sdp_ptr, hid_info->dsc_list, hid_info->dsc_list_length);
     *sdp_ptr += hid_info->dsc_list_length;
     *remaining_space -= hid_info->dsc_list_length;

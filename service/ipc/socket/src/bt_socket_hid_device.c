@@ -142,6 +142,7 @@ const static hid_device_callbacks_t g_hid_device_socket_cbs = {
 static void parse_and_copy_sdp(char* sdp_data, hid_device_sdp_settings_t* sdp_setting)
 {
     uint32_t data_offset = 0;
+    uint32_t info_len = offsetof(hid_info_t, dsc_list);
 
     sdp_setting->name = sdp_data;
     data_offset = (strlen(sdp_setting->name) + 1);
@@ -155,8 +156,8 @@ static void parse_and_copy_sdp(char* sdp_data, hid_device_sdp_settings_t* sdp_se
     data_offset = (strlen(sdp_setting->provider) + 1);
     sdp_data += data_offset;
 
-    memcpy(&sdp_setting->hids_info, sdp_data, sizeof(hid_info_t));
-    sdp_data += sizeof(hid_info_t);
+    memcpy(&sdp_setting->hids_info, sdp_data, info_len);
+    sdp_data += info_len;
 
     sdp_setting->hids_info.dsc_list = (uint8_t*)sdp_data;
 }
