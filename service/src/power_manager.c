@@ -75,8 +75,6 @@
 #define BT_PM_SNIFF6_TIMEOUT 0
 #endif
 
-#define BT_PM_PREF_MODE_SNIFF 0x10
-#define BT_PM_PREF_MODE_ACTIVE 0x20
 #define BT_PM_PREF_MODE_MASK 0x0f
 
 typedef enum {
@@ -84,13 +82,6 @@ typedef enum {
     BT_PM_NEW_REQ,
     BT_PM_EXECUTE,
 } bt_pm_request_t;
-
-typedef enum {
-    BT_PM_HCI_MODE_ACTIVE,
-    BT_PM_HCI_MODE_HOLD,
-    BT_PM_HCI_MODE_SNIFF,
-    BT_PM_HCI_MODE_PARK,
-} bt_pm_hci_mode_t;
 
 typedef enum {
     BT_PM_STATE_CONN_OPEN,
@@ -107,14 +98,14 @@ typedef enum {
 typedef enum {
     BT_PM_NO_ACTION, /* no change to the current pm setting */
     BT_PM_NO_PREF, /* service has no preference on power mode setting. eg. connection to service got closed */
-    BT_PM_SNIFF = BT_PM_PREF_MODE_SNIFF, /* prefers sniff mode */
+    BT_PM_SNIFF = BT_LINK_MODE_SNIFF, /* prefers sniff mode */
     BT_PM_SNIFF1, /* prefers sniff1 mode */
     BT_PM_SNIFF2, /* prefers sniff2 mode */
     BT_PM_SNIFF3, /* prefers sniff3 mode */
     BT_PM_SNIFF4, /* prefers sniff4 mode */
     BT_PM_SNIFF5, /* prefers sniff5 mode */
     BT_PM_SNIFF6, /* prefers sniff6 mode */
-    BT_PM_ACTIVE = BT_PM_PREF_MODE_ACTIVE, /* prefers active mode */
+    BT_PM_ACTIVE = BT_LINK_MODE_ACTIVE, /* prefers active mode */
 } bt_pm_prefer_mode_t;
 
 typedef enum {
@@ -191,13 +182,13 @@ typedef struct {
 
 static const bt_pm_mode_t g_pm_mode[] = {
     /* sniff modes: max interval, min interval, attempt, timeout */
-    { BT_PM_SNIFF_MAX, BT_PM_SNIFF_MIN, BT_PM_SNIFF_ATTEMPT, BT_PM_SNIFF_TIMEOUT, BT_PM_HCI_MODE_SNIFF }, /* for BT_PM_SNIFF */
-    { BT_PM_SNIFF1_MAX, BT_PM_SNIFF1_MIN, BT_PM_SNIFF1_ATTEMPT, BT_PM_SNIFF1_TIMEOUT, BT_PM_HCI_MODE_SNIFF }, /* for BT_PM_SNIFF1 */
-    { BT_PM_SNIFF2_MAX, BT_PM_SNIFF2_MIN, BT_PM_SNIFF2_ATTEMPT, BT_PM_SNIFF2_TIMEOUT, BT_PM_HCI_MODE_SNIFF }, /* for BT_PM_SNIFF2 */
-    { BT_PM_SNIFF3_MAX, BT_PM_SNIFF3_MIN, BT_PM_SNIFF3_ATTEMPT, BT_PM_SNIFF3_TIMEOUT, BT_PM_HCI_MODE_SNIFF }, /* for BT_PM_SNIFF3 */
-    { BT_PM_SNIFF4_MAX, BT_PM_SNIFF4_MIN, BT_PM_SNIFF4_ATTEMPT, BT_PM_SNIFF4_TIMEOUT, BT_PM_HCI_MODE_SNIFF }, /* for BT_PM_SNIFF4 */
-    { BT_PM_SNIFF5_MAX, BT_PM_SNIFF5_MIN, BT_PM_SNIFF5_ATTEMPT, BT_PM_SNIFF5_TIMEOUT, BT_PM_HCI_MODE_SNIFF }, /* for BT_PM_SNIFF5 */
-    { BT_PM_SNIFF6_MAX, BT_PM_SNIFF6_MIN, BT_PM_SNIFF6_ATTEMPT, BT_PM_SNIFF6_TIMEOUT, BT_PM_HCI_MODE_SNIFF }, /* for BT_PM_SNIFF6 */
+    { BT_PM_SNIFF_MAX, BT_PM_SNIFF_MIN, BT_PM_SNIFF_ATTEMPT, BT_PM_SNIFF_TIMEOUT, BT_LINK_MODE_SNIFF }, /* for BT_PM_SNIFF */
+    { BT_PM_SNIFF1_MAX, BT_PM_SNIFF1_MIN, BT_PM_SNIFF1_ATTEMPT, BT_PM_SNIFF1_TIMEOUT, BT_LINK_MODE_SNIFF }, /* for BT_PM_SNIFF1 */
+    { BT_PM_SNIFF2_MAX, BT_PM_SNIFF2_MIN, BT_PM_SNIFF2_ATTEMPT, BT_PM_SNIFF2_TIMEOUT, BT_LINK_MODE_SNIFF }, /* for BT_PM_SNIFF2 */
+    { BT_PM_SNIFF3_MAX, BT_PM_SNIFF3_MIN, BT_PM_SNIFF3_ATTEMPT, BT_PM_SNIFF3_TIMEOUT, BT_LINK_MODE_SNIFF }, /* for BT_PM_SNIFF3 */
+    { BT_PM_SNIFF4_MAX, BT_PM_SNIFF4_MIN, BT_PM_SNIFF4_ATTEMPT, BT_PM_SNIFF4_TIMEOUT, BT_LINK_MODE_SNIFF }, /* for BT_PM_SNIFF4 */
+    { BT_PM_SNIFF5_MAX, BT_PM_SNIFF5_MIN, BT_PM_SNIFF5_ATTEMPT, BT_PM_SNIFF5_TIMEOUT, BT_LINK_MODE_SNIFF }, /* for BT_PM_SNIFF5 */
+    { BT_PM_SNIFF6_MAX, BT_PM_SNIFF6_MIN, BT_PM_SNIFF6_ATTEMPT, BT_PM_SNIFF6_TIMEOUT, BT_LINK_MODE_SNIFF }, /* for BT_PM_SNIFF6 */
 };
 
 static const bt_pm_config_t g_pm_cfg[] = {
@@ -410,7 +401,7 @@ static bt_status_t pm_request_active(bt_address_t* peer_addr)
     bt_pm_device_t* device;
     bt_status_t ret;
     bt_pm_mode_t mode = {
-        .mode = BT_PM_ACTIVE,
+        .mode = BT_LINK_MODE_ACTIVE,
     };
 
     device = pm_conn_device_find(peer_addr);
