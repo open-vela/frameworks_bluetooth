@@ -75,6 +75,8 @@
 #define BT_PM_SNIFF6_TIMEOUT 0
 #endif
 
+#define BT_PM_PREF_MODE_SNIFF 0x10
+#define BT_PM_PREF_MODE_ACTIVE 0x20
 #define BT_PM_PREF_MODE_MASK 0x0f
 
 typedef enum {
@@ -98,14 +100,14 @@ typedef enum {
 typedef enum {
     BT_PM_NO_ACTION, /* no change to the current pm setting */
     BT_PM_NO_PREF, /* service has no preference on power mode setting. eg. connection to service got closed */
-    BT_PM_SNIFF = BT_LINK_MODE_SNIFF, /* prefers sniff mode */
+    BT_PM_SNIFF = BT_PM_PREF_MODE_SNIFF, /* prefers sniff mode */
     BT_PM_SNIFF1, /* prefers sniff1 mode */
     BT_PM_SNIFF2, /* prefers sniff2 mode */
     BT_PM_SNIFF3, /* prefers sniff3 mode */
     BT_PM_SNIFF4, /* prefers sniff4 mode */
     BT_PM_SNIFF5, /* prefers sniff5 mode */
     BT_PM_SNIFF6, /* prefers sniff6 mode */
-    BT_PM_ACTIVE = BT_LINK_MODE_ACTIVE, /* prefers active mode */
+    BT_PM_ACTIVE = BT_PM_PREF_MODE_ACTIVE, /* prefers active mode */
 } bt_pm_prefer_mode_t;
 
 typedef enum {
