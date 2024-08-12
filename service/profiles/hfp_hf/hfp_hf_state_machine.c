@@ -51,7 +51,9 @@ typedef struct _hf_state_machine {
     connection_policy_t connection_policy;
     uint8_t spk_volume;
     uint8_t mic_volume;
+    int media_volume;
     void* volume_listener;
+    uint32_t set_volume_cnt;
     uint8_t codec;
     uint8_t retry_cnt;
     pending_state_t pending;
@@ -438,7 +440,11 @@ static void disconnected_enter(state_machine_t* sm)
     if (hsm_get_previous_state(sm)) {
         bt_pm_conn_close(PROFILE_HFP_HF, &hfsm->addr);
         bt_media_remove_listener(hfsm->volume_listener);
+        hfsm->spk_volume = 0;
+        hfsm->mic_volume = 0;
+        hfsm->media_volume = INVALID_MEDIA_VOLUME;
         hfsm->volume_listener = NULL;
+        hfsm->set_volume_cnt = 0;
         hf_service_notify_connection_state_changed(&hfsm->addr, PROFILE_STATE_DISCONNECTED);
     }
 
@@ -852,6 +858,32 @@ static void handle_dailing_fail(state_machine_t* sm, uint8_t* number)
     hf_service_notify_call_state_changed(&hfsm->addr, &call);
 }
 
+static void handle_hf_set_voice_call_volume(state_machine_t* sm, hfp_volume_type_t type, uint8_t volume)
+{
+    hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
+    bt_status_t status = BT_STATUS_SUCCESS;
+    int new_volume = INVALID_MEDIA_VOLUME;
+
+    if (type == HFP_VOLUME_TYPE_SPK) {
+        hfsm->spk_volume = volume;
+
+        new_volume = bt_media_volume_hfp_to_media(volume);
+        if (new_volume == hfsm->media_volume) {
+            return;
+        }
+
+        status = bt_media_set_voice_call_volume(new_volume);
+        if (status != BT_STATUS_SUCCESS) {
+            BT_LOGE("Set media voice call volume failed");
+        } else if (hfsm->set_volume_cnt < UINT32_MAX) {
+            hfsm->set_volume_cnt++;
+        }
+
+    } else if (type == HFP_VOLUME_TYPE_MIC) {
+        hfsm->mic_volume = volume;
+    }
+}
+
 static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_data_t* data)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
@@ -942,17 +974,8 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
     case HF_STACK_EVENT_VOLUME_CHANGED: {
         hfp_volume_type_t type = data->valueint1;
         uint8_t hf_vol = data->valueint2;
-        // set media volume, need call media interface
-        if (type == HFP_VOLUME_TYPE_SPK) {
-            hfsm->spk_volume = hf_vol;
-            status = bt_media_set_voice_call_volume(bt_media_volume_hfp_to_media(hf_vol));
-            if (status != BT_STATUS_SUCCESS) {
-                BT_LOGE("Set media voice call volume failed");
-            }
-        } else if (type == HFP_VOLUME_TYPE_MIC) {
-            hfsm->mic_volume = hf_vol;
-        }
-        BT_LOGD("Volume changed, %s:%d", type == HFP_VOLUME_TYPE_MIC ? "Mic" : "Spk", hf_vol);
+        handle_hf_set_voice_call_volume(sm, type, hf_vol);
+        BT_LOGD("Volume changed, %s:%" PRIu8, type == HFP_VOLUME_TYPE_MIC ? "Mic" : "Spk", hf_vol);
         hf_service_notify_volume_changed(&hfsm->addr, type, hf_vol);
         break;
     }
@@ -1042,6 +1065,12 @@ static void hfp_hf_voice_volume_change_callback(void* cookie, int volume)
     hf_state_machine_t* hfsm = (hf_state_machine_t*)cookie;
     hfp_hf_msg_t* msg;
 
+    hfsm->media_volume = volume;
+    if (hfsm->set_volume_cnt) {
+        hfsm->set_volume_cnt--;
+        return;
+    }
+
     msg = hfp_hf_msg_new(HF_SET_VOLUME, &hfsm->addr);
     if (!msg) {
         BT_LOGE("New hf message alloc failed");
@@ -1066,9 +1095,8 @@ static void connected_enter(state_machine_t* sm)
         hfsm->need_query = false;
     }
     if (hsm_get_previous_state(sm) != &audio_on_state) {
-        int media_vol;
-        if (bt_media_get_voice_call_volume(&media_vol) == BT_STATUS_SUCCESS) {
-            hfsm->spk_volume = bt_media_volume_media_to_hfp(media_vol);
+        if (bt_media_get_voice_call_volume(&hfsm->media_volume) == BT_STATUS_SUCCESS) {
+            hfsm->spk_volume = bt_media_volume_media_to_hfp(hfsm->media_volume);
             bt_sal_hfp_hf_set_volume(&hfsm->addr, HFP_VOLUME_TYPE_SPK, hfsm->spk_volume);
         } else {
             BT_LOGE("Get voice call volume failed");
@@ -1420,6 +1448,7 @@ hf_state_machine_t* hf_state_machine_new(bt_address_t* addr, void* context)
     memcpy(&hfsm->addr, addr, sizeof(bt_address_t));
     hfsm->update_calls = bt_list_new(NULL);
     hfsm->current_calls = bt_list_new(hf_call_delete);
+    hfsm->media_volume = INVALID_MEDIA_VOLUME;
     list_initialize(&hfsm->pending_actions);
     hsm_ctor(&hfsm->sm, (state_t*)&disconnected_state);
 
