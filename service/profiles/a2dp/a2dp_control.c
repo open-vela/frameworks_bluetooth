@@ -187,7 +187,7 @@ static void a2dp_control_on_stop(uint8_t ch_id)
     }
 #endif
 
-    a2dp_control_event(ch_id, A2DP_CTRL_EVT_STOPPED);
+    a2dp_control_event(ch_id, A2DP_CTRL_EVT_STOPPED); /* TODO: send event when flush ends */
 }
 
 static void a2dp_control_on_config_done(uint8_t ch_id)
