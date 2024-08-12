@@ -52,7 +52,8 @@
 #define MAX_FRAME_NUM_PER_TICK 14
 #define STREAM_DELAY_MS 10
 #define STREAM_FLUSH_SIZE (1024)
-
+#define UNDERFLOW_TICKS_TO_SUSPEND (100)
+#define UNDERFLOW_TICKS_TO_FLUSH (2)
 typedef enum {
     STATE_OFF,
     STATE_RUNNING,
@@ -162,14 +163,18 @@ static void a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len
     }
 
     circbuf_write(&stream->stream_pool, buffer, len);
+
+    if (stream->stream_state == STATE_FLUSHING)
+        goto out;
+
     space = circbuf_space(&stream->stream_pool);
     if (space == 0) {
         a2dp_source_read_congest(ch_id);
     }
 
-    if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_PAUSED) {
+    if (stream->underflow.state == UNDERFLOW_STATE_PAUSED) {
         a2dp_source_stream_start();
-        a2dp_src_stream.underflow.state = UNDERFLOW_STATE_RESUMING;
+        stream->underflow.state = UNDERFLOW_STATE_RESUMING;
     }
 out:
     free(buffer);
@@ -233,30 +238,46 @@ static void a2dp_source_audio_handle_timer(service_timer_t* timer, void* arg)
 {
     a2dp_source_stream_t* stream = &a2dp_src_stream;
 
-    if (a2dp_src_stream.stream_state != STATE_RUNNING)
+    if ((stream->stream_state != STATE_RUNNING) && (stream->stream_state != STATE_FLUSHING))
         return;
 
+    /* Handle stream underflow */
     if (circbuf_used(&stream->stream_pool) == 0) {
-        if (!a2dp_src_stream.underflow.ticks)
+        if (!stream->underflow.ticks)
             BT_LOGD("a2dp src send frame, underflowed");
 
-        // underflow 2000ms auto suspend
-        if (a2dp_src_stream.underflow.ticks++ > 100 && a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
+        stream->underflow.ticks++;
+    } else if (stream->underflow.ticks) {
+        BT_LOGD("a2dp src send frame resume, underflowed %" PRIu32 "ticks", stream->underflow.ticks);
+        stream->underflow.ticks = 0;
+        stream->underflow.state = UNDERFLOW_STATE_NONE;
+    }
+
+    /* Send/flush buffered data and read new data */
+    switch (stream->stream_state) {
+    case STATE_RUNNING:
+        if ((stream->underflow.state == UNDERFLOW_STATE_NONE) && (stream->underflow.ticks > UNDERFLOW_TICKS_TO_SUSPEND)) {
             a2dp_source_stream_stop();
-            a2dp_src_stream.underflow.state = UNDERFLOW_STATE_PAUSED;
+            stream->underflow.state = UNDERFLOW_STATE_PAUSED;
+            return;
         }
-        return;
-    }
-
-    if (a2dp_src_stream.underflow.ticks) {
-        BT_LOGD("a2dp src send frame resume, underflowed %" PRIu32 "ticks", a2dp_src_stream.underflow.ticks);
-        a2dp_src_stream.underflow.ticks = 0;
-        a2dp_src_stream.underflow.state = UNDERFLOW_STATE_NONE;
-    }
-
-    if (stream->stream_interface) {
         stream->stream_interface->send_frames(STREAM_DATA_RESERVED, get_os_timestamp_us());
         a2dp_source_start_read();
+        break;
+    case STATE_FLUSHING:
+        if (stream->underflow.ticks > UNDERFLOW_TICKS_TO_FLUSH) {
+            a2dp_src_stream.stream_state = STATE_OFF;
+            audio_transport_read_stop(a2dp_transport, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
+            circbuf_reset(&stream->stream_pool);
+            service_loop_cancel_timer(stream->media_alarm);
+            stream->media_alarm = NULL;
+            return;
+        }
+        circbuf_reset(&stream->stream_pool);
+        a2dp_source_start_read();
+        break;
+    default:
+        return;
     }
 }
 
@@ -303,8 +324,10 @@ static void a2dp_source_start_audio_req(void)
         return;
     }
 
-    if (stream->stream_state == STATE_FLUSHING)
+    if (stream->stream_state == STATE_FLUSHING) {
+        BT_LOGE("the previous flush is ongoing");
         a2dp_source_stop_flush();
+    }
 
     stream->mtu = peer->mtu > 0 ? peer->mtu : MAX_2MBPS_AVDTP_MTU;
     stream->interval_ms = stream->stream_interface->get_interval_ms();
@@ -335,16 +358,9 @@ static void a2dp_source_stop_audio_req(bool cleanup)
     if (a2dp_src_stream.stream_state != STATE_RUNNING)
         return;
 
-    if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
-        audio_transport_read_stop(a2dp_transport, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
-        a2dp_source_start_flush();
-        circbuf_reset(&a2dp_src_stream.stream_pool);
-    }
-    service_loop_cancel_timer(a2dp_src_stream.media_alarm);
-    a2dp_src_stream.media_alarm = NULL;
     a2dp_src_stream.sequence_number = 0;
-    a2dp_src_stream.stream_state = STATE_OFF;
     a2dp_src_stream.stream_interface->reset();
+    a2dp_src_stream.stream_state = STATE_FLUSHING;
 }
 
 static void a2dp_source_close_audio(void)
