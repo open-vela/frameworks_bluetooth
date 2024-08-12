@@ -17,6 +17,8 @@
 #ifndef __MEDIA_SYSTEM_H__
 #define __MEDIA_SYSTEM_H__
 
+#define INVALID_MEDIA_VOLUME (-1)
+
 typedef void (*bt_media_voice_volume_change_callback_t)(void* context, int volume);
 
 int bt_media_get_music_volume_range();

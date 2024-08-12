@@ -52,7 +52,9 @@ typedef struct _ag_state_machine {
     uint8_t spk_volume;
     uint8_t mic_volume;
     uint8_t retry_cnt;
+    int media_volume;
     void* volume_listener;
+    uint32_t set_volume_cnt;
     pending_state_t pending;
     service_timer_t* connect_timer;
     service_timer_t* audio_timer;
@@ -60,9 +62,6 @@ typedef struct _ag_state_machine {
     service_timer_t* offload_timer;
     service_timer_t* retry_timer;
 } ag_state_machine_t;
-
-#define MD2AGVOL(vol) ((vol) > 15 ? 15 : (vol))
-#define AG2MDVOL(vol) ((vol) > 15 ? 15 : (vol))
 
 #define AG_TIMEOUT 10000
 #define AG_OFFLOAD_TIMEOUT 500
@@ -318,7 +317,11 @@ static void disconnected_enter(state_machine_t* sm)
     AG_DBG_ENTER(sm, &agsm->addr);
     if (hsm_get_previous_state(sm)) {
         bt_media_remove_listener(agsm->volume_listener);
+        agsm->spk_volume = 0;
+        agsm->mic_volume = 0;
+        agsm->media_volume = INVALID_MEDIA_VOLUME;
         agsm->volume_listener = NULL;
+        agsm->set_volume_cnt = 0;
         bt_media_set_anc_enable(true);
         bt_pm_conn_close(PROFILE_HFP_AG, &agsm->addr);
         flag_clear(agsm, PENDING_DISCONNECT);
@@ -522,6 +525,32 @@ static bool disconnecting_process_event(state_machine_t* sm, uint32_t event, voi
     return true;
 }
 
+static void handle_ag_set_voice_call_volume(state_machine_t* sm, hfp_volume_type_t type, uint8_t volume)
+{
+    ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    bt_status_t status = BT_STATUS_SUCCESS;
+    int new_volume = INVALID_MEDIA_VOLUME;
+
+    if (type == HFP_VOLUME_TYPE_SPK) {
+        agsm->spk_volume = volume;
+
+        new_volume = bt_media_volume_hfp_to_media(volume);
+        if (new_volume == agsm->media_volume) {
+            return;
+        }
+
+        status = bt_media_set_voice_call_volume(new_volume);
+        if (status != BT_STATUS_SUCCESS) {
+            BT_LOGE("Set media voice call volume failed");
+        } else if (agsm->set_volume_cnt < UINT32_MAX) {
+            agsm->set_volume_cnt++;
+        }
+
+    } else if (type == HFP_VOLUME_TYPE_MIC) {
+        agsm->mic_volume = volume;
+    }
+}
+
 static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
@@ -572,15 +601,7 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case AG_STACK_EVENT_VOLUME_CHANGED: {
         hfp_volume_type_t type = data->valueint1;
         uint8_t ag_vol = data->valueint2;
-        /* set system volume */
-        if (type == HFP_VOLUME_TYPE_SPK) {
-            agsm->spk_volume = ag_vol;
-            if (bt_media_set_voice_call_volume(AG2MDVOL(ag_vol)) != BT_STATUS_SUCCESS) {
-                BT_LOGE("Set media voice call volume failed");
-            }
-        } else if (type == HFP_VOLUME_TYPE_MIC) {
-            agsm->mic_volume = ag_vol;
-        }
+        handle_ag_set_voice_call_volume(sm, type, ag_vol);
         BT_LOGD("Volume changed, %s:%" PRIu8, type == HFP_VOLUME_TYPE_MIC ? "Mic" : "Spk", ag_vol);
         ag_service_notify_volume_changed(&agsm->addr, type, ag_vol);
         break;
@@ -688,6 +709,12 @@ static void hfp_ag_voice_volume_change_callback(void* cookie, int volume)
     ag_state_machine_t* agsm = (ag_state_machine_t*)cookie;
     hfp_ag_msg_t* msg;
 
+    agsm->media_volume = volume;
+    if (agsm->set_volume_cnt) {
+        agsm->set_volume_cnt--;
+        return;
+    }
+
     msg = hfp_ag_msg_new(AG_SET_VOLUME, &agsm->addr);
     if (!msg) {
         BT_LOGE("New ag message alloc failed");
@@ -727,6 +754,9 @@ static void connected_enter(state_machine_t* sm)
     bt_pm_conn_open(PROFILE_HFP_AG, &agsm->addr);
 
     if (previous_state < HFP_AG_STATE_CONNECTED) {
+        if (bt_media_get_voice_call_volume(&agsm->media_volume) != BT_STATUS_SUCCESS) {
+            BT_LOGE("Get voice call volume failed");
+        }
         agsm->volume_listener = bt_media_listen_voice_call_volume_change(hfp_ag_voice_volume_change_callback, agsm);
         agsm->retry_cnt = 0;
         if (!agsm->volume_listener) {
@@ -1048,7 +1078,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         break;
     case AG_SET_VOLUME: {
         hfp_volume_type_t type = data->valueint1;
-        uint8_t ag_vol = MD2AGVOL(data->valueint2);
+        uint8_t ag_vol = bt_media_volume_media_to_hfp(data->valueint2);
         if ((type == HFP_VOLUME_TYPE_SPK) && (ag_vol != agsm->spk_volume)) {
             status = bt_sal_hfp_ag_set_volume(&agsm->addr, type, ag_vol);
             if (status != BT_STATUS_SUCCESS) {
@@ -1202,6 +1232,7 @@ ag_state_machine_t* ag_state_machine_new(bt_address_t* addr, void* context)
     agsm->audio_timer = NULL;
     agsm->dial_out_timer = NULL;
     agsm->codec = HFP_CODEC_CVSD;
+    agsm->media_volume = INVALID_MEDIA_VOLUME;
     memcpy(&agsm->addr, addr, sizeof(bt_address_t));
     hsm_ctor(&agsm->sm, (state_t*)&disconnected_state);
 
