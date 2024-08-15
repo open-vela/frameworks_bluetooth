@@ -50,7 +50,7 @@ int index_alloc(index_allocator_t* allocator)
     int index;
     int bitno;
 
-    for (;;) {
+    do {
         minor = allocator->id_next;
         if (allocator->id_next >= allocator->id_max)
             allocator->id_next = 0;
@@ -63,10 +63,7 @@ int index_alloc(index_allocator_t* allocator)
             allocator->id_map[index] |= (1 << bitno);
             return (int)minor;
         }
-
-        if (start == minor)
-            return -1;
-    }
+    } while (allocator->id_next != start);
 
     return -1;
 }
