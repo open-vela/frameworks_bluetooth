@@ -164,13 +164,13 @@ static void a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len
 
     circbuf_write(&stream->stream_pool, buffer, len);
 
-    if (stream->stream_state == STATE_FLUSHING)
-        goto out;
-
     space = circbuf_space(&stream->stream_pool);
     if (space == 0) {
         a2dp_source_read_congest(ch_id);
     }
+
+    if (stream->stream_state == STATE_FLUSHING)
+        goto out;
 
     if (stream->underflow.state == UNDERFLOW_STATE_PAUSED) {
         a2dp_source_stream_start();
