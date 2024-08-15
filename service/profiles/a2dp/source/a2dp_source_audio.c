@@ -55,9 +55,10 @@
 #define UNDERFLOW_TICKS_TO_SUSPEND (100)
 #define UNDERFLOW_TICKS_TO_FLUSH (2)
 typedef enum {
-    STATE_OFF,
-    STATE_RUNNING,
-    STATE_FLUSHING
+    STATE_OFF, /* idle state */
+    STATE_FLUSHING, /* flush remaining data */
+    STATE_RUNNING, /* streaming */
+    STATE_SUSPENDING /* suspend after all data is send */
 } stream_state_t;
 
 typedef enum {
@@ -169,7 +170,7 @@ static void a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len
         a2dp_source_read_congest(ch_id);
     }
 
-    if (stream->stream_state == STATE_FLUSHING)
+    if (stream->stream_state == STATE_SUSPENDING)
         goto out;
 
     if (stream->underflow.state == UNDERFLOW_STATE_PAUSED) {
@@ -238,7 +239,7 @@ static void a2dp_source_audio_handle_timer(service_timer_t* timer, void* arg)
 {
     a2dp_source_stream_t* stream = &a2dp_src_stream;
 
-    if ((stream->stream_state != STATE_RUNNING) && (stream->stream_state != STATE_FLUSHING))
+    if ((stream->stream_state != STATE_RUNNING) && (stream->stream_state != STATE_SUSPENDING))
         return;
 
     /* Handle stream underflow */
@@ -264,7 +265,7 @@ static void a2dp_source_audio_handle_timer(service_timer_t* timer, void* arg)
         stream->stream_interface->send_frames(STREAM_DATA_RESERVED, get_os_timestamp_us());
         a2dp_source_start_read();
         break;
-    case STATE_FLUSHING:
+    case STATE_SUSPENDING:
         if (stream->underflow.ticks > UNDERFLOW_TICKS_TO_FLUSH) {
             a2dp_src_stream.stream_state = STATE_OFF;
             audio_transport_read_stop(a2dp_transport, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
@@ -324,7 +325,7 @@ static void a2dp_source_start_audio_req(void)
         return;
     }
 
-    if (stream->stream_state == STATE_FLUSHING) {
+    if ((stream->stream_state == STATE_FLUSHING) || (stream->stream_state == STATE_SUSPENDING)) {
         BT_LOGE("the previous flush is ongoing");
         a2dp_source_stop_flush();
     }
@@ -360,7 +361,7 @@ static void a2dp_source_stop_audio_req(bool cleanup)
 
     a2dp_src_stream.sequence_number = 0;
     a2dp_src_stream.stream_interface->reset();
-    a2dp_src_stream.stream_state = STATE_FLUSHING;
+    a2dp_src_stream.stream_state = STATE_SUSPENDING;
 }
 
 static void a2dp_source_close_audio(void)
@@ -401,11 +402,15 @@ void a2dp_source_on_started(bool started)
     BT_LOGD("%s: %d", __func__, started);
 
     a2dp_control_event(AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL, started ? A2DP_CTRL_EVT_STARTED : A2DP_CTRL_EVT_START_FAIL);
-    if (a2dp_src_stream.offloading) {
+    if (a2dp_src_stream.offloading)
         return;
-    }
 
-    if (started && (a2dp_src_stream.stream_state == STATE_OFF || a2dp_src_stream.stream_state == STATE_FLUSHING)) {
+    if (!started)
+        return;
+
+    if ((a2dp_src_stream.stream_state == STATE_OFF)
+        || (a2dp_src_stream.stream_state == STATE_FLUSHING)
+        || (a2dp_src_stream.stream_state == STATE_SUSPENDING)) {
         a2dp_source_start_audio_req();
     }
 }
