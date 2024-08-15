@@ -174,7 +174,7 @@ config BLUETOOTH_A2DP_MAX_CONNECTIONS
 
 config BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
 	bool "Bluetooth A2dp peer partial reconnect support"
-	default n
+	default y
 	help
 		Bluetooth A2dp peer partial reconnect support
 
