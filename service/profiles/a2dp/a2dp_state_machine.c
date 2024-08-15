@@ -96,7 +96,6 @@ typedef struct _a2dp_state_machine {
     service_timer_t* start_timer;
     service_timer_t* avrcp_timer;
     service_timer_t* delay_start_timer;
-    service_timer_t* delay_suspend_timer;
     service_timer_t* offload_timer;
 } a2dp_state_machine_t;
 
@@ -888,13 +887,6 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
     }
 
     case STREAM_START_REQ:
-        if (a2dp_sm->delay_suspend_timer) {
-            BT_LOGD("need stop suspend timer");
-            service_loop_cancel_timer(a2dp_sm->delay_suspend_timer);
-            a2dp_sm->delay_suspend_timer = NULL;
-            a2dp_audio_on_started(a2dp_sm->peer_sep, true);
-            break;
-        }
         /* received start request when we are in pending a2dp stream
            suspend sub-state, we need restart stream and transmit state to
            opened state, and wait for started event */
@@ -916,13 +908,6 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
 
     case STREAM_SUSPEND_REQ: {
         bt_status_t status;
-
-        if (a2dp_sm->delay_suspend_timer) {
-            BT_LOGD("need stop suspend timer");
-            service_loop_cancel_timer(a2dp_sm->delay_suspend_timer);
-            a2dp_sm->delay_suspend_timer = NULL;
-        }
-
         /* if device had already send suspend request, ignore it */
         if (flag_isset(a2dp_sm, PENDING_STOP)) {
             BT_LOGD("had already send suspend request, ignore it");
@@ -1112,7 +1097,7 @@ const char* a2dp_state_machine_current_state(a2dp_state_machine_t* sm)
 
 bool a2dp_state_machine_is_pending_stop(a2dp_state_machine_t* sm)
 {
-    if (flag_isset(sm, PENDING_STOP) || sm->delay_suspend_timer)
+    if (flag_isset(sm, PENDING_STOP))
         return true;
 
     return false;
