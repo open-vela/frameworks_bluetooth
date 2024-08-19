@@ -866,8 +866,8 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         status = bt_sal_a2dp_source_suspend_stream(&a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Stream suspend failed");
+            a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         }
-        a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
     }
 
@@ -881,7 +881,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         // If remote suspend, notify ffmpeg to
         //  suspend/stop stream.
         a2dp_sm->pending = PENDING_NONE;
-        a2dp_audio_on_suspended(a2dp_sm->peer_sep);
+        a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         a2dp_report_audio_state(a2dp_sm, &a2dp_sm->addr,
             A2DP_AUDIO_STATE_STOPPED);
         hsm_transition_to(sm, &opened_state);
@@ -935,6 +935,8 @@ static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_d
     A2DP_DBG_EVENT(sm, &a2dp_sm->addr, event);
     switch (event) {
     case STREAM_SUSPEND_REQ:
+        break;
+
     case STREAM_CLOSED_EVT:
     case STREAM_SUSPENDED_EVT:
         a2dp_audio_on_stopped(a2dp_sm->peer_sep);

@@ -40,6 +40,7 @@
 #include "bt_list.h"
 
 void a2dp_source_stream_start(void);
+void a2dp_source_stream_prepare_suspend(void);
 void a2dp_source_stream_stop(void);
 void a2dp_source_codec_state_change(void);
 bool a2dp_source_stream_ready(void);

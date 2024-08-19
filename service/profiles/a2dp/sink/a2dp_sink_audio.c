@@ -252,20 +252,21 @@ void a2dp_sink_on_stopped(void)
 {
     a2dp_sink_stream_t* stream = &sink_stream;
 
+    BT_LOGD("%s", __func__);
+
     if (sink_stream.state == STATE_OFF)
         return;
 
-    BT_LOGD("%s", __func__);
     service_loop_cancel_timer(stream->media_alarm);
     stream->media_alarm = NULL;
     a2dp_sink_flush_packet_queue();
     stream->state = STATE_OFF;
 }
 
-void a2dp_sink_on_suspended(void)
+void a2dp_sink_prepare_suspend(void)
 {
     BT_LOGD("%s", __func__);
-    a2dp_sink_on_stopped();
+    a2dp_sink_on_stopped(); /* stop and suspend act the same at audio sink*/
 }
 
 void a2dp_sink_mute(void)
@@ -273,7 +274,7 @@ void a2dp_sink_mute(void)
     BT_LOGD("%s", __func__);
 
     sink_stream.ready = false;
-    a2dp_sink_on_suspended();
+    a2dp_sink_prepare_suspend();
 }
 
 void a2dp_sink_resume(void)

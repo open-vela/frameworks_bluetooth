@@ -55,7 +55,7 @@ void a2dp_sink_packet_recieve(a2dp_sink_packet_t* packet);
 bool a2dp_sink_on_connection_changed(bool connected);
 void a2dp_sink_on_started(bool started);
 void a2dp_sink_on_stopped(void);
-void a2dp_sink_on_suspended(void);
+void a2dp_sink_prepare_suspend(void);
 void a2dp_sink_mute(void);
 void a2dp_sink_resume(void);
 void a2dp_sink_setup_codec(bt_address_t* bd_addr);

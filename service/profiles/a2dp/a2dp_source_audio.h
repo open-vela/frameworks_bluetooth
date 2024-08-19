@@ -59,7 +59,7 @@ void a2dp_source_audio_cleanup(void);
 bool a2dp_source_on_connection_changed(bool connected);
 void a2dp_source_on_started(bool started);
 void a2dp_source_on_stopped(void);
-void a2dp_source_on_suspended(void);
+void a2dp_source_prepare_suspend(void);
 bool a2dp_source_is_streaming(void);
 void a2dp_source_setup_codec(bt_address_t* bd_addr);
 int a2dp_source_sbc_update_config(uint32_t mtu, sbc_param_t* param, uint8_t* codec_info);

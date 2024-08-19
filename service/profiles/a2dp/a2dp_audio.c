@@ -83,16 +83,16 @@ void a2dp_audio_on_stopped(uint8_t peer_sep)
 #endif
 }
 
-void a2dp_audio_on_suspended(uint8_t peer_sep)
+void a2dp_audio_prepare_suspend(uint8_t peer_sep)
 {
     BT_LOGD("%s", __func__);
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     if (peer_sep == SEP_SNK)
-        a2dp_source_on_suspended();
+        a2dp_source_prepare_suspend();
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     if (peer_sep == SEP_SRC)
-        a2dp_sink_on_suspended();
+        a2dp_sink_prepare_suspend();
 #endif
 }
 
