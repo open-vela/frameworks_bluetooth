@@ -125,11 +125,18 @@ static advertiser_t* alloc_new_advertiser(void* remote, const advertiser_callbac
     return adver;
 }
 
-static void delete_advertiser(advertiser_t* adver)
+static void destroy_advertiser(advertiser_t* adver)
 {
     if (adver->adv_id)
         index_free(adv_manager.adv_allocator, adver->adv_id - 1);
     free(adver);
+}
+
+static void delete_advertiser(advertiser_t* adver)
+{
+    service_loop_cancel_timer(adver->adv_start);
+    adver->adv_start = NULL;
+    list_delete(&adver->adver_node);
 }
 
 static bool is_advertiser_exist(advertiser_t* adver)
@@ -168,10 +175,9 @@ static void start_advertising_timeout(service_timer_t* timer, void* userdata)
         return;
     }
 
-    service_loop_cancel_timer(adver->adv_start);
-    list_delete(&adver->adver_node);
-    adver->callbacks.on_advertising_start(get_adver(adver), 0, BT_ADV_STATUS_START_TIMEOUT);
     delete_advertiser(adver);
+    adver->callbacks.on_advertising_start(get_adver(adver), 0, BT_ADV_STATUS_START_TIMEOUT);
+    destroy_advertiser(adver);
 }
 
 static void advertiser_start_event(void* data)
@@ -207,17 +213,8 @@ static void advertiser_start_event(void* data)
 
     return;
 fail:
-    delete_advertiser(adver);
+    destroy_advertiser(adver);
     advertiser_info_free(adv_info);
-}
-
-static void advertiser_stop(advertiser_t* adver)
-{
-    bt_sal_le_stop_adv(adver->adv_id);
-    list_delete(&adver->adver_node);
-    service_loop_cancel_timer(adver->adv_start);
-    adver->callbacks.on_advertising_stopped(get_adver(adver), adver->adv_id);
-    delete_advertiser(adver);
 }
 
 static void advertiser_stop_event(void* data)
@@ -244,7 +241,7 @@ static void advertiser_stop_event(void* data)
         }
     }
 
-    advertiser_stop(adver);
+    bt_sal_le_stop_adv(adver->adv_id);
 }
 
 static void advertiser_notify_state(void* data)
@@ -252,20 +249,26 @@ static void advertiser_notify_state(void* data)
     adv_event_t* advstate = (adv_event_t*)data;
     advertiser_t* adver;
 
-    if (!adv_manager.started)
-        return;
-
-    if (advstate->state == LE_ADVERTISING_STARTED) {
-        adver = get_advertiser_if_exist(advstate->adv_id);
-        if (adver) {
-            service_loop_cancel_timer(adver->adv_start);
-            adver->adv_start = NULL;
-            adver->callbacks.on_advertising_start(get_adver(adver), advstate->adv_id, BT_ADV_STATUS_SUCCESS);
-        }
-    } else {
-        /* Ignored LE_ADVERTISING_STOPPED event */
+    if (!adv_manager.started) {
+        goto exit;
     }
 
+    adver = get_advertiser_if_exist(advstate->adv_id);
+    if (!adver) {
+        goto exit;
+    }
+
+    if (advstate->state == LE_ADVERTISING_STARTED) {
+        service_loop_cancel_timer(adver->adv_start);
+        adver->adv_start = NULL;
+        adver->callbacks.on_advertising_start(get_adver(adver), advstate->adv_id, BT_ADV_STATUS_SUCCESS);
+    } else if (advstate->state == LE_ADVERTISING_STOPPED) {
+        delete_advertiser(adver);
+        adver->callbacks.on_advertising_stopped(get_adver(adver), advstate->adv_id);
+        destroy_advertiser(adver);
+    }
+
+exit:
     free(advstate);
 }
 
@@ -280,7 +283,10 @@ static void advertisers_cleanup(void* data)
     list_for_every_safe(&adv_manager.advertiser_list, node, tmp)
     {
         advertiser_t* adver = (advertiser_t*)node;
-        advertiser_stop(adver);
+        bt_sal_le_stop_adv(adver->adv_id);
+        delete_advertiser(adver);
+        adver->callbacks.on_advertising_stopped(get_adver(adver), adver->adv_id);
+        destroy_advertiser(adver);
     }
 
     list_delete(&adv_manager.advertiser_list);
@@ -319,7 +325,7 @@ bt_advertiser_t* start_advertising(void* remote,
 
     adv_event_t* start = malloc(sizeof(adv_event_t));
     if (!start) {
-        delete_advertiser(adver);
+        destroy_advertiser(adver);
         return NULL;
     }
 
