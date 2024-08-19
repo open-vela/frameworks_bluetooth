@@ -170,13 +170,16 @@ static void a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len
         a2dp_source_read_congest(ch_id);
     }
 
-    if (stream->stream_state == STATE_SUSPENDING)
-        goto out;
-
     if (stream->underflow.state == UNDERFLOW_STATE_PAUSED) {
+        /**
+         * Patch for audio channel control:
+         * An extra A2DP suspened is sent due to data underflow.
+         * A compensatory A2DP start is now created when data recovers.
+         */
         a2dp_source_stream_start();
         stream->underflow.state = UNDERFLOW_STATE_RESUMING;
     }
+
 out:
     free(buffer);
 }
@@ -258,6 +261,12 @@ static void a2dp_source_audio_handle_timer(service_timer_t* timer, void* arg)
     switch (stream->stream_state) {
     case STATE_RUNNING:
         if ((stream->underflow.state == UNDERFLOW_STATE_NONE) && (stream->underflow.ticks > UNDERFLOW_TICKS_TO_SUSPEND)) {
+            /**
+             * Patch for audio channel control:
+             * Audio stream may end without a control command received.
+             * An A2DP suspend is created by Bluetooth service to send to the audio SNK.
+             * An underflow state is marked so we can re-start the stream in the future.
+             */
             a2dp_source_stream_stop();
             stream->underflow.state = UNDERFLOW_STATE_PAUSED;
             return;
@@ -267,14 +276,12 @@ static void a2dp_source_audio_handle_timer(service_timer_t* timer, void* arg)
         break;
     case STATE_SUSPENDING:
         if (stream->underflow.ticks > UNDERFLOW_TICKS_TO_FLUSH) {
-            a2dp_src_stream.stream_state = STATE_OFF;
             audio_transport_read_stop(a2dp_transport, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
             circbuf_reset(&stream->stream_pool);
-            service_loop_cancel_timer(stream->media_alarm);
-            stream->media_alarm = NULL;
+            a2dp_source_stream_stop();
             return;
         }
-        circbuf_reset(&stream->stream_pool);
+        stream->stream_interface->send_frames(STREAM_DATA_RESERVED, get_os_timestamp_us());
         a2dp_source_start_read();
         break;
     default:
@@ -325,7 +332,11 @@ static void a2dp_source_start_audio_req(void)
         return;
     }
 
-    if ((stream->stream_state == STATE_FLUSHING) || (stream->stream_state == STATE_SUSPENDING)) {
+    if (stream->stream_state == STATE_FLUSHING) {
+        /* Issue: when a flushing is ongoing, there might be
+         * incompleted audio frame remains in the audio channel.
+         * This would lead to decoding failure at audio sink.
+         */
         BT_LOGE("the previous flush is ongoing");
         a2dp_source_stop_flush();
     }
@@ -334,34 +345,51 @@ static void a2dp_source_start_audio_req(void)
     stream->interval_ms = stream->stream_interface->get_interval_ms();
     stream->max_tx_length = stream->mtu;
 
-    if (a2dp_src_stream.underflow.state == UNDERFLOW_STATE_NONE) {
+    if (stream->underflow.state == UNDERFLOW_STATE_NONE) {
         stream->read_congest = 0;
         circbuf_reset(&stream->stream_pool);
         a2dp_source_start_read();
     }
     stream->underflow.ticks = 0;
     stream->underflow.state = UNDERFLOW_STATE_NONE;
-    /* delay start, wait stream pool filling */
-    stream->media_alarm = service_loop_timer(STREAM_DELAY_MS,
-        0,
-        a2dp_source_start_delay,
-        NULL);
+
+    if (stream->media_alarm == NULL) { /* delay start, wait stream pool filling */
+        stream->media_alarm = service_loop_timer(STREAM_DELAY_MS,
+            0, a2dp_source_start_delay, NULL);
+    } /* else, keep the previous timer running */
+
     stream->stream_state = STATE_RUNNING;
 }
 
 static void a2dp_source_stop_audio_req(bool cleanup)
 {
-    BT_LOGD("%s, remaining:%" PRIuPTR, __func__, circbuf_used(&a2dp_src_stream.stream_pool));
+    a2dp_source_stream_t* stream = &a2dp_src_stream;
 
-    if (cleanup)
-        memset(&a2dp_src_stream.underflow, 0, sizeof(a2dp_source_underflow_t));
+    BT_LOGD("%s, remaining:%" PRIuPTR, __func__, circbuf_used(&stream->stream_pool));
 
-    if (a2dp_src_stream.stream_state != STATE_RUNNING)
+    if (cleanup) { /* Audio stream is closed, no need to maintain the underflow status */
+        memset(&stream->underflow, 0, sizeof(a2dp_source_underflow_t));
+    }
+
+    stream->sequence_number = 0;
+    stream->stream_interface->reset();
+    stream->stream_state = STATE_OFF;
+    if (stream->media_alarm) {
+        service_loop_cancel_timer(stream->media_alarm);
+        stream->media_alarm = NULL;
+    }
+}
+
+static void a2dp_source_suspend_audio_req(void)
+{
+    a2dp_source_stream_t* stream = &a2dp_src_stream;
+
+    BT_LOGD("%s, remaining:%" PRIuPTR, __func__, circbuf_used(&stream->stream_pool));
+
+    if (stream->stream_state != STATE_RUNNING)
         return;
 
-    a2dp_src_stream.sequence_number = 0;
-    a2dp_src_stream.stream_interface->reset();
-    a2dp_src_stream.stream_state = STATE_SUSPENDING;
+    stream->stream_state = STATE_SUSPENDING;
 }
 
 static void a2dp_source_close_audio(void)
@@ -426,14 +454,16 @@ void a2dp_source_on_stopped(void)
     a2dp_source_stop_audio_req(false);
 }
 
-void a2dp_source_on_suspended(void)
+void a2dp_source_prepare_suspend(void)
 {
     BT_LOGD("%s", __func__);
 
     if (a2dp_src_stream.offloading) {
+        BT_LOGD("No stream data to handle, stop immediately");
+        a2dp_source_stream_stop();
         return;
     }
-    a2dp_source_stop_audio_req(false);
+    a2dp_source_suspend_audio_req();
 }
 
 void a2dp_source_setup_codec(bt_address_t* bd_addr)
