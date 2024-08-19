@@ -178,7 +178,7 @@ static void a2dp_control_on_stop(uint8_t ch_id)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     if (ch_id == AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL && a2dp_source_stream_started()) {
-        a2dp_source_stream_stop();
+        a2dp_source_stream_prepare_suspend();
     }
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
@@ -308,7 +308,7 @@ static void a2dp_data_cb(uint8_t ch_id, audio_transport_event_t event)
         BT_LOGD("%s: ## AUDIO PATH DETACHED ##", __func__);
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         if (a2dp_source_is_streaming())
-            a2dp_source_stream_stop();
+            a2dp_source_stream_prepare_suspend();
 #endif
         break;
 

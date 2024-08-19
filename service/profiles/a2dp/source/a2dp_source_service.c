@@ -293,6 +293,11 @@ void a2dp_source_stream_start(void)
     do_in_a2dp_service(a2dp_event_new(STREAM_START_REQ, peer->bd_addr));
 }
 
+void a2dp_source_stream_prepare_suspend(void)
+{
+    a2dp_audio_prepare_suspend(SEP_SNK);
+}
+
 void a2dp_source_stream_stop(void)
 {
     a2dp_peer_t* peer = a2dp_source_active_peer();
