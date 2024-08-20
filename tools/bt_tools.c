@@ -1541,6 +1541,7 @@ static void on_pair_request_cb(void* cookie, bt_address_t* addr)
 
 static void on_pair_display_cb(void* cookie, bt_address_t* addr, bt_transport_t transport, bt_pair_type_t type, uint32_t passkey)
 {
+    uint8_t ret = 0;
     char buff[128] = { 0 };
     char buff1[64] = { 0 };
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
@@ -1549,7 +1550,12 @@ static void on_pair_display_cb(void* cookie, bt_address_t* addr, bt_transport_t 
     sprintf(buff, "Pair Display [%s][%s]", addr_str, LINK_TYPE(transport));
     switch (type) {
     case PAIR_TYPE_PASSKEY_CONFIRMATION:
-        sprintf(buff1, "[SSP][CONFIRM][%" PRIu32 "] please reply:", passkey);
+        if (!g_auto_accept_pair) {
+            sprintf(buff1, "[SSP][CONFIRM][%" PRIu32 "] please reply:", passkey);
+            break;
+        }
+        ret = bt_device_set_pairing_confirmation(g_bttool_ins, addr, transport, true);
+        sprintf(buff1, "[SSP][CONFIRM] Auto confirm [%" PRIu32 "] %s", passkey, ret == BT_STATUS_SUCCESS ? "SUCCESS" : "FAILED");
         break;
     case PAIR_TYPE_PASSKEY_ENTRY:
         sprintf(buff1, "[SSP][ENTRY][%" PRIu32 "], please reply:", passkey);
