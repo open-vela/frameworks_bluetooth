@@ -215,12 +215,12 @@ static void pan_tap_poll_data(service_poll_t* poll, int revent, void* userdata)
         int ret = read(g_pan.tun_fd, pan_read_buf, g_pan.tun_packet_size);
         if (ret > 0) {
             memcpy(&ethhdr, pan_read_buf, sizeof(eth_hdr_t));
-            bt_pm_busy(PROFILE_PANU, &msg->addr);
+            bt_pm_busy(PROFILE_PANU, &g_pan.peer_addr);
             bt_sal_pan_write(&g_pan.peer_addr, ntohs(ethhdr.h_proto),
                 ethhdr.h_dest, ethhdr.h_src,
                 pan_read_buf + sizeof(eth_hdr_t),
                 ret - sizeof(eth_hdr_t));
-            bt_pm_idle(PROFILE_PANU, &msg->addr);
+            bt_pm_idle(PROFILE_PANU, &g_pan.peer_addr);
         }
         return;
     }
