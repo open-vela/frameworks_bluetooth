@@ -455,6 +455,7 @@ static void spp_cleanup_all_apps(void)
     {
         spp_cleanup_app((spp_handle_t*)node);
         list_delete(&((spp_handle_t*)node)->node);
+        free(node);
     }
 }
 
