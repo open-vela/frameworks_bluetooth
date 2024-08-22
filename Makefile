@@ -42,7 +42,16 @@ endif
 CSRCS += service/src/manager_service.c
 CSRCS += service/src/power_manager.c
 CSRCS += service/vendor/bt_vendor.c
-CSRCS += service/common/*.c
+
+CSRCS += service/common/bt_time.c
+CSRCS += service/common/index_allocator.c
+CSRCS += service/common/service_loop.c
+
+ifeq ($(CONFIG_BLUETOOTH_STORAGE_PROPERTY_SUPPORT), y)
+CSRCS += service/common/storage_property.c
+else
+CSRCS += service/common/storage.c
+endif
 
 ifeq ($(CONFIG_BLUETOOTH_OBELISK), y)
 	CSRCS += service/src/adapter_service.c
