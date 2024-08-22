@@ -37,12 +37,35 @@
  ****************************************************************************/
 static audio_transport_t* g_audio_ctrl_transport;
 
+static const char* audio_cmd_to_string(audio_ctrl_cmd_t cmd)
+{
+    switch (cmd) {
+        CASE_RETURN_STR(AUDIO_CTRL_CMD_START)
+        CASE_RETURN_STR(AUDIO_CTRL_CMD_STOP)
+        CASE_RETURN_STR(AUDIO_CTRL_CMD_CONFIG_DONE)
+    default:
+        return "UNKNOWN_CMD";
+    }
+}
+
+static const char* audio_event_to_string(audio_ctrl_evt_t event)
+{
+    switch (event) {
+        CASE_RETURN_STR(AUDIO_CTRL_EVT_STARTED)
+        CASE_RETURN_STR(AUDIO_CTRL_EVT_START_FAIL)
+        CASE_RETURN_STR(AUDIO_CTRL_EVT_STOPPED)
+        CASE_RETURN_STR(AUDIO_CTRL_EVT_UPDATE_CONFIG)
+    default:
+        return "UNKNOWN_EVENT";
+    }
+}
+
 static void audio_ctrl_event_with_data(uint8_t ch_id, audio_ctrl_evt_t event, uint8_t* data, uint8_t data_len)
 {
     uint8_t stream[128];
     uint8_t* p = stream;
 
-    BT_LOGD("%s, event:%d", __func__, event);
+    BT_LOGD("%s, event:%s", __func__, audio_event_to_string(event));
 
     UINT8_TO_STREAM(p, event);
     if (data_len) {
@@ -61,27 +84,18 @@ void auidio_ctrl_send_control_event(uint8_t profile_id, audio_ctrl_evt_t evt)
     case PROFILE_HFP_HF:
         audio_ctrl_event_with_data(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_HFP_CTRL, evt, NULL, 0);
         break;
+    case PROFILE_A2DP:
+        audio_ctrl_event_with_data(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, evt, NULL, 0);
+        break;
     default:
         BT_LOGW("%s, unknown profile id: %d", __func__, profile_id);
         break;
     }
 }
 
-static const char* audio_event_to_string(audio_ctrl_cmd_t event)
-{
-    switch (event) {
-        CASE_RETURN_STR(AUDIO_CTRL_CMD_START)
-        CASE_RETURN_STR(AUDIO_CTRL_CMD_STOP)
-        CASE_RETURN_STR(AUDIO_CTRL_CMD_CONFIG_DONE)
-    default:
-        return "UNKNOWN_EVENT";
-    }
-}
-
 static void audio_recv_ctrl_data(uint8_t ch_id, audio_ctrl_cmd_t cmd)
 {
-    BT_LOGD("%s: audio-ctrl-cmd : %s", __func__,
-        audio_event_to_string(cmd));
+    BT_LOGD("%s: audio-ctrl-cmd : %s", __func__, audio_cmd_to_string(cmd));
 
     switch (cmd) {
     case AUDIO_CTRL_CMD_START:
