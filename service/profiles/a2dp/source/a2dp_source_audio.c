@@ -455,6 +455,7 @@ void a2dp_source_on_stopped(void)
     }
 
     a2dp_source_stop_audio_req(false);
+    a2dp_control_event(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, A2DP_CTRL_EVT_STOPPED);
 }
 
 void a2dp_source_prepare_suspend(void)

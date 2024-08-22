@@ -46,11 +46,13 @@
 #include "sal_avrcp_target_interface.h"
 
 #include "a2dp_audio.h"
+#include "a2dp_control.h"
 #include "a2dp_event.h"
 #include "a2dp_sink.h"
 #include "a2dp_source.h"
 #include "a2dp_state_machine.h"
 #include "adapter_internel.h"
+#include "audio_control.h"
 #include "bt_avrcp.h"
 #include "bt_utils.h"
 #include "hci_parser.h"
@@ -447,6 +449,10 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
         a2dp_offload_send_stop_cmd(a2dp_sm, data);
         break;
 
+    case OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
+        break;
+
     default:
         break;
     }
@@ -502,6 +508,10 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
 
     case OFFLOAD_STOP_REQ:
         a2dp_offload_send_stop_cmd(a2dp_sm, data);
+        break;
+
+    case OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
         break;
 
     default:
@@ -763,9 +773,9 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         a2dp_offload_send_stop_cmd(a2dp_sm, data);
         break;
 
-    case OFFLOAD_STOP_EVT: {
+    case OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
         break;
-    }
 
     default:
         break;
@@ -903,6 +913,10 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         a2dp_offload_send_stop_cmd(a2dp_sm, data);
         break;
 
+    case OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
+        break;
+
     default:
         break;
     }
@@ -948,6 +962,10 @@ static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_d
 
     case OFFLOAD_STOP_REQ:
         a2dp_offload_send_stop_cmd(a2dp_sm, data);
+        break;
+
+    case OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
         break;
 
     default:
