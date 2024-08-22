@@ -39,17 +39,22 @@
 #define LOG_TAG "sink_sbc"
 #include "utils/log.h"
 
+#define LOAS_HDRSIZE 3
+
+#define LATM_HEADER 0x56E0
+
 static a2dp_sink_packet_t* sink_sbc_repackage(uint8_t* data, uint16_t length)
 {
     a2dp_sink_packet_t* packet = NULL;
-    /* sbc packed header, skip it */
-    uint8_t SBC_HDRSIZE = 1;
 
-    length -= SBC_HDRSIZE;
-    packet = malloc(sizeof(a2dp_sink_packet_t) + length);
+    /* pack aac loas header */
+    packet = malloc(sizeof(a2dp_sink_packet_t) + length + LOAS_HDRSIZE);
     if (packet) {
-        packet->length = length;
-        memcpy(packet->data, data + SBC_HDRSIZE, length);
+        packet->data[0] = (LATM_HEADER >> 8) & 0xFF;
+        packet->data[1] = (LATM_HEADER & 0xE0) | ((length >> 8) & 0x1F);
+        packet->data[2] = length & 0xFF;
+        packet->length = length + LOAS_HDRSIZE;
+        memcpy(packet->data + LOAS_HDRSIZE, data, length);
     }
 
     return packet;
