@@ -21,6 +21,10 @@ config BLUETOOTH
 	depends on LIBUV_EXTENSION
 
 if BLUETOOTH
+config BLUETOOTH_STORAGE_PROPERTY_SUPPORT
+	bool "Bluetooth Storage KVDB Property support"
+	default n
+
 config BLUETOOTH_BREDR_SUPPORT
 	bool "BREDR support"
 	default y
