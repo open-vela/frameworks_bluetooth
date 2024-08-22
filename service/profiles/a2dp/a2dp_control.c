@@ -179,15 +179,15 @@ static void a2dp_control_on_stop(uint8_t ch_id)
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     if (ch_id == AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL && a2dp_source_stream_started()) {
         a2dp_source_stream_prepare_suspend();
+        /* A2DP_CTRL_EVT_STOPPED is send when offload stopped */
     }
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     if (ch_id == AUDIO_TRANS_CH_ID_AV_SINK_CTRL) {
         a2dp_sink_mute();
+        a2dp_control_event(ch_id, A2DP_CTRL_EVT_STOPPED); /* TODO: send event when flush ends */
     }
 #endif
-
-    a2dp_control_event(ch_id, A2DP_CTRL_EVT_STOPPED); /* TODO: send event when flush ends */
 }
 
 static void a2dp_control_on_config_done(uint8_t ch_id)
