@@ -166,11 +166,14 @@ static bt_device_t* adapter_find_create_le_device(bt_address_t* addr, ble_addr_t
 static void adapter_delete_device(void* data)
 {
     bt_device_t* device = (bt_device_t*)data;
-    bt_address_t* addr = device_get_address(device);
+    bt_address_t* addr;
 
-    // bt_sal_disconnect(addr);
-    CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_connection_state_changed, addr,
-        device_get_transport(device), CONNECTION_STATE_DISCONNECTED);
+    if (device_get_connection_state(device) != CONNECTION_STATE_DISCONNECTED) {
+        addr = device_get_address(device);
+        CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_connection_state_changed, addr,
+            device_get_transport(device), CONNECTION_STATE_DISCONNECTED);
+    }
+
     device_delete(device);
 }
 
