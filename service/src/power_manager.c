@@ -495,6 +495,10 @@ static bool pm_start_timer(bt_address_t* peer_addr, uint32_t timeout, uint8_t pr
             timer->pm_action = pm_action;
             timer->profile_id = profile_id;
             memcpy(&timer->peer_addr, peer_addr, sizeof(timer->peer_addr));
+            if (timer->pm_timer) {
+                service_loop_cancel_timer(timer->pm_timer);
+            }
+
             timer->pm_timer = service_loop_timer(timeout, 0, pm_timeout_callback, timer);
             return true;
         }
