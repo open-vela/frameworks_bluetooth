@@ -372,7 +372,10 @@ static void a2dp_source_stop_audio_req(bool cleanup)
     }
 
     stream->sequence_number = 0;
-    stream->stream_interface->reset();
+    if (stream->stream_interface && stream->stream_interface->reset) {
+        stream->stream_interface->reset();
+    }
+
     stream->stream_state = STATE_OFF;
     if (stream->media_alarm) {
         service_loop_cancel_timer(stream->media_alarm);
