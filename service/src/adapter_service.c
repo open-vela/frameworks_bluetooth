@@ -1022,6 +1022,9 @@ void adapter_on_le_disabled(void)
     adv_manager_cleanup();
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
+    adapter_lock();
+    bt_list_clear(g_adapter_service.le_devices);
+    adapter_unlock();
     scan_manager_cleanup();
 #endif
 #ifdef CONFIG_BLUETOOTH_L2CAP
@@ -1542,6 +1545,8 @@ void adapter_cleanup(void)
         adapter_lock();
         bt_list_free(adapter->devices);
         adapter->devices = NULL;
+        bt_list_free(adapter->le_devices);
+        adapter->le_devices = NULL;
         bt_callbacks_list_free(adapter->adapter_callbacks);
         adapter->adapter_callbacks = NULL;
         adapter_state_machine_destory(adapter->stm);
