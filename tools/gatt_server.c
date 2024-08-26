@@ -730,6 +730,18 @@ int gatts_command_init(void* handle)
 
 int gatts_command_uninit(void* handle)
 {
+    if (g_dis_handle) {
+        bt_gatts_unregister_service(g_dis_handle);
+    }
+
+    if (g_bas_handle) {
+        bt_gatts_unregister_service(g_bas_handle);
+    }
+
+    if (g_custom_handle) {
+        bt_gatts_unregister_service(g_custom_handle);
+    }
+
     return 0;
 }
 

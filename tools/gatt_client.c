@@ -617,6 +617,12 @@ int gattc_command_init(void* handle)
 
 int gattc_command_uninit(void* handle)
 {
+    for (int i = 0; i < GATTC_CONNECTION_MAX; i++) {
+        if (g_gattc_devies[i].handle) {
+            bt_gattc_delete_connect(g_gattc_devies[i].handle);
+        }
+    }
+
     return 0;
 }
 

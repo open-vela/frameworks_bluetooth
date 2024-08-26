@@ -69,12 +69,16 @@ bt_status_t bt_gattc_delete_connect(gattc_handle_t conn_handle)
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
-    void** user_phandle = gattc_remote->user_phandle;
+    void** user_phandle;
 
     CHECK_NULL_PTR(gattc_remote);
 
     packet.gattc_pl._bt_gattc_delete.handle = PTR2INT(uint64_t) gattc_remote->cookie;
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_DELETE_CONNECT);
+    user_phandle = gattc_remote->user_phandle;
+    free(gattc_remote);
+    *user_phandle = NULL;
+
     if (status != BT_STATUS_SUCCESS) {
         return status;
     }
@@ -82,8 +86,6 @@ bt_status_t bt_gattc_delete_connect(gattc_handle_t conn_handle)
         return packet.gattc_r.status;
     }
 
-    free(gattc_remote);
-    *user_phandle = NULL;
     return BT_STATUS_SUCCESS;
 }
 
