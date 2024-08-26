@@ -94,13 +94,16 @@ bt_status_t bt_gatts_unregister_service(gatts_handle_t srv_handle)
     bt_message_packet_t packet;
     bt_status_t status;
     bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
+    void** user_phandle;
 
     CHECK_NULL_PTR(gatts_remote);
 
-    void** user_phandle = gatts_remote->user_phandle;
-
     packet.gatts_pl._bt_gatts_unregister.handle = PTR2INT(uint64_t) gatts_remote->cookie;
     status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_UNREGISTER_SERVICE);
+    user_phandle = gatts_remote->user_phandle;
+    gatts_remote_destroy(gatts_remote);
+    *user_phandle = NULL;
+
     if (status != BT_STATUS_SUCCESS) {
         return status;
     }
@@ -108,8 +111,6 @@ bt_status_t bt_gatts_unregister_service(gatts_handle_t srv_handle)
         return packet.gatts_r.status;
     }
 
-    gatts_remote_destroy(gatts_remote);
-    *user_phandle = NULL;
     return BT_STATUS_SUCCESS;
 }
 
