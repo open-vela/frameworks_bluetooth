@@ -329,7 +329,8 @@ void tele_service_cleanup(void)
         return;
     teleif_unregister_callbacks(tele_context, PRIMARY_SLOT, &tele_cbs);
     teleif_client_disconnect(tele_context);
-    bt_list_clear(g_current_calls);
+    bt_list_free(g_current_calls);
+    g_current_calls = NULL;
 }
 
 bt_status_t tele_service_dial_number(char* number)
