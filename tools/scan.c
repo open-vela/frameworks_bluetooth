@@ -43,7 +43,7 @@ static bt_command_t g_scanner_tables[] = {
                                   "\t  -p or --phy, le scan phy (1M/2M/Coded)\n"
                                   "\t  -m or --mode, scan mode (0:low power mode, 1:balance mode, 2:low latency mode)\n"
                                   "\t  -l or --legacy, is legacy scan (1: true, 0: false)\n"
-                                  "\t  -f or --filter, filter advertiser complete name\n" },
+                                  "\t  -f or --filter, filter advertiser :<uuid>\n" },
     { "stop", stop_scan_cmd, 0, "stop scan" },
     { "dump", dump_scan_cmd, 0, "dump scan state" },
 };
@@ -87,9 +87,7 @@ static const scanner_callbacks_t scanner_callbacks = {
 static int start_scan_cmd(void* handle, int argc, char* argv[])
 {
     int opt;
-    uint8_t* filter_data = NULL;
-    uint16_t filter_len = 0;
-    advertiser_data_t* filter;
+    ble_scan_filter_t filter = {};
     ble_scan_settings_t settings = { BT_SCAN_MODE_LOW_POWER, 0, BT_LE_SCAN_TYPE_PASSIVE, BT_LE_1M_PHY, { 0 } };
 
     if (g_scanner)
@@ -144,14 +142,10 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
             settings.legacy = legacy;
         } break;
         case 'f': {
-            PRINT("filtered name: %s ", optarg);
-            filter = advertiser_data_new();
-
-            /* set adv complete name */
-            advertiser_data_set_name(filter, optarg);
-
-            /* build scan response data */
-            filter_data = advertiser_data_build(filter, &filter_len);
+            uint16_t uuid = atoi(optarg);
+            PRINT("uuid: 0x%02x ", uuid);
+            filter.active = true;
+            filter.uuids[0] = uuid;
         } break;
         default:
             break;
@@ -159,9 +153,8 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
     }
 
     if (optind >= 1) {
-        if (filter_data) {
-            g_scanner = bt_le_start_scan_with_filters(handle, &settings, filter_data, filter_len, &scanner_callbacks);
-            advertiser_data_free(filter);
+        if (filter.active) {
+            g_scanner = bt_le_start_scan_with_filters(handle, &settings, &filter, &scanner_callbacks);
         } else
             g_scanner = bt_le_start_scan_settings(handle, &settings, &scanner_callbacks);
     } else {

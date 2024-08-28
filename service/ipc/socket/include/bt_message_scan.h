@@ -69,8 +69,7 @@ BT_SCAN_MESSAGE_START,
         struct {
             uint64_t remote;
             ble_scan_settings_t settings;
-            uint8_t filter_data[256];
-            uint16_t filter_length;
+            ble_scan_filter_t filter;
         } _bt_le_start_scan_with_filters;
     } bt_message_scan_t;
 

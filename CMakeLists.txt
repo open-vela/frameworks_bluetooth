@@ -80,8 +80,10 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/advertising.c)
     endif()
 
-    if(CONFIG_BLUETOOTH_BLE_ADV)
+    if(CONFIG_BLUETOOTH_BLE_SCAN)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/scan_manager.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/scan_record.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/scan_filter.c)
     endif()
 
     if(CONFIG_BLUETOOTH_L2CAP)
