@@ -23,6 +23,7 @@
 #include "bluetooth.h"
 #include "bt_le_scan.h"
 #include "bt_list.h"
+#include "bt_time.h"
 #include "sal_adapter_interface.h"
 #include "scan_filter.h"
 #include "scan_manager.h"
@@ -33,10 +34,12 @@
 #ifndef CONFIG_OBELISK_LE_SCANNER_MAX_NUM
 #define CONFIG_OBELISK_LE_SCANNER_MAX_NUM 2
 #endif
+#define BT_LE_ADV_REPORT_PERIOD_MS (500) /* 500ms adv report period for bad IPC */
 
 typedef struct {
     bt_address_t addr;
     ble_addr_type_t addr_type;
+    uint32_t timestamp;
 } scanner_device_t;
 
 typedef struct scanner {
@@ -107,13 +110,14 @@ static scanner_device_t* scanner_find_device(const bt_address_t* addr, ble_addr_
     return NULL;
 }
 
-static scanner_device_t* scanner_add_device(bt_address_t* addr, ble_addr_type_t addr_type)
+static scanner_device_t* scanner_add_device(bt_address_t* addr, ble_addr_type_t addr_type, uint32_t timestamp_ms)
 {
     scanner_device_t* device;
 
     device = alloc_device(addr, addr_type);
     assert(device);
 
+    device->timestamp = timestamp_ms;
     bt_list_add_tail(scanner_manager.devices, device);
 
     return device;
@@ -159,12 +163,39 @@ static bool scanner_is_registered(scanner_t* scanner)
     return false;
 }
 
+static bool scanner_match_duration(scanner_device_t* device, uint32_t duration, uint32_t timestamp)
+{
+    uint32_t t1;
+    uint32_t t2;
+    uint32_t t3;
+
+    t1 = device->timestamp;
+    t2 = t1 + duration;
+    t3 = t2 + duration;
+
+    if (timestamp < t1) {
+        /* Timestamp overflow */
+        device->timestamp = timestamp;
+        return false;
+    } else if ((t1 <= timestamp) && timestamp < t2) {
+        return true;
+    } else if ((t2 <= timestamp) && timestamp < t3) {
+        return false;
+    } else {
+        device->timestamp = timestamp;
+        return true;
+    }
+}
+
 static void notify_scanners_scan_result(void* data)
 {
     struct list_node* node;
     ble_scan_result_t* result = (ble_scan_result_t*)data;
     scan_record_t record = { 0 };
+    scanner_device_t* device;
+    uint32_t timestamp_ms;
 
+    timestamp_ms = get_os_timestamp_ms();
     list_for_every(&scanner_manager.scanning_list, node)
     {
         scanner_t* scanner = (scanner_t*)node;
@@ -178,15 +209,18 @@ static void notify_scanners_scan_result(void* data)
             record.active = true;
         }
 
-        if (scanner_find_device(&result->addr, result->addr_type)) {
-            goto exit_filter;
-        }
-
-        if (!scanner_match_filter(&record, &scanner->filter)) {
+        device = scanner_find_device(&result->addr, result->addr_type);
+        if (!device && !scanner_match_filter(&record, &scanner->filter)) {
             continue;
         }
 
-        scanner_add_device(&result->addr, result->addr_type);
+        if (!device) {
+            device = scanner_add_device(&result->addr, result->addr_type, timestamp_ms);
+        }
+
+        if (!scanner_match_duration(device, scanner->filter.duration, timestamp_ms)) {
+            continue;
+        }
 
     exit_filter:
         scanner->callbacks->on_scan_result(get_remote(scanner), result);
@@ -408,6 +442,7 @@ bt_scanner_t* scanner_start_scan_with_filters(void* remote,
     }
 
     if (filter && filter->active) {
+        filter->duration = BT_LE_ADV_REPORT_PERIOD_MS;
         memcpy(&scanner->filter, filter, sizeof(*filter));
     }
 

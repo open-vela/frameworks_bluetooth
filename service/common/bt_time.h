@@ -20,4 +20,6 @@
 
 uint64_t get_os_timestamp_us(void);
 
+uint32_t get_os_timestamp_ms(void);
+
 #endif /* _BT_STORAGE_H__ */

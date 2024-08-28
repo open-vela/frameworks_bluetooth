@@ -27,3 +27,12 @@ uint64_t get_os_timestamp_us(void)
 
     return (uint64_t)(((uint64_t)ts.tv_sec * 1000000L) + ((uint64_t)ts.tv_nsec / 1000));
 }
+
+uint32_t get_os_timestamp_ms(void)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_BOOTTIME, &ts);
+
+    return (uint32_t)((ts.tv_sec * 1000) + (ts.tv_nsec / 1000000UL));
+}
