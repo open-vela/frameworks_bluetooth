@@ -115,6 +115,7 @@ typedef struct {
 } ble_scan_params_t;
 
 typedef struct {
+    uint32_t duration;
     uint16_t uuids[BLE_SCAN_FILTER_UUID_MAX_NUM];
     uint8_t active;
 } ble_scan_filter_t;
