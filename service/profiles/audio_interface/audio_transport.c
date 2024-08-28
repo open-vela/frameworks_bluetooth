@@ -90,6 +90,7 @@ static void transport_connection_close_cb(uv_handle_t* handle)
 {
     transport_channel_t* ch = handle->data;
 
+    free(handle);
     if (ch->state == IPC_CONNTECTED) {
         ch->state = IPC_DISCONNTECTED;
         if (ch->event_cb)
@@ -110,8 +111,6 @@ static void transport_connection_close_cb(uv_handle_t* handle)
             free(transport);
         }
     }
-
-    free(handle);
 }
 
 static void audio_transport_connection_close(transport_channel_t* ch)
