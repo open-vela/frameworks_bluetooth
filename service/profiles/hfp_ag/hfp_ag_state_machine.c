@@ -368,6 +368,12 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
             break;
         }
     } break;
+    case AG_OFFLOAD_START_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+        break;
+    case AG_OFFLOAD_STOP_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     case AG_OFFLOAD_STOP_EVT:
         auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
         break;
@@ -481,6 +487,12 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
             bt_sal_hfp_ag_error_response(&agsm->addr, HFP_ATCMD_RESULT_CMEERR_OPERATION_NOTSUPPORTED);
         }
         break;
+    case AG_OFFLOAD_START_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+        break;
+    case AG_OFFLOAD_STOP_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     case AG_OFFLOAD_STOP_EVT:
         auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
         break;
@@ -521,6 +533,12 @@ static bool disconnecting_process_event(state_machine_t* sm, uint32_t event, voi
             break;
         }
     } break;
+    case AG_OFFLOAD_START_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+        break;
+    case AG_OFFLOAD_STOP_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     case AG_OFFLOAD_STOP_EVT:
         auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
         break;
@@ -933,6 +951,12 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
             break;
         }
     } break;
+    case AG_OFFLOAD_START_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+        break;
+    case AG_OFFLOAD_STOP_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     case AG_OFFLOAD_STOP_EVT:
         auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
         break;
@@ -1003,6 +1027,12 @@ static bool audio_connecting_process_event(state_machine_t* sm, uint32_t event, 
             break;
         }
     } break;
+    case AG_OFFLOAD_START_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+        break;
+    case AG_OFFLOAD_STOP_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     case AG_OFFLOAD_STOP_EVT:
         auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
         break;
@@ -1249,6 +1279,12 @@ static bool audio_disconnecting_process_event(state_machine_t* sm, uint32_t even
             break;
         }
     } break;
+    case AG_OFFLOAD_START_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+        break;
+    case AG_OFFLOAD_STOP_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     case AG_OFFLOAD_STOP_EVT:
         auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
         break;
