@@ -23,6 +23,7 @@
 #include "bt_config.h"
 #include "bt_profile.h"
 #include "bt_utils.h"
+#include "hfp_ag_service.h"
 #include "hfp_hf_service.h"
 #include "service_loop.h"
 #include "utils/log.h"
@@ -89,6 +90,8 @@ void auidio_ctrl_send_control_event(uint8_t profile_id, audio_ctrl_evt_t evt)
         break;
     default:
         BT_LOGW("%s, unknown profile id: %d", __func__, profile_id);
+        /* Use a default control channel, currently via CONFIG_BLUETOOTH_AUDIO_TRANS_ID_HFP_CTRL */
+        audio_ctrl_event_with_data(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_HFP_CTRL, evt, NULL, 0);
         break;
     }
 }
@@ -99,18 +102,30 @@ static void audio_recv_ctrl_data(uint8_t ch_id, audio_ctrl_cmd_t cmd)
 
     switch (cmd) {
     case AUDIO_CTRL_CMD_START:
-        if (hfp_hf_on_sco_start()) {
+#ifdef CONFIG_BLUETOOTH_HFP_HF
+        if (hfp_hf_on_sco_start())
             break;
-        }
-        /* TODO: Try AG start */
+#endif
+#ifdef CONFIG_BLUETOOTH_HFP_AG
+        if (hfp_ag_on_sco_start())
+            break;
+#endif
         /* TODO: Parse the payload to determine an active profile */
+        BT_LOGD("%s: active profile not found", __func__);
+        auidio_ctrl_send_control_event(PROFILE_MAX, AUDIO_CTRL_EVT_START_FAIL);
         break;
     case AUDIO_CTRL_CMD_STOP:
-        if (hfp_hf_on_sco_stop()) {
+#ifdef CONFIG_BLUETOOTH_HFP_HF
+        if (hfp_hf_on_sco_stop())
             break;
-        }
-        /* TODO: Try AG stop*/
+#endif
+#ifdef CONFIG_BLUETOOTH_HFP_AG
+        if (hfp_ag_on_sco_stop())
+            break;
+#endif
         /* TODO: Parse the payload to determine an active profile */
+        BT_LOGD("%s: active profile not found", __func__);
+        auidio_ctrl_send_control_event(PROFILE_MAX, AUDIO_CTRL_EVT_STOPPED);
         break;
     default:
         BT_LOGD("%s: UNSUPPORTED CMD (%d)", __func__, cmd);

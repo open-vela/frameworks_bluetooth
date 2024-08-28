@@ -19,6 +19,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include "audio_transport.h"
 #include "bt_device.h"
 #include "bt_hfp_ag.h"
 #include "hfp_define.h"
@@ -92,6 +93,13 @@ bt_status_t hfp_ag_phone_state_change(bt_address_t* addr, uint8_t num_active, ui
 bt_status_t hfp_ag_device_status_changed(bt_address_t* addr, hfp_network_state_t network,
     hfp_roaming_state_t roam, uint8_t signal, uint8_t battery);
 bt_status_t hfp_ag_dial_result(uint8_t result);
+
+/*
+ * service api
+ */
+
+bool hfp_ag_on_sco_start(void);
+bool hfp_ag_on_sco_stop(void);
 
 typedef struct ag_interface {
     size_t size;
