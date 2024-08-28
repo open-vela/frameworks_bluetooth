@@ -38,11 +38,10 @@ bt_scanner_t* BTSYMBOLS(bt_le_start_scan_settings)(bt_instance_t* ins,
 
 bt_scanner_t* BTSYMBOLS(bt_le_start_scan_with_filters)(bt_instance_t* ins,
     ble_scan_settings_t* settings,
-    uint8_t* filter_data,
-    uint16_t filter_length,
+    ble_scan_filter_t* filter,
     const scanner_callbacks_t* cbs)
 {
-    return scanner_start_scan_with_filters(NULL, settings, filter_data, filter_length, cbs);
+    return scanner_start_scan_with_filters(NULL, settings, filter, cbs);
 }
 
 void BTSYMBOLS(bt_le_stop_scan)(bt_instance_t* ins, bt_scanner_t* scanner)

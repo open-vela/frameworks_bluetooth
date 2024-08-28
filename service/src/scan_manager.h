@@ -19,12 +19,6 @@
 #include <stdio.h>
 
 #include "bt_le_scan.h"
-typedef struct {
-    bt_address_t addr; // remote device addr
-    uint8_t length; // length of the adv_data_mask
-    uint8_t* adv_data_mask; // only reported to service layer if adv_data contains adv_data_mask
-    // TODO: add new filter type in future
-} ble_scan_filter_t;
 
 enum scan_state {
     SCAN_STATE_STARTED,
@@ -39,8 +33,7 @@ bt_scanner_t* scanner_start_scan_settings(void* remote,
     const scanner_callbacks_t* cbs);
 bt_scanner_t* scanner_start_scan_with_filters(void* remote,
     ble_scan_settings_t* settings,
-    uint8_t* filter_data,
-    uint16_t filter_length,
+    ble_scan_filter_t* filter,
     const scanner_callbacks_t* cbs);
 void scanner_stop_scan(bt_scanner_t* scanner);
 bool scan_is_supported(void);

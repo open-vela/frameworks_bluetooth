@@ -94,7 +94,6 @@ bt_status_t bt_sal_le_set_io_capability(bt_io_capability_t cap);
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
 bt_status_t bt_sal_le_set_scan_parameters(ble_scan_params_t* params);
 /* maybe implement it in scan service */
-bt_status_t bt_sal_le_set_scan_filters(ble_scan_filter_t* filter);
 bt_status_t bt_sal_le_start_scan(void);
 bt_status_t bt_sal_le_stop_scan(void);
 #endif
