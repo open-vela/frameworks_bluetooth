@@ -38,6 +38,7 @@
 #include "utils/log.h"
 
 #define HFP_AG_RETRY_MAX 1
+#define HFP_FAKE_NUMBER "10000000"
 
 typedef struct _ag_state_machine {
     state_machine_t sm;
@@ -610,8 +611,15 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         process_cind_request(agsm);
         break;
     case AG_STACK_EVENT_AT_CLCC_REQUEST:
-        /* system call interface */
-        tele_service_query_current_call(&agsm->addr);
+        if (agsm->virtual_call_started) {
+            bt_sal_hfp_ag_clcc_response(&agsm->addr, 1, HFP_CALL_DIRECTION_INCOMING,
+                HFP_AG_CALL_STATE_ACTIVE, HFP_CALL_MODE_VOICE, HFP_CALL_MPTY_TYPE_SINGLE,
+                HFP_CALL_ADDRTYPE_UNKNOWN, HFP_FAKE_NUMBER);
+            bt_sal_hfp_ag_clcc_response(&agsm->addr, 0, 0, 0, 0, 0, 0, NULL);
+        } else {
+            /* system call interface */
+            tele_service_query_current_call(&agsm->addr);
+        }
         break;
     case AG_STACK_EVENT_AT_COPS_REQUEST: {
         /* system call interface */
