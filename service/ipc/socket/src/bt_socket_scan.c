@@ -143,8 +143,7 @@ void bt_socket_server_scan_process(service_poll_t* poll,
         scan->remote = packet->scan_pl._bt_le_start_scan_with_filters.remote;
         packet->scan_r.remote = PTR2INT(uint64_t) scanner_start_scan_with_filters(scan,
             &packet->scan_pl._bt_le_start_scan_with_filters.settings,
-            packet->scan_pl._bt_le_start_scan_with_filters.filter_data,
-            packet->scan_pl._bt_le_start_scan_with_filters.filter_length,
+            &packet->scan_pl._bt_le_start_scan_with_filters.filter,
             &g_scanner_socket_cb);
         if (!packet->scan_r.remote) {
             bt_free(scan);
