@@ -1371,15 +1371,15 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         }
         break;
     }
-    case HF_OFFLOAD_START_REQ: {
-        if (hf_offload_send_cmd(hfsm, true) == BT_STATUS_SUCCESS) {
-            flag_set(hfsm, PENDING_OFFLOAD_START);
-            hfsm->offload_timer = service_loop_timer(HF_OFFLOAD_TIMEOUT, 0, hfp_hf_offload_timeout_callback, hfsm);
-        } else {
+    case HF_OFFLOAD_START_REQ:
+        if (hf_offload_send_cmd(hfsm, true) != BT_STATUS_SUCCESS) {
             BT_LOGE("failed to start offload");
+            auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+            break;
         }
+        flag_set(hfsm, PENDING_OFFLOAD_START);
+        hfsm->offload_timer = service_loop_timer(HF_OFFLOAD_TIMEOUT, 0, hfp_hf_offload_timeout_callback, hfsm);
         break;
-    }
     case HF_OFFLOAD_START_EVT: {
         bt_hci_event_t* hci_event;
         hci_error_t result;
@@ -1412,19 +1412,19 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         }
         break;
     }
-    case HF_OFFLOAD_STOP_REQ: {
+    case HF_OFFLOAD_STOP_REQ:
         if (hfsm->offload_timer) {
             service_loop_cancel_timer(hfsm->offload_timer);
             hfsm->offload_timer = NULL;
             auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
         }
-        if (hf_offload_send_cmd(hfsm, false) == BT_STATUS_SUCCESS) {
-            flag_set(hfsm, PENDING_OFFLOAD_STOP);
-        } else {
+        if (hf_offload_send_cmd(hfsm, false) != BT_STATUS_SUCCESS) {
             BT_LOGE("failed to stop offload");
+            auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+            break;
         }
+        flag_set(hfsm, PENDING_OFFLOAD_STOP);
         break;
-    }
     default:
         return default_process_event(sm, event, data);
     }

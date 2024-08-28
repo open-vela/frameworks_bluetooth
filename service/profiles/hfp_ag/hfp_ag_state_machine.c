@@ -20,6 +20,7 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "audio_control.h"
 #include "bt_addr.h"
 #include "bt_device.h"
 #include "bt_hfp_ag.h"
@@ -106,7 +107,6 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
 static bool audio_connecting_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 static bool audio_disconnecting_process_event(state_machine_t* sm, uint32_t event, void* p_data);
-static bt_status_t ag_offload_send_stop_cmd(ag_state_machine_t* ag_sm, hfp_ag_data_t* data);
 
 static const state_t disconnected_state = {
     .state_name = "Disconnected",
@@ -368,6 +368,9 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
             break;
         }
     } break;
+    case AG_OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     default:
         BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
@@ -478,6 +481,9 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
             bt_sal_hfp_ag_error_response(&agsm->addr, HFP_ATCMD_RESULT_CMEERR_OPERATION_NOTSUPPORTED);
         }
         break;
+    case AG_OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     default:
         BT_LOGW("Unexpected event:%" PRId32 "", event);
         break;
@@ -515,11 +521,9 @@ static bool disconnecting_process_event(state_machine_t* sm, uint32_t event, voi
             break;
         }
     } break;
-    case AG_OFFLOAD_STOP_REQ: {
-        ag_offload_send_stop_cmd(agsm, data);
-    } break;
-    case AG_OFFLOAD_STOP_EVT: {
-    } break;
+    case AG_OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     default:
         BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
@@ -688,6 +692,9 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         if (data->valueint1 == 0)
             bt_media_set_anc_enable(false);
         break;
+    case AG_OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     default:
         BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
@@ -816,24 +823,35 @@ static void bt_hci_event_callback(bt_hci_event_t* hci_event, void* context)
     hfp_ag_send_message(msg);
 }
 
-static bt_status_t ag_offload_send_stop_cmd(ag_state_machine_t* ag_sm, hfp_ag_data_t* data)
+static bt_status_t ag_offload_send_cmd(ag_state_machine_t* agsm, bool is_start)
 {
     uint8_t ogf;
     uint16_t ocf;
-    uint8_t len;
+    size_t size;
     uint8_t* payload;
+    hfp_offload_config_t config = { 0 };
+    uint8_t offload[sizeof(hfp_offload_config_t)];
 
-    if (!ag_sm || !data) {
-        return BT_STATUS_PARM_INVALID;
+    config.sco_hdl = agsm->sco_conn_handle;
+    config.sco_codec = agsm->codec;
+    if (is_start) {
+        if (!hfp_offload_start_builder(&config, offload, &size)) {
+            BT_LOGE("HFP AG offload start builder failed");
+            assert(0);
+        }
+    } else {
+        if (!hfp_offload_stop_builder(&config, offload, &size)) {
+            BT_LOGE("HFP AG offload stop builder failed");
+            assert(0);
+        }
     }
 
-    payload = data->data;
-    len = data->size - sizeof(ogf) - sizeof(ocf);
-    STREAM_TO_UINT8(ogf, payload)
+    payload = offload;
+    STREAM_TO_UINT8(ogf, payload);
     STREAM_TO_UINT16(ocf, payload);
-    flag_set(ag_sm, PENDING_OFFLOAD_STOP);
+    size -= sizeof(ogf) + sizeof(ocf);
 
-    return bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, ag_sm);
+    return bt_sal_send_hci_command(ogf, ocf, size, payload, bt_hci_event_callback, agsm);
 }
 
 static bool is_virtual_call_allowed(state_machine_t* sm)
@@ -915,11 +933,9 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
             break;
         }
     } break;
-    case AG_OFFLOAD_STOP_REQ: {
-        ag_offload_send_stop_cmd(agsm, data);
-    } break;
-    case AG_OFFLOAD_STOP_EVT: {
-    } break;
+    case AG_OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     default:
         default_process_event(sm, event, p_data);
         break;
@@ -976,6 +992,7 @@ static bool audio_connecting_process_event(state_machine_t* sm, uint32_t event, 
 
         switch (state) {
         case HFP_AUDIO_STATE_CONNECTED:
+            agsm->sco_conn_handle = data->valueint2;
             hsm_transition_to(sm, &audio_on_state);
             break;
         case HFP_AUDIO_STATE_DISCONNECTED:
@@ -986,11 +1003,9 @@ static bool audio_connecting_process_event(state_machine_t* sm, uint32_t event, 
             break;
         }
     } break;
-    case AG_OFFLOAD_STOP_REQ: {
-        ag_offload_send_stop_cmd(agsm, data);
-    } break;
-    case AG_OFFLOAD_STOP_EVT: {
-    } break;
+    case AG_OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     default:
         default_process_event(sm, event, p_data);
         break;
@@ -1015,10 +1030,6 @@ static void audio_on_enter(state_machine_t* sm)
 
     bt_pm_sco_open(PROFILE_HFP_AG, &agsm->addr);
 
-    if (agsm->offloading) {
-        return;
-    }
-
     /* TODO: get volume */
     /* TODO: set remote volume */
     bt_media_set_hfp_samplerate(agsm->codec == HFP_CODEC_MSBC ? 16000 : 8000);
@@ -1029,6 +1040,8 @@ static void audio_on_enter(state_machine_t* sm)
 static void audio_on_exit(state_machine_t* sm)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
+    hfp_ag_msg_t* msg;
+
     AG_DBG_EXIT(sm, &agsm->addr);
 
     bt_pm_sco_close(PROFILE_HFP_AG, &agsm->addr);
@@ -1036,6 +1049,16 @@ static void audio_on_exit(state_machine_t* sm)
     bt_media_set_sco_unavailable();
 
     set_virtual_call_started(sm, false);
+    if (agsm->offloading) {
+        /* In case that AUDIO_CTRL_CMD_STOP is not received on time */
+        msg = hfp_ag_msg_new(AG_OFFLOAD_STOP_REQ, &agsm->addr);
+        if (msg) {
+            ag_state_machine_dispatch(agsm, msg);
+            hfp_ag_msg_destory(msg);
+        } else {
+            BT_LOGE("message alloc failed");
+        }
+    }
 }
 
 static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_data)
@@ -1121,21 +1144,15 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
             break;
         }
     } break;
-    case AG_OFFLOAD_START_REQ: {
-        uint8_t ogf;
-        uint16_t ocf;
-        uint8_t len;
-        uint8_t* payload;
-
-        payload = data->data;
-        len = data->size - sizeof(ogf) - sizeof(ocf);
-        STREAM_TO_UINT8(ogf, payload)
-        STREAM_TO_UINT16(ocf, payload);
-
+    case AG_OFFLOAD_START_REQ:
+        if (ag_offload_send_cmd(agsm, true) != BT_STATUS_SUCCESS) {
+            BT_LOGE("failed to start offload");
+            auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+            break;
+        }
         flag_set(agsm, PENDING_OFFLOAD_START);
         agsm->offload_timer = service_loop_timer(AG_OFFLOAD_TIMEOUT, 0, hfp_ag_offload_timeout_callback, agsm);
-        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, agsm);
-    } break;
+        break;
     case AG_OFFLOAD_START_EVT: {
         bt_hci_event_t* hci_event;
         hci_error_t result;
@@ -1149,23 +1166,41 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         result = hci_get_result(hci_event);
         if (result != HCI_SUCCESS) {
             BT_LOGE("AG_OFFLOAD_START fail, status:0x%0x", result);
+            auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+            if (bt_sal_hfp_ag_disconnect_audio(&agsm->addr) != BT_STATUS_SUCCESS) {
+                BT_ADDR_LOG("Terminate audio failed for :%s", &agsm->addr);
+            }
             break;
         }
 
-        bt_media_set_hfp_samplerate(agsm->codec == HFP_CODEC_MSBC ? 16000 : 8000);
-        bt_media_set_sco_available();
-        ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_CONNECTED);
-    } break;
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STARTED);
+        break;
+    }
     case AG_OFFLOAD_TIMEOUT_EVT: {
         flag_clear(agsm, PENDING_OFFLOAD_START);
         agsm->offload_timer = NULL;
-        bt_media_set_sco_unavailable();
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+        if (bt_sal_hfp_ag_disconnect_audio(&agsm->addr) != BT_STATUS_SUCCESS) {
+            BT_ADDR_LOG("Terminate audio failed for :%s", &agsm->addr);
+        }
+        break;
     } break;
-    case AG_OFFLOAD_STOP_REQ: {
-        ag_offload_send_stop_cmd(agsm, data);
-    } break;
-    case AG_OFFLOAD_STOP_EVT: {
-    } break;
+    case AG_OFFLOAD_STOP_REQ:
+        if (agsm->offload_timer) {
+            service_loop_cancel_timer(agsm->offload_timer);
+            agsm->offload_timer = NULL;
+            auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+        }
+        if (ag_offload_send_cmd(agsm, false) != BT_STATUS_SUCCESS) {
+            BT_LOGE("failed to stop offload");
+            auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+            break;
+        }
+        flag_set(agsm, PENDING_OFFLOAD_STOP);
+        break;
+    case AG_OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     default:
         default_process_event(sm, event, p_data);
         break;
@@ -1214,11 +1249,9 @@ static bool audio_disconnecting_process_event(state_machine_t* sm, uint32_t even
             break;
         }
     } break;
-    case AG_OFFLOAD_STOP_REQ: {
-        ag_offload_send_stop_cmd(agsm, data);
-    } break;
-    case AG_OFFLOAD_STOP_EVT: {
-    } break;
+    case AG_OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        break;
     default:
         default_process_event(sm, event, p_data);
         break;

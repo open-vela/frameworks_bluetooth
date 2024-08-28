@@ -316,16 +316,15 @@ bool hfp_hf_on_sco_start(void)
 {
     hf_device_t* device;
 
-    if (!g_hfp_service.offloading) {
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STARTED);
+    device = find_hf_device_by_state(HFP_HF_STATE_AUDIO_CONNECTED);
+    if (!device) {
+        BT_LOGD("%s: sco not found", __func__);
         return false;
     }
 
-    device = find_hf_device_by_state(HFP_HF_STATE_AUDIO_CONNECTED);
-    if (!device) {
-        BT_LOGE("%s: sco not found", __func__);
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
-        return false;
+    if (!g_hfp_service.offloading) {
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STARTED);
+        return true;
     }
 
     if (hfp_hf_send_event(&device->addr, HF_OFFLOAD_START_REQ) != BT_STATUS_SUCCESS) {
@@ -334,6 +333,7 @@ bool hfp_hf_on_sco_start(void)
         return true;
     }
 
+    BT_LOGD("%s: send sco offload start", __func__);
     /* AUDIO_CTRL_EVT_STARTED would be generated at HF_OFFLOAD_START_EVT */
     return true;
 }
@@ -342,16 +342,15 @@ bool hfp_hf_on_sco_stop(void)
 {
     hf_device_t* device;
 
-    if (!g_hfp_service.offloading) {
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+    device = find_hf_device_by_state(HFP_HF_STATE_AUDIO_CONNECTED);
+    if (!device) {
+        BT_LOGD("%s: sco not found", __func__);
         return false;
     }
 
-    device = find_hf_device_by_state(HFP_HF_STATE_AUDIO_CONNECTED);
-    if (!device) {
-        BT_LOGE("%s: sco not found", __func__);
+    if (!g_hfp_service.offloading) {
         auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
-        return false;
+        return true;
     }
 
     if (hfp_hf_send_event(&device->addr, HF_OFFLOAD_STOP_REQ) != BT_STATUS_SUCCESS) {
@@ -360,7 +359,8 @@ bool hfp_hf_on_sco_stop(void)
         return true;
     }
 
-    /* AUDIO_CTRL_EVT_STARTED would be generated at HF_OFFLOAD_STOP_EVT */
+    BT_LOGD("%s: send sco offload stop", __func__);
+    /* AUDIO_CTRL_EVT_STOPPED would be generated at HF_OFFLOAD_STOP_EVT */
     return true;
 }
 

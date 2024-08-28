@@ -23,6 +23,7 @@
 #include <kvdb.h>
 #endif
 
+#include "audio_control.h"
 #include "bt_hfp_ag.h"
 #include "bt_profile.h"
 #include "bt_vendor.h"
@@ -74,7 +75,6 @@ typedef struct
  * Private Function Prototypes
  ****************************************************************************/
 bt_status_t hfp_ag_send_message(hfp_ag_msg_t* msg);
-
 static void hfp_ag_process_message(void* data);
 
 /****************************************************************************
@@ -99,6 +99,24 @@ static bool ag_device_cmp(void* device, void* addr)
 static ag_device_t* find_ag_device_by_addr(bt_address_t* addr)
 {
     return bt_list_find(g_ag_service.ag_devices, ag_device_cmp, addr);
+}
+
+static ag_device_t* find_ag_device_by_state(hfp_ag_state_t state)
+{
+    bt_list_t* list = g_ag_service.ag_devices;
+    bt_list_node_t* node;
+
+    if (!list)
+        return NULL;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        ag_device_t* device = bt_list_node(node);
+        if (ag_state_machine_get_state(device->agsm) == state) {
+            return device;
+        }
+    }
+
+    return NULL;
 }
 
 static ag_device_t* ag_device_new(bt_address_t* addr, ag_state_machine_t* agsm)
@@ -126,14 +144,6 @@ static void ag_device_delete(ag_device_t* device)
     ag_state_machine_destory(device->agsm);
     hfp_ag_msg_destory(msg);
     free(device);
-}
-
-static bool hfp_codec_get_offload(ag_state_machine_t* agsm,
-    hfp_offload_config_t* offload)
-{
-    offload->sco_hdl = ag_state_machine_get_sco_handle(agsm);
-    offload->sco_codec = ag_state_machine_get_codec(agsm);
-    return true;
 }
 
 static ag_state_machine_t* get_state_machine(bt_address_t* addr)
@@ -265,47 +275,6 @@ static void ag_dispatch_msg_foreach(void* data, void* context)
     ag_state_machine_dispatch(device->agsm, (hfp_ag_msg_t*)context);
 }
 
-static void hfp_ag_prepare_handle(ag_state_machine_t* agsm,
-    hfp_ag_msg_t* event)
-{
-    switch (event->event) {
-    case AG_STACK_EVENT_AUDIO_STATE_CHANGED: {
-        hfp_offload_config_t offload = { 0 };
-        ag_service_t* service = &g_ag_service;
-        uint8_t param[sizeof(hfp_offload_config_t)];
-        size_t size;
-        bool ret;
-
-        if (!service->offloading) {
-            break;
-        }
-
-        if (event->data.valueint1 == HFP_AUDIO_STATE_CONNECTED) {
-            ag_state_machine_set_sco_handle(agsm, event->data.valueint2);
-            hfp_codec_get_offload(agsm, &offload);
-            ret = hfp_offload_start_builder(&offload, param, &size);
-            if (!ret) {
-                BT_LOGE("HFP AG codec_offload_start_builder failed");
-                break;
-            }
-
-            hfp_ag_send_message(hfp_ag_event_new_ext(AG_OFFLOAD_START_REQ, &event->data.addr, param, size));
-        } else if (event->data.valueint1 == HFP_AUDIO_STATE_DISCONNECTED) {
-            hfp_codec_get_offload(agsm, &offload);
-            ret = hfp_offload_stop_builder(&offload, param, &size);
-            if (!ret) {
-                BT_LOGE("HFP AG codec_offload_stop_builder failed");
-                break;
-            }
-
-            hfp_ag_send_message(hfp_ag_event_new_ext(AG_OFFLOAD_STOP_REQ, &event->data.addr, param, size));
-        }
-    }
-    default:
-        break;
-    }
-}
-
 static void hfp_ag_process_message(void* data)
 {
     hfp_ag_msg_t* msg = (hfp_ag_msg_t*)data;
@@ -337,7 +306,13 @@ static void hfp_ag_process_message(void* data)
             break;
         }
 
-        hfp_ag_prepare_handle(agsm, msg);
+        if (msg->event == AG_STACK_EVENT_AUDIO_STATE_CHANGED
+            && msg->data.valueint1 == HFP_AUDIO_STATE_CONNECTED) {
+            /* Make this device active. TODO: set active device by App. */
+            bt_list_move(g_ag_service.ag_devices, g_ag_service.ag_devices,
+                find_ag_device_by_addr(&msg->data.addr), true);
+        }
+
         ag_state_machine_dispatch(agsm, msg);
         pthread_mutex_unlock(&g_ag_service.device_lock);
         break;
@@ -366,9 +341,74 @@ bt_status_t hfp_ag_send_event(bt_address_t* addr, hfp_ag_event_t evt)
     return hfp_ag_send_message(msg);
 }
 
+bool hfp_ag_on_sco_start(void)
+{
+    ag_device_t* device;
+
+    device = find_ag_device_by_state(HFP_AG_STATE_AUDIO_CONNECTED);
+    if (!device) {
+        BT_LOGD("%s: sco not found", __func__);
+        return false;
+    }
+
+    if (!g_ag_service.offloading) {
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STARTED);
+        return true;
+    }
+
+    if (hfp_ag_send_event(&device->addr, AG_OFFLOAD_START_REQ) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s: failed to send msg", __func__);
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+        return true;
+    }
+
+    BT_LOGD("%s: send sco offload start", __func__);
+    /* AUDIO_CTRL_EVT_STARTED would be generated at AG_OFFLOAD_START_EVT */
+    return true;
+}
+
+bool hfp_ag_on_sco_stop(void)
+{
+    ag_device_t* device;
+
+    device = find_ag_device_by_state(HFP_AG_STATE_AUDIO_CONNECTED);
+    if (!device) {
+        BT_LOGE("%s: sco not found", __func__);
+        return false;
+    }
+
+    if (!g_ag_service.offloading) {
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        return true;
+    }
+
+    if (hfp_ag_send_event(&device->addr, AG_OFFLOAD_STOP_REQ) != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s: failed to send msg", __func__);
+        auidio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        return true;
+    }
+
+    BT_LOGD("%s: send sco offload stop", __func__);
+    /* AUDIO_CTRL_EVT_STOPPED would be generated at AG_OFFLOAD_STOP_EVT */
+    return true;
+}
+
 static bt_status_t hfp_ag_init(void)
 {
-    return BT_STATUS_SUCCESS;
+    bt_status_t ret;
+
+    ret = audio_ctrl_init(PROFILE_HFP_AG);
+    if (ret != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s: failed to start audio control channel", __func__);
+        return ret;
+    }
+
+    return ret;
+}
+
+static void hfp_ag_cleanup(void)
+{
+    audio_ctrl_cleanup(PROFILE_HFP_AG);
 }
 
 static bt_status_t hfp_ag_startup(profile_on_startup_t cb)
@@ -408,10 +448,6 @@ static void hfp_ag_process_msg(profile_msg_t* msg)
 static int hfp_ag_get_state(void)
 {
     return 1;
-}
-
-static void hfp_ag_cleanup(void)
-{
 }
 
 static void* hfp_ag_register_callbacks(void* remote, const hfp_ag_callbacks_t* callbacks)
