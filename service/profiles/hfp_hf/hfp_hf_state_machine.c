@@ -505,10 +505,15 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
         }
         break;
     }
-    case HF_OFFLOAD_STOP_EVT: {
+    case HF_OFFLOAD_START_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+        break;
+    case HF_OFFLOAD_STOP_REQ:
         auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
         break;
-    }
+    case HF_OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        break;
     default:
         BT_LOGE("Disconnected: Unexpected stack event: %s", stack_event_to_string(event));
         break;
@@ -736,10 +741,15 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         bt_sal_hfp_hf_disconnect(&hfsm->addr);
         hsm_transition_to(sm, &disconnected_state);
         break;
-    case HF_OFFLOAD_STOP_EVT: {
+    case HF_OFFLOAD_START_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+        break;
+    case HF_OFFLOAD_STOP_REQ:
         auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
         break;
-    }
+    case HF_OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        break;
     default:
         break;
     }
@@ -1024,10 +1034,6 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
     case HF_STACK_EVENT_CODEC_CHANGED:
         hfsm->codec = data->valueint1 == HFP_CODEC_MSBC ? HFP_CODEC_MSBC : HFP_CODEC_CVSD;
         break;
-    case HF_OFFLOAD_STOP_EVT: {
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
-        break;
-    }
     default:
         BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;
@@ -1222,6 +1228,15 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         }
         break;
     }
+    case HF_OFFLOAD_START_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+        break;
+    case HF_OFFLOAD_STOP_REQ:
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        break;
+    case HF_OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        break;
     default:
         return default_process_event(sm, event, data);
     }
@@ -1424,6 +1439,9 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
             break;
         }
         flag_set(hfsm, PENDING_OFFLOAD_STOP);
+        break;
+    case HF_OFFLOAD_STOP_EVT:
+        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
         break;
     default:
         return default_process_event(sm, event, data);
