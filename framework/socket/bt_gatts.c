@@ -68,41 +68,68 @@ bt_status_t bt_gatts_register_service(bt_instance_t* ins, gatts_handle_t* phandl
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
     CHECK_NULL_PTR(phandle);
 
+    if (ins->gatts_remote_list == NULL) {
+        ins->gatts_remote_list = bt_list_new((bt_list_free_cb_t)gatts_remote_destroy);
+        if (ins->gatts_remote_list == NULL) {
+            return BT_STATUS_NOMEM;
+        }
+    }
+
     gatts_remote = gatts_remote_new(ins, callbacks);
-    if (!gatts_remote)
-        return BT_STATUS_NOMEM;
+    if (!gatts_remote) {
+        status = BT_STATUS_NOMEM;
+        goto fail;
+    }
 
     packet.gatts_pl._bt_gatts_register.cookie = PTR2INT(uint64_t) gatts_remote;
     status = bt_socket_client_sendrecv(ins, &packet, BT_GATT_SERVER_REGISTER_SERVICE);
     if (status != BT_STATUS_SUCCESS) {
-        gatts_remote_destroy(gatts_remote);
-        return status;
+        goto fail;
     }
     if (packet.gatts_r.status != BT_STATUS_SUCCESS) {
-        gatts_remote_destroy(gatts_remote);
-        return packet.gatts_r.status;
+        status = packet.gatts_r.status;
+        goto fail;
     }
 
     gatts_remote->cookie = INT2PTR(void*) packet.gatts_r.handle;
     gatts_remote->user_phandle = phandle;
+    bt_list_add_tail(ins->gatts_remote_list, gatts_remote);
+
     *phandle = gatts_remote;
     return BT_STATUS_SUCCESS;
+
+fail:
+    if (gatts_remote) {
+        gatts_remote_destroy(gatts_remote);
+    }
+    if (!bt_list_length(ins->gatts_remote_list)) {
+        bt_list_free(ins->gatts_remote_list);
+        ins->gatts_remote_list = NULL;
+    }
+    return status;
 }
 
 bt_status_t bt_gatts_unregister_service(gatts_handle_t srv_handle)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+    bt_instance_t* ins;
     bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
     void** user_phandle;
 
     CHECK_NULL_PTR(gatts_remote);
 
+    ins = gatts_remote->ins;
     packet.gatts_pl._bt_gatts_unregister.handle = PTR2INT(uint64_t) gatts_remote->cookie;
-    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_UNREGISTER_SERVICE);
+    status = bt_socket_client_sendrecv(ins, &packet, BT_GATT_SERVER_UNREGISTER_SERVICE);
     user_phandle = gatts_remote->user_phandle;
-    gatts_remote_destroy(gatts_remote);
+    bt_list_remove(ins->gatts_remote_list, gatts_remote);
     *user_phandle = NULL;
+
+    if (!bt_list_length(ins->gatts_remote_list)) {
+        bt_list_free(ins->gatts_remote_list);
+        ins->gatts_remote_list = NULL;
+    }
 
     if (status != BT_STATUS_SUCCESS) {
         return status;

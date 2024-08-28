@@ -40,9 +40,18 @@ bt_status_t bt_gattc_create_connect(bt_instance_t* ins, gattc_handle_t* phandle,
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
     CHECK_NULL_PTR(phandle);
 
+    if (ins->gattc_remote_list == NULL) {
+        ins->gattc_remote_list = bt_list_new(free);
+        if (ins->gattc_remote_list == NULL) {
+            return BT_STATUS_NOMEM;
+        }
+    }
+
     gattc_remote = (bt_gattc_remote_t*)malloc(sizeof(bt_gattc_remote_t));
-    if (!gattc_remote)
-        return BT_STATUS_NOMEM;
+    if (!gattc_remote) {
+        status = BT_STATUS_NOMEM;
+        goto fail;
+    }
 
     gattc_remote->ins = ins;
     gattc_remote->callbacks = callbacks;
@@ -50,34 +59,52 @@ bt_status_t bt_gattc_create_connect(bt_instance_t* ins, gattc_handle_t* phandle,
     packet.gattc_pl._bt_gattc_create.cookie = PTR2INT(uint64_t) gattc_remote;
     status = bt_socket_client_sendrecv(ins, &packet, BT_GATT_CLIENT_CREATE_CONNECT);
     if (status != BT_STATUS_SUCCESS) {
-        free(gattc_remote);
-        return status;
+        goto fail;
     }
     if (packet.gattc_r.status != BT_STATUS_SUCCESS) {
-        free(gattc_remote);
-        return packet.gattc_r.status;
+        status = packet.gattc_r.status;
+        goto fail;
     }
 
     gattc_remote->cookie = INT2PTR(void*) packet.gattc_r.handle;
     gattc_remote->user_phandle = phandle;
+    bt_list_add_tail(ins->gattc_remote_list, gattc_remote);
+
     *phandle = gattc_remote;
     return BT_STATUS_SUCCESS;
+
+fail:
+    if (gattc_remote) {
+        free(gattc_remote);
+    }
+    if (!bt_list_length(ins->gattc_remote_list)) {
+        bt_list_free(ins->gattc_remote_list);
+        ins->gattc_remote_list = NULL;
+    }
+    return status;
 }
 
 bt_status_t bt_gattc_delete_connect(gattc_handle_t conn_handle)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+    bt_instance_t* ins;
     bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
     void** user_phandle;
 
     CHECK_NULL_PTR(gattc_remote);
 
+    ins = gattc_remote->ins;
     packet.gattc_pl._bt_gattc_delete.handle = PTR2INT(uint64_t) gattc_remote->cookie;
-    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_DELETE_CONNECT);
+    status = bt_socket_client_sendrecv(ins, &packet, BT_GATT_CLIENT_DELETE_CONNECT);
     user_phandle = gattc_remote->user_phandle;
-    free(gattc_remote);
+    bt_list_remove(ins->gattc_remote_list, gattc_remote);
     *user_phandle = NULL;
+
+    if (!bt_list_length(ins->gattc_remote_list)) {
+        bt_list_free(ins->gattc_remote_list);
+        ins->gattc_remote_list = NULL;
+    }
 
     if (status != BT_STATUS_SUCCESS) {
         return status;

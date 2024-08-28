@@ -443,6 +443,9 @@ typedef struct bt_instance {
     void* spp_cookie;
     void* hidd_cookie;
     void* l2cap_cookie;
+
+    bt_list_t* gattc_remote_list;
+    bt_list_t* gatts_remote_list;
 #endif
 } bt_instance_t;
 

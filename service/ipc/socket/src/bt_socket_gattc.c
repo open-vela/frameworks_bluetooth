@@ -46,6 +46,19 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+#define CHECK_REMOTE_VALID(_list, _remote)                                                     \
+    do {                                                                                       \
+        bt_list_node_t* _node;                                                                 \
+        if (!_list)                                                                            \
+            return BT_STATUS_SERVICE_NOT_FOUND;                                                \
+        for (_node = bt_list_head(_list); _node != NULL; _node = bt_list_next(_list, _node)) { \
+            if (bt_list_node(_node) == _remote)                                                \
+                break;                                                                         \
+        }                                                                                      \
+        if (!_node)                                                                            \
+            return BT_STATUS_SERVICE_NOT_FOUND;                                                \
+    } while (0)
+
 #define CALLBACK_REMOTE(_remote, _type, _cback, ...) \
     do {                                             \
         _type* _cbs = (_type*)_remote->callbacks;    \
@@ -343,6 +356,8 @@ int bt_socket_client_gattc_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
     bt_gattc_remote_t* gattc_remote = INT2PTR(bt_gattc_remote_t*) packet->gattc_cb._on_callback.remote;
+    CHECK_REMOTE_VALID(ins->gattc_remote_list, gattc_remote);
+
     switch (packet->code) {
     case BT_GATT_CLIENT_ON_CONNECTED:
         CALLBACK_REMOTE(gattc_remote, gattc_callbacks_t,
