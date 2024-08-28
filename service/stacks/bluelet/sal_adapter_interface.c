@@ -1427,31 +1427,6 @@ bt_status_t bt_sal_le_set_scan_parameters(ble_scan_params_t* params)
 #endif
 }
 
-/* maybe implement it in scan service */
-bt_status_t bt_sal_le_set_scan_filters(ble_scan_filter_t* filter)
-{
-#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    SAL_CHECK_PARAM(filter);
-    SERVICE_BLE_SCAN_FILTER_S* scan_filter = malloc(sizeof(SERVICE_BLE_SCAN_FILTER_S) + filter->length);
-
-    if (scan_filter == NULL)
-        return BT_STATUS_NOMEM;
-
-    memcpy(scan_filter->bd_addr, filter->addr.addr, 6);
-    scan_filter->length = filter->length;
-    memcpy(scan_filter->adv_data_mask, filter->adv_data_mask, filter->length);
-    if (service_adapter_gap_set_ble_scan_filter(scan_filter) != SERVICE_BT_STATUS_SUCCESS) {
-        free(scan_filter);
-        return BT_STATUS_FAIL;
-    }
-    free(scan_filter);
-
-    return BT_STATUS_SUCCESS;
-#else
-    return BT_STATUS_NOT_SUPPORTED;
-#endif
-}
-
 bt_status_t bt_sal_le_start_scan(void)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
