@@ -33,7 +33,14 @@ void* BTSYMBOLS(bt_spp_register_app)(bt_instance_t* ins, const spp_callbacks_t* 
 {
     spp_interface_t* profile = get_profile_service();
 
-    return profile->register_app(NULL, callbacks);
+    return profile->register_app(NULL, NULL, SPP_PORT_TYPE_TTY, callbacks);
+}
+
+void* BTSYMBOLS(bt_spp_register_app_ext)(bt_instance_t* ins, const char* name, int port_type, const spp_callbacks_t* callbacks)
+{
+    spp_interface_t* profile = get_profile_service();
+
+    return profile->register_app(NULL, name, port_type, callbacks);
 }
 
 bt_status_t BTSYMBOLS(bt_spp_unregister_app)(bt_instance_t* ins, void* handle)

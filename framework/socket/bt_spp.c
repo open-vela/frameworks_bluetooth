@@ -24,9 +24,9 @@
 #include "spp_service.h"
 #include "utils/log.h"
 
-void* bt_spp_register_app(bt_instance_t* ins, const spp_callbacks_t* callbacks)
+void* bt_spp_register_app_ext(bt_instance_t* ins, const char* name, int port_type, const spp_callbacks_t* callbacks)
 {
-    bt_message_packet_t packet;
+    bt_message_packet_t packet = { 0 };
     bt_status_t status;
     void* handle;
 
@@ -45,6 +45,13 @@ void* bt_spp_register_app(bt_instance_t* ins, const spp_callbacks_t* callbacks)
         return NULL;
     }
 
+    if (name) {
+        packet.spp_pl._bt_spp_register_app.name_len = strlen(name);
+        strlcpy(packet.spp_pl._bt_spp_register_app.name, name, sizeof(packet.spp_pl._bt_spp_register_app.name));
+    } else
+        packet.spp_pl._bt_spp_register_app.name_len = 0;
+
+    packet.spp_pl._bt_spp_register_app.port_type = port_type;
     status = bt_socket_client_sendrecv(ins, &packet, BT_SPP_REGISTER_APP);
     if (status != BT_STATUS_SUCCESS || !packet.spp_r.handle) {
         bt_callbacks_list_free(ins->spp_callbacks);
@@ -53,6 +60,11 @@ void* bt_spp_register_app(bt_instance_t* ins, const spp_callbacks_t* callbacks)
     }
 
     return handle;
+}
+
+void* bt_spp_register_app(bt_instance_t* ins, const spp_callbacks_t* callbacks)
+{
+    return bt_spp_register_app_ext(ins, NULL, SPP_PORT_TYPE_TTY, callbacks);
 }
 
 bt_status_t bt_spp_unregister_app(bt_instance_t* ins, void* handle)

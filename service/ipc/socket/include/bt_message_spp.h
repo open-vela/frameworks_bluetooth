@@ -50,6 +50,12 @@ BT_SPP_MESSAGE_START,
 
     typedef union {
         struct {
+            uint32_t name_len;
+            char name[64];
+            int port_type;
+        } _bt_spp_register_app;
+
+        struct {
             uint32_t handle;
             bt_uuid_t uuid;
             uint16_t scn;

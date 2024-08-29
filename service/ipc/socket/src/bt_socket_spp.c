@@ -107,7 +107,8 @@ void bt_socket_server_spp_process(service_poll_t* poll,
     switch (packet->code) {
     case BT_SPP_REGISTER_APP: {
         if (ins->spp_cookie == NULL) {
-            ins->spp_cookie = profile->register_app(ins, &g_spp_socket_cb);
+            ins->spp_cookie = profile->register_app(ins, packet->spp_pl._bt_spp_register_app.name_len ? packet->spp_pl._bt_spp_register_app.name : NULL,
+                packet->spp_pl._bt_spp_register_app.port_type, &g_spp_socket_cb);
             packet->spp_r.handle = PTR2INT(uint64_t) ins->spp_cookie;
         } else {
             packet->spp_r.handle = 0;
