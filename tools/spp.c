@@ -552,7 +552,7 @@ int spp_command_init(void* handle)
     sem_init(&spp_send_sem, 0, 0);
     thread_loop_init(&spp_thread_loop);
     thread_loop_run(&spp_thread_loop, true, "spp_client");
-    spp_app_handle = bt_spp_register_app(handle, &spp_cbs);
+    spp_app_handle = bt_spp_register_app_ext(handle, "bttool", SPP_PORT_TYPE_TTY, &spp_cbs);
 
     return 0;
 }
