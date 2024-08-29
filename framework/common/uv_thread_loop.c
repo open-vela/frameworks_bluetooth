@@ -123,7 +123,7 @@ static void thread_schedule_loop(void* data)
     do_in_thread_loop(loop, set_ready, priv);
     uv_run(loop, UV_RUN_DEFAULT);
     priv->is_running = 0;
-    uv_loop_close(loop);
+    (void)uv_loop_close(loop);
 
     syslog(LOG_DEBUG, "%s %s quit", priv->name, __func__);
 
@@ -214,7 +214,7 @@ void thread_loop_exit(uv_loop_t* loop)
         uv_sem_destroy(&priv->exited);
     } else {
         uv_run(loop, UV_RUN_ONCE);
-        uv_loop_close(loop);
+        (void)uv_loop_close(loop);
     }
 
     uv_mutex_lock(&priv->msg_lock);

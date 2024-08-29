@@ -125,7 +125,7 @@ static void service_schedule_loop(void* data)
     do_in_service_loop(set_ready, loop);
     uv_run(loop->handle, UV_RUN_DEFAULT);
     loop->is_running = 0;
-    uv_loop_close(loop->handle);
+    (void)uv_loop_close(loop->handle);
 
     BT_LOGD("%s %s quit", loop->name, __func__);
     uv_sem_post(&loop->exited);
@@ -208,7 +208,7 @@ int service_loop_init(void)
     return 0;
 
 fail:
-    uv_loop_close(uvloop);
+    (void)uv_loop_close(uvloop);
     free(loop);
     return ret;
 }
@@ -260,7 +260,7 @@ void service_loop_exit(void)
     struct list_node* tmp;
 
     if (loop == NULL) {
-        uv_loop_close(handle);
+        (void)uv_loop_close(handle);
         return;
     }
 
@@ -270,7 +270,7 @@ void service_loop_exit(void)
         uv_sem_destroy(&loop->exited);
     } else {
         uv_run(handle, UV_RUN_ONCE);
-        uv_loop_close(handle);
+        (void)uv_loop_close(handle);
     }
 
     uv_mutex_lock(&loop->msg_lock);
