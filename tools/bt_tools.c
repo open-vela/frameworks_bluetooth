@@ -1714,6 +1714,7 @@ int main(int argc, char** argv)
 
     pthread_mutex_init(&bt_lock, NULL);
     pthread_cond_init(&disable_cond, NULL);
+    pthread_setschedprio(pthread_self(), CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY);
     g_bttool_ins = bluetooth_create_instance();
     if (g_bttool_ins == NULL) {
         PRINT("create instance error\n");

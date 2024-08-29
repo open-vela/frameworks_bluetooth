@@ -59,7 +59,7 @@ config BLUETOOTH_SERVICE_LOOP_THREAD_STACK_SIZE
 
 config BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY
 	int "bluetooth service loop thread priority"
-	default 100
+	default 103
 
 config BLUETOOTH_DUMPBUFFER
 	bool "Bluetooth dumpbuffer"
