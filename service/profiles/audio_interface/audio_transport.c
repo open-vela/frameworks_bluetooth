@@ -134,7 +134,7 @@ static void transport_chnl_close_cb(uv_handle_t* handle)
 
     free(handle);
     ch->closing = 0;
-    if (ch && ch->ipc_handle && ch->state == IPC_DISCONNTECTED) {
+    if (ch->ipc_handle && ch->state == IPC_DISCONNTECTED) {
         transport = ch->ipc_handle;
         if (!transport->closing)
             return;
