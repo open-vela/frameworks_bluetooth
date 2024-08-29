@@ -675,6 +675,7 @@ static bt_status_t bluelet_stack_init(void)
     pthread_t thread_id;
     uv_sem_t startup;
     bt_status_t status;
+    struct sched_param param;
 
     if (stack_initialized)
         return BT_STATUS_SUCCESS;
@@ -690,6 +691,9 @@ static bt_status_t bluelet_stack_init(void)
 
     uv_sem_init(&startup, 0);
     pthread_attr_init(&pattr);
+    pthread_attr_getschedparam(&pattr, &param);
+    param.sched_priority = CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY;
+    pthread_attr_setschedparam(&pattr, &param);
     pthread_attr_setstacksize(&pattr, BTSTACK_THREAD_STACK_SIZE);
 
     /* Create bluelet stack schedule thread */

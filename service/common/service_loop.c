@@ -245,6 +245,8 @@ int service_loop_run(bool start_thread, char* name)
         uv_sem_destroy(&loop->ready);
         BT_LOGD("%s loop running now !!!", loop->name);
     } else {
+        pthread_setschedprio(loop->thread, CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY);
+
         BT_LOGD("service loop running now !!!");
         service_schedule_loop(loop);
     }
