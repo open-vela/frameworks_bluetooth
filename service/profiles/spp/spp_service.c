@@ -341,6 +341,20 @@ static void remove_pty_device(spp_pty_device_t* device)
     free(device);
 }
 
+static bool spp_app_is_exist(void* handle)
+{
+    struct list_node* node;
+
+    list_for_every(&g_spp_handle.apps, node)
+    {
+        if ((void*)node == handle)
+            return true;
+    }
+
+    BT_LOGW("spp app not found: %p", handle);
+    return false;
+}
+
 static spp_pty_device_t* spp_pty_device_open(spp_pty_device_t* device)
 {
     int ret;
@@ -874,7 +888,7 @@ static bt_status_t spp_unregister_app(void** remote, void* handle)
 {
     spp_handle_t* app = handle;
 
-    if (!app)
+    if (!app || !spp_app_is_exist(handle))
         return BT_STATUS_FAIL;
 
     pthread_mutex_lock(&g_spp_handle.spp_lock);
