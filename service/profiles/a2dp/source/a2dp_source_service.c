@@ -200,8 +200,10 @@ static void a2dp_service_handle_event(void* data)
     a2dp_event_t* event = data;
 
     /* msg cleanup ? */
-    if (!g_a2dp_source.enabled && event->event != A2DP_STARTUP)
+    if (!g_a2dp_source.enabled && event->event != A2DP_STARTUP) {
+        a2dp_event_destory(event);
         return;
+    }
 
     switch (event->event) {
     case A2DP_STARTUP:
