@@ -51,6 +51,11 @@ typedef enum {
     SPP_PTY_MODE_RAW
 } spp_pty_mode_t;
 
+typedef enum {
+    SPP_PORT_TYPE_TTY,
+    SPP_PORT_TYPE_RPMSG_UART,
+} spp_port_type_t;
+
 /**
  * @brief Spp connection state callback
  *
@@ -93,6 +98,17 @@ typedef struct {
  * @return void* - spp app handle, NULL on failure.
  */
 void* BTSYMBOLS(bt_spp_register_app)(bt_instance_t* ins, const spp_callbacks_t* callbacks);
+
+/**
+ * @brief Register spp app with params
+ *
+ * @param ins - bluetooth client instance.
+ * @param callbacks - spp callback functions.
+ * @param name - spp app name.
+ * @param port_type - spp port type.
+ * @return void* - spp app handle, NULL on failure.
+ */
+void* BTSYMBOLS(bt_spp_register_app_ext)(bt_instance_t* ins, const char* name, int port_type, const spp_callbacks_t* callbacks);
 
 /**
  * @brief Unregister spp app

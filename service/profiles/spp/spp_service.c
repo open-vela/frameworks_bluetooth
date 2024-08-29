@@ -60,6 +60,9 @@
 #define SERVICE_SCN(port) ((port & 0x3E) >> 1)
 #define SERVICE_CONN_ID(conn_port) (conn_port >> 6)
 
+#ifdef CONFIG_RPMSG_UART
+#define SPP_UART_DEV "dev/ttySPP0"
+#endif
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -78,6 +81,8 @@ struct spp_service_global {
 typedef struct spp_handle {
     struct list_node node;
     bt_instance_t* ins;
+    char name[64];
+    int port_type;
     void* remote;
     const spp_callbacks_t* cbs;
 } spp_handle_t;
@@ -359,10 +364,18 @@ static spp_pty_device_t* spp_pty_device_open(spp_pty_device_t* device)
 {
     int ret;
 
-    ret = open_pty(&device->mfd, device->pty_name);
-    if (ret != 0) {
-        BT_LOGE("pty create failed");
-        goto error;
+    if (device->app_handle->port_type == SPP_PORT_TYPE_TTY) {
+        ret = open_pty(&device->mfd, device->pty_name);
+        if (ret != 0) {
+            BT_LOGE("pty create failed");
+            goto error;
+        }
+    } else if (device->app_handle->port_type == SPP_PORT_TYPE_RPMSG_UART) {
+#ifdef CONFIG_RPMSG_UART
+        device->mfd = open(SPP_UART_DEV, O_RDWR);
+        assert((sizeof(device->pty_name) - 1) > strlen(SPP_UART_DEV));
+        strlcpy(device->pty_name, SPP_UART_DEV, sizeof(device->pty_name));
+#endif
     }
 
     device->handle = euv_pty_init(get_service_uv_loop(), device->mfd, UV_TTY_MODE_IO);
@@ -852,7 +865,7 @@ static int spp_get_state(void)
     return 1;
 }
 
-static void* spp_register_app(void* remote, const spp_callbacks_t* callbacks)
+static void* spp_register_app(void* remote, const char* name, int port_type, const spp_callbacks_t* callbacks)
 {
     spp_handle_t* hdl = NULL;
 
@@ -867,12 +880,16 @@ static void* spp_register_app(void* remote, const spp_callbacks_t* callbacks)
         return NULL;
     }
 
-    hdl = malloc(sizeof(spp_handle_t));
+    hdl = zalloc(sizeof(spp_handle_t));
     if (hdl == NULL) {
         pthread_mutex_unlock(&g_spp_handle.spp_lock);
         return NULL;
     }
 
+    if (name)
+        strlcpy(hdl->name, name, sizeof(hdl->name));
+
+    hdl->port_type = port_type;
     hdl->ins = NULL;
     hdl->remote = remote;
     hdl->cbs = callbacks;
