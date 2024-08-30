@@ -458,6 +458,27 @@ void a2dp_source_on_stopped(void)
     a2dp_control_event(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, A2DP_CTRL_EVT_STOPPED);
 }
 
+bool a2dp_source_prepare_start(void)
+{
+    BT_LOGD("%s", __func__);
+
+    if (a2dp_src_stream.offloading) {
+        return true;
+    }
+
+    if (a2dp_src_stream.stream_state == STATE_SUSPENDING) {
+        /*
+         * An A2DP_CTRL_CMD_START is received during STATE_SUSPENDING, withdraw the
+         * STATE_SUSPENDING and no need to send the redundant start request.
+         */
+        BT_LOGD("Recover from STATE_SUSPENDING");
+        a2dp_src_stream.stream_state = STATE_RUNNING;
+        return false;
+    }
+
+    return true;
+}
+
 void a2dp_source_prepare_suspend(void)
 {
     BT_LOGD("%s", __func__);
