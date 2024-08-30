@@ -163,6 +163,10 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
         bt_socket_server_a2dp_source_process(poll, fd, ins, &packet);
     } else if (packet.code > BT_A2DP_SINK_MESSAGE_START && packet.code < BT_A2DP_SINK_MESSAGE_END) {
         bt_socket_server_a2dp_sink_process(poll, fd, ins, &packet);
+#ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
+    } else if (packet.code > BT_AVRCP_TARGET_MESSAGE_START && packet.code < BT_AVRCP_TARGET_MESSAGE_END) {
+        bt_socket_server_avrcp_target_process(poll, fd, ins, &packet);
+#endif
     } else if (packet.code > BT_HFP_AG_MESSAGE_START && packet.code < BT_HFP_AG_MESSAGE_END) {
         bt_socket_server_hfp_ag_process(poll, fd, ins, &packet);
     } else if (packet.code > BT_HFP_HF_MESSAGE_START && packet.code < BT_HFP_HF_MESSAGE_END) {

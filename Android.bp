@@ -14,6 +14,7 @@ cc_library {
         "service/ipc/socket/src/bt_socket_gatts.c",
         "service/ipc/socket/src/bt_socket_a2dp_sink.c",
         "service/ipc/socket/src/bt_socket_a2dp_source.c",
+        "service/ipc/socket/src/bt_socket_avrcp_target.c",
         "service/ipc/socket/src/bt_socket_hfp_ag.c",
         "service/ipc/socket/src/bt_socket_hfp_hf.c",
         "service/ipc/socket/src/bt_socket_hid_device.c",

@@ -166,6 +166,7 @@ static void absolute_volume_cb(BD_ADDR addr, uint8_t volume)
         return;
 
     msg->data.absvol.volume = volume;
+
     bt_sal_avrcp_control_event_callback(msg);
 }
 #endif /* CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME */
