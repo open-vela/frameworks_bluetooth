@@ -99,6 +99,15 @@ void bt_socket_server_a2dp_sink_process(service_poll_t* poll,
 
 int bt_socket_client_a2dp_sink_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+
+/* AVRCP Target */
+
+void bt_socket_server_avrcp_target_process(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+
+int bt_socket_client_avrcp_target_callback(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+
 /* HFP */
 void bt_socket_server_hfp_ag_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);

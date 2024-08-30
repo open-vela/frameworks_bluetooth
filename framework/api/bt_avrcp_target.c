@@ -19,6 +19,7 @@
 
 #include "avrcp_target_service.h"
 #include "bt_avrcp_target.h"
+#include "bt_internal.h"
 #include "bt_profile.h"
 #include "service_manager.h"
 #include "utils/log.h"
@@ -28,16 +29,31 @@ static avrcp_target_interface_t* get_profile_service(void)
     return (avrcp_target_interface_t*)service_manager_get_profile(PROFILE_AVRCP_TG);
 }
 
-void* bt_avrcp_target_register_callbacks(bt_instance_t* ins, const avrcp_target_callbacks_t* callbacks)
+void* BTSYMBOLS(bt_avrcp_target_register_callbacks)(bt_instance_t* ins, const avrcp_target_callbacks_t* callbacks)
 {
     avrcp_target_interface_t* profile = get_profile_service();
 
     return profile->register_callbacks(NULL, callbacks);
 }
 
-bool bt_avrcp_target_unregister_callbacks(bt_instance_t* ins, void* cookie)
+bool BTSYMBOLS(bt_avrcp_target_unregister_callbacks)(bt_instance_t* ins, void* cookie)
 {
     avrcp_target_interface_t* profile = get_profile_service();
 
     return profile->unregister_callbacks(NULL, cookie);
+}
+
+bt_status_t BTSYMBOLS(bt_avrcp_target_get_play_status_response)(bt_instance_t* ins, bt_address_t* addr, avrcp_play_status_t play_status,
+    uint32_t song_len, uint32_t song_pos)
+{
+    avrcp_target_interface_t* profile = get_profile_service();
+
+    return profile->get_play_status_rsp(addr, play_status, song_len, song_pos);
+}
+
+bt_status_t BTSYMBOLS(bt_avrcp_target_play_status_notify)(bt_instance_t* ins, bt_address_t* addr, avrcp_play_status_t play_status)
+{
+    avrcp_target_interface_t* profile = get_profile_service();
+
+    return profile->play_status_notify(addr, play_status);
 }
