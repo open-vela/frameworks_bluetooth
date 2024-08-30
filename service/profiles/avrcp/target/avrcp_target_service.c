@@ -311,6 +311,7 @@ static void handle_avrcp_passthrough_cmd(bt_address_t* addr,
     }
 
     BT_LOGD("passthrough cmd: %d, state: %d", op, state);
+    AVRCP_TG_CALLBACK_FOREACH(g_avrc_target.callbacks, received_panel_operation_cb, addr, op, state);
     if (state != AVRCP_KEY_PRESSED)
         return;
 
@@ -364,6 +365,8 @@ static void handle_avrcp_play_status_request(avrcp_msg_t* msg)
 
     BT_LOGD("playback status: %s, duration: 0x%08" PRIx32 ", position: 0x%08" PRIx32, bt_media_status_str(playback), durations, position);
     bt_sal_avrcp_target_get_play_status_rsp(addr, playback, durations, position);
+
+    AVRCP_TG_CALLBACK_FOREACH(g_avrc_target.callbacks, received_get_play_status_request_cb, addr);
 }
 
 static void handle_avrcp_register_notification(avrcp_msg_t* msg)
@@ -423,6 +426,8 @@ static void handle_avrcp_register_notification(avrcp_msg_t* msg)
     default:
         break;
     }
+
+    AVRCP_TG_CALLBACK_FOREACH(g_avrc_target.callbacks, received_register_notification_request_cb, addr, event, msg->data.notify_req.interval);
 }
 
 static void avrcp_target_service_handle_callback(void* data)
@@ -585,10 +590,53 @@ static bool avrcp_target_unregister_callbacks(void** remote, void* cookie)
     return bt_remote_callbacks_unregister(g_avrc_target.callbacks, remote, cookie);
 }
 
+static bt_status_t avrcp_target_get_play_status_response(bt_address_t* addr, avrcp_play_status_t status,
+    uint32_t song_len, uint32_t song_pos)
+{
+    avrcp_tg_device_t* device = NULL;
+
+    pthread_mutex_lock(&g_avrc_target.mutex);
+    if (g_avrc_target.enable) {
+        pthread_mutex_unlock(&g_avrc_target.mutex);
+        return BT_STATUS_NOT_ENABLED;
+    }
+
+    pthread_mutex_unlock(&g_avrc_target.mutex);
+
+    device = tg_device_find(addr);
+    if (!device) {
+        return BT_STATUS_DEVICE_NOT_FOUND;
+    }
+
+    return bt_sal_avrcp_target_get_play_status_rsp(addr, status, song_len, song_pos);
+}
+
+static bt_status_t avrcp_target_play_status_notify(bt_address_t* addr, avrcp_play_status_t status)
+{
+    avrcp_tg_device_t* device = NULL;
+
+    pthread_mutex_lock(&g_avrc_target.mutex);
+    if (g_avrc_target.enable) {
+        pthread_mutex_unlock(&g_avrc_target.mutex);
+        return BT_STATUS_NOT_ENABLED;
+    }
+
+    pthread_mutex_unlock(&g_avrc_target.mutex);
+
+    device = tg_device_find(addr);
+    if (!device) {
+        return BT_STATUS_DEVICE_NOT_FOUND;
+    }
+
+    return bt_sal_avrcp_target_play_status_notify(addr, status);
+}
+
 static const avrcp_target_interface_t avrcp_targetInterface = {
     .size = sizeof(avrcp_targetInterface),
     .register_callbacks = avrcp_target_register_callbacks,
     .unregister_callbacks = avrcp_target_unregister_callbacks,
+    .get_play_status_rsp = avrcp_target_get_play_status_response,
+    .play_status_notify = avrcp_target_play_status_notify,
 };
 
 static const void* get_avrcp_target_profile_interface(void)
