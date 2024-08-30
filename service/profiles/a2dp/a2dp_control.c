@@ -150,8 +150,11 @@ static void a2dp_control_on_start(uint8_t ch_id)
     if (ch_id == AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         if (a2dp_source_stream_ready()) {
-            a2dp_source_stream_start();
-            return;
+            if (a2dp_source_prepare_start() == true) {
+                a2dp_source_stream_start();
+                return; /* A2DP_CTRL_EVT_STARTED is send when A2DP started */
+            }
+            evt = A2DP_CTRL_EVT_STARTED;
         } else if (a2dp_source_stream_started()) {
             evt = A2DP_CTRL_EVT_STARTED;
         } else {
