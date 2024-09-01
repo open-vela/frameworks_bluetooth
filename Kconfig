@@ -136,7 +136,7 @@ config BLUETOOTH_GATTC_MAX_CONNECTIONS
 
 config BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
 	int "GATT server max number of attributes contained in a table"
-	default 16
+	default 10
 endif
 
 config BLUETOOTH_AVRCP_TARGET
