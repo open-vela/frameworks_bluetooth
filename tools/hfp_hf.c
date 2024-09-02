@@ -511,6 +511,9 @@ static const hfp_hf_callbacks_t hfp_hf_cbs = {
     hf_cmd_complete_callback,
     hf_ring_indication_callback,
     hf_vol_changed_callback,
+    NULL,
+    NULL,
+    NULL,
 };
 
 int hfp_hf_commond_init(void* handle)
