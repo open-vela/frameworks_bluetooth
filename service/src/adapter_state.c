@@ -473,7 +473,9 @@ static bool ble_turning_off_process_event(state_machine_t* sm, uint32_t event, v
 
     switch (event) {
     case BLE_PROFILE_DISABLED:
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
         bt_sal_le_disable();
+#endif
         break;
     case BLE_DISABLED:
         hsm_transition_to(sm, &off_state);
