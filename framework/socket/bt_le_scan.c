@@ -18,6 +18,7 @@
 #include <stdlib.h>
 
 #include "bluetooth.h"
+#include "bt_debug.h"
 #include "bt_le_scan.h"
 #include "bt_list.h"
 #include "bt_socket.h"
