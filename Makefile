@@ -328,6 +328,19 @@ CSRCS     += feature/src/system_bluetooth_bt_a2dpsink.c
 CSRCS     += feature/src/system_bluetooth_bt_a2dpsink_impl.c
 endif
 
+depend::
+	@python3 $(APPDIR)/frameworks/base/feature/tools/jidl/jsongensource.py \
+		$(APPDIR)/frameworks/bluetooth/feature/jidl/bluetooth.jidl -out-dir \
+		$(APPDIR)/frameworks/bluetooth/feature/src -header system_bluetooth.h -source system_bluetooth.c
+	@python3 $(APPDIR)/frameworks/base/feature/tools/jidl/jsongensource.py \
+		$(APPDIR)/frameworks/bluetooth/feature/jidl/bluetooth_bt.jidl -out-dir \
+		$(APPDIR)/frameworks/bluetooth/feature/src -header system_bluetooth_bt.h -source system_bluetooth_bt.c
+ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
+	@python3 $(APPDIR)/frameworks/base/feature/tools/jidl/jsongensource.py \
+		$(APPDIR)/frameworks/bluetooth/feature/jidl/bluetooth_bt_a2dpsink.jidl -out-dir \
+		$(APPDIR)/frameworks/bluetooth/feature/src -header system_bluetooth_bt_a2dpsink.h -source system_bluetooth_bt_a2dpsink.c
+endif
+
 endif
 
 ifneq ($(NOEXPORTSRCS),)
