@@ -22,7 +22,7 @@
 #include "bt_list.h"
 #include "bt_profile.h"
 #include "power_manager.h"
-#include "sal_adapter_interface.h"
+#include "sal_interface.h"
 #include "service_loop.h"
 #include "utils/log.h"
 
@@ -391,7 +391,7 @@ static bt_status_t pm_request_sniff(bt_address_t* peer_addr, bt_pm_mode_index_t 
     }
 
     BT_LOGD("%s, peer_addr:%s, max:%d, min:%d, attempt:%d, timeout:%d", __func__, bt_addr_str(peer_addr), mode.max, mode.min, mode.attempt, mode.timeout);
-    ret = bt_sal_set_power_mode(peer_addr, &mode);
+    ret = bt_sal_set_power_mode(PRIMARY_ADAPTER, peer_addr, &mode);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s, fail to set power mode, ret:%d", __func__, ret);
         return ret;
@@ -419,7 +419,7 @@ static bt_status_t pm_request_active(bt_address_t* peer_addr)
     }
 
     BT_LOGD("%s, peer_addr:%s", __func__, bt_addr_str(peer_addr));
-    ret = bt_sal_set_power_mode(peer_addr, &mode);
+    ret = bt_sal_set_power_mode(PRIMARY_ADAPTER, peer_addr, &mode);
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s, fail to set power mode, ret:%d", __func__, ret);
         return ret;

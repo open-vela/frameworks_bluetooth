@@ -30,7 +30,7 @@
 #include "bt_list.h"
 #include "callbacks_list.h"
 #include "sal_a2dp_source_interface.h"
-#include "sal_adapter_interface.h"
+#include "sal_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
 #include "utils/log.h"
@@ -117,7 +117,7 @@ static void a2dp_service_prepare_handle(a2dp_state_machine_t* sm,
 {
     switch (event->event) {
     case CONNECTED_EVT: {
-        set_active_peer(&event->event_data.bd_addr, bt_sal_get_acl_link_handle(&event->event_data.bd_addr, BT_TRANSPORT_BREDR));
+        set_active_peer(&event->event_data.bd_addr, bt_sal_get_acl_connection_handle(PRIMARY_ADAPTER, &event->event_data.bd_addr, BT_TRANSPORT_BREDR));
         break;
     }
 

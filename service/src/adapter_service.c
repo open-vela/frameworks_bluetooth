@@ -48,7 +48,7 @@
 #include "connection_manager.h"
 #include "device.h"
 #include "hci_error.h"
-#include "sal_adapter_interface.h"
+#include "sal_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
 #include "state_machine.h"
@@ -262,7 +262,7 @@ static void bonded_device_loaded(void* data, uint16_t length, uint16_t items)
             BT_LOGD("BONDED DEVICE[%d], Name:[%s] Addr:[%s] LinkKey: [%02X] | [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
                 i, remote->name, addr_str, remote->link_key_type, lk[0], lk[1], lk[2], lk[3], lk[4], lk[5], lk[6],
                 lk[7], lk[8], lk[9], lk[10], lk[11], lk[12], lk[13], lk[14], lk[15]);
-            bt_sal_set_bonded_devices(remote);
+            bt_sal_set_bonded_devices(PRIMARY_ADAPTER, remote, 1);
             remote++;
         }
     }
@@ -396,7 +396,7 @@ static void process_pair_request_evt(bt_address_t* addr, bool local_initiate, bo
 
     if (!is_bondable) {
         BT_ADDR_LOG("Pair not allowed for:%s", addr);
-        bt_sal_reply_pair_request(addr, HCI_ERR_PAIRING_NOT_ALLOWED);
+        bt_sal_pair_reply(PRIMARY_ADAPTER, addr, HCI_ERR_PAIRING_NOT_ALLOWED);
         return;
     }
 
@@ -418,13 +418,19 @@ static void process_pin_request_evt(bt_address_t* addr, uint32_t cod,
 
     adapter_lock();
     device = adapter_find_create_classic_device(addr);
-    device_set_device_class(device, cod);
     if (device_get_bond_state(device) == BOND_STATE_CANCELING) {
         BT_LOGE("%s, canceling reject", __func__);
-        bt_sal_pin_reply(addr, false, NULL, 0);
+        bt_sal_pin_reply(PRIMARY_ADAPTER, addr, false, NULL, 0);
         adapter_unlock();
         return;
     }
+
+    if (!device_check_flag(device, DFLAG_NAME_SET | DFLAG_GET_RMT_NAME)) {
+        BT_LOGD("pin requesting, request remote name...");
+        bt_sal_get_remote_name(PRIMARY_ADAPTER, addr);
+        device_set_flags(device, DFLAG_GET_RMT_NAME);
+    }
+
     if (device_get_bond_state(device) != BOND_STATE_BONDING)
         device_set_bond_state(device, BOND_STATE_BONDING);
     adapter_unlock();
@@ -432,21 +438,20 @@ static void process_pin_request_evt(bt_address_t* addr, uint32_t cod,
     send_pair_display_notification(addr, BT_TRANSPORT_BREDR, PAIR_TYPE_PIN_CODE, 0x0);
 }
 
-static void process_ssp_request_evt(bt_address_t* addr, uint8_t link_type,
+static void process_ssp_request_evt(bt_address_t* addr, uint8_t transport,
     uint32_t cod, bt_pair_type_t ssp_type,
     uint32_t pass_key, const char* name)
 {
     bt_device_t* device;
     adapter_lock();
 
-    device = adapter_find_device(addr, link_type);
+    device = adapter_find_device(addr, transport);
 
-    device_set_device_class(device, cod);
     if (device_get_bond_state(device) == BOND_STATE_CANCELING) {
         BT_LOGE("%s, canceling reject", __func__);
-        if (link_type == BT_TRANSPORT_BREDR) {
+        if (transport == BT_TRANSPORT_BREDR) {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-            bt_sal_ssp_reply(addr, false, ssp_type, 0x0);
+            bt_sal_ssp_reply(PRIMARY_ADAPTER, addr, false, ssp_type, 0x0);
 #endif
         } else {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
@@ -458,31 +463,37 @@ static void process_ssp_request_evt(bt_address_t* addr, uint8_t link_type,
         return;
     }
 
+    if (!device_check_flag(device, DFLAG_NAME_SET | DFLAG_GET_RMT_NAME)) {
+        BT_LOGD("ssp, request remote name...");
+        bt_sal_get_remote_name(PRIMARY_ADAPTER, addr);
+        device_set_flags(device, DFLAG_GET_RMT_NAME);
+    }
+
     if (device_get_bond_state(device) != BOND_STATE_BONDING)
         device_set_bond_state(device, BOND_STATE_BONDING);
     adapter_unlock();
     /* send ssp request notification*/
-    send_pair_display_notification(addr, link_type, ssp_type, pass_key);
+    send_pair_display_notification(addr, transport, ssp_type, pass_key);
 }
 
 static void process_bond_state_change_evt(bt_address_t* addr, bond_state_t state,
-    uint8_t link_type, bool is_ctkd)
+    uint8_t transport, bool is_ctkd)
 {
     remote_device_properties_t remote;
     bt_device_t* device;
 
     adapter_lock();
-    if (link_type == BT_TRANSPORT_BREDR) {
+    if (transport == BT_TRANSPORT_BREDR) {
         device = adapter_find_create_classic_device(addr);
         if (state == BOND_STATE_BONDED) {
             device_set_bond_state(device, BOND_STATE_BONDED);
-            bt_sal_get_remote_device_info(addr, &remote);
+            bt_sal_get_remote_device_info(PRIMARY_ADAPTER, addr, &remote);
             device_set_device_type(device, remote.device_type);
             /* update bonded device info */
             adapter_update_bonded_device();
             // device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_BREDR);
             if (device_is_connected(device))
-                bt_sal_start_service_discovery(addr, NULL);
+                bt_sal_start_service_discovery(PRIMARY_ADAPTER, addr, NULL);
         }
     } else {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
@@ -503,7 +514,7 @@ static void process_bond_state_change_evt(bt_address_t* addr, bond_state_t state
     device_set_bond_state(device, state);
     adapter_unlock();
     /* send bond state change notification */
-    CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_bond_state_changed, addr, link_type, state, is_ctkd);
+    CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_bond_state_changed, addr, transport, state, is_ctkd);
 }
 
 static void process_service_search_done_evt(bt_address_t* addr, bt_uuid_t* uuids, uint16_t size)
@@ -520,20 +531,20 @@ static void process_service_search_done_evt(bt_address_t* addr, bt_uuid_t* uuids
 }
 
 static void process_enc_state_change_evt(bt_address_t* addr, bool encrypted,
-    uint8_t link_type)
+    uint8_t transport)
 {
     bt_device_t* device;
 
     adapter_lock();
-    if (link_type == BT_TRANSPORT_BREDR)
+    if (transport == BT_TRANSPORT_BREDR)
         device = adapter_find_create_classic_device(addr);
-    else if (link_type == BT_TRANSPORT_BLE)
+    else if (transport == BT_TRANSPORT_BLE)
         device = adapter_find_device(addr, BT_TRANSPORT_BLE);
     else
         return;
 
     if (encrypted) {
-        if (link_type == BT_TRANSPORT_BREDR)
+        if (transport == BT_TRANSPORT_BREDR)
             device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_BREDR);
         else
             device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_LE);
@@ -552,6 +563,7 @@ static void process_link_key_update_evt(bt_address_t* addr, bt_128key_t link_key
     device = adapter_find_create_classic_device(addr);
     device_set_link_key(device, link_key);
     device_set_link_key_type(device, type);
+    adapter_update_bonded_device();
     bt_addr_ba2str(addr, addr_str);
     uint8_t* lk = link_key;
     BT_LOGI("DEVICE[%s] LinkKey: %02X | [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
@@ -588,12 +600,12 @@ static void handle_security_event(void* data)
             evt->pin_req.name);
         break;
     case SSP_REQUEST_EVT:
-        process_ssp_request_evt(&evt->addr, evt->ssp_req.link_type, evt->ssp_req.cod,
+        process_ssp_request_evt(&evt->addr, evt->ssp_req.transport, evt->ssp_req.cod,
             evt->ssp_req.ssp_type, evt->ssp_req.pass_key, evt->ssp_req.name);
         break;
     case BOND_STATE_CHANGE_EVT:
         process_bond_state_change_evt(&evt->addr, evt->bond_state.state,
-            evt->bond_state.link_type,
+            evt->bond_state.transport,
             evt->bond_state.is_ctkd);
         break;
     case SDP_SEARCH_DONE_EVT:
@@ -601,7 +613,7 @@ static void handle_security_event(void* data)
         break;
     case ENC_STATE_CHANGE_EVT:
         process_enc_state_change_evt(&evt->addr, evt->enc_state.encrypted,
-            evt->enc_state.link_type);
+            evt->enc_state.transport);
         break;
     case LINK_KEY_UPDATE_EVT:
         process_link_key_update_evt(&evt->addr, evt->link_key.key, evt->link_key.type);
@@ -616,10 +628,9 @@ static void handle_security_event(void* data)
     free(data);
 }
 
-static void process_connect_request_evt(bt_address_t* addr)
+static void process_connect_request_evt(bt_address_t* addr, uint32_t cod)
 {
     adapter_service_t* adapter = &g_adapter_service;
-    remote_device_properties_t remote;
     bt_device_t* device;
     bool reject = false;
 
@@ -627,13 +638,12 @@ static void process_connect_request_evt(bt_address_t* addr)
 
     adapter_lock();
     device = adapter_find_create_classic_device(addr);
-    bt_sal_get_remote_device_info(addr, &remote);
-    device_set_device_class(device, remote.class_of_device);
+    device_set_device_class(device, cod);
     if (get_devices_cnt(DFLAG_CONNECTED, BT_TRANSPORT_BREDR) >= adapter->max_acl_connections) {
         reject = true;
         BT_LOGW("Reject connect request without available connection");
         /*  if a2dp source support, accept link with master role ? */
-        bt_sal_reply_link_request(addr, false);
+        bt_sal_acl_connection_reply(PRIMARY_ADAPTER, addr, false);
     }
     adapter_unlock();
     if (!reject) {
@@ -659,17 +669,22 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
     bt_device_t* device;
 
     BT_ADDR_LOG("ACL connection state changed, addr:%s, link:%d, state:%s, status:%d, reason:%" PRIu32 "", addr,
-        acl_params->link_type, acl_connection_str(acl_params->connection_state),
+        acl_params->transport, acl_connection_str(acl_params->connection_state),
         acl_params->status, acl_params->hci_reason_code);
 
     adapter_lock();
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    if (acl_params->link_type == BT_TRANSPORT_BREDR)
+    if (acl_params->transport == BT_TRANSPORT_BREDR) {
         device = adapter_find_create_classic_device(addr);
-    else
+        if (device_get_bond_state(device) == BOND_STATE_BONDING && !device_check_flag(device, DFLAG_NAME_SET | DFLAG_GET_RMT_NAME)) {
+            BT_LOGD("bonding, request remote name...");
+            bt_sal_get_remote_name(PRIMARY_ADAPTER, addr);
+            device_set_flags(device, DFLAG_GET_RMT_NAME);
+        }
+    } else
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-        if (acl_params->link_type == BT_TRANSPORT_BLE)
+        if (acl_params->transport == BT_TRANSPORT_BLE)
         device = adapter_find_create_le_device(addr, acl_params->addr_type);
     else
 #endif
@@ -681,11 +696,13 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
 
     device_set_connection_state(device, acl_params->connection_state);
     if (acl_params->connection_state == CONNECTION_STATE_CONNECTED) {
-        device_set_acl_handle(device, bt_sal_get_acl_link_handle(addr, acl_params->link_type));
+        device_set_acl_handle(device, bt_sal_get_acl_connection_handle(PRIMARY_ADAPTER, addr, acl_params->transport));
+        // if (acl_params->transport == BT_TRANSPORT_BLE)
+        //     adapter_le_add_whitelist(addr);
     }
     adapter_unlock();
 
-    if (acl_params->link_type == BT_TRANSPORT_BREDR) {
+    if (acl_params->transport == BT_TRANSPORT_BREDR) {
         switch (acl_params->connection_state) {
         case CONNECTION_STATE_CONNECTED:
             bt_pm_remote_device_connected(addr);
@@ -699,11 +716,11 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
     }
 
     if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED)
-        bt_cm_process_disconnect_event(addr, acl_params->link_type);
+        bt_cm_process_disconnect_event(addr, acl_params->transport);
 
     /* send connection changed notification */
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_connection_state_changed, addr,
-        acl_params->link_type, acl_params->connection_state);
+        acl_params->transport, acl_params->connection_state);
 }
 
 static void handle_connection_event(void* data)
@@ -712,7 +729,7 @@ static void handle_connection_event(void* data)
 
     switch (conn_evt->evt_id) {
     case CONNECT_REQUEST_EVT:
-        process_connect_request_evt(&conn_evt->addr);
+        process_connect_request_evt(&conn_evt->addr, conn_evt->cod);
         break;
     case CONNECTION_STATE_CHANGE_EVT:
         process_connection_state_changed_evt(&conn_evt->addr, &conn_evt->acl_params);
@@ -765,6 +782,7 @@ static void process_remote_name_recieved_evt(bt_address_t* addr, const char* nam
 
     BT_ADDR_LOG("remote device:%s name:%s", addr, name);
     notify = device_set_name(device, name);
+    device_clear_flag(device, DFLAG_GET_RMT_NAME);
     adapter_unlock();
     if (notify) {
         /* send name changed notification to all observer */
@@ -1087,15 +1105,15 @@ void adapter_on_br_enabled(void)
     char addrstr[BT_ADDR_STR_LENGTH];
 
     /* set local name */
-    bt_sal_set_local_name(props->name);
+    bt_sal_set_name(PRIMARY_ADAPTER, props->name);
     /* get local address */
-    bt_sal_get_local_address(&props->addr);
+    bt_sal_get_address(PRIMARY_ADAPTER, &props->addr);
     /* set io capability, first load stored adapter info, or use Kconfig default */
-    bt_sal_set_local_io_capability(props->io_capability);
+    bt_sal_set_io_capability(PRIMARY_ADAPTER, props->io_capability);
     /* set scan mode, no discoverable no connectable */
-    bt_sal_set_scan_mode(props->scan_mode, props->bondable);
+    bt_sal_set_scan_mode(PRIMARY_ADAPTER, props->scan_mode, props->bondable);
     /* set local class of device  */
-    bt_sal_set_local_device_class(props->class_of_device);
+    bt_sal_set_device_class(PRIMARY_ADAPTER, props->class_of_device);
     /* set default inquiry scan parameter */
     /*  */
     /* enable L2CAP service */
@@ -1163,7 +1181,7 @@ static void process_link_role_changed_evt(bt_address_t* addr, bt_link_role_t rol
     if (disable_policy) {
         BT_ADDR_LOG("Disable role switch at %s", addr);
         policy &= ~BT_BR_LINK_POLICY_ENABLE_ROLE_SWITCH;
-        bt_sal_set_link_policy(addr, policy);
+        bt_sal_set_link_policy(PRIMARY_ADAPTER, addr, policy);
     }
 }
 
@@ -1248,12 +1266,13 @@ void adapter_on_remote_name_recieved(bt_address_t* addr, const char* name)
     do_in_service_loop(handle_discovery_event, evt);
 }
 
-void adapter_on_connect_request(bt_address_t* addr)
+void adapter_on_connect_request(bt_address_t* addr, uint32_t cod)
 {
     adapter_remote_event_t* evt = create_remote_event(addr, CONNECT_REQUEST_EVT);
     if (!evt)
         return;
 
+    evt->cod = cod;
     do_in_service_loop(handle_connection_event, evt);
 }
 
@@ -1287,7 +1306,8 @@ void adapter_on_pin_request(bt_address_t* addr, uint32_t cod,
 
     evt->pin_req.cod = cod;
     evt->pin_req.min_16_digit = min_16_digit;
-    strncpy(evt->pin_req.name, name, BT_REM_NAME_MAX_LEN);
+    if (name)
+        strncpy(evt->pin_req.name, name, BT_REM_NAME_MAX_LEN);
 
     do_in_service_loop(handle_security_event, evt);
 }
@@ -1304,21 +1324,23 @@ void adapter_on_ssp_request(bt_address_t* addr, uint8_t transport,
     evt->ssp_req.cod = cod;
     evt->ssp_req.ssp_type = ssp_type;
     evt->ssp_req.pass_key = pass_key;
-    evt->ssp_req.link_type = transport;
-    strncpy(evt->ssp_req.name, name, BT_REM_NAME_MAX_LEN);
+    evt->ssp_req.transport = transport;
+    if (name)
+        strncpy(evt->ssp_req.name, name, BT_REM_NAME_MAX_LEN);
 
     do_in_service_loop(handle_security_event, evt);
 }
 
-void adapter_on_bond_state_changed(bt_address_t* addr, bond_state_t state, uint8_t link_type, bool is_ctkd)
+void adapter_on_bond_state_changed(bt_address_t* addr, bond_state_t state, uint8_t transport, bt_status_t status, bool is_ctkd)
 {
     adapter_remote_event_t* evt = create_remote_event(addr, BOND_STATE_CHANGE_EVT);
     if (!evt)
         return;
 
     evt->bond_state.state = state;
-    evt->bond_state.link_type = link_type;
+    evt->bond_state.transport = transport;
     evt->bond_state.is_ctkd = is_ctkd;
+    evt->bond_state.status = status;
     do_in_service_loop(handle_security_event, evt);
 }
 
@@ -1338,14 +1360,14 @@ void adapter_on_service_search_done(bt_address_t* addr, bt_uuid_t* uuids, uint16
     do_in_service_loop(handle_security_event, evt);
 }
 
-void adapter_on_encryption_state_changed(bt_address_t* addr, bool encrypted, uint8_t link_type)
+void adapter_on_encryption_state_changed(bt_address_t* addr, bool encrypted, uint8_t transport)
 {
     adapter_remote_event_t* evt = create_remote_event(addr, ENC_STATE_CHANGE_EVT);
     if (!evt)
         return;
 
     evt->enc_state.encrypted = encrypted;
-    evt->enc_state.link_type = link_type;
+    evt->enc_state.transport = transport;
     do_in_service_loop(handle_security_event, evt);
 }
 
@@ -1674,7 +1696,7 @@ bt_status_t adapter_start_discovery(uint32_t timeout)
         return BT_STATUS_FAIL;
     }
 
-    bt_status_t status = bt_sal_start_discovery(timeout);
+    bt_status_t status = bt_sal_start_discovery(PRIMARY_ADAPTER, timeout);
     if (status != BT_STATUS_SUCCESS) {
         adapter_unlock();
         return status;
@@ -1700,7 +1722,7 @@ bt_status_t adapter_cancel_discovery(void)
         return BT_STATUS_FAIL;
     }
 
-    bt_status_t status = bt_sal_stop_discovery();
+    bt_status_t status = bt_sal_stop_discovery(PRIMARY_ADAPTER);
     adapter->is_discovering = false;
     adapter_unlock();
 
@@ -1739,7 +1761,7 @@ bt_status_t adapter_set_name(const char* name)
     if (strncmp(adapter->properties.name, name, BT_LOC_NAME_MAX_LEN) == 0)
         goto error;
 
-    status = bt_sal_set_local_name((char*)name);
+    status = bt_sal_set_name(PRIMARY_ADAPTER, (char*)name);
     if (status != BT_STATUS_SUCCESS)
         goto error;
 
@@ -1778,7 +1800,7 @@ bt_status_t adapter_set_scan_mode(bt_scan_mode_t mode, bool bondable)
     if (adapter->properties.scan_mode == mode && adapter->properties.bondable == bondable)
         goto error;
 
-    status = bt_sal_set_scan_mode(mode, bondable);
+    status = bt_sal_set_scan_mode(PRIMARY_ADAPTER, mode, bondable);
     if (status != BT_STATUS_SUCCESS)
         goto error;
 
@@ -1812,7 +1834,7 @@ bt_status_t adapter_set_device_class(uint32_t cod)
     if (adapter->properties.class_of_device == cod)
         goto error;
 
-    status = bt_sal_set_local_device_class(cod);
+    status = bt_sal_set_device_class(PRIMARY_ADAPTER, cod);
     if (status != BT_STATUS_SUCCESS)
         goto error;
 
@@ -1845,7 +1867,7 @@ bt_status_t adapter_set_io_capability(bt_io_capability_t cap)
     if (adapter->properties.io_capability == cap)
         goto error;
 
-    status = bt_sal_set_local_io_capability(cap);
+    status = bt_sal_set_io_capability(PRIMARY_ADAPTER, cap);
     if (status != BT_STATUS_SUCCESS)
         goto error;
 
@@ -1873,14 +1895,14 @@ bt_status_t adapter_set_inquiry_scan_parameters(bt_scan_type_t type,
     uint16_t interval,
     uint16_t window)
 {
-    return bt_sal_set_inquiry_scan_parameters(type, interval, window);
+    return bt_sal_set_inquiry_scan_parameters(PRIMARY_ADAPTER, type, interval, window);
 }
 
 bt_status_t adapter_set_page_scan_parameters(bt_scan_type_t type,
     uint16_t interval,
     uint16_t window)
 {
-    return bt_sal_set_page_scan_parameters(type, interval, window);
+    return bt_sal_set_page_scan_parameters(PRIMARY_ADAPTER, type, interval, window);
 }
 
 bt_status_t adapter_get_le_address(bt_address_t* addr, ble_addr_type_t* type)
@@ -2339,7 +2361,7 @@ bt_status_t adapter_connect(bt_address_t* addr)
 
     adapter_lock();
     device = adapter_find_create_classic_device(addr);
-    if (bt_sal_connect(addr) != BT_STATUS_SUCCESS) {
+    if (bt_sal_connect(PRIMARY_ADAPTER, addr) != BT_STATUS_SUCCESS) {
         adapter_unlock();
         return BT_STATUS_FAIL;
     }
@@ -2365,7 +2387,9 @@ bt_status_t adapter_disconnect(bt_address_t* addr)
         return BT_STATUS_BUSY;
     }
 
-    if (bt_sal_disconnect(addr) != BT_STATUS_SUCCESS) {
+    if (bt_sal_disconnect(PRIMARY_ADAPTER, addr,
+            HCI_ERR_CONNECTION_TERMINATED_BY_LOCAL_HOST)
+        != BT_STATUS_SUCCESS) {
         adapter_unlock();
         return BT_STATUS_FAIL;
     }
@@ -2437,7 +2461,7 @@ bt_status_t adapter_connect_request_reply(bt_address_t* addr, bool accept)
     }
     adapter_unlock();
     bt_status_t status;
-    status = bt_sal_reply_link_request(addr, accept);
+    status = bt_sal_acl_connection_reply(PRIMARY_ADAPTER, addr, accept);
     if (status == BT_STATUS_SUCCESS && accept) {
         device_set_connection_state(device, CONNECTION_STATE_CONNECTING);
     }
@@ -2547,7 +2571,7 @@ bt_status_t adapter_create_bond(bt_address_t* addr, bt_transport_t transport)
     }
 
     if (adapter->is_discovering)
-        bt_sal_stop_discovery();
+        bt_sal_stop_discovery(PRIMARY_ADAPTER);
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (transport == BT_TRANSPORT_BREDR)
@@ -2576,7 +2600,7 @@ bt_status_t adapter_create_bond(bt_address_t* addr, bt_transport_t transport)
     adapter_unlock();
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (transport == BT_TRANSPORT_BREDR)
-        return bt_sal_create_bond(addr);
+        return bt_sal_create_bond(PRIMARY_ADAPTER, addr, transport, device_get_address_type(device));
     else
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
@@ -2600,7 +2624,7 @@ bt_status_t adapter_remove_bond(bt_address_t* addr, uint8_t transport)
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (transport == BT_TRANSPORT_BREDR) {
         device_delete_link_key(device);
-        bt_sal_remove_bond(addr);
+        bt_sal_remove_bond(PRIMARY_ADAPTER, addr, transport);
         /* remove bond device form storage */
         adapter_update_bonded_device();
     } else
@@ -2624,7 +2648,7 @@ bt_status_t adapter_cancel_bond(bt_address_t* addr)
         return BT_STATUS_FAIL;
     }
 
-    bt_status_t status = bt_sal_cancel_bond(addr);
+    bt_status_t status = bt_sal_cancel_bond(PRIMARY_ADAPTER, addr, BT_TRANSPORT_BREDR);
     if (status == BT_STATUS_SUCCESS)
         device_set_bond_state(device, BOND_STATE_CANCELING);
     adapter_unlock();
@@ -2642,7 +2666,7 @@ bt_status_t adapter_pair_request_reply(bt_address_t* addr, bool accept)
     }
     adapter_unlock();
     bt_status_t status;
-    status = bt_sal_reply_pair_request(addr, accept ? 0 : HCI_ERR_PAIRING_NOT_ALLOWED);
+    status = bt_sal_pair_reply(PRIMARY_ADAPTER, addr, accept ? 0 : HCI_ERR_PAIRING_NOT_ALLOWED);
     if (status == BT_STATUS_SUCCESS && accept) {
         /* callback bonding */
         CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_bond_state_changed,
@@ -2663,7 +2687,7 @@ bt_status_t adapter_set_pin_code(bt_address_t* addr, bool accept,
     }
 
     adapter_unlock();
-    return bt_sal_pin_reply(addr, accept, pincode, len);
+    return bt_sal_pin_reply(PRIMARY_ADAPTER, addr, accept, pincode, len);
 }
 
 bt_status_t adapter_set_pairing_confirmation(bt_address_t* addr, uint8_t transport, bool accept)
@@ -2678,7 +2702,7 @@ bt_status_t adapter_set_pairing_confirmation(bt_address_t* addr, uint8_t transpo
     adapter_unlock();
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (transport == BT_TRANSPORT_BREDR)
-        return bt_sal_ssp_reply(addr, accept, PAIR_TYPE_PASSKEY_CONFIRMATION, 0);
+        return bt_sal_ssp_reply(PRIMARY_ADAPTER, addr, accept, PAIR_TYPE_PASSKEY_CONFIRMATION, 0);
     else
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
@@ -2701,7 +2725,7 @@ bt_status_t adapter_set_pass_key(bt_address_t* addr, uint8_t transport, bool acc
     adapter_unlock();
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (transport == BT_TRANSPORT_BREDR)
-        return bt_sal_ssp_reply(addr, accept, PAIR_TYPE_PASSKEY_ENTRY, passkey);
+        return bt_sal_ssp_reply(PRIMARY_ADAPTER, addr, accept, PAIR_TYPE_PASSKEY_ENTRY, passkey);
     else
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
@@ -2782,7 +2806,7 @@ bt_status_t adapter_switch_role(bt_address_t* addr, bt_link_role_t role)
     adapter_unlock();
 
     if (prev_role != role)
-        return bt_sal_set_link_role(addr, role);
+        return bt_sal_set_link_role(PRIMARY_ADAPTER, addr, role);
 
     return BT_STATUS_SUCCESS;
 }
@@ -2791,7 +2815,7 @@ bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
     uint16_t band_width,
     uint16_t number)
 {
-    return bt_sal_set_afh_channel_classification(central_frequency, band_width, number);
+    return bt_sal_set_afh_channel_classification(PRIMARY_ADAPTER, central_frequency, band_width, number);
 }
 
 void adapter_get_support_profiles(void) { }
