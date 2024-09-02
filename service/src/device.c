@@ -173,6 +173,8 @@ bool device_set_name(bt_device_t* device, const char* name)
     if (!strncmp(device->remote.alias, "", BT_REM_NAME_MAX_LEN))
         strlcpy((char*)device->remote.alias, name, sizeof(device->remote.alias));
 
+    device_set_flags(device, DFLAG_NAME_SET);
+
     return true;
 }
 

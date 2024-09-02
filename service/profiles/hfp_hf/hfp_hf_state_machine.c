@@ -31,8 +31,8 @@
 #include "hfp_hf_state_machine.h"
 #include "media_system.h"
 #include "power_manager.h"
-#include "sal_adapter_interface.h"
 #include "sal_hfp_hf_interface.h"
+#include "sal_interface.h"
 #include "service_loop.h"
 #include "utils/log.h"
 
@@ -428,7 +428,7 @@ static bt_status_t hf_offload_send_cmd(hf_state_machine_t* hfsm, bool is_start)
     STREAM_TO_UINT16(ocf, payload);
     size -= sizeof(ogf) + sizeof(ocf);
 
-    return bt_sal_send_hci_command(ogf, ocf, size, payload, bt_hci_event_callback, hfsm);
+    return bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, size, payload, bt_hci_event_callback, hfsm);
 }
 
 static bool check_hfp_allowed(hf_state_machine_t* hfsm)
@@ -1215,7 +1215,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         pending_action_create(hfsm, HFP_ATCMD_CODE_BLDN, NULL);
         break;
     case HF_STACK_EVENT_AUDIO_REQ:
-        status = bt_sal_reply_sco_link_request(&hfsm->addr, true);
+        status = bt_sal_sco_connection_reply(PRIMARY_ADAPTER, &hfsm->addr, true);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Accept Sco request failed");
         }
