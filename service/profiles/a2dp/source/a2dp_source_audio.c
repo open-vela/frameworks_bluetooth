@@ -58,7 +58,8 @@ typedef enum {
     STATE_OFF, /* idle state */
     STATE_FLUSHING, /* flush remaining data */
     STATE_RUNNING, /* streaming */
-    STATE_SUSPENDING /* suspend after all data is send */
+    STATE_SUSPENDING, /* suspend after all data is send */
+    STATE_WAIT4_SUSPENDED /* wait for stream suspended */
 } stream_state_t;
 
 typedef enum {
@@ -279,6 +280,7 @@ static void a2dp_source_audio_handle_timer(service_timer_t* timer, void* arg)
             audio_transport_read_stop(a2dp_transport, AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO);
             circbuf_reset(&stream->stream_pool);
             a2dp_source_stream_stop();
+            stream->stream_state = STATE_WAIT4_SUSPENDED;
             return;
         }
         stream->stream_interface->send_frames(STREAM_DATA_RESERVED, get_os_timestamp_us());
@@ -441,7 +443,8 @@ void a2dp_source_on_started(bool started)
 
     if ((a2dp_src_stream.stream_state == STATE_OFF)
         || (a2dp_src_stream.stream_state == STATE_FLUSHING)
-        || (a2dp_src_stream.stream_state == STATE_SUSPENDING)) {
+        || (a2dp_src_stream.stream_state == STATE_SUSPENDING)
+        || (a2dp_src_stream.stream_state == STATE_WAIT4_SUSPENDED)) {
         a2dp_source_start_audio_req();
     }
 }

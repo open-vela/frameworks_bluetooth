@@ -55,6 +55,7 @@ typedef enum {
     STATE_FLUSHING,
     STATE_RUNNING,
     STATE_SUSPENDING,
+    STATE_WAIT4_SUSPENDED,
 } stream_state_t;
 
 typedef struct {
