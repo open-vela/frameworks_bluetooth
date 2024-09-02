@@ -58,12 +58,12 @@ void system_bluetooth_bt_a2dpsink_onUnregister(const char* feature_name)
     FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
-FtCallbackId system_bluetooth_bt_a2dpsink_get_onconnectstatechange(void* feature, union AppendData append_data)
+FtCallbackId system_bluetooth_bt_a2dpsink_get_onconnectstatechange(void* feature, AppendData append_data)
 {
     return feature_bluetooth_get_feature_callback(feature, A2DPSINK_ON_CONNECT_STATE_CHANGE);
 }
 
-void system_bluetooth_bt_a2dpsink_set_onconnectstatechange(void* feature, union AppendData append_data, FtCallbackId onconnectstatechange)
+void system_bluetooth_bt_a2dpsink_set_onconnectstatechange(void* feature, AppendData append_data, FtCallbackId onconnectstatechange)
 {
     FEATURE_LOG_DEBUG("set on a2dpsink set on connect state change callback: %p, callbackId: %d", feature, onconnectstatechange);
     feature_bluetooth_set_feature_callback(feature, onconnectstatechange, A2DPSINK_ON_CONNECT_STATE_CHANGE);

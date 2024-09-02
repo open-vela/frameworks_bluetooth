@@ -62,7 +62,7 @@ void system_bluetooth_onUnregister(const char* feature_name)
     FEATURE_LOG_DEBUG("%s::%s()", file_tag, __FUNCTION__);
 }
 
-void system_bluetooth_wrap_openAdapter(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_OpenAdapterParams* params)
+void system_bluetooth_wrap_openAdapter(FeatureInstanceHandle feature, AppendData append_data, system_bluetooth_OpenAdapterParams* params)
 {
     bt_status_t status = bt_adapter_enable(feature_bluetooth_get_bt_ins(feature));
     if (status == BT_STATUS_SUCCESS) {
@@ -83,7 +83,7 @@ void system_bluetooth_wrap_openAdapter(FeatureInstanceHandle feature, union Appe
     FeatureRemoveCallback(feature, params->complete);
 }
 
-void system_bluetooth_wrap_closeAdapter(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_CloseAdapterParams* params)
+void system_bluetooth_wrap_closeAdapter(FeatureInstanceHandle feature, AppendData append_data, system_bluetooth_CloseAdapterParams* params)
 {
     bt_status_t status = bt_adapter_disable(feature_bluetooth_get_bt_ins(feature));
     if (status == BT_STATUS_SUCCESS) {
@@ -104,7 +104,7 @@ void system_bluetooth_wrap_closeAdapter(FeatureInstanceHandle feature, union App
     FeatureRemoveCallback(feature, params->complete);
 }
 
-void system_bluetooth_wrap_getAdapterState(FeatureInstanceHandle feature, union AppendData append_data, system_bluetooth_GetAdapterStateParams* params)
+void system_bluetooth_wrap_getAdapterState(FeatureInstanceHandle feature, AppendData append_data, system_bluetooth_GetAdapterStateParams* params)
 {
     bt_instance_t* ins = feature_bluetooth_get_bt_ins(feature);
     bt_adapter_state_t state = bt_adapter_get_state(ins);
@@ -128,12 +128,12 @@ void system_bluetooth_wrap_getAdapterState(FeatureInstanceHandle feature, union 
     FeatureRemoveCallback(feature, params->complete);
 }
 
-FtCallbackId system_bluetooth_get_onadapterstatechange(void* feature, union AppendData append_data)
+FtCallbackId system_bluetooth_get_onadapterstatechange(void* feature, AppendData append_data)
 {
     return feature_bluetooth_get_feature_callback(feature, ON_ADAPTER_STATE_CHANGE);
 }
 
-void system_bluetooth_set_onadapterstatechange(void* feature, union AppendData append_data, FtCallbackId onadapterstatechange)
+void system_bluetooth_set_onadapterstatechange(void* feature, AppendData append_data, FtCallbackId onadapterstatechange)
 {
     FEATURE_LOG_DEBUG("set onadapterstatechange feature: %p, callbackId: %d", feature, onadapterstatechange);
     feature_bluetooth_set_feature_callback(feature, onadapterstatechange, ON_ADAPTER_STATE_CHANGE);
