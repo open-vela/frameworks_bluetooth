@@ -23,7 +23,7 @@
 #include "bluetooth.h"
 #include "bt_list.h"
 #include "index_allocator.h"
-#include "sal_adapter_interface.h"
+#include "sal_interface.h"
 #include "service_loop.h"
 #include "utils/log.h"
 

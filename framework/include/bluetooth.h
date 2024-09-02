@@ -60,6 +60,8 @@ extern "C" {
 #endif
 #endif // End of else
 
+#define PRIMARY_ADAPTER 0
+
 typedef uint8_t bt_controller_id_t;
 
 typedef enum {

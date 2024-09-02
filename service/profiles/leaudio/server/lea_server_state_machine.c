@@ -28,7 +28,7 @@
 #include "lea_audio_source.h"
 #include "lea_server_service.h"
 #include "lea_server_state_machine.h"
-#include "sal_adapter_interface.h"
+#include "sal_interface.h"
 #include "sal_lea_server_interface.h"
 #include "service_loop.h"
 
@@ -410,7 +410,7 @@ static void lea_server_stop_offload_req(lea_server_state_machine_t* leas_sm, lea
     STREAM_TO_UINT16(ocf, payload);
     flag_set(leas_sm, PENDING_OFFLOAD_STOP);
 
-    bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
+    bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, len, payload, bt_hci_event_callback,
         leas_sm);
 }
 
@@ -460,7 +460,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         flag_set(leas_sm, PENDING_OFFLOAD_START);
         leas_sm->offload_timer = service_loop_timer(LEA_SERVER_OFFLOAD_TIMEOUT, 0, lea_offload_config_timeout_callback, leas_sm);
 
-        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
+        bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, len, payload, bt_hci_event_callback,
             leas_sm);
         break;
     }
