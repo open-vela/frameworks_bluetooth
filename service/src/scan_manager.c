@@ -26,7 +26,7 @@
 #include "bt_list.h"
 #include "bt_socket.h"
 #include "bt_time.h"
-#include "sal_adapter_interface.h"
+#include "sal_interface.h"
 #include "scan_filter.h"
 #include "scan_manager.h"
 #include "scan_record.h"

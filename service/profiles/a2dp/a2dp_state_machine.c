@@ -41,9 +41,9 @@
 
 #include "sal_a2dp_sink_interface.h"
 #include "sal_a2dp_source_interface.h"
-#include "sal_adapter_interface.h"
 #include "sal_avrcp_control_interface.h"
 #include "sal_avrcp_target_interface.h"
+#include "sal_interface.h"
 
 #include "a2dp_audio.h"
 #include "a2dp_control.h"
@@ -362,7 +362,7 @@ static bt_status_t a2dp_offload_send_stop_cmd(a2dp_state_machine_t* a2dp_sm,
     STREAM_TO_UINT16(ocf, payload);
     flag_set(a2dp_sm, PENDING_OFFLOAD_STOP);
 
-    return bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, a2dp_sm);
+    return bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, len, payload, bt_hci_event_callback, a2dp_sm);
 }
 
 static bool flag_isset(a2dp_state_machine_t* a2dp_sm, pending_state_t flag)
@@ -745,7 +745,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         flag_set(a2dp_sm, PENDING_OFFLOAD_START);
         a2dp_sm->offload_timer = service_loop_timer(A2DP_OFFLOAD_TIMEOUT, 0, a2dp_offload_config_timeout_callback, a2dp_sm);
 
-        bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback,
+        bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, len, payload, bt_hci_event_callback,
             a2dp_sm);
         break;
     }
@@ -834,7 +834,7 @@ static bt_status_t a2dp_send_active_link_cmd(a2dp_state_machine_t* a2dp_sm, bool
     STREAM_TO_UINT16(ocf, payload);
     size -= sizeof(ogf) + sizeof(ocf);
 
-    return bt_sal_send_hci_command(ogf, ocf, size, payload, NULL /* TODO: add callback */, a2dp_sm);
+    return bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, size, payload, NULL /* TODO: add callback */, a2dp_sm);
 }
 
 static void started_enter(state_machine_t* sm)

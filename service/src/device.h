@@ -19,15 +19,14 @@
 #include "bluetooth_define.h"
 #include "bt_list.h"
 
-enum device_flags {
-    DFLAG_NAME_SET = (1 << 0),
-    DFLAG_ALIAS_SET = (1 << 1),
-    DFLAG_LINKKEY_SET = (1 << 2),
-    DFLAG_WHITELIST_ADDED = (1 << 3),
-    DFLAG_CONNECTED = (1 << 4),
-    DFLAG_BONDED = (1 << 5),
-    DFLAG_LE_KEY_SET = (1 << 6),
-};
+#define DFLAG_NAME_SET (1 << 0)
+#define DFLAG_GET_RMT_NAME (1 << 1)
+#define DFLAG_ALIAS_SET (1 << 2)
+#define DFLAG_LINKKEY_SET (1 << 3)
+#define DFLAG_WHITELIST_ADDED (1 << 4)
+#define DFLAG_CONNECTED (1 << 5)
+#define DFLAG_BONDED (1 << 6)
+#define DFLAG_LE_KEY_SET (1 << 7)
 
 typedef struct bt_device bt_device_t;
 

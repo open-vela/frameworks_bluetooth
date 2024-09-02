@@ -26,7 +26,7 @@
 #include "bt_status.h"
 #include "btsnoop_log.h"
 #include "log.h"
-#include "sal.h"
+#include "sal_interface.h"
 #include "service_loop.h"
 
 enum {

@@ -51,7 +51,7 @@ enum {
 typedef struct {
     bt_address_t addr; // Remote BT address
     ble_addr_type_t addr_type; // if link type is ble connection type
-    uint8_t link_type;
+    uint8_t transport;
     bt_status_t status;
     connection_state_t connection_state;
     uint32_t hci_reason_code;
@@ -114,6 +114,7 @@ typedef struct {
     bt_address_t addr;
     uint8_t evt_id;
     union {
+        uint32_t cod;
         acl_state_param_t acl_params;
         struct {
             bool local_initiate;
@@ -128,17 +129,18 @@ typedef struct {
             uint32_t cod;
             bt_pair_type_t ssp_type;
             uint32_t pass_key;
-            uint8_t link_type;
+            uint8_t transport;
             char name[BT_REM_NAME_MAX_LEN + 1];
         } ssp_req;
         struct {
             bond_state_t state;
-            uint8_t link_type;
+            uint8_t transport;
+            bt_status_t status;
             bool is_ctkd;
         } bond_state;
         struct {
             bool encrypted;
-            uint8_t link_type;
+            uint8_t transport;
         } enc_state;
         struct {
             bt_128key_t key;
@@ -222,7 +224,7 @@ void adapter_on_device_found(bt_discovery_result_t* result);
 void adapter_on_scan_mode_changed(bt_scan_mode_t mode);
 void adapter_on_discovery_state_changed(bt_discovery_state_t state);
 void adapter_on_remote_name_recieved(bt_address_t* addr, const char* name);
-void adapter_on_connect_request(bt_address_t* addr);
+void adapter_on_connect_request(bt_address_t* addr, uint32_t cod);
 void adapter_on_connection_state_changed(acl_state_param_t* param);
 void adapter_on_pairing_request(bt_address_t* addr, bool local_initiate, bool is_bondable);
 void adapter_on_ssp_request(bt_address_t* addr, uint8_t transport,
@@ -230,9 +232,9 @@ void adapter_on_ssp_request(bt_address_t* addr, uint8_t transport,
     uint32_t pass_key, const char* name);
 void adapter_on_pin_request(bt_address_t* addr, uint32_t cod,
     bool min_16_digit, const char* name);
-void adapter_on_bond_state_changed(bt_address_t* addr, bond_state_t state, uint8_t link_type, bool is_ctkd);
+void adapter_on_bond_state_changed(bt_address_t* addr, bond_state_t state, uint8_t transport, bt_status_t status, bool is_ctkd);
 void adapter_on_service_search_done(bt_address_t* addr, bt_uuid_t* uuids, uint16_t size);
-void adapter_on_encryption_state_changed(bt_address_t* addr, bool encrypted, uint8_t link_type);
+void adapter_on_encryption_state_changed(bt_address_t* addr, bool encrypted, uint8_t transport);
 void adapter_on_link_key_update(bt_address_t* addr, bt_128key_t link_key, bt_link_key_type_t type);
 void adapter_on_link_key_removed(bt_address_t* addr, bt_status_t status);
 void adapter_on_link_role_changed(bt_address_t* addr, bt_link_role_t role);
