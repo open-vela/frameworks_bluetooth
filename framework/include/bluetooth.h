@@ -56,6 +56,10 @@ extern "C" {
 #endif
 #endif // End of else
 
+#define PRIMARY_ADAPTER 0
+
+typedef uint8_t bt_controller_id_t;
+
 typedef enum {
     BT_IO_CAPABILITY_DISPLAYONLY = 0,
     BT_IO_CAPABILITY_DISPLAYYESNO,
@@ -182,6 +186,11 @@ typedef enum {
     BT_LE_ADDR_TYPE_UNKNOWN = 0xFF
 } ble_addr_type_t;
 
+typedef enum {
+    BT_ADDR_TYPE_BREDR,
+    BT_ADDR_TYPE_UNKNOWN = 0xFF
+} bt_addr_type_t;
+
 /* * BLE PHY type */
 typedef enum {
     BT_LE_1M_PHY,
@@ -194,7 +203,18 @@ typedef enum {
     BT_LE_CONNECT_FILTER_POLICY_WHITE_LIST
 } ble_connect_filter_policy_t;
 
+typedef enum {
+    EM_LE_LOW_LATENCY,
+    EM_LE_HIGH_TPUT,
+    EM_LE_LOW_POWER,
+} bt_enhanced_mode_t;
+
 typedef uint8_t bt_128key_t[16];
+
+typedef struct {
+    uint8_t hash[16];
+    uint8_t rand[16];
+} bt_oob_data_t;
 
 #define COD_SERVICE_BITS(c) (c & 0xFFE000) /* The major service classes field */
 #define COD_DEVICE_MAJOR_BITS(c) (c & 0x001F00) /* The major device classes field */

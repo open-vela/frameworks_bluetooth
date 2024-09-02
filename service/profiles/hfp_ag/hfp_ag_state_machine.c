@@ -34,8 +34,8 @@
 #include "hfp_ag_tele_service.h"
 #include "media_system.h"
 #include "power_manager.h"
-#include "sal_adapter_interface.h"
 #include "sal_hfp_ag_interface.h"
+#include "sal_interface.h"
 #include "utils/log.h"
 
 #define HFP_AG_RETRY_MAX 1
@@ -880,7 +880,7 @@ static bt_status_t ag_offload_send_cmd(ag_state_machine_t* agsm, bool is_start)
     STREAM_TO_UINT16(ocf, payload);
     size -= sizeof(ogf) + sizeof(ocf);
 
-    return bt_sal_send_hci_command(ogf, ocf, size, payload, bt_hci_event_callback, agsm);
+    return bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, size, payload, bt_hci_event_callback, agsm);
 }
 
 static bool is_virtual_call_allowed(state_machine_t* sm)
@@ -940,7 +940,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         hsm_transition_to(sm, &audio_connecting_state);
         break;
     case AG_STACK_EVENT_AUDIO_REQ:
-        if (bt_sal_reply_sco_link_request(&agsm->addr, true) != BT_STATUS_SUCCESS) {
+        if (bt_sal_sco_connection_reply(PRIMARY_ADAPTER, &agsm->addr, true) != BT_STATUS_SUCCESS) {
             BT_ADDR_LOG("Reply audio request fail:%s", &agsm->addr);
             return false;
         }

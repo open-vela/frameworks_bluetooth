@@ -25,7 +25,7 @@
 #include "bt_adapter.h"
 #include "btservice.h"
 #include "media_system.h"
-#include "sal_adapter_interface.h"
+#include "sal_interface.h"
 #include "service_manager.h"
 #include "state_machine.h"
 
@@ -336,7 +336,7 @@ static bool ble_on_process_event(state_machine_t* sm, uint32_t event, void* p_da
 static void turning_on_enter(state_machine_t* sm)
 {
     ADAPTER_DBG_ENTER(sm);
-    bt_status_t status = bt_sal_enable();
+    bt_status_t status = bt_sal_enable(PRIMARY_ADAPTER);
     if (status == BT_STATUS_SUCCESS) {
         const state_t* prev = hsm_get_previous_state(sm);
         adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_TURNING_ON);
@@ -425,7 +425,7 @@ static bool turning_off_process_event(state_machine_t* sm, uint32_t event, void*
 
     switch (event) {
     case BREDR_PROFILE_DISABLED:
-        bt_sal_disable();
+        bt_sal_disable(PRIMARY_ADAPTER);
         break;
     case BREDR_DISABLED:
         if (adapter_is_support_le()) {
