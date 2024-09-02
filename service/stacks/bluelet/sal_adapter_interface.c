@@ -397,6 +397,7 @@ static void smp_request_callback(SERVICE_SSP_REQUEST_DATA_S* request_data)
 static void update_ble_bonded_devices_callback(SERVICE_BLE_KEYS_S* bonded_device_list,
     uint8_t count_in)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     remote_device_le_properties_t* props = malloc(sizeof(remote_device_le_properties_t) * count_in);
 
     remote_device_le_properties_t* prop = props;
@@ -410,22 +411,27 @@ static void update_ble_bonded_devices_callback(SERVICE_BLE_KEYS_S* bonded_device
 
     adapter_on_le_bonded_device_update(props, count_in);
     free(props);
+#endif
 }
 
 static void ble_add_white_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     bt_address_t addr;
 
     memcpy(addr.addr, remote_addr, 6);
     adapter_on_whitelist_update(&addr, true, sal_status_translate(status));
+#endif
 }
 
 static void ble_remove_white_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     bt_address_t addr;
 
     memcpy(addr.addr, remote_addr, 6);
     adapter_on_whitelist_update(&addr, false, sal_status_translate(status));
+#endif
 }
 static void ble_add_resolving_list_callback(BD_ADDR remote_addr, SERVICE_BT_STATUS status) { DEBUG_IMPL }
 static void ble_remove_resolving_list_callback(BD_ADDR remote_addr,
@@ -433,19 +439,23 @@ static void ble_remove_resolving_list_callback(BD_ADDR remote_addr,
 
 static void ble_address_callback(BD_ADDR ble_addr, SERVICE_BLE_ADDR_TYPE ble_addr_type)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     bt_address_t addr;
 
     memcpy(addr.addr, ble_addr, 6);
     adapter_on_le_addr_update(&addr, ble_addr_type);
+#endif
 }
 
 static void ble_phy_update_callback(BD_ADDR remote_addr, SERVICE_BLE_PHY_TYPE tx_phy,
     SERVICE_BLE_PHY_TYPE rx_phy, SERVICE_BT_STATUS status)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     bt_address_t addr;
 
     memcpy(addr.addr, remote_addr, 6);
     adapter_on_le_phy_update(&addr, tx_phy, rx_phy, sal_status_translate(status));
+#endif
 }
 
 static void ble_irk_callback(BT_COMMON_KEY irk, BD_ADDR ble_addr,
@@ -505,10 +515,12 @@ static void ssp_local_oob_data_callback(BT_COMMON_KEY c_192_val, BT_COMMON_KEY r
     BT_COMMON_KEY c_256_val, BT_COMMON_KEY r_256_val) { DEBUG_IMPL }
 static void ble_local_oob_data_callback(BD_ADDR remote_addr, BT_COMMON_KEY c_val, BT_COMMON_KEY r_val)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     bt_address_t addr;
 
     memcpy(addr.addr, remote_addr, sizeof(addr.addr));
     adapter_on_le_local_oob_data_got(&addr, c_val, r_val);
+#endif
 }
 
 static void ble_scan_started_callback(void)
