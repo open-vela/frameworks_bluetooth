@@ -377,7 +377,7 @@ static void on_state_enter(state_machine_t* sm)
     adapter_on_br_enabled();
     adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_ON);
 
-#if defined(CONFIG_BLUETOOTH_A2DP) || defined(CONFIG_OBELISK_LE_AUDIO_SUPPORT) || defined(CONFIG_BLUETOOTH_HFP_HF) || defined(CONFIG_BLUETOOTH_HFP_AG)
+#if defined(CONFIG_BLUETOOTH_A2DP) || defined(CONFIG_BLUETOOTH_LE_AUDIO_SUPPORT) || defined(CONFIG_BLUETOOTH_HFP_HF) || defined(CONFIG_BLUETOOTH_HFP_AG)
     adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
     bt_media_set_a2dp_offloading(stm->a2dp_offloading);
     bt_media_set_hfp_offloading(stm->hfp_offloading);

@@ -68,7 +68,7 @@ int bt_sal_hci_transport_init(const bt_vhal_interface* vhal)
 {
     g_hci_rxlen = 0;
     g_vhal = vhal;
-    g_tlfd = open(CONFIG_OBELISK_HCI_UART_NAME, O_RDWR | O_BINARY | O_CLOEXEC);
+    g_tlfd = open(CONFIG_BLUETOOTH_SERVICE_HCI_UART_NAME, O_RDWR | O_BINARY | O_CLOEXEC);
     BT_LOGI("%s: g_tlfd = %d", __func__, g_tlfd);
 
     if (g_vhal) {

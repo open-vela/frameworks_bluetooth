@@ -44,7 +44,7 @@ enum bt_log_level_ {
     BT_LOG_LEVEL_DEBUG = LOG_DEBUG,
 };
 
-#ifndef CONFIG_OBELISK_LOG_LEVEL
+#ifndef CONFIG_BLUETOOTH_SERVICE_LOG_LEVEL
 #define DEFAULT_BT_LOG_LEVEL BT_LOG_LEVEL_OFF
 #define BT_LOG(id, level, fmt, ...)
 #define BT_LOGE(fmt, args...)
@@ -54,7 +54,7 @@ enum bt_log_level_ {
 #else
 extern bool bt_log_print_check(uint8_t level);
 
-#define DEFAULT_BT_LOG_LEVEL CONFIG_OBELISK_LOG_LEVEL
+#define DEFAULT_BT_LOG_LEVEL CONFIG_BLUETOOTH_SERVICE_LOG_LEVEL
 
 #define BT_LOG(id, level, fmt, args...) syslog(level, "["__S_LINE__   \
                                                       "]"             \

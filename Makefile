@@ -40,12 +40,7 @@ endif
 endif
 
 CSRCS += service/src/manager_service.c
-CSRCS += service/src/power_manager.c
-CSRCS += service/vendor/bt_vendor.c
-
-CSRCS += service/common/bt_time.c
 CSRCS += service/common/index_allocator.c
-CSRCS += service/common/service_loop.c
 
 ifeq ($(CONFIG_BLUETOOTH_STORAGE_PROPERTY_SUPPORT), y)
 CSRCS += service/common/storage_property.c
@@ -53,11 +48,15 @@ else
 CSRCS += service/common/storage.c
 endif
 
-ifeq ($(CONFIG_BLUETOOTH_OBELISK), y)
+ifeq ($(CONFIG_BLUETOOTH_SERVICE), y)
+	CSRCS += service/common/bt_time.c
+	CSRCS += service/common/service_loop.c
 	CSRCS += service/src/adapter_service.c
 	CSRCS += service/src/adapter_state.c
 	CSRCS += service/src/btservice.c
 	CSRCS += service/src/device.c
+	CSRCS += service/src/power_manager.c
+	CSRCS += service/vendor/bt_vendor.c
 	CSRCS += service/src/hci_parser.c
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += service/src/advertising.c
@@ -177,7 +176,7 @@ endif #CONFIG_BLUETOOTH_LEAUDIO_VMICP
 CSRCS += service/utils/*.c
 CSRCS += service/vhal/*.c
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/vhal
-endif #CONFIG_BLUETOOTH_OBELISK
+endif #CONFIG_BLUETOOTH_SERVICE
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CSRCS += tools/utils.c
@@ -272,8 +271,8 @@ CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks/include
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks/bluelet/include
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/vendor
 
-ifeq ($(CONFIG_BLUETOOTH_OBELISK), y)
-ifneq ($(CONFIG_OBELISK_BREDR_BLUELET)$(CONFIG_OBELISK_LE_BLUELET),)
+ifeq ($(CONFIG_BLUETOOTH_SERVICE), y)
+ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET)$(CONFIG_BLUETOOTH_STACK_LE_BLUELET),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/bluelet/bluelet/src/samples/stack_adapter/inc
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/vendor/xiaomi/vela/bluelet/inc
 endif

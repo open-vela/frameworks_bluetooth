@@ -32,8 +32,8 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
-#ifndef CONFIG_OBELISK_LE_SCANNER_MAX_NUM
-#define CONFIG_OBELISK_LE_SCANNER_MAX_NUM 2
+#ifndef CONFIG_BLUETOOTH_LE_SCANNER_MAX_NUM
+#define CONFIG_BLUETOOTH_LE_SCANNER_MAX_NUM 2
 #endif
 #ifndef CONFIG_BT_LE_ADV_REPORT_SIZE
 #define CONFIG_BT_LE_ADV_REPORT_SIZE 10
@@ -68,7 +68,7 @@ typedef struct {
 } scanner_ctrl_t;
 
 typedef struct scanner_manager {
-    scanner_t* scanner_list[CONFIG_OBELISK_LE_SCANNER_MAX_NUM];
+    scanner_t* scanner_list[CONFIG_BLUETOOTH_LE_SCANNER_MAX_NUM];
     struct list_node scanning_list;
     uint32_t hash_table[CONFIG_BT_LE_ADV_REPORT_SIZE];
     bt_list_t* devices;
@@ -165,7 +165,7 @@ static bool scanner_compare(scanner_t* src, scanner_t* dest)
 
 static bool scanner_is_registered(scanner_t* scanner)
 {
-    for (int i = 0; i < CONFIG_OBELISK_LE_SCANNER_MAX_NUM; i++) {
+    for (int i = 0; i < CONFIG_BLUETOOTH_LE_SCANNER_MAX_NUM; i++) {
         if (scanner_manager.scanner_list[i] == scanner)
             return true;
     }
@@ -298,19 +298,19 @@ static uint32_t register_scanner(scanner_t* scanner)
     if (!scanner)
         return BT_SCAN_STATUS_START_FAIL;
 
-    if (scanner_manager.scanner_cnt == CONFIG_OBELISK_LE_SCANNER_MAX_NUM) {
+    if (scanner_manager.scanner_cnt == CONFIG_BLUETOOTH_LE_SCANNER_MAX_NUM) {
         delete_scanner(scanner);
         return BT_SCAN_STATUS_SCANNER_REG_NOMEM;
     }
 
-    for (i = 0; i < CONFIG_OBELISK_LE_SCANNER_MAX_NUM; i++) {
+    for (i = 0; i < CONFIG_BLUETOOTH_LE_SCANNER_MAX_NUM; i++) {
         if (scanner_manager.scanner_list[i] != NULL && scanner_compare(scanner_manager.scanner_list[i], scanner)) {
             delete_scanner(scanner);
             return BT_SCAN_STATUS_SCANNER_EXISTED;
         }
     }
 
-    for (i = 0; i < CONFIG_OBELISK_LE_SCANNER_MAX_NUM; i++) {
+    for (i = 0; i < CONFIG_BLUETOOTH_LE_SCANNER_MAX_NUM; i++) {
         if (!scanner_manager.scanner_list[i]) {
             scanner->scanner_id = i;
             scanner_manager.scanner_list[i] = scanner;
@@ -349,7 +349,7 @@ static void stop_scanner(void* data)
 
 static void cleanup_scanner(void* data)
 {
-    for (int i = 0; i < CONFIG_OBELISK_LE_SCANNER_MAX_NUM; i++) {
+    for (int i = 0; i < CONFIG_BLUETOOTH_LE_SCANNER_MAX_NUM; i++) {
         scanner_t* scanner = scanner_manager.scanner_list[i];
         if (scanner)
             unregister_scanner(scanner);
@@ -542,7 +542,7 @@ void scanner_stop_scan(bt_scanner_t* scanner)
 
 bool scan_is_supported(void)
 {
-#ifdef CONFIG_OBELISK_LE_SCAN_ENABLE
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
     return true;
 #endif
     return false;

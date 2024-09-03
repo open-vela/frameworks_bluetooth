@@ -116,7 +116,7 @@ static void stack_state_changed_callback(SERVICE_BT_STACK_STATE stack_state)
 {
     uint8_t state = BT_BREDR_STACK_STATE_OFF;
 
-#if defined(CONFIG_OBELISK_BREDR_BLUELET) && !defined(CONFIG_OBELISK_LE_BLUELET)
+#if defined(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET) && !defined(CONFIG_BLUETOOTH_STACK_LE_BLUELET)
     state = stack_state == BT_STATE_ON ? BT_BREDR_STACK_STATE_ON : BT_BREDR_STACK_STATE_OFF;
 #else
     switch (adapter_get_state()) {
@@ -742,8 +742,6 @@ static void bluelet_stack_cleanup(void)
     bt_sal_hci_transport_cleanup();
     hci_fd = -1;
 }
-
-// #ifdef CONFIG_OBELISK_BREDR_BLUELET
 
 bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
 {

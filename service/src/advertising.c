@@ -27,8 +27,8 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
-#ifndef CONFIG_OBELISK_LE_ADVERTISER_MAX_NUM
-#define CONFIG_OBELISK_LE_ADVERTISER_MAX_NUM 2
+#ifndef CONFIG_BLUETOOTH_LE_ADVERTISER_MAX_NUM
+#define CONFIG_BLUETOOTH_LE_ADVERTISER_MAX_NUM 2
 #endif
 
 typedef struct {
@@ -366,7 +366,7 @@ void stop_advertising_id(uint8_t adv_id)
 
 bool advertising_is_supported(void)
 {
-#ifdef CONFIG_OBELISK_LE_ADV_ENABLE
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
     return true;
 #endif
     return false;
@@ -380,7 +380,7 @@ void advertising_on_remote_detached(void* remote)
 void adv_manager_init(void)
 {
     memset(&adv_manager, 0, sizeof(adv_manager));
-    adv_manager.adv_allocator = index_allocator_create(CONFIG_OBELISK_LE_ADVERTISER_MAX_NUM);
+    adv_manager.adv_allocator = index_allocator_create(CONFIG_BLUETOOTH_LE_ADVERTISER_MAX_NUM);
     assert(adv_manager.adv_allocator);
     list_initialize(&adv_manager.advertiser_list);
     adv_manager.started = true;
