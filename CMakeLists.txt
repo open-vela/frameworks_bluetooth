@@ -80,7 +80,7 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/service/common/storage.c)
   endif()
 
-  if(CONFIG_BLUETOOTH_OBELISK)
+  if(CONFIG_BLUETOOTH_SERVICE)
     list(
       APPEND
       CSRCS
@@ -387,8 +387,8 @@ if(CONFIG_BLUETOOTH)
 
   list(APPEND INCDIR ${BLUETOOTH_DIR}/service/vendor)
 
-  if(CONFIG_BLUETOOTH_OBELISK)
-    if(CONFIG_OBELISK_BREDR_BLUELET OR CONFIG_OBELISK_LE_BLUELET)
+  if(CONFIG_BLUETOOTH_SERVICE)
+    if(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET OR CONFIG_BLUETOOTH_STACK_LE_BLUELET)
       list(
         APPEND INCDIR
         ${NUTTX_APPS_DIR}/external/bluelet/bluelet/src/samples/stack_adapter/inc

@@ -2067,7 +2067,7 @@ bool adapter_is_support_le(void)
 
 bool adapter_is_support_leaudio(void)
 {
-#ifdef CONFIG_OBELISK_LE_AUDIO_SUPPORT
+#ifdef CONFIG_BLUETOOTH_LE_AUDIO_SUPPORT
     return true;
 #endif
     return false;

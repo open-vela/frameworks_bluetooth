@@ -300,13 +300,13 @@ config BLUETOOTH_SOCKET_PORT
 
 endif #BLUETOOTH_FRAMEWORK_SOCKET_IPC
 
-config BLUETOOTH_OBELISK
-	bool "Enable bluetooth service named OBELISK"
+config BLUETOOTH_SERVICE
+	bool "Enable bluetooth service"
 	default n
 	help
-		Enable bluetooth obelisk
+		Enable bluetooth service
 
-if BLUETOOTH_OBELISK
+if BLUETOOTH_SERVICE
 config BLUETOOTH_SERVER
 	bool "Bluetooth server enable"
 	default n
@@ -341,31 +341,26 @@ config BLUETOOTH_NET_IPv4
 
 endif #BLUETOOTH_SERVER
 
-config OBELISK_LOG_LEVEL
+config BLUETOOTH_SERVICE_LOG_LEVEL
 	int "Bluetooth service log level"
 	default 7
 	help
 		Set bt service log level <0~7>
 
-config OBELISK_HCI_UART_NAME
+config BLUETOOTH_SERVICE_HCI_UART_NAME
 	string "HCI uart driver name"
 	default "/dev/ttyBT0"
-
-choice
-	prompt "select service thread loop"
-	default OBELISK_LIBUV_LOOP
-	config OBELISK_LIBUV_LOOP
-		bool "thread loop use uv loop"
-endchoice
 
 if BLUETOOTH_BREDR_SUPPORT
 choice
 	prompt "select br stack"
-	default OBELISK_BREDR_BLUELET
-	config OBELISK_BREDR_BLUELET
+	default BLUETOOTH_STACK_BREDR_BLUELET
+	config BLUETOOTH_STACK_BREDR_BLUELET
 		bool "classic bt stack use bluelet"
 		select LIB_BLUELET
-	config OBELISK_NOT_SUPPORT_CLASSIC_BT
+	config BLUETOOTH_STACK_BREDR_ZBLUE
+		bool "classic bt stack use zblue"
+	config BLUETOOTH_STACK_NOT_SUPPORT_CLASSIC_BT
 		bool "not support classic bt stack"
 endchoice
 endif #BLUETOOTH_BREDR_SUPPORT
@@ -373,49 +368,33 @@ endif #BLUETOOTH_BREDR_SUPPORT
 if BLUETOOTH_BLE_SUPPORT
 choice
 	prompt "select le stack"
-	default OBELISK_LE_BLUELET
-	config OBELISK_LE_BLUELET
+	default BLUETOOTH_STACK_LE_BLUELET
+	config BLUETOOTH_STACK_LE_BLUELET
 		bool "ble stack use bluelet"
-	select LIB_BLUELET
-	config OBELISK_NOT_SUPPORT_LE
+		select LIB_BLUELET
+	config BLUETOOTH_STACK_LE_ZBLUE
+		bool "ble stack use zblue"
+	config BLUETOOTH_STACK_NOT_SUPPORT_LE
 		bool "not support ble stack"
 endchoice
 
-config OBELISK_LE_SCAN_ENABLE
-	bool "Enable Bluetooth le scan"
-	default n
-	help
-		Enable Bluetooth le scan
-
-config OBELISK_LE_SCANNER_MAX_NUM
+config BLUETOOTH_LE_SCANNER_MAX_NUM
 	int "LE scanner max register number"
 	default 2
 	help
 		le scanner max register number
 
-config OBELISK_LE_ADV_ENABLE
-	bool "Enable Bluetooth le advertising"
-	default n
-	help
-		Enable Bluetooth le advertising
-
-config OBELISK_LE_ADVERTISER_MAX_NUM
+config BLUETOOTH_LE_ADVERTISER_MAX_NUM
 	int "LE advertiser max register number"
 	default 2
 	help
 		Le scanner max register number
 
-if BLUETOOTH_HCI_BRIDGE_MODE
-config OBELISK_LE_HCI_UART_NAME
-	string "LE hci uart driver name"
-	default "/dev/ttyBLE0"
-endif #BLUETOOTH_HCI_BRIDGE_MODE
-
-config OBELISK_LE_AUDIO_SUPPORT
+config BLUETOOTH_LE_AUDIO_SUPPORT
 	bool "LE audio support"
 	default n
 endif #BLUETOOTH_BLE_SUPPORT
-endif #BLUETOOTH_OBELISK
+endif #BLUETOOTH_SERVICE
 
 config BLUETOOTH_TOOLS
 	bool "Enable bluetooth profile test tools"
@@ -424,10 +403,10 @@ config BLUETOOTH_TOOLS
 
 choice
 	prompt "select bt vendor"
-	default OBELISK_BT_VENDOR_BES
-	config OBELISK_BT_VENDOR_BES
+	default BLUETOOTH_VENDOR_BES
+	config BLUETOOTH_VENDOR_BES
 		bool "bluetooth vendor BES"
-	config OBELISK_BT_VENDOR_ACTIONS
+	config BLUETOOTH_VENDOR_ACTIONS
 		bool "bluetooth vendor ACTIONS"
 endchoice
 

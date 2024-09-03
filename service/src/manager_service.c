@@ -140,7 +140,7 @@ bt_status_t manager_delete_instance(uint32_t app_id)
     return BT_STATUS_SUCCESS;
 }
 
-#if defined(CONFIG_BLUETOOTH_OBELISK) && defined(__NuttX__)
+#if defined(CONFIG_BLUETOOTH_SERVICE) && defined(__NuttX__)
 bt_status_t manager_start_service(uint32_t app_id, enum profile_id profile)
 {
     bt_instance_impl_t* ins = manager_find_instance_by_appid(app_id);
@@ -168,7 +168,7 @@ void manager_init(void)
 {
     if (g_instance_id == NULL)
         g_instance_id = index_allocator_create(10);
-#if defined(CONFIG_BLUETOOTH_OBELISK) && defined(__NuttX__)
+#if defined(CONFIG_BLUETOOTH_SERVICE) && defined(__NuttX__)
     service_manager_init();
     bt_pm_init();
 #endif
@@ -187,7 +187,7 @@ void manager_cleanup(void)
 
     index_allocator_delete(&g_instance_id);
 
-#if defined(CONFIG_BLUETOOTH_OBELISK) && defined(__NuttX__)
+#if defined(CONFIG_BLUETOOTH_SERVICE) && defined(__NuttX__)
     service_manager_cleanup();
     bt_pm_cleanup();
 #endif
