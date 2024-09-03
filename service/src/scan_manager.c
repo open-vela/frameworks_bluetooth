@@ -34,7 +34,8 @@
 #ifndef CONFIG_OBELISK_LE_SCANNER_MAX_NUM
 #define CONFIG_OBELISK_LE_SCANNER_MAX_NUM 2
 #endif
-#define BT_LE_ADV_REPORT_PERIOD_MS (500) /* 500ms adv report period for bad IPC */
+#define BT_LE_ADV_REPORT_DURATION_MS 500
+#define BT_LE_ADV_REPORT_PERIOD_MS 5000
 
 typedef struct {
     bt_address_t addr;
@@ -163,7 +164,7 @@ static bool scanner_is_registered(scanner_t* scanner)
     return false;
 }
 
-static bool scanner_match_duration(scanner_device_t* device, uint32_t duration, uint32_t timestamp)
+static bool scanner_match_duration(scanner_device_t* device, uint32_t duration, uint32_t period, uint32_t timestamp)
 {
     uint32_t t1;
     uint32_t t2;
@@ -171,7 +172,7 @@ static bool scanner_match_duration(scanner_device_t* device, uint32_t duration, 
 
     t1 = device->timestamp;
     t2 = t1 + duration;
-    t3 = t2 + duration;
+    t3 = t1 + period;
 
     if (timestamp < t1) {
         /* Timestamp overflow */
@@ -218,7 +219,7 @@ static void notify_scanners_scan_result(void* data)
             device = scanner_add_device(&result->addr, result->addr_type, timestamp_ms);
         }
 
-        if (!scanner_match_duration(device, scanner->filter.duration, timestamp_ms)) {
+        if (!scanner_match_duration(device, scanner->filter.duration, scanner->filter.period, timestamp_ms)) {
             continue;
         }
 
@@ -442,7 +443,8 @@ bt_scanner_t* scanner_start_scan_with_filters(void* remote,
     }
 
     if (filter && filter->active) {
-        filter->duration = BT_LE_ADV_REPORT_PERIOD_MS;
+        filter->duration = BT_LE_ADV_REPORT_DURATION_MS;
+        filter->period = BT_LE_ADV_REPORT_PERIOD_MS;
         memcpy(&scanner->filter, filter, sizeof(*filter));
     }
 
