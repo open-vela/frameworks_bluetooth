@@ -128,7 +128,8 @@ typedef enum {
 
 typedef enum {
     BT_LINK_MODE_ACTIVE,
-    BT_LINK_MODE_SNIFF
+    BT_LINK_MODE_SNIFF,
+    BT_LINK_MODE_UNKNOWN,
 } bt_link_mode_t;
 
 typedef enum {

@@ -354,6 +354,7 @@ static bt_pm_device_t* pm_conn_device_add(bt_address_t* peer_addr)
     }
 
     memcpy(&device->peer_addr, peer_addr, sizeof(bt_address_t));
+    device->mode = BT_LINK_MODE_UNKNOWN;
     list_add_tail(&manager->pm_devices, &device->srv_node);
     return device;
 }
