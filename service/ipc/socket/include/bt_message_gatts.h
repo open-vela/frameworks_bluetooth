@@ -109,7 +109,7 @@ BT_GATT_SERVER_MESSAGE_START,
                 uint32_t properties;
                 uint32_t permissions;
                 uint32_t attr_length;
-            } attr_db[CONFIG_BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM];
+            } attr_db[GATTS_MAX_ATTRIBUTE_NUM];
         } _bt_gatts_add_attr_table;
 
         struct {
