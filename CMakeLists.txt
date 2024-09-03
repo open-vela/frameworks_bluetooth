@@ -355,6 +355,8 @@ if(CONFIG_BLUETOOTH)
 
   list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/include)
 
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/bluelet/include)
+
   list(APPEND INCDIR ${BLUETOOTH_DIR}/service/vendor)
 
   if(CONFIG_BLUETOOTH_OBELISK)
