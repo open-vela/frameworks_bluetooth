@@ -16,18 +16,18 @@
 
 #include "bt_vendor.h"
 
-#ifdef CONFIG_OBELISK_BT_VENDOR_BES
+#ifdef CONFIG_BLUETOOTH_VENDOR_BES
 #include "bt_vendor_bes.h"
 #endif
 
-#ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
+#ifdef CONFIG_BLUETOOTH_VENDOR_ACTIONS
 #include "bt_vendor_actions.h"
 #endif
 
 bool a2dp_offload_start_builder(a2dp_offload_config_t* config,
     uint8_t* offload, size_t* size)
 {
-#ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
+#ifdef CONFIG_BLUETOOTH_VENDOR_ACTIONS
     return actions_a2dp_offload_start_builder(config, offload, size);
 #else
     return false;
@@ -37,7 +37,7 @@ bool a2dp_offload_start_builder(a2dp_offload_config_t* config,
 bool a2dp_offload_stop_builder(a2dp_offload_config_t* config,
     uint8_t* offload, size_t* size)
 {
-#ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
+#ifdef CONFIG_BLUETOOTH_VENDOR_ACTIONS
     return actions_a2dp_offload_stop_builder(config, offload, size);
 #else
     return false;
@@ -47,7 +47,7 @@ bool a2dp_offload_stop_builder(a2dp_offload_config_t* config,
 bool hfp_offload_start_builder(hfp_offload_config_t* config,
     uint8_t* offload, size_t* size)
 {
-#ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
+#ifdef CONFIG_BLUETOOTH_VENDOR_ACTIONS
     return actions_hfp_offload_start_builder(config, offload, size);
 #else
     return false;
@@ -57,7 +57,7 @@ bool hfp_offload_start_builder(hfp_offload_config_t* config,
 bool hfp_offload_stop_builder(hfp_offload_config_t* config,
     uint8_t* offload, size_t* size)
 {
-#ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
+#ifdef CONFIG_BLUETOOTH_VENDOR_ACTIONS
     return actions_hfp_offload_stop_builder(config, offload, size);
 #else
     return false;
@@ -67,7 +67,7 @@ bool hfp_offload_stop_builder(hfp_offload_config_t* config,
 bool lea_offload_start_builder(lea_offload_config_t* config,
     uint8_t* offload, size_t* size)
 {
-#ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
+#ifdef CONFIG_BLUETOOTH_VENDOR_ACTIONS
     return actions_lea_offload_start_builder(config, offload, size);
 #else
     return false;
@@ -77,7 +77,7 @@ bool lea_offload_start_builder(lea_offload_config_t* config,
 bool lea_offload_stop_builder(lea_offload_config_t* config,
     uint8_t* offload, size_t* size)
 {
-#ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
+#ifdef CONFIG_BLUETOOTH_VENDOR_ACTIONS
     return actions_lea_offload_stop_builder(config, offload, size);
 #else
     return false;
@@ -87,7 +87,7 @@ bool lea_offload_stop_builder(lea_offload_config_t* config,
 bool acl_bandwidth_config_builder(acl_bandwitdh_config_t* config,
     uint8_t* cmd, size_t* size)
 {
-#ifdef CONFIG_OBELISK_BT_VENDOR_BES
+#ifdef CONFIG_BLUETOOTH_VENDOR_BES
     return bes_bandwidth_config_builder(config, cmd, size, true);
 #else
     return false;
@@ -97,7 +97,7 @@ bool acl_bandwidth_config_builder(acl_bandwitdh_config_t* config,
 bool acl_bandwidth_deconfig_builder(acl_bandwitdh_config_t* config,
     uint8_t* cmd, size_t* size)
 {
-#ifdef CONFIG_OBELISK_BT_VENDOR_BES
+#ifdef CONFIG_BLUETOOTH_VENDOR_BES
     return bes_bandwidth_config_builder(config, cmd, size, false);
 #else
     return false;
