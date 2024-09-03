@@ -179,10 +179,12 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
     } else if (packet.code > BT_SCAN_MESSAGE_START && packet.code < BT_SCAN_MESSAGE_END) {
         bt_socket_server_scan_process(poll, fd, ins, &packet);
 #endif
+#if defined(CONFIG_BLUETOOTH_GATT)
     } else if (packet.code > BT_GATT_CLIENT_MESSAGE_START && packet.code < BT_GATT_CLIENT_MESSAGE_END) {
         bt_socket_server_gattc_process(poll, fd, ins, &packet);
     } else if (packet.code > BT_GATT_SERVER_MESSAGE_START && packet.code < BT_GATT_SERVER_MESSAGE_END) {
         bt_socket_server_gatts_process(poll, fd, ins, &packet);
+#endif
     } else if (packet.code > BT_SPP_MESSAGE_START && packet.code < BT_SPP_MESSAGE_END) {
         bt_socket_server_spp_process(poll, fd, ins, &packet);
     } else if (packet.code > BT_PAN_MESSAGE_START && packet.code < BT_PAN_MESSAGE_END) {
