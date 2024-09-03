@@ -196,12 +196,12 @@ static const bt_pm_mode_t g_pm_mode[] = {
 static const bt_pm_config_t g_pm_cfg[] = {
     { PROFILE_HFP_HF, BT_PM_SPEC_INDEX_0 }, /* HF spec table */
     { PROFILE_HFP_AG, BT_PM_SPEC_INDEX_0 }, /* AG spec table */
-    { PROFILE_HID_DEV, BT_PM_SPEC_INDEX_1 }, /* HID spec table */
-    { PROFILE_A2DP, BT_PM_SPEC_INDEX_2 }, /* AV spec table */
-    { PROFILE_AVRCP_CT, BT_PM_SPEC_INDEX_2 }, /* AV spec table */
-    { PROFILE_AVRCP_TG, BT_PM_SPEC_INDEX_2 }, /* AV spec table */
-    { PROFILE_SPP, BT_PM_SPEC_INDEX_3 }, /* SPP spec table */
-    { PROFILE_PANU, BT_PM_SPEC_INDEX_4 }, /* PAN spec table */
+    { PROFILE_A2DP, BT_PM_SPEC_INDEX_1 }, /* AV spec table */
+    { PROFILE_AVRCP_CT, BT_PM_SPEC_INDEX_1 }, /* AV spec table */
+    { PROFILE_AVRCP_TG, BT_PM_SPEC_INDEX_1 }, /* AV spec table */
+    { PROFILE_SPP, BT_PM_SPEC_INDEX_2 }, /* SPP spec table */
+    { PROFILE_PANU, BT_PM_SPEC_INDEX_3 }, /* PAN spec table */
+    { PROFILE_HID_DEV, BT_PM_SPEC_INDEX_4 }, /* HID spec table */
 };
 
 static const bt_pm_spec_table_t g_pm_spec[] = {
@@ -219,21 +219,7 @@ static const bt_pm_spec_table_t g_pm_spec[] = {
             { BT_PM_ACTIVE, 0 } /* busy */
         } },
 
-    /* HID: 1(BT_PM_SPEC_INDEX_1) */
-    { (BT_PM_SNIFF), /* allow sniff */
-        (0), /* the SSR entry */
-        {
-            { BT_PM_SNIFF, 5000 }, /* conn open */
-            { BT_PM_NO_PREF, 0 }, /* conn close */
-            { BT_PM_NO_ACTION, 0 }, /* app open */
-            { BT_PM_NO_ACTION, 0 }, /* app close */
-            { BT_PM_NO_ACTION, 0 }, /* sco open */
-            { BT_PM_NO_ACTION, 0 }, /* sco close */
-            { BT_PM_SNIFF2, 5000 }, /* idle */
-            { BT_PM_SNIFF4, 200 } /* busy */
-        } },
-
-    /* AV: 2(BT_PM_SPEC_INDEX_2) */
+    /* AV: 1(BT_PM_SPEC_INDEX_1) */
     { (BT_PM_SNIFF), /* allow sniff */
         (0), /* the SSR entry */
         {
@@ -247,7 +233,7 @@ static const bt_pm_spec_table_t g_pm_spec[] = {
             { BT_PM_ACTIVE, 0 } /* busy */
         } },
 
-    /* SPP: 3(BT_PM_SPEC_INDEX_3) */
+    /* SPP: 2(BT_PM_SPEC_INDEX_2) */
     { (BT_PM_SNIFF), /* allow sniff */
         (0), /* the SSR entry */
         {
@@ -261,7 +247,7 @@ static const bt_pm_spec_table_t g_pm_spec[] = {
             { BT_PM_ACTIVE, 0 } /* busy */
         } },
 
-    /* PAN: 4(BT_PM_SPEC_INDEX_4) */
+    /* PAN: 3(BT_PM_SPEC_INDEX_3) */
     { (BT_PM_SNIFF), /* allow sniff */
         (0), /* the SSR entry */
         {
@@ -273,7 +259,21 @@ static const bt_pm_spec_table_t g_pm_spec[] = {
             { BT_PM_NO_ACTION, 0 }, /* sco close */
             { BT_PM_SNIFF, 5000 }, /* idle */
             { BT_PM_ACTIVE, 0 } /* busy */
-        } }
+        } },
+
+    /* HID: 4(BT_PM_SPEC_INDEX_4) */
+    { (BT_PM_SNIFF), /* allow sniff */
+        (0), /* the SSR entry */
+        {
+            { BT_PM_SNIFF, 5000 }, /* conn open */
+            { BT_PM_NO_PREF, 0 }, /* conn close */
+            { BT_PM_NO_ACTION, 0 }, /* app open */
+            { BT_PM_NO_ACTION, 0 }, /* app close */
+            { BT_PM_NO_ACTION, 0 }, /* sco open */
+            { BT_PM_NO_ACTION, 0 }, /* sco close */
+            { BT_PM_SNIFF2, 5000 }, /* idle */
+            { BT_PM_SNIFF4, 200 } /* busy */
+        } },
 };
 
 static bt_pm_manager_t g_pm_manager = { 0 };
@@ -466,7 +466,7 @@ static bool pm_prefer_config(bt_address_t* peer_addr, bt_pm_prefer_mode_t* pm_ac
         table = &g_pm_spec[config->spec_idx];
         action = &table->actn_tbl[service->state];
 
-        if (action->power_mode > power_mode || (action->power_mode == power_mode && action->timeout > timeout)) {
+        if (action->power_mode > power_mode) {
             power_mode = action->power_mode;
             timeout = action->timeout;
             id = config->profile_id;
