@@ -107,8 +107,15 @@ if(CONFIG_BLUETOOTH)
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/*.c)
     list(APPEND CSRCS ${APPEND_FILES})
 
-    file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/bluelet/*.c)
-    list(APPEND CSRCS ${APPEND_FILES})
+    if(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET OR CONFIG_BLUETOOTH_STACK_LE_BLUELET)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/bluelet/*.c)
+      list(APPEND CSRCS ${APPEND_FILES})
+    endif()
+
+    if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/zephyr/*.c)
+      list(APPEND CSRCS ${APPEND_FILES})
+    endif()
 
     if(NOT CONFIG_BLUETOOTH_BLE_AUDIO)
       file(GLOB EXLUDE_FILES ${BLUETOOTH_DIR}/service/stacks/bluelet/sal_lea_*)
@@ -383,9 +390,9 @@ if(CONFIG_BLUETOOTH)
 
   list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/include)
 
-  list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/bluelet/include)
-
   list(APPEND INCDIR ${BLUETOOTH_DIR}/service/vendor)
+
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/include)
 
   if(CONFIG_BLUETOOTH_SERVICE)
     if(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET OR CONFIG_BLUETOOTH_STACK_LE_BLUELET)
@@ -394,7 +401,14 @@ if(CONFIG_BLUETOOTH)
         ${NUTTX_APPS_DIR}/external/bluelet/bluelet/src/samples/stack_adapter/inc
       )
 
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/bluelet/include)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/vendor/xiaomi/vela/bluelet/inc)
+    endif()
+
+    if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/include/zephyr)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/kernel/include)
     endif()
 
     list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc)
