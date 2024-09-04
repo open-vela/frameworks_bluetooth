@@ -279,8 +279,13 @@ static void connection_state_process(void* data)
     bt_addr_ba2str(&msg->addr, addr_str);
     PRINT("%s addr:%s, scn: %" PRIx16 ", port: %" PRIx16 ", state:%" PRIu32, __func__, addr_str, msg->scn, msg->port, msg->state);
 
-    if (msg->state == PROFILE_STATE_DISCONNECTED)
+    if (msg->state == PROFILE_STATE_DISCONNECTED) {
         check_resource_release(msg->port);
+        /**
+         * Reset the SPP transation ctx when SPP disconnct.
+         */
+        spp_trans_reset();
+    }
 
     free(msg);
 }
