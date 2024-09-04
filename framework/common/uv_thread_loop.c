@@ -27,6 +27,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#include "bt_config.h"
 #include "bt_list.h"
 #include "uv_thread_loop.h"
 
