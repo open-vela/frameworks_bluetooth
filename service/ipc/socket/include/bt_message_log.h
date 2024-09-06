@@ -14,21 +14,28 @@
  * limitations under the License.
  ***************************************************************************/
 
-#ifndef __BT_SNOOP_LOG_H__
-#define __BT_SNOOP_LOG_H__
+#ifdef __BT_MESSAGE_CODE__
+BT_LOG_MESSAGE_START,
+    BT_LOG_ENABLE,
+    BT_LOG_DISABLE,
+    BT_LOG_SET_FILTER,
+    BT_LOG_REMOVE_FILTER,
+    BT_LOG_MESSAGE_END,
+#endif
 
-#include "bt_list.h"
-#include "bt_status.h"
-#include "bt_trace.h"
+#ifdef __BT_CALLBACK_CODE__
+    BT_LOG_CALLBACK_START,
+    BT_LOG_CALLBACK_END,
+#endif
 
-#include <stdint.h>
+#ifndef _BT_MESSAGE_LOG_H__
+#define _BT_MESSAGE_LOG_H__
 
-void btsnoop_log_capture(uint8_t is_recieve, uint8_t* hci_pkt, uint32_t hci_pkt_size);
-int btsnoop_log_init(void);
-void btsnoop_log_uninit(void);
-int btsnoop_log_enable(void);
-void btsnoop_log_disable(void);
-int btsnoop_set_filter(btsnoop_filter_flag_t filter_flag);
-int btsnoop_remove_filter(btsnoop_filter_flag_t filter_flag);
+    typedef union {
+    struct {
+        uint32_t filter_flag;
+    } _bt_log_set_flag,
+        _bt_log_remove_flag;
+} bt_message_log_t;
 
-#endif //__BT_SNOOP_LOG_H__
+#endif /* _BT_MESSAGE_LOG_H__ */

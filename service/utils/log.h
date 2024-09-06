@@ -98,5 +98,6 @@ extern bool bt_log_print_check(uint8_t level);
 
 void bt_log_server_init(void);
 void bt_log_server_cleanup(void);
-
+void bt_log_module_enable(int id, bool changed);
+void bt_log_module_disable(int id, bool changed);
 #endif
