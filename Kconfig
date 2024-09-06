@@ -435,6 +435,12 @@ config LE_DLF_SUPPORT
 endif #BLUETOOTH_BLE_SUPPORT
 endif #BLUETOOTH_SERVICE
 
+config MAX_SNOOP_FILE_SIZE
+	int "Maximum size of the snoop log file"
+	default 1048576
+	help
+		Maximum size of the snoop log file
+
 config BLUETOOTH_TOOLS
 	bool "Enable bluetooth profile test tools"
 	default n
