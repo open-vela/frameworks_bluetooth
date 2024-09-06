@@ -13,22 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-
-#ifndef __BT_SNOOP_LOG_H__
-#define __BT_SNOOP_LOG_H__
-
-#include "bt_list.h"
-#include "bt_status.h"
 #include "bt_trace.h"
+#include "bluetooth.h"
+#include "bt_internal.h"
+#include "utils/btsnoop_log.h"
+#include "utils/log.h"
 
-#include <stdint.h>
+void BTSYMBOLS(bluetooth_enable_btsnoop_log)(bt_instance_t* ins)
+{
+    bt_log_module_enable(LOG_ID_SNOOP, false);
+}
 
-void btsnoop_log_capture(uint8_t is_recieve, uint8_t* hci_pkt, uint32_t hci_pkt_size);
-int btsnoop_log_init(void);
-void btsnoop_log_uninit(void);
-int btsnoop_log_enable(void);
-void btsnoop_log_disable(void);
-int btsnoop_set_filter(btsnoop_filter_flag_t filter_flag);
-int btsnoop_remove_filter(btsnoop_filter_flag_t filter_flag);
+void BTSYMBOLS(bluetooth_disable_btsnoop_log)(bt_instance_t* ins)
+{
+    bt_log_module_disable(LOG_ID_SNOOP, false);
+}
 
-#endif //__BT_SNOOP_LOG_H__
+void BTSYMBOLS(bluetooth_set_btsnoop_filter)(bt_instance_t* ins, btsnoop_filter_flag_t filter_flag)
+{
+    btsnoop_set_filter(filter_flag);
+}
+
+void BTSYMBOLS(bluetooth_remove_btsnoop_filter)(bt_instance_t* ins, btsnoop_filter_flag_t filter_flag)
+{
+    btsnoop_remove_filter(filter_flag);
+}

@@ -189,6 +189,8 @@ void bt_socket_server_l2cap_process(service_poll_t* poll,
 int bt_socket_client_l2cap_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
+void bt_socket_server_log_process(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 #ifdef __cplusplus
 }
 #endif
