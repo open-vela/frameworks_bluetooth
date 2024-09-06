@@ -38,6 +38,7 @@ extern "C" {
 #include "bt_message_hfp_hf.h"
 #include "bt_message_hid_device.h"
 #include "bt_message_l2cap.h"
+#include "bt_message_log.h"
 #include "bt_message_manager.h"
 #include "bt_message_pan.h"
 #include "bt_message_scan.h"
@@ -61,6 +62,7 @@ typedef enum {
 #include "bt_message_hfp_hf.h"
 #include "bt_message_hid_device.h"
 #include "bt_message_l2cap.h"
+#include "bt_message_log.h"
 #include "bt_message_manager.h"
 #include "bt_message_pan.h"
 #include "bt_message_scan.h"
@@ -161,6 +163,8 @@ typedef struct
 
         bt_message_l2cap_t l2cap_pl;
         bt_message_l2cap_callbacks_t l2cap_cb;
+
+        bt_message_log_t log_pl;
     };
 } bt_message_packet_t;
 #pragma pack()

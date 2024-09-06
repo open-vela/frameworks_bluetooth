@@ -17,13 +17,18 @@
 #ifndef __BT_SNOOP_LOG_H__
 #define __BT_SNOOP_LOG_H__
 
+#include "bt_list.h"
 #include "bt_status.h"
+#include "bt_trace.h"
+
 #include <stdint.h>
 
-int btsnoop_create_new_file(void);
-void btsnoop_close_file(void);
-bt_status_t btsnoop_log_open(void);
 void btsnoop_log_capture(uint8_t is_recieve, uint8_t* hci_pkt, uint32_t hci_pkt_size);
-void btsnoop_log_close(void);
+int btsnoop_log_init(void);
+void btsnoop_log_uninit(void);
+int btsnoop_log_enable(void);
+void btsnoop_log_disable(void);
+int btsnoop_set_filter(btsnoop_filter_flag_t filter_flag);
+int btsnoop_remove_filter(btsnoop_filter_flag_t filter_flag);
 
 #endif //__BT_SNOOP_LOG_H__

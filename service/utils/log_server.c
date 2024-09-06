@@ -107,7 +107,7 @@ static int stack_log_setup(void)
     return 0;
 }
 
-static void bt_log_module_enable(int id, bool changed)
+void bt_log_module_enable(int id, bool changed)
 {
     const char* property = NULL;
     syslog(LOG_DEBUG, "%s, id %d\n", __func__, id);
@@ -116,7 +116,7 @@ static void bt_log_module_enable(int id, bool changed)
         if (g_logger.snoop_enable)
             return;
 
-        if (btsnoop_log_open() != BT_STATUS_SUCCESS) {
+        if (btsnoop_log_enable() != BT_STATUS_SUCCESS) {
             syslog(LOG_ERR, "%s\n", "enable snoop log fail");
             return;
         }
@@ -149,7 +149,7 @@ static void bt_log_module_enable(int id, bool changed)
     syslog(LOG_INFO, "%s enabled\n", log_id_str(id));
 }
 
-static void bt_log_module_disable(int id, bool changed)
+void bt_log_module_disable(int id, bool changed)
 {
     const char* property = NULL;
     syslog(LOG_DEBUG, "%s id %d\n", __func__, id);
@@ -158,7 +158,7 @@ static void bt_log_module_disable(int id, bool changed)
         if (!g_logger.snoop_enable)
             return;
 
-        btsnoop_log_close();
+        btsnoop_log_disable();
         g_logger.snoop_enable = 0;
         property = PERSIST_BT_SNOOP_LOG_EN;
         break;
@@ -252,9 +252,12 @@ void bt_log_server_init(void)
         stack_log_setup();
 
     /** snoop log init */
+    if (btsnoop_log_init() != BT_STATUS_SUCCESS)
+        syslog(LOG_ERR, "init snoop log fail\n");
+
     g_logger.snoop_enable = property_get_int32(PERSIST_BT_SNOOP_LOG_EN, 0);
     if (g_logger.snoop_enable) {
-        if (btsnoop_log_open() != BT_STATUS_SUCCESS)
+        if (btsnoop_log_enable() != BT_STATUS_SUCCESS)
             syslog(LOG_ERR, "%s\n", "enable snoop log fail");
     }
 
@@ -288,7 +291,9 @@ void bt_log_server_cleanup(void)
 
     /** snoop log deinit */
     if (g_logger.snoop_enable)
-        btsnoop_log_close();
+        btsnoop_log_disable();
+
+    btsnoop_log_uninit();
 
     /** stack log deinit */
     if (g_logger.stack_enable)
