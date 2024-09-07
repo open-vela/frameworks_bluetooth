@@ -506,13 +506,13 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
         break;
     }
     case HF_OFFLOAD_START_REQ:
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
         break;
     case HF_OFFLOAD_STOP_REQ:
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
         break;
     case HF_OFFLOAD_STOP_EVT:
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
         break;
     default:
         BT_LOGE("Disconnected: Unexpected stack event: %s", stack_event_to_string(event));
@@ -742,13 +742,13 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         hsm_transition_to(sm, &disconnected_state);
         break;
     case HF_OFFLOAD_START_REQ:
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
         break;
     case HF_OFFLOAD_STOP_REQ:
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
         break;
     case HF_OFFLOAD_STOP_EVT:
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
         break;
     default:
         break;
@@ -1229,13 +1229,13 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         break;
     }
     case HF_OFFLOAD_START_REQ:
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
         break;
     case HF_OFFLOAD_STOP_REQ:
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
         break;
     case HF_OFFLOAD_STOP_EVT:
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
         break;
     default:
         return default_process_event(sm, event, data);
@@ -1389,7 +1389,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
     case HF_OFFLOAD_START_REQ:
         if (hf_offload_send_cmd(hfsm, true) != BT_STATUS_SUCCESS) {
             BT_LOGE("failed to start offload");
-            auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+            audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
             break;
         }
         flag_set(hfsm, PENDING_OFFLOAD_START);
@@ -1408,20 +1408,20 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         result = hci_get_result(hci_event);
         if (result != HCI_SUCCESS) {
             BT_LOGE("HF_OFFLOAD_START fail, status:0x%0x", result);
-            auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+            audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
             if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS) {
                 BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
             }
             break;
         }
 
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STARTED);
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STARTED);
         break;
     }
     case HF_OFFLOAD_TIMEOUT_EVT: {
         flag_clear(hfsm, PENDING_OFFLOAD_START);
         hfsm->offload_timer = NULL;
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
         if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS) {
             BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
         }
@@ -1431,17 +1431,17 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         if (hfsm->offload_timer) {
             service_loop_cancel_timer(hfsm->offload_timer);
             hfsm->offload_timer = NULL;
-            auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
+            audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
         }
         if (hf_offload_send_cmd(hfsm, false) != BT_STATUS_SUCCESS) {
             BT_LOGE("failed to stop offload");
-            auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+            audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
             break;
         }
         flag_set(hfsm, PENDING_OFFLOAD_STOP);
         break;
     case HF_OFFLOAD_STOP_EVT:
-        auidio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
         break;
     default:
         return default_process_event(sm, event, data);

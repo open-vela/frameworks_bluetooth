@@ -78,7 +78,7 @@ static void audio_ctrl_event_with_data(uint8_t ch_id, audio_ctrl_evt_t event, ui
     }
 }
 
-void auidio_ctrl_send_control_event(uint8_t profile_id, audio_ctrl_evt_t evt)
+void audio_ctrl_send_control_event(uint8_t profile_id, audio_ctrl_evt_t evt)
 {
     switch (profile_id) {
     case PROFILE_HFP_AG:
@@ -112,7 +112,7 @@ static void audio_recv_ctrl_data(uint8_t ch_id, audio_ctrl_cmd_t cmd)
 #endif
         /* TODO: Parse the payload to determine an active profile */
         BT_LOGD("%s: active profile not found", __func__);
-        auidio_ctrl_send_control_event(PROFILE_MAX, AUDIO_CTRL_EVT_START_FAIL);
+        audio_ctrl_send_control_event(PROFILE_MAX, AUDIO_CTRL_EVT_START_FAIL);
         break;
     case AUDIO_CTRL_CMD_STOP:
 #ifdef CONFIG_BLUETOOTH_HFP_HF
@@ -125,7 +125,7 @@ static void audio_recv_ctrl_data(uint8_t ch_id, audio_ctrl_cmd_t cmd)
 #endif
         /* TODO: Parse the payload to determine an active profile */
         BT_LOGD("%s: active profile not found", __func__);
-        auidio_ctrl_send_control_event(PROFILE_MAX, AUDIO_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_MAX, AUDIO_CTRL_EVT_STOPPED);
         break;
     default:
         BT_LOGD("%s: UNSUPPORTED CMD (%d)", __func__, cmd);
