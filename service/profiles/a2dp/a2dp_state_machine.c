@@ -450,7 +450,7 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
         break;
 
     case OFFLOAD_STOP_EVT:
-        auidio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
         break;
 
     default:
@@ -511,7 +511,7 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case OFFLOAD_STOP_EVT:
-        auidio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
         break;
 
     default:
@@ -774,7 +774,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         break;
 
     case OFFLOAD_STOP_EVT:
-        auidio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
         break;
 
     default:
@@ -914,7 +914,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case OFFLOAD_STOP_EVT:
-        auidio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
         break;
 
     default:
@@ -965,7 +965,7 @@ static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case OFFLOAD_STOP_EVT:
-        auidio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
+        audio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
         break;
 
     default:
