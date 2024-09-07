@@ -39,7 +39,7 @@
 #include "audio_transport.h"
 #include "bt_status.h"
 
-void auidio_ctrl_send_control_event(uint8_t profile_id, audio_ctrl_evt_t evt);
+void audio_ctrl_send_control_event(uint8_t profile_id, audio_ctrl_evt_t evt);
 bt_status_t audio_ctrl_init(uint8_t profile_id);
 void audio_ctrl_cleanup(uint8_t profile_id);
 
