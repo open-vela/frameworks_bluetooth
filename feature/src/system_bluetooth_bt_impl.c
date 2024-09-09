@@ -289,9 +289,7 @@ void system_bluetooth_bt_wrap_disconnect(FeatureInstanceHandle feature, AppendDa
         goto COMPLETE_CALLBACK;
     }
 
-    for (int i = 0; i < MAX_FEATURE_ID; ++i) {
-        status |= bluetooth_disconnect_profiles(feature, &addr, i);
-    }
+    status = bt_device_disconnect(feature_bluetooth_get_bt_ins(feature), &addr);
 
     if (status != BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->fail, "disconnect failed!", status)) {
