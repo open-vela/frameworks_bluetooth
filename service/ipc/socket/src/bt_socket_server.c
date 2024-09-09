@@ -266,6 +266,11 @@ static void bt_socket_server_callback(service_poll_t* poll,
         return;
     }
 
+#ifdef CONFIG_NET_SOCKOPTS
+    setSocketBuf(fd, SO_RCVBUF);
+    setSocketBuf(fd, SO_SNDBUF);
+#endif
+
     remote_ins = zalloc(sizeof(bt_instance_t));
     list_initialize(&remote_ins->msg_queue);
     remote_ins->peer_fd = fd;
