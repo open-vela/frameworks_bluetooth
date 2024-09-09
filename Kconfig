@@ -286,6 +286,12 @@ config BLUETOOTH_RPMSG_CPUNAME
 	help
 		Bluetooth default server name
 
+config BLUETOOTH_SOCKET_BUF_SIZE
+	int "Bluetooth socket buffer size"
+	default 1024
+	help
+		Bluetooth socket buffer size
+
 config BLUETOOTH_SOCKET_PORT
 	int "Bluetooth socket port num"
 	default 140704
