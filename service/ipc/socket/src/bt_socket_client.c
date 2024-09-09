@@ -327,6 +327,11 @@ static int bt_socket_client_connect(int family, const char* name,
         return -errno;
     }
 
+#ifdef CONFIG_NET_SOCKOPTS
+    setSocketBuf(fd, SO_SNDBUF);
+    setSocketBuf(fd, SO_RCVBUF);
+#endif
+
     return fd;
 }
 
