@@ -43,6 +43,9 @@
 
 #define CONFIG_LEAS_PACS_FRAME_DURATION (ADPT_LEA_SUPPORTED_FRAME_DURATION_10 | ADPT_LEA_PREFERRED_FRAME_DURATION_10)
 
+#undef CONFIG_VSC_MAX_LEN
+#define CONFIG_VSC_MAX_LEN 64
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/

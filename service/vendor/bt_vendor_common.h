@@ -52,6 +52,11 @@ typedef struct {
     uint8_t codec_info[32]; /* Codec specific information */
 } a2dp_offload_config_t;
 
+typedef struct __attribute__((packed)) {
+    uint16_t acl_hdl; /* connection handle */
+    uint32_t bandwidth; /* bits per second */
+} acl_bandwitdh_config_t;
+
 typedef struct
 {
     uint16_t sco_codec;
