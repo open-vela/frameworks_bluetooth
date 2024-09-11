@@ -402,7 +402,7 @@ static bt_status_t hf_offload_send_cmd(hf_state_machine_t* hfsm, bool is_start)
     size_t size;
     uint8_t* payload;
     hfp_offload_config_t config = { 0 };
-    uint8_t offload[sizeof(hfp_offload_config_t)];
+    uint8_t offload[CONFIG_VSC_MAX_LEN];
 
     config.sco_hdl = hfsm->sco_conn_handle;
     config.sco_codec = hfsm->codec;
