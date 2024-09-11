@@ -417,7 +417,6 @@ void BTSYMBOLS(bt_device_connect_all_profile)(bt_instance_t* ins, bt_address_t* 
  */
 void BTSYMBOLS(bt_device_disconnect_all_profile)(bt_instance_t* ins, bt_address_t* addr);
 
-uint16_t BTSYMBOLS(bt_device_get_acl_handle)(bt_instance_t* ins, bt_address_t* addr);
 #ifdef __cplusplus
 }
 #endif
