@@ -88,6 +88,7 @@ typedef struct _a2dp_state_machine {
     state_machine_t sm;
     void* service;
     bt_address_t addr;
+    uint16_t acl_handle;
     pending_state_t pending;
     bool audio_ready;
     uint8_t peer_sep;
@@ -536,11 +537,28 @@ static void opened_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
     const state_t* prev_state = hsm_get_previous_state(sm);
+    a2dp_peer_t* peer = NULL;
     bool ret;
 
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
+    if (a2dp_sm->peer_sep == SEP_SRC) {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+        peer = a2dp_sink_find_peer(&a2dp_sm->addr);
+#endif
+    } else {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+        peer = a2dp_source_find_peer(&a2dp_sm->addr);
+#endif
+    }
+
+    if (!peer) {
+        BT_LOGE("peer device not found");
+        return;
+    }
+
     if (prev_state == &idle_state || prev_state == &opening_state) {
         /* if we are accept link as a2dp src, change the av link role to master */
+        a2dp_sm->acl_handle = peer->acl_hdl;
         if (a2dp_sm->peer_sep == SEP_SNK)
             adapter_switch_role(&a2dp_sm->addr, BT_LINK_ROLE_MASTER);
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
@@ -784,6 +802,40 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     return true;
 }
 
+static bt_status_t a2dp_send_active_link_cmd(a2dp_state_machine_t* a2dp_sm, bool is_start)
+{
+    uint8_t ogf;
+    uint16_t ocf;
+    size_t size;
+    uint8_t* payload;
+    acl_bandwitdh_config_t config = { 0 };
+    uint8_t cmd[CONFIG_VSC_MAX_LEN];
+
+    config.acl_hdl = a2dp_sm->acl_handle;
+    if (is_start) {
+        config.bandwidth = 219032; /* TODO: calculate bandwidth by codec configuration */
+        BT_LOGD("set bandwidth %" PRIu32 " kbps for connection 0x%04x",
+            config.bandwidth / 1000, config.acl_hdl);
+        if (!acl_bandwidth_config_builder(&config, cmd, &size)) {
+            BT_LOGE("A2DP config bandwidth failed");
+            return BT_STATUS_FAIL;
+        }
+    } else {
+        BT_LOGD("remove bandwidth config for connection 0x%04x", config.acl_hdl);
+        if (!acl_bandwidth_deconfig_builder(&config, cmd, &size)) {
+            BT_LOGE("A2DP deconfig bandwidth failed");
+            return BT_STATUS_FAIL;
+        }
+    }
+
+    payload = cmd;
+    STREAM_TO_UINT8(ogf, payload);
+    STREAM_TO_UINT16(ocf, payload);
+    size -= sizeof(ogf) + sizeof(ocf);
+
+    return bt_sal_send_hci_command(ogf, ocf, size, payload, NULL /* TODO: add callback */, a2dp_sm);
+}
+
 static void started_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
@@ -793,6 +845,7 @@ static void started_enter(state_machine_t* sm)
         adapter_switch_role(&a2dp_sm->addr, BT_LINK_ROLE_MASTER);
 
     bt_pm_busy(PROFILE_A2DP, &a2dp_sm->addr);
+    a2dp_send_active_link_cmd(a2dp_sm, true);
     a2dp_report_audio_state(a2dp_sm, &a2dp_sm->addr,
         A2DP_AUDIO_STATE_STARTED);
 }
@@ -803,6 +856,7 @@ static void started_exit(state_machine_t* sm)
 
     A2DP_DBG_EXIT(sm, &a2dp_sm->addr);
     bt_pm_idle(PROFILE_A2DP, &a2dp_sm->addr);
+    a2dp_send_active_link_cmd(a2dp_sm, false);
 }
 
 static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_data)
