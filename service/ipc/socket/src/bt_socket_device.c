@@ -271,10 +271,6 @@ void bt_socket_server_device_process(service_poll_t* poll,
             packet->devs_pl._bt_device_set_le_phy.rx_phy);
         break;
     }
-    case BT_DEVICE_GET_ACL_HANDLE: {
-        packet->devs_r.v16 = BTSYMBOLS(bt_device_get_acl_handle)(ins,
-            &packet->devs_pl._bt_device_addr.addr);
-    }
     case BT_DEVICE_CONNECT_ALL_PROFILE:
     case BT_DEVICE_DISCONNECT_ALL_PROFILE:
     default:

@@ -2592,21 +2592,6 @@ bt_status_t adapter_le_get_local_oob_data(bt_address_t* addr)
     return bt_sal_le_get_local_oob_data(addr);
 }
 
-uint16_t adapter_get_acl_handle(bt_address_t* addr)
-{
-    adapter_lock();
-    uint16_t handle;
-    bt_device_t* device = adapter_find_device(addr, BT_TRANSPORT_BREDR);
-    if (!device || !device_is_connected(device)) {
-        adapter_unlock();
-        return 0;
-    }
-
-    handle = device_get_acl_handle(device);
-    adapter_unlock();
-    return handle;
-}
-
 bt_status_t adapter_switch_role(bt_address_t* addr, bt_link_role_t role)
 {
     bt_device_t* device;
