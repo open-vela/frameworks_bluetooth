@@ -16,6 +16,10 @@
 
 #include "bt_vendor.h"
 
+#ifdef CONFIG_OBELISK_BT_VENDOR_BES
+#include "bt_vendor_bes.h"
+#endif
+
 #ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
 #include "bt_vendor_actions.h"
 #endif
@@ -75,6 +79,26 @@ bool lea_offload_stop_builder(lea_offload_config_t* config,
 {
 #ifdef CONFIG_OBELISK_BT_VENDOR_ACTIONS
     return actions_lea_offload_stop_builder(config, offload, size);
+#else
+    return false;
+#endif
+}
+
+bool acl_bandwidth_config_builder(acl_bandwitdh_config_t* config,
+    uint8_t* cmd, size_t* size)
+{
+#ifdef CONFIG_OBELISK_BT_VENDOR_BES
+    return bes_bandwidth_config_builder(config, cmd, size, true);
+#else
+    return false;
+#endif
+}
+
+bool acl_bandwidth_deconfig_builder(acl_bandwitdh_config_t* config,
+    uint8_t* cmd, size_t* size)
+{
+#ifdef CONFIG_OBELISK_BT_VENDOR_BES
+    return bes_bandwidth_config_builder(config, cmd, size, false);
 #else
     return false;
 #endif

@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2022 Xiaomi Corporation
+ *  Copyright (C) 2024 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,46 +13,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef _BT_CONTROLLER_VENDOR_H__
-#define _BT_CONTROLLER_VENDOR_H__
+#ifndef _BT_CONTROLLER_VENDOR_BES_H__
+#define _BT_CONTROLLER_VENDOR_BES_H__
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
 
-#include "bt_vendor_common.h"
-#include "lea_audio_common.h"
+#include "bt_utils.h"
+#include "bt_vendor.h"
 
 /****************************************************************************
- * Public Fucntion
+ * Pre-processor Definitions
  ****************************************************************************/
 
-bool a2dp_offload_start_builder(a2dp_offload_config_t* config,
-    uint8_t* offload, size_t* size);
+#undef CONFIG_VSC_MAX_LEN
+#define CONFIG_VSC_MAX_LEN 64
 
-bool a2dp_offload_stop_builder(a2dp_offload_config_t* config,
-    uint8_t* offload, size_t* size);
+/****************************************************************************
+ * Private Types
+ ****************************************************************************/
 
-bool hfp_offload_start_builder(hfp_offload_config_t* config,
-    uint8_t* offload, size_t* size);
+static inline bool bes_bandwidth_config_builder(acl_bandwitdh_config_t* config,
+    uint8_t* cmd, size_t* size, bool enable)
+{
+    uint8_t* param = cmd;
 
-bool hfp_offload_stop_builder(hfp_offload_config_t* config,
-    uint8_t* offload, size_t* size);
+    UINT8_TO_STREAM(param, 0x3F); /* OGF */
+    UINT16_TO_STREAM(param, 0x00D7); /* OCF */
 
-bool lea_offload_start_builder(lea_offload_config_t* config,
-    uint8_t* offload, size_t* size);
+    UINT8_TO_STREAM(param, 0x04); /* Len */
+    UINT8_TO_STREAM(param, 0x02); /* Sub-opcode */
+    if (enable) {
+        UINT8_TO_STREAM(param, 0x01); /* Start */
+    } else {
+        UINT8_TO_STREAM(param, 0x00); /* Stop */
+    }
+    UINT16_TO_STREAM(param, config->acl_hdl); /* Connection Handle */
 
-bool lea_offload_stop_builder(lea_offload_config_t* config,
-    uint8_t* offload, size_t* size);
+    *size = param - cmd;
+    return true;
+}
 
-bool acl_bandwidth_config_builder(acl_bandwitdh_config_t* config,
-    uint8_t* cmd, size_t* size);
-
-bool acl_bandwidth_deconfig_builder(acl_bandwitdh_config_t* config,
-    uint8_t* cmd, size_t* size);
-
-#endif /* _BT_CONTROLLER_VENDOR_H__ */
+#endif /* _BT_CONTROLLER_VENDOR_BES_H__ */
