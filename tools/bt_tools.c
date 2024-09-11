@@ -1292,8 +1292,6 @@ static void device_dump(void* handle, bt_address_t* addr, bt_transport_t transpo
         PRINT("\tClass: 0x%08" PRIx32 "", bt_device_get_device_class(handle, addr));
         PRINT("\tDeviceType: %d", bt_device_get_device_type(handle, addr));
         PRINT("\tIsConnected: %d", bt_device_is_connected(handle, addr, transport));
-        if (bt_device_is_connected(handle, addr, transport))
-            PRINT("\tACLHandle: %d", bt_device_get_acl_handle(handle, addr));
         PRINT("\tIsEnc: %d", bt_device_is_encrypted(handle, addr, transport));
         PRINT("\tIsBonded: %d", bt_device_is_bonded(handle, addr, transport));
         PRINT("\tBondState: %s", bond_state_to_string(bt_device_get_bond_state(handle, addr, transport)));

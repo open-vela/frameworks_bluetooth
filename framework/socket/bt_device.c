@@ -555,17 +555,3 @@ bt_status_t bt_device_get_le_sc_local_oob_data(bt_instance_t* ins, bt_address_t*
 
     return packet.devs_r.status;
 }
-
-uint16_t bt_device_get_acl_handle(bt_instance_t* ins, bt_address_t* addr)
-{
-    bt_message_packet_t packet;
-    bt_status_t status;
-
-    BT_SOCKET_INS_VALID(ins, 0xFFFF);
-    status = bt_device_send(ins, addr, &packet, BT_DEVICE_GET_ACL_HANDLE);
-    if (status != BT_STATUS_SUCCESS) {
-        return 0;
-    }
-
-    return packet.devs_r.v16;
-}

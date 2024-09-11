@@ -26,7 +26,6 @@ BT_DEVICE_MESSAGE_START,
     BT_DEVICE_GET_RSSI,
     BT_DEVICE_GET_ALIAS,
     BT_DEVICE_SET_ALIAS,
-    BT_DEVICE_GET_ACL_HANDLE,
     BT_DEVICE_IS_CONNECTED,
     BT_DEVICE_IS_ENCRYPTED,
     BT_DEVICE_IS_BOND_INITIATE_LOCAL,
@@ -97,8 +96,7 @@ BT_DEVICE_MESSAGE_START,
             _bt_device_disconnect,
             _bt_device_disconnect_le,
             _bt_device_addr,
-            _bt_device_get_le_sc_local_oob_data,
-            _bt_device_get_acl_handle;
+            _bt_device_get_le_sc_local_oob_data;
 
         struct {
             char name[64];

@@ -191,8 +191,3 @@ bt_status_t BTSYMBOLS(bt_device_get_le_sc_local_oob_data)(bt_instance_t* ins, bt
 {
     return adapter_le_get_local_oob_data(addr);
 }
-
-uint16_t BTSYMBOLS(bt_device_get_acl_handle)(bt_instance_t* ins, bt_address_t* addr)
-{
-    return adapter_get_acl_handle(addr);
-}
