@@ -848,7 +848,7 @@ static bt_status_t ag_offload_send_cmd(ag_state_machine_t* agsm, bool is_start)
     size_t size;
     uint8_t* payload;
     hfp_offload_config_t config = { 0 };
-    uint8_t offload[sizeof(hfp_offload_config_t)];
+    uint8_t offload[CONFIG_VSC_MAX_LEN];
 
     config.sco_hdl = agsm->sco_conn_handle;
     config.sco_codec = agsm->codec;

@@ -125,7 +125,7 @@ static void a2dp_service_prepare_handle(a2dp_state_machine_t* sm,
         a2dp_offload_config_t config = { 0 };
         a2dp_codec_config_t* codec_config;
         a2dp_device_t* device;
-        uint8_t param[sizeof(a2dp_offload_config_t)];
+        uint8_t param[CONFIG_VSC_MAX_LEN];
         size_t size;
         bool ret;
 
@@ -167,7 +167,7 @@ static void a2dp_service_prepare_handle(a2dp_state_machine_t* sm,
     case STREAM_CLOSED_EVT:
     case STREAM_SUSPENDED_EVT: {
         a2dp_offload_config_t config = { 0 };
-        uint8_t param[sizeof(a2dp_offload_config_t)];
+        uint8_t param[OFFLOAD_START_REQ];
         bool ret;
         size_t size;
 
