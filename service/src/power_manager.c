@@ -427,7 +427,7 @@ static bt_status_t pm_request_active(bt_address_t* peer_addr)
     return ret;
 }
 
-static bool pm_prefer_config(bt_address_t* peer_addr, bt_pm_prefer_mode_t* pm_action, uint32_t* timeout_ms, uint8_t* allowed_modes, uint8_t* profile_id)
+static bool pm_prefer_config(bt_address_t* peer_addr, bt_pm_prefer_mode_t* pm_action, uint32_t* timeout_ms, uint8_t* allowed_modes, uint16_t* profile_id)
 {
     bt_pm_manager_t* manager = &g_pm_manager;
     struct list_node* node;
@@ -435,7 +435,7 @@ static bool pm_prefer_config(bt_address_t* peer_addr, bt_pm_prefer_mode_t* pm_ac
     bt_pm_prefer_mode_t power_mode = BT_PM_NO_ACTION;
     uint8_t allow_mask = 0;
     uint32_t timeout = 0;
-    uint8_t id = 0;
+    uint16_t id = 0;
     bool ret = false;
 
     list_for_every_safe(&manager->pm_services, node, tmp)
@@ -466,7 +466,7 @@ static bool pm_prefer_config(bt_address_t* peer_addr, bt_pm_prefer_mode_t* pm_ac
         table = &g_pm_spec[config->spec_idx];
         action = &table->actn_tbl[service->state];
 
-        if (action->power_mode > power_mode) {
+        if (action->power_mode > power_mode || ((action->power_mode == power_mode) && (service->profile_id == *profile_id))) {
             power_mode = action->power_mode;
             timeout = action->timeout;
             id = config->profile_id;
@@ -542,13 +542,12 @@ static void pm_stop_timer_by_profile(bt_address_t* peer_addr, uint8_t profile_id
     }
 }
 
-static void pm_mode_request(bt_address_t* peer_addr, uint8_t req)
+static void pm_mode_request(bt_address_t* peer_addr, uint8_t req, uint16_t profile_id)
 {
     bool connected;
     bt_pm_prefer_mode_t pm_action;
     uint32_t timeout_ms;
     uint8_t allowed_modes;
-    uint8_t profile_id;
     bool ret;
 
     connected = adapter_is_remote_connected(peer_addr, BT_TRANSPORT_BREDR);
@@ -599,7 +598,7 @@ static void pm_timeout_callback(service_timer_t* timer, void* data)
     }
 
     BT_LOGD("%s, addr:%s, profile_id:%d, pm_action:%d", __func__, bt_addr_str(&pm_timer->peer_addr), pm_timer->profile_id, pm_timer->pm_action);
-    pm_mode_request(&pm_timer->peer_addr, BT_PM_EXECUTE);
+    pm_mode_request(&pm_timer->peer_addr, BT_PM_EXECUTE, pm_timer->profile_id);
 }
 
 static bool pm_check_prefer_action(uint8_t profile_id)
@@ -644,7 +643,7 @@ static void bt_pm_hanlde_callback(bt_pm_state_t state, uint8_t profile_id, bt_ad
         pm_conn_service_remove(service);
     }
 
-    pm_mode_request(peer_addr, BT_PM_RESTART);
+    pm_mode_request(peer_addr, BT_PM_RESTART, profile_id);
 }
 
 static void bt_pm_register(bt_pm_hanlde_callback_t cb)
@@ -794,7 +793,7 @@ void bt_pm_remote_link_mode_changed(bt_address_t* addr, uint8_t mode, uint16_t s
     switch (mode) {
     case BT_LINK_MODE_ACTIVE: {
         pm_stop_timer(addr);
-        pm_mode_request(addr, BT_PM_RESTART);
+        pm_mode_request(addr, BT_PM_RESTART, PROFILE_UNKOWN);
     } break;
     case BT_LINK_MODE_SNIFF: {
         pm_stop_timer(addr);
