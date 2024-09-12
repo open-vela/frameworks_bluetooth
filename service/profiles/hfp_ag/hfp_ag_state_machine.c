@@ -107,6 +107,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
 static bool audio_connecting_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 static bool audio_disconnecting_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+static void set_virtual_call_started(state_machine_t* sm, bool started);
 
 static const state_t disconnected_state = {
     .state_name = "Disconnected",
@@ -592,11 +593,19 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
             bt_sal_hfp_ag_stop_voice_recognition(&agsm->addr);
         }
         break;
-    case AG_PHONE_STATE_CHANGE:
-        bt_sal_hfp_ag_phone_state_change(&agsm->addr, data->valueint1,
-            data->valueint2, data->valueint3,
-            data->valueint4, data->string1, data->string2);
-        break;
+    case AG_PHONE_STATE_CHANGE: {
+        uint8_t num_active = data->valueint1;
+        uint8_t num_held = data->valueint2;
+        hfp_ag_call_state_t call_state = data->valueint3;
+        hfp_call_addrtype_t type = data->valueint4;
+        if (((num_active + num_held) > 0)
+            || (call_state != HFP_AG_CALL_STATE_IDLE && call_state != HFP_AG_CALL_STATE_DISCONNECTED)) {
+            set_virtual_call_started(sm, false);
+        }
+
+        bt_sal_hfp_ag_phone_state_change(&agsm->addr, num_active, num_held, call_state, type,
+            data->string1, data->string2);
+    } break;
     case AG_DEVICE_STATUS_CHANGED:
         bt_sal_hfp_ag_notify_device_status_changed(&agsm->addr, data->valueint1,
             data->valueint2, data->valueint3,
@@ -670,6 +679,7 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         ag_service_notify_call_hangup(&agsm->addr);
         break;
     case AG_STACK_EVENT_DIAL_NUMBER: {
+        set_virtual_call_started(sm, false);
         if (data->string1) {
             BT_LOGD("Dial number:%s", data->string1);
             /* system call interface */
@@ -766,6 +776,7 @@ static void set_virtual_call_started(state_machine_t* sm, bool started)
     if (agsm->virtual_call_started == started)
         return;
 
+    BT_LOGD("%s, started = %d", __func__, started);
     agsm->virtual_call_started = started;
 
     if (started) {
@@ -886,7 +897,8 @@ static bool is_virtual_call_allowed(state_machine_t* sm)
         return false;
 
     tele_service_get_phone_state(&num_active, &num_held, &call_state);
-    if (num_active || num_held || call_state != HFP_AG_CALL_STATE_IDLE)
+    if (num_active || num_held
+        || (call_state != HFP_AG_CALL_STATE_IDLE && call_state != HFP_AG_CALL_STATE_DISCONNECTED))
         return false;
 
     return true;
