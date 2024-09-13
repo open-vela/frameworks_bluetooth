@@ -201,7 +201,7 @@ static void property_monitor_cb(service_poll_t* poll,
         char key[PROP_NAME_MAX];
         int new;
 
-        property_monitor_read(g_logger.monitor_fd, key, (char*)&changed);
+        property_monitor_read(g_logger.monitor_fd, key, &changed, sizeof(changed));
         if (changed & (1 << FRAMEWORK_LOG_LEVEL_CHANGED)) {
             new = property_get_int32(PERSIST_BT_FRAMEWORK_LOG_LEVEL, 0);
             if (new != g_logger.framework_level)
