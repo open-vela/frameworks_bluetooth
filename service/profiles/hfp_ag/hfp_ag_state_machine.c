@@ -772,7 +772,6 @@ static void connected_enter(state_machine_t* sm)
         }
         ag_service_notify_connection_state_changed(&agsm->addr, PROFILE_STATE_CONNECTED);
     } else {
-        set_virtual_call_started(sm, false);
         ag_service_notify_audio_state_changed(&agsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
     }
     if (flag_isset(agsm, PENDING_DISCONNECT)) {
@@ -1034,6 +1033,8 @@ static void audio_on_exit(state_machine_t* sm)
     bt_pm_sco_close(PROFILE_HFP_AG, &agsm->addr);
     /* set sco device unavaliable */
     bt_media_set_sco_unavailable();
+
+    set_virtual_call_started(sm, false);
 }
 
 static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_data)
