@@ -21,6 +21,7 @@
 
 #include "adapter_internel.h"
 #include "bluetooth.h"
+#include "bt_hash.h"
 #include "bt_le_scan.h"
 #include "bt_list.h"
 #include "bt_time.h"
@@ -34,8 +35,15 @@
 #ifndef CONFIG_OBELISK_LE_SCANNER_MAX_NUM
 #define CONFIG_OBELISK_LE_SCANNER_MAX_NUM 2
 #endif
+#ifndef CONFIG_BT_LE_ADV_REPORT_SIZE
+#define CONFIG_BT_LE_ADV_REPORT_SIZE 10
+#endif
 #define BT_LE_ADV_REPORT_DURATION_MS 500
 #define BT_LE_ADV_REPORT_PERIOD_MS 5000
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
 
 typedef struct {
     bt_address_t addr;
@@ -62,6 +70,7 @@ typedef struct {
 typedef struct scanner_manager {
     scanner_t* scanner_list[CONFIG_OBELISK_LE_SCANNER_MAX_NUM];
     struct list_node scanning_list;
+    uint32_t hash_table[CONFIG_BT_LE_ADV_REPORT_SIZE];
     bt_list_t* devices;
     uint8_t scanner_cnt;
     bool is_scanning;
@@ -188,6 +197,48 @@ static bool scanner_match_duration(scanner_device_t* device, uint32_t duration, 
     }
 }
 
+static bool scanner_hsearch_find(const void* keyarg, size_t len)
+{
+    scanner_manager_t* manager = &scanner_manager;
+    uint32_t hash;
+    int i;
+
+    hash = bt_hash4(keyarg, len);
+    for (i = 0; i < ARRAY_SIZE(manager->hash_table); i++) {
+        if (manager->hash_table[i] == hash) {
+            return true;
+        }
+
+        if (manager->hash_table[i] == 0) {
+            break;
+        }
+    }
+
+    return false;
+}
+
+static void scanner_hsearch_add(const void* keyarg, size_t len)
+{
+    scanner_manager_t* manager = &scanner_manager;
+    uint32_t hash;
+    int i;
+
+    hash = bt_hash4(keyarg, len);
+    for (i = 0; i < ARRAY_SIZE(manager->hash_table); i++) {
+        if (manager->hash_table[i] == 0) {
+            manager->hash_table[i] = hash;
+            break;
+        }
+    }
+}
+
+static void scanner_hsearch_free()
+{
+    scanner_manager_t* manager = &scanner_manager;
+
+    memset(&manager->hash_table, 0, sizeof(manager->hash_table));
+}
+
 static void notify_scanners_scan_result(void* data)
 {
     struct list_node* node;
@@ -221,6 +272,16 @@ static void notify_scanners_scan_result(void* data)
 
         if (!scanner_match_duration(device, scanner->filter.duration, scanner->filter.period, timestamp_ms)) {
             continue;
+        }
+
+        if (scanner->filter.duplicated) {
+            if (scanner_hsearch_find(result->adv_data, result->length)) {
+                BT_LOGD("scanner_hsearch_find addr:%s", bt_addr_str(&result->addr));
+                continue;
+            } else {
+                scanner_hsearch_add(result->adv_data, result->length);
+                BT_LOGD("scanner_hsearch_add addr:%s", bt_addr_str(&result->addr));
+            }
         }
 
     exit_filter:
@@ -375,6 +436,7 @@ static void stop_scan(void* data)
     if (scanner_manager.is_scanning && !list_length(&scanner_manager.scanning_list)) {
         bt_sal_le_stop_scan();
         bt_list_clear(scanner_manager.devices);
+        scanner_hsearch_free();
         scanner_manager.is_scanning = false;
     }
 }
@@ -445,6 +507,7 @@ bt_scanner_t* scanner_start_scan_with_filters(void* remote,
     if (filter && filter->active) {
         filter->duration = BT_LE_ADV_REPORT_DURATION_MS;
         filter->period = BT_LE_ADV_REPORT_PERIOD_MS;
+        filter->duplicated = 0;
         memcpy(&scanner->filter, filter, sizeof(*filter));
     }
 

@@ -119,6 +119,7 @@ typedef struct {
     uint32_t period;
     uint16_t uuids[BLE_SCAN_FILTER_UUID_MAX_NUM];
     uint8_t active;
+    uint8_t duplicated;
 } ble_scan_filter_t;
 
 /**
