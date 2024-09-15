@@ -323,6 +323,7 @@ static void disconnected_enter(state_machine_t* sm)
         agsm->media_volume = INVALID_MEDIA_VOLUME;
         agsm->volume_listener = NULL;
         agsm->set_volume_cnt = 0;
+        agsm->virtual_call_started = false;
         bt_media_set_anc_enable(true);
         bt_pm_conn_close(PROFILE_HFP_AG, &agsm->addr);
         flag_clear(agsm, PENDING_DISCONNECT);
