@@ -1059,7 +1059,7 @@ connection_state_t bt_sal_get_connection_state(bt_controller_id_t id, bt_address
     return state;
 }
 
-uint16_t bt_sal_get_acl_connection_handle(bt_controller_id_t id, bt_address_t* addr)
+uint16_t bt_sal_get_acl_connection_handle(bt_controller_id_t id, bt_address_t* addr, bt_transport_t trasnport)
 {
     UNUSED(id);
     struct bt_conn_info info;

@@ -68,7 +68,7 @@ bt_status_t bt_sal_ssp_reply(bt_controller_id_t id, bt_address_t* addr,
 bt_status_t bt_sal_pin_reply(bt_controller_id_t id, bt_address_t* addr,
     bool accept, char* pincode, int len);
 connection_state_t bt_sal_get_connection_state(bt_controller_id_t id, bt_address_t* addr);
-uint16_t bt_sal_get_acl_connection_handle(bt_controller_id_t id, bt_address_t* addr);
+uint16_t bt_sal_get_acl_connection_handle(bt_controller_id_t id, bt_address_t* addr, bt_transport_t trasnport);
 uint16_t bt_sal_get_sco_connection_handle(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_connect(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_disconnect(bt_controller_id_t id, bt_address_t* addr, uint8_t reason);
