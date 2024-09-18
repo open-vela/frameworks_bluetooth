@@ -22,9 +22,9 @@
 #include "stack_adapter_hid.h"
 
 #include "bluetooth.h"
-#include "sal.h"
-#include "sal_bluelet.h"
 #include "sal_hid_device_interface.h"
+#include "sal_interface.h"
+#include "utils/log.h"
 
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
 static void app_state_cb(SERVICE_BTHD_APP_STATE state)

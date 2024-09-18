@@ -23,9 +23,9 @@
 #include "stack_adapter_hfp_ag.h"
 
 #include "bluetooth.h"
-#include "sal.h"
-#include "sal_bluelet.h"
 #include "sal_hfp_ag_interface.h"
+#include "sal_interface.h"
+#include "utils/log.h"
 
 #ifdef CONFIG_BLUETOOTH_HFP_AG
 static void connection_state_changed_callback(BD_ADDR remote_addr,

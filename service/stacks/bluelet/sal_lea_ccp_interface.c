@@ -25,8 +25,7 @@
 #include "bluetooth.h"
 #include "bt_lea_ccp.h"
 #include "lea_ccp_service.h"
-#include "sal.h"
-#include "sal_bluelet.h"
+#include "sal_interface.h"
 #include "sal_lea_ccp_interface.h"
 
 #define UNKNOWN_INFO "unknown"

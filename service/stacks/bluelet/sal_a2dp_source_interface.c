@@ -19,11 +19,11 @@
 #include <stdlib.h>
 
 #include "bluetooth.h"
-#include "sal.h"
+#include "sal_interface.h"
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
 #include "sal_a2dp_source_interface.h"
 #endif
-#include "sal_bluelet.h"
+#include "utils/log.h"
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
 

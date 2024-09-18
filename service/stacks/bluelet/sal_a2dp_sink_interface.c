@@ -18,16 +18,17 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "sal_interface.h"
 #include "stack_adapter_a2dp_sink.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_service_base.h"
 
 #include "bluetooth.h"
-#include "sal.h"
+#include "utils/log.h"
+
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
 #include "sal_a2dp_sink_interface.h"
 #endif
-#include "sal_bluelet.h"
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
 #ifndef CONFIG_BLUETOOTH_A2DP_MAX_CONNECTIONS

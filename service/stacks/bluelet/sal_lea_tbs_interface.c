@@ -23,8 +23,7 @@
 
 #include "bluetooth.h"
 #include "lea_tbs_service.h"
-#include "sal.h"
-#include "sal_bluelet.h"
+#include "sal_interface.h"
 #include "sal_lea_tbs_interface.h"
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS

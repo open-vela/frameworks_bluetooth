@@ -22,9 +22,9 @@
 #include "stack_adapter_gatt.h"
 
 #include "bluetooth.h"
-#include "sal.h"
-#include "sal_bluelet.h"
 #include "sal_gatt_client_interface.h"
+#include "sal_interface.h"
+#include "utils/log.h"
 
 #ifdef CONFIG_BLUETOOTH_GATT
 

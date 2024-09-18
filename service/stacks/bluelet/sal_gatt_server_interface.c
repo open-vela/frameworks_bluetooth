@@ -23,10 +23,9 @@
 
 #include "bluetooth.h"
 #include "bt_list.h"
-#include "sal.h"
-#include "sal_bluelet.h"
 #include "sal_gatt_server_interface.h"
-
+#include "sal_interface.h"
+#include "utils/log.h"
 #ifdef CONFIG_BLUETOOTH_GATT
 
 typedef struct {

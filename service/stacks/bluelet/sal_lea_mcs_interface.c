@@ -23,8 +23,7 @@
 
 #include "bluetooth.h"
 #include "lea_mcs_service.h"
-#include "sal.h"
-#include "sal_bluelet.h"
+#include "sal_interface.h"
 #include "sal_lea_mcs_interface.h"
 
 #define UNKNOWN_INFO "unknown"

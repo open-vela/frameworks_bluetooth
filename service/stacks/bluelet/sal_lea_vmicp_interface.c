@@ -20,7 +20,7 @@
 
 #include "bluetooth.h"
 #include "lea_vmicp_service.h"
-#include "sal.h"
+#include "sal_interface.h"
 
 #include "sal_lea_vmicp_interface.h"
 

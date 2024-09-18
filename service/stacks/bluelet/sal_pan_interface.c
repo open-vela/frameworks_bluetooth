@@ -23,8 +23,7 @@
 #include "stack_adapter_pan.h"
 
 #include "bluetooth.h"
-#include "sal.h"
-#include "sal_bluelet.h"
+#include "sal_interface.h"
 #include "sal_pan_interface.h"
 
 void connection_state_change_cb(BD_ADDR remote_addr, SERVICE_PAN_ROLE_TYPE remote_role,

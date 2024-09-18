@@ -22,9 +22,9 @@
 #include "stack_adapter_spp.h"
 
 #include "bluetooth.h"
-#include "sal.h"
-#include "sal_bluelet.h"
+#include "sal_interface.h"
 #include "sal_spp_interface.h"
+#include "utils/log.h"
 
 #ifdef CONFIG_BLUETOOTH_SPP
 static void connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_SPP_PORT conn_port,

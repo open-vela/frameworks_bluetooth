@@ -32,8 +32,7 @@
 #include "lea_mcp_service.h"
 #include "lea_server_service.h"
 #include "lea_vmics_service.h"
-#include "sal.h"
-#include "sal_bluelet.h"
+#include "sal_interface.h"
 #include "sal_lea_server_interface.h"
 
 static void adpt_lea_pacs_set_sink_locations_cbk(uint32_t locations);

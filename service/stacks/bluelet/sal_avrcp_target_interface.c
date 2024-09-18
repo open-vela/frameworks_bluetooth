@@ -23,10 +23,10 @@
 #include "stack_adapter_avrcp_target.h"
 #include "stack_adapter_common.h"
 
-#include "sal.h"
 #include "sal_avrcp_control_interface.h"
 #include "sal_avrcp_target_interface.h"
-#include "sal_bluelet.h"
+#include "sal_interface.h"
+#include "utils/log.h"
 
 #if defined(CONFIG_BLUETOOTH_AVRCP_TARGET) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
 

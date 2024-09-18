@@ -25,8 +25,7 @@
 #include "bluetooth.h"
 #include "bt_lea_vmics.h"
 #include "lea_vmics_service.h"
-#include "sal.h"
-#include "sal_bluelet.h"
+#include "sal_interface.h"
 #include "sal_lea_vmics_interface.h"
 
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS

@@ -27,8 +27,7 @@
 #include "bt_status.h"
 #include "lea_audio_common.h"
 #include "lea_server_service.h"
-#include "sal.h"
-#include "sal_bluelet.h"
+#include "sal_interface.h"
 #include "sal_lea_csis_interface.h"
 
 static void adpt_lea_csis_member_lock_cbk(uint32_t csis_id, BD_ADDR remote_addr, uint8_t lock);

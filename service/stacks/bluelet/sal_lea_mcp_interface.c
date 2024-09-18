@@ -19,8 +19,7 @@
 
 #include "bluetooth.h"
 #include "lea_mcp_service.h"
-#include "sal.h"
-#include "sal_bluelet.h"
+#include "sal_interface.h"
 #include "sal_lea_mcp_interface.h"
 #include "stack_adapter_common.h"
 #include "stack_adapter_lea_mcp.h"

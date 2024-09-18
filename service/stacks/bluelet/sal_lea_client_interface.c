@@ -30,8 +30,7 @@
 #include "bt_status.h"
 #include "lea_audio_common.h"
 #include "lea_client_service.h"
-#include "sal.h"
-#include "sal_bluelet.h"
+#include "sal_interface.h"
 #include "sal_lea_client_interface.h"
 
 static void adpt_lea_ucc_pac_callback(BD_ADDR remote_addr, SERVICE_LEA_PAC_INFO_S* pac_info);

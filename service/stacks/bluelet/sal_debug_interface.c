@@ -21,8 +21,7 @@
 #include "stack_adapter_gap.h"
 
 #include "bluetooth.h"
-#include "sal.h"
-#include "sal_bluelet.h"
+#include "sal_interface.h"
 
 struct _debug_type_map {
     bt_debug_type_t service_type;
@@ -47,7 +46,7 @@ struct _debug_type_map {
 #ifdef CONFIG_BLUELET_DEBUG
 static SERVICE_DEBUG_COMPONENT get_component_value(bt_debug_type_t type)
 {
-    for (int i = 0; i < ARRAY_SIZE(g_dbg_type_map); i++) {
+    for (int i = 0; i < SAL_ARRAY_SIZE(g_dbg_type_map); i++) {
         if (g_dbg_type_map[i].service_type == type)
             return g_dbg_type_map[i].stack_type;
     }
@@ -171,7 +170,7 @@ bt_status_t bt_sal_debug_update_log_mask(int mask)
 #ifdef CONFIG_BLUELET_DEBUG
     SERVICE_DEBUG_COMPONENT cp_type;
 
-    for (int i = 0; i < ARRAY_SIZE(g_dbg_type_map); i++) {
+    for (int i = 0; i < SAL_ARRAY_SIZE(g_dbg_type_map); i++) {
         if (g_dbg_type_map[i].stack_type == 0)
             continue;
 

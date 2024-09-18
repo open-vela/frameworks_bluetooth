@@ -22,9 +22,9 @@
 #include "stack_adapter_hfp.h"
 
 #include "bluetooth.h"
-#include "sal.h"
-#include "sal_bluelet.h"
 #include "sal_hfp_hf_interface.h"
+#include "sal_interface.h"
+#include "utils/log.h"
 
 #ifdef CONFIG_BLUETOOTH_HFP_HF
 static uint32_t hf_at_command_code_map(uint32_t atcc)

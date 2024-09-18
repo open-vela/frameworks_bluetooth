@@ -31,62 +31,6 @@
 
 #define BT_INVALID_CONNECTION_HANDLE 0xFFFF
 
-/* service adapter layer for BREDR */
-bt_status_t bt_sal_init(const bt_vhal_interface* vhal);
-void bt_sal_cleanup(void);
-bt_status_t bt_sal_enable(void);
-bt_status_t bt_sal_disable(void);
-bt_status_t bt_sal_set_local_name(char* name);
-bt_status_t bt_sal_get_local_address(bt_address_t* addr);
-bt_status_t bt_sal_set_local_io_capability(bt_io_capability_t cap);
-const char* bt_sal_get_local_name(void);
-bt_status_t bt_sal_set_local_device_class(uint32_t cod);
-uint32_t bt_sal_get_local_device_class(void);
-bt_status_t bt_sal_set_scan_mode(bt_scan_mode_t scan_mode, bool bondable);
-bt_status_t bt_sal_set_discovery_filter(bt_discovery_filter_t* filter);
-bt_status_t bt_sal_start_discovery(uint32_t timeout);
-bt_status_t bt_sal_stop_discovery(void);
-bt_status_t bt_sal_set_page_scan_parameters(bt_scan_type_t type,
-    uint16_t interval,
-    uint16_t window);
-bt_status_t bt_sal_set_inquiry_scan_parameters(bt_scan_type_t type,
-    uint16_t interval,
-    uint16_t window);
-/* Remote device */
-bt_status_t bt_sal_get_remote_name(bt_address_t* addr);
-int bt_sal_get_remote_services(bt_address_t* addr, bt_uuid_t* service_list, uint8_t count_in);
-bt_status_t bt_sal_reply_sco_link_request(bt_address_t* addr, bool accept);
-bt_status_t bt_sal_reply_link_request(bt_address_t* addr, bool accept);
-bt_status_t bt_sal_reply_pair_request(bt_address_t* addr, uint8_t reason);
-bt_status_t bt_sal_ssp_reply(bt_address_t* addr,
-    bool accept,
-    bt_pair_type_t type,
-    uint32_t passkey);
-bt_status_t bt_sal_pin_reply(bt_address_t* addr,
-    bool accept,
-    char* pincode,
-    int len);
-uint16_t bt_sal_get_acl_link_handle(bt_address_t* addr, bt_transport_t transport);
-bt_status_t bt_sal_connect(bt_address_t* addr);
-bt_status_t bt_sal_disconnect(bt_address_t* addr);
-bt_status_t bt_sal_create_bond(bt_address_t* addr);
-bt_status_t bt_sal_cancel_bond(bt_address_t* addr);
-bt_status_t bt_sal_remove_bond(bt_address_t* addr);
-bt_status_t bt_sal_ssp_set_remote_oob_data(bt_address_t* addr,
-    bt_128key_t c_192_val, bt_128key_t r_192_val,
-    bt_128key_t c_256_val, bt_128key_t r_256_val);
-bt_status_t bt_sal_ssp_get_local_oob_data(void);
-bt_status_t bt_sal_get_remote_device_info(bt_address_t* addr, remote_device_properties_t* properties);
-bt_status_t bt_sal_set_bonded_devices(remote_device_properties_t* prop);
-bt_status_t bt_sal_get_bonded_devices(remote_device_properties_t* properties, int* cnt);
-bt_status_t bt_sal_get_connected_devices(remote_device_properties_t* properties, int* cnt);
-bt_status_t bt_sal_start_service_discovery(bt_address_t* addr, bt_uuid_t* uuid);
-bt_status_t bt_sal_stop_service_discovery(bt_address_t* addr);
-bt_status_t bt_sal_set_link_role(bt_address_t* addr, bt_link_role_t role);
-bt_status_t bt_sal_set_link_policy(bt_address_t* addr, bt_link_policy_t policy);
-bt_status_t bt_sal_set_afh_channel_classification(uint16_t central_frequency,
-    uint16_t band_width,
-    uint16_t number);
 /* service adapter layer for LE */
 // #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal);
@@ -142,8 +86,4 @@ bt_status_t bt_sal_le_set_appearance(uint16_t appearance);
 uint16_t bt_sal_le_get_appearance(void);
 bt_status_t bt_sal_le_enable_key_derivation(bool brkey_to_lekey,
     bool lekey_to_brkey);
-
-bt_status_t bt_sal_send_hci_command(uint8_t ogf, uint16_t ocf, uint8_t length, uint8_t* buf,
-    bt_hci_event_callback_t cb, void* context);
-bt_status_t bt_sal_set_power_mode(bt_address_t* addr, bt_pm_mode_t* mode);
 #endif /* __SAL_ADAPTER_INTERFACE_H_ */

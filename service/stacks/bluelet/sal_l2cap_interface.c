@@ -20,7 +20,7 @@
 #include "stack_adapter_gap.h"
 
 #include "bluetooth.h"
-#include "sal.h"
+#include "sal_interface.h"
 #include "sal_l2cap_interface.h"
 
 #ifdef CONFIG_BLUETOOTH_L2CAP
