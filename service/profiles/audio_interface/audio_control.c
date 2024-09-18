@@ -28,6 +28,10 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
+#ifdef CONFIG_BLUETOOTH_A2DP
+#include "a2dp_control.h"
+#endif
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -86,7 +90,15 @@ void audio_ctrl_send_control_event(uint8_t profile_id, audio_ctrl_evt_t evt)
         audio_ctrl_event_with_data(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_HFP_CTRL, evt, NULL, 0);
         break;
     case PROFILE_A2DP:
-        audio_ctrl_event_with_data(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, evt, NULL, 0);
+#ifdef CONFIG_BLUETOOTH_A2DP
+        a2dp_control_event(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL, evt);
+#endif
+        /**
+         * TODO: replace a2dp_control_event() by audio_ctrl_event_with_data().
+         *
+         * Currently the A2DP control channel is recorded by a2dp_transport rather than g_audio_ctrl_transport.
+         * It's ineffective to send the message via audio_ctrl_event_with_data().
+         */
         break;
     default:
         BT_LOGW("%s, unknown profile id: %d", __func__, profile_id);
