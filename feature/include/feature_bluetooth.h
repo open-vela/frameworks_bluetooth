@@ -80,6 +80,7 @@ typedef struct {
 } feature_bluetooth_features_info_t;
 
 void feature_bluetooth_deal_callback(int status, void* data);
+void feature_bluetooth_remove_callback(int status, void* data);
 char* StringToFtString(const char* str);
 void feature_bluetooth_init_bt_ins(feature_bluetooth_feature_type_t feature, FeatureProtoHandle handle);
 void feature_bluetooth_uninit_bt_ins(feature_bluetooth_feature_type_t feature, FeatureProtoHandle handle);
