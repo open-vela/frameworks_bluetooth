@@ -25,12 +25,16 @@
 #include "system_bluetooth_bt_a2dpsink.h"
 #include "uv.h"
 
-#define REMOVE_CALLBACK(feature_callback, callback_type)                                           \
-    {                                                                                              \
-        if (feature_callback->callback_type != -1) {                                               \
-            FeatureRemoveCallback(feature_callback->feature_ins, feature_callback->callback_type); \
-        }                                                                                          \
-        feature_callback->callback_type = -1;                                                      \
+#define REMOVE_CALLBACK(feature_callback, callback_type)                                         \
+    {                                                                                            \
+        if (feature_callback->callback_type != -1) {                                             \
+            callback_info_t* info = (callback_info_t*)zalloc(sizeof(callback_info_t));           \
+            assert(info);                                                                        \
+            info->feature = feature_callback->feature_ins;                                       \
+            info->feature_callback_id = feature_callback->callback_type;                         \
+            FeaturePost(feature_callback->feature_ins, feature_bluetooth_remove_callback, info); \
+        }                                                                                        \
+        feature_callback->callback_type = -1;                                                    \
     }
 
 #define add_feature_callback(feature_callbacks, new_callbacks_type, handle)                         \
@@ -177,10 +181,6 @@ static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
         }
 
         FEATURE_LOG_DEBUG("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->on_adapter_state_changed_cb_id);
-        if (!FeatureCheckCallbackId(feature_callback->feature_ins, feature_callback->on_adapter_state_changed_cb_id)) {
-            break;
-        }
-
         if (state != BT_ADAPTER_STATE_ON && state != BT_ADAPTER_STATE_OFF) {
             break;
         }
@@ -251,10 +251,6 @@ static void on_discovery_state_changed_cb(void* cookie, bt_discovery_state_t sta
         }
 
         FEATURE_LOG_DEBUG("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->on_adapter_state_changed_cb_id);
-        if (!FeatureCheckCallbackId(feature_callback->feature_ins, feature_callback->on_adapter_state_changed_cb_id)) {
-            break;
-        }
-
         data = system_bluetoothMallocadapterStateCallbackData();
         if (!data) {
             continue;
@@ -322,10 +318,6 @@ static void on_discovery_result_cb(void* cookie, bt_discovery_result_t* result)
         }
 
         FEATURE_LOG_DEBUG("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->on_discovery_result_cb_id);
-        if (!FeatureCheckCallbackId(feature_callback->feature_ins, feature_callback->on_discovery_result_cb_id)) {
-            break;
-        }
-
         data = system_bluetooth_btMallocDiscoveryResultCallbackData();
         if (!data) {
             continue;
@@ -400,10 +392,6 @@ static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transp
         }
 
         FEATURE_LOG_DEBUG("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->on_bond_state_changed_cb_id);
-        if (!FeatureCheckCallbackId(feature_callback->feature_ins, feature_callback->on_bond_state_changed_cb_id)) {
-            break;
-        }
-
         data = system_bluetooth_btMalloconBondStateChangeData();
         if (!data) {
             continue;
@@ -479,10 +467,6 @@ static void a2dp_sink_connection_state_cb(void* cookie, bt_address_t* addr, prof
         }
 
         FEATURE_LOG_DEBUG("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->a2dp_sink_connection_state_cb_id);
-        if (!FeatureCheckCallbackId(feature_callback->feature_ins, feature_callback->a2dp_sink_connection_state_cb_id)) {
-            break;
-        }
-
         bt_addr_ba2str(addr, addr_str);
         data = system_bluetooth_bt_a2dpsinkMallocOnConnectStateChangeData();
         if (!data) {
