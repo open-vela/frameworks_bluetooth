@@ -21,21 +21,40 @@
 
 #define KVDB_USE_FEATURE "persist.using_bluetooth_feature"
 
+static void free_callback_info(callback_info_t* info)
+{
+    if (info->data) {
+        FeatureFreeValue(info->data);
+    }
+
+    free(info);
+}
+
 void feature_bluetooth_deal_callback(int status, void* data)
 {
     callback_info_t* info = (callback_info_t*)data;
     FEATURE_LOG_DEBUG("callback type:%d, feature:%p, callback id: %d", info->callback_id, info->feature, info->feature_callback_id);
+    if (!FeatureCheckCallbackId(info->feature, info->feature_callback_id)) {
+        goto freeData;
+    }
+
     if (!FeatureInvokeCallback(info->feature,
             info->feature_callback_id, info->data)) {
         FEATURE_LOG_ERROR("callback type:%d, feature:%p, callback id: %d, invoke discoveryresult callback failed!",
             info->callback_id, info->feature, info->feature_callback_id);
     }
 
-    if (info->data) {
-        FeatureFreeValue(info->data);
-    }
+freeData:
+    free_callback_info(info);
+}
 
-    free(data);
+void feature_bluetooth_remove_callback(int status, void* data)
+{
+    callback_info_t* info = (callback_info_t*)data;
+    FEATURE_LOG_DEBUG("remove callback, feature:%p, callback id: %d", info->feature, info->feature_callback_id);
+    FeatureRemoveCallback(info->feature, info->feature_callback_id);
+
+    free_callback_info(info);
 }
 
 char* StringToFtString(const char* str)
