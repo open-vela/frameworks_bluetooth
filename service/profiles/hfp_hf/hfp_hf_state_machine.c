@@ -38,6 +38,11 @@
 
 #define HFP_HF_RETRY_MAX 1
 
+const static char voip_call_number[][HFP_PHONENUM_DIGITS_MAX] = {
+    "10000000",
+    "10000001"
+};
+
 typedef struct _hf_state_machine {
     state_machine_t sm;
     bt_address_t addr;
@@ -568,6 +573,8 @@ static bool check_sco_allowed(state_machine_t* sm)
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
     uint64_t current_timestamp_us = get_os_timestamp_us();
     int64_t us_diff;
+    bt_list_node_t* cnode;
+    bt_list_t* clist = hfsm->current_calls;
 
     /* Verdict 1: allow SCO request if the recent call is initiated by HF */
     us_diff = calc_us_diff(hfsm->call_status.dialing_timestamp_us, current_timestamp_us);
@@ -579,7 +586,19 @@ static bool check_sco_allowed(state_machine_t* sm)
     us_diff = calc_us_diff(hfsm->call_status.webchat_flag_timestamp_us, current_timestamp_us);
     if ((us_diff >= 0) && (us_diff < HF_WEBCHAT_BLOCK_PERIOD)) {
         hfsm->call_status.webchat_flag_timestamp_us = current_timestamp_us;
+        BT_LOGD("%s failed: the recent call is speculated to be a web chat", __func__);
         return false;
+    }
+
+    /* Verdict 3: reject SCO request if there is a phone number specifically used for VoIP */
+    for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
+        hfp_current_call_t* ccall = bt_list_node(cnode);
+        for (uint32_t index = 0; index < (sizeof(voip_call_number) / sizeof(voip_call_number[0])); index++) {
+            if (0 == strcmp(voip_call_number[index], ccall->number)) {
+                BT_LOGD("%s failed: there is a phone number specifically used for VoIP", __func__);
+                return false;
+            }
+        }
     }
 #endif
     return true;
