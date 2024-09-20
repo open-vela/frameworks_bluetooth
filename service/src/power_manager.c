@@ -525,23 +525,6 @@ static void pm_stop_timer(bt_address_t* peer_addr)
     }
 }
 
-static void pm_stop_timer_by_profile(bt_address_t* peer_addr, uint8_t profile_id)
-{
-    bt_pm_manager_t* manager = &g_pm_manager;
-    bt_pm_timer_t* timer;
-    int i;
-
-    for (i = 0; i < CONFIG_BLUETOOTH_PM_MAX_TIMER_NUMBER; i++) {
-        timer = &manager->pm_timer[i];
-        if (timer->active && !bt_addr_compare(&timer->peer_addr, peer_addr) && timer->profile_id == profile_id) {
-            timer->active = false;
-            service_loop_cancel_timer(timer->pm_timer);
-            timer->pm_timer = NULL;
-            break;
-        }
-    }
-}
-
 static void pm_mode_request(bt_address_t* peer_addr, uint8_t req, uint16_t profile_id)
 {
     bool connected;
@@ -580,7 +563,7 @@ static void pm_mode_request(bt_address_t* peer_addr, uint8_t req, uint16_t profi
         if (pm_action & BT_PM_ACTIVE) {
             pm_request_active(peer_addr);
         } else if (timeout_ms > 0) {
-            pm_stop_timer_by_profile(peer_addr, profile_id);
+            pm_stop_timer(peer_addr);
             pm_start_timer(peer_addr, timeout_ms, profile_id, pm_action);
         }
     } break;
