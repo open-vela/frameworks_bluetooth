@@ -74,7 +74,7 @@ bool bt_adapter_unregister_callback(bt_instance_t* ins, void* cookie)
         return true;
     }
 
-    bt_callbacks_list_free(ins->adapter_callbacks);
+    bt_socket_client_free_callbacks(ins, ins->adapter_callbacks);
     ins->adapter_callbacks = NULL;
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_UNREGISTER_CALLBACK);

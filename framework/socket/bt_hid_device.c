@@ -100,7 +100,7 @@ bool bt_hid_device_unregister_callbacks(bt_instance_t* ins, void* cookie)
         return false;
 
     bt_remote_callbacks_unregister(ins->hidd_callbacks, NULL, cookie);
-    bt_callbacks_list_free(ins->hidd_callbacks);
+    bt_socket_client_free_callbacks(ins, ins->hidd_callbacks);
     ins->hidd_callbacks = NULL;
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_HID_DEVICE_UNREGISTER_CALLBACK);

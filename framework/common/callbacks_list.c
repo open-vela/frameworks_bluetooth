@@ -138,8 +138,9 @@ void bt_callbacks_foreach(callbacks_list_t* cbsl, void* context)
 {
 }
 
-void bt_callbacks_list_free(callbacks_list_t* cbsl)
+void bt_callbacks_list_free(void* data)
 {
+    callbacks_list_t* cbsl = data;
     if (!cbsl)
         return;
 
