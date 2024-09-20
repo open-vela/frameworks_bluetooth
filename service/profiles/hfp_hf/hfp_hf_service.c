@@ -103,6 +103,10 @@ static hf_device_t* find_hf_device_by_state(hfp_hf_state_t state)
     bt_list_t* list = g_hfp_service.hf_devices;
     bt_list_node_t* node;
 
+    if (list == NULL) {
+        return NULL;
+    }
+
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         hf_device_t* device = bt_list_node(node);
         if (hf_state_machine_get_state(device->hfsm) == state) {
