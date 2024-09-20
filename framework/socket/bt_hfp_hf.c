@@ -70,7 +70,7 @@ bool bt_hfp_hf_unregister_callbacks(bt_instance_t* ins, void* cookie)
     if (bt_callbacks_list_count(ins->hfp_hf_callbacks) > 0) {
         return true;
     }
-    bt_callbacks_list_free(ins->hfp_hf_callbacks);
+    bt_socket_client_free_callbacks(ins, ins->hfp_hf_callbacks);
     ins->hfp_hf_callbacks = NULL;
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_HF_UNREGISTER_CALLBACK);

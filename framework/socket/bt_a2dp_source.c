@@ -65,7 +65,8 @@ bool bt_a2dp_source_unregister_callbacks(bt_instance_t* ins, void* cookie)
     if (bt_callbacks_list_count(ins->a2dp_source_callbacks) > 0) {
         return true;
     }
-    bt_callbacks_list_free(ins->a2dp_source_callbacks);
+
+    bt_socket_client_free_callbacks(ins, ins->a2dp_source_callbacks);
     ins->a2dp_source_callbacks = NULL;
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SOURCE_UNREGISTER_CALLBACKS);

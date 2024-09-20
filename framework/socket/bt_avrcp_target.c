@@ -67,7 +67,7 @@ bool bt_avrcp_target_unregister_callbacks(bt_instance_t* ins, void* cookie)
         return true;
     }
 
-    bt_callbacks_list_free(ins->avrcp_target_callbacks);
+    bt_socket_client_free_callbacks(ins, ins->avrcp_target_callbacks);
     ins->avrcp_target_callbacks = NULL;
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_AVRCP_TARGET_UNREGISTER_CALLBACKS);

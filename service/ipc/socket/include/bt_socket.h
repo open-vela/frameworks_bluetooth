@@ -56,6 +56,8 @@ int bt_socket_client_init(bt_instance_t* ins, int family,
 
 void bt_socket_client_deinit(bt_instance_t* ins);
 
+void bt_socket_client_free_callbacks(bt_instance_t* ins, callbacks_list_t* cbsl);
+
 int bt_socket_client_sendrecv(bt_instance_t* ins,
     bt_message_packet_t* packet,
     bt_message_type_t code);
