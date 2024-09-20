@@ -52,7 +52,7 @@ BT_ADVERTISER_MESSAGE_START,
     {
         bt_instance_t* ins;
         advertiser_callback_t* callback;
-        uint32_t remote;
+        uint64_t remote;
     } bt_advertiser_remote_t;
 
     typedef union {

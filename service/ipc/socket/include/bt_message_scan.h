@@ -51,7 +51,7 @@ BT_SCAN_MESSAGE_START,
     } bt_scan_result_t;
 
     typedef struct {
-        uint32_t remote;
+        uint64_t remote;
         union {
             bt_instance_t* ins;
             scanner_callbacks_t* callback;
