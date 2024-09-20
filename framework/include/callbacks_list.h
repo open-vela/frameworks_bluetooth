@@ -40,11 +40,12 @@ typedef struct {
 
 #define BT_CALLBACK_FOREACH(_cbsl, _type, _cback, args...)                                     \
     do {                                                                                       \
-        if (_cbsl == NULL)                                                                     \
+        callbacks_list_t* __cbsl = _cbsl;                                                      \
+        if (__cbsl == NULL)                                                                    \
             break;                                                                             \
         bt_list_node_t* _node;                                                                 \
-        bt_list_t* _list = _cbsl->list;                                                        \
-        pthread_mutex_lock(&_cbsl->lock);                                                      \
+        bt_list_t* _list = __cbsl->list;                                                       \
+        pthread_mutex_lock(&__cbsl->lock);                                                     \
         for (_node = bt_list_head(_list); _node != NULL; _node = bt_list_next(_list, _node)) { \
             remote_callback_t* _rcbk = (remote_callback_t*)bt_list_node(_node);                \
             _type* _cbs = (_type*)_rcbk->callbacks;                                            \
@@ -52,7 +53,7 @@ typedef struct {
             if (_cbs && _cbs->_cback)                                                          \
                 _cbs->_cback(_remote, args);                                                   \
         }                                                                                      \
-        pthread_mutex_unlock(&_cbsl->lock);                                                    \
+        pthread_mutex_unlock(&__cbsl->lock);                                                   \
     } while (0)
 
 callbacks_list_t* bt_callbacks_list_new(uint8_t max);
@@ -61,7 +62,7 @@ bool bt_callbacks_unregister(callbacks_list_t* cbsl, remote_callback_t* rcbks);
 remote_callback_t* bt_remote_callbacks_register(callbacks_list_t* cbsl, void* remote, void* callbacks);
 bool bt_remote_callbacks_unregister(callbacks_list_t* cbsl, void** remote, remote_callback_t* rcbks);
 void bt_callbacks_foreach(callbacks_list_t* cbsl, void* context);
-void bt_callbacks_list_free(callbacks_list_t* cbsl);
+void bt_callbacks_list_free(void* cbsl);
 uint8_t bt_callbacks_list_count(callbacks_list_t* cbsl);
 
 #endif

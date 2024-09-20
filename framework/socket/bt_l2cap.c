@@ -68,7 +68,7 @@ bool bt_l2cap_unregister_callbacks(bt_instance_t* ins, void* cookie)
     }
 
     bt_remote_callbacks_unregister(ins->l2cap_callbacks, NULL, cookie);
-    bt_callbacks_list_free(ins->l2cap_callbacks);
+    bt_socket_client_free_callbacks(ins, ins->l2cap_callbacks);
     ins->l2cap_callbacks = NULL;
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_L2CAP_UNREGISTER_CALLBACKS);

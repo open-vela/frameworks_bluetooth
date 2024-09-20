@@ -443,6 +443,11 @@ static void bt_socket_sync_close(void* data)
     ins->peer_fd = -1;
 }
 
+void bt_socket_client_free_callbacks(bt_instance_t* ins, callbacks_list_t* cbsl)
+{
+    do_in_thread_loop_sync(ins->client_loop, bt_callbacks_list_free, cbsl);
+}
+
 void bt_socket_client_deinit(bt_instance_t* ins)
 {
     uv_sem_destroy(&ins->message_processed);
