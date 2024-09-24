@@ -17,9 +17,8 @@
 #define __BT_SAL_H__
 
 #include "bluetooth_define.h"
+#include "bt_utils.h"
 #include "utils/log.h"
-
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 #define SAL_NOT_SUPPORT                                    \
     {                                                      \

@@ -21,6 +21,8 @@
 extern "C" {
 #endif
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
 #define CASE_RETURN_STR(const) \
     case const:                \
         return #const;
