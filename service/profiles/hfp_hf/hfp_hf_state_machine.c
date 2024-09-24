@@ -575,6 +575,7 @@ static bool check_sco_allowed(state_machine_t* sm)
     int64_t us_diff;
     bt_list_node_t* cnode;
     bt_list_t* clist = hfsm->current_calls;
+    uint32_t index;
 
     /* Verdict 1: allow SCO request if the recent call is initiated by HF */
     us_diff = calc_us_diff(hfsm->call_status.dialing_timestamp_us, current_timestamp_us);
@@ -593,7 +594,7 @@ static bool check_sco_allowed(state_machine_t* sm)
     /* Verdict 3: reject SCO request if there is a phone number specifically used for VoIP */
     for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
         hfp_current_call_t* ccall = bt_list_node(cnode);
-        for (uint32_t index = 0; index < (sizeof(voip_call_number) / sizeof(voip_call_number[0])); index++) {
+        for (index = 0; index < ARRAY_SIZE(voip_call_number); index++) {
             if (0 == strcmp(voip_call_number[index], ccall->number)) {
                 BT_LOGD("%s failed: there is a phone number specifically used for VoIP", __func__);
                 return false;
