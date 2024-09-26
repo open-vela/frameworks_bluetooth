@@ -49,6 +49,7 @@
 #include "l2cap_service.h"
 #endif
 #include "utils/log.h"
+#include "vhal/bt_vhal.h"
 
 #define BTSTACK_THREAD_STACK_SIZE 8192
 #define DEBUG_IMPL BT_LOGD("%s", __func__);
@@ -669,7 +670,7 @@ static void* stack_schedule_loop(void* data)
     return NULL;
 }
 
-static bt_status_t bluelet_stack_init(void)
+static bt_status_t bluelet_stack_init(const bt_vhal_interface* vhal)
 {
     pthread_attr_t pattr;
     pthread_t thread_id;
@@ -681,7 +682,7 @@ static bt_status_t bluelet_stack_init(void)
         return BT_STATUS_SUCCESS;
 
     /* Open hci uart driver */
-    hci_fd = bt_sal_hci_transport_init();
+    hci_fd = bt_sal_hci_transport_init(vhal);
     if (hci_fd < 0)
         return BT_STATUS_FAIL;
 
@@ -732,10 +733,10 @@ static void bluelet_stack_cleanup(void)
 
 // #ifdef CONFIG_OBELISK_BREDR_BLUELET
 
-bt_status_t bt_sal_init(void)
+bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    return bluelet_stack_init();
+    return bluelet_stack_init(vhal);
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
@@ -1345,10 +1346,10 @@ bt_status_t bt_sal_set_afh_channel_classification(uint16_t central_frequency,
 
 /* BLE */
 
-bt_status_t bt_sal_le_init(void)
+bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    return bluelet_stack_init();
+    return bluelet_stack_init(vhal);
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif

@@ -268,6 +268,11 @@ if(CONFIG_BLUETOOTH)
 
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/utils/*.c)
     list(APPEND CSRCS ${APPEND_FILES})
+
+    file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/vhal/*.c)
+    list(APPEND CSRCS ${APPEND_FILES})
+
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/service/vhal)
   endif()
 
   if(CONFIG_BLUETOOTH_TOOLS)
