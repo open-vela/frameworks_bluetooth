@@ -27,9 +27,10 @@
 #endif
 #include "bluetooth_define.h"
 #include "power_manager.h"
+#include "vhal/bt_vhal.h"
 
 /* service adapter layer for BREDR */
-bt_status_t bt_sal_init(void);
+bt_status_t bt_sal_init(const bt_vhal_interface* vhal);
 void bt_sal_cleanup(void);
 bt_status_t bt_sal_enable(void);
 bt_status_t bt_sal_disable(void);
@@ -86,7 +87,7 @@ bt_status_t bt_sal_set_afh_channel_classification(uint16_t central_frequency,
     uint16_t number);
 /* service adapter layer for LE */
 // #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-bt_status_t bt_sal_le_init(void);
+bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal);
 void bt_sal_le_cleanup(void);
 bt_status_t bt_sal_le_enable(void);
 bt_status_t bt_sal_le_disable(void);

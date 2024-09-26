@@ -175,6 +175,8 @@ ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICP), y)
 endif #CONFIG_BLUETOOTH_LEAUDIO_VMICP
 
 CSRCS += service/utils/*.c
+CSRCS += service/vhal/*.c
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/vhal
 endif #CONFIG_BLUETOOTH_OBELISK
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
