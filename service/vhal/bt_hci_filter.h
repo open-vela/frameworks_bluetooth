@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2022 Xiaomi Corporation
+ *  Copyright (C) 2024 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#ifndef __BT_HCI_H4_H_
-#define __BT_HCI_H4_H_
+#ifndef _BT_HCI_FILTER_H__
+#define _BT_HCI_FILTER_H__
 
+#include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
-#include "vhal/bt_vhal.h"
+bool bt_hci_filter_can_recv(uint8_t* value, uint32_t size);
+bool bt_hci_filter_can_send(uint8_t* value, uint32_t size);
 
-int bt_sal_hci_transport_init(const bt_vhal_interface* vhal);
-void bt_sal_hci_transport_recv(void);
-int bt_sal_hci_send_packet(uint8_t* buf, uint32_t len);
-void bt_sal_hci_transport_cleanup(void);
-
-#endif /* __BT_HCI_H4_H_ */
+#endif /* _BT_HCI_FILTER_H__ */

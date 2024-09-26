@@ -26,6 +26,7 @@
 
 #include "hci_h4.h"
 #include "utils/btsnoop_log.h"
+#include "vhal/bt_vhal.h"
 
 #define LOG_TAG "h4"
 #include "utils/log.h"
@@ -41,6 +42,7 @@ enum {
 static int g_tlfd = -1;
 static uint8_t g_hci_rxbuf[2048];
 static uint16_t g_hci_rxlen = 0;
+static const bt_vhal_interface* g_vhal;
 
 static int h4_send_data(uint8_t* buf, int count)
 {
@@ -62,11 +64,16 @@ static int h4_send_data(uint8_t* buf, int count)
     return nwritten;
 }
 
-int bt_sal_hci_transport_init(void)
+int bt_sal_hci_transport_init(const bt_vhal_interface* vhal)
 {
     g_hci_rxlen = 0;
+    g_vhal = vhal;
     g_tlfd = open(CONFIG_OBELISK_HCI_UART_NAME, O_RDWR | O_BINARY | O_CLOEXEC);
     BT_LOGI("%s: g_tlfd = %d", __func__, g_tlfd);
+
+    if (g_vhal) {
+        g_vhal->open(g_tlfd);
+    }
 
     return g_tlfd;
 }
@@ -74,6 +81,7 @@ int bt_sal_hci_transport_init(void)
 void bt_sal_hci_transport_recv(void)
 {
     int ret;
+    bool filter = false;
     uint16_t pkt_len = 0;
     union hci_header {
         struct bt_hci_cmd_hdr_s cmd;
@@ -117,7 +125,15 @@ void bt_sal_hci_transport_recv(void)
             return;
 
         btsnoop_log_capture(1, g_hci_rxbuf, pkt_len);
-        service_adapter_gap_receive_hci_packet(g_hci_rxbuf, pkt_len);
+
+        if (g_vhal) {
+            filter = g_vhal->recv(g_hci_rxbuf, pkt_len);
+        }
+
+        if (!filter) {
+            service_adapter_gap_receive_hci_packet(g_hci_rxbuf, pkt_len);
+        }
+
         g_hci_rxlen -= pkt_len;
         memmove(g_hci_rxbuf, g_hci_rxbuf + pkt_len, g_hci_rxlen);
     }
@@ -127,12 +143,22 @@ int bt_sal_hci_send_packet(uint8_t* buf, uint32_t len)
 {
     btsnoop_log_capture(0, buf, len);
 
+    if (g_vhal) {
+        g_vhal->send(buf, len);
+    }
+
     return h4_send_data(buf, len);
 }
 
 void bt_sal_hci_transport_cleanup(void)
 {
     close(g_tlfd);
+
+    if (g_vhal) {
+        g_vhal->close(g_tlfd);
+    }
+
     g_hci_rxlen = 0;
     g_tlfd = -1;
+    g_vhal = NULL;
 }
