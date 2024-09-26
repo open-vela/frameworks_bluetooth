@@ -468,19 +468,3 @@ uv_loop_t* get_service_uv_loop(void)
 {
     return uv_default_loop();
 }
-
-#if defined(CONFIG_NET_SOCKOPTS) && defined(CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC)
-void setSocketBuf(int fd, int option)
-{
-    int buff_size = 0;
-    socklen_t socklen = sizeof(int);
-    assert(getsockopt(fd, SOL_SOCKET, option, &buff_size, &socklen) == OK);
-    if (buff_size >= CONFIG_BLUETOOTH_SOCKET_BUF_SIZE)
-        return;
-
-    buff_size = CONFIG_BLUETOOTH_SOCKET_BUF_SIZE;
-    assert(setsockopt(fd, SOL_SOCKET, option, &buff_size, sizeof(buff_size)) == OK);
-    assert(getsockopt(fd, SOL_SOCKET, option, &buff_size, &socklen) == OK);
-    assert(buff_size >= CONFIG_BLUETOOTH_SOCKET_BUF_SIZE);
-}
-#endif
