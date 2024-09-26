@@ -23,9 +23,8 @@
 
 static void free_callback_info(callback_info_t* info)
 {
-    if (info->data) {
+    if (info->data)
         FeatureFreeValue(info->data);
-    }
 
     free(info);
 }
@@ -38,10 +37,9 @@ void feature_bluetooth_deal_callback(int status, void* data)
         goto freeData;
     }
 
-    if (!FeatureInvokeCallback(info->feature,
-            info->feature_callback_id, info->data)) {
-        FEATURE_LOG_ERROR("callback type:%d, feature:%p, callback id: %d, invoke discoveryresult callback failed!",
-            info->callback_id, info->feature, info->feature_callback_id);
+    if (!FeatureInvokeCallback(info->feature, info->feature_callback_id, info->data)) {
+        FEATURE_LOG_ERROR("feature:%p, callback id: %d, invoke discoveryresult callback failed!",
+            info->feature, info->feature_callback_id);
     }
 
 freeData:
@@ -55,6 +53,26 @@ void feature_bluetooth_remove_callback(int status, void* data)
     FeatureRemoveCallback(info->feature, info->feature_callback_id);
 
     free_callback_info(info);
+}
+
+void feature_bluetooth_post_task(FeatureInstanceHandle handle, FtCallbackId callback_id, void* data)
+{
+    callback_info_t* callback_info;
+
+    callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
+    if (!callback_info) {
+        if (data)
+            FeatureFreeValue(data);
+        return;
+    }
+
+    callback_info->feature_callback_id = callback_id;
+    callback_info->feature = handle;
+    callback_info->data = data;
+    if (!FeaturePost(handle, feature_bluetooth_deal_callback, callback_info)) {
+        FEATURE_LOG_WARN("feature:%p, callback id: %d, post callback failed!", handle, callback_id);
+        free_callback_info(callback_info);
+    }
 }
 
 char* StringToFtString(const char* str)
