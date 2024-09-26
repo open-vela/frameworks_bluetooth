@@ -65,7 +65,6 @@ typedef struct {
 } feature_bluetooth_a2dp_sink_callbacks_t;
 
 typedef struct {
-    feature_bluetooth_callback_t callback_id;
     FtCallbackId feature_callback_id;
     void* feature;
     void* data;
@@ -81,6 +80,7 @@ typedef struct {
 
 void feature_bluetooth_deal_callback(int status, void* data);
 void feature_bluetooth_remove_callback(int status, void* data);
+void feature_bluetooth_post_task(FeatureInstanceHandle handle, FtCallbackId callback_id, void* data);
 char* StringToFtString(const char* str);
 void feature_bluetooth_init_bt_ins(feature_bluetooth_feature_type_t feature, FeatureProtoHandle handle);
 void feature_bluetooth_uninit_bt_ins(feature_bluetooth_feature_type_t feature, FeatureProtoHandle handle);
