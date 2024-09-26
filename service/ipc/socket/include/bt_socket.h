@@ -186,4 +186,8 @@ int bt_socket_client_l2cap_callback(service_poll_t* poll,
 }
 #endif
 
+#ifdef CONFIG_NET_SOCKOPTS
+void setSocketBuf(int fd, int option);
+#endif
+
 #endif /* _BT_SOCKET_H__ */
