@@ -270,11 +270,11 @@ static void notify_scanners_scan_result(void* data)
             device = scanner_add_device(&result->addr, result->addr_type, timestamp_ms);
         }
 
-        if (!scanner_match_duration(device, scanner->filter.duration, scanner->filter.period, timestamp_ms)) {
-            continue;
-        }
-
         if (scanner->filter.duplicated) {
+            if (!scanner_match_duration(device, scanner->filter.duration, scanner->filter.period, timestamp_ms)) {
+                continue;
+            }
+
             if (scanner_hsearch_find(result->adv_data, result->length)) {
                 BT_LOGD("scanner_hsearch_find addr:%s", bt_addr_str(&result->addr));
                 continue;
