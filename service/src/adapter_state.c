@@ -33,6 +33,8 @@
 #include "bt_utils.h"
 #include "utils/log.h"
 
+#define DISABLE_SAFE_TIMEOUT (2000)
+
 static void off_enter(state_machine_t* sm);
 static void off_exit(state_machine_t* sm);
 static void ble_turning_on_enter(state_machine_t* sm);
@@ -55,6 +57,8 @@ static bool turning_on_process_event(state_machine_t* sm, uint32_t event, void* 
 static bool on_state_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 static bool turning_off_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 static bool ble_turning_off_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+
+static void turning_off_safe_timeout_callback(service_timer_t* timer, void* data);
 
 static const state_t off_state = {
     .state_name = "Off",
@@ -119,6 +123,8 @@ typedef struct adapter_state_machine {
     bool a2dp_offloading;
     bool hfp_offloading;
     bool lea_offloading;
+    bool turning_off_safe;
+    service_timer_t* disable_safe_timer;
 } adapter_state_machine_t;
 
 #define ADPATER_STM_DEBUG 1
@@ -129,6 +135,8 @@ static const char* event_to_string(uint16_t event)
     switch (event) {
         CASE_RETURN_STR(SYS_TURN_ON)
         CASE_RETURN_STR(SYS_TURN_OFF)
+        CASE_RETURN_STR(SYS_TURN_OFF_SAFE)
+        CASE_RETURN_STR(SYS_TURN_OFF_SAFE_TIMEOUT)
         CASE_RETURN_STR(TURN_ON_BLE)
         CASE_RETURN_STR(TURN_OFF_BLE)
         CASE_RETURN_STR(BREDR_ENABLED)
@@ -139,6 +147,7 @@ static const char* event_to_string(uint16_t event)
         CASE_RETURN_STR(BREDR_DISABLE_TIMEOUT)
         CASE_RETURN_STR(BREDR_ENABLE_PROFILE_TIMEOUT)
         CASE_RETURN_STR(BREDR_DISABLE_PROFILE_TIMEOUT)
+        CASE_RETURN_STR(BREDR_ACL_ALL_DISCONNECTED)
         CASE_RETURN_STR(BLE_ENABLED)
         CASE_RETURN_STR(BLE_DISABLED)
         CASE_RETURN_STR(BLE_PROFILE_ENABLED)
@@ -392,11 +401,25 @@ static void on_state_exit(state_machine_t* sm)
 
 static bool on_state_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
+    adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
     ADAPTER_DBG_EVENT(sm, event);
 
     switch (event) {
     case SYS_TURN_OFF:
         hsm_transition_to(sm, &turning_off_state);
+        break;
+    case SYS_TURN_OFF_SAFE:
+        stm->turning_off_safe = true;
+
+        adapter_disconnect_safe();
+
+        stm->disable_safe_timer = service_loop_timer(DISABLE_SAFE_TIMEOUT, 0,
+            turning_off_safe_timeout_callback, (void*)sm);
+        break;
+    case BREDR_ACL_ALL_DISCONNECTED:
+    case SYS_TURN_OFF_SAFE_TIMEOUT:
+        if (stm->turning_off_safe)
+            hsm_transition_to(sm, &turning_off_state);
         break;
     default:
         return false;
@@ -407,7 +430,15 @@ static bool on_state_process_event(state_machine_t* sm, uint32_t event, void* p_
 
 static void turning_off_enter(state_machine_t* sm)
 {
+    adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
     ADAPTER_DBG_ENTER(sm);
+
+    stm->turning_off_safe = false;
+
+    /* Cancel the timer in safe disable mode */
+    service_loop_cancel_timer(stm->disable_safe_timer);
+    stm->disable_safe_timer = NULL;
+
     /* profile service shotdown */
     service_manager_shutdown(BT_TRANSPORT_BREDR);
     adapter_notify_state_change(BT_ADAPTER_STATE_ON, BT_ADAPTER_STATE_TURNING_OFF);
@@ -488,6 +519,11 @@ static bool ble_turning_off_process_event(state_machine_t* sm, uint32_t event, v
     }
 
     return true;
+}
+
+static void turning_off_safe_timeout_callback(service_timer_t* timer, void* data)
+{
+    send_to_state_machine((state_machine_t*)data, SYS_TURN_OFF_SAFE_TIMEOUT, NULL);
 }
 
 adapter_state_machine_t* adapter_state_machine_new(void* context)
