@@ -599,6 +599,14 @@ if (bt_adapter_disable(ins) == BT_STATUS_SUCCESS) {
 bt_status_t BTSYMBOLS(bt_adapter_disable)(bt_instance_t* ins);
 
 /**
+ * @brief Disable bluetooth adapter safely
+ *
+ * @param ins - bluetooth client instance.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_adapter_disable_safe)(bt_instance_t* ins);
+
+/**
  * @brief Enable BLE (Bluetooth Low Energy).
  *
  * Turns on the BLE functionality of the adapter.

@@ -288,6 +288,21 @@ static void adapter_delete_device(void* data)
     device_delete(device);
 }
 
+static bool adapter_check_acl_all_disconnected(void)
+{
+    bt_device_t* device;
+    bt_list_node_t* node;
+
+    for (node = bt_list_head(g_adapter_service.devices); node != NULL; node = bt_list_next(g_adapter_service.devices, node)) {
+        device = (bt_device_t*)bt_list_node(node);
+        if (device_is_connected(device)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 static adapter_remote_event_t* create_remote_event(bt_address_t* addr, uint8_t evt_id)
 {
     adapter_remote_event_t* evt = malloc(sizeof(adapter_remote_event_t));
@@ -864,6 +879,7 @@ static const char* acl_connection_str(connection_state_t state)
 static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_param_t* acl_params)
 {
     bt_device_t* device;
+    adapter_service_t* adapter = &g_adapter_service;
 
     BT_ADDR_LOG("ACL connection state changed, addr:%s, link:%d, state:%s, status:%d, reason:%" PRIu32 "", addr,
         acl_params->transport, acl_connection_str(acl_params->connection_state),
@@ -918,6 +934,13 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
     /* send connection changed notification */
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_connection_state_changed, addr,
         acl_params->transport, acl_params->connection_state);
+
+    /* check acls connection is all disconnected in safe disable mode */
+    if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED) {
+        if (adapter_check_acl_all_disconnected()) {
+            send_to_state_machine((state_machine_t*)adapter->stm, BREDR_ACL_ALL_DISCONNECTED, NULL);
+        }
+    }
 }
 
 static void handle_connection_event(void* data)
@@ -1829,6 +1852,16 @@ bt_status_t adapter_disable(uint8_t opt)
     return BT_STATUS_SUCCESS;
 }
 
+bt_status_t adapter_disable_safe(uint8_t opt)
+{
+    adapter_service_t* adapter = &g_adapter_service;
+
+    if (opt == SYS_SET_BT_ALL)
+        send_to_state_machine((state_machine_t*)adapter->stm, SYS_TURN_OFF_SAFE, NULL);
+
+    return BT_STATUS_SUCCESS;
+}
+
 void adapter_cleanup(void)
 {
     adapter_service_t* adapter = &g_adapter_service;
@@ -2650,6 +2683,26 @@ bt_status_t adapter_disconnect(bt_address_t* addr)
 
     device_set_connection_state(device, CONNECTION_STATE_DISCONNECTING);
     adapter_unlock();
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t adapter_disconnect_safe(void)
+{
+    bt_device_t* device;
+    bt_list_node_t* node;
+    adapter_service_t* adapter = &g_adapter_service;
+
+    /* check acls connection is all disconnected in safe disable mode */
+    if (adapter_check_acl_all_disconnected()) {
+        send_to_state_machine((state_machine_t*)adapter->stm, BREDR_ACL_ALL_DISCONNECTED, NULL);
+        return BT_STATUS_SUCCESS;
+    }
+
+    for (node = bt_list_head(g_adapter_service.devices); node != NULL; node = bt_list_next(g_adapter_service.devices, node)) {
+        device = (bt_device_t*)bt_list_node(node);
+        adapter_disconnect(device_get_address(device));
+    }
+
     return BT_STATUS_SUCCESS;
 }
 

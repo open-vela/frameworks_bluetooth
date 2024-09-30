@@ -274,6 +274,10 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_disable)(ins);
         break;
     }
+    case BT_ADAPTER_DISABLE_SAFE: {
+        packet->adpt_r.status = BTSYMBOLS(bt_adapter_disable_safe)(ins);
+        break;
+    }
     case BT_ADAPTER_ENABLE_LE: {
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_enable_le)(ins);
         break;
