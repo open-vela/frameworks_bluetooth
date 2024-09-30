@@ -42,6 +42,11 @@ bt_status_t BTSYMBOLS(bt_adapter_disable)(bt_instance_t* ins)
     return adapter_disable(SYS_SET_BT_ALL);
 }
 
+bt_status_t BTSYMBOLS(bt_adapter_disable_safe)(bt_instance_t* ins)
+{
+    return adapter_disable_safe(SYS_SET_BT_ALL);
+}
+
 bt_status_t BTSYMBOLS(bt_adapter_enable_le)(bt_instance_t* ins)
 {
     return adapter_enable(APP_SET_LE_ONLY);
