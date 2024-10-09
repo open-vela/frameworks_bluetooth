@@ -60,6 +60,7 @@ bool bt_l2cap_unregister_callbacks(bt_instance_t* ins, void* cookie)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+    callbacks_list_t* cbsl;
 
     BT_SOCKET_INS_VALID(ins, false);
 
@@ -68,8 +69,10 @@ bool bt_l2cap_unregister_callbacks(bt_instance_t* ins, void* cookie)
     }
 
     bt_remote_callbacks_unregister(ins->l2cap_callbacks, NULL, cookie);
-    bt_socket_client_free_callbacks(ins, ins->l2cap_callbacks);
+
+    cbsl = ins->l2cap_callbacks;
     ins->l2cap_callbacks = NULL;
+    bt_socket_client_free_callbacks(ins, cbsl);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_L2CAP_UNREGISTER_CALLBACKS);
     if (status != BT_STATUS_SUCCESS || packet.l2cap_r.status != BT_STATUS_SUCCESS) {

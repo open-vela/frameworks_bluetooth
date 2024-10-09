@@ -63,6 +63,7 @@ bool bt_adapter_unregister_callback(bt_instance_t* ins, void* cookie)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+    callbacks_list_t* cbsl;
 
     BT_SOCKET_INS_VALID(ins, false);
 
@@ -74,8 +75,9 @@ bool bt_adapter_unregister_callback(bt_instance_t* ins, void* cookie)
         return true;
     }
 
-    bt_socket_client_free_callbacks(ins, ins->adapter_callbacks);
+    cbsl = ins->adapter_callbacks;
     ins->adapter_callbacks = NULL;
+    bt_socket_client_free_callbacks(ins, cbsl);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_UNREGISTER_CALLBACK);
     if (status != BT_STATUS_SUCCESS || packet.adpt_r.status != BT_STATUS_SUCCESS) {
