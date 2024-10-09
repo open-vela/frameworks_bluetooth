@@ -60,6 +60,7 @@ bool bt_a2dp_sink_unregister_callbacks(bt_instance_t* ins, void* cookie)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+    callbacks_list_t* cbsl;
 
     BT_SOCKET_INS_VALID(ins, false);
     if (!ins->a2dp_sink_callbacks)
@@ -70,8 +71,9 @@ bool bt_a2dp_sink_unregister_callbacks(bt_instance_t* ins, void* cookie)
         return true;
     }
 
-    bt_socket_client_free_callbacks(ins, ins->a2dp_sink_callbacks);
+    cbsl = ins->a2dp_sink_callbacks;
     ins->a2dp_sink_callbacks = NULL;
+    bt_socket_client_free_callbacks(ins, cbsl);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_A2DP_SINK_UNREGISTER_CALLBACKS);
     if (status != BT_STATUS_SUCCESS || packet.a2dp_sink_r.status != BT_STATUS_SUCCESS) {

@@ -93,6 +93,7 @@ bool bt_hid_device_unregister_callbacks(bt_instance_t* ins, void* cookie)
 {
     bt_message_packet_t packet;
     bt_status_t status;
+    callbacks_list_t* cbsl;
 
     BT_SOCKET_INS_VALID(ins, false);
 
@@ -100,8 +101,10 @@ bool bt_hid_device_unregister_callbacks(bt_instance_t* ins, void* cookie)
         return false;
 
     bt_remote_callbacks_unregister(ins->hidd_callbacks, NULL, cookie);
-    bt_socket_client_free_callbacks(ins, ins->hidd_callbacks);
+
+    cbsl = ins->hidd_callbacks;
     ins->hidd_callbacks = NULL;
+    bt_socket_client_free_callbacks(ins, cbsl);
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_HID_DEVICE_UNREGISTER_CALLBACK);
     if (status != BT_STATUS_SUCCESS || packet.hidd_r.status != BT_STATUS_SUCCESS)
