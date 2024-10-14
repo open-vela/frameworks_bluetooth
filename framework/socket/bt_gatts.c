@@ -45,7 +45,7 @@ static bt_gatts_remote_t* gatts_remote_new(bt_instance_t* ins, gatts_callbacks_t
 
     remote->ins = ins;
     remote->callbacks = callbacks;
-    remote->cookie = NULL;
+    remote->cookie = 0;
 
     return remote;
 }
@@ -91,7 +91,7 @@ bt_status_t bt_gatts_register_service(bt_instance_t* ins, gatts_handle_t* phandl
         goto fail;
     }
 
-    gatts_remote->cookie = INT2PTR(void*) packet.gatts_r.handle;
+    gatts_remote->cookie = packet.gatts_r.handle;
     gatts_remote->user_phandle = phandle;
     bt_list_add_tail(ins->gatts_remote_list, gatts_remote);
 
