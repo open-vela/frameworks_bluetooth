@@ -21,9 +21,17 @@ config BLUETOOTH
 	depends on LIBUV_EXTENSION
 
 if BLUETOOTH
-config BLUETOOTH_STORAGE_PROPERTY_SUPPORT
-	bool "Bluetooth Storage KVDB Property support"
-	default n
+
+choice
+	prompt "select Bluetooth Storage Method(Unqlite, KVDB)"
+	default BLUETOOTH_STORAGE_UNQLITE_SUPPORT
+	config BLUETOOTH_STORAGE_PROPERTY_SUPPORT
+		bool "Bluetooth Storage KVDB Property support"
+		depends on KVDB
+	config BLUETOOTH_STORAGE_UNQLITE_SUPPORT
+		bool "Bluetooth Storage uv_db support"
+		depends on UNQLITE
+endchoice
 
 config BLUETOOTH_BREDR_SUPPORT
 	bool "BREDR support"

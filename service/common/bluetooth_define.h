@@ -67,6 +67,7 @@ typedef enum {
 typedef struct {
     bt_address_t addr;
     ble_addr_type_t addr_type;
+    // only can add member after "addr_type" if needed, see function bt_storage_save_remote_device for reasons.
     char name[BT_REM_NAME_MAX_LEN + 1];
     char alias[BT_REM_NAME_MAX_LEN + 1];
     uint32_t class_of_device;
@@ -78,6 +79,7 @@ typedef struct {
 typedef struct {
     bt_address_t addr;
     ble_addr_type_t addr_type;
+    // only can add member after "addr_type" if needed, see function bt_storage_save_le_remote_device for reasons.
     uint8_t smp_key[80];
     bt_device_type_t device_type;
 } remote_device_le_properties_t;
