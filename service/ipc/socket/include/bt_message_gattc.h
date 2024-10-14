@@ -66,7 +66,7 @@ BT_GATT_CLIENT_MESSAGE_START,
     typedef struct {
         bt_instance_t* ins;
         gattc_callbacks_t* callbacks;
-        void* cookie;
+        uint64_t cookie;
         void** user_phandle;
     } bt_gattc_remote_t;
 
