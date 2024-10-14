@@ -66,7 +66,7 @@ bt_status_t bt_gattc_create_connect(bt_instance_t* ins, gattc_handle_t* phandle,
         goto fail;
     }
 
-    gattc_remote->cookie = INT2PTR(void*) packet.gattc_r.handle;
+    gattc_remote->cookie = packet.gattc_r.handle;
     gattc_remote->user_phandle = phandle;
     bt_list_add_tail(ins->gattc_remote_list, gattc_remote);
 
