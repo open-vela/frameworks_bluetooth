@@ -358,7 +358,7 @@ int audio_transport_write(audio_transport_t* transport, uint8_t ch_id,
         return -EINVAL;
 
     ch = &transport->ch[ch_id];
-    if (ch->state != IPC_CONNTECTED) {
+    if (ch->state != IPC_CONNTECTED || !ch->cli_pipe) {
         return -1;
     }
     wreq = (transport_write_t*)malloc(sizeof(transport_write_t));
@@ -406,7 +406,7 @@ int audio_transport_read_start(audio_transport_t* transport,
         return -EINVAL;
 
     ch = &transport->ch[ch_id];
-    if (ch->state != IPC_CONNTECTED) {
+    if (ch->state != IPC_CONNTECTED || !ch->cli_pipe) {
         return -1;
     }
     rreq = (transport_read_t*)malloc(sizeof(transport_read_t));
