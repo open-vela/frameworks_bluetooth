@@ -636,7 +636,9 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
             BT_LOGE("A2DP Audio is not ready, Ignore start cmd");
             break;
         }
+        bt_pm_busy(PROFILE_A2DP, &a2dp_sm->addr);
         status = bt_sal_a2dp_source_start_stream(&a2dp_sm->addr);
+        bt_pm_idle(PROFILE_A2DP, &a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Stream start failed");
             break;
