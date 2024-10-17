@@ -56,6 +56,11 @@ if(CONFIG_BLUETOOTH)
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/socket/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
 
+      if (CONFIG_BLUETOOTH_FRAMEWORK_ASYNC)
+        file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/socket/async/*.c)
+        list(APPEND CSRCS ${APPEND_FILES})
+      endif()
+
       list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc/socket/include)
 
     else()
