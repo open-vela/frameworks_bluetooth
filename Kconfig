@@ -311,6 +311,12 @@ choice
 	config BLUETOOTH_FRAMEWORK_SOCKET_IPC
 		bool "use socket ipc api"
 endchoice
+
+config BLUETOOTH_FRAMEWORK_ASYNC
+	bool "Enable bluetooth framework async api"
+	default n
+	help
+		Enable bluetooth framework async api
 endif #BLUETOOTH_FRAMEWORK
 
 if BLUETOOTH_FRAMEWORK_SOCKET_IPC
