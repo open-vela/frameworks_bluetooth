@@ -36,6 +36,8 @@
 #include "bt_internal.h"
 
 #include "bluetooth.h"
+#include "bt_config.h"
+#include "bt_debug.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "bt_spp.h"
@@ -50,6 +52,11 @@
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
 #define CBLIST (ins->spp_callbacks)
+
+#ifdef CONFIG_RPMSG_UART
+#define SPP_UART_DEV "/dev/ttyDROID"
+#endif
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -164,8 +171,12 @@ static bool rpmsg_tty_mount_path(const char* src, char* dest, int len, const cha
         return false;
     }
 
+#if defined(CONFIG_RPMSG_UART)
+    strlcpy(dest, SPP_UART_DEV, len);
+#else
     if (snprintf(dest, len, "/dev/%s/%s", mount_cpu, src + 5) < 0)
         return false;
+#endif
 
     return true;
 }

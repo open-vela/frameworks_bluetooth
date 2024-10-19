@@ -37,13 +37,14 @@
 #else
 #include <sys/un.h>
 #endif
+
+#include "bt_config.h"
 #ifdef CONFIG_NET_RPMSG
 #include <netpacket/rpmsg.h>
 #endif
 
 #include "bluetooth.h"
 #include "bt_adapter.h"
-#include "bt_config.h"
 #include "bt_debug.h"
 #include "bt_message.h"
 #include "bt_socket.h"

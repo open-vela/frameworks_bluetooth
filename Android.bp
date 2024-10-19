@@ -1,4 +1,17 @@
-cc_library {
+bootstrap_go_package {
+    name: "soong-frameworkBluetooth",
+    pkgPath: "android/soong/frameworkBluetooth",
+    deps: [
+        "soong-android",
+        "soong-cc",
+    ],
+    srcs: [
+          "frameworkBluetooth.go",
+    ],
+    pluginFor: ["soong_build"],
+}
+
+frameworkBluetooth_cc_library {
     name : "libbt-framework-client",
     min_sdk_version: "33",
 
@@ -93,11 +106,11 @@ cc_binary {
 
     static_libs : [
         "libuv",
-        "libbt-framework-client",
     ],
 
     shared_libs : [
         "liblog",
+        "libbt-framework-client",
     ],
 
     cflags : [

@@ -61,7 +61,7 @@
 #define SERVICE_CONN_ID(conn_port) (conn_port >> 6)
 
 #ifdef CONFIG_RPMSG_UART
-#define SPP_UART_DEV "dev/ttySPP0"
+#define SPP_UART_DEV "/dev/ttyDROID"
 #endif
 /****************************************************************************
  * Private Types
