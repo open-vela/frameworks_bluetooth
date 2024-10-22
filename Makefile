@@ -262,7 +262,7 @@ ifneq ($(CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME)$(CONFIG_OFONO),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/glib/glib/glib
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/glib/glib
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/glib
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/utils/gdbus
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/system/utils/gdbus
 endif
 
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service
