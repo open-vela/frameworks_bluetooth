@@ -107,7 +107,8 @@ if(CONFIG_BLUETOOTH)
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/*.c)
     list(APPEND CSRCS ${APPEND_FILES})
 
-    if(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET OR CONFIG_BLUETOOTH_STACK_LE_BLUELET)
+    if(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET
+       OR CONFIG_BLUETOOTH_STACK_LE_BLUELET)
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/bluelet/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
@@ -371,7 +372,7 @@ if(CONFIG_BLUETOOTH)
 
     list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/glib)
 
-    list(APPEND INCDIR ${NUTTX_APPS_DIR}/frameworks/utils/gdbus)
+    list(APPEND INCDIR ${NUTTX_APPS_DIR}/frameworks/system/utils/gdbus)
   endif()
 
   list(APPEND INCDIR ${BLUETOOTH_DIR}/service)
@@ -395,7 +396,8 @@ if(CONFIG_BLUETOOTH)
   list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/include)
 
   if(CONFIG_BLUETOOTH_SERVICE)
-    if(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET OR CONFIG_BLUETOOTH_STACK_LE_BLUELET)
+    if(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET
+       OR CONFIG_BLUETOOTH_STACK_LE_BLUELET)
       list(
         APPEND INCDIR
         ${NUTTX_APPS_DIR}/external/bluelet/bluelet/src/samples/stack_adapter/inc
@@ -408,7 +410,8 @@ if(CONFIG_BLUETOOTH)
     if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/include/zephyr)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/)
-      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/kernel/include)
+      list(APPEND INCDIR
+           ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/kernel/include)
     endif()
 
     list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc)
