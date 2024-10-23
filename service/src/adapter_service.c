@@ -1560,6 +1560,11 @@ bt_status_t adapter_on_profile_services_shutdown(uint8_t transport, bool ret)
 bt_status_t adapter_enable(uint8_t opt)
 {
     adapter_service_t* adapter = &g_adapter_service;
+    bt_adapter_state_t state = adapter_get_state();
+
+    if (state == BT_ADAPTER_STATE_ON) {
+        return BT_STATUS_DONE;
+    }
 
     if (opt == SYS_SET_BT_ALL)
         send_to_state_machine((state_machine_t*)adapter->stm, SYS_TURN_ON, NULL);
@@ -1572,6 +1577,11 @@ bt_status_t adapter_enable(uint8_t opt)
 bt_status_t adapter_disable(uint8_t opt)
 {
     adapter_service_t* adapter = &g_adapter_service;
+    bt_adapter_state_t state = adapter_get_state();
+
+    if (state == BT_ADAPTER_STATE_OFF) {
+        return BT_STATUS_DONE;
+    }
 
     if (opt == SYS_SET_BT_ALL)
         send_to_state_machine((state_machine_t*)adapter->stm, SYS_TURN_OFF, NULL);
