@@ -34,7 +34,7 @@ endif
 	CSRCS += service/ipc/*.c
 	CSRCS += service/ipc/socket/src/*.c
 	CSRCS += framework/socket/*.c
-  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/ipc/socket/include
+  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc/socket/include
 else
 endif
 endif
@@ -99,9 +99,9 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP), y)
   CSRCS += service/profiles/a2dp/*.c
   CSRCS += service/profiles/a2dp/codec/*.c
   CSRCS += service/profiles/avrcp/*.c
-  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/a2dp
-  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/a2dp/codec
-  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/avrcp
+  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/a2dp
+  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/a2dp/codec
+  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/avrcp
 endif #CONFIG_BLUETOOTH_A2DP
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SOURCE), y)
@@ -180,7 +180,7 @@ endif #CONFIG_BLUETOOTH_LEAUDIO_VMICP
 
 CSRCS += service/utils/*.c
 CSRCS += service/vhal/*.c
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/vhal
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/vhal
 endif #CONFIG_BLUETOOTH_SERVICE
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
@@ -255,7 +255,7 @@ endif
 endif
 
 # framework/service/stack/tools dependence
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/framework/include
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/framework/include
 
 ifneq ($(CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME)$(CONFIG_OFONO),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/dbus/dbus
@@ -265,20 +265,20 @@ ifneq ($(CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME)$(CONFIG_OFONO),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/system/utils/gdbus
 endif
 
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/src
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/common
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/include
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/profiles/system
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks/include
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/vendor
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks/include
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/src
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/common
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/include
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/system
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/stacks
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/stacks/include
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/vendor
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/stacks/include
 
 ifeq ($(CONFIG_BLUETOOTH_SERVICE), y)
 ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET)$(CONFIG_BLUETOOTH_STACK_LE_BLUELET),)
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/stacks/bluelet/include
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/stacks/bluelet/include
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/bluelet/bluelet/src/samples/stack_adapter/inc
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/vendor/xiaomi/vela/bluelet/inc
 endif
@@ -287,11 +287,11 @@ ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/kernel/include
 endif
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/service/ipc
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
-	CFLAGS	+= ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/tools
+	CFLAGS	+= ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/tools
 endif
 
 ifeq ($(CONFIG_ARCH_SIM),y)
@@ -325,8 +325,8 @@ MAINSRC := $(wildcard $(MAINSRC))
 NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
 
 ifeq ($(CONFIG_BLUETOOTH_FEATURE),y)
-include $(APPDIR)/frameworks/base/feature/Make.defs
-CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/bluetooth/feature/include
+include $(APPDIR)/frameworks/runtimes/feature/Make.defs
+CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/feature/include
 
 CSRCS     += feature/src/system_bluetooth.c
 CSRCS     += feature/src/system_bluetooth_impl.c
@@ -341,16 +341,16 @@ CSRCS     += feature/src/system_bluetooth_bt_a2dpsink_impl.c
 endif
 
 depend::
-	@python3 $(APPDIR)/frameworks/base/feature/tools/jidl/jsongensource.py \
-		$(APPDIR)/frameworks/bluetooth/feature/jidl/bluetooth.jidl -out-dir \
-		$(APPDIR)/frameworks/bluetooth/feature/src -header system_bluetooth.h -source system_bluetooth.c
-	@python3 $(APPDIR)/frameworks/base/feature/tools/jidl/jsongensource.py \
-		$(APPDIR)/frameworks/bluetooth/feature/jidl/bluetooth_bt.jidl -out-dir \
-		$(APPDIR)/frameworks/bluetooth/feature/src -header system_bluetooth_bt.h -source system_bluetooth_bt.c
+	@python3 $(APPDIR)/frameworks/runtimes/feature/tools/jidl/jsongensource.py \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth.jidl -out-dir \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src -header system_bluetooth.h -source system_bluetooth.c
+	@python3 $(APPDIR)/frameworks/runtimes/feature/tools/jidl/jsongensource.py \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth_bt.jidl -out-dir \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src -header system_bluetooth_bt.h -source system_bluetooth_bt.c
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
-	@python3 $(APPDIR)/frameworks/base/feature/tools/jidl/jsongensource.py \
-		$(APPDIR)/frameworks/bluetooth/feature/jidl/bluetooth_bt_a2dpsink.jidl -out-dir \
-		$(APPDIR)/frameworks/bluetooth/feature/src -header system_bluetooth_bt_a2dpsink.h -source system_bluetooth_bt_a2dpsink.c
+	@python3 $(APPDIR)/frameworks/runtimes/feature/tools/jidl/jsongensource.py \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth_bt_a2dpsink.jidl -out-dir \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src -header system_bluetooth_bt_a2dpsink.h -source system_bluetooth_bt_a2dpsink.c
 endif
 
 endif

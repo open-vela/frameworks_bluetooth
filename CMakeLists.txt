@@ -428,9 +428,10 @@ if(CONFIG_BLUETOOTH)
   list(APPEND CFLAGS -Wno-strict-prototypes)
 
   if(CONFIG_BLUETOOTH_FEATURE)
-    set(FEATURE_TOP ${NUTTX_APPS_DIR}/frameworks/base/feature)
+    set(FEATURE_TOP ${NUTTX_APPS_DIR}/frameworks/runtimes/feature)
     list(APPEND INCDIR ${FEATURE_TOP}/include)
-    list(APPEND INCDIR ${NUTTX_APPS_DIR}/frameworks/bluetooth/feature/include)
+    list(APPEND INCDIR
+         ${NUTTX_APPS_DIR}/frameworks/connectivity/bluetooth/feature/include)
 
     list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth.c)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_impl.c)
