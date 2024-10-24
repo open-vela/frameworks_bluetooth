@@ -26,9 +26,12 @@
 #include <sys/socket.h>
 #endif
 
+#include "bt_debug.h"
 #include "bt_list.h"
 #include "service_loop.h"
 #include "utils/log.h"
+
+BT_DEBUG_MKTIMEVAL_S(service_message_callback);
 
 typedef struct {
     struct list_node node;
@@ -102,12 +105,16 @@ static void service_message_callback(uv_async_t* handle)
     service_loop_t* loop = uvloop->data;
     internel_msg_t* imsg;
 
+    BT_DEBUG_ENTER_TIME_SECTION(service_message_callback);
+
     for (;;) {
         uv_mutex_lock(&loop->msg_lock);
         imsg = (internel_msg_t*)list_remove_head(&loop->msg_queue);
         uv_mutex_unlock(&loop->msg_lock);
-        if (!imsg)
+        if (!imsg) {
+            BT_DEBUG_EXIT_TIME_SECTION(service_message_callback);
             return;
+        }
 
         imsg->func(imsg->msg);
         free(imsg);
