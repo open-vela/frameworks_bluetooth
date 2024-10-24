@@ -33,6 +33,20 @@ choice
 		depends on UNQLITE
 endchoice
 
+config BLUETOOTH_DEBUG_TIMEVAL
+    bool "Enable Bluetooth Debug Time"
+    default n
+    help
+        Enable this option to include Bluetooth debug time functionality.
+
+config BLUETOOTH_DEBUG_TIME_UNIT_US
+    bool "Use microseconds for Bluetooth debug time"
+    default n
+    depends on BLUETOOTH_DEBUG_TIMEVAL
+    help
+        Enable this option to use microseconds (us) for Bluetooth debug time.
+        If disabled, milliseconds (ms) will be used by default.
+
 config BLUETOOTH_BREDR_SUPPORT
 	bool "BREDR support"
 	default y
