@@ -146,62 +146,75 @@ static int bt_socket_server_trysend(bt_instance_t* ins)
 static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata)
 {
     bt_instance_t* ins = userdata;
-    bt_message_packet_t packet;
+    bt_message_packet_t* packet = (bt_message_packet_t*)ins->packet;
     int ret;
 
-    ret = recv(fd, &packet, sizeof(packet), 0);
-    if (ret <= 0)
-        return ret;
+    ret = recv(fd, (uint8_t*)packet + ins->offset, sizeof(*packet) - ins->offset, 0);
+    if (ret == 0) {
+        BT_LOGE("%s, bt socket disconnected", __func__);
+        return -1;
+    } else if (ret < 0) {
+        if (errno == EINTR || errno == EAGAIN)
+            return 0;
+        BT_LOGE("%s, bt socket recv ret: %d error: %d", __func__, ret, errno);
+        return -1;
+    }
 
-    if (packet.code > BT_MANAGER_MESSAGE_START && packet.code < BT_MANAGER_MESSAGE_END) {
-        bt_socket_server_manager_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_ADAPTER_MESSAGE_START && packet.code < BT_ADAPTER_MESSAGE_END) {
-        bt_socket_server_adapter_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_DEVICE_MESSAGE_START && packet.code < BT_DEVICE_MESSAGE_END) {
-        bt_socket_server_device_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_A2DP_SOURCE_MESSAGE_START && packet.code < BT_A2DP_SOURCE_MESSAGE_END) {
-        bt_socket_server_a2dp_source_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_A2DP_SINK_MESSAGE_START && packet.code < BT_A2DP_SINK_MESSAGE_END) {
-        bt_socket_server_a2dp_sink_process(poll, fd, ins, &packet);
+    ins->offset += ret;
+    if (ins->offset < sizeof(*packet))
+        return 0;
+    else
+        ins->offset = 0;
+
+    if (packet->code > BT_MANAGER_MESSAGE_START && packet->code < BT_MANAGER_MESSAGE_END) {
+        bt_socket_server_manager_process(poll, fd, ins, packet);
+    } else if (packet->code > BT_ADAPTER_MESSAGE_START && packet->code < BT_ADAPTER_MESSAGE_END) {
+        bt_socket_server_adapter_process(poll, fd, ins, packet);
+    } else if (packet->code > BT_DEVICE_MESSAGE_START && packet->code < BT_DEVICE_MESSAGE_END) {
+        bt_socket_server_device_process(poll, fd, ins, packet);
+    } else if (packet->code > BT_A2DP_SOURCE_MESSAGE_START && packet->code < BT_A2DP_SOURCE_MESSAGE_END) {
+        bt_socket_server_a2dp_source_process(poll, fd, ins, packet);
+    } else if (packet->code > BT_A2DP_SINK_MESSAGE_START && packet->code < BT_A2DP_SINK_MESSAGE_END) {
+        bt_socket_server_a2dp_sink_process(poll, fd, ins, packet);
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
-    } else if (packet.code > BT_AVRCP_TARGET_MESSAGE_START && packet.code < BT_AVRCP_TARGET_MESSAGE_END) {
-        bt_socket_server_avrcp_target_process(poll, fd, ins, &packet);
+    } else if (packet->code > BT_AVRCP_TARGET_MESSAGE_START && packet->code < BT_AVRCP_TARGET_MESSAGE_END) {
+        bt_socket_server_avrcp_target_process(poll, fd, ins, packet);
 #endif
-    } else if (packet.code > BT_HFP_AG_MESSAGE_START && packet.code < BT_HFP_AG_MESSAGE_END) {
-        bt_socket_server_hfp_ag_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_HFP_HF_MESSAGE_START && packet.code < BT_HFP_HF_MESSAGE_END) {
-        bt_socket_server_hfp_hf_process(poll, fd, ins, &packet);
+    } else if (packet->code > BT_HFP_AG_MESSAGE_START && packet->code < BT_HFP_AG_MESSAGE_END) {
+        bt_socket_server_hfp_ag_process(poll, fd, ins, packet);
+    } else if (packet->code > BT_HFP_HF_MESSAGE_START && packet->code < BT_HFP_HF_MESSAGE_END) {
+        bt_socket_server_hfp_hf_process(poll, fd, ins, packet);
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
-    } else if (packet.code > BT_ADVERTISER_MESSAGE_START && packet.code < BT_ADVERTISER_MESSAGE_END) {
-        bt_socket_server_advertiser_process(poll, fd, ins, &packet);
+    } else if (packet->code > BT_ADVERTISER_MESSAGE_START && packet->code < BT_ADVERTISER_MESSAGE_END) {
+        bt_socket_server_advertiser_process(poll, fd, ins, packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-    } else if (packet.code > BT_SCAN_MESSAGE_START && packet.code < BT_SCAN_MESSAGE_END) {
-        bt_socket_server_scan_process(poll, fd, ins, &packet);
+    } else if (packet->code > BT_SCAN_MESSAGE_START && packet->code < BT_SCAN_MESSAGE_END) {
+        bt_socket_server_scan_process(poll, fd, ins, packet);
 #endif
 #if defined(CONFIG_BLUETOOTH_GATT)
-    } else if (packet.code > BT_GATT_CLIENT_MESSAGE_START && packet.code < BT_GATT_CLIENT_MESSAGE_END) {
-        bt_socket_server_gattc_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_GATT_SERVER_MESSAGE_START && packet.code < BT_GATT_SERVER_MESSAGE_END) {
-        bt_socket_server_gatts_process(poll, fd, ins, &packet);
+    } else if (packet->code > BT_GATT_CLIENT_MESSAGE_START && packet->code < BT_GATT_CLIENT_MESSAGE_END) {
+        bt_socket_server_gattc_process(poll, fd, ins, packet);
+    } else if (packet->code > BT_GATT_SERVER_MESSAGE_START && packet->code < BT_GATT_SERVER_MESSAGE_END) {
+        bt_socket_server_gatts_process(poll, fd, ins, packet);
 #endif
-    } else if (packet.code > BT_SPP_MESSAGE_START && packet.code < BT_SPP_MESSAGE_END) {
-        bt_socket_server_spp_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_PAN_MESSAGE_START && packet.code < BT_PAN_MESSAGE_END) {
-        bt_socket_server_pan_process(poll, fd, ins, &packet);
-    } else if (packet.code > BT_HID_DEVICE_MESSAGE_START && packet.code < BT_HID_DEVICE_MESSAGE_END) {
-        bt_socket_server_hid_device_process(poll, fd, ins, &packet);
+    } else if (packet->code > BT_SPP_MESSAGE_START && packet->code < BT_SPP_MESSAGE_END) {
+        bt_socket_server_spp_process(poll, fd, ins, packet);
+    } else if (packet->code > BT_PAN_MESSAGE_START && packet->code < BT_PAN_MESSAGE_END) {
+        bt_socket_server_pan_process(poll, fd, ins, packet);
+    } else if (packet->code > BT_HID_DEVICE_MESSAGE_START && packet->code < BT_HID_DEVICE_MESSAGE_END) {
+        bt_socket_server_hid_device_process(poll, fd, ins, packet);
 #ifdef CONFIG_BLUETOOTH_L2CAP
-    } else if (packet.code > BT_L2CAP_MESSAGE_START && packet.code < BT_L2CAP_MESSAGE_END) {
-        bt_socket_server_l2cap_process(poll, fd, ins, &packet);
+    } else if (packet->code > BT_L2CAP_MESSAGE_START && packet->code < BT_L2CAP_MESSAGE_END) {
+        bt_socket_server_l2cap_process(poll, fd, ins, packet);
 #endif
     } else {
-        BT_LOGE("%s, Unhandled message:%" PRIu32, __func__, packet.code);
+        BT_LOGE("%s, Unhandled message:%" PRIu32, __func__, packet->code);
         assert(0);
         return BT_STATUS_PARM_INVALID;
     }
 
-    return bt_socket_server_send(ins, &packet, packet.code);
+    return bt_socket_server_send(ins, packet, packet->code);
 }
 
 static void bt_socket_server_ins_release(bt_instance_t* ins)
@@ -220,6 +233,9 @@ static void bt_socket_server_ins_release(bt_instance_t* ins)
 
     if (ins->peer_fd)
         close(ins->peer_fd);
+
+    if (ins->packet)
+        free(ins->packet);
 
     bt_list_remove(g_instances_list, ins);
     free(ins);
@@ -278,16 +294,31 @@ static void bt_socket_server_callback(service_poll_t* poll,
 #endif
 
     remote_ins = zalloc(sizeof(bt_instance_t));
+    if (!remote_ins)
+        goto error;
+
+    remote_ins->packet = zalloc(sizeof(bt_message_packet_t));
+    if (!remote_ins->packet)
+        goto error;
+
     list_initialize(&remote_ins->msg_queue);
     remote_ins->peer_fd = fd;
     remote_ins->poll = service_loop_poll_fd(fd, POLL_READABLE,
         bt_socket_server_handle_event, remote_ins);
-    if (!remote_ins->poll) {
-        free(remote_ins);
-        close(fd);
-        return;
-    }
+    if (!remote_ins->poll)
+        goto error;
+
     bt_list_add_tail(g_instances_list, remote_ins);
+    return;
+
+error:
+    if (fd >= 0)
+        close(fd);
+    if (remote_ins) {
+        if (remote_ins->packet)
+            free(remote_ins->packet);
+        free(remote_ins);
+    }
 }
 
 static int bt_socket_server_listen(int family, const char* name, int port)

@@ -347,6 +347,8 @@ static int bt_socket_client_connect(int family, const char* name,
 int bt_socket_client_sendrecv(bt_instance_t* ins, bt_message_packet_t* packet,
     bt_message_type_t code)
 {
+    uint8_t* send_data;
+    int send_size;
     int ret;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
@@ -357,10 +359,24 @@ int bt_socket_client_sendrecv(bt_instance_t* ins, bt_message_packet_t* packet,
 
     ins->cpacket = packet;
 
-    ret = send(ins->peer_fd, packet, sizeof(*packet), 0);
+    send_data = (uint8_t*)packet;
+    send_size = sizeof(*packet);
+    while (send_size > 0) {
+        ret = send(ins->peer_fd, send_data, send_size, 0);
+        if (ret == 0) {
+            break;
+        } else if (ret < 0) {
+            if (errno == EINTR || errno == EAGAIN)
+                continue;
+            break;
+        }
+        send_data += ret;
+        send_size -= ret;
+    }
 
     if (ret <= 0) {
         uv_mutex_unlock(&ins->mutex);
+        BT_LOGE("%s, bt socket send ret: %d error: %d", __func__, ret, errno);
         return BT_STATUS_FAIL;
     }
 
