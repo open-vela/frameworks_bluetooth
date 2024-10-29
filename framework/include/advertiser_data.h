@@ -82,29 +82,248 @@ extern "C" {
 #define BT_AD_FLAG_BREDR_NOT_SUPPORT 4
 #define BT_AD_FLAG_DUAL_MODE 8
 
+/**
+ * @cond
+ */
 typedef struct adv_data {
     uint8_t len;
     uint8_t type;
     uint8_t data[0];
 } adv_data_t;
+/**
+ * @endcond
+ */
 
 typedef struct advertiser_data_ advertiser_data_t;
+
+/**
+ * @brief Advertising data dump callback function.
+ *
+ * Function prototype for dumping advertising data in string format.
+ *
+ * @param str - Null-terminated string to dump.
+ */
 typedef void (*ad_dump_cb_t)(const char* str);
 
+/**
+ * @brief Dump advertising data.
+ *
+ * Parses the advertising data and outputs it using the provided dump callback.
+ *
+ * @param data - Pointer to the advertising data buffer.
+ * @param len - Length of the advertising data buffer.
+ * @param dump - Callback function to output the parsed data.
+ * @return true - Parsing and dumping was successful.
+ * @return false - Parsing failed.
+ *
+ * **Example:**
+ * @code
+static void on_scan_result_cb(bt_scanner_t* scanner, ble_scan_result_t* result)
+{
+    PRINT_ADDR("ScanResult ------[%s]------", &result->addr);
+    PRINT("AddrType:%d", result->addr_type);
+    PRINT("Rssi:%d", result->rssi);
+    PRINT("Type:%d", result->adv_type);
+    advertiser_data_dump((uint8_t*)result->adv_data, result->length, NULL);
+    PRINT("\n");
+}
+ * @endcode
+ */
 bool advertiser_data_dump(uint8_t* data, uint16_t len, ad_dump_cb_t dump);
 
+/**
+ * @brief Create a new advertiser data object.
+ *
+ * Allocates and initializes a new advertiser data object.
+ *
+ * @return advertiser_data_t* - Pointer to the new advertiser data object; NULL on failure.
+ *
+ * **Example:**
+ * @code
+advertiser_data_t* ad = advertiser_data_new();
+if (ad == NULL) {
+    // Handle allocation failure
+}
+ * @endcode
+ */
 advertiser_data_t* advertiser_data_new(void);
+
+/**
+ * @brief Free an advertiser data object.
+ *
+ * Frees the memory associated with an advertiser data object.
+ *
+ * @param ad - Pointer to the advertiser data object to free.
+ *
+ * **Example:**
+ * @code
+advertiser_data_free(ad);
+ * @endcode
+ */
 void advertiser_data_free(advertiser_data_t* ad);
+
+/**
+ * @brief Build the advertising data buffer.
+ *
+ * Constructs the advertising data buffer from the advertiser data object.
+ *
+ * @param ad - Pointer to the advertiser data object.
+ * @param[out] len - Pointer to store the length of the advertising data buffer.
+ * @return uint8_t* - Pointer to the advertising data buffer; NULL on failure.
+ *
+ * **Note:** The returned buffer should be freed by the caller when no longer needed.
+ *
+ * **Example:**
+ * @code
+uint16_t len;
+uint8_t* data = advertiser_data_build(ad, &len);
+if (data != NULL) {
+    // Use the advertising data buffer
+    free(data);
+}
+ * @endcode
+ */
 uint8_t* advertiser_data_build(advertiser_data_t* ad, uint16_t* len);
+
+/**
+ * @brief Set the device name in advertising data.
+ *
+ * Sets the local device name to be included in the advertising data.
+ *
+ * @param ad - Pointer to the advertiser data object.
+ * @param name - Null-terminated string containing the device name.
+ *
+ * **Example:**
+ * @code
+advertiser_data_set_name(ad, "My Device");
+ * @endcode
+ */
 void advertiser_data_set_name(advertiser_data_t* ad, const char* name);
+
+/**
+ * @brief Set the advertising flags.
+ *
+ * Sets the advertising flags to be included in the advertising data.
+ *
+ * @param ad - Pointer to the advertiser data object.
+ * @param flags - Advertising flags, see BT_AD_FLAG_* definitions.
+ *
+ * **Example:**
+ * @code
+advertiser_data_set_flags(ad, BT_AD_FLAG_GENERAL_DISCOVERABLE | BT_AD_FLAG_BREDR_NOT_SUPPORT);
+ * @endcode
+ */
 void advertiser_data_set_flags(advertiser_data_t* ad, uint8_t flags);
+
+/**
+ * @brief Set the GAP appearance.
+ *
+ * Sets the GAP appearance value to be included in the advertising data.
+ *
+ * @param ad - Pointer to the advertiser data object.
+ * @param appearance - Appearance value, see GAP Appearance Values.
+ *
+ * **Example:**
+ * @code
+advertiser_data_set_appearance(ad, 0x03C0); // HID Generic
+ * @endcode
+ */
 void advertiser_data_set_appearance(advertiser_data_t* ad, uint16_t appearance);
+
+/**
+ * @brief Add custom data to advertising data.
+ *
+ * Adds a custom AD structure to the advertising data.
+ *
+ * @param ad - Pointer to the advertiser data object.
+ * @param type - AD type, see BT_AD_* definitions.
+ * @param data - Pointer to the data payload.
+ * @param len - Length of the data payload.
+ *
+ * **Example:**
+ * @code
+uint8_t custom_data[] = {0x01, 0x02, 0x03};
+advertiser_data_add_data(ad, BT_AD_MANUFACTURER_DATA, custom_data, sizeof(custom_data));
+ * @endcode
+ */
 void advertiser_data_add_data(advertiser_data_t* ad, uint8_t type, uint8_t* data, uint8_t len);
+
+/**
+ * @brief Remove custom data from advertising data.
+ *
+ * Removes a custom AD structure from the advertising data.
+ *
+ * @param ad - Pointer to the advertiser data object.
+ * @param type - AD type, see BT_AD_* definitions.
+ * @param data - Pointer to the data payload.
+ * @param len - Length of the data payload.
+ *
+ * **Example:**
+ * @code
+advertiser_data_remove_data(ad, BT_AD_MANUFACTURER_DATA, custom_data, sizeof(custom_data));
+ * @endcode
+ */
 void advertiser_data_remove_data(advertiser_data_t* ad, uint8_t type, uint8_t* data, uint8_t len);
+
+/**
+ * @brief Add manufacturer-specific data to advertising data.
+ *
+ * Adds manufacturer-specific data to the advertising data.
+ *
+ * @param ad - Pointer to the advertiser data object.
+ * @param manufacture_id - Manufacturer ID assigned by the Bluetooth SIG.
+ * @param data - Pointer to the manufacturer-specific data.
+ * @param length - Length of the manufacturer-specific data.
+ *
+ * **Example:**
+ * @code
+uint8_t manuf_data[] = {0x12, 0x34, 0x56};
+advertiser_data_add_manufacture_data(ad, 0x038F, manuf_data, sizeof(manuf_data)); // 0x038F is Xiaomi Inc.
+ * @endcode
+ */
 void advertiser_data_add_manufacture_data(advertiser_data_t* ad,
     uint16_t manufacture_id,
     uint8_t* data, uint8_t length);
+
+/**
+ * @brief Add a service UUID to advertising data.
+ *
+ * Adds a service UUID to the advertising data.
+ *
+ * @param ad - Pointer to the advertiser data object.
+ * @param uuid - Pointer to the UUID to add, see @ref bt_uuid_t.
+ * @return true - UUID added successfully.
+ * @return false - Failed to add UUID.
+ *
+ * **Example:**
+ * @code
+bt_uuid_t service_uuid;
+bt_uuid_from_string("0000180D-0000-1000-8000-00805F9B34FB", &service_uuid); // Heart Rate Service
+advertiser_data_add_service_uuid(ad, &service_uuid);
+ * @endcode
+ */
 bool advertiser_data_add_service_uuid(advertiser_data_t* ad, const bt_uuid_t* uuid);
+
+/**
+ * @brief Add service data to advertising data.
+ *
+ * Adds service-specific data associated with a service UUID to the advertising data.
+ *
+ * @param ad - Pointer to the advertiser data object.
+ * @param uuid - Pointer to the UUID of the service, see @ref bt_uuid_t.
+ * @param data - Pointer to the service data payload.
+ * @param len - Length of the service data payload.
+ * @return true - Service data added successfully.
+ * @return false - Failed to add service data.
+ *
+ * **Example:**
+ * @code
+bt_uuid_t service_uuid;
+bt_uuid_from_string("0000180F-0000-1000-8000-00805F9B34FB", &service_uuid); // Battery Service
+uint8_t battery_level = 85; // 85%
+advertiser_data_add_service_data(ad, &service_uuid, &battery_level, 1);
+ * @endcode
+ */
 bool advertiser_data_add_service_data(advertiser_data_t* ad,
     const bt_uuid_t* uuid,
     uint8_t* data, uint8_t len);
