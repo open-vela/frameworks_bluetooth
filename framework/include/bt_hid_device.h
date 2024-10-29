@@ -47,7 +47,11 @@ extern "C" {
 #define HID_ATTR_MASK_BREDR 0x8000
 
 /**
- * @brief hid descriptor information
+ * @cond
+ */
+
+/**
+ * @brief HID descriptor information
  *
  */
 typedef struct {
@@ -66,7 +70,7 @@ typedef struct {
 } hid_info_t;
 
 /**
- * @brief hid device settings for SDP server
+ * @brief HID device settings for SDP server
  *
  */
 typedef struct {
@@ -77,7 +81,7 @@ typedef struct {
 } hid_device_sdp_settings_t;
 
 /**
- * @brief hid report type
+ * @brief HID report type
  *
  */
 typedef enum {
@@ -88,7 +92,7 @@ typedef enum {
 } hid_report_type_t;
 
 /**
- * @brief hid status code
+ * @brief HID status code
  *
  */
 typedef enum {
@@ -109,79 +113,160 @@ typedef enum {
 } hid_status_error_t;
 
 /**
- * @brief hid app state
+ * @brief HID app state
  *
  */
 typedef enum {
     HID_APP_STATE_NOT_REGISTERED,
     HID_APP_STATE_REGISTERED,
 } hid_app_state_t;
+/**
+ * @endcond
+ */
+
 
 /**
- * @brief hid device app state callback
+ * @brief HID device application state callback.
  *
- * @param cookie - callback cookie.
- * @param state - hid app state
+ * Callback function invoked when the HID application state changes. This callback
+ * is used to notify the HID device about the state transition in interaction 
+ * with the remote HID host.
+ *
+ * @param cookie - `remote_callback_t*`. 
+ *                 See `bt_hid_device_register_callbacks`.
+ * @param state  - New HID application state, see @ref hid_app_state_t.
+ *
+ * **Example:**
+ * @code
+ * void hidd_app_state_callback(void* cookie, hid_app_state_t state)
+ * {
+ *     // Handle HID application state change
+ * }
+ * @endcode
  */
 typedef void (*hidd_app_state_callback)(void* cookie, hid_app_state_t state);
 
 /**
- * @brief hid device connection state callback
+ * @brief HID device connection state callback.
  *
- * @param cookie - callback cookie.
- * @param addr - address of peer device.
- * @param le_hid - TRUE is le link. FALSE is BREDR link
- * @param state - hid connection state
+ * Callback function invoked when the HID connection state changes. This callback
+ * is used to notify the HID device about connection state changes with the remote 
+ * HID host.
+ *
+ * @param cookie - `remote_callback_t*`. 
+ *                 See `bt_hid_device_register_callbacks`.
+ * @param addr   - Address of the peer device, see @ref bt_address_t.
+ * @param le_hid - TRUE if the connection is over LE; FALSE if over BR/EDR.
+ * @param state  - New HID connection state, see @ref profile_connection_state_t.
+ *
+ * **Example:**
+ * @code
+ * void hidd_connection_state_callback(void* cookie, bt_address_t* addr, bool le_hid, profile_connection_state_t state)
+ * {
+ *     // Handle HID connection state change
+ * }
+ * @endcode
  */
 typedef void (*hidd_connection_state_callback)(void* cookie, bt_address_t* addr, bool le_hid,
     profile_connection_state_t state);
 
 /**
- * @brief callback for get the specified report from app
+ * @brief Callback for getting a specified report from the remote HID host.
  *
- * @param cookie - callback cookie.
- * @param addr - address of peer device.
- * @param rpt_type - report type
- * @param rpt_id - report id
- * @param buffer_size - max size to return
+ * Callback function invoked when a GET_REPORT request is received from the remote HID host.
+ *
+ * @param cookie - `remote_callback_t*`. 
+ *                 See `bt_hid_device_register_callbacks`.
+ * @param addr   - Address of the peer device, see @ref bt_address_t.
+ * @param rpt_type - Report type, see @ref hid_report_type_t.
+ * @param rpt_id - Report ID.
+ * @param buffer_size - Maximum size of the report data to return.
+ *
+ * **Example:**
+ * @code
+ * void hidd_get_report_callback(void* cookie, bt_address_t* addr, uint8_t rpt_type,
+ *     uint8_t rpt_id, uint16_t buffer_size)
+ * {
+ *     // Provide the requested report to the remote HID host
+ * }
+ * @endcode
  */
 typedef void (*hidd_get_report_callback)(void* cookie, bt_address_t* addr, uint8_t rpt_type,
     uint8_t rpt_id, uint16_t buffer_size);
 
 /**
- * @brief callback for set the specified report from app
+ * @brief Callback for setting a specified report from the remote HID host.
  *
- * @param cookie - callback cookie.
- * @param addr - address of peer device.
- * @param rpt_type - report type
- * @param rpt_size - size of the report data
- * @param rpt_data - report data
+ * Callback function invoked when a SET_REPORT request is received from the remote HID host.
+ *
+ * @param cookie - `remote_callback_t*`. 
+ *                 See `bt_hid_device_register_callbacks`.
+ * @param addr   - Address of the peer device, see @ref bt_address_t.
+ * @param rpt_type - Report type, see @ref hid_report_type_t.
+ * @param rpt_size - Size of the report data.
+ * @param rpt_data - Pointer to the report data.
+ *
+ * **Example:**
+ * @code
+ * void hidd_set_report_callback(void* cookie, bt_address_t* addr, uint8_t rpt_type,
+ *     uint16_t rpt_size, uint8_t* rpt_data)
+ * {
+ *     // Process the report data received from the remote HID host
+ * }
+ * @endcode
  */
 typedef void (*hidd_set_report_callback)(void* cookie, bt_address_t* addr, uint8_t rpt_type,
     uint16_t rpt_size, uint8_t* rpt_data);
 
 /**
- * @brief callback for receiving reports from host
+ * @brief Callback for receiving reports from the remote HID host.
  *
- * @param cookie - callback cookie.
- * @param addr - address of peer device.
- * @param rpt_type - report type
- * @param rpt_size - size of the report data
- * @param rpt_data - report data
+ * Callback function invoked when an INPUT report is received from the remote HID host.
+ *
+ * @param cookie - `remote_callback_t*`. 
+ *                 See `bt_hid_device_register_callbacks`.
+ * @param addr   - Address of the peer device, see @ref bt_address_t.
+ * @param rpt_type - Report type, see @ref hid_report_type_t.
+ * @param rpt_size - Size of the report data.
+ * @param rpt_data - Pointer to the report data.
+ *
+ * **Example:**
+ * @code
+ * void hidd_receive_report_callback(void* cookie, bt_address_t* addr, uint8_t rpt_type,
+ *     uint16_t rpt_size, uint8_t* rpt_data)
+ * {
+ *     // Handle the report data received from the remote HID host
+ * }
+ * @endcode
  */
 typedef void (*hidd_receive_report_callback)(void* cookie, bt_address_t* addr, uint8_t rpt_type,
     uint16_t rpt_size, uint8_t* rpt_data);
 
 /**
- * @brief hid device virtual cable unplug callback
+ * @brief HID device virtual cable unplug callback.
  *
- * @param cookie - callback cookie.
- * @param addr - address of peer device.
+ * Callback function invoked when a virtual cable unplug request is received from the remote HID host.
+ *
+ * @param cookie - `remote_callback_t*`. 
+ *                 See `bt_hid_device_register_callbacks`.
+ * @param addr   - Address of the peer device, see @ref bt_address_t.
+ *
+ * **Example:**
+ * @code
+ * void hidd_virtual_unplug_callback(void* cookie, bt_address_t* addr)
+ * {
+ *     // Handle virtual cable unplug event initiated by the remote HID host
+ * }
+ * @endcode
  */
 typedef void (*hidd_virtual_unplug_callback)(void* cookie, bt_address_t* addr);
 
 /**
- * @brief hid device event callbacks structure
+ * @cond
+ */
+
+/**
+ * @brief HID device event callbacks structure
  *
  */
 typedef struct {
@@ -193,101 +278,184 @@ typedef struct {
     hidd_receive_report_callback receive_report_cb;
     hidd_virtual_unplug_callback virtual_unplug_cb;
 } hid_device_callbacks_t;
+/**
+ * @endcond
+ */
 
 /**
- * @brief Register callback functions to hid device service
+ * @brief Register callback functions with the HID device service.
  *
- * @param ins - bluetooth client instance.
- * @param callbacks - hid device callback functions.
- * @return void* - callback cookie, NULL on failure.
+ * Registers application callbacks to receive HID device events.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param callbacks - Pointer to the HID device callbacks structure, see @ref hid_device_callbacks_t.
+ * @return void* - Callback cookie to be used in future calls; NULL on failure.
+ *
+ * **Example:**
+ * @code
+void* cookie = bt_hid_device_register_callbacks(ins, &my_hid_device_callbacks);
+if (cookie == NULL) {
+    // Handle error
+}
+ * @endcode
  */
 void* BTSYMBOLS(bt_hid_device_register_callbacks)(bt_instance_t* ins, const hid_device_callbacks_t* callbacks);
 
 /**
- * @brief Unregister hid device callback function
+ * @brief Unregister HID device callback functions.
  *
- * @param ins - bluetooth client instance.
- * @param cookie - callbacks cookie.
- * @return true - on callback unregister success
- * @return false - on callback cookie not found
+ * Unregisters the application callbacks from the HID device service.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param cookie - Callback cookie obtained from registration.
+ * @return true - Unregistration successful.
+ * @return false - Callback cookie not found or unregistration failed.
+ *
+ * **Example:**
+ * @code
+if (bt_hid_device_unregister_callbacks(ins, cookie)) {
+    // Unregistered successfully
+} else {
+    // Handle error
+}
+ * @endcode
  */
 bool BTSYMBOLS(bt_hid_device_unregister_callbacks)(bt_instance_t* ins, void* cookie);
 
 /**
- * @brief Register hid app
+ * @brief Register the HID application.
  *
- * @param ins - bluetooth client instance.
- * @param sdp_setting - hid device sdp setting.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Registers the HID device application.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param sdp_setting - Pointer to the HID device SDP settings, see @ref hid_device_sdp_settings_t.
+ * @param le_hid - TRUE to register as an LE HID device; FALSE for BR/EDR.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ *
+ * **Example:**
+ * @code
+hid_device_sdp_settings_t sdp_settings = {
+    .name = "My HID Device",
+    .description = "Example HID Device",
+    .provider = "My Company",
+    // Initialize hids_info...
+};
+if (bt_hid_device_register_app(ins, &sdp_settings, false) == BT_STATUS_SUCCESS) {
+    // HID application registered
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bt_hid_device_register_app)(bt_instance_t* ins, hid_device_sdp_settings_t* sdp_setting, bool le_hid);
 
 /**
- * @brief Unregister hid app
+ * @brief Unregister the HID application.
  *
- * @param ins - bluetooth client instance.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Unregisters the HID device application.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_hid_device_unregister_app(ins) == BT_STATUS_SUCCESS) {
+    // HID application unregistered
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bt_hid_device_unregister_app)(bt_instance_t* ins);
 
 /**
- * @brief Connect to hid host
+ * @brief Connect to a HID host.
  *
- * @param ins - bluetooth client instance.
- * @param addr - address of peer device.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Initiates a connection to a HID host device.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param addr - Address of the peer device, see @ref bt_address_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_hid_device_connect(ins, &host_addr) == BT_STATUS_SUCCESS) {
+    // Connection initiated
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bt_hid_device_connect)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
- * @brief Disconnect to hid host
+ * @brief Disconnect from a HID host.
  *
- * @param ins - bluetooth client instance.
- * @param addr - address of peer device.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Terminates the connection with a HID host device.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param addr - Address of the peer device, see @ref bt_address_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_hid_device_disconnect(ins, &host_addr) == BT_STATUS_SUCCESS) {
+    // Disconnection initiated
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bt_hid_device_disconnect)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
- * @brief Send report to hid host
+ * @brief Send a report to the HID host.
  *
- * @param ins - bluetooth client instance.
- * @param addr - address of peer device.
- * @param rpt_id - report id.
- * @param rpt_data - report data.
- * @param rpt_size - size of the report data.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Sends a HID report to the connected HID host device.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param addr - Address of the peer device, see @ref bt_address_t.
+ * @param rpt_id - Report ID.
+ * @param rpt_data - Pointer to the report data.
+ * @param rpt_size - Size of the report data.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ *
+ * **Example:**
+ * @code
+uint8_t report_data[] = { report data };
+if (bt_hid_device_send_report(ins, &host_addr, rpt_id, report_data, sizeof(report_data)) == BT_STATUS_SUCCESS) {
+    // Report sent
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bt_hid_device_send_report)(bt_instance_t* ins, bt_address_t* addr, uint8_t rpt_id, uint8_t* rpt_data, int rpt_size);
 
 /**
- * @brief Response report to the Host using GET_REPORT command
+ * @brief Respond with a report to the host's GET_REPORT command.
  *
- * @param ins - bluetooth client instance.
- * @param addr - address of peer device.
- * @param rpt_type - report type.
- * @param rpt_data - report data.
- * @param rpt_size - size of the report data.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Sends a report in response to a GET_REPORT request from the host.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param addr - Address of the peer device, see @ref bt_address_t.
+ * @param rpt_type - Report type, see @ref hid_report_type_t.
+ * @param rpt_data - Pointer to the report data.
+ * @param rpt_size - Size of the report data.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_hid_device_response_report)(bt_instance_t* ins, bt_address_t* addr, uint8_t rpt_type, uint8_t* rpt_data, int rpt_size);
 
 /**
- * @brief Notifies status to the Host using SET_REPORT command
+ * @brief Send local HID device error response to remote HID host.
  *
- * @param ins - bluetooth client instance.
- * @param addr - address of peer device.
- * @param error - error code.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Send local HID device error response to remote HID host.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param addr - Address of the peer device, see @ref bt_address_t.
+ * @param error - Error code, see @ref hid_status_error_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_hid_device_report_error)(bt_instance_t* ins, bt_address_t* addr, hid_status_error_t error);
 
 /**
- * @brief Virtual unplug the current hid host
+ * @brief Perform a virtual cable unplug with the current HID host.
  *
- * @param ins - bluetooth client instance.
- * @param addr - address of peer device.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Simulates the physical disconnection of the HID device from the host.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param addr - Address of the peer device, see @ref bt_address_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_hid_device_virtual_unplug)(bt_instance_t* ins, bt_address_t* addr);
 
