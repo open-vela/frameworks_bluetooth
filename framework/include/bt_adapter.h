@@ -28,8 +28,7 @@ extern "C" {
 #endif
 
 /**
- * @brief adapter state define
- *
+ * @cond
  */
 typedef enum {
     BT_ADAPTER_STATE_OFF = 0,
@@ -40,154 +39,467 @@ typedef enum {
     BT_ADAPTER_STATE_TURNING_OFF,
     BT_ADAPTER_STATE_BLE_TURNING_OFF,
 } bt_adapter_state_t;
+/**
+ * @endcond
+ */
 
 /**
- * @brief Adapter state changed callback
+ * @brief Adapter State Changed Callback.
  *
- * @param cookie - callback cookie.
- * @param state - new adapter state.
+ * State Transition Diagram:
+ * 
+ *     +---------------------------+
+ *     |   BT_ADAPTER_STATE_OFF     |
+ *     +---------------------------+
+ *             |
+ *        turn_on |
+ *             v
+ *     +-------------------------------+
+ *     | BT_ADAPTER_STATE_BLE_TURNING_ON |
+ *     +-------------------------------+
+ *             |
+ *        turn_on |
+ *             v
+ *     +---------------------------+
+ *     |   BT_ADAPTER_STATE_BLE_ON  |
+ *     +---------------------------+
+ *             |
+ *        turn_on |
+ *             v
+ *     +---------------------------+
+ *     | BT_ADAPTER_STATE_TURNING_ON |
+ *     +---------------------------+
+ *             |
+ *        turn_on |
+ *             v
+ *     +---------------------------+
+ *     |     BT_ADAPTER_STATE_ON    |
+ *     +---------------------------+
+ *             |
+ *      turn_off |
+ *             v
+ *     +---------------------------+
+ *     |  BT_ADAPTER_STATE_TURNING_OFF |
+ *     +---------------------------+
+ *             |
+ *      turn_off |
+ *             v
+ *     +-------------------------------+
+ *     | BT_ADAPTER_STATE_BLE_TURNING_OFF |
+ *     +-------------------------------+
+ *             |
+ *        turn_off |
+ *             v
+ *     +---------------------------+
+ *     |   BT_ADAPTER_STATE_OFF     |
+ *     +---------------------------+
+ * 
+ * State Descriptions:
+ * - `BT_ADAPTER_STATE_OFF`: The initial state. The adapter is off.
+ * - `BT_ADAPTER_STATE_BLE_TURNING_ON`: BLE is in the process of being turned on.
+ * - `BT_ADAPTER_STATE_BLE_ON`: BLE is fully on.
+ * - `BT_ADAPTER_STATE_TURNING_ON`: The Bluetooth adapter is turning on.
+ * - `BT_ADAPTER_STATE_ON`: The Bluetooth adapter is fully on.
+ * - `BT_ADAPTER_STATE_TURNING_OFF`: The Bluetooth adapter is turning off.
+ * - `BT_ADAPTER_STATE_BLE_TURNING_OFF`: BLE is turning off.
+ * 
+ * Callback invoked when the Bluetooth adapter state changes.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * 
+ * @param state - The new state of the Bluetooth adapter, as defined in @ref bt_adapter_state_t.
+ *
+ * **Example:**
+ * @code
+void on_adapter_state_changed(void* cookie, bt_adapter_state_t state)
+{
+#ifdef CONFIG_BLUETOOTH_FEATURE
+    bt_instance_t* ins = (bt_instance_t*)cookie;
+    printf("bt_instance: %p\n", ins);
+#else
+    printf("Context:%p, Adapter state changed: %d\n", cookie, state);
+#endif
+}
+
+const adapter_callbacks_t g_adapter_cbs = {
+    .on_adapter_state_changed = on_adapter_state_changed,
+};
+
+int main(int argc, char** argv)
+{
+    bt_instance_t* ins = NULL;
+    void* adapter_callback = NULL;
+
+    ins = bluetooth_create_instance();
+    if (ins == NULL) {
+        printf("create instance error\n");
+        return -1;
+    }
+    printf("create instance success\n");
+    adapter_callback = bt_adapter_register_callback(ins, &g_adapter_cbs);
+}
+ * @endcode
  */
 typedef void (*on_adapter_state_changed_callback)(void* cookie, bt_adapter_state_t state);
 
 /**
- * @brief Adapter discovery state changed callback
+ * @brief Adapter discovery state changed callback.
  *
- * @param cookie - callback cookie.
- * @param state - discovery state (0:stopped, 1:started).
+ * Callback function invoked when the discovery state changes.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param state - Discovery state, see @ref bt_discovery_state_t (0: stopped, 1: started).
+ *
+ * **Example:**
+ * @code
+void on_discovery_state_changed(void* cookie, bt_discovery_state_t state)
+{
+    printf("Discovery state: %s\n", state == BT_DISCOVERY_STATE_STARTED ? "Started" : "Stopped");
+}
+
+const adapter_callbacks_t g_adapter_cbs = {
+    .on_discovery_state_changed = on_discovery_state_changed,
+};
+
+int main(int argc, char** argv)
+{
+    bt_instance_t* ins = NULL;
+    void* adapter_callback = NULL;
+
+    ins = bluetooth_create_instance();
+    if (ins == NULL) {
+        printf("create instance error\n");
+        return -1;
+    }
+    printf("create instance success\n");
+    adapter_callback = bt_adapter_register_callback(ins, &g_adapter_cbs);
+}
+ * @endcode
  */
 typedef void (*on_discovery_state_changed_callback)(void* cookie, bt_discovery_state_t state);
 
 /**
- * @brief Discovery result callback
+ * @brief Discovery result callback.
  *
- * @param cookie - callback cookie.
- * @param remote - romote device info.
+ * Callback function invoked when a remote device is discovered.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param remote - Pointer to remote device information, see @ref bt_discovery_result_t.
+ *
+ * **Example:**
+ * @code
+void on_discovery_result(void* cookie, bt_discovery_result_t* result)
+{
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    bt_addr_ba2str(&result->addr, addr_str);
+    printf("Inquiring: device [%s], name: %s, cod: %08" PRIx32 ", rssi: %d\n", addr_str, result->name, result->cod, result->rssi);
+}
+ * @endcode
  */
 typedef void (*on_discovery_result_callback)(void* cookie, bt_discovery_result_t* remote);
 
 /**
- * @brief Scan mode changed callback
+ * @brief Scan mode changed callback.
  *
- * @param cookie - callback cookie.
- * @param mode - new scan mode.
+ * Callback function invoked when the scan mode changes.
+ *
+  * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param mode - New scan mode, see @ref bt_scan_mode_t.
+ *
+ * **Example:**
+ * @code
+void on_scan_mode_changed(void* cookie, bt_scan_mode_t mode)
+{
+    printf("Adapter new scan mode: %d\n", mode);
+}
+ * @endcode
  */
 typedef void (*on_scan_mode_changed_callback)(void* cookie, bt_scan_mode_t mode);
 
 /**
- * @brief Local device name changed callback
+ * @brief Local device name changed callback.
  *
- * @param cookie - callback cookie.
- * @param device_name - new local name.
+ * Callback function invoked when the local device name changes.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param device_name - New local device name.
+ *
+ * **Example:**
+ * @code
+void on_device_name_changed(void* cookie, const char* device_name)
+{
+    printf("Adapter update device name: %s\n", device_name);
+}
+ * @endcode
  */
 typedef void (*on_device_name_changed_callback)(void* cookie, const char* device_name);
 
 /**
- * @brief Pair request callback (io cap request)
+ * @brief Pair request callback (IO capability request).
  *
- * @param cookie - callback cookie.
- * @param addr - remote addr.
+ * Callback function invoked when a pair request is received.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ *
+ * **Example:**
+ * @code
+void on_pair_request(void* cookie, bt_address_t* addr)
+{
+    // Handle pair request
+}
+ * @endcode
  */
 typedef void (*on_pair_request_callback)(void* cookie, bt_address_t* addr);
 
 /**
- * @brief Pair information display callback
+ * @brief Pair information display callback.
  *
- * @param cookie - callback cookie.
- * @param addr - remote addr.
- * @param transport - transport type (0:BLE, 1:BREDR).
- * @param type - pair type.
- * @param passkey - passkey value, invalid on pair type equal PAIR_TYPE_PASSKEY_CONFIRMATION
+ * Callback function invoked to display pairing information.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ * @param transport - Transport type, see @ref bt_transport_t (0: LE, 1: BR/EDR).
+ * @param type - Pairing type, see @ref bt_pair_type_t.
+ * @param passkey - Passkey value; invalid if pairing type is PAIR_TYPE_PASSKEY_CONFIRMATION
  *                  or PAIR_TYPE_PASSKEY_NOTIFICATION.
+ *
+ * **Example:**
+ * @code
+void on_pair_display(void* cookie, bt_address_t* addr, bt_transport_t transport, bt_pair_type_t type, uint32_t passkey)
+{
+    // Display pairing information
+}
+ * @endcode
  */
 typedef void (*on_pair_display_callback)(void* cookie, bt_address_t* addr, bt_transport_t transport, bt_pair_type_t type, uint32_t passkey);
 
 /**
- * @brief Connect request callback
+ * @brief Connect request callback.
  *
- * @param cookie - callback cookie
- * @param addr - remote addr.
+ * Callback function invoked when a connect request is received.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ *
+ * **Example:**
+ * @code
+void on_connect_request(void* cookie, bt_address_t* addr)
+{
+    // Handle connect request
+}
+ * @endcode
  */
 typedef void (*on_connect_request_callback)(void* cookie, bt_address_t* addr);
 
 /**
- * @brief Connection state changed callback
+ * @brief Connection state changed callback.
  *
- * @param cookie - callback cookie
- * @param addr - remote addr.
- * @param transport - transport type (0:BLE, 1:BREDR).
- * @param state - ACL connection state.
+ * Callback function invoked when the ACL connection state changes.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ * @param transport - Transport type, see @ref bt_transport_t (0: LE, 1: BR/EDR).
+ * @param state - ACL connection state, see @ref connection_state_t.
+ *
+ * **Example:**
+ * @code
+void on_connection_state_changed(void* cookie, bt_address_t* addr, bt_transport_t transport, connection_state_t state)
+{
+    // Handle connection state change
+}
+ * @endcode
  */
 typedef void (*on_connection_state_changed_callback)(void* cookie, bt_address_t* addr, bt_transport_t transport, connection_state_t state);
 
 /**
- * @brief Bond state changed callback
+ * @brief Bond state changed callback.
  *
- * @param cookie - callback cookie.
- * @param addr - remote addr.
- * @param transport - transport type (0:BLE, 1:BREDR).
- * @param state - bond state.
+ * Callback function invoked when the bond state changes.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ * @param transport - Transport type, see @ref bt_transport_t (0: LE, 1: BR/EDR).
+ * @param state - Bond state, see @ref bond_state_t.
+ * @param is_ctkd - Whether cross-transport key derivation is used.
+ *
+ * **Example:**
+ * @code
+void on_bond_state_changed(void* cookie, bt_address_t* addr, bt_transport_t transport, bond_state_t state, bool is_ctkd)
+{
+    // Handle bond state change
+}
+ * @endcode
  */
 typedef void (*on_bond_state_changed_callback)(void* cookie, bt_address_t* addr, bt_transport_t transport, bond_state_t state, bool is_ctkd);
 
 /**
- * @brief Got local OOB data for LE secure connection pairing callback
+ * @brief Got local OOB data for LE secure connection pairing callback.
  *
- * @param cookie - callback cookie.
- * @param addr - remote addr.
- * @param c_val - LE secure connection confirmation value.
- * @param r_val - LE secure connection random value.
+ * Callback function invoked when local OOB data for LE Secure Connections is generated.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ * @param c_val - LE Secure Connections confirmation value.
+ * @param r_val - LE Secure Connections random value.
+ *
+ * **Example:**
+ * @code
+void on_le_sc_local_oob_data_got(void* cookie, bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
+{
+    // Handle OOB data
+}
+ * @endcode
  */
 typedef void (*on_le_sc_local_oob_data_got_callback)(void* cookie, bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val);
 
 /**
- * @brief Remote device name changed callback
+ * @brief Remote device name changed callback.
  *
- * @param cookie - callback cookie.
- * @param addr - remote addr.
- * @param name - remote device name.
+ * Callback function invoked when the remote device's name changes.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ * @param name - New name of the remote device.
+ *
+ * **Example:**
+ * @code
+void on_remote_name_changed(void* cookie, bt_address_t* addr, const char* name)
+{
+    // Handle remote name change
+}
+ * @endcode
  */
 typedef void (*on_remote_name_changed_callback)(void* cookie, bt_address_t* addr, const char* name);
 
 /**
- * @brief Remote device alias changed callback
+ * @brief Remote device alias changed callback.
  *
- * @param cookie - callback cookie.
- * @param addr - remote addr.
- * @param alias - alias, set by user.
+ * Callback function invoked when the remote device's alias changes.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ * @param alias - New alias set by the user.
+ *
+ * **Example:**
+ * @code
+void on_remote_alias_changed(void* cookie, bt_address_t* addr, const char* alias)
+{
+    // Handle remote alias change
+}
+ * @endcode
  */
 typedef void (*on_remote_alias_changed_callback)(void* cookie, bt_address_t* addr, const char* alias);
 
 /**
- * @brief Remote device class changed callback
+ * @brief Remote device class changed callback.
  *
- * @param cookie - callback cookie.
- * @param addr - remote addr.
- * @param cod - remote device class.
+ * Callback function invoked when the remote device's class changes.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ * @param cod - Class of Device (CoD) of the remote device.
+ *
+ * **Example:**
+ * @code
+void on_remote_cod_changed(void* cookie, bt_address_t* addr, uint32_t cod)
+{
+    // Handle remote class of device change
+}
+ * @endcode
  */
 typedef void (*on_remote_cod_changed_callback)(void* cookie, bt_address_t* addr, uint32_t cod);
 
 /**
- * @brief Remote device uuid changed callback
+ * @brief Remote device UUIDs changed callback.
  *
- * @param cookie - callback cookie.
- * @param addr - remote addr.
- * @param uuids - remote device support uuids.
- * @param size - uuid size.
+ * Callback function invoked when the remote device's supported UUIDs change.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ * @param uuids - Array of supported UUIDs, see @ref bt_uuid_t.
+ * @param size - Number of UUIDs in the array.
+ *
+ * **Example:**
+ * @code
+void on_remote_uuids_changed(void* cookie, bt_address_t* addr, bt_uuid_t* uuids, uint16_t size)
+{
+    // Handle remote UUIDs change
+}
+ * @endcode
  */
 typedef void (*on_remote_uuids_changed_callback)(void* cookie, bt_address_t* addr, bt_uuid_t* uuids, uint16_t size);
 
 /**
- * @brief Remote device link mode changed callback
+ * @brief Remote device link mode changed callback.
  *
- * @param cookie - callback cookie.
- * @param addr - remote addr.
- * @param mode - link mode.
- * @param sniff_interval - sniff interval.
+ * Callback function invoked when the link mode with the remote device changes.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ * @param mode - Link mode, see @ref bt_link_mode_t.
+ * @param sniff_interval - Sniff interval if in sniff mode.
+ *
+ * **Example:**
+ * @code
+void on_remote_link_mode_changed(void* cookie, bt_address_t* addr, bt_link_mode_t mode, uint16_t sniff_interval)
+{
+    // Handle link mode change
+}
+ * @endcode
  */
 typedef void (*on_remote_link_mode_changed_callback)(void* cookie, bt_address_t* addr, bt_link_mode_t mode, uint16_t sniff_interval);
+
 /**
- * @brief Adapter callback structure
- *
+ * @cond
  */
 typedef struct {
     on_adapter_state_changed_callback on_adapter_state_changed;
@@ -219,351 +531,607 @@ typedef struct {
     on_remote_cod_changed_callback on_remote_cod_changed;
     on_remote_uuids_changed_callback on_remote_uuids_changed;
 } remote_device_callbacks_t;
+/**
+ * @endcond
+ */
 
 /**
- * @brief Enable bluetooth adapter
+ * @brief Enable the Bluetooth adapter.
  *
- * @param ins - bluetooth client instance.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Turns on the Bluetooth adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_adapter_enable(ins) == BT_STATUS_SUCCESS) {
+    // Adapter enabled successfully
+} else {
+    // Handle error
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bt_adapter_enable)(bt_instance_t* ins);
 
 /**
- * @brief Disable bluetooth adapter
+ * @brief Disable the Bluetooth adapter.
  *
- * @param ins - bluetooth client instance.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Turns off the Bluetooth adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_adapter_disable(ins) == BT_STATUS_SUCCESS) {
+    // Adapter disabled successfully
+} else {
+    // Handle error
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bt_adapter_disable)(bt_instance_t* ins);
 
 /**
- * @brief Enable ble
+ * @brief Enable BLE (Bluetooth Low Energy).
  *
- * @param ins - bluetooth client instance.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Turns on the BLE functionality of the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_enable_le)(bt_instance_t* ins);
 
 /**
- * @brief Disable ble
+ * @brief Disable BLE (Bluetooth Low Energy).
  *
- * @param ins - bluetooth client instance.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Turns off the BLE functionality of the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_disable_le)(bt_instance_t* ins);
 
 /**
- * @brief Get adapter state
+ * @brief Get the current adapter state.
  *
- * @param ins - bluetooth client instance.
- * @return bt_adapter_state_t - adapter state.
+ * Retrieves the current state of the Bluetooth adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return bt_adapter_state_t - Current adapter state, see @ref bt_adapter_state_t.
  */
 bt_adapter_state_t BTSYMBOLS(bt_adapter_get_state)(bt_instance_t* ins);
 
 /**
- * @brief Get adapter device type
+ * @brief Get the adapter device type.
  *
- * @param ins - bluetooth client instance.
- * @return bt_device_type_t - device type(0:EDR, 1:LE, 2:DUAL, 0xFF:unknow).
+ * Retrieves the type of the Bluetooth adapter (e.g., BR/EDR, LE, Dual Mode).
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return bt_device_type_t - Device type (0: BR/EDR, 1: LE, 2: Dual Mode, 0xFF: Unknown).
  */
 bt_device_type_t BTSYMBOLS(bt_adapter_get_type)(bt_instance_t* ins);
 
 /**
- * @brief Set discovery filter
- * @note Not support now.
- * @param ins - bluetooth client instance.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * @brief Set the discovery filter.
+ *
+ * @note Not supported currently.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return bt_status_t - BT_STATUS_UNSUPPORTED.
  */
 bt_status_t BTSYMBOLS(bt_adapter_set_discovery_filter)(bt_instance_t* ins);
 
 /**
- * @brief Start discovery
+ * @brief Start device discovery.
  *
- * @param ins - bluetooth client instance.
- * @param timeout - maximum amount of time specified(Time = N * 1.28s, Range: 1.28 to 61.44 s).
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Initiates the device discovery process to find nearby Bluetooth devices.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param timeout - Maximum amount of time to perform discovery (Time = N * 1.28s, Range: 1.28s to 61.44s).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_adapter_start_discovery(ins, 10) == BT_STATUS_SUCCESS) {
+    // Discovery started successfully
+} else {
+    // Handle error
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bt_adapter_start_discovery)(bt_instance_t* ins, uint32_t timeout);
 
 /**
- * @brief Cancel discovery
+ * @brief Cancel device discovery.
  *
- * @param ins - bluetooth client instance.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Stops an ongoing device discovery process.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_adapter_cancel_discovery(ins) == BT_STATUS_SUCCESS) {
+    // Discovery cancelled successfully
+} else {
+    // Handle error
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bt_adapter_cancel_discovery)(bt_instance_t* ins);
 
 /**
- * @brief Check adapter is discvering
+ * @brief Check if the adapter is discovering.
  *
- * @param ins - bluetooth client instance.
- * @return true - adapter is discovering.
- * @return false - adapter is not discovering.
+ * Determines whether the adapter is currently performing device discovery.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return true - Adapter is discovering.
+ * @return false - Adapter is not discovering.
+ *
+ * **Example:**
+ * @code
+if (bt_adapter_is_discovering(ins)) {
+    // Adapter is discovering
+} else {
+    // Adapter is not discovering
+}
+ * @endcode
  */
 bool BTSYMBOLS(bt_adapter_is_discovering)(bt_instance_t* ins);
 
 /**
- * @brief Read the bluetooth controller address(BD_ADDR)
+ * @brief Read the Bluetooth controller address (BD_ADDR).
  *
- * @param ins - bluetooth client instance.
- * @param[out] addr - BDADDR, empty value on adapter not enabled.
+ * Retrieves the Bluetooth address of the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param[out] addr - Pointer to store the BD_ADDR; empty if adapter is not enabled.
+ *
+ * **Example:**
+ * @code
+bt_address_t addr;
+bt_adapter_get_address(ins, &addr);
+// Use addr as needed
+ * @endcode
  */
 void BTSYMBOLS(bt_adapter_get_address)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
- * @brief Set adapter local name
+ * @brief Set the adapter's local name.
  *
- * @param ins - bluetooth client instance.
- * @param name - adapter local name.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Sets the user-friendly name of the Bluetooth adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param name - New local name for the adapter.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_adapter_set_name(ins, "My Bluetooth Device") == BT_STATUS_SUCCESS) {
+    // Name set successfully
+} else {
+    // Handle error
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bt_adapter_set_name)(bt_instance_t* ins, const char* name);
 
 /**
- * @brief Get adapter local name
+ * @brief Get the adapter's local name.
  *
- * @param ins - bluetooth client instance.
- * @param[out] name - adapter local name from adapter service.
- * @param[in] length - maximum length of name buffer.
+ * Retrieves the user-friendly name of the Bluetooth adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param[out] name - Buffer to store the local name.
+ * @param[in] length - Maximum length of the name buffer.
+ *
+ * **Example:**
+ * @code
+char name[248];
+bt_adapter_get_name(ins, name, sizeof(name));
+// Use name as needed
+ * @endcode
  */
 void BTSYMBOLS(bt_adapter_get_name)(bt_instance_t* ins, char* name, int length);
 
 /**
- * @brief Get adapter supported uuids
- * @note - not support now.
- * @param ins - bluetooth client instance.
- * @param[out] uuids - uuids .
- * @param[out] size - uuid size.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * @brief Get adapter supported UUIDs.
+ *
+ * @note Not supported currently.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param[out] uuids - Array to store UUIDs.
+ * @param[out] size - Number of UUIDs retrieved.
+ * @return bt_status_t - BT_STATUS_UNSUPPORTED.
  */
 bt_status_t BTSYMBOLS(bt_adapter_get_uuids)(bt_instance_t* ins, bt_uuid_t* uuids, uint16_t* size);
 
 /**
- * @brief Set adapter scan mode
+ * @brief Set the adapter's scan mode.
  *
- * @param ins - bluetooth client instance.
- * @param mode - scan mode (0:none, 1:connectable, 2:connectable_discoverable).
- * @param bondable - bondable.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Configures the scan mode of the adapter (e.g., discoverable, connectable).
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param mode - Scan mode, see @ref bt_scan_mode_t (0: none, 1: connectable, 2: connectable_discoverable).
+ * @param bondable - Whether the adapter is bondable.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_adapter_set_scan_mode(ins, BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE, true) == BT_STATUS_SUCCESS) {
+    // Scan mode set successfully
+} else {
+    // Handle error
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bt_adapter_set_scan_mode)(bt_instance_t* ins, bt_scan_mode_t mode, bool bondable);
 
 /**
- * @brief Get adapter scan mode
+ * @brief Get the adapter's scan mode.
  *
- * @param ins - bluetooth client instance.
- * @return bt_scan_mode_t - scan mode (0:none, 1:connectable, 2:connectable_discoverable).
+ * Retrieves the current scan mode of the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return bt_scan_mode_t - Current scan mode, see @ref bt_scan_mode_t.
+ *
+ * **Example:**
+ * @code
+bt_scan_mode_t mode = bt_adapter_get_scan_mode(ins);
+// Use mode as needed
+ * @endcode
  */
 bt_scan_mode_t BTSYMBOLS(bt_adapter_get_scan_mode)(bt_instance_t* ins);
 
 /**
- * @brief Set adapter device class
+ * @brief Set the adapter's device class.
  *
- * @param ins - bluetooth client instance.
- * @param cod - class of device, zero is invalid.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Sets the Class of Device (CoD) for the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param cod - Class of Device; zero is invalid.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_adapter_set_device_class(ins, 0x200404) == BT_STATUS_SUCCESS) {
+    // Device class set successfully
+} else {
+    // Handle error
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bt_adapter_set_device_class)(bt_instance_t* ins, uint32_t cod);
 
 /**
- * @brief Get adapter device class
+ * @brief Get the adapter's device class.
  *
- * @param ins - bluetooth client instance.
- * @return uint32_t - class of device, zero on adapter not enabled.
+ * Retrieves the Class of Device (CoD) of the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return uint32_t - Class of Device; zero if adapter is not enabled.
+ *
+ * **Example:**
+ * @code
+uint32_t cod = bt_adapter_get_device_class(ins);
+// Use cod as needed
+ * @endcode
  */
 uint32_t BTSYMBOLS(bt_adapter_get_device_class)(bt_instance_t* ins);
 
 /**
- * @brief Set BREDR adapter io capability
+ * @brief Set the BR/EDR adapter IO capability.
  *
- * @param ins - bluetooth client instance.
- * @param cap - BREDR io capability.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Sets the Input/Output capability of the BR/EDR adapter for pairing.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param cap - IO capability, see @ref bt_io_capability_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_set_io_capability)(bt_instance_t* ins, bt_io_capability_t cap);
 
 /**
- * @brief Get BREDR adapter io capability
+ * @brief Get the BR/EDR adapter IO capability.
  *
- * @param ins - bluetooth client instance.
- * @return bt_io_capability_t - BREDR io capability.
+ * Retrieves the Input/Output capability of the BR/EDR adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return bt_io_capability_t - Current IO capability, see @ref bt_io_capability_t.
  */
 bt_io_capability_t BTSYMBOLS(bt_adapter_get_io_capability)(bt_instance_t* ins);
 
+/**
+ * @brief Set inquiry scan parameters.
+ *
+ * Configures the inquiry scan parameters for the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param type - Scan type, see @ref bt_scan_type_t.
+ * @param interval - Scan interval (in slots, 0x0012 to 0x1000).
+ * @param window - Scan window (in slots, 0x0011 to 0x1000).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ */
 bt_status_t BTSYMBOLS(bt_adapter_set_inquiry_scan_parameters)(bt_instance_t* ins, bt_scan_type_t type,
     uint16_t interval, uint16_t window);
 
+/**
+ * @brief Set page scan parameters.
+ *
+ * Configures the page scan parameters for the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param type - Scan type, see @ref bt_scan_type_t.
+ * @param interval - Scan interval (in slots, 0x0012 to 0x1000).
+ * @param window - Scan window (in slots, 0x0011 to 0x1000).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ */
 bt_status_t BTSYMBOLS(bt_adapter_set_page_scan_parameters)(bt_instance_t* ins, bt_scan_type_t type,
     uint16_t interval, uint16_t window);
+
 /**
- * @brief Get adapter bonded devices list
+ * @brief Get the list of bonded devices.
  *
- * @param ins - bluetooth client instance.
- * @param[out] addr - out bonded devices address array.
- * @param[out] num - out bonded devices num.
- * @param allocator - address array allocator.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Retrieves the list of devices that are bonded (paired) with the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param transport - Transport type, see @ref bt_transport_t.
+ * @param[out] addr - Pointer to an array of device addresses; allocated using the provided allocator.
+ * @param[out] num - Number of bonded devices.
+ * @param allocator - Allocator function to allocate memory for the address array.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_get_bonded_devices)(bt_instance_t* ins, bt_transport_t transport, bt_address_t** addr, int* num, bt_allocator_t allocator);
 
 /**
- * @brief Get adapter connected devices list
+ * @brief Get the list of connected devices.
  *
- * @param ins - bluetooth client instance.
- * @param[out] addr - out connected devices address array.
- * @param[out] num - out connected devices num.
- * @param allocator - address array allocator.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Retrieves the list of devices that are currently connected to the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param transport - Transport type, see @ref bt_transport_t.
+ * @param[out] addr - Pointer to an array of device addresses; allocated using the provided allocator.
+ * @param[out] num - Number of connected devices.
+ * @param allocator - Allocator function to allocate memory for the address array.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_get_connected_devices)(bt_instance_t* ins, bt_transport_t transport, bt_address_t** addr, int* num, bt_allocator_t allocator);
 
 /**
- * @brief Disconnect all connected device.
- * @note not support.
- * @param ins - bluetooth client instance.
+ * @brief Disconnect all connected devices.
+ *
+ * @note Not supported currently.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
  */
 void BTSYMBOLS(bt_adapter_disconnect_all_devices)(bt_instance_t* ins);
 
 /**
- * @brief Check BREDR adapter is supported
+ * @brief Check if BR/EDR is supported.
  *
- * @param ins - bluetooth client instance.
- * @return true - support.
- * @return false - not support.
+ * Determines whether BR/EDR (Basic Rate/Enhanced Data Rate) is supported by the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return true - BR/EDR is supported.
+ * @return false - BR/EDR is not supported.
  */
 bool BTSYMBOLS(bt_adapter_is_support_bredr)(bt_instance_t* ins);
 
 /**
- * @brief Register callback functions to adapter service
+ * @brief Register callback functions with the adapter service.
  *
- * @param ins - bluetooth client instance.
- * @param callbacks - adapter callback functions.
- * @return void* - callback cookie, NULL on failure.
+ * Registers application callbacks to receive adapter events.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param callbacks - Pointer to the adapter callbacks structure, see @ref adapter_callbacks_t.
+ * @return void* - Callback cookie to be used in future calls; NULL on failure.
+ *
+ * **Example:**
+ * @code
+void* cookie = bt_adapter_register_callback(ins, &my_adapter_callbacks);
+if (cookie == NULL) {
+    // Handle error
+}
+ * @endcode
  */
 void* BTSYMBOLS(bt_adapter_register_callback)(bt_instance_t* ins, const adapter_callbacks_t* adapter_cbs);
 
 /**
- * @brief Unregister adapter callback function
+ * @brief Unregister adapter callback functions.
  *
- * @param ins - bluetooth client instance.
- * @param cookie - callbacks cookie.
- * @return true - on callback unregister success.
- * @return false - on callback cookie not found.
+ * Unregisters the application callbacks from the adapter service.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param cookie - Callback cookie obtained from registration.
+ * @return true - Unregistration successful.
+ * @return false - Callback cookie not found or unregistration failed.
+ *
+ * **Example:**
+ * @code
+if (bt_adapter_unregister_callback(ins, cookie)) {
+    // Unregistered successfully
+} else {
+    // Handle error
+}
+ * @endcode
  */
 bool BTSYMBOLS(bt_adapter_unregister_callback)(bt_instance_t* ins, void* cookie);
 
 /**
- * @brief Check LE adapter is enabled
+ * @brief Check if BLE is enabled.
  *
- * @param ins - bluetooth client instance.
- * @return true - enabled.
- * @return false - disabled.
+ * Determines whether BLE functionality is currently enabled.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return true - BLE is enabled.
+ * @return false - BLE is disabled.
  */
 bool BTSYMBOLS(bt_adapter_is_le_enabled)(bt_instance_t* ins);
 
 /**
- * @brief Check LE adapter is supported
+ * @brief Check if BLE is supported.
  *
- * @param ins - bluetooth client instance.
- * @return true - support.
- * @return false - not support.
+ * Determines whether BLE functionality is supported by the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return true - BLE is supported.
+ * @return false - BLE is not supported.
  */
 bool BTSYMBOLS(bt_adapter_is_support_le)(bt_instance_t* ins);
 
 /**
- * @brief Check LE audio adapter is supported
+ * @brief Check if LE Audio is supported.
  *
- * @param ins - bluetooth client instance.
- * @return true - support.
- * @return false - not support.
+ * Determines whether LE Audio functionality is supported by the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return true - LE Audio is supported.
+ * @return false - LE Audio is not supported.
  */
 bool BTSYMBOLS(bt_adapter_is_support_leaudio)(bt_instance_t* ins);
 
 /**
- * @brief Get LE adapter address
+ * @brief Get the BLE adapter address.
  *
- * @param ins - bluetooth client instance.
- * @param[out] addr - LE address.
- * @param[out] type - LE address type.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Retrieves the BLE address and address type of the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param[out] addr - Pointer to store the BLE address.
+ * @param[out] type - Pointer to store the BLE address type, see @ref ble_addr_type_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_get_le_address)(bt_instance_t* ins, bt_address_t* addr, ble_addr_type_t* type);
 
 /**
- * @brief Set LE adapter private address
+ * @brief Set the BLE private address.
  *
- * @param ins - bluetooth client instance.
- * @param addr - LE address.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Sets the BLE private address of the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param addr - Pointer to the new BLE address.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_set_le_address)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
- * @brief Set Le identity address
+ * @brief Set the BLE identity address.
  *
- * @param ins - bluetooth client instance.
- * @param addr Le identity address
- * @param is_public - true:public, false:static
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Sets the BLE identity address of the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param addr - Pointer to the BLE identity address.
+ * @param is_public - true if the address is public; false if static.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_set_le_identity_address)(bt_instance_t* ins, bt_address_t* addr, bool is_public);
 
 /**
- * @brief Set LE adapter io capability
+ * @brief Set the BLE adapter IO capability.
  *
- * @param ins - bluetooth client instance.
- * @param le_io_cap - LE adapter io capability
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Sets the Input/Output capability of the BLE adapter for pairing.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param le_io_cap - IO capability value.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_set_le_io_capability)(bt_instance_t* ins, uint32_t le_io_cap);
 
 /**
- * @brief Get LE adapter io capability
+ * @brief Get the BLE adapter IO capability.
  *
- * @param ins - bluetooth client instance.
- * @return uint32_t - LE adapter io capability
+ * Retrieves the Input/Output capability of the BLE adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return uint32_t - Current IO capability value.
  */
 uint32_t BTSYMBOLS(bt_adapter_get_le_io_capability)(bt_instance_t* ins);
 
 /**
- * @brief Set Le adapter appearance
+ * @brief Set the BLE adapter appearance.
  *
- * @param ins - bluetooth client instance.
- * @param appearance - le appearance, zero is invalid.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Sets the GAP appearance value of the BLE adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param appearance - GAP appearance value; zero is invalid.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_set_le_appearance)(bt_instance_t* ins, uint16_t appearance);
 
 /**
- * @brief Get Le adapter appearance
+ * @brief Get the BLE adapter appearance.
  *
- * @param ins - bluetooth client instance.
- * @return uint16_t - le appearance, zero on adapter not enabled.
+ * Retrieves the GAP appearance value of the BLE adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @return uint16_t - GAP appearance value; zero if adapter is not enabled.
  */
 uint16_t BTSYMBOLS(bt_adapter_get_le_appearance)(bt_instance_t* ins);
 
 /**
- * @brief Enable/Disable cross transport key derivation.
+ * @brief Enable or disable cross-transport key derivation.
  *
- * @param ins - bluetooth client instance.
- * @param brkey_to_lekey - Enable or disable generating LE LTK from BR link key.
- * @param lekey_to_brkey - Enable or disable generating BR link key from LE LTK.
- * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ * Configures the adapter to enable or disable cross-transport key derivation (CTKD).
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param brkey_to_lekey - Enable generating LE LTK from BR/EDR link key.
+ * @param lekey_to_brkey - Enable generating BR/EDR link key from LE LTK.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
  */
 bt_status_t BTSYMBOLS(bt_adapter_le_enable_key_derivation)(bt_instance_t* ins,
     bool brkey_to_lekey,
     bool lekey_to_brkey);
 
+/**
+ * @brief Add a device to the BLE whitelist.
+ *
+ * Adds a device address to the BLE whitelist.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param addr - Address of the device to add, see @ref bt_address_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ */
 bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist)(bt_instance_t* ins, bt_address_t* addr);
 
+/**
+ * @brief Remove a device from the BLE whitelist.
+ *
+ * Removes a device address from the BLE whitelist.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param addr - Address of the device to remove, see @ref bt_address_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ */
 bt_status_t BTSYMBOLS(bt_adapter_le_remove_whitelist)(bt_instance_t* ins, bt_address_t* addr);
 
+/**
+ * @brief Set AFH (Adaptive Frequency Hopping) channel classification.
+ *
+ * Configures the AFH channel classification for the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param central_frequency - Central frequency in MHz.
+ * @param band_width - Bandwidth in MHz.
+ * @param number - Number of channels.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ */
 bt_status_t BTSYMBOLS(bt_adapter_set_afh_channel_classification)(bt_instance_t* ins, uint16_t central_frequency,
     uint16_t band_width, uint16_t number);
 
+/**
+ * @brief Set automatic sniff mode parameters.
+ *
+ * Configures automatic sniff mode parameters for the adapter.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param params - Pointer to auto sniff parameters, see @ref bt_auto_sniff_params_t.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ */
 bt_status_t BTSYMBOLS(bt_adapter_set_auto_sniff)(bt_instance_t* ins, bt_auto_sniff_params_t* params);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /* __BT_ADAPTER_H__ */
