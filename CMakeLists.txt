@@ -69,11 +69,7 @@ if(CONFIG_BLUETOOTH)
     CSRCS
     ${BLUETOOTH_DIR}/service/src/connection_manager.c
     ${BLUETOOTH_DIR}/service/src/manager_service.c
-    ${BLUETOOTH_DIR}/service/src/power_manager.c
-    ${BLUETOOTH_DIR}/service/vendor/bt_vendor.c
-    ${BLUETOOTH_DIR}/service/common/bt_time.c
-    ${BLUETOOTH_DIR}/service/common/index_allocator.c
-    ${BLUETOOTH_DIR}/service/common/service_loop.c)
+    ${BLUETOOTH_DIR}/service/common/index_allocator.c)
 
   if(CONFIG_BLUETOOTH_STORAGE_PROPERTY_SUPPORT)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/service/common/storage_property.c)
@@ -85,10 +81,14 @@ if(CONFIG_BLUETOOTH)
     list(
       APPEND
       CSRCS
+      ${BLUETOOTH_DIR}/service/common/bt_time.c
+      ${BLUETOOTH_DIR}/service/common/service_loop.c
       ${BLUETOOTH_DIR}/service/src/adapter_service.c
       ${BLUETOOTH_DIR}/service/src/adapter_state.c
       ${BLUETOOTH_DIR}/service/src/btservice.c
       ${BLUETOOTH_DIR}/service/src/device.c
+      ${BLUETOOTH_DIR}/service/src/power_manager.c
+      ${BLUETOOTH_DIR}/service/vendor/bt_vendor.c
       ${BLUETOOTH_DIR}/service/src/hci_parser.c)
 
     if(CONFIG_BLUETOOTH_BLE_ADV)
