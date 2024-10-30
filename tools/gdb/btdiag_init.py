@@ -62,3 +62,32 @@ for module_name in modules_to_register:
             gdb.write(f"Failed to source module {module_path}: {e}\n")
     else:
         gdb.write(f"Module not found: {module_path}\n")
+
+
+# Register the bthelp command in GDB
+class BtHelpCommand(gdb.Command):
+    """Custom command to show help information for Bluetooth-related GDB commands."""
+
+    def __init__(self):
+        super(BtHelpCommand, self).__init__("bthelp", gdb.COMMAND_SUPPORT)
+
+    def invoke(self, arg, from_tty):
+        # Iterate through the modules and execute the help command for each
+        for module_name in modules_to_register:
+            command_name = module_name.split(".")[
+                -1
+            ]  # Extract the command name from module name
+            try:
+                # Print a divider for each command
+                gdb.write(f"\n{'=' * 40}\n")
+                gdb.write(f"Help for command: {command_name}\n")
+                gdb.write(f"{'=' * 40}\n")
+
+                # Execute the help command for each registered module
+                gdb.execute(f"{command_name} -h")
+            except gdb.error as e:
+                gdb.write(f"Failed to execute help for {command_name}: {e}\n")
+
+
+# Instantiate the bthelp command
+BtHelpCommand()
