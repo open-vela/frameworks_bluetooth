@@ -398,7 +398,10 @@ enum {
     BLUETOOTH_USER,
 };
 
-typedef void (*bt_ipc_disconnected_cb_t)(void* cookie, void* user_data, int status);
+typedef struct bt_instance bt_instance_t;
+
+typedef void (*bt_ipc_connected_cb_t)(bt_instance_t* ins, void* user_data);
+typedef void (*bt_ipc_disconnected_cb_t)(bt_instance_t* ins, void* user_data, int status);
 
 typedef struct bt_instance {
     uint32_t app_id;
@@ -460,6 +463,7 @@ typedef struct bt_instance {
 
     bt_list_t* gattc_remote_list;
     bt_list_t* gatts_remote_list;
+    void* priv;
 #endif
 } bt_instance_t;
 
@@ -683,6 +687,27 @@ bool bluetooth_set_external_uv(bt_instance_t* ins, uv_loop_t* ext_loop)
  * @endcode
  */
 bool BTSYMBOLS(bluetooth_set_external_uv)(bt_instance_t* ins, uv_loop_t* ext_loop);
+
+/*
+    Async instance
+*/
+
+/**
+ * @brief Create bluetooth async client instance
+ *
+ * @param loop uv_loop_t
+ * @param connected client instance connected callback
+ * @param disconnected client instance disconnected callback
+ * @return bt_instance_t* - ins on success, NULL on failure.
+ */
+bt_instance_t* bluetooth_create_async_instance(uv_loop_t* loop, bt_ipc_connected_cb_t connected, bt_ipc_disconnected_cb_t disconnected, void* user_data);
+
+/**
+ * @brief Delete bluetooth async client instance
+ *
+ * @param ins bt_instance_t*
+ */
+void bluetooth_delete_async_instance(bt_instance_t* ins);
 
 #ifdef __cplusplus
 }
