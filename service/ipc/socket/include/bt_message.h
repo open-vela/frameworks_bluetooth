@@ -96,6 +96,7 @@ typedef enum {
 typedef struct
 {
     uint32_t code; /* bt_message_type_t */
+    uint64_t context;
     union {
         bt_manager_result_t manager_r;
         bt_adapter_result_t adpt_r;

@@ -33,6 +33,23 @@
 #define nitems(_a) (sizeof(_a) / sizeof(0 [(_a)]))
 #endif /* nitems */
 
+typedef struct {
+    void* user_data;
+    uv_loop_t* loop;
+    uv_connect_t conn_req;
+
+    uv_pipe_t* pipe;
+    bt_instance_t* ins;
+    bt_ipc_connected_cb_t connected;
+    bt_ipc_disconnected_cb_t disconnected;
+
+    bt_message_packet_t* packet;
+    uint32_t offset;
+
+    bt_list_t* pending_queue;
+    callbacks_list_t* adapter_callbacks;
+} bt_socket_async_client_t;
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -49,6 +66,11 @@ extern "C" {
 #endif
 
 /* Client */
+typedef void (*bt_socket_reply_cb_t)(bt_instance_t* ins, bt_message_packet_t* packet, void* cb, void* userdata);
+int bt_socket_async_client_init(bt_instance_t* ins, uv_loop_t* loop, int family,
+    const char* name, const char* cpu, int port, bt_ipc_connected_cb_t connected,
+    bt_ipc_disconnected_cb_t disconnected, void* user_data);
+void bt_socket_async_client_deinit(bt_instance_t* ins);
 
 int bt_socket_client_init(bt_instance_t* ins, int family,
     const char* name, const char* cpu,
@@ -62,6 +84,8 @@ int bt_socket_client_sendrecv(bt_instance_t* ins,
     bt_message_packet_t* packet,
     bt_message_type_t code);
 
+int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* packet,
+    bt_message_type_t code, bt_socket_reply_cb_t reply, void* cb, void* userdata);
 /* Server */
 
 int bt_socket_server_init(const char* name, int port);
@@ -82,7 +106,7 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
 
 int bt_socket_client_adapter_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet);
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async);
 
 /* Device */
 
