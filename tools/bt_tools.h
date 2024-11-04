@@ -80,6 +80,7 @@ typedef struct {
     uv_async_queue_t async;
     uv_thread_t thread;
     uv_sem_t ready;
+    bool async_api;
 } bttool_t;
 
 typedef struct {
@@ -88,6 +89,10 @@ typedef struct {
     int opt; /* use option parameters */
     char* help; /* usage  */
 } bt_command_t;
+
+int execute_async_command(void* handle, int argc, char* argv[]);
+int bttool_async_ins_init(bttool_t* bttool);
+void bttool_async_ins_uninit(bttool_t* bttool);
 
 int execute_command_in_table(void* handle, bt_command_t* table, uint32_t table_size, int argc, char* argv[]);
 int execute_command_in_table_offset(void* handle, bt_command_t* table, uint32_t table_size, int argc, char* argv[], uint8_t offset);
