@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2022 Xiaomi Corporation
+ *  Copyright (C) 2024 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,13 @@
  * limitations under the License.
  ***************************************************************************/
 #include <getopt.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if defined(__NuttX__)
-#include <system/readline.h>
-#endif
 
 #include "bluetooth.h"
 #include "bt_adapter.h"
+#include "bt_async.h"
 #include "bt_tools.h"
 #include "utils.h"
 
@@ -77,33 +74,6 @@ static int set_phy_cmd(void* handle, int argc, char** argv);
 static int dump_cmd(void* handle, int argc, char** argv);
 static int quit_cmd(void* handle, int argc, char** argv);
 
-bt_instance_t* g_bttool_ins = NULL;
-static void* adapter_callback = NULL;
-static bool g_cmd_had_inited = false;
-bool g_auto_accept_pair = true;
-bond_state_t g_bond_state = BOND_STATE_NONE;
-
-static struct {
-    int cmd_err_code;
-    const char* cmd_err_code_desc;
-} cmd_err_map[] = {
-    { CMD_OK, "OK" },
-    { CMD_INVALID_PARAM, "Invalid Parameter" },
-    { CMD_INVALID_OPT, "Invalid Option" },
-    { CMD_INVALID_ADDR, "Invalid Address" },
-    { CMD_PARAM_NOT_ENOUGH, "Parameter Not Enough" },
-    { CMD_UNKNOWN, "Unknown Command" },
-    { CMD_USAGE_FAULT, "Command Usage Fault" },
-    { CMD_ERROR, "API Return Error" },
-};
-
-static struct option main_options[] = {
-    { "async", 0, 0, 'a' },
-    { "help", 0, 0, 'h' },
-    { "version", 0, 0, 'v' },
-    { 0, 0, 0, 0 }
-};
-
 static struct option le_conn_options[] = {
     { "addr", required_argument, 0, 'a' },
     { "type", required_argument, 0, 't' },
@@ -143,7 +113,7 @@ static struct option le_conn_options[] = {
 
 #define SET_LE_PHY_USAGE "set le tx and rx phy, params: <addr><txphy><rxphy>(0:1M, 1:2M, 2:CODED)"
 
-static bt_command_t g_cmd_tables[] = {
+static bt_command_t g_async_cmd_tables[] = {
     { "enable", enable_cmd, 0, "enable stack" },
     { "disable", disable_cmd, 0, "disable stack" },
     { "state", get_state_cmd, 0, "get adapter state" },
@@ -175,9 +145,6 @@ static bt_command_t g_cmd_tables[] = {
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     { "a2dpsrc", a2dp_src_command_exec, 0, "a2dp source cmd,    input \'a2dpsrc\' show usage" },
-#endif
-#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
-    { "avrcpct", avrcp_control_command_exec, 0, "avrcp control cmd,    input \'avrcpct\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     { "hf", hfp_hf_command_exec, 0, "hands-free cmd,    input \'hf\' show usage" },
@@ -276,63 +243,23 @@ static bt_command_t g_pair_cmd_tables[] = {
     //{ "", , "set " },
 };
 
+static void* adapter_callback_async = NULL;
+static bool g_cmd_had_inited = false;
+
+extern bt_instance_t* g_bttool_ins;
+extern bool g_auto_accept_pair;
+extern bond_state_t g_bond_state;
+
+static void status_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
+{
+    PRINT("%s status: %d", __func__, status);
+}
+
 static void bt_tool_init(void* handle)
 {
-#ifdef CONFIG_BLUETOOTH_BLE_SCAN
-    scan_command_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_A2DP_SINK
-    a2dp_sink_commond_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    a2dp_src_commond_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
-    avrcp_control_commond_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_HFP_HF
-    hfp_hf_commond_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_HFP_AG
-    hfp_ag_commond_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_SPP
-    spp_command_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_HID_DEVICE
-    hidd_command_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_PAN
-    pan_command_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_GATT
-    gattc_command_init(handle);
-    gatts_command_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
-    leas_command_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_CLIENT
-    leac_command_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCP
-    lea_mcp_commond_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCS
-    lea_mcs_commond_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_CCP
-    lea_ccp_command_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
-    lea_tbs_command_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
-    lea_vmics_command_init(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
-    lea_vmicp_command_init(handle);
-#endif
+    if (g_cmd_had_inited)
+        return;
+
     g_cmd_had_inited = true;
 }
 
@@ -341,86 +268,29 @@ static void bt_tool_uninit(void* handle)
     if (!g_cmd_had_inited)
         return;
 
-#ifdef CONFIG_BLUETOOTH_BLE_SCAN
-    scan_command_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_A2DP_SINK
-    a2dp_sink_commond_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    a2dp_src_commond_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
-    avrcp_control_commond_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_HFP_HF
-    hfp_hf_commond_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_HFP_AG
-    hfp_ag_commond_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_SPP
-    spp_command_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_HID_DEVICE
-    hidd_command_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_PAN
-    pan_command_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_GATT
-    gattc_command_uninit(handle);
-    gatts_command_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
-    leas_command_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCP
-    lea_mcp_commond_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_MCS
-    lea_mcs_commond_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_CCP
-    lea_ccp_command_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_TBS
-    lea_tbs_command_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICS
-    lea_vmics_command_uninit(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
-    lea_vmicp_command_uninit(handle);
-#endif
     g_cmd_had_inited = false;
-}
-
-static const char* cmd_err_str(int err_code)
-{
-    for (int i = 0; i < ARRAY_SIZE(cmd_err_map); i++) {
-        if (cmd_err_map[i].cmd_err_code == err_code)
-            return cmd_err_map[i].cmd_err_code_desc;
-    }
-
-    return "Correct code ?";
 }
 
 static int enable_cmd(void* handle, int argc, char** argv)
 {
-    bt_adapter_enable(handle);
+    bt_adapter_enable_async(handle, status_cb, NULL);
     return CMD_OK;
 }
 
 static int disable_cmd(void* handle, int argc, char** argv)
 {
-    bt_adapter_disable(handle);
+    bt_adapter_disable_async(handle, status_cb, NULL);
     return CMD_OK;
+}
+
+static void get_state_cb(bt_instance_t* ins, bt_status_t status, bt_adapter_state_t state, void* userdata)
+{
+    PRINT("%s state: %d", __func__, state);
 }
 
 static int get_state_cmd(void* handle, int argc, char** argv)
 {
-    PRINT("Adapter State: %d", bt_adapter_get_state(handle));
+    bt_adapter_get_state_async(handle, get_state_cb, NULL);
     return CMD_OK;
 }
 
@@ -440,10 +310,10 @@ static int discovery_cmd(void* handle, int argc, char** argv)
         }
 
         PRINT("start discovery timeout:%d", timeout);
-        if (bt_adapter_start_discovery(handle, timeout) != BT_STATUS_SUCCESS)
+        if (bt_adapter_start_discovery_async(handle, timeout, status_cb, NULL) != BT_STATUS_SUCCESS)
             return CMD_ERROR;
     } else if (!strcmp(argv[0], "stop")) {
-        if (bt_adapter_cancel_discovery(handle) != BT_STATUS_SUCCESS)
+        if (bt_adapter_cancel_discovery_async(handle, status_cb, NULL) != BT_STATUS_SUCCESS)
             return CMD_ERROR;
     } else {
         return CMD_USAGE_FAULT;
@@ -534,16 +404,21 @@ static int set_scanmode_cmd(void* handle, int argc, char** argv)
     if (scanmode > BT_BR_SCAN_MODE_CONNECTABLE_DISCOVERABLE)
         return CMD_INVALID_PARAM;
 
-    if (bt_adapter_set_scan_mode(handle, scanmode, 1) != BT_STATUS_SUCCESS)
+    if (bt_adapter_set_scan_mode_async(handle, scanmode, 1, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Scan Mode:%d set success", scanmode);
     return CMD_OK;
 }
 
+static void get_scanmode_cb(bt_instance_t* ins, bt_status_t status, bt_scan_mode_t mode, void* userdata)
+{
+    PRINT("Scan Mode:%d", mode);
+}
+
 static int get_scanmode_cmd(void* handle, int argc, char** argv)
 {
-    PRINT("Scan Mode:%d", bt_adapter_get_scan_mode(handle));
+    bt_adapter_get_scan_mode_async(handle, get_scanmode_cb, NULL);
     return CMD_OK;
 }
 
@@ -560,34 +435,43 @@ static int set_iocap_cmd(void* handle, int argc, char** argv)
     if (iocap < BT_IO_CAPABILITY_DISPLAYONLY || iocap > BT_IO_CAPABILITY_KEYBOARDDISPLAY)
         return CMD_INVALID_PARAM;
 
-    if (bt_adapter_set_io_capability(handle, iocap) != BT_STATUS_SUCCESS)
+    if (bt_adapter_set_io_capability_async(handle, iocap, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("IO Capability:%d set success", iocap);
     return CMD_OK;
 }
 
+static void get_iocap_cb(bt_instance_t* ins, bt_status_t status, bt_io_capability_t iocap, void* userdata)
+{
+    PRINT("IO Capability:%d", iocap);
+}
+
 static int get_iocap_cmd(void* handle, int argc, char** argv)
 {
-    PRINT("IO Capability:%d", bt_adapter_get_io_capability(handle));
+    bt_adapter_get_io_capability_async(handle, get_iocap_cb, NULL);
     return CMD_OK;
+}
+
+static void get_local_addr_cb(bt_instance_t* ins, bt_status_t status, bt_address_t* addr, void* userdata)
+{
+    PRINT_ADDR("Local Address:[%s]", addr);
 }
 
 static int get_local_addr_cmd(void* handle, int argc, char** argv)
 {
-    bt_address_t addr;
-
-    bt_adapter_get_address(handle, &addr);
-    PRINT_ADDR("Local Address:[%s]", &addr);
+    bt_adapter_get_address_async(handle, get_local_addr_cb, NULL);
     return CMD_OK;
+}
+
+static void get_appearance_cb(bt_instance_t* ins, bt_status_t status, uint16_t appearance, void* userdata)
+{
+    PRINT("Le appearance:0x%04x", appearance);
 }
 
 static int get_appearance_cmd(void* handle, int argc, char** argv)
 {
-    uint16_t appearance;
-
-    appearance = bt_adapter_get_le_appearance(handle);
-    PRINT("Le appearance:0x%04x", appearance);
+    bt_adapter_get_le_appearance_async(handle, get_appearance_cb, NULL);
     return CMD_OK;
 }
 
@@ -597,7 +481,7 @@ static int set_appearance_cmd(void* handle, int argc, char** argv)
         return CMD_PARAM_NOT_ENOUGH;
 
     uint32_t appearance = strtoul(argv[0], NULL, 16);
-    bt_adapter_set_le_appearance(handle, appearance);
+    bt_adapter_set_le_appearance_async(handle, appearance, status_cb, NULL);
     PRINT("Set Le appearance:0x%04" PRIx32 "", appearance);
 
     return CMD_OK;
@@ -612,19 +496,19 @@ static int set_le_addr_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    bt_adapter_set_le_address(handle, &addr);
+    bt_adapter_set_le_address_async(handle, &addr, status_cb, NULL);
 
     return CMD_OK;
 }
 
+static void get_le_addr_cb(bt_instance_t* ins, bt_status_t status, bt_address_t* addr, ble_addr_type_t type, void* userdata)
+{
+    PRINT_ADDR("LE Address:%s, type:%d", addr, type);
+}
+
 static int get_le_addr_cmd(void* handle, int argc, char** argv)
 {
-    bt_address_t addr;
-    ble_addr_type_t type;
-
-    bt_adapter_get_le_address(handle, &addr, &type);
-    PRINT_ADDR("LE Address:%s, type:%d", &addr, type);
-
+    bt_adapter_get_le_address_async(handle, get_le_addr_cb, NULL);
     return CMD_OK;
 }
 
@@ -642,7 +526,7 @@ static int set_identity_addr_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_PARAM;
     }
 
-    bt_adapter_set_le_identity_address(handle, &addr, type);
+    bt_adapter_set_le_identity_address_async(handle, &addr, type, status_cb, NULL);
 
     return CMD_OK;
 }
@@ -669,20 +553,21 @@ static int set_scan_parameters_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_PARAM;
 
     if (!is_page)
-        bt_adapter_set_inquiry_scan_parameters(handle, type, interval, window);
+        bt_adapter_set_inquiry_scan_parameters_async(handle, type, interval, window, status_cb, NULL);
     else
-        bt_adapter_set_page_scan_parameters(handle, type, interval, window);
+        bt_adapter_set_page_scan_parameters_async(handle, type, interval, window, status_cb, NULL);
 
     return CMD_OK;
 }
 
+static void get_local_name_cb(bt_instance_t* ins, bt_status_t status, const char* name, void* userdata)
+{
+    PRINT("Local Name:%s", name);
+}
+
 static int get_local_name_cmd(void* handle, int argc, char** argv)
 {
-    char name[64 + 1];
-
-    bt_adapter_get_name(handle, name, 64);
-    PRINT("Local Name:%s", name);
-
+    bt_adapter_get_name_async(handle, get_local_name_cb, NULL);
     return CMD_OK;
 }
 
@@ -697,17 +582,21 @@ static int set_local_name_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_PARAM;
     }
 
-    if (bt_adapter_set_name(handle, name) != BT_STATUS_SUCCESS)
+    if (bt_adapter_set_name_async(handle, name, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Local Name:%s set success", name);
     return CMD_OK;
 }
 
+static void get_local_cod_cb(bt_instance_t* ins, bt_status_t status, uint32_t cod, void* userdata)
+{
+    PRINT("Local class of device: 0x%08" PRIx32 ", is HEADSET: %s", cod, IS_HEADSET(cod) ? "true" : "false");
+}
+
 static int get_local_cod_cmd(void* handle, int argc, char** argv)
 {
-    uint32_t cod = bt_adapter_get_device_class(handle);
-    PRINT("Local class of device: 0x%08" PRIx32 ", is HEADSET: %s", cod, IS_HEADSET(cod) ? "true" : "false");
+    bt_adapter_get_device_class_async(handle, get_local_cod_cb, NULL);
     return CMD_OK;
 }
 
@@ -721,7 +610,7 @@ static int set_local_cod_cmd(void* handle, int argc, char** argv)
     if (cod > 0xFFFFFF || cod & 0x3)
         return CMD_INVALID_PARAM;
 
-    if (bt_adapter_set_device_class(handle, cod) != BT_STATUS_SUCCESS)
+    if (bt_adapter_set_device_class_async(handle, cod, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Local class of device:0x%08" PRIx32 " set success", cod);
@@ -741,6 +630,8 @@ static int pair_cmd(void* handle, int argc, char** argv)
 
     return ret;
 }
+
+extern bool g_auto_accept_pair;
 
 static int pair_set_auto_cmd(void* handle, int argc, char** argv)
 {
@@ -781,7 +672,7 @@ static int pair_reply_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_PARAM;
 
     /* TODO: Check bond state*/
-    if (bt_device_pair_request_reply(handle, &addr, reply) != BT_STATUS_SUCCESS)
+    if (bt_device_pair_request_reply_async(handle, &addr, reply, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Device [%s] pair request %s", argv[0], reply ? "Accept" : "Reject");
@@ -812,7 +703,7 @@ static int pair_set_pincode_cmd(void* handle, int argc, char** argv)
     }
 
     /* TODO: Check bond state*/
-    if (bt_device_set_pin_code(handle, &addr, reply, pincode, pincode_len) != BT_STATUS_SUCCESS)
+    if (bt_device_set_pin_code_async(handle, &addr, reply, pincode, pincode_len, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Device [%s] pincode request %s, code:%s", argv[0], reply ? "Accept" : "Reject", pincode);
@@ -852,7 +743,7 @@ static int pair_set_passkey_cmd(void* handle, int argc, char** argv)
     }
 
     /* TODO: Check bond state*/
-    if (bt_device_set_pass_key(handle, &addr, transport, reply, passkey) != BT_STATUS_SUCCESS)
+    if (bt_device_set_pass_key_async(handle, &addr, transport, reply, passkey, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Device [%s] passkey request %s, passkey:%d", argv[0], reply ? "Accept" : "Reject", passkey);
@@ -877,7 +768,7 @@ static int pair_set_confirm_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_PARAM;
 
     /* TODO: Check bond state*/
-    if (bt_device_set_pairing_confirmation(handle, &addr, transport, reply) != BT_STATUS_SUCCESS)
+    if (bt_device_set_pairing_confirmation_async(handle, &addr, transport, reply, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Device [%s] ssp confirmation %s", argv[0], reply ? "Accept" : "Reject");
@@ -931,7 +822,7 @@ static int pair_set_tk_cmd(void* handle, int argc, char** argv)
 
     str2hex(argv[1], tk_val, sizeof(bt_128key_t));
 
-    if (bt_device_set_le_legacy_tk(handle, &addr, tk_val) != BT_STATUS_SUCCESS)
+    if (bt_device_set_le_legacy_tk_async(handle, &addr, tk_val, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Set oob temporary key for le legacy pairing with [%s]", argv[0]);
@@ -963,7 +854,7 @@ static int pair_set_oob_cmd(void* handle, int argc, char** argv)
     str2hex(argv[1], c_val, sizeof(bt_128key_t));
     str2hex(argv[2], r_val, sizeof(bt_128key_t));
 
-    if (bt_device_set_le_sc_remote_oob_data(handle, &addr, c_val, r_val) != BT_STATUS_SUCCESS)
+    if (bt_device_set_le_sc_remote_oob_data_async(handle, &addr, c_val, r_val, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Set remote oob data for le secure connection pairing with [%s]", argv[0]);
@@ -979,7 +870,7 @@ static int pair_get_oob_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    if (bt_device_get_le_sc_local_oob_data(handle, &addr) != BT_STATUS_SUCCESS)
+    if (bt_device_get_le_sc_local_oob_data_async(handle, &addr, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Get local oob data for le secure connection pairing with [%s]", argv[0]);
@@ -995,7 +886,7 @@ static int connect_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    if (bt_device_connect(handle, &addr) != BT_STATUS_SUCCESS)
+    if (bt_device_connect_async(handle, &addr, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Device[%s] connecting", argv[0]);
@@ -1011,7 +902,7 @@ static int disconnect_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    if (bt_device_disconnect(handle, &addr) != BT_STATUS_SUCCESS)
+    if (bt_device_disconnect_async(handle, &addr, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Device[%s] disconnecting", argv[0]);
@@ -1145,7 +1036,7 @@ static int le_connect_cmd(void* handle, int argc, char** argv)
     if (bt_addr_is_empty(&addr))
         return CMD_INVALID_ADDR;
 
-    if (bt_device_connect_le(handle, &addr, addrtype, &params) != BT_STATUS_SUCCESS)
+    if (bt_device_connect_le_async(handle, &addr, addrtype, &params, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -1160,7 +1051,7 @@ static int le_disconnect_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    if (bt_device_disconnect_le(handle, &addr) != BT_STATUS_SUCCESS)
+    if (bt_device_disconnect_le_async(handle, &addr, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("LE Device[%s] disconnecting", argv[0]);
@@ -1181,7 +1072,7 @@ static int create_bond_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_PARAM;
 
     /* TODO: Check bond state*/
-    if (bt_device_create_bond(handle, &addr, transport) != BT_STATUS_SUCCESS)
+    if (bt_device_create_bond_async(handle, &addr, transport, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Device [%s] create bond", argv[0]);
@@ -1198,7 +1089,7 @@ static int cancel_bond_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_ADDR;
 
     /* TODO: Check bond state*/
-    if (bt_device_cancel_bond(handle, &addr) != BT_STATUS_SUCCESS)
+    if (bt_device_cancel_bond_async(handle, &addr, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Device [%s] cancel bond", argv[0]);
@@ -1219,7 +1110,7 @@ static int remove_bond_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_PARAM;
 
     /* TODO: Check bond state*/
-    if (bt_device_remove_bond(handle, &addr, transport) != BT_STATUS_SUCCESS)
+    if (bt_device_remove_bond_async(handle, &addr, transport, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     PRINT("Device [%s] remove bond", argv[0]);
@@ -1243,7 +1134,7 @@ static int set_phy_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_PARAM;
     }
 
-    bt_device_set_le_phy(handle, &addr, tx_phy, rx_phy);
+    bt_device_set_le_phy_async(handle, &addr, tx_phy, rx_phy, status_cb, NULL);
 
     return CMD_OK;
 }
@@ -1262,44 +1153,84 @@ static const char* bond_state_to_string(bond_state_t state)
     }
 }
 
+static void get_device_alias_cb(bt_instance_t* ins, bt_status_t status, const char* alias, void* userdata)
+{
+    PRINT("\tAlias: %s", alias);
+}
+
+static void get_device_name_cb(bt_instance_t* ins, bt_status_t status, const char* alias, void* userdata)
+{
+    PRINT("\tNmae: %s", alias);
+}
+
+static void get_device_class_cb(bt_instance_t* ins, bt_status_t status, uint32_t class, void* userdata)
+{
+    PRINT("\tClass: 0x%08" PRIx32 "", class);
+}
+
+static void get_device_type_cb(bt_instance_t* ins, bt_status_t status, bt_device_type_t type, void* userdata)
+{
+    PRINT("\tDeviceType: %d", type);
+}
+
+static void is_connected_cb(bt_instance_t* ins, bt_status_t status, bool connected, void* userdata)
+{
+    PRINT("\tIsConnected: %d", connected);
+}
+
+static void is_encrypted_cb(bt_instance_t* ins, bt_status_t status, bool encrypted, void* userdata)
+{
+    PRINT("\tIsEncrypted: %d", encrypted);
+}
+
+static void is_bonded_cb(bt_instance_t* ins, bt_status_t status, bool bonded, void* userdata)
+{
+    PRINT("\tIsBonded: %d", bonded);
+}
+
+static void get_bond_state_cb(bt_instance_t* ins, bt_status_t status, bond_state_t state, void* userdata)
+{
+    PRINT("\tBondState: %s", bond_state_to_string(state));
+}
+
+static void is_bond_initiate_local_cb(bt_instance_t* ins, bt_status_t status, bool initiate, void* userdata)
+{
+    PRINT("\tIsBondInitiateLocal: %d", initiate);
+}
+
+static void get_uuids_cb(bt_instance_t* ins, bt_status_t status, bt_uuid_t* uuids, uint16_t uuid_cnt, void* userdata)
+{
+    PRINT("\tUUIDs:[%d]", uuid_cnt);
+    for (int i = 0; i < uuid_cnt; i++) {
+        char uuid_str[40] = { 0 };
+        bt_uuid_to_string(uuids + i, uuid_str, 40);
+        PRINT("\t\tuuid[%-2d]: %s", i, uuid_str);
+    }
+}
+
 static void device_dump(void* handle, bt_address_t* addr, bt_transport_t transport)
 {
-    char uuid_str[40] = { 0 };
-    char name[64] = { 0 };
-    bt_uuid_t* uuids = NULL;
-    uint16_t uuid_cnt = 0;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     bt_addr_ba2str(addr, addr_str);
     PRINT("device [%s]", addr_str);
     if (transport == BT_TRANSPORT_BREDR) {
-        bt_device_get_name(handle, addr, name, 64);
-        PRINT("\tName: %s", name);
-        memset(name, 0, 64);
-        bt_device_get_alias(handle, addr, name, 64);
-        PRINT("\tAlias: %s", name);
-        PRINT("\tClass: 0x%08" PRIx32 "", bt_device_get_device_class(handle, addr));
-        PRINT("\tDeviceType: %d", bt_device_get_device_type(handle, addr));
-        PRINT("\tIsConnected: %d", bt_device_is_connected(handle, addr, transport));
-        PRINT("\tIsEnc: %d", bt_device_is_encrypted(handle, addr, transport));
-        PRINT("\tIsBonded: %d", bt_device_is_bonded(handle, addr, transport));
-        PRINT("\tBondState: %s", bond_state_to_string(bt_device_get_bond_state(handle, addr, transport)));
-        PRINT("\tIsBondInitiateLocal: %d", bt_device_is_bond_initiate_local(handle, addr, transport));
-        bt_device_get_uuids(handle, addr, &uuids, &uuid_cnt, bttool_allocator);
-        if (uuid_cnt) {
-            PRINT("\tUUIDs:[%d]", uuid_cnt);
-            for (int i = 0; i < uuid_cnt; i++) {
-                bt_uuid_to_string(uuids + i, uuid_str, 40);
-                PRINT("\t\tuuid[%-2d]: %s", i, uuid_str);
-            }
-        }
-        free(uuids);
+        bt_device_get_name_async(handle, addr, get_device_name_cb, NULL);
+        bt_device_get_alias_async(handle, addr, get_device_alias_cb, NULL);
+        bt_device_get_device_class_async(handle, addr, get_device_class_cb, NULL);
+        bt_device_get_device_type_async(handle, addr, get_device_type_cb, NULL);
+        bt_device_is_connected_async(handle, addr, transport, is_connected_cb, NULL);
+        bt_device_is_encrypted_async(handle, addr, transport, is_encrypted_cb, NULL);
+        bt_device_is_bonded_async(handle, addr, transport, is_bonded_cb, NULL);
+        bt_device_get_bond_state_async(handle, addr, transport, get_bond_state_cb, NULL);
+        bt_device_is_bond_initiate_local_async(handle, addr, transport, is_bond_initiate_local_cb, NULL);
+        bt_device_get_uuids_async(handle, addr, get_uuids_cb, NULL);
     } else {
-        PRINT("\tIsConnected: %d", bt_device_is_connected(handle, addr, transport));
-        PRINT("\tIsEnc: %d", bt_device_is_encrypted(handle, addr, transport));
-        PRINT("\tIsBonded: %d", bt_device_is_bonded(handle, addr, transport));
-        PRINT("\tBondState: %s", bond_state_to_string(bt_device_get_bond_state(handle, addr, transport)));
-        PRINT("\tIsBondInitiateLocal: %d", bt_device_is_bond_initiate_local(handle, addr, transport));
+        bt_device_is_connected_async(handle, addr, transport, is_connected_cb, NULL);
+        bt_device_is_encrypted_async(handle, addr, transport, is_encrypted_cb, NULL);
+        bt_device_is_bonded_async(handle, addr, transport, is_bonded_cb, NULL);
+        bt_device_get_bond_state_async(handle, addr, transport, get_bond_state_cb, NULL);
+        bt_device_is_bond_initiate_local_async(handle, addr, transport, is_bond_initiate_local_cb, NULL);
     }
 }
 
@@ -1332,16 +1263,32 @@ static int device_set_alias_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_PARAM;
     }
 
-    bt_device_set_alias(handle, &addr, argv[1]);
+    bt_device_set_alias_async(handle, &addr, argv[1], status_cb, NULL);
     PRINT("Device: [%s] alias:%s set success", argv[0], argv[1]);
     return CMD_OK;
 }
 
+static void get_devices_cb(bt_instance_t* ins, bt_status_t status, bt_address_t* addrs, int num, int transport, void* userdata)
+{
+    for (int i = 0; i < num; i++) {
+        device_dump(ins, addrs + i, transport);
+    }
+}
+
+static void get_br_bonded_devices_cb(bt_instance_t* ins, bt_status_t status, bt_address_t* addrs, int num, void* userdata)
+{
+    PRINT("BREDR bonded device cnt:%d", num);
+    get_devices_cb(ins, status, addrs, num, BT_TRANSPORT_BREDR, userdata);
+}
+
+static void get_le_bonded_devices_cb(bt_instance_t* ins, bt_status_t status, bt_address_t* addrs, int num, void* userdata)
+{
+    PRINT("LE bonded device cnt:%d", num);
+    get_devices_cb(ins, status, addrs, num, BT_TRANSPORT_BREDR, userdata);
+}
+
 static int get_bonded_devices_cmd(void* handle, int argc, char** argv)
 {
-    bt_address_t* addrs = NULL;
-    int num = 0;
-
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
@@ -1349,21 +1296,25 @@ static int get_bonded_devices_cmd(void* handle, int argc, char** argv)
     if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
         return CMD_INVALID_PARAM;
 
-    bt_adapter_get_bonded_devices(handle, transport, &addrs, &num, bttool_allocator);
-    for (int i = 0; i < num; i++) {
-        device_dump(handle, addrs + i, transport);
-    }
-    free(addrs);
-    PRINT("bonded device cnt:%d", num);
+    bt_adapter_get_bonded_devices_async(handle, transport,
+        transport == BT_TRANSPORT_BREDR ? get_br_bonded_devices_cb : get_le_bonded_devices_cb, NULL);
 
     return CMD_OK;
 }
 
+static void get_br_connected_devices_cb(bt_instance_t* ins, bt_status_t status, bt_address_t* addrs, int num, void* userdata)
+{
+    PRINT("BREDR connected device cnt:%d", num);
+    get_devices_cb(ins, status, addrs, num, BT_TRANSPORT_BREDR, userdata);
+}
+
+static void get_le_connected_devices_cb(bt_instance_t* ins, bt_status_t status, bt_address_t* addrs, int num, void* userdata)
+{
+    PRINT("LE connected device cnt:%d", num);
+    get_devices_cb(ins, status, addrs, num, BT_TRANSPORT_BREDR, userdata);
+}
 static int get_connected_devices_cmd(void* handle, int argc, char** argv)
 {
-    bt_address_t* addrs = NULL;
-    int num = 0;
-
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
@@ -1371,13 +1322,8 @@ static int get_connected_devices_cmd(void* handle, int argc, char** argv)
     if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
         return CMD_INVALID_PARAM;
 
-    bt_adapter_get_connected_devices(handle, transport, &addrs, &num, bttool_allocator);
-    for (int i = 0; i < num; i++) {
-        device_dump(handle, addrs + i, transport);
-    }
-    free(addrs);
-    PRINT("connected device cnt:%d", num);
-
+    bt_adapter_get_connected_devices_async(handle, transport,
+        transport == BT_TRANSPORT_BREDR ? get_br_connected_devices_cb : get_le_connected_devices_cb, NULL);
     return CMD_OK;
 }
 
@@ -1424,31 +1370,26 @@ static void usage(void)
     printf("Options:\n"
            "\t--help\tDisplay help\n");
     printf("Commands:\n");
-    for (int i = 0; i < ARRAY_SIZE(g_cmd_tables); i++) {
-        printf("\t%-8s\t%s\n", g_cmd_tables[i].cmd, g_cmd_tables[i].help);
+    for (int i = 0; i < ARRAY_SIZE(g_async_cmd_tables); i++) {
+        printf("\t%-8s\t%s\n", g_async_cmd_tables[i].cmd, g_async_cmd_tables[i].help);
     }
     printf("\n"
            "For more information on the usage of each command use:\n"
            "\tbttool <command> --help\n");
 }
 
-static void show_version(void)
-{
-    printf("Version :2.0.1");
-}
-
-static int execute_command(void* handle, int argc, char* argv[])
+int execute_async_command(void* handle, int argc, char* argv[])
 {
     int ret;
 
-    for (int i = 0; i < ARRAY_SIZE(g_cmd_tables); i++) {
-        if (strlen(g_cmd_tables[i].cmd) == strlen(argv[0]) && strncmp(g_cmd_tables[i].cmd, argv[0], strlen(argv[0])) == 0) {
-            if (g_cmd_tables[i].func) {
-                if (g_cmd_tables[i].opt)
-                    ret = g_cmd_tables[i].func(handle, argc, &argv[0]);
+    for (int i = 0; i < ARRAY_SIZE(g_async_cmd_tables); i++) {
+        if (strlen(g_async_cmd_tables[i].cmd) == strlen(argv[0]) && strncmp(g_async_cmd_tables[i].cmd, argv[0], strlen(argv[0])) == 0) {
+            if (g_async_cmd_tables[i].func) {
+                if (g_async_cmd_tables[i].opt)
+                    ret = g_async_cmd_tables[i].func(handle, argc, &argv[0]);
                 else
-                    ret = g_cmd_tables[i].func(handle, argc - 1, &argv[1]);
-                if (g_cmd_tables[i].func == quit_cmd)
+                    ret = g_async_cmd_tables[i].func(handle, argc - 1, &argv[1]);
+                if (g_async_cmd_tables[i].func == quit_cmd)
                     return -2;
                 return ret;
             }
@@ -1465,21 +1406,19 @@ static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
 {
     PRINT("Context:%p, Adapter state changed: %d", cookie, state);
     if (state == BT_ADAPTER_STATE_ON) {
-        char name[64 + 1];
 
         bt_tool_init(g_bttool_ins);
         /* get name */
-        bt_adapter_get_name(g_bttool_ins, name, 64);
+        bt_adapter_get_name_async(g_bttool_ins, get_local_name_cb, NULL);
         /* get io cap */
-        bt_io_capability_t cap = bt_adapter_get_io_capability(g_bttool_ins);
+        bt_adapter_get_io_capability_async(g_bttool_ins, get_iocap_cb, NULL);
         /* get class */
-        uint32_t class = bt_adapter_get_device_class(g_bttool_ins);
+        bt_adapter_get_device_class_async(g_bttool_ins, get_local_cod_cb, NULL);
         /* get scan mode */
-        bt_scan_mode_t mode = bt_adapter_get_scan_mode(g_bttool_ins);
+        bt_adapter_get_scan_mode_async(g_bttool_ins, get_scanmode_cb, NULL);
         /* enable key derivation */
-        bt_adapter_le_enable_key_derivation(g_bttool_ins, true, true);
-        bt_adapter_set_page_scan_parameters(g_bttool_ins, BT_BR_SCAN_TYPE_INTERLACED, 0x400, 0x24);
-        PRINT("Adapter Name: %s, Cap: %d, Class: 0x%08" PRIX32 ", Mode:%d", name, cap, class, mode);
+        bt_adapter_le_enable_key_derivation_async(g_bttool_ins, true, true, status_cb, NULL);
+        bt_adapter_set_page_scan_parameters_async(g_bttool_ins, BT_BR_SCAN_TYPE_INTERLACED, 0x400, 0x24, status_cb, NULL);
     } else if (state == BT_ADAPTER_STATE_TURNING_OFF) {
         /* code */
         bt_tool_uninit(g_bttool_ins);
@@ -1512,7 +1451,7 @@ static void on_device_name_changed_cb(void* cookie, const char* device_name)
 static void on_pair_request_cb(void* cookie, bt_address_t* addr)
 {
     if (g_auto_accept_pair)
-        bt_device_pair_request_reply(g_bttool_ins, addr, true);
+        bt_device_pair_request_reply_async(g_bttool_ins, addr, true, status_cb, NULL);
 
     PRINT_ADDR("Incoming pair request from [%s] %s", addr, g_auto_accept_pair ? "auto accepted" : "please reply");
 }
@@ -1534,7 +1473,7 @@ static void on_pair_display_cb(void* cookie, bt_address_t* addr, bt_transport_t 
             sprintf(buff1, "[SSP][CONFIRM][%" PRIu32 "] please reply:", passkey);
             break;
         }
-        ret = bt_device_set_pairing_confirmation(g_bttool_ins, addr, transport, true);
+        ret = bt_device_set_pairing_confirmation_async(g_bttool_ins, addr, transport, true, status_cb, NULL);
         sprintf(buff1, "[SSP][CONFIRM] Auto confirm [%" PRIu32 "] %s", passkey, ret == BT_STATUS_SUCCESS ? "SUCCESS" : "FAILED");
         break;
     case PAIR_TYPE_PASSKEY_ENTRY:
@@ -1556,7 +1495,7 @@ static void on_pair_display_cb(void* cookie, bt_address_t* addr, bt_transport_t 
 
 static void on_connect_request_cb(void* cookie, bt_address_t* addr)
 {
-    bt_device_connect_request_reply(g_bttool_ins, addr, true);
+    bt_device_connect_request_reply_async(g_bttool_ins, addr, true, status_cb, NULL);
     PRINT_ADDR("Incoming connect request from [%s], auto accepted", addr);
 }
 
@@ -1618,7 +1557,7 @@ static void on_remote_uuids_changed_cb(void* cookie, bt_address_t* addr, bt_uuid
     }
 }
 
-const static adapter_callbacks_t g_adapter_cbs = {
+const static adapter_callbacks_t g_adapter_async_cbs = {
     .on_adapter_state_changed = on_adapter_state_changed_cb,
     .on_discovery_state_changed = on_discovery_state_changed_cb,
     .on_discovery_result = on_discovery_result_cb,
@@ -1636,329 +1575,48 @@ const static adapter_callbacks_t g_adapter_cbs = {
     .on_remote_uuids_changed = on_remote_uuids_changed_cb,
 };
 
-int execute_command_in_table_offset(void* handle, bt_command_t* table, uint32_t table_size, int argc, char* argv[], uint8_t offset)
+static void register_callback_cb(bt_instance_t* ins, bt_status_t status, void* cookie, void* userdata)
 {
-    int ret;
-    bt_command_t* cmd = table;
-
-    for (int i = 0; i < table_size; i++) {
-        if (strlen(cmd->cmd) == strlen(argv[0]) && strncmp(cmd->cmd, argv[0], strlen(argv[0])) == 0) {
-            if (cmd->func) {
-                ret = cmd->func(handle, argc - offset, &argv[offset]);
-                return ret;
-            }
-        }
-        cmd++;
-    }
-    PRINT("Erroneous command %s", argv[0]);
-
-    return CMD_UNKNOWN;
+    *(void**)userdata = cookie;
 }
 
-int execute_command_in_table(void* handle, bt_command_t* table, uint32_t table_size, int argc, char* argv[])
+static void state_on_cb(bt_instance_t* ins, bt_status_t status, bt_adapter_state_t state, void* userdata)
 {
-    return execute_command_in_table_offset(handle, table, table_size, argc, argv, 1);
+    PRINT("%s state: %d", __func__, state);
+
+    if (state == BT_ADAPTER_STATE_ON)
+        bt_tool_init(g_bttool_ins);
 }
 
-static int bttool_ins_init(bttool_t* bttool)
+static void ipc_connected(bt_instance_t* ins, void* userdata)
 {
-    pthread_setschedprio(pthread_self(), CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY);
-    g_bttool_ins = bluetooth_create_instance();
+    PRINT("ipc connected");
+
+    bt_adapter_register_callback_async(ins, &g_adapter_async_cbs, register_callback_cb, &adapter_callback_async);
+    bt_adapter_get_state_async(ins, state_on_cb, NULL);
+}
+
+static void ipc_disconnected(bt_instance_t* ins, void* userdata, int status)
+{
+    PRINT("ipc disconnected");
+}
+
+int bttool_async_ins_init(bttool_t* bttool)
+{
+    g_bttool_ins = bluetooth_create_async_instance(&bttool->loop, ipc_connected, ipc_disconnected, (void*)bttool);
     if (g_bttool_ins == NULL) {
         PRINT("create instance error\n");
         return -1;
     }
 
-    adapter_callback = bt_adapter_register_callback(g_bttool_ins, &g_adapter_cbs);
-    if (bt_adapter_get_state(g_bttool_ins) == BT_ADAPTER_STATE_ON)
-        bt_tool_init(g_bttool_ins);
-
     return 0;
 }
 
-static void bttool_ins_uninit(bttool_t* bttool)
+void bttool_async_ins_uninit(bttool_t* bttool)
 {
     bt_tool_uninit(g_bttool_ins);
-    bt_adapter_unregister_callback(g_bttool_ins, adapter_callback);
-    bluetooth_delete_instance(g_bttool_ins);
+    bt_adapter_unregister_callback_async(g_bttool_ins, adapter_callback_async, NULL, NULL);
+    bluetooth_delete_async_instance(g_bttool_ins);
     g_bttool_ins = NULL;
-    adapter_callback = NULL;
+    adapter_callback_async = NULL;
 }
-
-#ifdef CONFIG_LIBUV_EXTENSION
-static void handle_close_cb(uv_handle_t* handle)
-{
-    uv_stop(uv_handle_get_loop(handle));
-}
-
-static void bttool_execute_command_cb(uv_async_queue_t* handle, void* buffer)
-{
-    int ret;
-    int _argc = 0;
-    char* _argv[32];
-    char* saveptr = NULL;
-    char* tmpstr = buffer;
-    bttool_t* bttool = handle->data;
-
-    memset(_argv, 0, sizeof(_argv));
-
-    // 1. split command
-    while ((tmpstr = strtok_r(tmpstr, " ", &saveptr)) != NULL) {
-        _argv[_argc] = tmpstr;
-        _argc++;
-        tmpstr = NULL;
-    }
-
-    // 2. execute command
-    if (_argc > 0) {
-        if (bttool->async_api) {
-#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
-            ret = execute_async_command(g_bttool_ins, _argc, _argv);
-#else
-            ret = CMD_INVALID_OPT;
-#endif
-        } else
-            ret = execute_command(g_bttool_ins, _argc, _argv);
-        if (ret != CMD_OK) {
-            if (ret == -2) {
-                if (bttool->async_api) {
-#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
-                    bttool_async_ins_uninit(bttool);
-#endif
-                } else
-                    bttool_ins_uninit(bttool);
-                uv_async_queue_close(handle, handle_close_cb);
-            } else
-                PRINT("cmd execute error: [%s]", cmd_err_str(ret));
-        }
-    }
-
-    // 3. free buffer alloced by getline()
-    free(buffer);
-}
-
-static void bttool_command_uvloop_run(bttool_t* bttool)
-{
-    int ret;
-
-    /* This code is used to initialize the async queue. */
-    ret = uv_async_queue_init(&bttool->loop, &bttool->async, bttool_execute_command_cb);
-    if (ret != 0) {
-        PRINT("%s async error: %d", __func__, ret);
-        uv_loop_close(&bttool->loop);
-        return;
-    }
-
-    bttool->async.data = bttool;
-    uv_sem_post(&bttool->ready);
-
-    /* This code is used to start the event loop until there are no more events to process. */
-    uv_run(&bttool->loop, UV_RUN_DEFAULT);
-
-    /* The assert() function is used to check the return value of uv_loop_close().
-       If the return value is 0, it means that the loop is closed successfully,
-       otherwise it means an error occurs.
-    */
-    assert(uv_loop_close(&bttool->loop) == 0);
-}
-
-static void bttool_thread(void* data)
-{
-    bttool_t* bttool = data;
-
-    /* Initialize the event loop, the loop is available
-       before the asynchronous instance is created.
-    */
-    uv_loop_init(&bttool->loop);
-
-    /* initialize synchronous or asynchronous instance.
-       and register callbacks.
-    */
-    if (!bttool->async_api) {
-        bttool_ins_init(bttool);
-    } else {
-#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
-        bttool_async_ins_init(bttool);
-#endif
-    }
-
-    /* This code is used to start the event loop until there are no more events to process. */
-    bttool_command_uvloop_run(bttool);
-}
-
-static int bttool_create_thread(bttool_t* bttool)
-{
-    int ret;
-
-    ret = uv_sem_init(&bttool->ready, 0);
-    if (ret != 0) {
-        PRINT("%s sem init error: %d", __func__, ret);
-        return ret;
-    }
-
-    ret = uv_thread_create(&bttool->thread, bttool_thread, (void*)bttool);
-    if (ret != 0) {
-        PRINT("loop thread create :%d", ret);
-        return ret;
-    }
-
-    pthread_setname_np(bttool->thread, "bttool-cmd-exec");
-    uv_sem_wait(&bttool->ready);
-    uv_sem_destroy(&bttool->ready);
-
-    return 0;
-}
-
-static void bttool_quit(bttool_t* bttool)
-{
-    char* buffer = malloc(5);
-
-    strcpy(buffer, "quit");
-    uv_async_queue_send(&bttool->async, buffer);
-}
-
-int main(int argc, char** argv)
-{
-    int opt;
-    char* buffer = NULL;
-    int ret;
-    size_t len, size = 0;
-    bttool_t bttool = { .async_api = false };
-
-    while ((opt = getopt_long(argc, argv, "a-h-v-d", main_options, NULL)) != -1) {
-        switch (opt) {
-        case 'a':
-#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
-            bttool.async_api = true;
-            break;
-#else
-            PRINT("async not supported");
-            return -1;
-#endif
-        case 'h':
-            usage();
-            exit(0);
-        case 'v':
-            show_version();
-            exit(0);
-            break;
-        default:
-            break;
-        }
-    }
-
-    // Call the bttool_create_thread function to create a new thread
-    // If thread creation fails, the return value is non-zero
-    ret = bttool_create_thread(&bttool);
-    if (ret != 0)
-        return ret;
-
-    while (1) {
-        printf("bttool> ");
-        fflush(stdout);
-
-        len = getline(&buffer, &size, stdin);
-        if (-1 == len) {
-            bttool_quit(&bttool);
-            break;
-        }
-
-        buffer[len] = '\0';
-        if (buffer[0] == '!') {
-#ifdef CONFIG_SYSTEM_SYSTEM
-            system(buffer + 1);
-#endif
-            continue;
-        }
-
-        if (buffer[len - 1] == '\n')
-            buffer[len - 1] = '\0';
-
-        if (strcmp(buffer, "quit") == 0 || strcmp(buffer, "q") == 0) {
-            uv_async_queue_send(&bttool.async, buffer);
-            break;
-        }
-
-        uv_async_queue_send(&bttool.async, buffer);
-
-        buffer = NULL;
-    }
-
-    uv_thread_join(&bttool.thread);
-
-    return 0;
-}
-#else /* CONFIG_LIBUV_EXTENSION */
-int main(int argc, char** argv)
-{
-    int opt;
-    int _argc = 0;
-    char* _argv[32];
-    char* buffer = NULL;
-    char* saveptr;
-    int ret;
-    size_t len, size = 0;
-
-    while ((opt = getopt_long(argc, argv, "h-v-d", main_options, NULL)) != -1) {
-        switch (opt) {
-        case 'h':
-            usage();
-            exit(0);
-        case 'v':
-            show_version();
-            exit(0);
-            break;
-        default:
-            break;
-        }
-    }
-
-    bttool_ins_init(NULL);
-
-    while (1) {
-        printf("bttool> ");
-        fflush(stdout);
-
-        memset(_argv, 0, sizeof(_argv));
-        len = getline(&buffer, &size, stdin);
-        buffer[len] = '\0';
-        if (len < 0)
-            goto quit;
-
-        if (buffer[0] == '!') {
-#ifdef CONFIG_SYSTEM_SYSTEM
-            system(buffer + 1);
-#endif
-            continue;
-        }
-
-        if (buffer[len - 1] == '\n')
-            buffer[len - 1] = '\0';
-
-        saveptr = NULL;
-        char* tmpstr = buffer;
-
-        while ((tmpstr = strtok_r(tmpstr, " ", &saveptr)) != NULL) {
-            _argv[_argc] = tmpstr;
-            _argc++;
-            tmpstr = NULL;
-        }
-
-        if (_argc > 0) {
-            ret = execute_command(g_bttool_ins, _argc, _argv);
-            _argc = 0;
-            if (ret != CMD_OK) {
-                if (ret == -2)
-                    break;
-                PRINT("cmd execute error: [%s]", cmd_err_str(ret));
-            }
-        }
-    }
-
-quit:
-    bttool_ins_uninit(NULL);
-    free(buffer);
-
-    return 0;
-}
-#endif /* CONFIG_LIBUV_EXTENSION */
