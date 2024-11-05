@@ -33,6 +33,7 @@ BT_HFP_AG_MESSAGE_START,
     BT_HFP_AG_NOTIFY_DEVICE_STATUS,
     BT_HFP_AG_VOLUME_CONTROL,
     BT_HFP_AG_SEND_AT_COMMAND,
+    BT_HFP_AG_SEND_VENDOR_SPECIFIC_AT_COMMAND,
     BT_HFP_AG_MESSAGE_END,
 #endif
 
@@ -48,6 +49,7 @@ BT_HFP_AG_MESSAGE_START,
     BT_HFP_AG_ON_HANGUP_CALL,
     BT_HFP_AG_ON_DIAL_CALL,
     BT_HFP_AG_ON_AT_COMMAND_RECEIVED,
+    BT_HFP_AG_ON_VENDOR_SPECIFIC_AT_COMMAND_RECEIVED,
     BT_HFP_AG_CALLBACK_END,
 #endif
 
@@ -113,6 +115,14 @@ BT_HFP_AG_MESSAGE_START,
             uint8_t pad[2];
             char cmd[HFP_AT_LEN_MAX + 1];
         } _bt_hfp_ag_send_at_cmd;
+
+        struct {
+            bt_address_t addr;
+            uint8_t pad[2];
+            char cmd[HFP_COMPANY_PREFIX_LEN_MAX + 1];
+            uint8_t pad1[(HFP_COMPANY_PREFIX_LEN_MAX + 1 + 3) / 4 * 4 - (HFP_COMPANY_PREFIX_LEN_MAX + 1)];
+            char value[HFP_AT_LEN_MAX + 1];
+        } _bt_hfp_ag_send_vendor_specific_at_cmd;
     } bt_message_hfp_ag_t;
 
     typedef union {
@@ -159,6 +169,14 @@ BT_HFP_AG_MESSAGE_START,
             uint8_t pad[2];
             char cmd[HFP_AT_LEN_MAX + 1];
         } _on_at_cmd_received;
+
+        struct {
+            bt_address_t addr;
+            uint16_t company_id;
+            char command[HFP_COMPANY_PREFIX_LEN_MAX + 1];
+            uint8_t pad1[(HFP_COMPANY_PREFIX_LEN_MAX + 1 + 3) / 4 * 4 - (HFP_COMPANY_PREFIX_LEN_MAX + 1)];
+            char value[HFP_AT_LEN_MAX + 1];
+        } _on_vend_spec_at_cmd_received;
     } bt_message_hfp_ag_callbacks_t;
 
 #ifdef __cplusplus

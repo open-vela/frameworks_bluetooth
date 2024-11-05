@@ -151,3 +151,10 @@ bt_status_t BTSYMBOLS(bt_hfp_ag_send_at_command)(bt_instance_t* ins, bt_address_
 
     return profile->send_at_command(addr, at_command);
 }
+
+bt_status_t BTSYMBOLS(bt_hfp_ag_send_vendor_specific_at_command)(bt_instance_t* ins, bt_address_t* addr, const char* command, const char* value)
+{
+    hfp_ag_interface_t* profile = get_profile_service();
+
+    return profile->send_vendor_specific_at_command(addr, command, value);
+}

@@ -173,6 +173,25 @@ static void on_at_cmd_received_cb(void* cookie, bt_address_t* addr, const char* 
     bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_AT_COMMAND_RECEIVED);
 }
 
+static void on_vendor_specific_at_cmd_received_cb(void* cookie, bt_address_t* addr, const char* command, uint16_t company_id, const char* value)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_vend_spec_at_cmd_received.addr, addr, sizeof(bt_address_t));
+    if (command != NULL)
+        strlcpy(packet.hfp_ag_cb._on_vend_spec_at_cmd_received.command, command,
+            sizeof(packet.hfp_ag_cb._on_vend_spec_at_cmd_received.command));
+
+    packet.hfp_ag_cb._on_vend_spec_at_cmd_received.company_id = company_id;
+
+    if (value != NULL)
+        strlcpy(packet.hfp_ag_cb._on_vend_spec_at_cmd_received.value, value,
+            sizeof(packet.hfp_ag_cb._on_vend_spec_at_cmd_received.value));
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_VENDOR_SPECIFIC_AT_COMMAND_RECEIVED);
+}
+
 const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
     .connection_state_cb = on_connection_state_changed_cb,
     .audio_state_cb = on_audio_state_changed_cb,
@@ -184,6 +203,7 @@ const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
     .hangup_call_cb = on_hangup_call_cb,
     .dial_call_cb = on_dial_call_cb,
     .at_cmd_cb = on_at_cmd_received_cb,
+    .vender_specific_at_cmd_cb = on_vendor_specific_at_cmd_received_cb,
 };
 
 /****************************************************************************
@@ -297,6 +317,12 @@ void bt_socket_server_hfp_ag_process(service_poll_t* poll, int fd,
             &packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr,
             packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.cmd);
         break;
+    case BT_HFP_AG_SEND_VENDOR_SPECIFIC_AT_COMMAND:
+        packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_send_vendor_specific_at_command)(ins,
+            &packet->hfp_ag_pl._bt_hfp_ag_send_vendor_specific_at_cmd.addr,
+            packet->hfp_ag_pl._bt_hfp_ag_send_vendor_specific_at_cmd.cmd,
+            packet->hfp_ag_pl._bt_hfp_ag_send_vendor_specific_at_cmd.value);
+        break;
     default:
         break;
     }
@@ -364,6 +390,14 @@ int bt_socket_client_hfp_ag_callback(service_poll_t* poll,
             at_cmd_cb,
             &packet->hfp_ag_cb._on_at_cmd_received.addr,
             packet->hfp_ag_cb._on_at_cmd_received.cmd);
+        break;
+    case BT_HFP_AG_ON_VENDOR_SPECIFIC_AT_COMMAND_RECEIVED:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+            vender_specific_at_cmd_cb,
+            &packet->hfp_ag_cb._on_vend_spec_at_cmd_received.addr,
+            packet->hfp_ag_cb._on_vend_spec_at_cmd_received.command,
+            packet->hfp_ag_cb._on_vend_spec_at_cmd_received.company_id,
+            packet->hfp_ag_cb._on_vend_spec_at_cmd_received.value);
         break;
     default:
         return BT_STATUS_PARM_INVALID;
