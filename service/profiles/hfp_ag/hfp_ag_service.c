@@ -681,6 +681,21 @@ bt_status_t hfp_ag_send_clcc_response(bt_address_t* addr, uint32_t index, hfp_ca
     return bt_sal_hfp_ag_clcc_response(addr, index, dir, state, mode, mpty, type, number);
 }
 
+bt_status_t hfp_ag_send_vendor_specific_at_command(bt_address_t* addr, const char* command, const char* value)
+{
+    if (!command || !value)
+        return BT_STATUS_PARM_INVALID;
+
+    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_SEND_VENDOR_SPECIFIC_AT_COMMAND, addr);
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    AG_MSG_ADD_STR(msg, 1, command, strlen(command));
+    AG_MSG_ADD_STR(msg, 2, value, strlen(value));
+
+    return hfp_ag_send_message(msg);
+}
+
 static const hfp_ag_interface_t agInterface = {
     .size = sizeof(agInterface),
     .register_callbacks = hfp_ag_register_callbacks,
@@ -702,6 +717,7 @@ static const hfp_ag_interface_t agInterface = {
     .dial_response = hfp_ag_dial_result,
     .send_at_command = hfp_ag_send_at_command,
     .send_clcc_response = hfp_ag_send_clcc_response,
+    .send_vendor_specific_at_command = hfp_ag_send_vendor_specific_at_command,
 };
 
 static const void* get_ag_profile_interface(void)
@@ -777,6 +793,12 @@ void ag_service_notify_clcc_cmd(bt_address_t* addr)
     BT_LOGD("%s", __func__);
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, clcc_cmd_cb, addr);
 }
+void ag_service_notify_vendor_specific_cmd(bt_address_t* addr, const char* command, uint16_t company_id, const char* value)
+{
+    BT_LOGD("%s, command:%s, value:%s", __func__, command, value);
+    AG_CALLBACK_FOREACH(g_ag_service.callbacks, vender_specific_at_cmd_cb, addr, command, company_id, value);
+}
+
 void hfp_ag_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,
     profile_connection_reason_t reason, uint32_t remote_features)
 {

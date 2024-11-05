@@ -305,6 +305,17 @@ typedef void (*hfp_ag_clcc_cmd_received_callback)(void* cookie, bt_address_t* ad
  */
 
 /**
+ * @brief HFP vendor specific AT command received callback
+ *
+ * @param cookie - callback cookie.
+ * @param command - The prefix of the AT command.
+ * @param company_id - Bluetooth company ID.
+ * @param value - AT command value.
+ * @param addr - address of peer HF device.
+ */
+typedef void (*hfp_ag_vend_spec_at_cmd_received_callback)(void* cookie, bt_address_t* addr, const char* command, uint16_t company_id, const char* value);
+
+/**
  * @brief HFP AG callback structure
  *
  */
@@ -321,6 +332,7 @@ typedef struct
     hfp_ag_hangup_call_callback hangup_call_cb;
     hfp_ag_dial_call_callback dial_call_cb;
     hfp_ag_at_cmd_received_callback at_cmd_cb;
+    hfp_ag_vend_spec_at_cmd_received_callback vender_specific_at_cmd_cb;
     hfp_ag_clcc_cmd_received_callback clcc_cmd_cb;
 } hfp_ag_callbacks_t;
 
@@ -878,6 +890,17 @@ int bt_hfp_ag_send_clcc_response(bt_instance_t* ins, bt_address_t* addr, uint32_
 bt_status_t BTSYMBOLS(bt_hfp_ag_send_clcc_response)(bt_instance_t* ins, bt_address_t* addr,
     uint32_t index, hfp_call_direction_t dir, hfp_ag_call_state_t state, hfp_call_mode_t mode,
     hfp_call_mpty_type_t mpty, hfp_call_addrtype_t type, const char* number);
+
+/**
+ * @brief Send vendor specific AT Command
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @param command - the prefix of the AT command to be send.
+ * @param value - the value of the AT command to be send.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_ag_send_vendor_specific_at_command)(bt_instance_t* ins, bt_address_t* addr, const char* command, const char* value);
 #ifdef __cplusplus
 }
 #endif
