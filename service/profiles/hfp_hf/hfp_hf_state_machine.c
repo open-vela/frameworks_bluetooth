@@ -38,10 +38,12 @@
 
 #define HFP_HF_RETRY_MAX 1
 
+#ifdef CONFIG_HFP_HF_WEBCHAT_BLOCKER
 const static char voip_call_number[][HFP_PHONENUM_DIGITS_MAX] = {
     "10000000",
     "10000001"
 };
+#endif
 
 typedef struct _hf_state_machine {
     state_machine_t sm;
