@@ -169,6 +169,7 @@ typedef struct {
     struct list_node pm_services;
     struct list_node pm_devices;
     bool inited;
+    uint16_t last_profile_id;
 
     bt_pm_timer_t pm_timer[CONFIG_BLUETOOTH_PM_MAX_TIMER_NUMBER];
     bt_pm_hanlde_callback_t pm_callback;
@@ -471,6 +472,7 @@ static bool pm_prefer_config(bt_address_t* peer_addr, bt_pm_prefer_mode_t* pm_ac
             timeout = action->timeout;
             id = config->profile_id;
             allow_mask = table->allow_mask;
+            manager->last_profile_id = id;
             ret = true;
         }
     }
@@ -740,6 +742,7 @@ void bt_pm_init(void)
     }
 
     manager->inited = true;
+    manager->last_profile_id = PROFILE_UNKOWN;
     bt_pm_register(bt_pm_hanlde_callback);
     list_initialize(&manager->pm_services);
     list_initialize(&manager->pm_devices);
@@ -762,6 +765,7 @@ void bt_pm_cleanup(void)
 void bt_pm_remote_link_mode_changed(bt_address_t* addr, uint8_t mode, uint16_t sniff_interval)
 {
     bt_pm_device_t* device;
+    bt_pm_manager_t* manager = &g_pm_manager;
 
     BT_LOGD("%s, addr:%s, mode:%d, sniff_interval:%" PRId16, __func__, bt_addr_str(addr), mode, sniff_interval);
     device = pm_conn_device_find(addr);
@@ -776,7 +780,7 @@ void bt_pm_remote_link_mode_changed(bt_address_t* addr, uint8_t mode, uint16_t s
     switch (mode) {
     case BT_LINK_MODE_ACTIVE: {
         pm_stop_timer(addr);
-        pm_mode_request(addr, BT_PM_RESTART, PROFILE_UNKOWN);
+        pm_mode_request(addr, BT_PM_RESTART, manager->last_profile_id);
     } break;
     case BT_LINK_MODE_SNIFF: {
         pm_stop_timer(addr);
