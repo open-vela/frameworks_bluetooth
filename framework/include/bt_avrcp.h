@@ -21,6 +21,9 @@
 #include "bt_addr.h"
 #include "bt_device.h"
 
+/**
+ * @cond
+ */
 typedef enum {
     PASSTHROUGH_CMD_ID_SELECT,
     PASSTHROUGH_CMD_ID_UP,
@@ -132,7 +135,37 @@ typedef enum {
     AVRCP_RESPONSE_SKIPPED,
     AVRCP_RESPONSE_TIMEOUT
 } avrcp_response_t;
+/**
+ * @endcond
+ */
 
+/**
+ * @brief Callback for AVRCP connection state changed.
+ *
+ * There are four states for an AVRCP connection, namely DISCONNECTED, CONNECTING,
+ * CONNECTED, and DISCONNECTING. During the initialization phase of the AVRCP,
+ * it is necessary to register callback functions. This callback is triggered
+ * when there is a change in the state of the AVRCP connection.
+ *
+ * Stable States:
+ *    DISCONNECTED: The initial state.
+ *    CONNECTED: The AVRCP connection is established.
+ * Transient states:
+ *    CONNECTING: The AVRCP connection is being established.
+ *    DISCONNECTING: The AVRCP connection is being terminated.
+ *
+ * @param cookie - Callback cookie.
+ * @param addr - The Bluetooth address of the peer device.
+ * @param state - AVRCP profile connection state.
+ *
+ * **Example:**
+ * @code
+static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr, profile_connection_state_t state)
+{
+    printf("AVRCP connection state is: %d", state);
+}
+ * @endcode
+ */
 typedef void (*avrcp_connection_state_callback)(void* cookie, bt_address_t* addr, profile_connection_state_t state);
 
 #endif /* __BT_AVRCP_H__ */
