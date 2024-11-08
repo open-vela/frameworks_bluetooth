@@ -29,6 +29,8 @@
 #include "power_manager.h"
 #include "vhal/bt_vhal.h"
 
+#define BT_INVALID_CONNECTION_HANDLE 0xFFFF
+
 /* service adapter layer for BREDR */
 bt_status_t bt_sal_init(const bt_vhal_interface* vhal);
 void bt_sal_cleanup(void);
@@ -64,7 +66,7 @@ bt_status_t bt_sal_pin_reply(bt_address_t* addr,
     bool accept,
     char* pincode,
     int len);
-uint16_t bt_sal_get_acl_link_handle(bt_address_t* addr);
+uint16_t bt_sal_get_acl_link_handle(bt_address_t* addr, bt_transport_t transport);
 bt_status_t bt_sal_connect(bt_address_t* addr);
 bt_status_t bt_sal_disconnect(bt_address_t* addr);
 bt_status_t bt_sal_create_bond(bt_address_t* addr);

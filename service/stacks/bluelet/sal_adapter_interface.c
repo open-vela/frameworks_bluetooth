@@ -1074,14 +1074,24 @@ bt_status_t bt_sal_pin_reply(bt_address_t* addr,
 #endif
 }
 
-uint16_t bt_sal_get_acl_link_handle(bt_address_t* addr)
+uint16_t bt_sal_get_acl_link_handle(bt_address_t* addr, bt_transport_t trasnport)
 {
+    uint16_t handle = BT_INVALID_CONNECTION_HANDLE;
+
+    if (!addr)
+        return handle;
+
+    if (trasnport == BT_TRANSPORT_BREDR) {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    SAL_CHECK_PARAM(addr);
-    return service_adapter_gap_get_acl_handle(addr->addr);
-#else
-    return 0;
+        handle = service_adapter_gap_get_acl_handle(addr->addr);
 #endif
+    } else {
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+        handle = service_adapter_gap_ble_get_acl_handle(addr->addr);
+#endif
+    }
+
+    return handle;
 }
 
 bt_status_t bt_sal_connect(bt_address_t* addr)
