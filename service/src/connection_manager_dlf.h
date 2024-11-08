@@ -14,18 +14,15 @@
  * limitations under the License.
  ***************************************************************************/
 
-#ifndef __BT_CONNECTION_MANAGER_H__
-#define __BT_CONNECTION_MANAGER_H__
+#ifndef __CONNECTION_MANAGER_DLF_H__
+#define __CONNECTION_MANAGER_DLF_H__
 
 #include "bt_addr.h"
 #include "bt_status.h"
 
-void bt_cm_init(void);
-void bt_cm_cleanup(void);
+void bt_cm_dlf_cleanup(void);
 
-bt_status_t bt_cm_enable_enhanced_mode(bt_address_t* peer_addr, uint8_t mode);
-bt_status_t bt_cm_disable_enhanced_mode(bt_address_t* peer_addr, uint8_t mode);
+bt_status_t bt_cm_enable_dlf(bt_address_t* peer_addr);
+bt_status_t bt_cm_disable_dlf(bt_address_t* peer_addr);
 
-void bt_cm_process_disconnect_event(bt_address_t* peer_addr, uint8_t transport);
-
-#endif /*__BT_CONNECTION_MANAGER_H__*/
+#endif /*__CONNECTION_MANAGER_DLF_H__*/
