@@ -39,6 +39,7 @@ else
 endif
 endif
 
+CSRCS += service/src/connection_manager.c
 CSRCS += service/src/manager_service.c
 CSRCS += service/common/index_allocator.c
 

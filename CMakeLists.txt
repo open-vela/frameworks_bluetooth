@@ -67,6 +67,7 @@ if(CONFIG_BLUETOOTH)
   list(
     APPEND
     CSRCS
+    ${BLUETOOTH_DIR}/service/src/connection_manager.c
     ${BLUETOOTH_DIR}/service/src/manager_service.c
     ${BLUETOOTH_DIR}/service/common/index_allocator.c)
 
