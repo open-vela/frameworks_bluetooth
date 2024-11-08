@@ -33,6 +33,7 @@
 #define CONFIG_LEA_STREAM_MAX_NUM 4
 #define CONFIG_LEA_CODEC_MAX_NUM 2
 #define CONFIG_VSC_MAX_LEN 255 /* TODO: define by vendor */
+#define CONFIG_DLF_COMMAND_MAX_LEN 10
 
 /****************************************************************************
  * Private Types
@@ -81,5 +82,11 @@ typedef struct {
     bool initiator;
     lea_offload_codec_t codec[CONFIG_LEA_CODEC_MAX_NUM];
 } lea_offload_config_t;
+
+typedef struct
+{
+    uint16_t connection_handle;
+    uint16_t dlf_timeout;
+} le_dlf_config_t;
 
 #endif /* _BT_CONTROLLER_VENDOR_COMMON_H__ */
