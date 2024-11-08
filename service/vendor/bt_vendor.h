@@ -55,4 +55,10 @@ bool acl_bandwidth_config_builder(acl_bandwitdh_config_t* config,
 bool acl_bandwidth_deconfig_builder(acl_bandwitdh_config_t* config,
     uint8_t* cmd, size_t* size);
 
+bool le_dlf_enable_builder(le_dlf_config_t* config,
+    uint8_t* data, size_t* size);
+
+bool le_dlf_disable_builder(le_dlf_config_t* config,
+    uint8_t* data, size_t* size);
+
 #endif /* _BT_CONTROLLER_VENDOR_H__ */
