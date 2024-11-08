@@ -134,6 +134,10 @@ config BLUETOOTH_GATTC_MAX_CONNECTIONS
 	int "GATT client max connections"
 	default 8
 
+config BLUETOOTH_GATTS_MAX_CONNECTIONS
+	int "GATT sever max connections"
+	default 4
+
 config BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
 	int "GATT server max number of attributes contained in a table"
 	default 10
@@ -393,6 +397,11 @@ config BLUETOOTH_LE_ADVERTISER_MAX_NUM
 config BLUETOOTH_LE_AUDIO_SUPPORT
 	bool "LE audio support"
 	default n
+
+config LE_DLF_SUPPORT
+	bool "LE DLF support"
+	default n
+
 endif #BLUETOOTH_BLE_SUPPORT
 endif #BLUETOOTH_SERVICE
 
