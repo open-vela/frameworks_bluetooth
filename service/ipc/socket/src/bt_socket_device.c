@@ -271,6 +271,18 @@ void bt_socket_server_device_process(service_poll_t* poll,
             packet->devs_pl._bt_device_set_le_phy.rx_phy);
         break;
     }
+    case BT_DEVICE_ENABLE_ENHANCED_MODE: {
+        packet->devs_r.status = BTSYMBOLS(bt_device_enable_enhanced_mode)(ins,
+            &packet->devs_pl._bt_device_enable_enhanced_mode.addr,
+            packet->devs_pl._bt_device_enable_enhanced_mode.mode);
+        break;
+    }
+    case BT_DEVICE_DISABLE_ENHANCED_MODE: {
+        packet->devs_r.status = BTSYMBOLS(bt_device_disable_enhanced_mode)(ins,
+            &packet->devs_pl._bt_device_disable_enhanced_mode.addr,
+            packet->devs_pl._bt_device_enable_enhanced_mode.mode);
+        break;
+    }
     case BT_DEVICE_CONNECT_ALL_PROFILE:
     case BT_DEVICE_DISCONNECT_ALL_PROFILE:
     default:
