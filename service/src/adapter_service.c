@@ -45,6 +45,7 @@
 #include "bt_uuid.h"
 #include "btservice.h"
 #include "callbacks_list.h"
+#include "connection_manager.h"
 #include "device.h"
 #include "hci_error.h"
 #include "sal_adapter_interface.h"
@@ -696,6 +697,9 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
             break;
         }
     }
+
+    if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED)
+        bt_cm_process_disconnect_event(addr, acl_params->link_type);
 
     /* send connection changed notification */
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_connection_state_changed, addr,

@@ -105,6 +105,10 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/l2cap_service.c)
     endif()
 
+    if(CONFIG_LE_DLF_SUPPORT)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/connectino_manager_dlf.c)
+    endif()
+
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/*.c)
     list(APPEND CSRCS ${APPEND_FILES})
 
