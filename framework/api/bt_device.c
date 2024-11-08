@@ -21,6 +21,7 @@
 #include "bt_addr.h"
 #include "bt_device.h"
 #include "bt_internal.h"
+#include "connection_manager.h"
 #include "device.h"
 
 bt_status_t BTSYMBOLS(bt_device_get_identity_address)(bt_instance_t* ins, bt_address_t* bd_addr, bt_address_t* id_addr)
@@ -190,4 +191,14 @@ bt_status_t BTSYMBOLS(bt_device_set_le_sc_remote_oob_data)(bt_instance_t* ins, b
 bt_status_t BTSYMBOLS(bt_device_get_le_sc_local_oob_data)(bt_instance_t* ins, bt_address_t* addr)
 {
     return adapter_le_get_local_oob_data(addr);
+}
+
+bt_status_t BTSYMBOLS(bt_device_enable_enhanced_mode)(bt_instance_t* ins, bt_address_t* addr, bt_enhanced_mode_t mode)
+{
+    return bt_cm_enable_enhanced_mode(addr, mode);
+}
+
+bt_status_t BTSYMBOLS(bt_device_disable_enhanced_mode)(bt_instance_t* ins, bt_address_t* addr, bt_enhanced_mode_t mode)
+{
+    return bt_cm_disable_enhanced_mode(addr, mode);
 }
