@@ -22,6 +22,7 @@
 
 #include "bt_list.h"
 #include "bt_status.h"
+#include "connection_manager.h"
 #include "index_allocator.h"
 #include "manager_service.h"
 #include "power_manager.h"
@@ -196,6 +197,7 @@ void manager_init(void)
 #if defined(CONFIG_BLUETOOTH_SERVICE) && defined(__NuttX__)
     service_manager_init();
     bt_pm_init();
+    bt_cm_init();
 #endif
 }
 
@@ -219,6 +221,7 @@ void manager_cleanup(void)
 #if defined(CONFIG_BLUETOOTH_SERVICE) && defined(__NuttX__)
     service_manager_cleanup();
     bt_pm_cleanup();
+    bt_cm_cleanup();
 #endif
     uv_mutex_destroy(&g_mutex);
 }
