@@ -555,3 +555,37 @@ bt_status_t bt_device_get_le_sc_local_oob_data(bt_instance_t* ins, bt_address_t*
 
     return packet.devs_r.status;
 }
+
+bt_status_t bt_device_enable_enhanced_mode(bt_instance_t* ins, bt_address_t* addr, bt_enhanced_mode_t mode)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.devs_pl._bt_device_enable_enhanced_mode.addr, addr, sizeof(packet.devs_pl._bt_device_enable_enhanced_mode.addr));
+    packet.devs_pl._bt_device_enable_enhanced_mode.mode = mode;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_ENABLE_ENHANCED_MODE);
+
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.devs_r.status;
+}
+
+bt_status_t bt_device_disable_enhanced_mode(bt_instance_t* ins, bt_address_t* addr, bt_enhanced_mode_t mode)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.devs_pl._bt_device_disable_enhanced_mode.addr, addr, sizeof(packet.devs_pl._bt_device_disable_enhanced_mode.addr));
+    packet.devs_pl._bt_device_disable_enhanced_mode.mode = mode;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_DISABLE_ENHANCED_MODE);
+
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.devs_r.status;
+}

@@ -16,6 +16,7 @@
 #define LOG_TAG "connection_manager"
 
 #include "connection_manager.h"
+#include "bluetooth.h"
 
 typedef struct
 {
@@ -42,4 +43,20 @@ void bt_cm_cleanup(void)
         return;
 
     manager->inited = false;
+}
+
+bt_status_t bt_cm_enable_enhanced_mode(bt_address_t* addr, uint8_t mode)
+{
+    switch (mode) {
+    default:
+        return BT_STATUS_NOT_SUPPORTED;
+    }
+}
+
+bt_status_t bt_cm_disable_enhanced_mode(bt_address_t* addr, uint8_t mode)
+{
+    switch (mode) {
+    default:
+        return BT_STATUS_NOT_SUPPORTED;
+    }
 }

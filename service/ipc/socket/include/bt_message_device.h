@@ -49,6 +49,8 @@ BT_DEVICE_MESSAGE_START,
     BT_DEVICE_SET_LE_PHY,
     BT_DEVICE_CONNECT_ALL_PROFILE,
     BT_DEVICE_DISCONNECT_ALL_PROFILE,
+    BT_DEVICE_ENABLE_ENHANCED_MODE,
+    BT_DEVICE_DISABLE_ENHANCED_MODE,
     BT_DEVICE_MESSAGE_END,
 #endif
 
@@ -185,6 +187,12 @@ BT_DEVICE_MESSAGE_START,
             uint8_t tx_phy; /* ble_phy_type_t */
             uint8_t rx_phy; /* ble_phy_type_t */
         } _bt_device_set_le_phy;
+
+        struct {
+            bt_address_t addr;
+            uint8_t mode; /* bt_enhanced_mode_t */
+        } _bt_device_enable_enhanced_mode,
+            _bt_device_disable_enhanced_mode;
 
     } bt_message_device_t;
 
