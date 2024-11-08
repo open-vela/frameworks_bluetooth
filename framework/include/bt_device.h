@@ -417,6 +417,24 @@ void BTSYMBOLS(bt_device_connect_all_profile)(bt_instance_t* ins, bt_address_t* 
  */
 void BTSYMBOLS(bt_device_disconnect_all_profile)(bt_instance_t* ins, bt_address_t* addr);
 
+/**
+ * @brief Enable connection enhanced mode
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.
+ * @param mode - enhanced mode.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_device_enable_enhanced_mode)(bt_instance_t* ins, bt_address_t* addr, bt_enhanced_mode_t mode);
+
+/**
+ * @brief Disable connection enhanced mode
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.
+ * @param mode - enhanced mode.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_device_disable_enhanced_mode)(bt_instance_t* ins, bt_address_t* addr, bt_enhanced_mode_t mode);
+
 #ifdef __cplusplus
 }
 #endif

@@ -194,6 +194,12 @@ typedef enum {
     BT_LE_CONNECT_FILTER_POLICY_WHITE_LIST
 } ble_connect_filter_policy_t;
 
+typedef enum {
+    EM_LE_LOW_LATENCY,
+    EM_LE_HIGH_TPUT,
+    EM_LE_LOW_POWER,
+} bt_enhanced_mode_t;
+
 typedef uint8_t bt_128key_t[16];
 
 #define COD_SERVICE_BITS(c) (c & 0xFFE000) /* The major service classes field */
