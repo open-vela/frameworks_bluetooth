@@ -680,9 +680,7 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
 
     device_set_connection_state(device, acl_params->connection_state);
     if (acl_params->connection_state == CONNECTION_STATE_CONNECTED) {
-        device_set_acl_handle(device, bt_sal_get_acl_link_handle(addr));
-        // if (acl_params->link_type == BT_TRANSPORT_BLE)
-        //     adapter_le_add_whitelist(addr);
+        device_set_acl_handle(device, bt_sal_get_acl_link_handle(addr, acl_params->link_type));
     }
     adapter_unlock();
 

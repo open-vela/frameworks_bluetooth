@@ -117,7 +117,7 @@ static void a2dp_service_prepare_handle(a2dp_state_machine_t* sm,
 {
     switch (event->event) {
     case CONNECTED_EVT: {
-        set_active_peer(&event->event_data.bd_addr, bt_sal_get_acl_link_handle(&event->event_data.bd_addr));
+        set_active_peer(&event->event_data.bd_addr, bt_sal_get_acl_link_handle(&event->event_data.bd_addr, BT_TRANSPORT_BREDR));
         break;
     }
 
