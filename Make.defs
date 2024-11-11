@@ -17,7 +17,7 @@
 ifeq ($(CONFIG_BLUETOOTH), y)
 CONFIGURED_APPS += $(APPDIR)/frameworks/connectivity/bluetooth
 
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/include
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/include
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/framework/include
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/framework/include
 
 endif
