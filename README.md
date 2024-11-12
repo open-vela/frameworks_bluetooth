@@ -1,8 +1,8 @@
-# Overview of Vela Bluetooth
+# Overview of openvela Bluetooth
 
-## 1. Introduction to Vela Bluetooth
+## 1 Introduction to openvela Bluetooth
 
-Vela Bluetooth has been certified for Bluetooth 5.4. It currently supports Bluetooth profiles listed as below:
+openvela Bluetooth has been certified for Bluetooth 5.4. It currently supports Bluetooth profiles listed as below:
 
 - Core
 
@@ -28,11 +28,11 @@ Vela Bluetooth has been certified for Bluetooth 5.4. It currently supports Bluet
   - VCP/VCS
 - Mesh
 
-Vela Bluetooth currently also supports a variety of open source and proprietary stacks such as Zephyr, Bluez, Bluedroid, Barrot, etc.
+openvela Bluetooth currently also supports a variety of open source and proprietary stacks such as Zephyr, Bluez, Bluedroid, Barrot, etc.
 
-## 2. Vela Bluetooth Application Development
+## 2 openvela Bluetooth Application Development
 
-Third-party application developers may utilize the Vela QuickApp Feature to acquire system access capabilities. This feature comprises a set of API interfaces based on the QuickJS engine and is implemented in C++.
+Third-party application developers may utilize the openvela QuickApp Feature to acquire system access capabilities. This feature comprises a set of API interfaces based on the QuickJS engine and is implemented in C++.
 
 Please refer to the Bluetooth QuickApp API documents for details: [https://doc.quickapp.cn/features/system/bluetooth.html](https://doc.quickapp.cn/features/system/bluetooth.html)
 
@@ -49,9 +49,9 @@ Current Bluetooth APIs include:
 
 As we move forward, additional Bluetooth QuickApp APIs will be available for third-party applications. When the Bluetooth protocol stack and Bluetooth services become open-sourced, more powerful NDK interfaces will also be provided, allowing for direct utilization of all Bluetooth system-level capabilities.
 
-## 3. Vela Bluetooth Driver Development
+## 3. openvela Bluetooth Driver Development
 
-Vela Bluetooth supports multiple driver architectures. Taking the widely used BTH4 driver architecture as an example, chip manufacturers can implement a variable of the **struct bt_driver_s** structure type, and initialize the following member functions for it.
+openvela Bluetooth supports multiple driver architectures. Taking the widely used BTH4 driver architecture as an example, chip manufacturers can implement a variable of the **struct bt_driver_s** structure type, and initialize the following member functions for it.
 
 - CODE int (*open)(FAR struct bt_driver_s *btdev);
 - CODE int (*send)(FAR struct bt_driver_s *btdev, enum bt_buf_type_e type, FAR void *data, size_t len);
@@ -64,7 +64,7 @@ Then, register the driver instance by passing the variable of the above structur
 
 - int **bt_driver_register**(FAR struct bt_driver_s *drv);
 
-Please refer to the type definition in header file nuttx/include/nuttx/wireless/bluetooth/bt_driver.h. The figure below helps to provide a comprehensive understanding of its functioning within the Vela OS.
+Please refer to the type definition in header file nuttx/include/nuttx/wireless/bluetooth/bt_driver.h. The figure below helps to provide a comprehensive understanding of its functioning within the openvela OS.
 
 ![](img/bt_driver.png)
 
