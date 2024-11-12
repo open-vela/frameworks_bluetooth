@@ -1,8 +1,9 @@
 # 蓝牙概述
 
-## 一、Vela 蓝牙能力介绍
 
-Vela蓝牙已经通过Bluetooth 5.4认证。目前支持的蓝牙能力包括：
+## 一 openvela 蓝牙能力介绍
+
+openvela 蓝牙已经通过Bluetooth 5.4认证。目前支持的蓝牙能力包括：
 
 - Core
 
@@ -28,11 +29,11 @@ Vela蓝牙已经通过Bluetooth 5.4认证。目前支持的蓝牙能力包括：
   - VCP/VCS
 - Mesh
 
-Vela蓝牙目前还能够支持多种开源、闭源协议栈，如Zephyr、Bluez、Bluedroid、Barrot等。
+openvela 蓝牙目前还能够支持多种开源、闭源协议栈，如Zephyr、Bluez、Bluedroid、Barrot等。
 
-## 二、Vela 蓝牙应用开发
+## 二 openvela 蓝牙应用开发
 
-对于第三方应用开发者，可以使用 Vela 快应用 QuickApp Feature ，它是基于 QuickJS 引擎使用 C++ 实现的一系列 API 接口，为三方应用提供系统访问能力。
+对于第三方应用开发者，可以使用 openvela  快应用 QuickApp Feature ，它是基于 QuickJS 引擎使用 C++ 实现的一系列 API 接口，为三方应用提供系统访问能力。
 
 蓝牙接口请参考：[https://doc.quickapp.cn/features/system/bluetooth.html](https://doc.quickapp.cn/features/system/bluetooth.html)
 
@@ -49,7 +50,7 @@ Vela蓝牙目前还能够支持多种开源、闭源协议栈，如Zephyr、Blue
 
 将来会提供更多蓝牙能力来供三方应用来调用。当蓝牙协议栈、蓝牙服务开源后，还会提供更为强大的 NDK 接口来直接调用所有蓝牙系统的能力。
 
-## 三、Vela 蓝牙驱动开发
+## 三 openvela 蓝牙驱动开发
 
 Vela 蓝牙支持多种驱动架构。以目前常用的 BTH4 驱动架构为例，芯片厂商可以实现一个 **struct bt_driver_s** 结构体类型的变量，并为其初始化以下成员函数：
 
