@@ -375,7 +375,7 @@ config BLUETOOTH_SERVICE_LOG_LEVEL
 
 config BLUETOOTH_SERVICE_HCI_UART_NAME
 	string "HCI uart driver name"
-	default "/dev/ttyBT0"
+	default "/dev/ttyHCI0"
 
 if BLUETOOTH_BREDR_SUPPORT
 choice
