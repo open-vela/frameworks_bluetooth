@@ -44,6 +44,9 @@ static void remote_capabilities_rsp_cb(BD_ADDR addr,
 static void get_play_status_rsp_cb(BD_ADDR addr,
     SERVICE_AVRCP_MEDIA_STATUS media_status,
     uint32_t song_length, uint32_t position);
+static void get_element_attributes_cb(BD_ADDR addr, uint8_t attrs_count,
+    SERVICE_AVRCP_MEDIA_ATTR_TYPE* types,
+    uint16_t* chr_sets, char* attrs[]);
 
 static AVRCP_CALLBACKS_S avrcp_ctrl_cbks = {
     .size = sizeof(avrcp_ctrl_cbks),
@@ -51,7 +54,7 @@ static AVRCP_CALLBACKS_S avrcp_ctrl_cbks = {
     .avrcp_received_panel_rsp_cb = panel_rsp_cb,
     .avrcp_received_notification_cb = register_notification_event_cb,
     .avrcp_received_remote_capabilities_cb = remote_capabilities_rsp_cb,
-    .avrcp_received_element_attributes_cb = NULL,
+    .avrcp_received_element_attributes_cb = get_element_attributes_cb,
     .avrcp_received_play_status_cb = get_play_status_rsp_cb
 };
 
@@ -144,6 +147,30 @@ static void remote_capabilities_rsp_cb(BD_ADDR addr,
     msg->data.cap.cap_count = capabilities->count;
     msg->data.cap.capabilities[capabilities->count] = 0;
     memcpy(msg->data.cap.capabilities, caps, capabilities->count);
+    bt_sal_avrcp_control_event_callback(msg);
+}
+
+static void get_element_attributes_cb(BD_ADDR addr, uint8_t attrs_count,
+    SERVICE_AVRCP_MEDIA_ATTR_TYPE* types,
+    uint16_t* chr_sets, char* attrs[])
+{
+    avrcp_msg_t* msg = avrcp_msg_new(AVRC_GET_ELEMENT_ATTRIBUTES_RSP, (void*)addr);
+
+    if (msg == NULL)
+        return;
+
+    msg->data.attrs.count = attrs_count;
+    for (int i = 0; i < attrs_count; i++) {
+        msg->data.attrs.types[i] = (uint32_t)types[i];
+        msg->data.attrs.chr_sets[i] = chr_sets[i];
+        if (attrs[i] == NULL) {
+            msg->data.attrs.attrs[i] = NULL;
+        } else {
+            msg->data.attrs.attrs[i] = (char*)malloc(strlen(attrs[i]) + 1);
+            strlcpy(msg->data.attrs.attrs[i], attrs[i], strlen(attrs[i]) + 1);
+        }
+    }
+
     bt_sal_avrcp_control_event_callback(msg);
 }
 
@@ -264,6 +291,19 @@ bt_status_t bt_sal_avrcp_control_register_notification(bt_address_t* bd_addr,
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     SAL_CHECK_RET(service_adapter_avrcp_register_notification((void*)bd_addr, event - 1, interval),
+        SERVICE_BT_STATUS_SUCCESS);
+
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
+bt_status_t bt_sal_avrcp_control_get_element_attributes(bt_address_t* bd_addr,
+    uint8_t attrs_count, avrcp_media_attr_type_t* types)
+{
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    SAL_CHECK_RET(service_adapter_avrcp_get_element_attributes((void*)bd_addr, attrs_count, (SERVICE_AVRCP_MEDIA_ATTR_TYPE*)types),
         SERVICE_BT_STATUS_SUCCESS);
 
     return BT_STATUS_SUCCESS;

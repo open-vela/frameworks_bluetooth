@@ -52,5 +52,14 @@ avrcp_msg_t* avrcp_msg_new(rc_msg_id_t msg, bt_address_t* bd_addr)
 
 void avrcp_msg_destory(avrcp_msg_t* avrcp_msg)
 {
+    if (avrcp_msg->id == AVRC_GET_ELEMENT_ATTR_REQ) {
+        for (int i = 0; i < avrcp_msg->data.attrs.count; i++) {
+            if (avrcp_msg->data.attrs.attrs[i] != NULL) {
+                free(avrcp_msg->data.attrs.attrs[i]);
+                avrcp_msg->data.attrs.attrs[i] = NULL;
+            }
+        }
+    }
+
     free(avrcp_msg);
 }

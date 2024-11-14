@@ -308,6 +308,10 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/a2dp_source.c)
     endif()
 
+    if(CONFIG_BLUETOOTH_AVRCP_CONTROL)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/avrcp_control.c)
+    endif()
+
     if(CONFIG_BLUETOOTH_GATT)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/gatt_client.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/gatt_server.c)

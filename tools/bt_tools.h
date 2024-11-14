@@ -97,6 +97,10 @@ int a2dp_src_commond_init(void* handle);
 int a2dp_src_commond_uninit(void* handle);
 int a2dp_src_command_exec(void* handle, int argc, char* argv[]);
 
+int avrcp_control_commond_init(void* handle);
+int avrcp_control_commond_uninit(void* handle);
+int avrcp_control_command_exec(void* handle, int argc, char* argv[]);
+
 int hfp_hf_commond_init(void* handle);
 int hfp_hf_commond_uninit(void* handle);
 int hfp_hf_command_exec(void* handle, int argc, char* argv[]);

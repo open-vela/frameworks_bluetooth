@@ -203,6 +203,9 @@ endif #CONFIG_BLUETOOTH_A2DP_SINK
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SOURCE), y)
 	CSRCS += tools/a2dp_source.c
 endif #CONFIG_BLUETOOTH_A2DP_SOURCE
+ifeq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL), y)
+	CSRCS += tools/avrcp_control.c
+endif #CONFIG_BLUETOOTH_AVRCP_CONTROL
 ifeq ($(CONFIG_BLUETOOTH_GATT), y)
 	CSRCS += tools/gatt_client.c
 	CSRCS += tools/gatt_server.c
