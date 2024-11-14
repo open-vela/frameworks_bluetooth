@@ -29,18 +29,21 @@ static spp_interface_t* get_profile_service(void)
     return (spp_interface_t*)service_manager_get_profile(PROFILE_SPP);
 }
 
-void* BTSYMBOLS(bt_spp_register_app)(bt_instance_t* ins, const spp_callbacks_t* callbacks)
+void* BTSYMBOLS(bt_spp_register_app_with_name)(bt_instance_t* ins, const char* name, const spp_callbacks_t* callbacks)
 {
     spp_interface_t* profile = get_profile_service();
 
-    return profile->register_app(NULL, NULL, SPP_PORT_TYPE_TTY, callbacks);
+    return profile->register_app(NULL, name, callbacks);
+}
+
+void* BTSYMBOLS(bt_spp_register_app)(bt_instance_t* ins, const spp_callbacks_t* callbacks)
+{
+    return BTSYMBOLS(bt_spp_register_app_with_name)(ins, NULL, callbacks);
 }
 
 void* BTSYMBOLS(bt_spp_register_app_ext)(bt_instance_t* ins, const char* name, int port_type, const spp_callbacks_t* callbacks)
 {
-    spp_interface_t* profile = get_profile_service();
-
-    return profile->register_app(NULL, name, port_type, callbacks);
+    return BTSYMBOLS(bt_spp_register_app_with_name)(ins, name, callbacks);
 }
 
 bt_status_t BTSYMBOLS(bt_spp_unregister_app)(bt_instance_t* ins, void* handle)

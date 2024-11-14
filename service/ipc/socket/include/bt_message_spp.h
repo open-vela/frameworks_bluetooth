@@ -27,7 +27,7 @@ BT_SPP_MESSAGE_START,
 
 #ifdef __BT_CALLBACK_CODE__
     BT_SPP_CALLBACK_START,
-    BT_SPP_PTY_OPEN_CB,
+    BT_SPP_PROXY_STATE_CB,
     BT_SPP_CONNECTION_STATE_CB,
     BT_SPP_CALLBACK_END,
 #endif
@@ -52,7 +52,6 @@ BT_SPP_MESSAGE_START,
         struct {
             uint32_t name_len;
             char name[64];
-            int port_type;
         } _bt_spp_register_app;
 
         struct {
@@ -88,10 +87,11 @@ BT_SPP_MESSAGE_START,
         struct {
             uint32_t handle;
             bt_address_t addr;
+            uint8_t state;
             uint16_t scn;
             char name[64];
             uint16_t port;
-        } _pty_open_cb;
+        } _proxy_state_cb;
 
         struct {
             uint32_t handle;
