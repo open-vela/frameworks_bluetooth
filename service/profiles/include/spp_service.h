@@ -24,7 +24,7 @@
 
 typedef struct spp_interface {
     size_t size;
-    void* (*register_app)(void* remote, const char* name, int port_type, const spp_callbacks_t* callbacks);
+    void* (*register_app)(void* remote, const char* name, const spp_callbacks_t* callbacks);
     bt_status_t (*unregister_app)(void** remote, void* handle);
     bt_status_t (*server_start)(void* handle, uint16_t scn, bt_uuid_t* uuid, uint8_t max_connection);
     bt_status_t (*server_stop)(void* handle, uint16_t scn);
