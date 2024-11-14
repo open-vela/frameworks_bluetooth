@@ -45,6 +45,9 @@ typedef struct {
     /** notify volume changed */
     bt_status_t (*volume_changed_notify)(bt_address_t* bd_addr, uint8_t volume);
 
+    /** get element attributes */
+    bt_status_t (*avrcp_control_get_element_attributes)(bt_address_t* bd_addr);
+
 } avrcp_control_interface_t;
 
 /*

@@ -103,6 +103,13 @@ typedef struct {
 } rc_absvol_t;
 
 typedef struct {
+    uint8_t count;
+    uint32_t types[AVRCP_MAX_ATTR_COUNT];
+    uint16_t chr_sets[AVRCP_MAX_ATTR_COUNT];
+    char* attrs[AVRCP_MAX_ATTR_COUNT];
+} rc_element_attrs_t;
+
+typedef struct {
     bt_address_t addr;
     rc_msg_id_t id;
     uint8_t role;
@@ -115,6 +122,7 @@ typedef struct {
         rc_capabilities_t cap;
         rc_notification_rsp_t notify_rsp;
         rc_absvol_t absvol;
+        rc_element_attrs_t attrs;
         void* context;
     } data;
 } avrcp_msg_t;
