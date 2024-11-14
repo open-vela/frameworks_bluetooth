@@ -914,14 +914,15 @@ static bt_status_t spp_startup(profile_on_startup_t cb)
     }
 
     g_spp_handle.server_channel_map = 0;
+    g_spp_handle.registered = 0;
     g_spp_handle.allocator = index_allocator_create(CONNECTIONS_MAX);
     list_initialize(&g_spp_handle.devices);
     list_initialize(&g_spp_handle.servers);
     list_initialize(&g_spp_handle.apps);
     status = bt_sal_spp_init();
     if (status != BT_STATUS_SUCCESS) {
-        pthread_mutex_unlock(&g_spp_handle.spp_lock);
         list_delete(&g_spp_handle.devices);
+        pthread_mutex_unlock(&g_spp_handle.spp_lock);
         cb(PROFILE_SPP, false);
         return BT_STATUS_FAIL;
     }
@@ -943,6 +944,8 @@ static bt_status_t spp_shutdown(profile_on_shutdown_t cb)
     }
 
     g_spp_handle.started = 0;
+    g_spp_handle.registered = 0;
+    g_spp_handle.server_channel_map = 0;
     spp_cleanup_all_apps();
     index_allocator_delete(&g_spp_handle.allocator);
     list_delete(&g_spp_handle.devices);
@@ -967,17 +970,20 @@ static void* spp_register_app(void* remote, const char* name, const spp_callback
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (!g_spp_handle.started) {
         pthread_mutex_unlock(&g_spp_handle.spp_lock);
+        BT_LOGE("%s, SPP not started", __func__);
         return NULL;
     }
 
     if (g_spp_handle.registered == REGISTER_MAX) {
         pthread_mutex_unlock(&g_spp_handle.spp_lock);
+        BT_LOGE("%s, spp register reach MAX number: %d", __func__, REGISTER_MAX);
         return NULL;
     }
 
     hdl = zalloc(sizeof(spp_handle_t));
     if (hdl == NULL) {
         pthread_mutex_unlock(&g_spp_handle.spp_lock);
+        BT_LOGE("%s, spp handle malloc error", __func__);
         return NULL;
     }
 
