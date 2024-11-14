@@ -56,7 +56,7 @@ void scan_record_parse(scan_record_t* record, const uint8_t* eir_data, uint8_t e
         data_len = field_len - 1;
 
         switch (eir_data[1]) {
-        case EIR_SVC_DATA16:
+        case BT_EIR_SVC_DATA_16:
             record_parse_uuid16(record, data, data_len);
             break;
 
