@@ -364,6 +364,9 @@ static void handle_avrcp_get_capability_response(avrcp_msg_t* msg)
         case NOTIFICATION_EVT_VOLUME_CHANGED:
             /* don't work on controller role */
             break;
+        case NOTIFICATION_EVT_TRACK_CHANGED:
+            bt_sal_avrcp_control_register_notification(addr, *cap, 0);
+            break;
         default:
             break;
         }
@@ -410,6 +413,11 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t* msg)
     }
     case NOTIFICATION_EVT_VOLUME_CHANGED: {
         /* don't work on controller role */
+        break;
+    }
+    case NOTIFICATION_EVT_TRACK_CHANGED: {
+        BT_LOGD("track changed, get track info now...");
+        bt_sal_avrcp_control_get_element_attributes(addr, 0, NULL);
         break;
     }
     default:
