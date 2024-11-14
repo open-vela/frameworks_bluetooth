@@ -19,6 +19,7 @@
 
 #include "avrcp_control_service.h"
 #include "bt_avrcp_control.h"
+#include "bt_internal.h"
 #include "bt_profile.h"
 #include "service_manager.h"
 #include "utils/log.h"
@@ -28,16 +29,23 @@ static avrcp_control_interface_t* get_profile_service(void)
     return (avrcp_control_interface_t*)service_manager_get_profile(PROFILE_AVRCP_CT);
 }
 
-void* bt_avrcp_control_register_callbacks(bt_instance_t* ins, const avrcp_control_callbacks_t* callbacks)
+void* BTSYMBOLS(bt_avrcp_control_register_callbacks)(bt_instance_t* ins, const avrcp_control_callbacks_t* callbacks)
 {
     avrcp_control_interface_t* profile = get_profile_service();
 
     return profile->register_callbacks(NULL, callbacks);
 }
 
-bool bt_avrcp_control_unregister_callbacks(bt_instance_t* ins, void* cookie)
+bool BTSYMBOLS(bt_avrcp_control_unregister_callbacks)(bt_instance_t* ins, void* cookie)
 {
     avrcp_control_interface_t* profile = get_profile_service();
 
     return profile->unregister_callbacks(NULL, cookie);
+}
+
+bt_status_t BTSYMBOLS(bt_avrcp_control_get_element_attributes)(bt_instance_t* ins, bt_address_t* addr)
+{
+    avrcp_control_interface_t* profile = get_profile_service();
+
+    return profile->avrcp_control_get_element_attributes(addr);
 }
