@@ -176,6 +176,9 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     { "a2dpsrc", a2dp_src_command_exec, 0, "a2dp source cmd,    input \'a2dpsrc\' show usage" },
 #endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    { "avrcpct", avrcp_control_command_exec, 0, "avrcp control cmd,    input \'avrcpct\' show usage" },
+#endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     { "hf", hfp_hf_command_exec, 0, "hands-free cmd,    input \'hf\' show usage" },
 #endif
@@ -284,6 +287,9 @@ static void bt_tool_init(void* handle)
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     a2dp_src_commond_init(handle);
 #endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    avrcp_control_commond_init(handle);
+#endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     hfp_hf_commond_init(handle);
 #endif
@@ -343,6 +349,9 @@ static void bt_tool_uninit(void* handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     a2dp_src_commond_uninit(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    avrcp_control_commond_uninit(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
     hfp_hf_commond_uninit(handle);

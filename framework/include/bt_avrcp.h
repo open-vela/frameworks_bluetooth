@@ -21,6 +21,16 @@
 #include "bt_addr.h"
 #include "bt_device.h"
 
+#define AVRCP_MAX_ATTR_COUNT 9
+#define AVRCP_ATTR_MAX_TIELE_LEN 64
+#define AVRCP_ATTR_MAX_ARTIST_LEN 64
+#define AVRCP_ATTR_MAX_ALBUM_LEN 0
+#define AVRCP_ATTR_MAX_TRACK_NUMBER_LEN 0
+#define AVRCP_ATTR_MAX_TOTAL_TRACK_NUMBER_LEN 0
+#define AVRCP_ATTR_MAX_GENER_LEN 0
+#define AVRCP_ATTR_MAX_PLAYING_TIMES_LEN 0
+#define AVRCP_ATTR_MAX_COVER_ART_HANDLE_LEN 0
+
 typedef enum {
     PASSTHROUGH_CMD_ID_SELECT,
     PASSTHROUGH_CMD_ID_UP,
@@ -132,6 +142,17 @@ typedef enum {
     AVRCP_RESPONSE_SKIPPED,
     AVRCP_RESPONSE_TIMEOUT
 } avrcp_response_t;
+
+typedef enum {
+    AVRCP_ATTR_TITLE = 1,
+    AVRCP_ATTR_ARTIST_NAME,
+    AVRCP_ATTR_ALBUM_NAME,
+    AVRCP_ATTR_TRACK_NUMBER,
+    AVRCP_ATTR_TOTAL_NUMBER_OF_TRACKS,
+    AVRCP_ATTR_GENRE,
+    AVRCP_ATTR_PLAYING_TIME_MS,
+    AVRCP_ATTR_COVER_ART_HANDLE
+} avrcp_media_attr_type_t;
 
 typedef void (*avrcp_connection_state_callback)(void* cookie, bt_address_t* addr, profile_connection_state_t state);
 

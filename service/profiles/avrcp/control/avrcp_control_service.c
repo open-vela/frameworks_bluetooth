@@ -453,6 +453,25 @@ static void handle_avrcp_set_absolute_volume(avrcp_msg_t* msg)
 }
 #endif
 
+static void handle_avrcp_get_element_attrs_response(avrcp_msg_t* msg)
+{
+    uint8_t attrs_count = msg->data.attrs.count;
+    bt_address_t* addr = &msg->addr;
+    avrcp_element_attr_val_t attrs[attrs_count];
+
+    for (int i = 0; i < attrs_count; i++) {
+        attrs[i].attr_id = msg->data.attrs.types[i];
+        attrs[i].chr_set = msg->data.attrs.chr_sets[i];
+        if (msg->data.attrs.attrs[i] == NULL) {
+            attrs[i].text = NULL;
+        } else {
+            attrs[i].text = (uint8_t*)msg->data.attrs.attrs[i];
+        }
+    }
+
+    AVRCP_CT_CALLBACK_FOREACH(g_avrc_controller.callbacks, get_element_attribute_cb, addr, attrs_count, attrs);
+}
+
 static void avrcp_control_service_handle_callback(void* data)
 {
     avrcp_msg_t* msg = data;
@@ -480,6 +499,9 @@ static void avrcp_control_service_handle_callback(void* data)
 #endif
     case AVRC_REGISTER_NOTIFICATION_RSP:
         handle_avrcp_register_notification_response(msg);
+        break;
+    case AVRC_GET_ELEMENT_ATTRIBUTES_RSP:
+        handle_avrcp_get_element_attrs_response(msg);
         break;
     default:
         BT_LOGW("%s Unsupport message: %d", __func__, msg->id);
@@ -623,11 +645,15 @@ static bool avrcp_control_unregister_callbacks(void** remote, void* cookie)
 {
     return bt_remote_callbacks_unregister(g_avrc_controller.callbacks, remote, cookie);
 }
-
+static bt_status_t avrcp_control_get_element_attributes(bt_address_t* remote)
+{
+    return bt_sal_avrcp_control_get_element_attributes(remote, 0, NULL);
+}
 static const avrcp_control_interface_t avrcp_controlInterface = {
     .size = sizeof(avrcp_controlInterface),
     .register_callbacks = avrcp_control_register_callbacks,
-    .unregister_callbacks = avrcp_control_unregister_callbacks
+    .unregister_callbacks = avrcp_control_unregister_callbacks,
+    .avrcp_control_get_element_attributes = avrcp_control_get_element_attributes
 };
 
 static const void* get_avrcp_control_profile_interface(void)

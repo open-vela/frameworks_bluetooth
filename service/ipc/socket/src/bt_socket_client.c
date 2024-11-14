@@ -96,6 +96,10 @@ static void bt_socket_client_msg_process(bt_client_msg_t* msg)
     } else if (msg->packet.code > BT_AVRCP_TARGET_CALLBACK_START && msg->packet.code < BT_AVRCP_TARGET_CALLBACK_END) {
         bt_socket_client_avrcp_target_callback(NULL, -1, msg->ins, &msg->packet);
 #endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    } else if (msg->packet.code > BT_AVRCP_CONTROL_CALLBACK_START && msg->packet.code < BT_AVRCP_CONTROL_CALLBACK_END) {
+        bt_socket_client_avrcp_control_callback(NULL, -1, msg->ins, &msg->packet);
+#endif
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
     } else if (packet->code > BT_ADVERTISER_CALLBACK_START && packet->code < BT_ADVERTISER_CALLBACK_END) {
         bt_socket_client_advertiser_callback(NULL, -1, msg->ins, packet);
