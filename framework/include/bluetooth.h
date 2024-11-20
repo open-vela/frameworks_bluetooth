@@ -32,6 +32,10 @@ extern "C" {
 #include "callbacks_list.h"
 #include "uv_thread_loop.h"
 
+/**
+ * @cond
+ */
+
 #ifndef BTSYMBOLS
 #define BTSYMBOLS(s) s
 #endif
@@ -388,10 +392,6 @@ enum {
     BLUETOOTH_USER,
 };
 
-typedef bool (*bt_allocator_t)(void** data, uint32_t size);
-
-typedef void (*bt_hci_event_callback_t)(bt_hci_event_t* hci_event, void* context);
-
 typedef struct bt_instance {
     uint32_t app_id;
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_BINDER_IPC
@@ -453,60 +453,224 @@ typedef struct bt_instance {
 } bt_instance_t;
 
 /**
- * @brief Create bluetooth client instance
+ * @endcond
+ */
+
+/**
+ * @brief Allocate memory
+ *
+ * This function pointer allocates a size of memory and is pointed to the allocated memory by *data
+ *
+ * @param data - pointer of the pointer to the allocated memory
+ * @param size - size of the memory to be allocated
+ * @return bool.
+ *
+ * **Example:**
+ * @code
+static bool bt_socket_allocator(void** data, uint32_t size)
+{
+    *data = zalloc(size);
+    if (!(*data))
+        return false;
+
+    return true;
+}
+ * @endcode
+ */
+typedef bool (*bt_allocator_t)(void** data, uint32_t size);
+
+/**
+ * @brief hci event callback.
+ *
+ * This function pointer is triggered when hci event is received.
+ *
+ * @param hci_event - pointer of hci event(specified by vendor).
+ * @param context - user context.
+ * @return void.
+ *
+ * **Example:**
+ * @code
+static void bt_hci_event_callback(bt_hci_event_t* hci_event, void* context)
+{
+    BT_LOGD("%s, evt_code:0x%x, len:%d", __func__, hci_event->evt_code,
+        hci_event->length);
+    // Handle Context.
+}
+ * @endcode
+ */
+typedef void (*bt_hci_event_callback_t)(bt_hci_event_t* hci_event, void* context);
+
+/**
+ * @brief Create bluetooth instance
  *
  * @return bt_instance_t* - ins on success, NULL on failure.
+ *
+ * **Example:**
+ * @code
+bt_instance_t* bluetooth_get_instance(void)
+{
+    bt_instance_t* bluetooth_ins = bluetooth_find_instance(getpid());
+
+    if (bluetooth_ins == NULL)
+        return bluetooth_create_instance();
+    else
+        return bluetooth_ins;
+}
+ * @endcode
  */
 bt_instance_t* BTSYMBOLS(bluetooth_create_instance)(void);
 
 /**
- * @brief Get bluetooth client instance, If it does not exist, an instance is created
+ * @brief Get bluetooth instance, If it does not exist, an instance is created
  *
  * @return bt_instance_t* - ins if exist or create success, NULL, if create fail.
+ *
+ * **Example:**
+ * @code
+bt_instance_t* bluetooth_get_instance(void)
+{
+    bt_instance_t* bluetooth_ins = bluetooth_find_instance(getpid());
+
+    if (bluetooth_ins == NULL)
+        return bluetooth_create_instance();
+    else
+        return bluetooth_ins;
+}
+ * @endcode
  */
 bt_instance_t* BTSYMBOLS(bluetooth_get_instance)(void);
 
 /**
- * @brief Find bluetooth client instance
+ * @brief Find bluetooth instance
  *
  * @return bt_instance_t* - ins if exist, NULL otherwise.
+ *
+ * **Example:**
+ * @code
+bt_instance_t* bluetooth_get_instance(void)
+{
+    bt_instance_t* bluetooth_ins = bluetooth_find_instance(getpid());
+
+    if (bluetooth_ins == NULL)
+        return bluetooth_create_instance();
+    else
+        return bluetooth_ins;
+}
+ * @endcode
  */
 bt_instance_t* BTSYMBOLS(bluetooth_find_instance)(pid_t pid);
 
 /**
  * @brief Get profile proxy
  *
- * @param ins - bluetooth client instance.
+ * @param ins - bluetooth instance.
  * @param id - profile ID.
  * @return void* - profile proxy.
+ *
+ * **Example:**
+ * @code
+static bool bt_socket_allocator(void** data, uint32_t size)
+{
+    *data = zalloc(size);
+    if (!(*data))
+        return false;
+
+    return true;
+}
+ * @endcode
  */
 void* BTSYMBOLS(bluetooth_get_proxy)(bt_instance_t* ins, enum profile_id id);
 
 /**
  * @brief Delete client instance
  *
- * @param ins - bluetooth client instance.
+ * @param ins - bluetooth instance.
+ *
+ * **Example:**
+ * @code
+int main(int argc, char** argv) {
+    g_app_ins = bluetooth_create_instance();
+
+    while(1) {
+        // Handle events
+    }
+
+    bluetooth_delete_instance(g_app_ins);
+}
+ * @endcode
  */
 void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t* ins);
 
 /**
  * @brief Start profile service
  *
- * @param ins - bluetooth client instance.
+ * @param ins - bluetooth instance.
  * @param id - profile ID.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ *
+ * **Example:**
+ * @code
+int leac_command_init(void* handle)
+{
+    bt_status_t ret;
+
+    ret = bluetooth_start_service(handle, PROFILE_LEAUDIO_CLIENT);
+    if (ret != BT_STATUS_SUCCESS) {
+        PRINT("%s, failed ret:%d", __func__, ret);
+        return ret;
+    }
+
+    lea_client_callbacks = bt_lea_client_register_callbacks(handle, &lea_client_cbs);
+    return 0;
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t* ins, enum profile_id id);
 
 /**
  * @brief Stop profile service
  *
- * @param ins - bluetooth client instance.
- * @param id -profile ID.
+ * @param ins - bluetooth instance.
+ * @param id - profile ID.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ *
+ * **Example:**
+ * @code
+void leac_command_uninit(void* handle)
+{
+    bt_status_t ret;
+
+    bt_lea_client_unregister_callbacks(handle, lea_client_callbacks);
+    ret = bluetooth_stop_service(handle, PROFILE_LEAUDIO_CLIENT);
+    if (ret != BT_STATUS_SUCCESS) {
+        PRINT("%s, failed ret:%d", __func__, ret);
+    }
+}
+ * @endcode
  */
 bt_status_t BTSYMBOLS(bluetooth_stop_service)(bt_instance_t* ins, enum profile_id id);
 
+/**
+ * @brief Set external uv loop
+ *
+ * This function drops external UV_loop into bluetooth instance.
+ *
+ * @param ins - bluetooth instance.
+ * @param ext_loop - external uv loop.
+ * @return bool - true on success, false on failure.
+ *
+ * **Example:**
+ * @code
+bool bluetooth_set_external_uv(bt_instance_t* ins, uv_loop_t* ext_loop)
+{
+    BT_SOCKET_INS_VALID(ins, false);
+
+    ins->external_loop = ext_loop;
+
+    return true;
+}
+ * @endcode
+ */
 bool BTSYMBOLS(bluetooth_set_external_uv)(bt_instance_t* ins, uv_loop_t* ext_loop);
 
 #ifdef __cplusplus

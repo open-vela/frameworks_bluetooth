@@ -20,6 +20,10 @@
 extern "C" {
 #endif
 
+/**
+ * @cond
+ */
+
 #define PROFILE_A2DP_NAME "A2DP-Src"
 #define PROFILE_A2DP_SINK_NAME "A2DP-Sink"
 #define PROFILE_AVRCP_CT_NAME "AVRCP-CT"
@@ -63,6 +67,10 @@ enum profile_id {
     PROFILE_UNKOWN,
     PROFILE_MAX
 };
+
+/**
+ * @endcond
+ */
 
 #ifdef __cplusplus
 }
