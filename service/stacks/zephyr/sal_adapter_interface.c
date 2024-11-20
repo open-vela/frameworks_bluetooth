@@ -39,6 +39,8 @@
 
 #include "utils/log.h"
 
+#define BT_INVALID_CONNECTION_HANDLE 0xFFFF
+
 #define STACK_CALL(func) zblue_##func
 
 typedef void (*sal_func_t)(void* args);
@@ -98,6 +100,7 @@ struct device_context {
     int cnt;
 };
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 extern int zblue_main(void);
 static void zblue_on_connect_req(struct bt_conn* conn, uint8_t link_type, uint8_t* cod);
 static void zblue_on_connected(struct bt_conn* conn, uint8_t err);
@@ -413,10 +416,12 @@ static void zblue_on_ready_cb(int err)
 #endif
     adapter_on_adapter_state_changed(state);
 }
+#endif
 
 /* service adapter layer for BREDR */
 bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     zblue_main();
 
     bt_conn_cb_register(&g_conn_cbs);
@@ -424,12 +429,17 @@ bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 void bt_sal_cleanup(void)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     bt_conn_auth_cb_register(NULL);
     bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
+#endif
 }
 
 /* Adapter power */
@@ -472,11 +482,16 @@ bt_status_t bt_sal_disable(bt_controller_id_t id)
 
 bool bt_sal_is_enabled(bt_controller_id_t id)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
 
     return bt_is_ready();
+#else
+    return false;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(set_name)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -484,9 +499,11 @@ static void STACK_CALL(set_name)(void* args)
     BT_LOGD("%s: %s", __func__, req->adpt.name);
     SAL_CHECK(bt_set_name(req->adpt.name), 0);
 }
+#endif
 
 bt_status_t bt_sal_set_name(bt_controller_id_t id, char* name)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -497,6 +514,9 @@ bt_status_t bt_sal_set_name(bt_controller_id_t id, char* name)
     strlcpy(req->adpt.name, name, BT_LOC_NAME_MAX_LEN);
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 const char* bt_sal_get_name(bt_controller_id_t id)
@@ -508,6 +528,7 @@ const char* bt_sal_get_name(bt_controller_id_t id)
 
 bt_status_t bt_sal_get_address(bt_controller_id_t id, bt_address_t* addr)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     bt_addr_le_t got = { 0 };
     size_t count = 1;
@@ -519,10 +540,14 @@ bt_status_t bt_sal_get_address(bt_controller_id_t id, bt_address_t* addr)
 
     SAL_ASSERT(got.type == BT_ADDR_LE_PUBLIC);
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_set_io_capability(bt_controller_id_t id, bt_io_capability_t cap)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
 
     switch (cap) {
@@ -558,14 +583,22 @@ bt_status_t bt_sal_set_io_capability(bt_controller_id_t id, bt_io_capability_t c
     bt_conn_auth_cb_register(&g_conn_auth_cbs);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_io_capability_t bt_sal_get_io_capability(bt_controller_id_t id)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
-    SAL_NOT_SUPPORT;
+    return BT_IO_CAPABILITY_UNKNOW;
+#else
+    return BT_IO_CAPABILITY_UNKNOW;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(set_device_class)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -573,9 +606,11 @@ static void STACK_CALL(set_device_class)(void* args)
     BT_LOGD("%s: %lu", __func__, req->adpt.cod);
     SAL_CHECK(bt_set_class_of_device(req->adpt.cod), 0);
 }
+#endif
 
 bt_status_t bt_sal_set_device_class(bt_controller_id_t id, uint32_t cod)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -586,6 +621,9 @@ bt_status_t bt_sal_set_device_class(bt_controller_id_t id, uint32_t cod)
     req->adpt.cod = cod;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 uint32_t bt_sal_get_device_class(bt_controller_id_t id)
@@ -594,17 +632,7 @@ uint32_t bt_sal_get_device_class(bt_controller_id_t id)
     SAL_NOT_SUPPORT;
 }
 
-/*
-test 0->1
-test 0->2
-test 0->0
-test 1->2
-test 1->0
-test 1->1
-test 2->1
-test 2->0
-test 2->2
-*/
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(set_scan_mode)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -644,9 +672,11 @@ static void STACK_CALL(set_scan_mode)(void* args)
     if (ret == 0)
         adapter_on_scan_mode_changed(req->adpt.scanmode.scan_mode);
 }
+#endif
 
 bt_status_t bt_sal_set_scan_mode(bt_controller_id_t id, bt_scan_mode_t scan_mode, bool bondable)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -658,6 +688,9 @@ bt_status_t bt_sal_set_scan_mode(bt_controller_id_t id, bt_scan_mode_t scan_mode
     req->adpt.scanmode.bondable = bondable;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_scan_mode_t bt_sal_get_scan_mode(bt_controller_id_t id)
@@ -672,6 +705,7 @@ bool bt_sal_get_bondable(bt_controller_id_t id)
     SAL_NOT_SUPPORT;
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 /* Inquiry/page and inquiry/page scan */
 
 static bool zblue_inquiry_eir_name(uint8_t* eir, int len, char* name)
@@ -750,9 +784,11 @@ static void STACK_CALL(start_discovery)(void* args)
         == 0)
         adapter_on_discovery_state_changed(BT_DISCOVERY_STARTED);
 }
+#endif
 
 bt_status_t bt_sal_start_discovery(bt_controller_id_t id, uint32_t timeout)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -767,21 +803,31 @@ bt_status_t bt_sal_start_discovery(bt_controller_id_t id, uint32_t timeout)
     req->adpt.timeout = timeout;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(stop_discovery)(void* args)
 {
     SAL_CHECK(bt_br_discovery_stop(), 0);
     adapter_on_discovery_state_changed(BT_DISCOVERY_STOPPED);
 }
+#endif
 
 bt_status_t bt_sal_stop_discovery(bt_controller_id_t id)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
 
     return sal_send_req(sal_adapter_req(id, NULL, STACK_CALL(stop_discovery)));
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(set_scan_parameters)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -802,10 +848,12 @@ static void STACK_CALL(set_scan_parameters)(void* args)
         }
     }
 }
+#endif
 
 bt_status_t bt_sal_set_page_scan_parameters(bt_controller_id_t id, bt_scan_type_t type,
     uint16_t interval, uint16_t window)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -819,11 +867,15 @@ bt_status_t bt_sal_set_page_scan_parameters(bt_controller_id_t id, bt_scan_type_
     req->adpt.sp.window = window;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_set_inquiry_scan_parameters(bt_controller_id_t id, bt_scan_type_t type,
     uint16_t interval, uint16_t window)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -837,8 +889,12 @@ bt_status_t bt_sal_set_inquiry_scan_parameters(bt_controller_id_t id, bt_scan_ty
     req->adpt.sp.window = window;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 /* Remote device RNR/connection/bond/properties */
 static void zblue_on_remote_name_req_cb(const bt_addr_t* bdaddr, const char* name, uint8_t status)
 {
@@ -855,21 +911,31 @@ static void STACK_CALL(get_remote_name)(void* args)
 
     SAL_CHECK(bt_br_remote_name_request((bt_addr_t*)&req->addr, zblue_on_remote_name_req_cb), 0);
 }
+#endif
 
 bt_status_t bt_sal_get_remote_name(bt_controller_id_t id, bt_address_t* addr)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
 
     return sal_send_req(sal_adapter_req(id, addr, STACK_CALL(get_remote_name)));
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_auto_accept_connection(bt_controller_id_t id, bool enable)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     bt_conn_set_auto(enable);
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(sco_connection_reply)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -883,9 +949,11 @@ static void STACK_CALL(sco_connection_reply)(void* args)
 
     bt_conn_unref(conn);
 }
+#endif
 
 bt_status_t bt_sal_sco_connection_reply(bt_controller_id_t id, bt_address_t* addr, bool accept)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -896,8 +964,12 @@ bt_status_t bt_sal_sco_connection_reply(bt_controller_id_t id, bt_address_t* add
     req->adpt.accept = accept;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(acl_connection_reply)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -911,9 +983,11 @@ static void STACK_CALL(acl_connection_reply)(void* args)
 
     bt_conn_unref(conn);
 }
+#endif
 
 bt_status_t bt_sal_acl_connection_reply(bt_controller_id_t id, bt_address_t* addr, bool accept)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -924,8 +998,12 @@ bt_status_t bt_sal_acl_connection_reply(bt_controller_id_t id, bt_address_t* add
     req->adpt.accept = accept;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(pair_reply)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -937,9 +1015,11 @@ static void STACK_CALL(pair_reply)(void* args)
         SAL_CHECK(bt_conn_auth_pairing_reject(conn, req->adpt.reason), 0);
     }
 }
+#endif
 
 bt_status_t bt_sal_pair_reply(bt_controller_id_t id, bt_address_t* addr, uint8_t reason)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -950,8 +1030,12 @@ bt_status_t bt_sal_pair_reply(bt_controller_id_t id, bt_address_t* addr, uint8_t
     req->adpt.reason = reason;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(ssp_reply)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -975,10 +1059,12 @@ static void STACK_CALL(ssp_reply)(void* args)
 
     bt_conn_unref(conn);
 }
+#endif
 
 bt_status_t bt_sal_ssp_reply(bt_controller_id_t id, bt_address_t* addr, bool accept,
     bt_pair_type_t type, uint32_t passkey)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -991,8 +1077,12 @@ bt_status_t bt_sal_ssp_reply(bt_controller_id_t id, bt_address_t* addr, bool acc
     req->adpt.ssp.passkey = passkey;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(pin_reply)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -1006,10 +1096,12 @@ static void STACK_CALL(pin_reply)(void* args)
 
     bt_conn_unref(conn);
 }
+#endif
 
 bt_status_t bt_sal_pin_reply(bt_controller_id_t id, bt_address_t* addr,
     bool accept, char* pincode, int len)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -1024,10 +1116,14 @@ bt_status_t bt_sal_pin_reply(bt_controller_id_t id, bt_address_t* addr,
     req->adpt.pin.len = len;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 connection_state_t bt_sal_get_connection_state(bt_controller_id_t id, bt_address_t* addr)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     struct bt_conn_info info;
     connection_state_t state = CONNECTION_STATE_DISCONNECTED;
@@ -1057,10 +1153,14 @@ connection_state_t bt_sal_get_connection_state(bt_controller_id_t id, bt_address
 
     bt_conn_unref(conn);
     return state;
+#else
+    return CONNECTION_STATE_DISCONNECTED;
+#endif
 }
 
 uint16_t bt_sal_get_acl_connection_handle(bt_controller_id_t id, bt_address_t* addr, bt_transport_t trasnport)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     struct bt_conn_info info;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
@@ -1069,10 +1169,14 @@ uint16_t bt_sal_get_acl_connection_handle(bt_controller_id_t id, bt_address_t* a
     bt_conn_unref(conn);
 
     return info.handle;
+#else
+    return BT_INVALID_CONNECTION_HANDLE;
+#endif
 }
 
 uint16_t bt_sal_get_sco_connection_handle(bt_controller_id_t id, bt_address_t* addr)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     struct bt_conn_info info;
     struct bt_conn* conn = bt_conn_lookup_addr_sco((bt_addr_t*)addr);
@@ -1081,8 +1185,12 @@ uint16_t bt_sal_get_sco_connection_handle(bt_controller_id_t id, bt_address_t* a
     bt_conn_unref(conn);
 
     return info.handle;
+#else
+    return BT_INVALID_CONNECTION_HANDLE;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(connect)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -1096,14 +1204,20 @@ static void STACK_CALL(connect)(void* args)
 
     bt_conn_unref(conn);
 }
+#endif
 
 bt_status_t bt_sal_connect(bt_controller_id_t id, bt_address_t* addr)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
 
     return sal_send_req(sal_adapter_req(id, addr, STACK_CALL(connect)));
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(disconnect)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -1112,9 +1226,11 @@ static void STACK_CALL(disconnect)(void* args)
     SAL_CHECK(bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN), 0);
     bt_conn_unref(conn);
 }
+#endif
 
 bt_status_t bt_sal_disconnect(bt_controller_id_t id, bt_address_t* addr, uint8_t reason)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -1125,8 +1241,12 @@ bt_status_t bt_sal_disconnect(bt_controller_id_t id, bt_address_t* addr, uint8_t
     req->adpt.reason = reason;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(create_bond)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -1141,9 +1261,11 @@ static void STACK_CALL(create_bond)(void* args)
 
     adapter_on_bond_state_changed(&req->addr, state, BT_TRANSPORT_BREDR, BT_STATUS_SUCCESS, false);
 }
+#endif
 
 bt_status_t bt_sal_create_bond(bt_controller_id_t id, bt_address_t* addr, bt_transport_t transport, bt_addr_type_t type)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -1155,8 +1277,12 @@ bt_status_t bt_sal_create_bond(bt_controller_id_t id, bt_address_t* addr, bt_tra
     req->adpt.bond.type = type;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(cancel_bond)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -1165,9 +1291,11 @@ static void STACK_CALL(cancel_bond)(void* args)
     SAL_CHECK(bt_conn_auth_cancel(conn), 0);
     SAL_CHECK(bt_br_unpair((bt_addr_t*)&req->addr), 0);
 }
+#endif
 
 bt_status_t bt_sal_cancel_bond(bt_controller_id_t id, bt_address_t* addr, bt_transport_t transport)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -1178,17 +1306,23 @@ bt_status_t bt_sal_cancel_bond(bt_controller_id_t id, bt_address_t* addr, bt_tra
     req->adpt.bond.transport = transport;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(remove_bond)(void* args)
 {
     sal_adapter_req_t* req = args;
 
     SAL_CHECK(bt_br_unpair((bt_addr_t*)&req->addr), 0);
 }
+#endif
 
 bt_status_t bt_sal_remove_bond(bt_controller_id_t id, bt_address_t* addr, bt_transport_t transport)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -1199,6 +1333,9 @@ bt_status_t bt_sal_remove_bond(bt_controller_id_t id, bt_address_t* addr, bt_tra
     req->adpt.bond.transport = transport;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t bt_sal_set_remote_oob_data(bt_controller_id_t id, bt_address_t* addr,
@@ -1228,6 +1365,7 @@ bt_status_t bt_sal_get_remote_device_info(bt_controller_id_t id, bt_address_t* a
 
 bt_status_t bt_sal_set_bonded_devices(bt_controller_id_t id, remote_device_properties_t* props, int cnt)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     struct bt_bond_info_br bondinfo;
 
@@ -1240,8 +1378,12 @@ bt_status_t bt_sal_set_bonded_devices(bt_controller_id_t id, remote_device_prope
     }
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void get_bonded_devices(const struct bt_bond_info_br* info,
     void* user_data)
 {
@@ -1255,9 +1397,11 @@ static void get_bonded_devices(const struct bt_bond_info_br* info,
         ctx->got++;
     }
 }
+#endif
 
 bt_status_t bt_sal_get_bonded_devices(bt_controller_id_t id, remote_device_properties_t* props, int* cnt)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     struct device_context ctx;
 
@@ -1269,8 +1413,12 @@ bt_status_t bt_sal_get_bonded_devices(bt_controller_id_t id, remote_device_prope
     *cnt = ctx.got;
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void get_connected_devices(struct bt_conn* conn, void* data)
 {
     struct device_context* ctx = data;
@@ -1283,9 +1431,11 @@ static void get_connected_devices(struct bt_conn* conn, void* data)
         ctx->got++;
     }
 }
+#endif
 
 bt_status_t bt_sal_get_connected_devices(bt_controller_id_t id, remote_device_properties_t* props, int* cnt)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     struct device_context ctx;
 
@@ -1297,6 +1447,9 @@ bt_status_t bt_sal_get_connected_devices(bt_controller_id_t id, remote_device_pr
     *cnt = ctx.got;
 
     return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 /* Service discovery */
@@ -1306,17 +1459,24 @@ bt_status_t bt_sal_start_service_discovery(bt_controller_id_t id, bt_address_t* 
     SAL_NOT_SUPPORT;
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(stop_service_discovery)(void* args)
 {
 }
+#endif
 
 bt_status_t bt_sal_stop_service_discovery(bt_controller_id_t id, bt_address_t* addr)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
 
     return sal_send_req(sal_adapter_req(id, addr, STACK_CALL(stop_service_discovery)));
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 /* Link policy */
 static void STACK_CALL(set_power_mode)(void* args)
 {
@@ -1332,9 +1492,11 @@ static void STACK_CALL(set_power_mode)(void* args)
 
     bt_conn_unref(conn);
 }
+#endif
 
 bt_status_t bt_sal_set_power_mode(bt_controller_id_t id, bt_address_t* addr, bt_pm_mode_t* mode)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -1345,8 +1507,12 @@ bt_status_t bt_sal_set_power_mode(bt_controller_id_t id, bt_address_t* addr, bt_
     memcpy(&req->adpt.mode, mode, sizeof(*mode));
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(set_link_role)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -1355,9 +1521,11 @@ static void STACK_CALL(set_link_role)(void* args)
     SAL_CHECK(bt_conn_switch_role(conn, req->adpt.role), 0);
     bt_conn_unref(conn);
 }
+#endif
 
 bt_status_t bt_sal_set_link_role(bt_controller_id_t id, bt_address_t* addr, bt_link_role_t role)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -1368,8 +1536,12 @@ bt_status_t bt_sal_set_link_role(bt_controller_id_t id, bt_address_t* addr, bt_l
     req->adpt.role = role;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(set_link_policy)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -1398,9 +1570,11 @@ static void STACK_CALL(set_link_policy)(void* args)
 
     bt_conn_unref(conn);
 }
+#endif
 
 bt_status_t bt_sal_set_link_policy(bt_controller_id_t id, bt_address_t* addr, bt_link_policy_t policy)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -1411,15 +1585,21 @@ bt_status_t bt_sal_set_link_policy(bt_controller_id_t id, bt_address_t* addr, bt
     req->adpt.policy = policy;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(set_afh_channel_classification)(void* args)
 {
 }
+#endif
 
 bt_status_t bt_sal_set_afh_channel_classification(bt_controller_id_t id, uint16_t central_frequency,
     uint16_t band_width, uint16_t number)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -1432,14 +1612,20 @@ bt_status_t bt_sal_set_afh_channel_classification(bt_controller_id_t id, uint16_
     req->adpt.afh.number = number;
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(set_afh_channel_classification_1)(void* args)
 {
 }
+#endif
 
 bt_status_t bt_sal_set_afh_channel_classification_1(bt_controller_id_t id, uint8_t* map)
 {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     sal_adapter_req_t* req;
 
@@ -1450,6 +1636,9 @@ bt_status_t bt_sal_set_afh_channel_classification_1(bt_controller_id_t id, uint8
     memcpy(req->adpt.map, map, 10);
 
     return sal_send_req(req);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 /* VSC */
