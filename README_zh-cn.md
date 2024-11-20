@@ -3,7 +3,7 @@
 
 ## 一 openvela 蓝牙能力介绍
 
-openvela 蓝牙已经通过Bluetooth 5.4认证。目前支持的蓝牙能力包括：
+openvela 蓝牙已经通过 Bluetooth 5.4 认证。目前支持的蓝牙能力包括：
 
 - Core
 
@@ -52,7 +52,7 @@ openvela 蓝牙目前还能够支持多种开源、闭源协议栈，如Zephyr�
 
 ## 三 openvela 蓝牙驱动开发
 
-Vela 蓝牙支持多种驱动架构。以目前常用的 BTH4 驱动架构为例，芯片厂商可以实现一个 **struct bt_driver_s** 结构体类型的变量，并为其初始化以下成员函数：
+openvela 蓝牙支持多种驱动架构。以目前常用的 BTH4 驱动架构为例，芯片厂商可以实现一个 **struct bt_driver_s** 结构体类型的变量，并为其初始化以下成员函数：
 
 - CODE int (*open)(FAR struct bt_driver_s *btdev);
 - CODE int (*send)(FAR struct bt_driver_s *btdev, enum bt_buf_type_e type, FAR void *data, size_t len);
@@ -69,7 +69,7 @@ Vela 蓝牙支持多种驱动架构。以目前常用的 BTH4 驱动架构为例
 
 ![](img/bt_driver.png)
 
-备注：对于 receive()成员函数，芯片厂商无需定义，BTH4 驱动会为其初始化。
+备注：对于 receive() 成员函数，芯片厂商无需定义，BTH4 驱动会为其初始化。
 
 - CODE int (*receive)(FAR struct bt_driver_s *btdev, enum bt_buf_type_e type, FAR void *data, size_t len);
 
