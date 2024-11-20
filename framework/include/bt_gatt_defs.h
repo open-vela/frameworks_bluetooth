@@ -23,6 +23,10 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 
+/**
+ * @cond
+ */
+
 typedef enum {
     GATT_STATUS_SUCCESS,
     GATT_STATUS_FAILURE,
@@ -144,6 +148,10 @@ typedef enum {
 /* GATT_H_DESCRIPTOR */
 #define GATT_H_CPFD(_value, _length, _handle) \
     GATT_H_DESCRIPTOR(BT_UUID_DECLARE_16(0x2904), GATT_PERM_READ, ATTR_AUTO_RSP, NULL, NULL, _value, _length, _handle)
+
+/**
+ * @endcond
+ */
 
 #ifdef __cplusplus
 }
