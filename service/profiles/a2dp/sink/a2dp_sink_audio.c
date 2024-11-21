@@ -46,7 +46,6 @@
 #include "utils/log.h"
 
 #define A2DP_SINK_MEDIA_TICK_MS 20
-#define A2DP_MAX_DELAY_PACKET_COUNT 5
 #define A2DP_MAX_ENQUEUE_PACKET_COUNT 14
 #define A2DP_ASYNC_SEND_COUNT 14
 
@@ -192,7 +191,7 @@ void a2dp_sink_packet_recieve(a2dp_sink_packet_t* packet)
     }
 
     list_add_tail(queue, &packet->node);
-    if (list_length(queue) >= A2DP_MAX_DELAY_PACKET_COUNT && !stream->media_alarm) {
+    if (!stream->media_alarm) {
         BT_LOGD("%s start trans packet", __func__);
         stream->underflow_ts = 0;
         stream->last_ts = 0;
