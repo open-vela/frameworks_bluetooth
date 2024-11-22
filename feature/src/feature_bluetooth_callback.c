@@ -16,6 +16,7 @@
  */
 #include "bt_a2dp_sink.h"
 #include "bt_adapter.h"
+#include "bt_avrcp_control.h"
 #include "bt_list.h"
 #include "feature_bluetooth.h"
 #include "feature_exports.h"
@@ -23,6 +24,7 @@
 #include "system_bluetooth.h"
 #include "system_bluetooth_bt.h"
 #include "system_bluetooth_bt_a2dpsink.h"
+#include "system_bluetooth_bt_avrcpcontrol.h"
 #include "uv.h"
 
 #define REMOVE_CALLBACK(feature_callback, callback_type)                                                       \
@@ -85,6 +87,16 @@ static bool get_callback_a2dp_sink(void* data, void* feature_ins)
     return callbacks->feature_ins == feature_ins;
 }
 
+static bool get_callback_avrcp_control(void* data, void* feature_ins)
+{
+    feature_bluetooth_avrcp_control_callbacks_t* callbacks = (feature_bluetooth_avrcp_control_callbacks_t*)data;
+    if (!callbacks) {
+        return false;
+    }
+
+    return callbacks->feature_ins == feature_ins;
+}
+
 static void free_feature_callback(bt_list_t* callbacks, FeatureInstanceHandle handle, bt_list_find_cb find_func)
 {
     void* data;
@@ -133,6 +145,18 @@ static void free_feature_bluetooth_a2dp_sink_node(void* node)
     }
 
     REMOVE_CALLBACK(feature_callback, a2dp_sink_connection_state_cb_id);
+    free(feature_callback);
+}
+
+static void free_feature_bluetooth_avrcp_control_node(void* node)
+{
+    feature_bluetooth_avrcp_control_callbacks_t* feature_callback = (feature_bluetooth_avrcp_control_callbacks_t*)node;
+
+    if (!feature_callback) {
+        return;
+    }
+
+    REMOVE_CALLBACK(feature_callback, avrcp_control_element_attribute_cb_id);
     free(feature_callback);
 }
 
@@ -437,6 +461,92 @@ static const a2dp_sink_callbacks_t a2dp_sink_cbs = {
     a2dp_sink_connection_state_cb,
 };
 
+system_bluetooth_bt_avrcpcontrol_attr_info_t* get_attr_info(avrcp_element_attr_val_t* attr)
+{
+    system_bluetooth_bt_avrcpcontrol_attr_info_t* attr_info = system_bluetooth_bt_avrcpcontrolMallocattr_info_t();
+    attr_info->attrId = attr->attr_id;
+    attr_info->chrSet = attr->chr_set;
+    attr_info->text = StringToFtString((char*)attr->text);
+    return attr_info;
+}
+
+static void avrcp_control_get_element_attribute_cb(void* cookie, bt_address_t* addr, uint8_t attrs_count, avrcp_element_attr_val_t* attrs)
+{
+    int attr_index;
+    bt_instance_t* bt_ins = (bt_instance_t*)cookie;
+    feature_bluetooth_features_info_t* features_callbacks;
+    bt_list_t* callbacks;
+    bt_list_node_t* node;
+
+    FEATURE_LOG_DEBUG("avrcp control element attribute cb");
+    if (!bt_ins) {
+        return;
+    }
+
+    features_callbacks = (feature_bluetooth_features_info_t*)bt_ins->context;
+    if (!features_callbacks) {
+        return;
+    }
+
+    uv_mutex_lock(&features_callbacks->mutex);
+    callbacks = features_callbacks->feature_avrcp_control_callbacks;
+    if (!callbacks) {
+        uv_mutex_unlock(&features_callbacks->mutex);
+        return;
+    }
+
+    node = bt_list_head(callbacks);
+    if (!node) {
+        uv_mutex_unlock(&features_callbacks->mutex);
+        return;
+    }
+
+    while (node) {
+        feature_bluetooth_avrcp_control_callbacks_t* feature_callback;
+        system_bluetooth_bt_avrcpcontrol_OnElementAttributeData* data;
+        FtArray* attributes;
+
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+
+        feature_callback = (feature_bluetooth_avrcp_control_callbacks_t*)bt_list_node(node);
+        if (!feature_callback) {
+            break;
+        }
+
+        FEATURE_LOG_DEBUG("feature:%p, callbackId:%d", feature_callback->feature_ins, feature_callback->avrcp_control_element_attribute_cb_id);
+        bt_addr_ba2str(addr, addr_str);
+        data = system_bluetooth_bt_avrcpcontrolMallocOnElementAttributeData();
+        attributes = system_bluetooth_bt_avrcpcontrol_malloc_attr_info_t_struct_type_array();
+
+        if (!data || !attributes) {
+            continue;
+        }
+
+        data->deviceId = StringToFtString(addr_str);
+        data->attrsCount = attrs_count;
+        attributes->_size = attrs_count;
+        attributes->_element = malloc(attributes->_size * sizeof(struct Attribute*));
+        if (!attributes->_element) {
+            continue;
+        }
+        for (attr_index = 0; attr_index < attributes->_size; attr_index++) {
+            system_bluetooth_bt_avrcpcontrol_attr_info_t* attr_info = get_attr_info(&attrs[attr_index]);
+            ((system_bluetooth_bt_avrcpcontrol_attr_info_t**)attributes->_element)[attr_index] = attr_info;
+        }
+
+        data->attrs = attributes;
+
+        feature_bluetooth_post_task(feature_callback->feature_ins, feature_callback->avrcp_control_element_attribute_cb_id, data);
+        node = bt_list_next(callbacks, node);
+    }
+    uv_mutex_unlock(&features_callbacks->mutex);
+}
+
+static const avrcp_control_callbacks_t avrcp_control_cbs = {
+    .size = sizeof(avrcp_control_cbs),
+    .get_element_attribute_cb = avrcp_control_get_element_attribute_cb,
+};
+
 void feature_bluetooth_add_feature_callback(FeatureInstanceHandle handle, feature_bluetooth_feature_type_t feature_type)
 {
     bt_instance_t* bt_ins;
@@ -464,6 +574,11 @@ void feature_bluetooth_add_feature_callback(FeatureInstanceHandle handle, featur
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     case FEATURE_BLUETOOTH_A2DPSINK:
         add_feature_callback(features_callbacks->feature_a2dp_sink_callbacks, feature_bluetooth_a2dp_sink_callbacks_t, handle);
+        break;
+#endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    case FEATURE_BLUETOOTH_AVRCPCONTROL:
+        add_feature_callback(features_callbacks->feature_avrcp_control_callbacks, feature_bluetooth_avrcp_control_callbacks_t, handle);
         break;
 #endif
     default:
@@ -498,6 +613,11 @@ void feature_bluetooth_free_feature_callback(FeatureInstanceHandle handle, featu
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     case FEATURE_BLUETOOTH_A2DPSINK:
         free_feature_callback(features_callbacks->feature_a2dp_sink_callbacks, handle, get_callback_a2dp_sink);
+        break;
+#endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    case FEATURE_BLUETOOTH_AVRCPCONTROL:
+        free_feature_callback(features_callbacks->feature_avrcp_control_callbacks, handle, get_callback_avrcp_control);
         break;
 #endif
     default:
@@ -535,6 +655,11 @@ void feature_bluetooth_set_feature_callback(FeatureInstanceHandle handle, FtCall
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     case A2DPSINK_ON_CONNECT_STATE_CHANGE:
         set_feature_callback(features_callbacks->feature_a2dp_sink_callbacks, feature_bluetooth_a2dp_sink_callbacks_t, get_callback_a2dp_sink, handle, callback_id, a2dp_sink_connection_state_cb_id);
+        break;
+#endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    case AVRCPCONTROL_ELEMENT_ATTRIBUTE_CALLBACK:
+        set_feature_callback(features_callbacks->feature_avrcp_control_callbacks, feature_bluetooth_avrcp_control_callbacks_t, get_callback_avrcp_control, handle, callback_id, avrcp_control_element_attribute_cb_id);
         break;
 #endif
     default:
@@ -576,6 +701,11 @@ FtCallbackId feature_bluetooth_get_feature_callback(FeatureInstanceHandle handle
         get_feature_callback(features_callbacks->feature_a2dp_sink_callbacks, feature_bluetooth_a2dp_sink_callbacks_t, get_callback_a2dp_sink, handle, callback_id, a2dp_sink_connection_state_cb_id);
         break;
 #endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    case AVRCPCONTROL_ELEMENT_ATTRIBUTE_CALLBACK:
+        get_feature_callback(features_callbacks->feature_avrcp_control_callbacks, feature_bluetooth_avrcp_control_callbacks_t, get_callback_avrcp_control, handle, callback_id, avrcp_control_element_attribute_cb_id);
+        break;
+#endif
     default:
         break;
     }
@@ -607,6 +737,11 @@ void feature_bluetooth_callback_init(bt_instance_t* bt_ins)
     bt_ins->a2dp_sink_cookie = bt_a2dp_sink_register_callbacks(bt_ins, &a2dp_sink_cbs);
 #endif
 
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    features_callbacks->feature_avrcp_control_callbacks = bt_list_new(free_feature_bluetooth_avrcp_control_node);
+    bt_ins->avrcp_control_cookie = bt_avrcp_control_register_callbacks(bt_ins, &avrcp_control_cbs);
+#endif
+
     bt_ins->context = features_callbacks;
 }
 
@@ -629,11 +764,18 @@ void feature_bluetooth_callback_uninit(bt_instance_t* bt_ins)
     bt_a2dp_sink_unregister_callbacks(bt_ins, bt_ins->a2dp_sink_cookie);
 #endif
 
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    bt_avrcp_control_unregister_callbacks(bt_ins, bt_ins->avrcp_control_cookie);
+#endif
+
     uv_mutex_lock(&features_callbacks->mutex);
     bt_list_free(features_callbacks->feature_bluetooth_callbacks);
     bt_list_free(features_callbacks->feature_bluetooth_bt_callbacks);
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     bt_list_free(features_callbacks->feature_a2dp_sink_callbacks);
+#endif
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    bt_list_free(features_callbacks->feature_avrcp_control_callbacks);
 #endif
     uv_mutex_unlock(&features_callbacks->mutex);
 
