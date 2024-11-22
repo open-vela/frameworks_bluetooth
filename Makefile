@@ -341,6 +341,10 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
 CSRCS     += feature/src/system_bluetooth_bt_a2dpsink.c
 CSRCS     += feature/src/system_bluetooth_bt_a2dpsink_impl.c
 endif
+ifeq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL), y)
+CSRCS     += feature/src/system_bluetooth_bt_avrcpcontrol.c
+CSRCS     += feature/src/system_bluetooth_bt_avrcpcontrol_impl.c
+endif
 
 depend::
 	$(APPDIR)/../prebuilts/tools/rust/bin/jidl/jidl_gen_cpp \
@@ -353,6 +357,11 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
 	$(APPDIR)/../prebuilts/tools/rust/bin/jidl/jidl_gen_cpp \
 		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth_bt_a2dpsink.jidl --out-dir \
 		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src --header system_bluetooth_bt_a2dpsink.h --source system_bluetooth_bt_a2dpsink.c
+endif
+ifeq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL), y)
+	$(APPDIR)/../prebuilts/tools/rust/bin/jidl/jidl_gen_cpp \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth_bt_avrcpcontrol.jidl --out-dir \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src --header system_bluetooth_bt_avrcpcontrol.h --source system_bluetooth_bt_avrcpcontrol.c
 endif
 
 endif

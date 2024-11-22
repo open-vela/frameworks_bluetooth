@@ -1,0 +1,27 @@
+module system.bluetooth.bt.avrcpcontrol@1.0
+
+callback startGetElementAttributeSuccess()
+callback startGetElementAttributeFail(string data, int code)
+callback startGetElementAttributeComplete()
+struct StartGetElementAttributeParams {
+    string   deviceId
+    callback startGetElementAttributeSuccess  success
+    callback startGetElementAttributeFail     fail
+    callback startGetElementAttributeComplete complete
+}
+void startGetElementAttribute(StartGetElementAttributeParams params)
+
+struct attr_info_t {
+    int attrId
+    int chrSet
+    string text
+}
+
+struct OnElementAttributeData {
+    string deviceId
+    int attrsCount
+    attr_info_t[] attrs;
+}
+
+callback ElementAttributeCallback(OnElementAttributeData data)
+property ElementAttributeCallback onElementattribute

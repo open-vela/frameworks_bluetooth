@@ -505,6 +505,12 @@ if(CONFIG_BLUETOOTH)
       list(APPEND FEATURE_NAMES system_bluetooth_a2dpsink)
     endif()
 
+    if(CONFIG_BLUETOOTH_AVRCP_CONTROL)
+      list(APPEND FEATURE_SRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_avrcpcontrol_impl.c)
+      list(APPEND JIDL_PATHS ${BLUETOOTH_DIR}/feature/jdil/bluetooth_avrcpcontrol.jidl)
+      list(APPEND FEATURE_NAMES system_bluetooth_avrcpcontrol)
+    endif()
+
     nuttx_add_jidl(
       TARGET
       libbluetooth

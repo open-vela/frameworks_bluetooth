@@ -40,12 +40,14 @@ typedef enum {
     ON_DISCOVERY_RESULT,
     ON_BOND_STATE_CHANGE,
     A2DPSINK_ON_CONNECT_STATE_CHANGE,
+    AVRCPCONTROL_ELEMENT_ATTRIBUTE_CALLBACK,
 } feature_bluetooth_callback_t;
 
 typedef enum {
     FEATURE_BLUETOOTH,
     FEATURE_BLUETOOTH_BT,
     FEATURE_BLUETOOTH_A2DPSINK,
+    FEATURE_BLUETOOTH_AVRCPCONTROL,
 } feature_bluetooth_feature_type_t;
 
 typedef struct {
@@ -65,6 +67,11 @@ typedef struct {
 } feature_bluetooth_a2dp_sink_callbacks_t;
 
 typedef struct {
+    FeatureInstanceHandle* feature_ins;
+    FtCallbackId avrcp_control_element_attribute_cb_id;
+} feature_bluetooth_avrcp_control_callbacks_t;
+
+typedef struct {
     FtCallbackId feature_callback_id;
     void* feature;
     void* data;
@@ -75,6 +82,7 @@ typedef struct {
     bt_list_t* feature_bluetooth_callbacks;
     bt_list_t* feature_bluetooth_bt_callbacks;
     bt_list_t* feature_a2dp_sink_callbacks;
+    bt_list_t* feature_avrcp_control_callbacks;
     uint32_t created_features;
 } feature_bluetooth_features_info_t;
 
