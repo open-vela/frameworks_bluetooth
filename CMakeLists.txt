@@ -451,6 +451,12 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS
            ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_a2dpsink_impl.c)
     endif()
+    if(CONFIG_BLUETOOTH_AVRCP_CONTROL)
+      list(APPEND CSRCS
+           ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_avrcpcontrol.c)
+      list(APPEND CSRCS
+           ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_avrcpcontrol_impl.c)
+    endif()
   endif()
 
   nuttx_add_library(libbluetooth STATIC)
@@ -518,6 +524,10 @@ if(CONFIG_BLUETOOTH)
     if(CONFIG_BLUETOOTH_A2DP_SINK)
       list(APPEND JIDL_PATHS
            ${BLUETOOTH_DIR}/feature/jdil/bluetooth_a2dpsink.jidl)
+    endif()
+    if(CONFIG_BLUETOOTH_AVRCP_CONTROL)
+      list(APPEND JIDL_PATHS
+           ${BLUETOOTH_DIR}/feature/jdil/bluetooth_avrcpcontrol.jidl)
     endif()
 
     nuttx_add_jidl(

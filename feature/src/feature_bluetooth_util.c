@@ -77,6 +77,9 @@ void feature_bluetooth_post_task(FeatureInstanceHandle handle, FtCallbackId call
 
 char* StringToFtString(const char* str)
 {
+    if (!str) {
+        return NULL;
+    }
     int len = strlen(str);
     char* ftStr = (char*)FeatureMalloc(len + 1, FT_CHAR);
     strcpy(ftStr, str);
