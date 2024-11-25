@@ -140,10 +140,6 @@ static void a2dp_sbc_get_num_frame_iteration(uint8_t* num_of_iterations, uint8_t
 
 static int a2dp_sbc_frame_header_check(uint8_t* frame)
 {
-    if (frame[0] != A2DP_SBC_SYNCWORD) {
-        BT_LOGE("%s, sbc syncword error: %02x", __func__, frame[0]);
-        return -1;
-    }
     return 0;
 }
 
@@ -205,10 +201,8 @@ static void a2dp_source_sbc_send_frames(uint16_t header_reserve, uint64_t timest
 
     a2dp_sbc_get_num_frame_iteration(&num_of_iterations, &num_of_frames,
         timestamp);
-    if (num_of_frames == 0) {
-        BT_LOGD("%s, no frame to send", __func__);
+    if (num_of_frames == 0)
         return;
-    }
 
     for (int i = 0; i < num_of_iterations; i++) {
         a2dp_sbc_send_frames(header_reserve, num_of_frames);
@@ -238,7 +232,7 @@ static void a2dp_source_sbc_stream_reset(void)
     sample_rate = a2dp_sbc_sample_frequency(param->s16SamplingFreq);
     sbc_stream.media_timestamp = 0;
     sbc_stream.state.total_tx_frames = 0;
-    sbc_stream.state.session_start_us = bt_get_os_timestamp_us();
+    sbc_stream.state.session_start_us = get_os_timestamp_us();
     sbc_stream.feeding_state.last_frame_us = 0;
     sbc_stream.feeding_state.counter = 0;
     sbc_stream.feeding_state.bytes_per_tick = (sample_rate * A2DP_SBC_BIT_PER_SAMPLE / 8 * param->s16NumOfChannels * A2DP_SBC_ENCODER_INTERVAL_MS) / 1000;
@@ -249,18 +243,12 @@ static int a2dp_source_sbc_interval_ms(void)
     return A2DP_SBC_ENCODER_INTERVAL_MS;
 }
 
-static int a2dp_source_sbc_get_min_frame_size(void)
-{
-    return sbc_stream.frames_len;
-}
-
 static const a2dp_source_stream_interface_t a2dp_source_stream_sbc = {
     a2dp_source_sbc_stream_init,
     a2dp_source_sbc_stream_reset,
     NULL,
     a2dp_source_sbc_send_frames,
     a2dp_source_sbc_interval_ms,
-    a2dp_source_sbc_get_min_frame_size,
 };
 
 const a2dp_source_stream_interface_t* get_a2dp_source_sbc_stream_interface(void)

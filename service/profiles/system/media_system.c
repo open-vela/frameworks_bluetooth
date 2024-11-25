@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "bt_dfx.h"
 #include "bt_status.h"
 #include <media_api.h>
 
@@ -53,17 +52,14 @@ static int media_volume_to_ui_volume(int volume)
 }
 #endif /* CONFIG_MICO_MEDIA_MAIN_PLAYER */
 
-int bt_media_get_music_volume_range(void)
+int bt_media_get_music_volume_range()
 {
     int media_min_volume = 0; /* min volume of AVRCP must be 0. */
     int status;
 
-    status = media_policy_get_range(MEDIA_STREAM_A2DP_SNK MEDIA_POLICY_VOLUME, &media_min_volume, &g_media_max_volume);
-    if (status)
-        BT_DFX_AVRCP_VOL_ERROR(BT_DFXE_GET_MEDIA_VOLUME_RANGE_FAIL);
+    status = media_policy_get_range(MEDIA_SCENARIO_MUSIC MEDIA_POLICY_VOLUME, &media_min_volume, &g_media_max_volume);
 
     assert(!media_min_volume);
-
     return status;
 }
 
@@ -153,10 +149,8 @@ bt_status_t bt_media_set_a2dp_available(void)
     int is_available = 0;
 
     /* check A2DP device is available */
-    if (media_policy_is_devices_available(MEDIA_DEVICE_A2DP, &is_available) != 0) {
-        BT_DFX_A2DP_MEDIA_ERROR(BT_DFXE_GET_A2DP_AVAILABLE_FAIL);
+    if (media_policy_is_devices_available(MEDIA_DEVICE_A2DP, &is_available) != 0)
         return BT_STATUS_FAIL;
-    }
 
     if (is_available) {
         BT_LOGI("a2dp device had set available !");
@@ -164,10 +158,8 @@ bt_status_t bt_media_set_a2dp_available(void)
     }
 
     /* set A2DP device available */
-    if (media_policy_set_devices_available(MEDIA_DEVICE_A2DP) != 0) {
-        BT_DFX_A2DP_MEDIA_ERROR(BT_DFXE_SET_A2DP_AVAILABLE_FAIL);
+    if (media_policy_set_devices_available(MEDIA_DEVICE_A2DP) != 0)
         return BT_STATUS_FAIL;
-    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -198,10 +190,8 @@ bt_status_t bt_media_set_hfp_samplerate(uint16_t samplerate)
         return BT_STATUS_PARM_INVALID;
 
     /* set hfp samplerate, dev/pcm1c/p device ioctl */
-    if (media_policy_set_hfp_samplerate(samplerate) != 0) {
-        BT_DFX_HFP_MEDIA_ERROR(BT_DFXE_SET_HFP_SAMPLERATE_FAIL);
+    if (media_policy_set_hfp_samplerate(samplerate) != 0)
         return BT_STATUS_FAIL;
-    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -224,7 +214,6 @@ void* bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_call
     listener->policy_handle = media_policy_subscribe(MEDIA_SCENARIO_INCALL MEDIA_POLICY_VOLUME, bt_media_policy_volume_change_callback, listener);
     if (!listener->policy_handle) {
         BT_LOGI("media policy subscribe(%s-%s) failed!", MEDIA_SCENARIO_INCALL, MEDIA_POLICY_VOLUME);
-        BT_DFX_HFP_VOL_ERROR(BT_DFXE_MEDIA_POLICY_SUBSCRIBE_FAIL);
         free(listener);
         listener = NULL;
     }
@@ -234,20 +223,16 @@ void* bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_call
 
 bt_status_t bt_media_get_voice_call_volume(int* volume)
 {
-    if (media_policy_get_stream_volume(MEDIA_SCENARIO_INCALL, volume) != 0) {
-        BT_DFX_HFP_VOL_ERROR(BT_DFXE_GET_VOICE_CALL_VOLUME_FAIL);
+    if (media_policy_get_stream_volume(MEDIA_SCENARIO_INCALL, volume) != 0)
         return BT_STATUS_FAIL;
-    }
 
     return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_media_set_voice_call_volume(int volume)
 {
-    if (media_policy_set_stream_volume(MEDIA_SCENARIO_INCALL, volume) != 0) {
-        BT_DFX_HFP_VOL_ERROR(BT_DFXE_SET_VOICE_CALL_VOLUME_FAIL);
+    if (media_policy_set_stream_volume(MEDIA_SCENARIO_INCALL, volume) != 0)
         return BT_STATUS_FAIL;
-    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -256,11 +241,10 @@ bt_status_t bt_media_set_music_volume(int volume)
 {
     bt_status_t status;
 
-    status = media_policy_set_stream_volume(MEDIA_STREAM_A2DP_SNK, volume);
+    status = media_policy_set_stream_volume(MEDIA_STREAM_MUSIC, volume);
 
     if (status) {
         BT_LOGE("set music stream volume fail: %d, status: %d", volume, status);
-        BT_DFX_AVRCP_VOL_ERROR(BT_DFXE_SET_MEDIA_VOLUME_FAIL);
         return status;
     }
 
@@ -275,7 +259,6 @@ bt_status_t bt_media_set_music_volume(int volume)
     status = am_set_volume(mAm, AM_STREAM_TYPE_MEDIA, media_volume_to_ui_volume(volume));
 
     if (status != 0) {
-        BT_DFX_AVRCP_VOL_ERROR(BT_DFXE_SET_UI_VOLUME_FAIL);
         BT_LOGE("am_set_volume err, status: %d", status);
     }
 
@@ -289,10 +272,8 @@ bt_status_t bt_media_set_music_volume(int volume)
 
 bt_status_t bt_media_get_music_volume(int* volume)
 {
-    if (media_policy_get_stream_volume(MEDIA_STREAM_A2DP_SNK, volume) != 0) {
-        BT_DFX_AVRCP_VOL_ERROR(BT_DFXE_GET_STREAM_VOLUME_FAIL);
+    if (media_policy_get_stream_volume(MEDIA_STREAM_MUSIC, volume) != 0)
         return BT_STATUS_FAIL;
-    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -307,7 +288,7 @@ void* bt_media_listen_music_volume_change(bt_media_voice_volume_change_callback_
 
     listener->context = context;
     listener->policy_cb = cb;
-    listener->policy_handle = media_policy_subscribe(MEDIA_STREAM_A2DP_SNK MEDIA_POLICY_VOLUME, bt_media_policy_volume_change_callback, listener);
+    listener->policy_handle = media_policy_subscribe(MEDIA_SCENARIO_MUSIC MEDIA_POLICY_VOLUME, bt_media_policy_volume_change_callback, listener);
 
     return listener;
 }
@@ -315,20 +296,16 @@ void* bt_media_listen_music_volume_change(bt_media_voice_volume_change_callback_
 bt_status_t bt_media_set_sco_available(void)
 {
     /* set SCO device available */
-    if (media_policy_set_devices_available(MEDIA_DEVICE_SCO) != 0) {
-        BT_DFX_HFP_MEDIA_ERROR(BT_DFXE_SET_SCO_AVAILABLE_FAIL);
+    if (media_policy_set_devices_available(MEDIA_DEVICE_SCO) != 0)
         return BT_STATUS_FAIL;
-    }
 
     return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_media_set_sco_unavailable(void)
 {
-    if (media_policy_set_devices_unavailable(MEDIA_DEVICE_SCO) != 0) {
-        BT_DFX_HFP_MEDIA_ERROR(BT_DFXE_SET_SCO_UNAVAILABLE_FAIL);
+    if (media_policy_set_devices_unavailable(MEDIA_DEVICE_SCO) != 0)
         return BT_STATUS_FAIL;
-    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -396,10 +373,8 @@ bt_status_t bt_media_set_lea_offloading(bool enable)
 
 bt_status_t bt_media_set_anc_enable(bool enable)
 {
-    if (media_policy_set_int(MEDIA_POLICY_ANC_OFFLOAD_MODE, (int)enable, MEDIA_POLICY_APPLY) != 0) {
-        BT_DFX_HFP_MEDIA_ERROR(BT_DFXE_SET_ANC_ENABLE_FAIL);
+    if (media_policy_set_int(MEDIA_POLICY_ANC_OFFLOAD_MODE, (int)enable, MEDIA_POLICY_APPLY) != 0)
         return BT_STATUS_FAIL;
-    }
 
     return BT_STATUS_SUCCESS;
 }

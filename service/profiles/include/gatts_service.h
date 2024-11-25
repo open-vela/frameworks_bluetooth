@@ -39,9 +39,6 @@ void if_gatts_on_phy_read(bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_typ
 void if_gatts_on_phy_updated(bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, gatt_status_t status);
 void if_gatts_on_connection_parameter_changed(bt_address_t* addr, uint16_t connection_interval, uint16_t peripheral_latency,
     uint16_t supervision_timeout);
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-void if_gatts_on_database_hash(bt_address_t* addr, ble_addr_type_t addr_type, const uint8_t* hash, bool force_update);
-#endif
 
 /*
  * gatts remote
@@ -53,7 +50,6 @@ typedef struct gatts_interface {
     bt_status_t (*register_service)(void* remote, void** phandle, gatts_callbacks_t* callbacks);
     bt_status_t (*unregister_service)(void* srv_handle);
     bt_status_t (*connect)(void* srv_handle, bt_address_t* addr, ble_addr_type_t addr_type);
-    bt_status_t (*connect_bear)(void* srv_handle, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type);
     bt_status_t (*disconnect)(void* srv_handle, bt_address_t* addr);
     bt_status_t (*add_attr_table)(void* srv_handle, gatt_srv_db_t* srv_db);
     bt_status_t (*remove_attr_table)(void* srv_handle, uint16_t attr_handle);

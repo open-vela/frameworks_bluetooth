@@ -15,11 +15,11 @@
  ***************************************************************************/
 
 #include "adapter_internel.h"
-#include "bt_storage.h"
 #include "manager_service.h"
 #include "service_loop.h"
 #include "stack_manager.h"
 #include "state_machine.h"
+#include "storage.h"
 
 #ifdef CONFIG_BLUETOOTH_HFP_HF
 #include "hfp_hf_service.h"
@@ -27,10 +27,8 @@
 #ifdef CONFIG_BLUETOOTH_HFP_AG
 #include "hfp_ag_service.h"
 #endif
-#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
+#ifdef CONFIG_BLUETOOTH_GATT
 #include "gattc_service.h"
-#endif
-#ifdef CONFIG_BLUETOOTH_GATT_SERVER
 #include "gatts_service.h"
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
@@ -142,10 +140,8 @@ void bt_profile_init(void)
     register_pan_service();
 #endif
 
-#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
+#ifdef CONFIG_BLUETOOTH_GATT
     register_gattc_service();
-#endif
-#ifdef CONFIG_BLUETOOTH_GATT_SERVER
     register_gatts_service();
 #endif
 
@@ -249,9 +245,7 @@ int bt_service_init(void)
     if (create_bt_folder() != 0)
         return -1;
 
-#ifdef CONFIG_BLUETOOTH_LOG
     bt_log_server_init();
-#endif
     bt_storage_init();
     bt_profile_init();
     adapter_init();
@@ -270,10 +264,7 @@ int bt_service_cleanup(void)
     manager_cleanup();
     adapter_cleanup();
     bt_storage_cleanup();
-
-#ifdef CONFIG_BLUETOOTH_LOG
     bt_log_server_cleanup();
-#endif
 
     BT_LOGD("%s done", __func__);
     return 0;

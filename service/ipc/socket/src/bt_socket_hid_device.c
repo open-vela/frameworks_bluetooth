@@ -48,7 +48,7 @@
  ****************************************************************************/
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (__async ? __async->hidd_callbacks : ins->hidd_callbacks)
+#define CBLIST (ins->hidd_callbacks)
 
 /****************************************************************************
  * Private Types
@@ -241,13 +241,8 @@ void bt_socket_server_hid_device_process(service_poll_t* poll, int fd,
 #endif
 
 int bt_socket_client_hid_device_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
-    bt_socket_async_client_t* __async = NULL;
-
-    if (is_async)
-        __async = ins->priv;
-
     switch (packet->code) {
     case BT_HID_DEVICE_APP_STATE:
         CALLBACK_FOREACH(CBLIST, hid_device_callbacks_t,

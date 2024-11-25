@@ -20,7 +20,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#include "adapter_internel.h"
 #include "bt_list.h"
 #include "bt_profile.h"
 #include "gatts_event.h"
@@ -70,6 +69,7 @@
 typedef struct
 {
     bool started;
+    pthread_mutex_t device_lock;
     bt_list_t* services;
     bt_list_t* pend_ops;
 
@@ -88,6 +88,7 @@ typedef struct
 {
     void* remote;
     uint16_t srv_id;
+    pthread_mutex_t srv_lock;
     void** user_phandle;
     gatts_manager_t* manager;
     gatts_callbacks_t* callbacks;
@@ -212,6 +213,7 @@ static void gatts_service_delete(gatts_service_t* service)
     if (!service)
         return;
 
+    pthread_mutex_destroy(&service->srv_lock);
     bt_list_free(service->tables);
     free(service);
 }
@@ -237,55 +239,12 @@ static gatts_op_t* gatts_pendops_execute_out(gatts_manager_t* manager, gatts_req
     return NULL;
 }
 
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-static void gatts_process_database_hash_evt(struct gatts_db_hash_evt_param* evt)
-{
-    bt_status_t status;
-    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-    uint8_t stored_hash[BT_GATT_HASH_LEN] = { 0 };
-
-    if (!evt) {
-        BT_LOGE("%s, invalid param", __func__);
-        return;
-    }
-
-    bt_addr_ba2str(&evt->addr, addr_str);
-    BT_LOGD("GATTS-DB-HASH-EVENT from:%s, force_update:%d, hash:"
-            "%02X%02X%02X%02X%02X%02X%02X%02X"
-            "%02X%02X%02X%02X%02X%02X%02X%02X",
-        addr_str, evt->force_update,
-        evt->hash[0], evt->hash[1], evt->hash[2], evt->hash[3],
-        evt->hash[4], evt->hash[5], evt->hash[6], evt->hash[7],
-        evt->hash[8], evt->hash[9], evt->hash[10], evt->hash[11],
-        evt->hash[12], evt->hash[13], evt->hash[14], evt->hash[15]);
-
-    status = adapter_get_device_gatt_hash(&evt->addr, evt->addr_type, stored_hash);
-    if (status != BT_STATUS_SUCCESS) {
-        BT_LOGD("No bonded, skip.");
-        return;
-    }
-
-    if (!memcmp(stored_hash, evt->hash, sizeof(stored_hash))) {
-        BT_LOGD("DB Hash unchanged, no action.");
-        return;
-    }
-
-    if (evt->force_update) {
-        BT_LOGI("Force update");
-    } else {
-        BT_LOGI("Hash mismatch, trigger Service Changed: %s", addr_str);
-        bt_sal_gatt_server_change_indicate(PRIMARY_ADAPTER, 0x0001, 0xFFFF);
-    }
-
-    adapter_set_device_gatt_hash((bt_address_t*)&evt->addr, evt->addr_type, evt->hash);
-}
-#endif
-
 static void gatts_process_message(void* data)
 {
     gatts_service_t* service;
     gatts_msg_t* msg = (gatts_msg_t*)data;
 
+    pthread_mutex_lock(&g_gatts_manager.device_lock);
     if (!g_gatts_manager.started)
         goto end;
 
@@ -310,10 +269,6 @@ static void gatts_process_message(void* data)
         profile_connection_state_t connect_state = msg->param.connect_change.state;
         BT_ADDR_LOG("GATTS-CONNECTION-STATE-EVENT from:%s, state:%d", &msg->param.connect_change.addr, connect_state);
         if (connect_state == PROFILE_STATE_CONNECTED) {
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-            /* Always fetch latest db hash when gatt connected */
-            bt_sal_gatt_server_get_database_hash(PRIMARY_ADAPTER, &msg->param.connect_change.addr, false);
-#endif
             GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_connected, &msg->param.connect_change.addr);
         } else if (connect_state == PROFILE_STATE_DISCONNECTED) {
             GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_disconnected, &msg->param.connect_change.addr);
@@ -328,8 +283,8 @@ static void gatts_process_message(void* data)
         if (!element)
             break;
 
-        if (element->rsp_type == ATTR_AUTO_RSP || element->rsp_type == ATTR_AUTO_RSP_CCC_READ) {
-            bt_sal_gatt_server_send_response(PRIMARY_ADAPTER, &msg->param.read.addr, msg->param.read.request_id, element->attr_data, element->attr_length);
+        if (element->rsp_type == ATTR_AUTO_RSP) {
+            bt_sal_gatt_server_send_response(&msg->param.read.addr, msg->param.read.request_id, element->attr_data, element->attr_length);
         } else if (element->read_cb) {
             element->read_cb(service, &msg->param.read.addr, msg->param.read.element_id ^ service->srv_id, msg->param.read.request_id);
         }
@@ -343,7 +298,7 @@ static void gatts_process_message(void* data)
         if (!element)
             break;
 
-        bt_sal_gatt_server_send_response(PRIMARY_ADAPTER, &msg->param.write.addr, msg->param.write.request_id, NULL, 0);
+        bt_sal_gatt_server_send_response(&msg->param.write.addr, msg->param.write.request_id, NULL, 0);
         if (element->rsp_type == ATTR_AUTO_RSP) {
             if (element->attr_data) {
                 msg->param.write.length = MIN(element->attr_length, msg->param.write.length);
@@ -390,18 +345,13 @@ static void gatts_process_message(void* data)
         GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_conn_param_changed, &msg->param.conn_param.addr,
             msg->param.conn_param.interval, msg->param.conn_param.latency, msg->param.conn_param.timeout);
         break;
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-    case GATTS_EVENT_DB_HASH_AVAILABLE:
-        gatts_process_database_hash_evt(&msg->param.db_hash);
-        break;
-#endif
-
     default: {
 
     } break;
     }
 
 end:
+    pthread_mutex_unlock(&g_gatts_manager.device_lock);
     gatts_msg_destory(msg);
 }
 
@@ -416,8 +366,15 @@ static bt_status_t gatts_send_message(gatts_msg_t* msg)
 
 static bt_status_t if_gatts_init(void)
 {
+    pthread_mutexattr_t attr;
+
     memset(&g_gatts_manager, 0, sizeof(g_gatts_manager));
     g_gatts_manager.started = false;
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    if (pthread_mutex_init(&g_gatts_manager.device_lock, &attr) < 0)
+        return BT_STATUS_FAIL;
 
     return BT_STATUS_SUCCESS;
 }
@@ -427,7 +384,9 @@ static bt_status_t if_gatts_startup(profile_on_startup_t cb)
     bt_status_t status;
     gatts_manager_t* manager = &g_gatts_manager;
 
+    pthread_mutex_lock(&manager->device_lock);
     if (manager->started) {
+        pthread_mutex_unlock(&manager->device_lock);
         cb(PROFILE_GATTS, true);
         return BT_STATUS_SUCCESS;
     }
@@ -449,6 +408,7 @@ static bt_status_t if_gatts_startup(profile_on_startup_t cb)
         goto fail;
 
     manager->started = true;
+    pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTS, true);
 
     return BT_STATUS_SUCCESS;
@@ -458,6 +418,7 @@ fail:
     manager->services = NULL;
     bt_list_free(manager->pend_ops);
     manager->pend_ops = NULL;
+    pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTS, false);
 
     return status;
@@ -467,7 +428,10 @@ static bt_status_t if_gatts_shutdown(profile_on_shutdown_t cb)
 {
     gatts_manager_t* manager = &g_gatts_manager;
 
+    pthread_mutex_lock(&manager->device_lock);
+
     if (!manager->started) {
+        pthread_mutex_unlock(&manager->device_lock);
         cb(PROFILE_GATTS, true);
         return BT_STATUS_SUCCESS;
     }
@@ -477,41 +441,17 @@ static bt_status_t if_gatts_shutdown(profile_on_shutdown_t cb)
     bt_list_free(manager->pend_ops);
     manager->pend_ops = NULL;
     manager->started = false;
+    pthread_mutex_unlock(&manager->device_lock);
     bt_sal_gatt_server_disable();
     cb(PROFILE_GATTS, true);
 
     return BT_STATUS_SUCCESS;
 }
 
-static void if_gatts_process_msg(profile_msg_t* msg)
-{
-    if (!msg) {
-        return;
-    }
-
-    switch (msg->event) {
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-    case PROFILE_EVT_GATTS_REQUEST_DB_HASH: {
-        bt_address_t* addr = (bt_address_t*)msg->data.data;
-        if (!addr) {
-            BT_LOGE("received null address");
-            break;
-        }
-
-        BT_ADDR_LOG("GATTS-DB-HASH-REQUEST to:%s, force_update:%d", addr, msg->data.valuebool);
-        bt_sal_gatt_server_get_database_hash(PRIMARY_ADAPTER, addr, msg->data.valuebool);
-        break;
-    }
-#endif
-
-    default:
-        break;
-    }
-}
-
 static void if_gatts_cleanup(void)
 {
     g_gatts_manager.started = false;
+    pthread_mutex_destroy(&g_gatts_manager.device_lock);
 }
 
 static int if_gatts_get_state(void)
@@ -526,6 +466,8 @@ static int if_gatts_dump(void)
     int s_id = 0;
     char uuid_str[40] = { 0 };
 
+    pthread_mutex_lock(&g_gatts_manager.device_lock);
+
     for (snode = bt_list_head(slist); snode != NULL; snode = bt_list_next(slist, snode)) {
         gatts_service_t* service = (gatts_service_t*)bt_list_node(snode);
         bt_list_node_t* tnode;
@@ -533,13 +475,11 @@ static int if_gatts_dump(void)
         int t_id = 0;
 
         BT_LOGI("GATT Service[%d]: ID:0x%04x", s_id++, service->srv_id);
-        UNUSED(s_id);
         for (tnode = bt_list_head(tlist); tnode != NULL; tnode = bt_list_next(tlist, tnode)) {
             service_table_t* table = (service_table_t*)bt_list_node(tnode);
             gatt_element_t* element = table->elements;
 
             BT_LOGI("\tAttribute Table[%d]: Handle:0x%04x~0x%04x, Num:%d", t_id++, table->start_handle, table->end_handle, table->element_size);
-            UNUSED(t_id);
             for (int i = 0; i < table->element_size; i++, element++) {
                 bt_uuid_to_string(&element->uuid, uuid_str, 40);
                 BT_LOGI("\t\t>[0x%04x][Type:%d][Prop:%04x][UUID:%s]", element->handle, element->type, element->properties,
@@ -551,22 +491,33 @@ static int if_gatts_dump(void)
             BT_LOGI("\tNo Attributes were added");
     }
 
+    pthread_mutex_unlock(&g_gatts_manager.device_lock);
+
     return 0;
 }
 
 static bt_status_t if_gatts_register_service(void* remote, void** phandle, gatts_callbacks_t* callbacks)
 {
+    pthread_mutexattr_t attr;
+
     CHECK_ENABLED();
     if (!phandle)
         return BT_STATUS_PARM_INVALID;
 
+    pthread_mutex_lock(&g_gatts_manager.device_lock);
     gatts_service_t* service = gatts_service_new(callbacks);
     if (!service) {
+        pthread_mutex_unlock(&g_gatts_manager.device_lock);
         BT_LOGE("New gatts service alloc failed");
         return BT_STATUS_NOMEM;
     }
 
     bt_list_add_tail(g_gatts_manager.services, service);
+    pthread_mutex_unlock(&g_gatts_manager.device_lock);
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&service->srv_lock, &attr);
 
     service->remote = remote;
     service->manager = &g_gatts_manager;
@@ -591,7 +542,9 @@ static bt_status_t if_gatts_unregister_service(void* srv_handle)
     }
 
     void** user_phandle = service->user_phandle;
+    pthread_mutex_lock(&g_gatts_manager.device_lock);
     bt_list_remove(g_gatts_manager.services, service);
+    pthread_mutex_unlock(&g_gatts_manager.device_lock);
     *user_phandle = NULL;
 
     return BT_STATUS_SUCCESS;
@@ -605,18 +558,7 @@ static bt_status_t if_gatts_connect(void* srv_handle, bt_address_t* addr, ble_ad
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
     BT_ADDR_LOG("GATTS-CONNECT-REQUEST addr:%s", addr);
-    return bt_sal_gatt_server_connect(PRIMARY_ADAPTER, addr, addr_type);
-}
-
-static bt_status_t if_gatts_connect_bear(void* srv_handle, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type)
-{
-    gatts_service_t* service = srv_handle;
-
-    CHECK_ENABLED();
-    CHECK_SERVICE_VALID(g_gatts_manager.services, service);
-
-    BT_ADDR_LOG("GATTS-CONNECT-REQUEST-V2 addr:%s", addr);
-    return bt_sal_gatt_server_connect_bear(PRIMARY_ADAPTER, addr, addr_type, bear_type);
+    return bt_sal_gatt_server_connect(addr, addr_type);
 }
 
 static bt_status_t if_gatts_disconnect(void* srv_handle, bt_address_t* addr)
@@ -627,7 +569,7 @@ static bt_status_t if_gatts_disconnect(void* srv_handle, bt_address_t* addr)
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
     BT_ADDR_LOG("GATTS-DISCONNECT-REQUEST addr:%s", addr);
-    return bt_sal_gatt_server_cancel_connection(PRIMARY_ADAPTER, addr);
+    return bt_sal_gatt_server_cancel_connection(addr);
 }
 
 static bt_status_t if_gatts_add_attr_table(void* srv_handle, gatt_srv_db_t* srv_db)
@@ -746,57 +688,31 @@ static bt_status_t if_gatts_response(void* srv_handle, bt_address_t* addr, uint3
     if (!value)
         return BT_STATUS_PARM_INVALID;
 
-    return bt_sal_gatt_server_send_response(PRIMARY_ADAPTER, addr, req_handle, value, length);
+    return bt_sal_gatt_server_send_response(addr, req_handle, value, length);
 }
 
 static bt_status_t if_gatts_notify(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     gatts_service_t* service = srv_handle;
-#if defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
-    gatt_element_t* element;
-#endif
 
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
     if (!value)
         return BT_STATUS_PARM_INVALID;
 
-#if defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
-    element = find_service_element_by_id(service, attr_handle + service->srv_id);
-    if (!element) {
-        BT_LOGE("%s element null", __func__);
-        return BT_STATUS_PARM_INVALID;
-    }
-
-    return bt_sal_gatt_server_send_notification(PRIMARY_ADAPTER, addr, element, value, length);
-#else
-    return bt_sal_gatt_server_send_notification(PRIMARY_ADAPTER, addr, attr_handle + service->srv_id, value, length);
-#endif
+    return bt_sal_gatt_server_send_notification(addr, attr_handle + service->srv_id, value, length);
 }
 
 static bt_status_t if_gatts_indicate(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     gatts_service_t* service = srv_handle;
-#if defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
-    gatt_element_t* element;
-#endif
 
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
     if (!value)
         return BT_STATUS_PARM_INVALID;
 
-#if defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
-    element = find_service_element_by_id(service, attr_handle + service->srv_id);
-    if (!element) {
-        BT_LOGE("%s element null", __func__);
-        return BT_STATUS_PARM_INVALID;
-    }
-
-    return bt_sal_gatt_server_send_indication(PRIMARY_ADAPTER, addr, element, value, length);
-#else
-    return bt_sal_gatt_server_send_indication(PRIMARY_ADAPTER, addr, attr_handle + service->srv_id, value, length);
-#endif
+    return bt_sal_gatt_server_send_indication(addr, attr_handle + service->srv_id, value, length);
 }
 
 static bt_status_t if_gatts_read_phy(void* srv_handle, bt_address_t* addr)
@@ -806,12 +722,14 @@ static bt_status_t if_gatts_read_phy(void* srv_handle, bt_address_t* addr)
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
-    bt_status_t status = bt_sal_gatt_server_read_phy(PRIMARY_ADAPTER, addr);
+    bt_status_t status = bt_sal_gatt_server_read_phy(addr);
 
     if (status == BT_STATUS_SUCCESS && service->callbacks->on_phy_read) {
         gatts_op_t* op = gatts_op_new(GATTS_REQ_READ_PHY);
         op->param.phy.srv_handle = srv_handle;
+        pthread_mutex_lock(&g_gatts_manager.device_lock);
         bt_list_add_tail(service->manager->pend_ops, op);
+        pthread_mutex_unlock(&g_gatts_manager.device_lock);
     }
     return status;
 }
@@ -823,14 +741,16 @@ static bt_status_t if_gatts_update_phy(void* srv_handle, bt_address_t* addr, ble
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
-    bt_status_t status = bt_sal_gatt_server_set_phy(PRIMARY_ADAPTER, addr, tx_phy, rx_phy);
+    bt_status_t status = bt_sal_gatt_server_set_phy(addr, tx_phy, rx_phy);
 
     if (status == BT_STATUS_SUCCESS && service->callbacks->on_phy_updated) {
         gatts_op_t* op = gatts_op_new(GATTS_REQ_UPDATE_PHY);
         op->param.phy.srv_handle = srv_handle;
         op->param.phy.tx_phy = tx_phy;
         op->param.phy.rx_phy = rx_phy;
+        pthread_mutex_lock(&g_gatts_manager.device_lock);
         bt_list_add_tail(service->manager->pend_ops, op);
+        pthread_mutex_unlock(&g_gatts_manager.device_lock);
     }
     return status;
 }
@@ -840,7 +760,6 @@ static const gatts_interface_t gatts_if = {
     .register_service = if_gatts_register_service,
     .unregister_service = if_gatts_unregister_service,
     .connect = if_gatts_connect,
-    .connect_bear = if_gatts_connect_bear,
     .disconnect = if_gatts_disconnect,
     .add_attr_table = if_gatts_add_attr_table,
     .remove_attr_table = if_gatts_remove_attr_table,
@@ -925,18 +844,6 @@ void if_gatts_on_notification_sent(bt_address_t* addr, uint16_t element_id, gatt
     gatts_send_message(msg);
 }
 
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-void if_gatts_on_database_hash(bt_address_t* addr, ble_addr_type_t addr_type, const uint8_t* hash, bool force_update)
-{
-    gatts_msg_t* msg = gatts_msg_new(GATTS_EVENT_DB_HASH_AVAILABLE, 0);
-    memcpy(&msg->param.db_hash.addr, addr, sizeof(bt_address_t));
-    memcpy(msg->param.db_hash.hash, hash, BT_GATT_HASH_LEN);
-    msg->param.db_hash.addr_type = addr_type;
-    msg->param.db_hash.force_update = force_update;
-    gatts_send_message(msg);
-}
-#endif
-
 void if_gatts_on_phy_read(bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     gatts_msg_t* msg = gatts_msg_new(GATTS_EVENT_PHY_READ, 0);
@@ -985,7 +892,7 @@ static const profile_service_t gatts_service = {
     .init = if_gatts_init,
     .startup = if_gatts_startup,
     .shutdown = if_gatts_shutdown,
-    .process_msg = if_gatts_process_msg,
+    .process_msg = NULL,
     .get_state = if_gatts_get_state,
     .get_profile_interface = get_gatts_profile_interface,
     .cleanup = if_gatts_cleanup,

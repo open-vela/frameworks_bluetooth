@@ -24,35 +24,25 @@
 
 void* BTSYMBOLS(bt_l2cap_register_callbacks)(bt_instance_t* ins, const l2cap_callbacks_t* callbacks)
 {
-    return l2cap_register_callbacks(ins, callbacks);
+    return l2cap_register_callbacks(NULL, callbacks);
 }
 
-bool BTSYMBOLS(bt_l2cap_unregister_callbacks)(bt_instance_t* ins, void* handle)
+bool BTSYMBOLS(bt_l2cap_unregister_callbacks)(bt_instance_t* ins, void* cookie)
 {
-    return l2cap_unregister_callbacks(NULL, handle);
+    return l2cap_unregister_callbacks(NULL, cookie);
 }
 
-bt_status_t BTSYMBOLS(bt_l2cap_listen)(bt_instance_t* ins, void* handle, l2cap_config_option_t* option)
+bt_status_t BTSYMBOLS(bt_l2cap_listen)(bt_instance_t* ins, l2cap_config_option_t* option)
 {
-    return l2cap_listen_channel(handle, option);
+    return l2cap_listen_channel(option);
 }
 
-bt_status_t BTSYMBOLS(bt_l2cap_connect)(bt_instance_t* ins, void* handel, bt_address_t* addr, l2cap_config_option_t* option)
+bt_status_t BTSYMBOLS(bt_l2cap_connect)(bt_instance_t* ins, bt_address_t* addr, l2cap_config_option_t* option)
 {
-    return l2cap_connect_channel(handel, addr, option);
+    return l2cap_connect_channel(addr, option);
 }
 
-bt_status_t BTSYMBOLS(bt_l2cap_disconnect)(bt_instance_t* ins, void* handle, uint16_t id)
+bt_status_t BTSYMBOLS(bt_l2cap_disconnect)(bt_instance_t* ins, uint16_t cid)
 {
-    return l2cap_disconnect_channel(handle, id);
-}
-
-bt_status_t BTSYMBOLS(bt_l2cap_stop_listen)(bt_instance_t* ins, void* handle, uint16_t psm)
-{
-    return l2cap_stop_listen_channel(handle, BT_TRANSPORT_BLE, psm);
-}
-
-bt_status_t BTSYMBOLS(bt_l2cap_stop_listen_with_transport)(bt_instance_t* ins, void* handle, bt_transport_t transport, uint16_t psm)
-{
-    return l2cap_stop_listen_channel(handle, transport, psm);
+    return l2cap_disconnect_channel(cid);
 }

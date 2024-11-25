@@ -45,7 +45,7 @@ static bt_gatts_remote_t* gatts_remote_new(bt_instance_t* ins, gatts_callbacks_t
 
     remote->ins = ins;
     remote->callbacks = callbacks;
-    remote->cookie = 0;
+    remote->cookie = NULL;
 
     return remote;
 }
@@ -91,7 +91,7 @@ bt_status_t bt_gatts_register_service(bt_instance_t* ins, gatts_handle_t* phandl
         goto fail;
     }
 
-    gatts_remote->cookie = packet.gatts_r.handle;
+    gatts_remote->cookie = INT2PTR(void*) packet.gatts_r.handle;
     gatts_remote->user_phandle = phandle;
     bt_list_add_tail(ins->gatts_remote_list, gatts_remote);
 
@@ -159,25 +159,6 @@ bt_status_t bt_gatts_connect(gatts_handle_t srv_handle, bt_address_t* addr, ble_
     return packet.gatts_r.status;
 }
 
-bt_status_t bt_gatts_connect_bear(gatts_handle_t srv_handle, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type)
-{
-    bt_message_packet_t packet;
-    bt_status_t status;
-    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
-
-    CHECK_NULL_PTR(gatts_remote);
-
-    packet.gatts_pl._bt_gatts_connect_bear.handle = PTR2INT(uint64_t) gatts_remote->cookie;
-    packet.gatts_pl._bt_gatts_connect_bear.addr_type = addr_type;
-    packet.gatts_pl._bt_gatts_connect_bear.bear_type = bear_type;
-    memcpy(&packet.gatts_pl._bt_gatts_connect_bear.addr, addr, sizeof(bt_address_t));
-    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_CONNECT_BEAR);
-    if (status != BT_STATUS_SUCCESS)
-        return status;
-
-    return packet.gatts_r.status;
-}
-
 bt_status_t bt_gatts_disconnect(gatts_handle_t srv_handle, bt_address_t* addr)
 {
     bt_message_packet_t packet;
@@ -199,49 +180,41 @@ bt_status_t bt_gatts_add_attr_table(gatts_handle_t srv_handle, gatt_srv_db_t* sr
 {
     bt_message_packet_t packet;
     bt_status_t status;
-    int32_t attr_offset = 0;
-    int num_max;
     bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
-    uint8_t* raw_data;
+    uint8_t* raw_data = (uint8_t*)packet.gatts_pl._bt_gatts_add_attr_table.attr_db;
+    uint32_t data_length = sizeof(packet.gatts_pl._bt_gatts_add_attr_table.attr_db[0]) * srv_db->attr_num;
     gatt_attr_db_t* attr_inst = srv_db->attr_db;
 
     CHECK_NULL_PTR(gatts_remote);
+    if (data_length > sizeof(packet.gatts_pl._bt_gatts_add_attr_table.attr_db))
+        return BT_STATUS_PARM_INVALID;
 
-    while (attr_offset < srv_db->attr_num) {
-        num_max = (srv_db->attr_num - attr_offset)
-                > GATTS_MAX_ATTRIBUTE_NUM
-            ? GATTS_MAX_ATTRIBUTE_NUM
-            : (srv_db->attr_num - attr_offset);
+    raw_data += data_length;
+    for (int i = 0; i < srv_db->attr_num; i++, attr_inst++) {
+        memcpy(&packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].uuid, &attr_inst->uuid,
+            sizeof(packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].uuid));
+        packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].handle = attr_inst->handle;
+        packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].type = attr_inst->type;
+        packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].rsp_type = attr_inst->rsp_type;
+        packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].properties = attr_inst->properties;
+        packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].permissions = attr_inst->permissions;
+        packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].attr_length = attr_inst->attr_length;
 
-        raw_data = (uint8_t*)packet.gatts_pl._bt_gatts_add_attr_table.attr_db
-            + sizeof(packet.gatts_pl._bt_gatts_add_attr_table.attr_db[0]) * num_max;
-        attr_inst = srv_db->attr_db + attr_offset;
+        if (attr_inst->rsp_type == ATTR_AUTO_RSP && attr_inst->attr_length) {
+            data_length += attr_inst->attr_length;
+            if (data_length > sizeof(packet.gatts_pl._bt_gatts_add_attr_table.attr_db))
+                return BT_STATUS_PARM_INVALID;
 
-        for (int i = 0; i < num_max; i++, attr_inst++) {
-            memcpy(&packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].uuid, &attr_inst->uuid,
-                sizeof(packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].uuid));
-            packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].handle = attr_inst->handle;
-            packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].type = attr_inst->type;
-            packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].rsp_type = attr_inst->rsp_type;
-            packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].properties = attr_inst->properties;
-            packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].permissions = attr_inst->permissions;
-            packet.gatts_pl._bt_gatts_add_attr_table.attr_db[i].attr_length = attr_inst->attr_length;
-
-            if (attr_inst->rsp_type == ATTR_AUTO_RSP && attr_inst->attr_length) {
-                memcpy(raw_data, attr_inst->attr_value, attr_inst->attr_length);
-                raw_data += attr_inst->attr_length;
-            }
+            memcpy(raw_data, attr_inst->attr_value, attr_inst->attr_length);
+            raw_data += attr_inst->attr_length;
         }
-
-        packet.gatts_pl._bt_gatts_add_attr_table.handle = PTR2INT(uint64_t) gatts_remote->cookie;
-        packet.gatts_pl._bt_gatts_add_attr_table.attr_num = srv_db->attr_num;
-        packet.gatts_pl._bt_gatts_add_attr_table.attr_num_offset = attr_offset;
-        status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_ADD_ATTR_TABLE);
-        if (status != BT_STATUS_SUCCESS)
-            return status;
-
-        attr_offset += num_max;
     }
+
+    packet.gatts_pl._bt_gatts_add_attr_table.handle = PTR2INT(uint64_t) gatts_remote->cookie;
+    packet.gatts_pl._bt_gatts_add_attr_table.attr_num = srv_db->attr_num;
+    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_ADD_ATTR_TABLE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
 
     if (packet.gatts_r.status == BT_STATUS_SUCCESS) {
         bt_list_add_tail(gatts_remote->db_list, srv_db);

@@ -49,7 +49,6 @@ typedef enum {
     AG_START_VIRTUAL_CALL = 13,
     AG_STOP_VIRTUAL_CALL = 14,
     AG_SEND_AT_COMMAND = 18,
-    AG_SEND_VENDOR_SPECIFIC_AT_COMMAND,
     AG_STARTUP = 20,
     AG_SHUTDOWN = 21,
     AG_CONNECT_TIMEOUT = 25,
@@ -84,7 +83,6 @@ typedef enum {
 typedef struct
 {
     bt_address_t addr;
-    void* func;
     uint32_t valueint1;
     uint32_t valueint2;
     uint32_t valueint3;

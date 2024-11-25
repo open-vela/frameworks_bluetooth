@@ -29,21 +29,18 @@ static spp_interface_t* get_profile_service(void)
     return (spp_interface_t*)service_manager_get_profile(PROFILE_SPP);
 }
 
-void* BTSYMBOLS(bt_spp_register_app_with_name)(bt_instance_t* ins, const char* name, const spp_callbacks_t* callbacks)
+void* BTSYMBOLS(bt_spp_register_app)(bt_instance_t* ins, const spp_callbacks_t* callbacks)
 {
     spp_interface_t* profile = get_profile_service();
 
-    return profile->register_app(NULL, name, callbacks);
-}
-
-void* BTSYMBOLS(bt_spp_register_app)(bt_instance_t* ins, const spp_callbacks_t* callbacks)
-{
-    return BTSYMBOLS(bt_spp_register_app_with_name)(ins, NULL, callbacks);
+    return profile->register_app(NULL, NULL, SPP_PORT_TYPE_TTY, callbacks);
 }
 
 void* BTSYMBOLS(bt_spp_register_app_ext)(bt_instance_t* ins, const char* name, int port_type, const spp_callbacks_t* callbacks)
 {
-    return BTSYMBOLS(bt_spp_register_app_with_name)(ins, name, callbacks);
+    spp_interface_t* profile = get_profile_service();
+
+    return profile->register_app(NULL, name, port_type, callbacks);
 }
 
 bt_status_t BTSYMBOLS(bt_spp_unregister_app)(bt_instance_t* ins, void* handle)
@@ -67,18 +64,11 @@ bt_status_t BTSYMBOLS(bt_spp_server_stop)(bt_instance_t* ins, void* handle, uint
     return profile->server_stop(handle, scn);
 }
 
-bt_status_t BTSYMBOLS(bt_spp_insecure_connect)(bt_instance_t* ins, void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port)
-{
-    spp_interface_t* profile = get_profile_service();
-
-    return profile->connect(handle, addr, scn, uuid, port, true);
-}
-
 bt_status_t BTSYMBOLS(bt_spp_connect)(bt_instance_t* ins, void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port)
 {
     spp_interface_t* profile = get_profile_service();
 
-    return profile->connect(handle, addr, scn, uuid, port, false);
+    return profile->connect(handle, addr, scn, uuid, port);
 }
 
 bt_status_t BTSYMBOLS(bt_spp_disconnect)(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t port)

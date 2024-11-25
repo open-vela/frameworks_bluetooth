@@ -18,7 +18,6 @@
 BT_ADAPTER_MESSAGE_START,
     BT_ADAPTER_ENABLE,
     BT_ADAPTER_DISABLE,
-    BT_ADAPTER_DISABLE_SAFE,
     BT_ADAPTER_ENABLE_LE,
     BT_ADAPTER_DISABLE_LE,
     BT_ADAPTER_GET_STATE,
@@ -91,20 +90,6 @@ BT_ADAPTER_MESSAGE_START,
 #endif
 
 #include "bt_adapter.h"
-#include "bt_ipc_code.h"
-
-#define BT_IPC_CODE_COMMAND_ADAPTER_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_ADAPTER, 0)
-// TODO: Add new BT IPC Code sequentially
-#define BT_ADAPTER_SUBCODE_START_LIMITED_DISCOVERY 1
-#define BT_ADAPTER_START_LIMITED_DISCOVERY BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_ADAPTER, BT_ADAPTER_SUBCODE_START_LIMITED_DISCOVERY)
-#define BT_ADAPTER_SUBCODE_SET_DEBUG_MODE 2
-#define BT_ADAPTER_SET_DEBUG_MODE BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_ADAPTER, BT_ADAPTER_SUBCODE_SET_DEBUG_MODE)
-
-#define BT_IPC_CODE_COMMAND_ADAPTER_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_ADAPTER, BT_IPC_CODE_SUBCODE_MAX_NUM)
-
-#define BT_IPC_CODE_CALLBACK_ADAPTER_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_ADAPTER, 0)
-// TODO: Add new BT IPC Code sequentially
-#define BT_IPC_CODE_CALLBACK_ADAPTER_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_ADAPTER, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
     typedef union {
         uint8_t status; /* bt_status_t */
@@ -122,7 +107,6 @@ BT_ADAPTER_MESSAGE_START,
     typedef union {
         struct {
             bt_address_t addr;
-            uint8_t type;
         } _bt_adapter_get_address,
             _bt_adapter_set_le_address,
             _bt_adapter_le_add_whitelist,
@@ -137,13 +121,12 @@ BT_ADAPTER_MESSAGE_START,
             uint32_t v32;
         } _bt_adapter_start_discovery,
             _bt_adapter_set_device_class,
-            _bt_adapter_set_le_io_capability,
-            _bt_adapter_start_limited_discovery;
+            _bt_adapter_set_le_io_capability;
 
         struct {
             uint16_t size;
             uint8_t pad[2];
-            bt_uuid_t uuids[BT_UUID_MAX_NUM];
+            bt_uuid_t uuids[16];
         } _bt_adapter_get_uuids;
 
         struct {
@@ -168,11 +151,6 @@ BT_ADAPTER_MESSAGE_START,
         struct {
             uint16_t v16;
         } _bt_adapter_set_le_appearance;
-
-        struct {
-            uint8_t mode; /* bt_debug_mode_t */
-            uint8_t operation;
-        } _bt_adapter_set_debug_mode;
 
         struct {
             uint32_t num; /* int */
@@ -246,8 +224,7 @@ BT_ADAPTER_MESSAGE_START,
         struct {
             bt_address_t addr;
             uint8_t transport; /* bt_transport_t */
-            uint8_t previous_state; /* bond_state_t */
-            uint8_t current_state; /* bond_state_t */
+            uint8_t state; /* bond_state_t */
             uint8_t is_ctkd; /* boolean */
         } _on_bond_state_changed;
 

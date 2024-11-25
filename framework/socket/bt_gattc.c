@@ -66,7 +66,7 @@ bt_status_t bt_gattc_create_connect(bt_instance_t* ins, gattc_handle_t* phandle,
         goto fail;
     }
 
-    gattc_remote->cookie = packet.gattc_r.handle;
+    gattc_remote->cookie = INT2PTR(void*) packet.gattc_r.handle;
     gattc_remote->user_phandle = phandle;
     bt_list_add_tail(ins->gattc_remote_list, gattc_remote);
 
@@ -261,27 +261,6 @@ bt_status_t bt_gattc_write_without_response(gattc_handle_t conn_handle, uint16_t
     packet.gattc_pl._bt_gattc_write.length = length;
     memcpy(packet.gattc_pl._bt_gattc_write.value, value, length);
     status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_WRITE_NR);
-    if (status != BT_STATUS_SUCCESS)
-        return status;
-
-    return packet.gattc_r.status;
-}
-
-bt_status_t bt_gattc_write_with_signed(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
-{
-    bt_message_packet_t packet;
-    bt_status_t status;
-    bt_gattc_remote_t* gattc_remote = (bt_gattc_remote_t*)conn_handle;
-
-    CHECK_NULL_PTR(gattc_remote);
-    if (length > sizeof(packet.gattc_pl._bt_gattc_write.value))
-        return BT_STATUS_PARM_INVALID;
-
-    packet.gattc_pl._bt_gattc_write.handle = gattc_remote->cookie;
-    packet.gattc_pl._bt_gattc_write.attr_handle = attr_handle;
-    packet.gattc_pl._bt_gattc_write.length = length;
-    memcpy(packet.gattc_pl._bt_gattc_write.value, value, length);
-    status = bt_socket_client_sendrecv(gattc_remote->ins, &packet, BT_GATT_CLIENT_WRITE_WITH_SIGNED);
     if (status != BT_STATUS_SUCCESS)
         return status;
 

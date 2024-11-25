@@ -19,15 +19,15 @@
 #include "bluetooth_define.h"
 #include "bt_list.h"
 
-#define DFLAG_NAME_SET (1 << 0)
-#define DFLAG_GET_RMT_NAME (1 << 1)
-#define DFLAG_ALIAS_SET (1 << 2)
-#define DFLAG_LINKKEY_SET (1 << 3)
-#define DFLAG_WHITELIST_ADDED (1 << 4)
-#define DFLAG_CONNECTED (1 << 5)
-#define DFLAG_BONDED (1 << 6)
-#define DFLAG_LE_KEY_SET (1 << 7)
-#define DFLAG_GATT_HASH_VALID (1 << 8)
+enum device_flags {
+    DFLAG_NAME_SET = 0x00000001,
+    DFLAG_ALIAS_SET = 0x00000002,
+    DFLAG_LINKKEY_SET = 0x00000004,
+    DFLAG_WHITELIST_ADDED = 0x00000008,
+    DFLAG_CONNECTED = 0x00000016,
+    DFLAG_BONDED = 0x00000032,
+    DFLAG_LE_KEY_SET = 0x00000064,
+};
 
 typedef struct bt_device bt_device_t;
 
@@ -38,8 +38,6 @@ bt_transport_t device_get_transport(bt_device_t* device);
 bt_address_t* device_get_address(bt_device_t* device);
 bt_address_t* device_get_identity_address(bt_device_t* device);
 void device_set_identity_address(bt_device_t* device, bt_address_t* addr);
-uint8_t* device_get_local_csrk(bt_device_t* device);
-void device_set_local_csrk(bt_device_t* device, const uint8_t* local_csrk);
 ble_addr_type_t device_get_address_type(bt_device_t* device);
 void device_set_address_type(bt_device_t* device, ble_addr_type_t type);
 void device_set_device_type(bt_device_t* device, bt_device_type_t type);
@@ -68,7 +66,7 @@ void device_set_local_role(bt_device_t* device, bt_link_role_t role);
 void device_set_bond_initiate_local(bt_device_t* device, bool initiate_local);
 bool device_is_bond_initiate_local(bt_device_t* device);
 bond_state_t device_get_bond_state(bt_device_t* device);
-void device_set_bond_state(bt_device_t* device, bond_state_t state, bool is_ctkd, void* notify_change);
+void device_set_bond_state(bt_device_t* device, bond_state_t state);
 bool device_is_bonded(bt_device_t* device);
 uint8_t* device_get_link_key(bt_device_t* device);
 void device_set_link_key(bt_device_t* device, bt_128key_t link_key);
@@ -86,15 +84,7 @@ bool device_check_flag(bt_device_t* device, uint32_t flag);
 uint8_t* device_get_smp_key(bt_device_t* device);
 void device_set_smp_key(bt_device_t* device, uint8_t* smp_key);
 void device_delete_smp_key(bt_device_t* device);
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-void device_set_gatt_hash(bt_device_t* device, const uint8_t* hash);
-void device_delete_gatt_hash(bt_device_t* device);
-uint8_t* device_get_gatt_hash(bt_device_t* device);
-#endif
 void device_get_le_property(bt_device_t* device, remote_device_le_properties_t* prop);
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-void device_get_gatt_hash_property(bt_device_t* device, remote_device_gatt_properties_t* prop);
-#endif
 void device_dump(bt_device_t* device);
 
 #endif /* __REMOTE_DEVICE_H__ */

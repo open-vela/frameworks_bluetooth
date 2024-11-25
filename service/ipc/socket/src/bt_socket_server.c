@@ -45,13 +45,11 @@
 #include "adapter_internel.h"
 #include "bluetooth.h"
 #include "bt_adapter.h"
-#include "bt_dfx.h"
 #include "bt_internal.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
 #include "service_loop.h"
-#include "service_manager.h"
 
 #include "utils/log.h"
 
@@ -148,142 +146,68 @@ static int bt_socket_server_trysend(bt_instance_t* ins)
 static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata)
 {
     bt_instance_t* ins = userdata;
-    bt_message_packet_t* packet = (bt_message_packet_t*)ins->packet;
+    bt_message_packet_t packet;
     int ret;
 
-    ret = recv(fd, (uint8_t*)packet + ins->offset, sizeof(*packet) - ins->offset, 0);
-    if (ret == 0) {
-        BT_LOGE("%s, bt socket disconnected", __func__);
-        return -1;
-    } else if (ret < 0) {
-        if (errno == EINTR || errno == EAGAIN)
-            return 0;
-        BT_LOGE("%s, bt socket recv ret: %d error: %d", __func__, ret, errno);
-        return -1;
-    }
+    ret = recv(fd, &packet, sizeof(packet), 0);
+    if (ret <= 0)
+        return ret;
 
-    ins->offset += ret;
-    if (ins->offset < sizeof(*packet))
-        return 0;
-    else
-        ins->offset = 0;
-
-    if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_MANAGER_MESSAGE_START, BT_MANAGER_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_MANAGER_BEGIN, BT_IPC_CODE_COMMAND_MANAGER_END)) {
-        bt_socket_server_manager_process(poll, fd, ins, packet);
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_ADAPTER_MESSAGE_START, BT_ADAPTER_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_ADAPTER_BEGIN, BT_IPC_CODE_COMMAND_ADAPTER_END)) {
-        bt_socket_server_adapter_process(poll, fd, ins, packet);
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_DEVICE_MESSAGE_START, BT_DEVICE_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_DEVICE_BEGIN, BT_IPC_CODE_COMMAND_DEVICE_END)) {
-        bt_socket_server_device_process(poll, fd, ins, packet);
-#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_A2DP_SOURCE_MESSAGE_START, BT_A2DP_SOURCE_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_A2DP_SRC_BEGIN, BT_IPC_CODE_COMMAND_A2DP_SRC_END)) {
-        bt_socket_server_a2dp_source_process(poll, fd, ins, packet);
-#endif
-#ifdef CONFIG_BLUETOOTH_A2DP_SINK
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_A2DP_SINK_MESSAGE_START, BT_A2DP_SINK_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_A2DP_SINK_BEGIN, BT_IPC_CODE_COMMAND_A2DP_SINK_END)) {
-        bt_socket_server_a2dp_sink_process(poll, fd, ins, packet);
-#endif
+    if (packet.code > BT_MANAGER_MESSAGE_START && packet.code < BT_MANAGER_MESSAGE_END) {
+        bt_socket_server_manager_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_ADAPTER_MESSAGE_START && packet.code < BT_ADAPTER_MESSAGE_END) {
+        bt_socket_server_adapter_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_DEVICE_MESSAGE_START && packet.code < BT_DEVICE_MESSAGE_END) {
+        bt_socket_server_device_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_A2DP_SOURCE_MESSAGE_START && packet.code < BT_A2DP_SOURCE_MESSAGE_END) {
+        bt_socket_server_a2dp_source_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_A2DP_SINK_MESSAGE_START && packet.code < BT_A2DP_SINK_MESSAGE_END) {
+        bt_socket_server_a2dp_sink_process(poll, fd, ins, &packet);
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_AVRCP_TARGET_MESSAGE_START, BT_AVRCP_TARGET_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_AVRCP_TG_BEGIN, BT_IPC_CODE_COMMAND_AVRCP_TG_END)) {
-        bt_socket_server_avrcp_target_process(poll, fd, ins, packet);
+    } else if (packet.code > BT_AVRCP_TARGET_MESSAGE_START && packet.code < BT_AVRCP_TARGET_MESSAGE_END) {
+        bt_socket_server_avrcp_target_process(poll, fd, ins, &packet);
 #endif
-#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_AVRCP_CONTROL_MESSAGE_START, BT_AVRCP_CONTROL_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_AVRCP_CT_BEGIN, BT_IPC_CODE_COMMAND_AVRCP_CT_END)) {
-        bt_socket_server_avrcp_control_process(poll, fd, ins, packet);
-#endif
-#ifdef CONFIG_BLUETOOTH_HFP_AG
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_HFP_AG_MESSAGE_START, BT_HFP_AG_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_HFP_AG_BEGIN, BT_IPC_CODE_COMMAND_HFP_AG_END)) {
-        bt_socket_server_hfp_ag_process(poll, fd, ins, packet);
-#endif
-#ifdef CONFIG_BLUETOOTH_HFP_HF
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_HFP_HF_MESSAGE_START, BT_HFP_HF_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_HFP_HF_BEGIN, BT_IPC_CODE_COMMAND_HFP_HF_END)) {
-        bt_socket_server_hfp_hf_process(poll, fd, ins, packet);
-#endif
+    } else if (packet.code > BT_HFP_AG_MESSAGE_START && packet.code < BT_HFP_AG_MESSAGE_END) {
+        bt_socket_server_hfp_ag_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_HFP_HF_MESSAGE_START && packet.code < BT_HFP_HF_MESSAGE_END) {
+        bt_socket_server_hfp_hf_process(poll, fd, ins, &packet);
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_ADVERTISER_MESSAGE_START, BT_ADVERTISER_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_BLE_ADVERTISER_BEGIN, BT_IPC_CODE_COMMAND_BLE_ADVERTISER_END)) {
-        bt_socket_server_advertiser_process(poll, fd, ins, packet);
+    } else if (packet.code > BT_ADVERTISER_MESSAGE_START && packet.code < BT_ADVERTISER_MESSAGE_END) {
+        bt_socket_server_advertiser_process(poll, fd, ins, &packet);
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_SCAN_MESSAGE_START, BT_SCAN_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_BLE_SCAN_BEGIN, BT_IPC_CODE_COMMAND_BLE_SCAN_END)) {
-        bt_socket_server_scan_process(poll, fd, ins, packet);
+    } else if (packet.code > BT_SCAN_MESSAGE_START && packet.code < BT_SCAN_MESSAGE_END) {
+        bt_socket_server_scan_process(poll, fd, ins, &packet);
 #endif
-#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_GATT_CLIENT_MESSAGE_START, BT_GATT_CLIENT_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_GATTC_BEGIN, BT_IPC_CODE_COMMAND_GATTC_END)) {
-        bt_socket_server_gattc_process(poll, fd, ins, packet);
+#if defined(CONFIG_BLUETOOTH_GATT)
+    } else if (packet.code > BT_GATT_CLIENT_MESSAGE_START && packet.code < BT_GATT_CLIENT_MESSAGE_END) {
+        bt_socket_server_gattc_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_GATT_SERVER_MESSAGE_START && packet.code < BT_GATT_SERVER_MESSAGE_END) {
+        bt_socket_server_gatts_process(poll, fd, ins, &packet);
 #endif
-#ifdef CONFIG_BLUETOOTH_GATT_SERVER
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_GATT_SERVER_MESSAGE_START, BT_GATT_SERVER_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_GATTS_BEGIN, BT_IPC_CODE_COMMAND_GATTS_END)) {
-        bt_socket_server_gatts_process(poll, fd, ins, packet);
-#endif
-#ifdef CONFIG_BLUETOOTH_SPP
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_SPP_MESSAGE_START, BT_SPP_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_SPP_BEGIN, BT_IPC_CODE_COMMAND_SPP_END)) {
-        bt_socket_server_spp_process(poll, fd, ins, packet);
-#endif
-#ifdef CONFIG_BLUETOOTH_PAN
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_PAN_MESSAGE_START, BT_PAN_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_PAN_BEGIN, BT_IPC_CODE_COMMAND_PAN_END)) {
-        bt_socket_server_pan_process(poll, fd, ins, packet);
-#endif
-#ifdef CONFIG_BLUETOOTH_HID_DEVICE
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_HID_DEVICE_MESSAGE_START, BT_HID_DEVICE_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_HID_DEV_BEGIN, BT_IPC_CODE_COMMAND_HID_DEV_END)) {
-        bt_socket_server_hid_device_process(poll, fd, ins, packet);
-#endif
+    } else if (packet.code > BT_SPP_MESSAGE_START && packet.code < BT_SPP_MESSAGE_END) {
+        bt_socket_server_spp_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_PAN_MESSAGE_START && packet.code < BT_PAN_MESSAGE_END) {
+        bt_socket_server_pan_process(poll, fd, ins, &packet);
+    } else if (packet.code > BT_HID_DEVICE_MESSAGE_START && packet.code < BT_HID_DEVICE_MESSAGE_END) {
+        bt_socket_server_hid_device_process(poll, fd, ins, &packet);
 #ifdef CONFIG_BLUETOOTH_L2CAP
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_L2CAP_MESSAGE_START, BT_L2CAP_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_L2CAP_BEGIN, BT_IPC_CODE_COMMAND_L2CAP_END)) {
-        bt_socket_server_l2cap_process(poll, fd, ins, packet);
-#endif
-#ifdef CONFIG_BLUETOOTH_LOG
-    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_LOG_MESSAGE_START, BT_LOG_MESSAGE_END)
-        || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_LOG_BEGIN, BT_IPC_CODE_COMMAND_LOG_END)) {
-        bt_socket_server_log_process(poll, fd, ins, packet);
+    } else if (packet.code > BT_L2CAP_MESSAGE_START && packet.code < BT_L2CAP_MESSAGE_END) {
+        bt_socket_server_l2cap_process(poll, fd, ins, &packet);
 #endif
     } else {
-        BT_LOGE("%s, Unhandled message:%" PRIu32, __func__, packet->code);
+        BT_LOGE("%s, Unhandled message:%" PRIu32, __func__, packet.code);
         assert(0);
         return BT_STATUS_PARM_INVALID;
     }
 
-    return bt_socket_server_send(ins, packet, packet->code);
-}
-
-static void bt_unregister_callbacks(bt_instance_t* ins)
-{
-    bt_message_packet_t packet;
-    profile_msg_t msg;
-
-    // unreigster adapter callback
-    packet.code = BT_ADAPTER_UNREGISTER_CALLBACK;
-    bt_socket_server_adapter_process(ins->poll, ins->peer_fd, ins, &packet);
-
-    // unregsiter profile callback
-    msg.event = PROFILE_EVT_REMOTE_DETACH;
-    msg.data.data = ins;
-    service_manager_processmsg(&msg);
-
-    // TODO: unregister other Profile callback(GATT, LE ADV, LE SCAN)
+    return bt_socket_server_send(ins, &packet, packet.code);
 }
 
 static void bt_socket_server_ins_release(bt_instance_t* ins)
 {
     struct list_node* node;
     struct list_node* tmp;
-
-    bt_unregister_callbacks(ins);
 
     if (ins->poll)
         service_loop_remove_poll(ins->poll);
@@ -297,19 +221,8 @@ static void bt_socket_server_ins_release(bt_instance_t* ins)
     if (ins->peer_fd)
         close(ins->peer_fd);
 
-    if (ins->packet)
-        free(ins->packet);
-
     bt_list_remove(g_instances_list, ins);
     free(ins);
-}
-
-static void cnt_msg_queue(void* data, void* context)
-{
-    bt_instance_t* ins = (bt_instance_t*)data;
-    uint32_t* p_cnt = (uint32_t*)context;
-
-    *p_cnt += list_length(&ins->msg_queue);
 }
 
 static void bt_socket_server_handle_event(service_poll_t* poll,
@@ -326,7 +239,6 @@ static void bt_socket_server_handle_event(service_poll_t* poll,
     }
 
     if (revent & POLL_ERROR || revent & POLL_DISCONNECT) {
-        BT_LOGE("%s, revent = %d", __func__, revent);
         bt_socket_server_ins_release(ins);
     } else if (revent & POLL_READABLE) {
         ret = bt_socket_server_receive(poll, fd, userdata);
@@ -366,31 +278,16 @@ static void bt_socket_server_callback(service_poll_t* poll,
 #endif
 
     remote_ins = zalloc(sizeof(bt_instance_t));
-    if (!remote_ins)
-        goto error;
-
-    remote_ins->packet = zalloc(sizeof(bt_message_packet_t));
-    if (!remote_ins->packet)
-        goto error;
-
     list_initialize(&remote_ins->msg_queue);
     remote_ins->peer_fd = fd;
-    remote_ins->poll = service_loop_poll_fd(fd, POLL_READABLE | POLL_DISCONNECT,
+    remote_ins->poll = service_loop_poll_fd(fd, POLL_READABLE,
         bt_socket_server_handle_event, remote_ins);
-    if (!remote_ins->poll)
-        goto error;
-
-    bt_list_add_tail(g_instances_list, remote_ins);
-    return;
-
-error:
-    if (fd >= 0)
-        close(fd);
-    if (remote_ins) {
-        if (remote_ins->packet)
-            free(remote_ins->packet);
+    if (!remote_ins->poll) {
         free(remote_ins);
+        close(fd);
+        return;
     }
+    bt_list_add_tail(g_instances_list, remote_ins);
 }
 
 static int bt_socket_server_listen(int family, const char* name, int port)
@@ -450,7 +347,7 @@ static int bt_socket_server_listen(int family, const char* name, int port)
  ****************************************************************************/
 
 int bt_socket_server_send(bt_instance_t* ins, bt_message_packet_t* packet,
-    uint32_t code)
+    bt_message_type_t code)
 {
     bt_packet_cache_t* cache;
     int ret;
@@ -474,10 +371,8 @@ int bt_socket_server_send(bt_instance_t* ins, bt_message_packet_t* packet,
 
     if (ret != sizeof(*packet) && ins->poll) {
         cache = malloc(sizeof(*cache));
-        if (cache == NULL) {
-            BT_DFX_IPC_ALLOC_ERROR(BT_DFXE_SERVER_CACHE_ALLOC_FAIL, code);
+        if (cache == NULL)
             return BT_STATUS_NOMEM;
-        }
 
         list_add_tail(&ins->msg_queue, &cache->node);
         memcpy(&cache->packet, packet, sizeof(*packet));
@@ -538,8 +433,6 @@ int bt_socket_server_init(const char* name, int port)
 fail:
     if (g_instances_list)
         bt_list_free(g_instances_list);
-    g_instances_list = NULL;
-
     if (lpoll != NULL)
         service_loop_remove_poll(lpoll);
     if (local > 0)
@@ -559,13 +452,4 @@ fail:
 #endif
 
     return -EINVAL;
-}
-
-bool bt_socket_server_is_busy(void)
-{
-    uint32_t msg_cnt = 0;
-
-    bt_list_foreach(g_instances_list, cnt_msg_queue, &msg_cnt);
-
-    return msg_cnt > 0;
 }

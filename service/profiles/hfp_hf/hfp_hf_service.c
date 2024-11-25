@@ -23,11 +23,11 @@
 #include <kvdb.h>
 #endif
 
+#include "audio_control.h"
 #include "bt_hfp_hf.h"
 #include "bt_profile.h"
 #include "bt_vendor.h"
 #include "callbacks_list.h"
-#include "hfp_hf_audio.h"
 #include "hfp_hf_service.h"
 #include "hfp_hf_state_machine.h"
 #include "sal_hfp_hf_interface.h"
@@ -73,7 +73,6 @@ typedef struct
  ****************************************************************************/
 bt_status_t hfp_hf_send_message(hfp_hf_msg_t* msg);
 static hf_state_machine_t* get_state_machine(bt_address_t* addr);
-static bool hfp_hf_unregister_callbacks(void** remote, void* cookie);
 
 /****************************************************************************
  * Private Data
@@ -248,10 +247,8 @@ static void hfp_hf_process_message(void* data)
 {
     hfp_hf_msg_t* msg = (hfp_hf_msg_t*)data;
 
-    if (!g_hfp_service.started && msg->event != HF_STARTUP) {
-        hfp_hf_msg_destroy(msg);
+    if (!g_hfp_service.started && msg->event != HF_STARTUP)
         return;
-    }
 
     switch (msg->event) {
     case HF_STARTUP:
@@ -330,17 +327,18 @@ bool hfp_hf_on_sco_start(void)
     }
 
     if (!g_hfp_service.offloading) {
-        hfp_hf_on_started();
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STARTED);
         return true;
     }
 
     if (hfp_hf_send_event(&device->addr, HF_OFFLOAD_START_REQ) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to send msg", __func__);
-        hfp_hf_on_stopped();
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
         return true;
     }
 
     BT_LOGD("%s: send sco offload start", __func__);
+    /* AUDIO_CTRL_EVT_STARTED would be generated at HF_OFFLOAD_START_EVT */
     return true;
 }
 
@@ -355,28 +353,37 @@ bool hfp_hf_on_sco_stop(void)
     }
 
     if (!g_hfp_service.offloading) {
-        hfp_hf_on_stopped();
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
         return true;
     }
 
     if (hfp_hf_send_event(&device->addr, HF_OFFLOAD_STOP_REQ) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to send msg", __func__);
-        hfp_hf_on_stopped();
+        audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_STOPPED);
         return true;
     }
 
     BT_LOGD("%s: send sco offload stop", __func__);
+    /* AUDIO_CTRL_EVT_STOPPED would be generated at HF_OFFLOAD_STOP_EVT */
     return true;
 }
 
 static bt_status_t hfp_hf_init(void)
 {
-    return BT_STATUS_SUCCESS;
+    bt_status_t ret;
+
+    ret = audio_ctrl_init(PROFILE_HFP_HF);
+    if (ret != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s: failed to start audio control channel", __func__);
+        return ret;
+    }
+
+    return ret;
 }
 
 static void hfp_hf_cleanup(void)
 {
-    hfp_hf_audio_cleanup();
+    audio_ctrl_cleanup(PROFILE_HFP_HF);
 }
 
 static bt_status_t hfp_hf_startup(profile_on_startup_t cb)
@@ -407,16 +414,7 @@ static void hfp_hf_process_msg(profile_msg_t* msg)
     case PROFILE_EVT_HFP_OFFLOADING:
         g_hfp_service.offloading = msg->data.valuebool;
         break;
-    case PROFILE_EVT_REMOTE_DETACH: {
-        bt_instance_t* ins = msg->data.data;
 
-        if (ins->hfp_hf_cookie) {
-            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
-            hfp_hf_unregister_callbacks((void**)&ins, ins->hfp_hf_cookie);
-            ins->hfp_hf_cookie = NULL;
-        }
-        break;
-    }
     default:
         break;
     }
@@ -746,28 +744,6 @@ static bt_status_t hfp_hf_send_dtmf(bt_address_t* addr, char dtmf)
     return hfp_hf_send_message(msg);
 }
 
-static bt_status_t hfp_hf_get_subscriber_number(bt_address_t* addr)
-{
-    CHECK_ENABLED();
-
-    hfp_hf_msg_t* msg = hfp_hf_msg_new(HF_GET_SUBSCRIBER_NUMBER, addr);
-
-    if (!msg)
-        return BT_STATUS_NOMEM;
-
-    return hfp_hf_send_message(msg);
-}
-
-static bt_status_t hfp_hf_query_current_calls_with_callback(bt_address_t* addr)
-{
-    CHECK_ENABLED();
-    hfp_hf_msg_t* msg = hfp_hf_msg_new(HF_QUERY_CURRENT_CALLS_WITH_CALLBACK, addr);
-    if (!msg)
-        return BT_STATUS_NOMEM;
-
-    return hfp_hf_send_message(msg);
-}
-
 static const hfp_hf_interface_t HfInterface = {
     sizeof(HfInterface),
     .register_callbacks = hfp_hf_register_callbacks,
@@ -795,8 +771,6 @@ static const hfp_hf_interface_t HfInterface = {
     .update_battery_level = hfp_hf_update_battery_level,
     .volume_control = hfp_hf_volume_control,
     .send_dtmf = hfp_hf_send_dtmf,
-    .get_subscriber_number = hfp_hf_get_subscriber_number,
-    .query_current_calls_with_callback = hfp_hf_query_current_calls_with_callback,
 };
 
 static const void* get_hf_profile_interface(void)
@@ -872,24 +846,6 @@ void hf_service_notify_callheld(bt_address_t* addr, hfp_callheld_t callheld)
 {
     BT_LOGD("%s", __func__);
     HF_CALLBACK_FOREACH(g_hfp_service.callbacks, callheld_cb, addr, callheld);
-}
-
-void hf_service_notify_clip_received(bt_address_t* addr, const char* number, const char* name)
-{
-    BT_LOGD("%s", __func__);
-    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, clip_cb, addr, number, name);
-}
-
-void hf_service_notify_subscriber_number(bt_address_t* addr, const char* number, hfp_subscriber_number_service_t service)
-{
-    BT_LOGD("%s", __func__);
-    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, subscriber_number_cb, addr, number, service);
-}
-
-void hf_service_notify_current_calls(bt_address_t* addr, uint8_t num, hfp_current_call_t* calls)
-{
-    BT_LOGD("%s", __func__);
-    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, query_current_calls_cb, addr, num, calls);
 }
 
 void hfp_hf_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,
@@ -1065,24 +1021,12 @@ void hfp_hf_on_at_command_result_response(bt_address_t* addr, uint32_t at_cmd_co
     hfp_hf_send_message(msg);
 }
 
-void hfp_hf_on_subscriber_number_response(bt_address_t* addr, const char* number, hfp_subscriber_number_service_t service)
-{
-    hfp_hf_msg_t* msg = hfp_hf_msg_new(HF_STACK_EVENT_CNUM, addr);
-    if (!msg)
-        return;
-
-    HF_MSG_ADD_STR(msg, 1, number, strlen(number));
-    msg->data.valueint2 = service;
-
-    hfp_hf_send_message(msg);
-}
-
 static const profile_service_t hfp_hf_service = {
     .auto_start = true,
     .name = PROFILE_HFP_HF_NAME,
     .id = PROFILE_HFP_HF,
     .transport = BT_TRANSPORT_BREDR,
-    .uuid = BT_UUID_DECLARE_16(BT_UUID_HFP),
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = hfp_hf_init,
     .startup = hfp_hf_startup,
     .shutdown = hfp_hf_shutdown,

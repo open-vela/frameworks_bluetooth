@@ -19,7 +19,6 @@ BT_GATT_SERVER_MESSAGE_START,
     BT_GATT_SERVER_REGISTER_SERVICE,
     BT_GATT_SERVER_UNREGISTER_SERVICE,
     BT_GATT_SERVER_CONNECT,
-    BT_GATT_SERVER_CONNECT_BEAR,
     BT_GATT_SERVER_DISCONNECT,
     BT_GATT_SERVER_ADD_ATTR_TABLE,
     BT_GATT_SERVER_REMOVE_ATTR_TABLE,
@@ -58,20 +57,11 @@ BT_GATT_SERVER_MESSAGE_START,
 #endif
 
 #include "bt_gatts.h"
-#include "bt_ipc_code.h"
-
-#define BT_IPC_CODE_COMMAND_GATTS_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_GATTS, 0)
-// TODO: Add new BT IPC Code sequentially
-#define BT_IPC_CODE_COMMAND_GATTS_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_GATTS, BT_IPC_CODE_SUBCODE_MAX_NUM)
-
-#define BT_IPC_CODE_CALLBACK_GATTS_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_GATTS, 0)
-// TODO: Add new BT IPC Code sequentially
-#define BT_IPC_CODE_CALLBACK_GATTS_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_GATTS, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
     typedef struct {
         bt_instance_t* ins;
         gatts_callbacks_t* callbacks;
-        uint64_t cookie;
+        void* cookie;
         void** user_phandle;
         bt_list_t* db_list;
     } bt_gatts_remote_t;
@@ -106,18 +96,10 @@ BT_GATT_SERVER_MESSAGE_START,
         struct {
             uint64_t handle; /* gatts_handle_t */
             bt_address_t addr;
-            uint8_t addr_type; /* ble_addr_type_t */
-            uint8_t bear_type; /* ble_bear_type_t */
-        } _bt_gatts_connect_bear;
-
-        struct {
-            uint64_t handle; /* gatts_handle_t */
-            bt_address_t addr;
         } _bt_gatts_disconnect;
 
         struct {
             uint64_t handle; /* gatts_handle_t */
-            int32_t attr_num_offset;
             int32_t attr_num;
             struct {
                 bt_uuid_t uuid;

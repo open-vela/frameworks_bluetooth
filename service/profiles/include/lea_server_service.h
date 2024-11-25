@@ -20,8 +20,8 @@
  * Included Files
  ****************************************************************************/
 #include "bt_device.h"
-#include "bt_lea_common.h"
 #include "bt_lea_server.h"
+#include "lea_audio_common.h"
 
 typedef struct lea_server_interface {
     size_t size;

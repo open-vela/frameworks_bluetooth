@@ -48,7 +48,7 @@
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (__async ? __async->panu_callbacks : ins->panu_callbacks)
+#define CBLIST (ins->panu_callbacks)
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -136,13 +136,8 @@ void bt_socket_server_pan_process(service_poll_t* poll, int fd, bt_instance_t* i
 #endif
 
 int bt_socket_client_pan_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
-    bt_socket_async_client_t* __async = NULL;
-
-    if (is_async)
-        __async = ins->priv;
-
     switch (packet->code) {
     case BT_PAN_NETIF_STATE_CB: {
         {

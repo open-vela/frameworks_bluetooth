@@ -23,8 +23,6 @@
 #include <kvdb.h>
 #endif
 
-#include "a2dp_audio.h"
-#include "a2dp_device.h"
 #include "a2dp_sink_service.h"
 #include "adapter_internel.h"
 #include "bt_addr.h"
@@ -56,7 +54,6 @@ static a2dp_sink_global_t g_a2dp_sink = { 0 };
 
 static void sink_startup(void* data);
 static void sink_shutdown(void* data);
-static bool a2dp_sink_unregister_callbacks(void** remote, void* cookie);
 
 static void set_active_peer(bt_address_t* bd_addr)
 {
@@ -139,7 +136,7 @@ static void a2dp_snk_service_handle_event(void* data)
         break;
     }
     case PEER_STREAM_START_REQ:
-        bt_sal_a2dp_sink_start_stream(PRIMARY_ADAPTER, &event->event_data.bd_addr);
+        bt_sal_a2dp_sink_start_stream(&event->event_data.bd_addr);
         break;
     default: {
         a2dp_state_machine_t* a2dp_sm;
@@ -225,12 +222,6 @@ static bt_status_t a2dp_sink_init(void)
     return BT_STATUS_SUCCESS;
 }
 
-void a2dp_sink_service_audio_open(bt_address_t* addr)
-{
-    BT_LOGD("%s", __FUNCTION__);
-    a2dp_audio_open(SVR_SINK, g_a2dp_sink.offloading, addr);
-}
-
 static void a2dp_sink_cleanup(void)
 {
     g_a2dp_sink.active_peer = NULL;
@@ -251,6 +242,7 @@ static void sink_startup(void* data)
     }
 
     a2dp_audio_init(SVR_SINK, g_a2dp_sink.offloading);
+
     g_a2dp_sink.enabled = true;
     on_startup(PROFILE_A2DP_SINK, true);
 }
@@ -275,6 +267,7 @@ static void sink_shutdown(void* data)
     profile_on_shutdown_t on_shutdown = (profile_on_shutdown_t)data;
 
     g_a2dp_sink.enabled = false;
+    a2dp_audio_cleanup(SVR_SINK);
 
     list_for_every_safe(&g_a2dp_sink.list, node, tmp)
     {
@@ -282,7 +275,6 @@ static void sink_shutdown(void* data)
         a2dp_device_delete(device);
     }
     list_delete(&g_a2dp_sink.list);
-    a2dp_audio_cleanup(SVR_SINK);
     bt_sal_a2dp_sink_cleanup();
     g_a2dp_sink.active_peer = NULL;
     on_shutdown(PROFILE_A2DP_SINK, true);
@@ -307,16 +299,7 @@ static void a2dp_sink_process_msg(profile_msg_t* msg)
     case PROFILE_EVT_A2DP_OFFLOADING:
         g_a2dp_sink.offloading = msg->data.valuebool;
         break;
-    case PROFILE_EVT_REMOTE_DETACH: {
-        bt_instance_t* ins = msg->data.data;
 
-        if (ins->a2dp_sink_cookie) {
-            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
-            a2dp_sink_unregister_callbacks(NULL, ins->a2dp_sink_cookie);
-            ins->a2dp_sink_cookie = NULL;
-        }
-        break;
-    }
     default:
         break;
     }
@@ -439,7 +422,7 @@ static const profile_service_t a2dp_sink_service = {
     .name = PROFILE_A2DP_SINK_NAME,
     .id = PROFILE_A2DP_SINK,
     .transport = BT_TRANSPORT_BREDR,
-    .uuid = BT_UUID_DECLARE_16(BT_UUID_A2DP_SNK),
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = a2dp_sink_init,
     .startup = a2dp_sink_startup,
     .shutdown = a2dp_sink_shutdown,

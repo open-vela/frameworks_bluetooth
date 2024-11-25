@@ -24,10 +24,10 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "bt_lea_common.h"
 #include "bt_lea_vmicp.h"
 #include "bt_profile.h"
 #include "callbacks_list.h"
+#include "lea_audio_common.h"
 #include "lea_vmicp_event.h"
 #include "lea_vmicp_service.h"
 #include "sal_lea_vmicp_interface.h"

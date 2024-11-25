@@ -43,7 +43,6 @@
 typedef enum {
     GATT_WRITE_TYPE_NO_RSP = 0, /*!< Gatt write attribute need no response */
     GATT_WRITE_TYPE_RSP, /*!< Gatt write attribute need remote response */
-    GATT_WRITE_TYPE_SIGNED,
 } gatt_write_type_t;
 
 /**

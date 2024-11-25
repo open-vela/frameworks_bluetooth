@@ -21,19 +21,6 @@
 #include "bt_addr.h"
 #include "bt_device.h"
 
-#define AVRCP_MAX_ATTR_COUNT 9
-#define AVRCP_ATTR_MAX_TIELE_LEN 64
-#define AVRCP_ATTR_MAX_ARTIST_LEN 64
-#define AVRCP_ATTR_MAX_ALBUM_LEN 0
-#define AVRCP_ATTR_MAX_TRACK_NUMBER_LEN 0
-#define AVRCP_ATTR_MAX_TOTAL_TRACK_NUMBER_LEN 0
-#define AVRCP_ATTR_MAX_GENER_LEN 0
-#define AVRCP_ATTR_MAX_PLAYING_TIMES_LEN 0
-#define AVRCP_ATTR_MAX_COVER_ART_HANDLE_LEN 0
-
-/**
- * @cond
- */
 typedef enum {
     PASSTHROUGH_CMD_ID_SELECT,
     PASSTHROUGH_CMD_ID_UP,
@@ -111,10 +98,10 @@ typedef enum {
     PLAY_STATUS_ERROR,
 } avrcp_play_status_t;
 
-typedef enum {
+enum {
     AVRCP_CAPABILITY_ID_COMPANY_ID = 2,
     AVRCP_CAPABILITY_ID_EVENTS_SUPPORTED,
-} avrcp_capability_id_t;
+};
 
 typedef enum {
     NOTIFICATION_EVT_PALY_STATUS_CHANGED = 0x01,
@@ -146,48 +133,6 @@ typedef enum {
     AVRCP_RESPONSE_TIMEOUT
 } avrcp_response_t;
 
-typedef enum {
-    AVRCP_ATTR_TITLE = 1,
-    AVRCP_ATTR_ARTIST_NAME,
-    AVRCP_ATTR_ALBUM_NAME,
-    AVRCP_ATTR_TRACK_NUMBER,
-    AVRCP_ATTR_TOTAL_NUMBER_OF_TRACKS,
-    AVRCP_ATTR_GENRE,
-    AVRCP_ATTR_PLAYING_TIME_MS,
-    AVRCP_ATTR_COVER_ART_HANDLE
-} avrcp_media_attr_type_t;
-
-/**
- * @endcond
- */
-
-/**
- * @brief Callback for AVRCP connection state changed.
- *
- * There are four states for an AVRCP connection, namely DISCONNECTED, CONNECTING,
- * CONNECTED, and DISCONNECTING. During the initialization phase of the AVRCP,
- * it is necessary to register callback functions. This callback is triggered
- * when there is a change in the state of the AVRCP connection.
- *
- * Stable States:
- *    DISCONNECTED: The initial state.
- *    CONNECTED: The AVRCP connection is established.
- * Transient states:
- *    CONNECTING: The AVRCP connection is being established.
- *    DISCONNECTING: The AVRCP connection is being terminated.
- *
- * @param cookie - Callback cookie.
- * @param addr - The Bluetooth address of the peer device.
- * @param state - AVRCP profile connection state.
- *
- * **Example:**
- * @code
-static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr, profile_connection_state_t state)
-{
-    printf("AVRCP connection state is: %d", state);
-}
- * @endcode
- */
 typedef void (*avrcp_connection_state_callback)(void* cookie, bt_address_t* addr, profile_connection_state_t state);
 
 #endif /* __BT_AVRCP_H__ */

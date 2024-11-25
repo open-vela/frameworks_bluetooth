@@ -39,19 +39,7 @@ BT_L2CAP_MESSAGE_START,
 {
 #endif
 
-#include "bt_ipc_code.h"
 #include "bt_l2cap.h"
-
-#define BT_IPC_CODE_COMMAND_L2CAP_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_L2CAP, 0)
-// TODO: Add new BT IPC Code sequentially
-#define L2CAP_SUBCODE_STOP_LISTEN 1
-#define BT_L2CAP_STOP_LISTEN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_L2CAP, L2CAP_SUBCODE_STOP_LISTEN)
-
-#define BT_IPC_CODE_COMMAND_L2CAP_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_L2CAP, BT_IPC_CODE_SUBCODE_MAX_NUM)
-
-#define BT_IPC_CODE_CALLBACK_L2CAP_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_L2CAP, 0)
-// TODO: Add new BT IPC Code sequentially
-#define BT_IPC_CODE_CALLBACK_L2CAP_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_L2CAP, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
     typedef union {
         uint8_t status; /* bt_status_t */
@@ -70,13 +58,8 @@ BT_L2CAP_MESSAGE_START,
         } _bt_l2cap_connect;
 
         struct {
-            uint16_t id;
+            uint16_t cid;
         } _bt_l2cap_disconnect;
-
-        struct {
-            uint8_t transport; /* bt_transport_t */
-            uint16_t psm;
-        } _bt_l2cap_stop_listen;
 
     } bt_message_l2cap_t;
 
@@ -90,14 +73,12 @@ BT_L2CAP_MESSAGE_START,
             uint16_t psm;
             uint16_t incoming_mtu;
             uint16_t outgoing_mtu;
-            uint16_t id;
-            uint16_t listen_id;
-            char proxy_name[16];
+            char pty_name[64];
         } _connected_cb;
 
         struct {
             bt_address_t addr;
-            uint16_t id;
+            uint16_t cid;
             uint32_t reason;
         } _disconnected_cb;
 

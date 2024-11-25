@@ -50,8 +50,6 @@ typedef struct service_loop {
     struct list_node msg_queue;
     struct list_node init_queue;
     struct list_node clean_queue;
-    struct list_node deferred_queue;
-    service_timer_t* deferred_timer;
 } service_loop_t;
 
 typedef struct service_timer {
@@ -86,10 +84,9 @@ service_work_t* service_loop_work(void* user_data, service_work_cb_t work_cb,
     service_after_work_cb_t after_work_cb);
 void do_in_service_loop(service_func_t func, void* data);
 void do_in_service_loop_sync(service_func_t func, void* data);
-void do_in_service_loop_deffered(service_func_t func, void* data, bool flushable);
 void add_init_process(service_init_t func);
 
 uv_loop_t* get_service_uv_loop(void);
 
-uint64_t bt_get_os_timestamp_us(void);
+uint64_t get_os_timestamp_us(void);
 #endif /* _BT_SERVICE_LOOP_H__ */

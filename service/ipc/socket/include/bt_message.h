@@ -29,7 +29,6 @@ extern "C" {
 #include "bt_message_a2dp_source.h"
 #include "bt_message_adapter.h"
 #include "bt_message_advertiser.h"
-#include "bt_message_avrcp_control.h"
 #include "bt_message_avrcp_target.h"
 #include "bt_message_device.h"
 #include "bt_message_gattc.h"
@@ -38,7 +37,6 @@ extern "C" {
 #include "bt_message_hfp_hf.h"
 #include "bt_message_hid_device.h"
 #include "bt_message_l2cap.h"
-#include "bt_message_log.h"
 #include "bt_message_manager.h"
 #include "bt_message_pan.h"
 #include "bt_message_scan.h"
@@ -53,7 +51,6 @@ typedef enum {
 #include "bt_message_a2dp_source.h"
 #include "bt_message_adapter.h"
 #include "bt_message_advertiser.h"
-#include "bt_message_avrcp_control.h"
 #include "bt_message_avrcp_target.h"
 #include "bt_message_device.h"
 #include "bt_message_gattc.h"
@@ -62,7 +59,6 @@ typedef enum {
 #include "bt_message_hfp_hf.h"
 #include "bt_message_hid_device.h"
 #include "bt_message_l2cap.h"
-#include "bt_message_log.h"
 #include "bt_message_manager.h"
 #include "bt_message_pan.h"
 #include "bt_message_scan.h"
@@ -75,7 +71,6 @@ typedef enum {
 #include "bt_message_a2dp_source.h"
 #include "bt_message_adapter.h"
 #include "bt_message_advertiser.h"
-#include "bt_message_avrcp_control.h"
 #include "bt_message_avrcp_target.h"
 #include "bt_message_device.h"
 #include "bt_message_gattc.h"
@@ -96,7 +91,6 @@ typedef enum {
 typedef struct
 {
     uint32_t code; /* bt_message_type_t */
-    uint64_t context;
     union {
         bt_manager_result_t manager_r;
         bt_adapter_result_t adpt_r;
@@ -104,7 +98,6 @@ typedef struct
         bt_a2dp_sink_result_t a2dp_sink_r;
         bt_a2dp_source_result_t a2dp_source_r;
         bt_avrcp_target_result_t avrcp_target_r;
-        bt_avrcp_control_result_t avrcp_control_r;
         bt_hfp_ag_result_t hfp_ag_r;
         bt_hfp_hf_result_t hfp_hf_r;
         bt_advertiser_result_t adv_r;
@@ -132,8 +125,6 @@ typedef struct
 
         bt_message_avrcp_target_t avrcp_target_pl;
         bt_message_avrcp_target_callbacks_t avrcp_target_cb;
-        bt_message_avrcp_control_t avrcp_control_pl;
-        bt_message_avrcp_control_callbacks_t avrcp_control_cb;
 
         bt_message_hfp_ag_t hfp_ag_pl;
         bt_message_hfp_ag_callbacks_t hfp_ag_cb;
@@ -146,7 +137,6 @@ typedef struct
 
         bt_message_scan_t scan_pl;
         bt_message_scan_callbacks_t scan_cb;
-        bt_message_batch_scan_result_callbacks_t scan_batch_cb;
 
         bt_message_gattc_t gattc_pl;
         bt_message_gattc_callbacks_t gattc_cb;
@@ -165,8 +155,6 @@ typedef struct
 
         bt_message_l2cap_t l2cap_pl;
         bt_message_l2cap_callbacks_t l2cap_cb;
-
-        bt_message_log_t log_pl;
     };
 } bt_message_packet_t;
 #pragma pack()

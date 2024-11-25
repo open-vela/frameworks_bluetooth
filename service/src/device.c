@@ -25,16 +25,10 @@
 #include "bluetooth.h"
 #include "bluetooth_define.h"
 #include "bt_addr.h"
-#include "bt_config.h"
 #include "bt_device.h"
 #include "bt_list.h"
-#include "bt_utils.h"
-#include "bt_uuid.h"
 #include "device.h"
-#include "service_loop.h"
 #include "utils/log.h"
-
-#define BASE_UUID16_OFFSET 12
 
 typedef struct remote_device {
     char name[BT_REM_NAME_MAX_LEN + 1];
@@ -64,12 +58,8 @@ typedef struct remote_device {
     bt_address_t identity_addr;
     uint16_t appearance;
     uint8_t smp_data[80];
-    uint8_t local_csrk[16];
     ble_phy_type_t tx_phy;
     ble_phy_type_t rx_phy;
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-    uint8_t gatt_hash[BT_GATT_HASH_LEN];
-#endif
     // uint8_t scan_repetition_mode;
     // uint16_t clock_offset;
 } remote_device_t;
@@ -148,16 +138,6 @@ void device_set_identity_address(bt_device_t* device, bt_address_t* addr)
     }
 }
 
-uint8_t* device_get_local_csrk(bt_device_t* device)
-{
-    return device->remote.local_csrk;
-}
-
-void device_set_local_csrk(bt_device_t* device, const uint8_t* local_csrk)
-{
-    memcpy(device->remote.local_csrk, local_csrk, 16);
-}
-
 ble_addr_type_t device_get_address_type(bt_device_t* device)
 {
     return device->remote.addr_type;
@@ -193,8 +173,6 @@ bool device_set_name(bt_device_t* device, const char* name)
     if (!strncmp(device->remote.alias, "", BT_REM_NAME_MAX_LEN))
         strlcpy((char*)device->remote.alias, name, sizeof(device->remote.alias));
 
-    device_set_flags(device, DFLAG_NAME_SET);
-
     return true;
 }
 
@@ -205,7 +183,7 @@ uint32_t device_get_device_class(bt_device_t* device)
 
 bool device_set_device_class(bt_device_t* device, uint32_t cod)
 {
-    if (device->remote.device_class == cod || cod == 0) {
+    if (device->remote.device_class == cod) {
         return false;
     }
 
@@ -354,28 +332,9 @@ bond_state_t device_get_bond_state(bt_device_t* device)
     return device->remote.bond_state;
 }
 
-void device_set_bond_state(bt_device_t* device, bond_state_t state, bool is_ctkd, void* notify_change)
+void device_set_bond_state(bt_device_t* device, bond_state_t state)
 {
-    bond_state_change_message_t* msg;
-    bond_state_t prev_state = device->remote.bond_state;
-
-    if (prev_state == state)
-        return;
-
     device->remote.bond_state = state;
-    if (!notify_change)
-        return;
-
-    msg = zalloc(sizeof(bond_state_change_message_t));
-    if (!msg) {
-        BT_LOGE("%s malloc failed", __func__);
-        return;
-    }
-
-    msg->device = device;
-    msg->previous_state = prev_state;
-    msg->is_ctkd = is_ctkd;
-    do_in_service_loop(notify_change, msg);
 }
 
 bool device_is_bonded(bt_device_t* device)
@@ -387,13 +346,6 @@ uint8_t* device_get_link_key(bt_device_t* device)
 {
     return device->remote.link_key;
 }
-
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-uint8_t* device_get_gatt_hash(bt_device_t* device)
-{
-    return device->remote.gatt_hash;
-}
-#endif
 
 void device_set_link_key(bt_device_t* device, bt_128key_t link_key)
 {
@@ -437,129 +389,6 @@ void device_get_le_phy(bt_device_t* device, ble_phy_type_t* tx_phy, ble_phy_type
     *rx_phy = device->remote.rx_phy;
 }
 
-static void device_get_remote_uuids(bt_device_t* device, remote_device_properties_t* prop)
-{
-    bt_uuid_t* uuids;
-    uint8_t count_uuid16 = 0;
-    uint8_t count_uuid128 = 0;
-    uint8_t* uuids_prop = prop->uuids;
-    uint8_t* p = NULL;
-    uint8_t* q = NULL;
-    bt_uuid_t bt_uuid128_base = {
-        .type = BT_UUID128_TYPE,
-        .val.u128 = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
-            0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
-    };
-
-    memset(prop->uuids, 0, sizeof(prop->uuids));
-    if (device->remote.uuids.uuid_cnt == 0) {
-        BT_LOGD("%s, No uuids found", __func__);
-        return;
-    }
-
-    uuids = device->remote.uuids.uuids;
-
-    for (int i = 0; i < device->remote.uuids.uuid_cnt; i++) {
-        switch ((uuids + i)->type) {
-        case BT_UUID16_TYPE:
-            count_uuid16++;
-            break;
-        case BT_UUID32_TYPE:
-            break; // TODO: Save 32bit uuid
-        case BT_UUID128_TYPE: {
-            bt_uuid_t tmp = { 0 };
-            int result = -1;
-
-            memcpy(&tmp, uuids + i, sizeof(bt_uuid_t));
-            tmp.val.u128[12] = 0x00;
-            tmp.val.u128[13] = 0x00;
-            result = bt_uuid_compare(&tmp, &bt_uuid128_base);
-            if (result != 0) {
-                count_uuid128++;
-                break;
-            } else if ((uuids + i)->val.u128[14] == 0x00 && (uuids + i)->val.u128[15] == 0x00) {
-                count_uuid16++;
-            }
-
-            break;
-        }
-
-        default:
-            break;
-        }
-    }
-
-    if (count_uuid16 == 0 && count_uuid128 == 0) {
-        BT_LOGD("%s, No uuids found", __func__);
-        return;
-    }
-
-    if (count_uuid16 > 0) {
-        count_uuid16 = count_uuid16 * 2 + 1 > CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN ? (CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - 1) / 2 : count_uuid16;
-        *uuids_prop = (BT_HEAD_UUID16_TYPE << 5 | count_uuid16) & 0x7F;
-    }
-
-    if (count_uuid128 > 0) {
-        if (count_uuid16 > 0) {
-            count_uuid128 = count_uuid128 * 16 + 1 > CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - count_uuid16 * 2 + 1 ? (CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - count_uuid16 * 2 - 2) / 16 : count_uuid128;
-            *(uuids_prop + count_uuid16 * 2 + 1) = (BT_HEAD_UUID128_TYPE << 5 | count_uuid128) & 0x7F;
-        } else {
-            count_uuid128 = count_uuid128 * 16 + 1 > CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN ? (CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - 1) / 16 : count_uuid128;
-            *(uuids_prop) = (BT_HEAD_UUID128_TYPE << 5 | count_uuid128) & 0x7F;
-        }
-    }
-
-    if (count_uuid16 > 0) {
-        p = uuids_prop + 1;
-    }
-
-    if (count_uuid128 > 0) {
-        q = uuids_prop + count_uuid16 * 2 + 2;
-    }
-
-    for (int i = 0; i < device->remote.uuids.uuid_cnt && ((count_uuid16 > 0) | (count_uuid128 > 0)); i++) {
-        switch ((uuids + i)->type) {
-        case BT_UUID16_TYPE:
-            if (count_uuid16 > 0 && p - uuids_prop < CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - 1) {
-                UINT16_TO_STREAM(p, (uuids + i)->val.u16);
-                count_uuid16--;
-            }
-            break;
-        case BT_UUID32_TYPE:
-            break; // TODO: Save 32bit uuid
-        case BT_UUID128_TYPE: {
-            bt_uuid_t tmp = { 0 };
-            int result = -1;
-
-            memcpy(&tmp, uuids + i, sizeof(bt_uuid_t));
-            tmp.val.u128[12] = 0x00;
-            tmp.val.u128[13] = 0x00;
-            result = bt_uuid_compare(&tmp, &bt_uuid128_base);
-            if (result != 0) {
-                if (count_uuid128 > 0 && q - uuids_prop < CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - 15) {
-                    memcpy(q, (uuids + i)->val.u128, 16);
-                    q += 16;
-                    count_uuid128--;
-                }
-
-                break;
-            } else if ((uuids + i)->val.u128[14] == 0x00 && (uuids + i)->val.u128[15] == 0x00) {
-                if (count_uuid16 > 0 && p - uuids_prop < CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - 1) {
-                    *(p++) = (uuids + i)->val.u128[BASE_UUID16_OFFSET + 1];
-                    *(p++) = (uuids + i)->val.u128[BASE_UUID16_OFFSET];
-                    count_uuid16--;
-                }
-            }
-
-            break;
-        }
-
-        default:
-            break;
-        }
-    }
-}
-
 void device_get_property(bt_device_t* device, remote_device_properties_t* prop)
 {
     memcpy(&prop->addr, &device->remote.addr, sizeof(bt_address_t));
@@ -570,7 +399,6 @@ void device_get_property(bt_device_t* device, remote_device_properties_t* prop)
     memcpy(prop->link_key, device->remote.link_key, 16);
     prop->link_key_type = device->remote.link_key_type;
     prop->device_type = device->remote.device_type;
-    device_get_remote_uuids(device, prop);
 }
 
 void device_get_le_property(bt_device_t* device, remote_device_le_properties_t* prop)
@@ -579,17 +407,7 @@ void device_get_le_property(bt_device_t* device, remote_device_le_properties_t* 
     prop->addr_type = device->remote.addr_type;
     memcpy(prop->smp_key, device->remote.smp_data, 80);
     prop->device_type = device->remote.device_type;
-    memcpy(prop->local_csrk, device->remote.local_csrk, 16);
 }
-
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-void device_get_gatt_hash_property(bt_device_t* device, remote_device_gatt_properties_t* prop)
-{
-    memcpy(&prop->addr, &device->remote.addr, sizeof(bt_address_t));
-    prop->addr_type = device->remote.addr_type;
-    memcpy(prop->hash, device->remote.gatt_hash, sizeof(prop->hash));
-}
-#endif
 
 void device_set_flags(bt_device_t* device, uint32_t flags)
 {
@@ -622,18 +440,6 @@ void device_delete_smp_key(bt_device_t* device)
     device_clear_flag(device, DFLAG_LE_KEY_SET);
     memset(device->remote.smp_data, 0, sizeof(device->remote.smp_data));
 }
-
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-void device_set_gatt_hash(bt_device_t* device, const uint8_t* hash)
-{
-    memcpy(device->remote.gatt_hash, hash, sizeof(device->remote.gatt_hash));
-}
-
-void device_delete_gatt_hash(bt_device_t* device)
-{
-    memset(device->remote.gatt_hash, 0, sizeof(device->remote.gatt_hash));
-}
-#endif
 
 static int linkkey_dump(bt_device_t* device, char* str)
 {

@@ -20,7 +20,6 @@
  * Included Files
  ****************************************************************************/
 #include "bluetooth.h"
-#include "bluetooth_define.h"
 #include "bt_addr.h"
 #include "gatt_define.h"
 #include <stdint.h>
@@ -39,7 +38,6 @@ typedef enum {
     GATTS_EVENT_PHY_READ,
     GATTS_EVENT_PHY_UPDATE,
     GATTS_EVENT_CONN_PARAM_CHANGE,
-    GATTS_EVENT_DB_HASH_AVAILABLE,
 } gatts_event_t;
 
 typedef enum {
@@ -139,18 +137,6 @@ typedef struct
             uint16_t latency;
             uint16_t timeout;
         } conn_param;
-
-#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-        /**
-         * @brief GATTS_EVENT_DB_HASH_AVAILABLE
-         */
-        struct gatts_db_hash_evt_param {
-            bt_address_t addr;
-            ble_addr_type_t addr_type;
-            uint8_t hash[BT_GATT_HASH_LEN];
-            bool force_update;
-        } db_hash;
-#endif
 
     } param;
 

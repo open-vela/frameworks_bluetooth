@@ -23,7 +23,7 @@ extern "C" {
 
 #include "bt_addr.h"
 #include "bt_device.h"
-#include "bt_lea_common.h"
+#include "lea_audio_common.h"
 #include <stddef.h>
 
 #define OBJ_ID_SIZE 6

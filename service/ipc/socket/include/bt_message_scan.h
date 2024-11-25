@@ -42,27 +42,6 @@ BT_SCAN_MESSAGE_START,
 
 #include "bluetooth.h"
 #include "bt_le_scan.h"
-#include "bt_ipc_code.h"
-
-    enum {
-        BLE_SCAN_SUBCODE_START = 0,
-        BLE_SCAN_SUBCODE_BATCH_SCAN_CALLBACK = 1,
-        BLE_SCAN_SUBCODE_END = BT_IPC_CODE_SUBCODE_MAX_NUM,
-    };
-
-#define BT_IPC_CODE_COMMAND_BLE_SCAN_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_BLE_SCAN, 0)
-// TODO: Add new BT IPC Code sequentially
-#define BT_IPC_CODE_COMMAND_BLE_SCAN_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_BLE_SCAN, BT_IPC_CODE_SUBCODE_MAX_NUM)
-
-#define BT_IPC_CODE_CALLBACK_BLE_SCAN_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_BLE_SCAN, 0)
-// TODO: Add new BT IPC Code sequentially
-#define BT_LE_ON_BATCH_SCAN_RESULT BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_BLE_SCAN, BLE_SCAN_SUBCODE_BATCH_SCAN_CALLBACK)
-#define BT_IPC_CODE_CALLBACK_BLE_SCAN_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_BLE_SCAN, BT_IPC_CODE_SUBCODE_MAX_NUM)
-
-#define MAX_SCAN_RESULTS_PER_PACKET 13
-#define MAX_LEGACY_SCAN_RESULTS_LENGTH 31
-#define MAX_EXT_SCAN_RESULTS_LENGTH 256
-#define SCAN_FLUSH_INTERVAL_MS 150
 
     typedef union {
         uint8_t status; /* bt_status_t */
@@ -72,20 +51,11 @@ BT_SCAN_MESSAGE_START,
     } bt_scan_result_t;
 
     typedef struct {
-        uint16_t count;
-        uint64_t scanner;
-        struct {
-            ble_scan_result_t result;
-            uint8_t adv_data[MAX_LEGACY_SCAN_RESULTS_LENGTH];
-        } results[MAX_SCAN_RESULTS_PER_PACKET];
-    } bt_message_batch_scan_result_callbacks_t;
-
-    typedef struct {
         uint64_t remote;
-        bt_instance_t* ins;
-        scanner_callbacks_t* callback;
-        bt_message_batch_scan_result_callbacks_t scan_result_cache;
-        void* flush_ctrl;
+        union {
+            bt_instance_t* ins;
+            scanner_callbacks_t* callback;
+        };
     } bt_scan_remote_t;
 
     typedef union {
@@ -108,7 +78,7 @@ BT_SCAN_MESSAGE_START,
         struct {
             uint64_t scanner; /* bt_scan_remote_t* */
             ble_scan_result_t result;
-            uint8_t adv_data[MAX_EXT_SCAN_RESULTS_LENGTH];
+            uint8_t adv_data[256];
         } _on_scan_result_cb;
 
         struct {

@@ -52,7 +52,6 @@ typedef struct {
     void (*cleanup)(void);
     void (*send_frames)(uint16_t header_reserve, uint64_t timestamp);
     int (*get_interval_ms)(void);
-    int (*get_min_frame_size)(void);
 } a2dp_source_stream_interface_t;
 
 void a2dp_source_audio_init(bool offloading);
@@ -60,13 +59,14 @@ void a2dp_source_audio_cleanup(void);
 bool a2dp_source_on_connection_changed(bool connected);
 void a2dp_source_on_started(bool started);
 void a2dp_source_on_stopped(void);
+bool a2dp_source_prepare_start(void);
+void a2dp_source_prepare_suspend(void);
 bool a2dp_source_is_streaming(void);
 void a2dp_source_setup_codec(bt_address_t* bd_addr);
 int a2dp_source_sbc_update_config(uint32_t mtu, sbc_param_t* param, uint8_t* codec_info);
 int a2dp_source_aac_update_config(uint32_t mtu, aac_encoder_param_t* param, uint8_t* codec_info);
 bool a2dp_source_sbc_get_offload_config(a2dp_codec_config_t* codec, a2dp_offload_config_t* offload);
-void a2dp_source_audio_open(bool offloading, bt_address_t* bd_addr);
-uint32_t a2dp_source_get_frame_size(void);
+
 extern const a2dp_source_stream_interface_t* get_a2dp_source_sbc_stream_interface(void);
 extern const a2dp_source_stream_interface_t* get_a2dp_source_aac_stream_interface(void);
 

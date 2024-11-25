@@ -204,7 +204,7 @@ static void a2dp_source_aac_stream_reset(void)
     aac_encoder_param_t* param = stream->param;
 
     stream->state.total_tx_frames = 0;
-    stream->state.session_start_us = bt_get_os_timestamp_us();
+    stream->state.session_start_us = get_os_timestamp_us();
     stream->media_timestamp = 0;
     a2dp_aac_encoder_interval_ms = stream->frame_len * 1000 / param->u32SampleRate;
     if (a2dp_aac_encoder_interval_ms < A2DP_AAC_ENCODER_INTERVAL_MS)
@@ -221,18 +221,12 @@ int a2dp_source_aac_interval_ms(void)
     return a2dp_aac_encoder_interval_ms;
 }
 
-int a2dp_source_aac_get_min_frame_size(void)
-{
-    return 1; // AAC does not have a minimum frame size.
-}
-
 static const a2dp_source_stream_interface_t a2dp_source_stream_aac = {
     a2dp_source_aac_stream_init,
     a2dp_source_aac_stream_reset,
     NULL,
     a2dp_source_aac_send_frames,
     a2dp_source_aac_interval_ms,
-    a2dp_source_aac_get_min_frame_size,
 };
 
 const a2dp_source_stream_interface_t* get_a2dp_source_aac_stream_interface(void)

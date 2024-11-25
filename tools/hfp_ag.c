@@ -32,7 +32,6 @@ static int stop_virtual_call_cmd(void* handle, int argc, char* argv[]);
 static int start_voice_recognition_cmd(void* handle, int argc, char* argv[]);
 static int stop_voice_recognition_cmd(void* handle, int argc, char* argv[]);
 static int send_at_cmd_cmd(void* handle, int argc, char* argv[]);
-static int send_vendor_result_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_hfp_ag_tables[] = {
     { "connect", connect_cmd, 0, "\"establish hfp SLC connection     , params: <address>\"" },
@@ -43,8 +42,7 @@ static bt_command_t g_hfp_ag_tables[] = {
     { "stopvc", stop_virtual_call_cmd, 0, "\"disconnect SCO using virtual call, params: <address>\"" },
     { "startvr", start_voice_recognition_cmd, 0, "\"start voice recognition          , params: <address>\"" },
     { "stopvr", stop_voice_recognition_cmd, 0, "\"stop voice recognition           , params: <address>\"" },
-    { "sendat", send_at_cmd_cmd, 0, "\"send customize AT command to peer, params: <address> <atcmd>\" [deprecated]" },
-    { "sendvendor", send_vendor_result_cmd, 0, "\"send vendor specific result code , params: <address> <prefix> <value>\"" },
+    { "sendat", send_at_cmd_cmd, 0, "\"Send customize AT command to peer, params: <address> <atcmd>\"" },
 };
 
 static void* ag_callbacks = NULL;
@@ -206,22 +204,6 @@ static int send_at_cmd_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
-static int send_vendor_result_cmd(void* handle, int argc, char* argv[])
-{
-    bt_address_t addr;
-
-    if (argc < 3)
-        return CMD_PARAM_NOT_ENOUGH;
-
-    if (bt_addr_str2ba(argv[0], &addr) < 0)
-        return CMD_INVALID_ADDR;
-
-    if (bt_hfp_ag_send_vendor_specific_at_command(handle, &addr, argv[1], argv[2]) != BT_STATUS_SUCCESS)
-        return CMD_ERROR;
-
-    return CMD_OK;
-}
-
 static void ag_connection_state_callback(void* context, bt_address_t* addr, profile_connection_state_t state)
 {
     PRINT_ADDR("ag_connection_state_callback, addr:%s, state:%d", addr, state);
@@ -272,26 +254,6 @@ static void ag_at_cmd_callback(void* context, bt_address_t* addr, const char* at
     PRINT_ADDR("ag_at_cmd_callback, addr:%s, at_command:%s", addr, at_command);
 }
 
-static const char* company_id_to_string(uint16_t company_id)
-{
-    switch (company_id) {
-    case BLUETOOTH_COMPANY_ID_XIAOMI:
-        return "xiaomi";
-    case BLUETOOTH_COMPANY_ID_GOOGLE:
-        return "google";
-    default:
-        break;
-    }
-    return "unknown";
-}
-
-static void ag_vender_specific_at_cmd_callback(void* cookie, bt_address_t* addr,
-    const char* command, uint16_t company_id, const char* value)
-{
-    PRINT_ADDR("ag_vender_specific_at_cmd_callback, addr:%s, vendor:%s(0x%04x), command:%s", addr,
-        company_id_to_string(company_id), company_id, value);
-}
-
 static const hfp_ag_callbacks_t hfp_ag_cbs = {
     sizeof(hfp_ag_cbs),
     ag_connection_state_callback,
@@ -304,7 +266,6 @@ static const hfp_ag_callbacks_t hfp_ag_cbs = {
     ag_hangup_call_callback,
     ag_dial_call_callback,
     ag_at_cmd_callback,
-    ag_vender_specific_at_cmd_callback,
 };
 
 int hfp_ag_commond_init(void* handle)

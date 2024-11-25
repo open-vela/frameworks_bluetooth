@@ -50,7 +50,7 @@
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (__async ? __async->hfp_ag_callbacks : ins->hfp_ag_callbacks)
+#define CBLIST (ins->hfp_ag_callbacks)
 
 /****************************************************************************
  * Private Types
@@ -173,45 +173,6 @@ static void on_at_cmd_received_cb(void* cookie, bt_address_t* addr, const char* 
     bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_AT_COMMAND_RECEIVED);
 }
 
-static void on_clcc_cmd_received_cb(void* cookie, bt_address_t* addr)
-{
-    bt_message_packet_t packet = { 0 };
-    bt_instance_t* ins = cookie;
-
-    memcpy(&packet.hfp_ag_cb._on_clcc_cmd_received.addr, addr, sizeof(bt_address_t));
-
-    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_CLCC_COMMAND_RECEIVED);
-}
-
-static void on_vendor_specific_at_cmd_received_cb(void* cookie, bt_address_t* addr, const char* command, uint16_t company_id, const char* value)
-{
-    bt_message_packet_t packet = { 0 };
-    bt_instance_t* ins = cookie;
-
-    memcpy(&packet.hfp_ag_cb._on_vend_spec_at_cmd_received.addr, addr, sizeof(bt_address_t));
-    if (command != NULL)
-        strlcpy(packet.hfp_ag_cb._on_vend_spec_at_cmd_received.command, command,
-            sizeof(packet.hfp_ag_cb._on_vend_spec_at_cmd_received.command));
-
-    packet.hfp_ag_cb._on_vend_spec_at_cmd_received.company_id = company_id;
-
-    if (value != NULL)
-        strlcpy(packet.hfp_ag_cb._on_vend_spec_at_cmd_received.value, value,
-            sizeof(packet.hfp_ag_cb._on_vend_spec_at_cmd_received.value));
-
-    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_VENDOR_SPECIFIC_AT_COMMAND_RECEIVED);
-}
-
-static void on_cind_cmd_received_cb(void* cookie, bt_address_t* addr)
-{
-    bt_message_packet_t packet = { 0 };
-    bt_instance_t* ins = cookie;
-
-    memcpy(&packet.hfp_ag_cb._on_cind_cmd_received.addr, addr, sizeof(bt_address_t));
-
-    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_CIND_COMMAND_RECEIVED);
-}
-
 const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
     .connection_state_cb = on_connection_state_changed_cb,
     .audio_state_cb = on_audio_state_changed_cb,
@@ -223,9 +184,6 @@ const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
     .hangup_call_cb = on_hangup_call_cb,
     .dial_call_cb = on_dial_call_cb,
     .at_cmd_cb = on_at_cmd_received_cb,
-    .clcc_cmd_cb = on_clcc_cmd_received_cb,
-    .vender_specific_at_cmd_cb = on_vendor_specific_at_cmd_received_cb,
-    .cind_cmd_cb = on_cind_cmd_received_cb,
 };
 
 /****************************************************************************
@@ -339,51 +297,15 @@ void bt_socket_server_hfp_ag_process(service_poll_t* poll, int fd,
             &packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr,
             packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.cmd);
         break;
-    case BT_HFP_AG_SEND_CLCC_RESPONSE:
-        packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_send_clcc_response)(ins,
-            &packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.addr,
-            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.index,
-            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.dir,
-            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.state,
-            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.mode,
-            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.mpty,
-            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.type,
-            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.number[0] ? packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.number : NULL);
-        break;
-    case BT_HFP_AG_SEND_VENDOR_SPECIFIC_AT_COMMAND:
-        packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_send_vendor_specific_at_command)(ins,
-            &packet->hfp_ag_pl._bt_hfp_ag_send_vendor_specific_at_cmd.addr,
-            packet->hfp_ag_pl._bt_hfp_ag_send_vendor_specific_at_cmd.cmd,
-            packet->hfp_ag_pl._bt_hfp_ag_send_vendor_specific_at_cmd.value);
-        break;
     default:
-        switch (BT_IPC_GET_SUBCODE(packet->code)) {
-        case HFP_AG_SUBCODE_SEND_CIND_RESPONSE:
-            packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_send_cind_response)(ins,
-                &packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.addr,
-                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.network,
-                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.call,
-                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.call_held,
-                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.call_setup,
-                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.signal,
-                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.roam,
-                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.battery);
-            break;
-        default:
-            break;
-        }
+        break;
     }
 }
 #endif
 
 int bt_socket_client_hfp_ag_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
-    bt_socket_async_client_t* __async = NULL;
-
-    if (is_async)
-        __async = ins->priv;
-
     switch (packet->code) {
     case BT_HFP_AG_ON_CONNECTION_STATE_CHANGED:
         CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
@@ -443,29 +365,8 @@ int bt_socket_client_hfp_ag_callback(service_poll_t* poll,
             &packet->hfp_ag_cb._on_at_cmd_received.addr,
             packet->hfp_ag_cb._on_at_cmd_received.cmd);
         break;
-    case BT_HFP_AG_ON_CLCC_COMMAND_RECEIVED:
-        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
-            clcc_cmd_cb,
-            &packet->hfp_ag_cb._on_clcc_cmd_received.addr);
-        break;
-    case BT_HFP_AG_ON_VENDOR_SPECIFIC_AT_COMMAND_RECEIVED:
-        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
-            vender_specific_at_cmd_cb,
-            &packet->hfp_ag_cb._on_vend_spec_at_cmd_received.addr,
-            packet->hfp_ag_cb._on_vend_spec_at_cmd_received.command,
-            packet->hfp_ag_cb._on_vend_spec_at_cmd_received.company_id,
-            packet->hfp_ag_cb._on_vend_spec_at_cmd_received.value);
-        break;
     default:
-        switch (BT_IPC_GET_SUBCODE(packet->code)) {
-        case HFP_AG_SUBCODE_ON_CIND_COMMAND_RECEIVED:
-            CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
-                cind_cmd_cb,
-                &packet->hfp_ag_cb._on_cind_cmd_received.addr);
-            break;
-        default:
-            return BT_STATUS_PARM_INVALID;
-        }
+        return BT_STATUS_PARM_INVALID;
     }
 
     return BT_STATUS_SUCCESS;

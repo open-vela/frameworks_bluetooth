@@ -658,7 +658,7 @@ bt_status_t BpBtAdapter_setLeAddress(BpBtAdapter* bpBinder, bt_address_t* addr)
     return status;
 }
 
-bt_status_t BpBtAdapter_setLeIdentityAddress(BpBtAdapter* bpBinder, bt_address_t* addr, bool is_public)
+bt_status_t BpBtAdapter_setLeIdentityAddress(BpBtAdapter* bpBinder, bt_address_t* addr, bool public)
 {
     binder_status_t stat = STATUS_OK;
     AParcel *parcelIn, *parcelOut;
@@ -673,7 +673,7 @@ bt_status_t BpBtAdapter_setLeIdentityAddress(BpBtAdapter* bpBinder, bt_address_t
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 
-    stat = AParcel_writeBool(parcelIn, is_public);
+    stat = AParcel_writeBool(parcelIn, public);
     if (stat != STATUS_OK)
         return BT_STATUS_IPC_ERROR;
 

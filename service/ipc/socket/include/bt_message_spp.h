@@ -27,7 +27,7 @@ BT_SPP_MESSAGE_START,
 
 #ifdef __BT_CALLBACK_CODE__
     BT_SPP_CALLBACK_START,
-    BT_SPP_PROXY_STATE_CB,
+    BT_SPP_PTY_OPEN_CB,
     BT_SPP_CONNECTION_STATE_CB,
     BT_SPP_CALLBACK_END,
 #endif
@@ -41,15 +41,6 @@ BT_SPP_MESSAGE_START,
 #endif
 
 #include "bluetooth.h"
-#include "bt_ipc_code.h"
-
-#define BT_IPC_CODE_COMMAND_SPP_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_SPP, 0)
-// TODO: Add new BT IPC Code sequentially
-#define BT_IPC_CODE_COMMAND_SPP_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_SPP, BT_IPC_CODE_SUBCODE_MAX_NUM)
-
-#define BT_IPC_CODE_CALLBACK_SPP_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_SPP, 0)
-// TODO: Add new BT IPC Code sequentially
-#define BT_IPC_CODE_CALLBACK_SPP_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_SPP, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
     typedef union {
         uint8_t status; /* bt_status_t */
@@ -61,6 +52,7 @@ BT_SPP_MESSAGE_START,
         struct {
             uint32_t name_len;
             char name[64];
+            int port_type;
         } _bt_spp_register_app;
 
         struct {
@@ -81,7 +73,6 @@ BT_SPP_MESSAGE_START,
             int16_t scn;
             bt_uuid_t uuid;
             uint16_t port;
-            uint8_t insecure;
         } _bt_spp_connect;
 
         struct {
@@ -97,11 +88,10 @@ BT_SPP_MESSAGE_START,
         struct {
             uint32_t handle;
             bt_address_t addr;
-            uint8_t state;
             uint16_t scn;
             char name[64];
             uint16_t port;
-        } _proxy_state_cb;
+        } _pty_open_cb;
 
         struct {
             uint32_t handle;

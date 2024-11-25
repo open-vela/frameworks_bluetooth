@@ -36,8 +36,6 @@
 
 #undef BT_HCI_FILTER_LOG_ENABLE
 
-#ifdef CONFIG_BLUETOOTH_BLE_SCAN_FILTER
-
 enum {
     HCI_TYPE_COMMAND = 1,
     HCI_TYPE_ACL = 2,
@@ -175,11 +173,8 @@ static bool le_ext_adv_report_filter(uint8_t* data, uint32_t size)
     return false;
 }
 
-#endif /* CONFIG_BLUETOOTH_BLE_SCAN_FILTER */
-
 bool bt_hci_filter_can_recv(uint8_t* value, uint32_t size)
 {
-#ifdef CONFIG_BLUETOOTH_BLE_SCAN_FILTER
     if (value[1] == BT_HCI_EVT_LE_META_EVENT && value[3] == BT_HCI_EVT_LE_ADVERTISING_REPORT) {
         return le_adv_report_filter(value + 4, size - 4);
     } else if (value[1] == BT_HCI_EVT_LE_META_EVENT && value[3] == BT_HCI_EVT_LE_EXT_ADVERTISING_REPORT) {
@@ -187,14 +182,10 @@ bool bt_hci_filter_can_recv(uint8_t* value, uint32_t size)
     }
 
     return false;
-#else
-    return false;
-#endif
 }
 
 bool bt_hci_filter_can_send(uint8_t* value, uint32_t size)
 {
-#ifdef CONFIG_BLUETOOTH_BLE_SCAN_FILTER
     struct bt_hci_cmd_hdr_s* hdr = (struct bt_hci_cmd_hdr_s*)&value[1];
 
     if (hdr->opcode == BT_HCI_OP_LE_SET_SCAN_ENABLE || hdr->opcode == BT_HCI_OP_LE_SET_EXT_SCAN_ENABLE) {
@@ -202,7 +193,4 @@ bool bt_hci_filter_can_send(uint8_t* value, uint32_t size)
     }
 
     return true;
-#else
-    return true;
-#endif
 }

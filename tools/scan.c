@@ -34,7 +34,6 @@ static struct option scan_options[] = {
     { "mode", required_argument, 0, 'm' },
     { "legacy", required_argument, 0, 'l' },
     { "filter", required_argument, 0, 'f' },
-    { "policy", required_argument, 0, 'y' },
     { 0, 0, 0, 0 }
 };
 
@@ -44,9 +43,7 @@ static bt_command_t g_scanner_tables[] = {
                                   "\t  -p or --phy, le scan phy (1M/2M/Coded)\n"
                                   "\t  -m or --mode, scan mode (0:low power mode, 1:balance mode, 2:low latency mode)\n"
                                   "\t  -l or --legacy, is legacy scan (1: true, 0: false)\n"
-                                  "\t  -f or --filter, filter advertiser :<uuid>\n"
-                                  "\t  -y or --policy, scan filter policy (0: Accept All, 1: White List Only,\n"
-                                  "\t    2: Accept All + RPA, 3: White List + RPA)\n" },
+                                  "\t  -f or --filter, filter advertiser :<uuid>\n" },
     { "stop", stop_scan_cmd, 0, "stop scan" },
     { "dump", dump_scan_cmd, 0, "dump scan state" },
 };
@@ -97,7 +94,7 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
         return CMD_ERROR;
 
     optind = 0;
-    while ((opt = getopt_long(argc, argv, "t:p:m:l:f:y:", scan_options,
+    while ((opt = getopt_long(argc, argv, "t:p:m:l:f:", scan_options,
                 NULL))
         != -1) {
         switch (opt) {
@@ -149,21 +146,6 @@ static int start_scan_cmd(void* handle, int argc, char* argv[])
             PRINT("uuid: 0x%02x ", uuid);
             filter.active = true;
             filter.uuids[0] = uuid;
-        } break;
-        case 'y': {
-            int scan_policy = atoi(optarg);
-            if (scan_policy == 0)
-                settings.policy.policy = BT_LE_SCAN_POLICY_ACCEPT_ALL;
-            else if (scan_policy == 1)
-                settings.policy.policy = BT_LE_SCAN_POLICY_ONLY_WHITE_LIST;
-            else if (scan_policy == 2)
-                settings.policy.policy = BT_LE_SCAN_POLICY_ACCEPT_ALL_AND_RPA;
-            else if (scan_policy == 3)
-                settings.policy.policy = BT_LE_SCAN_POLICY_ONLY_WHITE_LIST_AND_RPA;
-            else {
-                PRINT("Invalid scan filter policy:%s", optarg);
-                return CMD_INVALID_OPT;
-            }
         } break;
         default:
             break;

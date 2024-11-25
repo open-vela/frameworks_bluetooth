@@ -42,17 +42,13 @@ BT_DEVICE_MESSAGE_START,
     BT_DEVICE_SET_LE_SC_REMOTE_OOB_DATA,
     BT_DEVICE_GET_LE_SC_LOCAL_OOB_DATA,
     BT_DEVICE_CONNECT,
-    BT_DEVICE_BACKGROUND_CONNECT,
     BT_DEVICE_DISCONNECT,
-    BT_DEVICE_BACKGROUND_DISCONNECT,
     BT_DEVICE_CONNECT_LE,
     BT_DEVICE_DISCONNECT_LE,
     BT_DEVICE_CONNECT_REQUEST_REPLY,
     BT_DEVICE_SET_LE_PHY,
     BT_DEVICE_CONNECT_ALL_PROFILE,
     BT_DEVICE_DISCONNECT_ALL_PROFILE,
-    BT_DEVICE_ENABLE_ENHANCED_MODE,
-    BT_DEVICE_DISABLE_ENHANCED_MODE,
     BT_DEVICE_MESSAGE_END,
 #endif
 
@@ -65,20 +61,6 @@ BT_DEVICE_MESSAGE_START,
 #endif
 
 #include "bt_device.h"
-#include "bt_ipc_code.h"
-
-#define BT_IPC_CODE_COMMAND_DEVICE_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_DEVICE, 0)
-// TODO: Add new BT IPC Code sequentially
-#define BT_DEVICE_SUBCODE_SET_SECURITY_LEVEL 1
-#define BT_DEVICE_SET_SECURITY_LEVEL BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_DEVICE, BT_DEVICE_SUBCODE_SET_SECURITY_LEVEL)
-#define BT_DEVICE_SUBCODE_SET_BONDABLE_LE 2
-#define BT_DEVICE_SET_BONDABLE_LE BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_DEVICE, BT_DEVICE_SUBCODE_SET_BONDABLE_LE)
-
-#define BT_IPC_CODE_COMMAND_DEVICE_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_DEVICE, BT_IPC_CODE_SUBCODE_MAX_NUM)
-
-#define BT_IPC_CODE_CALLBACK_DEVICE_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_DEVICE, 0)
-// TODO: Add new BT IPC Code sequentially
-#define BT_IPC_CODE_CALLBACK_DEVICE_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_DEVICE, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
     typedef union {
         uint8_t status; /* bt_status_t */
@@ -123,15 +105,10 @@ BT_DEVICE_MESSAGE_START,
         } _bt_device_get_name;
 
         struct {
-            bt_uuid_t uuids[BT_UUID_MAX_NUM];
+            bt_uuid_t uuids[16];
             bt_address_t addr;
             uint16_t size;
         } _bt_device_get_uuids;
-
-        struct {
-            uint8_t transport; /* bt_transport_t */
-            uint8_t level; /* range: 0 ~ 4 */
-        } _bt_device_set_security_level;
 
         struct {
             char alias[64];
@@ -153,15 +130,12 @@ BT_DEVICE_MESSAGE_START,
             _bt_device_is_encrypted,
             _bt_device_is_bond_initiate_local,
             _bt_device_get_bond_state,
-            _bt_device_is_bonded,
-            _bt_device_background_connect,
-            _bt_device_background_disconnect;
+            _bt_device_is_bonded;
 
         struct {
             bt_address_t addr;
             uint8_t accept; /* boolean */
-        } _bt_device_pair_request_reply,
-            _bt_device_set_bondable_le;
+        } _bt_device_pair_request_reply;
 
         struct {
             bt_address_t addr;
@@ -211,12 +185,6 @@ BT_DEVICE_MESSAGE_START,
             uint8_t tx_phy; /* ble_phy_type_t */
             uint8_t rx_phy; /* ble_phy_type_t */
         } _bt_device_set_le_phy;
-
-        struct {
-            bt_address_t addr;
-            uint8_t mode; /* bt_enhanced_mode_t */
-        } _bt_device_enable_enhanced_mode,
-            _bt_device_disable_enhanced_mode;
 
     } bt_message_device_t;
 

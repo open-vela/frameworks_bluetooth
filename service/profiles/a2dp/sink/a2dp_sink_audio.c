@@ -33,16 +33,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "a2dp_control.h"
 #include "a2dp_sink.h"
 #include "a2dp_sink_audio.h"
-#include "audio_control.h"
+#include "audio_transport.h"
 #include "bt_list.h"
 #include "bt_utils.h"
 
 #include "service_loop.h"
 
-#include "a2dp_audio.h"
-#define LOG_TAG "a2dp_snk_audio"
+#define LOG_TAG "a2dp_snk_stream"
 #include "utils/log.h"
 
 #define A2DP_SINK_MEDIA_TICK_MS 20
@@ -52,25 +52,28 @@
 
 typedef enum {
     STATE_OFF,
+    STATE_FLUSHING,
     STATE_RUNNING,
+    STATE_SUSPENDING,
+    STATE_WAIT4_SUSPENDED,
 } stream_state_t;
 
 typedef struct {
     uint8_t codec_info[10];
+    uint8_t packet_sending_cnt;
     uint64_t underflow_ts;
     uint64_t last_ts;
     uint32_t block_ticks;
+    bool ready;
     stream_state_t state;
     uv_mutex_t queue_lock;
     service_timer_t* media_alarm;
     struct list_node packet_queue;
     const a2dp_sink_stream_interface_t* stream_interface;
-    bool opened;
 } a2dp_sink_stream_t;
 
-static a2dp_sink_stream_t sink_stream = { 0 };
-
-static void a2dp_sink_stop_audio_req();
+extern audio_transport_t* a2dp_transport;
+a2dp_sink_stream_t sink_stream = { 0 };
 
 static const a2dp_sink_stream_interface_t* get_stream_interface(void)
 {
@@ -86,6 +89,14 @@ static const a2dp_sink_stream_interface_t* get_stream_interface(void)
 
     abort();
     return NULL;
+}
+
+static void a2dp_sink_write_done(uint8_t ch_id, uint8_t* buffer)
+{
+    a2dp_sink_stream_t* stream = &sink_stream;
+
+    if (stream->packet_sending_cnt > 0)
+        stream->packet_sending_cnt--;
 }
 
 static void a2dp_sink_flush_packet_queue(void)
@@ -107,14 +118,10 @@ static void a2dp_sink_audio_handle_timer(service_timer_t* timer, void* arg)
     struct list_node *node, *tmp;
     int ret;
 
-    if (stream->state != STATE_RUNNING) {
-        return;
-    }
-
-    uint64_t now_us = bt_get_os_timestamp_us();
+    uint64_t now_us = get_os_timestamp_us();
 #ifndef CONFIG_ARCH_SIM
     if (stream->last_ts && ((now_us - stream->last_ts) > 30000))
-        BT_LOGD("===a2dp cpu busy time:%" PRIu64 ", buff_cnt:%zu===", now_us - stream->last_ts, list_length(&sink_stream.packet_queue));
+        BT_LOGD("===a2dp cpu busy time:%lld, buff_cnt:%d===", now_us - stream->last_ts, list_length(&sink_stream.packet_queue));
     stream->last_ts = now_us;
 #endif
 
@@ -134,37 +141,34 @@ static void a2dp_sink_audio_handle_timer(service_timer_t* timer, void* arg)
 
     list_for_every_safe(queue, node, tmp)
     {
-        if (stream->block_ticks == 2) {
-            BT_LOGD("%s ipc blocking, waiting for resume", __func__);
+        if (stream->packet_sending_cnt == A2DP_ASYNC_SEND_COUNT) {
+            if (stream->block_ticks++ > 2)
+                BT_LOGD("%s ipc blocking, block ticks:%" PRIu32, __func__, stream->block_ticks);
+            goto out;
         }
 
+        stream->block_ticks = 0;
         packet = (a2dp_sink_packet_t*)node;
-        ret = audio_control_write(A2DP_SINK_PROFILE_ID, packet->data, packet->length);
-        if (ret < 0) {
-            stream->block_ticks++;
+        ret = audio_transport_write(a2dp_transport,
+            AUDIO_TRANS_CH_ID_AV_SINK_AUDIO,
+            packet->data, packet->length,
+            a2dp_sink_write_done);
+        if (ret != 0) {
+            BT_LOGE("%s, packet write failed", __func__);
             goto out;
-        } else if (ret < packet->length) {
-            packet->is_partial = true;
-            memmove(packet->data, packet->data + ret, packet->length - ret);
-            packet->length -= ret;
-            stream->block_ticks++;
-            goto out;
-        } else {
-            if (stream->block_ticks > 0) {
-                BT_LOGD("%s ipc blocking resume, block ticks:%" PRIu32, __func__, stream->block_ticks);
-                stream->block_ticks = 0;
-            }
         }
 
+        stream->packet_sending_cnt++;
         list_delete(node);
         if (sink_stream.stream_interface)
             sink_stream.stream_interface->packet_send_done(packet);
     }
+
 out:
     uv_mutex_unlock(&stream->queue_lock);
 }
 
-void a2dp_sink_packet_receive(a2dp_sink_packet_t* packet)
+void a2dp_sink_packet_recieve(a2dp_sink_packet_t* packet)
 {
     a2dp_sink_stream_t* stream = &sink_stream;
     struct list_node* queue = &stream->packet_queue;
@@ -179,30 +183,15 @@ void a2dp_sink_packet_receive(a2dp_sink_packet_t* packet)
 
     uv_mutex_lock(&stream->queue_lock);
     if (list_length(queue) == A2DP_MAX_ENQUEUE_PACKET_COUNT) {
-        a2dp_sink_packet_t* pkt = (a2dp_sink_packet_t*)list_peek_head(queue);
-
-        if (pkt && pkt->is_partial) {
-            // The list head element has already been partially sent and cannot be deleted. Delete the next packet.
-            FAR struct list_node* node = list_next(queue, &pkt->node);
-
-            if (node) {
-                list_delete(node);
-                free(node);
-                list_add_tail(queue, &packet->node);
-            } else {
-                free(packet);
-            }
-        } else {
-            free(list_remove_head(queue));
-            list_add_tail(queue, &packet->node);
-        }
-
+        BT_LOGD("%s queue is full, drop head packet", __func__);
+        struct list_node* pkt = list_remove_head(queue);
+        free(pkt);
+        list_add_tail(queue, &packet->node);
         uv_mutex_unlock(&stream->queue_lock);
         return;
     }
 
     list_add_tail(queue, &packet->node);
-
     if (list_length(queue) >= A2DP_MAX_DELAY_PACKET_COUNT && !stream->media_alarm) {
         BT_LOGD("%s start trans packet", __func__);
         stream->underflow_ts = 0;
@@ -213,109 +202,51 @@ void a2dp_sink_packet_receive(a2dp_sink_packet_t* packet)
         if (sink_stream.media_alarm == NULL)
             BT_LOGE("%s, media_alarm start error", __func__);
     }
-
     uv_mutex_unlock(&stream->queue_lock);
 }
 
 a2dp_sink_packet_t* a2dp_sink_new_packet(uint32_t timestamp, uint16_t seq, uint8_t* data, uint16_t length)
 {
-    a2dp_sink_packet_t* packet = NULL;
-
     (void)seq;
     (void)timestamp;
 
-    if (!sink_stream.stream_interface) {
+    if (sink_stream.stream_interface)
+        return sink_stream.stream_interface->repackage(data, length);
+    else
         return NULL;
-    }
-
-    packet = sink_stream.stream_interface->repackage(data, length);
-
-    if (!packet) {
-        return NULL;
-    }
-
-    packet->is_partial = false;
-    return packet;
 }
 
 // TODO: check active peer
 bool a2dp_sink_on_connection_changed(bool connected)
 {
+    transport_conn_state_t state;
+
     BT_LOGD("%s, %d", __func__, connected);
+    state = a2dp_control_get_state(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL);
+    if (state != IPC_CONNTECTED) {
+        return false;
+    }
+
+    if (connected) {
+        a2dp_control_update_audio_config(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, 1);
+    } else {
+        a2dp_sink_on_stopped();
+        a2dp_control_update_audio_config(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, 0);
+    }
+
     return true;
 }
 
 void a2dp_sink_on_started(bool started)
 {
-    a2dp_sink_stream_t* stream = &sink_stream;
-
     BT_LOGD("%s: %d", __func__, started);
-    audio_control_start(A2DP_SINK_PROFILE_ID, started);
-    if (started) {
-        if (stream->state != STATE_RUNNING) {
-            stream->state = STATE_RUNNING;
-        }
-    }
-}
-
-static void a2dp_sink_audio_handle_event(void* event)
-{
-    a2dp_audio_event_t* audio_event = (a2dp_audio_event_t*)event;
-
-    switch (audio_event->type) {
-    case A2DP_AUDIO_EVENT_START:
-        if (!a2dp_sink_stream_ready() && !a2dp_sink_stream_started()) {
-            BT_LOGW("%s: can not start when sink stream is not ready", __func__);
-            break;
-        }
-
-        a2dp_sink_on_started(true);
-        break;
-    case A2DP_AUDIO_EVENT_STOP:
-        a2dp_sink_stop_audio_req();
-        break;
-    case A2DP_AUDIO_EVENT_STOPPED:
-        audio_control_stop(A2DP_SINK_PROFILE_ID);
-        break;
-    default:
-        break;
-    }
-    free(audio_event);
-}
-
-static void a2dp_sink_stop_audio_req()
-{
-    a2dp_sink_stream_t* stream = &sink_stream;
-    a2dp_audio_event_t* event;
-
-    BT_LOGD("%s", __func__);
-    if (stream->state == STATE_OFF) {
-        goto out;
-    }
-
-    stream->state = STATE_OFF;
-    if (stream->media_alarm) {
-        service_loop_cancel_timer(stream->media_alarm);
-        stream->media_alarm = NULL;
-    }
-
-    uv_mutex_lock(&stream->queue_lock);
-    a2dp_sink_flush_packet_queue();
-    uv_mutex_unlock(&stream->queue_lock);
-
-    stream->underflow_ts = 0;
-    stream->last_ts = 0;
-    stream->block_ticks = 0;
-
-out:
-    event = (a2dp_audio_event_t*)zalloc(sizeof(a2dp_audio_event_t));
-    if (!event) {
-        BT_LOGE("%s: malloc event fail", __func__);
+    if (!sink_stream.ready)
         return;
-    }
 
-    event->type = A2DP_AUDIO_EVENT_STOPPED;
-    do_in_service_loop(a2dp_sink_audio_handle_event, event);
+    if (sink_stream.state != STATE_RUNNING) {
+        sink_stream.state = STATE_RUNNING;
+        a2dp_sink_flush_packet_queue();
+    }
 }
 
 void a2dp_sink_on_stopped(void)
@@ -324,42 +255,35 @@ void a2dp_sink_on_stopped(void)
 
     BT_LOGD("%s", __func__);
 
-    if (stream->state == STATE_OFF)
+    if (sink_stream.state == STATE_OFF)
         return;
 
-    a2dp_sink_stop_audio_req();
+    service_loop_cancel_timer(stream->media_alarm);
+    stream->media_alarm = NULL;
+    a2dp_sink_flush_packet_queue();
+    stream->state = STATE_OFF;
 }
 
-static void a2dp_sink_audio_stop(void)
+void a2dp_sink_prepare_suspend(void)
 {
-    a2dp_audio_event_t* event;
-
     BT_LOGD("%s", __func__);
-
-    event = (a2dp_audio_event_t*)zalloc(sizeof(a2dp_audio_event_t));
-    if (!event) {
-        BT_LOGE("%s: malloc event fail", __func__);
-        return;
-    }
-
-    event->type = A2DP_AUDIO_EVENT_STOP;
-    do_in_service_loop(a2dp_sink_audio_handle_event, event);
+    a2dp_sink_on_stopped(); /* stop and suspend act the same at audio sink*/
 }
 
-static void a2dp_sink_audio_start(void)
+void a2dp_sink_mute(void)
 {
-    a2dp_audio_event_t* event;
-
     BT_LOGD("%s", __func__);
 
-    event = (a2dp_audio_event_t*)zalloc(sizeof(a2dp_audio_event_t));
-    if (!event) {
-        BT_LOGE("%s: malloc event fail", __func__);
-        return;
-    }
+    sink_stream.ready = false;
+    a2dp_sink_prepare_suspend();
+}
 
-    event->type = A2DP_AUDIO_EVENT_START;
-    do_in_service_loop(a2dp_sink_audio_handle_event, event);
+void a2dp_sink_resume(void)
+{
+    BT_LOGD("%s", __func__);
+
+    sink_stream.ready = true;
+    a2dp_sink_on_started(true);
 }
 
 void a2dp_sink_setup_codec(bt_address_t* bd_addr)
@@ -369,52 +293,20 @@ void a2dp_sink_setup_codec(bt_address_t* bd_addr)
         BT_LOGE("get_stream_interface fail");
 }
 
-static audio_control_callbacks_t audio_control_callbacks = {
-    .size = sizeof(audio_control_callbacks_t),
-    .start_cb = a2dp_sink_audio_start,
-    .stop_cb = a2dp_sink_audio_stop,
-};
-
-void a2dp_sink_audio_open(void)
-{
-    a2dp_sink_stream_t* stream = &sink_stream;
-    bt_audio_config_t* config = NULL;
-
-    if (stream->state != STATE_OFF) {
-        BT_LOGE("%s: stream is running, open failed", __func__);
-        return;
-    }
-
-    stream->stream_interface = get_stream_interface();
-    uv_mutex_init(&sink_stream.queue_lock);
-    list_initialize(&sink_stream.packet_queue);
-
-    config = a2dp_codec_create_media_config(A2DP_SINK_PROFILE_ID);
-    if (!config) {
-        BT_LOGE("%s: create media config failed", __func__);
-        return;
-    }
-
-    audio_control_open(A2DP_SINK_PROFILE_ID, config, &audio_control_callbacks);
-    a2dp_sink_codec_state_change();
-    stream->opened = true;
-    a2dp_codec_delete_media_config(config);
-}
-
 void a2dp_sink_audio_init(void)
 {
-    BT_LOGD("%s", __func__);
+    sink_stream.media_alarm = NULL;
+    sink_stream.state = STATE_OFF;
+    uv_mutex_init(&sink_stream.queue_lock);
+    list_initialize(&sink_stream.packet_queue);
+    a2dp_control_init(AUDIO_TRANS_CH_ID_AV_SINK_CTRL, AUDIO_TRANS_CH_ID_AV_SINK_AUDIO);
 }
 
 void a2dp_sink_audio_cleanup(void)
 {
-    BT_LOGD("%s", __func__);
-    a2dp_sink_stop_audio_req();
-    if (!sink_stream.opened) {
-        return;
-    }
-
+    a2dp_sink_on_stopped();
+    a2dp_sink_flush_packet_queue();
     uv_mutex_destroy(&sink_stream.queue_lock);
     list_delete(&sink_stream.packet_queue);
-    sink_stream.opened = false;
+    a2dp_control_ch_close(AUDIO_TRANS_CH_ID_AV_SINK_CTRL, AUDIO_TRANS_CH_ID_AV_SINK_AUDIO);
 }

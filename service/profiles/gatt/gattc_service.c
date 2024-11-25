@@ -41,12 +41,6 @@
             return BT_STATUS_NOT_ENABLED; \
     }
 
-#define CHECK_ATTR_HANDLE_VALID(_handle)               \
-    do {                                               \
-        if ((_handle) == 0U || (_handle) > UINT16_MAX) \
-            return BT_STATUS_PARM_INVALID;             \
-    } while (0)
-
 #define CHECK_CONNECTION_VALID(_list, _conn)                                                   \
     do {                                                                                       \
         bt_list_node_t* _node;                                                                 \
@@ -69,6 +63,7 @@ typedef struct
     bool started;
     index_allocator_t* allocator;
     bt_list_t* connections;
+    pthread_mutex_t device_lock;
 
 } gattc_manager_t;
 
@@ -87,6 +82,7 @@ typedef struct
     void* remote;
     int conn_id;
     profile_connection_state_t state;
+    pthread_mutex_t conn_lock;
     void** user_phandle;
     bt_address_t remote_addr;
     gattc_manager_t* manager;
@@ -148,12 +144,13 @@ static void gattc_connection_delete(gattc_connection_t* connection)
         return;
 
     if (connection->state == PROFILE_STATE_CONNECTING || connection->state == PROFILE_STATE_CONNECTED)
-        bt_sal_gatt_client_disconnect(PRIMARY_ADAPTER, &connection->remote_addr);
+        bt_sal_gatt_client_disconnect(&connection->remote_addr);
     index_free(g_gattc_manager.allocator, connection->conn_id);
     bt_list_free(connection->services);
     connection->services = NULL;
     bt_list_free(connection->pend_ops);
     connection->pend_ops = NULL;
+    pthread_mutex_destroy(&connection->conn_lock);
     free(connection);
 }
 
@@ -220,9 +217,7 @@ static void gattc_service_delete(gattc_service_t* service)
         return;
 
     if (service->elements)
-#ifndef CONFIG_BLUETOOTH_STACK_LE_ZBLUE
         free(service->elements);
-#endif
     free(service);
 }
 
@@ -239,6 +234,7 @@ static void gattc_process_message(void* data)
     gattc_msg_t* msg = (gattc_msg_t*)data;
     gattc_connection_t* connection;
 
+    pthread_mutex_lock(&g_gattc_manager.device_lock);
     if (!g_gattc_manager.started) {
         goto end;
     }
@@ -289,6 +285,9 @@ static void gattc_process_message(void* data)
     case GATTC_EVENT_SUBSCRIBE: {
         gatt_element_t* element = find_gattc_element_by_handle(connection, msg->param.subscribe.element_id);
         if (element) {
+            if (msg->param.subscribe.status == GATT_STATUS_SUCCESS) {
+                element->notify_enable = msg->param.subscribe.enable;
+            }
             GATT_CBACK(connection->callbacks, on_subscribed, connection, msg->param.subscribe.status, msg->param.subscribe.element_id, msg->param.subscribe.enable);
         } else {
             BT_LOGE("GATTC receives a subscribe event with unknown element (id:0x%04x)", msg->param.subscribe.element_id);
@@ -296,7 +295,7 @@ static void gattc_process_message(void* data)
     } break;
     case GATTC_EVENT_NOTIFY: {
         gatt_element_t* element = find_gattc_element_by_handle(connection, msg->param.notify.element_id);
-        if (element) {
+        if (element && element->notify_enable) {
             GATT_CBACK(connection->callbacks, on_notified, connection, msg->param.notify.element_id, msg->param.notify.value, msg->param.notify.length);
         }
     } break;
@@ -322,6 +321,7 @@ static void gattc_process_message(void* data)
     }
 
 end:
+    pthread_mutex_unlock(&g_gattc_manager.device_lock);
     gattc_msg_destory(msg);
 }
 
@@ -336,7 +336,14 @@ static bt_status_t gattc_send_message(gattc_msg_t* msg)
 
 static bt_status_t if_gattc_init(void)
 {
+    pthread_mutexattr_t attr;
+
     memset(&g_gattc_manager, 0, sizeof(g_gattc_manager));
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    if (pthread_mutex_init(&g_gattc_manager.device_lock, &attr) < 0)
+        return BT_STATUS_FAIL;
 
     g_gattc_manager.started = false;
 
@@ -348,7 +355,9 @@ static bt_status_t if_gattc_startup(profile_on_startup_t cb)
     bt_status_t status;
     gattc_manager_t* manager = &g_gattc_manager;
 
+    pthread_mutex_lock(&manager->device_lock);
     if (manager->started) {
+        pthread_mutex_unlock(&manager->device_lock);
         cb(PROFILE_GATTC, true);
         return BT_STATUS_SUCCESS;
     }
@@ -365,13 +374,8 @@ static bt_status_t if_gattc_startup(profile_on_startup_t cb)
         goto fail;
     }
 
-#ifdef CONFIG_BLUETOOTH_STACK_LE_ZBLUE
-    status = bt_sal_gatt_client_enable();
-    if (status != BT_STATUS_SUCCESS)
-        goto fail;
-#endif
-
     manager->started = true;
+    pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTC, true);
 
     return BT_STATUS_SUCCESS;
@@ -380,6 +384,7 @@ fail:
     index_allocator_delete(&manager->allocator);
     bt_list_free(manager->connections);
     manager->connections = NULL;
+    pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTC, false);
 
     return status;
@@ -389,7 +394,10 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
 {
     gattc_manager_t* manager = &g_gattc_manager;
 
+    pthread_mutex_lock(&manager->device_lock);
+
     if (!manager->started) {
+        pthread_mutex_unlock(&manager->device_lock);
         cb(PROFILE_GATTC, true);
         return BT_STATUS_SUCCESS;
     }
@@ -398,9 +406,8 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
     manager->connections = NULL;
     index_allocator_delete(&manager->allocator);
     manager->started = false;
-#ifdef CONFIG_BLUETOOTH_STACK_LE_ZBLUE
-    bt_sal_gatt_client_disable();
-#endif
+    cb(PROFILE_GATTC, true);
+    pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTC, true);
 
     return BT_STATUS_SUCCESS;
@@ -409,6 +416,7 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
 static void if_gattc_cleanup(void)
 {
     g_gattc_manager.started = false;
+    pthread_mutex_destroy(&g_gattc_manager.device_lock);
 }
 
 static int if_gattc_get_state(void)
@@ -422,6 +430,8 @@ static int if_gattc_dump(void)
     bt_list_t* clist = g_gattc_manager.connections;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     char uuid_str[40] = { 0 };
+
+    pthread_mutex_lock(&g_gattc_manager.device_lock);
 
     for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
         gattc_connection_t* connection = (gattc_connection_t*)bt_list_node(cnode);
@@ -447,36 +457,48 @@ static int if_gattc_dump(void)
             BT_LOGI("\tNo Services found");
     }
 
+    pthread_mutex_unlock(&g_gattc_manager.device_lock);
+
     return 0;
 }
 
 static bt_status_t if_gattc_create_connect(void* remote, void** phandle, gattc_callbacks_t* callbacks)
 {
     bt_status_t status;
+    pthread_mutexattr_t attr;
 
     CHECK_ENABLED();
     if (!phandle)
         return BT_STATUS_PARM_INVALID;
 
+    pthread_mutex_lock(&g_gattc_manager.device_lock);
     gattc_connection_t* connection = gattc_connection_new(callbacks);
     if (!connection) {
+        pthread_mutex_unlock(&g_gattc_manager.device_lock);
         BT_LOGE("New gattc connection alloc failed");
         return BT_STATUS_NOMEM;
     }
 
     connection->services = bt_list_new((bt_list_free_cb_t)gattc_service_delete);
     if (!connection->services) {
+        pthread_mutex_unlock(&g_gattc_manager.device_lock);
         status = BT_STATUS_NOMEM;
         goto fail;
     }
 
     connection->pend_ops = bt_list_new((bt_list_free_cb_t)gattc_pendops_delete);
     if (!connection->pend_ops) {
+        pthread_mutex_unlock(&g_gattc_manager.device_lock);
         status = BT_STATUS_NOMEM;
         goto fail;
     }
 
     bt_list_add_tail(g_gattc_manager.connections, connection);
+    pthread_mutex_unlock(&g_gattc_manager.device_lock);
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&connection->conn_lock, &attr);
 
     connection->remote = remote;
     connection->manager = &g_gattc_manager;
@@ -499,10 +521,12 @@ static bt_status_t if_gattc_delete_connect(void* conn_handle)
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
     void** user_phandle = connection->user_phandle;
-    bt_sal_gatt_client_disconnect(PRIMARY_ADAPTER, &connection->remote_addr);
+    bt_sal_gatt_client_disconnect(&connection->remote_addr);
     bt_list_free(connection->services);
     connection->services = NULL;
+    pthread_mutex_lock(&g_gattc_manager.device_lock);
     bt_list_remove(g_gattc_manager.connections, connection);
+    pthread_mutex_unlock(&g_gattc_manager.device_lock);
     *user_phandle = NULL;
 
     return BT_STATUS_SUCCESS;
@@ -516,7 +540,7 @@ static bt_status_t if_gattc_connect(void* conn_handle, bt_address_t* addr, ble_a
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
     BT_ADDR_LOG("GATTC-CONNECT-REQUEST addr:%s", addr);
-    bt_status_t status = bt_sal_gatt_client_connect(PRIMARY_ADAPTER, addr, addr_type);
+    bt_status_t status = bt_sal_gatt_client_connect(addr, addr_type);
     if (status == BT_STATUS_SUCCESS) {
         connection->state = PROFILE_STATE_CONNECTING;
         memcpy(&connection->remote_addr, addr, sizeof(connection->remote_addr));
@@ -533,7 +557,7 @@ static bt_status_t if_gattc_disconnect(void* conn_handle)
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
     BT_ADDR_LOG("GATTC-DISCONNECT-REQUEST addr:%s", &connection->remote_addr);
-    bt_status_t status = bt_sal_gatt_client_disconnect(PRIMARY_ADAPTER, &connection->remote_addr);
+    bt_status_t status = bt_sal_gatt_client_disconnect(&connection->remote_addr);
     if (status == BT_STATUS_SUCCESS)
         connection->state = PROFILE_STATE_DISCONNECTING;
 
@@ -549,9 +573,9 @@ static bt_status_t if_gattc_discover_service(void* conn_handle, bt_uuid_t* filte
 
     bt_status_t status;
     if (!filter_uuid || !filter_uuid->type) {
-        status = bt_sal_gatt_client_discover_all_services(PRIMARY_ADAPTER, &connection->remote_addr);
+        status = bt_sal_gatt_client_discover_all_services(&connection->remote_addr);
     } else {
-        status = bt_sal_gatt_client_discover_service_by_uuid(PRIMARY_ADAPTER, &connection->remote_addr, filter_uuid);
+        status = bt_sal_gatt_client_discover_service_by_uuid(&connection->remote_addr, filter_uuid);
     }
 
     return status;
@@ -563,8 +587,6 @@ static bt_status_t if_gattc_get_attribute_by_handle(void* conn_handle, uint16_t 
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
-    CHECK_ATTR_HANDLE_VALID(attr_handle);
-
     if (!attr_desc)
         return BT_STATUS_PARM_INVALID;
 
@@ -586,7 +608,6 @@ static bt_status_t if_gattc_get_attribute_by_uuid(void* conn_handle, uint16_t st
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
-
     if (!attr_desc)
         return BT_STATUS_PARM_INVALID;
 
@@ -608,9 +629,8 @@ static bt_status_t if_gattc_read(void* conn_handle, uint16_t attr_handle)
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
-    CHECK_ATTR_HANDLE_VALID(attr_handle);
 
-    return bt_sal_gatt_client_read_element(PRIMARY_ADAPTER, &connection->remote_addr, attr_handle);
+    return bt_sal_gatt_client_read_element(&connection->remote_addr, attr_handle);
 }
 
 static bt_status_t if_gattc_write(void* conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
@@ -619,9 +639,8 @@ static bt_status_t if_gattc_write(void* conn_handle, uint16_t attr_handle, uint8
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
-    CHECK_ATTR_HANDLE_VALID(attr_handle);
 
-    return bt_sal_gatt_client_write_element(PRIMARY_ADAPTER, &connection->remote_addr, attr_handle,
+    return bt_sal_gatt_client_write_element(&connection->remote_addr, attr_handle,
         value, length, GATT_WRITE_TYPE_RSP);
 }
 
@@ -631,21 +650,9 @@ static bt_status_t if_gattc_write_without_response(void* conn_handle, uint16_t a
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
-    CHECK_ATTR_HANDLE_VALID(attr_handle);
 
-    return bt_sal_gatt_client_write_element(PRIMARY_ADAPTER, &connection->remote_addr, attr_handle,
+    return bt_sal_gatt_client_write_element(&connection->remote_addr, attr_handle,
         value, length, GATT_WRITE_TYPE_NO_RSP);
-}
-
-static bt_status_t if_gattc_signed_write(void* conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
-{
-    gattc_connection_t* connection = conn_handle;
-
-    CHECK_ENABLED();
-    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
-
-    return bt_sal_gatt_client_write_element(PRIMARY_ADAPTER, &connection->remote_addr, attr_handle,
-        value, length, GATT_WRITE_TYPE_SIGNED);
 }
 
 static bt_status_t if_gattc_subscribe(void* conn_handle, uint16_t attr_handle, uint16_t ccc_value)
@@ -656,7 +663,6 @@ static bt_status_t if_gattc_subscribe(void* conn_handle, uint16_t attr_handle, u
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
-    CHECK_ATTR_HANDLE_VALID(attr_handle);
 
     element = find_gattc_element_by_handle(connection, attr_handle);
     if (!element) {
@@ -677,7 +683,7 @@ static bt_status_t if_gattc_subscribe(void* conn_handle, uint16_t attr_handle, u
         return BT_STATUS_PARM_INVALID;
     }
 
-    return bt_sal_gatt_client_register_notifications(PRIMARY_ADAPTER, &connection->remote_addr, attr_handle, properties, true);
+    return bt_sal_gatt_client_register_notifications(&connection->remote_addr, attr_handle, properties, true);
 }
 
 static bt_status_t if_gattc_unsubscribe(void* conn_handle, uint16_t attr_handle)
@@ -687,7 +693,6 @@ static bt_status_t if_gattc_unsubscribe(void* conn_handle, uint16_t attr_handle)
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
-    CHECK_ATTR_HANDLE_VALID(attr_handle);
 
     element = find_gattc_element_by_handle(connection, attr_handle);
     if (!element) {
@@ -698,7 +703,7 @@ static bt_status_t if_gattc_unsubscribe(void* conn_handle, uint16_t attr_handle)
         return BT_STATUS_NOT_SUPPORTED;
     }
 
-    return bt_sal_gatt_client_register_notifications(PRIMARY_ADAPTER, &connection->remote_addr, attr_handle, element->properties, false);
+    return bt_sal_gatt_client_register_notifications(&connection->remote_addr, attr_handle, element->properties, false);
 }
 
 static bt_status_t if_gattc_exchange_mtu(void* conn_handle, uint32_t mtu)
@@ -712,7 +717,7 @@ static bt_status_t if_gattc_exchange_mtu(void* conn_handle, uint32_t mtu)
         mtu = GATT_MAX_MTU_SIZE;
     }
 
-    return bt_sal_gatt_client_send_mtu_req(PRIMARY_ADAPTER, &connection->remote_addr, mtu);
+    return bt_sal_gatt_client_send_mtu_req(&connection->remote_addr, mtu);
 }
 
 static bt_status_t if_gattc_update_connection_parameter(void* conn_handle, uint32_t min_interval, uint32_t max_interval, uint32_t latency,
@@ -723,7 +728,7 @@ static bt_status_t if_gattc_update_connection_parameter(void* conn_handle, uint3
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    return bt_sal_gatt_client_update_connection_parameter(PRIMARY_ADAPTER, &connection->remote_addr, min_interval, max_interval, latency,
+    return bt_sal_gatt_client_update_connection_parameter(&connection->remote_addr, min_interval, max_interval, latency,
         timeout, min_connection_event_length, max_connection_event_length);
 }
 
@@ -734,7 +739,7 @@ static bt_status_t if_gattc_read_phy(void* conn_handle)
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    return bt_sal_gatt_client_read_phy(PRIMARY_ADAPTER, &connection->remote_addr);
+    return bt_sal_gatt_client_read_phy(&connection->remote_addr);
 }
 
 static bt_status_t if_gattc_update_phy(void* conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
@@ -744,7 +749,7 @@ static bt_status_t if_gattc_update_phy(void* conn_handle, ble_phy_type_t tx_phy,
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    return bt_sal_gatt_client_set_phy(PRIMARY_ADAPTER, &connection->remote_addr, tx_phy, rx_phy);
+    return bt_sal_gatt_client_set_phy(&connection->remote_addr, tx_phy, rx_phy);
 }
 
 static bt_status_t if_gattc_read_rssi(void* conn_handle)
@@ -754,7 +759,7 @@ static bt_status_t if_gattc_read_rssi(void* conn_handle)
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
 
-    return bt_sal_gatt_client_read_remote_rssi(PRIMARY_ADAPTER, &connection->remote_addr);
+    return bt_sal_gatt_client_read_remote_rssi(&connection->remote_addr);
 }
 
 static const gattc_interface_t gattc_if = {
@@ -769,7 +774,6 @@ static const gattc_interface_t gattc_if = {
     .read = if_gattc_read,
     .write = if_gattc_write,
     .write_without_response = if_gattc_write_without_response,
-    .write_signed = if_gattc_signed_write,
     .subscribe = if_gattc_subscribe,
     .unsubscribe = if_gattc_unsubscribe,
     .exchange_mtu = if_gattc_exchange_mtu,

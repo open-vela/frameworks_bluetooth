@@ -47,7 +47,7 @@
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (__async ? __async->a2dp_sink_callbacks : ins->a2dp_sink_callbacks)
+#define CBLIST (ins->a2dp_sink_callbacks)
 
 /****************************************************************************
  * Private Types
@@ -173,13 +173,8 @@ void bt_socket_server_a2dp_sink_process(service_poll_t* poll,
 #endif
 
 int bt_socket_client_a2dp_sink_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
-    bt_socket_async_client_t* __async = NULL;
-
-    if (is_async)
-        __async = ins->priv;
-
     switch (packet->code) {
     case BT_A2DP_SINK_CONNECTION_STATE_CHANGE: {
         CALLBACK_FOREACH(CBLIST, a2dp_sink_callbacks_t,

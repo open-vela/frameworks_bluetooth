@@ -17,21 +17,13 @@
 #ifndef __BT_SNOOP_LOG_H__
 #define __BT_SNOOP_LOG_H__
 
-#include "bt_list.h"
 #include "bt_status.h"
-#include "bt_trace.h"
-
 #include <stdint.h>
 
-#define CONFIG_BLUETOOTH_SNOOP_LOG_DEFAULT_PATH "/data/misc/bt/snoop"
-#define SNOOP_PATH_MAX_LEN 255
-
+int btsnoop_create_new_file(void);
+void btsnoop_close_file(void);
+bt_status_t btsnoop_log_open(void);
 void btsnoop_log_capture(uint8_t is_recieve, uint8_t* hci_pkt, uint32_t hci_pkt_size);
-int btsnoop_log_init(char* path);
-void btsnoop_log_uninit(void);
-int btsnoop_log_enable(void);
-void btsnoop_log_disable(void);
-int btsnoop_set_filter(btsnoop_filter_flag_t filter_flag);
-int btsnoop_remove_filter(btsnoop_filter_flag_t filter_flag);
+void btsnoop_log_close(void);
 
 #endif //__BT_SNOOP_LOG_H__

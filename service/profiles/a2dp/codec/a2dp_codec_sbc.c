@@ -42,9 +42,6 @@
 #define LOG_TAG "a2dp_codec_sbc"
 #include "utils/log.h"
 
-#define A2DP_CODEC_SBC_BIT_PER_SAMPLE 16
-#define A2DP_CODEC_SBC_ENCODER_INTERVAL_MS 20
-
 typedef struct {
     uint8_t samp_freq; /* Sampling frequency */
     uint8_t ch_mode; /* Channel mode */
@@ -61,12 +58,12 @@ static int a2dp_parse_sbc_info(a2dp_sbc_info_t* info, uint8_t* codec_info)
         return -1;
     }
 
-    info->samp_freq = *codec_info & BT_A2DP_SBC_SAMP_FREQ_MSK;
-    info->ch_mode = *codec_info & BT_A2DP_SBC_CH_MD_MSK;
+    info->samp_freq = *codec_info & A2DP_SBC_SAMP_FREQ_MSK;
+    info->ch_mode = *codec_info & A2DP_SBC_CH_MD_MSK;
     codec_info++;
-    info->block_len = *codec_info & BT_A2DP_SBC_BLOCKS_MSK;
-    info->num_subbands = *codec_info & BT_A2DP_SBC_SUBBAND_MSK;
-    info->alloc_method = *codec_info & BT_A2DP_SBC_ALLOC_MD_MSK;
+    info->block_len = *codec_info & A2DP_SBC_BLOCKS_MSK;
+    info->num_subbands = *codec_info & A2DP_SBC_SUBBAND_MSK;
+    info->alloc_method = *codec_info & A2DP_SBC_ALLOC_MD_MSK;
     codec_info++;
     info->min_bitpool = *codec_info++;
     info->max_bitpool = *codec_info++;
@@ -77,9 +74,9 @@ static int a2dp_parse_sbc_info(a2dp_sbc_info_t* info, uint8_t* codec_info)
 static int a2dp_get_sbc_allocation_method(a2dp_sbc_info_t* info)
 {
     switch (info->alloc_method) {
-    case BT_A2DP_SBC_ALLOC_MD_S:
+    case A2DP_SBC_ALLOC_MD_S:
         return SBC_SNR;
-    case BT_A2DP_SBC_ALLOC_MD_L:
+    case A2DP_SBC_ALLOC_MD_L:
         return SBC_LOUDNESS;
     default:
         break;
@@ -91,13 +88,13 @@ static int a2dp_get_sbc_allocation_method(a2dp_sbc_info_t* info)
 static int a2dp_get_sbc_blocks(a2dp_sbc_info_t* info)
 {
     switch (info->block_len) {
-    case BT_A2DP_SBC_BLOCKS_4:
+    case A2DP_SBC_BLOCKS_4:
         return SBC_BLOCK_0;
-    case BT_A2DP_SBC_BLOCKS_8:
+    case A2DP_SBC_BLOCKS_8:
         return SBC_BLOCK_1;
-    case BT_A2DP_SBC_BLOCKS_12:
+    case A2DP_SBC_BLOCKS_12:
         return SBC_BLOCK_2;
-    case BT_A2DP_SBC_BLOCKS_16:
+    case A2DP_SBC_BLOCKS_16:
         return SBC_BLOCK_3;
     default:
         break;
@@ -109,9 +106,9 @@ static int a2dp_get_sbc_blocks(a2dp_sbc_info_t* info)
 static int a2dp_get_sbc_subbands(a2dp_sbc_info_t* info)
 {
     switch (info->num_subbands) {
-    case BT_A2DP_SBC_SUBBAND_4:
+    case A2DP_SBC_SUBBAND_4:
         return SUB_BANDS_4;
-    case BT_A2DP_SBC_SUBBAND_8:
+    case A2DP_SBC_SUBBAND_8:
         return SUB_BANDS_8;
     default:
         break;
@@ -123,13 +120,13 @@ static int a2dp_get_sbc_subbands(a2dp_sbc_info_t* info)
 static int a2dp_get_sbc_samp_frequency(a2dp_sbc_info_t* info)
 {
     switch (info->samp_freq) {
-    case BT_A2DP_SBC_SAMP_FREQ_16:
+    case A2DP_SBC_SAMP_FREQ_16:
         return SBC_SF_16000;
-    case BT_A2DP_SBC_SAMP_FREQ_32:
+    case A2DP_SBC_SAMP_FREQ_32:
         return SBC_SF_32000;
-    case BT_A2DP_SBC_SAMP_FREQ_44:
+    case A2DP_SBC_SAMP_FREQ_44:
         return SBC_SF_44100;
-    case BT_A2DP_SBC_SAMP_FREQ_48:
+    case A2DP_SBC_SAMP_FREQ_48:
         return SBC_SF_48000;
     default:
         break;
@@ -141,13 +138,13 @@ static int a2dp_get_sbc_samp_frequency(a2dp_sbc_info_t* info)
 static int a2dp_get_sbc_channel_mode(a2dp_sbc_info_t* info)
 {
     switch (info->ch_mode) {
-    case BT_A2DP_SBC_CH_MD_MONO:
+    case A2DP_SBC_CH_MD_MONO:
         return SBC_MONO;
-    case BT_A2DP_SBC_CH_MD_DUAL:
+    case A2DP_SBC_CH_MD_DUAL:
         return SBC_DUAL;
-    case BT_A2DP_SBC_CH_MD_STEREO:
+    case A2DP_SBC_CH_MD_STEREO:
         return SBC_STEREO;
-    case BT_A2DP_SBC_CH_MD_JOINT:
+    case A2DP_SBC_CH_MD_JOINT:
         return SBC_JOINT_STEREO;
     default:
         break;
@@ -194,26 +191,6 @@ uint16_t a2dp_sbc_sample_frequency(uint16_t sample_frequency)
         sampling_freq = 48000;
 
     return sampling_freq;
-}
-
-uint32_t a2dp_sbc_frames(sbc_param_t* param)
-{
-    uint32_t pcm_bytes_per_frame;
-    uint32_t bytes_per_tick;
-
-    if (param == NULL) {
-        BT_LOGE("%s, error param", __func__);
-        return 0;
-    }
-
-    if (param->s16ChannelMode == SBC_MONO) {
-        BT_LOGE("%s, not support mono mode", __func__);
-        return 0;
-    }
-
-    pcm_bytes_per_frame = param->s16NumOfSubBands * param->s16NumOfBlocks * param->s16NumOfChannels * A2DP_CODEC_SBC_BIT_PER_SAMPLE / 8;
-    bytes_per_tick = (a2dp_sbc_sample_frequency(param->s16SamplingFreq) * A2DP_CODEC_SBC_BIT_PER_SAMPLE / 8 * param->s16NumOfChannels * A2DP_CODEC_SBC_ENCODER_INTERVAL_MS) / 1000;
-    return bytes_per_tick / pcm_bytes_per_frame + (bytes_per_tick % pcm_bytes_per_frame ? 1 : 0);
 }
 
 uint32_t a2dp_sbc_bit_rate(sbc_param_t* param)

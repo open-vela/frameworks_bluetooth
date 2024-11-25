@@ -33,8 +33,6 @@ BT_HFP_AG_MESSAGE_START,
     BT_HFP_AG_NOTIFY_DEVICE_STATUS,
     BT_HFP_AG_VOLUME_CONTROL,
     BT_HFP_AG_SEND_AT_COMMAND,
-    BT_HFP_AG_SEND_CLCC_RESPONSE,
-    BT_HFP_AG_SEND_VENDOR_SPECIFIC_AT_COMMAND,
     BT_HFP_AG_MESSAGE_END,
 #endif
 
@@ -50,8 +48,6 @@ BT_HFP_AG_MESSAGE_START,
     BT_HFP_AG_ON_HANGUP_CALL,
     BT_HFP_AG_ON_DIAL_CALL,
     BT_HFP_AG_ON_AT_COMMAND_RECEIVED,
-    BT_HFP_AG_ON_CLCC_COMMAND_RECEIVED,
-    BT_HFP_AG_ON_VENDOR_SPECIFIC_AT_COMMAND_RECEIVED,
     BT_HFP_AG_CALLBACK_END,
 #endif
 
@@ -64,19 +60,6 @@ BT_HFP_AG_MESSAGE_START,
 #endif
 
 #include "bt_hfp_ag.h"
-#include "bt_ipc_code.h"
-
-#define BT_IPC_CODE_COMMAND_HFP_AG_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_AG, 0)
-// TODO: Add new BT IPC Code sequentially
-#define HFP_AG_SUBCODE_SEND_CIND_RESPONSE 1
-#define BT_HFP_AG_SEND_CIND_RESPONSE BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_AG, HFP_AG_SUBCODE_SEND_CIND_RESPONSE)
-#define BT_IPC_CODE_COMMAND_HFP_AG_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_AG, BT_IPC_CODE_SUBCODE_MAX_NUM)
-
-#define BT_IPC_CODE_CALLBACK_HFP_AG_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_HFP_AG, 0)
-// TODO: Add new BT IPC Code sequentially
-#define HFP_AG_SUBCODE_ON_CIND_COMMAND_RECEIVED 1
-#define BT_HFP_AG_ON_CIND_COMMAND_RECEIVED BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_HFP_AG, HFP_AG_SUBCODE_ON_CIND_COMMAND_RECEIVED)
-#define BT_IPC_CODE_CALLBACK_HFP_AG_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_HFP_AG, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
     typedef union {
         uint8_t status; /* bt_status_t */
@@ -130,36 +113,6 @@ BT_HFP_AG_MESSAGE_START,
             uint8_t pad[2];
             char cmd[HFP_AT_LEN_MAX + 1];
         } _bt_hfp_ag_send_at_cmd;
-
-        struct {
-            bt_address_t addr;
-            uint32_t index;
-            uint8_t dir;
-            uint8_t state;
-            uint8_t mode;
-            uint8_t mpty;
-            uint8_t type;
-            char number[HFP_PHONE_NUMBER_MAX + 1];
-        } _bt_hfp_ag_send_clcc_response;
-
-        struct {
-            bt_address_t addr;
-            uint8_t pad[2];
-            char cmd[HFP_COMPANY_PREFIX_LEN_MAX + 1];
-            uint8_t pad1[(HFP_COMPANY_PREFIX_LEN_MAX + 1 + 3) / 4 * 4 - (HFP_COMPANY_PREFIX_LEN_MAX + 1)];
-            char value[HFP_AT_LEN_MAX + 1];
-        } _bt_hfp_ag_send_vendor_specific_at_cmd;
-
-        struct {
-            bt_address_t addr;
-            uint8_t network;
-            uint8_t call;
-            uint8_t call_held;
-            uint8_t call_setup;
-            uint8_t signal;
-            uint8_t roam;
-            uint8_t battery;
-        } _bt_hfp_ag_send_cind_response;
     } bt_message_hfp_ag_t;
 
     typedef union {
@@ -206,22 +159,6 @@ BT_HFP_AG_MESSAGE_START,
             uint8_t pad[2];
             char cmd[HFP_AT_LEN_MAX + 1];
         } _on_at_cmd_received;
-
-        struct {
-            bt_address_t addr;
-        } _on_clcc_cmd_received;
-
-        struct {
-            bt_address_t addr;
-            uint16_t company_id;
-            char command[HFP_COMPANY_PREFIX_LEN_MAX + 1];
-            uint8_t pad1[(HFP_COMPANY_PREFIX_LEN_MAX + 1 + 3) / 4 * 4 - (HFP_COMPANY_PREFIX_LEN_MAX + 1)];
-            char value[HFP_AT_LEN_MAX + 1];
-        } _on_vend_spec_at_cmd_received;
-
-        struct {
-            bt_address_t addr;
-        } _on_cind_cmd_received;
     } bt_message_hfp_ag_callbacks_t;
 
 #ifdef __cplusplus

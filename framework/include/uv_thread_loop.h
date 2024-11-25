@@ -22,17 +22,6 @@
 
 typedef void (*thread_func_t)(void* data);
 
-typedef struct thread_loop_work thread_loop_work_t;
-typedef void (*thread_work_cb_t)(thread_loop_work_t* work, void* userdata);
-typedef void (*thread_after_work_cb_t)(thread_loop_work_t* work, void* userdata);
-
-typedef struct thread_loop_work {
-    uv_work_t work;
-    thread_work_cb_t work_cb;
-    thread_after_work_cb_t after_work_cb;
-    void* userdata;
-} thread_loop_work_t;
-
 int thread_loop_init(uv_loop_t* loop);
 int thread_loop_run(uv_loop_t* loop, bool start_thread, const char* name);
 void thread_loop_exit(uv_loop_t* loop);
@@ -44,7 +33,5 @@ uv_timer_t* thread_loop_timer_no_repeating(uv_loop_t* loop, uint64_t timeout, uv
 void thread_loop_cancel_timer(uv_timer_t* timer);
 void do_in_thread_loop(uv_loop_t* loop, thread_func_t func, void* data);
 void do_in_thread_loop_sync(uv_loop_t* loop, thread_func_t func, void* data);
-void thread_loop_work_sync(uv_loop_t* loop, void* user_data, thread_work_cb_t work_cb,
-    thread_after_work_cb_t after_work_cb);
 
 #endif /* _UV_THREAD_LOOP_H__ */

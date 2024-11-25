@@ -132,7 +132,7 @@ void bt_socket_server_advertiser_process(service_poll_t* poll,
 #endif
 
 int bt_socket_client_advertiser_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
     switch (packet->code) {
     case BT_LE_ON_ADVERTISER_START: {
@@ -141,10 +141,6 @@ int bt_socket_client_advertiser_callback(service_poll_t* poll,
         adver->callback->on_advertising_start(adver,
             packet->adv_cb._on_advertising_start.adv_id,
             packet->adv_cb._on_advertising_start.status);
-
-        if (packet->adv_cb._on_advertising_start.status != BT_ADV_STATUS_SUCCESS)
-            free(adver);
-
         break;
     }
     case BT_LE_ON_ADVERTISER_STOPPED: {

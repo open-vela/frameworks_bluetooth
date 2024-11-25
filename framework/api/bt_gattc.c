@@ -98,13 +98,6 @@ bt_status_t BTSYMBOLS(bt_gattc_write_without_response)(gattc_handle_t conn_handl
     return profile->write_without_response(conn_handle, attr_handle, value, length);
 }
 
-bt_status_t BTSYMBOLS(bt_gattc_write_with_signed)(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
-{
-    gattc_interface_t* profile = get_profile_service();
-
-    return profile->write_signed(conn_handle, attr_handle, value, length);
-}
-
 bt_status_t BTSYMBOLS(bt_gattc_subscribe)(gattc_handle_t conn_handle, uint16_t attr_handle, uint16_t ccc_value)
 {
     gattc_interface_t* profile = get_profile_service();

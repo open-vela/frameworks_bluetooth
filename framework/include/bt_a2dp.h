@@ -22,9 +22,6 @@
 #include "bt_device.h"
 
 /**
- * @cond
- */
-/**
  * @brief A2DP audio state
  */
 typedef enum {
@@ -32,63 +29,23 @@ typedef enum {
     A2DP_AUDIO_STATE_STOPPED,
     A2DP_AUDIO_STATE_STARTED,
 } a2dp_audio_state_t;
-/**
- * @endcond
- */
 
 /**
- * @brief Callback for A2DP connection state changed.
+ * @brief A2DP connection state changed callback
  *
- * There are four states for A2DP connection, namely DISCONNECTED, CONNECTING,
- * CONNECTED, and DISCONNECTING. During the initialization phase of the A2DP,
- * it is necessary to register callback functions. This callback is triggered
- * when there is a change in the state of the A2DP connection.
- *
- * Stable States:
- *    DISCONNECTED: The initial state.
- *    CONNECTED: The A2DP connection is established.
- * Transient states:
- *    CONNECTING: The A2DP connection is being established.
- *    DISCONNECTING: The A2DP connection is being terminated.
- *
- * @param cookie - Callback cookie.
- * @param addr - The Bluetooth address of the peer device.
- * @param state - A2DP profile connection state.
- *
- * **Example:**
- * @code
-static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr, profile_connection_state_t state)
-{
-    printf("A2DP connection state is: %d", state);
-}
- * @endcode
+ * @param cookie - callback cookie.
+ * @param addr - address of peer A2DP device.
+ * @param state - connection state.
  */
 typedef void (*a2dp_connection_state_callback)(void* cookie, bt_address_t* addr,
     profile_connection_state_t state);
 
 /**
- * @brief Callback for A2DP audio state changed.
+ * @brief A2DP audio connection state changed callback
  *
- * There are three states for A2DP audio, namely SUSPEND, STOPPED,
- * and STARTED. It is important to note that a callback function
- * is triggered whenever a change occurs in the audio state.
- *
- * Stable States:
- *    SUSPEND: The stream is suspended.
- *    STOPPED: The stream is stopped.
- *    STARTED: The stream is started.
- *
- * @param cookie - Callback cookie.
- * @param addr - The Bluetooth address of the peer device.
- * @param state - A2DP audio connection state.
- *
- * **Example:**
- * @code
-static void on_audio_state_changed_cb(void* cookie, bt_address_t* addr, a2dp_audio_state_t state)
-{
-    printf("A2DP audio state is: %d", state);
-}
- * @endcode
+ * @param cookie - callback cookie.
+ * @param addr - address of peer A2DP device.
+ * @param state - audio connection state.
  */
 typedef void (*a2dp_audio_state_callback)(void* cookie, bt_address_t* addr,
     a2dp_audio_state_t state);

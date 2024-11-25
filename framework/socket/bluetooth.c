@@ -23,10 +23,6 @@
 #include "manager_service.h"
 #include "service_loop.h"
 
-#ifdef CONFIG_NET_RPMSG
-#include <netpacket/rpmsg.h>
-#endif
-
 bt_instance_t* bluetooth_create_instance(void)
 {
     bt_status_t status;
@@ -82,63 +78,12 @@ bt_instance_t* bluetooth_create_instance(void)
     return ins;
 }
 
-bt_instance_t* bluetooth_create_async_instance(uv_loop_t* loop, bt_ipc_connected_cb_t connected, bt_ipc_disconnected_cb_t disconnected, void* user_data)
-{
-    bt_status_t status;
-    bt_instance_t* ins;
-
-    ins = zalloc(sizeof(bt_instance_t));
-    if (ins == NULL) {
-        return NULL;
-    }
-
-#if defined(CONFIG_BLUETOOTH_SERVER)
-    status = bt_socket_async_client_init(ins, loop, PF_LOCAL,
-        "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT, connected, disconnected, user_data);
-#elif defined(CONFIG_NET_RPMSG)
-    status = bt_socket_async_client_init(ins, loop, AF_RPMSG,
-        "bluetooth", CONFIG_BLUETOOTH_RPMSG_CPUNAME, CONFIG_BLUETOOTH_SOCKET_PORT, connected, disconnected, user_data);
-#elif defined(CONFIG_NET_IPv4)
-    status = bt_socket_async_client_init(ins, loop, AF_INET,
-        "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT, connected, disconnected, user_data);
-#else
-    status = bt_socket_async_client_init(ins, loop, PF_LOCAL,
-        "bluetooth", NULL, CONFIG_BLUETOOTH_SOCKET_PORT, connected, disconnected, user_data);
-#endif
-
-    if (status != BT_STATUS_SUCCESS) {
-        free(ins);
-        return NULL;
-    }
-
-    status = manager_create_async_instance(PTR2INT(uint64_t) ins, BLUETOOTH_SYSTEM,
-        "local", getpid(), (uid_t)pthread_self(), &ins->app_id);
-    if (status != BT_STATUS_SUCCESS) {
-        bt_socket_client_deinit(ins);
-        free(ins);
-        ins = NULL;
-    }
-
-    return ins;
-}
 bt_instance_t* bluetooth_find_instance(pid_t pid)
 {
     bt_status_t status;
     uint64_t handle;
 
     status = manager_get_instance("local", pid, &handle);
-    if (status != BT_STATUS_SUCCESS) {
-        return NULL;
-    }
-    return INT2PTR(bt_instance_t*) handle;
-}
-
-bt_instance_t* bluetooth_find_async_instance(pid_t pid)
-{
-    bt_status_t status;
-    uint64_t handle;
-
-    status = manager_get_async_instance("local", pid, &handle);
     if (status != BT_STATUS_SUCCESS) {
         return NULL;
     }
@@ -155,16 +100,6 @@ bt_instance_t* bluetooth_get_instance(void)
         return bluetooth_ins;
 }
 
-bt_instance_t* bluetooth_get_async_instance(uv_loop_t* loop, bt_ipc_connected_cb_t connected, bt_ipc_disconnected_cb_t disconnected, void* user_data)
-{
-    bt_instance_t* bluetooth_ins = bluetooth_find_async_instance(getpid());
-
-    if (bluetooth_ins == NULL)
-        return bluetooth_create_async_instance(loop, connected, disconnected, user_data);
-    else
-        return bluetooth_ins;
-}
-
 void* bluetooth_get_proxy(bt_instance_t* ins, enum profile_id id)
 {
     return NULL;
@@ -176,15 +111,6 @@ void bluetooth_delete_instance(bt_instance_t* ins)
 
     manager_delete_instance(ins->app_id);
     bt_socket_client_deinit(ins);
-    free(ins);
-}
-
-void bluetooth_delete_async_instance(bt_instance_t* ins)
-{
-    BT_SOCKET_INS_VALID(ins, );
-
-    manager_delete_instance(ins->app_id);
-    bt_socket_async_client_deinit(ins);
     free(ins);
 }
 

@@ -32,10 +32,6 @@ extern "C" {
 #include "callbacks_list.h"
 #include "uv_thread_loop.h"
 
-/**
- * @cond
- */
-
 #ifndef BTSYMBOLS
 #define BTSYMBOLS(s) s
 #endif
@@ -59,10 +55,6 @@ extern "C" {
 #define PTR2INT(it) (it)(uint32_t) // For example, PTR2INT(it)(pointer): (pointer)=>uint32_t=>(it)/int type
 #endif
 #endif // End of else
-
-#define PRIMARY_ADAPTER 0
-
-typedef uint8_t bt_controller_id_t;
 
 typedef enum {
     BT_IO_CAPABILITY_DISPLAYONLY = 0,
@@ -190,11 +182,6 @@ typedef enum {
     BT_LE_ADDR_TYPE_UNKNOWN = 0xFF
 } ble_addr_type_t;
 
-typedef enum {
-    BT_ADDR_TYPE_BREDR,
-    BT_ADDR_TYPE_UNKNOWN = 0xFF
-} bt_addr_type_t;
-
 /* * BLE PHY type */
 typedef enum {
     BT_LE_1M_PHY,
@@ -206,27 +193,6 @@ typedef enum {
     BT_LE_CONNECT_FILTER_POLICY_ADDR,
     BT_LE_CONNECT_FILTER_POLICY_WHITE_LIST
 } ble_connect_filter_policy_t;
-
-typedef enum {
-    /* ---------------- LE Enhanced Modes ---------------- */
-    EM_LE_MODE_START,
-    EM_LE_LOW_LATENCY = EM_LE_MODE_START,
-    EM_LE_HIGH_TPUT,
-    EM_LE_LOW_POWER,
-    EM_LE_MODE_END,
-
-    /* ---------------- BR/EDR Enhanced Modes ---------------- */
-    EM_BR_MODE_START = 0xF0,
-    EM_BR_LOW_LATENCY,
-    EM_BR_ULTRA_LOW_LATENCY,
-    EM_BR_HIGH_TPUT,
-    EM_BR_LOW_POWER,
-    EM_BR_MODE_END,
-} bt_enhanced_mode_t;
-
-typedef enum {
-    BT_DEBUG_MODE_PTS,
-} bt_debug_mode_t;
 
 typedef uint8_t bt_128key_t[16];
 
@@ -354,10 +320,6 @@ typedef uint8_t bt_128key_t[16];
 #else
 #define BT_DEV_NAME_MAX_LEN (64)
 #endif
-
-#define BLUETOOTH_COMPANY_ID_XIAOMI 0x038F
-#define BLUETOOTH_COMPANY_ID_GOOGLE 0x00E0
-
 #define BT_LOC_NAME_MAX_LEN BT_DEV_NAME_MAX_LEN
 #define BT_REM_NAME_MAX_LEN BT_DEV_NAME_MAX_LEN
 
@@ -426,10 +388,9 @@ enum {
     BLUETOOTH_USER,
 };
 
-typedef struct bt_instance bt_instance_t;
+typedef bool (*bt_allocator_t)(void** data, uint32_t size);
 
-typedef void (*bt_ipc_connected_cb_t)(bt_instance_t* ins, void* user_data);
-typedef void (*bt_ipc_disconnected_cb_t)(bt_instance_t* ins, void* user_data, int status);
+typedef void (*bt_hci_event_callback_t)(bt_hci_event_t* hci_event, void* context);
 
 typedef struct bt_instance {
     uint32_t app_id;
@@ -464,17 +425,14 @@ typedef struct bt_instance {
     void* context;
     uv_mutex_t lock;
 
-    bt_ipc_disconnected_cb_t disconnected;
     callbacks_list_t* adapter_callbacks;
     callbacks_list_t* a2dp_sink_callbacks;
     callbacks_list_t* a2dp_source_callbacks;
     callbacks_list_t* avrcp_target_callbacks;
-    callbacks_list_t* avrcp_control_callbacks;
     void* adapter_cookie;
     void* a2dp_sink_cookie;
     void* a2dp_source_cookie;
     void* avrcp_target_cookie;
-    void* avrcp_control_cookie;
 
     callbacks_list_t* hfp_ag_callbacks;
     callbacks_list_t* hfp_hf_callbacks;
@@ -491,268 +449,65 @@ typedef struct bt_instance {
 
     bt_list_t* gattc_remote_list;
     bt_list_t* gatts_remote_list;
-    void* priv;
 #endif
 } bt_instance_t;
 
 /**
- * @endcond
- */
-
-/**
- * @brief Allocate memory
- *
- * This function pointer allocates a size of memory and is pointed to the allocated memory by *data
- *
- * @param data - pointer of the pointer to the allocated memory
- * @param size - size of the memory to be allocated
- * @return bool.
- *
- * **Example:**
- * @code
-static bool bt_socket_allocator(void** data, uint32_t size)
-{
-    *data = zalloc(size);
-    if (!(*data))
-        return false;
-
-    return true;
-}
- * @endcode
- */
-typedef bool (*bt_allocator_t)(void** data, uint32_t size);
-
-/**
- * @brief hci event callback.
- *
- * This function pointer is triggered when hci event is received.
- *
- * @param hci_event - pointer of hci event(specified by vendor).
- * @param context - user context.
- * @return void.
- *
- * **Example:**
- * @code
-static void bt_hci_event_callback(bt_hci_event_t* hci_event, void* context)
-{
-    BT_LOGD("%s, evt_code:0x%x, len:%d", __func__, hci_event->evt_code,
-        hci_event->length);
-    // Handle Context.
-}
- * @endcode
- */
-typedef void (*bt_hci_event_callback_t)(bt_hci_event_t* hci_event, void* context);
-
-/**
- * @brief Create bluetooth instance
+ * @brief Create bluetooth client instance
  *
  * @return bt_instance_t* - ins on success, NULL on failure.
- *
- * **Example:**
- * @code
-bt_instance_t* bluetooth_get_instance(void)
-{
-    bt_instance_t* bluetooth_ins = bluetooth_find_instance(getpid());
-
-    if (bluetooth_ins == NULL)
-        return bluetooth_create_instance();
-    else
-        return bluetooth_ins;
-}
- * @endcode
  */
 bt_instance_t* BTSYMBOLS(bluetooth_create_instance)(void);
 
 /**
- * @brief Get bluetooth instance, If it does not exist, an instance is created
+ * @brief Get bluetooth client instance, If it does not exist, an instance is created
  *
  * @return bt_instance_t* - ins if exist or create success, NULL, if create fail.
- *
- * **Example:**
- * @code
-bt_instance_t* bluetooth_get_instance(void)
-{
-    bt_instance_t* bluetooth_ins = bluetooth_find_instance(getpid());
-
-    if (bluetooth_ins == NULL)
-        return bluetooth_create_instance();
-    else
-        return bluetooth_ins;
-}
- * @endcode
  */
 bt_instance_t* BTSYMBOLS(bluetooth_get_instance)(void);
 
 /**
- * @brief Find bluetooth instance
+ * @brief Find bluetooth client instance
  *
  * @return bt_instance_t* - ins if exist, NULL otherwise.
- *
- * **Example:**
- * @code
-bt_instance_t* bluetooth_get_instance(void)
-{
-    bt_instance_t* bluetooth_ins = bluetooth_find_instance(getpid());
-
-    if (bluetooth_ins == NULL)
-        return bluetooth_create_instance();
-    else
-        return bluetooth_ins;
-}
- * @endcode
  */
 bt_instance_t* BTSYMBOLS(bluetooth_find_instance)(pid_t pid);
 
 /**
  * @brief Get profile proxy
  *
- * @param ins - bluetooth instance.
+ * @param ins - bluetooth client instance.
  * @param id - profile ID.
  * @return void* - profile proxy.
- *
- * **Example:**
- * @code
-static bool bt_socket_allocator(void** data, uint32_t size)
-{
-    *data = zalloc(size);
-    if (!(*data))
-        return false;
-
-    return true;
-}
- * @endcode
  */
 void* BTSYMBOLS(bluetooth_get_proxy)(bt_instance_t* ins, enum profile_id id);
 
 /**
  * @brief Delete client instance
  *
- * @param ins - bluetooth instance.
- *
- * **Example:**
- * @code
-int main(int argc, char** argv) {
-    g_app_ins = bluetooth_create_instance();
-
-    while(1) {
-        // Handle events
-    }
-
-    bluetooth_delete_instance(g_app_ins);
-}
- * @endcode
+ * @param ins - bluetooth client instance.
  */
 void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t* ins);
 
 /**
  * @brief Start profile service
  *
- * @param ins - bluetooth instance.
+ * @param ins - bluetooth client instance.
  * @param id - profile ID.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
- *
- * **Example:**
- * @code
-int leac_command_init(void* handle)
-{
-    bt_status_t ret;
-
-    ret = bluetooth_start_service(handle, PROFILE_LEAUDIO_CLIENT);
-    if (ret != BT_STATUS_SUCCESS) {
-        PRINT("%s, failed ret:%d", __func__, ret);
-        return ret;
-    }
-
-    lea_client_callbacks = bt_lea_client_register_callbacks(handle, &lea_client_cbs);
-    return 0;
-}
- * @endcode
  */
 bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t* ins, enum profile_id id);
 
 /**
  * @brief Stop profile service
  *
- * @param ins - bluetooth instance.
- * @param id - profile ID.
+ * @param ins - bluetooth client instance.
+ * @param id -profile ID.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
- *
- * **Example:**
- * @code
-void leac_command_uninit(void* handle)
-{
-    bt_status_t ret;
-
-    bt_lea_client_unregister_callbacks(handle, lea_client_callbacks);
-    ret = bluetooth_stop_service(handle, PROFILE_LEAUDIO_CLIENT);
-    if (ret != BT_STATUS_SUCCESS) {
-        PRINT("%s, failed ret:%d", __func__, ret);
-    }
-}
- * @endcode
  */
 bt_status_t BTSYMBOLS(bluetooth_stop_service)(bt_instance_t* ins, enum profile_id id);
 
-/**
- * @brief Set external uv loop
- *
- * This function drops external UV_loop into bluetooth instance.
- *
- * @param ins - bluetooth instance.
- * @param ext_loop - external uv loop.
- * @return bool - true on success, false on failure.
- *
- * **Example:**
- * @code
-bool bluetooth_set_external_uv(bt_instance_t* ins, uv_loop_t* ext_loop)
-{
-    BT_SOCKET_INS_VALID(ins, false);
-
-    ins->external_loop = ext_loop;
-
-    return true;
-}
- * @endcode
- */
 bool BTSYMBOLS(bluetooth_set_external_uv)(bt_instance_t* ins, uv_loop_t* ext_loop);
-
-/*
-    Async instance
-*/
-
-/**
- * @brief Create bluetooth async client instance
- *
- * @param loop uv_loop_t
- * @param connected client instance connected callback
- * @param disconnected client instance disconnected callback
- * @return bt_instance_t* - ins on success, NULL on failure.
- */
-bt_instance_t* bluetooth_create_async_instance(uv_loop_t* loop, bt_ipc_connected_cb_t connected, bt_ipc_disconnected_cb_t disconnected, void* user_data);
-
-/**
- * @brief Delete bluetooth async client instance
- *
- * @param ins bt_instance_t*
- */
-void bluetooth_delete_async_instance(bt_instance_t* ins);
-
-/**
- * @brief get bluetooth async client instance
- *
- * @param loop uv_loop_t
- * @param connected client instance connected callback
- * @param disconnected client instance disconnected callback
- * @return bt_instance_t* - ins on success, NULL on failure.
- */
-bt_instance_t* bluetooth_get_async_instance(uv_loop_t* loop, bt_ipc_connected_cb_t connected, bt_ipc_disconnected_cb_t disconnected, void* user_data);
-
-/**
- * @brief Find bluetooth instance
- *
- * @return bt_instance_t* - ins if exist, NULL otherwise.
- */
-bt_instance_t* BTSYMBOLS(bluetooth_find_async_instance)(pid_t pid);
 
 #ifdef __cplusplus
 }

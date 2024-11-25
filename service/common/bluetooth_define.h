@@ -15,13 +15,11 @@
  ***************************************************************************/
 #ifndef __BLUETOOTH_DEFINE_H_
 #define __BLUETOOTH_DEFINE_H_
+
 #include "bluetooth.h"
 #include "bt_addr.h"
-#include "bt_config.h"
 #include "bt_uuid.h"
 // #define BLE_MAX_ADV_NUM 8
-
-#define BT_GATT_HASH_LEN 16
 
 #define SMP_KEYS_MAX_SIZE 80
 #define BT_COMMON_KEY_LENGTH 16
@@ -35,10 +33,6 @@
 #define DEFAULT_IO_CAPABILITY BT_IO_CAPABILITY_NOINPUTNOOUTPUT
 #define DEFAULT_SCAN_MODE BT_BR_SCAN_MODE_CONNECTABLE
 #define DEFAULT_BONDABLE_MODE 1
-
-#define BT_KVDB_VERSION_KEY "persist.bluetooth.version"
-#define BT_STORAGE_VERSION_STR_LEN 12 /* vxxx_xxx_xxx. e.g. v5_0_0 */
-#define BT_STORAGE_CURRENT_VERSION "v5_0_3"
 
 typedef enum {
     BT_LINKKEY_TYPE_COMBINATION_KEY,
@@ -72,47 +66,28 @@ typedef enum {
 
 typedef struct {
     bt_address_t addr;
-    uint8_t addr_type;
-    // only can add member after "addr_type" if needed, see function bt_storage_save_remote_device for reasons.
+    ble_addr_type_t addr_type;
     char name[BT_REM_NAME_MAX_LEN + 1];
     char alias[BT_REM_NAME_MAX_LEN + 1];
-    uint8_t link_key_type;
-    uint8_t device_type;
-    uint8_t pad[1];
-    uint8_t link_key[16];
     uint32_t class_of_device;
-    uint8_t uuids[CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN];
-} __attribute__((aligned(4))) remote_device_properties_v5_0_3_t;
-
-typedef struct {
-    bt_address_t addr;
-    uint8_t addr_type;
-    // only can add member after "addr_type" if needed, see function bt_storage_save_le_remote_device for reasons.
-    uint8_t device_type;
-    uint8_t smp_key[80];
-    uint8_t local_csrk[16];
-} __attribute__((aligned(4))) remote_device_le_properties_v5_0_3_t;
+    uint8_t link_key[16];
+    bt_link_key_type_t link_key_type;
+    bt_device_type_t device_type;
+} remote_device_properties_t;
 
 typedef struct {
     bt_address_t addr;
     ble_addr_type_t addr_type;
-    // only can add member after "addr_type" if needed, see function bt_storage_save_le_remote_device for reasons.
-    uint8_t hash[BT_GATT_HASH_LEN];
-} __attribute__((aligned(4))) remote_device_gatt_properties_v5_0_3_t;
+    uint8_t smp_key[80];
+    bt_device_type_t device_type;
+} remote_device_le_properties_t;
 
 typedef struct {
     char name[BT_LOC_NAME_MAX_LEN + 1];
-    uint8_t pad[3];
     uint32_t class_of_device;
     uint32_t io_capability;
     uint32_t scan_mode;
     uint32_t bondable;
-    uint8_t irk[16];
-} __attribute__((aligned(4))) adapter_storage_v5_0_3_t;
-
-typedef remote_device_properties_v5_0_3_t remote_device_properties_t;
-typedef remote_device_le_properties_v5_0_3_t remote_device_le_properties_t;
-typedef remote_device_gatt_properties_v5_0_3_t remote_device_gatt_properties_t;
-typedef adapter_storage_v5_0_3_t adapter_storage_t;
+} adapter_storage_t;
 
 #endif /* __BLUETOOTH_DEFINE_H_ */

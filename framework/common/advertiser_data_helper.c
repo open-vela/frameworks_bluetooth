@@ -88,13 +88,12 @@ static const char* show_ad_type_desc(uint8_t type)
 
 static void advertiser_data_info(adv_data_t* ad)
 {
-    if (!ad || ad->len < 1) {
-        syslog(LOG_ERR, "Invalid params, ad(%p)", ad);
+    if (ad->len < 1) {
         return;
     }
 
     syslog(4, "AdvType:(%s)\n", show_ad_type_desc(ad->type));
-    BT_DUMPBUFFER("AdvData:", ad->data, ad->len - 1);
+    lib_dumpbuffer("AdvData:", ad->data, ad->len - 1);
 
     switch (ad->type) {
     case BT_AD_FLAGS:

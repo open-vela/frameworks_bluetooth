@@ -246,18 +246,6 @@ void bt_socket_server_device_process(service_poll_t* poll,
             &packet->devs_pl._bt_device_addr.addr);
         break;
     }
-    case BT_DEVICE_BACKGROUND_CONNECT: {
-        packet->devs_r.status = BTSYMBOLS(bt_device_background_connect)(ins,
-            &packet->devs_pl._bt_device_background_connect.addr,
-            packet->devs_pl._bt_device_background_connect.transport);
-        break;
-    }
-    case BT_DEVICE_BACKGROUND_DISCONNECT: {
-        packet->devs_r.status = BTSYMBOLS(bt_device_background_disconnect)(ins,
-            &packet->devs_pl._bt_device_background_disconnect.addr,
-            packet->devs_pl._bt_device_background_disconnect.transport);
-        break;
-    }
     case BT_DEVICE_CONNECT_LE: {
         packet->devs_r.status = BTSYMBOLS(bt_device_connect_le)(ins,
             &packet->devs_pl._bt_device_connect_le.addr,
@@ -283,36 +271,10 @@ void bt_socket_server_device_process(service_poll_t* poll,
             packet->devs_pl._bt_device_set_le_phy.rx_phy);
         break;
     }
-    case BT_DEVICE_ENABLE_ENHANCED_MODE: {
-        packet->devs_r.status = BTSYMBOLS(bt_device_enable_enhanced_mode)(ins,
-            &packet->devs_pl._bt_device_enable_enhanced_mode.addr,
-            packet->devs_pl._bt_device_enable_enhanced_mode.mode);
-        break;
-    }
-    case BT_DEVICE_DISABLE_ENHANCED_MODE: {
-        packet->devs_r.status = BTSYMBOLS(bt_device_disable_enhanced_mode)(ins,
-            &packet->devs_pl._bt_device_disable_enhanced_mode.addr,
-            packet->devs_pl._bt_device_enable_enhanced_mode.mode);
-        break;
-    }
     case BT_DEVICE_CONNECT_ALL_PROFILE:
     case BT_DEVICE_DISCONNECT_ALL_PROFILE:
+    default:
         packet->devs_r.status = BT_STATUS_NOT_SUPPORTED;
         break;
-    default:
-        switch (BT_IPC_GET_SUBCODE(packet->code)) {
-        case BT_DEVICE_SUBCODE_SET_SECURITY_LEVEL:
-            packet->devs_r.status = BTSYMBOLS(bt_device_set_security_level)(ins,
-                packet->devs_pl._bt_device_set_security_level.level,
-                packet->devs_pl._bt_device_set_security_level.transport);
-            break;
-        case BT_DEVICE_SUBCODE_SET_BONDABLE_LE:
-            packet->devs_r.status = BTSYMBOLS(bt_device_set_bondable_le)(ins,
-                packet->devs_pl._bt_device_set_bondable_le.accept);
-            break;
-        default:
-            packet->devs_r.status = BT_STATUS_NOT_SUPPORTED;
-            break;
-        }
     }
 }

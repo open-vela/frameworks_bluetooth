@@ -49,7 +49,7 @@
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (__async ? __async->adapter_callbacks : ins->adapter_callbacks)
+#define CBLIST (ins->adapter_callbacks)
 
 /****************************************************************************
  * Private Types
@@ -162,15 +162,14 @@ static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr,
 }
 
 static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr,
-    bt_transport_t transport, bond_state_t previous_state, bond_state_t current_state, bool is_ctkd)
+    bt_transport_t transport, bond_state_t state, bool is_ctkd)
 {
     bt_message_packet_t packet = { 0 };
     bt_instance_t* ins = cookie;
 
     memcpy(&packet.adpt_cb._on_bond_state_changed.addr, addr, sizeof(bt_address_t));
     packet.adpt_cb._on_bond_state_changed.transport = transport;
-    packet.adpt_cb._on_bond_state_changed.previous_state = previous_state;
-    packet.adpt_cb._on_bond_state_changed.current_state = current_state;
+    packet.adpt_cb._on_bond_state_changed.state = state;
     packet.adpt_cb._on_bond_state_changed.is_ctkd = is_ctkd;
 
     bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_BOND_STATE_CHANGED);
@@ -250,7 +249,7 @@ const static adapter_callbacks_t g_adapter_socket_cbs = {
     .on_pair_display = on_pair_display_cb,
     .on_connect_request = on_connect_request_cb,
     .on_connection_state_changed = on_connection_state_changed_cb,
-    .on_bond_state_changed_extra = on_bond_state_changed_cb,
+    .on_bond_state_changed = on_bond_state_changed_cb,
     .on_le_sc_local_oob_data_got = on_le_sc_local_oob_data_got_cb,
     .on_remote_name_changed = on_remote_name_changed_cb,
     .on_remote_alias_changed = on_remote_alias_changed_cb,
@@ -272,10 +271,6 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
     }
     case BT_ADAPTER_DISABLE: {
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_disable)(ins);
-        break;
-    }
-    case BT_ADAPTER_DISABLE_SAFE: {
-        packet->adpt_r.status = BTSYMBOLS(bt_adapter_disable_safe)(ins);
         break;
     }
     case BT_ADAPTER_ENABLE_LE: {
@@ -482,13 +477,12 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
     }
     case BT_ADAPTER_LE_REMOVE_WHITELIST: {
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_remove_whitelist)(ins,
-            &packet->adpt_pl._bt_adapter_le_remove_whitelist.addr);
+            &packet->adpt_pl._bt_adapter_le_add_whitelist.addr);
         break;
     }
     case BT_ADAPTER_LE_ADD_WHITELIST: {
-        packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_add_whitelist_with_type)(ins,
-            &packet->adpt_pl._bt_adapter_le_add_whitelist.addr,
-            (ble_addr_type_t)packet->adpt_pl._bt_adapter_le_add_whitelist.type);
+        packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_add_whitelist)(ins,
+            &packet->adpt_pl._bt_adapter_le_remove_whitelist.addr);
         break;
     }
     case BT_ADAPTER_REGISTER_CALLBACK: {
@@ -518,34 +512,14 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
         break;
     }
     default:
-        switch (BT_IPC_GET_SUBCODE(packet->code)) {
-        case BT_ADAPTER_SUBCODE_START_LIMITED_DISCOVERY: {
-            packet->adpt_r.status = BTSYMBOLS(bt_adapter_start_limited_discovery)(ins,
-                packet->adpt_pl._bt_adapter_start_limited_discovery.v32);
-            break;
-        }
-        case BT_ADAPTER_SUBCODE_SET_DEBUG_MODE: {
-            packet->adpt_r.status = BTSYMBOLS(bt_adapter_set_debug_mode)(ins,
-                packet->adpt_pl._bt_adapter_set_debug_mode.mode,
-                packet->adpt_pl._bt_adapter_set_debug_mode.operation);
-            break;
-        }
-        default:
-            break;
-        }
         break;
     }
 }
 #endif
 
 int bt_socket_client_adapter_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
-    bt_socket_async_client_t* __async = NULL;
-
-    if (is_async)
-        __async = ins->priv;
-
     switch (packet->code) {
     case BT_ADAPTER_ON_ADAPTER_STATE_CHANGED: {
         CALLBACK_FOREACH(CBLIST, adapter_callbacks_t,
@@ -609,19 +583,10 @@ int bt_socket_client_adapter_callback(service_poll_t* poll,
     }
     case BT_ADAPTER_ON_BOND_STATE_CHANGED: {
         CALLBACK_FOREACH(CBLIST, adapter_callbacks_t,
-            on_bond_state_changed_extra,
-            &packet->adpt_cb._on_bond_state_changed.addr,
-            packet->adpt_cb._on_bond_state_changed.transport,
-            packet->adpt_cb._on_bond_state_changed.previous_state,
-            packet->adpt_cb._on_bond_state_changed.current_state,
-            packet->adpt_cb._on_bond_state_changed.is_ctkd);
-
-        // Compatible with on_bond_state_changed callback.
-        CALLBACK_FOREACH(CBLIST, adapter_callbacks_t,
             on_bond_state_changed,
             &packet->adpt_cb._on_bond_state_changed.addr,
             packet->adpt_cb._on_bond_state_changed.transport,
-            packet->adpt_cb._on_bond_state_changed.current_state,
+            packet->adpt_cb._on_bond_state_changed.state,
             packet->adpt_cb._on_bond_state_changed.is_ctkd);
         break;
     }

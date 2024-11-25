@@ -19,6 +19,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+#include "audio_transport.h"
 #include "bt_device.h"
 #include "bt_hfp_hf.h"
 #include "hfp_define.h"
@@ -34,19 +35,12 @@ typedef enum {
 
 typedef struct {
     hfp_call_t call_status;
-    hfp_callsetup_t callsetup_status;
-    hfp_callheld_t callheld_status;
-} hfp_hf_call_cache_t;
-
-typedef struct {
-    hfp_call_t call_status;
     uint64_t call_timestamp_us;
     hfp_callsetup_t callsetup_status;
     uint64_t callsetup_timestamp_us;
     hfp_callheld_t callheld_status;
     uint64_t callheld_timestamp_us;
     uint64_t dialing_timestamp_us;
-    hfp_hf_call_cache_t last_reported;
 #ifdef CONFIG_HFP_HF_WEBCHAT_BLOCKER
     uint64_t webchat_flag_timestamp_us;
 #endif
@@ -76,7 +70,6 @@ void hfp_hf_on_current_call_response(bt_address_t* addr, uint32_t idx,
     hfp_call_mpty_type_t mpty,
     const char* number, uint32_t type);
 void hfp_hf_on_at_command_result_response(bt_address_t* addr, uint32_t at_cmd_code, uint32_t result);
-void hfp_hf_on_subscriber_number_response(bt_address_t* addr, const char* number, hfp_subscriber_number_service_t service);
 
 /*
  *  statemachine callbacks
@@ -92,9 +85,6 @@ void hf_service_notify_volume_changed(bt_address_t* addr, hfp_volume_type_t type
 void hf_service_notify_call(bt_address_t* addr, hfp_call_t call);
 void hf_service_notify_callsetup(bt_address_t* addr, hfp_callsetup_t callsetup);
 void hf_service_notify_callheld(bt_address_t* addr, hfp_callheld_t callheld);
-void hf_service_notify_clip_received(bt_address_t* addr, const char* number, const char* name);
-void hf_service_notify_subscriber_number(bt_address_t* addr, const char* number, hfp_subscriber_number_service_t service);
-void hf_service_notify_current_calls(bt_address_t* addr, uint8_t num, hfp_current_call_t* calls);
 
 /*
  * service api
@@ -131,8 +121,6 @@ typedef struct hf_interface {
     bt_status_t (*update_battery_level)(bt_address_t* addr, uint8_t level);
     bt_status_t (*volume_control)(bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
     bt_status_t (*send_dtmf)(bt_address_t* addr, char dtmf);
-    bt_status_t (*get_subscriber_number)(bt_address_t* addr);
-    bt_status_t (*query_current_calls_with_callback)(bt_address_t* addr);
 } hfp_hf_interface_t;
 
 /*

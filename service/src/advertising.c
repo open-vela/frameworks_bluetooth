@@ -23,8 +23,7 @@
 #include "bluetooth.h"
 #include "bt_list.h"
 #include "index_allocator.h"
-#include "sal_interface.h"
-#include "sal_le_advertise_interface.h"
+#include "sal_adapter_interface.h"
 #include "service_loop.h"
 #include "utils/log.h"
 
@@ -200,7 +199,7 @@ static void advertiser_start_event(void* data)
     }
 
     adver->adv_id = adv_id + 1;
-    if (bt_sal_le_start_adv(PRIMARY_ADAPTER, adver->adv_id, &adv_info->params, adv_info->adv_data,
+    if (bt_sal_le_start_adv(adver->adv_id, &adv_info->params, adv_info->adv_data,
             adv_info->adv_len, adv_info->scan_rsp_data,
             adv_info->scan_rsp_len)
         != BT_STATUS_SUCCESS) {
@@ -242,7 +241,7 @@ static void advertiser_stop_event(void* data)
         }
     }
 
-    bt_sal_le_stop_adv(PRIMARY_ADAPTER, adver->adv_id);
+    bt_sal_le_stop_adv(adver->adv_id);
 }
 
 static void advertiser_notify_state(void* data)
@@ -284,7 +283,7 @@ static void advertisers_cleanup(void* data)
     list_for_every_safe(&adv_manager.advertiser_list, node, tmp)
     {
         advertiser_t* adver = (advertiser_t*)node;
-        bt_sal_le_stop_adv(PRIMARY_ADAPTER, adver->adv_id);
+        bt_sal_le_stop_adv(adver->adv_id);
         delete_advertiser(adver);
         adver->callbacks.on_advertising_stopped(get_adver(adver), adver->adv_id);
         destroy_advertiser(adver);
@@ -389,5 +388,5 @@ void adv_manager_init(void)
 
 void adv_manager_cleanup(void)
 {
-    advertisers_cleanup(NULL);
+    do_in_service_loop(advertisers_cleanup, NULL);
 }

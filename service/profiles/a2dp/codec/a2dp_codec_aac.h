@@ -72,11 +72,6 @@
 #define A2DP_AAC_BIT_RATE_MASK1 (0xFF << 8)
 #define A2DP_AAC_BIT_RATE_MASK2 0xFF
 
-// Used for creating a tinycompress buffer
-// A2DP_AAC_FRAME_SIZE * A2DP_AAC_FRAMES represents the buffer lenngth
-#define A2DP_AAC_FRAME_SIZE 1024
-#define A2DP_AAC_FRAMES 1
-
 typedef struct {
     uint16_t u16ObjectType;
     uint16_t u16VariableBitRate;

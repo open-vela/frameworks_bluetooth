@@ -23,12 +23,11 @@
 #include <kvdb.h>
 #endif
 
-// #include "audio_control.h"
+#include "audio_control.h"
 #include "bt_hfp_ag.h"
 #include "bt_profile.h"
 #include "bt_vendor.h"
 #include "callbacks_list.h"
-#include "hfp_ag_audio.h"
 #include "hfp_ag_event.h"
 #include "hfp_ag_service.h"
 #include "hfp_ag_state_machine.h"
@@ -77,7 +76,6 @@ typedef struct
  ****************************************************************************/
 bt_status_t hfp_ag_send_message(hfp_ag_msg_t* msg);
 static void hfp_ag_process_message(void* data);
-static bool hfp_ag_unregister_callbacks(void** remote, void* cookie);
 
 /****************************************************************************
  * Private Data
@@ -281,17 +279,15 @@ static void hfp_ag_process_message(void* data)
 {
     hfp_ag_msg_t* msg = (hfp_ag_msg_t*)data;
 
-    if (!g_ag_service.started && msg->event != AG_STARTUP) {
-        hfp_ag_msg_destory(msg);
+    if (!g_ag_service.started && msg->event != AG_STARTUP)
         return;
-    }
 
     switch (msg->event) {
     case AG_STARTUP:
-        ag_startup((profile_on_startup_t)msg->data.func);
+        ag_startup((profile_on_startup_t)msg->data.valueint1);
         break;
     case AG_SHUTDOWN:
-        ag_shutdown((profile_on_shutdown_t)msg->data.func);
+        ag_shutdown((profile_on_shutdown_t)msg->data.valueint1);
         break;
     case AG_DEVICE_STATUS_CHANGED:
     case AG_PHONE_STATE_CHANGE:
@@ -356,13 +352,13 @@ bool hfp_ag_on_sco_start(void)
     }
 
     if (!g_ag_service.offloading) {
-        hfp_ag_on_started();
+        audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STARTED);
         return true;
     }
 
     if (hfp_ag_send_event(&device->addr, AG_OFFLOAD_START_REQ) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to send msg", __func__);
-        hfp_ag_on_stopped();
+        audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
         return true;
     }
 
@@ -382,13 +378,13 @@ bool hfp_ag_on_sco_stop(void)
     }
 
     if (!g_ag_service.offloading) {
-        hfp_ag_on_stopped();
+        audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
         return true;
     }
 
     if (hfp_ag_send_event(&device->addr, AG_OFFLOAD_STOP_REQ) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to send msg", __func__);
-        hfp_ag_on_stopped();
+        audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
         return true;
     }
 
@@ -399,12 +395,20 @@ bool hfp_ag_on_sco_stop(void)
 
 static bt_status_t hfp_ag_init(void)
 {
-    return BT_STATUS_SUCCESS;
+    bt_status_t ret;
+
+    ret = audio_ctrl_init(PROFILE_HFP_AG);
+    if (ret != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s: failed to start audio control channel", __func__);
+        return ret;
+    }
+
+    return ret;
 }
 
 static void hfp_ag_cleanup(void)
 {
-    hfp_ag_audio_cleanup();
+    audio_ctrl_cleanup(PROFILE_HFP_AG);
 }
 
 static bt_status_t hfp_ag_startup(profile_on_startup_t cb)
@@ -413,7 +417,7 @@ static bt_status_t hfp_ag_startup(profile_on_startup_t cb)
     if (!msg)
         return BT_STATUS_NOMEM;
 
-    msg->data.func = (void*)cb;
+    msg->data.valueint1 = (uint32_t)cb;
 
     return hfp_ag_send_message(msg);
 }
@@ -424,7 +428,7 @@ static bt_status_t hfp_ag_shutdown(profile_on_shutdown_t cb)
     if (!msg)
         return BT_STATUS_NOMEM;
 
-    msg->data.func = (void*)cb;
+    msg->data.valueint1 = (uint32_t)cb;
 
     return hfp_ag_send_message(msg);
 }
@@ -435,16 +439,7 @@ static void hfp_ag_process_msg(profile_msg_t* msg)
     case PROFILE_EVT_HFP_OFFLOADING:
         g_ag_service.offloading = msg->data.valuebool;
         break;
-    case PROFILE_EVT_REMOTE_DETACH: {
-        bt_instance_t* ins = msg->data.data;
 
-        if (ins->hfp_ag_cookie) {
-            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
-            hfp_ag_unregister_callbacks((void**)&ins, ins->hfp_ag_cookie);
-            ins->hfp_ag_cookie = NULL;
-        }
-        break;
-    }
     default:
         break;
     }
@@ -667,44 +662,6 @@ bt_status_t hfp_ag_send_at_command(bt_address_t* addr, const char* at_command)
     return hfp_ag_send_message(msg);
 }
 
-bt_status_t hfp_ag_send_clcc_response(bt_address_t* addr, uint32_t index, hfp_call_direction_t dir,
-    hfp_ag_call_state_t state, hfp_call_mode_t mode, hfp_call_mpty_type_t mpty,
-    hfp_call_addrtype_t type, const char* number)
-{
-    return bt_sal_hfp_ag_clcc_response(addr, index, dir, state, mode, mpty, type, number);
-}
-
-bt_status_t hfp_ag_send_vendor_specific_at_command(bt_address_t* addr, const char* command, const char* value)
-{
-    if (!command || !value)
-        return BT_STATUS_PARM_INVALID;
-
-    hfp_ag_msg_t* msg = hfp_ag_msg_new(AG_SEND_VENDOR_SPECIFIC_AT_COMMAND, addr);
-    if (!msg)
-        return BT_STATUS_NOMEM;
-
-    AG_MSG_ADD_STR(msg, 1, command, strlen(command));
-    AG_MSG_ADD_STR(msg, 2, value, strlen(value));
-
-    return hfp_ag_send_message(msg);
-}
-
-bt_status_t hfp_ag_send_cind_response(bt_address_t* addr, hfp_network_state_t network,
-    hfp_call_t call, hfp_callheld_t call_held, hfp_callsetup_t call_setup, uint8_t signal,
-    hfp_roaming_state_t roam, uint8_t battery)
-{
-    hfp_ag_cind_resopnse_t resp;
-
-    resp.network = network;
-    resp.call = call;
-    resp.call_held = call_held;
-    resp.call_setup = call_setup;
-    resp.signal = signal;
-    resp.roam = roam;
-    resp.battery = battery;
-    return bt_sal_hfp_ag_cind_response(addr, &resp);
-}
-
 static const hfp_ag_interface_t agInterface = {
     .size = sizeof(agInterface),
     .register_callbacks = hfp_ag_register_callbacks,
@@ -725,9 +682,6 @@ static const hfp_ag_interface_t agInterface = {
     .volume_control = hfp_ag_volume_control,
     .dial_response = hfp_ag_dial_result,
     .send_at_command = hfp_ag_send_at_command,
-    .send_clcc_response = hfp_ag_send_clcc_response,
-    .send_vendor_specific_at_command = hfp_ag_send_vendor_specific_at_command,
-    .send_cind_response = hfp_ag_send_cind_response,
 };
 
 static const void* get_ag_profile_interface(void)
@@ -796,23 +750,6 @@ void ag_service_notify_cmd_received(bt_address_t* addr, const char* at_cmd)
 {
     BT_LOGD("%s", __func__);
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, at_cmd_cb, addr, at_cmd);
-}
-
-void ag_service_notify_clcc_cmd(bt_address_t* addr)
-{
-    BT_LOGD("%s", __func__);
-    AG_CALLBACK_FOREACH(g_ag_service.callbacks, clcc_cmd_cb, addr);
-}
-void ag_service_notify_vendor_specific_cmd(bt_address_t* addr, const char* command, uint16_t company_id, const char* value)
-{
-    BT_LOGD("%s, command:%s, value:%s", __func__, command, value);
-    AG_CALLBACK_FOREACH(g_ag_service.callbacks, vender_specific_at_cmd_cb, addr, command, company_id, value);
-}
-
-void ag_service_notify_cind_cmd(bt_address_t* addr)
-{
-    BT_LOGD("%s", __func__);
-    AG_CALLBACK_FOREACH(g_ag_service.callbacks, cind_cmd_cb, addr);
 }
 
 void hfp_ag_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,
@@ -984,7 +921,7 @@ static const profile_service_t hfp_ag_service = {
     .name = PROFILE_HFP_AG_NAME,
     .id = PROFILE_HFP_AG,
     .transport = BT_TRANSPORT_BREDR,
-    .uuid = BT_UUID_DECLARE_16(BT_UUID_HFP_AG),
+    .uuid = { BT_UUID128_TYPE, { 0 } },
     .init = hfp_ag_init,
     .startup = hfp_ag_startup,
     .shutdown = hfp_ag_shutdown,

@@ -42,11 +42,6 @@ bt_status_t BTSYMBOLS(bt_adapter_disable)(bt_instance_t* ins)
     return adapter_disable(SYS_SET_BT_ALL);
 }
 
-bt_status_t BTSYMBOLS(bt_adapter_disable_safe)(bt_instance_t* ins)
-{
-    return adapter_disable_safe(SYS_SET_BT_ALL);
-}
-
 bt_status_t BTSYMBOLS(bt_adapter_enable_le)(bt_instance_t* ins)
 {
     return adapter_enable(APP_SET_LE_ONLY);
@@ -77,19 +72,9 @@ bt_status_t BTSYMBOLS(bt_adapter_set_discovery_filter)(bt_instance_t* ins)
     return 0;
 }
 
-bt_status_t BTSYMBOLS(bt_adapter_start_limited_discovery)(bt_instance_t* ins, uint32_t timeout)
-{
-    return adapter_start_discovery(timeout, true);
-}
-
-bt_status_t BTSYMBOLS(bt_adapter_set_debug_mode)(bt_instance_t* ins, bt_debug_mode_t mode, uint8_t operation)
-{
-    return adapter_set_debug_mode(mode, operation);
-}
-
 bt_status_t BTSYMBOLS(bt_adapter_start_discovery)(bt_instance_t* ins, uint32_t timeout)
 {
-    return adapter_start_discovery(timeout, false);
+    return adapter_start_discovery(timeout);
 }
 
 bt_status_t BTSYMBOLS(bt_adapter_cancel_discovery)(bt_instance_t* ins)
@@ -184,9 +169,9 @@ bt_status_t BTSYMBOLS(bt_adapter_set_le_address)(bt_instance_t* ins, bt_address_
     return adapter_set_le_address(addr);
 }
 
-bt_status_t BTSYMBOLS(bt_adapter_set_le_identity_address)(bt_instance_t* ins, bt_address_t* addr, bool is_public)
+bt_status_t BTSYMBOLS(bt_adapter_set_le_identity_address)(bt_instance_t* ins, bt_address_t* addr, bool public)
 {
-    return adapter_set_le_identity_address(addr, is_public);
+    return adapter_set_le_identity_address(addr, public);
 }
 
 bt_status_t BTSYMBOLS(bt_adapter_set_le_appearance)(bt_instance_t* ins, uint16_t appearance)
@@ -208,12 +193,7 @@ bt_status_t BTSYMBOLS(bt_adapter_le_enable_key_derivation)(bt_instance_t* ins,
 
 bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist)(bt_instance_t* ins, bt_address_t* addr)
 {
-    return adapter_le_add_whitelist_with_type(addr, BT_LE_ADDR_TYPE_UNKNOWN);
-}
-
-bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist_with_type)(bt_instance_t* ins, bt_address_t* addr, ble_addr_type_t type)
-{
-    return adapter_le_add_whitelist_with_type(addr, type);
+    return adapter_le_add_whitelist(addr);
 }
 
 bt_status_t BTSYMBOLS(bt_adapter_le_remove_whitelist)(bt_instance_t* ins, bt_address_t* addr)

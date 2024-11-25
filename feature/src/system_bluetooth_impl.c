@@ -85,7 +85,7 @@ void system_bluetooth_wrap_openAdapter(FeatureInstanceHandle feature, AppendData
 
 void system_bluetooth_wrap_closeAdapter(FeatureInstanceHandle feature, AppendData append_data, system_bluetooth_CloseAdapterParams* params)
 {
-    bt_status_t status = bt_adapter_disable_safe(feature_bluetooth_get_bt_ins(feature));
+    bt_status_t status = bt_adapter_disable(feature_bluetooth_get_bt_ins(feature));
     if (status == BT_STATUS_SUCCESS) {
         if (!FeatureInvokeCallback(feature, params->success)) {
             FEATURE_LOG_ERROR("invoke success closeAdapter callback failed!");

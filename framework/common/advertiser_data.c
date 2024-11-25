@@ -223,7 +223,6 @@ bool advertiser_data_add_service_data(advertiser_data_t* ad,
     }
 
     memcpy(p, data, len);
-    sdata->len += len;
     bt_list_add_tail(ad->data, sdata);
 
     return true;

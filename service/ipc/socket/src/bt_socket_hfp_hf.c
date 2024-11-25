@@ -36,7 +36,6 @@
 #include "bt_internal.h"
 
 #include "bluetooth.h"
-#include "bt_debug.h"
 #include "bt_hfp_hf.h"
 #include "bt_message.h"
 #include "bt_socket.h"
@@ -51,7 +50,7 @@
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (__async ? __async->hfp_hf_callbacks : ins->hfp_hf_callbacks)
+#define CBLIST (ins->hfp_hf_callbacks)
 
 /****************************************************************************
  * Private Types
@@ -174,54 +173,6 @@ static void on_callheld_cb(void* cookie, bt_address_t* addr, hfp_callheld_t call
     bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_CALLHELD_IND_RECEIVED);
 }
 
-static void on_clip_cb(void* cookie, bt_address_t* addr, const char* number, const char* name)
-{
-    bt_message_packet_t packet = { 0 };
-    bt_instance_t* ins = cookie;
-
-    memcpy(&packet.hfp_hf_cb._on_clip_cb.addr, addr, sizeof(bt_address_t));
-    if (number != NULL)
-        strlcpy(packet.hfp_hf_cb._on_clip_cb.number, number, sizeof(packet.hfp_hf_cb._on_clip_cb.number));
-
-    if (name != NULL)
-        strlcpy(packet.hfp_hf_cb._on_clip_cb.name, name, sizeof(packet.hfp_hf_cb._on_clip_cb.name));
-
-    bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_CLIP_RECEIVED);
-}
-
-static void on_subscriber_number_cb(void* cookie, bt_address_t* addr, const char* number, hfp_subscriber_number_service_t service)
-{
-    bt_message_packet_t packet = { 0 };
-    bt_instance_t* ins = cookie;
-
-    memcpy(&packet.hfp_hf_cb._on_subscriber_number_cb.addr, addr, sizeof(bt_address_t));
-
-    if (number) {
-        strlcpy(packet.hfp_hf_cb._on_subscriber_number_cb.number, number, sizeof(packet.hfp_hf_cb._on_subscriber_number_cb.number));
-    }
-
-    packet.hfp_hf_cb._on_subscriber_number_cb.service = service;
-
-    bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_SUBSCRIBER_NUMBER_RECEIVED);
-}
-
-static void on_query_current_calls_cb(void* cookie, bt_address_t* addr, uint8_t num, hfp_current_call_t* calls)
-{
-    bt_message_packet_t packet = { 0 };
-    bt_instance_t* ins = cookie;
-
-    if (num > HFP_CALL_LIST_MAX) {
-        BT_LOGW("%s: too many calls (%d), truncate", __func__, num);
-        num = HFP_CALL_LIST_MAX;
-    }
-
-    memcpy(&packet.hfp_hf_cb._on_current_calls_cb.addr, addr, sizeof(bt_address_t));
-    memcpy(&packet.hfp_hf_cb._on_current_calls_cb.calls, calls, sizeof(hfp_current_call_t) * num);
-    packet.hfp_hf_cb._on_current_calls_cb.num = num;
-
-    bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_CURRENT_CALLS);
-}
-
 const static hfp_hf_callbacks_t g_hfp_hf_socket_cbs = {
     .connection_state_cb = on_connection_state_changed_cb,
     .audio_state_cb = on_audio_state_changed_cb,
@@ -233,9 +184,6 @@ const static hfp_hf_callbacks_t g_hfp_hf_socket_cbs = {
     .call_cb = on_call_cb,
     .callsetup_cb = on_callsetup_cb,
     .callheld_cb = on_callheld_cb,
-    .clip_cb = on_clip_cb,
-    .subscriber_number_cb = on_subscriber_number_cb,
-    .query_current_calls_cb = on_query_current_calls_cb,
 };
 
 static bool bt_socket_allocator(void** data, uint32_t size)
@@ -375,9 +323,6 @@ void bt_socket_server_hfp_hf_process(service_poll_t* poll, int fd,
 
         break;
     }
-    case BT_HFP_HF_QUERY_CURRENT_CALLS_WITH_CALLBACK:
-        packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_query_current_calls_with_callback)(ins, &packet->hfp_hf_pl._bt_hfp_hf_query_current_calls_with_callback.addr);
-        break;
     case BT_HFP_HF_SEND_AT_CMD:
         packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_send_at_cmd)(ins,
             &packet->hfp_hf_pl._bt_hfp_hf_send_at_cmd.addr,
@@ -394,26 +339,14 @@ void bt_socket_server_hfp_hf_process(service_poll_t* poll, int fd,
             packet->hfp_hf_pl._bt_hfp_hf_send_dtmf.dtmf);
         break;
     default:
-        switch (BT_IPC_GET_SUBCODE(packet->code)) {
-        case HFP_HF_SUBCODE_GET_SUBSCRIBER_NUMBER:
-            packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_get_subscriber_number)(ins,
-                &packet->hfp_hf_pl._bt_hfp_hf_get_subscriber_number.addr);
-            break;
-        default:
-            break;
-        }
+        break;
     }
 }
 #endif
 
 int bt_socket_client_hfp_hf_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
-    bt_socket_async_client_t* __async = NULL;
-
-    if (is_async)
-        __async = ins->priv;
-
     switch (packet->code) {
     case BT_HFP_HF_ON_CONNECTION_STATE_CHANGED:
         CALLBACK_FOREACH(CBLIST, hfp_hf_callbacks_t,
@@ -477,31 +410,7 @@ int bt_socket_client_hfp_hf_callback(service_poll_t* poll,
             packet->hfp_hf_cb._on_callheld_cb.value);
         break;
     default:
-        switch (BT_IPC_GET_SUBCODE(packet->code)) {
-        case HFP_HF_SUBCODE_ON_CLIP_RECEIVED:
-            CALLBACK_FOREACH(CBLIST, hfp_hf_callbacks_t,
-                clip_cb,
-                &packet->hfp_hf_cb._on_clip_cb.addr,
-                packet->hfp_hf_cb._on_clip_cb.number,
-                packet->hfp_hf_cb._on_clip_cb.name);
-            break;
-        case HFP_HF_SUBCODE_ON_SUBSCRIBER_NUMBER_RECEIVED:
-            CALLBACK_FOREACH(CBLIST, hfp_hf_callbacks_t,
-                subscriber_number_cb,
-                &packet->hfp_hf_cb._on_at_cmd_complete_cb.addr,
-                packet->hfp_hf_cb._on_subscriber_number_cb.number,
-                packet->hfp_hf_cb._on_subscriber_number_cb.service);
-            break;
-        case HFP_HF_SUBCODE_ON_CURRENT_CALLS_FINISHED:
-            CALLBACK_FOREACH(CBLIST, hfp_hf_callbacks_t,
-                query_current_calls_cb,
-                &packet->hfp_hf_cb._on_current_calls_cb.addr,
-                packet->hfp_hf_cb._on_current_calls_cb.num,
-                packet->hfp_hf_cb._on_current_calls_cb.calls);
-            break;
-        default:
-            return BT_STATUS_PARM_INVALID;
-        }
+        return BT_STATUS_PARM_INVALID;
     }
 
     return BT_STATUS_SUCCESS;
