@@ -231,6 +231,8 @@ int bt_socket_client_avrcp_control_callback(service_poll_t* poll,
             &packet->avrcp_control_cb._bt_avrcp_control_get_element_attribute.addr,
             packet->avrcp_control_cb._bt_avrcp_control_get_element_attribute.attrs_count,
             attrs);
+
+        free(attrs);
     }
 
     break;
