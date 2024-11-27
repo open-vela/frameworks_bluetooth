@@ -158,6 +158,11 @@ endif #CONFIG_BLUETOOTH_HFP_HF
 
 ifeq ($(CONFIG_BLUETOOTH_HFP_AG), y)
 	CSRCS += service/profiles/hfp_ag/*.c
+ifeq ($(CONFIG_BLUETOOTH_HFP_AG_TAPI), y)
+	CSRCS := $(filter-out $(wildcard service/profiles/hfp_ag/hfp_ag_tele_service.c),$(wildcard $(CSRCS)))
+else
+	CSRCS := $(filter-out $(wildcard service/profiles/hfp_ag/hfp_ag_tapi_service.c),$(wildcard $(CSRCS)))
+endif #CONFIG_BLUETOOTH_HFP_AG_TAPI
 endif #CONFIG_BLUETOOTH_HFP_AG
 
 ifeq ($(CONFIG_BLUETOOTH_SPP), y)

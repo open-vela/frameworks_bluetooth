@@ -229,6 +229,11 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_HFP_AG)
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/hfp_ag/*.c)
+      if(CONFIG_BLUETOOTH_HFP_AG_TAPI)
+        list(REMOVE_ITEM APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/hfp_ag/hfp_ag_tele_service.c)
+      else()
+        list(REMOVE_ITEM APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/hfp_ag/hfp_ag_tapi_service.c)
+      endif()
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 

@@ -245,6 +245,11 @@ config HFP_AG_MAX_CONNECTIONS
 config BLUETOOTH_HFP_AG_PRIMARY_SLOT
 	int "HFP select primary modem slot"
 	default 0
+
+config BLUETOOTH_HFP_AG_TAPI
+	bool "HFP ag adapt tapi"
+	default y
+	depends on TELEPHONY
 endif # BLUETOOTH_HFP_AG
 
 config BLUETOOTH_SPP

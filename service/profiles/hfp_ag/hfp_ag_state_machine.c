@@ -32,7 +32,11 @@
 #include "hfp_ag_event.h"
 #include "hfp_ag_service.h"
 #include "hfp_ag_state_machine.h"
+#ifdef CONFIG_BLUETOOTH_HFP_AG_TAPI
+#include "hfp_ag_tapi_service.h"
+#else
 #include "hfp_ag_tele_service.h"
+#endif
 #include "media_system.h"
 #include "power_manager.h"
 #include "sal_hfp_ag_interface.h"
@@ -460,7 +464,7 @@ static void process_vendor_specific_at(bt_address_t* addr, const char* at_string
         if (strncmp(at_string + 2 /* "AT" */, prefix->at_prefix, prefix_size)) {
             continue;
         }
-        value = at_string + strlen(prefix->at_prefix) + 3;  /* The value is the string after "AT+XIAOMI=" */
+        value = at_string + strlen(prefix->at_prefix) + 3; /* The value is the string after "AT+XIAOMI=" */
         if (value[0] == '\r' || value[0] == '\n') {
             break;
         }
@@ -476,8 +480,9 @@ static void process_vendor_specific_at(bt_address_t* addr, const char* at_string
     bt_sal_hfp_ag_error_response(addr, HFP_ATCMD_RESULT_CMEERR_OPERATION_NOTSUPPORTED);
 }
 
-static void hfp_ag_send_vendor_specific_at_cmd(bt_address_t* addr, const char* command, const char* value) {
-    char at_command[HFP_AT_LEN_MAX+1] = "\r\n";
+static void hfp_ag_send_vendor_specific_at_cmd(bt_address_t* addr, const char* command, const char* value)
+{
+    char at_command[HFP_AT_LEN_MAX + 1] = "\r\n";
     if (!command || !value)
         return;
 

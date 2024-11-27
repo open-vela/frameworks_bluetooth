@@ -31,7 +31,11 @@
 #include "hfp_ag_event.h"
 #include "hfp_ag_service.h"
 #include "hfp_ag_state_machine.h"
+#ifdef CONFIG_BLUETOOTH_HFP_AG_TAPI
+#include "hfp_ag_tapi_service.h"
+#else
 #include "hfp_ag_tele_service.h"
+#endif
 #include "sal_hfp_ag_interface.h"
 #include "service_loop.h"
 #include "service_manager.h"
