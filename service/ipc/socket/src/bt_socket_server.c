@@ -50,6 +50,7 @@
 #include "bt_socket.h"
 #include "callbacks_list.h"
 #include "service_loop.h"
+#include "service_manager.h"
 
 #include "utils/log.h"
 
@@ -223,10 +224,29 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
     return bt_socket_server_send(ins, packet, packet->code);
 }
 
+static void bt_unregister_callbacks(bt_instance_t* ins)
+{
+    bt_message_packet_t packet;
+    profile_msg_t msg;
+
+    // unreigster adapter callback
+    packet.code = BT_ADAPTER_UNREGISTER_CALLBACK;
+    bt_socket_server_adapter_process(ins->poll, ins->peer_fd, ins, &packet);
+
+    // unregsiter profile callback
+    msg.event = PROFILE_EVT_REMOTE_DETACH;
+    msg.data.data = ins;
+    service_manager_processmsg(&msg);
+
+    // TODO: unregister other Profile callback(GATT, LE ADV, LE SCAN)
+}
+
 static void bt_socket_server_ins_release(bt_instance_t* ins)
 {
     struct list_node* node;
     struct list_node* tmp;
+
+    bt_unregister_callbacks(ins);
 
     if (ins->poll)
         service_loop_remove_poll(ins->poll);
@@ -269,6 +289,7 @@ static void bt_socket_server_handle_event(service_poll_t* poll,
     }
 
     if (revent & POLL_ERROR || revent & POLL_DISCONNECT) {
+        BT_LOGE("%s, revent = %d", __func__, revent);
         bt_socket_server_ins_release(ins);
     } else if (revent & POLL_READABLE) {
         ret = bt_socket_server_receive(poll, fd, userdata);
@@ -317,7 +338,7 @@ static void bt_socket_server_callback(service_poll_t* poll,
 
     list_initialize(&remote_ins->msg_queue);
     remote_ins->peer_fd = fd;
-    remote_ins->poll = service_loop_poll_fd(fd, POLL_READABLE,
+    remote_ins->poll = service_loop_poll_fd(fd, POLL_READABLE | POLL_DISCONNECT,
         bt_socket_server_handle_event, remote_ins);
     if (!remote_ins->poll)
         goto error;
