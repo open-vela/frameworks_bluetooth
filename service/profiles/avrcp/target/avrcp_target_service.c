@@ -649,6 +649,24 @@ static int avrcp_target_dump(void)
     return 0;
 }
 
+static void avrcp_target_process_msg(profile_msg_t* msg)
+{
+    switch (msg->event) {
+    case PROFILE_EVT_REMOTE_DETACH: {
+        bt_instance_t* ins = msg->data.data;
+
+        if (ins->avrcp_target_cookie) {
+            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
+            avrcp_target_unregister_callbacks((void**)&ins, ins->avrcp_target_cookie);
+            ins->avrcp_target_cookie = NULL;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 static int avrcp_target_get_state(void)
 {
     return 1;
@@ -663,7 +681,7 @@ static const profile_service_t avrcp_target_service = {
     .init = avrcp_target_init,
     .startup = avrcp_target_startup,
     .shutdown = avrcp_target_shutdown,
-    .process_msg = NULL,
+    .process_msg = avrcp_target_process_msg,
     .get_state = avrcp_target_get_state,
     .get_profile_interface = get_avrcp_target_profile_interface,
     .cleanup = avrcp_target_cleanup,

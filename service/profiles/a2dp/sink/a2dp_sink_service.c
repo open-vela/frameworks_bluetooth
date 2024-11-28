@@ -54,6 +54,7 @@ static a2dp_sink_global_t g_a2dp_sink = { 0 };
 
 static void sink_startup(void* data);
 static void sink_shutdown(void* data);
+static bool a2dp_sink_unregister_callbacks(void** remote, void* cookie);
 
 static void set_active_peer(bt_address_t* bd_addr)
 {
@@ -299,7 +300,16 @@ static void a2dp_sink_process_msg(profile_msg_t* msg)
     case PROFILE_EVT_A2DP_OFFLOADING:
         g_a2dp_sink.offloading = msg->data.valuebool;
         break;
+    case PROFILE_EVT_REMOTE_DETACH: {
+        bt_instance_t* ins = msg->data.data;
 
+        if (ins->a2dp_sink_cookie) {
+            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
+            a2dp_sink_unregister_callbacks(NULL, ins->a2dp_sink_cookie);
+            ins->a2dp_sink_cookie = NULL;
+        }
+        break;
+    }
     default:
         break;
     }

@@ -58,6 +58,7 @@ void do_in_a2dp_service(a2dp_event_t* a2dp_event);
 
 static void source_shutdown(void* data);
 static void source_startup(void* data);
+static bool a2dp_source_unregister_callbacks(void** remote, void* cookie);
 
 static void set_active_peer(bt_address_t* bd_addr, uint16_t acl_hdl)
 {
@@ -463,7 +464,16 @@ static void a2dp_source_process_msg(profile_msg_t* msg)
     case PROFILE_EVT_A2DP_OFFLOADING:
         g_a2dp_source.offloading = msg->data.valuebool;
         break;
+    case PROFILE_EVT_REMOTE_DETACH: {
+        bt_instance_t* ins = msg->data.data;
 
+        if (ins->a2dp_source_cookie) {
+            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
+            a2dp_source_unregister_callbacks(NULL, ins->a2dp_source_cookie);
+            ins->a2dp_source_cookie = NULL;
+        }
+        break;
+    }
     default:
         break;
     }
