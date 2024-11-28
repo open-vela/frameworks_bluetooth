@@ -154,6 +154,7 @@ typedef struct {
 static int do_spp_write(spp_device_t* device, uint8_t* buffer, uint16_t length);
 static void spp_server_cleanup_devices(spp_server_t* server);
 static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* user_data);
+static bt_status_t spp_unregister_app(void** remote, void* handle);
 
 /****************************************************************************
  * Private Data
@@ -958,6 +959,25 @@ static bt_status_t spp_shutdown(profile_on_shutdown_t cb)
     return BT_STATUS_SUCCESS;
 }
 
+static void spp_process_msg(profile_msg_t* msg)
+{
+    switch (msg->event) {
+    case PROFILE_EVT_REMOTE_DETACH: {
+        bt_instance_t* ins = msg->data.data;
+
+        if (ins->spp_cookie) {
+            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
+            void* handle = NULL;
+            spp_unregister_app(&handle, ins->spp_cookie);
+            ins->spp_cookie = NULL;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 static int spp_get_state(void)
 {
     return 1;
@@ -1339,7 +1359,7 @@ static const profile_service_t spp_service = {
     .init = spp_init,
     .startup = spp_startup,
     .shutdown = spp_shutdown,
-    .process_msg = NULL,
+    .process_msg = spp_process_msg,
     .get_state = spp_get_state,
     .get_profile_interface = get_spp_profile_interface,
     .cleanup = spp_cleanup,

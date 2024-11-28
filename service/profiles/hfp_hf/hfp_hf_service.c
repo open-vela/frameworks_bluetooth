@@ -73,6 +73,7 @@ typedef struct
  ****************************************************************************/
 bt_status_t hfp_hf_send_message(hfp_hf_msg_t* msg);
 static hf_state_machine_t* get_state_machine(bt_address_t* addr);
+static bool hfp_hf_unregister_callbacks(void** remote, void* cookie);
 
 /****************************************************************************
  * Private Data
@@ -414,7 +415,16 @@ static void hfp_hf_process_msg(profile_msg_t* msg)
     case PROFILE_EVT_HFP_OFFLOADING:
         g_hfp_service.offloading = msg->data.valuebool;
         break;
+    case PROFILE_EVT_REMOTE_DETACH: {
+        bt_instance_t* ins = msg->data.data;
 
+        if (ins->hfp_hf_cookie) {
+            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
+            hfp_hf_unregister_callbacks((void**)&ins, ins->hfp_hf_cookie);
+            ins->hfp_hf_cookie = NULL;
+        }
+        break;
+    }
     default:
         break;
     }

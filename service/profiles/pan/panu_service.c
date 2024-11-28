@@ -98,6 +98,7 @@ static uint8_t* pan_read_buf = NULL;
 
 static pan_conn_t* pan_find_conn(bt_address_t* addr);
 static void pan_conn_close(pan_conn_t* conn);
+static bool pan_unregister_callbacks(void** remote, void* cookie);
 
 static uint8_t pan_conns(void)
 {
@@ -551,6 +552,24 @@ static bt_status_t pan_shutdown(profile_on_shutdown_t cb)
     return BT_STATUS_SUCCESS;
 }
 
+static void pan_process_msg(profile_msg_t* msg)
+{
+    switch (msg->event) {
+    case PROFILE_EVT_REMOTE_DETACH: {
+        bt_instance_t* ins = msg->data.data;
+
+        if (ins->panu_cookie) {
+            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
+            pan_unregister_callbacks((void**)&ins, ins->panu_cookie);
+            ins->panu_cookie = NULL;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 static int pan_get_state(void)
 {
     return 1;
@@ -653,7 +672,7 @@ static const profile_service_t pan_service = {
     .init = pan_init,
     .startup = pan_startup,
     .shutdown = pan_shutdown,
-    .process_msg = NULL,
+    .process_msg = pan_process_msg,
     .get_state = pan_get_state,
     .get_profile_interface = get_pan_profile_interface,
     .cleanup = pan_cleanup,
