@@ -416,6 +416,8 @@ typedef bool (*bt_allocator_t)(void** data, uint32_t size);
 
 typedef void (*bt_hci_event_callback_t)(bt_hci_event_t* hci_event, void* context);
 
+typedef void (*bt_ipc_disconnected_cb_t)(void* cookie, void* user_data, int status);
+
 typedef struct bt_instance {
     uint32_t app_id;
 #ifdef CONFIG_BLUETOOTH_FRAMEWORK_BINDER_IPC
@@ -449,6 +451,7 @@ typedef struct bt_instance {
     void* context;
     uv_mutex_t lock;
 
+    bt_ipc_disconnected_cb_t disconnected;
     callbacks_list_t* adapter_callbacks;
     callbacks_list_t* a2dp_sink_callbacks;
     callbacks_list_t* a2dp_source_callbacks;
