@@ -129,6 +129,7 @@ typedef struct {
  * Private Data
  ****************************************************************************/
 static hid_device_handle_t g_hidd_handle = { .started = false };
+static bool hid_device_unregister_callbacks(void** remote, void* cookie);
 
 /****************************************************************************
  * Private Functions
@@ -289,6 +290,24 @@ static void hid_device_cleanup(void)
     bt_callbacks_list_free(g_hidd_handle.callbacks);
     g_hidd_handle.callbacks = NULL;
     pthread_mutex_destroy(&g_hidd_handle.hid_lock);
+}
+
+static void hid_device_process_msg(profile_msg_t* msg)
+{
+    switch (msg->event) {
+    case PROFILE_EVT_REMOTE_DETACH: {
+        bt_instance_t* ins = msg->data.data;
+
+        if (ins->hidd_cookie) {
+            BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
+            hid_device_unregister_callbacks((void**)&ins, ins->hidd_cookie);
+            ins->hidd_cookie = NULL;
+        }
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 static int hid_device_get_state(void)
@@ -652,7 +671,7 @@ static const profile_service_t hid_device_service = {
     .init = hid_device_init,
     .startup = hid_device_startup,
     .shutdown = hid_device_shutdown,
-    .process_msg = NULL,
+    .process_msg = hid_device_process_msg,
     .get_state = hid_device_get_state,
     .get_profile_interface = get_device_profile_interface,
     .cleanup = hid_device_cleanup,
