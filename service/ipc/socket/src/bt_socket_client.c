@@ -270,6 +270,7 @@ static void bt_socket_client_handle_event(uv_poll_t* poll, int status, int event
 {
     uv_os_fd_t fd;
     int ret;
+    bt_instance_t* ins = poll->data;
 
     ret = uv_fileno((uv_handle_t*)poll, &fd);
     if (ret) {
@@ -279,6 +280,10 @@ static void bt_socket_client_handle_event(uv_poll_t* poll, int status, int event
 
     if (status != 0 || events & UV_DISCONNECT) {
         thread_loop_remove_poll(poll);
+        if (ins && ins->disconnected) {
+            BT_LOGE("%s socket disconnect, status = %d, events = %d", __func__, status, events);
+            ins->disconnected((void*)ins, NULL, status);
+        }
     } else if (events & UV_READABLE) {
         ret = bt_socket_client_receive(poll, fd, poll->data);
         if (ret != BT_STATUS_SUCCESS)
@@ -437,7 +442,7 @@ int bt_socket_client_init(bt_instance_t* ins, int family,
         }
     } while (retry--);
 
-    poll = thread_loop_poll_fd(ins->client_loop, ins->peer_fd, UV_READABLE,
+    poll = thread_loop_poll_fd(ins->client_loop, ins->peer_fd, UV_READABLE | UV_DISCONNECT,
         bt_socket_client_handle_event, ins);
     if (poll == NULL) {
         bt_socket_client_deinit(ins);
