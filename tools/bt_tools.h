@@ -33,6 +33,9 @@
 #include "bt_debug.h"
 #include "utils.h"
 
+#include "uv.h"
+#include "uv_async_queue.h"
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -72,6 +75,13 @@
 /****************************************************************************
  * Public Types
  ****************************************************************************/
+typedef struct {
+    uv_loop_t loop;
+    uv_async_queue_t async;
+    uv_thread_t thread;
+    uv_sem_t ready;
+} bttool_t;
+
 typedef struct {
     char* cmd; /* command */
     int (*func)(void* handle, int argc, char** argv); /* command func */
