@@ -658,4 +658,10 @@ config BLUETOOTH_LEAUDIO_CLIENT_METADATA_MAX_NUMBER
 
 endif # BLUETOOTH_LEAUDIO_CLIENT
 
+config BLUETOOTH_UPGRADE
+	bool "Enable Bluetooth storage transformation tool for upgrading OS"
+	default n
+	depends on KVDB
+	depends on UNQLITE
+
 endif #BLUETOOTH

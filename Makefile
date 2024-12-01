@@ -319,6 +319,11 @@ ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	PROGNAME += adapter_test
 	MAINSRC  += tests/adapter_test.c
 endif
+
+ifeq ($(CONFIG_BLUETOOTH_UPGRADE), y)
+	PROGNAME += bt_upgrade
+	MAINSRC  += tools/storage_transform.c
+endif
 endif
 
 ASRCS := $(wildcard $(ASRCS))

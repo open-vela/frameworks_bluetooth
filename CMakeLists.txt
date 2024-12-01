@@ -514,6 +514,24 @@ if(CONFIG_BLUETOOTH)
       libbluetooth)
   endif()
 
+  if(CONFIG_BLUETOOTH_UPGRADE)
+    nuttx_add_application(
+        NAME
+        bt_upgrade
+        SRCS
+        ${BLUETOOTH_DIR}/tools/storage_transform.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        STACKSIZE
+        8192
+        PRIORITY
+        ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
+  endif()
+
   if(CONFIG_BLUETOOTH_FEATURE)
     include(nuttx_add_jidl)
     set(PY_SCRIPT ${FEATURE_TOP}/tools/jidl/jsongensource.py)
