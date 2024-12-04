@@ -97,13 +97,13 @@
 // Socket: via IPv4
 //#define CONFIG_NET_IPv4 1
 #define CONFIG_INADDR_LOOPBACK 0x0A000202
+// SPP
+#define CONFIG_RPMSG_UART 1
 
 /********************* O95 Project Only *********************/
 #if defined(ANDROID_12)
 // Socket: RPMsg
 #define CONFIG_BLUETOOTH_RPMSG_CPUNAME "ap"
-// SPP
-#define CONFIG_RPMSG_UART 1
 
 /********************* O61 Project Only *********************/
 #elif defined(ANDROID_14)
