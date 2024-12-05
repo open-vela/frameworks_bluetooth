@@ -262,7 +262,7 @@ static void ble_turning_on_enter(state_machine_t* sm)
 {
     ADAPTER_DBG_ENTER(sm);
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    bt_status_t status = bt_sal_le_enable();
+    bt_status_t status = bt_sal_le_enable(PRIMARY_ADAPTER);
     if (status == BT_STATUS_SUCCESS)
         adapter_notify_state_change(BT_ADAPTER_STATE_OFF, BT_ADAPTER_STATE_BLE_TURNING_ON);
 #else
@@ -474,7 +474,7 @@ static bool ble_turning_off_process_event(state_machine_t* sm, uint32_t event, v
     switch (event) {
     case BLE_PROFILE_DISABLED:
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-        bt_sal_le_disable();
+        bt_sal_le_disable(PRIMARY_ADAPTER);
 #endif
         break;
     case BLE_DISABLED:
