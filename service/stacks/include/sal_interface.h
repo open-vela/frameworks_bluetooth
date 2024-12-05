@@ -19,6 +19,9 @@
 #include "bluetooth_define.h"
 
 #include "sal_adapter_classic_interface.h"
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+#include "sal_adapter_le_interface.h"
+#endif
 #include "sal_debug_interface.h"
 
 #if defined(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET) || defined(CONFIG_BLUETOOTH_STACK_LE_BLUELET)
