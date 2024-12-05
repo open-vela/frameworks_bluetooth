@@ -21,6 +21,9 @@
 #include "sal_adapter_classic_interface.h"
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 #include "sal_adapter_le_interface.h"
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
+#include "sal_le_advertise_interface.h"
+#endif
 #endif
 #include "sal_debug_interface.h"
 
