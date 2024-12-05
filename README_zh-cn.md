@@ -2,7 +2,7 @@
 
 \[ [English](README.md) | 简体中文 \]
 
-## 一 openvela 蓝牙能力介绍
+## 一、 openvela 蓝牙能力介绍
 
 openvela 蓝牙已经通过 Bluetooth 5.4 认证。目前支持的蓝牙能力包括：
 
@@ -32,26 +32,13 @@ openvela 蓝牙已经通过 Bluetooth 5.4 认证。目前支持的蓝牙能力�
 
 openvela 蓝牙目前还能够支持多种开源、闭源协议栈，如Zephyr、Bluez、Bluedroid、Barrot等。
 
-## 二 openvela 蓝牙应用开发
+## 二、 openvela 蓝牙应用开发
 
 对于第三方应用开发者，可以使用 openvela  快应用 QuickApp Feature ，它是基于 QuickJS 引擎使用 C++ 实现的一系列 API 接口，为三方应用提供系统访问能力。
 
-蓝牙接口请参考：[https://doc.quickapp.cn/features/system/bluetooth.html](https://doc.quickapp.cn/features/system/bluetooth.html)
+另外，还提供了 NDK 接口来使用蓝牙系统的所有能力。可以参阅目录 framework/include 中的头文件获取更多信息。
 
-目前支持三方应用调用的蓝牙能力包括：
-
-- 打开、关闭蓝牙
-- 查询、监听蓝牙状态
-- 开始、停止蓝牙扫描
-- 查询、监听蓝牙扫描结果
-- 连接、断开蓝牙
-- 查询已经连接的蓝牙设备
-- 查询 BLE 蓝牙设备的 Services
-- 读写 BLE 蓝牙设备的 Characteristics
-
-将来会提供更多蓝牙能力来供三方应用来调用。当蓝牙协议栈、蓝牙服务开源后，还会提供更为强大的 NDK 接口来直接调用所有蓝牙系统的能力。
-
-## 三 openvela 蓝牙驱动开发
+## 三、 openvela 蓝牙驱动开发
 
 openvela 蓝牙支持多种驱动架构。以目前常用的 BTH4 驱动架构为例，芯片厂商可以实现一个 **struct bt_driver_s** 结构体类型的变量，并为其初始化以下成员函数：
 

@@ -2,7 +2,7 @@
 
 \[ English | [简体中文](README_zh-cn.md) \]
 
-## 1 Introduction to openvela Bluetooth
+## 1. Introduction to openvela Bluetooth
 
 openvela Bluetooth has been certified for Bluetooth 5.4. It currently supports Bluetooth profiles listed as below:
 
@@ -32,24 +32,11 @@ openvela Bluetooth has been certified for Bluetooth 5.4. It currently supports B
 
 openvela Bluetooth currently also supports a variety of open source and proprietary stacks such as Zephyr, Bluez, Bluedroid, Barrot, etc.
 
-## 2 openvela Bluetooth Application Development
+## 2. openvela Bluetooth Application Development
 
-Third-party application developers may utilize the openvela QuickApp Feature to acquire system access capabilities. This feature comprises a set of API interfaces based on the QuickJS engine and is implemented in C++.
+Third-party application developers may utilize the openvela QuickApp Feature to acquire system access capabilities.
 
-Please refer to the Bluetooth QuickApp API documents for details: [https://doc.quickapp.cn/features/system/bluetooth.html](https://doc.quickapp.cn/features/system/bluetooth.html)
-
-Current Bluetooth APIs include:
-
-- Enable or disable Bluetooth adapter
-- Get or subscribe the state of Bluetooth adapter
-- Enable or disable BLE scan
-- Get or subscribe the results of BLE scan
-- Connect or disconnect Bluetooth remote devices
-- Get all connected Bluetooth remote devices
-- Get the Services of BLE remote devices
-- Read or write the Characteristics of BLE remote devices
-
-As we move forward, additional Bluetooth QuickApp APIs will be available for third-party applications. When the Bluetooth protocol stack and Bluetooth services become open-sourced, more powerful NDK interfaces will also be provided, allowing for direct utilization of all Bluetooth system-level capabilities.
+Additionally, NDK interfaces are also provided to utilize all Bluetooth system-level capabilities. Please refer to header files in folder framework/include for more details.
 
 ## 3. openvela Bluetooth Driver Development
 
