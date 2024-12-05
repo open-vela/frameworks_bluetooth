@@ -1419,7 +1419,7 @@ bt_status_t bt_sal_le_stop_scan(void)
 #endif
 
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
-bt_status_t bt_sal_le_start_adv(uint8_t adv_id,
+bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id,
     ble_adv_params_t* params,
     uint8_t* adv_data,
     uint16_t adv_len,
@@ -1454,7 +1454,7 @@ bt_status_t bt_sal_le_start_adv(uint8_t adv_id,
 #endif
 }
 
-bt_status_t bt_sal_le_stop_adv(uint8_t adv_id)
+bt_status_t bt_sal_le_stop_adv(bt_controller_id_t id, uint8_t adv_id)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_RET(service_adapter_gap_stop_ble_adv(adv_id), SERVICE_BT_STATUS_SUCCESS);

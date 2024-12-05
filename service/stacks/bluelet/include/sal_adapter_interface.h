@@ -45,13 +45,13 @@ bt_status_t bt_sal_le_start_scan(void);
 bt_status_t bt_sal_le_stop_scan(void);
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
-bt_status_t bt_sal_le_start_adv(uint8_t adv_id,
+bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id,
     ble_adv_params_t* params,
     uint8_t* adv_data,
     uint16_t adv_len,
     uint8_t* scan_rsp_data,
     uint16_t scan_rsp_len);
-bt_status_t bt_sal_le_stop_adv(uint8_t adv_id);
+bt_status_t bt_sal_le_stop_adv(bt_controller_id_t id, uint8_t adv_id);
 #endif
 int bt_sal_get_le_connected_devices(bt_controller_id_t id);
 int bt_sal_get_le_whitelist_devices(bt_controller_id_t id);
