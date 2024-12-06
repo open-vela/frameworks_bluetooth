@@ -212,8 +212,8 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
     } else if (packet->code > BT_L2CAP_MESSAGE_START && packet->code < BT_L2CAP_MESSAGE_END) {
         bt_socket_server_l2cap_process(poll, fd, ins, packet);
 #endif
-    } else if (packet.code > BT_LOG_MESSAGE_START && packet.code < BT_LOG_MESSAGE_END) {
-        bt_socket_server_log_process(poll, fd, ins, &packet);
+    } else if (packet->code > BT_LOG_MESSAGE_START && packet->code < BT_LOG_MESSAGE_END) {
+        bt_socket_server_log_process(poll, fd, ins, packet);
     } else {
         BT_LOGE("%s, Unhandled message:%" PRIu32, __func__, packet->code);
         assert(0);
