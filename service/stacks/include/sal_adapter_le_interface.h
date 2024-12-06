@@ -54,4 +54,8 @@ bt_status_t bt_sal_le_enable_key_derivation(bt_controller_id_t id, bool brkey_to
 struct bt_conn* get_le_conn_from_addr(bt_address_t* addr);
 bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr);
 
+#if defined(CONFIG_BT_USER_PHY_UPDATE)
+ble_phy_type_t le_phy_convert_from_stack(uint8_t mode);
+uint8_t le_phy_convert_from_service(ble_phy_type_t mode);
+#endif
 #endif /* __SAL_ADAPTER_LE_INTERFACE_H_ */
