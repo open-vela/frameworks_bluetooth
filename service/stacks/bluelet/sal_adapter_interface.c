@@ -546,7 +546,7 @@ static void ble_connection_updated_callback(BD_ADDR remote_addr, SERVICE_BT_STAT
     bt_address_t addr;
 
     memcpy(addr.addr, remote_addr, BT_ADDR_LENGTH);
-    bt_sal_gatt_client_connection_updated_callback(&addr, connection_interval, peripheral_latency, supervision_timeout,
+    bt_sal_gatt_client_connection_updated_callback(PRIMARY_ADAPTER, &addr, connection_interval, peripheral_latency, supervision_timeout,
         sal_status_translate(status));
     if (status == SERVICE_BT_STATUS_SUCCESS) {
         bt_sal_gatt_server_connection_changed_callback(&addr, connection_interval, peripheral_latency, supervision_timeout);

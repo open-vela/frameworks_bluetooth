@@ -69,7 +69,7 @@ static volatile uint32_t throughtput_cursor = 0;
 static bt_command_t g_gattc_tables[] = {
     { "create", create_cmd, 0, "\"create gatt client :\"" },
     { "delete", delete_cmd, 0, "\"delete gatt client :<conn id>\"" },
-    { "connect", connect_cmd, 0, "\"connect remote device :<conn id><address>\"" },
+    { "connect", connect_cmd, 0, "\"connect remote device :<conn id><address><addr type>\"" },
     { "disconnect", disconnect_cmd, 0, "\"disconnect remote device :<conn id>\"" },
     { "discover", discover_services_cmd, 0, "\"discover all services :<conn id>\"" },
     { "read_request", read_request_cmd, 0, "\"read request :<conn id><char id>\"" },
@@ -107,6 +107,7 @@ static gattc_device_t* find_gattc_device(void* handle)
 
 static int connect_cmd(void* handle, int argc, char* argv[])
 {
+    ble_addr_type_t addr_type = BT_LE_ADDR_TYPE_RANDOM;
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
@@ -117,7 +118,12 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[1], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    if (bt_gattc_connect(g_gattc_devies[conn_id].handle, &addr, BT_LE_ADDR_TYPE_UNKNOWN) != BT_STATUS_SUCCESS)
+    addr_type = atoi(argv[2]);
+    if (addr_type > BT_LE_ADDR_TYPE_ANONYMOUS || addr_type < BT_LE_ADDR_TYPE_PUBLIC) {
+        return CMD_INVALID_OPT;
+    }
+
+    if (bt_gattc_connect(g_gattc_devies[conn_id].handle, &addr, addr_type) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;

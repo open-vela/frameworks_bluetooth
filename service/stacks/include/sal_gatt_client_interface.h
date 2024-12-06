@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2022 Xiaomi Corporation
+ *  Copyright (C) 2024 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,10 @@
 #include "bt_status.h"
 #include "gattc_service.h"
 #include <stdint.h>
+
+#define GATT_ELEMENT_GROUP_MASK 0xFF00
+#define GATT_ELEMENT_GROUP_MAX 0xFF00
+#define GATT_ELEMENT_GROUP_ID(element_id) (element_id & GATT_ELEMENT_GROUP_MASK)
 
 bt_status_t bt_sal_gatt_client_connect(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t addr_type);
 bt_status_t bt_sal_gatt_client_disconnect(bt_controller_id_t id, bt_address_t* addr);
