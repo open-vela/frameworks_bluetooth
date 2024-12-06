@@ -67,10 +67,19 @@ enum {
 
 typedef void bt_scanner_t;
 
+#ifdef CONFIG_BLUETOOTH_STACK_LE_ZBLUE
+#define BT_LE_SCAN_TYPE_PASSIVE BT_LE_SCAN_TYPE_PASSIVE_MODE
+#define BT_LE_SCAN_TYPE_ACTIVE BT_LE_SCAN_TYPE_ACTIVE_MODE
+typedef enum {
+    BT_LE_SCAN_TYPE_PASSIVE_MODE = 0,
+    BT_LE_SCAN_TYPE_ACTIVE_MODE
+} ble_scan_type_t;
+#else
 typedef enum {
     BT_LE_SCAN_TYPE_PASSIVE = 0,
     BT_LE_SCAN_TYPE_ACTIVE
 } ble_scan_type_t;
+#endif
 
 /**
  * @brief Scan result structure
