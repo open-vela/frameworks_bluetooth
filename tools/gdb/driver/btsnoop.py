@@ -89,19 +89,7 @@ class BTSnoopCommand(gdb.Command):
 
     def get_inode_by_path(self, path):
         """Helper function to get the inode based on the given device path."""
-        found = {"inode": None}
-
-        def find_inode(node, current_path):
-            if current_path == path:
-                found["inode"] = node
-
-        try:
-            fs.foreach_inode(find_inode)
-        except gdb.error as e:
-            gdb.write("Error during inode traversal: {}\n".format(e))
-            return None
-
-        return found["inode"]
+        return next((node for node, p in fs.foreach_inode() if path == p), None)
 
     def get_header_length(self, tlv_type):
         if tlv_type == 2:
