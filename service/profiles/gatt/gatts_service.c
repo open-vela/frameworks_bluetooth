@@ -284,7 +284,7 @@ static void gatts_process_message(void* data)
             break;
 
         if (element->rsp_type == ATTR_AUTO_RSP) {
-            bt_sal_gatt_server_send_response(&msg->param.read.addr, msg->param.read.request_id, element->attr_data, element->attr_length);
+            bt_sal_gatt_server_send_response(PRIMARY_ADAPTER, &msg->param.read.addr, msg->param.read.request_id, element->attr_data, element->attr_length);
         } else if (element->read_cb) {
             element->read_cb(service, &msg->param.read.addr, msg->param.read.element_id ^ service->srv_id, msg->param.read.request_id);
         }
@@ -298,7 +298,7 @@ static void gatts_process_message(void* data)
         if (!element)
             break;
 
-        bt_sal_gatt_server_send_response(&msg->param.write.addr, msg->param.write.request_id, NULL, 0);
+        bt_sal_gatt_server_send_response(PRIMARY_ADAPTER, &msg->param.write.addr, msg->param.write.request_id, NULL, 0);
         if (element->rsp_type == ATTR_AUTO_RSP) {
             if (element->attr_data) {
                 msg->param.write.length = MIN(element->attr_length, msg->param.write.length);
@@ -558,7 +558,7 @@ static bt_status_t if_gatts_connect(void* srv_handle, bt_address_t* addr, ble_ad
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
     BT_ADDR_LOG("GATTS-CONNECT-REQUEST addr:%s", addr);
-    return bt_sal_gatt_server_connect(addr, addr_type);
+    return bt_sal_gatt_server_connect(PRIMARY_ADAPTER, addr, addr_type);
 }
 
 static bt_status_t if_gatts_disconnect(void* srv_handle, bt_address_t* addr)
@@ -569,7 +569,7 @@ static bt_status_t if_gatts_disconnect(void* srv_handle, bt_address_t* addr)
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
     BT_ADDR_LOG("GATTS-DISCONNECT-REQUEST addr:%s", addr);
-    return bt_sal_gatt_server_cancel_connection(addr);
+    return bt_sal_gatt_server_cancel_connection(PRIMARY_ADAPTER, addr);
 }
 
 static bt_status_t if_gatts_add_attr_table(void* srv_handle, gatt_srv_db_t* srv_db)
@@ -688,31 +688,57 @@ static bt_status_t if_gatts_response(void* srv_handle, bt_address_t* addr, uint3
     if (!value)
         return BT_STATUS_PARM_INVALID;
 
-    return bt_sal_gatt_server_send_response(addr, req_handle, value, length);
+    return bt_sal_gatt_server_send_response(PRIMARY_ADAPTER, addr, req_handle, value, length);
 }
 
 static bt_status_t if_gatts_notify(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     gatts_service_t* service = srv_handle;
+#if defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+    gatt_element_t* element;
+#endif
 
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
     if (!value)
         return BT_STATUS_PARM_INVALID;
 
-    return bt_sal_gatt_server_send_notification(addr, attr_handle + service->srv_id, value, length);
+#if defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+    element = find_service_element_by_id(service, attr_handle + service->srv_id);
+    if (!element) {
+        BT_LOGE("%s element null", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    return bt_sal_gatt_server_send_notification(PRIMARY_ADAPTER, addr, element->uuid, value, length);
+#else
+    return bt_sal_gatt_server_send_notification(PRIMARY_ADAPTER, addr, attr_handle + service->srv_id, value, length);
+#endif
 }
 
 static bt_status_t if_gatts_indicate(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, uint8_t* value, uint16_t length)
 {
     gatts_service_t* service = srv_handle;
+#if defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+    gatt_element_t* element;
+#endif
 
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
     if (!value)
         return BT_STATUS_PARM_INVALID;
 
-    return bt_sal_gatt_server_send_indication(addr, attr_handle + service->srv_id, value, length);
+#if defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+    element = find_service_element_by_id(service, attr_handle + service->srv_id);
+    if (!element) {
+        BT_LOGE("%s element null", __func__);
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    return bt_sal_gatt_server_send_indication(PRIMARY_ADAPTER, addr, element->uuid, value, length);
+#else
+    return bt_sal_gatt_server_send_indication(PRIMARY_ADAPTER, addr, attr_handle + service->srv_id, value, length);
+#endif
 }
 
 static bt_status_t if_gatts_read_phy(void* srv_handle, bt_address_t* addr)
@@ -722,7 +748,7 @@ static bt_status_t if_gatts_read_phy(void* srv_handle, bt_address_t* addr)
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
-    bt_status_t status = bt_sal_gatt_server_read_phy(addr);
+    bt_status_t status = bt_sal_gatt_server_read_phy(PRIMARY_ADAPTER, addr);
 
     if (status == BT_STATUS_SUCCESS && service->callbacks->on_phy_read) {
         gatts_op_t* op = gatts_op_new(GATTS_REQ_READ_PHY);
@@ -741,7 +767,7 @@ static bt_status_t if_gatts_update_phy(void* srv_handle, bt_address_t* addr, ble
     CHECK_ENABLED();
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
-    bt_status_t status = bt_sal_gatt_server_set_phy(addr, tx_phy, rx_phy);
+    bt_status_t status = bt_sal_gatt_server_set_phy(PRIMARY_ADAPTER, addr, tx_phy, rx_phy);
 
     if (status == BT_STATUS_SUCCESS && service->callbacks->on_phy_updated) {
         gatts_op_t* op = gatts_op_new(GATTS_REQ_UPDATE_PHY);

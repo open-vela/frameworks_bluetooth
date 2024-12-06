@@ -285,7 +285,7 @@ bt_status_t bt_sal_gatt_server_remove_elements(gatt_element_t* elements, uint16_
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_connect(bt_address_t* addr, ble_addr_type_t addr_type)
+bt_status_t bt_sal_gatt_server_connect(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t addr_type)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gatt_server_connect_v1(addr->addr, addr_type), GATT_SUCCESS);
@@ -293,7 +293,7 @@ bt_status_t bt_sal_gatt_server_connect(bt_address_t* addr, ble_addr_type_t addr_
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_cancel_connection(bt_address_t* addr)
+bt_status_t bt_sal_gatt_server_cancel_connection(bt_controller_id_t id, bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gatt_server_cancel_connection(addr->addr), GATT_SUCCESS);
@@ -301,7 +301,7 @@ bt_status_t bt_sal_gatt_server_cancel_connection(bt_address_t* addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_send_response(bt_address_t* addr, uint32_t request_id, uint8_t* value, uint16_t length)
+bt_status_t bt_sal_gatt_server_send_response(bt_controller_id_t id, bt_address_t* addr, uint32_t request_id, uint8_t* value, uint16_t length)
 {
     SAL_CHECK_PARAM(addr);
 
@@ -323,7 +323,7 @@ bt_status_t bt_sal_gatt_server_send_response(bt_address_t* addr, uint32_t reques
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_send_notification(bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length)
+bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length)
 {
     SERVICE_GATT_ELEMENT_S* sal_element;
 
@@ -341,7 +341,7 @@ bt_status_t bt_sal_gatt_server_send_notification(bt_address_t* addr, uint16_t el
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_send_indication(bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length)
+bt_status_t bt_sal_gatt_server_send_indication(bt_controller_id_t id, bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length)
 {
     SERVICE_GATT_ELEMENT_S* sal_element;
 
@@ -359,7 +359,7 @@ bt_status_t bt_sal_gatt_server_send_indication(bt_address_t* addr, uint16_t elem
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_read_phy(bt_address_t* addr)
+bt_status_t bt_sal_gatt_server_read_phy(bt_controller_id_t id, bt_address_t* addr)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gatt_server_read_phy(addr->addr), GATT_SUCCESS);
@@ -367,7 +367,7 @@ bt_status_t bt_sal_gatt_server_read_phy(bt_address_t* addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_gatt_server_set_phy(bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
+bt_status_t bt_sal_gatt_server_set_phy(bt_controller_id_t id, bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
     SAL_CHECK_PARAM(addr);
     SAL_CHECK_RET(service_adapter_gatt_server_set_phy(addr->addr, tx_phy, rx_phy), GATT_SUCCESS);
