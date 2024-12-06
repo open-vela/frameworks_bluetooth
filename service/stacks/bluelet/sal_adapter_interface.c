@@ -1377,7 +1377,7 @@ bt_status_t bt_sal_le_set_io_capability(bt_controller_id_t id, bt_io_capability_
 }
 
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-bt_status_t bt_sal_le_set_scan_parameters(ble_scan_params_t* params)
+bt_status_t bt_sal_le_set_scan_parameters(bt_controller_id_t id, ble_scan_params_t* params)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_PARAM(params);
@@ -1395,7 +1395,7 @@ bt_status_t bt_sal_le_set_scan_parameters(ble_scan_params_t* params)
 #endif
 }
 
-bt_status_t bt_sal_le_start_scan(void)
+bt_status_t bt_sal_le_start_scan(bt_controller_id_t id)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_RET(service_adapter_gap_start_ble_scan(), SERVICE_BT_STATUS_SUCCESS);
@@ -1406,7 +1406,7 @@ bt_status_t bt_sal_le_start_scan(void)
 #endif
 }
 
-bt_status_t bt_sal_le_stop_scan(void)
+bt_status_t bt_sal_le_stop_scan(bt_controller_id_t id)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     SAL_CHECK_RET(service_adapter_gap_stop_ble_scan(), SERVICE_BT_STATUS_SUCCESS);

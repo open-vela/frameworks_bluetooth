@@ -24,6 +24,9 @@
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
 #include "sal_le_advertise_interface.h"
 #endif
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
+#include "sal_le_scan_interface.h"
+#endif
 #endif
 #include "sal_debug_interface.h"
 

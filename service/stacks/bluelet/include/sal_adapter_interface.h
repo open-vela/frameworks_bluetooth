@@ -39,10 +39,10 @@ bt_status_t bt_sal_le_enable(bt_controller_id_t id);
 bt_status_t bt_sal_le_disable(bt_controller_id_t id);
 bt_status_t bt_sal_le_set_io_capability(bt_controller_id_t id, bt_io_capability_t cap);
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-bt_status_t bt_sal_le_set_scan_parameters(ble_scan_params_t* params);
+bt_status_t bt_sal_le_set_scan_parameters(bt_controller_id_t id, ble_scan_params_t* params);
 /* maybe implement it in scan service */
-bt_status_t bt_sal_le_start_scan(void);
-bt_status_t bt_sal_le_stop_scan(void);
+bt_status_t bt_sal_le_start_scan(bt_controller_id_t id);
+bt_status_t bt_sal_le_stop_scan(bt_controller_id_t id);
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
 bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id,

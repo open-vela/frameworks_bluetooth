@@ -405,8 +405,8 @@ static void start_scan(void* data)
     }
 
     if (!scanner_manager.is_scanning && !list_length(&scanner_manager.scanning_list)) {
-        bt_sal_le_set_scan_parameters(&params);
-        if (bt_sal_le_start_scan() != BT_STATUS_SUCCESS) {
+        bt_sal_le_set_scan_parameters(PRIMARY_ADAPTER, &params);
+        if (bt_sal_le_start_scan(PRIMARY_ADAPTER) != BT_STATUS_SUCCESS) {
             scanner->callbacks->on_scan_start_status(get_remote(scanner), BT_SCAN_STATUS_START_FAIL);
             goto ret;
         }
@@ -434,7 +434,7 @@ static void stop_scan(void* data)
     list_delete(&scanner->scanning_node);
     scanner->is_scanning = false;
     if (scanner_manager.is_scanning && !list_length(&scanner_manager.scanning_list)) {
-        bt_sal_le_stop_scan();
+        bt_sal_le_stop_scan(PRIMARY_ADAPTER);
         bt_list_clear(scanner_manager.devices);
         scanner_hsearch_free();
         scanner_manager.is_scanning = false;
