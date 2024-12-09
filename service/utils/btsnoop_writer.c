@@ -29,9 +29,14 @@
 #include "btsnoop_log.h"
 #include "btsnoop_writer.h"
 
-#define CONFIG_BLUETOOTH_SNOOP_LOG_PATH "/data/misc/bt/snoop"
-#define SNOOP_FILE_NAME_MAX_LEN 256
-#define SNOOP_FILE_NAME_PREFIX "snoop_"
+#define SNOOP_FILE_NAME_PREFIX "/snoop_"
+#define SNOOP_FILE_NAME_PREFIX_LEN 7
+#define SNOOP_FILE_NAME_DATE_LEN 80
+#define SNOOP_FILE_NAME_SUFFIX "%s_%" PRIu32 ".log"
+#define SNOOP_FILE_NAME_SUFFIX_LEN (20 + SNOOP_FILE_NAME_DATE_LEN)
+#define SNOOP_FILE_NAME SNOOP_FILE_NAME_PREFIX SNOOP_FILE_NAME_SUFFIX
+#define SNOOP_FILE_NAME_LEN (SNOOP_FILE_NAME_PREFIX_LEN + SNOOP_FILE_NAME_SUFFIX_LEN)
+#define SNOOP_FILE_FULL_NAME_MAX_LEN (SNOOP_FILE_NAME_LEN + SNOOP_PATH_MAX_LEN)
 #define SNOOP_FILE_TYPE 1002
 
 #define write_snoop_file(buf, buf_size)                                               \
@@ -66,6 +71,7 @@ struct btsnoop_pkt_hdr {
 static time_t time_base;
 static uint32_t ms_base;
 static btsnoop_file_t g_using_file = { 0 };
+static char g_snoop_file_path[SNOOP_PATH_MAX_LEN + 1];
 
 static void close_snoop_file(void)
 {
@@ -92,18 +98,31 @@ static int get_latest_file_and_clean_others(char* out_latest_file, bool clean_fi
     DIR* dir;
     struct dirent* entry;
     struct stat file_stat;
-    char full_path[SNOOP_FILE_NAME_MAX_LEN];
     time_t latest_time = -1;
-    char latest_file[SNOOP_FILE_NAME_MAX_LEN] = "";
+    char* full_path;
+    char* latest_file;
 
-    dir = opendir(CONFIG_BLUETOOTH_SNOOP_LOG_PATH);
+    full_path = zalloc(SNOOP_FILE_FULL_NAME_MAX_LEN + 1);
+    if (full_path == NULL) {
+        return BT_STATUS_FAIL;
+    }
+
+    latest_file = zalloc(SNOOP_FILE_FULL_NAME_MAX_LEN + 1);
+    if (latest_file == NULL) {
+        free(full_path);
+        return BT_STATUS_FAIL;
+    }
+
+    dir = opendir(g_snoop_file_path);
     if (dir == NULL) {
         syslog(LOG_ERR, "snoop folder open fail:%d", errno);
+        free(latest_file);
+        free(full_path);
         return BT_STATUS_FAIL;
     }
 
     while ((entry = readdir(dir)) != NULL) {
-        snprintf(full_path, sizeof(full_path), "%s/%s", CONFIG_BLUETOOTH_SNOOP_LOG_PATH, entry->d_name);
+        snprintf(full_path, SNOOP_FILE_FULL_NAME_MAX_LEN, "%s/%s", g_snoop_file_path, entry->d_name);
         if (strncmp(entry->d_name, SNOOP_FILE_NAME_PREFIX, strlen(SNOOP_FILE_NAME_PREFIX)) != 0) {
             continue;
         }
@@ -125,16 +144,18 @@ static int get_latest_file_and_clean_others(char* out_latest_file, bool clean_fi
 
         if (latest_time == -1 || file_stat.st_mtime > latest_time) {
             latest_time = file_stat.st_mtime;
-            strncpy(latest_file, full_path, SNOOP_FILE_NAME_MAX_LEN);
+            strlcpy(latest_file, full_path, SNOOP_FILE_FULL_NAME_MAX_LEN);
         }
     }
 
     if (NULL != out_latest_file) {
-        strncpy(out_latest_file, latest_file, SNOOP_FILE_NAME_MAX_LEN);
+        strlcpy(out_latest_file, latest_file, SNOOP_FILE_FULL_NAME_MAX_LEN);
     }
 
     closedir(dir);
 
+    free(latest_file);
+    free(full_path);
     return BT_STATUS_SUCCESS;
 }
 
@@ -143,13 +164,13 @@ int btsnoop_create_new_file(void)
     struct btsnoop_file_hdr hdr;
     time_t rawtime;
     struct tm* info;
-    char ts_str[80];
-    char file_name[128];
+    char ts_str[SNOOP_FILE_NAME_DATE_LEN + 1];
     int ret;
+    char* full_file_name;
 
     close_snoop_file();
 
-    if (-1 == mkdir(CONFIG_BLUETOOTH_SNOOP_LOG_PATH, 0777) && errno != EEXIST) {
+    if (-1 == mkdir(g_snoop_file_path, 0777) && errno != EEXIST) {
         syslog(LOG_ERR, "snoop folder create fail:%d", errno);
         return -errno;
     }
@@ -170,10 +191,13 @@ int btsnoop_create_new_file(void)
         info->tm_hour,
         info->tm_min,
         info->tm_sec);
-    snprintf(file_name, sizeof(file_name), CONFIG_BLUETOOTH_SNOOP_LOG_PATH "/" SNOOP_FILE_NAME_PREFIX "%s_%" PRIu32 ".log", ts_str, ms_base);
 
-    ret = open(file_name, O_RDWR | O_CREAT | O_TRUNC,
+    full_file_name = malloc(SNOOP_FILE_FULL_NAME_MAX_LEN + 1);
+    snprintf(full_file_name, SNOOP_FILE_FULL_NAME_MAX_LEN, "%s" SNOOP_FILE_NAME, g_snoop_file_path, ts_str, ms_base);
+    ret = open(full_file_name, O_RDWR | O_CREAT | O_TRUNC,
         S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+    free(full_file_name);
+
     if (ret < 0) {
         g_using_file.snoop_fd = -1;
         return ret;
@@ -211,12 +235,17 @@ int open_snoop_file(char* latest_file)
     return BT_STATUS_SUCCESS;
 }
 
+void set_snoop_file_path(char* path)
+{
+    strlcpy(g_snoop_file_path, path, SNOOP_PATH_MAX_LEN);
+}
+
 int writer_init()
 {
     DIR* dir;
-    char latest_file[SNOOP_FILE_NAME_MAX_LEN];
+    char latest_file[SNOOP_FILE_FULL_NAME_MAX_LEN + 1] = "";
 
-    dir = opendir(CONFIG_BLUETOOTH_SNOOP_LOG_PATH);
+    dir = opendir(g_snoop_file_path);
     if (dir == NULL) {
         closedir(dir);
         return btsnoop_create_new_file();

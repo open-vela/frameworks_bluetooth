@@ -20,5 +20,6 @@
 int writer_init();
 void writer_uninit();
 int writer_write_log(uint8_t is_recieve, uint8_t* p, uint32_t len);
+void set_snoop_file_path(char* path);
 
 #endif

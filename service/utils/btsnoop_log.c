@@ -47,10 +47,12 @@ void btsnoop_log_capture(uint8_t recieve, uint8_t* hci_pkt, uint32_t hci_pkt_siz
 #endif
 }
 
-int btsnoop_log_init(void)
+int btsnoop_log_init(char* path)
 {
     if (pthread_mutex_init(&snoop_lock, NULL) < 0)
         return BT_STATUS_FAIL;
+
+    set_snoop_file_path(path);
     return BT_STATUS_SUCCESS;
 }
 
