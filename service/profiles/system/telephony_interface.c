@@ -77,14 +77,13 @@ static bool tele_support_interface(const char* interface)
     return false;
 }
 
-static gboolean proxy_filter(GDBusClient* client, const char* path,
-    const char* interface)
+static gboolean proxy_filter(const char* path, const char* interface, void* user_data)
 {
     /* only support interface isn't filter out and will create proxy */
     return tele_support_interface(interface) ? FALSE : TRUE;
 }
 
-static gboolean object_filter(GDBusProxy* proxy)
+static gboolean object_filter(GDBusProxy* proxy, void* user_data)
 {
     const char* interface = g_dbus_proxy_get_interface(proxy);
     if (interface == NULL)
