@@ -22,6 +22,14 @@
 #include "bt_hfp.h"
 #include "bt_hid_device.h"
 
+#ifdef CONFIG_BLUETOOTH_A2DP_AAC_CODEC
+#define A2DP_PREFERRED_CODEC SERVICE_AVDTP_CODEC_TYPE_MPEG2_4_AAC
+#else
+#define A2DP_PREFERRED_CODEC SERVICE_AVDTP_CODEC_TYPE_SBC
+#endif
+
+#define STREAM_DATA_RESERVED offsetof(SERVICE_A2DP_SOURCE_PACKET_S, data)
+
 profile_connection_state_t bluelet_profile_connection_state(SERVICE_PROFILE_CONNECTION_STATE state);
 profile_connection_reason_t bluelet_profile_connection_reason(SERVICE_PROFILE_CONNECTION_REASON reason);
 #if defined(CONFIG_BLUETOOTH_HFP_AG) || defined(CONFIG_BLUETOOTH_HFP_HF)
