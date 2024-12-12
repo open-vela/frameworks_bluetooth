@@ -111,10 +111,10 @@ typedef enum {
     PLAY_STATUS_ERROR,
 } avrcp_play_status_t;
 
-enum {
+typedef enum {
     AVRCP_CAPABILITY_ID_COMPANY_ID = 2,
     AVRCP_CAPABILITY_ID_EVENTS_SUPPORTED,
-};
+} avrcp_capability_id_t;
 
 typedef enum {
     NOTIFICATION_EVT_PALY_STATUS_CHANGED = 0x01,
