@@ -16,6 +16,9 @@
 #ifndef __SAL_AVRCP_CONTROL_INTERFACE_H__
 #define __SAL_AVRCP_CONTROL_INTERFACE_H__
 
+#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARGET)
+
+#include "avrcp_msg.h"
 #include "bt_avrcp.h"
 #include "bt_device.h"
 
@@ -35,4 +38,7 @@ bt_status_t bt_sal_avrcp_control_register_notification(bt_controller_id_t id,
 bt_status_t bt_sal_avrcp_control_get_element_attributes(bt_controller_id_t id,
     bt_address_t* bd_addr, uint8_t attrs_count, avrcp_media_attr_type_t* types);
 
+void bt_sal_avrcp_control_event_callback(avrcp_msg_t* msg);
+
+#endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL || CONFIG_BLUETOOTH_AVRCP_TARGET */
 #endif /* __SAL_AVRCP_CONTROL_INTERFACE_H__ */

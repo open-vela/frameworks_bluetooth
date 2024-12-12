@@ -24,6 +24,7 @@
 #include "stack_adapter_service_base.h"
 
 #include "bluetooth.h"
+#include "bt_utils.h"
 #include "utils/log.h"
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
@@ -31,6 +32,8 @@
 #endif
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
+#include "a2dp_codec.h"
+
 #ifndef CONFIG_BLUETOOTH_A2DP_MAX_CONNECTIONS
 #define A2DP_MAX_CONNECTION (1)
 #else

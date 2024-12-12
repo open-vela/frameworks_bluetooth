@@ -199,7 +199,6 @@ if BLUETOOTH_A2DP
 config BLUETOOTH_A2DP_AAC_CODEC
 	bool "Bluetooth A2dp AAC codec support"
 	default n
-	select AAC_ENABLED
 
 config BLUETOOTH_A2DP_MAX_CONNECTIONS
 	int "Maximum A2dp connections"

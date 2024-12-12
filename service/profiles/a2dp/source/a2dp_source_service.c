@@ -23,6 +23,8 @@
 #include <kvdb.h>
 #endif
 
+#include "a2dp_audio.h"
+#include "a2dp_device.h"
 #include "a2dp_source_service.h"
 #include "adapter_internel.h"
 #include "bt_a2dp_source.h"

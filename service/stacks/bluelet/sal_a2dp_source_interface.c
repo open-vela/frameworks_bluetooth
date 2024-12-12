@@ -20,12 +20,16 @@
 
 #include "bluetooth.h"
 #include "sal_interface.h"
+#include "stack_adapter_a2dp_source.h"
+
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
 #include "sal_a2dp_source_interface.h"
 #endif
+#include "bt_utils.h"
 #include "utils/log.h"
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+#include "a2dp_codec.h"
 
 static void adp_connection_state_changed_cb(BD_ADDR remote_addr, SERVICE_PROFILE_CONNECTION_STATE state);
 static void adp_stream_state_changed_cb(BD_ADDR remote_addr, SERVICE_A2DP_STREAM_STATE state, uint16_t sink_cid);

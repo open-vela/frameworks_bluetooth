@@ -24,6 +24,7 @@
 #include "stack_adapter_service_base.h"
 
 #include "bluetooth.h"
+#include "bt_avrcp.h"
 #include "sal_avrcp_control_interface.h"
 #include "sal_interface.h"
 #include "utils/log.h"

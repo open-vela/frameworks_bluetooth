@@ -19,6 +19,7 @@
 #include <stdlib.h>
 
 #include "bluetooth.h"
+#include "bt_avrcp.h"
 #include "stack_adapter_avrcp.h"
 #include "stack_adapter_avrcp_target.h"
 #include "stack_adapter_common.h"
