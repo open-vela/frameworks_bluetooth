@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "avrcp_msg.h"
 #include "bluetooth.h"
 #include "bt_addr.h"
 #include "sal_a2dp_sink_interface.h"
@@ -37,6 +36,7 @@
 #include "utils/log.h"
 
 #if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARGET)
+
 static void zblue_on_connected(struct bt_conn* conn);
 static void zblue_on_disconnected(struct bt_conn* conn);
 static void zblue_on_notify(struct bt_conn* conn, uint8_t event_id, uint8_t status);
@@ -204,7 +204,7 @@ static void zblue_on_notify(struct bt_conn* conn, uint8_t event_id, uint8_t stat
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
             /* Note: This callback can be triggered when a set absolute volume command is received */
             msg = avrcp_msg_new(AVRC_SET_ABSOLUTE_VOLUME, &bd_addr);
-            msg->data.absvol.volume = volume;
+            msg->data.absvol.volume = status;
             bt_sal_avrcp_control_event_callback(msg);
 #endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL */
         }
@@ -336,7 +336,6 @@ static void zblue_on_playback_pos(struct bt_conn* conn, uint32_t pos)
     bt_sal_avrcp_control_event_callback(msg);
 #endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL */
 }
-#endif
 
 bt_status_t bt_sal_avrcp_control_init(void)
 {
@@ -549,3 +548,5 @@ bt_status_t bt_sal_avrcp_control_get_element_attributes(bt_controller_id_t id,
     return BT_STATUS_NOT_SUPPORTED;
 #endif
 }
+
+#endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL || CONFIG_BLUETOOTH_AVRCP_TARGET */

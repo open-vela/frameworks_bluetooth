@@ -36,6 +36,7 @@
 #include <nuttx/circbuf.h>
 
 #include "sal_a2dp_source_interface.h"
+#include "sal_interface.h"
 
 #include "a2dp_codec.h"
 #include "a2dp_control.h"

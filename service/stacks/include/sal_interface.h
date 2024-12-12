@@ -25,6 +25,9 @@
 #include "sal_adapter_interface.h"
 #include "sal_bluelet.h"
 #endif
+#if defined(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE) || defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+#include "sal_zblue.h"
+#endif
 
 typedef struct bt_stack_info {
     char name[32];

@@ -17,6 +17,8 @@
 #ifndef __SAL_A2DP_SOURCE_INTERFACE_H__
 #define __SAL_A2DP_SOURCE_INTERFACE_H__
 
+#ifdef CONFIG_BLUETOOTH_A2DP
+
 #include "a2dp_event.h"
 #include "bt_device.h"
 
@@ -31,4 +33,5 @@ bt_status_t bt_sal_a2dp_source_send_data(bt_controller_id_t id, bt_address_t* re
 
 void bt_sal_a2dp_source_event_callback(a2dp_event_t* event);
 
+#endif /* CONFIG_BLUETOOTH_A2DP */
 #endif /* __SAL_A2DP_SOURCE_INTERFACE_H__ */

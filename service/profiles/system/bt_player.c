@@ -336,6 +336,9 @@ bt_status_t bt_media_player_set_status(bt_media_player_t* player, bt_media_statu
 {
     int event;
 
+    if (!player)
+        return BT_STATUS_PARM_INVALID;
+
     if (player->play_status == status)
         return BT_STATUS_SUCCESS;
 

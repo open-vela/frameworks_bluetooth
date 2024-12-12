@@ -16,6 +16,9 @@
 #ifndef __SAL_AVRCP_TARGET_INTERFACE_H__
 #define __SAL_AVRCP_TARGET_INTERFACE_H__
 
+#if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARGET)
+
+#include "avrcp_msg.h"
 #include "bt_avrcp.h"
 #include "bt_device.h"
 
@@ -33,4 +36,7 @@ bt_status_t bt_sal_avrcp_target_notify_play_position_changed(bt_controller_id_t 
     bt_address_t* addr, uint32_t position);
 bt_status_t bt_sal_avrcp_target_register_volume_changed(bt_controller_id_t id, bt_address_t* addr);
 
+void bt_sal_avrcp_target_event_callback(avrcp_msg_t* msg);
+
+#endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL || CONFIG_BLUETOOTH_AVRCP_TARGET */
 #endif /* __SAL_AVRCP_TARGET_INTERFACE_H__ */
