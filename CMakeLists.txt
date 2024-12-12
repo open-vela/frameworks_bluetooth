@@ -431,6 +431,7 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/zephyr/include)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/include/zephyr)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/)
       list(APPEND INCDIR

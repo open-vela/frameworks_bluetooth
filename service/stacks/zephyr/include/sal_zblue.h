@@ -1,3 +1,4 @@
+
 /****************************************************************************
  *  Copyright (C) 2024 Xiaomi Corporation
  *
@@ -13,32 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#define LOG_TAG "sal_zblue"
+#ifndef __SAL_ZBLUE_H_
+#define __SAL_ZBLUE_H_
 
-#include "sal_interface.h"
-#include "sal_zblue.h"
-#include "utils/log.h"
+#include "bt_addr.h"
+#include "bt_status.h"
 
-void bt_sal_get_stack_info(bt_stack_info_t* info)
-{
-    snprintf(info->name, 32, "Zblue");
-    info->stack_ver_major = 5;
-    info->stack_ver_minor = 4;
-    info->sal_ver = 2;
-}
+#include <bluetooth/conn.h>
 
-bt_status_t bt_sal_get_remote_address(struct bt_conn* conn, bt_address_t* addr)
-{
-    struct bt_conn_info info;
+#define AVDTP_RTP_HEADER_LEN 12
+#define STREAM_DATA_RESERVED AVDTP_RTP_HEADER_LEN
 
-    if (conn == NULL)
-        return BT_STATUS_FAIL;
+bt_status_t bt_sal_get_remote_address(struct bt_conn* conn, bt_address_t* addr);
 
-    if (bt_conn_get_info(conn, &info) != 0) {
-        BT_LOGE("%s, failed to get address", __func__);
-        return BT_STATUS_FAIL;
-    }
-
-    bt_addr_set(addr, info.br.dst->val);
-    return BT_STATUS_SUCCESS;
-}
+#endif
