@@ -79,6 +79,10 @@ config BLUETOOTH_SERVICE_LOOP_THREAD_STACK_SIZE
 	int "bluetooth service loop thread stack size"
 	default 8192
 
+config BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN
+	int "bluetooth saved remote uuids length"
+	default 80
+
 config BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY
 	int "bluetooth service loop thread priority"
 	default 103
