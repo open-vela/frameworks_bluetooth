@@ -168,7 +168,7 @@ void bt_sal_a2dp_sink_cleanup(void)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_sink_connect(bt_address_t* addr)
+bt_status_t bt_sal_a2dp_sink_connect(bt_controller_id_t id, bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     SAL_CHECK_RET(service_adapter_a2dp_sink_connect((void*)addr, A2DP_PREFERRED_CODEC),
@@ -180,7 +180,7 @@ bt_status_t bt_sal_a2dp_sink_connect(bt_address_t* addr)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_sink_disconnect(bt_address_t* addr)
+bt_status_t bt_sal_a2dp_sink_disconnect(bt_controller_id_t id, bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     SAL_CHECK_RET(service_adapter_a2dp_sink_disconnect((void*)addr),
@@ -201,7 +201,7 @@ bt_status_t bt_sal_a2dp_sink_set_active_device(bt_address_t* addr)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_sink_start_stream(bt_address_t* addr)
+bt_status_t bt_sal_a2dp_sink_start_stream(bt_controller_id_t id, bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     SAL_CHECK_RET(service_adapter_a2dp_sink_accept_start_stream_req((void*)addr),

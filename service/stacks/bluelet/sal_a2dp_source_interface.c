@@ -154,7 +154,7 @@ void bt_sal_a2dp_source_cleanup(void)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_source_connect(bt_address_t* addr)
+bt_status_t bt_sal_a2dp_source_connect(bt_controller_id_t id, bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     SAL_CHECK_RET(service_adapter_a2dp_source_connect((void*)addr, A2DP_PREFERRED_CODEC),
@@ -166,7 +166,7 @@ bt_status_t bt_sal_a2dp_source_connect(bt_address_t* addr)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_source_disconnect(bt_address_t* addr)
+bt_status_t bt_sal_a2dp_source_disconnect(bt_controller_id_t id, bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     SAL_CHECK_RET(service_adapter_a2dp_source_disconnect((void*)addr),
@@ -178,7 +178,8 @@ bt_status_t bt_sal_a2dp_source_disconnect(bt_address_t* addr)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_source_set_silence_device(bt_address_t* addr, bool silence)
+bt_status_t bt_sal_a2dp_source_set_silence_device(bt_controller_id_t id, bt_address_t* addr,
+    bool silence)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     return BT_STATUS_SUCCESS;
@@ -196,7 +197,7 @@ bt_status_t bt_sal_a2dp_source_set_active_device(bt_address_t* addr)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_source_start_stream(bt_address_t* remote_addr)
+bt_status_t bt_sal_a2dp_source_start_stream(bt_controller_id_t id, bt_address_t* remote_addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     SAL_CHECK_RET(service_adapter_a2dp_source_start_stream((void*)remote_addr),
@@ -208,7 +209,7 @@ bt_status_t bt_sal_a2dp_source_start_stream(bt_address_t* remote_addr)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_source_suspend_stream(bt_address_t* remote_addr)
+bt_status_t bt_sal_a2dp_source_suspend_stream(bt_controller_id_t id, bt_address_t* remote_addr)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     SAL_CHECK_RET(service_adapter_a2dp_source_suspend_stream((void*)remote_addr),
@@ -220,8 +221,8 @@ bt_status_t bt_sal_a2dp_source_suspend_stream(bt_address_t* remote_addr)
 #endif
 }
 
-bt_status_t bt_sal_a2dp_source_send_data(bt_address_t* remote_addr, uint8_t* buf,
-    uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp, uint32_t seq)
+bt_status_t bt_sal_a2dp_source_send_data(bt_controller_id_t id, bt_address_t* remote_addr,
+    uint8_t* buf, uint16_t nbytes, uint8_t nb_frames, uint64_t timestamp, uint32_t seq)
 {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     SERVICE_A2DP_SOURCE_PACKET_S* packet;

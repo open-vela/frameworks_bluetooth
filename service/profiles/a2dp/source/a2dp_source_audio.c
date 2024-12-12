@@ -220,7 +220,7 @@ static void a2dp_source_send_callback(uint8_t* buf, uint16_t nbytes, uint8_t nb_
         return;
     }
 
-    bt_sal_a2dp_source_send_data(a2dp_source_active_peer()->bd_addr,
+    bt_sal_a2dp_source_send_data(PRIMARY_ADAPTER, a2dp_source_active_peer()->bd_addr,
         buf, nbytes, nb_frames, timestamp, a2dp_src_stream.sequence_number++);
 }
 
