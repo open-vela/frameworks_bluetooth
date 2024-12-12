@@ -185,11 +185,11 @@ static void media_player_notify_cb(bt_media_controller_t* controller, void* cont
     case BT_MEDIA_EVT_PLAYSTATUS_CHANGED:
         BT_LOGD("send playstatus notification --> %s", bt_media_status_str(value));
         device->play_status = value;
-        bt_sal_avrcp_target_play_status_notify(&device->addr, value);
+        bt_sal_avrcp_target_play_status_notify(PRIMARY_ADAPTER, &device->addr, value);
         break;
     case BT_MEDIA_EVT_POSITION_CHANGED:
         BT_LOGD("send position notification --> position: %" PRIu32, value);
-        bt_sal_avrcp_target_notify_play_position_changed(&device->addr, value);
+        bt_sal_avrcp_target_notify_play_position_changed(PRIMARY_ADAPTER, &device->addr, value);
         break;
     case BT_MEDIA_EVT_TRACK_CHANGED:
         break;
@@ -209,7 +209,7 @@ static void tg_retry_callback(service_timer_t* timer, void* data)
     bt_addr_ba2str(&device->addr, _addr_str);
     BT_LOGD("%s: device=[%s], state=%d, retry_cnt=%d", __func__, _addr_str, device->state, device->retry_cnt);
     if (device->state == PROFILE_STATE_DISCONNECTED)
-        bt_sal_avrcp_control_connect(&device->addr);
+        bt_sal_avrcp_control_connect(PRIMARY_ADAPTER, &device->addr);
 
     device->retry_timer = NULL;
 }
@@ -364,7 +364,7 @@ static void handle_avrcp_play_status_request(avrcp_msg_t* msg)
     bt_media_player_get_durations(controller, &durations);
 
     BT_LOGD("playback status: %s, duration: 0x%08" PRIx32 ", position: 0x%08" PRIx32, bt_media_status_str(playback), durations, position);
-    bt_sal_avrcp_target_get_play_status_rsp(addr, playback, durations, position);
+    bt_sal_avrcp_target_get_play_status_rsp(PRIMARY_ADAPTER, addr, playback, durations, position);
 
     AVRCP_TG_CALLBACK_FOREACH(g_avrc_target.callbacks, received_get_play_status_request_cb, addr);
 }
@@ -400,14 +400,14 @@ static void handle_avrcp_register_notification(avrcp_msg_t* msg)
             playback = device->play_status;
 
         BT_LOGD("send playstatus notification --> %s", bt_media_status_str(playback));
-        bt_sal_avrcp_target_play_status_notify(addr, playback);
+        bt_sal_avrcp_target_play_status_notify(PRIMARY_ADAPTER, addr, playback);
         break;
     }
     case NOTIFICATION_EVT_TRACK_CHANGED: {
         /*
          *   not support track changed notification
          */
-        bt_sal_avrcp_target_notify_track_changed(addr, false);
+        bt_sal_avrcp_target_notify_track_changed(PRIMARY_ADAPTER, addr, false);
         break;
     }
     case NOTIFICATION_EVT_PLAY_POS_CHANGED: {
@@ -417,7 +417,7 @@ static void handle_avrcp_register_notification(avrcp_msg_t* msg)
         bt_media_player_get_position(controller, &position);
         // if (position != POS_NOT_SUPPORT)
         //     device->pos_update = service_loop_timer();
-        bt_sal_avrcp_target_notify_play_position_changed(addr, position);
+        bt_sal_avrcp_target_notify_play_position_changed(PRIMARY_ADAPTER, addr, position);
         break;
     }
     case NOTIFICATION_EVT_VOLUME_CHANGED: {
@@ -608,7 +608,7 @@ static bt_status_t avrcp_target_get_play_status_response(bt_address_t* addr, avr
         return BT_STATUS_DEVICE_NOT_FOUND;
     }
 
-    return bt_sal_avrcp_target_get_play_status_rsp(addr, status, song_len, song_pos);
+    return bt_sal_avrcp_target_get_play_status_rsp(PRIMARY_ADAPTER, addr, status, song_len, song_pos);
 }
 
 static bt_status_t avrcp_target_play_status_notify(bt_address_t* addr, avrcp_play_status_t status)
@@ -628,7 +628,7 @@ static bt_status_t avrcp_target_play_status_notify(bt_address_t* addr, avrcp_pla
         return BT_STATUS_DEVICE_NOT_FOUND;
     }
 
-    return bt_sal_avrcp_target_play_status_notify(addr, status);
+    return bt_sal_avrcp_target_play_status_notify(PRIMARY_ADAPTER, addr, status);
 }
 
 static const avrcp_target_interface_t avrcp_targetInterface = {
