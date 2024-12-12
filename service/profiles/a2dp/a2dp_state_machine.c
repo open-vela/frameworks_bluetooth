@@ -416,9 +416,9 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
     case CONNECT_REQ: {
         bt_status_t status;
         if (a2dp_sm->peer_sep == SEP_SNK)
-            status = bt_sal_a2dp_source_connect(&data->bd_addr);
+            status = bt_sal_a2dp_source_connect(PRIMARY_ADAPTER, &data->bd_addr);
         else
-            status = bt_sal_a2dp_sink_connect(&data->bd_addr);
+            status = bt_sal_a2dp_sink_connect(PRIMARY_ADAPTER, &data->bd_addr);
         if (status != BT_STATUS_SUCCESS) {
             a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
                 PROFILE_STATE_DISCONNECTED);
@@ -436,7 +436,7 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
     case PEER_PARTIAL_RECONN_EVT:
         if (a2dp_sm->peer_sep == SEP_SNK) {
             bt_status_t status;
-            status = bt_sal_a2dp_source_connect(&data->bd_addr);
+            status = bt_sal_a2dp_source_connect(PRIMARY_ADAPTER, &data->bd_addr);
             if (status != BT_STATUS_SUCCESS) {
                 a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
                     PROFILE_STATE_DISCONNECTED);
@@ -487,9 +487,9 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
     switch (event) {
     case DISCONNECT_REQ: {
         if (a2dp_sm->peer_sep == SEP_SNK)
-            status = bt_sal_a2dp_source_disconnect(&data->bd_addr);
+            status = bt_sal_a2dp_source_disconnect(PRIMARY_ADAPTER, &data->bd_addr);
         else
-            status = bt_sal_a2dp_sink_disconnect(&data->bd_addr);
+            status = bt_sal_a2dp_sink_disconnect(PRIMARY_ADAPTER, &data->bd_addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect failed");
         }
@@ -607,9 +607,9 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         bt_status_t status;
 
         if (a2dp_sm->peer_sep == SEP_SNK)
-            status = bt_sal_a2dp_source_disconnect(&a2dp_sm->addr);
+            status = bt_sal_a2dp_source_disconnect(PRIMARY_ADAPTER, &a2dp_sm->addr);
         else
-            status = bt_sal_a2dp_sink_disconnect(&a2dp_sm->addr);
+            status = bt_sal_a2dp_sink_disconnect(PRIMARY_ADAPTER, &a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("A2dp disconnect failed");
         }
@@ -636,7 +636,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
             break;
         }
         bt_pm_busy(PROFILE_A2DP, &a2dp_sm->addr);
-        status = bt_sal_a2dp_source_start_stream(&a2dp_sm->addr);
+        status = bt_sal_a2dp_source_start_stream(PRIMARY_ADAPTER, &a2dp_sm->addr);
         bt_pm_idle(PROFILE_A2DP, &a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Stream start failed");
@@ -654,7 +654,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         a2dp_sm->delay_start_timer = NULL;
         if (flag_isset(a2dp_sm, PENDING_START))
             break;
-        status = bt_sal_a2dp_source_start_stream(&a2dp_sm->addr);
+        status = bt_sal_a2dp_source_start_stream(PRIMARY_ADAPTER, &a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Stream delay start failed");
             break;
@@ -870,9 +870,9 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case DISCONNECT_REQ: {
         bt_status_t status;
         if (a2dp_sm->peer_sep == SEP_SNK)
-            status = bt_sal_a2dp_source_disconnect(&a2dp_sm->addr);
+            status = bt_sal_a2dp_source_disconnect(PRIMARY_ADAPTER, &a2dp_sm->addr);
         else
-            status = bt_sal_a2dp_sink_disconnect(&a2dp_sm->addr);
+            status = bt_sal_a2dp_sink_disconnect(PRIMARY_ADAPTER, &a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Disconnect failed");
         }
@@ -914,7 +914,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
             break;
         }
         flag_set(a2dp_sm, PENDING_STOP);
-        status = bt_sal_a2dp_source_suspend_stream(&a2dp_sm->addr);
+        status = bt_sal_a2dp_source_suspend_stream(PRIMARY_ADAPTER, &a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Stream suspend failed");
             a2dp_audio_on_stopped(a2dp_sm->peer_sep);
