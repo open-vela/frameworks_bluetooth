@@ -29,6 +29,12 @@ typedef enum {
     BT_UUID128_TYPE = 16,
 } uuid_type_t;
 
+typedef enum {
+    BT_HEAD_UUID16_TYPE = 1,
+    BT_HEAD_UUID32_TYPE = 2,
+    BT_HEAD_UUID128_TYPE = 3,
+} head_uuid_type_t;
+
 typedef struct {
     uint8_t type; /* uuid_type_t */
     uint8_t pad[3];
@@ -56,6 +62,7 @@ typedef struct {
 #endif
 
 void bt_uuid_to_uuid128(const bt_uuid_t* src, bt_uuid_t* uuid128);
+void bt_uuid_to_uuid16(const bt_uuid_t* src, bt_uuid_t* uuid16);
 int bt_uuid_compare(const bt_uuid_t* uuid1, const bt_uuid_t* uuid2);
 int bt_uuid16_create(bt_uuid_t* uuid16, uint16_t value);
 int bt_uuid32_create(bt_uuid_t* uuid32, uint32_t value);
