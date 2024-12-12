@@ -160,8 +160,8 @@ static void avrcp_controller_service_handle_event(void* data)
 
 static void send_pass_through_cmd(avrcp_ct_device_t* device, avrcp_passthr_cmd_t cmd)
 {
-    bt_sal_avrcp_control_send_pass_through_cmd(&device->addr, cmd, AVRCP_KEY_PRESSED);
-    bt_sal_avrcp_control_send_pass_through_cmd(&device->addr, cmd, AVRCP_KEY_RELEASED);
+    bt_sal_avrcp_control_send_pass_through_cmd(PRIMARY_ADAPTER, &device->addr, cmd, AVRCP_KEY_PRESSED);
+    bt_sal_avrcp_control_send_pass_through_cmd(PRIMARY_ADAPTER, &device->addr, cmd, AVRCP_KEY_RELEASED);
 }
 
 static void avrcp_ct_on_play(bt_media_player_t* player, void* context)
@@ -221,7 +221,8 @@ static void bt_avrcp_absolute_volume_changed_notification(void* context, int vol
     uv_mutex_unlock(&device->lock);
 
     avrcp_volume = bt_media_volume_media_to_avrcp(volume);
-    status = bt_sal_avrcp_control_volume_changed_notify(&device->addr, avrcp_volume);
+    status = bt_sal_avrcp_control_volume_changed_notify(PRIMARY_ADAPTER, &device->addr,
+        avrcp_volume);
     if (status != BT_STATUS_SUCCESS) {
         BT_LOGW("notified absolute volume failed, status: %d, volume: %d.", status, volume);
     }
@@ -242,7 +243,8 @@ static void handle_avrcp_register_absolute_volume_notification(bt_address_t* add
         media_volume = 0;
     }
 
-    bt_sal_avrcp_control_volume_changed_notify(addr, bt_media_volume_media_to_avrcp(media_volume));
+    bt_sal_avrcp_control_volume_changed_notify(PRIMARY_ADAPTER, addr,
+        bt_media_volume_media_to_avrcp(media_volume));
 
     if (g_avrc_controller.volume_listener == NULL) {
         g_avrc_controller.volume_listener = bt_media_listen_music_volume_change(bt_avrcp_absolute_volume_changed_notification, (void*)device);
@@ -311,7 +313,7 @@ static void handle_avrcp_connection_state(avrcp_msg_t* msg)
         }
 
         bt_pm_conn_open(PROFILE_AVRCP_CT, &device->addr);
-        bt_sal_avrcp_control_get_capabilities(addr, AVRCP_CAPABILITY_ID_EVENTS_SUPPORTED);
+        bt_sal_avrcp_control_get_capabilities(PRIMARY_ADAPTER, addr, AVRCP_CAPABILITY_ID_EVENTS_SUPPORTED);
         device->player = bt_media_player_create(device, &g_player_cb);
     } break;
     case PROFILE_STATE_DISCONNECTING:
@@ -355,17 +357,17 @@ static void handle_avrcp_get_capability_response(avrcp_msg_t* msg)
         BT_LOGD("capability support event: %d", *cap);
         switch (*cap) {
         case NOTIFICATION_EVT_PALY_STATUS_CHANGED:
-            bt_sal_avrcp_control_register_notification(addr, *cap, 0);
-            bt_sal_avrcp_control_get_playback_state(addr);
+            bt_sal_avrcp_control_register_notification(PRIMARY_ADAPTER, addr, *cap, 0);
+            bt_sal_avrcp_control_get_playback_state(PRIMARY_ADAPTER, addr);
             break;
         case NOTIFICATION_EVT_PLAY_POS_CHANGED:
-            bt_sal_avrcp_control_register_notification(addr, *cap, 2);
+            bt_sal_avrcp_control_register_notification(PRIMARY_ADAPTER, addr, *cap, 2);
             break;
         case NOTIFICATION_EVT_VOLUME_CHANGED:
             /* don't work on controller role */
             break;
         case NOTIFICATION_EVT_TRACK_CHANGED:
-            bt_sal_avrcp_control_register_notification(addr, *cap, 0);
+            bt_sal_avrcp_control_register_notification(PRIMARY_ADAPTER, addr, *cap, 0);
             break;
         default:
             break;
@@ -403,7 +405,7 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t* msg)
         bt_media_status_t status = msg->data.notify_rsp.value;
         BT_LOGD("playback status changed: %s, get status now...", bt_media_status_str(status));
         bt_media_player_set_status(device->player, status);
-        bt_sal_avrcp_control_get_playback_state(addr);
+        bt_sal_avrcp_control_get_playback_state(PRIMARY_ADAPTER, addr);
         break;
     }
     case NOTIFICATION_EVT_PLAY_POS_CHANGED: {
@@ -417,7 +419,7 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t* msg)
     }
     case NOTIFICATION_EVT_TRACK_CHANGED: {
         BT_LOGD("track changed, get track info now...");
-        bt_sal_avrcp_control_get_element_attributes(addr, 0, NULL);
+        bt_sal_avrcp_control_get_element_attributes(PRIMARY_ADAPTER, addr, 0, NULL);
         break;
     }
     default:
@@ -655,7 +657,7 @@ static bool avrcp_control_unregister_callbacks(void** remote, void* cookie)
 }
 static bt_status_t avrcp_control_get_element_attributes(bt_address_t* remote)
 {
-    return bt_sal_avrcp_control_get_element_attributes(remote, 0, NULL);
+    return bt_sal_avrcp_control_get_element_attributes(PRIMARY_ADAPTER, remote, 0, NULL);
 }
 static const avrcp_control_interface_t avrcp_controlInterface = {
     .size = sizeof(avrcp_controlInterface),
