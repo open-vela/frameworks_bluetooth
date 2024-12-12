@@ -41,7 +41,6 @@
 #include "bt_device.h"
 #include "bt_list.h"
 #include "bt_profile.h"
-#include "bt_utils.h"
 #include "bt_uuid.h"
 #include "btservice.h"
 #include "callbacks_list.h"
@@ -54,6 +53,8 @@
 #include "state_machine.h"
 #include "storage.h"
 #define LOG_TAG "adapter-svc"
+
+#include "bt_utils.h"
 #include "utils/log.h"
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)

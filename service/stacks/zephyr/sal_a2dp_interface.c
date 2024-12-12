@@ -320,7 +320,6 @@ static void zblue_on_seted_codec(struct bt_conn* conn, struct bt_a2dp_media_code
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
     }
 }
-#endif /* CONFIG_BLUETOOTH_A2DP */
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
 static const uint8_t a2dp_sbc_src_codec[] = {
@@ -583,3 +582,5 @@ bt_status_t bt_sal_a2dp_sink_start_stream(bt_controller_id_t id, bt_address_t* a
     return BT_STATUS_NOT_SUPPORTED;
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
 }
+
+#endif /* CONFIG_BLUETOOTH_A2DP */
