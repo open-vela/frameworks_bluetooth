@@ -192,7 +192,7 @@ void bt_sal_avrcp_target_cleanup(void)
 #endif
 }
 
-bt_status_t bt_sal_avrcp_target_get_play_status_rsp(bt_address_t* addr,
+bt_status_t bt_sal_avrcp_target_get_play_status_rsp(bt_controller_id_t id, bt_address_t* addr,
     avrcp_play_status_t status, uint32_t song_len, uint32_t song_pos)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
@@ -205,7 +205,8 @@ bt_status_t bt_sal_avrcp_target_get_play_status_rsp(bt_address_t* addr,
 #endif
 }
 
-bt_status_t bt_sal_avrcp_target_play_status_notify(bt_address_t* addr, avrcp_play_status_t status)
+bt_status_t bt_sal_avrcp_target_play_status_notify(bt_controller_id_t id, bt_address_t* addr,
+    avrcp_play_status_t status)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     SAL_CHECK_RET(service_adapter_avrcp_target_notify_play_status_changed(
@@ -217,7 +218,8 @@ bt_status_t bt_sal_avrcp_target_play_status_notify(bt_address_t* addr, avrcp_pla
 #endif
 }
 
-bt_status_t bt_sal_avrcp_target_set_absolute_volume(bt_address_t* addr, uint8_t volume)
+bt_status_t bt_sal_avrcp_target_set_absolute_volume(bt_controller_id_t id, bt_address_t* addr,
+    uint8_t volume)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     SAL_CHECK_RET(service_adapter_avrcp_set_absolute_volume(
@@ -229,7 +231,8 @@ bt_status_t bt_sal_avrcp_target_set_absolute_volume(bt_address_t* addr, uint8_t 
 #endif
 }
 
-bt_status_t bt_sal_avrcp_target_notify_track_changed(bt_address_t* addr, bool selected)
+bt_status_t bt_sal_avrcp_target_notify_track_changed(bt_controller_id_t id, bt_address_t* addr,
+    bool selected)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     SAL_CHECK_RET(service_adapter_avrcp_target_notify_track_changed(
@@ -241,7 +244,8 @@ bt_status_t bt_sal_avrcp_target_notify_track_changed(bt_address_t* addr, bool se
 #endif
 }
 
-bt_status_t bt_sal_avrcp_target_notify_play_position_changed(bt_address_t* addr, uint32_t position)
+bt_status_t bt_sal_avrcp_target_notify_play_position_changed(bt_controller_id_t id,
+    bt_address_t* addr, uint32_t position)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     SAL_CHECK_RET(service_adapter_avrcp_target_notify_play_position_changed(
@@ -253,7 +257,7 @@ bt_status_t bt_sal_avrcp_target_notify_play_position_changed(bt_address_t* addr,
 #endif
 }
 
-bt_status_t bt_sal_avrcp_target_register_volume_changed(bt_address_t* addr)
+bt_status_t bt_sal_avrcp_target_register_volume_changed(bt_controller_id_t id, bt_address_t* addr)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     SAL_CHECK_RET(service_adapter_avrcp_register_notification(

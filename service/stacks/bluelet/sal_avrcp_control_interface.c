@@ -210,9 +210,8 @@ void bt_sal_avrcp_control_cleanup(void)
 #endif
 }
 
-bt_status_t bt_sal_avrcp_control_send_pass_through_cmd(bt_address_t* bd_addr,
-    avrcp_passthr_cmd_t key_code,
-    avrcp_key_state_t key_state)
+bt_status_t bt_sal_avrcp_control_send_pass_through_cmd(bt_controller_id_t id,
+    bt_address_t* bd_addr, avrcp_passthr_cmd_t key_code, avrcp_key_state_t key_state)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     SAL_CHECK_RET(service_adapter_avrcp_send_panel_operation((void*)bd_addr, key_code,
@@ -225,7 +224,7 @@ bt_status_t bt_sal_avrcp_control_send_pass_through_cmd(bt_address_t* bd_addr,
 #endif
 }
 
-bt_status_t bt_sal_avrcp_control_get_playback_state(bt_address_t* bd_addr)
+bt_status_t bt_sal_avrcp_control_get_playback_state(bt_controller_id_t id, bt_address_t* bd_addr)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     SAL_CHECK_RET(service_adapter_avrcp_get_play_status((void*)bd_addr),
@@ -237,7 +236,8 @@ bt_status_t bt_sal_avrcp_control_get_playback_state(bt_address_t* bd_addr)
 #endif
 }
 
-bt_status_t bt_sal_avrcp_control_volume_changed_notify(bt_address_t* bd_addr, uint8_t volume)
+bt_status_t bt_sal_avrcp_control_volume_changed_notify(bt_controller_id_t id,
+    bt_address_t* bd_addr, uint8_t volume)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     SAL_CHECK_RET(service_adapter_avrcp_target_notify_volume_changed((void*)bd_addr, volume),
@@ -249,7 +249,7 @@ bt_status_t bt_sal_avrcp_control_volume_changed_notify(bt_address_t* bd_addr, ui
 #endif
 }
 
-bt_status_t bt_sal_avrcp_control_connect(bt_address_t* bd_addr)
+bt_status_t bt_sal_avrcp_control_connect(bt_controller_id_t id, bt_address_t* bd_addr)
 {
 #if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARGET)
     SAL_CHECK_RET(service_adapter_avrcp_connect((void*)bd_addr),
@@ -261,7 +261,7 @@ bt_status_t bt_sal_avrcp_control_connect(bt_address_t* bd_addr)
 #endif
 }
 
-bt_status_t bt_sal_avrcp_control_disconnect(bt_address_t* bd_addr)
+bt_status_t bt_sal_avrcp_control_disconnect(bt_controller_id_t id, bt_address_t* bd_addr)
 {
 #if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARGET)
     SAL_CHECK_RET(service_adapter_avrcp_disconnect((void*)bd_addr),
@@ -273,7 +273,8 @@ bt_status_t bt_sal_avrcp_control_disconnect(bt_address_t* bd_addr)
 #endif
 }
 
-bt_status_t bt_sal_avrcp_control_get_capabilities(bt_address_t* bd_addr, uint8_t cap_id)
+bt_status_t bt_sal_avrcp_control_get_capabilities(bt_controller_id_t id, bt_address_t* bd_addr,
+    uint8_t cap_id)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     SAL_CHECK_RET(service_adapter_avrcp_get_remote_capabilities((void*)bd_addr, cap_id),
@@ -285,9 +286,8 @@ bt_status_t bt_sal_avrcp_control_get_capabilities(bt_address_t* bd_addr, uint8_t
 #endif
 }
 
-bt_status_t bt_sal_avrcp_control_register_notification(bt_address_t* bd_addr,
-    avrcp_notification_event_t event,
-    uint32_t interval)
+bt_status_t bt_sal_avrcp_control_register_notification(bt_controller_id_t id,
+    bt_address_t* bd_addr, avrcp_notification_event_t event, uint32_t interval)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     SAL_CHECK_RET(service_adapter_avrcp_register_notification((void*)bd_addr, event - 1, interval),
@@ -299,8 +299,8 @@ bt_status_t bt_sal_avrcp_control_register_notification(bt_address_t* bd_addr,
 #endif
 }
 
-bt_status_t bt_sal_avrcp_control_get_element_attributes(bt_address_t* bd_addr,
-    uint8_t attrs_count, avrcp_media_attr_type_t* types)
+bt_status_t bt_sal_avrcp_control_get_element_attributes(bt_controller_id_t id,
+    bt_address_t* bd_addr, uint8_t attrs_count, avrcp_media_attr_type_t* types)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     SAL_CHECK_RET(service_adapter_avrcp_get_element_attributes((void*)bd_addr, attrs_count, (SERVICE_AVRCP_MEDIA_ATTR_TYPE*)types),

@@ -527,7 +527,7 @@ static void avrcp_start_timeout_callback(service_timer_t* timer, void* data)
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
     a2dp_sm->avrcp_timer = NULL;
     if (a2dp_state_machine_get_connection_state(a2dp_sm) == PROFILE_STATE_CONNECTED) {
-        bt_sal_avrcp_control_connect(&a2dp_sm->addr); /* nothing happens if AVRCP already connected */
+        bt_sal_avrcp_control_connect(PRIMARY_ADAPTER, &a2dp_sm->addr); /* nothing happens if AVRCP already connected */
     }
 }
 #endif
@@ -569,7 +569,7 @@ static void opened_enter(state_machine_t* sm)
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
         if (a2dp_sm->peer_sep == SEP_SRC) {
             /* local is sink, try AVRCP connection as CT */
-            bt_sal_avrcp_control_connect(&a2dp_sm->addr);
+            bt_sal_avrcp_control_connect(PRIMARY_ADAPTER, &a2dp_sm->addr);
         }
 #endif
         ret = a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
@@ -584,7 +584,7 @@ static void opened_enter(state_machine_t* sm)
     }
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     else if (prev_state == &started_state) {
-        bt_sal_avrcp_target_play_status_notify(&a2dp_sm->addr, PLAY_STATUS_PAUSED);
+        bt_sal_avrcp_target_play_status_notify(PRIMARY_ADAPTER, &a2dp_sm->addr, PLAY_STATUS_PAUSED);
     }
 #endif
 }
@@ -614,7 +614,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
             BT_LOGE("A2dp disconnect failed");
         }
 #if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARTGET)
-        status = bt_sal_avrcp_control_disconnect(&a2dp_sm->addr);
+        status = bt_sal_avrcp_control_disconnect(PRIMARY_ADAPTER, &a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Avrc disconnect failed");
         }
@@ -877,7 +877,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
             BT_LOGE("Disconnect failed");
         }
 #if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARTGET)
-        status = bt_sal_avrcp_control_disconnect(&a2dp_sm->addr);
+        status = bt_sal_avrcp_control_disconnect(PRIMARY_ADAPTER, &a2dp_sm->addr);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Avrc disconnect failed");
         }
