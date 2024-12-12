@@ -30,7 +30,13 @@
 #endif
 #include "sal_debug_interface.h"
 
-#define BT_INVALID_CONNECTION_HANDLE 0xFFFF
+#if defined(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET) || defined(CONFIG_BLUETOOTH_STACK_LE_BLUELET)
+#include "sal_adapter_interface.h"
+#include "sal_bluelet.h"
+#endif
+#if defined(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE) || defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+#include "sal_zblue.h"
+#endif
 
 typedef struct bt_stack_info {
     char name[32];
@@ -67,17 +73,6 @@ typedef struct bt_stack_info {
         int __ret = cond;                               \
         if (__ret != expect) {                          \
             BT_LOGE("[%s] return:%d", __func__, __ret); \
-            return BT_STATUS_FAIL;                      \
-        }                                               \
-    }
-
-#define SAL_CHECK_RET_WITH_CONN(cond, expect, conn)     \
-    {                                                   \
-        int __ret = cond;                               \
-        if (__ret != expect) {                          \
-            BT_LOGE("[%s] return:%d", __func__, __ret); \
-            if (conn)                                   \
-                bt_conn_unref(conn);                    \
             return BT_STATUS_FAIL;                      \
         }                                               \
     }
