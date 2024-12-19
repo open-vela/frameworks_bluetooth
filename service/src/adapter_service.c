@@ -1384,7 +1384,6 @@ void adapter_on_link_role_changed(bt_address_t* addr, bt_link_role_t role)
 /* PM need implement */
 void adapter_on_link_mode_changed(bt_address_t* addr, bt_link_mode_t mode, uint16_t sniff_interval)
 {
-    BT_LOGD("%s", __func__);
     adapter_remote_event_t* evt = create_remote_event(addr, LINK_MODE_CHANGED_EVT);
     if (!evt)
         return;
