@@ -70,12 +70,19 @@ endif #CONFIG_BLUETOOTH_BLE_SCAN
 ifeq ($(CONFIG_BLUETOOTH_L2CAP), y)
 	CSRCS += service/src/l2cap_service.c
 endif #CONFIG_BLUETOOTH_L2CAP
+ifeq ($(CONFIG_LE_DLF_SUPPORT), y)
+	CSRCS += service/src/connection_manager_dlf.c
+endif #CONFIG_LE_DLF_SUPPORT
 	CSRCS += service/stacks/*.c
 ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET)$(CONFIG_BLUETOOTH_STACK_LE_BLUELET),)
 	CSRCS += service/stacks/bluelet/*.c
 endif
 ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
-	CSRCS += service/stacks/zephyr/*.c
+	CSRCS += service/stacks/zephyr/sal_debug_interface.c
+	CSRCS += service/stacks/zephyr/sal_zblue.c
+ifeq ($(CONFIG_BLUETOOTH_BREDR_SUPPORT), y)
+	CSRCS += service/stacks/zephyr/sal_adapter_classic_interface.c
+endif #CONFIG_BLUETOOTH_BREDR_SUPPORT
 endif
 ifeq ($(CONFIG_BLUETOOTH_BLE_AUDIO),)
   CSRCS := $(filter-out $(wildcard service/stacks/bluelet/sal_lea_*),$(wildcard $(CSRCS)))
@@ -286,7 +293,7 @@ ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET)$(CONFIG_BLUETOOTH_STACK_LE_BLUELE
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/vendor/xiaomi/vela/bluelet/inc
 endif
 ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
-	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/include/zephyr
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/stacks/zephyr/include
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/kernel/include
 endif

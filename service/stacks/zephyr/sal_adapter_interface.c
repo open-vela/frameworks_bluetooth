@@ -28,12 +28,13 @@
 #include "power_manager.h"
 #include "service_loop.h"
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/conn.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/hci_err.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/conn.h>
+#include <zephyr/bluetooth/hci.h>
+#include <zephyr/bluetooth/hci_types.h>
+#include <zephyr/bluetooth/classic/hfp_hf.h>
 
-#include <settings/settings.h>
+#include <zephyr/settings/settings.h>
 
 #include "sal_interface.h"
 
@@ -102,7 +103,9 @@ struct device_context {
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 extern int zblue_main(void);
+#ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
 static void zblue_on_connect_req(struct bt_conn* conn, uint8_t link_type, uint8_t* cod);
+#endif
 static void zblue_on_connected(struct bt_conn* conn, uint8_t err);
 static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason);
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
@@ -111,9 +114,10 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 static void zblue_on_remote_info_available(struct bt_conn* conn,
     struct bt_conn_remote_info* remote_info);
 #endif
-static void zblue_on_link_mode_changed(struct bt_conn* conn, uint8_t mode, uint16_t interval);
+#ifdef CONFIG_BT_POWER_MODE_CONTROL
+static void zblue_on_mode_changed(struct bt_conn* conn, uint8_t mode, uint16_t interval);
+#endif
 static void zblue_on_role_changed(struct bt_conn* conn, uint8_t role);
-static void zblue_on_pairing_request(struct bt_conn* conn);
 static void zblue_on_passkey_display(struct bt_conn* conn, unsigned int passkey);
 static void zblue_on_passkey_entry(struct bt_conn* conn);
 static void zblue_on_passkey_confirm(struct bt_conn* conn, unsigned int passkey);
@@ -126,14 +130,18 @@ static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err r
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
 
 static struct bt_conn_cb g_conn_cbs = {
+#ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
     .connect_req = zblue_on_connect_req,
+#endif /* CONFIG_BT_CONN_REQ_AUTO_HANDLE */
     .connected = zblue_on_connected,
     .disconnected = zblue_on_disconnected,
     .security_changed = zblue_on_security_changed,
 #ifdef CONFIG_BT_REMOTE_INFO
     .remote_info_available = zblue_on_remote_info_available,
 #endif
-    .link_mode_changed = zblue_on_link_mode_changed,
+#ifdef CONFIG_BT_POWER_MODE_CONTROL
+    .mode_changed = zblue_on_mode_changed,
+#endif
     .role_changed = zblue_on_role_changed,
 };
 
@@ -145,7 +153,6 @@ static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
 };
 
 static struct bt_conn_auth_cb g_conn_auth_cbs = {
-    .pairing_request = zblue_on_pairing_request,
     .cancel = zblue_on_cancel,
     .pairing_confirm = zblue_on_pairing_confirm,
     .pincode_entry = zblue_on_pincode_entry
@@ -193,6 +200,7 @@ static void zblue_conn_get_addr(struct bt_conn* conn, bt_address_t* addr)
     bt_addr_set(addr, info.br.dst->val);
 }
 
+#ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
 static void zblue_on_connect_req(struct bt_conn* conn, uint8_t link_type, uint8_t* cod)
 {
     if (link_type == BT_HCI_ACL) {
@@ -209,6 +217,7 @@ static void zblue_on_connect_req(struct bt_conn* conn, uint8_t link_type, uint8_
         // Ignore
     }
 }
+#endif
 
 static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
 {
@@ -258,7 +267,8 @@ static void zblue_on_remote_info_available(struct bt_conn* conn,
 }
 #endif
 
-static void zblue_on_link_mode_changed(struct bt_conn* conn, uint8_t mode, uint16_t interval)
+#ifdef CONFIG_BT_POWER_MODE_CONTROL
+static void zblue_on_mode_changed(struct bt_conn* conn, uint8_t mode, uint16_t interval)
 {
     bt_link_mode_t linkmode;
     bt_address_t addr;
@@ -272,6 +282,7 @@ static void zblue_on_link_mode_changed(struct bt_conn* conn, uint8_t mode, uint1
     zblue_conn_get_addr(conn, &addr);
     adapter_on_link_mode_changed(&addr, linkmode, interval);
 }
+#endif
 
 static void zblue_on_role_changed(struct bt_conn* conn, uint8_t role)
 {
@@ -286,14 +297,6 @@ static void zblue_on_role_changed(struct bt_conn* conn, uint8_t role)
 
     zblue_conn_get_addr(conn, &addr);
     adapter_on_link_role_changed(&addr, linkrole);
-}
-
-static void zblue_on_pairing_request(struct bt_conn* conn)
-{
-    bt_address_t addr;
-
-    zblue_conn_get_addr(conn, &addr);
-    adapter_on_pairing_request(&addr, false, true);
 }
 
 static void zblue_on_passkey_display(struct bt_conn* conn, unsigned int passkey)
@@ -398,8 +401,6 @@ static void zblue_on_ready_cb(int err)
         return;
     }
 
-    bt_conn_set_auto(false);
-
 #if defined(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE) && !defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
     state = BT_BREDR_STACK_STATE_ON;
 #else
@@ -418,15 +419,84 @@ static void zblue_on_ready_cb(int err)
 }
 #endif
 
+static bool zblue_inquiry_eir_name(const uint8_t* eir, int len, char* name)
+{
+    while (len) {
+        if (len < 2) {
+            false;
+        }
+
+        /* Look for early termination */
+        if (!eir[0]) {
+            false;
+        }
+
+        /* Check if field length is correct */
+        if (eir[0] > len - 1) {
+            false;
+        }
+
+        switch (eir[1]) {
+        case BT_DATA_NAME_SHORTENED:
+        case BT_DATA_NAME_COMPLETE:
+            memset(name, 0, BT_REM_NAME_MAX_LEN);
+            if (eir[0] > BT_REM_NAME_MAX_LEN - 1) {
+                memcpy(name, &eir[2], BT_REM_NAME_MAX_LEN - 1);
+            } else {
+                memcpy(name, &eir[2], eir[0] - 1);
+            }
+            return true;
+        default:
+            break;
+        }
+
+        /* Parse next AD Structure */
+        len -= eir[0] + 1;
+        eir += eir[0] + 1;
+    }
+
+    return false;
+}
+
+static void zblue_on_discovery_recv_cb(const struct bt_br_discovery_result* results)
+{
+    bt_discovery_result_t device;
+
+    memcpy(device.addr.addr, &results->addr, 6);
+    device.rssi = results->rssi;
+    device.cod = (results->cod[2] << 16) | (results->cod[1] << 8) | results->cod[0];
+    zblue_inquiry_eir_name(results->eir, sizeof(results->eir), device.name);
+
+    /* report discovery result to service */
+    adapter_on_device_found(&device);
+}
+
+static void zblue_on_discovery_complete_cb(const struct bt_br_discovery_result* results,
+    size_t count)
+{
+    adapter_on_discovery_state_changed(BT_DISCOVERY_STOPPED);
+    return;
+}
+
+static struct bt_br_discovery_cb g_br_discovery_cb = {
+    .recv = zblue_on_discovery_recv_cb,
+    .timeout = zblue_on_discovery_complete_cb
+};
+
 /* service adapter layer for BREDR */
 bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    zblue_main();
+    extern void z_sys_init(void);
+    static struct bt_hfp_hf_cb hf_cb;
+    z_sys_init();
 
+    bt_br_discovery_cb_register(&g_br_discovery_cb);
     bt_conn_cb_register(&g_conn_cbs);
     bt_conn_auth_cb_register(&g_conn_auth_cbs);
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
+    /* HFP HF for test */
+    bt_hfp_hf_register(&hf_cb);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -437,6 +507,7 @@ bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
 void bt_sal_cleanup(void)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    bt_br_discovery_cb_unregister(&g_br_discovery_cb);
     bt_conn_auth_cb_register(NULL);
     bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
 #endif
@@ -471,7 +542,7 @@ bt_status_t bt_sal_disable(bt_controller_id_t id)
         return BT_STATUS_SUCCESS;
     }
 
-    SAL_CHECK_RET(bt_disable(), 0);
+    bt_disable();
     adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
 
     return BT_STATUS_SUCCESS;
@@ -603,8 +674,7 @@ static void STACK_CALL(set_device_class)(void* args)
 {
     sal_adapter_req_t* req = args;
 
-    BT_LOGD("%s: %lu", __func__, req->adpt.cod);
-    SAL_CHECK(bt_set_class_of_device(req->adpt.cod), 0);
+    SAL_CHECK(bt_br_set_class_of_device(req->adpt.cod), 0);
 }
 #endif
 
@@ -707,67 +777,6 @@ bool bt_sal_get_bondable(bt_controller_id_t id)
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 /* Inquiry/page and inquiry/page scan */
-
-static bool zblue_inquiry_eir_name(uint8_t* eir, int len, char* name)
-{
-    while (len) {
-        if (len < 2) {
-            false;
-        }
-
-        /* Look for early termination */
-        if (!eir[0]) {
-            false;
-        }
-
-        /* Check if field length is correct */
-        if (eir[0] > len - 1) {
-            false;
-        }
-
-        switch (eir[1]) {
-        case BT_DATA_NAME_SHORTENED:
-        case BT_DATA_NAME_COMPLETE:
-            memset(name, 0, BT_REM_NAME_MAX_LEN);
-            if (eir[0] > BT_REM_NAME_MAX_LEN - 1) {
-                memcpy(name, &eir[2], BT_REM_NAME_MAX_LEN - 1);
-            } else {
-                memcpy(name, &eir[2], eir[0] - 1);
-            }
-            return true;
-        default:
-            break;
-        }
-
-        /* Parse next AD Structure */
-        len -= eir[0] + 1;
-        eir += eir[0] + 1;
-    }
-
-    return false;
-}
-
-static void zblue_on_discovery_complete_cb(struct bt_br_discovery_result* results,
-    size_t count)
-{
-    bt_discovery_result_t device;
-
-    if (results == NULL || count == 0) {
-        adapter_on_discovery_state_changed(BT_DISCOVERY_STOPPED);
-        return;
-    }
-
-    for (size_t i = 0; i < count; i++) {
-        memcpy(device.addr.addr, &results[i].addr, 6);
-        device.rssi = results[i].rssi;
-        device.cod = (results[i].cod[2] << 16) | (results[i].cod[1] << 8) | results[i].cod[0];
-        zblue_inquiry_eir_name(results[i].eir, sizeof(results[i].eir), device.name);
-
-        /* report discovery result to service */
-        adapter_on_device_found(&device);
-    }
-}
-
 static void STACK_CALL(start_discovery)(void* args)
 {
 #define DISCOVERY_DEVICE_MAX 30
@@ -780,7 +789,7 @@ static void STACK_CALL(start_discovery)(void* args)
     param.length = req->adpt.timeout;
 
     if (bt_br_discovery_start(&param, g_discovery_results,
-            SAL_ARRAY_SIZE(g_discovery_results), zblue_on_discovery_complete_cb)
+            SAL_ARRAY_SIZE(g_discovery_results))
         == 0)
         adapter_on_discovery_state_changed(BT_DISCOVERY_STARTED);
 }
@@ -927,51 +936,21 @@ bt_status_t bt_sal_get_remote_name(bt_controller_id_t id, bt_address_t* addr)
 bt_status_t bt_sal_auto_accept_connection(bt_controller_id_t id, bool enable)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    bt_conn_set_auto(enable);
-
     return BT_STATUS_SUCCESS;
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
 }
 
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-static void STACK_CALL(sco_connection_reply)(void* args)
-{
-    sal_adapter_req_t* req = args;
-    struct bt_conn* conn = bt_conn_lookup_addr_sco((bt_addr_t*)&req->addr);
-
-    if (req->adpt.accept) {
-        SAL_CHECK(bt_conn_accept_sco_conn(conn), 0);
-    } else {
-        SAL_CHECK(bt_conn_reject_sco_conn(conn, BT_HCI_ERR_INSUFFICIENT_RESOURCES), 0);
-    }
-
-    bt_conn_unref(conn);
-}
-#endif
-
 bt_status_t bt_sal_sco_connection_reply(bt_controller_id_t id, bt_address_t* addr, bool accept)
 {
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    UNUSED(id);
-    sal_adapter_req_t* req;
-
-    req = sal_adapter_req(id, addr, STACK_CALL(sco_connection_reply));
-    if (!req)
-        return BT_STATUS_NOMEM;
-
-    req->adpt.accept = accept;
-
-    return sal_send_req(req);
-#else
-    return BT_STATUS_NOT_SUPPORTED;
-#endif
+    SAL_NOT_SUPPORT;
 }
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(acl_connection_reply)(void* args)
 {
+#ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
     sal_adapter_req_t* req = args;
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
 
@@ -982,6 +961,7 @@ static void STACK_CALL(acl_connection_reply)(void* args)
     }
 
     bt_conn_unref(conn);
+#endif
 }
 #endif
 
@@ -1003,36 +983,9 @@ bt_status_t bt_sal_acl_connection_reply(bt_controller_id_t id, bt_address_t* add
 #endif
 }
 
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-static void STACK_CALL(pair_reply)(void* args)
-{
-    sal_adapter_req_t* req = args;
-    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
-
-    if (req->adpt.reason == BT_HCI_ERR_SUCCESS) {
-        SAL_CHECK(bt_conn_auth_pairing_accept(conn), 0);
-    } else {
-        SAL_CHECK(bt_conn_auth_pairing_reject(conn, req->adpt.reason), 0);
-    }
-}
-#endif
-
 bt_status_t bt_sal_pair_reply(bt_controller_id_t id, bt_address_t* addr, uint8_t reason)
 {
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    UNUSED(id);
-    sal_adapter_req_t* req;
-
-    req = sal_adapter_req(id, addr, STACK_CALL(pair_reply));
-    if (!req)
-        return BT_STATUS_NOMEM;
-
-    req->adpt.reason = reason;
-
-    return sal_send_req(req);
-#else
-    return BT_STATUS_NOT_SUPPORTED;
-#endif
+    SAL_NOT_SUPPORT;
 }
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
@@ -1176,18 +1129,7 @@ uint16_t bt_sal_get_acl_connection_handle(bt_controller_id_t id, bt_address_t* a
 
 uint16_t bt_sal_get_sco_connection_handle(bt_controller_id_t id, bt_address_t* addr)
 {
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    UNUSED(id);
-    struct bt_conn_info info;
-    struct bt_conn* conn = bt_conn_lookup_addr_sco((bt_addr_t*)addr);
-
-    bt_conn_get_info(conn, &info);
-    bt_conn_unref(conn);
-
-    return info.handle;
-#else
     return BT_INVALID_CONNECTION_HANDLE;
-#endif
 }
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
@@ -1253,7 +1195,7 @@ static void STACK_CALL(create_bond)(void* args)
     bond_state_t state = BOND_STATE_NONE;
     struct bt_conn* conn;
 
-    conn = bt_conn_pair((bt_addr_t*)&req->addr, BT_SECURITY_L3);
+    conn = bt_conn_pair_br((bt_addr_t*)&req->addr, BT_SECURITY_L3);
     if (conn) {
         state = BOND_STATE_BONDING;
         bt_conn_unref(conn);
@@ -1373,7 +1315,7 @@ bt_status_t bt_sal_set_bonded_devices(bt_controller_id_t id, remote_device_prope
         memcpy(&bondinfo.addr, &props->addr, 6);
         memcpy(&bondinfo.key, &props->link_key, 16);
         bondinfo.key_type = props->link_key_type;
-        if (bt_br_set_bond_info(&bondinfo))
+        if (bt_set_bond_info_br(&bondinfo))
             break;
     }
 
@@ -1409,7 +1351,7 @@ bt_status_t bt_sal_get_bonded_devices(bt_controller_id_t id, remote_device_prope
     ctx.cnt = *cnt;
     ctx.got = 0;
 
-    bt_br_foreach_bond(get_bonded_devices, &ctx);
+    bt_foreach_bond_br(get_bonded_devices, &ctx);
     *cnt = ctx.got;
 
     return BT_STATUS_SUCCESS;
@@ -1478,6 +1420,7 @@ bt_status_t bt_sal_stop_service_discovery(bt_controller_id_t id, bt_address_t* a
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 /* Link policy */
+#ifdef CONFIG_BT_POWER_MODE_CONTROL
 static void STACK_CALL(set_power_mode)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -1485,9 +1428,9 @@ static void STACK_CALL(set_power_mode)(void* args)
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)&req->addr);
 
     if (pm->mode == BT_LINK_MODE_ACTIVE) {
-        SAL_CHECK(bt_conn_check_exit_sniff(conn), 0);
+        SAL_CHECK(bt_conn_exit_sniff_mode(conn), 0);
     } else {
-        SAL_CHECK(bt_conn_check_enter_sniff(conn, pm->min, pm->max, pm->attempt, pm->timeout), 0);
+        SAL_CHECK(bt_conn_enter_sniff_mode(conn, pm->min, pm->max, pm->attempt, pm->timeout), 0);
     }
 
     bt_conn_unref(conn);
@@ -1511,6 +1454,16 @@ bt_status_t bt_sal_set_power_mode(bt_controller_id_t id, bt_address_t* addr, bt_
     return BT_STATUS_NOT_SUPPORTED;
 #endif
 }
+#else /* CONFIG_BT_POWER_MODE_CONTROL */
+bt_status_t bt_sal_set_power_mode(bt_controller_id_t id, bt_address_t* addr, bt_pm_mode_t* mode)
+{
+    UNUSED(id);
+    UNUSED(addr);
+    UNUSED(mode);
+
+    return BT_STATUS_NOT_SUPPORTED;
+}
+#endif /* CONFIG_BT_POWER_MODE_CONTROL */
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(set_link_role)(void* args)

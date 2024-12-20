@@ -44,7 +44,7 @@ if(CONFIG_BLUETOOTH)
 
       if(NOT CONFIG_BLUETOOTH_BLE_AUDIO)
         file(GLOB EXLUDE_FILES ${BLUETOOTH_DIR}/framework/api/bt_lea*)
-        list(REMOVE_ITEM EXCLUDE CSRCS ${EXLUDE_FILES})
+        list(REMOVE_ITEM CSRCS ${EXLUDE_FILES})
       endif()
 
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/ipc/*.c)
@@ -105,6 +105,10 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/l2cap_service.c)
     endif()
 
+    if(CONFIG_LE_DLF_SUPPORT)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/connectino_manager_dlf.c)
+    endif()
+
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/*.c)
     list(APPEND CSRCS ${APPEND_FILES})
 
@@ -115,8 +119,11 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
-      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/zephyr/*.c)
-      list(APPEND CSRCS ${APPEND_FILES})
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_debug_interface.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_zblue.c)
+      if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_adapter_classic_interface.c)
+      endif()
     endif()
 
     if(NOT CONFIG_BLUETOOTH_BLE_AUDIO)
@@ -411,7 +418,6 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
-      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/include/zephyr)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/)
       list(APPEND INCDIR
            ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/kernel/include)
