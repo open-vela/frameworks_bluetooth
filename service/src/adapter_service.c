@@ -717,7 +717,7 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
     }
 
     if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED)
-        bt_cm_process_disconnect_event(addr, acl_params->transport);
+        bt_cm_process_disconnect_event(addr, acl_params->transport, acl_params->hci_reason_code);
 
     /* send connection changed notification */
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_connection_state_changed, addr,
