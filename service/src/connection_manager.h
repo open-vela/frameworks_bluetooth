@@ -26,6 +26,10 @@ void bt_cm_cleanup(void);
 bt_status_t bt_cm_enable_enhanced_mode(bt_address_t* peer_addr, uint8_t mode);
 bt_status_t bt_cm_disable_enhanced_mode(bt_address_t* peer_addr, uint8_t mode);
 
-void bt_cm_process_disconnect_event(bt_address_t* peer_addr, uint8_t transport);
+void bt_cm_process_disconnect_event(bt_address_t* addr, uint8_t transport, uint32_t hci_reason_code);
+void bt_cm_disconnected(bt_address_t* addr, uint8_t profile_id);
+void bt_cm_connected(bt_address_t* addr, uint8_t profile_id);
+bt_status_t bt_cm_device_connect(bt_address_t* addr, uint8_t transport);
+bt_status_t bt_cm_device_disconnect(bt_address_t* addr, uint8_t transport);
 
 #endif /*__BT_CONNECTION_MANAGER_H__*/
