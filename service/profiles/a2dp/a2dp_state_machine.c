@@ -55,6 +55,7 @@
 #include "audio_control.h"
 #include "bt_avrcp.h"
 #include "bt_utils.h"
+#include "connection_manager.h"
 #include "hci_parser.h"
 #include "media_system.h"
 #include "power_manager.h"
@@ -390,6 +391,11 @@ static void idle_enter(state_machine_t* sm)
     a2dp_sm->audio_ready = false;
     if (prev_state != NULL) {
         bt_pm_conn_close(PROFILE_A2DP, &a2dp_sm->addr);
+        if (a2dp_sm->peer_sep == SEP_SRC) {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+            bt_cm_disconnected(&a2dp_sm->addr, PROFILE_A2DP_SINK);
+#endif
+        }
         a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
             PROFILE_STATE_DISCONNECTED);
         if (a2dp_sm->avrcp_timer) {
@@ -579,6 +585,11 @@ static void opened_enter(state_machine_t* sm)
         }
 
         bt_pm_conn_open(PROFILE_A2DP, &a2dp_sm->addr);
+        if (a2dp_sm->peer_sep == SEP_SRC) {
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+            bt_cm_connected(&a2dp_sm->addr, PROFILE_A2DP_SINK);
+#endif
+        }
         a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
             PROFILE_STATE_CONNECTED);
     }
