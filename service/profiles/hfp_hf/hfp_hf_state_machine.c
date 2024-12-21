@@ -26,6 +26,7 @@
 #include "bt_list.h"
 #include "bt_utils.h"
 #include "bt_vendor.h"
+#include "connection_manager.h"
 #include "hci_parser.h"
 #include "hfp_hf_service.h"
 #include "hfp_hf_state_machine.h"
@@ -448,6 +449,7 @@ static void disconnected_enter(state_machine_t* sm)
     hfsm->need_query = false;
     if (hsm_get_previous_state(sm)) {
         bt_pm_conn_close(PROFILE_HFP_HF, &hfsm->addr);
+        bt_cm_disconnected(&hfsm->addr, PROFILE_HFP_HF);
         bt_media_remove_listener(hfsm->volume_listener);
         hfsm->spk_volume = 0;
         hfsm->mic_volume = 0;
@@ -1140,6 +1142,7 @@ static void connected_enter(state_machine_t* sm)
     HF_DBG_ENTER(sm, &hfsm->addr);
 
     bt_pm_conn_open(PROFILE_HFP_HF, &hfsm->addr);
+    bt_cm_connected(&hfsm->addr, PROFILE_HFP_HF);
 
     if (hfsm->need_query) {
         bt_sal_hfp_hf_get_current_calls(&hfsm->addr);
