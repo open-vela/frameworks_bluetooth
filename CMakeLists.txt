@@ -44,7 +44,7 @@ if(CONFIG_BLUETOOTH)
 
       if(NOT CONFIG_BLUETOOTH_BLE_AUDIO)
         file(GLOB EXLUDE_FILES ${BLUETOOTH_DIR}/framework/api/bt_lea*)
-        list(REMOVE_ITEM EXCLUDE CSRCS ${EXLUDE_FILES})
+        list(REMOVE_ITEM CSRCS ${EXLUDE_FILES})
       endif()
 
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/ipc/*.c)
