@@ -76,7 +76,7 @@ typedef struct {
     struct list_node node;
     uint32_t cmd_code;
     union {
-        uint8_t number[HFP_PHONENUM_DIGITS_MAX];
+        char number[HFP_PHONENUM_DIGITS_MAX];
     } param;
 } hf_at_cmd_t;
 
@@ -243,7 +243,7 @@ static void pending_action_create(hf_state_machine_t* hfsm, uint32_t cmd_code, v
     case HFP_ATCMD_CODE_ATD:
     case HFP_ATCMD_CODE_BLDN:
         if (param) {
-            memcpy(cmd->param.number, param, sizeof(cmd->param.number) - 1);
+            strlcpy(cmd->param.number, (const char*)param, sizeof(cmd->param.number));
         }
         break;
     default:
@@ -874,7 +874,7 @@ static void hold_call(hf_state_machine_t* hfsm)
         BT_LOGE("No call to hold");
 }
 
-static void handle_dailing_fail(state_machine_t* sm, uint8_t* number)
+static void handle_dailing_fail(state_machine_t* sm, char* number)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
     hfp_current_call_t call = { 0 };
@@ -884,7 +884,7 @@ static void handle_dailing_fail(state_machine_t* sm, uint8_t* number)
     call.state = HFP_HF_CALL_STATE_DISCONNECTED;
     if (number) {
         BT_LOGD("number: %s", number);
-        memcpy(call.number, number, sizeof(call.number));
+        strlcpy(call.number, number, sizeof(call.number));
     }
 
     hf_service_notify_call_state_changed(&hfsm->addr, &call);
@@ -1187,7 +1187,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         status = bt_sal_hfp_hf_dial_number(&hfsm->addr, data->string1);
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("Dial number: %s failed", data->string1);
-            handle_dailing_fail(sm, (uint8_t*)data->string1);
+            handle_dailing_fail(sm, data->string1);
             break;
         }
         update_dialing_time(sm, current_timestamp_us);
