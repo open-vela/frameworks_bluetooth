@@ -284,10 +284,10 @@ static void hfp_ag_process_message(void* data)
 
     switch (msg->event) {
     case AG_STARTUP:
-        ag_startup((profile_on_startup_t)msg->data.valueint1);
+        ag_startup((profile_on_startup_t)msg->data.data);
         break;
     case AG_SHUTDOWN:
-        ag_shutdown((profile_on_shutdown_t)msg->data.valueint1);
+        ag_shutdown((profile_on_shutdown_t)msg->data.data);
         break;
     case AG_DEVICE_STATUS_CHANGED:
     case AG_PHONE_STATE_CHANGE:
@@ -417,7 +417,7 @@ static bt_status_t hfp_ag_startup(profile_on_startup_t cb)
     if (!msg)
         return BT_STATUS_NOMEM;
 
-    msg->data.valueint1 = (uint32_t)cb;
+    msg->data.data = (void*)cb;
 
     return hfp_ag_send_message(msg);
 }
@@ -428,7 +428,7 @@ static bt_status_t hfp_ag_shutdown(profile_on_shutdown_t cb)
     if (!msg)
         return BT_STATUS_NOMEM;
 
-    msg->data.valueint1 = (uint32_t)cb;
+    msg->data.data = (void*)cb;
 
     return hfp_ag_send_message(msg);
 }
