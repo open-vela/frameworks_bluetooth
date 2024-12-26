@@ -325,13 +325,11 @@ static void bonded_device_loaded(void* data, uint16_t length, uint16_t items)
             BT_LOGD("BONDED DEVICE[%d], Name:[%s] Addr:[%s] LinkKey: [%02X] | [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
                 i, remote->name, addr_str, remote->link_key_type, lk[0], lk[1], lk[2], lk[3], lk[4], lk[5], lk[6],
                 lk[7], lk[8], lk[9], lk[10], lk[11], lk[12], lk[13], lk[14], lk[15]);
-            bt_sal_set_bonded_devices(PRIMARY_ADAPTER, remote, 1);
             remote++;
         }
     }
-    BT_LOGD("classic bonded device cnt: %" PRIu16, items);
 
-    send_to_state_machine((state_machine_t*)g_adapter_service.stm, BREDR_ENABLED, NULL);
+    BT_LOGD("classic bonded device cnt: %" PRIu16, items);
 }
 
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
@@ -346,7 +344,6 @@ static void whitelist_device_loaded(void* data, uint16_t length, uint16_t items)
             device_set_flags(device, DFLAG_WHITELIST_ADDED);
             bt_addr_ba2str(&remote->addr, addr_str);
             BT_LOGD("LE WHITELIST[%d] [%s]", i, addr_str);
-            bt_sal_le_add_white_list(PRIMARY_ADAPTER, &remote->addr, remote->addr_type);
             remote++;
         }
     }
@@ -1073,21 +1070,32 @@ void adapter_on_adapter_state_changed(uint8_t stack_state)
 
     switch (stack_state) {
     case BT_BREDR_STACK_STATE_ON: {
-        adapter_storage_t storage;
-        int ret;
+        /* send bonded devices to stack (name/address/cod/alias/linkkey) */
+        int len = 0;
+        len = bt_list_length(adapter->devices);
+        if (len > 0) {
+            remote_device_properties_t remote[len];
+            memset(remote, 0, sizeof(remote));
+            bt_list_node_t* node = NULL;
+            int tmp = 0;
+            for (node = bt_list_head(adapter->devices); node != NULL; node = bt_list_next(adapter->devices, node)) {
+                bt_device_t* device = bt_list_node(node);
+                memcpy(&remote[tmp].addr, device_get_address(device), 6);
+                strlcpy(remote[tmp].name, device_get_name(device), sizeof(remote[tmp].name));
+                memcpy(remote[tmp].link_key, device_get_link_key(device), 16);
+                remote[tmp].link_key_type = device_get_link_key_type(device);
+                remote[tmp].class_of_device = device_get_device_class(device);
+                remote[tmp].device_type = device_get_device_type(device);
+                tmp++;
+            }
 
-        bt_storage_load_adapter_info(&storage);
-        adapter_properties_copy(&adapter->properties, &storage);
-
-        /* load bonded devices to stack (name/address/cod/alias/linkkey) */
-        ret = bt_storage_load_bonded_device(bonded_device_loaded);
-        if (ret < 0) {
-            BT_LOGE("%s, load_bonded_device err:%d", __func__, ret);
-            bonded_device_loaded(NULL, 0, 0);
+            bt_sal_set_bonded_devices(PRIMARY_ADAPTER, remote, 1);
+        } else {
+            BT_LOGD("classic bonded device cnt: 0");
         }
 
-        /* waiting for device load finished */
-        return;
+        event = BREDR_ENABLED;
+        break;
     }
     case BT_BREDR_STACK_STATE_OFF:
         event = BREDR_DISABLED;
@@ -1108,22 +1116,37 @@ void adapter_on_le_enabled(bool enablebt)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     adapter_service_t* adapter = &g_adapter_service;
-    int ret;
 
     BT_LOGD("%s, enablebt:%d", __func__, enablebt);
     /* get le address async */
     bt_sal_le_get_address(PRIMARY_ADAPTER);
     /* set le io capability ? */
     /* set appearance ? */
-    /* load bonded device to stack ? SMP keys */
-    ret = bt_storage_load_le_bonded_device(le_bonded_device_loaded);
-    if (ret < 0) {
-        le_bonded_device_loaded(NULL, 0, 0);
-    }
-    /* set white list ? */
-    ret = bt_storage_load_whitelist_device(whitelist_device_loaded);
-    if (ret < 0) {
-        whitelist_device_loaded(NULL, 0, 0);
+    /* send bonded device to stack ? SMP keys */
+    int len = 0;
+    len = bt_list_length(adapter->le_devices);
+    if (len > 0) {
+        remote_device_le_properties_t remote[len];
+        memset(remote, 0, sizeof(remote));
+        bt_list_node_t* node = NULL;
+        int tmp = 0;
+        for (node = bt_list_head(adapter->le_devices); node != NULL; node = bt_list_next(adapter->le_devices, node)) {
+            bt_device_t* device = bt_list_node(node);
+            memcpy(&remote[tmp].addr, device_get_address(device), 6);
+            remote[tmp].addr_type = device_get_address_type(device);
+            memcpy(remote[tmp].smp_key, device_get_smp_key(device), sizeof(remote[tmp].smp_key));
+            remote[tmp].device_type = device_get_device_type(device);
+            tmp++;
+
+            /* set white list ? */
+            if (device_check_flag(device, DFLAG_WHITELIST_ADDED)) {
+                bt_sal_le_add_white_list(PRIMARY_ADAPTER, device_get_address(device), device_get_address_type(device));
+            }
+        }
+
+        bt_sal_le_set_bonded_devices(remote, len);
+    } else {
+        BT_LOGD("ble bonded device cnt: 0");
     }
 
     /* set resolvinglist list ? */
@@ -1158,9 +1181,6 @@ void adapter_on_le_disabled(void)
     adv_manager_cleanup();
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-    adapter_lock();
-    bt_list_clear(g_adapter_service.le_devices);
-    adapter_unlock();
     scan_manager_cleanup();
 #endif
 #ifdef CONFIG_BLUETOOTH_L2CAP
@@ -1573,6 +1593,8 @@ void adapter_init(void)
 {
     adapter_service_t* adapter = &g_adapter_service;
     pthread_mutexattr_t attr;
+    adapter_storage_t storage;
+    int ret;
 
     memset(adapter, 0, sizeof(g_adapter_service));
     pthread_mutexattr_init(&attr);
@@ -1582,8 +1604,31 @@ void adapter_init(void)
     adapter->is_discovering = false;
     adapter->max_acl_connections = 10;
     adapter->devices = bt_list_new(adapter_delete_device);
+
+    bt_storage_load_adapter_info(&storage);
+    adapter_properties_copy(&adapter->properties, &storage);
+    BT_LOGD("Local Name:%s, Local Addr:%02x:%02x:%02x:%02x:%02x:%02x", adapter->properties.name,
+        adapter->properties.addr.addr[0], adapter->properties.addr.addr[1], adapter->properties.addr.addr[2],
+        adapter->properties.addr.addr[3], adapter->properties.addr.addr[4], adapter->properties.addr.addr[5]);
+    ret = bt_storage_load_bonded_device(bonded_device_loaded);
+    if (ret < 0) {
+        BT_LOGE("%s, load_bonded_device err:%d", __func__, ret);
+        bonded_device_loaded(NULL, 0, 0);
+    }
+
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     adapter->le_devices = bt_list_new(adapter_delete_device);
+    ret = bt_storage_load_le_bonded_device(le_bonded_device_loaded);
+    if (ret < 0) {
+        BT_LOGE("%s, le_bonded_device_loaded err:%d", __func__, ret);
+        le_bonded_device_loaded(NULL, 0, 0);
+    }
+
+    /* set white list ? */
+    ret = bt_storage_load_whitelist_device(whitelist_device_loaded);
+    if (ret < 0) {
+        whitelist_device_loaded(NULL, 0, 0);
+    }
 #endif
     adapter->adapter_callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
     adapter->stm = adapter_state_machine_new(NULL);
