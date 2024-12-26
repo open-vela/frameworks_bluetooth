@@ -719,6 +719,25 @@ if (bt_device_connect(ins, &addr) == BT_STATUS_SUCCESS) {
 bt_status_t BTSYMBOLS(bt_device_connect)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
+ * @brief Connect to peer device with specific Profiles. And open reconnect method.
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.if addr is NULL, connect last device in bonded list.
+ * @param transport - transport type (0:BLE, 1:BREDR).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_device_background_connect(ins, &addr, BT_TRANSPORT_BREDR) == BT_STATUS_SUCCESS) {
+    // connection initiated successfully
+} else {
+    // Handle error
+}
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_device_background_connect)(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport);
+
+/**
  * @brief Disconnect from a remote device.
  *
  * Terminates the ACL connection with a remote device.
@@ -737,6 +756,25 @@ if (bt_device_disconnect(ins, &addr) == BT_STATUS_SUCCESS) {
  * @endcode
  */
 bt_status_t BTSYMBOLS(bt_device_disconnect)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
+ * @brief Disconnect specific prfoiles.
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - remote device address.
+ * @param transport - transport type (0:BLE, 1:BREDR).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_device_background_disconnect(ins, &addr, BT_TRANSPORT_BREDR) == BT_STATUS_SUCCESS) {
+    // Disconnection initiated successfully
+} else {
+    // Handle error
+}
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_device_background_disconnect)(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport);
 
 /**
  * @brief Connect to a remote LE device.
