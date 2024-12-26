@@ -1571,8 +1571,11 @@ void adapter_on_le_local_oob_data_got(bt_address_t* addr, bt_128key_t c_val, bt_
 
 void adapter_init(void)
 {
+    BT_LOGD("%s", __func__);
     adapter_service_t* adapter = &g_adapter_service;
     pthread_mutexattr_t attr;
+    adapter_storage_t storage;
+    int ret;
 
     memset(adapter, 0, sizeof(g_adapter_service));
     pthread_mutexattr_init(&attr);
@@ -1582,8 +1585,22 @@ void adapter_init(void)
     adapter->is_discovering = false;
     adapter->max_acl_connections = 10;
     adapter->devices = bt_list_new(adapter_delete_device);
+
+    bt_storage_load_adapter_info(&storage);
+    adapter_properties_copy(&adapter->properties, &storage);
+    ret = bt_storage_load_bonded_device(bonded_device_loaded);
+    if (ret < 0) {
+        BT_LOGE("%s, load_bonded_device err:%d", __func__, ret);
+        bonded_device_loaded(NULL, 0, 0);
+    }
+
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     adapter->le_devices = bt_list_new(adapter_delete_device);
+    ret = bt_storage_load_le_bonded_device(le_bonded_device_loaded);
+    if (ret < 0) {
+        BT_LOGE("%s, le_bonded_device_loaded err:%d", __func__, ret);
+        le_bonded_device_loaded(NULL, 0, 0);
+    }
 #endif
     adapter->adapter_callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
     adapter->stm = adapter_state_machine_new(NULL);
