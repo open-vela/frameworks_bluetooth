@@ -288,6 +288,40 @@ bt_status_t bt_device_connect(bt_instance_t* ins, bt_address_t* addr)
     return packet.devs_r.status;
 }
 
+bt_status_t bt_device_background_connect(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    if (addr)
+        memcpy(&packet.devs_pl._bt_device_background_connect, addr, sizeof(*addr));
+    else
+        bt_addr_set_empty(&packet.devs_pl._bt_device_background_connect.addr);
+    packet.devs_pl._bt_device_background_connect.transport = transport;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_BACKGROUND_CONNECT);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.devs_r.status;
+}
+
+bt_status_t bt_device_background_disconnect(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+    memcpy(&packet.devs_pl._bt_device_background_disconnect, addr, sizeof(*addr));
+    packet.devs_pl._bt_device_background_disconnect.transport = transport;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_BACKGROUND_DISCONNECT);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.devs_r.status;
+}
+
 bt_status_t bt_device_disconnect(bt_instance_t* ins, bt_address_t* addr)
 {
     bt_message_packet_t packet;

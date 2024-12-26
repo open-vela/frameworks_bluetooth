@@ -109,6 +109,16 @@ bt_status_t BTSYMBOLS(bt_device_disconnect)(bt_instance_t* ins, bt_address_t* ad
     return adapter_disconnect(addr);
 }
 
+bt_status_t BTSYMBOLS(bt_device_background_connect)(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport)
+{
+    return bt_cm_device_connect(addr, transport);
+}
+
+bt_status_t BTSYMBOLS(bt_device_background_disconnect)(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport)
+{
+    return bt_cm_device_disconnect(addr, transport);
+}
+
 bt_status_t BTSYMBOLS(bt_device_connect_le)(bt_instance_t* ins,
     bt_address_t* addr,
     ble_addr_type_t type,
