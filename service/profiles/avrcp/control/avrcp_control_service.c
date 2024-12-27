@@ -451,6 +451,9 @@ static void handle_avrcp_set_absolute_volume(avrcp_msg_t* msg)
 
     if (media_volume != curr_volume) {
         device->set_abs_vol_cnt++;
+    } else {
+        uv_mutex_unlock(&device->lock);
+        return;
     }
 
     uv_mutex_unlock(&device->lock);
