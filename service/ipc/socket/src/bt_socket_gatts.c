@@ -244,6 +244,13 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
             &packet->gatts_pl._bt_gatts_connect.addr,
             packet->gatts_pl._bt_gatts_connect.addr_type);
         break;
+    case BT_GATT_SERVER_CONNECT_BEAR:
+        packet->gatts_r.status = BTSYMBOLS(bt_gatts_connect_bear)(
+            INT2PTR(gatts_handle_t) packet->gatts_pl._bt_gatts_connect_bear.handle,
+            &packet->gatts_pl._bt_gatts_connect_bear.addr,
+            packet->gatts_pl._bt_gatts_connect_bear.addr_type,
+            packet->gatts_pl._bt_gatts_connect_bear.bear_type);
+        break;
     case BT_GATT_SERVER_DISCONNECT:
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_disconnect)(
             INT2PTR(gatts_handle_t) packet->gatts_pl._bt_gatts_disconnect.handle,
