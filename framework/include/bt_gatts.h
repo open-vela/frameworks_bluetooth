@@ -399,6 +399,23 @@ if (bt_gatts_connect(service_handle, &addr, BT_LE_ADDR_TYPE_UNKNOWN) != BT_STATU
 bt_status_t BTSYMBOLS(bt_gatts_connect)(gatts_handle_t srv_handle, bt_address_t* addr, ble_addr_type_t addr_type);
 
 /**
+ * @brief create a connect bear with peer device.
+ *
+ * @param srv_handle - gatts handle(void*). Each GATT service has its own handle.
+ * @param addr - remote device address.
+ * @param addr_type - peer address type(ble_addr_type_t).
+ * @param bear_type - perr bear type
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, and other error codes on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_gatts_connect(service_handle, &addr, BT_LE_ADDR_TYPE_UNKNOWN) != BT_STATUS_SUCCESS)
+    // Handle Error
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_gatts_connect_bear)(gatts_handle_t srv_handle, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type);
+
+/**
  * @brief initiate a disconnect with peer device.
  *
  * @param srv_handle - gatts handle(void*). Each GATT service has its own handle.

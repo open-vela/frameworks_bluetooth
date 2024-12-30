@@ -561,6 +561,17 @@ static bt_status_t if_gatts_connect(void* srv_handle, bt_address_t* addr, ble_ad
     return bt_sal_gatt_server_connect(addr, addr_type);
 }
 
+static bt_status_t if_gatts_connect_bear(void* srv_handle, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type)
+{
+    gatts_service_t* service = srv_handle;
+
+    CHECK_ENABLED();
+    CHECK_SERVICE_VALID(g_gatts_manager.services, service);
+
+    BT_ADDR_LOG("GATTS-CONNECT-REQUEST-V2 addr:%s", addr);
+    return bt_sal_gatt_server_connect_bear(addr, addr_type, bear_type);
+}
+
 static bt_status_t if_gatts_disconnect(void* srv_handle, bt_address_t* addr)
 {
     gatts_service_t* service = srv_handle;
@@ -760,6 +771,7 @@ static const gatts_interface_t gatts_if = {
     .register_service = if_gatts_register_service,
     .unregister_service = if_gatts_unregister_service,
     .connect = if_gatts_connect,
+    .connect_bear = if_gatts_connect_bear,
     .disconnect = if_gatts_disconnect,
     .add_attr_table = if_gatts_add_attr_table,
     .remove_attr_table = if_gatts_remove_attr_table,

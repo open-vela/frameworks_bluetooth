@@ -159,6 +159,25 @@ bt_status_t bt_gatts_connect(gatts_handle_t srv_handle, bt_address_t* addr, ble_
     return packet.gatts_r.status;
 }
 
+bt_status_t bt_gatts_connect_bear(gatts_handle_t srv_handle, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+    bt_gatts_remote_t* gatts_remote = (bt_gatts_remote_t*)srv_handle;
+
+    CHECK_NULL_PTR(gatts_remote);
+
+    packet.gatts_pl._bt_gatts_connect_bear.handle = PTR2INT(uint64_t) gatts_remote->cookie;
+    packet.gatts_pl._bt_gatts_connect_bear.addr_type = addr_type;
+    packet.gatts_pl._bt_gatts_connect_bear.bear_type = bear_type;
+    memcpy(&packet.gatts_pl._bt_gatts_connect_bear.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(gatts_remote->ins, &packet, BT_GATT_SERVER_CONNECT_BEAR);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.gatts_r.status;
+}
+
 bt_status_t bt_gatts_disconnect(gatts_handle_t srv_handle, bt_address_t* addr)
 {
     bt_message_packet_t packet;

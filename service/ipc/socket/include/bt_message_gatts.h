@@ -19,6 +19,7 @@ BT_GATT_SERVER_MESSAGE_START,
     BT_GATT_SERVER_REGISTER_SERVICE,
     BT_GATT_SERVER_UNREGISTER_SERVICE,
     BT_GATT_SERVER_CONNECT,
+    BT_GATT_SERVER_CONNECT_BEAR,
     BT_GATT_SERVER_DISCONNECT,
     BT_GATT_SERVER_ADD_ATTR_TABLE,
     BT_GATT_SERVER_REMOVE_ATTR_TABLE,
@@ -92,6 +93,13 @@ BT_GATT_SERVER_MESSAGE_START,
             bt_address_t addr;
             uint8_t addr_type; /* ble_addr_type_t */
         } _bt_gatts_connect;
+
+        struct {
+            uint64_t handle; /* gatts_handle_t */
+            bt_address_t addr;
+            uint8_t addr_type; /* ble_addr_type_t */
+            uint8_t bear_type; /* ble_bear_type_t */
+        } _bt_gatts_connect_bear;
 
         struct {
             uint64_t handle; /* gatts_handle_t */
