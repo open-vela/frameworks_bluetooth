@@ -36,6 +36,7 @@ static int unregister_cmd(void* handle, int argc, char* argv[]);
 static int start_cmd(void* handle, int argc, char* argv[]);
 static int stop_cmd(void* handle, int argc, char* argv[]);
 static int connect_cmd(void* handle, int argc, char* argv[]);
+static int connect_bear_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int notify_bas_cmd(void* handle, int argc, char* argv[]);
 static int notify_cus_cmd(void* handle, int argc, char* argv[]);
@@ -187,6 +188,7 @@ static bt_command_t g_gatts_tables[] = {
     { "start", start_cmd, 0, "\"start gatt service :<id>\"" },
     { "stop", stop_cmd, 0, "\"stop gatt service :<id>\"" },
     { "connect", connect_cmd, 0, "\"connect remote device :<id><address>[addr type(0:public,1:random,2:public_id,3:random_id)]\"" },
+    { "connect_bear", connect_bear_cmd, 0, "\"connect remote device :<conn id><address><bear type(1:le att, 2:le eatt, 3:bredr att, 4:bredr eatt)>\"" },
     { "disconnect", disconnect_cmd, 0, "\"disconnect remote device :<id><address>\"" },
     { "notify_battery", notify_bas_cmd, 0, "\"send battery notification :<address><level>(0-100)\"" },
     { "notify_custom", notify_cus_cmd, 0, "\"send custom notification :<address><playload>\"" },
@@ -263,6 +265,29 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     }
 
     if (bt_gatts_connect(service_handle, &addr, addr_type) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int connect_bear_cmd(void* handle, int argc, char* argv[])
+{
+    if (argc < 3)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[1], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    gatts_handle_t service_handle;
+    int service_id = atoi(argv[0]);
+    GET_SERVICE_HANDLE(service_id, service_handle)
+
+    uint8_t bear_type = atoi(argv[2]);
+    if (bear_type <= ATT_BEAR_TYPE_NONE || bear_type >= ATT_BEAR_TYPE_ANY)
+        return CMD_INVALID_ADDR;
+
+    if (bt_gatts_connect_bear(service_handle, &addr, BT_LE_ADDR_TYPE_UNKNOWN, bear_type) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
