@@ -570,7 +570,7 @@ static void STACK_CALL(set_device_class)(void* args)
 {
     sal_adapter_req_t* req = args;
 
-    BT_LOGD("%s: %d", __func__, req->adpt.cod);
+    BT_LOGD("%s: %lu", __func__, req->adpt.cod);
     SAL_CHECK(bt_set_class_of_device(req->adpt.cod), 0);
 }
 
