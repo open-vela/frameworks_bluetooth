@@ -919,9 +919,17 @@ static bt_status_t ag_offload_send_cmd(ag_state_machine_t* agsm, bool is_start)
     uint8_t ogf;
     uint16_t ocf;
     size_t size;
+    bt_status_t status;
     uint8_t* payload;
     hfp_offload_config_t config = { 0 };
-    uint8_t offload[CONFIG_VSC_MAX_LEN];
+    uint8_t* offload;
+
+    offload = zalloc(CONFIG_VSC_MAX_LEN);
+
+    if (!offload) {
+        BT_LOGE("HFP HF offload alloc failed");
+        return BT_STATUS_NOMEM;
+    }
 
     config.sco_hdl = agsm->sco_conn_handle;
     config.sco_codec = agsm->codec;
@@ -942,7 +950,10 @@ static bt_status_t ag_offload_send_cmd(ag_state_machine_t* agsm, bool is_start)
     STREAM_TO_UINT16(ocf, payload);
     size -= sizeof(ogf) + sizeof(ocf);
 
-    return bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, size, payload, bt_hci_event_callback, agsm);
+    status = bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, size, payload, bt_hci_event_callback, agsm);
+    free(offload);
+
+    return status;
 }
 
 static bool is_virtual_call_allowed(state_machine_t* sm)

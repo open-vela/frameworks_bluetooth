@@ -423,9 +423,17 @@ static bt_status_t hf_offload_send_cmd(hf_state_machine_t* hfsm, bool is_start)
     uint8_t ogf;
     uint16_t ocf;
     size_t size;
+    bt_status_t status;
     uint8_t* payload;
     hfp_offload_config_t config = { 0 };
-    uint8_t offload[CONFIG_VSC_MAX_LEN];
+    uint8_t* offload;
+
+    offload = zalloc(CONFIG_VSC_MAX_LEN);
+
+    if (!offload) {
+        BT_LOGE("HFP HF offload alloc failed");
+        return BT_STATUS_NOMEM;
+    }
 
     config.sco_hdl = hfsm->sco_conn_handle;
     config.sco_codec = hfsm->codec;
@@ -445,8 +453,11 @@ static bt_status_t hf_offload_send_cmd(hf_state_machine_t* hfsm, bool is_start)
     STREAM_TO_UINT8(ogf, payload);
     STREAM_TO_UINT16(ocf, payload);
     size -= sizeof(ogf) + sizeof(ocf);
+ 
+    status = bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, size, payload, bt_hci_event_callback, hfsm);
+    free(offload);
 
-    return bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, size, payload, bt_hci_event_callback, hfsm);
+    return status;
 }
 
 static bool check_hfp_allowed(hf_state_machine_t* hfsm)

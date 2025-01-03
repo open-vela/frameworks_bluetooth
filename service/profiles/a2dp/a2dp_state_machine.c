@@ -809,8 +809,15 @@ static bt_status_t a2dp_send_active_link_cmd(a2dp_state_machine_t* a2dp_sm, bool
     uint16_t ocf;
     size_t size;
     uint8_t* payload;
+    bt_status_t status;
     acl_bandwitdh_config_t config = { 0 };
-    uint8_t cmd[CONFIG_VSC_MAX_LEN];
+    uint8_t* cmd;
+
+    cmd = zalloc(CONFIG_VSC_MAX_LEN);
+    if (!cmd) {
+        BT_LOGE("allocate memory failed");
+        return BT_STATUS_NOMEM;
+    }
 
     config.acl_hdl = a2dp_sm->acl_handle;
     if (is_start) {
@@ -819,13 +826,15 @@ static bt_status_t a2dp_send_active_link_cmd(a2dp_state_machine_t* a2dp_sm, bool
             config.bandwidth / 1000, config.acl_hdl);
         if (!acl_bandwidth_config_builder(&config, cmd, &size)) {
             BT_LOGE("A2DP config bandwidth failed");
-            return BT_STATUS_FAIL;
+            status = BT_STATUS_FAIL;
+            goto out;
         }
     } else {
         BT_LOGD("remove bandwidth config for connection 0x%04x", config.acl_hdl);
         if (!acl_bandwidth_deconfig_builder(&config, cmd, &size)) {
             BT_LOGE("A2DP deconfig bandwidth failed");
-            return BT_STATUS_FAIL;
+            status = BT_STATUS_FAIL;
+            goto out;
         }
     }
 
@@ -834,7 +843,10 @@ static bt_status_t a2dp_send_active_link_cmd(a2dp_state_machine_t* a2dp_sm, bool
     STREAM_TO_UINT16(ocf, payload);
     size -= sizeof(ogf) + sizeof(ocf);
 
-    return bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, size, payload, NULL /* TODO: add callback */, a2dp_sm);
+    status = bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, size, payload, NULL /* TODO: add callback */, a2dp_sm);
+out:
+    free(cmd);
+    return status;
 }
 
 static void started_enter(state_machine_t* sm)
