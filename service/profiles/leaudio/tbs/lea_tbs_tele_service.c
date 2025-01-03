@@ -269,11 +269,16 @@ static void tbs_call_list_query_complete(tapi_async_result* result)
     lea_tbs_call_state_t* state_s = malloc(sizeof(lea_tbs_call_state_t) * result->arg2);
     lea_tbs_call_state_t* sub_call;
 
-    if (result->status != OK)
+    if (!state_s) {
+        BT_LOGE("%s, error, malloc fail.", __func__);
         return;
+    }
+
+    if (result->status != OK)
+        goto error;
 
     if (result->arg2 == 0)
-        return;
+        goto error;
 
     call_info = result->data;
 
@@ -291,6 +296,11 @@ static void tbs_call_list_query_complete(tapi_async_result* result)
         }
     }
     lea_tbs_call_state_changed(result->arg2, state_s);
+    return;
+
+error:
+    free(state_s);
+    return;
 }
 
 static void tbs_call_manager_call_async_fun(tapi_async_result* result)
