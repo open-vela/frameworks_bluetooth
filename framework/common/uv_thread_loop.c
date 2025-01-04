@@ -169,13 +169,13 @@ int thread_loop_run(uv_loop_t* loop, bool start_thread, const char* name)
 {
     loop_priv_t* priv = loop->data;
 
-    if (start_thread) {
-        int ret = uv_sem_init(&priv->ready, 0);
-        if (ret != 0) {
-            syslog(LOG_ERR, "%s sem init error: %d", __func__, ret);
-            return ret;
-        }
+    int ret = uv_sem_init(&priv->ready, 0);
+    if (ret != 0) {
+        syslog(LOG_ERR, "%s sem init error: %d", __func__, ret);
+        return ret;
+    }
 
+    if (start_thread) {
         uv_thread_options_t options = {
             UV_THREAD_HAS_STACK_SIZE | UV_THREAD_HAS_PRIORITY,
             LOOP_THREAD_STACK_SIZE,
@@ -192,13 +192,14 @@ int thread_loop_run(uv_loop_t* loop, bool start_thread, const char* name)
         else
             snprintf(priv->name, sizeof(priv->name), "loop_%d", getpid());
         pthread_setname_np(priv->thread, priv->name);
-        uv_sem_wait(&priv->ready);
-        uv_sem_destroy(&priv->ready);
         syslog(LOG_DEBUG, "%s loop running now !!!", priv->name);
     } else {
         syslog(LOG_DEBUG, "%s loop running now !!!", name);
-        thread_schedule_loop(NULL);
+        thread_schedule_loop(loop);
     }
+
+    uv_sem_wait(&priv->ready);
+    uv_sem_destroy(&priv->ready);
 
     return 0;
 }
