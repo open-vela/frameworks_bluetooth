@@ -266,7 +266,7 @@ bool audio_transport_open(audio_transport_t* transport, uint8_t ch_id,
     const char* path, transport_event_cb_t cb)
 {
     transport_channel_t* ch;
-    uv_fs_t fs;
+    uv_fs_t* fs;
     int ret;
 
     if (ch_id >= AUDIO_TRANS_CH_NUM || !transport)
@@ -287,8 +287,14 @@ bool audio_transport_open(audio_transport_t* transport, uint8_t ch_id,
         return false;
     }
 
+    fs = malloc(sizeof(uv_fs_t));
+    if (!fs) {
+        BT_LOGE("%s malloc failed", __func__);
+        return false;
+    }
+
     ch->svr_pipe->data = ch;
-    ret = uv_fs_unlink(transport->loop, &fs, path, NULL);
+    ret = uv_fs_unlink(transport->loop, fs, path, NULL);
     if (ret != 0 && ret != UV_ENOENT) {
         BT_LOGE("unlink error: %s", uv_strerror(ret));
         goto error;
@@ -312,11 +318,13 @@ bool audio_transport_open(audio_transport_t* transport, uint8_t ch_id,
     ch->ch_id = ch_id;
     ch->event_cb = cb;
     ch->ipc_handle = (void*)transport;
+    free(fs);
 
     BT_LOGD("%s path{%d}[%s] success", __func__, ch_id, path);
 
     return true;
 error:
+    free(fs);
     audio_transport_channel_close(ch);
     return false;
 }
