@@ -43,6 +43,15 @@ const static char voip_call_number[][HFP_PHONENUM_DIGITS_MAX] = {
     "10000001"
 };
 
+#define HFP_HF_REPORT_CIEV_AND_CACHE(_hfsm, _ciev)                                                  \
+    do {                                                                                            \
+        if (_hfsm->call_status.last_reported._ciev##_status != _hfsm->call_status._ciev##_status) { \
+            BT_LOGD("%s, %s = %d", __func__, #_ciev, _hfsm->call_status._ciev##_status);            \
+            hf_service_notify_##_ciev(&hfsm->addr, _hfsm->call_status._ciev##_status);              \
+            hfsm->call_status.last_reported._ciev##_status = hfsm->call_status._ciev##_status;      \
+        }                                                                                           \
+    } while (0)
+
 typedef struct _hf_state_machine {
     state_machine_t sm;
     bt_address_t addr;
@@ -337,12 +346,21 @@ static void update_current_calls(hf_state_machine_t* hfsm, hfp_current_call_t* c
     bt_list_add_tail(hfsm->update_calls, call);
 }
 
+static void hf_service_fake_ciev(hf_state_machine_t* hfsm)
+{
+    HFP_HF_REPORT_CIEV_AND_CACHE(hfsm, call);
+    HFP_HF_REPORT_CIEV_AND_CACHE(hfsm, callsetup);
+    HFP_HF_REPORT_CIEV_AND_CACHE(hfsm, callheld);
+}
+
 static void query_current_calls_final(hf_state_machine_t* hfsm)
 {
     BT_LOGD("Query current call final");
     bt_list_node_t *cnode, *unode;
     bt_list_t* clist = hfsm->current_calls;
     bt_list_t* ulist = hfsm->update_calls;
+
+    hf_service_fake_ciev(hfsm);
 
     for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
         hfp_current_call_t* ccall = bt_list_node(cnode);
@@ -659,21 +677,21 @@ static void update_call_status(state_machine_t* sm, uint32_t event, uint32_t sta
         hfsm->call_status.call_timestamp_us = current_timestamp_us;
         BT_LOGD("%s: call:%d, timestamp = %" PRIu64, __func__, hfsm->call_status.call_status,
             hfsm->call_status.call_timestamp_us);
-        hf_service_notify_call(&hfsm->addr, status);
+        // hf_service_notify_call(&hfsm->addr, status);
         break;
     case HF_STACK_EVENT_CALLSETUP:
         hfsm->call_status.callsetup_status = (hfp_callsetup_t)status;
         hfsm->call_status.callsetup_timestamp_us = current_timestamp_us;
         BT_LOGD("%s: callsetup:%d, timestamp = %" PRIu64, __func__, hfsm->call_status.callsetup_status,
             hfsm->call_status.callsetup_timestamp_us);
-        hf_service_notify_callsetup(&hfsm->addr, status);
+        // hf_service_notify_callsetup(&hfsm->addr, status);
         break;
     case HF_STACK_EVENT_CALLHELD:
         hfsm->call_status.callheld_status = (hfp_callheld_t)status;
         hfsm->call_status.callheld_timestamp_us = current_timestamp_us;
         BT_LOGD("%s: callheld:%d, timestamp = %" PRIu64, __func__, hfsm->call_status.callheld_status,
             hfsm->call_status.callsetup_timestamp_us);
-        hf_service_notify_callheld(&hfsm->addr, status);
+        // hf_service_notify_callheld(&hfsm->addr, status);
         break;
     default:
         break;
