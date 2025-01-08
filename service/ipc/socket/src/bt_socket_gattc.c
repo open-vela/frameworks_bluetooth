@@ -250,12 +250,8 @@ void bt_socket_server_gattc_process(service_poll_t* poll, int fd,
         break;
     }
     case BT_GATT_CLIENT_DELETE_CONNECT: {
-        bt_gattc_remote_t* gattc_remote = if_gattc_get_remote(INT2PTR(void*) packet->gattc_pl._bt_gattc_delete.handle);
         packet->gattc_r.status = BTSYMBOLS(bt_gattc_delete_connect)(
             INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_delete.handle);
-
-        if (packet->gattc_r.status == BT_STATUS_SUCCESS)
-            free(gattc_remote);
         break;
     }
     case BT_GATT_CLIENT_CONNECT:

@@ -150,6 +150,8 @@ static void gattc_connection_delete(gattc_connection_t* connection)
     connection->services = NULL;
     bt_list_free(connection->pend_ops);
     connection->pend_ops = NULL;
+    if (connection->remote)
+        free(connection->remote);
     pthread_mutex_destroy(&connection->conn_lock);
     free(connection);
 }
