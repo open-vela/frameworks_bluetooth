@@ -47,6 +47,7 @@
 
 typedef struct {
     bool started;
+    bool le_hid;
     hid_app_state_t app_state;
     bt_address_t peer_addr;
     profile_connection_state_t conn_state;
@@ -128,7 +129,7 @@ typedef struct {
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-static hid_device_handle_t g_hidd_handle = { .started = false };
+static hid_device_handle_t g_hidd_handle = { .started = false, .le_hid = false };
 static bool hid_device_unregister_callbacks(void** remote, void* cookie);
 
 /****************************************************************************
@@ -268,12 +269,16 @@ static bt_status_t hid_device_shutdown(profile_on_shutdown_t cb)
         return BT_STATUS_NOT_ENABLED;
     }
 
+    if (g_hidd_handle.conn_state != PROFILE_STATE_DISCONNECTED)
+        HIDD_CALLBACK_FOREACH(g_hidd_handle.callbacks, connection_state_cb, &g_hidd_handle.peer_addr, g_hidd_handle.le_hid, PROFILE_STATE_DISCONNECTED);
+
     if (g_hidd_handle.conn_state == PROFILE_STATE_CONNECTED || g_hidd_handle.conn_state == PROFILE_STATE_CONNECTING) {
         bt_sal_hid_device_disconnect(&g_hidd_handle.peer_addr);
         bt_pm_conn_close(PROFILE_HID_DEV, &g_hidd_handle.peer_addr);
     }
 
     g_hidd_handle.started = false;
+    g_hidd_handle.le_hid = false;
     g_hidd_handle.app_state = HID_APP_STATE_NOT_REGISTERED;
     g_hidd_handle.conn_state = PROFILE_STATE_DISCONNECTED;
     bt_addr_set_empty(&g_hidd_handle.peer_addr);
@@ -370,6 +375,8 @@ static bt_status_t hid_device_register_app(hid_device_sdp_settings_t* sdp, bool 
     if (status == BT_STATUS_SUCCESS) {
         g_hidd_handle.app_state = HID_APP_STATE_REGISTERED;
     }
+
+    g_hidd_handle.le_hid = le_hid;
 
 exit:
     pthread_mutex_unlock(&g_hidd_handle.hid_lock);
@@ -594,6 +601,7 @@ void hid_device_on_connection_state_changed(bt_address_t* addr, bool le_hid, pro
     msg->connect_change.state = state;
     memcpy(&msg->connect_change.addr, addr, sizeof(bt_address_t));
 
+    g_hidd_handle.le_hid = le_hid;
     do_in_service_loop(hid_device_event_process, msg);
 }
 
