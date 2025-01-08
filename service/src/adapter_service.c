@@ -542,7 +542,7 @@ static void process_ssp_request_evt(bt_address_t* addr, uint8_t transport,
 static void process_bond_state_change_evt(bt_address_t* addr, bond_state_t state,
     uint8_t transport, bool is_ctkd)
 {
-    remote_device_properties_t remote;
+    remote_device_properties_t* remote;
     bt_device_t* device;
 
     adapter_lock();
@@ -550,8 +550,15 @@ static void process_bond_state_change_evt(bt_address_t* addr, bond_state_t state
         device = adapter_find_create_classic_device(addr);
         if (state == BOND_STATE_BONDED) {
             device_set_bond_state(device, BOND_STATE_BONDED);
-            bt_sal_get_remote_device_info(PRIMARY_ADAPTER, addr, &remote);
-            device_set_device_type(device, remote.device_type);
+            remote = (remote_device_properties_t*)malloc(sizeof(remote_device_properties_t));
+            if (!remote) {
+                BT_LOGE("%s, malloc failed", __func__);
+                return;
+            }
+
+            bt_sal_get_remote_device_info(PRIMARY_ADAPTER, addr, remote);
+            device_set_device_type(device, remote->device_type);
+            free(remote);
             /* update bonded device info */
             adapter_update_bonded_device();
             // device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_BREDR);
