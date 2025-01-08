@@ -230,12 +230,8 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
         break;
     }
     case BT_GATT_SERVER_UNREGISTER_SERVICE: {
-        bt_gatts_remote_t* gatts_remote = if_gatts_get_remote(INT2PTR(void*) packet->gatts_pl._bt_gatts_unregister.handle);
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_unregister_service)(
             INT2PTR(gatts_handle_t) packet->gatts_pl._bt_gatts_unregister.handle);
-
-        if (packet->gatts_r.status == BT_STATUS_SUCCESS)
-            free(gatts_remote);
         break;
     }
     case BT_GATT_SERVER_CONNECT:

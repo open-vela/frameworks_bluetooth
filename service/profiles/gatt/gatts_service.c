@@ -215,6 +215,8 @@ static void gatts_service_delete(gatts_service_t* service)
 
     pthread_mutex_destroy(&service->srv_lock);
     bt_list_free(service->tables);
+    if (service->remote)
+        free(service->remote);
     free(service);
 }
 
