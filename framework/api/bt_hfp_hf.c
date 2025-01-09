@@ -161,6 +161,13 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_terminate_call)(bt_instance_t* ins, bt_address_t
     return profile->terminate_call(addr);
 }
 
+bt_status_t BTSYMBOLS(bt_hfp_hf_hangup_call)(bt_instance_t* ins, bt_address_t* addr)
+{
+    hfp_hf_interface_t* profile = get_profile_service();
+
+    return profile->hangup_call(addr);
+}
+
 bt_status_t BTSYMBOLS(bt_hfp_hf_control_call)(bt_instance_t* ins, bt_address_t* addr, hfp_call_control_t chld, uint8_t index)
 {
     hfp_hf_interface_t* profile = get_profile_service();

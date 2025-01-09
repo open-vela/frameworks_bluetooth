@@ -303,6 +303,10 @@ void bt_socket_server_hfp_hf_process(service_poll_t* poll, int fd,
         packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_terminate_call)(ins,
             &packet->hfp_hf_pl._bt_hfp_hf_terminate_call.addr);
         break;
+    case BT_HFP_HF_HANGUP_CALL:
+        packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_hangup_call)(ins,
+            &packet->hfp_hf_pl._bt_hfp_hf_hangup_call.addr);
+        break;
     case BT_HFP_HF_CONTROL_CALL:
         packet->hfp_hf_r.status = BTSYMBOLS(bt_hfp_hf_control_call)(ins,
             &packet->hfp_hf_pl._bt_hfp_hf_control_call.addr,

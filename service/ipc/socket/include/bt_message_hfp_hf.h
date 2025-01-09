@@ -35,6 +35,7 @@ BT_HFP_HF_MESSAGE_START,
     BT_HFP_HF_REJECT_CALL,
     BT_HFP_HF_HOLD_CALL,
     BT_HFP_HF_TERMINATE_CALL,
+    BT_HFP_HF_HANGUP_CALL,
     BT_HFP_HF_CONTROL_CALL,
     BT_HFP_HF_QUERY_CURRENT_CALLS,
     BT_HFP_HF_SEND_AT_CMD,
@@ -90,7 +91,8 @@ BT_HFP_HF_MESSAGE_START,
             _bt_hfp_hf_redial,
             _bt_hfp_hf_reject_call,
             _bt_hfp_hf_hold_call,
-            _bt_hfp_hf_terminate_call;
+            _bt_hfp_hf_terminate_call,
+            _bt_hfp_hf_hangup_call;
 
         struct {
             bt_address_t addr;

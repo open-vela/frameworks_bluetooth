@@ -345,6 +345,21 @@ bt_status_t bt_hfp_hf_terminate_call(bt_instance_t* ins, bt_address_t* addr)
     return packet.hfp_hf_r.status;
 }
 
+bt_status_t bt_hfp_hf_hangup_call(bt_instance_t* ins, bt_address_t* addr)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.hfp_hf_pl._bt_hfp_hf_hangup_call.addr, addr, sizeof(bt_address_t));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_HF_HANGUP_CALL);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_hf_r.status;
+}
+
 bt_status_t bt_hfp_hf_control_call(bt_instance_t* ins, bt_address_t* addr, hfp_call_control_t chld, uint8_t index)
 {
     bt_message_packet_t packet;

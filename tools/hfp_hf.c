@@ -38,6 +38,7 @@ static int accept_call_cmd(void* handle, int argc, char* argv[]);
 static int reject_call_cmd(void* handle, int argc, char* argv[]);
 static int hold_call_cmd(void* handle, int argc, char* argv[]);
 static int terminate_call_cmd(void* handle, int argc, char* argv[]);
+static int hangup_call_cmd(void* handle, int argc, char* argv[]);
 static int control_call_cmd(void* handle, int argc, char* argv[]);
 static int query_current_calls_cmd(void* handle, int argc, char* argv[]);
 static int send_at_cmd_cmd(void* handle, int argc, char* argv[]);
@@ -91,6 +92,7 @@ static bt_command_t g_hfp_tables[] = {
     { "reject", reject_call_cmd, 0, REJECT_CALL_USAGE },
     { "hold", hold_call_cmd, 0, "Hold an Three-way calling            params: <address>" },
     { "term", terminate_call_cmd, 0, HANGUP_CALL_USAGE },
+    { "hangup", hangup_call_cmd, 0, "Hangup an incoming call" },
     { "control", control_call_cmd, 0, HOLD_CALL_USAGE },
     { "query", query_current_calls_cmd, 0, "Query current calls                  params: <address>" },
     { "sendat", send_at_cmd_cmd, 0, "Send customize AT command to peer    params: <address> <atcmd>" },
@@ -345,6 +347,21 @@ static int terminate_call_cmd(void* handle, int argc, char* argv[])
         return CMD_INVALID_ADDR;
 
     if (bt_hfp_hf_terminate_call(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int hangup_call_cmd(void* handle, int argc, char* argv[])
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (bt_hfp_hf_hangup_call(handle, &addr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;

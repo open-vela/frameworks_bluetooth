@@ -926,6 +926,16 @@ int app_hold_call(bt_instance_t* ins, bt_address_t* addr);
 bt_status_t BTSYMBOLS(bt_hfp_hf_hold_call)(bt_instance_t* ins, bt_address_t* addr);
 
 /**
+ * @brief Hangup voice call
+ *
+ * send AT+CHUP.
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer AG device.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_hf_hangup_call)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
  * @brief Terminate voice call
  *
  * This function is used to release all calls if any active, dialing or alerting

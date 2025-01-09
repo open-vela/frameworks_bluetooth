@@ -657,6 +657,15 @@ static bt_status_t hfp_hf_terminate_call(bt_address_t* addr)
     return hfp_hf_send_event(addr, HF_TERMINATE_CALL);
 }
 
+static bt_status_t hfp_hf_hangup_call(bt_address_t* addr)
+{
+    CHECK_ENABLED();
+    if (!hfp_hf_is_connected(addr))
+        return BT_STATUS_FAIL;
+
+    return hfp_hf_send_event(addr, HF_HANGUP_CALL);
+}
+
 static bt_status_t hfp_hf_control_call(bt_address_t* addr, hfp_call_control_t chld, uint8_t index)
 {
     CHECK_ENABLED();
@@ -775,6 +784,7 @@ static const hfp_hf_interface_t HfInterface = {
     .reject_call = hfp_hf_reject_call,
     .hold_call = hfp_hf_hold_call,
     .terminate_call = hfp_hf_terminate_call,
+    .hangup_call = hfp_hf_hangup_call,
     .control_call = hfp_hf_control_call,
     .query_current_calls = hfp_hf_query_current_calls,
     .send_at_cmd = hfp_hf_send_at_cmd,

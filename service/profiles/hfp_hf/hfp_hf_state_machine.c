@@ -865,7 +865,7 @@ static void reject_call(hf_state_machine_t* hfsm)
     }
 }
 
-static void hangup_call(hf_state_machine_t* hfsm)
+static void terminate_call(hf_state_machine_t* hfsm)
 {
     if (get_call_by_state(hfsm, HFP_HF_CALL_STATE_ACTIVE) != NULL || get_call_by_state(hfsm, HFP_HF_CALL_STATE_DIALING) != NULL || get_call_by_state(hfsm, HFP_HF_CALL_STATE_ALERTING) != NULL) {
         BT_LOGI("Terminate active/dialing/alerting call");
@@ -877,6 +877,15 @@ static void hangup_call(hf_state_machine_t* hfsm)
             BT_LOGE("Release held call(CHLD0) error, line:%d", __LINE__);
     } else
         BT_LOGE("No call to terminate");
+}
+
+static void hangup_call(hf_state_machine_t* hfsm)
+{
+    if (get_call_by_state(hfsm, HFP_HF_CALL_STATE_ACTIVE) != NULL) {
+        terminate_call(hfsm);
+    } else {
+        reject_call(hfsm);
+    }
 }
 
 static void hold_call(hf_state_machine_t* hfsm)
@@ -949,6 +958,9 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
         hold_call(hfsm);
         break;
     case HF_TERMINATE_CALL:
+        terminate_call(hfsm);
+        break;
+    case HF_HANGUP_CALL:
         hangup_call(hfsm);
         break;
     case HF_CONTROL_CALL: {
