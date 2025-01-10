@@ -846,7 +846,10 @@ static void process_le_phy_update_evt(bt_address_t* addr, ble_phy_type_t tx_phy,
 static void process_le_whitelist_update_evt(bt_address_t* addr, bool is_add, bt_status_t status)
 {
     bool is_added;
-    BT_LOGD("%s isadded:%d, status:%d", __func__, is_add, status);
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+
+    bt_addr_ba2str(addr, addr_str);
+    BT_LOGD("%s, %s isadded:%d, status:%d", __func__, addr_str, is_add, status);
 
     if (status != BT_STATUS_SUCCESS) {
         return;
@@ -2510,7 +2513,8 @@ bt_status_t adapter_le_add_whitelist(bt_address_t* addr)
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     adapter_service_t* adapter = &g_adapter_service;
     bt_device_t* device;
-    BT_LOGD("%s", __func__);
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+
     adapter_lock();
     if (adapter->adapter_state != BT_ADAPTER_STATE_ON) {
         adapter_unlock();
@@ -2530,6 +2534,9 @@ bt_status_t adapter_le_add_whitelist(bt_address_t* addr)
 
     adapter_unlock();
     return bt_sal_le_add_white_list(PRIMARY_ADAPTER, addr, device_get_address_type(device));
+
+    bt_addr_ba2str(addr, addr_str);
+    BT_LOGD("%s, %s", __func__, addr_str);
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
@@ -2540,6 +2547,7 @@ bt_status_t adapter_le_remove_whitelist(bt_address_t* addr)
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     adapter_service_t* adapter = &g_adapter_service;
     bt_device_t* device;
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     adapter_lock();
     if (adapter->adapter_state != BT_ADAPTER_STATE_ON) {
@@ -2559,6 +2567,10 @@ bt_status_t adapter_le_remove_whitelist(bt_address_t* addr)
     }
 
     adapter_unlock();
+    
+    bt_addr_ba2str(addr, addr_str);
+    BT_LOGD("%s, %s", __func__, addr_str);
+
     return bt_sal_le_remove_white_list(PRIMARY_ADAPTER, addr, device_get_address_type(device));
 #else
     return BT_STATUS_NOT_SUPPORTED;
