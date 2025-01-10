@@ -843,31 +843,36 @@ static void process_le_phy_update_evt(bt_address_t* addr, ble_phy_type_t tx_phy,
     adapter_unlock();
 }
 
-static void process_le_whitelist_update_evt(bt_address_t* addr, bool isadded, bt_status_t status)
+static void process_le_whitelist_update_evt(bt_address_t* addr, bool is_add, bt_status_t status)
 {
-    BT_LOGD("%s isadded:%d, status:%d", __func__, isadded, status);
+    bool is_added;
+    BT_LOGD("%s isadded:%d, status:%d", __func__, is_add, status);
+
+    if (status != BT_STATUS_SUCCESS) {
+        return;
+    }
+
     adapter_lock();
 
     bt_device_t* device = adapter_find_device(addr, BT_TRANSPORT_BLE);
     if (device == NULL) {
         bt_sal_le_remove_white_list(PRIMARY_ADAPTER, addr, device_get_address_type(device));
-        adapter_unlock();
-        return;
+        goto out;
     }
 
-    if (device_check_flag(device, DFLAG_WHITELIST_ADDED) && status == BT_STATUS_SUCCESS) {
-        adapter_unlock();
-        return;
-    }
+    is_added = device_check_flag(device, DFLAG_WHITELIST_ADDED);
 
-    if (isadded && status == BT_STATUS_SUCCESS) {
+    if (is_add == is_added)
+        goto out;
+
+    if (is_add) {
         device_set_flags(device, DFLAG_WHITELIST_ADDED);
     } else {
         device_clear_flag(device, DFLAG_WHITELIST_ADDED);
     }
-
     adapter_update_whitelist();
 
+out:
     adapter_unlock();
 }
 
@@ -936,7 +941,7 @@ static void handle_ble_event(void* data)
         break;
     case LE_WHITELIST_UPDATE_EVT:
         process_le_whitelist_update_evt(&evt->whitelist.addr,
-            evt->whitelist.is_added,
+            evt->whitelist.is_add,
             evt->whitelist.status);
         break;
     case LE_BONDED_DEVICE_UPDATE_EVT:
@@ -1458,7 +1463,7 @@ void adapter_on_le_phy_update(bt_address_t* addr, ble_phy_type_t tx_phy,
     do_in_service_loop(handle_ble_event, evt);
 }
 
-void adapter_on_whitelist_update(bt_address_t* addr, bool is_added, bt_status_t status)
+void adapter_on_whitelist_update(bt_address_t* addr, bool is_add, bt_status_t status)
 {
     BT_LOGD("%s", __func__);
 
@@ -1466,7 +1471,7 @@ void adapter_on_whitelist_update(bt_address_t* addr, bool is_added, bt_status_t 
 
     evt->evt_id = LE_WHITELIST_UPDATE_EVT;
     memcpy(&evt->whitelist.addr, addr, sizeof(*addr));
-    evt->whitelist.is_added = is_added;
+    evt->whitelist.is_add = is_add;
     evt->whitelist.status = status;
 
     do_in_service_loop(handle_ble_event, evt);
