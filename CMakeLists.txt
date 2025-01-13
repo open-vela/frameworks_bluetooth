@@ -427,27 +427,6 @@ if(CONFIG_BLUETOOTH)
 
   list(APPEND CFLAGS -Wno-strict-prototypes)
 
-  if(CONFIG_BLUETOOTH_FEATURE)
-    set(FEATURE_TOP ${NUTTX_APPS_DIR}/frameworks/runtimes/feature)
-    list(APPEND INCDIR ${FEATURE_TOP}/include)
-    list(APPEND INCDIR
-         ${NUTTX_APPS_DIR}/frameworks/connectivity/bluetooth/feature/include)
-
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth.c)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_impl.c)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/feature_bluetooth_util.c)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt.c)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_impl.c)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/feature_bluetooth_callback.c)
-
-    if(CONFIG_BLUETOOTH_A2DP_SINK)
-      list(APPEND CSRCS
-           ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_a2dpsink.c)
-      list(APPEND CSRCS
-           ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_a2dpsink_impl.c)
-    endif()
-  endif()
-
   nuttx_add_library(libbluetooth STATIC)
 
   # Add Applications
@@ -504,26 +483,33 @@ if(CONFIG_BLUETOOTH)
   endif()
 
   if(CONFIG_BLUETOOTH_FEATURE)
-    include(nuttx_add_jidl)
-    set(PY_SCRIPT ${FEATURE_TOP}/tools/jidl/jsongensource.py)
-    set(BINARY_EXT_MODULES_DIR ${CMAKE_BINARY_DIR}/feature/modules/)
+    set(FEATURE_SRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_impl.c
+                     ${BLUETOOTH_DIR}/feature/src/feature_bluetooth_util.c
+                     ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_impl.c
+                     ${BLUETOOTH_DIR}/feature/src/feature_bluetooth_callback.c)
+
+    target_include_directories(libbluetooth PRIVATE ${CMAKE_CURRENT_LIST_DIR}/feature/include)
+
     set(JIDL_PATHS ${BLUETOOTH_DIR}/feature/jdil/bluetooth.jidl
                    ${BLUETOOTH_DIR}/feature/jdil/bluetooth_bt.jidl)
 
+    set(FEATURE_NAMES system_bluetooth system_bluetooth_bt)
+
     if(CONFIG_BLUETOOTH_A2DP_SINK)
-      list(APPEND JIDL_PATHS
-           ${BLUETOOTH_DIR}/feature/jdil/bluetooth_a2dpsink.jidl)
+      list(APPEND FEATURE_SRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_a2dpsink_impl.c)
+      list(APPEND JIDL_PATHS ${BLUETOOTH_DIR}/feature/jdil/bluetooth_a2dpsink.jidl)
+      list(APPEND FEATURE_NAMES system_bluetooth_a2dpsink)
     endif()
 
     nuttx_add_jidl(
       TARGET
       libbluetooth
-      JIDL_SCRIPT
-      ${PY_SCRIPT}
-      JIDL_OUT_DIR
-      ${BINARY_EXT_MODULES_DIR}
+      FEATURE_SRCS
+      ${FEATURE_SRCS}
       JIDLS
       ${JIDL_PATHS}
+      FEATURE_NAMES
+      ${FEATURE_NAMES}
       OUT_SRC_EXT
       c)
   endif()
