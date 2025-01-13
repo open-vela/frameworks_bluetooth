@@ -26,6 +26,8 @@ extern "C" {
 #define BT_ADDR_LENGTH 6 /*define the address length*/
 #define BT_ADDR_STR_LENGTH 18
 
+#define bt_addr_str(addr) bt_addr_bastr(addr)
+
 /**
  * @cond
  */
@@ -162,12 +164,11 @@ int bt_addr_str2ba(const char* str, bt_address_t* addr);
  * **Example:**
  * @code
  * bt_address_t addr = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55};
- * printf("Address: %s\n", bt_addr_str(&addr));
+ * printf("Address: %s\n", bt_addr_bastr(&addr));
  * // Output: Address: 00:11:22:33:44:55
  * @endcode
  */
-char* bt_addr_str(const bt_address_t* addr);
-
+char* bt_addr_bastr(const bt_address_t* addr);
 
 /**
  * @brief Set a Bluetooth address.
