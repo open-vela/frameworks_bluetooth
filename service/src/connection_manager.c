@@ -187,6 +187,11 @@ static bt_status_t bt_cm_profile_connect(bt_address_t* addr, uint8_t transport)
         /* delay 500ms to ensure HFP connection is established first*/
         manager->connect_a2dp_flag = true;
         memcpy(&manager->connecting_addr, addr, sizeof(bt_address_t));
+        if (manager->a2dp_conn_timer) {
+            service_loop_cancel_timer(manager->a2dp_conn_timer);
+            manager->a2dp_conn_timer = NULL;
+        }
+
         manager->a2dp_conn_timer = service_loop_timer_no_repeating(PROFILE_CONNECT_INTERVAL, bt_cm_connect_a2dp_cb, manager);
     } else if (manager->profile_flags & FLAG_A2DP_SINK) { /* connect A2DP_SINK */
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
