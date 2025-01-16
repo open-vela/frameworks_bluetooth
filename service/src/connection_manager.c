@@ -373,12 +373,14 @@ void bt_cm_connected(bt_address_t* addr, uint8_t profile_id)
     switch (profile_id) {
     case PROFILE_HFP_HF: {
         bt_cm_clear_flags(FLAG_HFP_HF);
+        break;
     }
     case PROFILE_A2DP_SINK: {
         bt_cm_clear_flags(FLAG_A2DP_SINK);
         service_loop_cancel_timer(manager->a2dp_conn_timer);
         bt_addr_set_empty(&manager->connecting_addr);
         manager->a2dp_conn_timer = NULL;
+        break;
     }
     default:
         break;
@@ -405,6 +407,7 @@ void bt_cm_disconnected(bt_address_t* addr, uint8_t profile_id)
         service_loop_cancel_timer(manager->a2dp_conn_timer);
         bt_addr_set_empty(&manager->connecting_addr);
         manager->a2dp_conn_timer = NULL;
+        break;
     }
     default:
         break;
