@@ -77,50 +77,67 @@ typedef void (*bt_socket_callback_t)(void*, int, bt_instance_t*, bt_message_pack
 static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
     static const struct {
-        int start;
-        int end;
+        uint32_t start;
+        uint32_t end;
         bt_socket_callback_t callback;
     } callback_map[] = {
         { BT_ADAPTER_CALLBACK_START, BT_ADAPTER_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_adapter_callback },
+        { BT_IPC_CODE_CALLBACK_ADAPTER_BEGIN, BT_IPC_CODE_CALLBACK_ADAPTER_END, (bt_socket_callback_t)bt_socket_client_adapter_callback },
 #ifdef CONFIG_BLUETOOTH_HFP_AG
         { BT_HFP_AG_CALLBACK_START, BT_HFP_AG_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_hfp_ag_callback },
+        { BT_IPC_CODE_CALLBACK_HFP_AG_BEGIN, BT_IPC_CODE_CALLBACK_HFP_AG_END, (bt_socket_callback_t)bt_socket_client_hfp_ag_callback },
 #endif
 #ifdef CONFIG_BLUETOOTH_HFP_HF
         { BT_HFP_HF_CALLBACK_START, BT_HFP_HF_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_hfp_hf_callback },
+        { BT_IPC_CODE_CALLBACK_HFP_HF_BEGIN, BT_IPC_CODE_CALLBACK_HFP_HF_END, (bt_socket_callback_t)bt_socket_client_hfp_hf_callback },
 #endif
-#ifdef CONFIG_BLUETOOTH_A2DP
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
         { BT_A2DP_SINK_CALLBACK_START, BT_A2DP_SINK_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_a2dp_sink_callback },
+        { BT_IPC_CODE_CALLBACK_A2DP_SINK_BEGIN, BT_IPC_CODE_CALLBACK_A2DP_SINK_END, (bt_socket_callback_t)bt_socket_client_a2dp_sink_callback },
+#endif
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         { BT_A2DP_SOURCE_CALLBACK_START, BT_A2DP_SOURCE_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_a2dp_source_callback },
+        { BT_IPC_CODE_CALLBACK_A2DP_SRC_BEGIN, BT_IPC_CODE_CALLBACK_A2DP_SRC_END, (bt_socket_callback_t)bt_socket_client_a2dp_sink_callback },
 #endif
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
         { BT_AVRCP_TARGET_CALLBACK_START, BT_AVRCP_TARGET_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_avrcp_target_callback },
+        { BT_IPC_CODE_CALLBACK_AVRCP_TG_BEGIN, BT_IPC_CODE_CALLBACK_AVRCP_TG_END, (bt_socket_callback_t)bt_socket_client_avrcp_target_callback },
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
         { BT_ADVERTISER_CALLBACK_START, BT_ADVERTISER_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_advertiser_callback },
+        { BT_IPC_CODE_CALLBACK_BLE_ADVERTISER_BEGIN, BT_IPC_CODE_CALLBACK_BLE_ADVERTISER_END, (bt_socket_callback_t)bt_socket_client_advertiser_callback },
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
         { BT_SCAN_CALLBACK_START, BT_SCAN_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_scan_callback },
+        { BT_IPC_CODE_CALLBACK_BLE_SCAN_BEGIN, BT_IPC_CODE_CALLBACK_BLE_SCAN_END, (bt_socket_callback_t)bt_socket_client_scan_callback },
 #endif
 #ifdef CONFIG_BLUETOOTH_GATT
         { BT_GATT_CLIENT_CALLBACK_START, BT_GATT_CLIENT_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_gattc_callback },
+        { BT_IPC_CODE_CALLBACK_GATTC_BEGIN, BT_IPC_CODE_CALLBACK_GATTC_END, (bt_socket_callback_t)bt_socket_client_gattc_callback },
+
         { BT_GATT_SERVER_CALLBACK_START, BT_GATT_SERVER_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_gatts_callback },
+        { BT_IPC_CODE_CALLBACK_GATTS_BEGIN, BT_IPC_CODE_CALLBACK_GATTS_END, (bt_socket_callback_t)bt_socket_client_gatts_callback },
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
         { BT_SPP_CALLBACK_START, BT_SPP_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_spp_callback },
+        { BT_IPC_CODE_CALLBACK_SPP_BEGIN, BT_IPC_CODE_CALLBACK_SPP_END, (bt_socket_callback_t)bt_socket_client_spp_callback },
 #endif
 #ifdef CONFIG_BLUETOOTH_PAN
         { BT_PAN_CALLBACK_START, BT_PAN_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_pan_callback },
+        { BT_IPC_CODE_CALLBACK_PAN_BEGIN, BT_IPC_CODE_CALLBACK_PAN_END, (bt_socket_callback_t)bt_socket_client_pan_callback },
 #endif
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
         { BT_HID_DEVICE_CALLBACK_START, BT_HID_DEVICE_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_hid_device_callback },
+        { BT_IPC_CODE_CALLBACK_HID_DEV_BEGIN, BT_IPC_CODE_CALLBACK_HID_DEV_END, (bt_socket_callback_t)bt_socket_client_hid_device_callback },
 #endif
 #ifdef CONFIG_BLUETOOTH_L2CAP
         { BT_L2CAP_CALLBACK_START, BT_L2CAP_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_l2cap_callback },
+        { BT_IPC_CODE_CALLBACK_L2CAP_BEGIN, BT_IPC_CODE_CALLBACK_L2CAP_END, (bt_socket_callback_t)bt_socket_client_l2cap_callback },
 #endif
     };
 
     for (size_t i = 0; i < sizeof(callback_map) / sizeof(callback_map[0]); ++i) {
-        if (packet->code > callback_map[i].start && packet->code < callback_map[i].end) {
+        if (BT_IPC_CODE_CHECK_RANGE(packet->code, callback_map[i].start, callback_map[i].end)) {
             callback_map[i].callback(NULL, -1, ins, packet);
             return;
         }
