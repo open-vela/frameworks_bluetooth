@@ -118,9 +118,14 @@ static int get_latest_file_and_clean_others(char* out_latest_file, bool clean_fi
         }
 
         if (clean_files && file_stat.st_mtime > latest_time) {
-            remove(latest_file);
+            if (remove(latest_file) != 0) {
+                syslog(LOG_ERR, "remove snoop file fail:%d, %s", errno, latest_file);
+            }
+
         } else if (clean_files && latest_time != -1) {
-            remove(full_path);
+            if (remove(full_path) != 0) {
+                syslog(LOG_ERR, "remove snoop file fail:%d, %s", errno, full_path);
+            }
         }
 
         if (latest_time == -1 || file_stat.st_mtime > latest_time) {
