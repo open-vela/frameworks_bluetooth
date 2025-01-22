@@ -47,4 +47,5 @@ void euv_pipe_disconnect(euv_pipe_t* handle);
 int euv_pipe_write(euv_pipe_t* handle, uint8_t* buffer, int length, euv_write_cb cb);
 int euv_pipe_read_start(euv_pipe_t* handle, uint16_t read_size, euv_read_cb read_cb, euv_alloc_cb alloc_cb);
 int euv_pipe_read_stop(euv_pipe_t* handle);
+void euv_pipe_close2(euv_pipe_t* handle);
 #endif
