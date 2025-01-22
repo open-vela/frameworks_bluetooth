@@ -442,3 +442,25 @@ void euv_pipe_disconnect(euv_pipe_t* handle)
     handle->cli_pipe.data = handle;
     uv_close((uv_handle_t*)&handle->cli_pipe, euv_close_callback);
 }
+
+void euv_pipe_close2(euv_pipe_t* handle)
+{
+    euv_pipe_mode_t mode;
+
+    if (!handle) {
+        BT_LOGE("%s, invalid arg", __func__);
+        return;
+    }
+
+    if (handle->mode == EUV_PIPE_TYPE_SERVER_LOCAL) {
+        mode = EUV_PIPE_TYPE_SERVER_RPMSG;
+    } else if (handle->mode == EUV_PIPE_TYPE_SERVER_RPMSG) {
+        mode = EUV_PIPE_TYPE_SERVER_LOCAL;
+    } else {
+        BT_LOGE("%s, invalid mode", __func__);
+        return;
+    }
+
+    handle->srv_pipe[mode].data = NULL;
+    uv_close((uv_handle_t*)&handle->srv_pipe[mode], euv_close_callback);
+}

@@ -99,12 +99,20 @@ typedef struct {
     spp_handle_t* app_handle;
 } spp_server_t;
 
+typedef struct
+{
+    struct list_node node;
+    uint8_t* buffer;
+    uint16_t length;
+} spp_rx_buf_t;
+
 typedef struct {
     struct list_node node;
     spp_server_t* server;
     euv_pipe_t* handle;
     service_timer_t* timer;
     cache_buf_t cache_buf;
+    struct list_node rx_list;
     bool accept;
     bt_address_t addr;
     int16_t scn;
@@ -120,6 +128,7 @@ typedef struct {
     spp_handle_t* app_handle;
     /* connection state */
     profile_connection_state_t state;
+    spp_proxy_state_t proxy_state;
 } spp_device_t;
 
 typedef struct {
@@ -293,7 +302,9 @@ static spp_device_t* alloc_new_device(bt_address_t* addr, int16_t scn,
     device->rx_bytes = 0;
     device->remaining_quota = SENDING_BUFS_QUOTA;
     device->state = PROFILE_STATE_DISCONNECTED;
+    device->proxy_state = SPP_PROXY_STATE_DISCONNECTED;
     memcpy(&device->addr, addr, sizeof(bt_address_t));
+    list_initialize(&device->rx_list);
     list_add_tail(&g_spp_handle.devices, &device->node);
 
     return device;
@@ -369,11 +380,11 @@ static spp_device_t* spp_device_open(spp_device_t* device)
     sprintf(device->proxy_name, "%s-%d", SPP_PROXY_SERVER_PREF, device->scn);
     device->handle = euv_pipe_open(get_service_uv_loop(), device->proxy_name, spp_proxy_connection_callback, device);
     if (!device->handle) {
-        BT_LOGE("pipe create failed");
+        BT_LOGE("spp proxy open fail, proxy_name: %s", device->proxy_name);
         goto error;
     }
 
-    BT_LOGD("pipe create success, name: %s", device->proxy_name);
+    BT_LOGD("spp proxy open success, name: %s", device->proxy_name);
     return device;
 
 error:
@@ -542,16 +553,65 @@ unlock:
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
 }
 
+static void spp_rx_buffer_send(spp_device_t* device)
+{
+    struct list_node *node, *tmp;
+    spp_rx_buf_t* buf;
+
+    list_for_every_safe(&device->rx_list, node, tmp)
+    {
+        buf = (spp_rx_buf_t*)node;
+        device->rx_bytes += buf->length;
+        if (euv_pipe_write(device->handle, buf->buffer, buf->length, euv_write_complete) != 0) {
+            BT_LOGE("Spp write to slave port %d failed", device->conn_port);
+            break;
+        }
+        spp_dumpbuffer("master write:", buf->buffer, buf->length);
+        list_delete(node);
+        free(node);
+    }
+}
+
+static bool spp_rx_buffer_empty(spp_device_t* device)
+{
+    return list_is_empty(&device->rx_list);
+}
+
+static void spp_rx_buffer_cache(spp_device_t* device, uint8_t* buffer, uint16_t length)
+{
+    spp_rx_buf_t* rx_buf = (spp_rx_buf_t*)malloc(sizeof(spp_rx_buf_t));
+
+    if (!rx_buf) {
+        BT_LOGE("%s, malloc failed", __func__);
+        return;
+    }
+
+    rx_buf->buffer = buffer;
+    rx_buf->length = length;
+    list_add_tail(&device->rx_list, &rx_buf->node);
+}
+
 static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* user_data)
 {
     spp_device_t* device;
     int ret;
+
+    if (status < 0) {
+        BT_LOGE("%s,uv listen error: %d", __func__, status);
+        return;
+    }
+
+    /* close unsed pipe */
+    euv_pipe_close2(handle);
 
     device = find_spp_device_by_handle(handle);
     if (!device->handle) {
         BT_LOGE("%s, handle null", __func__);
         return;
     }
+
+    device->proxy_state = SPP_PROXY_STATE_CONNECTED;
+    spp_rx_buffer_send(device);
 
     ret = euv_pipe_read_start(device->handle, device->next_to_read, euv_read_complete, euv_alloc_buffer);
     if (ret != 0) {
@@ -695,8 +755,23 @@ static void spp_on_incoming_data_received(bt_address_t* addr, uint16_t port,
     int ret;
 
     device = find_spp_device_by_conn(SERVICE_CONN_ID(port));
-    if (!device || buffer == NULL)
+    if (!device || buffer == NULL) {
+        BT_LOGE("%s, port or address mismatch", __func__);
         return;
+    }
+
+    if (device->proxy_state != SPP_PROXY_STATE_CONNECTED) {
+        BT_LOGW("spp proxy cache, port: %d, buf:%p, length:%d", port, buffer, length);
+        spp_rx_buffer_cache(device, buffer, length);
+        return;
+    }
+
+    if (!spp_rx_buffer_empty(device)) {
+        BT_LOGW("spp proxy handle cache, port: %d, buf:%p, length:%d", port, buffer, length);
+        spp_rx_buffer_cache(device, buffer, length);
+        spp_rx_buffer_send(device);
+        return;
+    }
 
     spp_dumpbuffer("master write:", buffer, length);
     device->rx_bytes += length;
