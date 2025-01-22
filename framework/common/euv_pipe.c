@@ -143,6 +143,7 @@ static void euv_alloc_callback(uv_handle_t* handle, size_t size, uv_buf_t* buf)
 static void euv_read_callback(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 {
     euv_read_t* reader;
+    bool release;
 
     if (!stream->data) {
         BT_LOGE("%s, stream data null", __func__);
@@ -150,9 +151,14 @@ static void euv_read_callback(uv_stream_t* stream, ssize_t nread, const uv_buf_t
     }
 
     reader = (euv_read_t*)stream->data;
+    release = !reader->alloc_cb;
 
     if (reader->read_cb)
         reader->read_cb((euv_pipe_t*)stream, (const uint8_t*)buf->base, nread);
+
+    if (release) {
+        free(buf->base);
+    }
 }
 
 static void euv_write_callback(uv_write_t* req, int status)
