@@ -441,7 +441,7 @@ static void spp_disconnect(void* data)
 {
     spp_device_t* device;
     spp_cmd_t* msg = data;
-    bt_address_t addr;
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     device = find_device_by_port(msg->port);
     if (device == NULL) {
@@ -449,9 +449,9 @@ static void spp_disconnect(void* data)
         return;
     }
 
-    bt_addr_set_empty(&addr);
-    bt_spp_disconnect(msg->handle, spp_app_handle, &addr, msg->port);
-    PRINT("%s, port:%d disconnecting", __func__, msg->port);
+    bt_spp_disconnect(msg->handle, spp_app_handle, &msg->addr, msg->port);
+    bt_addr_ba2str(&msg->addr, addr_str);
+    PRINT("%s, address:%s port:%d disconnecting", __func__, addr_str, msg->port);
     free(data);
 }
 
@@ -466,6 +466,7 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
 
     msg->handle = handle;
     msg->port = atoi(argv[1]);
+    bt_addr_str2ba(argv[0], &msg->addr);
 
     PRINT("%s, address:%s port:%d", __func__, argv[0], msg->port);
     do_in_thread_loop(&spp_thread_loop, spp_disconnect, msg);
