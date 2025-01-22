@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bt_config.h"
 #include "bt_list.h"
 #include "bt_spp.h"
 #include "bt_tools.h"
