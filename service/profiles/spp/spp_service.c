@@ -1140,6 +1140,12 @@ static bt_status_t spp_disconnect(void* handle, bt_address_t* addr, uint16_t por
         goto unlock_exit;
     }
 
+    if (bt_addr_compare(&device->addr, addr)) {
+        ret = BT_STATUS_DEVICE_NOT_FOUND;
+        BT_LOGE("%s, addr not match", __func__);
+        goto unlock_exit;
+    }
+
     device->state = PROFILE_STATE_DISCONNECTING;
     bt_sal_spp_disconnect(device->conn_port);
 
