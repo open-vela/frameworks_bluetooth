@@ -23,6 +23,7 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "bt_config.h"
 #include "bt_debug.h"
 #include "euv_pipe.h"
 #include "uv.h"
