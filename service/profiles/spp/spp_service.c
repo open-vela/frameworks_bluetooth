@@ -377,7 +377,7 @@ static spp_device_t* spp_device_open(spp_device_t* device)
         return NULL;
     }
 
-    sprintf(device->proxy_name, "%s-%d", SPP_PROXY_SERVER_PREF, device->scn);
+    sprintf(device->proxy_name, "%s-%d", SPP_PROXY_SERVER_PREF, device->conn_id);
     device->handle = euv_pipe_open(get_service_uv_loop(), device->proxy_name, spp_proxy_connection_callback, device);
     if (!device->handle) {
         BT_LOGE("spp proxy open fail, proxy_name: %s", device->proxy_name);

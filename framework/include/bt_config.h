@@ -15,7 +15,6 @@
 
 #elif defined(ANDROID)
 
-#define CONFIG_NET_RPMSG 1
 #define CONFIG_LIB_BLUELET 1
 #define CONFIG_QBUF_COUNT 20
 #define CONFIG_BREDR 1
@@ -95,9 +94,19 @@
 #define CONFIG_BLUETOOTH_TOOLS 1
 #define CONFIG_BLUETOOTH_VENDOR_BES 1
 
+// Socket: via RPMsg
+#define CONFIG_NET_RPMSG 1
+
 // Socket: via IPv4
 //#define CONFIG_NET_IPv4 1
+//#define CONFIG_BLUETOOTH_NET_IPv4 1
 #define CONFIG_INADDR_LOOPBACK 0x0A000202
+
+// SPP via RPMsg UART "/dev/ttyDROID"
+//#define CONFIG_RPMSG_UART 1
+
+// SPP via RPMsg socket/pipe
+#define CONFIG_BLUETOOTH_SPP_RPMSG_NET 1
 
 /********************* O95 Project Only *********************/
 #if defined(ANDROID_12)
