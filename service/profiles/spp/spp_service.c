@@ -442,8 +442,10 @@ static void spp_app_cleanup_servers(spp_handle_t* app)
     list_for_every_safe(&g_spp_handle.servers, node, tmp)
     {
         server = (spp_server_t*)node;
-        if (server->app_handle == app)
+        if (server->app_handle == app) {
+            bt_sal_spp_server_stop(STACK_SVR_PORT(server->scn));
             free_server_resource(server);
+        }
     }
 }
 
