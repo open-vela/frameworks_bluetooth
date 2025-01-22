@@ -47,18 +47,13 @@ extern "C" {
 #define BT_UUID_SERVCLASS_SERIAL_PORT 0x1101
 
 /**
- * @brief Spp pty mode
+ * @brief Spp proxy state
  *
  */
 typedef enum {
-    SPP_PTY_MODE_NORMAL,
-    SPP_PTY_MODE_RAW
-} spp_pty_mode_t;
-
-typedef enum {
-    SPP_PORT_TYPE_TTY,
-    SPP_PORT_TYPE_RPMSG_UART,
-} spp_port_type_t;
+    SPP_PROXY_STATE_CONNECTED,
+    SPP_PROXY_STATE_DISCONNECTED,
+} spp_proxy_state_t;
 
 /**
  * @endcond
@@ -124,6 +119,17 @@ void spp_pty_open_cb(void* handle, bt_address_t* addr, uint16_t scn, uint16_t po
 typedef void (*spp_pty_open_callback)(void* handle, bt_address_t* addr, uint16_t scn, uint16_t port, char* name);
 
 /**
+ * @brief Spp proxy state notification
+ *
+ * @param handle - spp app handle, the return value of bt_spp_register_app.
+ * @param addr - address of peer device.
+ * @param scn - server channel number, range in <1-28>.
+ * @param port - unique port of connection.
+ * @param name - proxy name, like "btspp-srv0"
+ */
+typedef void (*spp_proxy_state_callback)(void* handle, bt_address_t* addr, spp_proxy_state_t state, uint16_t scn, uint16_t port, char* name);
+
+/**
  * @cond
  */
 
@@ -132,8 +138,9 @@ typedef void (*spp_pty_open_callback)(void* handle, bt_address_t* addr, uint16_t
  */
 typedef struct {
     size_t size;
-    spp_pty_open_callback pty_open_cb;
+    spp_pty_open_callback pty_open_cb; /* [deprecated] */
     spp_connection_state_callback connection_state_cb;
+    spp_proxy_state_callback proxy_state_cb;
 } spp_callbacks_t;
 
 /**
@@ -222,7 +229,17 @@ void app_init_spp_2(bt_instance_t* ins)
 void* BTSYMBOLS(bt_spp_register_app_ext)(bt_instance_t* ins, const char* name, int port_type, const spp_callbacks_t* callbacks);
 
 /**
- * @brief Unregister SPP service for applications.
+ * @brief Register spp app with name
+ *
+ * @param ins - bluetooth client instance.
+ * @param name - spp app name.
+ * @param callbacks - spp callback functions.
+ * @return void* - spp app handle, NULL on failure.
+ */
+void* BTSYMBOLS(bt_spp_register_app_with_name)(bt_instance_t* ins, const char* name, const spp_callbacks_t* callbacks);
+
+/**
+ * @brief Unregister spp app
  *
  * This function is used to unregister the SPP service for an application. Before
  * using this function, the application should have completed registration

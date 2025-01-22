@@ -68,18 +68,19 @@
 #include "service_manager.h"
 #include "spp_service.h"
 
-static void spp_pty_open_cb(void* handle, bt_address_t* addr, uint16_t scn, uint16_t port, char* name)
+static void spp_proxy_state_cb(void* handle, bt_address_t* addr, spp_proxy_state_t state, uint16_t scn, uint16_t port, char* name)
 {
     bt_message_packet_t packet = { 0 };
     bt_instance_t* ins = handle;
 
-    memcpy(&packet.spp_cb._pty_open_cb.addr, addr, sizeof(*addr));
-    packet.spp_cb._pty_open_cb.scn = scn;
-    packet.spp_cb._pty_open_cb.port = port;
+    memcpy(&packet.spp_cb._proxy_state_cb.addr, addr, sizeof(*addr));
+    packet.spp_cb._proxy_state_cb.state = state;
+    packet.spp_cb._proxy_state_cb.scn = scn;
+    packet.spp_cb._proxy_state_cb.port = port;
     if (name && strlen(name))
-        strncpy(packet.spp_cb._pty_open_cb.name, name, sizeof(packet.spp_cb._pty_open_cb.name) - 1);
+        strncpy(packet.spp_cb._proxy_state_cb.name, name, sizeof(packet.spp_cb._proxy_state_cb.name) - 1);
 
-    bt_socket_server_send(ins, &packet, BT_SPP_PTY_OPEN_CB);
+    bt_socket_server_send(ins, &packet, BT_SPP_PROXY_STATE_CB);
 }
 
 static void spp_connection_state_cb(void* handle, bt_address_t* addr,
@@ -97,9 +98,9 @@ static void spp_connection_state_cb(void* handle, bt_address_t* addr,
     bt_socket_server_send(ins, &packet, BT_SPP_CONNECTION_STATE_CB);
 }
 static spp_callbacks_t g_spp_socket_cb = {
-    sizeof(g_spp_socket_cb),
-    spp_pty_open_cb,
-    spp_connection_state_cb,
+    .size = sizeof(g_spp_socket_cb),
+    .connection_state_cb = spp_connection_state_cb,
+    .proxy_state_cb = spp_proxy_state_cb,
 };
 
 /****************************************************************************
@@ -114,8 +115,7 @@ void bt_socket_server_spp_process(service_poll_t* poll,
     switch (packet->code) {
     case BT_SPP_REGISTER_APP: {
         if (ins->spp_cookie == NULL) {
-            ins->spp_cookie = profile->register_app(ins, packet->spp_pl._bt_spp_register_app.name_len ? packet->spp_pl._bt_spp_register_app.name : NULL,
-                packet->spp_pl._bt_spp_register_app.port_type, &g_spp_socket_cb);
+            ins->spp_cookie = profile->register_app(ins, packet->spp_pl._bt_spp_register_app.name_len ? packet->spp_pl._bt_spp_register_app.name : NULL, &g_spp_socket_cb);
             packet->spp_r.handle = PTR2INT(uint64_t) ins->spp_cookie;
         } else {
             packet->spp_r.handle = 0;
@@ -186,18 +186,19 @@ int bt_socket_client_spp_callback(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet)
 {
     switch (packet->code) {
-    case BT_SPP_PTY_OPEN_CB: {
-        char* name = packet->spp_cb._pty_open_cb.name;
+    case BT_SPP_PROXY_STATE_CB: {
+        char* name = packet->spp_cb._proxy_state_cb.name;
 #if !defined(CONFIG_BLUETOOTH_SERVER) && defined(CONFIG_BLUETOOTH_RPMSG_CPUNAME)
         char rename[64];
         if (rpmsg_tty_mount_path(name, rename, 64, CONFIG_BLUETOOTH_RPMSG_CPUNAME))
             name = rename;
 #endif
         CALLBACK_FOREACH(CBLIST, spp_callbacks_t,
-            pty_open_cb,
-            &packet->spp_cb._pty_open_cb.addr,
-            packet->spp_cb._pty_open_cb.scn,
-            packet->spp_cb._pty_open_cb.port,
+            proxy_state_cb,
+            &packet->spp_cb._proxy_state_cb.addr,
+            packet->spp_cb._proxy_state_cb.state,
+            packet->spp_cb._proxy_state_cb.scn,
+            packet->spp_cb._proxy_state_cb.port,
             name);
         break;
     }
