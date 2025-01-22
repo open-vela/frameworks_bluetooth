@@ -261,6 +261,11 @@ config BLUETOOTH_SPP_MAX_CONNECTIONS
 config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
 	int "SPP server max connections"
 	default 8
+
+config BLUETOOTH_SPP_RPMSG_NET
+	bool "SPP rpmsg net support"
+	default n
+	depends on NET_RPMSG
 endif
 
 config BLUETOOTH_HID_DEVICE
