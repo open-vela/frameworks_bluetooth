@@ -438,6 +438,11 @@ void euv_pipe_close(euv_pipe_t* handle)
         return;
     }
 
+    if (uv_is_closing((uv_handle_t*)&handle->srv_pipe[handle->mode])) {
+        BT_LOGE("%s, uv_is_closing", __func__);
+        return;
+    }
+
     euv_pipe_disconnect(handle);
 
     handle->srv_pipe[handle->mode].data = handle;
@@ -448,6 +453,11 @@ void euv_pipe_disconnect(euv_pipe_t* handle)
 {
     if (!handle) {
         BT_LOGE("%s, invalid arg", __func__);
+        return;
+    }
+
+    if (uv_is_closing((uv_handle_t*)&handle->cli_pipe)) {
+        BT_LOGE("%s, uv_is_closing", __func__);
         return;
     }
 
@@ -470,6 +480,11 @@ void euv_pipe_close2(euv_pipe_t* handle)
         mode = EUV_PIPE_TYPE_SERVER_LOCAL;
     } else {
         BT_LOGE("%s, invalid mode", __func__);
+        return;
+    }
+
+    if (uv_is_closing((uv_handle_t*)&handle->srv_pipe[mode])) {
+        BT_LOGE("%s, uv_is_closing", __func__);
         return;
     }
 
