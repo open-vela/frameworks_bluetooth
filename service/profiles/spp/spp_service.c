@@ -558,6 +558,7 @@ static void spp_rx_buffer_send(spp_device_t* device)
     struct list_node *node, *tmp;
     spp_rx_buf_t* buf;
 
+    BT_LOGD("spp_rx_buffer_send, rx_list: %d, rx_bytes: %" PRIu32 "", list_length(&device->rx_list), device->rx_bytes);
     list_for_every_safe(&device->rx_list, node, tmp)
     {
         buf = (spp_rx_buf_t*)node;
@@ -566,7 +567,7 @@ static void spp_rx_buffer_send(spp_device_t* device)
             BT_LOGE("Spp write to slave port %d failed", device->conn_port);
             break;
         }
-        spp_dumpbuffer("master write:", buf->buffer, buf->length);
+        spp_dumpbuffer("master buffer write:", buf->buffer, buf->length);
         list_delete(node);
         free(node);
     }
@@ -610,6 +611,7 @@ static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* 
         return;
     }
 
+    BT_LOGD("spp proxy connected, status: %d", status);
     device->proxy_state = SPP_PROXY_STATE_CONNECTED;
     spp_rx_buffer_send(device);
 
