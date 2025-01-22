@@ -352,6 +352,8 @@ euv_pipe_t* euv_pipe_open(uv_loop_t* loop, const char* server_path, euv_connect_
         return NULL;
     }
 
+    handle->mode = EUV_PIPE_TYPE_UNKNOWN;
+
     creq = (euv_connect_t*)zalloc(sizeof(euv_connect_t));
     if (!creq) {
         BT_LOGE("%s, zalloc creq fail", __func__);
@@ -423,6 +425,15 @@ void euv_pipe_close(euv_pipe_t* handle)
 {
     if (!handle) {
         BT_LOGE("%s, invalid arg", __func__);
+        return;
+    }
+
+    if (handle->mode == EUV_PIPE_TYPE_UNKNOWN) {
+        BT_LOGE("%s, unkown mode", __func__);
+        handle->srv_pipe[EUV_PIPE_TYPE_SERVER_LOCAL].data = handle;
+        uv_close((uv_handle_t*)&handle->srv_pipe[EUV_PIPE_TYPE_SERVER_LOCAL], euv_close_callback);
+        handle->srv_pipe[EUV_PIPE_TYPE_SERVER_RPMSG].data = NULL;
+        uv_close((uv_handle_t*)&handle->srv_pipe[EUV_PIPE_TYPE_SERVER_RPMSG], euv_close_callback);
         return;
     }
 

@@ -19,6 +19,7 @@
 #include "uv.h"
 
 typedef enum {
+    EUV_PIPE_TYPE_UNKNOWN = -1,
     EUV_PIPE_TYPE_SERVER_LOCAL,
     EUV_PIPE_TYPE_SERVER_RPMSG,
     EUV_PIPE_TYPE_CLIENT_LOCAL,
