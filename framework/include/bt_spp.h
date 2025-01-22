@@ -119,13 +119,29 @@ void spp_pty_open_cb(void* handle, bt_address_t* addr, uint16_t scn, uint16_t po
 typedef void (*spp_pty_open_callback)(void* handle, bt_address_t* addr, uint16_t scn, uint16_t port, char* name);
 
 /**
- * @brief Spp proxy state notification
+ * @brief Callback used to notify SPP proxy states.
  *
- * @param handle - spp app handle, the return value of bt_spp_register_app.
- * @param addr - address of peer device.
- * @param scn - server channel number, range in <1-28>.
- * @param port - unique port of connection.
- * @param name - proxy name, like "btspp-srv0"
+ * When the SPP proxy state changes, this callback will be triggered. The SPP
+ * proxy states include CONNECTED and DISCONNECTED. After the callback is triggered,
+ * the application will be notified with the APP handle corresponding to the SPP
+ * proxy state, the Bluetooth address of the peer device, the server channel number
+ * used for the SPP connection, the SPP connection port, and the latest SPP proxy
+ * state.
+ *
+ * @param handle - SPP APP handle, the return value of bt_spp_register_app.
+ * @param addr - The Bluetooth address of the peer device.
+ * @param state - SPP proxy state.
+ * @param scn - Server channel number, range in 1-28.
+ * @param port - The unique port of connection.
+ * @param name - Proxy name, like "btspp-srv0"
+ *
+ * **Example:**
+ * @code
+void spp_proxy_state_cb(void* handle, bt_address_t* addr, spp_proxy_state_t state, uint16_t scn, uint16_t port, char* name)
+{
+    printf("spp_proxy_state_cb, state: %d, scn: %d, port: %d, name: %s\n", state, scn, port, name);
+}
+ * @endcode
  */
 typedef void (*spp_proxy_state_callback)(void* handle, bt_address_t* addr, spp_proxy_state_t state, uint16_t scn, uint16_t port, char* name);
 
@@ -229,17 +245,49 @@ void app_init_spp_2(bt_instance_t* ins)
 void* BTSYMBOLS(bt_spp_register_app_ext)(bt_instance_t* ins, const char* name, int port_type, const spp_callbacks_t* callbacks);
 
 /**
- * @brief Register spp app with name
+ * @brief Register an SPP service with specified parameters for applications.
  *
- * @param ins - bluetooth client instance.
- * @param name - spp app name.
- * @param callbacks - spp callback functions.
- * @return void* - spp app handle, NULL on failure.
+ * The application can register the SPP service with the specified name and port
+ * type used in the SPP service through this function. Before using this function,
+ * the application should prepare callback functions for receiving SPP connection
+ * states notifications and SPP proxy states notifications or PTY open information
+ * notifications to register the service. After calling this function, the application
+ * will obtain a handle to identify the application entity in the SPP service, which
+ * will be used for the SPP service to find the corresponding application.
+ *
+ * @note It should be noted that the callback used for PTY open is not recommended, the
+ *       callback used for SPP proxy states is recommended.
+ *
+ * @param ins - Bluetooth client instance.
+ * @param callbacks - SPP callback functions.
+ * @param name - SPP application name.
+ * @return void* - SPP application handle, NULL represents fail.
+ *
+ * **Example:**
+ * @code
+void* spp_handle;
+const static spp_callbacks_t callbacks = {
+    .size = sizeof(spp_callbacks_t),
+    .connection_state_cb = spp_connection_state_cb,
+    .spp_proxy_state_cb = spp_proxy_state_cb,
+};
+
+void app_init_spp_3(bt_instance_t* ins)
+{
+    char* name = "spp_app_name";
+
+    spp_handle = bt_spp_register_app_with_name(ins, name, &callbacks);
+    if(!spp_handle)
+        printf("register spp app failed\n");
+    else
+        printf("register spp app success\n");
+}
+ * @endcode
  */
 void* BTSYMBOLS(bt_spp_register_app_with_name)(bt_instance_t* ins, const char* name, const spp_callbacks_t* callbacks);
 
 /**
- * @brief Unregister spp app
+ * @brief Unregister SPP service for applications.
  *
  * This function is used to unregister the SPP service for an application. Before
  * using this function, the application should have completed registration
@@ -281,8 +329,8 @@ bt_status_t BTSYMBOLS(bt_spp_unregister_app)(bt_instance_t* ins, void* handle);
  * on other devices.
  *
  * @param ins - Bluetooth client instance.
- * @param handle - SPP application handle.
- * @param scn - Server channel number, range in 1-28.
+ * @param handle - SPP APP handle.
+ * @param scn - Server channel number, range in <1-28>.
  * @param uuid - Server uuid, default:0x1101.
  * @param max_connection - Maximum of client connections.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
@@ -319,8 +367,8 @@ bt_status_t BTSYMBOLS(bt_spp_server_start)(bt_instance_t* ins, void* handle, uin
  * will have stopped the SPP server.
  *
  * @param ins - Bluetooth client instance.
- * @param handle - SPP application handle.
- * @param scn - Server channel number, range in 1-28.
+ * @param handle - SPP APP handle.
+ * @param scn - Server channel number, range in <1-28>.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  *
  * **Example:**
@@ -351,9 +399,9 @@ bt_status_t BTSYMBOLS(bt_spp_server_stop)(bt_instance_t* ins, void* handle, uint
  * an SPP connection will be established with the remote device.
  *
  * @param[in] ins - Bluetooth client instance.
- * @param[in] handle - SPP application handle.
- * @param[in] addr - The Bluetooth address of the peer device.
- * @param[in] scn - Server channel number, range in 1-28.
+ * @param[in] handle - SPP APP handle.
+ * @param[in] addr - address of peer device.
+ * @param[in] scn - Server channel number, range in <1-28>.
  *                - UNKNOWN_SERVER_CHANNEL_NUM: Not specify scn.
  * @param[in] uuid - Server uuid, default:0x1101.
  * @param[out] port - The unique port of connection.
