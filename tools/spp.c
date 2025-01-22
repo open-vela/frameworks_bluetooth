@@ -20,12 +20,12 @@
 #include "bt_spp.h"
 #include "bt_tools.h"
 #include "bt_uuid.h"
-#include "euv_pty.h"
+#include "euv_pipe.h"
 #include "uv_thread_loop.h"
 
 typedef struct {
     struct list_node node;
-    euv_pty_t* pty;
+    euv_pipe_t* pipe;
     int fd;
     int port;
 } spp_device_t;
@@ -99,7 +99,7 @@ static void usage(void)
     }
 }
 
-static spp_device_t* find_pty_by_port(int port)
+static spp_device_t* find_device_by_port(int port)
 {
     struct list_node* list = &device_list;
     struct list_node* node;
@@ -117,7 +117,7 @@ static spp_device_t* find_pty_by_port(int port)
     return NULL;
 }
 
-static spp_device_t* find_pty_by_handle(void* handle)
+static spp_device_t* find_device_by_handle(void* handle)
 {
     struct list_node* list = &device_list;
     struct list_node* node;
@@ -126,7 +126,7 @@ static spp_device_t* find_pty_by_handle(void* handle)
     list_for_every(list, node)
     {
         device = (spp_device_t*)node;
-        if (device->pty == handle) {
+        if (device->pipe == handle) {
             return device;
         }
     }
@@ -135,13 +135,13 @@ static spp_device_t* find_pty_by_handle(void* handle)
     return NULL;
 }
 
-static void bulk_trans_complete(euv_pty_t* handle, uint8_t* buf, int status)
+static void bulk_trans_complete(euv_pipe_t* handle, uint8_t* buf, int status)
 {
     transmit_context_t* ctx = &trans_ctx;
 
     ctx->bulk_count--;
     if (ctx->bulk_count)
-        euv_pty_write(handle, buf, ctx->bulk_length, bulk_trans_complete);
+        euv_pipe_write(handle, buf, ctx->bulk_length, bulk_trans_complete);
     else
         free(buf);
 }
@@ -170,7 +170,7 @@ static void speed_test_start(void* cmd)
 
     free(msg);
 
-    device = find_pty_by_port(port);
+    device = find_device_by_port(port);
     if (!device)
         return;
 
@@ -178,7 +178,7 @@ static void speed_test_start(void* cmd)
         PRINT("spp is testing");
         return;
     }
-    ctx->handle = device->pty;
+    ctx->handle = device->pipe;
     ctx->state = TRANS_SENDING;
     ctx->bulk_length = 990;
     ctx->bulk_count = times;
@@ -186,11 +186,11 @@ static void speed_test_start(void* cmd)
 
     memset(start, 0, sizeof(start));
     sprintf((char*)start, "START:%" PRIu32 ";", ctx->trans_total_size);
-    euv_pty_write(device->pty, start, strlen((const char*)start), NULL);
+    euv_pipe_write(device->pipe, start, strlen((const char*)start), NULL);
     PRINT("transmit start, waiting for %" PRIu32 " bytes transmit done", ctx->trans_total_size);
 }
 
-static void spp_data_received(euv_pty_t* handle, const uint8_t* buf, ssize_t size)
+static void spp_data_received(euv_pipe_t* handle, const uint8_t* buf, ssize_t size)
 {
     transmit_context_t* ctx = &trans_ctx;
 
@@ -207,7 +207,7 @@ static void spp_data_received(euv_pty_t* handle, const uint8_t* buf, ssize_t siz
             ctx->state = TRANS_RECVING;
             sscanf((const char*)buf, "START:%" PRIu32 ";", &ctx->trans_total_size);
             PRINT("receive start, waiting for %" PRIu32 " bytes transmit done", ctx->trans_total_size);
-            euv_pty_write(handle, (uint8_t*)TRANS_START_ACK, strlen(TRANS_START_ACK), NULL);
+            euv_pipe_write(handle, (uint8_t*)TRANS_START_ACK, strlen(TRANS_START_ACK), NULL);
             ctx->start_timestamp = get_timestamp_msec();
         } else
             lib_dumpbuffer("spp read", buf, size);
@@ -222,7 +222,7 @@ static void spp_data_received(euv_pty_t* handle, const uint8_t* buf, ssize_t siz
             ctx->bulk_buf = malloc(ctx->bulk_length);
             memset(ctx->bulk_buf, 0xA5, ctx->bulk_length);
             ctx->start_timestamp = get_timestamp_msec();
-            euv_pty_write(handle, ctx->bulk_buf, ctx->bulk_length, bulk_trans_complete);
+            euv_pipe_write(handle, ctx->bulk_buf, ctx->bulk_length, bulk_trans_complete);
         }
         break;
     case TRANS_RECVING:
@@ -230,7 +230,7 @@ static void spp_data_received(euv_pty_t* handle, const uint8_t* buf, ssize_t siz
         if (ctx->received_size >= ctx->trans_total_size) {
             ctx->end_timestamp = get_timestamp_msec();
             show_result(ctx->start_timestamp, ctx->end_timestamp, ctx->trans_total_size);
-            euv_pty_write(handle, (uint8_t*)TRANS_EOF, 4, NULL);
+            euv_pipe_write(handle, (uint8_t*)TRANS_EOF, 4, NULL);
             spp_trans_reset();
         }
         break;
@@ -239,19 +239,19 @@ static void spp_data_received(euv_pty_t* handle, const uint8_t* buf, ssize_t siz
     }
 }
 
-static void pty_read_cb(euv_pty_t* handle, const uint8_t* buf, ssize_t size)
+static void spp_read_cb(euv_pipe_t* handle, const uint8_t* buf, ssize_t size)
 {
     if (size > 0)
         spp_data_received(handle, buf, size);
     else if (size < 0) {
         PRINT("%s read failed, status:%d", __func__, (int)size);
-        euv_pty_read_stop(handle);
-        spp_device_t* device = find_pty_by_handle(handle);
+        euv_pipe_read_stop(handle);
+        spp_device_t* device = find_device_by_handle(handle);
         if (device == NULL)
             return;
 
-        euv_pty_close(device->pty);
-        device->pty = NULL;
+        euv_pipe_disconnect(device->pipe);
+        device->pipe = NULL;
         list_delete(&device->node);
         free(device);
     }
@@ -261,12 +261,12 @@ static void check_resource_release(uint16_t port)
 {
     spp_device_t* device;
 
-    device = find_pty_by_port(port);
+    device = find_device_by_port(port);
     if (device == NULL)
         return;
 
-    euv_pty_close(device->pty);
-    device->pty = NULL;
+    euv_pipe_disconnect(device->pipe);
+    device->pipe = NULL;
     list_delete(&device->node);
     free(device);
 }
@@ -306,34 +306,51 @@ static void connection_state_callback(void* handle, bt_address_t* addr, uint16_t
     do_in_thread_loop(&spp_thread_loop, connection_state_process, (void*)msg);
 }
 
-static void pty_open_process(void* data)
+static void proxy_connect_callback(euv_pipe_t* handle, int status, void* user_data)
 {
-    spp_cmd_t* msg = data;
-    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    spp_device_t* device;
 
-    int fd = open(msg->name, O_RDWR | O_NOCTTY | O_CLOEXEC);
-    if (fd < 0)
-        return;
+    PRINT("%s", __func__);
+
+    device = user_data;
+    list_add_tail(&device_list, &device->node);
+
+    euv_pipe_read_start(handle, 2048, spp_read_cb, NULL);
+}
+
+static void spp_open_process(void* data)
+{
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    spp_cmd_t* msg = data;
+    spp_device_t* device;
 
     bt_addr_ba2str(&msg->addr, addr_str);
+    PRINT("%s addr:%s, scn:%d, port: %d, name: %s", __func__, addr_str, msg->scn, msg->port, msg->name);
 
-    PRINT("%s addr:%s, scn:%d, port: %d, name:%s, slave fd:%d", __func__, addr_str, msg->scn, msg->port, msg->name, fd);
-    spp_device_t* device = malloc(sizeof(spp_device_t));
-    device->fd = fd;
-    device->port = msg->port;
-    free(msg);
-    device->pty = euv_pty_init(&spp_thread_loop, fd, UV_TTY_MODE_IO);
-    if (device->pty == NULL) {
-        free(device);
-        PRINT("%s pty init error", __func__);
+    device = zalloc(sizeof(spp_device_t));
+    if (!device) {
+        PRINT("%s, device not exist", __func__);
         return;
     }
 
-    list_add_tail(&device_list, &device->node);
-    euv_pty_read_start(device->pty, 2048, pty_read_cb);
+    device->port = msg->port;
+
+#ifdef CONFIG_BLUETOOTH_SPP_RPMSG_NET
+    device->pipe = euv_rpmsg_pipe_connect(&spp_thread_loop, msg->name, CONFIG_BLUETOOTH_RPMSG_CPUNAME, proxy_connect_callback, device);
+#else
+    device->pipe = euv_pipe_connect(&spp_thread_loop, msg->name, proxy_connect_callback, device);
+#endif
+    if (!device->pipe) {
+        PRINT("%s, pipe connect failed", __func__);
+        free(msg);
+        free(device);
+        return;
+    }
+
+    free(msg);
 }
 
-static void pty_open_callback(void* handle, bt_address_t* addr, uint16_t scn, uint16_t port, char* name)
+static void proxy_state_callback(void* handle, bt_address_t* addr, spp_proxy_state_t state, uint16_t scn, uint16_t port, char* name)
 {
     spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
     if (!msg)
@@ -345,7 +362,11 @@ static void pty_open_callback(void* handle, bt_address_t* addr, uint16_t scn, ui
     msg->port = port;
     msg->name = strdup(name);
 
-    do_in_thread_loop(&spp_thread_loop, pty_open_process, (void*)msg);
+    if (state == SPP_PROXY_STATE_CONNECTED) {
+        do_in_thread_loop(&spp_thread_loop, spp_open_process, (void*)msg);
+    } else if (state == SPP_PROXY_STATE_DISCONNECTED) {
+        PRINT("%s, spp proxy disconnected", __func__);
+    }
 }
 
 static int start_server_cmd(void* handle, int argc, char* argv[])
@@ -421,7 +442,7 @@ static void spp_disconnect(void* data)
     spp_cmd_t* msg = data;
     bt_address_t addr;
 
-    device = find_pty_by_port(msg->port);
+    device = find_device_by_port(msg->port);
     if (device == NULL) {
         free(data);
         return;
@@ -451,7 +472,7 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
-static void write_complete(euv_pty_t* handle, uint8_t* buf, int status)
+static void write_complete(euv_pipe_t* handle, uint8_t* buf, int status)
 {
     free(buf);
 }
@@ -461,16 +482,16 @@ static void spp_write(void* data)
     spp_device_t* device;
     spp_cmd_t* msg = data;
 
-    device = find_pty_by_port(msg->port);
+    device = find_device_by_port(msg->port);
     if (!device)
         goto error;
 
-    if (trans_ctx.handle == device->pty) {
+    if (trans_ctx.handle == device->pipe) {
         PRINT("spp is testing");
         goto error;
     }
 
-    euv_pty_write(device->pty, msg->buf, msg->len, write_complete);
+    euv_pipe_write(device->pipe, msg->buf, msg->len, write_complete);
     free(msg);
     return;
 
@@ -542,9 +563,9 @@ static int dump_cmd(void* handle, int argc, char* argv[])
 }
 
 static spp_callbacks_t spp_cbs = {
-    sizeof(spp_callbacks_t),
-    pty_open_callback,
-    connection_state_callback,
+    .size = sizeof(spp_callbacks_t),
+    .proxy_state_cb = proxy_state_callback,
+    .connection_state_cb = connection_state_callback,
 };
 
 int spp_command_init(void* handle)
@@ -552,7 +573,7 @@ int spp_command_init(void* handle)
     sem_init(&spp_send_sem, 0, 0);
     thread_loop_init(&spp_thread_loop);
     thread_loop_run(&spp_thread_loop, true, "spp_client");
-    spp_app_handle = bt_spp_register_app_ext(handle, "bttool", SPP_PORT_TYPE_TTY, &spp_cbs);
+    spp_app_handle = bt_spp_register_app_with_name(handle, "btool", &spp_cbs);
 
     return 0;
 }
