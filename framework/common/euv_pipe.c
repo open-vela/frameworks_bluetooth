@@ -209,13 +209,20 @@ int euv_pipe_read_stop(euv_pipe_t* handle)
         return -EINVAL;
     }
 
+    if (!uv_is_active((uv_handle_t*)&handle->cli_pipe)) {
+        BT_LOGW("%s, cli_pipe is inactive", __func__);
+        return 0;
+    }
+
+    if (uv_is_closing((uv_handle_t*)&handle->cli_pipe)) {
+        BT_LOGE("%s, uv_is_closing", __func__);
+        return 0;
+    }
+
     free(handle->cli_pipe.data);
     handle->cli_pipe.data = NULL;
 
-    if (uv_is_active((uv_handle_t*)&handle->cli_pipe))
-        return uv_read_stop((uv_stream_t*)&handle->cli_pipe);
-
-    return 0;
+    return uv_read_stop((uv_stream_t*)&handle->cli_pipe);
 }
 
 int euv_pipe_write(euv_pipe_t* handle, uint8_t* buffer, int length, euv_write_cb cb)
@@ -466,6 +473,8 @@ void euv_pipe_disconnect(euv_pipe_t* handle)
         BT_LOGE("%s, uv_is_closing", __func__);
         return;
     }
+
+    euv_pipe_read_stop(handle);
 
     handle->cli_pipe.data = handle;
     uv_close((uv_handle_t*)&handle->cli_pipe, euv_close_callback);
