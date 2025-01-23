@@ -58,7 +58,7 @@ typedef enum {
 struct zblue_a2dp_info_t {
     struct bt_a2dp* a2dp;
     struct bt_conn* conn;
-    struct bt_a2dp_stream stream;
+    struct bt_a2dp_stream* stream;
     bt_address_t bd_addr;
     struct bt_a2dp_ep* selected_peer_endpoint;
     bt_list_t* peer_endpoint;
@@ -635,6 +635,11 @@ static void a2dp_info_destroy(void* data)
     if (a2dp_info->selected_peer_endpoint)
         a2dp_peer_endpoint_destroy(a2dp_info->selected_peer_endpoint);
 
+    if (a2dp_info->stream) {
+        free(a2dp_info->stream);
+        a2dp_info->stream = NULL;
+    }
+
     free(data);
 }
 
@@ -963,6 +968,10 @@ static void bt_a2dp_stream_released(struct bt_a2dp_stream* stream)
         bt_sal_a2dp_sink_event_callback(a2dp_event_new(DISCONNECTED_EVT, &a2dp_info->bd_addr));
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
     }
+
+    free(a2dp_info->stream);
+    a2dp_info->stream = NULL;
+
     if (a2dp_info->disconnecting == true && flag_isset(a2dp_info, A2DP_STATE_BIT_SIG_CONN)) {
         bt_a2dp_disconnect(a2dp_info->a2dp);
         return;
@@ -1089,7 +1098,7 @@ static bt_status_t bt_a2dp_set_config(struct zblue_a2dp_info_t* a2dp_info, struc
             continue;
         }
 
-        bt_a2dp_stream_config(a2dp_info->a2dp, &a2dp_info->stream, local,
+        bt_a2dp_stream_config(a2dp_info->a2dp, a2dp_info->stream, local,
             a2dp_info->selected_peer_endpoint, a2dp_info->config);
 
         return BT_STATUS_SUCCESS;
@@ -1121,7 +1130,8 @@ static uint8_t bt_a2dp_discover_endpoint_cb(struct bt_a2dp* a2dp,
         return BT_A2DP_DISCOVER_EP_CONTINUE;
     }
 
-    bt_a2dp_stream_cb_register(&a2dp_info->stream, &stream_ops);
+    a2dp_info->stream = (struct bt_a2dp_stream*)calloc(1, sizeof(struct bt_a2dp_stream));
+    bt_a2dp_stream_cb_register(a2dp_info->stream, &stream_ops);
 
     if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
@@ -1195,7 +1205,7 @@ static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
 
     a2dp_info->a2dp = a2dp;
     a2dp_info->conn = conn;
-    memset(&a2dp_info->stream, 0, sizeof(a2dp_info->stream));
+    a2dp_info->stream = NULL;
     a2dp_info->int_acp = A2DP_ACP;
     a2dp_info->role = SEP_INVALID;
     a2dp_info->is_cleanup = false;
@@ -1398,8 +1408,9 @@ static int zblue_on_config_req(struct bt_a2dp* a2dp, struct bt_a2dp_ep* ep,
         return -1;
     }
 
-    *stream = &a2dp_info->stream; /* The a2dp_stream saved in SAL is assigned a value in zblue. */
-    bt_a2dp_stream_cb_register(&a2dp_info->stream, &stream_ops);
+    a2dp_info->stream = (struct bt_a2dp_stream*)calloc(1, sizeof(struct bt_a2dp_stream));
+    *stream = a2dp_info->stream; /* The a2dp_stream saved in SAL is assigned a value in zblue. */
+    bt_a2dp_stream_cb_register(a2dp_info->stream, &stream_ops);
     *rsp_err_code = BT_AVDTP_SUCCESS;
     return 0;
 }
@@ -1615,7 +1626,7 @@ static bt_status_t a2dp_source_profile_connect(bt_controller_id_t id, bt_address
     memcpy(&a2dp_info->bd_addr, addr, sizeof(bt_address_t));
     a2dp_info->a2dp = a2dp;
     a2dp_info->conn = conn;
-    memset(&a2dp_info->stream, 0, sizeof(a2dp_info->stream));
+    a2dp_info->stream = NULL;
     a2dp_info->int_acp = A2DP_INT;
     a2dp_info->role = SEP_SRC;
     a2dp_info->is_cleanup = false;
@@ -1677,7 +1688,7 @@ static bt_status_t a2dp_sink_profile_connect(bt_controller_id_t id, bt_address_t
     memcpy(&a2dp_info->bd_addr, addr, sizeof(bt_address_t));
     a2dp_info->a2dp = a2dp;
     a2dp_info->conn = conn;
-    memset(&a2dp_info->stream, 0, sizeof(a2dp_info->stream));
+    a2dp_info->stream = NULL;
     a2dp_info->int_acp = A2DP_INT;
     a2dp_info->role = SEP_SNK;
     a2dp_info->is_cleanup = false;
@@ -1719,7 +1730,7 @@ static bt_status_t bt_sal_a2dp_disconnect(struct zblue_a2dp_info_t* a2dp_info)
     a2dp_info->disconnecting = true;
     if (flag_isset(a2dp_info, A2DP_STATE_BIT_MEDIA_CONN)) {
         BT_LOGW("%s, media connection exists, disconnect", __func__);
-        return bt_a2dp_stream_release(&a2dp_info->stream);
+        return bt_a2dp_stream_release(a2dp_info->stream);
     } else if (flag_isset(a2dp_info, A2DP_STATE_BIT_SIG_CONN)) {
         BT_LOGW("%s, signaling connection exists, disconnect", __func__);
         return bt_a2dp_disconnect(a2dp_info->a2dp);
@@ -1787,7 +1798,7 @@ bt_status_t bt_sal_a2dp_source_start_stream(bt_controller_id_t id, bt_address_t*
         return BT_STATUS_PARM_INVALID;
     }
 
-    SAL_CHECK_RET(bt_a2dp_stream_start(&a2dp_info->stream), 0);
+    SAL_CHECK_RET(bt_a2dp_stream_start(a2dp_info->stream), 0);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1805,7 +1816,7 @@ bt_status_t bt_sal_a2dp_source_suspend_stream(bt_controller_id_t id, bt_address_
         return BT_STATUS_PARM_INVALID;
     }
 
-    SAL_CHECK_RET(bt_a2dp_stream_suspend(&a2dp_info->stream), 0);
+    SAL_CHECK_RET(bt_a2dp_stream_suspend(a2dp_info->stream), 0);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -1840,7 +1851,7 @@ bt_status_t bt_sal_a2dp_source_send_data(bt_controller_id_t id, bt_address_t* re
     // nbytes = Media Payload Length
     net_buf_add_mem(media_packet_buf, &buf[AVDTP_RTP_HEADER_LEN], nbytes);
 
-    ret = bt_a2dp_stream_send(&a2dp_info->stream, media_packet_buf, seq, timestamp);
+    ret = bt_a2dp_stream_send(a2dp_info->stream, media_packet_buf, seq, timestamp);
     if (ret < 0)
         goto error;
 
