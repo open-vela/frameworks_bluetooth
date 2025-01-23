@@ -590,8 +590,10 @@ static bt_status_t lea_server_startup(profile_on_startup_t cb)
     lea_server_service_t* service = &g_lea_server_service;
 
     BT_LOGD("%s", __func__);
-    if (service->started)
+    if (service->started) {
+        cb(PROFILE_LEAUDIO_SERVER, true);
         return BT_STATUS_SUCCESS;
+    }
 
     service->leas_devices = bt_list_new((bt_list_free_cb_t)
             lea_server_device_delete);
@@ -612,15 +614,19 @@ static bt_status_t lea_server_startup(profile_on_startup_t cb)
 
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&service->device_lock, &attr);
-    pthread_mutex_init(&service->stream_lock, &attr);
+    if (pthread_mutex_init(&service->device_lock, &attr) != 0 ||
+            pthread_mutex_init(&service->stream_lock, &attr) != 0) {
+        BT_LOGE("%s: pthread_mutex_init failed", __func__);
+        status = BT_STATUS_FAIL;
+        goto fail;
+    }
 
     status = bt_sal_lea_init();
     if (status != BT_STATUS_SUCCESS)
         goto fail;
 
     service->started = true;
-
+    cb(PROFILE_LEAUDIO_SERVER, true);
     return BT_STATUS_SUCCESS;
 
 fail:
@@ -630,6 +636,7 @@ fail:
     service->callbacks = NULL;
     pthread_mutex_destroy(&service->device_lock);
     pthread_mutex_destroy(&service->stream_lock);
+    cb(PROFILE_LEAUDIO_SERVER, false);
     return status;
 }
 

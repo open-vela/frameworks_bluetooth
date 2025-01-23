@@ -1520,8 +1520,18 @@ static bt_status_t lea_mcs_startup(profile_on_startup_t cb)
     bt_status_t status;
     pthread_mutexattr_t attr;
     mcs_service_t* service = &g_mcs_service;
-    if (service->started)
+    if (service->started) {
+        cb(PROFILE_LEAUDIO_MCS, true);
         return BT_STATUS_SUCCESS;
+    }
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    if (pthread_mutex_init(&service->device_lock, &attr) < 0) {
+        BT_LOGE("%s: pthread_mutex_init failed", __func__);
+        cb(PROFILE_LEAUDIO_MCS, false);
+        return BT_STATUS_FAIL;
+    }
 
     service->callbacks = bt_callbacks_list_new(2);
     if (!service->callbacks) {
@@ -1529,20 +1539,17 @@ static bt_status_t lea_mcs_startup(profile_on_startup_t cb)
         goto fail;
     }
 
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&service->device_lock, &attr);
-
     service->started = true;
 
     lea_mcs_media_init();
-
+    cb(PROFILE_LEAUDIO_MCS, true);
     return BT_STATUS_SUCCESS;
 
 fail:
     bt_callbacks_list_free(service->callbacks);
     service->callbacks = NULL;
     pthread_mutex_destroy(&service->device_lock);
+    cb(PROFILE_LEAUDIO_MCS, false);
     return status;
 }
 

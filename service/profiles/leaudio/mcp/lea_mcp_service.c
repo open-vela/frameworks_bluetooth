@@ -1177,29 +1177,40 @@ static bt_status_t lea_mcp_startup(profile_on_startup_t cb)
     bt_status_t status;
     pthread_mutexattr_t attr;
     mcp_service_t* service = &g_mcp_service;
-    if (service->started)
+    if (service->started) {
+        cb(PROFILE_LEAUDIO_MCP, true);
         return BT_STATUS_SUCCESS;
+    }
+
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    if (pthread_mutex_init(&service->device_lock, &attr) < 0)
+    if (pthread_mutex_init(&service->device_lock, &attr) < 0) {
+        cb(PROFILE_LEAUDIO_MCP, false);
         return BT_STATUS_FAIL;
+    }
+
     service->callbacks = bt_callbacks_list_new(2);
     if (!service->callbacks) {
         status = BT_STATUS_NOMEM;
         goto fail;
     }
+
     service->started = true;
     service->media_session_handle = media_session_register(service,
         lea_mcs_media_seesion_event_callback);
     if (!service->media_session_handle) {
         BT_LOGE("%s media session open failed.", __func__);
-        return BT_STATUS_FAIL;
+        status = BT_STATUS_FAIL;
+        goto fail;
     }
+
+    cb(PROFILE_LEAUDIO_MCP, true);
     return BT_STATUS_SUCCESS;
 fail:
     bt_callbacks_list_free(service->callbacks);
     service->callbacks = NULL;
     pthread_mutex_destroy(&service->device_lock);
+    cb(PROFILE_LEAUDIO_MCP, false);
     return status;
 }
 

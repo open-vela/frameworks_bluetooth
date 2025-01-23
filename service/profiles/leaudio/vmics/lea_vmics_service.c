@@ -233,8 +233,10 @@ static bt_status_t lea_vmics_startup(profile_on_startup_t cb)
     vmics_service_t* service = &g_vmics_service;
 
     BT_LOGD("%s", __func__);
-    if (service->started)
+    if (service->started) {
+        cb(PROFILE_LEAUDIO_VMICS, true);
         return BT_STATUS_SUCCESS;
+    }
 
     service->callbacks = bt_callbacks_list_new(2);
     if (!service->callbacks) {
@@ -244,17 +246,23 @@ static bt_status_t lea_vmics_startup(profile_on_startup_t cb)
 
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&service->vmics_lock, &attr);
+    if (pthread_mutex_init(&service->vmics_lock, &attr) != 0) {
+        BT_LOGE("%s: pthread_mutex_init failed", __func__);
+        status = BT_STATUS_FAIL;
+        goto fail;
+    }
 
     service->started = true;
 
     service->volume_session = media_session_open(LEA_VMICS_MEDIA_SESSION_NAME);
+    cb(PROFILE_LEAUDIO_VMICS, true);
     return BT_STATUS_SUCCESS;
 
 fail:
     bt_callbacks_list_free(service->callbacks);
     service->callbacks = NULL;
     pthread_mutex_destroy(&service->vmics_lock);
+    cb(PROFILE_LEAUDIO_VMICS, false);
     return status;
 }
 

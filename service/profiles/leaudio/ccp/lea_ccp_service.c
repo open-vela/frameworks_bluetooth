@@ -1223,8 +1223,10 @@ static bt_status_t lea_ccp_startup(profile_on_startup_t cb)
     lea_ccp_service_t* service = &g_ccp_service;
 
     BT_LOGD("%s", __func__);
-    if (service->started)
+    if (service->started) {
+        cb(PROFILE_LEAUDIO_CCP, true);
         return BT_STATUS_SUCCESS;
+    }
 
     service->lea_calls = bt_list_new((bt_list_free_cb_t)lea_ccp_call_delete);
     service->info = (bearer_tele_info_t*)malloc(sizeof(bearer_tele_info_t));
@@ -1239,6 +1241,7 @@ static bt_status_t lea_ccp_startup(profile_on_startup_t cb)
     pthread_mutex_init(&service->ccp_lock, &attr);
 
     service->started = true;
+    cb(PROFILE_LEAUDIO_CCP, true);
     return BT_STATUS_SUCCESS;
 
 fail:
@@ -1248,6 +1251,7 @@ fail:
     bt_callbacks_list_free(service->callbacks);
     service->callbacks = NULL;
     pthread_mutex_destroy(&service->ccp_lock);
+    cb(PROFILE_LEAUDIO_CCP, false);
     return status;
 }
 

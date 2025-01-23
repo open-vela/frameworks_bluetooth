@@ -749,8 +749,18 @@ static bt_status_t lea_tbs_startup(profile_on_startup_t cb)
     bt_status_t status;
     pthread_mutexattr_t attr;
     lea_tbs_service_t* service = &g_tbs_service;
-    if (service->started)
+    if (service->started) {
+        cb(PROFILE_LEAUDIO_TBS, true);
         return BT_STATUS_SUCCESS;
+    }
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    if (pthread_mutex_init(&service->tbs_lock, &attr) != 0) {
+        BT_LOGE("%s: pthread_mutex_init failed", __func__);
+        status = BT_STATUS_FAIL;
+        goto fail;
+    }
 
     service->callbacks = bt_callbacks_list_new(2);
     if (!service->callbacks) {
@@ -758,21 +768,23 @@ static bt_status_t lea_tbs_startup(profile_on_startup_t cb)
         goto fail;
     }
 
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&service->tbs_lock, &attr);
     service->started = true;
 
-    lea_tbs_add();
+    if (lea_tbs_add() != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s: lea_tbs_add failed", __func__);
+        status = BT_STATUS_FAIL;
+        goto fail;
+    }
 
     lea_tbs_tele_service_init();
-
+    cb(PROFILE_LEAUDIO_TBS, true);
     return BT_STATUS_SUCCESS;
 
 fail:
     bt_callbacks_list_free(service->callbacks);
     service->callbacks = NULL;
     pthread_mutex_destroy(&service->tbs_lock);
+    cb(PROFILE_LEAUDIO_TBS, false);
     return status;
 }
 
