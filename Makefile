@@ -608,7 +608,6 @@ MAINSRC := $(wildcard $(MAINSRC))
 NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
 
 ifeq ($(CONFIG_BLUETOOTH_FEATURE),y)
-include $(APPDIR)/frameworks/runtimes/feature/Make.defs
 CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/feature/include
 
 CSRCS     += feature/src/system_bluetooth.c
@@ -628,16 +627,16 @@ CSRCS     += feature/src/system_bluetooth_bt_avrcpcontrol_impl.c
 endif
 
 depend::
-	@python3 $(APPDIR)/frameworks/runtimes/feature/tools/jidl/jsongensource.py \
-		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth.jidl -out-dir \
-		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src -header system_bluetooth.h -source system_bluetooth.c
-	@python3 $(APPDIR)/frameworks/runtimes/feature/tools/jidl/jsongensource.py \
-		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth_bt.jidl -out-dir \
-		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src -header system_bluetooth_bt.h -source system_bluetooth_bt.c
+	$(APPDIR)/../prebuilts/tools/rust/bin/jidl/jidl_gen_cpp \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth.jidl --out-dir \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src --header system_bluetooth.h --source system_bluetooth.c
+	$(APPDIR)/../prebuilts/tools/rust/bin/jidl/jidl_gen_cpp \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth_bt.jidl --out-dir \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src --header system_bluetooth_bt.h --source system_bluetooth_bt.c
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
-	@python3 $(APPDIR)/frameworks/runtimes/feature/tools/jidl/jsongensource.py \
-		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth_bt_a2dpsink.jidl -out-dir \
-		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src -header system_bluetooth_bt_a2dpsink.h -source system_bluetooth_bt_a2dpsink.c
+	$(APPDIR)/../prebuilts/tools/rust/bin/jidl/jidl_gen_cpp \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth_bt_a2dpsink.jidl --out-dir \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src --header system_bluetooth_bt_a2dpsink.h --source system_bluetooth_bt_a2dpsink.c
 endif
 ifeq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL), y)
 	@python3 $(APPDIR)/frameworks/runtimes/feature/tools/jidl/jsongensource.py \
