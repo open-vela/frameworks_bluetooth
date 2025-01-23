@@ -24,7 +24,7 @@
 #define LOG_TAG "lea_audio_source"
 
 #include <errno.h>
-#include <nuttx/mm/circbuf.h>
+#include <nuttx/circbuf.h>
 #include <stdlib.h>
 #include <string.h>
 
