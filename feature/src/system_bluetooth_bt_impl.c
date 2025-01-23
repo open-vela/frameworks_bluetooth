@@ -424,7 +424,7 @@ FtString system_bluetooth_bt_wrap_getDeviceName(FeatureInstanceHandle feature, A
     return StringToFtString(name);
 }
 
-unsigned int system_bluetooth_bt_wrap_getDeviceClass(FeatureInstanceHandle feature, AppendData append_data, FtString deviceId)
+FtUint32 system_bluetooth_bt_wrap_getDeviceClass(FeatureInstanceHandle feature, AppendData append_data, FtString deviceId)
 {
     bt_address_t addr;
     if (bt_addr_str2ba(deviceId, &addr) < 0) {
