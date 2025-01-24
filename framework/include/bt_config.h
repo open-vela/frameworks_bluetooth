@@ -1,13 +1,6 @@
 #ifndef __INCLUDE_BT_CONFIG_H
 #define __INCLUDE_BT_CONFIG_H
 
-// Platform: 32-bit or 64-bit
-#if defined(CONFIG_ARCH_ARM64) || defined(ARCH_X86_64) || defined(ANDROID) || (!defined(CONFIG_SIM_M32) && defined(CONFIG_ARCH_SIM))
-#define CONFIG_CPU_BIT64 1
-#elif defined(ARCH_ARM) || defined(ARCH_X86) || defined(__NuttX__)
-#define CONFIG_CPU_BIT32 1
-#endif
-
 // Configuration of Bluetooth Framework/Service/Stack
 #if defined(__NuttX__)
 
@@ -127,6 +120,13 @@
 #define CONFIG_BLUETOOTH_HID_DEVICE 1
 #endif
 
+#endif
+
+// Platform: 32-bit or 64-bit
+#if defined(CONFIG_ARCH_ARM64) || defined(ARCH_X86_64) || defined(ANDROID) || (!defined(CONFIG_SIM_M32) && defined(CONFIG_ARCH_SIM)) || defined(CONFIG_ARCH_X86_64)
+#define CONFIG_CPU_BIT64 1
+#elif defined(ARCH_ARM) || defined(ARCH_X86)
+#define CONFIG_CPU_BIT32 1
 #endif
 
 //############################################################################
