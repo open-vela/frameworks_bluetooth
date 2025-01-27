@@ -29,10 +29,10 @@
 #include "service_loop.h"
 
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/classic/hfp_hf.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/bluetooth/hci_types.h>
-#include <zephyr/bluetooth/classic/hfp_hf.h>
 
 #include <zephyr/settings/settings.h>
 
