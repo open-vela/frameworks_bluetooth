@@ -66,7 +66,7 @@ static int storage_set_key(const char* key, void* data, size_t length)
 {
     int ret;
 
-    ret = property_set_binary(key, data, length, false);
+    ret = property_set_binary(key, data, length, true);
     if (ret < 0) {
         BT_LOGE("key %s set error!", key);
         return ret;
@@ -187,11 +187,11 @@ static void adapter_properties_default(adapter_storage_t* prop)
 
 int bt_storage_save_adapter_info(adapter_storage_t* adapter)
 {
-    property_set_binary(BT_KVDB_ADAPTERINFO_NAME, adapter->name, sizeof(adapter->name), false);
-    property_set_int32(BT_KVDB_ADAPTERINFO_COD, adapter->class_of_device);
-    property_set_int32(BT_KVDB_ADAPTERINFO_IOCAP, adapter->io_capability);
-    property_set_int32(BT_KVDB_ADAPTERINFO_SCAN, adapter->scan_mode);
-    property_set_int32(BT_KVDB_ADAPTERINFO_BOND, adapter->bondable);
+    property_set_binary(BT_KVDB_ADAPTERINFO_NAME, adapter->name, sizeof(adapter->name), true);
+    property_set_int32_oneway(BT_KVDB_ADAPTERINFO_COD, adapter->class_of_device);
+    property_set_int32_oneway(BT_KVDB_ADAPTERINFO_IOCAP, adapter->io_capability);
+    property_set_int32_oneway(BT_KVDB_ADAPTERINFO_SCAN, adapter->scan_mode);
+    property_set_int32_oneway(BT_KVDB_ADAPTERINFO_BOND, adapter->bondable);
     property_commit();
     return 0;
 }
