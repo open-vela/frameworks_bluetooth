@@ -480,6 +480,7 @@ void euv_pipe_disconnect(euv_pipe_t* handle)
     uv_close((uv_handle_t*)&handle->cli_pipe, euv_close_callback);
 }
 
+#ifdef CONFIG_NET_RPMSG
 void euv_pipe_close2(euv_pipe_t* handle)
 {
     euv_pipe_mode_t mode;
@@ -506,3 +507,4 @@ void euv_pipe_close2(euv_pipe_t* handle)
     handle->srv_pipe[mode].data = NULL;
     uv_close((uv_handle_t*)&handle->srv_pipe[mode], euv_close_callback);
 }
+#endif

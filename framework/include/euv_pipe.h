@@ -43,10 +43,10 @@ void euv_pipe_close(euv_pipe_t* handle);
 euv_pipe_t* euv_pipe_connect(uv_loop_t* loop, const char* path, euv_connect_cb cb, void* user_data);
 #ifdef CONFIG_NET_RPMSG
 euv_pipe_t* euv_rpmsg_pipe_connect(uv_loop_t* loop, const char* path, const char* cpu_name, euv_connect_cb cb, void* user_data);
+void euv_pipe_close2(euv_pipe_t* handle);
 #endif
 void euv_pipe_disconnect(euv_pipe_t* handle);
 int euv_pipe_write(euv_pipe_t* handle, uint8_t* buffer, int length, euv_write_cb cb);
 int euv_pipe_read_start(euv_pipe_t* handle, uint16_t read_size, euv_read_cb read_cb, euv_alloc_cb alloc_cb);
 int euv_pipe_read_stop(euv_pipe_t* handle);
-void euv_pipe_close2(euv_pipe_t* handle);
 #endif
