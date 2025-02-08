@@ -21,6 +21,7 @@
 #include <sys/types.h>
 
 #include "audio_control.h"
+#include "bluetooth.h"
 #include "bt_addr.h"
 #include "bt_device.h"
 #include "bt_hfp_ag.h"
@@ -64,6 +65,16 @@ typedef struct _ag_state_machine {
     service_timer_t* offload_timer;
     service_timer_t* retry_timer;
 } ag_state_machine_t;
+
+typedef struct vendor_specific_at_prefix {
+    char* at_prefix;
+    uint16_t company_id;
+} vendor_specific_at_prefix_t;
+
+static const vendor_specific_at_prefix_t company_id_map[] = {
+    { "+XIAOMI", BLUETOOTH_COMPANY_ID_XIAOMI },
+    { "+ANDROID", BLUETOOTH_COMPANY_ID_GOOGLE },
+};
 
 #define AG_TIMEOUT 10000
 #define AG_OFFLOAD_TIMEOUT 500
@@ -200,6 +211,7 @@ static const char* stack_event_to_string(hfp_ag_event_t event)
         CASE_RETURN_STR(AG_SET_INBAND_RING_ENABLE)
         CASE_RETURN_STR(AG_DIALING_RESULT)
         CASE_RETURN_STR(AG_SEND_AT_COMMAND)
+        CASE_RETURN_STR(AG_SEND_VENDOR_SPECIFIC_AT_COMMAND)
         CASE_RETURN_STR(AG_STARTUP)
         CASE_RETURN_STR(AG_SHUTDOWN)
         CASE_RETURN_STR(AG_CONNECT_TIMEOUT)
@@ -427,6 +439,56 @@ static void ag_retry_callback(service_timer_t* timer, void* data)
     agsm->retry_timer = NULL;
 }
 
+static void process_vendor_specific_at(bt_address_t* addr, const char* at_string)
+{
+    uint8_t company_id_index;
+    uint16_t company_id;
+    size_t prefix_size;
+    char command[HFP_COMPANY_PREFIX_LEN_MAX + 1] = { 0 };
+    const char* value;
+    const vendor_specific_at_prefix_t* prefix;
+
+    if (!at_string)
+        return;
+
+    for (company_id_index = 0; company_id_index < ARRAY_SIZE(company_id_map); company_id_index++) {
+        prefix = &company_id_map[company_id_index];
+        prefix_size = strlen(prefix->at_prefix);
+        if (strlen(at_string) <= prefix_size + 3 /* "AT" and "=" */) {
+            continue;
+        }
+        if (strncmp(at_string + 2 /* "AT" */, prefix->at_prefix, prefix_size)) {
+            continue;
+        }
+        value = at_string + strlen(prefix->at_prefix) + 3;  /* The value is the string after "AT+XIAOMI=" */
+        if (value[0] == '\r' || value[0] == '\n') {
+            break;
+        }
+        strlcpy(command, prefix->at_prefix, sizeof(command));
+        company_id = prefix->company_id;
+
+        BT_LOGD("%s, command:%s, company_id:0x%04X, value:%s", __FUNCTION__, command, company_id, value);
+        ag_service_notify_vendor_specific_cmd(addr, command, company_id, value);
+        bt_sal_hfp_ag_send_at_cmd(addr, "\r\nOK\r\n", sizeof("\r\nOK\r\n"));
+        return;
+    }
+    BT_LOGD("unknown AT command:%s", at_string);
+    bt_sal_hfp_ag_error_response(addr, HFP_ATCMD_RESULT_CMEERR_OPERATION_NOTSUPPORTED);
+}
+
+static void hfp_ag_send_vendor_specific_at_cmd(bt_address_t* addr, const char* command, const char* value) {
+    char at_command[HFP_AT_LEN_MAX+1] = "\r\n";
+    if (!command || !value)
+        return;
+
+    strlcat(at_command, command, sizeof(at_command));
+    strlcat(at_command, ": ", sizeof(at_command));
+    strlcat(at_command, value, sizeof(at_command));
+    strlcat(at_command, "\r\n", sizeof(at_command));
+    BT_LOGD("%s, command:%s, value:%s", __FUNCTION__, command, value);
+    bt_sal_hfp_ag_send_at_cmd(addr, at_command, strlen(at_command));
+}
+
 static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
@@ -445,6 +507,9 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         break;
     case AG_SEND_AT_COMMAND:
         bt_sal_hfp_ag_send_at_cmd(&agsm->addr, data->string1, strlen(data->string1));
+        break;
+    case AG_SEND_VENDOR_SPECIFIC_AT_COMMAND:
+        hfp_ag_send_vendor_specific_at_cmd(&agsm->addr, data->string1, data->string2);
         break;
     case AG_STACK_EVENT_CONNECTION_STATE_CHANGED: {
         profile_connection_state_t state = data->valueint1;
@@ -482,11 +547,7 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         process_cind_request(agsm);
         break;
     case AG_STACK_EVENT_AT_COMMAND:
-        if (hfp_ag_get_local_features() & HFP_FEAT_AG_UNKNOWN_AT_CMD) {
-            ag_service_notify_cmd_received(&agsm->addr, data->string1);
-        } else {
-            bt_sal_hfp_ag_error_response(&agsm->addr, HFP_ATCMD_RESULT_CMEERR_OPERATION_NOTSUPPORTED);
-        }
+        process_vendor_specific_at(&agsm->addr, data->string1);
         break;
     case AG_OFFLOAD_START_REQ:
         audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
@@ -617,6 +678,9 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case AG_SEND_AT_COMMAND:
         bt_sal_hfp_ag_send_at_cmd(&agsm->addr, data->string1, strlen(data->string1));
         break;
+    case AG_SEND_VENDOR_SPECIFIC_AT_COMMAND:
+        hfp_ag_send_vendor_specific_at_cmd(&agsm->addr, data->string1, data->string2);
+        break;
     case AG_DIALING_RESULT:
         if (agsm->dial_out_timer) {
             service_loop_cancel_timer(agsm->dial_out_timer);
@@ -706,10 +770,8 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
 
         if (at_cmd_check_test(&agsm->addr, at_cmd)) {
             break;
-        } else if (hfp_ag_get_local_features() & HFP_FEAT_AG_UNKNOWN_AT_CMD) {
-            ag_service_notify_cmd_received(&agsm->addr, at_cmd);
         } else {
-            bt_sal_hfp_ag_error_response(&agsm->addr, HFP_ATCMD_RESULT_CMEERR_OPERATION_NOTSUPPORTED);
+            process_vendor_specific_at(&agsm->addr, at_cmd);
         }
     } break;
     case AG_STACK_EVENT_SEND_DTMF:

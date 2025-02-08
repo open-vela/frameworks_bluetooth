@@ -326,3 +326,20 @@ bt_status_t bt_hfp_ag_send_at_command(bt_instance_t* ins, bt_address_t* addr, co
 
     return packet.hfp_ag_r.status;
 }
+
+bt_status_t bt_hfp_ag_send_vendor_specific_at_command(bt_instance_t* ins, bt_address_t* addr, const char* command, const char* value)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_send_vendor_specific_at_cmd.addr, addr, sizeof(bt_address_t));
+    strlcpy(packet.hfp_ag_pl._bt_hfp_ag_send_vendor_specific_at_cmd.cmd, command, sizeof(packet.hfp_ag_pl._bt_hfp_ag_send_vendor_specific_at_cmd.cmd));
+    strlcpy(packet.hfp_ag_pl._bt_hfp_ag_send_vendor_specific_at_cmd.value, value, sizeof(packet.hfp_ag_pl._bt_hfp_ag_send_vendor_specific_at_cmd.value));
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_SEND_VENDOR_SPECIFIC_AT_COMMAND);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
+}

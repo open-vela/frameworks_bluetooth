@@ -107,7 +107,7 @@ BT_DEVICE_MESSAGE_START,
         } _bt_device_get_name;
 
         struct {
-            bt_uuid_t uuids[16];
+            bt_uuid_t uuids[BT_UUID_MAX_NUM];
             bt_address_t addr;
             uint16_t size;
         } _bt_device_get_uuids;

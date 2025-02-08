@@ -93,7 +93,7 @@ typedef struct {
         {
             /* data */
             bt_address_t addr;
-            bool is_added;
+            bool is_add;
             bt_status_t status;
         } whitelist;
         struct
@@ -243,7 +243,7 @@ void adapter_on_link_policy_changed(bt_address_t* addr, bt_link_policy_t policy)
 void adapter_on_le_addr_update(bt_address_t* addr, ble_addr_type_t type);
 void adapter_on_le_phy_update(bt_address_t* addr, ble_phy_type_t tx_phy,
     ble_phy_type_t rx_phy, bt_status_t status);
-void adapter_on_whitelist_update(bt_address_t* addr, bool is_added, bt_status_t status);
+void adapter_on_whitelist_update(bt_address_t* addr, bool is_add, bt_status_t status);
 void adapter_on_le_bonded_device_update(remote_device_le_properties_t* props, uint16_t bonded_devices_cnt);
 void adapter_on_le_local_oob_data_got(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val);
 

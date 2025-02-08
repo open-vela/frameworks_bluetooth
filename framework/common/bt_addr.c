@@ -21,11 +21,8 @@
 
 #include "bt_addr.h"
 
-const bt_address_t bt_addr_empty = {
+static const bt_address_t bt_addr_empty = {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
-};
-const bt_address_t bt_addr_any = {
-    { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }
 };
 
 static char g_bdaddr_str[18];
@@ -79,7 +76,7 @@ int bt_addr_ba2str(const bt_address_t* addr, char* str)
         addr->addr[2], addr->addr[1], addr->addr[0]);
 }
 
-char* bt_addr_str(const bt_address_t* addr)
+char* bt_addr_bastr(const bt_address_t* addr)
 {
     if (!addr) {
         return NULL;
