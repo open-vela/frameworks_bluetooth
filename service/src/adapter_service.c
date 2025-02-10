@@ -1477,7 +1477,6 @@ void adapter_on_link_role_changed(bt_address_t* addr, bt_link_role_t role)
 /* PM need implement */
 void adapter_on_link_mode_changed(bt_address_t* addr, bt_link_mode_t mode, uint16_t sniff_interval)
 {
-    BT_LOGD("%s", __func__);
     adapter_remote_event_t* evt = create_remote_event(addr, LINK_MODE_CHANGED_EVT);
     if (!evt)
         return;
@@ -2629,7 +2628,7 @@ bt_status_t adapter_le_remove_whitelist(bt_address_t* addr)
     }
 
     adapter_unlock();
-    
+
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("%s, %s", __func__, addr_str);
 
