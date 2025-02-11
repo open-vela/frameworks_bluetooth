@@ -391,7 +391,7 @@ static void query_current_calls_final(hf_state_machine_t* hfsm)
         hfp_current_call_t* ccall = bt_list_find(clist, call_index_cmp, &ucall->index);
         /* update new call to current call list */
         if (!ccall) {
-            bt_list_add_tail(clist, ucall);
+            bt_list_add_tail(clist, hf_call_new(ucall->index, ucall->dir, ucall->state, ucall->mpty, ucall->number));
             hf_service_notify_call_state_changed(&hfsm->addr, ucall);
         }
     }
