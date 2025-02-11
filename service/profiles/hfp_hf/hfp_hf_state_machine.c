@@ -399,12 +399,25 @@ static void query_current_calls_final(hf_state_machine_t* hfsm)
     bt_list_clear(ulist);
 }
 
+static void free_update_calls(hf_state_machine_t* hfsm)
+{
+    bt_list_node_t* unode;
+    bt_list_t* ulist = hfsm->update_calls;
+
+    for (unode = bt_list_head(ulist); unode != NULL; unode = bt_list_next(ulist, unode)) {
+        hfp_current_call_t* ucall = bt_list_node(unode);
+        hf_call_delete(ucall);
+    }
+
+    bt_list_clear(ulist);
+}
+
 static void state_machine_reset_calls(hf_state_machine_t* hfsm)
 {
     hf_at_cmd_t* node;
 
     bt_list_clear(hfsm->current_calls);
-    bt_list_clear(hfsm->update_calls);
+    free_update_calls(hfsm);
     while ((node = pending_action_get(hfsm)) != NULL)
         pending_action_destroy(node); /* discard pending actions */
     if (hfsm->connect_timer)
@@ -1522,7 +1535,7 @@ void hf_state_machine_destory(hf_state_machine_t* hfsm)
     if (hfsm->retry_timer)
         service_loop_cancel_timer(hfsm->retry_timer);
 
-    bt_list_free(hfsm->update_calls);
+    free_update_calls(hfsm);
     bt_list_free(hfsm->current_calls);
     bt_media_remove_listener(hfsm->volume_listener);
     hfsm->volume_listener = NULL;
