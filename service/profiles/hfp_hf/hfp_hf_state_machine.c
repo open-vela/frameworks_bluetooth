@@ -1502,7 +1502,7 @@ hf_state_machine_t* hf_state_machine_new(bt_address_t* addr, void* context)
     hfsm->service = context;
     hfsm->codec = HFP_CODEC_CVSD;
     memcpy(&hfsm->addr, addr, sizeof(bt_address_t));
-    hfsm->update_calls = bt_list_new(hf_call_delete);
+    hfsm->update_calls = bt_list_new(NULL);
     hfsm->current_calls = bt_list_new(hf_call_delete);
     hfsm->media_volume = INVALID_MEDIA_VOLUME;
     list_initialize(&hfsm->pending_actions);
