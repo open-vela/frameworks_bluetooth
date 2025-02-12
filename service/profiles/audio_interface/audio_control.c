@@ -251,7 +251,7 @@ void audio_ctrl_cleanup(uint8_t profile_id)
     case PROFILE_HFP_AG:
     case PROFILE_HFP_HF:
         if (g_audio_ctrl_transport) {
-            audio_transport_close(g_audio_ctrl_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_HFP_CTRL);
+            audio_transport_close(g_audio_ctrl_transport, AUDIO_TRANS_CH_ID_ALL);
         }
         break;
     default:
