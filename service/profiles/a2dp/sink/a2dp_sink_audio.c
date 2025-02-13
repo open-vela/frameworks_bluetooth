@@ -230,6 +230,11 @@ bool a2dp_sink_on_connection_changed(bool connected)
     if (connected) {
         a2dp_control_update_audio_config(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, 1);
     } else {
+        /* When disconnected, the Media framework should send AUDIO_CTRL_CMD_STOP to notify us that
+        it is no longer ready to receive data via audio data channel. However, due to a logic issue,
+        the media currently cannot send AUDIO_CTRL_CMD_STOP upon disconnection. As a workaround,
+        we are proactively setting sink_stream.ready to false in such scenario.  */
+        sink_stream.ready = false;
         a2dp_sink_on_stopped();
         a2dp_control_update_audio_config(CONFIG_BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL, 0);
     }
