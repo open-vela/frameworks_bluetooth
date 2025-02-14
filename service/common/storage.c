@@ -48,8 +48,6 @@ static uv_db_t* storage_handle = NULL;
 static void key_set_callback(int status, const char* key, uv_buf_t value, void* cookie)
 {
     free(value.base);
-    if (status == 0)
-        uv_db_commit(storage_handle);
 }
 
 static void key_get_callback(int status, const char* key, uv_buf_t value, void* cookie)
