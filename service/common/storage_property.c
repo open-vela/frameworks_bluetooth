@@ -54,6 +54,8 @@
 #define BT_KVDB_BLEBOND "persist.bluetooth.blebonded."
 #define BT_KVDB_BLEWHITELIST "persist.bluetooth.whitelist."
 
+static const uint8_t bt_prop_version_0_1[VERSION_HEADER_LENGTH] = { 0x33, 0x8B, 0x9E, 0x00, 0x00, 0x01 };
+
 typedef struct {
     void* key;
     uint16_t items;
@@ -132,12 +134,13 @@ static void callback_le_load_addr(const char* name, const char* value, void* coo
 
 static void storage_get_key(const char* key, void* data, uint16_t value_len, void* cookie)
 {
-    bt_property_value_t* prop_value;
+    bt_property_value_t* props_value;
     remote_device_properties_t* bt_remote;
     remote_device_le_properties_t* le_remote;
     bt_address_t* addr;
     size_t prop_size;
     char* prop_name;
+    char* prop_value;
     int i;
 
     if (!key || !data)
@@ -152,8 +155,8 @@ static void storage_get_key(const char* key, void* data, uint16_t value_len, voi
         return;
     }
 
-    prop_value = (bt_property_value_t*)data;
-    if (prop_value->items == 0) {
+    props_value = (bt_property_value_t*)data;
+    if (props_value->items == 0) {
         ((load_storage_callback_t)cookie)(NULL, 0, 0);
         return;
     }
@@ -165,33 +168,44 @@ static void storage_get_key(const char* key, void* data, uint16_t value_len, voi
     }
 
     if (!strncmp(key, BT_KVDB_BTBOND, strlen(BT_KVDB_BTBOND))) {
+        prop_size = VERSION_HEADER_LENGTH + sizeof(remote_device_properties_t) - offsetof(remote_device_properties_t, addr_type);
+        prop_value = (char*)malloc(prop_size);
+        if (!prop_value) {
+            BT_LOGE("property_value malloc failed!");
+            free(prop_name);
+            return;
+        }
+
         property_list(callback_bt_load_addr, data); // get addr to generate property name
-        for (i = 0; i < prop_value->items; i++) {
-            bt_remote = (remote_device_properties_t*)prop_value->value + i;
+
+        for (i = 0; i < props_value->items; i++) {
+            bt_remote = (remote_device_properties_t*)props_value->value + i;
             addr = &bt_remote->addr;
             GEN_PROP_KEY(prop_name, key, addr, PROP_NAME_MAX);
             /**
              * Note: It should be ensured that "addr" is the first member of the struct remote_device_properties_t
              * and "addr_type" is the second member.
              * */
-            prop_size = sizeof(remote_device_properties_t) - offsetof(remote_device_properties_t, addr_type);
-            property_get_binary(prop_name, &bt_remote->addr_type, prop_size);
+            property_get_binary(prop_name, prop_value, prop_size);
+            memcpy(bt_remote->version, prop_value, VERSION_HEADER_LENGTH);
+            memcpy(&bt_remote->addr_type, prop_value + VERSION_HEADER_LENGTH, prop_size - VERSION_HEADER_LENGTH);
         }
+        free(prop_value);
     } else { /*!BT_KVDB_BTBOND*/
+        prop_size = sizeof(remote_device_le_properties_t) - offsetof(remote_device_le_properties_t, addr_type);
         property_list(callback_le_load_addr, data); // get addr to generate property name
-        for (i = 0; i < prop_value->items; i++) {
-            le_remote = (remote_device_le_properties_t*)prop_value->value + i;
+        for (i = 0; i < props_value->items; i++) {
+            le_remote = (remote_device_le_properties_t*)props_value->value + i;
             addr = &le_remote->addr;
             GEN_PROP_KEY(prop_name, key, addr, PROP_NAME_MAX);
             /**
              * Note: It should be ensured that "addr" is the first member of the struct remote_device_le_properties_t
              * and "addr_type" is the second member.
              * */
-            prop_size = sizeof(remote_device_le_properties_t) - offsetof(remote_device_le_properties_t, addr_type);
             property_get_binary(prop_name, &le_remote->addr_type, prop_size);
         }
     }
-    ((load_storage_callback_t)cookie)(prop_value->value, value_len, prop_value->items);
+    ((load_storage_callback_t)cookie)(props_value->value, value_len, props_value->items);
     free(prop_name);
 }
 
@@ -245,6 +259,7 @@ static int bt_storage_save_remote_device(const char* key, void* value, uint16_t 
 {
     size_t prop_vlen;
     char* prop_name;
+    char* prop_value;
     remote_device_properties_t* data;
     bt_address_t* addr;
     int i;
@@ -259,7 +274,14 @@ static int bt_storage_save_remote_device(const char* key, void* value, uint16_t 
         return -ENOMEM;
     }
     data = (remote_device_properties_t*)value;
-    prop_vlen = value_size - offsetof(remote_device_properties_t, addr_type);
+    prop_vlen = VERSION_HEADER_LENGTH + value_size - offsetof(remote_device_properties_t, addr_type);
+    prop_value = (char*)malloc(prop_vlen);
+    if (!prop_value) {
+        BT_LOGE("property_value malloc failed!");
+        free(prop_name);
+        return -ENOMEM;
+    }
+
     for (i = 0; i < items; i++) {
         addr = &data->addr;
         GEN_PROP_KEY(prop_name, key, addr, PROP_NAME_MAX);
@@ -267,14 +289,18 @@ static int bt_storage_save_remote_device(const char* key, void* value, uint16_t 
          * Note: It should be ensured that "addr" is the first member of the struct remote_device_properties_t
          * and "addr_type" is the second member.
          * */
-        ret = storage_set_key(prop_name, &data->addr_type, prop_vlen);
+        memcpy(prop_value, data->version, VERSION_HEADER_LENGTH);
+        memcpy(prop_value + VERSION_HEADER_LENGTH, &data->addr_type, prop_vlen - VERSION_HEADER_LENGTH);
+        ret = storage_set_key(prop_name, prop_value, prop_vlen);
         if (ret < 0) {
             free(prop_name);
+            free(prop_value);
             return ret;
         }
         data++;
     }
     free(prop_name);
+    free(prop_value);
     return 0;
 }
 
@@ -565,6 +591,31 @@ int bt_storage_load_le_bonded_device(load_storage_callback_t cb)
     free(prop_value);
 
     return 0;
+}
+
+void bt_storage_set_version(void* version)
+{
+
+    memcpy(version, bt_prop_version_0_1, VERSION_HEADER_LENGTH);
+}
+
+bool bt_storage_version_match(void* version)
+{
+    return memcmp(bt_prop_version_0_1, version, VERSION_HEADER_LENGTH) == 0;
+}
+
+void bt_storage_transform(remote_device_properties_t* dst_prop, remote_device_old_properties_t* src_prop, bool load_uuid)
+{
+    memcpy(&dst_prop->addr, &src_prop->addr, sizeof(bt_address_t));
+    dst_prop->addr_type = src_prop->addr_type;
+    strlcpy(dst_prop->name, src_prop->name, sizeof(dst_prop->name));
+    strlcpy(dst_prop->alias, src_prop->alias, sizeof(dst_prop->alias));
+    dst_prop->class_of_device = src_prop->class_of_device;
+    memcpy(dst_prop->link_key, src_prop->link_key, 16);
+    dst_prop->link_key_type = src_prop->link_key_type;
+    dst_prop->device_type = src_prop->device_type;
+    if (load_uuid)
+        memcpy(dst_prop->uuids, (uint8_t*)src_prop + sizeof(remote_device_old_properties_t), CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN);
 }
 
 int bt_storage_init(void)
