@@ -313,7 +313,7 @@ static void process_cind_request(ag_state_machine_t* agsm)
     resp.battery = 5;
     tele_service_get_phone_state(&num_active, &num_held, &call_state);
     resp.call = num_active ? HFP_CALL_CALLS_IN_PROGRESS : HFP_CALL_NO_CALLS_IN_PROGRESS;
-    resp.call_held = num_held ? HFP_CALLHELD_HELD : HFP_CALLHELD_NONE;
+    resp.call_held = num_held ? (num_active ? HFP_CALLHELD_HELD_AND_ACTIVE : HFP_CALLHELD_HELD) : HFP_CALLHELD_NONE;
     resp.call_setup = callstate_to_callsetup(call_state);
     BT_LOGD("AT+CIND=? response");
     bt_sal_hfp_ag_cind_response(&agsm->addr, &resp);

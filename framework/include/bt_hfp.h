@@ -60,6 +60,7 @@ typedef enum {
 
 typedef enum {
     HFP_CALLHELD_NONE = 0,
+    HFP_CALLHELD_HELD_AND_ACTIVE,
     HFP_CALLHELD_HELD,
 } hfp_callheld_t;
 
