@@ -62,21 +62,85 @@ typedef struct {
     uint8_t value[0];
 } bt_property_value_t;
 
-static void storage_commit(service_work_t* work, void* userdata)
+typedef struct {
+    char key[128];
+    size_t length;
+    uint8_t data[];
+} bt_property_t;
+
+static void storage_save_adapter_info(service_work_t* work, void* userdata)
 {
+    adapter_storage_t* adapter = (adapter_storage_t*)userdata;
+    property_set_binary(BT_KVDB_ADAPTERINFO_NAME, adapter->name, sizeof(adapter->name), false);
+    property_set_int32(BT_KVDB_ADAPTERINFO_COD, adapter->class_of_device);
+    property_set_int32(BT_KVDB_ADAPTERINFO_IOCAP, adapter->io_capability);
+    property_set_int32(BT_KVDB_ADAPTERINFO_SCAN, adapter->scan_mode);
+    property_set_int32(BT_KVDB_ADAPTERINFO_BOND, adapter->bondable);
     property_commit();
+}
+
+static void storage_save_adapter_info_complete(service_work_t* work, void* userdata)
+{
+    free(userdata);
+}
+
+static void storage_delete_prop(service_work_t* work, void* userdata)
+{
+    int i;
+    bt_property_value_t* prop_value = (bt_property_value_t*)userdata;
+    char prop_name[PROP_NAME_MAX];
+
+    for (i = 0; i < prop_value->items; i++) {
+        addr = (bt_address_t*)prop_value->value + i;
+        GEN_PROP_KEY(prop_name, prop_value->key, addr, PROP_NAME_MAX);
+        property_delete(prop_name);
+    }
+
+    property_commit();
+}
+
+static void storage_delete_prop_complete(service_work_t* work, void* userdata)
+{
+    free(userdata);
+}
+
+static void storage_set_prop(service_work_t* work, void* userdata) 
+{
+    int ret;
+    bt_property_t *prop = (bt_property_t*)userdata;
+
+    ret = property_set_binary(prop->key, prop->data, prop->length, true);
+    if (ret < 0) {
+        BT_LOGE("key %s set error!", key);
+        return ret;
+    }
+    property_commit();
+
+}
+
+static void storage_set_prop_complete(service_work_t* work, void* userdata)
+{
+    free(userdata);
 }
 
 static int storage_set_key(const char* key, void* data, size_t length)
 {
     int ret;
+    bt_property_t *prop;
 
-    ret = property_set_binary(key, data, length, true);
-    if (ret < 0) {
-        BT_LOGE("key %s set error!", key);
-        return ret;
-    }
-    service_loop_work(NULL, storage_commit, NULL);
+    if (!key || !data)
+        return -1;
+
+    prop = malloc(sizeof(bt_property_t) + length);
+    if (!prop)
+        return -1;
+    
+    strlcpy(prop->key, key, PROP_NAME_MAX);
+    prop->length = length;
+    memcpy(prop->data, data, length);
+
+    service_loop_work(prop, storage_set_prop, storage_set_prop_complete);
+
     return ret;
 }
 
@@ -192,12 +256,21 @@ static void adapter_properties_default(adapter_storage_t* prop)
 
 int bt_storage_save_adapter_info(adapter_storage_t* adapter)
 {
-    property_set_binary(BT_KVDB_ADAPTERINFO_NAME, adapter->name, sizeof(adapter->name), true);
-    property_set_int32_oneway(BT_KVDB_ADAPTERINFO_COD, adapter->class_of_device);
-    property_set_int32_oneway(BT_KVDB_ADAPTERINFO_IOCAP, adapter->io_capability);
-    property_set_int32_oneway(BT_KVDB_ADAPTERINFO_SCAN, adapter->scan_mode);
-    property_set_int32_oneway(BT_KVDB_ADAPTERINFO_BOND, adapter->bondable);
-    service_loop_work(NULL, storage_commit, NULL);
+    adapter_storage_t* adapter_copy;
+
+    adapter_copy = (adapter_storage_t*)malloc(sizeof(adapter_storage_t));
+    if (!adapter_copy) {
+        BT_LOGE("adapter_copy malloc failed!");
+        return -ENOMEM;
+    }
+    memcpy(adapter_copy, adapter, sizeof(adapter_storage_t));
+
+    if(service_loop_work(adapter_copy, storage_save_adapter_info, storage_save_adapter_info_complete)) {
+        BT_LOGE("service_loop_work failed!");
+        storage_save_adapter_info_complete(NULL, adapter_copy);
+        return -EINVAL;
+    }
+
     return 0;
 }
 
@@ -352,14 +425,10 @@ static void bt_storage_delete(char* key, uint16_t items, char* prop_name)
     prop_value->value_length = total_length;
 
     property_list(callback_load_key, (void*)prop_value);
-    for (i = 0; i < items; i++) {
-        addr = (bt_address_t*)prop_value->value + i;
-        GEN_PROP_KEY(prop_name, key, addr, PROP_NAME_MAX);
-        property_delete(prop_name);
+    if (service_loop_work(prop_value, storage_delete_prop, storage_delete_prop_complete) == NULL) {
+        BT_LOGE("service_loop_work failed!");
+        storage_delete_prop_complete(NULL, prop_value);
     }
-
-    free(prop_value);
-    service_loop_work(NULL, storage_commit, NULL);
 }
 
 int bt_storage_save_bonded_device(remote_device_properties_t* remote, uint16_t size)
