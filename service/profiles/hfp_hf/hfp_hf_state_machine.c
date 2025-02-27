@@ -359,25 +359,23 @@ static void hf_service_fake_ciev(hf_state_machine_t* hfsm)
 static void query_current_calls_final(hf_state_machine_t* hfsm)
 {
     BT_LOGD("Query current call final");
-    bt_list_node_t *cnode, *unode;
+    bt_list_node_t* unode;
     bt_list_t* clist = hfsm->current_calls;
     bt_list_t* ulist = hfsm->update_calls;
+    bt_list_node_t* cnode = bt_list_head(clist);
 
     hf_service_fake_ciev(hfsm);
 
-    for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
+    while (cnode) {
         hfp_current_call_t* ccall = bt_list_node(cnode);
         hfp_current_call_t* ucall = bt_list_find(ulist, call_index_cmp, &ccall->index);
+        bt_list_node_t* next_node = bt_list_next(clist, cnode);
         if (!ucall) {
-            bt_list_node_t* tmp = bt_list_next(clist, cnode);
             /* call not found from update list, notify had terminated */
             ccall->state = HFP_HF_CALL_STATE_DISCONNECTED;
             hf_service_notify_call_state_changed(&hfsm->addr, ccall);
             /* resource free in bt_list_remove_node */
             bt_list_remove_node(clist, cnode);
-            cnode = tmp;
-            if (!cnode)
-                break;
         } else {
             if (ucall->dir != ccall->dir || ucall->state != ccall->state
                 || ucall->mpty != ccall->mpty || strcmp(ucall->number, ccall->number)) {
@@ -389,6 +387,7 @@ static void query_current_calls_final(hf_state_machine_t* hfsm)
                 hf_service_notify_call_state_changed(&hfsm->addr, ccall);
             }
         }
+        cnode = next_node;
     }
 
     for (unode = bt_list_head(ulist); unode != NULL; unode = bt_list_next(ulist, unode)) {
