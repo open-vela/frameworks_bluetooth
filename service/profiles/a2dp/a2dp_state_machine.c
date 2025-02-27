@@ -688,11 +688,10 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
             a2dp_sm->delay_start_timer = NULL;
         }
 
-        if (!a2dp_sm->audio_ready) {
+        if (!a2dp_sm->audio_ready && a2dp_sm->peer_sep == SEP_SNK) {
             BT_LOGW("A2dp device is not ready: %s", stack_event_to_string(event));
             break;
         }
-
         a2dp_audio_on_started(a2dp_sm->peer_sep, true);
         hsm_transition_to(sm, &started_state);
         break;
@@ -947,7 +946,14 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case DEVICE_CODEC_STATE_CHANGE_EVT:
+        a2dp_sm->audio_ready = true;
         a2dp_report_audio_config_state(a2dp_sm, &a2dp_sm->addr);
+        if (a2dp_sm->peer_sep == SEP_SNK) {
+            BT_LOGE("Codec reconfiguration should not be performed during the Started state, as a source.");
+            break;
+        }
+
+        a2dp_audio_setup_codec(a2dp_sm->peer_sep, &a2dp_sm->addr);
         break;
 
     case OFFLOAD_STOP_REQ:
