@@ -23,13 +23,12 @@
 #include "bt_addr.h"
 #include "sal_a2dp_sink_interface.h"
 #include "sal_a2dp_source_interface.h"
+#include "sal_a2dp.h"
 #include "sal_avrcp_control_interface.h"
 #include "sal_avrcp_target_interface.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
 
-#include <zephyr/bluetooth/conn.h>
-#include <zephyr/bluetooth/zephyr3/a2dp.h>
 #include <zephyr/bluetooth/zephyr3/avrcp_cttg.h>
 
 #include "bt_utils.h"
@@ -171,7 +170,7 @@ static void zblue_on_notify(struct bt_conn* conn, uint8_t event_id, uint8_t stat
     avrcp_msg_t* msg;
 
 #ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
-    uint8_t role = bt_a2dp_get_a2dp_role(conn);
+    uint8_t role = bt_avrcp_get_a2dp_role(conn);
 #endif
 
     if (bt_sal_get_remote_address(conn, &bd_addr) != BT_STATUS_SUCCESS)
@@ -193,7 +192,7 @@ static void zblue_on_notify(struct bt_conn* conn, uint8_t event_id, uint8_t stat
 #endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL */
 #ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
     case BT_AVRCP_EVENT_VOLUME_CHANGED:
-        if (role == BT_A2DP_CH_SOURCE) {
+        if (role == BT_AVDTP_SOURCE) {
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
             /* Note: This callback can be triggered when a set absolute volume response is received */
             msg = avrcp_msg_new(AVRC_REGISTER_NOTIFICATION_ABSVOL_RSP, &bd_addr);
