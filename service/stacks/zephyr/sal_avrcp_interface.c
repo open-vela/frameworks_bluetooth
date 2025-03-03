@@ -28,14 +28,14 @@
 #include "sal_interface.h"
 #include "sal_zblue.h"
 
-#include <zephyr/bluetooth/conn.h>
-#include <zephyr/bluetooth/zephyr3/a2dp.h>
 #include <zephyr/bluetooth/zephyr3/avrcp_cttg.h>
 
 #include "bt_utils.h"
 #include "utils/log.h"
 
 #if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARGET)
+
+extern bt_status_t bt_sal_a2dp_get_role(struct bt_conn* conn, uint8_t* a2dp_role);
 
 static void zblue_on_connected(struct bt_conn* conn);
 static void zblue_on_disconnected(struct bt_conn* conn);
@@ -169,9 +169,11 @@ static void zblue_on_notify(struct bt_conn* conn, uint8_t event_id, uint8_t stat
 {
     bt_address_t bd_addr;
     avrcp_msg_t* msg;
+    uint8_t role;
+    bt_status_t get_role_status;
 
 #ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
-    uint8_t role = bt_a2dp_get_a2dp_role(conn);
+    get_role_status = bt_sal_a2dp_get_role(conn, &role);
 #endif
 
     if (bt_sal_get_remote_address(conn, &bd_addr) != BT_STATUS_SUCCESS)
@@ -193,21 +195,23 @@ static void zblue_on_notify(struct bt_conn* conn, uint8_t event_id, uint8_t stat
 #endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL */
 #ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
     case BT_AVRCP_EVENT_VOLUME_CHANGED:
-        if (role == BT_A2DP_CH_SOURCE) {
-#ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
+#if defined(CONFIG_BLUETOOTH_AVRCP_TARGET)
+        if (get_role_status != 0 || role == 0 /* SEP_SRC */) {
             /* Note: This callback can be triggered when a set absolute volume response is received */
             msg = avrcp_msg_new(AVRC_REGISTER_NOTIFICATION_ABSVOL_RSP, &bd_addr);
             msg->data.absvol.volume = status;
             bt_sal_avrcp_control_event_callback(msg);
-#endif /* CONFIG_BLUETOOTH_AVRCP_TARGET */
-        } else { /* BT_A2DP_CH_SINK */
-#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+        }
+#elif defined(CONFIG_BLUETOOTH_AVRCP_CONTROL)
+        if (get_role_status != 0 || role == 1 /* SEP_SNK */) {
             /* Note: This callback can be triggered when a set absolute volume command is received */
             msg = avrcp_msg_new(AVRC_SET_ABSOLUTE_VOLUME, &bd_addr);
             msg->data.absvol.volume = status;
             bt_sal_avrcp_control_event_callback(msg);
-#endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL */
         }
+#else
+        break;
+#endif
         break;
 #endif /* CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME */
     default:
