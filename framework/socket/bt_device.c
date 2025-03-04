@@ -177,7 +177,7 @@ bool bt_device_get_alias(bt_instance_t* ins, bt_address_t* addr, char* alias, ui
     }
 
     strlcpy(alias, packet.devs_pl._bt_device_get_alias.alias,
-        MIN(length, sizeof(packet.devs_pl._bt_device_get_alias.alias) - 1));
+        MIN(length, sizeof(packet.devs_pl._bt_device_get_alias.alias)));
 
     return packet.devs_r.status;
 }
