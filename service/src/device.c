@@ -31,6 +31,7 @@
 #include "bt_utils.h"
 #include "bt_uuid.h"
 #include "device.h"
+#include "storage.h"
 #include "utils/log.h"
 
 #define BASE_UUID16_OFFSET 12
@@ -521,6 +522,7 @@ static void device_get_remote_uuids(bt_device_t* device, remote_device_propertie
 
 void device_get_property(bt_device_t* device, remote_device_properties_t* prop)
 {
+    bt_storage_set_version(prop->version);
     memcpy(&prop->addr, &device->remote.addr, sizeof(bt_address_t));
     prop->addr_type = device->remote.addr_type;
     strlcpy(prop->name, device->remote.name, BT_REM_NAME_MAX_LEN);

@@ -32,4 +32,8 @@ int bt_storage_load_bonded_device(load_storage_callback_t cb);
 int bt_storage_load_whitelist_device(load_storage_callback_t cb);
 int bt_storage_load_le_bonded_device(load_storage_callback_t cb);
 
+void bt_storage_set_version(void* version);
+bool bt_storage_version_match(void* version);
+void bt_storage_transform(remote_device_properties_t* dst_prop, remote_device_old_properties_t* src_prop, bool load_uuid);
+
 #endif /* _BT_STORAGE_H__ */

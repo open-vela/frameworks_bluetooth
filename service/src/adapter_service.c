@@ -304,9 +304,27 @@ static void load_remote_uuids(remote_device_properties_t* remote, bt_device_t* d
 
 static void bonded_device_loaded(void* data, uint16_t length, uint16_t items)
 {
+    bool is_match;
+    bool load_uuid;
+    uint16_t item_len;
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    remote_device_properties_t* remote;
+    remote_device_properties_t* remote_tmp = zalloc(sizeof(remote_device_properties_t));
+
     if (data && items) {
-        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
-        remote_device_properties_t* remote = (remote_device_properties_t*)data;
+        is_match = bt_storage_version_match(data);
+        load_uuid = length == items * sizeof(remote_device_old_properties_t) ? false : true;
+        load_uuid |= is_match;
+        /* Get first remote device Info. Device[0]*/
+        if (is_match) {
+            remote = (remote_device_properties_t*)data;
+            item_len = sizeof(remote_device_properties_t);
+        } else {
+            remote = remote_tmp;
+            bt_storage_transform(remote, (remote_device_old_properties_t*)data, load_uuid);
+            item_len = load_uuid ? sizeof(remote_device_old_properties_t) + CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN
+                                 : sizeof(remote_device_old_properties_t);
+        }
 
         BT_LOGD("load classic bonded device successfully:");
         for (int i = 0; i < items; i++) {
@@ -318,7 +336,9 @@ static void bonded_device_loaded(void* data, uint16_t length, uint16_t items)
             device_set_link_key(device, remote->link_key);
             device_set_link_key_type(device, remote->link_key_type);
             device_set_bond_state(device, BOND_STATE_BONDED);
-            load_remote_uuids(remote, device);
+            /* old version(without UUID) need not load */
+            if (load_uuid)
+                load_remote_uuids(remote, device);
             bt_list_add_tail(g_adapter_service.devices, device);
             bt_addr_ba2str(&remote->addr, addr_str);
             uint8_t* lk = remote->link_key;
@@ -326,9 +346,14 @@ static void bonded_device_loaded(void* data, uint16_t length, uint16_t items)
                 i, remote->name, addr_str, remote->link_key_type, lk[0], lk[1], lk[2], lk[3], lk[4], lk[5], lk[6],
                 lk[7], lk[8], lk[9], lk[10], lk[11], lk[12], lk[13], lk[14], lk[15]);
             bt_sal_set_bonded_devices(PRIMARY_ADAPTER, remote, 1);
-            remote++;
+            /* Get next remote device Info. Device[1] to Device[items-1]. If items == 1, do nothing.*/
+            if (!is_match && i < items - 1) {
+                bt_storage_transform(remote, (remote_device_old_properties_t*)((uint8_t*)data + (i + 1) * item_len), load_uuid);
+            } else
+                remote++;
         }
     }
+    free(remote_tmp);
     BT_LOGD("classic bonded device cnt: %" PRIu16, items);
 
     send_to_state_machine((state_machine_t*)g_adapter_service.stm, BREDR_ENABLED, NULL);

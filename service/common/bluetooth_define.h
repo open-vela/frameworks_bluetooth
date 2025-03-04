@@ -24,6 +24,8 @@
 #define SMP_KEYS_MAX_SIZE 80
 #define BT_COMMON_KEY_LENGTH 16
 
+#define VERSION_HEADER_LENGTH 6
+
 #ifdef CONFIG_BLUETOOTH_DEFAULT_COD
 #define DEFAULT_DEVICE_OF_CLASS CONFIG_BLUETOOTH_DEFAULT_COD
 #else
@@ -65,6 +67,7 @@ typedef enum {
 } bt_debug_type_t;
 
 typedef struct {
+    uint8_t version[VERSION_HEADER_LENGTH];
     bt_address_t addr;
     ble_addr_type_t addr_type;
     // only can add member after "addr_type" if needed, see function bt_storage_save_remote_device for reasons.
@@ -76,6 +79,18 @@ typedef struct {
     bt_device_type_t device_type;
     uint8_t uuids[CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN];
 } remote_device_properties_t;
+
+typedef struct {
+    bt_address_t addr;
+    ble_addr_type_t addr_type;
+    // only can add member after "addr_type" if needed, see function bt_storage_save_remote_device for reasons.
+    char name[BT_REM_NAME_MAX_LEN + 1];
+    char alias[BT_REM_NAME_MAX_LEN + 1];
+    uint32_t class_of_device;
+    uint8_t link_key[16];
+    bt_link_key_type_t link_key_type;
+    bt_device_type_t device_type;
+} remote_device_old_properties_t;
 
 typedef struct {
     bt_address_t addr;

@@ -44,6 +44,7 @@ typedef struct {
 } key_header_t;
 
 static uv_db_t* storage_handle = NULL;
+static const uint8_t bt_prop_version_0_1[VERSION_HEADER_LENGTH] = { 0x33, 0x8B, 0x9E, 0x00, 0x00, 0x01 };
 
 static void key_set_callback(int status, const char* key, uv_buf_t value, void* cookie)
 {
@@ -182,6 +183,30 @@ void bt_storage_load_le_device_info(void)
 
 void bt_storage_load_irk_info(void)
 {
+}
+
+void bt_storage_set_version(void* version)
+{
+    memcpy(version, bt_prop_version_0_1, VERSION_HEADER_LENGTH);
+}
+
+bool bt_storage_version_match(void* version)
+{
+    return memcmp(bt_prop_version_0_1, version, VERSION_HEADER_LENGTH) == 0;
+}
+
+void bt_storage_transform(remote_device_properties_t* dst_prop, remote_device_old_properties_t* src_prop, bool load_uuid)
+{
+    memcpy(&dst_prop->addr, &src_prop->addr, sizeof(bt_address_t));
+    dst_prop->addr_type = src_prop->addr_type;
+    strlcpy(dst_prop->name, src_prop->name, sizeof(dst_prop->name));
+    strlcpy(dst_prop->alias, src_prop->alias, sizeof(dst_prop->alias));
+    dst_prop->class_of_device = src_prop->class_of_device;
+    memcpy(dst_prop->link_key, src_prop->link_key, 16);
+    dst_prop->link_key_type = src_prop->link_key_type;
+    dst_prop->device_type = src_prop->device_type;
+    if (load_uuid)
+        memcpy(dst_prop->uuids, (uint8_t*)src_prop + sizeof(remote_device_old_properties_t), CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN);
 }
 
 int bt_storage_init(void)
