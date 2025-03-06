@@ -29,6 +29,8 @@ extern "C" {
 #define BTSYMBOLS(s) s
 #endif
 
+#define HFP_PHONE_NUMBER_MAX 80
+
 /**
  * @cond
  */
@@ -306,6 +308,22 @@ typedef void (*hfp_ag_at_cmd_received_callback)(void* cookie, bt_address_t* addr
 typedef void (*hfp_ag_vend_spec_at_cmd_received_callback)(void* cookie, bt_address_t* addr, const char* command, uint16_t company_id, const char* value);
 
 /**
+ * @brief HFP CLCC command received callback
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer HF device.
+ *
+ * **Example:**
+ * @code
+ void hfp_ag_clcc_cmd_received_callback(void* cookie, bt_address_t* addr)
+ {
+        printf("hfp_ag_clcc_cmd_received_callback\n");
+ }
+ * @endcode
+ */
+typedef void (*hfp_ag_clcc_cmd_received_callback)(void* cookie, bt_address_t* addr);
+
+/**
  * @cond
  */
 
@@ -327,6 +345,7 @@ typedef struct
     hfp_ag_dial_call_callback dial_call_cb;
     hfp_ag_at_cmd_received_callback at_cmd_cb;
     hfp_ag_vend_spec_at_cmd_received_callback vender_specific_at_cmd_cb;
+    hfp_ag_clcc_cmd_received_callback clcc_cmd_cb;
 } hfp_ag_callbacks_t;
 
 /**
@@ -869,6 +888,50 @@ int app_send_specific_at_command(bt_instance_t* ins, bt_address_t* addr);
  * @endcode
  */
 bt_status_t BTSYMBOLS(bt_hfp_ag_send_vendor_specific_at_command)(bt_instance_t* ins, bt_address_t* addr, const char* command, const char* value);
+
+/**
+ * @brief Send CLCC Response
+ *
+ * This function shall be invoked for each call when there are multiple calls. When all calls are
+ * transmitted, the application shall invoke bt_hfp_ag_clcc_response(ins, addr, 0, 0, 0, 0, NULL)
+ * to finalize a query procedure.
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer HF device.
+ * @param index - index of the call.
+ * @param dir - direction of the call.
+ * @param state - state of the call.
+ * @param mode - mode of the call.
+ * @param mpty - whether the call is multi party.
+ * @param type - type of the call.
+ * @param number - phone number of the call.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ *
+ * **Example:**
+ * @code
+int bt_hfp_ag_send_clcc_response(bt_instance_t* ins, bt_address_t* addr, uint32_t index,
+    hfp_call_direction_t dir, hfp_ag_call_state_t state, hfp_call_mode_t mode,
+    hfp_call_mpty_type_t mpty, hfp_call_addrtype_t type, const char* number)
+{
+    bt_status_t status;
+    uint32_t index = 1;
+    hfp_call_direction_t dir = HFP_CALL_DIRECTION_INCOMING;
+    hfp_ag_call_state_t state = HFP_AG_CALL_STATE_INCOMING;
+    hfp_call_mode_t mode = HFP_CALL_MODE_VOICE;
+    hfp_call_mpty_type_t mpty = HFP_CALL_MPTY_TYPE_SINGLE;
+    hfp_call_addrtype_t type = HFP_CALL_ADDRTYPE_NATIONAL;
+    char number[] = "12345678900";
+    status = bt_hfp_ag_send_clcc_response(ins, addr, index, dir, state, mode, mpty, type, number);
+    if (status != BT_STATUS_SUCCESS)
+        printf("send clcc response failed\n");
+
+    return status;
+}
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_hfp_ag_send_clcc_response)(bt_instance_t* ins, bt_address_t* addr,
+    uint32_t index, hfp_call_direction_t dir, hfp_ag_call_state_t state, hfp_call_mode_t mode,
+    hfp_call_mpty_type_t mpty, hfp_call_addrtype_t type, const char* number);
 #ifdef __cplusplus
 }
 #endif
