@@ -173,6 +173,16 @@ static void on_at_cmd_received_cb(void* cookie, bt_address_t* addr, const char* 
     bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_AT_COMMAND_RECEIVED);
 }
 
+static void on_clcc_cmd_received_cb(void* cookie, bt_address_t* addr)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_clcc_cmd_received.addr, addr, sizeof(bt_address_t));
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_CLCC_COMMAND_RECEIVED);
+}
+
 const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
     .connection_state_cb = on_connection_state_changed_cb,
     .audio_state_cb = on_audio_state_changed_cb,
@@ -184,6 +194,7 @@ const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
     .hangup_call_cb = on_hangup_call_cb,
     .dial_call_cb = on_dial_call_cb,
     .at_cmd_cb = on_at_cmd_received_cb,
+    .clcc_cmd_cb = on_clcc_cmd_received_cb,
 };
 
 /****************************************************************************
@@ -297,6 +308,17 @@ void bt_socket_server_hfp_ag_process(service_poll_t* poll, int fd,
             &packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr,
             packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.cmd);
         break;
+    case BT_HFP_AG_SEND_CLCC_RESPONSE:
+        packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_send_clcc_response)(ins,
+            &packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr,
+            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.index,
+            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.dir,
+            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.state,
+            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.mode,
+            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.mpty,
+            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.type,
+            packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.number[0] ? packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.number : NULL);
+        break;
     default:
         break;
     }
@@ -364,6 +386,11 @@ int bt_socket_client_hfp_ag_callback(service_poll_t* poll,
             at_cmd_cb,
             &packet->hfp_ag_cb._on_at_cmd_received.addr,
             packet->hfp_ag_cb._on_at_cmd_received.cmd);
+        break;
+    case BT_HFP_AG_ON_CLCC_COMMAND_RECEIVED:
+        CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+            clcc_cmd_cb,
+            &packet->hfp_ag_cb._on_clcc_cmd_received.addr);
         break;
     default:
         return BT_STATUS_PARM_INVALID;
