@@ -343,3 +343,31 @@ bt_status_t bt_hfp_ag_send_vendor_specific_at_command(bt_instance_t* ins, bt_add
 
     return packet.hfp_ag_r.status;
 }
+
+bt_status_t bt_hfp_ag_send_clcc_response(bt_instance_t* ins, bt_address_t* addr, uint32_t index,
+    hfp_call_direction_t dir, hfp_ag_call_state_t state, hfp_call_mode_t mode,
+    hfp_call_mpty_type_t mpty, hfp_call_addrtype_t type, const char* number)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.hfp_ag_pl._bt_hfp_ag_send_clcc_response.addr, addr, sizeof(bt_address_t));
+    packet.hfp_ag_pl._bt_hfp_ag_send_clcc_response.index = index;
+    packet.hfp_ag_pl._bt_hfp_ag_send_clcc_response.dir = dir;
+    packet.hfp_ag_pl._bt_hfp_ag_send_clcc_response.state = state;
+    packet.hfp_ag_pl._bt_hfp_ag_send_clcc_response.mode = mode;
+    packet.hfp_ag_pl._bt_hfp_ag_send_clcc_response.mpty = mpty;
+    packet.hfp_ag_pl._bt_hfp_ag_send_clcc_response.type = type;
+
+    if (number) {
+        strlcpy(packet.hfp_ag_pl._bt_hfp_ag_send_clcc_response.number, number, sizeof(packet.hfp_ag_pl._bt_hfp_ag_send_clcc_response.number));
+    }
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_HFP_AG_SEND_CLCC_RESPONSE);
+    if (status != BT_STATUS_SUCCESS)
+        return status;
+
+    return packet.hfp_ag_r.status;
+}
