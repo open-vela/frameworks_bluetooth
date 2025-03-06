@@ -84,6 +84,7 @@ void ag_service_notify_call_hangup(bt_address_t* addr);
 void ag_service_notify_call_dial(bt_address_t* addr, const char* number);
 void ag_service_notify_cmd_received(bt_address_t* addr, const char* at_cmd);
 void ag_service_notify_vendor_specific_cmd(bt_address_t* addr, const char* command, uint16_t company_id, const char* value);
+void ag_service_notify_clcc_cmd(bt_address_t* addr);
 
 /*
  * telephony
@@ -126,6 +127,9 @@ typedef struct ag_interface {
     bt_status_t (*dial_response)(uint8_t result);
     bt_status_t (*send_at_command)(bt_address_t* addr, const char* at_command);
     bt_status_t (*send_vendor_specific_at_command)(bt_address_t* addr, const char* command, const char* value);
+    bt_status_t (*send_clcc_response)(bt_address_t* addr, uint32_t index, hfp_call_direction_t dir,
+        hfp_ag_call_state_t state, hfp_call_mode_t mode, hfp_call_mpty_type_t mpty,
+        hfp_call_addrtype_t type, const char* number);
 } hfp_ag_interface_t;
 
 /*

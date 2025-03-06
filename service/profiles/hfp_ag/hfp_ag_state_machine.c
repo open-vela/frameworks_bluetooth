@@ -713,8 +713,12 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
                 HFP_CALL_ADDRTYPE_UNKNOWN, HFP_FAKE_NUMBER);
             bt_sal_hfp_ag_clcc_response(&agsm->addr, 0, 0, 0, 0, 0, 0, NULL);
         } else {
+#ifdef CONFIG_LIB_DBUS
             /* system call interface */
             tele_service_query_current_call(&agsm->addr);
+#else
+            ag_service_notify_clcc_cmd(&agsm->addr);
+#endif
         }
         break;
     case AG_STACK_EVENT_AT_COPS_REQUEST: {
