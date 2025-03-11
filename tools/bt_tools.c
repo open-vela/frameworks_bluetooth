@@ -1789,6 +1789,10 @@ static void bttool_thread(void* data)
 static int bttool_create_thread(bttool_t* bttool)
 {
     int ret;
+    uv_thread_options_t options = {
+        .flags = UV_THREAD_HAS_STACK_SIZE,
+        .stack_size = 8192,
+    };
 
     ret = uv_sem_init(&bttool->ready, 0);
     if (ret != 0) {
@@ -1796,7 +1800,7 @@ static int bttool_create_thread(bttool_t* bttool)
         return ret;
     }
 
-    ret = uv_thread_create(&bttool->thread, bttool_thread, (void*)bttool);
+    ret = uv_thread_create_ex(&bttool->thread, &options, bttool_thread, (void*)bttool);
     if (ret != 0) {
         PRINT("loop thread create :%d", ret);
         return ret;
