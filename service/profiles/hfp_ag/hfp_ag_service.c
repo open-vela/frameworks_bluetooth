@@ -397,7 +397,7 @@ static bt_status_t hfp_ag_init(void)
 {
     bt_status_t ret;
 
-    ret = audio_ctrl_init(PROFILE_HFP_AG);
+    ret = audio_ctrl_init();
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to start audio control channel", __func__);
         return ret;
@@ -408,7 +408,7 @@ static bt_status_t hfp_ag_init(void)
 
 static void hfp_ag_cleanup(void)
 {
-    audio_ctrl_cleanup(PROFILE_HFP_AG);
+    audio_ctrl_cleanup();
 }
 
 static bt_status_t hfp_ag_startup(profile_on_startup_t cb)
