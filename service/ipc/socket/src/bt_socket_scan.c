@@ -65,7 +65,7 @@ static void on_scan_result_cb(bt_scanner_t* scanner, ble_scan_result_t* result)
 
     packet.scan_cb._on_scan_result_cb.scanner = scan->remote;
     memcpy(&packet.scan_cb._on_scan_result_cb.result, result, sizeof(*result));
-    if (result->length && result->length <= sizeof(packet.scan_cb._on_scan_result_cb.adv_data)) {
+    if (result->length <= sizeof(packet.scan_cb._on_scan_result_cb.adv_data)) {
         memcpy(packet.scan_cb._on_scan_result_cb.adv_data, result->adv_data, result->length);
     } else {
         BT_LOGW("exceeds scan result maximum length :%d", result->length);
