@@ -224,7 +224,8 @@ BT_ADAPTER_MESSAGE_START,
         struct {
             bt_address_t addr;
             uint8_t transport; /* bt_transport_t */
-            uint8_t state; /* bond_state_t */
+            uint8_t previous_state; /* bond_state_t */
+            uint8_t current_state; /* bond_state_t */
             uint8_t is_ctkd; /* boolean */
         } _on_bond_state_changed;
 
