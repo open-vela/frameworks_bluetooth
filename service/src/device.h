@@ -65,7 +65,7 @@ void device_set_local_role(bt_device_t* device, bt_link_role_t role);
 void device_set_bond_initiate_local(bt_device_t* device, bool initiate_local);
 bool device_is_bond_initiate_local(bt_device_t* device);
 bond_state_t device_get_bond_state(bt_device_t* device);
-void device_set_bond_state(bt_device_t* device, bond_state_t state);
+void device_set_bond_state(bt_device_t* device, bond_state_t state, bool is_ctkd, void* notify_change);
 bool device_is_bonded(bt_device_t* device);
 uint8_t* device_get_link_key(bt_device_t* device);
 void device_set_link_key(bt_device_t* device, bt_128key_t link_key);
