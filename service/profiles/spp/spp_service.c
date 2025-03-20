@@ -611,8 +611,8 @@ static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* 
 #endif
 
     device = find_spp_device_by_handle(handle);
-    if (!device->handle) {
-        BT_LOGE("%s, handle null", __func__);
+    if (!device || !device->handle) {
+        BT_LOGE("%s, device or handle null", __func__);
         return;
     }
 
