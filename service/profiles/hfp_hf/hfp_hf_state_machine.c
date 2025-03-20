@@ -609,6 +609,28 @@ static bool check_sco_allowed(state_machine_t* sm)
     return true;
 }
 
+static void try_disconnect_audio(hf_state_machine_t* hfsm)
+{
+    BT_ADDR_LOG("Try disconnect audio for :%s", &hfsm->addr);
+
+    if (flag_isset(hfsm, PENDING_AUDIO_DISCONNECT)) {
+        BT_LOGD("Previous audio disconnection is pending");
+        return;
+    }
+
+    if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS) {
+        BT_LOGE("Failed to disconnect audio");
+        return;
+    }
+
+    // Should set flag when SCO not connected?
+    if (hf_state_machine_get_state(hfsm) == HFP_HF_STATE_AUDIO_CONNECTED) {
+        flag_set(hfsm, PENDING_AUDIO_DISCONNECT);
+    } else {
+        BT_LOGW("SCO not connected");
+    }
+}
+
 #ifdef CONFIG_HFP_HF_WEBCHAT_BLOCKER
 static void channel_type_verdict(state_machine_t* sm, uint32_t event, uint32_t status,
     uint64_t current_timestamp_us)
@@ -624,8 +646,7 @@ static void channel_type_verdict(state_machine_t* sm, uint32_t event, uint32_t s
                 BT_LOGD("%s: this might be a video chat from WeChat", __func__);
                 hfsm->call_status.webchat_flag_timestamp_us = current_timestamp_us;
                 if (hf_state_machine_get_state(hfsm) == HFP_HF_STATE_AUDIO_CONNECTED && !check_sco_allowed(sm)) {
-                    if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS)
-                        BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
+                    try_disconnect_audio(hfsm);
                 }
             }
         }
@@ -1170,8 +1191,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
         }
         break;
     case HF_DISCONNECT_AUDIO:
-        if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS)
-            BT_ADDR_LOG("Disconnect audio failed for :%s", &hfsm->addr);
+        try_disconnect_audio(hfsm); // Should set flag when SCO not connected?
         break;
     case HF_VOICE_RECOGNITION_START:
         if (!hfsm->recognition_active) {
@@ -1247,6 +1267,9 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
             hsm_transition_to(sm, &audio_on_state);
             break;
         case HFP_AUDIO_STATE_DISCONNECTED:
+            BT_LOGW("SCO disconnected without connected");
+            flag_clear(hfsm, PENDING_AUDIO_DISCONNECT);
+            break;
         default:
             break;
         }
@@ -1295,9 +1318,9 @@ static void audio_on_enter(state_machine_t* sm)
         bt_media_set_sco_available();
     } else {
         BT_LOGI("SCO is not allowed");
-        if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS)
-            BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
+        try_disconnect_audio(hfsm);
     }
+
     hf_service_notify_audio_state_changed(&hfsm->addr, HFP_AUDIO_STATE_CONNECTED);
 }
 
@@ -1325,6 +1348,8 @@ static void audio_on_exit(state_machine_t* sm)
         }
     }
 
+    flag_clear(hfsm, PENDING_AUDIO_DISCONNECT);
+
     hf_service_notify_audio_state_changed(&hfsm->addr, HFP_AUDIO_STATE_DISCONNECTED);
 }
 
@@ -1344,10 +1369,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         hsm_transition_to(sm, &disconnected_state);
         break;
     case HF_DISCONNECT_AUDIO:
-        status = bt_sal_hfp_hf_disconnect_audio(&hfsm->addr);
-        if (status != BT_STATUS_SUCCESS) {
-            BT_LOGE("Disconnect Sco connection failed");
-        }
+        try_disconnect_audio(hfsm);
         break;
     case HF_VOICE_RECOGNITION_STOP:
         if (hfsm->recognition_active) {
@@ -1433,9 +1455,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         if (result != HCI_SUCCESS) {
             BT_LOGE("HF_OFFLOAD_START fail, status:0x%0x", result);
             audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
-            if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS) {
-                BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
-            }
+            try_disconnect_audio(hfsm);
             break;
         }
 
@@ -1446,9 +1466,7 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         flag_clear(hfsm, PENDING_OFFLOAD_START);
         hfsm->offload_timer = NULL;
         audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
-        if (bt_sal_hfp_hf_disconnect_audio(&hfsm->addr) != BT_STATUS_SUCCESS) {
-            BT_ADDR_LOG("Terminate audio failed for :%s", &hfsm->addr);
-        }
+        try_disconnect_audio(hfsm);
         break;
     }
     case HF_OFFLOAD_STOP_REQ:
