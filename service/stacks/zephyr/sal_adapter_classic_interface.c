@@ -1257,6 +1257,8 @@ static void STACK_CALL(cancel_bond)(void* args)
 
     SAL_CHECK(bt_conn_auth_cancel(conn), 0);
     SAL_CHECK(bt_br_unpair((bt_addr_t*)&req->addr), 0);
+
+    bt_conn_unref(conn);
 }
 #endif
 
