@@ -89,6 +89,12 @@ endif #CONFIG_BLUETOOTH_BREDR_SUPPORT
 ifeq ($(CONFIG_BLUETOOTH_A2DP), y)
 	CSRCS += service/stacks/zephyr/sal_a2dp_interface.c
 endif #CONFIG_BLUETOOTH_A2DP
+ifeq ($(CONFIG_BLUETOOTH_HFP_HF), y)
+	CSRCS += service/stacks/zephyr/sal_hfp_hf_interface.c
+endif #CONFIG_BLUETOOTH_HFP_HF
+ifeq ($(CONFIG_BLUETOOTH_HFP_AG), y)
+	CSRCS += service/stacks/zephyr/sal_hfp_ag_interface.c
+endif #CONFIG_BLUETOOTH_HFP_AG
 ifneq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL)$(CONFIG_BLUETOOTH_AVRCP_TARGET),)
 	CSRCS += service/stacks/zephyr/sal_avrcp_interface.c
 endif #CONFIG_BLUETOOTH_AVRCP_CONTROL/CONFIG_BLUETOOTH_AVRCP_TARGET

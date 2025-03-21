@@ -1463,7 +1463,7 @@ static void STACK_CALL(set_power_mode)(void* args)
 
     bt_conn_unref(conn);
 }
-#endif
+
 
 bt_status_t bt_sal_set_power_mode(bt_controller_id_t id, bt_address_t* addr, bt_pm_mode_t* mode)
 {
@@ -1492,7 +1492,7 @@ bt_status_t bt_sal_set_power_mode(bt_controller_id_t id, bt_address_t* addr, bt_
     return BT_STATUS_NOT_SUPPORTED;
 }
 #endif /* CONFIG_BT_POWER_MODE_CONTROL */
-
+#endif
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(set_link_role)(void* args)
 {
