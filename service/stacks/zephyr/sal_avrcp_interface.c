@@ -372,7 +372,9 @@ bt_status_t bt_sal_avrcp_control_connect(bt_controller_id_t id, bt_address_t* ad
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
 
-    SAL_CHECK_RET(bt_avrcp_cttg_connect(conn), 0);
+    SAL_CHECK_RET_WITH_CONN(bt_avrcp_cttg_connect(conn), 0, conn);
+
+    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -385,7 +387,9 @@ bt_status_t bt_sal_avrcp_control_disconnect(bt_controller_id_t id, bt_address_t*
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
 
-    SAL_CHECK_RET(bt_avrcp_cttg_disconnect(conn), 0);
+    SAL_CHECK_RET_WITH_CONN(bt_avrcp_cttg_disconnect(conn), 0, conn);
+
+    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -401,10 +405,14 @@ bt_status_t bt_sal_avrcp_control_send_pass_through_cmd(bt_controller_id_t id,
     uint8_t op_id = sal_op_2_zephyr_op(key_code);
     bool push = key_state == AVRCP_KEY_PRESSED ? true : false;
 
-    if (op_id == AVRCP_OPERATION_ID_UNDEFINED)
+    if (op_id == AVRCP_OPERATION_ID_UNDEFINED) {
+        bt_conn_unref(conn);
         return BT_STATUS_PARM_INVALID;
+    }
 
-    SAL_CHECK_RET(bt_avrcp_ct_pass_through_cmd(conn, op_id, push), 0);
+    SAL_CHECK_RET_WITH_CONN(bt_avrcp_ct_pass_through_cmd(conn, op_id, push), 0, conn);
+
+    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -442,7 +450,9 @@ bt_status_t bt_sal_avrcp_target_set_absolute_volume(bt_controller_id_t id, bt_ad
     value.c_param[2] = volume; /* data */
     value.c_param[3] = 0; /* Not used */
 
-    SAL_CHECK_RET(bt_avrcp_ct_set_absolute_volume(conn, value.i_param), 0);
+    SAL_CHECK_RET_WITH_CONN(bt_avrcp_ct_set_absolute_volume(conn, value.i_param), 0, conn);
+
+    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -456,7 +466,9 @@ bt_status_t bt_sal_avrcp_control_get_capabilities(bt_controller_id_t id, bt_addr
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
 
-    SAL_CHECK_RET(bt_pts_avrcp_ct_get_capabilities(conn), 0);
+    SAL_CHECK_RET_WITH_CONN(bt_pts_avrcp_ct_get_capabilities(conn), 0, conn);
+
+    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -469,7 +481,9 @@ bt_status_t bt_sal_avrcp_control_get_playback_state(bt_controller_id_t id, bt_ad
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
 
-    SAL_CHECK_RET(bt_avrcp_ct_get_play_status(conn), 0);
+    SAL_CHECK_RET_WITH_CONN(bt_avrcp_ct_get_play_status(conn), 0, conn);
+
+    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -527,7 +541,9 @@ bt_status_t bt_sal_avrcp_control_volume_changed_notify(bt_controller_id_t id,
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
 
-    SAL_CHECK_RET(bt_avrcp_tg_notify_change(conn, volume), 0);
+    SAL_CHECK_RET_WITH_CONN(bt_avrcp_tg_notify_change(conn, volume), 0, conn);
+
+    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 #else
@@ -541,7 +557,9 @@ bt_status_t bt_sal_avrcp_control_get_element_attributes(bt_controller_id_t id,
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
     struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
 
-    SAL_CHECK_RET(bt_avrcp_ct_get_id3_info(conn), 0);
+    SAL_CHECK_RET_WITH_CONN(bt_avrcp_ct_get_id3_info(conn), 0, conn);
+
+    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 #else
