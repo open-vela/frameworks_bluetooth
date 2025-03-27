@@ -18,27 +18,23 @@
 
 #define LOG_TAG "stack_manager"
 #include "utils/log.h"
-#include "vhal/bt_vhal.h"
 
 bt_status_t stack_manager_init(void)
 {
     bt_status_t ret;
-    const bt_vhal_interface* vhal;
     bt_stack_info_t info;
-
-    vhal = get_bt_vhal_interface();
 
     bt_sal_get_stack_info(&info);
     BT_LOGI("Stack Info: %s Ver:%d.%d Sal:%d", info.name,
         info.stack_ver_major, info.stack_ver_minor, info.sal_ver);
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    ret = bt_sal_init(vhal);
+    ret = bt_sal_init();
     if (ret != BT_STATUS_SUCCESS)
         return ret;
 #endif
 
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
-    ret = bt_sal_le_init(vhal);
+    ret = bt_sal_le_init();
     if (ret != BT_STATUS_SUCCESS)
         return ret;
 #endif

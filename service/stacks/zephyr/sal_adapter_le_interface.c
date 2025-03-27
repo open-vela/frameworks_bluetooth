@@ -407,7 +407,7 @@ bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr)
     return BT_STATUS_SUCCESS;
 }
 
-bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal)
+bt_status_t bt_sal_le_init()
 {
     zblue_main();
 

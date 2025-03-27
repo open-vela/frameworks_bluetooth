@@ -23,9 +23,8 @@
 #include "bt_addr.h"
 #include "bt_status.h"
 #include "power_manager.h"
-#include "vhal/bt_vhal.h"
 
-bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal);
+bt_status_t bt_sal_le_init(void);
 void bt_sal_le_cleanup(void);
 bt_status_t bt_sal_le_enable(bt_controller_id_t id);
 bt_status_t bt_sal_le_disable(bt_controller_id_t id);

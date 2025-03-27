@@ -22,14 +22,13 @@
 #include "bt_addr.h"
 #include "bt_device.h"
 #include "bt_status.h"
-#include "bt_vhal.h"
 
 #include "bluetooth_define.h"
 #include "power_manager.h"
 
 /* service adapter layer for BREDR */
 // #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-bt_status_t bt_sal_init(const bt_vhal_interface* vhal);
+bt_status_t bt_sal_init(void);
 void bt_sal_cleanup(void);
 
 /* Adapter power */

@@ -28,8 +28,6 @@ extern "C" {
 #define BTSYMBOLS(s) s
 #endif
 
-#define BLE_SCAN_FILTER_UUID_MAX_NUM 2
-
 /**
  * @cond
  */
@@ -126,17 +124,6 @@ typedef struct {
     ble_scan_type_t scan_type;
     ble_phy_type_t scan_phy;
 } ble_scan_params_t;
-
-typedef struct {
-    uint32_t duration;
-    uint32_t period;
-    uint16_t uuids[BLE_SCAN_FILTER_UUID_MAX_NUM];
-    uint8_t active;
-    uint8_t duplicated;
-} ble_scan_filter_t;
-/**
- * @endcond
- */
 
 /**
  * @brief Scan result callback function.
@@ -290,7 +277,8 @@ if (scanner == NULL) {
  */
 bt_scanner_t* BTSYMBOLS(bt_le_start_scan_with_filters)(bt_instance_t* ins,
     ble_scan_settings_t* settings,
-    ble_scan_filter_t* filter_data,
+    uint8_t* filter_data,
+    uint16_t filter_length,
     const scanner_callbacks_t* cbs);
 
 /**

@@ -79,10 +79,11 @@ bt_scanner_t* bt_le_start_scan_settings(bt_instance_t* ins,
 
 bt_scanner_t* bt_le_start_scan_with_filters(bt_instance_t* ins,
     ble_scan_settings_t* settings,
-    ble_scan_filter_t* filter,
+    uint8_t* filter_data,
+    uint16_t filter_length,
     const scanner_callbacks_t* cbs)
 {
-    bt_message_packet_t packet = { 0 };
+    bt_message_packet_t packet;
     bt_status_t status;
 
     BT_SOCKET_INS_VALID(ins, NULL);
@@ -96,8 +97,9 @@ bt_scanner_t* bt_le_start_scan_with_filters(bt_instance_t* ins,
     if (settings)
         memcpy(&packet.scan_pl._bt_le_start_scan_with_filters.settings, settings, sizeof(*settings));
 
-    if (filter) {
-        memcpy(&packet.scan_pl._bt_le_start_scan_with_filters.filter, filter, sizeof(*filter));
+    if (filter_data) {
+        memcpy(&packet.scan_pl._bt_le_start_scan_with_filters.filter_data, filter_data, filter_length);
+        packet.scan_pl._bt_le_start_scan_with_filters.filter_length = filter_length;
     }
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_START_WITH_FILTERS);

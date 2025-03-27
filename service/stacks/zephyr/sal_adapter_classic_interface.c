@@ -484,7 +484,7 @@ static struct bt_br_discovery_cb g_br_discovery_cb = {
 };
 
 /* service adapter layer for BREDR */
-bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
+bt_status_t bt_sal_init()
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     extern void z_sys_init(void);
