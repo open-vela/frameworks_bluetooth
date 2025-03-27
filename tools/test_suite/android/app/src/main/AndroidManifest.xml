@@ -29,23 +29,19 @@
 
         <activity
             android:name=".ble.BleScanActivity"
-            android:label="@string/ble_scan"
-            android:screenOrientation="portrait" />
+            android:label="@string/ble_scan" />
 
         <activity
             android:name=".bredr.BredrInquiryActivity"
-            android:label="@string/bredr_inquiry"
-            android:screenOrientation="portrait" />
+            android:label="@string/bredr_inquiry" />
 
         <activity
             android:name=".ble.BleCentralActivity"
-            android:label="@string/ble_central"
-            android:screenOrientation="portrait" />
+            android:label="@string/ble_central" />
 
         <activity
             android:name=".ble.BlePeripheralActivity"
-            android:label="@string/ble_peripheral"
-            android:screenOrientation="portrait" />
+            android:label="@string/ble_peripheral" />
 
     </application>
 
