@@ -121,7 +121,7 @@ static void a2dp_sink_audio_handle_timer(service_timer_t* timer, void* arg)
     uint64_t now_us = get_os_timestamp_us();
 #ifndef CONFIG_ARCH_SIM
     if (stream->last_ts && ((now_us - stream->last_ts) > 30000))
-        BT_LOGD("===a2dp cpu busy time:%lld, buff_cnt:%d===", now_us - stream->last_ts, list_length(&sink_stream.packet_queue));
+        BT_LOGD("===a2dp cpu busy time:%" PRIu64 ", buff_cnt:%zu===", now_us - stream->last_ts, list_length(&sink_stream.packet_queue));
     stream->last_ts = now_us;
 #endif
 
