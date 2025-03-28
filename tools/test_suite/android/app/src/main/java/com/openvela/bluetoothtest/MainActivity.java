@@ -34,85 +34,43 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import com.openvela.bluetooth.BluetoothStateObserver;
 import com.openvela.bluetooth.callback.BluetoothStateCallback;
+import com.openvela.bluetoothtest.LocalAdapter.OnOffActivity;
 import com.openvela.bluetoothtest.ble.BleScanActivity;
 import com.openvela.bluetoothtest.ble.BlePeripheralActivity;
 import com.openvela.bluetoothtest.bredr.BredrInquiryActivity;
 
 public class MainActivity extends AppCompatActivity {
     private final String TAG = MainActivity.class.getSimpleName();
-    private final int REQUEST_ENABLE_BT = 1;
-
-    private LinearLayout llBluetoothAdapterTip;
-    private BluetoothStateObserver btStateObserver;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        initView();
         requestBluetoothPermission();
-        listenBluetoothState();
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        btStateObserver.unregisterReceiver();
-    }
-
-    private void initView() {
-        llBluetoothAdapterTip = findViewById(R.id.ll_adapter_tip);
-        TextView tvAdapterStates = findViewById(R.id.tv_adapter_states);
-
-        tvAdapterStates.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), REQUEST_ENABLE_BT);
-            }
-        });
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.S)
     private void requestBluetoothPermission() {
-        List<String> permissions = new ArrayList<>();
-        permissions.add(Manifest.permission.BLUETOOTH_SCAN);
-        permissions.add(Manifest.permission.BLUETOOTH_ADVERTISE);
-        permissions.add(Manifest.permission.BLUETOOTH_CONNECT);
-        permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
-        permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
-
-        registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), map -> {
-            if (!isBluetoothEnabled()) {
-                llBluetoothAdapterTip.setVisibility(View.VISIBLE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            String[] necessaryBluetoothPermissioins = {
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Manifest.permission.BLUETOOTH_ADVERTISE,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_FINE_LOCATION};
+            if (necessaryBluetoothPermissioins.length > 0) {
+                Log.d(TAG, "Request Bluetooth permissions");
+                ActivityCompat.requestPermissions(this, necessaryBluetoothPermissioins, 1);
             }
-        }).launch(permissions.toArray(new String[0]));
+        }
     }
 
-    private void listenBluetoothState() {
-        btStateObserver = new BluetoothStateObserver(this);
-        btStateObserver.registerReceiver(new BluetoothStateCallback() {
-            @Override
-            public void onEnabled() {
-                Log.i(TAG, "BluetoothAdapter is enabled!");
-                llBluetoothAdapterTip.setVisibility(View.GONE);
-            }
-
-            @Override
-            public void onDisabled() {
-                Log.i(TAG, "BluetoothAdapter is disabled!");
-                llBluetoothAdapterTip.setVisibility(View.VISIBLE);
-            }
-        });
+    public void entryOnOffActivity(View view) {
+        startActivity(new Intent(this, OnOffActivity.class));
     }
-
-    private boolean isBluetoothEnabled() {
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        return bluetoothAdapter != null && bluetoothAdapter.isEnabled();
-    }
-
     public void entryBredrInquiryActivity(View view) {
         startActivity(new Intent(this, BredrInquiryActivity.class));
     }

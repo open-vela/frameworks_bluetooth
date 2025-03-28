@@ -4,6 +4,9 @@
 
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
@@ -28,12 +31,16 @@
         </activity>
 
         <activity
-            android:name=".ble.BleScanActivity"
-            android:label="@string/ble_scan" />
+            android:name=".LocalAdapter.OnOffActivity"
+            android:label="@string/bredr_on_off" />
 
         <activity
             android:name=".bredr.BredrInquiryActivity"
             android:label="@string/bredr_inquiry" />
+
+        <activity
+            android:name=".ble.BleScanActivity"
+            android:label="@string/ble_scan" />
 
         <activity
             android:name=".ble.BleCentralActivity"
