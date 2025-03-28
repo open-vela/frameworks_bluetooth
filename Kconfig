@@ -47,6 +47,14 @@ config BLUETOOTH_DEBUG_TIME_UNIT_US
         Enable this option to use microseconds (us) for Bluetooth debug time.
         If disabled, milliseconds (ms) will be used by default.
 
+config BLUETOOTH_DEBUG_MEMORY
+    bool "Enable Bluetooth Debug Memory"
+    default n
+    help
+        Enable this option to override standard memory allocation functions
+        (malloc, calloc, free) with Bluetooth-specific versions (bt_malloc, etc).
+        Useful for tracking memory usage and debugging in Bluetooth modules.
+
 config BLUETOOTH_BREDR_SUPPORT
 	bool "BREDR support"
 	default y
