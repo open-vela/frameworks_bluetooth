@@ -32,6 +32,8 @@
 #include "utils/log.h"
 
 BT_DEBUG_MKTIMEVAL_S(service_message_callback);
+#define DEFERRED_MSG_TIMEOUT (100) /**< 100ms */
+#define DEFFERED_MSG_MAX (50)
 
 typedef struct {
     struct list_node node;
@@ -214,6 +216,7 @@ int service_loop_init(void)
 
     list_initialize(&loop->msg_queue);
     list_initialize(&loop->init_queue);
+    list_initialize(&loop->deferred_queue);
 
     return 0;
 
@@ -276,6 +279,9 @@ void service_loop_exit(void)
         return;
     }
 
+    service_loop_cancel_timer(loop->deferred_timer);
+    loop->deferred_timer = NULL;
+
     if (loop->is_running) {
         do_in_service_loop(set_stop, loop);
         uv_sem_wait(&loop->exited);
@@ -297,7 +303,15 @@ void service_loop_exit(void)
         list_delete(node);
         free(node);
     }
+
+    list_for_every_safe(&loop->deferred_queue, node, tmp)
+    {
+        list_delete(node);
+        free(node);
+    }
+
     list_delete(&loop->msg_queue);
+    list_delete(&loop->deferred_queue);
     uv_mutex_unlock(&loop->msg_lock);
     uv_mutex_destroy(&loop->msg_lock);
     free(loop);
@@ -469,6 +483,50 @@ void do_in_service_loop_sync(service_func_t func, void* data)
     do_in_service_loop(service_sync_callback, &msg);
     uv_sem_wait(&msg.signal);
     uv_sem_destroy(&msg.signal);
+}
+
+static void deferred_timeout(service_timer_t* timer, void* data)
+{
+    service_loop_t* loop = (service_loop_t*)data;
+
+    uv_mutex_lock(&loop->msg_lock);
+    list_merge(&loop->msg_queue, &loop->deferred_queue);
+    uv_mutex_unlock(&loop->msg_lock);
+
+    service_loop_cancel_timer(loop->deferred_timer);
+    loop->deferred_timer = NULL;
+
+    uv_async_send(&loop->async);
+}
+
+void do_in_service_loop_deffered(service_func_t func, void* data, bool flushable)
+{
+    uv_loop_t* handle = get_service_uv_loop();
+    service_loop_t* loop = handle->data;
+    size_t length;
+    internel_msg_t* msg;
+
+    if (flushable) {
+        uv_mutex_lock(&loop->msg_lock);
+        length = list_length(&loop->deferred_queue);
+        uv_mutex_unlock(&loop->msg_lock);
+        if (length > DEFFERED_MSG_MAX) {
+            return;
+        }
+    }
+
+    msg = (internel_msg_t*)malloc(sizeof(internel_msg_t));
+    assert(msg);
+
+    msg->func = func;
+    msg->msg = data;
+
+    uv_mutex_lock(&loop->msg_lock);
+    list_add_tail(&loop->deferred_queue, &msg->node);
+    uv_mutex_unlock(&loop->msg_lock);
+
+    if (!loop->deferred_timer)
+        loop->deferred_timer = service_loop_timer_no_repeating(DEFERRED_MSG_TIMEOUT, deferred_timeout, loop);
 }
 
 uv_loop_t* get_service_uv_loop(void)
