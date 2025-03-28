@@ -93,6 +93,8 @@ int bt_socket_server_init(const char* name, int port);
 int bt_socket_server_send(bt_instance_t* ins, bt_message_packet_t* packet,
     uint32_t code);
 
+bool bt_socket_server_is_busy(void);
+
 /* Manager */
 void bt_socket_server_manager_process(service_poll_t* poll,
     int fd, bt_instance_t* ins, bt_message_packet_t* packet);
