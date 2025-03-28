@@ -16,6 +16,11 @@
 
 include $(APPDIR)/Make.defs
 
+ifeq ($(CONFIG_BLUETOOTH_MEM_OVERRIDE),y)
+	CSRCS += tools/bt_memory.c
+endif
+CFLAGS += -include framework/include/bt_memory.h
+
 ifeq ($(CONFIG_BLUETOOTH), y)
 
 CSRCS += framework/common/*.c
