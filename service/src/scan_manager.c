@@ -24,6 +24,7 @@
 #include "bt_hash.h"
 #include "bt_le_scan.h"
 #include "bt_list.h"
+#include "bt_socket.h"
 #include "bt_time.h"
 #include "sal_interface.h"
 #include "scan_filter.h"
@@ -246,6 +247,11 @@ static void notify_scanners_scan_result(void* data)
     scan_record_t record = { 0 };
     scanner_device_t* device;
     uint32_t timestamp_ms;
+
+    if (bt_socket_server_is_busy()) {
+        do_in_service_loop_deffered(notify_scanners_scan_result, data, true);
+        return;
+    }
 
     timestamp_ms = get_os_timestamp_ms();
     list_for_every(&scanner_manager.scanning_list, node)
