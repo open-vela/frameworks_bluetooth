@@ -1,54 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    tools:context=".MainActivity">
 
-    <LinearLayout
-        android:id="@+id/ll_adapter_tip"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:gravity="center_vertical"
-        android:background="@color/colorWarn"
-        android:visibility="gone">
+        android:layout_height="wrap_content">
 
-        <TextView
-            android:id="@+id/tv_tip"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:textColor="@color/white"
-            android:text="@string/bluetooth_adapter_disabled"/>
-
-        <TextView
-            android:id="@+id/tv_adapter_states"
+        <Button
+            android:id="@+id/button_on_off"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
-            android:textColor="@color/white"
-            android:text="@string/enable"/>
-    </LinearLayout>
+            android:layout_marginTop="16dp"
+            android:onClick="entryOnOffActivity"
+            android:text="@string/bredr_on_off"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:onClick="entryBredrInquiryActivity"
-        android:text="@string/bredr_inquiry"
-        android:textAllCaps="false" />
+        <Button
+            android:id="@+id/button_bredr_inquiry"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:onClick="entryBredrInquiryActivity"
+            android:text="@string/bredr_inquiry"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="@+id/button_on_off"
+            app:layout_constraintStart_toStartOf="@+id/button_on_off"
+            app:layout_constraintTop_toBottomOf="@+id/button_on_off" />
 
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:onClick="entryBleCentralActivity"
-        android:text="@string/ble_central"
-        android:textAllCaps="false"/>
+        <Button
+            android:id="@+id/button_ble_peripheral"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:onClick="entryBlePeripheralActivity"
+            android:text="@string/ble_peripheral"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="@+id/button_bredr_inquiry"
+            app:layout_constraintStart_toStartOf="@+id/button_bredr_inquiry"
+            app:layout_constraintTop_toBottomOf="@+id/button_bredr_inquiry" />
 
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:onClick="entryBlePeripheralActivity"
-        android:text="@string/ble_peripheral"
-        android:textAllCaps="false" />
+        <Button
+            android:id="@+id/button_ble_central"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:onClick="entryBleCentralActivity"
+            android:text="@string/ble_central"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="@+id/button_ble_peripheral"
+            app:layout_constraintStart_toStartOf="@+id/button_ble_peripheral"
+            app:layout_constraintTop_toBottomOf="@+id/button_ble_peripheral" />
 
-</LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>
