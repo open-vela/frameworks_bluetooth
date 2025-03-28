@@ -21,10 +21,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.util.Log;
 
 import com.openvela.bluetooth.callback.BluetoothStateCallback;
 
 public class BluetoothStateObserver extends BroadcastReceiver {
+    private final String TAG = "BluetoothStateObserver";
+    private static final boolean DBG = false;
     private final Context context;
     private BluetoothStateCallback bluetoothStateCallback;
 
@@ -36,12 +39,16 @@ public class BluetoothStateObserver extends BroadcastReceiver {
         final IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         context.registerReceiver(this, filter);
+        if (DBG)
+            Log.d(TAG, "registerReceiver");
         this.bluetoothStateCallback = callback;
     }
 
     public void unregisterReceiver() {
         try {
             context.unregisterReceiver(this);
+            if (DBG)
+                Log.d(TAG, "unregisterReceiver");
             this.bluetoothStateCallback = null;
         } catch (Exception e) {
             e.printStackTrace();
@@ -56,6 +63,9 @@ public class BluetoothStateObserver extends BroadcastReceiver {
 
         if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
             int status = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+            if (DBG)
+                Log.d(TAG, "onReceive" + status);
+
             if (status == BluetoothAdapter.STATE_ON) {
                 if (bluetoothStateCallback != null) {
                     bluetoothStateCallback.onEnabled();
