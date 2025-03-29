@@ -76,6 +76,8 @@ public class BlePeripheralActivity extends AppCompatActivity {
     }
 
     private void startAdvertising(final byte[] payload) {
+        Log.d(TAG, "startAdvertising: enter");
+
         AdvertiseSettings advertiseSettings = new AdvertiseSettings.Builder()
             .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
             .setConnectable(true)
@@ -92,6 +94,8 @@ public class BlePeripheralActivity extends AppCompatActivity {
     }
 
     public void stopAdvertising() {
+        Log.d(TAG, "stopAdvertising");
+
         bluetoothAdvertiser.stopAdvertising(advertiseCallback);
         bluetoothAdvertiser = null;
     }
@@ -101,12 +105,13 @@ public class BlePeripheralActivity extends AppCompatActivity {
         public void onStartSuccess(AdvertiseSettings settingsInEffect) {
             tvAdvState.setText("Advertising...");
             btnAdv.setText("STOP ADVERTISE");
+            Log.e(TAG, "AdvertiseCallback::onStartSuccess: OK");
         }
 
         @Override
         public void onStartFailure(int errorCode) {
             tvAdvState.setText("Advertise Failed: " + errorCode);
-            Log.e(TAG, "onAdvStartFailure: " + errorCode);
+            Log.e(TAG, "AdvertiseCallback::onAdvStartFailure: " + errorCode);
         }
     };
 }

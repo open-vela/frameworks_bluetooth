@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/spp"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    tools:context=".bredr.SppActivity"
+    tools:layout_editor_absoluteX="0dp"
+    tools:layout_editor_absoluteY="42dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/textView4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="8dp"
+            android:text="PSM"
+            app:layout_constraintStart_toEndOf="@+id/text_service_uuid_1"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/textView5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="7dp"
+            android:layout_marginTop="8dp"
+            android:text="PSM"
+            app:layout_constraintStart_toEndOf="@+id/text_service_uuid_2"
+            app:layout_constraintTop_toBottomOf="@+id/divider" />
+
+        <EditText
+            android:id="@+id/text_service_uuid_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="text"
+            android:text="0"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/button_spp_server_register_1"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:text="Register 1"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toStartOf="@+id/button_spp_server_unregister_1"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_service_uuid_1" />
+
+        <Button
+            android:id="@+id/button_spp_server_register_2"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="1dp"
+            android:text="Register 2"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toStartOf="@+id/button_spp_server_unregister_2"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_service_uuid_2" />
+
+        <EditText
+            android:id="@+id/text_service_uuid_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="text"
+            android:text="0"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/divider" />
+
+        <Button
+            android:id="@+id/button_spp_server_unregister_2"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:text="Unregister 2"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/button_spp_server_register_2"
+            app:layout_constraintTop_toTopOf="@+id/button_spp_server_register_2" />
+
+        <View
+            android:id="@+id/divider"
+            android:layout_width="411dp"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/button_spp_send_1" />
+
+        <Button
+            android:id="@+id/button_spp_client_connect_2"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:text="Connect 2"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toStartOf="@+id/button_spp_disconnect_2"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_bd_addr_2" />
+
+        <Button
+            android:id="@+id/button_spp_disconnect_2"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:text="Disconnect 2"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/button_spp_client_connect_2"
+            app:layout_constraintTop_toTopOf="@+id/button_spp_client_connect_2" />
+
+        <Button
+            android:id="@+id/button_spp_disconnect_1"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:text="Disconnect 1"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/button_spp_client_connect_1"
+            app:layout_constraintTop_toTopOf="@+id/button_spp_client_connect_1" />
+
+        <Button
+            android:id="@+id/button_spp_send_2"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:text="Send 2"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_data_to_send_2" />
+
+        <EditText
+            android:id="@+id/text_data_to_send_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:ems="10"
+            android:inputType="text"
+            android:text="VelaTest:12"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/button_spp_client_connect_2" />
+
+        <EditText
+            android:id="@+id/text_bd_addr_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:ems="10"
+            android:inputType="text"
+            android:text="20:3B:34:C7:BD:30"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/button_spp_server_register_2" />
+
+        <Button
+            android:id="@+id/button_spp_server_unregister_1"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:text="Unregister 1"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/button_spp_server_register_1"
+            app:layout_constraintTop_toTopOf="@+id/button_spp_server_register_1" />
+
+        <View
+            android:id="@+id/divider2"
+            android:layout_width="411dp"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/button_spp_send_2" />
+
+        <EditText
+            android:id="@+id/text_data_to_send_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:ems="10"
+            android:inputType="text"
+            android:text="VelaTest:12"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/button_spp_client_connect_1" />
+
+        <Button
+            android:id="@+id/button_spp_send_1"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:text="Send 1"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.498"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_data_to_send_1" />
+
+        <EditText
+            android:id="@+id/text_data_to_display"
+            android:layout_width="wrap_content"
+            android:layout_height="100dp"
+            android:layout_marginTop="8dp"
+            android:ems="10"
+            android:gravity="start|top"
+            android:inputType="textMultiLine"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/divider2" />
+
+        <EditText
+            android:id="@+id/text_bd_addr_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:ems="10"
+            android:inputType="text"
+            android:text="7C:A4:49:11:BD:27"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/button_spp_server_register_1" />
+
+        <Button
+            android:id="@+id/button_spp_client_connect_1"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:text="Connect 1"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toStartOf="@+id/button_spp_disconnect_1"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_bd_addr_1" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>

@@ -39,6 +39,14 @@
             android:label="@string/bredr_inquiry" />
 
         <activity
+            android:name=".bredr.SppActivity"
+            android:label="@string/spp" />
+
+        <activity
+            android:name=".bredr.BredrL2capActivity"
+            android:label="@string/bredr_l2cap" />
+
+        <activity
             android:name=".ble.BleScanActivity"
             android:label="@string/ble_scan" />
 
@@ -49,6 +57,10 @@
         <activity
             android:name=".ble.BlePeripheralActivity"
             android:label="@string/ble_peripheral" />
+
+        <activity
+            android:name=".ble.BleL2capActivity"
+            android:label="@string/ble_l2cap" />
 
     </application>
 
