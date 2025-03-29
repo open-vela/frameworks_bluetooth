@@ -14,7 +14,7 @@
 
         <Button
             android:id="@+id/button_on_off"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:onClick="entryOnOffActivity"
@@ -26,7 +26,7 @@
 
         <Button
             android:id="@+id/button_bredr_inquiry"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:onClick="entryBredrInquiryActivity"
@@ -38,7 +38,7 @@
 
         <Button
             android:id="@+id/button_ble_peripheral"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:onClick="entryBlePeripheralActivity"
@@ -50,7 +50,7 @@
 
         <Button
             android:id="@+id/button_ble_central"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:onClick="entryBleCentralActivity"
