@@ -37,6 +37,30 @@
             app:layout_constraintTop_toBottomOf="@+id/button_on_off" />
 
         <Button
+            android:id="@+id/button_spp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:onClick="entrySppActivity"
+            android:text="@string/spp"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="@+id/button_bredr_inquiry"
+            app:layout_constraintStart_toStartOf="@+id/button_bredr_inquiry"
+            app:layout_constraintTop_toBottomOf="@+id/button_bredr_inquiry" />
+
+        <Button
+            android:id="@+id/button_bredr_l2cap"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:onClick="entryBredrL2capActivity"
+            android:text="@string/bredr_l2cap"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="@+id/button_spp"
+            app:layout_constraintStart_toStartOf="@+id/button_spp"
+            app:layout_constraintTop_toBottomOf="@+id/button_spp" />
+
+        <Button
             android:id="@+id/button_ble_peripheral"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -44,9 +68,9 @@
             android:onClick="entryBlePeripheralActivity"
             android:text="@string/ble_peripheral"
             android:textAllCaps="false"
-            app:layout_constraintEnd_toEndOf="@+id/button_bredr_inquiry"
-            app:layout_constraintStart_toStartOf="@+id/button_bredr_inquiry"
-            app:layout_constraintTop_toBottomOf="@+id/button_bredr_inquiry" />
+            app:layout_constraintEnd_toEndOf="@+id/button_bredr_l2cap"
+            app:layout_constraintStart_toStartOf="@+id/button_bredr_l2cap"
+            app:layout_constraintTop_toBottomOf="@+id/button_bredr_l2cap" />
 
         <Button
             android:id="@+id/button_ble_central"
@@ -59,6 +83,18 @@
             app:layout_constraintEnd_toEndOf="@+id/button_ble_peripheral"
             app:layout_constraintStart_toStartOf="@+id/button_ble_peripheral"
             app:layout_constraintTop_toBottomOf="@+id/button_ble_peripheral" />
+
+        <Button
+            android:id="@+id/button_ble_l2cap"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:onClick="entryBleL2capActivity"
+            android:text="@string/ble_l2cap"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="@+id/button_ble_central"
+            app:layout_constraintStart_toStartOf="@+id/button_ble_central"
+            app:layout_constraintTop_toBottomOf="@+id/button_ble_central" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
