@@ -39,9 +39,12 @@ import androidx.core.app.ActivityCompat;
 import com.openvela.bluetooth.BluetoothStateObserver;
 import com.openvela.bluetooth.callback.BluetoothStateCallback;
 import com.openvela.bluetoothtest.LocalAdapter.OnOffActivity;
+import com.openvela.bluetoothtest.ble.BleL2capActivity;
 import com.openvela.bluetoothtest.ble.BleScanActivity;
 import com.openvela.bluetoothtest.ble.BlePeripheralActivity;
 import com.openvela.bluetoothtest.bredr.BredrInquiryActivity;
+import com.openvela.bluetoothtest.bredr.BredrL2capActivity;
+import com.openvela.bluetoothtest.bredr.SppActivity;
 
 public class MainActivity extends AppCompatActivity {
     private final String TAG = MainActivity.class.getSimpleName();
@@ -71,8 +74,17 @@ public class MainActivity extends AppCompatActivity {
     public void entryOnOffActivity(View view) {
         startActivity(new Intent(this, OnOffActivity.class));
     }
+
     public void entryBredrInquiryActivity(View view) {
         startActivity(new Intent(this, BredrInquiryActivity.class));
+    }
+
+    public void entrySppActivity(View view) {
+        startActivity(new Intent(this, SppActivity.class));
+    }
+
+    public void entryBredrL2capActivity(View view) {
+        startActivity(new Intent(this, BredrL2capActivity.class));
     }
 
     public void entryBleCentralActivity(View view) {
@@ -81,5 +93,9 @@ public class MainActivity extends AppCompatActivity {
 
     public void entryBlePeripheralActivity(View view) {
         startActivity(new Intent(this, BlePeripheralActivity.class));
+    }
+
+    public void entryBleL2capActivity(View view) {
+        startActivity(new Intent(this, BleL2capActivity.class));
     }
 }
