@@ -293,9 +293,6 @@ static void gattc_process_message(void* data)
     case GATTC_EVENT_SUBSCRIBE: {
         gatt_element_t* element = find_gattc_element_by_handle(connection, msg->param.subscribe.element_id);
         if (element) {
-            if (msg->param.subscribe.status == GATT_STATUS_SUCCESS) {
-                element->notify_enable = msg->param.subscribe.enable;
-            }
             GATT_CBACK(connection->callbacks, on_subscribed, connection, msg->param.subscribe.status, msg->param.subscribe.element_id, msg->param.subscribe.enable);
         } else {
             BT_LOGE("GATTC receives a subscribe event with unknown element (id:0x%04x)", msg->param.subscribe.element_id);
@@ -303,7 +300,7 @@ static void gattc_process_message(void* data)
     } break;
     case GATTC_EVENT_NOTIFY: {
         gatt_element_t* element = find_gattc_element_by_handle(connection, msg->param.notify.element_id);
-        if (element && element->notify_enable) {
+        if (element) {
             GATT_CBACK(connection->callbacks, on_notified, connection, msg->param.notify.element_id, msg->param.notify.value, msg->param.notify.length);
         }
     } break;
