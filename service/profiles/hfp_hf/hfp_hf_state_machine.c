@@ -360,8 +360,10 @@ static void query_current_calls_final(hf_state_machine_t* hfsm)
             if (!cnode)
                 break;
         } else {
-            if (ucall->state != ccall->state || ucall->mpty != ccall->mpty || strcmp(ucall->number, ccall->number)) {
+            if (ucall->dir != ccall->dir || ucall->state != ccall->state
+                || ucall->mpty != ccall->mpty || strcmp(ucall->number, ccall->number)) {
                 /* call state or mutil part or number changed, notify changed */
+                ccall->dir = ucall->dir;
                 ccall->state = ucall->state;
                 ccall->mpty = ucall->mpty;
                 snprintf(ccall->number, HFP_PHONENUM_DIGITS_MAX, "%s", ucall->number);
