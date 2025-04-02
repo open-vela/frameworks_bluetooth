@@ -18,8 +18,8 @@
 ############################################################################
 import argparse
 import gdb
-from nuttxgdb import utils
-from nuttxgdb import lists
+from nxgdb import utils
+from nxgdb import lists
 
 
 # Initialize enum values globally

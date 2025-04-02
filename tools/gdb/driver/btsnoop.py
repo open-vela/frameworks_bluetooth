@@ -18,8 +18,8 @@
 ############################################################################
 import argparse
 import gdb
-from nuttxgdb import utils
-from nuttxgdb import fs
+from nxgdb import utils
+from nxgdb import fs
 import struct
 
 

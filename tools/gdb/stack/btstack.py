@@ -18,7 +18,7 @@
 ############################################################################
 import gdb
 import argparse
-from nuttxgdb import utils
+from nxgdb import utils
 
 ADPT_GATT_REQ_TYPE = utils.enum("ADPT_GATT_REQ_TYPE")
 

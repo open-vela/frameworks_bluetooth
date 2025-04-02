@@ -25,12 +25,12 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Source gdbinit.py from the relative path
 nuttx_gdbinit_path = os.path.abspath(
-    os.path.join(base_dir, "../../../../nuttx/tools/gdb/gdbinit.py")
+    os.path.join(base_dir, "../../../../nuttx/tools/pynuttx/gdbinit.py")
 )
 
 # Add the directory containing 'nuttxgdb' to sys.path
 nuttx_gdb_module_path = os.path.abspath(
-    os.path.join(base_dir, "../../../../nuttx/tools/gdb")
+    os.path.join(base_dir, "../../../../nuttx/tools/pynuttx/nxgdb")
 )
 if nuttx_gdb_module_path not in sys.path:
     sys.path.insert(0, nuttx_gdb_module_path)
