@@ -18,7 +18,7 @@
 ############################################################################
 import argparse
 import gdb
-from nuttxgdb import utils
+from nxgdb import utils
 
 
 class BTTImevalCommand(gdb.Command):
