@@ -39,6 +39,10 @@
             android:label="@string/bredr_inquiry" />
 
         <activity
+            android:name=".bredr.BondActivity"
+            android:label="@string/bond" />
+
+        <activity
             android:name=".bredr.SppActivity"
             android:label="@string/spp" />
 

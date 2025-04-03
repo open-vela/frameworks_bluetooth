@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2024 Xiaomi Corporation
+ *  Copyright (C) 2025 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,10 @@
  * limitations under the License.
  ***************************************************************************/
 
-package com.openvela.bluetoothtest.LocalAdapter;
+package com.openvela.bluetoothtest.bredr;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -27,25 +28,32 @@ import android.widget.Button;
 import android.widget.EditText;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.openvela.bluetooth.BluetoothBondStateObserver;
 import com.openvela.bluetooth.BluetoothStateObserver;
+import com.openvela.bluetooth.callback.BluetoothBondStateCallback;
 import com.openvela.bluetooth.callback.BluetoothStateCallback;
 import com.openvela.bluetoothtest.MainActivity;
 import com.openvela.bluetoothtest.R;
 
-public class OnOffActivity extends AppCompatActivity {
-    private final String TAG = OnOffActivity.class.getSimpleName();
-    private final int REQUEST_ENABLE_BT = 1;
+import java.lang.reflect.Method;
+import java.util.Set;
+
+public class BondActivity extends AppCompatActivity {
+    private final String TAG = BondActivity.class.getSimpleName();
+    EditText textBdAddr;
     EditText textNumOfCycles;
+    EditText textPairedDevices;
     EditText textResultDisplay;
-    private BluetoothStateObserver btStateObserver;
+    private BluetoothBondStateObserver btBondStateObserver;
     private BluetoothAdapter bluetoothAdapter;
     private int timesOfCycles;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_on_off);
-        listenBluetoothState();
+        setContentView(R.layout.activity_bond);
+        listenBluetoothBondState();
 
         BluetoothManager bluetoothManager = getSystemService(BluetoothManager.class);
         bluetoothAdapter = bluetoothManager.getAdapter();
@@ -54,10 +62,12 @@ public class OnOffActivity extends AppCompatActivity {
             return;
         }
 
+        textBdAddr = findViewById(R.id.textBdAddr);
         textNumOfCycles = findViewById(R.id.textNumOfCycles);
+        textPairedDevices = findViewById(R.id.textPairedDevices);
         textResultDisplay = findViewById(R.id.textResultDisplay);
 
-        Button buttonEnable = findViewById(R.id.button_enable_bluetooth);
+        Button buttonEnable = findViewById(R.id.button_create_bond);
         buttonEnable.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -67,12 +77,12 @@ public class OnOffActivity extends AppCompatActivity {
                 else
                     timesOfCycles = Integer.parseInt(str);
 
-                Log.d(TAG, "onClick: Enable Bluetooth, timesOfCycles = " + timesOfCycles);
-                enableBluetooth();
+                Log.d(TAG, "onClick: Create Bond, timesOfCycles = " + timesOfCycles);
+                createBond();
             }
         });
 
-        Button buttonDisable = findViewById(R.id.button_disable_bluetooth);
+        Button buttonDisable = findViewById(R.id.button_remove_bond);
         buttonDisable.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -82,55 +92,56 @@ public class OnOffActivity extends AppCompatActivity {
                 else
                     timesOfCycles = Integer.parseInt(str);
 
-                Log.d(TAG, "onClick: Disable Bluetooth, timesOfCycles = " + timesOfCycles);
-                new AsyncTask<Void, Void, Void>() {
-                    @Override
-                    protected Void doInBackground(Void... params) {
-                        // Time consuming operation
-                        disableBluetooth();
-                        return null;
-                    }
-                    @Override
-                    protected void onPostExecute(Void result) {
-                        // Update UI
-                    }
-                }.execute();
-
+                Log.d(TAG, "onClick: Remove Bond, timesOfCycles = " + timesOfCycles);
+                removeBond();
             }
         });
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        btStateObserver.unregisterReceiver();
+    protected void onStart() {
+        super.onStart();
+
+        showBondedDevices();
     }
 
-    private void listenBluetoothState() {
-        btStateObserver = new BluetoothStateObserver(this);
-        btStateObserver.registerReceiver(new BluetoothStateCallback() {
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        btBondStateObserver.unregisterReceiver();
+    }
+
+    private void listenBluetoothBondState() {
+        btBondStateObserver = new BluetoothBondStateObserver(this);
+        btBondStateObserver.registerReceiver(new BluetoothBondStateCallback() {
             @Override
-            public void onEnabled() {
+            public void onBonded(BluetoothDevice device) {
                 String str = textResultDisplay.getText().toString();
-                str = "\r\nBluetoothAdapter is enabled, timesOfCycles = " + timesOfCycles +str;
+                String bdAddr = device.getAddress();
+                str = "\r\n" + bdAddr + " was bonded, timesOfCycles = " + timesOfCycles + str;
                 textResultDisplay.setText(str);
                 Log.i(TAG, str);
+
+                showBondedDevices();
 
                 // Disable Bluetooth again
                 if (timesOfCycles > 0)
-                    disableBluetooth();
+                    removeBond();
             }
 
             @Override
-            public void onDisabled() {
+            public void onBondRemoved(BluetoothDevice device) {
                 String str = textResultDisplay.getText().toString();
-                str = "\r\nBluetoothAdapter is disabled, timesOfCycles = " + timesOfCycles + str;
+                String bdAddr = device.getAddress();
+                str = "\r\n" + bdAddr + " was removed, timesOfCycles = " + timesOfCycles + str;
                 textResultDisplay.setText(str);
                 Log.i(TAG, str);
 
+                showBondedDevices();
+
                 // Enable Bluetooth again
                 if (timesOfCycles > 0)
-                    enableBluetooth();
+                    createBond();
 
                 timesOfCycles--;
             }
@@ -142,11 +153,48 @@ public class OnOffActivity extends AppCompatActivity {
         return bluetoothAdapter != null && bluetoothAdapter.isEnabled();
     }
 
-    private void enableBluetooth() {
-        startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), REQUEST_ENABLE_BT);
+    private void createBond() {
+        String addr = textBdAddr.getText().toString();
+
+        try {
+            BluetoothDevice btDevice = bluetoothAdapter.getRemoteDevice(addr);
+            btDevice.createBond();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    private void disableBluetooth() {
-        bluetoothAdapter.disable();
+    private void removeBond() {
+        String addr = textBdAddr.getText().toString();
+        BluetoothDevice btDevice = bluetoothAdapter.getRemoteDevice(addr);
+        //btDevice.removeBond();
+
+        try {
+            Method method = btDevice.getClass().getMethod("removeBond", (Class[]) null);
+            method.invoke(btDevice, (Object[]) null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void showBondedDevices() {
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (bluetoothAdapter == null)
+            return;
+
+        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
+
+        String str = "Paired devices:\r\n";
+        if (pairedDevices.size() > 0) {
+            // There are paired devices. Get the name and address of each paired device.
+            for (BluetoothDevice device : pairedDevices) {
+                String deviceName = device.getName();
+                String deviceHardwareAddress = device.getAddress(); // MAC address
+
+                str += deviceHardwareAddress + " (" + deviceName + ") \r\n";
+            }
+        }
+
+        textPairedDevices.setText(str);
     }
 }
