@@ -323,6 +323,7 @@ ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/stacks/zephyr/include
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/kernel/include
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/vela_mible_port/include
 endif
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc
 endif
@@ -330,6 +331,9 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CFLAGS	+= ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/tools
 endif
+
+CSRCS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/vela_mible_port/src/vela_mible_manage.c
+CSRCS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/vela_mible_port/src/vela_mible_port.c
 
 ifeq ($(CONFIG_ARCH_SIM),y)
 CFLAGS	 += -O0
