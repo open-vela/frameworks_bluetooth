@@ -280,8 +280,10 @@ static void hfp_ag_process_message(void* data)
 {
     hfp_ag_msg_t* msg = (hfp_ag_msg_t*)data;
 
-    if (!g_ag_service.started && msg->event != AG_STARTUP)
+    if (!g_ag_service.started && msg->event != AG_STARTUP) {
+        hfp_ag_msg_destory(msg);
         return;
+    }
 
     switch (msg->event) {
     case AG_STARTUP:

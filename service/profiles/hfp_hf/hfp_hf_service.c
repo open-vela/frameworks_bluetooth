@@ -248,8 +248,10 @@ static void hfp_hf_process_message(void* data)
 {
     hfp_hf_msg_t* msg = (hfp_hf_msg_t*)data;
 
-    if (!g_hfp_service.started && msg->event != HF_STARTUP)
+    if (!g_hfp_service.started && msg->event != HF_STARTUP) {
+        hfp_hf_msg_destroy(msg);
         return;
+    }
 
     switch (msg->event) {
     case HF_STARTUP:
