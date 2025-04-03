@@ -20,13 +20,13 @@
 #include "bt_list.h"
 
 enum device_flags {
-    DFLAG_NAME_SET = 0x00000001,
-    DFLAG_ALIAS_SET = 0x00000002,
-    DFLAG_LINKKEY_SET = 0x00000004,
-    DFLAG_WHITELIST_ADDED = 0x00000008,
-    DFLAG_CONNECTED = 0x00000016,
-    DFLAG_BONDED = 0x00000032,
-    DFLAG_LE_KEY_SET = 0x00000064,
+    DFLAG_NAME_SET = (1 << 0),
+    DFLAG_ALIAS_SET = (1 << 1),
+    DFLAG_LINKKEY_SET = (1 << 2),
+    DFLAG_WHITELIST_ADDED = (1 << 3),
+    DFLAG_CONNECTED = (1 << 4),
+    DFLAG_BONDED = (1 << 5),
+    DFLAG_LE_KEY_SET = (1 << 6),
 };
 
 typedef struct bt_device bt_device_t;
