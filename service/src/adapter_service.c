@@ -1681,6 +1681,33 @@ bt_status_t adapter_set_discovery_filter(void)
     return BT_STATUS_NOT_SUPPORTED;
 }
 
+static void adapter_remove_found_devices()
+{
+    bt_list_t* list = g_adapter_service.devices;
+    bt_list_node_t* node;
+    bt_list_node_t* next_node;
+
+    for (node = bt_list_head(list); node != NULL; node = next_node) {
+        bt_device_t* device;
+
+        next_node = bt_list_next(list, node);
+        device = bt_list_node(node);
+        if (device == NULL) {
+            continue;
+        }
+
+        if (device_is_bonded(device)) {
+            continue;
+        }
+
+        if (device_is_connected(device)) {
+            continue;
+        }
+
+        bt_list_remove_node(list, node);
+    }
+}
+
 bt_status_t adapter_start_discovery(uint32_t timeout)
 {
     adapter_service_t* adapter = &g_adapter_service;
@@ -1695,6 +1722,8 @@ bt_status_t adapter_start_discovery(uint32_t timeout)
         adapter_unlock();
         return BT_STATUS_FAIL;
     }
+
+    adapter_remove_found_devices();
 
     bt_status_t status = bt_sal_start_discovery(PRIMARY_ADAPTER, timeout);
     if (status != BT_STATUS_SUCCESS) {
@@ -1716,6 +1745,8 @@ bt_status_t adapter_cancel_discovery(void)
         adapter_unlock();
         return BT_STATUS_NOT_ENABLED;
     }
+
+    adapter_remove_found_devices();
 
     if (!adapter->is_discovering) {
         adapter_unlock();
