@@ -1,5 +1,5 @@
 /****************************************************************************
- *  Copyright (C) 2024 Xiaomi Corporation
+ *  Copyright (C) 2025 Xiaomi Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import com.openvela.bluetoothtest.MainActivity;
 import com.openvela.bluetoothtest.R;
 
 public class SppActivity extends AppCompatActivity {
-    private final String TAG = MainActivity.class.getSimpleName();
+    private final String TAG = SppActivity.class.getSimpleName();
 
     // Client/Server #1
     EditText textServiceUUID_1;
