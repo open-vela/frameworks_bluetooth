@@ -27,6 +27,7 @@ BT_SCAN_MESSAGE_START,
 #ifdef __BT_CALLBACK_CODE__
     BT_SCAN_CALLBACK_START,
     BT_LE_ON_SCAN_RESULT,
+    BT_LE_ON_BATCH_SCAN_RESULT,
     BT_LE_ON_SCAN_START_STATUS,
     BT_LE_ON_SCAN_STOPPED,
     BT_SCAN_CALLBACK_END,
@@ -52,6 +53,11 @@ BT_SCAN_MESSAGE_START,
 // TODO: Add new BT IPC Code sequentially
 #define BT_IPC_CODE_CALLBACK_BLE_SCAN_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_BLE_SCAN, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
+#define MAX_SCAN_RESULTS_PER_PACKET 15
+#define MAX_LEGACY_SCAN_RESULTS_LENGTH 31
+#define MAX_EXT_SCAN_RESULTS_LENGTH 256
+#define SCAN_FLUSH_INTERVAL_MS 150
+
     typedef union {
         uint8_t status; /* bt_status_t */
         uint8_t vbool; /* boolean */
@@ -60,11 +66,22 @@ BT_SCAN_MESSAGE_START,
     } bt_scan_result_t;
 
     typedef struct {
+        uint16_t count;
+        uint32_t scanner;
+        struct {
+            ble_scan_result_t result;
+            uint8_t adv_data[MAX_LEGACY_SCAN_RESULTS_LENGTH];
+        } results[MAX_SCAN_RESULTS_PER_PACKET];
+    } bt_message_batch_scan_result_callbacks_t;
+
+    typedef struct {
         uint64_t remote;
         union {
             bt_instance_t* ins;
             scanner_callbacks_t* callback;
         };
+        bt_message_batch_scan_result_callbacks_t scan_result_cache;
+        void* flush_ctrl;
     } bt_scan_remote_t;
 
     typedef union {
@@ -87,7 +104,7 @@ BT_SCAN_MESSAGE_START,
         struct {
             uint64_t scanner; /* bt_scan_remote_t* */
             ble_scan_result_t result;
-            uint8_t adv_data[256];
+            uint8_t adv_data[MAX_EXT_SCAN_RESULTS_LENGTH];
         } _on_scan_result_cb;
 
         struct {
