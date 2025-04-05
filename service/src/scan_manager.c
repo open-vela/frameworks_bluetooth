@@ -75,7 +75,7 @@ static scanner_device_t* alloc_device(bt_address_t* addr, ble_addr_type_t addr_t
 {
     scanner_device_t* device;
 
-    device = zalloc(sizeof(scanner_device_t));
+    device = bt_zalloc(sizeof(scanner_device_t));
     if (!device) {
         return NULL;
     }
@@ -90,7 +90,7 @@ static void free_device(void* data)
 {
     scanner_device_t* device = data;
 
-    free(device);
+    bt_free(device);
 }
 
 static scanner_device_t* scanner_find_device(const bt_address_t* addr, ble_addr_type_t addr_type)
