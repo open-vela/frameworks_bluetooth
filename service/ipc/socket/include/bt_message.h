@@ -145,6 +145,7 @@ typedef struct
 
         bt_message_scan_t scan_pl;
         bt_message_scan_callbacks_t scan_cb;
+        bt_message_batch_scan_result_callbacks_t scan_batch_cb;
 
         bt_message_gattc_t gattc_pl;
         bt_message_gattc_callbacks_t gattc_cb;
