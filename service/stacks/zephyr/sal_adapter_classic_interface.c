@@ -542,7 +542,9 @@ bt_status_t bt_sal_disable(bt_controller_id_t id)
         return BT_STATUS_SUCCESS;
     }
 
+#ifndef CONFIG_BLUETOOTH_BLE_SUPPORT
     bt_disable();
+#endif
     adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
 
     return BT_STATUS_SUCCESS;

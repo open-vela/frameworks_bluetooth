@@ -426,7 +426,7 @@ void bt_sal_le_cleanup(void)
 bt_status_t bt_sal_le_enable(bt_controller_id_t id)
 {
     if (bt_is_ready()) {
-        adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_ON);
+        adapter_on_adapter_state_changed(BLE_STACK_STATE_ON);
         return BT_STATUS_SUCCESS;
     }
 
@@ -438,12 +438,12 @@ bt_status_t bt_sal_le_enable(bt_controller_id_t id)
 bt_status_t bt_sal_le_disable(bt_controller_id_t id)
 {
     if (!bt_is_ready()) {
-        adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
+        adapter_on_adapter_state_changed(BLE_STACK_STATE_OFF);
         return BT_STATUS_SUCCESS;
     }
 
-    SAL_CHECK_RET(bt_disable(), 0);
-    adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
+    bt_disable();
+    adapter_on_adapter_state_changed(BLE_STACK_STATE_OFF);
 
     return BT_STATUS_SUCCESS;
 }
