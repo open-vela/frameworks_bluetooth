@@ -149,6 +149,23 @@ static bt_status_t zblue_le_ext_convert_param(ble_adv_params_t* params, struct b
         break;
     }
 
+    switch (params->channel_map) {
+    case BT_LE_ADV_CHANNEL_37_ONLY:
+        param->options |= BT_LE_ADV_OPT_DISABLE_CHAN_38 | BT_LE_ADV_OPT_DISABLE_CHAN_39;
+        break;
+    case BT_LE_ADV_CHANNEL_38_ONLY:
+        param->options |= BT_LE_ADV_OPT_DISABLE_CHAN_37 | BT_LE_ADV_OPT_DISABLE_CHAN_39;
+        break;
+    case BT_LE_ADV_CHANNEL_39_ONLY:
+        param->options |= BT_LE_ADV_OPT_DISABLE_CHAN_37 | BT_LE_ADV_OPT_DISABLE_CHAN_38;
+        break;
+    case BT_LE_ADV_CHANNEL_DEFAULT:
+        break;
+    default:
+        BT_LOGE("%s, le ext adv convert fail, invalid channel_map:%d", __func__, params->channel_map);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     param->interval_min = params->interval;
     param->interval_max = params->interval;
 
