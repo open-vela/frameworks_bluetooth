@@ -297,7 +297,14 @@ euv_pipe_t* euv_pipe_connect(uv_loop_t* loop, const char* server_path, euv_conne
     creq->data = user_data;
     creq->req.data = handle;
 
+#if defined(CONFIG_BLUETOOTH_SERVER)
     uv_pipe_connect(&creq->req, &handle->cli_pipe, server_path, euv_connect_callback);
+#elif defined(CONFIG_NET_RPMSG)
+    uv_pipe_rpmsg_connect(&creq->req, &handle->cli_pipe, server_path, CONFIG_BLUETOOTH_RPMSG_CPUNAME, euv_connect_callback);
+#else
+    uv_pipe_connect(&creq->req, &handle->cli_pipe, server_path, euv_connect_callback); // not using bluetoothd
+#endif
+
     return handle;
 
 err_out:
