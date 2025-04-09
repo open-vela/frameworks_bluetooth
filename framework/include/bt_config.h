@@ -100,9 +100,6 @@
 // SPP via RPMsg UART "/dev/ttyDROID"
 //#define CONFIG_RPMSG_UART 1
 
-// SPP via RPMsg socket/pipe
-#define CONFIG_BLUETOOTH_SPP_RPMSG_NET 1
-
 /********************* O95 Project Only *********************/
 #if defined(ANDROID_12)
 // Socket: RPMsg
