@@ -427,12 +427,7 @@ static void spp_open_process(void* data)
     }
 
     device->port = msg->port;
-
-#ifdef CONFIG_BLUETOOTH_SPP_RPMSG_NET
-    device->pipe = euv_rpmsg_pipe_connect(&spp_thread_loop, msg->name, CONFIG_BLUETOOTH_RPMSG_CPUNAME, proxy_connect_callback, device);
-#else
     device->pipe = euv_pipe_connect(&spp_thread_loop, msg->name, proxy_connect_callback, device);
-#endif
     if (!device->pipe) {
         PRINT("%s, pipe connect failed", __func__);
         free(msg);
