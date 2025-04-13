@@ -126,7 +126,7 @@ BT_ADAPTER_MESSAGE_START,
         struct {
             uint16_t size;
             uint8_t pad[2];
-            bt_uuid_t uuids[16];
+            bt_uuid_t uuids[BT_UUID_MAX_NUM];
         } _bt_adapter_get_uuids;
 
         struct {
