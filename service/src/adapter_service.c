@@ -1857,7 +1857,16 @@ void adapter_get_name(char* name, int size)
 
 bt_status_t adapter_get_uuids(bt_uuid_t* uuids, uint16_t* size)
 {
-    return BT_STATUS_NOT_SUPPORTED;
+    bt_status_t status = BT_STATUS_SUCCESS;
+
+    adapter_lock();
+    CHECK_ADAPTER_READY();
+
+    service_manager_get_uuid(uuids, size);
+
+error:
+    adapter_unlock();
+    return status;
 }
 
 bt_status_t adapter_set_scan_mode(bt_scan_mode_t mode, bool bondable)

@@ -23,6 +23,15 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 
+/**
+ * @cond
+ */
+
+#define BT_UUID_A2DP_SRC 0x110A
+#define BT_UUID_A2DP_SNK 0x110B
+#define BT_UUID_HFP 0x111E
+#define BT_UUID_HFP_AG 0x111F
+
 typedef enum {
     BT_UUID16_TYPE = 2,
     BT_UUID32_TYPE = 4,

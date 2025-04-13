@@ -160,6 +160,28 @@ int service_manager_startup(uint8_t transport)
     return 0;
 }
 
+int service_manager_get_uuid(bt_uuid_t* uuids, uint16_t* size)
+{
+    uint16_t cnt = 0;
+    bt_uuid_t empty_uuid = BT_UUID_DECLARE_128(0);
+
+    for (int i = 0; i < PROFILE_MAX && cnt < BT_UUID_MAX_NUM; i++) {
+        profile_service_t* profile = service_slots[i].service;
+        if (profile == NULL)
+            continue;
+
+        if (bt_uuid_compare(&empty_uuid, &profile->uuid) == 0)
+            continue;
+
+        memcpy(uuids++, &profile->uuid, sizeof(bt_uuid_t));
+        cnt++;
+    }
+
+    *size = cnt;
+
+    return 0;
+}
+
 int service_manager_processmsg(profile_msg_t* msg)
 {
     for (int i = 0; i < PROFILE_MAX; i++) {
