@@ -74,6 +74,7 @@ typedef struct profile_service {
 void register_service(const profile_service_t* service);
 int service_manager_init(void);
 int service_manager_startup(uint8_t transport);
+int service_manager_get_uuid(bt_uuid_t* uuids, uint16_t* size);
 int service_manager_processmsg(profile_msg_t* msg);
 int service_manager_shutdown(uint8_t transport);
 const void* service_manager_get_profile(enum profile_id id);
