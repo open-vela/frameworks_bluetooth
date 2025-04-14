@@ -387,38 +387,6 @@ static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
     } /* else: Ignore it*/
 }
 
-static void zblue_on_ready_cb(int err)
-{
-    uint8_t state = BT_BREDR_STACK_STATE_OFF;
-
-    if (IS_ENABLED(CONFIG_SETTINGS)) {
-        settings_load();
-    }
-
-    if (err) {
-        BT_LOGD("zblue init failed (err %d)\n", err);
-        adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
-        return;
-    }
-
-#if defined(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE) && !defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
-    state = BT_BREDR_STACK_STATE_ON;
-#else
-    switch (adapter_get_state()) {
-    case BT_ADAPTER_STATE_BLE_TURNING_ON:
-        state = BLE_STACK_STATE_ON;
-        break;
-    case BT_ADAPTER_STATE_TURNING_ON:
-        state = BT_BREDR_STACK_STATE_ON;
-        break;
-    default:
-        break;
-    }
-#endif
-    adapter_on_adapter_state_changed(state);
-}
-#endif
-
 static bool zblue_inquiry_eir_name(const uint8_t* eir, int len, char* name)
 {
     while (len) {
@@ -483,13 +451,20 @@ static struct bt_br_discovery_cb g_br_discovery_cb = {
     .timeout = zblue_on_discovery_complete_cb
 };
 
-/* service adapter layer for BREDR */
-bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
+static void zblue_on_ready_cb(int err)
 {
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    extern void z_sys_init(void);
+    uint8_t state = BT_BREDR_STACK_STATE_OFF;
     static struct bt_hfp_hf_cb hf_cb;
-    z_sys_init();
+
+    if (IS_ENABLED(CONFIG_SETTINGS)) {
+        settings_load();
+    }
+
+    if (err) {
+        BT_LOGD("zblue init failed (err %d)\n", err);
+        adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
+        return;
+    }
 
     bt_br_discovery_cb_register(&g_br_discovery_cb);
     bt_conn_cb_register(&g_conn_cbs);
@@ -497,6 +472,31 @@ bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
     /* HFP HF for test */
     bt_hfp_hf_register(&hf_cb);
+
+#if defined(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE) && !defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+    state = BT_BREDR_STACK_STATE_ON;
+#else
+    switch (adapter_get_state()) {
+    case BT_ADAPTER_STATE_BLE_TURNING_ON:
+        state = BLE_STACK_STATE_ON;
+        break;
+    case BT_ADAPTER_STATE_TURNING_ON:
+        state = BT_BREDR_STACK_STATE_ON;
+        break;
+    default:
+        break;
+    }
+#endif
+    adapter_on_adapter_state_changed(state);
+}
+#endif
+
+/* service adapter layer for BREDR */
+bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
+{
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    extern void z_sys_init(void);
+    z_sys_init();
 
     return BT_STATUS_SUCCESS;
 #else
@@ -506,11 +506,6 @@ bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
 
 void bt_sal_cleanup(void)
 {
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    bt_br_discovery_cb_unregister(&g_br_discovery_cb);
-    bt_conn_auth_cb_register(NULL);
-    bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
-#endif
 }
 
 /* Adapter power */
@@ -542,6 +537,11 @@ bt_status_t bt_sal_disable(bt_controller_id_t id)
         return BT_STATUS_SUCCESS;
     }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    bt_br_discovery_cb_unregister(&g_br_discovery_cb);
+    bt_conn_auth_cb_register(NULL);
+    bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
+#endif
     bt_disable();
     adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
 
