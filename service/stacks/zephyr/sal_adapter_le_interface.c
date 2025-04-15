@@ -65,7 +65,7 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason);
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level, enum bt_security_err err);
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded);
 static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
-static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
+static void zblue_on_bond_deleted(uint8_t dev_id, uint8_t id, const bt_addr_le_t* peer);
 static void zblue_on_phy_updated(struct bt_conn* conn, struct bt_conn_le_phy_info* info);
 static void zblue_on_param_updated(struct bt_conn* conn, uint16_t interval, uint16_t latency, uint16_t timeout);
 
@@ -312,7 +312,7 @@ static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err r
     bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
 }
 
-static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
+static void zblue_on_bond_deleted(uint8_t dev_id, uint8_t id, const bt_addr_le_t* peer)
 {
     bt_address_t addr;
 
@@ -324,7 +324,7 @@ static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
     }
 }
 
-static void zblue_on_ready_cb(int err)
+static void zblue_on_ready_cb(uint8_t dev_id, int err)
 {
     if (IS_ENABLED(CONFIG_SETTINGS)) {
         settings_load();

@@ -128,7 +128,7 @@ static void zblue_on_pincode_entry(struct bt_conn* conn, bool highsec);
 static void zblue_on_link_key_notify(struct bt_conn* conn, uint8_t* key, uint8_t key_type);
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded);
 static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
-static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
+static void zblue_on_bond_deleted(uint8_t dev_id, uint8_t id, const bt_addr_le_t* peer);
 
 static struct bt_conn_cb g_conn_cbs = {
 #ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
@@ -377,7 +377,7 @@ static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err r
     bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
 }
 
-static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
+static void zblue_on_bond_deleted(uint8_t dev_id, uint8_t id, const bt_addr_le_t* peer)
 {
     bt_address_t addr;
 
@@ -426,7 +426,7 @@ static bool zblue_inquiry_eir_name(const uint8_t* eir, int len, char* name)
     return false;
 }
 
-static void zblue_on_discovery_recv_cb(const struct bt_br_discovery_result* results)
+static void zblue_on_discovery_recv_cb(uint8_t dev_id, const struct bt_br_discovery_result* results)
 {
     bt_discovery_result_t device;
 
@@ -439,7 +439,7 @@ static void zblue_on_discovery_recv_cb(const struct bt_br_discovery_result* resu
     adapter_on_device_found(&device);
 }
 
-static void zblue_on_discovery_complete_cb(const struct bt_br_discovery_result* results,
+static void zblue_on_discovery_complete_cb(uint8_t dev_id, const struct bt_br_discovery_result* results,
     size_t count)
 {
     adapter_on_discovery_state_changed(BT_DISCOVERY_STOPPED);
@@ -451,7 +451,7 @@ static struct bt_br_discovery_cb g_br_discovery_cb = {
     .timeout = zblue_on_discovery_complete_cb
 };
 
-static void zblue_on_ready_cb(int err)
+static void zblue_on_ready_cb(uint8_t dev_id, int err)
 {
     uint8_t state = BT_BREDR_STACK_STATE_OFF;
     static struct bt_hfp_hf_cb hf_cb;
