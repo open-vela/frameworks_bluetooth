@@ -430,6 +430,7 @@ static void device_get_remote_uuids(bt_device_t* device, remote_device_propertie
             0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
     };
 
+    memset(prop->uuids, 0, sizeof(prop->uuids));
     if (device->remote.uuids.uuid_cnt == 0) {
         BT_LOGD("%s, No uuids found", __func__);
         return;
