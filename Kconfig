@@ -74,6 +74,7 @@ config BLUETOOTH_HCI_BRIDGE_MODE
 config BLUETOOTH_GATT
 	bool "Generic ATT profile support"
 	default y
+	depends on PTHREAD_MUTEX_TYPES
 
 config BLUETOOTH_SERVICE_LOOP_THREAD_STACK_SIZE
 	int "bluetooth service loop thread stack size"
