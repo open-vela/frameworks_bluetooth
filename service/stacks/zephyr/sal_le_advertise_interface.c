@@ -334,14 +334,17 @@ static void STACK_CALL(start_adv)(void* args)
     ret = BT_STATUS_SUCCESS;
 
 done:
-    free(req->adpt.start_adv.adv_data);
-    free(req->adpt.start_adv.scan_rsp_data);
+    if (req->adpt.start_adv.adv_data)
+        free(req->adpt.start_adv.adv_data);
+    if (req->adpt.start_adv.scan_rsp_data)
+        free(req->adpt.start_adv.scan_rsp_data);
 }
 
 bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_params_t* params, uint8_t* adv_data, uint16_t adv_len, uint8_t* scan_rsp_data, uint16_t scan_rsp_len)
 {
     sal_adapter_req_t* req;
     int ret;
+    bool ext_adv;
 
     req = sal_adapter_req(id, adv_id, STACK_CALL(start_adv));
     if (!req) {
@@ -356,29 +359,47 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
         goto error;
     }
 
-    req->adpt.start_adv.adv_data = malloc(adv_len);
-    if (!req->adpt.start_adv.adv_data) {
-        BT_LOGE("%s, malloc fail", __func__);
-        ret = BT_STATUS_NOMEM;
-        goto error;
+    ext_adv = (req->adpt.start_adv.param.options & BT_LE_ADV_OPT_EXT_ADV) ? true : false;
+
+    if ((!(req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
+        || !ext_adv) {
+        req->adpt.start_adv.adv_data = malloc(adv_len);
+        if (!req->adpt.start_adv.adv_data) {
+            BT_LOGE("%s, malloc fail", __func__);
+            ret = BT_STATUS_NOMEM;
+            goto error;
+        }
+
+        memcpy(req->adpt.start_adv.adv_data, adv_data, adv_len);
+        req->adpt.start_adv.adv_len = adv_len;
+    } else {
+        req->adpt.start_adv.adv_data = NULL;
+        req->adpt.start_adv.adv_len = 0;
     }
 
-    memcpy(req->adpt.start_adv.adv_data, adv_data, adv_len);
-    req->adpt.start_adv.adv_len = adv_len;
+    if (((req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
+        || !ext_adv) {
+        req->adpt.start_adv.scan_rsp_data = malloc(scan_rsp_len);
+        if (!req->adpt.start_adv.scan_rsp_data) {
+            BT_LOGE("%s, malloc fail", __func__);
+            ret = BT_STATUS_NOMEM;
+            goto error;
+        }
 
-    req->adpt.start_adv.scan_rsp_data = malloc(scan_rsp_len);
-    if (!req->adpt.start_adv.scan_rsp_data) {
-        BT_LOGE("%s, malloc fail", __func__);
-        ret = BT_STATUS_NOMEM;
-        goto error;
+        memcpy(req->adpt.start_adv.scan_rsp_data, scan_rsp_data, scan_rsp_len);
+        req->adpt.start_adv.scan_rsp_len = scan_rsp_len;
+    } else {
+        req->adpt.start_adv.scan_rsp_data = NULL;
+        req->adpt.start_adv.scan_rsp_len = 0;
     }
-
-    memcpy(req->adpt.start_adv.scan_rsp_data, scan_rsp_data, scan_rsp_len);
-    req->adpt.start_adv.scan_rsp_len = scan_rsp_len;
 
     return sal_send_req(req);
 
 error:
+    if (req->adpt.start_adv.adv_data)
+        free(req->adpt.start_adv.adv_data);
+    if (req->adpt.start_adv.scan_rsp_data)
+        free(req->adpt.start_adv.scan_rsp_data);
     free(req);
     return ret;
 };
