@@ -421,10 +421,27 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
     switch (event) {
     case CONNECT_REQ: {
         bt_status_t status;
-        if (a2dp_sm->peer_sep == SEP_SNK)
-            status = bt_sal_a2dp_source_connect(PRIMARY_ADAPTER, &data->bd_addr);
-        else
-            status = bt_sal_a2dp_sink_connect(PRIMARY_ADAPTER, &data->bd_addr);
+        if (a2dp_sm->peer_sep == SEP_SNK) {
+            status = bt_cm_profile_connect_safe(&data->bd_addr, PROFILE_A2DP);
+            if (status == BT_STATUS_SUCCESS) {
+                BT_LOGD("wait acl connection first");
+                break; /**< stay in idle state */
+            }
+            if (status == BT_STATUS_DONE) {
+                BT_LOGD("acl established, create a2dp connection");
+                status = bt_sal_a2dp_source_connect(PRIMARY_ADAPTER, &data->bd_addr);
+            }
+        } else {
+            status = bt_cm_profile_connect_safe(&data->bd_addr, PROFILE_A2DP_SINK);
+            if (status == BT_STATUS_SUCCESS) {
+                BT_LOGD("wait acl connection first");
+                break; /**< stay in idle state */
+            }
+            if (status == BT_STATUS_DONE) {
+                BT_LOGD("acl established, create a2dp connection");
+                status = bt_sal_a2dp_sink_connect(PRIMARY_ADAPTER, &data->bd_addr);
+            }
+        }
         if (status != BT_STATUS_SUCCESS) {
             a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
                 PROFILE_STATE_DISCONNECTED);
@@ -585,7 +602,11 @@ static void opened_enter(state_machine_t* sm)
         }
 
         bt_pm_conn_open(PROFILE_A2DP, &a2dp_sm->addr);
-        if (a2dp_sm->peer_sep == SEP_SRC) {
+        if (a2dp_sm->peer_sep == SEP_SNK) {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+            bt_cm_connected(&a2dp_sm->addr, PROFILE_A2DP);
+#endif
+        } else if (a2dp_sm->peer_sep == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
             bt_cm_connected(&a2dp_sm->addr, PROFILE_A2DP_SINK);
 #endif

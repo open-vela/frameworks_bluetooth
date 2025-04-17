@@ -460,22 +460,85 @@ static bt_status_t a2dp_source_shutdown(profile_on_shutdown_t cb)
     return BT_STATUS_SUCCESS;
 }
 
+static profile_connection_state_t a2dp_source_get_connection_state(bt_address_t* addr)
+{
+    if (!g_a2dp_source.enabled) {
+        return PROFILE_STATE_DISCONNECTED;
+    }
+
+    a2dp_device_t* device = find_a2dp_device_by_addr(&g_a2dp_source.list, addr);
+    if (!device) {
+        return PROFILE_STATE_DISCONNECTED;
+    }
+
+    profile_connection_state_t state = a2dp_state_machine_get_connection_state(device->a2dp_sm);
+    return state;
+}
+
+static bt_status_t a2dp_source_connect(bt_address_t* addr)
+{
+    if (!g_a2dp_source.enabled) {
+        return PROFILE_STATE_DISCONNECTED;
+    }
+
+    do_in_a2dp_service(a2dp_event_new(CONNECT_REQ, addr));
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t a2dp_source_disconnect(bt_address_t* addr)
+{
+    if (!g_a2dp_source.enabled) {
+        return PROFILE_STATE_DISCONNECTED;
+    }
+
+    do_in_a2dp_service(a2dp_event_new(DISCONNECT_REQ, addr));
+
+    return BT_STATUS_SUCCESS;
+}
+
 static void a2dp_source_process_msg(profile_msg_t* msg)
 {
+    bt_instance_t* ins;
+    bt_address_t* addr;
+    profile_connection_state_t state;
+
     switch (msg->event) {
     case PROFILE_EVT_A2DP_OFFLOADING:
         g_a2dp_source.offloading = msg->data.valuebool;
         break;
-    case PROFILE_EVT_REMOTE_DETACH: {
-        bt_instance_t* ins = msg->data.data;
-
+    case PROFILE_EVT_REMOTE_DETACH:
+        ins = msg->data.data;
         if (ins->a2dp_source_cookie) {
             BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
             a2dp_source_unregister_callbacks(NULL, ins->a2dp_source_cookie);
             ins->a2dp_source_cookie = NULL;
         }
         break;
-    }
+    case PROFILE_EVT_SAFE_CONNECT_DONE:
+        addr = (bt_address_t*)msg->data.data;
+        BT_ADDR_LOG("safe connect done, addr:%s", addr);
+        if (!g_a2dp_source.enabled)
+            break;
+
+        state = a2dp_source_get_connection_state(addr);
+        if (state != PROFILE_STATE_DISCONNECTED)
+            break; /**< nothing to do */
+
+        a2dp_source_connect(addr);
+        break;
+    case PROFILE_EVT_SAFE_CONNECT_FAILED:
+        addr = (bt_address_t*)msg->data.data;
+        BT_ADDR_LOG("safe connect failed, addr:%s", addr);
+        if (!g_a2dp_source.enabled)
+            break;
+
+        state = a2dp_source_get_connection_state(addr);
+        if (state != PROFILE_STATE_DISCONNECTED)
+            break; /**< should wait for stack event */
+
+        a2dp_source_service_notify_connection_state_changed(addr, PROFILE_STATE_DISCONNECTED);
+        break;
     default:
         break;
     }
@@ -541,43 +604,6 @@ static bool a2dp_source_is_playing(bt_address_t* addr)
 
     a2dp_state_t state = a2dp_state_machine_get_state(device->a2dp_sm);
     return state == A2DP_STATE_STARTED;
-}
-
-static profile_connection_state_t a2dp_source_get_connection_state(bt_address_t* addr)
-{
-    if (!g_a2dp_source.enabled) {
-        return PROFILE_STATE_DISCONNECTED;
-    }
-
-    a2dp_device_t* device = find_a2dp_device_by_addr(&g_a2dp_source.list, addr);
-    if (!device) {
-        return PROFILE_STATE_DISCONNECTED;
-    }
-
-    profile_connection_state_t state = a2dp_state_machine_get_connection_state(device->a2dp_sm);
-    return state;
-}
-
-static bt_status_t a2dp_source_connect(bt_address_t* addr)
-{
-    if (!g_a2dp_source.enabled) {
-        return PROFILE_STATE_DISCONNECTED;
-    }
-
-    do_in_a2dp_service(a2dp_event_new(CONNECT_REQ, addr));
-
-    return BT_STATUS_SUCCESS;
-}
-
-static bt_status_t a2dp_source_disconnect(bt_address_t* addr)
-{
-    if (!g_a2dp_source.enabled) {
-        return PROFILE_STATE_DISCONNECTED;
-    }
-
-    do_in_a2dp_service(a2dp_event_new(DISCONNECT_REQ, addr));
-
-    return BT_STATUS_SUCCESS;
 }
 
 static bt_status_t a2dp_source_set_silence_device(bt_address_t* addr, bool silence)

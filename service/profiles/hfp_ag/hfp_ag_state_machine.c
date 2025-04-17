@@ -28,6 +28,7 @@
 #include "bt_list.h"
 #include "bt_utils.h"
 #include "bt_vendor.h"
+#include "connection_manager.h"
 #include "hci_parser.h"
 #include "hfp_ag_event.h"
 #include "hfp_ag_service.h"
@@ -352,16 +353,28 @@ static void disconnected_exit(state_machine_t* sm)
 
 static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
+    bt_status_t status;
     ag_state_machine_t* agsm = (ag_state_machine_t*)sm;
     hfp_ag_data_t* data = (hfp_ag_data_t*)p_data;
     AG_DBG_EVENT(sm, &agsm->addr, event);
 
     switch (event) {
     case AG_CONNECT:
-        if (bt_sal_hfp_ag_connect(&agsm->addr) != BT_STATUS_SUCCESS) {
+        status = bt_cm_profile_connect_safe(&agsm->addr, PROFILE_HFP_AG);
+        if (status == BT_STATUS_SUCCESS) {
+            BT_LOGD("wait acl connection first");
+            break; /**< stay in idle state */
+        }
+
+        if (status == BT_STATUS_DONE) {
+            BT_LOGD("acl established, create hfp connection");
+            status = bt_sal_hfp_ag_connect(&agsm->addr);
+        }
+
+        if (status != BT_STATUS_SUCCESS) {
             BT_ADDR_LOG("Connect failed for %s", &agsm->addr);
             ag_service_notify_connection_state_changed(&agsm->addr, PROFILE_STATE_DISCONNECTED);
-            return false;
+            break;
         }
         hsm_transition_to(sm, &connecting_state);
         break;
@@ -859,6 +872,7 @@ static void connected_enter(state_machine_t* sm)
     uint8_t previous_state = hsm_get_state_value(hsm_get_previous_state(sm));
 
     bt_pm_conn_open(PROFILE_HFP_AG, &agsm->addr);
+    bt_cm_connected(&agsm->addr, PROFILE_HFP_AG);
 
     if (previous_state < HFP_AG_STATE_CONNECTED) {
         if (bt_media_get_voice_call_volume(&agsm->media_volume) != BT_STATUS_SUCCESS) {

@@ -36,6 +36,8 @@ typedef enum {
     PROFILE_EVT_HFP_OFFLOADING,
     PROFILE_EVT_LEA_OFFLOADING,
     PROFILE_EVT_REMOTE_DETACH,
+    PROFILE_EVT_SAFE_CONNECT_DONE,
+    PROFILE_EVT_SAFE_CONNECT_FAILED,
 } profile_event_t;
 
 typedef struct
@@ -76,8 +78,10 @@ int service_manager_init(void);
 int service_manager_startup(uint8_t transport);
 int service_manager_get_uuid(bt_uuid_t* uuids, uint16_t* size);
 int service_manager_processmsg(profile_msg_t* msg);
+int service_manager_processmsg_by_profile_id(enum profile_id id, profile_msg_t* msg);
 int service_manager_shutdown(uint8_t transport);
 const void* service_manager_get_profile(enum profile_id id);
+int service_manager_get_transport(enum profile_id id, uint8_t* transport);
 bt_status_t service_manager_control(enum profile_id id, control_cmd_t cmd);
 int service_manager_cleanup(void);
 

@@ -411,22 +411,89 @@ static bt_status_t hfp_hf_shutdown(profile_on_shutdown_t cb)
     return hfp_hf_send_message(msg);
 }
 
+static profile_connection_state_t hfp_hf_get_connection_state(bt_address_t* addr)
+{
+    hf_device_t* device = find_hf_device_by_addr(addr);
+    profile_connection_state_t conn_state;
+    uint32_t state;
+
+    if (!device)
+        return PROFILE_STATE_DISCONNECTED;
+
+    state = hf_state_machine_get_state(device->hfsm);
+    if (state == HFP_HF_STATE_DISCONNECTED)
+        conn_state = PROFILE_STATE_DISCONNECTED;
+    else if (state == HFP_HF_STATE_CONNECTING)
+        conn_state = PROFILE_STATE_CONNECTING;
+    else if (state == HFP_HF_STATE_DISCONNECTING)
+        conn_state = PROFILE_STATE_DISCONNECTING;
+    else
+        conn_state = PROFILE_STATE_CONNECTED;
+
+    return conn_state;
+}
+
+static bt_status_t hfp_hf_connect(bt_address_t* addr)
+{
+    CHECK_ENABLED();
+    if (get_current_connnection_cnt() >= g_hfp_service.max_connections)
+        return BT_STATUS_NO_RESOURCES;
+
+    return hfp_hf_send_event(addr, HF_CONNECT);
+}
+
+static bt_status_t hfp_hf_disconnect(bt_address_t* addr)
+{
+    CHECK_ENABLED();
+    profile_connection_state_t state = hfp_hf_get_connection_state(addr);
+    if (state == PROFILE_STATE_DISCONNECTED || state == PROFILE_STATE_DISCONNECTING)
+        return BT_STATUS_FAIL;
+
+    return hfp_hf_send_event(addr, HF_DISCONNECT);
+}
+
 static void hfp_hf_process_msg(profile_msg_t* msg)
 {
+    bt_instance_t* ins;
+    bt_address_t* addr;
+    profile_connection_state_t state;
+
     switch (msg->event) {
     case PROFILE_EVT_HFP_OFFLOADING:
         g_hfp_service.offloading = msg->data.valuebool;
         break;
-    case PROFILE_EVT_REMOTE_DETACH: {
-        bt_instance_t* ins = msg->data.data;
-
+    case PROFILE_EVT_REMOTE_DETACH:
+        ins = msg->data.data;
         if (ins->hfp_hf_cookie) {
             BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
             hfp_hf_unregister_callbacks((void**)&ins, ins->hfp_hf_cookie);
             ins->hfp_hf_cookie = NULL;
         }
         break;
-    }
+    case PROFILE_EVT_SAFE_CONNECT_DONE:
+        addr = (bt_address_t*)msg->data.data;
+        BT_ADDR_LOG("safe connect done, addr:%s", addr);
+        if (!g_hfp_service.started)
+            break;
+
+        state = hfp_hf_get_connection_state(addr);
+        if (state != PROFILE_STATE_DISCONNECTED)
+            break; /**< nothing to do */
+
+        hfp_hf_connect(addr);
+        break;
+    case PROFILE_EVT_SAFE_CONNECT_FAILED:
+        addr = (bt_address_t*)msg->data.data;
+        BT_ADDR_LOG("safe connect failed, addr:%s", addr);
+        if (!g_hfp_service.started)
+            break;
+
+        state = hfp_hf_get_connection_state(addr);
+        if (state != PROFILE_STATE_DISCONNECTED)
+            break; /**< should wait for stack event */
+
+        hf_service_notify_connection_state_changed(addr, PROFILE_STATE_DISCONNECTED);
+        break;
     default:
         break;
     }
@@ -477,47 +544,6 @@ static bool hfp_hf_is_audio_connected(bt_address_t* addr)
     bool connected = hf_state_machine_get_state(device->hfsm) == HFP_HF_STATE_AUDIO_CONNECTED;
 
     return connected;
-}
-
-static profile_connection_state_t hfp_hf_get_connection_state(bt_address_t* addr)
-{
-    hf_device_t* device = find_hf_device_by_addr(addr);
-    profile_connection_state_t conn_state;
-    uint32_t state;
-
-    if (!device)
-        return PROFILE_STATE_DISCONNECTED;
-
-    state = hf_state_machine_get_state(device->hfsm);
-    if (state == HFP_HF_STATE_DISCONNECTED)
-        conn_state = PROFILE_STATE_DISCONNECTED;
-    else if (state == HFP_HF_STATE_CONNECTING)
-        conn_state = PROFILE_STATE_CONNECTING;
-    else if (state == HFP_HF_STATE_DISCONNECTING)
-        conn_state = PROFILE_STATE_DISCONNECTING;
-    else
-        conn_state = PROFILE_STATE_CONNECTED;
-
-    return conn_state;
-}
-
-static bt_status_t hfp_hf_connect(bt_address_t* addr)
-{
-    CHECK_ENABLED();
-    if (get_current_connnection_cnt() >= g_hfp_service.max_connections)
-        return BT_STATUS_NO_RESOURCES;
-
-    return hfp_hf_send_event(addr, HF_CONNECT);
-}
-
-static bt_status_t hfp_hf_disconnect(bt_address_t* addr)
-{
-    CHECK_ENABLED();
-    profile_connection_state_t state = hfp_hf_get_connection_state(addr);
-    if (state == PROFILE_STATE_DISCONNECTED || state == PROFILE_STATE_DISCONNECTING)
-        return BT_STATUS_FAIL;
-
-    return hfp_hf_send_event(addr, HF_DISCONNECT);
 }
 
 static bt_status_t hfp_hf_set_connection_policy(bt_address_t* addr, connection_policy_t policy)

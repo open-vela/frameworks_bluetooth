@@ -818,6 +818,9 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
         }
     }
 
+    if (acl_params->connection_state == CONNECTION_STATE_CONNECTED)
+        bt_cm_process_connect_event(addr, acl_params->transport, acl_params->hci_reason_code);
+
     if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED)
         bt_cm_process_disconnect_event(addr, acl_params->transport, acl_params->hci_reason_code);
 
@@ -2414,6 +2417,24 @@ bool adapter_is_remote_connected(bt_address_t* addr, bt_transport_t transport)
     adapter_unlock();
 
     return connected;
+}
+
+connection_state_t adapter_get_connection_state(bt_address_t* addr, bt_transport_t transport)
+{
+    bt_device_t* device;
+    connection_state_t state;
+
+    adapter_lock();
+    device = adapter_find_device(addr, transport);
+    if (device == NULL) {
+        adapter_unlock();
+        return CONNECTION_STATE_DISCONNECTED;
+    }
+
+    state = device_get_connection_state(device);
+    adapter_unlock();
+
+    return state;
 }
 
 bool adapter_is_remote_encrypted(bt_address_t* addr, bt_transport_t transport)

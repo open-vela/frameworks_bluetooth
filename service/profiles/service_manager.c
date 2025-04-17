@@ -182,6 +182,19 @@ int service_manager_get_uuid(bt_uuid_t* uuids, uint16_t* size)
     return 0;
 }
 
+int service_manager_get_transport(enum profile_id id, uint8_t* transport)
+{
+    assert(id < PROFILE_MAX);
+    profile_service_t* profile = service_slots[id].service;
+    if (!profile) {
+        BT_LOGE("%s profile-id:%d is not found, profile:%p\n", __func__, id, profile);
+        return -1;
+    }
+
+    *transport = profile->transport;
+    return 0;
+}
+
 int service_manager_processmsg(profile_msg_t* msg)
 {
     for (int i = 0; i < PROFILE_MAX; i++) {
@@ -189,6 +202,17 @@ int service_manager_processmsg(profile_msg_t* msg)
         if (profile && profile->process_msg)
             profile->process_msg(msg);
     }
+
+    return 0;
+}
+
+int service_manager_processmsg_by_profile_id(enum profile_id id, profile_msg_t* msg)
+{
+    assert(id < PROFILE_MAX);
+
+    profile_service_t* profile = service_slots[id].service;
+    if (profile && profile->process_msg)
+        profile->process_msg(msg);
 
     return 0;
 }

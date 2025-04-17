@@ -306,6 +306,7 @@ int8_t adapter_get_remote_rssi(bt_address_t* addr);
 bool adapter_get_remote_alias(bt_address_t* addr, char* alias);
 bt_status_t adapter_set_remote_alias(bt_address_t* addr, const char* alias);
 bool adapter_is_remote_connected(bt_address_t* addr, bt_transport_t transport);
+connection_state_t adapter_get_connection_state(bt_address_t* addr, bt_transport_t transport);
 bool adapter_is_remote_encrypted(bt_address_t* addr, bt_transport_t transport);
 bool adapter_is_bond_initiate_local(bt_address_t* addr, bt_transport_t transport);
 bond_state_t adapter_get_remote_bond_state(bt_address_t* addr, bt_transport_t transport);

@@ -492,6 +492,7 @@ static void disconnected_exit(state_machine_t* sm)
 
 static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
+    bt_status_t status;
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
     hfp_hf_data_t* data = (hfp_hf_data_t*)p_data;
 
@@ -503,7 +504,18 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
             break;
         }
 
-        if (bt_sal_hfp_hf_connect(&hfsm->addr) != BT_STATUS_SUCCESS) {
+        status = bt_cm_profile_connect_safe(&hfsm->addr, PROFILE_HFP_HF);
+        if (status == BT_STATUS_SUCCESS) {
+            BT_LOGD("wait acl connection first");
+            break; /**< stay in idle state */
+        }
+
+        if (status == BT_STATUS_DONE) {
+            BT_LOGD("acl established, create hfp connection");
+            status = bt_sal_hfp_hf_connect(&hfsm->addr);
+        }
+
+        if (status != BT_STATUS_SUCCESS) {
             BT_ADDR_LOG("Connect failed for %s", &hfsm->addr);
             hf_service_notify_connection_state_changed(&hfsm->addr, PROFILE_STATE_DISCONNECTED);
             break;

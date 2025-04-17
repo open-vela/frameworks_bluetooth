@@ -25,6 +25,7 @@
 
 #include "a2dp_audio.h"
 #include "a2dp_device.h"
+#include "a2dp_sink.h"
 #include "a2dp_sink_service.h"
 #include "adapter_internel.h"
 #include "bt_addr.h"
@@ -56,6 +57,8 @@ static a2dp_sink_global_t g_a2dp_sink = { 0 };
 
 static void sink_startup(void* data);
 static void sink_shutdown(void* data);
+static bt_status_t a2dp_sink_connect(bt_address_t* addr);
+static bt_status_t a2dp_sink_disconnect(bt_address_t* addr);
 static bool a2dp_sink_unregister_callbacks(void** remote, void* cookie);
 
 static void set_active_peer(bt_address_t* bd_addr)
@@ -298,20 +301,46 @@ static bt_status_t a2dp_sink_shutdown(profile_on_shutdown_t cb)
 
 static void a2dp_sink_process_msg(profile_msg_t* msg)
 {
+    bt_instance_t* ins;
+    bt_address_t* addr;
+    profile_connection_state_t state;
+
     switch (msg->event) {
     case PROFILE_EVT_A2DP_OFFLOADING:
         g_a2dp_sink.offloading = msg->data.valuebool;
         break;
-    case PROFILE_EVT_REMOTE_DETACH: {
-        bt_instance_t* ins = msg->data.data;
-
+    case PROFILE_EVT_REMOTE_DETACH:
+        ins = msg->data.data;
         if (ins->a2dp_sink_cookie) {
             BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
             a2dp_sink_unregister_callbacks(NULL, ins->a2dp_sink_cookie);
             ins->a2dp_sink_cookie = NULL;
         }
         break;
-    }
+    case PROFILE_EVT_SAFE_CONNECT_DONE:
+        addr = (bt_address_t*)msg->data.data;
+        BT_ADDR_LOG("safe connect done, addr:%s", addr);
+        if (!g_a2dp_sink.enabled)
+            break;
+
+        state = a2dp_sink_get_connection_state(addr);
+        if (state != PROFILE_STATE_DISCONNECTED)
+            break; /**< nothing to do */
+
+        a2dp_sink_connect(addr);
+        break;
+    case PROFILE_EVT_SAFE_CONNECT_FAILED:
+        addr = (bt_address_t*)msg->data.data;
+        BT_ADDR_LOG("safe connect failed, addr:%s", addr);
+        if (!g_a2dp_sink.enabled)
+            break;
+
+        state = a2dp_sink_get_connection_state(addr);
+        if (state != PROFILE_STATE_DISCONNECTED)
+            break; /**< should wait for stack event */
+
+        a2dp_sink_service_notify_connection_state_changed(addr, PROFILE_STATE_DISCONNECTED);
+        break;
     default:
         break;
     }

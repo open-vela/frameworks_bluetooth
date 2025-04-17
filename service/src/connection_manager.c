@@ -41,7 +41,10 @@
 
 #define FLAG_NONE (0)
 #define FLAG_HFP_HF (1 << (PROFILE_HFP_HF))
+#define FLAG_HFP_AG (1 << (PROFILE_HFP_AG))
 #define FLAG_A2DP_SINK (1 << (PROFILE_A2DP_SINK))
+#define FLAG_A2DP_SOURCE (1 << (PROFILE_A2DP))
+#define FLAG_ALL (UINT32_MAX)
 
 typedef struct {
     service_timer_t* timer;
@@ -64,6 +67,26 @@ typedef struct {
 static bt_connection_manager_t g_connection_manager;
 
 static bt_status_t bt_cm_profile_connect(bt_address_t* addr, uint8_t transport);
+
+static const uint32_t id_flag_map[][2] = {
+    { PROFILE_A2DP, FLAG_A2DP_SOURCE },
+    { PROFILE_A2DP_SINK, FLAG_A2DP_SINK },
+    { PROFILE_HFP_HF, FLAG_HFP_HF },
+    { PROFILE_HFP_AG, FLAG_HFP_AG },
+    { PROFILE_MAX, FLAG_NONE }
+};
+
+static uint32_t profile_id_2_profile_flag(uint8_t profile_id)
+{
+    int i = 0;
+    while (id_flag_map[i][0] != PROFILE_MAX) {
+        if (id_flag_map[i][0] == profile_id)
+            return id_flag_map[i][1];
+
+        i++;
+    }
+    return FLAG_NONE;
+}
 
 static void bt_cm_set_flags(uint32_t flags)
 {
@@ -98,7 +121,7 @@ static void bt_cm_enable_conn(void)
 {
     bt_connection_manager_t* manager = &g_connection_manager;
 
-    bt_cm_clear_flags(FLAG_HFP_HF | FLAG_A2DP_SINK);
+    bt_cm_clear_flags(FLAG_ALL);
     bt_cm_stop_timer();
     manager->connect_a2dp_flag = false;
     manager->busy = false;
@@ -201,6 +224,37 @@ static bt_status_t bt_cm_profile_connect(bt_address_t* addr, uint8_t transport)
     }
 
     return status;
+}
+
+static bt_status_t bt_cm_profile_connect_v2(bt_address_t* addr, uint8_t transport)
+{
+    uint8_t profile_id;
+    uint32_t profile_flag;
+    profile_msg_t msg = { 0 };
+    bt_connection_manager_t* manager = &g_connection_manager;
+
+    BT_ADDR_LOG("try profile connection, addr:%s", addr);
+
+    if (transport == BT_TRANSPORT_BLE)
+        return BT_STATUS_UNSUPPORTED;
+
+    if (bt_addr_is_empty(&manager->connecting_addr))
+        return BT_STATUS_UNHANDLED;
+
+    if (bt_addr_compare(&manager->connecting_addr, addr))
+        return BT_STATUS_PARM_INVALID;
+
+    for (profile_id = 0; profile_id < PROFILE_MAX; profile_id++) {
+        profile_flag = profile_id_2_profile_flag(profile_id);
+        if (!(manager->profile_flags & profile_flag))
+            continue;
+
+        msg.event = PROFILE_EVT_SAFE_CONNECT_DONE;
+        msg.data.data = addr;
+        service_manager_processmsg_by_profile_id(profile_id, &msg);
+    }
+
+    return BT_STATUS_SUCCESS;
 }
 
 static bt_status_t bt_cm_profile_disconnect(bt_address_t* addr, uint8_t transport)
@@ -360,60 +414,6 @@ bt_status_t bt_cm_device_disconnect(bt_address_t* addr, uint8_t transport)
     return bt_cm_profile_disconnect(addr, BT_TRANSPORT_BREDR);
 }
 
-void bt_cm_connected(bt_address_t* addr, uint8_t profile_id)
-{
-    bt_connection_manager_t* manager = &g_connection_manager;
-    bt_cm_timer_t* cm_timer = &manager->cm_timer;
-
-    if (bt_addr_compare(&cm_timer->peer_addr, addr)) {
-        return;
-    }
-
-    BT_LOGD("%s connect success, profile_id: %d", __func__, profile_id);
-    switch (profile_id) {
-    case PROFILE_HFP_HF: {
-        bt_cm_clear_flags(FLAG_HFP_HF);
-        break;
-    }
-    case PROFILE_A2DP_SINK: {
-        bt_cm_clear_flags(FLAG_A2DP_SINK);
-        service_loop_cancel_timer(manager->a2dp_conn_timer);
-        bt_addr_set_empty(&manager->connecting_addr);
-        manager->a2dp_conn_timer = NULL;
-        break;
-    }
-    default:
-        break;
-    }
-
-    if ((manager->profile_flags & (FLAG_HFP_HF | FLAG_A2DP_SINK)) == 0) {
-        BT_LOGD("%s no profile to connect", __func__);
-        bt_cm_enable_conn();
-    }
-}
-
-void bt_cm_disconnected(bt_address_t* addr, uint8_t profile_id)
-{
-    bt_connection_manager_t* manager = &g_connection_manager;
-    bt_cm_timer_t* cm_timer = &manager->cm_timer;
-
-    if (bt_addr_compare(&cm_timer->peer_addr, addr)) {
-        return;
-    }
-
-    BT_LOGD("%s connect failed, profile_id: %d", __func__, profile_id);
-    switch (profile_id) {
-    case PROFILE_A2DP_SINK: {
-        service_loop_cancel_timer(manager->a2dp_conn_timer);
-        bt_addr_set_empty(&manager->connecting_addr);
-        manager->a2dp_conn_timer = NULL;
-        break;
-    }
-    default:
-        break;
-    }
-}
-
 static void bt_cm_timeout_cb(service_timer_t* timer, void* userdata)
 {
     bt_cm_timer_t* cm_timer = (bt_cm_timer_t*)userdata;
@@ -454,6 +454,107 @@ static bool bt_cm_start_timer(bt_address_t* peer_addr)
     return true;
 }
 
+bt_status_t bt_cm_profile_connect_safe(bt_address_t* peer_addr, uint8_t profile_id)
+{
+    int err;
+    uint8_t transport;
+    uint32_t profile_flag = profile_id_2_profile_flag(profile_id);
+    bt_connection_manager_t* manager = &g_connection_manager;
+
+    if (!manager->inited)
+        return BT_STATUS_NOT_READY;
+
+    if (bt_addr_is_empty(peer_addr))
+        return BT_STATUS_PARM_INVALID;
+
+    if (profile_flag == FLAG_NONE)
+        return BT_STATUS_PARM_INVALID;
+
+    err = service_manager_get_transport(profile_id, &transport);
+    if (err)
+        return BT_STATUS_PARM_INVALID;
+
+    if (transport == BT_TRANSPORT_BLE)
+        return BT_STATUS_UNSUPPORTED;
+
+    if (!bt_addr_is_empty(&manager->connecting_addr)
+        && bt_addr_compare(&manager->connecting_addr, peer_addr))
+        return BT_STATUS_BUSY;
+
+    bt_cm_set_flags(profile_flag);
+
+    if (adapter_get_connection_state(peer_addr, transport) == CONNECTION_STATE_DISCONNECTED) {
+        BT_LOGD("%s: create acl connection first", __func__);
+        memcpy(&manager->connecting_addr, peer_addr, sizeof(bt_address_t));
+        bt_cm_start_timer(peer_addr); /**< set timeout to terminate connection manager works */
+        return adapter_connect(peer_addr); /**< assume BR/EDR */
+    }
+
+    return BT_STATUS_DONE; /**< can create profile connection */
+}
+
+void bt_cm_connected(bt_address_t* addr, uint8_t profile_id)
+{
+    bt_connection_manager_t* manager = &g_connection_manager;
+    bt_cm_timer_t* cm_timer = &manager->cm_timer;
+
+    if (bt_addr_compare(&cm_timer->peer_addr, addr)) {
+        return;
+    }
+
+    BT_LOGD("%s connect success, profile_id: %d", __func__, profile_id);
+    switch (profile_id) {
+    case PROFILE_HFP_HF: {
+        bt_cm_clear_flags(FLAG_HFP_HF);
+        break;
+    }
+    case PROFILE_HFP_AG: {
+        bt_cm_clear_flags(FLAG_HFP_AG);
+        break;
+    }
+    case PROFILE_A2DP: {
+        bt_cm_clear_flags(FLAG_A2DP_SOURCE);
+        break;
+    }
+    case PROFILE_A2DP_SINK: {
+        bt_cm_clear_flags(FLAG_A2DP_SINK);
+        service_loop_cancel_timer(manager->a2dp_conn_timer);
+        bt_addr_set_empty(&manager->connecting_addr);
+        manager->a2dp_conn_timer = NULL;
+        break;
+    }
+    default:
+        break;
+    }
+
+    if ((manager->profile_flags & FLAG_ALL) == 0) {
+        BT_LOGD("%s no profile to connect", __func__);
+        bt_cm_enable_conn();
+    }
+}
+
+void bt_cm_disconnected(bt_address_t* addr, uint8_t profile_id)
+{
+    bt_connection_manager_t* manager = &g_connection_manager;
+    bt_cm_timer_t* cm_timer = &manager->cm_timer;
+
+    if (bt_addr_compare(&cm_timer->peer_addr, addr)) {
+        return;
+    }
+
+    BT_LOGD("%s connect failed, profile_id: %d", __func__, profile_id);
+    switch (profile_id) {
+    case PROFILE_A2DP_SINK: {
+        service_loop_cancel_timer(manager->a2dp_conn_timer);
+        bt_addr_set_empty(&manager->connecting_addr);
+        manager->a2dp_conn_timer = NULL;
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 static void bt_cm_process_reconnection(bt_address_t* addr, uint32_t hci_reason_code)
 {
     bt_connection_manager_t* manager = &g_connection_manager;
@@ -478,6 +579,38 @@ static void bt_cm_process_reconnection(bt_address_t* addr, uint32_t hci_reason_c
         bt_cm_profile_connect(addr, BT_TRANSPORT_BREDR);
 }
 
+static void bt_cm_notify_profile_disconnected(bt_address_t* addr, uint8_t transport)
+{
+    uint8_t profile_id;
+    uint32_t profile_flag;
+    profile_msg_t msg = { 0 };
+    bt_connection_manager_t* manager = &g_connection_manager;
+
+    if (bt_addr_is_empty(&manager->connecting_addr))
+        return;
+
+    if (bt_addr_compare(&manager->connecting_addr, addr))
+        return;
+
+    if (transport == BT_TRANSPORT_BLE)
+        return; /**< not supported */
+
+    for (profile_id = 0; profile_id < PROFILE_MAX; profile_id++) {
+        profile_flag = profile_id_2_profile_flag(profile_id);
+        if (!(manager->profile_flags & profile_flag))
+            continue;
+
+        msg.event = PROFILE_EVT_SAFE_CONNECT_FAILED;
+        msg.data.data = addr;
+        service_manager_processmsg_by_profile_id(profile_id, &msg);
+    }
+}
+
+void bt_cm_process_connect_event(bt_address_t* addr, uint8_t transport, uint32_t hci_reason_code)
+{
+    bt_cm_profile_connect_v2(addr, transport);
+}
+
 void bt_cm_process_disconnect_event(bt_address_t* addr, uint8_t transport, uint32_t hci_reason_code)
 {
     bt_connection_manager_t* manager = &g_connection_manager;
@@ -491,6 +624,8 @@ void bt_cm_process_disconnect_event(bt_address_t* addr, uint8_t transport, uint3
 
     if (manager->reconnect_enable)
         bt_cm_process_reconnection(addr, hci_reason_code);
+
+    bt_cm_notify_profile_disconnected(addr, transport);
 }
 
 bt_status_t bt_cm_enable_enhanced_mode(bt_address_t* addr, uint8_t mode)
