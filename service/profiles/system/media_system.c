@@ -57,7 +57,7 @@ int bt_media_get_music_volume_range()
     int media_min_volume = 0; /* min volume of AVRCP must be 0. */
     int status;
 
-    status = media_policy_get_range(MEDIA_SCENARIO_MUSIC MEDIA_POLICY_VOLUME, &media_min_volume, &g_media_max_volume);
+    status = media_policy_get_range(MEDIA_STREAM_A2DP_SNK MEDIA_POLICY_VOLUME, &media_min_volume, &g_media_max_volume);
 
     assert(!media_min_volume);
     return status;
@@ -241,7 +241,7 @@ bt_status_t bt_media_set_music_volume(int volume)
 {
     bt_status_t status;
 
-    status = media_policy_set_stream_volume(MEDIA_STREAM_MUSIC, volume);
+    status = media_policy_set_stream_volume(MEDIA_STREAM_A2DP_SNK, volume);
 
     if (status) {
         BT_LOGE("set music stream volume fail: %d, status: %d", volume, status);
@@ -272,7 +272,7 @@ bt_status_t bt_media_set_music_volume(int volume)
 
 bt_status_t bt_media_get_music_volume(int* volume)
 {
-    if (media_policy_get_stream_volume(MEDIA_STREAM_MUSIC, volume) != 0)
+    if (media_policy_get_stream_volume(MEDIA_STREAM_A2DP_SNK, volume) != 0)
         return BT_STATUS_FAIL;
 
     return BT_STATUS_SUCCESS;
@@ -288,7 +288,7 @@ void* bt_media_listen_music_volume_change(bt_media_voice_volume_change_callback_
 
     listener->context = context;
     listener->policy_cb = cb;
-    listener->policy_handle = media_policy_subscribe(MEDIA_SCENARIO_MUSIC MEDIA_POLICY_VOLUME, bt_media_policy_volume_change_callback, listener);
+    listener->policy_handle = media_policy_subscribe(MEDIA_STREAM_A2DP_SNK MEDIA_POLICY_VOLUME, bt_media_policy_volume_change_callback, listener);
 
     return listener;
 }
