@@ -1244,6 +1244,7 @@ void spp_on_data_sent(uint16_t conn_port, uint8_t* buffer, uint16_t length,
 
     device = find_spp_device_by_conn(SERVICE_CONN_ID(conn_port));
     if (!device) {
+        free(buffer);
         BT_LOGE("%s port:%d not exist", __func__, conn_port);
         return;
     }
