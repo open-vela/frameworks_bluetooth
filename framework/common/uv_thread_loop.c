@@ -179,7 +179,7 @@ int thread_loop_run(uv_loop_t* loop, bool start_thread, const char* name)
         uv_thread_options_t options = {
             UV_THREAD_HAS_STACK_SIZE | UV_THREAD_HAS_PRIORITY,
             LOOP_THREAD_STACK_SIZE,
-            CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY
+            CONFIG_BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY + 1
         };
         ret = uv_thread_create_ex(&priv->thread, &options, thread_schedule_loop, (void*)loop);
         if (ret != 0) {
