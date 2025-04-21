@@ -117,7 +117,7 @@ static pan_conn_t* pan_new_conn(bt_address_t* addr)
     if (pan_find_conn(addr))
         return NULL;
 
-    conn = malloc(sizeof(pan_conn_t));
+    conn = bt_malloc(sizeof(pan_conn_t));
     memcpy(&conn->addr, addr, sizeof(bt_address_t));
     list_add_tail(&g_pan.conn_list, &conn->node);
 
@@ -127,7 +127,7 @@ static pan_conn_t* pan_new_conn(bt_address_t* addr)
 static void pan_free_conn(pan_conn_t* conn)
 {
     list_delete(&conn->node);
-    free(conn);
+    bt_free(conn);
 }
 
 static pan_conn_t* pan_find_conn(bt_address_t* addr)
@@ -287,7 +287,7 @@ static pan_conn_t* pan_new_conn_open(bt_address_t* addr, uint8_t local, uint8_t 
             goto open_fail;
 
         g_pan.tun_packet_size = ret;
-        pan_read_buf = malloc(g_pan.tun_packet_size);
+        pan_read_buf = bt_malloc(g_pan.tun_packet_size);
         if (pan_read_buf == NULL) {
             BT_LOGE("%s packet malloc failed", __func__);
             goto open_fail;
@@ -328,7 +328,7 @@ static void pan_conn_close(pan_conn_t* conn)
         }
 
         if (pan_read_buf) {
-            free(pan_read_buf);
+            bt_free(pan_read_buf);
             pan_read_buf = NULL;
         }
 
@@ -406,7 +406,7 @@ static void pan_service_event_process(void* data)
         on_pan_data_incoming(&msg->addr, evt->protocol,
             evt->packet, evt->length);
         bt_pm_idle(PROFILE_PANU, &msg->addr);
-        free(evt->packet);
+        bt_free(evt->packet);
         break;
     }
     default:
@@ -414,13 +414,13 @@ static void pan_service_event_process(void* data)
     }
     pthread_mutex_unlock(&g_pan.pan_lock);
 
-    free(data);
+    bt_free(data);
 }
 
 void pan_on_connection_state_changed(bt_address_t* addr, pan_role_t remote_role,
     pan_role_t local_role, profile_connection_state_t state)
 {
-    pan_msg_t* pan_msg = (pan_msg_t*)malloc(sizeof(pan_msg_t));
+    pan_msg_t* pan_msg = (pan_msg_t*)bt_malloc(sizeof(pan_msg_t));
     if (pan_msg == NULL) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -443,7 +443,7 @@ void pan_on_data_received(bt_address_t* addr, uint16_t protocol,
     eth_hdr_t ethhdr;
     uint8_t* packet;
 
-    pan_msg = (pan_msg_t*)malloc(sizeof(pan_msg_t));
+    pan_msg = (pan_msg_t*)bt_malloc(sizeof(pan_msg_t));
     if (pan_msg == NULL) {
         BT_LOGE("%s msg malloc failed", __func__);
         return;
@@ -460,9 +460,9 @@ void pan_on_data_received(bt_address_t* addr, uint16_t protocol,
     ethhdr.h_proto = htons(protocol);
 
     /* malloc packet with eth header */
-    packet = malloc(g_pan.tun_packet_size + sizeof(ethhdr));
+    packet = bt_malloc(g_pan.tun_packet_size + sizeof(ethhdr));
     if (packet == NULL) {
-        free(pan_msg);
+        bt_free(pan_msg);
         BT_LOGE("%s packet malloc failed", __func__);
         return;
     }
@@ -472,8 +472,8 @@ void pan_on_data_received(bt_address_t* addr, uint16_t protocol,
 
     /* copy protocol data to packet buffer */
     if (length > g_pan.tun_packet_size) {
-        free(packet);
-        free(pan_msg);
+        bt_free(packet);
+        bt_free(pan_msg);
         BT_LOGE("send eth packet size:%d is exceeded limit!", length);
         return;
     }

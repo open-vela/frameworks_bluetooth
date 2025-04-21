@@ -39,7 +39,7 @@ static void advertiser_data_calc_len(void* data, void* context)
 
 advertiser_data_t* advertiser_data_new(void)
 {
-    advertiser_data_t* ad = malloc(sizeof(advertiser_data_t));
+    advertiser_data_t* ad = bt_malloc(sizeof(advertiser_data_t));
     if (!ad)
         return NULL;
 
@@ -52,10 +52,10 @@ advertiser_data_t* advertiser_data_new(void)
 void advertiser_data_free(advertiser_data_t* ad)
 {
     if (ad->buffer)
-        free(ad->buffer);
+        bt_free(ad->buffer);
 
     bt_list_free(ad->data);
-    free(ad);
+    bt_free(ad);
 }
 
 uint8_t* advertiser_data_build(advertiser_data_t* ad, uint16_t* len)
@@ -65,7 +65,7 @@ uint8_t* advertiser_data_build(advertiser_data_t* ad, uint16_t* len)
     uint8_t* p;
 
     if (ad->buffer)
-        free(ad->buffer);
+        bt_free(ad->buffer);
 
     if (!bt_list_length(ad->data))
         return NULL;
@@ -73,7 +73,7 @@ uint8_t* advertiser_data_build(advertiser_data_t* ad, uint16_t* len)
     bt_list_foreach(ad->data, advertiser_data_calc_len, &total_len);
 
     *len = total_len;
-    ad->buffer = malloc(total_len);
+    ad->buffer = bt_malloc(total_len);
     p = ad->buffer;
 
     for (node = bt_list_head(ad->data); node != NULL;
@@ -89,7 +89,7 @@ uint8_t* advertiser_data_build(advertiser_data_t* ad, uint16_t* len)
 void advertiser_data_set_name(advertiser_data_t* ad, const char* name)
 {
     uint8_t name_len = strlen(name);
-    adv_data_t* data = zalloc(sizeof(adv_data_t) + name_len + 1);
+    adv_data_t* data = bt_zalloc(sizeof(adv_data_t) + name_len + 1);
 
     if (name_len > BT_LE_AD_NAME_LEN) {
         name_len = BT_LE_AD_NAME_LEN;
@@ -105,7 +105,7 @@ void advertiser_data_set_name(advertiser_data_t* ad, const char* name)
 
 void advertiser_data_set_flags(advertiser_data_t* ad, uint8_t flags)
 {
-    adv_data_t* data = malloc(sizeof(adv_data_t) + 1);
+    adv_data_t* data = bt_malloc(sizeof(adv_data_t) + 1);
 
     data->len = 2;
     data->type = BT_AD_FLAGS;
@@ -116,7 +116,7 @@ void advertiser_data_set_flags(advertiser_data_t* ad, uint8_t flags)
 
 void advertiser_data_set_appearance(advertiser_data_t* ad, uint16_t appearance)
 {
-    adv_data_t* data = malloc(sizeof(adv_data_t) + 2);
+    adv_data_t* data = bt_malloc(sizeof(adv_data_t) + 2);
     uint8_t* p = data->data;
 
     data->len = 3;
@@ -128,7 +128,7 @@ void advertiser_data_set_appearance(advertiser_data_t* ad, uint16_t appearance)
 
 void advertiser_data_add_data(advertiser_data_t* ad, uint8_t type, uint8_t* data, uint8_t len)
 {
-    adv_data_t* adata = malloc(sizeof(adv_data_t) + len);
+    adv_data_t* adata = bt_malloc(sizeof(adv_data_t) + len);
 
     adata->type = type;
     adata->len = len;
@@ -145,7 +145,7 @@ void advertiser_data_add_manufacture_data(advertiser_data_t* ad,
     uint16_t manufacture_id,
     uint8_t* data, uint8_t length)
 {
-    adv_data_t* mdata = malloc(sizeof(adv_data_t) + 2 + length);
+    adv_data_t* mdata = bt_malloc(sizeof(adv_data_t) + 2 + length);
     uint8_t* p = mdata->data;
 
     mdata->len = length + 2 + 1;
@@ -163,20 +163,20 @@ bool advertiser_data_add_service_uuid(advertiser_data_t* ad, const bt_uuid_t* uu
 
     switch (uuid->type) {
     case BT_UUID16_TYPE:
-        data = malloc(sizeof(adv_data_t) + 2);
+        data = bt_malloc(sizeof(adv_data_t) + 2);
         data->len = 2 + 1;
         data->type = BT_AD_UUID16_ALL;
         p = data->data;
         UINT16_TO_STREAM(p, uuid->val.u16);
         break;
     case BT_UUID32_TYPE:
-        data = malloc(sizeof(adv_data_t) + 4);
+        data = bt_malloc(sizeof(adv_data_t) + 4);
         data->len = 4 + 1;
         data->type = BT_AD_UUID32_ALL;
         p = data->data;
         UINT32_TO_STREAM(p, uuid->val.u32);
     case BT_UUID128_TYPE:
-        data = malloc(sizeof(adv_data_t) + 16);
+        data = bt_malloc(sizeof(adv_data_t) + 16);
         data->len = 16 + 1;
         data->type = BT_AD_UUID128_ALL;
         memcpy(data->data, uuid->val.u128, 16);
@@ -199,20 +199,20 @@ bool advertiser_data_add_service_data(advertiser_data_t* ad,
 
     switch (uuid->type) {
     case BT_UUID16_TYPE:
-        sdata = malloc(sizeof(adv_data_t) + len + 2);
+        sdata = bt_malloc(sizeof(adv_data_t) + len + 2);
         sdata->len = 2 + 1;
         sdata->type = BT_AD_SERVICE_DATA16;
         p = sdata->data;
         UINT16_TO_STREAM(p, uuid->val.u16);
         break;
     case BT_UUID32_TYPE:
-        sdata = malloc(sizeof(adv_data_t) + len + 4);
+        sdata = bt_malloc(sizeof(adv_data_t) + len + 4);
         sdata->len = 4 + 1;
         sdata->type = BT_AD_SERVICE_DATA32;
         p = sdata->data;
         UINT32_TO_STREAM(p, uuid->val.u32);
     case BT_UUID128_TYPE:
-        sdata = malloc(sizeof(adv_data_t) + len + 16);
+        sdata = bt_malloc(sizeof(adv_data_t) + len + 16);
         sdata->len = 16 + 1;
         sdata->type = BT_AD_SERVICE_DATA128;
         memcpy(sdata->data, uuid->val.u128, 16);

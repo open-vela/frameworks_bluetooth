@@ -193,7 +193,7 @@ int bt_socket_client_avrcp_control_callback(service_poll_t* poll,
         break;
     case BT_AVRCP_CONTROL_ON_GET_ELEMENT_ATTRIBUTES_REQUEST: {
         avrcp_element_attr_val_t* attrs = NULL;
-        attrs = (avrcp_element_attr_val_t*)malloc(sizeof(avrcp_element_attr_val_t) * packet->avrcp_control_cb._bt_avrcp_control_get_element_attribute.attrs_count);
+        attrs = (avrcp_element_attr_val_t*)bt_malloc(sizeof(avrcp_element_attr_val_t) * packet->avrcp_control_cb._bt_avrcp_control_get_element_attribute.attrs_count);
         for (int i = 0; i < packet->avrcp_control_cb._bt_avrcp_control_get_element_attribute.attrs_count; i++) {
             attrs[i].attr_id = packet->avrcp_control_cb._bt_avrcp_control_get_element_attribute.types[i];
             attrs[i].chr_set = packet->avrcp_control_cb._bt_avrcp_control_get_element_attribute.chr_sets[i];
@@ -232,7 +232,7 @@ int bt_socket_client_avrcp_control_callback(service_poll_t* poll,
             packet->avrcp_control_cb._bt_avrcp_control_get_element_attribute.attrs_count,
             attrs);
 
-        free(attrs);
+        bt_free(attrs);
     }
 
     break;

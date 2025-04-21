@@ -215,7 +215,7 @@ static int operator_status_to_value(const char* str)
 
 static tele_call_t* tele_voicecall_new(tele_modem_t* modem, GDBusProxy* proxy)
 {
-    tele_call_t* call = malloc(sizeof(tele_call_t));
+    tele_call_t* call = bt_malloc(sizeof(tele_call_t));
 
     memset(call, 0, sizeof(tele_call_t));
     call->client = modem->client;
@@ -226,7 +226,7 @@ static tele_call_t* tele_voicecall_new(tele_modem_t* modem, GDBusProxy* proxy)
 
 static void tele_voicecall_delete(tele_call_t* call)
 {
-    free(call);
+    bt_free(call);
 }
 
 static tele_call_t* voicecall_proxy_added(tele_modem_t* modem, GDBusProxy* proxy)
@@ -313,7 +313,7 @@ static int tele_call_get_call_info(tele_client_t* tele, tele_call_t* call)
 
 static tele_modem_t* tele_modem_new(tele_client_t* tele, GDBusProxy* proxy)
 {
-    tele_modem_t* modem = malloc(sizeof(tele_modem_t));
+    tele_modem_t* modem = bt_malloc(sizeof(tele_modem_t));
     if (!modem)
         return NULL;
 
@@ -329,7 +329,7 @@ static tele_modem_t* tele_modem_new(tele_client_t* tele, GDBusProxy* proxy)
 static void tele_modem_delete(tele_modem_t* modem)
 {
     bt_list_free(modem->voicecalls);
-    free(modem);
+    bt_free(modem);
 }
 
 static tele_modem_t* modem_proxy_added(tele_client_t* tele, GDBusProxy* proxy)
@@ -756,7 +756,7 @@ tele_client_t* teleif_client_connect(const char* name)
 {
     GDBusClient* dbus_client;
 
-    tele_client_t* tele = malloc(sizeof(tele_client_t));
+    tele_client_t* tele = bt_malloc(sizeof(tele_client_t));
     if (!tele)
         return NULL;
 
@@ -766,7 +766,7 @@ tele_client_t* teleif_client_connect(const char* name)
     if (!tele->dbus_sys) {
         BT_LOGE("Can't get on system bus");
         bt_list_free(tele->modems);
-        free(tele);
+        bt_free(tele);
         return NULL;
     }
 
@@ -795,7 +795,7 @@ void teleif_client_disconnect(tele_client_t* tele)
     dbus_connection_close(tele->dbus_sys);
     dbus_connection_unref(tele->dbus_sys);
     bt_list_free(tele->modems);
-    free(tele);
+    bt_free(tele);
 }
 
 void teleif_register_callbacks(tele_client_t* tele, int slot, tele_callbacks_t* cbs)
@@ -898,7 +898,7 @@ int teleif_get_all_calls(tele_client_t* tele, int slot, get_calls_callback_t cbs
         return TELE_SUCCESS;
     }
 
-    calls = malloc(sizeof(tele_call_t*) * call_nums);
+    calls = bt_malloc(sizeof(tele_call_t*) * call_nums);
     if (!calls)
         return TELE_ERR_NOMEM;
 
@@ -949,7 +949,7 @@ static void dial_reply(DBusMessage* message, void* user_data)
 
 static void dial_destory(void* user_data)
 {
-    free(user_data);
+    bt_free(user_data);
 }
 
 int teleif_call_dial_number(tele_client_t* tele, int slot, char* number,
@@ -961,7 +961,7 @@ int teleif_call_dial_number(tele_client_t* tele, int slot, char* number,
         return TELE_ERR_PROXY;
     }
 
-    dial_param_t* param = malloc(sizeof(dial_param_t));
+    dial_param_t* param = bt_malloc(sizeof(dial_param_t));
     if (!param)
         return TELE_ERR_NOMEM;
 
@@ -971,7 +971,7 @@ int teleif_call_dial_number(tele_client_t* tele, int slot, char* number,
 
     if (!g_dbus_proxy_method_call(proxy, "Dial", dial_setup,
             dial_reply, param, dial_destory)) {
-        free(param);
+        bt_free(param);
         return TELE_FAIL;
     }
 

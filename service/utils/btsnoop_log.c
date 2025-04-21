@@ -50,7 +50,7 @@ static void write_log(service_work_t* work, void* userdata)
 
 static void write_log_complete(service_work_t* work, void* userdata)
 {
-    free(userdata);
+    bt_free(userdata);
 }
 
 void btsnoop_log_capture(uint8_t receive, uint8_t* hci_pkt, uint32_t hci_pkt_size)
@@ -67,7 +67,7 @@ void btsnoop_log_capture(uint8_t receive, uint8_t* hci_pkt, uint32_t hci_pkt_siz
         goto error;
     }
 
-    hci_command = (btsnoop_hci_command_t*)malloc(sizeof(btsnoop_hci_command_t) + hci_pkt_size);
+    hci_command = (btsnoop_hci_command_t*)bt_malloc(sizeof(btsnoop_hci_command_t) + hci_pkt_size);
     if (hci_command == NULL) {
         BT_LOGE("malloc fail");
         goto error;

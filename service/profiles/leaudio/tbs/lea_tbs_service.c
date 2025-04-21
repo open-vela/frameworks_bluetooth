@@ -468,7 +468,7 @@ bt_status_t lea_tbs_set_telephone_bearer_info(lea_tbs_telephone_bearer_t* bearer
     bt_status_t ret;
     SERVICE_LEA_TELEPHONE_BEARER_S* tele_bearer;
 
-    tele_bearer = (SERVICE_LEA_TELEPHONE_BEARER_S*)malloc(sizeof(SERVICE_LEA_TELEPHONE_BEARER_S));
+    tele_bearer = (SERVICE_LEA_TELEPHONE_BEARER_S*)bt_malloc(sizeof(SERVICE_LEA_TELEPHONE_BEARER_S));
     tele_bearer->tbs_id = lea_tbs_id;
     tele_bearer->bearer_ref = bearer->bearer_ref;
     tele_bearer->provider_name = bearer->provider_name;
@@ -498,7 +498,7 @@ bt_status_t lea_tbs_add_call(lea_tbs_calls_t* call_s)
     bt_status_t ret;
     SERVICE_LEA_TBS_CALL_S* bts_call_s;
 
-    bts_call_s = (SERVICE_LEA_TBS_CALL_S*)malloc(sizeof(SERVICE_LEA_TBS_CALL_S));
+    bts_call_s = (SERVICE_LEA_TBS_CALL_S*)bt_malloc(sizeof(SERVICE_LEA_TBS_CALL_S));
     bts_call_s->tbs_id = lea_tbs_id;
     bts_call_s->index = call_s->index;
     bts_call_s->state = call_s->state;

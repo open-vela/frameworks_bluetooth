@@ -244,7 +244,7 @@ static void a2dp_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len)
     uint8_t* pbuf = buffer;
 
     if (len <= 0) {
-        free(buffer);
+        bt_free(buffer);
         if (len < 0)
             audio_transport_read_stop(a2dp_transport, ch_id);
         return;
@@ -258,7 +258,7 @@ static void a2dp_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len)
         a2dp_recv_ctrl_data(ch_id, cmd);
     }
     // free the buffer alloced by a2dp_ctrl_buffer_alloc
-    free(buffer);
+    bt_free(buffer);
 }
 
 static void a2dp_ctrl_start(uint8_t ch_id)

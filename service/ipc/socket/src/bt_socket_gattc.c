@@ -234,7 +234,7 @@ void bt_socket_server_gattc_process(service_poll_t* poll, int fd,
     switch (packet->code) {
     case BT_GATT_CLIENT_CREATE_CONNECT: {
         gattc_interface_t* profile = (gattc_interface_t*)service_manager_get_profile(PROFILE_GATTC);
-        bt_gattc_remote_t* gattc_remote = malloc(sizeof(bt_gattc_remote_t));
+        bt_gattc_remote_t* gattc_remote = bt_malloc(sizeof(bt_gattc_remote_t));
         if (!gattc_remote) {
             packet->gattc_r.status = BT_STATUS_NO_RESOURCES;
             break;
@@ -246,7 +246,7 @@ void bt_socket_server_gattc_process(service_poll_t* poll, int fd,
             INT2PTR(void**) & packet->gattc_r.handle,
             (gattc_callbacks_t*)&g_gattc_socket_cbs);
         if (packet->gattc_r.status != BT_STATUS_SUCCESS)
-            free(gattc_remote);
+            bt_free(gattc_remote);
         break;
     }
     case BT_GATT_CLIENT_DELETE_CONNECT: {
@@ -255,7 +255,7 @@ void bt_socket_server_gattc_process(service_poll_t* poll, int fd,
             INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_delete.handle);
 
         if (packet->gattc_r.status == BT_STATUS_SUCCESS)
-            free(gattc_remote);
+            bt_free(gattc_remote);
         break;
     }
     case BT_GATT_CLIENT_CONNECT:

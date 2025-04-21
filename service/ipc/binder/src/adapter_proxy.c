@@ -401,7 +401,7 @@ bt_status_t BpBtAdapter_getName(BpBtAdapter* bpBinder, char* name, int length)
         return BT_STATUS_IPC_ERROR;
 
     snprintf(name, length, "%s", btName);
-    free(btName);
+    bt_free(btName);
 
     return BT_STATUS_SUCCESS;
 }
@@ -1071,7 +1071,7 @@ bool BpBtAdapter_getRemoteName(BpBtAdapter* bpBinder, bt_address_t* addr, char* 
         return false;
 
     snprintf(name, length, "%s", remoteName);
-    free(remoteName);
+    bt_free(remoteName);
 
     stat = AParcel_readBool(parcelOut, &ret);
     if (stat != STATUS_OK)
@@ -1136,12 +1136,12 @@ bt_status_t BpBtAdapter_getRemoteUuids(BpBtAdapter* bpBinder, bt_address_t* addr
     if (uuidSize) {
         length = sizeof(bt_uuid_t) * uuidSize;
         if (!allocator((void**)uuids, length)) {
-            free(uuidArray);
+            bt_free(uuidArray);
             return BT_STATUS_NOMEM;
         }
 
         memcpy(*uuids, uuidArray, length);
-        free(uuidArray);
+        bt_free(uuidArray);
     }
 
     stat = AParcel_readUint32(parcelOut, &status);
@@ -1225,7 +1225,7 @@ bool BpBtAdapter_getRemoteAlias(BpBtAdapter* bpBinder, bt_address_t* addr, char*
         return false;
 
     snprintf(alias, length, "%s", Alias);
-    free(Alias);
+    bt_free(Alias);
 
     stat = AParcel_readBool(parcelOut, &ret);
     if (stat != STATUS_OK)

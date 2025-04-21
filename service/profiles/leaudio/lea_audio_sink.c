@@ -198,7 +198,7 @@ static void lea_sink_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t 
         lea_sink_recv_ctrl_data(cmd);
     }
     // free the buffer alloced by lea_sink_ctrl_buffer_alloc
-    free(buffer);
+    bt_free(buffer);
 }
 
 static void lea_sink_ctrl_start(void)
@@ -332,7 +332,7 @@ static void lea_sink_flush_packet_queue(void)
     list_for_every_safe(&stream->packet_queue, node, tmp)
     {
         list_delete(node);
-        free(node);
+        bt_free(node);
     }
 }
 
@@ -421,7 +421,7 @@ lea_recv_iso_data_t* lea_audio_sink_packet_alloc(uint32_t timestamp, uint16_t se
     (void)seq;
     (void)timestamp;
 
-    packet = malloc(sizeof(lea_recv_iso_data_t) + length);
+    packet = bt_malloc(sizeof(lea_recv_iso_data_t) + length);
     if (!packet) {
         BT_LOGE("fail, packet malloc");
         return NULL;
@@ -437,7 +437,7 @@ lea_recv_iso_data_t* lea_audio_sink_packet_alloc(uint32_t timestamp, uint16_t se
 
 void lea_audio_sink_packet_free(lea_recv_iso_data_t* packet)
 {
-    free(packet);
+    bt_free(packet);
 }
 
 bt_status_t lea_audio_sink_start(void)
@@ -554,7 +554,7 @@ void lea_audio_sink_packet_recv(lea_recv_iso_data_t* packet)
     }
 
     if (stream->state != STREAM_STATE_RUNNING) {
-        free(packet);
+        bt_free(packet);
         return;
     }
 
@@ -562,7 +562,7 @@ void lea_audio_sink_packet_recv(lea_recv_iso_data_t* packet)
     if (list_length(queue) == LEA_MAX_ENQUEUE_PACKET_COUNT) {
         BT_LOGD("%s queue is full, drop head packet", __func__);
         struct list_node* pkt = list_remove_head(queue);
-        free(pkt);
+        bt_free(pkt);
         list_add_tail(queue, &packet->node);
         uv_mutex_unlock(&stream->queue_lock);
         return;

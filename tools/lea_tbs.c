@@ -92,7 +92,7 @@ static int tbs_set_telephone_bearer_info(void* handle, int argc, char* argv[])
     if (argc < 9)
         return CMD_PARAM_NOT_ENOUGH;
 
-    lea_tbs_telephone_bearer_t* bearer = (lea_tbs_telephone_bearer_t*)malloc(sizeof(lea_tbs_telephone_bearer_t));
+    lea_tbs_telephone_bearer_t* bearer = (lea_tbs_telephone_bearer_t*)bt_malloc(sizeof(lea_tbs_telephone_bearer_t));
     bearer->bearer_ref = (void*)atoi(argv[0]);
     strcpy((char*)bearer->provider_name, argv[1]);
     strcpy((char*)bearer->uci, argv[2]);
@@ -113,7 +113,7 @@ static int tbs_add_call(void* handle, int argc, char* argv[])
     if (argc < 6)
         return CMD_PARAM_NOT_ENOUGH;
 
-    lea_tbs_calls_t* call_s = (lea_tbs_calls_t*)malloc(sizeof(lea_tbs_calls_t));
+    lea_tbs_calls_t* call_s = (lea_tbs_calls_t*)bt_malloc(sizeof(lea_tbs_calls_t));
 
     call_s->index = (uint8_t)atoi(argv[0]);
     call_s->state = (uint8_t)atoi(argv[1]);
@@ -226,7 +226,7 @@ static int tbs_call_state_changed(void* handle, int argc, char* argv[])
 
     uint8_t number = (uint8_t)atoi(argv[0]);
     lea_tbs_call_state_t* states_s;
-    states_s = (lea_tbs_call_state_t*)malloc(sizeof(lea_tbs_call_state_t) * number);
+    states_s = (lea_tbs_call_state_t*)bt_malloc(sizeof(lea_tbs_call_state_t) * number);
     lea_tbs_call_state_t* sub_state = states_s;
 
     for (int i = 0; i < number; i++) {

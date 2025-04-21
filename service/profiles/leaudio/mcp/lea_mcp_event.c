@@ -28,7 +28,7 @@ mcp_event_t* mcp_event_new_ext(mcp_event_type_t event, bt_address_t* remote_addr
 {
     mcp_event_t* mcp_event;
 
-    mcp_event = (mcp_event_t*)malloc(sizeof(mcp_event_t) + size);
+    mcp_event = (mcp_event_t*)bt_malloc(sizeof(mcp_event_t) + size);
     if (mcp_event == NULL)
         return NULL;
 
@@ -43,5 +43,5 @@ mcp_event_t* mcp_event_new_ext(mcp_event_type_t event, bt_address_t* remote_addr
 
 void mcp_event_destory(mcp_event_t* mcp_event)
 {
-    free(mcp_event);
+    bt_free(mcp_event);
 }

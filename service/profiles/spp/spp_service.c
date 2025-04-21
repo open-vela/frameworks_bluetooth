@@ -240,7 +240,7 @@ static spp_server_t* alloc_new_server(uint16_t scn, bt_uuid_t* uuid, spp_handle_
     if (scn_bit_alloc(scn) != 0)
         return NULL;
 
-    spp_server_t* server = malloc(sizeof(spp_server_t));
+    spp_server_t* server = bt_malloc(sizeof(spp_server_t));
     if (!server)
         return NULL;
 
@@ -257,7 +257,7 @@ static void free_server_resource(spp_server_t* server)
     spp_server_cleanup_devices(server);
     scn_bit_free(server->scn);
     list_delete(&server->node);
-    free(server);
+    bt_free(server);
 }
 
 static spp_server_t* find_server(uint16_t scn)
@@ -287,7 +287,7 @@ static spp_device_t* alloc_new_device(bt_address_t* addr, int16_t scn,
     if (conn_id < 0)
         return NULL;
 
-    device = malloc(sizeof(spp_device_t));
+    device = bt_malloc(sizeof(spp_device_t));
     if (device == NULL)
         return NULL;
 
@@ -354,7 +354,7 @@ static void remove_spp_device(spp_device_t* device)
     BT_LOGI("spp device remove, conn_id: %d", device->conn_id);
     index_free(g_spp_handle.allocator, device->conn_id);
     list_delete(&device->node);
-    free(device);
+    bt_free(device);
 }
 
 static bool spp_app_is_exist(void* handle)
@@ -486,7 +486,7 @@ static void spp_cleanup_all_apps(void)
     {
         spp_cleanup_app((spp_handle_t*)node);
         list_delete(&((spp_handle_t*)node)->node);
-        free(node);
+        bt_free(node);
     }
 }
 
@@ -524,7 +524,7 @@ static void euv_read_complete(euv_pipe_t* handle, const uint8_t* buf, ssize_t si
 
     if (size <= 0) {
         if (buf && (device->cache_buf.length == 0))
-            free((void*)buf);
+            bt_free((void*)buf);
 
         if (size < 0)
             spp_device_close(device);
@@ -572,7 +572,7 @@ static void spp_rx_buffer_send(spp_device_t* device)
         }
         spp_dumpbuffer("master buffer write:", buf->buffer, buf->length);
         list_delete(node);
-        free(node);
+        bt_free(node);
     }
 }
 
@@ -583,7 +583,7 @@ static bool spp_rx_buffer_empty(spp_device_t* device)
 
 static void spp_rx_buffer_cache(spp_device_t* device, uint8_t* buffer, uint16_t length)
 {
-    spp_rx_buf_t* rx_buf = (spp_rx_buf_t*)malloc(sizeof(spp_rx_buf_t));
+    spp_rx_buf_t* rx_buf = (spp_rx_buf_t*)bt_malloc(sizeof(spp_rx_buf_t));
 
     if (!rx_buf) {
         BT_LOGE("%s, malloc failed", __func__);
@@ -698,7 +698,7 @@ static int do_spp_write(spp_device_t* device, uint8_t* buffer, uint16_t length)
         if (status != BT_STATUS_SUCCESS) {
             BT_LOGE("%s write to stack failed", __func__);
             bt_pm_idle(PROFILE_SPP, &device->addr);
-            free(tmpbuf);
+            bt_free(tmpbuf);
             return length - remaining;
         }
         device->tx_bytes += size;
@@ -793,7 +793,7 @@ static void spp_on_outgoing_complete(uint16_t port, uint8_t* buffer, uint16_t le
 {
     spp_device_t* device;
 
-    free(buffer);
+    bt_free(buffer);
     device = find_spp_device_by_conn(SERVICE_CONN_ID(port));
     if (!device)
         return;
@@ -874,7 +874,7 @@ static void spp_service_event_process(void* data)
     }
 
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
-    free(data);
+    bt_free(data);
 }
 
 static bt_status_t spp_init(void)
@@ -989,7 +989,7 @@ static void* spp_register_app(void* remote, const char* name, const spp_callback
         return NULL;
     }
 
-    hdl = zalloc(sizeof(spp_handle_t));
+    hdl = bt_zalloc(sizeof(spp_handle_t));
     if (hdl == NULL) {
         pthread_mutex_unlock(&g_spp_handle.spp_lock);
         BT_LOGE("%s, spp handle malloc error", __func__);
@@ -1029,7 +1029,7 @@ static bt_status_t spp_unregister_app(void** remote, void* handle)
         *remote = app->remote;
     spp_cleanup_app(app);
     list_delete(&app->node);
-    free(app);
+    bt_free(app);
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
 
     return BT_STATUS_SUCCESS;
@@ -1248,7 +1248,7 @@ static const void* get_spp_profile_interface(void)
 void spp_on_connection_state_changed(bt_address_t* addr, uint16_t conn_port,
     profile_connection_state_t state)
 {
-    spp_msg_t* msg = malloc(sizeof(spp_msg_t));
+    spp_msg_t* msg = bt_malloc(sizeof(spp_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -1274,7 +1274,7 @@ void spp_on_data_sent(uint16_t conn_port, uint8_t* buffer, uint16_t length,
         return;
     }
 
-    msg = malloc(sizeof(spp_msg_t));
+    msg = bt_malloc(sizeof(spp_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -1293,7 +1293,7 @@ void spp_on_data_sent(uint16_t conn_port, uint8_t* buffer, uint16_t length,
 void spp_on_data_received(bt_address_t* addr, uint16_t conn_port,
     uint8_t* buffer, uint16_t length)
 {
-    spp_msg_t* msg = malloc(sizeof(spp_msg_t));
+    spp_msg_t* msg = bt_malloc(sizeof(spp_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -1310,7 +1310,7 @@ void spp_on_data_received(bt_address_t* addr, uint16_t conn_port,
 
 void spp_on_server_recieve_connect_request(bt_address_t* addr, uint16_t scn)
 {
-    spp_msg_t* msg = malloc(sizeof(spp_msg_t));
+    spp_msg_t* msg = bt_malloc(sizeof(spp_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -1325,7 +1325,7 @@ void spp_on_server_recieve_connect_request(bt_address_t* addr, uint16_t scn)
 
 void spp_on_connection_mfs_update(uint16_t conn_port, uint16_t mfs)
 {
-    spp_msg_t* msg = malloc(sizeof(spp_msg_t));
+    spp_msg_t* msg = bt_malloc(sizeof(spp_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;

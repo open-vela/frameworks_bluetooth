@@ -197,7 +197,7 @@ static void hid_device_event_process(void* data)
 
 end:
     pthread_mutex_unlock(&g_hidd_handle.hid_lock);
-    free(msg);
+    bt_free(msg);
 }
 
 static bt_status_t hid_device_init(void)
@@ -569,7 +569,7 @@ static const void* get_device_profile_interface(void)
 
 void hid_device_on_app_state_changed(hid_app_state_t state)
 {
-    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t));
+    hidd_msg_t* msg = bt_malloc(sizeof(hidd_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -583,7 +583,7 @@ void hid_device_on_app_state_changed(hid_app_state_t state)
 
 void hid_device_on_connection_state_changed(bt_address_t* addr, bool le_hid, profile_connection_state_t state)
 {
-    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t));
+    hidd_msg_t* msg = bt_malloc(sizeof(hidd_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -599,7 +599,7 @@ void hid_device_on_connection_state_changed(bt_address_t* addr, bool le_hid, pro
 
 void hid_device_on_get_report(bt_address_t* addr, uint8_t rpt_type, uint8_t rpt_id, uint16_t buffer_size)
 {
-    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t));
+    hidd_msg_t* msg = bt_malloc(sizeof(hidd_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -616,7 +616,7 @@ void hid_device_on_get_report(bt_address_t* addr, uint8_t rpt_type, uint8_t rpt_
 
 void hid_device_on_set_report(bt_address_t* addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data)
 {
-    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t) + rpt_size);
+    hidd_msg_t* msg = bt_malloc(sizeof(hidd_msg_t) + rpt_size);
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -633,7 +633,7 @@ void hid_device_on_set_report(bt_address_t* addr, uint8_t rpt_type, uint16_t rpt
 
 void hid_device_on_receive_report(bt_address_t* addr, uint8_t rpt_type, uint16_t rpt_size, uint8_t* rpt_data)
 {
-    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t) + rpt_size);
+    hidd_msg_t* msg = bt_malloc(sizeof(hidd_msg_t) + rpt_size);
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;
@@ -650,7 +650,7 @@ void hid_device_on_receive_report(bt_address_t* addr, uint8_t rpt_type, uint16_t
 
 void hid_device_on_virtual_cable_unplug(bt_address_t* addr)
 {
-    hidd_msg_t* msg = malloc(sizeof(hidd_msg_t));
+    hidd_msg_t* msg = bt_malloc(sizeof(hidd_msg_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;

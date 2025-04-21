@@ -1034,7 +1034,7 @@ a2dp_state_machine_t* a2dp_state_machine_new(void* context, uint8_t peer_sep, bt
 {
     a2dp_state_machine_t* a2dp_sm;
 
-    a2dp_sm = (a2dp_state_machine_t*)malloc(sizeof(a2dp_state_machine_t));
+    a2dp_sm = (a2dp_state_machine_t*)bt_malloc(sizeof(a2dp_state_machine_t));
     if (!a2dp_sm)
         return NULL;
 
@@ -1058,7 +1058,7 @@ void a2dp_state_machine_destory(a2dp_state_machine_t* a2dp_sm)
     }
 
     hsm_dtor(&a2dp_sm->sm);
-    free((void*)a2dp_sm);
+    bt_free((void*)a2dp_sm);
 }
 
 void a2dp_state_machine_handle_event(a2dp_state_machine_t* sm,

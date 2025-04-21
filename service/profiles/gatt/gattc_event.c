@@ -22,7 +22,7 @@ gattc_msg_t* gattc_msg_new(gattc_event_t event, bt_address_t* addr, uint16_t pla
 {
     gattc_msg_t* msg;
 
-    msg = (gattc_msg_t*)malloc(sizeof(gattc_msg_t) + playload_length);
+    msg = (gattc_msg_t*)bt_malloc(sizeof(gattc_msg_t) + playload_length);
     if (msg == NULL)
         return NULL;
 
@@ -34,14 +34,14 @@ gattc_msg_t* gattc_msg_new(gattc_event_t event, bt_address_t* addr, uint16_t pla
 
 void gattc_msg_destory(gattc_msg_t* msg)
 {
-    free(msg);
+    bt_free(msg);
 }
 
 gattc_op_t* gattc_op_new(gattc_request_t request)
 {
     gattc_op_t* operation;
 
-    operation = (gattc_op_t*)malloc(sizeof(gattc_op_t));
+    operation = (gattc_op_t*)bt_malloc(sizeof(gattc_op_t));
     if (operation == NULL)
         return NULL;
 
@@ -52,5 +52,5 @@ gattc_op_t* gattc_op_new(gattc_request_t request)
 
 void gattc_op_destory(gattc_op_t* operation)
 {
-    free(operation);
+    bt_free(operation);
 }

@@ -67,7 +67,7 @@ static void on_advertising_start_cb(bt_advertiser_t* adv, uint8_t adv_id, uint8_
 
     bt_socket_server_send(adver->ins, &packet, BT_LE_ON_ADVERTISER_START);
     if (status != 0)
-        free(adver);
+        bt_free(adver);
 }
 
 static void on_advertising_stopped_cb(bt_advertiser_t* adv, uint8_t adv_id)
@@ -79,7 +79,7 @@ static void on_advertising_stopped_cb(bt_advertiser_t* adv, uint8_t adv_id)
     packet.adv_cb._on_advertising_stopped.adv_id = adv_id;
 
     bt_socket_server_send(adver->ins, &packet, BT_LE_ON_ADVERTISER_STOPPED);
-    free(adv);
+    bt_free(adv);
 }
 
 static advertiser_callback_t g_advertiser_socket_cb = {
@@ -97,7 +97,7 @@ void bt_socket_server_advertiser_process(service_poll_t* poll,
 {
     switch (packet->code) {
     case BT_LE_START_ADVERTISING: {
-        bt_advertiser_remote_t* adver = malloc(sizeof(*adver));
+        bt_advertiser_remote_t* adver = bt_malloc(sizeof(*adver));
         adver->ins = ins;
         adver->remote = packet->adv_pl._bt_le_start_advertising.adver;
         packet->adv_r.remote = PTR2INT(uint64_t) start_advertising((void*)adver,
@@ -109,7 +109,7 @@ void bt_socket_server_advertiser_process(service_poll_t* poll,
             &g_advertiser_socket_cb);
 
         if (!packet->adv_r.remote)
-            free(adver);
+            bt_free(adver);
 
         break;
     }
@@ -148,7 +148,7 @@ int bt_socket_client_advertiser_callback(service_poll_t* poll,
 
         adver->callback->on_advertising_stopped(adver,
             packet->adv_cb._on_advertising_stopped.adv_id);
-        free(adver);
+        bt_free(adver);
         break;
     }
     default:

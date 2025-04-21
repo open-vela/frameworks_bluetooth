@@ -55,7 +55,7 @@ static binder_status_t IBtScannerCallbacks_Class_onTransact(AIBinder* binder, tr
             return stat;
 
         cbks->callbacks->on_scan_result(cbks, result);
-        free(result);
+        bt_free(result);
         break;
     }
     case ICBKS_ON_SCAN_START_STATUS: {
@@ -115,7 +115,7 @@ IBtScannerCallbacks* BtScannerCallbacks_new(const scanner_callbacks_t* callbacks
 {
     AIBinder_Class* clazz;
     AIBinder* binder;
-    IBtScannerCallbacks* cbks = malloc(sizeof(IBtScannerCallbacks));
+    IBtScannerCallbacks* cbks = bt_malloc(sizeof(IBtScannerCallbacks));
 
     clazz = AIBinder_Class_define(BT_SCANNER_CALLBACK_DESC, IBtScannerCallbacks_Class_onCreate,
         IBtScannerCallbacks_Class_onDestroy, IBtScannerCallbacks_Class_onTransact);
@@ -137,5 +137,5 @@ void BtScannerCallbacks_delete(IBtScannerCallbacks* cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    free(cbks);
+    bt_free(cbks);
 }

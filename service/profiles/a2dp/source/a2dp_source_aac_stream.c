@@ -141,14 +141,14 @@ static void a2dp_aac_send_frames(uint16_t header_reserve, uint8_t frames)
             len = (uint16_t)((loas->header[1] & 0x1F) << 8) + (uint16_t)loas->header[2];
         else
             continue;
-        uint8_t* buffer = malloc(header_reserve + len);
+        uint8_t* buffer = bt_malloc(header_reserve + len);
         if (buffer == NULL)
             return;
 
         // read AAC data with latm header
         ret = aac_stream.read_callback(buffer + header_reserve, len);
         if (ret == 0) {
-            free(buffer);
+            bt_free(buffer);
             aac_stream.feeding_state.counter += aac_stream.frame_len * aac_stream.param->u16NumOfChannels * A2DP_AAC_BIT_PER_SAMPLE / 8 * frames;
             BT_LOGW("%s, underflow :%d, %f", __func__, frames, aac_stream.feeding_state.counter);
             return;
@@ -158,7 +158,7 @@ static void a2dp_aac_send_frames(uint16_t header_reserve, uint8_t frames)
         aac_stream.media_timestamp += aac_stream.frame_len;
         aac_stream.state.total_tx_frames++;
         frames--;
-        free(buffer);
+        bt_free(buffer);
     } while (frames);
 }
 

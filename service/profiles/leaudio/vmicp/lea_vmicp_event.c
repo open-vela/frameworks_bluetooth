@@ -23,7 +23,7 @@ lea_vmicp_msg_t* lea_vmicp_msg_new(lea_vmicp_event_t event, bt_address_t* remote
 {
     lea_vmicp_msg_t* msg;
 
-    msg = (lea_vmicp_msg_t*)malloc(sizeof(lea_vmicp_msg_t));
+    msg = (lea_vmicp_msg_t*)bt_malloc(sizeof(lea_vmicp_msg_t));
     if (!msg)
         return NULL;
 
@@ -36,5 +36,5 @@ lea_vmicp_msg_t* lea_vmicp_msg_new(lea_vmicp_event_t event, bt_address_t* remote
 
 void lea_vmicp_msg_destory(lea_vmicp_msg_t* msg)
 {
-    free(msg);
+    bt_free(msg);
 }

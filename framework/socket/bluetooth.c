@@ -28,7 +28,7 @@ bt_instance_t* bluetooth_create_instance(void)
     bt_status_t status;
     bt_instance_t* ins;
 
-    ins = zalloc(sizeof(bt_instance_t));
+    ins = bt_zalloc(sizeof(bt_instance_t));
     if (ins == NULL) {
         return NULL;
     }
@@ -48,7 +48,7 @@ bt_instance_t* bluetooth_create_instance(void)
 #endif
 
     if (status != BT_STATUS_SUCCESS) {
-        free(ins);
+        bt_free(ins);
         return NULL;
     }
 
@@ -56,7 +56,7 @@ bt_instance_t* bluetooth_create_instance(void)
         "local", getpid(), 0, &ins->app_id);
     if (status != BT_STATUS_SUCCESS) {
         bt_socket_client_deinit(ins);
-        free(ins);
+        bt_free(ins);
         ins = NULL;
     }
 #if 0
@@ -83,7 +83,7 @@ bt_instance_t* bluetooth_create_async_instance(uv_loop_t* loop, bt_ipc_connected
     bt_status_t status;
     bt_instance_t* ins;
 
-    ins = zalloc(sizeof(bt_instance_t));
+    ins = bt_zalloc(sizeof(bt_instance_t));
     if (ins == NULL) {
         return NULL;
     }
@@ -103,7 +103,7 @@ bt_instance_t* bluetooth_create_async_instance(uv_loop_t* loop, bt_ipc_connected
 #endif
 
     if (status != BT_STATUS_SUCCESS) {
-        free(ins);
+        bt_free(ins);
         return NULL;
     }
 
@@ -111,7 +111,7 @@ bt_instance_t* bluetooth_create_async_instance(uv_loop_t* loop, bt_ipc_connected
         "local", getpid(), 0, &ins->app_id);
     if (status != BT_STATUS_SUCCESS) {
         bt_socket_client_deinit(ins);
-        free(ins);
+        bt_free(ins);
         ins = NULL;
     }
 
@@ -150,7 +150,7 @@ void bluetooth_delete_instance(bt_instance_t* ins)
 
     manager_delete_instance(ins->app_id);
     bt_socket_client_deinit(ins);
-    free(ins);
+    bt_free(ins);
 }
 
 void bluetooth_delete_async_instance(bt_instance_t* ins)
@@ -159,7 +159,7 @@ void bluetooth_delete_async_instance(bt_instance_t* ins)
 
     manager_delete_instance(ins->app_id);
     bt_socket_async_client_deinit(ins);
-    free(ins);
+    bt_free(ins);
 }
 
 bt_status_t bluetooth_start_service(bt_instance_t* ins, enum profile_id id)

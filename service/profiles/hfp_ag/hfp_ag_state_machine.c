@@ -1373,7 +1373,7 @@ ag_state_machine_t* ag_state_machine_new(bt_address_t* addr, void* context)
 {
     ag_state_machine_t* agsm;
 
-    agsm = (ag_state_machine_t*)malloc(sizeof(ag_state_machine_t));
+    agsm = (ag_state_machine_t*)bt_malloc(sizeof(ag_state_machine_t));
     if (!agsm)
         return NULL;
 
@@ -1406,7 +1406,7 @@ void ag_state_machine_destory(ag_state_machine_t* agsm)
     bt_media_remove_listener(agsm->volume_listener);
     agsm->volume_listener = NULL;
     hsm_dtor(&agsm->sm);
-    free((void*)agsm);
+    bt_free((void*)agsm);
 }
 
 void ag_state_machine_dispatch(ag_state_machine_t* agsm, hfp_ag_msg_t* msg)

@@ -391,7 +391,7 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
 
             memcpy(packet->adpt_pl._bt_adapter_get_bonded_devices.addr, addr,
                 sizeof(bt_address_t) * packet->adpt_pl._bt_adapter_get_bonded_devices.num);
-            free(addr);
+            bt_free(addr);
         }
         break;
     }
@@ -407,7 +407,7 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
             }
             memcpy(packet->adpt_pl._bt_adapter_get_connected_devices.addr, addr,
                 sizeof(bt_address_t) * packet->adpt_pl._bt_adapter_get_connected_devices.num);
-            free(addr);
+            bt_free(addr);
         }
         break;
     }

@@ -221,7 +221,7 @@ static gatts_device_t* find_gatts_device(bt_address_t* addr)
 
 static gatts_device_t* add_gatts_device(bt_address_t* addr)
 {
-    gatts_device_t* device = (gatts_device_t*)malloc(sizeof(gatts_device_t));
+    gatts_device_t* device = (gatts_device_t*)bt_malloc(sizeof(gatts_device_t));
     if (!device) {
         PRINT("malloc device failed!");
         return NULL;
@@ -237,7 +237,7 @@ static void remove_gatts_device(gatts_device_t* device)
 {
     if (device) {
         list_delete(&device->node);
-        free(device);
+        bt_free(device);
     }
 }
 
@@ -530,7 +530,7 @@ static int throughput_cmd(void* handle, int argc, char* argv[])
     }
 
     uint32_t notify_length = device->gatt_mtu;
-    uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * notify_length);
+    uint8_t* payload = (uint8_t*)bt_malloc(sizeof(uint8_t) * notify_length);
     if (!payload) {
         PRINT("notify payload malloc failed");
         return CMD_ERROR;
@@ -574,7 +574,7 @@ static int throughput_cmd(void* handle, int argc, char* argv[])
         throughtput_cursor++;
         notify_count++;
     }
-    free(payload);
+    bt_free(payload);
 
     if (run_time <= 0) {
         PRINT("gatts notify throughput test failed due to an unexpected interruption!");

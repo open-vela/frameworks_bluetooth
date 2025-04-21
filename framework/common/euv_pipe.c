@@ -117,7 +117,7 @@ static void euv_close_callback(uv_handle_t* hdl)
         return;
     }
 
-    free(handle->data);
+    bt_free(handle->data);
     handle->data = NULL;
 }
 
@@ -135,7 +135,7 @@ static void euv_alloc_callback(uv_handle_t* handle, size_t size, uv_buf_t* buf)
     if (reader->alloc_cb)
         reader->alloc_cb((euv_pipe_t*)handle, (uint8_t**)&buf->base, &buf->len);
     else {
-        buf->base = malloc(reader->read_size);
+        buf->base = bt_malloc(reader->read_size);
         buf->len = reader->read_size;
     }
 }
@@ -157,7 +157,7 @@ static void euv_read_callback(uv_stream_t* stream, ssize_t nread, const uv_buf_t
         reader->read_cb((euv_pipe_t*)stream, (const uint8_t*)buf->base, nread);
 
     if (release) {
-        free(buf->base);
+        bt_free(buf->base);
     }
 }
 
@@ -168,7 +168,7 @@ static void euv_write_callback(uv_write_t* req, int status)
     if (wreq->write_cb)
         wreq->write_cb((euv_pipe_t*)wreq->req.data, wreq->buffer, status);
 
-    free(wreq);
+    bt_free(wreq);
 }
 
 int euv_pipe_read_start(euv_pipe_t* handle, uint16_t read_size, euv_read_cb read_cb, euv_alloc_cb alloc_cb)
@@ -181,7 +181,7 @@ int euv_pipe_read_start(euv_pipe_t* handle, uint16_t read_size, euv_read_cb read
         return 0;
     }
 
-    reader = malloc(sizeof(euv_read_t));
+    reader = bt_malloc(sizeof(euv_read_t));
     if (!reader) {
         BT_LOGE("%s, reader malloc fail", __func__);
         return -ENOMEM;
@@ -196,7 +196,7 @@ int euv_pipe_read_start(euv_pipe_t* handle, uint16_t read_size, euv_read_cb read
     if (ret != 0) {
         BT_LOGE("%s, read start err:%d", __func__, ret);
         handle->cli_pipe.data = NULL;
-        free(reader);
+        bt_free(reader);
     }
 
     return ret;
@@ -219,7 +219,7 @@ int euv_pipe_read_stop(euv_pipe_t* handle)
         return 0;
     }
 
-    free(handle->cli_pipe.data);
+    bt_free(handle->cli_pipe.data);
     handle->cli_pipe.data = NULL;
 
     return uv_read_stop((uv_stream_t*)&handle->cli_pipe);
@@ -236,7 +236,7 @@ int euv_pipe_write(euv_pipe_t* handle, uint8_t* buffer, int length, euv_write_cb
         return -EINVAL;
     }
 
-    wreq = (euv_write_t*)malloc(sizeof(euv_write_t));
+    wreq = (euv_write_t*)bt_malloc(sizeof(euv_write_t));
     if (!wreq)
         return -ENOMEM;
 
@@ -248,7 +248,7 @@ int euv_pipe_write(euv_pipe_t* handle, uint8_t* buffer, int length, euv_write_cb
     ret = uv_write(&wreq->req, (uv_stream_t*)&handle->cli_pipe, &buf, 1, euv_write_callback);
     if (ret != 0) {
         BT_LOGE("%s, write err:%d", __func__, ret);
-        free(wreq);
+        bt_free(wreq);
     }
 
     return ret;
@@ -261,7 +261,7 @@ static void euv_connect_callback(uv_connect_t* req, int status)
     if (creq->connect_cb)
         creq->connect_cb(creq->req.data, status, creq->data);
 
-    free(req);
+    bt_free(req);
 }
 
 euv_pipe_t* euv_pipe_connect(uv_loop_t* loop, const char* server_path, euv_connect_cb cb, void* user_data)
@@ -275,7 +275,7 @@ euv_pipe_t* euv_pipe_connect(uv_loop_t* loop, const char* server_path, euv_conne
         return NULL;
     }
 
-    handle = (euv_pipe_t*)zalloc(sizeof(euv_pipe_t));
+    handle = (euv_pipe_t*)bt_zalloc(sizeof(euv_pipe_t));
     if (!handle) {
         BT_LOGE("%s, zalloc fail", __func__);
         return NULL;
@@ -287,7 +287,7 @@ euv_pipe_t* euv_pipe_connect(uv_loop_t* loop, const char* server_path, euv_conne
         goto err_out;
     }
 
-    creq = zalloc(sizeof(euv_connect_t));
+    creq = bt_zalloc(sizeof(euv_connect_t));
     if (!creq) {
         BT_LOGE("%s, zalloc failed", __func__);
         goto err_out;
@@ -301,7 +301,7 @@ euv_pipe_t* euv_pipe_connect(uv_loop_t* loop, const char* server_path, euv_conne
     return handle;
 
 err_out:
-    free(handle);
+    bt_free(handle);
     return NULL;
 }
 
@@ -317,7 +317,7 @@ euv_pipe_t* euv_rpmsg_pipe_connect(uv_loop_t* loop, const char* server_path, con
         return NULL;
     }
 
-    handle = (euv_pipe_t*)zalloc(sizeof(euv_pipe_t));
+    handle = (euv_pipe_t*)bt_zalloc(sizeof(euv_pipe_t));
     if (!handle) {
         BT_LOGE("%s, zalloc fail", __func__);
         return NULL;
@@ -329,7 +329,7 @@ euv_pipe_t* euv_rpmsg_pipe_connect(uv_loop_t* loop, const char* server_path, con
         goto err_out;
     }
 
-    creq = zalloc(sizeof(euv_connect_t));
+    creq = bt_zalloc(sizeof(euv_connect_t));
     if (!creq) {
         BT_LOGE("%s, zalloc failed", __func__);
         goto err_out;
@@ -343,7 +343,7 @@ euv_pipe_t* euv_rpmsg_pipe_connect(uv_loop_t* loop, const char* server_path, con
     return handle;
 
 err_out:
-    free(handle);
+    bt_free(handle);
     return NULL;
 }
 #endif
@@ -360,7 +360,7 @@ euv_pipe_t* euv_pipe_open(uv_loop_t* loop, const char* server_path, euv_connect_
         return NULL;
     }
 
-    handle = (euv_pipe_t*)zalloc(sizeof(euv_pipe_t));
+    handle = (euv_pipe_t*)bt_zalloc(sizeof(euv_pipe_t));
     if (!handle) {
         BT_LOGE("%s, zalloc handle fail", __func__);
         return NULL;
@@ -368,7 +368,7 @@ euv_pipe_t* euv_pipe_open(uv_loop_t* loop, const char* server_path, euv_connect_
 
     handle->mode = EUV_PIPE_TYPE_UNKNOWN;
 
-    creq = (euv_connect_t*)zalloc(sizeof(euv_connect_t));
+    creq = (euv_connect_t*)bt_zalloc(sizeof(euv_connect_t));
     if (!creq) {
         BT_LOGE("%s, zalloc creq fail", __func__);
         goto errout_with_handle;
@@ -429,9 +429,9 @@ euv_pipe_t* euv_pipe_open(uv_loop_t* loop, const char* server_path, euv_connect_
     return handle;
 
 errout_with_creq:
-    free(creq);
+    bt_free(creq);
 errout_with_handle:
-    free(handle);
+    bt_free(handle);
     return NULL;
 }
 

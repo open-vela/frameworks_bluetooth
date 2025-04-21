@@ -142,7 +142,7 @@ static void adapter_notify_bond_state(void* data)
     if (previous_state == BOND_STATE_CANCELING) {
         if (current_state != BOND_STATE_NONE) {
             BT_LOGE("previous state is canceling, but current state is not none");
-            free(msg);
+            bt_free(msg);
             return;
         } else {
             previous_state = BOND_STATE_BONDING; // report bonding -> none
@@ -151,7 +151,7 @@ static void adapter_notify_bond_state(void* data)
 
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_bond_state_changed_extra, addr, transport,
         previous_state, current_state, msg->is_ctkd);
-    free(msg);
+    bt_free(msg);
 }
 
 static bt_device_t* adapter_find_device(const bt_address_t* addr, bt_transport_t transport)
@@ -226,7 +226,7 @@ static void adapter_delete_device(void* data)
 
 static adapter_remote_event_t* create_remote_event(bt_address_t* addr, uint8_t evt_id)
 {
-    adapter_remote_event_t* evt = malloc(sizeof(adapter_remote_event_t));
+    adapter_remote_event_t* evt = bt_malloc(sizeof(adapter_remote_event_t));
     if (!evt) {
         BT_LOGE("adapter event alloc fail");
         return NULL;
@@ -312,7 +312,7 @@ static void load_remote_uuids(remote_device_properties_t* remote, bt_device_t* d
         }
     }
 
-    uuids = (bt_uuid_t*)malloc(sizeof(bt_uuid_t) * count_uuids);
+    uuids = (bt_uuid_t*)bt_malloc(sizeof(bt_uuid_t) * count_uuids);
     tmp = uuids;
     for (int i = 0; i < count_uuid16; i++) {
         bt_uuid_t uuid;
@@ -335,7 +335,7 @@ static void load_remote_uuids(remote_device_properties_t* remote, bt_device_t* d
     }
 
     device_set_uuids(device, uuids, count_uuids);
-    free(uuids);
+    bt_free(uuids);
 }
 
 static void bonded_device_loaded(void* data, uint16_t length, uint16_t items)
@@ -624,7 +624,7 @@ static void process_service_search_done_evt(bt_address_t* addr, bt_uuid_t* uuids
     adapter_unlock();
     adapter_update_bonded_device();
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_remote_uuids_changed, addr, uuids, size);
-    free(uuids);
+    bt_free(uuids);
 }
 
 static void process_enc_state_change_evt(bt_address_t* addr, bool encrypted,
@@ -728,7 +728,7 @@ static void handle_security_event(void* data)
         break;
     }
 
-    free(data);
+    bt_free(data);
 }
 
 static void process_connect_request_evt(bt_address_t* addr, uint32_t cod)
@@ -841,7 +841,7 @@ static void handle_connection_event(void* data)
         break;
     }
 
-    free(data);
+    bt_free(data);
 }
 
 static void process_discovery_state_changed_evt(bt_discovery_state_t state)
@@ -909,7 +909,7 @@ static void handle_discovery_event(void* data)
         break;
     }
 
-    free(data);
+    bt_free(data);
 }
 
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
@@ -1013,7 +1013,7 @@ static void process_le_bonded_device_update_evt(remote_device_le_properties_t* p
 
     /* update all bonded le device to storage */
     bt_storage_save_le_bonded_device(props, bonded_devices_cnt);
-    free(props);
+    bt_free(props);
     adapter_unlock();
 }
 
@@ -1062,7 +1062,7 @@ static void handle_ble_event(void* data)
         break;
     }
 
-    free(data);
+    bt_free(data);
 }
 #endif
 
@@ -1258,7 +1258,7 @@ static void handle_scan_mode_changed(void* data)
 {
     bt_scan_mode_t scan_mode = *((bt_scan_mode_t*)data);
 
-    free(data);
+    bt_free(data);
     adapter_lock();
     adapter_save_properties();
     adapter_unlock();
@@ -1327,12 +1327,12 @@ static void handle_link_event(void* data)
         break;
     }
 
-    free(data);
+    bt_free(data);
 }
 
 void adapter_on_scan_mode_changed(bt_scan_mode_t mode)
 {
-    bt_scan_mode_t* scan_mode = malloc(sizeof(bt_scan_mode_t));
+    bt_scan_mode_t* scan_mode = bt_malloc(sizeof(bt_scan_mode_t));
 
     *scan_mode = mode;
     do_in_service_loop(handle_scan_mode_changed, scan_mode);
@@ -1340,7 +1340,7 @@ void adapter_on_scan_mode_changed(bt_scan_mode_t mode)
 
 void adapter_on_discovery_state_changed(bt_discovery_state_t state)
 {
-    adapter_discovery_evt_t* evt = malloc(sizeof(adapter_discovery_evt_t));
+    adapter_discovery_evt_t* evt = bt_malloc(sizeof(adapter_discovery_evt_t));
     if (!evt)
         return;
 
@@ -1351,7 +1351,7 @@ void adapter_on_discovery_state_changed(bt_discovery_state_t state)
 
 void adapter_on_device_found(bt_discovery_result_t* result)
 {
-    adapter_discovery_evt_t* evt = malloc(sizeof(adapter_discovery_evt_t));
+    adapter_discovery_evt_t* evt = bt_malloc(sizeof(adapter_discovery_evt_t));
     if (!evt)
         return;
 
@@ -1362,7 +1362,7 @@ void adapter_on_device_found(bt_discovery_result_t* result)
 
 void adapter_on_remote_name_recieved(bt_address_t* addr, const char* name)
 {
-    adapter_discovery_evt_t* evt = malloc(sizeof(adapter_discovery_evt_t));
+    adapter_discovery_evt_t* evt = bt_malloc(sizeof(adapter_discovery_evt_t));
     if (!evt)
         return;
 
@@ -1462,9 +1462,9 @@ void adapter_on_service_search_done(bt_address_t* addr, bt_uuid_t* uuids, uint16
         return;
 
     evt->sdp.uuid_size = size;
-    evt->sdp.uuids = malloc(sizeof(bt_uuid_t) * size);
+    evt->sdp.uuids = bt_malloc(sizeof(bt_uuid_t) * size);
     if (!evt->sdp.uuids) {
-        free(evt);
+        bt_free(evt);
         return;
     }
     memcpy(evt->sdp.uuids, uuids, sizeof(bt_uuid_t) * size);
@@ -1542,7 +1542,7 @@ void adapter_on_le_addr_update(bt_address_t* addr, ble_addr_type_t type)
 {
     BT_LOGD("%s", __func__);
 
-    adapter_ble_evt_t* evt = malloc(sizeof(adapter_ble_evt_t));
+    adapter_ble_evt_t* evt = bt_malloc(sizeof(adapter_ble_evt_t));
 
     evt->evt_id = LE_ADDR_UPDATE_EVT;
     memcpy(&evt->addr_update.local_addr, addr, sizeof(*addr));
@@ -1556,7 +1556,7 @@ void adapter_on_le_phy_update(bt_address_t* addr, ble_phy_type_t tx_phy,
 {
     BT_LOGD("%s", __func__);
 
-    adapter_ble_evt_t* evt = malloc(sizeof(adapter_ble_evt_t));
+    adapter_ble_evt_t* evt = bt_malloc(sizeof(adapter_ble_evt_t));
 
     evt->evt_id = LE_PHY_UPDATE_EVT;
     memcpy(&evt->phy_update.addr, addr, sizeof(*addr));
@@ -1571,7 +1571,7 @@ void adapter_on_whitelist_update(bt_address_t* addr, bool is_add, bt_status_t st
 {
     BT_LOGD("%s", __func__);
 
-    adapter_ble_evt_t* evt = malloc(sizeof(adapter_ble_evt_t));
+    adapter_ble_evt_t* evt = bt_malloc(sizeof(adapter_ble_evt_t));
 
     evt->evt_id = LE_WHITELIST_UPDATE_EVT;
     memcpy(&evt->whitelist.addr, addr, sizeof(*addr));
@@ -1585,11 +1585,11 @@ void adapter_on_le_bonded_device_update(remote_device_le_properties_t* props, ui
 {
     BT_LOGD("%s", __func__);
 
-    adapter_ble_evt_t* evt = malloc(sizeof(adapter_ble_evt_t));
+    adapter_ble_evt_t* evt = bt_malloc(sizeof(adapter_ble_evt_t));
 
     evt->evt_id = LE_BONDED_DEVICE_UPDATE_EVT;
     size_t prop_size = sizeof(remote_device_le_properties_t) * bonded_devices_cnt;
-    evt->bonded_devices.props = malloc(prop_size);
+    evt->bonded_devices.props = bt_malloc(prop_size);
     evt->bonded_devices.bonded_devices_cnt = bonded_devices_cnt;
     memcpy(evt->bonded_devices.props, props, prop_size);
 
@@ -1598,7 +1598,7 @@ void adapter_on_le_bonded_device_update(remote_device_le_properties_t* props, ui
 
 void adapter_on_le_local_oob_data_got(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
 {
-    adapter_ble_evt_t* evt = malloc(sizeof(adapter_ble_evt_t));
+    adapter_ble_evt_t* evt = bt_malloc(sizeof(adapter_ble_evt_t));
 
     evt->evt_id = LE_SC_LOCAL_OOB_DATA_GOT_EVT;
     memcpy(&evt->oob_data.addr, addr, sizeof(evt->oob_data.addr));

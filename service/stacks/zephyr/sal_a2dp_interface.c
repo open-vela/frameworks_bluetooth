@@ -307,7 +307,7 @@ static void zblue_on_seted_codec(struct bt_conn* conn, struct bt_a2dp_media_code
     }
 
     event = a2dp_event_new(CODEC_CONFIG_EVT, &bd_addr);
-    event->event_data.data = malloc(sizeof(codec_config));
+    event->event_data.data = bt_malloc(sizeof(codec_config));
     memcpy(event->event_data.data, &codec_config, sizeof(codec_config));
 
     if (role == BT_A2DP_CH_SOURCE) {

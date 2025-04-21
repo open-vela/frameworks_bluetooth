@@ -253,7 +253,7 @@ static lea_server_device_t* find_lea_server_device_by_addr(bt_address_t* addr)
 static lea_server_device_t* lea_server_device_new(bt_address_t* addr,
     lea_server_state_machine_t* leasm)
 {
-    lea_server_device_t* device = calloc(1, sizeof(lea_server_device_t));
+    lea_server_device_t* device = bt_calloc(1, sizeof(lea_server_device_t));
     if (!device)
         return NULL;
 
@@ -275,7 +275,7 @@ static void lea_server_device_delete(lea_server_device_t* device)
     lea_server_state_machine_dispatch(device->leasm, msg);
     lea_server_msg_destory(msg);
     lea_server_state_machine_destory(device->leasm);
-    free(device);
+    bt_free(device);
 }
 
 static lea_server_state_machine_t* get_state_machine(bt_address_t* addr)
@@ -375,8 +375,8 @@ static bool lea_server_message_prehandle(lea_server_state_machine_t* leasm,
         }
 
         event->event = OFFLOAD_START_REQ;
-        free(event->data.data);
-        event->data.data = malloc(size);
+        bt_free(event->data.data);
+        event->data.data = bt_malloc(size);
         memcpy(event->data.data, param, size);
         event->data.size = size;
         break;
@@ -832,7 +832,7 @@ lea_audio_stream_t* lea_server_add_stream(
         return audio_stream;
     }
 
-    audio_stream = calloc(1, sizeof(lea_audio_stream_t));
+    audio_stream = bt_calloc(1, sizeof(lea_audio_stream_t));
     if (!audio_stream) {
         BT_LOGE("error, malloc %s", __func__);
         return NULL;

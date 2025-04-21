@@ -149,7 +149,7 @@ static void adapter_register_callback_reply(bt_instance_t* ins, bt_message_packe
         ret_cb(ins, packet->adpt_r.status, data->cookie, data->userdata);
     }
 
-    free(data);
+    bt_free(data);
 }
 
 bt_status_t bt_adapter_register_callback_async(bt_instance_t* ins,
@@ -189,7 +189,7 @@ bt_status_t bt_adapter_register_callback_async(bt_instance_t* ins,
         return BT_STATUS_NO_RESOURCES;
     }
 
-    data = calloc(1, sizeof(bt_register_callback_data_t));
+    data = bt_calloc(1, sizeof(bt_register_callback_data_t));
     data->userdata = userdata;
     data->cookie = handle;
 
@@ -197,7 +197,7 @@ bt_status_t bt_adapter_register_callback_async(bt_instance_t* ins,
     if (status != BT_STATUS_SUCCESS) {
         bt_callbacks_list_free(priv->adapter_callbacks);
         priv->adapter_callbacks = NULL;
-        free(data);
+        bt_free(data);
         return BT_STATUS_FAIL;
     }
 

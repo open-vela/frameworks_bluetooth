@@ -26,7 +26,7 @@ static void free_callback_info(callback_info_t* info)
     if (info->data)
         FeatureFreeValue(info->data);
 
-    free(info);
+    bt_free(info);
 }
 
 void feature_bluetooth_deal_callback(int status, void* data)
@@ -59,7 +59,7 @@ void feature_bluetooth_post_task(FeatureInstanceHandle handle, FtCallbackId call
 {
     callback_info_t* callback_info;
 
-    callback_info = (callback_info_t*)calloc(1, sizeof(callback_info_t));
+    callback_info = (callback_info_t*)bt_calloc(1, sizeof(callback_info_t));
     if (!callback_info) {
         if (data)
             FeatureFreeValue(data);

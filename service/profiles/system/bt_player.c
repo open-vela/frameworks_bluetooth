@@ -135,7 +135,7 @@ char* bt_media_status_str(uint8_t status)
 
 bt_media_controller_t* bt_media_controller_create(void* context, bt_media_notify_callback_t cb)
 {
-    bt_media_controller_t* controller = malloc(sizeof(*controller));
+    bt_media_controller_t* controller = bt_malloc(sizeof(*controller));
     int ret = 0;
 
     if (controller == NULL)
@@ -143,7 +143,7 @@ bt_media_controller_t* bt_media_controller_create(void* context, bt_media_notify
 
     controller->mediasession = media_session_open(NULL);
     if (!controller->mediasession) {
-        free(controller);
+        bt_free(controller);
         return NULL;
     }
 
@@ -151,7 +151,7 @@ bt_media_controller_t* bt_media_controller_create(void* context, bt_media_notify
         controller, media_session_event_cb);
     if (ret != 0) {
         media_session_close(controller->mediasession);
-        free(controller);
+        bt_free(controller);
         return NULL;
     }
     controller->holder = context;
@@ -171,7 +171,7 @@ void bt_media_controller_destory(bt_media_controller_t* controller)
         return;
 
     media_session_close(controller->mediasession);
-    free(controller);
+    bt_free(controller);
 }
 
 bt_status_t bt_media_player_play(bt_media_controller_t* controller)
@@ -303,13 +303,13 @@ bt_media_player_t* bt_media_player_create(void* context, bt_media_player_callbac
     if (context == NULL || cb == NULL)
         return NULL;
 
-    bt_media_player_t* player = malloc(sizeof(*player));
+    bt_media_player_t* player = bt_malloc(sizeof(*player));
     if (!player)
         return NULL;
 
     player->mediasession = media_session_register(player, media_control_event_cb);
     if (!player->mediasession) {
-        free(player);
+        bt_free(player);
         return NULL;
     }
     player->cb = cb;
@@ -329,7 +329,7 @@ void bt_media_player_destory(bt_media_player_t* player)
         media_session_unregister(player->mediasession);
     }
 
-    free(player);
+    bt_free(player);
 }
 
 bt_status_t bt_media_player_set_status(bt_media_player_t* player, bt_media_status_t status)

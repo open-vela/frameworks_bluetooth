@@ -93,7 +93,7 @@ static void instance_release(bt_instance_impl_t* ins)
 {
     list_delete(&ins->node);
     index_free(g_instance_id, ins->app_id);
-    free(ins);
+    bt_free(ins);
 }
 
 bt_status_t manager_create_instance(uint64_t handle, uint32_t type,
@@ -109,7 +109,7 @@ bt_status_t manager_create_instance(uint64_t handle, uint32_t type,
     if (g_instance_id == NULL)
         g_instance_id = index_allocator_create(10);
 
-    ins = malloc(sizeof(bt_instance_impl_t));
+    ins = bt_malloc(sizeof(bt_instance_impl_t));
     if (!ins) {
         uv_mutex_unlock(&g_mutex);
         return BT_STATUS_NOMEM;
@@ -119,7 +119,7 @@ bt_status_t manager_create_instance(uint64_t handle, uint32_t type,
     ins->uid = uid;
     int idx = index_alloc(g_instance_id);
     if (idx < 0) {
-        free(ins);
+        bt_free(ins);
         uv_mutex_unlock(&g_mutex);
         return BT_STATUS_NO_RESOURCES;
     }
@@ -159,7 +159,7 @@ bt_status_t manager_delete_instance(uint32_t app_id)
 
     list_delete(&ins->node);
     index_free(g_instance_id, ins->app_id);
-    free(ins);
+    bt_free(ins);
 
     uv_mutex_unlock(&g_mutex);
 

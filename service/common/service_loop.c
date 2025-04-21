@@ -67,7 +67,7 @@ static void set_ready(void* data)
         imsg = (internel_msg_t*)node;
         ret = imsg->init(NULL);
         list_delete(node);
-        free(imsg);
+        bt_free(imsg);
         if (ret != 0) {
             BT_LOGE("%s init process fail: %d", __func__, ret);
             set_stop(data);
@@ -117,7 +117,7 @@ static void service_message_callback(uv_async_t* handle)
         }
 
         imsg->func(imsg->msg);
-        free(imsg);
+        bt_free(imsg);
     }
 }
 
@@ -184,7 +184,7 @@ static void service_poll_cb(uv_poll_t* handle, int status, int events)
 static void handle_close_cb(uv_handle_t* handle)
 {
     if (handle->data)
-        free(handle->data);
+        bt_free(handle->data);
 }
 
 int service_loop_init(void)
@@ -197,7 +197,7 @@ int service_loop_init(void)
     if (uvloop->data != NULL)
         return -1;
 
-    loop = calloc(1, sizeof(service_loop_t));
+    loop = bt_calloc(1, sizeof(service_loop_t));
     if (loop == NULL) {
         ret = -ENOMEM;
         goto fail;
@@ -219,7 +219,7 @@ int service_loop_init(void)
 
 fail:
     (void)uv_loop_close(uvloop);
-    free(loop);
+    bt_free(loop);
     return ret;
 }
 
@@ -289,18 +289,18 @@ void service_loop_exit(void)
     list_for_every_safe(&loop->init_queue, node, tmp)
     {
         list_delete(node);
-        free(node);
+        bt_free(node);
     }
 
     list_for_every_safe(&loop->msg_queue, node, tmp)
     {
         list_delete(node);
-        free(node);
+        bt_free(node);
     }
     list_delete(&loop->msg_queue);
     uv_mutex_unlock(&loop->msg_lock);
     uv_mutex_destroy(&loop->msg_lock);
-    free(loop);
+    bt_free(loop);
 }
 
 service_poll_t* service_loop_poll_fd(int fd, int pevents, service_poll_cb_t cb, void* userdata)
@@ -311,7 +311,7 @@ service_poll_t* service_loop_poll_fd(int fd, int pevents, service_poll_cb_t cb, 
     assert(fd);
     assert(cb);
 
-    service_poll_t* poll = (service_poll_t*)malloc(sizeof(service_poll_t));
+    service_poll_t* poll = (service_poll_t*)bt_malloc(sizeof(service_poll_t));
     if (!poll)
         return NULL;
 
@@ -330,7 +330,7 @@ service_poll_t* service_loop_poll_fd(int fd, int pevents, service_poll_cb_t cb, 
 
 error:
     BT_LOGE("%s failed: %d", __func__, ret);
-    free(poll);
+    bt_free(poll);
     return NULL;
 }
 
@@ -360,7 +360,7 @@ service_timer_t* service_loop_timer(uint64_t timeout, uint64_t repeat, service_t
     if (!cb)
         return NULL;
 
-    service_timer_t* timer = malloc(sizeof(service_timer_t));
+    service_timer_t* timer = bt_malloc(sizeof(service_timer_t));
     if (!timer)
         return NULL;
 
@@ -403,7 +403,7 @@ static void service_after_work_cb(uv_work_t* req, int status)
 
     if (work->after_work_cb)
         work->after_work_cb(work, work->userdata);
-    free(work);
+    bt_free(work);
 }
 
 service_work_t* service_loop_work(void* user_data, service_work_cb_t work_cb,
@@ -411,7 +411,7 @@ service_work_t* service_loop_work(void* user_data, service_work_cb_t work_cb,
 {
     uv_loop_t* handle = get_service_uv_loop();
 
-    service_work_t* work = zalloc(sizeof(*work));
+    service_work_t* work = bt_zalloc(sizeof(*work));
     if (work == NULL)
         return work;
 
@@ -421,7 +421,7 @@ service_work_t* service_loop_work(void* user_data, service_work_cb_t work_cb,
     work->work.data = work;
 
     if (uv_queue_work(handle, &work->work, service_work_cb, service_after_work_cb) != 0) {
-        free(work);
+        bt_free(work);
         return NULL;
     }
 
@@ -433,7 +433,7 @@ void add_init_process(service_init_t func)
     uv_loop_t* handle = get_service_uv_loop();
     service_loop_t* loop = handle->data;
 
-    internel_msg_t* msg = (internel_msg_t*)malloc(sizeof(internel_msg_t));
+    internel_msg_t* msg = (internel_msg_t*)bt_malloc(sizeof(internel_msg_t));
 
     msg->init = func;
     uv_mutex_lock(&loop->msg_lock);
@@ -446,7 +446,7 @@ void do_in_service_loop(service_func_t func, void* data)
     uv_loop_t* handle = get_service_uv_loop();
     service_loop_t* loop = handle->data;
 
-    internel_msg_t* msg = (internel_msg_t*)malloc(sizeof(internel_msg_t));
+    internel_msg_t* msg = (internel_msg_t*)bt_malloc(sizeof(internel_msg_t));
     assert(msg);
 
     msg->func = func;

@@ -47,7 +47,7 @@ bt_status_t bt_gattc_create_connect(bt_instance_t* ins, gattc_handle_t* phandle,
         }
     }
 
-    gattc_remote = (bt_gattc_remote_t*)malloc(sizeof(bt_gattc_remote_t));
+    gattc_remote = (bt_gattc_remote_t*)bt_malloc(sizeof(bt_gattc_remote_t));
     if (!gattc_remote) {
         status = BT_STATUS_NOMEM;
         goto fail;
@@ -75,7 +75,7 @@ bt_status_t bt_gattc_create_connect(bt_instance_t* ins, gattc_handle_t* phandle,
 
 fail:
     if (gattc_remote) {
-        free(gattc_remote);
+        bt_free(gattc_remote);
     }
     if (!bt_list_length(ins->gattc_remote_list)) {
         bt_list_free(ins->gattc_remote_list);

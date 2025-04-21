@@ -122,7 +122,7 @@ static ag_device_t* find_ag_device_by_state(hfp_ag_state_t state)
 
 static ag_device_t* ag_device_new(bt_address_t* addr, ag_state_machine_t* agsm)
 {
-    ag_device_t* device = malloc(sizeof(ag_device_t));
+    ag_device_t* device = bt_malloc(sizeof(ag_device_t));
     if (!device)
         return NULL;
 
@@ -144,7 +144,7 @@ static void ag_device_delete(ag_device_t* device)
     ag_state_machine_dispatch(device->agsm, msg);
     ag_state_machine_destory(device->agsm);
     hfp_ag_msg_destory(msg);
-    free(device);
+    bt_free(device);
 }
 
 static ag_state_machine_t* get_state_machine(bt_address_t* addr)

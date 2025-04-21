@@ -124,7 +124,7 @@ static gattc_connection_t* gattc_connection_new(gattc_callbacks_t* callbacks)
     if (new_id < 0)
         return NULL;
 
-    gattc_connection_t* connection = calloc(1, sizeof(gattc_connection_t));
+    gattc_connection_t* connection = bt_calloc(1, sizeof(gattc_connection_t));
     if (!connection) {
         index_free(g_gattc_manager.allocator, new_id);
         return NULL;
@@ -151,7 +151,7 @@ static void gattc_connection_delete(gattc_connection_t* connection)
     bt_list_free(connection->pend_ops);
     connection->pend_ops = NULL;
     pthread_mutex_destroy(&connection->conn_lock);
-    free(connection);
+    bt_free(connection);
 }
 
 static bool attribute_handle_cmp(void* service, void* handle)
@@ -198,7 +198,7 @@ static gatt_element_t* find_gattc_element_by_uuid(gattc_connection_t* connection
 
 static gattc_service_t* gattc_service_new(bt_uuid_t* uuid)
 {
-    gattc_service_t* service = malloc(sizeof(gattc_service_t));
+    gattc_service_t* service = bt_malloc(sizeof(gattc_service_t));
     if (!service)
         return NULL;
 
@@ -217,8 +217,8 @@ static void gattc_service_delete(gattc_service_t* service)
         return;
 
     if (service->elements)
-        free(service->elements);
-    free(service);
+        bt_free(service->elements);
+    bt_free(service);
 }
 
 static void gattc_pendops_delete(gattc_op_t* operation)
@@ -226,7 +226,7 @@ static void gattc_pendops_delete(gattc_op_t* operation)
     if (!operation)
         return;
 
-    free(operation);
+    bt_free(operation);
 }
 
 static void gattc_process_message(void* data)

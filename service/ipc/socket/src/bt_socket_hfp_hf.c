@@ -319,7 +319,7 @@ void bt_socket_server_hfp_hf_process(service_poll_t* poll, int fd,
         memcpy(packet->hfp_hf_pl._bt_hfp_hf_query_current_calls.calls, calls,
             sizeof(hfp_current_call_t) * MIN(num, HFP_CALL_LIST_MAX));
         if (calls)
-            free(calls);
+            bt_free(calls);
 
         break;
     }

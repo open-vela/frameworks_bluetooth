@@ -91,7 +91,7 @@ static binder_status_t IBtPanCallbacks_Class_onTransact(AIBinder* binder, transa
             return stat;
 
         cbks->callbacks->netif_state_cb(cbks, state, localRole, ifName);
-        free(ifName);
+        bt_free(ifName);
         break;
     }
     default:
@@ -135,7 +135,7 @@ IBtPanCallbacks* BtPanCallbacks_new(const pan_callbacks_t* callbacks)
 {
     AIBinder_Class* clazz;
     AIBinder* binder;
-    IBtPanCallbacks* cbks = malloc(sizeof(IBtPanCallbacks));
+    IBtPanCallbacks* cbks = bt_malloc(sizeof(IBtPanCallbacks));
 
     clazz = AIBinder_Class_define(BT_PAN_CALLBACK_DESC, IBtPanCallbacks_Class_onCreate,
         IBtPanCallbacks_Class_onDestroy, IBtPanCallbacks_Class_onTransact);
@@ -157,5 +157,5 @@ void BtPanCallbacks_delete(IBtPanCallbacks* cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    free(cbks);
+    bt_free(cbks);
 }

@@ -687,7 +687,7 @@ lea_client_state_machine_t* lea_client_state_machine_new(bt_address_t* addr,
 {
     lea_client_state_machine_t* leasm;
 
-    leasm = (lea_client_state_machine_t*)malloc(
+    leasm = (lea_client_state_machine_t*)bt_malloc(
         sizeof(lea_client_state_machine_t));
     if (!leasm)
         return NULL;
@@ -707,7 +707,7 @@ void lea_client_state_machine_destory(lea_client_state_machine_t* leasm)
         return;
 
     hsm_dtor(&leasm->sm);
-    free((void*)leasm);
+    bt_free((void*)leasm);
 }
 
 void lea_client_state_machine_dispatch(lea_client_state_machine_t* leasm,

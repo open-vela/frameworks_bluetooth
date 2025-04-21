@@ -133,7 +133,7 @@ static void a2dp_audio_data_alloc(uint8_t ch_id, uint8_t** buffer, size_t* len)
 
     next_to_read = space > stream->max_tx_length ? stream->max_tx_length : space;
 
-    alloc_buffer = (void*)malloc(next_to_read);
+    alloc_buffer = (void*)bt_malloc(next_to_read);
     if (!alloc_buffer) {
         *buffer = NULL;
         audio_transport_read_stop(a2dp_transport, ch_id);
@@ -184,12 +184,12 @@ static void a2dp_audio_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len
     }
 
 out:
-    free(buffer);
+    bt_free(buffer);
 }
 
 static void a2dp_audio_data_flush(uint8_t ch_id, uint8_t* buffer, ssize_t len)
 {
-    free(buffer);
+    bt_free(buffer);
 }
 
 static void a2dp_source_start_read(void)

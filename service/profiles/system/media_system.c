@@ -141,7 +141,7 @@ void bt_media_remove_listener(void* handle)
         listener->policy_handle = NULL;
     }
 
-    free(listener);
+    bt_free(listener);
 }
 
 bt_status_t bt_media_set_a2dp_available(void)
@@ -205,7 +205,7 @@ static void bt_media_policy_volume_change_callback(void* cookie, int number, con
 
 void* bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_callback_t cb, void* context)
 {
-    bt_media_listener_t* listener = malloc(sizeof(bt_media_listener_t));
+    bt_media_listener_t* listener = bt_malloc(sizeof(bt_media_listener_t));
     if (!listener)
         return NULL;
 
@@ -214,7 +214,7 @@ void* bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_call
     listener->policy_handle = media_policy_subscribe(MEDIA_SCENARIO_INCALL MEDIA_POLICY_VOLUME, bt_media_policy_volume_change_callback, listener);
     if (!listener->policy_handle) {
         BT_LOGI("media policy subscribe(%s-%s) failed!", MEDIA_SCENARIO_INCALL, MEDIA_POLICY_VOLUME);
-        free(listener);
+        bt_free(listener);
         listener = NULL;
     }
 
@@ -282,7 +282,7 @@ void* bt_media_listen_music_volume_change(bt_media_voice_volume_change_callback_
 {
     bt_media_listener_t* listener;
 
-    listener = malloc(sizeof(bt_media_listener_t));
+    listener = bt_malloc(sizeof(bt_media_listener_t));
     if (!listener)
         return NULL;
 

@@ -136,7 +136,7 @@ static binder_status_t IBtGattClientCallbacks_Class_onTransact(AIBinder* binder,
 
         if (cbks->callbacks && cbks->callbacks->on_read)
             cbks->callbacks->on_read(cbks, status, (uint16_t)attr_handle, value, (uint16_t)length);
-        free(value);
+        bt_free(value);
         break;
     }
     case ICBKS_GATT_CLIENT_WRITTEN: {
@@ -174,7 +174,7 @@ static binder_status_t IBtGattClientCallbacks_Class_onTransact(AIBinder* binder,
 
         if (cbks->callbacks && cbks->callbacks->on_notified)
             cbks->callbacks->on_notified(cbks, (uint16_t)attr_handle, value, (uint16_t)length);
-        free(value);
+        bt_free(value);
         break;
     }
     default:
@@ -218,7 +218,7 @@ IBtGattClientCallbacks* BtGattClientCallbacks_new(const gattc_callbacks_t* callb
 {
     AIBinder_Class* clazz;
     AIBinder* binder;
-    IBtGattClientCallbacks* cbks = malloc(sizeof(IBtGattClientCallbacks));
+    IBtGattClientCallbacks* cbks = bt_malloc(sizeof(IBtGattClientCallbacks));
 
     clazz = AIBinder_Class_define(BT_GATT_CLIENT_CALLBACK_DESC, IBtGattClientCallbacks_Class_onCreate,
         IBtGattClientCallbacks_Class_onDestroy, IBtGattClientCallbacks_Class_onTransact);
@@ -240,5 +240,5 @@ void BtGattClientCallbacks_delete(IBtGattClientCallbacks* cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    free(cbks);
+    bt_free(cbks);
 }

@@ -393,7 +393,7 @@ static int query_current_calls_cmd(void* handle, int argc, char* argv[])
             call++;
         }
     }
-    free(calls);
+    bt_free(calls);
 
     return CMD_OK;
 }

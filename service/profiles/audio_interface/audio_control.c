@@ -176,7 +176,7 @@ static void audio_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len
 
 free_out:
     /* free the buffer alloced by a2dp_ctrl_buffer_alloc */
-    free(buffer);
+    bt_free(buffer);
 }
 
 static void audio_ctrl_start(void)

@@ -27,7 +27,7 @@ mcs_event_t* mcs_event_new_ext(mcs_event_type_t event, uint32_t mcs_id, size_t s
 {
     mcs_event_t* mcs_event;
 
-    mcs_event = (mcs_event_t*)malloc(sizeof(mcs_event_t) + size);
+    mcs_event = (mcs_event_t*)bt_malloc(sizeof(mcs_event_t) + size);
     if (mcs_event == NULL)
         return NULL;
 
@@ -39,5 +39,5 @@ mcs_event_t* mcs_event_new_ext(mcs_event_type_t event, uint32_t mcs_id, size_t s
 
 void mcs_event_destory(mcs_event_t* mcs_event)
 {
-    free(mcs_event);
+    bt_free(mcs_event);
 }

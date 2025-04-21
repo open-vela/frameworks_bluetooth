@@ -71,14 +71,14 @@ static g_snoop_filter_global_t g_snoop_filter = { 0 };
 
 static void free_l2cap_cid_item(void* data)
 {
-    free(data);
+    bt_free(data);
 }
 
 static btsnoop_filter_acl_info_t* malloc_acl_connection_item(uint16_t acl_connection_handle)
 {
     btsnoop_filter_acl_info_t* item;
 
-    item = zalloc(sizeof(btsnoop_filter_acl_info_t));
+    item = bt_zalloc(sizeof(btsnoop_filter_acl_info_t));
     if (NULL == item) {
         return NULL;
     }
@@ -87,7 +87,7 @@ static btsnoop_filter_acl_info_t* malloc_acl_connection_item(uint16_t acl_connec
     item->filter_cids = bt_list_new(free_l2cap_cid_item);
 
     if (NULL == item->filter_cids) {
-        free(item);
+        bt_free(item);
         return NULL;
     }
 
@@ -99,7 +99,7 @@ static void free_acl_connection_item(void* data)
     btsnoop_filter_acl_info_t* info = (btsnoop_filter_acl_info_t*)data;
 
     bt_list_free(info->filter_cids);
-    free(data);
+    bt_free(data);
 }
 
 static bool compare_acl_connection_item(void* data, void* context)
@@ -111,7 +111,7 @@ static btsnoop_filter_l2cap_channel_info_t* malloc_filter_cid_item(uint16_t loca
 {
     btsnoop_filter_l2cap_channel_info_t* new_item;
 
-    new_item = (btsnoop_filter_l2cap_channel_info_t*)zalloc(sizeof(btsnoop_filter_l2cap_channel_info_t));
+    new_item = (btsnoop_filter_l2cap_channel_info_t*)bt_zalloc(sizeof(btsnoop_filter_l2cap_channel_info_t));
 
     if (NULL == new_item)
         return NULL;

@@ -45,8 +45,8 @@ typedef struct {
 static void uv_close_callback(uv_handle_t* handle)
 {
     if (handle->data)
-        free(handle->data);
-    free(handle);
+        bt_free(handle->data);
+    bt_free(handle);
 }
 
 static void uv_alloc_callback(uv_handle_t* handle, size_t size, uv_buf_t* buf)
@@ -59,7 +59,7 @@ static void uv_alloc_callback(uv_handle_t* handle, size_t size, uv_buf_t* buf)
     if (reader->alloc_cb)
         reader->alloc_cb((euv_pty_t*)handle, (uint8_t**)&buf->base, &buf->len);
     else {
-        buf->base = malloc(reader->read_size);
+        buf->base = bt_malloc(reader->read_size);
         buf->len = reader->read_size;
     }
 }
@@ -77,7 +77,7 @@ static void uv_read_callback(uv_stream_t* stream, ssize_t nread, const uv_buf_t*
         reader->read_cb((euv_pty_t*)stream, (const uint8_t*)buf->base, nread);
 
     if (release)
-        free(buf->base);
+        bt_free(buf->base);
 }
 
 static void uv_write_callback(uv_write_t* req, int status)
@@ -87,7 +87,7 @@ static void uv_write_callback(uv_write_t* req, int status)
     if (wreq->write_cb)
         wreq->write_cb((euv_pty_t*)wreq->req.data, wreq->buffer, status);
 
-    free(wreq);
+    bt_free(wreq);
 }
 
 static int euv_pty_read_start_(euv_pty_t* handle, uint16_t read_size, euv_read_cb read_cb, euv_alloc_cb alloc_cb)
@@ -98,7 +98,7 @@ static int euv_pty_read_start_(euv_pty_t* handle, uint16_t read_size, euv_read_c
     if (uv_is_active((uv_handle_t*)&handle->uv_tty))
         return 0;
 
-    reader = malloc(sizeof(euv_read_t));
+    reader = bt_malloc(sizeof(euv_read_t));
     if (reader == NULL)
         return -ENOMEM;
 
@@ -110,7 +110,7 @@ static int euv_pty_read_start_(euv_pty_t* handle, uint16_t read_size, euv_read_c
     ret = uv_read_start((uv_stream_t*)&handle->uv_tty, uv_alloc_callback, uv_read_callback);
     if (ret != 0) {
         handle->uv_tty.data = NULL;
-        free(reader);
+        bt_free(reader);
     }
 
     return ret;
@@ -131,7 +131,7 @@ int euv_pty_read_stop(euv_pty_t* handle)
     if (handle == NULL)
         return -EINVAL;
 
-    free(handle->uv_tty.data);
+    bt_free(handle->uv_tty.data);
     handle->uv_tty.data = NULL;
 
     if (uv_is_active((uv_handle_t*)&handle->uv_tty))
@@ -149,7 +149,7 @@ int euv_pty_write(euv_pty_t* handle, uint8_t* buffer, int length, euv_write_cb c
     if (handle == NULL)
         return -EINVAL;
 
-    wreq = (euv_wreq_t*)malloc(sizeof(euv_wreq_t));
+    wreq = (euv_wreq_t*)bt_malloc(sizeof(euv_wreq_t));
     if (!wreq)
         return -ENOMEM;
 
@@ -160,7 +160,7 @@ int euv_pty_write(euv_pty_t* handle, uint8_t* buffer, int length, euv_write_cb c
 
     ret = uv_write(&wreq->req, (uv_stream_t*)&handle->uv_tty, &buf, 1, uv_write_callback);
     if (ret != 0)
-        free(wreq);
+        bt_free(wreq);
 
     return ret;
 }
@@ -173,14 +173,14 @@ euv_pty_t* euv_pty_init(uv_loop_t* loop, int fd, uv_tty_mode_t mode)
     if (loop == NULL || fd < 0)
         return NULL;
 
-    handle = (euv_pty_t*)malloc(sizeof(euv_pty_t));
+    handle = (euv_pty_t*)bt_malloc(sizeof(euv_pty_t));
     if (!handle)
         return NULL;
 
     memset(handle, 0, sizeof(euv_pty_t));
     ret = uv_tty_init(loop, &handle->uv_tty, fd, 1);
     if (ret != 0) {
-        free(handle);
+        bt_free(handle);
         return NULL;
     }
     // set mode

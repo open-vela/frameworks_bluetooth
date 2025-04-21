@@ -47,7 +47,7 @@ static uv_db_t* storage_handle = NULL;
 
 static void key_set_callback(int status, const char* key, uv_buf_t value, void* cookie)
 {
-    free(value.base);
+    bt_free(value.base);
 }
 
 static void key_get_callback(int status, const char* key, uv_buf_t value, void* cookie)
@@ -101,14 +101,14 @@ static void adapter_properties_default(adapter_storage_t* prop)
 
 int bt_storage_save_adapter_info(adapter_storage_t* adapter)
 {
-    key_header_t* key = malloc(sizeof(key_header_t) + sizeof(*adapter));
+    key_header_t* key = bt_malloc(sizeof(key_header_t) + sizeof(*adapter));
 
     key->items = 1;
     key->key_length = sizeof(*adapter);
     memcpy(key->key_value, adapter, sizeof(*adapter));
     int ret = storage_set_key(BT_KEY_ADAPTER_INFO, key, sizeof(key_header_t) + sizeof(*adapter));
     if (ret != 0)
-        free(key);
+        bt_free(key);
 
     return ret;
 }
@@ -120,7 +120,7 @@ int bt_storage_load_adapter_info(adapter_storage_t* adapter)
 
     if (storage_get_key(BT_KEY_ADAPTER_INFO, (void**)&key, &len, NULL) == 0) {
         memcpy(adapter, key->key_value, sizeof(*adapter));
-        free(key);
+        bt_free(key);
     } else {
         adapter_properties_default(adapter);
         bt_storage_save_adapter_info(adapter);
@@ -132,7 +132,7 @@ int bt_storage_load_adapter_info(adapter_storage_t* adapter)
 static int bt_storage_save_remote_device(const char* key, void* value, uint16_t value_size, uint16_t items)
 {
     uint16_t total_length = value_size * items;
-    key_header_t* header = malloc(sizeof(key_header_t) + total_length);
+    key_header_t* header = bt_malloc(sizeof(key_header_t) + total_length);
 
     header->items = items;
     header->key_length = total_length;
@@ -141,7 +141,7 @@ static int bt_storage_save_remote_device(const char* key, void* value, uint16_t 
 
     int ret = storage_set_key(key, header, sizeof(key_header_t) + total_length);
     if (ret != 0)
-        free(header);
+        bt_free(header);
 
     return ret;
 }

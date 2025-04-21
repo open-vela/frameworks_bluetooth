@@ -142,10 +142,10 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder* binder, transact
         stat = AParcel_writeUint32(reply, status);
         attr_inst = srv_db.attr_db;
         for (int i = 0; i < srv_db.attr_num; i++, attr_inst++) {
-            free(attr_inst->uuid);
+            bt_free(attr_inst->uuid);
             // free(attr_inst->attr_value);
         }
-        free(srv_db.attr_db);
+        bt_free(srv_db.attr_db);
         break;
     }
     case IGATT_SERVER_START: {
@@ -188,7 +188,7 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder* binder, transact
             return stat;
 
         status = profile->response((void*)handle, req_handle, value, (uint16_t)length);
-        free(value);
+        bt_free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -214,7 +214,7 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder* binder, transact
             return stat;
 
         status = profile->notify((void*)handle, (uint16_t)attr_handle, value, (uint16_t)length);
-        free(value);
+        bt_free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -240,7 +240,7 @@ static binder_status_t IBtGattServer_Class_onTransact(AIBinder* binder, transact
             return stat;
 
         status = profile->indicate((void*)handle, (uint16_t)attr_handle, value, (uint16_t)length);
-        free(value);
+        bt_free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -311,7 +311,7 @@ BpBtGattServer* BpBtGattServer_new(const char* instance)
 
     /* linktoDeath ? */
 
-    bpBinder = malloc(sizeof(*bpBinder));
+    bpBinder = bt_malloc(sizeof(*bpBinder));
     if (!bpBinder)
         goto bail;
 
@@ -328,7 +328,7 @@ bail:
 void BpBtGattServer_delete(BpBtGattServer* bpBinder)
 {
     AIBinder_decStrong(bpBinder->binder);
-    free(bpBinder);
+    bt_free(bpBinder);
 }
 
 AIBinder* BtGattServer_getService(BpBtGattServer** bpGatts, const char* instance)

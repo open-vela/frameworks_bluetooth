@@ -88,7 +88,7 @@ static scanner_device_t* alloc_device(bt_address_t* addr, ble_addr_type_t addr_t
 {
     scanner_device_t* device;
 
-    device = zalloc(sizeof(scanner_device_t));
+    device = bt_zalloc(sizeof(scanner_device_t));
     if (!device) {
         return NULL;
     }
@@ -103,7 +103,7 @@ static void free_device(void* data)
 {
     scanner_device_t* device = data;
 
-    free(device);
+    bt_free(device);
 }
 
 static scanner_device_t* scanner_find_device(const bt_address_t* addr, ble_addr_type_t addr_type)
@@ -135,7 +135,7 @@ static scanner_device_t* scanner_add_device(bt_address_t* addr, ble_addr_type_t 
 
 static scanner_t* alloc_new_scanner(void* remote, const scanner_callbacks_t* cbs)
 {
-    scanner_t* app = malloc(sizeof(scanner_t));
+    scanner_t* app = bt_malloc(sizeof(scanner_t));
 
     if (!app)
         return NULL;
@@ -152,7 +152,7 @@ static void delete_scanner(scanner_t* scanner)
     if (scanner->is_scanning)
         list_delete(&scanner->scanning_node);
 
-    free(scanner);
+    bt_free(scanner);
 }
 
 static bool scanner_compare(scanner_t* src, scanner_t* dest)
@@ -288,7 +288,7 @@ static void notify_scanners_scan_result(void* data)
         scanner->callbacks->on_scan_result(get_remote(scanner), result);
     }
 
-    free(data);
+    bt_free(data);
 }
 
 static uint32_t register_scanner(scanner_t* scanner)
@@ -344,7 +344,7 @@ static void stop_scanner(void* data)
 
     unregister_scanner(scanner);
 
-    free(data);
+    bt_free(data);
 }
 
 static void cleanup_scanner(void* data)
@@ -418,7 +418,7 @@ static void start_scan(void* data)
     scanner->callbacks->on_scan_start_status(get_remote(scanner), BT_SCAN_STATUS_SUCCESS);
 
 ret:
-    free(start);
+    bt_free(start);
 }
 
 static void stop_scan(void* data)
@@ -448,7 +448,7 @@ void scan_on_state_changed(uint8_t state)
 
 void scan_on_result_data_update(ble_scan_result_t* result_info, char* adv_data)
 {
-    ble_scan_result_t* result = malloc(sizeof(ble_scan_result_t) + result_info->length);
+    ble_scan_result_t* result = bt_malloc(sizeof(ble_scan_result_t) + result_info->length);
 
     if (!result)
         return;
@@ -469,9 +469,9 @@ bt_scanner_t* scanner_start_scan(void* remote, const scanner_callbacks_t* cbs)
     if (!scanner)
         return NULL;
 
-    scanner_ctrl_t* start = malloc(sizeof(scanner_ctrl_t));
+    scanner_ctrl_t* start = bt_malloc(sizeof(scanner_ctrl_t));
     if (start == NULL) {
-        free(scanner);
+        bt_free(scanner);
         return NULL;
     }
 
@@ -498,9 +498,9 @@ bt_scanner_t* scanner_start_scan_with_filters(void* remote,
     if (!scanner)
         return NULL;
 
-    start = zalloc(sizeof(scanner_ctrl_t));
+    start = bt_zalloc(sizeof(scanner_ctrl_t));
     if (start == NULL) {
-        free(scanner);
+        bt_free(scanner);
         return NULL;
     }
 
@@ -532,7 +532,7 @@ void scanner_stop_scan(bt_scanner_t* scanner)
     if (!adapter_is_le_enabled())
         return;
 
-    scanner_ctrl_t* stop = malloc(sizeof(scanner_ctrl_t));
+    scanner_ctrl_t* stop = bt_malloc(sizeof(scanner_ctrl_t));
     if (stop == NULL)
         return;
 

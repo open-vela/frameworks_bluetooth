@@ -214,7 +214,7 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
     switch (packet->code) {
     case BT_GATT_SERVER_REGISTER_SERVICE: {
         gatts_interface_t* profile = (gatts_interface_t*)service_manager_get_profile(PROFILE_GATTS);
-        bt_gatts_remote_t* gatts_remote = malloc(sizeof(bt_gatts_remote_t));
+        bt_gatts_remote_t* gatts_remote = bt_malloc(sizeof(bt_gatts_remote_t));
         if (!gatts_remote) {
             packet->gatts_r.status = BT_STATUS_NO_RESOURCES;
             break;
@@ -226,7 +226,7 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
             (void**)&packet->gatts_r.handle,
             (gatts_callbacks_t*)&g_gatts_socket_cbs);
         if (packet->gatts_r.status != BT_STATUS_SUCCESS)
-            free(gatts_remote);
+            bt_free(gatts_remote);
         break;
     }
     case BT_GATT_SERVER_UNREGISTER_SERVICE: {
@@ -235,7 +235,7 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
             INT2PTR(gatts_handle_t) packet->gatts_pl._bt_gatts_unregister.handle);
 
         if (packet->gatts_r.status == BT_STATUS_SUCCESS)
-            free(gatts_remote);
+            bt_free(gatts_remote);
         break;
     }
     case BT_GATT_SERVER_CONNECT:
@@ -255,7 +255,7 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
         gatt_attr_db_t* attr_inst;
 
         srv_db.attr_num = packet->gatts_pl._bt_gatts_add_attr_table.attr_num;
-        srv_db.attr_db = zalloc(sizeof(gatt_attr_db_t) * packet->gatts_pl._bt_gatts_add_attr_table.attr_num);
+        srv_db.attr_db = bt_zalloc(sizeof(gatt_attr_db_t) * packet->gatts_pl._bt_gatts_add_attr_table.attr_num);
         if (!srv_db.attr_db) {
             packet->gatts_r.status = BT_STATUS_NO_RESOURCES;
             break;
@@ -285,7 +285,7 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_add_attr_table)(
             INT2PTR(gatts_handle_t) packet->gatts_pl._bt_gatts_add_attr_table.handle,
             &srv_db);
-        free(srv_db.attr_db);
+        bt_free(srv_db.attr_db);
 
         break;
     }

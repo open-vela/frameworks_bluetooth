@@ -164,7 +164,7 @@ static gatt_element_t* gatt_alloc_element_by_addr(bt_address_t* addr)
 
 static sal_adapter_req_t* sal_adapter_req(bt_controller_id_t id, bt_address_t* addr, sal_func_t func)
 {
-    sal_adapter_req_t* req = calloc(sizeof(sal_adapter_req_t), 1);
+    sal_adapter_req_t* req = bt_calloc(sizeof(sal_adapter_req_t), 1);
 
     if (req) {
         req->id = id;
@@ -182,7 +182,7 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
 
     SAL_ASSERT(req);
     req->func(req);
-    free(userdata);
+    bt_free(userdata);
 }
 
 static bt_status_t sal_send_req(sal_adapter_req_t* req)
@@ -479,7 +479,7 @@ static void gatt_client_write_callback(struct bt_conn* conn, void* user_data)
 
     if_gattc_on_element_written(&addr, *handle, BT_STATUS_SUCCESS);
 
-    free(handle);
+    bt_free(handle);
 }
 
 static uint8_t bt_gatt_notify_handler(struct bt_conn* conn, struct bt_gatt_subscribe_params* params,
@@ -628,7 +628,7 @@ bt_status_t bt_sal_gatt_client_write_element(bt_controller_id_t id, bt_address_t
     } else if (write_type == GATT_WRITE_TYPE_NO_RSP) {
         uint16_t* handle;
 
-        handle = (uint16_t*)malloc(sizeof(uint16_t));
+        handle = (uint16_t*)bt_malloc(sizeof(uint16_t));
         *handle = element_id;
 
         err = bt_gatt_write_without_response_cb(conn, element_id, value, length, false, gatt_client_write_callback, handle);

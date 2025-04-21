@@ -106,7 +106,7 @@ static void a2dp_sink_flush_packet_queue(void)
     list_for_every_safe(&sink_stream.packet_queue, node, tmp)
     {
         list_delete(node);
-        free(node);
+        bt_free(node);
     }
 }
 
@@ -177,7 +177,7 @@ void a2dp_sink_packet_recieve(a2dp_sink_packet_t* packet)
         return;
 
     if (stream->state != STATE_RUNNING) {
-        free(packet);
+        bt_free(packet);
         return;
     }
 
@@ -185,7 +185,7 @@ void a2dp_sink_packet_recieve(a2dp_sink_packet_t* packet)
     if (list_length(queue) == A2DP_MAX_ENQUEUE_PACKET_COUNT) {
         BT_LOGD("%s queue is full, drop head packet", __func__);
         struct list_node* pkt = list_remove_head(queue);
-        free(pkt);
+        bt_free(pkt);
         list_add_tail(queue, &packet->node);
         uv_mutex_unlock(&stream->queue_lock);
         return;

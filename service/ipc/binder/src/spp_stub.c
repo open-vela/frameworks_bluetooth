@@ -246,7 +246,7 @@ BpBtSpp* BpBtSpp_new(const char* instance)
 
     /* linktoDeath ? */
 
-    bpBinder = malloc(sizeof(*bpBinder));
+    bpBinder = bt_malloc(sizeof(*bpBinder));
     if (!bpBinder)
         goto bail;
 
@@ -263,7 +263,7 @@ bail:
 void BpBtSpp_delete(BpBtSpp* bpSpp)
 {
     AIBinder_decStrong(bpSpp->binder);
-    free(bpSpp);
+    bt_free(bpSpp);
 }
 
 AIBinder* BtSpp_getService(BpBtSpp** bpSpp, const char* instance)

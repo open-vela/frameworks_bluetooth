@@ -120,7 +120,7 @@ static hf_device_t* find_hf_device_by_state(hfp_hf_state_t state)
 
 static hf_device_t* hf_device_new(bt_address_t* addr, hf_state_machine_t* hfsm)
 {
-    hf_device_t* device = malloc(sizeof(hf_device_t));
+    hf_device_t* device = bt_malloc(sizeof(hf_device_t));
     if (!device)
         return NULL;
 
@@ -142,7 +142,7 @@ static void hf_device_delete(hf_device_t* device)
     hf_state_machine_dispatch(device->hfsm, msg);
     hfp_hf_msg_destroy(msg);
     hf_state_machine_destory(device->hfsm);
-    free(device);
+    bt_free(device);
 }
 
 static hf_state_machine_t* get_state_machine(bt_address_t* addr)

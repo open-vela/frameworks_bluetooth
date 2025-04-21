@@ -75,7 +75,7 @@ static void storage_save_adapter_info(service_work_t* work, void* userdata)
 
 static void storage_save_adapter_info_complete(service_work_t* work, void* userdata)
 {
-    free(userdata);
+    bt_free(userdata);
 }
 
 static void storage_commit(service_work_t* work, void* userdata)
@@ -158,7 +158,7 @@ static void storage_get_key(const char* key, void* data, uint16_t value_len, voi
         return;
     }
 
-    prop_name = (char*)malloc(PROP_NAME_MAX);
+    prop_name = (char*)bt_malloc(PROP_NAME_MAX);
     if (!prop_name) {
         BT_LOGE("property_name malloc failed!");
         return;
@@ -192,7 +192,7 @@ static void storage_get_key(const char* key, void* data, uint16_t value_len, voi
         }
     }
     ((load_storage_callback_t)cookie)(prop_value->value, value_len, prop_value->items);
-    free(prop_name);
+    bt_free(prop_name);
 }
 
 static void adapter_properties_default(adapter_storage_t* prop)
@@ -210,7 +210,7 @@ int bt_storage_save_adapter_info(adapter_storage_t* adapter)
 {
     adapter_storage_t* adapter_copy;
 
-    adapter_copy = (adapter_storage_t*)malloc(sizeof(adapter_storage_t));
+    adapter_copy = (adapter_storage_t*)bt_malloc(sizeof(adapter_storage_t));
     if (!adapter_copy) {
         BT_LOGE("adapter_copy malloc failed!");
         return -ENOMEM;
@@ -253,7 +253,7 @@ static int bt_storage_save_remote_device(const char* key, void* value, uint16_t 
     if (!key || !value)
         return 0;
 
-    prop_name = (char*)malloc(PROP_NAME_MAX);
+    prop_name = (char*)bt_malloc(PROP_NAME_MAX);
     if (!prop_name) {
         BT_LOGE("property_name malloc failed!");
         return -ENOMEM;
@@ -269,12 +269,12 @@ static int bt_storage_save_remote_device(const char* key, void* value, uint16_t 
          * */
         ret = storage_set_key(prop_name, &data->addr_type, prop_vlen);
         if (ret < 0) {
-            free(prop_name);
+            bt_free(prop_name);
             return ret;
         }
         data++;
     }
-    free(prop_name);
+    bt_free(prop_name);
     return 0;
 }
 
@@ -291,7 +291,7 @@ static int bt_storage_save_le_remote_device(const char* key, void* value, uint16
     if (!key || !value)
         return 0;
 
-    prop_name = (char*)malloc(PROP_NAME_MAX);
+    prop_name = (char*)bt_malloc(PROP_NAME_MAX);
     if (!prop_name) {
         BT_LOGE("property_name malloc failed!");
         return -ENOMEM;
@@ -307,12 +307,12 @@ static int bt_storage_save_le_remote_device(const char* key, void* value, uint16
          * */
         ret = storage_set_key(prop_name, &data->addr_type, prop_vlen);
         if (ret < 0) {
-            free(prop_name);
+            bt_free(prop_name);
             return ret;
         }
         data++;
     }
-    free(prop_name);
+    bt_free(prop_name);
     return 0;
 }
 
@@ -365,7 +365,7 @@ static void bt_storage_delete(char* key, uint16_t items, char* prop_name)
         return;
 
     total_length = items * sizeof(bt_address_t);
-    prop_value = malloc(sizeof(bt_property_value_t) + total_length);
+    prop_value = bt_malloc(sizeof(bt_property_value_t) + total_length);
     if (!prop_value) {
         BT_LOGE("property malloc failed!");
         return;
@@ -383,7 +383,7 @@ static void bt_storage_delete(char* key, uint16_t items, char* prop_name)
         property_delete(prop_name);
     }
 
-    free(prop_value);
+    bt_free(prop_value);
     service_loop_work(NULL, storage_commit, NULL);
 }
 
@@ -393,7 +393,7 @@ int bt_storage_save_bonded_device(remote_device_properties_t* remote, uint16_t s
     char* prop_name;
     int ret;
 
-    prop_name = (char*)malloc(PROP_NAME_MAX);
+    prop_name = (char*)bt_malloc(PROP_NAME_MAX);
     if (!prop_name) {
         BT_LOGE("property_name malloc failed!");
         return -ENOMEM;
@@ -411,7 +411,7 @@ int bt_storage_save_bonded_device(remote_device_properties_t* remote, uint16_t s
         bt_storage_delete(BT_KVDB_BTBOND, items, prop_name);
     }
 
-    free(prop_name);
+    bt_free(prop_name);
     return ret;
 }
 
@@ -421,7 +421,7 @@ int bt_storage_save_whitelist(remote_device_le_properties_t* remote, uint16_t si
     char* prop_name;
     int ret;
 
-    prop_name = (char*)malloc(PROP_NAME_MAX);
+    prop_name = (char*)bt_malloc(PROP_NAME_MAX);
     if (!prop_name) {
         BT_LOGE("property_name malloc failed!");
         return -ENOMEM;
@@ -439,7 +439,7 @@ int bt_storage_save_whitelist(remote_device_le_properties_t* remote, uint16_t si
         bt_storage_delete(BT_KVDB_BLEWHITELIST, items, prop_name);
     }
 
-    free(prop_name);
+    bt_free(prop_name);
     return ret;
 }
 
@@ -449,7 +449,7 @@ int bt_storage_save_le_bonded_device(remote_device_le_properties_t* remote, uint
     char* prop_name;
     int ret;
 
-    prop_name = (char*)malloc(PROP_NAME_MAX);
+    prop_name = (char*)bt_malloc(PROP_NAME_MAX);
     if (!prop_name) {
         BT_LOGE("property_name malloc failed!");
         return -ENOMEM;
@@ -467,7 +467,7 @@ int bt_storage_save_le_bonded_device(remote_device_le_properties_t* remote, uint
         bt_storage_delete(BT_KVDB_BLEBOND, items, prop_name);
     }
 
-    free(prop_name);
+    bt_free(prop_name);
     return ret;
 }
 
@@ -486,7 +486,7 @@ int bt_storage_load_bonded_device(load_storage_callback_t cb)
     }
 
     total_length = items * sizeof(remote_device_properties_t);
-    prop_value = malloc(sizeof(bt_property_value_t) + total_length);
+    prop_value = bt_malloc(sizeof(bt_property_value_t) + total_length);
     if (!prop_value) {
         BT_LOGE("property malloc failed!");
         return -ENOMEM;
@@ -498,7 +498,7 @@ int bt_storage_load_bonded_device(load_storage_callback_t cb)
     prop_value->value_length = total_length;
 
     storage_get_key(BT_KVDB_BTBOND, (void*)prop_value, sizeof(remote_device_properties_t), (void*)cb);
-    free(prop_value);
+    bt_free(prop_value);
 
     return 0;
 }
@@ -518,7 +518,7 @@ int bt_storage_load_whitelist_device(load_storage_callback_t cb)
     }
 
     total_length = items * sizeof(remote_device_le_properties_t);
-    prop_value = malloc(sizeof(bt_property_value_t) + total_length);
+    prop_value = bt_malloc(sizeof(bt_property_value_t) + total_length);
     if (!prop_value) {
         BT_LOGE("property malloc failed!");
         return -ENOMEM;
@@ -530,7 +530,7 @@ int bt_storage_load_whitelist_device(load_storage_callback_t cb)
     prop_value->value_length = total_length;
 
     storage_get_key(BT_KVDB_BLEWHITELIST, (void*)prop_value, sizeof(remote_device_le_properties_t), (void*)cb);
-    free(prop_value);
+    bt_free(prop_value);
 
     return 0;
 }
@@ -550,7 +550,7 @@ int bt_storage_load_le_bonded_device(load_storage_callback_t cb)
     }
 
     total_length = items * sizeof(remote_device_le_properties_t);
-    prop_value = malloc(sizeof(bt_property_value_t) + total_length);
+    prop_value = bt_malloc(sizeof(bt_property_value_t) + total_length);
     if (!prop_value) {
         BT_LOGE("property malloc failed!");
         return -ENOMEM;
@@ -562,7 +562,7 @@ int bt_storage_load_le_bonded_device(load_storage_callback_t cb)
     prop_value->value_length = total_length;
 
     storage_get_key(BT_KVDB_BLEBOND, (void*)prop_value, sizeof(remote_device_le_properties_t), (void*)cb);
-    free(prop_value);
+    bt_free(prop_value);
 
     return 0;
 }

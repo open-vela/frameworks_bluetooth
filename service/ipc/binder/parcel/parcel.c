@@ -209,7 +209,7 @@ static binder_status_t AParcel_readParcelableUuid(const AParcel* parcel, void* a
 
 static bool AParcel_parcelableUuidAllocator(void* arrayData, int32_t length)
 {
-    char* p = malloc(sizeof(bt_uuid_t) * length);
+    char* p = bt_malloc(sizeof(bt_uuid_t) * length);
     *(char**)arrayData = p;
 
     return true;
@@ -618,7 +618,7 @@ binder_status_t AParcel_readBleScanResult(const AParcel* parcel, ble_scan_result
     if (stat != STATUS_OK)
         return stat;
 
-    result = malloc(sizeof(ble_scan_result_t) + length);
+    result = bt_malloc(sizeof(ble_scan_result_t) + length);
     if (!result)
         return STATUS_NO_MEMORY;
 
@@ -768,7 +768,7 @@ static binder_status_t AParcel_readParcelableAttribute(const AParcel* parcel, vo
 {
     gatt_attr_db_t* attribute = (gatt_attr_db_t*)arrayData + index;
 
-    attribute->uuid = malloc(sizeof(bt_uuid_t));
+    attribute->uuid = bt_malloc(sizeof(bt_uuid_t));
     if (!attribute->uuid)
         return STATUS_NO_MEMORY;
 

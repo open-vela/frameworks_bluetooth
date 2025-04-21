@@ -144,7 +144,7 @@ static void bulk_trans_complete(euv_pipe_t* handle, uint8_t* buf, int status)
     if (ctx->bulk_count)
         euv_pipe_write(handle, buf, ctx->bulk_length, bulk_trans_complete);
     else
-        free(buf);
+        bt_free(buf);
 }
 
 static void spp_trans_reset(void)
@@ -169,7 +169,7 @@ static void speed_test_start(void* cmd)
     uint16_t port = msg->port;
     uint16_t times = msg->len;
 
-    free(msg);
+    bt_free(msg);
 
     device = find_device_by_port(port);
     if (!device)
@@ -220,7 +220,7 @@ static void spp_data_received(euv_pipe_t* handle, const uint8_t* buf, ssize_t si
             spp_trans_reset();
         } else if (strncmp((const char*)buf, TRANS_START_ACK, strlen(TRANS_START_ACK)) == 0) {
             sem_post(&spp_send_sem);
-            ctx->bulk_buf = malloc(ctx->bulk_length);
+            ctx->bulk_buf = bt_malloc(ctx->bulk_length);
             memset(ctx->bulk_buf, 0xA5, ctx->bulk_length);
             ctx->start_timestamp = get_timestamp_msec();
             euv_pipe_write(handle, ctx->bulk_buf, ctx->bulk_length, bulk_trans_complete);
@@ -254,7 +254,7 @@ static void spp_read_cb(euv_pipe_t* handle, const uint8_t* buf, ssize_t size)
         euv_pipe_disconnect(device->pipe);
         device->pipe = NULL;
         list_delete(&device->node);
-        free(device);
+        bt_free(device);
     }
 }
 
@@ -269,7 +269,7 @@ static void check_resource_release(uint16_t port)
     euv_pipe_disconnect(device->pipe);
     device->pipe = NULL;
     list_delete(&device->node);
-    free(device);
+    bt_free(device);
 }
 
 static void connection_state_process(void* data)
@@ -288,13 +288,13 @@ static void connection_state_process(void* data)
         spp_trans_reset();
     }
 
-    free(msg);
+    bt_free(msg);
 }
 
 static void connection_state_callback(void* handle, bt_address_t* addr, uint16_t scn,
     uint16_t port, profile_connection_state_t state)
 {
-    spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
+    spp_cmd_t* msg = bt_malloc(sizeof(spp_cmd_t));
     if (!msg)
         return;
 
@@ -328,7 +328,7 @@ static void spp_open_process(void* data)
     bt_addr_ba2str(&msg->addr, addr_str);
     PRINT("%s addr:%s, scn:%d, port: %d, name: %s", __func__, addr_str, msg->scn, msg->port, msg->name);
 
-    device = zalloc(sizeof(spp_device_t));
+    device = bt_zalloc(sizeof(spp_device_t));
     if (!device) {
         PRINT("%s, device not exist", __func__);
         return;
@@ -343,17 +343,17 @@ static void spp_open_process(void* data)
 #endif
     if (!device->pipe) {
         PRINT("%s, pipe connect failed", __func__);
-        free(msg);
-        free(device);
+        bt_free(msg);
+        bt_free(device);
         return;
     }
 
-    free(msg);
+    bt_free(msg);
 }
 
 static void proxy_state_callback(void* handle, bt_address_t* addr, spp_proxy_state_t state, uint16_t scn, uint16_t port, char* name)
 {
-    spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
+    spp_cmd_t* msg = bt_malloc(sizeof(spp_cmd_t));
     if (!msg)
         return;
 
@@ -445,14 +445,14 @@ static void spp_disconnect(void* data)
 
     device = find_device_by_port(msg->port);
     if (device == NULL) {
-        free(data);
+        bt_free(data);
         return;
     }
 
     bt_spp_disconnect(msg->handle, spp_app_handle, &msg->addr, msg->port);
     bt_addr_ba2str(&msg->addr, addr_str);
     PRINT("%s, address:%s port:%d disconnecting", __func__, addr_str, msg->port);
-    free(data);
+    bt_free(data);
 }
 
 static int disconnect_cmd(void* handle, int argc, char* argv[])
@@ -460,7 +460,7 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
+    spp_cmd_t* msg = bt_malloc(sizeof(spp_cmd_t));
     if (!msg)
         return CMD_ERROR;
 
@@ -476,7 +476,7 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
 
 static void write_complete(euv_pipe_t* handle, uint8_t* buf, int status)
 {
-    free(buf);
+    bt_free(buf);
 }
 
 static void spp_write(void* data)
@@ -494,12 +494,12 @@ static void spp_write(void* data)
     }
 
     euv_pipe_write(device->pipe, msg->buf, msg->len, write_complete);
-    free(msg);
+    bt_free(msg);
     return;
 
 error:
-    free(msg->buf);
-    free(msg);
+    bt_free(msg->buf);
+    bt_free(msg);
 }
 
 static int write_cmd(void* handle, int argc, char* argv[])
@@ -513,9 +513,9 @@ static int write_cmd(void* handle, int argc, char* argv[])
     port = atoi(argv[0]);
     buf = (uint8_t*)strdup(argv[1]);
 
-    spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
+    spp_cmd_t* msg = bt_malloc(sizeof(spp_cmd_t));
     if (!msg) {
-        free(buf);
+        bt_free(buf);
         return CMD_ERROR;
     }
 
@@ -539,7 +539,7 @@ static int speed_test_cmd(void* handle, int argc, char* argv[])
     if (port < 0 || times < 0)
         return CMD_INVALID_PARAM;
 
-    spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
+    spp_cmd_t* msg = bt_malloc(sizeof(spp_cmd_t));
     if (!msg)
         return CMD_ERROR;
 

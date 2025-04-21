@@ -38,7 +38,7 @@ bt_advertiser_t* bt_le_start_advertising(bt_instance_t* ins,
 
     BT_SOCKET_INS_VALID(ins, NULL);
 
-    adv = malloc(sizeof(*adv));
+    adv = bt_malloc(sizeof(*adv));
     if (adv == NULL)
         return NULL;
 
@@ -47,7 +47,7 @@ bt_advertiser_t* bt_le_start_advertising(bt_instance_t* ins,
     memcpy(&packet.adv_pl._bt_le_start_advertising.params, params, sizeof(*params));
     if ((adv_len && (adv_len > sizeof(packet.adv_pl._bt_le_start_advertising.adv_data)))
         || (scan_rsp_len && (scan_rsp_len > sizeof(packet.adv_pl._bt_le_start_advertising.scan_rsp_data)))) {
-        free(adv);
+        bt_free(adv);
         return NULL;
     }
     if (adv_len)
@@ -60,7 +60,7 @@ bt_advertiser_t* bt_le_start_advertising(bt_instance_t* ins,
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_LE_START_ADVERTISING);
     if (status != BT_STATUS_SUCCESS || !packet.adv_r.remote) {
-        free(adv);
+        bt_free(adv);
         return NULL;
     }
 

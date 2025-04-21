@@ -43,7 +43,7 @@ static a2dp_sink_packet_t* sink_aac_repackage(uint8_t* data, uint16_t length)
     uint8_t LOAS_HDRSIZE = 3;
 
     /* pack aac loas header */
-    packet = malloc(sizeof(a2dp_sink_packet_t) + length + LOAS_HDRSIZE);
+    packet = bt_malloc(sizeof(a2dp_sink_packet_t) + length + LOAS_HDRSIZE);
     if (packet) {
         packet->data[0] = 0x56;
         packet->data[1] = 0xE0 | ((length >> 8) & 0x1f);
@@ -57,7 +57,7 @@ static a2dp_sink_packet_t* sink_aac_repackage(uint8_t* data, uint16_t length)
 
 static void sink_aac_packet_send_done(a2dp_sink_packet_t* packet)
 {
-    free(packet);
+    bt_free(packet);
 }
 
 static const a2dp_sink_stream_interface_t a2dp_sink_stream_aac = {

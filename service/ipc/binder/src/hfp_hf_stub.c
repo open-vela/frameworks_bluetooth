@@ -179,7 +179,7 @@ static binder_status_t IBtHfpHf_Class_onTransact(AIBinder* binder, transaction_c
             return stat;
 
         status = profile->dial(&addr, number);
-        free(number);
+        bt_free(number);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -366,7 +366,7 @@ BpBtHfpHf* BpBtHfpHf_new(const char* instance)
 
     /* linktoDeath ? */
 
-    bpBinder = malloc(sizeof(*bpBinder));
+    bpBinder = bt_malloc(sizeof(*bpBinder));
     if (!bpBinder)
         goto bail;
 
@@ -383,7 +383,7 @@ bail:
 void BpBtHfpHf_delete(BpBtHfpHf* bpHfpHf)
 {
     AIBinder_decStrong(bpHfpHf->binder);
-    free(bpHfpHf);
+    bt_free(bpHfpHf);
 }
 
 AIBinder* BtHfpHf_getService(BpBtHfpHf** bpHfpHf, const char* instance)

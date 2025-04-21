@@ -215,7 +215,7 @@ lea_tbs_calls_t* lea_tbs_tele_add_call(tapi_call_info* call_info)
 
     lea_tbs_calls_t* call_s;
 
-    call_s = (lea_tbs_calls_t*)malloc(sizeof(lea_tbs_calls_t));
+    call_s = (lea_tbs_calls_t*)bt_malloc(sizeof(lea_tbs_calls_t));
     if (!call_s) {
         BT_LOGE("error, malloc %s", __func__);
         return NULL;
@@ -240,7 +240,7 @@ static void tbs_on_tapi_client_ready(const char* client_name, void* user_data)
     tapi_pref_net_mode value = NETWORK_PREF_NET_TYPE_ANY;
     lea_tbs_telephone_bearer_t* bearer;
 
-    bearer = (lea_tbs_telephone_bearer_t*)malloc(sizeof(lea_tbs_telephone_bearer_t));
+    bearer = (lea_tbs_telephone_bearer_t*)bt_malloc(sizeof(lea_tbs_telephone_bearer_t));
     if (client_name != NULL)
         BT_LOGD("%s :tapi is ready for %s\n", __func__, client_name);
 
@@ -259,14 +259,14 @@ static void tbs_on_tapi_client_ready(const char* client_name, void* user_data)
     bearer->optional_opcodes_supported = BTS_DEFAULT_OPTIONAL_OPCODE_SUPPORTED;
 
     lea_tbs_set_telephone_bearer_info(bearer);
-    free(bearer);
+    bt_free(bearer);
     bearer = NULL;
 }
 
 static void tbs_call_list_query_complete(tapi_async_result* result)
 {
     tapi_call_info* call_info;
-    lea_tbs_call_state_t* state_s = malloc(sizeof(lea_tbs_call_state_t) * result->arg2);
+    lea_tbs_call_state_t* state_s = bt_malloc(sizeof(lea_tbs_call_state_t) * result->arg2);
     lea_tbs_call_state_t* sub_call;
 
     if (result->status != OK)

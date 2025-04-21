@@ -195,7 +195,7 @@ static int write_request_cmd(void* handle, int argc, char* argv[])
         if (len <= 0 || len > 0xFFFF)
             return CMD_USAGE_FAULT;
 
-        value = malloc(len);
+        value = bt_malloc(len);
         if (!value)
             return CMD_ERROR;
 
@@ -207,12 +207,12 @@ static int write_request_cmd(void* handle, int argc, char* argv[])
         return CMD_INVALID_PARAM;
 
     if (value)
-        free(value);
+        bt_free(value);
 
     return CMD_OK;
 error:
     if (value)
-        free(value);
+        bt_free(value);
     return CMD_ERROR;
 }
 
@@ -353,7 +353,7 @@ static int throughput_cmd(void* handle, int argc, char* argv[])
     uint16_t attr_handle = strtol(argv[1], NULL, 16);
 
     uint32_t write_length = g_gattc_devies[conn_id].gatt_mtu;
-    uint8_t* payload = (uint8_t*)malloc(sizeof(uint8_t) * write_length);
+    uint8_t* payload = (uint8_t*)bt_malloc(sizeof(uint8_t) * write_length);
     if (!payload) {
         PRINT("write payload malloc failed");
         return CMD_ERROR;
@@ -396,7 +396,7 @@ static int throughput_cmd(void* handle, int argc, char* argv[])
         throughtput_cursor++;
         write_count++;
     }
-    free(payload);
+    bt_free(payload);
 
     if (run_time <= 0) {
         PRINT("gattc write throughput test failed due to an unexpected interruption!");

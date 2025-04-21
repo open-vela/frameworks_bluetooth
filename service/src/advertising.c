@@ -72,10 +72,10 @@ static void advertiser_info_free(advertising_info_t* adv_info)
 {
     if (adv_info) {
         if (adv_info->adv_data)
-            free(adv_info->adv_data);
+            bt_free(adv_info->adv_data);
         if (adv_info->scan_rsp_data)
-            free(adv_info->scan_rsp_data);
-        free(adv_info);
+            bt_free(adv_info->scan_rsp_data);
+        bt_free(adv_info);
     }
 }
 
@@ -85,12 +85,12 @@ static advertising_info_t* advertiser_info_copy(ble_adv_params_t* params,
     uint8_t* scan_rsp_data,
     uint16_t scan_rsp_len)
 {
-    advertising_info_t* adv_info = calloc(1, sizeof(advertising_info_t));
+    advertising_info_t* adv_info = bt_calloc(1, sizeof(advertising_info_t));
     if (!adv_info)
         goto fail;
 
     if (adv_len && adv_data) {
-        adv_info->adv_data = malloc(adv_len);
+        adv_info->adv_data = bt_malloc(adv_len);
         if (!adv_info->adv_data)
             goto fail;
         memcpy(adv_info->adv_data, adv_data, adv_len);
@@ -98,7 +98,7 @@ static advertising_info_t* advertiser_info_copy(ble_adv_params_t* params,
     }
 
     if (scan_rsp_len && scan_rsp_data) {
-        adv_info->scan_rsp_data = malloc(scan_rsp_len);
+        adv_info->scan_rsp_data = bt_malloc(scan_rsp_len);
         if (!adv_info->scan_rsp_data)
             goto fail;
         memcpy(adv_info->scan_rsp_data, scan_rsp_data, scan_rsp_len);
@@ -114,7 +114,7 @@ fail:
 
 static advertiser_t* alloc_new_advertiser(void* remote, const advertiser_callback_t* cbs)
 {
-    advertiser_t* adver = malloc(sizeof(advertiser_t));
+    advertiser_t* adver = bt_malloc(sizeof(advertiser_t));
     if (!adver)
         return NULL;
 
@@ -130,7 +130,7 @@ static void destroy_advertiser(advertiser_t* adver)
 {
     if (adver->adv_id)
         index_free(adv_manager.adv_allocator, adver->adv_id - 1);
-    free(adver);
+    bt_free(adver);
 }
 
 static void delete_advertiser(advertiser_t* adver)
@@ -189,7 +189,7 @@ static void advertiser_start_event(void* data)
     advertising_info_t* adv_info = start->adv_info;
     int adv_id;
 
-    free(start);
+    bt_free(start);
     if (!adv_manager.started)
         return;
 
@@ -225,7 +225,7 @@ static void advertiser_stop_event(void* data)
     advertiser_t* adver = stop->adver;
     uint8_t adv_id = stop->adv_id;
 
-    free(stop);
+    bt_free(stop);
     if (!adv_manager.started)
         return;
 
@@ -270,7 +270,7 @@ static void advertiser_notify_state(void* data)
     }
 
 exit:
-    free(advstate);
+    bt_free(advstate);
 }
 
 static void advertisers_cleanup(void* data)
@@ -297,7 +297,7 @@ static void advertisers_cleanup(void* data)
 
 void advertising_on_state_changed(uint8_t adv_id, uint8_t state)
 {
-    adv_event_t* advstate = malloc(sizeof(adv_event_t));
+    adv_event_t* advstate = bt_malloc(sizeof(adv_event_t));
 
     if (!advstate) {
         BT_LOGE("adv_id: %d state malloc failed", adv_id);
@@ -324,7 +324,7 @@ bt_advertiser_t* start_advertising(void* remote,
     if (!adver)
         return NULL;
 
-    adv_event_t* start = malloc(sizeof(adv_event_t));
+    adv_event_t* start = bt_malloc(sizeof(adv_event_t));
     if (!start) {
         destroy_advertiser(adver);
         return NULL;
@@ -343,7 +343,7 @@ void stop_advertising(bt_advertiser_t* adver)
     if (!adapter_is_le_enabled())
         return;
 
-    adv_event_t* stop = malloc(sizeof(adv_event_t));
+    adv_event_t* stop = bt_malloc(sizeof(adv_event_t));
     if (!stop)
         return;
 
@@ -356,7 +356,7 @@ void stop_advertising_id(uint8_t adv_id)
     if (!adapter_is_le_enabled())
         return;
 
-    adv_event_t* stop = malloc(sizeof(adv_event_t));
+    adv_event_t* stop = bt_malloc(sizeof(adv_event_t));
     if (!stop)
         return;
 

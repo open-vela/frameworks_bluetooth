@@ -143,13 +143,13 @@ static binder_status_t IBtGattServerCallbacks_Class_onTransact(AIBinder* binder,
 
         stat = AParcel_readUint32(in, &length);
         if (stat != STATUS_OK) {
-            free(value);
+            bt_free(value);
             return stat;
         }
 
         stat = AParcel_readUint32(in, &offset);
         if (stat != STATUS_OK) {
-            free(value);
+            bt_free(value);
             return stat;
         }
 
@@ -159,7 +159,7 @@ static binder_status_t IBtGattServerCallbacks_Class_onTransact(AIBinder* binder,
                 break;
             }
         }
-        free(value);
+        bt_free(value);
         break;
     }
     case ICBKS_GATT_SERVER_NOTIFY_COMPLETE: {
@@ -219,7 +219,7 @@ IBtGattServerCallbacks* BtGattServerCallbacks_new(const gatts_callbacks_t* callb
 {
     AIBinder_Class* clazz;
     AIBinder* binder;
-    IBtGattServerCallbacks* cbks = malloc(sizeof(IBtGattServerCallbacks));
+    IBtGattServerCallbacks* cbks = bt_malloc(sizeof(IBtGattServerCallbacks));
 
     clazz = AIBinder_Class_define(BT_GATT_SERVER_CALLBACK_DESC, IBtGattServerCallbacks_Class_onCreate,
         IBtGattServerCallbacks_Class_onDestroy, IBtGattServerCallbacks_Class_onTransact);
@@ -241,5 +241,5 @@ void BtGattServerCallbacks_delete(IBtGattServerCallbacks* cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    free(cbks);
+    bt_free(cbks);
 }

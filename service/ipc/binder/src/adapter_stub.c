@@ -160,7 +160,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder* binder, transaction
             return stat;
 
         status = adapter_set_name(name);
-        free(name);
+        bt_free(name);
         stat = AParcel_writeUint32(out, status);
         break;
     }
@@ -305,7 +305,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder* binder, transaction
         status = adapter_get_bonded_devices(&addrs, &size, AParcelUtils_btCommonAllocator, BT_TRANSPORT_BREDR);
         if (addrs && size) {
             stat = AParcel_writeAddressArray(out, addrs, size);
-            free(addrs);
+            bt_free(addrs);
             if (stat != STATUS_OK)
                 return stat;
         }
@@ -319,7 +319,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder* binder, transaction
         status = adapter_get_connected_devices(&addrs, &size, AParcelUtils_btCommonAllocator, BT_TRANSPORT_BREDR);
         if (addrs && size) {
             stat = AParcel_writeAddressArray(out, addrs, size);
-            free(addrs);
+            bt_free(addrs);
             if (stat != STATUS_OK)
                 return stat;
         }
@@ -379,8 +379,8 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder* binder, transaction
             return stat;
 
         void* cookie = start_advertising(remote, &param, adv, adv_len, scan_rsp, scan_rsp_len, BpBtAdvertiserCallbacks_getStatic());
-        free(adv);
-        free(scan_rsp);
+        bt_free(adv);
+        bt_free(scan_rsp);
         stat = AParcel_writeUint32(out, (uint32_t)cookie);
 #endif
         break;
@@ -523,7 +523,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder* binder, transaction
             return stat;
 
         if (uuids && uuidSize)
-            free(uuids);
+            bt_free(uuids);
         stat = AParcel_writeUint32(out, status);
         break;
     }
@@ -578,7 +578,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder* binder, transaction
             return stat;
 
         status = adapter_set_remote_alias(&addr, alias);
-        free(alias);
+        bt_free(alias);
         stat = AParcel_writeUint32(out, status);
         break;
     }
@@ -725,7 +725,7 @@ static binder_status_t IBtAdapter_Class_onTransact(AIBinder* binder, transaction
             return stat;
 
         status = adapter_set_pin_code(&addr, accept, pincode, len);
-        free(pincode);
+        bt_free(pincode);
         stat = AParcel_writeUint32(out, status);
         break;
     }
@@ -885,7 +885,7 @@ BpBtAdapter* BpBtAdapter_new(const char* instance)
 
     /* linktoDeath ? */
 
-    bpBinder = malloc(sizeof(*bpBinder));
+    bpBinder = bt_malloc(sizeof(*bpBinder));
     if (!bpBinder)
         goto bail;
 
@@ -902,7 +902,7 @@ bail:
 void BpBtAdapter_delete(BpBtAdapter* bpAdapter)
 {
     AIBinder_decStrong(bpAdapter->binder);
-    free(bpAdapter);
+    bt_free(bpAdapter);
 }
 
 AIBinder* BtAdapter_getService(BpBtAdapter** bpAdapter, const char* instance)

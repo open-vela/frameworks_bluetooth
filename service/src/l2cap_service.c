@@ -223,7 +223,7 @@ exit:
 
 static void euv_write_complete(euv_pty_t* handle, uint8_t* buf, int status)
 {
-    free(buf);
+    bt_free(buf);
 }
 
 static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* param)
@@ -237,7 +237,7 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
         return;
     }
 
-    channel = calloc(1, sizeof(l2cap_channel_t));
+    channel = bt_calloc(1, sizeof(l2cap_channel_t));
     if (!channel) {
         return;
     }
@@ -348,7 +348,7 @@ static void handle_l2cap_event(void* data)
     }
 
     pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
-    free(msg);
+    bt_free(msg);
 }
 
 /****************************************************************************
@@ -357,7 +357,7 @@ static void handle_l2cap_event(void* data)
 
 void l2cap_on_channel_connected(bt_address_t* addr, l2cap_channel_param_t* param)
 {
-    l2cap_msg_t* msg = malloc(sizeof(l2cap_msg_t));
+    l2cap_msg_t* msg = bt_malloc(sizeof(l2cap_msg_t));
     if (!msg) {
         return;
     }
@@ -370,7 +370,7 @@ void l2cap_on_channel_connected(bt_address_t* addr, l2cap_channel_param_t* param
 
 void l2cap_on_channel_disconnected(bt_address_t* addr, uint16_t cid, uint32_t reason)
 {
-    l2cap_msg_t* msg = malloc(sizeof(l2cap_msg_t));
+    l2cap_msg_t* msg = bt_malloc(sizeof(l2cap_msg_t));
     if (!msg) {
         return;
     }
@@ -384,14 +384,14 @@ void l2cap_on_channel_disconnected(bt_address_t* addr, uint16_t cid, uint32_t re
 
 void l2cap_on_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_data, uint16_t packet_size)
 {
-    l2cap_msg_t* msg = malloc(sizeof(l2cap_msg_t));
+    l2cap_msg_t* msg = bt_malloc(sizeof(l2cap_msg_t));
     if (!msg) {
         return;
     }
 
-    msg->packet_received.data = malloc(packet_size);
+    msg->packet_received.data = bt_malloc(packet_size);
     if (!msg->packet_received.data) {
-        free(msg);
+        bt_free(msg);
         return;
     }
 
@@ -405,7 +405,7 @@ void l2cap_on_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_
 
 void l2cap_on_packet_sent(bt_address_t* addr, uint16_t cid)
 {
-    l2cap_msg_t* msg = malloc(sizeof(l2cap_msg_t));
+    l2cap_msg_t* msg = bt_malloc(sizeof(l2cap_msg_t));
     if (!msg) {
         return;
     }

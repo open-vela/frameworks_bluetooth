@@ -114,7 +114,7 @@ void bt_socket_server_device_process(service_poll_t* poll,
 
             memcpy(packet->devs_pl._bt_device_get_uuids.uuids, uuid,
                 sizeof(bt_uuid_t) * packet->devs_pl._bt_device_get_uuids.size);
-            free(uuid);
+            bt_free(uuid);
         }
         break;
     }

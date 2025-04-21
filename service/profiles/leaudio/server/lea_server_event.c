@@ -29,7 +29,7 @@ lea_server_msg_t* lea_server_msg_new_ext(lea_server_event_t event,
 {
     lea_server_msg_t* msg;
 
-    msg = (lea_server_msg_t*)zalloc(sizeof(lea_server_msg_t));
+    msg = (lea_server_msg_t*)bt_zalloc(sizeof(lea_server_msg_t));
     if (!msg)
         return NULL;
 
@@ -40,7 +40,7 @@ lea_server_msg_t* lea_server_msg_new_ext(lea_server_event_t event,
 
     if (size > 0) {
         msg->data.size = size;
-        msg->data.data = malloc(size);
+        msg->data.data = bt_malloc(size);
         memcpy(msg->data.data, data, size);
     }
 
@@ -53,6 +53,6 @@ void lea_server_msg_destory(lea_server_msg_t* msg)
         return;
     }
 
-    free(msg->data.data);
-    free(msg);
+    bt_free(msg->data.data);
+    bt_free(msg);
 }

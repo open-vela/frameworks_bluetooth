@@ -63,7 +63,7 @@ a2dp_device_t* a2dp_device_new(void* ctx, uint8_t peer_sep, bt_address_t* bd_add
     a2dp_device_t* device;
     a2dp_state_machine_t* a2dp_sm;
 
-    device = (a2dp_device_t*)malloc(sizeof(a2dp_device_t));
+    device = (a2dp_device_t*)bt_malloc(sizeof(a2dp_device_t));
     if (!device)
         return NULL;
 
@@ -72,7 +72,7 @@ a2dp_device_t* a2dp_device_new(void* ctx, uint8_t peer_sep, bt_address_t* bd_add
     a2dp_sm = a2dp_state_machine_new(ctx, peer_sep, bd_addr);
     if (!a2dp_sm) {
         BT_LOGE("Create state machine failed");
-        free(device);
+        bt_free(device);
         return NULL;
     }
 
@@ -98,5 +98,5 @@ void a2dp_device_delete(a2dp_device_t* device)
 
     a2dp_state_machine_destory(device->a2dp_sm);
     list_delete(&device->node);
-    free((void*)device);
+    bt_free((void*)device);
 }

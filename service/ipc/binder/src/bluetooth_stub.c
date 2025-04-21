@@ -66,7 +66,7 @@ static binder_status_t IBtManager_Class_onTransact(AIBinder* binder, transaction
             return stat;
 
         bt_status_t status = manager_create_instance(handle, type, hostName, (pid_t)pid, uid, &appId);
-        free(hostName);
+        bt_free(hostName);
 
         stat = AParcel_writeUint32(reply, appId);
         if (stat != STATUS_OK)
@@ -104,7 +104,7 @@ static binder_status_t IBtManager_Class_onTransact(AIBinder* binder, transaction
 
         BT_LOGD("UID:%d, PID:%d, hostname:%s", uid, pid, hostName);
         bt_status_t status = manager_get_instance(hostName, (pid_t)pid, &handle);
-        free(hostName);
+        bt_free(hostName);
 
         stat = AParcel_writeUint32(reply, handle);
         if (stat != STATUS_OK)
@@ -220,7 +220,7 @@ BpBtManager* BpBtManager_new(const char* instance)
 
     /* linktoDeath ? */
 
-    bpBinder = malloc(sizeof(*bpBinder));
+    bpBinder = bt_malloc(sizeof(*bpBinder));
     if (!bpBinder)
         goto bail;
 
@@ -237,7 +237,7 @@ bail:
 void BpBtManager_delete(BpBtManager* bpManager)
 {
     AIBinder_decStrong(bpManager->binder);
-    free(bpManager);
+    bt_free(bpManager);
 }
 
 AIBinder* BtManager_getService(BpBtManager** bpManager, const char* instance)

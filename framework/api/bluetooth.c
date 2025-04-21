@@ -36,14 +36,14 @@ bt_instance_t* BTSYMBOLS(bluetooth_create_instance)(void)
     bt_service_init();
     service_loop_run(true, "bt_service");
 #endif
-    bt_instance_t* ins = zalloc(sizeof(bt_instance_t));
+    bt_instance_t* ins = bt_zalloc(sizeof(bt_instance_t));
     if (!ins) {
         return NULL;
     }
 
     bt_status_t status = manager_create_instance(PTR2INT(uint64_t) ins, BLUETOOTH_SYSTEM, "local", getpid(), 0, &app_id);
     if (status != BT_STATUS_SUCCESS) {
-        free(ins);
+        bt_free(ins);
         return NULL;
     }
 
@@ -89,7 +89,7 @@ void BTSYMBOLS(bluetooth_delete_instance)(bt_instance_t* ins)
     bt_service_cleanup();
     service_loop_exit();
 #endif
-    free(ins);
+    bt_free(ins);
 }
 
 bt_status_t BTSYMBOLS(bluetooth_start_service)(bt_instance_t* ins, enum profile_id id)

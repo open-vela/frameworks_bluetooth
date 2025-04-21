@@ -47,7 +47,7 @@ static struct bt_le_scan_param scan_param;
 
 static sal_scan_req_t* sal_scan_req(bt_controller_id_t id, sal_func_t func)
 {
-    sal_scan_req_t* req = calloc(1, sizeof(sal_scan_req_t));
+    sal_scan_req_t* req = bt_calloc(1, sizeof(sal_scan_req_t));
 
     if (!req) {
         BT_LOGE("%s, req malloc fail", __func__);
@@ -66,7 +66,7 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
 
     SAL_ASSERT(req);
     req->func(req);
-    free(userdata);
+    bt_free(userdata);
 }
 
 static bt_status_t sal_send_req(sal_scan_req_t* req)

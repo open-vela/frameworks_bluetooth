@@ -237,7 +237,7 @@ static binder_status_t IBtGattClient_Class_onTransact(AIBinder* binder, transact
             return stat;
 
         status = profile->write((void*)handle, (uint16_t)attr_handle, value, (uint16_t)length);
-        free(value);
+        bt_free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -263,7 +263,7 @@ static binder_status_t IBtGattClient_Class_onTransact(AIBinder* binder, transact
             return stat;
 
         status = profile->write_without_response((void*)handle, (uint16_t)attr_handle, value, (uint16_t)length);
-        free(value);
+        bt_free(value);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -430,7 +430,7 @@ BpBtGattClient* BpBtGattClient_new(const char* instance)
 
     /* linktoDeath ? */
 
-    bpBinder = malloc(sizeof(*bpBinder));
+    bpBinder = bt_malloc(sizeof(*bpBinder));
     if (!bpBinder)
         goto bail;
 
@@ -447,7 +447,7 @@ bail:
 void BpBtGattClient_delete(BpBtGattClient* bpBinder)
 {
     AIBinder_decStrong(bpBinder->binder);
-    free(bpBinder);
+    bt_free(bpBinder);
 }
 
 AIBinder* BtGattClient_getService(BpBtGattClient** bpGattc, const char* instance)

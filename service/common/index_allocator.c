@@ -24,7 +24,7 @@ index_allocator_t* index_allocator_create(int max)
     uint8_t num_index = (max / 32) + 1;
     int size = sizeof(index_allocator_t) + num_index * 4;
 
-    index_allocator_t* allocator = malloc(size);
+    index_allocator_t* allocator = bt_malloc(size);
     if (!allocator)
         return NULL;
 
@@ -38,7 +38,7 @@ index_allocator_t* index_allocator_create(int max)
 void index_allocator_delete(index_allocator_t** allocator)
 {
     if (*allocator)
-        free(*allocator);
+        bt_free(*allocator);
 
     *allocator = NULL;
 }

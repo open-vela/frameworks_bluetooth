@@ -235,7 +235,7 @@ BpBtHfpAg* BpBtHfpAg_new(const char* instance)
 
     /* linktoDeath ? */
 
-    bpBinder = malloc(sizeof(*bpBinder));
+    bpBinder = bt_malloc(sizeof(*bpBinder));
     if (!bpBinder)
         goto bail;
 
@@ -252,7 +252,7 @@ bail:
 void BpBtHfpAg_delete(BpBtHfpAg* bpHfpAg)
 {
     AIBinder_decStrong(bpHfpAg->binder);
-    free(bpHfpAg);
+    bt_free(bpHfpAg);
 }
 
 AIBinder* BtHfpAg_getService(BpBtHfpAg** bpHfpAg, const char* instance)

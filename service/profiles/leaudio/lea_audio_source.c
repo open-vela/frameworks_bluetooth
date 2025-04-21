@@ -137,7 +137,7 @@ static void lea_audio_sink_alloc(uint8_t ch_id, uint8_t** buffer, size_t* len)
     }
 
     next_to_read = space > stream->sdu_size ? stream->sdu_size : space;
-    alloc_buffer = (void*)malloc(next_to_read);
+    alloc_buffer = (void*)bt_malloc(next_to_read);
 
     if (!alloc_buffer) {
         *buffer = NULL;
@@ -178,7 +178,7 @@ static void lea_audio_sink_recv(uint8_t ch_id, uint8_t* buffer, ssize_t len)
     }
 
 out:
-    free(buffer);
+    bt_free(buffer);
 }
 
 static int lea_audio_source_read(uint8_t* buf, uint16_t frame_len)
@@ -275,7 +275,7 @@ static void lea_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len)
     uint8_t* pbuf = buffer;
 
     if (len <= 0) {
-        free(buffer);
+        bt_free(buffer);
         if (len < 0)
             audio_transport_read_stop(g_source_transport, ch_id);
         return;
@@ -289,7 +289,7 @@ static void lea_ctrl_data_received(uint8_t ch_id, uint8_t* buffer, ssize_t len)
         lea_recv_ctrl_data(ch_id, cmd);
     }
     // free the buffer alloced by lea_ctrl_buffer_alloc
-    free(buffer);
+    bt_free(buffer);
 }
 
 static void lea_source_ctrl_start(void)

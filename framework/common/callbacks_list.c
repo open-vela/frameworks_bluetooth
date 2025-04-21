@@ -39,14 +39,14 @@ static bool remote_is_found(void* data, void* context)
 callbacks_list_t* bt_callbacks_list_new(uint8_t max)
 {
     pthread_mutexattr_t attr;
-    callbacks_list_t* cbsl = malloc(sizeof(callbacks_list_t));
+    callbacks_list_t* cbsl = bt_malloc(sizeof(callbacks_list_t));
 
     if (!cbsl)
         return NULL;
 
     cbsl->list = bt_list_new(free);
     if (!cbsl->list) {
-        free(cbsl);
+        bt_free(cbsl);
         return NULL;
     }
 
@@ -54,7 +54,7 @@ callbacks_list_t* bt_callbacks_list_new(uint8_t max)
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     if (pthread_mutex_init(&cbsl->lock, &attr) < 0) {
         bt_list_free(cbsl->list);
-        free(cbsl);
+        bt_free(cbsl);
         return NULL;
     }
 
@@ -97,7 +97,7 @@ remote_callback_t* bt_remote_callbacks_register(callbacks_list_t* cbsl, void* re
         return NULL;
     }
 
-    remote_cbk = malloc(sizeof(*remote_cbk));
+    remote_cbk = bt_malloc(sizeof(*remote_cbk));
     remote_cbk->remote = remote;
     remote_cbk->callbacks = callbacks;
 
@@ -148,7 +148,7 @@ void bt_callbacks_list_free(void* data)
     bt_list_free(cbsl->list);
     pthread_mutex_unlock(&cbsl->lock);
     pthread_mutex_destroy(&cbsl->lock);
-    free(cbsl);
+    bt_free(cbsl);
 }
 
 uint8_t bt_callbacks_list_count(callbacks_list_t* cbsl)

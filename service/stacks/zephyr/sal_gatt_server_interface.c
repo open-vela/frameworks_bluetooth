@@ -153,10 +153,10 @@ static struct bt_gatt_attr* gatt_db_add(const struct bt_gatt_attr* pattern, size
 
     memcpy(attr, pattern, sizeof(*attr));
 
-    attr->uuid = malloc(uuid_size);
+    attr->uuid = bt_malloc(uuid_size);
     memcpy((void*)attr->uuid, &u->uuid, uuid_size);
 
-    attr->user_data = malloc(user_data_len);
+    attr->user_data = bt_malloc(user_data_len);
     memcpy(attr->user_data, pattern->user_data, user_data_len);
 
     BT_LOGD("user_data 0x%p, user_data_len:%d", attr->user_data, user_data_len);
@@ -236,7 +236,7 @@ static int alloc_characteristic(struct add_characteristic* ch)
         return -EINVAL;
     }
 
-    user_data = zalloc(sizeof(*user_data));
+    user_data = bt_zalloc(sizeof(*user_data));
     user_data->data = ch->attr_data;
     user_data->len = ch->attr_length;
 
@@ -380,7 +380,7 @@ static struct bt_gatt_cb zblue_gatt_callbacks = {
 
 static sal_adapter_req_t* sal_adapter_req(bt_controller_id_t id, bt_address_t* addr, sal_func_t func)
 {
-    sal_adapter_req_t* req = calloc(sizeof(sal_adapter_req_t), 1);
+    sal_adapter_req_t* req = bt_calloc(sizeof(sal_adapter_req_t), 1);
 
     if (req) {
         req->id = id;
@@ -398,7 +398,7 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
 
     SAL_ASSERT(req);
     req->func(req);
-    free(userdata);
+    bt_free(userdata);
 }
 
 static bt_status_t sal_send_req(sal_adapter_req_t* req)
@@ -647,7 +647,7 @@ bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_addre
 static void send_indication_destory(struct bt_gatt_indicate_params* params)
 {
     BT_LOGD("%s, send_indication_destory", __func__);
-    free(params);
+    bt_free(params);
 }
 
 static void send_indication_result(struct bt_conn* conn, struct bt_gatt_indicate_params* params, uint8_t err)
@@ -675,7 +675,7 @@ static uint8_t gatt_send_indication(const struct bt_gatt_attr* attr, uint16_t ha
         return BT_GATT_ITER_CONTINUE;
     }
 
-    params = zalloc(sizeof(struct bt_gatt_indicate_params));
+    params = bt_zalloc(sizeof(struct bt_gatt_indicate_params));
     if (!params) {
         BT_LOGE("%s, zalloc fail", __func__);
         return BT_GATT_ITER_STOP;

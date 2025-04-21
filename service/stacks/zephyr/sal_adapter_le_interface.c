@@ -341,7 +341,7 @@ static void zblue_on_ready_cb(int err)
 
 static sal_adapter_req_t* sal_adapter_req(bt_controller_id_t id, bt_address_t* addr, sal_func_t func)
 {
-    sal_adapter_req_t* req = calloc(sizeof(sal_adapter_req_t), 1);
+    sal_adapter_req_t* req = bt_calloc(sizeof(sal_adapter_req_t), 1);
 
     if (req) {
         req->id = id;
@@ -359,7 +359,7 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
 
     SAL_ASSERT(req);
     req->func(req);
-    free(userdata);
+    bt_free(userdata);
 }
 
 static bt_status_t sal_send_req(sal_adapter_req_t* req)

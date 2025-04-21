@@ -196,7 +196,7 @@ static void load_btbond_cb(int status, const char* key, uv_buf_t value, void* co
     syslog(LOG_DEBUG, "device type size is %zu", sizeof(SERVICE_REMOTE_DEVICE_S));
 
     device = (SERVICE_REMOTE_DEVICE_S*)(&bt_storage->bonded_devices);
-    device_properties = (remote_device_properties_t*)malloc(sizeof(remote_device_properties_t) * bt_storage->bonded_number);
+    device_properties = (remote_device_properties_t*)bt_malloc(sizeof(remote_device_properties_t) * bt_storage->bonded_number);
     if (!device_properties) {
         syslog(LOG_ERR, "malloc failed");
         return;
@@ -206,7 +206,7 @@ static void load_btbond_cb(int status, const char* key, uv_buf_t value, void* co
         transform_btbond_to_deviceproperty(device + i, device_properties + i);
 
     bt_storage_save_bonded_device(device_properties, bt_storage->bonded_number);
-    free(device_properties);
+    bt_free(device_properties);
 }
 
 static void load_blebond_cb(int status, const char* key, uv_buf_t value, void* cookie)
@@ -229,7 +229,7 @@ static void load_blebond_cb(int status, const char* key, uv_buf_t value, void* c
     }
 
     keys = (ble_keys_t*)(&bt_storage->bonded_devices);
-    device_properties = (remote_device_le_properties_t*)malloc(sizeof(remote_device_le_properties_t) * bt_storage->bonded_number);
+    device_properties = (remote_device_le_properties_t*)bt_malloc(sizeof(remote_device_le_properties_t) * bt_storage->bonded_number);
     if (!device_properties) {
         syslog(LOG_ERR, "malloc failed\n");
         return;
@@ -239,7 +239,7 @@ static void load_blebond_cb(int status, const char* key, uv_buf_t value, void* c
         transform_blebond_to_deviceleproperty(keys + i, device_properties + i);
 
     bt_storage_save_le_bonded_device(device_properties, bt_storage->bonded_number);
-    free(device_properties);
+    bt_free(device_properties);
 }
 
 static void load_blewhitelist_cb(int status, const char* key, uv_buf_t value, void* cookie)
@@ -265,7 +265,7 @@ static void load_blewhitelist_cb(int status, const char* key, uv_buf_t value, vo
     syslog(LOG_DEBUG, "device type size is %zu", sizeof(SERVICE_REMOTE_BLE_DEVICE_S));
 
     whitelist_device = (SERVICE_REMOTE_BLE_DEVICE_S*)(&ble_whitelist->devices); // obtain the address of the first device
-    device_properties = (remote_device_le_properties_t*)malloc(sizeof(remote_device_le_properties_t) * ble_whitelist->num);
+    device_properties = (remote_device_le_properties_t*)bt_malloc(sizeof(remote_device_le_properties_t) * ble_whitelist->num);
     if (!device_properties) {
         syslog(LOG_ERR, "malloc failed\n");
         return;
@@ -275,7 +275,7 @@ static void load_blewhitelist_cb(int status, const char* key, uv_buf_t value, vo
         transform_blewhitelist_to_deviceleproperty(whitelist_device + i, device_properties + i);
 
     bt_storage_save_whitelist(device_properties, ble_whitelist->num);
-    free(device_properties);
+    bt_free(device_properties);
 }
 
 static void load_from_db_with_key(uv_db_t* db, const char* key, void* cb, void* cookie)

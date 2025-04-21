@@ -102,22 +102,22 @@ static int get_latest_file_and_clean_others(char* out_latest_file, bool clean_fi
     char* full_path;
     char* latest_file;
 
-    full_path = zalloc(SNOOP_FILE_FULL_NAME_MAX_LEN + 1);
+    full_path = bt_zalloc(SNOOP_FILE_FULL_NAME_MAX_LEN + 1);
     if (full_path == NULL) {
         return BT_STATUS_FAIL;
     }
 
-    latest_file = zalloc(SNOOP_FILE_FULL_NAME_MAX_LEN + 1);
+    latest_file = bt_zalloc(SNOOP_FILE_FULL_NAME_MAX_LEN + 1);
     if (latest_file == NULL) {
-        free(full_path);
+        bt_free(full_path);
         return BT_STATUS_FAIL;
     }
 
     dir = opendir(g_snoop_file_path);
     if (dir == NULL) {
         syslog(LOG_ERR, "snoop folder open fail:%d", errno);
-        free(latest_file);
-        free(full_path);
+        bt_free(latest_file);
+        bt_free(full_path);
         return BT_STATUS_FAIL;
     }
 
@@ -154,8 +154,8 @@ static int get_latest_file_and_clean_others(char* out_latest_file, bool clean_fi
 
     closedir(dir);
 
-    free(latest_file);
-    free(full_path);
+    bt_free(latest_file);
+    bt_free(full_path);
     return BT_STATUS_SUCCESS;
 }
 
@@ -192,11 +192,11 @@ int btsnoop_create_new_file(void)
         info->tm_min,
         info->tm_sec);
 
-    full_file_name = malloc(SNOOP_FILE_FULL_NAME_MAX_LEN + 1);
+    full_file_name = bt_malloc(SNOOP_FILE_FULL_NAME_MAX_LEN + 1);
     snprintf(full_file_name, SNOOP_FILE_FULL_NAME_MAX_LEN, "%s" SNOOP_FILE_NAME, g_snoop_file_path, ts_str, ms_base);
     ret = open(full_file_name, O_RDWR | O_CREAT | O_TRUNC,
         S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-    free(full_file_name);
+    bt_free(full_file_name);
 
     if (ret < 0) {
         g_using_file.snoop_fd = -1;

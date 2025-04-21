@@ -150,7 +150,7 @@ IBtHfpAgCallbacks* BtHfpAgCallbacks_new(const hfp_ag_callbacks_t* callbacks)
 {
     AIBinder_Class* clazz;
     AIBinder* binder;
-    IBtHfpAgCallbacks* cbks = malloc(sizeof(IBtHfpAgCallbacks));
+    IBtHfpAgCallbacks* cbks = bt_malloc(sizeof(IBtHfpAgCallbacks));
 
     clazz = AIBinder_Class_define(BT_HFP_AG_CALLBACK_DESC, IBtHfpAgCallbacks_Class_onCreate,
         IBtHfpAgCallbacks_Class_onDestroy, IBtHfpAgCallbacks_Class_onTransact);
@@ -172,5 +172,5 @@ void BtHfpAgCallbacks_delete(IBtHfpAgCallbacks* cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    free(cbks);
+    bt_free(cbks);
 }

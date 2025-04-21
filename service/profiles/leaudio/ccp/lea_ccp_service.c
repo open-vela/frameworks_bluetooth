@@ -154,7 +154,7 @@ lea_tbs_call_state_t* lea_ccp_add_call(lea_tbs_call_state_t* call)
 {
     lea_tbs_call_state_t* ccp_call;
 
-    ccp_call = malloc(sizeof(lea_tbs_call_state_t));
+    ccp_call = bt_malloc(sizeof(lea_tbs_call_state_t));
     if (!ccp_call) {
         BT_LOGE("error, malloc %s", __func__);
         return NULL;
@@ -172,7 +172,7 @@ static void lea_ccp_call_delete(lea_tbs_call_state_t* ccp_call)
 {
     if (!ccp_call)
         return;
-    free(ccp_call);
+    bt_free(ccp_call);
 }
 
 /****************************************************************************
@@ -1227,7 +1227,7 @@ static bt_status_t lea_ccp_startup(profile_on_startup_t cb)
         return BT_STATUS_SUCCESS;
 
     service->lea_calls = bt_list_new((bt_list_free_cb_t)lea_ccp_call_delete);
-    service->info = (bearer_tele_info_t*)malloc(sizeof(bearer_tele_info_t));
+    service->info = (bearer_tele_info_t*)bt_malloc(sizeof(bearer_tele_info_t));
     service->callbacks = bt_callbacks_list_new(2);
     if (!service->callbacks) {
         status = BT_STATUS_NOMEM;
@@ -1244,7 +1244,7 @@ static bt_status_t lea_ccp_startup(profile_on_startup_t cb)
 fail:
     bt_list_free(service->lea_calls);
     service->lea_calls = NULL;
-    free((void*)service->info);
+    bt_free((void*)service->info);
     bt_callbacks_list_free(service->callbacks);
     service->callbacks = NULL;
     pthread_mutex_destroy(&service->ccp_lock);
@@ -1262,7 +1262,7 @@ static bt_status_t lea_ccp_shutdown(profile_on_shutdown_t cb)
 
     bt_list_free(g_ccp_service.lea_calls);
     g_ccp_service.lea_calls = NULL;
-    free((void*)g_ccp_service.info);
+    bt_free((void*)g_ccp_service.info);
     g_ccp_service.info = NULL;
     bt_callbacks_list_free(g_ccp_service.callbacks);
     g_ccp_service.callbacks = NULL;

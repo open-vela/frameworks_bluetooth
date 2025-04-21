@@ -32,7 +32,7 @@ typedef struct _bt_list_node {
 
 bt_list_t* bt_list_new(bt_list_free_cb_t cb)
 {
-    bt_list_t* list = malloc(sizeof(bt_list_t));
+    bt_list_t* list = bt_malloc(sizeof(bt_list_t));
     if (!list)
         return NULL;
 
@@ -50,7 +50,7 @@ void bt_list_free(bt_list_t* list)
 
     bt_list_clear(list);
     list_delete(&list->list);
-    free(list);
+    bt_free(list);
 }
 
 void bt_list_clear(bt_list_t* list)
@@ -65,7 +65,7 @@ void bt_list_clear(bt_list_t* list)
         list_delete(&bt_node->node);
         if (list->free_cb)
             list->free_cb(bt_node->data);
-        free(bt_node);
+        bt_free(bt_node);
         list->length--;
     }
 }
@@ -119,7 +119,7 @@ void* bt_list_node(bt_list_node_t* bt_node)
 void bt_list_add_head(bt_list_t* list, void* data)
 {
     assert(list);
-    bt_list_node_t* node = malloc(sizeof(bt_list_node_t));
+    bt_list_node_t* node = bt_malloc(sizeof(bt_list_node_t));
     assert(node);
 
     node->data = data;
@@ -130,7 +130,7 @@ void bt_list_add_head(bt_list_t* list, void* data)
 void bt_list_add_tail(bt_list_t* list, void* data)
 {
     assert(list);
-    bt_list_node_t* node = malloc(sizeof(bt_list_node_t));
+    bt_list_node_t* node = bt_malloc(sizeof(bt_list_node_t));
     assert(node);
 
     node->data = data;
@@ -144,7 +144,7 @@ void bt_list_remove_node(bt_list_t* list, bt_list_node_t* node)
     list->length--;
     if (list->free_cb)
         list->free_cb(node->data);
-    free(node);
+    bt_free(node);
 }
 
 void bt_list_remove(bt_list_t* list, void* data)
@@ -160,7 +160,7 @@ void bt_list_remove(bt_list_t* list, void* data)
             list_delete(&bt_node->node);
             if (list->free_cb)
                 list->free_cb(bt_node->data);
-            free(bt_node);
+            bt_free(bt_node);
             list->length--;
             break;
         }

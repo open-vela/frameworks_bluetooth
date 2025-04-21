@@ -121,14 +121,14 @@ static int bt_socket_server_trysend(bt_instance_t* ins)
             service_loop_remove_poll(ins->poll);
             ins->poll = NULL;
             list_delete(node);
-            free(node);
+            bt_free(node);
             break;
         } else if (ret != size) {
             cache->offset += ret;
             break;
         } else {
             list_delete(node);
-            free(node);
+            bt_free(node);
         }
     }
 
@@ -254,17 +254,17 @@ static void bt_socket_server_ins_release(bt_instance_t* ins)
     list_for_every_safe(&ins->msg_queue, node, tmp)
     {
         list_delete(node);
-        free(node);
+        bt_free(node);
     }
 
     if (ins->peer_fd)
         close(ins->peer_fd);
 
     if (ins->packet)
-        free(ins->packet);
+        bt_free(ins->packet);
 
     bt_list_remove(g_instances_list, ins);
-    free(ins);
+    bt_free(ins);
 }
 
 static void bt_socket_server_handle_event(service_poll_t* poll,
@@ -320,11 +320,11 @@ static void bt_socket_server_callback(service_poll_t* poll,
     setSocketBuf(fd, SO_SNDBUF);
 #endif
 
-    remote_ins = zalloc(sizeof(bt_instance_t));
+    remote_ins = bt_zalloc(sizeof(bt_instance_t));
     if (!remote_ins)
         goto error;
 
-    remote_ins->packet = zalloc(sizeof(bt_message_packet_t));
+    remote_ins->packet = bt_zalloc(sizeof(bt_message_packet_t));
     if (!remote_ins->packet)
         goto error;
 
@@ -343,8 +343,8 @@ error:
         close(fd);
     if (remote_ins) {
         if (remote_ins->packet)
-            free(remote_ins->packet);
-        free(remote_ins);
+            bt_free(remote_ins->packet);
+        bt_free(remote_ins);
     }
 }
 
@@ -428,7 +428,7 @@ int bt_socket_server_send(bt_instance_t* ins, bt_message_packet_t* packet,
     }
 
     if (ret != sizeof(*packet) && ins->poll) {
-        cache = malloc(sizeof(*cache));
+        cache = bt_malloc(sizeof(*cache));
         if (cache == NULL)
             return BT_STATUS_NOMEM;
 

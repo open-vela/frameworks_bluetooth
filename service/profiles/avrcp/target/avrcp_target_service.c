@@ -104,7 +104,7 @@ static avrcp_tg_device_t* tg_device_create(bt_address_t* addr, bool initiator)
     if (!addr)
         return NULL;
 
-    device = malloc(sizeof(avrcp_tg_device_t));
+    device = bt_malloc(sizeof(avrcp_tg_device_t));
     if (!device)
         return NULL;
 
@@ -146,7 +146,7 @@ static void tg_device_destory(void* data)
         AVRCP_TG_CALLBACK_FOREACH(g_avrc_target.callbacks, connection_state_cb, &device->addr, PROFILE_STATE_DISCONNECTED);
 
     bt_pm_conn_close(PROFILE_AVRCP_TG, &device->addr);
-    free(device);
+    bt_free(device);
 }
 
 static void tg_device_remove(avrcp_tg_device_t* device)

@@ -305,7 +305,7 @@ static bt_pm_service_t* pm_conn_service_add(uint8_t profile_id, uint8_t state, b
     bt_pm_manager_t* manager = &g_pm_manager;
     bt_pm_service_t* service;
 
-    service = calloc(1, sizeof(bt_pm_service_t));
+    service = bt_calloc(1, sizeof(bt_pm_service_t));
     if (!service) {
         return NULL;
     }
@@ -321,7 +321,7 @@ static void pm_conn_service_remove(bt_pm_service_t* service)
 {
     if (service) {
         list_delete(&service->srv_node);
-        free(service);
+        bt_free(service);
     }
 }
 
@@ -349,7 +349,7 @@ static bt_pm_device_t* pm_conn_device_add(bt_address_t* peer_addr)
     bt_pm_manager_t* manager = &g_pm_manager;
     bt_pm_device_t* device;
 
-    device = calloc(1, sizeof(bt_pm_device_t));
+    device = bt_calloc(1, sizeof(bt_pm_device_t));
     if (!device) {
         return NULL;
     }
@@ -364,7 +364,7 @@ static void pm_conn_device_remove(bt_pm_device_t* device)
 {
     if (device) {
         list_delete(&device->srv_node);
-        free(device);
+        bt_free(device);
     }
 }
 

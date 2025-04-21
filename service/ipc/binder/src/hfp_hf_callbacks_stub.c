@@ -117,7 +117,7 @@ static binder_status_t IBtHfpHfCallbacks_Class_onTransact(AIBinder* binder, tran
         if (stat != STATUS_OK)
             return stat;
         cbks->callbacks->cmd_complete_cb(cbks, &addr, resp);
-        free(resp);
+        bt_free(resp);
         break;
     }
     case ICBKS_HFP_HF_RING_INDICATION: {
@@ -189,7 +189,7 @@ IBtHfpHfCallbacks* BtHfpHfCallbacks_new(const hfp_hf_callbacks_t* callbacks)
 {
     AIBinder_Class* clazz;
     AIBinder* binder;
-    IBtHfpHfCallbacks* cbks = malloc(sizeof(IBtHfpHfCallbacks));
+    IBtHfpHfCallbacks* cbks = bt_malloc(sizeof(IBtHfpHfCallbacks));
 
     clazz = AIBinder_Class_define(BT_HFP_HF_CALLBACK_DESC,
         IBtHfpHfCallbacks_Class_onCreate,
@@ -213,5 +213,5 @@ void BtHfpHfCallbacks_delete(IBtHfpHfCallbacks* cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    free(cbks);
+    bt_free(cbks);
 }

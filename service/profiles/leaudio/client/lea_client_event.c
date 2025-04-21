@@ -29,7 +29,7 @@ lea_client_msg_t* lea_client_msg_new_ext(lea_client_event_t event, bt_address_t*
 {
     lea_client_msg_t* msg;
 
-    msg = (lea_client_msg_t*)zalloc(sizeof(lea_client_msg_t));
+    msg = (lea_client_msg_t*)bt_zalloc(sizeof(lea_client_msg_t));
     if (!msg)
         return NULL;
 
@@ -41,7 +41,7 @@ lea_client_msg_t* lea_client_msg_new_ext(lea_client_event_t event, bt_address_t*
 
     if (size > 0) {
         msg->data.size = size;
-        msg->data.data = malloc(size);
+        msg->data.data = bt_malloc(size);
         memcpy(msg->data.data, data, size);
     }
 
@@ -54,8 +54,8 @@ void lea_client_msg_destory(lea_client_msg_t* msg)
         return;
     }
 
-    free(msg->data.data);
-    free(msg);
+    bt_free(msg->data.data);
+    bt_free(msg);
 }
 
 lea_csip_msg_t* lea_csip_msg_new(lea_csip_event_t event, bt_address_t* remote_addr)
@@ -67,7 +67,7 @@ lea_csip_msg_t* lea_csip_msg_new_ext(lea_csip_event_t event, bt_address_t* remot
 {
     lea_csip_msg_t* csip_msg;
 
-    csip_msg = (lea_csip_msg_t*)malloc(sizeof(lea_csip_msg_t) + size);
+    csip_msg = (lea_csip_msg_t*)bt_malloc(sizeof(lea_csip_msg_t) + size);
     if (csip_msg == NULL)
         return NULL;
 
@@ -81,5 +81,5 @@ lea_csip_msg_t* lea_csip_msg_new_ext(lea_csip_event_t event, bt_address_t* remot
 
 void lea_csip_msg_destory(lea_csip_msg_t* csip_msg)
 {
-    free(csip_msg);
+    bt_free(csip_msg);
 }

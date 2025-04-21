@@ -134,12 +134,12 @@ static void bt_socket_client_msg_process(bt_client_msg_t* msg)
     bt_message_packet_t* packet = &msg->packet;
 
     bt_socket_client_callback_process(msg->ins, packet, false);
-    free(msg);
+    bt_free(msg);
 }
 
 static void bt_socket_client_async_close(uv_handle_t* handle)
 {
-    free(handle);
+    bt_free(handle);
 }
 
 static void bt_socket_client_async_cb(uv_async_t* handle)
@@ -163,7 +163,7 @@ static bt_status_t callback_send_to_external(bt_instance_t* ins, bt_client_msg_t
 {
     uv_mutex_lock(&ins->lock);
     if (!ins->external_async) {
-        ins->external_async = malloc(sizeof(uv_async_t));
+        ins->external_async = bt_malloc(sizeof(uv_async_t));
         int ret = uv_async_init(ins->external_loop, ins->external_async, bt_socket_client_async_cb);
         if (ret != 0) {
             uv_mutex_unlock(&ins->lock);
@@ -188,18 +188,18 @@ static void bt_socket_client_after_work(uv_work_t* req, int status)
 {
     assert(req);
 
-    free(req);
+    bt_free(req);
 }
 
 static bt_status_t callback_send_to_queue_work(bt_instance_t* ins, bt_client_msg_t* msg)
 {
-    uv_work_t* work = zalloc(sizeof(*work));
+    uv_work_t* work = bt_zalloc(sizeof(*work));
     if (work == NULL)
         return BT_STATUS_NOMEM;
 
     work->data = msg;
     if (uv_queue_work(ins->client_loop, work, bt_socket_client_work, bt_socket_client_after_work) != 0) {
-        free(work);
+        bt_free(work);
         return BT_STATUS_FAIL;
     }
 
@@ -241,7 +241,7 @@ static int bt_socket_client_receive(uv_poll_t* poll, int fd, void* userdata)
         uv_sem_post(&ins->message_processed);
         return BT_STATUS_SUCCESS;
     } else if (packet->code > BT_CALLBACK_START && packet->code < BT_CALLBACK_END) {
-        bt_client_msg_t* msg = malloc(sizeof(*msg));
+        bt_client_msg_t* msg = bt_malloc(sizeof(*msg));
         if (!msg)
             return BT_STATUS_NOMEM;
 
@@ -250,12 +250,12 @@ static int bt_socket_client_receive(uv_poll_t* poll, int fd, void* userdata)
         if (ins->external_loop) {
             bt_status_t status = callback_send_to_external(ins, msg);
             if (status != BT_STATUS_SUCCESS) {
-                free(msg);
+                bt_free(msg);
                 return status;
             }
         } else {
             if (callback_send_to_queue_work(ins, msg) != BT_STATUS_SUCCESS) {
-                free(msg);
+                bt_free(msg);
                 return BT_STATUS_FAIL;
             }
         }
@@ -405,17 +405,17 @@ int bt_socket_client_init(bt_instance_t* ins, int family,
     uv_poll_t* poll;
     int retry = CLIENT_MAX_RETRY;
 
-    ins->client_loop = zalloc(sizeof(uv_loop_t));
+    ins->client_loop = bt_zalloc(sizeof(uv_loop_t));
     if (!ins->client_loop)
         return BT_STATUS_NOMEM;
 
     if (thread_loop_init(ins->client_loop) != 0) {
-        free(ins->client_loop);
+        bt_free(ins->client_loop);
         ins->client_loop = NULL;
         return BT_STATUS_FAIL;
     }
 
-    ins->packet = malloc(sizeof(bt_message_packet_t));
+    ins->packet = bt_malloc(sizeof(bt_message_packet_t));
     if (ins->packet == NULL) {
         bt_socket_client_deinit(ins);
         return BT_STATUS_NOMEM;
@@ -481,7 +481,7 @@ void bt_socket_client_deinit(bt_instance_t* ins)
     uv_mutex_destroy(&ins->mutex);
 
     if (ins->packet)
-        free(ins->packet);
+        bt_free(ins->packet);
 
     if (!ins->poll)
         bt_socket_sync_close(ins);
@@ -495,7 +495,7 @@ void bt_socket_client_deinit(bt_instance_t* ins)
         list_for_every_safe(&ins->msg_queue, node, tmp)
         {
             list_delete(node);
-            free(node);
+            bt_free(node);
         }
         uv_mutex_unlock(&ins->lock);
         uv_close((uv_handle_t*)ins->external_async, bt_socket_client_async_close);
@@ -503,7 +503,7 @@ void bt_socket_client_deinit(bt_instance_t* ins)
 
     uv_mutex_destroy(&ins->lock);
     thread_loop_exit(ins->client_loop);
-    free(ins->client_loop);
+    bt_free(ins->client_loop);
 }
 
 /*
@@ -529,7 +529,7 @@ static void bt_socket_alloc_cb(uv_handle_t* handle,
     bt_socket_async_client_t* priv = uv_handle_get_data(handle);
 
     if (priv->packet == NULL) {
-        priv->packet = malloc(sizeof(bt_message_packet_t));
+        priv->packet = bt_malloc(sizeof(bt_message_packet_t));
         if (priv->packet == NULL) {
             BT_LOGE("malloc failed");
             buf = NULL;
@@ -593,7 +593,7 @@ static void bt_socket_read_cb(uv_stream_t* stream,
 
 static void bt_socket_close_cb(uv_handle_t* handle)
 {
-    free(handle);
+    bt_free(handle);
 }
 
 static void bt_socket_connect_cb(uv_connect_t* req, int status)
@@ -614,7 +614,7 @@ static void bt_socket_connect_cb(uv_connect_t* req, int status)
 
 static void bt_socket_write_cb(uv_write_t* req, int status)
 {
-    free(req);
+    bt_free(req);
 }
 
 static void bt_socket_context_free(void* data)
@@ -622,7 +622,7 @@ static void bt_socket_context_free(void* data)
     /* callback to user the request was canceled because the instance was released? */
 
     /* free data */
-    free(data);
+    bt_free(data);
 }
 
 int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* packet,
@@ -635,7 +635,7 @@ int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* pa
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
     priv = ins->priv;
 
-    ctx = malloc(sizeof(bt_message_context_t));
+    ctx = bt_malloc(sizeof(bt_message_context_t));
     if (!ctx)
         return BT_STATUS_NOMEM;
 
@@ -647,9 +647,9 @@ int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* pa
     packet->code = code;
     packet->context = (uintptr_t)ctx;
 
-    bt_socket_write_t* wreq = malloc(sizeof(bt_socket_write_t));
+    bt_socket_write_t* wreq = bt_malloc(sizeof(bt_socket_write_t));
     if (wreq == NULL) {
-        free(ctx);
+        bt_free(ctx);
         return BT_STATUS_NOMEM;
     }
 
@@ -657,8 +657,8 @@ int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* pa
     memcpy(&wreq->packet, packet, sizeof(bt_message_packet_t));
     buf = uv_buf_init((char*)&wreq->packet, sizeof(bt_message_packet_t));
     if (uv_write(&wreq->req, (uv_stream_t*)priv->pipe, &buf, 1, bt_socket_write_cb) != 0) {
-        free(wreq);
-        free(ctx);
+        bt_free(wreq);
+        bt_free(ctx);
         return BT_STATUS_FAIL;
     }
 
@@ -677,7 +677,7 @@ int bt_socket_async_client_init(bt_instance_t* ins, uv_loop_t* loop, int family,
     if (ins == NULL || loop == NULL)
         return BT_STATUS_PARM_INVALID;
 
-    priv = calloc(1, sizeof(bt_socket_async_client_t));
+    priv = bt_calloc(1, sizeof(bt_socket_async_client_t));
     if (priv == NULL)
         return BT_STATUS_NOMEM;
 
@@ -689,7 +689,7 @@ int bt_socket_async_client_init(bt_instance_t* ins, uv_loop_t* loop, int family,
     priv->pending_queue = bt_list_new(bt_socket_context_free);
 
     if (family == AF_LOCAL || family == AF_RPMSG) {
-        priv->pipe = malloc(sizeof(uv_pipe_t));
+        priv->pipe = bt_malloc(sizeof(uv_pipe_t));
         if (priv->pipe == NULL)
             goto fail;
 
@@ -748,7 +748,7 @@ void bt_socket_async_client_deinit(bt_instance_t* ins)
     if (priv->pipe)
         uv_close((uv_handle_t*)priv->pipe, bt_socket_close_cb);
 
-    free(priv->packet);
-    free(priv);
+    bt_free(priv->packet);
+    bt_free(priv);
     ins->priv = NULL;
 }

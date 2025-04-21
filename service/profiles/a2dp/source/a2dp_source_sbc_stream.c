@@ -158,7 +158,7 @@ static void a2dp_sbc_send_frames(uint16_t header_reserve, uint8_t frames)
     uint16_t blocm_x_subband = param->s16NumOfSubBands * param->s16NumOfBlocks;
 
     max_frames_len = frames * sbc_stream.frames_len;
-    buffer = malloc(max_frames_len + header_reserve + 1);
+    buffer = bt_malloc(max_frames_len + header_reserve + 1);
     if (buffer == NULL) {
         BT_LOGW("%s, sbc buffer allocation failure: %d", __func__, frames);
         return;
@@ -191,7 +191,7 @@ static void a2dp_sbc_send_frames(uint16_t header_reserve, uint8_t frames)
     }
 
     // free frame buffer
-    free(buffer);
+    bt_free(buffer);
 }
 
 static void a2dp_source_sbc_send_frames(uint16_t header_reserve, uint64_t timestamp)

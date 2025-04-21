@@ -289,7 +289,7 @@ static int register_cmd(void* handle, int argc, char* argv[])
         break;
     }
 
-    hidd_setting.hids_info.dsc_list = malloc(desc_len + 3);
+    hidd_setting.hids_info.dsc_list = bt_malloc(desc_len + 3);
     if (!hidd_setting.hids_info.dsc_list) {
         return CMD_ERROR;
     }
@@ -304,7 +304,7 @@ static int register_cmd(void* handle, int argc, char* argv[])
     memcpy(hidd_setting.hids_info.dsc_list + 3, desc_list, desc_len);
 
     bt_status_t ret = bt_hid_device_register_app(handle, &hidd_setting, transport == BT_TRANSPORT_BLE);
-    free(hidd_setting.hids_info.dsc_list);
+    bt_free(hidd_setting.hids_info.dsc_list);
     if (ret != BT_STATUS_SUCCESS) {
         if (ret == BT_STATUS_NO_RESOURCES) {
             PRINT("HID app has registed, please unregister then try again");
@@ -415,7 +415,7 @@ static int send_report_cmd(void* handle, int argc, char* argv[])
 
     report_id = atoi(argv[1]);
     size = strlen(argv[2]) + 1;
-    buffer = (char*)malloc(size);
+    buffer = (char*)bt_malloc(size);
     if (!buffer)
         return CMD_ERROR;
 
@@ -430,7 +430,7 @@ static int send_report_cmd(void* handle, int argc, char* argv[])
     hex2str(buffer, report_data, report_length);
 
     bt_status_t ret = bt_hid_device_send_report(handle, &addr, report_id, report_data, report_length);
-    free(buffer);
+    bt_free(buffer);
     if (ret != BT_STATUS_SUCCESS) {
         return CMD_ERROR;
     }

@@ -84,7 +84,7 @@ static void bt_cm_process_dlf_result(void* context)
     BT_LOGI("DLF operation type: %d, command status: 0x%x", dlf_operation->is_enabled, dlf_operation->status);
 
     if (dlf_operation->is_enabled && (dlf_operation->status == HCI_SUCCESS)) {
-        free(dlf_operation);
+        bt_free(dlf_operation);
         return;
     }
 
@@ -92,7 +92,7 @@ static void bt_cm_process_dlf_result(void* context)
     if (dlf_link)
         bt_cm_remove_dlf_link(dlf_link);
 
-    free(dlf_operation);
+    bt_free(dlf_operation);
 }
 
 static void bt_hci_event_callback(bt_hci_event_t* hci_event, void* context)
@@ -122,7 +122,7 @@ static bt_status_t bt_cm_send_dlf_command(cm_dlf_link_t* dlf_link, bool is_enabl
     le_dlf_config_t dlf_config;
     cm_dlf_operation_t* dlf_operation;
 
-    dlf_operation = (cm_dlf_operation_t*)malloc(sizeof(cm_dlf_operation_t));
+    dlf_operation = (cm_dlf_operation_t*)bt_malloc(sizeof(cm_dlf_operation_t));
     if (!dlf_operation) {
         BT_LOGE("malloc failed");
         return BT_STATUS_FAIL;
@@ -135,7 +135,7 @@ static bt_status_t bt_cm_send_dlf_command(cm_dlf_link_t* dlf_link, bool is_enabl
 
     if (!bt_cm_build_dlf_command(&dlf_config, temp_data, &size, is_enabled)) {
         BT_LOGD("build dlf command %d failed", is_enabled);
-        free(dlf_operation);
+        bt_free(dlf_operation);
         return BT_STATUS_NOT_SUPPORTED;
     }
 

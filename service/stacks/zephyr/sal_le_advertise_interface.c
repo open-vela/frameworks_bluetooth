@@ -193,7 +193,7 @@ static bt_status_t zblue_le_ext_create(struct bt_le_adv_param* param, struct bt_
     }
 
     index = bt_le_ext_adv_get_index(*adv);
-    adv_set = malloc(sizeof(*adv_set));
+    adv_set = bt_malloc(sizeof(*adv_set));
     if (!adv_set) {
         BT_LOGE("%s, malloc fail", __func__);
         bt_le_ext_adv_delete(*adv);
@@ -224,7 +224,7 @@ static bt_status_t zblue_le_ext_delete(struct bt_le_adv_set* adv_set)
     }
 
     index = bt_le_ext_adv_get_index(adv_set->adv);
-    free(adv_set);
+    bt_free(adv_set);
     g_adv_sets[index] = NULL;
 
     return BT_STATUS_SUCCESS;
@@ -284,7 +284,7 @@ static bt_status_t zblue_le_ext_adv_set_data(struct bt_le_ext_adv* adv, uint8_t*
 
 static sal_adapter_req_t* sal_adapter_req(bt_controller_id_t id, uint8_t adv_id, sal_func_t func)
 {
-    sal_adapter_req_t* req = calloc(sizeof(sal_adapter_req_t), 1);
+    sal_adapter_req_t* req = bt_calloc(sizeof(sal_adapter_req_t), 1);
 
     if (req) {
         req->id = id;
@@ -301,7 +301,7 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
 
     SAL_ASSERT(req);
     req->func(req);
-    free(userdata);
+    bt_free(userdata);
 }
 
 static bt_status_t sal_send_req(sal_adapter_req_t* req)
@@ -352,9 +352,9 @@ static void STACK_CALL(start_adv)(void* args)
 
 done:
     if (req->adpt.start_adv.adv_data)
-        free(req->adpt.start_adv.adv_data);
+        bt_free(req->adpt.start_adv.adv_data);
     if (req->adpt.start_adv.scan_rsp_data)
-        free(req->adpt.start_adv.scan_rsp_data);
+        bt_free(req->adpt.start_adv.scan_rsp_data);
 }
 
 bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_params_t* params, uint8_t* adv_data, uint16_t adv_len, uint8_t* scan_rsp_data, uint16_t scan_rsp_len)
@@ -380,7 +380,7 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
 
     if ((!(req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
         || !ext_adv) {
-        req->adpt.start_adv.adv_data = malloc(adv_len);
+        req->adpt.start_adv.adv_data = bt_malloc(adv_len);
         if (!req->adpt.start_adv.adv_data) {
             BT_LOGE("%s, malloc fail", __func__);
             ret = BT_STATUS_NOMEM;
@@ -396,7 +396,7 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
 
     if (((req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
         || !ext_adv) {
-        req->adpt.start_adv.scan_rsp_data = malloc(scan_rsp_len);
+        req->adpt.start_adv.scan_rsp_data = bt_malloc(scan_rsp_len);
         if (!req->adpt.start_adv.scan_rsp_data) {
             BT_LOGE("%s, malloc fail", __func__);
             ret = BT_STATUS_NOMEM;
@@ -414,10 +414,10 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
 
 error:
     if (req->adpt.start_adv.adv_data)
-        free(req->adpt.start_adv.adv_data);
+        bt_free(req->adpt.start_adv.adv_data);
     if (req->adpt.start_adv.scan_rsp_data)
-        free(req->adpt.start_adv.scan_rsp_data);
-    free(req);
+        bt_free(req->adpt.start_adv.scan_rsp_data);
+    bt_free(req);
     return ret;
 };
 

@@ -163,13 +163,13 @@ static binder_status_t IBtHidd_Class_onTransact(AIBinder* binder, transaction_co
 
     register_out:
         if (sdp.name)
-            free((void*)sdp.name);
+            bt_free((void*)sdp.name);
         if (sdp.description)
-            free((void*)sdp.description);
+            bt_free((void*)sdp.description);
         if (sdp.provider)
-            free((void*)sdp.provider);
+            bt_free((void*)sdp.provider);
         if (sdp.hids_info.dsc_list)
-            free((void*)sdp.hids_info.dsc_list);
+            bt_free((void*)sdp.hids_info.dsc_list);
         break;
     }
     case IHIDD_UNREGISTER_APP: {
@@ -223,12 +223,12 @@ static binder_status_t IBtHidd_Class_onTransact(AIBinder* binder, transaction_co
 
         stat = AParcel_readInt32(in, &rpt_size);
         if (stat != STATUS_OK) {
-            free(rpt_data);
+            bt_free(rpt_data);
             return stat;
         }
 
         status = profile->send_report(&addr, (uint8_t)rpt_id, rpt_data, rpt_size);
-        free(rpt_data);
+        bt_free(rpt_data);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -252,12 +252,12 @@ static binder_status_t IBtHidd_Class_onTransact(AIBinder* binder, transaction_co
 
         stat = AParcel_readInt32(in, &rpt_size);
         if (stat != STATUS_OK) {
-            free(rpt_data);
+            bt_free(rpt_data);
             return stat;
         }
 
         status = profile->response_report(&addr, (uint8_t)rpt_type, rpt_data, rpt_size);
-        free(rpt_data);
+        bt_free(rpt_data);
         stat = AParcel_writeUint32(reply, status);
         break;
     }
@@ -357,7 +357,7 @@ BpBtHidd* BpBtHidd_new(const char* instance)
 
     /* linktoDeath ? */
 
-    bpBinder = malloc(sizeof(*bpBinder));
+    bpBinder = bt_malloc(sizeof(*bpBinder));
     if (!bpBinder)
         goto bail;
 
@@ -374,7 +374,7 @@ bail:
 void BpBtHidd_delete(BpBtHidd* bpHidd)
 {
     AIBinder_decStrong(bpHidd->binder);
-    free(bpHidd);
+    bt_free(bpHidd);
 }
 
 AIBinder* BtHidd_getService(BpBtHidd** bpHidd, const char* instance)

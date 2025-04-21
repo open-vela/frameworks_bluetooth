@@ -33,13 +33,13 @@
 
 static bt_gatts_remote_t* gatts_remote_new(bt_instance_t* ins, gatts_callbacks_t* callbacks)
 {
-    bt_gatts_remote_t* remote = malloc(sizeof(bt_gatts_remote_t));
+    bt_gatts_remote_t* remote = bt_malloc(sizeof(bt_gatts_remote_t));
     if (!remote)
         return NULL;
 
     remote->db_list = bt_list_new(NULL);
     if (!remote->db_list) {
-        free(remote);
+        bt_free(remote);
         return NULL;
     }
 
@@ -56,7 +56,7 @@ static void gatts_remote_destroy(bt_gatts_remote_t* remote)
         return;
 
     bt_list_free(remote->db_list);
-    free(remote);
+    bt_free(remote);
 }
 
 bt_status_t bt_gatts_register_service(bt_instance_t* ins, gatts_handle_t* phandle, gatts_callbacks_t* callbacks)

@@ -182,7 +182,7 @@ BpBtPan* BpBtPan_new(const char* instance)
 
     /* linktoDeath ? */
 
-    bpBinder = malloc(sizeof(*bpBinder));
+    bpBinder = bt_malloc(sizeof(*bpBinder));
     if (!bpBinder)
         goto bail;
 
@@ -199,7 +199,7 @@ bail:
 void BpBtPan_delete(BpBtPan* bpPan)
 {
     AIBinder_decStrong(bpPan->binder);
-    free(bpPan);
+    bt_free(bpPan);
 }
 
 AIBinder* BtPan_getService(BpBtPan** bpPan, const char* instance)

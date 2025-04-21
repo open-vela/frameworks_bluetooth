@@ -492,7 +492,7 @@ static bool ble_turning_off_process_event(state_machine_t* sm, uint32_t event, v
 
 adapter_state_machine_t* adapter_state_machine_new(void* context)
 {
-    adapter_state_machine_t* stm = malloc(sizeof(adapter_state_machine_t));
+    adapter_state_machine_t* stm = bt_malloc(sizeof(adapter_state_machine_t));
     if (!stm)
         return NULL;
 
@@ -508,5 +508,5 @@ void adapter_state_machine_destory(adapter_state_machine_t* stm)
         return;
 
     hsm_dtor(&stm->sm);
-    free((void*)stm);
+    bt_free((void*)stm);
 }

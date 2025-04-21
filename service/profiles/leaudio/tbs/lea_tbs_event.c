@@ -27,7 +27,7 @@ lea_tbs_msg_t* lea_tbs_msg_new_ext(lea_tbs_event_t event, uint32_t tbs_id, size_
 {
     lea_tbs_msg_t* tbs_event;
 
-    tbs_event = (lea_tbs_msg_t*)malloc(sizeof(lea_tbs_msg_t) + size);
+    tbs_event = (lea_tbs_msg_t*)bt_malloc(sizeof(lea_tbs_msg_t) + size);
     if (tbs_event == NULL)
         return NULL;
 
@@ -40,5 +40,5 @@ lea_tbs_msg_t* lea_tbs_msg_new_ext(lea_tbs_event_t event, uint32_t tbs_id, size_
 
 void lea_tbs_msg_destory(lea_tbs_msg_t* tbs_msg)
 {
-    free(tbs_msg);
+    bt_free(tbs_msg);
 }

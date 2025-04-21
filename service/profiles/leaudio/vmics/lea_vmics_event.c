@@ -23,7 +23,7 @@ lea_vmics_msg_t* lea_vmics_msg_new(lea_vmics_event_t event)
 {
     lea_vmics_msg_t* msg;
 
-    msg = (lea_vmics_msg_t*)malloc(sizeof(lea_vmics_msg_t));
+    msg = (lea_vmics_msg_t*)bt_malloc(sizeof(lea_vmics_msg_t));
     if (!msg)
         return NULL;
 
@@ -34,5 +34,5 @@ lea_vmics_msg_t* lea_vmics_msg_new(lea_vmics_event_t event)
 
 void lea_vmics_msg_destory(lea_vmics_msg_t* msg)
 {
-    free(msg);
+    bt_free(msg);
 }

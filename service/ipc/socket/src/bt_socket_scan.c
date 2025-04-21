@@ -86,7 +86,7 @@ static void on_scan_status_cb(bt_scanner_t* scanner, uint8_t status)
     bt_socket_server_send(scan->ins, &packet, BT_LE_ON_SCAN_START_STATUS);
 
     if (status != 0)
-        free(scan);
+        bt_free(scan);
 }
 
 static void on_scan_stopped_cb(bt_scanner_t* scanner)
@@ -96,7 +96,7 @@ static void on_scan_stopped_cb(bt_scanner_t* scanner)
 
     packet.scan_cb._on_scan_stopped_cb.scanner = scan->remote;
     bt_socket_server_send(scan->ins, &packet, BT_LE_ON_SCAN_STOPPED);
-    free(scanner);
+    bt_free(scanner);
 }
 
 static scanner_callbacks_t g_scanner_socket_cb = {
@@ -115,29 +115,29 @@ void bt_socket_server_scan_process(service_poll_t* poll,
 {
     switch (packet->code) {
     case BT_LE_SCAN_START: {
-        bt_scan_remote_t* scan = malloc(sizeof(*scan));
+        bt_scan_remote_t* scan = bt_malloc(sizeof(*scan));
 
         scan->ins = ins;
         scan->remote = packet->scan_pl._bt_le_start_scan.remote;
         packet->scan_r.remote = PTR2INT(uint64_t) scanner_start_scan(scan, &g_scanner_socket_cb);
         if (!packet->scan_r.remote)
-            free(scan);
+            bt_free(scan);
         break;
     }
     case BT_LE_SCAN_START_SETTINGS: {
-        bt_scan_remote_t* scan = malloc(sizeof(*scan));
+        bt_scan_remote_t* scan = bt_malloc(sizeof(*scan));
 
         scan->ins = ins;
         scan->remote = packet->scan_pl._bt_le_start_scan_settings.remote;
         packet->scan_r.remote = PTR2INT(uint64_t) scanner_start_scan_settings(scan,
             &packet->scan_pl._bt_le_start_scan_settings.settings, &g_scanner_socket_cb);
         if (!packet->scan_r.remote) {
-            free(scan);
+            bt_free(scan);
         }
         break;
     }
     case BT_LE_SCAN_START_WITH_FILTERS: {
-        bt_scan_remote_t* scan = zalloc(sizeof(*scan));
+        bt_scan_remote_t* scan = bt_zalloc(sizeof(*scan));
 
         scan->ins = ins;
         scan->remote = packet->scan_pl._bt_le_start_scan_with_filters.remote;
@@ -146,7 +146,7 @@ void bt_socket_server_scan_process(service_poll_t* poll,
             &packet->scan_pl._bt_le_start_scan_with_filters.filter,
             &g_scanner_socket_cb);
         if (!packet->scan_r.remote) {
-            free(scan);
+            bt_free(scan);
         }
         break;
     }
@@ -172,11 +172,11 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
     case BT_LE_ON_SCAN_RESULT: {
         bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_cb._on_scan_result_cb.scanner;
         ble_scan_result_t* result = &packet->scan_cb._on_scan_result_cb.result;
-        ble_scan_result_t* tmp = malloc(sizeof(ble_scan_result_t) + result->length);
+        ble_scan_result_t* tmp = bt_malloc(sizeof(ble_scan_result_t) + result->length);
         memcpy(tmp, result, sizeof(ble_scan_result_t));
         memcpy(tmp->adv_data, packet->scan_cb._on_scan_result_cb.adv_data, result->length);
         scan->callback->on_scan_result(scan, tmp);
-        free(tmp);
+        bt_free(tmp);
         break;
     }
     case BT_LE_ON_SCAN_START_STATUS: {
@@ -184,14 +184,14 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
 
         scan->callback->on_scan_start_status(scan, packet->scan_cb._on_scan_status_cb.status);
         if (packet->scan_cb._on_scan_status_cb.status != 0)
-            free(scan);
+            bt_free(scan);
         break;
     }
     case BT_LE_ON_SCAN_STOPPED: {
         bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_cb._on_scan_stopped_cb.scanner;
 
         scan->callback->on_scan_stopped(scan);
-        free(scan);
+        bt_free(scan);
         break;
     }
     default:

@@ -46,7 +46,7 @@ a2dp_event_t* a2dp_event_new_ext(a2dp_event_type_t event,
 {
     a2dp_event_t* a2dp_event;
 
-    a2dp_event = (a2dp_event_t*)zalloc(sizeof(a2dp_event_t));
+    a2dp_event = (a2dp_event_t*)bt_zalloc(sizeof(a2dp_event_t));
     if (a2dp_event == NULL)
         return NULL;
 
@@ -57,7 +57,7 @@ a2dp_event_t* a2dp_event_new_ext(a2dp_event_type_t event,
 
     if (size > 0) {
         a2dp_event->event_data.size = size;
-        a2dp_event->event_data.data = malloc(size);
+        a2dp_event->event_data.data = bt_malloc(size);
         memcpy(a2dp_event->event_data.data, data, size);
     }
 
@@ -66,6 +66,6 @@ a2dp_event_t* a2dp_event_new_ext(a2dp_event_type_t event,
 
 void a2dp_event_destory(a2dp_event_t* a2dp_event)
 {
-    free(a2dp_event->event_data.data);
-    free(a2dp_event);
+    bt_free(a2dp_event->event_data.data);
+    bt_free(a2dp_event);
 }

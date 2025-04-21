@@ -30,7 +30,7 @@ bool AParcelUtils_stringAllocator(void* stringData, int32_t length, char** buffe
     if (length == -1 || buffer == NULL)
         return true;
 
-    char* p = malloc(length);
+    char* p = bt_malloc(length);
     *(char**)stringData = p;
     *buffer = p;
 
@@ -110,7 +110,7 @@ bool AParcelUtils_byteArrayAllocator(void* arrayData, int32_t length, int8_t** o
     if (length == -1 || outBuffer == NULL)
         return true;
 
-    int8_t* p = malloc(length);
+    int8_t* p = bt_malloc(length);
     *(int8_t**)arrayData = p;
     *outBuffer = p;
 

@@ -35,7 +35,7 @@ bt_instance_t* bluetooth_create_instance(void)
     AIBinder* binder;
     char name[64] = { 0 };
 
-    bt_instance_t* ins = zalloc(sizeof(bt_instance_t));
+    bt_instance_t* ins = bt_zalloc(sizeof(bt_instance_t));
     if (!ins) {
         return NULL;
     }
@@ -55,7 +55,7 @@ bt_instance_t* bluetooth_create_instance(void)
     return ins;
 
 bail:
-    free(ins);
+    bt_free(ins);
     return NULL;
 }
 
@@ -157,7 +157,7 @@ void bluetooth_delete_instance(bt_instance_t* ins)
     BpBtAdapter_delete(ins->adapter_proxy);
     BpBtManager_deleteInstance(ins->manager_proxy, ins->app_id);
     BpBtManager_delete(ins->manager_proxy);
-    free(ins);
+    bt_free(ins);
 }
 
 bt_status_t bluetooth_start_service(bt_instance_t* ins, enum profile_id id)

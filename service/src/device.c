@@ -79,7 +79,7 @@ typedef struct bt_device {
 
 static bt_device_t* device_create(bt_address_t* addr, bt_transport_t transport, ble_addr_type_t addr_type)
 {
-    bt_device_t* device = zalloc(sizeof(bt_device_t));
+    bt_device_t* device = bt_zalloc(sizeof(bt_device_t));
 
     if (!device)
         return NULL;
@@ -116,8 +116,8 @@ bt_device_t* le_device_create(bt_address_t* addr, ble_addr_type_t addr_type)
 void device_delete(bt_device_t* device)
 {
     if (device->remote.uuids.uuids)
-        free(device->remote.uuids.uuids);
-    free(device);
+        bt_free(device->remote.uuids.uuids);
+    bt_free(device);
 }
 
 bt_transport_t device_get_transport(bt_device_t* device)
@@ -242,9 +242,9 @@ bool device_set_uuids(bt_device_t* device, bt_uuid_t* uuids, uint16_t size)
     if (!update)
         return false;
 
-    free(device->remote.uuids.uuids);
+    bt_free(device->remote.uuids.uuids);
 copy:
-    device->remote.uuids.uuids = malloc(sizeof(bt_uuid_t) * size);
+    device->remote.uuids.uuids = bt_malloc(sizeof(bt_uuid_t) * size);
     memcpy(device->remote.uuids.uuids, uuids, sizeof(bt_uuid_t) * size);
     device->remote.uuids.uuid_cnt = size;
 
@@ -352,7 +352,7 @@ void device_set_bond_state(bt_device_t* device, bond_state_t state, bool is_ctkd
     if (!notify_change)
         return;
 
-    msg = zalloc(sizeof(bond_state_change_message_t));
+    msg = bt_zalloc(sizeof(bond_state_change_message_t));
     if (!msg) {
         BT_LOGE("%s malloc failed", __func__);
         return;

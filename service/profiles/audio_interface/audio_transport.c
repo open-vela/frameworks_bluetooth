@@ -90,7 +90,7 @@ static void transport_connection_close_cb(uv_handle_t* handle)
 {
     transport_channel_t* ch = handle->data;
 
-    free(handle);
+    bt_free(handle);
     if (ch->state == IPC_CONNTECTED) {
         ch->state = IPC_DISCONNTECTED;
         if (ch->event_cb)
@@ -108,7 +108,7 @@ static void transport_connection_close_cb(uv_handle_t* handle)
             }
 
             BT_LOGI("%s transport freed:0x%p", __func__, transport);
-            free(transport);
+            bt_free(transport);
         }
     }
 }
@@ -131,7 +131,7 @@ static void transport_chnl_close_cb(uv_handle_t* handle)
     transport_channel_t* ch = handle->data;
     audio_transport_t* transport = NULL;
 
-    free(handle);
+    bt_free(handle);
     ch->closing = 0;
     if (ch->ipc_handle && ch->state == IPC_DISCONNTECTED) {
         transport = ch->ipc_handle;
@@ -145,7 +145,7 @@ static void transport_chnl_close_cb(uv_handle_t* handle)
         }
 
         BT_LOGI("%s transport freed:0x%p", __func__, transport);
-        free(transport);
+        bt_free(transport);
     }
 }
 
@@ -170,10 +170,10 @@ static void transport_chnl_listen_cb(uv_stream_t* stream, int status)
         return;
     }
 
-    ch->cli_pipe = malloc(sizeof(uv_pipe_t));
+    ch->cli_pipe = bt_malloc(sizeof(uv_pipe_t));
     ret = uv_pipe_init(stream->loop, ch->cli_pipe, 0);
     if (ret != 0) {
-        free(ch->cli_pipe);
+        bt_free(ch->cli_pipe);
         ch->cli_pipe = NULL;
         BT_LOGE("client pipe init error %s", uv_strerror(ret));
         return;
@@ -216,8 +216,8 @@ static void transport_chnl_write_cb(uv_write_t* req, int status)
     if (wreq->write_cb)
         wreq->write_cb(ch->ch_id, wreq->buffer);
 
-    free(wreq->buffer);
-    free(wreq);
+    bt_free(wreq->buffer);
+    bt_free(wreq);
 
     if (need_close)
         audio_transport_connection_close(ch);
@@ -249,7 +249,7 @@ audio_transport_t* audio_transport_init(uv_loop_t* loop)
     if (!loop)
         return NULL;
 
-    transport = (audio_transport_t*)zalloc(sizeof(audio_transport_t));
+    transport = (audio_transport_t*)bt_zalloc(sizeof(audio_transport_t));
     if (!transport) {
         BT_LOGE("%s malloc failed", __func__);
         return NULL;
@@ -278,10 +278,10 @@ bool audio_transport_open(audio_transport_t* transport, uint8_t ch_id,
         return true;
 
     ch->cli_pipe = NULL;
-    ch->svr_pipe = malloc(sizeof(uv_pipe_t));
+    ch->svr_pipe = bt_malloc(sizeof(uv_pipe_t));
     ret = uv_pipe_init(transport->loop, ch->svr_pipe, 0);
     if (ret != 0) {
-        free(ch->svr_pipe);
+        bt_free(ch->svr_pipe);
         ch->svr_pipe = NULL;
         BT_LOGE("server pipe init error %s", uv_strerror(ret));
         return false;
@@ -342,7 +342,7 @@ void audio_transport_close(audio_transport_t* transport, uint8_t ch_id)
     }
 
     if (!transport->closing)
-        free(transport);
+        bt_free(transport);
 }
 
 int audio_transport_write(audio_transport_t* transport, uint8_t ch_id,
@@ -361,14 +361,14 @@ int audio_transport_write(audio_transport_t* transport, uint8_t ch_id,
     if (ch->state != IPC_CONNTECTED || !ch->cli_pipe) {
         return -1;
     }
-    wreq = (transport_write_t*)malloc(sizeof(transport_write_t));
+    wreq = (transport_write_t*)bt_malloc(sizeof(transport_write_t));
     if (!wreq) {
         BT_LOGE("write req alloc failed");
         return -ENOMEM;
     }
-    uint8_t* tmpbuf = (uint8_t*)malloc(len);
+    uint8_t* tmpbuf = (uint8_t*)bt_malloc(len);
     if (!tmpbuf) {
-        free(wreq);
+        bt_free(wreq);
         return -ENOMEM;
     }
 
@@ -384,8 +384,8 @@ int audio_transport_write(audio_transport_t* transport, uint8_t ch_id,
         transport_chnl_write_cb);
     if (ret != 0) {
         BT_LOGE("write error: %s", uv_strerror(ret));
-        free(wreq);
-        free(tmpbuf);
+        bt_free(wreq);
+        bt_free(tmpbuf);
         audio_transport_connection_close(ch);
         return ret;
     }
@@ -409,7 +409,7 @@ int audio_transport_read_start(audio_transport_t* transport,
     if (ch->state != IPC_CONNTECTED || !ch->cli_pipe) {
         return -1;
     }
-    rreq = (transport_read_t*)malloc(sizeof(transport_read_t));
+    rreq = (transport_read_t*)bt_malloc(sizeof(transport_read_t));
     if (!rreq) {
         BT_LOGE("read req alloc failed");
         return -ENOMEM;
@@ -425,7 +425,7 @@ int audio_transport_read_start(audio_transport_t* transport,
         transport_chnl_read_cb);
     if (ret != 0 && ret != UV_EALREADY) {
         BT_LOGE("read start error :%s", uv_strerror(ret));
-        free(rreq);
+        bt_free(rreq);
         audio_transport_connection_close(ch);
         return ret;
     }
@@ -449,7 +449,7 @@ int audio_transport_read_stop(audio_transport_t* transport, uint8_t ch_id)
     ret = uv_read_stop((uv_stream_t*)ch->cli_pipe);
 
     // free read request
-    free(ch->cli_pipe->data);
+    bt_free(ch->cli_pipe->data);
     ch->cli_pipe->data = NULL;
     if (ret != 0) {
         BT_LOGE("read stop error :%s", uv_strerror(ret));

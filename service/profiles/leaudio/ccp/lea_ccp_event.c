@@ -30,7 +30,7 @@ lea_ccp_msg_t* lea_ccp_msg_new_ext(lea_ccp_event_t event, bt_address_t* remote_a
 {
     lea_ccp_msg_t* ccp_msg;
 
-    ccp_msg = (lea_ccp_msg_t*)malloc(sizeof(lea_ccp_msg_t) + size);
+    ccp_msg = (lea_ccp_msg_t*)bt_malloc(sizeof(lea_ccp_msg_t) + size);
     if (ccp_msg == NULL)
         return NULL;
 
@@ -45,5 +45,5 @@ lea_ccp_msg_t* lea_ccp_msg_new_ext(lea_ccp_event_t event, bt_address_t* remote_a
 
 void lea_ccp_msg_destory(lea_ccp_msg_t* ccp_msg)
 {
-    free(ccp_msg);
+    bt_free(ccp_msg);
 }

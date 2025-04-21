@@ -1293,7 +1293,7 @@ static void device_dump(void* handle, bt_address_t* addr, bt_transport_t transpo
                 PRINT("\t\tuuid[%-2d]: %s", i, uuid_str);
             }
         }
-        free(uuids);
+        bt_free(uuids);
     } else {
         PRINT("\tIsConnected: %d", bt_device_is_connected(handle, addr, transport));
         PRINT("\tIsEnc: %d", bt_device_is_encrypted(handle, addr, transport));
@@ -1353,7 +1353,7 @@ static int get_bonded_devices_cmd(void* handle, int argc, char** argv)
     for (int i = 0; i < num; i++) {
         device_dump(handle, addrs + i, transport);
     }
-    free(addrs);
+    bt_free(addrs);
     PRINT("bonded device cnt:%d", num);
 
     return CMD_OK;
@@ -1375,7 +1375,7 @@ static int get_connected_devices_cmd(void* handle, int argc, char** argv)
     for (int i = 0; i < num; i++) {
         device_dump(handle, addrs + i, transport);
     }
-    free(addrs);
+    bt_free(addrs);
     PRINT("connected device cnt:%d", num);
 
     return CMD_OK;
@@ -1736,7 +1736,7 @@ static void bttool_execute_command_cb(uv_async_queue_t* handle, void* buffer)
     }
 
     // 3. free buffer alloced by getline()
-    free(buffer);
+    bt_free(buffer);
 }
 
 static void bttool_command_uvloop_run(bttool_t* bttool)
@@ -1817,7 +1817,7 @@ static int bttool_create_thread(bttool_t* bttool)
 
 static void bttool_quit(bttool_t* bttool)
 {
-    char* buffer = malloc(5);
+    char* buffer = bt_malloc(5);
 
     strcpy(buffer, "quit");
     uv_async_queue_send(&bttool->async, buffer);
@@ -1963,7 +1963,7 @@ int main(int argc, char** argv)
 
 quit:
     bttool_ins_uninit(NULL);
-    free(buffer);
+    bt_free(buffer);
 
     return 0;
 }

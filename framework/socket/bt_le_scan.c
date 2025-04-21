@@ -32,7 +32,7 @@ bt_scanner_t* bt_le_start_scan(bt_instance_t* ins, const scanner_callbacks_t* cb
 
     BT_SOCKET_INS_VALID(ins, NULL);
 
-    bt_scan_remote_t* scan = malloc(sizeof(*scan));
+    bt_scan_remote_t* scan = bt_malloc(sizeof(*scan));
     if (scan == NULL)
         return NULL;
 
@@ -41,7 +41,7 @@ bt_scanner_t* bt_le_start_scan(bt_instance_t* ins, const scanner_callbacks_t* cb
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_START);
     if (status != BT_STATUS_SUCCESS || !packet.scan_r.remote) {
-        free(scan);
+        bt_free(scan);
         return NULL;
     }
 
@@ -58,7 +58,7 @@ bt_scanner_t* bt_le_start_scan_settings(bt_instance_t* ins,
 
     BT_SOCKET_INS_VALID(ins, NULL);
 
-    bt_scan_remote_t* scan = malloc(sizeof(*scan));
+    bt_scan_remote_t* scan = bt_malloc(sizeof(*scan));
     if (scan == NULL)
         return NULL;
 
@@ -69,7 +69,7 @@ bt_scanner_t* bt_le_start_scan_settings(bt_instance_t* ins,
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_START_SETTINGS);
     if (status != BT_STATUS_SUCCESS || !packet.scan_r.remote) {
-        free(scan);
+        bt_free(scan);
         return NULL;
     }
 
@@ -87,7 +87,7 @@ bt_scanner_t* bt_le_start_scan_with_filters(bt_instance_t* ins,
 
     BT_SOCKET_INS_VALID(ins, NULL);
 
-    bt_scan_remote_t* scan = zalloc(sizeof(*scan));
+    bt_scan_remote_t* scan = bt_zalloc(sizeof(*scan));
     if (scan == NULL)
         return NULL;
 
@@ -102,7 +102,7 @@ bt_scanner_t* bt_le_start_scan_with_filters(bt_instance_t* ins,
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_LE_SCAN_START_WITH_FILTERS);
     if (status != BT_STATUS_SUCCESS || !packet.scan_r.remote) {
-        free(scan);
+        bt_free(scan);
         return NULL;
     }
 

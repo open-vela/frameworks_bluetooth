@@ -104,7 +104,7 @@ static void thread_message_callback(uv_async_t* handle)
             return;
 
         imsg->func(imsg->msg);
-        free(imsg);
+        bt_free(imsg);
     }
 }
 
@@ -133,20 +133,20 @@ static void thread_schedule_loop(void* data)
 
 static void handle_close_cb(uv_handle_t* handle)
 {
-    free(handle);
+    bt_free(handle);
 }
 
 int thread_loop_init(uv_loop_t* loop)
 {
     int ret;
-    loop_priv_t* priv = malloc(sizeof(loop_priv_t));
+    loop_priv_t* priv = bt_malloc(sizeof(loop_priv_t));
     if (!priv)
         return -ENOMEM;
 
     priv->is_running = 0;
     ret = uv_mutex_init(&priv->msg_lock);
     if (ret != 0) {
-        free(priv);
+        bt_free(priv);
         syslog(LOG_ERR, "%s mutex error: %d", __func__, ret);
         return ret;
     }
@@ -156,7 +156,7 @@ int thread_loop_init(uv_loop_t* loop)
     if (ret != 0) {
         list_delete(&priv->msg_queue);
         uv_mutex_destroy(&priv->msg_lock);
-        free(priv);
+        bt_free(priv);
         return ret;
     }
 
@@ -226,12 +226,12 @@ void thread_loop_exit(uv_loop_t* loop)
     list_for_every_safe(&priv->msg_queue, node, tmp)
     {
         list_delete(node);
-        free(node);
+        bt_free(node);
     }
     list_delete(&priv->msg_queue);
     uv_mutex_unlock(&priv->msg_lock);
     uv_mutex_destroy(&priv->msg_lock);
-    free(priv);
+    bt_free(priv);
 }
 
 uv_poll_t* thread_loop_poll_fd(uv_loop_t* loop, int fd, int pevents, uv_poll_cb cb, void* userdata)
@@ -239,7 +239,7 @@ uv_poll_t* thread_loop_poll_fd(uv_loop_t* loop, int fd, int pevents, uv_poll_cb 
     assert(fd);
     assert(cb);
 
-    uv_poll_t* handle = (uv_poll_t*)malloc(sizeof(uv_poll_t));
+    uv_poll_t* handle = (uv_poll_t*)bt_malloc(sizeof(uv_poll_t));
     if (!handle)
         return NULL;
 
@@ -256,7 +256,7 @@ uv_poll_t* thread_loop_poll_fd(uv_loop_t* loop, int fd, int pevents, uv_poll_cb 
 
 error:
     syslog(LOG_ERR, "%s failed: %d", __func__, ret);
-    free(handle);
+    bt_free(handle);
     return NULL;
 }
 
@@ -283,7 +283,7 @@ uv_timer_t* thread_loop_timer(uv_loop_t* loop, uint64_t timeout, uint64_t repeat
     if (!cb)
         return NULL;
 
-    uv_timer_t* handle = malloc(sizeof(uv_timer_t));
+    uv_timer_t* handle = bt_malloc(sizeof(uv_timer_t));
     if (!handle)
         return NULL;
 
@@ -311,7 +311,7 @@ void thread_loop_cancel_timer(uv_timer_t* timer)
 void do_in_thread_loop(uv_loop_t* loop, thread_func_t func, void* data)
 {
     loop_priv_t* priv = loop->data;
-    internel_msg_t* msg = (internel_msg_t*)malloc(sizeof(internel_msg_t));
+    internel_msg_t* msg = (internel_msg_t*)bt_malloc(sizeof(internel_msg_t));
     assert(msg);
 
     msg->func = func;

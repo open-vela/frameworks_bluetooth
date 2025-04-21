@@ -407,7 +407,7 @@ static lea_client_device_t* lea_client_device_new(bt_address_t* addr,
     lea_client_state_machine_t* leasm)
 {
     pthread_mutexattr_t attr;
-    lea_client_device_t* device = calloc(1, sizeof(lea_client_device_t));
+    lea_client_device_t* device = bt_calloc(1, sizeof(lea_client_device_t));
     if (!device)
         return NULL;
 
@@ -433,7 +433,7 @@ static void lea_client_device_delete(lea_client_device_t* device)
     lea_client_msg_destory(msg);
     lea_client_state_machine_destory(device->leasm);
     pthread_mutex_destroy(&device->device_lock);
-    free(device);
+    bt_free(device);
 }
 
 static bool group_sirk_cmp_cb(void* data, void* sirk)
@@ -497,7 +497,7 @@ static lea_client_group_t* lea_client_group_new(uint8_t* sirk)
     int salt;
     bt_status_t ret;
 
-    group = calloc(1, sizeof(lea_client_group_t));
+    group = bt_calloc(1, sizeof(lea_client_group_t));
     if (!group) {
         BT_LOGE("%s, malloc fail", __func__);
         return NULL;
@@ -747,8 +747,8 @@ static bool lea_client_message_prehandle(lea_client_state_machine_t* leas_sm,
         }
 
         event->event = OFFLOAD_START_REQ;
-        free(event->data.data);
-        event->data.data = malloc(size);
+        bt_free(event->data.data);
+        event->data.data = bt_malloc(size);
         memcpy(event->data.data, param, size);
         event->data.size = size;
         break;
@@ -1737,7 +1737,7 @@ lea_audio_stream_t* lea_client_add_stream(
     lea_client_service_t* service = &g_lea_client_service;
     lea_audio_stream_t* audio_stream;
 
-    audio_stream = malloc(sizeof(lea_audio_stream_t));
+    audio_stream = bt_malloc(sizeof(lea_audio_stream_t));
     if (!audio_stream) {
         BT_LOGE("error, malloc %s", __func__);
         return NULL;

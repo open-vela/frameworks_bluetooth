@@ -160,8 +160,8 @@ static void a2dp_service_prepare_handle(a2dp_state_machine_t* sm,
         }
 
         event->event = OFFLOAD_START_REQ;
-        free(event->event_data.data);
-        event->event_data.data = malloc(size);
+        bt_free(event->event_data.data);
+        event->event_data.data = bt_malloc(size);
         event->event_data.size = size;
         memcpy(event->event_data.data, param, size);
         break;

@@ -243,7 +243,7 @@ static void pending_action_create(hf_state_machine_t* hfsm, uint32_t cmd_code, v
 {
     hf_at_cmd_t* cmd = NULL;
 
-    cmd = zalloc(sizeof(hf_at_cmd_t));
+    cmd = bt_zalloc(sizeof(hf_at_cmd_t));
 
     cmd->cmd_code = cmd_code;
     switch (cmd_code) {
@@ -272,7 +272,7 @@ static hf_at_cmd_t* pending_action_get(hf_state_machine_t* hfsm)
 static void pending_action_destroy(hf_at_cmd_t* cmd)
 {
     if (cmd)
-        free(cmd);
+        bt_free(cmd);
 }
 
 static void set_current_call_name(hf_state_machine_t* hfsm, char* number, char* name)
@@ -316,7 +316,7 @@ static hfp_current_call_t* hf_call_new(uint32_t idx,
     hfp_call_mpty_type_t mpty,
     char* number)
 {
-    hfp_current_call_t* call = malloc(sizeof(hfp_current_call_t));
+    hfp_current_call_t* call = bt_malloc(sizeof(hfp_current_call_t));
 
     BT_LOGD("Current Call[%" PRIu32 "]: dir:%d, state:%d, mpty:%d, number:%s", idx, dir, state, mpty, number);
     call->index = idx;
@@ -333,7 +333,7 @@ static void hf_call_delete(void* data)
 {
     hfp_current_call_t* call = (hfp_current_call_t*)data;
 
-    free(call);
+    bt_free(call);
 }
 
 static hfp_current_call_t* get_call_by_state(hf_state_machine_t* hfsm, hfp_hf_call_state_t state)
@@ -1516,7 +1516,7 @@ hf_state_machine_t* hf_state_machine_new(bt_address_t* addr, void* context)
 {
     hf_state_machine_t* hfsm;
 
-    hfsm = (hf_state_machine_t*)malloc(sizeof(hf_state_machine_t));
+    hfsm = (hf_state_machine_t*)bt_malloc(sizeof(hf_state_machine_t));
     if (!hfsm)
         return NULL;
 
@@ -1551,7 +1551,7 @@ void hf_state_machine_destory(hf_state_machine_t* hfsm)
     bt_media_remove_listener(hfsm->volume_listener);
     hfsm->volume_listener = NULL;
     hsm_dtor(&hfsm->sm);
-    free((void*)hfsm);
+    bt_free((void*)hfsm);
 }
 
 void hf_state_machine_dispatch(hf_state_machine_t* hfsm, hfp_hf_msg_t* msg)

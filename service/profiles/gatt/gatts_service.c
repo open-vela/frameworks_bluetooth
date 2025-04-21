@@ -163,7 +163,7 @@ static uint16_t generate_service_id(void)
 
 static service_table_t* service_table_new(int element_size)
 {
-    service_table_t* table = malloc(sizeof(service_table_t) + sizeof(gatt_element_t) * element_size);
+    service_table_t* table = bt_malloc(sizeof(service_table_t) + sizeof(gatt_element_t) * element_size);
     if (!table)
         return NULL;
 
@@ -180,10 +180,10 @@ static void service_table_delete(service_table_t* table)
     gatt_element_t* elements = table->elements;
     for (int i = 0; i < table->element_size; i++, elements++) {
         if (elements->attr_data)
-            free(elements->attr_data);
+            bt_free(elements->attr_data);
     }
 
-    free(table);
+    bt_free(table);
 }
 
 static gatts_service_t* gatts_service_new(gatts_callbacks_t* callbacks)
@@ -192,13 +192,13 @@ static gatts_service_t* gatts_service_new(gatts_callbacks_t* callbacks)
     if (!new_id)
         return NULL;
 
-    gatts_service_t* service = calloc(1, sizeof(gatts_service_t));
+    gatts_service_t* service = bt_calloc(1, sizeof(gatts_service_t));
     if (!service)
         return NULL;
 
     service->tables = bt_list_new((bt_list_free_cb_t)service_table_delete);
     if (!service->tables) {
-        free(service);
+        bt_free(service);
         return NULL;
     }
 
@@ -215,7 +215,7 @@ static void gatts_service_delete(gatts_service_t* service)
 
     pthread_mutex_destroy(&service->srv_lock);
     bt_list_free(service->tables);
-    free(service);
+    bt_free(service);
 }
 
 static void gatts_pendops_delete(gatts_op_t* operation)
@@ -223,7 +223,7 @@ static void gatts_pendops_delete(gatts_op_t* operation)
     if (!operation)
         return;
 
-    free(operation);
+    bt_free(operation);
 }
 
 static gatts_op_t* gatts_pendops_execute_out(gatts_manager_t* manager, gatts_request_t request)
@@ -601,7 +601,7 @@ static bt_status_t if_gatts_add_attr_table(void* srv_handle, gatt_srv_db_t* srv_
         elements->attr_length = attr_inst->attr_length;
         elements->attr_data = NULL;
         if (elements->rsp_type == ATTR_AUTO_RSP && elements->attr_length) {
-            elements->attr_data = malloc(elements->attr_length);
+            elements->attr_data = bt_malloc(elements->attr_length);
             memcpy(elements->attr_data, attr_inst->attr_value, elements->attr_length);
         }
 

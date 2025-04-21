@@ -37,7 +37,7 @@
 
 #define add_feature_callback(feature_callbacks, new_callbacks_type, handle)                         \
     {                                                                                               \
-        new_callbacks_type* new_callback = (new_callbacks_type*)malloc(sizeof(new_callbacks_type)); \
+        new_callbacks_type* new_callback = (new_callbacks_type*)bt_malloc(sizeof(new_callbacks_type)); \
         /* The hexadecimal representation of -1 is 0xFF */                                          \
         memset(new_callback, -1, sizeof(new_callbacks_type));                                       \
         new_callback->feature_ins = handle;                                                         \
@@ -120,7 +120,7 @@ static void free_feature_bluetooth_node(void* node)
     }
 
     REMOVE_CALLBACK(feature_callback, on_adapter_state_changed_cb_id);
-    free(feature_callback);
+    bt_free(feature_callback);
 }
 
 static void free_feature_bluetooth_bt_node(void* node)
@@ -133,7 +133,7 @@ static void free_feature_bluetooth_bt_node(void* node)
 
     REMOVE_CALLBACK(feature_callback, on_bond_state_changed_cb_id);
     REMOVE_CALLBACK(feature_callback, on_discovery_result_cb_id);
-    free(feature_callback);
+    bt_free(feature_callback);
 }
 
 static void free_feature_bluetooth_a2dp_sink_node(void* node)
@@ -145,7 +145,7 @@ static void free_feature_bluetooth_a2dp_sink_node(void* node)
     }
 
     REMOVE_CALLBACK(feature_callback, a2dp_sink_connection_state_cb_id);
-    free(feature_callback);
+    bt_free(feature_callback);
 }
 
 static void free_feature_bluetooth_avrcp_control_node(void* node)
@@ -157,7 +157,7 @@ static void free_feature_bluetooth_avrcp_control_node(void* node)
     }
 
     REMOVE_CALLBACK(feature_callback, avrcp_control_element_attribute_cb_id);
-    free(feature_callback);
+    bt_free(feature_callback);
 }
 
 static void on_adapter_state_changed_cb(void* cookie, bt_adapter_state_t state)
@@ -525,7 +525,7 @@ static void avrcp_control_get_element_attribute_cb(void* cookie, bt_address_t* a
         data->deviceId = StringToFtString(addr_str);
         data->attrsCount = attrs_count;
         attributes->_size = attrs_count;
-        attributes->_element = malloc(attributes->_size * sizeof(struct Attribute*));
+        attributes->_element = bt_malloc(attributes->_size * sizeof(struct Attribute*));
         if (!attributes->_element) {
             continue;
         }
@@ -721,7 +721,7 @@ void feature_bluetooth_callback_init(bt_instance_t* bt_ins)
         return;
     }
 
-    features_callbacks = (feature_bluetooth_features_info_t*)calloc(1, sizeof(feature_bluetooth_features_info_t));
+    features_callbacks = (feature_bluetooth_features_info_t*)bt_calloc(1, sizeof(feature_bluetooth_features_info_t));
 
     assert(features_callbacks);
 
@@ -780,5 +780,5 @@ void feature_bluetooth_callback_uninit(bt_instance_t* bt_ins)
     uv_mutex_unlock(&features_callbacks->mutex);
 
     uv_mutex_destroy(&features_callbacks->mutex);
-    free(features_callbacks);
+    bt_free(features_callbacks);
 }

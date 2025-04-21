@@ -95,7 +95,7 @@ static avrcp_ct_device_t* ct_device_create(bt_address_t* addr, bool initiator)
     if (!addr)
         return NULL;
 
-    device = malloc(sizeof(avrcp_ct_device_t));
+    device = bt_malloc(sizeof(avrcp_ct_device_t));
     if (!device)
         return NULL;
 
@@ -132,7 +132,7 @@ static void ct_device_destory(void* data)
 
     bt_pm_conn_close(PROFILE_AVRCP_CT, &device->addr);
     uv_mutex_destroy(&device->lock);
-    free(device);
+    bt_free(device);
 }
 
 static void ct_device_remove(avrcp_ct_device_t* device)

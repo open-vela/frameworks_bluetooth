@@ -113,7 +113,7 @@ IBtAdvertiserCallbacks* BtAdvertiserCallbacks_new(const advertiser_callback_t* c
 {
     AIBinder_Class* clazz;
     AIBinder* binder;
-    IBtAdvertiserCallbacks* cbks = malloc(sizeof(IBtAdvertiserCallbacks));
+    IBtAdvertiserCallbacks* cbks = bt_malloc(sizeof(IBtAdvertiserCallbacks));
 
     clazz = AIBinder_Class_define(BT_ADVERTISER_CALLBACK_DESC, IBtAdvertiserCallbacks_Class_onCreate,
         IBtAdvertiserCallbacks_Class_onDestroy, IBtAdvertiserCallbacks_Class_onTransact);
@@ -135,5 +135,5 @@ void BtAdvertiserCallbacks_delete(IBtAdvertiserCallbacks* cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    free(cbks);
+    bt_free(cbks);
 }

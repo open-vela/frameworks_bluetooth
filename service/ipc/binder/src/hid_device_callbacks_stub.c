@@ -124,7 +124,7 @@ static binder_status_t IBtHiddCallbacks_Class_onTransact(AIBinder* binder, trans
             return stat;
 
         cbks->callbacks->set_report_cb(cbks, &addr, (uint8_t)rpt_type, (uint16_t)rpt_size, rpt_data);
-        free(rpt_data);
+        bt_free(rpt_data);
         break;
     }
     case ICBKS_RECEIVE_REPORT: {
@@ -149,7 +149,7 @@ static binder_status_t IBtHiddCallbacks_Class_onTransact(AIBinder* binder, trans
             return stat;
 
         cbks->callbacks->receive_report_cb(cbks, &addr, (uint8_t)rpt_type, (uint16_t)rpt_size, rpt_data);
-        free(rpt_data);
+        bt_free(rpt_data);
         break;
     }
     case ICBKS_VIRTUAL_UNPLUG: {
@@ -203,7 +203,7 @@ IBtHiddCallbacks* BtHiddCallbacks_new(const hid_device_callbacks_t* callbacks)
 {
     AIBinder_Class* clazz;
     AIBinder* binder;
-    IBtHiddCallbacks* cbks = malloc(sizeof(IBtHiddCallbacks));
+    IBtHiddCallbacks* cbks = bt_malloc(sizeof(IBtHiddCallbacks));
 
     clazz = AIBinder_Class_define(BT_HID_DEVICE_CALLBACK_DESC, IBtHiddCallbacks_Class_onCreate,
         IBtHiddCallbacks_Class_onDestroy, IBtHiddCallbacks_Class_onTransact);
@@ -225,5 +225,5 @@ void BtHiddCallbacks_delete(IBtHiddCallbacks* cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    free(cbks);
+    bt_free(cbks);
 }

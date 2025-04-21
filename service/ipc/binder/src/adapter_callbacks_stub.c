@@ -83,7 +83,7 @@ static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder* binder, tr
 
         if (remoteName)
             snprintf(remote.name, sizeof(remote.name), "%s", remoteName);
-        free(remoteName);
+        bt_free(remoteName);
 
         stat = AParcel_readUint32(in, &remote.cod);
         if (stat != STATUS_OK)
@@ -115,7 +115,7 @@ static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder* binder, tr
 
         cbks->callbacks->on_device_name_changed(cbks, deviceName);
         if (deviceName)
-            free(deviceName);
+            bt_free(deviceName);
         break;
     }
     case ICBKS_PAIR_REQUEST: {
@@ -205,7 +205,7 @@ static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder* binder, tr
             return stat;
 
         cbks->callbacks->on_remote_name_changed(cbks, &addr, remoteName);
-        free(remoteName);
+        bt_free(remoteName);
         break;
     }
     case ICBKS_REMOTE_ALIAS_CHANGED: {
@@ -221,7 +221,7 @@ static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder* binder, tr
             return stat;
 
         cbks->callbacks->on_remote_alias_changed(cbks, &addr, alias);
-        free(alias);
+        bt_free(alias);
         break;
     }
     case ICBKS_REMOTE_COD_CHANGED: {
@@ -253,7 +253,7 @@ static binder_status_t IBtAdapterCallbacks_Class_onTransact(AIBinder* binder, tr
             return stat;
 
         cbks->callbacks->on_remote_uuids_changed(cbks, &addr, uuids, (uint16_t)uuidSize);
-        free(uuids);
+        bt_free(uuids);
         break;
     }
     default:
@@ -297,7 +297,7 @@ IBtAdapterCallbacks* BtAdapterCallbacks_new(const adapter_callbacks_t* callbacks
 {
     AIBinder_Class* clazz;
     AIBinder* binder;
-    IBtAdapterCallbacks* cbks = malloc(sizeof(IBtAdapterCallbacks));
+    IBtAdapterCallbacks* cbks = bt_malloc(sizeof(IBtAdapterCallbacks));
 
     clazz = AIBinder_Class_define(BT_ADAPTER_CALLBACK_DESC, IBtAdapterCallbacks_Class_onCreate,
         IBtAdapterCallbacks_Class_onDestroy, IBtAdapterCallbacks_Class_onTransact);
@@ -319,5 +319,5 @@ void BtAdapterCallbacks_delete(IBtAdapterCallbacks* cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    free(cbks);
+    bt_free(cbks);
 }

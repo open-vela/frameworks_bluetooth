@@ -71,7 +71,7 @@ static binder_status_t IBtSppCallbacks_Class_onTransact(AIBinder* binder, transa
             return stat;
 
         cbks->callbacks->pty_open_cb(cbks, &addr, (uint16_t)scn, (uint16_t)port, name);
-        free(name);
+        bt_free(name);
 
         break;
     }
@@ -139,7 +139,7 @@ IBtSppCallbacks* BtSppCallbacks_new(const spp_callbacks_t* callbacks)
 {
     AIBinder_Class* clazz;
     AIBinder* binder;
-    IBtSppCallbacks* cbks = malloc(sizeof(IBtSppCallbacks));
+    IBtSppCallbacks* cbks = bt_malloc(sizeof(IBtSppCallbacks));
 
     clazz = AIBinder_Class_define(BT_SPP_CALLBACK_DESC, IBtSppCallbacks_Class_onCreate,
         IBtSppCallbacks_Class_onDestroy, IBtSppCallbacks_Class_onTransact);
@@ -161,5 +161,5 @@ void BtSppCallbacks_delete(IBtSppCallbacks* cbks)
     if (cbks->WeakBinder)
         AIBinder_Weak_delete(cbks->WeakBinder);
 
-    free(cbks);
+    bt_free(cbks);
 }
