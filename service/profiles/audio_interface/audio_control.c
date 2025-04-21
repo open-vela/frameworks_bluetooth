@@ -223,42 +223,37 @@ static void audio_ctrl_cb(uint8_t ch_id, audio_transport_event_t event)
     }
 }
 
-bt_status_t audio_ctrl_init(uint8_t profile_id)
+bt_status_t audio_ctrl_init(void)
 {
-    switch (profile_id) {
-    case PROFILE_HFP_AG:
-    case PROFILE_HFP_HF:
-        if (g_audio_ctrl_transport == NULL) {
-            g_audio_ctrl_transport = audio_transport_init(get_service_uv_loop());
-        }
-        if (!audio_transport_open(g_audio_ctrl_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_HFP_CTRL,
-                CONFIG_BLUETOOTH_SCO_CTRL_PATH, audio_ctrl_cb)) {
-            BT_LOGE("fail to open audio transport");
-            return BT_STATUS_FAIL;
-        }
-        break;
-    default:
-        BT_LOGW("%s, unknown profile id: %d", __func__, profile_id);
-        break;
+    BT_LOGI("%s, enter", __func__);
+
+    if (g_audio_ctrl_transport) {
+        BT_LOGD("%s, repeated attempt", __func__);
+        return BT_STATUS_SUCCESS;
     }
+
+    g_audio_ctrl_transport = audio_transport_init(get_service_uv_loop());
+    if (!audio_transport_open(g_audio_ctrl_transport, CONFIG_BLUETOOTH_AUDIO_TRANS_ID_HFP_CTRL,
+            CONFIG_BLUETOOTH_SCO_CTRL_PATH, audio_ctrl_cb)) {
+        BT_LOGE("fail to open audio transport");
+        goto error;
+    }
+
+    BT_LOGI("%s, success", __func__);
 
     return BT_STATUS_SUCCESS;
+
+error:
+    audio_ctrl_cleanup();
+    return BT_STATUS_FAIL;
 }
 
-void audio_ctrl_cleanup(uint8_t profile_id)
+void audio_ctrl_cleanup(void)
 {
-    switch (profile_id) {
-    case PROFILE_HFP_AG:
-    case PROFILE_HFP_HF:
-        if (g_audio_ctrl_transport) {
-            audio_transport_close(g_audio_ctrl_transport, AUDIO_TRANS_CH_ID_ALL);
-        }
-        break;
-    default:
-        BT_LOGW("%s, unknown profile id: %d", __func__, profile_id);
-        break;
+    if (g_audio_ctrl_transport) {
+        audio_transport_close(g_audio_ctrl_transport, AUDIO_TRANS_CH_ID_ALL);
+        g_audio_ctrl_transport = NULL;
     }
 
-    /* TODO: close audio transport when all profile closed */
-    g_audio_ctrl_transport = NULL;
+    BT_LOGI("%s, done", __func__);
 }

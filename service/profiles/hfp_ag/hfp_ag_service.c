@@ -280,8 +280,10 @@ static void hfp_ag_process_message(void* data)
 {
     hfp_ag_msg_t* msg = (hfp_ag_msg_t*)data;
 
-    if (!g_ag_service.started && msg->event != AG_STARTUP)
+    if (!g_ag_service.started && msg->event != AG_STARTUP) {
+        hfp_ag_msg_destory(msg);
         return;
+    }
 
     switch (msg->event) {
     case AG_STARTUP:
@@ -398,7 +400,7 @@ static bt_status_t hfp_ag_init(void)
 {
     bt_status_t ret;
 
-    ret = audio_ctrl_init(PROFILE_HFP_AG);
+    ret = audio_ctrl_init();
     if (ret != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to start audio control channel", __func__);
         return ret;
@@ -409,7 +411,7 @@ static bt_status_t hfp_ag_init(void)
 
 static void hfp_ag_cleanup(void)
 {
-    audio_ctrl_cleanup(PROFILE_HFP_AG);
+    audio_ctrl_cleanup();
 }
 
 static bt_status_t hfp_ag_startup(profile_on_startup_t cb)

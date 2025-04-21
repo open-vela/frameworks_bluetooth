@@ -155,7 +155,6 @@ static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
 
 static struct bt_conn_auth_cb g_conn_auth_cbs = {
     .cancel = zblue_on_cancel,
-    .pairing_confirm = zblue_on_pairing_confirm,
     .pincode_entry = zblue_on_pincode_entry
 };
 
@@ -627,27 +626,32 @@ bt_status_t bt_sal_set_io_capability(bt_controller_id_t id, bt_io_capability_t c
         g_conn_auth_cbs.passkey_display = zblue_on_passkey_display;
         g_conn_auth_cbs.passkey_entry = NULL;
         g_conn_auth_cbs.passkey_confirm = NULL;
+        g_conn_auth_cbs.pairing_confirm = NULL;
         break;
     case BT_IO_CAPABILITY_DISPLAYYESNO:
         g_conn_auth_cbs.passkey_display = zblue_on_passkey_display;
         g_conn_auth_cbs.passkey_entry = NULL;
         g_conn_auth_cbs.passkey_confirm = zblue_on_passkey_confirm;
+        g_conn_auth_cbs.pairing_confirm = zblue_on_pairing_confirm;
         break;
     case BT_IO_CAPABILITY_KEYBOARDONLY:
         g_conn_auth_cbs.passkey_display = NULL;
         g_conn_auth_cbs.passkey_entry = zblue_on_passkey_entry;
         g_conn_auth_cbs.passkey_confirm = NULL;
+        g_conn_auth_cbs.pairing_confirm = NULL;
         break;
     case BT_IO_CAPABILITY_KEYBOARDDISPLAY:
         g_conn_auth_cbs.passkey_display = zblue_on_passkey_display;
         g_conn_auth_cbs.passkey_entry = zblue_on_passkey_entry;
         g_conn_auth_cbs.passkey_confirm = zblue_on_passkey_confirm;
+        g_conn_auth_cbs.pairing_confirm = zblue_on_pairing_confirm;
         break;
     case BT_IO_CAPABILITY_NOINPUTNOOUTPUT:
     default:
         g_conn_auth_cbs.passkey_display = NULL;
         g_conn_auth_cbs.passkey_entry = NULL;
         g_conn_auth_cbs.passkey_confirm = NULL;
+        g_conn_auth_cbs.pairing_confirm = NULL;
         break;
     }
 
@@ -709,6 +713,7 @@ static void STACK_CALL(set_scan_mode)(void* args)
     sal_adapter_req_t* req = args;
     bool iscan = false;
     bool pscan = false;
+    int ret;
 
     switch (req->adpt.scanmode.scan_mode) {
     case BT_SCAN_MODE_NONE:
@@ -726,18 +731,10 @@ static void STACK_CALL(set_scan_mode)(void* args)
         break;
     }
 
-    int ret = bt_br_set_connectable(pscan);
+    ret = bt_br_set_visibility(iscan, pscan);
     if (ret != 0 && ret != -EALREADY) {
-        BT_LOGE("%s set connectable failed:%d", __func__, ret);
+        BT_LOGE("%s set scanmode failed:%d", __func__, ret);
         return;
-    }
-
-    if (iscan) {
-        ret = bt_br_set_discoverable(iscan);
-        if (ret != 0 && ret != -EALREADY) {
-            BT_LOGE("%s set discoverable failed:%d", __func__, ret);
-            return;
-        }
     }
 
     if (ret == 0)
