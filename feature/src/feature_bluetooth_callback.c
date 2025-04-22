@@ -35,13 +35,13 @@
         feature_callback->callback_type = -1;                                                                  \
     } while (0);
 
-#define add_feature_callback(feature_callbacks, new_callbacks_type, handle)                         \
-    {                                                                                               \
+#define add_feature_callback(feature_callbacks, new_callbacks_type, handle)                            \
+    {                                                                                                  \
         new_callbacks_type* new_callback = (new_callbacks_type*)bt_malloc(sizeof(new_callbacks_type)); \
-        /* The hexadecimal representation of -1 is 0xFF */                                          \
-        memset(new_callback, -1, sizeof(new_callbacks_type));                                       \
-        new_callback->feature_ins = handle;                                                         \
-        bt_list_add_tail(feature_callbacks, new_callback);                                          \
+        /* The hexadecimal representation of -1 is 0xFF */                                             \
+        memset(new_callback, -1, sizeof(new_callbacks_type));                                          \
+        new_callback->feature_ins = handle;                                                            \
+        bt_list_add_tail(feature_callbacks, new_callback);                                             \
     }
 
 #define set_feature_callback(feature_callbacks, callbacks_type, find_func, handle, callback_id, callback_type) \

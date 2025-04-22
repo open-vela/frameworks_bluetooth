@@ -124,15 +124,14 @@ typedef enum {
  * @endcond
  */
 
-
 /**
  * @brief HID device application state callback.
  *
  * Callback function invoked when the HID application state changes. This callback
- * is used to notify the HID device about the state transition in interaction 
+ * is used to notify the HID device about the state transition in interaction
  * with the remote HID host.
  *
- * @param cookie - `remote_callback_t*`. 
+ * @param cookie - `remote_callback_t*`.
  *                 See `bt_hid_device_register_callbacks`.
  * @param state  - New HID application state, see @ref hid_app_state_t.
  *
@@ -150,10 +149,10 @@ typedef void (*hidd_app_state_callback)(void* cookie, hid_app_state_t state);
  * @brief HID device connection state callback.
  *
  * Callback function invoked when the HID connection state changes. This callback
- * is used to notify the HID device about connection state changes with the remote 
+ * is used to notify the HID device about connection state changes with the remote
  * HID host.
  *
- * @param cookie - `remote_callback_t*`. 
+ * @param cookie - `remote_callback_t*`.
  *                 See `bt_hid_device_register_callbacks`.
  * @param addr   - Address of the peer device, see @ref bt_address_t.
  * @param le_hid - TRUE if the connection is over LE; FALSE if over BR/EDR.
@@ -175,7 +174,7 @@ typedef void (*hidd_connection_state_callback)(void* cookie, bt_address_t* addr,
  *
  * Callback function invoked when a GET_REPORT request is received from the remote HID host.
  *
- * @param cookie - `remote_callback_t*`. 
+ * @param cookie - `remote_callback_t*`.
  *                 See `bt_hid_device_register_callbacks`.
  * @param addr   - Address of the peer device, see @ref bt_address_t.
  * @param rpt_type - Report type, see @ref hid_report_type_t.
@@ -199,7 +198,7 @@ typedef void (*hidd_get_report_callback)(void* cookie, bt_address_t* addr, uint8
  *
  * Callback function invoked when a SET_REPORT request is received from the remote HID host.
  *
- * @param cookie - `remote_callback_t*`. 
+ * @param cookie - `remote_callback_t*`.
  *                 See `bt_hid_device_register_callbacks`.
  * @param addr   - Address of the peer device, see @ref bt_address_t.
  * @param rpt_type - Report type, see @ref hid_report_type_t.
@@ -223,7 +222,7 @@ typedef void (*hidd_set_report_callback)(void* cookie, bt_address_t* addr, uint8
  *
  * Callback function invoked when an INPUT report is received from the remote HID host.
  *
- * @param cookie - `remote_callback_t*`. 
+ * @param cookie - `remote_callback_t*`.
  *                 See `bt_hid_device_register_callbacks`.
  * @param addr   - Address of the peer device, see @ref bt_address_t.
  * @param rpt_type - Report type, see @ref hid_report_type_t.
@@ -247,7 +246,7 @@ typedef void (*hidd_receive_report_callback)(void* cookie, bt_address_t* addr, u
  *
  * Callback function invoked when a virtual cable unplug request is received from the remote HID host.
  *
- * @param cookie - `remote_callback_t*`. 
+ * @param cookie - `remote_callback_t*`.
  *                 See `bt_hid_device_register_callbacks`.
  * @param addr   - Address of the peer device, see @ref bt_address_t.
  *

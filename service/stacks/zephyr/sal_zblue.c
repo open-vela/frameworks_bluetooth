@@ -15,8 +15,8 @@
  ***************************************************************************/
 #define LOG_TAG "sal_zblue"
 
-#include "sal_interface.h"
 #include "sal_zblue.h"
+#include "sal_interface.h"
 #include "utils/log.h"
 
 void bt_sal_get_stack_info(bt_stack_info_t* info)

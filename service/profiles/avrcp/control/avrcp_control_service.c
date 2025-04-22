@@ -21,8 +21,8 @@
 #include <unistd.h>
 
 #include "adapter_internel.h"
-#include "avrcp_msg.h"
 #include "avrcp_control_service.h"
+#include "avrcp_msg.h"
 #include "bt_addr.h"
 #include "bt_list.h"
 #include "bt_player.h"
