@@ -501,6 +501,32 @@ config BLUETOOTH_TOOLS
 	default n
 	select BLUETOOTH_FRAMEWORK
 
+config APP_BT_SAMPLE_CODE
+	bool "Enable bluetooth sample code"
+	default n
+	select BLUETOOTH_FRAMEWORK
+
+config APP_BT_SAMPLE_CODE_BASIC
+	bool "bluetooth basic sample code"
+	default n
+	depends on APP_BT_SAMPLE_CODE
+config APP_BT_SAMPLE_CODE_ENABLE
+	bool "bluetooth enable sample code"
+	default n
+	depends on APP_BT_SAMPLE_CODE
+config APP_BT_SAMPLE_CODE_DISCOVERY
+	bool "bluetooth discovery sample code"
+	default n
+	depends on APP_BT_SAMPLE_CODE
+config APP_BT_SAMPLE_CODE_CREATEBOND
+	bool "bluetooth createbond sample code"
+	default n
+	depends on APP_BT_SAMPLE_CODE
+config APP_BT_SAMPLE_CODE_ACCEPTBOND
+	bool "bluetooth acceptbond sample code"
+	default n
+	depends on APP_BT_SAMPLE_CODE
+
 choice
 	prompt "select bt vendor"
 	default BLUETOOTH_VENDOR_NONE

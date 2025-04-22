@@ -337,6 +337,28 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_memory.c)
   endif()
 
+  if(CONFIG_APP_BT_SAMPLE_CODE)
+  if(CONFIG_APP_BT_SAMPLE_CODE_BASIC)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/basic/*.c)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_ENABLE)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/enable/*.c)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_DISCOVERY)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/discovery/*.c)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_CREATEBOND)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/createbond/*.c)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/acceptbond/*.c)
+  endif()
+  endif()
+
   if(CONFIG_BLUETOOTH_TOOLS)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/utils.c)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/log.c)
@@ -481,6 +503,28 @@ if(CONFIG_BLUETOOTH)
     list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc)
   endif()
 
+  if (CONFIG_APP_BT_SAMPLE_CODE)
+  if(CONFIG_APP_BT_SAMPLE_CODE_BASIC)
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/sample_code/basic)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_ENABLE)
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/sample_code/enable)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_DISCOVERY)
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/sample_code/discovery)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_CREATEBOND)
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/sample_code/createbond)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND)
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/sample_code/acceptbond)
+  endif()
+  endif()
+
   if(CONFIG_BLUETOOTH_TOOLS)
     list(APPEND INCDIR ${BLUETOOTH_DIR}/tools)
   endif()
@@ -510,6 +554,98 @@ if(CONFIG_BLUETOOTH)
       ${CFLAGS}
       DEPENDS
       libbluetooth)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE)
+    if(CONFIG_APP_BT_SAMPLE_CODE_BASIC)
+      nuttx_add_application(
+        NAME
+        bt_basic
+        SRCS
+        ${BLUETOOTH_DIR}/sample_code/basic/basic.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        STACKSIZE
+        8192
+        PRIORITY
+        ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
+    endif()
+
+    if(CONFIG_APP_BT_SAMPLE_CODE_ENABLE)
+      nuttx_add_application(
+          NAME
+          bt_enable
+          SRCS
+          ${BLUETOOTH_DIR}/sample_code/enable/enable.c
+          INCLUDE_DIRECTORIES
+          ${INCDIR}
+          STACKSIZE
+          8192
+          PRIORITY
+          ${SCHED_PRIORITY_DEFAULT}
+          COMPILE_FLAGS
+          ${CFLAGS}
+          DEPENDS
+          libbluetooth)
+    endif()
+
+    if(CONFIG_APP_BT_SAMPLE_CODE_DISCOVERY)
+      nuttx_add_application(
+        NAME
+        bt_discovery
+        SRCS
+        ${BLUETOOTH_DIR}/sample_code/discovery/discovery.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        STACKSIZE
+        8192
+        PRIORITY
+        ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
+    endif()
+
+    if(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND)
+      nuttx_add_application(
+        NAME
+        bt_acceptbond
+        SRCS
+        ${BLUETOOTH_DIR}/sample_code/acceptbond/acceptbond.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        STACKSIZE
+        8192
+        PRIORITY
+        ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
+    endif()
+
+    if(CONFIG_APP_BT_SAMPLE_CODE_CREATEBOND)
+      nuttx_add_application(
+        NAME
+        bt_createbond
+        SRCS
+        ${BLUETOOTH_DIR}/sample_code/createbond/createbond.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        STACKSIZE
+        8192
+        PRIORITY
+        ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
+    endif()
   endif()
 
   if(CONFIG_BLUETOOTH_TOOLS)
