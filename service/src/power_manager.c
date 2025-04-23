@@ -26,6 +26,8 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
+#define BT_PM_REQ_PENDING_TIMEOUT 2500
+
 #ifndef BT_PM_SNIFF_MAX
 #define BT_PM_SNIFF_MAX 800
 #define BT_PM_SNIFF_MIN 400
@@ -130,6 +132,11 @@ typedef enum {
     BT_PM_SPEC_INDEX_MAX = BT_PM_SPEC_INDEX_4,
 } bt_pm_spec_index_t;
 
+typedef enum {
+    BT_PM_STATUS_NONE,
+    BT_PM_STATUS_PENDING_ACTIVE,
+} bt_pm_status_t;
+
 typedef struct {
     bt_pm_prefer_mode_t power_mode;
     uint16_t timeout;
@@ -180,7 +187,9 @@ typedef struct {
 
     bt_address_t peer_addr;
     uint8_t mode;
+    uint8_t hci_status;
     uint16_t interval;
+    service_timer_t* request_timer;
 } bt_pm_device_t;
 
 static const bt_pm_mode_t g_pm_mode[] = {
@@ -280,6 +289,32 @@ static const bt_pm_spec_table_t g_pm_spec[] = {
 static bt_pm_manager_t g_pm_manager = { 0 };
 
 static void pm_timeout_callback(service_timer_t* timer, void* data);
+static void pm_request_timeout_callback(service_timer_t* timer, void* data);
+
+static void pm_request_start_timer(bt_pm_device_t* device)
+{
+    if (!device) {
+        return;
+    }
+
+    if (device->request_timer) {
+        service_loop_cancel_timer(device->request_timer);
+    }
+    device->request_timer = service_loop_timer(BT_PM_REQ_PENDING_TIMEOUT, 0,
+        pm_request_timeout_callback, device);
+}
+
+static void pm_request_stop_timer(bt_pm_device_t* device)
+{
+    if (!device) {
+        return;
+    }
+
+    if (device->request_timer) {
+        service_loop_cancel_timer(device->request_timer);
+        device->request_timer = NULL;
+    }
+}
 
 static bt_pm_service_t* pm_conn_service_find(uint8_t profile_id, bt_address_t* peer_addr)
 {
@@ -349,7 +384,7 @@ static bt_pm_device_t* pm_conn_device_add(bt_address_t* peer_addr)
     bt_pm_manager_t* manager = &g_pm_manager;
     bt_pm_device_t* device;
 
-    device = calloc(1, sizeof(bt_pm_device_t));
+    device = zalloc(sizeof(bt_pm_device_t));
     if (!device) {
         return NULL;
     }
@@ -414,7 +449,7 @@ static bt_status_t pm_request_active(bt_address_t* peer_addr)
         return BT_STATUS_FAIL;
     }
 
-    if (device->mode == BT_LINK_MODE_ACTIVE) {
+    if ((device->mode == BT_LINK_MODE_ACTIVE) || (device->hci_status == BT_PM_STATUS_PENDING_ACTIVE)) {
         return BT_STATUS_SUCCESS;
     }
 
@@ -424,6 +459,9 @@ static bt_status_t pm_request_active(bt_address_t* peer_addr)
         BT_LOGE("%s, fail to set power mode, ret:%d", __func__, ret);
         return ret;
     }
+
+    device->hci_status = BT_PM_STATUS_PENDING_ACTIVE;
+    pm_request_start_timer(device);
 
     return ret;
 }
@@ -584,6 +622,15 @@ static void pm_timeout_callback(service_timer_t* timer, void* data)
 
     BT_LOGD("%s, addr:%s, profile_id:%d, pm_action:%d", __func__, bt_addr_str(&pm_timer->peer_addr), pm_timer->profile_id, pm_timer->pm_action);
     pm_mode_request(&pm_timer->peer_addr, BT_PM_EXECUTE, pm_timer->profile_id);
+}
+
+static void pm_request_timeout_callback(service_timer_t* timer, void* data)
+{
+    bt_pm_device_t* device = (bt_pm_device_t*)data;
+
+    BT_LOGD("%s, current mode: %d", __func__, device->mode);
+
+    device->hci_status = BT_PM_STATUS_NONE;
 }
 
 static bool pm_check_prefer_action(uint8_t profile_id)
@@ -776,10 +823,12 @@ void bt_pm_remote_link_mode_changed(bt_address_t* addr, uint8_t mode, uint16_t s
 
     device->interval = sniff_interval;
     device->mode = mode;
+    device->hci_status = BT_PM_STATUS_NONE;
 
     switch (mode) {
     case BT_LINK_MODE_ACTIVE: {
         pm_stop_timer(addr);
+        pm_request_stop_timer(device);
         pm_mode_request(addr, BT_PM_RESTART, manager->last_profile_id);
     } break;
     case BT_LINK_MODE_SNIFF: {
