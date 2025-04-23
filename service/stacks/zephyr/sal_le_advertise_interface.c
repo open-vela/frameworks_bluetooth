@@ -100,38 +100,78 @@ static bt_status_t zblue_le_ext_convert_param(ble_adv_params_t* params, struct b
 
     switch (params->adv_type) {
     case BT_LE_ADV_IND:
-    case BT_LE_ADV_DIRECT_IND:
-    case BT_LE_ADV_SCAN_IND:
-        param->options |= BT_LE_ADV_OPT_SCANNABLE;
+    case BT_LE_EXT_ADV_IND:
         param->options |= BT_LE_ADV_OPT_CONN;
-        break;
-    case BT_LE_ADV_NONCONN_IND:
         param->options |= BT_LE_ADV_OPT_EXT_ADV;
+        param->options |= BT_LE_ADV_OPT_NO_2M;
+        break;
+    case BT_LE_ADV_SCAN_IND:
+    case BT_LE_EXT_ADV_SCAN_IND:
+        param->options |= BT_LE_ADV_OPT_SCANNABLE;
+        param->options |= BT_LE_ADV_OPT_EXT_ADV;
+        param->options |= BT_LE_ADV_OPT_NO_2M;
+        break;
+    case BT_LE_ADV_DIRECT_IND:
+    case BT_LE_EXT_ADV_DIRECT_IND:
+        param->options |= BT_LE_ADV_OPT_CONN;
+        param->options |= BT_LE_ADV_OPT_EXT_ADV;
+        param->options |= BT_LE_ADV_OPT_NO_2M;
+        param->options |= BT_LE_ADV_OPT_DIR_MODE_LOW_DUTY;
         break;
     case BT_LE_SCAN_RSP:
-        param->options |= BT_LE_ADV_OPT_CONN;
-        param->options |= BT_LE_ADV_OPT_SCANNABLE;
+    case BT_LE_EXT_SCAN_RSP:
+    case BT_LE_ADV_NONCONN_IND:
+    case BT_LE_EXT_ADV_NONCONN_IND:
         param->options |= BT_LE_ADV_OPT_EXT_ADV;
+        param->options |= BT_LE_ADV_OPT_NO_2M;
         break;
     case BT_LE_LEGACY_ADV_IND:
+        param->options |= BT_LE_ADV_OPT_CONN;
+        param->options |= BT_LE_ADV_OPT_SCANNABLE;
+        break;
     case BT_LE_LEGACY_ADV_DIRECT_IND:
-    case BT_LE_LEGACY_ADV_SCAN_IND:
         param->options |= BT_LE_ADV_OPT_CONN;
         break;
-    case BT_LE_LEGACY_ADV_NONCONN_IND:
-        break;
-    case BT_LE_LEGACY_SCAN_RSP:
+    case BT_LE_LEGACY_ADV_SCAN_IND:
         param->options |= BT_LE_ADV_OPT_SCANNABLE;
+        break;
+    case BT_LE_LEGACY_ADV_NONCONN_IND:
+    case BT_LE_LEGACY_SCAN_RSP:
         break;
     default:
         BT_LOGE("%s, le ext adv convert fail, invalid adv_type:%d", __func__, params->adv_type);
         return BT_STATUS_PARM_INVALID;
     }
 
+    switch (params->own_addr_type) {
+    case BT_LE_ADDR_TYPE_PUBLIC:
+        param->options |= BT_LE_ADV_OPT_USE_IDENTITY;
+        break;
+    }
+
+    switch (params->channel_map) {
+    case BT_LE_ADV_CHANNEL_37_ONLY:
+        param->options |= BT_LE_ADV_OPT_DISABLE_CHAN_38 | BT_LE_ADV_OPT_DISABLE_CHAN_39;
+        break;
+    case BT_LE_ADV_CHANNEL_38_ONLY:
+        param->options |= BT_LE_ADV_OPT_DISABLE_CHAN_37 | BT_LE_ADV_OPT_DISABLE_CHAN_39;
+        break;
+    case BT_LE_ADV_CHANNEL_39_ONLY:
+        param->options |= BT_LE_ADV_OPT_DISABLE_CHAN_37 | BT_LE_ADV_OPT_DISABLE_CHAN_38;
+        break;
+    case BT_LE_ADV_CHANNEL_DEFAULT:
+        break;
+    default:
+        BT_LOGE("%s, le ext adv convert fail, invalid channel_map:%d", __func__, params->channel_map);
+        return BT_STATUS_PARM_INVALID;
+    }
+
     param->interval_min = params->interval;
     param->interval_max = params->interval;
 
-    if (params->adv_type == BT_LE_ADV_DIRECT_IND) {
+    if (params->adv_type == BT_LE_ADV_DIRECT_IND
+        || params->adv_type == BT_LE_EXT_ADV_DIRECT_IND
+        || params->adv_type == BT_LE_LEGACY_ADV_DIRECT_IND) {
         addr.type = params->peer_addr_type;
         memcpy(&addr.a, &params->peer_addr, sizeof(bt_address_t));
         param->peer = &addr;
@@ -311,14 +351,17 @@ static void STACK_CALL(start_adv)(void* args)
     ret = BT_STATUS_SUCCESS;
 
 done:
-    free(req->adpt.start_adv.adv_data);
-    free(req->adpt.start_adv.scan_rsp_data);
+    if (req->adpt.start_adv.adv_data)
+        free(req->adpt.start_adv.adv_data);
+    if (req->adpt.start_adv.scan_rsp_data)
+        free(req->adpt.start_adv.scan_rsp_data);
 }
 
 bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_params_t* params, uint8_t* adv_data, uint16_t adv_len, uint8_t* scan_rsp_data, uint16_t scan_rsp_len)
 {
     sal_adapter_req_t* req;
     int ret;
+    bool ext_adv;
 
     req = sal_adapter_req(id, adv_id, STACK_CALL(start_adv));
     if (!req) {
@@ -333,29 +376,47 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
         goto error;
     }
 
-    req->adpt.start_adv.adv_data = malloc(adv_len);
-    if (!req->adpt.start_adv.adv_data) {
-        BT_LOGE("%s, malloc fail", __func__);
-        ret = BT_STATUS_NOMEM;
-        goto error;
+    ext_adv = (req->adpt.start_adv.param.options & BT_LE_ADV_OPT_EXT_ADV) ? true : false;
+
+    if ((!(req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
+        || !ext_adv) {
+        req->adpt.start_adv.adv_data = malloc(adv_len);
+        if (!req->adpt.start_adv.adv_data) {
+            BT_LOGE("%s, malloc fail", __func__);
+            ret = BT_STATUS_NOMEM;
+            goto error;
+        }
+
+        memcpy(req->adpt.start_adv.adv_data, adv_data, adv_len);
+        req->adpt.start_adv.adv_len = adv_len;
+    } else {
+        req->adpt.start_adv.adv_data = NULL;
+        req->adpt.start_adv.adv_len = 0;
     }
 
-    memcpy(req->adpt.start_adv.adv_data, adv_data, adv_len);
-    req->adpt.start_adv.adv_len = adv_len;
+    if (((req->adpt.start_adv.param.options & BT_LE_ADV_OPT_SCANNABLE) && ext_adv)
+        || !ext_adv) {
+        req->adpt.start_adv.scan_rsp_data = malloc(scan_rsp_len);
+        if (!req->adpt.start_adv.scan_rsp_data) {
+            BT_LOGE("%s, malloc fail", __func__);
+            ret = BT_STATUS_NOMEM;
+            goto error;
+        }
 
-    req->adpt.start_adv.scan_rsp_data = malloc(scan_rsp_len);
-    if (!req->adpt.start_adv.scan_rsp_data) {
-        BT_LOGE("%s, malloc fail", __func__);
-        ret = BT_STATUS_NOMEM;
-        goto error;
+        memcpy(req->adpt.start_adv.scan_rsp_data, scan_rsp_data, scan_rsp_len);
+        req->adpt.start_adv.scan_rsp_len = scan_rsp_len;
+    } else {
+        req->adpt.start_adv.scan_rsp_data = NULL;
+        req->adpt.start_adv.scan_rsp_len = 0;
     }
-
-    memcpy(req->adpt.start_adv.scan_rsp_data, scan_rsp_data, scan_rsp_len);
-    req->adpt.start_adv.scan_rsp_len = scan_rsp_len;
 
     return sal_send_req(req);
 
 error:
+    if (req->adpt.start_adv.adv_data)
+        free(req->adpt.start_adv.adv_data);
+    if (req->adpt.start_adv.scan_rsp_data)
+        free(req->adpt.start_adv.scan_rsp_data);
     free(req);
     return ret;
 };
