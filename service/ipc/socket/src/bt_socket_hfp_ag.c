@@ -202,6 +202,16 @@ static void on_vendor_specific_at_cmd_received_cb(void* cookie, bt_address_t* ad
     bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_VENDOR_SPECIFIC_AT_COMMAND_RECEIVED);
 }
 
+static void on_cind_cmd_received_cb(void* cookie, bt_address_t* addr)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_ag_cb._on_cind_cmd_received.addr, addr, sizeof(bt_address_t));
+
+    bt_socket_server_send(ins, &packet, BT_HFP_AG_ON_CIND_COMMAND_RECEIVED);
+}
+
 const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
     .connection_state_cb = on_connection_state_changed_cb,
     .audio_state_cb = on_audio_state_changed_cb,
@@ -215,6 +225,7 @@ const static hfp_ag_callbacks_t g_hfp_ag_socket_cbs = {
     .at_cmd_cb = on_at_cmd_received_cb,
     .clcc_cmd_cb = on_clcc_cmd_received_cb,
     .vender_specific_at_cmd_cb = on_vendor_specific_at_cmd_received_cb,
+    .cind_cmd_cb = on_cind_cmd_received_cb,
 };
 
 /****************************************************************************
@@ -330,7 +341,7 @@ void bt_socket_server_hfp_ag_process(service_poll_t* poll, int fd,
         break;
     case BT_HFP_AG_SEND_CLCC_RESPONSE:
         packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_send_clcc_response)(ins,
-            &packet->hfp_ag_pl._bt_hfp_ag_send_at_cmd.addr,
+            &packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.addr,
             packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.index,
             packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.dir,
             packet->hfp_ag_pl._bt_hfp_ag_send_clcc_response.state,
@@ -346,7 +357,21 @@ void bt_socket_server_hfp_ag_process(service_poll_t* poll, int fd,
             packet->hfp_ag_pl._bt_hfp_ag_send_vendor_specific_at_cmd.value);
         break;
     default:
-        break;
+        switch (BT_IPC_GET_SUBCODE(packet->code)) {
+        case HFP_AG_SUBCODE_SEND_CIND_RESPONSE:
+            packet->hfp_ag_r.status = BTSYMBOLS(bt_hfp_ag_send_cind_response)(ins,
+                &packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.addr,
+                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.network,
+                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.call,
+                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.call_held,
+                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.call_setup,
+                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.signal,
+                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.roam,
+                packet->hfp_ag_pl._bt_hfp_ag_send_cind_response.battery);
+            break;
+        default:
+            break;
+        }
     }
 }
 #endif
@@ -432,7 +457,15 @@ int bt_socket_client_hfp_ag_callback(service_poll_t* poll,
             packet->hfp_ag_cb._on_vend_spec_at_cmd_received.value);
         break;
     default:
-        return BT_STATUS_PARM_INVALID;
+        switch (BT_IPC_GET_SUBCODE(packet->code)) {
+        case HFP_AG_SUBCODE_ON_CIND_COMMAND_RECEIVED:
+            CALLBACK_FOREACH(CBLIST, hfp_ag_callbacks_t,
+                cind_cmd_cb,
+                &packet->hfp_ag_cb._on_cind_cmd_received.addr);
+            break;
+        default:
+            return BT_STATUS_PARM_INVALID;
+        }
     }
 
     return BT_STATUS_SUCCESS;

@@ -68,10 +68,14 @@ BT_HFP_AG_MESSAGE_START,
 
 #define BT_IPC_CODE_COMMAND_HFP_AG_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_AG, 0)
 // TODO: Add new BT IPC Code sequentially
+#define HFP_AG_SUBCODE_SEND_CIND_RESPONSE 1
+#define BT_HFP_AG_SEND_CIND_RESPONSE BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_AG, HFP_AG_SUBCODE_SEND_CIND_RESPONSE)
 #define BT_IPC_CODE_COMMAND_HFP_AG_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_AG, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
 #define BT_IPC_CODE_CALLBACK_HFP_AG_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_HFP_AG, 0)
 // TODO: Add new BT IPC Code sequentially
+#define HFP_AG_SUBCODE_ON_CIND_COMMAND_RECEIVED 1
+#define BT_HFP_AG_ON_CIND_COMMAND_RECEIVED BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_HFP_AG, HFP_AG_SUBCODE_ON_CIND_COMMAND_RECEIVED)
 #define BT_IPC_CODE_CALLBACK_HFP_AG_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_HFP_AG, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
     typedef union {
@@ -145,6 +149,17 @@ BT_HFP_AG_MESSAGE_START,
             uint8_t pad1[(HFP_COMPANY_PREFIX_LEN_MAX + 1 + 3) / 4 * 4 - (HFP_COMPANY_PREFIX_LEN_MAX + 1)];
             char value[HFP_AT_LEN_MAX + 1];
         } _bt_hfp_ag_send_vendor_specific_at_cmd;
+
+        struct {
+            bt_address_t addr;
+            uint8_t network;
+            uint8_t call;
+            uint8_t call_held;
+            uint8_t call_setup;
+            uint8_t signal;
+            uint8_t roam;
+            uint8_t battery;
+        } _bt_hfp_ag_send_cind_response;
     } bt_message_hfp_ag_t;
 
     typedef union {
@@ -203,6 +218,10 @@ BT_HFP_AG_MESSAGE_START,
             uint8_t pad1[(HFP_COMPANY_PREFIX_LEN_MAX + 1 + 3) / 4 * 4 - (HFP_COMPANY_PREFIX_LEN_MAX + 1)];
             char value[HFP_AT_LEN_MAX + 1];
         } _on_vend_spec_at_cmd_received;
+
+        struct {
+            bt_address_t addr;
+        } _on_cind_cmd_received;
     } bt_message_hfp_ag_callbacks_t;
 
 #ifdef __cplusplus

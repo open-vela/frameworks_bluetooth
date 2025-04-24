@@ -167,3 +167,12 @@ bt_status_t BTSYMBOLS(bt_hfp_ag_send_vendor_specific_at_command)(bt_instance_t* 
 
     return profile->send_vendor_specific_at_command(addr, command, value);
 }
+
+bt_status_t BTSYMBOLS(bt_hfp_ag_send_cind_response)(bt_instance_t* ins, bt_address_t* addr,
+    hfp_network_state_t network, hfp_call_t call, hfp_callheld_t call_held, hfp_callsetup_t call_setup,
+    uint8_t signal, hfp_roaming_state_t roam, uint8_t battery)
+{
+    hfp_ag_interface_t* profile = get_profile_service();
+
+    return profile->send_cind_response(addr, network, call, call_held, call_setup, signal, roam, battery);
+}

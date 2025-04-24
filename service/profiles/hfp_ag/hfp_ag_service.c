@@ -696,6 +696,22 @@ bt_status_t hfp_ag_send_vendor_specific_at_command(bt_address_t* addr, const cha
     return hfp_ag_send_message(msg);
 }
 
+bt_status_t hfp_ag_send_cind_response(bt_address_t* addr, hfp_network_state_t network,
+    hfp_call_t call, hfp_callheld_t call_held, hfp_callsetup_t call_setup, uint8_t signal,
+    hfp_roaming_state_t roam, uint8_t battery)
+{
+    hfp_ag_cind_resopnse_t resp;
+
+    resp.network = network;
+    resp.call = call;
+    resp.call_held = call_held;
+    resp.call_setup = call_setup;
+    resp.signal = signal;
+    resp.roam = roam;
+    resp.battery = battery;
+    return bt_sal_hfp_ag_cind_response(addr, &resp);
+}
+
 static const hfp_ag_interface_t agInterface = {
     .size = sizeof(agInterface),
     .register_callbacks = hfp_ag_register_callbacks,
@@ -718,6 +734,7 @@ static const hfp_ag_interface_t agInterface = {
     .send_at_command = hfp_ag_send_at_command,
     .send_clcc_response = hfp_ag_send_clcc_response,
     .send_vendor_specific_at_command = hfp_ag_send_vendor_specific_at_command,
+    .send_cind_response = hfp_ag_send_cind_response,
 };
 
 static const void* get_ag_profile_interface(void)
@@ -797,6 +814,12 @@ void ag_service_notify_vendor_specific_cmd(bt_address_t* addr, const char* comma
 {
     BT_LOGD("%s, command:%s, value:%s", __func__, command, value);
     AG_CALLBACK_FOREACH(g_ag_service.callbacks, vender_specific_at_cmd_cb, addr, command, company_id, value);
+}
+
+void ag_service_notify_cind_cmd(bt_address_t* addr)
+{
+    BT_LOGD("%s", __func__);
+    AG_CALLBACK_FOREACH(g_ag_service.callbacks, cind_cmd_cb, addr);
 }
 
 void hfp_ag_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,

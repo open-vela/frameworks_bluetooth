@@ -289,6 +289,7 @@ static void dial_out_timeout(service_timer_t* timer, void* data)
     hfp_ag_dial_result(HFP_ATCMD_RESULT_TIMEOUT);
 }
 
+#ifdef CONFIG_LIB_DBUS
 static uint8_t callstate_to_callsetup(hfp_ag_call_state_t call_state)
 {
     switch (call_state) {
@@ -320,6 +321,7 @@ static void process_cind_request(ag_state_machine_t* agsm)
     BT_LOGD("AT+CIND=? response");
     bt_sal_hfp_ag_cind_response(&agsm->addr, &resp);
 }
+#endif
 
 static void update_remote_features(ag_state_machine_t* agsm, uint32_t remote_features)
 {
@@ -548,7 +550,11 @@ static bool connecting_process_event(state_machine_t* sm, uint32_t event, void* 
         agsm->codec = data->valueint1 == HFP_CODEC_MSBC ? HFP_CODEC_MSBC : HFP_CODEC_CVSD;
         break;
     case AG_STACK_EVENT_AT_CIND_REQUEST:
+#ifdef CONFIG_LIB_DBUS
         process_cind_request(agsm);
+#else
+        ag_service_notify_cind_cmd(&agsm->addr);
+#endif
         break;
     case AG_STACK_EVENT_AT_COMMAND:
         process_vendor_specific_at(&agsm->addr, data->string1);
@@ -708,7 +714,11 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
     }
     case AG_STACK_EVENT_AT_CIND_REQUEST:
+#ifdef CONFIG_LIB_DBUS
         process_cind_request(agsm);
+#else
+        ag_service_notify_cind_cmd(&agsm->addr);
+#endif
         break;
     case AG_STACK_EVENT_AT_CLCC_REQUEST:
         if (agsm->virtual_call_started) {

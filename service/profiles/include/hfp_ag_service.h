@@ -85,6 +85,7 @@ void ag_service_notify_call_dial(bt_address_t* addr, const char* number);
 void ag_service_notify_cmd_received(bt_address_t* addr, const char* at_cmd);
 void ag_service_notify_clcc_cmd(bt_address_t* addr);
 void ag_service_notify_vendor_specific_cmd(bt_address_t* addr, const char* command, uint16_t company_id, const char* value);
+void ag_service_notify_cind_cmd(bt_address_t* addr);
 
 /*
  * telephony
@@ -130,6 +131,9 @@ typedef struct ag_interface {
         hfp_ag_call_state_t state, hfp_call_mode_t mode, hfp_call_mpty_type_t mpty,
         hfp_call_addrtype_t type, const char* number);
     bt_status_t (*send_vendor_specific_at_command)(bt_address_t* addr, const char* command, const char* value);
+    bt_status_t (*send_cind_response)(bt_address_t* addr, hfp_network_state_t network, hfp_call_t call,
+        hfp_callheld_t call_held, hfp_callsetup_t call_setup, uint8_t signal,
+        hfp_roaming_state_t roam, uint8_t battery);
 } hfp_ag_interface_t;
 
 /*
