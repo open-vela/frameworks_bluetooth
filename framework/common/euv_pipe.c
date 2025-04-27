@@ -117,6 +117,15 @@ static void euv_close_callback(uv_handle_t* hdl)
         return;
     }
 
+    /* when client disconnects, it free handle directly
+     */
+    if (!handle->data) {
+        free(handle);
+        return;
+    }
+
+    /* when server connected, it free euv_connect first, then free handle after disconnected
+     */
     free(handle->data);
     handle->data = NULL;
 }
