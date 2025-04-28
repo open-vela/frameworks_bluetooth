@@ -55,6 +55,11 @@ config BLUETOOTH_BLE_SCAN
 	bool "LE scan support"
 	default n
 
+config BLUETOOTH_BLE_SCAN_FILTER
+	bool "LE scan filter support"
+	default n
+	depends on BLUETOOTH_BLE_SCAN
+
 config BLUETOOTH_BLE_AUDIO
        bool "LE audio support"
        default n
