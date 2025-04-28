@@ -505,10 +505,14 @@ bt_scanner_t* scanner_start_scan_with_filters(void* remote,
     }
 
     if (filter && filter->active) {
+#ifndef CONFIG_BLUETOOTH_BLE_SCAN_FILTER
+        filter->active = false;
+#else
         filter->duration = BT_LE_ADV_REPORT_DURATION_MS;
         filter->period = BT_LE_ADV_REPORT_PERIOD_MS;
         filter->duplicated = 0;
         memcpy(&scanner->filter, filter, sizeof(*filter));
+#endif
     }
 
     start->scanner = scanner;
