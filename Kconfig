@@ -55,6 +55,19 @@ config BLUETOOTH_DEBUG_MEMORY
         (malloc, calloc, free) with Bluetooth-specific versions (bt_malloc, etc).
         Useful for tracking memory usage and debugging in Bluetooth modules.
 
+config BLUETOOTH_DEBUG_TRACE
+	bool "Enable Bluetooth Debug Trace"
+	default n
+	help
+		Enable bluetooth debug trace tools.
+
+if BLUETOOTH_DEBUG_TRACE
+config BLUETOOTH_TRACE_BUFFER_SIZE
+	int "Bluetooth Trace Buffer Size"
+	default 512
+
+endif #BLUETOOTH_DEBUG_TRACE
+
 config BLUETOOTH_BREDR_SUPPORT
 	bool "BREDR support"
 	default y

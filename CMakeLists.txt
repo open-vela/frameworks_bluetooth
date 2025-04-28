@@ -77,6 +77,10 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/service/common/storage.c)
   endif()
 
+  if(CONFIG_BLUETOOTH_DEBUG_TRACE)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
+  endif()
+
   if(CONFIG_BLUETOOTH_SERVICE)
     list(
       APPEND
