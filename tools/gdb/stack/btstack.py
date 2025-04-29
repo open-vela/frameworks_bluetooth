@@ -1,5 +1,5 @@
 ############################################################################
-# frameworks/bluetooth/tools/gdb/stack/btstack.py
+# frameworks/connectivity/bluetooth/tools/gdb/stack/btstack.py
 #
 # Copyright (C) 2024 Xiaomi Corporation
 #

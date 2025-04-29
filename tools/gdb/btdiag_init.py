@@ -1,5 +1,5 @@
 ############################################################################
-# frameworks/bluetooth/tools/gdb/btdiag_init.py
+# frameworks/connectivity/bluetooth/tools/gdb/btdiag_init.py
 #
 # Copyright (C) 2024 Xiaomi Corporation
 #
@@ -17,49 +17,60 @@
 #
 ############################################################################
 import sys
+
+sys.dont_write_bytecode = True  # Prevent __pycache__ generation
+
 import os
 import gdb
+import importlib.util
 
-# Get the current directory path, which is where btinit.py is located
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Source gdbinit.py from the relative path
-nuttx_gdbinit_path = os.path.abspath(
-    os.path.join(base_dir, "../../../../nuttx/tools/pynuttx/gdbinit.py")
+nxgdb_dir = os.path.abspath(
+    os.path.join(base_dir, "../../../../../nuttx/tools/pynuttx")
 )
+if nxgdb_dir not in sys.path:
+    sys.path.insert(0, nxgdb_dir)
 
-# Add the directory containing 'nuttxgdb' to sys.path
-nuttx_gdb_module_path = os.path.abspath(
-    os.path.join(base_dir, "../../../../nuttx/tools/pynuttx/nxgdb")
-)
-if nuttx_gdb_module_path not in sys.path:
-    sys.path.insert(0, nuttx_gdb_module_path)
+if base_dir not in sys.path:
+    sys.path.insert(0, base_dir)
 
-if os.path.exists(nuttx_gdbinit_path):
-    gdb.execute(f"source {nuttx_gdbinit_path}")
-    gdb.write(f"Sourced GDB init file from: {nuttx_gdbinit_path}\n")
+gdbinit_path = os.path.join(nxgdb_dir, "gdbinit.py")
+if os.path.exists(gdbinit_path):
+    try:
+        with open(gdbinit_path, "rb") as f:
+            code = compile(f.read(), gdbinit_path, "exec")
+            exec(code, globals(), globals())
+        gdb.write(f"Imported GDB init module from: {gdbinit_path}\n")
+    except Exception as e:
+        gdb.write(f"Failed to import GDB init module: {e}\n")
 else:
-    gdb.write(f"GDB init file not found at: {nuttx_gdbinit_path}\n")
+    gdb.write(f"GDB init file not found at: {gdbinit_path}\n")
 
-# List of modules to be registered
 modules_to_register = [
-    "service.btsocket",  # Example path: frameworks/bluetooth/tools/gdb/service/btsocket.py
+    "service.btsocket",
     "service.btdev",
     "stack.btstack",
     "driver.btsnoop",
     "utlis.bttimeval",
 ]
 
-# Import each module to register commands
+
+def import_module_from_path(module_path):
+    module_name = os.path.splitext(os.path.basename(module_path))[0]
+    try:
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        gdb.write(f"Imported GDB command module: {module_path}\n")
+    except Exception as e:
+        gdb.write(f"Failed to import module {module_path}: {e}\n")
+
+
 for module_name in modules_to_register:
     module_path = os.path.join(base_dir, *module_name.split(".")) + ".py"
-
     if os.path.exists(module_path):
-        try:
-            gdb.execute(f"source {module_path}")
-            gdb.write(f"Sourced GDB command module: {module_path}\n")
-        except Exception as e:
-            gdb.write(f"Failed to source module {module_path}: {e}\n")
+        import_module_from_path(module_path)
     else:
         gdb.write(f"Module not found: {module_path}\n")
 

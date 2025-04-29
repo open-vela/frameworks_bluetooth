@@ -1,5 +1,5 @@
 ############################################################################
-# frameworks/bluetooth/tools/gdb/driver/btsnoop.py
+# frameworks/connectivity/bluetooth/tools/gdb/driver/btsnoop.py
 #
 # Copyright (C) 2024 Xiaomi Corporation
 #
@@ -19,7 +19,6 @@
 import argparse
 import gdb
 from nxgdb import utils
-from nxgdb import fs
 import struct
 
 
@@ -89,7 +88,13 @@ class BTSnoopCommand(gdb.Command):
 
     def get_inode_by_path(self, path):
         """Helper function to get the inode based on the given device path."""
-        return next((node for node, p in fs.foreach_inode() if path == p), None)
+        try:
+            from nxgdb import fs  # delay import
+
+            return next((node for node, p in fs.foreach_inode() if path == p), None)
+        except Exception as e:
+            gdb.write(f"Error: Failed to get inode for path '{path}': {e}\n")
+            return None
 
     def get_header_length(self, tlv_type):
         if tlv_type == 2:
