@@ -1,5 +1,5 @@
 ############################################################################
-# frameworks/bluetooth/tools/gdb/utlis/bttimeval.py
+# frameworks/connectivity/bluetooth/tools/gdb/utlis/bttimeval.py
 #
 # Copyright (C) 2024 Xiaomi Corporation
 #

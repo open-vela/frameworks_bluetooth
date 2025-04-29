@@ -1,5 +1,5 @@
 ############################################################################
-# frameworks/bluetooth/tools/gdb/service/btsocket.py
+# frameworks/connectivity/bluetooth/tools/gdb/service/btsocket.py
 #
 # Copyright (C) 2024 Xiaomi Corporation
 #
