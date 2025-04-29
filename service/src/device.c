@@ -183,7 +183,7 @@ uint32_t device_get_device_class(bt_device_t* device)
 
 bool device_set_device_class(bt_device_t* device, uint32_t cod)
 {
-    if (device->remote.device_class == cod) {
+    if (device->remote.device_class == cod || cod == 0) {
         return false;
     }
 
