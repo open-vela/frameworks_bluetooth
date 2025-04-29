@@ -1,5 +1,5 @@
 ############################################################################
-# frameworks/bluetooth/tools/gdb/service/btdev.py
+# frameworks/connectivity/bluetooth/tools/gdb/service/btdev.py
 #
 # Copyright (C) 2024 Xiaomi Corporation
 #
