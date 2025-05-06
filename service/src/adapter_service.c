@@ -1723,7 +1723,7 @@ bt_status_t adapter_cancel_discovery(void)
         return BT_STATUS_NOT_ENABLED;
     }
 
-    adapter_remove_found_devices();
+    // adapter_remove_found_devices();
 
     if (!adapter->is_discovering) {
         adapter_unlock();
