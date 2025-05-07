@@ -281,27 +281,6 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
         free(tmp);
         break;
     }
-    case BT_LE_ON_BATCH_SCAN_RESULT: {
-        bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_batch_cb.scanner;
-
-        uint8_t tmp_buf[sizeof(ble_scan_result_t) + MAX_LEGACY_SCAN_RESULTS_LENGTH];
-
-        for (int i = 0; i < packet->scan_batch_cb.count; ++i) {
-            ble_scan_result_t* result = &packet->scan_batch_cb.results[i].result;
-            uint8_t len = result->length;
-
-            if (len > MAX_LEGACY_SCAN_RESULTS_LENGTH)
-                continue;
-
-            ble_scan_result_t* tmp = (ble_scan_result_t*)tmp_buf;
-
-            memcpy(tmp, result, sizeof(ble_scan_result_t));
-            memcpy(tmp->adv_data, packet->scan_batch_cb.results[i].adv_data, len);
-
-            scan->callback->on_scan_result(scan, tmp);
-        }
-        break;
-    }
     case BT_LE_ON_SCAN_START_STATUS: {
         bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_cb._on_scan_status_cb.scanner;
 
@@ -317,8 +296,34 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
         free(scan);
         break;
     }
-    default:
-        return BT_STATUS_PARM_INVALID;
+    default: {
+        uint32_t subcode = BT_IPC_GET_SUBCODE(packet->code);
+        switch (subcode) {
+        case BLE_SCAN_SUBCODE_BATCH_SCAN_CALLBACK: {
+            bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_batch_cb.scanner;
+
+            uint8_t tmp_buf[sizeof(ble_scan_result_t) + MAX_LEGACY_SCAN_RESULTS_LENGTH];
+
+            for (int i = 0; i < packet->scan_batch_cb.count; ++i) {
+                ble_scan_result_t* result = &packet->scan_batch_cb.results[i].result;
+                uint8_t len = result->length;
+
+                if (len > MAX_LEGACY_SCAN_RESULTS_LENGTH)
+                    continue;
+
+                ble_scan_result_t* tmp = (ble_scan_result_t*)tmp_buf;
+
+                memcpy(tmp, result, sizeof(ble_scan_result_t));
+                memcpy(tmp->adv_data, packet->scan_batch_cb.results[i].adv_data, len);
+
+                scan->callback->on_scan_result(scan, tmp);
+            }
+            break;
+        }
+        default:
+            return BT_STATUS_PARM_INVALID;
+        }
+    }
     }
 
     return BT_STATUS_SUCCESS;
