@@ -243,7 +243,7 @@ static void property_monitor_cb(service_poll_t* poll,
 void bt_log_server_init(void)
 {
 #if defined(CONFIG_KVDB) && defined(__NuttX__)
-    char path[SNOOP_PATH_MAX_LEN];
+    char path[SNOOP_PATH_MAX_LEN] = { 0 };
 
     /** framework log init */
     g_logger.framework_level = property_get_int32(PERSIST_BT_FRAMEWORK_LOG_LEVEL, DEFAULT_BT_LOG_LEVEL);
@@ -255,7 +255,7 @@ void bt_log_server_init(void)
     if (g_logger.stack_enable)
         stack_log_setup();
 
-    if (property_get_binary(PERSIST_BT_SNOOP_FILE_PATH, path, SNOOP_PATH_MAX_LEN) <= 0) {
+    if (property_get_binary(PERSIST_BT_SNOOP_FILE_PATH, path, sizeof(path) - 1) <= 0) {
         strlcpy(path, CONFIG_BLUETOOTH_SNOOP_LOG_DEFAULT_PATH, SNOOP_PATH_MAX_LEN);
     }
     /** snoop log init */
