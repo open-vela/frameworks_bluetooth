@@ -26,7 +26,7 @@
 #include "device.h"
 
 static int bt_device_send(bt_instance_t* ins, bt_address_t* addr,
-    bt_message_packet_t* packet, bt_message_type_t code)
+    bt_message_packet_t* packet, uint32_t code)
 {
     memcpy(&packet->devs_pl._bt_device_addr.addr, addr, sizeof(*addr));
 
