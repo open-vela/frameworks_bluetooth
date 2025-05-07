@@ -66,7 +66,9 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded);
 static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
+#if defined(CONFIG_BT_USER_PHY_UPDATE)
 static void zblue_on_phy_updated(struct bt_conn* conn, struct bt_conn_le_phy_info* info);
+#endif // CONFIG_BT_USER_PHY_UPDATE
 static void zblue_on_param_updated(struct bt_conn* conn, uint16_t interval, uint16_t latency, uint16_t timeout);
 
 static void zblue_on_auth_passkey_display(struct bt_conn* conn, unsigned int passkey);
@@ -407,9 +409,10 @@ bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr)
     return BT_STATUS_SUCCESS;
 }
 
+extern void z_sys_init(void);
 bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal)
 {
-    zblue_main();
+    z_sys_init();
 
     bt_conn_cb_register(&g_conn_cbs);
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
