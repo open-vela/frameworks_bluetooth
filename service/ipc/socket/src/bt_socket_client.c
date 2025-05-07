@@ -371,7 +371,7 @@ static int bt_socket_client_connect(int family, const char* name,
  ****************************************************************************/
 
 int bt_socket_client_sendrecv(bt_instance_t* ins, bt_message_packet_t* packet,
-    bt_message_type_t code)
+    uint32_t code)
 {
     uint8_t* send_data;
     int send_size;
