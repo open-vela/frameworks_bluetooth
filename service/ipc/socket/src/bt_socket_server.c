@@ -443,7 +443,7 @@ static int bt_socket_server_listen(int family, const char* name, int port)
  ****************************************************************************/
 
 int bt_socket_server_send(bt_instance_t* ins, bt_message_packet_t* packet,
-    bt_message_type_t code)
+    uint32_t code)
 {
     bt_packet_cache_t* cache;
     int ret;

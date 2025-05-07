@@ -82,7 +82,7 @@ void bt_socket_client_free_callbacks(bt_instance_t* ins, callbacks_list_t* cbsl)
 
 int bt_socket_client_sendrecv(bt_instance_t* ins,
     bt_message_packet_t* packet,
-    bt_message_type_t code);
+    uint32_t code);
 
 int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* packet,
     bt_message_type_t code, bt_socket_reply_cb_t reply, void* cb, void* userdata);
@@ -91,7 +91,7 @@ int bt_socket_client_send_with_reply(bt_instance_t* ins, bt_message_packet_t* pa
 int bt_socket_server_init(const char* name, int port);
 
 int bt_socket_server_send(bt_instance_t* ins, bt_message_packet_t* packet,
-    bt_message_type_t code);
+    uint32_t code);
 
 bool bt_socket_server_is_busy(void);
 
