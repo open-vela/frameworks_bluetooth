@@ -1,5 +1,5 @@
 /****************************************************************************
- * include/nuttx/list.h
+ * include/bt_list_internal.h
  *
  * Extracted from logic originally written by Travis Geiselbrecht and
  * released under a public domain license.  Re-released here under the 3-
@@ -37,12 +37,14 @@
  *
  ****************************************************************************/
 
-#ifndef __INCLUDE_NUTTX_LIST_H
-#define __INCLUDE_NUTTX_LIST_H
+#ifndef __INCLUDE_BT_LIST_INTERNAL_H
+#define __INCLUDE_BT_LIST_INTERNAL_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+
+#ifndef __NuttX__
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -282,8 +284,8 @@
  ****************************************************************************/
 
 struct list_node {
-    FAR struct list_node* prev;
     FAR struct list_node* next;
+    FAR struct list_node* prev;
 };
 
 /****************************************************************************
@@ -327,4 +329,8 @@ static inline size_t list_length(FAR struct list_node* list)
     return cnt;
 }
 
-#endif /* __INCLUDE_NUTTX_LIST_H */
+#else
+#include <nuttx/list.h>
+#endif
+
+#endif /* __INCLUDE_BT_LIST_INTERNAL_H */
