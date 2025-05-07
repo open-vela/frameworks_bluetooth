@@ -18,7 +18,7 @@
 
 #include "bluetooth_define.h"
 
-#include "sal_adapter_classic_interface.h"
+#include "sal_adapter_dual_interface.h"
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 #include "sal_adapter_le_interface.h"
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
@@ -30,9 +30,9 @@
 #endif
 #include "sal_debug_interface.h"
 
-#if defined(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET) || defined(CONFIG_BLUETOOTH_STACK_LE_BLUELET)
-#include "sal_adapter_interface.h"
-#endif
+// #if defined(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET) || defined(CONFIG_BLUETOOTH_STACK_LE_BLUELET)
+// #include "sal_adapter_interface.h"
+// #endif
 
 typedef struct bt_stack_info {
     char name[32];

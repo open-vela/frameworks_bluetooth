@@ -374,7 +374,9 @@ static void on_state_enter(state_machine_t* sm)
 {
     ADAPTER_DBG_ENTER(sm);
     const state_t* prev = hsm_get_previous_state(sm);
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     adapter_on_br_enabled();
+#endif // CONFIG_BLUETOOTH_BREDR_SUPPORT
     adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_ON);
 
 #if defined(CONFIG_BLUETOOTH_A2DP) || defined(CONFIG_BLUETOOTH_LE_AUDIO_SUPPORT) || defined(CONFIG_BLUETOOTH_HFP_HF) || defined(CONFIG_BLUETOOTH_HFP_AG)
@@ -416,7 +418,9 @@ static void turning_off_enter(state_machine_t* sm)
 static void turning_off_exit(state_machine_t* sm)
 {
     ADAPTER_DBG_EXIT(sm);
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     adapter_on_br_disabled();
+#endif // CONFIG_BLUETOOTH_BREDR_SUPPORT
 }
 
 static bool turning_off_process_event(state_machine_t* sm, uint32_t event, void* p_data)

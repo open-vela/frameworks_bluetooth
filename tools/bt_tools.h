@@ -23,6 +23,10 @@
 #endif
 #define LOG_TAG "[bttool]"
 
+#if defined(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE) || defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+#include <zephyr/sys/util.h>
+#endif // defined(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE) || defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+
 #include <getopt.h>
 #include <inttypes.h>
 #include <stdint.h>
@@ -39,7 +43,9 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+#ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif // ARRAY_SIZE
 #define CMD_OK (0)
 #define CMD_INVALID_PARAM (-1)
 #define CMD_INVALID_OPT (-4)
