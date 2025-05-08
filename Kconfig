@@ -435,6 +435,7 @@ choice
 		select LIB_BLUELET
 	config BLUETOOTH_STACK_LE_ZBLUE
 		bool "ble stack use zblue"
+		select BT
 	config BLUETOOTH_STACK_NOT_SUPPORT_LE
 		bool "not support ble stack"
 endchoice
