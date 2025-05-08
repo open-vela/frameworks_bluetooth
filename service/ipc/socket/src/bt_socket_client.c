@@ -250,14 +250,18 @@ static int bt_socket_client_receive(uv_poll_t* poll, int fd, void* userdata)
         ins->offset = 0;
     }
 
-    if (packet->code > BT_MESSAGE_START && packet->code < BT_MESSAGE_END) {
+    if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_MESSAGE_START, BT_MESSAGE_END)
+        || (BT_IPC_CODE_CHECK_TYPE(packet->code, BT_IPC_CODE_TYPE_COMMAND)
+            && !BT_IPC_CODE_CHECK_GROUP(packet->code, BT_IPC_CODE_GROUP_LEGACY))) {
         if (ins->cpacket == NULL)
             return BT_STATUS_SUCCESS;
 
         memcpy(ins->cpacket, packet, sizeof(*packet));
         uv_sem_post(&ins->message_processed);
         return BT_STATUS_SUCCESS;
-    } else if (packet->code > BT_CALLBACK_START && packet->code < BT_CALLBACK_END) {
+    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_CALLBACK_START, BT_CALLBACK_END)
+        || (BT_IPC_CODE_CHECK_TYPE(packet->code, BT_IPC_CODE_TYPE_CALLBACK)
+            && !BT_IPC_CODE_CHECK_GROUP(packet->code, BT_IPC_CODE_GROUP_LEGACY))) {
         bt_client_msg_t* msg = malloc(sizeof(*msg));
         if (!msg)
             return BT_STATUS_NOMEM;
