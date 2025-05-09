@@ -25,6 +25,11 @@ extern "C" {
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
+#ifdef CONFIG_BLUETOOTH_STACK_LE_ZBLUE
+#undef ARRAY_SIZE
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
 #define CASE_RETURN_STR(const) \
     case const:                \
         return #const;
