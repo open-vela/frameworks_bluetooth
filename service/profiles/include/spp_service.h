@@ -28,7 +28,7 @@ typedef struct spp_interface {
     bt_status_t (*unregister_app)(void** remote, void* handle);
     bt_status_t (*server_start)(void* handle, uint16_t scn, bt_uuid_t* uuid, uint8_t max_connection);
     bt_status_t (*server_stop)(void* handle, uint16_t scn);
-    bt_status_t (*connect)(void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port);
+    bt_status_t (*connect)(void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port, uint8_t insecure);
     bt_status_t (*disconnect)(void* handle, bt_address_t* addr, uint16_t port);
 } spp_interface_t;
 

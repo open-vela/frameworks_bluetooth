@@ -138,6 +138,29 @@ bt_status_t bt_spp_connect(bt_instance_t* ins, void* handle, bt_address_t* addr,
 
     memcpy(&packet.spp_pl._bt_spp_connect.addr, addr, sizeof(*addr));
     packet.spp_pl._bt_spp_connect.scn = scn;
+    packet.spp_pl._bt_spp_connect.insecure = 0;
+    memcpy(&packet.spp_pl._bt_spp_connect.uuid, uuid, sizeof(*uuid));
+
+    status = bt_socket_client_sendrecv(ins, &packet, BT_SPP_CONNECT);
+    if (status != BT_STATUS_SUCCESS || packet.spp_r.status != BT_STATUS_SUCCESS) {
+        return packet.spp_r.status;
+    }
+
+    *port = packet.spp_pl._bt_spp_connect.port;
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t bt_spp_insecure_connect(bt_instance_t* ins, void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.spp_pl._bt_spp_connect.addr, addr, sizeof(*addr));
+    packet.spp_pl._bt_spp_connect.scn = scn;
+    packet.spp_pl._bt_spp_connect.insecure = 1;
     memcpy(&packet.spp_pl._bt_spp_connect.uuid, uuid, sizeof(*uuid));
 
     status = bt_socket_client_sendrecv(ins, &packet, BT_SPP_CONNECT);
