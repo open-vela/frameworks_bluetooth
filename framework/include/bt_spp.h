@@ -423,6 +423,20 @@ void app_connect_spp_server(bt_instance_t* ins, void* handle)
 bt_status_t BTSYMBOLS(bt_spp_connect)(bt_instance_t* ins, void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port);
 
 /**
+ * @brief Connect to spp server with insecure connection
+ *
+ * @param[in] ins - bluetooth client instance.
+ * @param[in] handle - spp app handle.
+ * @param[in] addr - address of peer device.
+ * @param[in] scn - server channel number, range in <1-28>.
+ *                - UNKNOWN_SERVER_CHANNEL_NUM: Not specify scn.
+ * @param[in] uuid - server uuid, default:0x1101.
+ * @param[out] port - point to unique port of connection.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_spp_insecure_connect)(bt_instance_t* ins, void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port);
+
+/**
  * @brief Disconnect to SPP server
  *
  * This function is used to initiate an SPP disconnection to a specified device.
