@@ -2572,10 +2572,11 @@ bt_status_t adapter_le_add_whitelist(bt_address_t* addr)
     }
 
     adapter_unlock();
-    return bt_sal_le_add_white_list(PRIMARY_ADAPTER, addr, device_get_address_type(device));
 
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("%s, %s", __func__, addr_str);
+
+    return bt_sal_le_add_white_list(PRIMARY_ADAPTER, addr, device_get_address_type(device));
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
