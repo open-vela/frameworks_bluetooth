@@ -1144,11 +1144,12 @@ unlock_exit:
     return ret;
 }
 
-static bt_status_t spp_connect(void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port)
+static bt_status_t spp_connect(void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port, uint8_t insecure)
 {
     bt_status_t status = BT_STATUS_SUCCESS;
     spp_device_t* device;
     bt_uuid_t uuid_128_dst;
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
 
     /* TODO: check handle are valid */
     if (!handle)
@@ -1168,7 +1169,10 @@ static bt_status_t spp_connect(void* handle, bt_address_t* addr, int16_t scn, bt
         goto unlock_exit;
     }
 
-    status = bt_sal_spp_connect(addr, device->conn_port, &uuid_128_dst);
+    bt_addr_ba2str(&device->addr, addr_str);
+    BT_LOGD("%s, addr:%s, insecure:%d", __func__, addr_str, insecure);
+
+    status = bt_sal_spp_connect_with_option(addr, device->conn_port, &uuid_128_dst, insecure);
     if (status != BT_STATUS_SUCCESS) {
         // spp_notify_connection_state(device, SPP_CONNECTION_STATE_DISCONNECTED);
         remove_spp_device(device);
