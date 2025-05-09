@@ -81,6 +81,7 @@ BT_SPP_MESSAGE_START,
             int16_t scn;
             bt_uuid_t uuid;
             uint16_t port;
+            uint8_t insecure;
         } _bt_spp_connect;
 
         struct {
