@@ -150,6 +150,8 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
         }
     }
 
+    bt_conn_unref(conn);
+
     memcpy(&state.addr, info.le.dst->a.val, sizeof(state.addr));
     adapter_on_connection_state_changed(&state);
     if (info.role == BT_HCI_ROLE_PERIPHERAL) {
