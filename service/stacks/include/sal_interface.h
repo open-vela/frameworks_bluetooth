@@ -78,7 +78,8 @@ typedef struct bt_stack_info {
         int __ret = cond;                               \
         if (__ret != expect) {                          \
             BT_LOGE("[%s] return:%d", __func__, __ret); \
-            bt_conn_unref(conn);                        \
+            if (conn)                                   \
+                bt_conn_unref(conn);                    \
             return BT_STATUS_FAIL;                      \
         }                                               \
     }
