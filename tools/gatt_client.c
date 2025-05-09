@@ -108,7 +108,7 @@ static gattc_device_t* find_gattc_device(void* handle)
 static int connect_cmd(void* handle, int argc, char* argv[])
 {
     ble_addr_type_t addr_type = BT_LE_ADDR_TYPE_RANDOM;
-    if (argc < 2)
+    if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
 
     int conn_id = atoi(argv[0]);
