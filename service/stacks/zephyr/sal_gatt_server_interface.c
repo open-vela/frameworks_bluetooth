@@ -505,7 +505,7 @@ static void STACK_CALL(conn_connect)(void* args)
 {
     sal_adapter_req_t* req = args;
     bt_addr_le_t address = { 0 };
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int err;
 
     address.type = req->addr_type;
@@ -562,7 +562,7 @@ bt_status_t bt_sal_gatt_server_connect(bt_controller_id_t id, bt_address_t* addr
 static void STACK_CALL(conn_cancel)(void* args)
 {
     sal_adapter_req_t* req = args;
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int err;
 
     conn = get_le_conn_from_addr(&req->addr);
@@ -716,7 +716,7 @@ bt_status_t bt_sal_gatt_server_send_indication(bt_controller_id_t id, bt_address
 bt_status_t bt_sal_gatt_server_read_phy(bt_controller_id_t id, bt_address_t* addr)
 {
 #if defined(CONFIG_BT_USER_PHY_UPDATE)
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     struct bt_conn_info info;
     int ret;
     ble_phy_type_t tx_mode;

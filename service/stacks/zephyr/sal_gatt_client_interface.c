@@ -204,7 +204,7 @@ static void STACK_CALL(conn_connect)(void* args)
 {
     sal_adapter_req_t* req = args;
     bt_addr_le_t address = { 0 };
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int err;
 
     address.type = req->addr_type;
@@ -261,7 +261,7 @@ bt_status_t bt_sal_gatt_client_connect(bt_controller_id_t id, bt_address_t* addr
 static void STACK_CALL(conn_disconnect)(void* args)
 {
     sal_adapter_req_t* req = args;
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int err;
 
     gatt_free_instance(&req->addr);
@@ -273,9 +273,9 @@ static void STACK_CALL(conn_disconnect)(void* args)
     }
 
     err = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+
     if (err) {
         BT_LOGE("%s, disconnect fail err:%d", __func__, err);
-        return;
     }
 }
 
@@ -518,7 +518,7 @@ static void bt_gatt_subscribe_response(struct bt_conn* conn, uint8_t err,
 bt_status_t bt_sal_gatt_client_discover_all_services(bt_controller_id_t id, bt_address_t* addr)
 {
     static struct bt_gatt_discover_params disc_params = { 0 };
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int err;
 
     conn = get_le_conn_from_addr(addr);
@@ -545,7 +545,7 @@ bt_status_t bt_sal_gatt_client_discover_all_services(bt_controller_id_t id, bt_a
 bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_controller_id_t id, bt_address_t* addr, bt_uuid_t* uuid)
 {
     static struct bt_gatt_discover_params disc_params = { 0 };
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int err;
     static union uuid u;
 
@@ -577,7 +577,7 @@ bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_controller_id_t id, b
 bt_status_t bt_sal_gatt_client_read_element(bt_controller_id_t id, bt_address_t* addr, uint16_t element_id)
 {
     static struct bt_gatt_read_params read_params = { 0 };
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int err;
 
     conn = get_le_conn_from_addr(addr);
@@ -602,7 +602,7 @@ bt_status_t bt_sal_gatt_client_read_element(bt_controller_id_t id, bt_address_t*
 
 bt_status_t bt_sal_gatt_client_write_element(bt_controller_id_t id, bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length, gatt_write_type_t write_type)
 {
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int err;
 
     conn = get_le_conn_from_addr(addr);
@@ -645,7 +645,7 @@ bt_status_t bt_sal_gatt_client_register_notifications(bt_controller_id_t id, bt_
 {
     static struct bt_gatt_subscribe_params subscribe_params = { 0 };
     uint16_t value;
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int err;
 
     BT_LOGD("%s, addr:%s, element_id:0x%0x, properties:0x%0x, enable:%d", __func__, bt_addr_str(addr), element_id, properties, enable);
@@ -727,7 +727,7 @@ bt_status_t bt_sal_gatt_client_send_mtu_req(bt_controller_id_t id, bt_address_t*
 static void STACK_CALL(update_connection_parameter)(void* args)
 {
     sal_adapter_req_t* req = args;
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int err;
 
     conn = get_le_conn_from_addr(&req->addr);
@@ -768,7 +768,7 @@ bt_status_t bt_sal_gatt_client_update_connection_parameter(bt_controller_id_t id
 
 bt_status_t bt_sal_gatt_client_read_remote_rssi(bt_controller_id_t id, bt_address_t* addr)
 {
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int err;
     int8_t rssi;
 
@@ -791,7 +791,7 @@ bt_status_t bt_sal_gatt_client_read_remote_rssi(bt_controller_id_t id, bt_addres
 bt_status_t bt_sal_gatt_client_read_phy(bt_controller_id_t id, bt_address_t* addr)
 {
 #ifdef CONFIG_BT_USER_PHY_UPDATE
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     struct bt_conn_info info;
     int err;
     ble_phy_type_t tx_mode;
