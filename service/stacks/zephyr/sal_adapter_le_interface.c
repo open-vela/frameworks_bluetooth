@@ -59,7 +59,7 @@ typedef struct {
     uint16_t* cnt;
 } device_context_t;
 
-extern int zblue_main(void);
+extern void z_sys_init(void);
 
 static void zblue_on_connected(struct bt_conn* conn, uint8_t err);
 static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason);
@@ -410,7 +410,9 @@ bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr)
 
 bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal)
 {
-    zblue_main();
+#ifndef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    z_sys_init();
+#endif
 
     bt_conn_cb_register(&g_conn_cbs);
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
