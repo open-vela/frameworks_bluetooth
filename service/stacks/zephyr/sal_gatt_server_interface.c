@@ -426,7 +426,7 @@ bt_status_t bt_sal_gatt_server_enable(void)
 
 bt_status_t bt_sal_gatt_server_disable(void)
 {
-    bt_gatt_cb_register(NULL);
+    bt_gatt_cb_unregister(&zblue_gatt_callbacks);
 
     return BT_STATUS_SUCCESS;
 }
