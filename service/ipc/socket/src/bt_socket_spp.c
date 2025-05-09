@@ -145,7 +145,8 @@ void bt_socket_server_spp_process(service_poll_t* poll,
             &packet->spp_pl._bt_spp_connect.addr,
             packet->spp_pl._bt_spp_connect.scn,
             &packet->spp_pl._bt_spp_connect.uuid,
-            &packet->spp_pl._bt_spp_connect.port);
+            &packet->spp_pl._bt_spp_connect.port,
+            packet->spp_pl._bt_spp_connect.insecure);
         break;
     }
     case BT_SPP_DISCONNECT: {

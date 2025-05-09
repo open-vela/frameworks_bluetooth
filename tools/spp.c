@@ -72,6 +72,7 @@ typedef struct {
 static int start_server_cmd(void* handle, int argc, char* argv[]);
 static int stop_server_cmd(void* handle, int argc, char* argv[]);
 static int connect_cmd(void* handle, int argc, char* argv[]);
+static int insecure_connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int write_cmd(void* handle, int argc, char* argv[]);
 static int speed_test_cmd(void* handle, int argc, char* argv[]);
@@ -101,6 +102,7 @@ static bt_command_t g_spp_tables[] = {
     { "start", start_server_cmd, 0, "\"start spp server        param: <scn>(range in [1,28]) <uuid>\"" },
     { "stop", stop_server_cmd, 0, "\"stop  spp server        param: <scn>(range in [1,28])\"" },
     { "connect", connect_cmd, 0, "\"connect spp device      param: <address> <port> <uuid>\"" },
+    { "insconnect", insecure_connect_cmd, 0, "\"connect spp device with insecure mode     param: <address> <port> <uuid>\"" },
     { "disconnect", disconnect_cmd, 0, "\"disconnect peer device  param: <address> <port>\"" },
     { "write", write_cmd, 0, "\"write data to peer      param: <port> <data>\"" },
     { "speed", speed_test_cmd, 0, "\"performance test        param: <port> <iteration>\" note:iteration * 990 shoule less than free memory" },
@@ -516,6 +518,37 @@ static int connect_cmd(void* handle, int argc, char* argv[])
 
     bt_uuid16_create(&uuid16, uuid);
     if (bt_spp_connect(handle, spp_app_handle, &addr, scn, &uuid16, &port) != BT_STATUS_SUCCESS) {
+        PRINT("connect scn:%d, failed\n", scn);
+        return CMD_ERROR;
+    }
+
+    PRINT("%s, address:%s scn:%d, port:%d, uuid:0x%04x", __func__, argv[1], scn, port, uuid);
+    return CMD_OK;
+}
+
+static int insecure_connect_cmd(void* handle, int argc, char* argv[])
+{
+    int16_t scn;
+    uint16_t uuid;
+    uint16_t port;
+    bt_uuid_t uuid16;
+    bt_address_t addr;
+
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    scn = atoi(argv[1]);
+
+    if (argc == 3)
+        uuid = strtol(argv[2], NULL, 16);
+    else
+        uuid = BT_UUID_SERVCLASS_SERIAL_PORT;
+
+    bt_uuid16_create(&uuid16, uuid);
+    if (bt_spp_insecure_connect(handle, spp_app_handle, &addr, scn, &uuid16, &port) != BT_STATUS_SUCCESS) {
         PRINT("connect scn:%d, failed\n", scn);
         return CMD_ERROR;
     }

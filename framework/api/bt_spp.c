@@ -67,11 +67,18 @@ bt_status_t BTSYMBOLS(bt_spp_server_stop)(bt_instance_t* ins, void* handle, uint
     return profile->server_stop(handle, scn);
 }
 
+bt_status_t BTSYMBOLS(bt_spp_insecure_connect)(bt_instance_t* ins, void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port)
+{
+    spp_interface_t* profile = get_profile_service();
+
+    return profile->connect(handle, addr, scn, uuid, port, true);
+}
+
 bt_status_t BTSYMBOLS(bt_spp_connect)(bt_instance_t* ins, void* handle, bt_address_t* addr, int16_t scn, bt_uuid_t* uuid, uint16_t* port)
 {
     spp_interface_t* profile = get_profile_service();
 
-    return profile->connect(handle, addr, scn, uuid, port);
+    return profile->connect(handle, addr, scn, uuid, port, false);
 }
 
 bt_status_t BTSYMBOLS(bt_spp_disconnect)(bt_instance_t* ins, void* handle, bt_address_t* addr, uint16_t port)
