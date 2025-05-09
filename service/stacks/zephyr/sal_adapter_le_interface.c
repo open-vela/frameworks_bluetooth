@@ -661,7 +661,7 @@ static void STACK_CALL(conn_connect)(void* args)
 {
     sal_adapter_req_t* req = args;
     bt_addr_le_t address = { 0 };
-    struct bt_conn* conn;
+    struct bt_conn* conn = NULL;
     int err;
 
     address.type = req->addr_type;
