@@ -368,10 +368,6 @@ static void bt_tool_uninit(void* handle)
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_command_uninit(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_GATT
-    gattc_command_uninit(handle);
-    gatts_command_uninit(handle);
-#endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
     leas_command_uninit(handle);
 #endif
@@ -414,6 +410,10 @@ static int enable_cmd(void* handle, int argc, char** argv)
 
 static int disable_cmd(void* handle, int argc, char** argv)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
+    gattc_command_uninit(handle);
+    gatts_command_uninit(handle);
+#endif
     bt_adapter_disable(handle);
     return CMD_OK;
 }
