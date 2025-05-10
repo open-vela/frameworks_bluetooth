@@ -140,7 +140,8 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
     int i;
     acl_state_param_t state = {
         .transport = BT_TRANSPORT_BLE,
-        .connection_state = CONNECTION_STATE_DISCONNECTED
+        .connection_state = CONNECTION_STATE_DISCONNECTED,
+        .hci_reason_code = reason
     };
 
     BT_LOGD("%s", __func__);
