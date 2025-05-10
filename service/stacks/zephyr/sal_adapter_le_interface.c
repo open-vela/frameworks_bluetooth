@@ -101,13 +101,27 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     int i;
     acl_state_param_t state = {
         .transport = BT_TRANSPORT_BLE,
-        .connection_state = CONNECTION_STATE_CONNECTED
+        .status = err,
     };
 
     BT_LOGD("%s, err:%d", __func__, err);
     bt_conn_get_info(conn, &info);
 
     if (info.type != BT_CONN_TYPE_LE) {
+        return;
+    }
+
+    memcpy(&state.addr, info.le.dst->a.val, sizeof(state.addr));
+
+    if (err) {
+        bt_conn_unref(conn);
+        state.connection_state = CONNECTION_STATE_DISCONNECTED;
+        adapter_on_connection_state_changed(&state);
+        if (info.role == BT_HCI_ROLE_PERIPHERAL) {
+            if_gatts_on_connection_state_changed(&state.addr, PROFILE_STATE_DISCONNECTED);
+        } else if (info.role == BT_HCI_ROLE_CENTRAL) {
+            if_gattc_on_connection_state_changed(&state.addr, PROFILE_STATE_DISCONNECTED);
+        }
         return;
     }
 
@@ -118,7 +132,7 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
         }
     }
 
-    memcpy(&state.addr, info.le.dst->a.val, sizeof(state.addr));
+    state.connection_state = CONNECTION_STATE_CONNECTED;
     adapter_on_connection_state_changed(&state);
     if (info.role == BT_HCI_ROLE_PERIPHERAL) {
         if_gatts_on_connection_state_changed(&state.addr, PROFILE_STATE_CONNECTED);
