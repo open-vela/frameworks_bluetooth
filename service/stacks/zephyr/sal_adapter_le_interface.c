@@ -104,6 +104,8 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
 {
     struct bt_conn_info info;
     int i;
+    profile_connection_state_t profile_state = PROFILE_STATE_CONNECTED;
+
     acl_state_param_t state = {
         .transport = BT_TRANSPORT_BLE,
         .connection_state = CONNECTION_STATE_CONNECTED
@@ -116,6 +118,20 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
         return;
     }
 
+    get_le_addr_from_conn(conn, &state.addr);
+
+    if (err) {
+        state.connection_state = CONNECTION_STATE_DISCONNECTED;
+        state.status = err;
+        profile_state = PROFILE_STATE_DISCONNECTED;
+
+        if (info.role == BT_HCI_ROLE_CENTRAL) {
+            bt_conn_unref(conn);
+        }
+
+        goto report;
+    }
+
     for (i = 0; i < ARRAY_SIZE(g_acl_conns); i++) {
         if (!g_acl_conns[i]) {
             g_acl_conns[i] = conn;
@@ -123,13 +139,13 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
         }
     }
 
-    memcpy(&state.addr, info.le.dst->a.val, sizeof(state.addr));
+report:
     adapter_on_connection_state_changed(&state);
 #ifdef CONFIG_BLUETOOTH_GATT
     if (info.role == BT_HCI_ROLE_PERIPHERAL) {
-        if_gatts_on_connection_state_changed(&state.addr, PROFILE_STATE_CONNECTED);
+        if_gatts_on_connection_state_changed(&state.addr, profile_state);
     } else if (info.role == BT_HCI_ROLE_CENTRAL) {
-        if_gattc_on_connection_state_changed(&state.addr, PROFILE_STATE_CONNECTED);
+        if_gattc_on_connection_state_changed(&state.addr, profile_state);
     }
 #endif
 }
