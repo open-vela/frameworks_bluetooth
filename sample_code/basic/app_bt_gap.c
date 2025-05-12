@@ -18,7 +18,7 @@
 
 #include "basic.h"
 
-void app_bt_gap_handle_message(bt_instance_t* g_bt_ins, node_t* node)
+void demo_basic_handle_gap_message(bt_instance_t* g_bt_ins, node_t* node)
 {
     // Handle Bluetooth message，Call the API interface of Bluetooth.
 }
