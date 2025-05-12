@@ -442,6 +442,23 @@ choice
 		bool "not support ble stack"
 endchoice
 
+config GATT_CLIENT_SERVICE_MAX
+    int "Maximum number of discovered services per connection"
+    default 20
+    depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
+    help
+		The maximum number of GATT services that can be stored per BLE connection
+		when using the ZBLUE stack.
+
+config GATT_CLIENT_ELEMENT_MAX
+    int "Maximum number of discovered GATT attributes per connection"
+    default 200
+    depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
+    help
+		The maximum number of GATT attribute elements (e.g., characteristics
+		and descriptors) that can be stored per BLE connection
+		when using the ZBLUE stack.
+
 config BLUETOOTH_LE_SCANNER_MAX_NUM
 	int "LE scanner max register number"
 	default 2
