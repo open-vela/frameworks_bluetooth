@@ -221,8 +221,7 @@ static void ag_startup(profile_on_startup_t on_startup)
 
     service->max_connections = CONFIG_HFP_AG_MAX_CONNECTIONS;
     service->ag_devices = bt_list_new((bt_list_free_cb_t)ag_device_delete);
-    service->callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
-    if (!service->ag_devices || !service->callbacks) {
+    if (!service->ag_devices) {
         status = BT_STATUS_NOMEM;
         goto fail;
     }
@@ -243,8 +242,6 @@ static void ag_startup(profile_on_startup_t on_startup)
 fail:
     bt_list_free(service->ag_devices);
     service->ag_devices = NULL;
-    bt_callbacks_list_free(service->callbacks);
-    service->callbacks = NULL;
     pthread_mutex_destroy(&service->device_lock);
     on_startup(PROFILE_HFP_AG, false);
 }
@@ -263,8 +260,6 @@ static void ag_shutdown(profile_on_shutdown_t on_shutdown)
     g_ag_service.ag_devices = NULL;
     pthread_mutex_unlock(&g_ag_service.device_lock);
     pthread_mutex_destroy(&g_ag_service.device_lock);
-    bt_callbacks_list_free(g_ag_service.callbacks);
-    g_ag_service.callbacks = NULL;
     bt_sal_hfp_ag_cleanup();
     on_shutdown(PROFILE_HFP_AG, true);
 }
@@ -406,12 +401,17 @@ static bt_status_t hfp_ag_init(void)
         return ret;
     }
 
+    g_ag_service->callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
+
     return ret;
 }
 
 static void hfp_ag_cleanup(void)
 {
     audio_ctrl_cleanup();
+
+    bt_callbacks_list_free(g_ag_service.callbacks);
+    g_ag_service.callbacks = NULL;
 }
 
 static bt_status_t hfp_ag_startup(profile_on_startup_t cb)
