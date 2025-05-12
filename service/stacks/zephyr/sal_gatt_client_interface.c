@@ -29,9 +29,6 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
-#define CONFIG_GATT_CLIENT_SERVICE_MAX 10
-#define CONFIG_GATT_CLIENT_ELEMENT_MAX 20
-
 #ifdef CONFIG_BLUETOOTH_GATT
 #define STACK_CALL(func) zblue_##func
 
@@ -350,6 +347,9 @@ static uint8_t zblue_gatt_client_disc_chrc_callback(struct bt_conn* conn, const 
             BT_LOGD("%s, discover service finished", __func__);
             if_gattc_on_service_discovered(&instance->addr, instance->element, instance->element_size);
             if_gattc_on_discover_completed(&addr, GATT_STATUS_SUCCESS);
+            instance->element_size = 0;
+            instance->service_idx = 0;
+            instance->service_size = 0;
         }
         return BT_GATT_ITER_STOP;
     }
