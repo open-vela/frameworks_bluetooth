@@ -112,7 +112,7 @@ static void app_bt_set_io_capability(bt_io_capability_t capability)
     app_list_add_tail(&node->node);
 }
 
-void bt_gap_init(void)
+static void app_bt_gap_init(void)
 {
     app_bt_set_io_capability(BT_IO_CAPABILITY_NOINPUTNOOUTPUT);
 
@@ -122,7 +122,7 @@ void bt_gap_init(void)
 /**
  * @brief Discover nearby Bluetooth devices.
  */
-void app_bt_discovery(void)
+static void app_bt_discovery(void)
 {
     node_t* node = (node_t*)malloc(sizeof(node_t));
     if (node == NULL) {
@@ -157,7 +157,7 @@ static void gap_adapter_state_changed_callback(void* cookie, bt_adapter_state_t 
     app_list_add_tail(&node->node);
 
     if (state == BT_ADAPTER_STATE_ON) {
-        bt_gap_init();
+        app_bt_gap_init();
         app_bt_discovery();
     } else if (state == BT_ADAPTER_STATE_OFF) {
         app_demo.running = 0;
@@ -327,7 +327,7 @@ static void app_handle_message(node_t* node)
     }
 
     if (node->data.msg_type > APP_BT_GAP_MESSAGE_START && node->data.msg_type < APP_BT_GAP_MESSAGE_END)
-        app_bt_gap_handle_message(g_bt_ins, node);
+        demo_createbond_handle_gap_message(g_bt_ins, node);
 }
 
 /**
