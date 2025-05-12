@@ -19,7 +19,7 @@
 
 #include "acceptbond.h"
 
-void app_bt_gap_handle_message(bt_instance_t* g_bt_ins, node_t* node)
+void demo_acceptbond_handle_gap_message(bt_instance_t* g_bt_ins, node_t* node)
 {
     app_demo_message_t* msg = &node->data;
     switch (msg->msg_type) {
