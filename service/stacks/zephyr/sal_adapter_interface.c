@@ -245,7 +245,8 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
 
     acl_state_param_t state = {
         .transport = BT_TRANSPORT_BREDR,
-        .connection_state = CONNECTION_STATE_DISCONNECTED
+        .connection_state = CONNECTION_STATE_DISCONNECTED,
+        .hci_reason_code = reason,
     };
 
     zblue_conn_get_addr(conn, &state.addr);
