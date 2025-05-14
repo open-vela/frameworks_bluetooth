@@ -19,6 +19,7 @@ frameworkBluetooth_cc_library {
     srcs : [
         "framework/common/*.c",
         "framework/socket/*.c",
+        "service/common/bt_time.c",
         "service/common/index_allocator.c",
         "service/ipc/socket/src/bt_socket_client.c",
         "service/ipc/socket/src/bt_socket_adapter.c",
@@ -102,6 +103,7 @@ frameworkBluetooth_cc_binary {
     local_include_dirs : [
         "framework/include",
         "service",
+        "service/common",
         "service/utils",
     ],
 
