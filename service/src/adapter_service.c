@@ -241,6 +241,67 @@ static int get_devices_cnt(int flag, uint8_t transport)
     return cnt;
 }
 
+static void load_remote_uuids(remote_device_properties_t* remote, bt_device_t* device)
+{
+    bt_uuid_t* uuids;
+    bt_uuid_t* tmp;
+    uint16_t count_uuid16 = 0;
+    uint16_t count_uuid128 = 0;
+    uint16_t count_uuids = 0;
+    uint8_t* remote_uuids = remote->uuids;
+
+    if (*remote_uuids == 0) {
+        BT_LOGD("%s, No uuids found", __func__);
+        return;
+    }
+
+    switch (*remote_uuids >> 5) {
+    case BT_HEAD_UUID16_TYPE:
+        count_uuid16 = *remote_uuids & 0x1F;
+        break;
+    case BT_HEAD_UUID128_TYPE:
+        count_uuid128 = *remote_uuids & 0x1F;
+        break;
+    default:
+        break;
+    }
+
+    remote_uuids++;
+    count_uuids = count_uuid16;
+
+    if (count_uuid16 != 0) {
+        if (count_uuid16 * 2 + 1 < CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN) {
+            count_uuid128 = *(remote_uuids + count_uuid16 * 2) & 0x1F;
+            count_uuids += count_uuid128;
+        }
+    }
+
+    uuids = (bt_uuid_t*)malloc(sizeof(bt_uuid_t) * count_uuids);
+    tmp = uuids;
+    for (int i = 0; i < count_uuid16; i++) {
+        bt_uuid_t uuid;
+
+        uuid.type = BT_UUID16_TYPE;
+        BE_STREAM_TO_UINT16(uuid.val.u16, remote_uuids)
+        bt_uuid_to_uuid128(&uuid, tmp);
+        tmp++;
+    }
+
+    if (count_uuid128 != 0) {
+        remote_uuids++;
+    }
+
+    for (int i = 0; i < count_uuid128; i++) {
+        tmp->type = BT_UUID128_TYPE;
+        memcpy(tmp->val.u128, remote_uuids, sizeof(tmp->val.u128));
+        remote_uuids += 16;
+        tmp++;
+    }
+
+    device_set_uuids(device, uuids, count_uuids);
+    free(uuids);
+}
+
 static void bonded_device_loaded(void* data, uint16_t length, uint16_t items)
 {
     if (data && items) {
@@ -257,6 +318,7 @@ static void bonded_device_loaded(void* data, uint16_t length, uint16_t items)
             device_set_link_key(device, remote->link_key);
             device_set_link_key_type(device, remote->link_key_type);
             device_set_bond_state(device, BOND_STATE_BONDED);
+            load_remote_uuids(remote, device);
             bt_list_add_tail(g_adapter_service.devices, device);
             bt_addr_ba2str(&remote->addr, addr_str);
             uint8_t* lk = remote->link_key;
@@ -526,7 +588,7 @@ static void process_service_search_done_evt(bt_address_t* addr, bt_uuid_t* uuids
     device = adapter_find_create_classic_device(addr);
     device_set_uuids(device, uuids, size);
     adapter_unlock();
-
+    adapter_update_bonded_device();
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_remote_uuids_changed, addr, uuids, size);
     free(uuids);
 }
