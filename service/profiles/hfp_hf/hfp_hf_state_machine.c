@@ -415,6 +415,10 @@ static void state_machine_reset_calls(hf_state_machine_t* hfsm)
     if (hfsm->connect_timer)
         service_loop_cancel_timer(hfsm->connect_timer);
     hfsm->recognition_active = false;
+
+    hfsm->call_status.last_reported.call_status = HFP_CALL_NO_CALLS_IN_PROGRESS;
+    hfsm->call_status.last_reported.callheld_status = HFP_CALLHELD_NONE;
+    hfsm->call_status.last_reported.callsetup_status = HFP_CALLSETUP_NONE;
 }
 
 static void update_remote_features(hf_state_machine_t* hfsm, uint32_t remote_features)
