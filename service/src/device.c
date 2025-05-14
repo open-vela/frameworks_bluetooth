@@ -25,10 +25,15 @@
 #include "bluetooth.h"
 #include "bluetooth_define.h"
 #include "bt_addr.h"
+#include "bt_config.h"
 #include "bt_device.h"
 #include "bt_list.h"
+#include "bt_utils.h"
+#include "bt_uuid.h"
 #include "device.h"
 #include "utils/log.h"
+
+#define BASE_UUID16_OFFSET 12
 
 typedef struct remote_device {
     char name[BT_REM_NAME_MAX_LEN + 1];
@@ -391,6 +396,128 @@ void device_get_le_phy(bt_device_t* device, ble_phy_type_t* tx_phy, ble_phy_type
     *rx_phy = device->remote.rx_phy;
 }
 
+static void device_get_remote_uuids(bt_device_t* device, remote_device_properties_t* prop)
+{
+    bt_uuid_t* uuids;
+    uint8_t count_uuid16 = 0;
+    uint8_t count_uuid128 = 0;
+    uint8_t* uuids_prop = prop->uuids;
+    uint8_t* p;
+    uint8_t* q;
+    bt_uuid_t bt_uuid128_base = {
+        .type = BT_UUID128_TYPE,
+        .val.u128 = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
+            0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+    };
+
+    if (device->remote.uuids.uuid_cnt == 0) {
+        BT_LOGD("%s, No uuids found", __func__);
+        return;
+    }
+
+    uuids = device->remote.uuids.uuids;
+
+    for (int i = 0; i < device->remote.uuids.uuid_cnt; i++) {
+        switch ((uuids + i)->type) {
+        case BT_UUID16_TYPE:
+            count_uuid16++;
+            break;
+        case BT_UUID32_TYPE:
+            break; // TODO: Save 32bit uuid
+        case BT_UUID128_TYPE: {
+            bt_uuid_t tmp = { 0 };
+            int result = -1;
+
+            memcpy(&tmp, uuids + i, sizeof(bt_uuid_t));
+            tmp.val.u128[12] = 0x00;
+            tmp.val.u128[13] = 0x00;
+            result = bt_uuid_compare(&tmp, &bt_uuid128_base);
+            if (result != 0) {
+                count_uuid128++;
+                break;
+            } else if ((uuids + i)->val.u128[14] == 0x00 && (uuids + i)->val.u128[15] == 0x00) {
+                count_uuid16++;
+            }
+
+            break;
+        }
+
+        default:
+            break;
+        }
+    }
+
+    if (count_uuid16 == 0 && count_uuid128 == 0) {
+        BT_LOGD("%s, No uuids found", __func__);
+        return;
+    }
+
+    if (count_uuid16 > 0) {
+        count_uuid16 = count_uuid16 * 2 + 1 > CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN ? (CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - 1) / 2 : count_uuid16;
+        *uuids_prop = (BT_HEAD_UUID16_TYPE << 5 | count_uuid16) & 0x7F;
+    }
+
+    if (count_uuid128 > 0) {
+        if (count_uuid16 > 0) {
+            count_uuid128 = count_uuid128 * 16 + 1 > CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - count_uuid16 * 2 + 1 ? (CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - count_uuid16 * 2 - 2) / 16 : count_uuid128;
+            *(uuids_prop + count_uuid16 * 2 + 1) = (BT_HEAD_UUID128_TYPE << 5 | count_uuid128) & 0x7F;
+        } else {
+            count_uuid128 = count_uuid128 * 16 + 1 > CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN ? (CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - 1) / 16 : count_uuid128;
+            *(uuids_prop) = (BT_HEAD_UUID128_TYPE << 5 | count_uuid128) & 0x7F;
+        }
+    }
+
+    if (count_uuid16 > 0) {
+        p = uuids_prop + 1;
+    }
+
+    if (count_uuid128 > 0) {
+        q = uuids_prop + count_uuid16 * 2 + 2;
+    }
+
+    for (int i = 0; i < device->remote.uuids.uuid_cnt && ((count_uuid16 > 0) | (count_uuid128 > 0)); i++) {
+        switch ((uuids + i)->type) {
+        case BT_UUID16_TYPE:
+            if (count_uuid16 > 0 && p - uuids_prop < CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - 1) {
+                UINT16_TO_STREAM(p, (uuids + i)->val.u16);
+                count_uuid16--;
+            }
+            break;
+        case BT_UUID32_TYPE:
+            break; // TODO: Save 32bit uuid
+        case BT_UUID128_TYPE: {
+            bt_uuid_t tmp = { 0 };
+            int result = -1;
+
+            memcpy(&tmp, uuids + i, sizeof(bt_uuid_t));
+            tmp.val.u128[12] = 0x00;
+            tmp.val.u128[13] = 0x00;
+            result = bt_uuid_compare(&tmp, &bt_uuid128_base);
+            if (result != 0) {
+                if (count_uuid128 > 0 && q - uuids_prop < CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - 15) {
+                    memcpy(q, (uuids + i)->val.u128, 16);
+                    q += 16;
+                    count_uuid128--;
+                }
+
+                break;
+            } else if ((uuids + i)->val.u128[14] == 0x00 && (uuids + i)->val.u128[15] == 0x00) {
+                if (count_uuid16 > 0 && p - uuids_prop < CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN - 1) {
+                    *(p++) = (uuids + i)->val.u128[BASE_UUID16_OFFSET + 1];
+                    *(p++) = (uuids + i)->val.u128[BASE_UUID16_OFFSET];
+                    count_uuid16--;
+                }
+            }
+
+            break;
+        }
+
+        default:
+            break;
+        }
+    }
+}
+
 void device_get_property(bt_device_t* device, remote_device_properties_t* prop)
 {
     memcpy(&prop->addr, &device->remote.addr, sizeof(bt_address_t));
@@ -401,6 +528,7 @@ void device_get_property(bt_device_t* device, remote_device_properties_t* prop)
     memcpy(prop->link_key, device->remote.link_key, 16);
     prop->link_key_type = device->remote.link_key_type;
     prop->device_type = device->remote.device_type;
+    device_get_remote_uuids(device, prop);
 }
 
 void device_get_le_property(bt_device_t* device, remote_device_le_properties_t* prop)

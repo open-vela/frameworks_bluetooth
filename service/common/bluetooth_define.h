@@ -15,9 +15,9 @@
  ***************************************************************************/
 #ifndef __BLUETOOTH_DEFINE_H_
 #define __BLUETOOTH_DEFINE_H_
-
 #include "bluetooth.h"
 #include "bt_addr.h"
+#include "bt_config.h"
 #include "bt_uuid.h"
 // #define BLE_MAX_ADV_NUM 8
 
@@ -74,6 +74,7 @@ typedef struct {
     uint8_t link_key[16];
     bt_link_key_type_t link_key_type;
     bt_device_type_t device_type;
+    uint8_t uuids[CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN];
 } remote_device_properties_t;
 
 typedef struct {
