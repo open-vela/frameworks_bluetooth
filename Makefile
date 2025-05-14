@@ -52,6 +52,10 @@ else
 CSRCS += service/common/storage.c
 endif
 
+ifeq ($(CONFIG_BLUETOOTH_DEBUG_MEMORY),y)
+CSRCS += debug/bt_memory.c
+endif
+
 ifeq ($(CONFIG_BLUETOOTH_SERVICE), y)
 	CSRCS += service/common/service_loop.c
 	CSRCS += service/src/adapter_service.c
