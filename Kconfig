@@ -478,11 +478,13 @@ config BLUETOOTH_TOOLS
 
 choice
 	prompt "select bt vendor"
-	default BLUETOOTH_VENDOR_BES
+	default BLUETOOTH_VENDOR_NONE
 	config BLUETOOTH_VENDOR_BES
 		bool "bluetooth vendor BES"
 	config BLUETOOTH_VENDOR_ACTIONS
 		bool "bluetooth vendor ACTIONS"
+	config BLUETOOTH_VENDOR_NONE
+		bool "bluetooth vendor NONE"
 endchoice
 
 config BLUETOOTH_FEATURE
