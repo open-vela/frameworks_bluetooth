@@ -713,6 +713,7 @@ static void STACK_CALL(set_scan_mode)(void* args)
     sal_adapter_req_t* req = args;
     bool iscan = false;
     bool pscan = false;
+    int ret;
 
     switch (req->adpt.scanmode.scan_mode) {
     case BT_SCAN_MODE_NONE:
@@ -730,18 +731,10 @@ static void STACK_CALL(set_scan_mode)(void* args)
         break;
     }
 
-    int ret = bt_br_set_connectable(pscan);
+    ret = bt_br_set_visibility(iscan, pscan);
     if (ret != 0 && ret != -EALREADY) {
-        BT_LOGE("%s set connectable failed:%d", __func__, ret);
+        BT_LOGE("%s set scanmode failed:%d", __func__, ret);
         return;
-    }
-
-    if (iscan) {
-        ret = bt_br_set_discoverable(iscan);
-        if (ret != 0 && ret != -EALREADY) {
-            BT_LOGE("%s set discoverable failed:%d", __func__, ret);
-            return;
-        }
     }
 
     if (ret == 0)
