@@ -14,11 +14,11 @@
  * limitations under the License.
  ***************************************************************************/
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/conn.h>
-#include <bluetooth/gatt.h>
-#include <bluetooth/l2cap.h>
-#include <bluetooth/uuid.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/conn.h>
+#include <zephyr/bluetooth/gatt.h>
+#include <zephyr/bluetooth/l2cap.h>
+#include <zephyr/bluetooth/uuid.h>
 
 #include <debug.h>
 

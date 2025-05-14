@@ -22,9 +22,9 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/conn.h>
-#include <bluetooth/hci.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/conn.h>
+#include <zephyr/bluetooth/hci.h>
 
 #ifndef CONFIG_BT_EXT_ADV_MAX_ADV_SET
 #define CONFIG_BT_EXT_ADV_MAX_ADV_SET 3
