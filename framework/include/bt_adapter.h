@@ -344,6 +344,8 @@ typedef void (*on_connection_state_changed_callback)(void* cookie, bt_address_t*
  *
  * Callback function invoked when the bond state changes.
  *
+ * @note The way the callback is invoked locally will no longer be supported.
+ *
  * @param cookie - User-defined context:
  *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
  *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
@@ -362,6 +364,28 @@ void on_bond_state_changed(void* cookie, bt_address_t* addr, bt_transport_t tran
  * @endcode
  */
 typedef void (*on_bond_state_changed_callback)(void* cookie, bt_address_t* addr, bt_transport_t transport, bond_state_t state, bool is_ctkd);
+
+/**
+ * @brief Bond state changed callback.
+ *
+ * @param cookie - User-defined context:
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is enabled, it's a `bt_instance_t*`.
+ *                 - If `CONFIG_BLUETOOTH_FEATURE` is disabled, it's a dynamically allocated `remote_callback_t*`.
+ *                 See `bt_adapter_register_callback` and `bt_remote_callbacks_register` for details.
+ * @param addr - Address of the remote device, see @ref bt_address_t.
+ * @param transport - Transport type, see @ref bt_transport_t (0: LE, 1: BR/EDR).
+ * @param previous_state - Previous bond state, see @ref bond_state_t.
+ * @param current_state - Current bond state, see @ref bond_state_t.
+ * @param is_ctkd - Indicates whether to use cross-transport key derivation, true if cross-transport key derivation is used.
+ *
+ * **Example:**
+ * @code
+ * void on_bond_state_changed(void* cookie, bt_address_t* addr, bt_transport_t transport, bond_state_t previous_state, bond_state_t current_state, bool is_ctkd)
+ * {
+ *     printf("Bond state changed: %d -> %d\n", previous_state, current_state);
+ * }
+ */
+typedef void (*on_bond_state_changed_callback_extra)(void* cookie, bt_address_t* addr, bt_transport_t transport, bond_state_t previous_state, bond_state_t current_state, bool is_ctkd);
 
 /**
  * @brief Got local OOB data for LE secure connection pairing callback.
@@ -512,6 +536,7 @@ typedef struct {
     on_connect_request_callback on_connect_request;
     on_connection_state_changed_callback on_connection_state_changed;
     on_bond_state_changed_callback on_bond_state_changed;
+    on_bond_state_changed_callback_extra on_bond_state_changed_extra;
     on_le_sc_local_oob_data_got_callback on_le_sc_local_oob_data_got;
     on_remote_name_changed_callback on_remote_name_changed;
     on_remote_alias_changed_callback on_remote_alias_changed;
