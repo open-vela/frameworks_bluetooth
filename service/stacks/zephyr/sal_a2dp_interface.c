@@ -26,8 +26,8 @@
 #include "sal_interface.h"
 #include "sal_zblue.h"
 
-#include <zephyr/bluetooth/classic/a2dp.h>
 #include <zephyr/bluetooth/conn.h>
+#include <zephyr/bluetooth/zephyr3/a2dp.h>
 
 #include "bt_utils.h"
 #include "utils/log.h"
