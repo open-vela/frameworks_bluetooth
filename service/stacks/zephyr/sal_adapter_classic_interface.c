@@ -1220,7 +1220,7 @@ static void STACK_CALL(create_bond)(void* args)
     bond_state_t state = BOND_STATE_NONE;
     struct bt_conn* conn;
 
-    conn = bt_conn_pair_br((bt_addr_t*)&req->addr, BT_SECURITY_L3);
+    conn = bt_conn_pair_br((bt_addr_t*)&req->addr, BT_SECURITY_L2);
     if (conn) {
         state = BOND_STATE_BONDING;
         bt_conn_unref(conn);
