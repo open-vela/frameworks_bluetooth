@@ -19,6 +19,7 @@
 #include "bt_config.h"
 #include "bt_list.h"
 #include "bt_spp.h"
+#include "bt_time.h"
 #include "bt_tools.h"
 #include "bt_uuid.h"
 #include "euv_pipe.h"
@@ -40,6 +41,12 @@ typedef struct {
     uint16_t len;
     uint32_t state;
     char* name;
+
+    /* spp ping test */
+    int size;
+    int count;
+    int delay;
+    int timeout;
 } spp_cmd_t;
 
 typedef struct {
@@ -50,6 +57,7 @@ typedef struct {
         TRANS_WRITING,
         TRANS_SENDING,
         TRANS_RECVING,
+        TRANS_ECHO,
     } state;
     uint8_t* bulk_buf;
     int32_t bulk_count;
@@ -58,6 +66,7 @@ typedef struct {
     uint32_t received_size;
     uint64_t start_timestamp;
     uint64_t end_timestamp;
+    int seq;
 } transmit_context_t;
 
 static int start_server_cmd(void* handle, int argc, char* argv[]);
@@ -66,6 +75,7 @@ static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int write_cmd(void* handle, int argc, char* argv[]);
 static int speed_test_cmd(void* handle, int argc, char* argv[]);
+static int ping_test_cmd(void* handle, int argc, char* argv[]);
 static int dump_cmd(void* handle, int argc, char* argv[]);
 
 static const char* TRANS_START = "START:";
@@ -78,6 +88,15 @@ static void* spp_app_handle = NULL;
 static uv_loop_t spp_thread_loop = { 0 };
 static transmit_context_t trans_ctx = { 0 };
 
+static struct option spp_ping_options[] = {
+    { "port", required_argument, 0, 'p' },
+    { "size", required_argument, 0, 's' },
+    { "count", required_argument, 0, 'c' },
+    { "timeout", required_argument, 0, 't' },
+    { "delay", required_argument, 0, 'd' },
+    { 0, 0, 0, 0 }
+};
+
 static bt_command_t g_spp_tables[] = {
     { "start", start_server_cmd, 0, "\"start spp server        param: <scn>(range in [1,28]) <uuid>\"" },
     { "stop", stop_server_cmd, 0, "\"stop  spp server        param: <scn>(range in [1,28])\"" },
@@ -85,6 +104,7 @@ static bt_command_t g_spp_tables[] = {
     { "disconnect", disconnect_cmd, 0, "\"disconnect peer device  param: <address> <port>\"" },
     { "write", write_cmd, 0, "\"write data to peer      param: <port> <data>\"" },
     { "speed", speed_test_cmd, 0, "\"performance test        param: <port> <iteration>\" note:iteration * 990 shoule less than free memory" },
+    { "ping", ping_test_cmd, 0, "\"ping test        param: [-p port] [-s size] [-c count] [-t timeout] [-d delay ms]" },
     { "dump", dump_cmd, 0, "\"dump spp current state\"" },
 };
 
@@ -191,6 +211,66 @@ static void speed_test_start(void* cmd)
     PRINT("transmit start, waiting for %" PRIu32 " bytes transmit done", ctx->trans_total_size);
 }
 
+static void ping_test_start(void* cmd)
+{
+    spp_cmd_t* msg = cmd;
+    spp_device_t* device;
+    transmit_context_t* ctx = &trans_ctx;
+    uint16_t port = msg->port;
+    uint16_t counts = msg->count;
+    int size = msg->size;
+    int timeout = msg->timeout;
+    int delay = msg->delay;
+
+    device = find_device_by_port(port);
+    if (!device) {
+        PRINT("Device not found for port:%d", port);
+        return;
+    }
+
+    ctx->handle = device->pipe;
+    ctx->state = TRANS_ECHO;
+    ctx->bulk_length = size;
+    ctx->bulk_buf = malloc(size);
+    if (!ctx->bulk_buf) {
+        PRINT("malloc bulk_buf failed");
+        return;
+    }
+
+    BT_LOGD("spp ping start, counts:%d, size:%d, timeout:%d, delay:%d", counts, size, timeout, delay);
+    for (size_t seq = 1; seq <= counts; seq++) {
+        struct timespec ts;
+        char header[20];
+
+        snprintf(header, sizeof(header), "ECHO:%d", seq);
+
+        if (ctx->bulk_length < strlen(header)) {
+            PRINT("bulk_length is too small");
+            goto end;
+        }
+
+        memcpy(ctx->bulk_buf, header, strlen(header));
+        memset(ctx->bulk_buf + strlen(header), 0xA5, ctx->bulk_length - strlen(header));
+        ctx->seq = seq;
+        ctx->start_timestamp = get_timestamp_msec();
+
+        euv_pipe_write(device->pipe, ctx->bulk_buf, ctx->bulk_length, NULL);
+
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ts.tv_sec += timeout;
+        if (sem_timedwait(&spp_send_sem, &ts) < 0) {
+            PRINT("spp ping test timeout");
+            spp_trans_reset();
+            goto end;
+        }
+
+        usleep(delay * 1000);
+    }
+
+end:
+    free(ctx->bulk_buf);
+}
+
 static void spp_data_received(euv_pipe_t* handle, const uint8_t* buf, ssize_t size)
 {
     transmit_context_t* ctx = &trans_ctx;
@@ -233,6 +313,18 @@ static void spp_data_received(euv_pipe_t* handle, const uint8_t* buf, ssize_t si
             show_result(ctx->start_timestamp, ctx->end_timestamp, ctx->trans_total_size);
             euv_pipe_write(handle, (uint8_t*)TRANS_EOF, 4, NULL);
             spp_trans_reset();
+        }
+        break;
+    case TRANS_ECHO:
+        if (strncmp((const char*)buf, "ECHO", strlen("ECHO")) == 0) {
+            uint64_t start_timestamp;
+
+            ctx->handle = handle;
+            start_timestamp = get_timestamp_msec();
+
+            PRINT("%d bytes from port(%d): seq=%d time=%" PRIu64 " ms", strlen((const char*)buf), ctx->port, ctx->seq, (start_timestamp - ctx->start_timestamp));
+            lib_dumpbuffer("spp recv:", buf, size);
+            sem_post(&spp_send_sem);
         }
         break;
     default:
@@ -378,9 +470,9 @@ static int start_server_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint16_t scn = atoi(argv[0]);
+    uint16_t scn = atoi(argv[1]);
     if (argc == 2)
-        uuid = strtol(argv[1], NULL, 16);
+        uuid = strtol(argv[2], NULL, 16);
     else
         uuid = BT_UUID_SERVCLASS_SERIAL_PORT;
 
@@ -400,7 +492,7 @@ static int stop_server_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint16_t scn = atoi(argv[0]);
+    uint16_t scn = atoi(argv[1]);
     bt_spp_server_stop(handle, spp_app_handle, scn);
 
     return CMD_OK;
@@ -417,13 +509,13 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_addr_str2ba(argv[0], &addr) < 0)
+    if (bt_addr_str2ba(argv[1], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    scn = atoi(argv[1]);
+    scn = atoi(argv[2]);
 
     if (argc == 3)
-        uuid = strtol(argv[2], NULL, 16);
+        uuid = strtol(argv[3], NULL, 16);
     else
         uuid = BT_UUID_SERVCLASS_SERIAL_PORT;
 
@@ -433,7 +525,7 @@ static int connect_cmd(void* handle, int argc, char* argv[])
         return CMD_ERROR;
     }
 
-    PRINT("%s, address:%s scn:%d, port:%d, uuid:0x%04x", __func__, argv[0], scn, port, uuid);
+    PRINT("%s, address:%s scn:%d, port:%d, uuid:0x%04x", __func__, argv[1], scn, port, uuid);
     return CMD_OK;
 }
 
@@ -465,10 +557,10 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
         return CMD_ERROR;
 
     msg->handle = handle;
-    msg->port = atoi(argv[1]);
-    bt_addr_str2ba(argv[0], &msg->addr);
+    msg->port = atoi(argv[2]);
+    bt_addr_str2ba(argv[1], &msg->addr);
 
-    PRINT("%s, address:%s port:%d", __func__, argv[0], msg->port);
+    PRINT("%s, address:%s port:%d", __func__, argv[1], msg->port);
     do_in_thread_loop(&spp_thread_loop, spp_disconnect, msg);
 
     return CMD_OK;
@@ -510,8 +602,8 @@ static int write_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    port = atoi(argv[0]);
-    buf = (uint8_t*)strdup(argv[1]);
+    port = atoi(argv[1]);
+    buf = (uint8_t*)strdup(argv[2]);
 
     spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
     if (!msg) {
@@ -521,7 +613,7 @@ static int write_cmd(void* handle, int argc, char* argv[])
 
     msg->port = port;
     msg->buf = buf;
-    msg->len = strlen(argv[1]);
+    msg->len = strlen(argv[2]);
 
     do_in_thread_loop(&spp_thread_loop, spp_write, msg);
     return CMD_OK;
@@ -534,8 +626,8 @@ static int speed_test_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    port = atoi(argv[0]);
-    times = atoi(argv[1]);
+    port = atoi(argv[1]);
+    times = atoi(argv[2]);
     if (port < 0 || times < 0)
         return CMD_INVALID_PARAM;
 
@@ -555,6 +647,58 @@ static int speed_test_cmd(void* handle, int argc, char* argv[])
         spp_trans_reset();
         return CMD_ERROR;
     }
+
+    return CMD_OK;
+}
+
+static int ping_test_cmd(void* handle, int argc, char* argv[])
+{
+    int opt;
+    int delay = 200; // dealy 200 ms
+    int count = 1;
+    int timeout = 1;
+    int size = 50;
+    int port = 0;
+
+    optind = 0;
+    while ((opt = getopt_long(argc, argv, "+d:c:t:s:p:", spp_ping_options,
+                NULL))
+        != -1) {
+        switch (opt) {
+        case 'd':
+            delay = atoi(optarg);
+            break;
+        case 'c':
+            count = atoi(optarg);
+            break;
+        case 't':
+            timeout = atoi(optarg);
+            break;
+        case 's':
+            size = atoi(optarg);
+            break;
+        case 'p':
+            port = atoi(optarg);
+            break;
+        default:
+            PRINT("%s, default opt:%c, arg:%s", __func__, opt, optarg);
+            break;
+        }
+    }
+
+    spp_cmd_t* msg = zalloc(sizeof(spp_cmd_t));
+    if (!msg)
+        return CMD_ERROR;
+
+    msg->delay = delay;
+    msg->count = count;
+    msg->timeout = timeout;
+    msg->size = size;
+    msg->port = port;
+    BT_LOGD("delay:%d, count:%d, timeout:%d, size:%d, port:%d", delay, count, timeout, size, port);
+
+    ping_test_start(msg);
+    free(msg);
 
     return CMD_OK;
 }
@@ -593,7 +737,7 @@ int spp_command_exec(void* handle, int argc, char* argv[])
     int ret = CMD_USAGE_FAULT;
 
     if (argc > 0)
-        ret = execute_command_in_table(handle, g_spp_tables, ARRAY_SIZE(g_spp_tables), argc, argv);
+        ret = execute_command_in_table_offset(handle, g_spp_tables, ARRAY_SIZE(g_spp_tables), argc - 1, argv, 0);
 
     if (ret < 0)
         usage();
