@@ -36,6 +36,7 @@
 
 #include <zephyr/settings/settings.h>
 
+#include "sal_adapter_le_interface.h"
 #include "sal_interface.h"
 
 #include "utils/log.h"
@@ -1113,18 +1114,45 @@ connection_state_t bt_sal_get_connection_state(bt_controller_id_t id, bt_address
 
 uint16_t bt_sal_get_acl_connection_handle(bt_controller_id_t id, bt_address_t* addr, bt_transport_t trasnport)
 {
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     struct bt_conn_info info;
-    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+    struct bt_conn* conn = NULL;
 
-    bt_conn_get_info(conn, &info);
-    bt_conn_unref(conn);
+    if (trasnport == BT_TRANSPORT_BLE) {
+#ifdef CONFIG_BLUETOOTH_LE_SUPPORT
+        conn = get_le_conn_from_addr(addr);
+        if (!conn) {
+            BT_LOGE("%s, conn null", __func__);
+            return BT_INVALID_CONNECTION_HANDLE;
+        }
 
-    return info.handle;
-#else
-    return BT_INVALID_CONNECTION_HANDLE;
+        if (bt_conn_get_info(conn, &info)) {
+            BT_LOGE("%s, bt_conn_get_info fail", __func__);
+            return BT_INVALID_CONNECTION_HANDLE;
+        }
+
+        return info.handle;
 #endif
+    } else if (trasnport == BT_TRANSPORT_BREDR) {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+        conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+        if (!conn) {
+            BT_LOGE("%s, conn null", __func__);
+            return BT_INVALID_CONNECTION_HANDLE;
+        }
+
+        if (bt_conn_get_info(conn, &info)) {
+            BT_LOGE("%s, bt_conn_get_info fail", __func__);
+            bt_conn_unref(conn);
+            return BT_INVALID_CONNECTION_HANDLE;
+        }
+
+        bt_conn_unref(conn);
+        return info.handle;
+#endif
+    }
+
+    return BT_INVALID_CONNECTION_HANDLE;
 }
 
 uint16_t bt_sal_get_sco_connection_handle(bt_controller_id_t id, bt_address_t* addr)
