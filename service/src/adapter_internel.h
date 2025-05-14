@@ -49,6 +49,12 @@ enum {
 };
 
 typedef struct {
+    void* device;
+    bond_state_t previous_state;
+    bool is_ctkd;
+} bond_state_change_message_t;
+
+typedef struct {
     bt_address_t addr; // Remote BT address
     ble_addr_type_t addr_type; // if link type is ble connection type
     uint8_t transport;

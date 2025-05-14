@@ -31,6 +31,7 @@
 #include "bt_utils.h"
 #include "bt_uuid.h"
 #include "device.h"
+#include "service_loop.h"
 #include "utils/log.h"
 
 #define BASE_UUID16_OFFSET 12
@@ -339,9 +340,28 @@ bond_state_t device_get_bond_state(bt_device_t* device)
     return device->remote.bond_state;
 }
 
-void device_set_bond_state(bt_device_t* device, bond_state_t state)
+void device_set_bond_state(bt_device_t* device, bond_state_t state, bool is_ctkd, void* notify_change)
 {
+    bond_state_change_message_t* msg;
+    bond_state_t prev_state = device->remote.bond_state;
+
+    if (prev_state == state)
+        return;
+
     device->remote.bond_state = state;
+    if (!notify_change)
+        return;
+
+    msg = zalloc(sizeof(bond_state_change_message_t));
+    if (!msg) {
+        BT_LOGE("%s malloc failed", __func__);
+        return;
+    }
+
+    msg->device = device;
+    msg->previous_state = prev_state;
+    msg->is_ctkd = is_ctkd;
+    do_in_service_loop(notify_change, msg);
 }
 
 bool device_is_bonded(bt_device_t* device)
