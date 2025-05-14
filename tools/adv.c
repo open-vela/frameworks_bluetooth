@@ -231,6 +231,7 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
                 return CMD_INVALID_PARAM;
             }
             PRINT("duration: %" PRId32 " ms", duration * 10);
+            params.duration = duration;
         } break;
         case 'P': {
             bt_address_t peeraddr;

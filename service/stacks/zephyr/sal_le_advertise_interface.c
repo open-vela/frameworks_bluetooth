@@ -42,6 +42,7 @@ typedef void (*sal_func_t)(void* args);
 typedef union {
     struct {
         struct bt_le_adv_param param;
+        struct bt_le_ext_adv_start_param ext_param;
         uint8_t* adv_data;
         uint16_t adv_len;
         uint8_t* scan_rsp_data;
@@ -73,12 +74,7 @@ static struct bt_le_ext_adv_cb g_adv_cb = {
     .connected = ext_adv_connected,
 };
 
-static void ext_adv_sent(struct bt_le_ext_adv* adv, struct bt_le_ext_adv_sent_info* info)
-{
-    BT_LOGD("%s ", __func__);
-}
-
-static void ext_adv_connected(struct bt_le_ext_adv* adv, struct bt_le_ext_adv_connected_info* info)
+static void ext_adv_terminated_cb(struct bt_le_ext_adv* adv)
 {
     int index;
 
@@ -92,6 +88,20 @@ static void ext_adv_connected(struct bt_le_ext_adv* adv, struct bt_le_ext_adv_co
 
     advertising_on_state_changed(g_adv_sets[index]->adv_id, LE_ADVERTISING_STOPPED);
     zblue_le_ext_delete(g_adv_sets[index]);
+}
+
+static void ext_adv_sent(struct bt_le_ext_adv* adv, struct bt_le_ext_adv_sent_info* info)
+{
+    BT_LOGD("%s ", __func__);
+
+    ext_adv_terminated_cb(adv);
+}
+
+static void ext_adv_connected(struct bt_le_ext_adv* adv, struct bt_le_ext_adv_connected_info* info)
+{
+    BT_LOGD("%s ", __func__);
+
+    ext_adv_terminated_cb(adv);
 }
 
 static bt_status_t zblue_le_ext_convert_param(ble_adv_params_t* params, struct bt_le_adv_param* param)
@@ -340,7 +350,7 @@ static void STACK_CALL(start_adv)(void* args)
         goto done;
     }
 
-    ret = bt_le_ext_adv_start(adv, BT_LE_EXT_ADV_START_DEFAULT);
+    ret = bt_le_ext_adv_start(adv, &req->adpt.start_adv.ext_param);
     if (ret) {
         BT_LOGE("%s, le ext adv start fail, err:%d", __func__, ret);
         ret = BT_STATUS_FAIL;
@@ -408,6 +418,10 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
     } else {
         req->adpt.start_adv.scan_rsp_data = NULL;
         req->adpt.start_adv.scan_rsp_len = 0;
+    }
+
+    if (params->duration) {
+        req->adpt.start_adv.ext_param.timeout = params->duration;
     }
 
     return sal_send_req(req);
