@@ -125,6 +125,7 @@ static void adapter_notify_bond_state(void* data)
     bt_address_t* addr;
     bt_transport_t transport;
     bond_state_t current_state;
+    bond_state_t previous_state;
 
     if (!msg) {
         BT_LOGE("msg is NULL");
@@ -137,8 +138,19 @@ static void adapter_notify_bond_state(void* data)
     transport = device_get_transport(device);
     current_state = device_get_bond_state(device);
     adapter_unlock();
+    previous_state = msg->previous_state;
+    if (previous_state == BOND_STATE_CANCELING) {
+        if (current_state != BOND_STATE_NONE) {
+            BT_LOGE("previous state is canceling, but current state is not none");
+            free(msg);
+            return;
+        } else {
+            previous_state = BOND_STATE_BONDING; // report bonding -> none
+        }
+    }
+
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_bond_state_changed_extra, addr, transport,
-        msg->previous_state, current_state, msg->is_ctkd);
+        previous_state, current_state, msg->is_ctkd);
     free(msg);
 }
 
@@ -2792,7 +2804,7 @@ bt_status_t adapter_cancel_bond(bt_address_t* addr)
 
     bt_status_t status = bt_sal_cancel_bond(PRIMARY_ADAPTER, addr, BT_TRANSPORT_BREDR);
     if (status == BT_STATUS_SUCCESS)
-        device_set_bond_state(device, BOND_STATE_CANCELING, false, adapter_notify_bond_state);
+        device_set_bond_state(device, BOND_STATE_CANCELING, false, NULL); // Filter out the reporting of BOND_STATE_CANCELING.
     adapter_unlock();
 
     return status;
