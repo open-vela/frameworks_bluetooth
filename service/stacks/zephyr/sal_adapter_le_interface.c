@@ -727,7 +727,6 @@ static void STACK_CALL(create_bond)(void* args)
 {
     sal_adapter_req_t* req = args;
     struct bt_conn* conn;
-    struct bt_conn_info info;
     int err;
 
     conn = get_le_conn_from_addr(&req->addr);
