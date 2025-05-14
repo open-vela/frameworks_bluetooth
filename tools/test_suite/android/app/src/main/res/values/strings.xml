@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Bluetooth Test Suite</string>
+    <string name="ble_scan">BLE Scan</string>
+    <string name="ble_central">BLE Central</string>
+    <string name="ble_peripheral">BLE Peripheral</string>
+    <string name="bredr_inquiry">BREDR Inquiry</string>
+
+    <string name="enable">ENABLE</string>
+    <string name="bluetooth_adapter_disabled">Bluetooth adapter is disabled</string>
+
+</resources>
