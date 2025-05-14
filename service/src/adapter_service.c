@@ -1149,10 +1149,20 @@ void adapter_on_le_enabled(bool enablebt)
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     adapter_service_t* adapter = &g_adapter_service;
     int ret;
+    char addrstr[BT_ADDR_STR_LENGTH];
 
     BT_LOGD("%s, enablebt:%d", __func__, enablebt);
-    /* get le address async */
-    bt_sal_le_get_address(PRIMARY_ADAPTER);
+
+    /* get le address */
+    ret = bt_sal_le_get_address(PRIMARY_ADAPTER, &adapter->le_properties.addr);
+    if (ret < 0) {
+        BT_LOGE("%s, get le address fail, ret:%d", __func__, ret);
+        bt_addr_set_empty(&adapter->le_properties.addr);
+    }
+
+    bt_addr_ba2str(&props->addr, addrstr);
+    BT_LOGD("%s, le_addr:%s", __func__, addrstr);
+
     /* set le io capability ? */
     /* set appearance ? */
     /* load bonded device to stack ? SMP keys */
