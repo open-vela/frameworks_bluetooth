@@ -22,6 +22,12 @@
 #include "a2dp_event.h"
 #include "bt_device.h"
 
+#if defined(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)
+#include "sal_zblue.h"
+#elif defined(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET)
+#include "sal_bluelet.h"
+#endif
+
 bt_status_t bt_sal_a2dp_source_init(uint8_t max_connection);
 void bt_sal_a2dp_source_cleanup(void);
 bt_status_t bt_sal_a2dp_source_connect(bt_controller_id_t id, bt_address_t* addr);
