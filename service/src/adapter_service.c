@@ -2810,9 +2810,9 @@ bt_status_t adapter_pair_request_reply(bt_address_t* addr, bool accept)
     bt_status_t status;
     status = bt_sal_pair_reply(PRIMARY_ADAPTER, addr, accept ? 0 : HCI_ERR_PAIRING_NOT_ALLOWED);
     if (status == BT_STATUS_SUCCESS && accept) {
-        /* callback bonding */
-        CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_bond_state_changed,
-            addr, BT_TRANSPORT_BREDR, BOND_STATE_BONDING, false);
+        adapter_lock();
+        device_set_bond_state(device, BOND_STATE_BONDING, false, adapter_notify_bond_state);
+        adapter_unlock();
     }
 
     return status;
