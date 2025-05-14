@@ -84,7 +84,7 @@ NET_BUF_POOL_DEFINE(bt_a2dp_tx_pool, CONFIG_BT_MAX_CONN,
 static struct bt_a2dp_codec_ie sbc_src_ie = {
     .len = 4, /* BT_A2DP_SBC_IE_LENGTH */
     .codec_ie = {
-        0x23, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+        0x2B, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
         0xFF, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
         0x02, /* min bitpool */
         0x35, /* max bitpool */
@@ -107,19 +107,28 @@ static struct bt_a2dp_codec_ie src_sbc_ie_default[] = {
     {
         .len = 4,
         .codec_ie = {
-            0x21,
-            0x15,
-            0x02,
-            0x35,
+            0x28, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x02, /* min bitpool */
+            0x35, /* max bitpool */
         },
     },
     {
         .len = 4,
         .codec_ie = {
-            0x22,
-            0x15,
-            0x02,
-            0x35,
+            0x22, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x02, /* min bitpool */
+            0x35, /* max bitpool */
+        },
+    },
+    {
+        .len = 4,
+        .codec_ie = {
+            0x21, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x02, /* min bitpool */
+            0x35, /* max bitpool */
         },
     },
 };
@@ -131,6 +140,9 @@ static struct bt_a2dp_codec_cfg src_sbc_cfg_preferred[] = {
     {
         .codec_config = &src_sbc_ie_default[1],
     },
+    {
+        .codec_config = &src_sbc_ie_default[2],
+    },
 };
 #endif
 
@@ -139,7 +151,7 @@ static struct bt_a2dp_codec_cfg src_sbc_cfg_preferred[] = {
 static struct bt_a2dp_codec_ie sbc_snk_ie = {
     .len = 4, /* BT_A2DP_SBC_IE_LENGTH */
     .codec_ie = {
-        0x33, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+        0x3F, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
         0xFF, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
         0x02, /* min bitpool */
         0x35, /* max bitpool */
@@ -162,37 +174,73 @@ static struct bt_a2dp_codec_ie snk_sbc_ie_default[] = {
     {
         .len = 4,
         .codec_ie = {
-            0x21,
-            0x15,
-            0x02,
-            0x35,
+            0x28, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x02, /* min bitpool */
+            0x35, /* max bitpool */
         },
     },
     {
         .len = 4,
         .codec_ie = {
-            0x22,
-            0x15,
-            0x02,
-            0x35,
+            0x24, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x02, /* min bitpool */
+            0x35, /* max bitpool */
         },
     },
     {
         .len = 4,
         .codec_ie = {
-            0x11,
-            0x15,
-            0x02,
-            0x35,
+            0x22, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x02, /* min bitpool */
+            0x35, /* max bitpool */
         },
     },
     {
         .len = 4,
         .codec_ie = {
-            0x12,
-            0x15,
-            0x02,
-            0x35,
+            0x21, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x02, /* min bitpool */
+            0x35, /* max bitpool */
+        },
+    },
+    {
+        .len = 4,
+        .codec_ie = {
+            0x18, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x02, /* min bitpool */
+            0x35, /* max bitpool */
+        },
+    },
+    {
+        .len = 4,
+        .codec_ie = {
+            0x14, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x02, /* min bitpool */
+            0x35, /* max bitpool */
+        },
+    },
+    {
+        .len = 4,
+        .codec_ie = {
+            0x12, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x02, /* min bitpool */
+            0x35, /* max bitpool */
+        },
+    },
+    {
+        .len = 4,
+        .codec_ie = {
+            0x11, /* 16000 | 32000 | 44100 | 48000 | mono | dual channel | stereo | join stereo */
+            0x15, /* Block length: 4/8/12/16, subbands:4/8, Allocation Method: SNR, Londness */
+            0x02, /* min bitpool */
+            0x35, /* max bitpool */
         },
     },
 };
@@ -209,6 +257,18 @@ static struct bt_a2dp_codec_cfg snk_sbc_cfg_preferred[] = {
     },
     {
         .codec_config = &snk_sbc_ie_default[3],
+    },
+    {
+        .codec_config = &snk_sbc_ie_default[4],
+    },
+    {
+        .codec_config = &snk_sbc_ie_default[5],
+    },
+    {
+        .codec_config = &snk_sbc_ie_default[6],
+    },
+    {
+        .codec_config = &snk_sbc_ie_default[7],
     }
 };
 #endif
