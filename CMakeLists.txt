@@ -318,6 +318,10 @@ if(CONFIG_BLUETOOTH)
     list(APPEND INCDIR ${BLUETOOTH_DIR}/service/vhal)
   endif()
 
+  if(CONFIG_BLUETOOTH_DEBUG_MEMORY)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_memory.c)
+  endif()
+
   if(CONFIG_BLUETOOTH_TOOLS)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/utils.c)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/log.c)
