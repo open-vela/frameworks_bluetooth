@@ -46,6 +46,7 @@
 #include "audio_transport.h"
 #include "utils.h"
 #define LOG_TAG "a2dp_src_stream"
+#include "sal_zblue.h"
 #include "utils/log.h"
 
 #include "service_loop.h"
