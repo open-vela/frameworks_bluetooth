@@ -1153,11 +1153,126 @@ static void zblue_on_disconnected(struct bt_a2dp* a2dp)
     bt_list_remove_a2dp_info(a2dp_info);
 }
 
+static uint8_t bt_avdtp_codec_sanity_check(uint8_t local, uint8_t config, uint8_t offset, uint8_t len, uint8_t err)
+{
+    uint8_t codec;
+
+    codec = (config >> offset) & ((1 << len) - 1); /* The collection of codec parameters to be checked */
+    if (!codec)
+        return err;
+
+    if ((codec - 1) & codec) { /* The codec parameter to be checked has only one option available. */
+        BT_LOGE("%s, Configuration has multiple options.", __func__);
+        return err;
+    }
+
+    if (((config & local) >> offset) & ((1 << len) - 1)) {
+        err = BT_AVDTP_SUCCESS;
+    } else {
+        /* Not_Supported error */
+        err++;
+    }
+
+    return err;
+}
+
+static void bt_avdtp_codec_check_sbc(struct bt_a2dp_codec_ie* local, struct bt_a2dp_codec_ie* codec_cfg, uint8_t* rsp_err_code)
+{
+    if (local->len != codec_cfg->len) {
+        *rsp_err_code = BT_AVDTP_BAD_LENGTH;
+        return;
+    }
+
+    /* Sampling Frequency */
+    *rsp_err_code = bt_avdtp_codec_sanity_check(local->codec_ie[0], codec_cfg->codec_ie[0], 4, 4, BT_A2DP_INVALID_SAMPLING_FREQUENCY);
+    if (*rsp_err_code != BT_AVDTP_SUCCESS)
+        return;
+
+    /* Channel Mode */
+    *rsp_err_code = bt_avdtp_codec_sanity_check(local->codec_ie[0], codec_cfg->codec_ie[0], 0, 4, BT_A2DP_INVALID_CHANNEL_MODE);
+    if (*rsp_err_code != BT_AVDTP_SUCCESS)
+        return;
+
+    /* Block Length */
+    *rsp_err_code = bt_avdtp_codec_sanity_check(local->codec_ie[1], codec_cfg->codec_ie[1], 4, 4, BT_A2DP_INVALID_BLOCK_LENGTH);
+    if (*rsp_err_code != BT_AVDTP_SUCCESS)
+        return;
+
+    /* Subbands */
+    *rsp_err_code = bt_avdtp_codec_sanity_check(local->codec_ie[1], codec_cfg->codec_ie[1], 2, 2, BT_A2DP_INVALID_SUBBANDS);
+    if (*rsp_err_code != BT_AVDTP_SUCCESS)
+        return;
+
+    /* Allocation Method */
+    *rsp_err_code = bt_avdtp_codec_sanity_check(local->codec_ie[1], codec_cfg->codec_ie[1], 0, 2, BT_A2DP_INVALID_ALLOCATION_METHOD);
+    if (*rsp_err_code != BT_AVDTP_SUCCESS)
+        return;
+
+    /* Bitpool */
+    if (codec_cfg->codec_ie[2] > codec_cfg->codec_ie[3]) {
+        *rsp_err_code = BT_A2DP_INVALID_MINIMUM_BITPOOL_VALUE;
+        return;
+    }
+    if ((codec_cfg->codec_ie[2] < 2) || (codec_cfg->codec_ie[2] > 250)) {
+        *rsp_err_code = BT_A2DP_INVALID_MINIMUM_BITPOOL_VALUE;
+        return;
+    }
+    if ((codec_cfg->codec_ie[3] < 2) || (codec_cfg->codec_ie[3] > 250)) {
+        *rsp_err_code = BT_A2DP_INVALID_MAXIMUM_BITPOOL_VALUE;
+        return;
+    }
+
+    if ((codec_cfg->codec_ie[2] < local->codec_ie[2]) || (codec_cfg->codec_ie[2] > local->codec_ie[3])) {
+        *rsp_err_code = BT_A2DP_NOT_SUPPORTED_MINIMUM_BITPOOL_VALUE;
+        return;
+    }
+    if (codec_cfg->codec_ie[3] > local->codec_ie[3]) {
+        *rsp_err_code = BT_A2DP_NOT_SUPPORTED_MAXIMUM_BITPOOL_VALUE;
+        return;
+    }
+}
+
+static void bt_avdtp_set_config_check(struct bt_a2dp_ep* ep, struct bt_a2dp_codec_cfg* codec_cfg, uint8_t* rsp_err_code)
+{
+    switch (ep->codec_type) {
+    case BT_A2DP_SBC:
+        bt_avdtp_codec_check_sbc(ep->codec_cap, codec_cfg->codec_config, rsp_err_code);
+        break;
+    case BT_A2DP_MPEG1:
+    case BT_A2DP_MPEG2:
+    case BT_A2DP_ATRAC:
+    case BT_A2DP_VENDOR:
+    default:
+        *rsp_err_code = BT_A2DP_NOT_SUPPORTED_CODEC_TYPE;
+        break;
+    }
+}
+
 static int zblue_on_config_req(struct bt_a2dp* a2dp, struct bt_a2dp_ep* ep,
     struct bt_a2dp_codec_cfg* codec_cfg, struct bt_a2dp_stream** stream,
     uint8_t* rsp_err_code)
 {
     struct zblue_a2dp_info_t* a2dp_info;
+
+    *rsp_err_code = BT_AVDTP_SUCCESS;
+
+    if (ep == NULL || codec_cfg == NULL) {
+        *rsp_err_code = BT_AVDTP_BAD_STATE;
+        return -1;
+    }
+
+    if (ep->sep.sep_info.inuse) {
+        BT_LOGE("%s, local SEP has already been used.", __func__);
+        *rsp_err_code = BT_AVDTP_SEP_IN_USE;
+        return -1;
+    }
+
+    bt_avdtp_set_config_check(ep, codec_cfg, rsp_err_code);
+
+    if (*rsp_err_code != BT_AVDTP_SUCCESS) {
+        BT_LOGE("%s, config fail: 0x%02x", __func__, *rsp_err_code);
+        return -1;
+    }
 
     a2dp_info = (struct zblue_a2dp_info_t*)bt_list_find(bt_a2dp_conn, bt_a2dp_info_find_a2dp, a2dp);
     if (!a2dp_info) {
