@@ -613,10 +613,19 @@ bt_status_t bt_sal_le_set_address(bt_controller_id_t id, bt_address_t* addr)
     SAL_NOT_SUPPORT;
 }
 
-bt_status_t bt_sal_le_get_address(bt_controller_id_t id)
+bt_status_t bt_sal_le_get_address(bt_controller_id_t id, bt_address_t* addr)
 {
-    /* stack handle this case: */
-    SAL_NOT_SUPPORT;
+    UNUSED(id);
+    bt_addr_le_t got = { 0 };
+    size_t count = 1;
+
+    SAL_CHECK_PARAM(addr);
+
+    bt_id_get(&got, &count);
+    bt_addr_set(addr, (uint8_t*)&got.a);
+
+    SAL_ASSERT(got.type == BT_ADDR_LE_PUBLIC);
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_sal_le_set_bonded_devices(bt_controller_id_t id, remote_device_le_properties_t* props, uint16_t prop_cnt)
