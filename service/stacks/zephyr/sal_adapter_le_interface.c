@@ -123,11 +123,13 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
 
     memcpy(&state.addr, info.le.dst->a.val, sizeof(state.addr));
     adapter_on_connection_state_changed(&state);
+#ifdef CONFIG_BLUETOOTH_GATT
     if (info.role == BT_HCI_ROLE_PERIPHERAL) {
         if_gatts_on_connection_state_changed(&state.addr, PROFILE_STATE_CONNECTED);
     } else if (info.role == BT_HCI_ROLE_CENTRAL) {
         if_gattc_on_connection_state_changed(&state.addr, PROFILE_STATE_CONNECTED);
     }
+#endif
 }
 
 static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
@@ -155,11 +157,13 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
 
     memcpy(&state.addr, info.le.dst->a.val, sizeof(state.addr));
     adapter_on_connection_state_changed(&state);
+#ifdef CONFIG_BLUETOOTH_GATT
     if (info.role == BT_HCI_ROLE_PERIPHERAL) {
         if_gatts_on_connection_state_changed(&state.addr, PROFILE_STATE_DISCONNECTED);
     } else if (info.role == BT_HCI_ROLE_CENTRAL) {
         if_gattc_on_connection_state_changed(&state.addr, PROFILE_STATE_DISCONNECTED);
     }
+#endif
 }
 
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
@@ -198,9 +202,11 @@ static void zblue_on_param_updated(struct bt_conn* conn, uint16_t interval, uint
 
     BT_LOGD("%s, interval:%d, latency:%d, timeout:%d", __func__, interval, latency, timeout);
 
+#ifdef CONFIG_BLUETOOTH_GATT
     if (info.role == BT_HCI_ROLE_CENTRAL) {
         if_gattc_on_connection_parameter_updated(&addr, interval, latency, timeout, BT_STATUS_SUCCESS);
     }
+#endif
 }
 
 #if defined(CONFIG_BT_USER_PHY_UPDATE)
