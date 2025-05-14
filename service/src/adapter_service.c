@@ -658,6 +658,12 @@ static void process_link_key_update_evt(bt_address_t* addr, bt_128key_t link_key
 
     adapter_lock();
     device = adapter_find_create_classic_device(addr);
+    if (!device_check_flag(device, DFLAG_NAME_SET | DFLAG_GET_RMT_NAME)) {
+        BT_LOGD("linkkey notify, request remote name...");
+        bt_sal_get_remote_name(PRIMARY_ADAPTER, addr);
+        device_set_flags(device, DFLAG_GET_RMT_NAME);
+    }
+
     device_set_link_key(device, link_key);
     device_set_link_key_type(device, type);
     adapter_update_bonded_device();
