@@ -1160,7 +1160,7 @@ void adapter_on_le_enabled(bool enablebt)
         bt_addr_set_empty(&adapter->le_properties.addr);
     }
 
-    bt_addr_ba2str(&props->addr, addrstr);
+    bt_addr_ba2str(&adapter->le_properties.addr, addrstr);
     BT_LOGD("%s, le_addr:%s", __func__, addrstr);
 
     /* set le io capability ? */
