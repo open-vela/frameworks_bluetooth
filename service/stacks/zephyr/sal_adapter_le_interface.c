@@ -22,12 +22,12 @@
 #include "sal_interface.h"
 #include "service_loop.h"
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/conn.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/hci_err.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/conn.h>
+#include <zephyr/bluetooth/hci.h>
+#include <zephyr/bluetooth/hci_types.h>
 
-#include <settings/settings.h>
+#include <zephyr/settings/settings.h>
 
 #include "utils/log.h"
 
