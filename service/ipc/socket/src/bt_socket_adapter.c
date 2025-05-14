@@ -162,14 +162,15 @@ static void on_connection_state_changed_cb(void* cookie, bt_address_t* addr,
 }
 
 static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr,
-    bt_transport_t transport, bond_state_t state, bool is_ctkd)
+    bt_transport_t transport, bond_state_t previous_state, bond_state_t current_state, bool is_ctkd)
 {
     bt_message_packet_t packet = { 0 };
     bt_instance_t* ins = cookie;
 
     memcpy(&packet.adpt_cb._on_bond_state_changed.addr, addr, sizeof(bt_address_t));
     packet.adpt_cb._on_bond_state_changed.transport = transport;
-    packet.adpt_cb._on_bond_state_changed.state = state;
+    packet.adpt_cb._on_bond_state_changed.previous_state = previous_state;
+    packet.adpt_cb._on_bond_state_changed.current_state = current_state;
     packet.adpt_cb._on_bond_state_changed.is_ctkd = is_ctkd;
 
     bt_socket_server_send(ins, &packet, BT_ADAPTER_ON_BOND_STATE_CHANGED);
@@ -249,7 +250,7 @@ const static adapter_callbacks_t g_adapter_socket_cbs = {
     .on_pair_display = on_pair_display_cb,
     .on_connect_request = on_connect_request_cb,
     .on_connection_state_changed = on_connection_state_changed_cb,
-    .on_bond_state_changed = on_bond_state_changed_cb,
+    .on_bond_state_changed_extra = on_bond_state_changed_cb,
     .on_le_sc_local_oob_data_got = on_le_sc_local_oob_data_got_cb,
     .on_remote_name_changed = on_remote_name_changed_cb,
     .on_remote_alias_changed = on_remote_alias_changed_cb,
@@ -588,10 +589,19 @@ int bt_socket_client_adapter_callback(service_poll_t* poll,
     }
     case BT_ADAPTER_ON_BOND_STATE_CHANGED: {
         CALLBACK_FOREACH(CBLIST, adapter_callbacks_t,
+            on_bond_state_changed_extra,
+            &packet->adpt_cb._on_bond_state_changed.addr,
+            packet->adpt_cb._on_bond_state_changed.transport,
+            packet->adpt_cb._on_bond_state_changed.previous_state,
+            packet->adpt_cb._on_bond_state_changed.current_state,
+            packet->adpt_cb._on_bond_state_changed.is_ctkd);
+
+        // Compatible with on_bond_state_changed callback.
+        CALLBACK_FOREACH(CBLIST, adapter_callbacks_t,
             on_bond_state_changed,
             &packet->adpt_cb._on_bond_state_changed.addr,
             packet->adpt_cb._on_bond_state_changed.transport,
-            packet->adpt_cb._on_bond_state_changed.state,
+            packet->adpt_cb._on_bond_state_changed.current_state,
             packet->adpt_cb._on_bond_state_changed.is_ctkd);
         break;
     }
