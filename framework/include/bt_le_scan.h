@@ -22,6 +22,10 @@ extern "C" {
 
 #include <stdint.h>
 
+#ifdef CONFIG_BLUETOOTH_STACK_LE_ZBLUE
+#include <zephyr/bluetooth/bluetooth.h>
+#endif
+
 #include "bluetooth.h"
 #include "bt_le_advertiser.h"
 #ifndef BTSYMBOLS
