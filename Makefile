@@ -92,6 +92,21 @@ endif #CONFIG_BLUETOOTH_A2DP
 ifneq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL)$(CONFIG_BLUETOOTH_AVRCP_TARGET),)
 	CSRCS += service/stacks/zephyr/sal_avrcp_interface.c
 endif #CONFIG_BLUETOOTH_AVRCP_CONTROL/CONFIG_BLUETOOTH_AVRCP_TARGET
+
+ifeq ($(CONFIG_BLUETOOTH_STACK_LE_ZBLUE), y)
+	CSRCS += service/stacks/zephyr/sal_adapter_le_interface.c
+ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
+	CSRCS += service/stacks/zephyr/sal_le_advertise_interface.c
+endif #CONFIG_BLUETOOTH_BLE_ADV
+ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
+	CSRCS += service/stacks/zephyr/sal_le_scan_interface.c
+endif #CONFIG_BLUETOOTH_BLE_SCAN
+ifeq ($(CONFIG_BLUETOOTH_GATT), y)
+	CSRCS += service/stacks/zephyr/sal_gatt_client_interface.c
+	CSRCS += service/stacks/zephyr/sal_gatt_server_interface.c
+endif #CONFIG_BLUETOOTH_GATT
+endif #CONFIG_BLUETOOTH_STACK_LE_ZBLUE
+
 endif
 ifeq ($(CONFIG_BLUETOOTH_BLE_AUDIO),)
   CSRCS := $(filter-out $(wildcard service/stacks/bluelet/sal_lea_*),$(wildcard $(CSRCS)))

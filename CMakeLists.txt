@@ -131,6 +131,23 @@ if(CONFIG_BLUETOOTH)
       endif()
     endif()
 
+    if(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_adapter_le_interface.c)
+
+      if(CONFIG_BLUETOOTH_BLE_ADV)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_le_advertise_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_BLE_SCAN)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_le_scan_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_GATT)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_gatt_client_interface.c)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_gatt_server_interface.c)
+      endif()
+    endif()
+
     if(NOT CONFIG_BLUETOOTH_BLE_AUDIO)
       file(GLOB EXLUDE_FILES ${BLUETOOTH_DIR}/service/stacks/bluelet/sal_lea_*)
       list(REMOVE_ITEM CSRCS ${EXLUDE_FILES})

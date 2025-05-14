@@ -103,20 +103,20 @@ static bt_status_t zblue_le_ext_convert_param(ble_adv_params_t* params, struct b
     case BT_LE_ADV_DIRECT_IND:
     case BT_LE_ADV_SCAN_IND:
         param->options |= BT_LE_ADV_OPT_SCANNABLE;
-        param->options |= BT_LE_ADV_OPT_CONNECTABLE;
+        param->options |= BT_LE_ADV_OPT_CONN;
         break;
     case BT_LE_ADV_NONCONN_IND:
         param->options |= BT_LE_ADV_OPT_EXT_ADV;
         break;
     case BT_LE_SCAN_RSP:
-        param->options |= BT_LE_ADV_OPT_CONNECTABLE;
+        param->options |= BT_LE_ADV_OPT_CONN;
         param->options |= BT_LE_ADV_OPT_SCANNABLE;
         param->options |= BT_LE_ADV_OPT_EXT_ADV;
         break;
     case BT_LE_LEGACY_ADV_IND:
     case BT_LE_LEGACY_ADV_DIRECT_IND:
     case BT_LE_LEGACY_ADV_SCAN_IND:
-        param->options |= BT_LE_ADV_OPT_CONNECTABLE;
+        param->options |= BT_LE_ADV_OPT_CONN;
         break;
     case BT_LE_LEGACY_ADV_NONCONN_IND:
         break;
