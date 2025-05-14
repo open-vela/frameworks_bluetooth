@@ -21,6 +21,7 @@
 
 #include "bt_utils.h"
 #include "bt_uuid.h"
+#include "utils/log.h"
 
 static const bt_uuid_t bt_uuid128_base = {
     .type = BT_UUID128_TYPE,
@@ -40,6 +41,12 @@ static void bt_uuid16_to_uuid128(const bt_uuid_t* uuid16, bt_uuid_t* uuid128)
     UINT16_TO_STREAM(p, uuid16->val.u16);
 
     memcpy(&uuid128->val.u128[BASE_UUID16_OFFSET], uuid, sizeof(uuid));
+}
+
+static void bt_uuid128_to_uuid16(const bt_uuid_t* uuid128, bt_uuid_t* uuid16)
+{
+    uuid16->type = BT_UUID16_TYPE;
+    uuid16->val.u16 = (uint16_t)(uuid128->val.u128[BASE_UUID16_OFFSET + 1] << 8 | uuid128->val.u128[BASE_UUID16_OFFSET]);
 }
 
 static void bt_uuid32_to_uuid128(const bt_uuid_t* uuid32, bt_uuid_t* uuid128)
@@ -63,6 +70,23 @@ void bt_uuid_to_uuid128(const bt_uuid_t* src, bt_uuid_t* uuid128)
         break;
     case BT_UUID16_TYPE:
         bt_uuid16_to_uuid128(src, uuid128);
+        break;
+    default:
+        break;
+    }
+}
+
+void bt_uuid_to_uuid16(const bt_uuid_t* src, bt_uuid_t* uuid16)
+{
+    switch (src->type) {
+    case BT_UUID128_TYPE:
+        bt_uuid128_to_uuid16(src, uuid16);
+        break;
+    case BT_UUID32_TYPE:
+        BT_LOGE("uuid32 to uuid16 not supported!");
+        break;
+    case BT_UUID16_TYPE:
+        *uuid16 = *src;
         break;
     default:
         break;
