@@ -20,6 +20,7 @@
 #include "gattc_service.h"
 #include "gatts_service.h"
 #include "sal_interface.h"
+#include "sal_zephyr_interface.h"
 #include "service_loop.h"
 
 #include <zephyr/bluetooth/bluetooth.h>

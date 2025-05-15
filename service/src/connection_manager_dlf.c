@@ -19,7 +19,7 @@
 #include "bt_debug.h"
 #include "bt_utils.h"
 #include "hci_parser.h"
-#include "sal_adapter_interface.h"
+#include "sal_interface.h"
 #include "service_loop.h"
 #include "vendor/bt_vendor.h"
 #include "vendor/bt_vendor_common.h"
