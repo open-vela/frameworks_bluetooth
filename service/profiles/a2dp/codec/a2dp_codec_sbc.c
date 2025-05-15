@@ -106,9 +106,9 @@ static int a2dp_get_sbc_blocks(a2dp_sbc_info_t* info)
 static int a2dp_get_sbc_subbands(a2dp_sbc_info_t* info)
 {
     switch (info->num_subbands) {
-    case A2DP_SBC_SUBBAND_4:
+    case BT_A2DP_SBC_SUBBAND_4:
         return SUB_BANDS_4;
-    case A2DP_SBC_SUBBAND_8:
+    case BT_A2DP_SBC_SUBBAND_8:
         return SUB_BANDS_8;
     default:
         break;

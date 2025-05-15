@@ -18,6 +18,7 @@
 
 #include "bt_addr.h"
 #include "bt_status.h"
+#include "bt_uuid.h"
 
 #include <zephyr/bluetooth/conn.h>
 
@@ -27,3 +28,9 @@
 bt_status_t bt_sal_get_remote_address(struct bt_conn* conn, bt_address_t* addr);
 
 #endif
+
+#undef BT_UUID_DECLARE_16
+#undef BT_UUID_DECLARE_32
+#undef BT_UUID_DECLARE_128
+
+#include <zephyr/bluetooth/classic/sdp.h>
