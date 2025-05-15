@@ -22,9 +22,7 @@
 #include <stdlib.h>
 
 #include "a2dp_device.h"
-#include "bt_addr.h"
 #include "bt_list.h"
-#include "bt_utils.h"
 #include "sal_a2dp_sink_interface.h"
 #include "sal_a2dp_source_interface.h"
 #include "sal_connection_manager.h"
@@ -32,9 +30,15 @@
 #include "sal_zblue.h"
 #include "utils/log.h"
 
+#include "bt_uuid.h"
+
+#undef BT_UUID_DECLARE_16
+#undef BT_UUID_DECLARE_32
+#undef BT_UUID_DECLARE_128
+#include <zephyr/bluetooth/classic/sdp.h>
+
 #include <zephyr/bluetooth/classic/a2dp.h>
 #include <zephyr/bluetooth/classic/a2dp_codec_sbc.h>
-#include <zephyr/bluetooth/classic/sdp.h>
 
 #ifdef CONFIG_BLUETOOTH_A2DP
 #include "a2dp_codec.h"
@@ -793,9 +797,6 @@ static void zblue_on_stream_configured(struct bt_a2dp_stream* stream)
         return;
     }
 
-    if ((a2dp_info->role == SEP_SRC) || (a2dp_info->role == SEP_SNK && a2dp_info->int_acp == A2DP_INT))
-        SAL_CHECK_RET(bt_a2dp_stream_establish(stream), 0);
-
     event = a2dp_event_new(CODEC_CONFIG_EVT, &a2dp_info->bd_addr);
     event->event_data.data = malloc(sizeof(codec_config));
     memcpy(event->event_data.data, &codec_config, sizeof(codec_config));
@@ -808,6 +809,11 @@ static void zblue_on_stream_configured(struct bt_a2dp_stream* stream)
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
         bt_sal_a2dp_sink_event_callback(event);
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
+    }
+
+    if ((a2dp_info->role == SEP_SRC) || (a2dp_info->role == SEP_SNK && a2dp_info->int_acp == A2DP_INT)) {
+        if (bt_a2dp_stream_establish(stream))
+            BT_LOGE("%s, bt_a2dp_stream_establish failed", __func__);
     }
 }
 
@@ -940,7 +946,6 @@ static void zblue_on_stream_recv(struct bt_a2dp_stream* stream,
 {
     a2dp_event_t* event;
     a2dp_sink_packet_t* packet;
-    uint8_t num_of_frames;
     uint16_t seq;
     uint32_t timestamp;
     struct zblue_a2dp_info_t* a2dp_info;
@@ -1631,9 +1636,6 @@ error:
 
 static bt_status_t bt_sal_a2dp_disconnect(struct zblue_a2dp_info_t* a2dp_info)
 {
-    int res_media = 0;
-    int res_signaling = 0;
-
     if (!a2dp_info)
         return BT_STATUS_SUCCESS;
 
@@ -1821,8 +1823,6 @@ void bt_sal_a2dp_source_cleanup(void)
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
     bt_list_t* list = bt_a2dp_conn;
     bt_list_node_t* node;
-    uint8_t media_type = BT_AVDTP_AUDIO;
-    uint8_t role = 0; /* BT_AVDTP_SOURCE */
 
     if (!list)
         return;
@@ -1854,8 +1854,6 @@ void bt_sal_a2dp_sink_cleanup(void)
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     bt_list_t* list = bt_a2dp_conn;
     bt_list_node_t* node;
-    uint8_t media_type = BT_AVDTP_AUDIO;
-    uint8_t role = 1; /* BT_AVDTP_SINK */
 
     if (!list)
         return;

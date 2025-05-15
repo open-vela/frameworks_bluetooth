@@ -60,8 +60,8 @@
 #define A2DP_SBC_BLOCKS_16 0x10 /* 16blocks */
 
 #define A2DP_SBC_SUBBAND_MSK 0x0C /* b3-b2 number of subbands */
-#define A2DP_SBC_SUBBAND_4 0x08 /* b3: 4 */
-#define A2DP_SBC_SUBBAND_8 0x04 /* b2: 8 */
+#define BT_A2DP_SBC_SUBBAND_4 0x08 /* b3: 4 */
+#define BT_A2DP_SBC_SUBBAND_8 0x04 /* b2: 8 */
 
 #define A2DP_SBC_ALLOC_MD_MSK 0x03 /* b1-b0 allocation mode */
 #define A2DP_SBC_ALLOC_MD_S 0x02 /* b1: SNR */
