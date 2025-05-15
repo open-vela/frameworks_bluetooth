@@ -27,3 +27,4 @@
 bt_status_t bt_sal_get_remote_address(struct bt_conn* conn, bt_address_t* addr);
 
 #endif
+
