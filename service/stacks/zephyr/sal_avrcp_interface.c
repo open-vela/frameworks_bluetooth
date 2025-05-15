@@ -172,10 +172,11 @@ static void zblue_on_notify(struct bt_conn* conn, uint8_t event_id, uint8_t stat
 {
     bt_address_t bd_addr;
     avrcp_msg_t* msg;
+
+#ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
     uint8_t role;
     bt_status_t get_role_status;
 
-#ifdef CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
     get_role_status = bt_sal_a2dp_get_role(conn, &role);
 #endif
 
