@@ -35,6 +35,9 @@ endif
 	CSRCS += service/ipc/socket/src/*.c
 	CSRCS += framework/socket/*.c
   CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc/socket/include
+ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC), y)
+	CSRCS += framework/socket/async/*.c
+endif #CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
 else
 endif
 endif
@@ -88,9 +91,28 @@ endif
 ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
 	CSRCS += service/stacks/zephyr/sal_debug_interface.c
 	CSRCS += service/stacks/zephyr/sal_zblue.c
-ifeq ($(CONFIG_BLUETOOTH_BREDR_SUPPORT), y)
-	CSRCS += service/stacks/zephyr/sal_adapter_classic_interface.c
-endif #CONFIG_BLUETOOTH_BREDR_SUPPORT
+	CSRCS += service/stacks/zephyr/sal_adapter_interface.c
+ifeq ($(CONFIG_BLUETOOTH_A2DP), y)
+	CSRCS += service/stacks/zephyr/sal_a2dp_interface.c
+endif #CONFIG_BLUETOOTH_A2DP
+ifneq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL)$(CONFIG_BLUETOOTH_AVRCP_TARGET),)
+	CSRCS += service/stacks/zephyr/sal_avrcp_interface.c
+endif #CONFIG_BLUETOOTH_AVRCP_CONTROL/CONFIG_BLUETOOTH_AVRCP_TARGET
+
+ifeq ($(CONFIG_BLUETOOTH_STACK_LE_ZBLUE), y)
+	CSRCS += service/stacks/zephyr/sal_adapter_le_interface.c
+ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
+	CSRCS += service/stacks/zephyr/sal_le_advertise_interface.c
+endif #CONFIG_BLUETOOTH_BLE_ADV
+ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
+	CSRCS += service/stacks/zephyr/sal_le_scan_interface.c
+endif #CONFIG_BLUETOOTH_BLE_SCAN
+ifeq ($(CONFIG_BLUETOOTH_GATT), y)
+	CSRCS += service/stacks/zephyr/sal_gatt_client_interface.c
+	CSRCS += service/stacks/zephyr/sal_gatt_server_interface.c
+endif #CONFIG_BLUETOOTH_GATT
+endif #CONFIG_BLUETOOTH_STACK_LE_ZBLUE
+
 endif
 ifeq ($(CONFIG_BLUETOOTH_BLE_AUDIO),)
   CSRCS := $(filter-out $(wildcard service/stacks/bluelet/sal_lea_*),$(wildcard $(CSRCS)))
@@ -203,6 +225,9 @@ ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CSRCS += tools/utils.c
 	CSRCS += tools/log.c
 	CSRCS += tools/uv_thread_loop.c
+ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC), y)
+	CSRCS += tools/async/gap.c
+endif
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += tools/adv.c
 endif
@@ -303,6 +328,7 @@ endif
 ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/stacks/zephyr/include
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/subsys/bluetooth/host
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/zblue/zblue/port/include/kernel/include
 endif
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc
