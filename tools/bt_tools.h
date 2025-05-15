@@ -39,7 +39,9 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+#ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
 #define CMD_OK (0)
 #define CMD_INVALID_PARAM (-1)
 #define CMD_INVALID_OPT (-4)

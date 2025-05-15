@@ -418,6 +418,7 @@ static void zblue_on_ready_cb(int err)
 }
 #endif
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static bool zblue_inquiry_eir_name(const uint8_t* eir, int len, char* name)
 {
     while (len) {
@@ -481,6 +482,7 @@ static struct bt_br_discovery_cb g_br_discovery_cb = {
     .recv = zblue_on_discovery_recv_cb,
     .timeout = zblue_on_discovery_complete_cb
 };
+#endif
 
 /* service adapter layer for BREDR */
 bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
@@ -1129,7 +1131,7 @@ uint16_t bt_sal_get_acl_connection_handle(bt_controller_id_t id, bt_address_t* a
     struct bt_conn* conn = NULL;
 
     if (trasnport == BT_TRANSPORT_BLE) {
-#ifdef CONFIG_BLUETOOTH_LE_SUPPORT
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
         conn = get_le_conn_from_addr(addr);
         if (!conn) {
             BT_LOGE("%s, conn null", __func__);
