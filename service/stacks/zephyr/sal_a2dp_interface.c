@@ -27,6 +27,7 @@
 #include "bt_utils.h"
 #include "sal_a2dp_sink_interface.h"
 #include "sal_a2dp_source_interface.h"
+#include "sal_connection_manager.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
 #include "utils/log.h"
@@ -833,6 +834,19 @@ static void zblue_on_stream_established(struct bt_a2dp_stream* stream)
     }
 }
 
+static void bt_sal_a2dp_notify_disconnected(struct zblue_a2dp_info_t* a2dp_info)
+{
+    if (a2dp_info->role == SEP_SRC) {
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+        bt_sal_cm_profile_disconnected_callback(cm_data_new(&a2dp_info->bd_addr, PROFILE_A2DP));
+#endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
+    } else { /* SEP_SNK */
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+        bt_sal_cm_profile_disconnected_callback(cm_data_new(&a2dp_info->bd_addr, PROFILE_A2DP_SINK));
+#endif /* CONFIG_BLUETOOTH_A2DP_SINK */
+    }
+}
+
 static void bt_a2dp_stream_released(struct bt_a2dp_stream* stream)
 {
     struct zblue_a2dp_info_t* a2dp_info;
@@ -866,6 +880,7 @@ static void bt_a2dp_stream_released(struct bt_a2dp_stream* stream)
 
     if (flag_is_conn_none(a2dp_info)) {
         BT_LOGI("%s, Both channel disconnected", __func__);
+        bt_sal_a2dp_notify_disconnected(a2dp_info);
         bt_list_remove_a2dp_info(a2dp_info);
     }
 }
@@ -1190,8 +1205,10 @@ static void zblue_on_disconnected(struct bt_a2dp* a2dp)
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
     }
 
-    if (flag_is_conn_none(a2dp_info))
+    if (flag_is_conn_none(a2dp_info)) {
+        bt_sal_a2dp_notify_disconnected(a2dp_info);
         bt_list_remove_a2dp_info(a2dp_info);
+    }
 }
 
 static uint8_t bt_avdtp_codec_sanity_check(uint8_t local, uint8_t config, uint8_t offset, uint8_t len, uint8_t err)
@@ -1669,6 +1686,46 @@ bt_status_t bt_sal_a2dp_sink_disconnect(bt_controller_id_t id, bt_address_t* add
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
+}
+
+bool bt_sal_a2dp_try_disconnect_a2dp_sink(bt_controller_id_t id, bt_address_t* addr)
+{
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+    struct zblue_a2dp_info_t* a2dp_info;
+
+    a2dp_info = (struct zblue_a2dp_info_t*)bt_list_find(bt_a2dp_conn, bt_a2dp_info_find_addr, addr);
+    if (!a2dp_info) {
+        BT_LOGW("%s, a2dp_info is NULL", __func__);
+        return false;
+    }
+
+    if (bt_sal_a2dp_disconnect(a2dp_info))
+        return false;
+
+    return true;
+#else
+    return false;
+#endif /* CONFIG_BLUETOOTH_A2DP_SINK */
+}
+
+bool bt_sal_a2dp_try_disconnect_a2dp_srouce(bt_controller_id_t id, bt_address_t* addr)
+{
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+    struct zblue_a2dp_info_t* a2dp_info;
+
+    a2dp_info = (struct zblue_a2dp_info_t*)bt_list_find(bt_a2dp_conn, bt_a2dp_info_find_addr, addr);
+    if (!a2dp_info) {
+        BT_LOGW("%s, a2dp_info is NULL", __func__);
+        return false;
+    }
+
+    if (bt_sal_a2dp_disconnect(a2dp_info))
+        return false;
+
+    return true;
+#else
+    return false;
+#endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
 }
 
 bt_status_t bt_sal_a2dp_source_start_stream(bt_controller_id_t id, bt_address_t* addr)

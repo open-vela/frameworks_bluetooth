@@ -37,6 +37,7 @@
 #include <zephyr/settings/settings.h>
 
 #include "sal_adapter_le_interface.h"
+#include "sal_connection_manager.h"
 #include "sal_interface.h"
 #include "sal_zephyr_interface.h"
 
@@ -238,6 +239,7 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
 
     zblue_conn_get_addr(conn, &state.addr);
     adapter_on_connection_state_changed(&state);
+    bt_sal_cm_acl_disconnected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN));
 }
 
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
@@ -491,6 +493,7 @@ bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
     extern void z_sys_init(void);
     static struct bt_hfp_hf_cb hf_cb;
     z_sys_init();
+    bt_sal_cm_conn_init();
 
     bt_br_discovery_cb_register(&g_br_discovery_cb);
     bt_conn_cb_register(&g_conn_cbs);
@@ -511,6 +514,7 @@ void bt_sal_cleanup(void)
     bt_br_discovery_cb_unregister(&g_br_discovery_cb);
     bt_conn_auth_cb_register(NULL);
     bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
+    bt_sal_cm_conn_cleanup();
 #endif
 }
 
@@ -1298,7 +1302,12 @@ bt_status_t bt_sal_cancel_bond(bt_controller_id_t id, bt_address_t* addr, bt_tra
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(remove_bond)(void* args)
 {
+    bt_status_t status;
     sal_adapter_req_t* req = args;
+
+    status = bt_sal_cm_try_disconnect_profiles(&req->addr, true);
+    if (status == BT_STATUS_SUCCESS)
+        return;
 
     SAL_CHECK(bt_br_unpair((bt_addr_t*)&req->addr), 0);
 }
