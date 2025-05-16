@@ -92,6 +92,7 @@ ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
 	CSRCS += service/stacks/zephyr/sal_debug_interface.c
 	CSRCS += service/stacks/zephyr/sal_zblue.c
 	CSRCS += service/stacks/zephyr/sal_adapter_interface.c
+	CSRCS += service/stacks/zephyr/sal_connection_manager.c
 ifeq ($(CONFIG_BLUETOOTH_A2DP), y)
 	CSRCS += service/stacks/zephyr/sal_a2dp_interface.c
 endif #CONFIG_BLUETOOTH_A2DP
