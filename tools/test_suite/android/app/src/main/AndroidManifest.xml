@@ -65,7 +65,10 @@
         <activity
             android:name=".ble.BleL2capActivity"
             android:label="@string/ble_l2cap" />
-
+        <activity
+            android:name=".ble.BleAddGattServiceActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            />
     </application>
 
 </manifest>

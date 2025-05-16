@@ -29,8 +29,10 @@ import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.BluetoothLeAdvertiser;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import com.openvela.bluetoothtest.R;
+import android.content.Intent;
 
 public class BlePeripheralActivity extends AppCompatActivity {
     private final String TAG = BlePeripheralActivity.class.getSimpleName();
@@ -38,8 +40,9 @@ public class BlePeripheralActivity extends AppCompatActivity {
     private volatile BluetoothLeAdvertiser bluetoothAdvertiser;
     private TextView tvAdvState;
     private Button btnAdv;
+    private Button btnExit;
     private EditText etAdvName;
-
+    private Button addService;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,7 +61,12 @@ public class BlePeripheralActivity extends AppCompatActivity {
     private void initView() {
         tvAdvState = findViewById(R.id.tv_adv_state);
         btnAdv = findViewById(R.id.btn_adv);
+        btnExit = findViewById(R.id.btn_exit);
         etAdvName = findViewById(R.id.et_adv_name);
+        addService = findViewById(R.id.add_service);
+        btnExit.setOnClickListener(v -> {
+            finish(); // Call the finish() method to return to the previous page.
+        });
 
         btnAdv.setOnClickListener(v -> {
            if (isAdvertising()) {
@@ -69,6 +77,12 @@ public class BlePeripheralActivity extends AppCompatActivity {
                startAdvertising(etAdvName.getText().toString().getBytes());
            }
         });
+
+        Button addServiceButton = findViewById(R.id.add_service);
+        addServiceButton.setOnClickListener(v -> {
+        Intent intent = new Intent(this, BleAddGattServiceActivity.class);
+        startActivity(intent);
+});
     }
 
     private boolean isAdvertising() {

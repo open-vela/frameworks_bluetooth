@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".BleAddGattServiceActivity">
+
+    <!-- Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:title="Add Service"
+        android:titleTextColor="@android:color/white"/>
+
+    <!-- Add Service Button -->
+    <Button
+        android:id="@+id/btn_add_service"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Service"
+        android:textAllCaps="false"
+        android:layout_margin="16dp" />
+
+    <!-- TextView List for Displaying Added Services -->
+    <LinearLayout
+        android:id="@+id/added_service_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+    </LinearLayout>
+
+    <!-- Add Characteristic Button Container -->
+    <LinearLayout
+        android:id="@+id/add_characteristic_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"/>
+    
+    <!-- Here we can put more content, such as service configuration forms, etc. -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Configure your GATT service here"
+        android:padding="16dp"
+        android:textSize="16sp" />
+</LinearLayout>
