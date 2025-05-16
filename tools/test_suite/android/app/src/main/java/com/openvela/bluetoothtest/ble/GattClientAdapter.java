@@ -53,7 +53,7 @@ public class GattClientAdapter extends RecyclerAdapter<BluetoothGattService> {
     private final Map<String, BluetoothGatt> gattHashMap = new HashMap<>();
     private BleConnectCallback<BtDevice> bleConnectCallback;
     private int view_position = -1;
-
+    BluetoothGatt bluetoothGatt;
     public GattClientAdapter(Context context) {
         super(context, R.layout.item_gatt_service, new ArrayList<>());
     }
@@ -80,7 +80,7 @@ public class GattClientAdapter extends RecyclerAdapter<BluetoothGattService> {
         }
 
         if (viewHolder.getBindingAdapterPosition() == view_position){
-            GattClientCharAdapter charAdapter = new GattClientCharAdapter(mContext, gattService.getCharacteristics());
+            GattClientCharAdapter charAdapter = new GattClientCharAdapter(mContext, gattService.getCharacteristics(), bluetoothGatt);
             RecyclerView recyclerView = viewHolder.getView(R.id.recyclerView);
             recyclerView.setLayoutManager(new LinearLayoutManager(mContext, LinearLayoutManager.VERTICAL, false));
             recyclerView.setAdapter(charAdapter);
@@ -112,7 +112,6 @@ public class GattClientAdapter extends RecyclerAdapter<BluetoothGattService> {
             return;
         }
 
-        BluetoothGatt bluetoothGatt;
         bluetoothGatt = bluetoothdevice.connectGatt(mContext, false, gattCallback, BluetoothDevice.TRANSPORT_LE);
         if (bluetoothGatt != null) {
             startConnectTimer(address);

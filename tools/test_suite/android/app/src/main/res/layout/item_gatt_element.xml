@@ -35,6 +35,23 @@
         android:text="W_TPUT"
         android:visibility="gone"/>
 
+    <EditText
+        android:id="@+id/et_payload_size"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:hint="Payload"
+        android:text="239"
+        android:layout_marginEnd="8dp" />
+
+    <EditText
+        android:id="@+id/et_total_count"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:hint="Total"
+        android:text="1000"/>
+
     <TextView
         android:id="@+id/tv_read_value"
         android:layout_width="wrap_content"
@@ -43,5 +60,17 @@
         android:textColor="@color/text_gray"
         android:textStyle="bold"
         android:visibility="gone"/>
+
+    <!-- ProgressBar -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="0"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone" /> <!-- Initial concealment -->
 
 </LinearLayout>

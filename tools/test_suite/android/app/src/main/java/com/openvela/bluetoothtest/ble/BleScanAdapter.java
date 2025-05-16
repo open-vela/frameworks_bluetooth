@@ -214,13 +214,13 @@ public class BleScanAdapter extends RecyclerAdapter<BtDevice> {
                 if (scanFilters != null) {
                     found = false;
                     for (String filter : scanFilters) {
-                        if ((address != null && address.toLowerCase().contains(filter.toLowerCase())) ||
-                            (name != null && name.toLowerCase().contains(filter.toLowerCase()))) {
+                        if ((name != null && name.toLowerCase().contains(filter.toLowerCase()))) {
                             found = true;
                             break;
                         }
                     }
                 }
+
                 if (!found) {
                     return;
                 }

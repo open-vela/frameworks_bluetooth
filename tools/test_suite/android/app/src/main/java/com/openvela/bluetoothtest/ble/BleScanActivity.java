@@ -34,7 +34,7 @@ import com.openvela.bluetoothtest.R;
 
 public class BleScanActivity extends AppCompatActivity {
     private final String TAG = BleScanActivity.class.getSimpleName();
-    private static final long BLE_SCAN_PERIOD_MS = 12 * 1000;
+    private static final long BLE_SCAN_PERIOD_MS = 30 * 1000;
     private TextView tvScanState;
     private Button btnScan;
     private EditText etFilter;
