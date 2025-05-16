@@ -29,13 +29,15 @@
 #include "service_loop.h"
 
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/classic/hfp_hf.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/bluetooth/hci_types.h>
-#include <zephyr/bluetooth/classic/hfp_hf.h>
 
 #include <zephyr/settings/settings.h>
 
+#include "sal_adapter_le_interface.h"
+#include "sal_connection_manager.h"
 #include "sal_interface.h"
 
 #include "utils/log.h"
@@ -154,7 +156,6 @@ static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
 
 static struct bt_conn_auth_cb g_conn_auth_cbs = {
     .cancel = zblue_on_cancel,
-    .pairing_confirm = zblue_on_pairing_confirm,
     .pincode_entry = zblue_on_pincode_entry
 };
 
@@ -241,6 +242,7 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
 
     zblue_conn_get_addr(conn, &state.addr);
     adapter_on_connection_state_changed(&state);
+    bt_sal_cm_acl_disconnected_callback(cm_data_new(&state.addr, PROFILE_UNKOWN));
 }
 
 static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
@@ -421,6 +423,7 @@ static void zblue_on_ready_cb(int err)
 }
 #endif
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static bool zblue_inquiry_eir_name(const uint8_t* eir, int len, char* name)
 {
     while (len) {
@@ -484,6 +487,7 @@ static struct bt_br_discovery_cb g_br_discovery_cb = {
     .recv = zblue_on_discovery_recv_cb,
     .timeout = zblue_on_discovery_complete_cb
 };
+#endif
 
 /* service adapter layer for BREDR */
 bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
@@ -492,6 +496,7 @@ bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
     extern void z_sys_init(void);
     static struct bt_hfp_hf_cb hf_cb;
     z_sys_init();
+    bt_sal_cm_conn_init();
 
     bt_br_discovery_cb_register(&g_br_discovery_cb);
     bt_conn_cb_register(&g_conn_cbs);
@@ -512,6 +517,7 @@ void bt_sal_cleanup(void)
     bt_br_discovery_cb_unregister(&g_br_discovery_cb);
     bt_conn_auth_cb_register(NULL);
     bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
+    bt_sal_cm_conn_cleanup();
 #endif
 }
 
@@ -534,17 +540,31 @@ bt_status_t bt_sal_enable(bt_controller_id_t id)
 #endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+static void STACK_CALL(brder_disable)(void* args)
+{
+    bt_disable();
+}
+#endif
+
 bt_status_t bt_sal_disable(bt_controller_id_t id)
 {
     UNUSED(id);
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    sal_adapter_req_t* req;
+
     if (!bt_is_ready()) {
         adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
         return BT_STATUS_SUCCESS;
     }
-
-    bt_disable();
+#ifndef CONFIG_BLUETOOTH_BLE_SUPPORT
+    req = sal_adapter_req(id, NULL, STACK_CALL(brder_disable));
+    if (!req) {
+        return BT_STATUS_NOMEM;
+    }
+    sal_send_req(req);
+#endif
     adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
 
     return BT_STATUS_SUCCESS;
@@ -628,27 +648,32 @@ bt_status_t bt_sal_set_io_capability(bt_controller_id_t id, bt_io_capability_t c
         g_conn_auth_cbs.passkey_display = zblue_on_passkey_display;
         g_conn_auth_cbs.passkey_entry = NULL;
         g_conn_auth_cbs.passkey_confirm = NULL;
+        g_conn_auth_cbs.pairing_confirm = NULL;
         break;
     case BT_IO_CAPABILITY_DISPLAYYESNO:
         g_conn_auth_cbs.passkey_display = zblue_on_passkey_display;
         g_conn_auth_cbs.passkey_entry = NULL;
         g_conn_auth_cbs.passkey_confirm = zblue_on_passkey_confirm;
+        g_conn_auth_cbs.pairing_confirm = zblue_on_pairing_confirm;
         break;
     case BT_IO_CAPABILITY_KEYBOARDONLY:
         g_conn_auth_cbs.passkey_display = NULL;
         g_conn_auth_cbs.passkey_entry = zblue_on_passkey_entry;
         g_conn_auth_cbs.passkey_confirm = NULL;
+        g_conn_auth_cbs.pairing_confirm = NULL;
         break;
     case BT_IO_CAPABILITY_KEYBOARDDISPLAY:
         g_conn_auth_cbs.passkey_display = zblue_on_passkey_display;
         g_conn_auth_cbs.passkey_entry = zblue_on_passkey_entry;
         g_conn_auth_cbs.passkey_confirm = zblue_on_passkey_confirm;
+        g_conn_auth_cbs.pairing_confirm = zblue_on_pairing_confirm;
         break;
     case BT_IO_CAPABILITY_NOINPUTNOOUTPUT:
     default:
         g_conn_auth_cbs.passkey_display = NULL;
         g_conn_auth_cbs.passkey_entry = NULL;
         g_conn_auth_cbs.passkey_confirm = NULL;
+        g_conn_auth_cbs.pairing_confirm = NULL;
         break;
     }
 
@@ -710,6 +735,7 @@ static void STACK_CALL(set_scan_mode)(void* args)
     sal_adapter_req_t* req = args;
     bool iscan = false;
     bool pscan = false;
+    int ret;
 
     switch (req->adpt.scanmode.scan_mode) {
     case BT_SCAN_MODE_NONE:
@@ -727,18 +753,10 @@ static void STACK_CALL(set_scan_mode)(void* args)
         break;
     }
 
-    int ret = bt_br_set_connectable(pscan);
+    ret = bt_br_set_visibility(iscan, pscan);
     if (ret != 0 && ret != -EALREADY) {
-        BT_LOGE("%s set connectable failed:%d", __func__, ret);
+        BT_LOGE("%s set scanmode failed:%d", __func__, ret);
         return;
-    }
-
-    if (iscan) {
-        ret = bt_br_set_discoverable(iscan);
-        if (ret != 0 && ret != -EALREADY) {
-            BT_LOGE("%s set discoverable failed:%d", __func__, ret);
-            return;
-        }
     }
 
     if (ret == 0)
@@ -1115,18 +1133,45 @@ connection_state_t bt_sal_get_connection_state(bt_controller_id_t id, bt_address
 
 uint16_t bt_sal_get_acl_connection_handle(bt_controller_id_t id, bt_address_t* addr, bt_transport_t trasnport)
 {
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
     struct bt_conn_info info;
-    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+    struct bt_conn* conn = NULL;
 
-    bt_conn_get_info(conn, &info);
-    bt_conn_unref(conn);
+    if (trasnport == BT_TRANSPORT_BLE) {
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
+        conn = get_le_conn_from_addr(addr);
+        if (!conn) {
+            BT_LOGE("%s, conn null", __func__);
+            return BT_INVALID_CONNECTION_HANDLE;
+        }
 
-    return info.handle;
-#else
-    return BT_INVALID_CONNECTION_HANDLE;
+        if (bt_conn_get_info(conn, &info)) {
+            BT_LOGE("%s, bt_conn_get_info fail", __func__);
+            return BT_INVALID_CONNECTION_HANDLE;
+        }
+
+        return info.handle;
 #endif
+    } else if (trasnport == BT_TRANSPORT_BREDR) {
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+        conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+        if (!conn) {
+            BT_LOGE("%s, conn null", __func__);
+            return BT_INVALID_CONNECTION_HANDLE;
+        }
+
+        if (bt_conn_get_info(conn, &info)) {
+            BT_LOGE("%s, bt_conn_get_info fail", __func__);
+            bt_conn_unref(conn);
+            return BT_INVALID_CONNECTION_HANDLE;
+        }
+
+        bt_conn_unref(conn);
+        return info.handle;
+#endif
+    }
+
+    return BT_INVALID_CONNECTION_HANDLE;
 }
 
 uint16_t bt_sal_get_sco_connection_handle(bt_controller_id_t id, bt_address_t* addr)
@@ -1197,7 +1242,7 @@ static void STACK_CALL(create_bond)(void* args)
     bond_state_t state = BOND_STATE_NONE;
     struct bt_conn* conn;
 
-    conn = bt_conn_pair_br((bt_addr_t*)&req->addr, BT_SECURITY_L3);
+    conn = bt_conn_pair_br((bt_addr_t*)&req->addr, BT_SECURITY_L2);
     if (conn) {
         state = BOND_STATE_BONDING;
         bt_conn_unref(conn);
@@ -1234,6 +1279,8 @@ static void STACK_CALL(cancel_bond)(void* args)
 
     SAL_CHECK(bt_conn_auth_cancel(conn), 0);
     SAL_CHECK(bt_br_unpair((bt_addr_t*)&req->addr), 0);
+
+    bt_conn_unref(conn);
 }
 #endif
 
@@ -1258,7 +1305,12 @@ bt_status_t bt_sal_cancel_bond(bt_controller_id_t id, bt_address_t* addr, bt_tra
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
 static void STACK_CALL(remove_bond)(void* args)
 {
+    bt_status_t status;
     sal_adapter_req_t* req = args;
+
+    status = bt_sal_cm_try_disconnect_profiles(&req->addr, true);
+    if (status == BT_STATUS_SUCCESS)
+        return;
 
     SAL_CHECK(bt_br_unpair((bt_addr_t*)&req->addr), 0);
 }

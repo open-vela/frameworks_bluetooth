@@ -25,6 +25,7 @@
 #include "sal_a2dp_source_interface.h"
 #include "sal_avrcp_control_interface.h"
 #include "sal_avrcp_target_interface.h"
+#include "sal_connection_manager.h"
 #include "sal_interface.h"
 #include "sal_zblue.h"
 
@@ -156,6 +157,8 @@ static void zblue_on_disconnected(struct bt_conn* conn)
     msg->data.conn_state.conn_state = PROFILE_STATE_DISCONNECTED;
     msg->data.conn_state.reason = PROFILE_REASON_UNSPECIFIED;
     bt_sal_avrcp_control_event_callback(msg);
+
+    bt_sal_cm_profile_disconnected_callback(cm_data_new(&bd_addr, PROFILE_AVRCP_CT));
 #endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL */
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
     msg = avrcp_msg_new(AVRC_CONNECTION_STATE_CHANGED, &bd_addr);
@@ -391,6 +394,14 @@ bt_status_t bt_sal_avrcp_control_disconnect(bt_controller_id_t id, bt_address_t*
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
+}
+
+bool bt_sal_avrcp_try_disconnect_avrcp_control(bt_controller_id_t id, bt_address_t* addr)
+{
+    if (bt_sal_avrcp_control_disconnect(id, addr) == BT_STATUS_SUCCESS)
+        return true;
+
+    return false;
 }
 
 bt_status_t bt_sal_avrcp_control_send_pass_through_cmd(bt_controller_id_t id,
