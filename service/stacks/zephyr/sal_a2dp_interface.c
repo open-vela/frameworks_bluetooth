@@ -15,6 +15,7 @@
  ***************************************************************************/
 #define LOG_TAG "sal_a2dp"
 
+#include <assert.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -39,13 +40,19 @@
 
 #define A2DP_PEER_ENDPOINT_MAX 10
 
-#define BT_A2DP_MEDIA_CONNECTED(state) (state | 0xF0)
-#define BT_A2DP_SIGNALING_CONNECTED(state) (state | 0x0F)
-#define BT_A2DP_MEDIA_DISCONNECTED(state) (state & 0x0F)
-#define BT_A2DP_SIGNALING_DISCONNECTED(state) (state & 0xF0)
+typedef enum {
+    A2DP_STATE_BIT_SIG_CONN = 0,
+    A2DP_STATE_BIT_MEDIA_CONN = 4,
+} a2dp_state_bit_t;
 
-#define BT_A2DP_FIND_MEDIA_CONNECTION(state) (state & 0xF0)
-#define BT_A2DP_FIND_SIGNALING_CONNECTION(state) (state & 0x0F)
+#define SAL_A2DP_CLEAR_STATE_BIT(state) ((state) &= 0x00)
+#define SAL_A2DP_SET_SIGNALING_CONNECTED_BIT(state) ((state) |= (1 << A2DP_STATE_BIT_SIG_CONN))
+#define SAL_A2DP_CLEAR_SIGNALING_CONNECTED_BIT(state) ((state) &= (~(1 << A2DP_STATE_BIT_SIG_CONN)))
+#define SAL_A2DP_SET_MEDIA_CONNECTED_BIT(state) ((state) |= (1 << A2DP_STATE_BIT_MEDIA_CONN))
+#define SAL_A2DP_CLEAR_MEDIA_CONNECTED_BIT(state) ((state) &= (~(1 << A2DP_STATE_BIT_MEDIA_CONN)))
+#define SAL_A2DP_GET_SIGNALING_CONNECTION_BIT(state) ((((state) >> A2DP_STATE_BIT_SIG_CONN)) & 1)
+#define SAL_A2DP_GET_MEDIA_CONNECTION_BIT(state) (((state) >> A2DP_STATE_BIT_MEDIA_CONN) & 1)
+#define SAL_A2DP_IS_CONNECTION_NONE(state) (!(SAL_A2DP_GET_SIGNALING_CONNECTION_BIT(state)) && !(SAL_A2DP_GET_MEDIA_CONNECTION_BIT(state)))
 
 typedef enum {
     A2DP_INT = 0,
@@ -69,11 +76,13 @@ struct zblue_a2dp_info_t {
      * and the lower 8 bits represent the status of the signaling channel.
      */
     uint8_t state;
-    bool disconnect; // disconnect flag, Avoid repeatedly disconnecting A2DP during cleanup.
+    bool disconnecting; // true if a disconnection is in progress.
     uint8_t codec_type; // The codec type to be set during reconfiguration.
 };
 
 static bt_list_t* bt_a2dp_conn = NULL;
+
+static void bt_list_remove_a2dp_info(struct zblue_a2dp_info_t* a2dp_info);
 
 NET_BUF_POOL_DEFINE(bt_a2dp_tx_pool, CONFIG_BT_MAX_CONN,
     BT_L2CAP_BUF_SIZE(CONFIG_BT_L2CAP_TX_MTU),
@@ -789,7 +798,7 @@ static void zblue_on_stream_established(struct bt_a2dp_stream* stream)
         return;
     }
 
-    a2dp_info->state = BT_A2DP_MEDIA_CONNECTED(a2dp_info->state);
+    SAL_A2DP_SET_MEDIA_CONNECTED_BIT(a2dp_info->state);
 
     if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
@@ -802,10 +811,9 @@ static void zblue_on_stream_established(struct bt_a2dp_stream* stream)
     }
 }
 
-static void zblue_on_stream_released(struct bt_a2dp_stream* stream)
+static void bt_a2dp_stream_released(struct bt_a2dp_stream* stream)
 {
     struct zblue_a2dp_info_t* a2dp_info;
-    BT_LOGI("%s, stream released", __func__);
 
     if (bt_a2dp_conn == NULL) {
         BT_LOGE("%s, bt_a2dp_conn is null", __func__);
@@ -818,22 +826,32 @@ static void zblue_on_stream_released(struct bt_a2dp_stream* stream)
         return;
     }
 
-    a2dp_info->state = BT_A2DP_MEDIA_DISCONNECTED(a2dp_info->state);
+    SAL_A2DP_CLEAR_MEDIA_CONNECTED_BIT(a2dp_info->state);
 
     if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         bt_sal_a2dp_source_event_callback(a2dp_event_new(STREAM_CLOSED_EVT, &a2dp_info->bd_addr));
-        bt_sal_a2dp_source_event_callback(a2dp_event_new(DISCONNECTED_EVT, &a2dp_info->bd_addr));
 #endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
     } else { /* SEP_SNK */
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
         bt_sal_a2dp_sink_event_callback(a2dp_event_new(STREAM_CLOSED_EVT, &a2dp_info->bd_addr));
-        bt_sal_a2dp_sink_event_callback(a2dp_event_new(DISCONNECTED_EVT, &a2dp_info->bd_addr));
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
     }
-    if (a2dp_info->disconnect == true && BT_A2DP_SIGNALING_CONNECTED(a2dp_info->state)) {
+    if (a2dp_info->disconnecting == true && SAL_A2DP_GET_SIGNALING_CONNECTION_BIT(a2dp_info->state)) {
         bt_a2dp_disconnect(a2dp_info->a2dp);
+        return;
     }
+
+    if (SAL_A2DP_IS_CONNECTION_NONE(a2dp_info->state)) {
+        BT_LOGI("%s, Both channel disconnected", __func__);
+        bt_list_remove_a2dp_info(a2dp_info);
+    }
+}
+
+static void zblue_on_stream_released(struct bt_a2dp_stream* stream)
+{
+    BT_LOGI("%s, stream released", __func__);
+    bt_a2dp_stream_released(stream);
 }
 
 static void zblue_on_stream_started(struct bt_a2dp_stream* stream)
@@ -1057,7 +1075,7 @@ static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
 
     if (a2dp_info) {
         BT_LOGW("a2dp_info already exists");
-        a2dp_info->state = BT_A2DP_SIGNALING_CONNECTED(a2dp_info->state);
+        SAL_A2DP_SET_SIGNALING_CONNECTED_BIT(a2dp_info->state);
         if (a2dp_info->int_acp == A2DP_INT) {
             bt_a2dp_discover(a2dp, &bt_discover_param);
             return;
@@ -1091,8 +1109,9 @@ static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
     a2dp_info->int_acp = A2DP_ACP;
     a2dp_info->role = SEP_INVALID;
     a2dp_info->is_cleanup = false;
-    a2dp_info->state = BT_A2DP_SIGNALING_CONNECTED(a2dp_info->state);
-    a2dp_info->disconnect = false;
+    SAL_A2DP_CLEAR_STATE_BIT(a2dp_info->state);
+    SAL_A2DP_SET_SIGNALING_CONNECTED_BIT(a2dp_info->state);
+    a2dp_info->disconnecting = false;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
 }
@@ -1107,8 +1126,8 @@ static void bt_list_remove_a2dp_info(struct zblue_a2dp_info_t* a2dp_info)
         BT_LOGE("%s, a2dp_info is null", __func__);
         return;
     }
-    if (a2dp_info->state != 0)
-        return;
+
+    assert(a2dp_info->state == 0);
 
     if (a2dp_info->is_cleanup && (bt_list_length(bt_a2dp_conn) == 1)) {
         BT_LOGI("cleanup done, free bt_a2dp_conn");
@@ -1136,21 +1155,21 @@ static void zblue_on_disconnected(struct bt_a2dp* a2dp)
         BT_LOGW("a2dp_info not found");
         return;
     }
-    a2dp_info->state = BT_A2DP_SIGNALING_DISCONNECTED(a2dp_info->state);
+
+    SAL_A2DP_CLEAR_SIGNALING_CONNECTED_BIT(a2dp_info->state);
 
     if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-        bt_sal_a2dp_source_event_callback(a2dp_event_new(STREAM_CLOSED_EVT, &a2dp_info->bd_addr));
         bt_sal_a2dp_source_event_callback(a2dp_event_new(DISCONNECTED_EVT, &a2dp_info->bd_addr));
 #endif /* CONFIG_BLUETOOTH_A2DP_SOURCE */
     } else { /* SEP_SNK */
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
-        bt_sal_a2dp_sink_event_callback(a2dp_event_new(STREAM_CLOSED_EVT, &a2dp_info->bd_addr));
         bt_sal_a2dp_sink_event_callback(a2dp_event_new(DISCONNECTED_EVT, &a2dp_info->bd_addr));
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
     }
 
-    bt_list_remove_a2dp_info(a2dp_info);
+    if (SAL_A2DP_IS_CONNECTION_NONE(a2dp_info->state))
+        bt_list_remove_a2dp_info(a2dp_info);
 }
 
 static uint8_t bt_avdtp_codec_sanity_check(uint8_t local, uint8_t config, uint8_t offset, uint8_t len, uint8_t err)
@@ -1340,17 +1359,8 @@ static void zblue_on_release_rsp(struct bt_a2dp_stream* stream, uint8_t rsp_err_
         return;
 
     BT_LOGE("%s, close fail: %d", __func__, rsp_err_code);
-    struct zblue_a2dp_info_t* a2dp_info = (struct zblue_a2dp_info_t*)bt_list_find(bt_a2dp_conn, bt_a2dp_info_find_a2dp, stream->a2dp);
-    if (!a2dp_info) {
-        BT_LOGE("%s, a2dp_info not found", __func__);
-        return;
-    }
 
-    a2dp_info->state = BT_A2DP_MEDIA_DISCONNECTED(a2dp_info->state);
-    if (a2dp_info->disconnect == true && BT_A2DP_SIGNALING_CONNECTED(a2dp_info->state)) {
-        BT_LOGI("Failed to disconnect the media channel, disconnect the signaling channel");
-        bt_a2dp_disconnect(a2dp_info->a2dp);
-    }
+    bt_a2dp_stream_released(stream);
 }
 
 static int zblue_on_start_req(struct bt_a2dp_stream* stream, uint8_t* rsp_err_code)
@@ -1512,8 +1522,8 @@ bt_status_t bt_sal_a2dp_source_connect(bt_controller_id_t id, bt_address_t* addr
     a2dp_info->int_acp = A2DP_INT;
     a2dp_info->role = SEP_SRC;
     a2dp_info->is_cleanup = false;
-    a2dp_info->state = 0;
-    a2dp_info->disconnect = false;
+    SAL_A2DP_CLEAR_STATE_BIT(a2dp_info->state);
+    a2dp_info->disconnecting = false;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
     bt_conn_unref(conn);
@@ -1565,8 +1575,8 @@ bt_status_t bt_sal_a2dp_sink_connect(bt_controller_id_t id, bt_address_t* addr)
     a2dp_info->int_acp = A2DP_INT;
     a2dp_info->role = SEP_SNK;
     a2dp_info->is_cleanup = false;
-    a2dp_info->state = 0;
-    a2dp_info->disconnect = false;
+    SAL_A2DP_CLEAR_STATE_BIT(a2dp_info->state);
+    a2dp_info->disconnecting = false;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
     bt_conn_unref(conn);
@@ -1588,16 +1598,16 @@ static bt_status_t bt_sal_a2dp_disconnect(struct zblue_a2dp_info_t* a2dp_info)
     if (!a2dp_info)
         return BT_STATUS_SUCCESS;
 
-    if (a2dp_info->disconnect) {
+    if (a2dp_info->disconnecting) {
         BT_LOGW("%s, disconnecting", __func__);
         return BT_STATUS_SUCCESS;
     }
 
-    a2dp_info->disconnect = true;
-    if (BT_A2DP_FIND_MEDIA_CONNECTION(a2dp_info->state)) {
+    a2dp_info->disconnecting = true;
+    if (SAL_A2DP_GET_MEDIA_CONNECTION_BIT(a2dp_info->state)) {
         BT_LOGW("%s, media connection exists, disconnect", __func__);
         return bt_a2dp_stream_release(&a2dp_info->stream);
-    } else if (BT_A2DP_FIND_SIGNALING_CONNECTION(a2dp_info->state)) {
+    } else if (SAL_A2DP_GET_SIGNALING_CONNECTION_BIT(a2dp_info->state)) {
         BT_LOGW("%s, signaling connection exists, disconnect", __func__);
         return bt_a2dp_disconnect(a2dp_info->a2dp);
     }
