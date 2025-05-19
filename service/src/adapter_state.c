@@ -450,6 +450,7 @@ static void ble_turning_off_enter(state_machine_t* sm)
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     /* LE profile service shotdown */
     service_manager_shutdown(BT_TRANSPORT_BLE);
+    adapter_on_le_disabled();
     const state_t* prev = hsm_get_previous_state(sm);
     adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_BLE_TURNING_OFF);
 #else
@@ -463,7 +464,6 @@ static void ble_turning_off_exit(state_machine_t* sm)
     adapter_state_machine_t* stm = (adapter_state_machine_t*)sm;
     ADAPTER_DBG_EXIT(sm);
     stm->ble_enabled = false;
-    adapter_on_le_disabled();
 #endif
 }
 

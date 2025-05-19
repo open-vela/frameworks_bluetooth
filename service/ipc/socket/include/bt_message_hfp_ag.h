@@ -34,6 +34,7 @@ BT_HFP_AG_MESSAGE_START,
     BT_HFP_AG_VOLUME_CONTROL,
     BT_HFP_AG_SEND_AT_COMMAND,
     BT_HFP_AG_SEND_VENDOR_SPECIFIC_AT_COMMAND,
+    BT_HFP_AG_SEND_CLCC_RESPONSE,
     BT_HFP_AG_MESSAGE_END,
 #endif
 
@@ -50,6 +51,7 @@ BT_HFP_AG_MESSAGE_START,
     BT_HFP_AG_ON_DIAL_CALL,
     BT_HFP_AG_ON_AT_COMMAND_RECEIVED,
     BT_HFP_AG_ON_VENDOR_SPECIFIC_AT_COMMAND_RECEIVED,
+    BT_HFP_AG_ON_CLCC_COMMAND_RECEIVED,
     BT_HFP_AG_CALLBACK_END,
 #endif
 
@@ -123,6 +125,17 @@ BT_HFP_AG_MESSAGE_START,
             uint8_t pad1[(HFP_COMPANY_PREFIX_LEN_MAX + 1 + 3) / 4 * 4 - (HFP_COMPANY_PREFIX_LEN_MAX + 1)];
             char value[HFP_AT_LEN_MAX + 1];
         } _bt_hfp_ag_send_vendor_specific_at_cmd;
+
+        struct {
+            bt_address_t addr;
+            uint32_t index;
+            uint8_t dir;
+            uint8_t state;
+            uint8_t mode;
+            uint8_t mpty;
+            uint8_t type;
+            char number[HFP_PHONE_NUMBER_MAX + 1];
+        } _bt_hfp_ag_send_clcc_response;
     } bt_message_hfp_ag_t;
 
     typedef union {
@@ -177,6 +190,10 @@ BT_HFP_AG_MESSAGE_START,
             uint8_t pad1[(HFP_COMPANY_PREFIX_LEN_MAX + 1 + 3) / 4 * 4 - (HFP_COMPANY_PREFIX_LEN_MAX + 1)];
             char value[HFP_AT_LEN_MAX + 1];
         } _on_vend_spec_at_cmd_received;
+
+        struct {
+            bt_address_t addr;
+        } _on_clcc_cmd_received;
     } bt_message_hfp_ag_callbacks_t;
 
 #ifdef __cplusplus

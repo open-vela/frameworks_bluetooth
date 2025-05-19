@@ -42,7 +42,9 @@ BT_DEVICE_MESSAGE_START,
     BT_DEVICE_SET_LE_SC_REMOTE_OOB_DATA,
     BT_DEVICE_GET_LE_SC_LOCAL_OOB_DATA,
     BT_DEVICE_CONNECT,
+    BT_DEVICE_BACKGROUND_CONNECT,
     BT_DEVICE_DISCONNECT,
+    BT_DEVICE_BACKGROUND_DISCONNECT,
     BT_DEVICE_CONNECT_LE,
     BT_DEVICE_DISCONNECT_LE,
     BT_DEVICE_CONNECT_REQUEST_REPLY,
@@ -132,7 +134,9 @@ BT_DEVICE_MESSAGE_START,
             _bt_device_is_encrypted,
             _bt_device_is_bond_initiate_local,
             _bt_device_get_bond_state,
-            _bt_device_is_bonded;
+            _bt_device_is_bonded,
+            _bt_device_background_connect,
+            _bt_device_background_disconnect;
 
         struct {
             bt_address_t addr;
