@@ -267,12 +267,12 @@ static void bt_socket_server_ins_release(bt_instance_t* ins)
     free(ins);
 }
 
-static void cnt_msg_queue(void* data, void* context)
+static void check_busy(void* data, void* context)
 {
     bt_instance_t* ins = (bt_instance_t*)data;
-    uint32_t* p_cnt = (uint32_t*)context;
-
-    *p_cnt += list_length(&ins->msg_queue);
+    uint8_t* busy = (uint8_t*)context;
+    if (!list_is_empty(&ins->msg_queue))
+        *busy = 1;
 }
 
 static void bt_socket_server_handle_event(service_poll_t* poll,
@@ -524,9 +524,9 @@ fail:
 
 bool bt_socket_server_is_busy(void)
 {
-    uint32_t msg_cnt = 0;
+    uint8_t busy = 0;
 
-    bt_list_foreach(g_instances_list, cnt_msg_queue, &msg_cnt);
+    bt_list_foreach(g_instances_list, check_busy, &busy);
 
-    return msg_cnt > 0;
+    return busy != 0;
 }
