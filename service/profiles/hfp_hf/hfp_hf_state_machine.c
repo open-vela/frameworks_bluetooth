@@ -200,6 +200,7 @@ static const char* stack_event_to_string(hfp_hf_event_t event)
         CASE_RETURN_STR(HF_SEND_AT_COMMAND)
         CASE_RETURN_STR(HF_UPDATE_BATTERY_LEVEL)
         CASE_RETURN_STR(HF_SEND_DTMF)
+        CASE_RETURN_STR(HF_GET_SUBSCRIBER_NUMBER)
         CASE_RETURN_STR(HF_TIMEOUT)
         CASE_RETURN_STR(HF_OFFLOAD_START_REQ)
         CASE_RETURN_STR(HF_OFFLOAD_STOP_REQ)
@@ -222,6 +223,7 @@ static const char* stack_event_to_string(hfp_hf_event_t event)
         CASE_RETURN_STR(HF_STACK_EVENT_CMD_RESULT)
         CASE_RETURN_STR(HF_STACK_EVENT_RING_INDICATION)
         CASE_RETURN_STR(HF_STACK_EVENT_CODEC_CHANGED)
+        CASE_RETURN_STR(HF_STACK_EVENT_CNUM)
     default:
         return "UNKNOWN_HF_EVENT";
     }
@@ -1016,6 +1018,11 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
         if (status != BT_STATUS_SUCCESS)
             BT_LOGE("Send dtmf failed");
         break;
+    case HF_GET_SUBSCRIBER_NUMBER:
+        status = bt_sal_hfp_hf_get_subscriber_number(&hfsm->addr);
+        if (status != BT_STATUS_SUCCESS)
+            BT_LOGE("Get subscriber number failed");
+        break;
     case HF_STACK_EVENT_VR_STATE_CHANGED: {
         hfp_hf_vr_state_t state = data->valueint1;
 
@@ -1106,6 +1113,14 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
     case HF_STACK_EVENT_CODEC_CHANGED:
         hfsm->codec = data->valueint1 == HFP_CODEC_MSBC ? HFP_CODEC_MSBC : HFP_CODEC_CVSD;
         break;
+    case HF_STACK_EVENT_CNUM: {
+        char* number = data->string1;
+        uint32_t service = data->valueint2;
+
+        BT_LOGD("CNUM:number: %s, service: %" PRIu32, number == NULL ? "NULL" : number, service);
+        hf_service_notify_subscriber_number(&hfsm->addr, data->string1, (hfp_subscriber_number_service_t)data->valueint2);
+        break;
+    }
     default:
         BT_LOGW("Unexpected event:%" PRIu32 "", event);
         break;

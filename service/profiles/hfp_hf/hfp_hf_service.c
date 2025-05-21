@@ -756,6 +756,17 @@ static bt_status_t hfp_hf_send_dtmf(bt_address_t* addr, char dtmf)
     return hfp_hf_send_message(msg);
 }
 
+static bt_status_t hfp_hf_get_subscriber_number(bt_address_t* addr)
+{
+    CHECK_ENABLED();
+
+    hfp_hf_msg_t* msg = hfp_hf_msg_new(HF_GET_SUBSCRIBER_NUMBER, addr);
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    return hfp_hf_send_message(msg);
+}
+
 static const hfp_hf_interface_t HfInterface = {
     sizeof(HfInterface),
     .register_callbacks = hfp_hf_register_callbacks,
@@ -783,6 +794,7 @@ static const hfp_hf_interface_t HfInterface = {
     .update_battery_level = hfp_hf_update_battery_level,
     .volume_control = hfp_hf_volume_control,
     .send_dtmf = hfp_hf_send_dtmf,
+    .get_subscriber_number = hfp_hf_get_subscriber_number,
 };
 
 static const void* get_hf_profile_interface(void)
@@ -864,6 +876,12 @@ void hf_service_notify_clip_received(bt_address_t* addr, const char* number, con
 {
     BT_LOGD("%s", __func__);
     HF_CALLBACK_FOREACH(g_hfp_service.callbacks, clip_cb, addr, number, name);
+}
+
+void hf_service_notify_subscriber_number(bt_address_t* addr, const char* number, hfp_subscriber_number_service_t service)
+{
+    BT_LOGD("%s", __func__);
+    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, subscriber_number_cb, addr, number, service);
 }
 
 void hfp_hf_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,
@@ -1036,6 +1054,18 @@ void hfp_hf_on_at_command_result_response(bt_address_t* addr, uint32_t at_cmd_co
 
     msg->data.valueint1 = at_cmd_code;
     msg->data.valueint2 = result;
+    hfp_hf_send_message(msg);
+}
+
+void hfp_hf_on_subscriber_number_response(bt_address_t* addr, const char* number, hfp_subscriber_number_service_t service)
+{
+    hfp_hf_msg_t* msg = hfp_hf_msg_new(HF_STACK_EVENT_CNUM, addr);
+    if (!msg)
+        return;
+
+    HF_MSG_ADD_STR(msg, 1, number, strlen(number));
+    msg->data.valueint2 = service;
+
     hfp_hf_send_message(msg);
 }
 
