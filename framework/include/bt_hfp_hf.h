@@ -70,6 +70,15 @@ typedef struct {
 } hfp_current_call_t;
 
 /**
+ * @brief HFP subscriber number service
+ */
+typedef enum {
+    HFP_HF_SERVICE_UNKNOWN = 0,
+    HFP_HF_SERVICE_VOICE,
+    HFP_HF_SERVICE_FAX,
+} hfp_subscriber_number_service_t;
+
+/**
  * @endcond
  */
 
@@ -389,6 +398,16 @@ void hfp_hf_callheld_cb(void* cookie, bt_address_t* addr, hfp_callheld_t callhel
 typedef void (*hfp_hf_callheld_callback)(void* cookie, bt_address_t* addr, hfp_callheld_t callheld);
 
 /**
+ * @brief HFP HF get subscriber number callback.
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer AG device.
+ * @param number - phone number.
+ * @param service - indicates which service this phone number relates to.
+ */
+typedef void (*hfp_hf_subscriber_number_callback)(void* cookie, bt_address_t* addr, const char* number, hfp_subscriber_number_service_t service);
+
+/**
  * @brief HFP HF +clip callback.
  *
  * @param cookie - callback cookie.
@@ -420,6 +439,7 @@ typedef struct
     hfp_hf_callsetup_callback callsetup_cb;
     hfp_hf_callheld_callback callheld_cb;
     hfp_hf_clip_callback clip_cb;
+    hfp_hf_subscriber_number_callback subscriber_number_cb;
 } hfp_hf_callbacks_t;
 
 /**
@@ -1157,6 +1177,15 @@ int app_send_dtmf(bt_instance_t* ins, bt_address_t* addr, char dtmf);
  * @endcode
  */
 bt_status_t BTSYMBOLS(bt_hfp_hf_send_dtmf)(bt_instance_t* ins, bt_address_t* addr, char dtmf);
+
+/**
+ * @brief Get Subscriber Number
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer AG device.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_hf_get_subscriber_number)(bt_instance_t* ins, bt_address_t* addr);
 
 #ifdef __cplusplus
 }

@@ -53,6 +53,7 @@ typedef enum {
     HF_SEND_AT_COMMAND = 19,
     HF_UPDATE_BATTERY_LEVEL = 20,
     HF_SEND_DTMF = 21,
+    HF_GET_SUBSCRIBER_NUMBER = 22,
     HF_STARTUP = 28,
     HF_SHUTDOWN = 29,
     HF_TIMEOUT = 30,
@@ -77,6 +78,7 @@ typedef enum {
     HF_STACK_EVENT_CMD_RESULT,
     HF_STACK_EVENT_RING_INDICATION,
     HF_STACK_EVENT_CODEC_CHANGED,
+    HF_STACK_EVENT_CNUM,
 } hfp_hf_event_t;
 
 typedef struct
