@@ -198,3 +198,9 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_send_dtmf)(bt_instance_t* ins, bt_address_t* add
     hfp_hf_interface_t* profile = get_profile_service();
     return profile->send_dtmf(addr, dtmf);
 }
+
+bt_status_t BTSYMBOLS(bt_hfp_hf_get_subscriber_number)(bt_instance_t* ins, bt_address_t* addr)
+{
+    hfp_hf_interface_t* profile = get_profile_service();
+    return profile->get_subscriber_number(addr);
+}
