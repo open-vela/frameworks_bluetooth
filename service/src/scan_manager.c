@@ -557,7 +557,7 @@ void scan_manager_init(void)
 
 void scan_manager_cleanup(void)
 {
-    cleanup_scanner(NULL);
+    do_in_service_loop(cleanup_scanner, NULL);
 }
 
 void scanner_dump(bt_scanner_t* scanner)

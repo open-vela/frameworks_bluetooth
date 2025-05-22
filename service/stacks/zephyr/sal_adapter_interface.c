@@ -226,7 +226,6 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     };
 
     zblue_conn_get_addr(conn, &state.addr);
-    bt_sal_get_remote_name(BT_TRANSPORT_BREDR, &state.addr);
     adapter_on_connection_state_changed(&state);
 }
 
@@ -234,8 +233,7 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
 {
     acl_state_param_t state = {
         .transport = BT_TRANSPORT_BREDR,
-        .connection_state = CONNECTION_STATE_DISCONNECTED,
-        .hci_reason_code = reason,
+        .connection_state = CONNECTION_STATE_DISCONNECTED
     };
 
     zblue_conn_get_addr(conn, &state.addr);
@@ -535,31 +533,17 @@ bt_status_t bt_sal_enable(bt_controller_id_t id)
 #endif
 }
 
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-static void STACK_CALL(brder_disable)(void* args)
-{
-    bt_disable();
-}
-#endif
-
 bt_status_t bt_sal_disable(bt_controller_id_t id)
 {
     UNUSED(id);
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    sal_adapter_req_t* req;
-
     if (!bt_is_ready()) {
         adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
         return BT_STATUS_SUCCESS;
     }
-#ifndef CONFIG_BLUETOOTH_BLE_SUPPORT
-    req = sal_adapter_req(id, NULL, STACK_CALL(brder_disable));
-    if (!req) {
-        return BT_STATUS_NOMEM;
-    }
-    sal_send_req(req);
-#endif
+
+    bt_disable();
     adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
 
     return BT_STATUS_SUCCESS;

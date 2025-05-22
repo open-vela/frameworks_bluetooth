@@ -389,5 +389,5 @@ void adv_manager_init(void)
 
 void adv_manager_cleanup(void)
 {
-    advertisers_cleanup(NULL);
+    do_in_service_loop(advertisers_cleanup, NULL);
 }

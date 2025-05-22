@@ -855,7 +855,7 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
     }
 
     if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED)
-        bt_cm_process_disconnect_event(addr, acl_params->transport, acl_params->hci_reason_code);
+        bt_cm_process_disconnect_event(addr, acl_params->transport);
 
     /* send connection changed notification */
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_connection_state_changed, addr,
@@ -1204,7 +1204,7 @@ void adapter_on_le_enabled(bool enablebt)
         bt_addr_set_empty(&adapter->le_properties.addr);
     }
 
-    bt_addr_ba2str(&adapter->le_properties.addr, addrstr);
+    // bt_addr_ba2str(&props->addr, addrstr);
     BT_LOGD("%s, le_addr:%s", __func__, addrstr);
 
     /* set le io capability ? */
@@ -1953,16 +1953,7 @@ void adapter_get_name(char* name, int size)
 
 bt_status_t adapter_get_uuids(bt_uuid_t* uuids, uint16_t* size)
 {
-    bt_status_t status = BT_STATUS_SUCCESS;
-
-    adapter_lock();
-    CHECK_ADAPTER_READY();
-
-    service_manager_get_uuid(uuids, size);
-
-error:
-    adapter_unlock();
-    return status;
+    return BT_STATUS_NOT_SUPPORTED;
 }
 
 bt_status_t adapter_set_scan_mode(bt_scan_mode_t mode, bool bondable)
