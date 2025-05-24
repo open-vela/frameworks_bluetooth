@@ -414,8 +414,8 @@ bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal)
 {
     z_sys_init();
 
-    bt_conn_cb_register(&g_conn_cbs);
-    bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
+    // bt_conn_cb_register(&g_conn_cbs);
+    // bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
 
     return BT_STATUS_SUCCESS;
 }

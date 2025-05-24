@@ -303,7 +303,7 @@ CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/framework/
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/tools/channel_sounding/include
 CSRCS += tools/channel_sounding/src/connected_cs_reflector.c
 CSRCS += tools/channel_sounding/src/distance_estimation.c
-
+CSRCS += tools/cs_reflector.c
 
 ifneq ($(CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME)$(CONFIG_OFONO),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/dbus/dbus

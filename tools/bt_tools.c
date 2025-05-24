@@ -222,6 +222,7 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     { "vmicp", vmicp_command_exec, 0, "vcp/micp client cmd, input \'vmicp\' show usage" },
 #endif
+    {"cs_ref", cs_reflector_command_exec, 0, "cs reflector cmd"},
     { "dump", dump_cmd, 0, "dump adapter state" },
     { "log", log_command, 0, "log control command" },
     { "help", usage_cmd, 0, "Usage for bttools" },
