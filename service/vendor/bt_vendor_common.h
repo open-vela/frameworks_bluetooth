@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "lea_audio_common.h"
+#include "bt_lea_common.h"
 
 /****************************************************************************
  * Pre-processor Definitions

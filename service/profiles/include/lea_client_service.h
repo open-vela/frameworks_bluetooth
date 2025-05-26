@@ -21,7 +21,7 @@
  ****************************************************************************/
 #include "bt_device.h"
 #include "bt_lea_client.h"
-#include "lea_audio_common.h"
+#include "bt_lea_common.h"
 
 typedef struct {
     bool is_source;
