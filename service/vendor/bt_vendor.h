@@ -24,8 +24,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "bt_lea_common.h"
 #include "bt_vendor_common.h"
-#include "lea_audio_common.h"
 
 /****************************************************************************
  * Public Fucntion
