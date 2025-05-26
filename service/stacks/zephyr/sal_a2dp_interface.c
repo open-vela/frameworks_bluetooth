@@ -45,15 +45,6 @@ typedef enum {
     A2DP_STATE_BIT_MEDIA_CONN = 4,
 } a2dp_state_bit_t;
 
-#define SAL_A2DP_CLEAR_STATE_BIT(state) ((state) &= 0x00)
-#define SAL_A2DP_SET_SIGNALING_CONNECTED_BIT(state) ((state) |= (1 << A2DP_STATE_BIT_SIG_CONN))
-#define SAL_A2DP_CLEAR_SIGNALING_CONNECTED_BIT(state) ((state) &= (~(1 << A2DP_STATE_BIT_SIG_CONN)))
-#define SAL_A2DP_SET_MEDIA_CONNECTED_BIT(state) ((state) |= (1 << A2DP_STATE_BIT_MEDIA_CONN))
-#define SAL_A2DP_CLEAR_MEDIA_CONNECTED_BIT(state) ((state) &= (~(1 << A2DP_STATE_BIT_MEDIA_CONN)))
-#define SAL_A2DP_GET_SIGNALING_CONNECTION_BIT(state) ((((state) >> A2DP_STATE_BIT_SIG_CONN)) & 1)
-#define SAL_A2DP_GET_MEDIA_CONNECTION_BIT(state) (((state) >> A2DP_STATE_BIT_MEDIA_CONN) & 1)
-#define SAL_A2DP_IS_CONNECTION_NONE(state) (!(SAL_A2DP_GET_SIGNALING_CONNECTION_BIT(state)) && !(SAL_A2DP_GET_MEDIA_CONNECTION_BIT(state)))
-
 typedef enum {
     A2DP_INT = 0,
     A2DP_ACP = 1,
@@ -83,6 +74,37 @@ struct zblue_a2dp_info_t {
 static bt_list_t* bt_a2dp_conn = NULL;
 
 static void bt_list_remove_a2dp_info(struct zblue_a2dp_info_t* a2dp_info);
+
+static void flag_reset(struct zblue_a2dp_info_t* a2dp_info)
+{
+    a2dp_info->state &= 0x00;
+}
+
+static void flag_set(struct zblue_a2dp_info_t* a2dp_info, a2dp_state_bit_t flag)
+{
+    a2dp_info->state |= (1 << flag);
+}
+
+static void flag_clear(struct zblue_a2dp_info_t* a2dp_info, a2dp_state_bit_t flag)
+{
+    a2dp_info->state &= (~(1 << flag));
+}
+
+static bool flag_isset(struct zblue_a2dp_info_t* a2dp_info, a2dp_state_bit_t flag)
+{
+    return (a2dp_info->state >> flag) & 1;
+}
+
+static bool flag_is_conn_none(struct zblue_a2dp_info_t* a2dp_info)
+{
+    if (flag_isset(a2dp_info, A2DP_STATE_BIT_SIG_CONN))
+        return false;
+
+    if (flag_isset(a2dp_info, A2DP_STATE_BIT_MEDIA_CONN))
+        return false;
+
+    return true;
+}
 
 NET_BUF_POOL_DEFINE(bt_a2dp_tx_pool, CONFIG_BT_MAX_CONN,
     BT_L2CAP_BUF_SIZE(CONFIG_BT_L2CAP_TX_MTU),
@@ -798,7 +820,7 @@ static void zblue_on_stream_established(struct bt_a2dp_stream* stream)
         return;
     }
 
-    SAL_A2DP_SET_MEDIA_CONNECTED_BIT(a2dp_info->state);
+    flag_set(a2dp_info, A2DP_STATE_BIT_MEDIA_CONN);
 
     if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
@@ -826,7 +848,7 @@ static void bt_a2dp_stream_released(struct bt_a2dp_stream* stream)
         return;
     }
 
-    SAL_A2DP_CLEAR_MEDIA_CONNECTED_BIT(a2dp_info->state);
+    flag_clear(a2dp_info, A2DP_STATE_BIT_MEDIA_CONN);
 
     if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
@@ -837,12 +859,12 @@ static void bt_a2dp_stream_released(struct bt_a2dp_stream* stream)
         bt_sal_a2dp_sink_event_callback(a2dp_event_new(STREAM_CLOSED_EVT, &a2dp_info->bd_addr));
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
     }
-    if (a2dp_info->disconnecting == true && SAL_A2DP_GET_SIGNALING_CONNECTION_BIT(a2dp_info->state)) {
+    if (a2dp_info->disconnecting == true && flag_isset(a2dp_info, A2DP_STATE_BIT_SIG_CONN)) {
         bt_a2dp_disconnect(a2dp_info->a2dp);
         return;
     }
 
-    if (SAL_A2DP_IS_CONNECTION_NONE(a2dp_info->state)) {
+    if (flag_is_conn_none(a2dp_info)) {
         BT_LOGI("%s, Both channel disconnected", __func__);
         bt_list_remove_a2dp_info(a2dp_info);
     }
@@ -1075,7 +1097,7 @@ static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
 
     if (a2dp_info) {
         BT_LOGW("a2dp_info already exists");
-        SAL_A2DP_SET_SIGNALING_CONNECTED_BIT(a2dp_info->state);
+        flag_set(a2dp_info, A2DP_STATE_BIT_SIG_CONN);
         if (a2dp_info->int_acp == A2DP_INT) {
             bt_a2dp_discover(a2dp, &bt_discover_param);
             return;
@@ -1109,8 +1131,8 @@ static void zblue_on_connected(struct bt_a2dp* a2dp, int err)
     a2dp_info->int_acp = A2DP_ACP;
     a2dp_info->role = SEP_INVALID;
     a2dp_info->is_cleanup = false;
-    SAL_A2DP_CLEAR_STATE_BIT(a2dp_info->state);
-    SAL_A2DP_SET_SIGNALING_CONNECTED_BIT(a2dp_info->state);
+    flag_reset(a2dp_info);
+    flag_set(a2dp_info, A2DP_STATE_BIT_SIG_CONN);
     a2dp_info->disconnecting = false;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
@@ -1156,7 +1178,7 @@ static void zblue_on_disconnected(struct bt_a2dp* a2dp)
         return;
     }
 
-    SAL_A2DP_CLEAR_SIGNALING_CONNECTED_BIT(a2dp_info->state);
+    flag_clear(a2dp_info, A2DP_STATE_BIT_SIG_CONN);
 
     if (a2dp_info->role == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
@@ -1168,7 +1190,7 @@ static void zblue_on_disconnected(struct bt_a2dp* a2dp)
 #endif /* CONFIG_BLUETOOTH_A2DP_SINK */
     }
 
-    if (SAL_A2DP_IS_CONNECTION_NONE(a2dp_info->state))
+    if (flag_is_conn_none(a2dp_info))
         bt_list_remove_a2dp_info(a2dp_info);
 }
 
@@ -1522,7 +1544,7 @@ bt_status_t bt_sal_a2dp_source_connect(bt_controller_id_t id, bt_address_t* addr
     a2dp_info->int_acp = A2DP_INT;
     a2dp_info->role = SEP_SRC;
     a2dp_info->is_cleanup = false;
-    SAL_A2DP_CLEAR_STATE_BIT(a2dp_info->state);
+    flag_reset(a2dp_info);
     a2dp_info->disconnecting = false;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
@@ -1575,7 +1597,7 @@ bt_status_t bt_sal_a2dp_sink_connect(bt_controller_id_t id, bt_address_t* addr)
     a2dp_info->int_acp = A2DP_INT;
     a2dp_info->role = SEP_SNK;
     a2dp_info->is_cleanup = false;
-    SAL_A2DP_CLEAR_STATE_BIT(a2dp_info->state);
+    flag_reset(a2dp_info);
     a2dp_info->disconnecting = false;
 
     bt_list_add_tail(bt_a2dp_conn, a2dp_info);
@@ -1604,10 +1626,10 @@ static bt_status_t bt_sal_a2dp_disconnect(struct zblue_a2dp_info_t* a2dp_info)
     }
 
     a2dp_info->disconnecting = true;
-    if (SAL_A2DP_GET_MEDIA_CONNECTION_BIT(a2dp_info->state)) {
+    if (flag_isset(a2dp_info, A2DP_STATE_BIT_MEDIA_CONN)) {
         BT_LOGW("%s, media connection exists, disconnect", __func__);
         return bt_a2dp_stream_release(&a2dp_info->stream);
-    } else if (SAL_A2DP_GET_SIGNALING_CONNECTION_BIT(a2dp_info->state)) {
+    } else if (flag_isset(a2dp_info, A2DP_STATE_BIT_SIG_CONN)) {
         BT_LOGW("%s, signaling connection exists, disconnect", __func__);
         return bt_a2dp_disconnect(a2dp_info->a2dp);
     }
