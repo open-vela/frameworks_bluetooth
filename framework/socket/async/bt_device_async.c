@@ -529,6 +529,7 @@ bt_status_t bt_device_set_pin_code_async(bt_instance_t* ins, bt_address_t* addr,
     memcpy(&packet.devs_pl._bt_device_set_pin_code.addr, addr, sizeof(*addr));
     memcpy(&packet.devs_pl._bt_device_set_pin_code.pincode, pincode, len);
     packet.devs_pl._bt_device_set_pin_code.len = len;
+    packet.devs_pl._bt_device_set_pin_code.accept = accept;
 
     return bt_socket_client_send_with_reply(ins, &packet, BT_DEVICE_SET_PIN_CODE, device_status_reply, (void*)cb, userdata);
 }
