@@ -65,6 +65,18 @@ void BTSYMBOLS(bluetooth_set_btsnoop_filter)(bt_instance_t* ins, btsnoop_filter_
  */
 void BTSYMBOLS(bluetooth_remove_btsnoop_filter)(bt_instance_t* ins, btsnoop_filter_flag_t filter_flag);
 
+// async
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+#include "bt_async.h"
+
+bt_status_t bluetooth_enable_btsnoop_log_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata);
+bt_status_t bluetooth_disable_btsnoop_log_async(bt_instance_t* ins, bt_status_cb_t cb, void* userdata);
+bt_status_t bluetooth_set_btsnoop_filter_async(bt_instance_t* ins, btsnoop_filter_flag_t filter_flag,
+    bt_status_cb_t cb, void* userdata);
+bt_status_t bluetooth_remove_btsnoop_filter_async(bt_instance_t* ins, btsnoop_filter_flag_t filter_flag,
+    bt_status_cb_t cb, void* userdata);
+#endif // CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+
 #ifdef __cplusplus
 }
 #endif

@@ -196,7 +196,7 @@ static bt_command_t g_async_cmd_tables[] = {
     { "vmicp", vmicp_command_exec, 0, "vcp/micp client cmd, input \'vmicp\' show usage" },
 #endif
     { "dump", dump_cmd, 0, "dump adapter state" },
-    { "log", log_command, 0, "log control command" },
+    { "log", log_command_async, 0, "log control command" },
     { "help", usage_cmd, 0, "Usage for bttools" },
     { "quit", quit_cmd, 0, "Quit" },
     { "q", quit_cmd, 0, "Quit" },
