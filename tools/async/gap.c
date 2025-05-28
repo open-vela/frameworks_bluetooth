@@ -168,7 +168,7 @@ static bt_command_t g_async_cmd_tables[] = {
     { "pan", pan_command_exec, 0, "pan cmd,           input \'pan\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_GATT
-    { "gattc", gattc_command_exec, 0, "gatt client cmd    input \'gattc\' show usage" },
+    { "gattc", gattc_command_exec_async, 0, "gatt client cmd    input \'gattc\' show usage" },
     { "gatts", gatts_command_exec, 0, "gatt server cmd    input \'gatts\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
@@ -269,6 +269,9 @@ static void bt_tool_init(void* handle)
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_command_init_async(handle);
 #endif
+#ifdef CONFIG_BLUETOOTH_GATT
+    gattc_command_init_async(handle);
+#endif
 
     g_cmd_had_inited = true;
 }
@@ -280,6 +283,9 @@ static void bt_tool_uninit(void* handle)
 
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_command_uninit_async(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_GATT
+    gattc_command_uninit_async(handle);
 #endif
 
     g_cmd_had_inited = false;
