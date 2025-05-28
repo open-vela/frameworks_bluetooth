@@ -35,7 +35,7 @@
 
 #include "utils/log.h"
 
-#define CM_RECONNECT_INTERVAL (8000) /* reconnect Interval */
+#define CM_RECONNECT_INTERVAL (12000) /* reconnect Interval */
 #define PROFILE_CONNECT_INTERVAL (500) /* Interval between HFP and A2DP */
 #define CM_RECONNECT_TIMES ((60 * 30) / 8) /* Continuous 30-mins reconnect */
 
