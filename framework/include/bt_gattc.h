@@ -93,6 +93,38 @@ bt_status_t BTSYMBOLS(bt_gattc_read_phy)(gattc_handle_t conn_handle);
 bt_status_t BTSYMBOLS(bt_gattc_update_phy)(gattc_handle_t conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 bt_status_t BTSYMBOLS(bt_gattc_read_rssi)(gattc_handle_t conn_handle);
 
+// async
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+#include "bt_async.h"
+typedef void (*bt_gattc_create_connect_cb_t)(bt_instance_t* ins, bt_status_t status, gattc_handle_t* phandle, void* userdata);
+typedef void (*bt_gattc_delete_connect_cb_t)(bt_instance_t* ins, bt_status_t status, void* userdata);
+typedef void (*bt_gattc_get_attribute_cb_t)(bt_instance_t* ins, bt_status_t status, gatt_attr_desc_t* attr_desc, void* userdata);
+typedef void (*bt_gattc_write_cb_t)(bt_instance_t* ins, bt_status_t status, void* userdata);
+
+bt_status_t bt_gattc_create_connect_async(bt_instance_t* ins, gattc_handle_t* phandle, gattc_callbacks_t* callbacks,
+    bt_gattc_create_connect_cb_t cb, void* userdata);
+bt_status_t bt_gattc_delete_connect_async(gattc_handle_t conn_handle, bt_status_cb_t bt_gattc_delete_connect_cb_t, void* userdata);
+bt_status_t bt_gattc_connect_async(gattc_handle_t conn_handle, bt_address_t* addr, ble_addr_type_t addr_type, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_gattc_disconnect_async(gattc_handle_t conn_handle, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_gattc_discover_service_async(gattc_handle_t conn_handle, bt_uuid_t* filter_uuid, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_gattc_get_attribute_by_handle_async(gattc_handle_t conn_handle, uint16_t attr_handle, bt_gattc_get_attribute_cb_t cb, void* userdata);
+bt_status_t bt_gattc_get_attribute_by_uuid_async(gattc_handle_t conn_handle, uint16_t start_handle, uint16_t end_handle, bt_uuid_t* attr_uuid,
+    bt_gattc_get_attribute_cb_t cb, void* userdata);
+bt_status_t bt_gattc_read_async(gattc_handle_t conn_handle, uint16_t attr_handle, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_gattc_write_async(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_gattc_write_without_response_async(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length,
+    bt_gattc_write_cb_t cb, void* userdata);
+bt_status_t bt_gattc_subscribe_async(gattc_handle_t conn_handle, uint16_t attr_handle, uint16_t ccc_value, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_gattc_unsubscribe_async(gattc_handle_t conn_handle, uint16_t attr_handle, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_gattc_exchange_mtu_async(gattc_handle_t conn_handle, uint32_t mtu, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_gattc_update_connection_parameter_async(gattc_handle_t conn_handle, uint32_t min_interval, uint32_t max_interval,
+    uint32_t latency, uint32_t timeout, uint32_t min_connection_event_length,
+    uint32_t max_connection_event_length, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_gattc_read_phy_async(gattc_handle_t conn_handle, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_gattc_update_phy_async(gattc_handle_t conn_handle, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_gattc_read_rssi_async(gattc_handle_t conn_handle, bt_status_cb_t cb, void* userdata);
+#endif // CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+
 #ifdef __cplusplus
 }
 #endif

@@ -124,6 +124,9 @@ int pan_command_exec(void* handle, int argc, char* argv[]);
 int gattc_command_init(void* handle);
 int gattc_command_uninit(void* handle);
 int gattc_command_exec(void* handle, int argc, char* argv[]);
+int gattc_command_init_async(void* handle);
+int gattc_command_uninit_async(void* handle);
+int gattc_command_exec_async(void* handle, int argc, char* argv[]);
 
 int gatts_command_init(void* handle);
 int gatts_command_uninit(void* handle);

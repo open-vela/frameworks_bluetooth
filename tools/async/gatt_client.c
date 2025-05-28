@@ -566,10 +566,8 @@ static int throughput_cmd(void* handle, int argc, char* argv[])
         throughtput_info_t* data;
         clock_gettime(CLOCK_BOOTTIME, &current_ts);
 
-        if (throughtput_state != BT_STATUS_SUCCESS) {
-            free(payload);
+        if (throughtput_state != BT_STATUS_SUCCESS)
             return CMD_ERROR;
-        }
 
         if (run_time < (current_ts.tv_sec - start_ts.tv_sec)) {
             run_time = (current_ts.tv_sec - start_ts.tv_sec);
@@ -776,14 +774,12 @@ static int delete_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
-    CHECK_CONNCTION_ID(conn_id);
+    int* conn_id = (int*)malloc(sizeof(int));
+    *conn_id = atoi(argv[0]);
+    CHECK_CONNCTION_ID(*conn_id);
 
-    int* userdata = (int*)malloc(sizeof(int));
-    *userdata = conn_id;
-
-    if (bt_gattc_delete_connect_async(g_gattc_devies[conn_id].handle, delete_connect_cb, userdata) != BT_STATUS_SUCCESS) {
-        free(userdata);
+    if (bt_gattc_delete_connect_async(g_gattc_devies[(*conn_id)].handle, delete_connect_cb, conn_id) != BT_STATUS_SUCCESS) {
+        free(conn_id);
         return CMD_ERROR;
     }
 
