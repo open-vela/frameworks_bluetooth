@@ -106,6 +106,9 @@ int adv_command_exec_async(void* handle, int argc, char* argv[]);
 int scan_command_init(void* handle);
 void scan_command_uninit(void* handle);
 int scan_command_exec(void* handle, int argc, char* argv[]);
+int scan_command_init_async(void* handle);
+void scan_command_uninit_async(void* handle);
+int scan_command_exec_async(void* handle, int argc, char* argv[]);
 
 int a2dp_sink_commond_init(void* handle);
 int a2dp_sink_commond_uninit(void* handle);
