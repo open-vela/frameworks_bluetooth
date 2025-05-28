@@ -232,6 +232,9 @@ ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CSRCS += tools/uv_thread_loop.c
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC), y)
 	CSRCS += tools/async/gap.c
+ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
+	CSRCS += tools/async/adv.c
+endif #CONFIG_BLUETOOTH_BLE_ADV
 endif
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += tools/adv.c
