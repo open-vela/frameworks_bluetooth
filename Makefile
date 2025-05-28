@@ -257,6 +257,9 @@ ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC), y)
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += tools/async/adv.c
 endif #CONFIG_BLUETOOTH_BLE_ADV
+ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
+	CSRCS += tools/async/scan.c
+endif
 endif
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += tools/adv.c
