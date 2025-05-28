@@ -199,7 +199,7 @@ static bt_command_t g_async_cmd_tables[] = {
 #endif
     { "dump", dump_cmd, 0, "dump adapter state" },
 #ifdef CONFIG_BLUETOOTH_LOG
-    { "log", log_command, 0, "log control command" },
+    { "log", log_command_async, 0, "log control command" },
 #endif
     { "help", usage_cmd, 0, "Usage for bttools" },
     { "quit", quit_cmd, 0, "Quit" },
