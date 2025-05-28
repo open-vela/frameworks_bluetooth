@@ -144,7 +144,7 @@ static bt_command_t g_async_cmd_tables[] = {
     { "adv", adv_command_exec_async, 0, "advertising cmd,   input \'adv\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-    { "scan", scan_command_exec, 0, "scan cmd,          input \'scan\' show usage" },
+    { "scan", scan_command_exec_async, 0, "scan cmd,          input \'scan\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     { "a2dpsnk", a2dp_sink_command_exec, 0, "a2dp sink cmd,    input \'a2dpsnk\' show usage" },
@@ -266,6 +266,10 @@ static void bt_tool_init(void* handle)
     if (g_cmd_had_inited)
         return;
 
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
+    scan_command_init_async(handle);
+#endif
+
     g_cmd_had_inited = true;
 }
 
@@ -273,6 +277,10 @@ static void bt_tool_uninit(void* handle)
 {
     if (!g_cmd_had_inited)
         return;
+
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
+    scan_command_uninit_async(handle);
+#endif
 
     g_cmd_had_inited = false;
 }
