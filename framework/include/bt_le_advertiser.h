@@ -296,6 +296,21 @@ void app_check_advertising_support(bt_instance_t* ins)
  */
 bool BTSYMBOLS(bt_le_advertising_is_supported)(bt_instance_t* ins);
 
+// async
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+#include "bt_async.h"
+
+typedef void (*bt_le_start_adv_callback_cb_t)(bt_instance_t* ins, bt_status_t status, void* adv, void* userdata);
+
+bt_status_t bt_le_start_advertising_async(bt_instance_t* ins, ble_adv_params_t* params, uint8_t* adv_data,
+    uint16_t adv_len, uint8_t* scan_rsp_data, uint16_t scan_rsp_len,
+    advertiser_callback_t* adv_cbs, bt_le_start_adv_callback_cb_t cb, void* userdata);
+bt_status_t bt_le_stop_advertising_async(bt_instance_t* ins, bt_advertiser_t* adver, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_le_stop_advertising_id_async(bt_instance_t* ins, uint8_t adv_id, bt_status_cb_t cb, void* userdata);
+bt_status_t bt_le_advertising_is_supported_async(bt_instance_t* ins, bt_bool_cb_t cb, void* userdata);
+
+#endif // CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
+
 #ifdef __cplusplus
 }
 #endif

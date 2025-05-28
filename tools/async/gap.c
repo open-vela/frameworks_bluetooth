@@ -135,7 +135,7 @@ static bt_command_t g_async_cmd_tables[] = {
     { "stop", stop_service_cmd, 0, "stop profile service,  Not implemented" },
     { "setphy", set_phy_cmd, 0, SET_LE_PHY_USAGE },
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
-    { "adv", adv_command_exec, 0, "advertising cmd,   input \'adv\' show usage" },
+    { "adv", adv_command_exec_async, 0, "advertising cmd,   input \'adv\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     { "scan", scan_command_exec, 0, "scan cmd,          input \'scan\' show usage" },

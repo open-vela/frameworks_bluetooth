@@ -101,6 +101,7 @@ int execute_command_in_table_offset(void* handle, bt_command_t* table, uint32_t 
 
 int log_command(void* handle, int argc, char* argv[]);
 int adv_command_exec(void* handle, int argc, char* argv[]);
+int adv_command_exec_async(void* handle, int argc, char* argv[]);
 
 int scan_command_init(void* handle);
 void scan_command_uninit(void* handle);

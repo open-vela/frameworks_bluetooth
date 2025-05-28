@@ -330,6 +330,9 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/async/gap.c)
+      if(CONFIG_BLUETOOTH_BLE_ADV)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/async/adv.c)
+      endif()
     endif()
 
     if(CONFIG_BLUETOOTH_BLE_ADV)
