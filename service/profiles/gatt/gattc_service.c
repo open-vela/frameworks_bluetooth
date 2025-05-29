@@ -376,6 +376,12 @@ static bt_status_t if_gattc_startup(profile_on_startup_t cb)
         goto fail;
     }
 
+#ifdef CONFIG_BLUETOOTH_STACK_LE_ZBLUE
+    status = bt_sal_gatt_client_enable();
+    if (status != BT_STATUS_SUCCESS)
+        goto fail;
+#endif
+
     manager->started = true;
     pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTC, true);
@@ -408,6 +414,9 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
     manager->connections = NULL;
     index_allocator_delete(&manager->allocator);
     manager->started = false;
+#ifdef CONFIG_BLUETOOTH_STACK_LE_ZBLUE
+    bt_sal_gatt_client_disable();
+#endif
     cb(PROFILE_GATTC, true);
     pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTC, true);

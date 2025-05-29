@@ -366,17 +366,17 @@ static void set_value(uint16_t attr_id, uint8_t* val, uint16_t len)
     value->len = len;
 }
 
-static void zblue_gatt_mtu_updated_callback(struct bt_conn* conn, uint16_t tx, uint16_t rx)
+static void zblue_gatts_mtu_updated_callback(struct bt_conn* conn, uint16_t tx, uint16_t rx)
 {
     bt_address_t addr;
 
-    BT_LOGD("Updated MTU: TX: %d RX: %d bytes\n", tx, rx);
+    BT_LOGD("Updated MTU: TX: %d RX: %d bytes, MIN: %d", tx, rx, MIN(tx, rx));
     zblue_conn_get_addr(conn, &addr);
-    if_gatts_on_mtu_changed(&addr, tx);
+    if_gatts_on_mtu_changed(&addr, tx - 3);
 }
 
 static struct bt_gatt_cb zblue_gatt_callbacks = {
-    .att_mtu_updated = zblue_gatt_mtu_updated_callback
+    .att_mtu_updated = zblue_gatts_mtu_updated_callback
 };
 
 static sal_adapter_req_t* sal_adapter_req(bt_controller_id_t id, bt_address_t* addr, sal_func_t func)

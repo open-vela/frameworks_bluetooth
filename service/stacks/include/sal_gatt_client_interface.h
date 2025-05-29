@@ -25,6 +25,10 @@
 #define GATT_ELEMENT_GROUP_MAX 0xFF00
 #define GATT_ELEMENT_GROUP_ID(element_id) (element_id & GATT_ELEMENT_GROUP_MASK)
 
+#if defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+bt_status_t bt_sal_gatt_client_enable(void);
+bt_status_t bt_sal_gatt_client_disable(void);
+#endif
 bt_status_t bt_sal_gatt_client_connect(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t addr_type);
 bt_status_t bt_sal_gatt_client_disconnect(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_gatt_client_discover_all_services(bt_controller_id_t id, bt_address_t* addr);
