@@ -97,7 +97,7 @@ static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_pac
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         { BT_A2DP_SOURCE_CALLBACK_START, BT_A2DP_SOURCE_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_a2dp_source_callback },
-        { BT_IPC_CODE_CALLBACK_A2DP_SRC_BEGIN, BT_IPC_CODE_CALLBACK_A2DP_SRC_END, (bt_socket_callback_t)bt_socket_client_a2dp_sink_callback },
+        { BT_IPC_CODE_CALLBACK_A2DP_SRC_BEGIN, BT_IPC_CODE_CALLBACK_A2DP_SRC_END, (bt_socket_callback_t)bt_socket_client_a2dp_source_callback },
 #endif
 #ifdef CONFIG_BLUETOOTH_AVRCP_TARGET
         { BT_AVRCP_TARGET_CALLBACK_START, BT_AVRCP_TARGET_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_avrcp_target_callback },
