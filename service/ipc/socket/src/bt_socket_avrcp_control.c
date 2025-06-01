@@ -47,7 +47,7 @@
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (ins->avrcp_control_callbacks)
+#define CBLIST (__async ? __async->avrcp_control_callbacks : ins->avrcp_control_callbacks)
 
 /****************************************************************************
  * Private Types
@@ -182,8 +182,13 @@ void bt_socket_server_avrcp_control_process(service_poll_t* poll,
 #endif
 
 int bt_socket_client_avrcp_control_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
+    bt_socket_async_client_t* __async = NULL;
+
+    if (is_async)
+        __async = ins->priv;
+
     switch (packet->code) {
     case BT_AVRCP_CONTROL_ON_CONNECTION_STATE_CHANGED:
         CALLBACK_FOREACH(CBLIST, avrcp_control_callbacks_t,

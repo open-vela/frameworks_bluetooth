@@ -50,7 +50,7 @@
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (ins->hfp_hf_callbacks)
+#define CBLIST (__async ? __async->hfp_hf_callbacks : ins->hfp_hf_callbacks)
 
 /****************************************************************************
  * Private Types
@@ -345,8 +345,13 @@ void bt_socket_server_hfp_hf_process(service_poll_t* poll, int fd,
 #endif
 
 int bt_socket_client_hfp_hf_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
+    bt_socket_async_client_t* __async = NULL;
+
+    if (is_async)
+        __async = ins->priv;
+
     switch (packet->code) {
     case BT_HFP_HF_ON_CONNECTION_STATE_CHANGED:
         CALLBACK_FOREACH(CBLIST, hfp_hf_callbacks_t,

@@ -72,7 +72,7 @@ typedef struct _work_msg {
  * Private Functions
  ****************************************************************************/
 
-typedef void (*bt_socket_callback_t)(void*, int, bt_instance_t*, bt_message_packet_t*);
+typedef void (*bt_socket_callback_t)(void*, int, bt_instance_t*, bt_message_packet_t*, bool);
 
 static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
@@ -138,7 +138,7 @@ static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_pac
 
     for (size_t i = 0; i < sizeof(callback_map) / sizeof(callback_map[0]); ++i) {
         if (BT_IPC_CODE_CHECK_RANGE(packet->code, callback_map[i].start, callback_map[i].end)) {
-            callback_map[i].callback(NULL, -1, ins, packet);
+            callback_map[i].callback(NULL, -1, ins, packet, is_async);
             return;
         }
     }
