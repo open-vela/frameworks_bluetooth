@@ -359,10 +359,17 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
 #endif
 
 int bt_socket_client_gatts_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
     bt_gatts_remote_t* gatts_remote = INT2PTR(bt_gatts_remote_t*) packet->gatts_cb._on_callback.remote;
-    CHECK_REMOTE_VALID(ins->gatts_remote_list, gatts_remote);
+    bt_socket_async_client_t* __async = NULL;
+
+    if (is_async) {
+        __async = ins->priv;
+        CHECK_REMOTE_VALID(__async->gatts_remote_list, gatts_remote);
+    } else {
+        CHECK_REMOTE_VALID(ins->gatts_remote_list, gatts_remote);
+    }
 
     switch (packet->code) {
     case BT_GATT_SERVER_ON_CONNECTED:
