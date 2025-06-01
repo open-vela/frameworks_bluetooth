@@ -459,6 +459,14 @@ config GATT_CLIENT_ELEMENT_MAX
 		and descriptors) that can be stored per BLE connection
 		when using the ZBLUE stack.
 
+config GATT_CLIENT_CHAR_PER_SERVICE_MAX
+    int "Maximum number of characteristics per service"
+    default 100
+    depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
+    help
+        The maximum number of characteristics that can be discovered and stored
+        under a single GATT service when using the ZBLUE stack.
+
 config BLUETOOTH_LE_SCANNER_MAX_NUM
 	int "LE scanner max register number"
 	default 2
