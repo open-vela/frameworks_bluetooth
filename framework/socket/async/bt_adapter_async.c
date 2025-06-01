@@ -140,14 +140,12 @@ static void adapter_register_callback_reply(bt_instance_t* ins, bt_message_packe
     bt_socket_async_client_t* priv = ins->priv;
     bt_register_callback_cb_t ret_cb = (bt_register_callback_cb_t)cb;
 
-    if (packet->adpt_r.status != BT_STATUS_SUCCESS || !ret_cb) {
+    if (packet->adpt_r.status != BT_STATUS_SUCCESS) {
         bt_callbacks_list_free(priv->adapter_callbacks);
         priv->adapter_callbacks = NULL;
     }
 
-    if (ret_cb) {
-        ret_cb(ins, packet->adpt_r.status, data->cookie, data->userdata);
-    }
+    ret_cb(ins, packet->adpt_r.status, data->cookie, data->userdata);
 
     free(data);
 }
@@ -162,6 +160,7 @@ bt_status_t bt_adapter_register_callback_async(bt_instance_t* ins,
     void* handle;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+    BT_SOCKET_PTR_VALID(cb, BT_STATUS_PARM_INVALID);
 
     priv = ins->priv;
     if (!priv)
@@ -169,8 +168,10 @@ bt_status_t bt_adapter_register_callback_async(bt_instance_t* ins,
 
     if (priv->adapter_callbacks) {
         handle = bt_remote_callbacks_register(priv->adapter_callbacks, NULL, (void*)adapter_cbs);
-        cb(ins, BT_STATUS_SUCCESS, handle, userdata);
-        return BT_STATUS_SUCCESS;
+        if (handle == NULL)
+            return BT_STATUS_NO_RESOURCES;
+
+        goto send_message;
     }
 
     priv->adapter_callbacks = bt_callbacks_list_new(CONFIG_BLUETOOTH_MAX_REGISTER_NUM);
@@ -189,6 +190,7 @@ bt_status_t bt_adapter_register_callback_async(bt_instance_t* ins,
         return BT_STATUS_NO_RESOURCES;
     }
 
+send_message:
     data = calloc(1, sizeof(bt_register_callback_data_t));
     data->userdata = userdata;
     data->cookie = handle;
