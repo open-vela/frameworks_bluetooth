@@ -46,7 +46,7 @@
  ****************************************************************************/
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (ins->l2cap_callbacks)
+#define CBLIST (__async ? __async->l2cap_callbacks : ins->l2cap_callbacks)
 
 /****************************************************************************
  * Private Types
@@ -152,8 +152,13 @@ static bool rpmsg_tty_mount_path(const char* src, char* dest, int len, const cha
 #endif
 
 int bt_socket_client_l2cap_callback(service_poll_t* poll, int fd,
-    bt_instance_t* ins, bt_message_packet_t* packet)
+    bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
+    bt_socket_async_client_t* __async = NULL;
+
+    if (is_async)
+        __async = ins->priv;
+
     switch (packet->code) {
     case BT_L2CAP_CONNECTED_CB: {
         l2cap_connect_params_t conn_parm = {
