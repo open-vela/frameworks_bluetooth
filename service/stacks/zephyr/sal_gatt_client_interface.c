@@ -848,6 +848,7 @@ static void gatt_client_write_cmd_callback(struct bt_conn* conn, uint8_t err,
     if (err) {
         BT_LOGE("%s, gatt write fail err:%d", __func__, err);
         if_gattc_on_element_written(&addr, params->handle, BT_STATUS_FAIL);
+        free(params);
         return;
     }
 
@@ -855,6 +856,8 @@ static void gatt_client_write_cmd_callback(struct bt_conn* conn, uint8_t err,
     memcpy(&addr, info.le.dst->a.val, sizeof(addr));
 
     if_gattc_on_element_written(&addr, params->handle, BT_STATUS_SUCCESS);
+
+    free(params);
 }
 
 static void gatt_client_write_callback(struct bt_conn* conn, void* user_data)
@@ -1036,17 +1039,21 @@ bt_status_t bt_sal_gatt_client_write_element(bt_controller_id_t id, bt_address_t
     }
 
     if (write_type == GATT_WRITE_TYPE_RSP) {
-        struct bt_gatt_write_params write_params = { 0 };
+        struct bt_gatt_write_params* write_params = zalloc(sizeof(struct bt_gatt_write_params));
+        if (!write_params) {
+            return BT_STATUS_NOMEM;
+        }
 
-        write_params.func = gatt_client_write_cmd_callback;
-        write_params.handle = element_id;
-        write_params.data = value;
-        write_params.length = length;
-        write_params.offset = 0;
+        write_params->func = gatt_client_write_cmd_callback;
+        write_params->handle = element_id;
+        write_params->data = value;
+        write_params->length = length;
+        write_params->offset = 0;
 
-        err = bt_gatt_write(conn, &write_params);
+        err = bt_gatt_write(conn, write_params);
         if (err) {
             BT_LOGE("%s, gatt write fail err:%d", __func__, err);
+            free(write_params);
             return BT_STATUS_FAIL;
         }
     } else if (write_type == GATT_WRITE_TYPE_NO_RSP) {
@@ -1058,6 +1065,7 @@ bt_status_t bt_sal_gatt_client_write_element(bt_controller_id_t id, bt_address_t
         err = bt_gatt_write_without_response_cb(conn, element_id, value, length, false, gatt_client_write_callback, handle);
         if (err) {
             BT_LOGE("%s, gatt write without rsp fail err:%d", __func__, err);
+            free(handle);
             return BT_STATUS_FAIL;
         }
     }
