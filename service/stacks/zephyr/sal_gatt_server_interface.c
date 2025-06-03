@@ -56,6 +56,11 @@
 
 #define STACK_CALL(func) zblue_##func
 
+typedef enum {
+    GATTS_CB_TYPE_ADDED,
+    GATTS_CB_TYPE_REMOVED
+} sal_gatts_cb_type_t;
+
 typedef void (*sal_func_t)(void* args);
 
 union uuid {
@@ -81,9 +86,10 @@ struct add_characteristic {
 };
 
 struct gatt_value {
-    uint16_t len;
-    uint8_t* data;
+    void* context;
     uint8_t flags[1];
+    uint16_t len;
+    uint8_t data[0];
 };
 
 struct set_value {
@@ -101,6 +107,12 @@ struct gatt_server_context {
 
 typedef union {
     bool reason;
+
+    struct {
+        uint16_t element_id;
+        uint16_t size;
+        sal_gatts_cb_type_t type;
+    } attr_op;
 } sal_adapter_args_t;
 
 typedef struct {
@@ -148,24 +160,40 @@ static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr
 
 static struct bt_gatt_attr* gatt_db_add(const struct bt_gatt_attr* pattern, size_t user_data_len)
 {
-    static struct bt_gatt_attr* attr = server_db;
+    struct bt_gatt_attr* attr = &server_db[attr_count];
+
+    if (attr_count >= CONFIG_GATT_SERVER_MAX_ATTRIBUTES) {
+        BT_LOGE("%s, server_db is full", __func__);
+        return NULL;
+    }
+
     const union uuid* u = CONTAINER_OF(pattern->uuid, union uuid, uuid);
-    size_t uuid_size = u->uuid.type == BT_UUID_TYPE_16 ? sizeof(u->u16) : sizeof(u->u128);
+    size_t uuid_size = (u->uuid.type == BT_UUID_TYPE_16) ? sizeof(u->u16) : sizeof(u->u128);
 
     memcpy(attr, pattern, sizeof(*attr));
 
     attr->uuid = malloc(uuid_size);
+    if (!attr->uuid) {
+        BT_LOGE("%s, uuid malloc failed", __func__);
+        return NULL;
+    }
     memcpy((void*)attr->uuid, &u->uuid, uuid_size);
 
     attr->user_data = malloc(user_data_len);
+    if (!attr->user_data) {
+        BT_LOGE("%s, user_data malloc failed", __func__);
+        free((void*)attr->uuid);
+        attr->uuid = NULL;
+        return NULL;
+    }
     memcpy(attr->user_data, pattern->user_data, user_data_len);
 
-    BT_LOGD("user_data 0x%p, user_data_len:%d", attr->user_data, user_data_len);
+    BT_LOGD("user_data 0x%p, user_data_len: %zu", attr->user_data, user_data_len);
 
     attr_count++;
     svc_attr_count++;
 
-    return attr++;
+    return attr;
 }
 
 static bt_status_t register_service(void)
@@ -180,6 +208,8 @@ static bt_status_t register_service(void)
         BT_LOGD("%s, gatt service register", __func__);
         return BT_STATUS_FAIL;
     }
+
+    svc_count++;
 
     svc_attr_count = 0U;
     return BT_STATUS_SUCCESS;
@@ -203,8 +233,6 @@ static void add_service(gatt_element_t* element)
             return;
         }
     }
-
-    svc_count++;
 
     switch (element->type) {
     case GATT_PRIMARY_SERVICE:
@@ -230,6 +258,7 @@ static int alloc_characteristic(struct add_characteristic* ch)
     struct bt_gatt_attr *attr_chrc, *attr_value;
     struct bt_gatt_chrc* chrc_data;
     struct gatt_value* user_data;
+    size_t total_size;
 
     /* Add Characteristic Declaration */
     attr_chrc = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(BT_UUID_GATT_CHRC, BT_GATT_PERM_READ, bt_gatt_attr_read_chrc, NULL, (&(struct bt_gatt_chrc) {})), sizeof(*chrc_data));
@@ -237,14 +266,32 @@ static int alloc_characteristic(struct add_characteristic* ch)
         return -EINVAL;
     }
 
-    user_data = zalloc(sizeof(*user_data));
-    user_data->data = ch->attr_data;
-    user_data->len = ch->attr_length;
-
-    attr_value = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(ch->uuid, ch->permissions & GATT_PERM_MASK, read_value, write_value, user_data), sizeof(*user_data));
-    if (!attr_value) {
+    if (!attr_chrc) {
+        BT_LOGE("%s, attr_chrc allocation failed", __func__);
         return -EINVAL;
     }
+
+    total_size = sizeof(*user_data) + ch->attr_length;
+
+    user_data = zalloc(total_size);
+    if (!user_data) {
+        BT_LOGE("%s, user_data allocation failed", __func__);
+        return -ENOMEM;
+    }
+
+    if (ch->attr_length > 0 && ch->attr_data) {
+        memcpy(user_data->data, ch->attr_data, ch->attr_length);
+        user_data->len = ch->attr_length;
+    }
+
+    attr_value = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(ch->uuid, ch->permissions & GATT_PERM_MASK, read_value, write_value, user_data), total_size);
+    if (!attr_value) {
+        BT_LOGE("%s, attr_value allocation failed", __func__);
+        free(user_data);
+        return -EINVAL;
+    }
+
+    free(user_data);
 
     chrc_data = attr_chrc->user_data;
     chrc_data->properties = ch->properties;
@@ -417,6 +464,24 @@ static bt_status_t sal_send_req(sal_adapter_req_t* req)
     return BT_STATUS_SUCCESS;
 }
 
+static void sal_gatts_elements_callback(void* args)
+{
+    sal_adapter_req_t* req = args;
+    if (!args)
+        return;
+
+    switch (req->adpt.attr_op.type) {
+    case GATTS_CB_TYPE_ADDED:
+        if_gatts_on_elements_added(BT_STATUS_SUCCESS, req->adpt.attr_op.element_id, req->adpt.attr_op.size);
+        break;
+    case GATTS_CB_TYPE_REMOVED:
+        if_gatts_on_elements_removed(BT_STATUS_SUCCESS, req->adpt.attr_op.element_id, req->adpt.attr_op.size);
+        break;
+    default:
+        break;
+    }
+}
+
 bt_status_t bt_sal_gatt_server_enable(void)
 {
     bt_gatt_cb_register(&zblue_gatt_callbacks);
@@ -434,6 +499,11 @@ bt_status_t bt_sal_gatt_server_disable(void)
 bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t* elements, uint16_t size)
 {
     size_t index;
+    bt_status_t status;
+    sal_adapter_req_t* req;
+
+    if (!elements || size == 0)
+        return BT_STATUS_PARM_INVALID;
 
     for (index = 0; index < size; index++) {
         switch (elements[index].type) {
@@ -448,12 +518,27 @@ bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t* elements, uint16_t s
             add_descriptor(&elements[index]);
             break;
         default:
-            BT_LOGE("%s, type:%d not handle", __func__, elements[index].type);
+            BT_LOGE("%s, unsupported type: %d", __func__, elements[index].type);
             break;
         }
     }
 
-    return register_service();
+    req = calloc(1, sizeof(sal_adapter_req_t));
+    if (!req)
+        return BT_STATUS_NOMEM;
+
+    status = register_service();
+    if (status != BT_STATUS_SUCCESS) {
+        free(req);
+        return status;
+    }
+
+    req->func = sal_gatts_elements_callback;
+    req->adpt.attr_op.element_id = elements[0].handle;
+    req->adpt.attr_op.size = size;
+    req->adpt.attr_op.type = GATTS_CB_TYPE_ADDED;
+
+    return sal_send_req((void*)req);
 }
 
 static struct bt_gatt_service* get_primary_service_from_element(gatt_element_t* element)
@@ -484,22 +569,73 @@ static struct bt_gatt_service* get_primary_service_from_element(gatt_element_t* 
     return NULL;
 }
 
+static void remove_service(gatt_element_t* element)
+{
+    size_t i, count, index;
+    struct bt_gatt_attr* start;
+    struct bt_gatt_service* svc = get_primary_service_from_element(element);
+    if (!svc) {
+        BT_LOGW("%s, service not found", __func__);
+        return;
+    }
+
+    bt_gatt_service_unregister(svc);
+
+    start = svc->attrs;
+    count = svc->attr_count;
+    index = start - server_db;
+
+    for (i = 0; i < count; i++) {
+        free(start[i].user_data);
+        free((void*)start[i].uuid);
+    }
+
+    if (index + count < attr_count) {
+        memmove(&server_db[index], &server_db[index + count],
+            (attr_count - index - count) * sizeof(struct bt_gatt_attr));
+    }
+
+    memset(&server_db[attr_count - count], 0, count * sizeof(struct bt_gatt_attr));
+    attr_count -= count;
+
+    svc->attrs = NULL;
+    svc->attr_count = 0;
+    svc_count--;
+
+    BT_LOGD("%s, removed service at index %zu, attr_count now %u", __func__, index, attr_count);
+}
+
 bt_status_t bt_sal_gatt_server_remove_elements(gatt_element_t* elements, uint16_t size)
 {
+    if (!elements || size == 0)
+        return BT_STATUS_PARM_INVALID;
+
     uint16_t i;
-    struct bt_gatt_service* srv;
+    sal_adapter_req_t* req;
     char uuid_str[40];
 
+    req = calloc(1, sizeof(sal_adapter_req_t));
+    if (!req)
+        return BT_STATUS_NOMEM;
+
     for (i = 0; i < size; i++) {
-        srv = get_primary_service_from_element(&elements[i]);
-        if (srv) {
-            bt_uuid_to_string(&elements[i].uuid, uuid_str, 40);
-            BT_LOGD("%s, uuid:%s", __func__, uuid_str);
-            bt_gatt_service_unregister(srv);
+        switch (elements[i].type) {
+        case GATT_PRIMARY_SERVICE:
+            remove_service(&elements[i]);
+            break;
+        default:
+            bt_uuid_to_string(&elements[i].uuid, uuid_str, sizeof(uuid_str));
+            BT_LOGW("%s, unknown type %d, uuid=%s", __func__, elements[i].type, uuid_str);
+            break;
         }
     }
 
-    return BT_STATUS_SUCCESS;
+    req->func = sal_gatts_elements_callback;
+    req->adpt.attr_op.element_id = elements[0].handle;
+    req->adpt.attr_op.size = size;
+    req->adpt.attr_op.type = GATTS_CB_TYPE_REMOVED;
+
+    return sal_send_req((void*)req);
 }
 
 static void STACK_CALL(conn_connect)(void* args)
