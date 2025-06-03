@@ -72,7 +72,9 @@ static bt_command_t g_gattc_tables[] = {
     { "delete", delete_cmd, 0, "\"delete gatt client :<conn id>\"" },
     { "connect", connect_cmd, 0, "\"connect remote device :<conn id><address>[addr type(0:public,1:random,2:public_id,3:random_id)]\"" },
     { "disconnect", disconnect_cmd, 0, "\"disconnect remote device :<conn id>\"" },
-    { "discover", discover_services_cmd, 0, "\"discover all services :<conn id>\"" },
+    { "discover", discover_services_cmd, 0, "\"discover all services : <conn id> [uuid]\"\n"
+                                            "\t\t\t  e.g., discover 0\n"
+                                            "\t\t\t  e.g., discover 0 1800" },
     { "read_request", read_request_cmd, 0, "\"read request :<conn id><char id>\"" },
     { "write_cmd", write_cmd, 0, "\"write cmd :<conn id><char id><type>(str or hex)<playload>\n"
                                  "\t\t\t  e.g., write_cmd 0 0001 str HelloWorld!\n"
@@ -158,7 +160,16 @@ static int discover_services_cmd(void* handle, int argc, char* argv[])
     int conn_id = atoi(argv[0]);
     CHECK_CONNCTION_ID(conn_id);
 
-    if (bt_gattc_discover_service(g_gattc_devies[conn_id].handle, NULL) != BT_STATUS_SUCCESS)
+    bt_uuid_t* uuid_ptr = NULL;
+    bt_uuid_t uuid;
+
+    if (argc >= 2) {
+        uint16_t uuid_val = (uint16_t)strtol(argv[1], NULL, 16);
+        uuid = BT_UUID_DECLARE_16(uuid_val);
+        uuid_ptr = &uuid;
+    }
+
+    if (bt_gattc_discover_service(g_gattc_devies[conn_id].handle, uuid_ptr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
