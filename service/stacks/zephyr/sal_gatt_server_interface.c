@@ -83,6 +83,7 @@ struct add_characteristic {
     const struct bt_uuid* uuid;
     uint32_t attr_length;
     uint8_t* attr_data;
+    gatt_element_t* element;
 };
 
 struct gatt_value {
@@ -103,6 +104,7 @@ struct gatt_server_context {
     uint8_t* value;
     uint16_t length;
     struct bt_conn* conn;
+    gatt_element_t* element;
 };
 
 typedef union {
@@ -284,6 +286,8 @@ static int alloc_characteristic(struct add_characteristic* ch)
         user_data->len = ch->attr_length;
     }
 
+    user_data->context = ch->element;
+
     attr_value = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_ATTRIBUTE(ch->uuid, ch->permissions & GATT_PERM_MASK, read_value, write_value, user_data), total_size);
     if (!attr_value) {
         BT_LOGE("%s, attr_value allocation failed", __func__);
@@ -316,6 +320,7 @@ static void add_characteristic(gatt_element_t* element)
     chr.uuid = &u.uuid;
     chr.attr_length = element->attr_length;
     chr.attr_data = element->attr_data;
+    chr.element = element;
 
     if (alloc_characteristic(&chr)) {
         BT_LOGE("%s, alloc characteristic fail", __func__);
@@ -745,9 +750,25 @@ bt_status_t bt_sal_gatt_server_get_attr_value(bt_controller_id_t id, bt_address_
     return BT_STATUS_UNSUPPORTED;
 }
 
+static void send_notification_result(struct bt_conn* conn, void* user_data)
+{
+    gatt_element_t* element = (gatt_element_t*)user_data;
+    bt_address_t addr;
+
+    if (!element) {
+        BT_LOGE("%s, element is NULL", __func__);
+        return;
+    }
+
+    zblue_conn_get_addr(conn, &addr);
+
+    if_gatts_on_notification_sent(&addr, element->handle, GATT_STATUS_SUCCESS);
+}
+
 static uint8_t gatt_send_notification(const struct bt_gatt_attr* attr, uint16_t handle, void* user_data)
 {
     struct gatt_server_context* context = user_data;
+    struct bt_gatt_notify_params params;
     union uuid u;
 
     if (!bt_uuid_create(&u.uuid, (uint8_t*)&context->uuid->val, context->uuid->type)) {
@@ -759,17 +780,30 @@ static uint8_t gatt_send_notification(const struct bt_gatt_attr* attr, uint16_t 
         return BT_GATT_ITER_CONTINUE;
     }
 
-    bt_gatt_notify(context->conn, attr, context->value, context->length);
+    memset(&params, 0, sizeof(params));
+
+    params.attr = attr;
+    params.data = context->value;
+    params.len = context->length;
+    params.func = send_notification_result;
+    params.user_data = context->element;
+#if defined(CONFIG_BT_EATT)
+    params.chan_opt = BT_ATT_CHAN_OPT_NONE;
+#endif /* CONFIG_BT_EATT */
+
+    bt_gatt_notify_cb(context->conn, &params);
+
     return BT_GATT_ITER_STOP;
 }
 
-bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_address_t* addr, bt_uuid_t uuid, uint8_t* value, uint16_t length)
+bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_address_t* addr, gatt_element_t* element, uint8_t* value, uint16_t length)
 {
     struct gatt_server_context context = {
         .addr = addr,
-        .uuid = &uuid,
+        .uuid = &element->uuid,
         .value = value,
         .length = length,
+        .element = element,
     };
 
     context.conn = get_le_conn_from_addr(addr);
@@ -784,17 +818,43 @@ bt_status_t bt_sal_gatt_server_send_notification(bt_controller_id_t id, bt_addre
 
 static void send_indication_destory(struct bt_gatt_indicate_params* params)
 {
-    BT_LOGD("%s, send_indication_destory", __func__);
+    BT_LOGD("%s", __func__);
     free(params);
 }
 
 static void send_indication_result(struct bt_conn* conn, struct bt_gatt_indicate_params* params, uint8_t err)
 {
-    if (err) {
-        BT_LOGE("%s, send indication fail", __func__);
+    struct gatt_value* value;
+    gatt_element_t* element;
+    bt_address_t addr;
+    bt_status_t status = GATT_STATUS_SUCCESS;
+
+    if (!params || !params->attr) {
+        BT_LOGE("%s, params or attr is NULL", __func__);
+        return;
     }
 
-    // todo: notify app?
+    value = (struct gatt_value*)params->attr->user_data;
+    if (!value || !value->context) {
+        BT_LOGE("%s, value or context is NULL", __func__);
+        return;
+    }
+
+    element = value->context;
+
+    if (!element) {
+        BT_LOGE("%s, element is NULL", __func__);
+        return;
+    }
+
+    zblue_conn_get_addr(conn, &addr);
+
+    if (err) {
+        BT_LOGE("%s, send indication failed for handle:0x%04x", __func__, element->handle);
+        status = GATT_STATUS_FAILURE;
+    }
+
+    if_gatts_on_notification_sent(&addr, element->handle, status);
 }
 
 static uint8_t gatt_send_indication(const struct bt_gatt_attr* attr, uint16_t handle, void* user_data)
@@ -832,13 +892,14 @@ static uint8_t gatt_send_indication(const struct bt_gatt_attr* attr, uint16_t ha
     return BT_GATT_ITER_STOP;
 }
 
-bt_status_t bt_sal_gatt_server_send_indication(bt_controller_id_t id, bt_address_t* addr, bt_uuid_t uuid, uint8_t* value, uint16_t length)
+bt_status_t bt_sal_gatt_server_send_indication(bt_controller_id_t id, bt_address_t* addr, gatt_element_t* element, uint8_t* value, uint16_t length)
 {
     struct gatt_server_context context = {
         .addr = addr,
-        .uuid = &uuid,
+        .uuid = &element->uuid,
         .value = value,
         .length = length,
+        .element = element,
     };
 
     context.conn = get_le_conn_from_addr(addr);
