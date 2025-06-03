@@ -52,6 +52,7 @@ typedef struct {
     void (*cleanup)(void);
     void (*send_frames)(uint16_t header_reserve, uint64_t timestamp);
     int (*get_interval_ms)(void);
+    int (*get_min_frame_size)(void);
 } a2dp_source_stream_interface_t;
 
 void a2dp_source_audio_init(bool offloading);
