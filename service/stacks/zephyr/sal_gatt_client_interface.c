@@ -37,6 +37,12 @@
 typedef void (*sal_func_t)(void* args);
 
 typedef struct {
+    uint16_t value_handle;
+    struct bt_gatt_subscribe_params indicate_params;
+    struct bt_gatt_subscribe_params notify_params;
+} gatt_subscribe_slot_t;
+
+typedef struct {
     uint16_t decl_handle;
     uint16_t value_handle;
     uint8_t properties;
@@ -69,6 +75,7 @@ struct gatt_instance {
     struct gatt_service service[CONFIG_GATT_CLIENT_SERVICE_MAX];
     gatt_element_t element[CONFIG_GATT_CLIENT_ELEMENT_MAX];
     gatt_element_char_t element_char[CONFIG_GATT_CLIENT_CHAR_PER_SERVICE_MAX];
+    gatt_subscribe_slot_t subscribe_slot[CONFIG_GATT_CLIENT_CHAR_PER_SERVICE_MAX];
 };
 
 typedef union {
@@ -82,6 +89,8 @@ typedef struct {
     sal_func_t func;
     sal_adapter_args_t adpt;
 } sal_adapter_req_t;
+
+static bool zblue_uuid2_to_uuid1(struct bt_uuid* u1, const bt_uuid_t* u2);
 
 static void zblue_gattc_mtu_updated_callback(struct bt_conn* conn, uint16_t tx, uint16_t rx);
 
@@ -110,6 +119,97 @@ static void gatt_discover_cleanup(struct gatt_instance* instance)
 static bool gatt_is_service_discovery_complete(struct gatt_instance* instance)
 {
     return (instance->element_char_idx == 0 && instance->element_char_size == 0);
+}
+
+static gatt_subscribe_slot_t* gatt_find_subscribe_slot(struct gatt_instance* instance, uint16_t value_handle)
+{
+    for (int i = 0; i < CONFIG_GATT_CLIENT_CHAR_PER_SERVICE_MAX; i++) {
+        if (instance->subscribe_slot[i].value_handle == value_handle) {
+            return &instance->subscribe_slot[i];
+        }
+    }
+    return NULL;
+}
+
+static gatt_subscribe_slot_t* gatt_get_or_create_subscribe_slot(struct gatt_instance* instance, uint16_t value_handle)
+{
+    gatt_subscribe_slot_t* slot = gatt_find_subscribe_slot(instance, value_handle);
+
+    if (slot) {
+        return slot;
+    }
+
+    for (int i = 0; i < CONFIG_GATT_CLIENT_CHAR_PER_SERVICE_MAX; i++) {
+        if (instance->subscribe_slot[i].value_handle == 0) {
+            instance->subscribe_slot[i].value_handle = value_handle;
+            memset(&instance->subscribe_slot[i].notify_params, 0, sizeof(struct bt_gatt_subscribe_params));
+            memset(&instance->subscribe_slot[i].indicate_params, 0, sizeof(struct bt_gatt_subscribe_params));
+            return &instance->subscribe_slot[i];
+        }
+    }
+
+    return NULL;
+}
+
+static void gatt_delete_subscribe_slot_by_param(struct gatt_instance* instance, struct bt_gatt_subscribe_params* param)
+{
+    for (int i = 0; i < CONFIG_GATT_CLIENT_CHAR_PER_SERVICE_MAX; i++) {
+        gatt_subscribe_slot_t* slot = &instance->subscribe_slot[i];
+
+        if (slot->value_handle == 0)
+            continue;
+
+        if (&slot->notify_params == param) {
+            memset(&slot->notify_params, 0, sizeof(struct bt_gatt_subscribe_params));
+            return;
+        }
+
+        if (&slot->indicate_params == param) {
+            memset(&slot->indicate_params, 0, sizeof(struct bt_gatt_subscribe_params));
+            return;
+        }
+    }
+}
+
+static void gatt_clear_all_subscribe_slots(struct gatt_instance* instance)
+{
+    memset(instance->subscribe_slot, 0, sizeof(instance->subscribe_slot));
+}
+
+static uint16_t gatt_find_ccc_handle_by_value_handle(struct gatt_instance* instance, uint16_t value_handle)
+{
+    static const struct bt_uuid_16 uuid_ccc = BT_UUID_INIT_16(BT_UUID_GATT_CCC_VAL);
+    static union uuid u;
+    int start = -1;
+
+    for (int i = 0; i < CONFIG_GATT_CLIENT_ELEMENT_MAX; i++) {
+        if (instance->element[i].handle == value_handle) {
+            start = i + 1;
+            break;
+        }
+    }
+
+    if (start < 0) {
+        return 0;
+    }
+
+    for (int i = start; i < CONFIG_GATT_CLIENT_ELEMENT_MAX; i++) {
+        const gatt_element_t* elem = &instance->element[i];
+
+        if ((elem->handle == 0) || (elem->type == GATT_CHARACTERISTIC)) {
+            break;
+        }
+
+        if (!zblue_uuid2_to_uuid1(&u.uuid, &elem->uuid)) {
+            continue;
+        }
+
+        if (!bt_uuid_cmp(&u.uuid, &uuid_ccc.uuid)) {
+            return elem->handle;
+        }
+    }
+
+    return 0;
 }
 
 static struct gatt_instance* gatt_find_instance_by_addr(bt_address_t* addr)
@@ -781,9 +881,9 @@ static uint8_t bt_gatt_notify_handler(struct bt_conn* conn, struct bt_gatt_subsc
     bt_conn_get_info(conn, &info);
     memcpy(&addr, info.le.dst->a.val, sizeof(addr));
 
-    handle = params->ccc_handle;
+    handle = params->value_handle;
     if (data == NULL) {
-        BT_LOGE("[UNSUBSCRIBED] 0x%04X", params->ccc_handle);
+        BT_LOGE("[UNSUBSCRIBED] 0x%04X", params->value_handle);
         return BT_GATT_ITER_STOP;
     }
 
@@ -794,14 +894,37 @@ static uint8_t bt_gatt_notify_handler(struct bt_conn* conn, struct bt_gatt_subsc
 static void bt_gatt_subscribe_response(struct bt_conn* conn, uint8_t err,
     struct bt_gatt_subscribe_params* params)
 {
-    struct bt_conn_info info;
     bt_address_t addr;
 
+    if (get_le_addr_from_conn(conn, &addr) != BT_STATUS_SUCCESS) {
+        return;
+    }
+
     BT_LOGD("%s, err:%d", __func__, err);
-    bt_conn_get_info(conn, &info);
-    memcpy(&addr, info.le.dst->a.val, sizeof(addr));
 
     if_gattc_on_element_subscribed(&addr, params->value_handle, err ? BT_STATUS_FAIL : BT_STATUS_SUCCESS, true);
+}
+
+static void bt_gatt_unsubscribe_response(struct bt_conn* conn, uint8_t err,
+    struct bt_gatt_subscribe_params* params)
+{
+    bt_address_t addr;
+    struct gatt_instance* instance;
+
+    if (get_le_addr_from_conn(conn, &addr) != BT_STATUS_SUCCESS) {
+        return;
+    }
+
+    BT_LOGD("%s, err:%d", __func__, err);
+
+    if_gattc_on_element_subscribed(&addr, params->value_handle, err ? BT_STATUS_FAIL : BT_STATUS_SUCCESS, false);
+
+    if (err == BT_STATUS_SUCCESS) {
+        instance = gatt_find_instance_by_addr(&addr);
+        if (instance) {
+            gatt_delete_subscribe_slot_by_param(instance, params);
+        }
+    }
 }
 
 bt_status_t bt_sal_gatt_client_discover_all_services(bt_controller_id_t id, bt_address_t* addr)
@@ -809,11 +932,17 @@ bt_status_t bt_sal_gatt_client_discover_all_services(bt_controller_id_t id, bt_a
     static struct bt_gatt_discover_params disc_params = { 0 };
     struct bt_conn* conn;
     int err;
+    struct gatt_instance* instance;
 
     conn = get_le_conn_from_addr(addr);
     if (!conn) {
         BT_LOGE("%s, conn null", __func__);
         return BT_STATUS_FAIL;
+    }
+
+    instance = gatt_find_instance_by_addr(addr);
+    if (instance) {
+        gatt_clear_all_subscribe_slots(instance);
     }
 
     disc_params.uuid = NULL;
@@ -837,6 +966,7 @@ bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_controller_id_t id, b
     struct bt_conn* conn;
     int err;
     static union uuid u;
+    struct gatt_instance* instance;
 
     conn = get_le_conn_from_addr(addr);
     if (!conn) {
@@ -847,6 +977,11 @@ bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_controller_id_t id, b
     if (!zblue_uuid2_to_uuid1(&u.uuid, uuid)) {
         BT_LOGE("%s, uuid convert fail", __func__);
         return BT_STATUS_FAIL;
+    }
+
+    instance = gatt_find_instance_by_addr(addr);
+    if (instance) {
+        gatt_clear_all_subscribe_slots(instance);
     }
 
     disc_params.uuid = &u.uuid;
@@ -932,10 +1067,16 @@ bt_status_t bt_sal_gatt_client_write_element(bt_controller_id_t id, bt_address_t
 
 bt_status_t bt_sal_gatt_client_register_notifications(bt_controller_id_t id, bt_address_t* addr, uint16_t element_id, uint16_t properties, bool enable)
 {
-    static struct bt_gatt_subscribe_params subscribe_params = { 0 };
-    uint16_t value;
+    struct gatt_instance* instance;
     struct bt_conn* conn;
     int err;
+    uint16_t ccc_handle;
+    gatt_subscribe_slot_t* slot;
+
+    if (!(properties & (GATT_PROP_NOTIFY | GATT_PROP_INDICATE))) {
+        BT_LOGE("%s, invalid properties:0x%04x", __func__, properties);
+        return BT_STATUS_PARM_INVALID;
+    }
 
     BT_LOGD("%s, addr:%s, element_id:0x%0x, properties:0x%0x, enable:%d", __func__, bt_addr_str(addr), element_id, properties, enable);
     conn = get_le_conn_from_addr(addr);
@@ -944,31 +1085,66 @@ bt_status_t bt_sal_gatt_client_register_notifications(bt_controller_id_t id, bt_
         return BT_STATUS_FAIL;
     }
 
-    if (properties == GATT_PROP_NOTIFY) {
-        value = BT_GATT_CCC_NOTIFY;
-    } else if (properties == GATT_PROP_INDICATE) {
-        value = BT_GATT_CCC_INDICATE;
-    } else {
-        BT_LOGE("%s, properties:%d invalid", __func__, properties);
-        return BT_STATUS_PARM_INVALID;
+    instance = gatt_find_instance_by_addr(addr);
+    if (!instance) {
+        BT_LOGE("%s, instance not found", __func__);
+        return BT_STATUS_FAIL;
     }
 
-    subscribe_params.value_handle = element_id - 1;
-    subscribe_params.ccc_handle = element_id;
-    subscribe_params.notify = bt_gatt_notify_handler;
-    subscribe_params.subscribe = bt_gatt_subscribe_response;
-    subscribe_params.value = value;
+    ccc_handle = gatt_find_ccc_handle_by_value_handle(instance, element_id);
+    if (!ccc_handle) {
+        BT_LOGE("%s, no CCC handle found for element:0x%04x", __func__, element_id);
+        return BT_STATUS_FAIL;
+    }
 
-    if (enable) {
-        err = bt_gatt_subscribe(conn, &subscribe_params);
+    slot = gatt_get_or_create_subscribe_slot(instance, element_id);
+    if (!slot) {
+        BT_LOGE("%s, no slot available", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    if (properties & GATT_PROP_NOTIFY) {
+        struct bt_gatt_subscribe_params* notify = &slot->notify_params;
+
+        notify->value_handle = element_id;
+        notify->ccc_handle = ccc_handle;
+        notify->notify = bt_gatt_notify_handler;
+        notify->value = BT_GATT_CCC_NOTIFY;
+
+        if (enable) {
+            notify->subscribe = bt_gatt_subscribe_response;
+            err = bt_gatt_subscribe(conn, notify);
+        } else {
+            notify->subscribe = bt_gatt_unsubscribe_response;
+            err = bt_gatt_unsubscribe(conn, notify);
+        }
+
         if (err) {
-            BT_LOGE("%s, gatt subscribe fail err:%d", __func__, err);
+            BT_LOGE("%s, %s NOTIFY failed, err:%d", __func__,
+                enable ? "subscribe" : "unsubscribe", err);
             return BT_STATUS_FAIL;
         }
-    } else {
-        err = bt_gatt_unsubscribe(conn, &subscribe_params);
+    }
+
+    if (properties & GATT_PROP_INDICATE) {
+        struct bt_gatt_subscribe_params* indicate = &slot->indicate_params;
+
+        indicate->value_handle = element_id;
+        indicate->ccc_handle = ccc_handle;
+        indicate->notify = bt_gatt_notify_handler;
+        indicate->value = BT_GATT_CCC_INDICATE;
+
+        if (enable) {
+            indicate->subscribe = bt_gatt_subscribe_response;
+            err = bt_gatt_subscribe(conn, indicate);
+        } else {
+            indicate->subscribe = bt_gatt_unsubscribe_response;
+            err = bt_gatt_unsubscribe(conn, indicate);
+        }
+
         if (err) {
-            BT_LOGE("%s, gatt subscribe fail err:%d", __func__, err);
+            BT_LOGE("%s, %s INDICATE failed, err:%d", __func__,
+                enable ? "subscribe" : "unsubscribe", err);
             return BT_STATUS_FAIL;
         }
     }
