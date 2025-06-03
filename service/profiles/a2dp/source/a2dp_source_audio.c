@@ -248,7 +248,7 @@ static void a2dp_source_audio_handle_timer(service_timer_t* timer, void* arg)
         return;
 
     /* Handle stream underflow */
-    if (circbuf_used(&stream->stream_pool) == 0) {
+    if (circbuf_used(&stream->stream_pool) < stream->stream_interface->get_min_frame_size()) {
         if (!stream->underflow.ticks)
             BT_LOGD("a2dp src send frame, underflowed");
 

@@ -243,12 +243,18 @@ static int a2dp_source_sbc_interval_ms(void)
     return A2DP_SBC_ENCODER_INTERVAL_MS;
 }
 
+static int a2dp_source_sbc_get_min_frame_size(void)
+{
+    return sbc_stream.frames_len;
+}
+
 static const a2dp_source_stream_interface_t a2dp_source_stream_sbc = {
     a2dp_source_sbc_stream_init,
     a2dp_source_sbc_stream_reset,
     NULL,
     a2dp_source_sbc_send_frames,
     a2dp_source_sbc_interval_ms,
+    a2dp_source_sbc_get_min_frame_size,
 };
 
 const a2dp_source_stream_interface_t* get_a2dp_source_sbc_stream_interface(void)
