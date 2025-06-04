@@ -54,6 +54,8 @@
 #define GATT_PERM_READ_AUTHORIZATION 0x40
 #define GATT_PERM_WRITE_AUTHORIZATION 0x80
 
+#define GATT_OPS_WRITE_REQUEST 0 /* not used */
+
 #define STACK_CALL(func) zblue_##func
 
 typedef enum {
@@ -150,13 +152,29 @@ static ssize_t read_value(struct bt_conn* conn, const struct bt_gatt_attr* attr,
     return bt_gatt_attr_read(conn, attr, buf, len, offset, user_data->data, user_data->len);
 }
 
-static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr, const void* buf, uint16_t len, uint16_t offset, uint8_t flags)
+static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr,
+    const void* buf, uint16_t len, uint16_t offset, uint8_t flags)
 {
+    bt_address_t addr;
+    gatt_element_t* element;
     struct gatt_value* user_data = attr->user_data;
+
+    if (!user_data || !user_data->context) {
+        BT_LOGE("%s, user_data or context is NULL", __func__);
+        return BT_GATT_ERR(BT_ATT_ERR_UNLIKELY);
+    }
+
+    element = user_data->context;
 
     BT_LOGD("%s", __func__);
 
+    /* FIXME: length check */
     memcpy(user_data->data + offset, buf, len);
+
+    zblue_conn_get_addr(conn, &addr);
+
+    if_gatts_on_received_element_write_request(&addr, GATT_OPS_WRITE_REQUEST, element->handle, (uint8_t*)buf, offset, len);
+
     return len;
 }
 
