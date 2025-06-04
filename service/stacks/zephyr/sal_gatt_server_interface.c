@@ -555,12 +555,13 @@ static struct bt_gatt_service* get_primary_service_from_element(gatt_element_t* 
         return NULL;
     }
 
+    struct bt_gatt_attr attr = BT_GATT_PRIMARY_SERVICE(&u.uuid);
+
     for (srv = server_svcs; srv < server_svcs + CONFIG_GATT_SERVER_MAX_SERVICES; srv++) {
         if (!srv->attrs) {
             continue;
         }
-
-        if (!bt_uuid_cmp(srv->attrs[0].uuid, &u.uuid)) {
+        if (!bt_uuid_cmp(srv->attrs[0].uuid, attr.uuid)) {
             return srv;
         }
     }
