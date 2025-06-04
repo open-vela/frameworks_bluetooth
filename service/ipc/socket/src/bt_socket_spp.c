@@ -51,7 +51,7 @@
 
 #define CALLBACK_FOREACH(_list, _struct, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, _struct, _cback, ##__VA_ARGS__)
-#define CBLIST (ins->spp_callbacks)
+#define CBLIST (__async ? __async->spp_callbacks : ins->spp_callbacks)
 
 #ifdef CONFIG_RPMSG_UART
 #define SPP_UART_DEV "/dev/ttyDROID"
@@ -183,8 +183,13 @@ static bool rpmsg_tty_mount_path(const char* src, char* dest, int len, const cha
 #endif
 
 int bt_socket_client_spp_callback(service_poll_t* poll,
-    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
 {
+    bt_socket_async_client_t* __async = NULL;
+
+    if (is_async)
+        __async = ins->priv;
+
     switch (packet->code) {
     case BT_SPP_PROXY_STATE_CB: {
         char* name = packet->spp_cb._proxy_state_cb.name;
