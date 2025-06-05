@@ -70,3 +70,10 @@ bt_status_t BTSYMBOLS(bt_avrcp_control_get_subunit_info)(bt_instance_t* ins, bt_
 
     return profile->avrcp_control_get_subunit_info(addr);
 }
+
+bt_status_t BTSYMBOLS(bt_avrcp_control_get_playback_state)(bt_instance_t* ins, bt_address_t* addr)
+{
+    avrcp_control_interface_t* profile = get_profile_service();
+
+    return profile->avrcp_control_get_playback_state(addr);
+}
