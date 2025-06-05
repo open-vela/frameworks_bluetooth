@@ -52,7 +52,7 @@ static int media_volume_to_ui_volume(int volume)
 }
 #endif /* CONFIG_MICO_MEDIA_MAIN_PLAYER */
 
-int bt_media_get_music_volume_range()
+int bt_media_get_music_volume_range(void)
 {
     int media_min_volume = 0; /* min volume of AVRCP must be 0. */
     int status;
