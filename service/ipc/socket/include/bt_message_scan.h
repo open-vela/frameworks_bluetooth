@@ -58,7 +58,7 @@ BT_SCAN_MESSAGE_START,
 
     typedef struct {
         uint16_t count;
-        uint32_t scanner;
+        uint64_t scanner;
         struct {
             ble_scan_result_t result;
             uint8_t adv_data[MAX_LEGACY_SCAN_RESULTS_LENGTH];
