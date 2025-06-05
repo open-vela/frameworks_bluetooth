@@ -282,7 +282,7 @@ int bt_socket_client_scan_callback(service_poll_t* poll,
         break;
     }
     case BT_LE_ON_BATCH_SCAN_RESULT: {
-        bt_scan_remote_t* scan = (bt_scan_remote_t*)packet->scan_batch_cb.scanner;
+        bt_scan_remote_t* scan = INT2PTR(bt_scan_remote_t*) packet->scan_batch_cb.scanner;
 
         uint8_t tmp_buf[sizeof(ble_scan_result_t) + MAX_LEGACY_SCAN_RESULTS_LENGTH];
 
