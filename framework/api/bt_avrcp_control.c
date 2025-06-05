@@ -49,3 +49,10 @@ bt_status_t BTSYMBOLS(bt_avrcp_control_get_element_attributes)(bt_instance_t* in
 
     return profile->avrcp_control_get_element_attributes(addr);
 }
+
+bt_status_t BTSYMBOLS(bt_avrcp_control_send_passthrough_cmd)(bt_instance_t* ins, bt_address_t* addr, uint8_t cmd, uint8_t state)
+{
+    avrcp_control_interface_t* profile = get_profile_service();
+
+    return profile->avrcp_control_send_passthrough_cmd(addr, cmd, state);
+}

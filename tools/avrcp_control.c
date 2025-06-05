@@ -24,9 +24,11 @@
 #include "bt_tools.h"
 
 static int getattrs_cmd(void* handle, int argc, char* argv[]);
+static int send_passthrough_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_avrcp_control_tables[] = {
     { "getattrs", getattrs_cmd, 0, "\"get element attributes from the peer device, params: <address>\"" },
+    { "sendpassthrough", send_passthrough_cmd, 0, "\"send passthrough command to the peer device, params: <address> <command> <operation>(0:press, 1:release)\"" },
 };
 
 static void usage(void)
@@ -125,6 +127,41 @@ static int getattrs_cmd(void* handle, int argc, char* argv[])
 
     if (bt_avrcp_control_get_element_attributes(handle, &addr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int send_passthrough_cmd(void* handle, int argc, char* argv[])
+{
+    if (argc < 3)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    int cmd = atoi(argv[1]);
+    if (cmd > PASSTHROUGH_CMD_ID_RESERVED || cmd < 0) {
+        return CMD_INVALID_PARAM;
+    }
+
+    int op = atoi(argv[2]);
+    if (op != 0 && op != 1) {
+        return CMD_INVALID_PARAM;
+    }
+
+    switch (op) {
+    case 0:
+        if (bt_avrcp_control_send_passthrough_cmd(handle, &addr, cmd, 0) != BT_STATUS_SUCCESS)
+            return CMD_ERROR;
+        break;
+    case 1:
+        if (bt_avrcp_control_send_passthrough_cmd(handle, &addr, cmd, 1) != BT_STATUS_SUCCESS)
+            return CMD_ERROR;
+        break;
+    default:
+        break;
+    }
 
     return CMD_OK;
 }

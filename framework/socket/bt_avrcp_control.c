@@ -100,3 +100,21 @@ bt_status_t bt_avrcp_control_get_element_attributes(bt_instance_t* ins, bt_addre
 
     return packet.avrcp_control_r.status;
 }
+
+bt_status_t bt_avrcp_control_send_passthrough_cmd(bt_instance_t* ins, bt_address_t* addr, uint8_t cmd, uint8_t state)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    memcpy(&packet.avrcp_control_pl._bt_avrcp_control_send_passthrough_cmd.addr, addr, sizeof(packet.avrcp_control_pl._bt_avrcp_control_send_passthrough_cmd.addr));
+    packet.avrcp_control_pl._bt_avrcp_control_send_passthrough_cmd.cmd = cmd;
+    packet.avrcp_control_pl._bt_avrcp_control_send_passthrough_cmd.state = state;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_AVRCP_CT_SEND_PASSTHROUGH_CMD);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.avrcp_control_r.status;
+}

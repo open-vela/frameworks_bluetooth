@@ -658,11 +658,18 @@ static bt_status_t avrcp_control_get_element_attributes(bt_address_t* remote)
 {
     return bt_sal_avrcp_control_get_element_attributes(PRIMARY_ADAPTER, remote, 0, NULL);
 }
+
+static bt_status_t avrcp_control_send_passthrough_cmd(bt_address_t* remote, uint8_t cmd, uint8_t state)
+{
+    return bt_sal_avrcp_control_send_pass_through_cmd(PRIMARY_ADAPTER, remote, cmd, state);
+}
+
 static const avrcp_control_interface_t avrcp_controlInterface = {
     .size = sizeof(avrcp_controlInterface),
     .register_callbacks = avrcp_control_register_callbacks,
     .unregister_callbacks = avrcp_control_unregister_callbacks,
-    .avrcp_control_get_element_attributes = avrcp_control_get_element_attributes
+    .avrcp_control_get_element_attributes = avrcp_control_get_element_attributes,
+    .avrcp_control_send_passthrough_cmd = avrcp_control_send_passthrough_cmd
 };
 
 static const void* get_avrcp_control_profile_interface(void)

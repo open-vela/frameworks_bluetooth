@@ -48,6 +48,9 @@ typedef struct {
     /** get element attributes */
     bt_status_t (*avrcp_control_get_element_attributes)(bt_address_t* bd_addr);
 
+    /** send passthrough command */
+    bt_status_t (*avrcp_control_send_passthrough_cmd)(bt_address_t* bd_addr, uint8_t cmd, uint8_t state);
+
 } avrcp_control_interface_t;
 
 /*
