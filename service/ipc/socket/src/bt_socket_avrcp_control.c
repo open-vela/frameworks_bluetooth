@@ -186,6 +186,10 @@ void bt_socket_server_avrcp_control_process(service_poll_t* poll,
             packet->avrcp_control_r.status = BTSYMBOLS(bt_avrcp_control_get_unit_info)(ins,
                 &packet->avrcp_control_pl._bt_avrcp_control_get_unit_info.addr);
             break;
+        case AVRCP_CT_SUBCODE_GET_SUBUNIT_INFO_CMD:
+            packet->avrcp_control_r.status = BTSYMBOLS(bt_avrcp_control_get_subunit_info)(ins,
+                &packet->avrcp_control_pl._bt_avrcp_control_get_subunit_info.addr);
+            break;
         default:
             break;
         }
