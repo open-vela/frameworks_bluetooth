@@ -682,4 +682,20 @@ bt_status_t bt_sal_avrcp_control_get_element_attributes(bt_controller_id_t id,
 #endif
 }
 
+bt_status_t bt_sal_avrcp_control_get_unit_info(bt_controller_id_t id,
+    bt_address_t* bd_addr)
+{
+#ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
+
+    SAL_CHECK_RET_WITH_CONN(bt_avrcp_ct_get_unit_info(conn), 0, conn);
+
+    bt_conn_unref(conn);
+
+    return BT_STATUS_SUCCESS;
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
+}
+
 #endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL || CONFIG_BLUETOOTH_AVRCP_TARGET */
