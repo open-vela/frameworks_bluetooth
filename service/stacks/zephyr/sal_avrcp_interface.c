@@ -348,6 +348,7 @@ static void zblue_on_playback_pos(struct bt_conn* conn, uint32_t pos)
 bt_status_t bt_sal_avrcp_control_init(void)
 {
 #if defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_ABSOLUTE_VOLUME)
+    bt_sdp_register_service(&avrcp_ct_rec);
     SAL_CHECK_RET(bt_avrcp_cttg_register_cb(&avrcp_cbks), 0);
 
     return BT_STATUS_SUCCESS;
@@ -369,6 +370,7 @@ bt_status_t bt_sal_avrcp_target_init(void)
 
 void bt_sal_avrcp_control_cleanup(void)
 {
+    bt_sdp_unregister_service(&avrcp_ct_rec);
 }
 
 void bt_sal_avrcp_target_cleanup(void)

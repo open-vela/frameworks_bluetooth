@@ -21,6 +21,14 @@
 #include "avrcp_msg.h"
 #include "bt_avrcp.h"
 #include "bt_device.h"
+#include <zephyr/bluetooth/classic/sdp.h>
+#define AVCTP_VER_1_4 (0x0104u)
+#define AVRCP_VER_1_6 (0x0106u)
+
+#define AVRCP_CAT_1 BIT(0) /* Player/Recorder */
+#define AVRCP_CAT_2 BIT(1) /* Monitor/Amplifier */
+#define AVRCP_CAT_3 BIT(2) /* Tuner */
+#define AVRCP_CAT_4 BIT(3) /* Menu */
 
 bt_status_t bt_sal_avrcp_control_init(void);
 void bt_sal_avrcp_control_cleanup(void);
@@ -39,6 +47,50 @@ bt_status_t bt_sal_avrcp_control_get_element_attributes(bt_controller_id_t id,
     bt_address_t* bd_addr, uint8_t attrs_count, avrcp_media_attr_type_t* types);
 
 void bt_sal_avrcp_control_event_callback(avrcp_msg_t* msg);
+
+static struct bt_sdp_attribute avrcp_ct_attrs[] = {
+    BT_SDP_NEW_SERVICE,
+    BT_SDP_LIST(
+        BT_SDP_ATTR_SVCLASS_ID_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                BT_SDP_ARRAY_16(BT_SDP_AV_REMOTE_SVCLASS) },
+            { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                BT_SDP_ARRAY_16(BT_SDP_AV_REMOTE_CONTROLLER_SVCLASS) }, )),
+    BT_SDP_LIST(
+        BT_SDP_ATTR_PROTO_DESC_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 16),
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+                BT_SDP_DATA_ELEM_LIST(
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                        BT_SDP_ARRAY_16(BT_SDP_PROTO_L2CAP) },
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+                        BT_SDP_ARRAY_16(BT_UUID_AVCTP_VAL) }, ) },
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+                BT_SDP_DATA_ELEM_LIST(
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                        BT_SDP_ARRAY_16(BT_UUID_AVCTP_VAL) },
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+                        BT_SDP_ARRAY_16(AVCTP_VER_1_4) }, ) }, )),
+    /* C1: Browsing not supported */
+    BT_SDP_LIST(
+        BT_SDP_ATTR_PROFILE_DESC_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 8),
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+                BT_SDP_DATA_ELEM_LIST(
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                        BT_SDP_ARRAY_16(BT_SDP_AV_REMOTE_SVCLASS) },
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+                        BT_SDP_ARRAY_16(AVRCP_VER_1_6) }, ) }, )),
+    BT_SDP_SUPPORTED_FEATURES(AVRCP_CAT_1 | AVRCP_CAT_2),
+    /* O: Provider Name not presented */
+    BT_SDP_SERVICE_NAME("AVRCP Controller"),
+};
+
+static struct bt_sdp_record avrcp_ct_rec = BT_SDP_RECORD(avrcp_ct_attrs);
 
 #endif /* CONFIG_BLUETOOTH_AVRCP_CONTROL || CONFIG_BLUETOOTH_AVRCP_TARGET */
 #endif /* __SAL_AVRCP_CONTROL_INTERFACE_H__ */
