@@ -56,6 +56,9 @@ typedef struct {
 
     /** get subunit info */
     bt_status_t (*avrcp_control_get_subunit_info)(bt_address_t* bd_addr);
+
+    /** get playback state */
+    bt_status_t (*avrcp_control_get_playback_state)(bt_address_t* bd_addr);
 } avrcp_control_interface_t;
 
 /*
