@@ -679,6 +679,11 @@ static bt_status_t avrcp_control_get_playback_state(bt_address_t* remote)
     return bt_sal_avrcp_control_get_playback_state(PRIMARY_ADAPTER, remote);
 }
 
+static bt_status_t avrcp_control_register_notification(bt_address_t* remote, avrcp_notification_event_t event, uint32_t interval)
+{
+    return bt_sal_avrcp_control_register_notification(PRIMARY_ADAPTER, remote, event, interval);
+}
+
 static const avrcp_control_interface_t avrcp_controlInterface = {
     .size = sizeof(avrcp_controlInterface),
     .register_callbacks = avrcp_control_register_callbacks,
@@ -687,7 +692,8 @@ static const avrcp_control_interface_t avrcp_controlInterface = {
     .avrcp_control_send_passthrough_cmd = avrcp_control_send_passthrough_cmd,
     .avrcp_control_get_unit_info = avrcp_control_get_unit_info,
     .avrcp_control_get_subunit_info = avrcp_control_get_subunit_info,
-    .avrcp_control_get_playback_state = avrcp_control_get_playback_state
+    .avrcp_control_get_playback_state = avrcp_control_get_playback_state,
+    .avrcp_control_register_notification = avrcp_control_register_notification
 };
 
 static const void* get_avrcp_control_profile_interface(void)

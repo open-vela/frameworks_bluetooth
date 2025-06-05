@@ -153,4 +153,14 @@ bt_status_t BTSYMBOLS(bt_avrcp_control_get_subunit_info)(bt_instance_t* ins, bt_
  */
 bt_status_t BTSYMBOLS(bt_avrcp_control_get_playback_state)(bt_instance_t* ins, bt_address_t* addr);
 
+/**
+ * @brief Register notification to peer device, this interface is used for pts.
+ *
+ * @param ins - Bluetooth client instance.
+ * @param addr - Remote BT address.
+ * @param event - Notification event.
+ * @param interval - Notification interval.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_avrcp_control_register_notification)(bt_instance_t* ins, bt_address_t* addr, uint8_t event, uint32_t interval);
 #endif /* __BT_AVRCP_CONTROL_H__ */
