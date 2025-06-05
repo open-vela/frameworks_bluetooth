@@ -45,6 +45,7 @@ bt_status_t bt_sal_avrcp_control_register_notification(bt_controller_id_t id,
     bt_address_t* bd_addr, avrcp_notification_event_t event, uint32_t interval);
 bt_status_t bt_sal_avrcp_control_get_element_attributes(bt_controller_id_t id,
     bt_address_t* bd_addr, uint8_t attrs_count, avrcp_media_attr_type_t* types);
+bt_status_t bt_sal_avrcp_control_get_unit_info(bt_controller_id_t id, bt_address_t* bd_addr);
 
 void bt_sal_avrcp_control_event_callback(avrcp_msg_t* msg);
 
