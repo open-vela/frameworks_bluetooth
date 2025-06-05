@@ -424,7 +424,10 @@ bt_status_t bt_sal_avrcp_control_send_pass_through_cmd(bt_controller_id_t id,
     bool push = key_state == AVRCP_KEY_PRESSED ? true : false;
 
     if (op_id == AVRCP_OPERATION_ID_UNDEFINED) {
-        bt_conn_unref(conn);
+        if (conn) {
+            bt_conn_unref(conn);
+        }
+
         return BT_STATUS_PARM_INVALID;
     }
 
