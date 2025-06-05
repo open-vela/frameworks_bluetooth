@@ -126,4 +126,15 @@ bt_status_t start_get_element_attributes(bt_instance_t* ins, bt_address_t* addr)
  */
 bt_status_t BTSYMBOLS(bt_avrcp_control_get_element_attributes)(bt_instance_t* ins, bt_address_t* addr);
 
+/**
+ * @brief Send passthrough cmd to peer device.
+ *
+ * @param ins - Bluetooth client instance.
+ * @param addr - Remote BT address.
+ * @param cmd - Passthrough cmd.
+ * @param state - PRESSED or RELEASED.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_avrcp_control_send_passthrough_cmd)(bt_instance_t* ins, bt_address_t* addr, uint8_t cmd, uint8_t state);
+
 #endif /* __BT_AVRCP_CONTROL_H__ */
