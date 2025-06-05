@@ -175,6 +175,18 @@ void bt_socket_server_avrcp_control_process(service_poll_t* poll,
             &packet->avrcp_control_pl._bt_avrcp_control_get_element_attribute.addr);
         break;
     default:
+        switch (BT_IPC_GET_SUBCODE(packet->code)) {
+        case AVRCP_CT_SUBCODE_SEND_PASSTHROUGH_CMD:
+            packet->avrcp_control_r.status = BTSYMBOLS(bt_avrcp_control_send_passthrough_cmd)(ins,
+                &packet->avrcp_control_pl._bt_avrcp_control_send_passthrough_cmd.addr,
+                packet->avrcp_control_pl._bt_avrcp_control_send_passthrough_cmd.cmd,
+                packet->avrcp_control_pl._bt_avrcp_control_send_passthrough_cmd.state);
+            break;
+
+        default:
+            break;
+        }
+
         break;
     }
 }

@@ -42,6 +42,8 @@ BT_AVRCP_CONTROL_MESSAGE_START,
 
 #define BT_IPC_CODE_COMMAND_AVRCP_CT_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_AVRCP_CT, 0)
 // TODO: Add new BT IPC Code sequentially
+#define AVRCP_CT_SUBCODE_SEND_PASSTHROUGH_CMD 1
+#define BT_AVRCP_CT_SEND_PASSTHROUGH_CMD BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_AVRCP_CT, AVRCP_CT_SUBCODE_SEND_PASSTHROUGH_CMD)
 #define BT_IPC_CODE_COMMAND_AVRCP_CT_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_AVRCP_CT, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
 #define BT_IPC_CODE_CALLBACK_AVRCP_CT_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_AVRCP_CT, 0)
@@ -57,6 +59,12 @@ BT_AVRCP_CONTROL_MESSAGE_START,
         struct {
             bt_address_t addr;
         } _bt_avrcp_control_get_element_attribute;
+
+        struct {
+            bt_address_t addr;
+            uint8_t cmd;
+            uint8_t state;
+        } _bt_avrcp_control_send_passthrough_cmd;
     } bt_message_avrcp_control_t;
 
     typedef union {
