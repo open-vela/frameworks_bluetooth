@@ -59,6 +59,9 @@ typedef struct {
 
     /** get playback state */
     bt_status_t (*avrcp_control_get_playback_state)(bt_address_t* bd_addr);
+
+    /** register notification */
+    bt_status_t (*avrcp_control_register_notification)(bt_address_t* remote, avrcp_notification_event_t event, uint32_t interval);
 } avrcp_control_interface_t;
 
 /*

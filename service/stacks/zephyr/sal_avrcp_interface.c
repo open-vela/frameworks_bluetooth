@@ -94,7 +94,7 @@ static avrcp_passthr_cmd_t zephyr_op_2_sal_op(uint8_t op)
 static uint8_t sal_op_2_zephyr_op(avrcp_passthr_cmd_t op)
 {
     switch (op) {
-        case PASSTHROUGH_CMD_ID_SELECT:
+    case PASSTHROUGH_CMD_ID_SELECT:
         return AVRCP_OPERATION_ID_SELECT;
     case PASSTHROUGH_CMD_ID_UP:
         return AVRCP_OPERATION_ID_UP;
@@ -214,6 +214,58 @@ static uint8_t sal_op_2_zephyr_op(avrcp_passthr_cmd_t op)
         BT_LOGW("%s, unsupported operation: 0x%x", __func__, op);
         return AVRCP_OPERATION_ID_UNDEFINED;
     }
+}
+
+static uint8_t sal_event_2_zephyr_event(avrcp_notification_event_t event)
+{
+    uint8_t event_id = 0;
+
+    switch (event) {
+    case NOTIFICATION_EVT_PALY_STATUS_CHANGED:
+        event_id = BT_AVRCP_EVENT_PLAYBACK_STATUS_CHANGED;
+        break;
+    case NOTIFICATION_EVT_TRACK_CHANGED:
+        event_id = BT_AVRCP_EVENT_TRACK_CHANGED;
+        break;
+    case NOTIFICATION_EVT_TRACK_END:
+        event_id = BT_AVRCP_EVENT_TRACK_REACHED_END;
+        break;
+    case NOTIFICATION_EVT_TRACK_START:
+        event_id = BT_AVRCP_EVENT_TRACK_REACHED_START;
+        break;
+    case NOTIFICATION_EVT_PLAY_POS_CHANGED:
+        event_id = BT_AVRCP_EVENT_PLAYBACK_POS_CHANGED;
+        break;
+    case NOTIFICATION_EVT_BATTERY_STATUS_CHANGED:
+        event_id = BT_AVRCP_EVENT_BATT_STATUS_CHANGED;
+        break;
+    case NOTIFICATION_EVT_SYSTEM_STATUS_CHANGED:
+        event_id = BT_AVRCP_EVENT_SYSTEM_STATUS_CHANGED;
+        break;
+    case NOTIFICATION_EVT_APP_SETTING_CHANGED:
+        event_id = BT_AVRCP_EVENT_PLAYER_APPLICATION_SETTING_CHANGED;
+        break;
+    case NOTIFICATION_EVT_NOW_PLAYING_CONTENT_CHANGED:
+        event_id = BT_AVRCP_EVENT_NOW_PLAYING_CONTENT_CHANGED;
+        break;
+    case NOTIFICATION_EVT_AVAILABLE_PLAYERS_CHANGED:
+        event_id = BT_AVRCP_EVENT_AVAILABLE_PLAYERS_CHANGED;
+        break;
+    case NOTIFICATION_EVT_ADDRESSED_PLAYER_CHANGED:
+        event_id = BT_AVRCP_EVENT_ADDRESSED_PLAYER_CHANGED;
+        break;
+    case NOTIFICATION_EVT_UIDS_CHANGED:
+        event_id = BT_AVRCP_EVENT_UIDS_CHANGED;
+        break;
+    case NOTIFICATION_EVT_VOLUME_CHANGED:
+        event_id = BT_AVRCP_EVENT_VOLUME_CHANGED;
+        break;
+    default:
+        BT_LOGW("%s, unsupported notification event: 0x%x", __func__, event);
+        break;
+    }
+
+    return event_id;
 }
 
 static void zblue_on_connected(struct bt_conn* conn)
@@ -539,7 +591,21 @@ bt_status_t bt_sal_avrcp_control_register_notification(bt_controller_id_t id,
     bt_address_t* bd_addr, avrcp_notification_event_t event, uint32_t interval)
 {
 #ifdef CONFIG_BLUETOOTH_AVRCP_CONTROL
-    /* No need to do */
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)bd_addr);
+    uint8_t event_id = 0;
+
+    event_id = sal_event_2_zephyr_event(event);
+    if (event_id == 0) {
+        if (conn) {
+            bt_conn_unref(conn);
+        }
+        
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    SAL_CHECK_RET_WITH_CONN(bt_avrcp_ct_register_notification(conn, event_id), 0, conn);
+
+    bt_conn_unref(conn);
 
     return BT_STATUS_SUCCESS;
 #else

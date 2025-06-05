@@ -194,6 +194,12 @@ void bt_socket_server_avrcp_control_process(service_poll_t* poll,
             packet->avrcp_control_r.status = BTSYMBOLS(bt_avrcp_control_get_playback_state)(ins,
                 &packet->avrcp_control_pl._bt_avrcp_control_get_playback_state.addr);
             break;
+        case AVRCP_CT_SUBCODE_REGISTER_NOTIFICATION_CMD:
+            packet->avrcp_control_r.status = BTSYMBOLS(bt_avrcp_control_register_notification)(ins,
+                &packet->avrcp_control_pl._bt_avrcp_control_register_notification.addr,
+                packet->avrcp_control_pl._bt_avrcp_control_register_notification.event,
+                packet->avrcp_control_pl._bt_avrcp_control_register_notification.interval);
+            break;
         default:
             break;
         }
