@@ -1569,8 +1569,8 @@ static void on_bond_state_changed_cb(void* cookie, bt_address_t* addr, bt_transp
     bond_state_t previous_state, bond_state_t current_state, bool is_ctkd)
 {
     g_bond_state = current_state;
-    PRINT_ADDR("Device [%s][%s] bond state: %s -> %s, is_ctkd: %d", addr, LINK_TYPE(transport),
-        bond_state_to_string(previous_state), bond_state_to_string(current_state), is_ctkd);
+    PRINT_ADDR("Device [%s][%s] bond state: %s, previous state: %s is_ctkd: %d", addr, LINK_TYPE(transport),
+        bond_state_to_string(current_state), bond_state_to_string(previous_state), is_ctkd);
 }
 
 static void on_le_sc_local_oob_data_got_cb(void* cookie, bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val)
