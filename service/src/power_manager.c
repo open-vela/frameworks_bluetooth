@@ -238,7 +238,7 @@ static const bt_pm_spec_table_t g_pm_spec[] = {
     { (BT_PM_SNIFF), /* allow sniff */
         (0), /* the SSR entry */
         {
-            { BT_PM_ACTIVE, 0 }, /* conn open */
+            { BT_PM_NO_ACTION, 0 }, /* conn open */
             { BT_PM_NO_PREF, 0 }, /* conn close */
             { BT_PM_ACTIVE, 0 }, /* app open */
             { BT_PM_NO_ACTION, 0 }, /* app close */
