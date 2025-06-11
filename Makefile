@@ -61,7 +61,6 @@ CSRCS += service/debug/bt_trace.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_SERVICE), y)
-	CSRCS += service/common/bt_time.c
 	CSRCS += service/common/service_loop.c
 	CSRCS += service/src/adapter_service.c
 	CSRCS += service/src/adapter_state.c
