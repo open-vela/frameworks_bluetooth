@@ -1,0 +1,3 @@
+module system.bluetooth@2.0
+
+promise<object> getAddressAsync()
