@@ -81,7 +81,6 @@ if(CONFIG_BLUETOOTH)
     list(
       APPEND
       CSRCS
-      ${BLUETOOTH_DIR}/service/common/bt_time.c
       ${BLUETOOTH_DIR}/service/common/service_loop.c
       ${BLUETOOTH_DIR}/service/src/adapter_service.c
       ${BLUETOOTH_DIR}/service/src/adapter_state.c
