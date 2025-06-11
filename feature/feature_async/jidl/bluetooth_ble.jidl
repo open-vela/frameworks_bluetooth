@@ -1,0 +1,35 @@
+module system.bluetooth.ble@2.0
+
+struct AdvertiseSetting {
+    int interval
+    int txPower
+    boolean connectable
+}
+
+struct ManufactureData {
+    string manufactureId
+    object manufactureValue
+}
+
+struct ServiceData {
+    string serviceUuid
+    object serviceValue
+}
+
+struct AdvertiseData {
+    string[] serviceUuids
+    ManufactureData[] manufactureData
+    ServiceData[] serviceData
+}
+
+struct StartAdvertisingParams {
+    AdvertiseSetting setting
+    AdvertiseData advData
+    AdvertiseData advResponse = null
+}
+
+interface Advertiser {
+    promise<void> startAdvertising(StartAdvertisingParams params)
+    void stopAdvertising()
+}
+[ctor="true", target="adv"] Advertiser createAdvertiser()
