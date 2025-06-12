@@ -39,6 +39,12 @@ config BLUETOOTH_DEBUG_TIME_UNIT_US
         Enable this option to use microseconds (us) for Bluetooth debug time.
         If disabled, milliseconds (ms) will be used by default.
 
+config BLUETOOTH_TASK_STACK_SIZE
+	int "bluetooth task stack size"
+	default 8192
+	help
+	    This cofiguration is used to set the stack size of bluetooth task.
+
 config BLUETOOTH_BREDR_SUPPORT
 	bool "BREDR support"
 	default y
