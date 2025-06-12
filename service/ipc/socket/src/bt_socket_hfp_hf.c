@@ -173,6 +173,21 @@ static void on_callheld_cb(void* cookie, bt_address_t* addr, hfp_callheld_t call
     bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_CALLHELD_IND_RECEIVED);
 }
 
+static void on_clip_cb(void* cookie, bt_address_t* addr, const char* number, const char* name)
+{
+    bt_message_packet_t packet = { 0 };
+    bt_instance_t* ins = cookie;
+
+    memcpy(&packet.hfp_hf_cb._on_clip_cb.addr, addr, sizeof(bt_address_t));
+    if (number != NULL)
+        strlcpy(packet.hfp_hf_cb._on_clip_cb.number, number, sizeof(packet.hfp_hf_cb._on_clip_cb.number));
+
+    if (name != NULL)
+        strlcpy(packet.hfp_hf_cb._on_clip_cb.name, name, sizeof(packet.hfp_hf_cb._on_clip_cb.name));
+
+    bt_socket_server_send(ins, &packet, BT_HFP_HF_ON_CLIP_RECEIVED);
+}
+
 const static hfp_hf_callbacks_t g_hfp_hf_socket_cbs = {
     .connection_state_cb = on_connection_state_changed_cb,
     .audio_state_cb = on_audio_state_changed_cb,
@@ -184,6 +199,7 @@ const static hfp_hf_callbacks_t g_hfp_hf_socket_cbs = {
     .call_cb = on_call_cb,
     .callsetup_cb = on_callsetup_cb,
     .callheld_cb = on_callheld_cb,
+    .clip_cb = on_clip_cb,
 };
 
 static bool bt_socket_allocator(void** data, uint32_t size)
@@ -415,7 +431,17 @@ int bt_socket_client_hfp_hf_callback(service_poll_t* poll,
             packet->hfp_hf_cb._on_callheld_cb.value);
         break;
     default:
-        return BT_STATUS_PARM_INVALID;
+        switch (BT_IPC_GET_SUBCODE(packet->code)) {
+        case HFP_HF_SUBCODE_ON_CLIP_RECEIVED:
+            CALLBACK_FOREACH(CBLIST, hfp_hf_callbacks_t,
+                clip_cb,
+                &packet->hfp_hf_cb._on_clip_cb.addr,
+                packet->hfp_hf_cb._on_clip_cb.number,
+                packet->hfp_hf_cb._on_clip_cb.name);
+            break;
+        default:
+            return BT_STATUS_PARM_INVALID;
+        }
     }
 
     return BT_STATUS_SUCCESS;
