@@ -58,12 +58,12 @@ static int a2dp_parse_sbc_info(a2dp_sbc_info_t* info, uint8_t* codec_info)
         return -1;
     }
 
-    info->samp_freq = *codec_info & A2DP_SBC_SAMP_FREQ_MSK;
-    info->ch_mode = *codec_info & A2DP_SBC_CH_MD_MSK;
+    info->samp_freq = *codec_info & BT_A2DP_SBC_SAMP_FREQ_MSK;
+    info->ch_mode = *codec_info & BT_A2DP_SBC_CH_MD_MSK;
     codec_info++;
-    info->block_len = *codec_info & A2DP_SBC_BLOCKS_MSK;
-    info->num_subbands = *codec_info & A2DP_SBC_SUBBAND_MSK;
-    info->alloc_method = *codec_info & A2DP_SBC_ALLOC_MD_MSK;
+    info->block_len = *codec_info & BT_A2DP_SBC_BLOCKS_MSK;
+    info->num_subbands = *codec_info & BT_A2DP_SBC_SUBBAND_MSK;
+    info->alloc_method = *codec_info & BT_A2DP_SBC_ALLOC_MD_MSK;
     codec_info++;
     info->min_bitpool = *codec_info++;
     info->max_bitpool = *codec_info++;
@@ -74,9 +74,9 @@ static int a2dp_parse_sbc_info(a2dp_sbc_info_t* info, uint8_t* codec_info)
 static int a2dp_get_sbc_allocation_method(a2dp_sbc_info_t* info)
 {
     switch (info->alloc_method) {
-    case A2DP_SBC_ALLOC_MD_S:
+    case BT_A2DP_SBC_ALLOC_MD_S:
         return SBC_SNR;
-    case A2DP_SBC_ALLOC_MD_L:
+    case BT_A2DP_SBC_ALLOC_MD_L:
         return SBC_LOUDNESS;
     default:
         break;
@@ -88,13 +88,13 @@ static int a2dp_get_sbc_allocation_method(a2dp_sbc_info_t* info)
 static int a2dp_get_sbc_blocks(a2dp_sbc_info_t* info)
 {
     switch (info->block_len) {
-    case A2DP_SBC_BLOCKS_4:
+    case BT_A2DP_SBC_BLOCKS_4:
         return SBC_BLOCK_0;
-    case A2DP_SBC_BLOCKS_8:
+    case BT_A2DP_SBC_BLOCKS_8:
         return SBC_BLOCK_1;
-    case A2DP_SBC_BLOCKS_12:
+    case BT_A2DP_SBC_BLOCKS_12:
         return SBC_BLOCK_2;
-    case A2DP_SBC_BLOCKS_16:
+    case BT_A2DP_SBC_BLOCKS_16:
         return SBC_BLOCK_3;
     default:
         break;
@@ -120,13 +120,13 @@ static int a2dp_get_sbc_subbands(a2dp_sbc_info_t* info)
 static int a2dp_get_sbc_samp_frequency(a2dp_sbc_info_t* info)
 {
     switch (info->samp_freq) {
-    case A2DP_SBC_SAMP_FREQ_16:
+    case BT_A2DP_SBC_SAMP_FREQ_16:
         return SBC_SF_16000;
-    case A2DP_SBC_SAMP_FREQ_32:
+    case BT_A2DP_SBC_SAMP_FREQ_32:
         return SBC_SF_32000;
-    case A2DP_SBC_SAMP_FREQ_44:
+    case BT_A2DP_SBC_SAMP_FREQ_44:
         return SBC_SF_44100;
-    case A2DP_SBC_SAMP_FREQ_48:
+    case BT_A2DP_SBC_SAMP_FREQ_48:
         return SBC_SF_48000;
     default:
         break;
@@ -138,13 +138,13 @@ static int a2dp_get_sbc_samp_frequency(a2dp_sbc_info_t* info)
 static int a2dp_get_sbc_channel_mode(a2dp_sbc_info_t* info)
 {
     switch (info->ch_mode) {
-    case A2DP_SBC_CH_MD_MONO:
+    case BT_A2DP_SBC_CH_MD_MONO:
         return SBC_MONO;
-    case A2DP_SBC_CH_MD_DUAL:
+    case BT_A2DP_SBC_CH_MD_DUAL:
         return SBC_DUAL;
-    case A2DP_SBC_CH_MD_STEREO:
+    case BT_A2DP_SBC_CH_MD_STEREO:
         return SBC_STEREO;
-    case A2DP_SBC_CH_MD_JOINT:
+    case BT_A2DP_SBC_CH_MD_JOINT:
         return SBC_JOINT_STEREO;
     default:
         break;
