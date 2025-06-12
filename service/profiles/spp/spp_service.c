@@ -560,7 +560,7 @@ static void spp_rx_buffer_send(spp_device_t* device)
     struct list_node *node, *tmp;
     spp_rx_buf_t* buf;
 
-    BT_LOGD("spp_rx_buffer_send, rx_list: %d, rx_bytes: %" PRIu32 "", list_length(&device->rx_list), device->rx_bytes);
+    BT_LOGD("spp_rx_buffer_send, rx_list: %zu, rx_bytes: %" PRIu32 "", list_length(&device->rx_list), device->rx_bytes);
     list_for_every_safe(&device->rx_list, node, tmp)
     {
         buf = (spp_rx_buf_t*)node;
