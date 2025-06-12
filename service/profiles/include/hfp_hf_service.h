@@ -92,6 +92,7 @@ void hf_service_notify_volume_changed(bt_address_t* addr, hfp_volume_type_t type
 void hf_service_notify_call(bt_address_t* addr, hfp_call_t call);
 void hf_service_notify_callsetup(bt_address_t* addr, hfp_callsetup_t callsetup);
 void hf_service_notify_callheld(bt_address_t* addr, hfp_callheld_t callheld);
+void hf_service_notify_clip_received(bt_address_t* addr, const char* number, const char* name);
 
 /*
  * service api

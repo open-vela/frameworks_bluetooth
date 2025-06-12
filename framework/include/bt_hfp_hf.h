@@ -389,6 +389,16 @@ void hfp_hf_callheld_cb(void* cookie, bt_address_t* addr, hfp_callheld_t callhel
 typedef void (*hfp_hf_callheld_callback)(void* cookie, bt_address_t* addr, hfp_callheld_t callheld);
 
 /**
+ * @brief HFP HF +clip callback.
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer AG device.
+ * @param number - the number of call.
+ * @param name - the name of call.
+ */
+typedef void (*hfp_hf_clip_callback)(void* cookie, bt_address_t* addr, const char* number, const char* name);
+
+/**
  * @cond
  */
 
@@ -409,6 +419,7 @@ typedef struct
     hfp_hf_call_callback call_cb;
     hfp_hf_callsetup_callback callsetup_cb;
     hfp_hf_callheld_callback callheld_cb;
+    hfp_hf_clip_callback clip_cb;
 } hfp_hf_callbacks_t;
 
 /**

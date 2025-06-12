@@ -76,6 +76,8 @@ BT_HFP_HF_MESSAGE_START,
 
 #define BT_IPC_CODE_CALLBACK_HFP_HF_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_HFP_HF, 0)
 // TODO: Add new BT IPC Code sequentially
+#define HFP_HF_SUBCODE_ON_CLIP_RECEIVED 1
+#define BT_HFP_HF_ON_CLIP_RECEIVED BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_HFP_HF, HFP_HF_SUBCODE_ON_CLIP_RECEIVED)
 #define BT_IPC_CODE_CALLBACK_HFP_HF_END BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_HFP_HF, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
     typedef union {
@@ -202,6 +204,13 @@ BT_HFP_HF_MESSAGE_START,
         } _on_call_cb,
             _on_callsetup_cb,
             _on_callheld_cb;
+
+        struct {
+            bt_address_t addr;
+            uint8_t pad[2];
+            char number[HFP_PHONENUM_DIGITS_MAX];
+            char name[HFP_NAME_DIGITS_MAX];
+        } _on_clip_cb;
     } bt_message_hfp_hf_callbacks_t;
 
 #ifdef __cplusplus

@@ -860,6 +860,12 @@ void hf_service_notify_callheld(bt_address_t* addr, hfp_callheld_t callheld)
     HF_CALLBACK_FOREACH(g_hfp_service.callbacks, callheld_cb, addr, callheld);
 }
 
+void hf_service_notify_clip_received(bt_address_t* addr, const char* number, const char* name)
+{
+    BT_LOGD("%s", __func__);
+    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, clip_cb, addr, number, name);
+}
+
 void hfp_hf_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,
     profile_connection_reason_t reason, uint32_t remote_features)
 {

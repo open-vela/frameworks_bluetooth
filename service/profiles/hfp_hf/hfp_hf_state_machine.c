@@ -1030,6 +1030,7 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
         char* number = data->string1;
         char* name = data->string2;
         BT_LOGD("CLIP:number :%s, name: %s", number, name == NULL ? "NULL" : name);
+        hf_service_notify_clip_received(&hfsm->addr, number, name);
         set_current_call_name(hfsm, number, name);
         break;
     }
