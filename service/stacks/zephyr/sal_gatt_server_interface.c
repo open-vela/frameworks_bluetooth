@@ -45,6 +45,10 @@
 #define CONFIG_GATT_SERVER_MAX_ATTRIBUTES 30
 #endif
 
+#ifndef CONFIG_GATT_SERVER_MAX_CHARSIZE
+#define CONFIG_GATT_SERVER_MAX_CHARSIZE 512
+#endif
+
 #define NEXT_DB_ATTR(attr) (attr + 1)
 #define LAST_DB_ATTR (server_db + (attr_count - 1))
 
@@ -170,6 +174,7 @@ static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr
 
     /* FIXME: length check */
     memcpy(user_data->data + offset, buf, len);
+    user_data->len = offset + len;
 
     zblue_conn_get_addr(conn, &addr);
 
@@ -291,7 +296,7 @@ static int alloc_characteristic(struct add_characteristic* ch)
         return -EINVAL;
     }
 
-    total_size = sizeof(*user_data) + ch->attr_length;
+    total_size = sizeof(*user_data) + (ch->attr_length > 0 ? ch->attr_length : CONFIG_GATT_SERVER_MAX_CHARSIZE);
 
     user_data = zalloc(total_size);
     if (!user_data) {
