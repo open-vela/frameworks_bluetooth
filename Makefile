@@ -305,7 +305,7 @@ CFLAGS	 += -O0
 endif
 CFLAGS	 += -Wno-strict-prototypes #-fno-short-enums -Wl,-no-enum-size-warning #-Werror
 PRIORITY  = SCHED_PRIORITY_DEFAULT
-STACKSIZE = 8192
+STACKSIZE = $(CONFIG_BLUETOOTH_TASK_STACK_SIZE)
 MODULE    = $(CONFIG_BLUETOOTH)
 
 # if enabled bluetoothd
