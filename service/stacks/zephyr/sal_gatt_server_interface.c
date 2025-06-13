@@ -627,6 +627,17 @@ static void remove_service(gatt_element_t* element)
     memset(&server_db[attr_count - count], 0, count * sizeof(struct bt_gatt_attr));
     attr_count -= count;
 
+    for (i = 0; i < svc_count; i++) {
+        struct bt_gatt_service* s = &server_svcs[i];
+        if (!s->attrs) {
+            continue;
+        }
+
+        if (s->attrs > start) {
+            s->attrs -= count;
+        }
+    }
+
     svc->attrs = NULL;
     svc->attr_count = 0;
     svc_count--;
