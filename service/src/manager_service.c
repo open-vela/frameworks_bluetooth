@@ -34,6 +34,9 @@
 typedef struct bt_instance {
     struct list_node node;
     pid_t pid;
+
+    /* uid = 0 means sync intances
+    uid = pthread_id means async instance */
     uid_t uid;
     uint32_t app_id;
     uint64_t handle;
@@ -56,6 +59,28 @@ static bt_instance_impl_t* manager_find_instance(const char* name, pid_t pid)
     list_for_every(&g_instances, node)
     {
         bt_instance_impl_t* ins = (bt_instance_impl_t*)node;
+        if (ins->uid != 0)
+            continue;
+
+        size_t name_len = strlen(name);
+        name_len = name_len > BT_INST_HOST_NAME_LEN ? BT_INST_HOST_NAME_LEN : name_len;
+        if (strncmp((char*)ins->host_name, name, name_len) == 0 && ins->pid == pid)
+            return ins;
+    }
+
+    return NULL;
+}
+
+static bt_instance_impl_t* manager_find_async_instance(const char* name, pid_t pid)
+{
+    struct list_node* node;
+
+    list_for_every(&g_instances, node)
+    {
+        bt_instance_impl_t* ins = (bt_instance_impl_t*)node;
+        if (ins->uid == 0)
+            continue;
+
         size_t name_len = strlen(name);
         name_len = name_len > BT_INST_HOST_NAME_LEN ? BT_INST_HOST_NAME_LEN : name_len;
         if (strncmp((char*)ins->host_name, name, name_len) == 0 && ins->pid == pid) {
@@ -136,9 +161,55 @@ bt_status_t manager_create_instance(uint64_t handle, uint32_t type,
     return BT_STATUS_SUCCESS;
 }
 
+bt_status_t manager_create_async_instance(uint64_t handle, uint32_t type,
+    const char* name, pid_t pid, uid_t uid,
+    uint32_t* app_id)
+{
+    bt_instance_impl_t* ins = manager_find_async_instance(name, pid);
+    if (ins)
+        return BT_STATUS_FAIL;
+
+    if (g_instance_id == NULL)
+        g_instance_id = index_allocator_create(10);
+
+    ins = malloc(sizeof(bt_instance_impl_t));
+    if (!ins)
+        return BT_STATUS_NOMEM;
+
+    ins->pid = pid;
+    ins->uid = uid;
+    int idx = index_alloc(g_instance_id);
+    if (idx < 0) {
+        free(ins);
+        return BT_STATUS_NO_RESOURCES;
+    }
+    *app_id = idx;
+    ins->app_id = idx;
+    ins->handle = handle;
+    ins->ins_type = type;
+    snprintf((char*)ins->host_name, BT_INST_HOST_NAME_LEN, "%s", name);
+
+    list_add_tail(&g_instances, &ins->node);
+
+    return BT_STATUS_SUCCESS;
+}
+
 bt_status_t manager_get_instance(const char* name, pid_t pid, uint64_t* handle)
 {
     bt_instance_impl_t* ins = manager_find_instance(name, pid);
+    if (ins == NULL) {
+        *handle = 0;
+        return BT_STATUS_DEVICE_NOT_FOUND;
+    }
+
+    *handle = ins->handle;
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t manager_get_async_instance(const char* name, pid_t pid, uint64_t* handle)
+{
+    bt_instance_impl_t* ins = manager_find_async_instance(name, pid);
     if (ins == NULL) {
         *handle = 0;
         return BT_STATUS_DEVICE_NOT_FOUND;
