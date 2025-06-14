@@ -723,6 +723,23 @@ bt_instance_t* bluetooth_create_async_instance(uv_loop_t* loop, bt_ipc_connected
  */
 void bluetooth_delete_async_instance(bt_instance_t* ins);
 
+/**
+ * @brief get bluetooth async client instance
+ *
+ * @param loop uv_loop_t
+ * @param connected client instance connected callback
+ * @param disconnected client instance disconnected callback
+ * @return bt_instance_t* - ins on success, NULL on failure.
+ */
+bt_instance_t* bluetooth_get_async_instance(uv_loop_t* loop, bt_ipc_connected_cb_t connected, bt_ipc_disconnected_cb_t disconnected, void* user_data);
+
+/**
+ * @brief Find bluetooth instance
+ *
+ * @return bt_instance_t* - ins if exist, NULL otherwise.
+ */
+bt_instance_t* BTSYMBOLS(bluetooth_find_async_instance)(pid_t pid);
+
 #ifdef __cplusplus
 }
 #endif
