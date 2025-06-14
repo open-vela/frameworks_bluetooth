@@ -467,6 +467,19 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS
            ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_avrcpcontrol_impl.c)
     endif()
+  elseif(CONFIG_BLUETOOTH_FEATURE_ASYNC)
+    set(FEATURE_TOP ${NUTTX_APPS_DIR}/frameworks/runtimes/feature)
+    list(APPEND INCDIR ${FEATURE_TOP}/include)
+    list(APPEND INCDIR
+         ${NUTTX_APPS_DIR}/frameworks/connectivity/bluetooth/feature/feature_async/include)
+
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/feature_async/src/bluetooth_impl.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/feature_async/src/feature_bluetooth_util.c)
+
+    if(CONFIG_BLUETOOTH_BLE_ADV)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/feature_async/src/bluetooth_ble_impl.c)
+    endif()
+  else()
   endif()
 
   nuttx_add_library(libbluetooth STATIC)
@@ -569,6 +582,29 @@ if(CONFIG_BLUETOOTH)
       ${JIDL_PATHS}
       OUT_SRC_EXT
       c)
+  elseif(CONFIG_BLUETOOTH_FEATURE_ASYNC)
+    include(nuttx_add_jidl)
+    set(PY_SCRIPT ${FEATURE_TOP}/tools/jidl/jsongensource.py)
+    set(BINARY_EXT_MODULES_DIR ${CMAKE_BINARY_DIR}/feature/modules/)
+    set(JIDL_PATHS ${BLUETOOTH_DIR}/feature/feature_async/jidl/bluetooth.jidl)
+
+    if(CONFIG_BLUETOOTH_BLE_ADV)
+      list(APPEND JIDL_PATHS
+        ${BLUETOOTH_DIR}/feature/feature_async/jidl/bluetooth_ble.jidl)
+    endif()
+
+    nuttx_add_jidl(
+      TARGET
+      libbluetooth
+      JIDL_SCRIPT
+      ${PY_SCRIPT}
+      JIDL_OUT_DIR
+      ${BINARY_EXT_MODULES_DIR}
+      JIDLS
+      ${JIDL_PATHS}
+      OUT_SRC_EXT
+      c)
+  else()
   endif()
 
   # Add Dependson
