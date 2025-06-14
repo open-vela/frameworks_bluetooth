@@ -417,7 +417,29 @@ ifeq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL), y)
 		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth_bt_avrcpcontrol.jidl --out-dir \
 		$(APPDIR)/frameworks/connectivity/bluetooth/feature/src --header system_bluetooth_bt_avrcpcontrol.h --source system_bluetooth_bt_avrcpcontrol.c
 endif
+else ifeq ($(CONFIG_BLUETOOTH_FEATURE_ASYNC), y)
+include $(APPDIR)/frameworks/runtimes/feature/Make.defs
+CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/feature/feature_async/include
 
+CSRCS     += feature/feature_async/src/bluetooth.c
+CSRCS     += feature/feature_async/src/bluetooth_impl.c
+CSRCS     += feature/feature_async/src/feature_bluetooth_util.c
+
+ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
+CSRCS     += feature/feature_async/src/bluetooth_ble.c
+CSRCS     += feature/feature_async/src/bluetooth_ble_impl.c
+endif
+
+depend::
+	@python3 $(APPDIR)/frameworks/runtimes/feature/tools/jidl/jsongensource.py \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/feature_async/jidl/bluetooth.jidl -out-dir \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/feature_async/src -header bluetooth.h -source bluetooth.c
+ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
+	@python3 $(APPDIR)/frameworks/runtimes/feature/tools/jidl/jsongensource.py \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/feature_async/jidl/bluetooth_ble.jidl -out-dir \
+		$(APPDIR)/frameworks/connectivity/bluetooth/feature/feature_async/src -header bluetooth_ble.h -source bluetooth_ble.c
+endif
+else
 endif
 
 ifneq ($(NOEXPORTSRCS),)

@@ -512,10 +512,17 @@ choice
 		bool "bluetooth vendor NONE"
 endchoice
 
-config BLUETOOTH_FEATURE
-	bool "bluetooth feature api support"
-	default n
-	depends on FEATURE_FRAMEWORK
+choice
+	prompt "select feature api"
+	default BLUETOOTH_FEATURE_NONE
+	config BLUETOOTH_FEATURE_NONE
+		bool "not supporting Bluetooth feature API."
+	config BLUETOOTH_FEATURE
+		bool "support Bluetooth synchronization API."
+	config BLUETOOTH_FEATURE_ASYNC
+		bool "support Bluetooth asynchronous API."
+		depends on BLUETOOTH_FRAMEWORK_ASYNC
+endchoice
 
 config BLUETOOTH_LEAUDIO_CLIENT
 	bool "enable bluetooth leaudio client feature"
