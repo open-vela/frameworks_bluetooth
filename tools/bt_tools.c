@@ -418,7 +418,7 @@ static int enable_cmd(void* handle, int argc, char** argv)
 
 static int disable_cmd(void* handle, int argc, char** argv)
 {
-    bt_adapter_disable(handle);
+    bt_adapter_disable_safe(handle);
     return CMD_OK;
 }
 
