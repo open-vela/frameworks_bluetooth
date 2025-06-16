@@ -19,7 +19,7 @@
 
 #include "bt_time.h"
 
-uint64_t get_os_timestamp_us(void)
+uint64_t bt_get_os_timestamp_us(void)
 {
     struct timespec ts;
 
@@ -28,7 +28,7 @@ uint64_t get_os_timestamp_us(void)
     return (uint64_t)(((uint64_t)ts.tv_sec * 1000000L) + ((uint64_t)ts.tv_nsec / 1000));
 }
 
-uint32_t get_os_timestamp_ms(void)
+uint32_t bt_get_os_timestamp_ms(void)
 {
     struct timespec ts;
 

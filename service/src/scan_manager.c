@@ -253,7 +253,7 @@ static void notify_scanners_scan_result(void* data)
         return;
     }
 
-    timestamp_ms = get_os_timestamp_ms();
+    timestamp_ms = bt_get_os_timestamp_ms();
     list_for_every(&scanner_manager.scanning_list, node)
     {
         scanner_t* scanner = (scanner_t*)node;

@@ -575,7 +575,7 @@ static bool check_sco_allowed(state_machine_t* sm)
 {
 #ifdef CONFIG_HFP_HF_WEBCHAT_BLOCKER
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
-    uint64_t current_timestamp_us = get_os_timestamp_us();
+    uint64_t current_timestamp_us = bt_get_os_timestamp_us();
     int64_t us_diff;
     bt_list_node_t* cnode;
     bt_list_t* clist = hfsm->current_calls;
@@ -672,7 +672,7 @@ static void update_dialing_time(state_machine_t* sm, uint64_t current_timestamp_
 static void update_call_status(state_machine_t* sm, uint32_t event, uint32_t status)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
-    uint64_t current_timestamp_us = get_os_timestamp_us();
+    uint64_t current_timestamp_us = bt_get_os_timestamp_us();
 
 #ifdef CONFIG_HFP_HF_WEBCHAT_BLOCKER
     channel_type_verdict(sm, event, status, current_timestamp_us);
@@ -1172,7 +1172,7 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
     hfp_hf_data_t* data = (hfp_hf_data_t*)p_data;
-    uint64_t current_timestamp_us = get_os_timestamp_us();
+    uint64_t current_timestamp_us = bt_get_os_timestamp_us();
     bt_status_t status;
 
     HF_DBG_EVENT(sm, &hfsm->addr, event);

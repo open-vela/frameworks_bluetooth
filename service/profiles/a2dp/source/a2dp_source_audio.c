@@ -272,7 +272,7 @@ static void a2dp_source_audio_handle_timer(service_timer_t* timer, void* arg)
             stream->underflow.state = UNDERFLOW_STATE_PAUSED;
             return;
         }
-        stream->stream_interface->send_frames(STREAM_DATA_RESERVED, get_os_timestamp_us());
+        stream->stream_interface->send_frames(STREAM_DATA_RESERVED, bt_get_os_timestamp_us());
         a2dp_source_start_read();
         break;
     case STATE_SUSPENDING:
@@ -283,7 +283,7 @@ static void a2dp_source_audio_handle_timer(service_timer_t* timer, void* arg)
             stream->stream_state = STATE_WAIT4_SUSPENDED;
             return;
         }
-        stream->stream_interface->send_frames(STREAM_DATA_RESERVED, get_os_timestamp_us());
+        stream->stream_interface->send_frames(STREAM_DATA_RESERVED, bt_get_os_timestamp_us());
         a2dp_source_start_read();
         break;
     default:
