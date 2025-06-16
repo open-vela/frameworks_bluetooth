@@ -284,12 +284,12 @@ static void lea_sink_audio_handle_timer(service_timer_t* timer, void* data)
     uv_mutex_lock(&stream->queue_lock);
     if (list_is_empty(queue) == true) {
         if (!stream->underflow_ts)
-            stream->underflow_ts = get_os_timestamp_us();
+            stream->underflow_ts = bt_get_os_timestamp_us();
         goto out;
     }
 
     if (stream->underflow_ts) {
-        uint64_t now_us = get_os_timestamp_us();
+        uint64_t now_us = bt_get_os_timestamp_us();
         uint64_t miss_tick = (now_us - stream->underflow_ts) / (uint64_t)(LEA_SINK_MEDIA_TICK_MS * 1000);
         if (miss_tick > 2) {
             BT_LOGD("%s underflow, miss ticks: %" PRIu64, __func__, miss_tick);

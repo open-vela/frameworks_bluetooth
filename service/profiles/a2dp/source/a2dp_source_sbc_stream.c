@@ -232,7 +232,7 @@ static void a2dp_source_sbc_stream_reset(void)
     sample_rate = a2dp_sbc_sample_frequency(param->s16SamplingFreq);
     sbc_stream.media_timestamp = 0;
     sbc_stream.state.total_tx_frames = 0;
-    sbc_stream.state.session_start_us = get_os_timestamp_us();
+    sbc_stream.state.session_start_us = bt_get_os_timestamp_us();
     sbc_stream.feeding_state.last_frame_us = 0;
     sbc_stream.feeding_state.counter = 0;
     sbc_stream.feeding_state.bytes_per_tick = (sample_rate * A2DP_SBC_BIT_PER_SAMPLE / 8 * param->s16NumOfChannels * A2DP_SBC_ENCODER_INTERVAL_MS) / 1000;
