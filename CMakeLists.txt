@@ -203,6 +203,12 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_HFP_AG)
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/hfp_ag/*.c)
+      if(CONFIG_PHONE_SERVICE)
+        list(REMOVE_ITEM APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/system/telephony_interface.c)
+        list(REMOVE_ITEM APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/hfp_ag/hfp_ag_tele_service.c)
+      else()
+        list(REMOVE_ITEM APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/hfp_ag/hfp_ag_tele_phone_service.c)
+      endif()
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 
