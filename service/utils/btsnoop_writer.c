@@ -84,7 +84,7 @@ static void close_snoop_file(void)
 }
 static uint32_t get_current_time_ms(void)
 {
-    return (uint32_t)(get_os_timestamp_us() / 1000);
+    return (uint32_t)(bt_get_os_timestamp_us() / 1000);
 }
 
 static unsigned long byteswap_ulong(unsigned long val)
