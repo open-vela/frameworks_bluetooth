@@ -204,7 +204,7 @@ static void a2dp_source_aac_stream_reset(void)
     aac_encoder_param_t* param = stream->param;
 
     stream->state.total_tx_frames = 0;
-    stream->state.session_start_us = get_os_timestamp_us();
+    stream->state.session_start_us = bt_get_os_timestamp_us();
     stream->media_timestamp = 0;
     a2dp_aac_encoder_interval_ms = stream->frame_len * 1000 / param->u32SampleRate;
     if (a2dp_aac_encoder_interval_ms < A2DP_AAC_ENCODER_INTERVAL_MS)

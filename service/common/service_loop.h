@@ -91,5 +91,5 @@ void add_init_process(service_init_t func);
 
 uv_loop_t* get_service_uv_loop(void);
 
-uint64_t get_os_timestamp_us(void);
+uint64_t bt_get_os_timestamp_us(void);
 #endif /* _BT_SERVICE_LOOP_H__ */

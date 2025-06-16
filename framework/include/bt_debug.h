@@ -26,9 +26,9 @@ typedef struct timeval_s {
 /* Macro to get current timestamp */
 #ifdef CONFIG_BLUETOOTH_DEBUG_TIMEVAL
 #ifdef CONFIG_BLUETOOTH_DEBUG_TIME_UNIT_US
-#define _GetCurrTime() ((uint64_t)get_os_timestamp_us())
+#define _GetCurrTime() ((uint64_t)bt_get_os_timestamp_us())
 #else
-#define _GetCurrTime() ((uint64_t)get_os_timestamp_ms())
+#define _GetCurrTime() ((uint64_t)bt_get_os_timestamp_ms())
 #endif
 #else
 #define _GetCurrTime() 0
