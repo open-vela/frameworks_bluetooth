@@ -556,9 +556,13 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     if (!msg)
         return CMD_ERROR;
 
+    if (bt_addr_str2ba(argv[1], &msg->addr) < 0) {
+        free(msg);
+        return CMD_INVALID_ADDR;
+    }
+
     msg->handle = handle;
     msg->port = atoi(argv[2]);
-    bt_addr_str2ba(argv[1], &msg->addr);
 
     PRINT("%s, address:%s port:%d", __func__, argv[1], msg->port);
     do_in_thread_loop(&spp_thread_loop, spp_disconnect, msg);
