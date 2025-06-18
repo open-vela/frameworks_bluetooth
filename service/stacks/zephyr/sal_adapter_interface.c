@@ -545,7 +545,7 @@ bt_status_t bt_sal_enable(bt_controller_id_t id)
 #endif
 }
 
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+#if defined(CONFIG_BLUETOOTH_BREDR_SUPPORT) && !defined(CONFIG_BLUETOOTH_BLE_SUPPORT)
 static void STACK_CALL(brder_disable)(void* args)
 {
     bt_disable();
@@ -557,13 +557,13 @@ bt_status_t bt_sal_disable(bt_controller_id_t id)
     UNUSED(id);
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    sal_adapter_req_t* req;
 
     if (!bt_is_ready()) {
         adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
         return BT_STATUS_SUCCESS;
     }
 #ifndef CONFIG_BLUETOOTH_BLE_SUPPORT
+    sal_adapter_req_t* req;
     req = sal_adapter_req(id, NULL, STACK_CALL(brder_disable));
     if (!req) {
         return BT_STATUS_NOMEM;
