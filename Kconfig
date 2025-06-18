@@ -68,6 +68,12 @@ config BLUETOOTH_TRACE_BUFFER_SIZE
 
 endif #BLUETOOTH_DEBUG_TRACE
 
+config BLUETOOTH_TASK_STACK_SIZE
+	int "bluetooth task stack size"
+	default 8192
+	help
+	    This cofiguration is used to set the stack size of bluetooth task.
+
 config BLUETOOTH_BREDR_SUPPORT
 	bool "BREDR support"
 	default y
