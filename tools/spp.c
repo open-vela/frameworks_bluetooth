@@ -423,7 +423,7 @@ static void spp_open_process(void* data)
     device = zalloc(sizeof(spp_device_t));
     if (!device) {
         PRINT("%s, device not exist", __func__);
-        return;
+        goto free;
     }
 
     device->port = msg->port;
@@ -435,17 +435,24 @@ static void spp_open_process(void* data)
 #endif
     if (!device->pipe) {
         PRINT("%s, pipe connect failed", __func__);
-        free(msg);
         free(device);
-        return;
     }
 
+free:
+    free(msg->name);
     free(msg);
 }
 
 static void proxy_state_callback(void* handle, bt_address_t* addr, spp_proxy_state_t state, uint16_t scn, uint16_t port, char* name)
 {
-    spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
+    spp_cmd_t* msg;
+
+    if (state != SPP_PROXY_STATE_CONNECTED) {
+        PRINT("%s, spp proxy disconnected", __func__);
+        return;
+    }
+
+    msg = malloc(sizeof(spp_cmd_t));
     if (!msg)
         return;
 
@@ -455,11 +462,7 @@ static void proxy_state_callback(void* handle, bt_address_t* addr, spp_proxy_sta
     msg->port = port;
     msg->name = strdup(name);
 
-    if (state == SPP_PROXY_STATE_CONNECTED) {
-        do_in_thread_loop(&spp_thread_loop, spp_open_process, (void*)msg);
-    } else if (state == SPP_PROXY_STATE_DISCONNECTED) {
-        PRINT("%s, spp proxy disconnected", __func__);
-    }
+    do_in_thread_loop(&spp_thread_loop, spp_open_process, (void*)msg);
 }
 
 static int start_server_cmd(void* handle, int argc, char* argv[])
