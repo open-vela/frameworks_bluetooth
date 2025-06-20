@@ -426,6 +426,7 @@ static int get_state_cmd(void* handle, int argc, char** argv)
 
 static int discovery_cmd(void* handle, int argc, char** argv)
 {
+    PRINT("test 3");
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
