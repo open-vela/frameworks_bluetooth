@@ -760,10 +760,15 @@ static void spp_on_incoming_data_received(bt_address_t* addr, uint16_t port,
     spp_device_t* device;
     int ret;
 
-    device = find_spp_device_by_conn(SERVICE_CONN_ID(port));
-    if (!device || buffer == NULL) {
-        BT_LOGE("%s, port or address mismatch", __func__);
+    if (buffer == NULL) {
+        BT_LOGE("%s, buffer is NULL", __func__);
         return;
+    }
+
+    device = find_spp_device_by_conn(SERVICE_CONN_ID(port));
+    if (!device) {
+        BT_LOGE("%s, port or address mismatch", __func__);
+        goto error;
     }
 
     if (device->proxy_state != SPP_PROXY_STATE_CONNECTED) {
@@ -785,7 +790,13 @@ static void spp_on_incoming_data_received(bt_address_t* addr, uint16_t port,
     if (ret != 0) {
         BT_LOGE("Spp write to slave port %d failed", device->conn_port);
         spp_device_close(device);
+        goto error;
     }
+
+    return;
+
+error:
+    free(buffer);
 }
 
 static void spp_on_outgoing_complete(uint16_t port, uint8_t* buffer, uint16_t length)
