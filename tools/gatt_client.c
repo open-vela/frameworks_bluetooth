@@ -98,6 +98,8 @@ static void usage(void)
 
 static gattc_device_t* find_gattc_device(void* handle)
 {
+    PRINT("test 2");
+    PRINT("test 3");
     for (int i = 0; i < GATTC_CONNECTION_MAX; i++) {
         if (g_gattc_devies[i].handle == handle)
             return &g_gattc_devies[i];
