@@ -156,20 +156,26 @@ static spp_device_t* find_device_by_handle(void* handle)
     return NULL;
 }
 
+static void spp_trans_reset(void)
+{
+    memset(&trans_ctx, 0, sizeof(trans_ctx));
+}
+
 static void bulk_trans_complete(euv_pipe_t* handle, uint8_t* buf, int status)
 {
     transmit_context_t* ctx = &trans_ctx;
 
     ctx->bulk_count--;
-    if (ctx->bulk_count)
-        euv_pipe_write(handle, buf, ctx->bulk_length, bulk_trans_complete);
-    else
+    if (!ctx->bulk_count) {
         free(buf);
-}
+        return;
+    }
 
-static void spp_trans_reset(void)
-{
-    memset(&trans_ctx, 0, sizeof(trans_ctx));
+    if (euv_pipe_write(handle, buf, ctx->bulk_length, bulk_trans_complete)) {
+        BT_LOGE("%s, euv_pipe_write error", __func__);
+        spp_trans_reset();
+        free(buf);
+    }
 }
 
 static void show_result(uint64_t start, uint64_t end, uint32_t bytes)
@@ -303,7 +309,12 @@ static void spp_data_received(euv_pipe_t* handle, const uint8_t* buf, ssize_t si
             ctx->bulk_buf = malloc(ctx->bulk_length);
             memset(ctx->bulk_buf, 0xA5, ctx->bulk_length);
             ctx->start_timestamp = get_timestamp_msec();
-            euv_pipe_write(handle, ctx->bulk_buf, ctx->bulk_length, bulk_trans_complete);
+            if (euv_pipe_write(handle, ctx->bulk_buf, ctx->bulk_length, bulk_trans_complete)) {
+                BT_LOGE("%s, euv_pipe_write error", __func__);
+                free(ctx->bulk_buf);
+                ctx->bulk_buf = NULL;
+                spp_trans_reset();
+            }
         }
         break;
     case TRANS_RECVING:
@@ -592,7 +603,11 @@ static void spp_write(void* data)
         goto error;
     }
 
-    euv_pipe_write(device->pipe, msg->buf, msg->len, write_complete);
+    if (euv_pipe_write(device->pipe, msg->buf, msg->len, write_complete)) {
+        PRINT("%s, euv_pipe_write failed", __func__);
+        goto error;
+    }
+
     free(msg);
     return;
 
