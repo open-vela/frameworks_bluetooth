@@ -24,6 +24,12 @@
 #include "bt_tools.h"
 #include "utils.h"
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+
+#define LOG_TAG "[bttool_async]"
+
 static void usage(void);
 static int usage_cmd(void* handle, int argc, char** argv);
 static int enable_cmd(void* handle, int argc, char** argv);
