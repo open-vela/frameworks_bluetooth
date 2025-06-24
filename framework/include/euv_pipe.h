@@ -30,6 +30,8 @@ typedef struct euv_pipe {
     uv_pipe_t cli_pipe;
     uv_pipe_t srv_pipe[2];
     euv_pipe_mode_t mode;
+    uint32_t tx_pending;
+    uint32_t tx_threshold;
     void* data;
 } euv_pipe_t;
 

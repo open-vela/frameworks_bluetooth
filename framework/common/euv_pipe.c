@@ -32,8 +32,13 @@
 #define CONFIG_EUV_PIPE_MAX_CONNEXTIONS 4
 #endif
 
+#ifndef CONFIG_EUV_PIPE_MAX_WRITE_BUF_SIZE
+#define CONFIG_EUV_PIPE_MAX_WRITE_BUF_SIZE 4096
+#endif
+
 typedef struct {
     uv_write_t req;
+    uint32_t len;
     uint8_t* buffer;
     euv_write_cb write_cb;
 } euv_write_t;
@@ -164,9 +169,12 @@ static void euv_read_callback(uv_stream_t* stream, ssize_t nread, const uv_buf_t
 static void euv_write_callback(uv_write_t* req, int status)
 {
     euv_write_t* wreq = (euv_write_t*)req;
+    euv_pipe_t* handle = (euv_pipe_t*)wreq->req.data;
 
     if (wreq->write_cb)
         wreq->write_cb((euv_pipe_t*)wreq->req.data, wreq->buffer, status);
+
+    handle->tx_pending = (handle->tx_pending > wreq->len) ? (handle->tx_pending - wreq->len) : 0;
 
     free(wreq);
 }
@@ -236,12 +244,18 @@ int euv_pipe_write(euv_pipe_t* handle, uint8_t* buffer, int length, euv_write_cb
         return -EINVAL;
     }
 
+    if ((handle->tx_threshold) && ((handle->tx_pending + length) > handle->tx_threshold)) {
+        BT_LOGD("%s, congest", __func__);
+        return -EAGAIN;
+    }
+
     wreq = (euv_write_t*)malloc(sizeof(euv_write_t));
     if (!wreq)
         return -ENOMEM;
 
     wreq->req.data = (void*)handle;
     wreq->buffer = buffer;
+    wreq->len = length;
     wreq->write_cb = cb;
     buf = uv_buf_init((char*)buffer, length);
 
@@ -249,9 +263,12 @@ int euv_pipe_write(euv_pipe_t* handle, uint8_t* buffer, int length, euv_write_cb
     if (ret != 0) {
         BT_LOGE("%s, write err:%d", __func__, ret);
         free(wreq);
+        return ret;
     }
 
-    return ret;
+    handle->tx_pending += length;
+
+    return 0;
 }
 
 static void euv_connect_callback(uv_connect_t* req, int status)
@@ -281,6 +298,8 @@ euv_pipe_t* euv_pipe_connect(uv_loop_t* loop, const char* server_path, euv_conne
         return NULL;
     }
 
+    handle->tx_pending = 0;
+    handle->tx_threshold = CONFIG_EUV_PIPE_MAX_WRITE_BUF_SIZE;
     err = uv_pipe_init(loop, &handle->cli_pipe, 0);
     if (err != 0) {
         BT_LOGE("%s, srv_pipe init failed: %s", __func__, uv_strerror(err));
@@ -367,7 +386,8 @@ euv_pipe_t* euv_pipe_open(uv_loop_t* loop, const char* server_path, euv_connect_
     }
 
     handle->mode = EUV_PIPE_TYPE_UNKNOWN;
-
+    handle->tx_pending = 0;
+    handle->tx_threshold = 0; /* TODO: consider flow control in uplink */
     creq = (euv_connect_t*)zalloc(sizeof(euv_connect_t));
     if (!creq) {
         BT_LOGE("%s, zalloc creq fail", __func__);
