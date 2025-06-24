@@ -491,10 +491,12 @@ static void voicecall_manager_signal_process(tele_client_t* tele,
             tele->cbs->call_added_cb(tele, call);
     } else if (!strcmp(signal, "CallRemoved")) {
         /* notify user call removed */
-        if (tele->cbs && tele->cbs->call_removed_cb) {
-            tele->cbs->call_removed_cb(tele, call);
+        if (call) {
+            if (tele->cbs && tele->cbs->call_removed_cb) {
+                tele->cbs->call_removed_cb(tele, call);
+            }
+            voicecall_proxy_remove(modem, proxy);
         }
-        dbus_proxy_unref(proxy);
     }
 }
 
@@ -566,13 +568,14 @@ static void modem_based_proxy_added(tele_client_t* tele, GDBusProxy* proxy)
     if (!strcmp(interface, OFONO_VOICECALL_MANAGER_INTERFACE))
         modem->voicecall_managers = proxy;
     else if (!strcmp(interface, OFONO_VOICECALL_INTERFACE)) {
-#if 0
-        tele_call_t* call = voicecall_proxy_added(modem, proxy);
-        tele_call_get_call_info(tele, call);
-/* notify user call added */
-        if (tele->cbs && tele->cbs->call_added_cb)
-            tele->cbs->call_added_cb(tele, call);
-#endif
+        tele_call_t* call = find_voicecall(modem, proxy);
+        if (!call) {
+            call = voicecall_proxy_added(modem, proxy);
+            tele_call_get_call_info(tele, call);
+            /* notify user call added */
+            if (tele->cbs && tele->cbs->call_added_cb)
+                tele->cbs->call_added_cb(tele, call);
+        }
     } else if (!strcmp(interface, OFONO_NETWORK_REGISTRATION_INTERFACE))
         modem->network_registration = proxy;
     else if (!strcmp(interface, OFONO_NETWORK_OPERATOR_INTERFACE))
@@ -594,14 +597,12 @@ static void modem_based_proxy_removed(tele_client_t* tele, GDBusProxy* proxy)
     if (!strcmp(interface, OFONO_VOICECALL_MANAGER_INTERFACE))
         modem->voicecall_managers = NULL;
     else if (!strcmp(interface, OFONO_VOICECALL_INTERFACE)) {
-        voicecall_proxy_remove(modem, proxy);
-#if 0
-        tele_call_t *call = find_voicecall(modem, proxy);
-        if (tele->cbs && tele->cbs->call_removed_cb)
-            tele->cbs->call_removed_cb(tele, call);
-        bt_list_remove(modem->voicecalls, call);
-        tele_voicecall_delete(call);
-#endif
+        tele_call_t* call = find_voicecall(modem, proxy);
+        if (call) {
+            if (tele->cbs && tele->cbs->call_removed_cb)
+                tele->cbs->call_removed_cb(tele, call);
+            voicecall_proxy_remove(modem, proxy);
+        }
     } else if (!strcmp(interface, OFONO_NETWORK_REGISTRATION_INTERFACE))
         modem->network_registration = NULL;
     else if (!strcmp(interface, OFONO_NETWORK_OPERATOR_INTERFACE))
