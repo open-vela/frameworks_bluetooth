@@ -805,7 +805,7 @@ int app_send_specific_volume_control(bt_instance_t* ins, bt_address_t* addr);
 bt_status_t BTSYMBOLS(bt_hfp_ag_volume_control)(bt_instance_t* ins, bt_address_t* addr, hfp_volume_type_t type, uint8_t volume);
 
 /**
- * @brief Send an AT Command to HF device.
+ * @brief Send an AT Command to HF device [Deprecated].
  *
  * This function is used to send specific AT commands to the specified HF device. The
  * address parameter is used to specify the peer HF device.
