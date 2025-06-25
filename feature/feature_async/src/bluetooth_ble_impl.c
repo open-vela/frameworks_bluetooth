@@ -323,9 +323,6 @@ static void start_adv_cb(bt_instance_t* ins, bt_status_t status, void* adv, void
         adv_info->adv = adv;
         FeaturePromiseResolve(adv_info->interface, data->pid);
     } else {
-        if (adv_info->adv)
-            FEATURE_LOG_ERROR("Currently broadcasting, does not support multicasting!");
-
         FeaturePromiseReject(adv_info->interface, data->pid, status, "start advertising failed!");
     }
 
@@ -350,6 +347,11 @@ void system_bluetooth_ble_Advertiser_interface_adv_startAdvertising(FeatureInter
 
     if (!params || !params->setting)
         goto error;
+
+    if (adv_info->adv) {
+        FEATURE_LOG_ERROR("%s, Repeated Attempt", __func__);
+        goto error;
+    }
 
     // AdvertiseSetting
     if (feature_set_adv_params(params->setting, &adv_params) != BT_STATUS_SUCCESS)
