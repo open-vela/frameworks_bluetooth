@@ -218,6 +218,12 @@ int euv_pipe_read_stop(euv_pipe_t* handle)
         return -EINVAL;
     }
 
+    if (handle->cli_pipe.data) {
+        BT_LOGD("%s, free cli_pipe's reader ", __func__);
+        free(handle->cli_pipe.data);
+        handle->cli_pipe.data = NULL;
+    }
+
     if (!uv_is_active((uv_handle_t*)&handle->cli_pipe)) {
         BT_LOGW("%s, cli_pipe is inactive", __func__);
         return 0;
@@ -227,9 +233,6 @@ int euv_pipe_read_stop(euv_pipe_t* handle)
         BT_LOGE("%s, uv_is_closing", __func__);
         return 0;
     }
-
-    free(handle->cli_pipe.data);
-    handle->cli_pipe.data = NULL;
 
     return uv_read_stop((uv_stream_t*)&handle->cli_pipe);
 }
