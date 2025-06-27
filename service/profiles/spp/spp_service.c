@@ -408,6 +408,12 @@ static void spp_device_close(spp_device_t* device)
         device->handle = NULL;
     }
 
+    if (device->cache_buf.length > 0) {
+        BT_LOGD("%s, free cache buf, length: %d", __func__, device->cache_buf.length);
+        free(device->cache_buf.buffer_head);
+        device->cache_buf.length = 0;
+    }
+
     device->app_handle = NULL;
 }
 
