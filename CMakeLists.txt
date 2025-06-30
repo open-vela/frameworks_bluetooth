@@ -79,7 +79,7 @@ if(CONFIG_BLUETOOTH)
   if(CONFIG_BLUETOOTH_STORAGE_PROPERTY_SUPPORT)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/service/common/storage_property.c)
   else()
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/service/common/storage.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/service/common/bt_storage.c)
   endif()
 
   if(CONFIG_BLUETOOTH_DEBUG_TRACE)

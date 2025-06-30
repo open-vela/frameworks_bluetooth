@@ -50,7 +50,7 @@ CSRCS += service/common/index_allocator.c
 ifeq ($(CONFIG_BLUETOOTH_STORAGE_PROPERTY_SUPPORT), y)
 CSRCS += service/common/storage_property.c
 else
-CSRCS += service/common/storage.c
+CSRCS += service/common/bt_storage.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_DEBUG_MEMORY),y)
