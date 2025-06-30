@@ -88,7 +88,8 @@ static const char* show_ad_type_desc(uint8_t type)
 
 static void advertiser_data_info(adv_data_t* ad)
 {
-    if (ad->len < 1) {
+    if (!ad || ad->len < 1) {
+        syslog(LOG_ERR, "Invalid params, ad(%p)", ad);
         return;
     }
 
