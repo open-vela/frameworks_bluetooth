@@ -17,7 +17,7 @@
 #include <kvdb.h>
 
 #include "bluetooth_define.h"
-#include "storage.h"
+#include "bt_storage.h"
 #include "syslog.h"
 #include "uv_ext.h"
 

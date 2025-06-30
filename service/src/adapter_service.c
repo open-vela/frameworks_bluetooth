@@ -41,6 +41,7 @@
 #include "bt_device.h"
 #include "bt_list.h"
 #include "bt_profile.h"
+#include "bt_storage.h"
 #include "bt_uuid.h"
 #include "btservice.h"
 #include "callbacks_list.h"
@@ -51,7 +52,6 @@
 #include "service_loop.h"
 #include "service_manager.h"
 #include "state_machine.h"
-#include "storage.h"
 #define LOG_TAG "adapter-svc"
 
 #include "bt_utils.h"

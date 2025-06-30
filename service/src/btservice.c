@@ -15,11 +15,11 @@
  ***************************************************************************/
 
 #include "adapter_internel.h"
+#include "bt_storage.h"
 #include "manager_service.h"
 #include "service_loop.h"
 #include "stack_manager.h"
 #include "state_machine.h"
-#include "storage.h"
 
 #ifdef CONFIG_BLUETOOTH_HFP_HF
 #include "hfp_hf_service.h"
