@@ -775,10 +775,11 @@ tele_client_t* teleif_client_connect(const char* name)
         return NULL;
     }
 
-    /* Set disconnect handler to avoid the thread being killed after dbus_connection_close() */
-    g_dbus_set_disconnect_function(tele->dbus_sys, system_bus_disconnected, NULL, NULL);
-
     dbus_client = g_dbus_client_new(tele->dbus_sys, OFONO_SERVICE, OFONO_MANAGER_PATH);
+
+    /* Set disconnect handler to avoid the thread being killed after dbus_connection_close() */
+    dbus_client_add_disconnect_watch(dbus_client, system_bus_disconnected, NULL, NULL);
+
     tele->dbus_client = dbus_client;
     g_dbus_client_set_proxy_filter(dbus_client, proxy_filter, tele);
     g_dbus_client_set_connect_watch(dbus_client, ofono_connect_handler, tele);
