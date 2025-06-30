@@ -21,8 +21,8 @@
 #include <unistd.h>
 
 #include "bluetooth_define.h"
+#include "bt_storage.h"
 #include "service_loop.h"
-#include "storage.h"
 #include "utils/log.h"
 #include "uv_ext.h"
 
