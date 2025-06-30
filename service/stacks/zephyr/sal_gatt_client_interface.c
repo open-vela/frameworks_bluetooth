@@ -59,7 +59,6 @@ struct gatt_service {
     uint16_t start_handle;
     uint16_t end_handle;
     bt_uuid_t uuid;
-    const struct bt_uuid* uuid_ref;
 };
 
 struct gatt_instance {
@@ -498,7 +497,7 @@ static uint8_t zblue_gatt_client_disc_desc_callback(struct bt_conn* conn, const 
                     element->properties = 0;
                     element->permissions = 0;
                 }
-                zblue_gatt_client_discover_chrc(conn, service->uuid_ref, service->start_handle, service->end_handle);
+                zblue_gatt_client_discover_chrc(conn, NULL, service->start_handle, service->end_handle);
             } else {
 #ifdef CONFIG_GATT_CLIENT_LOG
                 BT_LOGD("%s, all services discovered", __func__);
@@ -559,7 +558,7 @@ static uint8_t zblue_gatt_client_disc_desc_callback(struct bt_conn* conn, const 
                     element->properties = 0;
                     element->permissions = 0;
                 }
-                zblue_gatt_client_discover_chrc(conn, service->uuid_ref, service->start_handle, service->end_handle);
+                zblue_gatt_client_discover_chrc(conn, NULL, service->start_handle, service->end_handle);
             } else {
 #ifdef CONFIG_GATT_CLIENT_LOG
                 BT_LOGD("%s, all services discovered", __func__);
@@ -667,7 +666,7 @@ static uint8_t zblue_gatt_client_disc_chrc_callback(struct bt_conn* conn, const 
                     element->type = BT_GATT_DISCOVER_PRIMARY;
                     element->properties = 0;
                     element->permissions = 0;
-                    zblue_gatt_client_discover_chrc(conn, service->uuid_ref, service->start_handle, service->end_handle);
+                    zblue_gatt_client_discover_chrc(conn, NULL, service->start_handle, service->end_handle);
                 }
             } else {
 #ifdef CONFIG_GATT_CLIENT_LOG
@@ -743,7 +742,7 @@ static uint8_t zblue_gatt_client_disc_service_callback(struct bt_conn* conn, con
             element->permissions = 0;
         }
 
-        zblue_gatt_client_discover_chrc(conn, service->uuid_ref, service->start_handle, service->end_handle);
+        zblue_gatt_client_discover_chrc(conn, NULL, service->start_handle, service->end_handle);
         return BT_GATT_ITER_STOP;
     }
 
@@ -761,7 +760,6 @@ static uint8_t zblue_gatt_client_disc_service_callback(struct bt_conn* conn, con
     data = attr->user_data;
     service->start_handle = attr->handle;
     service->end_handle = data->end_handle;
-    service->uuid_ref = data->uuid;
     zblue_uuid1_to_uuid2(data->uuid, &service->uuid);
 
     return BT_GATT_ITER_CONTINUE;
