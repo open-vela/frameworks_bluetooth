@@ -31,6 +31,7 @@
 typedef struct {
     bt_instance_t* bluetooth_ins;
     FeatureInterfaceHandle interface;
+    bool busy;
     void* adv;
 } advertiser_t;
 
@@ -95,6 +96,7 @@ FeatureInterfaceHandle system_bluetooth_ble_wrap_createAdvertiser(FeatureInstanc
     adv_info->bluetooth_ins = feature_bluetooth_get_bt_ins(feature);
     adv_info->interface = handle;
     adv_info->adv = NULL;
+    adv_info->busy = false;
 
     FeatureSetObjectData(handle, adv_info);
     return handle;
@@ -277,8 +279,10 @@ static bt_status_t feature_set_adv_data(system_bluetooth_ble_AdvertiseData* adv_
     return BT_STATUS_SUCCESS;
 
 error:
-    if (*adv)
+    if (*adv) {
         advertiser_data_free(*adv);
+        *adv = NULL;
+    }
 
     return BT_STATUS_FAIL;
 }
@@ -302,8 +306,10 @@ static bt_status_t feature_set_scan_rsp_data(system_bluetooth_ble_AdvertiseData*
     return BT_STATUS_SUCCESS;
 
 error:
-    if (*scan_rsp)
+    if (*scan_rsp) {
         advertiser_data_free(*scan_rsp);
+        *scan_rsp = NULL;
+    }
 
     return BT_STATUS_FAIL;
 }
@@ -311,22 +317,35 @@ error:
 static void start_adv_cb(bt_instance_t* ins, bt_status_t status, void* adv, void* userdata)
 {
     feature_data_t* data = (feature_data_t*)userdata;
-    advertiser_t* adv_info = advertiser_obj_get(data->feature_if);
+    advertiser_t* adv_info;
 
     if (FeatureInstanceIsDetached(data->feature_if)) {
         FEATURE_LOG_ERROR("feature instance is detached!");
-        free(data);
-        return;
+        goto error;
     }
 
-    if (adv && !adv_info->adv) {
+    adv_info = advertiser_obj_get(data->feature_if);
+    assert(adv_info->adv == NULL);
+
+    if (adv) {
         adv_info->adv = adv;
         FeaturePromiseResolve(adv_info->interface, data->pid);
     } else {
+        adv_info->busy = false;
         FeaturePromiseReject(adv_info->interface, data->pid, status, "start advertising failed!");
     }
 
     FeatureFreeInstanceHandle(data->feature_if);
+    free(data);
+    return;
+
+error:
+    if (adv)
+        bt_le_stop_advertising_async(bluetooth_find_async_instance(getpid()), adv, NULL, NULL);
+
+    if (!FeatureInstanceIsDetached(data->feature_if))
+        FeatureFreeInstanceHandle(data->feature_if);
+
     free(data);
 }
 
@@ -348,7 +367,7 @@ void system_bluetooth_ble_Advertiser_interface_adv_startAdvertising(FeatureInter
     if (!params || !params->setting)
         goto error;
 
-    if (adv_info->adv) {
+    if (adv_info->busy) {
         FEATURE_LOG_ERROR("%s, Repeated Attempt", __func__);
         goto error;
     }
@@ -386,13 +405,21 @@ void system_bluetooth_ble_Advertiser_interface_adv_startAdvertising(FeatureInter
         scan_rsp = NULL;
     }
 
-    if (status == BT_STATUS_SUCCESS)
+    if (status == BT_STATUS_SUCCESS) {
+        adv_info->busy = true;
         return;
+    }
 
     FeatureFreeInstanceHandle(data->feature_if);
     free(data);
 
 error:
+    if (adv)
+        advertiser_data_free(adv);
+
+    if (scan_rsp)
+        advertiser_data_free(scan_rsp);
+
     FeaturePromiseReject(handle, pid, status, "start advertising failed!");
 }
 
@@ -406,4 +433,5 @@ void system_bluetooth_ble_Advertiser_interface_adv_stopAdvertising(FeatureInterf
 
     bt_le_stop_advertising_async(adv_info->bluetooth_ins, adv_info->adv, NULL, NULL);
     adv_info->adv = NULL;
+    adv_info->busy = false;
 }
