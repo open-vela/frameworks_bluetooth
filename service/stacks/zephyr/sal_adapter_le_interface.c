@@ -418,8 +418,10 @@ static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
     }
 }
 
-static void zblue_on_ready_cb(int err)
+static void zblue_on_ready_cb(bt_controller_id_t dev_id, int err)
 {
+    UNUSED(dev_id);
+
     if (IS_ENABLED(CONFIG_SETTINGS)) {
         settings_load();
     }
