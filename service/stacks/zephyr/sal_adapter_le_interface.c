@@ -444,11 +444,13 @@ static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err r
     bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
 }
 
-static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
+static void zblue_on_bond_deleted(bt_controller_id_t id, const bt_addr_le_t* peer)
 {
     bt_address_t addr;
     bool is_ctkd = false;
     bt_address_t* remote_addr;
+
+    UNUSED(dev_id);
 
     BT_LOGD("%s", __func__);
 
