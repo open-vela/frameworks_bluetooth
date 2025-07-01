@@ -141,6 +141,10 @@ int bt_socket_client_advertiser_callback(service_poll_t* poll,
         adver->callback->on_advertising_start(adver,
             packet->adv_cb._on_advertising_start.adv_id,
             packet->adv_cb._on_advertising_start.status);
+
+        if (packet->adv_cb._on_advertising_start.status != BT_ADV_STATUS_SUCCESS)
+            free(adver);
+
         break;
     }
     case BT_LE_ON_ADVERTISER_STOPPED: {
