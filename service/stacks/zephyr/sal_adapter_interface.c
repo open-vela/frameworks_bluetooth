@@ -396,10 +396,11 @@ static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
     } /* else: Ignore it*/
 }
 
-static void zblue_on_ready_cb(int err)
+static void zblue_on_ready_cb(bt_controller_id_t dev_id, int err)
 {
     uint8_t state = BT_BREDR_STACK_STATE_OFF;
 
+    UNUSED(dev_id);
     if (IS_ENABLED(CONFIG_SETTINGS)) {
         settings_load();
     }
@@ -485,7 +486,6 @@ static void zblue_on_discovery_complete_cb(const struct bt_br_discovery_result* 
     size_t count)
 {
     adapter_on_discovery_state_changed(BT_DISCOVERY_STOPPED);
-    return;
 }
 
 static struct bt_br_discovery_cb g_br_discovery_cb = {
