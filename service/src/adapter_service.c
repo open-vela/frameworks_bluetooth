@@ -231,6 +231,19 @@ bt_address_t* adapter_get_le_remote_address(bt_address_t* addr, ble_addr_type_t 
     return NULL;
 }
 
+ble_addr_type_t adapter_get_le_remote_address_type(bt_address_t* addr)
+{
+    bt_device_t* device;
+
+    device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+    if (!device) {
+        BT_LOGE("device not found");
+        return BT_LE_ADDR_TYPE_UNKNOWN;
+    }
+
+    return device_get_address_type(device);
+}
+
 static bt_device_t* adapter_find_create_classic_device(bt_address_t* addr)
 {
     bt_device_t* device;

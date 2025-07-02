@@ -255,6 +255,7 @@ void adapter_on_le_local_oob_data_got(bt_address_t* addr, bt_128key_t c_val, bt_
 
 /* adapter sal invoke functions */
 bt_address_t* adapter_get_le_remote_address(bt_address_t* addr, ble_addr_type_t addr_type);
+ble_addr_type_t adapter_get_le_remote_address_type(bt_address_t* addr);
 
 /* adapter framework invoke functions */
 void adapter_init(void);
