@@ -180,6 +180,21 @@ static bt_device_t* adapter_find_device(const bt_address_t* addr, bt_transport_t
     return NULL;
 }
 
+static bt_device_t* adapter_find_create_classic_device(bt_address_t* addr)
+{
+    bt_device_t* device;
+
+    if ((device = adapter_find_device(addr, BT_TRANSPORT_BREDR)))
+        return device;
+
+    device = br_device_create(addr);
+    assert(device);
+    bt_list_add_tail(g_adapter_service.devices, device);
+
+    return device;
+}
+
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 static bool adapter_campare_id_addr(const bt_address_t* addr, ble_addr_type_t addr_type, const bt_address_t* id_addr)
 {
     if (!bt_addr_is_empty(id_addr)
@@ -244,21 +259,6 @@ ble_addr_type_t adapter_get_le_remote_address_type(bt_address_t* addr)
     return device_get_address_type(device);
 }
 
-static bt_device_t* adapter_find_create_classic_device(bt_address_t* addr)
-{
-    bt_device_t* device;
-
-    if ((device = adapter_find_device(addr, BT_TRANSPORT_BREDR)))
-        return device;
-
-    device = br_device_create(addr);
-    assert(device);
-    bt_list_add_tail(g_adapter_service.devices, device);
-
-    return device;
-}
-
-#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 static bt_device_t* adapter_find_create_le_device(bt_address_t* addr, ble_addr_type_t addr_type)
 {
     bt_device_t* device;
@@ -644,7 +644,6 @@ static void process_bond_state_change_evt(bt_address_t* addr, bond_state_t state
 {
     remote_device_properties_t remote;
     bt_device_t* device;
-    bt_address_t id_addr;
 
     adapter_lock();
     if (transport == BT_TRANSPORT_BREDR) {
@@ -665,6 +664,7 @@ static void process_bond_state_change_evt(bt_address_t* addr, bond_state_t state
         if (state == BOND_STATE_BONDED) {
             device_set_device_type(device, BT_DEVICE_TYPE_BLE);
 #ifdef CONFIG_BLUETOOTH_STACK_LE_ZBLUE
+            bt_address_t id_addr;
             if (bt_sal_get_identity_addr(addr, &id_addr) != BT_STATUS_SUCCESS) {
                 BT_LOGE("%s, cannot get identity addr", __func__);
             }
