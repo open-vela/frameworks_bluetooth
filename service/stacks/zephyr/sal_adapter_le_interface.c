@@ -124,8 +124,10 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     remote_addr = adapter_get_le_remote_address(&le_addr, info.le.dst->type);
     if (remote_addr) {
         memcpy(&state.addr, remote_addr, sizeof(state.addr));
+        state.addr_type = adapter_get_le_remote_address_type(remote_addr);
     } else {
         memcpy(&state.addr, &le_addr, sizeof(state.addr));
+        state.addr_type = info.le.dst->type;
     }
 
     if (err) {
@@ -215,8 +217,10 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
     remote_addr = adapter_get_le_remote_address(&le_addr, info.le.dst->type);
     if (remote_addr) {
         memcpy(&state.addr, remote_addr, sizeof(state.addr));
+        state.addr_type = adapter_get_le_remote_address_type(remote_addr);
     } else {
         memcpy(&state.addr, &le_addr, sizeof(state.addr));
+        state.addr_type = info.le.dst->type;
     }
 
     adapter_on_connection_state_changed(&state);
