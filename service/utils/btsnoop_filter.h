@@ -40,6 +40,7 @@ typedef enum {
 typedef enum {
     BTSNOOP_CONNECT_COMPLETE = 0x03,
     BTSNOOP_DISCONNECT_COMPLETE = 0x05,
+    BTSNOOP_NUMBER_OF_COMPLETED_PACKETS = 0x13,
 } btsnoop_hci_event_t;
 
 typedef enum {
@@ -61,27 +62,14 @@ typedef enum {
 } btsnoop_l2cap_state_t;
 
 typedef enum {
-    BTSNOOP_L2CAP_RSP_STATUS_SUCCESSFUL = 0x00,
-    BTSNOOP_L2CAP_RSP_STATUS_PENDING = 0x01,
-} btsnoop_l2cap_rsp_status_t;
-
-typedef struct {
-    uint16_t local_cid;
-    uint16_t peer_cid;
-} btsnoop_l2cap_channel_cids_t;
-
-typedef struct {
-    uint16_t connection_handle;
-    btsnoop_l2cap_channel_cids_t avdtp_signal_ch;
-    uint16_t prev_acl_cid;
-    bt_list_t* filter_cids;
-} btsnoop_filter_acl_info_t;
-
-typedef struct {
-    btsnoop_l2cap_channel_cids_t cids;
-    uint16_t psm;
-    btsnoop_l2cap_state_t state;
-} btsnoop_filter_l2cap_channel_info_t;
+    BTSNOOP_L2CAP_RSP_RESULT_SUCCESSFUL = 0x00,
+    BTSNOOP_L2CAP_RSP_RESULT_PENDING = 0x01,
+    BTSNOOP_L2CAP_RSP_RESULT_PSM_NOT_SUPPORTED = 0x02,
+    BTSNOOP_L2CAP_RSP_RESULT_SECURITY_BLOCK = 0x03,
+    BTSNOOP_L2CAP_RSP_RESULT_NO_RESOURCES_AVAILABLE = 0x04,
+    BTSNOOP_L2CAP_RSP_RESULT_INVALID_SCID = 0x06,
+    BTSNOOP_L2CAP_RSP_RESULT_SCID_ALREADY_ALLOCATED = 0x07,
+} btsnoop_l2cap_rsp_result_t;
 
 int filter_init();
 void filter_uninit();
