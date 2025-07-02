@@ -38,7 +38,9 @@ static int get_adapter_cmd(void* handle, int argc, char** argv);
 static int set_scanmode_cmd(void* handle, int argc, char** argv);
 static int get_scanmode_cmd(void* handle, int argc, char** argv);
 static int set_iocap_cmd(void* handle, int argc, char** argv);
+static int set_le_iocap_cmd(void* handle, int argc, char** argv);
 static int get_iocap_cmd(void* handle, int argc, char** argv);
+static int get_le_iocap_cmd(void* handle, int argc, char** argv);
 static int get_local_addr_cmd(void* handle, int argc, char** argv);
 static int get_appearance_cmd(void* handle, int argc, char** argv);
 static int set_appearance_cmd(void* handle, int argc, char** argv);
@@ -236,6 +238,7 @@ static bt_command_t g_cmd_tables[] = {
 static bt_command_t g_set_cmd_tables[] = {
     { "scanmode", set_scanmode_cmd, 0, "params: <scan mode> (0:none, 1:connectable 2:connectable&discoverable)" },
     { "iocap", set_iocap_cmd, 0, SET_IOCAP_USAGE },
+    { "le_iocap", set_le_iocap_cmd, 0, SET_IOCAP_USAGE },
     { "name", set_local_name_cmd, 0, "params: <local name>, example \"vela-bt\"" },
     { "class", set_local_cod_cmd, 0, SET_CLASS_USAGE },
     { "appearance", set_appearance_cmd, 0, "set le adapter appearance, params: <appearance>" },
@@ -249,6 +252,7 @@ static bt_command_t g_set_cmd_tables[] = {
 static bt_command_t g_get_cmd_tables[] = {
     { "scanmode", get_scanmode_cmd, 0, "get adapter scan mode" },
     { "iocap", get_iocap_cmd, 0, "get adapter io capability" },
+    { "le_iocap", get_le_iocap_cmd, 0, "get adapter le io capability" },
     { "addr", get_local_addr_cmd, 0, "get adapter local addr" },
     { "leaddr", get_le_addr_cmd, 0, "get ble adapter addr" },
     { "name", get_local_name_cmd, 0, "get adapter local name" },
@@ -567,9 +571,35 @@ static int set_iocap_cmd(void* handle, int argc, char** argv)
     return CMD_OK;
 }
 
+static int set_le_iocap_cmd(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (strlen(argv[0]) > 1) {
+        return CMD_INVALID_PARAM;
+    }
+
+    uint32_t iocap = *argv[0] - '0';
+    if (iocap < BT_IO_CAPABILITY_DISPLAYONLY || iocap > BT_IO_CAPABILITY_KEYBOARDDISPLAY)
+        return CMD_INVALID_PARAM;
+
+    if (bt_adapter_set_le_io_capability(handle, iocap) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("IO Capability:%" PRIu32 " set success", iocap);
+    return CMD_OK;
+}
+
 static int get_iocap_cmd(void* handle, int argc, char** argv)
 {
     PRINT("IO Capability:%d", bt_adapter_get_io_capability(handle));
+    return CMD_OK;
+}
+
+static int get_le_iocap_cmd(void* handle, int argc, char** argv)
+{
+    PRINT("IO Capability:%" PRIu32, bt_adapter_get_le_io_capability(handle));
     return CMD_OK;
 }
 
