@@ -116,6 +116,11 @@ int btsnoop_log_enable(void)
         return BT_STATUS_FAIL;
     }
 
+    /* filter out the following snoop logs by default. */
+    filter_set_filter_flag(BTSNOOP_FILTER_A2DP_AUDIO);
+    filter_set_filter_flag(BTSNOOP_FILTER_SPP);
+    filter_set_filter_flag(BTSNOOP_FILTER_NOCP);
+
     snoop_enable = true;
 
     pthread_mutex_unlock(&snoop_lock);
