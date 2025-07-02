@@ -247,6 +247,9 @@ void adapter_on_whitelist_update(bt_address_t* addr, bool is_added, bt_status_t 
 void adapter_on_le_bonded_device_update(remote_device_le_properties_t* props, uint16_t bonded_devices_cnt);
 void adapter_on_le_local_oob_data_got(bt_address_t* addr, bt_128key_t c_val, bt_128key_t r_val);
 
+/* adapter sal invoke functions */
+bt_address_t* adapter_get_le_remote_address(bt_address_t* addr, ble_addr_type_t addr_type);
+
 /* adapter framework invoke functions */
 void adapter_init(void);
 void adapter_cleanup(void);
