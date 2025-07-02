@@ -787,7 +787,7 @@ static void STACK_CALL(create_bond)(void* args)
         return;
     }
 
-    err = bt_conn_set_security(conn, BT_SECURITY_L4);
+    err = bt_conn_set_security(conn, BT_SECURITY_L2);
     if (err) {
         BT_LOGE("%s, bond fail err:%d", __func__, err);
         return;
