@@ -553,6 +553,7 @@ bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal)
 #endif
 
     bt_conn_cb_register(&g_conn_cbs);
+    bt_conn_le_auth_cb_register(&g_conn_auth_cbs);
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
 
     return BT_STATUS_SUCCESS;
@@ -561,6 +562,7 @@ bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal)
 void bt_sal_le_cleanup(void)
 {
     bt_conn_cb_register(NULL);
+    bt_conn_le_auth_cb_register(NULL);
     bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
 }
 
@@ -680,7 +682,7 @@ bt_status_t bt_sal_le_set_io_capability(bt_controller_id_t id, bt_io_capability_
     BT_LOGD("Set IO capability: %d", cap);
 
     memset(&g_conn_auth_cbs, 0, sizeof(g_conn_auth_cbs));
-    bt_conn_auth_cb_register(NULL);
+    bt_conn_le_auth_cb_register(NULL);
 
     switch (cap) {
     case BT_IO_CAPABILITY_DISPLAYONLY:
@@ -715,7 +717,7 @@ bt_status_t bt_sal_le_set_io_capability(bt_controller_id_t id, bt_io_capability_
 #endif
     g_conn_auth_cbs.pairing_confirm = zblue_on_auth_pairing_confirm;
 
-    if (bt_conn_auth_cb_register(&g_conn_auth_cbs)) {
+    if (bt_conn_le_auth_cb_register(&g_conn_auth_cbs)) {
         BT_LOGE("Failed to register conn auth callbacks");
         return BT_STATUS_FAIL;
     }
