@@ -30,6 +30,8 @@
 
 #include <zephyr/settings/settings.h>
 
+#include "keys.h"
+
 #include "utils/log.h"
 
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
@@ -99,6 +101,37 @@ static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
 
 static struct bt_conn_auth_cb g_conn_auth_cbs;
 static struct bt_conn* g_acl_conns[CONFIG_BT_MAX_CONN];
+
+static uint8_t zblue_convert_addr_type(ble_addr_type_t addr_type)
+{
+    uint8_t type;
+
+    switch (addr_type) {
+    case BT_LE_ADDR_TYPE_PUBLIC:
+        type = BT_ADDR_LE_PUBLIC;
+        break;
+    case BT_LE_ADDR_TYPE_RANDOM:
+        type = BT_ADDR_LE_RANDOM;
+        break;
+    case BT_LE_ADDR_TYPE_PUBLIC_ID:
+        type = BT_ADDR_LE_PUBLIC_ID;
+        break;
+    case BT_LE_ADDR_TYPE_RANDOM_ID:
+        type = BT_ADDR_LE_RANDOM_ID;
+        break;
+    case BT_LE_ADDR_TYPE_ANONYMOUS:
+        type = BT_ADDR_LE_ANONYMOUS;
+        break;
+    case BT_LE_ADDR_TYPE_UNKNOWN:
+        type = BT_ADDR_LE_RANDOM;
+        break;
+    default:
+        BT_LOGE("%s, invalid type:%d", __func__, addr_type);
+        assert(0);
+    }
+
+    return type;
+}
 
 static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
 {
@@ -414,13 +447,19 @@ static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err r
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
 {
     bt_address_t addr;
+    bool is_ctkd = false;
+    bt_address_t* remote_addr;
 
     BT_LOGD("%s", __func__);
 
-    if (id == 0 && peer->type == BT_ADDR_LE_PUBLIC) {
-        memcpy(&addr, peer->a.val, sizeof(addr));
-        adapter_on_link_key_removed(&addr, BT_STATUS_SUCCESS);
+    memcpy(&addr, peer->a.val, sizeof(addr.addr));
+    remote_addr = adapter_get_le_remote_address(&addr, peer->type);
+    if (!remote_addr) {
+        BT_LOGE("%s, not found remote device", __func__);
+        return;
     }
+
+    adapter_on_bond_state_changed(remote_addr, BOND_STATE_NONE, BT_TRANSPORT_BLE, BT_STATUS_SUCCESS, is_ctkd);
 }
 
 static void zblue_on_ready_cb(int err)
@@ -877,21 +916,36 @@ bt_status_t bt_sal_le_create_bond(bt_controller_id_t id, bt_address_t* addr, ble
     return sal_send_req(req);
 }
 
+static void zblue_convert_le_addr(bt_address_t* addr, ble_addr_type_t type, bt_addr_le_t* le_addr)
+{
+    le_addr->type = zblue_convert_addr_type(type);
+    memcpy(le_addr->a.val, addr, sizeof(addr->addr));
+}
+
 static void STACK_CALL(remove_bond)(void* args)
 {
     sal_adapter_req_t* req = args;
-    struct bt_conn* conn;
-    struct bt_conn_info info;
+    struct bt_keys* keys;
+    bt_addr_le_t le_addr;
+    ble_addr_type_t type;
     int err;
 
-    conn = get_le_conn_from_addr(&req->addr);
-    if (!conn) {
-        BT_LOGE("%s, conn null", __func__);
+    type = adapter_get_le_remote_address_type(&req->addr);
+    if (type == BT_LE_ADDR_TYPE_UNKNOWN) {
+        BT_LOGE("%s, unknown addr type", __func__);
         return;
     }
 
-    bt_conn_get_info(conn, &info);
-    err = bt_unpair(BT_ID_DEFAULT, info.le.dst);
+    zblue_convert_le_addr(&req->addr, type, &le_addr);
+    keys = bt_keys_find_irk(BT_ID_DEFAULT, &le_addr);
+    if (keys) {
+        err = bt_unpair(BT_ID_DEFAULT, &keys->addr);
+    } else {
+        /* if peer device not support BT_PRIVACY, will not exchange IRK. */
+        BT_LOGD("%s, not found irk", __func__);
+        err = bt_unpair(BT_ID_DEFAULT, &le_addr);
+    }
+
     if (err < 0) {
         BT_LOGE("%s, unpair fail err:%d", __func__, err);
         return;
