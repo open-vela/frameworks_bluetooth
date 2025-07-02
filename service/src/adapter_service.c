@@ -180,6 +180,57 @@ static bt_device_t* adapter_find_device(const bt_address_t* addr, bt_transport_t
     return NULL;
 }
 
+static bool adapter_campare_id_addr(const bt_address_t* addr, ble_addr_type_t addr_type, const bt_address_t* id_addr)
+{
+    if (!bt_addr_is_empty(id_addr)
+        && !bt_addr_compare(addr, id_addr)
+        && ((addr_type == BT_LE_ADDR_TYPE_PUBLIC) || (addr_type == BT_LE_ADDR_TYPE_RANDOM))) {
+        return true;
+    }
+
+    return false;
+}
+
+static bt_device_t* adapter_find_le_device(const bt_address_t* addr, ble_addr_type_t addr_type)
+{
+    bt_list_node_t* node;
+    bt_list_t* list;
+    bool cmp_result = false;
+
+    list = g_adapter_service.le_devices;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        bt_device_t* device = bt_list_node(node);
+
+        if (device_is_bonded(device)) {
+            /* Comparison of Identity Addresses for Bonded remote Devices, addr type may be public or random*/
+            cmp_result = adapter_campare_id_addr(addr, addr_type, device_get_identity_address(device));
+        } else if (!device_is_bonded(device)) {
+            cmp_result = adapter_campare_id_addr(addr, addr_type, device_get_identity_address(device));
+        } else {
+            /* Comparison of Addresses for no bond remote Devices */
+            cmp_result = !bt_addr_compare(addr, device_get_address(device));
+        }
+
+        if (cmp_result)
+            return device;
+    }
+
+    return NULL;
+}
+
+bt_address_t* adapter_get_le_remote_address(bt_address_t* addr, ble_addr_type_t addr_type)
+{
+    bt_device_t* device;
+
+    device = adapter_find_le_device(addr, addr_type);
+    if (device) {
+        return device_get_address(device);
+    }
+
+    return NULL;
+}
+
 static bt_device_t* adapter_find_create_classic_device(bt_address_t* addr)
 {
     bt_device_t* device;
@@ -580,6 +631,7 @@ static void process_bond_state_change_evt(bt_address_t* addr, bond_state_t state
 {
     remote_device_properties_t remote;
     bt_device_t* device;
+    bt_address_t id_addr;
 
     adapter_lock();
     if (transport == BT_TRANSPORT_BREDR) {
@@ -599,10 +651,15 @@ static void process_bond_state_change_evt(bt_address_t* addr, bond_state_t state
         device = adapter_find_create_le_device(addr, BT_LE_ADDR_TYPE_PUBLIC);
         if (state == BOND_STATE_BONDED) {
             device_set_device_type(device, BT_DEVICE_TYPE_BLE);
+#ifdef CONFIG_BLUETOOTH_STACK_LE_ZBLUE
+            if (bt_sal_get_identity_addr(addr, &id_addr) != BT_STATUS_SUCCESS) {
+                BT_LOGE("%s, cannot get identity addr", __func__);
+            }
+            device_set_identity_address(device, &id_addr);
+#endif
             // device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_LE);
         } else if (state == BOND_STATE_NONE) {
             device_delete_smp_key(device);
-            device_set_identity_address(device, NULL);
         }
 #else
         adapter_unlock();
@@ -2719,7 +2776,7 @@ bt_status_t adapter_le_remove_whitelist(bt_address_t* addr)
     }
 
     adapter_unlock();
-    
+
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("%s, %s", __func__, addr_str);
 
