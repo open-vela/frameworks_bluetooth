@@ -50,6 +50,7 @@ bt_status_t bt_sal_le_set_phy(bt_controller_id_t id, bt_address_t* addr, ble_phy
 bt_status_t bt_sal_le_set_appearance(bt_controller_id_t id, uint16_t appearance);
 uint16_t bt_sal_le_get_appearance(bt_controller_id_t id);
 bt_status_t bt_sal_le_enable_key_derivation(bt_controller_id_t id, bool brkey_to_lekey, bool lekey_to_brkey);
+bt_status_t bt_sal_get_identity_addr(bt_address_t* addr, bt_address_t* id_addr);
 
 struct bt_conn* get_le_conn_from_addr(bt_address_t* addr);
 bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr);
