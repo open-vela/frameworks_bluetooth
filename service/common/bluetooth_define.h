@@ -21,6 +21,8 @@
 #include "bt_uuid.h"
 // #define BLE_MAX_ADV_NUM 8
 
+#define BT_GATT_HASH_LEN 16
+
 #define SMP_KEYS_MAX_SIZE 80
 #define BT_COMMON_KEY_LENGTH 16
 
