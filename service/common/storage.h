@@ -28,9 +28,11 @@ int bt_storage_load_adapter_info(adapter_storage_t* adapter);
 int bt_storage_save_bonded_device(remote_device_properties_t* remote, uint16_t size);
 int bt_storage_save_whitelist(remote_device_le_properties_t* remote, uint16_t size);
 int bt_storage_save_le_bonded_device(remote_device_le_properties_t* remote, uint16_t size);
+int bt_storage_save_gatt_cache_device(remote_device_gatt_properties_t* remote, uint16_t size);
 int bt_storage_load_bonded_device(load_storage_callback_t cb);
 int bt_storage_load_whitelist_device(load_storage_callback_t cb);
 int bt_storage_load_le_bonded_device(load_storage_callback_t cb);
+int bt_storage_load_gatt_cache_device(load_storage_callback_t cb);
 
 #ifdef CONFIG_BLUETOOTH_STORAGE_PROPERTY_SUPPORT
 #define GEN_PROP_KEY(buf, key, address, len) snprintf((buf), (len), "%s%02X:%02X:%02X:%02X:%02X:%02X", \
@@ -57,6 +59,7 @@ int bt_storage_load_le_bonded_device(load_storage_callback_t cb);
 #define BT_KVDB_BTBOND "persist.bluetooth.btbonded."
 #define BT_KVDB_BLEBOND "persist.bluetooth.blebonded."
 #define BT_KVDB_BLEWHITELIST "persist.bluetooth.whitelist."
+#define BT_KVDB_BLEGATTDBHASH "persist.bluetooth.blegattDBhash."
 
 int bt_storage_properties_destory(void);
 void bt_storage_delete(char* key, uint16_t items, char* prop_name);
