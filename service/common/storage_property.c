@@ -295,6 +295,44 @@ static int bt_storage_save_le_remote_device(const char* key, void* value, uint16
     return 0;
 }
 
+/*BT_KVDB_BLEGATTDBHASH*/
+static int bt_storage_save_gatt_cache_remote_device(const char* key, void* value, uint16_t value_size, uint16_t items)
+{
+    size_t prop_vlen;
+    char* prop_name;
+    remote_device_gatt_properties_t* data;
+    bt_address_t* addr;
+    int i;
+    int ret;
+
+    if (!key || !value)
+        return 0;
+
+    prop_name = (char*)malloc(PROP_NAME_MAX);
+    if (!prop_name) {
+        BT_LOGE("property_name malloc failed!");
+        return -ENOMEM;
+    }
+    data = (remote_device_gatt_properties_t*)value;
+    prop_vlen = value_size - offsetof(remote_device_gatt_properties_t, addr_type);
+    for (i = 0; i < items; i++) {
+        addr = &data->addr;
+        GEN_PROP_KEY(prop_name, key, addr, PROP_NAME_MAX);
+        /**
+         * Note: It should be ensured that "addr" is the first member of the struct remote_device_gatt_properties_t
+         * and "addr_type" is the second member.
+         * */
+        ret = storage_set_key(prop_name, &data->addr_type, prop_vlen);
+        if (ret < 0) {
+            free(prop_name);
+            return ret;
+        }
+        data++;
+    }
+    free(prop_name);
+    return 0;
+}
+
 static void callback_bt_count(const char* name, const char* value, void* count_u16)
 {
     if (!strncmp(name, BT_KVDB_BTBOND, strlen(BT_KVDB_BTBOND))) {
@@ -305,6 +343,13 @@ static void callback_bt_count(const char* name, const char* value, void* count_u
 static void callback_le_count(const char* name, const char* value, void* count_u16)
 {
     if (!strncmp(name, BT_KVDB_BLEBOND, strlen(BT_KVDB_BLEBOND))) {
+        (*(uint16_t*)count_u16)++;
+    }
+}
+
+static void callback_gatthash_count(const char* name, const char* value, void* count_u16)
+{
+    if (!strncmp(name, BT_KVDB_BLEGATTDBHASH, strlen(BT_KVDB_BLEGATTDBHASH))) {
         (*(uint16_t*)count_u16)++;
     }
 }
@@ -422,6 +467,34 @@ int bt_storage_save_whitelist(remote_device_le_properties_t* remote, uint16_t si
     return ret;
 }
 
+int bt_storage_save_gatt_cache_device(remote_device_gatt_properties_t* remote, uint16_t size)
+{
+    uint16_t items = 0;
+    char* prop_name;
+    int ret;
+
+    prop_name = (char*)malloc(PROP_NAME_MAX);
+    if (!prop_name) {
+        BT_LOGE("property_name malloc failed!");
+        return -ENOMEM;
+    }
+
+    /* remove all BLE gatt cache device property before save new property*/
+    property_list(callback_gatthash_count, &items);
+    bt_storage_delete(BT_KVDB_BLEGATTDBHASH, items, prop_name);
+
+    ret = bt_storage_save_gatt_cache_remote_device(BT_KVDB_BLEGATTDBHASH, remote, sizeof(remote_device_gatt_properties_t), size);
+    if (ret < 0) {
+        BT_LOGE("save BLE gatt cache device failed!");
+        items = 0;
+        property_list(callback_gatthash_count, &items);
+        bt_storage_delete(BT_KVDB_BLEGATTDBHASH, items, prop_name);
+    }
+
+    free(prop_name);
+    return ret;
+}
+
 int bt_storage_save_le_bonded_device(remote_device_le_properties_t* remote, uint16_t size)
 {
     uint16_t items = 0;
@@ -477,6 +550,38 @@ int bt_storage_load_bonded_device(load_storage_callback_t cb)
     prop_value->value_length = total_length;
 
     storage_get_key(BT_KVDB_BTBOND, (void*)prop_value, sizeof(remote_device_properties_t), (void*)cb);
+    free(prop_value);
+
+    return 0;
+}
+
+int bt_storage_load_gatt_cache_device(load_storage_callback_t cb)
+{
+    uint16_t items;
+    bt_property_value_t* prop_value;
+    uint32_t total_length;
+    int ret;
+
+    items = 0;
+    ret = property_list(callback_gatthash_count, &items);
+    if (ret < 0) {
+        BT_LOGE("property_list failed!");
+        return ret;
+    }
+
+    total_length = items * sizeof(remote_device_gatt_properties_t);
+    prop_value = malloc(sizeof(bt_property_value_t) + total_length);
+    if (!prop_value) {
+        BT_LOGE("property malloc failed!");
+        return -ENOMEM;
+    }
+
+    prop_value->key = BT_KVDB_BLEGATTDBHASH;
+    prop_value->items = items;
+    prop_value->offset = 0;
+    prop_value->value_length = total_length;
+
+    storage_get_key(BT_KVDB_BLEGATTDBHASH, (void*)prop_value, sizeof(remote_device_gatt_properties_t), (void*)cb);
     free(prop_value);
 
     return 0;
