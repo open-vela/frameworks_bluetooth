@@ -726,6 +726,15 @@ config BLUETOOTH_GATTS_MAX_CONNECTIONS
 config BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
 	int "GATT Server max number of attributes contained in a table"
 	default 10
+
+config BLUETOOTH_GATTS_CACHE_SUPPORT
+	bool "Enable GATT Server Cache Support"
+	default y
+	depends on BLUETOOTH_BLE_SUPPORT
+	help
+		Enable internal GATT attribute table hash comparison.
+		On reconnect, trusted devices may receive Service Changed indications
+		if attribute changes are detected.
 endif # BLUETOOTH_GATT_SERVER
 
 menuconfig BLUETOOTH_SPP
