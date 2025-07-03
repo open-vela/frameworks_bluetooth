@@ -1155,6 +1155,23 @@ static void handle_discovery_event(void* data)
     free(data);
 }
 
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+static void handle_adapter_to_profile_event(void* data)
+{
+    profile_msg_t* msg;
+
+    if (!data) {
+        return;
+    }
+
+    msg = (profile_msg_t*)data;
+
+    service_manager_processmsg(msg);
+
+    free(msg);
+}
+#endif
+
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
 static void process_le_address_update_evt(bt_address_t* addr, ble_addr_type_t type)
 {

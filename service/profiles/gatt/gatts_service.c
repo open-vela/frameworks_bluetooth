@@ -433,6 +433,32 @@ static bt_status_t if_gatts_shutdown(profile_on_shutdown_t cb)
     return BT_STATUS_SUCCESS;
 }
 
+static void if_gatts_process_msg(profile_msg_t* msg)
+{
+    if (!msg) {
+        return;
+    }
+
+    switch (msg->event) {
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+    case PROFILE_EVT_GATTS_REQUEST_DB_HASH: {
+        bt_address_t* addr = (bt_address_t*)msg->data.data;
+        if (!addr) {
+            BT_LOGE("received null address");
+            break;
+        }
+
+        BT_ADDR_LOG("GATTS-DB-HASH-REQUEST to:%s, force_update:%d", addr, msg->data.valuebool);
+        bt_sal_gatt_server_get_database_hash(PRIMARY_ADAPTER, addr, msg->data.valuebool);
+        break;
+    }
+#endif
+
+    default:
+        break;
+    }
+}
+
 static void if_gatts_cleanup(void)
 {
     g_gatts_manager.started = false;
@@ -909,7 +935,7 @@ static const profile_service_t gatts_service = {
     .init = if_gatts_init,
     .startup = if_gatts_startup,
     .shutdown = if_gatts_shutdown,
-    .process_msg = NULL,
+    .process_msg = if_gatts_process_msg,
     .get_state = if_gatts_get_state,
     .get_profile_interface = get_gatts_profile_interface,
     .cleanup = if_gatts_cleanup,

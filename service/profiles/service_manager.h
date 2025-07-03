@@ -36,6 +36,7 @@ typedef enum {
     PROFILE_EVT_HFP_OFFLOADING,
     PROFILE_EVT_LEA_OFFLOADING,
     PROFILE_EVT_REMOTE_DETACH,
+    PROFILE_EVT_GATTS_REQUEST_DB_HASH,
 } profile_event_t;
 
 typedef struct
