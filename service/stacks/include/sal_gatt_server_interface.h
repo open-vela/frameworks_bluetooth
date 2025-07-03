@@ -48,6 +48,7 @@ bt_status_t bt_sal_gatt_server_set_phy(bt_controller_id_t id, bt_address_t* addr
 #ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
 bt_status_t bt_sal_gatt_server_get_database_hash(bt_controller_id_t id, bt_address_t* addr, bool force_update);
 #endif
+bt_status_t bt_sal_gatt_server_change_indicate(bt_controller_id_t id, uint16_t start_hdl, uint16_t end_hdl);
 void bt_sal_gatt_server_connection_changed_callback(bt_address_t* addr, uint16_t connection_interval, uint16_t peripheral_latency,
     uint16_t supervision_timeout);
 void bt_sal_gatt_server_connection_state_changed_callback(bt_controller_id_t id, bt_address_t* addr, profile_connection_state_t state);
