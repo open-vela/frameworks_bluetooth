@@ -36,6 +36,7 @@
 #define BT_KEY_BLEBOND "BleBonded"
 #define BT_KEY_BLEWHITELIST "WhiteList"
 #define BT_KEY_BLERESOLVINGLIST "ResolvingList"
+#define BT_KEY_BLEGATTHASH "BleGattDBHash"
 
 typedef struct {
     uint16_t items;
@@ -148,6 +149,11 @@ static int bt_storage_save_remote_device(const char* key, void* value, uint16_t 
     return ret;
 }
 
+int bt_storage_save_gatt_cache_device(remote_device_gatt_properties_t* remote, uint16_t size)
+{
+    return bt_storage_save_remote_device(BT_KEY_BLEGATTHASH, remote, sizeof(*remote), size);
+}
+
 int bt_storage_save_bonded_device(remote_device_properties_t* remote, uint16_t size)
 {
     return bt_storage_save_remote_device(BT_KEY_BTBOND, remote, sizeof(*remote), size);
@@ -161,6 +167,11 @@ int bt_storage_save_whitelist(remote_device_le_properties_t* remote, uint16_t si
 int bt_storage_save_le_bonded_device(remote_device_le_properties_t* remote, uint16_t size)
 {
     return bt_storage_save_remote_device(BT_KEY_BLEBOND, remote, sizeof(*remote), size);
+}
+
+int bt_storage_load_gatt_cache_device(load_storage_callback_t cb)
+{
+    return storage_get_key(BT_KEY_BLEGATTHASH, NULL, NULL, (void*)cb);
 }
 
 int bt_storage_load_bonded_device(load_storage_callback_t cb)
