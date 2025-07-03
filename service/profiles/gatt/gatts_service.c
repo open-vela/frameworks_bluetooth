@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#include "adapter_internel.h"
 #include "bt_list.h"
 #include "bt_profile.h"
 #include "gatts_event.h"
@@ -236,6 +237,50 @@ static gatts_op_t* gatts_pendops_execute_out(gatts_manager_t* manager, gatts_req
     return NULL;
 }
 
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+static void gatts_process_database_hash_evt(struct gatts_db_hash_evt_param* evt)
+{
+    bt_status_t status;
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+    uint8_t stored_hash[BT_GATT_HASH_LEN] = { 0 };
+
+    if (!evt) {
+        BT_LOGE("%s, invalid param", __func__);
+        return;
+    }
+
+    bt_addr_ba2str(&evt->addr, addr_str);
+    BT_LOGD("GATTS-DB-HASH-EVENT from:%s, force_update:%d, hash:"
+            "%02X%02X%02X%02X%02X%02X%02X%02X"
+            "%02X%02X%02X%02X%02X%02X%02X%02X",
+        addr_str, evt->force_update,
+        evt->hash[0], evt->hash[1], evt->hash[2], evt->hash[3],
+        evt->hash[4], evt->hash[5], evt->hash[6], evt->hash[7],
+        evt->hash[8], evt->hash[9], evt->hash[10], evt->hash[11],
+        evt->hash[12], evt->hash[13], evt->hash[14], evt->hash[15]);
+
+    status = adapter_get_device_gatt_hash(&evt->addr, evt->addr_type, stored_hash);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGD("No bonded, skip.");
+        return;
+    }
+
+    if (!memcmp(stored_hash, evt->hash, sizeof(stored_hash))) {
+        BT_LOGD("DB Hash unchanged, no action.");
+        return;
+    }
+
+    if (evt->force_update) {
+        BT_LOGI("Force update");
+    } else {
+        BT_LOGI("Hash mismatch, trigger Service Changed: %s", addr_str);
+        /* TODO: Call Service Change Indicate Sal interface */
+    }
+
+    adapter_set_device_gatt_hash((bt_address_t*)&evt->addr, evt->addr_type, evt->hash);
+}
+#endif
+
 static void gatts_process_message(void* data)
 {
     gatts_service_t* service;
@@ -265,6 +310,10 @@ static void gatts_process_message(void* data)
         profile_connection_state_t connect_state = msg->param.connect_change.state;
         BT_ADDR_LOG("GATTS-CONNECTION-STATE-EVENT from:%s, state:%d", &msg->param.connect_change.addr, connect_state);
         if (connect_state == PROFILE_STATE_CONNECTED) {
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+            /* Always fetch latest db hash when gatt connected */
+            bt_sal_gatt_server_get_database_hash(PRIMARY_ADAPTER, &msg->param.connect_change.addr, false);
+#endif
             GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_connected, &msg->param.connect_change.addr);
         } else if (connect_state == PROFILE_STATE_DISCONNECTED) {
             GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_disconnected, &msg->param.connect_change.addr);
@@ -343,6 +392,7 @@ static void gatts_process_message(void* data)
         break;
 #ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
     case GATTS_EVENT_DB_HASH_AVAILABLE:
+        gatts_process_database_hash_evt(&msg->param.db_hash);
         break;
 #endif
 
