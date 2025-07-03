@@ -549,6 +549,32 @@ static void whitelist_device_loaded(void* data, uint16_t length, uint16_t items)
     BT_LOGD("ble whitelist device cnt: %" PRIu16, items);
 }
 
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+static void gatt_hash_device_loaded(void* data, uint16_t length, uint16_t items)
+{
+    if (data && items) {
+        char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+
+        remote_device_gatt_properties_t* remote = (remote_device_gatt_properties_t*)data;
+
+        BT_LOGD("load GATT hash state successfully:");
+        for (int i = 0; i < items; i++) {
+            bt_device_t* device = adapter_find_create_le_device(&remote->addr, remote->addr_type);
+            device_set_gatt_hash(device, remote->hash);
+            device_set_flags(device, DFLAG_GATT_HASH_VALID);
+            bt_addr_ba2str(&remote->addr, addr_str);
+            uint8_t* h = remote->hash;
+            BT_LOGD("GATT HASH[%d], Addr:[%s] Hash: [%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X]",
+                i, addr_str,
+                h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7],
+                h[8], h[9], h[10], h[11], h[12], h[13], h[14], h[15]);
+            remote++;
+        }
+    }
+    BT_LOGD("gatt hash device cnt: %" PRIu16, items);
+}
+#endif
+
 static void le_bonded_device_loaded(void* data, uint16_t length, uint16_t items)
 {
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
@@ -657,6 +683,36 @@ static void adapter_update_whitelist(void)
 
     bt_storage_save_whitelist(remotes, size);
 }
+
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+static void adapter_update_gatt_hash(void)
+{
+    bt_list_t* list = g_adapter_service.le_devices;
+    bt_list_node_t* node;
+
+    int size = get_devices_cnt(DFLAG_GATT_HASH_VALID, BT_TRANSPORT_BLE);
+    if (!size) {
+        bt_storage_save_gatt_cache_device(NULL, 0);
+        return;
+    }
+
+    BT_LOGD("%s", __func__);
+
+    remote_device_gatt_properties_t remotes[size];
+    size = 0;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        bt_device_t* device = bt_list_node(node);
+        if (device_check_flag(device, DFLAG_GATT_HASH_VALID)) {
+            remote_device_gatt_properties_t* remote = &remotes[size];
+            device_get_gatt_hash_property(device, remote);
+            size++;
+        }
+    }
+
+    bt_storage_save_gatt_cache_device(remotes, size);
+}
+#endif
 #endif
 
 static void adapter_save_properties(void)
@@ -798,6 +854,11 @@ static void process_bond_state_change_evt(bt_address_t* addr, bond_state_t state
 #endif
             // device_set_connection_state(device, CONNECTION_STATE_ENCRYPTED_LE);
         } else if (state == BOND_STATE_NONE) {
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+            device_clear_flag(device, DFLAG_GATT_HASH_VALID);
+            device_delete_gatt_hash(device);
+            adapter_update_gatt_hash();
+#endif
             device_delete_smp_key(device);
         }
 #else
@@ -1462,6 +1523,14 @@ void adapter_on_le_enabled(bool enablebt)
     if (ret < 0) {
         whitelist_device_loaded(NULL, 0, 0);
     }
+
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+    /* set gatt db hash ? */
+    ret = bt_storage_load_gatt_cache_device(gatt_hash_device_loaded);
+    if (ret < 0) {
+        gatt_hash_device_loaded(NULL, 0, 0);
+    }
+#endif
 
     /* set resolvinglist list ? */
     /* enable cdtk */
