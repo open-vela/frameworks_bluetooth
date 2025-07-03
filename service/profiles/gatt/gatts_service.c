@@ -341,6 +341,11 @@ static void gatts_process_message(void* data)
         GATTS_CALLBACK_FOREACH(g_gatts_manager.services, gatts_service_t, on_conn_param_changed, &msg->param.conn_param.addr,
             msg->param.conn_param.interval, msg->param.conn_param.latency, msg->param.conn_param.timeout);
         break;
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+    case GATTS_EVENT_DB_HASH_AVAILABLE:
+        break;
+#endif
+
     default: {
 
     } break;
@@ -843,6 +848,18 @@ void if_gatts_on_notification_sent(bt_address_t* addr, uint16_t element_id, gatt
     memcpy(&msg->param.change_send.addr, addr, sizeof(bt_address_t));
     gatts_send_message(msg);
 }
+
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+void if_gatts_on_database_hash(bt_address_t* addr, ble_addr_type_t addr_type, const uint8_t* hash, bool force_update)
+{
+    gatts_msg_t* msg = gatts_msg_new(GATTS_EVENT_DB_HASH_AVAILABLE, 0);
+    memcpy(&msg->param.db_hash.addr, addr, sizeof(bt_address_t));
+    memcpy(msg->param.db_hash.hash, hash, BT_GATT_HASH_LEN);
+    msg->param.db_hash.addr_type = addr_type;
+    msg->param.db_hash.force_update = force_update;
+    gatts_send_message(msg);
+}
+#endif
 
 void if_gatts_on_phy_read(bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy)
 {
