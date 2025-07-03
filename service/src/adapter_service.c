@@ -1329,7 +1329,8 @@ static void process_le_bonded_device_update_evt(remote_device_le_properties_t* p
         device_set_local_csrk(device, prop->local_csrk);
 
 #ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
-        if (device_is_connected(device)) {
+        if (device_is_connected(device) && !device_check_flag(device, DFLAG_GATT_HASH_VALID)) {
+            /* only first bonded request db hash to update gatt cache */
             msg = (profile_msg_t*)zalloc(sizeof(profile_msg_t));
             if (msg) {
                 msg->event = PROFILE_EVT_GATTS_REQUEST_DB_HASH;
@@ -3499,6 +3500,44 @@ bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
 {
     return bt_sal_set_afh_channel_classification(PRIMARY_ADAPTER, central_frequency, band_width, number);
 }
+
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+bt_status_t adapter_set_device_gatt_hash(bt_address_t* addr, ble_addr_type_t addr_type, const uint8_t* hash)
+{
+    bt_device_t* device = adapter_find_create_le_device(addr, addr_type);
+
+    if (!device_is_bonded(device)) {
+        return BT_STATUS_FAIL;
+    }
+
+    device_set_gatt_hash(device, hash);
+    device_set_flags(device, DFLAG_GATT_HASH_VALID);
+    adapter_update_gatt_hash();
+
+    return BT_STATUS_SUCCESS;
+}
+
+bt_status_t adapter_get_device_gatt_hash(bt_address_t* addr, ble_addr_type_t addr_type, uint8_t* out_hash)
+{
+    uint8_t* hash;
+    bt_device_t* device = adapter_find_create_le_device(addr, addr_type);
+
+    if (!device_is_bonded(device)) {
+        return BT_STATUS_FAIL;
+    }
+
+    if (!device_check_flag(device, DFLAG_GATT_HASH_VALID)) {
+        /* No valid hash (OTA or first bond), return all zeros */
+        memset(out_hash, 0, BT_GATT_HASH_LEN);
+        return BT_STATUS_SUCCESS;
+    }
+
+    hash = device_get_gatt_hash(device);
+    memcpy(out_hash, hash, BT_GATT_HASH_LEN);
+
+    return BT_STATUS_SUCCESS;
+}
+#endif
 
 void adapter_get_support_profiles(void) { }
 

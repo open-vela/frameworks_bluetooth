@@ -360,6 +360,10 @@ bt_status_t adapter_switch_role(bt_address_t* addr, bt_link_role_t role);
 bt_status_t adapter_set_afh_channel_classification(uint16_t central_frequency,
     uint16_t band_width,
     uint16_t number);
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+bt_status_t adapter_set_device_gatt_hash(bt_address_t* addr, ble_addr_type_t addr_type, const uint8_t* hash);
+bt_status_t adapter_get_device_gatt_hash(bt_address_t* addr, ble_addr_type_t addr_type, uint8_t* out_hash);
+#endif
 void* adapter_register_callback(void* remote, const adapter_callbacks_t* adapter_cbs);
 bool adapter_unregister_callback(void** remote, void* cookie);
 
