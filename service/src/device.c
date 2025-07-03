@@ -67,6 +67,9 @@ typedef struct remote_device {
     uint8_t local_csrk[16];
     ble_phy_type_t tx_phy;
     ble_phy_type_t rx_phy;
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+    uint8_t gatt_hash[BT_GATT_HASH_LEN];
+#endif
     // uint8_t scan_repetition_mode;
     // uint16_t clock_offset;
 } remote_device_t;
@@ -385,6 +388,13 @@ uint8_t* device_get_link_key(bt_device_t* device)
     return device->remote.link_key;
 }
 
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+uint8_t* device_get_gatt_hash(bt_device_t* device)
+{
+    return device->remote.gatt_hash;
+}
+#endif
+
 void device_set_link_key(bt_device_t* device, bt_128key_t link_key)
 {
     memcpy(device->remote.link_key, link_key, sizeof(bt_128key_t));
@@ -572,6 +582,15 @@ void device_get_le_property(bt_device_t* device, remote_device_le_properties_t* 
     memcpy(prop->local_csrk, device->remote.local_csrk, 16);
 }
 
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+void device_get_gatt_hash_property(bt_device_t* device, remote_device_gatt_properties_t* prop)
+{
+    memcpy(&prop->addr, &device->remote.addr, sizeof(bt_address_t));
+    prop->addr_type = device->remote.addr_type;
+    memcpy(prop->hash, device->remote.gatt_hash, sizeof(prop->hash));
+}
+#endif
+
 void device_set_flags(bt_device_t* device, uint32_t flags)
 {
     device->flags |= flags;
@@ -603,6 +622,18 @@ void device_delete_smp_key(bt_device_t* device)
     device_clear_flag(device, DFLAG_LE_KEY_SET);
     memset(device->remote.smp_data, 0, sizeof(device->remote.smp_data));
 }
+
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+void device_set_gatt_hash(bt_device_t* device, const uint8_t* hash)
+{
+    memcpy(device->remote.gatt_hash, hash, sizeof(device->remote.gatt_hash));
+}
+
+void device_delete_gatt_hash(bt_device_t* device)
+{
+    memset(device->remote.gatt_hash, 0, sizeof(device->remote.gatt_hash));
+}
+#endif
 
 static int linkkey_dump(bt_device_t* device, char* str)
 {

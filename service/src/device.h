@@ -27,6 +27,7 @@
 #define DFLAG_CONNECTED (1 << 5)
 #define DFLAG_BONDED (1 << 6)
 #define DFLAG_LE_KEY_SET (1 << 7)
+#define DFLAG_GATT_HASH_VALID (1 << 8)
 
 typedef struct bt_device bt_device_t;
 
@@ -85,7 +86,15 @@ bool device_check_flag(bt_device_t* device, uint32_t flag);
 uint8_t* device_get_smp_key(bt_device_t* device);
 void device_set_smp_key(bt_device_t* device, uint8_t* smp_key);
 void device_delete_smp_key(bt_device_t* device);
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+void device_set_gatt_hash(bt_device_t* device, const uint8_t* hash);
+void device_delete_gatt_hash(bt_device_t* device);
+uint8_t* device_get_gatt_hash(bt_device_t* device);
+#endif
 void device_get_le_property(bt_device_t* device, remote_device_le_properties_t* prop);
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+void device_get_gatt_hash_property(bt_device_t* device, remote_device_gatt_properties_t* prop);
+#endif
 void device_dump(bt_device_t* device);
 
 #endif /* __REMOTE_DEVICE_H__ */
