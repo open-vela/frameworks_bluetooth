@@ -274,7 +274,7 @@ static void gatts_process_database_hash_evt(struct gatts_db_hash_evt_param* evt)
         BT_LOGI("Force update");
     } else {
         BT_LOGI("Hash mismatch, trigger Service Changed: %s", addr_str);
-        /* TODO: Call Service Change Indicate Sal interface */
+        bt_sal_gatt_server_change_indicate(PRIMARY_ADAPTER, 0x0001, 0xFFFF);
     }
 
     adapter_set_device_gatt_hash((bt_address_t*)&evt->addr, evt->addr_type, evt->hash);
