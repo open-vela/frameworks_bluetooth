@@ -94,6 +94,13 @@ typedef struct {
 } __attribute__((aligned(4))) remote_device_le_properties_v5_0_3_t;
 
 typedef struct {
+    bt_address_t addr;
+    ble_addr_type_t addr_type;
+    // only can add member after "addr_type" if needed, see function bt_storage_save_le_remote_device for reasons.
+    uint8_t hash[BT_GATT_HASH_LEN];
+} __attribute__((aligned(4))) remote_device_gatt_properties_v5_0_3_t;
+
+typedef struct {
     char name[BT_LOC_NAME_MAX_LEN + 1];
     uint8_t pad[3];
     uint32_t class_of_device;
@@ -105,6 +112,7 @@ typedef struct {
 
 typedef remote_device_properties_v5_0_3_t remote_device_properties_t;
 typedef remote_device_le_properties_v5_0_3_t remote_device_le_properties_t;
+typedef remote_device_gatt_properties_v5_0_3_t remote_device_gatt_properties_t;
 typedef adapter_storage_v5_0_3_t adapter_storage_t;
 
 #endif /* __BLUETOOTH_DEFINE_H_ */
