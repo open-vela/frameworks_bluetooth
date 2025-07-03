@@ -3539,7 +3539,9 @@ bt_status_t adapter_get_device_gatt_hash(bt_address_t* addr, ble_addr_type_t add
 }
 #endif
 
-void adapter_get_support_profiles(void) { }
+void adapter_get_support_profiles(void)
+{
+}
 
 void adapter_dump(void)
 {
