@@ -1243,6 +1243,9 @@ out:
 
 static void process_le_bonded_device_update_evt(remote_device_le_properties_t* props, uint16_t bonded_devices_cnt)
 {
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+    profile_msg_t* msg;
+#endif
     bt_device_t* device;
     remote_device_le_properties_t* prop = props;
     char addr_str[BT_ADDR_STR_LENGTH];
@@ -1263,6 +1266,20 @@ static void process_le_bonded_device_update_evt(remote_device_le_properties_t* p
         device_set_smp_key(device, prop->smp_key);
         device_set_identity_address(device, (bt_address_t*)prop->smp_key);
         device_set_local_csrk(device, prop->local_csrk);
+
+#ifdef CONFIG_BLUETOOTH_GATTS_CACHE_SUPPORT
+        if (device_is_connected(device)) {
+            msg = (profile_msg_t*)zalloc(sizeof(profile_msg_t));
+            if (msg) {
+                msg->event = PROFILE_EVT_GATTS_REQUEST_DB_HASH;
+                msg->data.data = device_get_address(device);
+                msg->data.valuebool = true; /* force_update */
+                do_in_service_loop(handle_adapter_to_profile_event, msg);
+            } else {
+                BT_LOGE("DB hash request allocate failed");
+            }
+        }
+#endif
 
         bt_addr_ba2str(&prop->addr, addr_str);
         uint8_t* ltk = &prop->smp_key[12];
