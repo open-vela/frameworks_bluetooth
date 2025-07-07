@@ -143,7 +143,7 @@ static bt_status_t bt_cm_send_dlf_command(cm_dlf_link_t* dlf_link, bool is_enabl
     len = size - sizeof(ogf) - sizeof(ocf);
     STREAM_TO_UINT8(ogf, payload);
     STREAM_TO_UINT16(ocf, payload);
-    return bt_sal_send_hci_command(ogf, ocf, len, payload, bt_hci_event_callback, dlf_operation);
+    return bt_sal_send_hci_command(PRIMARY_ADAPTER, ogf, ocf, len, payload, bt_hci_event_callback, dlf_operation);
 }
 
 void bt_cm_dlf_cleanup(void)
@@ -171,7 +171,7 @@ bt_status_t bt_cm_enable_dlf(bt_address_t* peer_addr)
         return BT_STATUS_FAIL;
     }
 
-    connection_handle = bt_sal_get_acl_link_handle(peer_addr, BT_TRANSPORT_BLE);
+    connection_handle = bt_sal_get_acl_connection_handle(PRIMARY_ADAPTER, peer_addr, BT_TRANSPORT_BLE);
     if (connection_handle == BT_INVALID_CONNECTION_HANDLE)
         return BT_STATUS_PARM_INVALID;
 
