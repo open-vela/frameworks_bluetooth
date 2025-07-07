@@ -114,7 +114,7 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_LE_DLF_SUPPORT)
-      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/connectino_manager_dlf.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/connection_manager_dlf.c)
     endif()
 
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/*.c)
