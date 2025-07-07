@@ -509,6 +509,13 @@ config BLUETOOTH_TOOLS
 	default n
 	select BLUETOOTH_FRAMEWORK
 
+config BLUETOOTH_DFX
+	bool "Enable bluetooth DFX"
+	default n
+	depends on DFX_EVENT
+	help
+		Enable bluetooth DFX
+
 choice
 	prompt "select bt vendor"
 	default BLUETOOTH_VENDOR_NONE
