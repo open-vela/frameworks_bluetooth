@@ -90,6 +90,11 @@ config BLUETOOTH_BLE_SCAN
 	bool "LE scan support"
 	default n
 
+config BLUETOOTH_BLE_SCAN_FILTER
+	bool "LE scan filter support"
+	default n
+	depends on BLUETOOTH_BLE_SCAN
+
 config BLUETOOTH_BLE_AUDIO
        bool "LE audio support"
        default n
@@ -187,6 +192,10 @@ config BLUETOOTH_GATTC_MAX_CONNECTIONS
 	int "GATT client max connections"
 	default 8
 
+config BLUETOOTH_GATTS_MAX_CONNECTIONS
+	int "GATT sever max connections"
+	default 4
+
 config BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
 	int "GATT server max number of attributes contained in a table"
 	default 10
@@ -203,7 +212,7 @@ config BLUETOOTH_AVRCP_CONTROL
 config BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
 	bool "Audio/Video Remote Control Profile support absolute volume"
 	default n
-	depends on (BLUETOOTH_AVRCP_CONTROL || BLUETOOTH_AVRCP_TARGET) && BLUELET_AVRCP_TG_ABSVOL_SUPPORT
+	depends on (BLUETOOTH_AVRCP_CONTROL || BLUETOOTH_AVRCP_TARGET) && ((BLUETOOTH_STACK_BREDR_BLUELET && BLUELET_AVRCP_TG_ABSVOL_SUPPORT) || (BLUETOOTH_STACK_BREDR_ZBLUE))
 
 config BLUETOOTH_A2DP
 	bool "Advanced Audio Distribution Profile"
@@ -284,6 +293,11 @@ config BLUETOOTH_SPP_MAX_CONNECTIONS
 config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
 	int "SPP server max connections"
 	default 8
+
+config BLUETOOTH_SPP_RPMSG_NET
+	bool "SPP rpmsg net support"
+	default n
+	depends on NET_RPMSG
 endif
 
 config BLUETOOTH_HID_DEVICE
@@ -329,6 +343,12 @@ choice
 	config BLUETOOTH_FRAMEWORK_SOCKET_IPC
 		bool "use socket ipc api"
 endchoice
+
+config BLUETOOTH_FRAMEWORK_ASYNC
+	bool "Enable bluetooth framework async api"
+	default n
+	help
+		Enable bluetooth framework async api
 endif #BLUETOOTH_FRAMEWORK
 
 if BLUETOOTH_FRAMEWORK_SOCKET_IPC
@@ -401,7 +421,7 @@ config BLUETOOTH_SERVICE_LOG_LEVEL
 
 config BLUETOOTH_SERVICE_HCI_UART_NAME
 	string "HCI uart driver name"
-	default "/dev/ttyBT0"
+	default "/dev/ttyHCI0"
 
 if BLUETOOTH_BREDR_SUPPORT
 choice
@@ -430,6 +450,31 @@ choice
 		bool "not support ble stack"
 endchoice
 
+config GATT_CLIENT_SERVICE_MAX
+    int "Maximum number of discovered services per connection"
+    default 20
+    depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
+    help
+		The maximum number of GATT services that can be stored per BLE connection
+		when using the ZBLUE stack.
+
+config GATT_CLIENT_ELEMENT_MAX
+    int "Maximum number of discovered GATT attributes per connection"
+    default 200
+    depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
+    help
+		The maximum number of GATT attribute elements (e.g., characteristics
+		and descriptors) that can be stored per BLE connection
+		when using the ZBLUE stack.
+
+config GATT_CLIENT_CHAR_PER_SERVICE_MAX
+    int "Maximum number of characteristics per service"
+    default 100
+    depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
+    help
+        The maximum number of characteristics that can be discovered and stored
+        under a single GATT service when using the ZBLUE stack.
+
 config BLUETOOTH_LE_SCANNER_MAX_NUM
 	int "LE scanner max register number"
 	default 2
@@ -445,21 +490,66 @@ config BLUETOOTH_LE_ADVERTISER_MAX_NUM
 config BLUETOOTH_LE_AUDIO_SUPPORT
 	bool "LE audio support"
 	default n
+
+config LE_DLF_SUPPORT
+	bool "LE DLF support"
+	default n
+
 endif #BLUETOOTH_BLE_SUPPORT
 endif #BLUETOOTH_SERVICE
+
+config MAX_SNOOP_FILE_SIZE
+	int "Maximum size of the snoop log file"
+	default 1048576
+	help
+		Maximum size of the snoop log file
 
 config BLUETOOTH_TOOLS
 	bool "Enable bluetooth profile test tools"
 	default n
 	select BLUETOOTH_FRAMEWORK
 
+config APP_BT_SAMPLE_CODE
+	bool "Enable bluetooth sample code"
+	default n
+	select BLUETOOTH_FRAMEWORK
+
+config APP_BT_SAMPLE_CODE_BASIC
+	bool "bluetooth basic sample code"
+	default n
+	depends on APP_BT_SAMPLE_CODE
+config APP_BT_SAMPLE_CODE_ENABLE
+	bool "bluetooth enable sample code"
+	default n
+	depends on APP_BT_SAMPLE_CODE
+config APP_BT_SAMPLE_CODE_DISCOVERY
+	bool "bluetooth discovery sample code"
+	default n
+	depends on APP_BT_SAMPLE_CODE
+config APP_BT_SAMPLE_CODE_CREATEBOND
+	bool "bluetooth createbond sample code"
+	default n
+	depends on APP_BT_SAMPLE_CODE
+config APP_BT_SAMPLE_CODE_ACCEPTBOND
+	bool "bluetooth acceptbond sample code"
+	default n
+	depends on APP_BT_SAMPLE_CODE
+config BLUETOOTH_DFX
+	bool "Enable bluetooth DFX"
+	default n
+	depends on DFX_EVENT
+	help
+		Enable bluetooth DFX
+
 choice
 	prompt "select bt vendor"
-	default BLUETOOTH_VENDOR_BES
+	default BLUETOOTH_VENDOR_NONE
 	config BLUETOOTH_VENDOR_BES
 		bool "bluetooth vendor BES"
 	config BLUETOOTH_VENDOR_ACTIONS
 		bool "bluetooth vendor ACTIONS"
+	config BLUETOOTH_VENDOR_NONE
+		bool "bluetooth vendor NONE"
 endchoice
 
 choice

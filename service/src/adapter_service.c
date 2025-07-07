@@ -39,6 +39,7 @@
 #include "bt_adapter.h"
 #include "bt_addr.h"
 #include "bt_device.h"
+#include "bt_dfx.h"
 #include "bt_list.h"
 #include "bt_profile.h"
 #include "bt_uuid.h"
@@ -784,6 +785,23 @@ static const char* acl_connection_str(connection_state_t state)
     }
 }
 
+static void bt_dfx_connection_state_changed(uint32_t hci_reason_code, uint8_t transport)
+{
+    if (transport == BT_TRANSPORT_BREDR) {
+        switch (hci_reason_code) {
+        case HCI_ERR_CONNECTION_TIMEOUT:
+            BT_DFX_BR_GAP_DISCONN_ERROR(BT_DFXE_CONN_TIMEOUT);
+            break;
+        case HCI_ERR_CONNECTION_FAILED_TO_BE_ESTABLISHED:
+            BT_DFX_BR_GAP_DISCONN_ERROR(BT_DFXE_CONN_FAILED_TO_BE_ESTABLISHED);
+            break;
+        default:
+            break;
+        }
+        return;
+    }
+}
+
 static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_param_t* acl_params)
 {
     bt_device_t* device;
@@ -834,6 +852,8 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
             break;
         }
     }
+
+    bt_dfx_connection_state_changed(acl_params->hci_reason_code, acl_params->transport);
 
     if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED)
         bt_cm_process_disconnect_event(addr, acl_params->transport);
@@ -1815,11 +1835,13 @@ bt_status_t adapter_start_discovery(uint32_t timeout)
     adapter_lock();
     if (adapter->adapter_state != BT_ADAPTER_STATE_ON) {
         adapter_unlock();
+        BT_DFX_BR_GAP_INQUIRY_ERROR(BT_DFXE_ADAPTER_STATE_NOT_ON);
         return BT_STATUS_NOT_ENABLED;
     }
 
     if (adapter->is_discovering) {
         adapter_unlock();
+        BT_DFX_BR_GAP_INQUIRY_ERROR(BT_DFXE_REPEATED_ATTEMPT);
         return BT_STATUS_FAIL;
     }
 
