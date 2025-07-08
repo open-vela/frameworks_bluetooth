@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
+#define LOG_TAG "snoop_filter"
+
 #include <stdlib.h>
 
 #include "utils/btsnoop_filter.h"
@@ -29,45 +31,71 @@ static g_snoop_filter_global_t g_snoop_filter = { 0 };
 #define L2CAP_NULL_IDENTIFIER_CID 0x0000
 #define L2CAP_SIGNALING_CHANNEL_CID 0x0001
 #define L2CAP_LE_SIGNALING_CHANNEL_CID 0x0005
+#define RFCOMM_DLCI0 0x00 /* MULTIPLEXER_CONTROL_CHANNEL */
 
-#define GET_HCI_H4_PLAYLOAD(pkt) ((pkt) + 1)
-#define GET_HCI_H4_PLAYLOAD_SIZE(pkt_size) ((pkt_size)-1)
-#define GET_L2CAP_PACKET_DATA(pkt) ((pkt) + 6)
-#define GET_L2CAP_PACKET_PLATLOAD_SIZE(pkt_size) ((pkt_size)-6)
-#define GET_HCI_EVENT_PLAYLOAD(pkt) ((pkt) + 2)
-#define GET_HCI_EVENT_PLAYLOAD_SIZE(pkt_size) ((pkt_size)-2)
-#define GET_L2CAP_COMMAND_DATA(pkt) ((pkt) + 4)
-#define GET_L2CAP_COMMAND_DATA_SIZE(pkt_size) ((pkt_size)-4)
+#define GET_HCI_H4_PAYLOAD(h4_pkt) ((h4_pkt) + 1)
+#define GET_HCI_H4_PAYLOAD_SIZE(h4_pkt_size) ((h4_pkt_size)-1)
+#define GET_L2CAP_PACKET_PAYLOAD(hci_pkt) ((hci_pkt) + 8)
+#define GET_L2CAP_PACKET_PAYLOAD_SIZE(hci_pkt_size) ((hci_pkt_size)-8)
 
 #define GET_HCI_TYPE(hci_pkt) ((hci_pkt)[0])
-#define GET_HCI_EVENT_CODE(evt) ((evt)[0])
-#define GET_ACL_CONNECTION_HANDLE_FROM_ACL_DATA(pkt) (((uint16_t*)(pkt))[0] & 0x0FFF)
-#define GET_PB_FLAG_FROM_ACL_DATA(pkt) (((pkt)[1] >> 4) & 0x3)
-#define GET_ACL_CONNECTION_HANDLE_FROM_CONNECT_COMPELTE_EVENT(pkt) (*(uint16_t*)(((uint8_t*)(pkt)) + 3))
-#define GET_STATUS_FROM_CONNECT_COMPELTE_EVENT(pkt) (((uint8_t*)(pkt))[2])
-#define GET_ACL_CONNECTION_HANDLE_FROM_DISCONNECT_COMPELTE_EVENT(pkt) (*(uint16_t*)(((uint8_t*)(pkt)) + 3))
-#define GET_STATUS_FROM_DISCONNECT_COMPELTE_EVENT(pkt) (((uint8_t*)(pkt))[2])
-#define GET_L2CAP_CID(pkt) (*(uint16_t*)(pkt))
-#define GET_L2CAP_COMMAND_CODE(pkt) ((pkt)[2])
-#define GET_L2CAP_CONNECTION_REQ_COMMAND_PSM(pkt) (*(uint16_t*)(((uint8_t*)(pkt)) + 6))
-#define GET_L2CAP_CONNECTION_REQ_COMMAND_SCID(pkt) (*(uint16_t*)(((uint8_t*)(pkt)) + 8))
-#define GET_L2CAP_CONNECTION_RSP_COMMAND_SCID(pkt) (*(uint16_t*)(((uint8_t*)(pkt)) + 8))
-#define GET_L2CAP_CONNECTION_RSP_COMMAND_DCID(pkt) (*(uint16_t*)(((uint8_t*)(pkt)) + 6))
-#define GET_L2CAP_CONNECTION_RSP_COMMAND_STATUS(pkt) (*(uint16_t*)(((uint8_t*)(pkt)) + 10))
-#define GET_L2CAP_DISCONNECTION_RSP_COMMAND_SCID(pkt) (*(uint16_t*)(((uint8_t*)(pkt)) + 6))
-#define GET_L2CAP_DISCONNECTION_RSP_COMMAND_DCID(pkt) (*(uint16_t*)(((uint8_t*)(pkt)) + 8))
+#define GET_HCI_EVENT_CODE(hci_evt) ((hci_evt)[0])
+#define GET_ACL_CONNECTION_HANDLE_FROM_ACL_DATA(acl_data) (((uint16_t*)(acl_data))[0] & 0x0FFF)
+#define GET_PB_FLAG_FROM_ACL_DATA(acl_data) (((acl_data)[1] >> 4) & 0x3)
+#define GET_ACL_CONNECTION_HANDLE_FROM_CONNECT_COMPELTE_EVENT(hci_evt) (*(uint16_t*)(((uint8_t*)(hci_evt)) + 3))
+#define GET_STATUS_FROM_CONNECT_COMPELTE_EVENT(hci_evt) (((uint8_t*)(hci_evt))[2])
+#define GET_ACL_CONNECTION_HANDLE_FROM_DISCONNECT_COMPELTE_EVENT(hci_evt) (*(uint16_t*)(((uint8_t*)(hci_evt)) + 3))
+#define GET_STATUS_FROM_DISCONNECT_COMPELTE_EVENT(hci_evt) (((uint8_t*)(hci_evt))[2])
+#define GET_L2CAP_CID(acl_data) (*(uint16_t*)(((uint8_t*)(acl_data)) + 6))
+#define GET_L2CAP_COMMAND_CODE(l2cap_pdu) ((l2cap_pdu)[0])
+#define GET_L2CAP_CONNECTION_REQ_COMMAND_PSM(l2cap_pdu) (*(uint16_t*)(((uint8_t*)(l2cap_pdu)) + 4))
+#define GET_L2CAP_CONNECTION_REQ_COMMAND_SCID(l2cap_pdu) (*(uint16_t*)(((uint8_t*)(l2cap_pdu)) + 6))
+#define GET_L2CAP_CONNECTION_RSP_COMMAND_DCID(l2cap_pdu) (*(uint16_t*)(((uint8_t*)(l2cap_pdu)) + 4))
+#define GET_L2CAP_CONNECTION_RSP_COMMAND_SCID(l2cap_pdu) (*(uint16_t*)(((uint8_t*)(l2cap_pdu)) + 6))
+#define GET_L2CAP_CONNECTION_RSP_COMMAND_RESULT(l2cap_pdu) (*(uint16_t*)(((uint8_t*)(l2cap_pdu)) + 8))
+#define GET_L2CAP_DISCONNECTION_RSP_COMMAND_DCID(l2cap_pdu) (*(uint16_t*)(((uint8_t*)(l2cap_pdu)) + 4))
+#define GET_L2CAP_DISCONNECTION_RSP_COMMAND_SCID(l2cap_pdu) (*(uint16_t*)(((uint8_t*)(l2cap_pdu)) + 6))
+#define GET_RFCOMM_DLCI(l2cap_pdu) ((((uint8_t*)(l2cap_pdu))[4]) >> 2)
 
-#define GET_L2CAP_RSP_DERIVE_CIDS(pkt, is_receive, local_cid, peer_cid, get_scid, get_dcid) \
-    do {                                                                                    \
-        if (is_receive) {                                                                   \
-            local_cid = get_scid(pkt);                                                      \
-            peer_cid = get_dcid(pkt);                                                       \
-        } else {                                                                            \
-            local_cid = get_dcid(pkt);                                                      \
-            peer_cid = get_scid(pkt);                                                       \
-            response_cids_info.peer_cid = peer_cid;                                         \
-        }                                                                                   \
+#define GET_L2CAP_RSP_DERIVE_CIDS(pkt, is_receive, local_cid, peer_cid, get_scid, get_dcid)  \
+    do {                                                                                     \
+        if (is_receive) {                                                                    \
+            local_cid = get_scid(pkt);                                                       \
+            peer_cid = get_dcid(pkt);                                                        \
+        } else {                                                                             \
+            local_cid = get_dcid(pkt);                                                       \
+            peer_cid = get_scid(pkt);                                                        \
+            response_cids_info.peer_cid = peer_cid;                                          \
+        }                                                                                    \
+        BT_LOGD("%s, local_cid = 0x%04x, peer_cid = 0x%04x", __func__, local_cid, peer_cid); \
     } while (0)
+
+typedef struct {
+    uint16_t local_cid;
+    uint16_t peer_cid;
+} btsnoop_l2cap_channel_cids_t;
+
+typedef struct {
+    uint16_t connection_handle;
+    btsnoop_l2cap_channel_cids_t avdtp_signal_ch;
+    btsnoop_l2cap_channel_cids_t rfcomm_ch;
+    btsnoop_l2cap_channel_cids_t prev_cids;
+    bt_list_t* filter_cids;
+    void* context;
+} btsnoop_filter_acl_info_t;
+
+typedef struct {
+    btsnoop_l2cap_channel_cids_t cids;
+    uint16_t psm;
+    btsnoop_l2cap_state_t state;
+} btsnoop_filter_l2cap_channel_info_t;
+
+typedef struct {
+    btsnoop_filter_acl_info_t* acl_info;
+    btsnoop_l2cap_channel_cids_t cids;
+    uint32_t pkt_size;
+    uint8_t* pkt;
+} btsnoop_filter_l2cap_context_t;
 
 static void free_l2cap_cid_item(void* data)
 {
@@ -125,26 +153,53 @@ static btsnoop_filter_l2cap_channel_info_t* malloc_filter_cid_item(uint16_t loca
 
 static bool compare_l2cap_local_and_remote_cid_item(void* data, void* context)
 {
-    btsnoop_filter_l2cap_channel_info_t* tmp_data = (btsnoop_filter_l2cap_channel_info_t*)data;
-    btsnoop_l2cap_channel_cids_t* tmp_context = (btsnoop_l2cap_channel_cids_t*)context;
+    btsnoop_filter_l2cap_channel_info_t* l2cap = (btsnoop_filter_l2cap_channel_info_t*)data;
+    btsnoop_l2cap_channel_cids_t* cids = (btsnoop_l2cap_channel_cids_t*)context;
 
-    return (tmp_data->cids.local_cid == tmp_context->local_cid) && (tmp_data->cids.peer_cid == tmp_context->peer_cid);
+    return (l2cap->cids.local_cid == cids->local_cid) && (l2cap->cids.peer_cid == cids->peer_cid);
 }
 
 static bool compare_l2cap_local_or_remote_cid_item(void* data, void* context)
 {
-    btsnoop_filter_l2cap_channel_info_t* tmp_data = (btsnoop_filter_l2cap_channel_info_t*)data;
-    btsnoop_l2cap_channel_cids_t* tmp_context = (btsnoop_l2cap_channel_cids_t*)context;
+    btsnoop_filter_l2cap_channel_info_t* l2cap = (btsnoop_filter_l2cap_channel_info_t*)data;
+    btsnoop_l2cap_channel_cids_t* cids = (btsnoop_l2cap_channel_cids_t*)context;
 
-    return (tmp_data->cids.local_cid == tmp_context->local_cid) || (tmp_data->cids.peer_cid == tmp_context->peer_cid);
+    return (l2cap->cids.local_cid == cids->local_cid) || (l2cap->cids.peer_cid == cids->peer_cid);
 }
 
-static bool compare_l2cap_local_cid_item(void* data, void* context)
+static bool handle_rfcomm_data(btsnoop_filter_l2cap_context_t* l2cap_context)
 {
-    btsnoop_filter_l2cap_channel_info_t* tmp_data = (btsnoop_filter_l2cap_channel_info_t*)data;
-    btsnoop_l2cap_channel_cids_t* tmp_context = (btsnoop_l2cap_channel_cids_t*)context;
+    if (!l2cap_context->pkt_size)
+        return false; /* keep abnormal data */
 
-    return (tmp_data->cids.local_cid == tmp_context->local_cid);
+    if (GET_RFCOMM_DLCI(l2cap_context->pkt) == RFCOMM_DLCI0)
+        return false; /* keep signaling message */
+
+    /* TODO: return false on unfiltered channels, e.g., HFP */
+
+    return true;
+}
+
+static bool handle_l2cap_tx_data(void* data, void* context)
+{
+    btsnoop_filter_l2cap_channel_info_t* l2cap = (btsnoop_filter_l2cap_channel_info_t*)data;
+    btsnoop_filter_l2cap_context_t* l2cap_context = (btsnoop_filter_l2cap_context_t*)context;
+
+    if (l2cap_context->cids.peer_cid == l2cap_context->acl_info->rfcomm_ch.peer_cid)
+        return handle_rfcomm_data(l2cap_context);
+
+    return (l2cap->cids.peer_cid == l2cap_context->cids.peer_cid);
+}
+
+static bool handle_l2cap_rx_data(void* data, void* context)
+{
+    btsnoop_filter_l2cap_channel_info_t* l2cap = (btsnoop_filter_l2cap_channel_info_t*)data;
+    btsnoop_filter_l2cap_context_t* l2cap_context = (btsnoop_filter_l2cap_context_t*)context;
+
+    if (l2cap_context->cids.local_cid == l2cap_context->acl_info->rfcomm_ch.local_cid)
+        return handle_rfcomm_data(l2cap_context);
+
+    return (l2cap->cids.local_cid == l2cap_context->cids.local_cid);
 }
 
 static int handle_hci_command(uint8_t* pkt, uint32_t pkt_size)
@@ -153,10 +208,9 @@ static int handle_hci_command(uint8_t* pkt, uint32_t pkt_size)
     return 0;
 }
 
-static btsnoop_filter_flag_t handle_rfcomm_data(uint8_t* pkt, uint32_t pkt_size)
+static btsnoop_filter_flag_t handle_rfcomm_request(const btsnoop_filter_l2cap_context_t* l2cap_context)
 {
-    // TODO: handle_rfcomm_data
-    return BTSNOOP_FILTER_UNFILTER;
+    return BTSNOOP_FILTER_SPP; // TODO: BTSNOOP_FILTER_SPP | BTSNOOP_FILTER_HFP
 }
 
 static bool check_channel_need_filtered(btsnoop_filter_acl_info_t* acl_info, uint16_t psm, uint16_t scid, uint8_t is_receive)
@@ -164,7 +218,8 @@ static bool check_channel_need_filtered(btsnoop_filter_acl_info_t* acl_info, uin
     assert(acl_info);
     switch (psm) {
     case BTSNOOP_PSM_AVDTP:
-        if ((acl_info->avdtp_signal_ch.peer_cid != L2CAP_NULL_IDENTIFIER_CID) || (acl_info->avdtp_signal_ch.local_cid != L2CAP_NULL_IDENTIFIER_CID))
+        if ((acl_info->avdtp_signal_ch.peer_cid != L2CAP_NULL_IDENTIFIER_CID)
+            || (acl_info->avdtp_signal_ch.local_cid != L2CAP_NULL_IDENTIFIER_CID))
             return true;
 
         if (is_receive)
@@ -172,25 +227,46 @@ static bool check_channel_need_filtered(btsnoop_filter_acl_info_t* acl_info, uin
         else
             acl_info->avdtp_signal_ch.local_cid = scid;
 
+        BT_LOGD("%s[%d], AVDTP signaling hannel recognized scid = {%d:%d}", __func__, __LINE__,
+            acl_info->avdtp_signal_ch.local_cid, acl_info->avdtp_signal_ch.peer_cid);
+
         break;
+    case BTSNOOP_PSM_RFCOMM:
+        if ((acl_info->rfcomm_ch.peer_cid != L2CAP_NULL_IDENTIFIER_CID)
+            || (acl_info->rfcomm_ch.local_cid != L2CAP_NULL_IDENTIFIER_CID)) {
+            BT_LOGE("%s, duplicated RFCOMM", __func__);
+            return false; // This shall never happens.
+        }
+
+        if (is_receive)
+            acl_info->rfcomm_ch.peer_cid = scid;
+        else
+            acl_info->rfcomm_ch.local_cid = scid;
+
+        BT_LOGD("%s[%d], RFCOMM channel recognized scid = {%d:%d}", __func__, __LINE__,
+            acl_info->rfcomm_ch.local_cid, acl_info->rfcomm_ch.peer_cid);
+
+        return true;
     default:
+        BT_LOGD("%s[%d], unrecognized psm: %d", __func__, __LINE__, psm);
         break;
     }
     return false;
 }
 
-static void handle_l2cap_connection_request(btsnoop_filter_acl_info_t* acl_info, uint8_t is_receive, uint8_t* pkt, uint32_t pkt_size)
+static void handle_l2cap_connection_request(btsnoop_filter_acl_info_t* acl_info, uint8_t is_receive,
+    const btsnoop_filter_l2cap_context_t* l2cap_context)
 {
     assert(acl_info);
     uint16_t psm, scid;
     btsnoop_filter_flag_t filter_flag = BTSNOOP_FILTER_MAX;
     btsnoop_filter_l2cap_channel_info_t* data = NULL;
 
-    psm = GET_L2CAP_CONNECTION_REQ_COMMAND_PSM(pkt);
+    psm = GET_L2CAP_CONNECTION_REQ_COMMAND_PSM(l2cap_context->pkt);
 
     switch (psm) {
     case BTSNOOP_PSM_RFCOMM:
-        filter_flag = handle_rfcomm_data(pkt, pkt_size);
+        filter_flag = handle_rfcomm_request(l2cap_context);
         break;
     case BTSNOOP_PSM_AVDTP:
         filter_flag = BTSNOOP_FILTER_A2DP_AUDIO;
@@ -209,7 +285,7 @@ static void handle_l2cap_connection_request(btsnoop_filter_acl_info_t* acl_info,
         return;
     }
 
-    scid = GET_L2CAP_CONNECTION_REQ_COMMAND_SCID(pkt);
+    scid = GET_L2CAP_CONNECTION_REQ_COMMAND_SCID(l2cap_context->pkt);
 
     if (!check_channel_need_filtered(acl_info, psm, scid, is_receive)) {
         return;
@@ -226,6 +302,8 @@ static void handle_l2cap_connection_request(btsnoop_filter_acl_info_t* acl_info,
         return;
     }
 
+    BT_LOGD("%s, psm %d added to snoop filter", __func__, psm);
+
     bt_list_add_tail(acl_info->filter_cids, data);
 }
 
@@ -236,17 +314,23 @@ static void handle_acl_info_connection_response(btsnoop_filter_acl_info_t* acl_i
         acl_info->avdtp_signal_ch.peer_cid = peer_cid;
     } else if (acl_info->avdtp_signal_ch.peer_cid == peer_cid) {
         acl_info->avdtp_signal_ch.local_cid = local_cid;
+    } else if (acl_info->rfcomm_ch.local_cid == local_cid) {
+        acl_info->rfcomm_ch.peer_cid = peer_cid;
+    } else if (acl_info->rfcomm_ch.peer_cid == peer_cid) {
+        acl_info->rfcomm_ch.local_cid = local_cid;
     }
 }
 
-static void handle_l2cap_connection_response(btsnoop_filter_acl_info_t* acl_info, uint8_t is_receive, uint8_t* pkt, uint32_t pkt_size)
+static void handle_l2cap_connection_response(btsnoop_filter_acl_info_t* acl_info, uint8_t is_receive,
+    const btsnoop_filter_l2cap_context_t* l2cap_context)
 {
     assert(acl_info);
-    uint16_t status, local_cid, peer_cid;
+    uint16_t result, local_cid, peer_cid;
     btsnoop_filter_l2cap_channel_info_t* channel_info = NULL;
     btsnoop_l2cap_channel_cids_t response_cids_info = { 0 };
 
-    GET_L2CAP_RSP_DERIVE_CIDS(pkt, is_receive, local_cid, peer_cid, GET_L2CAP_CONNECTION_RSP_COMMAND_SCID, GET_L2CAP_CONNECTION_RSP_COMMAND_DCID);
+    GET_L2CAP_RSP_DERIVE_CIDS(l2cap_context->pkt, is_receive, local_cid, peer_cid,
+        GET_L2CAP_CONNECTION_RSP_COMMAND_SCID, GET_L2CAP_CONNECTION_RSP_COMMAND_DCID);
 
     if (is_receive) {
         response_cids_info.local_cid = local_cid;
@@ -254,10 +338,10 @@ static void handle_l2cap_connection_response(btsnoop_filter_acl_info_t* acl_info
         response_cids_info.peer_cid = peer_cid;
     }
 
-    status = GET_L2CAP_CONNECTION_RSP_COMMAND_STATUS(pkt);
+    result = GET_L2CAP_CONNECTION_RSP_COMMAND_RESULT(l2cap_context->pkt);
 
-    switch (status) {
-    case BTSNOOP_L2CAP_RSP_STATUS_SUCCESSFUL:
+    switch (result) {
+    case BTSNOOP_L2CAP_RSP_RESULT_SUCCESSFUL:
         handle_acl_info_connection_response(acl_info, local_cid, peer_cid);
         channel_info = bt_list_find(acl_info->filter_cids, compare_l2cap_local_and_remote_cid_item, &response_cids_info);
         if (NULL == channel_info)
@@ -271,7 +355,7 @@ static void handle_l2cap_connection_response(btsnoop_filter_acl_info_t* acl_info
 
         channel_info->state = BTSNOOP_L2CAP_STATE_CONNECTED;
         break;
-    case BTSNOOP_L2CAP_RSP_STATUS_PENDING:
+    case BTSNOOP_L2CAP_RSP_RESULT_PENDING:
         break;
     default:
         channel_info = bt_list_find(acl_info->filter_cids, compare_l2cap_local_and_remote_cid_item, &response_cids_info);
@@ -289,78 +373,110 @@ static void handle_acl_info_disconnection_response(btsnoop_filter_acl_info_t* ac
     if ((acl_info->avdtp_signal_ch.local_cid == local_cid) && (acl_info->avdtp_signal_ch.peer_cid == peer_cid)) {
         acl_info->avdtp_signal_ch.peer_cid = L2CAP_NULL_IDENTIFIER_CID;
         acl_info->avdtp_signal_ch.local_cid = L2CAP_NULL_IDENTIFIER_CID;
+    } else if ((acl_info->rfcomm_ch.local_cid == local_cid) && (acl_info->rfcomm_ch.peer_cid == peer_cid)) {
+        acl_info->rfcomm_ch.peer_cid = L2CAP_NULL_IDENTIFIER_CID;
+        acl_info->rfcomm_ch.local_cid = L2CAP_NULL_IDENTIFIER_CID;
     }
 }
 
-static void handle_l2cap_disconnection_response(btsnoop_filter_acl_info_t* acl_info, uint8_t is_receive, uint8_t* pkt, uint32_t pkt_size)
+static void handle_l2cap_disconnection_response(btsnoop_filter_acl_info_t* acl_info, uint8_t is_receive,
+    const btsnoop_filter_l2cap_context_t* l2cap_context)
 {
     assert(acl_info);
     uint16_t local_cid, peer_cid;
     btsnoop_filter_l2cap_channel_info_t* channel_info = NULL;
     btsnoop_l2cap_channel_cids_t response_cids_info = { 0 };
 
-    GET_L2CAP_RSP_DERIVE_CIDS(pkt, is_receive, local_cid, peer_cid, GET_L2CAP_DISCONNECTION_RSP_COMMAND_SCID, GET_L2CAP_DISCONNECTION_RSP_COMMAND_DCID);
+    GET_L2CAP_RSP_DERIVE_CIDS(l2cap_context->pkt, is_receive, local_cid, peer_cid,
+        GET_L2CAP_DISCONNECTION_RSP_COMMAND_SCID, GET_L2CAP_DISCONNECTION_RSP_COMMAND_DCID);
     response_cids_info.local_cid = local_cid;
     response_cids_info.peer_cid = peer_cid;
     channel_info = bt_list_find(acl_info->filter_cids, compare_l2cap_local_or_remote_cid_item, &response_cids_info);
 
     handle_acl_info_disconnection_response(acl_info, local_cid, peer_cid);
+
+    if (!channel_info)
+        return;
+
+    BT_LOGD("%s, psm %d removed from snoop filter", __func__, channel_info->psm);
+
     bt_list_remove(acl_info->filter_cids, channel_info);
 }
 
-static void handle_l2cap_signaling_channel_data(btsnoop_filter_acl_info_t* acl_info, uint8_t is_receive, uint8_t* pkt, uint32_t pkt_size)
+static bool handle_l2cap_signaling_channel_data(btsnoop_filter_acl_info_t* acl_info,
+    uint8_t is_receive, const btsnoop_filter_l2cap_context_t* l2cap_context)
 {
     assert(acl_info);
-    uint8_t command_code = GET_L2CAP_COMMAND_CODE(pkt);
 
-    switch (command_code) {
+    if (!l2cap_context->pkt_size)
+        return false;
+
+    switch (GET_L2CAP_COMMAND_CODE(l2cap_context->pkt)) {
     case BTSNOOP_L2CAP_CODE_CONNECTION_REQUEST:
-        handle_l2cap_connection_request(acl_info, is_receive, pkt, pkt_size);
+        handle_l2cap_connection_request(acl_info, is_receive, l2cap_context);
         break;
     case BTSNOOP_L2CAP_CODE_CONNECTION_RESPONSE:
-        handle_l2cap_connection_response(acl_info, is_receive, pkt, pkt_size);
+        handle_l2cap_connection_response(acl_info, is_receive, l2cap_context);
         break;
     case BTSNOOP_L2CAP_CODE_DISCONNECTION_RESPONSE:
-        handle_l2cap_disconnection_response(acl_info, is_receive, pkt, pkt_size);
+        handle_l2cap_disconnection_response(acl_info, is_receive, l2cap_context);
         break;
     default:
         break;
     }
+
+    return false; /* keep all signaling data */
 }
 
 static bool handle_acl_data(uint8_t is_receive, uint8_t* pkt, uint32_t pkt_size)
 {
-    btsnoop_l2cap_channel_cids_t acl_cids;
+    btsnoop_filter_l2cap_context_t l2cap_context = { 0 };
     uint16_t connection_handle;
     btsnoop_filter_acl_info_t* acl_info;
     uint8_t* l2cap_packet;
     uint32_t l2cap_pkt_size;
-    uint16_t acl_cid;
     uint8_t pb_flag;
 
-    l2cap_packet = GET_L2CAP_PACKET_DATA(pkt);
-    l2cap_pkt_size = GET_L2CAP_PACKET_PLATLOAD_SIZE(pkt_size);
+    l2cap_packet = GET_L2CAP_PACKET_PAYLOAD(pkt);
+    l2cap_pkt_size = GET_L2CAP_PACKET_PAYLOAD_SIZE(pkt_size);
     connection_handle = GET_ACL_CONNECTION_HANDLE_FROM_ACL_DATA(pkt);
     acl_info = bt_list_find(g_snoop_filter.acl_connection_list, compare_acl_connection_item, &connection_handle);
 
     if (NULL == acl_info) {
         BT_LOGE("The acl connection information does not exist.");
-        return false;
+        return true; /* remove unrecognized data to avoid flood issue */
     }
 
     pb_flag = GET_PB_FLAG_FROM_ACL_DATA(pkt);
     if (pb_flag == BTSNOOP_ACL_PB_CONTINUING) {
-        acl_cid = acl_info->prev_acl_cid;
+        l2cap_context.cids.local_cid = acl_info->prev_cids.local_cid;
+        l2cap_context.cids.peer_cid = acl_info->prev_cids.peer_cid;
     } else {
-        acl_cid = GET_L2CAP_CID(l2cap_packet);
-        acl_info->prev_acl_cid = acl_cid;
+        if (is_receive)
+            acl_info->prev_cids.local_cid = l2cap_context.cids.local_cid = GET_L2CAP_CID(pkt);
+        else
+            acl_info->prev_cids.peer_cid = l2cap_context.cids.peer_cid = GET_L2CAP_CID(pkt);
     }
+    l2cap_context.acl_info = acl_info;
+    l2cap_context.pkt = l2cap_packet;
+    l2cap_context.pkt_size = l2cap_pkt_size;
 
-    if (acl_cid == L2CAP_SIGNALING_CHANNEL_CID || acl_cid == L2CAP_LE_SIGNALING_CHANNEL_CID) {
-        handle_l2cap_signaling_channel_data(acl_info, is_receive, l2cap_packet, l2cap_pkt_size);
+    if (is_receive) {
+        if ((l2cap_context.cids.local_cid == L2CAP_SIGNALING_CHANNEL_CID)
+            || (l2cap_context.cids.local_cid == L2CAP_LE_SIGNALING_CHANNEL_CID)) {
+            return handle_l2cap_signaling_channel_data(acl_info, is_receive, &l2cap_context);
+        }
+
+        if (NULL != bt_list_find(acl_info->filter_cids, handle_l2cap_rx_data, &l2cap_context)) {
+            return true;
+        }
     } else {
-        acl_cids.local_cid = acl_cid;
-        if (NULL != bt_list_find(acl_info->filter_cids, compare_l2cap_local_cid_item, &acl_cids)) {
+        if ((l2cap_context.cids.peer_cid == L2CAP_SIGNALING_CHANNEL_CID)
+            || (l2cap_context.cids.peer_cid == L2CAP_LE_SIGNALING_CHANNEL_CID)) {
+            return handle_l2cap_signaling_channel_data(acl_info, is_receive, &l2cap_context);
+        }
+
+        if (NULL != bt_list_find(acl_info->filter_cids, handle_l2cap_tx_data, &l2cap_context)) {
             return true;
         }
     }
@@ -436,10 +552,16 @@ static bool handle_hci_event(uint8_t* pkt, uint32_t pkt_size)
     case BTSNOOP_DISCONNECT_COMPLETE:
         handle_hci_event_disconnect_complete(pkt, pkt_size);
         break;
+    case BTSNOOP_NUMBER_OF_COMPLETED_PACKETS:
+        if (g_snoop_filter.filter_items & (1ULL << BTSNOOP_FILTER_NOCP))
+            return true;
+
+        break;
     default:
         break;
     }
-    return 0;
+
+    return false;
 }
 
 static int handle_iso_data(uint8_t* hci_pkt, uint32_t hci_pkt_size)
@@ -454,8 +576,8 @@ bool filter_can_filter(uint8_t is_receive, uint8_t* hci_pkt, uint32_t hci_pkt_si
     uint8_t hci_type;
 
     hci_type = GET_HCI_TYPE(hci_pkt);
-    pkt_data = GET_HCI_H4_PLAYLOAD(hci_pkt);
-    pkt_size = GET_HCI_H4_PLAYLOAD_SIZE(hci_pkt_size);
+    pkt_data = GET_HCI_H4_PAYLOAD(hci_pkt);
+    pkt_size = GET_HCI_H4_PAYLOAD_SIZE(hci_pkt_size);
 
     switch (hci_type) {
     case BTSNOOP_HCI_TYPE_HCI_COMMAND:
@@ -499,6 +621,8 @@ int filter_set_filter_flag(btsnoop_filter_flag_t filter_flag)
 
     g_snoop_filter.filter_items |= 1ULL << filter_flag;
 
+    BT_LOGD("%s, filter_items = 0x%" PRIu64, __func__, g_snoop_filter.filter_items);
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -509,6 +633,8 @@ int filter_remove_filter_flag(btsnoop_filter_flag_t filter_flag)
     }
 
     g_snoop_filter.filter_items &= ~(1ULL << filter_flag);
+
+    BT_LOGD("%s, filter_items = 0x%" PRIu64, __func__, g_snoop_filter.filter_items);
 
     return BT_STATUS_SUCCESS;
 }
