@@ -148,4 +148,32 @@
             "%s:%s", "btA2dpOffloadError", reason);                                   \
     } while (0)
 
+// avrcp
+#if defined(CONFIG_BLUETOOTH_DFX) && (defined(CONFIG_BLUETOOTH_AVRCP_CONTROL) || defined(CONFIG_BLUETOOTH_AVRCP_TARGET))
+#define BT_DFX_SEND_AVRCP_EVENT(...) sendEventMisightF(__VA_ARGS__)
+#else
+#define BT_DFX_SEND_AVRCP_EVENT(...)
+#endif
+
+#define BT_DFX_AVRCP_CONN_ERROR(reason)                                               \
+    do {                                                                              \
+        BT_LOGE("BT_DFX: btAvrcpConnectError: %s", reason);                           \
+        BT_DFX_SEND_AVRCP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_AVRCP, BT_DFXC_AVRCP_CONN), \
+            "%s:%s", "btAvrcpConnectError", reason);                                  \
+    } while (0)
+
+#define BT_DFX_AVRCP_CTRL_ERROR(reason)                                               \
+    do {                                                                              \
+        BT_LOGE("BT_DFX: btAvrcpCtrlError: %s", reason);                              \
+        BT_DFX_SEND_AVRCP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_AVRCP, BT_DFXC_AVRCP_CTRL), \
+            "%s:%s", "btAvrcpCtrlError", reason);                                     \
+    } while (0)
+
+#define BT_DFX_AVRCP_VOL_ERROR(reason)                                               \
+    do {                                                                             \
+        BT_LOGE("BT_DFX: btAvrcpVolError: %s", reason);                              \
+        BT_DFX_SEND_AVRCP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_AVRCP, BT_DFXC_AVRCP_VOL), \
+            "%s:%s", "btAvrcpVolError", reason);                                     \
+    } while (0)
+
 #endif /* _BT_DFX_H_ */
