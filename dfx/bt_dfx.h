@@ -120,4 +120,32 @@
             "port", port, "role", role);                                              \
     } while (0)
 
+// a2dp
+#if defined(CONFIG_BLUETOOTH_DFX) && defined(CONFIG_BLUETOOTH_A2DP)
+#define BT_DFX_SEND_A2DP_EVENT(...) sendEventMisightF(__VA_ARGS__)
+#else
+#define BT_DFX_SEND_A2DP_EVENT(...)
+#endif
+
+#define BT_DFX_A2DP_CONN_ERROR(reason)                                             \
+    do {                                                                           \
+        BT_LOGE("BT_DFX: btA2dpConnectError: %s", reason);                         \
+        BT_DFX_SEND_A2DP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_A2DP, BT_DFXC_A2DP_CONN), \
+            "%s:%s", "btA2dpConnectError", reason);                                \
+    } while (0)
+
+#define BT_DFX_A2DP_MEDIA_ERROR(reason)                                             \
+    do {                                                                            \
+        BT_LOGE("BT_DFX: btA2dpMediaError: %s", reason);                            \
+        BT_DFX_SEND_A2DP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_A2DP, BT_DFXC_A2DP_MEDIA), \
+            "%s:%s", "btA2dpMediaError", reason);                                   \
+    } while (0)
+
+#define BT_DFX_A2DP_OFFLOAD_ERROR(reason)                                             \
+    do {                                                                              \
+        BT_LOGE("BT_DFX: btA2dpOffloadError: %s", reason);                            \
+        BT_DFX_SEND_A2DP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_A2DP, BT_DFXC_A2DP_OFFLOAD), \
+            "%s:%s", "btA2dpOffloadError", reason);                                   \
+    } while (0)
+
 #endif /* _BT_DFX_H_ */
