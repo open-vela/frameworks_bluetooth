@@ -129,6 +129,8 @@ static void zblue_on_link_key_notify(struct bt_conn* conn, uint8_t* key, uint8_t
 static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded);
 static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason);
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
+static void zblue_register_callback(void);
+static void zblue_unregister_callback(void);
 
 static struct bt_conn_cb g_conn_cbs = {
 #ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
@@ -411,6 +413,8 @@ static void zblue_on_ready_cb(bt_controller_id_t dev_id, int err)
         return;
     }
 
+    zblue_register_callback();
+
 #if defined(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE) && !defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
     state = BT_BREDR_STACK_STATE_ON;
 #else
@@ -492,16 +496,10 @@ static struct bt_br_discovery_cb g_br_discovery_cb = {
     .recv = zblue_on_discovery_recv_cb,
     .timeout = zblue_on_discovery_complete_cb
 };
-#endif
 
-/* service adapter layer for BREDR */
-bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
+static void zblue_register_callback(void)
 {
-#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    extern void z_sys_init(void);
     static struct bt_hfp_hf_cb hf_cb;
-    z_sys_init();
-    bt_sal_cm_conn_init();
 
     bt_br_discovery_cb_register(&g_br_discovery_cb);
     bt_conn_cb_register(&g_conn_cbs);
@@ -509,6 +507,23 @@ bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
     /* HFP HF for test */
     bt_hfp_hf_register(&hf_cb);
+}
+
+static void zblue_unregister_callback(void)
+{
+    bt_br_discovery_cb_unregister(&g_br_discovery_cb);
+    bt_conn_auth_cb_register(NULL);
+    bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
+}
+#endif
+
+/* service adapter layer for BREDR */
+bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
+{
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    extern void z_sys_init(void);
+    z_sys_init();
+    bt_sal_cm_conn_init();
 
     return BT_STATUS_SUCCESS;
 #else
@@ -519,9 +534,6 @@ bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
 void bt_sal_cleanup(void)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
-    bt_br_discovery_cb_unregister(&g_br_discovery_cb);
-    bt_conn_auth_cb_register(NULL);
-    bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
     bt_sal_cm_conn_cleanup();
 #endif
 }
@@ -534,6 +546,7 @@ bt_status_t bt_sal_enable(bt_controller_id_t id)
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (bt_is_ready()) {
         adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_ON);
+        zblue_register_callback();
         return BT_STATUS_SUCCESS;
     }
 
@@ -545,15 +558,22 @@ bt_status_t bt_sal_enable(bt_controller_id_t id)
 #endif
 }
 
-#if defined(CONFIG_BLUETOOTH_BREDR_SUPPORT) && !defined(CONFIG_BLUETOOTH_BLE_SUPPORT)
+#if defined(CONFIG_BLUETOOTH_BREDR_SUPPORT)
 static void STACK_CALL(brder_disable)(void* args)
 {
+    UNUSED(args);
+
+    zblue_unregister_callback();
+#ifndef CONFIG_BLUETOOTH_BLE_SUPPORT
     bt_disable();
+#endif
 }
 #endif
 
 bt_status_t bt_sal_disable(bt_controller_id_t id)
 {
+    sal_adapter_req_t* req;
+
     UNUSED(id);
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
@@ -562,14 +582,13 @@ bt_status_t bt_sal_disable(bt_controller_id_t id)
         adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
         return BT_STATUS_SUCCESS;
     }
-#ifndef CONFIG_BLUETOOTH_BLE_SUPPORT
-    sal_adapter_req_t* req;
+
     req = sal_adapter_req(id, NULL, STACK_CALL(brder_disable));
     if (!req) {
         return BT_STATUS_NOMEM;
     }
     sal_send_req(req);
-#endif
+
     adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
 
     return BT_STATUS_SUCCESS;
