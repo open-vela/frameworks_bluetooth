@@ -23,4 +23,6 @@
 #define BT_DFXE_CONN_TIMEOUT "btConnTimeout"
 #define BT_DFXE_CONN_FAILED_TO_BE_ESTABLISHED "btConnFailedToBeEstablished"
 
+#define BT_DFXE_SCANNER_EXCEED_MAX_NUM "btScannerExceedMaxNum"
+
 #endif /* _BT_DFX_REASON_H_ */
