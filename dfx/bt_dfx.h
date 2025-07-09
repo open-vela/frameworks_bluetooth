@@ -60,4 +60,41 @@
             "%s:%s", "brPairError", reason);                                         \
     } while (0)
 
+// ble
+#if defined(CONFIG_BLUETOOTH_DFX) && defined(CONFIG_BLUETOOTH_BLE_SUPPORT)
+#define BT_DFX_SEND_LE_GAP_EVENT(...) sendEventMisightF(__VA_ARGS__)
+#else
+#define BT_DFX_SEND_LE_GAP_EVENT(...)
+#endif
+
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
+#define BT_DFX_LE_GAP_SCAN_ERROR(reason)                                                 \
+    do {                                                                                 \
+        BT_LOGE("BT_DFX: bleScanError: %s", reason);                                     \
+        BT_DFX_SEND_LE_GAP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_LE_GAP, BT_DFXC_LE_GAP_SCAN), \
+            "%s:%s", "bleScanError", reason);                                            \
+    } while (0)
+#endif
+
+#define BT_DFX_LE_GAP_CONN_ERROR(reason)                                                 \
+    do {                                                                                 \
+        BT_LOGE("BT_DFX: bleConnectError: %s", reason);                                  \
+        BT_DFX_SEND_LE_GAP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_LE_GAP, BT_DFXC_LE_GAP_CONN), \
+            "%s:%s", "bleConnectError", reason);                                         \
+    } while (0)
+
+#define BT_DFX_LE_GAP_DISCONN_ERROR(reason)                                                 \
+    do {                                                                                    \
+        BT_LOGE("BT_DFX: bleDisconnectError: %s", reason);                                  \
+        BT_DFX_SEND_LE_GAP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_LE_GAP, BT_DFXC_LE_GAP_DISCONN), \
+            "%s:%s", "bleDisconnectError", reason);                                         \
+    } while (0)
+
+#define BT_DFX_LE_GAP_PAIR_ERROR(reason)                                                 \
+    do {                                                                                 \
+        BT_LOGE("BT_DFX: blePairError: %s", reason);                                     \
+        BT_DFX_SEND_LE_GAP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_LE_GAP, BT_DFXC_LE_GAP_PAIR), \
+            "%s:%s", "blePairError", reason);                                            \
+    } while (0)
+
 #endif /* _BT_DFX_H_ */
