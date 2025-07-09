@@ -56,6 +56,11 @@
 #define BT_DFXC_A2DP_MEDIA (10)
 #define BT_DFXC_A2DP_OFFLOAD (20)
 
+// group: BT_DFXG_AVRCP
+#define BT_DFXC_AVRCP_CONN (0)
+#define BT_DFXC_AVRCP_CTRL (10)
+#define BT_DFXC_AVRCP_VOL (20)
+
 #define BT_DFX_BUILD_CODE(group, subcode) ((BT_DFX_BASE_VELA_BLUETOOTH) + (group) + (subcode))
 
 #endif /* _BT_DFX_EVENT_H_ */

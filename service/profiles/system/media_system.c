@@ -59,8 +59,11 @@ int bt_media_get_music_volume_range(void)
     int status;
 
     status = media_policy_get_range(MEDIA_SCENARIO_MUSIC MEDIA_POLICY_VOLUME, &media_min_volume, &g_media_max_volume);
+    if (status)
+        BT_DFX_AVRCP_VOL_ERROR(BT_DFXE_GET_MEDIA_VOLUME_RANGE_FAIL);
 
     assert(!media_min_volume);
+
     return status;
 }
 
@@ -250,6 +253,7 @@ bt_status_t bt_media_set_music_volume(int volume)
 
     if (status) {
         BT_LOGE("set music stream volume fail: %d, status: %d", volume, status);
+        BT_DFX_AVRCP_VOL_ERROR(BT_DFXE_SET_MEDIA_VOLUME_FAIL);
         return status;
     }
 
@@ -264,6 +268,7 @@ bt_status_t bt_media_set_music_volume(int volume)
     status = am_set_volume(mAm, AM_STREAM_TYPE_MEDIA, media_volume_to_ui_volume(volume));
 
     if (status != 0) {
+        BT_DFX_AVRCP_VOL_ERROR(BT_DFXE_SET_UI_VOLUME_FAIL);
         BT_LOGE("am_set_volume err, status: %d", status);
     }
 
@@ -277,8 +282,10 @@ bt_status_t bt_media_set_music_volume(int volume)
 
 bt_status_t bt_media_get_music_volume(int* volume)
 {
-    if (media_policy_get_stream_volume(MEDIA_STREAM_MUSIC, volume) != 0)
+    if (media_policy_get_stream_volume(MEDIA_STREAM_MUSIC, volume) != 0) {
+        BT_DFX_AVRCP_VOL_ERROR(BT_DFXE_GET_STREAM_VOLUME_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
