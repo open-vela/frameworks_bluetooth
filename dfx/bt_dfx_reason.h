@@ -25,4 +25,8 @@
 
 #define BT_DFXE_SCANNER_EXCEED_MAX_NUM "btScannerExceedMaxNum"
 
+#define BT_DFXE_SPP_NOT_STARTUP "btSppNotStartup"
+#define BT_DFXE_SPP_SCN_ALLOC_FAIL "btSppScnAllocFail"
+#define BT_DFXE_SPP_NO_RESOURCES "btSppNoResources"
+
 #endif /* _BT_DFX_REASON_H_ */
