@@ -36,4 +36,17 @@
 #define BT_DFXE_OFFLOAD_START_TIMEOUT "btOffloadStartTimeout"
 #define BT_DFXE_OFFLOAD_HCI_UNSPECIFIED_ERROR "btOffloadHciUnspecifiedError"
 
+#define BT_DFXE_GET_MEDIA_VOLUME_RANGE_FAIL "btGetMediaVolumeRangeFail"
+#define BT_DFXE_SET_MEDIA_VOLUME_FAIL "btSetMediaVolumeFail"
+#define BT_DFXE_SET_UI_VOLUME_FAIL "btSetUiVolumeFail"
+#define BT_DFXE_MEDIA_PLAYER_CREATE_FAIL "btMediaPlayerCreateFail"
+#define BT_DFXE_GET_STREAM_VOLUME_FAIL "btGetStreamVolumeFail"
+#define BT_DFXE_MEDIA_SESSION_OPEN_FAIL "btMediaSessionOpenFail"
+#define BT_DFXE_MEDIA_SESSION_SET_EVENT_CB_FAIL "btMediaSessionSetEventCbFail"
+#define BT_DFXE_MEDIA_SESSION_START_FAIL "btMediaSessionStartFail"
+#define BT_DFXE_MEDIA_SESSION_STOP_FAIL "btMediaSessionStopFail"
+#define BT_DFXE_MEDIA_SESSION_PAUSE_FAIL "btMediaSessionPauseFail"
+#define BT_DFXE_MEDIA_SESSION_NEXT_SONG_FAIL "btMediaSessionNextSongFail"
+#define BT_DFXE_MEDIA_SESSION_PREV_SONG_FAIL "btMediaSessionPrevSongFail"
+
 #endif /* _BT_DFX_REASON_H_ */
