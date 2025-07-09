@@ -24,6 +24,7 @@
 #include "bt_addr.h"
 #include "bt_debug.h"
 #include "bt_device.h"
+#include "bt_dfx.h"
 #include "bt_list.h"
 #include "bt_profile.h"
 #include "bt_uuid.h"
@@ -1106,6 +1107,7 @@ static bt_status_t spp_server_start(void* handle, uint16_t scn, bt_uuid_t* uuid,
     pthread_mutex_lock(&g_spp_handle.spp_lock);
     if (!g_spp_handle.started) {
         ret = BT_STATUS_NOT_ENABLED;
+        BT_DFX_SPP_CONN_ERROR(BT_DFXE_SPP_NOT_STARTUP);
         goto unlock_exit;
     }
 
@@ -1116,6 +1118,7 @@ static bt_status_t spp_server_start(void* handle, uint16_t scn, bt_uuid_t* uuid,
     server = alloc_new_server(scn, uuid, handle);
     if (!server) {
         ret = BT_STATUS_NO_RESOURCES;
+        BT_DFX_SPP_CONN_ERROR(BT_DFXE_SPP_SCN_ALLOC_FAIL);
         goto unlock_exit;
     }
 
@@ -1180,6 +1183,7 @@ static bt_status_t spp_connect(void* handle, bt_address_t* addr, int16_t scn, bt
         uuid, false, handle);
     if (!device) {
         status = BT_STATUS_NO_RESOURCES;
+        BT_DFX_SPP_CONN_ERROR(BT_DFXE_SPP_NO_RESOURCES);
         goto unlock_exit;
     }
 

@@ -97,4 +97,27 @@
             "%s:%s", "blePairError", reason);                                            \
     } while (0)
 
+// spp
+#if defined(CONFIG_BLUETOOTH_DFX) && defined(CONFIG_BLUETOOTH_SPP)
+#define BT_DFX_SEND_SPP_EVENT(...) sendEventMisightF(__VA_ARGS__)
+#else
+#define BT_DFX_SEND_SPP_EVENT(...)
+#endif
+
+#define BT_DFX_SPP_CONN_ERROR(reason)                                              \
+    do {                                                                           \
+        BT_LOGE("BT_DFX: btSppConnectError: %s", reason);                          \
+        BT_DFX_SEND_SPP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_RFCOMM, BT_DFXC_SPP_CONN), \
+            "%s:%s", "btSppConnectError", reason);                                 \
+    } while (0)
+
+#define BT_DFX_SPP_DISCONN_ERROR(reason, scn, port, role)                             \
+    do {                                                                              \
+        BT_LOGE("BT_DFX: btSppDisconnected: %s, scn: %d, port: %d, role: %d",         \
+            reason, scn, port, role);                                                 \
+        BT_DFX_SEND_SPP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_RFCOMM, BT_DFXC_SPP_DISCONN), \
+            "%s:%s,%s:%d,%s:%d,%s:%s", "btSppDisconnected", reason, "scn", scn,       \
+            "port", port, "role", role);                                              \
+    } while (0)
+
 #endif /* _BT_DFX_H_ */
