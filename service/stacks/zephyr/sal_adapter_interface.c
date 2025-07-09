@@ -564,6 +564,7 @@ static void STACK_CALL(brder_disable)(void* args)
 
     zblue_unregister_callback();
 #ifndef CONFIG_BLUETOOTH_BLE_SUPPORT
+    bt_br_set_visibility(false, false);
     bt_disable();
 #endif
 }
