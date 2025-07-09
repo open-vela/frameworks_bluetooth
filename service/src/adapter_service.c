@@ -800,6 +800,19 @@ static void bt_dfx_connection_state_changed(uint32_t hci_reason_code, uint8_t tr
         }
         return;
     }
+
+    if (transport == BT_TRANSPORT_BLE) {
+        switch (hci_reason_code) {
+        case HCI_ERR_CONNECTION_TIMEOUT:
+            BT_DFX_LE_GAP_DISCONN_ERROR(BT_DFXE_CONN_TIMEOUT);
+            break;
+        case HCI_ERR_CONNECTION_FAILED_TO_BE_ESTABLISHED:
+            BT_DFX_LE_GAP_DISCONN_ERROR(BT_DFXE_CONN_FAILED_TO_BE_ESTABLISHED);
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_param_t* acl_params)
