@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "bt_dfx.h"
 #include "bt_status.h"
 #include <media_api.h>
 
@@ -149,8 +150,10 @@ bt_status_t bt_media_set_a2dp_available(void)
     int is_available = 0;
 
     /* check A2DP device is available */
-    if (media_policy_is_devices_available(MEDIA_DEVICE_A2DP, &is_available) != 0)
+    if (media_policy_is_devices_available(MEDIA_DEVICE_A2DP, &is_available) != 0) {
+        BT_DFX_A2DP_MEDIA_ERROR(BT_DFXE_GET_A2DP_AVAILABLE_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     if (is_available) {
         BT_LOGI("a2dp device had set available !");
@@ -158,8 +161,10 @@ bt_status_t bt_media_set_a2dp_available(void)
     }
 
     /* set A2DP device available */
-    if (media_policy_set_devices_available(MEDIA_DEVICE_A2DP) != 0)
+    if (media_policy_set_devices_available(MEDIA_DEVICE_A2DP) != 0) {
+        BT_DFX_A2DP_MEDIA_ERROR(BT_DFXE_SET_A2DP_AVAILABLE_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }

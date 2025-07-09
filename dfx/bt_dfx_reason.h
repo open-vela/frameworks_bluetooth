@@ -29,4 +29,11 @@
 #define BT_DFXE_SPP_SCN_ALLOC_FAIL "btSppScnAllocFail"
 #define BT_DFXE_SPP_NO_RESOURCES "btSppNoResources"
 
+#define BT_DFXE_A2DP_CONN_TIMEOUT "btA2dpConnTimeout"
+#define BT_DFXE_SET_A2DP_AVAILABLE_FAIL "btSetA2dpAvailableFail"
+#define BT_DFXE_GET_A2DP_AVAILABLE_FAIL "btGetA2dpAvailableFail"
+
+#define BT_DFXE_OFFLOAD_START_TIMEOUT "btOffloadStartTimeout"
+#define BT_DFXE_OFFLOAD_HCI_UNSPECIFIED_ERROR "btOffloadHciUnspecifiedError"
+
 #endif /* _BT_DFX_REASON_H_ */

@@ -54,6 +54,7 @@
 #include "adapter_internel.h"
 #include "audio_control.h"
 #include "bt_avrcp.h"
+#include "bt_dfx.h"
 #include "bt_utils.h"
 #include "connection_manager.h"
 #include "hci_parser.h"
@@ -314,6 +315,7 @@ static void a2dp_connect_timeout_callback(service_timer_t* timer, void* data)
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
     a2dp_event_t* a2dp_event;
 
+    BT_DFX_A2DP_CONN_ERROR(BT_DFXE_A2DP_CONN_TIMEOUT);
     a2dp_event = a2dp_event_new(CONNECT_TIMEOUT, &a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
@@ -344,6 +346,7 @@ static void a2dp_offload_config_timeout_callback(service_timer_t* timer, void* d
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)data;
     a2dp_event_t* a2dp_event;
 
+    BT_DFX_A2DP_OFFLOAD_ERROR(BT_DFXE_OFFLOAD_START_TIMEOUT);
     a2dp_event = a2dp_event_new(OFFLOAD_TIMEOUT, &a2dp_sm->addr);
     a2dp_state_machine_handle_event(a2dp_sm, a2dp_event);
     a2dp_event_destory(a2dp_event);
@@ -782,6 +785,8 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         status = hci_get_result(hci_event);
         if (status != HCI_SUCCESS) {
             BT_LOGE("A2DP_OFFLOAD_START fail, status:0x%0x", status);
+            BT_DFX_A2DP_OFFLOAD_ERROR(BT_DFXE_OFFLOAD_HCI_UNSPECIFIED_ERROR);
+
             a2dp_audio_on_started(a2dp_sm->peer_sep, false);
             break;
         }
