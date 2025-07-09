@@ -21,6 +21,7 @@
 
 #include "adapter_internel.h"
 #include "bluetooth.h"
+#include "bt_dfx.h"
 #include "bt_hash.h"
 #include "bt_le_scan.h"
 #include "bt_list.h"
@@ -306,6 +307,7 @@ static uint32_t register_scanner(scanner_t* scanner)
 
     if (scanner_manager.scanner_cnt == CONFIG_BLUETOOTH_LE_SCANNER_MAX_NUM) {
         delete_scanner(scanner);
+        BT_DFX_LE_GAP_SCAN_ERROR(BT_DFXE_SCANNER_EXCEED_MAX_NUM);
         return BT_SCAN_STATUS_SCANNER_REG_NOMEM;
     }
 
