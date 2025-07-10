@@ -82,6 +82,8 @@ static void zblue_on_auth_pairing_confirm(struct bt_conn* conn);
 #ifdef CONFIG_BT_SMP_APP_PAIRING_ACCEPT
 static enum bt_security_err zblue_on_pairing_accept(struct bt_conn* conn, const struct bt_conn_pairing_feat* const feat);
 #endif
+static void zblue_register_callback(void);
+static void zblue_unregister_callback(void);
 
 static struct bt_conn_cb g_conn_cbs = {
     .connected = zblue_on_connected,
@@ -464,6 +466,19 @@ static void zblue_on_bond_deleted(bt_controller_id_t id, const bt_addr_le_t* pee
     adapter_on_bond_state_changed(remote_addr, BOND_STATE_NONE, BT_TRANSPORT_BLE, BT_STATUS_SUCCESS, is_ctkd);
 }
 
+static void zblue_register_callback(void) {
+    bt_conn_cb_register(&g_conn_cbs);
+    bt_conn_le_auth_cb_register(&g_conn_auth_cbs);
+    bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
+}
+
+static void zblue_unregister_callback(void){
+    bt_conn_cb_register(NULL);
+    bt_conn_le_auth_cb_register(NULL);
+    bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
+}
+
+
 static void zblue_on_ready_cb(int err)
 {
     if (IS_ENABLED(CONFIG_SETTINGS)) {
@@ -476,6 +491,7 @@ static void zblue_on_ready_cb(int err)
         return;
     }
 
+    zblue_register_callback();
     adapter_on_adapter_state_changed(BLE_STACK_STATE_ON);
 }
 
@@ -554,18 +570,11 @@ bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal)
     z_sys_init();
 #endif
 
-    bt_conn_cb_register(&g_conn_cbs);
-    bt_conn_le_auth_cb_register(&g_conn_auth_cbs);
-    bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
-
     return BT_STATUS_SUCCESS;
 }
 
 void bt_sal_le_cleanup(void)
 {
-    bt_conn_cb_register(NULL);
-    bt_conn_le_auth_cb_register(NULL);
-    bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
 }
 
 bt_status_t bt_sal_le_enable(bt_controller_id_t id)
@@ -582,6 +591,7 @@ bt_status_t bt_sal_le_enable(bt_controller_id_t id)
 
 static void STACK_CALL(le_disable)(void* args)
 {
+    zblue_unregister_callback();
     bt_disable();
 }
 
