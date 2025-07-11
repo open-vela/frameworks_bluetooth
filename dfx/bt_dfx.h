@@ -218,4 +218,18 @@
             "%s:%s", "btHfpOffloadError", reason);                                 \
     } while (0)
 
+// hid
+#if defined(CONFIG_BLUETOOTH_DFX) && defined(CONFIG_BLUETOOTH_HID_DEVICE)
+#define BT_DFX_SEND_HID_EVENT(...) sendEventMisightF(__VA_ARGS__)
+#else
+#define BT_DFX_SEND_HID_EVENT(...)
+#endif
+
+#define BT_DFX_HID_CONN_ERROR(reason)                                           \
+    do {                                                                        \
+        BT_LOGE("BT_DFX: btHidConnectError: %s", reason);                       \
+        BT_DFX_SEND_HID_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_HID, BT_DFXC_HID_CONN), \
+            "%s:%s", "btHidConnectError", reason);                              \
+    } while (0)
+
 #endif /* _BT_DFX_H_ */
