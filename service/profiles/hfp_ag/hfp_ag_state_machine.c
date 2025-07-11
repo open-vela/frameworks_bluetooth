@@ -24,6 +24,7 @@
 #include "bluetooth.h"
 #include "bt_addr.h"
 #include "bt_device.h"
+#include "bt_dfx.h"
 #include "bt_hfp_ag.h"
 #include "bt_list.h"
 #include "bt_utils.h"
@@ -276,6 +277,7 @@ static bool at_cmd_check_test(bt_address_t* addr, const char* atcmd)
 static void connect_timeout(service_timer_t* timer, void* data)
 {
     ag_state_machine_t* agsm = (ag_state_machine_t*)data;
+    BT_DFX_HFP_CONN_ERROR(BT_DFXE_HFP_AG_CONN_TIMEOUT);
 
     hfp_ag_send_event(&agsm->addr, AG_CONNECT_TIMEOUT);
 }
@@ -433,6 +435,7 @@ static void ag_retry_callback(service_timer_t* timer, void* data)
             hsm_transition_to(sm, &connecting_state);
         } else {
             BT_LOGI("failed to connect %s", _addr_str);
+            BT_DFX_HFP_CONN_ERROR(BT_DFXE_HFP_AG_CONN_RETRY_FAIL);
         }
     }
 
@@ -1129,6 +1132,8 @@ static void hfp_ag_offload_timeout_callback(service_timer_t* timer, void* data)
 
     msg = hfp_ag_msg_new(AG_OFFLOAD_TIMEOUT_EVT, &agsm->addr);
     ag_state_machine_dispatch(agsm, msg);
+    BT_DFX_HFP_OFFLOAD_ERROR(BT_DFXE_OFFLOAD_START_TIMEOUT);
+
     hfp_ag_msg_destory(msg);
 }
 
@@ -1276,6 +1281,8 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         result = hci_get_result(hci_event);
         if (result != HCI_SUCCESS) {
             BT_LOGE("AG_OFFLOAD_START fail, status:0x%0x", result);
+            BT_DFX_HFP_OFFLOAD_ERROR(BT_DFXE_OFFLOAD_HCI_UNSPECIFIED_ERROR);
+
             audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
             if (bt_sal_hfp_ag_disconnect_audio(&agsm->addr) != BT_STATUS_SUCCESS) {
                 BT_ADDR_LOG("Terminate audio failed for :%s", &agsm->addr);

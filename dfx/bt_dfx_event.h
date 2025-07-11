@@ -61,6 +61,13 @@
 #define BT_DFXC_AVRCP_CTRL (10)
 #define BT_DFXC_AVRCP_VOL (20)
 
+// group: BT_DFXG_HFP
+#define BT_DFXC_HFP_CONN (0)
+#define BT_DFXC_HFP_SCO_CONN (10)
+#define BT_DFXC_HFP_VOL (20)
+#define BT_DFXC_HFP_MEDIA (30)
+#define BT_DFXC_HFP_OFFLOAD (40)
+
 #define BT_DFX_BUILD_CODE(group, subcode) ((BT_DFX_BASE_VELA_BLUETOOTH) + (group) + (subcode))
 
 #endif /* _BT_DFX_EVENT_H_ */

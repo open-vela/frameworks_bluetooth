@@ -22,6 +22,7 @@
 
 #include "audio_control.h"
 #include "bt_addr.h"
+#include "bt_dfx.h"
 #include "bt_hfp_hf.h"
 #include "bt_list.h"
 #include "bt_utils.h"
@@ -557,6 +558,7 @@ static bool disconnected_process_event(state_machine_t* sm, uint32_t event, void
 static void connect_timeout(service_timer_t* timer, void* data)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)data;
+    BT_DFX_HFP_CONN_ERROR(BT_DFXE_HFP_HF_CONN_TIMEOUT);
 
     hfp_hf_send_event(&hfsm->addr, HF_TIMEOUT);
 }
@@ -745,6 +747,7 @@ static void hf_retry_callback(service_timer_t* timer, void* data)
             hsm_transition_to(sm, &connecting_state);
         } else {
             BT_LOGI("failed to connect %s", _addr_str);
+            BT_DFX_HFP_CONN_ERROR(BT_DFXE_HFP_HF_CONN_RETRY_FAIL);
         }
     }
 
@@ -1322,6 +1325,8 @@ static void hfp_hf_offload_timeout_callback(service_timer_t* timer, void* data)
 
     msg = hfp_hf_msg_new(HF_OFFLOAD_TIMEOUT_EVT, &hfsm->addr);
     hf_state_machine_dispatch(hfsm, msg);
+    BT_DFX_HFP_OFFLOAD_ERROR(BT_DFXE_OFFLOAD_START_TIMEOUT);
+
     hfp_hf_msg_destroy(msg);
 }
 
@@ -1480,6 +1485,8 @@ static bool audio_on_process_event(state_machine_t* sm, uint32_t event, void* p_
         result = hci_get_result(hci_event);
         if (result != HCI_SUCCESS) {
             BT_LOGE("HF_OFFLOAD_START fail, status:0x%0x", result);
+            BT_DFX_HFP_OFFLOAD_ERROR(BT_DFXE_OFFLOAD_HCI_UNSPECIFIED_ERROR);
+
             audio_ctrl_send_control_event(PROFILE_HFP_HF, AUDIO_CTRL_EVT_START_FAIL);
             try_disconnect_audio(hfsm);
             break;

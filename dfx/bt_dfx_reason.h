@@ -49,4 +49,16 @@
 #define BT_DFXE_MEDIA_SESSION_NEXT_SONG_FAIL "btMediaSessionNextSongFail"
 #define BT_DFXE_MEDIA_SESSION_PREV_SONG_FAIL "btMediaSessionPrevSongFail"
 
+#define BT_DFXE_HFP_AG_CONN_TIMEOUT "btHfpAgConnTimeout"
+#define BT_DFXE_HFP_AG_CONN_RETRY_FAIL "btHfpAgConnRetryFail"
+#define BT_DFXE_HFP_HF_CONN_TIMEOUT "btHfpHfConnTimeout"
+#define BT_DFXE_HFP_HF_CONN_RETRY_FAIL "btHfpHfConnRetryFail"
+#define BT_DFXE_SET_VOICE_CALL_VOLUME_FAIL "btSetVoiceCallVolumeFail"
+#define BT_DFXE_GET_VOICE_CALL_VOLUME_FAIL "btGetVoiceCallVolumeFail"
+#define BT_DFXE_MEDIA_POLICY_SUBSCRIBE_FAIL "btMediaPolicySubscribeFail"
+#define BT_DFXE_SET_HFP_SAMPLERATE_FAIL "btSetHfpSamplerateFail"
+#define BT_DFXE_SET_SCO_AVAILABLE_FAIL "btSetScoAvailableFail"
+#define BT_DFXE_SET_SCO_UNAVAILABLE_FAIL "btSetScoUnavailableFail"
+#define BT_DFXE_SET_ANC_ENABLE_FAIL "btSetAncEnableFail"
+
 #endif /* _BT_DFX_REASON_H_ */
