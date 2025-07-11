@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "bt_time.h"
 #include "btsnoop_log.h"
