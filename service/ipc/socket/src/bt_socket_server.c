@@ -45,6 +45,7 @@
 #include "adapter_internel.h"
 #include "bluetooth.h"
 #include "bt_adapter.h"
+#include "bt_dfx.h"
 #include "bt_internal.h"
 #include "bt_message.h"
 #include "bt_socket.h"
@@ -467,8 +468,10 @@ int bt_socket_server_send(bt_instance_t* ins, bt_message_packet_t* packet,
 
     if (ret != sizeof(*packet) && ins->poll) {
         cache = malloc(sizeof(*cache));
-        if (cache == NULL)
+        if (cache == NULL) {
+            BT_DFX_IPC_ALLOC_ERROR(BT_DFXE_SERVER_CACHE_ALLOC_FAIL, code);
             return BT_STATUS_NOMEM;
+        }
 
         list_add_tail(&ins->msg_queue, &cache->node);
         memcpy(&cache->packet, packet, sizeof(*packet));

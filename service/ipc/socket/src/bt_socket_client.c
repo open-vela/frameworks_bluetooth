@@ -46,6 +46,7 @@
 #include "bluetooth.h"
 #include "bt_adapter.h"
 #include "bt_debug.h"
+#include "bt_dfx.h"
 #include "bt_message.h"
 #include "bt_socket.h"
 #include "callbacks_list.h"
@@ -267,8 +268,10 @@ static int bt_socket_client_receive(uv_poll_t* poll, int fd, void* userdata)
         || (BT_IPC_CODE_CHECK_TYPE(packet->code, BT_IPC_CODE_TYPE_CALLBACK)
             && !BT_IPC_CODE_CHECK_GROUP(packet->code, BT_IPC_CODE_GROUP_LEGACY))) {
         bt_client_msg_t* msg = malloc(sizeof(*msg));
-        if (!msg)
+        if (!msg) {
+            BT_DFX_IPC_ALLOC_ERROR(BT_DFXE_CLIENT_MSG_ALLOC_FAIL, packet->code);
             return BT_STATUS_NOMEM;
+        }
 
         msg->ins = ins;
         memcpy(&msg->packet, packet, sizeof(*packet));
@@ -456,6 +459,7 @@ int bt_socket_client_init(bt_instance_t* ins, int family,
         ins->peer_fd = bt_socket_client_connect(family, name, cpu, port);
         if (ins->peer_fd <= 0 && !retry) {
             /* connect fail, go out */
+            BT_DFX_IPC_CONN_ERROR(BT_DFXE_CLIENT_CONNECT_FAIL, BT_DFXE_FILE_DESCRIPTOR_ERROR);
             bt_socket_client_deinit(ins);
             return BT_STATUS_PARM_INVALID;
         } else if (ins->peer_fd <= 0) {
@@ -638,6 +642,7 @@ static void bt_socket_connect_cb(uv_connect_t* req, int status)
 
     if (status != 0) {
         BT_LOGE("bt async client connect failed: %s", uv_strerror(status));
+        BT_DFX_IPC_CONN_ERROR(BT_DFXE_ASYNC_CLIENT_CONN_FAIL, uv_strerror(status));
         if (priv->disconnected)
             priv->disconnected(priv->ins, priv->user_data, status);
     } else {

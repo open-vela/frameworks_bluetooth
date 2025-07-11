@@ -637,6 +637,7 @@ static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* 
 
     if (status < 0) {
         BT_LOGE("%s,uv listen error: %d", __func__, status);
+        BT_DFX_IPC_CONN_ERROR(BT_DFXE_SPP_CONN_FAIL, "");
         return;
     }
 

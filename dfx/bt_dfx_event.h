@@ -71,6 +71,17 @@
 // group: BT_DFXG_HID
 #define BT_DFXC_HID_CONN (0)
 
+// group: BT_DFXG_MESH
+
+// group: BT_DFXG_CHANNEL_SOUNDING
+
+// group: BT_DFXG_OTHERS
+#define BT_DFXC_SOCKET (0)
+#define BT_DFXC_IPC_CONN (10)
+#define BT_DFXC_IPC_ALLOC (20)
+#define BT_DFXC_DRIVER (100)
+#define BT_DFXC_OPEN (200)
+
 #define BT_DFX_BUILD_CODE(group, subcode) ((BT_DFX_BASE_VELA_BLUETOOTH) + (group) + (subcode))
 
 #endif /* _BT_DFX_EVENT_H_ */

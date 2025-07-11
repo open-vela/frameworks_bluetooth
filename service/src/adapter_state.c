@@ -23,6 +23,7 @@
 
 #include "adapter_internel.h"
 #include "bt_adapter.h"
+#include "bt_dfx.h"
 #include "btservice.h"
 #include "media_system.h"
 #include "sal_interface.h"
@@ -274,6 +275,8 @@ static void ble_turning_on_enter(state_machine_t* sm)
     bt_status_t status = bt_sal_le_enable(PRIMARY_ADAPTER);
     if (status == BT_STATUS_SUCCESS)
         adapter_notify_state_change(BT_ADAPTER_STATE_OFF, BT_ADAPTER_STATE_BLE_TURNING_ON);
+    else
+        BT_DFX_OPEN_ERROR(BT_DFXE_LE_ENABLE_FAIL);
 #else
     BT_LOGE("Not supported");
 #endif
@@ -349,6 +352,8 @@ static void turning_on_enter(state_machine_t* sm)
     if (status == BT_STATUS_SUCCESS) {
         const state_t* prev = hsm_get_previous_state(sm);
         adapter_notify_state_change(hsm_get_state_value(prev), BT_ADAPTER_STATE_TURNING_ON);
+    } else {
+        BT_DFX_OPEN_ERROR(BT_DFXE_BR_ENABLE_FAIL);
     }
 }
 
