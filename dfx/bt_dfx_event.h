@@ -68,6 +68,9 @@
 #define BT_DFXC_HFP_MEDIA (30)
 #define BT_DFXC_HFP_OFFLOAD (40)
 
+// group: BT_DFXG_HID
+#define BT_DFXC_HID_CONN (0)
+
 #define BT_DFX_BUILD_CODE(group, subcode) ((BT_DFX_BASE_VELA_BLUETOOTH) + (group) + (subcode))
 
 #endif /* _BT_DFX_EVENT_H_ */

@@ -61,4 +61,6 @@
 #define BT_DFXE_SET_SCO_UNAVAILABLE_FAIL "btSetScoUnavailableFail"
 #define BT_DFXE_SET_ANC_ENABLE_FAIL "btSetAncEnableFail"
 
+#define BT_DFXE_HID_CONNECT_BUSY "btHidConnectBusy"
+
 #endif /* _BT_DFX_REASON_H_ */
