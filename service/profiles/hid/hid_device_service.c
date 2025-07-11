@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "bt_dfx.h"
 #include "bt_profile.h"
 #include "callbacks_list.h"
 #include "power_manager.h"
@@ -410,6 +411,7 @@ static bt_status_t hid_device_connect(bt_address_t* addr)
 
     if (!bt_addr_is_empty(&g_hidd_handle.peer_addr)) {
         BT_ADDR_LOG("HID device has connected to %s, %s!", &g_hidd_handle.peer_addr, __func__);
+        BT_DFX_HID_CONN_ERROR(BT_DFXE_HID_CONNECT_BUSY);
         status = BT_STATUS_BUSY;
         goto exit;
     }
