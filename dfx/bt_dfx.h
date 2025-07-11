@@ -232,4 +232,46 @@
             "%s:%s", "btHidConnectError", reason);                              \
     } while (0)
 
+// others
+#if defined(CONFIG_BLUETOOTH_DFX)
+#define BT_DFX_SEND_OTHERS_EVENT(...) sendEventMisightF(__VA_ARGS__)
+#else
+#define BT_DFX_SEND_OTHERS_EVENT(...)
+#endif
+
+#define BT_DFX_SOCKET_ERROR(reason, port)                                           \
+    do {                                                                            \
+        BT_LOGE("BT_DFX: btSocketError: %s, port: %d", reason, port);               \
+        BT_DFX_SEND_OTHERS_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_OTHERS, BT_DFXC_SOCKET), \
+            "%s:%s,%s:%d", "btSocketError", reason, "port", port);                  \
+    } while (0)
+
+#define BT_DFX_IPC_CONN_ERROR(type, reason)                                           \
+    do {                                                                              \
+        BT_LOGE("BT_DFX: btIpcConnectError: %s, reason: %s", type, reason);           \
+        BT_DFX_SEND_OTHERS_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_OTHERS, BT_DFXC_IPC_CONN), \
+            "%s:%s,%s:%s", "btIpcConnectError", type, "reason", reason);              \
+    } while (0)
+
+#define BT_DFX_IPC_ALLOC_ERROR(reason, packet_code)                                       \
+    do {                                                                                  \
+        BT_LOGE("BT_DFX: btIpcAllocError: %s, packetCode: %d", reason, (int)packet_code); \
+        BT_DFX_SEND_OTHERS_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_OTHERS, BT_DFXC_IPC_ALLOC),    \
+            "%s:%s,%s:%d", "btIpcAllocError", reason, "packetCode", (int)packet_code);    \
+    } while (0)
+
+#define BT_DFX_DRIVER_ERROR(type, name, reason)                                          \
+    do {                                                                                 \
+        BT_LOGE("BT_DFX: btDriverError: %s, name: %s, reason: %s", type, name, reason);  \
+        BT_DFX_SEND_OTHERS_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_OTHERS, BT_DFXC_DRIVER),      \
+            "%s:%s,%s:%s,%s:%s", "btDriverError", type, "name", name, "reason", reason); \
+    } while (0)
+
+#define BT_DFX_OPEN_ERROR(reason)                                                 \
+    do {                                                                          \
+        BT_LOGE("BT_DFX: btOpenError: %s", reason);                               \
+        BT_DFX_SEND_OTHERS_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_OTHERS, BT_DFXC_OPEN), \
+            "%s:%s", "btOpenError", reason);                                      \
+    } while (0)
+
 #endif /* _BT_DFX_H_ */
