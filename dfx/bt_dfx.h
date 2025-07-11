@@ -176,4 +176,46 @@
             "%s:%s", "btAvrcpVolError", reason);                                     \
     } while (0)
 
+// hfp
+#if defined(CONFIG_BLUETOOTH_DFX) && (defined(CONFIG_BLUETOOTH_HFP_HF) || defined(CONFIG_BLUETOOTH_HFP_AG))
+#define BT_DFX_SEND_HFP_EVENT(...) sendEventMisightF(__VA_ARGS__)
+#else
+#define BT_DFX_SEND_HFP_EVENT(...)
+#endif
+
+#define BT_DFX_HFP_CONN_ERROR(reason)                                           \
+    do {                                                                        \
+        BT_LOGE("BT_DFX: btHfpConnectError: %s", reason);                       \
+        BT_DFX_SEND_HFP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_HFP, BT_DFXC_HFP_CONN), \
+            "%s:%s", "btHfpConnectError", reason);                              \
+    } while (0)
+
+#define BT_DFX_HFP_SCO_CONN_ERROR(reason)                                           \
+    do {                                                                            \
+        BT_LOGE("BT_DFX: btHfpScoConnectError: %s", reason);                        \
+        BT_DFX_SEND_HFP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_HFP, BT_DFXC_HFP_SCO_CONN), \
+            "%s:%s", "btHfpScoConnectError", reason);                               \
+    } while (0)
+
+#define BT_DFX_HFP_VOL_ERROR(reason)                                           \
+    do {                                                                       \
+        BT_LOGE("BT_DFX: btHfpVolError: %s", reason);                          \
+        BT_DFX_SEND_HFP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_HFP, BT_DFXC_HFP_VOL), \
+            "%s:%s", "btHfpVolError", reason);                                 \
+    } while (0)
+
+#define BT_DFX_HFP_MEDIA_ERROR(reason)                                           \
+    do {                                                                         \
+        BT_LOGE("BT_DFX: btHfpMediaError: %s", reason);                          \
+        BT_DFX_SEND_HFP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_HFP, BT_DFXC_HFP_MEDIA), \
+            "%s:%s", "btHfpMediaError", reason);                                 \
+    } while (0)
+
+#define BT_DFX_HFP_OFFLOAD_ERROR(reason)                                           \
+    do {                                                                           \
+        BT_LOGE("BT_DFX: btHfpOffloadError: %s", reason);                          \
+        BT_DFX_SEND_HFP_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_HFP, BT_DFXC_HFP_OFFLOAD), \
+            "%s:%s", "btHfpOffloadError", reason);                                 \
+    } while (0)
+
 #endif /* _BT_DFX_H_ */
