@@ -198,8 +198,10 @@ bt_status_t bt_media_set_hfp_samplerate(uint16_t samplerate)
         return BT_STATUS_PARM_INVALID;
 
     /* set hfp samplerate, dev/pcm1c/p device ioctl */
-    if (media_policy_set_hfp_samplerate(samplerate) != 0)
+    if (media_policy_set_hfp_samplerate(samplerate) != 0) {
+        BT_DFX_HFP_MEDIA_ERROR(BT_DFXE_SET_HFP_SAMPLERATE_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -222,6 +224,7 @@ void* bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_call
     listener->policy_handle = media_policy_subscribe(MEDIA_SCENARIO_INCALL MEDIA_POLICY_VOLUME, bt_media_policy_volume_change_callback, listener);
     if (!listener->policy_handle) {
         BT_LOGI("media policy subscribe(%s-%s) failed!", MEDIA_SCENARIO_INCALL, MEDIA_POLICY_VOLUME);
+        BT_DFX_HFP_VOL_ERROR(BT_DFXE_MEDIA_POLICY_SUBSCRIBE_FAIL);
         free(listener);
         listener = NULL;
     }
@@ -231,16 +234,20 @@ void* bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_call
 
 bt_status_t bt_media_get_voice_call_volume(int* volume)
 {
-    if (media_policy_get_stream_volume(MEDIA_SCENARIO_INCALL, volume) != 0)
+    if (media_policy_get_stream_volume(MEDIA_SCENARIO_INCALL, volume) != 0) {
+        BT_DFX_HFP_VOL_ERROR(BT_DFXE_GET_VOICE_CALL_VOLUME_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_media_set_voice_call_volume(int volume)
 {
-    if (media_policy_set_stream_volume(MEDIA_SCENARIO_INCALL, volume) != 0)
+    if (media_policy_set_stream_volume(MEDIA_SCENARIO_INCALL, volume) != 0) {
+        BT_DFX_HFP_VOL_ERROR(BT_DFXE_SET_VOICE_CALL_VOLUME_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -308,16 +315,20 @@ void* bt_media_listen_music_volume_change(bt_media_voice_volume_change_callback_
 bt_status_t bt_media_set_sco_available(void)
 {
     /* set SCO device available */
-    if (media_policy_set_devices_available(MEDIA_DEVICE_SCO) != 0)
+    if (media_policy_set_devices_available(MEDIA_DEVICE_SCO) != 0) {
+        BT_DFX_HFP_MEDIA_ERROR(BT_DFXE_SET_SCO_AVAILABLE_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
 
 bt_status_t bt_media_set_sco_unavailable(void)
 {
-    if (media_policy_set_devices_unavailable(MEDIA_DEVICE_SCO) != 0)
+    if (media_policy_set_devices_unavailable(MEDIA_DEVICE_SCO) != 0) {
+        BT_DFX_HFP_MEDIA_ERROR(BT_DFXE_SET_SCO_UNAVAILABLE_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
@@ -385,8 +396,10 @@ bt_status_t bt_media_set_lea_offloading(bool enable)
 
 bt_status_t bt_media_set_anc_enable(bool enable)
 {
-    if (media_policy_set_int(MEDIA_POLICY_ANC_OFFLOAD_MODE, (int)enable, MEDIA_POLICY_APPLY) != 0)
+    if (media_policy_set_int(MEDIA_POLICY_ANC_OFFLOAD_MODE, (int)enable, MEDIA_POLICY_APPLY) != 0) {
+        BT_DFX_HFP_MEDIA_ERROR(BT_DFXE_SET_ANC_ENABLE_FAIL);
         return BT_STATUS_FAIL;
+    }
 
     return BT_STATUS_SUCCESS;
 }
