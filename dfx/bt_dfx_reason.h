@@ -63,4 +63,14 @@
 
 #define BT_DFXE_HID_CONNECT_BUSY "btHidConnectBusy"
 
+#define BT_DFXE_CLIENT_CONNECT_FAIL "btClientConnectFail"
+#define BT_DFXE_ASYNC_CLIENT_CONN_FAIL "btAsyncClientConnectFail"
+#define BT_DFXE_FILE_DESCRIPTOR_ERROR "btFileDescriptorError"
+#define BT_DFXE_SPP_CONN_FAIL "btSppConnFail"
+#define BT_DFXE_CLIENT_MSG_ALLOC_FAIL "btClientMsgAllocFail"
+#define BT_DFXE_SERVER_CACHE_ALLOC_FAIL "btServerCacheAllocFail"
+#define BT_DFXE_OPEN_HCI_UART_FAIL "btOpenHciUartFail"
+#define BT_DFXE_LE_ENABLE_FAIL "btLeEnableFail"
+#define BT_DFXE_BR_ENABLE_FAIL "btBrEnableFail"
+
 #endif /* _BT_DFX_REASON_H_ */
