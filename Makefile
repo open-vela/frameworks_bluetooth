@@ -241,6 +241,10 @@ endif
 ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND), y)
 	CSRCS += sample_code/acceptbond/*.c
 endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_A2DPSNK), y)
+	CSRCS += sample_code/a2dpsnk/*.c
+endif
 endif #CONFIG_APP_BT_SAMPLE_CODE
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
@@ -380,6 +384,10 @@ endif
 ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND), y)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/sample_code/acceptbond
 endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_A2DPSNK), y)
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/sample_code/a2dpsnk
+endif
 endif #CONFIG_APP_BT_SAMPLE_CODE
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
@@ -424,6 +432,11 @@ endif
 ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND), y)
 	PROGNAME  += bt_acceptbond
 	MAINSRC   += sample_code/acceptbond/acceptbond.c
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_A2DPSNK), y)
+	PROGNAME += bt_a2dpsnk
+	MAINSRC  += sample_code/a2dpsnk/a2dpsnk.c
 endif
 endif #CONFIG_APP_BT_SAMPLE_CODE
 

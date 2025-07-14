@@ -534,6 +534,10 @@ config APP_BT_SAMPLE_CODE_ACCEPTBOND
 	bool "bluetooth acceptbond sample code"
 	default n
 	depends on APP_BT_SAMPLE_CODE
+config APP_BT_SAMPLE_CODE_A2DPSNK
+	bool "bluetooth a2dpsnk sample code"
+	default n
+depends on APP_BT_SAMPLE_CODE
 config BLUETOOTH_DFX
 	bool "Enable bluetooth DFX"
 	default y

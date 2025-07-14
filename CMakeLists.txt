@@ -338,6 +338,10 @@ if(CONFIG_BLUETOOTH)
   if(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/acceptbond/*.c)
   endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_A2DPSNK)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/a2dpsnk/*.c)
+  endif()
   endif()
 
   if(CONFIG_BLUETOOTH_TOOLS)
@@ -504,6 +508,10 @@ if(CONFIG_BLUETOOTH)
   if(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND)
     list(APPEND INCDIR ${BLUETOOTH_DIR}/sample_code/acceptbond)
   endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_A2DPSNK)
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/sample_code/a2dpsnk)
+  endif()
   endif()
 
   if(CONFIG_BLUETOOTH_TOOLS)
@@ -638,6 +646,24 @@ if(CONFIG_BLUETOOTH)
         bt_acceptbond
         SRCS
         ${BLUETOOTH_DIR}/sample_code/acceptbond/acceptbond.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        STACKSIZE
+        8192
+        PRIORITY
+        ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
+    endif()
+
+    if(CONFIG_APP_BT_SAMPLE_CODE_A2DPSNK)
+      nuttx_add_application(
+        NAME
+        bt_a2dpsnk
+        SRCS
+        ${BLUETOOTH_DIR}/sample_code/a2dpsnk/a2dpsnk.c
         INCLUDE_DIRECTORIES
         ${INCDIR}
         STACKSIZE
