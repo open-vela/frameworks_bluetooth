@@ -439,6 +439,9 @@ static bt_status_t feature_set_adv_data(system_bluetooth_ble_AdvertiseData* adv_
         return BT_STATUS_FAIL;
 
     *adv = advertiser_data_new();
+    if (!(*adv))
+        return BT_STATUS_FAIL;
+
     advertiser_data_set_flags(*adv, BT_AD_FLAG_DUAL_MODE | BT_AD_FLAG_GENERAL_DISCOVERABLE); /* set adv flags 0x08 */
 
     for (int i = 0; adv_data->serviceUuids != NULL && i < adv_data->serviceUuids->_size; i++) {
@@ -482,6 +485,9 @@ static bt_status_t feature_set_scan_rsp_data(system_bluetooth_ble_AdvertiseData*
         return BT_STATUS_SUCCESS;
 
     *scan_rsp = advertiser_data_new();
+    if (!(*scan_rsp))
+        return BT_STATUS_FAIL;
+
     if (feature_get_advertiser_data(scan_rsp_data, *scan_rsp, adv_info) != BT_STATUS_SUCCESS) {
         FEATURE_LOG_ERROR("get scan response data failed!");
         goto error;
