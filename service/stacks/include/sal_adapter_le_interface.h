@@ -25,6 +25,9 @@
 #include "power_manager.h"
 #include "vhal/bt_vhal.h"
 
+#define GATT_ROLE_SERVER (1UL << 0)
+#define GATT_ROLE_CLIENT (1UL << 1)
+
 bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal);
 void bt_sal_le_cleanup(void);
 bt_status_t bt_sal_le_enable(bt_controller_id_t id);
@@ -38,9 +41,7 @@ bt_status_t bt_sal_le_set_bonded_devices(bt_controller_id_t id, remote_device_le
 bt_status_t bt_sal_le_get_bonded_devices(bt_controller_id_t id, remote_device_le_properties_t* props, uint16_t* prop_cnt);
 bt_status_t bt_sal_le_connect(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t type, ble_connect_params_t* params);
 bt_status_t bt_sal_le_disconnect(bt_controller_id_t id, bt_address_t* addr);
-bt_status_t bt_sal_le_set_bondable(bt_controller_id_t id, bool enable);
 bt_status_t bt_sal_le_create_bond(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t type);
-bt_status_t bt_sal_le_set_security_level(bt_controller_id_t id, uint8_t level);
 bt_status_t bt_sal_le_remove_bond(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_le_smp_reply(bt_controller_id_t id, bt_address_t* addr, bool accept, bt_pair_type_t type, uint32_t passkey);
 bt_status_t bt_sal_le_set_legacy_tk(bt_controller_id_t id, bt_address_t* addr, bt_128key_t tk_val);
@@ -54,4 +55,13 @@ uint16_t bt_sal_le_get_appearance(bt_controller_id_t id);
 bt_status_t bt_sal_le_enable_key_derivation(bt_controller_id_t id, bool brkey_to_lekey, bool lekey_to_brkey);
 bt_status_t bt_sal_get_identity_addr(bt_address_t* addr, bt_address_t* id_addr);
 
+struct bt_conn* get_le_conn_from_addr(bt_address_t* addr);
+bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr);
+bt_status_t le_conn_set_role(bt_address_t* addr, uint8_t flag);
+bt_status_t le_conn_remove(bt_address_t* addr);
+
+#if defined(CONFIG_BT_USER_PHY_UPDATE)
+ble_phy_type_t le_phy_convert_from_stack(uint8_t mode);
+uint8_t le_phy_convert_from_service(ble_phy_type_t mode);
+#endif
 #endif /* __SAL_ADAPTER_LE_INTERFACE_H_ */
