@@ -536,7 +536,7 @@ config APP_BT_SAMPLE_CODE_ACCEPTBOND
 	depends on APP_BT_SAMPLE_CODE
 config BLUETOOTH_DFX
 	bool "Enable bluetooth DFX"
-	default n
+	default y
 	depends on DFX_EVENT
 	help
 		Enable bluetooth DFX
