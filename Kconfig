@@ -511,7 +511,7 @@ config BLUETOOTH_TOOLS
 
 config BLUETOOTH_DFX
 	bool "Enable bluetooth DFX"
-	default n
+	default y
 	depends on DFX_EVENT
 	help
 		Enable bluetooth DFX
