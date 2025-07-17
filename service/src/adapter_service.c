@@ -349,6 +349,7 @@ static void load_remote_uuids(remote_device_properties_t* remote, bt_device_t* d
     uint16_t count_uuid128 = 0;
     uint16_t count_uuids = 0;
     uint8_t* remote_uuids = remote->uuids;
+    uint32_t property_length = 0;
 
     if (*remote_uuids == 0) {
         BT_LOGD("%s, No uuids found", __func__);
@@ -367,7 +368,7 @@ static void load_remote_uuids(remote_device_properties_t* remote, bt_device_t* d
     }
 
     remote_uuids++;
-    count_uuids = count_uuid16;
+    count_uuids = count_uuid16 + count_uuid128;
 
     if (count_uuid16 != 0) {
         if (count_uuid16 * 2 + 1 < CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN) {
@@ -376,7 +377,29 @@ static void load_remote_uuids(remote_device_properties_t* remote, bt_device_t* d
         }
     }
 
+    if (!count_uuids) {
+        BT_LOGE("%s, No uuids found", __func__);
+        return;
+    }
+
+    if (count_uuid16)
+        property_length += 1 + (count_uuid16 << 1);
+
+    if (count_uuid128)
+        property_length += 1 + (count_uuid128 << 4);
+
+    if (property_length > CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN) {
+        BT_LOGE("%s, Incorrect property length: %" PRIu32 " > %d", __func__, property_length,
+            CONFIG_BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN);
+        return;
+    }
+
     uuids = (bt_uuid_t*)malloc(sizeof(bt_uuid_t) * count_uuids);
+    if (!uuids) {
+        BT_LOGE("%s, malloc fail", __func__);
+        return;
+    }
+
     tmp = uuids;
     for (int i = 0; i < count_uuid16; i++) {
         bt_uuid_t uuid;
@@ -492,8 +515,9 @@ static void adapter_update_bonded_device(void)
     }
 
     remote_device_properties_t remotes[size];
-    size = 0;
+    memset(remotes, 0x00, sizeof(remote_device_properties_t) * size);
 
+    size = 0;
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         bt_device_t* device = bt_list_node(node);
         if (device_is_bonded(device)) {
