@@ -49,6 +49,12 @@ typedef union {
 } sal_adapter_args_t;
 
 typedef struct {
+    struct bt_conn* conn;
+    bt_address_t addr;
+    uint8_t role; // e.g., GATT_ROLE_SERVER
+} le_conn_info_t;
+
+typedef struct {
     bt_controller_id_t id;
     bt_address_t addr;
     ble_addr_type_t addr_type;
@@ -85,6 +91,9 @@ static enum bt_security_err zblue_on_pairing_accept(struct bt_conn* conn, const 
 static void zblue_register_callback(void);
 static void zblue_unregister_callback(void);
 
+static le_conn_info_t* le_conn_add(const bt_address_t* addr);
+static le_conn_info_t* le_conn_find(const bt_address_t* addr);
+
 static struct bt_conn_cb g_conn_cbs = {
     .connected = zblue_on_connected,
     .disconnected = zblue_on_disconnected,
@@ -102,7 +111,7 @@ static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
 };
 
 static struct bt_conn_auth_cb g_conn_auth_cbs;
-static struct bt_conn* g_acl_conns[CONFIG_BT_MAX_CONN];
+static le_conn_info_t g_le_conn_info[CONFIG_BT_MAX_CONN];
 
 static uint8_t zblue_convert_addr_type(ble_addr_type_t addr_type)
 {
@@ -137,8 +146,9 @@ static uint8_t zblue_convert_addr_type(ble_addr_type_t addr_type)
 
 static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
 {
+    uint8_t role;
     struct bt_conn_info info;
-    int i;
+    le_conn_info_t* slot;
     profile_connection_state_t profile_state = PROFILE_STATE_CONNECTED;
 
     bt_address_t le_addr;
@@ -173,23 +183,35 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
         if (info.role == BT_HCI_ROLE_CENTRAL) {
             bt_conn_unref(conn);
         }
-
-        goto report;
     }
 
-    for (i = 0; i < ARRAY_SIZE(g_acl_conns); i++) {
-        if (!g_acl_conns[i]) {
-            g_acl_conns[i] = conn;
-            break;
+    slot = le_conn_add(&state.addr);
+
+    if (!slot) {
+        return;
+    }
+
+    if (!err) {
+        slot->conn = conn;
+        if (!slot->role) {
+            slot->role |= GATT_ROLE_SERVER;
         }
     }
 
-report:
+    role = slot->role;
+
+    if (err || (slot->conn == NULL)) {
+        le_conn_remove(&state.addr);
+        slot = NULL;
+    }
+
     adapter_on_connection_state_changed(&state);
 #ifdef CONFIG_BLUETOOTH_GATT
-    if (info.role == BT_HCI_ROLE_PERIPHERAL) {
+    if (role & GATT_ROLE_SERVER) {
         if_gatts_on_connection_state_changed(&state.addr, profile_state);
-    } else if (info.role == BT_HCI_ROLE_CENTRAL) {
+    }
+
+    if (role & GATT_ROLE_CLIENT) {
         if_gattc_on_connection_state_changed(&state.addr, profile_state);
     }
 #endif
@@ -221,7 +243,8 @@ bt_status_t bt_sal_get_identity_addr(bt_address_t* addr, bt_address_t* id_addr)
 static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
 {
     struct bt_conn_info info;
-    int i;
+    le_conn_info_t* slot;
+    uint8_t role;
     bt_address_t le_addr;
     bt_address_t* remote_addr;
     acl_state_param_t state = {
@@ -241,13 +264,6 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
         bt_conn_unref(conn);
     }
 
-    for (i = 0; i < ARRAY_SIZE(g_acl_conns); i++) {
-        if (g_acl_conns[i] == conn) {
-            g_acl_conns[i] = NULL;
-            break;
-        }
-    }
-
     memcpy(&le_addr, info.le.dst->a.val, sizeof(le_addr.addr));
     remote_addr = adapter_get_le_remote_address(&le_addr, info.le.dst->type);
     if (remote_addr) {
@@ -258,11 +274,23 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
         state.addr_type = info.le.dst->type;
     }
 
+    slot = le_conn_find(&state.addr);
+
+    if (!slot) {
+        return;
+    }
+
+    role = slot->role;
+    le_conn_remove(&state.addr);
+    slot = NULL;
+
     adapter_on_connection_state_changed(&state);
 #ifdef CONFIG_BLUETOOTH_GATT
-    if (info.role == BT_HCI_ROLE_PERIPHERAL) {
+    if (role & GATT_ROLE_SERVER) {
         if_gatts_on_connection_state_changed(&state.addr, PROFILE_STATE_DISCONNECTED);
-    } else if (info.role == BT_HCI_ROLE_CENTRAL) {
+    }
+
+    if (role & GATT_ROLE_CLIENT) {
         if_gattc_on_connection_state_changed(&state.addr, PROFILE_STATE_DISCONNECTED);
     }
 #endif
@@ -536,17 +564,11 @@ static bt_status_t sal_send_req(sal_adapter_req_t* req)
     return BT_STATUS_SUCCESS;
 }
 
-struct bt_conn* get_le_conn_from_addr(bt_address_t* addr)
+static le_conn_info_t* le_conn_find(const bt_address_t* addr)
 {
-    for (int i = 0; i < ARRAY_SIZE(g_acl_conns); i++) {
-        if (g_acl_conns[i]) {
-            struct bt_conn_info info;
-
-            bt_conn_get_info(g_acl_conns[i], &info);
-            if (!memcmp(info.le.dst->a.val, addr, sizeof(bt_address_t))
-                || !memcmp(info.le.remote->a.val, addr, sizeof(bt_address_t))) {
-                return g_acl_conns[i];
-            }
+    for (int i = 0; i < CONFIG_BT_MAX_CONN; i++) {
+        if (!bt_addr_compare(&g_le_conn_info[i].addr, addr)) {
+            return &g_le_conn_info[i];
         }
     }
 
@@ -554,17 +576,94 @@ struct bt_conn* get_le_conn_from_addr(bt_address_t* addr)
 }
 
 bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr)
-
 {
-    struct bt_conn_info info;
+    for (int i = 0; i < CONFIG_BT_MAX_CONN; i++) {
+        if (g_le_conn_info[i].conn == conn) {
+            memcpy(addr, &g_le_conn_info[i].addr, sizeof(bt_address_t));
+            return BT_STATUS_SUCCESS;
+        }
+    }
 
-    if (bt_conn_get_info(conn, &info)) {
-        BT_LOGE("%s, get conn info fail", __func__);
+    BT_LOGD("%s, conn not found", __func__);
+    return BT_STATUS_FAIL;
+}
+
+struct bt_conn* get_le_conn_from_addr(bt_address_t* addr)
+{
+    le_conn_info_t* info;
+
+    info = le_conn_find(addr);
+
+    return info ? info->conn : NULL;
+}
+
+static le_conn_info_t* le_conn_add(const bt_address_t* addr)
+{
+    le_conn_info_t* info = le_conn_find(addr);
+    if (info) {
+        return info;
+    }
+
+    for (int i = 0; i < CONFIG_BT_MAX_CONN; i++) {
+        if (!g_le_conn_info[i].conn && bt_addr_is_empty(&g_le_conn_info[i].addr)) {
+            memcpy(g_le_conn_info[i].addr.addr, addr->addr, BT_ADDR_LENGTH);
+            return &g_le_conn_info[i];
+        }
+    }
+
+    BT_LOGE("%s, no free entry", __func__);
+    return NULL;
+}
+
+bt_status_t le_conn_set_role(bt_address_t* addr, uint8_t flag)
+{
+    le_conn_info_t* info;
+
+    if (bt_addr_is_empty(addr) || !flag) {
+        BT_LOGE("%s, invalid addr or flag", __func__);
         return BT_STATUS_FAIL;
     }
 
-    memcpy(addr, info.le.dst->a.val, sizeof(bt_address_t));
-    return BT_STATUS_SUCCESS;
+    info = le_conn_find(addr);
+    if (info) {
+        if (info->role & flag) {
+            BT_LOGD("conn flag already set, skip");
+            return BT_STATUS_DONE;
+        }
+
+        info->role |= flag;
+
+        if (info->conn) {
+            if ((info->role & GATT_ROLE_CLIENT) && flag == GATT_ROLE_SERVER) {
+                if_gatts_on_connection_state_changed(&info->addr, PROFILE_STATE_CONNECTED);
+            } else if ((info->role & GATT_ROLE_SERVER) && flag == GATT_ROLE_CLIENT) {
+                if_gattc_on_connection_state_changed(&info->addr, PROFILE_STATE_CONNECTED);
+            }
+            return BT_STATUS_DONE;
+        }
+
+        return BT_STATUS_SUCCESS;
+    }
+
+    info = le_conn_add(addr);
+    if (info) {
+        info->role = flag;
+        return BT_STATUS_SUCCESS;
+    }
+
+    return BT_STATUS_FAIL;
+}
+
+bt_status_t le_conn_remove(bt_address_t* addr)
+{
+    le_conn_info_t* info = le_conn_find(addr);
+    if (info) {
+        memset(info, 0, sizeof(*info));
+        return BT_STATUS_SUCCESS;
+    }
+
+    BT_LOGD("%s, addr not found", __func__);
+    return BT_STATUS_FAIL;
 }
 
 bt_status_t bt_sal_le_init(const bt_vhal_interface* vhal)
