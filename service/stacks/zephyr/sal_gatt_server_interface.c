@@ -80,6 +80,7 @@ struct add_descriptor {
     uint8_t permissions;
     uint8_t properties;
     const struct bt_uuid* uuid;
+    gatt_element_t* element;
 };
 
 struct add_characteristic {
@@ -95,6 +96,19 @@ struct add_characteristic {
 struct gatt_value {
     void* context;
     uint8_t flags[1];
+    uint16_t len;
+    uint8_t data[0];
+};
+
+struct gatt_ccc_wrapper {
+    /**
+     * NOTE: `ccc` must be the first member!
+     * This ensures `&wrapper->ccc == (void *)wrapper`,
+     * so that we can safely cast between `_bt_gatt_ccc*` and `gatt_ccc_wrapper*`
+     * or free it through `user_data` pointer.
+     */
+    struct _bt_gatt_ccc ccc;
+    gatt_element_t* element;
     uint16_t len;
     uint8_t data[0];
 };
@@ -204,14 +218,18 @@ static struct bt_gatt_attr* gatt_db_add(const struct bt_gatt_attr* pattern, size
     }
     memcpy((void*)attr->uuid, &u->uuid, uuid_size);
 
-    attr->user_data = malloc(user_data_len);
-    if (!attr->user_data) {
-        BT_LOGE("%s, user_data malloc failed", __func__);
-        free((void*)attr->uuid);
-        attr->uuid = NULL;
-        return NULL;
+    if (user_data_len == 0) {
+        attr->user_data = pattern->user_data;
+    } else {
+        attr->user_data = malloc(user_data_len);
+        if (!attr->user_data) {
+            BT_LOGE("%s, user_data malloc failed", __func__);
+            free((void*)attr->uuid);
+            attr->uuid = NULL;
+            return NULL;
+        }
+        memcpy(attr->user_data, pattern->user_data, user_data_len);
     }
-    memcpy(attr->user_data, pattern->user_data, user_data_len);
 
     BT_LOGD("user_data 0x%p, user_data_len: %zu", attr->user_data, user_data_len);
 
@@ -351,15 +369,49 @@ static void add_characteristic(gatt_element_t* element)
     }
 }
 
-static void ccc_cfg_changed(const struct bt_gatt_attr* attr, uint16_t value)
+static ssize_t bt_sal_on_ccc_written(struct bt_conn* conn, const struct bt_gatt_attr* attr,
+    const void* buf, uint16_t len, uint16_t offset, uint8_t flags)
 {
-    BT_LOGD("%s, value:%d", __func__, value);
+    bt_address_t addr;
+    struct gatt_ccc_wrapper* wrapper;
+    struct _bt_gatt_ccc* ccc;
+    gatt_element_t* element;
+    uint16_t value;
+    ssize_t ret;
+    uint8_t index;
+
+    ret = bt_gatt_attr_write_ccc(conn, attr, buf, len, offset, flags);
+
+    if (ret < 0)
+        return ret;
+
+    ccc = (struct _bt_gatt_ccc*)attr->user_data;
+
+    wrapper = CONTAINER_OF(ccc, struct gatt_ccc_wrapper, ccc);
+    element = wrapper->element;
+
+    index = bt_conn_index(conn);
+    if (index >= CONFIG_BT_MAX_CONN) {
+        BT_LOGE("%s, invalid conn index = %u", __func__, index);
+        return -EINVAL;
+    }
+
+    value = ccc->cfg[index].value;
+
+    zblue_conn_get_addr(conn, &addr);
+
+    if_gatts_on_received_element_write_request(&addr, GATT_OPS_WRITE_REQUEST,
+        element->handle, (uint8_t*)&value, 0, sizeof(value));
+
+    return ret;
 }
 
 static int alloc_descriptor(const struct bt_gatt_attr* attr, struct add_descriptor* desc)
 {
     struct bt_gatt_attr* attr_desc;
+    struct gatt_ccc_wrapper* ccc_wrapper;
     struct bt_gatt_chrc* chrc = attr->user_data;
+    struct _bt_gatt_ccc* ccc;
 
     if (bt_uuid_cmp(desc->uuid, BT_UUID_GATT_CCC)) {
         BT_LOGE("%s uuid not match", __func__);
@@ -371,8 +423,27 @@ static int alloc_descriptor(const struct bt_gatt_attr* attr, struct add_descript
         return -EINVAL;
     }
 
-    attr_desc = gatt_db_add(&(struct bt_gatt_attr)BT_GATT_CCC(ccc_cfg_changed, desc->permissions & GATT_PERM_MASK), sizeof(struct _bt_gatt_ccc));
+    /* This memory is freed in remove_service() via attr->user_data */
+    ccc_wrapper = zalloc(sizeof(struct gatt_ccc_wrapper));
+    if (!ccc_wrapper) {
+        BT_LOGE("%s, wrapper alloc failed", __func__);
+        return -ENOMEM;
+    }
+
+    ccc = &ccc_wrapper->ccc;
+    ccc_wrapper->element = desc->element;
+
+    attr_desc = gatt_db_add(
+        &(struct bt_gatt_attr) {
+            .uuid = BT_UUID_GATT_CCC,
+            .perm = desc->permissions & GATT_PERM_MASK,
+            .read = bt_gatt_attr_read_ccc,
+            .write = bt_sal_on_ccc_written,
+            .user_data = ccc },
+        0);
+
     if (!attr_desc) {
+        free(ccc_wrapper);
         BT_LOGE("%s attr_desc null", __func__);
         return -EINVAL;
     }
@@ -412,6 +483,7 @@ static void add_descriptor(gatt_element_t* element)
     desc.permissions = element->permissions;
     desc.properties = element->properties;
     desc.uuid = &u.uuid;
+    desc.element = element;
 
     chrc = get_base_chrc(LAST_DB_ATTR);
     if (!chrc) {
