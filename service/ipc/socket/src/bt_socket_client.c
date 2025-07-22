@@ -574,7 +574,9 @@ static int bt_socket_async_client_handle_packet(bt_instance_t* ins, bt_message_p
 {
     bt_socket_async_client_t* priv = ins->priv;
 
-    if (packet->code > BT_MESSAGE_START && packet->code < BT_MESSAGE_END) {
+    if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_MESSAGE_START, BT_MESSAGE_END)
+        || (BT_IPC_CODE_CHECK_TYPE(packet->code, BT_IPC_CODE_TYPE_COMMAND)
+            && !BT_IPC_CODE_CHECK_GROUP(packet->code, BT_IPC_CODE_GROUP_LEGACY))) {
         bt_message_context_t* ctx = (bt_message_context_t*)(uintptr_t)packet->context;
         bt_message_context_t* head = bt_list_node(bt_list_head(priv->pending_queue));
 
@@ -584,7 +586,9 @@ static int bt_socket_async_client_handle_packet(bt_instance_t* ins, bt_message_p
             ctx->reply_cb(ins, packet, ctx->cb, ctx->userdata);
 
         bt_list_remove_node(priv->pending_queue, bt_list_head(priv->pending_queue));
-    } else if (packet->code > BT_CALLBACK_START && packet->code < BT_CALLBACK_END) {
+    } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_CALLBACK_START, BT_CALLBACK_END)
+        || (BT_IPC_CODE_CHECK_TYPE(packet->code, BT_IPC_CODE_TYPE_CALLBACK)
+            && !BT_IPC_CODE_CHECK_GROUP(packet->code, BT_IPC_CODE_GROUP_LEGACY))) {
         bt_socket_client_callback_process(ins, packet, true);
     } else {
         assert(0);
