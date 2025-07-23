@@ -1052,4 +1052,9 @@ bt_status_t bt_sal_gatt_server_set_phy(bt_controller_id_t id, bt_address_t* addr
     return bt_sal_le_set_phy(id, addr, tx_phy, rx_phy);
 }
 
+void bt_sal_gatt_server_connection_state_changed_callback(bt_controller_id_t id, bt_address_t* addr, profile_connection_state_t state)
+{
+    if_gatts_on_connection_state_changed(addr, state);
+}
+
 #endif /* CONFIG_BLUETOOTH_GATT*/
