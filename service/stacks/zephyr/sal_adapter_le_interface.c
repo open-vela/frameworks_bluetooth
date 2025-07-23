@@ -19,6 +19,8 @@
 #include "adapter_internel.h"
 #include "gattc_service.h"
 #include "gatts_service.h"
+#include "sal_gatt_client_interface.h"
+#include "sal_gatt_server_interface.h"
 #include "sal_interface.h"
 #include "service_loop.h"
 
@@ -207,11 +209,11 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     adapter_on_connection_state_changed(&state);
 #ifdef CONFIG_BLUETOOTH_GATT
     if (role & GATT_ROLE_SERVER) {
-        if_gatts_on_connection_state_changed(&state.addr, profile_state);
+        bt_sal_gatt_server_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, profile_state);
     }
 
     if (role & GATT_ROLE_CLIENT) {
-        if_gattc_on_connection_state_changed(&state.addr, profile_state);
+        bt_sal_gatt_client_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, profile_state);
     }
 #endif
 }
@@ -286,11 +288,11 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
     adapter_on_connection_state_changed(&state);
 #ifdef CONFIG_BLUETOOTH_GATT
     if (role & GATT_ROLE_SERVER) {
-        if_gatts_on_connection_state_changed(&state.addr, PROFILE_STATE_DISCONNECTED);
+        bt_sal_gatt_server_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, PROFILE_STATE_DISCONNECTED);
     }
 
     if (role & GATT_ROLE_CLIENT) {
-        if_gattc_on_connection_state_changed(&state.addr, PROFILE_STATE_DISCONNECTED);
+        bt_sal_gatt_client_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, PROFILE_STATE_DISCONNECTED);
     }
 #endif
 }
@@ -632,9 +634,9 @@ bt_status_t le_conn_set_role(bt_address_t* addr, uint8_t flag)
 
         if (info->conn) {
             if ((info->role & GATT_ROLE_CLIENT) && flag == GATT_ROLE_SERVER) {
-                if_gatts_on_connection_state_changed(&info->addr, PROFILE_STATE_CONNECTED);
+                bt_sal_gatt_server_connection_state_changed_callback(PRIMARY_ADAPTER, &info->addr, PROFILE_STATE_CONNECTED);
             } else if ((info->role & GATT_ROLE_SERVER) && flag == GATT_ROLE_CLIENT) {
-                if_gattc_on_connection_state_changed(&info->addr, PROFILE_STATE_CONNECTED);
+                bt_sal_gatt_client_connection_state_changed_callback(PRIMARY_ADAPTER, &info->addr, PROFILE_STATE_CONNECTED);
             }
             return BT_STATUS_DONE;
         }
