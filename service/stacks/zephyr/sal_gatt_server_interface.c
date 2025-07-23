@@ -22,8 +22,6 @@
 #include <zephyr/bluetooth/l2cap.h>
 #include <zephyr/bluetooth/uuid.h>
 
-#include "sal_gatt_server_interface.h"
-
 #include "bluetooth.h"
 #include "bt_list.h"
 #include "bt_status.h"
@@ -152,14 +150,6 @@ static uint8_t svc_count;
 static struct bt_gatt_service server_svcs[CONFIG_GATT_SERVER_MAX_SERVICES];
 static struct bt_gatt_attr server_db[CONFIG_GATT_SERVER_MAX_ATTRIBUTES];
 
-static void zblue_conn_get_addr(struct bt_conn* conn, bt_address_t* addr)
-{
-    struct bt_conn_info info;
-
-    bt_conn_get_info(conn, &info);
-    bt_addr_set(addr, info.le.dst->a.val);
-}
-
 static ssize_t read_value(struct bt_conn* conn, const struct bt_gatt_attr* attr,
     void* buf, uint16_t len, uint16_t offset)
 {
@@ -190,7 +180,7 @@ static ssize_t write_value(struct bt_conn* conn, const struct bt_gatt_attr* attr
     memcpy(user_data->data + offset, buf, len);
     user_data->len = offset + len;
 
-    zblue_conn_get_addr(conn, &addr);
+    get_le_addr_from_conn(conn, &addr);
 
     if_gatts_on_received_element_write_request(&addr, GATT_OPS_WRITE_REQUEST, element->handle, (uint8_t*)buf, offset, len);
 
@@ -398,7 +388,7 @@ static ssize_t bt_sal_on_ccc_written(struct bt_conn* conn, const struct bt_gatt_
 
     value = ccc->cfg[index].value;
 
-    zblue_conn_get_addr(conn, &addr);
+    get_le_addr_from_conn(conn, &addr);
 
     if_gatts_on_received_element_write_request(&addr, GATT_OPS_WRITE_REQUEST,
         element->handle, (uint8_t*)&value, 0, sizeof(value));
@@ -518,7 +508,7 @@ static void zblue_gatts_mtu_updated_callback(struct bt_conn* conn, uint16_t tx, 
     bt_address_t addr;
 
     BT_LOGD("Updated MTU: TX: %d RX: %d bytes, MIN: %d", tx, rx, MIN(tx, rx));
-    zblue_conn_get_addr(conn, &addr);
+    get_le_addr_from_conn(conn, &addr);
     if_gatts_on_mtu_changed(&addr, tx - 3);
 }
 
@@ -872,7 +862,7 @@ static void send_notification_result(struct bt_conn* conn, void* user_data)
         return;
     }
 
-    zblue_conn_get_addr(conn, &addr);
+    get_le_addr_from_conn(conn, &addr);
 
     if_gatts_on_notification_sent(&addr, element->handle, GATT_STATUS_SUCCESS);
 }
@@ -959,7 +949,7 @@ static void send_indication_result(struct bt_conn* conn, struct bt_gatt_indicate
         return;
     }
 
-    zblue_conn_get_addr(conn, &addr);
+    get_le_addr_from_conn(conn, &addr);
 
     if (err) {
         BT_LOGE("%s, send indication failed for handle:0x%04x", __func__, element->handle);
