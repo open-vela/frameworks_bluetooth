@@ -53,6 +53,8 @@ extern "C" {
 typedef enum {
     SPP_PROXY_STATE_CONNECTED,
     SPP_PROXY_STATE_DISCONNECTED,
+    SPP_PROXY_STATE_CONNECTING,
+    SPP_PROXY_STATE_CLOSING,
 } spp_proxy_state_t;
 
 /**
