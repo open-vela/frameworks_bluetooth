@@ -622,6 +622,12 @@ static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* 
         return;
     }
 
+    BT_LOGD("%s, connection port %" PRIu16 ", proxy state: %d", __func__, device->conn_id, device->proxy_state);
+    if (device->proxy_state == SPP_PROXY_STATE_CLOSING) {
+        spp_device_cleanup(device, false);
+        return;
+    }
+
     BT_LOGD("spp proxy connected, status: %d", status);
     device->proxy_state = SPP_PROXY_STATE_CONNECTED;
     spp_rx_buffer_send(device);
@@ -752,12 +758,19 @@ static void spp_on_connection_state_chaneged(bt_address_t* addr, uint16_t port,
             return;
         }
 
+        device->proxy_state = SPP_PROXY_STATE_CONNECTING; // waiting for proxy connection
         spp_notify_proxy_state(device, SPP_PROXY_STATE_CONNECTED);
         bt_pm_conn_open(PROFILE_SPP, &device->addr);
     } else if (state == PROFILE_STATE_DISCONNECTED) {
         bt_pm_conn_close(PROFILE_SPP, &device->addr);
         spp_notify_proxy_state(device, SPP_PROXY_STATE_DISCONNECTED);
-        spp_device_cleanup(device, false);
+        BT_LOGD("spp proxy state: %d", device->proxy_state);
+        if (device->proxy_state == SPP_PROXY_STATE_CONNECTING) {
+            BT_LOGI("spp proxy is waiting for connection, connection port: %" PRIu16 " release later", device->conn_id);
+            device->proxy_state = SPP_PROXY_STATE_CLOSING;
+        } else {
+            spp_device_cleanup(device, false);
+        }
     }
 }
 
