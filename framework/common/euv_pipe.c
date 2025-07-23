@@ -219,7 +219,6 @@ int euv_pipe_read_stop(euv_pipe_t* handle)
     }
 
     if (handle->cli_pipe.data) {
-        BT_LOGD("%s, free cli_pipe's reader ", __func__);
         free(handle->cli_pipe.data);
         handle->cli_pipe.data = NULL;
     }
