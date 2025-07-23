@@ -155,6 +155,7 @@ static int do_spp_write(spp_device_t* device, uint8_t* buffer, uint16_t length);
 static void spp_server_cleanup_devices(spp_server_t* server);
 static void spp_proxy_connection_callback(euv_pipe_t* handle, int status, void* user_data);
 static bt_status_t spp_unregister_app(void** remote, void* handle);
+static bool spp_rx_buffer_empty(spp_device_t* device);
 
 /****************************************************************************
  * Private Data
@@ -412,6 +413,19 @@ static void spp_device_close(spp_device_t* device)
         BT_LOGD("%s, free cache buf, length: %d", __func__, device->cache_buf.length);
         free(device->cache_buf.buffer_head);
         device->cache_buf.length = 0;
+    }
+
+    if (!spp_rx_buffer_empty(device)) {
+        BT_LOGD("%s, free rx cache list, list_length: %zu", __func__, list_length(&device->rx_list));
+        struct list_node *node, *tmp;
+
+        list_for_every_safe(&device->rx_list, node, tmp)
+        {
+            /* The memory pointed to by buf->buffer must be released prior to the protocol stack
+            reporting status. */
+            list_delete(node);
+            free(node);
+        }
     }
 
     device->app_handle = NULL;
