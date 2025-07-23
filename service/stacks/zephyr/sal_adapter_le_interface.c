@@ -446,7 +446,7 @@ static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err r
     bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
 }
 
-static void zblue_on_bond_deleted(bt_controller_id_t id, const bt_addr_le_t* peer)
+static void zblue_on_bond_deleted(bt_controller_id_t dev_id, const bt_addr_le_t* peer)
 {
     bt_address_t addr;
     bool is_ctkd = false;
@@ -479,11 +479,13 @@ static void zblue_unregister_callback(void){
 }
 
 
-static void zblue_on_ready_cb(int err)
+static void zblue_on_ready_cb(bt_controller_id_t dev_id, int err)
 {
     if (IS_ENABLED(CONFIG_SETTINGS)) {
         settings_load();
     }
+
+    UNUSED(dev_id);
 
     if (err) {
         BT_LOGD("zblue init failed (err %d)\n", err);
