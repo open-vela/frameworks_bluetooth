@@ -305,6 +305,7 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
     bt_address_t addr;
     bt_address_t le_addr;
     bt_address_t* remote_addr;
+    int ret;
     bool encrypted = false;
 
     BT_LOGD("%s, level: %d", __func__, level);
@@ -324,6 +325,13 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 
     if (err) {
         adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BLE, BT_STATUS_FAIL, false);
+        if (err == BT_SECURITY_ERR_PIN_OR_KEY_MISSING) {
+            BT_LOGD("%s, pin or key missing, remove old key", __func__);
+            ret = bt_unpair(BT_ID_DEFAULT, info.le.dst);
+            if (ret < 0) {
+                BT_LOGE("%s, Failed to remove old key: %d", __func__, ret);
+            }
+        }
     }
 
     if (level >= BT_SECURITY_L2 && err == BT_SECURITY_ERR_SUCCESS) {
