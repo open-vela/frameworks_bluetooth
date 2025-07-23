@@ -404,8 +404,6 @@ static void STACK_CALL(conn_disconnect)(void* args)
     struct bt_conn* conn;
     int err;
 
-    gatt_free_instance(&req->addr);
-
     conn = get_le_conn_from_addr(&req->addr);
     if (!conn) {
         BT_LOGE("%s, conn null", __func__);
@@ -1330,4 +1328,13 @@ void bt_sal_gatt_client_connection_updated_callback(bt_controller_id_t id, bt_ad
 {
     /* Notthing to do, implement within zblue_on_param_updated*/
 }
+
+void bt_sal_gatt_client_connection_state_changed_callback(bt_controller_id_t id, bt_address_t* addr, profile_connection_state_t state)
+{
+    if (state == PROFILE_STATE_DISCONNECTED) {
+        gatt_free_instance(addr);
+    }
+    if_gattc_on_connection_state_changed(addr, state);
+}
+
 #endif /* CONFIG_BLUETOOTH_GATT */

@@ -44,5 +44,6 @@ bt_status_t bt_sal_gatt_client_read_phy(bt_controller_id_t id, bt_address_t* add
 bt_status_t bt_sal_gatt_client_set_phy(bt_controller_id_t id, bt_address_t* addr, ble_phy_type_t tx_phy, ble_phy_type_t rx_phy);
 void bt_sal_gatt_client_connection_updated_callback(bt_controller_id_t id, bt_address_t* addr, uint16_t connection_interval, uint16_t peripheral_latency,
     uint16_t supervision_timeout, bt_status_t status);
+void bt_sal_gatt_client_connection_state_changed_callback(bt_controller_id_t id, bt_address_t* addr, profile_connection_state_t state);
 
 #endif /* __SAL_GATT_CLIENT_INTERFACE_H__ */
