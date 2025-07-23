@@ -386,7 +386,7 @@ static spp_device_t* spp_device_open(spp_device_t* device)
         goto error;
     }
 
-    BT_LOGD("spp proxy open success, name: %s", device->proxy_name);
+    BT_LOGD("spp proxy open success, name: %s, handle: %p", device->proxy_name, device->handle);
     return device;
 
 error:
@@ -1179,6 +1179,7 @@ static bt_status_t spp_connect(void* handle, bt_address_t* addr, int16_t scn, bt
     // todo: start connect timer, release device if timeout
     *port = device->conn_id;
     device->state = PROFILE_STATE_CONNECTING;
+    BT_LOGD("%s, return port: %" PRIu16, __func__, device->conn_id);
 
 unlock_exit:
     pthread_mutex_unlock(&g_spp_handle.spp_lock);
