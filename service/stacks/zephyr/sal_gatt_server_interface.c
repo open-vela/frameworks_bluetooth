@@ -506,10 +506,11 @@ static void set_value(uint16_t attr_id, uint8_t* val, uint16_t len)
 static void zblue_gatts_mtu_updated_callback(struct bt_conn* conn, uint16_t tx, uint16_t rx)
 {
     bt_address_t addr;
+    uint16_t att_mtu = MIN(tx, rx);
+    uint16_t att_payload = (att_mtu >= 23) ? (att_mtu - 3) : 20;
 
-    BT_LOGD("Updated MTU: TX: %d RX: %d bytes, MIN: %d", tx, rx, MIN(tx, rx));
     get_le_addr_from_conn(conn, &addr);
-    if_gatts_on_mtu_changed(&addr, tx - 3);
+    if_gatts_on_mtu_changed(&addr, att_payload);
 }
 
 static struct bt_gatt_cb zblue_gatt_callbacks = {
