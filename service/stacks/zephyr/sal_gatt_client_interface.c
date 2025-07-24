@@ -1164,10 +1164,11 @@ bt_status_t bt_sal_gatt_client_register_notifications(bt_controller_id_t id, bt_
 static void zblue_gattc_mtu_updated_callback(struct bt_conn* conn, uint16_t tx, uint16_t rx)
 {
     bt_address_t addr;
+    uint16_t att_mtu = MIN(tx, rx);
+    uint16_t att_payload = (att_mtu >= 23) ? (att_mtu - 3) : 20;
 
-    BT_LOGD("Updated MTU: TX: %d RX: %d bytes, MIN: %d", tx, rx, MIN(tx, rx));
     get_le_addr_from_conn(conn, &addr);
-    if_gattc_on_mtu_changed(&addr, rx - 3, BT_STATUS_SUCCESS);
+    if_gattc_on_mtu_changed(&addr, att_payload, BT_STATUS_SUCCESS);
 }
 
 static void gatt_exchange_mtu_func(struct bt_conn* conn, uint8_t err,
