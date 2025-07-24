@@ -475,7 +475,7 @@ static void zblue_register_callback(void)
 
 static void zblue_unregister_callback(void)
 {
-    bt_conn_cb_register(NULL);
+    bt_conn_cb_unregister(&g_conn_cbs);
     bt_conn_le_auth_cb_register(NULL);
     bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
 }
