@@ -509,14 +509,10 @@ static struct bt_br_discovery_cb g_br_discovery_cb = {
 
 static void zblue_register_callback(void)
 {
-    static struct bt_hfp_hf_cb hf_cb;
-
     bt_br_discovery_cb_register(&g_br_discovery_cb);
     bt_conn_cb_register(&g_conn_cbs);
     bt_conn_auth_cb_register(&g_conn_auth_cbs);
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
-    /* HFP HF for test */
-    bt_hfp_hf_register(&hf_cb);
 }
 
 static void zblue_unregister_callback(void)
