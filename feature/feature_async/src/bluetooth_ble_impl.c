@@ -21,24 +21,13 @@
 #include "bluetooth_ble.h"
 #include "bt_adapter.h"
 #include "bt_le_advertiser.h"
+#include "bt_message_advertiser.h"
 #include "feature_bluetooth.h"
 #include "feature_context.h"
 #include "feature_exports.h"
 #include "feature_log.h"
 
 #define file_tag "bluetooth_ble"
-
-typedef struct {
-    bt_instance_t* bluetooth_ins;
-    FeatureInterfaceHandle interface;
-    bool busy;
-    void* adv;
-} advertiser_t;
-
-static advertiser_t* advertiser_obj_get(FeatureInterfaceHandle handle)
-{
-    return (advertiser_t*)FeatureGetObjectData(handle);
-}
 
 void system_bluetooth_ble_onRegister(const char* feature_name)
 {
@@ -47,7 +36,7 @@ void system_bluetooth_ble_onRegister(const char* feature_name)
 
 void system_bluetooth_ble_onCreate(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
-    feature_bluetooth_init_bt_ins_async(FEATURE_BLUETOOTH_BLE, handle);
+    feature_bluetooth_init_bt_ins_async(handle);
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
@@ -63,7 +52,6 @@ void system_bluetooth_ble_onDetached(FeatureRuntimeContext ctx, FeatureInstanceH
 
 void system_bluetooth_ble_onDestroy(FeatureRuntimeContext ctx, FeatureProtoHandle handle)
 {
-    feature_bluetooth_uninit_bt_ins_async(FEATURE_BLUETOOTH_BLE, handle);
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
@@ -72,44 +60,133 @@ void system_bluetooth_ble_onUnregister(const char* feature_name)
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
+static bool adv_userdata_cmp(void* node, void* userdata)
+{
+    return ((feature_bluetooth_adv_info_t*)node)->start_userdata == userdata;
+}
+
+static bool adv_cmp(void* node, void* adv)
+{
+    return ((feature_bluetooth_adv_info_t*)node)->adv == adv;
+}
+
+#define FIND_INFO_BY_USERDATA(ins, data, type, ret)                                              \
+    do {                                                                                         \
+        feature_bluetooth_features_info_t* features_info;                                        \
+        bt_list_t* list;                                                                         \
+        if (!ins) {                                                                              \
+            ret = NULL;                                                                          \
+            break;                                                                               \
+        }                                                                                        \
+        features_info = (feature_bluetooth_features_info_t*)(ins->context);                      \
+        list = features_info->feature_ble_##type;                                                \
+        if (!list) {                                                                             \
+            ret = NULL;                                                                          \
+            break;                                                                               \
+        }                                                                                        \
+        ret = (feature_bluetooth_##type##_info_t*)bt_list_find(list, type##_userdata_cmp, data); \
+    } while (0);
+
+#define FIND_INFO_BY_OBJECT(ins, obj, type, ret)                                       \
+    do {                                                                               \
+        feature_bluetooth_features_info_t* features_info;                              \
+        bt_list_t* list;                                                               \
+        if (!ins) {                                                                    \
+            ret = NULL;                                                                \
+            break;                                                                     \
+        }                                                                              \
+        features_info = (feature_bluetooth_features_info_t*)(ins->context);            \
+        list = features_info->feature_ble_##type;                                      \
+        if (!list) {                                                                   \
+            ret = NULL;                                                                \
+            break;                                                                     \
+        }                                                                              \
+        ret = (feature_bluetooth_##type##_info_t*)bt_list_find(list, type##_cmp, obj); \
+    } while (0);
+
 void system_bluetooth_ble_Advertiser_interface_adv_finalize(FeatureInterfaceHandle handle)
 {
-    advertiser_t* adv_info = advertiser_obj_get(handle);
+    feature_bluetooth_adv_info_t* adv_info = (feature_bluetooth_adv_info_t*)FeatureGetObjectData(handle);
+    bt_instance_t* bluetooth_instance = adv_info->ins;
+    feature_bluetooth_features_info_t* features_info = (feature_bluetooth_features_info_t*)(bluetooth_instance->context);
 
     if (adv_info->adv) {
         FEATURE_LOG_INFO("%s::%s(), stop advertising\n", file_tag, __FUNCTION__);
-        bt_le_stop_advertising_async(adv_info->bluetooth_ins, adv_info->adv, NULL, NULL);
+        bt_le_stop_advertising_async(bluetooth_instance, adv_info->adv, NULL, NULL);
     }
 
-    free(adv_info);
-    adv_info = NULL;
-    FeatureSetObjectData(handle, NULL);
+    if (adv_info->start_userdata) {
+        free(adv_info->start_userdata);
+        adv_info->start_userdata = NULL;
+    }
+
+    bt_list_remove(features_info->feature_ble_adv, adv_info);
 }
 
 FeatureInterfaceHandle system_bluetooth_ble_wrap_createAdvertiser(FeatureInstanceHandle feature, AppendData append_data)
 {
-    advertiser_t* adv_info = (advertiser_t*)malloc(sizeof(advertiser_t));
+    bt_instance_t* bluetooth_instance = feature_bluetooth_get_bt_ins(feature);
+    feature_bluetooth_features_info_t* features_info = (feature_bluetooth_features_info_t*)(bluetooth_instance->context);
+    feature_bluetooth_adv_info_t* adv_info = (feature_bluetooth_adv_info_t*)calloc(1, sizeof(feature_bluetooth_adv_info_t));
 
     FeatureInterfaceHandle handle = system_bluetooth_ble_createAdvertiser_instance(feature);
     FEATURE_LOG_INFO("%s::%s(), FeatureInstanceHandle: %p, FeatureInterfaceHandle: %p\n", file_tag, __FUNCTION__, feature, handle);
 
-    adv_info->bluetooth_ins = feature_bluetooth_get_bt_ins(feature);
+    adv_info->ins = bluetooth_instance;
     adv_info->interface = handle;
-    adv_info->adv = NULL;
-    adv_info->busy = false;
 
+    bt_list_add_tail(features_info->feature_ble_adv, adv_info);
     FeatureSetObjectData(handle, adv_info);
+
     return handle;
 }
 
 static void on_advertising_start_cb(bt_advertiser_t* adv, uint8_t adv_id, uint8_t status)
 {
+    feature_data_t* data;
+    feature_bluetooth_adv_info_t* adv_info;
+    bt_instance_t* bluetooth_instance;
+
+    bluetooth_instance = ((bt_advertiser_remote_t*)adv)->ins;
+    FIND_INFO_BY_OBJECT(bluetooth_instance, adv, adv, adv_info);
+    if (!adv_info) {
+        FEATURE_LOG_ERROR("%s, adv_info not found", __func__);
+        return;
+    }
+
+    data = (feature_data_t*)adv_info->start_userdata;
+
     FEATURE_LOG_INFO("%s, handle:%p, adv_id:%d, status:%d", __func__, adv, adv_id, status);
+
+    if (status != BT_STATUS_SUCCESS) {
+        FEATURE_LOG_ERROR("%s, adv fail", __func__);
+        adv_info->adv = NULL;
+        adv_info->busy = false;
+        FeaturePromiseReject(adv_info->interface, data->pid, status, "start advertising failed!");
+    } else {
+        FeaturePromiseResolve(adv_info->interface, data->pid);
+    }
+
+    free(adv_info->start_userdata);
+    adv_info->start_userdata = NULL;
 }
 
 static void on_advertising_stopped_cb(bt_advertiser_t* adv, uint8_t adv_id)
 {
+    feature_bluetooth_adv_info_t* adv_info;
+    bt_instance_t* bluetooth_instance;
+
+    bluetooth_instance = ((bt_advertiser_remote_t*)adv)->ins;
+    FIND_INFO_BY_OBJECT(bluetooth_instance, adv, adv, adv_info);
+    if (!adv_info) {
+        FEATURE_LOG_ERROR("%s, adv_info not found", __func__);
+        return;
+    }
+
     FEATURE_LOG_INFO("%s, handle:%p, adv_id:%d", __func__, adv, adv_id);
+
+    adv_info->adv = NULL;
+    adv_info->busy = false;
 }
 
 static advertiser_callback_t adv_callback = {
@@ -147,7 +224,8 @@ bt_status_t get_valid_uuid16(uint16_t* out, const char* in)
     return BT_STATUS_SUCCESS;
 }
 
-static bt_status_t feature_get_advertiser_data(system_bluetooth_ble_AdvertiseData* data, advertiser_data_t* adv_data, advertiser_t* adv_info)
+static bt_status_t feature_get_advertiser_data(system_bluetooth_ble_AdvertiseData* data,
+    advertiser_data_t* adv_data, feature_bluetooth_adv_info_t* adv_info)
 {
     bt_uuid_t uuid;
     int index = 0;
@@ -242,7 +320,7 @@ static bt_status_t feature_set_adv_params(system_bluetooth_ble_AdvertiseSetting*
 }
 
 static bt_status_t feature_set_adv_data(system_bluetooth_ble_AdvertiseData* adv_data, advertiser_data_t** adv,
-    uint8_t** p_adv_data, uint16_t* adv_len, advertiser_t* adv_info)
+    uint8_t** p_adv_data, uint16_t* adv_len, feature_bluetooth_adv_info_t* adv_info)
 {
     bt_uuid_t uuid;
     uint16_t id;
@@ -288,7 +366,7 @@ error:
 }
 
 static bt_status_t feature_set_scan_rsp_data(system_bluetooth_ble_AdvertiseData* scan_rsp_data, advertiser_data_t** scan_rsp,
-    uint8_t** p_scan_rsp_data, uint16_t* scan_rsp_len, advertiser_t* adv_info)
+    uint8_t** p_scan_rsp_data, uint16_t* scan_rsp_len, feature_bluetooth_adv_info_t* adv_info)
 {
     if (!scan_rsp_data)
         return BT_STATUS_SUCCESS;
@@ -317,51 +395,41 @@ error:
 static void start_adv_cb(bt_instance_t* ins, bt_status_t status, void* adv, void* userdata)
 {
     feature_data_t* data = (feature_data_t*)userdata;
-    advertiser_t* adv_info;
+    feature_bluetooth_adv_info_t* adv_info;
 
-    if (FeatureInstanceIsDetached(data->feature_if)) {
-        FEATURE_LOG_ERROR("feature instance is detached!");
+    FIND_INFO_BY_USERDATA(ins, userdata, adv, adv_info);
+    if (!adv_info)
         goto error;
-    }
 
-    adv_info = advertiser_obj_get(data->feature_if);
     assert(adv_info->adv == NULL);
 
     if (adv) {
         adv_info->adv = adv;
-        FeaturePromiseResolve(adv_info->interface, data->pid);
     } else {
         adv_info->busy = false;
         FeaturePromiseReject(adv_info->interface, data->pid, status, "start advertising failed!");
     }
 
-    FeatureFreeInstanceHandle(data->feature_if);
-    free(data);
     return;
 
 error:
     if (adv)
-        bt_le_stop_advertising_async(bluetooth_find_async_instance(getpid()), adv, NULL, NULL);
-
-    if (!FeatureInstanceIsDetached(data->feature_if))
-        FeatureFreeInstanceHandle(data->feature_if);
-
-    free(data);
+        bt_le_stop_advertising_async(ins, adv, NULL, NULL);
 }
 
 void system_bluetooth_ble_Advertiser_interface_adv_startAdvertising(FeatureInterfaceHandle handle, AppendData append_data,
     FtPromiseId pid, system_bluetooth_ble_StartAdvertisingParams* params)
 {
     bt_status_t status;
-    feature_data_t* data;
-    advertiser_t* adv_info;
+    feature_data_t* data = NULL;
+    feature_bluetooth_adv_info_t* adv_info = NULL;
     ble_adv_params_t adv_params = { 0 };
     advertiser_data_t *adv = NULL, *scan_rsp = NULL;
     uint8_t *p_adv_data = NULL, *p_scan_rsp_data = NULL;
     uint16_t adv_len = 0;
     uint16_t scan_rsp_len = 0;
 
-    adv_info = advertiser_obj_get(handle);
+    adv_info = FeatureGetObjectData(handle);
     status = BT_STATUS_FAIL;
 
     if (!params || !params->setting)
@@ -388,12 +456,18 @@ void system_bluetooth_ble_Advertiser_interface_adv_startAdvertising(FeatureInter
     if (!data)
         goto error;
 
-    data->feature_if = FeatureDupInstanceHandle(handle);
+    data->interface = handle;
     data->pid = pid;
 
-    status = bt_le_start_advertising_async(adv_info->bluetooth_ins, &adv_params,
+    adv_info->start_userdata = (void*)data;
+
+    status = bt_le_start_advertising_async(adv_info->ins, &adv_params,
         p_adv_data, adv_len, p_scan_rsp_data, scan_rsp_len, &adv_callback,
         start_adv_cb, (void*)data);
+
+    if (status != BT_STATUS_SUCCESS) {
+        goto error;
+    }
 
     if (adv) {
         advertiser_data_free(adv);
@@ -405,15 +479,15 @@ void system_bluetooth_ble_Advertiser_interface_adv_startAdvertising(FeatureInter
         scan_rsp = NULL;
     }
 
-    if (status == BT_STATUS_SUCCESS) {
-        adv_info->busy = true;
-        return;
-    }
-
-    FeatureFreeInstanceHandle(data->feature_if);
-    free(data);
+    adv_info->busy = true;
+    return;
 
 error:
+    if (data) {
+        free(data);
+        adv_info->start_userdata = NULL;
+    }
+
     if (adv)
         advertiser_data_free(adv);
 
@@ -425,13 +499,10 @@ error:
 
 void system_bluetooth_ble_Advertiser_interface_adv_stopAdvertising(FeatureInterfaceHandle handle, AppendData append_data)
 {
-    advertiser_t* adv_info;
+    feature_bluetooth_adv_info_t* adv_info = FeatureGetObjectData(handle);
 
-    adv_info = advertiser_obj_get(handle);
     if (adv_info->adv == NULL)
         return;
 
-    bt_le_stop_advertising_async(adv_info->bluetooth_ins, adv_info->adv, NULL, NULL);
-    adv_info->adv = NULL;
-    adv_info->busy = false;
+    bt_le_stop_advertising_async(adv_info->ins, adv_info->adv, NULL, NULL);
 }

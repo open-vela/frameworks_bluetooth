@@ -21,10 +21,7 @@
 #include "bt_list.h"
 #include "feature_exports.h"
 
-typedef enum {
-    FEATURE_BLUETOOTH,
-    FEATURE_BLUETOOTH_BLE,
-} feature_bluetooth_feature_type_t;
+#define FEATURE_MANAGER_BLUETOOTH_DATA "bluetooth"
 
 typedef struct {
     FtCallbackId feature_callback_id;
@@ -49,18 +46,28 @@ typedef struct {
     void* params;
     union {
         FeatureInstanceHandle feature_ins;
-        FeatureInterfaceHandle feature_if;
+        FeatureInterfaceHandle interface;
     };
 } feature_data_t;
 
 typedef struct {
-    uint32_t created_features;
+    bt_instance_t* ins;
+    FeatureInterfaceHandle interface;
+    void* adv;
+    void* start_userdata;
+    bool busy;
+} feature_bluetooth_adv_info_t;
+
+typedef struct {
+    bt_list_t* feature_ble_adv;
+
 } feature_bluetooth_features_info_t;
 
 char* StringToFtString(const char* str);
 void feature_bluetooth_post_task(FeatureInstanceHandle handle, FtCallbackId callback_id, void* data);
 
-void feature_bluetooth_init_bt_ins_async(feature_bluetooth_feature_type_t feature, FeatureProtoHandle handle);
-void feature_bluetooth_uninit_bt_ins_async(feature_bluetooth_feature_type_t feature, FeatureProtoHandle handle);
+void feature_bluetooth_init_bt_ins_async(FeatureProtoHandle handle);
+void feature_bluetooth_uninit_bt_ins_async(void* data);
 bt_instance_t* feature_bluetooth_get_bt_ins(FeatureInstanceHandle feature);
+void feature_ble_list_free(void* data);
 #endif // _FEATURE_BLUETOOTH_H_
