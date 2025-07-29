@@ -18,6 +18,8 @@
 
 #include "basic.h"
 
+#wxd
+
 void app_bt_gap_handle_message(bt_instance_t* g_bt_ins, node_t* node)
 {
     // Handle Bluetooth message，Call the API interface of Bluetooth.
