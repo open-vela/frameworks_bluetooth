@@ -21,8 +21,6 @@
 
 #define KVDB_USE_FEATURE "persist.using_bluetooth_feature"
 
-uint32_t g_created_features;
-
 char* StringToFtString(const char* str)
 {
     if (!str) {
@@ -45,6 +43,40 @@ static bool feature_bluetooth_using_feature()
     return using_bluetoothd_feature;
 }
 
+void feature_ble_list_free(void* data)
+{
+    free(data);
+}
+
+static void feature_bluetooth_list_init(bt_instance_t* bt_ins)
+{
+    feature_bluetooth_features_info_t* features_info;
+    if (!bt_ins) {
+        return;
+    }
+
+    features_info = (feature_bluetooth_features_info_t*)calloc(1, sizeof(feature_bluetooth_features_info_t));
+
+    assert(features_info);
+
+    features_info->feature_ble_adv = bt_list_new(feature_ble_list_free);
+    bt_ins->context = features_info;
+}
+
+static void feature_bluetooth_list_uninit(bt_instance_t* bt_ins)
+{
+    feature_bluetooth_features_info_t* features_info;
+    if (!bt_ins) {
+        return;
+    }
+
+    features_info = (feature_bluetooth_features_info_t*)bt_ins->context;
+
+    bt_list_free(features_info->feature_ble_adv);
+    free(bt_ins->context);
+    bt_ins->context = NULL;
+}
+
 static void ipc_connected(bt_instance_t* ins, void* userdata)
 {
     FEATURE_LOG_ERROR("ipc connected");
@@ -55,53 +87,42 @@ static void ipc_disconnected(bt_instance_t* ins, void* userdata, int status)
     FEATURE_LOG_ERROR("ipc disconnected");
 }
 
-void feature_bluetooth_init_bt_ins_async(feature_bluetooth_feature_type_t type, FeatureProtoHandle handle)
+void feature_bluetooth_init_bt_ins_async(FeatureProtoHandle handle)
 {
-    bt_instance_t* bluetooth_ins;
     uv_loop_t* loop;
-    FeatureManagerHandle manager;
-    feature_bluetooth_features_info_t* features_info;
+    FeatureManagerHandle manager = FeatureGetManagerHandleFromProto(handle);
+    void* data = FeatureGetManagerUserData(manager, FEATURE_MANAGER_BLUETOOTH_DATA);
+    bt_instance_t* bluetooth_ins = (bt_instance_t*)data;
 
     if (!feature_bluetooth_using_feature()) {
         FeatureSetProtoData(handle, NULL);
         return;
     }
 
-    manager = FeatureGetManagerHandleFromProto(handle);
-    loop = FeatureGetUVLoop(manager);
-    bluetooth_ins = bluetooth_get_async_instance(loop, ipc_connected, ipc_disconnected, NULL);
+    if (bluetooth_ins) {
+        FeatureSetProtoData(handle, bluetooth_ins);
+        return;
+    }
 
+    loop = FeatureGetUVLoop(manager);
+    bluetooth_ins = bluetooth_create_async_instance(loop, ipc_connected, ipc_disconnected, NULL);
     if (bluetooth_ins == NULL) {
         FEATURE_LOG_ERROR("Failed to get Bluetooth instance.");
         return;
     }
 
-    if (bluetooth_ins->context == NULL) {
-        features_info = (feature_bluetooth_features_info_t*)calloc(1, sizeof(feature_bluetooth_features_info_t));
-        assert(features_info);
-        bluetooth_ins->context = features_info;
-    }
-
-    ((feature_bluetooth_features_info_t*)bluetooth_ins->context)->created_features |= (1UL << type);
+    FeatureSetManagerUserDataWithFreeCallback(manager, FEATURE_MANAGER_BLUETOOTH_DATA, bluetooth_ins, feature_bluetooth_uninit_bt_ins_async);
+    feature_bluetooth_list_init(bluetooth_ins);
 
     FeatureSetProtoData(handle, bluetooth_ins);
 }
 
-void feature_bluetooth_uninit_bt_ins_async(feature_bluetooth_feature_type_t type, FeatureProtoHandle handle)
+void feature_bluetooth_uninit_bt_ins_async(void* data)
 {
-    bt_instance_t* bluetooth_ins;
+    bt_instance_t* bluetooth_ins = (bt_instance_t*)data;
     feature_bluetooth_features_info_t* features_info;
 
     if (!feature_bluetooth_using_feature()) {
-        return;
-    }
-
-    FeatureSetProtoData(handle, NULL);
-
-    bluetooth_ins = bluetooth_find_async_instance(getpid());
-
-    if (bluetooth_ins == NULL) {
-        FEATURE_LOG_ERROR("Bluetooth instance not found.");
         return;
     }
 
@@ -112,14 +133,7 @@ void feature_bluetooth_uninit_bt_ins_async(feature_bluetooth_feature_type_t type
         return;
     }
 
-    features_info->created_features &= ~(1UL << type);
-
-    if (features_info->created_features) {
-        return;
-    }
-
-    free(bluetooth_ins->context);
-    bluetooth_ins->context = NULL;
+    feature_bluetooth_list_uninit(bluetooth_ins);
     bluetooth_delete_async_instance(bluetooth_ins);
 }
 
