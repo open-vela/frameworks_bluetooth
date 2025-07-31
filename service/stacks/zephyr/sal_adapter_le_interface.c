@@ -233,12 +233,12 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
     BT_LOGD("%s", __func__);
     bt_conn_get_info(conn, &info);
 
-    if (info.role == BT_HCI_ROLE_CENTRAL) {
-        bt_conn_unref(conn);
-    }
-
     if (info.type != BT_CONN_TYPE_LE) {
         return;
+    }
+
+    if (info.role == BT_HCI_ROLE_CENTRAL) {
+        bt_conn_unref(conn);
     }
 
     for (i = 0; i < ARRAY_SIZE(g_acl_conns); i++) {
@@ -466,18 +466,19 @@ static void zblue_on_bond_deleted(bt_controller_id_t dev_id, const bt_addr_le_t*
     adapter_on_bond_state_changed(remote_addr, BOND_STATE_NONE, BT_TRANSPORT_BLE, BT_STATUS_SUCCESS, is_ctkd);
 }
 
-static void zblue_register_callback(void) {
+static void zblue_register_callback(void)
+{
     bt_conn_cb_register(&g_conn_cbs);
     bt_conn_le_auth_cb_register(&g_conn_auth_cbs);
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
 }
 
-static void zblue_unregister_callback(void){
+static void zblue_unregister_callback(void)
+{
     bt_conn_cb_register(NULL);
     bt_conn_le_auth_cb_register(NULL);
     bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
 }
-
 
 static void zblue_on_ready_cb(bt_controller_id_t dev_id, int err)
 {
