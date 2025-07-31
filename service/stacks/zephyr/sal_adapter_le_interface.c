@@ -232,12 +232,12 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
     BT_LOGD("%s", __func__);
     bt_conn_get_info(conn, &info);
 
-    if (info.role == BT_HCI_ROLE_CENTRAL) {
-        bt_conn_unref(conn);
-    }
-
     if (info.type != BT_CONN_TYPE_LE) {
         return;
+    }
+
+    if (info.role == BT_HCI_ROLE_CENTRAL) {
+        bt_conn_unref(conn);
     }
 
     for (i = 0; i < ARRAY_SIZE(g_acl_conns); i++) {
