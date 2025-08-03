@@ -579,6 +579,10 @@ static le_conn_info_t* le_conn_find(const bt_address_t* addr)
 
 bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr)
 {
+    struct bt_conn_info info;
+    bt_address_t* resolved_addr;
+
+    /* Check local connection info table first */
     for (int i = 0; i < CONFIG_BT_MAX_CONN; i++) {
         if (g_le_conn_info[i].conn == conn) {
             memcpy(addr, &g_le_conn_info[i].addr, sizeof(bt_address_t));
@@ -586,8 +590,32 @@ bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr)
         }
     }
 
-    BT_LOGD("%s, conn not found", __func__);
-    return BT_STATUS_FAIL;
+    /*
+     * Fallback: g_le_conn_info may not be initialized yet if certain events
+     * (e.g. MTU exchange) occur before the connected callback.
+     * Use Zephyr's internal connection info as a fallback source.
+     */
+    if (bt_conn_get_info(conn, &info)) {
+        BT_LOGE("%s: failed to get conn info", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    if (info.type != BT_CONN_TYPE_LE || !info.le.dst) {
+        BT_LOGE("%s: invalid LE connection or dst is null", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    /* Attempt to resolve RPA to identity address */
+    resolved_addr = adapter_get_le_remote_address((bt_address_t*)info.le.dst->a.val,
+        info.le.dst->type);
+    if (resolved_addr) {
+        memcpy(addr, resolved_addr, sizeof(bt_address_t));
+        BT_LOGD("%s: fallback to bt_conn_info and resolved RPA to identity address", __func__);
+    } else {
+        memcpy(addr, info.le.dst->a.val, sizeof(bt_address_t));
+    }
+
+    return BT_STATUS_SUCCESS;
 }
 
 struct bt_conn* get_le_conn_from_addr(bt_address_t* addr)
