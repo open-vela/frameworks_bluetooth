@@ -2218,11 +2218,11 @@ bt_status_t adapter_set_le_address(bt_address_t* addr)
 #endif
 }
 
-bt_status_t adapter_set_le_identity_address(bt_address_t* addr, bool public)
+bt_status_t adapter_set_le_identity_address(bt_address_t* addr, bool is_public)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     // adapter_service_t *adapter = &g_adapter_service;
-    if (public)
+    if (is_public)
         bt_sal_le_set_public_identity(PRIMARY_ADAPTER, addr);
     else
         bt_sal_le_set_static_identity(PRIMARY_ADAPTER, addr);

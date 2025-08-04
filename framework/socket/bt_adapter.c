@@ -542,7 +542,7 @@ bt_status_t bt_adapter_set_le_address(bt_instance_t* ins, bt_address_t* addr)
     return packet.adpt_r.status;
 }
 
-bt_status_t bt_adapter_set_le_identity_address(bt_instance_t* ins, bt_address_t* addr, bool public)
+bt_status_t bt_adapter_set_le_identity_address(bt_instance_t* ins, bt_address_t* addr, bool is_public)
 {
     bt_message_packet_t packet;
     bt_status_t status;
@@ -550,7 +550,7 @@ bt_status_t bt_adapter_set_le_identity_address(bt_instance_t* ins, bt_address_t*
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.adpt_pl._bt_adapter_set_le_identity_address.addr, addr, sizeof(*addr));
-    packet.adpt_pl._bt_adapter_set_le_identity_address.pub = public;
+    packet.adpt_pl._bt_adapter_set_le_identity_address.pub = is_public;
     status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_LE_IDENTITY_ADDRESS);
     if (status != BT_STATUS_SUCCESS) {
         return status;
