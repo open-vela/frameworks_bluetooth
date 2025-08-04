@@ -296,7 +296,7 @@ bt_status_t adapter_set_le_io_capability(uint32_t le_io_cap);
 uint32_t adapter_get_le_io_capability(void);
 bt_status_t adapter_get_le_address(bt_address_t* addr, ble_addr_type_t* type);
 bt_status_t adapter_set_le_address(bt_address_t* addr);
-bt_status_t adapter_set_le_identity_address(bt_address_t* addr, bool public);
+bt_status_t adapter_set_le_identity_address(bt_address_t* addr, bool is_public);
 bt_status_t adapter_set_le_appearance(uint16_t appearance);
 uint16_t adapter_get_le_appearance(void);
 bt_status_t adapter_get_bonded_devices(bt_transport_t transport, bt_address_t** addr, int* size, bt_allocator_t allocator);

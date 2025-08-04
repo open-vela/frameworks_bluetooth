@@ -174,9 +174,9 @@ bt_status_t BTSYMBOLS(bt_adapter_set_le_address)(bt_instance_t* ins, bt_address_
     return adapter_set_le_address(addr);
 }
 
-bt_status_t BTSYMBOLS(bt_adapter_set_le_identity_address)(bt_instance_t* ins, bt_address_t* addr, bool public)
+bt_status_t BTSYMBOLS(bt_adapter_set_le_identity_address)(bt_instance_t* ins, bt_address_t* addr, bool is_public)
 {
-    return adapter_set_le_identity_address(addr, public);
+    return adapter_set_le_identity_address(addr, is_public);
 }
 
 bt_status_t BTSYMBOLS(bt_adapter_set_le_appearance)(bt_instance_t* ins, uint16_t appearance)
