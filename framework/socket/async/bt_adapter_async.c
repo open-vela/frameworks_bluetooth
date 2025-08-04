@@ -496,14 +496,14 @@ bt_status_t bt_adapter_set_le_address_async(bt_instance_t* ins, bt_address_t* ad
     return bt_socket_client_send_with_reply(ins, &packet, BT_ADAPTER_SET_LE_ADDRESS, adapter_status_reply, (void*)cb, userdata);
 }
 
-bt_status_t bt_adapter_set_le_identity_address_async(bt_instance_t* ins, bt_address_t* addr, bool public, bt_status_cb_t cb, void* userdata)
+bt_status_t bt_adapter_set_le_identity_address_async(bt_instance_t* ins, bt_address_t* addr, bool is_public, bt_status_cb_t cb, void* userdata)
 {
     bt_message_packet_t packet;
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
 
     memcpy(&packet.adpt_pl._bt_adapter_set_le_identity_address.addr, addr, sizeof(*addr));
-    packet.adpt_pl._bt_adapter_set_le_identity_address.pub = public;
+    packet.adpt_pl._bt_adapter_set_le_identity_address.pub = is_public;
 
     return bt_socket_client_send_with_reply(ins, &packet, BT_ADAPTER_SET_LE_IDENTITY_ADDRESS, adapter_status_reply, (void*)cb, userdata);
 }
