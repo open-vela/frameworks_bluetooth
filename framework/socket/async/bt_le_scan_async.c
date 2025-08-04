@@ -86,6 +86,7 @@ bt_status_t bt_le_start_scan_async(bt_instance_t* ins, const scanner_callbacks_t
     if (scan == NULL)
         return BT_STATUS_FAIL;
 
+    scan->ins = ins;
     scan->callback = (scanner_callbacks_t*)scan_cbs;
     packet.scan_pl._bt_le_start_scan.remote = PTR2INT(uint64_t) scan;
 
@@ -118,6 +119,7 @@ bt_status_t bt_le_start_scan_settings_async(bt_instance_t* ins, ble_scan_setting
     if (scan == NULL)
         return BT_STATUS_FAIL;
 
+    scan->ins = ins;
     scan->callback = (scanner_callbacks_t*)scan_cbs;
     packet.scan_pl._bt_le_start_scan_settings.remote = PTR2INT(uint64_t) scan;
     if (settings)
@@ -152,6 +154,7 @@ bt_status_t bt_le_start_scan_with_filters_async(bt_instance_t* ins, ble_scan_set
     if (scan == NULL)
         return BT_STATUS_FAIL;
 
+    scan->ins = ins;
     scan->callback = (scanner_callbacks_t*)scan_cbs;
     packet.scan_pl._bt_le_start_scan_with_filters.remote = PTR2INT(uint64_t) scan;
     if (settings)
