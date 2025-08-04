@@ -82,10 +82,8 @@ BT_SCAN_MESSAGE_START,
 
     typedef struct {
         uint64_t remote;
-        union {
-            bt_instance_t* ins;
-            scanner_callbacks_t* callback;
-        };
+        bt_instance_t* ins;
+        scanner_callbacks_t* callback;
         bt_message_batch_scan_result_callbacks_t scan_result_cache;
         void* flush_ctrl;
     } bt_scan_remote_t;
