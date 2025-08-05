@@ -72,8 +72,6 @@ struct h4_data {
 static const struct device* bt_dev;
 static service_poll_t* hci_handle;
 
-static void hci_remove_recv(void* data);
-
 static void h4_data_dump(const char* tag, uint8_t type, uint8_t* data, uint32_t len)
 {
 #ifdef CONFIG_BT_HCI_H4_DEBUG
@@ -232,7 +230,6 @@ static void bt_sal_hci_transport_recv(void)
     len = read(h4->fd, frame + frame_size, sizeof(frame) - frame_size);
     if (len < 0) {
         BT_LOGE("Reading hci failed, errno %d", errno);
-        hci_remove_recv(NULL);
         close(h4->fd);
         h4->fd = -1;
         return;
@@ -299,7 +296,10 @@ int bt_sal_hci_transport_init(const bt_vhal_interface* vhal)
 
 void bt_sal_hci_transport_cleanup(void)
 {
-    return;
+    struct h4_data* h4 = bt_dev->data;
+
+    close(h4->fd);
+    h4->fd = -1;
 }
 
 static void hci_remove_recv(void* data)
@@ -325,23 +325,10 @@ static void hci_poll_recv(service_poll_t* poll, int revent, void* userdata)
 
 static int h4_open(const struct device* dev, bt_hci_recv_t recv, void* hci_data)
 {
-    int ret;
     int fd;
     struct h4_data* h4;
-    char dev_name[32];
 
-    if (dev->name == NULL) {
-        BT_LOGE("No device name");
-        return -EINVAL;
-    }
-
-    ret = snprintf(dev_name, sizeof(dev_name), "%s", dev->name);
-    if (ret < 0 || ret >= sizeof(dev_name)) {
-        BT_LOGE("dev_name:%s snprintf failed, ret %d, ", dev->name, ret);
-        return -EINVAL;
-    }
-
-    fd = open(dev_name, O_RDWR | O_BINARY | O_CLOEXEC);
+    fd = open(CONFIG_BT_UART_ON_DEV_NAME, O_RDWR | O_BINARY | O_CLOEXEC);
     if (fd < 0) {
         BT_LOGE("H4: Failed to open %s: %d", CONFIG_BT_UART_ON_DEV_NAME, errno);
         return fd;
@@ -360,18 +347,6 @@ static int h4_open(const struct device* dev, bt_hci_recv_t recv, void* hci_data)
         BT_LOGD("hci fd:%d add poll failed", h4->fd);
         return -1;
     }
-
-    return 0;
-}
-
-static int h4_close(const struct device* dev)
-{
-    struct h4_data* h4 = dev->data;
-
-    do_in_service_loop_sync(hci_remove_recv, NULL);
-
-    close(h4->fd);
-    h4->fd = -1;
 
     return 0;
 }
@@ -415,7 +390,6 @@ static int h4_send(const struct device* dev, struct net_buf* buf)
 
 const struct bt_hci_driver_api h4_drv_api = {
     .open = h4_open,
-    .close = h4_close,
     .send = h4_send,
 };
 
@@ -436,6 +410,4 @@ static int h4_init(const struct device* dev)
         CONFIG_KERNEL_INIT_PRIORITY_DEVICE, &h4_drv_api)
 
 H4_DEVICE_INIT(0);
-#ifdef CONFIG_BT_MC_DEVICE_INST
 H4_DEVICE_INIT(1);
-#endif
