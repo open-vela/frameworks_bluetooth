@@ -556,6 +556,8 @@ static void zblue_unregister_callback(void)
 /* service adapter layer for BREDR */
 bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
 {
+    bt_sal_hci_transport_init(vhal);
+
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     extern void z_sys_init(void);
     z_sys_init();
@@ -572,6 +574,8 @@ void bt_sal_cleanup(void)
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     bt_sal_cm_conn_cleanup();
 #endif
+
+    bt_sal_hci_transport_cleanup();
 }
 
 /* Adapter power */

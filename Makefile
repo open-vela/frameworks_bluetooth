@@ -222,6 +222,7 @@ ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_BLUELET)$(CONFIG_BLUETOOTH_STACK_LE_BLUELE
 	CSRCS += service/stacks/bluelet/*.c
 endif
 ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
+	CSRCS += service/stacks/zephyr/hci_h4.c
 	CSRCS += service/stacks/zephyr/sal_debug_interface.c
 	CSRCS += service/stacks/zephyr/sal_zblue.c
 	CSRCS += service/stacks/zephyr/sal_adapter_interface.c
