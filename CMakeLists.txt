@@ -86,6 +86,8 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
   endif()
 
+  list(APPEND CFLAGS -Wno-strict-prototypes)
+
   if(CONFIG_BLUETOOTH_SERVICE)
     list(
       APPEND
@@ -130,6 +132,17 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_debug_interface.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_zblue.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_adapter_interface.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_connection_manager.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)
+      if(CONFIG_BLUETOOTH_A2DP)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_a2dp_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_AVRCP_CONTROL OR CONFIG_BLUETOOTH_AVRCP_TARGET)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_avrcp_interface.c)
+      endif()
     endif()
 
     if(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
@@ -458,9 +471,11 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/zephyr/include)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/)
       list(APPEND INCDIR
            ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/kernel/include)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/subsys/bluetooth/host)
     endif()
 
     list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc)
