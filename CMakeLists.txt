@@ -82,10 +82,6 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/service/common/storage.c)
   endif()
 
-  if(CONFIG_BLUETOOTH_DEBUG_TRACE)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
-  endif()
-
   if(CONFIG_BLUETOOTH_SERVICE)
     list(
       APPEND
@@ -342,7 +338,6 @@ if(CONFIG_BLUETOOTH)
 
   if(CONFIG_BLUETOOTH_TOOLS)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/utils.c)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/log.c)
 
     if(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/async/gap.c)
@@ -382,6 +377,11 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_HFP_AG)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/hfp_ag.c)
+    endif()
+
+    if(ifeq ($(CONFIG_BLUETOOTH_LOG), y))
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/log.c)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
     endif()
 
     if(CONFIG_BLUETOOTH_SPP)

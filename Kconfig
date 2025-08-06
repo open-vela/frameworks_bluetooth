@@ -334,6 +334,12 @@ config BLUETOOTH_FRAMEWORK
 	help
 		Enable bluetooth framework api
 
+config BLUETOOTH_HCI_FILTER
+       bool "Enable bluetooth hci filter"
+       default y
+       help
+               Enable bluetooth hci filter
+
 if BLUETOOTH_FRAMEWORK
 choice
 	prompt "select bluetooth framework type"
@@ -413,11 +419,19 @@ config BLUETOOTH_NET_IPv4
 
 endif #BLUETOOTH_SERVER
 
+config BLUETOOTH_LOG
+	bool "Enable bluetooth log"
+	default y
+	help
+		Enable bluetooth log
+
+if BLUETOOTH_LOG
 config BLUETOOTH_SERVICE_LOG_LEVEL
 	int "Bluetooth service log level"
 	default 7
 	help
 		Set bt service log level <0~7>
+endif #BLUETOOTH_LOG
 
 config BLUETOOTH_SERVICE_HCI_UART_NAME
 	string "HCI uart driver name"
@@ -491,8 +505,13 @@ config BLUETOOTH_LE_AUDIO_SUPPORT
 	bool "LE audio support"
 	default n
 
+config BLUETOOTH_CONNECTION_MANAGER
+       bool "Bluetooth connection manager support"
+       default y
+
 config LE_DLF_SUPPORT
 	bool "LE DLF support"
+	depends on BLUETOOTH_CONNECTION_MANAGER
 	default n
 
 endif #BLUETOOTH_BLE_SUPPORT

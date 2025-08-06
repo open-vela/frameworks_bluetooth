@@ -279,8 +279,12 @@ void manager_init(void)
         g_instance_id = index_allocator_create(10);
 #if defined(CONFIG_BLUETOOTH_SERVICE) && defined(__NuttX__)
     service_manager_init();
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     bt_pm_init();
+#endif
+#ifdef CONFIG_BLUETOOTH_CONNECTION_MANAGER
     bt_cm_init();
+#endif
 #endif
 }
 
@@ -303,8 +307,12 @@ void manager_cleanup(void)
 
 #if defined(CONFIG_BLUETOOTH_SERVICE) && defined(__NuttX__)
     service_manager_cleanup();
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     bt_pm_cleanup();
+#endif
+#ifdef CONFIG_BLUETOOTH_CONNECTION_MANAGER
     bt_cm_cleanup();
+#endif
 #endif
     uv_mutex_destroy(&g_mutex);
 }

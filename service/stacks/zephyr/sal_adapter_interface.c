@@ -36,10 +36,10 @@
 
 #include <zephyr/settings/settings.h>
 
+#include "hci_h4.h"
 #include "sal_adapter_le_interface.h"
 #include "sal_connection_manager.h"
 #include "sal_interface.h"
-#include "hci_h4.h"
 
 #include "utils/log.h"
 
@@ -524,7 +524,7 @@ static void zblue_unregister_callback(void)
 /* service adapter layer for BREDR */
 bt_status_t bt_sal_init(const bt_vhal_interface* vhal)
 {
-    bt_sal_hci_transport_init();
+    bt_sal_hci_transport_init(vhal);
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     extern void z_sys_init(void);
@@ -580,11 +580,10 @@ static void STACK_CALL(brder_disable)(void* args)
 
 bt_status_t bt_sal_disable(bt_controller_id_t id)
 {
-    sal_adapter_req_t* req;
-
     UNUSED(id);
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    sal_adapter_req_t* req;
 
     if (!bt_is_ready()) {
         adapter_on_adapter_state_changed(BT_BREDR_STACK_STATE_OFF);
