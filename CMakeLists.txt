@@ -130,6 +130,7 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_debug_interface.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_zblue.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_adapter_interface.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_connection_manager.c)
     endif()
 
     if(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
@@ -452,6 +453,8 @@ if(CONFIG_BLUETOOTH)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/)
       list(APPEND INCDIR
            ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/kernel/include)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/host)
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/zephyr/include)
     endif()
 
     list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc)
@@ -465,7 +468,7 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CFLAGS -O0)
   endif()
 
-  list(APPEND CFLAGS -Wno-strict-prototypes)
+  list(APPEND CFLAGS -Wno-strict-prototypes -Wno-undef -Wno-incompatible-pointer-types -Wno-pointer-sign)
 
   if(CONFIG_BLUETOOTH_FEATURE)
     set(FEATURE_TOP ${NUTTX_APPS_DIR}/frameworks/runtimes/feature)
