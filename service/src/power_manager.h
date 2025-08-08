@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include "bt_addr.h"
+#include "bt_status.h"
 
 typedef struct {
     uint16_t max;
@@ -43,5 +44,7 @@ void bt_pm_cleanup(void);
 void bt_pm_remote_link_mode_changed(bt_address_t* addr, uint8_t mode, uint16_t sniff_interval);
 void bt_pm_remote_device_connected(bt_address_t* addr);
 void bt_pm_remote_device_disconnected(bt_address_t* addr);
+
+bt_status_t bt_pm_set_app_profile_sniff(bt_address_t* peer_addr, bt_pm_mode_t* sniff_params);
 
 #endif /* __BT_POWER_MANAGER_H__ */
