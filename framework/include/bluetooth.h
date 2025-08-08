@@ -215,9 +215,20 @@ typedef enum {
 } ble_connect_filter_policy_t;
 
 typedef enum {
-    EM_LE_LOW_LATENCY,
+    /* ---------------- LE Enhanced Modes ---------------- */
+    EM_LE_MODE_START,
+    EM_LE_LOW_LATENCY = EM_LE_MODE_START,
     EM_LE_HIGH_TPUT,
     EM_LE_LOW_POWER,
+    EM_LE_MODE_END,
+
+    /* ---------------- BR/EDR Enhanced Modes ---------------- */
+    EM_BR_MODE_START = 0xF0,
+    EM_BR_LOW_LATENCY,
+    EM_BR_ULTRA_LOW_LATENCY,
+    EM_BR_HIGH_TPUT,
+    EM_BR_LOW_POWER,
+    EM_BR_MODE_END,
 } bt_enhanced_mode_t;
 
 typedef enum {
