@@ -19,6 +19,7 @@
 #include "adapter_internel.h"
 #include "bluetooth.h"
 #include "hci_error.h"
+#include "power_manager.h"
 #include "service_loop.h"
 #include "service_manager.h"
 
@@ -34,6 +35,16 @@
 #endif
 
 #include "utils/log.h"
+
+#define BT_CM_LL_SNIFF_INTERVAL_MAX 160
+#define BT_CM_LL_SNIFF_INTERVAL_MIN 40
+#define BT_CM_LL_SNIFF_ATTEMPT 4
+#define BT_CM_LL_SNIFF_TIMEOUT 1
+
+#define BT_CM_ULL_SNIFF_INTERVAL_MAX 18
+#define BT_CM_ULL_SNIFF_INTERVAL_MIN 10
+#define BT_CM_ULL_SNIFF_ATTEMPT 4
+#define BT_CM_ULL_SNIFF_TIMEOUT 1
 
 #define CM_RECONNECT_INTERVAL (12000) /* reconnect Interval */
 #define PROFILE_CONNECT_INTERVAL (500) /* Interval between HFP and A2DP */
@@ -60,6 +71,26 @@ typedef struct {
     bt_cm_timer_t cm_timer;
     service_timer_t* a2dp_conn_timer;
 } bt_connection_manager_t;
+
+typedef struct {
+    uint16_t max_interval; /** Maximum sniff interval */
+    uint16_t min_interval; /** Minimum sniff interval */
+    uint16_t attempt; /** Sniff attempt parameter */
+    uint16_t timeout; /** Sniff timeout parameter */
+    uint16_t idle_timeout_ms; /** Idle timeout before entering sniff */
+} bt_cm_sniff_param_t;
+
+static bt_cm_sniff_param_t g_bt_cm_sniff_param_table[] = {
+    /* Low Latency */
+    { BT_CM_LL_SNIFF_INTERVAL_MAX, BT_CM_LL_SNIFF_INTERVAL_MIN,
+        BT_CM_LL_SNIFF_ATTEMPT, BT_CM_LL_SNIFF_TIMEOUT,
+        1000 },
+
+    /* Ultra Low Latency */
+    { BT_CM_ULL_SNIFF_INTERVAL_MAX, BT_CM_ULL_SNIFF_INTERVAL_MIN,
+        BT_CM_ULL_SNIFF_ATTEMPT, BT_CM_ULL_SNIFF_TIMEOUT,
+        1000 },
+};
 
 static bt_connection_manager_t g_connection_manager;
 
@@ -493,14 +524,66 @@ void bt_cm_process_disconnect_event(bt_address_t* addr, uint8_t transport, uint3
         bt_cm_process_reconnection(addr, hci_reason_code);
 }
 
-bt_status_t bt_cm_enable_enhanced_mode(bt_address_t* addr, uint8_t mode)
+static inline void bt_cm_sniff_param_to_pm_mode(const bt_cm_sniff_param_t* in,
+    bt_pm_mode_t* out)
+{
+    out->max = in->max_interval;
+    out->min = in->min_interval;
+    out->attempt = in->attempt;
+    out->timeout = in->timeout;
+    out->mode = BT_LINK_MODE_SNIFF; /** BR/EDR sniff link mode */
+}
+
+static inline int sniff_param_table_index_from_mode(bt_enhanced_mode_t mode)
 {
     switch (mode) {
-    case EM_LE_LOW_LATENCY: {
+    case EM_BR_LOW_LATENCY:
+        return 0;
+    case EM_BR_ULTRA_LOW_LATENCY:
+        return 1;
+
+    default:
+        return -1;
+    }
+}
+
+static bt_status_t bt_cm_apply_bredr_sniff_mode(bt_address_t* addr, uint8_t table_idx)
+{
+    bt_pm_mode_t sniff_params;
+    bt_cm_sniff_param_t* p;
+
+    if (!addr) {
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    p = &g_bt_cm_sniff_param_table[table_idx];
+
+    /* Do not pass bt_cm_sniff_param_t directly.
+     * In the future, we may have multiple clients with different sniff_param values.
+     * We will choose the best pm mode and idle timeout from them, so set them separately.
+     */
+    bt_cm_sniff_param_to_pm_mode(p, &sniff_params);
+
+    return bt_pm_set_app_profile_sniff(addr, &sniff_params);
+}
+
+bt_status_t bt_cm_enable_enhanced_mode(bt_address_t* addr, uint8_t mode)
+{
+    int table_idx;
+
+    switch (mode) {
 #ifdef CONFIG_LE_DLF_SUPPORT
+    case EM_LE_LOW_LATENCY:
         return bt_cm_enable_dlf(addr);
 #endif
-    }
+
+    case EM_BR_LOW_LATENCY:
+    case EM_BR_ULTRA_LOW_LATENCY:
+        table_idx = sniff_param_table_index_from_mode(mode);
+        if (table_idx < 0) {
+            return BT_STATUS_PARM_INVALID;
+        }
+        return bt_cm_apply_bredr_sniff_mode(addr, table_idx);
     default:
         return BT_STATUS_NOT_SUPPORTED;
     }
@@ -509,11 +592,15 @@ bt_status_t bt_cm_enable_enhanced_mode(bt_address_t* addr, uint8_t mode)
 bt_status_t bt_cm_disable_enhanced_mode(bt_address_t* addr, uint8_t mode)
 {
     switch (mode) {
-    case EM_LE_LOW_LATENCY: {
 #ifdef CONFIG_LE_DLF_SUPPORT
+    case EM_LE_LOW_LATENCY:
         return bt_cm_disable_dlf(addr);
 #endif
-    }
+
+    case EM_BR_LOW_LATENCY:
+    case EM_BR_ULTRA_LOW_LATENCY:
+        return bt_pm_set_app_profile_sniff(addr, NULL);
+
     default:
         return BT_STATUS_NOT_SUPPORTED;
     }
