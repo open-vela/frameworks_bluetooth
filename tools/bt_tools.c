@@ -79,6 +79,7 @@ static int search_cmd(void* handle, int argc, char** argv);
 static int start_service_cmd(void* handle, int argc, char** argv);
 static int stop_service_cmd(void* handle, int argc, char** argv);
 static int set_phy_cmd(void* handle, int argc, char** argv);
+static int enhance_mode_cmd(void* handle, int argc, char** argv);
 static int dump_cmd(void* handle, int argc, char** argv);
 static int quit_cmd(void* handle, int argc, char** argv);
 static void bttool_ins_uninit(bttool_t* bttool);
@@ -171,6 +172,8 @@ static bt_command_t g_cmd_tables[] = {
     { "start", start_service_cmd, 0, "start profile service, Not implemented" },
     { "stop", stop_service_cmd, 0, "stop profile service,  Not implemented" },
     { "setphy", set_phy_cmd, 0, SET_LE_PHY_USAGE },
+    { "enhance", enhance_mode_cmd, 0,
+        "enhance <peer-addr> <mode> <enable(0|1)>, mode: le_ll le_ht le_lp br_ll br_ul br_ht br_lp" },
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
     { "adv", adv_command_exec, 0, "advertising cmd,   input \'adv\' show usage" },
 #endif
@@ -1380,6 +1383,76 @@ static int set_phy_cmd(void* handle, int argc, char** argv)
     }
 
     bt_device_set_le_phy(handle, &addr, tx_phy, rx_phy);
+
+    return CMD_OK;
+}
+
+static bool parse_mode_string(const char* str, bt_enhanced_mode_t* out_mode)
+{
+    if (!str || !out_mode)
+        return false;
+
+    switch (str[0]) {
+    case 'l': // le_*
+        if (strcmp(str, "le_ll") == 0) {
+            *out_mode = EM_LE_LOW_LATENCY;
+            return true;
+        }
+        if (strcmp(str, "le_ht") == 0) {
+            *out_mode = EM_LE_HIGH_TPUT;
+            return true;
+        }
+        if (strcmp(str, "le_lp") == 0) {
+            *out_mode = EM_LE_LOW_POWER;
+            return true;
+        }
+        break;
+    case 'b': // br_*
+        if (strcmp(str, "br_ll") == 0) {
+            *out_mode = EM_BR_LOW_LATENCY;
+            return true;
+        }
+        if (strcmp(str, "br_ul") == 0) {
+            *out_mode = EM_BR_ULTRA_LOW_LATENCY;
+            return true;
+        }
+        if (strcmp(str, "br_ht") == 0) {
+            *out_mode = EM_BR_HIGH_TPUT;
+            return true;
+        }
+        if (strcmp(str, "br_lp") == 0) {
+            *out_mode = EM_BR_LOW_POWER;
+            return true;
+        }
+        break;
+    }
+
+    return false;
+}
+
+static int enhance_mode_cmd(void* handle, int argc, char** argv)
+{
+    bt_address_t addr;
+    bt_enhanced_mode_t mode;
+    int enable_flag;
+
+    if (argc < 3)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (!parse_mode_string(argv[1], &mode))
+        return CMD_INVALID_PARAM;
+
+    enable_flag = atoi(argv[2]);
+    if (enable_flag != 0 && enable_flag != 1)
+        return CMD_INVALID_ADDR;
+
+    if (enable_flag)
+        bt_device_enable_enhanced_mode(handle, &addr, mode);
+    else
+        bt_device_disable_enhanced_mode(handle, &addr, mode);
 
     return CMD_OK;
 }

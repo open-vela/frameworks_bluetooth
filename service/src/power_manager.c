@@ -26,6 +26,8 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
+#define BT_PM_REQ_PENDING_TIMEOUT 2500
+
 #ifndef BT_PM_SNIFF_MAX
 #define BT_PM_SNIFF_MAX 800
 #define BT_PM_SNIFF_MIN 400
@@ -130,6 +132,11 @@ typedef enum {
     BT_PM_SPEC_INDEX_MAX = BT_PM_SPEC_INDEX_4,
 } bt_pm_spec_index_t;
 
+typedef enum {
+    BT_PM_STATUS_NONE,
+    BT_PM_STATUS_PENDING_ACTIVE,
+} bt_pm_status_t;
+
 typedef struct {
     bt_pm_prefer_mode_t power_mode;
     uint16_t timeout;
@@ -169,6 +176,7 @@ typedef struct {
     struct list_node pm_services;
     struct list_node pm_devices;
     bool inited;
+    uint16_t last_profile_id;
 
     bt_pm_timer_t pm_timer[CONFIG_BLUETOOTH_PM_MAX_TIMER_NUMBER];
     bt_pm_hanlde_callback_t pm_callback;
@@ -179,7 +187,12 @@ typedef struct {
 
     bt_address_t peer_addr;
     uint8_t mode;
+    uint8_t hci_status;
     uint16_t interval;
+    service_timer_t* request_timer;
+
+    bt_pm_mode_t app_preferred_sniff_params;
+    bool immediate_sniff_switch;
 } bt_pm_device_t;
 
 static const bt_pm_mode_t g_pm_mode[] = {
@@ -237,7 +250,7 @@ static const bt_pm_spec_table_t g_pm_spec[] = {
     { (BT_PM_SNIFF), /* allow sniff */
         (0), /* the SSR entry */
         {
-            { BT_PM_ACTIVE, 0 }, /* conn open */
+            { BT_PM_NO_ACTION, 0 }, /* conn open */
             { BT_PM_NO_PREF, 0 }, /* conn close */
             { BT_PM_ACTIVE, 0 }, /* app open */
             { BT_PM_NO_ACTION, 0 }, /* app close */
@@ -279,6 +292,32 @@ static const bt_pm_spec_table_t g_pm_spec[] = {
 static bt_pm_manager_t g_pm_manager = { 0 };
 
 static void pm_timeout_callback(service_timer_t* timer, void* data);
+static void pm_request_timeout_callback(service_timer_t* timer, void* data);
+
+static void pm_request_start_timer(bt_pm_device_t* device)
+{
+    if (!device) {
+        return;
+    }
+
+    if (device->request_timer) {
+        service_loop_cancel_timer(device->request_timer);
+    }
+    device->request_timer = service_loop_timer(BT_PM_REQ_PENDING_TIMEOUT, 0,
+        pm_request_timeout_callback, device);
+}
+
+static void pm_request_stop_timer(bt_pm_device_t* device)
+{
+    if (!device) {
+        return;
+    }
+
+    if (device->request_timer) {
+        service_loop_cancel_timer(device->request_timer);
+        device->request_timer = NULL;
+    }
+}
 
 static bt_pm_service_t* pm_conn_service_find(uint8_t profile_id, bt_address_t* peer_addr)
 {
@@ -348,13 +387,16 @@ static bt_pm_device_t* pm_conn_device_add(bt_address_t* peer_addr)
     bt_pm_manager_t* manager = &g_pm_manager;
     bt_pm_device_t* device;
 
-    device = calloc(1, sizeof(bt_pm_device_t));
+    device = zalloc(sizeof(bt_pm_device_t));
     if (!device) {
         return NULL;
     }
 
     memcpy(&device->peer_addr, peer_addr, sizeof(bt_address_t));
     device->mode = BT_LINK_MODE_ACTIVE;
+
+    device->app_preferred_sniff_params = g_pm_mode[BT_PM_SNIFF & BT_PM_PREF_MODE_MASK];
+
     list_add_tail(&manager->pm_devices, &device->srv_node);
     return device;
 }
@@ -362,12 +404,13 @@ static bt_pm_device_t* pm_conn_device_add(bt_address_t* peer_addr)
 static void pm_conn_device_remove(bt_pm_device_t* device)
 {
     if (device) {
+        pm_request_stop_timer(device);
         list_delete(&device->srv_node);
         free(device);
     }
 }
 
-static bt_status_t pm_request_sniff(bt_address_t* peer_addr, bt_pm_mode_index_t index)
+static bt_status_t pm_request_sniff(bt_address_t* peer_addr, bt_pm_mode_index_t index, uint16_t profile_id)
 {
     bt_pm_device_t* device;
     bt_pm_mode_t mode;
@@ -384,7 +427,12 @@ static bt_status_t pm_request_sniff(bt_address_t* peer_addr, bt_pm_mode_index_t 
         return BT_STATUS_FAIL;
     }
 
-    memcpy(&mode, &g_pm_mode[index], sizeof(bt_pm_mode_t));
+    if (profile_id == PROFILE_SPP) {
+        memcpy(&mode, &device->app_preferred_sniff_params, sizeof(bt_pm_mode_t));
+    } else {
+        memcpy(&mode, &g_pm_mode[index], sizeof(bt_pm_mode_t));
+    }
+
     if (device->mode == BT_LINK_MODE_SNIFF && device->interval <= mode.max && device->interval >= mode.min) {
         return BT_STATUS_SUCCESS;
     }
@@ -413,7 +461,7 @@ static bt_status_t pm_request_active(bt_address_t* peer_addr)
         return BT_STATUS_FAIL;
     }
 
-    if (device->mode == BT_LINK_MODE_ACTIVE) {
+    if ((device->mode == BT_LINK_MODE_ACTIVE) || (device->hci_status == BT_PM_STATUS_PENDING_ACTIVE)) {
         return BT_STATUS_SUCCESS;
     }
 
@@ -423,6 +471,9 @@ static bt_status_t pm_request_active(bt_address_t* peer_addr)
         BT_LOGE("%s, fail to set power mode, ret:%d", __func__, ret);
         return ret;
     }
+
+    device->hci_status = BT_PM_STATUS_PENDING_ACTIVE;
+    pm_request_start_timer(device);
 
     return ret;
 }
@@ -471,6 +522,7 @@ static bool pm_prefer_config(bt_address_t* peer_addr, bt_pm_prefer_mode_t* pm_ac
             timeout = action->timeout;
             id = config->profile_id;
             allow_mask = table->allow_mask;
+            manager->last_profile_id = id;
             ret = true;
         }
     }
@@ -556,7 +608,7 @@ static void pm_mode_request(bt_address_t* peer_addr, uint8_t req, uint16_t profi
         if (pm_action & BT_PM_ACTIVE) {
             pm_request_active(peer_addr);
         } else if (pm_action & BT_PM_SNIFF) {
-            pm_request_sniff(peer_addr, pm_action & BT_PM_PREF_MODE_MASK);
+            pm_request_sniff(peer_addr, pm_action & BT_PM_PREF_MODE_MASK, profile_id);
         }
     } break;
     case BT_PM_RESTART: {
@@ -582,6 +634,15 @@ static void pm_timeout_callback(service_timer_t* timer, void* data)
 
     BT_LOGD("%s, addr:%s, profile_id:%d, pm_action:%d", __func__, bt_addr_str(&pm_timer->peer_addr), pm_timer->profile_id, pm_timer->pm_action);
     pm_mode_request(&pm_timer->peer_addr, BT_PM_EXECUTE, pm_timer->profile_id);
+}
+
+static void pm_request_timeout_callback(service_timer_t* timer, void* data)
+{
+    bt_pm_device_t* device = (bt_pm_device_t*)data;
+
+    BT_LOGD("%s, current mode: %d", __func__, device->mode);
+
+    device->hci_status = BT_PM_STATUS_NONE;
 }
 
 static bool pm_check_prefer_action(uint8_t profile_id)
@@ -740,6 +801,7 @@ void bt_pm_init(void)
     }
 
     manager->inited = true;
+    manager->last_profile_id = PROFILE_UNKOWN;
     bt_pm_register(bt_pm_hanlde_callback);
     list_initialize(&manager->pm_services);
     list_initialize(&manager->pm_devices);
@@ -762,6 +824,7 @@ void bt_pm_cleanup(void)
 void bt_pm_remote_link_mode_changed(bt_address_t* addr, uint8_t mode, uint16_t sniff_interval)
 {
     bt_pm_device_t* device;
+    bt_pm_manager_t* manager = &g_pm_manager;
 
     BT_LOGD("%s, addr:%s, mode:%d, sniff_interval:%" PRId16, __func__, bt_addr_str(addr), mode, sniff_interval);
     device = pm_conn_device_find(addr);
@@ -772,11 +835,21 @@ void bt_pm_remote_link_mode_changed(bt_address_t* addr, uint8_t mode, uint16_t s
 
     device->interval = sniff_interval;
     device->mode = mode;
+    device->hci_status = BT_PM_STATUS_NONE;
 
     switch (mode) {
     case BT_LINK_MODE_ACTIVE: {
         pm_stop_timer(addr);
-        pm_mode_request(addr, BT_PM_RESTART, PROFILE_UNKOWN);
+        pm_request_stop_timer(device);
+        if (device->immediate_sniff_switch) {
+            /* Force switch to our sniff parameters immediately
+             * to avoid being overridden by peer device
+             */
+            device->immediate_sniff_switch = false;
+            pm_request_sniff(addr, BT_PM_SNIFF & BT_PM_PREF_MODE_MASK, PROFILE_SPP);
+        } else {
+            pm_mode_request(addr, BT_PM_RESTART, manager->last_profile_id);
+        }
     } break;
     case BT_LINK_MODE_SNIFF: {
         pm_stop_timer(addr);
@@ -806,5 +879,35 @@ void bt_pm_remote_device_disconnected(bt_address_t* addr)
         BT_LOGE("%s, fail to find device:%s", __func__, bt_addr_str(addr));
         return;
     }
+
+    pm_stop_timer(addr);
+
     pm_conn_device_remove(device);
+}
+
+bt_status_t bt_pm_set_app_profile_sniff(bt_address_t* peer_addr, bt_pm_mode_t* sniff_params)
+{
+    bt_pm_device_t* device;
+
+    device = pm_conn_device_find(peer_addr);
+    if (!device) {
+        BT_LOGE("%s, fail to find device:%s", __func__, bt_addr_str(peer_addr));
+        return BT_STATUS_FAIL;
+    }
+
+    if (!sniff_params) {
+        device->app_preferred_sniff_params = g_pm_mode[BT_PM_SNIFF & BT_PM_PREF_MODE_MASK];
+    } else {
+        device->app_preferred_sniff_params = *sniff_params;
+    }
+
+    if (device->mode == BT_LINK_MODE_ACTIVE) {
+        device->immediate_sniff_switch = false;
+    } else {
+        /* Force switching sniff parameters */
+        device->immediate_sniff_switch = true;
+        pm_request_active(peer_addr);
+    }
+
+    return BT_STATUS_SUCCESS;
 }
