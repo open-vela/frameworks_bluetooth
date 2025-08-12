@@ -29,6 +29,11 @@
 #include "sal_interface.h"
 #include "sal_zblue.h"
 
+#include "bt_uuid.h"
+#undef BT_UUID_DECLARE_16
+#undef BT_UUID_DECLARE_32
+#undef BT_UUID_DECLARE_128
+#include <zephyr/bluetooth/classic/sdp.h>
 #include <zephyr/bluetooth/zephyr3/avrcp_cttg.h>
 
 #include "bt_utils.h"
@@ -46,6 +51,50 @@ static void zblue_on_get_play_status(struct bt_conn* conn, uint8_t cmd, uint32_t
 static void zblue_on_get_volume(struct bt_conn* conn, uint8_t* volume);
 static void zblue_on_update_id3_info(struct bt_conn* conn, struct id3_info* info);
 static void zblue_on_playback_pos(struct bt_conn* conn, uint32_t pos);
+
+static struct bt_sdp_attribute avrcp_ct_attrs[] = {
+    BT_SDP_NEW_SERVICE,
+    BT_SDP_LIST(
+        BT_SDP_ATTR_SVCLASS_ID_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                BT_SDP_ARRAY_16(BT_SDP_AV_REMOTE_SVCLASS) },
+            { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                BT_SDP_ARRAY_16(BT_SDP_AV_REMOTE_CONTROLLER_SVCLASS) }, )),
+    BT_SDP_LIST(
+        BT_SDP_ATTR_PROTO_DESC_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 16),
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+                BT_SDP_DATA_ELEM_LIST(
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                        BT_SDP_ARRAY_16(BT_SDP_PROTO_L2CAP) },
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+                        BT_SDP_ARRAY_16(BT_UUID_AVCTP_VAL) }, ) },
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+                BT_SDP_DATA_ELEM_LIST(
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                        BT_SDP_ARRAY_16(BT_UUID_AVCTP_VAL) },
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+                        BT_SDP_ARRAY_16(AVCTP_VER_1_4) }, ) }, )),
+    /* C1: Browsing not supported */
+    BT_SDP_LIST(
+        BT_SDP_ATTR_PROFILE_DESC_LIST,
+        BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 8),
+        BT_SDP_DATA_ELEM_LIST(
+            { BT_SDP_TYPE_SIZE_VAR(BT_SDP_SEQ8, 6),
+                BT_SDP_DATA_ELEM_LIST(
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UUID16),
+                        BT_SDP_ARRAY_16(BT_SDP_AV_REMOTE_SVCLASS) },
+                    { BT_SDP_TYPE_SIZE(BT_SDP_UINT16),
+                        BT_SDP_ARRAY_16(AVRCP_VER_1_6) }, ) }, )),
+    BT_SDP_SUPPORTED_FEATURES(AVRCP_CAT_1 | AVRCP_CAT_2),
+    /* O: Provider Name not presented */
+    BT_SDP_SERVICE_NAME("AVRCP Controller"),
+};
+
+static struct bt_sdp_record avrcp_ct_rec = BT_SDP_RECORD(avrcp_ct_attrs);
 
 static struct bt_avrcp_app_cb avrcp_cbks = {
     .connected = zblue_on_connected,
@@ -599,7 +648,7 @@ bt_status_t bt_sal_avrcp_control_register_notification(bt_controller_id_t id,
         if (conn) {
             bt_conn_unref(conn);
         }
-        
+
         return BT_STATUS_PARM_INVALID;
     }
 
