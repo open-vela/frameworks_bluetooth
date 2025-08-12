@@ -567,7 +567,16 @@ static void modem_based_proxy_added(tele_client_t* tele, GDBusProxy* proxy)
 
     if (!strcmp(interface, OFONO_VOICECALL_MANAGER_INTERFACE))
         modem->voicecall_managers = proxy;
-    else if (!strcmp(interface, OFONO_NETWORK_REGISTRATION_INTERFACE))
+    else if (!strcmp(interface, OFONO_VOICECALL_INTERFACE)) {
+        tele_call_t* call = find_voicecall(modem, proxy);
+        if (!call) {
+            call = voicecall_proxy_added(modem, proxy);
+            tele_call_get_call_info(tele, call);
+            /* notify user call added */
+            if (tele->cbs && tele->cbs->call_added_cb)
+                tele->cbs->call_added_cb(tele, call);
+        }
+    } else if (!strcmp(interface, OFONO_NETWORK_REGISTRATION_INTERFACE))
         modem->network_registration = proxy;
     else if (!strcmp(interface, OFONO_NETWORK_OPERATOR_INTERFACE))
         modem->network_operator = proxy;
