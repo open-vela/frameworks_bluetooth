@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2023 Xiaomi InC. All rights reserved.
+ *   Copyright (C) 2025 Xiaomi InC. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,29 +30,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __A2DP_SINK_H__
-#define __A2DP_SINK_H__
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-#include <pthread.h>
-
-#include "bt_list.h"
-#include "callbacks_list.h"
-
-#include "a2dp_codec.h"
-#include "a2dp_device.h"
-#include "a2dp_event.h"
-#include "bt_a2dp_sink.h"
-
-a2dp_peer_t* a2dp_sink_find_peer(bt_address_t* addr);
-bool a2dp_sink_stream_ready(void);
-bool a2dp_sink_stream_started(void);
-void a2dp_sink_codec_state_change(void);
-void a2dp_sink_service_audio_open(bt_address_t* addr);
-
-void a2dp_sink_service_notify_connection_state_changed(bt_address_t* addr, profile_connection_state_t state);
-void a2dp_sink_service_notify_audio_state_changed(bt_address_t* addr, a2dp_audio_state_t state);
-void a2dp_sink_service_notify_audio_sink_config_changed(bt_address_t* addr);
+#ifndef __HFP_AG_AUDIO_H__
+#define __HFP_AG_AUDIO_H__
+#include "bt_device.h"
+void hfp_ag_audio_init(bool offloading);
+void hfp_ag_audio_cleanup(void);
+bool hfp_ag_on_connection_changed(bool connected);
+void hfp_ag_on_started(void);
+void hfp_ag_on_stopped(void);
+void hfp_ag_audio_open(uint8_t codec, bool offloading, bt_address_t* bd_addr);
 
 #endif

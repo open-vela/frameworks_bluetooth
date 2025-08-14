@@ -225,6 +225,12 @@ static bt_status_t a2dp_sink_init(void)
     return BT_STATUS_SUCCESS;
 }
 
+void a2dp_sink_service_audio_open(bt_address_t* addr)
+{
+    BT_LOGD("%s", __FUNCTION__);
+    a2dp_audio_open(SVR_SINK, g_a2dp_sink.offloading, addr);
+}
+
 static void a2dp_sink_cleanup(void)
 {
     g_a2dp_sink.active_peer = NULL;
@@ -245,7 +251,6 @@ static void sink_startup(void* data)
     }
 
     a2dp_audio_init(SVR_SINK, g_a2dp_sink.offloading);
-
     g_a2dp_sink.enabled = true;
     on_startup(PROFILE_A2DP_SINK, true);
 }
@@ -270,7 +275,6 @@ static void sink_shutdown(void* data)
     profile_on_shutdown_t on_shutdown = (profile_on_shutdown_t)data;
 
     g_a2dp_sink.enabled = false;
-    a2dp_audio_cleanup(SVR_SINK);
 
     list_for_every_safe(&g_a2dp_sink.list, node, tmp)
     {
@@ -278,6 +282,7 @@ static void sink_shutdown(void* data)
         a2dp_device_delete(device);
     }
     list_delete(&g_a2dp_sink.list);
+    a2dp_audio_cleanup(SVR_SINK);
     bt_sal_a2dp_sink_cleanup();
     g_a2dp_sink.active_peer = NULL;
     on_shutdown(PROFILE_A2DP_SINK, true);

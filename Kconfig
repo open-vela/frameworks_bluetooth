@@ -671,21 +671,13 @@ config BLUETOOTH_LEA_SOURCE_DATA_PATH
 	string "Bluetooth LE Audio Transport Source Data Path"
 	default "lea_source_data"
 
-config BLUETOOTH_A2DP_SINK_CTRL_PATH
-	string "Bluetooth A2DP Audio Transport Sink Ctrl Path"
-	default "a2dp_sink_ctrl"
+config BLUETOOTH_A2DP_SINK_DEVICE
+	string "Bluetooth A2DP Audio Transport Sink Device"
+	default "/dev/audio/a2dpsnkp"
 
-config BLUETOOTH_A2DP_SINK_DATA_PATH
-	string "Bluetooth A2DP Audio Transport Sink Data Path"
-	default "a2dp_sink_data"
-
-config BLUETOOTH_A2DP_SOURCE_CTRL_PATH
-	string "Bluetooth A2DP Audio Transport Source Ctrl Path"
-	default "a2dp_source_ctrl"
-
-config BLUETOOTH_A2DP_SOURCE_DATA_PATH
-	string "Bluetooth A2DP Audio Transport Source Data Path"
-	default "a2dp_source_data"
+config BLUETOOTH_A2DP_SOURCE_DEVICE
+	string "Bluetooth A2DP Audio Transport Source Device"
+	default "/dev/audio/a2dpsrcc"
 
 endmenu #Bluetooth Audio Transport config
 

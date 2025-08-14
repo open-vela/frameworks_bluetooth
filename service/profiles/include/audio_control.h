@@ -33,14 +33,26 @@
 #ifndef __AUDIO_CONTROL_H__
 #define __AUDIO_CONTROL_H__
 
-/****************************************************************************
- * Included Files
- ****************************************************************************/
-#include "audio_transport.h"
-#include "bt_status.h"
+#include "audio_codec.h"
 
-void audio_ctrl_send_control_event(uint8_t profile_id, audio_ctrl_evt_t evt);
-bt_status_t audio_ctrl_init(void);
-void audio_ctrl_cleanup(void);
+#define A2DP_SOURCE_PROFILE_ID 0
+#define A2DP_SINK_PROFILE_ID 1
+#define HFP_HF_PROFILE_ID 2
+#define HFP_AG_PROFILE_ID 3
+
+typedef void (*audio_control_start_callback)();
+typedef void (*audio_control_stop_callback)();
+typedef struct {
+    size_t size;
+    audio_control_start_callback start_cb;
+    audio_control_stop_callback stop_cb;
+} audio_control_callbacks_t;
+
+void audio_control_open(uint8_t profile_id, const bt_audio_config_t* config, const void* ctrl_callback);
+void audio_control_start(uint8_t profile_id, bool started);
+void audio_control_stop(uint8_t profile_id);
+void audio_control_reset(uint8_t profile_id);
+int audio_control_read(uint8_t profile_id, void* buf, unsigned int size);
+int audio_control_write(uint8_t profile_id, const void* buf, unsigned int size);
 
 #endif

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2023 Xiaomi InC. All rights reserved.
+ *   Copyright (C) 2025 Xiaomi InC. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,37 +30,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef __A2DP_CONTROL_H__
-#define __A2DP_CONTROL_H__
-
-#include "audio_transport.h"
-
-#define A2DP_CTRL_EVT_HEADER_LEN 1
-
-#define AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL 0
-#define AUDIO_TRANS_CH_ID_AV_SOURCE_AUDIO 1
-#define AUDIO_TRANS_CH_ID_AV_SINK_CTRL 2
-#define AUDIO_TRANS_CH_ID_AV_SINK_AUDIO 3
-#define AUDIO_TRANS_CH_ID_AV_INVALID 0xFF
-
-typedef enum {
-    A2DP_CTRL_CMD_START,
-    A2DP_CTRL_CMD_STOP,
-    A2DP_CTRL_CMD_CONFIG_DONE
-} a2dp_ctrl_cmd_t;
-
-typedef enum {
-    A2DP_CTRL_EVT_STARTED,
-    A2DP_CTRL_EVT_START_FAIL,
-    A2DP_CTRL_EVT_STOPPED,
-    A2DP_CTRL_EVT_UPDATE_CONFIG
-} a2dp_ctrl_evt_t;
-
-extern void a2dp_control_init(uint8_t ctrl_id, uint8_t data_id);
-extern void a2dp_control_ch_close(uint8_t ctrl_id, uint8_t data_id);
-extern void a2dp_control_cleanup(void);
-extern void a2dp_control_event(uint8_t ch_id, a2dp_ctrl_evt_t evt);
-extern void a2dp_control_update_audio_config(uint8_t ch_id, uint8_t isvalid);
-extern transport_conn_state_t a2dp_control_get_state(uint8_t ch_id);
+#ifndef __HFP_HF_AUDIO_H__
+#define __HFP_HF_AUDIO_H__
+#include "bt_device.h"
+void hfp_hf_audio_init(bool offloading);
+void hfp_hf_audio_cleanup(void);
+bool hfp_hf_on_connection_changed(bool connected);
+void hfp_hf_on_started(void);
+void hfp_hf_on_stopped(void);
+void hfp_hf_audio_open(uint8_t codec, bool offloading, bt_address_t* bd_addr);
 
 #endif
