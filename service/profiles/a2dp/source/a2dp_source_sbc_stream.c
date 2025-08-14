@@ -205,8 +205,10 @@ static void a2dp_source_sbc_send_frames(uint16_t header_reserve, uint64_t timest
 
     a2dp_sbc_get_num_frame_iteration(&num_of_iterations, &num_of_frames,
         timestamp);
-    if (num_of_frames == 0)
+    if (num_of_frames == 0) {
+        BT_LOGD("%s, no frame to send", __func__);
         return;
+    }
 
     for (int i = 0; i < num_of_iterations; i++) {
         a2dp_sbc_send_frames(header_reserve, num_of_frames);

@@ -21,8 +21,8 @@
 #include <unistd.h>
 
 #include "adapter_internel.h"
-#include "avrcp_msg.h"
 #include "avrcp_control_service.h"
+#include "avrcp_msg.h"
 #include "bt_addr.h"
 #include "bt_list.h"
 #include "bt_player.h"
@@ -400,9 +400,9 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t* msg)
     if (!device)
         return;
 
-    BT_LOGD("register_notification evt: %d", msg->data.notify_rsp.event);
     switch (msg->data.notify_rsp.event) {
     case NOTIFICATION_EVT_PALY_STATUS_CHANGED: {
+        BT_LOGD("register_notification evt: %d", msg->data.notify_rsp.event);
         bt_media_status_t status = msg->data.notify_rsp.value;
         BT_LOGD("playback status changed: %s, get status now...", bt_media_status_str(status));
         bt_media_player_set_status(device->player, status);
@@ -410,7 +410,6 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t* msg)
         break;
     }
     case NOTIFICATION_EVT_PLAY_POS_CHANGED: {
-        BT_LOGD("song position is: %" PRIu32, msg->data.notify_rsp.value);
         bt_media_player_set_position(device->player, msg->data.notify_rsp.value);
         break;
     }
@@ -419,7 +418,6 @@ static void handle_avrcp_register_notification_response(avrcp_msg_t* msg)
         break;
     }
     case NOTIFICATION_EVT_TRACK_CHANGED: {
-        BT_LOGD("track changed, get track info now...");
         bt_sal_avrcp_control_get_element_attributes(PRIMARY_ADAPTER, addr, 0, NULL);
         break;
     }

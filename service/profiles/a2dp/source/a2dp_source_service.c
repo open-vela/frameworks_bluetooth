@@ -25,6 +25,7 @@
 
 #include "a2dp_audio.h"
 #include "a2dp_device.h"
+#include "a2dp_source_audio.h"
 #include "a2dp_source_service.h"
 #include "adapter_internel.h"
 #include "bt_a2dp_source.h"
@@ -298,16 +299,19 @@ void a2dp_source_stream_start(void)
     do_in_a2dp_service(a2dp_event_new(STREAM_START_REQ, peer->bd_addr));
 }
 
-void a2dp_source_stream_prepare_suspend(void)
-{
-    a2dp_audio_prepare_suspend(SEP_SNK);
-}
-
 void a2dp_source_stream_stop(void)
 {
     a2dp_peer_t* peer = a2dp_source_active_peer();
+    a2dp_state_machine_t* a2dp_sm;
+
     if (!peer)
         return;
+
+    a2dp_sm = get_state_machine(peer->bd_addr);
+    if (!a2dp_sm || a2dp_state_machine_get_state(a2dp_sm) != A2DP_STATE_STARTED) {
+        a2dp_source_on_stopped();
+        return;
+    }
 
     do_in_a2dp_service(a2dp_event_new(STREAM_SUSPEND_REQ, peer->bd_addr));
 }
@@ -435,13 +439,13 @@ static void source_shutdown(void* data)
     profile_on_shutdown_t on_shutdown = (profile_on_shutdown_t)data;
 
     g_a2dp_source.enabled = false;
-    a2dp_audio_cleanup(SVR_SOURCE);
     list_for_every_safe(&g_a2dp_source.list, node, tmp)
     {
         device = (a2dp_device_t*)node;
         a2dp_device_delete(device);
     }
     list_delete(&g_a2dp_source.list);
+    a2dp_audio_cleanup(SVR_SOURCE);
     bt_sal_a2dp_source_cleanup();
     g_a2dp_source.active_peer = NULL;
     on_shutdown(PROFILE_A2DP, true);
@@ -500,6 +504,12 @@ void a2dp_source_service_notify_audio_source_config_changed(
 {
     BT_LOGD("%s", __FUNCTION__);
     A2DP_SOURCE_CALLBACK_FOREACH(g_a2dp_source.callbacks, audio_source_config_cb, addr);
+}
+
+void a2dp_source_service_audio_open(bt_address_t* addr)
+{
+    BT_LOGD("%s", __FUNCTION__);
+    a2dp_audio_open(SVR_SOURCE, g_a2dp_source.offloading, addr);
 }
 
 static void* a2dp_source_register_callbacks(void* remote, const a2dp_source_callbacks_t* callbacks)

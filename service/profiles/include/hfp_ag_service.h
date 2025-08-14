@@ -19,7 +19,6 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-#include "audio_transport.h"
 #include "bt_device.h"
 #include "bt_hfp_ag.h"
 #include "hfp_define.h"

@@ -195,10 +195,11 @@ if(CONFIG_BLUETOOTH)
            ${BLUETOOTH_DIR}/service/profiles/system/media_system.c)
     endif()
 
-    file(GLOB APPEND_FILES
-         ${BLUETOOTH_DIR}/service/profiles/audio_interface/*.c)
-    list(APPEND CSRCS ${APPEND_FILES})
-
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/service/profiles/audio_interface/audio_control.c)
+    if(CONFIG_AUDIOUTILS_TINYCOMPRESS)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/profiles/audio_interface/audio_transport.c)
+        list(APPEND INCDIR ${BLUETOOTH_DIR}/service/profiles/audio_interface/include)
+    endif()
     if(CONFIG_BLUETOOTH_GATT)
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/gatt/*.c)
       list(APPEND CSRCS ${APPEND_FILES})

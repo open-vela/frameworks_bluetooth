@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2023 Xiaomi InC. All rights reserved.
+ *   Copyright (C) 2025 Xiaomi InC. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -39,55 +39,19 @@
 
 #include "uv.h"
 
-typedef enum {
-    TRANSPORT_OPEN_EVT = 0x0001,
-    TRANSPORT_CLOSE_EVT = 0x0002,
-    TRANSPORT_RX_DATA_EVT = 0x0004,
-    TRANSPORT_RX_DATA_READY_EVT = 0x0008,
-    TRANSPORT_TX_DATA_READY_EVT = 0x0010
-} audio_transport_event_t;
+#include "tinycompress/tinycompress.h"
 
-typedef enum {
-    AUDIO_CTRL_CMD_START,
-    AUDIO_CTRL_CMD_STOP,
-    AUDIO_CTRL_CMD_CONFIG_DONE
-} audio_ctrl_cmd_t;
-
-typedef enum {
-    AUDIO_CTRL_EVT_STARTED,
-    AUDIO_CTRL_EVT_START_FAIL,
-    AUDIO_CTRL_EVT_STOPPED,
-    AUDIO_CTRL_EVT_UPDATE_CONFIG
-} audio_ctrl_evt_t;
-
-typedef enum {
-    IPC_DISCONNTECTED = -1,
-    IPC_CONNTECTED
-} transport_conn_state_t;
-
-typedef struct _audio_transport audio_transport_t;
-typedef void (*transport_event_cb_t)(uint8_t ch_id, audio_transport_event_t event);
-typedef void (*transport_alloc_cb_t)(uint8_t ch_id, uint8_t** buffer, size_t* len);
-typedef void (*transport_read_cb_t)(uint8_t ch_id, uint8_t* buffer, ssize_t len);
-typedef void (*transport_write_cb_t)(uint8_t ch_id, uint8_t* buffer);
-
-#define AUDIO_TRANS_CH_NUM 5
-#define AUDIO_TRANS_CH_ID_ALL 6 /* used to address all the ch id at once */
-
-const char* audio_transport_dump_event(uint8_t event);
-audio_transport_t* audio_transport_init(uv_loop_t* loop);
-bool audio_transport_open(audio_transport_t* transport, uint8_t ch_id,
-    const char* path, transport_event_cb_t cb);
-void audio_transport_close(audio_transport_t* transport, uint8_t ch_id);
-int audio_transport_write(audio_transport_t* transport, uint8_t ch_id,
-    const uint8_t* data, uint16_t len,
-    transport_write_cb_t cb);
-int audio_transport_read_start(audio_transport_t* transport,
-    uint8_t ch_id,
-    transport_alloc_cb_t alloc_cb,
-    transport_read_cb_t read_cb);
-int audio_transport_read_stop(audio_transport_t* transport, uint8_t ch_id);
-transport_conn_state_t audio_transport_get_state(audio_transport_t* transport,
-    uint8_t ch_id);
-
+struct compress* audio_transport_open(const char* name, uint32_t flags, struct compr_config* config);
+void audio_transport_nonblock(struct compress* cps, int nonblock);
+void audio_transport_set_event(struct compress* cps, void* cookie, void* callback);
+int audio_transport_get_file_descriptor(struct compress* cps);
+void audio_transport_poll_available(struct compress* cps);
+void audio_transport_start(struct compress* cps);
+void audio_transport_resume(struct compress* cps);
+void audio_transport_stop(struct compress* cps);
+void audio_transport_pause(struct compress* cps);
+void audio_transport_close(struct compress* cps);
+void audio_transport_reset(struct compress* cps);
+int audio_transport_read(struct compress* cps, void* buf, unsigned int size);
+int audio_transport_write(struct compress* cps, const void* data, uint16_t len);
 #endif
