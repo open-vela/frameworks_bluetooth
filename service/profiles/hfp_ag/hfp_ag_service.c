@@ -23,11 +23,12 @@
 #include <kvdb.h>
 #endif
 
-#include "audio_control.h"
+// #include "audio_control.h"
 #include "bt_hfp_ag.h"
 #include "bt_profile.h"
 #include "bt_vendor.h"
 #include "callbacks_list.h"
+#include "hfp_ag_audio.h"
 #include "hfp_ag_event.h"
 #include "hfp_ag_service.h"
 #include "hfp_ag_state_machine.h"
@@ -355,13 +356,13 @@ bool hfp_ag_on_sco_start(void)
     }
 
     if (!g_ag_service.offloading) {
-        audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STARTED);
+        hfp_ag_on_started();
         return true;
     }
 
     if (hfp_ag_send_event(&device->addr, AG_OFFLOAD_START_REQ) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to send msg", __func__);
-        audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_START_FAIL);
+        hfp_ag_on_stopped();
         return true;
     }
 
@@ -381,13 +382,13 @@ bool hfp_ag_on_sco_stop(void)
     }
 
     if (!g_ag_service.offloading) {
-        audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        hfp_ag_on_stopped();
         return true;
     }
 
     if (hfp_ag_send_event(&device->addr, AG_OFFLOAD_STOP_REQ) != BT_STATUS_SUCCESS) {
         BT_LOGE("%s: failed to send msg", __func__);
-        audio_ctrl_send_control_event(PROFILE_HFP_AG, AUDIO_CTRL_EVT_STOPPED);
+        hfp_ag_on_stopped();
         return true;
     }
 
@@ -398,20 +399,12 @@ bool hfp_ag_on_sco_stop(void)
 
 static bt_status_t hfp_ag_init(void)
 {
-    bt_status_t ret;
-
-    ret = audio_ctrl_init();
-    if (ret != BT_STATUS_SUCCESS) {
-        BT_LOGE("%s: failed to start audio control channel", __func__);
-        return ret;
-    }
-
-    return ret;
+    return BT_STATUS_SUCCESS;
 }
 
 static void hfp_ag_cleanup(void)
 {
-    audio_ctrl_cleanup();
+    hfp_ag_audio_cleanup();
 }
 
 static bt_status_t hfp_ag_startup(profile_on_startup_t cb)

@@ -46,13 +46,11 @@
 #include "sal_interface.h"
 
 #include "a2dp_audio.h"
-#include "a2dp_control.h"
 #include "a2dp_event.h"
 #include "a2dp_sink.h"
 #include "a2dp_source.h"
 #include "a2dp_state_machine.h"
 #include "adapter_internel.h"
-#include "audio_control.h"
 #include "bt_avrcp.h"
 #include "bt_dfx.h"
 #include "bt_utils.h"
@@ -241,11 +239,6 @@ static void a2dp_report_connection_state(a2dp_state_machine_t* stm, bt_address_t
 #endif
     } else {
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
-        /* is active device? */
-        if (state == PROFILE_STATE_DISCONNECTED) {
-            if (bt_media_set_a2dp_unavailable() != BT_STATUS_SUCCESS)
-                BT_LOGE("set A2DP unavailable fail");
-        }
         a2dp_source_service_notify_connection_state_changed(addr, state);
 #endif
     }
@@ -273,6 +266,8 @@ static void a2dp_report_audio_config_state(a2dp_state_machine_t* stm, bt_address
 
     if (stm->peer_sep == SEP_SRC) {
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
+        if (bt_media_set_a2dp_available() != BT_STATUS_SUCCESS)
+            BT_LOGE("set A2DP available fail");
         a2dp_sink_service_notify_audio_sink_config_changed(addr);
 #endif
     } else {
@@ -387,11 +382,12 @@ static void flag_clear(a2dp_state_machine_t* a2dp_sm, pending_state_t flag)
 static void idle_enter(state_machine_t* sm)
 {
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
-    const state_t* prev_state = hsm_get_previous_state(sm);
+    const state_t* prev_state;
 
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
 
     a2dp_sm->audio_ready = false;
+    prev_state = hsm_get_previous_state(sm);
     if (prev_state != NULL) {
         bt_pm_conn_close(PROFILE_A2DP, &a2dp_sm->addr);
         if (a2dp_sm->peer_sep == SEP_SRC) {
@@ -405,6 +401,11 @@ static void idle_enter(state_machine_t* sm)
             service_loop_cancel_timer(a2dp_sm->avrcp_timer);
             a2dp_sm->avrcp_timer = NULL;
         }
+    }
+
+    if (prev_state == &opened_state || prev_state == &started_state) {
+        if (bt_media_set_a2dp_unavailable() != BT_STATUS_SUCCESS)
+            BT_LOGE("set A2DP unavailable fail");
     }
 }
 
@@ -459,7 +460,6 @@ static bool idle_process_event(state_machine_t* sm, uint32_t event, void* p_data
         break;
 
     case OFFLOAD_STOP_EVT:
-        audio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
         break;
 
     default:
@@ -520,7 +520,6 @@ static bool opening_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case OFFLOAD_STOP_EVT:
-        audio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
         break;
 
     default:
@@ -546,7 +545,6 @@ static void opened_enter(state_machine_t* sm)
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
     const state_t* prev_state = hsm_get_previous_state(sm);
     a2dp_peer_t* peer = NULL;
-    bool ret;
 
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
     if (a2dp_sm->peer_sep == SEP_SRC) {
@@ -581,12 +579,19 @@ static void opened_enter(state_machine_t* sm)
             bt_sal_avrcp_control_connect(PRIMARY_ADAPTER, &a2dp_sm->addr);
         }
 #endif
-        ret = a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, true);
-        if (!ret) {
-            BT_LOGD("a2dp control not connected, then set a2dp available");
-            bt_media_set_a2dp_available();
-        }
 
+        a2dp_audio_setup_codec(a2dp_sm->peer_sep, &a2dp_sm->addr);
+
+#ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
+        if (a2dp_sm->peer_sep == SEP_SNK) {
+            a2dp_source_service_audio_open(&a2dp_sm->addr);
+        }
+#endif
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+        if (a2dp_sm->peer_sep == SEP_SRC) {
+            a2dp_sink_service_audio_open(&a2dp_sm->addr);
+        }
+#endif
         bt_pm_conn_open(PROFILE_A2DP, &a2dp_sm->addr);
         if (a2dp_sm->peer_sep == SEP_SRC) {
 #if defined(CONFIG_BLUETOOTH_A2DP_SINK) && defined(CONFIG_BLUETOOTH_CONNECTION_MANAGER)
@@ -686,6 +691,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
                call a2dp_audio_on_started(), shoule ack start failure; */
             a2dp_audio_on_started(a2dp_sm->peer_sep, false);
         }
+
         a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
         hsm_transition_to(sm, &idle_state);
         break;
@@ -725,7 +731,6 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
     case DEVICE_CODEC_STATE_CHANGE_EVT:
         a2dp_sm->audio_ready = true;
         a2dp_report_audio_config_state(a2dp_sm, &a2dp_sm->addr);
-        a2dp_audio_setup_codec(a2dp_sm->peer_sep, &a2dp_sm->addr);
         break;
 
     case START_TIMEOUT: {
@@ -808,7 +813,7 @@ static bool opened_process_event(state_machine_t* sm, uint32_t event, void* p_da
         break;
 
     case OFFLOAD_STOP_EVT:
-        audio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
+        a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
 
     default:
@@ -897,6 +902,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
             BT_LOGE("Avrc disconnect failed");
         }
 #endif
+        a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
         hsm_transition_to(sm, &closing_state);
         break;
     }
@@ -917,7 +923,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
 
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     case DATA_IND_EVT:
-        a2dp_sink_packet_recieve(data->packet);
+        a2dp_sink_packet_receive(data->packet);
         break;
 #endif
 
@@ -938,7 +944,8 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
     }
 
     case DISCONNECTED_EVT:
-        // check active, if active should nofify ffmpeg to stop
+        if (bt_media_set_a2dp_unavailable() != BT_STATUS_SUCCESS)
+            BT_LOGE("set A2DP unavailable fail");
         a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
         hsm_transition_to(sm, &idle_state);
         break;
@@ -977,7 +984,7 @@ static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case OFFLOAD_STOP_EVT:
-        audio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
+        a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
 
     default:
@@ -992,7 +999,12 @@ static void closing_enter(state_machine_t* sm)
     a2dp_state_machine_t* a2dp_sm = (a2dp_state_machine_t*)sm;
 
     A2DP_DBG_ENTER(sm, &a2dp_sm->addr);
-    a2dp_audio_on_connection_changed(a2dp_sm->peer_sep, false);
+    const state_t* prev_state = hsm_get_previous_state(sm);
+    if (prev_state == &opened_state || prev_state == &started_state) {
+        if (bt_media_set_a2dp_unavailable() != BT_STATUS_SUCCESS)
+            BT_LOGE("set A2DP unavailable fail");
+    }
+
     a2dp_report_connection_state(a2dp_sm, &a2dp_sm->addr,
         PROFILE_STATE_DISCONNECTING);
 }
@@ -1017,7 +1029,6 @@ static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_d
     case STREAM_CLOSED_EVT:
     case STREAM_SUSPENDED_EVT:
         flag_clear(a2dp_sm, PENDING_STOP);
-        a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
 
     case DISCONNECTED_EVT:
@@ -1029,7 +1040,6 @@ static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_d
         break;
 
     case OFFLOAD_STOP_EVT:
-        audio_ctrl_send_control_event(PROFILE_A2DP, A2DP_CTRL_EVT_STOPPED);
         break;
 
     default:
