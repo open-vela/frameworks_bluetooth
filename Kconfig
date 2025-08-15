@@ -294,7 +294,7 @@ endif #BLUETOOTH_L2CAP
 
 config BLUETOOTH_MAX_REGISTER_NUM
 	int "Max register callback nums"
-	default 4
+	default 6
 
 config BLUETOOTH_FRAMEWORK
 	bool "Enable bluetooth framework api"
