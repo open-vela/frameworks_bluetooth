@@ -50,11 +50,13 @@
 #define NEXT_DB_ATTR(attr) (attr + 1)
 #define LAST_DB_ATTR (server_db + (attr_count - 1))
 
-#define GATT_PERM_MASK (BT_GATT_PERM_READ | BT_GATT_PERM_READ_AUTHEN | BT_GATT_PERM_READ_ENCRYPT | BT_GATT_PERM_WRITE | BT_GATT_PERM_WRITE_AUTHEN | BT_GATT_PERM_WRITE_ENCRYPT | BT_GATT_PERM_PREPARE_WRITE)
+#define GATT_PERM_MASK (BT_GATT_PERM_READ | BT_GATT_PERM_READ_AUTHEN \
+    | BT_GATT_PERM_READ_ENCRYPT | BT_GATT_PERM_READ_LESC             \
+    | BT_GATT_PERM_WRITE | BT_GATT_PERM_WRITE_AUTHEN                 \
+    | BT_GATT_PERM_WRITE_ENCRYPT | BT_GATT_PERM_WRITE_LESC | BT_GATT_PERM_PREPARE_WRITE)
+
 #define GATT_PERM_ENC_READ_MASK (BT_GATT_PERM_READ_ENCRYPT | BT_GATT_PERM_READ_AUTHEN)
 #define GATT_PERM_ENC_WRITE_MASK (BT_GATT_PERM_WRITE_ENCRYPT | BT_GATT_PERM_WRITE_AUTHEN)
-#define GATT_PERM_READ_AUTHORIZATION 0x40
-#define GATT_PERM_WRITE_AUTHORIZATION 0x80
 
 #define GATT_OPS_WRITE_REQUEST 0 /* not used */
 
@@ -84,7 +86,7 @@ struct add_descriptor {
 struct add_characteristic {
     uint16_t char_id;
     uint8_t properties;
-    uint8_t permissions;
+    uint16_t permissions;
     const struct bt_uuid* uuid;
     uint32_t attr_length;
     uint8_t* attr_data;
@@ -336,6 +338,39 @@ static int alloc_characteristic(struct add_characteristic* ch)
     return 0;
 }
 
+static uint16_t covert_gatt_permission(uint16_t elem_perm)
+{
+    int chr_perm = 0;
+
+    if (elem_perm & GATT_PERM_READ) {
+        chr_perm |= BT_GATT_PERM_READ;
+        if (elem_perm & GATT_PERM_AUTHEN_REQUIRED) {
+            chr_perm |= BT_GATT_PERM_READ_AUTHEN;
+        }
+        if (elem_perm & GATT_PERM_ENCRYPT_REQUIRED) {
+            chr_perm |= BT_GATT_PERM_READ_ENCRYPT;
+        }
+        if (elem_perm & GATT_PERM_MITM_REQUIRED) {
+            chr_perm |= BT_GATT_PERM_READ_LESC;
+        }
+    }
+
+    if (elem_perm & GATT_PERM_WRITE) {
+        chr_perm |= BT_GATT_PERM_WRITE;
+        if (elem_perm & GATT_PERM_AUTHEN_REQUIRED) {
+            chr_perm |= BT_GATT_PERM_WRITE_AUTHEN;
+        }
+        if (elem_perm & GATT_PERM_ENCRYPT_REQUIRED) {
+            chr_perm |= BT_GATT_PERM_WRITE_ENCRYPT;
+        }
+        if (elem_perm & GATT_PERM_MITM_REQUIRED) {
+            chr_perm |= BT_GATT_PERM_WRITE_LESC;
+        }
+    }
+
+    return chr_perm;
+}
+
 static void add_characteristic(gatt_element_t* element)
 {
     struct add_characteristic chr = { 0 };
@@ -346,7 +381,7 @@ static void add_characteristic(gatt_element_t* element)
         return;
     }
 
-    chr.permissions = element->permissions;
+    chr.permissions = covert_gatt_permission(element->permissions);
     chr.properties = element->properties;
     chr.uuid = &u.uuid;
     chr.attr_length = element->attr_length;
@@ -470,7 +505,7 @@ static void add_descriptor(gatt_element_t* element)
         return;
     }
 
-    desc.permissions = element->permissions;
+    desc.permissions = covert_gatt_permission(element->permissions);
     desc.properties = element->properties;
     desc.uuid = &u.uuid;
     desc.element = element;
