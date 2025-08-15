@@ -304,12 +304,13 @@ static void a2dp_sink_process_msg(profile_msg_t* msg)
         break;
     case PROFILE_EVT_REMOTE_DETACH: {
         bt_instance_t* ins = msg->data.data;
-
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
         if (ins->a2dp_sink_cookie) {
             BT_LOGD("%s PROFILE_EVT_REMOTE_DETACH", __func__);
             a2dp_sink_unregister_callbacks(NULL, ins->a2dp_sink_cookie);
             ins->a2dp_sink_cookie = NULL;
         }
+#endif
         break;
     }
     default:

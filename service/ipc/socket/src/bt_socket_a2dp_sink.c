@@ -138,6 +138,7 @@ void bt_socket_server_a2dp_sink_process(service_poll_t* poll,
         break;
     }
     case BT_A2DP_SINK_REGISTER_CALLBACKS: {
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
         if (ins->a2dp_sink_cookie == NULL) {
             a2dp_sink_interface_t* profile = get_profile_service();
             ins->a2dp_sink_cookie = profile->register_callbacks(ins, &g_a2dp_sink_cbs);
@@ -149,9 +150,11 @@ void bt_socket_server_a2dp_sink_process(service_poll_t* poll,
         } else {
             packet->a2dp_sink_r.status = BT_STATUS_SUCCESS;
         }
+#endif
         break;
     }
     case BT_A2DP_SINK_UNREGISTER_CALLBACKS: {
+#ifdef CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
         if (ins->a2dp_sink_cookie) {
             a2dp_sink_interface_t* profile = get_profile_service();
             if (profile->unregister_callbacks(NULL, ins->a2dp_sink_cookie)) {
@@ -163,6 +166,7 @@ void bt_socket_server_a2dp_sink_process(service_poll_t* poll,
         } else {
             packet->a2dp_sink_r.status = BT_STATUS_NOT_FOUND;
         }
+#endif
         break;
     }
     default:

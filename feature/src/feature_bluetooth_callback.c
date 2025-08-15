@@ -732,7 +732,7 @@ void feature_bluetooth_callback_init(bt_instance_t* bt_ins)
 
     bt_ins->adapter_cookie = bt_adapter_register_callback(bt_ins, &g_adapter_cbs);
 
-#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK && CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
     features_callbacks->feature_a2dp_sink_callbacks = bt_list_new(free_feature_bluetooth_a2dp_sink_node);
     bt_ins->a2dp_sink_cookie = bt_a2dp_sink_register_callbacks(bt_ins, &a2dp_sink_cbs);
 #endif
@@ -760,7 +760,7 @@ void feature_bluetooth_callback_uninit(bt_instance_t* bt_ins)
     }
 
     bt_adapter_unregister_callback(bt_ins, bt_ins->adapter_cookie);
-#ifdef CONFIG_BLUETOOTH_A2DP_SINK
+#ifdef CONFIG_BLUETOOTH_A2DP_SINK && CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC
     bt_a2dp_sink_unregister_callbacks(bt_ins, bt_ins->a2dp_sink_cookie);
 #endif
 
