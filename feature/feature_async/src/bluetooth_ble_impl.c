@@ -412,9 +412,9 @@ static bt_status_t feature_set_adv_params(system_bluetooth_ble_AdvertiseSetting*
     }
 
     if (setting->connectable)
-        adv_params->adv_type = BT_LE_ADV_IND;
+        adv_params->adv_type = BT_LE_LEGACY_ADV_IND;
     else
-        adv_params->adv_type = BT_LE_ADV_NONCONN_IND;
+        adv_params->adv_type = BT_LE_LEGACY_ADV_NONCONN_IND;
 
     bt_addr_set_empty(&adv_params->peer_addr);
     adv_params->peer_addr_type = BT_LE_ADDR_TYPE_PUBLIC;
