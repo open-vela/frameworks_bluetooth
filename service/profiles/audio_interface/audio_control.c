@@ -40,6 +40,7 @@
 /****************************************************************************
  * Private Data
  ****************************************************************************/
+extern audio_transport_t* a2dp_transport;
 static audio_transport_t* g_audio_ctrl_transport;
 
 static const char* audio_cmd_to_string(audio_ctrl_cmd_t cmd)
@@ -221,6 +222,12 @@ static void audio_ctrl_cb(uint8_t ch_id, audio_transport_event_t event)
         BT_LOGD("%s: ### EVENT %d NOT HANDLED ###", __func__, event);
         break;
     }
+}
+
+bool audio_ctrl_is_media_ready()
+{
+    //return false if TRANSPORT_OPEN_EVT is never received.
+    return audio_transport_is_media_ready(a2dp_transport);
 }
 
 bt_status_t audio_ctrl_init(void)

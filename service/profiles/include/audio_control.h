@@ -40,6 +40,7 @@
 #include "bt_status.h"
 
 void audio_ctrl_send_control_event(uint8_t profile_id, audio_ctrl_evt_t evt);
+bool audio_ctrl_is_media_ready(void);
 bt_status_t audio_ctrl_init(void);
 void audio_ctrl_cleanup(void);
 

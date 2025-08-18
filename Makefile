@@ -96,7 +96,9 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP), y)
 	CSRCS += service/stacks/zephyr/sal_a2dp_interface.c
 endif #CONFIG_BLUETOOTH_A2DP
 ifneq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL)$(CONFIG_BLUETOOTH_AVRCP_TARGET),)
+  	CSRCS += service/profiles/avrcp/*.c
 	CSRCS += service/stacks/zephyr/sal_avrcp_interface.c
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/avrcp
 endif #CONFIG_BLUETOOTH_AVRCP_CONTROL/CONFIG_BLUETOOTH_AVRCP_TARGET
 
 ifeq ($(CONFIG_BLUETOOTH_STACK_LE_ZBLUE), y)
@@ -115,16 +117,16 @@ endif #CONFIG_BLUETOOTH_STACK_LE_ZBLUE
 
 endif
 ifeq ($(CONFIG_BLUETOOTH_BLE_AUDIO),)
-  CSRCS := $(filter-out $(wildcard service/stacks/bluelet/sal_lea_*),$(wildcard $(CSRCS)))
+	CSRCS := $(filter-out $(wildcard service/stacks/bluelet/sal_lea_*),$(wildcard $(CSRCS)))
 endif #CONFIG_BLUETOOTH_BLE_AUDIO
 	CSRCS += service/profiles/*.c
 	CSRCS += service/profiles/system/*.c
-ifeq ($(CONFIG_BLUETOOTH_A2DP),)
+ifeq ($(CONFIG_BLUETOOTH_AVRCP_TARGET)$(CONFIG_BLUETOOTH_AVRCP_CONTROL),)
 	CSRCS := $(filter-out $(wildcard service/profiles/system/bt_player.c),$(wildcard $(CSRCS)))
 endif #CONFIG_BLUETOOTH_A2DP
-ifeq ($(findstring y, $(CONFIG_BLUETOOTH_A2DP)_$(CONFIG_BLUETOOTH_HFP_AG)_$(CONFIG_BLUETOOTH_HFP_HF)_$(CONFIG_BLUETOOTH_BLE_AUDIO)), )
+ifeq ($(findstring y, $(CONFIG_BLUETOOTH_A2DP)_$(CONFIG_BLUETOOTH_AVRCP_TARGET)_$(CONFIG_BLUETOOTH_AVRCP_CONTROL)_$(CONFIG_BLUETOOTH_HFP_AG)_$(CONFIG_BLUETOOTH_HFP_HF)_$(CONFIG_BLUETOOTH_BLE_AUDIO)), )
 	CSRCS := $(filter-out $(wildcard service/profiles/system/media_system.c),$(wildcard $(CSRCS)))
-endif #CONFIG_BLUETOOTH_A2DP/CONFIG_BLUETOOTH_HFP_AG/CONFIG_BLUETOOTH_HFP_HF
+endif #CONFIG_BLUETOOTH_A2DP/CONFIG_BLUETOOTH_AVRCP/CONFIG_BLUETOOTH_HFP_AG/CONFIG_BLUETOOTH_HFP_HF
 ifeq ($(CONFIG_MICO_MEDIA_MAIN_PLAYER),y)
 	CFLAGS += ${INCDIR_PREFIX}${TOPDIR}/../vendor/xiaomi/miai/mediaplayer/include
 endif #CONFIG_MICO_MEDIA_MAIN_PLAYER
@@ -136,10 +138,8 @@ endif #CONFIG_BLUETOOTH_GATT
 ifeq ($(CONFIG_BLUETOOTH_A2DP), y)
   CSRCS += service/profiles/a2dp/*.c
   CSRCS += service/profiles/a2dp/codec/*.c
-  CSRCS += service/profiles/avrcp/*.c
   CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/a2dp
   CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/a2dp/codec
-  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/avrcp
 endif #CONFIG_BLUETOOTH_A2DP
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SOURCE), y)
