@@ -65,6 +65,11 @@ static bt_media_status_t media_state_to_playback_status(int media_state)
 static void media_session_event_cb(void* cookie, int event, int ret,
     const char* extra)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return;
+    }
+
     bt_media_controller_t* controller = cookie;
     int status;
     int media_state;
@@ -136,6 +141,11 @@ char* bt_media_status_str(uint8_t status)
 
 bt_media_controller_t* bt_media_controller_create(void* context, bt_media_notify_callback_t cb)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return NULL;
+    }
+
     bt_media_controller_t* controller = malloc(sizeof(*controller));
     int ret = 0;
 
@@ -170,6 +180,11 @@ void bt_media_controller_set_context(bt_media_controller_t* controller, void* co
 
 void bt_media_controller_destory(bt_media_controller_t* controller)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return;
+    }
+
     if (!controller)
         return;
 
@@ -179,6 +194,11 @@ void bt_media_controller_destory(bt_media_controller_t* controller)
 
 bt_status_t bt_media_player_play(bt_media_controller_t* controller)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (!controller)
         return BT_STATUS_PARM_INVALID;
 
@@ -192,6 +212,11 @@ bt_status_t bt_media_player_play(bt_media_controller_t* controller)
 
 bt_status_t bt_media_player_pause(bt_media_controller_t* controller)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (!controller)
         return BT_STATUS_PARM_INVALID;
 
@@ -205,6 +230,11 @@ bt_status_t bt_media_player_pause(bt_media_controller_t* controller)
 
 bt_status_t bt_media_player_stop(bt_media_controller_t* controller)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (!controller)
         return BT_STATUS_PARM_INVALID;
 
@@ -218,6 +248,11 @@ bt_status_t bt_media_player_stop(bt_media_controller_t* controller)
 
 bt_status_t bt_media_player_next(bt_media_controller_t* controller)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (!controller)
         return BT_STATUS_PARM_INVALID;
 
@@ -231,6 +266,11 @@ bt_status_t bt_media_player_next(bt_media_controller_t* controller)
 
 bt_status_t bt_media_player_prev(bt_media_controller_t* controller)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (!controller)
         return BT_STATUS_PARM_INVALID;
 
@@ -245,6 +285,11 @@ bt_status_t bt_media_player_prev(bt_media_controller_t* controller)
 bt_status_t bt_media_player_get_playback_status(bt_media_controller_t* controller,
     bt_media_status_t* status)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     int state = 0;
 
     if (!controller || !status)
@@ -261,6 +306,11 @@ bt_status_t bt_media_player_get_playback_status(bt_media_controller_t* controlle
 
 bt_status_t bt_media_player_get_position(bt_media_controller_t* controller, uint32_t* positions)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (!controller || !positions)
         return BT_STATUS_PARM_INVALID;
 
@@ -274,6 +324,11 @@ bt_status_t bt_media_player_get_position(bt_media_controller_t* controller, uint
 
 bt_status_t bt_media_player_get_durations(bt_media_controller_t* controller, uint32_t* durations)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (!controller || !durations)
         return BT_STATUS_PARM_INVALID;
 
@@ -288,6 +343,11 @@ bt_status_t bt_media_player_get_durations(bt_media_controller_t* controller, uin
 static void media_control_event_cb(void* cookie, int event,
     int ret, const char* extra)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return;
+    }
+
     bt_media_player_t* player = cookie;
 
     switch (event) {
@@ -313,6 +373,11 @@ static void media_control_event_cb(void* cookie, int event,
 
 bt_media_player_t* bt_media_player_create(void* context, bt_media_player_callback_t* cb)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return NULL;
+    }
+
     if (context == NULL || cb == NULL)
         return NULL;
 
@@ -335,6 +400,11 @@ bt_media_player_t* bt_media_player_create(void* context, bt_media_player_callbac
 
 void bt_media_player_destory(bt_media_player_t* player)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return;
+    }
+
     if (!player)
         return;
 
@@ -348,6 +418,11 @@ void bt_media_player_destory(bt_media_player_t* player)
 
 bt_status_t bt_media_player_set_status(bt_media_player_t* player, bt_media_status_t status)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     int event;
 
     if (!player)
@@ -376,7 +451,7 @@ bt_status_t bt_media_player_set_status(bt_media_player_t* player, bt_media_statu
         return BT_STATUS_PARM_INVALID;
     }
 
-    media_session_notify(player->mediasession, event, 0, NULL);
+    media_session_notify(player->mediasession, event, 0, NULL); // player有保护，需要保护player->mediasessio吗？
     player->play_status = status;
 
     return BT_STATUS_SUCCESS;

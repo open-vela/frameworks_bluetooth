@@ -278,6 +278,7 @@ static void a2dp_ctrl_cb(uint8_t ch_id, audio_transport_event_t event)
     switch (event) {
     case TRANSPORT_OPEN_EVT:
         a2dp_ctrl_start(ch_id);
+        audio_transport_set_media_ready(a2dp_transport, true);
 #ifdef CONFIG_BLUETOOTH_A2DP_SOURCE
         if (ch_id == AUDIO_TRANS_CH_ID_AV_SOURCE_CTRL && a2dp_source_stream_ready())
             a2dp_control_update_audio_config(ch_id, 1);
@@ -290,6 +291,7 @@ static void a2dp_ctrl_cb(uint8_t ch_id, audio_transport_event_t event)
 
     case TRANSPORT_CLOSE_EVT:
         a2dp_ctrl_stop(ch_id);
+        audio_transport_set_media_ready(a2dp_transport, false);
         break;
 
     default:

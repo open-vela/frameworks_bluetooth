@@ -89,5 +89,6 @@ int audio_transport_read_start(audio_transport_t* transport,
 int audio_transport_read_stop(audio_transport_t* transport, uint8_t ch_id);
 transport_conn_state_t audio_transport_get_state(audio_transport_t* transport,
     uint8_t ch_id);
-
+void audio_tranport_set_media_ready(audio_transport_t* transport, bool ready); // write
+bool audio_transport_is_media_ready(const audio_transport_t* transport); // read
 #endif

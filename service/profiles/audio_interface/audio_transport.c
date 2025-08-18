@@ -70,8 +70,23 @@ typedef struct {
 typedef struct _audio_transport {
     uv_loop_t* loop;
     uint8_t closing;
+    bool is_media_ready;
     transport_channel_t ch[AUDIO_TRANS_CH_NUM];
 } audio_transport_t;
+
+void audio_transport_set_media_ready(audio_transport_t* transport, bool ready) {
+    if (!transport)
+        return;
+
+    transport->is_media_ready = ready;
+}
+
+bool audio_transport_is_media_ready(const audio_transport_t* transport) {
+    if (!transport)
+        return false;
+
+    return transport->is_media_ready;
+}
 
 const char* audio_transport_dump_event(uint8_t event)
 {

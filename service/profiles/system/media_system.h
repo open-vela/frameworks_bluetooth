@@ -17,6 +17,11 @@
 #ifndef __MEDIA_SYSTEM_H__
 #define __MEDIA_SYSTEM_H__
 
+#pragma once
+
+#include <stdint.h>
+#include <stdbool.h>
+
 #define INVALID_MEDIA_VOLUME (-1)
 
 typedef void (*bt_media_voice_volume_change_callback_t)(void* context, int volume);

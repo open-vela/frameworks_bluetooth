@@ -21,6 +21,7 @@
 
 #include "bt_dfx.h"
 #include "bt_status.h"
+
 #include <media_api.h>
 
 #ifdef CONFIG_MICO_MEDIA_MAIN_PLAYER
@@ -55,6 +56,12 @@ static int media_volume_to_ui_volume(int volume)
 
 int bt_media_get_music_volume_range(void)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        g_media_max_volume = 15;
+        return 0;
+    }
+
     int media_min_volume = 0; /* min volume of AVRCP must be 0. */
     int status;
 
@@ -62,7 +69,11 @@ int bt_media_get_music_volume_range(void)
     if (status)
         BT_DFX_AVRCP_VOL_ERROR(BT_DFXE_GET_MEDIA_VOLUME_RANGE_FAIL);
 
-    assert(!media_min_volume);
+    //assert(!media_min_volume);
+    if (media_min_volume != 0) {
+        BT_LOGD("Media min volume must be 0, but got %d", media_min_volume);
+        media_min_volume = 0;
+    }
 
     return status;
 }
@@ -136,6 +147,11 @@ uint8_t bt_media_volume_media_to_hfp(int media_volume)
 
 void bt_media_remove_listener(void* handle)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return;
+    }
+
     bt_media_listener_t* listener = (bt_media_listener_t*)handle;
     if (!listener)
         return;
@@ -150,6 +166,11 @@ void bt_media_remove_listener(void* handle)
 
 bt_status_t bt_media_set_a2dp_available(void)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     int is_available = 0;
 
     /* check A2DP device is available */
@@ -174,6 +195,11 @@ bt_status_t bt_media_set_a2dp_available(void)
 
 bt_status_t bt_media_set_a2dp_unavailable(void)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     int is_available = 0;
 
     /* check A2DP device is unavailable */
@@ -194,6 +220,11 @@ bt_status_t bt_media_set_a2dp_unavailable(void)
 
 bt_status_t bt_media_set_hfp_samplerate(uint16_t samplerate)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (samplerate != 8000 && samplerate != 16000)
         return BT_STATUS_PARM_INVALID;
 
@@ -215,6 +246,11 @@ static void bt_media_policy_volume_change_callback(void* cookie, int number, con
 
 void* bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_callback_t cb, void* context)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return NULL;
+    }
+
     bt_media_listener_t* listener = malloc(sizeof(bt_media_listener_t));
     if (!listener)
         return NULL;
@@ -234,6 +270,11 @@ void* bt_media_listen_voice_call_volume_change(bt_media_voice_volume_change_call
 
 bt_status_t bt_media_get_voice_call_volume(int* volume)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (media_policy_get_stream_volume(MEDIA_SCENARIO_INCALL, volume) != 0) {
         BT_DFX_HFP_VOL_ERROR(BT_DFXE_GET_VOICE_CALL_VOLUME_FAIL);
         return BT_STATUS_FAIL;
@@ -244,6 +285,11 @@ bt_status_t bt_media_get_voice_call_volume(int* volume)
 
 bt_status_t bt_media_set_voice_call_volume(int volume)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (media_policy_set_stream_volume(MEDIA_SCENARIO_INCALL, volume) != 0) {
         BT_DFX_HFP_VOL_ERROR(BT_DFXE_SET_VOICE_CALL_VOLUME_FAIL);
         return BT_STATUS_FAIL;
@@ -254,6 +300,11 @@ bt_status_t bt_media_set_voice_call_volume(int volume)
 
 bt_status_t bt_media_set_music_volume(int volume)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     bt_status_t status;
 
     status = media_policy_set_stream_volume(MEDIA_STREAM_MUSIC, volume);
@@ -289,6 +340,11 @@ bt_status_t bt_media_set_music_volume(int volume)
 
 bt_status_t bt_media_get_music_volume(int* volume)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (media_policy_get_stream_volume(MEDIA_STREAM_MUSIC, volume) != 0) {
         BT_DFX_AVRCP_VOL_ERROR(BT_DFXE_GET_STREAM_VOLUME_FAIL);
         return BT_STATUS_FAIL;
@@ -299,6 +355,11 @@ bt_status_t bt_media_get_music_volume(int* volume)
 
 void* bt_media_listen_music_volume_change(bt_media_voice_volume_change_callback_t cb, void* context)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     bt_media_listener_t* listener;
 
     listener = malloc(sizeof(bt_media_listener_t));
@@ -314,6 +375,11 @@ void* bt_media_listen_music_volume_change(bt_media_voice_volume_change_callback_
 
 bt_status_t bt_media_set_sco_available(void)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     /* set SCO device available */
     if (media_policy_set_devices_available(MEDIA_DEVICE_SCO) != 0) {
         BT_DFX_HFP_MEDIA_ERROR(BT_DFXE_SET_SCO_AVAILABLE_FAIL);
@@ -325,6 +391,11 @@ bt_status_t bt_media_set_sco_available(void)
 
 bt_status_t bt_media_set_sco_unavailable(void)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (media_policy_set_devices_unavailable(MEDIA_DEVICE_SCO) != 0) {
         BT_DFX_HFP_MEDIA_ERROR(BT_DFXE_SET_SCO_UNAVAILABLE_FAIL);
         return BT_STATUS_FAIL;
@@ -349,6 +420,11 @@ bt_status_t bt_media_set_hfp_offloading(bool enable)
 
 bt_status_t bt_media_set_lea_available(void)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     int is_available = 0;
 
     /* check LEA device is available */
@@ -369,6 +445,11 @@ bt_status_t bt_media_set_lea_available(void)
 
 bt_status_t bt_media_set_lea_unavailable(void)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     int is_available = 0;
 
     /* check LEA device is unavailable */
@@ -396,6 +477,11 @@ bt_status_t bt_media_set_lea_offloading(bool enable)
 
 bt_status_t bt_media_set_anc_enable(bool enable)
 {
+    if (!audio_ctrl_is_media_ready()) {
+        BT_LOGD("Media not ready");
+        return BT_STATUS_FAIL;
+    }
+
     if (media_policy_set_int(MEDIA_POLICY_ANC_OFFLOAD_MODE, (int)enable, MEDIA_POLICY_APPLY) != 0) {
         BT_DFX_HFP_MEDIA_ERROR(BT_DFXE_SET_ANC_ENABLE_FAIL);
         return BT_STATUS_FAIL;
