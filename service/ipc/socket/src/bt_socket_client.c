@@ -618,7 +618,9 @@ static void bt_socket_read_cb(uv_stream_t* stream,
 
 static void bt_socket_close_cb(uv_handle_t* handle)
 {
+    bt_socket_async_client_t* priv = uv_handle_get_data(handle);
     free(handle);
+    free(priv);
 }
 
 static void bt_socket_connect_cb(uv_connect_t* req, int status)
@@ -772,8 +774,8 @@ void bt_socket_async_client_deinit(bt_instance_t* ins)
 
     if (priv->pipe)
         uv_close((uv_handle_t*)priv->pipe, bt_socket_close_cb);
+    else
+        free(priv);
 
     free(priv->packet);
-    free(priv);
-    ins->priv = NULL;
 }
