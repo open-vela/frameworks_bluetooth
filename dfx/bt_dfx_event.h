@@ -17,7 +17,7 @@
 #define _BT_DFX_EVENT_H_
 
 // vela bluetooth event id
-#define BT_DFX_BASE_VELA_BLUETOOTH (923020000)
+#define BT_DFX_BASE_VELA_BLUETOOTH (961020000)
 
 // event group
 #define BT_DFXG_BR_GAP (0)
