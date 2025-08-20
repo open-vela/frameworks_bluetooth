@@ -28,6 +28,7 @@ import android.widget.EditText;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.openvela.bluetooth.BtHelper;
 import com.openvela.bluetooth.BtSock;
 import com.openvela.bluetoothtest.MainActivity;
 import com.openvela.bluetoothtest.R;
@@ -114,7 +115,13 @@ public class BleL2capActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 String uuid = textServiceUUID_1.getText().toString();
-                String addr = textBdAddr_1.getText().toString();
+                String addr = BtHelper.formatMacAddress(textBdAddr_1.getText().toString());
+                if (addr == null) {
+                    textBdAddr_1.setText("Invalid");
+                    return;
+                }
+
+                textBdAddr_1.setText(addr);
 
                 Log.d(TAG, "onClick: Connect by Client#1, to BD_ADDR =  " + addr);
                 btSock_1.connect(addr, uuid);
@@ -140,7 +147,14 @@ public class BleL2capActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 String uuid = textServiceUUID_2.getText().toString();
-                String addr = textBdAddr_2.getText().toString();
+                String addr = BtHelper.formatMacAddress(textBdAddr_2.getText().toString());
+                if(addr == null)
+                {
+                    textBdAddr_2.setText("Invalid");
+                    return;
+                }
+
+                textBdAddr_2.setText(addr);
 
                 Log.d(TAG, "onClick: Connect by Client#2, to BD_ADDR =  " + addr);
                 btSock_2.connect(addr, uuid);
@@ -168,7 +182,7 @@ public class BleL2capActivity extends AppCompatActivity {
                 String str = textDataToSend_1.getText().toString();
 
                 Log.d(TAG, "onClick: Send by Client/Server#1, data =  " + str);
-                btSock_1.send(str, 0);
+                btSock_1.send(str, 1);
             }
         });
 
@@ -183,7 +197,7 @@ public class BleL2capActivity extends AppCompatActivity {
                 String str = textDataToSend_2.getText().toString();
 
                 Log.d(TAG, "onClick: Send by Client/Server#2, data =  " + str);
-                btSock_2.send(str, 0);
+                btSock_2.send(str, 1);
             }
         });
 
