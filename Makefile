@@ -37,6 +37,7 @@ endif
   CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc/socket/include
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC), y)
 	CSRCS += framework/socket/async/*.c
+	CSRCS += framework/btwrap/async/*.c
 endif #CONFIG_BLUETOOTH_FRAMEWORK_ASYNC
 else
 endif
