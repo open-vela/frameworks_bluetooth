@@ -133,11 +133,10 @@ typedef void (*bt_gattc_feature_delete_client_cb_t)(bt_instance_t* ins, gatt_sta
  * @param ins         Bluetooth instance.
  * @param status      Operation status.
  * @param conn_handle Connection handle.
- * @param services    Array of discovered services (pointer array).
- * @param count       Number of services in the array.
+ * @param service     Retrieved service (single entry).
  */
 typedef void (*bt_gattc_feature_get_service_cb_t)(bt_instance_t* ins, gatt_status_t status, gattc_handle_t conn_handle,
-    const gatt_service_t* services[], size_t count);
+    const gatt_service_t* service);
 
 /**
  * @brief Read characteristic callback.
@@ -233,13 +232,13 @@ bt_status_t bt_gattc_feature_create_client_async(bt_instance_t* ins, bt_address_
 
 /**
  * @brief Delete GATT client.
- * @param ins         Bluetooth instance.
- * @param conn_handle Connection handle (from create).
- * @param cb          Async call status callback.
- * @param userdata    User context.
+ * @param ins        Bluetooth instance.
+ * @param addr       Remote device address.
+ * @param cb         Delete completion callback.
+ * @param userdata   User context.
  * @return bt_status_t
  */
-bt_status_t bt_gattc_feature_delete_client_async(bt_instance_t* ins, gattc_handle_t conn_handle,
+bt_status_t bt_gattc_feature_delete_client_async(bt_instance_t* ins, bt_address_t* addr,
     bt_gattc_feature_delete_client_cb_t cb, void* userdata);
 
 /**

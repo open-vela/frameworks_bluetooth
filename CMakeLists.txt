@@ -589,6 +589,10 @@ if(CONFIG_BLUETOOTH)
     if(CONFIG_BLUETOOTH_BLE_ADV)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/feature_async/src/bluetooth_ble_impl.c)
     endif()
+
+    if(CONFIG_BLUETOOTH_GATT)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/btwrap/async/bt_gatt_feature.c)
+    endif()
   else()
   endif()
 
