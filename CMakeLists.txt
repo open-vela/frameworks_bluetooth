@@ -762,6 +762,15 @@ if(CONFIG_BLUETOOTH)
   else()
   endif()
 
+  if(CONFIG_BLUETOOTH_DFX)
+      set(XML_PATHS ${BLUETOOTH_DIR}/dfx/event_bt.xml)
+      nuttx_add_dfx_event(
+        TARGET
+        dfx_bt
+        XML_PATHS
+        ${XML_PATHS})
+  endif()
+
   # Add Dependson
   nuttx_add_dependencies(TARGET libbluetooth DEPENDS libuv)
 

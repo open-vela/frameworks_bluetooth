@@ -480,6 +480,13 @@ CSRCS     += feature/src/system_bluetooth_bt_avrcpcontrol.c
 CSRCS     += feature/src/system_bluetooth_bt_avrcpcontrol_impl.c
 endif
 
+ifneq ($(CONFIG_BLUETOOTH_DFX),)
+  DFX_XML=$(APPDIR)/frameworks/connectivity/bluetooth/dfx
+  CHARGER_XML=$(APPDIR)/frameworks/connectivity/bluetooth/dfx/event_bt.xml
+context::
+	@cp $(CHARGER_XML) $(DFX_XML)
+endif
+
 depend::
 	$(APPDIR)/../prebuilts/tools/rust/bin/jidl/jidl_gen_cpp \
 		$(APPDIR)/frameworks/connectivity/bluetooth/feature/jidl/bluetooth.jidl --out-dir \

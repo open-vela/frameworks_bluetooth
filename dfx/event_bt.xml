@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+
+<EventRoot version="">
+
+    <Event id="961020000" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="brInquiryError" type="string"/>
+    </Event>
+
+    <Event id="961020100" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="brConnectError" type="string"/>
+    </Event>
+
+    <Event id="961020110" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="brDisconnectError" type="string"/>
+    </Event>
+
+    <Event id="961020200" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="brPairError" type="string"/>
+    </Event>
+
+    <Event id="961020500" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="bleScanError" type="string"/>
+    </Event>
+
+    <Event id="961020600" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="bleConnectError" type="string"/>
+    </Event>
+
+    <Event id="961020610" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="bleDisconnectError" type="string"/>
+    </Event>
+
+    <Event id="961020700" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="blePairError" type="string"/>
+    </Event>
+
+    <Event id="961021000" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btSppConnectError" type="string"/>
+    </Event>
+
+    <Event id="961021010" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L2">
+       <Param id="0" name="btSppDisconnected" type="string"/>
+       <Param id="1" name="scn" type="int"/>
+       <Param id="2" name="port" type="int"/>
+       <Param id="3" name="role" type="string"/>
+    </Event>
+
+    <Event id="961023000" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btA2dpConnectError" type="string"/>
+    </Event>
+
+    <Event id="961023010" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btA2dpMediaError" type="string"/>
+    </Event>
+
+    <Event id="961023020" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btA2dpOffloadError" type="string"/>
+    </Event>
+
+    <Event id="961023200" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btAvrcpConnectError" type="string"/>
+    </Event>
+
+    <Event id="961023210" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btAvrcpCtrlError" type="string"/>
+    </Event>
+
+    <Event id="961023220" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btAvrcpVolError" type="string"/>
+    </Event>
+
+    <Event id="961023400" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btHfpConnectError" type="string"/>
+    </Event>
+
+    <Event id="961023410" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btHfpScoConnectError" type="string"/>
+    </Event>
+
+    <Event id="961023420" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btHfpVolError" type="string"/>
+    </Event>
+
+    <Event id="961023430" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btHfpMediaError" type="string"/>
+    </Event>
+
+    <Event id="961023440" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btHfpOffloadError" type="string"/>
+    </Event>
+
+    <Event id="961026000" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btHidConnectError" type="string"/>
+    </Event>
+
+    <Event id="961029000" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L2">
+       <Param id="0" name="btSocketError" type="string"/>
+       <Param id="1" name="port" type="int"/>
+    </Event>
+
+    <Event id="961029010" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btIpcConnectError" type="string"/>
+       <Param id="1" name="reason" type="string"/>
+    </Event>
+
+    <Event id="961029020" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btIpcAllocError" type="string"/>
+       <Param id="1" name="packetCode" type="int"/>
+    </Event>
+
+    <Event id="961029100" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L2">
+       <Param id="0" name="btDriverError" type="string"/>
+       <Param id="1" name="name" type="string"/>
+       <Param id="2" name="reason" type="string"/>
+    </Event>
+
+    <Event id="961029200" FaultType="FAULT" FaultLevel="CRITICAL" PrivacyLevel="L1">
+       <Param id="0" name="btOpenError" type="string"/>
+    </Event>
+</EventRoot>
+
