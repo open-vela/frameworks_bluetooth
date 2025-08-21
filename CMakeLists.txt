@@ -735,6 +735,10 @@ if(CONFIG_BLUETOOTH)
         ${BLUETOOTH_DIR}/feature/feature_async/jidl/bluetooth_ble.jidl)
     endif()
 
+    if(CONFIG_BLUETOOTH_GATT)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/btwrap/async/bt_gatt_feature.c)
+    endif()
+
     nuttx_add_jidl(
       TARGET
       libbluetooth

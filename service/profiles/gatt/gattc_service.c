@@ -41,6 +41,12 @@
             return BT_STATUS_NOT_ENABLED; \
     }
 
+#define CHECK_ATTR_HANDLE_VALID(_handle)               \
+    do {                                               \
+        if ((_handle) == 0U || (_handle) > UINT16_MAX) \
+            return BT_STATUS_PARM_INVALID;             \
+    } while (0)
+
 #define CHECK_CONNECTION_VALID(_list, _conn)                                                   \
     do {                                                                                       \
         bt_list_node_t* _node;                                                                 \
@@ -598,6 +604,8 @@ static bt_status_t if_gattc_get_attribute_by_handle(void* conn_handle, uint16_t 
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+    CHECK_ATTR_HANDLE_VALID(attr_handle);
+
     if (!attr_desc)
         return BT_STATUS_PARM_INVALID;
 
@@ -619,6 +627,7 @@ static bt_status_t if_gattc_get_attribute_by_uuid(void* conn_handle, uint16_t st
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
     if (!attr_desc)
         return BT_STATUS_PARM_INVALID;
 
@@ -640,6 +649,7 @@ static bt_status_t if_gattc_read(void* conn_handle, uint16_t attr_handle)
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+    CHECK_ATTR_HANDLE_VALID(attr_handle);
 
     return bt_sal_gatt_client_read_element(PRIMARY_ADAPTER, &connection->remote_addr, attr_handle);
 }
@@ -650,6 +660,7 @@ static bt_status_t if_gattc_write(void* conn_handle, uint16_t attr_handle, uint8
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+    CHECK_ATTR_HANDLE_VALID(attr_handle);
 
     return bt_sal_gatt_client_write_element(PRIMARY_ADAPTER, &connection->remote_addr, attr_handle,
         value, length, GATT_WRITE_TYPE_RSP);
@@ -661,6 +672,7 @@ static bt_status_t if_gattc_write_without_response(void* conn_handle, uint16_t a
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+    CHECK_ATTR_HANDLE_VALID(attr_handle);
 
     return bt_sal_gatt_client_write_element(PRIMARY_ADAPTER, &connection->remote_addr, attr_handle,
         value, length, GATT_WRITE_TYPE_NO_RSP);
@@ -674,6 +686,7 @@ static bt_status_t if_gattc_subscribe(void* conn_handle, uint16_t attr_handle, u
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+    CHECK_ATTR_HANDLE_VALID(attr_handle);
 
     element = find_gattc_element_by_handle(connection, attr_handle);
     if (!element) {
@@ -704,6 +717,7 @@ static bt_status_t if_gattc_unsubscribe(void* conn_handle, uint16_t attr_handle)
 
     CHECK_ENABLED();
     CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+    CHECK_ATTR_HANDLE_VALID(attr_handle);
 
     element = find_gattc_element_by_handle(connection, attr_handle);
     if (!element) {
