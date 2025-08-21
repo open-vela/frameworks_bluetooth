@@ -772,10 +772,12 @@ void bt_socket_async_client_deinit(bt_instance_t* ins)
         priv->pending_queue = NULL;
     }
 
-    if (priv->pipe)
+    if (priv->pipe) {
         uv_close((uv_handle_t*)priv->pipe, bt_socket_close_cb);
-    else
-        free(priv);
+        free(priv->packet);
+        return;
+    }
 
     free(priv->packet);
+    free(priv);
 }
