@@ -18,10 +18,14 @@
 #ifndef _FEATURE_BLUETOOTH_H_
 #define _FEATURE_BLUETOOTH_H_
 #include "bluetooth.h"
+#include "bt_device.h"
 #include "bt_list.h"
+#include "bt_message_gattc.h"
 #include "feature_exports.h"
 
 #define FEATURE_MANAGER_BLUETOOTH_DATA "bluetooth"
+
+bool js_event_cb_added();
 
 typedef enum {
     STATE_NON_SCAN = 0,
@@ -48,7 +52,6 @@ typedef struct {
 
 typedef struct {
     FtPromiseId pid;
-    void* params;
     union {
         FeatureInstanceHandle feature_ins;
         FeatureInterfaceHandle interface;
@@ -80,8 +83,44 @@ typedef struct {
 } feature_bluetooth_scan_info_t;
 
 typedef struct {
+    gattc_handle_t handle;
+    bt_address_t remote_address;
+    ble_addr_type_t addr_type;
+    connection_state_t conn_state;
+    uint16_t gatt_mtu;
+} gattc_t;
+
+typedef enum {
+    FEATURE_GATTC_CONN,
+    FEATURE_GATTC_DISCONN,
+    FEATURE_GATTC_DISCOVERY,
+    FEATURE_GATTC_READ_CHAR,
+    FEATURE_GATTC_READ_DESC,
+    FEATURE_GATTC_WRITE_CHAR,
+    FEATURE_GATTC_WRITE_DESC,
+    FEATURE_GATTC_SET_MTU,
+    FEATURE_GATTC_SET_NOTIFY,
+} gattc_userdata_type_t;
+
+typedef struct {
+    FtPromiseId pid;
+    gattc_userdata_type_t userdata_type;
+    FeatureInterfaceHandle interface;
+    bt_list_t* cached_services;
+} gattc_data_t;
+
+typedef struct {
+    bool created;
+    bt_instance_t* ins;
+    FeatureInterfaceHandle interface;
+    gattc_t* gattc;
+    bt_list_t* userdata_list;
+} feature_bluetooth_gattc_info_t;
+
+typedef struct {
     bt_list_t* feature_ble_adv;
     bt_list_t* feature_ble_scan;
+    bt_list_t* feature_ble_gattc;
 } feature_bluetooth_features_info_t;
 
 char* StringToFtString(const char* str);

@@ -61,6 +61,7 @@ static void feature_bluetooth_list_init(bt_instance_t* bt_ins)
 
     features_info->feature_ble_adv = bt_list_new(feature_ble_list_free);
     features_info->feature_ble_scan = bt_list_new(feature_ble_list_free);
+    features_info->feature_ble_gattc = bt_list_new(feature_ble_list_free);
     bt_ins->context = features_info;
 }
 
@@ -75,6 +76,7 @@ static void feature_bluetooth_list_uninit(bt_instance_t* bt_ins)
 
     bt_list_free(features_info->feature_ble_adv);
     bt_list_free(features_info->feature_ble_scan);
+    bt_list_free(features_info->feature_ble_gattc);
     free(bt_ins->context);
     bt_ins->context = NULL;
 }

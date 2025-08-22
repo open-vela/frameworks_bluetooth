@@ -65,6 +65,7 @@ struct ScanResult {
     string deviceId
     int rssi
     object data
+    string addressType
 }
 
 callback deviceFoundResult(ScanResult[] result)
@@ -82,3 +83,80 @@ interface Scanner {
     void unsubscribeBLEDeviceFind(int SubscribeId)
 }
 [ctor="true", target="scan"] Scanner createScanner()
+
+struct BLEDescriptor {
+    string serviceUuid
+    string characteristicUuid
+    string descriptorUuid
+    object descriptorValue
+}
+
+struct GattProperties {
+    boolean read
+    boolean write
+    boolean writeNoResponse
+    boolean notify
+    boolean indicate
+}
+
+struct BLECharacteristic {
+    string serviceUuid
+    string characteristicUuid
+    object characteristicValue
+    BLEDescriptor[] descriptors
+    GattProperties properties
+}
+
+struct GattService {
+    string serviceUuid
+    boolean isPrimary
+    BLECharacteristic[] characteristics
+    GattService[] includeServices
+}
+
+struct SetNotifyCharChangedParams {
+    BLECharacteristic characteristic
+    boolean enable
+}
+
+const ProfileConnectionState = {
+    STATE_DISCONNECTED = 0,
+    STATE_CONNECTING = 1,
+    STATE_CONNECTED = 2,
+    STATE_DISCONNECTING = 3
+}
+
+struct ReadCharacteristicValue {
+    BLECharacteristic characteristic
+}
+
+struct ReadDescriptorValue {
+    BLEDescriptor descriptor
+}
+
+struct WriteCharacteristicValue {
+    BLECharacteristic characteristic
+}
+
+struct WriteDescriptorValue {
+    BLEDescriptor descriptor
+}
+
+struct SetBLEMtuSize {
+    int mtu
+}
+
+interface GattClient {
+    promise<void> connect()
+    promise<void> disconnect()
+    promise<GattService[]> getServices()
+    promise<BLECharacteristic> readCharacteristicValue(ReadCharacteristicValue params)
+    promise<BLEDescriptor> readDescriptorValue(ReadDescriptorValue params)
+    promise<void> writeCharacteristicValue(WriteCharacteristicValue params)
+    promise<void> writeDescriptorValue(WriteDescriptorValue params)
+    promise<void> setBLEMtuSize(SetBLEMtuSize params)
+    promise<void> setNotifyCharacteristicChanged(SetNotifyCharChangedParams params)
+    event onBLECharacteristicChange(BLECharacteristic params)
+    event onBLEConnectionStateChange(int state)
+}
+[ctor="true", target="gattc"] GattClient createGattClientDevice(string deviceId, ...)
