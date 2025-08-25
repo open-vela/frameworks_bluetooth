@@ -72,8 +72,10 @@ choice
 		bool "Not supporting Bluetooth feature API."
 	config BLUETOOTH_FEATURE
 		bool "Support Bluetooth synchronization API."
+		depends on FEATURE_FRAMEWORK
 	config BLUETOOTH_FEATURE_ASYNC
 		bool "Support Bluetooth asynchronous API."
+		depends on FEATURE_FRAMEWORK
 		depends on BLUETOOTH_FRAMEWORK_ASYNC
 endchoice
 
