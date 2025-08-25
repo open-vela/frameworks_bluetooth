@@ -253,11 +253,11 @@
             "%s:%s,%s:%s", "btIpcConnectError", type, "reason", reason);              \
     } while (0)
 
-#define BT_DFX_IPC_ALLOC_ERROR(reason, packet_code)                                       \
-    do {                                                                                  \
-        BT_LOGE("BT_DFX: btIpcAllocError: %s, packetCode: %d", reason, (int)packet_code); \
-        BT_DFX_SEND_OTHERS_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_OTHERS, BT_DFXC_IPC_ALLOC),    \
-            "%s:%s,%s:%d", "btIpcAllocError", reason, "packetCode", (int)packet_code);    \
+#define BT_DFX_IPC_ALLOC_ERROR(reason, packet_code)                                        \
+    do {                                                                                   \
+        BT_LOGE("BT_DFX: btIpcAllocError: %s, packetCode: %" PRIu32, reason, packet_code); \
+        BT_DFX_SEND_OTHERS_EVENT(BT_DFX_BUILD_CODE(BT_DFXG_OTHERS, BT_DFXC_IPC_ALLOC),     \
+            "%s:%s,%s:%" PRIu32 "", "btIpcAllocError", reason, "packetCode", packet_code); \
     } while (0)
 
 #define BT_DFX_DRIVER_ERROR(type, name, reason)                                          \
