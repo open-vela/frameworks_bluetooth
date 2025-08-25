@@ -258,6 +258,11 @@ static void notify_scanners_scan_result(void* data)
     {
         scanner_t* scanner = (scanner_t*)node;
 
+        if (!scanner) {
+            free(data);
+            return;
+        }
+
         if (!scanner->filter.active) {
             goto exit_filter;
         }
