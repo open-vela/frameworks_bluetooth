@@ -233,7 +233,15 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     };
 
     zblue_conn_get_addr(conn, &state.addr);
+    if (err) {
+        state.connection_state = CONNECTION_STATE_DISCONNECTED;
+        state.status = err;
+        goto error;
+    }
+
     bt_sal_get_remote_name(BT_TRANSPORT_BREDR, &state.addr);
+
+error:
     adapter_on_connection_state_changed(&state);
 }
 
