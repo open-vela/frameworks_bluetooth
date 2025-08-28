@@ -307,7 +307,7 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
     bt_address_t* remote_addr;
     bool encrypted = false;
 
-    BT_LOGD("%s", __func__);
+    BT_LOGD("%s, level: %d", __func__, level);
     bt_conn_get_info(conn, &info);
 
     if (info.type != BT_CONN_TYPE_LE) {
