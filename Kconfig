@@ -14,16 +14,119 @@
 # limitations under the License.
 #
 
-config BLUETOOTH
-	bool "Enable Framework Bluetooth"
+
+menuconfig BLUETOOTH
+	bool "Bluetooth"
 	default n
 	depends on LIBUV
 	depends on LIBUV_EXTENSION
 
 if BLUETOOTH
+menuconfig BLUETOOTH_FRAMEWORK
+	bool "Framework API"
+	default n
+	help
+		Enable Bluetooth Framework API
+
+if BLUETOOTH_FRAMEWORK
+choice
+	prompt "Select Bluetooth framework type"
+	default BLUETOOTH_FRAMEWORK_LOCAL
+	config BLUETOOTH_FRAMEWORK_LOCAL
+		bool "Use local API without IPC"
+	config BLUETOOTH_FRAMEWORK_SOCKET_IPC
+		bool "Use socket IPC API"
+endchoice
+
+if BLUETOOTH_FRAMEWORK_SOCKET_IPC
+config BLUETOOTH_RPMSG_CPUNAME
+	string "Bluetooth RPMsg CPU name"
+	default "cp"
+	help
+		Bluetooth default server name
+
+config BLUETOOTH_SOCKET_BUF_SIZE
+	int "Bluetooth socket buffer size"
+	default 1024
+	help
+		Bluetooth socket buffer size
+
+config BLUETOOTH_SOCKET_PORT
+	int "Bluetooth socket port num"
+	default 140704
+	help
+		Socket port of inet
+
+endif #BLUETOOTH_FRAMEWORK_SOCKET_IPC
+
+config BLUETOOTH_FRAMEWORK_ASYNC
+	bool "Enable Bluetooth Framework async API"
+	default n
+	help
+		Enable Bluetooth Framework async API
 
 choice
-	prompt "select Bluetooth Storage Method(Unqlite, KVDB)"
+	prompt "Select feature API"
+	default BLUETOOTH_FEATURE_NONE
+	config BLUETOOTH_FEATURE_NONE
+		bool "Not supporting Bluetooth feature API."
+	config BLUETOOTH_FEATURE
+		bool "Support Bluetooth synchronization API."
+	config BLUETOOTH_FEATURE_ASYNC
+		bool "Support Bluetooth asynchronous API."
+		depends on BLUETOOTH_FRAMEWORK_ASYNC
+endchoice
+
+endif #BLUETOOTH_FRAMEWORK
+
+menu "Core"
+config BLUETOOTH_BREDR_SUPPORT
+	bool "Bluetooth BREDR"
+	default y
+
+config BLUETOOTH_BLE_SUPPORT
+	bool "Bluetooth LE"
+	default n
+
+config BLUETOOTH_BLE_ADV
+	bool "LE Advertising support"
+	default n
+
+config BLUETOOTH_BLE_SCAN
+	bool "LE Scan support"
+	default n
+
+config BLUETOOTH_BLE_SCAN_FILTER
+	bool "LE Scan Filter support"
+	default n
+	depends on BLUETOOTH_BLE_SCAN
+
+config BLUETOOTH_L2CAP
+	bool "L2CAP dynamic channel support"
+	default n
+
+if BLUETOOTH_L2CAP
+config BLUETOOTH_L2CAP_OUTGOING_MTU
+	int "Outgoing MTU"
+	default 2048
+	help
+		config L2CAP Outgoing MTU
+
+endif #BLUETOOTH_L2CAP
+
+choice
+	prompt "Select BT vendor"
+	default BLUETOOTH_VENDOR_NONE
+	config BLUETOOTH_VENDOR_BES
+		bool "Bluetooth vendor BES"
+	config BLUETOOTH_VENDOR_ACTIONS
+		bool "Bluetooth vendor ACTIONS"
+	config BLUETOOTH_VENDOR_NONE
+		bool "Bluetooth vendor NONE"
+endchoice
+
+choice
+	prompt "Select Bluetooth Storage Method(Unqlite, KVDB)"
 	default BLUETOOTH_STORAGE_UNQLITE_SUPPORT
 	config BLUETOOTH_STORAGE_PROPERTY_SUPPORT
 		bool "Bluetooth Storage KVDB Property support"
@@ -33,174 +136,180 @@ choice
 		depends on UNQLITE
 endchoice
 
-config BLUETOOTH_DEBUG_TIMEVAL
-    bool "Enable Bluetooth Debug Time"
-    default n
-    help
-        Enable this option to include Bluetooth debug time functionality.
+config BLUETOOTH_PM_MAX_TIMER_NUMBER
+	int "Bluetooth PM maximum number of timers"
+	default 16
 
-config BLUETOOTH_DEBUG_TIME_UNIT_US
-    bool "Use microseconds for Bluetooth debug time"
-    default n
-    depends on BLUETOOTH_DEBUG_TIMEVAL
-    help
-        Enable this option to use microseconds (us) for Bluetooth debug time.
-        If disabled, milliseconds (ms) will be used by default.
-
-config BLUETOOTH_DEBUG_MEMORY
-    bool "Enable Bluetooth Debug Memory"
-    default n
-    help
-        Enable this option to override standard memory allocation functions
-        (malloc, calloc, free) with Bluetooth-specific versions (bt_malloc, etc).
-        Useful for tracking memory usage and debugging in Bluetooth modules.
-
-config BLUETOOTH_DEBUG_TRACE
-	bool "Enable Bluetooth Debug Trace"
+config BLUETOOTH_UPGRADE
+	bool "Enable Bluetooth Storage transformation tool for upgrading OS"
 	default n
-	help
-		Enable bluetooth debug trace tools.
-
-if BLUETOOTH_DEBUG_TRACE
-config BLUETOOTH_TRACE_BUFFER_SIZE
-	int "Bluetooth Trace Buffer Size"
-	default 512
-
-endif #BLUETOOTH_DEBUG_TRACE
+	depends on KVDB
+	depends on UNQLITE
 
 config BLUETOOTH_TASK_STACK_SIZE
-	int "bluetooth task stack size"
+	int "Bluetooth task stack size"
 	default 8192
 	help
-	    This cofiguration is used to set the stack size of bluetooth task.
+		This cofiguration is used to set the stack size of bluetooth task.
 
-config BLUETOOTH_BREDR_SUPPORT
-	bool "BREDR support"
-	default y
+config BLUETOOTH_SERVICE_LOOP_THREAD_STACK_SIZE
+	int "Bluetooth Service loop thread stack size"
+	default 8192
 
-config BLUETOOTH_BLE_SUPPORT
-	bool "LE support"
+config BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY
+	int "Bluetooth Service loop thread priority"
+	default 103
+
+config BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN
+	int "Bluetooth saved remote uuids length"
+	default 80
+
+config BLUETOOTH_MAX_REGISTER_NUM
+	int "Max register callback nums"
+	default 4
+
+endmenu #Core
+
+menuconfig BLUETOOTH_SERVICE
+	bool "Service"
+	default n
+	help
+		Enable Bluetooth Service
+
+if BLUETOOTH_SERVICE
+menuconfig BLUETOOTH_SERVER
+	bool "Bluetooth Server"
+	default n
+	help
+		Enable Bluetooth server
+
+if BLUETOOTH_SERVER
+config BLUETOOTH_SERVER_NAME
+	string "Blutooth Server name"
+	default "bluetoothd"
+	help
+		Bluetooth default server name
+
+config BLUETOOTH_IPC_JOIN_LOOP
+	bool "Let IPC join service loop"
+	default n
+	help
+		Bluetooth IPC join service loop
+
+config BLUETOOTH_NET_IPv4
+	bool "Let Bluetooth Server listen message from network"
+	default n
+	depends on NET_IPv4
+	help
+		Bluetooth server listen message
+
+endif #BLUETOOTH_SERVER
+
+if BLUETOOTH_BREDR_SUPPORT
+menu "Bluetooth BREDR Config"
+choice
+	prompt "Select BR stack"
+	default BLUETOOTH_STACK_BREDR_BLUELET
+	config BLUETOOTH_STACK_BREDR_BLUELET
+		bool "Classic BT stack use bluelet"
+		select LIB_BLUELET
+	config BLUETOOTH_STACK_BREDR_ZBLUE
+		bool "Classic BT stack use zblue"
+	config BLUETOOTH_STACK_NOT_SUPPORT_CLASSIC_BT
+		bool "Not support classic BT stack"
+endchoice
+
+endmenu #Bluetooth BREDR Config
+endif #BLUETOOTH_BREDR_SUPPORT
+
+if BLUETOOTH_BLE_SUPPORT
+menu "Bluetooth LE Config"
+choice
+	prompt "Select LE stack"
+	default BLUETOOTH_STACK_LE_BLUELET
+	config BLUETOOTH_STACK_LE_BLUELET
+		bool "BLE Stack use Bluelet"
+		select LIB_BLUELET
+	config BLUETOOTH_STACK_LE_ZBLUE
+		bool "BLE Stack use Zblue"
+	config BLUETOOTH_STACK_NOT_SUPPORT_LE
+		bool "Not support BLE Stack"
+endchoice
+
+config BLUETOOTH_LE_SCANNER_MAX_NUM
+	int "LE Scanner max register number"
+	default 2
+	help
+		LE Scanner max register number
+
+config BLUETOOTH_LE_ADVERTISER_MAX_NUM
+	int "LE Advertiser max register number"
+	default 2
+	help
+		LE Advertiser max register number
+
+config LE_DLF_SUPPORT
+	bool "Enable LE DLF support"
 	default n
 
-config BLUETOOTH_BLE_ADV
-	bool "LE advertising support"
-	default n
+endmenu #Bluetooth LE Config
+endif #BLUETOOTH_BLE_SUPPORT
 
-config BLUETOOTH_BLE_SCAN
-	bool "LE scan support"
-	default n
-
-config BLUETOOTH_BLE_SCAN_FILTER
-	bool "LE scan filter support"
-	default n
-	depends on BLUETOOTH_BLE_SCAN
-
-config BLUETOOTH_BLE_AUDIO
-       bool "LE audio support"
-       default n
+config BLUETOOTH_SERVICE_HCI_UART_NAME
+	string "HCI uart driver name"
+	default "/dev/ttyHCI0"
 
 config BLUETOOTH_HCI_BRIDGE_MODE
 	bool "HCI bridge mode"
 	default n
 
-config BLUETOOTH_GATT
-	bool "Generic ATT profile support"
+config CONFIG_BLUETOOTH_DEFAULT_COD
+	hex "Default class of device"
+	default 0x00280704
+	help
+		Set default class of device
+
+endif #BLUETOOTH_SERVICE
+
+menu "Profiles"
+menuconfig BLUETOOTH_A2DP
+	bool "Advanced Audio Distribution Profile (A2DP)"
+	default n
+	depends on MEDIA
+
+if BLUETOOTH_A2DP
+config BLUETOOTH_A2DP_SOURCE
+	bool "A2DP source role support"
+	default n
+	select BLUETOOTH_AVRCP_TARGET
+
+if BLUETOOTH_A2DP_SOURCE
+config BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
+	bool "Bluetooth A2DP peer partial reconnect support"
 	default y
+	help
+		Bluetooth A2DP peer partial reconnect support
 
-config BLUETOOTH_SERVICE_LOOP_THREAD_STACK_SIZE
-	int "bluetooth service loop thread stack size"
-	default 8192
+endif #BLUETOOTH_A2DP_SOURCE
 
-config BLUETOOTH_MAX_SAVED_REMOTE_UUIDS_LEN
-	int "bluetooth saved remote uuids length"
-	default 80
+config BLUETOOTH_A2DP_SINK
+	bool "A2DP sink role support"
+	default n
+	select BLUETOOTH_AVRCP_CONTROL
 
-config BLUETOOTH_SERVICE_LOOP_THREAD_PRIORITY
-	int "bluetooth service loop thread priority"
-	default 103
-
-config BLUETOOTH_DUMPBUFFER
-	bool "Bluetooth dumpbuffer"
+config BLUETOOTH_A2DP_AAC_CODEC
+	bool "Bluetooth A2DP AAC codec support"
 	default n
 
-config BLUETOOTH_AUDIO_TRANS_RPSMG_SERVER
-	bool "Rpmsg audio transport server"
-	default n
-
-config BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL
-	int "Bluetooth Audio Transport Source Ctrl Channel ID"
-	default 0
-
-config BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO
-	int "Bluetooth Audio Transport Source Audio Channel ID"
+config BLUETOOTH_A2DP_MAX_CONNECTIONS
+	int "Maximum A2DP connections"
 	default 1
+	help
+		Maximum A2DP connections
 
-config BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL
-	int "Bluetooth Audio Transport Sink Ctrl Channel ID"
-	default 2
+endif #BLUETOOTH_A2DP
 
-config BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO
-	int "Bluetooth Audio Transport Sink Audio Channel ID"
-	default 3
-
-config BLUETOOTH_AUDIO_TRANS_ID_HFP_CTRL
-	int "Bluetooth Audio Transport SCO Ctrl Channel ID"
-	default 4
-
-config BLUETOOTH_A2DP_SINK_CTRL_PATH
-	string "Bluetooth A2DP Audio Transport Sink Ctrl Path"
-	default "a2dp_sink_ctrl"
-
-config BLUETOOTH_A2DP_SINK_DATA_PATH
-	string "Bluetooth A2DP Audio Transport Sink Data Path"
-	default "a2dp_sink_data"
-
-config BLUETOOTH_A2DP_SOURCE_CTRL_PATH
-	string "Bluetooth A2DP Audio Transport Source Ctrl Path"
-	default "a2dp_source_ctrl"
-
-config BLUETOOTH_A2DP_SOURCE_DATA_PATH
-	string "Bluetooth A2DP Audio Transport Source Data Path"
-	default "a2dp_source_data"
-
-config BLUETOOTH_LEA_SINK_CTRL_PATH
-	string "Bluetooth LE Audio Transport Sink Ctrl Path"
-	default "lea_sink_ctrl"
-
-config BLUETOOTH_LEA_SINK_DATA_PATH
-	string "Bluetooth LE Audio Transport Sink Data Path"
-	default "lea_sink_data"
-
-config BLUETOOTH_LEA_SOURCE_CTRL_PATH
-	string "Bluetooth LE Audio Transport Source Ctrl Path"
-	default "lea_source_ctrl"
-
-config BLUETOOTH_LEA_SOURCE_DATA_PATH
-	string "Bluetooth LE Audio Transport Source Data Path"
-	default "lea_source_data"
-
-config BLUETOOTH_SCO_CTRL_PATH
-	string "Bluetooth SCO Transport Ctrl Path"
-	default "sco_ctrl"
-
-config BLUETOOTH_PM_MAX_TIMER_NUMBER
-	int "Bluetooth PM maximum number of timers"
-	default 16
-
-if BLUETOOTH_GATT
-config BLUETOOTH_GATTC_MAX_CONNECTIONS
-	int "GATT client max connections"
-	default 8
-
-config BLUETOOTH_GATTS_MAX_CONNECTIONS
-	int "GATT sever max connections"
-	default 4
-
-config BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
-	int "GATT server max number of attributes contained in a table"
-	default 10
-endif
-
+menu "Audio/Video Remote Control Profile (AVRCP)"
 config BLUETOOTH_AVRCP_TARGET
 	bool "Audio/Video Remote Control Profile (Target) support"
 	default n
@@ -213,43 +322,9 @@ config BLUETOOTH_AVRCP_ABSOLUTE_VOLUME
 	bool "Audio/Video Remote Control Profile support absolute volume"
 	default n
 	depends on (BLUETOOTH_AVRCP_CONTROL || BLUETOOTH_AVRCP_TARGET) && ((BLUETOOTH_STACK_BREDR_BLUELET && BLUELET_AVRCP_TG_ABSVOL_SUPPORT) || (BLUETOOTH_STACK_BREDR_ZBLUE))
+endmenu #Audio/Video Remote Control Profile
 
-config BLUETOOTH_A2DP
-	bool "Advanced Audio Distribution Profile"
-	default n
-	depends on MEDIA
-
-config BLUETOOTH_A2DP_SOURCE
-	bool "A2DP source profile support"
-	default n
-	select BLUETOOTH_AVRCP_TARGET
-	depends on BLUETOOTH_A2DP
-
-config BLUETOOTH_A2DP_SINK
-	bool "A2DP sink profile support"
-	default n
-	select BLUETOOTH_AVRCP_CONTROL
-	depends on BLUETOOTH_A2DP
-
-if BLUETOOTH_A2DP
-config BLUETOOTH_A2DP_AAC_CODEC
-	bool "Bluetooth A2dp AAC codec support"
-	default n
-
-config BLUETOOTH_A2DP_MAX_CONNECTIONS
-	int "Maximum A2dp connections"
-	default 1
-	help
-		Maximum A2dp connections
-
-config BLUETOOTH_A2DP_PEER_PARTIAL_RECONN
-	bool "Bluetooth A2dp peer partial reconnect support"
-	default y
-	help
-		Bluetooth A2dp peer partial reconnect support
-
-endif #BLUETOOTH_A2DP
-
+menu "Hands-Free Profile (HFP)"
 config BLUETOOTH_HFP_HF
 	bool "HFP hands-free profile support"
 	default n
@@ -277,310 +352,37 @@ config HFP_AG_MAX_CONNECTIONS
 config BLUETOOTH_HFP_AG_PRIMARY_SLOT
 	int "HFP select primary modem slot"
 	default 0
+
 endif # BLUETOOTH_HFP_AG
 
-config BLUETOOTH_SPP
-	bool "Serial port profile support"
+config BLUETOOTH_SCO_CTRL_PATH
+	string "Bluetooth SCO Transport Ctrl Path"
+	default "sco_ctrl"
+
+endmenu #Hands-Free Profile
+
+menu "LE Audio"
+	comment "There should be two \"LE Audio support\" options, if you only see one, please enable \"Bluetooth BLE support\" in Framework"
+
+config BLUETOOTH_BLE_AUDIO
+	bool "LE Audio support"
 	default n
-	depends on SERIAL_TERMIOS
-	depends on PSEUDOTERM
-
-if BLUETOOTH_SPP
-config BLUETOOTH_SPP_MAX_CONNECTIONS
-	int "SPP max connections"
-	default 1
-
-config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
-	int "SPP server max connections"
-	default 8
-
-config BLUETOOTH_SPP_RPMSG_NET
-	bool "SPP rpmsg net support"
-	default n
-	depends on NET_RPMSG
-endif
-
-config BLUETOOTH_HID_DEVICE
-	bool "HID device profile support"
-	default n
-
-config BLUETOOTH_PAN
-	bool "Personal area network profile support"
-	default n
-	depends on ALLOW_BSD_COMPONENTS
-	help
-		config NET_TUN_PKTSIZE should set 1518
-
-config BLUETOOTH_L2CAP
-	bool "L2CAP dynamic channel support"
-	default n
-
-if BLUETOOTH_L2CAP
-config BLUETOOTH_L2CAP_OUTGOING_MTU
-	int "Outgoing MTU"
-	default 2048
-	help
-		config L2CAP Outgoing MTU
-
-endif #BLUETOOTH_L2CAP
-
-config BLUETOOTH_MAX_REGISTER_NUM
-	int "Max register callback nums"
-	default 4
-
-config BLUETOOTH_FRAMEWORK
-	bool "Enable bluetooth framework api"
-	default n
-	help
-		Enable bluetooth framework api
-
-if BLUETOOTH_FRAMEWORK
-choice
-	prompt "select bluetooth framework type"
-	default BLUETOOTH_FRAMEWORK_LOCAL
-	config BLUETOOTH_FRAMEWORK_LOCAL
-		bool "use local api without ipc"
-	config BLUETOOTH_FRAMEWORK_SOCKET_IPC
-		bool "use socket ipc api"
-endchoice
-
-config BLUETOOTH_FRAMEWORK_ASYNC
-	bool "Enable bluetooth framework async api"
-	default n
-	help
-		Enable bluetooth framework async api
-endif #BLUETOOTH_FRAMEWORK
-
-if BLUETOOTH_FRAMEWORK_SOCKET_IPC
-config BLUETOOTH_RPMSG_CPUNAME
-	string "Blutooth rpmsg cpu name"
-	default "cp"
-	help
-		Bluetooth default server name
-
-config BLUETOOTH_SOCKET_BUF_SIZE
-	int "Bluetooth socket buffer size"
-	default 1024
-	help
-		Bluetooth socket buffer size
-
-config BLUETOOTH_SOCKET_PORT
-	int "Bluetooth socket port num"
-	default 140704
-	help
-		Socket port of inet
-
-endif #BLUETOOTH_FRAMEWORK_SOCKET_IPC
-
-config BLUETOOTH_SERVICE
-	bool "Enable bluetooth service"
-	default n
-	help
-		Enable bluetooth service
-
-if BLUETOOTH_SERVICE
-config BLUETOOTH_SERVER
-	bool "Bluetooth server enable"
-	default n
-	help
-		Enable bluetooth server
-
-config CONFIG_BLUETOOTH_DEFAULT_COD
-	hex "default class of device"
-	default 0x00280704
-	help
-		Set default class of device
-
-if BLUETOOTH_SERVER
-config BLUETOOTH_SERVER_NAME
-	string "Blutooth server name"
-	default "bluetoothd"
-	help
-		Bluetooth default server name
-
-config BLUETOOTH_IPC_JOIN_LOOP
-	bool "Let ipc join service loop"
-	default n
-	help
-		Bluetooth ipc join service loop
-
-config BLUETOOTH_NET_IPv4
-	bool "Let Bluetooth server listen message from network"
-	default n
-	depends on NET_IPv4
-	help
-		Bluetooth server listen message
-
-endif #BLUETOOTH_SERVER
-
-config BLUETOOTH_SERVICE_LOG_LEVEL
-	int "Bluetooth service log level"
-	default 7
-	help
-		Set bt service log level <0~7>
-
-config BLUETOOTH_SERVICE_HCI_UART_NAME
-	string "HCI uart driver name"
-	default "/dev/ttyHCI0"
-
-if BLUETOOTH_BREDR_SUPPORT
-choice
-	prompt "select br stack"
-	default BLUETOOTH_STACK_BREDR_BLUELET
-	config BLUETOOTH_STACK_BREDR_BLUELET
-		bool "classic bt stack use bluelet"
-		select LIB_BLUELET
-	config BLUETOOTH_STACK_BREDR_ZBLUE
-		bool "classic bt stack use zblue"
-	config BLUETOOTH_STACK_NOT_SUPPORT_CLASSIC_BT
-		bool "not support classic bt stack"
-endchoice
-endif #BLUETOOTH_BREDR_SUPPORT
 
 if BLUETOOTH_BLE_SUPPORT
-choice
-	prompt "select le stack"
-	default BLUETOOTH_STACK_LE_BLUELET
-	config BLUETOOTH_STACK_LE_BLUELET
-		bool "ble stack use bluelet"
-		select LIB_BLUELET
-	config BLUETOOTH_STACK_LE_ZBLUE
-		bool "ble stack use zblue"
-	config BLUETOOTH_STACK_NOT_SUPPORT_LE
-		bool "not support ble stack"
-endchoice
-
-config GATT_CLIENT_SERVICE_MAX
-    int "Maximum number of discovered services per connection"
-    default 20
-    depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
-    help
-		The maximum number of GATT services that can be stored per BLE connection
-		when using the ZBLUE stack.
-
-config GATT_CLIENT_ELEMENT_MAX
-    int "Maximum number of discovered GATT attributes per connection"
-    default 200
-    depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
-    help
-		The maximum number of GATT attribute elements (e.g., characteristics
-		and descriptors) that can be stored per BLE connection
-		when using the ZBLUE stack.
-
-config GATT_CLIENT_CHAR_PER_SERVICE_MAX
-    int "Maximum number of characteristics per service"
-    default 100
-    depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
-    help
-        The maximum number of characteristics that can be discovered and stored
-        under a single GATT service when using the ZBLUE stack.
-
-config BLUETOOTH_LE_SCANNER_MAX_NUM
-	int "LE scanner max register number"
-	default 2
-	help
-		le scanner max register number
-
-config BLUETOOTH_LE_ADVERTISER_MAX_NUM
-	int "LE advertiser max register number"
-	default 2
-	help
-		Le scanner max register number
-
 config BLUETOOTH_LE_AUDIO_SUPPORT
-	bool "LE audio support"
-	default n
-
-config LE_DLF_SUPPORT
-	bool "LE DLF support"
+	bool "LE Audio support"
 	default n
 
 endif #BLUETOOTH_BLE_SUPPORT
-endif #BLUETOOTH_SERVICE
 
-config MAX_SNOOP_FILE_SIZE
-	int "Maximum size of the snoop log file"
-	default 1048576
-	help
-		Maximum size of the snoop log file
-
-config BLUETOOTH_TOOLS
-	bool "Enable bluetooth profile test tools"
-	default n
-	select BLUETOOTH_FRAMEWORK
-
-config APP_BT_SAMPLE_CODE
-	bool "Enable bluetooth sample code"
-	default n
-	select BLUETOOTH_FRAMEWORK
-
-config APP_BT_SAMPLE_CODE_BASIC
-	bool "bluetooth basic sample code"
-	default n
-	depends on APP_BT_SAMPLE_CODE
-config APP_BT_SAMPLE_CODE_ENABLE
-	bool "bluetooth enable sample code"
-	default n
-	depends on APP_BT_SAMPLE_CODE
-config APP_BT_SAMPLE_CODE_DISCOVERY
-	bool "bluetooth discovery sample code"
-	default n
-	depends on APP_BT_SAMPLE_CODE
-config APP_BT_SAMPLE_CODE_CREATEBOND
-	bool "bluetooth createbond sample code"
-	default n
-	depends on APP_BT_SAMPLE_CODE
-config APP_BT_SAMPLE_CODE_ACCEPTBOND
-	bool "bluetooth acceptbond sample code"
-	default n
-	depends on APP_BT_SAMPLE_CODE
-config BLUETOOTH_DFX
-	bool "Enable bluetooth DFX"
-	default y
-	depends on DFX_EVENT
-	help
-		Enable bluetooth DFX
-
-choice
-	prompt "select bt vendor"
-	default BLUETOOTH_VENDOR_NONE
-	config BLUETOOTH_VENDOR_BES
-		bool "bluetooth vendor BES"
-	config BLUETOOTH_VENDOR_ACTIONS
-		bool "bluetooth vendor ACTIONS"
-	config BLUETOOTH_VENDOR_NONE
-		bool "bluetooth vendor NONE"
-endchoice
-
-choice
-	prompt "select feature api"
-	default BLUETOOTH_FEATURE_NONE
-	config BLUETOOTH_FEATURE_NONE
-		bool "not supporting Bluetooth feature API."
-	config BLUETOOTH_FEATURE
-		bool "support Bluetooth synchronization API."
-	config BLUETOOTH_FEATURE_ASYNC
-		bool "support Bluetooth asynchronous API."
-		depends on BLUETOOTH_FRAMEWORK_ASYNC
-endchoice
-
-config BLUETOOTH_LEAUDIO_CLIENT
-	bool "enable bluetooth leaudio client feature"
+menuconfig BLUETOOTH_LEAUDIO_CLIENT
+	bool "Bluetooth LE Audio Client"
 	default n
 
-config BLUETOOTH_LEAUDIO_SERVER
-	bool "enable bluetooth leaudio server feature"
-	default n
-
+if BLUETOOTH_LEAUDIO_CLIENT
 config BLUETOOTH_LEAUDIO_TBS
-	bool "enable bluetooth leaudio tbs feature"
+	bool "Enable Bluetooth LE Audio TBS feature"
 	default n
-	depends on BLUETOOTH_LEAUDIO_CLIENT
-
-config BLUETOOTH_LEAUDIO_CCP
-	bool "enable bluetooth leaudio ccp feature"
-	default n
-	depends on BLUETOOTH_LEAUDIO_SERVER
 
 if BLUETOOTH_LEAUDIO_TBS
 config BLUETOOTH_LEAUDIO_TBS_PRIMARY_SLOT
@@ -593,193 +395,426 @@ config BLUETOOTH_LEAUDIO_TBS_CALL_NAME
 
 endif # BLUETOOTH_LEAUDIO_TBS
 
-if BLUETOOTH_LEAUDIO_CCP
-config BLUETOOTH_LEAUDIO_SERVER_CALL_CONTROL_NUMBER
-	int "leaudio tbs server number"
-	default 1
-	help
-		leaudio tbs server number
-
-endif # BLUETOOTH_LEAUDIO_CCP
-
 config BLUETOOTH_LEAUDIO_MCS
-	bool "enable bluetooth leaudio mcs feature"
+	bool "Enable Bluetooth LE Audio MCS feature"
 	default n
-	depends on BLUETOOTH_LEAUDIO_CLIENT
-
-config BLUETOOTH_LEAUDIO_MCP
-	bool "enable bluetooth leaudio mcp feature"
-	default n
-	depends on BLUETOOTH_LEAUDIO_SERVER
-
-if BLUETOOTH_LEAUDIO_MCP
-config BLUETOOTH_LEAUDIO_SERVER_MEDIA_CONTROL_NUMBER
-	int "leaudio mcs server number"
-	default 1
-	help
-		leaudio mcs server number
-
-endif # BLUETOOTH_LEAUDIO_MCP
 
 config BLUETOOTH_LEAUDIO_VMICP
-	bool "enable bluetooth leaudio vmicp feature"
+	bool "Enable Bluetooth LE Audio VMICP feature"
 	default n
-	depends on BLUETOOTH_LEAUDIO_CLIENT
 
-config BLUETOOTH_LEAUDIO_VMICS
-	bool "enable bluetooth leaudio vmics feature"
-	default n
-	depends on BLUETOOTH_LEAUDIO_SERVER
-
-if BLUETOOTH_LEAUDIO_VMICS
-config BLUETOOTH_LEAUDIO_VCS_VOLUME_STEP
-	int "leaudio server vcs volume step size"
-	default 2
-	help
-		leaudio server vcs volume step size
-
-config BLUETOOTH_LEAUDIO_VOCS_NUMBER
-	int "leaudio server vocs numnber"
-	default 0
-	help
-		leaudio server vocs number
-
-config BLUETOOTH_LEAUDIO_AICS_NUMBER
-	int "leaudio server aics numnber"
-	default 0
-	help
-		leaudio server aics number
-
-config BLUETOOTH_LEAUDIO_VCS_VOLUME_INITIAL
-	int "leaudio server vcs initial volume value"
-	default 125
-	help
-		leaudio server vcs volume initial value
-
-config BLUETOOTH_LEAUDIO_VCS_UNMUTED
-	int "leaudio server vcs unmute"
-	default 0
-	help
-		leaudio server vcs unmute
-
-config BLUETOOTH_LEAUDIO_VCS_VOLUME_DEFAULT_SETTING
-	int "leaudio server vcs vol settings"
-	default 0
-	help
-		leaudio server vcs vol settings
-
-config BLUETOOTH_LEAUDIO_MICS_NUMBER
-	int "leaudio server mics numnber"
-	default 0
-	help
-		leaudio server mics number
-
-endif # BLUETOOTH_LEAUDIO_VMICS
-
-if BLUETOOTH_LEAUDIO_SERVER
-config BLUETOOTH_LEAUDIO_SERVER_SINK_ASE_NUMBER
-	int "leaudio server sink number"
-	default 1
-	help
-		leaudio server sink ase number
-
-config BLUETOOTH_LEAUDIO_SERVER_SOURCE_ASE_NUMBER
-	int "leaudio server source number"
-	default 1
-	help
-		leaudio server source ase number
-
-config BLUETOOTH_LEAUDIO_SERVER_BASS_STATE_NUMBER
-	int "leaudio server bass state number"
-	default 1
-	help
-		leaudio server bass state number
-
-config BLUETOOTH_LEAUDIO_SERVER_SOURCE
-	bool "enable leaudio server source"
-	default y
-
-config BLUETOOTH_LEAUDIO_SERVER_SOURCE_LOCATION
-	int "leaudio server source location"
-	default 1
-	help
-		leaudio server source location
-
-config BLUETOOTH_LEAUDIO_SERVER_SINK_LOCATION
-	int "leaudio server sink location"
-	default 1
-	help
-		leaudio server sink location
-
-config BLUETOOTH_LEAUDIO_SERVER_CSIS_SIZE
-	int "leaudio server csis set size"
-	default 1
-	help
-		leaudio server csis set size
-
-config BLUETOOTH_LEAUDIO_SERVER_CSIS_RANK
-	int "leaudio server csis rank"
-	default 1
-	help
-		leaudio server csis rank
-
-endif # BLUETOOTH_LEAUDIO_SERVER
-
-if BLUETOOTH_LEAUDIO_CLIENT
 config BLUETOOTH_LEAUDIO_CLIENT_MAX_CONNECTIONS
-	int "leaudio client max connections"
+	int "LE Audio Client max connections"
 	default 4
 	help
-		leaudio client max connections
+		LE Audio Client max connections
 
 config BLUETOOTH_LEAUDIO_CLIENT_MAX_GROUP
-	int "leaudio client max group"
+	int "LE Audio Client max group"
 	default 4
 	help
-		leaudio client max connections
+		LE Audio Client max HFP_AG_MAX_CONNECTIONS
 
 config BLUETOOTH_LEAUDIO_CLIENT_MAX_DEVICES
-	int "leaudio client max devices"
+	int "LE Audio Client max devices"
 	default 8
 	help
-		leaudio client max devices
+		LE Audio Client max devices
 
 config BLUETOOTH_LEAUDIO_CLIENT_MAX_ALLOC_NUMBER
-	int "leaudio client max alloc number"
+	int "LE Audio Client max alloc number"
 	default 64
 	help
-		leaudio client max group
+		LE Audio Client max group
 
 config BLUETOOTH_LEAUDIO_CLIENT_ASE_MAX_NUMBER
-	int "leaudio client max ase number"
+	int "LE Audio Client max ase number"
 	default 2
 	help
-		leaudio client max ase number
+		LE Audio Client max ase number
 
 config BLUETOOTH_LEAUDIO_CLIENT_PAC_MAX_NUMBER
-	int "leaudio client max pac number"
+	int "LE Audio Client max pac number"
 	default 3
 	help
-		leaudio client max pac number
+		LE Audio Client max pac number
 
 config BLUETOOTH_LEAUDIO_CLIENT_CIS_MAX_NUMBER
-	int "leaudio client max cis number"
+	int "LE Audio Client max cis number"
 	default 2
 	help
-		leaudio client max cis number
+		LE Audio Client max cis number
 
 config BLUETOOTH_LEAUDIO_CLIENT_METADATA_MAX_NUMBER
-	int "leaudio client max metadata number"
+	int "LE Audio Client max metadata number"
 	default 4
 	help
-		leaudio client max metadata number
+		LE Audio Client max metadata number
 
 endif # BLUETOOTH_LEAUDIO_CLIENT
 
-config BLUETOOTH_UPGRADE
-	bool "Enable Bluetooth storage transformation tool for upgrading OS"
+
+menuconfig BLUETOOTH_LEAUDIO_SERVER
+	bool "Bluetooth LE Audio Server"
 	default n
-	depends on KVDB
-	depends on UNQLITE
+
+if BLUETOOTH_LEAUDIO_SERVER
+config BLUETOOTH_LEAUDIO_CCP
+	bool "Enable Bluetooth LE Audio CCP feature"
+	default n
+
+if BLUETOOTH_LEAUDIO_CCP
+config BLUETOOTH_LEAUDIO_SERVER_CALL_CONTROL_NUMBER
+	int "LE Audio TBS server number"
+	default 1
+	help
+		LE Audio TBS server number
+
+endif # BLUETOOTH_LEAUDIO_CCP
+
+config BLUETOOTH_LEAUDIO_MCP
+	bool "Enable Bluetooth LE Audio MCP feature"
+	default n
+
+if BLUETOOTH_LEAUDIO_MCP
+config BLUETOOTH_LEAUDIO_SERVER_MEDIA_CONTROL_NUMBER
+	int "LE Audio MCS server number"
+	default 1
+	help
+		LE Audio MCS server number
+
+endif # BLUETOOTH_LEAUDIO_MCP
+
+menuconfig BLUETOOTH_LEAUDIO_VMICS
+	bool "Enable Bluetooth LE Audio VMICS feature"
+	default n
+
+if BLUETOOTH_LEAUDIO_VMICS
+config BLUETOOTH_LEAUDIO_VCS_VOLUME_STEP
+	int "LE Audio Server VCS volume step size"
+	default 2
+	help
+		LE Audio Server VCS volume step size
+
+config BLUETOOTH_LEAUDIO_VOCS_NUMBER
+	int "LE Audio Server VOCS numnber"
+	default 0
+	help
+		LE Audio Server VOCS number
+
+config BLUETOOTH_LEAUDIO_AICS_NUMBER
+	int "LE Audio Server AICS numnber"
+	default 0
+	help
+		LE Audio Server AICS numnber
+
+config BLUETOOTH_LEAUDIO_VCS_VOLUME_INITIAL
+	int "LE Audio Server VCS initial volume value"
+	default 125
+	help
+		LE Audio Server VCS volume initial value
+
+config BLUETOOTH_LEAUDIO_VCS_UNMUTED
+	int "LE Audio Server VCS unmute"
+	default 0
+	help
+		LE Audio Server VCS unmute
+
+config BLUETOOTH_LEAUDIO_VCS_VOLUME_DEFAULT_SETTING
+	int "LE Audio Server VCS vol settings"
+	default 0
+	help
+		LE Audio Server VCS vol settings
+
+config BLUETOOTH_LEAUDIO_MICS_NUMBER
+	int "LE Audio Server MICS numnber"
+	default 0
+	help
+		LE Audio Server MICS number
+
+endif # BLUETOOTH_LEAUDIO_VMICS
+
+config BLUETOOTH_LEAUDIO_SERVER_SINK_ASE_NUMBER
+	int "LE Audio Server Sink number"
+	default 1
+	help
+		LE Audio Server Sink ase number
+
+config BLUETOOTH_LEAUDIO_SERVER_SOURCE_ASE_NUMBER
+	int "LE Audio Server Source number"
+	default 1
+	help
+		LE Audio Server Source ase number
+
+config BLUETOOTH_LEAUDIO_SERVER_BASS_STATE_NUMBER
+	int "LE Audio Server Bass state number"
+	default 1
+	help
+		LE Audio Server Bass state number
+
+config BLUETOOTH_LEAUDIO_SERVER_SOURCE
+	bool "Enable LE Audio Server source"
+	default y
+
+config BLUETOOTH_LEAUDIO_SERVER_SOURCE_LOCATION
+	int "LE Audio Server source location"
+	default 1
+	help
+		LE Audio Server source location
+
+config BLUETOOTH_LEAUDIO_SERVER_SINK_LOCATION
+	int "LE Audio Server sink location"
+	default 1
+	help
+		LE Audio Server sink location
+
+config BLUETOOTH_LEAUDIO_SERVER_CSIS_SIZE
+	int "LE Audio Server CSIS set size"
+	default 1
+	help
+		LE Audio Server CSIS set size
+
+config BLUETOOTH_LEAUDIO_SERVER_CSIS_RANK
+	int "LE Audio Server CSIS rank"
+	default 1
+	help
+		LE Audio Server CSIS rank
+
+endif # BLUETOOTH_LEAUDIO_SERVER
+
+endmenu #Bluetooth LE Audio
+
+menu "Bluetooth Audio Transport"
+config BLUETOOTH_AUDIO_TRANS_RPSMG_SERVER
+	bool "RPMsg audio transport server"
+	default n
+
+config BLUETOOTH_AUDIO_TRANS_ID_SOURCE_CTRL
+	int "Bluetooth Audio Transport Source Ctrl Channel ID"
+	default 0
+
+config BLUETOOTH_AUDIO_TRANS_ID_SOURCE_AUDIO
+	int "Bluetooth Audio Transport Source Audio Channel ID"
+	default 1
+
+config BLUETOOTH_AUDIO_TRANS_ID_SINK_CTRL
+	int "Bluetooth Audio Transport Sink Ctrl Channel ID"
+	default 2
+
+config BLUETOOTH_AUDIO_TRANS_ID_SINK_AUDIO
+	int "Bluetooth Audio Transport Sink Audio Channel ID"
+	default 3
+
+config BLUETOOTH_AUDIO_TRANS_ID_HFP_CTRL
+	int "Bluetooth Audio Transport SCO Ctrl Channel ID"
+	default 4
+
+config BLUETOOTH_LEA_SINK_CTRL_PATH
+	string "Bluetooth LE Audio Transport Sink Ctrl Path"
+	default "lea_sink_ctrl"
+
+config BLUETOOTH_LEA_SINK_DATA_PATH
+	string "Bluetooth LE Audio Transport Sink Data Path"
+	default "lea_sink_data"
+
+config BLUETOOTH_LEA_SOURCE_CTRL_PATH
+	string "Bluetooth LE Audio Transport Source Ctrl Path"
+	default "lea_source_ctrl"
+
+config BLUETOOTH_LEA_SOURCE_DATA_PATH
+	string "Bluetooth LE Audio Transport Source Data Path"
+	default "lea_source_data"
+
+config BLUETOOTH_A2DP_SINK_CTRL_PATH
+	string "Bluetooth A2DP Audio Transport Sink Ctrl Path"
+	default "a2dp_sink_ctrl"
+
+config BLUETOOTH_A2DP_SINK_DATA_PATH
+	string "Bluetooth A2DP Audio Transport Sink Data Path"
+	default "a2dp_sink_data"
+
+config BLUETOOTH_A2DP_SOURCE_CTRL_PATH
+	string "Bluetooth A2DP Audio Transport Source Ctrl Path"
+	default "a2dp_source_ctrl"
+
+config BLUETOOTH_A2DP_SOURCE_DATA_PATH
+	string "Bluetooth A2DP Audio Transport Source Data Path"
+	default "a2dp_source_data"
+
+endmenu #Bluetooth Audio Transport config
+
+menuconfig BLUETOOTH_GATT
+	bool "Generic Attribute Profile (GATT)"
+	default y
+
+if BLUETOOTH_GATT
+config BLUETOOTH_GATTC_MAX_CONNECTIONS
+	int "GATT Client max connections"
+	default 8
+
+config BLUETOOTH_GATTS_MAX_CONNECTIONS
+	int "GATT Server max connections"
+	default 4
+
+config BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
+	int "GATT Server max number of attributes contained in a table"
+	default 10
+
+config GATT_CLIENT_SERVICE_MAX
+	int "Maximum number of discovered services per connection"
+	default 20
+	depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
+	help
+		The maximum number of GATT services that can be stored per BLE connection
+		when using the ZBLUE stack.
+
+config GATT_CLIENT_ELEMENT_MAX
+	int "Maximum number of discovered GATT attributes per connection"
+	default 200
+	depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
+	help
+		The maximum number of GATT attribute elements (e.g., characteristics
+		and descriptors) that can be stored per BLE connection
+		when using the ZBLUE stack.
+
+config GATT_CLIENT_CHAR_PER_SERVICE_MAX
+	int "Maximum number of characteristics per service"
+	default 100
+	depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
+	help
+		The maximum number of characteristics that can be discovered and stored
+		under a single GATT service when using the ZBLUE stack.
+
+endif # BLUETOOTH_GATT
+
+menuconfig BLUETOOTH_SPP
+	bool "Serial Port Profile (SPP)"
+	default n
+	depends on SERIAL_TERMIOS
+	depends on PSEUDOTERM
+
+if BLUETOOTH_SPP
+config BLUETOOTH_SPP_MAX_CONNECTIONS
+	int "SPP max connections"
+	default 1
+
+config BLUETOOTH_SPP_SERVER_MAX_CONNECTIONS
+	int "SPP Server max connections"
+	default 8
+
+config BLUETOOTH_SPP_RPMSG_NET
+	bool "SPP RPMsg net support"
+	default n
+	depends on NET_RPMSG
+
+endif #BLUETOOTH_SPP
+	
+config BLUETOOTH_HID_DEVICE
+	bool "Human Interface Device Profile (HID)"
+	default n
+
+config BLUETOOTH_PAN
+	bool "Personal Area Network Profile (PAN)"
+	default n
+	depends on ALLOW_BSD_COMPONENTS
+	help
+		config NET_TUN_PKTSIZE should set 1518
+
+endmenu #Profiles
+
+menu "Debug"
+config BLUETOOTH_DEBUG_TIMEVAL
+	bool "Enable Bluetooth debug time"
+	default n
+	help
+		Enable this option to include Bluetooth debug time functionality.
+
+config BLUETOOTH_DEBUG_TIME_UNIT_US
+	bool "Use microseconds for Bluetooth debug time"
+	default n
+	depends on BLUETOOTH_DEBUG_TIMEVAL
+	help
+		Enable this option to use microseconds (us) for Bluetooth debug time.
+		If disabled, milliseconds (ms) will be used by default.
+
+config BLUETOOTH_DEBUG_MEMORY
+	bool "Enable Bluetooth debug memory"
+	default n
+	help
+		Enable this option to override standard memory allocation functions
+		(malloc, calloc, free) with Bluetooth-specific versions (bt_malloc, etc).
+		Useful for tracking memory usage and debugging in Bluetooth modules.
+
+config BLUETOOTH_DEBUG_TRACE
+	bool "Enable Bluetooth debug trace"
+	default n
+	help
+		Enable Bluetooth debug trace tools.
+
+if BLUETOOTH_DEBUG_TRACE
+config BLUETOOTH_TRACE_BUFFER_SIZE
+	int "Bluetooth trace buffer size"
+	default 512
+
+endif #BLUETOOTH_DEBUG_TRACE
+
+config MAX_SNOOP_FILE_SIZE
+	int "Maximum size of the snoop log file"
+	default 1048576
+	help
+		Maximum size of the snoop log file
+
+config BLUETOOTH_DUMPBUFFER
+	bool "Bluetooth dumpbuffer"
+	default n
+
+config BLUETOOTH_DFX
+	bool "Enable Bluetooth DFX"
+	default y
+	depends on DFX_EVENT
+	help
+		Enable Bluetooth DFX
+
+config BLUETOOTH_SERVICE_LOG_LEVEL
+	int "Bluetooth Service log level"
+	default 7
+	depends on BLUETOOTH_SERVICE
+	help
+		Set BT Service log level <0~7>
+
+endmenu #Debug
+
+config BLUETOOTH_TOOLS
+	bool "Bluetooth profile test tools (BT_TOOLS)"
+	default n
+	select BLUETOOTH_FRAMEWORK
+
+menuconfig APP_BT_SAMPLE_CODE
+	bool "Sample Code"
+	default n
+	select BLUETOOTH_FRAMEWORK
+
+if APP_BT_SAMPLE_CODE
+config APP_BT_SAMPLE_CODE_BASIC
+	bool "Bluetooth basic sample code"
+	default n
+
+config APP_BT_SAMPLE_CODE_ENABLE
+	bool "Bluetooth enable sample code"
+	default n
+
+config APP_BT_SAMPLE_CODE_DISCOVERY
+	bool "Bluetooth discovery sample code"
+	default n
+
+config APP_BT_SAMPLE_CODE_CREATEBOND
+	bool "Bluetooth createbond sample code"
+	default n
+
+config APP_BT_SAMPLE_CODE_ACCEPTBOND
+	bool "Bluetooth acceptbond sample code"
+	default n
+
+endif #APP_BT_SAMPLE_CODE
 
 endif #BLUETOOTH
