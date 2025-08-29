@@ -751,6 +751,17 @@ static bt_status_t hfp_hf_get_subscriber_number(bt_address_t* addr)
     CHECK_ENABLED();
 
     hfp_hf_msg_t* msg = hfp_hf_msg_new(HF_GET_SUBSCRIBER_NUMBER, addr);
+
+    if (!msg)
+        return BT_STATUS_NOMEM;
+
+    return hfp_hf_send_message(msg);
+}
+
+static bt_status_t hfp_hf_query_current_calls_with_callback(bt_address_t* addr)
+{
+    CHECK_ENABLED();
+    hfp_hf_msg_t* msg = hfp_hf_msg_new(HF_QUERY_CURRENT_CALLS_WITH_CALLBACK, addr);
     if (!msg)
         return BT_STATUS_NOMEM;
 
@@ -785,6 +796,7 @@ static const hfp_hf_interface_t HfInterface = {
     .volume_control = hfp_hf_volume_control,
     .send_dtmf = hfp_hf_send_dtmf,
     .get_subscriber_number = hfp_hf_get_subscriber_number,
+    .query_current_calls_with_callback = hfp_hf_query_current_calls_with_callback,
 };
 
 static const void* get_hf_profile_interface(void)
@@ -872,6 +884,12 @@ void hf_service_notify_subscriber_number(bt_address_t* addr, const char* number,
 {
     BT_LOGD("%s", __func__);
     HF_CALLBACK_FOREACH(g_hfp_service.callbacks, subscriber_number_cb, addr, number, service);
+}
+
+void hf_service_notify_current_calls(bt_address_t* addr, uint8_t num, hfp_current_call_t* calls)
+{
+    BT_LOGD("%s", __func__);
+    HF_CALLBACK_FOREACH(g_hfp_service.callbacks, query_current_calls_cb, addr, num, calls);
 }
 
 void hfp_hf_on_connection_state_changed(bt_address_t* addr, profile_connection_state_t state,

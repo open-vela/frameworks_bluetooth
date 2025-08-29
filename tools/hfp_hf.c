@@ -40,6 +40,7 @@ static int hold_call_cmd(void* handle, int argc, char* argv[]);
 static int terminate_call_cmd(void* handle, int argc, char* argv[]);
 static int control_call_cmd(void* handle, int argc, char* argv[]);
 static int query_current_calls_cmd(void* handle, int argc, char* argv[]);
+static int query_current_calls_with_callback_cmd(void* handle, int argc, char* argv[]);
 static int send_at_cmd_cmd(void* handle, int argc, char* argv[]);
 static int update_battery_level_cmd(void* handle, int argc, char* argv[]);
 static int send_dtmf_cmd(void* handle, int argc, char* argv[]);
@@ -94,6 +95,7 @@ static bt_command_t g_hfp_tables[] = {
     { "term", terminate_call_cmd, 0, HANGUP_CALL_USAGE },
     { "control", control_call_cmd, 0, HOLD_CALL_USAGE },
     { "query", query_current_calls_cmd, 0, "Query current calls                  params: <address>" },
+    { "querycb", query_current_calls_with_callback_cmd, 0, "Query current calls with callback    params: <address>" },
     { "sendat", send_at_cmd_cmd, 0, "Send customize AT command to peer    params: <address> <atcmd>" },
     { "battery", update_battery_level_cmd, 0, "Update battery level within [0, 100] params: <address> <level>\"" },
     { "dtmf", send_dtmf_cmd, 0, SEND_DTMF_USAGE },
@@ -402,6 +404,21 @@ static int query_current_calls_cmd(void* handle, int argc, char* argv[])
     return CMD_OK;
 }
 
+static int query_current_calls_with_callback_cmd(void* handle, int argc, char* argv[])
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+    bt_address_t addr;
+
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (bt_hfp_hf_query_current_calls_with_callback(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
 static int send_at_cmd_cmd(void* handle, int argc, char* argv[])
 {
     if (argc < 2)
@@ -532,6 +549,16 @@ static void hf_subscriber_number_cb(void* context, bt_address_t* addr, const cha
     PRINT_ADDR("hf_subscriber_number_cb, addr:%s, number:%s, service:%d", addr, number, service);
 }
 
+static void hf_current_call_callback(void* context, bt_address_t* addr, uint8_t num, hfp_current_call_t* calls)
+{
+    printf("hf_current_call_callback\n");
+    for (int i = 0; i < num; i++) {
+        hfp_current_call_t* c = &calls[i];
+        PRINT_ADDR("hf_current_call_callback, addr:%s, idx[%" PRIx32 "], dir:%d, state:%d, number:%s, name:%s",
+            addr, c->index, c->dir, c->state, c->number, c->name);
+    }
+}
+
 static const hfp_hf_callbacks_t hfp_hf_cbs = {
     sizeof(hfp_hf_cbs),
     hf_connection_state_callback,
@@ -546,6 +573,7 @@ static const hfp_hf_callbacks_t hfp_hf_cbs = {
     NULL,
     hf_clip_cb,
     hf_subscriber_number_cb,
+    hf_current_call_callback,
 };
 
 int hfp_hf_commond_init(void* handle)

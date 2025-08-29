@@ -204,3 +204,9 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_get_subscriber_number)(bt_instance_t* ins, bt_ad
     hfp_hf_interface_t* profile = get_profile_service();
     return profile->get_subscriber_number(addr);
 }
+
+bt_status_t BTSYMBOLS(bt_hfp_hf_query_current_calls_with_callback)(bt_instance_t* ins, bt_address_t* addr)
+{
+    hfp_hf_interface_t* profile = get_profile_service();
+    return profile->query_current_calls_with_callback(addr);
+}

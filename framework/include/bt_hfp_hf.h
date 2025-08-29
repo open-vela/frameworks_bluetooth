@@ -418,6 +418,16 @@ typedef void (*hfp_hf_subscriber_number_callback)(void* cookie, bt_address_t* ad
 typedef void (*hfp_hf_clip_callback)(void* cookie, bt_address_t* addr, const char* number, const char* name);
 
 /**
+ * @brief HFP HF query current calls callback.
+ *
+ * @param cookie - callback cookie.
+ * @param addr - address of peer AG device.
+ * @param num - number of current calls.
+ * @param calls - list of current calls.
+ */
+typedef void (*hfp_hf_query_current_calls_callback)(void* cookie, bt_address_t* addr, uint8_t num, hfp_current_call_t* calls);
+
+/**
  * @cond
  */
 
@@ -440,6 +450,7 @@ typedef struct
     hfp_hf_callheld_callback callheld_cb;
     hfp_hf_clip_callback clip_cb;
     hfp_hf_subscriber_number_callback subscriber_number_cb;
+    hfp_hf_query_current_calls_callback query_current_calls_cb;
 } hfp_hf_callbacks_t;
 
 /**
@@ -1186,6 +1197,14 @@ bt_status_t BTSYMBOLS(bt_hfp_hf_send_dtmf)(bt_instance_t* ins, bt_address_t* add
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
 bt_status_t BTSYMBOLS(bt_hfp_hf_get_subscriber_number)(bt_instance_t* ins, bt_address_t* addr);
+
+/**
+ * @brief Query Current Calls With Callback
+ *
+ * @param ins - bluetooth client instance.
+ * @param addr - address of peer AG device.
+ */
+bt_status_t BTSYMBOLS(bt_hfp_hf_query_current_calls_with_callback)(bt_instance_t* ins, bt_address_t* addr);
 
 #ifdef __cplusplus
 }

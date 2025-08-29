@@ -80,6 +80,7 @@ typedef struct _hf_state_machine {
     bt_list_t* update_calls;
     hfp_hf_call_status_t call_status;
     uint8_t need_query;
+    bool need_query_callback;
     void* service;
 } hf_state_machine_t;
 
@@ -197,6 +198,7 @@ static const char* stack_event_to_string(hfp_hf_event_t event)
         CASE_RETURN_STR(HF_TERMINATE_CALL)
         CASE_RETURN_STR(HF_CONTROL_CALL)
         CASE_RETURN_STR(HF_QUERY_CURRENT_CALLS)
+        CASE_RETURN_STR(HF_QUERY_CURRENT_CALLS_WITH_CALLBACK)
         CASE_RETURN_STR(HF_SEND_AT_COMMAND)
         CASE_RETURN_STR(HF_UPDATE_BATTERY_LEVEL)
         CASE_RETURN_STR(HF_SEND_DTMF)
@@ -359,6 +361,24 @@ static void hf_service_fake_ciev(hf_state_machine_t* hfsm)
     HFP_HF_REPORT_CIEV_AND_CACHE(hfsm, callheld);
 }
 
+static void hf_notify_current_calls(hf_state_machine_t* hfsm)
+{
+    bt_list_t* calls_list = hfsm->current_calls;
+    hfp_current_call_t calls_array[HFP_CALL_LIST_MAX];
+    uint8_t i = 0;
+    hfp_current_call_t* call;
+
+    for (bt_list_node_t* call_node = bt_list_head(calls_list); call_node != NULL; call_node = bt_list_next(calls_list, call_node)) {
+        call = bt_list_node(call_node);
+        memcpy(&calls_array[i], call, sizeof(hfp_current_call_t));
+        if (++i >= HFP_CALL_LIST_MAX) {
+            break;
+        }
+    }
+    hf_service_notify_current_calls(&(hfsm->addr), i, calls_array);
+    hfsm->need_query_callback = false;
+}
+
 static void query_current_calls_final(hf_state_machine_t* hfsm)
 {
     BT_LOGD("Query current call final");
@@ -402,6 +422,12 @@ static void query_current_calls_final(hf_state_machine_t* hfsm)
             hf_service_notify_call_state_changed(&hfsm->addr, ucall);
         }
     }
+
+    if (hfsm->need_query_callback) {
+        hf_notify_current_calls(hfsm);
+    }
+
+    flag_clear(hfsm, PENDING_CURRENT_CALLS_QUERY);
 
     bt_list_clear(ulist);
 }
@@ -967,6 +993,18 @@ static void handle_hf_set_voice_call_volume(state_machine_t* sm, hfp_volume_type
     }
 }
 
+static bt_status_t query_current_calls_with_callback(hf_state_machine_t* hfsm)
+{
+    if (flag_isset(hfsm, PENDING_CURRENT_CALLS_QUERY)) {
+        BT_LOGD("Service is querying current calls, wait until done before callback.");
+        hfsm->need_query_callback = true;
+        return BT_STATUS_SUCCESS;
+    }
+
+    hf_notify_current_calls(hfsm);
+    return BT_STATUS_SUCCESS;
+}
+
 static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_data_t* data)
 {
     hf_state_machine_t* hfsm = (hf_state_machine_t*)sm;
@@ -1002,6 +1040,12 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
         if (status != BT_STATUS_SUCCESS)
             BT_LOGE("Query current call failed");
         break;
+    case HF_QUERY_CURRENT_CALLS_WITH_CALLBACK:
+        status = query_current_calls_with_callback(hfsm);
+        if (status != BT_STATUS_SUCCESS) {
+            BT_LOGE("Query current call with callback failed");
+        }
+        break;
     case HF_SEND_AT_COMMAND: {
         status = bt_sal_hfp_hf_send_at_cmd(&hfsm->addr, data->string1, strlen(data->string1));
         if (status != BT_STATUS_SUCCESS)
@@ -1034,7 +1078,9 @@ static bool default_process_event(state_machine_t* sm, uint32_t event, hfp_hf_da
     case HF_STACK_EVENT_CALLSETUP:
     case HF_STACK_EVENT_CALLHELD:
         update_call_status(sm, event, data->valueint1);
-        bt_sal_hfp_hf_get_current_calls(&hfsm->addr);
+        if (bt_sal_hfp_hf_get_current_calls(&hfsm->addr) == BT_STATUS_SUCCESS) {
+            flag_set(hfsm, PENDING_CURRENT_CALLS_QUERY);
+        }
         break;
     case HF_STACK_EVENT_CLIP: {
         char* number = data->string1;
