@@ -21,7 +21,9 @@
 #include <zephyr/bluetooth/att.h>
 #include <zephyr/bluetooth/gatt.h>
 #include "common.h"
-
+#include "cs_service.h"
+#include "cs_msg.h"
+#include "bt_addr.h"
 #define CS_CONFIG_ID     0
 #define NUM_MODE_0_STEPS 1
 #define RAS_SEG_HEADER_SIZE    4
@@ -477,9 +479,14 @@ static void mtu_exchange_cb(struct bt_conn *conn, uint8_t err,
 static void connected_cb(struct bt_conn *conn, uint8_t err)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
+	bt_address_t bt_addr = {0};
 
 	(void)bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 	BT_INFO("Connected to %s (err 0x%02X)\n", addr, err);
+
+	memcpy(bt_addr, addr, sizeof(bt_address_t));
+	cs_msg_t* msg = cs_msg_new(CONNECTED_EVT, &bt_addr);
+	bt_sal_cs_event_callback(msg);
 
 	__ASSERT(ras_srv->connection == conn, "Unexpected connected callback");
 
@@ -512,6 +519,14 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 
 static void disconnected_cb(struct bt_conn *conn, uint8_t reason)
 {
+	char addr[BT_ADDR_LE_STR_LEN];
+	bt_address_t bt_addr = {0};
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+	memcpy(bt_addr, addr, sizeof(bt_address_t));
+	cs_msg_t* msg = cs_msg_new(DISCONNECTED_EVT, &bt_addr);
+	bt_sal_cs_event_callback(msg);
+
 	BT_INFO("Disconnected (reason 0x%02X)\n", reason);
 
 	bt_conn_unref(conn);
@@ -530,6 +545,17 @@ static void disconnected_cb(struct bt_conn *conn, uint8_t reason)
 
 static void remote_capabilities_cb(struct bt_conn *conn, struct bt_conn_le_cs_capabilities *params)
 {
+	char addr[BT_ADDR_LE_STR_LEN];
+	bt_address_t bt_addr = {0};
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+	memcpy(bt_addr, addr, sizeof(bt_address_t));
+	cs_msg_t* msg = cs_msg_new(CAPBLITIES_RECEIVED_EVT, &bt_addr);
+	cs_bt_conn_le_cs_capabilities_t capabilities = {};
+	memcpy(&capabilities, params, sizeof(cs_bt_conn_le_cs_capabilities_t));
+	msg->cs_data.data = &capabilities;
+	bt_sal_cs_event_callback(msg);
+
 	ARG_UNUSED(params);
 	BT_INFO("CS capability exchange completed.\n");
 	BT_INFO("num_config_supported:%d, max_consecutive_procedures_supported:%d", 
@@ -561,6 +587,17 @@ static void remote_capabilities_cb(struct bt_conn *conn, struct bt_conn_le_cs_ca
 
 static void config_created_cb(struct bt_conn *conn, struct bt_conn_le_cs_config *config)
 {
+	char addr[BT_ADDR_LE_STR_LEN];
+	bt_address_t bt_addr = {0};
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+	memcpy(bt_addr, addr, sizeof(bt_address_t));
+	cs_msg_t* msg = cs_msg_new(CONFIG_DONE_EVT, &bt_addr);
+	cs_bt_conn_le_cs_config_t cs_config = {};
+	memcpy(&cs_config, config, sizeof(cs_bt_conn_le_cs_config_t));
+	msg->cs_data.data = cs_config;
+	bt_sal_cs_event_callback(msg);
+
 	BT_INFO("CS config creation complete. ID: %d\n", config->id);
 	BT_INFO("main_mode_type:%d, sub_mode_type:%d", 
 	    config->main_mode_type, config->sub_mode_type);
@@ -585,12 +622,30 @@ static void config_created_cb(struct bt_conn *conn, struct bt_conn_le_cs_config 
 
 static void security_enabled_cb(struct bt_conn *conn)
 {
+	char addr[BT_ADDR_LE_STR_LEN];
+	bt_address_t bt_addr = {0};
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+	memcpy(bt_addr, addr, sizeof(bt_address_t));
+	cs_msg_t* msg = cs_msg_new(SECURITY_DONE_EVT, &bt_addr);
+	bt_sal_cs_event_callback(msg);
 	BT_INFO("CS security enabled.\n");
 }
 
 static void procedure_enabled_cb(struct bt_conn *conn,
 				 struct bt_conn_le_cs_procedure_enable_complete *params)
 {
+	char addr[BT_ADDR_LE_STR_LEN];
+	bt_address_t bt_addr = {0};
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+	memcpy(bt_addr, addr, sizeof(bt_address_t));
+	cs_msg_t* msg = cs_msg_new(PROCEDURE_DONE_EVT, &bt_addr);
+	cs_bt_conn_le_cs_procedure_enable_complete_t procedure = {};
+	memcpy(&procedure, params, sizeof(cs_bt_conn_le_cs_procedure_enable_complete_t));
+	msg->cs_data.data = procedure;
+	bt_sal_cs_event_callback(msg);
+
 	if (params->state == 1) {
 		BT_INFO("CS procedures enabled.\n");
 	} else {

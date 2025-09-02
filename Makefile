@@ -141,7 +141,10 @@ ifeq ($(CONFIG_BLUETOOTH_A2DP), y)
   CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/a2dp/codec
   CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/avrcp
 endif #CONFIG_BLUETOOTH_A2DP
-
+ifeq ($(CONFIG_BLUETOOTH_CS), y)
+  CSRCS += service/profiles/cs/*.c
+  CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/profiles/cs
+endif #CONFIG_BLUETOOTH_CS
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SOURCE), y)
   CSRCS += service/profiles/a2dp/source/*.c
 endif #CONFIG_BLUETOOTH_A2DP_SOURCE

@@ -15,172 +15,162 @@
  ***************************************************************************/
 
 #include "sal_le_cs_interface.h"
-
-
-int bt_sal_cs_read_remote_supported_capabilities(bt_controller_id_t id, bt_address_t* addr,
-                                                 ble_addr_type_t addr_type)
+#include <zephyr/bluetooth/cs.h>
+#include "sal_interface.h"
+bt_status_t bt_sal_cs_read_remote_supported_capabilities(bt_controller_id_t id, bt_address_t* addr)
 {
-    struct bt_conn* conn;
-    int err;
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
 
-    CHECK_CONN_FROM_ADDR(addr, conn, label_on_error);
+    SAL_CHECK_RET_WITH_CONN(bt_le_cs_read_remote_supported_capabilities(conn), 0, conn);
 
-    err = bt_le_cs_read_remote_supported_capabilities(conn);
+    bt_conn_unref(conn);
 
-    if (err) {
-        BT_LOGW("CS read remote supported capabilities fail.");
-    }
-
-    return err;
-
-label_on_error:
-    return -1;
+    return BT_STATUS_SUCCESS;
 }
 
-int bt_sal_cs_set_default_settings(bt_controller_id_t id, bt_address_t* addr,
-                                                 ble_addr_type_t addr_type,
-				  const struct bt_le_cs_set_default_settings_param *params)
+bt_status_t bt_sal_cs_set_default_settings(bt_controller_id_t id, bt_address_t* addr, cs_bt_le_cs_set_default_settings_param_t *params)
 {
-    struct bt_conn* conn;
-    int err;
+	const struct bt_le_cs_set_default_settings_param default_settings = {
+		.enable_initiator_role = params->enable_initiator_role,
+		.enable_reflector_role = params->enable_reflector_role,
+		.cs_sync_antenna_selection = params->cs_sync_antenna_selection,
+		.max_tx_power = BT_HCI_OP_LE_CS_MAX_MAX_TX_POWER,
+	};
 
-    CHECK_CONN_FROM_ADDR(addr, conn, label_on_error);
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
 
-    err = bt_le_cs_set_default_settings(conn, params);
+    SAL_CHECK_RET_WITH_CONN(bt_le_cs_set_default_settings(conn, params), 0, conn);
 
-    return err;
+    bt_conn_unref(conn);
 
-label_on_error:
-    return -1;
+    return BT_STATUS_SUCCESS;
 }
 
-int bt_sal_cs_read_remote_fae_table(bt_controller_id_t id, bt_address_t* addr,
-                                                 ble_addr_type_t addr_type)
+bt_status_t bt_sal_cs_read_remote_fae_table(bt_controller_id_t id, bt_address_t* addr)
 {
-    struct bt_conn* conn;
-    int err;
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
 
-    CHECK_CONN_FROM_ADDR(addr, conn, label_on_error);
+    SAL_CHECK_RET_WITH_CONN(bt_le_cs_read_remote_fae_table(conn), 0, conn);
 
-    err = bt_le_cs_read_remote_fae_table(conn);
+    bt_conn_unref(conn);
 
-    return err;
-
-label_on_error:
-    return -1;
+    return BT_STATUS_SUCCESS;
     
 }
 
-int bt_sal_cs_create_config(bt_controller_id_t id, bt_address_t* addr,
-                            ble_addr_type_t addr_type,
-                            struct bt_le_cs_create_config_params *params,
+bt_status_t bt_sal_cs_create_config(bt_controller_id_t id, bt_address_t* addr,
+                            struct cs_bt_le_cs_create_config_params_t *params,
 			                enum bt_le_cs_create_config_context context)
 {
-    struct bt_conn* conn;
-    int err;
-    CHECK_CONN_FROM_ADDR(addr, conn, label_on_error);
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+    bt_le_cs_create_config_params config = {};
+    memcpy(&config, params, sizeof(bt_le_cs_create_config_params));
+    SAL_CHECK_RET_WITH_CONN(bt_le_cs_create_config(conn, config, (cs_bt_le_cs_create_config_context_t)context), 0, conn);
 
-    err = bt_le_cs_create_config(conn, params, context);
+    bt_conn_unref(conn);
 
-    return err;
-
-label_on_error:
-    return -1;
+    return BT_STATUS_SUCCESS;
 }
 
-int bt_sal_cs_remove_config(struct bt_conn *conn, uint8_t config_id)
+bt_status_t bt_sal_cs_remove_config(uint8_t config_id)
 {
-    struct bt_conn* conn;
-    int err;
-    CHECK_CONN_FROM_ADDR(addr, conn, label_on_error);
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
 
-    err = bt_le_cs_remove_config(conn, config_id);
+    SAL_CHECK_RET_WITH_CONN(bt_le_cs_remove_config(conn, config_id), 0, conn);
 
-    return err;
+    bt_conn_unref(conn);
 
-label_on_error:
-    return -1;
+    return BT_STATUS_SUCCESS;
 }
 
-int bt_sal_cs_security_enable(bt_controller_id_t id, bt_address_t* addr,
-                            ble_addr_type_t addr_type)
+bt_status_t bt_sal_cs_security_enable(bt_controller_id_t id, bt_address_t* addr)
 {
-    struct bt_conn* conn;
-    int err;
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
 
-    CHECK_CONN_FROM_ADDR(addr, conn, label_on_error);
+    SAL_CHECK_RET_WITH_CONN(bt_le_cs_security_enable(), 0, conn);
 
-    err = bt_le_cs_security_enable();
+    bt_conn_unref(conn);
 
-label_on_error:
-    return -1;
+    return BT_STATUS_SUCCESS;
 }
 
-int bt_sal_cs_procedure_enable(struct bt_conn *conn,
-			      const struct bt_le_cs_procedure_enable_param *params)
+bt_status_t bt_sal_cs_procedure_enable(bt_address_t* addr
+			      const struct cs_bt_le_cs_procedure_enable_param_t *params)
 {
-    struct bt_conn* conn;
-    int err;
+    struct bt_le_cs_procedure_enable_param enable = {};
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
 
-    CHECK_CONN_FROM_ADDR(addr, conn, label_on_error);
+    memcpy(&enable, params, sizeof(bt_le_cs_procedure_enable_param));
 
-    err = bt_le_cs_procedure_enable(conn, params);
+    SAL_CHECK_RET_WITH_CONN(bt_le_cs_procedure_enable(conn, &enable), 0, conn);
 
-label_on_error:
-    return -1;
+    bt_conn_unref(conn);
+
+    return BT_STATUS_SUCCESS;
 }
 
-int bt_sal_cs_remove_config(bt_controller_id_t id, bt_address_t* addr,
-                            ble_addr_type_t addr_type, uint8_t config_id)
+bt_status_t bt_sal_cs_remove_config(bt_controller_id_t id, bt_address_t* addr, uint8_t config_id)
 {
-    struct bt_conn* conn;
-    int err;
-    CHECK_CONN_FROM_ADDR(addr, conn, label_on_error);
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
 
-    err = bt_le_cs_remove_config(conn, config_id);
+    SAL_CHECK_RET_WITH_CONN(bt_le_cs_remove_config(conn, config_id), 0, conn);
 
-label_on_error:
-    return -1;
+    bt_conn_unref(conn);
+
+    return BT_STATUS_SUCCESS;
 }
 
-int bt_sal_cs_set_procedure_parameters(bt_controller_id_t id, bt_address_t* addr,
-                            ble_addr_type_t addr_type,
-				      const struct bt_le_cs_set_procedure_parameters_param *params)
+bt_status_t bt_sal_cs_set_procedure_parameters(bt_controller_id_t id, bt_address_t* addr,
+				      const struct cs_bt_le_cs_set_procedure_parameters_param_t *params)
 {
-    struct bt_conn* conn;
-    int err;
-    CHECK_CONN_FROM_ADDR(addr, conn, label_on_error);
+    struct bt_le_cs_set_procedure_parameters_param parameters = {};
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
 
-    err = bt_le_cs_set_procedure_parameters(conn, params);
+    memcpy(&parameters, params, sizeof(bt_le_cs_set_procedure_parameters_param));
 
-label_on_error:
-    return -1;
+    SAL_CHECK_RET_WITH_CONN(bt_le_cs_set_procedure_parameters(conn, &parameters), 0, conn);
+
+    bt_conn_unref(conn);
+
+    return BT_STATUS_SUCCESS;
 }
 
-int bt_sal_cs_set_channel_classification(uint8_t channel_classification[10])
+bt_status_t bt_sal_cs_set_channel_classification(uint8_t channel_classification[10])
 {
-    int err = bt_sal_cs_set_channel_classification(channel_classification);
-    return err;
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+
+    SAL_CHECK_RET_WITH_CONN(bt_le_cs_set_channel_classification(channel_classification), 0, conn);
+
+    bt_conn_unref(conn);
+
+    return BT_STATUS_SUCCESS;
 }
 
-int bt_sal_cs_read_local_supported_capabilities(struct bt_conn_le_cs_capabilities *ret)
+bt_status_t bt_sal_cs_read_local_supported_capabilities(struct cs_bt_conn_le_cs_capabilities_t *params)
 {
-    int err = bt_le_cs_read_local_supported_capabilities(ret);
-    return err;
+    struct bt_conn_le_cs_capabilities capabilities = {};
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
+
+    memcpy(&capabilities, params, sizeof(bt_conn_le_cs_capabilities));
+    SAL_CHECK_RET_WITH_CONN(bt_le_cs_read_local_supported_capabilities(&capabilities), 0, conn);
+
+    bt_conn_unref(conn);
+
+    return BT_STATUS_SUCCESS;
 }
 
-int bt_sal_cs_write_cached_remote_supported_capabilities(
-	struct bt_conn *conn, const struct bt_conn_le_cs_capabilities *params)
+bt_status_t bt_sal_cs_write_cached_remote_supported_capabilities(
+	const struct cs_bt_conn_le_cs_capabilities_t *params)
 {
-    struct bt_conn* conn;
-    int err;
-    CHECK_CONN_FROM_ADDR(addr, conn, label_on_error);
+    struct bt_conn_le_cs_capabilities capabilities = {};
+    struct bt_conn* conn = bt_conn_lookup_addr_br((bt_addr_t*)addr);
 
-    err = bt_le_cs_write_cached_remote_supported_capabilities(conn, params);
-    return err;
+    memcpy(&capabilities, params, sizeof(bt_conn_le_cs_capabilities));
+    SAL_CHECK_RET_WITH_CONN(bt_le_cs_write_cached_remote_supported_capabilities(conn, &capabilities), 0, conn);
 
-label_on_error:
-    return -1;
+    bt_conn_unref(conn);
+
+    return BT_STATUS_SUCCESS;
 }
 
 
