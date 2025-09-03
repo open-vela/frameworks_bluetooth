@@ -30,7 +30,7 @@
 
 #undef CONFIG_GATT_CLIENT_LOG
 
-#ifdef CONFIG_BLUETOOTH_GATT
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
 #define STACK_CALL(func) zblue_##func
 
 typedef void (*sal_func_t)(void* args);
@@ -1336,4 +1336,4 @@ void bt_sal_gatt_client_connection_state_changed_callback(bt_controller_id_t id,
     if_gattc_on_connection_state_changed(addr, state);
 }
 
-#endif /* CONFIG_BLUETOOTH_GATT */
+#endif /* CONFIG_BLUETOOTH_GATT_CLIENT */

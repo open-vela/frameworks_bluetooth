@@ -47,10 +47,12 @@ endif #CONFIG_BLUETOOTH_SPP
 ifeq ($(CONFIG_BLUETOOTH_HID_DEVICE), y)
 CSRCS += framework/api/bt_hid_device.c
 endif #CONFIG_BLUETOOTH_HID_DEVICE
-ifeq ($(CONFIG_BLUETOOTH_GATT), y)
+ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT), y)
 CSRCS += framework/api/bt_gattc.c
+endif #CONFIG_BLUETOOTH_GATT_CLIENT
+ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER), y)
 CSRCS += framework/api/bt_gatts.c
-endif #CONFIG_BLUETOOTH_GATT
+endif #CONFIG_BLUETOOTH_GATT_SERVER
 ifeq ($(CONFIG_BLUETOOTH_L2CAP), y)
 CSRCS += framework/api/bt_l2cap.c
 endif #CONFIG_BLUETOOTH_L2CAP
@@ -123,12 +125,15 @@ CSRCS += framework/socket/bt_hid_device.c
 CSRCS += service/ipc/socket/src/bt_socket_hid_device.c
 endif #CONFIG_BLUETOOTH_HID_DEVICE
 
-ifeq ($(CONFIG_BLUETOOTH_GATT), y)
+ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT), y)
 CSRCS += framework/socket/bt_gattc.c
-CSRCS += framework/socket/bt_gatts.c
 CSRCS += service/ipc/socket/src/bt_socket_gattc.c
+endif #CONFIG_BLUETOOTH_GATT_CLIENT
+
+ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER), y)
+CSRCS += framework/socket/bt_gatts.c
 CSRCS += service/ipc/socket/src/bt_socket_gatts.c
-endif #CONFIG_BLUETOOTH_GATT
+endif #CONFIG_BLUETOOTH_GATT_SERVER
 
 ifeq ($(CONFIG_BLUETOOTH_L2CAP), y)
 CSRCS += framework/socket/bt_l2cap.c
@@ -233,10 +238,12 @@ endif #CONFIG_BLUETOOTH_BLE_ADV
 ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
 	CSRCS += service/stacks/zephyr/sal_le_scan_interface.c
 endif #CONFIG_BLUETOOTH_BLE_SCAN
-ifeq ($(CONFIG_BLUETOOTH_GATT), y)
+ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT), y)
 	CSRCS += service/stacks/zephyr/sal_gatt_client_interface.c
+endif #CONFIG_BLUETOOTH_GATT_CLIENT
+ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER), y)
 	CSRCS += service/stacks/zephyr/sal_gatt_server_interface.c
-endif #CONFIG_BLUETOOTH_GATT
+endif #CONFIG_BLUETOOTH_GATT_SERVER
 endif #CONFIG_BLUETOOTH_STACK_LE_ZBLUE
 
 endif
@@ -255,9 +262,14 @@ ifeq ($(CONFIG_MICO_MEDIA_MAIN_PLAYER),y)
 	CFLAGS += ${INCDIR_PREFIX}${TOPDIR}/../vendor/xiaomi/miai/mediaplayer/include
 endif #CONFIG_MICO_MEDIA_MAIN_PLAYER
 	CSRCS += service/profiles/audio_interface/*.c
-ifeq ($(CONFIG_BLUETOOTH_GATT), y)
-	CSRCS += service/profiles/gatt/*.c
-endif #CONFIG_BLUETOOTH_GATT
+ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT), y)
+	CSRCS += service/profiles/gatt/gattc_event.c
+	CSRCS += service/profiles/gatt/gattc_service.c
+endif #CONFIG_BLUETOOTH_GATT_CLIENT
+ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER), y)
+	CSRCS += service/profiles/gatt/gatts_event.c
+	CSRCS += service/profiles/gatt/gatts_service.c
+endif #CONFIG_BLUETOOTH_GATT_SERVER
 
 ifeq ($(CONFIG_BLUETOOTH_A2DP), y)
   CSRCS += service/profiles/a2dp/*.c
@@ -403,10 +415,12 @@ endif #CONFIG_BLUETOOTH_A2DP_SOURCE
 ifeq ($(CONFIG_BLUETOOTH_AVRCP_CONTROL), y)
 	CSRCS += tools/avrcp_control.c
 endif #CONFIG_BLUETOOTH_AVRCP_CONTROL
-ifeq ($(CONFIG_BLUETOOTH_GATT), y)
+ifeq ($(CONFIG_BLUETOOTH_GATT_CLIENT), y)
 	CSRCS += tools/gatt_client.c
+endif #CONFIG_BLUETOOTH_GATT_CLIENT
+ifeq ($(CONFIG_BLUETOOTH_GATT_SERVER), y)
 	CSRCS += tools/gatt_server.c
-endif #CONFIG_BLUETOOTH_GATT
+endif #CONFIG_BLUETOOTH_GATT_SERVER
 ifeq ($(CONFIG_BLUETOOTH_HFP_HF), y)
 	CSRCS += tools/hfp_hf.c
 endif #CONFIG_BLUETOOTH_HFP_HF

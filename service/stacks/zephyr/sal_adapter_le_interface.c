@@ -154,8 +154,7 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     uint8_t role;
     struct bt_conn_info info;
     le_conn_info_t* slot;
-    int i;
-#ifdef CONFIG_BLUETOOTH_GATT
+#if defined(CONFIG_BLUETOOTH_GATT_CLIENT) || defined(CONFIG_BLUETOOTH_GATT_SERVER)
     profile_connection_state_t profile_state = PROFILE_STATE_CONNECTED;
 #endif
 
@@ -186,7 +185,7 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     if (err) {
         state.connection_state = CONNECTION_STATE_DISCONNECTED;
         state.status = err;
-#ifdef CONFIG_BLUETOOTH_GATT
+#if defined(CONFIG_BLUETOOTH_GATT_CLIENT) || defined(CONFIG_BLUETOOTH_GATT_SERVER)
         profile_state = PROFILE_STATE_DISCONNECTED;
 #endif
 
@@ -216,11 +215,13 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     }
 
     adapter_on_connection_state_changed(&state);
-#ifdef CONFIG_BLUETOOTH_GATT
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
     if (role & GATT_ROLE_SERVER) {
         bt_sal_gatt_server_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, profile_state);
     }
+#endif
 
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
     if (role & GATT_ROLE_CLIENT) {
         bt_sal_gatt_client_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, profile_state);
     }
@@ -295,11 +296,13 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
     slot = NULL;
 
     adapter_on_connection_state_changed(&state);
-#ifdef CONFIG_BLUETOOTH_GATT
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
     if (role & GATT_ROLE_SERVER) {
         bt_sal_gatt_server_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, PROFILE_STATE_DISCONNECTED);
     }
+#endif
 
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
     if (role & GATT_ROLE_CLIENT) {
         bt_sal_gatt_client_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, PROFILE_STATE_DISCONNECTED);
     }
@@ -333,12 +336,10 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 
     if (err) {
         adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BLE, BT_STATUS_FAIL, false);
-        if (err == BT_SECURITY_ERR_PIN_OR_KEY_MISSING) {
-            BT_LOGD("%s, pin or key missing, remove old key", __func__);
-            ret = bt_unpair(BT_ID_DEFAULT, info.le.dst);
-            if (ret < 0) {
-                BT_LOGE("%s, Failed to remove old key: %d", __func__, ret);
-            }
+        BT_LOGD("%s, err: %d, remove old key", __func__, err);
+        ret = bt_unpair(BT_ID_DEFAULT, info.le.dst);
+        if (ret < 0) {
+            BT_LOGE("%s, Failed to remove old key: %d", __func__, ret);
         }
     }
 
@@ -367,7 +368,7 @@ static void zblue_on_param_updated(struct bt_conn* conn, uint16_t interval, uint
 
     BT_LOGD("%s, interval:%d, latency:%d, timeout:%d", __func__, interval, latency, timeout);
 
-#ifdef CONFIG_BLUETOOTH_GATT
+#if defined(CONFIG_BLUETOOTH_GATT_CLIENT)
     if (info.role == BT_HCI_ROLE_CENTRAL) {
         if_gattc_on_connection_parameter_updated(&addr, interval, latency, timeout, BT_STATUS_SUCCESS);
     }
@@ -513,17 +514,17 @@ static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
 static void zblue_register_callback(void)
 {
     bt_conn_cb_register(&g_conn_cbs);
-    bt_conn_le_auth_cb_register(&g_conn_auth_cbs);
 #ifdef CONFIG_BT_SMP
+    bt_conn_le_auth_cb_register(&g_conn_auth_cbs);
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
 #endif
 }
 
 static void zblue_unregister_callback(void)
 {
-    bt_conn_cb_register(NULL);
+    bt_conn_cb_unregister(&g_conn_cbs);
+    #ifdef CONFIG_BT_SMP
     bt_conn_le_auth_cb_register(NULL);
-#ifdef CONFIG_BT_SMP
     bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
 #endif
 }
@@ -597,6 +598,10 @@ static le_conn_info_t* le_conn_find(const bt_address_t* addr)
 
 bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr)
 {
+    struct bt_conn_info info;
+    bt_address_t* resolved_addr;
+
+    /* Check local connection info table first */
     for (int i = 0; i < CONFIG_BT_MAX_CONN; i++) {
         if (g_le_conn_info[i].conn == conn) {
             memcpy(addr, &g_le_conn_info[i].addr, sizeof(bt_address_t));
@@ -604,8 +609,32 @@ bt_status_t get_le_addr_from_conn(struct bt_conn* conn, bt_address_t* addr)
         }
     }
 
-    BT_LOGD("%s, conn not found", __func__);
-    return BT_STATUS_FAIL;
+    /*
+     * Fallback: g_le_conn_info may not be initialized yet if certain events
+     * (e.g. MTU exchange) occur before the connected callback.
+     * Use Zephyr's internal connection info as a fallback source.
+     */
+    if (bt_conn_get_info(conn, &info)) {
+        BT_LOGE("%s: failed to get conn info", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    if (info.type != BT_CONN_TYPE_LE || !info.le.dst) {
+        BT_LOGE("%s: invalid LE connection or dst is null", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    /* Attempt to resolve RPA to identity address */
+    resolved_addr = adapter_get_le_remote_address((bt_address_t*)info.le.dst->a.val,
+        info.le.dst->type);
+    if (resolved_addr) {
+        memcpy(addr, resolved_addr, sizeof(bt_address_t));
+        BT_LOGD("%s: fallback to bt_conn_info and resolved RPA to identity address", __func__);
+    } else {
+        memcpy(addr, info.le.dst->a.val, sizeof(bt_address_t));
+    }
+
+    return BT_STATUS_SUCCESS;
 }
 
 struct bt_conn* get_le_conn_from_addr(bt_address_t* addr)
@@ -655,9 +684,13 @@ bt_status_t le_conn_set_role(bt_address_t* addr, uint8_t flag)
 
         if (info->conn) {
             if ((info->role & GATT_ROLE_CLIENT) && flag == GATT_ROLE_SERVER) {
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
                 bt_sal_gatt_server_connection_state_changed_callback(PRIMARY_ADAPTER, &info->addr, PROFILE_STATE_CONNECTED);
+#endif
             } else if ((info->role & GATT_ROLE_SERVER) && flag == GATT_ROLE_CLIENT) {
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
                 bt_sal_gatt_client_connection_state_changed_callback(PRIMARY_ADAPTER, &info->addr, PROFILE_STATE_CONNECTED);
+#endif
             }
             return BT_STATUS_DONE;
         }

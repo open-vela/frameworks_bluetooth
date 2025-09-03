@@ -187,6 +187,7 @@ void bt_log_module_disable(int id, bool changed)
     syslog(LOG_INFO, "%s disabled\n", log_id_str(id));
 }
 
+#if defined(CONFIG_KVDB) && defined(__NuttX__)
 static void property_monitor_cb(service_poll_t* poll,
     int revent, void* userdata)
 {
@@ -237,6 +238,7 @@ static void property_monitor_cb(service_poll_t* poll,
         }
     }
 }
+#endif
 
 void bt_log_server_init(void)
 {
