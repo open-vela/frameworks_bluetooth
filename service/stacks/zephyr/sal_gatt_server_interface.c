@@ -33,7 +33,7 @@
 #include "service_loop.h"
 #include "utils/log.h"
 
-#ifdef CONFIG_BLUETOOTH_GATT
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
 
 #ifndef CONFIG_GATT_SERVER_MAX_SERVICES
 #define CONFIG_GATT_SERVER_MAX_SERVICES 10
@@ -1110,4 +1110,4 @@ void bt_sal_gatt_server_connection_state_changed_callback(bt_controller_id_t id,
     if_gatts_on_connection_state_changed(addr, state);
 }
 
-#endif /* CONFIG_BLUETOOTH_GATT*/
+#endif /* CONFIG_BLUETOOTH_GATT_SERVER */

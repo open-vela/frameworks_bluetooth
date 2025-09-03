@@ -656,26 +656,22 @@ config BLUETOOTH_LEA_SOURCE_DATA_PATH
 endmenu #Bluetooth Audio Transport config
 
 menuconfig BLUETOOTH_GATT
-	bool "Generic Attribute Profile (GATT)"
+	bool "Generic ATT Profile Support(deprecated)"
 	default y
 
-if BLUETOOTH_GATT
+menuconfig BLUETOOTH_GATT_CLIENT
+	bool "Generic Attribute Profile (GATT) Client"
+	default y
+
+if BLUETOOTH_GATT_CLIENT
 config BLUETOOTH_GATTC_MAX_CONNECTIONS
 	int "GATT Client max connections"
 	default 8
 
-config BLUETOOTH_GATTS_MAX_CONNECTIONS
-	int "GATT Server max connections"
-	default 4
-
-config BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
-	int "GATT Server max number of attributes contained in a table"
-	default 10
-
 config GATT_CLIENT_SERVICE_MAX
 	int "Maximum number of discovered services per connection"
 	default 20
-	depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
+	depends on BLUETOOTH_GATT_CLIENT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
 	help
 		The maximum number of GATT services that can be stored per BLE connection
 		when using the ZBLUE stack.
@@ -683,7 +679,7 @@ config GATT_CLIENT_SERVICE_MAX
 config GATT_CLIENT_ELEMENT_MAX
 	int "Maximum number of discovered GATT attributes per connection"
 	default 200
-	depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
+	depends on BLUETOOTH_GATT_CLIENT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
 	help
 		The maximum number of GATT attribute elements (e.g., characteristics
 		and descriptors) that can be stored per BLE connection
@@ -692,12 +688,25 @@ config GATT_CLIENT_ELEMENT_MAX
 config GATT_CLIENT_CHAR_PER_SERVICE_MAX
 	int "Maximum number of characteristics per service"
 	default 100
-	depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
+	depends on BLUETOOTH_GATT_CLIENT && BLUETOOTH_STACK_LE_ZBLUE && BT_GATT_CLIENT
 	help
 		The maximum number of characteristics that can be discovered and stored
 		under a single GATT service when using the ZBLUE stack.
+endif # BLUETOOTH_GATT_CLIENT
 
-endif # BLUETOOTH_GATT
+menuconfig BLUETOOTH_GATT_SERVER
+	bool "Generic Attribute Profile (GATT) Server"
+	default y
+
+if BLUETOOTH_GATT_SERVER
+config BLUETOOTH_GATTS_MAX_CONNECTIONS
+	int "GATT Server max connections"
+	default 4
+
+config BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
+	int "GATT Server max number of attributes contained in a table"
+	default 10
+endif # BLUETOOTH_GATT_SERVER
 
 menuconfig BLUETOOTH_SPP
 	bool "Serial Port Profile (SPP)"

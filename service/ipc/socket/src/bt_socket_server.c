@@ -217,10 +217,12 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
         || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_BLE_SCAN_BEGIN, BT_IPC_CODE_COMMAND_BLE_SCAN_END)) {
         bt_socket_server_scan_process(poll, fd, ins, packet);
 #endif
-#ifdef CONFIG_BLUETOOTH_GATT
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_GATT_CLIENT_MESSAGE_START, BT_GATT_CLIENT_MESSAGE_END)
         || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_GATTC_BEGIN, BT_IPC_CODE_COMMAND_GATTC_END)) {
         bt_socket_server_gattc_process(poll, fd, ins, packet);
+#endif
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_GATT_SERVER_MESSAGE_START, BT_GATT_SERVER_MESSAGE_END)
         || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_GATTS_BEGIN, BT_IPC_CODE_COMMAND_GATTS_END)) {
         bt_socket_server_gatts_process(poll, fd, ins, packet);

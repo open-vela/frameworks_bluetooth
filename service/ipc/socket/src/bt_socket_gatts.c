@@ -74,7 +74,7 @@
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
-#if defined(CONFIG_BLUETOOTH_SERVER) && defined(CONFIG_BLUETOOTH_GATT) && defined(__NuttX__)
+#if defined(CONFIG_BLUETOOTH_SERVER) && defined(CONFIG_BLUETOOTH_GATT_SERVER) && defined(__NuttX__)
 #include "gatts_service.h"
 #include "service_manager.h"
 

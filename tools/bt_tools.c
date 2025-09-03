@@ -206,8 +206,10 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_PAN
     { "pan", pan_command_exec, 0, "pan cmd,           input \'pan\' show usage" },
 #endif
-#ifdef CONFIG_BLUETOOTH_GATT
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
     { "gattc", gattc_command_exec, 0, "gatt client cmd    input \'gattc\' show usage" },
+#endif
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
     { "gatts", gatts_command_exec, 0, "gatt server cmd    input \'gatts\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
@@ -327,8 +329,10 @@ static void bt_tool_init(void* handle)
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_command_init(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_GATT
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
     gattc_command_init(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
     gatts_command_init(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
@@ -393,8 +397,10 @@ static void bt_tool_uninit(void* handle)
 #ifdef CONFIG_BLUETOOTH_PAN
     pan_command_uninit(handle);
 #endif
-#ifdef CONFIG_BLUETOOTH_GATT
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
     gattc_command_uninit(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
     gatts_command_uninit(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER

@@ -158,8 +158,7 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     uint8_t role;
     struct bt_conn_info info;
     le_conn_info_t* slot;
-    int i;
-#ifdef CONFIG_BLUETOOTH_GATT
+#if defined(CONFIG_BLUETOOTH_GATT_CLIENT) || defined(CONFIG_BLUETOOTH_GATT_SERVER)
     profile_connection_state_t profile_state = PROFILE_STATE_CONNECTED;
 #endif
 
@@ -190,7 +189,7 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     if (err) {
         state.connection_state = CONNECTION_STATE_DISCONNECTED;
         state.status = err;
-#ifdef CONFIG_BLUETOOTH_GATT
+#if defined(CONFIG_BLUETOOTH_GATT_CLIENT) || defined(CONFIG_BLUETOOTH_GATT_SERVER)
         profile_state = PROFILE_STATE_DISCONNECTED;
 #endif
 
@@ -220,11 +219,13 @@ static void zblue_on_connected(struct bt_conn* conn, uint8_t err)
     }
 
     adapter_on_connection_state_changed(&state);
-#ifdef CONFIG_BLUETOOTH_GATT
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
     if (role & GATT_ROLE_SERVER) {
         bt_sal_gatt_server_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, profile_state);
     }
+#endif
 
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
     if (role & GATT_ROLE_CLIENT) {
         bt_sal_gatt_client_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, profile_state);
     }
@@ -299,11 +300,13 @@ static void zblue_on_disconnected(struct bt_conn* conn, uint8_t reason)
     slot = NULL;
 
     adapter_on_connection_state_changed(&state);
-#ifdef CONFIG_BLUETOOTH_GATT
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
     if (role & GATT_ROLE_SERVER) {
         bt_sal_gatt_server_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, PROFILE_STATE_DISCONNECTED);
     }
+#endif
 
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
     if (role & GATT_ROLE_CLIENT) {
         bt_sal_gatt_client_connection_state_changed_callback(PRIMARY_ADAPTER, &state.addr, PROFILE_STATE_DISCONNECTED);
     }
@@ -369,7 +372,7 @@ static void zblue_on_param_updated(struct bt_conn* conn, uint16_t interval, uint
 
     BT_LOGD("%s, interval:%d, latency:%d, timeout:%d", __func__, interval, latency, timeout);
 
-#ifdef CONFIG_BLUETOOTH_GATT
+#if defined(CONFIG_BLUETOOTH_GATT_CLIENT)
     if (info.role == BT_HCI_ROLE_CENTRAL) {
         if_gattc_on_connection_parameter_updated(&addr, interval, latency, timeout, BT_STATUS_SUCCESS);
     }
@@ -518,8 +521,8 @@ static void zblue_on_bond_deleted(bt_controller_id_t dev_id, const bt_addr_le_t*
 static void zblue_register_callback(void)
 {
     bt_conn_cb_register(&g_conn_cbs);
-    bt_conn_le_auth_cb_register(&g_conn_auth_cbs);
 #ifdef CONFIG_BT_SMP
+    bt_conn_le_auth_cb_register(&g_conn_auth_cbs);
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
 #endif
 }
@@ -527,8 +530,8 @@ static void zblue_register_callback(void)
 static void zblue_unregister_callback(void)
 {
     bt_conn_cb_unregister(&g_conn_cbs);
-    bt_conn_le_auth_cb_register(NULL);
 #ifdef CONFIG_BT_SMP
+    bt_conn_le_auth_cb_register(NULL);
     bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
 #endif
 }
@@ -689,9 +692,13 @@ bt_status_t le_conn_set_role(bt_address_t* addr, uint8_t flag)
 
         if (info->conn) {
             if ((info->role & GATT_ROLE_CLIENT) && flag == GATT_ROLE_SERVER) {
+#ifdef CONFIG_BLUETOOTH_GATT_SERVER
                 bt_sal_gatt_server_connection_state_changed_callback(PRIMARY_ADAPTER, &info->addr, PROFILE_STATE_CONNECTED);
+#endif
             } else if ((info->role & GATT_ROLE_SERVER) && flag == GATT_ROLE_CLIENT) {
+#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
                 bt_sal_gatt_client_connection_state_changed_callback(PRIMARY_ADAPTER, &info->addr, PROFILE_STATE_CONNECTED);
+#endif
             }
             return BT_STATUS_DONE;
         }
