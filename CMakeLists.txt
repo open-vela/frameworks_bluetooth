@@ -156,8 +156,11 @@ if(CONFIG_BLUETOOTH)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_le_scan_interface.c)
       endif()
 
-      if(CONFIG_BLUETOOTH_GATT)
+      if(CONFIG_BLUETOOTH_GATT_CLIENT)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_gatt_client_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_GATT_SERVER)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_gatt_server_interface.c)
       endif()
     endif()
@@ -191,9 +194,14 @@ if(CONFIG_BLUETOOTH)
          ${BLUETOOTH_DIR}/service/profiles/audio_interface/*.c)
     list(APPEND CSRCS ${APPEND_FILES})
 
-    if(CONFIG_BLUETOOTH_GATT)
-      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/profiles/gatt/*.c)
-      list(APPEND CSRCS ${APPEND_FILES})
+    if(CONFIG_BLUETOOTH_GATT_CLIENT)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/profiles/gatt/gattc_event.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/profiles/gatt/gattc_service.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_GATT_SERVER)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/profiles/gatt/gatts_event.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/profiles/gatt/gatts_service.c)
     endif()
 
     if(CONFIG_BLUETOOTH_A2DP)
@@ -383,8 +391,11 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/avrcp_control.c)
     endif()
 
-    if(CONFIG_BLUETOOTH_GATT)
+    if(CONFIG_BLUETOOTH_GATT_CLIENT)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/gatt_client.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_GATT_SERVER)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/gatt_server.c)
     endif()
 
