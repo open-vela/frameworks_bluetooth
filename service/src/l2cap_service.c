@@ -57,6 +57,11 @@
  */
 #define L2CAP_SRVPIPE_NAME_PREF "l-srvpipe"
 
+/**
+ * \def L2CAP socket pipe default read size
+ */
+#define L2CAP_PIPE_DEF_READ_SIZE 1024
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -242,6 +247,21 @@ static l2cap_channel_t* find_l2cap_channel_by_cid(uint16_t cid)
     return NULL;
 }
 
+static l2cap_channel_t* find_l2cap_channel_by_pipe(euv_pipe_t* pipe)
+{
+    bt_list_node_t* node;
+    bt_list_t* list = g_l2cap_manager.channel_list;
+
+    for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+        l2cap_channel_t* channel = (l2cap_channel_t*)bt_list_node(node);
+        if (channel->pipe == pipe) {
+            return channel;
+        }
+    }
+
+    return NULL;
+}
+
 static l2cap_channel_t* find_l2cap_channel_by_id(uint16_t id)
 {
     bt_list_node_t* node;
@@ -302,60 +322,121 @@ static l2cap_channel_t* find_l2cap_channel_by_conn_param(bt_address_t* addr, uin
     return NULL;
 }
 
-static int l2cap_channel_pty_open(l2cap_channel_t* channel)
+static void free_l2cap_channel(l2cap_channel_t* channel)
 {
-    int ret;
-
-    ret = open_pty(&channel->mfd, channel->pty_name);
-    if (ret != 0) {
-        BT_LOGE("pty create failed");
-        goto error;
+    if (!channel) {
+        BT_LOGE("%s, channel is NULL", __func__);
+        return;
     }
 
-    channel->pty = euv_pty_init(get_service_uv_loop(), channel->mfd, UV_TTY_MODE_IO);
-    if (!channel->pty) {
-        ret = -1;
-        goto error;
-    }
+    if (channel->pipe)
+        euv_pipe_close(channel->pipe);
 
-    BT_LOGD("pty create success, name: %s, master: %d", channel->pty_name, channel->mfd);
-    return 0;
-error:
-    close(channel->mfd);
-    return ret;
+    index_free(g_l2cap_manager.id_allocator, channel->id);
+
+    bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
 }
 
-static int l2cap_channel_pty_close(l2cap_channel_t* channel)
-{
-    if (channel->pty) {
-        euv_pty_close(channel->pty);
-        channel->pty = NULL;
-        channel->mfd = -1;
-    }
-
-    return 0;
-}
-
-static void euv_read_complete(euv_pty_t* handle, const uint8_t* buf, ssize_t size)
+static void l2cap_receive_data_from_app(euv_pipe_t* pipe, const uint8_t* buf, ssize_t size)
 {
     l2cap_channel_t* channel;
 
-    pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
-    channel = find_l2cap_channel_by_handle(handle);
-    if (!channel || !buf)
-        goto exit;
-
-    if (size < 0) {
-        bt_sal_l2cap_disconnect_channel(channel->cid);
-        goto exit;
+    if (!pipe || !buf) {
+        BT_LOGE("%s, invalid arg", __func__);
+        return;
     }
 
-    bt_sal_l2cap_send_packet(channel->cid, (uint8_t*)buf, size);
-exit:
+    pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
+    channel = find_l2cap_channel_by_pipe(pipe);
+    if (!channel) {
+        BT_LOGE("%s, find L2CAP channel null", __func__);
+        goto unlock;
+    }
+
+    if (!size) {
+        // maybe data path disconnect.
+        BT_LOGD("read size is 0");
+    } else if (size < 0) {
+        BT_LOGD("%s, data path for L2CAP connnection %" PRIu16 " close, reason: %zd", __func__, channel->id, size);
+        if (channel->channel_connected) {
+            bt_sal_l2cap_disconnect_channel(channel->local_cid);
+        }
+
+        euv_pipe_close(pipe); // may be read stop, free it at l2cap disconnected.
+        channel->pipe = NULL;
+        channel->proxy_connected = false;
+    } else {
+        if (!channel->channel_connected) {
+            BT_LOGW("%s, L2CAP channel not connected", __func__);
+        } else {
+            bt_sal_l2cap_send_packet(channel->local_cid, (uint8_t*)buf, size);
+        }
+    }
+
+unlock:
     pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
 }
 
-static void euv_write_complete(euv_pty_t* handle, uint8_t* buf, int status)
+static void proxy_connected_cb(euv_pipe_t* pipe, int status, void* data)
+{
+    int ret;
+    l2cap_channel_t* channel;
+
+    if (!pipe || !data) {
+        BT_LOGE("%s, invalid arg", __func__);
+        return;
+    }
+
+    channel = (l2cap_channel_t*)data;
+    pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
+    if (status) {
+        BT_LOGE("%s, data path for L2CAP connnection %" PRIu16 " establish failed: %s", __func__, channel->id, uv_strerror(status));
+        goto fail;
+    }
+
+    BT_LOGI("%s, data path for L2CAP connnection %" PRIu16 " established", __func__, channel->id);
+    channel->proxy_connected = true;
+#ifdef CONFIG_NET_RPMSG
+    // TBD: API specific socket protocol.
+    // Close unused pipe.
+    euv_pipe_close2(channel->pipe);
+#endif
+    // If keep unconnected pipe alive, service need to release two pipes on disconnection.
+
+    // start reading pipe after L2CAP Channel connected? read size unknown now
+    // start read for monitoring pipe
+    ret = euv_pipe_read_start(channel->pipe, L2CAP_PIPE_DEF_READ_SIZE, l2cap_receive_data_from_app, NULL);
+    if (ret) {
+        BT_LOGE("%s, start read pipe failed", __func__);
+        goto fail;
+    }
+
+    pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
+
+    return;
+
+fail:
+    // TBD: cancel l2cap channel listen or connect immediately?
+    euv_pipe_close(channel->pipe);
+    channel->pipe = NULL;
+    channel->proxy_connected = false;
+    pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
+}
+
+static bool prepare_data_path(l2cap_channel_t* channel)
+{
+    snprintf(channel->proxy_name, sizeof(channel->proxy_name), "%s-%d", L2CAP_SRVPIPE_NAME_PREF, channel->id);
+    channel->pipe = euv_pipe_open(get_service_uv_loop(), channel->proxy_name, proxy_connected_cb, channel);
+    if (!channel->pipe) {
+        BT_LOGE("%s, open server pipe %s failed", __func__, channel->proxy_name);
+        return false;
+    }
+
+    BT_LOGD("%s, open server pipe %s success", __func__, channel->proxy_name);
+    return true;
+}
+
+static void euv_write_complete(euv_pipe_t* handle, uint8_t* buf, int status)
 {
     free(buf);
 }
@@ -605,39 +686,117 @@ bool l2cap_unregister_callbacks(void** remote, void* cookie)
 
 bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option)
 {
+    bt_status_t status;
+    l2cap_channel_t* channel;
+
     if ((!handle) || (!option)) {
         return BT_STATUS_PARM_INVALID;
     }
 
     CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
 
-    return bt_sal_l2cap_listen_channel(option);
+    pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
+    channel = alloc_free_channel(handle, NULL, option->psm, L2CAP_CHANNEL_ROLE_SERVER);
+    if (!channel) {
+        status = BT_STATUS_NOMEM;
+        goto out;
+    }
+
+    if (!prepare_data_path(channel)) {
+        bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
+        status = BT_STATUS_NOMEM; // maybe use other status
+        goto out;
+    }
+
+    BT_LOGI("%s, L2CAP(id: %" PRIu16 ", psm: 0x%" PRIx16 ") listen", __func__, channel->id, channel->psm);
+    option->id = channel->id;
+    strlcpy(option->proxy_name, channel->proxy_name, sizeof(option->proxy_name));
+    status = bt_sal_l2cap_listen_channel(option);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, L2CAP(id: %" PRIu16 ", psm: 0x%" PRIx16 " listen failed", __func__, channel->id, channel->psm);
+        bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
+    }
+
+out:
+    pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
+
+    return status;
 }
 
 bt_status_t l2cap_connect_channel(void* handle, bt_address_t* addr, l2cap_config_option_t* option)
 {
+    bt_status_t status;
+    l2cap_channel_t* channel;
+    char addr_str[BT_ADDR_STR_LENGTH];
+
     if ((!handle) || (!addr) || (!option)) {
         return BT_STATUS_PARM_INVALID;
     }
 
     CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
 
-    return bt_sal_l2cap_connect_channel(addr, option);
+    pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
+    channel = alloc_free_channel(handle, addr, option->psm, L2CAP_CHANNEL_ROLE_CLIENT);
+    if (!channel) {
+        status = BT_STATUS_NOMEM;
+        goto out;
+    }
+
+    if (!prepare_data_path(channel)) {
+        bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
+        status = BT_STATUS_NOMEM; // maybe use other status
+        goto out;
+    }
+
+    bt_addr_ba2str(addr, addr_str);
+    BT_LOGI("%s, L2CAP(id: %" PRIu16 ", psm: 0x%" PRIx16 ") connect remote: %s", __func__, channel->id, channel->psm, addr_str);
+    option->id = channel->id;
+    strlcpy(option->proxy_name, channel->proxy_name, sizeof(option->proxy_name));
+    status = bt_sal_l2cap_connect_channel(addr, option);
+    if (status != BT_STATUS_SUCCESS) {
+        BT_LOGE("%s, L2CAP(id: %" PRIu16 ", psm: 0x%" PRIx16 ") connect failed", __func__, channel->id, channel->psm);
+        bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
+    } else {
+        // TBD: timeout for connection initiation.
+    }
+
+out:
+    pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
+
+    return status;
 }
 
 bt_status_t l2cap_disconnect_channel(void* handle, uint16_t id)
 {
     bt_status_t status;
+    l2cap_channel_t* channel;
 
     CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
 
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
-    if (!find_l2cap_channel_by_cid(cid)) {
+    channel = find_l2cap_channel_by_id(id);
+    if (!channel) {
         status = BT_STATUS_NOT_FOUND;
+        BT_LOGE("%s, L2CAP(id: %" PRIu16 ") not found", __func__, id);
         goto exit;
     }
 
-    status = bt_sal_l2cap_disconnect_channel(cid);
+    if (channel->app_handle != handle) {
+        status = BT_STATUS_UNHANDLED;
+        BT_LOGW("%s, L2CAP(id: %" PRIu16 ") not belong to this app", __func__, id);
+        goto exit;
+    }
+
+    // TBD: add channel stm: connecting/listening, connected, disconnecting, disconnected
+    if (!channel->local_cid) {
+        // bug: if cid not allocated, disconnect failed
+        status = BT_STATUS_NOT_READY;
+        BT_LOGE("%s, L2CAP(id: %" PRIu16 ") not connected", __func__, id);
+        goto exit;
+    }
+
+    BT_LOGI("%s, L2CAP(id: %" PRIu16 ", cid: 0x%" PRIx16 ") disconnect", __func__, id, channel->local_cid);
+    status = bt_sal_l2cap_disconnect_channel(channel->local_cid);
 
 exit:
     pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
