@@ -32,6 +32,7 @@
 #include "bt_internal.h"
 
 #include "bluetooth.h"
+#include "bt_config.h"
 #include "bt_l2cap.h"
 #include "bt_message.h"
 #include "bt_socket.h"
