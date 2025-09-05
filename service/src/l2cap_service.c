@@ -94,6 +94,7 @@ typedef struct {
 
 typedef struct {
     enum {
+        CID_ALLOCATED_EVT,
         CHANNEL_CONNECTED_EVT,
         CHANNEL_DISCONNECTED_EVT,
         PACKET_RECEVIED_EVT,
@@ -101,6 +102,14 @@ typedef struct {
     } event;
 
     union {
+        /**
+         * @brief CID_ALLOCATED_EVT
+         */
+        struct cid_allocated_evt_param {
+            bt_address_t addr;
+            uint16_t psm;
+            uint16_t cid;
+        } cid_allocated;
         /**
          * @brief CHANNEL_CONNECTED_EVT
          */
@@ -248,6 +257,51 @@ static l2cap_channel_t* find_l2cap_channel_by_id(uint16_t id)
     return NULL;
 }
 
+static l2cap_channel_t* find_l2cap_channel_by_conn_param(bt_address_t* addr, uint16_t psm,
+    l2cap_channel_role_t role, bool is_connected)
+{
+    bt_list_node_t* node;
+    bt_list_t* list = g_l2cap_manager.channel_list;
+
+    switch (role) {
+    case L2CAP_CHANNEL_ROLE_CLIENT: {
+        // client find by psm and addr
+        if (!addr) {
+            BT_LOGE("%s, invalid arg", __func__);
+            return NULL;
+        }
+
+        for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+            l2cap_channel_t* channel = (l2cap_channel_t*)bt_list_node(node);
+            if (channel->psm == psm
+                && channel->role == role
+                && channel->channel_connected == is_connected
+                && !bt_addr_compare(&channel->addr, addr)) {
+                return channel;
+            }
+        }
+        break;
+    }
+    case L2CAP_CHANNEL_ROLE_SERVER: {
+        // server find by psm
+        for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
+            l2cap_channel_t* channel = (l2cap_channel_t*)bt_list_node(node);
+            if (channel->psm == psm
+                && channel->role == role
+                && channel->channel_connected == is_connected) {
+                return channel;
+            }
+        }
+        break;
+    }
+    case L2CAP_CHANNEL_ROLE_ACCEPT:
+    default:
+        break;
+    }
+
+    return NULL;
+}
+
 static int l2cap_channel_pty_open(l2cap_channel_t* channel)
 {
     int ret;
@@ -304,6 +358,20 @@ exit:
 static void euv_write_complete(euv_pty_t* handle, uint8_t* buf, int status)
 {
     free(buf);
+}
+
+static void handle_cid_allocated(bt_address_t* addr, uint16_t psm, uint16_t cid)
+{
+    l2cap_channel_t* channel;
+
+    // handle_cid_allocated is for client only.
+    channel = find_l2cap_channel_by_conn_param(addr, psm, L2CAP_CHANNEL_ROLE_CLIENT, false);
+    if (channel) {
+        channel->local_cid = cid;
+        BT_LOGI("L2CAP connection %" PRIu16 " get local CID: 0x%" PRIx16, channel->id, cid);
+    } else {
+        BT_LOGE("record allocated CID: 0x%x failed!", cid);
+    }
 }
 
 static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* param)
@@ -405,6 +473,11 @@ static void handle_l2cap_event(void* data)
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
 
     switch (msg->event) {
+    case CID_ALLOCATED_EVT:
+        handle_cid_allocated(&msg->cid_allocated.addr,
+            msg->cid_allocated.psm,
+            msg->cid_allocated.cid);
+        break;
     case CHANNEL_CONNECTED_EVT:
         handle_channel_conneted(&msg->channel_connected.addr, &msg->channel_connected.param);
         break;
@@ -434,6 +507,20 @@ static void handle_l2cap_event(void* data)
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
+
+void l2cap_on_cid_allocated(bt_address_t* addr, uint16_t psm, uint16_t cid)
+{
+    l2cap_msg_t* msg = malloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        return;
+    }
+
+    msg->event = CID_ALLOCATED_EVT;
+    memcpy(&msg->cid_allocated.addr, addr, sizeof(bt_address_t));
+    msg->cid_allocated.psm = psm;
+    msg->cid_allocated.cid = cid;
+    do_in_service_loop(handle_l2cap_event, msg);
+}
 
 void l2cap_on_channel_connected(bt_address_t* addr, l2cap_channel_param_t* param)
 {
