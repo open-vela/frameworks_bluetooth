@@ -157,6 +157,43 @@ static l2cap_manager_t g_l2cap_manager;
  * Private Functions
  ****************************************************************************/
 
+static l2cap_channel_t* alloc_free_channel(bt_address_t* addr, uint16_t psm, l2cap_channel_role_t role)
+{
+    int id;
+    l2cap_channel_t* channel;
+
+    if (addr && role == L2CAP_CHANNEL_ROLE_SERVER) {
+        // this check is not necessary?
+        BT_LOGW("%s, server channel remote addr is not NULL", __func__);
+        return NULL;
+    }
+
+    id = index_alloc(g_l2cap_manager.id_allocator);
+    if (id < 0) {
+        BT_LOGE("%s, alloc l2cap channel id failed", __func__);
+        return NULL;
+    }
+
+    channel = (l2cap_channel_t*)calloc(1, sizeof(l2cap_channel_t));
+    if (!channel) {
+        BT_LOGE("%s, alloc l2cap channel failed", __func__);
+        return NULL;
+    }
+
+    if (addr)
+        memcpy(&channel->addr, addr, sizeof(bt_address_t)); // copy address
+
+    channel->psm = psm;
+    channel->id = id;
+    channel->role = role;
+    channel->channel_connected = false;
+    channel->proxy_connected = false;
+
+    bt_list_add_tail(g_l2cap_manager.channel_list, (void*)channel);
+
+    return channel;
+}
+
 static l2cap_channel_t* find_l2cap_channel_by_cid(uint16_t cid)
 {
     bt_list_node_t* node;
