@@ -27,13 +27,16 @@ typedef struct {
 } l2cap_endpoint_param_t;
 
 typedef struct {
-    uint16_t cid;
+    uint16_t local_cid;
+    uint16_t remote_cid;
     uint16_t psm;
+    bool is_client;
     bt_transport_t transport;
     l2cap_endpoint_param_t incoming;
     l2cap_endpoint_param_t outgoing;
 } l2cap_channel_param_t;
 
+void l2cap_on_cid_allocated(bt_address_t* addr, uint16_t cid, uint16_t psm);
 void l2cap_on_channel_connected(bt_address_t* addr, l2cap_channel_param_t* param);
 void l2cap_on_channel_disconnected(bt_address_t* addr, uint16_t cid, uint32_t reason);
 void l2cap_on_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_data, uint16_t packet_size);
