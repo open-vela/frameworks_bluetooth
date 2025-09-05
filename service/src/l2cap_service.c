@@ -467,22 +467,21 @@ static void proxy_connected_cb(euv_pipe_t* pipe, int status, void* data)
     }
 
     channel = (l2cap_channel_t*)data;
-    pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
     if (status) {
         BT_LOGE("%s, data path for L2CAP connnection %" PRIu16 " establish failed: %s", __func__, channel->id, uv_strerror(status));
         goto fail;
     }
 
     BT_LOGI("%s, data path for L2CAP connnection %" PRIu16 " established", __func__, channel->id);
-    channel->proxy_connected = true;
-#ifdef CONFIG_NET_RPMSG
-    // TBD: API specific socket protocol.
-    // Close unused pipe.
-    euv_pipe_close2(channel->pipe);
-#endif
-    // If keep unconnected pipe alive, service need to release two pipes on disconnection.
 
-    // start reading pipe after L2CAP Channel connected? read size unknown now
+#ifdef CONFIG_NET_RPMSG
+    euv_pipe_close2(pipe);
+#endif
+
+    pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
+    channel->proxy_connected = true;
+    pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
+
     // start read for monitoring pipe
     ret = euv_pipe_read_start(channel->pipe, L2CAP_PIPE_DEF_READ_SIZE, l2cap_receive_data_from_app, NULL);
     if (ret) {
@@ -490,11 +489,10 @@ static void proxy_connected_cb(euv_pipe_t* pipe, int status, void* data)
         goto fail;
     }
 
-    pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
-
     return;
 
 fail:
+    pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
     bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
     pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
 }
