@@ -48,12 +48,6 @@
     } while (0)
 
 /**
- * \def L2CAP_CBACK_FOREACH(_list, _cback) Description
- */
-#define L2CAP_CBACK_FOREACH(_list, _cback, ...) \
-    BT_CALLBACK_FOREACH(_list, l2cap_callbacks_t, _cback, ##__VA_ARGS__)
-
-/**
  * \def L2CAP connection maximum limitation
  */
 #define L2CAP_CHANNEL_MAX_NUM 20
@@ -87,6 +81,7 @@ typedef struct {
     euv_pipe_t* pipe;
     char proxy_name[16];
     bool proxy_connected;
+    remote_callback_t* app_handle;
 } l2cap_channel_t;
 
 typedef struct {
@@ -157,7 +152,35 @@ static l2cap_manager_t g_l2cap_manager;
  * Private Functions
  ****************************************************************************/
 
-static l2cap_channel_t* alloc_free_channel(bt_address_t* addr, uint16_t psm, l2cap_channel_role_t role)
+static inline void l2cap_notify_connected(l2cap_channel_t* channel, l2cap_connect_params_t* param)
+{
+    l2cap_callbacks_t* cbs;
+
+    if (channel && channel->app_handle && channel->app_handle->remote && channel->app_handle->callbacks) {
+        cbs = (l2cap_callbacks_t*)channel->app_handle->callbacks;
+        if (cbs->on_connected) {
+            cbs->on_connected(channel->app_handle->remote, param);
+        }
+    } else {
+        BT_LOGE("%s, channel or callbacks is NULL", __func__);
+    }
+}
+
+static inline void l2cap_notify_disconnected(l2cap_channel_t* channel, uint32_t reason)
+{
+    l2cap_callbacks_t* cbs;
+
+    if (channel && channel->app_handle && channel->app_handle->remote && channel->app_handle->callbacks) {
+        cbs = (l2cap_callbacks_t*)channel->app_handle->callbacks;
+        if (cbs->on_disconnected) {
+            cbs->on_disconnected(channel->app_handle->remote, &channel->addr, channel->id, reason);
+        }
+    } else {
+        BT_LOGE("%s, channel or callbacks is NULL", __func__);
+    }
+}
+
+static l2cap_channel_t* alloc_free_channel(void* handle, bt_address_t* addr, uint16_t psm, l2cap_channel_role_t role)
 {
     int id;
     l2cap_channel_t* channel;
@@ -180,6 +203,7 @@ static l2cap_channel_t* alloc_free_channel(bt_address_t* addr, uint16_t psm, l2c
         return NULL;
     }
 
+    channel->app_handle = (remote_callback_t*)handle;
     if (addr)
         memcpy(&channel->addr, addr, sizeof(bt_address_t)); // copy address
 
@@ -201,7 +225,7 @@ static l2cap_channel_t* find_l2cap_channel_by_cid(uint16_t cid)
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         l2cap_channel_t* channel = (l2cap_channel_t*)bt_list_node(node);
-        if (channel->cid == cid) {
+        if (channel->local_cid == cid) {
             return channel;
         }
     }
@@ -209,14 +233,14 @@ static l2cap_channel_t* find_l2cap_channel_by_cid(uint16_t cid)
     return NULL;
 }
 
-static l2cap_channel_t* find_l2cap_channel_by_handle(euv_pty_t* handle)
+static l2cap_channel_t* find_l2cap_channel_by_id(uint16_t id)
 {
     bt_list_node_t* node;
     bt_list_t* list = g_l2cap_manager.channel_list;
 
     for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
         l2cap_channel_t* channel = (l2cap_channel_t*)bt_list_node(node);
-        if (channel->pty == handle) {
+        if (channel->id == id) {
             return channel;
         }
     }
@@ -328,7 +352,7 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
     conn_param.outgoing_mtu = channel->outgoing.mtu;
     conn_param.pty_name = channel->pty_name;
 
-    L2CAP_CBACK_FOREACH(g_l2cap_manager.callbacks, on_connected, &conn_param);
+    l2cap_notify_connected(channel, &conn_param);
 }
 
 static void handle_channel_disconneted(bt_address_t* addr, uint16_t cid, uint32_t reason)
@@ -340,7 +364,7 @@ static void handle_channel_disconneted(bt_address_t* addr, uint16_t cid, uint32_
         l2cap_channel_pty_close(channel);
         bt_list_remove(g_l2cap_manager.channel_list, channel);
     }
-    L2CAP_CBACK_FOREACH(g_l2cap_manager.callbacks, on_disconnected, addr, cid, reason);
+    l2cap_notify_disconnected(channel, reason);
 }
 
 static void handle_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_data, uint16_t packet_size)
@@ -474,17 +498,27 @@ void l2cap_on_packet_sent(bt_address_t* addr, uint16_t cid)
 
 void* l2cap_register_callbacks(void* remote, const l2cap_callbacks_t* callbacks)
 {
+    if (!adapter_is_le_enabled()) {
+        BT_LOGE("%s, adapter is not enabled", __func__);
+        return NULL;
+    }
+
     return bt_remote_callbacks_register(g_l2cap_manager.callbacks, remote, (void*)callbacks);
 }
 
 bool l2cap_unregister_callbacks(void** remote, void* cookie)
 {
+    if (!adapter_is_le_enabled()) {
+        BT_LOGI("%s, adapter is not enabled", __func__);
+        return true;
+    }
+
     return bt_remote_callbacks_unregister(g_l2cap_manager.callbacks, remote, (remote_callback_t*)cookie);
 }
 
-bt_status_t l2cap_listen_channel(l2cap_config_option_t* option)
+bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option)
 {
-    if (!option) {
+    if ((!handle) || (!option)) {
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -493,9 +527,9 @@ bt_status_t l2cap_listen_channel(l2cap_config_option_t* option)
     return bt_sal_l2cap_listen_channel(option);
 }
 
-bt_status_t l2cap_connect_channel(bt_address_t* addr, l2cap_config_option_t* option)
+bt_status_t l2cap_connect_channel(void* handle, bt_address_t* addr, l2cap_config_option_t* option)
 {
-    if ((!addr) || (!option)) {
+    if ((!handle) || (!addr) || (!option)) {
         return BT_STATUS_PARM_INVALID;
     }
 
@@ -504,7 +538,7 @@ bt_status_t l2cap_connect_channel(bt_address_t* addr, l2cap_config_option_t* opt
     return bt_sal_l2cap_connect_channel(addr, option);
 }
 
-bt_status_t l2cap_disconnect_channel(uint16_t cid)
+bt_status_t l2cap_disconnect_channel(void* handle, uint16_t id)
 {
     bt_status_t status;
 

@@ -41,9 +41,9 @@ void l2cap_on_packet_sent(bt_address_t* addr, uint16_t cid);
 
 void* l2cap_register_callbacks(void* remote, const l2cap_callbacks_t* callbacks);
 bool l2cap_unregister_callbacks(void** remote, void* cookie);
-bt_status_t l2cap_listen_channel(l2cap_config_option_t* option);
-bt_status_t l2cap_connect_channel(bt_address_t* addr, l2cap_config_option_t* option);
-bt_status_t l2cap_disconnect_channel(uint16_t cid);
+bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option);
+bt_status_t l2cap_connect_channel(void* handle, bt_address_t* addr, l2cap_config_option_t* option);
+bt_status_t l2cap_disconnect_channel(void* handle, uint16_t id);
 
 bt_status_t l2cap_service_init(void);
 void l2cap_service_cleanup(void);
