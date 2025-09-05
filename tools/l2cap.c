@@ -30,16 +30,279 @@ typedef struct {
     uint16_t id;
 } l2cap_channel_t;
 
+typedef struct {
+    bt_address_t addr;
+    uint16_t id;
+    uint16_t psm;
+    uint16_t cid;
+    uint16_t listen_id; // for server listen
+    char* proxy_name;
+    uint8_t* buf;
+    uint16_t len;
+} l2cap_msg_t;
+
 static uv_loop_t g_l2cap_thread;
 static void* g_l2cap_handle;
 static struct list_node channel_list = LIST_INITIAL_VALUE(channel_list);
 
+static l2cap_channel_t* find_channel_by_id(uint16_t id)
+{
+    struct list_node* node;
+    struct list_node* list = &channel_list;
+    l2cap_channel_t* channel;
+
+    list_for_every(list, node)
+    {
+        channel = (l2cap_channel_t*)node;
+        if (channel->id == id) {
+            return channel;
+        }
+    }
+
+    return NULL;
+}
+
+static l2cap_channel_t* find_channel_by_pipe(euv_pipe_t* pipe)
+{
+    struct list_node* node;
+    struct list_node* list = &channel_list;
+    l2cap_channel_t* channel;
+
+    list_for_every(list, node)
+    {
+        channel = (l2cap_channel_t*)node;
+        if (channel->pipe == pipe) {
+            return channel;
+        }
+    }
+
+    return NULL;
+}
+
+static void write_complete_cb(euv_pipe_t* handle, uint8_t* buf, int status)
+{
+    free(buf);
+}
+
+static void read_complete_cb(euv_pipe_t* pipe, const uint8_t* buf, ssize_t nread)
+{
+    l2cap_channel_t* channel;
+
+    // need lock
+    if (nread < 0) {
+        PRINT("read failed:%s\n", uv_strerror(nread));
+        euv_pipe_read_stop(pipe);
+        channel = find_channel_by_pipe(pipe);
+        if (channel == NULL) {
+            PRINT("channel not found\n");
+            return;
+        }
+
+        euv_pipe_disconnect(channel->pipe);
+        channel->pipe = NULL;
+        list_delete(&channel->node);
+        free(channel);
+    } else if (nread == 0) {
+        if (buf)
+            free((void*)buf);
+    } else {
+        lib_dumpbuffer("read data:", buf, nread);
+    }
+}
+
+static void data_path_connected_cb(euv_pipe_t* pipe, int status, void* data)
+{
+    l2cap_channel_t* channel = (l2cap_channel_t*)data;
+    // need lock
+    PRINT("l2cap channel(id:%" PRIu16 ") data path establish status:%d\n", channel->id, status); // euv thread
+
+    // do nothing
+}
+
+static void add_l2cap_channel(void* data)
+{
+    l2cap_msg_t* msg;
+    l2cap_channel_t* channel;
+
+    if (!data) {
+        PRINT("invalid arg\n");
+        return;
+    }
+
+    msg = (l2cap_msg_t*)data;
+    channel = (l2cap_channel_t*)zalloc(sizeof(l2cap_channel_t));
+    if (!channel) {
+        PRINT("allocate channel failed\n");
+        goto free_msg;
+        // TBD: cancel l2cap channel listen or connect immediately?
+    }
+
+    PRINT("L2cap channel(id:%" PRIu16 ") alloc success\n", msg->id);
+    channel->id = msg->id;
+    channel->psm = msg->psm;
+    channel->pipe = euv_pipe_connect(&g_l2cap_thread, msg->proxy_name, data_path_connected_cb, channel);
+    if (!channel->pipe) {
+        PRINT("connect pipe failed\n");
+        free(channel);
+        goto free_msg;
+    }
+
+    list_add_tail(&channel_list, &channel->node);
+
+free_msg:
+    free(msg->proxy_name);
+    free(msg);
+}
+
+static void l2cap_channel_connected_process(void* data)
+{
+    int ret;
+    l2cap_msg_t* msg;
+    l2cap_channel_t* channel;
+
+    if (!data) {
+        PRINT("invalid arg\n");
+        return;
+    }
+
+    msg = (l2cap_msg_t*)data;
+    channel = find_channel_by_id(msg->id);
+    if (channel == NULL) {
+        PRINT("channel not found\n");
+        goto free_msg;
+    }
+
+    channel->cid = msg->cid;
+    PRINT("L2cap channel(id:%" PRIu16 "/cid:%x) connected\n", msg->id, msg->cid);
+    ret = euv_pipe_read_start(channel->pipe, 2048, read_complete_cb, NULL);
+    if (ret) {
+        PRINT("start read pipe failed\n");
+        // disconnect data path, l2cap service will disconnect l2cap channel
+        euv_pipe_disconnect(channel->pipe);
+        list_delete(&channel->node);
+        free(channel);
+        goto free_msg;
+    }
+
+    // Clone listen channel
+    if (msg->listen_id > 0 && msg->proxy_name) {
+        PRINT("prepare a new listen channel(id: %" PRIu16 ") for PSM:0x%x\n", msg->listen_id, msg->psm);
+        msg->id = msg->listen_id; // for reusing add_l2cap_channel method.
+        add_l2cap_channel((void*)msg);
+        return;
+    }
+
+free_msg:
+    if (msg->proxy_name)
+        free(msg->proxy_name);
+
+    free(msg);
+}
+
+static void l2cap_channel_disconnected_process(void* data)
+{
+    l2cap_msg_t* msg;
+    l2cap_channel_t* channel;
+
+    if (!data) {
+        PRINT("invalid arg\n");
+        return;
+    }
+
+    msg = (l2cap_msg_t*)data;
+    channel = find_channel_by_id(msg->id);
+    if (channel == NULL) {
+        PRINT("channel not found\n");
+        free(msg);
+        return;
+    }
+
+    PRINT("free channel(id:%" PRIu16 ")\n", msg->id);
+    if (channel->pipe) {
+        euv_pipe_disconnect(channel->pipe);
+        channel->pipe = NULL;
+    }
+
+    list_delete(&channel->node);
+    free(channel);
+    free(msg);
+}
+
+static void do_l2cap_write(void* data)
+{
+    l2cap_msg_t* msg;
+    l2cap_channel_t* channel;
+
+    if (!data) {
+        PRINT("invalid arg\n");
+        return;
+    }
+
+    msg = (l2cap_msg_t*)data;
+    channel = find_channel_by_id(msg->id);
+    if (channel == NULL || channel->pipe == NULL) {
+        PRINT("channel not found or pipe disconnected\n");
+        free(msg->buf);
+        free(msg);
+        return;
+    }
+
+    PRINT("L2cap channel(id:%" PRIu16 ") write %d bytes\n", msg->id, msg->len);
+    lib_dumpbuffer("write data:", msg->buf, msg->len);
+    euv_pipe_write(channel->pipe, msg->buf, msg->len, write_complete_cb);
+    free(msg);
+}
+
 static void on_connected(void* handle, l2cap_connect_params_t* params)
 {
+    l2cap_msg_t* msg;
+
+    if (!params) {
+        PRINT("invalid arg\n");
+        return;
+    }
+
+    msg = (l2cap_msg_t*)zalloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed\n");
+        return;
+    }
+
+    msg->id = params->id;
+    msg->psm = params->psm;
+    msg->cid = params->cid;
+    if (params->listen_id > 0) {
+        PRINT("new listen(id: %" PRIu16 "/ proxy_name: %s) for listen psm: 0x%x)", params->listen_id, params->proxy_name, params->psm);
+        msg->listen_id = params->listen_id;
+        msg->proxy_name = strdup(params->proxy_name);
+    }
+
+    memcpy(&msg->addr, &params->addr, sizeof(bt_address_t));
+    do_in_thread_loop(&g_l2cap_thread, l2cap_channel_connected_process, msg);
 }
 
 static void on_disconnected(void* handle, bt_address_t* addr, uint16_t id, uint32_t reason)
 {
+    l2cap_msg_t* msg;
+    char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
+
+    if (!addr) {
+        PRINT("invalid arg\n");
+        return;
+    }
+
+    bt_addr_ba2str(addr, addr_str);
+    PRINT("l2cap channel(id:%" PRIu16 ") disconnected, reason:%" PRIu32 ", addr:%s\n", id, reason, addr_str);
+
+    msg = (l2cap_msg_t*)malloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed\n");
+        return;
+    }
+
+    msg->id = id;
+    memcpy(&msg->addr, addr, sizeof(bt_address_t));
+    do_in_thread_loop(&g_l2cap_thread, l2cap_channel_disconnected_process, msg);
 }
 
 static l2cap_callbacks_t l2cap_callback = {
@@ -50,21 +313,138 @@ static l2cap_callbacks_t l2cap_callback = {
 
 static int connect_cmd(void* handle, int argc, char* argv[])
 {
+    bt_address_t addr;
+    l2cap_config_option_t conn_option = { 0 };
+    l2cap_msg_t* msg;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!\n");
+        return CMD_ERROR;
+    }
+
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    conn_option.psm = atoi(argv[1]);
+    // defaule param
+    conn_option.transport = BT_TRANSPORT_BLE;
+    conn_option.mode = L2CAP_CHANNEL_MODE_LE_CREDIT_BASED_FLOW_CONTROL;
+    conn_option.mtu = 128;
+    conn_option.le_mps = 128;
+    conn_option.init_credits = 0xffff;
+    if (bt_l2cap_connect(handle, g_l2cap_handle, &addr, &conn_option) != BT_STATUS_SUCCESS) {
+        PRINT("connect %s failed\n", argv[0]);
+        return CMD_ERROR;
+    }
+
+    PRINT("L2cap channel(id:%" PRIu16 ") connecting\n", conn_option.id);
+    msg = (l2cap_msg_t*)malloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed\n");
+        return CMD_ERROR;
+    }
+
+    msg->id = conn_option.id;
+    msg->psm = conn_option.psm;
+    msg->proxy_name = strdup(conn_option.proxy_name);
+    memcpy(&msg->addr, &addr, sizeof(bt_address_t));
+    do_in_thread_loop(&g_l2cap_thread, add_l2cap_channel, msg);
+
     return CMD_OK;
 }
 
 static int listen_cmd(void* handle, int argc, char* argv[])
 {
+    l2cap_config_option_t conn_option = { 0 };
+    l2cap_msg_t* msg;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!\n");
+        return CMD_ERROR;
+    }
+
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    conn_option.psm = atoi(argv[0]);
+    // default param
+    conn_option.transport = BT_TRANSPORT_BLE;
+    conn_option.mode = L2CAP_CHANNEL_MODE_LE_CREDIT_BASED_FLOW_CONTROL;
+    conn_option.mtu = 128;
+    conn_option.le_mps = 128;
+    conn_option.init_credits = 0xffff;
+    if (bt_l2cap_listen(handle, g_l2cap_handle, &conn_option) != BT_STATUS_SUCCESS) {
+        PRINT("listen %d failed\n", conn_option.psm);
+        return CMD_ERROR;
+    }
+
+    PRINT("L2cap channel(id:%" PRIu16 "/psm:0x%x) start listen\n", conn_option.id, conn_option.psm);
+    msg = (l2cap_msg_t*)malloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed\n");
+        return CMD_ERROR;
+    }
+
+    msg->id = conn_option.id;
+    msg->psm = conn_option.psm;
+    msg->proxy_name = strdup(conn_option.proxy_name);
+    do_in_thread_loop(&g_l2cap_thread, add_l2cap_channel, msg);
+
     return CMD_OK;
 }
 
 static int disconnect_cmd(void* handle, int argc, char* argv[])
 {
+    uint16_t id;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!\n");
+        return CMD_ERROR;
+    }
+
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    id = atoi(argv[0]);
+    PRINT("L2cap channel(id:%" PRIu16 ") disconnecting\n", id);
+    bt_l2cap_disconnect(handle, g_l2cap_handle, id);
+
     return CMD_OK;
 }
 
 static int write_cmd(void* handle, int argc, char* argv[])
 {
+    uint8_t* buf;
+    l2cap_msg_t* msg;
+
+    if (!handle || !g_l2cap_handle) {
+        PRINT("L2CAP tool not ready!\n");
+        return CMD_ERROR;
+    }
+
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    buf = (uint8_t*)strdup(argv[1]);
+    if (buf == NULL) {
+        PRINT("allocate buf failed\n");
+        return CMD_ERROR;
+    }
+
+    msg = (l2cap_msg_t*)malloc(sizeof(l2cap_msg_t));
+    if (!msg) {
+        PRINT("allocate msg failed\n");
+        return CMD_ERROR;
+    }
+
+    msg->id = atoi(argv[0]);
+    msg->buf = buf;
+    msg->len = strlen(argv[1]);
+    do_in_thread_loop(&g_l2cap_thread, do_l2cap_write, msg);
+
     return CMD_OK;
 }
 
