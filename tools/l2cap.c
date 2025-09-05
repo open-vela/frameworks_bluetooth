@@ -437,6 +437,7 @@ static int write_cmd(void* handle, int argc, char* argv[])
     msg = (l2cap_msg_t*)malloc(sizeof(l2cap_msg_t));
     if (!msg) {
         PRINT("allocate msg failed\n");
+        free(buf);
         return CMD_ERROR;
     }
 
