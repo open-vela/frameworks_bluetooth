@@ -21,6 +21,7 @@ BT_L2CAP_MESSAGE_START,
     BT_L2CAP_LISTEN,
     BT_L2CAP_CONNECT,
     BT_L2CAP_DISCONNECT,
+    BT_L2CAP_STOP_LISTEN,
     BT_L2CAP_MESSAGE_END,
 #endif
 
@@ -69,6 +70,10 @@ BT_L2CAP_MESSAGE_START,
         struct {
             uint16_t id;
         } _bt_l2cap_disconnect;
+
+        struct {
+            uint16_t psm;
+        } _bt_l2cap_stop_listen;
 
     } bt_message_l2cap_t;
 
