@@ -67,7 +67,7 @@ BT_L2CAP_MESSAGE_START,
         } _bt_l2cap_connect;
 
         struct {
-            uint16_t cid;
+            uint16_t id;
         } _bt_l2cap_disconnect;
 
     } bt_message_l2cap_t;
@@ -82,12 +82,14 @@ BT_L2CAP_MESSAGE_START,
             uint16_t psm;
             uint16_t incoming_mtu;
             uint16_t outgoing_mtu;
-            char pty_name[64];
+            uint16_t id;
+            uint16_t listen_id;
+            char proxy_name[16];
         } _connected_cb;
 
         struct {
             bt_address_t addr;
-            uint16_t cid;
+            uint16_t id;
             uint32_t reason;
         } _disconnected_cb;
 
