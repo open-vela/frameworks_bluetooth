@@ -339,8 +339,9 @@ static l2cap_channel_t* find_l2cap_channel_by_conn_param(bt_address_t* addr, uin
         }
         break;
     }
-    case L2CAP_CHANNEL_ROLE_SERVER: {
-        // server find by psm
+    case L2CAP_CHANNEL_ROLE_SERVER:
+    case L2CAP_CHANNEL_ROLE_ACCEPT: {
+        // server and accept find by psm
         for (node = bt_list_head(list); node != NULL; node = bt_list_next(list, node)) {
             l2cap_channel_t* channel = (l2cap_channel_t*)bt_list_node(node);
             if (channel->psm == psm
@@ -351,16 +352,49 @@ static l2cap_channel_t* find_l2cap_channel_by_conn_param(bt_address_t* addr, uin
         }
         break;
     }
-    case L2CAP_CHANNEL_ROLE_ACCEPT:
-    default:
+    default: {
+        BT_LOGE("%s, invalid arg", __func__);
         break;
+    }
     }
 
     return NULL;
 }
 
-static void free_l2cap_channel(l2cap_channel_t* channel)
+static void free_le_dynamic_psm(uint16_t psm)
 {
+    l2cap_channel_t* channel;
+
+    // check psm is valid.
+    if (psm < LE_PSM_DYNAMIC_MIN
+        || psm >= LE_PSM_DYNAMIC_MIN + L2CAP_LE_DYNAMIC_PSM_NUM) {
+        // invalid le dynamic psm
+        return;
+    }
+
+    channel = find_l2cap_channel_by_conn_param(NULL, psm, L2CAP_CHANNEL_ROLE_SERVER, false);
+    if (channel) {
+        BT_LOGI("%s, psm %" PRIu16 " is used to listen", __func__, psm);
+        return;
+    }
+
+    channel = find_l2cap_channel_by_conn_param(NULL, psm, L2CAP_CHANNEL_ROLE_ACCEPT, true);
+    if (channel) {
+        BT_LOGI("%s, psm %" PRIu16 " is used to accept", __func__, psm);
+        return;
+    }
+
+    BT_LOGI("%s, psm %" PRIu16 " is free", __func__, psm);
+    g_l2cap_manager.psm_map &= ~(1 << (psm - LE_PSM_DYNAMIC_MIN));
+    bt_sal_l2cap_stop_listen_channel(psm);
+}
+
+static void free_l2cap_channel(void* context)
+{
+    uint16_t psm;
+    l2cap_channel_t* channel = (l2cap_channel_t*)context;
+
+    BT_LOGD("%s, channel id: %" PRIu16, __func__, channel->id);
     if (!channel) {
         BT_LOGE("%s, channel is NULL", __func__);
         return;
@@ -371,7 +405,14 @@ static void free_l2cap_channel(l2cap_channel_t* channel)
 
     index_free(g_l2cap_manager.id_allocator, channel->id);
 
-    bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
+    if (channel->role != L2CAP_CHANNEL_ROLE_CLIENT) {
+        psm = channel->psm;
+        channel->psm = 0; // remove this channel's psm
+        BT_LOGD("%s, try to free le dynamic psm 0x%" PRIx16, __func__, psm);
+        free_le_dynamic_psm(psm);
+    }
+
+    free(channel);
 }
 
 static void l2cap_receive_data_from_app(euv_pipe_t* pipe, const uint8_t* buf, ssize_t size)
@@ -399,9 +440,7 @@ static void l2cap_receive_data_from_app(euv_pipe_t* pipe, const uint8_t* buf, ss
             bt_sal_l2cap_disconnect_channel(channel->local_cid);
         }
 
-        euv_pipe_close(pipe); // may be read stop, free it at l2cap disconnected.
-        channel->pipe = NULL;
-        channel->proxy_connected = false;
+        bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
     } else {
         if (!channel->channel_connected) {
             BT_LOGW("%s, L2CAP channel not connected", __func__);
@@ -453,10 +492,7 @@ static void proxy_connected_cb(euv_pipe_t* pipe, int status, void* data)
     return;
 
 fail:
-    // TBD: cancel l2cap channel listen or connect immediately?
-    euv_pipe_close(channel->pipe);
-    channel->pipe = NULL;
-    channel->proxy_connected = false;
+    bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
     pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
 }
 
@@ -514,21 +550,25 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
         return;
     }
 
+    if (!channel->proxy_connected) {
+        BT_LOGE("L2CAP channel(id:%" PRIu16 "/cid:0x %" PRIx16 ") data path is not prepared", channel->id, channel->local_cid);
+        bt_sal_l2cap_disconnect_channel(channel->local_cid);
+        return;
+    }
+
     if (role == L2CAP_CHANNEL_ROLE_SERVER) {
         memcpy(&channel->addr, addr, sizeof(channel->addr));
         channel->local_cid = param->local_cid;
         channel->role = L2CAP_CHANNEL_ROLE_ACCEPT;
-        new_listen_channel = alloc_free_channel(NULL, channel->psm, L2CAP_CHANNEL_ROLE_SERVER);
+        new_listen_channel = alloc_free_channel((void*)channel->app_handle, NULL, channel->psm, L2CAP_CHANNEL_ROLE_SERVER);
         if (!new_listen_channel) {
             BT_LOGE("%s, allocate new listen channel for psm: %" PRIx16 "failed", __func__, channel->psm);
-            // TBD: stop server?
             return;
         }
 
         if (!prepare_data_path(new_listen_channel)) {
             BT_LOGE("%s, prepare data path failed", __func__);
-            // TBD: free new listen channel
-            // TBD: stop server?
+            bt_list_remove(g_l2cap_manager.channel_list, new_listen_channel);
             return;
         }
     }
@@ -536,11 +576,6 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
     memcpy(&channel->incoming, &param->incoming, sizeof(channel->incoming));
     memcpy(&channel->outgoing, &param->outgoing, sizeof(channel->outgoing));
     channel->tx_mtu = MIN(param->outgoing.mtu, CONFIG_BLUETOOTH_L2CAP_OUTGOING_MTU);
-    if (!channel->proxy_connected) {
-        BT_LOGE("L2CAP channel(id:%" PRIu16 "/cid:0x%x) data path is not prepared", channel->id, channel->local_cid);
-        bt_sal_l2cap_disconnect_channel(channel->local_cid);
-        return;
-    }
 
     // restart read pipe to adjust mtu
     ret = euv_pipe_read_stop(channel->pipe);
@@ -580,8 +615,15 @@ static void handle_channel_conneted(bt_address_t* addr, l2cap_channel_param_t* p
 static void handle_channel_disconneted(bt_address_t* addr, uint16_t cid, uint32_t reason)
 {
     l2cap_channel_t* channel;
-    uint16_t id;
+    char addr_str[BT_ADDR_STR_LENGTH];
 
+    if (!addr) {
+        BT_LOGE("%s, invalid arg", __func__);
+        return;
+    }
+
+    bt_addr_ba2str(addr, addr_str);
+    BT_LOGD("L2CAP channel(cid:0x%" PRIx16 ") disconnected, remote addr:%s, reason: %" PRIu32, cid, addr_str, reason);
     // Note:
     // If clinet get cid fail during connecing, it won't be removed in this callback.
     channel = find_l2cap_channel_by_cid(cid);
@@ -590,13 +632,11 @@ static void handle_channel_disconneted(bt_address_t* addr, uint16_t cid, uint32_
         return;
     }
 
-    id = channel->id;
     BT_LOGI("L2CAP channel(id:%" PRIu16 "/cid:0x%" PRIx16 ") disconnected, reason: 0x%" PRIx32 "", channel->id, cid, reason);
     // Notice:
     // The app will be aware of the data path disconnected first, pay attention to multithreading conflicts.
-    free_l2cap_channel(channel);
-
     l2cap_notify_disconnected(channel, reason);
+    bt_list_remove(g_l2cap_manager.channel_list, (void*)channel);
 }
 
 static void handle_packet_received(bt_address_t* addr, uint16_t cid, uint8_t* packet_data, uint16_t packet_size)
@@ -940,7 +980,7 @@ bt_status_t l2cap_service_init(void)
         return BT_STATUS_NOMEM;
     }
 
-    g_l2cap_manager.channel_list = bt_list_new(free);
+    g_l2cap_manager.channel_list = bt_list_new(free_l2cap_channel);
     if (!g_l2cap_manager.channel_list) {
         bt_callbacks_list_free(g_l2cap_manager.callbacks);
         return BT_STATUS_NOMEM;
