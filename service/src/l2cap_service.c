@@ -69,6 +69,11 @@
  */
 #define L2CAP_LE_DYNAMIC_PSM_NUM 64
 
+/**
+ * \def L2CAP Dynamic PSM bit mask
+ */
+#define PSM_BIT_MASK(psm) (1ULL << (psm - LE_PSM_DYNAMIC_MIN))
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -247,19 +252,17 @@ static bool check_psm_available(uint16_t psm)
         return false;
     }
 
-    return !(g_l2cap_manager.psm_map & (1 << (psm - LE_PSM_DYNAMIC_MIN)));
+    return !(g_l2cap_manager.psm_map & PSM_BIT_MASK(psm));
 }
 
 static uint16_t alloc_le_dynamic_psm(void)
 {
     uint16_t psm;
-    uint8_t i;
 
-    // Reserved PSM range: 0x00080 - 0x0089
-    for (i = 10; i < L2CAP_LE_DYNAMIC_PSM_NUM; i++) {
-        if (!(g_l2cap_manager.psm_map & (1 << i))) {
-            psm = LE_PSM_DYNAMIC_MIN + i;
-            g_l2cap_manager.psm_map |= (1 << i);
+    // Reserved PSM range: 0x0080 - 0x0089
+    for (psm = LE_PSM_DYNAMIC_MIN + 10; psm < LE_PSM_DYNAMIC_MIN + L2CAP_LE_DYNAMIC_PSM_NUM; psm++) {
+        if (!(g_l2cap_manager.psm_map & PSM_BIT_MASK(psm))) {
+            g_l2cap_manager.psm_map |= PSM_BIT_MASK(psm);
             BT_LOGI("%s, alloc psm %" PRIx16, __func__, psm);
             return psm;
         }
@@ -385,7 +388,7 @@ static void free_le_dynamic_psm(uint16_t psm)
     }
 
     BT_LOGI("%s, psm %" PRIu16 " is free", __func__, psm);
-    g_l2cap_manager.psm_map &= ~(1 << (psm - LE_PSM_DYNAMIC_MIN));
+    g_l2cap_manager.psm_map &= ~PSM_BIT_MASK(psm);
     bt_sal_l2cap_stop_listen_channel(psm);
 }
 
@@ -824,7 +827,7 @@ bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option)
         }
     } else {
         if (check_psm_available(option->psm)) {
-            g_l2cap_manager.psm_map |= (1 << (option->psm - LE_PSM_DYNAMIC_MIN));
+            g_l2cap_manager.psm_map |= PSM_BIT_MASK(option->psm);
         } else {
             BT_LOGE("%s, psm: 0x%" PRIx16 " is not available", __func__, option->psm);
             status = BT_STATUS_NOMEM;
