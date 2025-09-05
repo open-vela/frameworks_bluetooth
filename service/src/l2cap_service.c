@@ -62,6 +62,13 @@
  */
 #define L2CAP_PIPE_DEF_READ_SIZE 1024
 
+/**
+ * \def L2CAP LE Dynamic PSM number limitation
+ *
+ * \note 0x0080 ~ 0x00FF is for L2CAP LE Dynamic PSM
+ */
+#define L2CAP_LE_DYNAMIC_PSM_NUM 64
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -93,6 +100,7 @@ typedef struct {
     callbacks_list_t* callbacks;
     bt_list_t* channel_list;
     index_allocator_t* id_allocator; // allocate id
+    uint64_t psm_map;
     pthread_mutex_t l2cap_lock;
 
 } l2cap_manager_t;
@@ -230,6 +238,35 @@ static l2cap_channel_t* alloc_free_channel(void* handle, bt_address_t* addr, uin
     bt_list_add_tail(g_l2cap_manager.channel_list, (void*)channel);
 
     return channel;
+}
+
+static bool check_psm_available(uint16_t psm)
+{
+    if (psm < LE_PSM_DYNAMIC_MIN || psm >= LE_PSM_DYNAMIC_MIN + L2CAP_LE_DYNAMIC_PSM_NUM) {
+        BT_LOGE("%s, psm %" PRIx16 " is not support", __func__, psm);
+        return false;
+    }
+
+    return !(g_l2cap_manager.psm_map & (1 << (psm - LE_PSM_DYNAMIC_MIN)));
+}
+
+static uint16_t alloc_le_dynamic_psm(void)
+{
+    uint16_t psm;
+    uint8_t i;
+
+    // Reserved PSM range: 0x00080 - 0x0089
+    for (i = 10; i < L2CAP_LE_DYNAMIC_PSM_NUM; i++) {
+        if (!(g_l2cap_manager.psm_map & (1 << i))) {
+            psm = LE_PSM_DYNAMIC_MIN + i;
+            g_l2cap_manager.psm_map |= (1 << i);
+            BT_LOGI("%s, alloc psm %" PRIx16, __func__, psm);
+            return psm;
+        }
+    }
+
+    BT_LOGE("%s, no dynamic PSM available", __func__);
+    return 0;
 }
 
 static l2cap_channel_t* find_l2cap_channel_by_cid(uint16_t cid)
@@ -738,6 +775,23 @@ bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option)
     CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
 
     pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
+    if (option->psm == 0) {
+        option->psm = alloc_le_dynamic_psm();
+        if (option->psm == 0) {
+            BT_LOGW("%s, allocate psm failed", __func__);
+            status = BT_STATUS_NOMEM;
+            goto out;
+        }
+    } else {
+        if (check_psm_available(option->psm)) {
+            g_l2cap_manager.psm_map |= (1 << (option->psm - LE_PSM_DYNAMIC_MIN));
+        } else {
+            BT_LOGE("%s, psm: 0x%" PRIx16 " is not available", __func__, option->psm);
+            status = BT_STATUS_NOMEM;
+            goto out;
+        }
+    }
+
     channel = alloc_free_channel(handle, NULL, option->psm, L2CAP_CHANNEL_ROLE_SERVER);
     if (!channel) {
         status = BT_STATUS_NOMEM;
@@ -863,6 +917,7 @@ bt_status_t l2cap_service_init(void)
     }
 
     g_l2cap_manager.id_allocator = index_allocator_create(L2CAP_CHANNEL_MAX_NUM);
+    g_l2cap_manager.psm_map = 0;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&g_l2cap_manager.l2cap_lock, &attr);
@@ -879,6 +934,7 @@ void l2cap_service_cleanup(void)
     bt_list_free(g_l2cap_manager.channel_list);
     g_l2cap_manager.channel_list = NULL;
     index_allocator_delete(&g_l2cap_manager.id_allocator);
+    g_l2cap_manager.psm_map = 0;
     pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
 
     pthread_mutex_destroy(&g_l2cap_manager.l2cap_lock);
