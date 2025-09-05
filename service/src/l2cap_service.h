@@ -47,6 +47,7 @@ bool l2cap_unregister_callbacks(void** remote, void* cookie);
 bt_status_t l2cap_listen_channel(void* handle, l2cap_config_option_t* option);
 bt_status_t l2cap_connect_channel(void* handle, bt_address_t* addr, l2cap_config_option_t* option);
 bt_status_t l2cap_disconnect_channel(void* handle, uint16_t id);
+bt_status_t l2cap_stop_listen_channel(void* handle, uint16_t psm);
 
 bt_status_t l2cap_service_init(void);
 void l2cap_service_cleanup(void);

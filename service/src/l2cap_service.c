@@ -899,6 +899,36 @@ exit:
     return status;
 }
 
+bt_status_t l2cap_stop_listen_channel(void* handle, uint16_t psm)
+{
+    bt_status_t status = BT_STATUS_SUCCESS;
+    l2cap_channel_t* channel;
+
+    CHECK_ADAPTER_ENABLED(BT_STATUS_NOT_ENABLED);
+
+    pthread_mutex_lock(&g_l2cap_manager.l2cap_lock);
+    channel = find_l2cap_channel_by_conn_param(NULL, psm, L2CAP_CHANNEL_ROLE_SERVER, false);
+    if (!channel) {
+        status = BT_STATUS_NOT_FOUND;
+        BT_LOGE("%s, L2CAP(psm: 0x%" PRIx16 ") not found", __func__, psm);
+        goto exit;
+    }
+
+    if (channel->app_handle != handle) {
+        status = BT_STATUS_UNHANDLED;
+        BT_LOGW("%s, L2CAP(id: %" PRIu16 ") not belong to this app", __func__, channel->id);
+        goto exit;
+    }
+
+    BT_LOGI("%s, L2CAP(id: %" PRIu16 ", psm: 0x%" PRIx16 ") stop listen", __func__, channel->id, channel->psm);
+    bt_list_remove(g_l2cap_manager.channel_list, (void*)channel); // free listen channel
+
+exit:
+    pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
+    return status;
+}
+
+// TBD: managed by service_manager
 bt_status_t l2cap_service_init(void)
 {
     pthread_mutexattr_t attr;
