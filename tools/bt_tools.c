@@ -175,6 +175,9 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     { "scan", scan_command_exec, 0, "scan cmd,          input \'scan\' show usage" },
 #endif
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    { "l2cap", l2cap_command_exec, 0, "l2cap cmd,         input \'l2cap\' show usage" },
+#endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     { "a2dpsnk", a2dp_sink_command_exec, 0, "a2dp sink cmd,    input \'a2dpsnk\' show usage" },
 #endif
@@ -295,6 +298,9 @@ static void bt_tool_init(void* handle)
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_command_init(handle);
 #endif
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    l2cap_command_init(handle);
+#endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     a2dp_sink_commond_init(handle);
 #endif
@@ -359,6 +365,9 @@ static void bt_tool_uninit(void* handle)
 
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_command_uninit(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_L2CAP
+    l2cap_command_uninit(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     a2dp_sink_commond_uninit(handle);
