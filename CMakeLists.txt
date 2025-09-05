@@ -550,6 +550,10 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/scan.c)
     endif()
 
+    if(CONFIG_BLUETOOTH_L2CAP)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/l2cap.c)
+    endif()
+
     if(CONFIG_BLUETOOTH_A2DP_SINK)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/a2dp_sink.c)
     endif()

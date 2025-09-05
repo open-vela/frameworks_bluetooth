@@ -428,6 +428,9 @@ endif
 ifeq ($(CONFIG_BLUETOOTH_BLE_SCAN), y)
 	CSRCS += tools/scan.c
 endif
+ifeq ($(CONFIG_BLUETOOTH_L2CAP), y)
+	CSRCS += tools/l2cap.c
+endif #CONFIG_BLUETOOTH_L2CAP
 ifeq ($(CONFIG_BLUETOOTH_A2DP_SINK), y)
 	CSRCS += tools/a2dp_sink.c
 endif #CONFIG_BLUETOOTH_A2DP_SINK
