@@ -131,12 +131,15 @@ void bt_socket_server_l2cap_process(service_poll_t* poll, int fd,
         packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_disconnect)(ins, ins->l2cap_cookie,
             packet->l2cap_pl._bt_l2cap_disconnect.id);
         break;
-    case BT_L2CAP_STOP_LISTEN:
-        packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_stop_listen)(ins, ins->l2cap_cookie,
-            packet->l2cap_pl._bt_l2cap_stop_listen.psm);
-        break;
     default:
-        break;
+        switch (BT_IPC_GET_SUBCODE(packet->code)) {
+        case L2CAP_SUBCODE_STOP_LISTEN:
+            packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_stop_listen)(ins, ins->l2cap_cookie,
+                packet->l2cap_pl._bt_l2cap_stop_listen.psm);
+            break;
+        default:
+            break;
+        }
     }
 }
 #endif
