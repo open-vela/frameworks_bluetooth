@@ -33,3 +33,52 @@ interface Advertiser {
     void stopAdvertising()
 }
 [ctor="true", target="adv"] Advertiser createAdvertiser()
+
+struct ScanFilter {
+    string deviceId
+    string name
+    string serviceUuid
+}
+
+const ScanDuty = {
+    SCAN_MODE_LOW_POWER = 0,
+    SCAN_MODE_BALANCED = 1,
+    SCAN_MODE_LOW_LATENCY = 2
+}
+
+struct ScanOptions {
+    int interval
+    int dutyMode
+}
+
+struct StartScanParams {
+    ScanFilter[] filters
+    ScanOptions options = null
+}
+
+const ScanState = {
+    STATE_NON_SCAN = 0,
+    STATE_SCANING = 1
+}
+
+struct ScanResult {
+    string deviceId
+    int rssi
+    object data
+}
+
+callback deviceFoundResult(ScanResult[] result)
+callback deviceFindFail()
+struct DeviceFindParams {
+    callback deviceFoundResult callback
+    callback deviceFindFail fail
+}
+
+interface Scanner {
+    promise<void> startBLEScan(StartScanParams params)
+    void stopBLEScan()
+    promise<int> getScanState()
+    int subscribeBLEDeviceFind(DeviceFindParams params)
+    void unsubscribeBLEDeviceFind(int SubscribeId)
+}
+[ctor="true", target="scan"] Scanner createScanner()

@@ -23,6 +23,11 @@
 
 #define FEATURE_MANAGER_BLUETOOTH_DATA "bluetooth"
 
+typedef enum {
+    STATE_NON_SCAN = 0,
+    STATE_SCANING = 1,
+} ScanState;
+
 typedef struct {
     FtCallbackId feature_callback_id;
     void* feature;
@@ -59,8 +64,24 @@ typedef struct {
 } feature_bluetooth_adv_info_t;
 
 typedef struct {
-    bt_list_t* feature_ble_adv;
+    FtInt id;
+    FtCallbackId callback;
+    FtCallbackId fail;
+} scan_subscribe_info_t;
 
+typedef struct {
+    bt_instance_t* ins;
+    FeatureInterfaceHandle interface;
+    void* scan;
+    void* start_userdata;
+    bool busy;
+    bt_list_t* subscribe_info;
+    FtInt subscribe_id;
+} feature_bluetooth_scan_info_t;
+
+typedef struct {
+    bt_list_t* feature_ble_adv;
+    bt_list_t* feature_ble_scan;
 } feature_bluetooth_features_info_t;
 
 char* StringToFtString(const char* str);
