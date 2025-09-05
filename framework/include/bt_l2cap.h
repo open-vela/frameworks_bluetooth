@@ -142,6 +142,19 @@ bt_status_t BTSYMBOLS(bt_l2cap_connect)(bt_instance_t* ins, void* handle, bt_add
  */
 bt_status_t BTSYMBOLS(bt_l2cap_disconnect)(bt_instance_t* ins, void* handle, uint16_t id);
 
+/**
+ * @brief Stop L2CAP listen
+ *
+ * This function used to stop L2CAP listen rather than disconnect all conected
+ * L2CAP channels for a specific PSM.
+ *
+ * @param ins - bluetooth client instance.
+ * @param handle - L2CAP APP handle.
+ * @param psm - PSM used for listen.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
+ */
+bt_status_t BTSYMBOLS(bt_l2cap_stop_listen)(bt_instance_t* ins, void* handle, uint16_t psm);
+
 #ifdef __cplusplus
 }
 #endif
