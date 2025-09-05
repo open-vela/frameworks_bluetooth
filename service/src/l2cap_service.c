@@ -28,12 +28,11 @@
 
 #include "adapter_internel.h"
 #include "bluetooth.h"
+#include "euv_pipe.h"
+#include "index_allocator.h"
 #include "l2cap_service.h"
 #include "sal_l2cap_interface.h"
 #include "service_loop.h"
-
-#include "euv_pty.h"
-#include "openpty.h"
 #include "utils/log.h"
 
 /****************************************************************************
@@ -54,26 +53,46 @@
 #define L2CAP_CBACK_FOREACH(_list, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, l2cap_callbacks_t, _cback, ##__VA_ARGS__)
 
+/**
+ * \def L2CAP connection maximum limitation
+ */
+#define L2CAP_CHANNEL_MAX_NUM 20
+
+/**
+ * \def L2CAP socket server pipe name prefix
+ */
+#define L2CAP_SRVPIPE_NAME_PREF "l-srvpipe"
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
+typedef enum {
+    L2CAP_CHANNEL_ROLE_SERVER,
+    L2CAP_CHANNEL_ROLE_ACCEPT,
+    L2CAP_CHANNEL_ROLE_CLIENT,
+} l2cap_channel_role_t;
 
 typedef struct {
     bt_address_t addr;
     bt_transport_t transport;
-    uint16_t cid;
+    uint16_t local_cid;
+    uint16_t remote_cid;
     uint16_t psm;
     l2cap_endpoint_param_t incoming;
     l2cap_endpoint_param_t outgoing;
     uint16_t tx_mtu;
-    euv_pty_t* pty;
-    int mfd;
-    char pty_name[64];
+    uint16_t id;
+    l2cap_channel_role_t role;
+    bool channel_connected;
+    euv_pipe_t* pipe;
+    char proxy_name[16];
+    bool proxy_connected;
 } l2cap_channel_t;
 
 typedef struct {
     callbacks_list_t* callbacks;
     bt_list_t* channel_list;
+    index_allocator_t* id_allocator; // allocate id
     pthread_mutex_t l2cap_lock;
 
 } l2cap_manager_t;
@@ -484,6 +503,7 @@ bt_status_t l2cap_service_init(void)
         return BT_STATUS_NOMEM;
     }
 
+    g_l2cap_manager.id_allocator = index_allocator_create(L2CAP_CHANNEL_MAX_NUM);
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&g_l2cap_manager.l2cap_lock, &attr);
@@ -499,6 +519,7 @@ void l2cap_service_cleanup(void)
     g_l2cap_manager.callbacks = NULL;
     bt_list_free(g_l2cap_manager.channel_list);
     g_l2cap_manager.channel_list = NULL;
+    index_allocator_delete(&g_l2cap_manager.id_allocator);
     pthread_mutex_unlock(&g_l2cap_manager.l2cap_lock);
 
     pthread_mutex_destroy(&g_l2cap_manager.l2cap_lock);
