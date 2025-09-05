@@ -50,16 +50,21 @@ typedef struct {
     uint16_t mtu; /* Maximum Transmission Unit */
     uint16_t le_mps; /* Maximum PDU payload Size for LE */
     uint16_t init_credits; /* initial credits for LE */
+    uint16_t id; /* L2CAP Service socket id */
+    char proxy_name[16]; /* Proxy name */
 } l2cap_config_option_t;
 
 typedef struct {
     bt_address_t addr;
     bt_transport_t transport;
-    uint16_t cid; /* Channel id. */
+    uint16_t cid; /* Local channel id. */
     uint16_t psm; /* Dynamic Service PSM */
     uint16_t incoming_mtu; /* Incoming transmit MTU. */
-    uint16_t outgoing_mtu; /* outgoing transmit MTU */
-    const char* pty_name; /* pty device name, like "/dev/pts/0" */
+    uint16_t outgoing_mtu; /* Outgoing transmit MTU */
+    uint16_t id; /* Connected L2CAP Channel socket id */
+    // for L2CAP listen only.
+    uint16_t listen_id; /* New L2CAP Listen socket id */
+    char proxy_name[16]; /* Proxy name for server */
 } l2cap_connect_params_t;
 
 /**
@@ -75,10 +80,10 @@ typedef void (*l2cap_connected_callback_t)(void* cookie, l2cap_connect_params_t*
  *
  * @param cookie - callbacks cookie, the return value of bt_l2cap_register_callbacks.
  * @param addr - remote addr.
- * @param cid - channel id.
+ * @param id - L2CAP service socket id, used to identify L2CAP service channel resource.
  * @param reason - disconnect reason.
  */
-typedef void (*l2cap_disconnected_callback_t)(void* cookie, bt_address_t* addr, uint16_t cid, uint32_t reason);
+typedef void (*l2cap_disconnected_callback_t)(void* cookie, bt_address_t* addr, uint16_t id, uint32_t reason);
 
 /**
  * @brief L2CAP event callback structure
@@ -95,7 +100,7 @@ typedef struct {
  *
  * @param ins - bluetooth client instance.
  * @param callbacks - L2CAP callback functions.
- * @return void* - callbacks cookie, NULL on failure.
+ * @return void* - L2CAP APP handle, NULL on failure.
  */
 void* BTSYMBOLS(bt_l2cap_register_callbacks)(bt_instance_t* ins, const l2cap_callbacks_t* callbacks);
 
@@ -103,36 +108,39 @@ void* BTSYMBOLS(bt_l2cap_register_callbacks)(bt_instance_t* ins, const l2cap_cal
  * @brief Unregister L2CAP callback functions.
  *
  * @param ins - bluetooth client instance.
- * @param cookie - callbacks cookie.
+ * @param handle - L2CAP APP handle.
  * @return true - on callback unregister success
  * @return false - on callback cookie not found
  */
-bool BTSYMBOLS(bt_l2cap_unregister_callbacks)(bt_instance_t* ins, void* cookie);
+bool BTSYMBOLS(bt_l2cap_unregister_callbacks)(bt_instance_t* ins, void* handle);
 
 /**
  * @brief Listen for a L2CAP connection request
  * @param ins - bluetooth client instance.
+ * @param handle - L2CAP APP handle.
  * @param option - L2CAP config option.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_l2cap_listen)(bt_instance_t* ins, l2cap_config_option_t* option);
+bt_status_t BTSYMBOLS(bt_l2cap_listen)(bt_instance_t* ins, void* handle, l2cap_config_option_t* option);
 
 /**
  * @brief Request L2CAP connection to remote device
  * @param ins - bluetooth client instance.
+ * @param handle - L2CAP APP handle.
  * @param addr - remote addr.
  * @param option - L2CAP config option.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_l2cap_connect)(bt_instance_t* ins, bt_address_t* addr, l2cap_config_option_t* option);
+bt_status_t BTSYMBOLS(bt_l2cap_connect)(bt_instance_t* ins, void* handle, bt_address_t* addr, l2cap_config_option_t* option);
 
 /**
  * @brief Reqeust to disconnect a L2CAP channel
  * @param ins - bluetooth client instance.
- * @param cid - channel id.
+ * @param handle - L2CAP APP handle.
+ * @param id - Connected L2CAP Channel socket id.
  * @return bt_status_t - BT_STATUS_SUCCESS on success, a negated errno value on failure.
  */
-bt_status_t BTSYMBOLS(bt_l2cap_disconnect)(bt_instance_t* ins, uint16_t cid);
+bt_status_t BTSYMBOLS(bt_l2cap_disconnect)(bt_instance_t* ins, void* handle, uint16_t id);
 
 #ifdef __cplusplus
 }

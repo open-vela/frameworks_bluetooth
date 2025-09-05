@@ -69,17 +69,18 @@ static void on_connected_cb(void* cookie, l2cap_connect_params_t* param)
     packet.l2cap_cb._connected_cb.psm = param->psm;
     packet.l2cap_cb._connected_cb.incoming_mtu = param->incoming_mtu;
     packet.l2cap_cb._connected_cb.outgoing_mtu = param->outgoing_mtu;
-    if (param->pty_name)
-        strlcpy(packet.l2cap_cb._connected_cb.pty_name, param->pty_name, sizeof(packet.l2cap_cb._connected_cb.pty_name));
+    packet.l2cap_cb._connected_cb.id = param->id;
+    packet.l2cap_cb._connected_cb.listen_id = param->listen_id;
+    strlcpy(packet.l2cap_cb._connected_cb.proxy_name, param->proxy_name, sizeof(packet.l2cap_cb._connected_cb.proxy_name));
     bt_socket_server_send(ins, &packet, BT_L2CAP_CONNECTED_CB);
 }
 
-static void on_disconnected_cb(void* cookie, bt_address_t* addr, uint16_t cid, uint32_t reason)
+static void on_disconnected_cb(void* cookie, bt_address_t* addr, uint16_t id, uint32_t reason)
 {
     bt_message_packet_t packet = { 0 };
     bt_instance_t* ins = cookie;
     memcpy(&packet.l2cap_cb._disconnected_cb.addr, addr, sizeof(packet.l2cap_cb._disconnected_cb.addr));
-    packet.l2cap_cb._disconnected_cb.cid = cid;
+    packet.l2cap_cb._disconnected_cb.id = id;
     packet.l2cap_cb._disconnected_cb.reason = reason;
     bt_socket_server_send(ins, &packet, BT_L2CAP_DISCONNECTED_CB);
 }
@@ -117,37 +118,21 @@ void bt_socket_server_l2cap_process(service_poll_t* poll, int fd,
         }
         break;
     case BT_L2CAP_LISTEN:
-        packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_listen)(ins,
+        packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_listen)(ins, ins->l2cap_cookie,
             &packet->l2cap_pl._bt_l2cap_listen.option);
         break;
     case BT_L2CAP_CONNECT:
-        packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_connect)(ins,
+        packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_connect)(ins, ins->l2cap_cookie,
             &packet->l2cap_pl._bt_l2cap_connect.addr,
             &packet->l2cap_pl._bt_l2cap_connect.option);
         break;
     case BT_L2CAP_DISCONNECT:
-        packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_disconnect)(ins,
-            packet->l2cap_pl._bt_l2cap_disconnect.cid);
+        packet->l2cap_r.status = BTSYMBOLS(bt_l2cap_disconnect)(ins, ins->l2cap_cookie,
+            packet->l2cap_pl._bt_l2cap_disconnect.id);
         break;
     default:
         break;
     }
-}
-#endif
-
-#if !defined(CONFIG_BLUETOOTH_SERVER) && defined(CONFIG_BLUETOOTH_RPMSG_CPUNAME)
-static bool rpmsg_tty_mount_path(const char* src, char* dest, int len, const char* mount_cpu)
-{
-    char* path = strstr(src, "/dev/");
-
-    if (!path || path != src) {
-        return false;
-    }
-
-    if (snprintf(dest, len, "/dev/%s/%s", mount_cpu, src + 5) < 0)
-        return false;
-
-    return true;
 }
 #endif
 
@@ -167,14 +152,11 @@ int bt_socket_client_l2cap_callback(service_poll_t* poll, int fd,
             .psm = packet->l2cap_cb._connected_cb.psm,
             .incoming_mtu = packet->l2cap_cb._connected_cb.incoming_mtu,
             .outgoing_mtu = packet->l2cap_cb._connected_cb.outgoing_mtu,
-            .pty_name = packet->l2cap_cb._connected_cb.pty_name,
+            .id = packet->l2cap_cb._connected_cb.id,
+            .listen_id = packet->l2cap_cb._connected_cb.listen_id,
         };
+        strlcpy(conn_parm.proxy_name, packet->l2cap_cb._connected_cb.proxy_name, sizeof(conn_parm.proxy_name));
         memcpy(&conn_parm.addr, &packet->l2cap_cb._connected_cb.addr, sizeof(conn_parm.addr));
-#if !defined(CONFIG_BLUETOOTH_SERVER) && defined(CONFIG_BLUETOOTH_RPMSG_CPUNAME)
-        char rename[64];
-        if (rpmsg_tty_mount_path(conn_parm.pty_name, rename, 64, CONFIG_BLUETOOTH_RPMSG_CPUNAME))
-            conn_parm.pty_name = rename;
-#endif
         CALLBACK_FOREACH(CBLIST, l2cap_callbacks_t,
             on_connected,
             &conn_parm);
@@ -184,7 +166,7 @@ int bt_socket_client_l2cap_callback(service_poll_t* poll, int fd,
         CALLBACK_FOREACH(CBLIST, l2cap_callbacks_t,
             on_disconnected,
             &packet->l2cap_cb._disconnected_cb.addr,
-            packet->l2cap_cb._disconnected_cb.cid,
+            packet->l2cap_cb._disconnected_cb.id,
             packet->l2cap_cb._disconnected_cb.reason);
         break;
     default:
