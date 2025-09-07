@@ -126,12 +126,15 @@ static void bt_sal_cm_profile_disconnected(void* data)
     cm_data_t* cm_data = data;
     bt_profile_connection_manager_t* manager;
 
-    if (bt_sal_disconnecting_list == NULL)
+    if (bt_sal_disconnecting_list == NULL) {
+        cm_data_destory(cm_data);
         return;
+    }
 
     manager = bt_list_find(bt_sal_disconnecting_list, bt_cm_disconnect_find, &cm_data->addr);
     if (manager == NULL) {
         BT_LOGW("%s, manager not found.", __func__);
+        cm_data_destory(cm_data);
         return;
     }
 
@@ -169,12 +172,15 @@ static void bt_sal_cm_acl_disconnected(void* data)
     cm_data_t* cm_data = data;
     bt_profile_connection_manager_t* manager;
 
-    if (bt_sal_disconnecting_list == NULL)
+    if (bt_sal_disconnecting_list == NULL) {
+        cm_data_destory(cm_data);
         return;
+    }
 
     manager = bt_list_find(bt_sal_disconnecting_list, bt_cm_disconnect_find, &cm_data->addr);
     if (manager == NULL) {
         BT_LOGW("%s, manager not found.", __func__);
+        cm_data_destory(cm_data);
         return;
     }
 
