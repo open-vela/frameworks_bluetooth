@@ -31,6 +31,7 @@ struct StartAdvertisingParams {
 interface Advertiser {
     promise<void> startAdvertising(StartAdvertisingParams params)
     void stopAdvertising()
+    void close()
 }
 [ctor="true", target="adv"] Advertiser createAdvertiser()
 
@@ -81,6 +82,7 @@ interface Scanner {
     promise<int> getScanState()
     int subscribeBLEDeviceFind(DeviceFindParams params)
     void unsubscribeBLEDeviceFind(int SubscribeId)
+    void close()
 }
 [ctor="true", target="scan"] Scanner createScanner()
 
@@ -156,6 +158,7 @@ interface GattClient {
     promise<void> writeDescriptorValue(WriteDescriptorValue params)
     promise<void> setBLEMtuSize(SetBLEMtuSize params)
     promise<void> setNotifyCharacteristicChanged(SetNotifyCharChangedParams params)
+    boolean close()
     event onBLECharacteristicChange(BLECharacteristic params)
     event onBLEConnectionStateChange(int state)
 }
