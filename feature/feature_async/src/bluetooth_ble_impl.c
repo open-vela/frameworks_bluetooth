@@ -161,9 +161,12 @@ feature_bluetooth_gattc_info_t* find_gattc_info_by_userdata(bt_instance_t* ins, 
     return NULL;
 }
 
-void system_bluetooth_ble_Advertiser_interface_adv_finalize(FeatureInterfaceHandle handle)
+static void feature_adv_destroy(FeatureInterfaceHandle handle)
 {
     feature_bluetooth_adv_info_t* adv_info = (feature_bluetooth_adv_info_t*)FeatureGetObjectData(handle);
+    if (adv_info == NULL)
+        return;
+
     bt_instance_t* bluetooth_instance = adv_info->ins;
     feature_bluetooth_features_info_t* features_info = (feature_bluetooth_features_info_t*)(bluetooth_instance->context);
 
@@ -178,6 +181,11 @@ void system_bluetooth_ble_Advertiser_interface_adv_finalize(FeatureInterfaceHand
     }
 
     bt_list_remove(features_info->feature_ble_adv, adv_info);
+}
+
+void system_bluetooth_ble_Advertiser_interface_adv_finalize(FeatureInterfaceHandle handle)
+{
+    feature_adv_destroy(handle);
 }
 
 FeatureInterfaceHandle system_bluetooth_ble_wrap_createAdvertiser(FeatureInstanceHandle feature, AppendData append_data)
@@ -514,8 +522,12 @@ void system_bluetooth_ble_Advertiser_interface_adv_startAdvertising(FeatureInter
     uint16_t adv_len = 0;
     uint16_t scan_rsp_len = 0;
 
-    adv_info = FeatureGetObjectData(handle);
     status = BT_STATUS_FAIL;
+    adv_info = FeatureGetObjectData(handle);
+    if (!adv_info) {
+        FEATURE_LOG_ERROR("%s, advertiser has been closed", __func__);
+        return;
+    }
 
     if (!params || !params->setting)
         goto error;
@@ -585,11 +597,22 @@ error:
 void system_bluetooth_ble_Advertiser_interface_adv_stopAdvertising(FeatureInterfaceHandle handle, AppendData append_data)
 {
     feature_bluetooth_adv_info_t* adv_info = FeatureGetObjectData(handle);
+    if (!adv_info) {
+        FEATURE_LOG_ERROR("%s, advertiser has been closed", __func__);
+        return;
+    }
 
     if (adv_info->adv == NULL)
         return;
 
     bt_le_stop_advertising_async(adv_info->ins, adv_info->adv, NULL, NULL);
+}
+
+void system_bluetooth_ble_Advertiser_interface_adv_close(FeatureInterfaceHandle handle, AppendData append_data)
+{
+    feature_adv_destroy(handle);
+
+    FeatureSetObjectData(handle, NULL);
 }
 
 FeatureInterfaceHandle system_bluetooth_ble_wrap_createScanner(FeatureInstanceHandle feature, AppendData append_data)
@@ -612,10 +635,13 @@ FeatureInterfaceHandle system_bluetooth_ble_wrap_createScanner(FeatureInstanceHa
     return handle;
 }
 
-void system_bluetooth_ble_Scanner_interface_scan_finalize(FeatureInterfaceHandle handle)
+static void feature_scan_destroy(FeatureInterfaceHandle handle)
 {
     bt_list_node_t* node;
     feature_bluetooth_scan_info_t* scan_info = (feature_bluetooth_scan_info_t*)FeatureGetObjectData(handle);
+    if (scan_info == NULL)
+        return;
+
     bt_instance_t* bluetooth_instance = scan_info->ins;
     feature_bluetooth_features_info_t* features_info = (feature_bluetooth_features_info_t*)(bluetooth_instance->context);
 
@@ -638,6 +664,11 @@ void system_bluetooth_ble_Scanner_interface_scan_finalize(FeatureInterfaceHandle
     bt_list_free(scan_info->subscribe_info);
 
     bt_list_remove(features_info->feature_ble_scan, scan_info);
+}
+
+void system_bluetooth_ble_Scanner_interface_scan_finalize(FeatureInterfaceHandle handle)
+{
+    feature_scan_destroy(handle);
 }
 
 static void on_scan_result_cb(bt_scanner_t* scanner, ble_scan_result_t* result)
@@ -771,8 +802,12 @@ void system_bluetooth_ble_Scanner_interface_scan_startBLEScan(FeatureInterfaceHa
     feature_bluetooth_scan_info_t* scan_info;
     ble_scan_settings_t settings = { BT_SCAN_MODE_LOW_POWER, 0, BT_LE_SCAN_TYPE_PASSIVE, BT_LE_1M_PHY, { 0 } };
 
-    scan_info = FeatureGetObjectData(handle);
     status = BT_STATUS_FAIL;
+    scan_info = FeatureGetObjectData(handle);
+    if (!scan_info) {
+        FEATURE_LOG_ERROR("%s, scanner has been closed", __func__);
+        return;
+    }
 
     if (!params)
         goto error;
@@ -814,6 +849,10 @@ error:
 void system_bluetooth_ble_Scanner_interface_scan_stopBLEScan(FeatureInterfaceHandle handle, AppendData append_data)
 {
     feature_bluetooth_scan_info_t* scan_info = FeatureGetObjectData(handle);
+    if (!scan_info) {
+        FEATURE_LOG_ERROR("%s, scanner has been closed", __func__);
+        return;
+    }
 
     if (scan_info->scan == NULL)
         return;
@@ -826,6 +865,10 @@ void system_bluetooth_ble_Scanner_interface_scan_stopBLEScan(FeatureInterfaceHan
 void system_bluetooth_ble_Scanner_interface_scan_getScanState(FeatureInterfaceHandle handle, AppendData append_data, FtPromiseId pid)
 {
     feature_bluetooth_scan_info_t* scan_info = FeatureGetObjectData(handle);
+    if (!scan_info) {
+        FEATURE_LOG_ERROR("%s, scanner has been closed", __func__);
+        return;
+    }
 
     if (scan_info->scan == NULL) {
         FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "scanner not found");
@@ -844,6 +887,11 @@ FtInt system_bluetooth_ble_Scanner_interface_scan_subscribeBLEDeviceFind(Feature
 {
     feature_bluetooth_scan_info_t* scan_info = FeatureGetObjectData(handle);
     scan_subscribe_info_t* subscribe_info;
+
+    if (!scan_info) {
+        FEATURE_LOG_ERROR("%s, scanner has been closed", __func__);
+        return -1;
+    }
 
     if (!(params->callback > 0)) {
         if (params->fail > 0) {
@@ -869,6 +917,10 @@ void system_bluetooth_ble_Scanner_interface_scan_unsubscribeBLEDeviceFind(Featur
 {
     scan_subscribe_info_t* subscribe_info;
     feature_bluetooth_scan_info_t* scan_info = FeatureGetObjectData(handle);
+    if (!scan_info) {
+        FEATURE_LOG_ERROR("%s, scanner has been closed", __func__);
+        return;
+    }
 
     subscribe_info = (scan_subscribe_info_t*)bt_list_find(scan_info->subscribe_info, scan_subscribe_info_cmp, &SubscribeId);
     if (!subscribe_info)
@@ -877,6 +929,13 @@ void system_bluetooth_ble_Scanner_interface_scan_unsubscribeBLEDeviceFind(Featur
     FeatureRemoveCallback(handle, subscribe_info->callback);
     FeatureRemoveCallback(handle, subscribe_info->fail);
     bt_list_remove(scan_info->subscribe_info, subscribe_info);
+}
+
+void system_bluetooth_ble_Scanner_interface_scan_close(FeatureInterfaceHandle handle, AppendData append_data)
+{
+    feature_scan_destroy(handle);
+
+    FeatureSetObjectData(handle, NULL);
 }
 
 typedef enum {
@@ -1495,9 +1554,12 @@ error:
     return NULL;
 }
 
-void system_bluetooth_ble_GattClient_interface_gattc_finalize(FeatureInterfaceHandle handle)
+static void feature_gattc_destroy(FeatureInterfaceHandle handle)
 {
     feature_bluetooth_gattc_info_t* gattc_info = (feature_bluetooth_gattc_info_t*)FeatureGetObjectData(handle);
+    if (gattc_info == NULL)
+        return;
+
     bt_instance_t* bluetooth_instance = gattc_info->ins;
     feature_bluetooth_features_info_t* features_info = (feature_bluetooth_features_info_t*)(bluetooth_instance->context);
 
@@ -1506,12 +1568,18 @@ void system_bluetooth_ble_GattClient_interface_gattc_finalize(FeatureInterfaceHa
         if (gattc_info->gattc->conn_state == CONNECTION_STATE_CONNECTED) {
             bt_gattc_feature_disconnect_async(gattc_info->gattc->handle, NULL, NULL);
         }
+
+        bt_gattc_feature_delete_client_async(bluetooth_instance, &gattc_info->gattc->remote_address, NULL, NULL);
     }
 
-    bt_gattc_feature_delete_client_async(bluetooth_instance, &gattc_info->gattc->remote_address, NULL, NULL);
     free(gattc_info->gattc);
     bt_list_free(gattc_info->userdata_list);
     bt_list_remove(features_info->feature_ble_gattc, gattc_info);
+}
+
+void system_bluetooth_ble_GattClient_interface_gattc_finalize(FeatureInterfaceHandle handle)
+{
+    feature_gattc_destroy(handle);
 }
 
 static void gattc_connect_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
@@ -1582,8 +1650,12 @@ void system_bluetooth_ble_GattClient_interface_gattc_connect(FeatureInterfaceHan
     gattc_data_t* data = NULL;
     feature_bluetooth_gattc_info_t* gattc_info;
 
-    gattc_info = FeatureGetObjectData(handle);
     status = BT_STATUS_FAIL;
+    gattc_info = FeatureGetObjectData(handle);
+    if (!gattc_info) {
+        FEATURE_LOG_ERROR("%s, gattc has been closed", __func__);
+        return;
+    }
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_DISCONNECTED) {
         FEATURE_LOG_ERROR("%s, Repeated Attempt", __func__);
@@ -1655,6 +1727,10 @@ void system_bluetooth_ble_GattClient_interface_gattc_disconnect(FeatureInterface
     feature_bluetooth_gattc_info_t* gattc_info;
 
     gattc_info = FeatureGetObjectData(handle);
+    if (!gattc_info) {
+        FEATURE_LOG_ERROR("%s, gattc has been closed", __func__);
+        return;
+    }
 
     if (gattc_info->gattc->conn_state == CONNECTION_STATE_DISCONNECTED) {
         FeaturePromiseResolve(handle, pid);
@@ -1725,6 +1801,10 @@ void system_bluetooth_ble_GattClient_interface_gattc_getServices(FeatureInterfac
     feature_bluetooth_gattc_info_t* gattc_info;
 
     gattc_info = FeatureGetObjectData(handle);
+    if (!gattc_info) {
+        FEATURE_LOG_ERROR("%s, gattc has been closed", __func__);
+        return;
+    }
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, gattc not connected", __func__);
@@ -1796,8 +1876,12 @@ void system_bluetooth_ble_GattClient_interface_gattc_readCharacteristicValue(Fea
     gattc_data_t* data = NULL;
     feature_bluetooth_gattc_info_t* gattc_info;
 
-    gattc_info = FeatureGetObjectData(handle);
     status = BT_STATUS_FAIL;
+    gattc_info = FeatureGetObjectData(handle);
+    if (!gattc_info) {
+        FEATURE_LOG_ERROR("%s, gattc has been closed", __func__);
+        return;
+    }
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, gattc not connected", __func__);
@@ -1878,8 +1962,12 @@ void system_bluetooth_ble_GattClient_interface_gattc_readDescriptorValue(Feature
     gattc_data_t* data = NULL;
     feature_bluetooth_gattc_info_t* gattc_info;
 
-    gattc_info = FeatureGetObjectData(handle);
     status = BT_STATUS_FAIL;
+    gattc_info = FeatureGetObjectData(handle);
+    if (!gattc_info) {
+        FEATURE_LOG_ERROR("%s, gattc has been closed", __func__);
+        return;
+    }
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, gattc not connected", __func__);
@@ -1965,8 +2053,12 @@ void system_bluetooth_ble_GattClient_interface_gattc_writeCharacteristicValue(Fe
     feature_bluetooth_gattc_info_t* gattc_info;
     ft_context_ref ft_ctx = FeatureGetContext(handle);
 
-    gattc_info = FeatureGetObjectData(handle);
     status = BT_STATUS_FAIL;
+    gattc_info = FeatureGetObjectData(handle);
+    if (!gattc_info) {
+        FEATURE_LOG_ERROR("%s, gattc has been closed", __func__);
+        return;
+    }
 
     FtArray* descriptor_array = params->characteristic->descriptors;
     int descriptor_len = descriptor_array->_size;
@@ -2066,8 +2158,12 @@ void system_bluetooth_ble_GattClient_interface_gattc_writeDescriptorValue(Featur
     gattc_data_t* data = NULL;
     feature_bluetooth_gattc_info_t* gattc_info;
 
-    gattc_info = FeatureGetObjectData(handle);
     status = BT_STATUS_FAIL;
+    gattc_info = FeatureGetObjectData(handle);
+    if (!gattc_info) {
+        FEATURE_LOG_ERROR("%s, gattc has been closed", __func__);
+        return;
+    }
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, not connected", __func__);
@@ -2155,8 +2251,12 @@ void system_bluetooth_ble_GattClient_interface_gattc_setBLEMtuSize(FeatureInterf
     gattc_data_t* data = NULL;
     feature_bluetooth_gattc_info_t* gattc_info;
 
-    gattc_info = FeatureGetObjectData(handle);
     status = BT_STATUS_FAIL;
+    gattc_info = FeatureGetObjectData(handle);
+    if (!gattc_info) {
+        FEATURE_LOG_ERROR("%s, gattc has been closed", __func__);
+        return;
+    }
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, gattc not connected", __func__);
@@ -2223,8 +2323,12 @@ void system_bluetooth_ble_GattClient_interface_gattc_setNotifyCharacteristicChan
     gattc_data_t* data = NULL;
     feature_bluetooth_gattc_info_t* gattc_info;
 
-    gattc_info = FeatureGetObjectData(handle);
     status = BT_STATUS_FAIL;
+    gattc_info = FeatureGetObjectData(handle);
+    if (!gattc_info) {
+        FEATURE_LOG_ERROR("%s, gattc has been closed", __func__);
+        return;
+    }
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, gattc not connected", __func__);
@@ -2270,4 +2374,11 @@ error:
         bt_list_remove(gattc_info->userdata_list, data);
 
     FeaturePromiseReject(handle, pid, status, "gattc set notify failed!");
+}
+
+FtBool system_bluetooth_ble_GattClient_interface_gattc_close(FeatureInterfaceHandle handle, AppendData append_data)
+{
+    feature_gattc_destroy(handle);
+    FeatureSetObjectData(handle, NULL);
+    return true;
 }
