@@ -154,8 +154,11 @@ typedef enum {
 
 /* GATT_H_DESCRIPTOR */
 #define GATT_H_CCCD(_perm, _change, _handle) \
-    GATT_H_DESCRIPTOR(BT_UUID_DECLARE_16(BT_UUID_GATT_CCCD), _perm, ATTR_RSP_BY_APP, NULL, _change, NULL, 0, _handle)
+    GATT_H_DESCRIPTOR(BT_UUID_DECLARE_16(BT_UUID_GATT_CCCD), _perm, ATTR_AUTO_RSP, NULL, _change, NULL, 0, _handle)
 
+/* GATT_H_DESCRIPTOR for CCCD with user response (APP handles read/write) */
+#define GATT_H_CCCD_USER_RSP(_perm, _read, _write, _handle) \
+    GATT_H_DESCRIPTOR(BT_UUID_DECLARE_16(BT_UUID_GATT_CCCD), _perm, ATTR_RSP_BY_APP, _read, _write, NULL, 0, _handle)
 /* GATT_H_DESCRIPTOR */
 #define GATT_H_CPFD(_value, _length, _handle) \
     GATT_H_DESCRIPTOR(BT_UUID_DECLARE_16(BT_UUID_GATT_CPFD), GATT_PERM_READ, ATTR_AUTO_RSP, NULL, NULL, _value, _length, _handle)
