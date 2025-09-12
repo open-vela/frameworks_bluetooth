@@ -47,6 +47,7 @@ typedef union {
         struct bt_conn_le_create_param create;
         struct bt_le_conn_param conn;
     } conn_param;
+    int security_level;
 } sal_adapter_args_t;
 
 typedef struct {
@@ -117,6 +118,7 @@ static struct bt_conn_auth_info_cb g_conn_auth_info_cbs = {
 
 static struct bt_conn_auth_cb g_conn_auth_cbs;
 static le_conn_info_t g_le_conn_info[CONFIG_BT_MAX_CONN];
+static bt_security_t g_security_level = BT_SECURITY_L2;
 
 static uint8_t zblue_convert_addr_type(ble_addr_type_t addr_type)
 {
@@ -1078,7 +1080,7 @@ static void STACK_CALL(create_bond)(void* args)
         return;
     }
 
-    err = bt_conn_set_security(conn, BT_SECURITY_L2);
+    err = bt_conn_set_security(conn, g_security_level);
     if (err) {
         BT_LOGE("%s, bond fail err:%d", __func__, err);
         return;
@@ -1101,6 +1103,28 @@ bt_status_t bt_sal_le_create_bond(bt_controller_id_t id, bt_address_t* addr, ble
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
+}
+
+static void STACK_CALL(set_security_level)(void* args)
+{
+    sal_adapter_req_t* req = args;
+
+    g_security_level = req->adpt.security_level;
+}
+
+bt_status_t bt_sal_le_set_security_level(bt_controller_id_t id, uint8_t level)
+{
+    sal_adapter_req_t* req;
+
+    req = sal_adapter_req(id, NULL, STACK_CALL(set_security_level));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    req->adpt.security_level = level;
+
+    return sal_send_req(req);
 }
 
 static void zblue_convert_le_addr(bt_address_t* addr, ble_addr_type_t type, bt_addr_le_t* le_addr)
