@@ -71,6 +71,8 @@ BT_DEVICE_MESSAGE_START,
 // TODO: Add new BT IPC Code sequentially
 #define BT_DEVICE_SUBCODE_SET_SECURITY_LEVEL 1
 #define BT_DEVICE_SET_SECURITY_LEVEL BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_DEVICE, BT_DEVICE_SUBCODE_SET_SECURITY_LEVEL)
+#define BT_DEVICE_SUBCODE_SET_BONDABLE_LE 2
+#define BT_DEVICE_SET_BONDABLE_LE BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_DEVICE, BT_DEVICE_SUBCODE_SET_BONDABLE_LE)
 
 #define BT_IPC_CODE_COMMAND_DEVICE_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_DEVICE, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
@@ -158,7 +160,8 @@ BT_DEVICE_MESSAGE_START,
         struct {
             bt_address_t addr;
             uint8_t accept; /* boolean */
-        } _bt_device_pair_request_reply;
+        } _bt_device_pair_request_reply,
+            _bt_device_set_bondable_le;
 
         struct {
             bt_address_t addr;

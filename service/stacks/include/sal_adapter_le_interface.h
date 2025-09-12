@@ -41,6 +41,7 @@ bt_status_t bt_sal_le_set_bonded_devices(bt_controller_id_t id, remote_device_le
 bt_status_t bt_sal_le_get_bonded_devices(bt_controller_id_t id, remote_device_le_properties_t* props, uint16_t* prop_cnt);
 bt_status_t bt_sal_le_connect(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t type, ble_connect_params_t* params);
 bt_status_t bt_sal_le_disconnect(bt_controller_id_t id, bt_address_t* addr);
+bt_status_t bt_sal_le_set_bondable(bt_controller_id_t id, bool enable);
 bt_status_t bt_sal_le_create_bond(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t type);
 bt_status_t bt_sal_le_set_security_level(bt_controller_id_t id, uint8_t level);
 bt_status_t bt_sal_le_remove_bond(bt_controller_id_t id, bt_address_t* addr);

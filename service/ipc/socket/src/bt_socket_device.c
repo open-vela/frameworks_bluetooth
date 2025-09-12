@@ -306,6 +306,10 @@ void bt_socket_server_device_process(service_poll_t* poll,
                 packet->devs_pl._bt_device_set_security_level.level,
                 packet->devs_pl._bt_device_set_security_level.transport);
             break;
+        case BT_DEVICE_SUBCODE_SET_BONDABLE_LE:
+            packet->devs_r.status = BTSYMBOLS(bt_device_set_bondable_le)(ins,
+                packet->devs_pl._bt_device_set_bondable_le.accept);
+            break;
         default:
             packet->devs_r.status = BT_STATUS_NOT_SUPPORTED;
             break;
