@@ -43,6 +43,7 @@ static int get_local_addr_cmd(void* handle, int argc, char** argv);
 static int get_appearance_cmd(void* handle, int argc, char** argv);
 static int set_appearance_cmd(void* handle, int argc, char** argv);
 static int set_le_addr_cmd(void* handle, int argc, char** argv);
+static int set_bondable_le_cmd(void* handle, int argc, char** argv);
 static int set_security_level_cmd(void* handle, int argc, char** argv);
 static int get_le_addr_cmd(void* handle, int argc, char** argv);
 static int set_identity_addr_cmd(void* handle, int argc, char** argv);
@@ -245,6 +246,7 @@ static bt_command_t g_set_cmd_tables[] = {
     { "class", set_local_cod_cmd, 0, SET_CLASS_USAGE },
     { "appearance", set_appearance_cmd, 0, "set le adapter appearance, params: <appearance>" },
     { "leaddr", set_le_addr_cmd, 0, "set ble adapter addr, params: <leaddr>" },
+    { "bondable", set_bondable_le_cmd, 0, "set LE bondable, params: <bondable>" },
     { "security", set_security_level_cmd, 0, "set bond security level, params: <level> <transport>" },
     { "id", set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>" },
     { "scanparams", set_scan_parameters_cmd, 0, SET_SCANPARAMS_USAGE },
@@ -641,6 +643,20 @@ static int set_le_addr_cmd(void* handle, int argc, char** argv)
 
     bt_adapter_set_le_address(handle, &addr);
 
+    return CMD_OK;
+}
+
+static int set_bondable_le_cmd(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bool bondable = atoi(argv[0]);
+
+    if (bt_device_set_bondable_le(handle, bondable) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("bondable: %d set success", bondable);
     return CMD_OK;
 }
 

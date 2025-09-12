@@ -323,6 +323,7 @@ bt_status_t adapter_le_add_whitelist(bt_address_t* addr);
 bt_status_t adapter_le_remove_whitelist(bt_address_t* addr);
 bt_status_t adapter_create_bond(bt_address_t* addr, bt_transport_t transport);
 bt_status_t adapter_remove_bond(bt_address_t* addr, uint8_t transport);
+bt_status_t adapter_le_set_bondable(bool enable);
 bt_status_t adapter_set_security_level(uint8_t level, bt_transport_t transport);
 bt_status_t adapter_cancel_bond(bt_address_t* addr);
 bt_status_t adapter_pair_request_reply(bt_address_t* addr, bool accept);
