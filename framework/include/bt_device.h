@@ -97,7 +97,7 @@ typedef enum {
  * @brief Get the BLE Identity Address of a remote device.
  *
  * Retrieves the BLE Identity Address (`id_addr`) of a remote device. The Identity Address is a fixed
- * BLE address used to identify the device, distinct from the current BLE address (`bd_addr`) when 
+ * BLE address used to identify the device, distinct from the current BLE address (`bd_addr`) when
  * privacy features such as Resolvable Private Address (RPA) are enabled.
  *
  * @param ins - Bluetooth client instance, see @ref bt_instance_t.
@@ -107,24 +107,24 @@ typedef enum {
  * @param[out] id_addr - Pointer to store the Identity Address, which will be one of:
  *                       - Public Device Address
  *                       - Static Random Address
- * 
+ *
  * @return bt_status_t
  *         - `BT_STATUS_SUCCESS`: Successfully retrieved the Identity Address.
  *         - Negative error code: Operation failed (e.g., invalid address or device not found).
  *
  * @note **Difference Between `bd_addr` and `id_addr`:**
- *       - **`bd_addr`**: The device's current BLE connection address, which may change if privacy 
+ *       - **`bd_addr`**: The device's current BLE connection address, which may change if privacy
  *         features such as RPA are used. It is used for ongoing communication.
  *       - **`id_addr`**: The stable Identity Address, which will always be one of:
  *         - **Public Device Address**: Globally unique and assigned by the manufacturer.
  *         - **Static Random Address**: Fixed and randomly generated, persistent across power cycles.
  *
  * @note **Bluetooth Address Details:**
- *       - **Public Device Address**: Globally unique address assigned by the manufacturer, also used 
+ *       - **Public Device Address**: Globally unique address assigned by the manufacturer, also used
  *         as BD_ADDR for BR/EDR devices.
  *       - **Random Device Address**: Includes:
  *         - **Static Address**: Fixed random address when privacy is not enabled.
- *         - **Resolvable Private Address (RPA)**: Temporary address used for privacy, resolved to 
+ *         - **Resolvable Private Address (RPA)**: Temporary address used for privacy, resolved to
  *           the Identity Address using the IRK (Identity Resolving Key).
  *       - **Identity Address**: A fixed address used to identify the device.
  *
@@ -146,7 +146,7 @@ bt_status_t BTSYMBOLS(bt_device_get_identity_address)(bt_instance_t* ins, bt_add
 /**
  * @brief Get the BLE address type of a remote device.
  *
- * Retrieves the BLE address type, indicating whether it is Public, Static Random, RPA, 
+ * Retrieves the BLE address type, indicating whether it is Public, Static Random, RPA,
  * or other specific types.
  *
  * @param ins - Bluetooth client instance, see @ref bt_instance_t.
@@ -157,12 +157,12 @@ bt_status_t BTSYMBOLS(bt_device_get_identity_address)(bt_instance_t* ins, bt_add
  *
  * @note **Address Types:**
  *       - **BT_LE_ADDR_TYPE_PUBLIC**: Public address, globally unique and unchanging.
- *       - **BT_LE_ADDR_TYPE_RANDOM**: Random address, used during connections (e.g., RPA or static random).  
- *         When used locally (e.g., in advertising), this indicates a static random address 
+ *       - **BT_LE_ADDR_TYPE_RANDOM**: Random address, used during connections (e.g., RPA or static random).
+ *         When used locally (e.g., in advertising), this indicates a static random address
  *         set via `bt_adapter_set_le_address`.
- *       - **BT_LE_ADDR_TYPE_PUBLIC_ID**: Public identity address, using public address for identification 
+ *       - **BT_LE_ADDR_TYPE_PUBLIC_ID**: Public identity address, using public address for identification
  *         even if a static random address is set.
- *       - **BT_LE_ADDR_TYPE_RANDOM_ID**: Random identity address (e.g., RPA), used when 
+ *       - **BT_LE_ADDR_TYPE_RANDOM_ID**: Random identity address (e.g., RPA), used when
  *         the privacy feature is enabled.
  *       - **BT_LE_ADDR_TYPE_ANONYMOUS**: Anonymous address, often used with Accept/White Lists.
  *       - **BT_LE_ADDR_TYPE_UNKNOWN**: The address type cannot be determined.
@@ -241,10 +241,10 @@ bool BTSYMBOLS(bt_device_get_name)(bt_instance_t* ins, bt_address_t* addr, char*
 /**
  * @brief Get the Class of Device (CoD) of a remote device.
  *
- * Retrieves the Class of Device (CoD) value of a remote device. 
- * The Class of Device is a parameter received during the device discovery procedure 
- * on the BR/EDR physical transport, indicating the type of device. 
- * The Class of Device parameter is only used on BR/EDR and BR/EDR/LE devices 
+ * Retrieves the Class of Device (CoD) value of a remote device.
+ * The Class of Device is a parameter received during the device discovery procedure
+ * on the BR/EDR physical transport, indicating the type of device.
+ * The Class of Device parameter is only used on BR/EDR and BR/EDR/LE devices
  * using the BR/EDR physical transport.
  *
  * - The CoD parameter consists of:
@@ -271,10 +271,10 @@ uint32_t BTSYMBOLS(bt_device_get_device_class)(bt_instance_t* ins, bt_address_t*
 /**
  * @brief Get the list of supported UUIDs of a remote device.
  *
- * Retrieves the list of Universally Unique Identifiers (UUIDs) supported by a remote device. 
- * A UUID is a universally unique identifier that is expected to be unique across all 
- * space and time (more precisely, the probability of independently-generated UUIDs 
- * being the same is negligible). Normally, a client searches for services based on 
+ * Retrieves the list of Universally Unique Identifiers (UUIDs) supported by a remote device.
+ * A UUID is a universally unique identifier that is expected to be unique across all
+ * space and time (more precisely, the probability of independently-generated UUIDs
+ * being the same is negligible). Normally, a client searches for services based on
  * specific desired characteristics, each represented by a UUID.
  *
  * @param ins - Bluetooth client instance, see @ref bt_instance_t.
@@ -303,9 +303,9 @@ bt_status_t BTSYMBOLS(bt_device_get_uuids)(bt_instance_t* ins, bt_address_t* add
 /**
  * @brief Get the BLE appearance of a remote device.
  *
- * Retrieves the Appearance characteristic of a remote device. The Appearance 
- * characteristic contains a 16-bit number that can be mapped to an icon or string 
- * that describes the physical representation of the device during the device discovery 
+ * Retrieves the Appearance characteristic of a remote device. The Appearance
+ * characteristic contains a 16-bit number that can be mapped to an icon or string
+ * that describes the physical representation of the device during the device discovery
  * procedure. It is a characteristic of the GAP service located on the device’s GATT Server.
  *
  * @note Currently not supported.
@@ -356,7 +356,7 @@ bool BTSYMBOLS(bt_device_get_alias)(bt_instance_t* ins, bt_address_t* addr, char
  *
  * Assigns an alias (user-defined name) to a remote device.
  * The length of the alias name shall be less than BT_LOC_NAME_MAX_LEN.
- * 
+ *
  * @param ins - Bluetooth client instance, see @ref bt_instance_t.
  * @param addr - Address of the remote device.
  * @param alias - New alias for the device.
@@ -512,6 +512,25 @@ if (bt_device_create_bond(ins, &addr, BT_TRANSPORT_BR_EDR) == BT_STATUS_SUCCESS)
  * @endcode
  */
 bt_status_t BTSYMBOLS(bt_device_create_bond)(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport);
+
+/**
+ * @brief Set the security level for bond.
+ *
+ * Dynamically set the security level when bond with remote device.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param level - set the security level(0 ~ 4). Level 0: Only for BR/EDR special cases, like SDP
+ * @param transport - Transport type (0: LE, 1: BR/EDR).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a error code on failure.
+ *
+ * **Example:**
+ * @code
+// bond with Authenticated Secure Connections
+ bt_device_set_security_level(ins, 4, BT_TRANSPORT_BLE);
+ bt_device_create_bond(ins, &addr, BT_TRANSPORT_BLE);
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_device_set_security_level)(bt_instance_t* ins, uint8_t level, bt_transport_t transport);
 
 /**
  * @brief Remove bonding with a remote device.
