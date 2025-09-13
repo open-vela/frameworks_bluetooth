@@ -550,6 +550,35 @@ if (bt_gattc_write_without_response(g_gattc_devies[conn_id].handle, attr_handle,
 bt_status_t BTSYMBOLS(bt_gattc_write_without_response)(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length);
 
 /**
+ * @brief Write data to a specific attribute (Signed Write Without Response).
+ *
+ * This function writes data to a specific attribute handle using the
+ * ATT "Signed Write Command" procedure. It should be used when the
+ * attribute's properties include the `GATT_PROPERTY_SIGNED_WRITE` flag.
+ *
+ * Unlike a normal Write Without Response, this procedure includes a
+ * signature to provide authentication of the write operation.
+ *
+ * @param conn_handle  GATT client connection handle (void*).
+ * @param attr_handle  Attribute handle being written.
+ * @param value        Pointer to the buffer containing the data to write.
+ * @param length       Length of the data buffer.
+ *
+ * @return bt_status_t
+ * - BT_STATUS_SUCCESS on success,
+ * - Other error codes on failure.
+ *
+ * **Example:**
+ * @code
+if (bt_gattc_write_with_signed(g_gattc_devices[conn_id].handle,
+                               attr_handle, value, len) != BT_STATUS_SUCCESS) {
+    // Handle Error
+}
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_gattc_write_with_signed)(gattc_handle_t conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length);
+
+/**
  * @brief enable a centain CCCD(Client Characteristic Configuration Description).
  *
  * This function is used to enable CCCD. Once enabled, it can receive Indication and Notification

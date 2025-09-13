@@ -42,6 +42,7 @@ static int discover_services_cmd(void* handle, int argc, char* argv[]);
 static int read_request_cmd(void* handle, int argc, char* argv[]);
 static int write_cmd(void* handle, int argc, char* argv[]);
 static int write_request_cmd(void* handle, int argc, char* argv[]);
+static int write_signed_cmd(void* handle, int argc, char* argv[]);
 static int enable_cccd_cmd(void* handle, int argc, char* argv[]);
 static int disable_cccd_cmd(void* handle, int argc, char* argv[]);
 static int exchange_mtu_cmd(void* handle, int argc, char* argv[]);
@@ -82,6 +83,9 @@ static bt_command_t g_gattc_tables[] = {
     { "write_request", write_request_cmd, 0, "\"write request with response : <conn id><har id><type>(str or hex)<payload>\"\n"
                                              "\t\t\t  e.g., write_request 0 0001 str HelloACK\n"
                                              "\t\t\t  e.g., write_request 0 0001 hex 0A 0B 0C 0D\"" },
+    { "write_signed", write_signed_cmd, 0, "\"signed write without response : <conn id><har id><type>(str or hex)<payload>\"\n"
+                                           "\t\t\t  e.g., write_signed 0 0001 str HelloACK\n"
+                                           "\t\t\t  e.g., write_signed 0 0001 hex 0A 0B 0C 0D\"" },
     { "enable_cccd", enable_cccd_cmd, 0, "\"enable cccd(1: NOTIFY, 2: INDICATE) :<conn id><char id><ccc value>\"" },
     { "disable_cccd", disable_cccd_cmd, 0, "\"disable cccd :<conn id><char id>\"" },
     { "exchange_mtu", exchange_mtu_cmd, 0, "\"exchange mtu :<conn id><mtu>\"" },
@@ -220,6 +224,49 @@ static int write_cmd(void* handle, int argc, char* argv[])
         for (i = 0; i < len; i++)
             value[i] = (uint8_t)(strtol(argv[3 + i], NULL, 16) & 0xFF);
         if (bt_gattc_write_without_response(g_gattc_devies[conn_id].handle, attr_handle, value, len) != BT_STATUS_SUCCESS)
+            goto error;
+    } else
+        return CMD_INVALID_PARAM;
+
+    if (value)
+        free(value);
+
+    return CMD_OK;
+error:
+    if (value)
+        free(value);
+    return CMD_ERROR;
+}
+
+static int write_signed_cmd(void* handle, int argc, char* argv[])
+{
+    if (argc < 4)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    int conn_id = atoi(argv[0]);
+    int len, i;
+    uint8_t* value = NULL;
+    CHECK_CONNCTION_ID(conn_id);
+
+    uint16_t attr_handle = strtol(argv[1], NULL, 16);
+
+    if (!strcmp(argv[2], "str")) {
+        if (bt_gattc_write_with_signed(g_gattc_devies[conn_id].handle, attr_handle,
+                (uint8_t*)argv[3], strlen(argv[3]))
+            != BT_STATUS_SUCCESS)
+            return CMD_ERROR;
+    } else if (!strcmp(argv[2], "hex")) {
+        len = argc - 3;
+        if (len <= 0 || len > 0xFFFF)
+            return CMD_USAGE_FAULT;
+
+        value = malloc(len);
+        if (!value)
+            return CMD_ERROR;
+
+        for (i = 0; i < len; i++)
+            value[i] = (uint8_t)(strtol(argv[3 + i], NULL, 16) & 0xFF);
+        if (bt_gattc_write_with_signed(g_gattc_devies[conn_id].handle, attr_handle, value, len) != BT_STATUS_SUCCESS)
             goto error;
     } else
         return CMD_INVALID_PARAM;
