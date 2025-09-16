@@ -209,6 +209,10 @@ typedef enum {
     EM_LE_LOW_POWER,
 } bt_enhanced_mode_t;
 
+typedef enum {
+    BT_DEBUG_MODE_PTS,
+} bt_debug_mode_t;
+
 typedef uint8_t bt_128key_t[16];
 
 typedef struct {
