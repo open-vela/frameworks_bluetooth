@@ -758,7 +758,20 @@ static void on_scan_start_status_cb(bt_scanner_t* scanner, uint8_t status)
 
 static void on_scan_stopped_cb(bt_scanner_t* scanner)
 {
+    feature_bluetooth_scan_info_t* scan_info;
+    bt_instance_t* bluetooth_instance;
+
+    bluetooth_instance = ((bt_scan_remote_t*)scanner)->ins;
+    FIND_INFO_BY_OBJECT(bluetooth_instance, scanner, scan, scan_info);
+    if (!scan_info) {
+        FEATURE_LOG_ERROR("%s, scan_info not found", __func__);
+        return;
+    }
+
     FEATURE_LOG_ERROR("%s, scanner:%p", __func__, scanner);
+
+    scan_info->scan = NULL;
+    scan_info->busy = false;
 }
 
 static const scanner_callbacks_t scanner_callbacks = {
@@ -858,8 +871,6 @@ void system_bluetooth_ble_Scanner_interface_scan_stopBLEScan(FeatureInterfaceHan
         return;
 
     bt_le_stop_scan_async(scan_info->ins, scan_info->scan, NULL, NULL);
-    scan_info->scan = NULL;
-    scan_info->busy = false;
 }
 
 void system_bluetooth_ble_Scanner_interface_scan_getScanState(FeatureInterfaceHandle handle, AppendData append_data, FtPromiseId pid)
