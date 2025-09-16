@@ -870,11 +870,6 @@ void system_bluetooth_ble_Scanner_interface_scan_getScanState(FeatureInterfaceHa
         return;
     }
 
-    if (scan_info->scan == NULL) {
-        FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "scanner not found");
-        return;
-    }
-
     if (scan_info->scan) {
         FeaturePromiseResolve(handle, pid, STATE_SCANING);
     } else {
