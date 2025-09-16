@@ -337,7 +337,7 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
         memcpy(&addr, &le_addr, sizeof(addr.addr));
     }
 
-    if (err) {
+    if (err && !adapter_get_pts_mode()) {
         adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BLE, BT_STATUS_FAIL, false);
         BT_LOGD("%s, err: %d, remove old key", __func__, err);
         ret = bt_unpair(BT_ID_DEFAULT, info.le.dst);
@@ -493,7 +493,8 @@ static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err r
 
     memcpy(&addr, info.le.dst->a.val, sizeof(addr));
     adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BLE, BT_STATUS_AUTH_FAILURE, false);
-    bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
+    if (!adapter_get_pts_mode())
+        bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
 }
 
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)

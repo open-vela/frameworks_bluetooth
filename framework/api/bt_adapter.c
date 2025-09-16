@@ -72,9 +72,19 @@ bt_status_t BTSYMBOLS(bt_adapter_set_discovery_filter)(bt_instance_t* ins)
     return 0;
 }
 
+bt_status_t BTSYMBOLS(bt_adapter_start_limited_discovery)(bt_instance_t* ins, uint32_t timeout)
+{
+    return adapter_start_discovery(timeout, true);
+}
+
+bt_status_t BTSYMBOLS(bt_adapter_set_debug_mode)(bt_instance_t* ins, uint8_t mode, uint8_t operation)
+{
+    return adapter_set_debug_mode(mode, operation);
+}
+
 bt_status_t BTSYMBOLS(bt_adapter_start_discovery)(bt_instance_t* ins, uint32_t timeout)
 {
-    return adapter_start_discovery(timeout);
+    return adapter_start_discovery(timeout, false);
 }
 
 bt_status_t BTSYMBOLS(bt_adapter_cancel_discovery)(bt_instance_t* ins)
@@ -169,9 +179,9 @@ bt_status_t BTSYMBOLS(bt_adapter_set_le_address)(bt_instance_t* ins, bt_address_
     return adapter_set_le_address(addr);
 }
 
-bt_status_t BTSYMBOLS(bt_adapter_set_le_identity_address)(bt_instance_t* ins, bt_address_t* addr, bool public)
+bt_status_t BTSYMBOLS(bt_adapter_set_le_identity_address)(bt_instance_t* ins, bt_address_t* addr, bool is_public)
 {
-    return adapter_set_le_identity_address(addr, public);
+    return adapter_set_le_identity_address(addr, is_public);
 }
 
 bt_status_t BTSYMBOLS(bt_adapter_set_le_appearance)(bt_instance_t* ins, uint16_t appearance)
