@@ -957,7 +957,7 @@ typedef enum {
 
 static void feature_notify_gatt_state_changed(FeatureInterfaceHandle handle, connection_state_t state, bt_address_t* addr)
 {
-    FtEventId event_id = FeatureGetEventId(handle, "onBLEGattConnectionStateChange");
+    FtEventId event_id = FeatureGetEventId(handle, "onBLEConnectionStateChange");
     FtInt conn_state;
 
     if (!(FeatureGetEventCallbackCount(handle, event_id) > 0))
