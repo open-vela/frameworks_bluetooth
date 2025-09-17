@@ -1515,37 +1515,29 @@ static bt_gattc_feature_callbacks_t gattc_cbs = {
 };
 
 FeatureInterfaceHandle system_bluetooth_ble_wrap_createGattClientDevice(FeatureInstanceHandle feature,
-    AppendData append_data, FtString deviceId, FtVariParams vari_params)
+    AppendData append_data, FtString deviceId, FtString addressType)
 {
     bt_instance_t* bluetooth_instance = feature_bluetooth_get_bt_ins(feature);
     feature_bluetooth_features_info_t* features_info = (feature_bluetooth_features_info_t*)(bluetooth_instance->context);
     feature_bluetooth_gattc_info_t* gattc_info = (feature_bluetooth_gattc_info_t*)calloc(1, sizeof(feature_bluetooth_gattc_info_t));
-    ft_context_ref ft_ctx = FeatureGetContext(feature);
 
     gattc_info->ins = bluetooth_instance;
     gattc_info->gattc = (gattc_t*)calloc(1, sizeof(gattc_t));
 
+    if (!deviceId || !addressType)
+        goto error;
+
     if (bt_addr_str2ba(deviceId, &gattc_info->gattc->remote_address) < 0)
         goto error;
 
-    for (int i = 0; i < vari_params.vari_count; i++) {
-        ft_value_t param = vari_params.vari_args[i]; // Visit each parameter
-        ft_type param_type = ft_get_type(ft_ctx, param); // Get parameter type
-        if (param_type == FT_TYPE_STRING) {
-            const char* param_str = ft_to_string(ft_ctx, param);
-            if (!strncmp(param_str, "PUBLIC", strlen("PUBLIC")))
-                gattc_info->gattc->addr_type = BT_LE_ADDR_TYPE_PUBLIC;
-            else if (!strncmp(param_str, "RANDOM", strlen("RANDOM")))
-                gattc_info->gattc->addr_type = BT_LE_ADDR_TYPE_RANDOM;
-            else if (!strncmp(param_str, "ANONYMOUS", strlen("ANONYMOUS")))
-                gattc_info->gattc->addr_type = BT_LE_ADDR_TYPE_ANONYMOUS;
-            else
-                gattc_info->gattc->addr_type = BT_LE_ADDR_TYPE_UNKNOWN;
-
-            ft_free_string(ft_ctx, param_str);
-        } else
-            goto error;
-    }
+    if (!strncmp(addressType, "PUBLIC", strlen("PUBLIC")))
+        gattc_info->gattc->addr_type = BT_LE_ADDR_TYPE_PUBLIC;
+    else if (!strncmp(addressType, "RANDOM", strlen("RANDOM")))
+        gattc_info->gattc->addr_type = BT_LE_ADDR_TYPE_RANDOM;
+    else if (!strncmp(addressType, "ANONYMOUS", strlen("ANONYMOUS")))
+        gattc_info->gattc->addr_type = BT_LE_ADDR_TYPE_ANONYMOUS;
+    else
+        gattc_info->gattc->addr_type = BT_LE_ADDR_TYPE_UNKNOWN;
 
     FeatureInterfaceHandle handle = system_bluetooth_ble_createGattClientDevice_instance(feature);
     FEATURE_LOG_INFO("%s::%s(), FeatureInstanceHandle: %p, FeatureInterfaceHandle: %p\n", file_tag, __FUNCTION__, feature, handle);
