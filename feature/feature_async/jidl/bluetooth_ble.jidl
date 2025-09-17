@@ -76,10 +76,14 @@ struct DeviceFindParams {
     callback deviceFindFail fail
 }
 
+struct ScanStateParams {
+    int scanState
+}
+
 interface Scanner {
     promise<void> startBLEScan(StartScanParams params)
     void stopBLEScan()
-    promise<int> getScanState()
+    promise<ScanStateParams> getScanState()
     int subscribeBLEDeviceFind(DeviceFindParams params)
     void unsubscribeBLEDeviceFind(int SubscribeId)
     void close()
