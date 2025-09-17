@@ -166,4 +166,4 @@ interface GattClient {
     event onBLECharacteristicChange(BLECharacteristic params)
     event onBLEConnectionStateChange(int state)
 }
-[ctor="true", target="gattc"] GattClient createGattClientDevice(string deviceId, ...)
+[ctor="true", target="gattc"] GattClient createGattClientDevice(string deviceId, string addressType = "UNKNOWN")
