@@ -876,16 +876,20 @@ void system_bluetooth_ble_Scanner_interface_scan_stopBLEScan(FeatureInterfaceHan
 void system_bluetooth_ble_Scanner_interface_scan_getScanState(FeatureInterfaceHandle handle, AppendData append_data, FtPromiseId pid)
 {
     feature_bluetooth_scan_info_t* scan_info = FeatureGetObjectData(handle);
+    system_bluetooth_ble_ScanStateParams* state;
     if (!scan_info) {
         FEATURE_LOG_ERROR("%s, scanner has been closed", __func__);
         return;
     }
 
-    if (scan_info->scan) {
-        FeaturePromiseResolve(handle, pid, STATE_SCANING);
-    } else {
-        FeaturePromiseResolve(handle, pid, STATE_NON_SCAN);
-    }
+    state = system_bluetooth_bleMallocScanStateParams();
+    if (scan_info->scan)
+        state->scanState = STATE_SCANING;
+    else
+        state->scanState = STATE_NON_SCAN;
+
+    FeaturePromiseResolve(handle, pid, state);
+    FeatureFreeValue(state);
 }
 
 FtInt system_bluetooth_ble_Scanner_interface_scan_subscribeBLEDeviceFind(FeatureInterfaceHandle handle, AppendData append_data,
