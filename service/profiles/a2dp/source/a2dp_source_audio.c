@@ -44,6 +44,7 @@
 #include "a2dp_source_audio.h"
 
 #include "audio_transport.h"
+#include "bt_time.h"
 #include "utils.h"
 #define LOG_TAG "a2dp_src_stream"
 #include "utils/log.h"
@@ -86,6 +87,7 @@ typedef struct {
     struct circbuf_s stream_pool;
     uint8_t read_congest;
     a2dp_source_underflow_t underflow;
+    uint64_t last_ts;
     const a2dp_source_stream_interface_t* stream_interface;
 } a2dp_source_stream_t;
 
@@ -247,6 +249,15 @@ static void a2dp_source_audio_handle_timer(service_timer_t* timer, void* arg)
     if ((stream->stream_state != STATE_RUNNING) && (stream->stream_state != STATE_SUSPENDING))
         return;
 
+#ifndef CONFIG_ARCH_SIM
+    uint64_t now_us = bt_get_os_timestamp_us();
+    if (stream->last_ts && ((now_us - stream->last_ts) > (2 * stream->interval_ms * 1000))) {
+        BT_LOGD("===a2dp cpu busy time:%" PRIu64 "===", now_us - stream->last_ts);
+    }
+
+    stream->last_ts = now_us;
+#endif
+
     /* Handle stream underflow */
     if (circbuf_used(&stream->stream_pool) < stream->stream_interface->get_min_frame_size()) {
         if (!stream->underflow.ticks)
@@ -315,6 +326,7 @@ static void a2dp_source_start_delay(service_timer_t* timer, void* arg)
 
     service_loop_cancel_timer(stream->media_alarm);
     stream->media_alarm = NULL;
+    stream->last_ts = 0;
     stream->media_alarm = service_loop_timer(stream->interval_ms,
         stream->interval_ms,
         a2dp_source_audio_handle_timer,
