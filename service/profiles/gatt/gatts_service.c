@@ -569,7 +569,7 @@ static bt_status_t if_gatts_connect_bear(void* srv_handle, bt_address_t* addr, b
     CHECK_SERVICE_VALID(g_gatts_manager.services, service);
 
     BT_ADDR_LOG("GATTS-CONNECT-REQUEST-V2 addr:%s", addr);
-    return bt_sal_gatt_server_connect_bear(addr, addr_type, bear_type);
+    return bt_sal_gatt_server_connect_bear(PRIMARY_ADAPTER, addr, addr_type, bear_type);
 }
 
 static bt_status_t if_gatts_disconnect(void* srv_handle, bt_address_t* addr)
