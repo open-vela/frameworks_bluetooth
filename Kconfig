@@ -103,6 +103,12 @@ config BLUETOOTH_BLE_SCAN_FILTER
 	default n
 	depends on BLUETOOTH_BLE_SCAN
 
+config BLUETOOTH_HCI_FILTER
+       bool "Enable Bluetooth HCI filter"
+       default y
+       help
+               Enable Bluetooth HCI filter
+
 config BLUETOOTH_L2CAP
 	bool "L2CAP dynamic channel support"
 	default n
