@@ -799,6 +799,11 @@ static void STACK_CALL(conn_connect)(void* args)
     }
 }
 
+bt_status_t bt_sal_gatt_server_connect_bear(bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type)
+{
+    return BT_STATUS_UNSUPPORTED;
+}
+
 bt_status_t bt_sal_gatt_server_connect(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t addr_type)
 {
     sal_adapter_req_t* req;
