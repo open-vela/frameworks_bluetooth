@@ -947,6 +947,7 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
     }
     adapter_unlock();
 
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     if (acl_params->transport == BT_TRANSPORT_BREDR) {
         switch (acl_params->connection_state) {
         case CONNECTION_STATE_CONNECTED:
@@ -959,11 +960,14 @@ static void process_connection_state_changed_evt(bt_address_t* addr, acl_state_p
             break;
         }
     }
+#endif
 
     bt_dfx_connection_state_changed(acl_params->hci_reason_code, acl_params->transport);
 
+#ifdef CONFIG_BLUETOOTH_CONNECTION_MANAGER
     if (acl_params->connection_state == CONNECTION_STATE_DISCONNECTED)
         bt_cm_process_disconnect_event(addr, acl_params->transport, acl_params->hci_reason_code);
+#endif
 
     /* send connection changed notification */
     CALLBACK_FOREACH(CBLIST, adapter_callbacks_t, on_connection_state_changed, addr,

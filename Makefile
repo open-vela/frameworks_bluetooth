@@ -43,9 +43,12 @@ else
 endif
 endif
 
-CSRCS += service/src/connection_manager.c
 CSRCS += service/src/manager_service.c
 CSRCS += service/common/index_allocator.c
+
+ifeq ($(CONFIG_BLUETOOTH_CONNECTION_MANAGER), y)
+CSRCS += service/src/connection_manager.c
+endif #CONFIG_BLUETOOTH_CONNECTION_MANAGER
 
 ifeq ($(CONFIG_BLUETOOTH_STORAGE_PROPERTY_SUPPORT), y)
 CSRCS += service/common/storage_property.c
@@ -97,7 +100,9 @@ ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
 	CSRCS += service/stacks/zephyr/sal_debug_interface.c
 	CSRCS += service/stacks/zephyr/sal_zblue.c
 	CSRCS += service/stacks/zephyr/sal_adapter_interface.c
+	ifeq ($(CONFIG_BLUETOOTH_CONNECTION_MANAGER), y)
 	CSRCS += service/stacks/zephyr/sal_connection_manager.c
+	endif
 ifeq ($(CONFIG_BLUETOOTH_A2DP), y)
 	CSRCS += service/stacks/zephyr/sal_a2dp_interface.c
 endif #CONFIG_BLUETOOTH_A2DP

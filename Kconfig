@@ -245,8 +245,13 @@ config BLUETOOTH_LE_ADVERTISER_MAX_NUM
 	help
 		LE Advertiser max register number
 
+config BLUETOOTH_CONNECTION_MANAGER
+       bool "Bluetooth connection manager support"
+       default y
+
 config LE_DLF_SUPPORT
 	bool "Enable LE DLF support"
+	depends on BLUETOOTH_CONNECTION_MANAGER
 	default n
 
 endmenu #Bluetooth LE Config
