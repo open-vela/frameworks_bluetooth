@@ -69,6 +69,17 @@ typedef enum {
 } ble_scan_type_t;
 
 /**
+ * @brief Scan filter policy
+ *
+ */
+typedef enum {
+    BT_LE_SCAN_POLICY_ACCEPT_ALL = 0,
+    BT_LE_SCAN_POLICY_ONLY_WHITE_LIST,
+    BT_LE_SCAN_POLICY_ACCEPT_ALL_AND_RPA,
+    BT_LE_SCAN_POLICY_ONLY_WHITE_LIST_AND_RPA,
+} ble_scan_filter_type_t;
+
+/**
  * @brief Scan result structure
  *
  */
@@ -112,6 +123,7 @@ typedef struct {
     int scan_window;
     ble_scan_type_t scan_type;
     ble_phy_type_t scan_phy;
+    ble_scan_filter_type_t filter_type;
 } ble_scan_params_t;
 
 typedef struct {
