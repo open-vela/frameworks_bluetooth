@@ -169,7 +169,7 @@ static bt_command_t g_cmd_tables[] = {
     { "createbond", create_bond_cmd, 0, "create bond, params: <addr> <transport>(0:BLE, 1:BREDR)" },
     { "cancelbond", cancel_bond_cmd, 0, "cancel bond, params: <addr>" },
     { "removebond", remove_bond_cmd, 0, "remove bond, params: <addr> <transport>(0:BLE, 1:BREDR)" },
-    { "addwhite", add_white_cmd, 0, "add device to white list, params: <addr>" },
+    { "addwhite", add_white_cmd, 0, "add device to white list, params: <addr> <address type>(0:public,1:random,2:public_id,3:random_id)" },
     { "removewhite", remove_white_cmd, 0, "remove device from white list, params: <addr>" },
     { "setalias", device_set_alias_cmd, 0, "set device alias, params: <addr>" },
     { "device", device_show_cmd, 0, "show device information, params: <addr>" },
@@ -1394,10 +1394,25 @@ static int add_white_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    if (BTSYMBOLS(bt_adapter_le_add_whitelist)(handle, &addr) != BT_STATUS_SUCCESS)
-        return CMD_ERROR;
+    if (argc >= 2) {
+        int type = atoi(argv[1]);
+        if (type < 0 || type > 3) {
+            return CMD_INVALID_PARAM;
+        }
 
-    PRINT("Device [%s] added to whitelist", argv[0]);
+        if (bt_adapter_le_add_whitelist_with_type(handle, &addr, type) != BT_STATUS_SUCCESS) {
+            return CMD_ERROR;
+        }
+
+        PRINT("Device [%s] with type %d added to whitelist", argv[0], type);
+    } else {
+        if (bt_adapter_le_add_whitelist(handle, &addr) != BT_STATUS_SUCCESS) {
+            return CMD_ERROR;
+        }
+
+        PRINT("Device [%s] added to whitelist", argv[0]);
+    }
+
     return CMD_OK;
 }
 
