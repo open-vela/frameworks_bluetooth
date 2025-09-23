@@ -228,9 +228,11 @@ static int bt_socket_server_receive(service_poll_t* poll, int fd, void* userdata
             || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_SPP_BEGIN, BT_IPC_CODE_COMMAND_SPP_END)) {
         bt_socket_server_spp_process(poll, fd, ins, packet);
 #endif
+#ifdef CONFIG_BLUETOOTH_PAN
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_PAN_MESSAGE_START, BT_PAN_MESSAGE_END)
             || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_PAN_BEGIN, BT_IPC_CODE_COMMAND_PAN_END)) {
         bt_socket_server_pan_process(poll, fd, ins, packet);
+#endif
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
     } else if (BT_IPC_CODE_CHECK_RANGE(packet->code, BT_HID_DEVICE_MESSAGE_START, BT_HID_DEVICE_MESSAGE_END)
             || BT_IPC_CODE_CHECK_RANGE(packet->code, BT_IPC_CODE_COMMAND_HID_DEV_BEGIN, BT_IPC_CODE_COMMAND_HID_DEV_END)) {
