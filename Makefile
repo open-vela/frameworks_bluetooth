@@ -231,8 +231,12 @@ ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICP), y)
 	CSRCS += service/profiles/leaudio/vmicp/*.c
 endif #CONFIG_BLUETOOTH_LEAUDIO_VMICP
 
+ifeq ($(CONFIG_BLUETOOTH_HCI_FILTER), y)
+CSRCS += service/vhal/bt_hci_filter.c
+endif
+
 CSRCS += service/utils/*.c
-CSRCS += service/vhal/*.c
+CSRCS += service/vhal/bt_vhal.c
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/vhal
 endif #CONFIG_BLUETOOTH_SERVICE
 

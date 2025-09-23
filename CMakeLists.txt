@@ -127,6 +127,10 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/connection_manager_dlf.c)
     endif()
 
+    if(CONFIG_BLUETOOTH_HCI_FILTER)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/vhal/bt_hci_filter.c)
+    endif()
+
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/*.c)
     list(APPEND CSRCS ${APPEND_FILES})
 
@@ -336,7 +340,7 @@ if(CONFIG_BLUETOOTH)
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/utils/*.c)
     list(APPEND CSRCS ${APPEND_FILES})
 
-    file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/vhal/*.c)
+    file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/vhal/bt_vhal.c)
     list(APPEND CSRCS ${APPEND_FILES})
 
     list(APPEND INCDIR ${BLUETOOTH_DIR}/service/vhal)
