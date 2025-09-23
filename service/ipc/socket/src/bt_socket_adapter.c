@@ -486,8 +486,9 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
         break;
     }
     case BT_ADAPTER_LE_ADD_WHITELIST: {
-        packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_add_whitelist)(ins,
-            &packet->adpt_pl._bt_adapter_le_add_whitelist.addr);
+        packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_add_whitelist_with_type)(ins,
+            &packet->adpt_pl._bt_adapter_le_add_whitelist.addr,
+            (ble_addr_type_t)packet->adpt_pl._bt_adapter_le_add_whitelist.type);
         break;
     }
     case BT_ADAPTER_REGISTER_CALLBACK: {

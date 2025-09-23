@@ -122,6 +122,7 @@ BT_ADAPTER_MESSAGE_START,
     typedef union {
         struct {
             bt_address_t addr;
+            uint8_t type;
         } _bt_adapter_get_address,
             _bt_adapter_set_le_address,
             _bt_adapter_le_add_whitelist,
