@@ -1150,6 +1150,17 @@ bt_status_t BTSYMBOLS(bt_adapter_le_enable_key_derivation)(bt_instance_t* ins,
  */
 bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist)(bt_instance_t* ins, bt_address_t* addr);
 
+/**
+ * @brief Add a device to the BLE whitelist with specified address type.
+ *
+ * Adds a device address to the BLE whitelist, allowing the caller to specify the address type
+ * (e.g., public or random address).
+ *
+ * @param ins Bluetooth client instance, see @ref bt_instance_t.
+ * @param addr Address of the device to add, see @ref bt_address_t.
+ * @param type Address type of the device, see @ref ble_addr_type_t.
+ * @return bt_status_t BT_STATUS_SUCCESS on success; a negative error code on failure.
+ */
 bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist_with_type)(bt_instance_t* ins, bt_address_t* addr, ble_addr_type_t type);
 
 /**
