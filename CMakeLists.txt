@@ -56,6 +56,11 @@ if(CONFIG_BLUETOOTH)
       file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/socket/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
 
+      if (CONFIG_BLUETOOTH_FRAMEWORK_ASYNC)
+        file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/socket/async/*.c)
+        list(APPEND CSRCS ${APPEND_FILES})
+      endif()
+
       list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc/socket/include)
 
     else()
@@ -77,15 +82,12 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/service/common/storage.c)
   endif()
 
-  if(CONFIG_BLUETOOTH_DEBUG_TRACE)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
-  endif()
+  list(APPEND CFLAGS -Wno-strict-prototypes)
 
   if(CONFIG_BLUETOOTH_SERVICE)
     list(
       APPEND
       CSRCS
-      ${BLUETOOTH_DIR}/service/common/bt_time.c
       ${BLUETOOTH_DIR}/service/common/service_loop.c
       ${BLUETOOTH_DIR}/service/src/adapter_service.c
       ${BLUETOOTH_DIR}/service/src/adapter_state.c
@@ -110,7 +112,11 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_LE_DLF_SUPPORT)
-      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/connectino_manager_dlf.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/connection_manager_dlf.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_HCI_FILTER)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/vhal/bt_hci_filter.c)
     endif()
 
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/stacks/*.c)
@@ -126,6 +132,34 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_debug_interface.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_zblue.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_adapter_interface.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_connection_manager.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)
+      if(CONFIG_BLUETOOTH_A2DP)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_a2dp_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_AVRCP_CONTROL OR CONFIG_BLUETOOTH_AVRCP_TARGET)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_avrcp_interface.c)
+      endif()
+    endif()
+
+    if(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_adapter_le_interface.c)
+
+      if(CONFIG_BLUETOOTH_BLE_ADV)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_le_advertise_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_BLE_SCAN)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_le_scan_interface.c)
+      endif()
+
+      if(CONFIG_BLUETOOTH_GATT)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_gatt_client_interface.c)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_gatt_server_interface.c)
+      endif()
     endif()
 
     if(NOT CONFIG_BLUETOOTH_BLE_AUDIO)
@@ -287,7 +321,7 @@ if(CONFIG_BLUETOOTH)
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/utils/*.c)
     list(APPEND CSRCS ${APPEND_FILES})
 
-    file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/vhal/*.c)
+    file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/vhal/bt_vhal.c)
     list(APPEND CSRCS ${APPEND_FILES})
 
     list(APPEND INCDIR ${BLUETOOTH_DIR}/service/vhal)
@@ -297,9 +331,37 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_memory.c)
   endif()
 
+  if(CONFIG_APP_BT_SAMPLE_CODE)
+  if(CONFIG_APP_BT_SAMPLE_CODE_BASIC)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/basic/*.c)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_ENABLE)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/enable/*.c)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_DISCOVERY)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/discovery/*.c)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_CREATEBOND)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/createbond/*.c)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/acceptbond/*.c)
+  endif()
+  endif()
+
   if(CONFIG_BLUETOOTH_TOOLS)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/utils.c)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/log.c)
+
+    if(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/async/gap.c)
+      if(CONFIG_BLUETOOTH_BLE_ADV)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/async/adv.c)
+      endif()
+    endif()
 
     if(CONFIG_BLUETOOTH_BLE_ADV)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/adv.c)
@@ -332,6 +394,11 @@ if(CONFIG_BLUETOOTH)
 
     if(CONFIG_BLUETOOTH_HFP_AG)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/hfp_ag.c)
+    endif()
+
+    if(ifeq ($(CONFIG_BLUETOOTH_LOG), y))
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/log.c)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
     endif()
 
     if(CONFIG_BLUETOOTH_SPP)
@@ -426,12 +493,36 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/zephyr/include)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/)
       list(APPEND INCDIR
            ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/kernel/include)
+      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/subsys/bluetooth/host)
     endif()
 
     list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc)
+  endif()
+
+  if (CONFIG_APP_BT_SAMPLE_CODE)
+  if(CONFIG_APP_BT_SAMPLE_CODE_BASIC)
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/sample_code/basic)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_ENABLE)
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/sample_code/enable)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_DISCOVERY)
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/sample_code/discovery)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_CREATEBOND)
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/sample_code/createbond)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND)
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/sample_code/acceptbond)
+  endif()
   endif()
 
   if(CONFIG_BLUETOOTH_TOOLS)
@@ -503,6 +594,98 @@ if(CONFIG_BLUETOOTH)
       ${CFLAGS}
       DEPENDS
       libbluetooth)
+  endif()
+
+  if(CONFIG_APP_BT_SAMPLE_CODE)
+    if(CONFIG_APP_BT_SAMPLE_CODE_BASIC)
+      nuttx_add_application(
+        NAME
+        bt_basic
+        SRCS
+        ${BLUETOOTH_DIR}/sample_code/basic/basic.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        STACKSIZE
+        8192
+        PRIORITY
+        ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
+    endif()
+
+    if(CONFIG_APP_BT_SAMPLE_CODE_ENABLE)
+      nuttx_add_application(
+          NAME
+          bt_enable
+          SRCS
+          ${BLUETOOTH_DIR}/sample_code/enable/enable.c
+          INCLUDE_DIRECTORIES
+          ${INCDIR}
+          STACKSIZE
+          8192
+          PRIORITY
+          ${SCHED_PRIORITY_DEFAULT}
+          COMPILE_FLAGS
+          ${CFLAGS}
+          DEPENDS
+          libbluetooth)
+    endif()
+
+    if(CONFIG_APP_BT_SAMPLE_CODE_DISCOVERY)
+      nuttx_add_application(
+        NAME
+        bt_discovery
+        SRCS
+        ${BLUETOOTH_DIR}/sample_code/discovery/discovery.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        STACKSIZE
+        8192
+        PRIORITY
+        ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
+    endif()
+
+    if(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND)
+      nuttx_add_application(
+        NAME
+        bt_acceptbond
+        SRCS
+        ${BLUETOOTH_DIR}/sample_code/acceptbond/acceptbond.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        STACKSIZE
+        8192
+        PRIORITY
+        ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
+    endif()
+
+    if(CONFIG_APP_BT_SAMPLE_CODE_CREATEBOND)
+      nuttx_add_application(
+        NAME
+        bt_createbond
+        SRCS
+        ${BLUETOOTH_DIR}/sample_code/createbond/createbond.c
+        INCLUDE_DIRECTORIES
+        ${INCDIR}
+        STACKSIZE
+        8192
+        PRIORITY
+        ${SCHED_PRIORITY_DEFAULT}
+        COMPILE_FLAGS
+        ${CFLAGS}
+        DEPENDS
+        libbluetooth)
+    endif()
   endif()
 
   if(CONFIG_BLUETOOTH_TOOLS)

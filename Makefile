@@ -42,9 +42,12 @@ else
 endif
 endif
 
-CSRCS += service/src/connection_manager.c
 CSRCS += service/src/manager_service.c
 CSRCS += service/common/index_allocator.c
+
+ifeq ($(CONFIG_BLUETOOTH_CONNECTION_MANAGER), y)
+CSRCS += service/src/connection_manager.c
+endif #CONFIG_BLUETOOTH_CONNECTION_MANAGER
 
 ifeq ($(CONFIG_BLUETOOTH_STORAGE_PROPERTY_SUPPORT), y)
 CSRCS += service/common/storage_property.c
@@ -56,12 +59,11 @@ ifeq ($(CONFIG_BLUETOOTH_DEBUG_MEMORY),y)
 CSRCS += debug/bt_memory.c
 endif
 
-ifeq ($(CONFIG_BLUETOOTH_DEBUG_TRACE), y)
+ifeq ($(CONFIG_BLUETOOTH_LOG), y)
 CSRCS += service/debug/bt_trace.c
 endif
 
 ifeq ($(CONFIG_BLUETOOTH_SERVICE), y)
-	CSRCS += service/common/bt_time.c
 	CSRCS += service/common/service_loop.c
 	CSRCS += service/src/adapter_service.c
 	CSRCS += service/src/adapter_state.c
@@ -92,7 +94,9 @@ ifneq ($(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)$(CONFIG_BLUETOOTH_STACK_LE_ZBLUE),)
 	CSRCS += service/stacks/zephyr/sal_debug_interface.c
 	CSRCS += service/stacks/zephyr/sal_zblue.c
 	CSRCS += service/stacks/zephyr/sal_adapter_interface.c
+	ifeq ($(CONFIG_BLUETOOTH_CONNECTION_MANAGER), y)
 	CSRCS += service/stacks/zephyr/sal_connection_manager.c
+	endif
 ifeq ($(CONFIG_BLUETOOTH_A2DP), y)
 	CSRCS += service/stacks/zephyr/sal_a2dp_interface.c
 endif #CONFIG_BLUETOOTH_A2DP
@@ -217,17 +221,52 @@ ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICP), y)
 	CSRCS += service/profiles/leaudio/vmicp/*.c
 endif #CONFIG_BLUETOOTH_LEAUDIO_VMICP
 
+ifeq ($(CONFIG_BLUETOOTH_LOG), y)
+CSRCS += service/utils/log_server.c
+CSRCS += service/utils/btsnoop_log.c
+CSRCS += service/utils/btsnoop_writer.c
+CSRCS += service/utils/btsnoop_filter.c
+endif #CONFIG_BLUETOOTH_LOG
+
+ifeq ($(CONFIG_BLUETOOTH_HCI_FILTER), y)
+CSRCS += service/vhal/bt_hci_filter.c
+endif
+
 CSRCS += service/utils/*.c
-CSRCS += service/vhal/*.c
+CSRCS += service/vhal/bt_vhal.c
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/vhal
 endif #CONFIG_BLUETOOTH_SERVICE
 
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE), y)
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_BASIC), y)
+	CSRCS += sample_code/basic/*.c
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_ENABLE), y)
+	CSRCS += sample_code/enable/*.c
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_DISCOVERY), y)
+	CSRCS += sample_code/discovery/*.c
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_CREATEBOND), y)
+	CSRCS += sample_code/createbond/*.c
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND), y)
+	CSRCS += sample_code/acceptbond/*.c
+endif
+endif #CONFIG_APP_BT_SAMPLE_CODE
+
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CSRCS += tools/utils.c
-	CSRCS += tools/log.c
 	CSRCS += tools/uv_thread_loop.c
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC), y)
 	CSRCS += tools/async/gap.c
+ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
+	CSRCS += tools/async/adv.c
+endif #CONFIG_BLUETOOTH_BLE_ADV
 endif
 ifeq ($(CONFIG_BLUETOOTH_BLE_ADV), y)
 	CSRCS += tools/adv.c
@@ -255,7 +294,9 @@ endif #CONFIG_BLUETOOTH_HFP_HF
 ifeq ($(CONFIG_BLUETOOTH_HFP_AG), y)
 	CSRCS += tools/hfp_ag.c
 endif #CONFIG_BLUETOOTH_HFP_AG
-
+ifeq ($(CONFIG_BLUETOOTH_LOG), y)
+CSRCS += tools/log.c
+endif #CONFIG_BLUETOOTH_LOG
 ifeq ($(CONFIG_BLUETOOTH_SPP), y)
 	CSRCS += tools/spp.c
 endif
@@ -336,6 +377,28 @@ endif
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/service/ipc
 endif
 
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE), y)
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_BASIC), y)
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/sample_code/basic
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_ENABLE), y)
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/sample_code/enable
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_DISCOVERY), y)
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/sample_code/discovery
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_CREATEBOND), y)
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/sample_code/createbond
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND), y)
+	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/sample_code/acceptbond
+endif
+endif #CONFIG_APP_BT_SAMPLE_CODE
+
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CFLAGS	+= ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/tools
 endif
@@ -353,6 +416,33 @@ ifeq ($(CONFIG_BLUETOOTH_SERVER), y)
 	PROGNAME += $(CONFIG_BLUETOOTH_SERVER_NAME)
 	MAINSRC  += service/src/main.c
 endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE), y)
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_BASIC), y)
+	PROGNAME  += bt_basic
+	MAINSRC   += sample_code/basic/basic.c
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_ENABLE), y)
+	PROGNAME  += bt_enable
+	MAINSRC   += sample_code/enable/enable.c
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_DISCOVERY), y)
+	PROGNAME  += bt_discovery
+	MAINSRC   += sample_code/discovery/discovery.c
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_CREATEBOND), y)
+	PROGNAME  += bt_createbond
+	MAINSRC   += sample_code/createbond/createbond.c
+endif
+
+ifeq ($(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND), y)
+	PROGNAME  += bt_acceptbond
+	MAINSRC   += sample_code/acceptbond/acceptbond.c
+endif
+endif #CONFIG_APP_BT_SAMPLE_CODE
 
 # if enabled bttool
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)

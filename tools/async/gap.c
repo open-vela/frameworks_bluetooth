@@ -144,7 +144,7 @@ static bt_command_t g_async_cmd_tables[] = {
     { "adv", adv_command_exec_async, 0, "advertising cmd,   input \'adv\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_BLE_SCAN
-    { "scan", scan_command_exec_async, 0, "scan cmd,          input \'scan\' show usage" },
+    { "scan", scan_command_exec, 0, "scan cmd,          input \'scan\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_A2DP_SINK
     { "a2dpsnk", a2dp_sink_command_exec, 0, "a2dp sink cmd,    input \'a2dpsnk\' show usage" },
@@ -167,10 +167,8 @@ static bt_command_t g_async_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_PAN
     { "pan", pan_command_exec, 0, "pan cmd,           input \'pan\' show usage" },
 #endif
-#ifdef CONFIG_BLUETOOTH_GATT_CLIENT
-    { "gattc", gattc_command_exec_async, 0, "gatt client cmd    input \'gattc\' show usage" },
-#endif
-#ifdef CONFIG_BLUETOOTH_GATT_SERVER
+#ifdef CONFIG_BLUETOOTH_GATT
+    { "gattc", gattc_command_exec, 0, "gatt client cmd    input \'gattc\' show usage" },
     { "gatts", gatts_command_exec, 0, "gatt server cmd    input \'gatts\' show usage" },
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_SERVER
@@ -199,7 +197,7 @@ static bt_command_t g_async_cmd_tables[] = {
 #endif
     { "dump", dump_cmd, 0, "dump adapter state" },
 #ifdef CONFIG_BLUETOOTH_LOG
-    { "log", log_command_async, 0, "log control command" },
+    { "log", log_command, 0, "log control command" },
 #endif
     { "help", usage_cmd, 0, "Usage for bttools" },
     { "quit", quit_cmd, 0, "Quit" },
@@ -270,13 +268,6 @@ static void bt_tool_init(void* handle)
     if (g_cmd_had_inited)
         return;
 
-#ifdef CONFIG_BLUETOOTH_BLE_SCAN
-    scan_command_init_async(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_GATT
-    gattc_command_init_async(handle);
-#endif
-
     g_cmd_had_inited = true;
 }
 
@@ -284,13 +275,6 @@ static void bt_tool_uninit(void* handle)
 {
     if (!g_cmd_had_inited)
         return;
-
-#ifdef CONFIG_BLUETOOTH_BLE_SCAN
-    scan_command_uninit_async(handle);
-#endif
-#ifdef CONFIG_BLUETOOTH_GATT
-    gattc_command_uninit_async(handle);
-#endif
 
     g_cmd_had_inited = false;
 }

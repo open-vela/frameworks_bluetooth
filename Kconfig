@@ -775,12 +775,20 @@ config BLUETOOTH_DFX
 	help
 		Enable Bluetooth DFX
 
+config BLUETOOTH_LOG
+	bool "Enable Bluetooth log"
+	default y
+	help
+		Enable Bluetooth log
+
+if BLUETOOTH_LOG
 config BLUETOOTH_SERVICE_LOG_LEVEL
 	int "Bluetooth Service log level"
 	default 7
 	depends on BLUETOOTH_SERVICE
 	help
 		Set BT Service log level <0~7>
+endif #BLUETOOTH_LOG
 
 endmenu #Debug
 
