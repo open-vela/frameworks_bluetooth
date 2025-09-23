@@ -72,6 +72,8 @@ static int le_disconnect_cmd(void* handle, int argc, char** argv);
 static int create_bond_cmd(void* handle, int argc, char** argv);
 static int cancel_bond_cmd(void* handle, int argc, char** argv);
 static int remove_bond_cmd(void* handle, int argc, char** argv);
+static int remove_white_cmd(void* handle, int argc, char** argv);
+static int add_white_cmd(void* handle, int argc, char** argv);
 static int device_show_cmd(void* handle, int argc, char** argv);
 static int device_set_alias_cmd(void* handle, int argc, char** argv);
 static int get_bonded_devices_cmd(void* handle, int argc, char** argv);
@@ -167,6 +169,8 @@ static bt_command_t g_cmd_tables[] = {
     { "createbond", create_bond_cmd, 0, "create bond, params: <addr> <transport>(0:BLE, 1:BREDR)" },
     { "cancelbond", cancel_bond_cmd, 0, "cancel bond, params: <addr>" },
     { "removebond", remove_bond_cmd, 0, "remove bond, params: <addr> <transport>(0:BLE, 1:BREDR)" },
+    { "addwhite", add_white_cmd, 0, "add device to white list, params: <addr>" },
+    { "removewhite", remove_white_cmd, 0, "remove device from white list, params: <addr>" },
     { "setalias", device_set_alias_cmd, 0, "set device alias, params: <addr>" },
     { "device", device_show_cmd, 0, "show device information, params: <addr>" },
     { "search", search_cmd, 0, "service serach <addr>, Not implemented" },
@@ -1378,6 +1382,38 @@ static int remove_bond_cmd(void* handle, int argc, char** argv)
         return CMD_ERROR;
 
     PRINT("Device [%s] remove bond", argv[0]);
+    return CMD_OK;
+}
+
+static int add_white_cmd(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (BTSYMBOLS(bt_adapter_le_add_whitelist)(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("Device [%s] added to whitelist", argv[0]);
+    return CMD_OK;
+}
+
+static int remove_white_cmd(void* handle, int argc, char** argv)
+{
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    bt_address_t addr;
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (BTSYMBOLS(bt_adapter_le_remove_whitelist)(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("Device [%s] removed from whitelist", argv[0]);
     return CMD_OK;
 }
 
