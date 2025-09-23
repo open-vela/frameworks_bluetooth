@@ -33,6 +33,7 @@ bt_status_t bt_sal_gatt_server_disable(void);
 bt_status_t bt_sal_gatt_server_add_elements(gatt_element_t* elements, uint16_t size);
 bt_status_t bt_sal_gatt_server_remove_elements(gatt_element_t* elements, uint16_t size);
 bt_status_t bt_sal_gatt_server_connect(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t addr_type);
+bt_status_t bt_sal_gatt_server_connect_bear(bt_controller_id_t id, bt_address_t* addr, ble_addr_type_t addr_type, uint8_t bear_type);
 bt_status_t bt_sal_gatt_server_cancel_connection(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_gatt_server_send_response(bt_controller_id_t id, bt_address_t* addr, uint32_t request_id, uint8_t* value, uint16_t length);
 #if defined(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
