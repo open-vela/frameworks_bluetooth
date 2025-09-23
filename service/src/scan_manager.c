@@ -306,14 +306,12 @@ static uint32_t register_scanner(scanner_t* scanner)
         return BT_SCAN_STATUS_START_FAIL;
 
     if (scanner_manager.scanner_cnt == CONFIG_BLUETOOTH_LE_SCANNER_MAX_NUM) {
-        delete_scanner(scanner);
         BT_DFX_LE_GAP_SCAN_ERROR(BT_DFXE_SCANNER_EXCEED_MAX_NUM);
         return BT_SCAN_STATUS_SCANNER_REG_NOMEM;
     }
 
     for (i = 0; i < CONFIG_BLUETOOTH_LE_SCANNER_MAX_NUM; i++) {
         if (scanner_manager.scanner_list[i] != NULL && scanner_compare(scanner_manager.scanner_list[i], scanner)) {
-            delete_scanner(scanner);
             return BT_SCAN_STATUS_SCANNER_EXISTED;
         }
     }
@@ -406,6 +404,7 @@ static void start_scan(void* data)
     uint32_t status = register_scanner(scanner);
     if (status != BT_SCAN_STATUS_SUCCESS) {
         scanner->callbacks->on_scan_start_status(get_remote(scanner), status);
+        delete_scanner(scanner);
         goto ret;
     }
 
@@ -417,6 +416,7 @@ static void start_scan(void* data)
         bt_sal_le_set_scan_parameters(PRIMARY_ADAPTER, &params);
         if (bt_sal_le_start_scan(PRIMARY_ADAPTER) != BT_STATUS_SUCCESS) {
             scanner->callbacks->on_scan_start_status(get_remote(scanner), BT_SCAN_STATUS_START_FAIL);
+            delete_scanner(scanner);
             goto ret;
         }
         scanner_manager.is_scanning = true;
