@@ -376,7 +376,7 @@ bt_status_t bt_sal_le_start_adv(bt_controller_id_t id, uint8_t adv_id, ble_adv_p
 
     req = sal_adapter_req(id, adv_id, STACK_CALL(start_adv));
     if (!req) {
-        BT_LOGE("%s, req null", __func__)
+        BT_LOGE("%s, req null", __func__);
         return BT_STATUS_NOMEM;
     }
 
@@ -469,7 +469,7 @@ bt_status_t bt_sal_le_stop_adv(bt_controller_id_t id, uint8_t adv_id)
 
     req = sal_adapter_req(id, adv_id, STACK_CALL(stop_adv));
     if (!req) {
-        BT_LOGE("%s, req null", __func__)
+        BT_LOGE("%s, req null", __func__);
         return BT_STATUS_NOMEM;
     }
 
