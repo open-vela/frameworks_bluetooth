@@ -245,7 +245,9 @@ int bt_service_init(void)
     if (create_bt_folder() != 0)
         return -1;
 
+#ifdef CONFIG_BLUETOOTH_LOG
     bt_log_server_init();
+#endif
     bt_storage_init();
     bt_profile_init();
     adapter_init();
@@ -264,7 +266,10 @@ int bt_service_cleanup(void)
     manager_cleanup();
     adapter_cleanup();
     bt_storage_cleanup();
+
+#ifdef CONFIG_BLUETOOTH_LOG
     bt_log_server_cleanup();
+#endif
 
     BT_LOGD("%s done", __func__);
     return 0;

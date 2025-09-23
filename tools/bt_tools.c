@@ -238,7 +238,9 @@ static bt_command_t g_cmd_tables[] = {
     { "storage", storage_command_exec, 0, "storage update cmd, input \'storage\' show usage" },
 #endif
     { "dump", dump_cmd, 0, "dump adapter state" },
+#ifdef CONFIG_BLUETOOTH_LOG
     { "log", log_command, 0, "log control command" },
+#endif
     { "help", usage_cmd, 0, "Usage for bttools" },
     { "quit", quit_cmd, 0, "Quit" },
     { "q", quit_cmd, 0, "Quit" },

@@ -65,7 +65,7 @@ ifeq ($(CONFIG_BLUETOOTH_DEBUG_MEMORY),y)
 CSRCS += debug/bt_memory.c
 endif
 
-ifeq ($(CONFIG_BLUETOOTH_DEBUG_TRACE), y)
+ifeq ($(CONFIG_BLUETOOTH_LOG), y)
 CSRCS += service/debug/bt_trace.c
 endif
 
@@ -236,6 +236,13 @@ ifeq ($(CONFIG_BLUETOOTH_LEAUDIO_VMICP), y)
 	CSRCS += service/profiles/leaudio/vmicp/*.c
 endif #CONFIG_BLUETOOTH_LEAUDIO_VMICP
 
+ifeq ($(CONFIG_BLUETOOTH_LOG), y)
+CSRCS += service/utils/log_server.c
+CSRCS += service/utils/btsnoop_log.c
+CSRCS += service/utils/btsnoop_writer.c
+CSRCS += service/utils/btsnoop_filter.c
+endif #CONFIG_BLUETOOTH_LOG
+
 ifeq ($(CONFIG_BLUETOOTH_HCI_FILTER), y)
 CSRCS += service/vhal/bt_hci_filter.c
 endif
@@ -269,7 +276,6 @@ endif #CONFIG_APP_BT_SAMPLE_CODE
 
 ifeq ($(CONFIG_BLUETOOTH_TOOLS), y)
 	CSRCS += tools/utils.c
-	CSRCS += tools/log.c
 	CSRCS += tools/uv_thread_loop.c
 ifeq ($(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC), y)
 	CSRCS += tools/async/gap.c
@@ -310,7 +316,9 @@ endif #CONFIG_BLUETOOTH_HFP_HF
 ifeq ($(CONFIG_BLUETOOTH_HFP_AG), y)
 	CSRCS += tools/hfp_ag.c
 endif #CONFIG_BLUETOOTH_HFP_AG
-
+ifeq ($(CONFIG_BLUETOOTH_LOG), y)
+CSRCS += tools/log.c
+endif #CONFIG_BLUETOOTH_LOG
 ifeq ($(CONFIG_BLUETOOTH_SPP), y)
 	CSRCS += tools/spp.c
 endif
