@@ -37,6 +37,9 @@
 /* the length of the SBC Media Payload header. */
 #define A2DP_SBC_MPL_HDR_LEN 1
 
+/* the sync word of the SBC Media Payload Header */
+#define A2DP_SBC_SYNCWORD 0x9C
+
 /* the LOSC of SBC media codec capabilitiy */
 #define A2DP_SBC_INFO_LEN 6
 
