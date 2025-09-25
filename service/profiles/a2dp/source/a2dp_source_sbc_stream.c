@@ -140,6 +140,10 @@ static void a2dp_sbc_get_num_frame_iteration(uint8_t* num_of_iterations, uint8_t
 
 static int a2dp_sbc_frame_header_check(uint8_t* frame)
 {
+    if (frame[0] != A2DP_SBC_SYNCWORD) {
+        BT_LOGE("%s, sbc syncword error: %02x", __func__, frame[0]);
+        return -1;
+    }
     return 0;
 }
 
