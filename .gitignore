@@ -2,3 +2,4 @@
 *.built
 *.depend
 *.dep
+/service/stacks/bluelet/
