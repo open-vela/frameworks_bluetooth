@@ -484,7 +484,7 @@ static void whitelist_device_loaded(void* data, uint16_t length, uint16_t items)
             device_set_flags(device, DFLAG_WHITELIST_ADDED);
             bt_addr_ba2str(&remote->addr, addr_str);
             BT_LOGD("LE WHITELIST[%d] [%s]", i, addr_str);
-            bt_sal_le_add_white_list(PRIMARY_ADAPTER, &remote->addr, remote->addr_type);
+            bt_sal_le_add_white_list(PRIMARY_ADAPTER, &remote->addr, BT_LE_ADDR_TYPE_UNKNOWN);
             remote++;
         }
     }
@@ -2806,7 +2806,7 @@ bt_status_t adapter_le_enable_key_derivation(bool brkey_to_lekey,
 #endif
 }
 
-bt_status_t adapter_le_add_whitelist(bt_address_t* addr)
+bt_status_t adapter_le_add_whitelist_with_type(bt_address_t* addr, ble_addr_type_t type)
 {
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     adapter_service_t* adapter = &g_adapter_service;
@@ -2819,6 +2819,9 @@ bt_status_t adapter_le_add_whitelist(bt_address_t* addr)
         return BT_STATUS_NOT_ENABLED;
     }
 
+    /* Note: We currently do not support finding a specific device by its address_type and address.
+     * Therefore, we always use the public address type (BT_LE_ADDR_TYPE_PUBLIC) to search for or create a device.
+     */
     device = adapter_find_create_le_device(addr, BT_LE_ADDR_TYPE_PUBLIC);
     if (!device) {
         adapter_unlock();
@@ -2835,7 +2838,7 @@ bt_status_t adapter_le_add_whitelist(bt_address_t* addr)
     bt_addr_ba2str(addr, addr_str);
     BT_LOGD("%s, %s", __func__, addr_str);
 
-    return bt_sal_le_add_white_list(PRIMARY_ADAPTER, addr, device_get_address_type(device));
+    return bt_sal_le_add_white_list(PRIMARY_ADAPTER, addr, type);
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
