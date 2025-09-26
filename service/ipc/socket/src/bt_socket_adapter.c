@@ -482,12 +482,12 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
     }
     case BT_ADAPTER_LE_REMOVE_WHITELIST: {
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_remove_whitelist)(ins,
-            &packet->adpt_pl._bt_adapter_le_add_whitelist.addr);
+            &packet->adpt_pl._bt_adapter_le_remove_whitelist.addr);
         break;
     }
     case BT_ADAPTER_LE_ADD_WHITELIST: {
         packet->adpt_r.status = BTSYMBOLS(bt_adapter_le_add_whitelist)(ins,
-            &packet->adpt_pl._bt_adapter_le_remove_whitelist.addr);
+            &packet->adpt_pl._bt_adapter_le_add_whitelist.addr);
         break;
     }
     case BT_ADAPTER_REGISTER_CALLBACK: {
