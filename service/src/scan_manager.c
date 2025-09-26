@@ -58,6 +58,7 @@ typedef struct scanner {
     uint8_t scanner_id;
     bool is_scanning;
     ble_scan_filter_policy_t policy;
+    ble_scan_settings_t settings;
     ble_scan_filter_t filter;
     const scanner_callbacks_t* callbacks;
 } scanner_t;
@@ -76,6 +77,28 @@ typedef struct scanner_manager {
     uint8_t scanner_cnt;
     bool is_scanning;
 } scanner_manager_t;
+
+typedef struct {
+    uint8_t mode;
+    uint8_t priority;
+} priority_map_t;
+
+static const priority_map_t g_scan_mode_priority_map[] = {
+    { BT_SCAN_MODE_LOW_LATENCY, 3 },
+    { BT_SCAN_MODE_BALANCED, 2 },
+    { BT_SCAN_MODE_LOW_POWER, 1 },
+    { 0, 0 },
+};
+
+static const priority_map_t g_filter_priority_map[] = {
+    { BT_LE_SCAN_POLICY_ACCEPT_ALL, 4 },
+    /* Not supported yet:
+    { BT_LE_SCAN_POLICY_ACCEPT_ALL_AND_RPA,       3 },
+    { BT_LE_SCAN_POLICY_ONLY_WHITE_LIST_AND_RPA,  2 },
+    */
+    { BT_LE_SCAN_POLICY_ONLY_WHITE_LIST, 1 },
+    { 0, 0 },
+};
 
 static scanner_manager_t scanner_manager;
 static void stop_scan(void* data);
@@ -240,6 +263,67 @@ static void scanner_hsearch_free()
     memset(&manager->hash_table, 0, sizeof(manager->hash_table));
 }
 
+static uint8_t get_priority(const priority_map_t* map, uint8_t mode)
+{
+    size_t i = 0;
+
+    while (map[i].priority) {
+        if (map[i].mode == mode) {
+            return map[i].priority;
+        }
+        i++;
+    }
+
+    return 0;
+}
+
+static inline uint8_t get_scanmode_priority(uint8_t scan_mode)
+{
+    return get_priority(g_scan_mode_priority_map, scan_mode);
+}
+
+static inline uint8_t get_filter_priority(uint8_t policy)
+{
+    return get_priority(g_filter_priority_map, policy);
+}
+
+static ble_scan_settings_t get_best_settings(scanner_t* new_scanner)
+{
+    struct list_node* node;
+    ble_scan_settings_t best = {
+        .scan_mode = BT_SCAN_MODE_LOW_POWER,
+        .legacy = false,
+        .scan_type = BT_LE_SCAN_TYPE_PASSIVE,
+        .scan_phy = BT_LE_1M_PHY, /* FIXME: improve in the future */
+        .policy.policy = BT_LE_SCAN_POLICY_ONLY_WHITE_LIST
+    };
+
+    if (new_scanner) {
+        memcpy(&best, &new_scanner->settings, sizeof(best));
+    }
+
+    list_for_every(&scanner_manager.scanning_list, node)
+    {
+        scanner_t* scanner = (scanner_t*)node;
+
+        if (get_scanmode_priority(scanner->settings.scan_mode) > get_scanmode_priority(best.scan_mode)) {
+            best.scan_mode = scanner->settings.scan_mode;
+            best.scan_phy = scanner->settings.scan_phy;
+            best.legacy = scanner->settings.legacy;
+        }
+
+        if (get_filter_priority(scanner->settings.policy.policy) > get_filter_priority(best.policy.policy)) {
+            best.policy.policy = scanner->settings.policy.policy;
+        }
+
+        if (scanner->settings.scan_type == BT_LE_SCAN_TYPE_ACTIVE) {
+            best.scan_type = BT_LE_SCAN_TYPE_ACTIVE;
+        }
+    }
+
+    return best;
+}
+
 static void notify_scanners_scan_result(void* data)
 {
     struct list_node* node;
@@ -402,7 +486,9 @@ static void start_scan(void* data)
 {
     scanner_ctrl_t* start = data;
     scanner_t* scanner = start->scanner;
-    ble_scan_params_t params = { 100, 100, BT_LE_SCAN_TYPE_PASSIVE, BT_LE_1M_PHY, BT_LE_SCAN_POLICY_ACCEPT_ALL };
+    ble_scan_params_t params;
+    ble_scan_settings_t current_settings = { BT_SCAN_MODE_LOW_LATENCY, false, BT_LE_SCAN_TYPE_PASSIVE,
+        BT_LE_1M_PHY, { BT_LE_SCAN_POLICY_ACCEPT_ALL } };
 
     uint32_t status = register_scanner(scanner);
     if (status != BT_SCAN_STATUS_SUCCESS) {
@@ -412,8 +498,20 @@ static void start_scan(void* data)
     }
 
     if (start->use_setting) {
-        setup_scan_parameter(&start->settings, &params);
+        if (scanner->settings.policy.policy > (uint8_t)BT_LE_SCAN_POLICY_ONLY_WHITE_LIST) {
+            scanner->callbacks->on_scan_start_status(get_remote(scanner), BT_SCAN_STATUS_INVALID_PARAMETER);
+            BT_LOGW("Invalid parameter");
+            delete_scanner(scanner);
+            goto ret;
+        }
+        memcpy(&scanner->settings, &start->settings, sizeof(ble_scan_settings_t));
+    } else {
+        memcpy(&scanner->settings, &current_settings, sizeof(ble_scan_settings_t));
+        BT_LOGD("Using default setting parameters");
     }
+
+    current_settings = get_best_settings(scanner);
+    setup_scan_parameter(&current_settings, &params);
 
     if (!scanner_manager.is_scanning && !list_length(&scanner_manager.scanning_list)) {
         bt_sal_le_set_scan_parameters(PRIMARY_ADAPTER, &params);
@@ -423,6 +521,15 @@ static void start_scan(void* data)
             goto ret;
         }
         scanner_manager.is_scanning = true;
+    } else if (scanner_manager.is_scanning && list_length(&scanner_manager.scanning_list)) {
+        bt_sal_le_stop_scan(PRIMARY_ADAPTER);
+        bt_sal_le_set_scan_parameters(PRIMARY_ADAPTER, &params);
+        if (bt_sal_le_start_scan(PRIMARY_ADAPTER) != BT_STATUS_SUCCESS) {
+            scanner_manager.is_scanning = false;
+            scanner->callbacks->on_scan_start_status(get_remote(scanner), BT_SCAN_STATUS_START_FAIL);
+            delete_scanner(scanner);
+            goto ret;
+        }
     }
 
     scanner->is_scanning = true;
@@ -436,6 +543,8 @@ ret:
 static void stop_scan(void* data)
 {
     scanner_t* scanner = (scanner_t*)data;
+    ble_scan_params_t params;
+    ble_scan_settings_t current_settings;
 
     if (!scanner_is_registered(scanner))
         return;
@@ -450,6 +559,12 @@ static void stop_scan(void* data)
         bt_list_clear(scanner_manager.devices);
         scanner_hsearch_free();
         scanner_manager.is_scanning = false;
+    } else if (scanner_manager.is_scanning && list_length(&scanner_manager.scanning_list)) {
+        current_settings = get_best_settings(NULL);
+        setup_scan_parameter(&current_settings, &params);
+        bt_sal_le_stop_scan(PRIMARY_ADAPTER);
+        bt_sal_le_set_scan_parameters(PRIMARY_ADAPTER, &params);
+        bt_sal_le_start_scan(PRIMARY_ADAPTER);
     }
 }
 
