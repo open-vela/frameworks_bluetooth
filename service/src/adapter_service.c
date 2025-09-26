@@ -483,8 +483,8 @@ static void whitelist_device_loaded(void* data, uint16_t length, uint16_t items)
             bt_device_t* device = adapter_find_create_le_device(&remote->addr, remote->addr_type);
             device_set_flags(device, DFLAG_WHITELIST_ADDED);
             bt_addr_ba2str(&remote->addr, addr_str);
-            BT_LOGD("LE WHITELIST[%d] [%s]", i, addr_str);
-            bt_sal_le_add_white_list(PRIMARY_ADAPTER, &remote->addr, BT_LE_ADDR_TYPE_UNKNOWN);
+            BT_LOGD("LE WHITELIST[%d] [%s], addr_type: %" PRIu8, i, addr_str, (uint8_t)remote->addr_type);
+            bt_sal_le_add_white_list(PRIMARY_ADAPTER, &remote->addr, remote->addr_type);
             remote++;
         }
     }
@@ -2819,10 +2819,26 @@ bt_status_t adapter_le_add_whitelist_with_type(bt_address_t* addr, ble_addr_type
         return BT_STATUS_NOT_ENABLED;
     }
 
-    /* Note: We currently do not support finding a specific device by its address_type and address.
-     * Therefore, we always use the public address type (BT_LE_ADDR_TYPE_PUBLIC) to search for or create a device.
+    /* Note: The service saves both the device address and the address type provided by the user.
+     * It uses the address alone to identify devices. When Bluetooth is enabled, the service loads
+     * devices from storage and re-adds them to the whitelist. Therefore, if the user enters
+     * BT_LE_ADDR_TYPE_UNKNOWN, we record it as BT_LE_ADDR_TYPE_PUBLIC as in the old API method.
+     * If a random or other type is specified, we save that exact type so that the device is
+     * re-added with the correct address and type.
      */
-    device = adapter_find_create_le_device(addr, BT_LE_ADDR_TYPE_PUBLIC);
+    if (type == BT_LE_ADDR_TYPE_UNKNOWN) {
+        device = adapter_find_create_le_device(addr, BT_LE_ADDR_TYPE_PUBLIC);
+    } else {
+        device = adapter_find_device(addr, BT_TRANSPORT_BLE);
+        if (!device) {
+            device = adapter_find_create_le_device(addr, type);
+        } else if (device_get_address_type(device) != type) {
+            device_set_address_type(device, type);
+            device_clear_flag(device, DFLAG_WHITELIST_ADDED);
+            bt_addr_ba2str(addr, addr_str);
+            BT_LOGW("%s, mismatch, %s type updated %" PRIu8, __func__, addr_str, (uint8_t)type);
+        }
+    }
     if (!device) {
         adapter_unlock();
         return BT_STATUS_NOMEM;
