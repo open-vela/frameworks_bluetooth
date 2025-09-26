@@ -198,7 +198,12 @@ bt_status_t BTSYMBOLS(bt_adapter_le_enable_key_derivation)(bt_instance_t* ins,
 
 bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist)(bt_instance_t* ins, bt_address_t* addr)
 {
-    return adapter_le_add_whitelist(addr);
+    return adapter_le_add_whitelist_with_type(addr, BT_LE_ADDR_TYPE_UNKNOWN);
+}
+
+bt_status_t BTSYMBOLS(bt_adapter_le_add_whitelist_with_type)(bt_instance_t* ins, bt_address_t* addr, ble_addr_type_t type)
+{
+    return adapter_le_add_whitelist_with_type(addr, type);
 }
 
 bt_status_t BTSYMBOLS(bt_adapter_le_remove_whitelist)(bt_instance_t* ins, bt_address_t* addr)
