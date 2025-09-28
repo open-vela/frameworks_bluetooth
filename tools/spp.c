@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ***************************************************************************/
-#include <stdlib.h>
-#include <string.h>
-
 #include "bt_config.h"
 #include "bt_list.h"
 #include "bt_spp.h"
@@ -24,6 +21,9 @@
 #include "bt_uuid.h"
 #include "euv_pipe.h"
 #include "uv_thread_loop.h"
+#include <inttypes.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct {
     struct list_node node;
@@ -66,7 +66,7 @@ typedef struct {
     uint32_t received_size;
     uint64_t start_timestamp;
     uint64_t end_timestamp;
-    int seq;
+    size_t seq;
 } transmit_context_t;
 
 static int start_server_cmd(void* handle, int argc, char* argv[]);
@@ -242,7 +242,7 @@ static void ping_test_start(void* cmd)
         struct timespec ts;
         char header[20];
 
-        snprintf(header, sizeof(header), "ECHO:%d", seq);
+        snprintf(header, sizeof(header), "ECHO:%zu", seq);
 
         if (ctx->bulk_length < strlen(header)) {
             PRINT("bulk_length is too small");
@@ -322,7 +322,7 @@ static void spp_data_received(euv_pipe_t* handle, const uint8_t* buf, ssize_t si
             ctx->handle = handle;
             start_timestamp = get_timestamp_msec();
 
-            PRINT("%d bytes from port(%d): seq=%d time=%" PRIu64 " ms", strlen((const char*)buf), ctx->port, ctx->seq, (start_timestamp - ctx->start_timestamp));
+            PRINT("%zu bytes from port(%" PRIu8 "): seq=%zu time=%" PRIu64 " ms", (size_t)strlen((const char*)buf), ctx->port, ctx->seq, (uint64_t)(start_timestamp - ctx->start_timestamp));
             lib_dumpbuffer("spp recv:", buf, size);
             sem_post(&spp_send_sem);
         }
