@@ -1011,6 +1011,7 @@ static bool closing_process_event(state_machine_t* sm, uint32_t event, void* p_d
 
     case STREAM_CLOSED_EVT:
     case STREAM_SUSPENDED_EVT:
+        flag_clear(a2dp_sm, PENDING_STOP);
         a2dp_audio_on_stopped(a2dp_sm->peer_sep);
         break;
 
