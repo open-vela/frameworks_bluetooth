@@ -18,24 +18,25 @@
  * Included Files
  ****************************************************************************/
 
- #include <assert.h>
- #include <errno.h>
- #include <poll.h>
- #include <stdlib.h>
- #include <string.h>
- #include <syslog.h>
- #include <unistd.h>
- 
- #include <sys/socket.h>
- #include <sys/un.h>
- 
- #include "bluetooth.h"
- #include "bt_cs.h"
- #include "bt_message.h"
- #include "bt_socket.h"
+#include <assert.h>
+#include <errno.h>
+#include <poll.h>
+#include <stdlib.h>
+#include <string.h>
+#include <syslog.h>
+#include <unistd.h>
+
+#include <sys/socket.h>
+#include <sys/un.h>
+
+#include "bluetooth.h"
+#include "bt_cs.h"
+#include "bt_message.h"
+#include "bt_socket.h"
 #include "cs_service.h"
 #include "service_manager.h"
  
+#ifdef CONFIG_BLUETOOTH_LE_CS
  /****************************************************************************
   * Pre-processor Definitions
   ****************************************************************************/
@@ -81,76 +82,78 @@ const static cs_callbacks_t g_cs_cbs = {
   * Public Functions
   ****************************************************************************/
  
- void bt_socket_server_cs_process(service_poll_t* poll,
-     int fd, bt_instance_t* ins, bt_message_packet_t* packet)
- {
-     cs_interface_t* profile;
- 
-     switch (BT_IPC_GET_SUBCODE(packet->code)) {
-     case CS_SUBCODE_REGISTER_CALLBACKS:
-         if (ins->cs_cookie == NULL) {
-             profile = (cs_interface_t*)service_manager_get_profile(PROFILE_CS);
-             if (profile) {
-                 ins->cs_cookie = profile->register_callbacks(ins, &g_cs_cbs);
-                 if (ins->cs_cookie) {
-                     packet->cs_r.status = BT_STATUS_SUCCESS;
-                 } else {
-                     packet->cs_r.status = BT_STATUS_NO_RESOURCES;
-                 }
-             } else {
-                 packet->cs_r.status = BT_STATUS_SERVICE_NOT_FOUND;
-             }
-         } else {
-             packet->cs_r.status = BT_STATUS_BUSY;
-         }
-         break;
-     case CS_SUBCODE_UNREGISTER_CALLBACKS:
-         if (ins->cs_cookie) {
-             profile = (cs_interface_t*)service_manager_get_profile(PROFILE_CS);
-             if (profile)
-                 profile->unregister_callbacks((void**)&ins, ins->cs_cookie);
-             ins->cs_cookie = NULL;
-             packet->cs_r.status = BT_STATUS_SUCCESS;
-         } else {
-             packet->cs_r.status = BT_STATUS_NOT_FOUND;
-         }
-         break;
-    case CS_SUBCODE_START_DISTANCE_MEASUREMENT:
-        packet->cs_r.status = BTSYMBOLS(bt_cs_start_distance_measurement)(ins, 
-            &packet->cs_pl._bt_cs_start_distance_measurement.params);
-            break;
-    case CS_SUBCODE_STOP_DISTANCE_MEASUREMENT:
-        packet->cs_r.status = BTSYMBOLS(bt_cs_stop_distance_measurement)(ins,
-        &packet->cs_pl._bt_cs_stop_distance_measurement.addr,
-    packet->cs_pl._bt_cs_stop_distance_measurement.method,
+void bt_socket_server_cs_process(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet)
+{
+    bt_cs_interface_t* profile;
+
+    switch (BT_IPC_GET_SUBCODE(packet->code)) {
+    case CS_SUBCODE_REGISTER_CALLBACKS:
+        if (ins->cs_cookie == NULL) {
+            profile = (bt_cs_interface_t*)service_manager_get_profile(PROFILE_CS);
+            if (profile) {
+                ins->cs_cookie = profile->register_callbacks(ins, &g_cs_cbs);
+                if (ins->cs_cookie) {
+                    packet->cs_r.status = BT_STATUS_SUCCESS;
+                } else {
+                    packet->cs_r.status = BT_STATUS_NO_RESOURCES;
+                }
+            } else {
+                packet->cs_r.status = BT_STATUS_SERVICE_NOT_FOUND;
+            }
+        } else {
+            packet->cs_r.status = BT_STATUS_BUSY;
+        }
+        break;
+    case CS_SUBCODE_UNREGISTER_CALLBACKS:
+        if (ins->cs_cookie) {
+            profile = (bt_cs_interface_t*)service_manager_get_profile(PROFILE_CS);
+            if (profile)
+                profile->unregister_callbacks((void**)&ins, ins->cs_cookie);
+            ins->cs_cookie = NULL;
+            packet->cs_r.status = BT_STATUS_SUCCESS;
+        } else {
+            packet->cs_r.status = BT_STATUS_NOT_FOUND;
+        }
+        break;
+case CS_SUBCODE_START_DISTANCE_MEASUREMENT:
+    packet->cs_r.status = BTSYMBOLS(bt_cs_start_distance_measurement)(ins,
+        &packet->cs_pl._bt_cs_start_distance_measurement.params);
+        break;
+case CS_SUBCODE_STOP_DISTANCE_MEASUREMENT:
+    packet->cs_r.status = BTSYMBOLS(bt_cs_stop_distance_measurement)(ins,
+    &packet->cs_pl._bt_cs_stop_distance_measurement.addr,
+packet->cs_pl._bt_cs_stop_distance_measurement.method,
 packet->cs_pl._bt_cs_stop_distance_measurement.timeout_bool);
-            break;
-     default:
-         break;
-     }
- }
- 
- #endif
- 
- int bt_socket_client_cs_callback(service_poll_t* poll,
-     int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
- {
-     bt_socket_async_client_t* __async = NULL;
- 
-     if (is_async)
-         __async = ins->priv;
- 
-     switch (packet->code) {
-     case BT_AVRCP_TARGET_ON_CONNECTION_STATE_CHANGED:
-         CALLBACK_FOREACH(CBLIST, avrcp_target_callbacks_t,
-             connection_state_cb,
-             &packet->avrcp_target_cb._on_connection_state_changed.addr,
-             packet->avrcp_target_cb._on_connection_state_changed.state);
-         break;
-     default:
-         return BT_STATUS_PARM_INVALID;
-     }
- 
-     return BT_STATUS_SUCCESS;
- }
+        break;
+    default:
+        break;
+    }
+}
+
+#endif
+
+int bt_socket_client_cs_callback(service_poll_t* poll,
+    int fd, bt_instance_t* ins, bt_message_packet_t* packet, bool is_async)
+{
+    bt_socket_async_client_t* __async = NULL;
+
+    if (is_async)
+        __async = ins->priv;
+
+    switch (packet->code) {
+    case BT_AVRCP_TARGET_ON_CONNECTION_STATE_CHANGED:
+        CALLBACK_FOREACH(CBLIST, avrcp_target_callbacks_t,
+            connection_state_cb,
+            &packet->avrcp_target_cb._on_connection_state_changed.addr,
+            packet->avrcp_target_cb._on_connection_state_changed.state);
+        break;
+    default:
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    return BT_STATUS_SUCCESS;
+}
+
+ #endif /* CONFIG_BLUETOOTH_LE_CS */
  

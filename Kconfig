@@ -201,6 +201,10 @@ config BLUETOOTH_GATTS_MAX_ATTRIBUTE_NUM
 	default 10
 endif
 
+config BLUETOOTH_LE_CS
+	bool "Bluetooth LE Channel Sounding supported"
+	default n
+
 config BLUETOOTH_AVRCP_TARGET
 	bool "Audio/Video Remote Control Profile (Target) support"
 	default n
@@ -494,6 +498,13 @@ config BLUETOOTH_LE_AUDIO_SUPPORT
 config LE_DLF_SUPPORT
 	bool "LE DLF support"
 	default n
+
+config BLUETOOTH_LE_CS
+	bool "LE channel sounding support"
+	default y
+	depends on BLUETOOTH_GATT && BLUETOOTH_STACK_LE_ZBLUE
+	help
+		LE channel sounding suport
 
 endif #BLUETOOTH_BLE_SUPPORT
 endif #BLUETOOTH_SERVICE

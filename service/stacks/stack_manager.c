@@ -15,8 +15,9 @@
  ***************************************************************************/
 #include "sal_interface.h"
 #include "service_loop.h"
-
+#ifndef LOG_TAG
 #define LOG_TAG "stack_manager"
+#endif /* LOG_TAG */
 #include "utils/log.h"
 #include "vhal/bt_vhal.h"
 

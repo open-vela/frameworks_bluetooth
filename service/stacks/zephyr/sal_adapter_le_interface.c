@@ -502,14 +502,14 @@ static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer)
 static void zblue_register_callback(void)
 {
     bt_conn_cb_register(&g_conn_cbs);
-    bt_conn_le_auth_cb_register(&g_conn_auth_cbs);
+    bt_conn_auth_cb_register(&g_conn_auth_cbs);
     bt_conn_auth_info_cb_register(&g_conn_auth_info_cbs);
 }
 
 static void zblue_unregister_callback(void)
 {
     bt_conn_cb_unregister(&g_conn_cbs);
-    bt_conn_le_auth_cb_register(NULL);
+    bt_conn_auth_cb_register(NULL);
     bt_conn_auth_info_cb_unregister(&g_conn_auth_info_cbs);
 }
 
@@ -829,7 +829,7 @@ bt_status_t bt_sal_le_set_io_capability(bt_controller_id_t id, bt_io_capability_
     BT_LOGD("Set IO capability: %d", cap);
 
     memset(&g_conn_auth_cbs, 0, sizeof(g_conn_auth_cbs));
-    bt_conn_le_auth_cb_register(NULL);
+    bt_conn_auth_cb_register(NULL);
 
     switch (cap) {
     case BT_IO_CAPABILITY_DISPLAYONLY:
@@ -864,7 +864,7 @@ bt_status_t bt_sal_le_set_io_capability(bt_controller_id_t id, bt_io_capability_
 #endif
     g_conn_auth_cbs.pairing_confirm = zblue_on_auth_pairing_confirm;
 
-    if (bt_conn_le_auth_cb_register(&g_conn_auth_cbs)) {
+    if (bt_conn_auth_cb_register(&g_conn_auth_cbs)) {
         BT_LOGE("Failed to register conn auth callbacks");
         return BT_STATUS_FAIL;
     }

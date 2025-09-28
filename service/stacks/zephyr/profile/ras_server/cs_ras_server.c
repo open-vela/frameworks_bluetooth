@@ -20,10 +20,19 @@
 #include <zephyr/bluetooth/cs.h>
 #include <zephyr/bluetooth/att.h>
 #include <zephyr/bluetooth/gatt.h>
-#include "common.h"
+#include <zephyr/logging/log.h>
+#include <common/bt_str.h>
 #include "cs_service.h"
-#include "cs_msg.h"
+#include "profiles/cs/cs_msg.h"
 #include "bt_addr.h"
+#include "cs_ras_server.h"
+
+#ifdef CONFIG_BLUETOOTH_LE_CS
+
+#ifndef MIN
+#define MIN(x, y) ( ((x)<(y))?(x):(y) )
+#endif
+
 #define CS_CONFIG_ID     0
 #define NUM_MODE_0_STEPS 1
 #define RAS_SEG_HEADER_SIZE    4
@@ -36,12 +45,6 @@ static const struct bt_data ad[] = {
 };
 
 static sal_le_ras_srv_env_t* ras_srv;
-
-// static ssize_t on_attr_write_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-// 				const void *buf, uint16_t len, uint16_t offset, uint8_t flags);
-
-// static ssize_t on_attr_ras_feature_read_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-// 				const void *buf, uint16_t len, uint16_t offset, uint8_t flags);
 
 /** @brief LE Audio Attribute User Data. */
 struct bt_ras_attr_user_data {
@@ -64,42 +67,48 @@ ssize_t	on_ras_ctr_pt_write_cb(struct bt_conn *conn, const struct bt_gatt_attr *
 			 const void *buf, uint16_t len, uint16_t offset,
 			 uint8_t flags)
 {
-    BT_INFO("RAS Control Point cb.\n");
-	BT_INFO("offset:%d, flags:%d, buf[%d]:%s", offset, flags, len, bt_hex(buf, len));
+    LOG_INF("RAS Control Point cb.\n");
+	LOG_INF("offset:%d, flags:%d, buf[%d]:%s", offset, flags, len, bt_hex(buf, len));
 	return len;
 }
 
 ssize_t ras_feature_read(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 			void *buf, uint16_t len, uint16_t offset)
 {
-	BT_INFO("RAS feature read cb.\n");
-	BT_INFO("offset:%d, buf[%d]:%s", offset, len, bt_hex(buf, len));
-	return bt_gatt_attr_read(conn, attr, buf, len, offset, (uint8_t *)&ras_feature, sizeof(ras_feature));
+	LOG_INF("RAS feature read cb, ras_feature 0x%lx.\n", ras_srv->ras_feature);
+	LOG_INF("offset:%d, buf[%d]:%s", offset, len, bt_hex(buf, len));
+	return bt_gatt_attr_read(conn, attr, buf, len, offset, (uint8_t *)&ras_srv->ras_feature, sizeof(ras_srv->ras_feature));
 }
 
 static void range_rt_dt_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
-	BT_INFO("The range real-time data ccc value is change to (%d)\n", value);
+	if (ras_srv) {
+		ras_srv->rt_dt_ccc_cfg = value;
+	}
+	LOG_INF("The range real-time data ccc value is change to (%d)\n", value);
 }
 
 static void range_on_dem_dt_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
-	BT_INFO("The range on-dem data ccc value is change to (%d)\n", value);
+	if (ras_srv) {
+		ras_srv->rt_dt_ccc_cfg = value;
+	}
+	LOG_INF("The range on-dem data ccc value is change to (%d)\n", value);
 }
 
 static void range_ctr_pt_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
-	BT_INFO("The range control point data ccc value is change to (%d)\n", value);
+	LOG_INF("The range control point data ccc value is change to (%d)\n", value);
 }
 
 static void range_dt_rd_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
-	BT_INFO("The range data ready data ccc value is change to (%d)\n", value);
+	LOG_INF("The range data ready data ccc value is change to (%d)\n", value);
 }
 
 static void range_dt_ov_wr_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
-	BT_INFO("The range over write data ccc value is change to (%d)\n", value);
+	LOG_INF("The range over write data ccc value is change to (%d)\n", value);
 }
 
 #define BT_RAS_ATTR_USER_DATA_INIT(_read, _write, _user_data) \
@@ -163,15 +172,15 @@ static void range_dt_ov_wr_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint
 static void ras_dt_rd_indicate_cb(struct bt_conn *conn,
 			struct bt_gatt_indicate_params *params, uint8_t err)
 {
-	BT_INFO("Indication %s\n", err != 0U ? "fail" : "success");
-	if (remaining_len) {
-		split_segment(conn, &latest_local_steps[ras_seg_offset], remaining_len);
+	LOG_INF("Indication %s\n", err != 0U ? "fail" : "success");
+	if (ras_srv->remaining_len) {
+		split_segment(conn, &ras_srv->latest_local_steps[ras_srv->ras_seg_offset], ras_srv->remaining_len);
 	}
 }
 
 static void ras_dt_rd_indicate_destroy(struct bt_gatt_indicate_params *params)
 {
-	BT_INFO("Indication complete\n");
+	LOG_INF("Indication complete\n");
 	ras_srv->ras_dt_rd_indicating = 0U;
 }
 
@@ -201,11 +210,9 @@ static void ras_write_bits(uint8_t* buf, int* bit_offset, uint32_t value, int bi
 
 static void split_segment(struct bt_conn *conn, uint8_t* buf, int len)
 {
-	// remaining_len = len;
-
 	if (ras_srv->remaining_len > ras_srv->ras_mtu - RAS_SEG_HEADER_SIZE - 1) {
 		int curr_seg_size = ras_srv->ras_mtu - RAS_SEG_HEADER_SIZE - 1;
-		BT_INFO("data send: offset:%lu, len:%d\n", ras_srv->ras_seg_offset, curr_seg_size);
+		LOG_INF("data send: offset:%lu, len:%d\n", ras_srv->ras_seg_offset, curr_seg_size);
 
 		// update offset
 		ras_srv->ras_seg_offset += curr_seg_size;
@@ -222,28 +229,39 @@ static void split_segment(struct bt_conn *conn, uint8_t* buf, int len)
 		
 		ras_srv->ras_seg_idx++;
 		memcpy(&send_buf[1], buf, curr_seg_size);
-		ras_dt_rd_ind_params.attr = &ras_attrs[SAL_LE_RAS_RT_DT_CHAR_IDX];
-		ras_dt_rd_ind_params.func = ras_dt_rd_indicate_cb;
-		ras_dt_rd_ind_params.destroy = ras_dt_rd_indicate_destroy;
-		ras_dt_rd_ind_params.data = send_buf;
-		ras_dt_rd_ind_params.len = curr_seg_size + 1;
+		ras_srv->ras_dt_rd_ind_params.attr = &ras_attrs[SAL_LE_RAS_RT_DT_CHAR_IDX];
+		ras_srv->ras_dt_rd_ind_params.func = ras_dt_rd_indicate_cb;
+		ras_srv->ras_dt_rd_ind_params.destroy = ras_dt_rd_indicate_destroy;
+		ras_srv->ras_dt_rd_ind_params.data = send_buf;
+		ras_srv->ras_dt_rd_ind_params.len = curr_seg_size + 1;
 
 		if ((send_buf[0] & 0x01) == 0x01) {
-			BT_INFO("First seg, data(%d):%s\n", curr_seg_size + 1, bt_hex(send_buf, curr_seg_size + 1));
+			LOG_INF("First seg, data(%d):%s\n", curr_seg_size + 1, bt_hex(send_buf, curr_seg_size + 1));
 		} else {
-			BT_INFO("The %d seg, data(%d):%s\n", send_buf[0] >> 2, curr_seg_size + 1, bt_hex(send_buf, curr_seg_size + 1));
+			LOG_INF("The %d seg, data(%d):%s\n", send_buf[0] >> 2, curr_seg_size + 1, bt_hex(send_buf, curr_seg_size + 1));
 		}
 
-		if (bt_gatt_notify(NULL, &ras_attrs[SAL_LE_RAS_RT_DT_CHAR_IDX], send_buf, curr_seg_size + 1) == 0) {
-			if (ras_srv->remaining_len) {
-				split_segment(conn, &latest_local_steps[ras_srv->ras_seg_offset], ras_srv->remaining_len);
+		if (ras_srv->rt_dt_ccc_cfg == SAL_LE_RAS_GATT_NOTIFY) {
+			if (bt_gatt_notify(conn, &ras_attrs[SAL_LE_RAS_RT_DT_CHAR_IDX], send_buf, curr_seg_size + 1) == 0) {
+				if (ras_srv->remaining_len) {
+					split_segment(conn, &ras_srv->latest_local_steps[ras_srv->ras_seg_offset], ras_srv->remaining_len);
+				}
+				ras_srv->ras_dt_rd_indicating = 1U;
+				free(send_buf);
+			} else {
+				LOG_INF("ras data ready Indicate fail.\n");
+				free(send_buf);
+				return;
 			}
-			ras_srv->ras_dt_rd_indicating = 1U;
-			free(send_buf);
-		} else {
-			BT_INFO("ras data ready Indicate fail.\n");
-			free(send_buf);
-			return;
+		} else if (ras_srv->rt_dt_ccc_cfg == SAL_LE_RAS_GATT_INDICATION) {
+			if (bt_gatt_indicate(conn, &ras_srv->ras_dt_rd_ind_params) == 0) {
+				ras_srv->ras_dt_rd_indicating = 1U;
+				free(send_buf);
+			} else {
+				LOG_INF("ras data ready Indicate fail.\n");
+				free(send_buf);
+				return;
+			}
 		}
 	} else {
         int curr_seg_size = len;
@@ -251,20 +269,31 @@ static void split_segment(struct bt_conn *conn, uint8_t* buf, int len)
 		send_buf[0] = (ras_srv->ras_seg_idx == 0) ? (0x01) : (ras_srv->ras_seg_idx << 2);
         send_buf[0] |= (0x01 << 1);
         memcpy(&send_buf[1], buf, curr_seg_size);
-		ras_dt_rd_ind_params.attr = &ras_attrs[SAL_LE_RAS_RT_DT_CHAR_IDX];
-		ras_dt_rd_ind_params.func = ras_dt_rd_indicate_cb;
-		ras_dt_rd_ind_params.destroy = ras_dt_rd_indicate_destroy;
-		ras_dt_rd_ind_params.data = send_buf;
-		ras_dt_rd_ind_params.len = curr_seg_size + 1;
+		ras_srv->ras_dt_rd_ind_params.attr = &ras_attrs[SAL_LE_RAS_RT_DT_CHAR_IDX];
+		ras_srv->ras_dt_rd_ind_params.func = ras_dt_rd_indicate_cb;
+		ras_srv->ras_dt_rd_ind_params.destroy = ras_dt_rd_indicate_destroy;
+		ras_srv->ras_dt_rd_ind_params.data = send_buf;
+		ras_srv->ras_dt_rd_ind_params.len = curr_seg_size + 1;
         ras_srv->ras_dt_rd_indicating = 0U;
-        BT_INFO("The last(%d) seg, data(%d):%s\n", send_buf[0] >> 2, curr_seg_size + 1, bt_hex(send_buf, curr_seg_size + 1));
-		BT_INFO("ras_dt_rd_indicating:%d\n", ras_srv->ras_dt_rd_indicating);
-		if (bt_gatt_notify(NULL, &ras_attrs[SAL_LE_RAS_RT_DT_CHAR_IDX], send_buf, curr_seg_size + 1) == 0) {
-			free(send_buf);
-		} else {
-			BT_INFO("ras data ready Indicate fail.\n");
-			free(send_buf);
-			return;
+        LOG_INF("The last(%d) seg, data(%d):%s\n", send_buf[0] >> 2, curr_seg_size + 1, bt_hex(send_buf, curr_seg_size + 1));
+		LOG_INF("ras_dt_rd_indicating:%d\n", ras_srv->ras_dt_rd_indicating);
+		if (ras_srv->rt_dt_ccc_cfg == SAL_LE_RAS_GATT_NOTIFY) {
+			if (bt_gatt_notify(conn, &ras_attrs[SAL_LE_RAS_RT_DT_CHAR_IDX], send_buf, curr_seg_size + 1) == 0) {
+				free(send_buf);
+			} else {
+				LOG_INF("ras data ready Indicate fail.\n");
+				free(send_buf);
+				return;
+			}
+		} else if (ras_srv->rt_dt_ccc_cfg == SAL_LE_RAS_GATT_INDICATION) {
+			if (bt_gatt_indicate(conn, &ras_srv->ras_dt_rd_ind_params) == 0) {
+				ras_srv->ras_dt_rd_indicating = 1U;
+				free(send_buf);
+			} else {
+				LOG_INF("ras data ready Indicate fail.\n");
+				free(send_buf);
+				return;
+			}
 		}
 
 		ras_srv->ras_seg_idx = 0;
@@ -284,25 +313,25 @@ void on_cccd_changed(const struct bt_gatt_attr *attr, uint16_t value)
 static void write_func(struct bt_conn *conn, uint8_t err, struct bt_gatt_write_params *params)
 {
 	if (err) {
-		BT_INFO("Write failed (err %d)\n", err);
+		LOG_INF("Write failed (err %d)\n", err);
 
 		return;
 	}
 }
 
-static int write_cs_reflector_step_data(void)
+int write_cs_reflector_step_data(void)
 {
 	int err;
 	struct bt_gatt_write_params write_params;
     write_params.func = write_func;
 	write_params.handle = ras_srv->step_data_attr_handle;
-	write_params.length = STEP_DATA_BUF_LEN;
-	write_params.data = &latest_local_steps[0];
+	write_params.length = SAL_LE_RAS_STEP_DATA_BUF_LEN;
+	write_params.data = &ras_srv->latest_local_steps[0];
 	write_params.offset = 0;
 
-	err = bt_gatt_write(connection, &write_params);
+	err = bt_gatt_write(ras_srv->connection, &write_params);
 	if (err) {
-		BT_INFO("Write failed (err %d)\n", err);
+		LOG_INF("Write failed (err %d)\n", err);
 		return 0;
 	}
 
@@ -320,12 +349,12 @@ static size_t transfrom_step_data_to_ras_format(uint8_t* data, size_t data_len, 
 
 	while (in_offset + 3 <= data_len) {
 		uint8_t step_mode = data[in_offset];
-		uint8_t step_channel = data[in_offset + 1];
+		// uint8_t step_channel = data[in_offset + 1];
 		uint8_t step_data_length = data[in_offset + 2];
 
 		// Check if there is enough data remaining for the full segment
 		if (in_offset + 3 + step_data_length > data_len) {
-            BT_INFO("Incomplete data, exiting early.\n");
+            LOG_INF("Incomplete data, exiting early.\n");
 			break;
 		}
 
@@ -347,17 +376,17 @@ static void subevent_result_cb(struct bt_conn *conn, struct bt_conn_le_cs_subeve
 {
 	static int i = 0;
 	if (result->step_data_buf) {
-		if (result->step_data_buf->len <= STEP_DATA_BUF_LEN) {
+		if (result->step_data_buf->len <= SAL_LE_RAS_STEP_DATA_BUF_LEN) {
 			memcpy(ras_srv->latest_local_steps, result->step_data_buf->data,
 			       result->step_data_buf->len);
-			BT_INFO("step data[%d]:%s\n", i++, bt_hex(result->step_data_buf->data, result->step_data_buf->len));
+			LOG_INF("step data[%d]:%s\n", i++, bt_hex(result->step_data_buf->data, result->step_data_buf->len));
 		} else {
-			BT_INFO("Not enough memory to store step data. (%d > %d)\n",
-			       result->step_data_buf->len, STEP_DATA_BUF_LEN);
+			LOG_INF("Not enough memory to store step data. (%d > %d)\n",
+			       result->step_data_buf->len, SAL_LE_RAS_STEP_DATA_BUF_LEN);
 		}
 	}
 
-	BT_INFO("The CS procedure state(%d), ras_dt_rd_indicating:%d\n", result->header.procedure_done_status, ras_srv->ras_dt_rd_indicating);
+	LOG_INF("The CS procedure state(%d), ras_dt_rd_indicating:%d\n", result->header.procedure_done_status, ras_srv->ras_dt_rd_indicating);
 	memset(ras_srv->latest_local_steps, 0, sizeof(ras_srv->latest_local_steps));
 
 	if (result->header.procedure_done_status == BT_CONN_LE_CS_PROCEDURE_COMPLETE) {
@@ -367,12 +396,8 @@ static void subevent_result_cb(struct bt_conn *conn, struct bt_conn_le_cs_subeve
 		/**
 		 * CS configuration identifier.
 		 * Range: 0 to 3
-		 */
-		// ras_write_bits(stream_buf, &bit_offset, result->header.config_id, 4);
-		/**
 		 * Rangging Counter is lower 12-bits of CS Procedure_Counter Provided by the Core Controller
 		 */
-		// ras_write_bits(stream_buf, &bit_offset, result->header.procedure_counter, 12);
 		ras_write_bits(stream_buf, &bit_offset, count_id, 16);
 		/**
 		 * Transmit power level used for the CS Procedure.
@@ -447,20 +472,20 @@ static void subevent_result_cb(struct bt_conn *conn, struct bt_conn_le_cs_subeve
 		ras_srv->ras_seg_offset = 0;
 		ras_srv->remaining_len = transfrom_step_data_to_ras_format(result->step_data_buf->data, result->step_data_buf->len, stream_buf + SAL_LE_RAS_SUB_PROCUDURE_HEAD);
 		ras_srv->remaining_len += SAL_LE_RAS_SUB_PROCUDURE_HEAD;
-		BT_INFO("stream head:%s.", bt_hex(stream_buf, SAL_LE_RAS_SUB_PROCUDURE_HEAD));
-		BT_INFO("stream_buf(%ld):%s.\n", ras_srv->remaining_len, bt_hex(stream_buf + 12, ras_srv->remaining_len - SAL_LE_RAS_SUB_PROCUDURE_HEAD));
-		BT_INFO("data ready indiacte count(%d)., uuid:0x%x, handle:%d\n", 
+		LOG_INF("stream head:%s.", bt_hex(stream_buf, SAL_LE_RAS_SUB_PROCUDURE_HEAD));
+		LOG_INF("stream_buf(%ld):%s.\n", ras_srv->remaining_len, bt_hex(stream_buf + 12, ras_srv->remaining_len - SAL_LE_RAS_SUB_PROCUDURE_HEAD));
+		LOG_INF("data ready indiacte count(%d)., uuid:0x%x, handle:%d\n", 
 			   result->header.procedure_counter, 
 			   BT_UUID_16(ras_attrs[SAL_LE_RAS_DT_RD_CHAR_VAL_IDX].uuid)->val, ras_attrs[SAL_LE_RAS_DT_RD_CHAR_VAL_IDX].handle);
-		BT_INFO("procedure_counter:0x%x, config_id:0x%x, reference_power_level:0x%x",
+		LOG_INF("procedure_counter:0x%x, config_id:0x%x, reference_power_level:0x%x",
 		    result->header.procedure_counter, result->header.config_id, result->header.reference_power_level);
-		BT_INFO("num_antenna_paths:0x%x, start_acl_conn_event:0x%x, frequency_compensation:0x%x",
+		LOG_INF("num_antenna_paths:0x%x, start_acl_conn_event:0x%x, frequency_compensation:0x%x",
 		    result->header.num_antenna_paths, result->header.start_acl_conn_event, result->header.frequency_compensation);
-		BT_INFO("procedure_done_status:0x%x, subevent_done_status:0x%x,   :0x%x", 
+		LOG_INF("procedure_done_status:0x%x, subevent_done_status:0x%x,   :0x%x", 
 		    result->header.procedure_done_status, result->header.subevent_done_status, result->header.procedure_abort_reason);
-		BT_INFO("subevent_abort_reason:0x%x, reference_power_level:0x%x, num_steps_reported:0x%x",
+		LOG_INF("subevent_abort_reason:0x%x, reference_power_level:0x%x, num_steps_reported:0x%x",
 		    result->header.subevent_abort_reason, result->header.reference_power_level, result->header.num_steps_reported);
-		BT_INFO("mode:0x%x, channel:0x%x, len:0x%x", result->step_data_buf->data[0], result->step_data_buf->data[1],
+		LOG_INF("mode:0x%x, channel:0x%x, len:0x%x", result->step_data_buf->data[0], result->step_data_buf->data[1],
 		     result->step_data_buf->data[2]);
 
 		split_segment(conn, stream_buf, ras_srv->remaining_len);
@@ -469,11 +494,14 @@ static void subevent_result_cb(struct bt_conn *conn, struct bt_conn_le_cs_subeve
 	return;
 }
 
-static void mtu_exchange_cb(struct bt_conn *conn, uint8_t err,
-			    struct bt_gatt_exchange_params *params)
+static void ras_mtu_updated(struct bt_conn *conn, uint16_t tx, uint16_t rx)
 {
-	ras_srv->ras_mtu =  bt_gatt_get_mtu(conn);
-	BT_INFO("MTU exchange %s (%u)\n", err == 0U ? "success" : "failed", bt_gatt_get_mtu(conn));
+	if (ras_srv) {
+		ras_srv->ras_mtu = MIN(tx, rx);
+	}
+
+	LOG_INF("Updated MTU: TX: %d RX: %d bytes, ras_mtu: %lu\n", tx, rx, ras_srv->ras_mtu);
+	return;
 }
 
 static void connected_cb(struct bt_conn *conn, uint8_t err)
@@ -482,9 +510,9 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 	bt_address_t bt_addr = {0};
 
 	(void)bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-	BT_INFO("Connected to %s (err 0x%02X)\n", addr, err);
+	LOG_INF("Connected to %s (err 0x%02X)\n", addr, err);
 
-	memcpy(bt_addr, addr, sizeof(bt_address_t));
+	memcpy(bt_addr.addr, addr, sizeof(bt_address_t));
 	cs_msg_t* msg = cs_msg_new(CONNECTED_EVT, &bt_addr);
 	bt_sal_cs_event_callback(msg);
 
@@ -495,25 +523,19 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 		ras_srv->connection = NULL;
 	}
 
+	LOG_INF("ras_srv:%p.", ras_srv);
 	ras_srv->connection = bt_conn_ref(conn);
-
-	static struct bt_gatt_exchange_params mtu_exchange_params = {.func = mtu_exchange_cb};
-
-	err = bt_gatt_exchange_mtu(ras->connection, &mtu_exchange_params);
-	if (err) {
-		BT_INFO("%s: MTU exchange failed (err %d)\n", __func__, err);
-	}
 
 	const struct bt_le_cs_set_default_settings_param default_settings = {
 		.enable_initiator_role = false,
 		.enable_reflector_role = true,
-		.cs_sync_antenna_selection = BT_LE_CS_ANTENNA_SELECTION_OPT_REPETITIVE,
+		.cs_sync_antenna_selection = BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_REPETITIVE,
 		.max_tx_power = BT_HCI_OP_LE_CS_MAX_MAX_TX_POWER,
 	};
 
 	err = bt_le_cs_set_default_settings(ras_srv->connection, &default_settings);
 	if (err) {
-		BT_INFO("Failed to configure default CS settings (err %d)\n", err);
+		LOG_INF("Failed to configure default CS settings (err %d)\n", err);
 	}
 }
 
@@ -523,11 +545,11 @@ static void disconnected_cb(struct bt_conn *conn, uint8_t reason)
 	bt_address_t bt_addr = {0};
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-	memcpy(bt_addr, addr, sizeof(bt_address_t));
+	memcpy(bt_addr.addr, addr, sizeof(bt_address_t));
 	cs_msg_t* msg = cs_msg_new(DISCONNECTED_EVT, &bt_addr);
 	bt_sal_cs_event_callback(msg);
 
-	BT_INFO("Disconnected (reason 0x%02X)\n", reason);
+	LOG_INF("Disconnected (reason 0x%02X)\n", reason);
 
 	bt_conn_unref(conn);
 	ras_srv->connection = NULL;
@@ -536,11 +558,11 @@ static void disconnected_cb(struct bt_conn *conn, uint8_t reason)
 					      BT_GAP_ADV_FAST_INT_MAX_1, NULL),
 			      ad, ARRAY_SIZE(ad), NULL, 0);
 	if (err) {
-		BT_INFO("Advertising failed to start (err %d)\n", err);
+		LOG_INF("Advertising failed to start (err %d)\n", err);
 		return;
 	}
 
-	BT_INFO("Advertising start again.\n");
+	LOG_INF("Advertising start again.\n");
 }
 
 static void remote_capabilities_cb(struct bt_conn *conn, struct bt_conn_le_cs_capabilities *params)
@@ -549,39 +571,39 @@ static void remote_capabilities_cb(struct bt_conn *conn, struct bt_conn_le_cs_ca
 	bt_address_t bt_addr = {0};
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-	memcpy(bt_addr, addr, sizeof(bt_address_t));
+	memcpy(bt_addr.addr, addr, sizeof(bt_address_t));
 	cs_msg_t* msg = cs_msg_new(CAPBLITIES_RECEIVED_EVT, &bt_addr);
-	cs_bt_conn_le_cs_capabilities_t capabilities = {};
-	memcpy(&capabilities, params, sizeof(cs_bt_conn_le_cs_capabilities_t));
+	bt_srv_conn_le_cs_capabilities_t capabilities = {};
+	memcpy(&capabilities, params, sizeof(bt_srv_conn_le_cs_capabilities_t));
 	msg->cs_data.data = &capabilities;
 	bt_sal_cs_event_callback(msg);
 
 	ARG_UNUSED(params);
-	BT_INFO("CS capability exchange completed.\n");
-	BT_INFO("num_config_supported:%d, max_consecutive_procedures_supported:%d", 
+	LOG_INF("CS capability exchange completed.\n");
+	LOG_INF("num_config_supported:%d, max_consecutive_procedures_supported:%d",
 	params->num_config_supported, params->max_consecutive_procedures_supported);
-	BT_INFO("num_antennas_supported:%d, max_antenna_paths_supported:%d.", 
+	LOG_INF("num_antennas_supported:%d, max_antenna_paths_supported:%d.",
 		params->num_antennas_supported, params->max_antenna_paths_supported);
-	BT_INFO("initiator_supported:%d, reflector_supported:%d", 
+	LOG_INF("initiator_supported:%d, reflector_supported:%d",
 	   params->initiator_supported, params->reflector_supported);
-	BT_INFO("mode_3_supported:%d, rtt_aa_only_precision:%d",
+	LOG_INF("mode_3_supported:%d, rtt_aa_only_precision:%d",
 	   params->mode_3_supported, params->rtt_aa_only_precision);
-	BT_INFO("rtt_sounding_precision:%d, rtt_random_payload_precision:%d",
+	LOG_INF("rtt_sounding_precision:%d, rtt_random_payload_precision:%d",
 	   params->rtt_sounding_precision, params->rtt_random_payload_precision);
-	BT_INFO("rtt_aa_only_n:%d, rtt_sounding_n:%d, rtt_random_payload_n:%d",
+	LOG_INF("rtt_aa_only_n:%d, rtt_sounding_n:%d, rtt_random_payload_n:%d",
 	  params->rtt_aa_only_n, params->rtt_sounding_n, params->rtt_random_payload_n);
-	BT_INFO("phase_based_nadm_sounding_supported:%d, phase_based_nadm_random_supported:%d",
+	LOG_INF("phase_based_nadm_sounding_supported:%d, phase_based_nadm_random_supported:%d",
 	  params->phase_based_nadm_sounding_supported, params->phase_based_nadm_random_supported);
-	BT_INFO("cs_sync_2m_phy_supported:%d, cs_sync_2m_2bt_phy_supported:%d",
+	LOG_INF("cs_sync_2m_phy_supported:%d, cs_sync_2m_2bt_phy_supported:%d",
 	  params->cs_sync_2m_phy_supported, params->cs_sync_2m_2bt_phy_supported);
-	BT_INFO("cs_without_fae_supported:%d, chsel_alg_3c_supported:%d",
+	LOG_INF("cs_without_fae_supported:%d, chsel_alg_3c_supported:%d",
 	  params->cs_without_fae_supported, params->chsel_alg_3c_supported);
-	BT_INFO("pbr_from_rtt_sounding_seq_supported:%d, t_ip1_times_supported:%d",
+	LOG_INF("pbr_from_rtt_sounding_seq_supported:%d, t_ip1_times_supported:%d",
 	  params->pbr_from_rtt_sounding_seq_supported, params->t_ip1_times_supported);
-	BT_INFO("t_ip2_times_supported:%d, t_fcs_times_supported:%d",
+	LOG_INF("t_ip2_times_supported:%d, t_fcs_times_supported:%d",
 	  params->t_ip2_times_supported, params->t_fcs_times_supported);
-	BT_INFO("t_pm_times_supported:%d, t_sw_time:%d, tx_snr_capability:%d",
-	  params->t_pm_times_supported, params->t_sw_time, 
+	LOG_INF("t_pm_times_supported:%d, t_sw_time:%d, tx_snr_capability:%d",
+	  params->t_pm_times_supported, params->t_sw_time,
 	  params->tx_snr_capability);
 }
 
@@ -591,29 +613,29 @@ static void config_created_cb(struct bt_conn *conn, struct bt_conn_le_cs_config 
 	bt_address_t bt_addr = {0};
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-	memcpy(bt_addr, addr, sizeof(bt_address_t));
+	memcpy(bt_addr.addr, addr, sizeof(bt_address_t));
 	cs_msg_t* msg = cs_msg_new(CONFIG_DONE_EVT, &bt_addr);
-	cs_bt_conn_le_cs_config_t cs_config = {};
-	memcpy(&cs_config, config, sizeof(cs_bt_conn_le_cs_config_t));
-	msg->cs_data.data = cs_config;
+	bt_srv_conn_le_cs_config_t cs_config = {};
+	memcpy(&cs_config, config, sizeof(bt_srv_conn_le_cs_config_t));
+	msg->cs_data.data = (void *)&cs_config;
 	bt_sal_cs_event_callback(msg);
 
-	BT_INFO("CS config creation complete. ID: %d\n", config->id);
-	BT_INFO("main_mode_type:%d, sub_mode_type:%d", 
+	LOG_INF("CS config creation complete. ID: %d\n", config->id);
+	LOG_INF("main_mode_type:%d, sub_mode_type:%d", 
 	    config->main_mode_type, config->sub_mode_type);
-	BT_INFO("min_main_mode_steps:%d, max_main_mode_steps:%d", 
+	LOG_INF("min_main_mode_steps:%d, max_main_mode_steps:%d", 
 	    config->min_main_mode_steps, config->max_main_mode_steps);
-	BT_INFO("main_mode_repetition:%d, mode_0_steps:%d",
+	LOG_INF("main_mode_repetition:%d, mode_0_steps:%d",
 	    config->main_mode_repetition, config->mode_0_steps);
-	BT_INFO("role:%d, rtt_type:%d, cs_sync_phy:%d", 
+	LOG_INF("role:%d, rtt_type:%d, cs_sync_phy:%d", 
 	    config->role, config->rtt_type, config->cs_sync_phy);
-	BT_INFO("channel_map_repetition:%d, channel_selection_type:%d",
+	LOG_INF("channel_map_repetition:%d, channel_selection_type:%d",
 	    config->channel_map_repetition, config->channel_selection_type);
-	BT_INFO("ch3c_shape:%d, ch3c_jump:%d", config->ch3c_shape, config->ch3c_jump);
-	BT_INFO("t_ip1_time_us:%d, t_ip2_time_us:%d", 
+	LOG_INF("ch3c_shape:%d, ch3c_jump:%d", config->ch3c_shape, config->ch3c_jump);
+	LOG_INF("t_ip1_time_us:%d, t_ip2_time_us:%d", 
 	    config->t_ip1_time_us, config->t_ip2_time_us);
-	BT_INFO("t_fcs_time_us:%d, t_pm_time_us:%d", config->t_fcs_time_us, config->t_pm_time_us);
-    BT_INFO("channel_map:0x%x%x%x%x%x%x%x%x%x%x.", 
+	LOG_INF("t_fcs_time_us:%d, t_pm_time_us:%d", config->t_fcs_time_us, config->t_pm_time_us);
+    LOG_INF("channel_map:0x%x%x%x%x%x%x%x%x%x%x.", 
 	    config->channel_map[0], config->channel_map[1], config->channel_map[2],
 	    config->channel_map[3], config->channel_map[4], config->channel_map[5],
 	    config->channel_map[6], config->channel_map[7], config->channel_map[8], 
@@ -626,10 +648,10 @@ static void security_enabled_cb(struct bt_conn *conn)
 	bt_address_t bt_addr = {0};
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-	memcpy(bt_addr, addr, sizeof(bt_address_t));
+	memcpy(bt_addr.addr, addr, sizeof(bt_address_t));
 	cs_msg_t* msg = cs_msg_new(SECURITY_DONE_EVT, &bt_addr);
 	bt_sal_cs_event_callback(msg);
-	BT_INFO("CS security enabled.\n");
+	LOG_INF("CS security enabled.\n");
 }
 
 static void procedure_enabled_cb(struct bt_conn *conn,
@@ -639,22 +661,22 @@ static void procedure_enabled_cb(struct bt_conn *conn,
 	bt_address_t bt_addr = {0};
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-	memcpy(bt_addr, addr, sizeof(bt_address_t));
+	memcpy(bt_addr.addr, addr, sizeof(bt_address_t));
 	cs_msg_t* msg = cs_msg_new(PROCEDURE_DONE_EVT, &bt_addr);
-	cs_bt_conn_le_cs_procedure_enable_complete_t procedure = {};
-	memcpy(&procedure, params, sizeof(cs_bt_conn_le_cs_procedure_enable_complete_t));
-	msg->cs_data.data = procedure;
+	bt_srv_conn_le_cs_procedure_enable_complete_t procedure = {};
+	memcpy(&procedure, params, sizeof(bt_srv_conn_le_cs_procedure_enable_complete_t));
+	msg->cs_data.data = (void *)&procedure;
 	bt_sal_cs_event_callback(msg);
 
 	if (params->state == 1) {
-		BT_INFO("CS procedures enabled.\n");
+		LOG_INF("CS procedures enabled.\n");
 	} else {
-		BT_INFO("CS procedures disabled.\n");
+		LOG_INF("CS procedures disabled.\n");
 	}
 
-	BT_INFO("config_id:%d, tone_antenna:%d, tx_power:%d, subevents_per_event:%d\n", 
+	LOG_INF("config_id:%d, tone_antenna:%d, tx_power:%d, subevents_per_event:%d\n", 
 		params->config_id, params->tone_antenna_config_selection, params->selected_tx_power, params->subevents_per_event);
-	BT_INFO("subevent_interval:%d, event_interval:%d, procedure_interval:%d, procedure_count:%d, max_procedure_len:%d\n",
+	LOG_INF("subevent_interval:%d, event_interval:%d, procedure_interval:%d, procedure_count:%d, max_procedure_len:%d\n",
 	    params->subevent_interval, params->event_interval, params->procedure_interval, params->procedure_count, params->max_procedure_len);
 
 	return;
@@ -670,29 +692,41 @@ static struct bt_conn_cb conn_cbs = {
 	.le_cs_subevent_data_available = subevent_result_cb,
 };
 
-int vela_le_cs_enable(void)
+static struct bt_gatt_cb ras_gatt_callbacks = {
+	.att_mtu_updated = ras_mtu_updated
+};
+
+int le_cs_enable(void)
 {
 	int err;
 
-	BT_INFO("Starting Channel Sounding Demo\n");
+	LOG_INF("Starting Channel Sounding Demo\n");
+
+	ras_srv = (sal_le_ras_srv_env_t *)malloc(sizeof(sal_le_ras_srv_env_t));
+
+	ras_srv->ras_feature = 0x07000007;
 
 	err = bt_gatt_service_register(&ras_svc);
 	if (err != 0) {
-		BT_INFO("Failed to register Ranging Service in gatt DB");
+		LOG_INF("Failed to register Ranging Service in gatt DB");
 		return err;
 	}
 
 	bt_conn_cb_register(&conn_cbs);
 
+	bt_gatt_cb_register(&ras_gatt_callbacks);
+
 	err = bt_le_adv_start(BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONN, BT_GAP_ADV_FAST_INT_MIN_1,
 					      BT_GAP_ADV_FAST_INT_MAX_1, NULL),
 			      ad, ARRAY_SIZE(ad), NULL, 0);
 	if (err) {
-		BT_INFO("Advertising failed to start (err %d)\n", err);
+		LOG_INF("Advertising failed to start (err %d)\n", err);
 		return 0;
 	}
 
-	BT_INFO("Advertising starting.\n");
+	LOG_INF("Advertising starting.\n");
 
 	return 0;
 }
+
+#endif /* CONFIG_BLUETOOTH_LE_CS */

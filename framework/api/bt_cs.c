@@ -17,42 +17,46 @@
 
 #include <stdint.h>
 
-#include "cs_service.h"
-#include "bt_cs.h"
+
 #include "bt_internal.h"
 #include "bt_profile.h"
 #include "service_manager.h"
 #include "utils/log.h"
+#include "cs_service.h"
+#include "bt_cs.h"
 
-static cs_interface_t* get_profile_service(void)
+#ifdef CONFIG_BLUETOOTH_LE_CS
+
+static bt_cs_interface_t* get_profile_service(void)
 {
-    return (cs_interface_t*)service_manager_get_profile(PROFILE_CS);
+    return (bt_cs_interface_t*)service_manager_get_profile(PROFILE_CS);
 }
-
 void* BTSYMBOLS(bt_cs_register_callbacks)(bt_instance_t* ins, const cs_callbacks_t* callbacks)
 {
-    cs_interface_t* profile = get_profile_service();
+    bt_cs_interface_t* profile = get_profile_service();
 
     return profile->register_callbacks(NULL, callbacks);
 }
 
 bool BTSYMBOLS(bt_cs_unregister_callbacks)(bt_instance_t* ins, void* cookie)
 {
-    cs_interface_t* profile = get_profile_service();
+    bt_cs_interface_t* profile = get_profile_service();
 
     return profile->unregister_callbacks(NULL, cookie);
 }
 
 bt_status_t BTSYMBOLS(bt_cs_start_distance_measurement)(bt_instance_t* ins, bt_distance_measurement_params_t* params)
 {
-    cs_interface_t* profile = get_profile_service();
+    bt_cs_interface_t* profile = get_profile_service();
 
     return profile->start_distance_measurement(params);
 }
 
-bt_status_t BTSYMBOLS(bt_cs_stop_distance_measurement)(bt_instance_t* ins, bt_address_t* addr, int method, bool timeout)
+bt_status_t BTSYMBOLS(bt_cs_stop_distance_measurement)(bt_instance_t* ins, bt_address_t* addr, uint8_t method, bool timeout)
 {
-    cs_interface_t* profile = get_profile_service();
+    bt_cs_interface_t* profile = get_profile_service();
 
     return profile->stop_distance_measurement(addr, method, timeout);
 }
+
+#endif /* CONFIG_BLUETOOTH_LE_CS */

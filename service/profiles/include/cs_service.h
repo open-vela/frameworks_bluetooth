@@ -20,10 +20,12 @@
  * Included Files
  ****************************************************************************/
 #include "bt_cs.h"
+#include "profiles/cs/cs_msg.h"
+
 typedef enum  {
-	CS_BT_CONN_LE_CS_PROCEDURES_DISABLED,
-	CS_BT_CONN_LE_CS_PROCEDURES_ENABLED,
-}cs_bt_conn_le_cs_procedure_enable_state_t;
+	CS_BT_SRV_CONN_LE_CS_PROCEDURES_DISABLED,
+	CS_BT_SRV_CONN_LE_CS_PROCEDURES_ENABLED,
+} bt_srv_conn_le_cs_procedure_enable_state_t;
 
 /** CS Test Tone Antennna Config Selection.
  *
@@ -53,168 +55,169 @@ typedef enum  {
  *  - 2:2 configuration, where both A and B support 2 antennas and N_AP = 4
  */
 typedef enum  {
-	CS_BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_ONE,
-	CS_BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_TWO,
-	CS_BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_THREE,
-	CS_BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FOUR,
-	CS_BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FIVE,
-	CS_BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SIX,
-	CS_BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SEVEN,
-	CS_BT_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_EIGHT,
-}cs_bt_conn_le_cs_tone_antenna_config_selection_t;
+	CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_ONE,
+	CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_TWO,
+	CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_THREE,
+	CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FOUR,
+	CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_FIVE,
+	CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SIX,
+	CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_SEVEN,
+	CS_BT_SRV_LE_CS_TONE_ANTENNA_CONFIGURATION_INDEX_EIGHT,
+} bt_srv_conn_le_cs_tone_antenna_config_selection_t;
 
 /** Channel sounding main mode */
 typedef enum  {
 	/** Mode-1 (RTT) */
-	CS_BT_CONN_LE_CS_MAIN_MODE_1 = 0x01,
+	CS_BT_SRV_CONN_LE_CS_MAIN_MODE_1 = 0x01,
 	/** Mode-2 (PBR) */
-	CS_BT_CONN_LE_CS_MAIN_MODE_2,
+	CS_BT_SRV_CONN_LE_CS_MAIN_MODE_2,
 	/** Mode-3 (RTT and PBR) */
-	CS_BT_CONN_LE_CS_MAIN_MODE_3,
-}cs_bt_conn_le_cs_main_mode_t;
+	CS_BT_SRV_CONN_LE_CS_MAIN_MODE_3,
+} bt_srv_conn_le_cs_main_mode_t;
 
 /** Channel sounding sub mode */
 typedef enum  {
 	/** Mode-1 (RTT) */
-	CS_BT_CONN_LE_CS_SUB_MODE_1 = 0x01,
+	CS_BT_SRV_CONN_LE_CS_SUB_MODE_1 = 0x01,
 	/** Mode-2 (PBR) */
-	CS_BT_CONN_LE_CS_SUB_MODE_2,
+	CS_BT_SRV_CONN_LE_CS_SUB_MODE_2,
 	/** Mode-3 (RTT and PBR) */
-	CS_BT_CONN_LE_CS_SUB_MODE_3,
+	CS_BT_SRV_CONN_LE_CS_SUB_MODE_3,
 	/** Unused */
-	CS_BT_CONN_LE_CS_SUB_MODE_UNUSED = 0xFF,
-}cs_bt_conn_le_cs_sub_mode_t;
+	CS_BT_SRV_CONN_LE_CS_SUB_MODE_UNUSED = 0xFF,
+} bt_srv_conn_le_cs_sub_mode_t;
 
 /** Channel sounding role */
 typedef enum  {
 	/** CS initiator role */
-	CS_BT_CONN_LE_CS_ROLE_INITIATOR,
+	CS_BT_SRV_CONN_LE_CS_ROLE_INITIATOR,
 	/** CS reflector role */
-	CS_BT_CONN_LE_CS_ROLE_REFLECTOR,
-}cs_bt_conn_le_cs_role_t;
+	CS_BT_SRV_CONN_LE_CS_ROLE_REFLECTOR,
+} bt_srv_conn_le_cs_role_t;
 
 /** Channel sounding RTT type */
 typedef enum  {
 	/** RTT AA only */
-	CS_BT_CONN_LE_CS_RTT_TYPE_AA_ONLY,
+	CS_BT_SRV_CONN_LE_CS_RTT_TYPE_AA_ONLY,
 	/** RTT with 32-bit sounding sequence */
-	CS_BT_CONN_LE_CS_RTT_TYPE_32_BIT_SOUNDING,
+	CS_BT_SRV_CONN_LE_CS_RTT_TYPE_32_BIT_SOUNDING,
 	/** RTT with 96-bit sounding sequence */
-	CS_BT_CONN_LE_CS_RTT_TYPE_96_BIT_SOUNDING,
+	CS_BT_SRV_CONN_LE_CS_RTT_TYPE_96_BIT_SOUNDING,
 	/** RTT with 32-bit random sequence */
-	CS_BT_CONN_LE_CS_RTT_TYPE_32_BIT_RANDOM,
+	CS_BT_SRV_CONN_LE_CS_RTT_TYPE_32_BIT_RANDOM,
 	/** RTT with 64-bit random sequence */
-	CS_BT_CONN_LE_CS_RTT_TYPE_64_BIT_RANDOM,
+	CS_BT_SRV_CONN_LE_CS_RTT_TYPE_64_BIT_RANDOM,
 	/** RTT with 96-bit random sequence */
-	CS_BT_CONN_LE_CS_RTT_TYPE_96_BIT_RANDOM,
+	CS_BT_SRV_CONN_LE_CS_RTT_TYPE_96_BIT_RANDOM,
 	/** RTT with 128-bit random sequence */
-	CS_BT_CONN_LE_CS_RTT_TYPE_128_BIT_RANDOM,
-}cs_bt_conn_le_cs_rtt_type_t;
+	CS_BT_SRV_CONN_LE_CS_RTT_TYPE_128_BIT_RANDOM,
+} bt_srv_conn_le_cs_rtt_type_t;
 
 /** Channel sounding PHY used for CS sync */
 typedef enum  {
 	/** LE 1M PHY */
-	CS_BT_CONN_LE_CS_SYNC_1M_PHY = 0x01,
+	CS_BT_SRV_CONN_LE_CS_SYNC_1M_PHY = 0x01,
 	/** LE 2M PHY */
-	CS_BT_CONN_LE_CS_SYNC_2M_PHY,
+	CS_BT_SRV_CONN_LE_CS_SYNC_2M_PHY,
 	/** LE 2M 2BT PHY */
-	CS_BT_CONN_LE_CS_SYNC_2M_2BT_PHY,
-}cs_bt_conn_le_cs_sync_phy_t;
+	CS_BT_SRV_CONN_LE_CS_SYNC_2M_2BT_PHY,
+} bt_srv_conn_le_cs_sync_phy_t;
 
 /** Channel sounding channel selection type */
 typedef enum  {
 	/** Use Channel Selection Algorithm #3b for non-mode-0 CS steps */
-	CS_BT_CONN_LE_CS_CHSEL_TYPE_3B,
+	CS_BT_SRV_CONN_LE_CS_CHSEL_TYPE_3B,
 	/** Use Channel Selection Algorithm #3c for non-mode-0 CS steps */
-	CS_BT_CONN_LE_CS_CHSEL_TYPE_3C,
-}cs_bt_conn_le_cs_chsel_type_t;
+	CS_BT_SRV_CONN_LE_CS_CHSEL_TYPE_3C,
+} bt_srv_conn_le_cs_chsel_type_t;
 
 /** Channel sounding channel sequence shape */
 typedef enum  {
 	/** Use Hat shape for user-specified channel sequence */
-	CS_BT_CONN_LE_CS_CH3C_SHAPE_HAT,
+	CS_BT_SRV_CONN_LE_CS_CH3C_SHAPE_HAT,
 	/** Use X shape for user-specified channel sequence */
-	CS_BT_CONN_LE_CS_CH3C_SHAPE_X,
-}cs_bt_conn_le_cs_ch3c_shape_t;
+	CS_BT_SRV_CONN_LE_CS_CH3C_SHAPE_X,
+} bt_srv_conn_le_cs_ch3c_shape_t;
 
 /** Supported AA-Only RTT precision. */
 typedef enum {
 	/** AA-Only RTT variant is not supported. */
-	CS_BT_CONN_LE_CS_RTT_AA_ONLY_NOT_SUPP = 0,
+	CS_BT_SRV_CONN_LE_CS_RTT_AA_ONLY_NOT_SUPP = 0,
 	/** 10ns time-of-flight accuracy. */
-	CS_BT_CONN_LE_CS_RTT_AA_ONLY_10NS,
+	CS_BT_SRV_CONN_LE_CS_RTT_AA_ONLY_10NS,
 	/** 150ns time-of-flight accuracy. */
-	CS_BT_CONN_LE_CS_RTT_AA_ONLY_150NS,
-}cs_bt_conn_le_cs_capability_rtt_aa_only_t;
+	CS_BT_SRV_CONN_LE_CS_RTT_AA_ONLY_150NS,
+} bt_srv_conn_le_cs_capability_rtt_aa_only_t;
 
 /** Supported Sounding Sequence RTT precision. */
 typedef enum  {
 	/** Sounding Sequence RTT variant is not supported. */
-	CS_BT_CONN_LE_CS_RTT_SOUNDING_NOT_SUPP = 0,
+	CS_BT_SRV_CONN_LE_CS_RTT_SOUNDING_NOT_SUPP = 0,
 	/** 10ns time-of-flight accuracy. */
-	CS_BT_CONN_LE_CS_RTT_SOUNDING_10NS,
+	CS_BT_SRV_CONN_LE_CS_RTT_SOUNDING_10NS,
 	/** 150ns time-of-flight accuracy. */
-	CS_BT_CONN_LE_CS_RTT_SOUNDING_150NS,
-}cs_bt_conn_le_cs_capability_rtt_sounding_t;
+	CS_BT_SRV_CONN_LE_CS_RTT_SOUNDING_150NS,
+} bt_srv_conn_le_cs_capability_rtt_sounding_t;
 
 /** Supported Random Payload RTT precision. */
 typedef enum  {
 	/** Random Payload RTT variant is not supported. */
-	CS_BT_CONN_LE_CS_RTT_RANDOM_PAYLOAD_NOT_SUPP = 0,
+	CS_BT_SRV_CONN_LE_CS_RTT_RANDOM_PAYLOAD_NOT_SUPP = 0,
 	/** 10ns time-of-flight accuracy. */
-	CS_BT_CONN_LE_CS_RTT_RANDOM_PAYLOAD_10NS,
+	CS_BT_SRV_CONN_LE_CS_RTT_RANDOM_PAYLOAD_10NS,
 	/** 150ns time-of-flight accuracy. */
-	CS_BT_CONN_LE_CS_RTT_RANDOM_PAYLOAD_150NS,
-}cs_bt_conn_le_cs_capability_rtt_random_payload_t;
+	CS_BT_SRV_CONN_LE_CS_RTT_RANDOM_PAYLOAD_150NS,
+} bt_srv_conn_le_cs_capability_rtt_random_payload_t;
 
 typedef enum  {
 	/** Use antenna identifier 1 for CS_SYNC packets. */
-	BT_LE_CS_ANTENNA_SELECTION_OPT_ONE = 0x01,
+	BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_ONE = 0x01,
 	/** Use antenna identifier 2 for CS_SYNC packets. */
-	BT_LE_CS_ANTENNA_SELECTION_OPT_TWO = 0x02,
+	BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_TWO = 0x02,
 	/** Use antenna identifier 3 for CS_SYNC packets. */
-	BT_LE_CS_ANTENNA_SELECTION_OPT_THREE = 0x03,
+	BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_THREE = 0x03,
 	/** Use antenna identifier 4 for CS_SYNC packets. */
-	BT_LE_CS_ANTENNA_SELECTION_OPT_FOUR = 0x04,
+	BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_FOUR = 0x04,
 	/** Use antennas in repetitive order from 1 to 4 for CS_SYNC packets. */
-	BT_LE_CS_ANTENNA_SELECTION_OPT_REPETITIVE = 0xFE,
+	BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_REPETITIVE = 0xFE,
 	/** No recommendation for local controller antenna selection. */
-	BT_LE_CS_ANTENNA_SELECTION_OPT_NO_RECOMMENDATION = 0xFF,
-}cs_bt_le_cs_sync_antenna_selection_opt_t;
+	BT_LE_SRV_CS_ANTENNA_SELECTION_OPT_NO_RECOMMENDATION = 0xFF,
+} bt_le_srv_cs_sync_antenna_selection_opt_t;
 
 /** CS Test Initiator SNR control options */
 typedef enum  {
-	BT_LE_CS_INITIATOR_SNR_CONTROL_18dB = 0x01,
-	BT_LE_CS_INITIATOR_SNR_CONTROL_21dB,
-	BT_LE_CS_INITIATOR_SNR_CONTROL_24dB,
-	BT_LE_CS_INITIATOR_SNR_CONTROL_27dB,
-	BT_LE_CS_INITIATOR_SNR_CONTROL_30dB,
-	BT_LE_CS_INITIATOR_SNR_CONTROL_NOT_USED = 0xFF,
-}cs_bt_le_cs_initiator_snr_control_t;
+	BT_LE_SRV_CS_INITIATOR_SNR_CONTROL_18dB = 0x01,
+	BT_LE_SRV_CS_INITIATOR_SNR_CONTROL_21dB,
+	BT_LE_SRV_CS_INITIATOR_SNR_CONTROL_24dB,
+	BT_LE_SRV_CS_INITIATOR_SNR_CONTROL_27dB,
+	BT_LE_SRV_CS_INITIATOR_SNR_CONTROL_30dB,
+	BT_LE_SRV_CS_INITIATOR_SNR_CONTROL_NOT_USED = 0xFF,
+} bt_le_srv_cs_initiator_snr_control_t;
 
 typedef enum  {
-	BT_LE_CS_PROCEDURE_PHY_1M = 0x01,
-	BT_LE_CS_PROCEDURE_PHY_2M,
-	BT_LE_CS_PROCEDURE_PHY_CODED_S8,
-	BT_LE_CS_PROCEDURE_PHY_CODED_S2,
-}cs_bt_le_cs_procedure_phy_t;
+	BT_LE_SRV_CS_PROCEDURE_PHY_1M = 0x01,
+	BT_LE_SRV_CS_PROCEDURE_PHY_2M,
+	BT_LE_SRV_CS_PROCEDURE_PHY_CODED_S8,
+	BT_LE_SRV_CS_PROCEDURE_PHY_CODED_S2,
+} bt_le_srv_cs_procedure_phy_t;
 
 /** CS config creation context */
 typedef enum  {
 	/** Write CS configuration in local Controller only  */
-	CS_BT_LE_CS_CREATE_CONFIG_CONTEXT_LOCAL_ONLY,
+	BT_LE_SRV_CS_CREATE_CONFIG_CONTEXT_LOCAL_ONLY,
 	/** Write CS configuration in both local and remote Controller using Channel Sounding
 	 * Configuration procedure
 	 */
-	CS_BT_LE_CS_CREATE_CONFIG_CONTEXT_LOCAL_AND_REMOTE
-}cs_bt_le_cs_create_config_context_t;
+	BT_LE_SRV_CS_CREATE_CONFIG_CONTEXT_LOCAL_AND_REMOTE
+} bt_le_srv_cs_create_config_context_t;
+
 typedef struct  {
 	/** CS configuration ID */
 	uint8_t id;
 	/** Main CS mode type */
-	cs_bt_conn_le_cs_main_mode_t main_mode_type;
+	bt_srv_conn_le_cs_main_mode_t main_mode_type;
 	/** Sub CS mode type */
-	cs_bt_conn_le_cs_sub_mode_t sub_mode_type;
+	bt_srv_conn_le_cs_sub_mode_t sub_mode_type;
 	/** Minimum number of CS main mode steps to be executed before a submode step is executed */
 	uint8_t min_main_mode_steps;
 	/** Maximum number of CS main mode steps to be executed before a submode step is executed */
@@ -227,19 +230,19 @@ typedef struct  {
 	/** Number of CS mode-0 steps to be included at the beginning of each CS subevent */
 	uint8_t mode_0_steps;
 	/** CS role */
-	cs_bt_conn_le_cs_role_t role;
+	bt_srv_conn_le_cs_role_t role;
 	/** RTT type */
-	cs_bt_conn_le_cs_rtt_type_t rtt_type;
+	bt_srv_conn_le_cs_rtt_type_t rtt_type;
 	/** CS Sync PHY */
-	cs_bt_conn_le_cs_sync_phy_t cs_sync_phy;
+	bt_srv_conn_le_cs_sync_phy_t cs_sync_phy;
 	/** The number of times the Channel_Map field will be cycled through for non-mode-0 steps
 	 * within a CS procedure
 	 */
 	uint8_t channel_map_repetition;
 	/** Channel selection type */
-	cs_bt_conn_le_cs_chsel_type_t channel_selection_type;
+	bt_srv_conn_le_cs_chsel_type_t channel_selection_type;
 	/** User-specified channel sequence shape */
-	cs_bt_conn_le_cs_ch3c_shape_t ch3c_shape;
+	bt_srv_conn_le_cs_ch3c_shape_t ch3c_shape;
 	/** Number of channels skipped in each rising and falling sequence  */
 	uint8_t ch3c_jump;
 	/** Channel map used for CS procedure
@@ -248,12 +251,12 @@ typedef struct  {
 	 *  At least 15 channels shall be enabled.
 	 */
 	uint8_t channel_map[10];
-}cs_bt_le_cs_create_config_params_t;
+} bt_le_srv_cs_create_config_params_t;
 
 typedef struct  {
 	uint8_t config_id;
 	uint8_t enable;
-}cs_bt_le_cs_procedure_enable_param_t;
+} bt_le_srv_cs_procedure_enable_param_t;
 
 typedef struct  {
 	/* The ID associated with the desired configuration (0 to 3) */
@@ -280,10 +283,10 @@ typedef struct  {
 	uint32_t max_subevent_len;
 
 	/* Antenna configuration index */
-	cs_bt_conn_le_cs_tone_antenna_config_selection_t tone_antenna_config_selection;
+	bt_srv_conn_le_cs_tone_antenna_config_selection_t tone_antenna_config_selection;
 
 	/* Phy */
-	cs_bt_le_cs_procedure_phy_t phy;
+	bt_le_srv_cs_procedure_phy_t phy;
 
 	/* Transmit power delta, in signed dB, to indicate the recommended difference between the
 	 * remote device's power level for the CS tones and RTT packets and the existing power
@@ -295,11 +298,11 @@ typedef struct  {
 	uint8_t preferred_peer_antenna;
 
 	/* Initiator SNR control adjustment */
-	cs_bt_le_cs_initiator_snr_control_t snr_control_initiator;
+	bt_le_srv_cs_initiator_snr_control_t snr_control_initiator;
 
 	/* Reflector SNR control adjustment */
-	cs_bt_le_cs_initiator_snr_control_t snr_control_reflector;
-}cs_bt_le_cs_set_procedure_parameters_param_t;
+	bt_le_srv_cs_initiator_snr_control_t snr_control_reflector;
+} bt_le_srv_cs_set_procedure_parameters_param_t;
 
 /** Default CS settings in the local Controller */
 typedef struct  {
@@ -309,7 +312,7 @@ typedef struct  {
 	bool enable_reflector_role;
 	/** Antenna identifier to be used for CS_SYNC packets by the local controller.
 	 */
-	cs_bt_le_cs_sync_antenna_selection_opt_t cs_sync_antenna_selection;
+	bt_le_srv_cs_sync_antenna_selection_opt_t cs_sync_antenna_selection;
 	/** Maximum output power (Effective Isotropic Radiated Power) to be used
 	 *  for all CS transmissions.
 	 *
@@ -317,7 +320,7 @@ typedef struct  {
 	 *  @ref BT_HCI_OP_LE_CS_MAX_MAX_TX_POWER.
 	 */
 	uint8_t max_tx_power;
-}cs_bt_le_cs_set_default_settings_param_t;
+} bt_le_srv_cs_set_default_settings_param_t;
 
 /** Remote channel sounding capabilities for LE connections supporting CS */
 typedef struct {
@@ -340,11 +343,11 @@ typedef struct {
 	/** Mode-3 */
 	bool mode_3_supported;
 	/** RTT AA-Only */
-	cs_bt_conn_le_cs_capability_rtt_aa_only_t rtt_aa_only_precision;
+	bt_srv_conn_le_cs_capability_rtt_aa_only_t rtt_aa_only_precision;
 	/** RTT Sounding */
-	cs_bt_conn_le_cs_capability_rtt_sounding_t rtt_sounding_precision;
+	bt_srv_conn_le_cs_capability_rtt_sounding_t rtt_sounding_precision;
 	/** RTT Random Payload */
-	cs_bt_conn_le_cs_capability_rtt_random_payload_t rtt_random_payload_precision;
+	bt_srv_conn_le_cs_capability_rtt_random_payload_t rtt_random_payload_precision;
 	/** Number of CS steps needed to achieve the
 	 * accuracy requirements for RTT AA Only.
 	 *
@@ -433,15 +436,15 @@ typedef struct {
 	 *  - Bit 4: 30dB
 	 */
 	uint8_t tx_snr_capability;
-}cs_bt_conn_le_cs_capabilities_t;
+} bt_srv_conn_le_cs_capabilities_t;
 
 typedef struct  {
 	/** CS configuration ID */
 	uint8_t id;
 	/** Main CS mode type */
-	cs_bt_conn_le_cs_main_mode_t main_mode_type;
+	bt_srv_conn_le_cs_main_mode_t main_mode_type;
 	/** Sub CS mode type */
-	cs_bt_conn_le_cs_sub_mode_t sub_mode_type;
+	bt_srv_conn_le_cs_sub_mode_t sub_mode_type;
 	/** Minimum number of CS main mode steps to be executed before a submode step is executed */
 	uint8_t min_main_mode_steps;
 	/** Maximum number of CS main mode steps to be executed before a submode step is executed */
@@ -454,19 +457,19 @@ typedef struct  {
 	/** Number of CS mode-0 steps to be included at the beginning of each CS subevent */
 	uint8_t mode_0_steps;
 	/** CS role */
-	cs_bt_conn_le_cs_role_t role;
+	bt_srv_conn_le_cs_role_t role;
 	/** RTT type */
-	cs_bt_conn_le_cs_rtt_type_t rtt_type;
+	bt_srv_conn_le_cs_rtt_type_t rtt_type;
 	/** CS Sync PHY */
-	cs_bt_conn_le_cs_sync_phy_t cs_sync_phy;
+	bt_srv_conn_le_cs_sync_phy_t cs_sync_phy;
 	/** The number of times the Channel_Map field will be cycled through for non-mode-0 steps
 	 *  within a CS procedure
 	 */
 	uint8_t channel_map_repetition;
 	/** Channel selection type */
-	cs_bt_conn_le_cs_chsel_type_t channel_selection_type;
+	bt_srv_conn_le_cs_chsel_type_t channel_selection_type;
 	/** User-specified channel sequence shape */
-	cs_bt_conn_le_cs_ch3c_shape_t ch3c_shape;
+	bt_srv_conn_le_cs_ch3c_shape_t ch3c_shape;
 	/** Number of channels skipped in each rising and falling sequence  */
 	uint8_t ch3c_jump;
 	/** Interlude time in microseconds between the RTT packets */
@@ -483,17 +486,17 @@ typedef struct  {
 	 *  At least 15 channels shall be enabled.
 	 */
 	uint8_t channel_map[10];
-}cs_bt_conn_le_cs_config_t;
+} bt_srv_conn_le_cs_config_t;
 
 typedef struct  {
 	/* The ID associated with the desired configuration (0 to 3) */
 	uint8_t config_id;
 
 	/* State of the CS procedure */
-	cs_bt_conn_le_cs_procedure_enable_state_t state;
+	bt_srv_conn_le_cs_procedure_enable_state_t state;
 
 	/* Antenna configuration index */
-	cs_bt_conn_le_cs_tone_antenna_config_selection_t tone_antenna_config_selection;
+	bt_srv_conn_le_cs_tone_antenna_config_selection_t tone_antenna_config_selection;
 
 	/* Transmit power level used for CS procedures (-127 to 20 dB; 0x7F if unavailable) */
 	int8_t selected_tx_power;
@@ -520,7 +523,7 @@ typedef struct  {
 
 	/* Maximum duration for each procedure in units of 0.625 ms (0x0001 to 0xFFFF) */
 	uint16_t max_procedure_len;
-}cs_bt_conn_le_cs_procedure_enable_complete_t;
+} bt_srv_conn_le_cs_procedure_enable_complete_t;
 
 typedef struct {
     size_t size;
@@ -539,11 +542,13 @@ typedef struct {
     
     bt_status_t (*stop_distance_measurement)(bt_address_t* addr, int method, bool timeout);
 
-} cs_interface_t;
+} bt_cs_interface_t;
 
 /*
  * register profile to service manager
  */
-void register_cs_service(void);
+void bt_register_cs_service(void);
+
+void bt_sal_cs_event_callback(cs_msg_t* msg);
 
 #endif /* __CS_SERVICE_H__ */

@@ -1235,7 +1235,7 @@ bt_status_t bt_sal_gatt_client_enable(void)
 
 bt_status_t bt_sal_gatt_client_disable(void)
 {
-    bt_gatt_cb_unregister(&zblue_gatt_callbacks);
+    // bt_gatt_cb_unregister(&zblue_gatt_callbacks);
 
     return BT_STATUS_SUCCESS;
 }

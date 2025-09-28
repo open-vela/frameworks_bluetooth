@@ -18,7 +18,9 @@
 #include "bt_cs.h"
 #include "bt_socket.h"
 #include "bt_message.h"
+#include "utils/log.h"
 
+#ifdef CONFIG_BLUETOOTH_LE_CS
 
 void* bt_cs_register_callbacks(bt_instance_t* ins, const cs_callbacks_t* callbacks)
 {
@@ -84,6 +86,7 @@ bt_status_t bt_cs_start_distance_measurement(bt_instance_t* ins, bt_distance_mea
 
     BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
     memcpy(&packet.cs_pl._bt_cs_start_distance_measurement.params, params, sizeof(bt_distance_measurement_params_t));
+    BT_LOGI("BT_CS_START_DISTANCE_MEASUREMENT:0x%lx", BT_CS_START_DISTANCE_MEASUREMENT);
     status = bt_socket_client_sendrecv(ins, &packet, BT_CS_START_DISTANCE_MEASUREMENT);
     if (status != BT_STATUS_SUCCESS) {
         return status;
@@ -105,3 +108,5 @@ bt_status_t bt_cs_stop_distance_measurement(bt_instance_t* ins, bt_address_t* ad
     }
     return packet.cs_r.status;
 }
+
+#endif /* CONFIG_BLUETOOTH_LE_CS */

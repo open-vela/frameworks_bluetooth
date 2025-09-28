@@ -18,6 +18,8 @@
  #include <zephyr/bluetooth/cs.h>
  #include "le_cs_manager.h"
 
+ #ifdef CONFIG_BLUETOOTH_LE_CS
+
 #define LE_CS_FREQUENCY_MHZ(ch)    (2402u + 1u * (ch))
 #define LE_CS_FREQUENCY_HZ(ch)     (LE_CS_FREQUENCY_MHZ(ch) * 1000000.0f)
 #define LE_CS_SPEED_OF_LIGHT_M_PER_S  (299792458.0f)
@@ -305,6 +307,4 @@ void bt_le_cs_run_distance_estimation(uint8_t *local_step_data, uint16_t local_d
     return;
 }
 
-
-
-
+#endif /* CONFIG_BLUETOOTH_LE_CS */

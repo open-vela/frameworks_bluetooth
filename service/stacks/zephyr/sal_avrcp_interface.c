@@ -30,9 +30,9 @@
 #include "sal_zblue.h"
 
 #include "bt_uuid.h"
-#undef BT_UUID_DECLARE_16
-#undef BT_UUID_DECLARE_32
-#undef BT_UUID_DECLARE_128
+#undef BT_FW_UUID_DECLARE_16
+#undef BT_FW_UUID_DECLARE_32
+#undef BT_FW_UUID_DECLARE_128
 #include <zephyr/bluetooth/classic/sdp.h>
 #include <zephyr/bluetooth/zephyr3/avrcp_cttg.h>
 

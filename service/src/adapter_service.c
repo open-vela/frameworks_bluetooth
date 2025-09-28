@@ -53,8 +53,9 @@
 #include "service_manager.h"
 #include "state_machine.h"
 #include "storage.h"
+#ifndef LOG_TAG
 #define LOG_TAG "adapter-svc"
-
+#endif /* LOG_TAG */
 #include "bt_utils.h"
 #include "utils/log.h"
 

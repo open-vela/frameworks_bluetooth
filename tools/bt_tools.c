@@ -224,6 +224,9 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     { "vmicp", vmicp_command_exec, 0, "vcp/micp client cmd, input \'vmicp\' show usage" },
 #endif
+#ifdef CONFIG_BLUETOOTH_LE_CS
+    {"cs", le_cs_command_exec, 0, "le cs cmd, input \'tbs\' show usage"},
+#endif
     { "dump", dump_cmd, 0, "dump adapter state" },
     { "log", log_command, 0, "log control command" },
     { "help", usage_cmd, 0, "Usage for bttools" },
@@ -337,6 +340,9 @@ static void bt_tool_init(void* handle)
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     lea_vmicp_command_init(handle);
 #endif
+#ifdef CONFIG_BLUETOOTH_LE_CS
+    le_cs_commond_init(handle);
+#endif
     g_cmd_had_inited = true;
 }
 
@@ -396,6 +402,9 @@ static void bt_tool_uninit(void* handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_LEAUDIO_VMICP
     lea_vmicp_command_uninit(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_LE_CS
+    le_cs_commond_uninit(handle);
 #endif
     g_cmd_had_inited = false;
 }

@@ -36,6 +36,8 @@
 #include "state_machine.h"
 #include "utils/log.h"
 
+#ifdef CONFIG_BLUETOOTH_LE_CS
+
 static char* stack_event_to_string(cs_msg_id_t msg_id);
 
 #define CS_TRANS_DBG(_sm, _addr, _action)                                                       \
@@ -79,12 +81,12 @@ typedef struct _cs_state_machine {
     bt_distance_measurement_params_t params;
 } cs_state_machine_t;
 
-static cs_bt_le_cs_set_default_settings_param_t g_default_settings = {};
+static bt_le_srv_cs_set_default_settings_param_t g_default_settings = {};
 
 static void stopped_enter(state_machine_t* sm);
 static void stopped_exit(state_machine_t* sm);
-static void init_enter(state_machine_t* sm);
-static void init_exit(state_machine_t* sm);
+// static void init_enter(state_machine_t* sm);
+// static void init_exit(state_machine_t* sm);
 static void connected_enter(state_machine_t* sm);
 static void connected_exit(state_machine_t* sm);
 static void wait_for_config_complete_enter(state_machine_t* sm);
@@ -97,7 +99,7 @@ static void started_enter(state_machine_t* sm);
 static void started_exit(state_machine_t* sm);
 
 static bool stopped_process_event(state_machine_t* sm, uint32_t event, void* p_data);
-static bool init_process_event(state_machine_t* sm, uint32_t event, void* p_data);
+// static bool init_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 static bool wait_for_config_complete_process_event(state_machine_t* sm, uint32_t event, void* p_data);
 static bool wait_for_security_complete_process_event(state_machine_t* sm, uint32_t event, void* p_data);
@@ -112,13 +114,13 @@ static const state_t stopped_state = {
     .process_event = stopped_process_event,
 };
 
-static const state_t init_state = {
-    .state_name = "Init",
-    .state_value = CS_STATE_INIT,
-    .enter = init_enter,
-    .exit = init_exit,
-    .process_event = init_process_event,
-};
+// static const state_t init_state = {
+//     .state_name = "Init",
+//     .state_value = CS_STATE_INIT,
+//     .enter = init_enter,
+//     .exit = init_exit,
+//     .process_event = init_process_event,
+// };
 
 static const state_t connected_state = {
     .state_name = "Connected",
@@ -178,7 +180,7 @@ static void stopped_exit(state_machine_t* sm)
 static bool stopped_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    cs_msg_t* data = (cs_msg_t*)p_data;
+    // cs_msg_t* data = (cs_msg_t*)p_data;
 
     CS_DBG_EVENT(sm, &cs_sm->addr, event);
     switch (event) {
@@ -192,40 +194,40 @@ static bool stopped_process_event(state_machine_t* sm, uint32_t event, void* p_d
     return true;
 }
 
-static void init_enter(state_machine_t* sm)
-{
-    cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    // const state_t* prev_state = hsm_get_previous_state(sm);
+// static void init_enter(state_machine_t* sm)
+// {
+//     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
+//     // const state_t* prev_state = hsm_get_previous_state(sm);
 
-    CS_DBG_ENTER(sm, &cs_sm->addr);
-}
+//     CS_DBG_ENTER(sm, &cs_sm->addr);
+// }
 
-static void init_exit(state_machine_t* sm)
-{
-    cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
+// static void init_exit(state_machine_t* sm)
+// {
+//     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
 
-    CS_DBG_EXIT(sm, &cs_sm->addr);
-}
+//     CS_DBG_EXIT(sm, &cs_sm->addr);
+// }
 
-static bool init_process_event(state_machine_t* sm, uint32_t event, void* p_data)
-{
-    cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    cs_msg_t* data = (cs_msg_t*)p_data;
+// static bool init_process_event(state_machine_t* sm, uint32_t event, void* p_data)
+// {
+//     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
+//     // cs_msg_t* data = (cs_msg_t*)p_data;
 
-    CS_DBG_EVENT(sm, &cs_sm->addr, event);
-    switch (event) {
-    case CONNECTED_EVT:
-        hsm_transition_to(sm, &connected_state);
-        break;
-    case DISCONNECTED_EVT:
-        hsm_transition_to(sm, &stopped_state);
-        break;
-    default:
-        break;
-    }
+//     CS_DBG_EVENT(sm, &cs_sm->addr, event);
+//     switch (event) {
+//     case CONNECTED_EVT:
+//         hsm_transition_to(sm, &connected_state);
+//         break;
+//     case DISCONNECTED_EVT:
+//         hsm_transition_to(sm, &stopped_state);
+//         break;
+//     default:
+//         break;
+//     }
 
-    return true;
-}
+//     return true;
+// }
 
 static void connected_enter(state_machine_t* sm)
 {
@@ -252,8 +254,8 @@ static bool connected_process_event(state_machine_t* sm, uint32_t event, void* p
     case START_REQ:
         bt_distance_measurement_params_t* params = data->data;
 
-        g_default_settings.enable_initiator_role = params->role == CS_BT_CONN_LE_CS_ROLE_INITIATOR ? true : false;
-        g_default_settings.enable_reflector_role = params->role == CS_BT_CONN_LE_CS_ROLE_REFLECTOR ? true : false;
+        g_default_settings.enable_initiator_role = params->role == CS_BT_SRV_CONN_LE_CS_ROLE_INITIATOR ? true : false;
+        g_default_settings.enable_reflector_role = params->role == CS_BT_SRV_CONN_LE_CS_ROLE_REFLECTOR ? true : false;
         g_default_settings.cs_sync_antenna_selection = params->antenna_paths_mask;
         cs_sm->params = *params;
 
@@ -297,7 +299,7 @@ static void wait_for_config_complete_exit(state_machine_t* sm)
 static bool wait_for_config_complete_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    cs_msg_data_t* data = (cs_msg_data_t*)p_data;
+    // cs_msg_data_t* data = (cs_msg_data_t*)p_data;
 
     CS_DBG_EVENT(sm, &cs_sm->addr, event);
     switch (event) {
@@ -335,7 +337,7 @@ static void wait_for_security_complete_exit(state_machine_t* sm)
 static bool wait_for_security_complete_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    cs_msg_t* data = (cs_msg_t*)p_data;
+    // cs_msg_t* data = (cs_msg_t*)p_data;
 
     CS_DBG_EVENT(sm, &cs_sm->addr, event);
     switch (event) {
@@ -376,7 +378,7 @@ static void wait_for_procedure_complete_exit(state_machine_t* sm)
 static bool wait_for_procedure_complete_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    cs_msg_t* data = (cs_msg_t*)p_data;
+    // cs_msg_t* data = (cs_msg_t*)p_data;
 
     CS_DBG_EVENT(sm, &cs_sm->addr, event);
     switch (event) {
@@ -420,7 +422,7 @@ static void started_exit(state_machine_t* sm)
 static bool started_process_event(state_machine_t* sm, uint32_t event, void* p_data)
 {
     cs_state_machine_t* cs_sm = (cs_state_machine_t*)sm;
-    cs_msg_t* data = (cs_msg_t*)p_data;
+    // cs_msg_t* data = (cs_msg_t*)p_data;
 
     CS_DBG_EVENT(sm, &cs_sm->addr, event);
     switch (event) {
@@ -471,3 +473,5 @@ cs_state_machine_t* cs_state_machine_new(void* context, bt_address_t* bd_addr)
 
     return cs_sm;
 }
+
+#endif /* CONFIG_BLUETOOTH_LE_CS */

@@ -30,10 +30,12 @@
 #include "cs_state_machine.h"
 #include "gatts_service.h"
 #include "power_manager.h"
-#include "sal_le_cs_ras_server.h"
+#include "cs_ras_server.h"
 #include "service_loop.h"
 #include "service_manager.h"
 #include "utils/log.h"
+
+#ifdef CONFIG_BLUETOOTH_LE_CS
 
 #define CS_CALLBACK_FOREACH(_list, _cback, ...) \
     BT_CALLBACK_FOREACH(_list, cs_callbacks_t, _cback, ##__VA_ARGS__)
@@ -223,6 +225,8 @@ static bt_status_t cs_init(void)
         return BT_STATUS_FAIL;
     }
 
+    list_initialize(&g_cs_service.list);
+
     return BT_STATUS_SUCCESS;
 }
 
@@ -234,7 +238,7 @@ static void cs_cleanup(void)
 
 static void service_startup(profile_on_startup_t cb)
 {
-    vela_le_cs_enable();
+    le_cs_enable();
     cb(PROFILE_CS, true);
 }
 
@@ -314,7 +318,7 @@ static bt_status_t cs_stop_distance_measurement(bt_address_t* addr, int method, 
     return BT_STATUS_SUCCESS;
 }
 
-static const cs_interface_t cs_interface = {
+static const bt_cs_interface_t cs_interface = {
     .size = sizeof(cs_interface),
     .register_callbacks = cs_register_callbacks,
     .unregister_callbacks = cs_unregister_callbacks,
@@ -366,7 +370,9 @@ void bt_sal_cs_event_callback(cs_msg_t* msg)
     do_in_cs_service(msg);
 }
 
-void register_cs_service(void)
+void bt_register_cs_service(void)
 {
     register_service(&cs_service);
 }
+
+#endif /* CONFIG_BLUETOOTH_LE_CS */

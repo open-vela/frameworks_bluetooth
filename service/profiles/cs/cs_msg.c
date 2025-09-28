@@ -35,6 +35,8 @@
 
 #include "cs_msg.h"
 
+#ifdef CONFIG_BLUETOOTH_LE_CS
+
 cs_msg_t* cs_msg_new(cs_msg_id_t msg, bt_address_t* bd_addr)
 {
     cs_msg_t* cs_msg;
@@ -54,3 +56,5 @@ void cs_msg_destory(cs_msg_t* cs_msg)
 {
     free(cs_msg);
 }
+
+#endif /* CONFIG_BLUETOOTH_LE_CS */

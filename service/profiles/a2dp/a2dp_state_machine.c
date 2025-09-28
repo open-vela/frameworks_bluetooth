@@ -63,8 +63,9 @@
 #include "state_machine.h"
 
 #include "service_loop.h"
-
+#ifndef LOG_TAG
 #define LOG_TAG "a2dp_stm"
+#endif /* LOG_TAG */
 #include "utils/log.h"
 
 #ifndef CONFIG_BLUETOOTH_A2DP_CONNECT_TIMEOUT

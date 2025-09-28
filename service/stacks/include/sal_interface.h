@@ -17,6 +17,7 @@
 #define __SAL_ADAPTER_H_
 
 #include "bluetooth_define.h"
+#include "utils/log.h"
 
 #include "sal_adapter_classic_interface.h"
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT

@@ -179,4 +179,8 @@ int lea_vmicp_command_init(void* handle);
 void lea_vmicp_command_uninit(void* handle);
 int vmicp_command_exec(void* handle, int argc, char* argv[]);
 
+int le_cs_commond_init(void* handle);
+int le_cs_commond_uninit(void* handle);
+int le_cs_command_exec(void* handle, int argc, char* argv[]);
+
 #endif /* __BT_TOOLS_H__ */

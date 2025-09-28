@@ -29,8 +29,9 @@
 #include "sal_interface.h"
 #include "service_manager.h"
 #include "state_machine.h"
-
+#ifndef LOG_TAG
 #define LOG_TAG "adapter-stm"
+#endif /* LOG_TAG */
 #include "bt_utils.h"
 #include "utils/log.h"
 

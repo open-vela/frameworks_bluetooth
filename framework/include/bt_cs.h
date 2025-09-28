@@ -17,9 +17,13 @@
 #define __BT_CS_H__
 
 #include <stddef.h>
-
+#include "bt_internal.h"
 #include "bt_addr.h"
 #include "bt_device.h"
+
+// #ifndef BTSYMBOLS
+// #define BTSYMBOLS(s) s
+// #endif
 
 typedef void (*cs_distance_measure_started_cb)(void* cookie,bt_address_t* addr, uint8_t method);
 typedef void (*cs_distance_measure_stopped_cb)(void* cookie,bt_address_t* addr, uint8_t reason, uint8_t method);
