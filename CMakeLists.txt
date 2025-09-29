@@ -773,7 +773,7 @@ if(CONFIG_BLUETOOTH)
           INCLUDE_DIRECTORIES
           ${INCDIR}
           STACKSIZE
-          8192
+          4096
           PRIORITY
           ${SCHED_PRIORITY_DEFAULT}
           COMPILE_FLAGS
