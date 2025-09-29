@@ -157,6 +157,11 @@ bt_status_t BTSYMBOLS(bt_device_create_bond)(bt_instance_t* ins, bt_address_t* a
     return adapter_create_bond(addr, transport);
 }
 
+bt_status_t BTSYMBOLS(bt_device_set_security_level)(bt_instance_t* ins, uint8_t level, bt_transport_t transport)
+{
+    return adapter_set_security_level(level, transport);
+}
+
 bt_status_t BTSYMBOLS(bt_device_remove_bond)(bt_instance_t* ins, bt_address_t* addr, uint8_t transport)
 {
     return adapter_remove_bond(addr, transport);
