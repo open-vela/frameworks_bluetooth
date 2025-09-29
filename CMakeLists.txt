@@ -28,53 +28,185 @@ if(CONFIG_BLUETOOTH)
   file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/common/*.c)
   list(APPEND CSRCS ${APPEND_FILES})
 
-  if(CONFIG_BLUETOOTH_FRAMEWORK)
-    if(CONFIG_BLUETOOTH_FRAMEWORK_LOCAL)
-      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/api/*.c)
+  list(
+    APPEND
+    CSRCS
+    ${BLUETOOTH_DIR}/framework/api/bluetooth.c
+    ${BLUETOOTH_DIR}/framework/api/bt_adapter.c
+    ${BLUETOOTH_DIR}/framework/api/bt_device.c)
+
+  if(CONFIG_BLUETOOTH_A2DP_SINK)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_a2dp_sink.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_A2DP_SOURCE)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_a2dp_source.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_AVRCP_TARGET)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_avrcp_target.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_AVRCP_CONTROL)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_avrcp_control.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_HFP_AG)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_hfp_ag.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_HFP_HF)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_hfp_hf.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_SPP)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_spp.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_HID_DEVICE)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_hid_device.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_GATT_CLIENT)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_gattc.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_GATT_SERVER)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_gatts.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_L2CAP)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_l2cap.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_BLE_ADV)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_le_advertiser.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_BLE_SCAN)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_le_scan.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_LOG)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_trace.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_PAN)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/api/bt_pan.c)
+  endif()
+
+  if(CONFIG_BLUETOOTH_BLE_AUDIO)
+    file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/api/bt_lea*.c)
+    list(APPEND CSRCS ${APPEND_FILES})
+  endif()
+
+  if(CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC)
+    list(
+      APPEND
+      CSRCS
+      ${BLUETOOTH_DIR}/service/ipc/bluetooth_ipc.c
+      ${BLUETOOTH_DIR}/framework/socket/bt_device.c
+      ${BLUETOOTH_DIR}/framework/socket/bt_adapter.c
+      ${BLUETOOTH_DIR}/framework/socket/bluetooth.c
+      ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket.c
+      ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_manager.c
+      ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_client.c
+      ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_server.c
+      ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_device.c
+      ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_adapter.c)
+
+    if(CONFIG_BLUETOOTH_A2DP_SINK)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_a2dp_sink.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_a2dp_sink.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_A2DP_SOURCE)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_a2dp_source.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_a2dp_source.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_AVRCP_TARGET)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_avrcp_target.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_avrcp_target.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_AVRCP_CONTROL)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_avrcp_control.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_avrcp_control.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_HFP_HF)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_hfp_hf.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_hfp_hf.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_HFP_AG)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_hfp_ag.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_hfp_ag.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_SPP)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_spp.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_spp.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_HID_DEVICE)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_hid_device.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_hid_device.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_GATT_CLIENT)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_gattc.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_gattc.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_GATT_SERVER)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_gatts.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_gatts.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_L2CAP)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_l2cap.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_l2cap.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_BLE_ADV)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_le_advertiser.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_advertiser.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_BLE_SCAN)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_le_scan.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_le_scan.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_PAN)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_pan.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_pan.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_LOG)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/socket/bt_trace.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/ipc/socket/src/bt_socket_log.c)
+    endif()
+
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc/socket/include)
+
+    if (CONFIG_BLUETOOTH_FRAMEWORK_ASYNC)
+      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/socket/async/*.c)
       list(APPEND CSRCS ${APPEND_FILES})
-
-      if(NOT CONFIG_BLUETOOTH_BLE_AUDIO)
-        file(GLOB EXLUDE_FILES ${BLUETOOTH_DIR}/framework/api/bt_lea*)
-        list(REMOVE_ITEM CSRCS ${EXLUDE_FILES})
-      endif()
-
-    elseif(CONFIG_BLUETOOTH_FRAMEWORK_SOCKET_IPC)
-      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/api/*.c)
-      list(APPEND CSRCS ${APPEND_FILES})
-
-      if(NOT CONFIG_BLUETOOTH_BLE_AUDIO)
-        file(GLOB EXLUDE_FILES ${BLUETOOTH_DIR}/framework/api/bt_lea*)
-        list(REMOVE_ITEM CSRCS ${EXLUDE_FILES})
-      endif()
-
-      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/ipc/*.c)
-      list(APPEND CSRCS ${APPEND_FILES})
-
-      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/ipc/socket/src/*.c)
-      list(APPEND CSRCS ${APPEND_FILES})
-
-      file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/socket/*.c)
-      list(APPEND CSRCS ${APPEND_FILES})
-
-      if (CONFIG_BLUETOOTH_FRAMEWORK_ASYNC)
-        file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/framework/socket/async/*.c)
-        list(APPEND CSRCS ${APPEND_FILES})
-      endif()
-
-      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc/socket/include)
-
-    else()
-      # Other IPC source files
-
     endif()
   endif()
 
   list(
     APPEND
     CSRCS
-    ${BLUETOOTH_DIR}/service/src/connection_manager.c
     ${BLUETOOTH_DIR}/service/src/manager_service.c
     ${BLUETOOTH_DIR}/service/common/index_allocator.c)
+
+  if(CONFIG_BLUETOOTH_CONNECTION_MANAGER)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/connection_manager.c)
+  endif()
 
   if(CONFIG_BLUETOOTH_STORAGE_PROPERTY_SUPPORT)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/service/common/storage_property.c)
@@ -82,7 +214,9 @@ if(CONFIG_BLUETOOTH)
     list(APPEND CSRCS ${BLUETOOTH_DIR}/service/common/storage.c)
   endif()
 
-  list(APPEND CFLAGS -Wno-strict-prototypes)
+  if(CONFIG_BLUETOOTH_DEBUG_MEMORY)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_memory.c)
+  endif()
 
   if(CONFIG_BLUETOOTH_SERVICE)
     list(
@@ -93,9 +227,12 @@ if(CONFIG_BLUETOOTH)
       ${BLUETOOTH_DIR}/service/src/adapter_state.c
       ${BLUETOOTH_DIR}/service/src/btservice.c
       ${BLUETOOTH_DIR}/service/src/device.c
-      ${BLUETOOTH_DIR}/service/src/power_manager.c
       ${BLUETOOTH_DIR}/service/vendor/bt_vendor.c
       ${BLUETOOTH_DIR}/service/src/hci_parser.c)
+
+    if(CONFIG_BLUETOOTH_BREDR_SUPPORT)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/power_manager.c)
+    endif()
 
     if(CONFIG_BLUETOOTH_BLE_ADV)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/src/advertising.c)
@@ -129,13 +266,13 @@ if(CONFIG_BLUETOOTH)
     endif()
 
     if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/zephyr/include)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/hci_h4.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_debug_interface.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_zblue.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_adapter_interface.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_connection_manager.c)
-    endif()
 
-    if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE)
       if(CONFIG_BLUETOOTH_A2DP)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_a2dp_interface.c)
       endif()
@@ -143,6 +280,7 @@ if(CONFIG_BLUETOOTH)
       if(CONFIG_BLUETOOTH_AVRCP_CONTROL OR CONFIG_BLUETOOTH_AVRCP_TARGET)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/service/stacks/zephyr/sal_avrcp_interface.c)
       endif()
+
     endif()
 
     if(CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
@@ -326,8 +464,16 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${APPEND_FILES})
     endif()
 
-    file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/utils/*.c)
-    list(APPEND CSRCS ${APPEND_FILES})
+    if(CONFIG_BLUETOOTH_LOG)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/utils/log_server.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/utils/btsnoop_log.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/utils/btsnoop_writer.c)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/utils/btsnoop_filter.c)
+    endif()
+
+    if(CONFIG_BLUETOOTH_HCI_FILTER)
+      list(APPEND CSRCS ${BLUETOOTH_DIR}/service/vhal/bt_hci_filter.c)
+    endif()
 
     file(GLOB APPEND_FILES ${BLUETOOTH_DIR}/service/vhal/bt_vhal.c)
     list(APPEND CSRCS ${APPEND_FILES})
@@ -367,12 +513,15 @@ if(CONFIG_BLUETOOTH)
     if(CONFIG_BLUETOOTH_FRAMEWORK_ASYNC)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/async/gap.c)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/async/log.c)
+
       if(CONFIG_BLUETOOTH_BLE_ADV)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/async/adv.c)
       endif()
+
       if(CONFIG_BLUETOOTH_BLE_SCAN)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/async/scan.c)
       endif()
+
       if(CONFIG_BLUETOOTH_GATT)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/async/gatt_client.c)
       endif()
@@ -414,7 +563,7 @@ if(CONFIG_BLUETOOTH)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/hfp_ag.c)
     endif()
 
-    if(ifeq ($(CONFIG_BLUETOOTH_LOG), y))
+    if(CONFIG_BLUETOOTH_LOG)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/tools/log.c)
         list(APPEND CSRCS ${BLUETOOTH_DIR}/debug/bt_trace.c)
     endif()
@@ -507,18 +656,16 @@ if(CONFIG_BLUETOOTH)
         ${NUTTX_APPS_DIR}/external/bluelet/bluelet/src/samples/stack_adapter/inc
       )
 
-      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/bluelet/include)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/vendor/xiaomi/vela/bluelet/inc)
     endif()
 
     if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
-      list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/zephyr/include)
       list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/)
       list(APPEND INCDIR
            ${NUTTX_APPS_DIR}/external/zblue/zblue/port/include/kernel/include)
-      list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/zblue/zblue/port/subsys/bluetooth/host)
     endif()
 
+    list(APPEND INCDIR ${BLUETOOTH_DIR}/service/stacks/bluelet/include)
     list(APPEND INCDIR ${BLUETOOTH_DIR}/service/ipc)
   endif()
 
@@ -760,6 +907,7 @@ if(CONFIG_BLUETOOTH)
     set(PY_SCRIPT ${FEATURE_TOP}/tools/jidl/jsongensource.py)
     set(BINARY_EXT_MODULES_DIR ${CMAKE_BINARY_DIR}/feature/modules/)
     set(JIDL_PATHS ${BLUETOOTH_DIR}/feature/feature_async/jidl/bluetooth.jidl)
+
     list(APPEND JIDL_PATHS
         ${BLUETOOTH_DIR}/feature/feature_async/jidl/bluetooth_ble.jidl)
 
