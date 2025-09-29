@@ -657,6 +657,17 @@ bt_device_type_t BTSYMBOLS(bt_adapter_get_type)(bt_instance_t* ins);
 bt_status_t BTSYMBOLS(bt_adapter_set_discovery_filter)(bt_instance_t* ins);
 
 /**
+ * @brief Start device limited discovery.
+ *
+ * Initiates the device limited discovery process to find nearby Bluetooth devices.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param timeout - Maximum amount of time to perform discovery (Time = N * 1.28s, Range: 1.28s to 61.44s).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ */
+bt_status_t BTSYMBOLS(bt_adapter_start_limited_discovery)(bt_instance_t* ins, uint32_t timeout);
+
+/**
  * @brief Start device discovery.
  *
  * Initiates the device discovery process to find nearby Bluetooth devices.

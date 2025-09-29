@@ -1988,7 +1988,7 @@ static void adapter_remove_found_devices()
     }
 }
 
-bt_status_t adapter_start_discovery(uint32_t timeout)
+bt_status_t adapter_start_discovery(uint32_t timeout, bool is_limited)
 {
     adapter_service_t* adapter = &g_adapter_service;
 
@@ -2007,7 +2007,7 @@ bt_status_t adapter_start_discovery(uint32_t timeout)
 
     adapter_remove_found_devices();
 
-    bt_status_t status = bt_sal_start_discovery(PRIMARY_ADAPTER, timeout);
+    bt_status_t status = bt_sal_start_discovery(PRIMARY_ADAPTER, timeout, is_limited);
     if (status != BT_STATUS_SUCCESS) {
         adapter_unlock();
         return status;
