@@ -224,6 +224,10 @@ typedef enum {
     EM_BR_MODE_END,
 } bt_enhanced_mode_t;
 
+typedef enum {
+    BT_DEBUG_MODE_PTS,
+} bt_debug_mode_t;
+
 typedef uint8_t bt_128key_t[16];
 
 #define COD_SERVICE_BITS(c) (c & 0xFFE000) /* The major service classes field */

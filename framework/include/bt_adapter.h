@@ -916,6 +916,18 @@ bt_status_t BTSYMBOLS(bt_adapter_set_page_scan_parameters)(bt_instance_t* ins, b
     uint16_t interval, uint16_t window);
 
 /**
+ * @brief Set operation to specific debug mode. e.g. BT_DEBUG_MODE_PTS
+ *
+ * Sets the adapter to test mode.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param mode - test mode, see @ref bt_debug_mode_t.
+ * @param operation - operation for debug mode.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a negative error code on failure.
+ */
+bt_status_t BTSYMBOLS(bt_adapter_set_debug_mode)(bt_instance_t* ins, bt_debug_mode_t mode, uint8_t operation);
+
+/**
  * @brief Get the list of bonded devices.
  *
  * Retrieves the list of devices that are bonded (paired) with the adapter.

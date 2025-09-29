@@ -97,6 +97,8 @@ BT_ADAPTER_MESSAGE_START,
 // TODO: Add new BT IPC Code sequentially
 #define BT_ADAPTER_SUBCODE_START_LIMITED_DISCOVERY 1
 #define BT_ADAPTER_START_LIMITED_DISCOVERY BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_ADAPTER, BT_ADAPTER_SUBCODE_START_LIMITED_DISCOVERY)
+#define BT_ADAPTER_SUBCODE_SET_DEBUG_MODE 2
+#define BT_ADAPTER_SET_DEBUG_MODE BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_ADAPTER, BT_ADAPTER_SUBCODE_SET_DEBUG_MODE)
 
 #define BT_IPC_CODE_COMMAND_ADAPTER_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_ADAPTER, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
@@ -166,6 +168,11 @@ BT_ADAPTER_MESSAGE_START,
         struct {
             uint16_t v16;
         } _bt_adapter_set_le_appearance;
+
+        struct {
+            uint8_t mode; /* bt_debug_mode_t */
+            uint8_t operation;
+        } _bt_adapter_set_debug_mode;
 
         struct {
             uint32_t num; /* int */

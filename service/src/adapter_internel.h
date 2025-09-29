@@ -294,6 +294,8 @@ bt_status_t adapter_set_page_scan_parameters(bt_scan_type_t type,
     uint16_t window);
 bt_status_t adapter_set_le_io_capability(uint32_t le_io_cap);
 uint32_t adapter_get_le_io_capability(void);
+bool adapter_get_pts_mode(void);
+bt_status_t adapter_set_debug_mode(bt_debug_mode_t mode, uint8_t operation);
 bt_status_t adapter_get_le_address(bt_address_t* addr, ble_addr_type_t* type);
 bt_status_t adapter_set_le_address(bt_address_t* addr);
 bt_status_t adapter_set_le_identity_address(bt_address_t* addr, bool is_public);

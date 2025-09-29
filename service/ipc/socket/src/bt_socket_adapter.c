@@ -524,6 +524,12 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
                 packet->adpt_pl._bt_adapter_start_limited_discovery.v32);
             break;
         }
+        case BT_ADAPTER_SUBCODE_SET_DEBUG_MODE: {
+            packet->adpt_r.status = BTSYMBOLS(bt_adapter_set_debug_mode)(ins,
+                packet->adpt_pl._bt_adapter_set_debug_mode.mode,
+                packet->adpt_pl._bt_adapter_set_debug_mode.operation);
+            break;
+        }
         default:
             break;
         }
