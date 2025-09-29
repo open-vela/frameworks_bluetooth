@@ -144,8 +144,8 @@ static struct option le_conn_options[] = {
                       "\t --min_ce_length, Range: 0x0000 to 0xFFFF\n"                                                           \
                       "\t --max_ce_length, Range: 0x0000 to 0xFFFF\n"
 
-#define INQUIRY_USAGE "inquiry device\n"                                          \
-                      "\t\t\t- start <timeout>(Range: 1-48, i.e., 1.28-61.44s)\n" \
+#define INQUIRY_USAGE "inquiry device\n"                                                                    \
+                      "\t\t\t- start <timeout>(Range: 1-48, i.e., 1.28-61.44s) [is_limited](Range: 0, 1)\n" \
                       "\t\t\t- stop"
 
 #define SET_LE_PHY_USAGE "set le tx and rx phy, params: <addr><txphy><rxphy>(0:1M, 1:2M, 2:CODED)"
@@ -450,6 +450,8 @@ static int get_state_cmd(void* handle, int argc, char** argv)
 
 static int discovery_cmd(void* handle, int argc, char** argv)
 {
+    int limited = 0;
+
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
@@ -463,9 +465,19 @@ static int discovery_cmd(void* handle, int argc, char** argv)
             return CMD_INVALID_PARAM;
         }
 
-        PRINT("start discovery timeout:%d", timeout);
-        if (bt_adapter_start_discovery(handle, timeout) != BT_STATUS_SUCCESS)
+        if (argc >= 3) {
+            limited = atoi(argv[2]);
+        }
+
+        PRINT("start %s discovery timeout:%d", limited ? "limited" : "general", timeout);
+
+        if ((limited
+                    ? bt_adapter_start_limited_discovery(handle, timeout)
+                    : bt_adapter_start_discovery(handle, timeout))
+            != BT_STATUS_SUCCESS) {
             return CMD_ERROR;
+        }
+
     } else if (!strcmp(argv[0], "stop")) {
         if (bt_adapter_cancel_discovery(handle) != BT_STATUS_SUCCESS)
             return CMD_ERROR;

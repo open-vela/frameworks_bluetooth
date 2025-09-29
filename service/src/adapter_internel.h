@@ -272,7 +272,7 @@ bool adapter_is_le_enabled(void);
 bt_device_type_t adapter_get_type(void);
 
 bt_status_t adapter_set_discovery_filter(void);
-bt_status_t adapter_start_discovery(uint32_t timeout);
+bt_status_t adapter_start_discovery(uint32_t timeout, bool is_limited);
 bt_status_t adapter_cancel_discovery(void);
 bool adapter_is_discovering(void);
 void adapter_get_address(bt_address_t* addr);

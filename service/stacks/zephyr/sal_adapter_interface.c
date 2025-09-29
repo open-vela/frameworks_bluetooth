@@ -55,7 +55,10 @@ typedef union {
         bt_scan_mode_t scan_mode;
         bool bondable;
     } scanmode;
-    uint32_t timeout;
+    struct {
+        uint32_t timeout;
+        bool limited;
+    } discovery;
     struct {
         bool inquiry;
         bt_scan_type_t type;
@@ -858,8 +861,8 @@ static void STACK_CALL(start_discovery)(void* args)
     static struct bt_br_discovery_result g_discovery_results[DISCOVERY_DEVICE_MAX];
 
     /* unlimited number of responses. */
-    param.limited = false;
-    param.length = req->adpt.timeout;
+    param.limited = req->adpt.discovery.limited;
+    param.length = req->adpt.discovery.timeout;
 
     if (bt_br_discovery_start(&param, g_discovery_results,
             SAL_ARRAY_SIZE(g_discovery_results))
@@ -868,7 +871,7 @@ static void STACK_CALL(start_discovery)(void* args)
 }
 #endif
 
-bt_status_t bt_sal_start_discovery(bt_controller_id_t id, uint32_t timeout)
+bt_status_t bt_sal_start_discovery(bt_controller_id_t id, uint32_t timeout, bool is_limited)
 {
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
     UNUSED(id);
@@ -882,7 +885,8 @@ bt_status_t bt_sal_start_discovery(bt_controller_id_t id, uint32_t timeout)
     if (!req)
         return BT_STATUS_NOMEM;
 
-    req->adpt.timeout = timeout;
+    req->adpt.discovery.timeout = timeout;
+    req->adpt.discovery.limited = is_limited;
 
     return sal_send_req(req);
 #else

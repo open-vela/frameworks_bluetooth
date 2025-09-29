@@ -55,7 +55,7 @@ bt_scan_mode_t bt_sal_get_scan_mode(bt_controller_id_t id);
 bool bt_sal_get_bondable(bt_controller_id_t id);
 
 /* Inquiry/page and inquiry/page scan */
-bt_status_t bt_sal_start_discovery(bt_controller_id_t id, uint32_t timeout);
+bt_status_t bt_sal_start_discovery(bt_controller_id_t id, uint32_t timeout, bool is_limited);
 bt_status_t bt_sal_stop_discovery(bt_controller_id_t id);
 bt_status_t bt_sal_set_page_scan_parameters(bt_controller_id_t id, bt_scan_type_t type,
     uint16_t interval, uint16_t window);

@@ -95,6 +95,9 @@ BT_ADAPTER_MESSAGE_START,
 
 #define BT_IPC_CODE_COMMAND_ADAPTER_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_ADAPTER, 0)
 // TODO: Add new BT IPC Code sequentially
+#define BT_ADAPTER_SUBCODE_START_LIMITED_DISCOVERY 1
+#define BT_ADAPTER_START_LIMITED_DISCOVERY BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_ADAPTER, BT_ADAPTER_SUBCODE_START_LIMITED_DISCOVERY)
+
 #define BT_IPC_CODE_COMMAND_ADAPTER_END BT_IPC_CODE(BT_IPC_CODE_TYPE_COMMAND, BT_IPC_CODE_GROUP_ADAPTER, BT_IPC_CODE_SUBCODE_MAX_NUM)
 
 #define BT_IPC_CODE_CALLBACK_ADAPTER_BEGIN BT_IPC_CODE(BT_IPC_CODE_TYPE_CALLBACK, BT_IPC_CODE_GROUP_ADAPTER, 0)
@@ -132,7 +135,8 @@ BT_ADAPTER_MESSAGE_START,
             uint32_t v32;
         } _bt_adapter_start_discovery,
             _bt_adapter_set_device_class,
-            _bt_adapter_set_le_io_capability;
+            _bt_adapter_set_le_io_capability,
+            _bt_adapter_start_limited_discovery;
 
         struct {
             uint16_t size;

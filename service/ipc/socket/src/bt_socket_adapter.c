@@ -518,6 +518,15 @@ void bt_socket_server_adapter_process(service_poll_t* poll,
         break;
     }
     default:
+        switch (BT_IPC_GET_SUBCODE(packet->code)) {
+        case BT_ADAPTER_SUBCODE_START_LIMITED_DISCOVERY: {
+            packet->adpt_r.status = BTSYMBOLS(bt_adapter_start_limited_discovery)(ins,
+                packet->adpt_pl._bt_adapter_start_limited_discovery.v32);
+            break;
+        }
+        default:
+            break;
+        }
         break;
     }
 }
