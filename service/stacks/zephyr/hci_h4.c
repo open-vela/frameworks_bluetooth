@@ -410,4 +410,6 @@ static int h4_init(const struct device* dev)
         CONFIG_KERNEL_INIT_PRIORITY_DEVICE, &h4_drv_api)
 
 H4_DEVICE_INIT(0);
+#ifdef CONFIG_BT_MC_DEVICE_INST
 H4_DEVICE_INIT(1);
+#endif
