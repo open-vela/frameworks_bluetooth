@@ -491,6 +491,23 @@ bt_status_t bt_adapter_set_page_scan_parameters(bt_instance_t* ins, bt_scan_type
     return packet.adpt_r.status;
 }
 
+bt_status_t bt_adapter_set_debug_mode(bt_instance_t* ins, bt_debug_mode_t mode, uint8_t operation)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    packet.adpt_pl._bt_adapter_set_debug_mode.mode = mode;
+    packet.adpt_pl._bt_adapter_set_debug_mode.operation = operation;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_ADAPTER_SET_DEBUG_MODE);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.adpt_r.status;
+}
+
 bt_status_t bt_adapter_set_le_io_capability(bt_instance_t* ins, uint32_t le_io_cap)
 {
     bt_message_packet_t packet;

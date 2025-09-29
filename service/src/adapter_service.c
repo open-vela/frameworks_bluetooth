@@ -97,6 +97,7 @@ typedef struct adapter_service {
     pthread_mutex_t adapter_lock;
     bt_adapter_state_t adapter_state;
     bool is_discovering;
+    bool is_pts_mode;
     uint8_t max_acl_connections;
     callbacks_list_t* adapter_callbacks;
     int adapter_state_adv;
@@ -2300,6 +2301,44 @@ uint32_t adapter_get_le_io_capability(void)
 #else
     return 0;
 #endif
+}
+
+static bt_status_t adapter_set_pts_mode(bool enable)
+{
+    adapter_service_t* adapter = &g_adapter_service;
+
+    BT_LOGD("%s, enable:%d", __func__, enable);
+
+    adapter_lock();
+    adapter->is_pts_mode = enable;
+    adapter_unlock();
+
+    return BT_STATUS_SUCCESS;
+}
+
+bool adapter_get_pts_mode(void)
+{
+    adapter_service_t* adapter = &g_adapter_service;
+    bool is_pts_mode;
+
+    adapter_lock();
+    is_pts_mode = adapter->is_pts_mode;
+    adapter_unlock();
+
+    return is_pts_mode;
+}
+
+bt_status_t adapter_set_debug_mode(bt_debug_mode_t mode, uint8_t operation)
+{
+    switch (mode) {
+    case BT_DEBUG_MODE_PTS: {
+        adapter_set_pts_mode(operation);
+    } break;
+    default:
+        return BT_STATUS_PARM_INVALID;
+    }
+
+    return BT_STATUS_SUCCESS;
 }
 
 bt_status_t adapter_set_le_appearance(uint16_t appearance)
