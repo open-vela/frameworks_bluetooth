@@ -103,6 +103,8 @@ enum {
     IOT_SERVICE_RX_CHR_ID,
     IOT_SERVICE_READ_CHR_ID,
     IOT_SERVICE_PTS_MTU_CHR_ID,
+    IOT_SERVICE_SIGN_RW_CHR_ID,
+    IOT_SERVICE_AUTH_CHR_ID,
 };
 
 uint8_t read_pts_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'P', 'T', 'S', '!' };
@@ -179,6 +181,10 @@ static gatt_attr_db_t s_iot_attr_db[] = {
     GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0xFF05), GATT_PROP_READ, GATT_PERM_READ, read_char_value, sizeof(read_char_value), IOT_SERVICE_READ_CHR_ID),
     /* PTS: MTU-1 Read characteristic - 0xFF06 */
     GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0xFF06), GATT_PROP_READ, GATT_PERM_READ, read_pts_char_value, sizeof(read_pts_char_value), IOT_SERVICE_PTS_MTU_CHR_ID),
+    /* Private Characteristic for read and Signed write demo - 0xFF07 */
+    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF07), GATT_PROP_READ | GATT_PROP_SIGNED_WRITE, GATT_PERM_READ | GATT_PERM_WRITE, rx_char_on_read, rx_char_on_write, IOT_SERVICE_SIGN_RW_CHR_ID),
+    /* Private Characteristic for Auth R/W demo - 0xFF08 */
+    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF08), GATT_PROP_READ | GATT_PROP_WRITE, GATT_PERM_READ | GATT_PERM_WRITE | GATT_PERM_AUTHEN_REQUIRED, rx_char_on_read, rx_char_on_write, IOT_SERVICE_AUTH_CHR_ID),
 };
 
 static gatt_srv_db_t s_iot_service_db = {
