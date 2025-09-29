@@ -297,8 +297,18 @@ void bt_socket_server_device_process(service_poll_t* poll,
     }
     case BT_DEVICE_CONNECT_ALL_PROFILE:
     case BT_DEVICE_DISCONNECT_ALL_PROFILE:
-    default:
         packet->devs_r.status = BT_STATUS_NOT_SUPPORTED;
         break;
+    default:
+        switch (BT_IPC_GET_SUBCODE(packet->code)) {
+        case BT_DEVICE_SUBCODE_SET_SECURITY_LEVEL:
+            packet->devs_r.status = BTSYMBOLS(bt_device_set_security_level)(ins,
+                packet->devs_pl._bt_device_set_security_level.level,
+                packet->devs_pl._bt_device_set_security_level.transport);
+            break;
+        default:
+            packet->devs_r.status = BT_STATUS_NOT_SUPPORTED;
+            break;
+        }
     }
 }

@@ -514,6 +514,25 @@ if (bt_device_create_bond(ins, &addr, BT_TRANSPORT_BR_EDR) == BT_STATUS_SUCCESS)
 bt_status_t BTSYMBOLS(bt_device_create_bond)(bt_instance_t* ins, bt_address_t* addr, bt_transport_t transport);
 
 /**
+ * @brief Set the security level for bond.
+ *
+ * Dynamically set the security level when bond with remote device.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param level - set the security level(0 ~ 4). Level 0: Only for BR/EDR special cases, like SDP
+ * @param transport - Transport type (0: LE, 1: BR/EDR).
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a error code on failure.
+ *
+ * **Example:**
+ * @code
+// bond with Authenticated Secure Connections
+ bt_device_set_security_level(ins, 4, BT_TRANSPORT_BLE);
+ bt_device_create_bond(ins, &addr, BT_TRANSPORT_BLE);
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_device_set_security_level)(bt_instance_t* ins, uint8_t level, bt_transport_t transport);
+
+/**
  * @brief Remove bonding with a remote device.
  *
  * Removes the bonding information of a remote device.

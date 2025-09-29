@@ -45,6 +45,7 @@ static int get_local_addr_cmd(void* handle, int argc, char** argv);
 static int get_appearance_cmd(void* handle, int argc, char** argv);
 static int set_appearance_cmd(void* handle, int argc, char** argv);
 static int set_le_addr_cmd(void* handle, int argc, char** argv);
+static int set_security_level_cmd(void* handle, int argc, char** argv);
 static int get_le_addr_cmd(void* handle, int argc, char** argv);
 static int set_identity_addr_cmd(void* handle, int argc, char** argv);
 static int set_scan_parameters_cmd(void* handle, int argc, char** argv);
@@ -253,6 +254,7 @@ static bt_command_t g_set_cmd_tables[] = {
     { "class", set_local_cod_cmd, 0, SET_CLASS_USAGE },
     { "appearance", set_appearance_cmd, 0, "set le adapter appearance, params: <appearance>" },
     { "leaddr", set_le_addr_cmd, 0, "set ble adapter addr, params: <leaddr>" },
+    { "security", set_security_level_cmd, 0, "set bond security level, params: <level> <transport>" },
     { "id", set_identity_addr_cmd, 0, "set ble identity addr, params: <identity addr> <addr type>" },
     { "scanparams", set_scan_parameters_cmd, 0, SET_SCANPARAMS_USAGE },
     { "help", NULL, 0, "show set help info" },
@@ -660,6 +662,30 @@ static int set_le_addr_cmd(void* handle, int argc, char** argv)
 
     bt_adapter_set_le_address(handle, &addr);
 
+    return CMD_OK;
+}
+
+static int set_security_level_cmd(void* handle, int argc, char** argv)
+{
+    if (argc < 2)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    if (strlen(argv[0]) > 1) {
+        return CMD_INVALID_PARAM;
+    }
+
+    uint8_t level = *argv[0] - '0';
+    if (level < 0 || level > 4)
+        return CMD_INVALID_PARAM;
+
+    int transport = atoi(argv[1]);
+    if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
+        return CMD_INVALID_PARAM;
+
+    if (bt_device_set_security_level(handle, level, transport) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    PRINT("security level: %d, transport: %d", level, transport);
     return CMD_OK;
 }
 
