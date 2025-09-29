@@ -942,6 +942,25 @@ bt_status_t bt_sal_le_set_bonded_devices(bt_controller_id_t id, remote_device_le
     SAL_NOT_SUPPORT;
 }
 
+static void STACK_CALL(security_connect)(void* args)
+{
+    sal_adapter_req_t* req = args;
+    struct bt_conn* conn;
+    int err;
+
+    conn = get_le_conn_from_addr(&req->addr);
+    if (!conn) {
+        BT_LOGE("%s, conn null", __func__);
+        return;
+    }
+
+    err = bt_conn_set_security(conn, g_security_level);
+    if (err) {
+        BT_LOGE("%s, start le encryption fail err:%d", __func__, err);
+        return;
+    }
+}
+
 static void STACK_CALL(conn_connect)(void* args)
 {
     sal_adapter_req_t* req = args;
@@ -963,6 +982,16 @@ bt_status_t bt_sal_le_connect(bt_controller_id_t id, bt_address_t* addr, ble_add
 {
     sal_adapter_req_t* req;
     uint8_t type;
+
+    if (get_le_conn_from_addr(addr)) {
+        req = sal_adapter_req(id, addr, STACK_CALL(security_connect));
+        if (!req) {
+            BT_LOGE("%s, req null", __func__);
+            return BT_STATUS_NOMEM;
+        }
+
+        return sal_send_req(req);
+    }
 
     req = sal_adapter_req(id, addr, STACK_CALL(conn_connect));
     if (!req) {
