@@ -502,23 +502,23 @@ if(CONFIG_BLUETOOTH)
 
   if(CONFIG_APP_BT_SAMPLE_CODE)
   if(CONFIG_APP_BT_SAMPLE_CODE_BASIC)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/basic/*.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/basic/app_bt_gap.c)
   endif()
 
   if(CONFIG_APP_BT_SAMPLE_CODE_ENABLE)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/enable/*.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/enable/app_bt_gap.c)
   endif()
 
   if(CONFIG_APP_BT_SAMPLE_CODE_DISCOVERY)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/discovery/*.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/discovery/app_bt_gap.c)
   endif()
 
   if(CONFIG_APP_BT_SAMPLE_CODE_CREATEBOND)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/createbond/*.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/createbond/app_bt_gap.c)
   endif()
 
   if(CONFIG_APP_BT_SAMPLE_CODE_ACCEPTBOND)
-    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/acceptbond/*.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/sample_code/acceptbond/app_bt_gap.c)
   endif()
   endif()
 
