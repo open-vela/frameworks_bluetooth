@@ -271,6 +271,10 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
     bt_address_t addr;
     bool encrypted = false;
 
+    if (!bt_conn_get_dst_br(conn)) {
+        return;
+    }
+
     zblue_conn_get_addr(conn, &addr);
 
     if (err) {
@@ -372,6 +376,10 @@ static void zblue_on_link_key_notify(struct bt_conn* conn, uint8_t* key, uint8_t
 {
     bt_address_t addr;
 
+    if (!bt_conn_get_dst_br(conn)) {
+        return;
+    }
+
     zblue_conn_get_addr(conn, &addr);
     adapter_on_link_key_update(&addr, key, key_type);
     adapter_on_bond_state_changed(&addr, BOND_STATE_BONDED, BT_TRANSPORT_BREDR, BT_STATUS_SUCCESS, false);
@@ -381,6 +389,10 @@ static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded)
 {
     bt_address_t addr;
     bond_state_t state;
+
+    if (!bt_conn_get_dst_br(conn)) {
+        return;
+    }
 
     if (bonded) {
         state = BOND_STATE_BONDED;
@@ -395,6 +407,10 @@ static void zblue_on_pairing_complete(struct bt_conn* conn, bool bonded)
 static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err reason)
 {
     bt_address_t addr;
+
+    if (!bt_conn_get_dst_br(conn)) {
+        return;
+    }
 
     zblue_conn_get_addr(conn, &addr);
     adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BREDR, BT_STATUS_AUTH_FAILURE, false);
