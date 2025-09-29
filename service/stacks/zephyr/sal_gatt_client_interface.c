@@ -93,6 +93,9 @@ static bool zblue_uuid2_to_uuid1(struct bt_uuid* u1, const bt_uuid_t* u2);
 
 static void zblue_gattc_mtu_updated_callback(struct bt_conn* conn, uint16_t tx, uint16_t rx);
 
+static bt_status_t zblue_gatt_client_discover_include_service(struct bt_conn* conn, const struct bt_uuid* uuid,
+    uint16_t start_handle, uint16_t end_handle);
+
 static bt_status_t zblue_gatt_client_discover_chrc(struct bt_conn* conn, const struct bt_uuid* uuid,
     uint16_t start_handle, uint16_t end_handle);
 
@@ -501,7 +504,7 @@ static uint8_t zblue_gatt_client_disc_desc_callback(struct bt_conn* conn, const 
                     element->properties = 0;
                     element->permissions = 0;
                 }
-                zblue_gatt_client_discover_chrc(conn, NULL, service->start_handle, service->end_handle);
+                zblue_gatt_client_discover_include_service(conn, NULL, service->start_handle, service->end_handle);
             } else {
 #ifdef CONFIG_GATT_CLIENT_LOG
                 BT_LOGD("%s, all services discovered", __func__);
@@ -670,7 +673,7 @@ static uint8_t zblue_gatt_client_disc_chrc_callback(struct bt_conn* conn, const 
                     element->type = BT_GATT_DISCOVER_PRIMARY;
                     element->properties = 0;
                     element->permissions = 0;
-                    zblue_gatt_client_discover_chrc(conn, NULL, service->start_handle, service->end_handle);
+                    zblue_gatt_client_discover_include_service(conn, NULL, service->start_handle, service->end_handle);
                 }
             } else {
 #ifdef CONFIG_GATT_CLIENT_LOG
@@ -746,7 +749,7 @@ static uint8_t zblue_gatt_client_disc_service_callback(struct bt_conn* conn, con
             element->permissions = 0;
         }
 
-        zblue_gatt_client_discover_chrc(conn, NULL, service->start_handle, service->end_handle);
+        zblue_gatt_client_discover_include_service(conn, NULL, service->start_handle, service->end_handle);
         return BT_GATT_ITER_STOP;
     }
 
@@ -765,6 +768,52 @@ static uint8_t zblue_gatt_client_disc_service_callback(struct bt_conn* conn, con
     service->start_handle = attr->handle;
     service->end_handle = data->end_handle;
     zblue_uuid1_to_uuid2(data->uuid, &service->uuid);
+
+    return BT_GATT_ITER_CONTINUE;
+}
+
+static uint8_t zblue_gatt_client_disc_include_callback(struct bt_conn* conn,
+    const struct bt_gatt_attr* attr,
+    struct bt_gatt_discover_params* params)
+{
+    struct bt_gatt_include* data;
+    struct gatt_instance* instance;
+    struct gatt_service* service;
+    bt_address_t addr;
+
+    get_le_addr_from_conn(conn, &addr);
+
+    instance = gatt_find_alloc_instance_by_addr(&addr);
+    if (!instance) {
+        BT_LOGE("%s, instance find fail", __func__);
+        bt_sal_gatt_client_disconnect(PRIMARY_ADAPTER, &addr);
+        return BT_GATT_ITER_STOP;
+    }
+
+    service = &instance->service[instance->service_idx];
+
+    if (!attr) {
+        zblue_gatt_client_discover_chrc(conn, NULL, service->start_handle, service->end_handle);
+        return BT_GATT_ITER_STOP;
+    }
+
+    data = attr->user_data;
+    if (!data) {
+        BT_LOGW("%s, include user_data null", __func__);
+        return BT_GATT_ITER_CONTINUE;
+    }
+
+    BT_LOGD("[INCLUDE] attr 0x%04x -> service 0x%04x - 0x%04x",
+        attr->handle, data->start_handle, data->end_handle);
+
+    gatt_element_t* element = gatt_alloc_element_by_addr(&addr);
+    if (element) {
+        element->handle = attr->handle;
+        element->type = BT_GATT_DISCOVER_INCLUDE;
+        element->properties = 0;
+        element->permissions = 0;
+        zblue_uuid1_to_uuid2(data->uuid, &element->uuid);
+    }
 
     return BT_GATT_ITER_CONTINUE;
 }
@@ -997,6 +1046,27 @@ bt_status_t bt_sal_gatt_client_discover_service_by_uuid(bt_controller_id_t id, b
     err = bt_gatt_discover(conn, &disc_params);
     if (err < 0) {
         BT_LOGE("%s, gatt discovery fail", __func__);
+        return BT_STATUS_FAIL;
+    }
+
+    return BT_STATUS_SUCCESS;
+}
+
+static bt_status_t zblue_gatt_client_discover_include_service(struct bt_conn* conn, const struct bt_uuid* uuid,
+    uint16_t start_handle, uint16_t end_handle)
+{
+    static struct bt_gatt_discover_params disc_params = { 0 };
+    int err;
+
+    disc_params.uuid = NULL;
+    disc_params.start_handle = start_handle;
+    disc_params.end_handle = end_handle;
+    disc_params.type = BT_GATT_DISCOVER_INCLUDE;
+    disc_params.func = zblue_gatt_client_disc_include_callback;
+
+    err = bt_gatt_discover(conn, &disc_params);
+    if (err < 0) {
+        BT_LOGE("%s, bt_gatt_discover(include) fail", __func__);
         return BT_STATUS_FAIL;
     }
 
