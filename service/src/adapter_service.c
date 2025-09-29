@@ -2957,14 +2957,19 @@ bt_status_t adapter_set_security_level(uint8_t level, bt_transport_t transport)
     }
 
     adapter_unlock();
+
 #ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     if (transport == BT_TRANSPORT_BLE) {
         return bt_sal_le_set_security_level(PRIMARY_ADAPTER, level);
     }
-    return BT_STATUS_NOT_SUPPORTED;
-#else
-    return BT_STATUS_NOT_SUPPORTED;
 #endif
+
+#ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT
+    if (transport == BT_TRANSPORT_BREDR) {
+        return bt_sal_set_security_level(PRIMARY_ADAPTER, level);
+    }
+#endif
+
     return BT_STATUS_NOT_SUPPORTED;
 }
 

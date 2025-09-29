@@ -86,6 +86,7 @@ typedef union {
         uint16_t band_width;
         uint16_t number;
     } afh;
+    int security_level;
     uint8_t map[10];
 } sal_adapter_args_t;
 
@@ -131,6 +132,8 @@ static void zblue_on_pairing_failed(struct bt_conn* conn, enum bt_security_err r
 static void zblue_on_bond_deleted(uint8_t id, const bt_addr_le_t* peer);
 static void zblue_register_callback(void);
 static void zblue_unregister_callback(void);
+
+static bt_security_t g_security_level = BT_SECURITY_L2;
 
 static struct bt_conn_cb g_conn_cbs = {
 #ifndef CONFIG_BT_CONN_REQ_AUTO_HANDLE
@@ -1292,7 +1295,7 @@ static void STACK_CALL(create_bond)(void* args)
     bond_state_t state = BOND_STATE_NONE;
     struct bt_conn* conn;
 
-    conn = bt_conn_pair_br((bt_addr_t*)&req->addr, BT_SECURITY_L2);
+    conn = bt_conn_pair_br((bt_addr_t*)&req->addr, g_security_level);
     if (conn) {
         state = BOND_STATE_BONDING;
         bt_conn_unref(conn);
@@ -1319,6 +1322,28 @@ bt_status_t bt_sal_create_bond(bt_controller_id_t id, bt_address_t* addr, bt_tra
 #else
     return BT_STATUS_NOT_SUPPORTED;
 #endif
+}
+
+static void STACK_CALL(set_security_level)(void* args)
+{
+    sal_adapter_req_t* req = args;
+
+    g_security_level = req->adpt.security_level;
+}
+
+bt_status_t bt_sal_set_security_level(bt_controller_id_t id, uint8_t level)
+{
+    sal_adapter_req_t* req;
+
+    req = sal_adapter_req(id, NULL, STACK_CALL(set_security_level));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    req->adpt.security_level = level;
+
+    return sal_send_req(req);
 }
 
 #ifdef CONFIG_BLUETOOTH_BREDR_SUPPORT

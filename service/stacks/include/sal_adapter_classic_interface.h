@@ -77,6 +77,7 @@ uint16_t bt_sal_get_acl_connection_handle(bt_controller_id_t id, bt_address_t* a
 uint16_t bt_sal_get_sco_connection_handle(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_connect(bt_controller_id_t id, bt_address_t* addr);
 bt_status_t bt_sal_disconnect(bt_controller_id_t id, bt_address_t* addr, uint8_t reason);
+bt_status_t bt_sal_set_security_level(bt_controller_id_t id, uint8_t level);
 bt_status_t bt_sal_create_bond(bt_controller_id_t id, bt_address_t* addr, bt_transport_t transport, bt_addr_type_t type);
 bt_status_t bt_sal_cancel_bond(bt_controller_id_t id, bt_address_t* addr, bt_transport_t transport);
 bt_status_t bt_sal_remove_bond(bt_controller_id_t id, bt_address_t* addr, bt_transport_t transport);
