@@ -2971,6 +2971,7 @@ bt_status_t adapter_le_remove_whitelist(bt_address_t* addr)
 
 bt_status_t adapter_le_set_bondable(bool bondable)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SUPPORT
     adapter_service_t* adapter = &g_adapter_service;
 
     adapter_lock();
@@ -2982,6 +2983,9 @@ bt_status_t adapter_le_set_bondable(bool bondable)
 
     adapter_unlock();
     return bt_sal_le_set_bondable(PRIMARY_ADAPTER, bondable);
+#else
+    return BT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 bt_status_t adapter_set_security_level(uint8_t level, bt_transport_t transport)
