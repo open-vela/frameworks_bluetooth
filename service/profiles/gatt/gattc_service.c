@@ -637,6 +637,17 @@ static bt_status_t if_gattc_write_without_response(void* conn_handle, uint16_t a
         value, length, GATT_WRITE_TYPE_NO_RSP);
 }
 
+static bt_status_t if_gattc_signed_write(void* conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length)
+{
+    gattc_connection_t* connection = conn_handle;
+
+    CHECK_ENABLED();
+    CHECK_CONNECTION_VALID(g_gattc_manager.connections, connection);
+
+    return bt_sal_gatt_client_write_element(PRIMARY_ADAPTER, &connection->remote_addr, attr_handle,
+        value, length, GATT_WRITE_TYPE_SIGNED);
+}
+
 static bt_status_t if_gattc_subscribe(void* conn_handle, uint16_t attr_handle, uint16_t ccc_value)
 {
     gattc_connection_t* connection = conn_handle;
@@ -758,6 +769,7 @@ static const gattc_interface_t gattc_if = {
     .read = if_gattc_read,
     .write = if_gattc_write,
     .write_without_response = if_gattc_write_without_response,
+    .write_signed = if_gattc_signed_write,
     .subscribe = if_gattc_subscribe,
     .unsubscribe = if_gattc_unsubscribe,
     .exchange_mtu = if_gattc_exchange_mtu,

@@ -1102,7 +1102,7 @@ bt_status_t bt_sal_gatt_client_read_element(bt_controller_id_t id, bt_address_t*
 bt_status_t bt_sal_gatt_client_write_element(bt_controller_id_t id, bt_address_t* addr, uint16_t element_id, uint8_t* value, uint16_t length, gatt_write_type_t write_type)
 {
     struct bt_conn* conn;
-    int err;
+    int err = 0;
 
     conn = get_le_conn_from_addr(addr);
     if (!conn) {
@@ -1110,8 +1110,9 @@ bt_status_t bt_sal_gatt_client_write_element(bt_controller_id_t id, bt_address_t
         return BT_STATUS_FAIL;
     }
 
-    if (write_type == GATT_WRITE_TYPE_RSP) {
-        struct bt_gatt_write_params* write_params = zalloc(sizeof(struct bt_gatt_write_params));
+    switch (write_type) {
+    case GATT_WRITE_TYPE_RSP: {
+        struct bt_gatt_write_params* write_params = (struct bt_gatt_write_params*)zalloc(sizeof(struct bt_gatt_write_params));
         if (!write_params) {
             return BT_STATUS_NOMEM;
         }
@@ -1128,18 +1129,48 @@ bt_status_t bt_sal_gatt_client_write_element(bt_controller_id_t id, bt_address_t
             free(write_params);
             return BT_STATUS_FAIL;
         }
-    } else if (write_type == GATT_WRITE_TYPE_NO_RSP) {
-        uint16_t* handle;
+        break;
+    }
 
-        handle = (uint16_t*)malloc(sizeof(uint16_t));
+    case GATT_WRITE_TYPE_NO_RSP: {
+        uint16_t* handle = (uint16_t*)malloc(sizeof(uint16_t));
+        if (!handle) {
+            return BT_STATUS_NOMEM;
+        }
         *handle = element_id;
 
-        err = bt_gatt_write_without_response_cb(conn, element_id, value, length, false, gatt_client_write_callback, handle);
+        err = bt_gatt_write_without_response_cb(conn, element_id, value, length,
+            false, gatt_client_write_callback, handle);
         if (err) {
             BT_LOGE("%s, gatt write without rsp fail err:%d", __func__, err);
             free(handle);
             return BT_STATUS_FAIL;
         }
+        break;
+    }
+
+#ifdef CONFIG_BT_SIGNING
+    case GATT_WRITE_TYPE_SIGNED: {
+        uint16_t* handle = (uint16_t*)malloc(sizeof(uint16_t));
+        if (!handle) {
+            return BT_STATUS_NOMEM;
+        }
+        *handle = element_id;
+
+        err = bt_gatt_write_without_response_cb(conn, element_id, value, length,
+            true, gatt_client_write_callback, handle);
+        if (err) {
+            BT_LOGE("%s, gatt write (signed) fail err:%d", __func__, err);
+            free(handle);
+            return BT_STATUS_FAIL;
+        }
+        break;
+    }
+#endif
+
+    default:
+        BT_LOGE("%s, unsupported write_type:%d", __func__, write_type);
+        return BT_STATUS_NOT_SUPPORTED;
     }
 
     return BT_STATUS_SUCCESS;

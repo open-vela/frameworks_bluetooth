@@ -347,7 +347,17 @@ void bt_socket_server_gattc_process(service_poll_t* poll, int fd,
             INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_rssi.handle);
         break;
     default:
-        break;
+        switch (BT_IPC_GET_SUBCODE(packet->code)) {
+        case BT_GATT_CLIENT_SUBCODE_WRITE_WITH_SIGNED:
+            packet->gattc_r.status = BTSYMBOLS(bt_gattc_write_with_signed)(
+                INT2PTR(gattc_handle_t) packet->gattc_pl._bt_gattc_write.handle,
+                packet->gattc_pl._bt_gattc_write.attr_handle,
+                packet->gattc_pl._bt_gattc_write.value,
+                packet->gattc_pl._bt_gattc_write.length);
+            break;
+        default:
+            break;
+        }
     }
 }
 #endif

@@ -58,6 +58,7 @@ typedef struct gattc_interface {
     bt_status_t (*read)(void* conn_handle, uint16_t attr_handle);
     bt_status_t (*write)(void* conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length);
     bt_status_t (*write_without_response)(void* conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length);
+    bt_status_t (*write_signed)(void* conn_handle, uint16_t attr_handle, uint8_t* value, uint16_t length);
     bt_status_t (*subscribe)(void* conn_handle, uint16_t attr_handle, uint16_t ccc_value);
     bt_status_t (*unsubscribe)(void* conn_handle, uint16_t attr_handle);
     bt_status_t (*exchange_mtu)(void* conn_handle, uint32_t mtu);
