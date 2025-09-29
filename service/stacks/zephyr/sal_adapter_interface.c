@@ -283,12 +283,17 @@ static void zblue_on_security_changed(struct bt_conn* conn, bt_security_t level,
 
     zblue_conn_get_addr(conn, &addr);
 
+    BT_LOGD("%s, level: %d, required level: %d, err: %d", __func__, level, g_security_level, err);
+
     if (err) {
         adapter_on_bond_state_changed(&addr, BOND_STATE_NONE, BT_TRANSPORT_BREDR, BT_STATUS_FAIL, false);
     }
 
-    if (level >= BT_SECURITY_L2 && err == BT_SECURITY_ERR_SUCCESS) {
+    if (level >= g_security_level && err == BT_SECURITY_ERR_SUCCESS) {
         encrypted = true;
+    } else {
+        bt_conn_disconnect(conn, BT_HCI_ERR_AUTH_FAIL);
+        return;
     }
 
     adapter_on_encryption_state_changed(&addr, encrypted, BT_TRANSPORT_BREDR);
