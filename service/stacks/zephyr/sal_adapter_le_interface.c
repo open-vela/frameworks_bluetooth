@@ -49,6 +49,7 @@ typedef union {
         struct bt_le_conn_param conn;
     } conn_param;
     int security_level;
+    bool bondable;
 } sal_adapter_args_t;
 
 typedef struct {
@@ -1035,6 +1036,28 @@ bt_status_t bt_sal_le_disconnect(bt_controller_id_t id, bt_address_t* addr)
     if (!req) {
         return BT_STATUS_NOMEM;
     }
+
+    return sal_send_req(req);
+}
+
+static void STACK_CALL(set_bondable)(void* args)
+{
+    sal_adapter_req_t* req = args;
+
+    bt_set_bondable_mc(req->id, req->adpt.bondable);
+}
+
+bt_status_t bt_sal_le_set_bondable(bt_controller_id_t id, bool enable)
+{
+    sal_adapter_req_t* req;
+
+    req = sal_adapter_req(id, NULL, STACK_CALL(set_bondable));
+    if (!req) {
+        BT_LOGE("%s, req null", __func__);
+        return BT_STATUS_NOMEM;
+    }
+
+    req->adpt.bondable = enable;
 
     return sal_send_req(req);
 }

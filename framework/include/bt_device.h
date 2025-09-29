@@ -533,6 +533,24 @@ bt_status_t BTSYMBOLS(bt_device_create_bond)(bt_instance_t* ins, bt_address_t* a
 bt_status_t BTSYMBOLS(bt_device_set_security_level)(bt_instance_t* ins, uint8_t level, bt_transport_t transport);
 
 /**
+ * @brief Set LE bond mode.
+ *
+ * Dynamically set the bond mode when bond with remote device.
+ *
+ * @param ins - Bluetooth client instance, see @ref bt_instance_t.
+ * @param bool - bondable. true for bondable, false for non-bondable.
+ * @return bt_status_t - BT_STATUS_SUCCESS on success; a error code on failure.
+ *
+ * **Example:**
+ * @code
+// pair with non-bondable mode
+ bt_device_set_bondable_le(ins, false);
+ bt_device_create_bond(ins, &addr, BT_TRANSPORT_BLE);
+ * @endcode
+ */
+bt_status_t BTSYMBOLS(bt_device_set_bondable_le)(bt_instance_t* ins, bool bondable);
+
+/**
  * @brief Remove bonding with a remote device.
  *
  * Removes the bonding information of a remote device.

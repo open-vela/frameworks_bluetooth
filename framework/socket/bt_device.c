@@ -422,6 +422,22 @@ bt_status_t bt_device_set_le_phy(bt_instance_t* ins,
     return packet.devs_r.status;
 }
 
+bt_status_t bt_device_set_bondable_le(bt_instance_t* ins, bool bondable)
+{
+    bt_message_packet_t packet;
+    bt_status_t status;
+
+    BT_SOCKET_INS_VALID(ins, BT_STATUS_PARM_INVALID);
+
+    packet.devs_pl._bt_device_set_bondable_le.accept = bondable;
+    status = bt_socket_client_sendrecv(ins, &packet, BT_DEVICE_SET_BONDABLE_LE);
+    if (status != BT_STATUS_SUCCESS) {
+        return status;
+    }
+
+    return packet.devs_r.status;
+}
+
 bt_status_t bt_device_set_security_level(bt_instance_t* ins, uint8_t level, bt_transport_t transport)
 {
     bt_message_packet_t packet;

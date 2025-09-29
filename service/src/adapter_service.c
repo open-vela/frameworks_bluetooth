@@ -2930,6 +2930,21 @@ bt_status_t adapter_le_remove_whitelist(bt_address_t* addr)
 #endif
 }
 
+bt_status_t adapter_le_set_bondable(bool bondable)
+{
+    adapter_service_t* adapter = &g_adapter_service;
+
+    adapter_lock();
+    if ((adapter->adapter_state != BT_ADAPTER_STATE_ON)
+        && (adapter->adapter_state != BT_ADAPTER_STATE_BLE_ON)) {
+        adapter_unlock();
+        return BT_STATUS_NOT_ENABLED;
+    }
+
+    adapter_unlock();
+    return bt_sal_le_set_bondable(PRIMARY_ADAPTER, bondable);
+}
+
 bt_status_t adapter_set_security_level(uint8_t level, bt_transport_t transport)
 {
     adapter_service_t* adapter = &g_adapter_service;
