@@ -102,8 +102,10 @@ enum {
     IOT_SERVICE_TX_CHR_CCC_ID,
     IOT_SERVICE_RX_CHR_ID,
     IOT_SERVICE_READ_CHR_ID,
+    IOT_SERVICE_PTS_MTU_CHR_ID,
 };
 
+uint8_t read_pts_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'P', 'T', 'S', '!' };
 uint8_t read_char_value[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'V', 'E', 'L', 'A', '!' };
 
 uint16_t tx_char_ccc_changed(void* srv_handle, bt_address_t* addr, uint16_t attr_handle, const uint8_t* value, uint16_t length, uint16_t offset)
@@ -172,9 +174,11 @@ static gatt_attr_db_t s_iot_attr_db[] = {
     /* Client Characteristic Configuration Descriptor - 0x2902 */
     GATT_H_CCCD(GATT_PERM_READ | GATT_PERM_WRITE | GATT_PERM_AUTHEN_REQUIRED, tx_char_ccc_changed, IOT_SERVICE_TX_CHR_CCC_ID),
     /* Private Characteristic for RX - 0xFF02 */
-    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF02), GATT_PROP_READ | GATT_PROP_WRITE_NR, GATT_PERM_READ | GATT_PERM_WRITE, rx_char_on_read, rx_char_on_write, IOT_SERVICE_RX_CHR_ID),
+    GATT_H_CHARACTERISTIC_USER_RSP(BT_UUID_DECLARE_16(0xFF02), GATT_PROP_READ | GATT_PROP_WRITE_NR | GATT_PROP_WRITE, GATT_PERM_READ | GATT_PERM_WRITE, rx_char_on_read, rx_char_on_write, IOT_SERVICE_RX_CHR_ID),
     /* Private Characteristic for read operation demo - 0xFF05 */
     GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0xFF05), GATT_PROP_READ, GATT_PERM_READ, read_char_value, sizeof(read_char_value), IOT_SERVICE_READ_CHR_ID),
+    /* PTS: MTU-1 Read characteristic - 0xFF06 */
+    GATT_H_CHARACTERISTIC_AUTO_RSP(BT_UUID_DECLARE_16(0xFF06), GATT_PROP_READ, GATT_PERM_READ, read_pts_char_value, sizeof(read_pts_char_value), IOT_SERVICE_PTS_MTU_CHR_ID),
 };
 
 static gatt_srv_db_t s_iot_service_db = {

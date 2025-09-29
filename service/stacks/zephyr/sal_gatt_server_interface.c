@@ -155,9 +155,20 @@ static struct bt_gatt_attr server_db[CONFIG_GATT_SERVER_MAX_ATTRIBUTES];
 static ssize_t read_value(struct bt_conn* conn, const struct bt_gatt_attr* attr,
     void* buf, uint16_t len, uint16_t offset)
 {
+    uint16_t pts_read_size;
     struct gatt_value* user_data = attr->user_data;
 
     BT_LOGD("%s, handle:0x%0x, user_data 0x%p, user_data_len:%d", __func__, attr->handle, user_data, user_data->len);
+
+    if (bt_uuid_cmp(attr->uuid, BT_UUID_DECLARE_16(0xFF06)) == 0) {
+        pts_read_size = bt_gatt_get_mtu(conn) - 1;
+        static uint8_t s_fake[512] = { 0 };
+        if (pts_read_size <= 512) {
+            memset(s_fake, 0xAA, pts_read_size);
+        }
+
+        return bt_gatt_attr_read(conn, attr, buf, len, offset, s_fake, pts_read_size);
+    }
 
     return bt_gatt_attr_read(conn, attr, buf, len, offset, user_data->data, user_data->len);
 }
