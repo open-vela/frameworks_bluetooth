@@ -63,6 +63,7 @@ void system_bluetooth_ble_onUnregister(const char* feature_name)
     FEATURE_LOG_INFO("%s::%s()", file_tag, __FUNCTION__);
 }
 
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
 static bool adv_userdata_cmp(void* node, void* userdata)
 {
     return ((feature_bluetooth_adv_info_t*)node)->start_userdata == userdata;
@@ -72,6 +73,7 @@ static bool adv_cmp(void* node, void* adv)
 {
     return ((feature_bluetooth_adv_info_t*)node)->adv == adv;
 }
+#endif
 
 static bool scan_userdata_cmp(void* node, void* userdata)
 {
@@ -161,6 +163,35 @@ feature_bluetooth_gattc_info_t* find_gattc_info_by_userdata(bt_instance_t* ins, 
     return NULL;
 }
 
+bt_status_t get_valid_uuid128(uint8_t uuid128[16], const char* in)
+{
+    int num;
+    int ret;
+    if (strlen(in) != 36)
+        return BT_STATUS_PARM_INVALID;
+
+    if (in[8] != '-' || in[13] != '-' || in[18] != '-' || in[23] != '-')
+        return BT_STATUS_PARM_INVALID;
+
+    ret = sscanf(in, "%02hhx%02hhx%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx"
+                     "-%02hhx%02hhx-%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%n",
+        &uuid128[15], &uuid128[14], &uuid128[13], &uuid128[12], &uuid128[11], &uuid128[10], &uuid128[9], &uuid128[8],
+        &uuid128[7], &uuid128[6], &uuid128[5], &uuid128[4], &uuid128[3], &uuid128[2], &uuid128[1], &uuid128[0], &num);
+
+    if (ret != 16 || num != 36)
+        return BT_STATUS_PARM_INVALID;
+
+    return BT_STATUS_SUCCESS;
+}
+
+char* bt_uuid_to_feature_string(const bt_uuid_t* bt_uuid)
+{
+    char uuid[40] = { 0 };
+    bt_uuid_to_string(bt_uuid, uuid, 40);
+    return StringToFtString(uuid);
+}
+
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
 static void feature_adv_destroy(FeatureInterfaceHandle handle)
 {
     feature_bluetooth_adv_info_t* adv_info = (feature_bluetooth_adv_info_t*)FeatureGetObjectData(handle);
@@ -182,14 +213,18 @@ static void feature_adv_destroy(FeatureInterfaceHandle handle)
 
     bt_list_remove(features_info->feature_ble_adv, adv_info);
 }
+#endif
 
 void system_bluetooth_ble_Advertiser_interface_adv_finalize(FeatureInterfaceHandle handle)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
     feature_adv_destroy(handle);
+#endif
 }
 
 FeatureInterfaceHandle system_bluetooth_ble_wrap_createAdvertiser(FeatureInstanceHandle feature, AppendData append_data)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
     bt_instance_t* bluetooth_instance = feature_bluetooth_get_bt_ins(feature);
     feature_bluetooth_features_info_t* features_info = (feature_bluetooth_features_info_t*)(bluetooth_instance->context);
     feature_bluetooth_adv_info_t* adv_info = (feature_bluetooth_adv_info_t*)calloc(1, sizeof(feature_bluetooth_adv_info_t));
@@ -204,8 +239,12 @@ FeatureInterfaceHandle system_bluetooth_ble_wrap_createAdvertiser(FeatureInstanc
     FeatureSetObjectData(handle, adv_info);
 
     return handle;
+#else
+    return NULL;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
 static void on_advertising_start_cb(bt_advertiser_t* adv, uint8_t adv_id, uint8_t status)
 {
     feature_data_t* data;
@@ -287,34 +326,6 @@ bt_status_t get_valid_uuid16(uint16_t* out, const char* in)
     }
 
     return BT_STATUS_SUCCESS;
-}
-
-bt_status_t get_valid_uuid128(uint8_t uuid128[16], const char* in)
-{
-    int num;
-    int ret;
-    if (strlen(in) != 36)
-        return BT_STATUS_PARM_INVALID;
-
-    if (in[8] != '-' || in[13] != '-' || in[18] != '-' || in[23] != '-')
-        return BT_STATUS_PARM_INVALID;
-
-    ret = sscanf(in, "%02hhx%02hhx%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx"
-                     "-%02hhx%02hhx-%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%n",
-        &uuid128[15], &uuid128[14], &uuid128[13], &uuid128[12], &uuid128[11], &uuid128[10], &uuid128[9], &uuid128[8],
-        &uuid128[7], &uuid128[6], &uuid128[5], &uuid128[4], &uuid128[3], &uuid128[2], &uuid128[1], &uuid128[0], &num);
-
-    if (ret != 16 || num != 36)
-        return BT_STATUS_PARM_INVALID;
-
-    return BT_STATUS_SUCCESS;
-}
-
-char* bt_uuid_to_feature_string(const bt_uuid_t* bt_uuid)
-{
-    char uuid[40] = { 0 };
-    bt_uuid_to_string(bt_uuid, uuid, 40);
-    return StringToFtString(uuid);
 }
 
 static bt_status_t feature_get_advertiser_data(system_bluetooth_ble_AdvertiseData* data,
@@ -509,10 +520,12 @@ error:
     if (adv)
         bt_le_stop_advertising_async(ins, adv, NULL, NULL);
 }
+#endif
 
 void system_bluetooth_ble_Advertiser_interface_adv_startAdvertising(FeatureInterfaceHandle handle, AppendData append_data,
     FtPromiseId pid, system_bluetooth_ble_StartAdvertisingParams* params)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
     bt_status_t status;
     feature_data_t* data = NULL;
     feature_bluetooth_adv_info_t* adv_info = NULL;
@@ -592,10 +605,15 @@ error:
         advertiser_data_free(scan_rsp);
 
     FeaturePromiseReject(handle, pid, status, "start advertising failed!");
+#else
+    FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "advertising is not supported.");
+#endif
+
 }
 
 void system_bluetooth_ble_Advertiser_interface_adv_stopAdvertising(FeatureInterfaceHandle handle, AppendData append_data)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
     feature_bluetooth_adv_info_t* adv_info = FeatureGetObjectData(handle);
     if (!adv_info) {
         FEATURE_LOG_ERROR("%s, advertiser has been closed", __func__);
@@ -606,13 +624,16 @@ void system_bluetooth_ble_Advertiser_interface_adv_stopAdvertising(FeatureInterf
         return;
 
     bt_le_stop_advertising_async(adv_info->ins, adv_info->adv, NULL, NULL);
+#endif
 }
 
 void system_bluetooth_ble_Advertiser_interface_adv_close(FeatureInterfaceHandle handle, AppendData append_data)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_ADV
     feature_adv_destroy(handle);
 
     FeatureSetObjectData(handle, NULL);
+#endif
 }
 
 FeatureInterfaceHandle system_bluetooth_ble_wrap_createScanner(FeatureInstanceHandle feature, AppendData append_data)
