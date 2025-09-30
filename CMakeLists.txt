@@ -730,11 +730,8 @@ if(CONFIG_BLUETOOTH)
     set(PY_SCRIPT ${FEATURE_TOP}/tools/jidl/jsongensource.py)
     set(BINARY_EXT_MODULES_DIR ${CMAKE_BINARY_DIR}/feature/modules/)
     set(JIDL_PATHS ${BLUETOOTH_DIR}/feature/feature_async/jidl/bluetooth.jidl)
-
-    if(CONFIG_BLUETOOTH_BLE_ADV)
-      list(APPEND JIDL_PATHS
+    list(APPEND JIDL_PATHS
         ${BLUETOOTH_DIR}/feature/feature_async/jidl/bluetooth_ble.jidl)
-    endif()
 
     if(CONFIG_BLUETOOTH_GATT)
       list(APPEND CSRCS ${BLUETOOTH_DIR}/framework/btwrap/async/bt_gatt_feature.c)
