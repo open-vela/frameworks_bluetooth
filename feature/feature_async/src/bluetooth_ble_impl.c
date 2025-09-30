@@ -92,6 +92,7 @@ static bool scan_subscribe_info_cmp(void* node, void* id)
 }
 #endif
 
+#ifdef CONFIG_BLUETOOTH_GATT
 static bool gattc_userdata_cmp(void* node, void* userdata)
 {
     return ((gattc_data_t*)node) == userdata;
@@ -106,6 +107,7 @@ static bool gattc_userdata_type_cmp(void* node, void* type)
 {
     return ((gattc_data_t*)node)->userdata_type == (gattc_userdata_type_t)type;
 }
+#endif
 
 #define FIND_INFO_BY_USERDATA(ins, data, type, ret)                                              \
     do {                                                                                         \
@@ -141,6 +143,7 @@ static bool gattc_userdata_type_cmp(void* node, void* type)
         ret = (feature_bluetooth_##type##_info_t*)bt_list_find(list, type##_cmp, obj); \
     } while (0);
 
+#ifdef CONFIG_BLUETOOTH_GATT
 feature_bluetooth_gattc_info_t* find_gattc_info_by_userdata(bt_instance_t* ins, void* data)
 {
     feature_bluetooth_features_info_t* features_info;
@@ -192,6 +195,7 @@ char* bt_uuid_to_feature_string(const bt_uuid_t* bt_uuid)
     bt_uuid_to_string(bt_uuid, uuid, 40);
     return StringToFtString(uuid);
 }
+#endif
 
 #ifdef CONFIG_BLUETOOTH_BLE_ADV
 static void feature_adv_destroy(FeatureInterfaceHandle handle)
@@ -1003,6 +1007,7 @@ void system_bluetooth_ble_Scanner_interface_scan_close(FeatureInterfaceHandle ha
 #endif
 }
 
+#ifdef CONFIG_BLUETOOTH_GATT
 typedef enum {
     FEATURE_GATT_STATE_DISCONNECTED,
     FEATURE_GATT_STATE_CONNECTING,
@@ -1568,10 +1573,12 @@ static bt_gattc_feature_callbacks_t gattc_cbs = {
     .on_notified = notify_received_callback,
     .on_mtu_updated = mtu_updated_callback,
 };
+#endif
 
 FeatureInterfaceHandle system_bluetooth_ble_wrap_createGattClientDevice(FeatureInstanceHandle feature,
     AppendData append_data, FtString deviceId, FtString addressType)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
     bt_instance_t* bluetooth_instance = feature_bluetooth_get_bt_ins(feature);
     feature_bluetooth_features_info_t* features_info = (feature_bluetooth_features_info_t*)(bluetooth_instance->context);
     feature_bluetooth_gattc_info_t* gattc_info = (feature_bluetooth_gattc_info_t*)calloc(1, sizeof(feature_bluetooth_gattc_info_t));
@@ -1609,8 +1616,12 @@ error:
     free(gattc_info->gattc);
     free(gattc_info);
     return NULL;
+#else
+    return NULL;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_GATT
 static void feature_gattc_destroy(FeatureInterfaceHandle handle)
 {
     feature_bluetooth_gattc_info_t* gattc_info = (feature_bluetooth_gattc_info_t*)FeatureGetObjectData(handle);
@@ -1633,12 +1644,16 @@ static void feature_gattc_destroy(FeatureInterfaceHandle handle)
     bt_list_free(gattc_info->userdata_list);
     bt_list_remove(features_info->feature_ble_gattc, gattc_info);
 }
+#endif
 
 void system_bluetooth_ble_GattClient_interface_gattc_finalize(FeatureInterfaceHandle handle)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
     feature_gattc_destroy(handle);
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_GATT
 static void gattc_connect_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
 {
     gattc_data_t* data = (gattc_data_t*)userdata;
@@ -1700,9 +1715,11 @@ error:
     FeaturePromiseReject(data->interface, data->pid, status, "gattc create connect failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
+#endif
 
 void system_bluetooth_ble_GattClient_interface_gattc_connect(FeatureInterfaceHandle handle, AppendData append_data, FtPromiseId pid)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
     bt_status_t status;
     gattc_data_t* data = NULL;
     feature_bluetooth_gattc_info_t* gattc_info;
@@ -1753,8 +1770,12 @@ error:
         bt_list_remove(gattc_info->userdata_list, data);
 
     FeaturePromiseReject(handle, pid, status, "gattc connect failed!");
+#else
+    FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_GATT
 static void gattc_disconnect_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
 {
     gattc_data_t* data = (gattc_data_t*)userdata;
@@ -1776,9 +1797,11 @@ static void gattc_disconnect_cb(bt_instance_t* ins, bt_status_t status, void* us
     FeaturePromiseReject(data->interface, data->pid, status, "gattc disconnect failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
+#endif
 
 void system_bluetooth_ble_GattClient_interface_gattc_disconnect(FeatureInterfaceHandle handle, AppendData append_data, FtPromiseId pid)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
     bt_status_t status = BT_STATUS_FAIL;
     gattc_data_t* data = NULL;
     feature_bluetooth_gattc_info_t* gattc_info;
@@ -1825,8 +1848,12 @@ error:
         bt_list_remove(gattc_info->userdata_list, data);
 
     FeaturePromiseReject(handle, pid, status, "gattc disconnect failed!");
+#else
+    FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_GATT
 // continuously reported
 static void gattc_get_service_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
 {
@@ -1850,9 +1877,11 @@ error:
     bt_list_free(data->cached_services);
     bt_list_remove(gattc_info->userdata_list, data);
 }
+#endif
 
 void system_bluetooth_ble_GattClient_interface_gattc_getServices(FeatureInterfaceHandle handle, AppendData append_data, FtPromiseId pid)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
     bt_status_t status = BT_STATUS_FAIL;
     gattc_data_t* data = NULL;
     feature_bluetooth_gattc_info_t* gattc_info;
@@ -1898,8 +1927,12 @@ error:
     }
 
     FeaturePromiseReject(handle, pid, status, "gattc get service failed!");
+#else
+    FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_GATT
 static void gattc_read_characteristic_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
 {
     gattc_data_t* data = (gattc_data_t*)userdata;
@@ -1922,10 +1955,12 @@ error:
     bt_list_remove(gattc_info->userdata_list, data);
     return;
 }
+#endif
 
 void system_bluetooth_ble_GattClient_interface_gattc_readCharacteristicValue(FeatureInterfaceHandle handle, AppendData append_data,
     FtPromiseId pid, system_bluetooth_ble_ReadCharacteristicValue* params)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
     bt_status_t status;
     uint8_t uuid128[16];
     bt_uuid_t service_uuid;
@@ -1984,8 +2019,12 @@ error:
         bt_list_remove(gattc_info->userdata_list, data);
 
     FeaturePromiseReject(handle, pid, status, "gattc write characteristic failed!");
+#else
+    FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_GATT
 static void gattc_read_descriptor_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
 {
     gattc_data_t* data = (gattc_data_t*)userdata;
@@ -2007,10 +2046,12 @@ error:
     FeaturePromiseReject(data->interface, data->pid, status, "gattc read descriptor failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
+#endif
 
 void system_bluetooth_ble_GattClient_interface_gattc_readDescriptorValue(FeatureInterfaceHandle handle, AppendData append_data,
     FtPromiseId pid, system_bluetooth_ble_ReadDescriptorValue* params)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
     bt_status_t status;
     uint8_t uuid128[16];
     bt_uuid_t service_uuid;
@@ -2076,8 +2117,12 @@ error:
         bt_list_remove(gattc_info->userdata_list, data);
 
     FeaturePromiseReject(handle, pid, status, "gattc read descriptor failed!");
+#else
+    FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_GATT
 static void gattc_write_char_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
 {
     gattc_data_t* data = (gattc_data_t*)userdata;
@@ -2099,10 +2144,12 @@ error:
     FeaturePromiseReject(data->interface, data->pid, status, "gattc write characteristic failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
+#endif
 
 void system_bluetooth_ble_GattClient_interface_gattc_writeCharacteristicValue(FeatureInterfaceHandle handle, AppendData append_data,
     FtPromiseId pid, system_bluetooth_ble_WriteCharacteristicValue* params)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
     bt_status_t status;
     uint8_t uuid128[16];
     gatt_characteristic_t characteristic = { 0 };
@@ -2181,8 +2228,12 @@ error:
         bt_list_remove(gattc_info->userdata_list, data);
 
     FeaturePromiseReject(handle, pid, status, "gattc write characteristic failed!");
+#else
+    FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_GATT
 static void gattc_write_desc_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
 {
     gattc_data_t* data = (gattc_data_t*)userdata;
@@ -2204,10 +2255,12 @@ error:
     FeaturePromiseReject(data->interface, data->pid, status, "gattc write descriptor failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
+#endif
 
 void system_bluetooth_ble_GattClient_interface_gattc_writeDescriptorValue(FeatureInterfaceHandle handle, AppendData append_data,
     FtPromiseId pid, system_bluetooth_ble_WriteDescriptorValue* params)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
     bt_status_t status;
     uint8_t uuid128[16];
     size_t length;
@@ -2277,8 +2330,12 @@ error:
         bt_list_remove(gattc_info->userdata_list, data);
 
     FeaturePromiseReject(handle, pid, status, "gattc write descriptor failed!");
+#else
+    FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_GATT
 static void gattc_set_mtu_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
 {
     gattc_data_t* data = (gattc_data_t*)userdata;
@@ -2300,10 +2357,12 @@ error:
     FeaturePromiseReject(data->interface, data->pid, status, "gattc set mtu!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
+#endif
 
 void system_bluetooth_ble_GattClient_interface_gattc_setBLEMtuSize(FeatureInterfaceHandle handle, AppendData append_data,
     FtPromiseId pid, system_bluetooth_ble_SetBLEMtuSize* params)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
     bt_status_t status;
     gattc_data_t* data = NULL;
     feature_bluetooth_gattc_info_t* gattc_info;
@@ -2347,8 +2406,12 @@ error:
         bt_list_remove(gattc_info->userdata_list, data);
 
     FeaturePromiseReject(handle, pid, status, "gattc set mtu failed!");
+#else
+    FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_GATT
 static void gattc_set_notify_cb(bt_instance_t* ins, bt_status_t status, void* userdata)
 {
     gattc_data_t* data = (gattc_data_t*)userdata;
@@ -2370,10 +2433,12 @@ error:
     FeaturePromiseReject(data->interface, data->pid, status, "gattc set notify failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
+#endif
 
 void system_bluetooth_ble_GattClient_interface_gattc_setNotifyCharacteristicChanged(FeatureInterfaceHandle handle, AppendData append_data,
     FtPromiseId pid, system_bluetooth_ble_SetNotifyCharChangedParams* params)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
     bt_status_t status;
     uint8_t uuid128[16];
     gatt_characteristic_t characteristic = { 0 };
@@ -2431,11 +2496,18 @@ error:
         bt_list_remove(gattc_info->userdata_list, data);
 
     FeaturePromiseReject(handle, pid, status, "gattc set notify failed!");
+#else
+    FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
+#endif
 }
 
 FtBool system_bluetooth_ble_GattClient_interface_gattc_close(FeatureInterfaceHandle handle, AppendData append_data)
 {
+#ifdef CONFIG_BLUETOOTH_GATT
     feature_gattc_destroy(handle);
     FeatureSetObjectData(handle, NULL);
     return true;
+#else
+    return false;
+#endif
 }
