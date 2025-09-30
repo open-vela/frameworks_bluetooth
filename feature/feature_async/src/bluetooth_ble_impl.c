@@ -75,6 +75,7 @@ static bool adv_cmp(void* node, void* adv)
 }
 #endif
 
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
 static bool scan_userdata_cmp(void* node, void* userdata)
 {
     return ((feature_bluetooth_scan_info_t*)node)->start_userdata == userdata;
@@ -85,6 +86,12 @@ static bool scan_cmp(void* node, void* scan)
     return ((feature_bluetooth_scan_info_t*)node)->scan == scan;
 }
 
+static bool scan_subscribe_info_cmp(void* node, void* id)
+{
+    return ((scan_subscribe_info_t*)node)->id == *(FtInt*)id;
+}
+#endif
+
 static bool gattc_userdata_cmp(void* node, void* userdata)
 {
     return ((gattc_data_t*)node) == userdata;
@@ -93,11 +100,6 @@ static bool gattc_userdata_cmp(void* node, void* userdata)
 static bool gattc_cmp(void* node, void* handle)
 {
     return ((feature_bluetooth_gattc_info_t*)node)->gattc->handle == handle;
-}
-
-static bool scan_subscribe_info_cmp(void* node, void* id)
-{
-    return ((scan_subscribe_info_t*)node)->id == *(FtInt*)id;
 }
 
 static bool gattc_userdata_type_cmp(void* node, void* type)
@@ -638,6 +640,7 @@ void system_bluetooth_ble_Advertiser_interface_adv_close(FeatureInterfaceHandle 
 
 FeatureInterfaceHandle system_bluetooth_ble_wrap_createScanner(FeatureInstanceHandle feature, AppendData append_data)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
     bt_instance_t* bluetooth_instance = feature_bluetooth_get_bt_ins(feature);
     feature_bluetooth_features_info_t* features_info = (feature_bluetooth_features_info_t*)(bluetooth_instance->context);
     feature_bluetooth_scan_info_t* scan_info = (feature_bluetooth_scan_info_t*)calloc(1, sizeof(feature_bluetooth_scan_info_t));
@@ -654,8 +657,12 @@ FeatureInterfaceHandle system_bluetooth_ble_wrap_createScanner(FeatureInstanceHa
     FeatureSetObjectData(handle, scan_info);
 
     return handle;
+#else
+    return NULL;
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
 static void feature_scan_destroy(FeatureInterfaceHandle handle)
 {
     bt_list_node_t* node;
@@ -686,12 +693,16 @@ static void feature_scan_destroy(FeatureInterfaceHandle handle)
 
     bt_list_remove(features_info->feature_ble_scan, scan_info);
 }
+#endif
 
 void system_bluetooth_ble_Scanner_interface_scan_finalize(FeatureInterfaceHandle handle)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
     feature_scan_destroy(handle);
+#endif
 }
 
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
 static void on_scan_result_cb(bt_scanner_t* scanner, ble_scan_result_t* result)
 {
     bt_list_node_t* node;
@@ -827,10 +838,12 @@ error:
     if (scan)
         bt_le_stop_scan_async(ins, scan, NULL, NULL);
 }
+#endif
 
 void system_bluetooth_ble_Scanner_interface_scan_startBLEScan(FeatureInterfaceHandle handle, AppendData append_data,
     FtPromiseId pid, system_bluetooth_ble_StartScanParams* params)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
     bt_status_t status;
     feature_data_t* data = NULL;
     feature_bluetooth_scan_info_t* scan_info;
@@ -878,10 +891,14 @@ error:
     }
 
     FeaturePromiseReject(handle, pid, status, "start scan failed!");
+#else
+    FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "scanner is not supported");
+#endif
 }
 
 void system_bluetooth_ble_Scanner_interface_scan_stopBLEScan(FeatureInterfaceHandle handle, AppendData append_data)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
     feature_bluetooth_scan_info_t* scan_info = FeatureGetObjectData(handle);
     if (!scan_info) {
         FEATURE_LOG_ERROR("%s, scanner has been closed", __func__);
@@ -892,10 +909,12 @@ void system_bluetooth_ble_Scanner_interface_scan_stopBLEScan(FeatureInterfaceHan
         return;
 
     bt_le_stop_scan_async(scan_info->ins, scan_info->scan, NULL, NULL);
+#endif
 }
 
 void system_bluetooth_ble_Scanner_interface_scan_getScanState(FeatureInterfaceHandle handle, AppendData append_data, FtPromiseId pid)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
     feature_bluetooth_scan_info_t* scan_info = FeatureGetObjectData(handle);
     system_bluetooth_ble_ScanStateParams* state;
     if (!scan_info) {
@@ -911,11 +930,13 @@ void system_bluetooth_ble_Scanner_interface_scan_getScanState(FeatureInterfaceHa
 
     FeaturePromiseResolve(handle, pid, state);
     FeatureFreeValue(state);
+#endif
 }
 
 FtInt system_bluetooth_ble_Scanner_interface_scan_subscribeBLEDeviceFind(FeatureInterfaceHandle handle, AppendData append_data,
     system_bluetooth_ble_DeviceFindParams* params)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
     feature_bluetooth_scan_info_t* scan_info = FeatureGetObjectData(handle);
     scan_subscribe_info_t* subscribe_info;
 
@@ -942,10 +963,14 @@ FtInt system_bluetooth_ble_Scanner_interface_scan_subscribeBLEDeviceFind(Feature
     bt_list_add_tail(scan_info->subscribe_info, subscribe_info);
 
     return subscribe_info->id;
+#else
+    return -1;
+#endif
 }
 
 void system_bluetooth_ble_Scanner_interface_scan_unsubscribeBLEDeviceFind(FeatureInterfaceHandle handle, AppendData append_data, FtInt SubscribeId)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
     scan_subscribe_info_t* subscribe_info;
     feature_bluetooth_scan_info_t* scan_info = FeatureGetObjectData(handle);
     if (!scan_info) {
@@ -960,13 +985,16 @@ void system_bluetooth_ble_Scanner_interface_scan_unsubscribeBLEDeviceFind(Featur
     FeatureRemoveCallback(handle, subscribe_info->callback);
     FeatureRemoveCallback(handle, subscribe_info->fail);
     bt_list_remove(scan_info->subscribe_info, subscribe_info);
+#endif
 }
 
 void system_bluetooth_ble_Scanner_interface_scan_close(FeatureInterfaceHandle handle, AppendData append_data)
 {
+#ifdef CONFIG_BLUETOOTH_BLE_SCAN
     feature_scan_destroy(handle);
 
     FeatureSetObjectData(handle, NULL);
+#endif
 }
 
 typedef enum {
