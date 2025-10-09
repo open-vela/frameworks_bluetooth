@@ -26,6 +26,10 @@
 #define FEATURE_MANAGER_BLUETOOTH_DATA "bluetooth"
 
 bool js_event_cb_added();
+#define FEATURE_BT_NO_RESOURCES 10013
+#define FEATURE_BT_IPC_ERROR 10012
+#define FEATURE_BT_UNKNOWN_ERROR 10008
+#define FEATURE_BT_NOT_ENABLED 10001
 
 typedef enum {
     STATE_NON_SCAN = 0,

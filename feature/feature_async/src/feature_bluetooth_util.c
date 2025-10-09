@@ -146,3 +146,32 @@ bt_instance_t* feature_bluetooth_get_bt_ins(FeatureInstanceHandle feature)
     FeatureProtoHandle protoHandle = FeatureGetProtoHandle(feature);
     return FeatureGetProtoData(protoHandle);
 }
+
+FeatureErrorCode feature_error_code_mapping(u_int8_t status){
+    switch(status){
+        case BT_STATUS_FAIL:
+            return FT_ERR_GENERAL;
+        case BT_STATUS_NOMEM:
+            return FT_ERR_GENERAL;
+        case BT_STATUS_NOT_ENABLED:
+            return FEATURE_BT_NOT_ENABLED;
+        case BT_STATUS_DONE:
+            return FT_ERR_DUPLICATE_SUBMISSION;
+        case BT_STATUS_NOT_SUPPORTED:
+            return FT_ERR_NOT_SUPPORTED;
+        case BT_STATUS_NO_RESOURCES:
+            return FEATURE_BT_NO_RESOURCES;
+        case BT_STATUS_IPC_ERROR:
+            return FEATURE_BT_IPC_ERROR;
+        case BT_STATUS_DEVICE_NOT_FOUND:
+            return FT_ERR_TIMEOUT;
+        case BT_STATUS_PARM_INVALID:
+            return FT_ERR_ARGS;
+        case BT_STATUS_NOT_FOUND:
+            return FT_ERR_TIMEOUT;
+        case BT_STATUS_ERROR_BUT_UNKNOWN:
+            return FEATURE_BT_UNKNOWN_ERROR;
+        default:
+            return FEATURE_BT_UNKNOWN_ERROR;
+    }
+}

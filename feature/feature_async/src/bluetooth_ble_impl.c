@@ -272,7 +272,7 @@ static void on_advertising_start_cb(bt_advertiser_t* adv, uint8_t adv_id, uint8_
         FEATURE_LOG_ERROR("%s, adv fail", __func__);
         adv_info->adv = NULL;
         adv_info->busy = false;
-        FeaturePromiseReject(adv_info->interface, data->pid, status, "start advertising failed!");
+        FeaturePromiseReject(adv_info->interface, data->pid, feature_error_code_mapping(status), "start advertising failed!");
     } else {
         FeaturePromiseResolve(adv_info->interface, data->pid);
     }
@@ -523,7 +523,7 @@ static void start_adv_cb(bt_instance_t* ins, bt_status_t status, void* adv, void
         adv_info->adv = adv;
     } else {
         adv_info->busy = false;
-        FeaturePromiseReject(adv_info->interface, data->pid, status, "start advertising failed!");
+        FeaturePromiseReject(adv_info->interface, data->pid, feature_error_code_mapping(status), "start advertising failed!");
     }
 
     return;
@@ -555,28 +555,38 @@ void system_bluetooth_ble_Advertiser_interface_adv_startAdvertising(FeatureInter
     }
 
     if (!params || !params->setting)
+        status = BT_STATUS_PARM_INVALID;
         goto error;
 
     if (adv_info->busy) {
         FEATURE_LOG_ERROR("%s, Repeated Attempt", __func__);
+        status = BT_STATUS_DONE;
         goto error;
     }
 
     // AdvertiseSetting
-    if (feature_set_adv_params(params->setting, &adv_params) != BT_STATUS_SUCCESS)
+    if (feature_set_adv_params(params->setting, &adv_params) != BT_STATUS_SUCCESS){
+        status = BT_STATUS_PARM_INVALID;
         goto error;
+    }   
 
     // AdvertiseData-advData
-    if (feature_set_adv_data(params->advData, &adv, &p_adv_data, &adv_len, adv_info) != BT_STATUS_SUCCESS)
+    if (feature_set_adv_data(params->advData, &adv, &p_adv_data, &adv_len, adv_info) != BT_STATUS_SUCCESS){
+        status = BT_STATUS_FAIL;
         goto error;
+    }
 
     // AdvertiseData-scanRspData
     if (feature_set_scan_rsp_data(params->advResponse, &scan_rsp, &p_scan_rsp_data, &scan_rsp_len, adv_info) != BT_STATUS_SUCCESS)
+        status = BT_STATUS_FAIL;
         goto error;
 
     data = (feature_data_t*)malloc(sizeof(feature_data_t));
-    if (!data)
+    if (!data) {
+        status = BT_STATUS_NOMEM;
         goto error;
+    }
+        
 
     data->interface = handle;
     data->pid = pid;
@@ -616,7 +626,7 @@ error:
     if (scan_rsp)
         advertiser_data_free(scan_rsp);
 
-    FeaturePromiseReject(handle, pid, status, "start advertising failed!");
+    FeaturePromiseReject(handle, pid, feature_error_code_mapping(status), "start advertising failed!");
 #else
     FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "advertising is not supported.");
 #endif
@@ -829,8 +839,10 @@ static void start_scan_cb(bt_instance_t* ins, bt_status_t status, void* scan, vo
 
     FIND_INFO_BY_USERDATA(ins, userdata, scan, scan_info);
 
-    if (!scan_info)
+    if (!scan_info){
+        status = BT_STATUS_PARM_INVALID;
         goto error;
+    }
 
     assert(scan_info->scan == NULL);
 
@@ -838,7 +850,7 @@ static void start_scan_cb(bt_instance_t* ins, bt_status_t status, void* scan, vo
         scan_info->scan = scan;
     } else {
         scan_info->busy = false;
-        FeaturePromiseReject(scan_info->interface, data->pid, status, "start scan failed!");
+        FeaturePromiseReject(scan_info->interface, data->pid, feature_error_code_mapping(status), "start scan failed!");
     }
 
     return;
@@ -865,11 +877,15 @@ void system_bluetooth_ble_Scanner_interface_scan_startBLEScan(FeatureInterfaceHa
         return;
     }
 
-    if (!params)
+    if (!params) {
+        status = BT_STATUS_PARM_INVALID;
         goto error;
+    }
+        
 
     if (scan_info->busy) {
         FEATURE_LOG_ERROR("%s, Repeated Attempt", __func__);
+        status = BT_STATUS_DONE;
         goto error;
     }
 
@@ -878,8 +894,10 @@ void system_bluetooth_ble_Scanner_interface_scan_startBLEScan(FeatureInterfaceHa
     }
 
     data = (feature_data_t*)malloc(sizeof(feature_data_t));
-    if (!data)
+    if (!data) {
+        status = BT_STATUS_NOMEM;
         goto error;
+    }
 
     data->interface = handle;
     data->pid = pid;
@@ -899,7 +917,7 @@ error:
         scan_info->start_userdata = NULL;
     }
 
-    FeaturePromiseReject(handle, pid, status, "start scan failed!");
+    FeaturePromiseReject(handle, pid, feature_error_code_mapping(status), "start scan failed!");
 #else
     FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "scanner is not supported");
 #endif
@@ -1082,7 +1100,7 @@ static void connect_callback(bt_instance_t* ins, gatt_status_t status, gattc_han
         if (gattc_info->gattc->conn_state == CONNECTION_STATE_CONNECTING)
             gattc_set_conn_state(gattc_info, CONNECTION_STATE_DISCONNECTED);
 
-        FeaturePromiseReject(data->interface, data->pid, status, "gattc connect failed!");
+        FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc connect failed!");
         bt_list_remove(gattc_info->userdata_list, data);
         return;
     }
@@ -1121,7 +1139,7 @@ static void disconnect_callback(bt_instance_t* ins, gatt_status_t status, gattc_
             gattc_set_conn_state(gattc_info, CONNECTION_STATE_CONNECTED);
 
         FEATURE_LOG_ERROR("%s, disconnect failed, status: %d", __func__, status);
-        FeaturePromiseReject(data->interface, data->pid, status, "gattc disconnect failed!");
+        FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc disconnect failed!");
         bt_list_remove(gattc_info->userdata_list, data);
         return;
     }
@@ -1274,7 +1292,7 @@ static void discover_callback(bt_instance_t* ins, gatt_status_t status, gattc_ha
 
     if (status != GATT_STATUS_SUCCESS) {
         FEATURE_LOG_ERROR("%s, get service failed, status: %d", __func__, status);
-        FeaturePromiseReject(data->interface, data->pid, status, "gattc get service failed!");
+        FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc get service failed!");
         bt_list_free(data->cached_services);
         bt_list_remove(gattc_info->userdata_list, data);
         return;
@@ -1362,7 +1380,7 @@ static void read_char_callback(bt_instance_t* ins, gatt_status_t status, gattc_h
 
     if (status != GATT_STATUS_SUCCESS) {
         FEATURE_LOG_ERROR("%s, read characteristic failed, status: %d", __func__, status);
-        FeaturePromiseReject(data->interface, data->pid, status, "gattc read characteristic failed!");
+        FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc read characteristic failed!");
         bt_list_remove(gattc_info->userdata_list, data);
         return;
     }
@@ -1400,7 +1418,7 @@ static void read_desc_callback(bt_instance_t* ins, gatt_status_t status, gattc_h
 
     if (status != GATT_STATUS_SUCCESS) {
         FEATURE_LOG_ERROR("%s, read descriptor, status: %d", __func__, status);
-        FeaturePromiseReject(data->interface, data->pid, status, "gattc read descriptor failed!");
+        FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc read descriptor failed!");
         bt_list_remove(gattc_info->userdata_list, data);
         return;
     }
@@ -1436,7 +1454,7 @@ static void write_char_callback(bt_instance_t* ins, gatt_status_t status, gattc_
 
     if (status != GATT_STATUS_SUCCESS) {
         FEATURE_LOG_ERROR("%s, write characteristic, status: %d", __func__, status);
-        FeaturePromiseReject(data->interface, data->pid, status, "gattc write characteristic failed!");
+        FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc write characteristic failed!");
         bt_list_remove(gattc_info->userdata_list, data);
         return;
     }
@@ -1466,7 +1484,7 @@ static void write_desc_callback(bt_instance_t* ins, gatt_status_t status, gattc_
 
     if (status != GATT_STATUS_SUCCESS) {
         FEATURE_LOG_ERROR("%s, write descriptor, status: %d", __func__, status);
-        FeaturePromiseReject(data->interface, data->pid, status, "gattc write descriptor failed!");
+        FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc write descriptor failed!");
         bt_list_remove(gattc_info->userdata_list, data);
         return;
     }
@@ -1496,7 +1514,7 @@ static void subscribe_complete_callback(bt_instance_t* ins, gatt_status_t status
 
     if (status != GATT_STATUS_SUCCESS) {
         FEATURE_LOG_ERROR("%s, subscribe, status: %d", __func__, status);
-        FeaturePromiseReject(data->interface, data->pid, status, "gattc subscribe failed!");
+        FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc subscribe failed!");
         bt_list_remove(gattc_info->userdata_list, data);
         return;
     }
@@ -1550,7 +1568,7 @@ static void mtu_updated_callback(gattc_handle_t conn_handle, gatt_status_t statu
 
     if (status != GATT_STATUS_SUCCESS) {
         FEATURE_LOG_ERROR("%s, mtu, status: %d", __func__, status);
-        FeaturePromiseReject(data->interface, data->pid, status, "gattc mtu failed!");
+        FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc mtu failed!");
         bt_list_remove(gattc_info->userdata_list, data);
         return;
     }
@@ -1674,7 +1692,7 @@ error:
         gattc_set_conn_state(gattc_info, CONNECTION_STATE_DISCONNECTED);
 
     FEATURE_LOG_ERROR("%s, connect failed, status: %d", __func__, status);
-    FeaturePromiseReject(data->interface, data->pid, status, "gattc connect failed!");
+    FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc connect failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
 
@@ -1711,7 +1729,7 @@ error:
         gattc_set_conn_state(gattc_info, CONNECTION_STATE_DISCONNECTED);
 
     FEATURE_LOG_ERROR("%s, create connect failed, status: %d", __func__, status);
-    FeaturePromiseReject(data->interface, data->pid, status, "gattc create connect failed!");
+    FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc create connect failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
 #endif
@@ -1732,12 +1750,15 @@ void system_bluetooth_ble_GattClient_interface_gattc_connect(FeatureInterfaceHan
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_DISCONNECTED) {
         FEATURE_LOG_ERROR("%s, Repeated Attempt", __func__);
+        status = BT_STATUS_DONE;
         goto error;
     }
 
     data = (gattc_data_t*)calloc(1, sizeof(gattc_data_t));
-    if (!data)
+    if (!data) {
+        status = BT_STATUS_NOMEM;
         goto error;
+    }
 
     data->interface = handle;
     data->userdata_type = FEATURE_GATTC_CONN;
@@ -1747,6 +1768,7 @@ void system_bluetooth_ble_GattClient_interface_gattc_connect(FeatureInterfaceHan
     if (gattc_info->created) {
         if (!gattc_info->gattc->handle) {
             FEATURE_LOG_ERROR("%s, not create connect", __func__);
+            status = BT_STATUS_FAIL;
             goto error;
         }
         status = bt_gattc_feature_connect_async(gattc_info->gattc->handle, &gattc_info->gattc->remote_address,
@@ -1768,7 +1790,7 @@ error:
     if (data)
         bt_list_remove(gattc_info->userdata_list, data);
 
-    FeaturePromiseReject(handle, pid, status, "gattc connect failed!");
+    FeaturePromiseReject(handle, pid, feature_error_code_mapping(status), "gattc connect failed!");
 #else
     FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
 #endif
@@ -1793,7 +1815,7 @@ static void gattc_disconnect_cb(bt_instance_t* ins, bt_status_t status, void* us
         gattc_set_conn_state(gattc_info, CONNECTION_STATE_CONNECTED);
 
     FEATURE_LOG_ERROR("%s, disconnect failed, status: %d", __func__, status);
-    FeaturePromiseReject(data->interface, data->pid, status, "gattc disconnect failed!");
+    FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc disconnect failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
 #endif
@@ -1816,17 +1838,21 @@ void system_bluetooth_ble_GattClient_interface_gattc_disconnect(FeatureInterface
         return;
     } else if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, gattc not connected", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (!gattc_info->gattc->handle) {
         FEATURE_LOG_ERROR("%s, gattc handle is NULL", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     data = (gattc_data_t*)calloc(1, sizeof(gattc_data_t));
-    if (!data)
+    if (!data) {
+        status = BT_STATUS_NOMEM;
         goto error;
+    }
 
     data->interface = handle;
     data->pid = pid;
@@ -1846,7 +1872,7 @@ error:
     if (data)
         bt_list_remove(gattc_info->userdata_list, data);
 
-    FeaturePromiseReject(handle, pid, status, "gattc disconnect failed!");
+    FeaturePromiseReject(handle, pid, feature_error_code_mapping(status), "gattc disconnect failed!");
 #else
     FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
 #endif
@@ -1872,7 +1898,7 @@ static void gattc_get_service_cb(bt_instance_t* ins, bt_status_t status, void* u
 
 error:
     FEATURE_LOG_ERROR("%s, get service failed, status: %d", __func__, status);
-    FeaturePromiseReject(data->interface, data->pid, status, "gattc get service failed!");
+    FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc get service failed!");
     bt_list_free(data->cached_services);
     bt_list_remove(gattc_info->userdata_list, data);
 }
@@ -1893,17 +1919,21 @@ void system_bluetooth_ble_GattClient_interface_gattc_getServices(FeatureInterfac
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, gattc not connected", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (!gattc_info->gattc->handle) {
         FEATURE_LOG_ERROR("%s, gattc handle is null", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     data = (gattc_data_t*)calloc(1, sizeof(gattc_data_t));
-    if (!data)
+    if (!data) {
+        status = BT_STATUS_NOMEM;
         goto error;
+    }
 
     data->interface = handle;
     data->pid = pid;
@@ -1925,7 +1955,7 @@ error:
         bt_list_remove(gattc_info->userdata_list, data);
     }
 
-    FeaturePromiseReject(handle, pid, status, "gattc get service failed!");
+    FeaturePromiseReject(handle, pid, feature_error_code_mapping(status), "gattc get service failed!");
 #else
     FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
 #endif
@@ -1950,7 +1980,7 @@ static void gattc_read_characteristic_cb(bt_instance_t* ins, bt_status_t status,
 
 error:
     FEATURE_LOG_ERROR("%s, read characteristic failed, status: %d", __func__, status);
-    FeaturePromiseReject(data->interface, data->pid, status, "gattc read characteristic failed!");
+    FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc read characteristic failed!");
     bt_list_remove(gattc_info->userdata_list, data);
     return;
 }
@@ -1976,29 +2006,35 @@ void system_bluetooth_ble_GattClient_interface_gattc_readCharacteristicValue(Fea
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, gattc not connected", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (!gattc_info->gattc->handle) {
         FEATURE_LOG_ERROR("%s, gattc handle is NULL", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (get_valid_uuid128(uuid128, params->characteristic->characteristicUuid)) {
         FEATURE_LOG_ERROR("%s, Invalid Characteristic UUID", __func__);
+        status = BT_STATUS_PARM_INVALID;
         goto error;
     }
     bt_uuid128_create(&characteristic_uuid, uuid128);
 
     if (get_valid_uuid128(uuid128, params->characteristic->serviceUuid)) {
         FEATURE_LOG_ERROR("%s, Invalid Service UUID", __func__);
+        status = BT_STATUS_PARM_INVALID;
         goto error;
     }
     bt_uuid128_create(&service_uuid, uuid128);
 
     data = (gattc_data_t*)calloc(1, sizeof(gattc_data_t));
-    if (!data)
+    if (!data) {
+        status = BT_STATUS_NOMEM;
         goto error;
+    }
 
     data->interface = handle;
     data->pid = pid;
@@ -2017,7 +2053,7 @@ error:
     if (data)
         bt_list_remove(gattc_info->userdata_list, data);
 
-    FeaturePromiseReject(handle, pid, status, "gattc write characteristic failed!");
+    FeaturePromiseReject(handle, pid, feature_error_code_mapping(status), "gattc write characteristic failed!");
 #else
     FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
 #endif
@@ -2042,7 +2078,7 @@ static void gattc_read_descriptor_cb(bt_instance_t* ins, bt_status_t status, voi
 
 error:
     FEATURE_LOG_ERROR("%s, read descriptor, status: %d", __func__, status);
-    FeaturePromiseReject(data->interface, data->pid, status, "gattc read descriptor failed!");
+    FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc read descriptor failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
 #endif
@@ -2068,35 +2104,43 @@ void system_bluetooth_ble_GattClient_interface_gattc_readDescriptorValue(Feature
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, gattc not connected", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (!gattc_info->gattc->handle) {
         FEATURE_LOG_ERROR("%s, gattc handle is NULL", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (get_valid_uuid128(uuid128, params->descriptor->characteristicUuid)) {
         FEATURE_LOG_ERROR("%s, Invalid Descriptor UUID", __func__);
+        status = BT_STATUS_PARM_INVALID;
         goto error;
     }
     bt_uuid128_create(&characteristic_uuid, uuid128);
 
     if (get_valid_uuid128(uuid128, params->descriptor->serviceUuid)) {
         FEATURE_LOG_ERROR("%s, Invalid Service UUID", __func__);
+        status = BT_STATUS_PARM_INVALID;
         goto error;
     }
     bt_uuid128_create(&service_uuid, uuid128);
 
     if (get_valid_uuid128(uuid128, params->descriptor->descriptorUuid)) {
         FEATURE_LOG_ERROR("%s, Invalid Service UUID", __func__);
+        status = BT_STATUS_PARM_INVALID;
         goto error;
     }
     bt_uuid128_create(&descriptor_uuid, uuid128);
 
     data = (gattc_data_t*)calloc(1, sizeof(gattc_data_t));
-    if (!data)
+    if (!data) {
+        status = BT_STATUS_NOMEM;
         goto error;
+    }
+        
 
     data->interface = handle;
     data->pid = pid;
@@ -2115,7 +2159,7 @@ error:
     if (data)
         bt_list_remove(gattc_info->userdata_list, data);
 
-    FeaturePromiseReject(handle, pid, status, "gattc read descriptor failed!");
+    FeaturePromiseReject(handle, pid, feature_error_code_mapping(status), "gattc read descriptor failed!");
 #else
     FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
 #endif
@@ -2140,7 +2184,7 @@ static void gattc_write_char_cb(bt_instance_t* ins, bt_status_t status, void* us
 
 error:
     FEATURE_LOG_ERROR("%s, write characteristic failed, status: %d", __func__, status);
-    FeaturePromiseReject(data->interface, data->pid, status, "gattc write characteristic failed!");
+    FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc write characteristic failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
 #endif
@@ -2170,22 +2214,26 @@ void system_bluetooth_ble_GattClient_interface_gattc_writeCharacteristicValue(Fe
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, not connected", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (!gattc_info->gattc->handle) {
         FEATURE_LOG_ERROR("%s, gattc handle is NULL", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (get_valid_uuid128(uuid128, params->characteristic->characteristicUuid)) {
         FEATURE_LOG_ERROR("%s, Invalid Characteristic UUID", __func__);
+        status = BT_STATUS_PARM_INVALID;
         goto error;
     }
     bt_uuid128_create(&characteristic.uuid, uuid128);
 
     if (get_valid_uuid128(uuid128, params->characteristic->serviceUuid)) {
         FEATURE_LOG_ERROR("%s, Invalid Service UUID", __func__);
+        status = BT_STATUS_PARM_INVALID;
         goto error;
     }
     bt_uuid128_create(&characteristic.service_uuid, uuid128);
@@ -2196,6 +2244,7 @@ void system_bluetooth_ble_GattClient_interface_gattc_writeCharacteristicValue(Fe
     for (int i = 0; i < descriptor_len; i++) {
         if (get_valid_uuid128(uuid128, ((system_bluetooth_ble_BLEDescriptor**)descriptor_array->_element)[i]->descriptorUuid)) {
             FEATURE_LOG_ERROR("%s, Invalid Descriptor UUID", __func__);
+            status = BT_STATUS_PARM_INVALID;
             goto error;
         }
         bt_uuid128_create(&descriptor[i].uuid, uuid128);
@@ -2206,8 +2255,10 @@ void system_bluetooth_ble_GattClient_interface_gattc_writeCharacteristicValue(Fe
     }
 
     data = (gattc_data_t*)calloc(1, sizeof(gattc_data_t));
-    if (!data)
+    if (!data) {
+        status = BT_STATUS_NOMEM;
         goto error;
+    }
 
     data->interface = handle;
     data->pid = pid;
@@ -2226,7 +2277,7 @@ error:
     if (data)
         bt_list_remove(gattc_info->userdata_list, data);
 
-    FeaturePromiseReject(handle, pid, status, "gattc write characteristic failed!");
+    FeaturePromiseReject(handle, pid, feature_error_code_mapping(status), "gattc write characteristic failed!");
 #else
     FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
 #endif
@@ -2251,7 +2302,7 @@ static void gattc_write_desc_cb(bt_instance_t* ins, bt_status_t status, void* us
 
 error:
     FEATURE_LOG_ERROR("%s, write descriptor failed, status: %d", __func__, status);
-    FeaturePromiseReject(data->interface, data->pid, status, "gattc write descriptor failed!");
+    FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc write descriptor failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
 #endif
@@ -2276,28 +2327,33 @@ void system_bluetooth_ble_GattClient_interface_gattc_writeDescriptorValue(Featur
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, not connected", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (!gattc_info->gattc->handle) {
         FEATURE_LOG_ERROR("%s, gattc handle is NULL", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (get_valid_uuid128(uuid128, params->descriptor->descriptorUuid)) {
         FEATURE_LOG_ERROR("%s, Invalid Descriptor UUID", __func__);
+        status = BT_STATUS_PARM_INVALID;
         goto error;
     }
     bt_uuid128_create(&descriptor.uuid, uuid128);
 
     if (get_valid_uuid128(uuid128, params->descriptor->characteristicUuid)) {
         FEATURE_LOG_ERROR("%s, Invalid Characteristic UUID", __func__);
+        status = BT_STATUS_PARM_INVALID;
         goto error;
     }
     bt_uuid128_create(&descriptor.characteristic_uuid, uuid128);
 
     if (get_valid_uuid128(uuid128, params->descriptor->serviceUuid)) {
         FEATURE_LOG_ERROR("%s, Invalid Service UUID", __func__);
+        status = BT_STATUS_PARM_INVALID;
         goto error;
     }
     bt_uuid128_create(&descriptor.service_uuid, uuid128);
@@ -2308,8 +2364,10 @@ void system_bluetooth_ble_GattClient_interface_gattc_writeDescriptorValue(Featur
     descriptor.value_len = length;
 
     data = (gattc_data_t*)calloc(1, sizeof(gattc_data_t));
-    if (!data)
+    if (!data) {
+        status = BT_STATUS_NOMEM;
         goto error;
+    }
 
     data->interface = handle;
     data->pid = pid;
@@ -2328,7 +2386,7 @@ error:
     if (data)
         bt_list_remove(gattc_info->userdata_list, data);
 
-    FeaturePromiseReject(handle, pid, status, "gattc write descriptor failed!");
+    FeaturePromiseReject(handle, pid, feature_error_code_mapping(status), "gattc write descriptor failed!");
 #else
     FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
 #endif
@@ -2353,7 +2411,7 @@ static void gattc_set_mtu_cb(bt_instance_t* ins, bt_status_t status, void* userd
 
 error:
     FEATURE_LOG_ERROR("%s, gattc set mtu failed, status: %d", __func__, status);
-    FeaturePromiseReject(data->interface, data->pid, status, "gattc set mtu!");
+    FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc set mtu!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
 #endif
@@ -2375,17 +2433,22 @@ void system_bluetooth_ble_GattClient_interface_gattc_setBLEMtuSize(FeatureInterf
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, gattc not connected", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (!gattc_info->gattc->handle) {
         FEATURE_LOG_ERROR("%s, gattc handle is NULL", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     data = (gattc_data_t*)calloc(1, sizeof(gattc_data_t));
-    if (!data)
+    if (!data){
+        status = BT_STATUS_NOMEM;
         goto error;
+    }
+        
 
     data->interface = handle;
     data->pid = pid;
@@ -2404,7 +2467,7 @@ error:
     if (data)
         bt_list_remove(gattc_info->userdata_list, data);
 
-    FeaturePromiseReject(handle, pid, status, "gattc set mtu failed!");
+    FeaturePromiseReject(handle, pid, feature_error_code_mapping(status), "gattc set mtu failed!");
 #else
     FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
 #endif
@@ -2429,7 +2492,7 @@ static void gattc_set_notify_cb(bt_instance_t* ins, bt_status_t status, void* us
 
 error:
     FEATURE_LOG_ERROR("%s, set notify failed, status: %d", __func__, status);
-    FeaturePromiseReject(data->interface, data->pid, status, "gattc set notify failed!");
+    FeaturePromiseReject(data->interface, data->pid, feature_error_code_mapping(status), "gattc set notify failed!");
     bt_list_remove(gattc_info->userdata_list, data);
 }
 #endif
@@ -2453,29 +2516,35 @@ void system_bluetooth_ble_GattClient_interface_gattc_setNotifyCharacteristicChan
 
     if (gattc_info->gattc->conn_state != CONNECTION_STATE_CONNECTED) {
         FEATURE_LOG_ERROR("%s, gattc not connected", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (!gattc_info->gattc->handle) {
         FEATURE_LOG_ERROR("%s, gattc handle not found", __func__);
+        status = BT_STATUS_FAIL;
         goto error;
     }
 
     if (get_valid_uuid128(uuid128, params->characteristic->serviceUuid)) {
         FEATURE_LOG_ERROR("%s, Invalid service UUID", __func__);
+        status = BT_STATUS_PARM_INVALID;
         goto error;
     }
     bt_uuid128_create(&characteristic.service_uuid, uuid128);
 
     if (get_valid_uuid128(uuid128, params->characteristic->characteristicUuid)) {
         FEATURE_LOG_ERROR("%s, Invalid characteristic UUID", __func__);
+        status = BT_STATUS_PARM_INVALID;
         goto error;
     }
     bt_uuid128_create(&characteristic.uuid, uuid128);
 
     data = (gattc_data_t*)calloc(1, sizeof(gattc_data_t));
-    if (!data)
+    if (!data){
+        status = BT_STATUS_NOMEM;
         goto error;
+    }
 
     data->interface = handle;
     data->pid = pid;
@@ -2494,7 +2563,7 @@ error:
     if (data)
         bt_list_remove(gattc_info->userdata_list, data);
 
-    FeaturePromiseReject(handle, pid, status, "gattc set notify failed!");
+    FeaturePromiseReject(handle, pid, feature_error_code_mapping(status), "gattc set notify failed!");
 #else
     FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "gattc is not supported.");
 #endif

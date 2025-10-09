@@ -553,6 +553,48 @@ if(CONFIG_BLUETOOTH)
 
   list(APPEND CFLAGS -Wno-strict-prototypes)
 
+  if(CONFIG_BLUETOOTH_FEATURE)
+    set(FEATURE_TOP ${NUTTX_APPS_DIR}/frameworks/runtimes/feature)
+    list(APPEND INCDIR ${FEATURE_TOP}/include)
+    list(APPEND INCDIR
+         ${NUTTX_APPS_DIR}/frameworks/connectivity/bluetooth/feature/include)
+    list(APPEND INCDIR
+         ${NUTTX_APPS_DIR}/frameworks/runtimes/feature/include)
+
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_impl.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/feature_bluetooth_util.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_impl.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/src/feature_bluetooth_callback.c)
+
+    if(CONFIG_BLUETOOTH_A2DP_SINK)
+      list(APPEND CSRCS
+           ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_a2dpsink.c)
+      list(APPEND CSRCS
+           ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_a2dpsink_impl.c)
+    endif()
+    if(CONFIG_BLUETOOTH_AVRCP_CONTROL)
+      list(APPEND CSRCS
+           ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_avrcpcontrol.c)
+      list(APPEND CSRCS
+           ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_avrcpcontrol_impl.c)
+    endif()
+  elseif(CONFIG_BLUETOOTH_FEATURE_ASYNC)
+    set(FEATURE_TOP ${NUTTX_APPS_DIR}/frameworks/runtimes/feature)
+    list(APPEND INCDIR ${FEATURE_TOP}/include)
+    list(APPEND INCDIR
+         ${NUTTX_APPS_DIR}/frameworks/connectivity/bluetooth/feature/feature_async/include)
+
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/feature_async/src/bluetooth_impl.c)
+    list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/feature_async/src/feature_bluetooth_util.c)
+
+    if(CONFIG_BLUETOOTH_BLE_ADV)
+        list(APPEND CSRCS ${BLUETOOTH_DIR}/feature/feature_async/src/bluetooth_ble_impl.c)
+    endif()
+  else()
+  endif()
+
   nuttx_add_library(libbluetooth STATIC)
 
   # Add Applications

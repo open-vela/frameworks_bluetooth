@@ -609,6 +609,7 @@ NOEXPORTSRCS = $(ASRCS)$(CSRCS)$(CXXSRCS)$(MAINSRC)
 
 ifeq ($(CONFIG_BLUETOOTH_FEATURE),y)
 CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/feature/include
+CFLAGS    += ${INCDIR_PREFIX}$(APPDIR)/frameworks/runtimes/feature/include
 
 CSRCS     += feature/src/system_bluetooth.c
 CSRCS     += feature/src/system_bluetooth_impl.c
