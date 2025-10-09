@@ -25,7 +25,11 @@
 
 #define FEATURE_MANAGER_BLUETOOTH_DATA "bluetooth"
 
-bool js_event_cb_added();
+#define FEATURE_BT_NO_RESOURCES 10013
+#define FEATURE_BT_IPC_ERROR 10012
+#define FEATURE_BT_UNKNOWN_ERROR 10008
+#define FEATURE_BT_NOT_ENABLED 10001
+#define FEATURE_BT_NOT_FOUND 10014
 
 typedef enum {
     STATE_NON_SCAN = 0,
@@ -123,8 +127,9 @@ typedef struct {
 } feature_bluetooth_features_info_t;
 
 char* StringToFtString(const char* str);
+bool js_event_cb_added();
 void feature_bluetooth_post_task(FeatureInstanceHandle handle, FtCallbackId callback_id, void* data);
-
+FeatureErrorCode bt_status_to_feature_error(uint8_t status);
 void feature_bluetooth_init_bt_ins_async(FeatureProtoHandle handle);
 void feature_bluetooth_uninit_bt_ins_async(void* data);
 bt_instance_t* feature_bluetooth_get_bt_ins(FeatureInstanceHandle feature);

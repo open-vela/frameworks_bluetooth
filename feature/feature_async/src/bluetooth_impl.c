@@ -74,7 +74,7 @@ static void get_addr_cb(bt_instance_t* ins, bt_status_t status, bt_address_t* ad
         FeaturePromiseResolve(data->feature_ins, data->pid, &ret_obj);
         ft_free_value(ft_ctx, ret_obj);
     } else {
-        FeaturePromiseReject(data->feature_ins, data->pid, status, "get address failed!");
+        FeaturePromiseReject(data->feature_ins, data->pid, bt_status_to_feature_error(status), "get address failed!");
     }
 
     FeatureFreeInstanceHandle(data->feature_ins);
@@ -98,7 +98,7 @@ void system_bluetooth_wrap_getAddressAsync(FeatureInstanceHandle feature, Append
     if (status == BT_STATUS_SUCCESS)
         return;
 
-    FeaturePromiseReject(feature, pid, status, "get address failed!");
+    FeaturePromiseReject(feature, pid, bt_status_to_feature_error(status), "get address failed!");
     FeatureFreeInstanceHandle(data->feature_ins);
     free(data);
 }
