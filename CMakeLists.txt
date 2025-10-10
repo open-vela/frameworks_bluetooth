@@ -697,21 +697,23 @@ if(CONFIG_BLUETOOTH)
 
     target_include_directories(libbluetooth PRIVATE ${CMAKE_CURRENT_LIST_DIR}/feature/include)
 
-    set(JIDL_PATHS ${BLUETOOTH_DIR}/feature/jdil/bluetooth.jidl
-                   ${BLUETOOTH_DIR}/feature/jdil/bluetooth_bt.jidl)
-
+    set(JIDL_PATHS ${BLUETOOTH_DIR}/feature/jidl/bluetooth.jidl
+                   ${BLUETOOTH_DIR}/feature/jidl/bluetooth_bt.jidl)
+    set(JIDL_OUT_NAMES system_bluetooth system_bluetooth_bt)
     set(FEATURE_NAMES system_bluetooth system_bluetooth_bt)
 
     if(CONFIG_BLUETOOTH_A2DP_SINK)
-      list(APPEND FEATURE_SRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_a2dpsink_impl.c)
-      list(APPEND JIDL_PATHS ${BLUETOOTH_DIR}/feature/jdil/bluetooth_a2dpsink.jidl)
-      list(APPEND FEATURE_NAMES system_bluetooth_a2dpsink)
+      list(APPEND FEATURE_SRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_a2dpsink_impl.c)
+      list(APPEND JIDL_PATHS ${BLUETOOTH_DIR}/feature/jidl/bluetooth_bt_a2dpsink.jidl)
+      list(APPEND FEATURE_NAMES system_bluetooth_bt_a2dpsink)
+      list(APPEND JIDL_OUT_NAMES system_bluetooth_bt_a2dpsink)
     endif()
 
     if(CONFIG_BLUETOOTH_AVRCP_CONTROL)
-      list(APPEND FEATURE_SRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_avrcpcontrol_impl.c)
-      list(APPEND JIDL_PATHS ${BLUETOOTH_DIR}/feature/jdil/bluetooth_avrcpcontrol.jidl)
-      list(APPEND FEATURE_NAMES system_bluetooth_avrcpcontrol)
+      list(APPEND FEATURE_SRCS ${BLUETOOTH_DIR}/feature/src/system_bluetooth_bt_avrcpcontrol_impl.c)
+      list(APPEND JIDL_PATHS ${BLUETOOTH_DIR}/feature/jidl/bluetooth_bt_avrcpcontrol.jidl)
+      list(APPEND FEATURE_NAMES system_bluetooth_bt_avrcpcontrol)
+      list(APPEND JIDL_OUT_NAMES system_bluetooth_bt_avrcpcontrol)
     endif()
 
     nuttx_add_jidl(
@@ -723,12 +725,19 @@ if(CONFIG_BLUETOOTH)
       ${JIDL_PATHS}
       FEATURE_NAMES
       ${FEATURE_NAMES}
+      JIDL_OUT_NAMES
+      ${JIDL_OUT_NAMES}
       OUT_SRC_EXT
       c)
   elseif(CONFIG_BLUETOOTH_FEATURE_ASYNC)
-    include(nuttx_add_jidl)
-    set(PY_SCRIPT ${FEATURE_TOP}/tools/jidl/jsongensource.py)
-    set(BINARY_EXT_MODULES_DIR ${CMAKE_BINARY_DIR}/feature/modules/)
+    set(ASYNC_FEATURE_SRCS ${BLUETOOTH_DIR}/feature/feature_async/src/bluetooth_impl.c
+                           ${BLUETOOTH_DIR}/feature/feature_async/src/feature_bluetooth_util.c
+                           ${BLUETOOTH_DIR}/feature/feature_async/src/bluetooth_ble_impl.c)
+
+    target_include_directories(libbluetooth PRIVATE ${CMAKE_CURRENT_LIST_DIR}/feature/feature_async/include)
+
+    set(ASYNC_FEATURE_NAMES system_bluetooth system_bluetooth_ble)
+
     set(JIDL_PATHS ${BLUETOOTH_DIR}/feature/feature_async/jidl/bluetooth.jidl)
     list(APPEND JIDL_PATHS
         ${BLUETOOTH_DIR}/feature/feature_async/jidl/bluetooth_ble.jidl)
@@ -740,12 +749,12 @@ if(CONFIG_BLUETOOTH)
     nuttx_add_jidl(
       TARGET
       libbluetooth
-      JIDL_SCRIPT
-      ${PY_SCRIPT}
-      JIDL_OUT_DIR
-      ${BINARY_EXT_MODULES_DIR}
+      FEATURE_SRCS
+      ${ASYNC_FEATURE_SRCS}
       JIDLS
       ${JIDL_PATHS}
+      FEATURE_NAMES
+      ${ASYNC_FEATURE_NAMES}
       OUT_SRC_EXT
       c)
   else()
