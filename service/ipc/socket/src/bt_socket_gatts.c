@@ -257,20 +257,27 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
             &packet->gatts_pl._bt_gatts_disconnect.addr);
         break;
     case BT_GATT_SERVER_ADD_ATTR_TABLE: {
+        static gatt_srv_db_t g_srv_db;
         uint8_t* raw_data = (uint8_t*)packet->gatts_pl._bt_gatts_add_attr_table.attr_db;
-        gatt_srv_db_t srv_db;
         gatt_attr_db_t* attr_inst;
+        uint32_t attr_pack_num;
 
-        srv_db.attr_num = packet->gatts_pl._bt_gatts_add_attr_table.attr_num;
-        srv_db.attr_db = zalloc(sizeof(gatt_attr_db_t) * packet->gatts_pl._bt_gatts_add_attr_table.attr_num);
-        if (!srv_db.attr_db) {
-            packet->gatts_r.status = BT_STATUS_NO_RESOURCES;
-            break;
+        if (!g_srv_db.attr_db) {
+            g_srv_db.attr_num = packet->gatts_pl._bt_gatts_add_attr_table.attr_num;
+            g_srv_db.attr_db = zalloc(sizeof(gatt_attr_db_t) * packet->gatts_pl._bt_gatts_add_attr_table.attr_num);
+            if (!g_srv_db.attr_db) {
+                packet->gatts_r.status = BT_STATUS_NO_RESOURCES;
+                break;
+            }
         }
 
-        attr_inst = srv_db.attr_db;
-        raw_data += sizeof(packet->gatts_pl._bt_gatts_add_attr_table.attr_db[0]) * srv_db.attr_num;
-        for (int i = 0; i < srv_db.attr_num; i++, attr_inst++) {
+        attr_pack_num = (packet->gatts_pl._bt_gatts_add_attr_table.attr_num - packet->gatts_pl._bt_gatts_add_attr_table.attr_num_offset)
+                > GATTS_MAX_ATTRIBUTE_NUM
+            ? GATTS_MAX_ATTRIBUTE_NUM
+            : (packet->gatts_pl._bt_gatts_add_attr_table.attr_num - packet->gatts_pl._bt_gatts_add_attr_table.attr_num_offset);
+        attr_inst = g_srv_db.attr_db + packet->gatts_pl._bt_gatts_add_attr_table.attr_num_offset;
+        raw_data += sizeof(packet->gatts_pl._bt_gatts_add_attr_table.attr_db[0]) * attr_pack_num;
+        for (int i = 0; i < attr_pack_num; i++, attr_inst++) {
             memcpy(&attr_inst->uuid, &packet->gatts_pl._bt_gatts_add_attr_table.attr_db[i].uuid,
                 sizeof(attr_inst->uuid));
             attr_inst->handle = packet->gatts_pl._bt_gatts_add_attr_table.attr_db[i].handle;
@@ -289,10 +296,18 @@ void bt_socket_server_gatts_process(service_poll_t* poll, int fd,
             }
         }
 
+        if (packet->gatts_pl._bt_gatts_add_attr_table.attr_num_offset + attr_pack_num != g_srv_db.attr_num) {
+            BT_LOGD("attribute not all, offset = %" PRIu32 ", attr_num = %" PRIu32 "",
+                packet->gatts_pl._bt_gatts_add_attr_table.attr_num_offset, g_srv_db.attr_num);
+            packet->gatts_r.status = BT_STATUS_SUCCESS;
+            break;
+        }
+
         packet->gatts_r.status = BTSYMBOLS(bt_gatts_add_attr_table)(
             INT2PTR(gatts_handle_t) packet->gatts_pl._bt_gatts_add_attr_table.handle,
-            &srv_db);
-        free(srv_db.attr_db);
+            &g_srv_db);
+        free(g_srv_db.attr_db);
+        g_srv_db.attr_db = NULL;
 
         break;
     }

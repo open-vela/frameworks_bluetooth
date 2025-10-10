@@ -117,6 +117,7 @@ BT_GATT_SERVER_MESSAGE_START,
 
         struct {
             uint64_t handle; /* gatts_handle_t */
+            int32_t attr_num_offset;
             int32_t attr_num;
             struct {
                 bt_uuid_t uuid;
