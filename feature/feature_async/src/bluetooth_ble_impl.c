@@ -620,7 +620,6 @@ error:
 #else
     FeaturePromiseReject(handle, pid, BT_STATUS_FAIL, "advertising is not supported.");
 #endif
-
 }
 
 void system_bluetooth_ble_Advertiser_interface_adv_stopAdvertising(FeatureInterfaceHandle handle, AppendData append_data)
