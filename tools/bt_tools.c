@@ -587,14 +587,14 @@ static int set_le_iocap_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_PARAM;
     }
 
-    uint32_t iocap = *argv[0] - '0';
+    int iocap = *argv[0] - '0';
     if (iocap < BT_IO_CAPABILITY_DISPLAYONLY || iocap > BT_IO_CAPABILITY_KEYBOARDDISPLAY)
         return CMD_INVALID_PARAM;
 
     if (bt_adapter_set_le_io_capability(handle, iocap) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
-    PRINT("IO Capability:%" PRIu32 " set success", iocap);
+    PRINT("IO Capability:%d set success", iocap);
     return CMD_OK;
 }
 
