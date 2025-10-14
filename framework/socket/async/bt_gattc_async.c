@@ -68,7 +68,7 @@ static void gattc_create_connect_reply(bt_instance_t* ins, bt_message_packet_t* 
     if (packet->gattc_r.status != BT_STATUS_SUCCESS)
         goto error;
 
-    gattc_remote->cookie = INT2PTR(void*) packet->gattc_r.handle;
+    gattc_remote->cookie = PTR2INT(uint64_t) packet->gattc_r.handle;
     gattc_remote->user_phandle = data->user_phandle;
     bt_list_add_tail(priv->gattc_remote_list, gattc_remote);
     *(data->user_phandle) = gattc_remote;
