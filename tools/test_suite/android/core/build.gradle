@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'com.openvela.bluetoothtest'
+    namespace 'com.openvela.bluetooth'
     compileSdkVersion 36
 
     defaultConfig {
