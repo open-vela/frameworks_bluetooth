@@ -1,8 +1,14 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+//apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 android {
     namespace 'com.openvela.bluetoothtest'
-    compileSdkVersion 36
+    compileSdk {
+        version = release(36)
+    }
 
     defaultConfig {
         applicationId "com.openvela.bluetoothtest"
@@ -16,8 +22,15 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_25
-        targetCompatibility JavaVersion.VERSION_25
+        sourceCompatibility JavaVersion.VERSION_24
+        targetCompatibility JavaVersion.VERSION_24
+    }
+
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_24)
+            freeCompilerArgs.add("-Xjvm-default=all")
+        }
     }
 
     buildTypes {
@@ -47,6 +60,5 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.12.0'
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
-
 }
 
