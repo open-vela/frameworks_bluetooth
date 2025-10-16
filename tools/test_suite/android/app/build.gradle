@@ -2,12 +2,16 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
-//apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 android {
     namespace 'com.openvela.bluetoothtest'
     compileSdk {
         version = release(36)
+    }
+
+    buildFeatures {
+        compose true
     }
 
     defaultConfig {
