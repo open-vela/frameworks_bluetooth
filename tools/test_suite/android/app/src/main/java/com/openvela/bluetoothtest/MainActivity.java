@@ -59,15 +59,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void requestBluetoothPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            String[] necessaryBluetoothPermissioins = {
+            String[] necessaryBluetoothPermissions = {
                     Manifest.permission.BLUETOOTH_CONNECT,
                     Manifest.permission.BLUETOOTH_SCAN,
                     Manifest.permission.BLUETOOTH_ADVERTISE,
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.ACCESS_FINE_LOCATION};
-            if (necessaryBluetoothPermissioins.length > 0) {
+            if (necessaryBluetoothPermissions.length > 0) {
                 Log.d(TAG, "Request Bluetooth permissions");
-                ActivityCompat.requestPermissions(this, necessaryBluetoothPermissioins, 1);
+                ActivityCompat.requestPermissions(this, necessaryBluetoothPermissions, 1);
             }
         }
     }
