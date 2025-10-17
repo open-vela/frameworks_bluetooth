@@ -537,13 +537,13 @@ static int insecure_connect_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_addr_str2ba(argv[0], &addr) < 0)
+    if (bt_addr_str2ba(argv[1], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    scn = atoi(argv[1]);
+    scn = atoi(argv[2]);
 
     if (argc == 3)
-        uuid = strtol(argv[2], NULL, 16);
+        uuid = strtol(argv[3], NULL, 16);
     else
         uuid = BT_UUID_SERVCLASS_SERIAL_PORT;
 
