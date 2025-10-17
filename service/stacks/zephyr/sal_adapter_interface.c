@@ -485,7 +485,7 @@ static bool zblue_inquiry_eir_name(const uint8_t* eir, int len, char* name)
 
 static void zblue_on_discovery_recv_cb(const struct bt_br_discovery_result* results)
 {
-    bt_discovery_result_t device;
+    bt_discovery_result_t device = { 0 };
 
     memcpy(device.addr.addr, &results->addr, 6);
     device.rssi = results->rssi;
