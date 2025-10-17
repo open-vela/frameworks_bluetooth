@@ -55,7 +55,7 @@ static int mcp_read_remote_info(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    uint8_t opcode = atoi(argv[1]);
+    uint8_t opcode = strtol(argv[1], NULL, 16);
     if (bt_lea_mcp_read_info(handle, &addr, opcode) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
@@ -71,8 +71,8 @@ static int mcp_media_control_request(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    uint32_t opcode = atoi(argv[1]);
-    int32_t n = atoi(argv[2]);
+    uint32_t opcode = strtol(argv[1], NULL, 16);
+    int32_t n = strtol(argv[2], NULL, 16);
 
     if (bt_lea_mcp_media_control_request(handle, &addr, opcode, n) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -89,8 +89,8 @@ static int mcp_search_control_request(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    uint8_t number = atoi(argv[1]);
-    uint32_t type = atoi(argv[2]);
+    uint8_t number = strtol(argv[1], NULL, 16);
+    uint32_t type = strtol(argv[2], NULL, 16);
     uint8_t* parameter = (uint8_t*)strdup(argv[3]);
 
     if (bt_lea_mcp_search_control_request(handle, &addr, number, type, parameter) != BT_STATUS_SUCCESS)

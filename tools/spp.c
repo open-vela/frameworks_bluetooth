@@ -465,7 +465,7 @@ static int start_server_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint16_t scn = atoi(argv[1]);
+    uint16_t scn = strtol(argv[1], NULL, 16);
     if (argc == 2)
         uuid = strtol(argv[2], NULL, 16);
     else
@@ -487,7 +487,7 @@ static int stop_server_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint16_t scn = atoi(argv[1]);
+    uint16_t scn = strtol(argv[1], NULL, 16);
     bt_spp_server_stop(handle, spp_app_handle, scn);
 
     return CMD_OK;
@@ -507,7 +507,7 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[1], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    scn = atoi(argv[2]);
+    scn = strtol(argv[2], NULL, 16);
 
     if (argc == 3)
         uuid = strtol(argv[3], NULL, 16);
@@ -557,7 +557,7 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     }
 
     msg->handle = handle;
-    msg->port = atoi(argv[2]);
+    msg->port = strtol(argv[2], NULL, 16);
 
     PRINT("%s, address:%s port:%d", __func__, argv[1], msg->port);
     do_in_thread_loop(&spp_thread_loop, spp_disconnect, msg);
@@ -601,7 +601,7 @@ static int write_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    port = atoi(argv[1]);
+    port = strtol(argv[1], NULL, 16);
     buf = (uint8_t*)strdup(argv[2]);
 
     spp_cmd_t* msg = malloc(sizeof(spp_cmd_t));
@@ -625,8 +625,8 @@ static int speed_test_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    port = atoi(argv[1]);
-    times = atoi(argv[2]);
+    port = strtol(argv[1], NULL, 16);
+    times = strtol(argv[2], NULL, 16);
     if (port < 0 || times < 0)
         return CMD_INVALID_PARAM;
 
@@ -665,19 +665,19 @@ static int ping_test_cmd(void* handle, int argc, char* argv[])
         != -1) {
         switch (opt) {
         case 'd':
-            delay = atoi(optarg);
+            delay = strtol(optarg, NULL, 16);
             break;
         case 'c':
-            count = atoi(optarg);
+            count = strtol(optarg, NULL, 16);
             break;
         case 't':
-            timeout = atoi(optarg);
+            timeout = strtol(optarg, NULL, 16);
             break;
         case 's':
-            size = atoi(optarg);
+            size = strtol(optarg, NULL, 16);
             break;
         case 'p':
-            port = atoi(optarg);
+            port = strtol(optarg, NULL, 16);
             break;
         default:
             PRINT("%s, default opt:%c, arg:%s", __func__, opt, optarg);

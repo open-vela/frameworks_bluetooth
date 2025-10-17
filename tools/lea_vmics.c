@@ -56,7 +56,7 @@ static int vcs_volume_set(void* handle, int argc, char** argv)
         return CMD_PARAM_NOT_ENOUGH;
     }
 
-    int vol = atoi(argv[0]);
+    int vol = strtol(argv[0], NULL, 16);
     if (bt_lea_vcs_volume_set(handle, vol) != BT_STATUS_SUCCESS) {
         return CMD_ERROR;
     }
@@ -69,7 +69,7 @@ static int vcs_mute_set(void* handle, int argc, char** argv)
         return CMD_PARAM_NOT_ENOUGH;
     }
 
-    int mute = atoi(argv[0]);
+    int mute = strtol(argv[0], NULL, 16);
     if (bt_lea_vcs_mute_set(handle, mute) != BT_STATUS_SUCCESS) {
         return CMD_ERROR;
     }
@@ -82,7 +82,7 @@ static int vcs_vol_flags_set(void* handle, int argc, char** argv)
         return CMD_PARAM_NOT_ENOUGH;
     }
 
-    int flags = atoi(argv[0]);
+    int flags = strtol(argv[0], NULL, 16);
     if (bt_lea_vcs_volume_flags_set(handle, flags) != BT_STATUS_SUCCESS) {
         return CMD_ERROR;
     }
@@ -95,7 +95,7 @@ static int mics_mute_set(void* handle, int argc, char** argv)
         return CMD_PARAM_NOT_ENOUGH;
     }
 
-    int mute = atoi(argv[0]);
+    int mute = strtol(argv[0], NULL, 16);
     if (bt_lea_mics_mute_set(handle, mute) != BT_STATUS_SUCCESS) {
         return CMD_ERROR;
     }

@@ -148,12 +148,12 @@ static int send_passthrough_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int cmd = atoi(argv[1]);
+    int cmd = strtol(argv[1], NULL, 16);
     if (cmd > PASSTHROUGH_CMD_ID_RESERVED || cmd < 0) {
         return CMD_INVALID_PARAM;
     }
 
-    int op = atoi(argv[2]);
+    int op = strtol(argv[2], NULL, 16);
     if (op != 0 && op != 1) {
         return CMD_INVALID_PARAM;
     }
@@ -228,8 +228,8 @@ static int register_notification(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int event = atoi(argv[1]);
-    int interval = atoi(argv[2]);
+    int event = strtol(argv[1], NULL, 16);
+    int interval = strtol(argv[2], NULL, 16);
 
     if (bt_avrcp_control_register_notification(handle, &addr, event, interval) != BT_STATUS_SUCCESS)
         return CMD_ERROR;

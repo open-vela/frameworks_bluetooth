@@ -240,7 +240,7 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(conn_id);
 
     bt_address_t addr;
@@ -248,7 +248,7 @@ static int connect_cmd(void* handle, int argc, char* argv[])
         return CMD_INVALID_ADDR;
 
     if (argc >= 3) {
-        addr_type = atoi(argv[2]);
+        addr_type = strtol(argv[2], NULL, 16);
         if (addr_type > BT_LE_ADDR_TYPE_ANONYMOUS || addr_type < BT_LE_ADDR_TYPE_PUBLIC) {
             PRINT("Invalid address type");
             return CMD_INVALID_OPT;
@@ -266,7 +266,7 @@ static int disconnect_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(conn_id);
 
     if (bt_gattc_disconnect_async(g_gattc_devies[conn_id].handle, status_cb, NULL) != BT_STATUS_SUCCESS)
@@ -280,7 +280,7 @@ static int discover_services_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(conn_id);
 
     bt_uuid_t* uuid_ptr = NULL;
@@ -303,7 +303,7 @@ static int read_request_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(conn_id);
 
     uint16_t attr_handle = strtol(argv[1], NULL, 16);
@@ -319,7 +319,7 @@ static int write_cmd(void* handle, int argc, char* argv[])
     if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     int len, i;
     uint8_t* value = NULL;
     CHECK_CONNCTION_ID(conn_id);
@@ -364,7 +364,7 @@ static int write_request_cmd(void* handle, int argc, char* argv[])
     if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     int len, i;
     uint8_t* value = NULL;
     CHECK_CONNCTION_ID(conn_id);
@@ -414,11 +414,11 @@ static int enable_cccd_cmd(void* handle, int argc, char* argv[])
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(conn_id);
 
     uint16_t attr_handle = strtol(argv[1], NULL, 16);
-    uint16_t ccc_value = atoi(argv[2]);
+    uint16_t ccc_value = strtol(argv[2], NULL, 16);
 
     if (bt_gattc_subscribe_async(g_gattc_devies[conn_id].handle, attr_handle, ccc_value, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -431,7 +431,7 @@ static int disable_cccd_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(conn_id);
 
     uint16_t attr_handle = strtol(argv[1], NULL, 16);
@@ -447,10 +447,10 @@ static int exchange_mtu_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(conn_id);
 
-    uint32_t mtu = atoi(argv[1]);
+    uint32_t mtu = strtol(argv[1], NULL, 16);
 
     if (bt_gattc_exchange_mtu_async(g_gattc_devies[conn_id].handle, mtu, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -463,15 +463,15 @@ static int update_conn_cmd(void* handle, int argc, char* argv[])
     if (argc < 7)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(conn_id);
 
-    uint32_t min_interval = atoi(argv[1]);
-    uint32_t max_interval = atoi(argv[2]);
-    uint32_t latency = atoi(argv[3]);
-    uint32_t timeout = atoi(argv[4]);
-    uint32_t min_connection_event_length = atoi(argv[5]);
-    uint32_t max_connection_event_length = atoi(argv[6]);
+    uint32_t min_interval = strtol(argv[1], NULL, 16);
+    uint32_t max_interval = strtol(argv[2], NULL, 16);
+    uint32_t latency = strtol(argv[3], NULL, 16);
+    uint32_t timeout = strtol(argv[4], NULL, 16);
+    uint32_t min_connection_event_length = strtol(argv[5], NULL, 16);
+    uint32_t max_connection_event_length = strtol(argv[6], NULL, 16);
 
     if (bt_gattc_update_connection_parameter_async(g_gattc_devies[conn_id].handle, min_interval, max_interval, latency,
             timeout, min_connection_event_length, max_connection_event_length, status_cb, NULL)
@@ -486,7 +486,7 @@ static int read_phy_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(conn_id);
 
     if (bt_gattc_read_phy_async(g_gattc_devies[conn_id].handle, status_cb, NULL) != BT_STATUS_SUCCESS)
@@ -500,11 +500,11 @@ static int update_phy_cmd(void* handle, int argc, char* argv[])
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(conn_id);
 
-    int tx = atoi(argv[1]);
-    int rx = atoi(argv[2]);
+    int tx = strtol(argv[1], NULL, 16);
+    int rx = strtol(argv[2], NULL, 16);
 
     if (bt_gattc_update_phy_async(g_gattc_devies[conn_id].handle, tx, rx, status_cb, NULL) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -517,7 +517,7 @@ static int read_rssi_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(conn_id);
 
     if (bt_gattc_read_rssi_async(g_gattc_devies[conn_id].handle, status_cb, NULL) != BT_STATUS_SUCCESS)
@@ -531,10 +531,10 @@ static int throughput_cmd(void* handle, int argc, char* argv[])
     if (argc < 3)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int conn_id = atoi(argv[0]);
+    int conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(conn_id);
 
-    int32_t test_time = atoi(argv[2]);
+    int32_t test_time = strtol(argv[2], NULL, 16);
     if (test_time <= 0)
         return CMD_INVALID_OPT;
 
@@ -775,7 +775,7 @@ static int delete_cmd(void* handle, int argc, char* argv[])
         return CMD_PARAM_NOT_ENOUGH;
 
     int* conn_id = (int*)malloc(sizeof(int));
-    *conn_id = atoi(argv[0]);
+    *conn_id = strtol(argv[0], NULL, 16);
     CHECK_CONNCTION_ID(*conn_id);
 
     if (bt_gattc_delete_connect_async(g_gattc_devies[(*conn_id)].handle, delete_connect_cb, conn_id) != BT_STATUS_SUCCESS) {

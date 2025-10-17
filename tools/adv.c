@@ -210,7 +210,7 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
             PRINT("adv type: %s", optarg);
             break;
         case 'i': {
-            int32_t interval = atoi(optarg);
+            int32_t interval = strtol(optarg, NULL, 16);
             if (interval < 0x20 || interval > 0x4000) {
                 PRINT("error interval, range must in 0x20~0x4000");
                 return CMD_INVALID_PARAM;
@@ -228,7 +228,7 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
             PRINT("adv appearance: 0x%04x ", appearance);
         }
         case 'p': {
-            int32_t power = atoi(optarg);
+            int32_t power = strtol(optarg, NULL, 16);
             if (power < -20 || power > 10) {
                 PRINT("error tx power, range must in -20~10");
                 return CMD_INVALID_PARAM;
@@ -238,7 +238,7 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
             PRINT("tx_power: %" PRId32 " dBm", power);
         } break;
         case 'c': {
-            int32_t channel = atoi(optarg);
+            int32_t channel = strtol(optarg, NULL, 16);
             if (channel != 0 && channel != 37 && channel != 38 && channel != 39) {
                 PRINT("error channel selected:%s, please choose \
                        one from 37,38,30, 0 means default",
@@ -274,7 +274,7 @@ static int start_adv_cmd(void* handle, int argc, char* argv[])
             PRINT("filter policy: %s", optarg);
         } break;
         case 'd': {
-            int32_t duration = atoi(optarg);
+            int32_t duration = strtol(optarg, NULL, 16);
             if (duration < 0 || duration > 0xFFFF) {
                 PRINT("error duration, range in 0x0000~0xFFFF");
                 return CMD_INVALID_PARAM;
@@ -431,7 +431,7 @@ static int stop_adv_cmd(void* handle, int argc, char* argv[])
         != -1) {
         switch (opt) {
         case 'i': {
-            int id = atoi(optarg);
+            int id = strtol(optarg, NULL, 16);
             if (id < 0) {
                 PRINT("Invalid ID:%d", id);
                 return CMD_INVALID_PARAM;

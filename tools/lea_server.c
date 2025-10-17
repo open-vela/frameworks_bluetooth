@@ -64,8 +64,8 @@ static int start_announce_cmd(void* handle, int argc, char* argv[])
 
     adv_size = sizeof(adv_data) / sizeof(adv_data[0]);
     md_size = sizeof(md_data) / sizeof(md_data[0]);
-    adv_id = atoi(argv[0]);
-    announce_type = atoi(argv[1]);
+    adv_id = strtol(argv[0], NULL, 16);
+    announce_type = strtol(argv[1], NULL, 16);
 
     if (bt_lea_server_start_announce(handle, adv_id, announce_type, adv_data, adv_size, md_data, md_size) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -78,7 +78,7 @@ static int stop_announce_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_lea_server_stop_announce(handle, atoi(argv[0])) != BT_STATUS_SUCCESS)
+    if (bt_lea_server_stop_announce(handle, strtol(argv[0], NULL, 16)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;

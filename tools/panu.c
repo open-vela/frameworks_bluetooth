@@ -70,8 +70,8 @@ static int connect_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    dst_role = atoi(argv[1]);
-    src_role = atoi(argv[2]);
+    dst_role = strtol(argv[1], NULL, 16);
+    src_role = strtol(argv[2], NULL, 16);
     if (bt_pan_connect(handle, &addr, dst_role, src_role) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 

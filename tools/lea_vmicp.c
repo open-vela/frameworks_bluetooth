@@ -98,7 +98,7 @@ static int vcc_vol_change(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int dir = atoi(argv[1]);
+    int dir = strtol(argv[1], NULL, 16);
 
     if (bt_lea_vmicp_change_volume(handle, &addr, dir) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -115,7 +115,7 @@ static int vcc_vol_unmute_change(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int dir = atoi(argv[1]);
+    int dir = strtol(argv[1], NULL, 16);
 
     if (bt_lea_vmicp_change_unmute_volume(handle, &addr, dir) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -132,7 +132,7 @@ static int vcc_abs_vol_set(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int volume = atoi(argv[1]);
+    int volume = strtol(argv[1], NULL, 16);
 
     if (bt_lea_vmicp_set_volume(handle, &addr, volume) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -149,7 +149,7 @@ static int vcc_mute_state_set(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int mute = atoi(argv[1]);
+    int mute = strtol(argv[1], NULL, 16);
 
     if (bt_lea_vmicp_set_volume_mute(handle, &addr, mute) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -181,7 +181,7 @@ static int micc_mute_state_set(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int mute = atoi(argv[1]);
+    int mute = strtol(argv[1], NULL, 16);
 
     if (bt_lea_vmicp_set_mic_mute(handle, &addr, mute) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
