@@ -484,6 +484,7 @@ endif
 
 # framework/service/stack/tools dependence
 CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/framework/include
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/frameworks/connectivity/bluetooth/framework/common
 
 ifneq ($(CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME)$(CONFIG_OFONO),)
 	CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/external/dbus/dbus

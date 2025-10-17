@@ -465,6 +465,7 @@ if(CONFIG_BLUETOOTH)
   endif()
 
   list(APPEND INCDIR ${BLUETOOTH_DIR}/framework/include)
+  list(APPEND INCDIR ${BLUETOOTH_DIR}/framework/common)
 
   if(CONFIG_LIB_DBUS_RPMSG_SERVER_CPUNAME OR CONFIG_OFONO)
     list(APPEND INCDIR ${NUTTX_APPS_DIR}/external/dbus/dbus)
