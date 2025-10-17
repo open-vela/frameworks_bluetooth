@@ -154,7 +154,7 @@ static int set_policy_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    switch (atoi(argv[1])) {
+    switch (strtol(argv[1], NULL, 10)) {
     case CONNECTION_POLICY_ALLOWED:
         policy = CONNECTION_POLICY_ALLOWED;
         break;
@@ -269,7 +269,7 @@ static int dial_memory_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    if (bt_hfp_hf_dial_memory(handle, &addr, atoi(argv[1])) != BT_STATUS_SUCCESS)
+    if (bt_hfp_hf_dial_memory(handle, &addr, strtoul(argv[1], NULL, 10)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -295,7 +295,7 @@ static int accept_call_cmd(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int flag = atoi(argv[1]);
+    int flag = strtol(argv[1], NULL, 10);
     if (flag < 0 || flag > 2)
         return CMD_INVALID_PARAM;
 
@@ -363,7 +363,7 @@ static int control_call_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int chld = atoi(argv[1]);
+    int chld = strtol(argv[1], NULL, 10);
     if (chld < 0 || chld > 3)
         return CMD_INVALID_PARAM;
 
@@ -452,7 +452,7 @@ static int update_battery_level_cmd(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int level = atoi(argv[1]);
+    int level = strtol(argv[1], NULL, 10);
     if (level < 0 || level > 100)
         return CMD_INVALID_PARAM;
 

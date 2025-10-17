@@ -140,7 +140,7 @@ static int mask_cmd(void* handle, int argc, char* argv[])
     int mask = property_get_int32("persist.bluetooth.log.stack_mask", 0x0);
     for (int i = 0; i < argc; i++) {
         if (argv[i] != NULL) {
-            int bit = atoi(argv[i]);
+            int bit = strtol(argv[i], NULL, 10);
             if (bit < 0 || bit > 31)
                 return CMD_INVALID_PARAM;
 
@@ -164,7 +164,7 @@ static int filter_cmd(void* handle, int argc, char* argv[])
 
     for (int i = 0; i < argc; i++) {
         if (argv[i] != NULL) {
-            int bit = atoi(argv[i]);
+            int bit = strtol(argv[i], NULL, 10);
             if (bit < 0 || bit >= BTSNOOP_FILTER_MAX)
                 return CMD_INVALID_PARAM;
 
@@ -182,7 +182,7 @@ static int unfilter_cmd(void* handle, int argc, char* argv[])
 
     for (int i = 0; i < argc; i++) {
         if (argv[i] != NULL) {
-            int bit = atoi(argv[i]);
+            int bit = strtol(argv[i], NULL, 10);
             if (bit < 0 || bit >= BTSNOOP_FILTER_MAX)
                 return CMD_INVALID_PARAM;
 
@@ -202,7 +202,7 @@ static int unmask_cmd(void* handle, int argc, char* argv[])
     int mask = property_get_int32("persist.bluetooth.log.stack_mask", 0x0);
     for (int i = 0; i < argc; i++) {
         if (argv[i] != NULL) {
-            int bit = atoi(argv[i]);
+            int bit = strtol(argv[i], NULL, 10);
             if (bit < 0 || bit > 31)
                 return CMD_INVALID_PARAM;
 
@@ -224,7 +224,7 @@ static int level_cmd(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int level = atoi(argv[0]);
+    int level = strtol(argv[0], NULL, 10);
     if (level != 0 && level != LOG_ERR && level != LOG_WARNING && level != LOG_INFO && level != LOG_DEBUG)
         return CMD_INVALID_PARAM;
 

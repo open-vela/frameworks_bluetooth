@@ -91,7 +91,7 @@ static int connect_audio(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    if (bt_lea_client_connect_audio(handle, &addr, atoi(argv[1])) != BT_STATUS_SUCCESS)
+    if (bt_lea_client_connect_audio(handle, &addr, strtoul(argv[1], NULL, 10)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -169,7 +169,7 @@ static int discovery_member_start(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_lea_client_discovery_member_start(handle, atoi(argv[0])) != BT_STATUS_SUCCESS)
+    if (bt_lea_client_discovery_member_start(handle, strtoul(argv[0], NULL, 10)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -180,7 +180,7 @@ static int discovery_member_stop(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_lea_client_discovery_member_stop(handle, atoi(argv[0])) != BT_STATUS_SUCCESS)
+    if (bt_lea_client_discovery_member_stop(handle, strtoul(argv[0], NULL, 10)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -196,7 +196,7 @@ static int group_add_member(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[1], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    if (bt_lea_client_group_add_member(handle, atoi(argv[0]), &addr) != BT_STATUS_SUCCESS)
+    if (bt_lea_client_group_add_member(handle, strtoul(argv[0], NULL, 10), &addr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -212,7 +212,7 @@ static int group_remove_member(void* handle, int argc, char* argv[])
     if (bt_addr_str2ba(argv[1], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    if (bt_lea_client_group_remove_member(handle, atoi(argv[0]), &addr) != BT_STATUS_SUCCESS)
+    if (bt_lea_client_group_remove_member(handle, strtoul(argv[0], NULL, 10), &addr) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -223,7 +223,7 @@ static int group_connect_audio(void* handle, int argc, char* argv[])
     if (argc < 2)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_lea_client_group_connect_audio(handle, atoi(argv[0]), atoi(argv[1])) != BT_STATUS_SUCCESS)
+    if (bt_lea_client_group_connect_audio(handle, strtoul(argv[0], NULL, 10), strtoul(argv[1], NULL, 16)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -234,7 +234,7 @@ static int group_disconnect_audio(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_lea_client_group_disconnect_audio(handle, atoi(argv[0])) != BT_STATUS_SUCCESS)
+    if (bt_lea_client_group_disconnect_audio(handle, strtoul(argv[0], NULL, 10)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -245,7 +245,7 @@ static int group_lock(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_lea_client_group_lock(handle, atoi(argv[0])) != BT_STATUS_SUCCESS)
+    if (bt_lea_client_group_lock(handle, strtoul(argv[0], NULL, 10)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;
@@ -256,7 +256,7 @@ static int group_unlock(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    if (bt_lea_client_group_unlock(handle, atoi(argv[0])) != BT_STATUS_SUCCESS)
+    if (bt_lea_client_group_unlock(handle, strtoul(argv[0], NULL, 10)) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
 
     return CMD_OK;

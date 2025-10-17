@@ -327,7 +327,7 @@ static int discovery_cmd(void* handle, int argc, char** argv)
         if (argc < 2)
             return CMD_PARAM_NOT_ENOUGH;
 
-        int timeout = atoi(argv[1]);
+        int timeout = strtol(argv[1], NULL, 10);
         if (timeout <= 0 || timeout > 48) {
             PRINT("%s, invalid timeout value:%d", __func__, timeout);
             return CMD_INVALID_PARAM;
@@ -424,7 +424,7 @@ static int set_scanmode_cmd(void* handle, int argc, char** argv)
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int scanmode = atoi(argv[0]);
+    int scanmode = strtol(argv[0], NULL, 10);
     if (scanmode > BT_BR_SCAN_MODE_CONNECTABLE_DISCOVERABLE)
         return CMD_INVALID_PARAM;
 
@@ -545,7 +545,7 @@ static int set_identity_addr_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int type = atoi(argv[1]);
+    int type = strtol(argv[1], NULL, 10);
     if (type != 0 && type != 1) {
         return CMD_INVALID_PARAM;
     }
@@ -560,19 +560,19 @@ static int set_scan_parameters_cmd(void* handle, int argc, char** argv)
     if (argc < 4)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int is_page = atoi(argv[0]);
+    int is_page = strtol(argv[0], NULL, 10);
     if (is_page != 0 && is_page != 1)
         return CMD_INVALID_PARAM;
 
-    int type = atoi(argv[1]);
+    int type = strtol(argv[1], NULL, 10);
     if (type != 0 && type != 1)
         return CMD_INVALID_PARAM;
 
-    int interval = atoi(argv[2]);
+    int interval = strtol(argv[2], NULL, 0);
     if (interval < 0x12 || interval > 0x1000)
         return CMD_INVALID_PARAM;
 
-    int window = atoi(argv[3]);
+    int window = strtol(argv[3], NULL, 0);
     if (window < 0x11 || window > 0x1000)
         return CMD_INVALID_PARAM;
 
@@ -629,7 +629,7 @@ static int set_local_cod_cmd(void* handle, int argc, char** argv)
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint32_t cod = strtol(argv[0], NULL, 16);
+    uint32_t cod = strtoul(argv[0], NULL, 16);
 
     if (cod > 0xFFFFFF || cod & 0x3)
         return CMD_INVALID_PARAM;
@@ -691,7 +691,7 @@ static int pair_reply_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int reply = atoi(argv[1]);
+    int reply = strtol(argv[1], NULL, 10);
     if (reply != 0 && reply != 1)
         return CMD_INVALID_PARAM;
 
@@ -715,7 +715,7 @@ static int pair_set_pincode_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int reply = atoi(argv[1]);
+    int reply = strtol(argv[1], NULL, 10);
     if (reply != 0 && reply != 1)
         return CMD_INVALID_PARAM;
 
@@ -745,11 +745,11 @@ static int pair_set_passkey_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int transport = atoi(argv[1]);
+    int transport = strtol(argv[1], NULL, 10);
     if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
         return CMD_INVALID_PARAM;
 
-    int reply = atoi(argv[2]);
+    int reply = strtol(argv[2], NULL, 10);
     if (reply != 0 && reply != 1)
         return CMD_INVALID_PARAM;
 
@@ -759,7 +759,7 @@ static int pair_set_passkey_cmd(void* handle, int argc, char** argv)
 
         char tmp[7] = { 0 };
         strncpy(tmp, argv[3], 6);
-        passkey = atoi(tmp);
+        passkey = strtol(tmp, NULL, 10);
         if (passkey > 1000000) {
             PRINT("Invalid passkey");
             return CMD_INVALID_PARAM;
@@ -783,11 +783,11 @@ static int pair_set_confirm_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int transport = atoi(argv[1]);
+    int transport = strtol(argv[1], NULL, 10);
     if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
         return CMD_INVALID_PARAM;
 
-    int reply = atoi(argv[2]);
+    int reply = strtol(argv[2], NULL, 10);
     if (reply != 0 && reply != 1)
         return CMD_INVALID_PARAM;
 
@@ -966,14 +966,14 @@ static int le_connect_cmd(void* handle, int argc, char** argv)
 
         } break;
         case 't': {
-            int32_t type = atoi(optarg);
+            int32_t type = strtol(optarg, NULL, 10);
             addrtype = type;
         } break;
         case 'd': {
             params.use_default_params = true;
         } break;
         case 'f': {
-            int32_t filter = atoi(optarg);
+            int32_t filter = strtol(optarg, NULL, 10);
             if (filter != BT_LE_CONNECT_FILTER_POLICY_ADDR && filter != BT_LE_CONNECT_FILTER_POLICY_WHITE_LIST) {
                 PRINT("Invalid filter:%s", optarg);
                 return CMD_INVALID_PARAM;
@@ -982,7 +982,7 @@ static int le_connect_cmd(void* handle, int argc, char** argv)
             params.filter_policy = filter;
         } break;
         case 'p': {
-            int32_t phy = atoi(optarg);
+            int32_t phy = strtol(optarg, NULL, 10);
             if (!phy_is_vaild(phy)) {
                 PRINT("Invalid phy:%s", optarg);
                 return CMD_INVALID_PARAM;
@@ -990,7 +990,7 @@ static int le_connect_cmd(void* handle, int argc, char** argv)
             params.init_phy = phy;
         } break;
         case 'l': {
-            int32_t latency = atoi(optarg);
+            int32_t latency = strtol(optarg, NULL, 0);
             if (latency < 0 || latency > 0x01F3) {
                 PRINT("Invalid latency:%s", optarg);
                 return CMD_INVALID_PARAM;
@@ -998,7 +998,7 @@ static int le_connect_cmd(void* handle, int argc, char** argv)
             params.connection_latency = latency;
         } break;
         case 'T': {
-            int32_t timeout = atoi(optarg);
+            int32_t timeout = strtol(optarg, NULL, 0);
             if (timeout < 0x0A || timeout > 0x0C80) {
                 PRINT("Invalid supervision_timeout:%s", optarg);
                 return CMD_INVALID_PARAM;
@@ -1010,7 +1010,7 @@ static int le_connect_cmd(void* handle, int argc, char** argv)
         } break;
         case 0: {
             const char* curopt = le_conn_options[index].name;
-            int32_t val = atoi(optarg);
+            int32_t val = strtol(optarg, NULL, 0);
 
             if (strncmp(curopt, "conn_interval_min", strlen("conn_interval_min")) == 0) {
                 if (val < 0x06 || val > 0x0C80) {
@@ -1091,7 +1091,7 @@ static int create_bond_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int transport = atoi(argv[1]);
+    int transport = strtol(argv[1], NULL, 10);
     if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
         return CMD_INVALID_PARAM;
 
@@ -1129,7 +1129,7 @@ static int remove_bond_cmd(void* handle, int argc, char** argv)
     if (bt_addr_str2ba(argv[0], &addr) < 0)
         return CMD_INVALID_ADDR;
 
-    int transport = atoi(argv[1]);
+    int transport = strtol(argv[1], NULL, 10);
     if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
         return CMD_INVALID_PARAM;
 
@@ -1151,8 +1151,8 @@ static int set_phy_cmd(void* handle, int argc, char** argv)
         return CMD_INVALID_ADDR;
 
     int tx_phy, rx_phy;
-    tx_phy = atoi(argv[1]);
-    rx_phy = atoi(argv[2]);
+    tx_phy = strtol(argv[1], NULL, 10);
+    rx_phy = strtol(argv[2], NULL, 10);
     if (!phy_is_vaild(tx_phy) || !phy_is_vaild(rx_phy)) {
         PRINT("Invalid phy parameter, tx:%d, rx:%d", tx_phy, rx_phy);
         return CMD_INVALID_PARAM;
@@ -1316,7 +1316,7 @@ static int get_bonded_devices_cmd(void* handle, int argc, char** argv)
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int transport = atoi(argv[0]);
+    int transport = strtol(argv[0], NULL, 10);
     if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
         return CMD_INVALID_PARAM;
 
@@ -1342,7 +1342,7 @@ static int get_connected_devices_cmd(void* handle, int argc, char** argv)
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int transport = atoi(argv[0]);
+    int transport = strtol(argv[0], NULL, 10);
     if (transport != BT_TRANSPORT_BREDR && transport != BT_TRANSPORT_BLE)
         return CMD_INVALID_PARAM;
 

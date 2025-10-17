@@ -90,7 +90,7 @@ static int mcs_media_state_changed(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    lea_adpt_mcs_media_state_t state = atoi(argv[0]);
+    lea_adpt_mcs_media_state_t state = strtol(argv[0], NULL, 16);
 
     if (bt_lea_mcs_media_state_changed(handle, state) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -111,7 +111,7 @@ static int mcs_media_control_response(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    lea_adpt_mcs_media_control_result_t result = atoi(argv[0]);
+    lea_adpt_mcs_media_control_result_t result = strtol(argv[0], NULL, 16);
 
     if (bt_lea_mcs_media_control_point_response(handle, result) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -124,7 +124,7 @@ static int mcs_playing_order_changed(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t order = atoi(argv[0]);
+    uint8_t order = strtoul(argv[0], NULL, 16);
 
     if (bt_lea_mcs_playing_order_changed(handle, order) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -137,7 +137,7 @@ static int mcs_playback_speed_changed(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t speed = atoi(argv[0]);
+    int speed = strtol(argv[0], NULL, 10);
 
     if (bt_lea_mcs_playback_speed_changed(handle, speed) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -150,7 +150,7 @@ static int mcs_seeking_speed_changed(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t speed = atoi(argv[0]);
+    int speed = strtol(argv[0], NULL, 10);
 
     if (bt_lea_mcs_seeking_speed_changed(handle, speed) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -176,7 +176,7 @@ static int mcs_track_duration_changed(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    uint8_t duration = atoi(argv[0]);
+    uint8_t duration = strtoul(argv[0], NULL, 10);
 
     if (bt_lea_mcs_track_duration_changed(handle, duration) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -189,7 +189,7 @@ static int mcs_track_position_changed(void* handle, int argc, char* argv[])
     if (argc < 1)
         return CMD_PARAM_NOT_ENOUGH;
 
-    int32_t position = atoi(argv[0]);
+    int32_t position = strtol(argv[0], NULL, 10);
 
     if (bt_lea_mcs_track_position_changed(handle, position) != BT_STATUS_SUCCESS)
         return CMD_ERROR;
@@ -204,7 +204,7 @@ static int mcs_current_track_changed(void* handle, int argc, char* argv[])
 
     lea_object_id track_id;
     for (int i = 0; i <= 5; i++) {
-        track_id[i] = strtol(argv[i], NULL, 16);
+        track_id[i] = strtoul(argv[i], NULL, 16);
     }
 
     if (bt_lea_mcs_current_track_change(handle, track_id) != BT_STATUS_SUCCESS)
@@ -220,7 +220,7 @@ static int mcs_next_track_changed(void* handle, int argc, char* argv[])
 
     lea_object_id track_id;
     for (int i = 0; i <= 5; i++) {
-        track_id[i] = strtol(argv[i], NULL, 16);
+        track_id[i] = strtoul(argv[i], NULL, 16);
     }
 
     if (bt_lea_mcs_next_track_changed(handle, track_id) != BT_STATUS_SUCCESS)
@@ -236,7 +236,7 @@ static int mcs_current_group_changed(void* handle, int argc, char* argv[])
 
     lea_object_id group_id;
     for (int i = 0; i <= 5; i++) {
-        group_id[i] = strtol(argv[i], NULL, 16);
+        group_id[i] = strtoul(argv[i], NULL, 16);
     }
 
     if (bt_lea_mcs_current_group_changed(handle, group_id) != BT_STATUS_SUCCESS)
@@ -252,7 +252,7 @@ static int mcs_parent_group_changed(void* handle, int argc, char* argv[])
 
     lea_object_id group_id;
     for (int i = 0; i <= 5; i++) {
-        group_id[i] = strtol(argv[i], NULL, 16);
+        group_id[i] = strtoul(argv[i], NULL, 16);
     }
 
     if (bt_lea_mcs_parent_group_changed(handle, group_id) != BT_STATUS_SUCCESS)
