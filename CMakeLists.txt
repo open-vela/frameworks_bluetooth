@@ -818,6 +818,9 @@ if(CONFIG_BLUETOOTH)
              ${BLUETOOTH_DIR}/framework/include)
 
   # Library Configuration
+  if(CONFIG_BLUETOOTH_STACK_BREDR_ZBLUE OR CONFIG_BLUETOOTH_STACK_LE_ZBLUE)
+    target_link_libraries(libbluetooth PRIVATE zblue_headers)
+  endif()
   target_compile_options(libbluetooth PRIVATE ${CFLAGS})
   target_sources(libbluetooth PRIVATE ${CSRCS})
   target_include_directories(libbluetooth PRIVATE ${INCDIR})
