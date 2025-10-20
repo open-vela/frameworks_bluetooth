@@ -82,7 +82,7 @@ static void bt_list_remove_a2dp_info(struct zblue_a2dp_info_t* a2dp_info);
 
 static void flag_reset(struct zblue_a2dp_info_t* a2dp_info)
 {
-    a2dp_info->state &= 0x00;
+    a2dp_info->state = 0x00;
 }
 
 static void flag_set(struct zblue_a2dp_info_t* a2dp_info, a2dp_state_bit_t flag)
