@@ -69,7 +69,6 @@ typedef struct
     bool started;
     index_allocator_t* allocator;
     bt_list_t* connections;
-    pthread_mutex_t device_lock;
 
 } gattc_manager_t;
 
@@ -88,7 +87,6 @@ typedef struct
     void* remote;
     int conn_id;
     profile_connection_state_t state;
-    pthread_mutex_t conn_lock;
     void** user_phandle;
     bt_address_t remote_addr;
     gattc_manager_t* manager;
@@ -156,7 +154,6 @@ static void gattc_connection_delete(gattc_connection_t* connection)
     connection->services = NULL;
     bt_list_free(connection->pend_ops);
     connection->pend_ops = NULL;
-    pthread_mutex_destroy(&connection->conn_lock);
     free(connection);
 }
 
@@ -242,7 +239,6 @@ static void gattc_process_message(void* data)
     gattc_msg_t* msg = (gattc_msg_t*)data;
     gattc_connection_t* connection;
 
-    pthread_mutex_lock(&g_gattc_manager.device_lock);
     if (!g_gattc_manager.started) {
         goto end;
     }
@@ -326,7 +322,6 @@ static void gattc_process_message(void* data)
     }
 
 end:
-    pthread_mutex_unlock(&g_gattc_manager.device_lock);
     gattc_msg_destory(msg);
 }
 
@@ -341,14 +336,7 @@ static bt_status_t gattc_send_message(gattc_msg_t* msg)
 
 static bt_status_t if_gattc_init(void)
 {
-    pthread_mutexattr_t attr;
-
     memset(&g_gattc_manager, 0, sizeof(g_gattc_manager));
-
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    if (pthread_mutex_init(&g_gattc_manager.device_lock, &attr) < 0)
-        return BT_STATUS_FAIL;
 
     g_gattc_manager.started = false;
 
@@ -360,9 +348,7 @@ static bt_status_t if_gattc_startup(profile_on_startup_t cb)
     bt_status_t status;
     gattc_manager_t* manager = &g_gattc_manager;
 
-    pthread_mutex_lock(&manager->device_lock);
     if (manager->started) {
-        pthread_mutex_unlock(&manager->device_lock);
         cb(PROFILE_GATTC, true);
         return BT_STATUS_SUCCESS;
     }
@@ -386,7 +372,6 @@ static bt_status_t if_gattc_startup(profile_on_startup_t cb)
 #endif
 
     manager->started = true;
-    pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTC, true);
 
     return BT_STATUS_SUCCESS;
@@ -395,7 +380,6 @@ fail:
     index_allocator_delete(&manager->allocator);
     bt_list_free(manager->connections);
     manager->connections = NULL;
-    pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTC, false);
 
     return status;
@@ -405,10 +389,7 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
 {
     gattc_manager_t* manager = &g_gattc_manager;
 
-    pthread_mutex_lock(&manager->device_lock);
-
     if (!manager->started) {
-        pthread_mutex_unlock(&manager->device_lock);
         cb(PROFILE_GATTC, true);
         return BT_STATUS_SUCCESS;
     }
@@ -421,7 +402,6 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
     bt_sal_gatt_client_disable();
 #endif
     cb(PROFILE_GATTC, true);
-    pthread_mutex_unlock(&manager->device_lock);
     cb(PROFILE_GATTC, true);
 
     return BT_STATUS_SUCCESS;
@@ -430,7 +410,6 @@ static bt_status_t if_gattc_shutdown(profile_on_shutdown_t cb)
 static void if_gattc_cleanup(void)
 {
     g_gattc_manager.started = false;
-    pthread_mutex_destroy(&g_gattc_manager.device_lock);
 }
 
 static int if_gattc_get_state(void)
@@ -444,8 +423,6 @@ static int if_gattc_dump(void)
     bt_list_t* clist = g_gattc_manager.connections;
     char addr_str[BT_ADDR_STR_LENGTH] = { 0 };
     char uuid_str[40] = { 0 };
-
-    pthread_mutex_lock(&g_gattc_manager.device_lock);
 
     for (cnode = bt_list_head(clist); cnode != NULL; cnode = bt_list_next(clist, cnode)) {
         gattc_connection_t* connection = (gattc_connection_t*)bt_list_node(cnode);
@@ -471,48 +448,36 @@ static int if_gattc_dump(void)
             BT_LOGI("\tNo Services found");
     }
 
-    pthread_mutex_unlock(&g_gattc_manager.device_lock);
-
     return 0;
 }
 
 static bt_status_t if_gattc_create_connect(void* remote, void** phandle, gattc_callbacks_t* callbacks)
 {
     bt_status_t status;
-    pthread_mutexattr_t attr;
 
     CHECK_ENABLED();
     if (!phandle)
         return BT_STATUS_PARM_INVALID;
 
-    pthread_mutex_lock(&g_gattc_manager.device_lock);
     gattc_connection_t* connection = gattc_connection_new(callbacks);
     if (!connection) {
-        pthread_mutex_unlock(&g_gattc_manager.device_lock);
         BT_LOGE("New gattc connection alloc failed");
         return BT_STATUS_NOMEM;
     }
 
     connection->services = bt_list_new((bt_list_free_cb_t)gattc_service_delete);
     if (!connection->services) {
-        pthread_mutex_unlock(&g_gattc_manager.device_lock);
         status = BT_STATUS_NOMEM;
         goto fail;
     }
 
     connection->pend_ops = bt_list_new((bt_list_free_cb_t)gattc_pendops_delete);
     if (!connection->pend_ops) {
-        pthread_mutex_unlock(&g_gattc_manager.device_lock);
         status = BT_STATUS_NOMEM;
         goto fail;
     }
 
     bt_list_add_tail(g_gattc_manager.connections, connection);
-    pthread_mutex_unlock(&g_gattc_manager.device_lock);
-
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&connection->conn_lock, &attr);
 
     connection->remote = remote;
     connection->manager = &g_gattc_manager;
@@ -538,9 +503,7 @@ static bt_status_t if_gattc_delete_connect(void* conn_handle)
     bt_sal_gatt_client_disconnect(PRIMARY_ADAPTER, &connection->remote_addr);
     bt_list_free(connection->services);
     connection->services = NULL;
-    pthread_mutex_lock(&g_gattc_manager.device_lock);
     bt_list_remove(g_gattc_manager.connections, connection);
-    pthread_mutex_unlock(&g_gattc_manager.device_lock);
     *user_phandle = NULL;
 
     return BT_STATUS_SUCCESS;
