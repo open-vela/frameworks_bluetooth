@@ -77,9 +77,6 @@ static node_t* app_list_remove_head(void)
  */
 static void gap_adapter_state_changed_callback(void* cookie, bt_adapter_state_t state)
 {
-    if (state != BT_ADAPTER_STATE_ON && state != BT_ADAPTER_STATE_OFF)
-        return;
-
     node_t* node = (node_t*)malloc(sizeof(node_t));
     if (node == NULL) {
         LOGE("malloc failed.");
