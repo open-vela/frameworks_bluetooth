@@ -232,25 +232,25 @@ static void radio_power_changed(bool state)
     BT_LOGD("%s,%d\n", __func__, state);
 }
 
-static void call_state_changed(tapi_call_info call_info)
+static void call_state_changed(tapi_call_info* call_info)
 {
     tapi_call_info* call = NULL;
-    tapi_call_info* exist_call = bt_list_find(g_current_calls, call_is_found, &call_info);
+    tapi_call_info* exist_call = bt_list_find(g_current_calls, call_is_found, call_info);
 
     BT_LOGD("%s\n", __func__);
 
-    dump_call(&call_info);
+    dump_call(call_info);
 
     if (exist_call != NULL)
         bt_list_remove(g_current_calls, exist_call);
 
-    if (bt_list_is_empty(g_current_calls) && call_info.state == CALL_STATUS_DISCONNECTED) {
-        update_call_state(&call_info);
+    if (bt_list_is_empty(g_current_calls) && call_info->state == CALL_STATUS_DISCONNECTED) {
+        update_call_state(call_info);
     }
 
-    if (call_info.state != CALL_STATUS_DISCONNECTED) {
+    if (call_info->state != CALL_STATUS_DISCONNECTED) {
         call = (tapi_call_info*)calloc(1, sizeof(tapi_call_info));
-        memcpy(call, &call_info, sizeof(tapi_call_info));
+        memcpy(call, call_info, sizeof(tapi_call_info));
         bt_list_add_tail(g_current_calls, call);
         update_call_state(call);
     }
