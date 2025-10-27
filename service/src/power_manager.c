@@ -404,6 +404,7 @@ static bt_pm_device_t* pm_conn_device_add(bt_address_t* peer_addr)
 static void pm_conn_device_remove(bt_pm_device_t* device)
 {
     if (device) {
+        pm_request_stop_timer(device);
         list_delete(&device->srv_node);
         free(device);
     }
@@ -878,6 +879,9 @@ void bt_pm_remote_device_disconnected(bt_address_t* addr)
         BT_LOGE("%s, fail to find device:%s", __func__, bt_addr_str(addr));
         return;
     }
+
+    pm_stop_timer(addr);
+
     pm_conn_device_remove(device);
 }
 
