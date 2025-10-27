@@ -564,7 +564,7 @@ static struct bt_gatt_cb zblue_gatt_callbacks = {
 
 static sal_adapter_req_t* sal_adapter_req(bt_controller_id_t id, bt_address_t* addr, sal_func_t func)
 {
-    sal_adapter_req_t* req = calloc(sizeof(sal_adapter_req_t), 1);
+    sal_adapter_req_t* req = calloc(1, sizeof(sal_adapter_req_t));
 
     if (req) {
         req->id = id;
@@ -582,7 +582,7 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
 
     SAL_ASSERT(req);
     req->func(req);
-    free(userdata);
+    free(req);
 }
 
 static bt_status_t sal_send_req(sal_adapter_req_t* req)

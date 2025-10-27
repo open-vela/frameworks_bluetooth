@@ -319,7 +319,7 @@ static void sal_invoke_async(service_work_t* work, void* userdata)
 
     SAL_ASSERT(req);
     req->func(req);
-    free(userdata);
+    free(req);
 }
 
 static bt_status_t sal_send_req(sal_adapter_req_t* req)
