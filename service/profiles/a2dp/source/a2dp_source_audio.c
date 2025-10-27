@@ -251,8 +251,8 @@ static void a2dp_source_audio_handle_timer(service_timer_t* timer, void* arg)
 
 #ifndef CONFIG_ARCH_SIM
     uint64_t now_us = bt_get_os_timestamp_us();
-    if (stream->last_ts && ((now_us - stream->last_ts) > (2 * stream->interval_ms * 1000))) {
-        BT_LOGD("===a2dp cpu busy time:%lld===", now_us - stream->last_ts);
+    if (stream->last_ts && ((now_us - stream->last_ts) > (2ULL * (uint64_t)stream->interval_ms * 1000ULL))) {
+        BT_LOGD("===a2dp cpu busy time:%" PRIu64 "===", now_us - stream->last_ts);
     }
 
     stream->last_ts = now_us;
