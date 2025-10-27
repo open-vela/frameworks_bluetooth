@@ -856,7 +856,7 @@ bt_status_t bt_gattc_feature_delete_client_async(bt_instance_t* ins, bt_address_
 {
     gatt_client_t* client;
 
-    if (!ins || !addr || !cb)
+    if (!ins || !addr)
         return BT_STATUS_PARM_INVALID;
 
     client = find_client_by_addr(addr);
