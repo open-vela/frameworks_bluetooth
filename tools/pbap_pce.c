@@ -34,6 +34,9 @@ static int connect_cmd(void* handle, int argc, char* argv[]);
 static int disconnect_cmd(void* handle, int argc, char* argv[]);
 static int get_contact_cmd(void* handle, int argc, char* argv[]);
 static int dump_cmd(void* handle, int argc, char* argv[]);
+static int set_blacklist_cmd(void* handle, int argc, char* argv[]);
+static int remove_blacklist_cmd(void* handle, int argc, char* argv[]);
+static int is_in_blacklist_cmd(void* handle, int argc, char* argv[]);
 
 static bt_command_t g_pce_tables[] = {
     { "connect", connect_cmd, 0, "connect to the PBAP server, param: <address>" },
@@ -44,6 +47,9 @@ static bt_command_t g_pce_tables[] = {
                                  "\t\t\t  \"get <address> 1 10086\"\r\n"
                                  "\t\t\t  property example: 0 by name\r\n"
                                  "\t\t\t                    1 by number" },
+    {"setblacklist", set_blacklist_cmd, 0, "set blacklist, param: <address>\r\n"},
+    {"removeblacklist", remove_blacklist_cmd, 0, "remove blacklist, param: <address>\r\n"},
+    {"checkblacklist", is_in_blacklist_cmd, 0, "check blacklist, param: <address>\r\n"},
     { "dump", dump_cmd, 0, "dump PBAP current state" },
 };
 
@@ -150,6 +156,62 @@ static int get_contact_cmd(void* handle, int argc, char* argv[])
     default:
         break;
     }
+
+    return CMD_OK;
+}
+
+static int set_blacklist_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address_t addr;
+
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    PRINT("%s, address:%s", __func__, argv[0]);
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (bt_pbap_pce_add_to_blacklist(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int remove_blacklist_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address_t addr;
+
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    PRINT("%s, address:%s", __func__, argv[0]);
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    if (bt_pbap_pce_remove_from_blacklist(handle, &addr) != BT_STATUS_SUCCESS)
+        return CMD_ERROR;
+
+    return CMD_OK;
+}
+
+static int is_in_blacklist_cmd(void* handle, int argc, char* argv[])
+{
+    bt_address_t addr;
+    bool is_blacklisted;
+
+    if (argc < 1)
+        return CMD_PARAM_NOT_ENOUGH;
+
+    PRINT("%s, address:%s", __func__, argv[0]);
+    if (bt_addr_str2ba(argv[0], &addr) < 0)
+        return CMD_INVALID_ADDR;
+
+    is_blacklisted = bt_pbap_pce_is_in_blacklist(handle, &addr);
+
+    if (is_blacklisted)
+        PRINT("addr %s is in blacklist", argv[0]);
+    else
+        PRINT("addr %s is not in blacklist", argv[0]);
 
     return CMD_OK;
 }
