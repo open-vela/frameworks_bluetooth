@@ -374,6 +374,13 @@ config BLUETOOTH_SCO_CTRL_PATH
 
 endmenu #Hands-Free Profile
 
+menu "Phone Book Profile (PBAP)"
+config BLUETOOTH_PBAP_PCE
+	bool "Phone Book Client Supported"
+	default n
+
+endmenu #Phone Book Profile
+
 menu "LE Audio"
 	comment "There should be two \"LE Audio support\" options, if you only see one, please enable \"Bluetooth BLE support\" in Framework"
 
