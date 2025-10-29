@@ -193,6 +193,9 @@ static bt_command_t g_cmd_tables[] = {
 #ifdef CONFIG_BLUETOOTH_SPP
     { "spp", spp_command_exec, 0, "serial port cmd,   input \'spp\' show usage" },
 #endif
+#ifdef CONFIG_BLUETOOTH_PBAP_PCE
+    { "pce", pce_command_exec, 0, "pbap client cmd,   input \'pce\' show usage" },
+#endif
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
     { "hidd", hidd_command_exec, 0, "hid device cmd,    input \'hidd\' show usage" },
 #endif
@@ -313,6 +316,9 @@ static void bt_tool_init(void* handle)
 #ifdef CONFIG_BLUETOOTH_SPP
     spp_command_init(handle);
 #endif
+#ifdef CONFIG_BLUETOOTH_PBAP_PCE
+    pce_command_init(handle);
+#endif
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
     hidd_command_init(handle);
 #endif
@@ -377,6 +383,9 @@ static void bt_tool_uninit(void* handle)
 #endif
 #ifdef CONFIG_BLUETOOTH_SPP
     spp_command_uninit(handle);
+#endif
+#ifdef CONFIG_BLUETOOTH_PBAP_PCE
+    pce_command_uninit(handle);
 #endif
 #ifdef CONFIG_BLUETOOTH_HID_DEVICE
     hidd_command_uninit(handle);

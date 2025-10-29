@@ -135,6 +135,10 @@ int spp_command_init(void* handle);
 void spp_command_uninit(void* handle);
 int spp_command_exec(void* handle, int argc, char* argv[]);
 
+int pce_command_init(void* handle);
+void pce_command_uninit(void* handle);
+int pce_command_exec(void* handle, int argc, char* argv[]);
+
 int hidd_command_init(void* handle);
 void hidd_command_uninit(void* handle);
 int hidd_command_exec(void* handle, int argc, char* argv[]);
