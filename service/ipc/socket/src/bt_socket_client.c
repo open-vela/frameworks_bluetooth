@@ -124,6 +124,9 @@ static void bt_socket_client_callback_process(bt_instance_t* ins, bt_message_pac
         { BT_SPP_CALLBACK_START, BT_SPP_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_spp_callback },
         { BT_IPC_CODE_CALLBACK_SPP_BEGIN, BT_IPC_CODE_CALLBACK_SPP_END, (bt_socket_callback_t)bt_socket_client_spp_callback },
 #endif
+#ifdef CONFIG_BLUETOOTH_PBAP_PCE
+        { BT_IPC_CODE_CALLBACK_PBAP_PCE_BEGIN, BT_IPC_CODE_CALLBACK_PBAP_PCE_END, (bt_socket_callback_t)bt_socket_client_pbap_pce_callback },
+#endif
 #ifdef CONFIG_BLUETOOTH_PAN
         { BT_PAN_CALLBACK_START, BT_PAN_CALLBACK_END, (bt_socket_callback_t)bt_socket_client_pan_callback },
         { BT_IPC_CODE_CALLBACK_PAN_BEGIN, BT_IPC_CODE_CALLBACK_PAN_END, (bt_socket_callback_t)bt_socket_client_pan_callback },
